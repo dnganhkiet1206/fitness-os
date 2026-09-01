@@ -141,6 +141,7 @@ const STEPS = [
   ['giấc chính của ngày', 'node', ['tools/main-sleep.mjs']],
   ['sheet giải thích thẻ hero', 'node', ['tools/activity-explainer.mjs']],
   ['cửa sổ lớp aura', 'node', ['tools/aura-window.mjs']],
+  ['aura trạng thái nghỉ', 'node', ['tools/resting-aura.mjs']],
   ['Dynamic Type', 'node', ['tools/dynamic-type.mjs']],
   ['cách Expander mở ra', 'node', ['tools/reveal-clip.mjs']],
   ['hiệu ứng vào', 'node', ['tools/entrance-once.mjs']],

@@ -91,6 +91,17 @@ function gateProblems(src) {
   /* Each looping component takes the gate and returns early. Checked as a
      pair, because a `moving` prop that is read and ignored is the same as no
      prop at all. */
+  /*
+    Ba tên này là các thành phần con của `assistant-aura.tsx` và CHỈ tồn tại ở
+    đó. Chạy chúng trên `readiness-aura.tsx` báo ba lỗi cho ba thứ tệp ấy không
+    có và không cần có — một luật đi tìm thứ không thuộc về nơi nó đang soi.
+
+    Phần chung ở trên — đếm vòng lặp, đếm chỗ huỷ, đếm chỗ thật sự dừng khi
+    `!moving` — mới là thứ áp cho mọi lớp aura, và nó đã chạy xong trước dòng
+    này.
+  */
+  if (!/function LightPool\(/.test(code)) return bad;
+
   for (const [what, re] of [
     ['LightPool', /function LightPool\(\{[^}]*moving[^}]*\}/],
     ['DustField', /function DustField\(\{[\s\S]{0,200}?moving[\s\S]{0,200}?\}\)/],
@@ -104,7 +115,19 @@ function gateProblems(src) {
   }
   return bad;
 }
-problems.push(...gateProblems(read(AURA)));
+/*
+  Hai lớp aura, không phải một.
+
+  `readiness-aura.tsx` có vòng lặp riêng từ khi trạng thái NGHỈ biết trôi, và
+  luật này từng chỉ soi `assistant-aura.tsx` — đúng lỗ hổng "một luật áp cho một
+  tệp là một luật đã bị vô hiệu ở mọi tệp còn lại" vừa phải vá ở
+  `entrance-app.mjs`. Tên tệp đi kèm thông báo, nếu không thì hai lớp báo lỗi
+  giống hệt nhau và không ai biết phải mở cái nào.
+*/
+const AURAS = [AURA, 'src/components/ascnd/readiness-aura.tsx'];
+for (const f of AURAS) {
+  problems.push(...gateProblems(read(f)).map((m) => m.replace(/^aura:/, `${f}:`)));
+}
 
 /*
   ── 2: the gate is focus, and the system setting ──
@@ -114,16 +137,26 @@ problems.push(...gateProblems(read(AURA)));
   somebody a way to turn the whole thing off without the app inventing a
   setting of its own.
 */
-{
-  const code = strip(read(AURA));
-  if (!/const moving = focused && !reduceMotion/.test(code)) {
+for (const f of AURAS) {
+  const code = strip(read(f));
+  /*
+    `focused && !reduceMotion` phải CÓ MẶT, không nhất thiết là toàn bộ biểu
+    thức. `readiness-aura.tsx` viết `resting && focused && !reduceMotion`: một
+    điều kiện CHẶT HƠN, vì wash màu là một phát biểu về hôm nay và một phát
+    biểu thì đứng yên. Đòi khớp cả dòng sẽ chặn đúng cái siết chặt ấy, tức là
+    luật đi phạt thứ nó muốn khuyến khích.
+
+    Nới ở chỗ này, không nới ở chỗ khác: hai cổng bắt buộc vẫn phải nguyên vẹn
+    và vẫn phải nằm trong cùng một cờ.
+  */
+  if (!/const moving = (?:\w+ && )*focused && !reduceMotion/.test(code)) {
     problems.push(
-      'aura: cờ dừng không phải là `focused && !reduceMotion` — ' +
+      `${f}: cờ dừng không chứa \`focused && !reduceMotion\` — ` +
         'thiếu focus thì nó chạy ở tab khác, thiếu reduce-motion thì bỏ qua cài đặt hệ thống',
     );
   }
-  if (!/useIsFocused\(\)/.test(code)) problems.push('aura: không đọc useIsFocused');
-  if (!/useReducedMotion\(\)/.test(code)) problems.push('aura: không đọc useReducedMotion');
+  if (!/useIsFocused\(\)/.test(code)) problems.push(`${f}: không đọc useIsFocused`);
+  if (!/useReducedMotion\(\)/.test(code)) problems.push(`${f}: không đọc useReducedMotion`);
 }
 
 /*

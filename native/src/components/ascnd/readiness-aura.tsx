@@ -1,8 +1,18 @@
-import { useId } from 'react';
+import { useIsFocused } from 'expo-router';
+import { useEffect, useId } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { colors } from '@/constants/ascnd';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 /**
  * The colour behind Today, taken from how recovered you are.
@@ -43,6 +53,51 @@ import { colors } from '@/constants/ascnd';
  * pairing `constants/ascnd.ts` says was already the tightest in the palette.
  */
 const AURA_ALPHA = 0.13;
+
+/**
+ * Độ mờ của trạng thái NGHỈ — khi chưa có số đo nào.
+ *
+ * 0,10, và con số này được ĐO chứ không chọn. Xem phép tính trong thân hàm:
+ * trên 0,10 thì chữ phụ tụt xuống dưới 4,5:1 ở trường hợp xấu nhất.
+ */
+const RESTING_ALPHA = 0.1;
+
+/**
+ * Nhịp trôi của trạng thái nghỉ, và vì sao chỉ trạng thái nghỉ mới trôi.
+ *
+ * ── cái được mượn từ Apple Music, và cái không ──
+ *
+ * Nền "Now Playing" của Apple Music dựng bằng BỐN bản sao ảnh bìa ở 25/50/80/
+ * 125% bề ngang khung nhìn, xoay tại chỗ và trôi theo quỹ đạo tròn, làm mờ qua
+ * một Metal shader có phép "twist". Không có gì trong đó bê thẳng sang được:
+ * app này không có ảnh bìa để lấy màu, và không có pipeline shader — thêm một
+ * cái là một lần dựng lại native cho đúng một hiệu ứng.
+ *
+ * Thứ chuyển được là NGUYÊN LÝ: ánh sáng có nguồn, và nguồn ấy chuyển động
+ * chậm tới mức bạn không bắt được nó đang chuyển, chỉ thấy màn hình không chết.
+ *
+ * ── và chỉ trạng thái nghỉ ──
+ *
+ * Wash MÀU là một phát biểu về hôm nay, và một phát biểu thì đứng yên. Trạng
+ * thái nghỉ không phát biểu gì, nên nó được phép thở. Cho cả hai cùng trôi là
+ * làm màu trạng thái bớt dứt khoát đi để đổi lấy một chuyển động không ai xin.
+ *
+ * 22 giây: đủ chậm để trong một lần liếc màn hình nó đứng yên, đủ động để nhìn
+ * lâu thì thấy khác. `assistant-aura.tsx` ghi lại vì sao việc này gần như miễn
+ * phí — `<Svg>` vẽ MỘT lần, chỉ `Animated.View` bọc ngoài chạy transform, nên
+ * "tám giây trôi tốn đúng bằng ngồi yên".
+ */
+const DRIFT_MS = 22_000;
+/** Biên độ trôi, theo tỉ lệ bề ngang màn hình. Nhỏ có chủ đích. */
+const DRIFT = 0.06;
+/**
+ * Lớp được vẽ to hơn màn hình bao nhiêu, để cú trôi không bao giờ hở mép.
+ *
+ * Ràng buộc là `OVERSCALE ≥ 1 + DRIFT` — xem phép tính ở chỗ dùng. Giữ hai
+ * hằng số cạnh nhau vì chúng chỉ đúng khi đi cùng nhau, và
+ * `tools/resting-aura.mjs` kiểm chính bất đẳng thức ấy.
+ */
+const OVERSCALE = 1.08;
 
 /** How far down the screen the wash reaches before it is gone. */
 const REACH = 0.52;
@@ -94,24 +149,128 @@ export function ReadinessAura({
     specific lie: a screen showing one person's readiness colour under another
     screen's number.
   */
+  const tint = override ?? (status ? TINT[status] : null);
+  /*
+    Chưa đo được thì KHÔNG tô màu readiness — nhưng cũng không để trang đen.
+
+    ── câu cũ, và nửa nào của nó vẫn đúng ──
+
+    Chỗ này từng `return null` kèm lý do: "A default wash would be the screen
+    asserting a state before anything has been measured." Nửa ấy vẫn đúng và
+    không được động vào: xanh/vàng/đỏ là TÍN HIỆU, tô một trong ba khi chưa có
+    số đo là nói dối về cơ thể người dùng.
+
+    Nửa sai là kết luận. "Không tô màu trạng thái" không kéo theo "không tô gì":
+    người dùng mở app lần đầu, chưa nối Apple Health, và nhận một màn hình đen
+    tuyền với một vòng tròn xám — trang trông như hỏng chứ không như đang chờ.
+
+    ── nên trạng thái nghỉ dùng BẠC THƯƠNG HIỆU ──
+
+    `constants/ascnd.ts` ghi thẳng về nhóm bạc: "It is an identity, not a
+    signal." Đó chính xác là thứ cần ở đây — một màu không phát biểu gì về sức
+    khoẻ hôm nay, chỉ nói rằng đây là app này. Không có cách đọc nhầm nào: bạc
+    không nằm trên thang xanh–vàng–đỏ.
+  */
+  const resting = !tint;
+
+  /*
+    Cú trôi.
+
+    Hook khai vô điều kiện — React không cho gọi hook trong nhánh — còn việc
+    CHẠY hay không thì quyết định bên trong effect. Ba cổng, và cả ba đều là
+    thứ `tools/aura-cost.mjs` đòi ở lớp aura kia:
+
+      · `resting`      — wash màu là một phát biểu, và phát biểu thì đứng yên
+      · `useIsFocused` — màn hình bị che thì không có ai nhìn cái gì cả
+      · Reduce Motion  — một vòng lặp vô hạn là đúng thứ cài đặt ấy tồn tại để tắt
+
+    `cancelAnimation` khi gỡ: một hiệu ứng không ai nhìn là một cái máy nóng.
+  */
+  const t = useSharedValue(0);
+  const focused = useIsFocused();
+  const reduceMotion = useReducedMotion();
+  const moving = resting && focused && !reduceMotion;
+
+  useEffect(() => {
+    if (!moving) {
+      cancelAnimation(t);
+      t.value = 0;
+      return;
+    }
+    t.value = withRepeat(withTiming(1, { duration: DRIFT_MS, easing: Easing.inOut(Easing.sin) }), -1, true);
+    return () => cancelAnimation(t);
+  }, [moving, t]);
+
+  /* Chỉ transform — không chạm vào thuộc tính nào của SVG. `assistant-aura.tsx`
+     ghi lại vì sao: `react-native-svg` vẽ lại cả `<Svg>` khi bất kỳ prop con
+     nào đổi, nên animate một `<Stop>` là cách đắt nhất để làm một vệt mờ chuyển
+     động. Ở đây `<Svg>` là bitmap tĩnh và chỉ cái vỏ quanh nó đi. */
+  const drift = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: (t.value - 0.5) * width * DRIFT },
+      { translateY: (0.5 - t.value) * width * DRIFT * 0.6 },
+      /*
+        `OVERSCALE`, không phải 1.
+
+        Bản đầu ở đây là `scale: 1 + t.value * 0.04`, và ở `t = 0` lớp bị dịch
+        TRÁI 3% bề ngang trong khi vẫn đúng cỡ màn hình — tức là hở một dải 3%
+        không vẽ gì ở mép phải, và pool thứ hai nằm ở cx=88% nên chỗ hở đó có
+        màu ngay bên cạnh. Một đường dọc cứng vắt qua màn hình, cùng loại với
+        vết cắt ngang mà chú thích về bán kính `r` ở dưới đã ghi lại.
+
+        Lớp phải LUÔN lớn hơn màn hình đủ để nuốt hết biên độ trôi: scale `s`
+        nới mỗi bên `(s − 1) / 2`, còn quãng dịch lớn nhất là `DRIFT / 2`. Nên
+        điều kiện là `(s − 1) / 2 ≥ DRIFT / 2`, tức `s ≥ 1 + DRIFT`. 1.08 với
+        DRIFT 0.06 để lại 1% dự phòng.
+      */
+      { scale: OVERSCALE + t.value * 0.04 },
+    ],
+  }));
+
   const uid = useId();
   const gid = `readinessAura-${uid}`;
   const gid2 = `readinessAura2-${uid}`;
 
-  const tint = override ?? (status ? TINT[status] : null);
-  /* No reading, no colour. A default wash would be the screen asserting a state
-     before anything has been measured. */
-  if (!tint) return null;
 
-  /* Sau cổng, nơi `tint` chắc chắn có giá trị. Mặc định là chính nó — một màu
-     vẫn vẽ được, chỉ là phẳng hơn; không bịa ra một tông thứ hai khi chỗ gọi
-     chưa chọn. */
-  const second = tint2 ?? tint;
+  /* Ở trạng thái nghỉ, hai tông là hai sắc bạc cạnh nhau trên cùng thang —
+     `primary` và `goldLight` — nên phép chồng chéo vẫn cho ra một dải chuyển
+     màu chứ không phải một vệt sáng đơn. Xem chú thích `tint2`.
+
+     Ngoài trạng thái nghỉ: mặc định là chính `tint` — một màu vẫn vẽ được, chỉ
+     là phẳng hơn; không bịa ra một tông thứ hai khi chỗ gọi chưa chọn. */
+  const paint = tint ?? colors.primary;
+  const second = resting ? colors.goldLight : (tint2 ?? paint);
+  /*
+    Trần độ mờ của trạng thái nghỉ, ĐO chứ không chọn.
+
+    Bạc `#a8afbd` sáng hơn hẳn ba màu tín hiệu neon, nên cùng một alpha nó nâng
+    nền lên nhiều hơn. Chữ phụ (`mutedForeground` #828282) là cặp chặt nhất
+    trong bảng màu — `constants/ascnd.ts` ghi lại cả phép đo đưa nó từ 3,39:1
+    lên 4,71:1 — nên nó là thứ quyết định trần ở đây.
+
+    Đo trên nền `background` #070708, trường hợp xấu nhất là wash ở đỉnh sáng
+    nằm ngay dưới chữ phụ:
+
+        alpha 0.10 → 4,63:1   ✓
+        alpha 0.12 → 4,47:1   ✗ dưới 4,5
+
+    Nên 0.10, và nó an toàn ở MỌI chỗ trên màn hình chứ không chỉ ở chỗ wash
+    tình cờ yếu. Kiểm lại bằng:
+
+        node -e "const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+        const lin=c=>{c/=255;return c<=0.03928?c/12.92:((c+0.055)/1.055)**2.4};
+        const L=v=>0.2126*lin(v[0])+0.7152*lin(v[1])+0.0722*lin(v[2]);
+        const bg=hex('#070708'),s=hex('#a8afbd'),m=hex('#828282'),a=0.10;
+        const o=s.map((v,i)=>v*a+bg[i]*(1-a));
+        console.log(((Math.max(L(m),L(o))+0.05)/(Math.min(L(m),L(o))+0.05)).toFixed(2))"
+  */
+  const alpha = resting ? RESTING_ALPHA : AURA_ALPHA;
 
   const h = height * REACH;
 
   return (
     <View style={styles.fill} pointerEvents="none">
+      <Animated.View style={drift}>
       <Svg width={width} height={h}>
         <Defs>
           {/*
@@ -136,9 +295,9 @@ export function ReadinessAura({
             where the circle does not reach there is nothing to see.
           */}
           <RadialGradient id={gid} cx="22%" cy="0%" r="95%">
-            <Stop offset="0" stopColor={tint} stopOpacity={AURA_ALPHA} />
-            <Stop offset="0.55" stopColor={tint} stopOpacity={AURA_ALPHA * 0.42} />
-            <Stop offset="1" stopColor={tint} stopOpacity={0} />
+            <Stop offset="0" stopColor={paint} stopOpacity={alpha} />
+            <Stop offset="0.55" stopColor={paint} stopOpacity={alpha * 0.42} />
+            <Stop offset="1" stopColor={paint} stopOpacity={0} />
           </RadialGradient>
           {/*
             r phải NHỎ HƠN khoảng cách từ tâm tới đáy hình chữ nhật, nếu không
@@ -155,14 +314,15 @@ export function ReadinessAura({
             vẫn an toàn.
           */}
           <RadialGradient id={gid2} cx="88%" cy="26%" r="70%">
-            <Stop offset="0" stopColor={second} stopOpacity={AURA_ALPHA * 0.85} />
-            <Stop offset="0.6" stopColor={second} stopOpacity={AURA_ALPHA * 0.3} />
+            <Stop offset="0" stopColor={second} stopOpacity={alpha * 0.85} />
+            <Stop offset="0.6" stopColor={second} stopOpacity={alpha * 0.3} />
             <Stop offset="1" stopColor={second} stopOpacity={0} />
           </RadialGradient>
         </Defs>
         <Rect x={0} y={0} width={width} height={h} fill={`url(#${gid})`} />
         <Rect x={0} y={0} width={width} height={h} fill={`url(#${gid2})`} />
       </Svg>
+      </Animated.View>
     </View>
   );
 }
