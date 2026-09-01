@@ -1,15 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Modal,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-  type FlatList,
-  type NativeScrollEvent,
-  type NativeSyntheticEvent,
-} from 'react-native';
+import { Modal, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import type Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SheetHeader } from '@/components/ascnd/sheet-header';
@@ -30,24 +22,24 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
  * side, and how far one nudge moves you — and a text field shows none of it.
  * It also never opens a keyboard over the thing you are trying to look at.
  *
- * ── the ruler is a list, and it lives in its own file ──
+ * ── the ruler is a drawing, and it lives in its own file ──
  *
- * A `FlatList`, so only the ticks near the viewport exist at any moment. Drawn
- * instead, the full 30–300 kg range at tenth-of-a-kilo steps is 2 701 marks
- * across eleven thousand points of width — one enormous rasterised texture to
- * scroll a window across. Windowing makes the range free: pounds needs six
- * thousand ticks and costs exactly the same.
+ * Đoạn ở đây từng mô tả một `FlatList` và lập luận rằng ảo hoá làm cả dải
+ * 30–300 kg thành miễn phí. Nó không miễn phí: người dùng báo thước "phải load
+ * mỗi lần kéo nhanh", tức những ô trắng mà tài liệu React Native gọi thẳng là
+ * đánh đổi cố hữu của `VirtualizedList`.
  *
- * It is `memo`ised in `weight-goal-ruler`, and separate for a reason: this
- * screen `setState`s on every scroll frame so the big number can follow the
- * drag, and while the list was in here that re-rendered hundreds of ticks
- * sixty times a second. Everything handed to it — including `onScroll` and
- * `onContentSizeChange` below — has to keep its identity between renders or
- * the split buys nothing.
+ * Thước nay là MỘT `<Pattern>` của SVG trượt bằng `transform` trên luồng UI.
+ * Không có gì được dựng theo từng vạch, nên không có gì có thể dựng không kịp.
+ * `weight-goal-ruler` ghi đầy đủ vì sao ảo hoá là câu trả lời sai cho một hoạ
+ * tiết tuần hoàn.
  *
- * Its ends are container padding, not spacer items, so item offsets stay
- * `index × TICK_W`: the tick under the mark is exactly `index × TICK_W`, with
- * the padding accounted for by the viewport rather than by the arithmetic.
+ * Nó vẫn `memo`ised và vẫn ở tệp riêng, nhưng lý do đã đổi: màn này `setState`
+ * theo cú kéo để con số lớn đi theo, và mọi thứ đưa sang nó phải giữ nguyên
+ * danh tính giữa các lần render.
+ *
+ * Hai đầu vẫn là đệm của nội dung chứ không phải phần tử chèn, nên vị trí cuộn
+ * vẫn đúng bằng `index × TICK_W`.
  *
  * ── the number comes from the scroll position ──
  *
@@ -56,24 +48,21 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
  * two values. Nothing is committed while dragging: `Done` writes, backing out
  * leaves the stored target alone.
  *
+ * Phép tính ấy nay chạy TRONG worklet của thước, và nó chỉ gọi sang đây khi kết
+ * quả đổi. Trước đây mỗi khung hình cuộn đều là một lời gọi JS rồi mới so sánh
+ * ở đầu này.
+ *
  * ── getting it to the right place on the first open ──
  *
  * Harder than it looks, and it was wrong: the ruler opened somewhere arbitrary
  * and dragged from there, so the number under the mark meant nothing.
  *
- * `initialScrollIndex` is the obvious tool and it is the broken one here. It
- * positions using `getItemLayout`, whose offsets are item-relative and know
- * nothing about the half-screen of container padding on each end, so it lands
- * short by that padding — and it runs against a list the modal has not
- * finished laying out, during a slide animation, which is how it ends up
- * nowhere in particular.
- *
- * `onContentSizeChange` is the reliable signal instead: it fires once the
+ * `onContentSizeChange` là tín hiệu đáng tin: it fires once the
  * content has actually been measured, which is the first moment a scroll
  * offset means anything. Positioning happens there, once per open, guarded by
  * a ref.
  *
- * Until that has happened `onScroll` is ignored entirely. Otherwise the
+ * Until that has happened the ruler's report is ignored entirely. Otherwise the
  * layout's own transient offsets get read as the user choosing values —
  * which is where the phantom movement came from, and a burst of haptics with
  * it.
@@ -113,7 +102,7 @@ export function WeightGoalDialog({
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const wl = weightLabel(unit);
-  const list = useRef<FlatList<number>>(null);
+  const list = useRef<Animated.ScrollView>(null);
 
   /**
    * One tick is a tenth of a unit — 50, 50.1, … 50.9, 51.
@@ -142,9 +131,8 @@ export function WeightGoalDialog({
   /**
    * Whether the ruler has been put where it belongs for this opening.
    *
-   * A ref, not state: it gates `onScroll`, which fires far more often than
-   * anything should re-render, and flipping it must not itself cause a render
-   * in the middle of a drag.
+   * A ref, not state: it gates the ruler's report, and flipping it must not
+   * itself cause a render in the middle of a drag.
    */
   const placed = useRef(false);
 
@@ -152,12 +140,14 @@ export function WeightGoalDialog({
    * The last index a haptic was fired for.
    *
    * A ref, and this is the whole reason the clicks did not track the notches.
-   * `onScroll` used to compare against `index` from state — a value captured
-   * when the handler was created. React does not necessarily re-render between
-   * two scroll events, so several events in a row could see the same stale
-   * `index`: crossing three ticks fired once, and coming back across the same
-   * tick fired again. A ref is written synchronously inside the handler, so
-   * every event compares against what the one before it actually saw.
+   * Bộ xử lý cuộn từng so với `index` lấy từ state — một giá trị chụp lại lúc
+   * hàm được tạo. React không nhất thiết render lại giữa hai sự kiện cuộn, nên
+   * vài sự kiện liên tiếp cùng thấy một `index` cũ: đi qua ba vạch chỉ kêu một
+   * lần, và quay lại qua đúng vạch đó thì kêu thêm lần nữa. Một ref được ghi
+   * đồng bộ ngay trong hàm, nên mỗi lần đều so với thứ lần trước thật sự thấy.
+   *
+   * Phép so THỨ NHẤT nay nằm trong worklet của thước và dùng shared value cho
+   * đúng lý do ấy; ref này giữ phép so thứ hai, thứ chỉ chạy sau cổng `placed`.
    */
   const clicked = useRef(seedIndex);
 
@@ -183,15 +173,22 @@ export function WeightGoalDialog({
    */
   const onContentSizeChange = useCallback(() => {
     if (placed.current) return;
-    list.current?.scrollToOffset({ offset: seedIndex * TICK_W, animated: false });
+    list.current?.scrollTo({ x: seedIndex * TICK_W, animated: false });
     clicked.current = seedIndex;
     placed.current = true;
   }, [seedIndex]);
 
-  const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+  /*
+    Vạch dưới kim vừa đổi.
+
+    Phép SO đã chuyển vào worklet của thước — xem `weight-goal-ruler` — nên hàm
+    này chỉ chạy khi thật sự có thay đổi, không phải mỗi khung hình. `clicked`
+    vẫn còn vì nó trả lời một câu khác: cú nhảy nào là do NGƯỜI DÙNG. Thước
+    không biết về `placed`, nên nó vẫn báo trong lúc bố cục đang ổn định.
+  */
+  const onIndex = useCallback((next: number) => {
     // Layout settling is not the user choosing a number
     if (!placed.current) return;
-    const next = Math.max(0, Math.min(count - 1, Math.round(e.nativeEvent.contentOffset.x / TICK_W)));
     const prev = clicked.current;
     if (next === prev) return;
     clicked.current = next;
@@ -219,7 +216,7 @@ export function WeightGoalDialog({
     } else {
       Haptics.selectionAsync();
     }
-  }, [count]);
+  }, []);
 
   const value = valueAt(index);
 
@@ -257,8 +254,8 @@ export function WeightGoalDialog({
               count={count}
               min10={min10}
               width={width}
-              listRef={list}
-              onScroll={onScroll}
+              scrollRef={list}
+              onIndex={onIndex}
               onContentSizeChange={onContentSizeChange}
             />
 
