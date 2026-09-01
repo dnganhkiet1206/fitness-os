@@ -255,8 +255,20 @@ export function WeightGoalDialog({
             <Icon icon={ArrowLeft} size={20} color={colors.foreground} />
           </PressScale>
           <Text style={styles.title}>{i18n.nWeightGoalEdit}</Text>
-          {/* Balances the back button so the title sits centred */}
-          <View style={styles.back} />
+          {/*
+            Chỗ trống để cân tiêu đề — TRONG SUỐT.
+
+            Nó dùng lại `styles.back`, tức là mang theo cả `backgroundColor`
+            của nút quay lại: một đĩa tròn xám đặc ở góc phải, cùng kích thước,
+            cùng màu, cùng hình dạng với một cái nút — và bấm vào thì không có
+            gì xảy ra. Một thứ trông như nút mà không phải nút là lời hứa dở
+            nhất một màn hình có thể đưa ra, và màn này chỉ có đúng ba thứ trên
+            đầu nên nó không lẫn vào đâu được.
+
+            Vẫn phải chiếm chỗ chứ không xoá hẳn: tiêu đề căn giữa bằng `flex: 1`
+            giữa hai đầu, nên bỏ đi thì nó lệch sang phải đúng 40 điểm.
+          */}
+          <View style={styles.headerSpacer} />
         </View>
 
         <View style={styles.stage}>
@@ -271,6 +283,7 @@ export function WeightGoalDialog({
           <View style={styles.ruler}>
             <Ruler
               count={count}
+              min10={min10}
               width={width}
               listRef={list}
               onScroll={onScroll}
@@ -322,6 +335,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.secondary,
   },
+  /* Cùng bề rộng với nút quay lại và KHÔNG có gì khác — xem chú thích ở chỗ
+     dùng. Không dùng lại `back`, vì thứ nó mang theo là cái nền. */
+  headerSpacer: { width: 40, height: 40 },
   title: { ...type.title2, flex: 1, textAlign: 'center', color: colors.foreground },
 
   // The number and the ruler sit together in the middle of the screen

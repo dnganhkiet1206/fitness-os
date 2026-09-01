@@ -72,17 +72,38 @@ import { colors } from '@/constants/ascnd';
  */
 export const TICK_W = 4;
 
-/** every Nth tick is drawn tall — a whole unit, at a tenth per tick */
-const MAJOR_EVERY = 10;
+/** ticks in a whole unit, at a tenth of a unit per tick */
+const PER_UNIT = 10;
 
 export const Ruler = memo(function Ruler({
   count,
+  min10,
   width,
   listRef,
   onScroll,
   onContentSizeChange,
 }: {
   count: number;
+  /**
+   * The value of index 0, in tenths of a display unit.
+   *
+   * ── it is here because "every tenth tick is tall" was wrong in pounds ──
+   *
+   * The rule used to be `index % 10 === 0`, which is a statement about the
+   * LIST, not about the scale. It is right in kilograms only by accident:
+   * index 0 is 30.0 kg, so `min10` is 300 and every tenth index does land on a
+   * whole kilogram.
+   *
+   * In pounds index 0 is 66.1 lb (`min10` 661), so the tall marks fall on
+   * 66.1, 67.1, 68.1 — the ruler never marks a whole pound, anywhere along its
+   * 5 954 ticks. Nothing reported it, because an evenly spaced row of tall
+   * marks looks correct no matter where it starts; only working out what value
+   * one of them stands for finds it.
+   *
+   * Reading the VALUE instead of the index makes the structure follow the
+   * scale it is drawn for, in both units.
+   */
+  min10: number;
   width: number;
   listRef: React.RefObject<FlatList<number> | null>;
   onScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
@@ -100,10 +121,14 @@ export const Ruler = memo(function Ruler({
   const renderItem = useCallback(
     ({ item }: { item: number }) => (
       <View style={styles.slot}>
-        <View style={[styles.tick, item % MAJOR_EVERY === 0 && styles.tickMajor]} />
+        <View style={[styles.tick, (min10 + item) % PER_UNIT === 0 && styles.tickMajor]} />
       </View>
     ),
-    [],
+    /* Not `[]`, and that is safe: `min10` changes when the display unit
+       changes, never during a drag. What must never appear in here is a value
+       that moves with the scroll — that is the re-render this file was split
+       out to stop. */
+    [min10],
   );
 
   const getItemLayout = useCallback(
@@ -128,8 +153,9 @@ export const Ruler = memo(function Ruler({
       decelerationRate={0.97}
       onContentSizeChange={onContentSizeChange}
       onScroll={onScroll}
-      // Every frame. A tick is 12pt, so a slow drag crosses one in a couple of
-      // frames — anything coarser turns the clicks into clusters with gaps.
+      // Every frame. A tick is 4pt, so at any real dragging speed several go
+      // past between frames — anything coarser turns the clicks into clusters
+      // with gaps, and misses whole-unit crossings altogether.
       scrollEventThrottle={1}
       initialNumToRender={48}
       maxToRenderPerBatch={48}
