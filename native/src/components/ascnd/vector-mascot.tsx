@@ -12,6 +12,7 @@ import Svg, { ClipPath, Defs, Ellipse, G, Path, Rect } from 'react-native-svg';
 
 import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
+import { useInteracting } from '@/lib/interaction';
 
 /**
  * Workout Companion — a calm, standing, athletic character. Fully
@@ -181,7 +182,15 @@ export function VectorMascot({
     vào giữa cú cuộn là một khung hình bị bỏ lỡ.
   */
   const focused = useIsFocused();
-  const idle = animated && focused;
+  /*
+    Thêm `!interacting`: đo được là mascot chiếm 89% công việc mỗi khung NGAY
+    TRONG LÚC vuốt deck, còn chính cú vuốt chỉ được 10%. Xem `lib/interaction`.
+
+    Dừng bằng cách thôi LÊN LỊCH chứ không huỷ giữa chừng — nhịp đang chạy tự
+    đi hết rồi im, êm hơn là khựng lại một cái.
+  */
+  const interacting = useInteracting();
+  const idle = animated && focused && !interacting;
 
   // ── quiet motion, tuned per companion: breath + blink + weight-shift ──
   const breath = useSharedValue(0);

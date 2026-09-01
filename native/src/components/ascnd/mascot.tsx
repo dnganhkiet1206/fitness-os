@@ -35,6 +35,7 @@ import { noteAsked, notePraised } from '@/lib/personal-model';
 import { useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
 import { levelFromXp } from '@/lib/mascot-room';
 import { useI18n } from '@/hooks/use-app-settings';
+import { useInteracting } from '@/lib/interaction';
 
 /**
  * Koa đã tới nơi trong phiên này chưa.
@@ -109,7 +110,24 @@ export function Mascot({
   scrollPause?: SharedValue<boolean>;
 } = {}) {
   const i18n = useI18n();
-  const focused = useIsFocused();
+  /*
+    `focused` giờ mang HAI câu hỏi: màn có đang xem không, VÀ tay có đang chạm
+    vào cái gì không.
+
+    Đo được (`tools/frame-churn.mjs`, trong lúc vuốt deck ở Dashboard): 73 lượt
+    sửa mỗi khung hình, trong đó 89% là mascot — một svg 54×68 với 26 nhóm
+    `<g>` — còn chính cú vuốt chỉ được 10%. Trên iOS mỗi nhóm là một lớp Core
+    Animation và cập nhật là vẽ lại.
+
+    Gộp vào `focused` thay vì thêm một cờ thứ hai, vì `focused` đã gác đúng ba
+    chỗ cần gác (hai `useEffect` và `animated=` truyền xuống figure). Thêm cờ
+    riêng thì lần sau ai đó sửa một chỗ sẽ quên hai chỗ kia — đúng lỗi mà ghi
+    chú ở `scrollPause` bên `index.tsx` đã cảnh báo: "hai cờ riêng cho một câu
+    hỏi là hai thứ sẽ lệch nhau".
+  */
+  const screenFocused = useIsFocused();
+  const interacting = useInteracting();
+  const focused = screenFocused && !interacting;
   const { enabled, mascot, message, messageGap, messageIsReaction, mood } = useMascot();
   const { data: wallet } = useMascotWallet();
   const { data: inventory } = useMascotInventory();

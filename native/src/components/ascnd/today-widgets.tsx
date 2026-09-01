@@ -24,6 +24,7 @@ import { useUnits } from '@/hooks/use-units';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 import { decText } from '@/lib/number-input';
+import { beginInteraction, endInteraction } from '@/lib/interaction';
 
 const NEUTRAL = '#9aa0aa';
 
@@ -143,6 +144,16 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
             keyboardType="decimal-pad"
             value={value}
             onChangeText={(v) => setValue(decText(v))}
+            /*
+              Ô đang gõ cũng là "tay đang chạm". Bàn phím mở ra làm cả trang
+              co giãn, và đó đúng là lúc không nên chia ngân sách khung hình cho
+              một hoạt ảnh trang trí — xem `lib/interaction`.
+
+              Cặp focus/blur luôn khớp nhau, kể cả khi ô mất focus vì trang bị
+              rời đi, nên bộ đếm không kẹt.
+            */
+            onFocus={() => beginInteraction()}
+            onBlur={() => endInteraction(320)}
             placeholder="70.0"
             placeholderTextColor={colors.mutedForeground}
           />

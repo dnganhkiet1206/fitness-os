@@ -12,6 +12,7 @@ import Animated, {
 
 import { Expander } from '@/components/ascnd/expander';
 import { colors, radius, spacing } from '@/constants/ascnd';
+import { beginInteraction, endInteraction } from '@/lib/interaction';
 
 /**
  * The ring cards, one at a time, swiped between — and the page's colour comes
@@ -261,6 +262,8 @@ export function CardDeck({
     .onBegin(() => {
       from.value = at.value;
       axis.value = 0;
+      /* Báo cho hoạt ảnh trang trí biết tay đang chạm — xem `lib/interaction`. */
+      runOnJS(beginInteraction)();
     })
     .onUpdate((e) => {
       /* Chốt trục ở khung hình đầu tiên có di chuyển thật, rồi thôi. */
@@ -292,6 +295,18 @@ export function CardDeck({
          đó giữa cú vuốt là làm chúng nhiều lần. */
       if (target !== Math.round(from.value)) runOnJS(settle)(target);
       at.value = withSpring(target, SNAP);
+    })
+    /*
+      `onFinalize` chứ không phải `onEnd`: `onEnd` thoát sớm cho cú dọc
+      (`axis.value !== 1`), nên buông ở đó thì một cú kéo dọc sẽ để mascot đứng
+      hình vĩnh viễn. `onFinalize` chạy cho MỌI kết cục — xong, huỷ, hay bị
+      gesture khác giành — nên số lần bắt đầu và số lần buông luôn khớp.
+
+      Giữ yên thêm 320ms vì lò xo snap còn chạy sau khi ngón tay nhấc; cho
+      mascot sống lại giữa lò xo là trả lại cú giật ở nửa sau chuyển động.
+    */
+    .onFinalize(() => {
+      runOnJS(endInteraction)(320);
     });
 
   /* Xem ghi chú ở `scrollRef`: không khai thì một cú kéo dọc trên deck sẽ huỷ
