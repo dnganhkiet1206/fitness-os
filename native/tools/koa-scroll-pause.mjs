@@ -123,8 +123,8 @@ if (anchor >= 0 && (!argSrc || !argSrc.includes('onBeginDrag'))) {
  * kiểm đúng một máy trạng thái, và kéo cả `tabScrollFrame` thật vào đây sẽ
  * biến nó thành một bài kiểm về thanh tab.
  */
-function machine(src) {
-  const pause = { value: false };
+function machine(src, focus = 0) {
+  const pause = { value: focus === 1 };
   const scrollY = { value: 0 };
   /* Bộ xử lý cuộn cũng ghi số đo khung nhìn cho phần tự-cuộn-khi-kéo. Chúng chỉ
      cần TỒN TẠI ở đây: tệp này kiểm một máy trạng thái, và một `ReferenceError`
@@ -132,11 +132,25 @@ function machine(src) {
      điều đã xảy ra khi hai dòng ấy được thêm vào. */
   const viewportH = { value: 0 };
   const maxScroll = { value: 0 };
+  /*
+    `focusSV` thì KHÁC — nó không phải một biến vô can, nó QUYẾT ĐỊNH kết quả.
+
+    Chế độ tập trung thu tấm nội dung — và Koa nằm trong nó — về chiều cao 0
+    bằng hộp cắt của `Expander`. Nhân vật vẫn ở trong cây, nên nếu bộ xử lý thả
+    về `false` cứng thì 36 vòng của nó chạy lại ngay lần nhấc tay đầu tiên, sau
+    một mép không ai nhìn thấy được. Và cuộn VẪN xảy ra ở chế độ ấy: khối chi
+    tiết cao hơn màn hình, người ta phải cuộn để đọc.
+
+    Nên nó vào đây như một CHIỀU của bảng ca, hai giá trị, chứ không phải một số
+    0 cấp cho xong — cấp 0 sẽ làm bước này xanh lại và mù đúng nửa mà chế độ tập
+    trung sinh ra. Cùng bài học mà `pick-row.mjs` đã học với `pillInset`.
+  */
+  const focusSV = { value: focus };
   const make = new Function(
-    'scrollPause', 'scrollY', 'viewportH', 'maxScroll', 'tabScrollFrame', 'runOnJS', 'armTabBarRestore', 'Date',
+    'scrollPause', 'scrollY', 'viewportH', 'maxScroll', 'focusSV', 'tabScrollFrame', 'runOnJS', 'armTabBarRestore', 'Date',
     `return ${src.replace(/^\(/, '').replace(/\)$/, '')};`,
   );
-  const h = make(pause, scrollY, viewportH, maxScroll, () => false, () => () => {}, () => {}, Date);
+  const h = make(pause, scrollY, viewportH, maxScroll, focusSV, () => false, () => () => {}, () => {}, Date);
   return { pause, h };
 }
 
@@ -165,29 +179,60 @@ const SEQUENCES = [
   },
 ];
 
-if (argSrc) {
+const EVT = { contentOffset: { y: 40 }, contentSize: { height: 2000 }, layoutMeasurement: { height: 800 } };
+
+/** Chạy một chuỗi sự kiện và trả về "đã từng đông cứng chưa" + trạng thái cuối. */
+function run(src, seq, focus) {
+  const m = machine(src, focus);
+  let paused = false;
+  for (const name of seq.events) {
+    m.h[name]?.(EVT);
+    if (m.pause.value) paused = true;
+  }
+  return { paused, end: m.pause.value };
+}
+
+/**
+ * Cùng một bảng ca, chạy ở CẢ HAI chế độ — và kỳ vọng ở hai chế độ NGƯỢC nhau ở
+ * trạng thái cuối.
+ *
+ *   · thu lại (focus 0): phải đông cứng trong cú cuộn, và phải THẢ khi xong.
+ *     Kẹt ở true là nhân vật thôi thở cho tới khi đổi tab.
+ *   · tập trung (focus 1): phải đông cứng, và phải VẪN đông cứng khi xong —
+ *     nó đang nằm sau một hộp cắt cao 0.
+ */
+function audit(src) {
+  const bad = [];
   for (const seq of SEQUENCES) {
-    let m;
+    let rest;
+    let focused;
     try {
-      m = machine(argSrc);
+      rest = run(src, seq, 0);
+      focused = run(src, seq, 1);
     } catch (e) {
-      problems.push(`không dựng lại được bộ xử lý cuộn từ ${TODAY}: ${e.message}`);
+      bad.push(`không dựng lại được bộ xử lý cuộn từ ${TODAY}: ${e.message}`);
       break;
     }
-    let paused = false;
-    for (const name of seq.events) {
-      m.h[name]?.({ contentOffset: { y: 40 }, contentSize: { height: 2000 }, layoutMeasurement: { height: 800 } });
-      if (m.pause.value) paused = true;
-    }
     /* Răng: nếu chưa lần nào đông cứng thì bản sửa không tồn tại. */
-    if (!paused) {
-      problems.push(`"${seq.name}": scrollPause KHÔNG BAO GIỜ bật — đồng hồ nhân vật chạy suốt cú cuộn`);
+    if (!rest.paused) {
+      bad.push(`"${seq.name}": scrollPause KHÔNG BAO GIỜ bật — đồng hồ nhân vật chạy suốt cú cuộn`);
     }
     /* Và chế độ hỏng tệ hơn: kẹt ở true thì nhân vật thôi thở vĩnh viễn. */
-    if (m.pause.value) {
-      problems.push(`"${seq.name}": mọi thứ đã dừng mà scrollPause vẫn TRUE — nhân vật đứng hình cho tới khi đổi tab`);
+    if (rest.end) {
+      bad.push(`"${seq.name}": mọi thứ đã dừng mà scrollPause vẫn TRUE — nhân vật đứng hình cho tới khi đổi tab`);
+    }
+    if (!focused.end) {
+      bad.push(
+        `"${seq.name}" ở chế độ TẬP TRUNG: cuộn xong scrollPause về false — Koa chạy lại 36 vòng của nó ` +
+          'sau một hộp cắt cao 0, thứ mà không ai nhìn thấy được',
+      );
     }
   }
+  return bad;
+}
+
+if (argSrc) {
+  problems.push(...audit(argSrc));
 }
 
 /* ── 3. phép tự kiểm ────────────────────────────────────────────────────────
@@ -206,9 +251,23 @@ const SELF = argSrc
         mutate: (s) => s.replace(/onEndDrag:\s*\(\)\s*=>\s*\{[^}]*\},?/, ''),
         expect: /vẫn TRUE — nhân vật đứng hình/,
       },
+      {
+        /* Bản đã xuất xưởng của chiều THỨ HAI: thả về `false` cứng. Nó xanh ở
+           mọi ca thu lại — đó chính là lý do bảng ca cũ không thấy gì. */
+        name: 'thả về false cứng thay vì về chế độ tập trung',
+        mutate: (s) => s.replace(/scrollPause\.value = focusSV\.value === 1;/g, 'scrollPause.value = false;'),
+        expect: /chế độ TẬP TRUNG/,
+      },
     ]
   : [];
 
+/*
+  Phép tự kiểm GỌI `audit`, không chép lại nó.
+
+  Vòng lặp ở đây từng dựng lại cả bảng ca và cả hai câu kỳ vọng bằng tay. Một
+  phép tự kiểm chép lại luật nó canh thì xoá luật đi vẫn xanh — dạng lỗi mà repo
+  này đã bắt năm lần.
+*/
 const selfFail = [];
 for (const s of SELF) {
   const broken = s.mutate(argSrc);
@@ -216,23 +275,7 @@ for (const s of SELF) {
     selfFail.push(`${s.name}: không gỡ được gì — phép thử ngược đang thử một bản y hệt bản thật`);
     continue;
   }
-  const found = [];
-  for (const seq of SEQUENCES) {
-    let m;
-    try {
-      m = machine(broken);
-    } catch (e) {
-      selfFail.push(`${s.name}: bản hỏng không chạy được — ${e.message}`);
-      break;
-    }
-    let paused = false;
-    for (const name of seq.events) {
-      m.h[name]?.({ contentOffset: { y: 40 }, contentSize: { height: 2000 }, layoutMeasurement: { height: 800 } });
-      if (m.pause.value) paused = true;
-    }
-    if (!paused) found.push(`"${seq.name}": scrollPause KHÔNG BAO GIỜ bật`);
-    if (m.pause.value) found.push(`"${seq.name}": vẫn TRUE — nhân vật đứng hình`);
-  }
+  const found = audit(broken);
   if (found.length === 0) selfFail.push(`${s.name}: bản hỏng vẫn XANH — luật này không bắt được gì`);
   else if (!found.some((f) => s.expect.test(f))) {
     selfFail.push(`${s.name}: đỏ, nhưng không đúng chỗ đã dự đoán (${s.expect}); thật ra báo: ${found.join('; ')}`);
@@ -257,7 +300,11 @@ console.log(
     'Mascot → MascotFigure → KoaFigure chuyển tiếp đủ ba chặng; ' +
     `và máy trạng thái được TRÍCH ra khỏi index.tsx rồi lái qua ${SEQUENCES.length} chuỗi sự kiện thật của UIScrollView ` +
     '(kéo chậm không sinh đà, vuốt mạnh có đà, chộp lại giữa đà, scrollTo không ngón tay, chạm-nhấc tại chỗ): ' +
-    'chuỗi nào cũng đông cứng trong lúc cuộn VÀ trở lại chạy khi dừng — vế sau là chế độ hỏng tệ hơn chính lỗi ' +
-    'được sửa, vì một cờ kẹt true không làm chậm gì cả, nó làm nhân vật thôi thở; ' +
-    `${SELF.length} phép thử ngược gỡ đúng một tay cầm mỗi bản và cả hai đều đỏ đúng ô đã dự đoán`,
+    'mỗi chuỗi chạy ở CẢ HAI chế độ. Thu lại: đông cứng trong lúc cuộn VÀ trở lại chạy khi dừng — vế sau là ' +
+    'chế độ hỏng tệ hơn chính lỗi được sửa, vì một cờ kẹt true không làm chậm gì cả, nó làm nhân vật thôi ' +
+    'thở. Tập trung: đông cứng và VẪN đông cứng khi cuộn xong, vì tấm nội dung — và Koa nằm trong nó — đang ' +
+    'bị hộp cắt của Expander thu về chiều cao 0, mà cuộn thì vẫn xảy ra ở đó (khối chi tiết cao hơn cả màn ' +
+    'hình, phải cuộn mới đọc hết). `focusSV` vào như một CHIỀU của bảng ca chứ không phải một số 0 cấp cho ' +
+    'xong: bản thả về `false` cứng xanh ở MỌI ca thu lại, nên chỉ chiều thứ hai mới nhìn thấy nó. ' +
+    `${SELF.length} phép thử ngược đều đỏ đúng ô đã dự đoán, và phép tự kiểm GỌI \`audit\` chứ không chép lại nó`,
 );

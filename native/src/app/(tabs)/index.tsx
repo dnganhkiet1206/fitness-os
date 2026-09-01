@@ -197,6 +197,7 @@ import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { isCustomGroup, useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { CardDeck } from '@/components/ascnd/card-deck';
+import { Expander } from '@/components/ascnd/expander';
 import { EmptyHero, NutritionHero, SleepHero, WaterHero } from '@/components/ascnd/hero-pages';
 import { HERO_DECK, recordHeight } from '@/lib/widget-heights';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
@@ -515,15 +516,25 @@ export default function TodayScreen() {
    *
    * ── lỗi ──
    *
-   * Các thẻ nhóm bị tháo khỏi cây khi `heroOpen`, và mỗi thẻ mang
-   * `entering={FadeInDown.springify().delay((heroWidgets.length + gi + wi) * 70)}`.
-   * Nên mỗi lần ĐÓNG thẻ chỉ số, cả dashboard dựng lại và toàn bộ cascade chạy
-   * lại: từng thẻ thông tin bay lên từ dưới, lệch nhau 70ms, kéo dài quá nửa
-   * giây. Người dùng bấm mũi tên để quay về thứ họ vừa rời khỏi, và thứ họ nhận
-   * là cả trang diễn lại màn chào.
+   * Mỗi thẻ nhóm mang
+   * `entering={FadeInDown.springify().delay((heroWidgets.length + gi + wi) * 70)}`,
+   * và các thẻ ấy bị tháo khỏi cây rồi dựng lại. Mỗi lần dựng lại là cả cascade
+   * chạy lại: từng thẻ bay lên từ dưới, lệch nhau 70ms, kéo dài quá nửa giây.
    *
    * Một hiệu ứng vào kể chuyện "cái này vừa tới". Đúng ở lần mở app — lúc ấy nó
    * vừa tới thật. Sai ở mọi lần sau, vì nó chưa đi đâu cả; nó chỉ bị che.
+   *
+   * ── chế độ tập trung THÔI tháo chúng ──
+   *
+   * Lý do đầu tiên viết ra ở đây là "mỗi lần ĐÓNG thẻ chỉ số, cả dashboard dựng
+   * lại". Nay tấm nội dung đi bằng `Expander` chứ không bằng một cái cổng, nên
+   * các thẻ ở nguyên trong cây suốt cả hai chiều và cascade không còn cách nào
+   * chạy lại vì lý do đó.
+   *
+   * Cờ này vẫn còn việc: `dayPending` vẫn lật được sau một lần đọc hỏng rồi
+   * thử lại, và lần dựng lại ấy vẫn không phải một lần "vừa tới". Nên điều kiện
+   * bây giờ đúng bằng `groupsUp` — CÙNG biểu thức mà JSX dùng, không thêm một
+   * vế nào mà JSX không có.
    *
    * ── vì sao là state chứ không phải `mounted` ──
    *
@@ -537,8 +548,8 @@ export default function TodayScreen() {
    */
   const [cascaded, setCascaded] = useState(false);
   useEffect(() => {
-    if (groupsUp && !heroOpen) setCascaded(true);
-  }, [groupsUp, heroOpen]);
+    if (groupsUp) setCascaded(true);
+  }, [groupsUp]);
 
   /**
    * Trang đã cuộn được bao xa, đọc trên UI thread.
@@ -644,20 +655,52 @@ export default function TodayScreen() {
    */
   const scrollPause = useSharedValue(false);
 
+  /* Chế độ tập trung tắt hẳn hiệu ứng theo cuộn.
+
+     Khi chi tiết đang mở thì hero VÀ khối số của nó chính là nội dung — cuộn
+     xuống là để đọc tiếp, không phải để rời đi. Làm mờ thứ người ta đang đọc là
+     trả lời sai câu hỏi họ vừa hỏi.
+
+     ── vì sao nó khai Ở ĐÂY chứ không ở chỗ dùng ──
+
+     `onScroll` bên dưới ĐỌC nó, và một worklet tham chiếu biến ngay lúc hook
+     được gọi. Khai sau `useAnimatedScrollHandler` thì worklet bắt phải một biến
+     chưa tồn tại — cùng ràng buộc mà `viewportH`/`maxScroll` ở trên đã phải
+     tuân theo. */
+  const focusSV = useSharedValue(0);
+  useEffect(() => {
+    focusSV.value = heroOpen ? 1 : 0;
+    /* Cùng một câu trả lời cho "Koa có ai nhìn không", viết vào cùng một chỗ mà
+       cú cuộn viết — xem `onEndDrag` bên dưới. Hai cờ riêng cho một câu hỏi là
+       hai thứ sẽ lệch nhau ở lần đầu ai đó chỉnh một bên. */
+    scrollPause.value = heroOpen;
+  }, [heroOpen, focusSV, scrollPause]);
+
+
   const onScroll = useAnimatedScrollHandler({
     onBeginDrag: () => {
       scrollPause.value = true;
     },
     /* Thả ngay khi nhấc tay. Nếu có đà thì `onMomentumBegin` giữ lại ở khung
-       hình kế — xem ghi chú ở `scrollPause`. */
+       hình kế — xem ghi chú ở `scrollPause`.
+
+       Thả về `focusSV`, không về `false`: cuộn chỉ là MỘT trong hai lý do Koa
+       phải đứng hình. Lý do kia là chế độ tập trung, nơi tấm nội dung — và Koa
+       nằm trong nó — bị hộp cắt của `Expander` thu về 0. Nhân vật vẫn ở trong
+       cây và vẫn chạy 36 vòng của nó sau một mép không ai nhìn thấy được, đúng
+       thứ mà `aura-cost.mjs` cấm ở lớp aura.
+
+       Và chính vì cuộn VẪN xảy ra ở chế độ tập trung — cả khối chi tiết cao hơn
+       màn hình, người ta phải cuộn để đọc — nên một `false` cứng ở đây sẽ cho
+       nhân vật chạy lại ngay lần nhấc tay đầu tiên. */
     onEndDrag: () => {
-      scrollPause.value = false;
+      scrollPause.value = focusSV.value === 1;
     },
     onMomentumBegin: () => {
       scrollPause.value = true;
     },
     onMomentumEnd: () => {
-      scrollPause.value = false;
+      scrollPause.value = focusSV.value === 1;
     },
     onScroll: (e) => {
       viewportH.value = e.layoutMeasurement.height;
@@ -694,16 +737,6 @@ export default function TodayScreen() {
    * rồi mờ dần. Đến khi tấm phủ hết vòng tròn thì nó đã tắt, nên không có lúc
    * nào một vòng tròn mờ nằm sau chữ.
    */
-  /* Chế độ tập trung tắt hẳn hiệu ứng theo cuộn.
-
-     Khi chi tiết đang mở thì hero VÀ khối số của nó chính là nội dung — cuộn
-     xuống là để đọc tiếp, không phải để rời đi. Làm mờ thứ người ta đang đọc là
-     trả lời sai câu hỏi họ vừa hỏi. */
-  const focusSV = useSharedValue(0);
-  useEffect(() => {
-    focusSV.value = heroOpen ? 1 : 0;
-  }, [heroOpen, focusSV]);
-
   /**
    * Hero có hành động RIÊNG: nó đứng nguyên và bị che dần từ dưới lên.
    *
@@ -782,19 +815,51 @@ export default function TodayScreen() {
   });
 
   /**
-   * Bật/tắt chế độ tập trung, và đưa trang về đầu.
+   * Bật/tắt chế độ tập trung. KHÔNG đưa trang về đầu.
    *
-   * ── lỗi việc đưa về đầu sửa ──
+   * ── lập luận cũ, và vế đã thôi đúng ──
    *
-   * Mở chi tiết, cuộn xuống, rồi bấm thu lại: màn hình tự cuộn theo. Đó không
-   * phải một hiệu ứng — đó là ScrollView đang KẸP vị trí cuộn. Thu lại gỡ cả
-   * dashboard ra khỏi cây cùng lúc, chiều cao nội dung co lại đột ngột, và
-   * offset cũ không còn tồn tại nên nó bị kéo về mốc gần nhất còn hợp lệ. Người
-   * dùng thấy một cú trôi mà mình không ra lệnh.
+   * Chỗ này từng gọi `scrollTo({ y: 0, animated: true })` ở cả hai chiều, và lý
+   * do viết ra là: "Thu lại gỡ cả dashboard ra khỏi cây CÙNG LÚC, chiều cao nội
+   * dung co lại đột ngột, và offset cũ không còn tồn tại nên nó bị kéo về mốc
+   * gần nhất còn hợp lệ. Người dùng thấy một cú trôi mà mình không ra lệnh."
    *
-   * `scrollTo(0)` có animation làm cùng việc đó nhưng NÓI RA: bạn vừa đổi trạng
-   * thái của trang, nên trang về chỗ bắt đầu của trạng thái mới. Cả hai chiều —
-   * mở ra cũng về đầu, vì phần chi tiết chính là thứ bạn vừa xin xem.
+   * Chẩn đoán ấy đúng, và chữ quan trọng nhất trong nó là ĐỘT NGỘT. Cú trôi khó
+   * chịu không phải vì trang di chuyển — mà vì nó di chuyển do một thứ đã xảy
+   * ra xong trong một khung hình, nên trên màn hình không còn gì giải thích nó.
+   *
+   * `scrollTo(0)` không gỡ điều đó; nó thêm một chuyển động THỨ BA. Đo trên
+   * harness web: mở thẻ sẵn sàng làm chạy cùng lúc một hộp cắt 240ms
+   * `inOut(cubic)` trên luồng UI, một cú xoá dashboard trong một khung hình, và
+   * một cú cuộn native có đường cong và thời lượng riêng — ba dòng thời gian
+   * cho một cú chạm.
+   *
+   * ── vì sao bỏ được ──
+   *
+   * Vì tấm nội dung nay co bằng `Expander`. Chiều cao nội dung đổi LIÊN TỤC
+   * trên đúng 240ms ấy, nên nếu ScrollView có phải kẹp thì nó kẹp dần theo cùng
+   * đường cong — và người dùng đang NHÌN thấy thứ gây ra nó co lại. Cú trôi
+   * thôi là một cú trôi và thành hệ quả, thứ mà một cú cuộn riêng không bao giờ
+   * thành được.
+   *
+   * Và trong phần lớn trường hợp không có gì để kẹp: mũi tên nằm TRÊN khối chi
+   * tiết, nên bạn chỉ bấm được nó từ những vị trí cuộn còn nhìn thấy nó.
+   *
+   * ── đo được, cùng một harness, cùng một thao tác ──
+   *
+   * Mở khối chi tiết, cuộn xuống, rồi bấm thu lại; theo dõi y của CHÍNH cái nút
+   * vừa bấm:
+   *
+   *     trước:  nút đi 225 điểm, scrollTop 225 → 0
+   *     sau:    nút đi   0 điểm, scrollTop 209 → 209
+   *
+   * Không có cú kẹp nào xảy ra: mức cuộn tối đa đi 209 → 1.383 trong khi tấm mở
+   * ra, nên vị trí cũ chưa bao giờ hết hợp lệ. Cú `scrollTo` cũ không cứu một
+   * cú kẹp — nó là chuyển động duy nhất trong cả cảnh ấy.
+   *
+   * `toggleEdit` bên trên GIỮ `scrollTo(0)` của nó, và đó không phải chuyện
+   * thiếu nhất quán: đổi sang chế độ sắp xếp là thay cả nội dung trang bằng một
+   * nội dung khác, không phải mở một phần của cùng một trang.
    */
   /**
    * Hàng nút trên đầu: tan đi khi rời đỉnh, hiện lại khi về đỉnh.
@@ -904,7 +969,6 @@ export default function TodayScreen() {
   const toggleHero = useCallback((index: number) => {
     Haptics.selectionAsync();
     setExpandedAt((v) => (v === index ? null : index));
-    scroller.current?.scrollTo({ y: 0, animated: true });
   }, []);
 
   /**
@@ -1467,12 +1531,15 @@ export default function TodayScreen() {
           )}
 
           {/*
-            Phần còn lại của trang, biến mất khi chi tiết mở.
+            Phần còn lại của trang, ĐI khi chi tiết mở — chứ không biến mất.
 
-            Mount có điều kiện chứ không phải `opacity: 0`: một khối vô hình vẫn
-            chiếm chiều cao của nó, nên trang sẽ có một vùng trống bằng cả
-            dashboard bên dưới vòng tròn. Hiệu ứng ra/vào lo phần chuyển động;
-            việc gỡ khỏi cây lo phần chiều cao.
+            Câu ở đây từng là "mount có điều kiện chứ không phải `opacity: 0`:
+            một khối vô hình vẫn chiếm chiều cao của nó". Vế thứ hai đúng và vẫn
+            đúng; vế thứ nhất là một lựa chọn nhị phân sai — giữa "xoá khỏi cây"
+            và "để nguyên chỗ", `Expander` là cửa thứ ba: chiều cao mất đi THẬT,
+            liên tục, trên cùng một đường cong với phần chi tiết đang mở ra.
+
+            Xem chú thích ở ngay trên `<Expander>` bên dưới cho phép đo.
           */}
           {/*
             Tấm nội dung, trượt ĐÈ lên hero.
@@ -1494,49 +1561,73 @@ export default function TodayScreen() {
             the light goes under it and nothing comes through."
           */}
           {/*
-            Ở chế độ tập trung KHÔNG vẽ tấm.
+            Ở chế độ tập trung KHÔNG vẽ tấm — và nay điều đó là hệ quả của hộp
+            cắt cao 0 chứ không phải của một cái cổng.
 
-            Mọi thứ bên trong nó đã bị ẩn, nhưng bản thân tấm thì vẫn vẽ: vẫn
-            blur, vẫn bo góc trên, vẫn padding. Kết quả là một tấm kính rỗng
-            ruột nằm dưới vòng tròn — trông đúng như "một mảnh của màn hình
-            khác lọt vào".
-
-            Một hộp chứa không có gì để chứa thì không phải một hộp chứa.
+            Câu cũ ở đây đúng và vẫn được giữ: mọi thứ bên trong đã ẩn mà tấm
+            vẫn vẽ thì còn lại một tấm kính rỗng ruột dưới vòng tròn, "một mảnh
+            của màn hình khác lọt vào". Khác biệt là ai bảo đảm điều đó. Trước
+            là `heroOpen ? null`, tức một khung hình. Nay là `Expander`: chiều
+            cao chạy về 0 và `overflow: hidden` thôi vẽ — cùng lúc, cùng đường
+            cong với phần chi tiết đang mở.
           */}
           {/*
-            ── không còn `entering`/`exiting` ở đây ──
+            ── vì sao cú chạm này từng KHÔNG có chuyển cảnh, và vì sao có bây giờ ──
 
-            Chỗ này từng mang `entering={mounted ? FadeIn : undefined}` cộng một
-            `exiting={FadeOut}`, và cả một đoạn dài giải thích vì sao `entering`
-            phải im ở lần dựng đầu: nếu khung hình bắt đầu bị bỏ lỡ thì cái CÒN
-            LẠI là giá trị đầu (opacity 0), và Koa cùng các nút ghi nằm đó,
-            chiếm chỗ, vô hình.
+            Một lần chạm mũi tên đổi BA thứ cùng lúc. Đo trên harness web, thẻ
+            sẵn sàng, khung nhìn 402×874:
 
-            Lập luận ấy đúng, và nó dẫn xa hơn một bước so với chỗ nó dừng lại:
-            nếu hiệu ứng vào phải im ở lần dựng đầu, thì lần nào nó KHÔNG im?
-            `heroOpen` chỉ đổi vì người dùng bấm vào thẻ chỉ số — nên câu trả
-            lời là "mỗi lần mở và mỗi lần đóng thẻ", và không lần nào trong số
-            đó là một chuyển cảnh cần làm mềm.
+              · khối chi tiết      +553pt   240ms, inOut(cubic), luồng UI
+              · cả dashboard bên dưới  −1.226pt  MỘT khung hình, không gì cả
+              · vị trí cuộn        tới −225pt  `scrollTo(animated)`, đường cong riêng
 
-            `heroOpen` chỉ đổi vì người dùng BẤM vào thẻ chỉ số. Nên hai hiệu
-            ứng này không bao giờ chạy lúc mở app; chúng chạy đúng vào mỗi lần
-            mở và mỗi lần đóng thẻ — tức là toàn bộ nửa dưới dashboard mờ đi rồi
-            mờ lại, mỗi lần bạn chạm một cái mũi tên.
+            Chiều cao nội dung trang đi 2.325 → 560 → 1.099: dashboard bị xoá
+            SẠCH trước, để lại một cái hố, rồi khối chi tiết mới bò vào lấp. Thứ
+            được làm mượt cẩn thận nhất là nửa NHỎ của thay đổi; nửa lớn là một
+            nhát cắt. Đó là câu trả lời cho "hiện tại không có trans".
 
-            Nó không nói gì cả. Người dùng vừa bấm; họ đã biết trạng thái vừa
-            đổi, và cái họ muốn xem là phần chi tiết chứ không phải phần đang
-            biến mất. `FadeIn` ở đây làm chậm chính thứ vừa được xin.
+            ── vì sao là `Expander` chứ không phải `FadeOut` ──
 
-            Và nó đắt đúng ở chỗ đắt nhất: nhóm này chứa `BlurView` +
-            `MaskedView` phủ kín, cộng mọi thẻ thông tin. Một `opacity` trên cả
-            nhóm ấy buộc iOS gộp toàn bộ ra một bề mặt ngoài màn rồi pha lại,
-            mỗi khung hình, suốt 200ms. Đây là lượt gộp lớn nhất trong app —
-            lớn hơn nhiều lần cái vừa được gỡ khỏi khối chi tiết thẻ sẵn sàng.
+            Đoạn từng đứng đây bác `entering`/`exiting` và cả hai lý do vẫn
+            đúng, nên không lý do nào bị lật:
 
-            Tháo/dựng vẫn giữ nguyên: chiều cao phải mất đi thật, nếu không thì
-            dưới vòng tròn có một vùng trống bằng cả dashboard.
+              1. "Người dùng vừa bấm; cái họ muốn xem là phần chi tiết chứ không
+                 phải phần đang biến mất." Đúng — nên phần này KHÔNG mờ, không
+                 tự giới thiệu, không kể gì về mình. Nó chỉ thôi chiếm chỗ, đúng
+                 tốc độ mà phần chi tiết chiếm chỗ.
+              2. "Một `opacity` trên cả nhóm ấy buộc iOS gộp toàn bộ ra một bề
+                 mặt ngoài màn — lượt gộp lớn nhất trong app." Đúng, và
+                 `reveal="clip"` tồn tại chính vì lý do ấy: nó KHÔNG viết
+                 `opacity` vào style, nên không có khoá nào để iOS thấy mà gộp.
+                 Xem `expander.tsx`.
+
+            Vế thứ ba của đoạn cũ — "tháo/dựng vẫn giữ nguyên: chiều cao phải
+            mất đi thật" — là lý do DUY NHẤT để xoá khỏi cây, và `Expander` thoả
+            nó: hộp cắt cao 0 là chiều cao 0 thật, không phải một khối vô hình
+            còn chiếm chỗ. Nên cái phải bỏ không phải hiệu ứng, mà là cú xoá.
+
+            ── và vì sao chúng chắc chắn đi cùng nhau ──
+
+            Cùng một component, cùng `reveal="clip"`, nên cùng `duration.move`
+            và cùng `inOut(cubic)`; và cả hai `open` lật trong CÙNG một lần
+            commit của `setExpandedAt`. Không có hai con số nào để lệch, vì
+            không có con số thứ hai nào được viết ra ở đây.
+
+            ── giá phải trả, nói thẳng ──
+
+            Dashboard nay MOUNT cả lúc đang ở chế độ tập trung. Đổi lại, mỗi cú
+            chạm thôi phải tháo rồi dựng lại toàn bộ nó — một chi phí nhọn, rơi
+            đúng vào lúc đang có hoạt hoạ chạy. Đổi một chi phí đều lấy việc bỏ
+            một cú nhọn đúng lúc là đánh đổi đúng chiều cho cảm giác mượt.
           */}
-          {!heroOpen ? (
+          {/* Lề âm nằm NGOÀI hộp cắt.
+
+              `styles.sheet` kéo ra hai bên `-spacing.md` để tấm chạm mép màn.
+              Đặt lề ấy bên trong một hộp `overflow: hidden` thì chính hộp cắt
+              gọt mất `spacing.md` mỗi bên — tấm thôi tràn mép, và không có lỗi
+              nào báo. Nên bleed ở lớp ngoài, padding ở lớp trong. */}
+          <View style={styles.sheetBleed}>
+          <Expander open={!heroOpen} reveal="clip">
           <View style={styles.sheet}>
             {/*
               Blur cũng phải tắt dần ở mép trên, không chỉ lớp phủ.
@@ -1749,11 +1840,14 @@ export default function TodayScreen() {
             </View>
 
           {/* HealthKit sync (native-only necessity, styled as a quick chip row) */}
-          {/* `!heroOpen` cùng với mọi thứ khác trong tấm: nó nằm ngoài cái cổng
-              đó nên ở chế độ tập trung nó là dòng DUY NHẤT còn sót lại dưới
-              vòng tròn — đúng cái "loạn thông tin" mà chế độ này sinh ra để
-              dọn. */}
-          {healthAvailable && !heroOpen && (
+          {/* KHÔNG còn `&& !heroOpen`, và ba chỗ trong tấm này đều vậy.
+
+              Chúng nằm TRONG hộp cắt, nên chế độ tập trung đã ẩn chúng bằng
+              chiều cao. Giữ thêm một cái cổng riêng thì nội dung biến mất ở
+              khung hình đầu trong khi hộp cắt còn đang co — tức là hộp cắt
+              chạy 240ms trên một cái vỏ RỖNG, và mắt vẫn thấy đúng nhát cắt mà
+              cả thay đổi này sinh ra để bỏ. */}
+          {healthAvailable && (
             <PressScale
               style={styles.syncButton}
               disabled={healthSync.isPending}
@@ -1802,7 +1896,7 @@ export default function TodayScreen() {
             carrying fifteen constants that go stale the first time a card gains
             a row.
           */}
-          {dayPending && !heroOpen ? (
+          {dayPending ? (
             <TodaySkeleton part="groups" heroWidgets={config.heroWidgets} groups={config.groups} />
           ) : null}
 
@@ -1821,7 +1915,7 @@ export default function TodayScreen() {
           */}
 
           {/* Grouped widgets, user-configurable order */}
-          {dayPending || dayFailed || heroOpen ? null : config.groups.map((group, gi) => (
+          {dayPending || dayFailed ? null : config.groups.map((group, gi) => (
             <View key={group.id} style={styles.group}>
               {/*
                 Nút Sửa neo vào VỊ TRÍ, không vào một mục cụ thể.
@@ -1888,7 +1982,8 @@ export default function TodayScreen() {
             </View>
           ))}
           </View>
-          ) : null}
+          </Expander>
+          </View>
         </>
       )}
 
@@ -2397,9 +2492,21 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: `rgba(0, 0, 0, ${SCRIM})`,
   },
+  /*
+    Hai lề âm của tấm, tách ra khỏi `sheet` — và việc tách là bắt buộc, không
+    phải để cho gọn.
+
+    `sheet` nay nằm trong hộp cắt của `Expander`, và hộp ấy là `overflow:
+    hidden`. Một `marginHorizontal: -spacing.md` bên TRONG một hộp cắt thì bị
+    chính hộp ấy gọt: tấm thôi chạm hai mép màn, để lộ hai dải hero ở hai bên —
+    đúng "ba đường thẳng đứng thay vì một mặt phẳng" mà lề âm sinh ra để bỏ. Không
+    có lỗi nào báo, và cả hai lề vẫn nằm nguyên trong style.
+
+    Nên bleed ở lớp NGOÀI hộp cắt, padding ở lớp trong. `tools/hero-focus.mjs`
+    giữ luật này.
+  */
+  sheetBleed: { marginHorizontal: -spacing.md, marginTop: -spacing.xl },
   sheet: {
-    marginHorizontal: -spacing.md,
-    marginTop: -spacing.xl,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,

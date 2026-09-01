@@ -91,20 +91,83 @@ const num = (src, name) => {
   }
 }
 
-/* ── 2. hộp chứa không có gì để chứa thì không được vẽ ──
+/* ── 2. tấm nội dung ĐI, chứ không biến mất ──
 
-   Ở chế độ tập trung mọi thứ trong tấm bị ẩn, nhưng tấm vẫn vẽ blur, bo góc và
-   padding — một tấm kính rỗng ruột dưới vòng tròn. Người dùng mô tả nó là "một
-   mảnh của màn hình khác lọt vào". */
+   Bất biến cũ ở đây là "hộp chứa không có gì để chứa thì không được vẽ", và nó
+   được cài bằng `{!heroOpen ? (`. Nó đạt mục tiêu ấy và trả giá ở chỗ khác:
+   một cú chạm mũi tên đổi 553pt chiều cao khối chi tiết trong 240ms trên luồng
+   UI, VÀ xoá 1.226pt dashboard trong MỘT khung hình. Đo trên harness web, chiều
+   cao nội dung trang đi 2.325 → 560 → 1.099: dashboard biến mất sạch trước, để
+   lại một cái hố, rồi khối chi tiết mới bò vào lấp. Nửa nhỏ của thay đổi được
+   làm mượt, nửa lớn là một nhát cắt — và đó là điều người dùng báo bằng câu
+   "hiện tại không có trans".
+
+   Mục tiêu cũ KHÔNG bị nới: hộp cắt cao 0 thì tấm cũng không vẽ. Chỉ khác là ai
+   bảo đảm điều đó — một cái cổng, hay một chiều cao chạy về 0 cùng đường cong
+   với thứ đang mở ra. */
 {
-  const at = today.indexOf('styles.sheet');
-  const before = at > 0 ? today.slice(Math.max(0, at - 200), at) : '';
-  if (at < 0) problems.push(`${TODAY}: không tìm thấy tấm nội dung`);
-  else if (!/!heroOpen/.test(before)) {
-    problems.push(
-      `${TODAY}: tấm nội dung vẽ cả khi chi tiết đang mở — ruột nó đã bị ẩn, nên còn lại là một hộp ` +
-        'kính rỗng. Một hộp chứa không có gì để chứa thì không phải một hộp chứa',
-    );
+  const at = today.indexOf('style={styles.sheet}');
+  if (at < 0) {
+    problems.push(`${TODAY}: không tìm thấy tấm nội dung — luật này mất chỗ bám, sửa luật chứ đừng tin nó`);
+  } else {
+    const before = today.slice(Math.max(0, at - 600), at);
+
+    /* 2a. không còn cổng tháo/dựng quanh tấm */
+    if (/\{!heroOpen \? \(/.test(before) || /\{heroOpen \? null :/.test(before)) {
+      problems.push(
+        `${TODAY}: tấm nội dung vẫn bị THÁO khỏi cây khi chi tiết mở — 1.226 điểm biến mất trong một khung ` +
+          'hình cạnh một khối chi tiết mở ra trong 240ms; nửa lớn của thay đổi không có chuyển cảnh nào',
+      );
+    }
+
+    /* 2b. và nó đi qua đúng cơ chế mà khối chi tiết đang dùng */
+    if (!/<Expander open=\{!heroOpen\} reveal="clip">/.test(before)) {
+      problems.push(
+        `${TODAY}: tấm nội dung không đi qua \`<Expander open={!heroOpen} reveal="clip">\` — hai nửa của ` +
+          'cùng một cú chạm phải chạy cùng component, nên chúng không có con số nào để lệch nhau',
+      );
+    }
+
+    /* 2c. và ruột nó không được tự biến mất trước.
+
+       Một `&& !heroOpen` còn sót lại BÊN TRONG hộp cắt thì nội dung rỗng ngay ở
+       khung hình đầu, hộp cắt chạy 240ms trên một cái vỏ, và mắt vẫn thấy đúng
+       nhát cắt mà cả thay đổi này sinh ra để bỏ. */
+    const end = today.indexOf('</Expander>', at);
+    if (end < 0) {
+      problems.push(`${TODAY}: không tìm thấy \`</Expander>\` đóng tấm nội dung`);
+    } else {
+      const body = today.slice(at, end);
+      const gates = body.match(/&&\s*!heroOpen|!heroOpen\s*&&|\|\|\s*heroOpen\s*\?|\bheroOpen\s*\?\s*null/g) ?? [];
+      if (gates.length) {
+        problems.push(
+          `${TODAY}: còn ${gates.length} cổng \`heroOpen\` BÊN TRONG hộp cắt (${[...new Set(gates)].join(', ')}) — ` +
+            'ruột tấm rỗng ngay khung hình đầu và hộp cắt chỉ còn co một cái vỏ',
+        );
+      }
+    }
+
+    /* 2d. lề âm phải nằm NGOÀI hộp cắt.
+
+       `overflow: hidden` gọt đúng phần mà `marginHorizontal: -spacing.md` vừa
+       kéo ra: tấm thôi chạm hai mép màn, để lộ hai dải hero ở hai bên. Không có
+       lỗi nào báo, và cả hai lề vẫn nằm nguyên trong style — nên chỉ một luật
+       mới thấy được. */
+    const sheetStyle = /\n  sheet: \{([\s\S]*?)\n  \},/.exec(today);
+    if (!sheetStyle) {
+      problems.push(`${TODAY}: không đọc được style \`sheet\` — luật lề âm đang không kiểm gì`);
+    } else if (/\bmargin/.test(sheetStyle[1])) {
+      problems.push(
+        `${TODAY}: \`styles.sheet\` vẫn mang lề âm bên TRONG hộp cắt — \`overflow: hidden\` gọt lại đúng ` +
+          'phần lề vừa kéo ra, và tấm thôi chạm hai mép màn',
+      );
+    }
+    if (!/sheetBleed: \{[^}]*marginHorizontal: -spacing\.md[^}]*\}/.test(today)) {
+      problems.push(`${TODAY}: không có \`sheetBleed\` mang lề ngang âm — tấm sẽ hẹp hơn hero`);
+    }
+    if (!/<View style=\{styles\.sheetBleed\}>\s*\n\s*<Expander/.test(today)) {
+      problems.push(`${TODAY}: \`sheetBleed\` không bọc NGOÀI \`<Expander>\` — lề âm lại nằm trong hộp cắt`);
+    }
   }
 }
 
@@ -125,19 +188,55 @@ const num = (src, name) => {
   }
 }
 
-/* ── 4. đổi chế độ phải đưa trang về đầu ──
+/* ── 4. một cú chạm, MỘT dòng thời gian ──
 
-   Thu lại gỡ cả dashboard ra khỏi cây, chiều cao nội dung co đột ngột, và
-   ScrollView kẹp vị trí cuộn về mốc gần nhất còn hợp lệ. Người dùng thấy một cú
-   trôi mình không ra lệnh. */
+   Luật này từng ĐÒI `toggleHero` gọi `scrollTo({ y: 0 })`, và lý do viết ra là:
+   "chiều cao nội dung đổi đột ngột thì ScrollView sẽ tự kẹp vị trí cuộn, và cú
+   trôi đó đọc ra như một lỗi".
+
+   Chẩn đoán ấy đúng, và chữ chịu lực trong nó là ĐỘT NGỘT — thứ mà luật 2 vừa
+   bỏ. Cú trôi khó chịu không phải vì trang di chuyển, mà vì nó di chuyển do một
+   việc đã xảy ra xong trong một khung hình, nên trên màn hình không còn gì giải
+   thích nó. `scrollTo` không gỡ điều đó; nó thêm một chuyển động THỨ BA, với
+   đường cong và thời lượng riêng, cạnh một hộp cắt 240ms `inOut(cubic)`.
+
+   Nay chiều cao nội dung đổi LIÊN TỤC trên đúng 240ms ấy, nên nếu ScrollView có
+   phải kẹp thì nó kẹp dần theo cùng đường cong, và người dùng đang nhìn thấy
+   thứ gây ra nó. Luật vì thế đảo chiều: cấm cú cuộn thứ ba.
+
+   `toggleEdit` KHÔNG bị luật này chạm tới, và đó là cố ý — đổi sang chế độ sắp
+   xếp là thay cả nội dung trang, không phải mở một phần của cùng một trang. */
 {
   const at = today.indexOf('const toggleHero');
-  const body = at < 0 ? '' : today.slice(at, at + 320);
-  if (!/scrollTo\(\s*\{\s*y:\s*0/.test(body)) {
-    problems.push(
-      `${TODAY}: toggleHero không đưa trang về đầu — chiều cao nội dung đổi đột ngột thì ScrollView ` +
-        'sẽ tự kẹp vị trí cuộn, và cú trôi đó đọc ra như một lỗi',
-    );
+  if (at < 0) {
+    problems.push(`${TODAY}: không tìm thấy \`toggleHero\` — luật này mất chỗ bám, sửa luật chứ đừng tin nó`);
+  } else {
+    /* Cắt ở đúng chỗ hàm đóng lại, KHÔNG bằng một cửa sổ ký tự.
+
+       Bản trước lấy 320 ký tự, và 320 ký tự từ đây chạy thẳng vào
+       `onHeroPageChange` — hàm ngay bên dưới, thứ VẪN cuộn về đầu một cách có
+       chủ ý khi người dùng vuốt sang thẻ khác. Nên luật đọc được một `scrollTo`
+       không thuộc về nó. Cùng dạng lỗi mà một cửa sổ 600 ký tự trong
+       `drag-reorder.mjs` đã mắc phải. */
+    const close = today.indexOf('}, []);', at);
+    if (close < 0) {
+      problems.push(`${TODAY}: không tìm thấy chỗ đóng của \`toggleHero\` — luật này đang đọc quá tay`);
+    }
+    const body = close < 0 ? '' : today.slice(at, close);
+    if (/scrollTo\(/.test(body)) {
+      problems.push(
+        `${TODAY}: toggleHero vẫn tự cuộn — đó là chuyển động THỨ BA trong một cú chạm đã có hộp cắt ` +
+          '240ms và một khối chi tiết mở ra; ba dòng thời gian cho một hành động',
+      );
+    }
+    /* Và cái ref vẫn phải còn cho `toggleEdit`: xoá nhầm nó thì đổi chế độ sắp
+       xếp thôi đưa trang về đầu, và luật này sẽ không thấy gì. */
+    if (!/scroller\.current\?\.scrollTo\(\{ y: 0, animated: true \}\);/.test(today)) {
+      problems.push(
+        `${TODAY}: không còn chỗ nào đưa trang về đầu khi ĐỔI CHẾ ĐỘ — \`toggleEdit\` thay cả nội dung ` +
+          'trang, và ở đó cú đưa về đầu vẫn là phần bắt buộc',
+      );
+    }
   }
 }
 
@@ -555,9 +654,16 @@ if (problems.length) {
 
 console.log(
   'hero khi cuộn OK — cú vuốt ngang hơi xiên không bị giết (ngưỡng bỏ cuộc theo chiều dọc LỚN HƠN ' +
-    'ngưỡng giành quyền theo chiều ngang, và pan thất bại là vĩnh viễn cho cú chạm đó); tấm nội dung ' +
-    'không vẽ khi ruột nó đã bị ẩn, nên không còn một hộp kính rỗng dưới vòng tròn; hero bắt đầu mờ ' +
-    'từ pixel cuộn ĐẦU TIÊN nên cú cuộn luôn có phản hồi; và đổi chế độ thì đưa trang về đầu, vì ' +
-    'chiều cao nội dung đổi đột ngột sẽ khiến ScrollView tự kẹp vị trí và cú trôi đó đọc ra như lỗi. ' +
-    'Cả bốn đều do người dùng báo từ máy thật — bộ chạy web không thấy được thứ nào',
+    'ngưỡng giành quyền theo chiều ngang, và pan thất bại là vĩnh viễn cho cú chạm đó); hero bắt đầu ' +
+    'mờ từ pixel cuộn ĐẦU TIÊN nên cú cuộn luôn có phản hồi; và một cú chạm mũi tên nay là MỘT dòng ' +
+    'thời gian thay vì ba. Tấm nội dung đi bằng cùng `<Expander reveal="clip">` với khối chi tiết — ' +
+    'cùng `duration.move`, cùng `inOut(cubic)`, cùng một lần commit — chứ không bị tháo khỏi cây; đo ' +
+    'trên harness web, bản cũ cho chiều cao nội dung trang đi 2.325 → 560 → 1.099, tức dashboard biến ' +
+    'mất sạch trong MỘT khung hình rồi khối chi tiết mới bò vào lấp cái hố. Không còn cổng `heroOpen` ' +
+    'nào bên trong hộp cắt (ruột rỗng ở khung hình đầu thì hộp cắt chỉ co một cái vỏ), lề âm nằm ' +
+    'NGOÀI hộp cắt (overflow:hidden gọt lại đúng phần lề vừa kéo ra, và không có lỗi nào báo), và ' +
+    '`toggleHero` KHÔNG tự cuộn nữa — cú `scrollTo` ấy là chuyển động thứ ba với đường cong riêng, ' +
+    'còn cú kẹp mà nó thay thế nay đi liên tục theo cùng đường cong với thứ gây ra nó. `toggleEdit` ' +
+    'thì vẫn đưa trang về đầu, vì đổi chế độ sắp xếp là thay CẢ nội dung trang. ' +
+    'Mọi thứ ở đây đều do người dùng báo từ máy thật — bộ chạy web không thấy được thứ nào',
 );

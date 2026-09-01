@@ -30,12 +30,26 @@
  *
  *     1. mở app, ngày đang tải        → thẻ chưa dựng
  *     2. dữ liệu về, thẻ hiện ra      → cascade PHẢI chạy
- *     3. bấm mở thẻ chỉ số            → thẻ bị tháo
- *     4. bấm đóng, thẻ dựng lại       → cascade PHẢI im
- *     5. mở/đóng thêm lần nữa         → vẫn im
+ *     3. một lần đọc hỏng             → thẻ bị tháo
+ *     4. thử lại xong, thẻ dựng lại   → cascade PHẢI im
+ *     5. lặp thêm một vòng            → vẫn im
  *
  * Bước 2 và bước 4 là hai vế; một luật chỉ canh bước 4 sẽ xanh với bản không
  * bao giờ có hiệu ứng vào nào cả.
+ *
+ * ── bước 3 ĐÃ ĐỔI NGHĨA ──
+ *
+ * Nó từng là "bấm mở thẻ chỉ số", vì tấm nội dung bị tháo khỏi cây khi
+ * `heroOpen`. Tấm nay đi bằng `<Expander>` — chiều cao chạy về 0 cùng đường
+ * cong với khối chi tiết đang mở — nên các thẻ ở nguyên trong cây và cú bấm ấy
+ * không dựng lại được gì. Lần dựng lại CÒN THẬT là `dayPending` lật.
+ *
+ * Hai phép thử ngược của chính tệp này đã báo đúng lúc: chúng thay một chuỗi
+ * không còn tồn tại và trả về "đang thử một bản y hệt bản thật".
+ *
+ * Và vì mô hình cho rằng "thẻ có mặt" đúng bằng `groupsUp`, hai đầu ấy được SO
+ * thẳng với nhau: thêm một vế vào cổng JSX mà `groupsUp` không có thì bước này
+ * đỏ, thay vì lặng lẽ mô phỏng một màn hình khác — đúng cách nó vừa lệch.
  */
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -149,42 +163,84 @@ function judge(m) {
   };
 
   /** Một lần render: đọc `entering` với cờ hiện tại, rồi chạy effect. */
-  const step = (groupsUp, heroOpen) => {
-    const shown = groupsUp && !heroOpen;
-    const anim = shown ? m.entering(flag)?.__anim === true : null;
+  const step = (groupsUp) => {
+    const anim = groupsUp ? m.entering(flag)?.__anim === true : null;
     /* Effect chạy theo đúng deps mà mã thật khai. */
-    const args = m.deps.map((d) => (d === 'groupsUp' ? groupsUp : d === 'heroOpen' ? heroOpen : undefined));
+    const args = m.deps.map((d) => (d === 'groupsUp' ? groupsUp : undefined));
     m.effect(...args, set);
     return anim;
   };
 
+  /*
+    ── chuỗi này ĐÃ ĐỔI, và vì sao ──
+
+    Bản trước lái hai biến, `groupsUp` và `heroOpen`, vì các thẻ nhóm bị THÁO
+    khỏi cây khi mở thẻ chỉ số — nên "đóng thẻ chỉ số" là một lần dựng lại, và
+    đó là lần cascade dễ chạy lại nhất.
+
+    Tấm nội dung nay đi bằng `<Expander>` chứ không bằng một cái cổng, nên các
+    thẻ ở nguyên trong cây suốt cả hai chiều và `heroOpen` không còn dựng lại
+    được gì. Giữ nó trong mô hình là mô phỏng một cơ chế không còn tồn tại; hai
+    phép thử ngược của tệp này đã báo đúng điều đó bằng câu "đang thử một bản y
+    hệt bản thật".
+
+    Lần dựng lại CÒN THẬT là `dayPending` lật: một lần đọc hỏng rồi thử lại gỡ
+    các thẻ ra rồi trả về. Lần ấy vẫn không phải một lần "vừa tới".
+  */
   /* 1. mở app, ngày đang tải — chưa có thẻ nào */
-  step(false, false);
+  step(false);
   /* 2. dữ liệu về: cascade PHẢI chạy. Đây là vế dễ mất nhất — một bản gắn cờ
         vào `mounted` sẽ im ở đây, và im ở đây là bỏ mất đúng lần duy nhất một
         hiệu ứng vào có nghĩa. */
-  if (step(true, false) !== true) {
+  if (step(true) !== true) {
     bad.push(
       'lần đầu thẻ hiện ra mà cascade KHÔNG chạy — cờ đang bật quá sớm (thường là gắn vào `mounted`, ' +
         'thứ thành true ngay sau commit đầu, lúc dữ liệu ngày còn đang tải và các thẻ chưa có mặt)',
     );
   }
-  /* 3. bấm mở thẻ chỉ số — thẻ bị tháo */
-  step(true, true);
-  /* 4. bấm đóng — thẻ dựng lại, cascade PHẢI im */
-  if (step(true, false) !== false) {
+  /* 3. một lần đọc hỏng đưa ngày về pending — thẻ bị tháo */
+  step(false);
+  /* 4. thử lại xong: thẻ dựng lại, cascade PHẢI im */
+  if (step(true) !== false) {
     bad.push(
-      'đóng thẻ chỉ số xong cascade lại chạy — cả nửa dưới dashboard diễn lại màn chào, từng thẻ bay lên ' +
-        'lệch nhau 70ms, mỗi lần người dùng chạm một cái mũi tên',
+      'thẻ dựng lại xong cascade lại chạy — cả nửa dưới dashboard diễn lại màn chào, từng thẻ bay lên ' +
+        'lệch nhau 70ms',
     );
   }
   /* 5. lần thứ hai, để chắc rằng cờ không bị đặt lại */
-  step(true, true);
-  if (step(true, false) !== false) bad.push('lần mở/đóng thứ hai cascade vẫn chạy');
+  step(false);
+  if (step(true) !== false) bad.push('lần dựng lại thứ hai cascade vẫn chạy');
   return bad;
 }
 
+/*
+  Và mô hình trên chỉ đúng chừng nào `groupsUp` VẪN là cái cổng mà JSX dùng.
+
+  `step()` cho rằng "thẻ có mặt" đúng bằng `groupsUp`. Nếu JSX thêm một vế nữa
+  mà `groupsUp` không có — đúng thứ vừa được gỡ ra — thì mô hình mô phỏng một
+  màn hình khác với màn hình thật, và nó sẽ nói dối theo chiều xanh. Nên hai đầu
+  được so thẳng với nhau.
+*/
+function gateMatches(src) {
+  const def = /const groupsUp = ([^;]+);/.exec(src);
+  const jsx = /\{([^}]*?)\? null : config\.groups\.map\(/.exec(src);
+  if (!def) return 'không tìm thấy định nghĩa `groupsUp`';
+  if (!jsx) return 'không tìm thấy cổng dựng thẻ nhóm trong JSX';
+  const d = def[1].replace(/\s/g, '');
+  const j = jsx[1].replace(/\s/g, '');
+  /* Hai vế phải là phủ định của nhau: `!a && !b` ↔ `a || b`. */
+  const want = d.replace(/^!/, '').split('&&!').join('||');
+  if (want !== j) {
+    return `\`groupsUp = ${d}\` nhưng JSX dựng thẻ khi \`!(${j})\` — mô hình ở đây đang mô phỏng một màn hình khác`;
+  }
+  return null;
+}
+
 const today = read(TODAY);
+{
+  const drift = gateMatches(today);
+  if (drift) problems.push(drift);
+}
 problems.push(...judge(model(today)));
 
 /* ── tấm chứa tất cả không được mang hiệu ứng nào ────────────────────────── */
@@ -269,17 +325,17 @@ const SELF = [
     name: 'gắn cờ vào `mounted` (giết cascade ở lần mở app)',
     mutate: (s) =>
       s.replace(
-        'if (groupsUp && !heroOpen) setCascaded(true);',
+        'if (groupsUp) setCascaded(true);',
         'setCascaded(true);',
       ),
     expect: /lần đầu thẻ hiện ra mà cascade KHÔNG chạy/,
   },
   {
-    name: 'đặt cờ lại về false khi mở thẻ',
+    name: 'đặt cờ lại về false khi thẻ bị tháo',
     mutate: (s) =>
       s.replace(
-        'if (groupsUp && !heroOpen) setCascaded(true);',
-        'if (groupsUp && !heroOpen) setCascaded(true); else setCascaded(false);',
+        'if (groupsUp) setCascaded(true);',
+        'if (groupsUp) setCascaded(true); else setCascaded(false);',
       ),
     expect: /bị đặt lại về false|cascade lại chạy/,
   },
@@ -326,8 +382,12 @@ if (problems.length) {
 
 console.log(
   'hiệu ứng vào OK — biểu thức `entering` của thẻ nhóm và thân useEffect đặt cờ được TRÍCH ra khỏi mã thật ' +
-    'rồi CHẠY qua đúng chuỗi người dùng đi: mở app lúc ngày đang tải → dữ liệu về (cascade PHẢI chạy) → bấm ' +
-    'mở thẻ chỉ số → bấm đóng (cascade PHẢI im) → mở/đóng lần nữa (vẫn im). Hai vế, và vế thứ nhất là vế dễ ' +
+    'rồi CHẠY qua đúng chuỗi người dùng đi: mở app lúc ngày đang tải → dữ liệu về (cascade PHẢI chạy) → một ' +
+    'lần đọc hỏng đưa ngày về pending → thử lại xong (cascade PHẢI im) → lặp lần nữa (vẫn im). Chuỗi này ' +
+    'từng lái `heroOpen`, vì các thẻ bị THÁO khi mở thẻ chỉ số; tấm nội dung nay đi bằng `<Expander>` nên ' +
+    'chúng ở nguyên trong cây, và lần dựng lại còn thật là `dayPending` lật. Mô hình chỉ đúng chừng nào ' +
+    '`groupsUp` vẫn ĐÚNG BẰNG cổng JSX dùng, nên hai đầu được so thẳng — thêm một vế vào một bên thì bước ' +
+    'này đỏ thay vì mô phỏng một màn hình khác trong im lặng. Hai vế, và vế thứ nhất là vế dễ ' +
     'mất: gắn cờ vào `mounted` sẽ giết luôn cascade ở lần mở app, vì `mounted` thành true ngay sau commit ' +
     'đầu — lúc dữ liệu ngày còn tải và các thẻ chưa có mặt — và một regex tìm dấu `?` không phân biệt được ' +
     'bản ấy với bản đúng. Cờ phải là React state khởi tạo false và không bao giờ bị đặt lại. Tấm chứa tất ' +
