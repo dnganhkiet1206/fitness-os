@@ -51,6 +51,7 @@ import { requestNotificationPermission } from '@/lib/notifications';
 import { displayVolume, volumeLabel } from '@/lib/units';
 import { errorText } from '@/lib/error-copy';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
+import { decText } from '@/lib/number-input';
 
 const TOTAL_STEPS = 7;
 const STEP_ICONS: LucideIcon[] = [User, Target, Dumbbell, Moon, Utensils, Pill, HeartPulse];
@@ -378,7 +379,7 @@ export function OnboardingFlow() {
                         style={[styles.input, heightError && styles.inputBad]}
                         keyboardType="number-pad"
                         value={heightCm}
-                        onChangeText={setHeightCm}
+                        onChangeText={(v) => setHeightCm(decText(v))}
                       />
                     </Field>
                   </View>

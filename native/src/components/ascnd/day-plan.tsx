@@ -32,6 +32,7 @@ import { DEFAULT_REST, DEFAULT_RPE, restLabel } from '@/lib/prescription';
 import { toast } from '@/lib/toast';
 import { parseRepEntry } from '@/lib/rep-entry';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
+import { decText, intText } from '@/lib/number-input';
 
 /**
  * One day of the week, as the thing you do rather than the thing you planned.
@@ -1086,7 +1087,7 @@ export function DayPlan({
                     returnKeyType="done"
                     selectTextOnFocus
                     value={loadOf(row)}
-                    onChangeText={(v) => setWeightText((prev) => ({ ...prev, [row.key]: v }))}
+                    onChangeText={(v) => setWeightText((prev) => ({ ...prev, [row.key]: decText(v) }))}
                   />
                   {/* No unit beside an empty box. A pull-up row read "— kg × 8",
                       which offers a unit for a number that is not there — and the
@@ -1105,7 +1106,7 @@ export function DayPlan({
                     returnKeyType="done"
                     selectTextOnFocus
                     value={repsOf(row)}
-                    onChangeText={(v) => setRepsText((prev) => ({ ...prev, [row.key]: v }))}
+                    onChangeText={(v) => setRepsText((prev) => ({ ...prev, [row.key]: intText(v) }))}
                   />
                 </View>
 

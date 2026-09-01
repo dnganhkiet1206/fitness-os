@@ -23,6 +23,7 @@ import { useProfile } from '@/hooks/useTodayData';
 import { useUnits } from '@/hooks/use-units';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
+import { decText } from '@/lib/number-input';
 
 const NEUTRAL = '#9aa0aa';
 
@@ -141,7 +142,7 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
             style={styles.weightInput}
             keyboardType="decimal-pad"
             value={value}
-            onChangeText={setValue}
+            onChangeText={(v) => setValue(decText(v))}
             placeholder="70.0"
             placeholderTextColor={colors.mutedForeground}
           />

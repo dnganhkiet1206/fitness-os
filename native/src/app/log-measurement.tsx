@@ -30,6 +30,7 @@ import { displayLength, lengthLabel, lengthToCm } from '@/lib/units';
 import { BOUNDS, plausible } from '@/lib/plausible';
 import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
+import { decText } from '@/lib/number-input';
 
 type FieldKey = Exclude<keyof BodyMeasurementInput, 'date' | 'notes'>;
 
@@ -235,7 +236,7 @@ function Field({
         placeholder="—"
         placeholderTextColor={colors.mutedForeground}
         value={value}
-        onChangeText={onChange}
+        onChangeText={(v) => onChange(decText(v))}
       />
       {error ? <Text style={styles.fieldError}>{error}</Text> : null}
     </View>

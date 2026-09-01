@@ -41,6 +41,7 @@ import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr } from '@/lib/local-date';
 import { consumePendingScan } from '@/lib/scan-bridge';
+import { intText } from '@/lib/number-input';
 
 const MEAL_KEYS = ['breakfast', 'lunch', 'dinner', 'snack', 'preworkout', 'postworkout'] as const;
 type MealType = (typeof MEAL_KEYS)[number];
@@ -888,7 +889,7 @@ function MacroInput({ label, value, onChange, bad }: { label: string; value: str
         placeholder="0"
         placeholderTextColor={colors.mutedForeground}
         value={value}
-        onChangeText={onChange}
+        onChangeText={(v) => onChange(intText(v))}
       />
     </View>
   );

@@ -34,6 +34,7 @@ import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { sleepRowToReplace } from '@/lib/same-day-entry';
 import { confirmWrite } from '@/lib/write-result';
 import { sleepSpan } from '@/lib/sleep-window';
+import { decText } from '@/lib/number-input';
 
 // Face picks map onto the web's 1–10 quality scale (SleepCard shows
 // "x/10") — code-drawn lucide faces on a red→teal neon ramp
@@ -237,7 +238,7 @@ export default function LogSleepSheet() {
               placeholder="0"
               placeholderTextColor={colors.mutedForeground}
               value={s.value}
-              onChangeText={s.set}
+              onChangeText={(v) => s.set(decText(v))}
             />
             <Text style={styles.stageUnit}>{i18n.logSleepMinutes}</Text>
           </View>

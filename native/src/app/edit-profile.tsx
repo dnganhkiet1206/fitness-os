@@ -41,6 +41,7 @@ import {
 import { readStat, statMessage } from '@/lib/plausible';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { errorText } from '@/lib/error-copy';
+import { decText, intText } from '@/lib/number-input';
 import {
   displayHeight,
   displayVolume,
@@ -392,7 +393,8 @@ export default function EditProfileSheet() {
               style={[styles.input, heightError && styles.inputBad]}
               keyboardType="decimal-pad"
               value={hDisp}
-              onChangeText={(v) => {
+              onChangeText={(raw) => {
+                const v = decText(raw);
                 setHDisp(v);
                 const n = parseFloat(v);
                 set('height_cm', v && !isNaN(n) ? String(Math.round(heightToCm(n, form.units_height as HeightUnit))) : '');
@@ -404,7 +406,8 @@ export default function EditProfileSheet() {
               style={[styles.input, weightError && styles.inputBad]}
               keyboardType="decimal-pad"
               value={wDisp}
-              onChangeText={(v) => {
+              onChangeText={(raw) => {
+                const v = decText(raw);
                 setWDisp(v);
                 const n = parseFloat(v);
                 set('weight_kg', v && !isNaN(n) ? String(Math.round(weightToKg(n, form.units_weight as WeightUnit) * 10) / 10) : '');
@@ -468,27 +471,27 @@ export default function EditProfileSheet() {
             style={[styles.input, styles.bigInput]}
             keyboardType="number-pad"
             value={form.tdee_target_kcal}
-            onChangeText={(v) => set('tdee_target_kcal', v)}
+            onChangeText={(v) => set('tdee_target_kcal', intText(v))}
           />
         </Field>
 
         {/* Macros */}
         <View style={styles.row}>
           <Field label={i18n.nProtein} style={styles.third}>
-            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_protein_g} onChangeText={(v) => set('macro_protein_g', v)} />
+            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_protein_g} onChangeText={(v) => set('macro_protein_g', intText(v))} />
           </Field>
           <Field label={i18n.nCarbs} style={styles.third}>
-            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_carbs_g} onChangeText={(v) => set('macro_carbs_g', v)} />
+            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_carbs_g} onChangeText={(v) => set('macro_carbs_g', intText(v))} />
           </Field>
           <Field label={i18n.nFat} style={styles.third}>
-            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_fat_g} onChangeText={(v) => set('macro_fat_g', v)} />
+            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_fat_g} onChangeText={(v) => set('macro_fat_g', intText(v))} />
           </Field>
           {/* Fibre was computed by `calcMacros` and then dropped on the floor here:
               the form had no field for it, so "tính lại" left it at whatever
               onboarding wrote. Invisible while it was a flat 30 for everybody;
               a real drift now that it scales with the calorie target. */}
           <Field label={i18n.foodFiber} style={styles.third}>
-            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_fiber_g} onChangeText={(v) => set('macro_fiber_g', v)} />
+            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_fiber_g} onChangeText={(v) => set('macro_fiber_g', intText(v))} />
           </Field>
         </View>
 
@@ -499,7 +502,10 @@ export default function EditProfileSheet() {
               style={styles.input}
               keyboardType="number-pad"
               value={waterDisp}
-              onChangeText={(v) => {
+              onChangeText={(raw) => {
+                /* `number-pad` nhưng ounce ra số lẻ, nên `decText` chứ không
+                   phải `intText` — xem `volumeToMl`. */
+                const v = decText(raw);
                 setWaterDisp(v);
                 const n = parseFloat(v);
                 set('water_target_ml', v && !isNaN(n) ? String(volumeToMl(n, vUnit)) : '');
@@ -527,7 +533,7 @@ export default function EditProfileSheet() {
             style={styles.input}
             keyboardType="decimal-pad"
             value={form.sleep_target_hours}
-            onChangeText={(v) => set('sleep_target_hours', v)}
+            onChangeText={(v) => set('sleep_target_hours', decText(v))}
           />
         </Field>
         <View style={styles.row}>

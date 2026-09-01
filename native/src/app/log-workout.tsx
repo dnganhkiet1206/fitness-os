@@ -51,6 +51,7 @@ import { entered, parseRepEntry } from '@/lib/rep-entry';
 import { ExerciseProgress } from '@/components/ascnd/exercise-progress';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/units';
+import { decText } from '@/lib/number-input';
 
 const RPE_VALUES = [6, 7, 8, 9, 10] as const;
 
@@ -741,7 +742,7 @@ export default function LogWorkoutSheet() {
                   placeholderTextColor={colors.mutedForeground}
                   keyboardType="decimal-pad"
                   value={s.weight}
-                  onChangeText={(v) => updateSet(idx, 'weight', v)}
+                  onChangeText={(v) => updateSet(idx, 'weight', decText(v))}
                 />
                 <TextInput
                   accessibilityLabel={`${s.exerciseName || i18n.nExercise} ${setNumbers[idx]} ${i18n.nReps}`}

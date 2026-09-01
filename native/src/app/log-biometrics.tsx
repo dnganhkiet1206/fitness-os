@@ -23,6 +23,7 @@ import { useLogBiometrics } from '@/hooks/use-biometrics';
 import { outOfRangeMessage } from '@/lib/plausible';
 import { toast } from '@/lib/toast';
 import { offlineNow } from '@/lib/offline';
+import { decText } from '@/lib/number-input';
 
 export default function LogBiometricsSheet() {
   const i18n = useI18n();
@@ -199,7 +200,7 @@ function Field({
           placeholder={placeholder}
           placeholderTextColor={colors.mutedForeground}
           value={value}
-          onChangeText={onChange}
+          onChangeText={(v) => onChange(decText(v))}
         />
         <Text style={styles.unit}>{unit}</Text>
       </View>
