@@ -84,7 +84,9 @@ export function Segmented<K extends string>({
    */
   variant?: 'pill' | 'capsule';
 }) {
-  const pad = 3;
+  /* Viên nang mỏng hơn: 2 điểm đệm thay vì 3, nên thumb gần sát mép ray như
+     control của hệ thống. */
+  const pad = variant === 'capsule' ? 2 : 3;
   const cap = variant === 'capsule';
   const r = cap || compact ? radius.full : radius.sm;
 
@@ -103,7 +105,7 @@ export function Segmented<K extends string>({
       fill={cap ? colors.background : colors.accent}
       border={cap ? { width: StyleSheet.hairlineWidth, color: glass.border } : undefined}
       radius={cap ? radius.full : compact ? radius.full : r - pad}
-      height={height}
+      height={cap ? CAP_H : height}
       gap={0}
       style={[cap ? styles.capRow : styles.row, { borderRadius: r, padding: pad }]}>
       {options.map((o) => {
@@ -113,7 +115,7 @@ export function Segmented<K extends string>({
             key={o.key}
             itemKey={o.key}
             accessibilityLabel={o.label}
-            style={[styles.seg, { height }]}
+            style={[styles.seg, { height: cap ? CAP_H : height }]}
             onPress={() => {
               if (on) return;
               Haptics.selectionAsync();
@@ -147,6 +149,18 @@ export function Segmented<K extends string>({
   );
 }
 
+/**
+ * Chiều cao của viên nang: 38, không phải 44.
+ *
+ * 44 là sàn cho một nút ĐƠN LẺ. Thanh này thì mỗi mục rộng gần nửa màn hình, nên
+ * vùng chạm thật lớn hơn sàn nhiều lần theo chiều ngang — thứ giới hạn không
+ * phải là ngón tay mà là mắt. Ở 44 cộng chữ 17 điểm, cả thanh nặng hơn tiêu đề
+ * màn đứng ngay trên nó.
+ *
+ * 38 là quãng mà segmented control của hệ thống nằm trong đó.
+ */
+const CAP_H = 38;
+
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', backgroundColor: 'rgba(24,24,27,0.6)' },
   seg: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
@@ -164,9 +178,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: glass.border,
   },
-  /* 17 điểm: cỡ của một điều hướng mục, không phải nhãn bên trong một ô nhỏ. */
-  capLabel: { ...type.headline },
-
+  /* 15 điểm, không phải 17. Thanh này là mục lục của màn; ở 17 điểm nó đọc ra
+     nặng hơn chính cái tiêu đề nó dẫn tới. Nét 600 giữ lại độ chắc đã mất. */
+  capLabel: { ...type.body, fontWeight: '600' },
 });
 
 /**
