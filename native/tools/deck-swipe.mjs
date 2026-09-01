@@ -239,9 +239,34 @@ const chromium = loadChromium();
   lệch chiều cao lớn nhất — và một phép đo chỉ nhìn bước đầu tiên sẽ báo
   "không sao" trong khi bước thứ ba giật.
 
-  Nên đo từng bước riêng: bước 0→1, 1→2, 2→3, rồi ngược lại.
+  Nên đo từng bước riêng: 0→1, 1→2, … rồi ngược lại.
+
+  ── và số trang ĐẾM TỪ DOM, không phải hằng số gõ tay ──
+
+  Bản trước tôi gõ 4. Deck có 5: `use-widget-config.ts` mặc định
+  ['readiness', 'activity', 'nutrition', 'water', 'sleep']. Nước đứng thứ tư,
+  nên hai cú chuyển liên quan tới nó là 2→3 và 3→4 — hằng số 4 đo được cái
+  đầu, bỏ sót cái sau, rồi in ra một bảng trông như đã kiểm hết.
+
+  Tệ hơn: danh sách ấy người dùng sắp xếp lại được, nên không con số nào đúng
+  mãi. Đếm từ DOM thì bảng luôn khớp với deck thật đang chạy.
 */
-const PAGES = 4;
+async function pageCount() {
+  const { browser, page } = await openPage(chromium);
+  await page.goto(`http://localhost:${port}/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await page.waitForTimeout(9000);
+  const n = await page.evaluate(`(() => { const st = ${FIND_STAGE}; return st ? st.children.length : 0; })()`);
+  await browser.close();
+  return n;
+}
+
+const PAGES = await pageCount();
+if (PAGES < 2) {
+  console.error(`\nchỉ đếm được ${PAGES} trang trong deck — không đo được, và không được suy đoán thay.`);
+  process.exit(1);
+}
+console.log(`deck có ${PAGES} trang`);
+
 const rows = [];
 for (let step = 0; step < PAGES - 1; step++) {
   for (const dir of ['trái', 'phải']) {
