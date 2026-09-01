@@ -436,7 +436,20 @@ const styles = StyleSheet.create({
     được, chỉ là nó thôi mặc đồng phục biểu mẫu: gạch chân mảnh nói "gõ được"
     mà không dựng thêm một hình chữ nhật thứ hai bên trong thẻ.
   */
-  weightLogger: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs, marginTop: spacing.sm },
+  /*
+    `center`, KHÔNG phải `baseline` — và đây là lý do bản đầu bị trả về.
+
+    Căn theo đường chân chữ đọc thì đúng hơn: "kg" ngồi trên cùng đường với đáy
+    con số, y như trạng thái đã ghi. Nhưng nó là thứ DUY NHẤT trong cả thẻ này
+    làm đổi CÁCH TÍNH bố cục — Yoga phải đo đường chân chữ của từng con, mà một
+    trong ba con là `TextInput`. Bỏ viền hộp, chốt bề rộng, thu nhỏ nút đều là
+    giá trị tĩnh; chỉ mình nó kéo thêm một lượt đo.
+
+    Người dùng báo bấm Ghi thì giật, và mốc bắt đầu đúng là lúc thẻ này đổi
+    thiết kế. `center` cho ra hình gần như y hệt ở cỡ chữ này, nên đây là chỗ
+    nhường rẻ nhất: giữ toàn bộ phần nhìn, bỏ đúng một dòng đắt.
+  */
+  weightLogger: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
   weightInput: {
     /*
       Bề rộng CHỐT, không phải `minWidth`.
