@@ -51,6 +51,19 @@ const PORT_BASE = 8732;
 const argv = process.argv.slice(2);
 const args = new Set(argv);
 const heavyN = Number(argv[argv.indexOf('--heavy') + 1]) || 400;
+/*
+  Số lượt cho MỖI ô, và lý do nó không được phép là 1.
+
+  Bản đầu của tệp này chạy mỗi ô đúng một lượt, và lượt ấy báo Dinh dưỡng
+  nặng thêm 28ms — tôi đã gọi đó là "tái hiện được". Chạy lại y hệt, không
+  đổi một dòng code nào, ra -4ms. Con số 28 là nhiễu.
+
+  Một công cụ dựng ra để thôi đoán mà lại đoán ngay ở lượt chạy đầu thì tệ
+  hơn không có, vì nó khoác cho phỏng đoán một cái vẻ đã đo. Lấy TRUNG VỊ của
+  nhiều lượt, và in kèm khoảng min–max để chính người đọc thấy được biên độ
+  nhiễu thay vì phải tin con số.
+*/
+const runs = Number(argv[argv.indexOf('--runs') + 1]) || 5;
 
 const { FIXTURES, REF, UID, day, jwt } = await import(path.join(NATIVE, 'tools', 'live-world.mjs'));
 
@@ -257,26 +270,46 @@ build();
 const { server, port } = await serve();
 const chromium = loadChromium();
 
+const mid = (xs) => {
+  const v = xs.filter((x) => x !== null && x !== undefined).sort((a, b) => a - b);
+  return v.length ? v[Math.floor(v.length / 2)] : null;
+};
+const lo = (xs) => { const v = xs.filter((x) => x != null); return v.length ? Math.min(...v) : null; };
+const hi = (xs) => { const v = xs.filter((x) => x != null); return v.length ? Math.max(...v) : null; };
+
 const rows = [];
 for (const [worldName, world] of [['nhẹ', FIXTURES], ['nặng', heavyWorld()]]) {
   for (const s of SCREENS) {
-    const { browser, page } = await openPage(chromium, world);
-    await page.goto(`http://localhost:${port}${s.route}`, { waitUntil: 'domcontentloaded', timeout: 90000 });
-    await page.waitForTimeout(9000);
-    const r = await press(page, s.label);
-    rows.push({ world: worldName, screen: s.name, ...(r ?? { first: null, p50: null, p99: null, jank: null }) });
-    await browser.close();
+    const got = [];
+    for (let i = 0; i < runs; i++) {
+      const { browser, page } = await openPage(chromium, world);
+      await page.goto(`http://localhost:${port}${s.route}`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+      await page.waitForTimeout(9000);
+      got.push((await press(page, s.label)) ?? { first: null, p50: null, p99: null, jank: null });
+      await browser.close();
+      process.stdout.write('.');
+    }
+    rows.push({
+      world: worldName, screen: s.name,
+      first: mid(got.map((g) => g.first)),
+      firstLo: lo(got.map((g) => g.first)), firstHi: hi(got.map((g) => g.first)),
+      p50: mid(got.map((g) => g.p50)), p99: mid(got.map((g) => g.p99)),
+      jank: got.reduce((n, g) => n + (g.jank ?? 0), 0),
+    });
   }
 }
 server.close();
+console.log('');
 
 const n = (v) => (v === null || v === undefined ? '—' : String(v) + 'ms');
 console.log(`\nthư viện thực phẩm: ${heavyN} món ở cột "nặng"\n`);
-console.log('dữ liệu  màn          nhúc nhích đầu   50%      99%   tăng tốc lại');
+console.log(`mỗi ô chạy ${runs} lượt; cột "nhúc nhích đầu" là TRUNG VỊ, trong ngoặc là min–max\n`);
+console.log('dữ liệu  màn          nhúc nhích đầu           50%      99%   tăng tốc lại');
 for (const r of rows) {
+  const spread = r.firstLo === null ? '' : ` (${r.firstLo}–${r.firstHi})`;
   console.log(
-    r.world.padEnd(8) + r.screen.padEnd(13) + n(r.first).padStart(11) + n(r.p50).padStart(11) +
-      n(r.p99).padStart(9) + String(r.jank ?? '—').padStart(11),
+    r.world.padEnd(8) + r.screen.padEnd(13) + (n(r.first) + spread).padStart(20) +
+      n(r.p50).padStart(11) + n(r.p99).padStart(9) + String(r.jank ?? '—').padStart(11),
   );
 }
 const janky = rows.filter((r) => (r.jank ?? 0) > 0);
@@ -297,10 +330,22 @@ if ([dLight, dHeavy, pLight, pHeavy].some((v) => v === null || v === undefined))
 } else {
   const dGrow = dHeavy - dLight;
   const pGrow = pHeavy - pLight;
-  console.log(`dinh dưỡng nặng thêm ${dGrow}ms, tiến trình nặng thêm ${pGrow}ms`);
+  /*
+    Ngưỡng phải LỚN HƠN biên độ nhiễu quan sát được, chứ không phải một con số
+    tròn nghe hợp lý. Đo được biên độ tự nhiên của cột này là quãng vài chục
+    mili giây giữa hai lượt chạy giống hệt nhau, nên chênh lệch phải vượt cả
+    khoảng min–max của hai ô thì mới đáng gọi là tín hiệu.
+  */
+  const noise = Math.max(
+    (rows.find((r) => r.world === 'nhẹ' && r.screen === 'dinh dưỡng')?.firstHi ?? 0) -
+      (rows.find((r) => r.world === 'nhẹ' && r.screen === 'dinh dưỡng')?.firstLo ?? 0),
+    (rows.find((r) => r.world === 'nặng' && r.screen === 'dinh dưỡng')?.firstHi ?? 0) -
+      (rows.find((r) => r.world === 'nặng' && r.screen === 'dinh dưỡng')?.firstLo ?? 0),
+  );
+  console.log(`dinh dưỡng nặng thêm ${dGrow}ms, tiến trình nặng thêm ${pGrow}ms (nhiễu quan sát được: ${noise}ms)`);
   console.log(
-    dGrow - pGrow >= 20
-      ? 'TÁI HIỆN ĐƯỢC — độ trễ tăng theo khối lượng dữ liệu, và tăng ở Dinh dưỡng nhiều hơn.'
-      : 'KHÔNG tái hiện được — giả thuyết "effect xếp hàng sau lượt dựng nặng" chưa được số liệu ủng hộ.',
+    dGrow - pGrow > noise
+      ? 'TÁI HIỆN ĐƯỢC — chênh lệch vượt biên độ nhiễu.'
+      : 'KHÔNG tái hiện được — chênh lệch chưa vượt biên độ nhiễu, nên chưa được coi là tín hiệu.',
   );
 }
