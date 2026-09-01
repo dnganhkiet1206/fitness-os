@@ -10,6 +10,7 @@ import { useRise } from '@/lib/entrance';
 
 import { Glyph } from '@/components/ascnd/assistant-icons';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { SectionTitle } from '@/components/ascnd/section-title';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { EmptyState } from '@/components/ascnd/empty-state';
@@ -233,9 +234,9 @@ export default function WorkoutsScreen() {
                 this block only renders when the read succeeded and returned
                 something, so it can never print the "(0)" that would be a claim
                 about a list that simply did not arrive. */}
-            <Text style={styles.sectionLabel}>
+            <SectionTitle>
               {i18n.nYourWorkouts} ({templates.length})
-            </Text>
+            </SectionTitle>
             <Pressable
               accessibilityRole="button"
               hitSlop={8}
@@ -307,6 +308,20 @@ export default function WorkoutsScreen() {
 
         Một hàng, một vai trò, và diện tích đúng bằng tầm quan trọng.
       */}
+      {/*
+        Hai hàng này nằm trong MỘT khối, không phải hai khối rời.
+
+        Comment của `toolRow` ngay dưới đã tự nói ra câu trả lời: "hình dạng
+        của một hàng Cài đặt, vì đó đúng là việc nó làm". Mà Cài đặt thì không
+        bao giờ để hai hàng liền vai nhau thành hai hình chữ nhật bo góc riêng
+        có khe ở giữa — nó gom chúng vào một khối, ngăn bằng một vạch tóc thụt
+        vào. Khe giữa hai khối nghĩa là "hai thứ khác loại"; hai hàng dẫn-đi-
+        chỗ-khác thì cùng loại.
+
+        Đây cũng đúng thứ nửa dưới trang Dinh dưỡng đang làm (`group` / `sep`
+        trong `food-cards`), nên hai trang thôi trả lời khác nhau.
+      */}
+      <View style={styles.toolGroup}>
       <PressScale
         accessibilityRole="button"
         accessibilityLabel={i18n.nLibraryHistory}
@@ -327,6 +342,8 @@ export default function WorkoutsScreen() {
         <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
       </PressScale>
 
+      <View style={styles.toolSep} />
+
       <PressScale
         accessibilityRole="button"
         accessibilityLabel={i18n.nToolsInsight}
@@ -341,16 +358,18 @@ export default function WorkoutsScreen() {
         </View>
         <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
       </PressScale>
+      </View>
 
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionLabel: { fontSize: 14, fontWeight: '600', color: colors.foreground },
   /* Tiêu đề mục và "Xem tất cả" của nó, một hàng. */
   libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  libAll: { ...type.footnote, color: colors.primary },
+  /* 15, không phải 13. Nó đứng cạnh một tiêu đề 18pt trên cùng một hàng; ở 13
+     nó đọc ra như chú thích của tiêu đề chứ không phải một nút bấm được. */
+  libAll: { ...type.body, fontWeight: '600', color: colors.primary },
   /* Hàng "tạo mới" ở cuối danh sách.
 
      KHÔNG dùng viền đứt nét: `tools/training-card.mjs` đã ghi lại rằng trên iOS
@@ -371,16 +390,20 @@ const styles = StyleSheet.create({
   addRowText: { ...type.footnote, fontWeight: '600', color: colors.primary },
   /* Hàng dẫn đi chỗ khác: hình dạng của một hàng Cài đặt, vì đó đúng là việc nó
      làm — nó không mang nội dung nào của riêng nó. */
+  toolGroup: {
+    borderRadius: radius.md,
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    overflow: 'hidden',
+  },
+  toolSep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: colors.border },
   toolRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     height: 56,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
   },
   toolRowCopy: { flex: 1, minWidth: 0, gap: 1 },
   toolRowText: { ...type.body, color: colors.foreground },

@@ -7,6 +7,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { SectionTitle } from '@/components/ascnd/section-title';
 import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
 import { NutritionCard, WaterWidget } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
@@ -97,38 +98,6 @@ type Tab = 'today' | 'plan';
  * is exactly the person looking at this screen, and "no meal plans yet" tells
  * them only that they have not done a thing they may not have a name for.
  */
-/**
- * Tiêu đề của một MỤC trên trang.
- *
- * Trước đây là icon 13pt + chữ 12pt IN HOA, giãn 2,4, màu mờ. Mỗi mảnh của
- * công thức đó đều kéo tiêu đề xuống hạng phụ: in hoa giãn rộng là kiểu chữ
- * của NHÃN (thứ dán lên một ô số, như "PROTEIN" trong thẻ macro), 12pt nhỏ
- * hơn cả chữ thân bài nó đứng trên, và màu mờ nói "cái này không quan trọng".
- * Cộng lại thì "Kế hoạch ăn" — mục chính của cả nửa trang — đọc ra nhỏ hơn
- * tên từng plan bên dưới nó.
- *
- * Giờ là 18pt/700, màu đầy, chữ thường.
- *
- * KHÔNG phải 22, dù "Top Picks for You" của Apple Music đúng là 22. Thang của
- * Apple là 34 / 28 / 22 / 20 / 17, và tiêu đề TRANG của Apple Music là 34 —
- * tiêu đề mục của nó thấp hơn tiêu đề trang hai bậc. Tiêu đề trang ở đây là
- * 28, nên bê thẳng số 22 sang thì khoảng cách chỉ còn 6 điểm: hai thứ đọc ra
- * gần ngang hạng và cả trang thành ra gào lên. Cái phải mượn là KHOẢNG CÁCH
- * trong thang, không phải con số tuyệt đối.
- *
- * 28 → 18 giữ đúng khoảng cách hai bậc ấy trong thang của app này.
- *
- * Bỏ icon vì ở cỡ này nó thành thừa: 22pt đậm đã tự tách mục ra khỏi nội dung
- * rồi, và một icon 13pt cạnh chữ 22pt thì lệch trọng lượng thấy rõ. Apple
- * không đặt icon cạnh tiêu đề mục ở bất kỳ màn nào trong ảnh tham chiếu.
- *
- * Gộp luôn `sectionHead` và `sectionHeadRow` — hai tên, cùng một khai báo, cho
- * cùng một việc, ở năm chỗ.
- */
-function SectionTitle({ children }: { children: ReactNode }) {
-  return <Text style={styles.sectionTitle}>{children}</Text>;
-}
-
 function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boolean }) {
   /* Lần vẽ đầu thì hiện ngay — xem `useRise`. */
   const rise = useRise();
@@ -799,7 +768,6 @@ export default function NutritionScreen() {
 }
 
 const styles = StyleSheet.create({
-  sectionTitle: { ...type.title2, color: colors.foreground },
 
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
@@ -886,7 +854,9 @@ const styles = StyleSheet.create({
   */
   planSection: { gap: spacing.sm + 4 },
   planHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  planAll: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  /* 15, không phải 13 — cùng lý do như `libAll` bên Tập luyện: nó đứng cạnh
+     một tiêu đề 18pt trên cùng một hàng. */
+  planAll: { ...type.body, fontWeight: '600', color: colors.primary },
   /* Một HÀNG trong khối, không phải một thẻ. Cao 56 để vượt sàn chạm 44 và để
      hai dòng chữ có chỗ thở. */
   planRow: {

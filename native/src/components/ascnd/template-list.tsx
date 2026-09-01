@@ -190,6 +190,8 @@ export function TemplateRow({
     Rest and effort are judged separately, because a workout can easily hold
     one rest throughout and a heavier effort on the compound at the front.
   */
+  const setCount = exs.reduce((n, e) => n + (e.sets ?? 0), 0);
+
   const oneRest = uniformValue(exs, (e) => e.restSeconds, DEFAULT_REST);
   const oneRpe = uniformValue(exs, (e) => e.rpe, DEFAULT_RPE);
   const sharedLine = oneRest !== null && oneRpe !== null ? prescriptionLine(i18n, oneRest, oneRpe) : null;
@@ -230,8 +232,29 @@ export function TemplateRow({
                 </View>
               ) : null}
             </View>
+            {/*
+              Số HIỆP, không phải số KG.
+
+              Mặt thẻ trước đây in "Khối lượng: 0 kg". Hai thứ sai cùng lúc.
+
+              Thứ nhất, khối lượng là KẾT QUẢ của một buổi đã tập — tổng
+              tạ × lần × hiệp của việc đã xảy ra. Mẫu tập thì chưa xảy ra: nó
+              là thứ bạn gán cho hôm nay. In một tổng thành tích lên mặt một
+              bản kế hoạch làm nó đọc ra như một dòng trong lịch sử tập, đúng
+              thứ nó không phải.
+
+              Thứ hai, với mẫu chưa điền tạ thì tổng ấy bằng 0, và "Khối lượng:
+              0 kg" là một tuyên bố rỗng. Chính tệp `workouts/index.tsx` đã
+              viết ra luật này cho cái đếm ngay bên trên: nó không bao giờ in
+              "(0)", "một tuyên bố về danh sách chưa hề tới".
+
+              Số hiệp thì là thứ có thật trong bản kế hoạch, và là con số bạn
+              cần khi cân xem hôm nay có kham nổi buổi này không. Tạ vẫn còn —
+              ở trong nếp gấp, theo từng bài, nơi nó là lời dặn chứ không phải
+              thành tích.
+            */}
             <Text style={styles.tplMeta}>
-              {exs.length} {i18n.workoutsExercises} · {i18n.workoutsVolume}: {Math.round(displayWeight(volume(exs), wUnit)).toLocaleString()} {wl}
+              {exs.length} {i18n.workoutsExercises} · {setCount} {i18n.nSetsShort}
             </Text>
             {/*
               On the face of the card, not inside the fold.
