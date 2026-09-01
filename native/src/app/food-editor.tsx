@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 
 import { ProgressBar } from '@/components/ascnd/progress-bar';
+import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { duration } from '@/constants/motion';
@@ -145,8 +146,8 @@ export default function FoodEditorSheet() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <SheetHeader title={isEdit ? i18n.foodEditTitle : i18n.foodAddTitle} onClose={nav.back} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{isEdit ? i18n.foodEditTitle : i18n.foodAddTitle}</Text>
 
         <Field label={i18n.foodName} value={name} onChange={setName} placeholder={i18n.foodNamePlaceholder} />
         <Field label={i18n.foodBrand} value={brand} onChange={setBrand} placeholder={i18n.foodBrandPlaceholder} />

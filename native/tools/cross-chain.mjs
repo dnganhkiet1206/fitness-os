@@ -249,6 +249,12 @@ try {
     'src/hooks/use-volume-unit.ts':
       'đơn vị đo là tuỳ chọn của MÁY (DEVICE_KEYS), cố ý giữ lại: xoá nó nghĩa là ai đó cho mượn ' +
       'máy một lần thì chủ máy nhận lại máy ở đơn vị khác',
+    'src/lib/interaction.ts':
+      'một cái ĐẾM số ngón tay đang chạm màn hình, về 0 khi nguồn cuối cùng buông. Nó là một sự ' +
+      'thật về CÚ CHẠM đang diễn ra, không phải về tài khoản: không ai có thể đăng xuất trong lúc ' +
+      'ngón tay vẫn đang giữ một cái thẻ, và nếu bằng cách nào đó xảy ra thì hậu quả là mascot đứng ' +
+      'hình cho tới cú chạm kế tiếp — hết. Đăng ký onUserScopedReset ở đây là nói rằng một cú vuốt ' +
+      'thuộc về một người',
     'src/hooks/use-mascot-emotion.tsx':
       '`greeted` là cờ một-lần-mỗi-lần-mở-app, và chính file đó nói vậy: "một sự thật về cây React này, ' +
       'không phải về tài khoản". Đổi tài khoản giữa chừng thì BRAVO không được chào — chỉ là thiếu một câu chào',

@@ -1,5 +1,4 @@
 import * as Haptics from 'expo-haptics';
-import { ArrowLeft } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Modal,
@@ -13,8 +12,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { Icon } from '@/components/ascnd/icon';
 import { Ruler, RULER_H, TICK_W } from '@/components/ascnd/weight-goal-ruler';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import type { useI18n } from '@/hooks/use-app-settings';
@@ -242,34 +241,7 @@ export function WeightGoalDialog({
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose} statusBarTranslucent>
       <View style={[styles.root, { paddingTop: insets.top }]}>
-        <View style={styles.header}>
-          <PressScale
-            accessibilityRole="button"
-            accessibilityLabel={i18n.a11yBack}
-            hitSlop={8}
-            style={styles.back}
-            onPress={() => {
-              Haptics.selectionAsync();
-              onClose();
-            }}>
-            <Icon icon={ArrowLeft} size={20} color={colors.foreground} />
-          </PressScale>
-          <Text style={styles.title}>{i18n.nWeightGoalEdit}</Text>
-          {/*
-            Chỗ trống để cân tiêu đề — TRONG SUỐT.
-
-            Nó dùng lại `styles.back`, tức là mang theo cả `backgroundColor`
-            của nút quay lại: một đĩa tròn xám đặc ở góc phải, cùng kích thước,
-            cùng màu, cùng hình dạng với một cái nút — và bấm vào thì không có
-            gì xảy ra. Một thứ trông như nút mà không phải nút là lời hứa dở
-            nhất một màn hình có thể đưa ra, và màn này chỉ có đúng ba thứ trên
-            đầu nên nó không lẫn vào đâu được.
-
-            Vẫn phải chiếm chỗ chứ không xoá hẳn: tiêu đề căn giữa bằng `flex: 1`
-            giữa hai đầu, nên bỏ đi thì nó lệch sang phải đúng 40 điểm.
-          */}
-          <View style={styles.headerSpacer} />
-        </View>
+        <SheetHeader title={i18n.nWeightGoalEdit} onClose={onClose} />
 
         <View style={styles.stage}>
           <Text style={styles.intent}>{intent}</Text>
@@ -326,19 +298,6 @@ export function WeightGoalDialog({
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
 
-  header: { height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md },
-  back: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.secondary,
-  },
-  /* Cùng bề rộng với nút quay lại và KHÔNG có gì khác — xem chú thích ở chỗ
-     dùng. Không dùng lại `back`, vì thứ nó mang theo là cái nền. */
-  headerSpacer: { width: 40, height: 40 },
-  title: { ...type.title2, flex: 1, textAlign: 'center', color: colors.foreground },
 
   // The number and the ruler sit together in the middle of the screen
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },

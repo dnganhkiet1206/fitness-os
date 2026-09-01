@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
@@ -447,24 +448,21 @@ export default function WorkoutBuilderSheet() {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       {/* ── header: the step you are on, and the way back out of it ── */}
-      <View style={styles.header}>
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={mode === 'pick' ? i18n.a11yClose : i18n.a11yBack}
-          hitSlop={8}
-          onPress={goBack}
-          style={styles.headerBtn}>
-          <Icon icon={mode === 'pick' ? X : ArrowLeft} size={18} color={colors.foreground} />
-        </PressScale>
+      {/*
+        Chỗ trống cân tiêu đề ở đây từng dùng lại `styles.headerBtn`, tức là
+        mang theo cả nền của nút: một đĩa tròn xám đặc ở góc phải, bấm không có
+        gì. Đúng lỗi mà `weight-goal-dialog` cũng đã mắc, độc lập với nhau —
+        hai lần cùng một sai sót là lý do cái đầu trang này thành một chỗ.
 
-        <View style={styles.headerTitle}>
-          <Text style={styles.title}>{i18n.nWbTitle}</Text>
-          <Text style={styles.subtitle} numberOfLines={1}>{subtitle}</Text>
-        </View>
-
-        {/* Balances the button so the title sits centred */}
-        <View style={styles.headerBtn} />
-      </View>
+        Icon là X hay mũi tên tuỳ bước: từ bước hai, nút trái quay LẠI chứ
+        không đóng, và một cái X ở đó vứt mất buổi tập đang dựng dở.
+      */}
+      <SheetHeader
+        title={i18n.nWbTitle}
+        subtitle={subtitle}
+        icon={mode === 'pick' ? X : ArrowLeft}
+        onClose={goBack}
+      />
 
       {/* Two segments, the one you are on lit. It is the cheapest way to say
           "this is short" — the old form gave no sense of how much was left. */}
@@ -781,14 +779,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     height: 56,
-  },
-  headerBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.secondary,
   },
   headerTitle: { flex: 1, alignItems: 'center' },
   title: { ...type.headline, color: colors.foreground },

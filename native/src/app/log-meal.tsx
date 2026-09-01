@@ -21,6 +21,7 @@ import {
 import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
+import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -534,8 +535,8 @@ export default function LogMealSheet() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <SheetHeader title={i18n.nLogMealTitle} onClose={nav.back} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{i18n.nLogMealTitle}</Text>
 
         {/* Meal type */}
         <PickRow

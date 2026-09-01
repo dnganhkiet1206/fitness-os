@@ -1,5 +1,3 @@
-import * as Haptics from 'expo-haptics';
-import { X } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
@@ -12,10 +10,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { PressScale } from '@/components/ascnd/press-scale';
-import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
-import { useI18n } from '@/hooks/use-app-settings';
+import { SheetHeader } from '@/components/ascnd/sheet-header';
+import { colors, spacing, type } from '@/constants/ascnd';
 
 /**
  * The frame every "fill this in" sheet in the app uses.
@@ -31,9 +27,14 @@ import { useI18n } from '@/hooks/use-app-settings';
  * ── full screen, with a button ──
  *
  * A bottom sheet is dismissed by dragging it down, and that is a gesture you
- * either know or you do not. This fills the screen and closes with a 34pt
- * button at the top. On iOS `pageSheet` still slides in and still drags away
- * for whoever reaches for it — nothing depends on it.
+ * either know or you do not. This fills the screen and closes with a button at
+ * the top. On iOS `pageSheet` still slides in and still drags away for whoever
+ * reaches for it — nothing depends on it.
+ *
+ * Cái đầu trang ấy nay là `SheetHeader`, dùng chung với mọi sheet khác: thanh
+ * kéo ở giữa, nút đóng bên trái, tiêu đề căn giữa. Trước đây tệp này tự dựng
+ * lấy và đặt tiêu đề bên TRÁI, nên hai sheet cạnh nhau trong cùng một app mở
+ * ra bằng hai bố cục khác nhau.
  *
  * The primary action is pinned at the bottom, above the home indicator, where
  * the thumb already is after filling in the last field. The body scrolls
@@ -62,26 +63,12 @@ export function FormSheet({
   footer?: ReactNode;
   children: ReactNode;
 }) {
-  const i18n = useI18n();
   const insets = useSafeAreaInsets();
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.head}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
-          <PressScale
-            accessibilityRole="button"
-            accessibilityLabel={i18n.a11yClose}
-            hitSlop={12}
-            onPress={() => {
-              Haptics.selectionAsync();
-              onClose();
-            }}
-            style={styles.close}>
-            <Icon icon={X} size={18} color={colors.foreground} />
-          </PressScale>
-        </View>
+        <SheetHeader title={title} onClose={onClose} />
 
         {belowHeader}
 
@@ -121,23 +108,6 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.background },
-  head: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-  },
-  title: { ...type.title2, color: colors.foreground, flex: 1 },
-  close: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.secondary,
-  },
   body: { flex: 1 },
   bodyContent: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md },
   foot: {

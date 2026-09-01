@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { Check } from 'lucide-react-native';
@@ -119,8 +120,8 @@ export default function LogBiometricsSheet() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <SheetHeader title={i18n.logBioTitle} onClose={nav.back} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{i18n.logBioTitle}</Text>
         {/*
           Vì sao số vừa nhập chưa hiện lên thẻ điểm sẵn sàng.
 

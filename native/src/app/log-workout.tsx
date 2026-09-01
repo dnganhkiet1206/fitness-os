@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 
 import { PickRow } from '@/components/ascnd/pick-row';
+import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { MusicLaunch } from '@/components/ascnd/music-launch';
 import { Icon } from '@/components/ascnd/icon';
@@ -662,8 +663,8 @@ export default function LogWorkoutSheet() {
     <KeyboardAvoidingView
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <SheetHeader title={i18n.nLogWorkoutTitle} onClose={nav.back} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{i18n.nLogWorkoutTitle}</Text>
 
         {todaysPlan ? (
           <PressScale

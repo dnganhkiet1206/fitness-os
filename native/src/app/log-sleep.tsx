@@ -20,6 +20,7 @@ import {
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
+import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -188,8 +189,8 @@ export default function LogSleepSheet() {
       layout complaint — it reads as a button that does not work the first time.
     */
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <SheetHeader title={i18n.nLogSleepTitle} onClose={nav.back} />
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Text style={styles.title}>{i18n.nLogSleepTitle}</Text>
 
       {/* Bed/wake times — compact pickers in settings-style rows (the old
           half-width spinners clipped horizontally) */}

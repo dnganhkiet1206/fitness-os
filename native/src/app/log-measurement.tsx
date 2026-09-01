@@ -17,6 +17,7 @@ import {
 
 import { Check } from 'lucide-react-native';
 
+import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -164,8 +165,8 @@ export default function LogMeasurementSheet() {
 
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <SheetHeader title={i18n.progressAddMeasurement} onClose={nav.back} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.title}>{i18n.progressAddMeasurement}</Text>
 
         <View style={styles.dateRow}>
           <Text style={styles.fieldLabel}>{i18n.progressDate}</Text>

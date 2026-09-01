@@ -20,6 +20,7 @@ import {
 
 import { PickRow } from '@/components/ascnd/pick-row';
 import { Segmented } from '@/components/ascnd/segmented';
+import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -310,24 +311,32 @@ export default function EditProfileSheet() {
 
   return (
     <View style={styles.root}>
-      <View style={styles.header}>
-        <Pressable hitSlop={8} onPress={() => nav.back()}>
-          <Text style={styles.headerCancel}>{i18n.nCancel}</Text>
-        </Pressable>
-        <Text style={styles.headerTitle}>{i18n.settingsPersonalInfo}</Text>
-        <Pressable
-          hitSlop={8}
-          onPress={() => save.mutate()}
-          disabled={save.isPending || save.isSuccess || statsBad}>
-          {save.isSuccess ? (
-            <Icon icon={Check} size={20} color={colors.primary} strokeWidth={3} />
-          ) : save.isPending ? (
-            <ActivityIndicator color={colors.primary} size="small" />
-          ) : (
-            <Text style={[styles.headerSave, statsBad && styles.headerSaveOff]}>{i18n.save}</Text>
-          )}
-        </Pressable>
-      </View>
+      {/*
+        Màn này giữ nút LƯU của nó, và đó là lý do `SheetHeader` có khe `right`.
+
+        Chữ "Huỷ" thành nút X — cùng hành động, cùng chỗ, và nay giống mọi sheet
+        khác trong app. Nút Lưu thì không thể bỏ: đây là màn duy nhất trong tám
+        màn dạng sheet mà đóng lại KHÔNG lưu, nên một cái X đứng một mình sẽ là
+        cách duy nhất ra khỏi màn và nó vứt hết những gì vừa nhập.
+      */}
+      <SheetHeader
+        title={i18n.settingsPersonalInfo}
+        onClose={nav.back}
+        right={
+          <Pressable
+            hitSlop={8}
+            onPress={() => save.mutate()}
+            disabled={save.isPending || save.isSuccess || statsBad}>
+            {save.isSuccess ? (
+              <Icon icon={Check} size={20} color={colors.primary} strokeWidth={3} />
+            ) : save.isPending ? (
+              <ActivityIndicator color={colors.primary} size="small" />
+            ) : (
+              <Text style={[styles.headerSave, statsBad && styles.headerSaveOff]}>{i18n.save}</Text>
+            )}
+          </Pressable>
+        }
+      />
 
       {/*
         This form runs from the name field down to the two sleep-time pickers —
