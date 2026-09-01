@@ -143,7 +143,7 @@ const FIND_STAGE = `
     return s.overflow === 'hidden' && s.position === 'relative' && b.width > 300 && b.height > 180;
   }))()`;
 
-async function swipe(page, dir) {
+async function swipe(page, dir, quiet = false) {
   const ok = await page.evaluate(`!!${FIND_STAGE}`);
   if (!ok) return null;
 
@@ -177,6 +177,7 @@ async function swipe(page, dir) {
   await page.mouse.up();
   await page.waitForTimeout(1600);
 
+  if (quiet) return { bậc: 0, khựng: 0, rớt: 0, đổiCao: 0, chạy: 0 };
   const f = await page.evaluate('window.__f');
   return read(f);
 }
@@ -228,19 +229,37 @@ build();
 const { server, port } = await serve();
 const chromium = loadChromium();
 
+/*
+  Đi hết TỪNG CẶP kề nhau, không phải một bước từ trang đầu.
+
+  Bản đầu chỉ vuốt một bước rồi kết luận cho cả deck. Nó bỏ sót đúng thứ cần
+  tìm: người dùng chỉ vào THẺ NƯỚC, và trang nước là trang duy nhất có hai ô
+  thay vì bốn (`hero-pages.tsx` ghi rõ: "Nước có đúng một phép đo và một mục
+  tiêu"). Nếu chiều cao sân khấu nhảy thì nó nhảy MẠNH NHẤT ở cặp có chênh
+  lệch chiều cao lớn nhất — và một phép đo chỉ nhìn bước đầu tiên sẽ báo
+  "không sao" trong khi bước thứ ba giật.
+
+  Nên đo từng bước riêng: bước 0→1, 1→2, 2→3, rồi ngược lại.
+*/
+const PAGES = 4;
 const rows = [];
-for (const dir of ['trái', 'phải']) {
-  const got = [];
-  for (let i = 0; i < runs; i++) {
-    const { browser, page } = await openPage(chromium);
-    await page.goto(`http://localhost:${port}/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
-    await page.waitForTimeout(9000);
-    const r = await swipe(page, dir);
-    if (r) got.push(r);
-    await browser.close();
-    process.stdout.write(r ? '.' : 'x');
+for (let step = 0; step < PAGES - 1; step++) {
+  for (const dir of ['trái', 'phải']) {
+    const got = [];
+    for (let i = 0; i < runs; i++) {
+      const { browser, page } = await openPage(chromium);
+      await page.goto(`http://localhost:${port}/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+      await page.waitForTimeout(9000);
+      /* Đi tới mép của bước đang đo mà KHÔNG đo, rồi mới đo đúng một bước. */
+      const lead = dir === 'trái' ? step : step + 1;
+      for (let k = 0; k < lead; k++) { await swipe(page, 'trái', true); await page.waitForTimeout(400); }
+      const r = await swipe(page, dir);
+      if (r) got.push(r);
+      await browser.close();
+      process.stdout.write(r ? '.' : 'x');
+    }
+    rows.push({ dir, step, got });
   }
-  rows.push({ dir, got });
 }
 server.close();
 console.log('');
@@ -255,12 +274,13 @@ const mid = (xs) => { const v = [...xs].sort((p, q) => p - q); return v.length ?
 const rng = (xs) => (xs.length ? `${Math.min(...xs)}–${Math.max(...xs)}` : '—');
 
 console.log(`\nmỗi hướng ${runs} lượt; số in ra là TRUNG VỊ, trong ngoặc là min–max\n`);
-console.log('hướng   bậc chiều cao      khựng        khung rớt     biên độ cao   thời gian chạy');
+console.log('bước    hướng   bậc chiều cao      khựng        khung rớt     biên độ cao   thời gian chạy');
 for (const r of rows) {
-  if (!r.got.length) { console.log(r.dir.padEnd(8) + 'không vuốt được'); continue; }
+  const tag = (r.dir === 'trái' ? `${r.step}→${r.step + 1}` : `${r.step + 1}→${r.step}`).padEnd(8);
+  if (!r.got.length) { console.log(tag + r.dir.padEnd(8) + 'không vuốt được'); continue; }
   const c = (k) => r.got.map((g) => g[k]);
   console.log(
-    r.dir.padEnd(8) +
+    tag + r.dir.padEnd(8) +
       `${mid(c('bậc'))} (${rng(c('bậc'))})`.padEnd(17) +
       `${mid(c('khựng'))} (${rng(c('khựng'))})`.padEnd(13) +
       `${mid(c('rớt'))} (${rng(c('rớt'))})`.padEnd(14) +
