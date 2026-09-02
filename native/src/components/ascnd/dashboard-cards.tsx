@@ -19,7 +19,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
-import { MACRO_BAR, MACRO_TINT, colors, radius, spacing } from '@/constants/ascnd';
+import { MACRO_BAR, MACRO_TINT, colors, glass, radius, spacing } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -1204,11 +1204,31 @@ const styles = StyleSheet.create({
     // there are three. See `NutritionCard`.
     flexGrow: 1,
     gap: 8,
-    backgroundColor: 'rgba(24,24,27,0.2)',
+    /*
+      ── cái NỀN không bao giờ vẽ được ô này, chỉ cái VIỀN vẽ được ──
+
+      Ô macro trước đây có nền `rgba(24,24,27,0.2)` và viền `rgba(43,43,49,0.2)`
+      — thiết kế ĐÃ có ý cho mỗi ô một cái vỏ, nhưng hai con số 0.2 làm cái vỏ
+      biến mất. Người dùng báo bốn ô "lọt thỏm vào thẻ chính".
+
+      Cách sửa hiển nhiên là nâng alpha. Đo thì nó chết: nền ô so với mặt thẻ
+      #0e0e11 ra 1.015 ở alpha 0.2 và chỉ tới 1.077 ở alpha 0.9 — mắt không
+      phân biệt được. Thử hướng ngược lại, nền TỐI hơn thẻ, cũng chỉ 1.045.
+      Thẻ và mọi nền ứng viên đều gần như đen; chênh lệch không có chỗ để tồn
+      tại.
+
+      Viền thì khác: cùng phép đo cho 1.048 ở mức hiện tại và 1.46 ở trắng 14%.
+      Nên thứ phải nâng là viền, không phải nền.
+
+      `glass.bg` + `glass.border` là cặp "tấm kính" app đã dùng cho mọi khối
+      nổi trên nền tối — không phải màu tôi bịa, và nó giữ ô macro cùng ngôn
+      ngữ với `toolRow`, `tipsCard`, `group` của danh sách thực phẩm.
+    */
+    backgroundColor: glass.bg,
     borderRadius: radius.sm,
     padding: spacing.sm + 4,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.2)',
+    borderColor: glass.border,
   },
   macroLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
   macroValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
