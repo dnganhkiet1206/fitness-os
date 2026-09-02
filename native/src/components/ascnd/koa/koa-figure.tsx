@@ -107,16 +107,33 @@ const AnimatedG = Animated.createAnimatedComponent(
  * It used to be 30 — a deliberate halving of every downstream cost, since the
  * clock drives every animated layer's worklet run, matrix maths and native
  * prop commit. At the user's request (2026-07-29) it now runs at the display's
- * own rate: 120 is above every current panel, so `FRAME_MS` (8.3ms) sits below
- * a 120Hz frame (8.3ms) and a 60Hz one (16.7ms) alike, and `stepClock` advances
- * on every frame. The result is 60fps on a 60Hz screen and 120fps on ProMotion.
+ * own rate, so `stepClock` advances only on the frames this allows.
  *
- * The room's own live layers already run at the display rate (`withRepeat`), so
- * this brings the character up to match them. It is the one number to turn back
- * down if a device runs hot — the scroll freeze already takes the figure out of
- * the budget while the page moves, so the cost is only paid on a still screen.
+ * ── 120 → 60, và vì sao ──
+ *
+ * Con số này từng là 120, "to bring the character up to match" các lớp live của
+ * phòng, kèm đúng một câu dặn: *"It is the one number to turn back down if a
+ * device runs hot."* Báo cáo ấy đã tới: app nóng khi mở lâu trên iPhone 16 Pro
+ * Max — tức một màn ProMotion, đúng loại máy duy nhất mà 120 khác 60.
+ *
+ * Đo trên harness, Today ĐỨNG YÊN 8 giây không chạm gì: ~696 lần ghi style mỗi
+ * giây, và năm phần tử đầu bảng đều là nhân vật này. Nó là thứ chạy liên tục
+ * lớn nhất trên màn hình mà người ta để mở.
+ *
+ * Câu cuối của đoạn cũ cũng cần đọc lại: *"the cost is only paid on a still
+ * screen"* — được viết như một sự trấn an, nhưng màn hình đứng yên CHÍNH LÀ
+ * trạng thái của một app đang mở lâu. Nó không phải ngoại lệ, nó là mặc định.
+ *
+ * 60 chứ không thấp hơn: nhịp thở và cú nghiêng người thì 30 cũng đủ, nhưng cú
+ * chớp mắt chỉ dài hơn một phần mười giây — ở 30fps nó còn ba khung hình và đọc
+ * ra là giật. 60 giữ nguyên mọi thứ mắt thấy được và bỏ đúng một nửa số lần
+ * tính lại trên máy ProMotion. Trên máy 60Hz thì không đổi gì cả.
+ *
+ * Đây là nửa đo được của bài toán nhiệt, không phải cả bài toán: nhân vật vẫn
+ * chạy MÃI khi màn hình đứng yên, kể cả lúc đã cuộn ra khỏi tầm nhìn. Lớp aura
+ * đã có luật "ngoài màn thì dừng"; nhân vật thì chưa.
  */
-const FIGURE_FPS = 120;
+const FIGURE_FPS = 60;
 const FRAME_MS = 1000 / FIGURE_FPS;
 
 export { KOA_ASPECT, KOA_VIEWBOX } from '@/components/ascnd/koa/koa-frame';

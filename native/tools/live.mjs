@@ -537,6 +537,89 @@ async function pressEverything(page, label, problems) {
 const SCENARIOS = [
   {
     /*
+      Màn hình ĐỨNG YÊN thì cái gì vẫn đang chạy?
+
+      ── vì sao bước này tồn tại ──
+
+      Người dùng báo app "rất nóng khi mở lâu" trên iPhone 16 Pro Max. Nhiệt là
+      việc chạy liên tục, và không một ảnh chụp nào thấy được nó: một vòng lặp
+      vĩnh viễn trông y hệt một màn hình đứng im.
+
+      Nên bước này ngồi yên trên Today, không chạm gì, và ĐẾM số lần style bị
+      ghi lại. Đo lần đầu: ~696 lần mỗi giây, năm phần tử đầu bảng đều là nhân
+      vật, cộng một chấm nhịp 60/giây. Đó là thứ đang sinh nhiệt.
+
+      ── ngưỡng là một NGÂN SÁCH, không phải một con số đẹp ──
+
+      Nó không bắt app phải đứng im: nhân vật có quyền thở, chấm trạng thái có
+      quyền nhịp. Nó bắt số thứ đang chạy phải ĐẾM ĐƯỢC — thêm một vòng lặp
+      vĩnh viễn nữa thì bước này đỏ, và người thêm phải nói ra vì sao.
+
+      Ngưỡng SỐ PHẦN TỬ là 6, đúng bằng con số đo được, và nó chặt như vậy vì
+      bản đầu không chặt: tôi đặt 9 để "nới một nửa", rồi phép thử ngược gỡ cổng
+      của lớp aura ra — thêm đúng một vòng lặp vĩnh viễn — và bước này vẫn XANH.
+      Một cái lưới có lỗ to bằng con cá nó phải bắt thì không phải cái lưới.
+
+      Sáu là: năm phần tử của nhân vật, cộng chấm nhịp của thẻ sẵn sàng. Thêm
+      MỘT thứ chạy mãi nữa là đỏ, và người thêm phải nói ra vì sao — đó chính là
+      việc của bước này. Con số này được phép tăng; nó không được phép tăng
+      trong im lặng.
+
+      Ngưỡng lần-ghi-mỗi-giây nới hơn (900 so với ~700 đo được) vì nó thật sự
+      dao động giữa hai lần chạy; số phần tử thì không.
+
+      ── và vì sao harness KHÔNG thấy hết ──
+
+      Web chạy 60Hz, nên `FIGURE_FPS` 120 hay 60 ở đây ra cùng một con số. Bước
+      này canh "có bao nhiêu thứ chạy mãi", không canh "chúng chạy nhanh bao
+      nhiêu". Nửa sau chỉ máy thật trả lời được.
+    */
+    name: 'đứng yên: không có vòng lặp vĩnh viễn nào mới',
+    route: '/', mode: 'full',
+    async run(page) {
+      /* Chờ mọi hiệu ứng VÀO chạy xong — chúng có quyền động, và đếm chúng là
+         đếm nhầm. Cascade dài nhất trong app là 600ms. */
+      await page.waitForTimeout(8000);
+      const out = await page.evaluate((secs) => new Promise((done) => {
+        const hits = new Map();
+        const obs = new MutationObserver((ms) => {
+          for (const m of ms) {
+            if (m.type !== 'attributes') continue;
+            const el = m.target;
+            if (!(el instanceof Element)) continue;
+            if (!el.__idleKey) {
+              const r = el.getBoundingClientRect();
+              el.__idleKey = `${el.tagName.toLowerCase()} ${Math.round(r.width)}×${Math.round(r.height)} @${Math.round(r.x)},${Math.round(r.y)}`;
+            }
+            hits.set(el.__idleKey, (hits.get(el.__idleKey) ?? 0) + 1);
+          }
+        });
+        obs.observe(document.body, {
+          attributes: true, subtree: true,
+          attributeFilter: ['style', 'transform', 'd', 'opacity', 'fill', 'cx', 'cy', 'r', 'points'],
+        });
+        setTimeout(() => {
+          obs.disconnect();
+          const rows = [...hits].sort((a, b) => b[1] - a[1]);
+          done({ n: rows.length, total: rows.reduce((s, r) => s + r[1], 0), top: rows.slice(0, 4) });
+        }, secs * 1000);
+      }), 5);
+
+      const perSec = Math.round(out.total / 5);
+      if (out.n > 6) {
+        return `có ${out.n} phần tử vẫn động khi màn hình đứng yên (ngân sách 6: năm của nhân vật ` +
+          `cộng chấm nhịp thẻ sẵn sàng). Nặng nhất: ` +
+          out.top.map(([k, v]) => `${k} ${Math.round(v / 5)}/s`).join('; ');
+      }
+      if (perSec > 900) {
+        return `khi đứng yên vẫn ghi ${perSec} lần style mỗi giây (ngân sách 900). Nặng nhất: ` +
+          out.top.map(([k, v]) => `${k} ${Math.round(v / 5)}/s`).join('; ');
+      }
+      return null;
+    },
+  },
+  {
+    /*
       Năm thẻ hero chồng khít lên nhau, và không có luật tĩnh nào thấy được.
 
       ── lỗi ──
