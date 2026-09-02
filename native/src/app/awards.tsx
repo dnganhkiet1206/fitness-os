@@ -90,6 +90,98 @@ const TIER_CONFIG: Record<string, Metal> = {
   platinum: { color: '#b45cff', light: '#ddb0ff', dark: '#6b2fa0', dim: 'rgba(180,92,255,0.12)', label: 'Platinum' },
 };
 
+/**
+ * Dáng huy chương, sinh bằng CÔNG THỨC — không phải đường cong vẽ tay.
+ *
+ * ── vì sao ràng buộc này ──
+ *
+ * Hai lượt trước tôi tự viết path Bézier cho ngọn lửa, giọt nước và trăng
+ * khuyết. Cả hai lượt đều ra hình méo, vì hệ số điều khiển là tôi đoán và
+ * "đúng cú pháp" không có nghĩa là "vẽ ra đẹp". Đa giác và hoa thị thì khác:
+ * đỉnh nằm trên đường tròn theo lượng giác, nên chúng luôn cân đối, và đổi
+ * bán kính là cả bộ theo.
+ *
+ * ── và vì sao đo bán kính trong trước khi chọn ──
+ *
+ * Mặt đĩa phải chứa được con số. Bán kính trong của từng hình đo trước khi
+ * gán: lục giác 48px, bát giác 52px, thoi 40px, tia mặt trời 45px — đều lọt
+ * "365" ở 21pt (~36px). Sao 5 cánh chỉ 25px, và nó CHỈ dùng cho miền kỷ lục
+ * nơi con số lớn nhất là "5". Lượt trước tôi chọn trăng khuyết mà không hỏi
+ * nó có chứa nổi con số không; nó không.
+ *
+ * ── ý nghĩa nằm ở đâu ──
+ *
+ *     chuỗi ngày   tia mặt trời   — toả ra, cháy tiếp
+ *     buổi tập     khiên          — sức mạnh
+ *     kỷ lục       sao năm cánh   — đỉnh
+ *     bước chân    lục giác       — biển chỉ đường
+ *     dinh dưỡng   bát giác       — cái đĩa
+ *     nước         hình thoi      — giọt, dựng theo hình học
+ *     giấc ngủ     vuông bo tròn  — cái gối
+ *     cân nặng     hình tròn      — mặt đồng hồ cân
+ */
+function polyPath(r: number, sides: number, rotate = -Math.PI / 2): string {
+  const pts: string[] = [];
+  for (let i = 0; i < sides; i++) {
+    const a = rotate + (i * 2 * Math.PI) / sides;
+    pts.push(`${(36 + r * Math.cos(a)).toFixed(2)},${(36 + r * Math.sin(a)).toFixed(2)}`);
+  }
+  return `M ${pts.join(' L ')} Z`;
+}
+
+/** Hoa thị / tia: bán kính so le giữa `r` và `r * inner`. */
+function starPath(r: number, points: number, inner: number): string {
+  const pts: string[] = [];
+  for (let i = 0; i < points * 2; i++) {
+    const rad = i % 2 === 0 ? r : r * inner;
+    const a = -Math.PI / 2 + (i * Math.PI) / points;
+    pts.push(`${(36 + rad * Math.cos(a)).toFixed(2)},${(36 + rad * Math.sin(a)).toFixed(2)}`);
+  }
+  return `M ${pts.join(' L ')} Z`;
+}
+
+/** Vuông bo tròn mạnh — cái gối. */
+function squirclePath(r: number): string {
+  const k = r * 0.55;
+  const a = r * 0.92;
+  return [
+    `M ${36 - a + k} ${36 - a}`, `L ${36 + a - k} ${36 - a}`,
+    `Q ${36 + a} ${36 - a} ${36 + a} ${36 - a + k}`, `L ${36 + a} ${36 + a - k}`,
+    `Q ${36 + a} ${36 + a} ${36 + a - k} ${36 + a}`, `L ${36 - a + k} ${36 + a}`,
+    `Q ${36 - a} ${36 + a} ${36 - a} ${36 + a - k}`, `L ${36 - a} ${36 - a + k}`,
+    `Q ${36 - a} ${36 - a} ${36 - a + k} ${36 - a}`, 'Z',
+  ].join(' ');
+}
+
+/** Khiên: vai vuông trên, mũi dưới. */
+function shieldPath(r: number): string {
+  const w = r * 0.9;
+  return [
+    `M ${36 - w} ${36 - r + r * 0.16}`,
+    `Q ${36 - w} ${36 - r} ${36 - w * 0.8} ${36 - r}`,
+    `L ${36 + w * 0.8} ${36 - r}`,
+    `Q ${36 + w} ${36 - r} ${36 + w} ${36 - r + r * 0.16}`,
+    `L ${36 + w} ${36 - r * 0.3}`,
+    `Q ${36 + w} ${36 + r * 0.3} ${36} ${36 + r}`,
+    `Q ${36 - w} ${36 + r * 0.3} ${36 - w} ${36 - r * 0.3}`,
+    'Z',
+  ].join(' ');
+}
+
+function medalPath(type: string, r: number): string | null {
+  switch (type) {
+    case 'streak': return starPath(r, 12, 0.8);
+    case 'first_workout':
+    case 'volume_milestone': return shieldPath(r);
+    case 'pr': return starPath(r, 5, 0.45);
+    case 'steps_goal': return polyPath(r, 6);
+    case 'nutrition': return polyPath(r, 8, -Math.PI / 8);
+    case 'water': return polyPath(r, 4, -Math.PI / 2);
+    case 'sleep': return squirclePath(r);
+    default: return null; /* cân nặng: hình tròn */
+  }
+}
+
 /*
   Chưa mở thì là kim loại XÁM, không phải kim loại có hạng bị làm mờ.
 
@@ -204,6 +296,12 @@ function MedalCard({
   */
   const glyph = isEarned ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.55)';
 
+  /* Dáng của miền ở hai bán kính; `null` là hình tròn — xem `medalPath`. Mọi
+     dáng đều đối xứng quanh 36,36 nên chữ vẫn đặt ở tâm, khác hẳn giọt nước và
+     ngọn lửa của lượt trước vốn dồn khối lượng về một đầu. */
+  const rim = medalPath(award.type, 33);
+  const face = medalPath(award.type, 28);
+
 
   /* Vòng tiến độ ở r=34, ngay ngoài vành r=33. */
   const R = 34;
@@ -277,10 +375,24 @@ function MedalCard({
             </RadialGradient>
           </Defs>
 
-          <Circle cx={36} cy={36} r={33} fill={`url(#rim-${award.key})`} />
-          <Circle cx={36} cy={36} r={28} fill={`url(#face-${award.key})`} />
+          {/* Vành và mặt CÙNG một dáng, khác bán kính — mọi hình đều có bề dày
+              cạnh, không riêng hình tròn. */}
+          {rim ? (
+            <Path d={rim} fill={`url(#rim-${award.key})`} />
+          ) : (
+            <Circle cx={36} cy={36} r={33} fill={`url(#rim-${award.key})`} />
+          )}
+          {face ? (
+            <Path d={face} fill={`url(#face-${award.key})`} />
+          ) : (
+            <Circle cx={36} cy={36} r={28} fill={`url(#face-${award.key})`} />
+          )}
           {/* Lát sáng: một cung ở phần tư trên-trái, mờ dần bằng độ trong. */}
-          <Path d="M 13 30 A 24 24 0 0 1 44 13 A 28 28 0 0 0 13 44 Z" fill="rgba(255,255,255,0.20)" />
+          {/* Vệt sáng bám theo đường tròn r=28, nên chỉ đúng cho mặt TRÒN. Các
+              dáng khác đã có chuyển màu xuyên tâm làm việc đó. */}
+          {!face && (
+            <Path d="M 13 30 A 24 24 0 0 1 44 13 A 28 28 0 0 0 13 44 Z" fill="rgba(255,255,255,0.20)" />
+          )}
 
           {/* Vòng tiến độ nằm NGOÀI đĩa, nên nó không đè lên mặt kim loại. */}
           {!isEarned && pct > 0 && (
@@ -531,12 +643,26 @@ const styles = StyleSheet.create({
   medalRing: { width: 72, height: 72 },
   /* Con số trên mặt đĩa: đậm, chữ số đều bề rộng, bóp sát để "365" và "250"
      vẫn nằm gọn trong 56 điểm đường kính mặt. */
+  /*
+    Con số DẬP vào kim loại, không đặt lên trên.
+
+    Một bóng tối lệch xuống một điểm ảnh cho nét chữ một cạnh dưới — đúng thứ
+    xảy ra khi chữ được dập chìm và ánh sáng đến từ trên trái, cùng hướng với
+    vệt sáng và với chuyển màu xuyên tâm của mặt đĩa. Không có nó thì con số
+    trông như dán lên.
+
+    Nét 900 và giãn -1: ở 22 điểm trong đường kính 56, "365" cần bóp sát mới
+    còn khoảng thở hai bên.
+  */
   medalMark: {
-    fontSize: 21,
-    fontWeight: '800',
-    letterSpacing: -0.8,
+    fontSize: 22,
+    fontWeight: '900',
+    letterSpacing: -1,
     fontVariant: ['tabular-nums'],
     marginTop: -1,
+    textShadowColor: 'rgba(0,0,0,0.45)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
   },
   medalIcon: {
     position: 'absolute',
