@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
@@ -452,9 +453,27 @@ function MedalCard({
       */}
       {showCount ? (
         <View style={styles.barWrap}>
-          <View style={styles.barTrack}>
-            <View style={[styles.barFill, { width: `${Math.max(2, pct * 100)}%`, backgroundColor: tier.color }]} />
-          </View>
+          {/*
+            `<ProgressBar>`, không phải một bản chép thứ bảy.
+
+            Bản đầu dựng track + fill tại chỗ và cho fill một `width` phần trăm.
+            Hai thứ hỏng cùng lúc: một `width` phần trăm KHÔNG chạy hoạt hoạ nên
+            thanh nhảy cóc mỗi lần con số đổi, và nếu có cho nó chạy thì đó là
+            một thuộc tính bố cục — layout phải tính lại mỗi khung hình.
+            `progress-bar.tsx` đã đo và giải quyết đúng hai chuyện đó một lần
+            cho cả app; `tools/progress-bar.mjs` tồn tại vì đây là bản chép thứ
+            bảy chứ không phải thứ nhất.
+
+            Sàn 2% được GIỮ, và nó chuyển sang chỗ gọi vì nó là một quyết định
+            về màn hình này: một thanh có điểm đầu và điểm cuối nhìn thấy được
+            thì 1/100 phải đọc ra là "mới bắt đầu", không phải "hình bị sứt".
+          */}
+          <ProgressBar
+            pct={Math.max(0.02, pct)}
+            color={tier.color}
+            height={4}
+            trackColor="rgba(255,255,255,0.08)"
+          />
           <Text style={styles.medalProgress}>
             {current!.toLocaleString(locale)} / {need!.toLocaleString(locale)}
           </Text>
@@ -651,16 +670,8 @@ const styles = StyleSheet.create({
   /* Số đứng riêng một dòng, chữ số đều bề rộng để cột không nhảy khi con số
      đổi từ 9 sang 10. */
   barWrap: { width: '100%', alignItems: 'center', gap: 4, marginTop: 2 },
-  barTrack: {
-    width: '100%',
-    height: 4,
-    borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    overflow: 'hidden',
-  },
   /* `width` là phần trăm nên nó co theo thẻ; `minWidth` 2% để mức 1/365 vẫn
      hiện ra một đầu mút thay vì biến mất hoàn toàn. */
-  barFill: { height: '100%', borderRadius: radius.full },
   medalProgress: {
     ...type.footnote,
     fontWeight: '700',
