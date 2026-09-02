@@ -91,7 +91,17 @@ export const DEFAULT_CONFIG: WidgetConfig = {
     },
     {
       id: 'fitness',
-      title: { en: 'Fitness', vi: 'Tập luyện' },
+      /* "Thể lực", KHÔNG phải "Tập luyện".
+
+         Tiếng Anh không lặp: nhóm là `Fitness`, thẻ bên trong là `TRAINING`.
+         Tiếng Việt thì cả hai cùng dịch thành "Tập luyện", nên trên màn Hôm
+         nay chữ ấy hiện hai lần liên tiếp — và tab dưới cùng cũng đã tên "Tập
+         luyện", thành ba chỗ. Đây là đụng độ khi DỊCH, không phải lỗi cấu
+         trúc, nên sửa ở chuỗi chứ không ở bố cục.
+
+         Nhóm chứa buổi tập, trạng thái tập và cân nặng — "Thể lực" phủ đúng cả
+         ba, còn "Tập luyện" chỉ phủ cái đầu. */
+      title: { en: 'Fitness', vi: 'Thể lực' },
       icon: '💪',
       widgets: ['training', 'workout-status', 'weight'],
     },

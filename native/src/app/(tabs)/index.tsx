@@ -47,6 +47,7 @@ import {
 } from '@/components/ascnd/dashboard-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { iconTint } from '@/constants/icon-tint';
 import { PeekHost } from '@/components/ascnd/card-peek';
 import { AccountAvatar } from '@/components/ascnd/account-avatar';
 import { DragReorder } from '@/components/ascnd/drag-reorder';
@@ -247,12 +248,30 @@ const HERO_COVER_FRACTION = 0.66;
 /* `intensity` là một prop chứ không phải một style, nên nó phải đi qua
    `animatedProps`; `useAnimatedStyle` không chạm tới được. */
 
+/*
+  Màu lấy từ `iconTint`, KHÔNG gõ tay ở đây.
+
+  Bảng này từng tự khai màu cho mỗi nhóm, và nó lệch với `constants/icon-tint`
+  ngay ở cái tạ: bảng tint nói `Dumbbell` là TRAINING (xanh dương), bảng này
+  nói cam. Trên màn Hôm nay hai cái tạ nằm cách nhau vài chục điểm ảnh — một
+  cam ở tiêu đề nhóm, một xanh ở dòng buổi tập gần nhất — và người dùng chụp
+  lại đúng chỗ đó.
+
+  `icon-tint.ts` TỒN TẠI để chấm dứt chuyện này; comment đầu tệp ấy ghi lại
+  rằng `Dumbbell` từng là bạc ở ba chỗ và xám 35% ở chỗ thứ tư. Bảng này đi
+  vòng qua nó, nên nó lại thành chỗ thứ năm.
+
+  Nếu hai nhóm ra cùng một màu thì đó là tín hiệu đổi ICON của nhóm, không
+  phải đè màu — đè màu là cách bảng tint bị vô hiệu hoá lần nữa.
+*/
 const GROUP_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
-  '❤️': { icon: Heart, color: '#ff4d6d' },
-  '🍎': { icon: Apple, color: colors.readinessGreen },
-  '💪': { icon: Dumbbell, color: colors.metricOrange },
-  '✨': { icon: Sparkles, color: colors.metricPurple },
-  '📌': { icon: Pin, color: colors.metricBlue },
+  '❤️': { icon: Heart, color: iconTint(Heart)! },
+  '🍎': { icon: Apple, color: iconTint(Apple)! },
+  '💪': { icon: Dumbbell, color: iconTint(Dumbbell)! },
+  '✨': { icon: Sparkles, color: iconTint(Sparkles)! },
+  /* `Pin` không có trong bảng tint — nó là ghim, không mang nghĩa miền nào.
+     Nhóm "khác" giữ màu trung tính của chính nó. */
+  '📌': { icon: Pin, color: colors.mutedForeground },
 };
 
 /** Neon-tinted icon chip for a widget group */
