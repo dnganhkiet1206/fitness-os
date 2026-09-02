@@ -74,81 +74,18 @@ export function useRecentAwards(limit = 3) {
    keep working; the list itself lives beside the decision it feeds. */
 export { AWARD_DEFINITIONS };
 
-export function useCheckAwards() {
-  const { user } = useAuth();
-  const { lang } = useAppSettings();
-  const queryClient = useQueryClient();
-  const { data: existingAwards } = useAwards();
-  /* Koa is told about a medal at the one moment the app is certain there is a
-     new one — inside `grant`, after the insert came back without a duplicate
-     error. Detecting it anywhere else would mean polling the awards list and
-     diffing it, which is what the character used to have to do for everything
-     and is why it could not see any of this. */
-  const koaCtx = useKoaContext();
-  const koaCtxRef = useRef(koaCtx);
-  koaCtxRef.current = koaCtx;
-
-  const grant = async (def: AwardDef, metadata: Record<string, unknown> = {}) => {
-    const text = AWARD_TEXT[def.key];
-    const { error } = await supabase.from('awards').insert({
-      user_id: user!.id,
-      award_type: def.type,
-      award_key: def.key,
-      // English is the canonical/history value; native renders by key
-      title: text.title.en,
-      description: text.desc.en,
-      icon: def.icon,
-      tier: def.tier,
-      metadata: metadata as Json,
-    });
-    /*
-      Already earned — on this device, on another one, or by the pass that ran a
-      moment ago. Recognised by SQLSTATE rather than by the English words in
-      PostgreSQL's message: see `isDuplicateAward`, and see `DailyLogRebuildError`
-      and `WrongAccountError`, both of which are classes for the same reason.
-    */
-    if (error && !isDuplicateAward(error)) throw error;
-    if (!error) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      // Fire the confetti overlay in the user's language
-      enqueueAward({
-        title: text.title[lang],
-        description: text.desc[lang],
-        icon: def.icon,
-        tier: def.tier,
-      });
-      /* The medal's own tier is the app's existing answer to "how big was
-         this", so the magnitude is read rather than invented. A personal
-         record is called by its name because the reaction differs: Koa looks
-         at the number first, then at the person. */
-      emitKoa(
-        {
-          id: `award:${def.key}`,
-          kind: def.type === 'pr' ? 'personal_record' : 'award_earned',
-          magnitude: TIER_MAGNITUDE[def.tier] ?? 0.5,
-          label: text.title[lang],
-        },
-        refreshKoaContext(koaCtxRef.current),
-      );
-    }
-  };
-
-  /*
-    ── the four reads the medals are decided from ──
-
-    Each answers `null` when it could not be read, and `null` never reaches a
-    threshold comparison. Every one of these used to be destructured as
-    `const { data: x } = …` with the `error` dropped on the floor, so a failed
-    query became "there is none of that" — which is the same shape
-    `daily-log-service` and `use-health-sync` were both corrected for, and it
-    decides permanent history here.
-
-    `use-mascot-room` runs the very same streak query for the number on screen
-    and does `if (logs.error) throw logs.error`. The two are now consistent: the
-    number and the medal come from one question asked one way.
-  */
-  const readSources = useCallback(async (): Promise<AwardSources> => {
-    const uid = user!.id;
+/**
+ * Mọi con số mà huy chương được quyết định từ đó.
+ *
+ * Đứng RIÊNG, không nằm trong `useCheckAwards`, vì hai chỗ cần nó: lượt xét để
+ * trao, và màn huy chương để vẽ tiến độ trên những cái chưa mở.
+ *
+ * Bản đầu tôi định cho màn tự truy vấn lấy — và đó đúng là "một quy tắc, hai
+ * bản sao" đã làm hỏng nhiều thứ trong repo này. Ngưỡng nằm ở `award-grant` mà
+ * con số hiển thị đọc từ một truy vấn khác thì hai bên sẽ lệch, và người dùng
+ * sẽ thấy "29/30" trên một huy chương đã được trao.
+ */
+export async function readAwardSources(uid: string): Promise<AwardSources> {
 
     const [logsRes, freezeRes, workoutRes, prRes, todayRes, mealRes, waterRes, sleepRes, weighRes] =
       await Promise.all([
@@ -225,7 +162,98 @@ export function useCheckAwards() {
       weighCount: weighRes.error ? null : weighRes.count ?? null,
       steps: todayRes.error ? null : todayRes.data?.steps ?? null,
     };
-  }, [user?.id]);
+}
+
+/**
+ * Tiến độ hiện tại, cho màn huy chương vẽ "12 / 30" lên cái chưa mở.
+ *
+ * `staleTime` một phút: các con số này là tổng cộng dồn, không phải thứ nhảy
+ * từng giây, và màn này không phải chỗ người ta ngồi nhìn chờ nó đổi.
+ */
+export function useAwardProgress() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['award_sources', user?.id],
+    enabled: !!user,
+    staleTime: 60_000,
+    queryFn: () => readAwardSources(user!.id),
+  });
+}
+
+export function useCheckAwards() {
+  const { user } = useAuth();
+  const { lang } = useAppSettings();
+  const queryClient = useQueryClient();
+  const { data: existingAwards } = useAwards();
+  /* Koa is told about a medal at the one moment the app is certain there is a
+     new one — inside `grant`, after the insert came back without a duplicate
+     error. Detecting it anywhere else would mean polling the awards list and
+     diffing it, which is what the character used to have to do for everything
+     and is why it could not see any of this. */
+  const koaCtx = useKoaContext();
+  const koaCtxRef = useRef(koaCtx);
+  koaCtxRef.current = koaCtx;
+
+  const grant = async (def: AwardDef, metadata: Record<string, unknown> = {}) => {
+    const text = AWARD_TEXT[def.key];
+    const { error } = await supabase.from('awards').insert({
+      user_id: user!.id,
+      award_type: def.type,
+      award_key: def.key,
+      // English is the canonical/history value; native renders by key
+      title: text.title.en,
+      description: text.desc.en,
+      icon: def.icon,
+      tier: def.tier,
+      metadata: metadata as Json,
+    });
+    /*
+      Already earned — on this device, on another one, or by the pass that ran a
+      moment ago. Recognised by SQLSTATE rather than by the English words in
+      PostgreSQL's message: see `isDuplicateAward`, and see `DailyLogRebuildError`
+      and `WrongAccountError`, both of which are classes for the same reason.
+    */
+    if (error && !isDuplicateAward(error)) throw error;
+    if (!error) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      // Fire the confetti overlay in the user's language
+      enqueueAward({
+        title: text.title[lang],
+        description: text.desc[lang],
+        icon: def.icon,
+        tier: def.tier,
+      });
+      /* The medal's own tier is the app's existing answer to "how big was
+         this", so the magnitude is read rather than invented. A personal
+         record is called by its name because the reaction differs: Koa looks
+         at the number first, then at the person. */
+      emitKoa(
+        {
+          id: `award:${def.key}`,
+          kind: def.type === 'pr' ? 'personal_record' : 'award_earned',
+          magnitude: TIER_MAGNITUDE[def.tier] ?? 0.5,
+          label: text.title[lang],
+        },
+        refreshKoaContext(koaCtxRef.current),
+      );
+    }
+  };
+
+  /*
+    ── the four reads the medals are decided from ──
+
+    Each answers `null` when it could not be read, and `null` never reaches a
+    threshold comparison. Every one of these used to be destructured as
+    `const { data: x } = …` with the `error` dropped on the floor, so a failed
+    query became "there is none of that" — which is the same shape
+    `daily-log-service` and `use-health-sync` were both corrected for, and it
+    decides permanent history here.
+
+    `use-mascot-room` runs the very same streak query for the number on screen
+    and does `if (logs.error) throw logs.error`. The two are now consistent: the
+    number and the medal come from one question asked one way.
+  */
+  const readSources = useCallback(() => readAwardSources(user!.id), [user?.id]);
 
   /** What the medal records about the moment it was earned. */
   const metadataFor = (def: AwardDef, s: AwardSources): Record<string, unknown> => {

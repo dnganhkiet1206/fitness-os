@@ -1,22 +1,9 @@
 import * as Haptics from 'expo-haptics';
-import {
-  Beef,
-  Calendar,
-  Dumbbell,
-  Flame,
-  Footprints,
-  Medal,
-  Moon,
-  Share2,
-  Sparkles,
-  Target,
-  Trophy,
-  type LucideIcon,
-} from 'lucide-react-native';
+import { Activity, BedDouble, Beef, Calendar, CalendarCheck, CalendarDays, CalendarRange, ChartLine, ChefHat, Crown, Droplet, Droplets, Dumbbell, Flame, Footprints, Gem, GlassWater, Medal, Moon, MoonStar, Mountain, Route, Salad, Scale, Share2, Shield, Sparkles, Sunrise, Target, TrendingUp, Trophy, Utensils, Zap, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useRef } from 'react';
 import { Share, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
@@ -24,29 +11,159 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { press } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { AWARD_DEFINITIONS, useAwards, useCheckAwards } from '@/hooks/use-extras';
+import { AWARD_DEFINITIONS, useAwardProgress, useAwards, useCheckAwards } from '@/hooks/use-extras';
+import type { AwardSources } from '@/lib/award-grant';
 import { awardText } from '@/lib/gamification-i18n';
 import type { AppLang } from '@/lib/i18n';
 
+/*
+  Mỗi HUY CHƯƠNG một dấu, không phải mỗi MIỀN một dấu.
+
+  Trước đây icon gán theo `type`, nên cả tám huy chương chuỗi ngày dùng chung
+  một ngọn lửa. Cộng với con số trên mặt đĩa thì đã phân biệt được, nhưng glyph
+  vẫn chưa NÓI gì: nó chỉ lặp lại cái tiêu đề mục ngay phía trên.
+
+  Nay mỗi cái mang dấu của chính nó, và dấu ấy leo thang theo ý nghĩa: chuỗi
+  ngày đi từ tia lửa → tuần → tháng → bình minh → huy hiệu → đá quý → vương
+  miện. Bước chân đi từ dấu chân → cung đường → ngọn núi.
+
+  Bảng này sinh ra từ chính danh mục và MỌI tên đã được đối chiếu với tệp thật
+  trong `lucide-react-native/dist/esm/icons`. Hai tên tôi bịa — `line-chart` và
+  `waves` — bị bắt ở bước đó; nếu không kiểm thì chúng rơi vào nhánh
+  `?? Trophy` và vẽ ra cái cúp, im lặng, không đỏ ở đâu cả.
+*/
 const ICON_MAP: Record<string, LucideIcon> = {
-  flame: Flame,
+  activity: Activity,
+  'bed-double': BedDouble,
+  'calendar-check': CalendarCheck,
+  'calendar-days': CalendarDays,
+  'calendar-range': CalendarRange,
+  'chart-line': ChartLine,
+  'chef-hat': ChefHat,
+  crown: Crown,
+  droplet: Droplet,
+  droplets: Droplets,
   dumbbell: Dumbbell,
-  trophy: Trophy,
-  calendar: Calendar,
-  target: Target,
-  moon: Moon,
+  flame: Flame,
   footprints: Footprints,
-  beef: Beef,
+  gem: Gem,
+  'glass-water': GlassWater,
+  medal: Medal,
+  moon: Moon,
+  'moon-star': MoonStar,
+  mountain: Mountain,
+  route: Route,
+  salad: Salad,
+  scale: Scale,
+  shield: Shield,
+  sunrise: Sunrise,
+  target: Target,
+  'trending-up': TrendingUp,
+  trophy: Trophy,
+  utensils: Utensils,
+  zap: Zap,
 };
 
-const TIER_CONFIG: Record<string, { color: string; dim: string; label: string }> = {
-  bronze: { color: '#c47b3d', dim: 'rgba(196,123,61,0.12)', label: 'Bronze' },
-  silver: { color: '#c7cad1', dim: 'rgba(199,202,209,0.12)', label: 'Silver' },
-  gold: { color: '#ffd93d', dim: 'rgba(255,217,61,0.12)', label: 'Gold' },
-  platinum: { color: '#b45cff', dim: 'rgba(180,92,255,0.12)', label: 'Platinum' },
+/**
+ * Mỗi hạng là một thứ KIM LOẠI, không phải một màu.
+ *
+ * ── vì sao cần ba tông cho mỗi hạng ──
+ *
+ * Bản cũ có đúng một màu mỗi hạng, và huy chương được vẽ bằng một vòng viền
+ * 3px cộng một icon lucide cùng màu ấy. Kết quả đọc ra là một nút bị vô hiệu
+ * hoá, không phải một tấm huy chương.
+ *
+ * Huy chương của Apple Fitness — thứ người dùng lấy làm chuẩn — là một cái ĐĨA
+ * ĐẶC: thân đĩa chuyển màu xuyên tâm, một vành ngoài dày hơn, glyph dập chìm
+ * vào mặt kim loại CÙNG TÔNG chứ không phải màu tương phản, và một vệt sáng
+ * chéo ở góc trên trái. Không có ba tông thì không dựng được cái nào trong bốn
+ * thứ đó: chuyển màu cần sáng và tối, vành cần tối hơn mặt, glyph dập chìm cần
+ * một tông tối hơn nữa nằm trên cùng nền.
+ *
+ * `dim` giữ nguyên cho viên chữ hạng ở dưới thẻ.
+ */
+type Metal = { color: string; light: string; dark: string; dim: string; label: string };
+const TIER_CONFIG: Record<string, Metal> = {
+  bronze: { color: '#c47b3d', light: '#e8a86a', dark: '#7d4a20', dim: 'rgba(196,123,61,0.12)', label: 'Bronze' },
+  silver: { color: '#c7cad1', light: '#f2f4f8', dark: '#7e828c', dim: 'rgba(199,202,209,0.12)', label: 'Silver' },
+  gold: { color: '#ffd93d', light: '#fff3ab', dark: '#b0790a', dim: 'rgba(255,217,61,0.12)', label: 'Gold' },
+  platinum: { color: '#b45cff', light: '#ddb0ff', dark: '#6b2fa0', dim: 'rgba(180,92,255,0.12)', label: 'Platinum' },
 };
 
-const TIERS = ['platinum', 'gold', 'silver', 'bronze'] as const;
+/*
+  Chưa mở thì là kim loại XÁM, không phải kim loại có hạng bị làm mờ.
+
+  Bản cũ hạ `opacity` cả thẻ xuống 0,4, nên chữ mô tả tụt dưới ngưỡng đọc được
+  — và đó là trạng thái của MỌI người ở ngày đầu. Cho huy chương một thứ kim
+  loại riêng thì nó tự nói "chưa mở" bằng chất liệu, và chữ giữ nguyên độ đọc.
+*/
+const LOCKED: Metal = {
+  color: '#4a4a55', light: '#5c5c68', dark: '#2a2a31',
+  dim: 'rgba(24,24,27,0.4)', label: '',
+};
+
+/**
+ * Nhóm theo MIỀN, không theo hạng.
+ *
+ * ── vì sao đổi ──
+ *
+ * Bản cũ gom theo hạng, nên năm huy chương chuỗi ngày (30/60/100/180/365) nằm
+ * rải trong mục "PLATINUM" cạnh "hoàn thành 100 buổi tập" — bốn cái thang khác
+ * nhau trộn vào nhau, và không cái nào đọc ra là một cái thang. Người muốn biết
+ * "chuỗi ngày của tôi tới đâu rồi" phải tự quét cả bốn mục.
+ *
+ * Và chữ "PLATINUM" hiện bảy lần trên một màn: một lần ở tiêu đề mục, một lần
+ * trên mỗi thẻ. Hạng vẫn còn trên thẻ — ở đó nó nói điều gì đó — nhưng thôi làm
+ * cách chia.
+ *
+ * Thứ tự: thang dài nhất trước, vì đó là thứ người ta theo lâu nhất.
+ */
+const DOMAINS: { types: string[]; vi: string; en: string }[] = [
+  { types: ['streak'], vi: 'Chuỗi ngày', en: 'Streaks' },
+  /*
+    `first_workout` gộp vào Buổi tập, không đứng riêng.
+
+    Nó là `type` riêng ở tầng dữ liệu vì luật trao khác nhau — một cái xét
+    `>= 1`, ba cái kia xét ngưỡng — nhưng với người đọc thì cả bốn đều trả lời
+    cùng một câu: "tôi đã tập bao nhiêu buổi". Cho nó một mục riêng nghĩa là
+    một tiêu đề, một đường kẻ, một bộ đếm "0/1" rồi đúng MỘT thẻ; khung nhiều
+    hơn nội dung.
+
+    Vì thế nhóm ở đây nhận một DANH SÁCH type chứ không phải một type. Cách
+    chia của màn hình thôi phải trùng khít với cách chia của bảng dữ liệu —
+    hai thứ ấy trả lời hai câu hỏi khác nhau.
+  */
+  { types: ['first_workout', 'volume_milestone'], vi: 'Buổi tập', en: 'Workouts' },
+  { types: ['pr'], vi: 'Kỷ lục cá nhân', en: 'Personal records' },
+  { types: ['steps_goal'], vi: 'Bước chân', en: 'Steps' },
+  { types: ['nutrition'], vi: 'Dinh dưỡng', en: 'Nutrition' },
+  { types: ['water'], vi: 'Nước uống', en: 'Water' },
+  { types: ['sleep'], vi: 'Giấc ngủ', en: 'Sleep' },
+  { types: ['body'], vi: 'Cân nặng', en: 'Body' },
+];
+
+/**
+ * Con số hiện tại cho mỗi miền, để thẻ chưa mở nói được "12 / 30".
+ *
+ * Tra tìm được ghi lại: huy chương chưa mở mà không nói bạn đang ở đâu thì nó
+ * chỉ là một ô xám. "Log 30 days in a row" đúng ở mọi ngày kể từ ngày đầu, nên
+ * nó không nói gì; "12 / 30" thì nói.
+ */
+function currentFor(type: string, src: AwardSources | undefined): number | null {
+  if (!src) return null;
+  switch (type) {
+    case 'streak': return src.streak;
+    case 'volume_milestone':
+    case 'first_workout': return src.workoutCount;
+    case 'pr': return src.prCount;
+    case 'steps_goal': return src.steps;
+    case 'nutrition': return src.mealCount;
+    case 'water': return src.waterDays;
+    case 'sleep': return src.sleepCount;
+    case 'body': return src.weighCount;
+    default: return null;
+  }
+}
 
 type AwardDef = (typeof AWARD_DEFINITIONS)[number];
 interface EarnedAward {
@@ -61,20 +178,59 @@ function MedalCard({
   locale,
   lang,
   index,
+  current,
 }: {
   award: AwardDef;
   earned: EarnedAward | undefined;
   locale: string;
   lang: AppLang;
   index: number;
+  /** con số hiện tại của miền này, hoặc `null` khi chưa đọc được */
+  current: number | null;
 }) {
   const i18n = useI18n();
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
   const AwardIcon = ICON_MAP[award.icon] ?? Trophy;
   const isEarned = !!earned;
   const { title, desc } = awardText(award.key, lang);
-  const R = 30;
+  const m: Metal = isEarned ? tier : LOCKED;
+  /*
+    Glyph SÁNG hơn mặt đĩa, không tối hơn.
+
+    Bản đầu tôi dập chìm bằng `m.dark` — đúng nguyên tắc của huy chương thật,
+    nơi kim loại sáng và nét khắc đổ bóng. Nhưng ở trạng thái chưa mở, mặt đĩa
+    là #4a4a55 và `dark` là #2a2a31: tối trên tối, và glyph biến mất khỏi ảnh
+    chụp. Nguyên tắc "khắc chìm" không bê thẳng sang một bảng màu tối được.
+  */
+  const glyph = isEarned ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.55)';
+
+
+  /* Vòng tiến độ ở r=34, ngay ngoài vành r=33. */
+  const R = 34;
   const C = 2 * Math.PI * R;
+
+  /*
+    Phần đã đi được, chỉ khi biết CẢ HAI đầu.
+
+    `need` vắng mặt ở những huy chương không có ngưỡng (`first_workout`,
+    `first_pr`) — chúng chỉ có hai trạng thái, nên không có gì để vẽ dở.
+    `current` là `null` khi truy vấn hỏng, và một truy vấn hỏng KHÔNG được vẽ
+    thành 0% — đó là cùng bất biến mà `usable()` giữ ở phía trao huy chương.
+  */
+  const need = 'requirement' in award ? award.requirement : null;
+  const pct =
+    isEarned || need == null || current == null ? 0 : Math.max(0, Math.min(1, current / need));
+  const showCount = !isEarned && need != null && current != null;
+
+  /*
+    Mốc, viết ngắn cho vừa mặt đĩa.
+
+    10.000 bước thành "10K" chứ không phải "10000" — năm chữ số ở cỡ này thì
+    hoặc tràn hoặc phải nhỏ tới mức thôi là mặt huy chương.
+  */
+  const mark =
+    need == null ? null : need >= 1000 ? `${Math.round(need / 1000)}K` : String(need);
+
 
   const share = async () => {
     Haptics.selectionAsync();
@@ -89,12 +245,45 @@ function MedalCard({
 
   return (
     <Animated.View
-      style={[styles.medalCard, !isEarned && styles.medalLocked]}
+      style={styles.medalCard}
       entering={FadeInDown.springify().damping(26).stiffness(180).delay(Math.min(index, 12) * 45)}>
       <View style={styles.medalRing}>
+        {/*
+          Một cái ĐĨA, không phải một cái vòng.
+
+          Bốn lớp, đúng giải phẫu của huy chương Apple Fitness:
+
+            1. vành ngoài — chuyển màu dọc sáng-trên/tối-dưới, cho cạnh có bề dày
+            2. mặt đĩa    — chuyển màu XUYÊN TÂM lệch lên trái, nơi ánh sáng rơi
+            3. vệt sáng   — một lát mỏng ở góc trên trái, thứ làm kim loại ra kim loại
+            4. glyph      — dập chìm bằng tông TỐI của cùng kim loại, không phải
+                            màu tương phản; đó là khác biệt giữa "khắc vào" và
+                            "dán lên"
+
+          Tất cả TĨNH. Bài học mascot trong phiên này là 26 nhóm SVG cập nhật
+          MỖI KHUNG HÌNH — chi phí nằm ở chỗ động, không ở chỗ có nhiều nhóm.
+          Bốn lớp không đổi thì vẽ một lần rồi thôi.
+        */}
         <Svg width={72} height={72} viewBox="0 0 72 72">
-          <Circle cx={36} cy={36} r={R} fill="none" stroke="#17171c" strokeWidth={3} />
-          {isEarned && (
+          <Defs>
+            <SvgGradient id={`rim-${award.key}`} x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={m.light} />
+              <Stop offset="1" stopColor={m.dark} />
+            </SvgGradient>
+            <RadialGradient id={`face-${award.key}`} cx="36%" cy="30%" r="78%">
+              <Stop offset="0" stopColor={m.light} />
+              <Stop offset="0.55" stopColor={m.color} />
+              <Stop offset="1" stopColor={m.dark} />
+            </RadialGradient>
+          </Defs>
+
+          <Circle cx={36} cy={36} r={33} fill={`url(#rim-${award.key})`} />
+          <Circle cx={36} cy={36} r={28} fill={`url(#face-${award.key})`} />
+          {/* Lát sáng: một cung ở phần tư trên-trái, mờ dần bằng độ trong. */}
+          <Path d="M 13 30 A 24 24 0 0 1 44 13 A 28 28 0 0 0 13 44 Z" fill="rgba(255,255,255,0.20)" />
+
+          {/* Vòng tiến độ nằm NGOÀI đĩa, nên nó không đè lên mặt kim loại. */}
+          {!isEarned && pct > 0 && (
             <Circle
               cx={36}
               cy={36}
@@ -104,25 +293,52 @@ function MedalCard({
               strokeWidth={3}
               strokeLinecap="round"
               strokeDasharray={`${C}`}
-              strokeDashoffset={0}
+              strokeDashoffset={C * (1 - pct)}
               transform="rotate(-90 36 36)"
             />
           )}
         </Svg>
+        {/*
+          CON SỐ là mặt của huy chương, glyph chỉ là phụ đề.
+
+          ── vì sao ──
+
+          `AWARD_DEFINITIONS` gán icon theo `type`, nên cả tám huy chương chuỗi
+          ngày dùng chung một ngọn lửa và cả bốn huy chương buổi tập dùng chung
+          một quả tạ. Trong mỗi nhóm mọi đĩa GIỐNG HỆT nhau — thứ duy nhất khác
+          là màu hạng — nên nhìn vào đĩa không đọc ra được nó là huy chương gì.
+          Người dùng nói đúng: "cái nào cũng giống nhau thành ra nhìn không có
+          ý nghĩa".
+
+          Ý nghĩa của một huy chương CHÍNH LÀ cái mốc, nên mốc phải là thứ lớn
+          nhất trên mặt đĩa. Huy chương chuỗi 30 ngày và chuỗi 365 ngày lập tức
+          khác nhau, và khác nhau ở đúng thứ làm chúng khác nhau. Apple đặt số
+          lên mặt badge vì cùng lý do.
+
+          Huy chương KHÔNG có ngưỡng — "buổi tập đầu tiên", "PR đầu tiên", "bữa
+          ăn đầu tiên" — thì không có số để in, và cũng không cần: chúng vốn đã
+          là duy nhất trong nhóm của mình. Chúng giữ glyph, vẽ lớn hơn.
+        */}
         <View style={styles.medalIcon}>
-          <Icon
-            icon={AwardIcon}
-            size={26}
-            color={isEarned ? tier.color : 'rgba(140,140,150,0.4)'}
-          />
+          {mark ? (
+            <>
+              <Icon icon={AwardIcon} size={13} color={glyph} />
+              <Text style={[styles.medalMark, { color: glyph }]} numberOfLines={1}>
+                {mark}
+              </Text>
+            </>
+          ) : (
+            <Icon icon={AwardIcon} size={30} color={glyph} />
+          )}
         </View>
       </View>
 
-      <View style={[styles.tierBadge, { backgroundColor: isEarned ? tier.dim : 'rgba(24,24,27,0.4)' }]}>
-        <Text style={[styles.tierBadgeText, { color: isEarned ? tier.color : 'rgba(140,140,150,0.4)' }]}>
-          {tier.label}
+      {showCount ? (
+        <Text style={styles.medalProgress}>
+          {current!.toLocaleString(locale)} / {need!.toLocaleString(locale)}
         </Text>
-      </View>
+      ) : null}
+
 
       <Text style={[styles.medalTitle, !isEarned && styles.medalTitleLocked]} numberOfLines={1}>
         {title}
@@ -151,6 +367,7 @@ function MedalCard({
 
 export default function AwardsScreen() {
   const { data: awards } = useAwards();
+  const { data: sources } = useAwardProgress();
   const { checkAndGrant, ready } = useCheckAwards();
   const checkedRef = useRef(false);
   const i18n = useI18n();
@@ -211,24 +428,28 @@ export default function AwardsScreen() {
         </View>
       </View>
 
-      {/* Tier sections (web: platinum → bronze) */}
-      {TIERS.map((tierKey) => {
-        const tierAwards = AWARD_DEFINITIONS.filter((a) => a.tier === tierKey);
-        if (tierAwards.length === 0) return null;
-        const tc = TIER_CONFIG[tierKey];
-        const tierEarned = tierAwards.filter((a) => earnedMap.has(a.key)).length;
+      {DOMAINS.map((dom) => {
+        const list = AWARD_DEFINITIONS.filter((a) => dom.types.includes(a.type));
+        if (list.length === 0) return null;
+        const done = list.filter((a) => earnedMap.has(a.key)).length;
+        /* Mọi type trong một nhóm đọc cùng một nguồn — `first_workout` và
+           `volume_milestone` đều là `workoutCount` — nên lấy type đầu là đủ. */
+        const now = currentFor(dom.types[0], sources);
         return (
-          <View key={tierKey} style={styles.tierSection}>
+          <View key={dom.types[0]} style={styles.tierSection}>
             <View style={styles.tierHeader}>
-              <Icon icon={Sparkles} size={14} color={tc.color} />
-              <Text style={[styles.tierTitle, { color: tc.color }]}>{tc.label}</Text>
+              {/* Icon của chính miền, không phải Sparkles cho mọi mục — bản cũ
+                  vẽ cùng một ngôi sao trên cả bốn tiêu đề, nên nó không phân
+                  biệt được gì và chỉ là trang trí. */}
+              <Icon icon={ICON_MAP[list[0].icon] ?? Trophy} size={14} color={colors.mutedForeground} />
+              <Text style={styles.tierTitle}>{lang === 'vi' ? dom.vi : dom.en}</Text>
               <View style={styles.tierLine} />
               <Text style={styles.tierCount}>
-                {tierEarned}/{tierAwards.length}
+                {done}/{list.length}
               </Text>
             </View>
             <View style={styles.grid}>
-              {tierAwards.map((award, i) => (
+              {list.map((award, i) => (
                 <MedalCard
                   key={award.key}
                   award={award}
@@ -236,6 +457,7 @@ export default function AwardsScreen() {
                   locale={locale}
                   lang={lang}
                   index={i}
+                  current={now}
                 />
               ))}
             </View>
@@ -298,8 +520,24 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(43,43,49,0.5)',
     backgroundColor: 'rgba(14,14,17,0.6)',
   },
-  medalLocked: { opacity: 0.4 },
+  /* Số đứng riêng một dòng, chữ số đều bề rộng để cột không nhảy khi con số
+     đổi từ 9 sang 10. */
+  medalProgress: {
+    ...type.footnote,
+    fontWeight: '700',
+    color: colors.mutedForeground,
+    fontVariant: ['tabular-nums'],
+  },
   medalRing: { width: 72, height: 72 },
+  /* Con số trên mặt đĩa: đậm, chữ số đều bề rộng, bóp sát để "365" và "250"
+     vẫn nằm gọn trong 56 điểm đường kính mặt. */
+  medalMark: {
+    fontSize: 21,
+    fontWeight: '800',
+    letterSpacing: -0.8,
+    fontVariant: ['tabular-nums'],
+    marginTop: -1,
+  },
   medalIcon: {
     position: 'absolute',
     top: 0,

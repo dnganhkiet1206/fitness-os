@@ -56,27 +56,27 @@
  *  `gamification-i18n` (`AWARD_TEXT`), keyed by `key`. */
 export const AWARD_DEFINITIONS = [
   { key: 'streak_3', type: 'streak', icon: 'flame', tier: 'bronze', requirement: 3 },
-  { key: 'streak_7', type: 'streak', icon: 'flame', tier: 'silver', requirement: 7 },
-  { key: 'streak_14', type: 'streak', icon: 'flame', tier: 'gold', requirement: 14 },
-  { key: 'streak_30', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 30 },
+  { key: 'streak_7', type: 'streak', icon: 'calendar-days', tier: 'silver', requirement: 7 },
+  { key: 'streak_14', type: 'streak', icon: 'calendar-check', tier: 'gold', requirement: 14 },
+  { key: 'streak_30', type: 'streak', icon: 'calendar-range', tier: 'platinum', requirement: 30 },
   /* Past a month the ladder used to stop, which is the wrong end to stop at:
      the people still logging on day 100 are the ones the app is working for,
      and they were being told nothing. These stay platinum because a new tier
      would mean a new colour in `TIER_CONFIG` and a value the awards table has
      never seen — the escalation is in the names and in how rare they are. */
-  { key: 'streak_60', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 60 },
-  { key: 'streak_100', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 100 },
-  { key: 'streak_180', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 180 },
-  { key: 'streak_365', type: 'streak', icon: 'flame', tier: 'platinum', requirement: 365 },
+  { key: 'streak_60', type: 'streak', icon: 'sunrise', tier: 'platinum', requirement: 60 },
+  { key: 'streak_100', type: 'streak', icon: 'medal', tier: 'platinum', requirement: 100 },
+  { key: 'streak_180', type: 'streak', icon: 'gem', tier: 'platinum', requirement: 180 },
+  { key: 'streak_365', type: 'streak', icon: 'crown', tier: 'platinum', requirement: 365 },
   { key: 'first_workout', type: 'first_workout', icon: 'dumbbell', tier: 'bronze' },
-  { key: 'workouts_10', type: 'volume_milestone', icon: 'dumbbell', tier: 'silver', requirement: 10 },
-  { key: 'workouts_50', type: 'volume_milestone', icon: 'dumbbell', tier: 'gold', requirement: 50 },
-  { key: 'workouts_100', type: 'volume_milestone', icon: 'dumbbell', tier: 'platinum', requirement: 100 },
-  { key: 'first_pr', type: 'pr', icon: 'trophy', tier: 'silver' },
+  { key: 'workouts_10', type: 'volume_milestone', icon: 'activity', tier: 'silver', requirement: 10 },
+  { key: 'workouts_50', type: 'volume_milestone', icon: 'zap', tier: 'gold', requirement: 50 },
+  { key: 'workouts_100', type: 'volume_milestone', icon: 'shield', tier: 'platinum', requirement: 100 },
+  { key: 'first_pr', type: 'pr', icon: 'trending-up', tier: 'silver' },
   { key: 'pr_5', type: 'pr', icon: 'trophy', tier: 'gold', requirement: 5 },
   { key: 'steps_10k', type: 'steps_goal', icon: 'footprints', tier: 'bronze' },
-  { key: 'steps_15k', type: 'steps_goal', icon: 'footprints', tier: 'silver', requirement: 15000 },
-  { key: 'steps_20k', type: 'steps_goal', icon: 'footprints', tier: 'gold', requirement: 20000 },
+  { key: 'steps_15k', type: 'steps_goal', icon: 'route', tier: 'silver', requirement: 15000 },
+  { key: 'steps_20k', type: 'steps_goal', icon: 'mountain', tier: 'gold', requirement: 20000 },
 
   /*
     ── mười hai huy chương cho những miền chưa có cái nào ──
@@ -101,17 +101,17 @@ export const AWARD_DEFINITIONS = [
     năm sau.
   */
   { key: 'first_meal', type: 'nutrition', icon: 'utensils', tier: 'bronze', requirement: 1 },
-  { key: 'meals_50', type: 'nutrition', icon: 'utensils', tier: 'silver', requirement: 50 },
-  { key: 'meals_250', type: 'nutrition', icon: 'utensils', tier: 'gold', requirement: 250 },
-  { key: 'water_7', type: 'water', icon: 'droplets', tier: 'bronze', requirement: 7 },
+  { key: 'meals_50', type: 'nutrition', icon: 'salad', tier: 'silver', requirement: 50 },
+  { key: 'meals_250', type: 'nutrition', icon: 'chef-hat', tier: 'gold', requirement: 250 },
+  { key: 'water_7', type: 'water', icon: 'droplet', tier: 'bronze', requirement: 7 },
   { key: 'water_30', type: 'water', icon: 'droplets', tier: 'silver', requirement: 30 },
-  { key: 'water_100', type: 'water', icon: 'droplets', tier: 'gold', requirement: 100 },
+  { key: 'water_100', type: 'water', icon: 'glass-water', tier: 'gold', requirement: 100 },
   { key: 'sleep_7', type: 'sleep', icon: 'moon', tier: 'bronze', requirement: 7 },
-  { key: 'sleep_30', type: 'sleep', icon: 'moon', tier: 'silver', requirement: 30 },
-  { key: 'sleep_100', type: 'sleep', icon: 'moon', tier: 'gold', requirement: 100 },
+  { key: 'sleep_30', type: 'sleep', icon: 'moon-star', tier: 'silver', requirement: 30 },
+  { key: 'sleep_100', type: 'sleep', icon: 'bed-double', tier: 'gold', requirement: 100 },
   { key: 'weigh_10', type: 'body', icon: 'scale', tier: 'bronze', requirement: 10 },
-  { key: 'weigh_50', type: 'body', icon: 'scale', tier: 'silver', requirement: 50 },
-  { key: 'weigh_200', type: 'body', icon: 'scale', tier: 'gold', requirement: 200 },
+  { key: 'weigh_50', type: 'body', icon: 'chart-line', tier: 'silver', requirement: 50 },
+  { key: 'weigh_200', type: 'body', icon: 'target', tier: 'gold', requirement: 200 },
 ] as const;
 
 export type AwardDef = (typeof AWARD_DEFINITIONS)[number];

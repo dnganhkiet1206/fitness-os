@@ -107,7 +107,10 @@ export const AWARD_TEXT: Record<string, { title: Bi; desc: Bi }> = {
     desc: { en: 'Log water on 30 days', vi: 'Ghi nước uống trong 30 ngày' },
   },
   water_100: {
-    title: { en: 'Hundred Days of Water', vi: 'Trăm Ngày Nước' },
+    /* 'Water Century', không phải 'Hundred Days of Water': tên dài bị cắt thành
+       "Hundred Days of Wa…" trên thẻ nửa bề ngang — thấy trên ảnh chụp, không
+       thấy trong tsc. Tên huy chương phải vừa một dòng ở nửa bề ngang màn 402. */
+    title: { en: 'Water Century', vi: 'Trăm Ngày Nước' },
     desc: { en: 'Log water on 100 days', vi: 'Ghi nước uống trong 100 ngày' },
   },
   sleep_7: {
