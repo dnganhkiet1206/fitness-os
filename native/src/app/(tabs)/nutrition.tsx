@@ -703,9 +703,23 @@ export default function NutritionScreen() {
                   same star you toggle them with.
                 */}
                 <View style={styles.foodSection}>
-                  <SectionTitle>
+                  {/*
+                    Nhãn phụ, KHÔNG phải tiêu đề mục.
+
+                    Trước đây khu này có BA tiêu đề 18pt xếp chồng — "Thực
+                    phẩm", "Thực phẩm của tôi", "Gần đây" — cho cùng một việc:
+                    tìm và chọn món. Ba tiêu đề cùng cỡ nghĩa là không cái nào
+                    dẫn cái nào, và cả khu cao gấp rưỡi nội dung nó chứa.
+
+                    Hai danh sách vẫn phải phân biệt được: comment ngay dưới ghi
+                    rằng "Gần đây" là món ĐÃ GHI chứ không phải món đã lưu, và
+                    nút trên mỗi hàng khác nhau — gắn sao so với giữ lại. Nên
+                    tôi gộp phần NHÌN chứ không trộn dữ liệu: một tiêu đề duy
+                    nhất ở trên, hai nhãn nhỏ lặng đi ở đây.
+                  */}
+                  <Text style={styles.foodSubLabel}>
                     {lang === 'vi' ? 'Thực phẩm của tôi' : 'My Foods'}
-                  </SectionTitle>
+                  </Text>
                   {myFoodsSorted.length > 0 ? (
                     <>
                       <FoodGroup rows={myFoodsSorted.slice(0, 5)} />
@@ -727,7 +741,7 @@ export default function NutritionScreen() {
                 */}
                 {recents && recents.length > 0 ? (
                   <View style={styles.foodSection}>
-                    <SectionTitle>{i18n.nutritionRecent}</SectionTitle>
+                    <Text style={styles.foodSubLabel}>{i18n.nutritionRecent}</Text>
                     <View style={foodListStyles.group}>
                       {recents.slice(0, 4).map((r, i) => (
                         <View key={`${r.food_name}-${i}`}>
@@ -807,7 +821,17 @@ const styles = StyleSheet.create({
      children of the page 20 apart — 20 is the distance between *sections*, and
      a heading a full section-gap above its own list reads as a heading for the
      page rather than for the list. */
-  foodSection: { gap: spacing.sm + 2 },
+  /* Khoảng cách giữa hai danh sách con hẹp lại: chúng thuộc cùng một mục nên
+     không cần cách nhau bằng khoảng dành cho hai MỤC khác nhau. */
+  foodSection: { gap: spacing.xs + 2 },
+  /* 13pt/600 hoa nhẹ, màu mờ — đủ để chia hai danh sách, không đủ để tranh
+     chỗ với tiêu đề "Thực phẩm" ở trên. */
+  foodSubLabel: {
+    ...type.footnote,
+    fontWeight: '600',
+    color: colors.mutedForeground,
+    letterSpacing: 0.3,
+  },
   seeMore: {
     flexDirection: 'row',
     alignItems: 'center',
