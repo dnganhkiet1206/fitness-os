@@ -2,7 +2,7 @@ import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Check, ChevronRight, PartyPopper, Sparkles } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -243,9 +243,10 @@ export function SupplementChecklistCard() {
         </View>
       ) : (
         <View style={styles.suppList}>
-          {supplements.map((s) => (
-            <PressScale
-              key={s.id}
+          {supplements.map((s, i) => (
+            <Fragment key={s.id}>
+              {i > 0 ? <View style={styles.suppSep} /> : null}
+              <PressScale
               style={styles.suppRow}
               onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
               <View style={[styles.checkbox, s.taken && styles.checkboxOn]}>
@@ -258,6 +259,7 @@ export function SupplementChecklistCard() {
                 {s.dose_text ? <Text style={styles.suppDose}>{s.dose_text}</Text> : null}
               </View>
             </PressScale>
+            </Fragment>
           ))}
         </View>
       )}
@@ -555,14 +557,48 @@ const styles = StyleSheet.create({
   // Supplements
   allDone: { ...type.body, color: colors.readinessGreen },
   allDoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
-  suppList: { marginTop: spacing.sm, gap: spacing.sm },
-  suppRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  suppList: { marginTop: spacing.sm },
+  /*
+    Vạch tóc giữa các hàng, thay cho một khoảng trống.
+
+    Hai hàng cách nhau 8 điểm trên cùng một nền thì mắt phải tự đoán chúng là
+    hai mục riêng. Một vạch thụt vào — thụt qua bề rộng ô tick cộng khoảng
+    cách, nên nó bắt đầu đúng dưới chữ — nói thẳng điều đó. Đây là idiom sẵn
+    có: `foodListStyles.sep` bên Dinh dưỡng làm y hệt.
+  */
+  suppSep: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 26 + spacing.md,
+    backgroundColor: colors.border,
+  },
+  /* Cao tối thiểu 44: đây là hàng BẤM ĐƯỢC và 44 là sàn chạm của Apple. Đệm
+     dọc cũng cho hai hàng thở ra thay vì dính nhau. */
+  suppRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: 44,
+    paddingVertical: spacing.xs,
+  },
+  /*
+    Ô tick phải TÁCH khỏi thẻ, không hoà vào nó.
+
+    Bản cũ để `borderColor: colors.border` — đúng màu viền của chính thẻ
+    (#2b2b31) — và không có nền riêng. Nên thứ duy nhất bấm được trên thẻ lại
+    là một đường viền cùng tông với mọi đường viền quanh nó.
+
+    Hai thay đổi: nền TỐI HƠN mặt thẻ (#070708 so với #0e0e11) nên nó đọc ra
+    là một cái lõm chờ được đánh dấu; và viền sáng hơn gấp đôi để cái lõm có
+    mép. Cùng nguyên tắc đã ghi ở thumb của thanh điều hướng mục: trên nền
+    tối, thứ nổi lên là thứ TỐI hơn có viền sáng, không phải thứ sáng hơn.
+  */
   checkbox: {
     width: 26,
     height: 26,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: 'rgba(255,255,255,0.28)',
+    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
