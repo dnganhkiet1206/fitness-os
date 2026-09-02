@@ -379,7 +379,12 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                   style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
                   onPress={() => picking !== null && assign(picking, t.id)}>
                   <View style={styles.pickerRowInner}>
-                    <Icon icon={Dumbbell} size={16} color={colors.primary} />
+                    {/* Không truyền màu: để `iconTint` quyết, như bảy chỗ vẽ
+                        cái tạ còn lại. `colors.primary` ở đây vừa đi vòng qua
+                        bảng tint vừa dùng màu HÀNH ĐỘNG CHÍNH cho một icon
+                        trang trí — hàng này đã bấm được rồi, icon không cần
+                        nói lại. */}
+                    <Icon icon={Dumbbell} size={16} />
                     <Text style={styles.pickerName} numberOfLines={1}>{t.name}</Text>
                   </View>
                   {picking !== null && byDay.get(picking)?.template_id === t.id ? (

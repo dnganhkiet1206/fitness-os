@@ -91,8 +91,30 @@ import { colors } from '@/constants/ascnd';
 const FOOD = colors.readinessGreen;
 /** energy: burned, spent, or counted */
 const ENERGY = colors.metricOrange;
-/** training */
-const TRAINING = colors.metricBlue;
+/**
+ * Tập luyện — KIM LOẠI, không phải xanh dương.
+ *
+ * Tạ, đĩa tạ, đòn gánh: thứ người ta cầm lên đều bằng thép. Một cái tạ màu
+ * xanh neon là một cái tạ không ai từng thấy, và nó đứng cạnh những icon khác
+ * cũng xanh neon (nước xanh cyan, chỉ số xanh dương) nên nó chẳng nói được
+ * mình là gì.
+ *
+ * `champagne` (#9fa3ad) là màu bạc app đã giữ sẵn trong nhóm nhận diện —
+ * `tools/resting-aura.mjs` liệt kê nó cạnh `primary` và `goldLight`. Nó là
+ * thép xám lạnh bất kể cái tên gợi ra gì.
+ *
+ * KHÔNG dùng `colors.primary`, dù nó cũng là bạc: `primary` có 195 chỗ dùng và
+ * nó là màu của HÀNH ĐỘNG CHÍNH. Tô icon bằng nó là làm nhoè ranh giới "cái
+ * này bấm được".
+ *
+ * Tương phản trên mặt thẻ #0e0e11: 7,63:1 — ngang màu xanh nó thay (7,42:1) và
+ * trên sàn 3:1 của đồ hoạ lớn rất nhiều.
+ *
+ * Đổi ở HẰNG SỐ chứ không ở riêng `Dumbbell`: `Activity` cũng là TRAINING, và
+ * để cái tạ hoá thép trong khi nhịp tập vẫn xanh là tạo ra đúng vết nứt mà tệp
+ * này sinh ra để hàn.
+ */
+const TRAINING = colors.champagne;
 /** the body's own signals */
 const VITAL = colors.readinessRed;
 /** water */
