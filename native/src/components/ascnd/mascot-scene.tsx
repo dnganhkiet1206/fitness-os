@@ -28,7 +28,7 @@ interface Props {
   /** false pauses everything on the stage (screen not focused) */
   animated?: boolean;
   /** the page's mid-scroll shared value — the whole scene holds in place. See StageRenderer */
-  scrollPause?: SharedValue<boolean>;
+  hold?: SharedValue<boolean>;
 }
 
 /** stage item key → studio skin name (see `STUDIO_SKINS`) */
@@ -49,7 +49,7 @@ export function MascotScene({
   energy = 0.5,
   streak,
   animated = true,
-  scrollPause,
+  hold,
 }: Props) {
   // The stage the player has equipped drives the theme; none equipped is the
   // free default. This is what makes the shop's "Use" a real choice — the room
@@ -70,7 +70,7 @@ export function MascotScene({
       flexSignal={flexSignal}
       streak={streak}
       animated={animated}
-      scrollPause={scrollPause}
+      hold={hold}
     />
   );
 }

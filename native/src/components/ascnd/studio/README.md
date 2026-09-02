@@ -252,7 +252,7 @@ page in particular dropped frames.
 the scroll offset through `Screen`'s forwarded `onScroll`, and **unmounts the
 room once the stage is off screen — but only once the scroll has settled**,
 never mid-flick. That last part matters: the room is already frozen for the
-whole of a scroll (the shared `scrollPause` below), so keeping it mounted
+whole of a scroll (the shared `hold` below), so keeping it mounted
 through a flick is free, and tearing four canvases and their frame callbacks
 down *during* the gesture is a catch a fast flick can feel. So the flick
 carries the frozen room along and the mount state is re-decided from the

@@ -37,7 +37,7 @@ interface Props {
   equippedOutfits?: Set<string>;
   animated?: boolean;
   /** pause the figure's clock in place (e.g. while the page scrolls) — see KoaFigure */
-  scrollPause?: SharedValue<boolean>;
+  hold?: SharedValue<boolean>;
   /** the room's insect clock — Koa glances at whichever one has landed */
   gaze?: SharedValue<number>;
   /**
@@ -130,7 +130,7 @@ function FigureBody(props: Props & { emotion: MascotEmotion }) {
   // `mood` is not destructured: this branch does not use it, and the vector
   // fallback below takes it through `{...props}` with its own 'neutral'
   // default, so naming it here only left an unused local.
-  const { mascot, size = 160, animated = true, scrollPause, emotion, gaze, dress } = props;
+  const { mascot, size = 160, animated = true, hold, emotion, gaze, dress } = props;
 
   if (mascot.id === 'koa') {
     const state = koaStateFor(emotion);
@@ -148,7 +148,7 @@ function FigureBody(props: Props & { emotion: MascotEmotion }) {
         dress={dress}
         size={size}
         animated={animated}
-        scrollPause={scrollPause}
+        hold={hold}
         gaze={gaze}
         worn={{ ...wornFrom(props.equippedOutfits), ...state.outfit }}
       />

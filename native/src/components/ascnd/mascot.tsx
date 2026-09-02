@@ -8,6 +8,7 @@ import Animated, {
   cancelAnimation,
   Easing,
   interpolate,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -97,7 +98,7 @@ export function Mascot({
    *
    * `mascot-room.tsx` đã gặp và đã sửa đúng lỗi này, và ghi lại bằng một câu:
    * *"một cú cuộn (bắt đầu và dừng) là phần còn lại của cú giật"*. Cơ chế có
-   * sẵn từ đó — `scrollPause` xuyên qua `MascotFigure` xuống `KoaFigure`, đọc
+   * sẵn từ đó — `hold` xuyên qua `MascotFigure` xuống `KoaFigure`, đọc
    * trên luồng UI nên nhân vật đứng hình ngay ở khung hình cú kéo bắt đầu, và
    * đồng hồ là bộ tích luỹ nên lúc chạy tiếp không nhảy. Thứ duy nhất còn
    * thiếu là chưa ai nối nó ở dashboard.
@@ -105,9 +106,9 @@ export function Mascot({
    * Không bắt buộc: các màn không cuộn (ô trống, màn ăn mừng) bỏ qua và nhân
    * vật thở như cũ.
    */
-  scrollPause,
+  hold,
 }: {
-  scrollPause?: SharedValue<boolean>;
+  hold?: SharedValue<boolean>;
 } = {}) {
   const i18n = useI18n();
   /*
@@ -122,7 +123,7 @@ export function Mascot({
     Gộp vào `focused` thay vì thêm một cờ thứ hai, vì `focused` đã gác đúng ba
     chỗ cần gác (hai `useEffect` và `animated=` truyền xuống figure). Thêm cờ
     riêng thì lần sau ai đó sửa một chỗ sẽ quên hai chỗ kia — đúng lỗi mà ghi
-    chú ở `scrollPause` bên `index.tsx` đã cảnh báo: "hai cờ riêng cho một câu
+    chú ở `hold` bên `index.tsx` đã cảnh báo: "hai cờ riêng cho một câu
     hỏi là hai thứ sẽ lệch nhau".
   */
   const screenFocused = useIsFocused();
@@ -224,26 +225,65 @@ export function Mascot({
     — so the loop is not started, and the value is put back to rest instead of
     being left wherever the last state's breath had reached.
   */
+  /*
+    ── và nó phải dừng khi KHÔNG AI NHÌN, không chỉ khi rời tab ──
+
+    Vòng lặp này từng chỉ gác bằng `focused`, và `focused` thì đúng suốt thời
+    gian người ta ở lại tab Hôm nay. Đo được: sau 20 giây không ai chạm, khi
+    đồng hồ khung hình của `KoaFigure` đã đứng hình theo `hold`, thân nhân vật
+    (64×64) và cái bóng dưới chân (34×10) VẪN động — 60 và 120 lần mỗi giây.
+    Cả hai do đúng một `hover` này lái.
+
+    Tức `hold` mới chỉ giữ được một nửa nhân vật. `KoaFigure` đọc nó vì nó có
+    một `useFrameCallback` để đọc trong; vòng lặp ở đây là `withRepeat`, thứ
+    chạy trên luồng UI mà không hỏi ai cả.
+
+    ── vì sao là `useAnimatedReaction` chứ không phải một `useEffect` nữa ──
+
+    `hold` là shared value: nó đổi trên luồng UI, không qua một lần render nào.
+    Một `useEffect` không bao giờ nghe thấy nó. `useAnimatedReaction` chạy ngay
+    trên luồng ấy, nên vòng lặp tắt ở đúng khung hình `hold` bật.
+
+    ── hai kiểu dừng, và chúng khác nhau ──
+
+    Ngừng vì KHÔNG AI NHÌN thì đứng nguyên tại chỗ — đúng hình dạng mà đồng hồ
+    khung hình đã dùng, nên không có từ vựng chuyển động nào mới. Ngừng vì nhân
+    vật thôi thở (mệt, hoặc rời tab) thì hạ về 0 trong 400ms, vì đó là một phát
+    biểu về TRẠNG THÁI và nó phải thấy được.
+  */
+  const breathing = useSharedValue(false);
   useEffect(() => {
-    if (!focused || presence.floatPt === 0) {
+    breathing.value = focused && presence.floatPt !== 0;
+  }, [focused, presence.floatPt, breathing]);
+
+  const half = presence.breathMs / 2;
+  useAnimatedReaction(
+    () => breathing.value && !(hold?.value ?? false),
+    (run, was) => {
+      if (run === was) return;
+      if (run) {
+        hover.value = withRepeat(
+          withSequence(
+            withTiming(1, { duration: half, easing: Easing.inOut(Easing.sin) }),
+            withTiming(0, { duration: half, easing: Easing.inOut(Easing.sin) }),
+          ),
+          -1,
+        );
+        return;
+      }
       cancelAnimation(hover);
-      hover.value = withTiming(0, { duration: 400 });
-      return;
-    }
-    const half = presence.breathMs / 2;
-    hover.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: half, easing: Easing.inOut(Easing.sin) }),
-        withTiming(0, { duration: half, easing: Easing.inOut(Easing.sin) }),
-      ),
-      -1,
-    );
-    return () => {
-      // a repeat runs until it is cancelled — leaving the tab is not enough
+      if (!breathing.value) hover.value = withTiming(0, { duration: 400 });
+    },
+    [half],
+  );
+
+  useEffect(
+    () => () => {
+      // a repeat runs until it is cancelled — unmounting is not enough
       cancelAnimation(hover);
-      hover.value = 0;
-    };
-  }, [focused, presence.floatPt, presence.breathMs, hover]);
+    },
+    [hover],
+  );
 
   useEffect(() => {
     /* Eased rather than snapped: the depth of a breath changing is itself a
@@ -405,7 +445,7 @@ export function Mascot({
               level={level}
               equippedOutfits={equippedOutfits}
               animated={focused}
-              scrollPause={scrollPause}
+              hold={hold}
             />
           </Animated.View>
         </View>

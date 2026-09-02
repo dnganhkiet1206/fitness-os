@@ -741,7 +741,7 @@ export interface KoaFigureProps {
    * gives the scroll its headroom back. Left out (pickers, celebrations) the
    * figure simply never pauses.
    */
-  scrollPause?: SharedValue<boolean>;
+  hold?: SharedValue<boolean>;
   /**
    * The insects' clock, if this figure is standing in the room with them.
    *
@@ -759,7 +759,7 @@ export function KoaFigure({
   worn,
   size = 160,
   animated = true,
-  scrollPause,
+  hold,
   gaze,
 }: KoaFigureProps) {
   const height = size * KOA_ASPECT;
@@ -815,7 +815,7 @@ export function KoaFigure({
     // is turned back off — because a figure holding its frame is what this
     // clock already knows how to do. `useFrameCallback` is outside Reanimated's
     // reduce-motion handling, so this is the only place it can be honoured.
-    if (reduceMotionSV.value || (scrollPause && scrollPause.value)) {
+    if (reduceMotionSV.value || (hold && hold.value)) {
       last.value = frame.timeSinceFirstFrame;
       return;
     }

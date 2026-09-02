@@ -28,7 +28,7 @@ export interface MascotBuddyProps {
    * passes its scroll shared value down so the character holds its frame while
    * the page scrolls rather than re-rasterising every frame. See `KoaFigure`.
    */
-  scrollPause?: SharedValue<boolean>;
+  hold?: SharedValue<boolean>;
   /**
    * The room's insect clock, when the buddy is standing in the room.
    *
@@ -47,7 +47,7 @@ export function MascotBuddy({
   level = 1,
   equippedOutfits,
   animated = true,
-  scrollPause,
+  hold,
   gaze,
 }: MascotBuddyProps) {
   return (
@@ -59,7 +59,7 @@ export function MascotBuddy({
       level={level}
       equippedOutfits={equippedOutfits}
       animated={animated}
-      scrollPause={scrollPause}
+      hold={hold}
       gaze={gaze}
     />
   );

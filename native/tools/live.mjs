@@ -615,6 +615,59 @@ const SCENARIOS = [
         return `khi đứng yên vẫn ghi ${perSec} lần style mỗi giây (ngân sách 900). Nặng nhất: ` +
           out.top.map(([k, v]) => `${k} ${Math.round(v / 5)}/s`).join('; ');
       }
+
+      /*
+        ── lần đo THỨ HAI, sau ngưỡng không-ai-chạm ──
+
+        Không chạm gì thì sau `IDLE_MS` (20 giây) nhân vật phải ĐỨNG HÌNH. Đây
+        là nửa quan trọng nhất của bài toán nhiệt: màn hình đứng yên là trạng
+        thái MẶC ĐỊNH của một app đang mở lâu, không phải ngoại lệ.
+
+        Lần đo đầu ở trên nằm gọn trong 20 giây ấy, nên nó đo trạng thái CÒN
+        CHẠY. Lần này đo trạng thái đã lặng, và kỳ vọng ngược lại — chỉ còn chấm
+        nhịp của thẻ sẵn sàng, thứ KHÔNG nằm trong thay đổi này.
+
+        Hai lần đo ngược chiều nhau là điều kiện để bước này có răng: một bản
+        đóng băng nhân vật vĩnh viễn qua được lần hai và trượt lần một; một bản
+        không bao giờ lặng thì ngược lại.
+      */
+      await page.waitForTimeout(9000);
+      /* Đếm KHÔNG đủ: một con số trần chỉ nói "còn thứ gì đó chạy", và thứ
+         đầu tiên phải làm khi thấy nó là đi tìm xem thứ đó là gì. Nên phép đo
+         tự gọi tên, kèm nhịp — hai thứ đó biến một lần đỏ thành một địa chỉ. */
+      const late = await page.evaluate((secs) => new Promise((done) => {
+        const hits = new Map();
+        const obs = new MutationObserver((ms) => {
+          for (const m of ms) {
+            if (m.type !== 'attributes' || !(m.target instanceof Element)) continue;
+            const el = m.target;
+            if (!el.__lateKey) {
+              const r = el.getBoundingClientRect();
+              el.__lateKey = `${el.tagName.toLowerCase()} ${Math.round(r.width)}×${Math.round(r.height)} @${Math.round(r.x)},${Math.round(r.y)}`;
+            }
+            hits.set(el.__lateKey, (hits.get(el.__lateKey) ?? 0) + 1);
+          }
+        });
+        obs.observe(document.body, {
+          attributes: true, subtree: true,
+          attributeFilter: ['style', 'transform', 'd', 'opacity', 'fill', 'cx', 'cy', 'r', 'points'],
+        });
+        setTimeout(() => {
+          obs.disconnect();
+          const rows = [...hits].sort((a, b) => b[1] - a[1]);
+          done({ n: rows.length, rows: rows.slice(0, 5).map(([k, v]) => `${k} ${Math.round(v / secs)}/s`) });
+        }, secs * 1000);
+      }), 5);
+
+      if (late.n > 2) {
+        return `sau 20 giây không ai chạm vẫn còn ${late.n} phần tử động (chờ tối đa 2: chấm nhịp thẻ ` +
+          `sẵn sàng): ${late.rows.join('; ')}. Nhân vật không đứng hình khi không ai nhìn — đó là toàn ` +
+          'bộ bài toán "máy nóng"';
+      }
+      if (out.n <= 2) {
+        return `TRƯỚC ngưỡng không-ai-chạm đã chỉ còn ${out.n} phần tử động — nhân vật đứng hình quá ` +
+          'sớm, hoặc nó không bao giờ chạy';
+      }
       return null;
     },
   },

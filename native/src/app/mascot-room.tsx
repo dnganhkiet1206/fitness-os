@@ -222,7 +222,7 @@ export default function MascotRoomScreen() {
    * animating out of sight, which is where the original heat came from.
    *
    * **This is only ever changed once a scroll has settled, never mid-scroll.**
-   * The room is already frozen for the whole of a scroll (`scrollPause`), so
+   * The room is already frozen for the whole of a scroll (`hold`), so
    * keeping it mounted through a flick costs nothing — and unmounting it *while*
    * the flick is in flight tears down four canvases and their frame callbacks
    * in the middle of the gesture, which a fast flick felt as a catch. So the
@@ -251,15 +251,15 @@ export default function MascotRoomScreen() {
    * which covers momentum too. The scene freezes and resumes with no jump — the
    * clocks are accumulators (see `loop-clock.ts`).
    */
-  const scrollPause = useSharedValue(false);
+  const hold = useSharedValue(false);
   const scrollIdle = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const markScrolling = () => {
-    scrollPause.value = true;
+    hold.value = true;
     if (scrollIdle.current) clearTimeout(scrollIdle.current);
     // longer than the 64ms scroll-event throttle, so momentum keeps it alive
     scrollIdle.current = setTimeout(() => {
-      scrollPause.value = false;
+      hold.value = false;
       // Only now, at rest, decide whether the room stays mounted — never
       // mid-flick. React ignores a set to the current value, so this is free
       // when nothing changed.
@@ -489,7 +489,7 @@ export default function MascotRoomScreen() {
           energy={energyCount / ENERGY_SIGNALS.length}
           streak={streak}
           animated={focused && stageOnScreen}
-          scrollPause={scrollPause}
+          hold={hold}
         />
         <CoinBurst trigger={burst.id} amount={burst.amount} />
       </View>

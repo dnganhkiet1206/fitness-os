@@ -88,7 +88,7 @@ interface Props {
    * drag begins with no React render in between and resumes with no jump. See
    * `useLoopClock` and `KoaFigure`.
    */
-  scrollPause?: SharedValue<boolean>;
+  hold?: SharedValue<boolean>;
 }
 
 export function StageRenderer({
@@ -103,7 +103,7 @@ export function StageRenderer({
   flexSignal = 0,
   streak,
   animated = true,
-  scrollPause,
+  hold,
 }: Props) {
   const emotion = useMascotEmotion();
   /**
@@ -151,7 +151,7 @@ export function StageRenderer({
    * minute and then have Koa staring at an empty shelf, so there is one and it
    * belongs to whatever contains both of them — which is this file.
    */
-  const bugs = useBugClock(scrollPause);
+  const bugs = useBugClock(hold);
 
   const nod = useSharedValue(0);
   const settle = useSharedValue(1);
@@ -234,7 +234,7 @@ export function StageRenderer({
           layer="back"
         />
         <View style={StyleSheet.absoluteFill}>
-          <PlantsCanvas width={sw} height={H} animated={animated} pause={scrollPause} />
+          <PlantsCanvas width={sw} height={H} animated={animated} pause={hold} />
         </View>
         <View style={StyleSheet.absoluteFill}>
           <Studio
@@ -259,7 +259,7 @@ export function StageRenderer({
               glow={STUDIO_SKINS[themeKey ?? 'default']?.glow}
               energy={energy}
               bugs={bugs}
-              pause={scrollPause}
+              pause={hold}
             />
           </View>
         ) : null}
@@ -293,7 +293,7 @@ export function StageRenderer({
               accent={accent}
               equippedOutfits={equippedOutfits}
               animated={animated}
-              scrollPause={scrollPause}
+              hold={hold}
               gaze={bugs}
             />
           </Animated.View>

@@ -22,18 +22,20 @@ import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextIn
 import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import Animated, {
-  useAnimatedRef,
-  withDelay,
-  withSpring,
-  runOnJS,
-  useAnimatedProps,
-  useAnimatedScrollHandler,
   FadeIn,
   FadeInDown,
   interpolate,
-  useAnimatedStyle,
-  useSharedValue,
+  measure,
+  runOnJS,
   type SharedValue,
+  useAnimatedProps,
+  useAnimatedRef,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useDerivedValue,
+  useSharedValue,
+  withDelay,
+  withSpring,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -231,6 +233,15 @@ const HERO_FADE = HERO_RING;
  * không phải trước.
  */
 const HERO_HOLD = HERO_RING * 0.34;
+
+/**
+ * Bao lâu không ai chạm thì nhân vật đứng hình.
+ *
+ * Xem đoạn dài ở `wake` bên dưới: 20 giây dài hơn mọi lần liếc mắt và ngắn hơn
+ * mọi lần để máy đó. Ở đây chứ không nằm trong thân component, vì nó là một
+ * quyết định về sản phẩm chứ không phải một con số của một lần render.
+ */
+const IDLE_MS = 20_000;
 
 /**
  * Quãng cuộn mà tấm nội dung phủ kín hero trong đó.
@@ -672,7 +683,27 @@ export default function TodayScreen() {
    * viễn. Thả ở `onEndDrag` khiến trường hợp xấu nhất là nhân vật chạy sớm một
    * khung hình, chứ không phải một nhân vật thôi thở.
    */
-  const scrollPause = useSharedValue(false);
+  /*
+    ── bốn lý do, MỘT kết quả ──
+
+    Giá trị này từng tên là `scrollPause` và chỉ có một lý do. Nay có bốn, và ba
+    trong số đó không phải cuộn — nên cái tên đã đổi, và quan trọng hơn: các lý
+    do được TÁCH khỏi kết quả.
+
+    Bản trước mỗi chỗ tự ghi thẳng vào cờ chung: `onBeginDrag` ghi true,
+    `onEndDrag` ghi `focusSV.value === 1`. Tức mỗi người viết phải nhớ OR đủ mọi
+    lý do KHÁC của mình — và tôi đã suýt sót đúng chuyện đó khi thêm lý do thứ
+    hai. Với bốn lý do thì đó không còn là "suýt".
+
+    Nên mỗi lý do có cờ riêng, và `hold` là phép OR viết ra ĐÚNG MỘT LẦN. Thêm
+    lý do thứ năm chỉ cần thêm một cờ và một vế; không chỗ nào khác phải sửa.
+  */
+  /** ngón tay đang kéo, hoặc đà chưa hết */
+  const dragging = useSharedValue(false);
+  /** đã cuộn qua khỏi nhân vật — nó còn trong cây nhưng không ai thấy */
+  const offscreen = useSharedValue(false);
+  /** không ai chạm vào màn hình đủ lâu */
+  const idle = useSharedValue(false);
 
   /* Chế độ tập trung tắt hẳn hiệu ứng theo cuộn.
 
@@ -689,19 +720,86 @@ export default function TodayScreen() {
   const focusSV = useSharedValue(0);
   useEffect(() => {
     focusSV.value = heroOpen ? 1 : 0;
-    /* Cùng một câu trả lời cho "Koa có ai nhìn không", viết vào cùng một chỗ mà
-       cú cuộn viết — xem `onEndDrag` bên dưới. Hai cờ riêng cho một câu hỏi là
-       hai thứ sẽ lệch nhau ở lần đầu ai đó chỉnh một bên. */
-    scrollPause.value = heroOpen;
-  }, [heroOpen, focusSV, scrollPause]);
+  }, [heroOpen, focusSV]);
+
+  /**
+   * "Đứng hình đi, không ai nhìn thấy bạn động đâu."
+   *
+   * Bốn lý do gộp ở đúng một chỗ. `koa-figure` đọc nó trên luồng UI và GIỮ
+   * `last` hiện hành, nên nhân vật dừng ở đúng khung hình nó đang ở và chạy
+   * tiếp không giật — cùng một hành vi cho cả bốn, nên không có từ vựng chuyển
+   * động nào mới được phát minh ra ở đây.
+   */
+  const hold = useDerivedValue(
+    () => dragging.value || offscreen.value || idle.value || focusSV.value === 1,
+  );
+
+  /*
+    ── lý do 3: nhân vật đã cuộn khỏi tầm nhìn ──
+
+    Lớp aura có luật "ngoài màn thì dừng" và `aura-cost.mjs` canh nó. Nhân vật
+    thì chưa có, nên nó chạy ở nhịp màn hình suốt cả nửa dưới của trang — nơi nó
+    đã ra khỏi khung nhìn từ lâu. Cùng một app, cùng một luật, một bên tuân một
+    bên không.
+
+    Đo MỘT LẦN mỗi cú cuộn, không phải mỗi khung hình: trong lúc cuộn thì
+    `dragging` đã giữ nó rồi, nên câu hỏi chỉ cần trả lời đúng lúc cú cuộn DỪNG.
+    `measure()` của Reanimated chạy ngay trong worklet nên không có chuyến nào
+    sang JS.
+
+    `null` là "không đo được", và ở đó câu trả lời an toàn là KHÔNG giữ: đóng
+    băng một thứ có thể đang hiện ra là lỗi tệ hơn hẳn cái đang được sửa.
+  */
+  const koaRef = useAnimatedRef<Animated.View>();
+  const settleOffscreen = () => {
+    'worklet';
+    const m = measure(koaRef);
+    offscreen.value = m === null ? false : m.pageY + m.height <= 0 || m.pageY >= viewportH.value;
+  };
+
+  /*
+    ── lý do 4: không ai chạm vào gì cả ──
+
+    Đây là trạng thái MẶC ĐỊNH của một app đang mở lâu, và là toàn bộ nội dung
+    của báo cáo "máy nóng khi mở lâu". Nhân vật thở mãi trong lúc màn hình đứng
+    yên; đo được ~605 lần ghi style mỗi giây chỉ riêng nó.
+
+    20 giây, và con số ấy là một đánh đổi có hai đầu. Ngắn hơn thì nhân vật đứng
+    hình trong lúc người ta còn đang ĐỌC dashboard, và một nhân vật đông cứng
+    giữa lúc nhìn đọc ra là app treo. Dài hơn thì phần lớn thời gian máy nóng
+    vẫn nằm ngoài tầm với. Hai mươi giây dài hơn mọi lần liếc mắt và ngắn hơn
+    mọi lần để máy đó.
+
+    Hình dạng của cú dừng KHÔNG mới: nó đúng bằng cú đông cứng mà mỗi lần cuộn
+    đã làm từ lâu — giữ nguyên khung hình, chạy tiếp không giật. Nên không có
+    thứ gì mới xuất hiện trên màn hình, chỉ có một lý do mới để cùng một thứ xảy
+    ra.
+  */
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wake = useCallback(() => {
+    idle.value = false;
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    idleTimer.current = setTimeout(() => {
+      idle.value = true;
+    }, IDLE_MS);
+  }, [idle]);
+  useEffect(() => {
+    wake();
+    return () => {
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+    };
+  }, [wake]);
 
 
   const onScroll = useAnimatedScrollHandler({
     onBeginDrag: () => {
-      scrollPause.value = true;
+      dragging.value = true;
+      /* Chạm vào là tỉnh. Một cú kéo không đi qua `onTouchStart` của lớp bọc
+         khi ScrollView đã giành quyền, nên nó phải tự đánh thức. */
+      runOnJS(wake)();
     },
     /* Thả ngay khi nhấc tay. Nếu có đà thì `onMomentumBegin` giữ lại ở khung
-       hình kế — xem ghi chú ở `scrollPause`.
+       hình kế — xem ghi chú ở `hold`.
 
        Thả về `focusSV`, không về `false`: cuộn chỉ là MỘT trong hai lý do Koa
        phải đứng hình. Lý do kia là chế độ tập trung, nơi tấm nội dung — và Koa
@@ -713,13 +811,15 @@ export default function TodayScreen() {
        màn hình, người ta phải cuộn để đọc — nên một `false` cứng ở đây sẽ cho
        nhân vật chạy lại ngay lần nhấc tay đầu tiên. */
     onEndDrag: () => {
-      scrollPause.value = focusSV.value === 1;
+      dragging.value = false;
+      settleOffscreen();
     },
     onMomentumBegin: () => {
-      scrollPause.value = true;
+      dragging.value = true;
     },
     onMomentumEnd: () => {
-      scrollPause.value = focusSV.value === 1;
+      dragging.value = false;
+      settleOffscreen();
     },
     onScroll: (e) => {
       viewportH.value = e.layoutMeasurement.height;
@@ -1330,7 +1430,20 @@ export default function TodayScreen() {
       *outside* the scroll view, so it stays put while the content moves. Light
       that scrolled with the cards would read as a drawing.
     */
-    <View style={styles.root}>
+    <View
+      style={styles.root}
+      /*
+        Chạm vào bất cứ đâu trên trang là "vẫn còn người ở đây".
+
+        `onTouchStart` NỔI BỌT và KHÔNG giành responder, nên nó thấy mọi cú chạm
+        trong cây mà không cướp cử chỉ nào — không nút nào, không cú vuốt deck
+        nào, không cú kéo sắp xếp nào bị đụng tới. Một `PanResponder` ở đây thì
+        sẽ đụng.
+
+        Cú kéo ScrollView là ngoại lệ duy nhất nó không thấy chắc chắn, nên
+        `onBeginDrag` tự gọi `wake` — xem bộ xử lý cuộn.
+      */
+      onTouchStart={wake}>
       <AmbientLight />
       {/*
         The day's colour, behind everything.
@@ -1787,7 +1900,12 @@ export default function TodayScreen() {
             <View style={styles.scrimBody} />
             </Animated.View>
             <View style={styles.rest}>
-              <Mascot scrollPause={scrollPause} />
+              {/* Lớp bọc CHỈ để đo được nhân vật đang ở đâu trên màn — xem
+                  `settleOffscreen`. Nó không mang style nào, nên không thêm một
+                  tầng bố cục nào. */}
+              <Animated.View ref={koaRef}>
+                <Mascot hold={hold} />
+              </Animated.View>
 
           {/* Quick log actions (web chips row) */}
           <View style={styles.quickRow}>

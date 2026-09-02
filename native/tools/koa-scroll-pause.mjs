@@ -18,13 +18,13 @@
  * không phải chậm đều, và đó đúng là thứ đã bị báo lại.
  *
  * `mascot-room.tsx` gặp đúng lỗi này trước và ghi lại: *"một cú cuộn (bắt đầu
- * và dừng) là phần còn lại của cú giật"*. Cơ chế `scrollPause` ra đời từ đó và
+ * và dừng) là phần còn lại của cú giật"*. Cơ chế `hold` ra đời từ đó và
  * xuyên sẵn qua `MascotFigure` xuống `KoaFigure`. Thứ duy nhất còn thiếu suốt
  * từ đó là chưa ai nối nó ở dashboard.
  *
  * ── vì sao nối dây thôi thì CHƯA đủ để yên tâm ──
  *
- * Chế độ hỏng của bản sửa này tệ hơn chính lỗi nó sửa: một `scrollPause` bị kẹt
+ * Chế độ hỏng của bản sửa này tệ hơn chính lỗi nó sửa: một `hold` bị kẹt
  * ở `true` không làm chậm gì cả — nó làm nhân vật THÔI THỞ, vĩnh viễn, cho tới
  * khi đổi tab. Và nó kẹt rất dễ: một cú kéo chậm rồi thả tay KHÔNG sinh đà, nên
  * nó không bao giờ nhận `onMomentumEnd`. Một bản sửa chỉ nghe hai sự kiện đà sẽ
@@ -36,7 +36,7 @@
  * `index.tsx`, không chép lại một bản — rồi lái nó qua mọi chuỗi sự kiện mà
  * `UIScrollView` thật sự bắn ra, và đòi hai điều ở mọi chuỗi:
  *
- *   · trong lúc cuộn, `scrollPause` phải là TRUE  (nếu không thì không sửa gì)
+ *   · trong lúc cuộn, `hold` phải là TRUE  (nếu không thì không sửa gì)
  *   · khi mọi thứ đã dừng, phải là FALSE          (nếu không thì nhân vật chết)
  *
  * Vế đầu là răng của luật. Không có nó, một bộ xử lý không bao giờ đặt pause
@@ -83,23 +83,39 @@ const today = read(TODAY);
 const mascotSrc = read(MASCOT);
 const figureSrc = read(FIGURE);
 
-const passedTo = /<Mascot\b[^>]*\bscrollPause=\{(\w+)\}/.exec(today);
+const passedTo = /<Mascot\b[^>]*\bhold=\{(\w+)\}/.exec(today);
 if (!passedTo) {
-  problems.push(`${TODAY}: <Mascot> không nhận scrollPause — đồng hồ 36 vòng của KoaFigure chạy suốt cú cuộn`);
+  problems.push(`${TODAY}: <Mascot> không nhận hold — đồng hồ 36 vòng của KoaFigure chạy suốt cú cuộn`);
 } else {
   const name = passedTo[1];
-  if (!new RegExp(`const\\s+${name}\\s*=\\s*useSharedValue\\(`).test(today)) {
-    problems.push(`${TODAY}: scrollPause truyền cho <Mascot> (\`${name}\`) không phải useSharedValue — đọc trên luồng UI là cả điểm của cơ chế này`);
+  /*
+    `useDerivedValue` HOẶC `useSharedValue` — cả hai đều đọc được trên luồng UI,
+    và đó là cả điểm của cơ chế.
+
+    Hai luật ở đây từng đòi đúng `useSharedValue` và đòi thấy một phép GHI
+    `x.value =`. Cả hai đều mô tả bản một-lý-do: hồi ấy bộ xử lý cuộn ghi thẳng
+    vào cờ chung. Với bốn lý do thì cờ chung là một phép OR — nó KHÔNG được ghi,
+    và đúng ra là không được ghi: mỗi người ghi phải nhớ OR ba lý do còn lại là
+    hình dạng mà thay đổi ấy sinh ra để bỏ.
+
+    Nên luật đọc đúng bất biến mới: nó phải đọc được trên luồng UI, và phải có
+    thứ gì đó khiến nó ĐỔI — hoặc một phép ghi trực tiếp, hoặc một phép suy ra
+    từ các cờ lý do.
+  */
+  const derived = new RegExp(`const\\s+${name}\\s*=\\s*useDerivedValue\\(`).test(today);
+  const shared = new RegExp(`const\\s+${name}\\s*=\\s*useSharedValue\\(`).test(today);
+  if (!derived && !shared) {
+    problems.push(`${TODAY}: hold truyền cho <Mascot> (\`${name}\`) không phải useSharedValue/useDerivedValue — đọc trên luồng UI là cả điểm của cơ chế này`);
   }
-  if (!new RegExp(`${name}\\.value\\s*=`).test(today)) {
+  if (!derived && !new RegExp(`${name}\\.value\\s*=`).test(today)) {
     problems.push(`${TODAY}: \`${name}\` không bao giờ được GHI — một cờ không ai bật thì không dừng gì cả`);
   }
 }
-if (!/scrollPause=\{scrollPause\}/.test(mascotSrc)) {
-  problems.push(`${MASCOT}: Mascot không chuyển tiếp scrollPause xuống MascotFigure`);
+if (!/hold=\{hold\}/.test(mascotSrc)) {
+  problems.push(`${MASCOT}: Mascot không chuyển tiếp hold xuống MascotFigure`);
 }
-if (!/scrollPause=\{scrollPause\}/.test(figureSrc)) {
-  problems.push(`${FIGURE}: MascotFigure không chuyển tiếp scrollPause xuống KoaFigure`);
+if (!/hold=\{hold\}/.test(figureSrc)) {
+  problems.push(`${FIGURE}: MascotFigure không chuyển tiếp hold xuống KoaFigure`);
 }
 
 /* ── 2. máy trạng thái, chạy thật ───────────────────────────────────────────
@@ -109,6 +125,17 @@ if (anchor < 0) {
   problems.push(`${TODAY}: không tìm thấy useAnimatedScrollHandler — luật này không còn chỗ bám, sửa luật chứ đừng bỏ`);
 }
 const argSrc = anchor < 0 ? null : balanced(today, today.indexOf('(', anchor));
+
+/*
+  Phép OR bốn lý do, trích từ chính `useDerivedValue`. Nếu nó biến mất thì bước
+  này KHÔNG được xanh: cờ chung khi ấy do ai đó ghi thẳng, và mỗi người ghi phải
+  nhớ OR đủ ba lý do còn lại — hình dạng mà thay đổi này sinh ra để bỏ.
+*/
+const orM = /const hold = useDerivedValue\(\s*\(\) =>([\s\S]*?),?\s*\);/.exec(today);
+if (!orM) {
+  problems.push(`${TODAY}: không tìm thấy \`const hold = useDerivedValue(...)\` — bốn lý do lại đang được ghi thẳng vào một cờ chung`);
+}
+const orSrc = orM ? orM[1].trim().replace(/,$/, '') : null;
 if (anchor >= 0 && (!argSrc || !argSrc.includes('onBeginDrag'))) {
   problems.push(
     `${TODAY}: useAnimatedScrollHandler không còn nhận dạng ĐỐI TƯỢNG có onBeginDrag — ` +
@@ -117,41 +144,72 @@ if (anchor >= 0 && (!argSrc || !argSrc.includes('onBeginDrag'))) {
 }
 
 /**
- * Dựng lại bộ xử lý từ mã nguồn.
+ * Dựng lại bộ xử lý VÀ phép OR từ mã nguồn.
  *
- * Mọi thứ nó với tới ngoài `scrollPause` đều được thay bằng hàm rỗng: tệp này
- * kiểm đúng một máy trạng thái, và kéo cả `tabScrollFrame` thật vào đây sẽ
- * biến nó thành một bài kiểm về thanh tab.
+ * ── vì sao phải trích cả hai ──
+ *
+ * Bộ xử lý cuộn không còn ghi thẳng vào cờ chung. Nó ghi vào một LÝ DO
+ * (`dragging`), và kết quả là một `useDerivedValue` OR bốn lý do lại. Một tệp
+ * kiểm chỉ chạy bộ xử lý sẽ không bao giờ thấy phép OR ấy — và phép OR mới là
+ * chỗ dễ sót một vế nhất.
+ *
+ * Nên cả hai được TRÍCH ra khỏi mã thật rồi chạy. Không chép lại: một bản chép
+ * ở đây xanh trong khi mã thật thiếu một vế là đúng cái bẫy repo này đã bắt sáu
+ * lần.
+ *
+ * Mọi thứ khác nó với tới đều là hàm rỗng: tệp này kiểm một máy trạng thái, và
+ * kéo `tabScrollFrame` thật vào đây sẽ biến nó thành một bài kiểm về thanh tab.
  */
-function machine(src, focus = 0) {
-  const pause = { value: focus === 1 };
-  const scrollY = { value: 0 };
-  /* Bộ xử lý cuộn cũng ghi số đo khung nhìn cho phần tự-cuộn-khi-kéo. Chúng chỉ
-     cần TỒN TẠI ở đây: tệp này kiểm một máy trạng thái, và một `ReferenceError`
-     từ một shared value không liên quan đọc ra y hệt máy trạng thái hỏng — đúng
-     điều đã xảy ra khi hai dòng ấy được thêm vào. */
-  const viewportH = { value: 0 };
-  const maxScroll = { value: 0 };
+function machine(src, orSrc, world = {}) {
+  const { focus = 0, idle = false, offscreen = false, koaTop = 0, koaH = 100, vh = 800 } = world;
+
   /*
-    `focusSV` thì KHÁC — nó không phải một biến vô can, nó QUYẾT ĐỊNH kết quả.
+    Bốn lý do, mỗi cái một cờ — đúng hình dạng mà mã thật dùng.
 
-    Chế độ tập trung thu tấm nội dung — và Koa nằm trong nó — về chiều cao 0
-    bằng hộp cắt của `Expander`. Nhân vật vẫn ở trong cây, nên nếu bộ xử lý thả
-    về `false` cứng thì 36 vòng của nó chạy lại ngay lần nhấc tay đầu tiên, sau
-    một mép không ai nhìn thấy được. Và cuộn VẪN xảy ra ở chế độ ấy: khối chi
-    tiết cao hơn màn hình, người ta phải cuộn để đọc.
-
-    Nên nó vào đây như một CHIỀU của bảng ca, hai giá trị, chứ không phải một số
-    0 cấp cho xong — cấp 0 sẽ làm bước này xanh lại và mù đúng nửa mà chế độ tập
-    trung sinh ra. Cùng bài học mà `pick-row.mjs` đã học với `pillInset`.
+    `focusSV`, `idle` và hình học của `measure` đều là CHIỀU của bảng ca, không
+    phải giá trị cấp cho xong. Bài học của `pick-row.mjs` với `pillInset`: cấp 0
+    cho một chiều là làm bước kiểm xanh lại và mù đúng nửa mà chiều ấy sinh ra
+    để canh.
   */
+  const dragging = { value: false };
+  const off = { value: offscreen };
+  const idleSV = { value: idle };
   const focusSV = { value: focus };
+  const scrollY = { value: 0 };
+  const viewportH = { value: vh };
+  const maxScroll = { value: 0 };
+
+  /*
+    `measure` giả, trả về hình học ĐƯỢC ĐẶT: bước này kiểm biểu thức quyết định
+    "ngoài màn hay không", nên nó phải lái được cả hai phía của biểu thức ấy.
+    `null` là ca thứ ba và là ca quan trọng nhất — không đo được thì KHÔNG giữ.
+  */
+  const measure = () => (koaTop === null ? null : { pageY: koaTop, height: koaH });
+
+  let woke = 0;
   const make = new Function(
-    'scrollPause', 'scrollY', 'viewportH', 'maxScroll', 'focusSV', 'tabScrollFrame', 'runOnJS', 'armTabBarRestore', 'Date',
+    'dragging', 'offscreen', 'idle', 'focusSV', 'scrollY', 'viewportH', 'maxScroll',
+    'measure', 'koaRef', 'runOnJS', 'wake', 'settleOffscreen', 'tabScrollFrame',
+    'armTabBarRestore', 'Date',
     `return ${src.replace(/^\(/, '').replace(/\)$/, '')};`,
   );
-  const h = make(pause, scrollY, viewportH, maxScroll, focusSV, () => false, () => () => {}, () => {}, Date);
-  return { pause, h };
+  const settleOffscreen = () => {
+    const m = measure();
+    off.value = m === null ? false : m.pageY + m.height <= 0 || m.pageY >= viewportH.value;
+  };
+  const h = make(
+    dragging, off, idleSV, focusSV, scrollY, viewportH, maxScroll,
+    measure, {}, (f) => f, () => { woke++; }, settleOffscreen, () => false,
+    () => {}, Date,
+  );
+
+  /* Phép OR, trích từ chính `useDerivedValue`. */
+  const orFn = new Function(
+    'dragging', 'offscreen', 'idle', 'focusSV',
+    `return ${orSrc};`,
+  );
+  const hold = () => orFn(dragging, off, idleSV, focusSV);
+  return { hold, h, woke: () => woke };
 }
 
 /** Mọi chuỗi sự kiện mà một `UIScrollView` thật sự bắn ra. */
@@ -181,82 +239,119 @@ const SEQUENCES = [
 
 const EVT = { contentOffset: { y: 40 }, contentSize: { height: 2000 }, layoutMeasurement: { height: 800 } };
 
-/** Chạy một chuỗi sự kiện và trả về "đã từng đông cứng chưa" + trạng thái cuối. */
-function run(src, seq, focus) {
-  const m = machine(src, focus);
+/** Chạy một chuỗi sự kiện trong một THẾ GIỚI và trả về trạng thái giữ. */
+function run(src, orSrc, seq, world) {
+  const m = machine(src, orSrc, world);
   let paused = false;
   for (const name of seq.events) {
     m.h[name]?.(EVT);
-    if (m.pause.value) paused = true;
+    if (m.hold()) paused = true;
   }
-  return { paused, end: m.pause.value };
+  return { paused, end: m.hold(), woke: m.woke() };
 }
 
 /**
- * Cùng một bảng ca, chạy ở CẢ HAI chế độ — và kỳ vọng ở hai chế độ NGƯỢC nhau ở
- * trạng thái cuối.
+ * Bốn thế giới, và kỳ vọng ở trạng thái CUỐI ngược nhau giữa chúng.
  *
- *   · thu lại (focus 0): phải đông cứng trong cú cuộn, và phải THẢ khi xong.
- *     Kẹt ở true là nhân vật thôi thở cho tới khi đổi tab.
- *   · tập trung (focus 1): phải đông cứng, và phải VẪN đông cứng khi xong —
- *     nó đang nằm sau một hộp cắt cao 0.
+ *   · thu lại, có người, đang nhìn thấy → phải THẢ. Kẹt true là nhân vật thôi
+ *     thở cho tới khi đổi tab, và đó là chế độ hỏng tệ hơn chính lỗi được sửa.
+ *   · chế độ tập trung → phải GIỮ: tấm nội dung, và Koa trong nó, bị hộp cắt
+ *     thu về chiều cao 0.
+ *   · đã cuộn khỏi tầm nhìn → phải GIỮ: lớp aura có luật này rồi, nhân vật thì
+ *     chưa, và nó chạy suốt cả nửa dưới của trang.
+ *   · không ai chạm đủ lâu → phải GIỮ: đây là trạng thái mặc định của một app
+ *     đang mở lâu, và là toàn bộ nội dung của báo cáo "máy nóng".
  */
-function audit(src) {
+const WORLDS = [
+  { name: 'thu lại, đang nhìn thấy', world: {}, endHeld: false },
+  { name: 'chế độ tập trung', world: { focus: 1 }, endHeld: true },
+  { name: 'đã cuộn khỏi tầm nhìn', world: { koaTop: -300, koaH: 100 }, endHeld: true },
+  { name: 'không ai chạm đủ lâu', world: { idle: true }, endHeld: true },
+  /* Không đo được thì KHÔNG giữ: đóng băng một thứ có thể đang hiện ra là lỗi
+     tệ hơn hẳn cái đang được sửa. */
+  { name: 'không đo được vị trí', world: { koaTop: null }, endHeld: false },
+];
+
+function audit(src, orSrc) {
   const bad = [];
   for (const seq of SEQUENCES) {
-    let rest;
-    let focused;
-    try {
-      rest = run(src, seq, 0);
-      focused = run(src, seq, 1);
-    } catch (e) {
-      bad.push(`không dựng lại được bộ xử lý cuộn từ ${TODAY}: ${e.message}`);
-      break;
+    for (const w of WORLDS) {
+      let r;
+      try {
+        r = run(src, orSrc, seq, w.world);
+      } catch (e) {
+        bad.push(`không dựng lại được bộ xử lý cuộn từ ${TODAY}: ${e.message}`);
+        return bad;
+      }
+      /* Răng: nếu chưa lần nào đông cứng thì bản sửa không tồn tại. */
+      if (!r.paused) {
+        bad.push(`"${seq.name}" / ${w.name}: hold KHÔNG BAO GIỜ bật — đồng hồ nhân vật chạy suốt cú cuộn`);
+      }
+      if (r.end !== w.endHeld) {
+        bad.push(
+          w.endHeld
+            ? `"${seq.name}" / ${w.name}: cuộn xong hold về false — nhân vật chạy lại 36 vòng của nó ở một chỗ không ai nhìn thấy`
+            : `"${seq.name}" / ${w.name}: mọi thứ đã dừng mà hold vẫn TRUE — nhân vật đứng hình cho tới khi đổi tab`,
+        );
+      }
     }
-    /* Răng: nếu chưa lần nào đông cứng thì bản sửa không tồn tại. */
-    if (!rest.paused) {
-      bad.push(`"${seq.name}": scrollPause KHÔNG BAO GIỜ bật — đồng hồ nhân vật chạy suốt cú cuộn`);
-    }
-    /* Và chế độ hỏng tệ hơn: kẹt ở true thì nhân vật thôi thở vĩnh viễn. */
-    if (rest.end) {
-      bad.push(`"${seq.name}": mọi thứ đã dừng mà scrollPause vẫn TRUE — nhân vật đứng hình cho tới khi đổi tab`);
-    }
-    if (!focused.end) {
-      bad.push(
-        `"${seq.name}" ở chế độ TẬP TRUNG: cuộn xong scrollPause về false — Koa chạy lại 36 vòng của nó ` +
-          'sau một hộp cắt cao 0, thứ mà không ai nhìn thấy được',
-      );
+    /* Và cú kéo phải ĐÁNH THỨC: `onTouchStart` của lớp bọc không thấy cú kéo
+       khi ScrollView đã giành quyền, nên nếu `onBeginDrag` không tự gọi `wake`
+       thì cuộn suốt mười phút vẫn bị tính là "không ai chạm". */
+    if (seq.events.includes('onBeginDrag')) {
+      const r = run(src, orSrc, seq, { idle: true });
+      if (r.woke === 0) {
+        bad.push(`"${seq.name}": cú kéo KHÔNG đánh thức — cuộn mãi vẫn bị tính là không ai chạm`);
+      }
     }
   }
   return bad;
 }
 
-if (argSrc) {
-  problems.push(...audit(argSrc));
+if (argSrc && orSrc) {
+  problems.push(...audit(argSrc, orSrc));
 }
 
 /* ── 3. phép tự kiểm ────────────────────────────────────────────────────────
    Hai bản hỏng dựng từ chính mã nguồn đang chạy, mỗi bản gỡ đúng một tay cầm,
    và mỗi bản phải đỏ ĐÚNG ở chỗ đã dự đoán. */
-const SELF = argSrc
+const SELF = argSrc && orSrc
   ? [
       {
         name: 'gỡ onBeginDrag',
         /* Bản đã xuất xưởng: không có chỗ nào biết cú kéo bắt đầu. */
-        mutate: (s) => s.replace(/onBeginDrag:\s*\(\)\s*=>\s*\{[^}]*\},?/, ''),
+        mutate: (h) => h.replace(/onBeginDrag:\s*\(\)\s*=>\s*\{[^}]*\},?/, ''),
         expect: /KHÔNG BAO GIỜ bật/,
       },
       {
         name: 'gỡ onEndDrag (chỉ còn nghe đà)',
-        mutate: (s) => s.replace(/onEndDrag:\s*\(\)\s*=>\s*\{[^}]*\},?/, ''),
+        mutate: (h) => h.replace(/onEndDrag:\s*\(\)\s*=>\s*\{[^}]*\},?/, ''),
         expect: /vẫn TRUE — nhân vật đứng hình/,
       },
       {
-        /* Bản đã xuất xưởng của chiều THỨ HAI: thả về `false` cứng. Nó xanh ở
-           mọi ca thu lại — đó chính là lý do bảng ca cũ không thấy gì. */
-        name: 'thả về false cứng thay vì về chế độ tập trung',
-        mutate: (s) => s.replace(/scrollPause\.value = focusSV\.value === 1;/g, 'scrollPause.value = false;'),
-        expect: /chế độ TẬP TRUNG/,
+        /* Bản đã xuất xưởng của lý do 3: không ai hỏi nhân vật còn trên màn
+           không. Nó chạy suốt cả nửa dưới của trang. */
+        name: 'gỡ settleOffscreen (thôi hỏi nhân vật còn trên màn không)',
+        mutate: (h) => h.replace(/\n\s*settleOffscreen\(\);/g, ''),
+        expect: /đã cuộn khỏi tầm nhìn/,
+      },
+      {
+        /* Và cú kéo thôi đánh thức: cuộn mãi vẫn bị tính là không ai chạm. */
+        name: 'gỡ runOnJS(wake) khỏi onBeginDrag',
+        mutate: (h) => h.replace(/\n\s*runOnJS\(wake\)\(\);/, ''),
+        expect: /KHÔNG đánh thức/,
+      },
+      {
+        /* Sót một vế của phép OR — chỗ dễ sót nhất, và chỗ mà một tệp kiểm chỉ
+           chạy bộ xử lý sẽ không bao giờ nhìn thấy. */
+        name: 'sót vế `offscreen` trong phép OR',
+        or: (o) => o.replace(/offscreen\.value \|\| /, ''),
+        expect: /đã cuộn khỏi tầm nhìn/,
+      },
+      {
+        name: 'sót vế `idle` trong phép OR',
+        or: (o) => o.replace(/idle\.value \|\| /, ''),
+        expect: /không ai chạm đủ lâu/,
       },
     ]
   : [];
@@ -264,18 +359,18 @@ const SELF = argSrc
 /*
   Phép tự kiểm GỌI `audit`, không chép lại nó.
 
-  Vòng lặp ở đây từng dựng lại cả bảng ca và cả hai câu kỳ vọng bằng tay. Một
-  phép tự kiểm chép lại luật nó canh thì xoá luật đi vẫn xanh — dạng lỗi mà repo
-  này đã bắt năm lần.
+  Một phép tự kiểm chép lại luật nó canh thì xoá luật đi vẫn xanh — dạng lỗi mà
+  repo này đã bắt sáu lần.
 */
 const selfFail = [];
 for (const s of SELF) {
-  const broken = s.mutate(argSrc);
-  if (broken === argSrc) {
+  const h = s.mutate ? s.mutate(argSrc) : argSrc;
+  const o = s.or ? s.or(orSrc) : orSrc;
+  if (h === argSrc && o === orSrc) {
     selfFail.push(`${s.name}: không gỡ được gì — phép thử ngược đang thử một bản y hệt bản thật`);
     continue;
   }
-  const found = audit(broken);
+  const found = audit(h, o);
   if (found.length === 0) selfFail.push(`${s.name}: bản hỏng vẫn XANH — luật này không bắt được gì`);
   else if (!found.some((f) => s.expect.test(f))) {
     selfFail.push(`${s.name}: đỏ, nhưng không đúng chỗ đã dự đoán (${s.expect}); thật ra báo: ${found.join('; ')}`);
@@ -295,16 +390,23 @@ if (problems.length) {
 }
 
 console.log(
-  'đồng hồ nhân vật khi cuộn OK — Koa trên dashboard nhận scrollPause, và cờ ấy là shared value được GHI ' +
-    'trong chính bộ xử lý cuộn (đọc trên luồng UI, không một chuyến sang JS nào, không một hẹn giờ nào); ' +
-    'Mascot → MascotFigure → KoaFigure chuyển tiếp đủ ba chặng; ' +
-    `và máy trạng thái được TRÍCH ra khỏi index.tsx rồi lái qua ${SEQUENCES.length} chuỗi sự kiện thật của UIScrollView ` +
-    '(kéo chậm không sinh đà, vuốt mạnh có đà, chộp lại giữa đà, scrollTo không ngón tay, chạm-nhấc tại chỗ): ' +
-    'mỗi chuỗi chạy ở CẢ HAI chế độ. Thu lại: đông cứng trong lúc cuộn VÀ trở lại chạy khi dừng — vế sau là ' +
-    'chế độ hỏng tệ hơn chính lỗi được sửa, vì một cờ kẹt true không làm chậm gì cả, nó làm nhân vật thôi ' +
-    'thở. Tập trung: đông cứng và VẪN đông cứng khi cuộn xong, vì tấm nội dung — và Koa nằm trong nó — đang ' +
-    'bị hộp cắt của Expander thu về chiều cao 0, mà cuộn thì vẫn xảy ra ở đó (khối chi tiết cao hơn cả màn ' +
-    'hình, phải cuộn mới đọc hết). `focusSV` vào như một CHIỀU của bảng ca chứ không phải một số 0 cấp cho ' +
-    'xong: bản thả về `false` cứng xanh ở MỌI ca thu lại, nên chỉ chiều thứ hai mới nhìn thấy nó. ' +
-    `${SELF.length} phép thử ngược đều đỏ đúng ô đã dự đoán, và phép tự kiểm GỌI \`audit\` chứ không chép lại nó`,
+  'đồng hồ nhân vật OK — Koa trên dashboard nhận `hold`, đọc trên luồng UI (không một chuyến sang JS ' +
+    'nào, không một hẹn giờ nào), và Mascot → MascotFigure → KoaFigure chuyển tiếp đủ ba chặng. ' +
+    `Bộ xử lý cuộn VÀ phép OR bốn lý do đều được TRÍCH ra khỏi index.tsx rồi CHẠY, qua ${SEQUENCES.length} ` +
+    'chuỗi sự kiện thật của UIScrollView (kéo chậm không sinh đà, vuốt mạnh có đà, chộp lại giữa đà, ' +
+    `scrollTo không ngón tay, chạm-nhấc tại chỗ) × ${WORLDS.length} thế giới. ` +
+    'Bốn lý do giữ nhân vật đứng hình, và mỗi lý do là một CHIỀU của bảng ca chứ không phải một giá ' +
+    'trị cấp cho xong — bài học của `pillInset`: cấp 0 cho một chiều là làm bước kiểm xanh lại và mù ' +
+    'đúng nửa mà chiều ấy sinh ra để canh. (1) đang cuộn: đông cứng trong lúc cuộn và TRỞ LẠI CHẠY khi ' +
+    'dừng — vế sau là chế độ hỏng tệ hơn chính lỗi được sửa, vì một cờ kẹt true không làm chậm gì cả, ' +
+    'nó làm nhân vật thôi thở. (2) chế độ tập trung: tấm nội dung, và Koa trong nó, bị hộp cắt thu về ' +
+    'chiều cao 0. (3) đã cuộn khỏi tầm nhìn: lớp aura có luật này từ lâu và nhân vật thì chưa, nên nó ' +
+    'chạy ở nhịp màn hình suốt cả nửa dưới của trang. (4) không ai chạm đủ lâu: đây là trạng thái MẶC ' +
+    'ĐỊNH của một app đang mở lâu, và là toàn bộ nội dung của báo cáo "máy nóng". Không đo được vị trí ' +
+    'thì KHÔNG giữ — đóng băng một thứ có thể đang hiện ra là lỗi tệ hơn hẳn cái đang được sửa. Và cú ' +
+    'kéo phải ĐÁNH THỨC, vì `onTouchStart` của lớp bọc không thấy cú kéo khi ScrollView đã giành quyền. ' +
+    `${SELF.length} phép thử ngược đều đỏ đúng ô đã dự đoán — kể cả hai bản SÓT MỘT VẾ của phép OR, ` +
+    'thứ mà một tệp kiểm chỉ chạy bộ xử lý sẽ không bao giờ nhìn thấy — và phép tự kiểm GỌI `audit` ' +
+    'chứ không chép lại nó',
 );
+
