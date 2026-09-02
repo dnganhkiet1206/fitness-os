@@ -630,7 +630,32 @@ export default function NutritionScreen() {
             {/* Cùng hàng tiêu đề mà các mục con của thư viện đang dùng, nên nửa
                 dưới đọc ra là một MỤC của trang chứ không phải một trang thứ hai
                 bị nối vào. */}
-            <SectionTitle>{i18n.nutritionFoods}</SectionTitle>
+            {/*
+              Nút "Thêm" lên HÀNG TIÊU ĐỀ, không chiếm nửa hàng tìm kiếm.
+
+              Nó đang là `colors.primary` — bạc sáng, cao 44 — nên nó là vật
+              sáng nhất cả khu, và nó ép ô tìm kiếm xuống còn nửa bề rộng.
+              Nhưng tìm là việc làm mỗi lần mở trang, còn tạo món mới là việc
+              làm vài tuần một lần. Diện tích đang chia ngược với tần suất.
+
+              Trên hàng tiêu đề nó thành một hành động chữ, đúng chỗ mà
+              "Xem tất cả" của mục Kế hoạch ăn đã đứng — cùng một khuôn cho
+              cùng một vai trò.
+            */}
+            <View style={styles.foodHead}>
+              <SectionTitle>{i18n.nutritionFoods}</SectionTitle>
+              <PressScale
+                accessibilityRole="button"
+                hitSlop={8}
+                style={styles.addFoodBtn}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  nav.push('/food-editor');
+                }}>
+                <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
+                <Text style={styles.addFoodText}>{i18n.foodAddCustom}</Text>
+              </PressScale>
+            </View>
 
             {/* Search + add custom food (web: search flex-1 + Add button) */}
             <View style={styles.searchRow}>
@@ -665,15 +690,6 @@ export default function NutritionScreen() {
                   <Icon icon={Barcode} size={17} color={colors.mutedForeground} />
                 </PressScale>
               </View>
-              <PressScale
-                style={styles.addFoodBtn}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  nav.push('/food-editor');
-                }}>
-                <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
-                <Text style={styles.addFoodText}>{i18n.foodAddCustom}</Text>
-              </PressScale>
             </View>
 
 
@@ -793,6 +809,7 @@ const styles = StyleSheet.create({
   /* 30pt on its own, so hitSlop 8 takes it to 46 — past Apple's 44pt floor
      without making the glyph bigger than the search icon facing it. */
   scanBtn: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
+  foodHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   searchWrap: {
     flex: 1,
     flexDirection: 'row',
@@ -802,19 +819,34 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    backgroundColor: 'rgba(24,24,27,0.3)',
+    /*
+      Chỉ đổi NỀN, giữ nguyên viền.
+
+      Ô này đã có viền `colors.border` từ trước, và đo ra 1.37 so với nền trang
+      — đủ thấy. Cái vô hình là nền: `rgba(24,24,27,0.3)` trên #070708 ra
+      #0c0c0e, tương phản 1.030. `glass.bg` đưa nó lên 1.113.
+
+      Chênh lệch nhỏ, và tôi nói rõ là nhỏ: cái mép mới là thứ vẽ ra ô nhập,
+      còn nền chỉ làm lòng ô bớt trống. Đây không phải chỗ tôi tưởng có vấn đề
+      lúc đầu — tiền đề ban đầu của tôi sai một nửa.
+    */
+    backgroundColor: glass.bg,
     paddingHorizontal: spacing.md - 4,
   },
-  addFoodBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    height: 44,
-    paddingHorizontal: spacing.md - 2,
-    borderRadius: radius.sm,
-    backgroundColor: colors.primary,
-  },
-  addFoodText: { fontSize: 12, fontWeight: '600', color: colors.primaryForeground },
+  /*
+    Hành động chữ, không phải viên bạc đặc.
+
+    Bản trước tôi đổi màu CHỮ sang `colors.primary` nhưng để nguyên
+    `backgroundColor: colors.primary` — bạc trên bạc, nên nút ra một tấm trống
+    rỗng không chữ không icon. Comment lúc đó ghi "nền và chiều cao 44 bỏ đi"
+    trong khi tôi không hề bỏ; ảnh chụp bắt được, tsc thì không, vì hai màu
+    trùng nhau là style hợp lệ.
+
+    Nay bỏ thật: không nền, không chiều cao cố định, không bo góc. Chỉ dấu cộng
+    và chữ ở màu nhấn, `hitSlop` 8 giữ vùng chạm.
+  */
+  addFoodBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  addFoodText: { ...type.footnote, fontWeight: '600', color: colors.primary },
   searchInput: { flex: 1, color: colors.foreground, fontSize: 15, height: '100%' },
 
   /* The heading, its group and its "see all" are one thing 10 apart, not three
