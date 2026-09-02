@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { Check, PartyPopper, Sparkles } from 'lucide-react-native';
+import { Check, ChevronRight, PartyPopper, Sparkles } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -380,36 +380,44 @@ export function SmartTipsCard() {
   const cached = useSmartNudges(false);
   const count = cached.data?.length ?? null;
 
-  return (
-    <GlassCard>
-      <View style={styles.cardHeaderRow}>
-        <View style={styles.tipsTitleWrap}>
-          <View style={styles.tipsTitleRow}>
-            <Icon icon={Sparkles} size={16} />
-            <Text style={styles.cardTitle}>{i18n.nSmartTips}</Text>
-          </View>
-          <Text style={styles.cardHint}>{i18n.nTipsHint}</Text>
-        </View>
-      </View>
+  const live =
+    count != null && count > 0
+      ? vi
+        ? `${count} gợi ý cho hôm nay`
+        : `${count} suggestions for today`
+      : null;
 
-      <PressScale
-        accessibilityRole="button"
-        style={styles.tipsBtn}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          nav.push('/assistant');
-        }}>
-        <Text style={styles.tipsBtnText}>
-          {count != null && count > 0
-            ? vi
-              ? `${count} gợi ý cho hôm nay`
-              : `${count} suggestions for today`
-            : vi
-              ? 'Xem insight hôm nay'
-              : 'See today’s insight'}
-        </Text>
-      </PressScale>
-    </GlassCard>
+  return (
+    <PressScale
+      accessibilityRole="button"
+      accessibilityLabel={`${i18n.nSmartTips} — ${live ?? i18n.nTipsHint}`}
+      onPress={() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        nav.push('/assistant');
+      }}>
+      <GlassCard style={styles.tipsCard}>
+        <View style={styles.tipsChip}>
+          <Icon icon={Sparkles} size={20} color={colors.metricPurple} />
+        </View>
+        <View style={styles.tipsCopy}>
+          <Text style={styles.tipsLead} numberOfLines={1}>{i18n.nSmartTips}</Text>
+          {/*
+            Dòng phụ mang TRẠNG THÁI, không mang lời quảng cáo.
+
+            Trước đây nó luôn là "AI từ dữ liệu gần đây" — một câu mô tả chính
+            nó, đúng ở mọi ngày nên không nói gì về hôm nay. Con số thì có nói,
+            mà nó lại bị nhét vào nhãn của cái nút. Đổi chỗ hai thứ: tên thẻ lên
+            dòng đầu, trạng thái xuống dòng phụ. Đó đúng là cách `toolRowSub`
+            bên Tập luyện đang làm ("Đã ghi 1 buổi tập").
+
+            Câu mô tả vẫn còn, nhưng chỉ ở NGÀY CHƯA CÓ SỐ — lúc ấy nó là thứ
+            duy nhất còn nói được điều gì.
+          */}
+          <Text style={styles.tipsSub} numberOfLines={1}>{live ?? i18n.nTipsHint}</Text>
+        </View>
+        <Icon icon={ChevronRight} size={17} color={colors.mutedForeground} />
+      </GlassCard>
+    </PressScale>
   );
 }
 
@@ -566,15 +574,38 @@ const styles = StyleSheet.create({
   suppDose: { ...type.caption, color: colors.mutedForeground },
 
   // Smart tips
-  tipsTitleWrap: { flex: 1, minWidth: 0 },
-  tipsTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  tipsBtn: {
-    marginTop: spacing.md,
-    height: 44,
-    borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+  /*
+    ── ba nhãn cho một cánh cửa ──
+
+    Thẻ cũ có tiêu đề "GỢI Ý THÔNG MINH", câu phụ "AI từ dữ liệu gần đây", rồi
+    một nút xám rộng hết bề ngang ghi "Xem insight hôm nay". Ba dòng chữ nói
+    gần cùng một điều, và thứ nặng nhất trên thẻ — tấm xám cao 44 — chỉ để mở
+    một trang. Trong khi mọi thẻ khác ở Dashboard đều hiện một con số, thẻ này
+    là cánh cửa duy nhất, và nó đeo ba tấm biển.
+
+    Nay cả thẻ LÀ cái nút, nên tấm xám không còn lý do tồn tại: hình dạng đã
+    nói "bấm được" qua ô icon có nền màu và mũi chevron, đúng như mọi hàng dẫn
+    đi chỗ khác trong app.
+
+    Ô icon 40×40 nền 12% alpha là idiom có sẵn của "GHI BỮA ĂN" (`chip` trong
+    `meal-log-actions`), không phải thứ tôi bịa ra ở đây. Tím `metricPurple` là
+    màu Sparkles vẫn dùng.
+
+    Cao 135 điểm xuống còn một hàng — và không mất thông tin nào, vì thứ mất là
+    hai bản sao của cùng một câu.
+  */
+  tipsCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
+  tipsChip: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: `${colors.metricPurple}1f`,
   },
-  tipsBtnText: { ...type.headline, color: colors.foreground },
+  tipsCopy: { flex: 1, minWidth: 0, gap: 1 },
+  /* 17 điểm màu đầy, không phải 12 in hoa màu mờ: đây là tên của thẻ, và ở cỡ
+     cũ nó đọc ra nhỏ hơn cả câu phụ nằm dưới nó. */
+  tipsLead: { ...type.body, fontWeight: '600', color: colors.foreground },
+  tipsSub: { ...type.footnote, color: colors.mutedForeground },
 });
