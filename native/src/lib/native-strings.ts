@@ -199,7 +199,7 @@ const en = {
   a11yAcceptTerms: 'Accept the terms',
   a11yMoveUp: 'Move up',
   a11yMoveDown: 'Move down',
-  a11ySleepQuality: 'Sleep quality {x} of 5',
+  a11ySleepQuality: 'Sleep quality {x} of {max}',
   // ── deleting an account ──
   nDeleteAccount: 'Delete account',
   nDeleteAccountDesc: 'Permanently removes your account and everything in it',
@@ -978,7 +978,7 @@ const vi: typeof en = {
   a11yAcceptTerms: 'Đồng ý điều khoản',
   a11yMoveUp: 'Chuyển lên',
   a11yMoveDown: 'Chuyển xuống',
-  a11ySleepQuality: 'Chất lượng giấc ngủ {x} trên 5',
+  a11ySleepQuality: 'Chất lượng giấc ngủ {x} trên {max}',
   // ── xoá tài khoản ──
   nDeleteAccount: 'Xoá tài khoản',
   nDeleteAccountDesc: 'Xoá vĩnh viễn tài khoản và toàn bộ dữ liệu trong đó',

@@ -36,6 +36,7 @@ import { sleepRowToReplace } from '@/lib/same-day-entry';
 import { confirmWrite } from '@/lib/write-result';
 import { sleepSpan } from '@/lib/sleep-window';
 import { decText } from '@/lib/number-input';
+import { SLEEP_QUALITY_MAX } from '@/lib/sleep-note';
 
 // Face picks map onto the web's 1–10 quality scale (SleepCard shows
 // "x/10") — code-drawn lucide faces on a red→teal neon ramp
@@ -44,7 +45,10 @@ const QUALITY: { value: number; icon: LucideIcon; color: string }[] = [
   { value: 4, icon: Frown, color: colors.metricOrange },
   { value: 6, icon: Meh, color: colors.readinessYellow },
   { value: 8, icon: Smile, color: colors.readinessGreen },
-  { value: 10, icon: Laugh, color: colors.metricCyan },
+  /* Mặt cười cao nhất PHẢI bằng `SLEEP_QUALITY_MAX` — mẫu số hiển thị và chuỗi
+     a11y đều đọc từ đó. Đổi thang mà quên một trong hai chỗ kia là lỗi đã xảy
+     ra một lần: `/100` và "trên 5" cho một thang 1–10. */
+  { value: SLEEP_QUALITY_MAX, icon: Laugh, color: colors.metricCyan },
 ];
 
 export default function LogSleepSheet() {
@@ -256,7 +260,7 @@ export default function LogSleepSheet() {
             <Pressable
               key={q.value}
               accessibilityRole="button"
-              accessibilityLabel={i18n.a11ySleepQuality.replace('{x}', String(q.value))}
+              accessibilityLabel={i18n.a11ySleepQuality.replace('{x}', String(q.value)).replace('{max}', String(SLEEP_QUALITY_MAX))}
               accessibilityState={{ selected: active }}
               onPress={() => {
                 Haptics.selectionAsync();

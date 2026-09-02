@@ -109,3 +109,25 @@ export function sleepNote(input: {
   /* Mặt ở giữa: không mâu thuẫn với phép đo nào, nên không có gì để nói thêm. */
   return null;
 }
+
+/**
+ * Thang điểm chất lượng giấc ngủ mà NGƯỜI DÙNG tự chấm.
+ *
+ * ── vì sao là một hằng số, không phải một con số gõ ba lần ──
+ *
+ * Thang này từng được viết ở ba chỗ rời nhau: giá trị các mặt cười trong
+ * `log-sleep.tsx` (2/4/6/8/10), mẫu số hiển thị ở `hero-pages.tsx`, và chuỗi
+ * a11y trong `native-strings.ts`. Ba bản sao, và HAI trong ba đã sai:
+ *
+ *     hiển thị  `/100`   → điểm tối đa 10 đọc ra là "10 trên 100", gần bét
+ *     a11y      `of 5`   → sai mẫu số cho người dùng trình đọc màn hình
+ *
+ * Người dùng bắt được cái thứ nhất vì nó làm hai thẻ trông như bất đồng dữ
+ * liệu: thẻ Sẵn sàng ghi "SLEEP 90/100", thẻ Giấc ngủ ghi "CHẤT LƯỢNG 10/100".
+ * Chúng không bất đồng — 90 là điểm app TÍNH từ thời lượng so với mục tiêu,
+ * 10 là điểm bạn TỰ CHẤM — nhưng cái mẫu số sai làm chúng trông như thế.
+ *
+ * Đừng đọc số này thay cho `sleep_score`: hai đại lượng khác nhau, và gộp
+ * chúng lại là cách sinh ra đúng sự nhầm lẫn ở trên.
+ */
+export const SLEEP_QUALITY_MAX = 10;

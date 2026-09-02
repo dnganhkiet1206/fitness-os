@@ -8,6 +8,7 @@ import { colors, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { displayVolume, volumeLabel } from '@/lib/units';
+import { SLEEP_QUALITY_MAX } from '@/lib/sleep-note';
 
 /** Cùng khoá với thẻ dinh dưỡng dạng danh sách: nút ở hai chỗ phải đếm lượt
  *  nhắc chung một tên, nếu không một chỗ im còn chỗ kia nhắc mãi. */
@@ -249,7 +250,33 @@ export function SleepHero({
         tiles={[
           { label: i18n.nSleep, value: String(hours), unit: `/ ${targetHours} h`, color: colors.metricPurple },
           ...(quality != null
-            ? [{ label: i18n.nQuality, value: String(Math.round(quality)), unit: '/100', color: colors.metricBlue }]
+            ? [
+                {
+                  label: i18n.nQuality,
+                  value: String(Math.round(quality)),
+                  /*
+                    `/10`, KHÔNG phải `/100`.
+
+                    `quality` là điểm người dùng TỰ CHẤM, và thang của nó là
+                    1–10: `log-sleep.tsx` cho chọn năm mặt cười với giá trị
+                    2/4/6/8/10, và cột `quality` trong migration mặc định 5.
+
+                    Dán `/100` lên nó biến điểm TỐI ĐA thành "10 trên 100" —
+                    người ngủ ngon nhất có thể và tự chấm mặt cười tươi nhất
+                    thì thấy một con số đọc ra là gần bét. Người dùng bắt được
+                    đúng chỗ này: thẻ Sẵn sàng ghi "SLEEP 90/100" còn thẻ Giấc
+                    ngủ ghi "CHẤT LƯỢNG 10/100", và hai con số trông như mâu
+                    thuẫn nhau.
+
+                    Chúng KHÔNG mâu thuẫn — chúng là hai đại lượng khác nhau:
+                    90 là điểm ngủ do app tính từ thời lượng so với mục tiêu,
+                    còn 10 là điểm bạn tự chấm. Cái sai chỉ là mẫu số, và chính
+                    cái mẫu số sai làm hai thẻ trông như bất đồng dữ liệu.
+                  */
+                  unit: `/${SLEEP_QUALITY_MAX}`,
+                  color: colors.metricBlue,
+                },
+              ]
             : []),
           { label: i18n.nBedtime, value: clock(bedtime), unit: '' },
           { label: i18n.nWaketime, value: clock(waketime), unit: '' },
