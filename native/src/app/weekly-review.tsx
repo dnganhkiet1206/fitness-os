@@ -770,7 +770,9 @@ const styles = StyleSheet.create({
   summary: { ...type.body, color: colors.secondaryForeground, marginTop: spacing.sm, lineHeight: 21 },
   itemCard: { paddingVertical: spacing.md },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  iconEmoji: { fontSize: 22 },
+  /* Emoji bỏ qua `color`, nhưng khai nó ra để `tools/text-color.mjs` không
+     cần một danh sách ngoại lệ mà người sau phải hiểu. */
+  iconEmoji: { fontSize: 22, color: colors.foreground },
   info: { flex: 1, minWidth: 0 },
   itemTitle: { ...type.body, fontWeight: '600', color: colors.foreground },
   trendMark: { color: colors.mutedForeground },

@@ -155,6 +155,7 @@ const STEPS = [
   ['mô hình lò xo', 'node', ['tools/spring-model.mjs']],
   ['hàng nút góc trên', 'node', ['tools/top-chrome.mjs']],
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
+  ['màu chữ', 'node', ['tools/text-color.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
   ['kiểu icon macro', 'node', ['tools/macro-icon-style.mjs']],

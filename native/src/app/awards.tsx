@@ -614,11 +614,25 @@ const styles = StyleSheet.create({
 
   tierSection: { gap: spacing.sm + 4 },
   tierHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /*
+    `color` PHẢI có ở đây.
+
+    Trước đây màu đến từ inline `{ color: tc.color }` — màu của hạng. Khi đổi
+    sang nhóm theo miền tôi bỏ dòng inline ấy và không cấp màu thay thế, nên
+    chữ rơi về màu mặc định của hệ thống: đen trên nền đen. Tiêu đề mục biến
+    mất hoàn toàn.
+
+    `tsc` không thấy được: thiếu `color` là style hợp lệ. Guard cũng không —
+    không luật nào nói "mỗi Text phải có màu". Chỉ mắt người bắt được, và đó
+    là lần thứ hai trong phiên này một thay đổi qua hết mọi cửa tự động rồi
+    hỏng trên màn hình.
+  */
   tierTitle: {
     fontSize: 13,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 2,
+    color: colors.foreground,
   },
   tierLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(43,43,49,0.4)' },
   tierCount: { ...type.mono, fontSize: 11, color: colors.mutedForeground },
@@ -685,13 +699,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  tierBadge: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.full },
-  tierBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1.6,
   },
   medalTitle: { fontSize: 13, fontWeight: '700', color: colors.foreground, textAlign: 'center' },
   /*
