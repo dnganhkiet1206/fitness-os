@@ -394,21 +394,6 @@ function MedalCard({
             <Path d="M 13 30 A 24 24 0 0 1 44 13 A 28 28 0 0 0 13 44 Z" fill="rgba(255,255,255,0.20)" />
           )}
 
-          {/* Vòng tiến độ nằm NGOÀI đĩa, nên nó không đè lên mặt kim loại. */}
-          {!isEarned && pct > 0 && (
-            <Circle
-              cx={36}
-              cy={36}
-              r={R}
-              fill="none"
-              stroke={tier.color}
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeDasharray={`${C}`}
-              strokeDashoffset={C * (1 - pct)}
-              transform="rotate(-90 36 36)"
-            />
-          )}
         </Svg>
         {/*
           CON SỐ là mặt của huy chương, glyph chỉ là phụ đề.
@@ -445,11 +430,6 @@ function MedalCard({
         </View>
       </View>
 
-      {showCount ? (
-        <Text style={styles.medalProgress}>
-          {current!.toLocaleString(locale)} / {need!.toLocaleString(locale)}
-        </Text>
-      ) : null}
 
 
       <Text style={[styles.medalTitle, !isEarned && styles.medalTitleLocked]} numberOfLines={1}>
@@ -458,6 +438,28 @@ function MedalCard({
       <Text style={styles.medalDesc} numberOfLines={2}>
         {desc}
       </Text>
+
+      {/*
+        Tiến độ là một THANH NGANG dưới cùng, không phải vòng cung quanh đĩa.
+
+        Vòng cung đọc sai ở hai điểm. Nó bám sát mép kim loại nên ở mức thấp —
+        1/60, 1/100 — nó chỉ là một vạch ngắn ở đỉnh, trông như một khiếm
+        khuyết của hình chứ không như tiến độ. Và nó cạnh tranh với chính cái
+        vành: hai đường tròn đồng tâm cách nhau một điểm ảnh.
+
+        Thanh ngang thì có điểm đầu và điểm cuối nhìn thấy được, nên 1/100 đọc
+        ra là "mới bắt đầu" chứ không phải "hình bị sứt".
+      */}
+      {showCount ? (
+        <View style={styles.barWrap}>
+          <View style={styles.barTrack}>
+            <View style={[styles.barFill, { width: `${Math.max(2, pct * 100)}%`, backgroundColor: tier.color }]} />
+          </View>
+          <Text style={styles.medalProgress}>
+            {current!.toLocaleString(locale)} / {need!.toLocaleString(locale)}
+          </Text>
+        </View>
+      ) : null}
 
       {earned && (
         <View style={styles.earnedRow}>
@@ -634,6 +636,17 @@ const styles = StyleSheet.create({
   },
   /* Số đứng riêng một dòng, chữ số đều bề rộng để cột không nhảy khi con số
      đổi từ 9 sang 10. */
+  barWrap: { width: '100%', alignItems: 'center', gap: 4, marginTop: 2 },
+  barTrack: {
+    width: '100%',
+    height: 4,
+    borderRadius: radius.full,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden',
+  },
+  /* `width` là phần trăm nên nó co theo thẻ; `minWidth` 2% để mức 1/365 vẫn
+     hiện ra một đầu mút thay vì biến mất hoàn toàn. */
+  barFill: { height: '100%', borderRadius: radius.full },
   medalProgress: {
     ...type.footnote,
     fontWeight: '700',
@@ -681,7 +694,16 @@ const styles = StyleSheet.create({
     letterSpacing: 1.6,
   },
   medalTitle: { fontSize: 13, fontWeight: '700', color: colors.foreground, textAlign: 'center' },
-  medalTitleLocked: { color: 'rgba(140,140,150,0.5)' },
+  /*
+    `mutedForeground`, không phải xám 50% alpha.
+
+    Bản cũ để `rgba(140,140,150,0.5)` — trên nền thẻ tối thì tên huy chương tụt
+    dưới ngưỡng đọc được, và đó là trạng thái của MỌI huy chương ở ngày đầu.
+    Mờ để nói "chưa mở" là đúng; mờ tới mức phải nheo mắt thì cả màn không dùng
+    được đúng lúc nó cần thuyết phục người ta nhất. Kim loại xám đã nói "chưa
+    mở" rồi — chữ không cần nói lại bằng cách tự xoá mình.
+  */
+  medalTitleLocked: { color: colors.mutedForeground },
   medalDesc: { fontSize: 11, color: colors.mutedForeground, textAlign: 'center', lineHeight: 14 },
   earnedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   earnedDate: { ...type.mono, fontSize: 11, color: colors.mutedForeground },
