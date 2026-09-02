@@ -72,6 +72,68 @@ export const AWARD_TEXT: Record<string, { title: Bi; desc: Bi }> = {
     title: { en: '10K Steps', vi: '10K Steps' },
     desc: { en: 'Hit 10,000 steps in a day', vi: 'Đạt 10,000 bước trong 1 ngày' },
   },
+  steps_15k: {
+    title: { en: 'Long Way', vi: 'Đường Dài' },
+    desc: { en: 'Hit 15,000 steps in a day', vi: 'Đạt 15.000 bước trong 1 ngày' },
+  },
+  steps_20k: {
+    title: { en: 'Twenty Thousand', vi: 'Hai Vạn Bước' },
+    desc: { en: 'Hit 20,000 steps in a day', vi: 'Đạt 20.000 bước trong 1 ngày' },
+  },
+
+  /* Bốn miền mới. Mô tả nói ĐÚNG điều kiện được kiểm, không nói điều kiện nghe
+     hay hơn: "ghi 7 ngày có uống nước" chứ không phải "uống đủ nước 7 ngày",
+     vì thứ hệ thống đếm là ngày CÓ GHI, không phải ngày đạt mục tiêu. Một mô
+     tả hứa nhiều hơn thứ được kiểm là một lời nói dối chờ người dùng phát
+     hiện. */
+  first_meal: {
+    title: { en: 'First Plate', vi: 'Bữa Đầu Tiên' },
+    desc: { en: 'Log your first meal', vi: 'Ghi bữa ăn đầu tiên' },
+  },
+  meals_50: {
+    title: { en: 'Fifty Plates', vi: 'Năm Mươi Bữa' },
+    desc: { en: 'Log 50 meals', vi: 'Ghi 50 bữa ăn' },
+  },
+  meals_250: {
+    title: { en: 'Kitchen Regular', vi: 'Khách Quen Của Bếp' },
+    desc: { en: 'Log 250 meals', vi: 'Ghi 250 bữa ăn' },
+  },
+  water_7: {
+    title: { en: 'Seven Springs', vi: 'Bảy Ngày Nước' },
+    desc: { en: 'Log water on 7 days', vi: 'Ghi nước uống trong 7 ngày' },
+  },
+  water_30: {
+    title: { en: 'Steady Current', vi: 'Dòng Chảy Đều' },
+    desc: { en: 'Log water on 30 days', vi: 'Ghi nước uống trong 30 ngày' },
+  },
+  water_100: {
+    title: { en: 'Hundred Days of Water', vi: 'Trăm Ngày Nước' },
+    desc: { en: 'Log water on 100 days', vi: 'Ghi nước uống trong 100 ngày' },
+  },
+  sleep_7: {
+    title: { en: 'Seven Nights', vi: 'Bảy Đêm' },
+    desc: { en: 'Log 7 nights of sleep', vi: 'Ghi 7 đêm ngủ' },
+  },
+  sleep_30: {
+    title: { en: 'Month of Rest', vi: 'Tháng Yên Giấc' },
+    desc: { en: 'Log 30 nights of sleep', vi: 'Ghi 30 đêm ngủ' },
+  },
+  sleep_100: {
+    title: { en: 'Hundred Nights', vi: 'Trăm Đêm' },
+    desc: { en: 'Log 100 nights of sleep', vi: 'Ghi 100 đêm ngủ' },
+  },
+  weigh_10: {
+    title: { en: 'Ten Readings', vi: 'Mười Lần Cân' },
+    desc: { en: 'Log 10 weigh-ins', vi: 'Ghi 10 lần cân' },
+  },
+  weigh_50: {
+    title: { en: 'Steady Hand', vi: 'Tay Đều' },
+    desc: { en: 'Log 50 weigh-ins', vi: 'Ghi 50 lần cân' },
+  },
+  weigh_200: {
+    title: { en: 'Two Hundred Marks', vi: 'Hai Trăm Vạch' },
+    desc: { en: 'Log 200 weigh-ins', vi: 'Ghi 200 lần cân' },
+  },
 };
 
 export const CHALLENGE_TEXT: Record<string, { title: Bi; desc: Bi; reward: Bi }> = {

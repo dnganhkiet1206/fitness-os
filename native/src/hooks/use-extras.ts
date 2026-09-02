@@ -150,7 +150,8 @@ export function useCheckAwards() {
   const readSources = useCallback(async (): Promise<AwardSources> => {
     const uid = user!.id;
 
-    const [logsRes, freezeRes, workoutRes, prRes, todayRes] = await Promise.all([
+    const [logsRes, freezeRes, workoutRes, prRes, todayRes, mealRes, waterRes, sleepRes, weighRes] =
+      await Promise.all([
       supabase
         .from('daily_logs')
         .select('date')
@@ -169,6 +170,26 @@ export function useCheckAwards() {
         .eq('user_id', uid)
         .eq('pr_detected', true),
       supabase.from('daily_logs').select('steps').eq('user_id', uid).eq('date', localDateStr()).maybeSingle(),
+      /*
+        Bốn miền mới. `head: true` với `count: 'exact'` nên server chỉ trả về
+        con số, không trả hàng nào — cùng cách hai truy vấn buổi tập ở trên đã
+        làm, và đó là lý do thêm bốn cái này không làm màn chậm đi.
+      */
+      supabase.from('meal_entries').select('id', { count: 'exact', head: true }).eq('user_id', uid),
+      /*
+        Nước đếm theo NGÀY, không theo lần ghi.
+
+        `water_logs` có một hàng mỗi lần uống, nên một người uống tám cốc trong
+        một ngày sẽ đạt "7 ngày uống đủ" ngay hôm đầu nếu đếm hàng. Huy chương
+        này nói về THÓI QUEN, và thói quen đo bằng số ngày.
+
+        Không có `count: 'exact'` cho DISTINCT trong PostgREST, nên đọc cột ngày
+        rồi đếm ở client. Giới hạn 400 hàng: ngưỡng cao nhất là 100 ngày, và
+        400 lần ghi đủ phủ nó ở mọi nhịp uống hợp lý.
+      */
+      supabase.from('water_logs').select('date').eq('user_id', uid).limit(400),
+      supabase.from('sleep_logs').select('id', { count: 'exact', head: true }).eq('user_id', uid),
+      supabase.from('weight_logs').select('id', { count: 'exact', head: true }).eq('user_id', uid),
     ]);
 
     /*
@@ -194,6 +215,14 @@ export function useCheckAwards() {
       streak,
       workoutCount: workoutRes.error ? null : workoutRes.count ?? null,
       prCount: prRes.error ? null : prRes.count ?? null,
+      mealCount: mealRes.error ? null : mealRes.count ?? null,
+      /* `null` khi đọc hỏng, KHÔNG phải 0 — xem ghi chú ở `AwardSources`: một
+         truy vấn hỏng không được đọc thành "chưa uống ngày nào". */
+      waterDays: waterRes.error
+        ? null
+        : new Set((waterRes.data ?? []).map((r) => r.date).filter(Boolean)).size,
+      sleepCount: sleepRes.error ? null : sleepRes.count ?? null,
+      weighCount: weighRes.error ? null : weighRes.count ?? null,
       steps: todayRes.error ? null : todayRes.data?.steps ?? null,
     };
   }, [user?.id]);

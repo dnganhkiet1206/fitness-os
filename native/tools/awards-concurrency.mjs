@@ -233,7 +233,15 @@ const o = { db: ${dbReady ? 'true' : 'false'} };
   /* ── A. the decision, over thresholds and edges ── */
   const none = new Set();
   const keys = (s, e = none) => awardsToGrant(s, e).map((d) => d.key).join(',');
-  const S = (p) => ({ streak: null, workoutCount: null, prCount: null, steps: null, ...p });
+  /* Mặc định null cho MỌI nguồn, kể cả bốn nguồn mới. Nếu thiếu, chúng đến
+     awardsToGrant dưới dạng undefined — mà usable() cũng loại undefined, nên ca
+     kiểm sẽ XANH vì lý do sai và không còn kiểm được gì.
+     (Không dùng dấu huyền trong tệp này: cả khối là một template literal.) */
+  const S = (p) => ({
+    streak: null, workoutCount: null, prCount: null, steps: null,
+    mealCount: null, waterDays: null, sleepCount: null, weighCount: null,
+    ...p,
+  });
   const cases = [
     [S({ streak: 0 }), ''],
     [S({ streak: 2 }), ''],
@@ -252,7 +260,31 @@ const o = { db: ${dbReady ? 'true' : 'false'} };
     [S({ prCount: 5 }), 'first_pr,pr_5'],
     [S({ steps: 9999 }), ''],
     [S({ steps: 10000 }), 'steps_10k'],
-    [S({ steps: 1e12 }), 'steps_10k'],
+    [S({ steps: 14999 }), 'steps_10k'],
+    [S({ steps: 15000 }), 'steps_10k,steps_15k'],
+    [S({ steps: 20000 }), 'steps_10k,steps_15k,steps_20k'],
+    /* Một con số vô lý vẫn phải trao ĐỦ CẢ THANG, không phải bậc đầu. Ca này
+       từng kỳ vọng đúng steps_10k — viết hồi bước chân chỉ có một huy chương —
+       và nó bắt được ngay lúc thang dài ra, đúng việc của nó. */
+    [S({ steps: 1e12 }), 'steps_10k,steps_15k,steps_20k'],
+
+    /* Bốn miền mới: dưới ngưỡng, đúng ngưỡng, và vượt xa. */
+    [S({ mealCount: 0 }), ''],
+    [S({ mealCount: 1 }), 'first_meal'],
+    [S({ mealCount: 49 }), 'first_meal'],
+    [S({ mealCount: 250 }), 'first_meal,meals_50,meals_250'],
+    [S({ waterDays: 6 }), ''],
+    [S({ waterDays: 7 }), 'water_7'],
+    [S({ waterDays: 100 }), 'water_7,water_30,water_100'],
+    [S({ sleepCount: 6 }), ''],
+    [S({ sleepCount: 30 }), 'sleep_7,sleep_30'],
+    [S({ weighCount: 9 }), ''],
+    [S({ weighCount: 200 }), 'weigh_10,weigh_50,weigh_200'],
+    /* null KHÔNG phải 0: một truy vấn hỏng không được trao gì, kể cả bậc thấp
+       nhất. Đây là bất biến mà usable() giữ, và nó dễ vỡ nhất đúng lúc thêm
+       miền mới — bốn nhánh mới đều phải đi qua nó. */
+    [S({ mealCount: null, waterDays: null, sleepCount: null, weighCount: null }), ''],
+
     [S({}), ''],
   ];
   let pass = 0, fail = null;

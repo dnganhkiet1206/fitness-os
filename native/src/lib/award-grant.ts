@@ -75,6 +75,43 @@ export const AWARD_DEFINITIONS = [
   { key: 'first_pr', type: 'pr', icon: 'trophy', tier: 'silver' },
   { key: 'pr_5', type: 'pr', icon: 'trophy', tier: 'gold', requirement: 5 },
   { key: 'steps_10k', type: 'steps_goal', icon: 'footprints', tier: 'bronze' },
+  { key: 'steps_15k', type: 'steps_goal', icon: 'footprints', tier: 'silver', requirement: 15000 },
+  { key: 'steps_20k', type: 'steps_goal', icon: 'footprints', tier: 'gold', requirement: 20000 },
+
+  /*
+    ── mười hai huy chương cho những miền chưa có cái nào ──
+
+    Danh mục cũ có mười lăm huy chương và tất cả đều thuộc MỘT miền: chuỗi ngày,
+    số buổi tập, PR, bước chân. App theo dõi cả dinh dưỡng, nước, giấc ngủ và
+    cân nặng — và không huy chương nào chạm tới chúng. Người chỉ ăn uống theo
+    dõi mà không tập thì màn này vĩnh viễn trống trơn.
+
+    ── vì sao ĐẾM chứ không phải ĐẠT MỤC TIÊU ──
+
+    Mỗi huy chương dưới đây suy ra được từ MỘT phép đếm trên một bảng. Bản đầu
+    tôi định dùng "đạt mục tiêu đạm 7 ngày" — nghe hay hơn, nhưng nó phải đọc
+    mục tiêu trong hồ sơ, so từng ngày, và mục tiêu thì đổi được. Một huy chương
+    đã trao rồi mà điều kiện của nó phụ thuộc vào con số người dùng chỉnh được
+    thì hoặc là sai sau khi họ chỉnh, hoặc phải chốt lại lịch sử — và cả hai đều
+    là quyết định về sản phẩm, không phải về code (xem ghi chú Chain T ở đầu
+    tệp: repo này CỐ Ý chưa quyết chuyện huy chương có sống sót khi điều kiện
+    thành sai).
+
+    Đếm thì không có chỗ nào để lệch: 50 bữa đã ghi hôm nay vẫn là 50 bữa vào
+    năm sau.
+  */
+  { key: 'first_meal', type: 'nutrition', icon: 'utensils', tier: 'bronze', requirement: 1 },
+  { key: 'meals_50', type: 'nutrition', icon: 'utensils', tier: 'silver', requirement: 50 },
+  { key: 'meals_250', type: 'nutrition', icon: 'utensils', tier: 'gold', requirement: 250 },
+  { key: 'water_7', type: 'water', icon: 'droplets', tier: 'bronze', requirement: 7 },
+  { key: 'water_30', type: 'water', icon: 'droplets', tier: 'silver', requirement: 30 },
+  { key: 'water_100', type: 'water', icon: 'droplets', tier: 'gold', requirement: 100 },
+  { key: 'sleep_7', type: 'sleep', icon: 'moon', tier: 'bronze', requirement: 7 },
+  { key: 'sleep_30', type: 'sleep', icon: 'moon', tier: 'silver', requirement: 30 },
+  { key: 'sleep_100', type: 'sleep', icon: 'moon', tier: 'gold', requirement: 100 },
+  { key: 'weigh_10', type: 'body', icon: 'scale', tier: 'bronze', requirement: 10 },
+  { key: 'weigh_50', type: 'body', icon: 'scale', tier: 'silver', requirement: 50 },
+  { key: 'weigh_200', type: 'body', icon: 'scale', tier: 'gold', requirement: 200 },
 ] as const;
 
 export type AwardDef = (typeof AWARD_DEFINITIONS)[number];
@@ -95,6 +132,14 @@ export interface AwardSources {
   prCount: number | null;
   /** today's step count */
   steps: number | null;
+  /** bữa ăn đã ghi, tổng cộng */
+  mealCount: number | null;
+  /** số NGÀY có ít nhất một lần ghi nước — không phải số lần ghi */
+  waterDays: number | null;
+  /** đêm ngủ đã ghi */
+  sleepCount: number | null;
+  /** lần cân đã ghi */
+  weighCount: number | null;
 }
 
 /** A number that can be compared against a threshold at all. */
@@ -133,7 +178,32 @@ export function awardsToGrant(sources: AwardSources, earned: ReadonlySet<string>
     if (sources.prCount >= 1) add('first_pr');
     if (sources.prCount >= 5) add('pr_5');
   }
-  if (usable(sources.steps) && sources.steps >= 10000) add('steps_10k');
+  if (usable(sources.steps)) {
+    if (sources.steps >= 10000) add('steps_10k');
+    if (sources.steps >= 15000) add('steps_15k');
+    if (sources.steps >= 20000) add('steps_20k');
+  }
+
+  /*
+    Bốn miền mới, cùng một hình dạng: một phép đếm so với ngưỡng trong danh mục.
+
+    Viết bằng vòng lặp trên `type` chứ không liệt kê từng khoá, vì phần trên đã
+    cho thấy cái giá của việc liệt kê: `workouts_10/50/100` phải gõ tay ba lần,
+    và thêm một bậc thứ tư nghĩa là sửa hai chỗ — danh mục VÀ chỗ này. Ở đây
+    thêm một bậc chỉ cần thêm một dòng vào danh mục.
+  */
+  const byCount: [AwardDef['type'], number | null][] = [
+    ['nutrition', sources.mealCount],
+    ['water', sources.waterDays],
+    ['sleep', sources.sleepCount],
+    ['body', sources.weighCount],
+  ];
+  for (const [type, n] of byCount) {
+    if (!usable(n)) continue;
+    for (const def of AWARD_DEFINITIONS) {
+      if (def.type === type && 'requirement' in def && n >= def.requirement) add(def.key);
+    }
+  }
 
   return out;
 }
