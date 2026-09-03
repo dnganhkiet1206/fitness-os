@@ -157,6 +157,7 @@ const STEPS = [
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
   ['màu chữ', 'node', ['tools/text-color.mjs']],
   ['chữ trùng màu nền', 'node', ['tools/same-color.mjs']],
+  ['huy chương một bản vẽ', 'node', ['tools/medal-single.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
   ['kiểu icon macro', 'node', ['tools/macro-icon-style.mjs']],

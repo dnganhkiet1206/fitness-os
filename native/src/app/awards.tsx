@@ -1,13 +1,14 @@
 import * as Haptics from 'expo-haptics';
-import { Activity, BedDouble, Beef, Calendar, CalendarCheck, CalendarDays, CalendarRange, ChartLine, ChefHat, Crown, Droplet, Droplets, Dumbbell, Flame, Footprints, Gem, GlassWater, Medal, Moon, MoonStar, Mountain, Route, Salad, Scale, Share2, Shield, Sparkles, Sunrise, Target, TrendingUp, Trophy, Utensils, Zap, type LucideIcon } from 'lucide-react-native';
+import { Medal as MedalIcon, Share2, Sparkles, Trophy } from 'lucide-react-native';
 import { useEffect, useRef } from 'react';
 import { Share, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Icon } from '@/components/ascnd/icon';
+import { ICON_MAP, Medal, TIER_CONFIG } from '@/components/ascnd/medal';
 import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { press } from '@/constants/motion';
@@ -16,184 +17,6 @@ import { AWARD_DEFINITIONS, useAwardProgress, useAwards, useCheckAwards } from '
 import type { AwardSources } from '@/lib/award-grant';
 import { awardText } from '@/lib/gamification-i18n';
 import type { AppLang } from '@/lib/i18n';
-
-/*
-  Mỗi HUY CHƯƠNG một dấu, không phải mỗi MIỀN một dấu.
-
-  Trước đây icon gán theo `type`, nên cả tám huy chương chuỗi ngày dùng chung
-  một ngọn lửa. Cộng với con số trên mặt đĩa thì đã phân biệt được, nhưng glyph
-  vẫn chưa NÓI gì: nó chỉ lặp lại cái tiêu đề mục ngay phía trên.
-
-  Nay mỗi cái mang dấu của chính nó, và dấu ấy leo thang theo ý nghĩa: chuỗi
-  ngày đi từ tia lửa → tuần → tháng → bình minh → huy hiệu → đá quý → vương
-  miện. Bước chân đi từ dấu chân → cung đường → ngọn núi.
-
-  Bảng này sinh ra từ chính danh mục và MỌI tên đã được đối chiếu với tệp thật
-  trong `lucide-react-native/dist/esm/icons`. Hai tên tôi bịa — `line-chart` và
-  `waves` — bị bắt ở bước đó; nếu không kiểm thì chúng rơi vào nhánh
-  `?? Trophy` và vẽ ra cái cúp, im lặng, không đỏ ở đâu cả.
-*/
-const ICON_MAP: Record<string, LucideIcon> = {
-  activity: Activity,
-  'bed-double': BedDouble,
-  'calendar-check': CalendarCheck,
-  'calendar-days': CalendarDays,
-  'calendar-range': CalendarRange,
-  'chart-line': ChartLine,
-  'chef-hat': ChefHat,
-  crown: Crown,
-  droplet: Droplet,
-  droplets: Droplets,
-  dumbbell: Dumbbell,
-  flame: Flame,
-  footprints: Footprints,
-  gem: Gem,
-  'glass-water': GlassWater,
-  medal: Medal,
-  moon: Moon,
-  'moon-star': MoonStar,
-  mountain: Mountain,
-  route: Route,
-  salad: Salad,
-  scale: Scale,
-  shield: Shield,
-  sunrise: Sunrise,
-  target: Target,
-  'trending-up': TrendingUp,
-  trophy: Trophy,
-  utensils: Utensils,
-  zap: Zap,
-};
-
-/**
- * Mỗi hạng là một thứ KIM LOẠI, không phải một màu.
- *
- * ── vì sao cần ba tông cho mỗi hạng ──
- *
- * Bản cũ có đúng một màu mỗi hạng, và huy chương được vẽ bằng một vòng viền
- * 3px cộng một icon lucide cùng màu ấy. Kết quả đọc ra là một nút bị vô hiệu
- * hoá, không phải một tấm huy chương.
- *
- * Huy chương của Apple Fitness — thứ người dùng lấy làm chuẩn — là một cái ĐĨA
- * ĐẶC: thân đĩa chuyển màu xuyên tâm, một vành ngoài dày hơn, glyph dập chìm
- * vào mặt kim loại CÙNG TÔNG chứ không phải màu tương phản, và một vệt sáng
- * chéo ở góc trên trái. Không có ba tông thì không dựng được cái nào trong bốn
- * thứ đó: chuyển màu cần sáng và tối, vành cần tối hơn mặt, glyph dập chìm cần
- * một tông tối hơn nữa nằm trên cùng nền.
- *
- * `dim` giữ nguyên cho viên chữ hạng ở dưới thẻ.
- */
-type Metal = { color: string; light: string; dark: string; dim: string; label: string };
-const TIER_CONFIG: Record<string, Metal> = {
-  bronze: { color: '#c47b3d', light: '#e8a86a', dark: '#7d4a20', dim: 'rgba(196,123,61,0.12)', label: 'Bronze' },
-  silver: { color: '#c7cad1', light: '#f2f4f8', dark: '#7e828c', dim: 'rgba(199,202,209,0.12)', label: 'Silver' },
-  gold: { color: '#ffd93d', light: '#fff3ab', dark: '#b0790a', dim: 'rgba(255,217,61,0.12)', label: 'Gold' },
-  platinum: { color: '#b45cff', light: '#ddb0ff', dark: '#6b2fa0', dim: 'rgba(180,92,255,0.12)', label: 'Platinum' },
-};
-
-/**
- * Dáng huy chương, sinh bằng CÔNG THỨC — không phải đường cong vẽ tay.
- *
- * ── vì sao ràng buộc này ──
- *
- * Hai lượt trước tôi tự viết path Bézier cho ngọn lửa, giọt nước và trăng
- * khuyết. Cả hai lượt đều ra hình méo, vì hệ số điều khiển là tôi đoán và
- * "đúng cú pháp" không có nghĩa là "vẽ ra đẹp". Đa giác và hoa thị thì khác:
- * đỉnh nằm trên đường tròn theo lượng giác, nên chúng luôn cân đối, và đổi
- * bán kính là cả bộ theo.
- *
- * ── và vì sao đo bán kính trong trước khi chọn ──
- *
- * Mặt đĩa phải chứa được con số. Bán kính trong của từng hình đo trước khi
- * gán: lục giác 48px, bát giác 52px, thoi 40px, tia mặt trời 45px — đều lọt
- * "365" ở 21pt (~36px). Sao 5 cánh chỉ 25px, và nó CHỈ dùng cho miền kỷ lục
- * nơi con số lớn nhất là "5". Lượt trước tôi chọn trăng khuyết mà không hỏi
- * nó có chứa nổi con số không; nó không.
- *
- * ── ý nghĩa nằm ở đâu ──
- *
- *     chuỗi ngày   tia mặt trời   — toả ra, cháy tiếp
- *     buổi tập     khiên          — sức mạnh
- *     kỷ lục       sao năm cánh   — đỉnh
- *     bước chân    lục giác       — biển chỉ đường
- *     dinh dưỡng   bát giác       — cái đĩa
- *     nước         hình thoi      — giọt, dựng theo hình học
- *     giấc ngủ     vuông bo tròn  — cái gối
- *     cân nặng     hình tròn      — mặt đồng hồ cân
- */
-function polyPath(r: number, sides: number, rotate = -Math.PI / 2): string {
-  const pts: string[] = [];
-  for (let i = 0; i < sides; i++) {
-    const a = rotate + (i * 2 * Math.PI) / sides;
-    pts.push(`${(36 + r * Math.cos(a)).toFixed(2)},${(36 + r * Math.sin(a)).toFixed(2)}`);
-  }
-  return `M ${pts.join(' L ')} Z`;
-}
-
-/** Hoa thị / tia: bán kính so le giữa `r` và `r * inner`. */
-function starPath(r: number, points: number, inner: number): string {
-  const pts: string[] = [];
-  for (let i = 0; i < points * 2; i++) {
-    const rad = i % 2 === 0 ? r : r * inner;
-    const a = -Math.PI / 2 + (i * Math.PI) / points;
-    pts.push(`${(36 + rad * Math.cos(a)).toFixed(2)},${(36 + rad * Math.sin(a)).toFixed(2)}`);
-  }
-  return `M ${pts.join(' L ')} Z`;
-}
-
-/** Vuông bo tròn mạnh — cái gối. */
-function squirclePath(r: number): string {
-  const k = r * 0.55;
-  const a = r * 0.92;
-  return [
-    `M ${36 - a + k} ${36 - a}`, `L ${36 + a - k} ${36 - a}`,
-    `Q ${36 + a} ${36 - a} ${36 + a} ${36 - a + k}`, `L ${36 + a} ${36 + a - k}`,
-    `Q ${36 + a} ${36 + a} ${36 + a - k} ${36 + a}`, `L ${36 - a + k} ${36 + a}`,
-    `Q ${36 - a} ${36 + a} ${36 - a} ${36 + a - k}`, `L ${36 - a} ${36 - a + k}`,
-    `Q ${36 - a} ${36 - a} ${36 - a + k} ${36 - a}`, 'Z',
-  ].join(' ');
-}
-
-/** Khiên: vai vuông trên, mũi dưới. */
-function shieldPath(r: number): string {
-  const w = r * 0.9;
-  return [
-    `M ${36 - w} ${36 - r + r * 0.16}`,
-    `Q ${36 - w} ${36 - r} ${36 - w * 0.8} ${36 - r}`,
-    `L ${36 + w * 0.8} ${36 - r}`,
-    `Q ${36 + w} ${36 - r} ${36 + w} ${36 - r + r * 0.16}`,
-    `L ${36 + w} ${36 - r * 0.3}`,
-    `Q ${36 + w} ${36 + r * 0.3} ${36} ${36 + r}`,
-    `Q ${36 - w} ${36 + r * 0.3} ${36 - w} ${36 - r * 0.3}`,
-    'Z',
-  ].join(' ');
-}
-
-function medalPath(type: string, r: number): string | null {
-  switch (type) {
-    case 'streak': return starPath(r, 12, 0.8);
-    case 'first_workout':
-    case 'volume_milestone': return shieldPath(r);
-    case 'pr': return starPath(r, 5, 0.45);
-    case 'steps_goal': return polyPath(r, 6);
-    case 'nutrition': return polyPath(r, 8, -Math.PI / 8);
-    case 'water': return polyPath(r, 4, -Math.PI / 2);
-    case 'sleep': return squirclePath(r);
-    default: return null; /* cân nặng: hình tròn */
-  }
-}
-
-/*
-  Chưa mở thì là kim loại XÁM, không phải kim loại có hạng bị làm mờ.
-
-  Bản cũ hạ `opacity` cả thẻ xuống 0,4, nên chữ mô tả tụt dưới ngưỡng đọc được
-  — và đó là trạng thái của MỌI người ở ngày đầu. Cho huy chương một thứ kim
-  loại riêng thì nó tự nói "chưa mở" bằng chất liệu, và chữ giữ nguyên độ đọc.
-*/
-const LOCKED: Metal = {
-  color: '#4a4a55', light: '#5c5c68', dark: '#2a2a31',
-  dim: 'rgba(24,24,27,0.4)', label: '',
-};
 
 /**
  * Nhóm theo MIỀN, không theo hạng.
@@ -286,28 +109,6 @@ function MedalCard({
   const AwardIcon = ICON_MAP[award.icon] ?? Trophy;
   const isEarned = !!earned;
   const { title, desc } = awardText(award.key, lang);
-  const m: Metal = isEarned ? tier : LOCKED;
-  /*
-    Glyph SÁNG hơn mặt đĩa, không tối hơn.
-
-    Bản đầu tôi dập chìm bằng `m.dark` — đúng nguyên tắc của huy chương thật,
-    nơi kim loại sáng và nét khắc đổ bóng. Nhưng ở trạng thái chưa mở, mặt đĩa
-    là #4a4a55 và `dark` là #2a2a31: tối trên tối, và glyph biến mất khỏi ảnh
-    chụp. Nguyên tắc "khắc chìm" không bê thẳng sang một bảng màu tối được.
-  */
-  const glyph = isEarned ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.55)';
-
-  /* Dáng của miền ở hai bán kính; `null` là hình tròn — xem `medalPath`. Mọi
-     dáng đều đối xứng quanh 36,36 nên chữ vẫn đặt ở tâm, khác hẳn giọt nước và
-     ngọn lửa của lượt trước vốn dồn khối lượng về một đầu. */
-  const rim = medalPath(award.type, 33);
-  const face = medalPath(award.type, 28);
-
-
-  /* Vòng tiến độ ở r=34, ngay ngoài vành r=33. */
-  const R = 34;
-  const C = 2 * Math.PI * R;
-
   /*
     Phần đã đi được, chỉ khi biết CẢ HAI đầu.
 
@@ -320,16 +121,6 @@ function MedalCard({
   const pct =
     isEarned || need == null || current == null ? 0 : Math.max(0, Math.min(1, current / need));
   const showCount = !isEarned && need != null && current != null;
-
-  /*
-    Mốc, viết ngắn cho vừa mặt đĩa.
-
-    10.000 bước thành "10K" chứ không phải "10000" — năm chữ số ở cỡ này thì
-    hoặc tràn hoặc phải nhỏ tới mức thôi là mặt huy chương.
-  */
-  const mark =
-    need == null ? null : need >= 1000 ? `${Math.round(need / 1000)}K` : String(need);
-
 
   const share = async () => {
     Haptics.selectionAsync();
@@ -346,92 +137,14 @@ function MedalCard({
     <Animated.View
       style={styles.medalCard}
       entering={FadeInDown.springify().damping(26).stiffness(180).delay(Math.min(index, 12) * 45)}>
-      <View style={styles.medalRing}>
-        {/*
-          Một cái ĐĨA, không phải một cái vòng.
-
-          Bốn lớp, đúng giải phẫu của huy chương Apple Fitness:
-
-            1. vành ngoài — chuyển màu dọc sáng-trên/tối-dưới, cho cạnh có bề dày
-            2. mặt đĩa    — chuyển màu XUYÊN TÂM lệch lên trái, nơi ánh sáng rơi
-            3. vệt sáng   — một lát mỏng ở góc trên trái, thứ làm kim loại ra kim loại
-            4. glyph      — dập chìm bằng tông TỐI của cùng kim loại, không phải
-                            màu tương phản; đó là khác biệt giữa "khắc vào" và
-                            "dán lên"
-
-          Tất cả TĨNH. Bài học mascot trong phiên này là 26 nhóm SVG cập nhật
-          MỖI KHUNG HÌNH — chi phí nằm ở chỗ động, không ở chỗ có nhiều nhóm.
-          Bốn lớp không đổi thì vẽ một lần rồi thôi.
-        */}
-        <Svg width={72} height={72} viewBox="0 0 72 72">
-          <Defs>
-            <SvgGradient id={`rim-${award.key}`} x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0" stopColor={m.light} />
-              <Stop offset="1" stopColor={m.dark} />
-            </SvgGradient>
-            <RadialGradient id={`face-${award.key}`} cx="36%" cy="30%" r="78%">
-              <Stop offset="0" stopColor={m.light} />
-              <Stop offset="0.55" stopColor={m.color} />
-              <Stop offset="1" stopColor={m.dark} />
-            </RadialGradient>
-          </Defs>
-
-          {/* Vành và mặt CÙNG một dáng, khác bán kính — mọi hình đều có bề dày
-              cạnh, không riêng hình tròn. */}
-          {rim ? (
-            <Path d={rim} fill={`url(#rim-${award.key})`} />
-          ) : (
-            <Circle cx={36} cy={36} r={33} fill={`url(#rim-${award.key})`} />
-          )}
-          {face ? (
-            <Path d={face} fill={`url(#face-${award.key})`} />
-          ) : (
-            <Circle cx={36} cy={36} r={28} fill={`url(#face-${award.key})`} />
-          )}
-          {/* Lát sáng: một cung ở phần tư trên-trái, mờ dần bằng độ trong. */}
-          {/* Vệt sáng bám theo đường tròn r=28, nên chỉ đúng cho mặt TRÒN. Các
-              dáng khác đã có chuyển màu xuyên tâm làm việc đó. */}
-          {!face && (
-            <Path d="M 13 30 A 24 24 0 0 1 44 13 A 28 28 0 0 0 13 44 Z" fill="rgba(255,255,255,0.20)" />
-          )}
-
-        </Svg>
-        {/*
-          CON SỐ là mặt của huy chương, glyph chỉ là phụ đề.
-
-          ── vì sao ──
-
-          `AWARD_DEFINITIONS` gán icon theo `type`, nên cả tám huy chương chuỗi
-          ngày dùng chung một ngọn lửa và cả bốn huy chương buổi tập dùng chung
-          một quả tạ. Trong mỗi nhóm mọi đĩa GIỐNG HỆT nhau — thứ duy nhất khác
-          là màu hạng — nên nhìn vào đĩa không đọc ra được nó là huy chương gì.
-          Người dùng nói đúng: "cái nào cũng giống nhau thành ra nhìn không có
-          ý nghĩa".
-
-          Ý nghĩa của một huy chương CHÍNH LÀ cái mốc, nên mốc phải là thứ lớn
-          nhất trên mặt đĩa. Huy chương chuỗi 30 ngày và chuỗi 365 ngày lập tức
-          khác nhau, và khác nhau ở đúng thứ làm chúng khác nhau. Apple đặt số
-          lên mặt badge vì cùng lý do.
-
-          Huy chương KHÔNG có ngưỡng — "buổi tập đầu tiên", "PR đầu tiên", "bữa
-          ăn đầu tiên" — thì không có số để in, và cũng không cần: chúng vốn đã
-          là duy nhất trong nhóm của mình. Chúng giữ glyph, vẽ lớn hơn.
-        */}
-        <View style={styles.medalIcon}>
-          {mark ? (
-            <>
-              <Icon icon={AwardIcon} size={13} color={glyph} />
-              <Text style={[styles.medalMark, { color: glyph }]} numberOfLines={1}>
-                {mark}
-              </Text>
-            </>
-          ) : (
-            <Icon icon={AwardIcon} size={30} color={glyph} />
-          )}
-        </View>
-      </View>
-
-
+      <Medal
+        type={award.type}
+        tier={award.tier}
+        icon={award.icon}
+        requirement={need}
+        earned={isEarned}
+        size={72}
+      />
 
       <Text style={[styles.medalTitle, !isEarned && styles.medalTitleLocked]} numberOfLines={1}>
         {title}
@@ -527,7 +240,7 @@ export default function AwardsScreen() {
       {/* Hero: medal tile + progress ring (web) */}
       <View style={styles.hero}>
         <View style={styles.heroTile}>
-          <Icon icon={Medal} size={30} color="#ffd93d" />
+          <Icon icon={MedalIcon} size={30} color="#ffd93d" />
         </View>
         <Text style={styles.heroCount}>
           {i18n.awardsEarned} <Text style={styles.heroCountNum}>{earnedCount}</Text> / {totalCount}{' '}
@@ -677,39 +390,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.mutedForeground,
     fontVariant: ['tabular-nums'],
-  },
-  medalRing: { width: 72, height: 72 },
-  /* Con số trên mặt đĩa: đậm, chữ số đều bề rộng, bóp sát để "365" và "250"
-     vẫn nằm gọn trong 56 điểm đường kính mặt. */
-  /*
-    Con số DẬP vào kim loại, không đặt lên trên.
-
-    Một bóng tối lệch xuống một điểm ảnh cho nét chữ một cạnh dưới — đúng thứ
-    xảy ra khi chữ được dập chìm và ánh sáng đến từ trên trái, cùng hướng với
-    vệt sáng và với chuyển màu xuyên tâm của mặt đĩa. Không có nó thì con số
-    trông như dán lên.
-
-    Nét 900 và giãn -1: ở 22 điểm trong đường kính 56, "365" cần bóp sát mới
-    còn khoảng thở hai bên.
-  */
-  medalMark: {
-    fontSize: 22,
-    fontWeight: '900',
-    letterSpacing: -1,
-    fontVariant: ['tabular-nums'],
-    marginTop: -1,
-    textShadowColor: 'rgba(0,0,0,0.45)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
-  },
-  medalIcon: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   medalTitle: { fontSize: 13, fontWeight: '700', color: colors.foreground, textAlign: 'center' },
   /*

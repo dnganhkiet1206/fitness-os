@@ -222,6 +222,10 @@ export function useCheckAwards() {
         description: text.desc[lang],
         icon: def.icon,
         tier: def.tier,
+        /* Khoá để modal tra được `type` và `requirement` — tức vẽ ra ĐÚNG tấm
+           huy chương vừa nhận, cùng dáng và cùng con số với màn `/awards`, chứ
+           không phải một cái đĩa tròn chung chung. */
+        awardKey: def.key,
       });
       /* The medal's own tier is the app's existing answer to "how big was
          this", so the magnitude is read rather than invented. A personal

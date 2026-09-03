@@ -1,16 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import {
-  Beef,
-  Calendar,
-  Dumbbell,
-  Flame,
-  Footprints,
-  Moon,
-  Target,
-  Trophy,
-  X,
-  type LucideIcon,
-} from 'lucide-react-native';
+import { X } from 'lucide-react-native';
 import { useEffect, useRef, useMemo } from 'react';
 import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -25,7 +14,11 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
+import { Medal, TIER_CONFIG } from '@/components/ascnd/medal';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
+/* Từ `lib/`, không qua `hooks/use-extras`: một component không cần kéo theo cả
+   tầng truy vấn chỉ để tra một danh mục tĩnh. */
+import { AWARD_DEFINITIONS } from '@/lib/award-grant';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { enqueueAward } from '@/lib/celebration-queue';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -37,29 +30,36 @@ import { useI18n } from '@/hooks/use-app-settings';
  * confetti burst + tier card for each, auto-dismissing after 4s.
  */
 
-const ICON_MAP: Record<string, LucideIcon> = {
-  flame: Flame,
-  dumbbell: Dumbbell,
-  trophy: Trophy,
-  calendar: Calendar,
-  target: Target,
-  moon: Moon,
-  footprints: Footprints,
-  beef: Beef,
-};
-
-const TIER_CONFIG: Record<string, { color: string; glow: string; label: string }> = {
-  bronze: { color: '#c47b3d', glow: 'rgba(196,123,61,0.5)', label: 'Bronze' },
-  silver: { color: '#c7cad1', glow: 'rgba(199,202,209,0.5)', label: 'Silver' },
-  gold: { color: '#ffd93d', glow: 'rgba(255,217,61,0.6)', label: 'Gold' },
-  platinum: { color: '#b45cff', glow: 'rgba(180,92,255,0.6)', label: 'Platinum' },
-};
+/**
+ * Đây là bản vẽ huy chương THỨ BA, và tôi không biết nó tồn tại.
+ *
+ * Người dùng báo thẻ "Huy chương gần đây" chưa nhận bản thiết kế mới. Tôi sửa
+ * thẻ ấy, rồi dựng `tools/medal-single.mjs` để bản sao không mọc lại — và luật
+ * vừa viết xong lập tức chỉ vào tệp này. Nó có đúng cùng một bảng tám icon đã
+ * cũ và đúng cùng một bảng màu hạng, cho cái modal hiện ra ĐÚNG LÚC người ta
+ * vừa nhận huy chương. Tức khoảnh khắc quan trọng nhất của cả hệ thống huy
+ * chương là khoảnh khắc vẽ bằng bản cũ nhất.
+ *
+ * Không ai tìm ra nó bằng mắt: nó chỉ hiện lên trong vài giây, và chỉ khi vừa
+ * đạt một mốc. Cái tìm ra nó là một luật hỏi "có bao nhiêu bảng màu hạng trong
+ * repo này" — một câu hỏi về cấu trúc, không phải về giao diện.
+ *
+ * `glow` trong bảng cũ chưa từng được đọc ở đâu, nên bỏ nó không mất gì.
+ */
 
 export interface CelebrationAward {
   title: string;
   description: string;
   icon: string;
   tier: string;
+  /**
+   * Khoá trong danh mục, khi ăn mừng này LÀ một huy chương.
+   *
+   * Hàng đợi này còn chở hai thứ khác — lên hạng ở phòng Koa, và hoàn thành
+   * thử thách tuần — và chúng không có mốc nào để in lên mặt đĩa. Chúng vẫn
+   * dùng chung cái đĩa, chỉ là đĩa tròn mang glyph thay vì mang con số.
+   */
+  awardKey?: string;
 }
 
 /** Queue an award medal celebration (shown by the shared CelebrationHost) */
@@ -121,7 +121,7 @@ export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAw
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
-  const AwardIcon = ICON_MAP[award.icon] ?? Trophy;
+  const def = award.awardKey ? AWARD_DEFINITIONS.find((d) => d.key === award.awardKey) : undefined;
   const kicker = lang === 'vi' ? 'Huy Chương Mới!' : 'New Award!';
 
   const backdrop = useSharedValue(0);
@@ -178,9 +178,38 @@ export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAw
             <Icon icon={X} size={16} color={colors.mutedForeground} />
           </Pressable>
 
-          <Animated.View
-            style={[styles.medal, { backgroundColor: tier.color, shadowColor: tier.color }, medalStyle]}>
-            <Icon icon={AwardIcon} size={36} color="#fff" />
+          {/*
+            Cùng cái đĩa mà màn `/awards` và thẻ trên Hôm nay vẽ.
+
+            Trước đây chỗ này là một ô bo góc 80×80 tô đặc màu hạng với một icon
+            trắng ở giữa — không vành, không chuyển màu, không dáng theo miền,
+            không con số. Ba màn, ba tấm huy chương khác nhau cho cùng một thứ.
+
+            Quầng sáng riêng của tấm huy chương thì BỎ, và đây là lý do chứ
+            không phải sơ suất.
+
+            Bóng cũ đổ từ một ô 80×80 tô đặc màu hạng. Đĩa mới là SVG trong một
+            lớp bọc trong suốt, và một `shadowOpacity` trên nền trong suốt thì
+            trên iOS không có hình nào để đổ bóng theo. Giữ lại bốn dòng ấy là
+            giữ một hiệu ứng đã chết mà trông vẫn như đang bật.
+
+            Cứu nó thì phải đặt một cái đĩa màu nhỏ hơn giấu sau lưng — và bán
+            kính của "nhỏ hơn" phụ thuộc vào DÁNG: tia mặt trời có bán kính
+            trong 0,8·r, khiên thì thắt lại ở dưới. Tức mỗi lần thêm một dáng
+            huy chương là một lần phải tính lại chỗ giấu.
+
+            Màu hạng vẫn toả ra: `styles.card` mang `shadowColor: tier.color`
+            và cái thẻ thì CÓ nền, nên bóng ấy vẫn đổ thật.
+          */}
+          <Animated.View style={[styles.medal, medalStyle]}>
+            <Medal
+              type={def?.type ?? 'body'}
+              tier={award.tier}
+              icon={def?.icon ?? award.icon}
+              requirement={def && 'requirement' in def ? def.requirement : null}
+              earned
+              size={88}
+            />
           </Animated.View>
 
           <Text style={styles.kicker}>{kicker}</Text>
@@ -228,17 +257,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
   },
   closeBtn: { position: 'absolute', top: spacing.sm + 2, right: spacing.sm + 2, zIndex: 3 },
-  medal: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-    shadowOpacity: 0.6,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 4 },
-  },
+  medal: { alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   kicker: {
     fontSize: 11,
     fontWeight: '700',

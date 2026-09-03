@@ -2,16 +2,12 @@ import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import {
   AlertTriangle,
-  Beef,
   CalendarCheck,
   CheckCircle2,
   ChevronRight,
   Clock,
   Dumbbell,
-  Flame,
-  Footprints,
-  Moon,
-  Target,
+  Heart,
   Trophy,
   Wifi,
   WifiOff,
@@ -26,6 +22,7 @@ import { BioGlyph, type BioGlyphName } from '@/components/ascnd/biometric-icons'
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
+import { Medal, TIER_CONFIG } from '@/components/ascnd/medal';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { TrainingExplainer } from '@/components/ascnd/training-explainer';
 import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
@@ -33,7 +30,7 @@ import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useProfile, useRecentWorkouts, useTodayBiometrics } from '@/hooks/useTodayData';
-import { useRecentAwards } from '@/hooks/use-extras';
+import { AWARD_DEFINITIONS, useRecentAwards } from '@/hooks/use-extras';
 import { useUnits } from '@/hooks/use-units';
 import { connectedSourceLabel } from '@/lib/biometric-source';
 import { goalTraining } from '@/lib/goal-training';
@@ -907,23 +904,30 @@ export function WorkoutStatusCard({ planned }: { planned: number }) {
 
 // ─── RecentAwards (web dashboard/RecentAwards) ─────────────────────────
 
-const AWARD_ICON: Record<string, LucideIcon> = {
-  flame: Flame,
-  dumbbell: Dumbbell,
-  trophy: Trophy,
-  calendar: CalendarCheck,
-  target: Target,
-  moon: Moon,
-  footprints: Footprints,
-  beef: Beef,
-};
-
-const TIER_COLOR: Record<string, string> = {
-  bronze: '#c47b3d',
-  silver: '#c7cad1',
-  gold: '#ffd93d',
-  platinum: '#b45cff',
-};
+/**
+ * Bản vẽ huy chương ở đây từng là bản THỨ HAI, và nó tụt lại phía sau.
+ *
+ * Thẻ này có bảng icon riêng — tám cái, trong khi danh mục có hai mươi chín —
+ * và một bảng màu hạng riêng, rồi vẽ một ô bo góc viền mảnh với một icon lucide
+ * bên trong. Màn `/awards` thì đã được vẽ lại thành đĩa kim loại bốn lớp có dáng
+ * riêng cho từng miền và con số dập lên mặt.
+ *
+ * Kết quả: hai màn nói hai chuyện khác nhau về cùng một tấm huy chương, và cái
+ * thẻ đa số người dùng nhìn thấy TRƯỚC lại là cái chưa bao giờ nhận bản thiết
+ * kế mới. Không bước kiểm nào bắt được — hai bản vẽ đều hợp lệ, đều biên dịch,
+ * đều có màu; chỉ người nhìn hai màn cạnh nhau mới thấy.
+ *
+ * ── vì sao phải tra lại danh mục ──
+ *
+ * Hàng trong `awards` chỉ có `award_key`, `icon`, `tier`. Dáng của đĩa đến từ
+ * `type` và con số trên mặt đến từ `requirement` — hai thứ chỉ có trong
+ * `AWARD_DEFINITIONS`. Và danh mục là bản ĐÚNG: một hàng ghi từ phiên bản cũ
+ * mang icon hoặc hạng đã đổi vẫn phải vẽ ra tấm huy chương của hôm nay, chứ
+ * không phải tấm của ngày nó được trao.
+ */
+function medalOf(key: string) {
+  return AWARD_DEFINITIONS.find((d) => d.key === key);
+}
 
 export function RecentAwardsCard() {
   const i18n = useI18n();
@@ -946,19 +950,39 @@ export function RecentAwardsCard() {
       </View>
       <View style={styles.awardList}>
         {awards.map((a) => {
-          const AIcon = AWARD_ICON[a.icon ?? ''] ?? Trophy;
-          const tint = TIER_COLOR[a.tier ?? ''] ?? colors.mutedForeground;
+          const def = medalOf(a.award_key);
+          const tier = def?.tier ?? a.tier ?? 'bronze';
+          const metal = TIER_CONFIG[tier] ?? TIER_CONFIG.bronze;
           const { title, desc } = awardText(a.award_key, lang, { title: a.title, desc: a.description });
           return (
             <View key={a.id} style={styles.awardRow}>
-              <View style={[styles.awardIcon, { borderColor: `${tint}55`, backgroundColor: `${tint}14` }]}>
-                <Icon icon={AIcon} size={17} color={tint} />
-              </View>
+              {/*
+                44 điểm, không 72 như ở màn `/awards`.
+
+                Ở đó đĩa là chủ thể của thẻ; ở đây nó đứng cạnh hai dòng chữ và
+                phải cao bằng chúng. `Medal` nhân mọi cỡ chữ bên trong với
+                `size/72`, và dưới 56 điểm nó bỏ luôn cái dấu nhỏ phía trên con
+                số — ở tỉ lệ này dấu ấy chỉ còn bảy điểm.
+              */}
+              <Medal
+                type={def?.type ?? 'weight'}
+                tier={tier}
+                icon={def?.icon ?? a.icon ?? 'trophy'}
+                requirement={def && 'requirement' in def ? def.requirement : null}
+                earned
+                size={44}
+              />
               <View style={styles.awardInfo}>
                 <Text style={styles.awardTitle} numberOfLines={1}>{title}</Text>
                 {desc ? <Text style={styles.awardDesc} numberOfLines={1}>{desc}</Text> : null}
               </View>
-              <Text style={[styles.awardTier, { color: tint }]}>{a.tier}</Text>
+              {/*
+                Tên hạng lấy từ chính bảng kim loại, không phải chuỗi thô trong
+                cơ sở dữ liệu. Hàng cũ trả về `bronze` viết thường và thẻ dựa vào
+                `textTransform` để làm nó ra dáng — nghĩa là chữ hiện lên là dữ
+                liệu, không phải nhãn.
+              */}
+              <Text style={[styles.awardTier, { color: metal.color }]}>{metal.label}</Text>
             </View>
           );
         })}
@@ -1212,14 +1236,6 @@ const styles = StyleSheet.create({
   viewAllText: { fontSize: 12, color: colors.primary },
   awardList: { gap: spacing.sm + 2 },
   awardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
-  awardIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-  },
   awardInfo: { flex: 1, minWidth: 0, gap: 1 },
   awardTitle: { fontSize: 14, fontWeight: '600', color: colors.foreground },
   awardDesc: { fontSize: 11, color: colors.mutedForeground },
