@@ -1,7 +1,7 @@
 import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
-import { Beef, Droplets, Flame, Footprints, Milk, Moon, Salad, Star, Sunrise, Target, Wheat, type LucideIcon } from 'lucide-react-native';
-import { useEffect, useId, useState } from 'react';
+import { Beef, Droplets, Flame, Footprints, Milk, Minus, Moon, Salad, Star, Sunrise, Target, Wheat, type LucideIcon } from 'lucide-react-native';
+import { useEffect, useId, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -23,7 +23,10 @@ import { MACRO_BAR, MACRO_TINT, colors, glass, radius, spacing } from '@/constan
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
-import { displayVolume, volumeLabel } from '@/lib/units';
+import { useAddWater, useRemoveLastWater, useTodayWaterLogs } from '@/hooks/use-water';
+import { toast } from '@/lib/toast';
+import { displayVolume, volumeLabel, volumeToMl, type VolumeUnit } from '@/lib/units';
+import { waterQuickAmounts } from '@/lib/water-presets';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const TRACK = '#17171c';
@@ -1016,11 +1019,25 @@ function MiniRing({
   const gradId = `mini-${uid.replace(/:/g, '')}`;
 
   const progress = useSharedValue(0);
+  /*
+    Lần vẽ đầu tiên và những lần sau KHÔNG cùng một chuyển động.
+
+    Lần đầu là một màn chào: chờ 200ms cho thẻ yên vị rồi quét 1100ms từ 0 lên
+    mức của ngày. Đẹp, và không ai đang chờ nó.
+
+    Từ khi thẻ có nút thêm nhanh thì mọi lần sau đều là PHẢN HỒI cho một cú bấm.
+    Giữ nguyên 200+1100 nghĩa là bấm xong phải đợi một giây ba mới thấy vòng
+    nhúc nhích — con số bên cạnh đã nhảy ngay (ghi lạc quan), nên vòng tròn hoá
+    ra là thứ chậm nhất trên thẻ và cú bấm đọc ra thành "chưa ăn".
+  */
+  const greeted = useRef(false);
   useEffect(() => {
-    progress.value = withDelay(
-      200,
-      withTiming(Math.min(pct, 100) / 100, { duration: 1100, easing: Easing.bezier(0.16, 1, 0.3, 1) }),
-    );
+    const to = withTiming(Math.min(pct, 100) / 100, {
+      duration: greeted.current ? duration.swap : 1100,
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+    });
+    progress.value = greeted.current ? to : withDelay(200, to);
+    greeted.current = true;
   }, [pct, progress]);
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: CIRC - progress.value * CIRC,
@@ -1067,6 +1084,7 @@ function CompactWidget({
   pct,
   onPress,
   ring,
+  footer,
 }: {
   icon: LucideIcon;
   iconColor: string;
@@ -1081,6 +1099,14 @@ function CompactWidget({
    * and has not been asked for one.
    */
   ring?: [string, string];
+  /**
+   * Thêm một hàng dưới hàng chính, bên trong cùng thẻ.
+   *
+   * Là `ReactNode` chứ không phải một cờ `quickAdd`: `CompactWidget` không có
+   * việc gì phải biết nước là gì, và bước chân đang đi là thẻ Bước chân sẽ
+   * không phải mọc thêm một nhánh `if` mà nó không dùng.
+   */
+  footer?: React.ReactNode;
 }) {
   return (
     <PressScale
@@ -1095,6 +1121,7 @@ function CompactWidget({
         the function — and the second style — are no longer carrying anything.
       */}
       <GlassCard style={styles.compactCard}>
+        <View style={styles.compactRow}>
           {ring ? (
             <MiniRing pct={pct} icon={icon} color={iconColor} gradient={ring} bg={iconBg} />
           ) : (
@@ -1107,8 +1134,137 @@ function CompactWidget({
             <Text style={styles.compactValue}>{valueText}</Text>
           </View>
           <Text style={styles.compactPct}>{pct}%</Text>
+        </View>
+        {footer}
       </GlassCard>
     </PressScale>
+  );
+}
+
+/**
+ * Ghi một cốc nước mà không phải rời thẻ.
+ *
+ * ── vì sao hàng này đáng chỗ ──
+ *
+ * Uống nước là việc lặp lại nhiều lần nhất trong ngày và nhẹ nhất về nội dung:
+ * không có món, không có khẩu phần, không có gì để chọn — chỉ một con số trong
+ * ba con số. Trước hàng này, ghi một cốc là: chạm thẻ → chờ màn `/water` đẩy
+ * vào → bấm 250 → vuốt quay lại. Bốn thao tác và hai lần chuyển màn cho một
+ * việc mà nội dung của nó vừa trong một nút.
+ *
+ * Nay là một chạm. Màn `/water` vẫn ở đó cho phần còn lại — biểu đồ tuần, danh
+ * sách từng lần, lượng lẻ không nằm trong ba mức — và hàng chính vẫn mở nó.
+ *
+ * ── vì sao có dấu trừ ──
+ *
+ * Bấm nhanh thì bấm nhầm. Trước đây không có nút thêm ở đây thì cũng không có
+ * gì để bấm nhầm; giờ có. Chỗ sửa mà lại nằm ở màn khác nghĩa là lỗi được phát
+ * hiện ở đây và chỉ chữa được ở kia.
+ *
+ * Nó bật/tắt theo `ml > 0`: tổng của ngày là tổng của các lần ghi, nên "tổng >
+ * 0" và "có ít nhất một lần ghi" là cùng một câu, và câu ấy đã có sẵn trên thẻ.
+ *
+ * ── vì sao vẫn phải gọi `useTodayWaterLogs` ──
+ *
+ * Không phải để bật cái nút. Là vì nếu không có nó thì mọi nút ở đây bấm xong
+ * KHÔNG có gì xảy ra cho tới khi server trả lời.
+ *
+ * `patchWater` trong `use-water.ts` mở đầu bằng `if (prevLogs)`: nó suy ra tổng
+ * MỚI bằng cách cộng lại danh sách đã vá, chứ không cộng thêm delta vào tổng
+ * cũ — cố ý, để tổng và danh sách không bao giờ kể hai câu chuyện khác nhau về
+ * cùng một cú bấm, kể cả khi hai cú bấm chồng lên nhau. Nhưng danh sách ấy chỉ
+ * được tải bởi màn `/water`. Ở Dashboard và Dinh dưỡng chỉ có `today_water`,
+ * nên `prevLogs` là `undefined` và nhánh vá lạc quan không chạy chút nào.
+ *
+ * Trước hàng này điều đó không hại ai: không có chỗ nào ghi nước từ hai màn kia
+ * cả. Playwright bắt được ngay ở lần đo đầu — POST đi đúng `amount_ml: 250`, mà
+ * thẻ vẫn đứng nguyên "1750 / 2500 ml" suốt 1,5 giây, không nhích một khung
+ * hình nào.
+ *
+ * Cách sửa rẻ hơn là cho `patchWater` cộng delta khi thiếu danh sách. Tôi không
+ * chọn nó: nó bỏ đúng cái bảo đảm mà đoạn code kia được viết ra để giữ. Tải
+ * danh sách thì cả thêm lẫn bỏ đều đi qua đường đã được chứng minh — và nó hâm
+ * nóng sẵn cache cho màn `/water` mà hàng chính mở ra.
+ *
+ * ── vì sao chip xanh mà dấu trừ thì không ──
+ *
+ * Ba chip là hành động của thẻ; dấu trừ là đường lùi. Cùng màu thì bốn nút
+ * thành một dãy đồng hạng và mắt phải đọc chữ mới biết cái nào làm gì.
+ *
+ * Nền chip là `rgba(14,165,233,0.10)` — đúng nền của icon giọt nước ở hàng
+ * trên. Đo trên mặt thẻ thật (`glass.bg` phủ trên `colors.background`, ra
+ * rgb(22,22,23)), một mình nó chỉ hơn nền thẻ **1,14:1** — gần như vô hình,
+ * đúng cái bẫy đã nuốt mấy ô macro và ô sinh trắc trong phiên này. Nên VIỀN mới
+ * là thứ vẽ ra hình nút: `rgba(59,166,255,0.28)` đạt **1,64:1**. Chữ
+ * `metricBlue` trên nền chip là **6,10:1**, thừa sàn 4,5:1.
+ */
+function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }) {
+  const i18n = useI18n();
+  const vl = volumeLabel(unit);
+  const add = useAddWater();
+  const undo = useRemoveLastWater();
+  /* Kết quả cố ý không dùng ở đây. Gọi nó là để `today_water_logs` NẰM trong
+     cache — xem ghi chú trên; xoá dòng này thì mọi nút dưới đây bấm xong không
+     có gì xảy ra cho tới khi server trả lời. */
+  useTodayWaterLogs();
+  const undoable = canUndo && !undo.isPending;
+
+  return (
+    <View style={styles.quickWrap}>
+      <View style={styles.quickSep} />
+      <View style={styles.quickRow}>
+        {waterQuickAmounts(unit).map((amount) => (
+          <PressScale
+            key={amount}
+            accessibilityRole="button"
+            /* Nhãn hiện ra là "+250 ml" — đọc lên thành "cộng hai trăm năm mươi
+               ml", không nói đây là nước hay bấm vào thì xảy ra gì. `a11yAddWater`
+               là câu đã có sẵn cho đúng nút này ở màn `/water`. */
+            accessibilityLabel={i18n.a11yAddWater.replace('{x}', String(amount)).replace('{unit}', vl)}
+            style={styles.quickBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              add.mutate(volumeToMl(amount, unit), { onError: (e: Error) => toast.fail(e) });
+            }}>
+            <Text style={styles.quickText}>
+              +{amount}
+              {/* Đơn vị nhỏ hơn số, CÙNG màu chứ không mờ đi. Bản mờ
+                  `rgba(59,166,255,0.65)` chỉ đạt 3,40:1 trên nền chip — dưới
+                  sàn 4,5:1 của chữ nhỏ. Thu nhỏ thì thứ bậc vẫn còn mà độ
+                  tương phản không mất gì (vẫn 6,10:1).
+                  Lồng trong cùng một `Text` chứ không phải hai `Text` cạnh
+                  nhau: chữ lồng tự nằm trên một đường chân, không cần
+                  `alignItems: 'baseline'` — thứ đã kéo lệch ô cân nặng trong
+                  phiên này. */}
+              <Text style={styles.quickUnit}> {vl}</Text>
+            </Text>
+          </PressScale>
+        ))}
+        {/*
+          Dấu trừ đứng CUỐI hàng, không phải đầu.
+
+          Màn `/water` đặt nó trước, và ở đó nó đúng: hàng ấy có nhãn "THÊM
+          NHANH" phía trên nên không nút nào phải tự giới thiệu. Ở đây hàng
+          không có nhãn, nên nút đầu tiên là thứ nói cho biết hàng này để làm
+          gì — và mở đầu bằng một ô xám mờ (trạng thái mặc định của nó vào buổi
+          sáng, khi chưa uống gì) là mở đầu bằng đường lùi.
+
+          Ba chip là lý do hàng này tồn tại; dấu trừ là ngoại lệ. Đọc từ trái
+          sang thì gặp việc thường làm trước, việc hiếm sau.
+        */}
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={i18n.a11yRemove}
+          disabled={!undoable}
+          style={[styles.quickUndo, !undoable && styles.quickOff]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            undo.mutate({ onError: (e: Error) => toast.fail(e) });
+          }}>
+          <Icon icon={Minus} size={16} color={colors.mutedForeground} strokeWidth={2.5} />
+        </PressScale>
+      </View>
+    </View>
   );
 }
 
@@ -1135,6 +1291,7 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
       valueText={`${displayVolume(ml, unit)} / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
       pct={pct}
       onPress={() => nav.push('/water')}
+      footer={<WaterQuickAdd unit={unit} canUndo={ml > 0} />}
     />
   );
 }
@@ -1252,7 +1409,10 @@ const styles = StyleSheet.create({
   stageLegendText: { fontSize: 11, color: colors.mutedForeground },
 
   // compact widgets
-  compactCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, padding: spacing.md },
+  /* `gap` chỉ sinh khoảng cách GIỮA các con. Thẻ Bước chân chỉ có một con
+     (không có footer) nên nó không nhận thêm một pixel nào từ dòng này. */
+  compactCard: { padding: spacing.md, gap: spacing.sm + 4 },
+  compactRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
   compactIcon: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   miniRing: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   miniRingCenter: {
@@ -1265,4 +1425,44 @@ const styles = StyleSheet.create({
   compactLabel: { fontSize: 12, color: colors.mutedForeground },
   compactValue: { fontSize: 14, fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
   compactPct: { fontSize: 18, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
+
+  // hàng thêm nhanh của thẻ Nước
+  quickWrap: { gap: spacing.sm + 4 },
+  /* Chỉ tràn ra hết bề rộng thẻ, không chỉ phần trong padding: đường kẻ là để
+     tách hai VÙNG của thẻ, và một đường ngắn hơn thẻ đọc ra thành đồ trang trí
+     nằm giữa chứ không phải một ranh giới. */
+  quickSep: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginHorizontal: -spacing.md,
+  },
+  quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  quickUndo: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: glass.border,
+    backgroundColor: glass.bg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickOff: { opacity: 0.35 },
+  quickBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(59,166,255,0.28)',
+    backgroundColor: 'rgba(14,165,233,0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: colors.metricBlue,
+    fontVariant: ['tabular-nums'],
+  },
+  quickUnit: { fontSize: 11, fontWeight: '600', color: colors.metricBlue },
 });

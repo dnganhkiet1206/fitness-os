@@ -34,11 +34,8 @@ import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { useProfile } from '@/hooks/useTodayData';
 import { useAddWater, useRemoveLastWater, useTodayWater, useTodayWaterLogs, useWaterWeek } from '@/hooks/use-water';
 import { displayVolume, volumeLabel, volumeToMl } from '@/lib/units';
+import { waterQuickAmounts } from '@/lib/water-presets';
 import { toast } from '@/lib/toast';
-
-// Quick-add amounts in the display unit (converted to ml on tap)
-const QUICK_ML = [250, 500, 750];
-const QUICK_OZ = [8, 12, 16];
 
 /**
  * The most anyone drinks in one sitting, in the display unit.
@@ -105,7 +102,7 @@ export default function WaterScreen() {
   const todayMl = total ?? 0;
   const pct = Math.min(100, (todayMl / target) * 100);
 
-  const QUICK = vUnit === 'oz' ? QUICK_OZ : QUICK_ML;
+  const QUICK = waterQuickAmounts(vUnit);
   // ml → "1.80 L" (metric) or "61 oz" (imperial)
   const bigValue = vUnit === 'oz' ? `${displayVolume(todayMl, 'oz')} oz` : `${(todayMl / 1000).toFixed(2)}L`;
   const targetLabel = vUnit === 'oz' ? `${displayVolume(target, 'oz')} oz` : `${(target / 1000).toFixed(1)}L`;
