@@ -52,6 +52,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { iconTint } from '@/constants/icon-tint';
 import { PeekHost } from '@/components/ascnd/card-peek';
 import { AccountAvatar } from '@/components/ascnd/account-avatar';
+import { BrandLockup } from '@/components/ascnd/brand-lockup';
 import { DragReorder } from '@/components/ascnd/drag-reorder';
 import { SwipeRow } from '@/components/ascnd/swipe-row';
 import { StreakChip } from '@/components/ascnd/streak-chip';
@@ -2323,9 +2324,22 @@ export default function TodayScreen() {
           Ngày nói lại thứ thanh trạng thái ngay phía trên đã nói. Lời chào nói
           tên bạn cho chính bạn nghe. Cả hai từng là hai dòng ĐẦU TIÊN của
           trang, tức nửa giây đầu tiên tiêu vào hai câu không đổi được quyết
-          định nào. Chỗ đó giờ là chỉ số sẵn sàng, và hàng này chỉ còn các nút.
+          định nào. Chỗ đó giờ là chỉ số sẵn sàng.
+
+          ── và chỗ trống ấy giờ là dấu hiệu của app ──
+
+          Sau khi bỏ hai dòng kia, ô này là một `<View>` RỖNG chỉ còn việc đẩy
+          hàng nút sang phải. Nó vẫn giữ đúng việc ấy — `flex: 1` không đổi —
+          nhưng nay nó cũng nói app này là app nào, ở đúng nơi mọi app khác nói
+          điều đó và mắt đã biết tìm.
+
+          Nó không chạm được và không nhận cú chạm: `headerBar` là
+          `pointerEvents="box-none"`, nên cú chạm rơi vào khoảng trống bên cạnh
+          logo vẫn đi xuống hero phía dưới như trước.
         */}
-        <View style={styles.headerText} />
+        <View style={styles.headerText}>
+          <BrandLockup />
+        </View>
         <View style={styles.headerButtons}>
           {/* The streak sits before the buttons because it is a *reading*, not
               an action — and it is only ever here, in the bar you land on. */}

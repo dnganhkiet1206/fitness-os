@@ -215,6 +215,12 @@ const STEPS = [
     dùng cho cả VO₂max lẫn nhịp thở suốt thời gian ấy.
   */
   ['dấu sinh trắc', 'node', ['tools/biometric-icons.mjs']],
+  /*
+    Logo trên đầu Today lấy cỡ từ TỈ LỆ NÉT của một tệp .png, không từ một con
+    số ai đó gõ. Dựng lại icon với lề khác là hợp lệ với `make-app-icon.mjs` và
+    không có gì báo — trừ bước này.
+  */
+  ['dấu thương hiệu', 'node', ['tools/brand-lockup.mjs']],
   ['ngôn ngữ AI', 'node', ['tools/ai-language.mjs']],
   ['worklet đo được', 'node', ['tools/measured-worklet.mjs']],
   ['giọng linh vật', 'node', ['tools/mascot-voice.mjs']],
