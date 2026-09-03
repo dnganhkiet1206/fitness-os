@@ -125,6 +125,15 @@ export const RULER_H = 96;
 const MINOR_H = 28;
 const MAJOR_H = 50;
 
+/**
+ * Bề rộng vạch dài.
+ *
+ * Rút ra khỏi `<Rect width={2}>` vì nay nó có NGƯỜI ĐỌC THỨ HAI: nắp che phải
+ * biết vạch cuối cùng kết thúc ở đâu để không gọt mất nửa nó. Hai chỗ cùng cần
+ * một con số là lúc con số phải có tên.
+ */
+const MARK_W = 2;
+
 export const Ruler = memo(function Ruler({
   count,
   min10,
@@ -226,6 +235,38 @@ export const Ruler = memo(function Ruler({
     transform: [{ translateX: (((pad + phase - scrollX.value) % PERIOD) + PERIOD) % PERIOD }],
   }));
 
+  /*
+    ── hai nắp che, và vì sao thước phải KẾT THÚC ──
+
+    Người dùng gửi ảnh ở đúng 30,0 kg — mức thấp nhất — và thước vẫn vẽ vạch
+    chạy tiếp sang trái. Những vạch ấy không ứng với giá trị nào cả: chúng chỉ
+    tồn tại vì hoạ tiết được tô bằng MỘT `<Rect>` phủ kín khung nhìn, và một
+    hoạ tiết tuần hoàn thì không biết dải giá trị bắt đầu hay kết thúc ở đâu.
+
+    Không cửa nào bắt được. `tsc` xanh, mọi guard xanh, và một hàng vạch cách
+    đều nhau trông ĐÚNG bất kể nó chạy tới đâu — cùng lý do khiến lỗi "vạch dài
+    lệch pha ở pound" sống sót 5.954 vạch. Chỉ có người biết 30 là đáy mới thấy.
+
+    Bản `rn-ruler-picker` (React Native) làm đúng chỗ này bằng cách khác: nó đệm
+    `width/2` mỗi đầu bằng `paddingHorizontal` và sinh dữ liệu CHỈ từ `minValue`
+    tới `maxValue`, nên phần đệm không có gì để vẽ. Ở đây không có danh sách để
+    ngắt — chỉ có một hoạ tiết — nên chỗ nào không thuộc dải thì phải bị che.
+
+    Che chứ không cắt: `overflow: 'hidden'` cắt theo HỘP BỐ CỤC, nên muốn cửa sổ
+    cắt chạy theo cú cuộn thì phải animate `width`, tức chạy lại bố cục mỗi
+    khung hình — đúng thứ `tools/motion.mjs` cấm và đúng thứ cả tệp này được
+    viết lại để tránh. Nắp che chỉ cần `translateX`, một phép ghi trên luồng UI,
+    giống hệt lớp vẽ.
+
+    Nắp mang `colors.background` vì thẻ này nằm trên nền ấy (`weight-goal-dialog`
+    → `styles.root`). Đó là một sự phụ thuộc thật, nên nó được viết ra ở đây
+    thay vì để ai đó đổi nền hộp thoại rồi phát hiện hai mảng đen nổi lên.
+  */
+  const capL = useAnimatedStyle(() => ({ transform: [{ translateX: pad - scrollX.value }] }));
+  const capR = useAnimatedStyle(() => ({
+    transform: [{ translateX: pad + (count - 1) * TICK_W + MARK_W - scrollX.value }],
+  }));
+
   const contentStyle = useMemo(() => ({ width: total }), [total]);
 
   return (
@@ -245,7 +286,7 @@ export const Ruler = memo(function Ruler({
               <Rect
                 x={0}
                 y={RULER_H - MAJOR_H}
-                width={2}
+                width={MARK_W}
                 height={MAJOR_H}
                 fill={colors.foreground}
                 opacity={0.7}
@@ -266,6 +307,18 @@ export const Ruler = memo(function Ruler({
           <Rect x={0} y={0} width={svgW} height={RULER_H} fill={`url(#${pid})`} />
         </Svg>
       </Animated.View>
+
+      {/*
+        Mép trái của nắp trái nằm ở `-width`, nên khi nó trượt tới `x0` thì vùng
+        che là `[x0 - width, x0]`. `x0` lớn nhất khi kéo quá đáy và lò xo giữ
+        thước lại; ngay cả khi đó nó vẫn nhỏ hơn một bề rộng màn hình, nên mép
+        trái của nắp không bao giờ bò vào trong khung nhìn.
+      */}
+      <Animated.View
+        style={[styles.cap, { left: -width, width }, capL]}
+        pointerEvents="none"
+      />
+      <Animated.View style={[styles.cap, { left: 0, width }, capR]} pointerEvents="none" />
 
       {/*
         Trong suốt và nằm TRÊN: nó chỉ để bắt cử chỉ và giữ quán tính. Nội dung
@@ -291,4 +344,5 @@ export const Ruler = memo(function Ruler({
 const styles = StyleSheet.create({
   root: { height: RULER_H, alignSelf: 'stretch' },
   paint: { position: 'absolute', top: 0, height: RULER_H },
+  cap: { position: 'absolute', top: 0, height: RULER_H, backgroundColor: colors.background },
 });
