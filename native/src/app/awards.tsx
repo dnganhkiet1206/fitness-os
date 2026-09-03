@@ -147,6 +147,11 @@ function MedalCard({
    *
    * Gắn `ascnd://` vào cho có xem trước là tệ hơn: với người chưa cài app đó là
    * một liên kết chết.
+   *
+   * Hoãn có chủ ý, không phải bỏ quên: cả hai đường ra — một tên miền thật, hay
+   * một ảnh tấm huy chương qua `react-native-view-shot` — đều là quyết định
+   * ngoài mã (một cái cần tên miền, một cái cần bản dựng native mới). Việc phải
+   * làm vào ngày phát hành nằm ở `docs/PRE_RELEASE.md` §8, kèm đủ các bước.
    */
   const share = async () => {
     Haptics.selectionAsync();

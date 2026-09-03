@@ -384,6 +384,72 @@ looked at specifically, not assumed.
 
 ---
 
+## 8. Chia sẻ huy chương không mang gì ngoài một dòng chữ — HOÃN, chờ ngày phát hành
+
+*Thêm 2026-09-03. Mục này viết bằng tiếng Việt vì nó là việc người dùng sẽ tự
+quyết vào ngày phát hành, không phải việc lập trình.*
+
+Người dùng báo: "khi nhấn chia sẻ trong huy chương thì không ra bất cứ thông tin
+gì cả, hay là do app chưa có url chính thức".
+
+### Đã sửa (đã lên nhánh)
+
+Hai lỗi thật, và **không** cái nào liên quan tới url:
+
+1. **Nút chỉ 30 điểm** — `awards.tsx`, glyph 14 + `hitSlop={8}`. Sàn Apple là 44.
+   Nay 16 + 14×2 = 44. `tools/tap-target.mjs` có thêm luật 2 để hình dạng này
+   (nút mà con duy nhất là một `<Icon>`, không có style nào mang `height`) không
+   lọt nữa; nó bắt thêm bốn chỗ, tất cả đã nâng `hitSlop`.
+2. **`catch {}` nuốt mọi thất bại** — và chú thích "user cancelled" nói sai:
+   tệp type của React Native ghi rằng huỷ thì Promise vẫn RESOLVE với
+   `dismissedAction`. Một lời ném ở đó là lỗi thật. Nay đi qua `toast.fail`.
+
+Một giả thuyết đã bị bác bằng phép đo: tôi nghi thông điệp rỗng vì
+`awards.tsx` gọi `awardText(key, lang)` không kèm fallback. Đối chiếu danh mục
+với bảng chữ: **29/29 khoá đều có chữ**. Không phải chỗ đó.
+
+### Chưa sửa, và vì sao
+
+`Share.share({ message })` **không cần url** — chuỗi chữ tự nó được chia sẻ. Nên
+url không phải nguyên nhân của "không ra gì". Nhưng nó là lý do thứ đến tay
+người nhận chỉ là một dòng chữ trần: iOS dựng ô xem trước từ một ĐƯỜNG DẪN, và
+app chưa có cái nào.
+
+Trạng thái hôm nay, đọc từ `app.json`:
+
+| | |
+|---|---|
+| `scheme` | `"ascnd"` — chỉ mở được trên máy ĐÃ cài app |
+| `ios.associatedDomains` | không có |
+| tên miền công khai | không có |
+
+Gắn `ascnd://` vào cho có xem trước là **tệ hơn**: với người chưa cài app đó là
+một liên kết chết.
+
+### Việc phải làm vào ngày phát hành
+
+Chọn một trong hai, hoặc cả hai:
+
+**A. Đường dẫn thật.** Cần một tên miền bạn sở hữu.
+1. Dựng một trang đích, ví dụ `https://<tên-miền>/a/<award_key>` — nó chỉ cần
+   một thẻ `og:title` / `og:image` để iOS và các app nhắn tin dựng ô xem trước.
+2. Thêm `ios.associatedDomains: ["applinks:<tên-miền>"]` vào `app.json` và đặt
+   tệp `apple-app-site-association` lên miền ấy, để người ĐÃ cài app bấm vào thì
+   mở thẳng trong app.
+3. Trong `awards.tsx`, truyền thêm `url` cho `Share.share`. Một dòng.
+
+**B. Ảnh tấm huy chương.** Thứ Strava và Apple Fitness làm, và là cách duy nhất
+để thứ chia sẻ có nghĩa với người KHÔNG cài app.
+- Cần thêm `react-native-view-shot` — một phụ thuộc native, tức một bản dựng
+  dev-client mới. Không cài được bằng OTA.
+- `components/ascnd/medal.tsx` đã tách riêng đúng cái đĩa, nên chụp nó ra ảnh là
+  bọc một `ViewShot` quanh một bản `<Medal size={512} />` dựng ngoài màn hình.
+
+Chưa làm cái nào vì cả hai đều phụ thuộc quyết định ngoài mã: A cần một tên
+miền, B cần một bản dựng native mới. Người dùng nói chưa biết khi nào phát hành.
+
+---
+
 ## How to re-verify this file
 
 ```bash
@@ -470,7 +536,10 @@ that nothing gets "fixed" until both the defect and the fix are proven.
 6. **§6 smaller things** — bucket limits and `.env` in git are still open
    (`git ls-files .env` still finds it, and `.gitignore` still has no rule
    for it). The `ai-coach.tsx` URL is done.
-7. **`delete-account` does not exist yet** — no directory in
+7. **§8 chia sẻ huy chương** — hai lỗi đã sửa; nội dung chia sẻ vẫn là một
+   dòng chữ. Cần một tên miền (đường dẫn thật) hoặc `react-native-view-shot`
+   (ảnh huy chương). Cả hai là quyết định ngoài mã, hoãn tới ngày phát hành.
+8. **`delete-account` does not exist yet** — no directory in
    `supabase/functions/`, no entry in `config.toml`. The app's Settings
    screen already calls it and already says "the server has not enabled
    this yet" on a 404, so nothing is broken today; it is a release
