@@ -171,7 +171,7 @@ export default function MealPlanScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yDelete}
-            hitSlop={12}
+            hitSlop={14}
             onPress={removePlan}>
             <Icon icon={Trash2} size={17} color={colors.mutedForeground} />
           </Pressable>

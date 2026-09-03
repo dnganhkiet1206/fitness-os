@@ -156,7 +156,7 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
           <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yAdd}
-            hitSlop={12}
+            hitSlop={13}
             disabled={createFood.isPending}
             onPress={quickAdd}>
             <Icon icon={Plus} size={18} color={colors.primary} strokeWidth={2.5} />

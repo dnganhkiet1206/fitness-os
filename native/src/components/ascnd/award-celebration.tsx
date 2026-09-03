@@ -174,7 +174,7 @@ export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAw
         ))}
 
         <Animated.View style={[styles.card, { shadowColor: tier.color }, cardStyle]}>
-          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDismiss} style={styles.closeBtn} hitSlop={8} onPress={dismiss}>
+          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDismiss} style={styles.closeBtn} hitSlop={14} onPress={dismiss}>
             <Icon icon={X} size={16} color={colors.mutedForeground} />
           </Pressable>
 

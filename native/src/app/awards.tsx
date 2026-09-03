@@ -16,6 +16,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AWARD_DEFINITIONS, useAwardProgress, useAwards, useCheckAwards } from '@/hooks/use-extras';
 import type { AwardSources } from '@/lib/award-grant';
 import { awardText } from '@/lib/gamification-i18n';
+import { toast } from '@/lib/toast';
 import type { AppLang } from '@/lib/i18n';
 
 /**
@@ -122,14 +123,37 @@ function MedalCard({
     isEarned || need == null || current == null ? 0 : Math.max(0, Math.min(1, current / need));
   const showCount = !isEarned && need != null && current != null;
 
+  /**
+   * Chia sẻ tấm huy chương.
+   *
+   * ── vì sao `catch {}` phải đi ──
+   *
+   * Người dùng báo "nhấn chia sẻ thì không ra bất cứ thông tin gì cả". Khối
+   * `catch` rỗng ở đây nuốt MỌI thất bại, và chú thích của nó — "user
+   * cancelled" — nói sai về chính thứ nó bắt: `Share.share` KHÔNG ném khi
+   * người dùng huỷ, nó trả về `{ action: 'dismissedAction' }`. Một lời ném ở
+   * đây là một lỗi thật, và nó đang được ném vào im lặng.
+   *
+   * Cùng tệp `settings.tsx` xuất dữ liệu bằng `Share.share` thì có
+   * `Alert.alert(errorText(e))`. Hai chỗ gọi cùng một API, một chỗ nói khi
+   * hỏng và một chỗ không — và chỗ không nói là chỗ người dùng đang đứng.
+   *
+   * ── còn nội dung thì vẫn là một câu, và đó là giới hạn thật ──
+   *
+   * App chưa có tên miền công khai: `app.json` khai `scheme: "ascnd"` (chỉ mở
+   * được trên máy ĐÃ cài app) và không có `associatedDomains` nào. Nên không có
+   * đường dẫn nào để đính kèm, và iOS không có gì để dựng ô xem trước — thứ
+   * đến tay người nhận là đúng một dòng chữ.
+   *
+   * Gắn `ascnd://` vào cho có xem trước là tệ hơn: với người chưa cài app đó là
+   * một liên kết chết.
+   */
   const share = async () => {
     Haptics.selectionAsync();
     try {
-      await Share.share({
-        message: `🏅 ${title} — ${desc}! #ASCND`,
-      });
-    } catch {
-      // user cancelled
+      await Share.share({ message: `🏅 ${title} — ${desc}! #ASCND` });
+    } catch (e) {
+      toast.fail(e);
     }
   };
 
@@ -202,8 +226,22 @@ function MedalCard({
               year: 'numeric',
             })}
           </Text>
-          <PressScale to={press.deep} accessibilityRole="button" accessibilityLabel={i18n.a11yShare} hitSlop={8} onPress={share}>
-            <Icon icon={Share2} size={14} color={colors.mutedForeground} />
+          {/*
+            hitSlop 14 quanh một glyph 16, tức vùng chạm 44 — đúng sàn của Apple.
+
+            Bản trước là glyph 14 với hitSlop 8: **30 điểm**, thiếu mười bốn.
+            `tools/tap-target.mjs` cho qua vì luật của nó là "dưới 44 thì phải CÓ
+            hitSlop", không phải "hitSlop phải đưa lên tới 44" — và chính lời
+            luật ấy mô tả đúng triệu chứng: dưới sàn thì người dùng bấm trượt và
+            kết luận "app không ăn", chứ không kết luận "nút nhỏ quá".
+          */}
+          <PressScale
+            to={press.deep}
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yShare}
+            hitSlop={14}
+            onPress={share}>
+            <Icon icon={Share2} size={16} color={colors.mutedForeground} />
           </PressScale>
         </View>
       )}

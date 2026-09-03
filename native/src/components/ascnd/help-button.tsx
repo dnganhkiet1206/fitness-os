@@ -119,7 +119,7 @@ export function HelpNudge({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yClose}
-            hitSlop={12}
+            hitSlop={15}
             onPress={onDismiss}>
             <Icon icon={X} size={14} color={colors.mutedForeground} />
           </Pressable>
