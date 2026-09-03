@@ -40,6 +40,16 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+
+/**
+ * Đại lượng có đơn vị bằng CHỮ, không phải ký hiệu.
+ *
+ * Danh sách này là một lời khai, và nó được đối chiếu ngược với `WordUnit`
+ * trong `plausible.ts` — thêm tên vào đây mà không thêm vào kiểu, hay ngược
+ * lại, đều đỏ. Nếu không thì "đơn vị là null" trở thành một cái cửa mở, đúng
+ * bằng cái lỗ luật đơn vị sinh ra để bịt.
+ */
+const WORD_UNIT = new Set(['resp_rpm']);
 const problems = [];
 const read = (p) => readFileSync(path.join(NATIVE, p), 'utf8');
 
@@ -134,7 +144,50 @@ for (const q of Object.keys(BOUNDS)) {
   if (plausible(q, NaN)) problems.push(`${q}: NaN được chấp nhận — có gõ gì đó vào và nó không phải là số`);
   if (plausible(q, Infinity)) problems.push(`${q}: Infinity được chấp nhận`);
   if (BOUNDS[q].min >= BOUNDS[q].max) problems.push(`${q}: khoảng rỗng (${BOUNDS[q].min}–${BOUNDS[q].max})`);
-  if (!BOUNDS[q].unit) problems.push(`${q}: không có đơn vị để in ra cho người dùng`);
+  /*
+    Mọi đại lượng vẫn phải có đơn vị để in ra — luật không đổi, chỉ chia hai
+    đường.
+
+    ── vì sao có đường thứ hai ──
+
+    `resp_rpm` từng mang `unit: 'rpm'`, và `rpm` là VÒNG TRÊN PHÚT: đơn vị của
+    một động cơ, in thẳng ra cho người dùng trong câu "Cần nằm trong khoảng
+    4–60 rpm". Nhịp thở đếm bằng HƠI THỞ, và cụm ấy là một TỪ — "nhịp/phút"
+    hay "breaths/min" — nên nó không có cách viết trung lập ngôn ngữ và không
+    thể sống trong tệp này.
+
+    Nên đại lượng loại ấy mang `unit: null` và chuỗi đến từ i18n. Nhưng "null"
+    một mình thì đúng bằng cái lỗ mà luật này sinh ra để bịt, nên nó phải được
+    KHAI BÁO ở `WORD_UNIT` dưới đây và phải có kiểu `WordUnit` trong
+    `plausible.ts` bắt chỗ gọi truyền chuỗi đã dịch vào. Một `null` không khai
+    báo vẫn đỏ như trước.
+  */
+  if (BOUNDS[q].unit === null) {
+    if (!WORD_UNIT.has(q)) problems.push(`${q}: đơn vị là null mà không khai báo là đơn vị bằng CHỮ`);
+  } else if (!BOUNDS[q].unit) {
+    problems.push(`${q}: không có đơn vị để in ra cho người dùng`);
+  }
+}
+
+/* Và những đại lượng khai là "đơn vị bằng chữ" phải thật sự được kiểu chặn:
+   `WordUnit` trong plausible.ts là thứ khiến quên truyền đơn vị thành lỗi biên
+   dịch. Một tên ở đây mà không có ở đó là một lời khai không ai giữ. */
+{
+  const src = readFileSync(path.join(NATIVE, 'src/lib/plausible.ts'), 'utf8');
+  const declared = /export type WordUnit =([^;]+);/.exec(src)?.[1] ?? '';
+  for (const q of WORD_UNIT) {
+    if (!new RegExp(`'${q}'`).test(declared)) {
+      problems.push(`${q}: khai là đơn vị bằng chữ nhưng không nằm trong \`WordUnit\` — kiểu không chặn được chỗ gọi`);
+    }
+  }
+  for (const m of declared.matchAll(/'(\w+)'/g)) {
+    if (!WORD_UNIT.has(m[1])) problems.push(`${m[1]}: nằm trong \`WordUnit\` nhưng công cụ này không biết`);
+    if (BOUNDS[m[1]]?.unit !== null) problems.push(`${m[1]}: là \`WordUnit\` nhưng vẫn giữ một đơn vị viết cứng`);
+  }
+  /* Và câu báo phải mang đúng chuỗi đã dịch được truyền vào. */
+  const vi = outOfRangeMessage('resp_rpm', '900', 'Cần nằm trong khoảng {min}–{max} {unit}', 'nhịp/phút');
+  if (!vi || !vi.includes('nhịp/phút')) problems.push(`câu báo nhịp thở không mang đơn vị đã dịch: "${vi}"`);
+  if (vi && /rpm/i.test(vi)) problems.push(`câu báo nhịp thở vẫn còn chữ "rpm": "${vi}"`);
 }
 
 /* The message must actually carry the numbers — a placeholder left unreplaced
@@ -434,6 +487,9 @@ console.log(
   `hợp lý sinh lý OK — ${CASES.length} ca ngưỡng: nhận đúng các kỷ lục có thật (nhịp nghỉ 27 bpm của Martin Brady, ` +
     'VO₂max 97,5 của Oskar Svendsen, mỡ thiết yếu 2% theo ACE) và từ chối các kiểu gõ nhầm (600 bpm, SpO₂ 970, mỡ 500%, 7500 kg); ' +
     `bỏ trống vẫn hợp lệ ở cả ${Object.keys(BOUNDS).length} đại lượng còn NaN/Infinity thì không; ` +
+    `mọi đại lượng đều có đơn vị in ra được, và ${WORD_UNIT.size} cái có đơn vị bằng CHỮ ` +
+    '(nhịp thở — "rpm" là vòng/phút của động cơ) phải khai cả ở đây lẫn trong kiểu `WordUnit`, ' +
+    'nên quên truyền chuỗi đã dịch là lỗi biên dịch chứ không phải một câu tiếng Anh lọt ra màn tiếng Việt; ' +
     `${REGISTRY.length} màn hình nhập đều có chốt chặn truy được về plausible VÀ có mặt trong chính biểu thức chặn nút lưu ` +
     '(một cái tên đúng không phải là một phép kiểm tra); màn hình log-* mới không có trong danh sách sẽ tự động hỏng',
 );

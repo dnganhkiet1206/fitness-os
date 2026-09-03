@@ -239,6 +239,53 @@ export function geometry(src) {
   return bad;
 }
 
+/**
+ * Màu: lấy từ token, và không hai dấu nào trùng màu trừ khi ĐƯỢC KHAI BÁO.
+ *
+ * Cùng một luật `glyph-collision.mjs` áp cho hình, áp cho màu — vì lỗi ở thẻ
+ * này là cùng một hình dạng: hai thứ khác nhau đeo chung một dấu hiệu. Cặp
+ * được phép ở đây là oxy máu và nhịp thở: một hệ (oxy vào cơ thể), và hai hình
+ * đã khác nhau hoàn toàn nên màu không phải thứ phải phân biệt chúng.
+ *
+ * Học thuyết ở `constants/icon-tint.ts` cũng cấm mượn màu của khái niệm khác
+ * ngay trên màn này: cyan là NƯỚC và tím là ĐÊM, mà thẻ Nước và thẻ Giấc ngủ
+ * đều nằm cùng một màn cuộn với thẻ này.
+ */
+const TINT_PAIR = new Set(['bloodOxygen+breath']);
+
+export function tints(src) {
+  const bad = [];
+  const table = /export const BIO_TINT[^{]*\{([\s\S]*?)\n\};/.exec(strip(src));
+  if (!table) return ['không đọc được bảng BIO_TINT'];
+  const picks = [...table[1].matchAll(/(\w+): colors\.(\w+),/g)].map((m) => [m[1], m[2]]);
+  if (picks.length !== 5) bad.push(`BIO_TINT có ${picks.length} mục, phải có 5`);
+  if (/#[0-9a-fA-F]{3,8}/.test(table[1])) bad.push('BIO_TINT có mã màu viết thẳng — phải là token của app');
+
+  const by = new Map();
+  for (const [name, tok] of picks) {
+    if (!by.has(tok)) by.set(tok, []);
+    by.get(tok).push(name);
+  }
+  for (const [tok, names] of by) {
+    if (names.length < 2) continue;
+    const key = [...names].sort().join('+');
+    if (!TINT_PAIR.has(key)) {
+      bad.push(`${names.join(' và ')} dùng chung màu \`${tok}\` mà không khai báo trong TINT_PAIR`);
+    } else if (names.length > 2) {
+      bad.push(`\`${tok}\` khai là một cặp nhưng có ${names.length} dấu dùng: ${names.join(', ')}`);
+    }
+  }
+  /* Nhịp thở không được mang màu của NƯỚC hay của ĐÊM — hai khái niệm có thẻ
+     riêng trên cùng màn Today. */
+  const of = Object.fromEntries(picks);
+  if (of.breath === 'metricCyan') bad.push('nhịp thở mang cyan — đó là màu NƯỚC, và thẻ Nước ở cùng màn');
+  if (of.breath === 'metricPurple') bad.push('nhịp thở mang tím — đó là màu ĐÊM/giấc ngủ, và thẻ Giấc ngủ ở cùng màn');
+  if (of.bloodOxygen === 'metricCyan') bad.push('oxy máu mang cyan — màu của nước, trên một hình vốn đã là giọt');
+  if (of.vo2max !== 'champagne') bad.push(`VO₂max mang \`${of.vo2max}\` — màu thể lực của app là champagne`);
+  if (of.heartRest !== 'readinessRed') bad.push(`nhịp tim nghỉ mang \`${of.heartRest}\` — màu tín hiệu cơ thể là readinessRed`);
+  return bad;
+}
+
 /** Một nét, một kiểu đầu nét, một kiểu góc, không gradient, không tô đặc. */
 export function material(src) {
   const bad = [];
@@ -322,6 +369,41 @@ export function cardRules(src) {
     if (new RegExp(`icon: ${n}\\b`).test(card)) {
       bad.push(`thẻ dùng lại icon lucide \`${n}\` — bộ dấu sinh trắc là \`BioGlyph\``);
     }
+  }
+  return bad;
+}
+
+/**
+ * Giờ hiện ra phải là giờ của MÁY, không phải giờ UTC.
+ *
+ * ── lỗi ──
+ *
+ * Danh sách "Các lần đo" in `date_time.replace('T', ' ').slice(0, 16)`.
+ * `date_time` là `timestamptz` và PostgREST trả nó về ở UTC, nên cắt chuỗi ra
+ * là in giờ UTC: ở Hà Nội một lần đo lúc 07:19 hiện thành 00:19, và mọi lần đo
+ * trước 7 giờ sáng còn nằm sai cả NGÀY.
+ *
+ * Luật cấm cắt chuỗi thời gian và đòi đi qua `local-date.ts` — nơi phép đổi
+ * múi giờ nằm một chỗ và giờ mùa hè do bảng tz của hệ điều hành lo.
+ */
+export function timestamps(sources) {
+  const bad = [];
+  for (const [where, src] of [['màn Sinh trắc học', sources.screen], ['thẻ Today', sources.card]]) {
+    const s = strip(src);
+    for (const m of s.matchAll(/date_time[^\n;]*\.slice\(/g)) {
+      bad.push(`${where}: cắt chuỗi \`date_time\` (${m[0].trim()}) — chuỗi ấy là UTC, không phải giờ máy`);
+    }
+    if (/date_time[^\n;]*\.replace\(\s*'T'/.test(s)) {
+      bad.push(`${where}: thay 'T' trong \`date_time\` rồi in thẳng — đó là giờ UTC`);
+    }
+  }
+  if (!/localStampStr\(s\.date_time\)/.test(strip(sources.screen))) {
+    bad.push('màn Sinh trắc học: danh sách lần đo không còn đi qua `localStampStr`');
+  }
+  /* Và giờ chỉ được đứng cạnh nguồn khi CÓ nguồn: "Chưa kết nối · 22:17" đọc
+     ra là việc mất kết nối xảy ra lúc 22:17. */
+  if (!/const sampledAt = connectedSource \? localTimeStr\(/.test(strip(sources.card))) {
+    bad.push('thẻ Today: giờ lấy mẫu không còn gác sau `connectedSource` — nó sẽ dính vào nhãn "Chưa kết nối"');
   }
   return bad;
 }
@@ -441,6 +523,31 @@ export function units(sources) {
   push('icon lucide quay lại bị bắt', () => cardRules(goodCard.replace("glyph: 'hrv' as const", 'icon: Activity')), true);
   push('mất dấu VO₂max bị bắt', () => cardRules(goodCard.replace('name="vo2max"', 'name="hrv"')), true);
 
+  const goodTints = [
+    'export const BIO_TINT: Record<BioGlyphName, string> = {',
+    '  heartRest: colors.readinessRed,',
+    '  hrv: colors.metricPurple,',
+    '  bloodOxygen: colors.metricBlue,',
+    '  breath: colors.metricBlue,',
+    '  vo2max: colors.champagne,',
+    '};',
+  ].join('\n');
+  push('bảng màu đúng thì im', () => tints(goodTints), false);
+  push('trùng màu không khai báo bị bắt', () => tints(goodTints.replace('hrv: colors.metricPurple', 'hrv: colors.champagne')), true);
+  push('nhịp thở mang cyan (màu nước) bị bắt', () => tints(goodTints.replace('breath: colors.metricBlue', 'breath: colors.metricCyan')), true);
+  push('nhịp thở mang tím (màu đêm) bị bắt', () => tints(goodTints.replace('breath: colors.metricBlue', 'breath: colors.metricPurple')), true);
+  push('VO₂max rời màu thể lực bị bắt', () => tints(goodTints.replace('vo2max: colors.champagne', 'vo2max: colors.metricOrange')), true);
+  push('mã màu viết thẳng bị bắt', () => tints(goodTints.replace('colors.metricPurple', "'#b45cff'")), true);
+
+  const goodStamps = {
+    screen: "<Text>{localStampStr(s.date_time) ?? '—'}</Text>",
+    card: 'const sampledAt = connectedSource ? localTimeStr(bio.date_time) : null;',
+  };
+  push('giờ đi qua local-date thì im', () => timestamps(goodStamps), false);
+  push('cắt chuỗi date_time bị bắt', () => timestamps({ ...goodStamps, screen: `${goodStamps.screen}\nconst t = s.date_time.slice(0, 16);` }), true);
+  push("thay 'T' rồi in bị bắt", () => timestamps({ ...goodStamps, screen: `${goodStamps.screen}\nconst t = s.date_time.replace('T', ' ');` }), true);
+  push('giờ không gác theo kết nối bị bắt', () => timestamps({ ...goodStamps, card: 'const sampledAt = localTimeStr(bio.date_time);' }), true);
+
   const goodUnits = {
     card: "export function BiometricsCard() {\n const u = 'mL/kg/min'; const v = i18n.biometricsBreathUnit;\n}",
     screen: "const m = [{ unit: 'mL/kg/min' }, { unit: i18n.biometricsBreathUnit }];",
@@ -467,8 +574,10 @@ const iconsSrc = read(ICONS);
 const problems = [
   ...geometry(iconsSrc),
   ...material(iconsSrc),
+  ...tints(iconsSrc),
   ...cardRules(read(CARD)),
   ...units({ card: read(CARD), screen: read(SCREEN), plausible: read('src/lib/plausible.ts'), i18n: read('src/lib/i18n.ts') }),
+  ...timestamps({ card: read(CARD), screen: read(SCREEN) }),
 ];
 
 if (problems.length) {
@@ -481,6 +590,8 @@ console.log(
   'dấu sinh trắc OK — năm hình vẽ tay trên cùng lưới 24, một nét, đầu và góc bo, không gradient; ' +
     `mỗi hình nằm trong khung ${ART_MIN}…${ART_MAX}, cạnh dài ${SPAN_MIN}…${SPAN_MAX}, tâm lệch dưới ${OFF_CENTRE}; ` +
     'bốn dấu hiệu tức thời mang bốn dấu khác nhau và không cái nào là icon lucide của khái niệm khác; ' +
+    'màu lấy từ token, không hai dấu nào trùng màu ngoài cặp oxy máu + nhịp thở đã khai báo, và nhịp thở không mượn cyan của nước hay tím của đêm; ' +
     'VO₂max đứng ngoài lưới ấy; đơn vị mL/kg/min và nhịp/phút giống nhau ở thẻ, ở màn chi tiết và ở câu báo ngoài khoảng; ' +
+    'giờ lấy mẫu đi qua local-date.ts (giờ máy, không phải UTC) và chỉ đứng cạnh nguồn khi có nguồn; ' +
     `${SELF_TESTS} ca tự kiểm chạy trên nguồn mẫu`,
 );

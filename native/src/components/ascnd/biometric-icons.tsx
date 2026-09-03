@@ -75,18 +75,28 @@ const HEART_LINE = 'M6.4 11.2h2.8l1.2-2.4 1.6 4.4 1-2h4.4';
 /**
  * HRV: KHOẢNG CÁCH biến thiên, không phải biên độ.
  *
- * Ba nhịp cao BẰNG NHAU, đỉnh ở x = 5.7, 11.8, 16.1 — khoảng cách 6.1 rồi 4.3
- * đơn vị. Đó đúng là đại lượng: HRV đo độ lệch giữa các khoảng R–R, không đo
- * nhịp mạnh yếu. Một hình vẽ biên độ nhấp nhô sẽ đẹp như nhau và nói sai.
+ * Ba nhịp cao BẰNG NHAU, và KHOẢNG TRỐNG giữa chúng là 5.8 rồi 2.0 đơn vị —
+ * gần gấp ba lần nhau. Đó đúng là đại lượng: HRV đo độ lệch giữa các khoảng
+ * R–R, không đo nhịp mạnh yếu. Một hình vẽ biên độ nhấp nhô sẽ đẹp như nhau
+ * và nói sai.
  *
- * Mỗi nhịp có một cái hõm nhỏ DƯỚI đường nền sau đỉnh. Bản đầu không có nó và
- * ba cái kim đều nhau đọc ra là một dãy núi; cái hõm là thứ kéo hình về lại
- * thành một dải nhịp tim.
+ * ── và KHÔNG có đoạn phẳng chạy ra hai mép ──
+ *
+ * Đó là chỗ ba bản trước hỏng, mỗi bản một kiểu, và cả ba chỉ lộ ra khi dựng
+ * lên nhìn:
+ *
+ *   · ba cái kim đều nhau trên một đường nền dài  → một cái VƯƠNG MIỆN
+ *   · đường nền chạy hết chiều ngang               → một MÀN HÌNH BỆNH VIỆN
+ *   · bốn vạch dọc rời nhau                        → một dãy VẠCH ĐẾM, không
+ *                                                    còn dính gì tới nhịp tim
+ *
+ * Bản này bắt đầu và kết thúc ở CHÂN một nhịp. Cái làm nó thành nhịp tim là
+ * đoạn nối ngắn giữa các đỉnh; cái làm nó thành HRV là hai đoạn nối ấy dài
+ * khác hẳn nhau.
  *
  * Và không có trái tim nào ở đây: đó là thứ tách nó khỏi ô bên cạnh ở 20pt.
  */
-const HRV =
-  'M2.4 14.4h2.2l1.1-6.4 1.1 7.6.7-1.2h3.2l1.1-6.4 1.1 7.6.7-1.2h1.4l1.1-6.4 1.1 7.6.7-1.2h3.4';
+const HRV = 'M2.9 15.8 4.5 8.2 6.1 15.8H11.9L13.5 8.2 15.1 15.8H17.1L18.7 8.2 20.3 15.8';
 
 /**
  * Oxy máu: một giọt CÓ LỖ.
@@ -112,17 +122,28 @@ const DROP_RING = 'M12 11.3a3.3 3.3 0 1 0 0 6.6 3.3 3.3 0 1 0 0-6.6Z';
  */
 const LOBE =
   'M11 9.4C11.3 13 11.2 16.6 10.9 19 10.7 20.7 9.2 21.5 7.4 21.3 5 21 3.3 19.1 3.1 16.5 2.9 13.3 5.4 10.2 8.6 9.5 9.4 9.3 10.4 9.3 11 9.4Z';
-/** Cuống dọc: nhịp thở. Đứng yên, đối xứng. */
-const TRACHEA = 'M12 3.6V10.6';
+/**
+ * Cuống NGẮN, đầu tù — nhịp thở.
+ *
+ * Đỉnh ở y=5.6, trong khi VO₂max mang một mũi tên lên tới y=2.6. Ba đơn vị
+ * chênh nhau cộng đầu tù đối đầu nhọn: đó là toàn bộ chỗ hai hình khác nhau,
+ * và nó nằm ở ĐỈNH — phần mắt chạm vào trước. Cùng cơ quan là có chủ đích:
+ * cả hai đều là hô hấp, và cặp thuỳ chung khiến chúng đọc ra là một họ.
+ */
+const TRACHEA = 'M12 5.6V10.6';
 /**
  * VO₂max: cùng cặp thuỳ ấy, cùng cuống ấy, nhưng cuống mang một đầu mũi tên.
  *
  * Bản đầu để mũi tên đi CHÉO qua hai thuỳ. Ở cỡ thật nó đọc ra là một hình
  * người, và nó phá mất tính đối xứng vốn là thứ làm hai thuỳ ra hai lá phổi.
  * Mũi tên dọc giữ nguyên dáng cơ quan và chỉ đổi đúng phần đỉnh.
+ *
+ * Cao tới y=2.6 chứ không phải 3.4, và đầu mũi rộng 3.4 chứ không phải 2.7:
+ * ở 20pt, ba đơn vị là hai điểm ảnh rưỡi, và đó là tất cả những gì ngăn hình
+ * này với hình nhịp thở. Nó phải đủ to để thấy được khi liếc qua.
  */
-const RISE = 'M12 3.4V10.6';
-const RISE_HEAD = 'M9.3 6.1 12 3.4l2.7 2.7';
+const RISE = 'M12 2.6V10.6';
+const RISE_HEAD = 'M8.6 6 12 2.6l3.4 3.4';
 
 /**
  * Màu của từng chỉ số.
@@ -140,14 +161,23 @@ const RISE_HEAD = 'M9.3 6.1 12 3.4l2.7 2.7';
  * trái tim lấy đỏ VITAL, và VO₂max lấy champagne — màu app đã gán cho tập
  * luyện. VO₂max LÀ một chỉ số thể lực, nên màu và bố cục nói cùng một câu.
  *
- * Ba cái còn lại đi theo hướng brief đặt ra (HRV xanh tím, SpO₂ xanh oxy, nhịp
- * thở lạnh) nhưng lấy từ token sẵn có, không sinh màu mới.
+ * Ba cái còn lại lấy từ token sẵn có, không sinh màu mới — và thẻ chỉ còn BỐN
+ * màu, không phải năm: oxy máu và nhịp thở dùng chung một xanh, vì chúng là
+ * một hệ. `tools/biometric-icons.mjs` bắt mọi lần trùng màu KHÔNG được khai
+ * báo, đúng cách `glyph-collision.mjs` bắt trùng hình.
  */
 export const BIO_TINT: Record<BioGlyphName, string> = {
   heartRest: colors.readinessRed,
   hrv: colors.metricPurple,
   bloodOxygen: colors.metricBlue,
-  breath: colors.metricCyan,
+  /* Cùng xanh với oxy máu, KHÔNG phải cyan.
+     Cyan là màu app đã gán cho NƯỚC (`icon-tint.ts`), và thẻ Nước nằm cùng
+     một màn cuộn với thẻ này — hai lá phổi màu nước là một câu nói sai. Dùng
+     chung xanh với SpO₂ là một lần trùng CÓ CHỦ ĐÍCH, đúng kiểu bảng ấy đã
+     làm với bước chân và calo: hai chỉ số này là một hệ — oxy vào cơ thể —
+     và hình của chúng đã khác nhau hoàn toàn nên màu không phải thứ phân
+     biệt. Thẻ còn bốn màu thay vì năm. */
+  breath: colors.metricBlue,
   vo2max: colors.champagne,
 };
 

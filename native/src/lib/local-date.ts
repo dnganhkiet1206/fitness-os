@@ -33,6 +33,45 @@ export function parseLocalDate(dateStr: string): Date {
 }
 
 /**
+ * HH:MM of an instant, in the device's timezone, on a 24-hour clock.
+ *
+ * ── the bug this closes ──
+ *
+ * The Biometrics readings list printed `date_time.replace('T', ' ').slice(0, 16)`.
+ * `date_time` is a `timestamptz`, which arrives from PostgREST as UTC — so
+ * slicing the string prints **UTC**. A reading taken at 07:19 in Hanoi was
+ * listed as `00:19`, and it was listed under the wrong date for anything logged
+ * before 07:00. This file's own header is about exactly that mistake at the
+ * other boundary.
+ *
+ * `Date` holds an absolute instant and the platform applies the zone rules for
+ * that instant, so daylight saving is handled by the tz database rather than by
+ * arithmetic here — nothing in this function has an offset in it to get wrong.
+ *
+ * ── and 24 hours, not the OS locale ──
+ *
+ * A bare `toLocaleTimeString()` asks the operating system, and a phone set to
+ * en-US prints "10:15 PM" in the middle of a Vietnamese screen. The app's
+ * language is what the person chose *in the app*. One function, so the two
+ * places that print a clock time cannot drift apart.
+ *
+ * Returns `null` for anything unparseable — a missing line beats `Invalid Date`
+ * printed next to somebody's own body measurements.
+ */
+export function localTimeStr(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+/** `YYYY-MM-DD HH:MM` of an instant, all in the device's timezone. */
+export function localStampStr(iso: string | null | undefined): string | null {
+  const time = localTimeStr(iso);
+  return time ? `${localDateStr(new Date(iso as string))} ${time}` : null;
+}
+
+/**
  * Whole days from `from` to `to`, both YYYY-MM-DD, in local time.
  *
  * Negative when `to` is earlier. `NaN` for anything unparseable, which callers

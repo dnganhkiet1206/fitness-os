@@ -13,6 +13,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { colors, radius, spacing, type } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBiometricHistory, useDeleteBiometricSample, type BiometricSample } from '@/hooks/use-biometrics';
+import { localStampStr } from '@/lib/local-date';
 import { toast } from '@/lib/toast';
 
 type MetricKey = 'hr' | 'hrvSdnn' | 'hrv' | 'spo2' | 'vo2max' | 'resp';
@@ -193,7 +194,15 @@ export default function BiometricsScreen() {
           {rows.map((s) => (
             <GlassCard key={s.id} style={styles.logRow}>
               <View style={styles.logBody}>
-                <Text style={styles.logWhen}>{s.date_time.replace('T', ' ').slice(0, 16)}</Text>
+                {/* Giờ của MÁY, không phải giờ UTC.
+
+                    `date_time` là `timestamptz` và PostgREST trả về ở UTC, nên
+                    cắt chuỗi ra là in giờ UTC: một lần đo lúc 07:19 ở Hà Nội
+                    hiện thành 00:19, và nằm sai cả ngày với mọi lần đo trước
+                    7 giờ sáng. `localStampStr` đổi sang giờ thiết bị; giờ mùa
+                    hè do bảng múi giờ của hệ điều hành lo, không do phép cộng
+                    nào ở đây. */}
+                <Text style={styles.logWhen}>{localStampStr(s.date_time) ?? '—'}</Text>
                 <Text style={styles.logVals} numberOfLines={1}>
                   {summarise(s, vi)}
                 </Text>

@@ -65,9 +65,34 @@ export type Quantity =
 export interface Bound {
   min: number;
   max: number;
-  /** shown next to the numbers when a value is refused */
-  unit: string;
+  /**
+   * Shown next to the numbers when a value is refused.
+   *
+   * `null` means this quantity's unit is a WORD, not a symbol — it has no
+   * language-neutral spelling, so it cannot live in this file and the caller
+   * must hand over the translated one. See `WordUnit` below.
+   */
+  unit: string | null;
 }
+
+/**
+ * The quantities whose unit is a word.
+ *
+ * ── vì sao cần một loại riêng thay vì chỉ sửa chuỗi ──
+ *
+ * Ô nhịp thở từng mang `unit: 'rpm'`, và `rpm` là VÒNG TRÊN PHÚT — đơn vị của
+ * một động cơ. Người dùng đọc nó trong câu "Cần nằm trong khoảng 4–60 rpm".
+ *
+ * Sửa chuỗi thành `'breaths/min'` chỉ dời lỗi sang tiếng Việt, và sửa thành
+ * `'nhịp/phút'` dời nó sang tiếng Anh: tệp này không biết người dùng đang đọc
+ * ngôn ngữ nào, và nó không được biết — đó là việc của i18n.
+ *
+ * Nên `unit` của nó là `null`, và các hàm dưới đây NẠP CHỒNG kiểu sao cho gọi
+ * với một `WordUnit` mà không kèm chuỗi đã dịch là một lỗi biên dịch. Không có
+ * giá trị dự phòng nào để quên: chỗ duy nhất có thể sai đã bị đóng bằng kiểu,
+ * chứ không bằng một luật ai đó phải nhớ.
+ */
+export type WordUnit = 'resp_rpm';
 
 export const BOUNDS: Record<Quantity, Bound> = {
   /*
@@ -101,8 +126,9 @@ export const BOUNDS: Record<Quantity, Bound> = {
   */
   vo2max_mlkgmin: { min: 10, max: 100, unit: 'mL/kg/min' },
 
-  /* Normal adults breathe 12–20 a minute. 4 is profound respiratory depression and 60 is severe distress; both ends are real, anything outside is not. */
-  resp_rpm: { min: 4, max: 60, unit: 'rpm' },
+  /* Normal adults breathe 12–20 a minute. 4 is profound respiratory depression and 60 is severe distress; both ends are real, anything outside is not.
+     `unit: null` — breaths per minute is a word, not a symbol; see `WordUnit`. */
+  resp_rpm: { min: 4, max: 60, unit: null },
 
   /*
     Generous at both ends on purpose: the point is to catch a decimal slipped or
@@ -324,13 +350,18 @@ export function readStat(q: Quantity, text: string, required: boolean): StatRead
  * Both problems get the same sentence, and that reads correctly for either: a
  * blank field and a 17 are both answered by "must be between 100 and 250 cm".
  */
-export function statMessage(q: Quantity, problem: StatProblem | null, template: string): string | null {
+export function statMessage(q: Exclude<Quantity, WordUnit>, problem: StatProblem | null, template: string): string | null;
+export function statMessage(q: WordUnit, problem: StatProblem | null, template: string, unit: string): string | null;
+export function statMessage(q: Quantity, problem: StatProblem | null, template: string, unit?: string): string | null {
   if (!problem) return null;
   const b = BOUNDS[q];
+  /* `b.unit` là `null` đúng với những đại lượng mà phần nạp chồng ở trên ĐÒI
+     tham số `unit`, nên nhánh này không thể ra chuỗi rỗng — không có giá trị
+     dự phòng nào để một chỗ gọi quên mất. */
   return template
     .replace('{min}', String(b.min))
     .replace('{max}', String(b.max))
-    .replace('{unit}', b.unit);
+    .replace('{unit}', unit ?? b.unit ?? '');
 }
 
 /**
@@ -339,6 +370,12 @@ export function statMessage(q: Quantity, problem: StatProblem | null, template: 
  *
  * Blank is not refused here — see `readStat`'s `required`.
  */
-export function outOfRangeMessage(q: Quantity, text: string, template: string): string | null {
-  return statMessage(q, readStat(q, text, false).problem, template);
+export function outOfRangeMessage(q: Exclude<Quantity, WordUnit>, text: string, template: string): string | null;
+export function outOfRangeMessage(q: WordUnit, text: string, template: string, unit: string): string | null;
+export function outOfRangeMessage(q: Quantity, text: string, template: string, unit?: string): string | null {
+  /* Hai phép ép kiểu này KHÔNG phải chỗ để dọn: bên trong phần cài đặt của một
+     hàm nạp chồng, TypeScript chỉ thấy chữ ký rộng (`Quantity`, `string | undefined`)
+     và không khớp được với hai chữ ký hẹp của `statMessage`. Ràng buộc thật đã
+     được áp ở BIÊN — mọi chỗ gọi từ ngoài đều đi qua hai dòng khai báo trên. */
+  return statMessage(q as WordUnit, readStat(q, text, false).problem, template, unit as string);
 }

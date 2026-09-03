@@ -40,7 +40,7 @@ import { goalTraining } from '@/lib/goal-training';
 import { strengthDaysIn } from '@/lib/training-week';
 import { loadWindow, type LoadSession } from '@/lib/session-load';
 import { awardText } from '@/lib/gamification-i18n';
-import { localDateStr } from '@/lib/local-date';
+import { localDateStr, localTimeStr } from '@/lib/local-date';
 import {
   acwrZone,
   chronicDays,
@@ -165,19 +165,25 @@ export function BiometricsCard() {
   */
   const connectedSource = connectedSourceLabel(bio.source);
 
-  /* Giờ của hàng mẫu, theo múi giờ của máy. `date_time` là `timestamptz`, nên
-     `Date` đọc ra đúng thời điểm; `toLocaleTimeString` đưa nó về giờ người đang
-     cầm máy. Một chuỗi không đọc được thì không hiện gì — thà thiếu một dòng
-     phụ còn hơn in ra `Invalid Date` cạnh những con số về cơ thể ai đó. */
-  const stamp = bio.date_time ? new Date(bio.date_time) : null;
-  const sampledAt =
-    stamp && !Number.isNaN(stamp.getTime())
-      /* 24 giờ, không theo locale của máy. `toLocaleTimeString` mặc định hỏi hệ
-         điều hành, và một máy đặt en-US in ra "10:15 PM" ngay giữa một thẻ tiếng
-         Việt — ngôn ngữ của app là thứ người dùng chọn trong app, không phải thứ
-         iOS đoán. Màn Sinh trắc học cũng in giờ 24. */
-      ? stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
-      : null;
+  /*
+    Giờ lấy mẫu — CHỈ khi có nguồn đã kết nối.
+
+    ── vì sao có điều kiện ấy ──
+
+    Hai chuỗi này nằm cạnh nhau trong một hàng, ngăn bằng dấu chấm giữa. Khi
+    chưa kết nối, hàng đọc thành "Chưa kết nối · 22:17" — và câu ấy nói rằng
+    việc mất kết nối xảy ra lúc 22:17. Không phải. Giờ ấy là của LẦN ĐO, còn
+    ô bên trái nói về ĐƯỜNG DỮ LIỆU; ghép hai chuyện vào một hàng thì cái thứ
+    hai bị đọc như phần bổ nghĩa cho cái thứ nhất.
+
+    Không mất gì: những lần nhập tay vẫn có giờ của mình, ở danh sách "Các lần
+    đo" trong `/biometrics`, nơi mỗi hàng là một lần đo chứ không phải một
+    trạng thái kết nối.
+
+    `localStampStr` cùng nhà với hàm này in ra ở màn ấy, nên hai chỗ không thể
+    lệch nhau về cách đọc một `timestamptz`.
+  */
+  const sampledAt = connectedSource ? localTimeStr(bio.date_time) : null;
 
   /*
     ── bốn dấu hiệu tức thời, rồi VO₂max, và ranh giới giữa chúng là thật ──

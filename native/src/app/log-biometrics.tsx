@@ -55,7 +55,10 @@ export default function LogBiometricsSheet() {
     hrv: outOfRangeMessage('hrv_ms', hrv, i18n.outOfRange),
     spo2: outOfRangeMessage('spo2_pct', spo2, i18n.outOfRange),
     vo2: outOfRangeMessage('vo2max_mlkgmin', vo2, i18n.outOfRange),
-    resp: outOfRangeMessage('resp_rpm', resp, i18n.outOfRange),
+    /* Đơn vị đi kèm, vì nhịp thở là đại lượng duy nhất có đơn vị bằng CHỮ:
+       `plausible.ts` không biết người dùng đang đọc ngôn ngữ nào, và kiểu của
+       `outOfRangeMessage` từ chối biên dịch nếu thiếu tham số này. */
+    resp: outOfRangeMessage('resp_rpm', resp, i18n.outOfRange, i18n.biometricsBreathUnit),
   };
   const anyBad = Object.values(errors).some(Boolean);
 
