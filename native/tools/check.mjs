@@ -161,6 +161,7 @@ const STEPS = [
   ['vệt sáng trong ray', 'node', ['tools/pill-mount.mjs']],
   ['màu thanh tab', 'node', ['tools/tab-tint.mjs']],
   ['đường cong điểm ngủ', 'node', ['tools/sleep-curve.mjs']],
+  ['nhật ký sự cố', 'node', ['tools/crash-log.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
   ['kiểu icon macro', 'node', ['tools/macro-icon-style.mjs']],

@@ -147,6 +147,11 @@ const DEVICE_KEYS = [
      trong hồ sơ. Cùng lý do như ngôn ngữ và đơn vị ngay trên: cho mượn máy
      đăng nhập một lần không được làm chủ máy nhận lại máy ở một theme khác. */
   'ascnd_theme',
+  /* Nhật ký sự cố ghi lại điều CÁI MÁY NÀY đã làm, không phải điều người dùng
+     đã làm — nó không chứa dữ liệu tài khoản nào, và cái sự cố xảy ra hôm qua
+     vẫn còn đáng đọc sau khi đăng xuất. Xoá theo tài khoản là vứt đúng thứ mà
+     lần mở app sau cần để nói ra chuyện gì đã xảy ra. */
+  'ascnd_crash_log',
 ];
 
 const USER_KEYS = [

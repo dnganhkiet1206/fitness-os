@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Bell, ChevronRight, KeyRound, Lock, Trash2, Upload } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -18,6 +18,8 @@ import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppLock } from '@/hooks/use-app-lock';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { clearCrashLog, readCrashLog, type CrashEntry } from '@/lib/crash-log';
+import { toast } from '@/lib/toast';
 import { useMascot } from '@/hooks/use-mascot';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
@@ -97,6 +99,47 @@ export default function SettingsScreen() {
   const mascot = useMascot();
   const lock = useAppLock();
   const [exporting, setExporting] = useState(false);
+
+  /*
+    Nhật ký sự cố — chỉ hiện khi CÓ.
+
+    Người dùng báo "thi thoảng chạm vào vùng này thì app crash", và không ai
+    đọc được gì: `src/` không có error boundary, không `ErrorUtils` handler,
+    không Sentry. Ở bản dev lỗi hiện một hộp đỏ rồi biến mất cùng lần tải lại;
+    ở bản phát hành app đóng lặng lẽ. `lib/crash-log.ts` nay giữ lại năm lần
+    gần nhất, và hàng này là chỗ lấy chúng ra.
+
+    Một hàng LUÔN hiện sẽ là một hàng nói "app này hay hỏng" với người chưa gặp
+    sự cố nào. Nó chỉ xuất hiện khi thật sự có gì để đọc.
+  */
+  const [crashes, setCrashes] = useState<CrashEntry[]>([]);
+  useEffect(() => {
+    readCrashLog().then(setCrashes);
+  }, []);
+
+  const shareCrashes = async () => {
+    Haptics.selectionAsync();
+    const body = crashes
+      .map((c, i) => `#${i + 1}  ${c.at}  ${c.fatal ? 'FATAL' : 'non-fatal'}\n${c.message}\n${c.stack}`)
+      .join('\n\n———\n\n');
+    try {
+      const res = await Share.share({ message: `ASCND crash log (${crashes.length})\n\n${body}` });
+      /*
+        Chỉ xoá khi đã GỬI ĐI THẬT.
+
+        `Share.share` huỷ thì vẫn resolve, với `dismissedAction` — nên xoá vô
+        điều kiện là vứt nhật ký của người vừa bấm nhầm rồi đóng bảng chia sẻ,
+        và thứ họ vứt là bằng chứng duy nhất về một sự cố không tái hiện được.
+        Cùng chỗ mà nút chia sẻ huy chương đã đọc sai API này một lần.
+      */
+      if (res.action === 'sharedAction') {
+        await clearCrashLog();
+        setCrashes([]);
+      }
+    } catch (e) {
+      toast.fail(e);
+    }
+  };
 
   // Profile enums are stored as English keys — render localized labels
   const GOAL_LABELS: Record<string, string> = {
@@ -578,6 +621,28 @@ export default function SettingsScreen() {
         </GlassCard>
 </PressScale>
       </Animated.View>
+
+      {crashes.length > 0 ? (
+        <Animated.View entering={rise(8)}>
+          <PressScale onPress={shareCrashes}>
+            <GlassCard>
+              <View style={styles.cardHeaderRow}>
+                <View style={styles.cardHeaderInfo}>
+                  <Text style={styles.cardTitle}>
+                    {lang === 'vi' ? 'Nhật ký sự cố' : 'Crash log'}
+                  </Text>
+                  <Text style={styles.cardHint}>
+                    {lang === 'vi'
+                      ? `${crashes.length} lần gần nhất — chạm để gửi đi`
+                      : `Last ${crashes.length} — tap to send`}
+                  </Text>
+                </View>
+                <Icon icon={Upload} size={18} color={c.mutedForeground} />
+              </View>
+            </GlassCard>
+          </PressScale>
+        </Animated.View>
+      ) : null}
 
       <Animated.View entering={rise(8)}>
       <GlassCard>

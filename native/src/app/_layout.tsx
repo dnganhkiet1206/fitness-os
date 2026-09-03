@@ -19,6 +19,7 @@ import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { makeStyles } from '@/constants/theme';
 import { usePalette, useThemeName } from '@/hooks/use-palette';
 import { AppLockProvider } from '@/hooks/use-app-lock';
+import { installCrashHandler } from '@/lib/crash-log';
 import { AppSettingsProvider, useI18n } from '@/hooks/use-app-settings';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { CoachChatProvider } from '@/hooks/use-coach-chat';
@@ -245,6 +246,17 @@ function LockedApp() {
 }
 
 export default function RootLayout() {
+  /*
+    Gắn TRƯỚC mọi thứ khác, và ở thân component chứ không trong `useEffect`.
+
+    Một lỗi ném ra lúc dựng cây — đúng loại lỗi hay giết app nhất — xảy ra
+    TRƯỚC khi effect đầu tiên chạy. Đặt trong `useEffect` thì cái handler chỉ
+    có mặt cho những lỗi xảy ra sau khi màn đầu đã vẽ xong, tức bỏ lỡ đúng
+    khoảnh khắc nguy hiểm nhất.
+
+    `installCrashHandler` tự chốt một lần, nên gọi ở mỗi lần render không tốn gì.
+  */
+  installCrashHandler();
   return (
     /*
       Every gesture in the app hangs off this, and its absence was a crash.
