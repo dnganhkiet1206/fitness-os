@@ -153,7 +153,19 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
   }
 
   return (
-    <View style={styles.planSection}>
+    /*
+      ── tiêu đề vào TRONG thẻ ──
+
+      Người dùng khoanh đỏ đúng vùng "tiêu đề + danh sách + nút AI" và nói thiết
+      kế lại. Khác biệt cấu trúc giữa hai ảnh nằm ở tiêu đề: bên tham chiếu
+      "Kế hoạch ăn (5)" và nút "Xem tất cả" nằm TRONG tấm; bên ta chúng nằm trên
+      nền trang, phía trên một khối danh sách có mép — nên cái mép ấy nói "đây
+      là danh sách" mà không nói "danh sách của cái gì".
+
+      Thẻ tự giữ khoảng cách bên trong: gói N con của `Screen` vào một thẻ là
+      xoá N−1 khe 20 điểm, bẫy mà `SegmentPanel` đã đo được ở màn Tiến trình.
+    */
+    <GlassCard style={styles.planSection}>
       <View style={styles.planHead}>
         <SectionTitle>
           {i18n.nutritionMealPlan} ({plans.length})
@@ -162,15 +174,26 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
             "see all" over a list that is already all of it is a control that
             does nothing, which is what this whole section used to be. */}
         {plans.length > PREVIEW ? (
-          <Pressable
+          /*
+            Viên nang có viền, không phải chữ trần.
+
+            Bản tham chiếu vẽ nó thành một viên nang, và lý do đọc được ngay
+            trên ảnh: chữ trần cạnh một tiêu đề đậm đọc ra như phần đuôi của
+            tiêu đề. Cái viền nói "đây là thứ bấm được" mà không cần thêm một
+            chữ nào. Mũi tên nói nó dẫn đi đâu đó — cùng mũi tên mà mọi hàng
+            dẫn-sang-trang khác trong app đang dùng.
+          */
+          <PressScale
             accessibilityRole="button"
             hitSlop={8}
+            style={styles.planAllPill}
             onPress={() => {
               Haptics.selectionAsync();
               nav.push('/meal-plans');
             }}>
             <Text style={styles.planAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
-          </Pressable>
+            <Icon icon={ChevronRight} size={13} color={colors.primary} />
+          </PressScale>
         ) : null}
       </View>
 
@@ -240,7 +263,7 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
         putting the first food in it were never two errands.
       */}
       <MealPlanWizard visible={creating} planId={null} onClose={() => setCreating(false)} />
-    </View>
+    </GlassCard>
   );
 }
 
@@ -944,6 +967,18 @@ const styles = StyleSheet.create({
      hạ xuống 18 mà số này ở nguyên, thành 0,83 — gần ngang hàng tiêu đề.
      Không tìm được con số Apple công bố riêng cho "See All"; tỉ lệ đọc được
      từ giao diện là khoảng 0,7, và 0,7 của 18 rơi đúng vào 13. */
+  planAllPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    height: 30,
+    paddingLeft: spacing.sm + 2,
+    paddingRight: spacing.xs + 2,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: glass.border,
+    backgroundColor: glass.bg,
+  },
   planAll: { ...type.footnote, fontWeight: '600', color: colors.primary },
   /* Một HÀNG trong khối, không phải một thẻ. Cao 56 để vượt sàn chạm 44 và để
      hai dòng chữ có chỗ thở. */

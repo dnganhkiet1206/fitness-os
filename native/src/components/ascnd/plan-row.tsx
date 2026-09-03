@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, spacing } from '@/constants/ascnd';
+import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { PLAN_DAYS } from '@/lib/planned-meal';
 
 /**
@@ -58,6 +58,41 @@ export function PlanWeek({ days, perDay }: { days?: Record<number, number>; perD
   );
 }
 
+/**
+ * Chữ đầu của tên kế hoạch, trong một đĩa.
+ *
+ * ── vì sao là chữ đầu, không phải icon ──
+ *
+ * Bản tham chiếu người dùng gửi cho mỗi hàng một đĩa màu mang icon buổi — bình
+ * minh, mặt trời, hoàng hôn, mặt trăng. Cái đĩa ấy là thứ làm năm hàng đọc ra
+ * như năm VẬT chứ như năm dòng của một bảng, và nó đáng lấy.
+ *
+ * Nhưng icon buổi thì không lấy được: `meal_plans` không có cột nào nói kế
+ * hoạch này là bữa sáng hay bữa tối. Trường phân loại duy nhất là `goal` (ba
+ * giá trị), và nó đã được viết THÀNH CHỮ ngay dòng dưới — đổi một chữ đọc được
+ * thành một glyph phải đoán là lỗ trong một danh sách người ta quét bằng mắt.
+ *
+ * Chữ đầu của tên thì có thật, khác nhau ở từng hàng, và không cần thêm một cột
+ * nào. Đó cũng đúng cách iOS làm cho danh bạ và album chưa có ảnh.
+ *
+ * Đĩa mang `glass.bg`/`glass.border` — cùng cặp mà mọi ô con trong app dùng —
+ * chứ không phải một màu mới cho mỗi hàng: màu trong app này đã có nghĩa ở khắp
+ * nơi (một trạng thái, một chỉ số, một chất), và gán màu theo tên kế hoạch là
+ * đặt thêm một nghĩa thứ hai lên cùng bảng màu.
+ */
+function Monogram({ name }: { name: string }) {
+  /* `[...name]` chứ không phải `name[0]`: tên tiếng Việt có dấu là một ký tự
+     Unicode có thể gồm nhiều code unit, và `[0]` cắt giữa nó ra một ô vuông. */
+  const first = [...name.trim()][0] ?? '?';
+  return (
+    <View style={styles.mono} pointerEvents="none">
+      <Text style={styles.monoText} numberOfLines={1}>
+        {first.toUpperCase()}
+      </Text>
+    </View>
+  );
+}
+
 export function PlanRow({
   name,
   goalText,
@@ -74,22 +109,42 @@ export function PlanRow({
   a11yLabel?: string;
 }) {
   const total = PLAN_DAYS.length * perDay;
+  const filled = countFill(days);
+  /*
+    Phần trăm, tính ra chứ không lấy từ đâu.
+
+    Bản tham chiếu ghi "66%" cạnh "5/21". 5/21 là 24%, nên con số kia là số
+    trong bản mock. Cái đáng lấy là Ý: "5/21" buộc người đọc làm một phép chia
+    trước khi biết mình đang ở đâu; phần trăm thì không.
+
+    `total` bằng 0 khi `perDay` bằng 0 — một kế hoạch không có bữa nào. Chia cho
+    nó ra `NaN`, và `NaN%` là thứ sẽ hiện lên màn hình mà không báo gì.
+  */
+  const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
   return (
     <PressScale
       accessibilityRole="button"
       accessibilityLabel={a11yLabel ?? name}
       style={styles.row}
       onPress={onPress}>
+      <Monogram name={name} />
       <View style={styles.text}>
         <View style={styles.top}>
           <Text style={styles.name} numberOfLines={1}>{name}</Text>
+          {/*
+            Phần trăm CÙNG thang màu với bảy ô bên dưới: xanh khi đã có gì, xám
+            khi chưa. Hai cách vẽ cùng một sự thật thì phải đổi màu cùng lúc —
+            một con số xanh trên một tuần toàn ô xám là hai câu trả lời khác
+            nhau cho một câu hỏi.
+          */}
+          <Text style={[styles.pct, filled > 0 && styles.pctOn]}>{pct}%</Text>
           <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
         </View>
         <Text style={styles.meta} numberOfLines={1}>
           {/* Con số làm bảy ô kia ĐỌC ĐƯỢC. Không có nó, một kế hoạch chưa có
               món là bảy hộp xám không nhãn — người dùng không biết đó là bảy
               ngày hay là lỗi vẽ. Đã bị hỏi đúng câu đó. */}
-          {[goalText, `${countFill(days)}/${total}`].filter(Boolean).join('  ·  ')}
+          {[goalText, `${filled}/${total}`].filter(Boolean).join('  ·  ')}
         </Text>
         <PlanWeek days={days} perDay={perDay} />
       </View>
@@ -102,13 +157,39 @@ const styles = StyleSheet.create({
      dòng chữ cộng bảng tuần có chỗ thở. */
   row: {
     flexDirection: 'row',
-    alignItems: 'center',
+    /*
+      `flex-start`, không phải `center`.
+
+      Cột chữ nay cao ba dòng — tên, dòng phụ, bảng bảy ngày — nên căn giữa đưa
+      cái đĩa xuống ngang dòng phụ và bảng tuần, tức nó trông như đang tụt.
+      Đĩa là nhãn của TÊN, nên nó phải ngang tên; `marginTop` 2 đưa tâm đĩa về
+      đúng giữa hai dòng chữ đầu.
+    */
+    alignItems: 'flex-start',
     gap: spacing.sm,
     minHeight: 56,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
   },
   text: { flex: 1, minWidth: 0, gap: 5 },
+  /* 36: vừa đủ để một chữ 15pt ngồi giữa mà không thành một cái nút. Bo tròn
+     hẳn — đĩa, không phải ô. */
+  mono: {
+    width: 36,
+    height: 36,
+    marginTop: 2,
+    borderRadius: radius.full,
+    backgroundColor: glass.bg,
+    borderWidth: glass.borderWidth,
+    borderColor: glass.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monoText: { fontSize: 15, fontWeight: '700', color: colors.foreground },
+  /* Xám là mặc định, xanh là ngoại lệ — một kế hoạch chưa có món thì 0% không
+     đáng sáng lên. */
+  pct: { fontSize: 13, fontWeight: '600', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  pctOn: { color: colors.readinessGreen },
   /* Tên co giãn để mũi tên bị đẩy ra MÉP PHẢI. Không có `flex` thì mũi tên bám
      sát cái tên, và một hàng có mũi tên ở giữa đọc ra như một phần của tên. */
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
