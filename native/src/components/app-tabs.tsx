@@ -162,20 +162,63 @@ export default function AppTabs() {
   return (
     <NativeTabs
       /*
-        Selected is near-white, unselected is the muted grey.
+        Tab đang chọn mang BẠC THƯƠNG HIỆU — cùng màu với glyph ngôi nhà ở
+        Health Assistant, thứ người dùng chỉ vào khi xin thay đổi này.
 
-        It was `colors.primary`, the brand silver — and against the unselected
-        grey that is a contrast of 1.74:1, which is to say the selected tab was
-        barely a different colour from the other four. Nothing was wrong with
-        the bar; you simply could not see which tab you were on. Foreground
-        against the same grey is 3.28:1.
+        `colors.primary` (#a8afbd) đúng là đầu tối của dải màu glyph ấy:
+        `GLYPH_TINT.home = ['#f2f3f6', '#a8afbd']` trong `assistant-icons.tsx`.
+        Và bảng màu tự nó đã ghi vì sao bạc là thương hiệu: "brand silver là một
+        BẢN SẮC, không phải một tín hiệu".
 
-        Monochrome on purpose, rather than reaching for one of the neon
-        signals. Those colours mean something everywhere else in the app — a
-        state, a metric, a warning — and a tab bar tinted green would be the
-        one green on screen that does not mean "good".
+        ── và đây là lần đảo ngược của chính ghi chú đứng ở đây ──
+
+        Ghi chú cũ nói: từng là `colors.primary`, đổi sang `foreground` vì bạc
+        so với xám chưa chọn chỉ 1,74:1 — "bạn đơn giản là không thấy mình đang
+        ở tab nào". Con số ấy ĐÚNG, và tôi tính lại được y hệt. Nhưng TIỀN ĐỀ
+        của nó thì không phải thứ đang chạy.
+
+        Đo pixel trên ảnh chụp máy thật (lấy điểm sáng nhất của mỗi glyph):
+
+            tab chưa chọn   rgb(255,255,255)   L = 1.000   ← TRẮNG, không phải
+                                                            xám mutedForeground
+            tab đang chọn   rgb(232,232,232)   L = 0.807
+
+        Tức `iconColor={{ default: mutedForeground }}` bên dưới KHÔNG có tác
+        dụng trên iOS 26 của máy này — glyph chưa chọn vẫn trắng nguyên. Nên
+        con số thật của cái ray đang chạy là:
+
+            foreground so với trắng   1,17:1   ← gần như không phân biệt được
+            primary   so với trắng    2,20:1
+
+        Nghĩa là màu người dùng xin không chỉ hợp bản sắc, nó còn tách tab đang
+        chọn ra RÕ HƠN gấp đôi so với thứ đang có. Và nó không mâu thuẫn với ghi
+        chú cũ: 1,74:1 là bạc so với XÁM, còn 2,20:1 là bạc so với TRẮNG.
+
+        ── cái bẫy còn lại, ghi ra thay vì để nó nằm im ──
+
+        Nếu một ngày `iconColor` bên dưới bắt đầu có tác dụng (đổi phiên bản
+        iOS, đổi expo-router, hoặc chạy trên Android nơi
+        `appearance.android.js` có dùng nó), tab chưa chọn thành xám và bạc tụt
+        về đúng 1,74:1 mà ghi chú cũ đã bác. Lúc ấy phải chọn lại một trong hai,
+        không được giữ cả hai: hoặc chưa chọn TRẮNG + đang chọn BẠC (2,20:1),
+        hoặc chưa chọn XÁM + đang chọn NHẠT (3,28:1).
+
+        ── vì sao là `tintColor` chứ không phải `iconColor.selected` ──
+
+        `tintColor` nhuộm CẢ glyph lẫn nhãn của mục đang chọn — navigator đọc nó
+        thành `selectedIconColor` và `selectedLabelStyle.color`. Đó đúng là thứ
+        Apple Music làm: đo trên ảnh chụp, cả icon lẫn chữ "Home" đều
+        rgb(254,92,124). Nhuộm mỗi icon thì nhãn ở lại một màu khác và mục đang
+        chọn nói hai giọng.
+
+        ── và vì sao KHÔNG lấy một màu neon ──
+
+        Ghi chú cũ đúng ở điểm này và nó được giữ nguyên: những màu kia mang
+        nghĩa ở khắp nơi trong app — một trạng thái, một chỉ số, một cảnh báo —
+        nên một thanh tab xanh lá sẽ là màu xanh lá duy nhất trên màn hình không
+        có nghĩa "tốt".
       */
-      tintColor={colors.foreground}
+      tintColor={colors.primary}
       iconColor={{ default: colors.mutedForeground }}
       labelStyle={{ default: { color: colors.mutedForeground } }}
       /*
