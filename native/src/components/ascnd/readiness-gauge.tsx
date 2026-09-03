@@ -25,7 +25,7 @@ import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-but
 import { ReadinessExplainer } from '@/components/ascnd/readiness-explainer';
 import { readinessConfidence } from '@/lib/readiness-engine';
 import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
-import { sleepNote, type SleepNoteKey } from '@/lib/sleep-note';
+import { SleepNoteBlock } from '@/components/ascnd/sleep-note-block';
 import { acwrZone } from '@/lib/training-card';
 import { colors, HERO_RING, radius, RING_TEXT_MAX_SCALE, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
@@ -172,14 +172,6 @@ export function ReadinessGauge({
   // Sub-score tiles: HRV / RHR / Sleep / Load (0–100) + the ACWR ratio
   /* Nhận xét về đêm qua — xem `lib/sleep-note.ts` cho luật và cho lý do nó là
      một phép SO chứ không phải đọc lại con số người dùng vừa tự chấm. */
-  const note = sleepNote({ quality: sleepQuality, durationMin: sleepMin, targetMin: sleepTargetMin });
-  const noteText = (k: SleepNoteKey) =>
-    ({
-      aligned_good: i18n.sleepNoteAlignedGood,
-      aligned_poor: i18n.sleepNoteAlignedPoor,
-      felt_worse_than_clock: i18n.sleepNoteFeltWorse,
-      felt_better_than_clock: i18n.sleepNoteFeltBetter,
-    })[k];
 
   const subs = readinessSubscores(explain);
   const subColor = (v: number) =>
@@ -631,14 +623,7 @@ export function ReadinessGauge({
         chấm KHÔNG vào công thức, nên nhận xét không được đọc ra thành "cảm
         giác của bạn đã làm điểm đổi".
       */}
-      {note ? (
-        <View style={styles.sleepNote}>
-          <Text style={styles.sleepNoteText}>
-            {noteText(note.key).replace('{short}', String(note.shortBy))}
-          </Text>
-          <Text style={styles.sleepNoteCaveat}>{i18n.sleepNoteScoreIsDuration}</Text>
-        </View>
-      ) : null}
+      <SleepNoteBlock quality={sleepQuality} durationMin={sleepMin} targetMin={sleepTargetMin} />
 
       {/* Explain + recommendation */}
       {explainText ? <Text style={styles.explain}>{explainText}</Text> : null}
@@ -798,9 +783,6 @@ const styles = StyleSheet.create({
   ringCenter: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   score: { fontSize: 60, fontWeight: '700', fontFamily: 'Menlo', fontVariant: ['tabular-nums'] },
   statusLabel: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2.4, marginTop: 6 },
-  sleepNote: { gap: 3, paddingHorizontal: spacing.card },
-  sleepNoteText: { ...type.footnote, color: colors.foreground, lineHeight: 18 },
-  sleepNoteCaveat: { ...type.footnote, color: colors.mutedForeground, opacity: 0.8 },
   readRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -123,12 +123,29 @@ if (!/function computeSleepScore\(sleepMin: number \| undefined, targetMin: numb
 
 /* ── mọi khoá đều có chữ, ở cả hai ngôn ngữ, và mọi chữ đều được dùng ────── */
 const i18n = read('src/lib/i18n.ts');
-const gauge = read('src/components/ascnd/readiness-gauge.tsx');
+/*
+  Nhận xét được vẽ ở MỘT component, `sleep-note-block.tsx`, và hai thẻ cùng
+  dùng nó.
+
+  Bản trước quét thẳng `readiness-gauge.tsx` vì hồi đó đó là chỗ duy nhất vẽ.
+  Khi khối được tách ra để thẻ Giấc ngủ cũng hiện được nhận xét, guard mất dấu
+  và báo đỏ — nó khớp CHÍNH TẢ trong một tệp, không khớp HÀNH VI.
+
+  Trỏ vào component là mạnh hơn chứ không yếu đi: trước kiểm một chỗ vẽ, nay
+  kiểm chỗ vẽ duy nhất mà cả hai thẻ đi qua. Và thêm một luật mới ở dưới: cả
+  hai thẻ phải THẬT SỰ dùng nó — vì lý do người dùng yêu cầu chuyện này là
+  nhận xét đúng nhưng đứng sai chỗ, và một guard không kiểm chỗ đứng thì không
+  ngăn được nó lùi về chỗ cũ.
+*/
+const block = read('src/components/ascnd/sleep-note-block.tsx');
+const lib = read('src/lib/sleep-note.ts');
 const KEYS = ['sleepNoteAlignedGood', 'sleepNoteAlignedPoor', 'sleepNoteFeltWorse', 'sleepNoteFeltBetter'];
 for (const k of KEYS) {
   const n = (i18n.match(new RegExp(`\\b${k}:\\s*\\n?\\s*'`, 'g')) ?? []).length;
   if (n !== 2) problems.push(`${k}: cần đúng 2 bản dịch, thấy ${n}`);
-  if (!gauge.includes(`i18n.${k}`)) problems.push(`${k}: không được vẽ ra ở readiness-gauge.tsx`);
+  /* Khoá sống trong bảng `sleepNoteText` ở `lib/sleep-note.ts`; component chỉ
+     gọi bảng ấy. Kiểm ở nơi khoá THẬT SỰ nằm, không ở nơi nó đi qua. */
+  if (!lib.includes(`${k}:`)) problems.push(`${k}: thiếu trong bảng sleepNoteText`);
 }
 /* Hai câu có chỗ điền số phải THẬT SỰ được thay, nếu không người dùng đọc
    nguyên chữ "{short}" trên thẻ. */
@@ -137,13 +154,30 @@ for (const k of ['sleepNoteAlignedPoor', 'sleepNoteFeltBetter']) {
     if (!m[1].includes('{short}')) problems.push(`${k}: câu này phải nói ra số phút thiếu ({short})`);
   }
 }
-if (!/replace\('\{short\}'/.test(gauge)) {
-  problems.push('readiness-gauge.tsx: không thay {short} bằng số — người dùng sẽ đọc nguyên chữ "{short}"');
+if (!/replace\('\{short\}'/.test(block)) {
+  problems.push('sleep-note-block.tsx: không thay {short} bằng số — người dùng sẽ đọc nguyên chữ "{short}"');
 }
 /* Câu "không tính vào điểm" phải đứng cạnh nhận xét, nếu không nhận xét đọc ra
    thành "cảm giác của bạn đã làm điểm đổi". */
-if (!/i18n\.sleepNoteScoreIsDuration/.test(gauge)) {
-  problems.push('readiness-gauge.tsx: nhận xét hiện mà không kèm câu "chất lượng không tính vào điểm"');
+if (!/i18n\.sleepNoteScoreIsDuration/.test(block)) {
+  problems.push('sleep-note-block.tsx: nhận xét hiện mà không kèm câu "chất lượng không tính vào điểm"');
+}
+
+/*
+  Và nhận xét phải tới được CẢ HAI thẻ.
+
+  Lỗi người dùng báo không phải "nhận xét sai" mà là "nhận xét đúng, ở chỗ
+  không ai thấy": nó chỉ hiện trong phần chi tiết của thẻ Sẵn sàng, cách thẻ
+  Giấc ngủ — nơi con số chất lượng nằm — một thẻ và một cú bấm. Nên chỗ ĐỨNG
+  là một phần của bản sửa, và guard phải canh nó.
+*/
+for (const [f, tên] of [
+  ['src/components/ascnd/readiness-gauge.tsx', 'thẻ Sẵn sàng'],
+  ['src/components/ascnd/hero-pages.tsx', 'thẻ Giấc ngủ'],
+]) {
+  if (!read(f).includes('<SleepNoteBlock')) {
+    problems.push(`${tên} (${f.split('/').pop()}) không vẽ nhận xét — nó lại nằm ở chỗ người dùng không thấy`);
+  }
 }
 /* Và sheet giải thích nói cùng điều đó, ở cả hai ngôn ngữ. */
 const sheet = read('src/components/ascnd/readiness-explainer.tsx');

@@ -131,3 +131,33 @@ export function sleepNote(input: {
  * chúng lại là cách sinh ra đúng sự nhầm lẫn ở trên.
  */
 export const SLEEP_QUALITY_MAX = 10;
+
+/**
+ * Khoá nhận xét → câu chữ, dùng chung cho MỌI chỗ vẽ nhận xét ấy.
+ *
+ * Bảng này từng nằm cục bộ trong `readiness-gauge.tsx`, và nhận xét chỉ hiện ở
+ * một chỗ: bên trong phần chi tiết của thẻ Sẵn sàng. Người dùng ngủ đủ 8 tiếng,
+ * chọn mặt cười đỏ, rồi kết luận rằng mặt cười chẳng làm gì — trong khi app CÓ
+ * sinh ra `felt_worse_than_clock` cho đúng tình huống đó. Nhận xét đúng, chỗ
+ * đứng sai.
+ *
+ * Nay thẻ Giấc ngủ cũng vẽ nó, ngay dưới ô CHẤT LƯỢNG. Hai chỗ vẽ thì bảng
+ * phải ở một chỗ — chép sang là mở đường cho hai câu chữ lệch nhau ở lần đầu
+ * ai đó sửa một bên.
+ */
+export function sleepNoteText(
+  i18n: {
+    sleepNoteAlignedGood: string;
+    sleepNoteAlignedPoor: string;
+    sleepNoteFeltWorse: string;
+    sleepNoteFeltBetter: string;
+  },
+  key: SleepNoteKey,
+): string {
+  return {
+    aligned_good: i18n.sleepNoteAlignedGood,
+    aligned_poor: i18n.sleepNoteAlignedPoor,
+    felt_worse_than_clock: i18n.sleepNoteFeltWorse,
+    felt_better_than_clock: i18n.sleepNoteFeltBetter,
+  }[key];
+}

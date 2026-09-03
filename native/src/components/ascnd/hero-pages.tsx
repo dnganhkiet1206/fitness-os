@@ -9,6 +9,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { displayVolume, volumeLabel } from '@/lib/units';
 import { SLEEP_QUALITY_MAX } from '@/lib/sleep-note';
+import { SleepNoteBlock } from '@/components/ascnd/sleep-note-block';
 
 /** Cùng khoá với thẻ dinh dưỡng dạng danh sách: nút ở hai chỗ phải đếm lượt
  *  nhắc chung một tên, nếu không một chỗ im còn chỗ kia nhắc mãi. */
@@ -282,6 +283,25 @@ export function SleepHero({
           { label: i18n.nWaketime, value: clock(waketime), unit: '' },
         ]}
       />
+
+      {/*
+        Nhận xét đứng NGAY DƯỚI ô chất lượng, không chôn ở thẻ khác.
+
+        ── vì sao ──
+
+        App đã sinh sẵn nhận xét cho đúng tình huống "ngủ đủ giờ mà vẫn thấy
+        mệt" (`felt_worse_than_clock`). Nhưng nó chỉ hiện trong phần chi tiết
+        của thẻ SẴN SÀNG — một thẻ khác, phải mở ra mới thấy.
+
+        Nên người dùng ngủ đủ 8 tiếng, chọn mặt cười đỏ, nhìn thẻ Giấc ngủ và
+        kết luận rằng mặt cười chẳng làm gì. Nhận xét đúng, chỗ đứng sai: nó
+        cách chỗ gây thắc mắc một thẻ và một cú bấm.
+
+        Câu thứ hai giữ cho câu thứ nhất trung thực — chất lượng tự chấm KHÔNG
+        vào công thức điểm (quyết định sản phẩm, `tools/sleep-note.mjs` canh),
+        nên nhận xét không được đọc ra thành "cảm giác của bạn đã đổi điểm".
+      */}
+      <SleepNoteBlock quality={quality} durationMin={totalMin} targetMin={targetMin} />
     </HeroPanel>
   );
 }
