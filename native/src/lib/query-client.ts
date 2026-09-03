@@ -139,7 +139,15 @@ export async function clearPersistedCache() {
  * to survive. A name that has to be added by hand is a decision somebody makes
  * once; a sweep is a decision nobody ever makes.
  */
-const DEVICE_KEYS = ['ascnd_lang', 'ascnd-volume-unit', 'ascnd_app_lock'];
+const DEVICE_KEYS = [
+  'ascnd_lang',
+  'ascnd-volume-unit',
+  'ascnd_app_lock',
+  /* Sáng/tối là cách người này muốn nhìn CÁI MÁY NÀY, không phải một trường
+     trong hồ sơ. Cùng lý do như ngôn ngữ và đơn vị ngay trên: cho mượn máy
+     đăng nhập một lần không được làm chủ máy nhận lại máy ở một theme khác. */
+  'ascnd_theme',
+];
 
 const USER_KEYS = [
   'ascnd_reminder_plan',

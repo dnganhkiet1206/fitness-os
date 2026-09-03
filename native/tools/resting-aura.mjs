@@ -43,7 +43,10 @@ const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 const AURA = 'src/components/ascnd/readiness-aura.tsx';
-const TOKENS = 'src/constants/ascnd.ts';
+/* Bảng màu đã dời sang `constants/palette.ts` — dữ liệu THUẦN, không import
+   gì — để `tools/palette.mjs` biên dịch rồi chạy nó một mình mà đo tương phản
+   trên giá trị thật. `ascnd.ts` giờ chỉ re-export nó dưới cái tên `colors`. */
+const TOKENS = 'src/constants/palette.ts';
 const problems = [];
 
 /** Đọc một hằng số màu ra khỏi bảng token, không chép lại. */

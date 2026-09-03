@@ -12,7 +12,9 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppLock } from '@/hooks/use-app-lock';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -80,6 +82,8 @@ const EXPORT_PAGE = 1000;
 const ITEMS_TABLE = 'meal_entry_items';
 
 export default function SettingsScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là mười một cái
      lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
@@ -88,7 +92,7 @@ export default function SettingsScreen() {
   const rise = useRise();
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
-  const { lang, setLang } = useAppSettings();
+  const { lang, setLang, theme, setTheme } = useAppSettings();
   const i18n = useI18n();
   const mascot = useMascot();
   const lock = useAppLock();
@@ -260,7 +264,7 @@ export default function SettingsScreen() {
               <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
               <Text style={styles.cardHint}>{user?.email}</Text>
             </View>
-            <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+            <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
           </View>
           <View style={styles.divider} />
           <Row label={i18n.nDailyTarget} value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
@@ -286,7 +290,7 @@ export default function SettingsScreen() {
               Haptics.selectionAsync();
               mascot.setEnabled(v);
             }}
-            trackColor={{ true: colors.readinessGreen, false: colors.secondary }}
+            trackColor={{ true: c.readinessGreen, false: c.secondary }}
           />
         </View>
         {/*
@@ -310,7 +314,7 @@ export default function SettingsScreen() {
                 Haptics.selectionAsync();
                 mascot.setCompanion(v);
               }}
-              trackColor={{ true: colors.readinessGreen, false: colors.secondary }}
+              trackColor={{ true: c.readinessGreen, false: c.secondary }}
             />
           </View>
         ) : null}
@@ -339,7 +343,7 @@ export default function SettingsScreen() {
           }}>
           <View style={styles.roomRow}>
             <Text style={styles.roomLabel}>{i18n.nMascotRoomTitle}</Text>
-            <Icon icon={ChevronRight} size={18} color={colors.mutedForeground} />
+            <Icon icon={ChevronRight} size={18} color={c.mutedForeground} />
           </View>
         </PressScale>
 
@@ -386,7 +390,7 @@ export default function SettingsScreen() {
                     </View>
                     {!m.unlocked && (
                       <View style={styles.mascotLockBadge}>
-                        <Icon icon={Lock} size={9} color={colors.mutedForeground} />
+                        <Icon icon={Lock} size={9} color={c.mutedForeground} />
                       </View>
                     )}
                   </View>
@@ -404,7 +408,7 @@ export default function SettingsScreen() {
                         pct={(mascot.unlockStats[m.unlock.kind] / m.unlock.count) * 100}
                         height={4}
                         radius={2}
-                        trackColor={colors.background}
+                        trackColor={c.background}
                         color={m.accent}
                         style={styles.mascotProgressTrack}
                       />
@@ -422,13 +426,52 @@ export default function SettingsScreen() {
       </GlassCard>
       </Animated.View>
 
+      {/*
+        Giao diện, ngay TRÊN ngôn ngữ.
+
+        Hai thứ cùng loại — tuỳ chọn của MÁY, không của tài khoản — nên chúng
+        đứng cạnh nhau, và cùng dùng `PickRow` để một cú chạm ở đây đọc ra
+        giống một cú chạm ở kia. "Theo máy" là mặc định và đứng đầu, vì đó là
+        thứ iOS đã dạy người dùng mong đợi.
+      */}
       <Animated.View entering={rise(2)}>
+      <GlassCard>
+        <Text style={styles.cardTitle}>{i18n.settingsTheme}</Text>
+        <PickRow
+          value={theme}
+          fill={c.primary}
+          slotFill={c.secondary}
+          radius={radius.md}
+          gap={spacing.sm}
+          style={styles.langRow}>
+          {(['system', 'light', 'dark'] as const).map((t) => (
+            <PickRow.Item
+              key={t}
+              itemKey={t}
+              accessibilityLabel={
+                t === 'system' ? i18n.settingsThemeSystem : t === 'light' ? i18n.settingsThemeLight : i18n.settingsThemeDark
+              }
+              onPress={() => {
+                Haptics.selectionAsync();
+                setTheme(t);
+              }}
+              style={styles.langChip}>
+              <Text style={[styles.langText, theme === t && styles.langTextActive]}>
+                {t === 'system' ? i18n.settingsThemeSystem : t === 'light' ? i18n.settingsThemeLight : i18n.settingsThemeDark}
+              </Text>
+            </PickRow.Item>
+          ))}
+        </PickRow>
+      </GlassCard>
+      </Animated.View>
+
+      <Animated.View entering={rise(3)}>
       <GlassCard>
         <Text style={styles.cardTitle}>Language / Ngôn ngữ</Text>
         <PickRow
           value={lang}
-          fill={colors.primary}
-          slotFill={colors.secondary}
+          fill={c.primary}
+          slotFill={c.secondary}
           radius={radius.md}
           gap={spacing.sm}
           style={styles.langRow}>
@@ -452,7 +495,7 @@ export default function SettingsScreen() {
       </Animated.View>
 
       {/* Reminders — local notifications */}
-      <Animated.View entering={rise(3)}>
+      <Animated.View entering={rise(4)}>
       <PressScale
         onPress={() => {
           Haptics.selectionAsync();
@@ -461,24 +504,24 @@ export default function SettingsScreen() {
         <GlassCard>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardHeaderLeft}>
-              <Icon icon={Bell} size={18} color={colors.mutedForeground} />
+              <Icon icon={Bell} size={18} color={c.mutedForeground} />
               <View style={styles.cardHeaderInfo}>
                 <Text style={styles.cardTitle}>{i18n.nRemindersTitle}</Text>
                 <Text style={styles.cardHint}>{i18n.nRemindersDesc}</Text>
               </View>
             </View>
-            <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+            <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
           </View>
         </GlassCard>
 </PressScale>
       </Animated.View>
 
       {/* App lock — Face ID */}
-      <Animated.View entering={rise(4)}>
+      <Animated.View entering={rise(5)}>
       <GlassCard>
         <View style={styles.toggleRow}>
           <View style={styles.cardHeaderLeft}>
-            <Icon icon={Lock} size={18} color={colors.mutedForeground} />
+            <Icon icon={Lock} size={18} color={c.mutedForeground} />
             <View style={styles.toggleInfo}>
               <Text style={styles.cardTitle}>{i18n.nLockTitle}</Text>
               <Text style={styles.cardHint}>
@@ -493,14 +536,14 @@ export default function SettingsScreen() {
               Haptics.selectionAsync();
               lock.setEnabled(v);
             }}
-            trackColor={{ true: colors.readinessGreen, false: colors.secondary }}
+            trackColor={{ true: c.readinessGreen, false: c.secondary }}
           />
         </View>
       </GlassCard>
       </Animated.View>
 
       {/* Change password */}
-      <Animated.View entering={rise(5)}>
+      <Animated.View entering={rise(6)}>
       <PressScale
         onPress={() => {
           Haptics.selectionAsync();
@@ -509,16 +552,16 @@ export default function SettingsScreen() {
         <GlassCard>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardHeaderLeft}>
-              <Icon icon={KeyRound} size={18} color={colors.mutedForeground} />
+              <Icon icon={KeyRound} size={18} color={c.mutedForeground} />
               <Text style={styles.cardTitle}>{i18n.settingsChangePassword}</Text>
             </View>
-            <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+            <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
           </View>
         </GlassCard>
 </PressScale>
       </Animated.View>
 
-      <Animated.View entering={rise(6)}>
+      <Animated.View entering={rise(7)}>
       <PressScale onPress={exportData} disabled={exporting}>
         <GlassCard>
           <View style={styles.cardHeaderRow}>
@@ -527,16 +570,16 @@ export default function SettingsScreen() {
               <Text style={styles.cardHint}>{i18n.settingsExportDesc}</Text>
             </View>
             {exporting ? (
-              <ActivityIndicator color={colors.primary} size="small" />
+              <ActivityIndicator color={c.primary} size="small" />
             ) : (
-              <Icon icon={Upload} size={18} color={colors.mutedForeground} />
+              <Icon icon={Upload} size={18} color={c.mutedForeground} />
             )}
           </View>
         </GlassCard>
 </PressScale>
       </Animated.View>
 
-      <Animated.View entering={rise(7)}>
+      <Animated.View entering={rise(8)}>
       <GlassCard>
         <Text style={styles.cardTitle}>{i18n.nAbout}</Text>
         <Row label={i18n.nVersion} value="1.0.0 (native)" />
@@ -544,7 +587,7 @@ export default function SettingsScreen() {
       </GlassCard>
       </Animated.View>
 
-      <Animated.View entering={rise(8)}>
+      <Animated.View entering={rise(9)}>
       <PressScale
         onPress={() => {
           Haptics.selectionAsync();
@@ -553,13 +596,13 @@ export default function SettingsScreen() {
         <GlassCard>
           <View style={styles.cardHeaderRow}>
             <Text style={styles.cardTitle}>{i18n.nLegal}</Text>
-            <Icon icon={ChevronRight} size={20} color={colors.mutedForeground} />
+            <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
           </View>
         </GlassCard>
 </PressScale>
       </Animated.View>
 
-      <Animated.View entering={rise(9)}>
+      <Animated.View entering={rise(10)}>
       <PressScale
         style={styles.signOut}
         onPress={confirmSignOut}>
@@ -569,7 +612,7 @@ export default function SettingsScreen() {
 
       {/* Last on the screen, and the only row in red — it is the one action
           here that cannot be undone. */}
-      <Animated.View entering={rise(10)}>
+      <Animated.View entering={rise(11)}>
       <PressScale
         accessibilityRole="button"
         accessibilityLabel={i18n.nDeleteAccount}
@@ -577,9 +620,9 @@ export default function SettingsScreen() {
         style={[styles.deleteAccount, deleting && styles.pressed]}
         onPress={confirmDeleteAccount}>
         {deleting ? (
-          <ActivityIndicator color={colors.readinessRed} size="small" />
+          <ActivityIndicator color={c.readinessRed} size="small" />
         ) : (
-          <Icon icon={Trash2} size={15} color={colors.readinessRed} />
+          <Icon icon={Trash2} size={15} color={c.readinessRed} />
         )}
         <View style={styles.deleteAccountText}>
           <Text style={styles.deleteAccountTitle}>{i18n.nDeleteAccount}</Text>
@@ -592,6 +635,8 @@ export default function SettingsScreen() {
 }
 
 function Row({ label, value }: { label: string; value: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.row}>
       <Text style={styles.rowLabel}>{label}</Text>
@@ -600,16 +645,16 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  cardTitle: { ...type.headline, color: colors.foreground },
-  cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
+const stylesFor = makeStyles((c) => ({
+  cardTitle: { ...type.headline, color: c.foreground },
+  cardHint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },
   cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   cardHeaderLeft: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardHeaderInfo: { flex: 1, minWidth: 0 },
-  chevron: { fontSize: 22, color: colors.mutedForeground },
+  chevron: { fontSize: 22, color: c.mutedForeground },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     marginVertical: spacing.md,
   },
   row: {
@@ -617,8 +662,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: spacing.sm,
   },
-  rowLabel: { ...type.body, color: colors.mutedForeground },
-  rowValue: { ...type.body, color: colors.foreground, fontWeight: '600', textTransform: 'capitalize' },
+  rowLabel: { ...type.body, color: c.mutedForeground },
+  rowValue: { ...type.body, color: c.foreground, fontWeight: '600', textTransform: 'capitalize' },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -636,7 +681,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  roomLabel: { ...type.body, color: colors.foreground },
+  roomLabel: { ...type.body, color: c.foreground },
   mascotRow: { marginTop: spacing.md },
   mascotChip: {
     width: 116,
@@ -645,12 +690,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     marginRight: spacing.sm,
   },
   mascotChipSelected: {
     borderWidth: 1.5,
-    borderColor: colors.primary,
+    borderColor: c.primary,
   },
   mascotChipLocked: { opacity: 0.7 },
   mascotFace: { width: 44, height: 52, alignItems: 'center', justifyContent: 'center' },
@@ -664,9 +709,9 @@ const styles = StyleSheet.create({
     width: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -684,12 +729,12 @@ const styles = StyleSheet.create({
   mascotProgressText: {
     fontSize: 11,
     fontVariant: ['tabular-nums'],
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
-  mascotName: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  mascotName: { ...type.footnote, fontWeight: '600', color: c.foreground },
   mascotMeta: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     minHeight: 26,
   },
@@ -702,12 +747,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  langText: { ...type.footnote, fontWeight: '600', color: colors.secondaryForeground },
-  langTextActive: { color: colors.primaryForeground },
+  langText: { ...type.footnote, fontWeight: '600', color: c.secondaryForeground },
+  langTextActive: { color: c.primaryForeground },
   signOut: {
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -722,7 +767,7 @@ const styles = StyleSheet.create({
 
     Red now means exactly one thing on this screen.
   */
-  signOutText: { ...type.headline, color: colors.foreground },
+  signOutText: { ...type.headline, color: c.foreground },
   deleteAccount: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -730,11 +775,14 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,59,92,0.35)',
+    /* Chính `destructive` ở 35%, không phải một bản chép của nó. Chuỗi cũ là
+       `rgba(255,59,92,0.35)` — đúng mã màu đỏ của bản TỐI, nên nó không đổi
+       theo theme và ở bản sáng nó vẫn là đỏ neon trên giấy. */
+    borderColor: alpha(c.destructive, 0.35),
     marginTop: spacing.sm,
   },
   deleteAccountText: { flex: 1 },
-  deleteAccountTitle: { fontSize: 15, fontWeight: '600', color: colors.readinessRed },
+  deleteAccountTitle: { fontSize: 15, fontWeight: '600', color: c.readinessRed },
   /* The dim while the delete is in flight. No transform: the press owns it. */
   pressed: { opacity: 0.85 },
-});
+}));

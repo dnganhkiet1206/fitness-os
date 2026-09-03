@@ -24,7 +24,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { StatusScrim } from '@/components/ascnd/status-scrim';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { useI18n } from '@/hooks/use-app-settings';
-import { colors, glass, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeMaterialStyles, makeStyles } from '@/constants/theme';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { setActiveScroller } from '@/lib/scroll-to-top';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
@@ -204,6 +206,7 @@ interface ScreenProps extends ViewProps {
  * that is padding twice.
  */
 function ScrollFrame({ on, children }: { on: boolean; children: React.ReactNode }) {
+  const styles = stylesFor(usePalette());
   if (!on) return <>{children}</>;
   return (
     <KeyboardAvoidingView
@@ -253,6 +256,7 @@ function ScrollFrame({ on, children }: { on: boolean; children: React.ReactNode 
 const AURA_DIM = 0.44;
 
 function PageAura({ tint }: { tint: readonly [string, string] }) {
+  const styles = stylesFor(usePalette());
   return (
     <>
       <ReadinessAura status={null} tint={tint[0]} tint2={tint[1]} />
@@ -262,6 +266,10 @@ function PageAura({ tint }: { tint: readonly [string, string] }) {
 }
 
 export function Screen({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, refreshable = false, children, style, ...props }: ScreenProps) {
+  const c = usePalette();
+  const m = useMaterial();
+  const styles = stylesFor(c);
+  const headerStyles = headerStylesFor(m);
   const insets = useSafeAreaInsets();
 
   /**
@@ -306,7 +314,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
       <RefreshControl
         refreshing={refreshing}
         onRefresh={onRefresh}
-        tintColor={colors.mutedForeground}
+        tintColor={c.mutedForeground}
         progressViewOffset={offset}
       />
     ) : undefined;
@@ -374,7 +382,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
             Haptics.selectionAsync();
             nav.back();
           }}>
-          <Icon icon={ChevronLeft} size={22} color={transparentHeader ? '#fff' : colors.primary} />
+          <Icon icon={ChevronLeft} size={22} color={transparentHeader ? '#fff' : c.primary} />
         </PressScale>
         <Text style={[styles.pageTitle, transparentHeader && styles.pageTitleFloat]} numberOfLines={1}>
           {title}
@@ -433,7 +441,7 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
         <AmbientLight />
         {aura ? <PageAura tint={aura} /> : null}
         {/* Web PageHeader: glass bar, 44pt, back chevron + centered title */}
-        <View style={[styles.pageHeader, { paddingTop: insets.top }]}>{headerBar}</View>
+        <View style={[styles.pageHeader, headerStyles.surface, { paddingTop: insets.top }]}>{headerBar}</View>
         <ScrollFrame on={keyboardAware}>
           <ScrollView
             ref={scroller}
@@ -499,9 +507,9 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   auraDim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: `rgba(0, 0, 0, ${AURA_DIM})` },
-  root: { flex: 1, backgroundColor: colors.background },
+  root: { flex: 1, backgroundColor: c.background },
   /**
    * Transparent, not `colors.background`.
    *
@@ -512,12 +520,8 @@ const styles = StyleSheet.create({
    */
   scroller: { flex: 1, backgroundColor: 'transparent' },
 
-  // Sub-page header (web PageHeader)
-  pageHeader: {
-    backgroundColor: glass.bg,
-    borderBottomWidth: glass.borderWidth,
-    borderBottomColor: glass.border,
-  },
+  // Sub-page header — bề mặt của nó nằm ở `headerStylesFor` bên dưới
+  pageHeader: {},
   pageHeaderRow: {
     height: HEADER_H,
     flexDirection: 'row',
@@ -530,7 +534,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     letterSpacing: -0.2,
-    color: colors.foreground,
+    color: c.foreground,
     textAlign: 'center',
   },
   pageTitleFloat: {
@@ -578,6 +582,22 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   headerText: { flex: 1, gap: 2 },
-  eyebrow: { ...type.footnote, color: colors.mutedForeground, textTransform: 'capitalize' },
-  title: { ...type.largeTitle, color: colors.foreground },
-});
+  eyebrow: { ...type.footnote, color: c.mutedForeground, textTransform: 'capitalize' },
+  title: { ...type.largeTitle, color: c.foreground },
+}));
+
+/*
+  Bề mặt của đầu trang phụ, đọc CHẤT LIỆU chứ không đọc bảng màu.
+
+  Ở bản tối nó là kính: trắng 6% với một viền tơ trắng 12%, để nội dung cuộn
+  bên dưới lộ mờ qua. Ở bản giấy nó là chính mặt thẻ — trắng đục — vì một lớp
+  phủ trắng 6% trên giấy trắng không tách được đầu trang khỏi nội dung, và
+  đường phân cách phải do viền làm.
+*/
+const headerStylesFor = makeMaterialStyles((m) => ({
+  surface: {
+    backgroundColor: m.bg,
+    borderBottomWidth: m.borderWidth,
+    borderBottomColor: m.border,
+  },
+}));

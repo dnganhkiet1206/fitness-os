@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "ascnd",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.ascnd.fitnessos",
       "supportsTablet": false,
@@ -14,7 +14,10 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleAllowMixedLocalizations": true,
-        "LSApplicationQueriesSchemes": ["music", "spotify"]
+        "LSApplicationQueriesSchemes": [
+          "music",
+          "spotify"
+        ]
       }
     },
     "android": {
@@ -34,9 +37,14 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#08080a",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 120
+          "backgroundColor": "#f7f4ef",
+          "image": "./assets/images/splash-icon-light.png",
+          "imageWidth": 120,
+          "dark": {
+            "backgroundColor": "#08080a",
+            "image": "./assets/images/splash-icon.png",
+            "imageWidth": 120
+          }
         }
       ],
       [

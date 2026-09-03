@@ -1,145 +1,29 @@
 import { Platform } from 'react-native';
 
+import { darkPalette } from '@/constants/palette';
+
 /**
  * ASCND design tokens — a faithful port of the web app's index.css
  * (HSL → hex, dark theme). Colours, radii, glass recipe and type scale
  * match the original so the native app reads as the same product.
  */
 
-export const colors = {
-  // Core surfaces (dark) — exact from --background/--card/etc.
-  background: '#070708',
-  card: '#0e0e11',
-  secondary: '#18181b',
-  muted: '#161618',
-  accent: '#1d1d20',
-  border: '#2b2b31',
-  input: '#303036',
-  /**
-   * Rãnh chưa chạy của MỌI vòng tròn tiến trình.
-   *
-   * Nó vốn là một hằng số cục bộ trong `readiness-gauge.tsx`, kèm câu "track
-   * color used by every web ring" — một lời khẳng định về toàn app viết trong
-   * một tệp, nên không gì giữ nó đúng. Đồng hồ nghỉ vẽ rãnh của nó bằng
-   * `#1c1c21`, lệch một chút, đủ để hai vòng tròn cạnh nhau trong cùng một app
-   * đọc ra là hai thứ khác nhau mà không ai chỉ được ra vì sao.
-   *
-   * Đưa lên đây thì câu ấy có một chỗ để đúng.
-   */
-  ringTrack: '#17171c',
-
-  // Text
-  foreground: '#ededed',
-  /**
-   * Secondary text — captions, units, macro labels, timestamps.
-   *
-   * Was `#6b6b6b`, which measures 3.39:1 against a card surface (`glass.bg`,
-   * 6% white over the page) and 3.78:1 against the page itself. WCAG 2.1 SC
-   * 1.4.3 asks 4.5:1 for text at this size, so it failed AA everywhere it was
-   * used — and after `foreground` it is the most-used colour in the app.
-   *
-   * `#828282` is the smallest step that clears it: 4.71:1 on a card, 5.24:1 on
-   * the page. The gap to `foreground` (15.45:1) stays wide enough that the two
-   * still read as different ranks, which is the job this colour actually has.
-   *
-   * Measured rather than eyeballed. Eyeballing in a dark room on a good screen
-   * is how it arrived at 3.39 in the first place.
-   */
-  mutedForeground: '#828282',
-  /**
-   * Secondary text, but on glass over the assistant's aura.
-   *
-   * `mutedForeground` is measured against a card — a dark, still surface. The
-   * two assistant screens do not have one: `LiquidGlass` samples a drifting
-   * coloured aura, so the surface under a caption is both brighter and never
-   * the same twice.
-   *
-   * Measured at the worst spot the aura can produce: its brightest pool at
-   * peak, the tail of its neighbour, the glass fill, the lit face at its bright
-   * corner, and the strongest tint wash on top. `#828282` lands at **2.57:1**
-   * there — below even the 3:1 asked of large text, and the failure is not
-   * subtle: the label under a metric disappears into its own card.
-   *
-   * `#c8ccd4` measures 4.9:1 on that surface. It is also already in the app —
-   * the `arrow` glyph's own colour — so this adds a role, not a colour.
-   *
-   * Only for text on `LiquidGlass`. On a card it is too close to `foreground`
-   * to read as a second rank, which is the job `mutedForeground` still has
-   * everywhere else.
-   */
-  glassMuted: '#c8ccd4',
-  secondaryForeground: '#999999',
-
-  // Brand (premium silver)
-  primary: '#a8afbd',
-  primaryForeground: '#070708',
-  goldLight: '#c7cad1',
-  champagne: '#9fa3ad',
-
-  /**
-   * ── the signalling colours are neon ──
-   *
-   * Everything below carries meaning — a state, a metric, a warning — as
-   * opposed to the surfaces and text above it, which carry none and are
-   * unchanged. Each is the same hue it was, with chroma and luminance pushed
-   * up until it reads as emitted light rather than pigment. On a near-black
-   * page that is what makes a colour legible at a glance: there is nothing to
-   * reflect, so a muted colour has only its own brightness to work with.
-   *
-   * It happens to fix a real contrast problem. Every one of these went *up*
-   * against `background`, and `readinessRed`/`destructive` at 4.20:1 had been
-   * under the 4.5:1 that small text wants — the colour the app uses to say
-   * something is wrong was the one hardest to read:
-   *
-   *   green   7.75 → 14.12    blue    5.56 →  7.75
-   *   yellow 11.02 → 14.62    purple  4.23 →  5.67
-   *   red     4.20 →  5.78    cyan    9.39 → 12.94
-   *                           orange  7.29 →  8.96
-   *
-   * The brand silver (`primary`, `goldLight`, `champagne`) is deliberately
-   * left alone. It is an identity, not a signal, and a neon brand colour would
-   * compete with every one of these for attention.
-   */
-
-  // Semantic
-  destructive: '#ff3b5c',
-
-  // Readiness
-  readinessGreen: '#2bf5a8',
-  readinessYellow: '#ffd93d',
-  readinessRed: '#ff3b5c',
-
-  // Metrics
-  metricBlue: '#3ba6ff',
-  metricPurple: '#b45cff',
-  metricCyan: '#22e3ff',
-  metricOrange: '#ff9130',
-  /**
-   * Đỏ hồng của thịt — màu của protein.
-   *
-   * KHÔNG dùng `readinessRed` cho việc này dù hai màu gần nhau: xanh lá, vàng
-   * và đỏ ở app này CÓ NGHĨA là trạng thái sẵn sàng, nên mượn một trong ba cho
-   * một macro là để hai chuyện khác nhau nói bằng cùng một màu.
-   *
-   * Giá trị lấy đúng con số `quick-stats.tsx` đã dùng cho protein — nó vốn là
-   * một mã màu viết thẳng ở đó, tức cùng một quyết định nằm ở hai chỗ. Giờ một
-   * chỗ.
-   */
-  metricRose: '#e6485c',
-  /**
-   * Neon beige — the weight history's line.
-   *
-   * The only warm colour in the metrics. It is here because the weight chart
-   * draws its ambient pool in the line's own colour, and a warm glow reads as
-   * light falling on the page while a white one reads as a white shape on it.
-   * It is close to the 3000K key in `ambient-light.tsx` (#ffd9b3) on purpose,
-   * so the chart agrees with the light the page is already lit by.
-   *
-   * 16.59:1 on `background` — above the green it replaced (14.12:1), so this
-   * is a legibility gain as well as a warmer one.
-   */
-  metricBeige: '#ffe6bd',
-} as const;
+/**
+ * Bảng màu của app.
+ *
+ * Giá trị nằm ở `constants/palette.ts` — dữ liệu thuần, không import gì — để
+ * `tools/palette.mjs` biên dịch và CHẠY được nó một mình mà đo tương phản trên
+ * giá trị thật. Ở đây chỉ còn cái tên mà 1938 chỗ trong app đang gọi.
+ *
+ * ── và điều đó có hệ quả cho các công cụ ──
+ *
+ * Một `tools/*.mjs` cần ĐỌC MÃ MÀU phải đọc `palette.ts`, không phải tệp này:
+ * ở đây không còn chuỗi hex nào để regex bắt. Ba công cụ đã hỏng đúng vì lý do
+ * ấy khi bảng màu dời đi (`resting-aura`, `glass-legibility`, `tab-tint`) và
+ * cả ba nay trỏ đúng chỗ. Các công cụ đọc `spacing`, `MACRO_TINT`, `PAGE_TINT`
+ * hay `RING_TEXT_MAX_SCALE` thì vẫn đọc tệp này — những thứ ấy không dời.
+ */
+export const colors = darkPalette;
 
 /**
  * What a session's effort costs you, in colour.

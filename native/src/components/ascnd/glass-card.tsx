@@ -3,7 +3,9 @@ import { StyleSheet, View, type LayoutChangeEvent, type ViewProps } from 'react-
 import Animated, { type AnimatedProps } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
-import { glass, spacing } from '@/constants/ascnd';
+import { spacing } from '@/constants/ascnd';
+import { makeMaterialStyles } from '@/constants/theme';
+import { useMaterial } from '@/hooks/use-palette';
 
 /**
  * Card surface — the web app's `.metric-card` / `.glass-card`: a 6% white
@@ -62,11 +64,24 @@ import { glass, spacing } from '@/constants/ascnd';
  * fills — measured at 359 × 171 inside a 359 × 171 card, expanded, no seam.
  * It is the native renderer that holds onto the old frame.
  *
- * ── no drop shadow ──
+ * ── no drop shadow, ON DARK ──
  *
- * Still true, and still for the original reason: RN renders shadows on dark as
- * a hard halo rather than a soft falloff. The depth comes from the gradient,
- * the hairline border and the bright top edge.
+ * Still true there, and still for the original reason: RN renders shadows on
+ * dark as a hard halo rather than a soft falloff. The depth comes from the
+ * gradient, the hairline border and the bright top edge.
+ *
+ * ── và vì sao bản SÁNG là một chất liệu khác, không phải bản này đổi màu ──
+ *
+ * Cả ba câu phía trên đảo chiều trên giấy. Lớp phủ trắng 6% trên #f7f4ef là
+ * không có gì. Dải sáng-tối 8% trên mặt trắng là một vệt bẩn. Còn bóng đổ —
+ * thứ đoạn trên phải bỏ — lại đọc ĐÚNG trên nền sáng, vì đó là cách một tờ
+ * giấy nổi lên khỏi tờ dưới nó.
+ *
+ * Nên ở bản sáng: mặt trắng đục, viền tơ ấm, bóng thấp mềm, KHÔNG gradient và
+ * KHÔNG mép sáng trên. Hai nhánh, và nhánh tối không đổi một điểm ảnh nào —
+ * đó là điều kiện để bản đã ship không phải kiểm lại.
+ *
+ * Chi tiết và các con số nằm ở `Material` trong `constants/theme.ts`.
  */
 /**
  * `layout`, `entering` and `exiting` are Reanimated's, passed straight through.
@@ -90,6 +105,8 @@ export function GlassCard({
   exiting,
   ...props
 }: GlassCardProps) {
+  const m = useMaterial();
+  const styles = stylesFor(m);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
 
   const measure = (e: LayoutChangeEvent) => {
@@ -115,6 +132,11 @@ export function GlassCard({
         — clipped, so harmless, and wrong for no reason. It also leaves the
         caller's own `onLayout` alone.
       */}
+      {/* Mặt gradient chỉ tồn tại ở chất liệu KÍNH. Ở bản giấy, `onLayout`
+          cũng đi theo: không có gì cần đo khi không có gì được vẽ, và một
+          `setState` mỗi lần thẻ đổi cỡ để dựng ra rỗng là công thừa trên đúng
+          53 tệp. */}
+      {m.lit ? (
       <View style={styles.face} pointerEvents="none" onLayout={measure}>
         {size ? (
         <Svg width={size.w} height={size.h}>
@@ -138,21 +160,31 @@ export function GlassCard({
         </Svg>
         ) : null}
       </View>
-      {/* Bright inner top edge (--glass-inner-shadow) */}
-      <View style={styles.topLine} pointerEvents="none" />
+      ) : null}
+      {/* Bright inner top edge (--glass-inner-shadow) — kính mới có */}
+      {m.highlight ? <View style={styles.topLine} pointerEvents="none" /> : null}
       {children}
     </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeMaterialStyles((m) => ({
   card: {
-    borderRadius: glass.radius,
+    borderRadius: m.radius,
     padding: spacing.card,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
-    overflow: 'hidden',
+    backgroundColor: m.bg,
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
+    /*
+      `overflow: 'hidden'` giữ mặt gradient trong bốn góc bo — nhưng nó cũng
+      CẮT bóng đổ, vì bóng nằm ngoài hộp.
+
+      Nên ở bản giấy nó phải là `visible`. Đổi được vì không còn gì bên trong
+      cần cắt: mặt gradient đã không dựng, và mép sáng cũng vậy. Nếu sau này
+      có ai thêm một lớp tràn viền vào nhánh giấy, đây là dòng phải xét lại.
+    */
+    overflow: m.lit ? 'hidden' : 'visible',
+    ...m.shadow,
   },
   face: {
     position: 'absolute',
@@ -160,7 +192,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    borderRadius: glass.radius,
+    borderRadius: m.radius,
     overflow: 'hidden',
   },
   topLine: {
@@ -169,6 +201,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: glass.highlight,
+    backgroundColor: m.highlight ?? 'transparent',
   },
-});
+}));

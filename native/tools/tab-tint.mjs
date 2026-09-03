@@ -34,7 +34,11 @@ import { fileURLToPath } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TABS = 'src/components/app-tabs.tsx';
-const PALETTE = 'src/constants/ascnd.ts';
+/* Giá trị màu sống ở `constants/palette.ts` — dữ liệu THUẦN, không import gì —
+   để `tools/palette.mjs` biên dịch rồi chạy nó mà đo tương phản trên giá trị
+   thật. `ascnd.ts` chỉ còn re-export nó dưới cái tên `colors`, nên một công cụ
+   dò mã màu bằng regex phải đọc tệp này. */
+const PALETTE = 'src/constants/palette.ts';
 const FLOOR = 1.5;
 
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^[ \t]*\/\/.*$/gm, '');

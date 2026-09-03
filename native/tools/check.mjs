@@ -224,6 +224,13 @@ const STEPS = [
     không có gì báo — trừ bước này.
   */
   ['dấu thương hiệu', 'node', ['tools/brand-lockup.mjs']],
+  /*
+    Hai bảng màu, và phép đo đã lái cả thiết kế của bảng thứ hai: 26 token của
+    bản tối đo trên nền giấy ra 1,10–3,64:1, KHÔNG cái nào tới sàn chữ. Bước này
+    chạy lại phép đo ấy trên cả hai bảng mỗi lần, và đếm phần chưa chuyển để
+    "xong" không bị đọc thành "xong hết".
+  */
+  ['bảng màu', 'node', ['tools/palette.mjs']],
   ['ngôn ngữ AI', 'node', ['tools/ai-language.mjs']],
   ['worklet đo được', 'node', ['tools/measured-worklet.mjs']],
   ['giọng linh vật', 'node', ['tools/mascot-voice.mjs']],

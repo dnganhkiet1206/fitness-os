@@ -70,7 +70,8 @@ const problems = [];
 // ── read the room out of its own source ──
 const aura = read('src/components/ascnd/assistant-aura.tsx');
 const glassSrc = read('src/components/ascnd/liquid-glass.tsx');
-const palette = read('src/constants/ascnd.ts');
+/* xem ghi chú cùng nội dung trong `tools/resting-aura.mjs` */
+const palette = read('src/constants/palette.ts');
 
 const pools = [...aura.matchAll(/colour: (?:colors\.(\w+)|'(#[0-9a-fA-F]{6})'), peak: ([\d.]+)/g)].map((m) => ({
   named: m[1],

@@ -15,7 +15,9 @@ import { Check } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
@@ -23,6 +25,8 @@ import { toast } from '@/lib/toast';
 const MIN_LENGTH = 6;
 
 export default function ChangePasswordScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -76,7 +80,7 @@ export default function ChangePasswordScreen() {
               autoCapitalize="none"
               textContentType="newPassword"
               placeholder="••••••••"
-              placeholderTextColor={colors.mutedForeground}
+              placeholderTextColor={c.mutedForeground}
               value={newPw}
               onChangeText={setNewPw}
             />
@@ -95,7 +99,7 @@ export default function ChangePasswordScreen() {
               autoCapitalize="none"
               textContentType="newPassword"
               placeholder="••••••••"
-              placeholderTextColor={colors.mutedForeground}
+              placeholderTextColor={c.mutedForeground}
               value={confirmPw}
               onChangeText={setConfirmPw}
             />
@@ -107,9 +111,9 @@ export default function ChangePasswordScreen() {
             disabled={!canSave}
             onPress={submit}>
             {saved ? (
-              <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+              <Icon icon={Check} size={22} color={c.primaryForeground} strokeWidth={3} />
             ) : saving ? (
-              <ActivityIndicator color={colors.primaryForeground} />
+              <ActivityIndicator color={c.primaryForeground} />
             ) : (
               <Text style={styles.buttonText}>{i18n.settingsChangePassword}</Text>
             )}
@@ -119,29 +123,29 @@ export default function ChangePasswordScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   content: { gap: spacing.md },
   field: { gap: 6 },
-  label: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
+  label: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
   input: {
     height: 50,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
   },
-  error: { ...type.caption, color: colors.readinessRed },
+  error: { ...type.caption, color: c.readinessRed },
   button: {
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,
   },
   buttonDisabled: { opacity: 0.4 },
-  buttonText: { ...type.headline, color: colors.primaryForeground },
-});
+  buttonText: { ...type.headline, color: c.primaryForeground },
+}));

@@ -301,6 +301,37 @@ console.log(`dấu hiệu trong ảnh gốc: ${bounds.w}×${bounds.h} (${((bound
     `splash-icon.png     ${side}×${side}    ${kb(IMG('splash-icon.png'))}  (dấu hiệu đã cắt sát, ` +
       `imageWidth trong app.json giờ đúng là bề rộng dấu hiệu)`,
   );
+
+  /* ── 4b. cùng dấu hiệu ấy, MỰC TỐI, cho màn chờ của theme sáng ──
+
+     Màn chờ là hình ảnh NATIVE: nó được vẽ trước khi một dòng JavaScript nào
+     chạy, nên không có `tintColor` nào với tới được nó. Ở theme sáng, một dấu
+     hiệu trắng trên giấy #f7f4ef là một ô trống — app mở ra bằng nửa giây
+     không có gì cả.
+
+     Nên nó phải là một TỆP THỨ HAI, và tệp ấy phải sinh ra ở đây chứ không
+     phải vẽ bằng tay: cùng một phép cắt, cùng một bounds, chỉ khác mực. Làm
+     tay thì lần đổi artwork sau sẽ cập nhật bản trắng và bỏ quên bản tối.
+
+     Mực là `lightPalette.foreground` (#1a1917) — cùng màu chữ của theme sáng,
+     nên logo màn chờ và chữ đầu tiên người dùng thấy là cùng một sắc đen ấm. */
+  const INK = { r: 0x1a, g: 0x19, b: 0x17 };
+  const dark = splash.clone();
+  dark.scan(0, 0, dark.bitmap.width, dark.bitmap.height, function ink(x, y, idx) {
+    /* Chỉ đổi RGB, giữ nguyên alpha — alpha LÀ hình dạng dấu hiệu, kể cả các
+       điểm nửa trong suốt ở mép. Ghi đè alpha là làm răng cưa cả logo. */
+    if (this.bitmap.data[idx + 3] === 0) return;
+    this.bitmap.data[idx] = INK.r;
+    this.bitmap.data[idx + 1] = INK.g;
+    this.bitmap.data[idx + 2] = INK.b;
+  });
+  dark.colorType(6);
+  dark.deflateLevel(9);
+  await write(dark, IMG('splash-icon-light.png'));
+  console.log(
+    `splash-icon-light.png ${side}×${side}  ${kb(IMG('splash-icon-light.png'))}  (cùng dấu hiệu, mực ` +
+      `#1a1917 — màn chờ native không nhuộm được lúc chạy nên theme sáng cần tệp riêng)`,
+  );
 }
 
 /* ── 5. Android foreground + monochrome: the same mark, inside the safe zone ── */

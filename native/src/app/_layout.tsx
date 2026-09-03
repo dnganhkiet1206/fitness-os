@@ -1,9 +1,9 @@
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
-import { useEffect } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 
 import { AppLockGate } from '@/components/ascnd/app-lock-gate';
 import { AuthScreen } from '@/components/ascnd/auth-screen';
@@ -16,7 +16,8 @@ import { NeonToastHost } from '@/components/ascnd/neon-toast';
 import { ConnectionBanner } from '@/components/ascnd/connection-banner';
 import { useReducedMotionSync } from '@/hooks/use-reduced-motion';
 import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
-import { colors } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette, useThemeName } from '@/hooks/use-palette';
 import { AppLockProvider } from '@/hooks/use-app-lock';
 import { AppSettingsProvider, useI18n } from '@/hooks/use-app-settings';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
@@ -27,18 +28,40 @@ import { asyncStoragePersister, CACHE_BUSTER, queryClient } from '@/lib/query-cl
 
 SplashScreen.preventAutoHideAsync();
 
-// ASCND is dark-first (matches the shipped Capacitor app)
-const ascndTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.background,
-    card: colors.card,
-    text: colors.foreground,
-    primary: colors.primary,
-    border: colors.border,
-  },
-};
+/**
+ * Theme của navigator, dựng từ bảng màu đang dùng.
+ *
+ * ── nó từng là một hằng số module, và đó là lý do không đổi được ──
+ *
+ * Bản cũ mở đầu bằng chú thích "ASCND is dark-first" và đóng băng `DarkTheme`
+ * cộng sáu mã màu lúc import. Giá trị này quyết định NỀN phía sau mọi màn hình
+ * và màu chữ mặc định của navigator, nên chừng nào nó còn là hằng số thì không
+ * một màn nào có thể sáng lên — nội dung sẽ nổi trên một khoảng đen.
+ *
+ * `dark` là một cờ THẬT với React Navigation, không phải nhãn: nó lái màu của
+ * status bar và của các bề mặt native mà app không vẽ. Đặt sai cờ ấy là có một
+ * trang sáng dưới một thanh trạng thái chữ trắng.
+ */
+function NavTheme({ children }: { children: ReactNode }) {
+  const name = useThemeName();
+  const c = usePalette();
+  const value = useMemo(() => {
+    const base = name === 'dark' ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      dark: name === 'dark',
+      colors: {
+        ...base.colors,
+        background: c.background,
+        card: c.card,
+        text: c.foreground,
+        primary: c.primary,
+        border: c.border,
+      },
+    };
+  }, [name, c]);
+  return <ThemeProvider value={value}>{children}</ThemeProvider>;
+}
 
 /** Renders nothing; keeps Apple Health current. See `useAutoHealthSync`. */
 function HealthAutoSync() {
@@ -48,6 +71,12 @@ function HealthAutoSync() {
 
 function Gate() {
   const i18n = useI18n();
+  /* Nền của các sheet modal đọc bảng màu đang dùng. Bản cũ đóng băng
+     `colors.card` lúc import, nên một sheet ghi bữa ăn ở theme sáng sẽ mở ra
+     trên một tấm #0e0e11 — nội dung sáng trên một khoảng đen, và cú trượt
+     xuống để đóng lộ ra đúng cái mép ấy. */
+  const c = usePalette();
+  const gateStyles = gateStylesFor(c);
   const { user, loading } = useAuth();
   const {
     data: profile,
@@ -95,7 +124,7 @@ function Gate() {
   */
   if (profileFailed && !profile) {
     return (
-      <View style={styles.gateFail}>
+      <View style={gateStyles.gateFail}>
         <LoadFailed i18n={i18n} onRetry={() => void refetchProfile()} busy={profileRefetching} />
       </View>
     );
@@ -123,14 +152,14 @@ function Gate() {
         name="log-meal"
         options={{
           presentation: 'modal',
-          contentStyle: { backgroundColor: colors.card },
+          contentStyle: { backgroundColor: c.card },
         }}
       />
       <Stack.Screen
         name="log-sleep"
         options={{
           presentation: 'modal',
-          contentStyle: { backgroundColor: colors.card },
+          contentStyle: { backgroundColor: c.card },
         }}
       />
       <Stack.Screen
@@ -160,7 +189,7 @@ function Gate() {
           name={name}
           options={{
             presentation: 'modal',
-            contentStyle: { backgroundColor: colors.card },
+            contentStyle: { backgroundColor: c.card },
           }}
         />
       ))}
@@ -255,9 +284,9 @@ export default function RootLayout() {
       }}>
       <AppSettingsProvider>
       <AuthProvider>
-        <ThemeProvider value={ascndTheme}>
+        <NavTheme>
           <LockedApp />
-        </ThemeProvider>
+        </NavTheme>
       </AuthProvider>
       </AppSettingsProvider>
     </PersistQueryClientProvider>
@@ -265,17 +294,24 @@ export default function RootLayout() {
   );
 }
 
+/* `root` không có màu nào, nên nó KHÔNG cần theme — giữ tĩnh.
+   Đưa một style không màu vào `makeStyles` là bắt nó dựng lại một lần cho mỗi
+   bảng màu để ra đúng cùng một kết quả, và nó nằm ở component NGOÀI cùng —
+   ngoài cả `AppSettingsProvider`, nơi không có bảng màu nào để đọc. */
 const styles = StyleSheet.create({
   /* The gesture root replaces the window as the app's outermost box, so it has
      to fill it — without `flex: 1` it collapses to its content and the app
      renders in a strip at the top. */
   root: { flex: 1 },
+});
+
+const gateStylesFor = makeStyles((c) => ({
   /* Centred on the app's own background, because this replaces the entire
      screen — it is not a card inside a page that failed, it is the page. */
   gateFail: {
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
-});
+}));
