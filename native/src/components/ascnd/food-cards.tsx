@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { MACRO_TINT, colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
   useCreateFoodItem,
@@ -40,6 +40,43 @@ import {
  * which has had a delete of its own all along. Nothing is lost except the
  * chance to remove a food you meant to scroll past.
  */
+/**
+ * P · C · F trên một hàng món, mỗi chữ cái mang màu của chính chất đó.
+ *
+ * ── vì sao đổi ──
+ *
+ * Bản cũ là một chuỗi xám duy nhất: `P10 · C50 · F60`. Ba con số quan trọng
+ * khác nhau nằm cùng một màu, cùng một cỡ, không dấu hiệu nào tách chúng — nên
+ * đọc một hàng món là đọc từ trái sang phải, từng ký tự. Bản tham chiếu người
+ * dùng gửi tô ba chữ cái ba màu, và đó không phải trang trí: nó biến ba con số
+ * thành ba CỘT mà mắt nhảy thẳng tới.
+ *
+ * Màu lấy từ `MACRO_TINT`, đúng bảng mà bốn ô macro ở đầu trang này và mọi
+ * thanh tiến độ chất đang dùng. Bịa ba mã màu ở đây là dựng bản thứ hai của một
+ * bảng đã có — và bản thứ hai luôn trôi khỏi bản đầu, thứ `MACRO_BAR` đã phải
+ * ghi lại nguyên một đoạn để tránh.
+ *
+ * ── và đơn vị được trả lại ──
+ *
+ * `P10` không nói 10 cái gì. Bản tham chiếu ghi `P 10g`, và một gam là thứ duy
+ * nhất ba con số này có thể là — nên chữ `g` không thêm thông tin cho người đã
+ * biết, nhưng nó xoá một khoảnh khắc ngờ cho người chưa.
+ *
+ * Con số vẫn mono và `tabular-nums`: ba số ở ba hàng chỉ thẳng cột khi chữ số
+ * cùng bề rộng, và đó là toàn bộ lý do tiêu một mặt chữ mono ở đây.
+ */
+function Macros({ p, c, f }: { p: number; c: number; f: number }) {
+  return (
+    <Text style={styles.macros} numberOfLines={1}>
+      <Text style={{ color: MACRO_TINT.protein }}>P</Text> {Math.round(p)}g
+      <Text style={styles.dot}> · </Text>
+      <Text style={{ color: MACRO_TINT.carbs }}>C</Text> {Math.round(c)}g
+      <Text style={styles.dot}> · </Text>
+      <Text style={{ color: MACRO_TINT.fat }}>F</Text> {Math.round(f)}g
+    </Text>
+  );
+}
+
 export function FoodCard({ f }: { f: FoodItemRow }) {
   const i18n = useI18n();
   const toggleFav = useToggleFavoriteFood();
@@ -58,9 +95,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
           {f.name}
           {f.brand ? <Text style={styles.brand}>  {f.brand}</Text> : null}
         </Text>
-        <Text style={styles.macros}>
-          P{Math.round(Number(f.protein_g))} · C{Math.round(Number(f.carbs_g))} · F{Math.round(Number(f.fat_g))}
-        </Text>
+        <Macros p={Number(f.protein_g)} c={Number(f.carbs_g)} f={Number(f.fat_g)} />
       </View>
 
       {/* Right-aligned, like the value in any table row — it is the number you
@@ -111,9 +146,7 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
     <View style={styles.row}>
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>{r.food_name}</Text>
-        <Text style={styles.macros}>
-          P{r.protein_g} · C{r.carbs_g} · F{r.fat_g}
-        </Text>
+        <Macros p={Number(r.protein_g)} c={Number(r.carbs_g)} f={Number(r.fat_g)} />
       </View>
       <Text style={styles.kcal}>{r.kcal} kcal</Text>
       {/* A fixed slot whether or not there is a button in it, so the kcal
@@ -151,7 +184,21 @@ const styles = StyleSheet.create({
   brand: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
   /* Monospace, because three numbers in a column only line up if the digits
      are the same width — that is the whole reason to spend a mono face here. */
-  macros: { fontSize: 11, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  /*
+    12, không phải 11.
+
+    Đặt cạnh bản tham chiếu ở CÙNG bề rộng thẻ, dòng macro bên ta nhỏ hơn thấy
+    rõ: tên món 15 điểm rồi tụt thẳng xuống 11: một bậc rưỡi trong khi bản kia
+    chỉ tụt một. Nó là dòng thông tin thứ hai của hàng, không phải chú thích.
+
+    Vẫn vừa hàng: hàng cao tối thiểu 52 với 10 điểm đệm mỗi đầu, nên phần chữ
+    được 32 điểm; 15 + 2 + 12 = 29.
+  */
+  macros: { fontSize: 12, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  /* Chữ cái mang màu chất, con số ở lại xám — xem `Macros`. */
+  /* Dấu chấm ngăn ba chất mờ hơn cả con số: nó là dấu ngắt chứ không phải
+     nội dung, và ở cùng độ sáng nó cạnh tranh với chính thứ nó ngăn ra. */
+  dot: { color: colors.border },
   kcal: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
   slot: { width: 18, alignItems: 'flex-end' },
 });

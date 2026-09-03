@@ -7,7 +7,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
-import { SectionTitle } from '@/components/ascnd/section-title';
+import { MicroLabel, SectionTitle } from '@/components/ascnd/section-title';
 import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
 import { NutritionCard, WaterWidget } from '@/components/ascnd/dashboard-cards';
 import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
@@ -642,6 +642,24 @@ export default function NutritionScreen() {
               "Xem tất cả" của mục Kế hoạch ăn đã đứng — cùng một khuôn cho
               cùng một vai trò.
             */}
+            {/*
+              ── cả thư viện nằm trong MỘT thẻ ──
+
+              Người dùng gửi một bản tham chiếu và nói "sửa lại vùng tôi khoanh
+              thành kiểu như này". Khác biệt lớn nhất giữa hai ảnh không phải
+              màu hay chữ: bên tham chiếu, "Thực phẩm" là một TẤM có mép; bên
+              ta nó là mấy khối rời nằm trực tiếp trên nền trang, ngay dưới một
+              thẻ Danh sách đi chợ CÓ mép.
+
+              Hệ quả đọc được trên ảnh: ranh giới cuối cùng mắt thấy là đáy thẻ
+              đi chợ, nên tiêu đề "Thực phẩm", ô tìm kiếm và hai danh sách trôi
+              lửng — không có gì nói chúng thuộc về nhau, và không có gì nói
+              chúng KẾT THÚC ở đâu. Trang có hai thẻ rồi một vùng không tên.
+
+              Một thẻ cho cả khu trả lời cả hai câu bằng một đường viền, và nó
+              là đúng thứ `GlassCard` đã làm cho mọi mục khác của trang này.
+            */}
+            <GlassCard style={styles.foodLibrary}>
             <View style={styles.foodHead}>
               <SectionTitle>{i18n.nutritionFoods}</SectionTitle>
               <PressScale
@@ -733,9 +751,7 @@ export default function NutritionScreen() {
                     tôi gộp phần NHÌN chứ không trộn dữ liệu: một tiêu đề duy
                     nhất ở trên, hai nhãn nhỏ lặng đi ở đây.
                   */}
-                  <Text style={styles.foodSubLabel}>
-                    {lang === 'vi' ? 'Thực phẩm của tôi' : 'My Foods'}
-                  </Text>
+                  <MicroLabel>{lang === 'vi' ? 'Thực phẩm của tôi' : 'My Foods'}</MicroLabel>
                   {myFoodsSorted.length > 0 ? (
                     <>
                       <FoodGroup rows={myFoodsSorted.slice(0, 5)} />
@@ -757,7 +773,7 @@ export default function NutritionScreen() {
                 */}
                 {recents && recents.length > 0 ? (
                   <View style={styles.foodSection}>
-                    <Text style={styles.foodSubLabel}>{i18n.nutritionRecent}</Text>
+                    <MicroLabel>{i18n.nutritionRecent}</MicroLabel>
                     <View style={foodListStyles.group}>
                       {recents.slice(0, 4).map((r, i) => (
                         <View key={`${r.food_name}-${i}`}>
@@ -771,6 +787,7 @@ export default function NutritionScreen() {
                 ) : null}
               </>
             )}
+            </GlassCard>
           </>
         )}
         </SegmentPanel>
@@ -805,6 +822,19 @@ const styles = StyleSheet.create({
      floor, and on a page with room to spare it also stops the row reading as
      an afterthought. */
 
+  /*
+    `gap` chứ không phải để các con tự chống nhau.
+
+    `Screen` xếp con của nó cách `spacing.stack` = 20. Gói N con vào một thẻ
+    biến N con của trang thành MỘT, nên N−1 khe ấy biến mất — đúng cái bẫy mà
+    `SegmentPanel` đã ghi lại và đo được ở màn Tiến trình (thẻ BMI kết thúc ở
+    y=194, thẻ kế bắt đầu ở y=195: không phải "sát hơn", là DÍNH). Thẻ này phải
+    tự trả lại khoảng cách ấy.
+
+    16 chứ không phải 20: bên trong một thẻ thì các khối là những phần của cùng
+    một thứ, còn 20 là khoảng cách giữa các THỨ.
+  */
+  foodLibrary: { gap: spacing.md },
   searchRow: { flexDirection: 'row', gap: spacing.sm },
   /* 30pt on its own, so hitSlop 8 takes it to 46 — past Apple's 44pt floor
      without making the glyph bigger than the search icon facing it. */
@@ -856,14 +886,13 @@ const styles = StyleSheet.create({
   /* Khoảng cách giữa hai danh sách con hẹp lại: chúng thuộc cùng một mục nên
      không cần cách nhau bằng khoảng dành cho hai MỤC khác nhau. */
   foodSection: { gap: spacing.xs + 2 },
-  /* 13pt/600 hoa nhẹ, màu mờ — đủ để chia hai danh sách, không đủ để tranh
-     chỗ với tiêu đề "Thực phẩm" ở trên. */
-  foodSubLabel: {
-    ...type.footnote,
-    fontWeight: '600',
-    color: colors.mutedForeground,
-    letterSpacing: 0.3,
-  },
+  /* `foodSubLabel` (13pt/600, giãn 0,3) đã đi cùng `<MicroLabel>`.
+     Lập luận cũ — "đủ để chia hai danh sách, không đủ để tranh chỗ với tiêu đề
+     Thực phẩm" — vẫn đúng, và chữ in hoa 12pt giãn rộng phục vụ nó TỐT HƠN:
+     nó nhỏ hơn, mờ hơn, và quan trọng nhất là nó đọc ra như một NHÃN chứ không
+     như một tiêu đề nhỏ. `section-title.tsx` ghi chính lập luận ấy khi nó bỏ
+     kiểu chữ này khỏi tiêu đề mục. Bản tham chiếu người dùng gửi cũng viết hoa
+     hai nhãn này. */
   seeMore: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -41,6 +41,33 @@ export function SectionTitle({ children }: { children: ReactNode }) {
   return <Text style={styles.title}>{children}</Text>;
 }
 
+/**
+ * NHÃN của một khối bên trong một thẻ — không phải tiêu đề mục.
+ *
+ * ── vì sao nó ở cạnh `SectionTitle` chứ không ở chỗ dùng ──
+ *
+ * Vì hai thứ này là hai vế của cùng MỘT quyết định, và ghi chú dài phía trên
+ * chính là quyết định ấy: 12pt in hoa giãn rộng màu mờ là kiểu chữ của nhãn,
+ * nên nó SAI cho một tiêu đề mục và ĐÚNG cho một nhãn. Tách hai vế ra hai tệp
+ * là mở đường cho ai đó đọc được nửa lập luận.
+ *
+ * Đây là bộ số mà mọi nhãn trong thẻ của app đang dùng — "GHI BỮA ĂN", "XU
+ * HƯỚNG SẴN SÀNG", "CHỈ SỐ BMI". `dashboard-cards` và `today-widgets-2` mỗi
+ * tệp có một component `MicroTitle` cục bộ lặp lại bộ số này; chúng còn kèm
+ * icon nên là một hình dạng khác, và gộp cả ba là một lượt sửa riêng. Cái tệp
+ * này ngăn được là bộ số thứ BA ra đời.
+ */
+export function MicroLabel({ children }: { children: ReactNode }) {
+  return <Text style={styles.micro}>{children}</Text>;
+}
+
 const styles = StyleSheet.create({
   title: { ...type.title2, color: colors.foreground },
+  micro: {
+    fontSize: 12,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 2.4,
+    color: colors.mutedForeground,
+  },
 });
