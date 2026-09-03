@@ -235,7 +235,42 @@ export function PickRow({
 }) {
   const reduceMotion = useReducedMotion();
   const [boxes, setBoxes] = useState<Record<string, Box>>({});
-  const here = boxes[value];
+  /*
+    Một ô ĐÃ ĐO KHÁC một ô đã được báo về.
+
+    ── lỗi người dùng gửi ảnh ──
+
+    Thi thoảng, ở đầu màn Dinh dưỡng và màn Tiến trình, hai mảnh sẫm hình bán
+    nguyệt nằm BÊN NGOÀI cái ray, thò ra khỏi mép trái màn hình, còn trong ray
+    thì không có thumb nào cả.
+
+    Quét pixel ảnh chụp: mảnh sẫm ấy rộng 19,6 điểm — đúng bằng `r`, không phải
+    bằng bề rộng một mục (~204). Tức `w` bằng 0. Lúc đó ba mảnh nằm ở:
+
+        nắp trái  [x, x+r]
+        thân      scaleX = max(0, 0 - 2r) = 0        → vô hình
+        nắp phải  [x + 0 - r, x] = [x-r, x]          → BÊN TRÁI nắp trái
+
+    Playwright dựng lại được ở lượt thứ hai trên mười: `[1..20 | 20..20 | -18..1]`
+    rồi mới nhảy về `[4..23 | 23..167 | 167..186]`.
+
+    ── vì sao cửa cũ không chặn được ──
+
+    Ghi chú ở chỗ dựng `pill` nói "chưa đo xong thì chưa gắn", và nó ĐÚNG với
+    thứ nó viết ra — nhưng `!here` chỉ hỏi "đã có ai báo về một ô chưa", không
+    hỏi "ô ấy có dùng được không". Một lượt bố cục với bề rộng 0 vẫn báo về một
+    ô hợp lệ về kiểu, nên cửa mở.
+
+    Đó đúng là phân biệt mà repo này đã phải làm ở chỗ khác và ghi lại: `null`
+    khác `0` ở điểm sẵn sàng, `usable()` khác "có dữ liệu" ở phía trao huy
+    chương. "Rỗng" và "chưa đọc được" là hai chuyện.
+
+    Và `placed` cũng ăn theo: hàm dưới thoát sớm khi `here` là `undefined`, nên
+    lần đặt THẬT đầu tiên vẫn là một cú nhảy chứ không phải một cú trượt từ mép
+    trái — thứ mà một lần "đặt" vào ô rỗng đã làm hỏng.
+  */
+  const reported = boxes[value];
+  const here = reported && reported.w > 0 ? reported : undefined;
 
   const x = useSharedValue(0);
   const y = useSharedValue(0);
@@ -278,13 +313,46 @@ export function PickRow({
   const h = height ?? here?.h ?? 0;
   const r = Math.min(radius, h / 2);
 
+  /*
+    `w` bằng 0 nghĩa là CHƯA ĐẶT, và chưa đặt thì không được vẽ.
+
+    ── vì sao cửa ở phía render là chưa đủ ──
+
+    Bản sửa đầu chặn ở chỗ dựng: ô đo được bề rộng 0 thì coi như chưa đo. Đúng,
+    và Playwright vẫn dựng lại được lỗi ngay sau đó. Lý do nằm ở THỨ TỰ:
+
+      1. `boxes` cập nhật → render → `pill` được gắn
+      2. worklet chạy NGAY với `x/y/w` còn ở giá trị khởi tạo 0 → vẽ khung đầu
+      3. `useEffect` chạy SAU khi vẽ → mới gán ô thật
+
+    Bước 2 là cái người dùng chụp được. Ở bước ấy `w` là 0, nên nắp phải nằm ở
+    `x + 0 - r`, tức BÊN TRÁI nắp trái và thò ra ngoài ray.
+
+    Bình thường bước 2 chỉ sống một khung hình. Nhưng luồng JS lúc mở app đang
+    dựng cả năm tab (`UITabBarController` mount hết một lượt), nên bước 3 có thể
+    tới muộn hàng trăm mili giây — trong khi luồng UI vẫn vẽ đều. Đó chính là
+    "thi thoảng", và nó cùng họ với lỗi màn trắng mà `lib/entrance.ts` ghi lại:
+    khung hình bị bỏ lỡ thì thứ còn lại là GIÁ TRỊ ĐẦU.
+
+    Nên chốt chặn phải nằm trong chính worklet, chỗ duy nhất luôn chạy đúng lúc
+    vẽ. `opacity` chứ không phải bỏ mảnh đi: nó là thuộc tính worklet được phép
+    chạm (`tools/motion.mjs`), và không kéo theo một lượt bố cục nào.
+  */
+  const hidden = () => {
+    'worklet';
+    return w.value > 0 ? 1 : 0;
+  };
+
   const left = useAnimatedStyle(() => ({
+    opacity: hidden(),
     transform: [{ translateX: x.value }, { translateY: y.value }],
   }));
   const right = useAnimatedStyle(() => ({
+    opacity: hidden(),
     transform: [{ translateX: x.value + w.value - r }, { translateY: y.value }],
   }));
   const mid = useAnimatedStyle(() => ({
+    opacity: hidden(),
     transform: [
       { translateX: x.value + r },
       { translateY: y.value },
