@@ -171,6 +171,49 @@ người ta *khoẻ lên*. Không file tập luyện nào đọc XP, và không 
 | **Thiếu dữ liệu** | **Không có dòng ngủ ≠ ngủ 0 phút.** Chiều giấc ngủ bị loại khỏi điểm sẵn sàng thay vì chấm 20/100 |
 | **Độ tin cậy** | Tự nhập hoặc từ đồng hồ |
 
+### 11a. Chiều "giấc ngủ" của điểm sẵn sàng — `computeSleepScore`
+
+Đây là chiều nặng nhất sau HRV (trọng số 0.30, lên 0.45 khi không có HRV), nên
+hình dạng của nó đáng ghi ra.
+
+| | |
+|---|---|
+| **Định nghĩa** | Đêm qua so với **mục tiêu ngủ của chính người đó** |
+| **Đầu vào** | `sleep_duration_min`, `sleep_target_min`, nợ ngủ 7 ngày |
+| **Hình dạng** | **Đỉnh ở đúng mục tiêu.** Đủ giờ = 100. Phẳng thêm **1 giờ**, rồi trừ **20 điểm mỗi giờ**, trừ tối đa **40** |
+| **Dưới mục tiêu** | Ba dải: 0 → 0.85 tỉ lệ cho 20 → 60 điểm; 0.85 → 1.0 cho 60 → 100 |
+| **Nợ ngủ** | Trừ thêm `5 điểm mỗi giờ nợ`, tối đa 15 |
+| **Khoảng** | 0–100, hoặc `null` |
+| **Thiếu dữ liệu** | 0 phút **không phải** một phép đo — trả `null`, trọng số chia lại |
+
+Bảng thật, mục tiêu 8 giờ, không nợ ngủ:
+
+| giờ ngủ | 4h | 6.8h | 7.5h | **8h** | 9h | 10h | 11h | 14h |
+|---|---|---|---|---|---|---|---|---|
+| điểm | 44 | 60 | 83 | **100** | 100 | 80 | 60 | 60 |
+
+**Bản trước thưởng cho ngủ quá mục tiêu**: nó tăng đơn điệu theo thời lượng, cho
+8h → 90 và 12h → 100, tức ngủ 14 tiếng được điểm tuyệt đối còn ngủ đúng mục tiêu
+thì không. Người dùng bắt được qua triệu chứng "thẻ ngủ 10/10 mà thẻ sẵn sàng chỉ
+90/100".
+
+Quan hệ giữa thời lượng ngủ và rủi ro là **hình chữ U**, không phải đường lên:
+phân tích gộp 79 đoàn hệ cho thấy ngủ < 7 giờ tăng tử vong mọi nguyên nhân 14%,
+còn ngủ ≥ 9 giờ tăng **34%**; mỗi giờ trên 7 mang RR 1.13 so với 1.06 mỗi giờ
+dưới 7. Vế trên tính bằng **giờ tuyệt đối** chứ không bằng tỉ lệ, vì bằng chứng
+nói về giờ — và một tỉ lệ sẽ phạt người có mục tiêu thấp nặng hơn.
+
+`tools/sleep-curve.mjs` lái engine thật qua `computeReadiness` ở 41 mốc thời
+lượng và canh sáu điều: đỉnh ở mục tiêu, đủ giờ được 100, qua mục tiêu không đi
+lên, dưới mục tiêu không đi xuống, mỗi giờ dưới mục tiêu phải nhích ≥ 5 điểm
+(một đường cong PHẲNG từng lọt qua luật chỉ-cấm-đi-xuống), và ngủ 14h vẫn cao
+hơn ngủ 4h.
+
+**Chất lượng tự chấm (mặt cười 1–10) KHÔNG vào công thức này** — đó là quyết định
+sản phẩm, canh bởi `tools/sleep-note.mjs`. Nó chỉ sinh ra dòng nhận xét dưới thẻ
+Giấc ngủ. Vì thế "CHẤT LƯỢNG 10/10" trên thẻ Giấc ngủ và "SLEEP 100/100" trên
+thẻ Sẵn sàng là **hai đại lượng khác nhau**: một cái bạn chấm, một cái app tính.
+
 ---
 
 ## Những gì app **không** tính, và vì sao

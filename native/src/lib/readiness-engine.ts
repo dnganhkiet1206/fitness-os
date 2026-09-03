@@ -91,7 +91,45 @@ function computeRHRScore(rhr: number, history: number[]): number | null {
 }
 
 /**
- * Last night, scored — or `null` when there was no last night to score.
+ * Ngủ thêm bao nhiêu cũng không tốt hơn ngủ ĐỦ.
+ *
+ * ── bản cũ nói ngược lại, và người dùng bắt được ──
+ *
+ * Công thức cũ tăng đơn điệu theo thời lượng: `90 + min(10, (ratio-1)*20)`.
+ * Chạy nó ra bảng (mục tiêu 8h, không nợ ngủ):
+ *
+ *      8h → 90     10h → 95     12h → 100     14h → 100
+ *
+ * Tức ngủ đúng mục tiêu được 90, còn ngủ 14 tiếng được điểm tuyệt đối. Người
+ * dùng hỏi vì sao thẻ ngủ ghi 10/10 mà thẻ sẵn sàng chỉ 90/100 — và câu trả lời
+ * thật không phải "hai thang khác nhau", mà là "đường cong này chấm sai".
+ *
+ * ── bằng chứng ──
+ *
+ * Quan hệ giữa thời lượng ngủ và rủi ro là hình chữ U, không phải đường lên.
+ * Phân tích gộp 79 đoàn hệ: ngủ < 7 giờ làm tăng tử vong mọi nguyên nhân 14%,
+ * ngủ ≥ 9 giờ tăng **34%**. Và độ dốc hai bên không bằng nhau — mỗi giờ TRÊN 7
+ * mang RR 1,13, mỗi giờ DƯỚI 7 mang RR 1,06. Ngủ dài không trung tính; nó tệ
+ * hơn ngủ thiếu cùng một lượng.
+ *
+ * ── hình dạng mới ──
+ *
+ * Đỉnh ở đúng mục tiêu, phẳng thêm một giờ, rồi đi xuống, có sàn.
+ *
+ *      6.8h → 60    8h → 100    9h → 100    10h → 80    11h → 60    14h → 60
+ *
+ * `OVER_GRACE_H` = 1: nhu cầu ngủ của một người dao động khoảng một giờ, nên
+ * hơn mục tiêu một giờ không phải là đi chệch.
+ *
+ * Sàn 60 chứ không phải 0: ngủ 13 tiếng không phải một đêm thức trắng. 60 đúng
+ * bằng điểm của người ngủ thiếu 1,2 giờ — cả hai đều là "lệch mục tiêu theo cách
+ * có ý nghĩa, nhưng vẫn có ngủ".
+ *
+ * ── và vế dưới mục tiêu được neo lại, không đổi hình ──
+ *
+ * Ba dải cũ giữ nguyên ranh giới (0,85 và 1,0) và giữ nguyên hai đầu 20 và 60.
+ * Chỉ dải trên cùng đổi hệ số 30 → 40 để nó cập bến 100 ở mục tiêu thay vì 90.
+ * Nên "đủ giờ" nay là điểm trọn vẹn, và đó là toàn bộ điều người dùng hỏi.
  *
  * ── the bug this returns null for ──
  *
@@ -104,22 +142,29 @@ function computeRHRScore(rhr: number, history: number[]): number | null {
  * So a person with three biometric readings and no sleep tracking was told,
  * with a number and a colour, that they were **not recovered**. Not because
  * they had slept badly; because the app had never been told how they slept.
- * Nothing on the screen distinguished the two, and the advice that follows a
- * red score — rest, cut volume — is advice about their body derived from an
- * absence of data about their body.
  *
- * Zero minutes of sleep is not a measurement. HRV already worked this way
- * (`computeHRVScore` returns null without enough history and the weights
- * redistribute); sleep now does too.
+ * Zero minutes of sleep is not a measurement.
  */
+/** Hơn mục tiêu bao nhiêu giờ thì vẫn tính là đủ. */
+const OVER_GRACE_H = 1;
+/** Mỗi giờ vượt quá quãng ân hạn trừ bao nhiêu điểm. */
+const OVER_PER_H = 20;
+/** Trừ tối đa — ngủ rất dài vẫn không phải một đêm không ngủ. */
+const OVER_MAX = 40;
+
 function computeSleepScore(sleepMin: number | undefined, targetMin: number, debtMin: number): number | null {
   if (sleepMin === undefined || sleepMin === null || sleepMin <= 0) return null;
-  const ratio = sleepMin / (targetMin || 480);
+  const target = targetMin || 480;
+  const ratio = sleepMin / target;
   let score: number;
   if (ratio >= 1.0) {
-    score = 90 + Math.min(10, (ratio - 1) * 20);
+    /* Vế TRÊN tính bằng GIỜ tuyệt đối, không bằng tỉ lệ: bằng chứng nói về giờ
+       ("≥ 9 giờ"), và một tỉ lệ sẽ phạt người có mục tiêu thấp nặng hơn — mục
+       tiêu 6h thì 7,5h đã là 1,25 lần, trong khi đó mới là 1,5 giờ hơn. */
+    const overH = (sleepMin - target) / 60;
+    score = 100 - clamp((overH - OVER_GRACE_H) * OVER_PER_H, 0, OVER_MAX);
   } else if (ratio >= 0.85) {
-    score = 60 + ((ratio - 0.85) / 0.15) * 30;
+    score = 60 + ((ratio - 0.85) / 0.15) * 40;
   } else {
     score = 20 + (ratio / 0.85) * 40;
   }
