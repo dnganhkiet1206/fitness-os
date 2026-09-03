@@ -10,7 +10,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Line, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { displayVolume } from '@/lib/units';
@@ -67,12 +69,12 @@ const AnimatedRect = Animated.createAnimatedComponent(Rect);
 
 /** pale cyan at the top of a bar, `metricBlue` at its foot */
 const BAR_TOP = '#8fe4ff';
-const BAR_BOTTOM = colors.metricBlue;
+const BAR_BOTTOM = 'metricBlue' satisfies PaletteKey;
 
 /** the blue pool behind the plot — Health tints the area behind its bars */
 /* `colors.metricBlue`, không phải mã màu chép lại. Cùng con số, nhưng chép lại
    thì đổi bảng màu xong chỗ này ở lại — và không có gì báo. */
-const WASH = colors.metricBlue;
+const WASH = 'metricBlue' satisfies PaletteKey;
 const WASH_PEAK = 0.1;
 
 /** shared falloff: steep, then a tail that never quite lands */
@@ -178,6 +180,7 @@ function Bar({
   index: number;
   gradId: string;
 }) {
+  const c = usePalette();
   /*
     Zero is drawn as nothing, not as a sliver.
 
@@ -220,7 +223,7 @@ function Bar({
           x={x - h.grow}
           width={w + h.grow * 2}
           rx={r + h.grow}
-          fill={BAR_BOTTOM}
+          fill={c[BAR_BOTTOM]}
           opacity={h.o * dim}
           animatedProps={rect}
         />
@@ -245,6 +248,8 @@ export function WaterChart({
   lang: 'vi' | 'en';
   i18n: ReturnType<typeof useI18n>;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /*
     Measured, not `width="100%"`.
 
@@ -331,11 +336,11 @@ export function WaterChart({
             <Defs>
               <LinearGradient id={barGrad} x1="0" y1="0" x2="0" y2="1">
                 <Stop offset="0" stopColor={BAR_TOP} />
-                <Stop offset="1" stopColor={BAR_BOTTOM} />
+                <Stop offset="1" stopColor={c[BAR_BOTTOM]} />
               </LinearGradient>
               <RadialGradient id={wash} cx="0.5" cy="0.85" rx="0.75" ry="0.9">
                 {CURVE.map((p) => (
-                  <Stop key={p.at} offset={p.at} stopColor={WASH} stopOpacity={WASH_PEAK * p.of} />
+                  <Stop key={p.at} offset={p.at} stopColor={c[WASH]} stopOpacity={WASH_PEAK * p.of} />
                 ))}
               </RadialGradient>
             </Defs>
@@ -351,7 +356,7 @@ export function WaterChart({
                 x2={plotW}
                 y1={PLOT_H - f * PLOT_H}
                 y2={PLOT_H - f * PLOT_H}
-                stroke={colors.foreground}
+                stroke={c.foreground}
                 strokeOpacity={f === 0 ? 0.16 : 0.08}
                 strokeWidth={0.5}
               />
@@ -365,7 +370,7 @@ export function WaterChart({
                 x2={i * slot}
                 y1="0"
                 y2={PLOT_H}
-                stroke={colors.foreground}
+                stroke={c.foreground}
                 strokeOpacity={0.07}
                 strokeWidth={0.5}
                 strokeDasharray={[2, 4]}
@@ -461,20 +466,20 @@ export function WaterChart({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   eyebrow: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
   big: {
     ...type.largeTitle,
-    color: colors.metricBlue,
+    color: c.metricBlue,
     fontVariant: ['tabular-nums'],
     marginTop: 2,
   },
-  span: { ...type.footnote, color: colors.mutedForeground, marginBottom: spacing.md },
+  span: { ...type.footnote, color: c.mutedForeground, marginBottom: spacing.md },
   plot: { height: PLOT_H },
   axis: {
     position: 'absolute',
@@ -487,7 +492,7 @@ const styles = StyleSheet.create({
   },
   // Nudged up by half a line so each label sits *on* its gridline rather than
   // hanging under it — the top and bottom ones would otherwise clip the plot.
-  axisText: { ...type.caption, color: colors.mutedForeground, marginVertical: -4 },
+  axisText: { ...type.caption, color: c.mutedForeground, marginVertical: -4 },
   // Flush columns over the plot: every point belongs to exactly one day.
   zones: { position: 'absolute', left: 0, top: 0, height: PLOT_H, flexDirection: 'row' },
   zone: { flex: 1, height: '100%' },
@@ -500,19 +505,19 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
     // Opaque, not the glass fill — this sits over the bars it describes, and a
     // translucent chip with a neon column behind it is unreadable.
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
   calloutValue: {
     ...type.footnote,
     fontWeight: '700',
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
-  calloutDay: { ...type.caption, color: colors.mutedForeground },
+  calloutDay: { ...type.caption, color: c.mutedForeground },
   dayRow: { flexDirection: 'row', marginTop: 2 },
-  dayText: { ...type.caption, color: colors.mutedForeground, flex: 1, textAlign: 'center' },
+  dayText: { ...type.caption, color: c.mutedForeground, flex: 1, textAlign: 'center' },
   // Today reads out of the row the same way its bar does out of the chart.
-  dayToday: { color: colors.foreground, fontWeight: '700' },
-});
+  dayToday: { color: c.foreground, fontWeight: '700' },
+}));

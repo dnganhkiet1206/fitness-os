@@ -8,7 +8,9 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
 import { StaggerItem } from '@/components/ascnd/stagger-item';
 import { toast } from '@/lib/toast';
-import { colors, spacing, type, radius } from '@/constants/ascnd';
+import { spacing, type, radius } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
   useInitWeeklyChallenges,
@@ -18,6 +20,8 @@ import {
 import { challengeText } from '@/lib/gamification-i18n';
 
 export default function ChallengesScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { data: challenges } = useWeeklyChallenges();
   const initChallenges = useInitWeeklyChallenges();
   const updateProgress = useUpdateChallengeProgress();
@@ -63,34 +67,34 @@ export default function ChallengesScreen() {
   return (
     <Screen refreshable back title={i18n.nChallenges}>
       {challenges && challenges.length > 0 ? (
-        challenges.map((c, i) => {
-          const target = Number(c.target_value) || 1;
-          const current = Math.min(Number(c.current_value) || 0, target);
+        challenges.map((ch, i) => {
+          const target = Number(ch.target_value) || 1;
+          const current = Math.min(Number(ch.current_value) || 0, target);
           const pct = Math.round((current / target) * 100);
-          const { title, desc } = challengeText(c.challenge_key, lang, { title: c.title, desc: c.description });
+          const { title, desc } = challengeText(ch.challenge_key, lang, { title: ch.title, desc: ch.description });
           return (
-            <StaggerItem key={c.id} index={i}>
+            <StaggerItem key={ch.id} index={i}>
             <GlassCard>
               <View style={styles.headerRow}>
                 <View style={styles.iconWrap}>
-                  <Icon icon={Target} size={20} color={colors.primary} />
+                  <Icon icon={Target} size={20} color={c.primary} />
                 </View>
                 <View style={styles.info}>
                   <Text style={styles.title}>{title}</Text>
                   {desc ? <Text style={styles.hint}>{desc}</Text> : null}
                 </View>
-                {c.completed && <Icon icon={Check} size={18} color={colors.readinessGreen} strokeWidth={3} />}
+                {ch.completed && <Icon icon={Check} size={18} color={c.readinessGreen} strokeWidth={3} />}
               </View>
               <ProgressBar
                 pct={pct}
-                color={c.completed ? colors.readinessGreen : colors.primary}
+                color={ch.completed ? c.readinessGreen : c.primary}
                 height={8}
                 radius={4}
-                trackColor={colors.secondary}
+                trackColor={c.secondary}
                 style={styles.progressTrack}
               />
               <Text style={styles.progressLabel}>
-                {c.completed ? i18n.nCompleted : `${current} / ${target}`}
+                {ch.completed ? i18n.nCompleted : `${current} / ${target}`}
               </Text>
             </GlassCard>
             </StaggerItem>
@@ -106,29 +110,29 @@ export default function ChallengesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
-  iconWrap: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center' },
+  iconWrap: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, minWidth: 0, gap: 2 },
-  title: { ...type.headline, color: colors.foreground },
-  hint: { ...type.footnote, color: colors.mutedForeground },
-  done: { fontSize: 20, color: colors.readinessGreen, fontWeight: '700' },
+  title: { ...type.headline, color: c.foreground },
+  hint: { ...type.footnote, color: c.mutedForeground },
+  done: { fontSize: 20, color: c.readinessGreen, fontWeight: '700' },
   progressTrack: {
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     overflow: 'hidden',
     marginTop: spacing.md,
   },
   progressFill: {
     height: '100%',
     borderRadius: 4,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
   progressLabel: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     marginTop: spacing.sm,
     textAlign: 'right',
   },
-});
+}));

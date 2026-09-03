@@ -1,7 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { FormSheet } from '@/components/ascnd/form-sheet';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { EXERCISE_TARGET_MIN, MOVE_TARGET_KCAL } from '@/lib/activity';
 
@@ -49,6 +51,8 @@ export function ActivityExplainer({
   /** mục tiêu bước chân CỦA NGƯỜI DÙNG — sheet nói đúng con số họ đã đặt */
   stepsTarget: number;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -106,9 +110,9 @@ export function ActivityExplainer({
   );
 }
 
-const styles = StyleSheet.create({
-  lede: { ...type.body, color: colors.foreground, marginBottom: spacing.md },
+const stylesFor = makeStyles((c) => ({
+  lede: { ...type.body, color: c.foreground, marginBottom: spacing.md },
   row: { gap: 4, marginBottom: spacing.md },
-  term: { ...type.headline, color: colors.foreground },
-  body: { ...type.footnote, color: colors.mutedForeground, lineHeight: 19 },
-});
+  term: { ...type.headline, color: c.foreground },
+  body: { ...type.footnote, color: c.mutedForeground, lineHeight: 19 },
+}));

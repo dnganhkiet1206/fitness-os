@@ -26,7 +26,9 @@ import { Medal, TIER_CONFIG } from '@/components/ascnd/medal';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { TrainingExplainer } from '@/components/ascnd/training-explainer';
 import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
-import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { glass, radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useProfile, useRecentWorkouts, useTodayBiometrics } from '@/hooks/useTodayData';
@@ -115,9 +117,11 @@ function DashedRule({ width, colour }: { width: number; colour: string }) {
 }
 
 function MicroTitle({ icon, children, color }: { icon?: LucideIcon; children: React.ReactNode; color?: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.microRow}>
-      {icon ? <Icon icon={icon} size={13} color={color ?? colors.mutedForeground} /> : null}
+      {icon ? <Icon icon={icon} size={13} color={color ?? c.mutedForeground} /> : null}
       <Text style={styles.microTitle}>{children}</Text>
     </View>
   );
@@ -137,6 +141,8 @@ function MicroTitle({ icon, children, color }: { icon?: LucideIcon; children: Re
 const BIO_ICON = 20;
 
 export function BiometricsCard() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { data: bio } = useTodayBiometrics();
 
@@ -244,7 +250,7 @@ export function BiometricsCard() {
             <Icon
               icon={connectedSource ? Wifi : WifiOff}
               size={12}
-              color={connectedSource ? colors.readinessGreen : colors.readinessRed}
+              color={connectedSource ? c.readinessGreen : c.readinessRed}
             />
             <Text style={styles.connText}>
               {connectedSource ?? i18n.dcBioNotConnected}
@@ -397,6 +403,8 @@ const whenLabel = (days: number, vi: boolean) => {
  * Everything on the card is now either a sentence, a weight, or a date.
  */
 export function TrainingCard({ acwr }: { acwr: number | null }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* The habit line spans the chart, and `DashedRule` needs that span in pixels
      rather than a percentage — see the note on it. Set once from `onLayout`;
      the line is absolutely positioned, so nothing it draws can change the box
@@ -832,12 +840,12 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
               : ''}
           </Text>
         </View>
-        <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+        <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
       </PressScale>
 
       {painFlags.length > 0 && (
         <View style={styles.painRow}>
-          <Icon icon={AlertTriangle} size={13} color={colors.readinessYellow} />
+          <Icon icon={AlertTriangle} size={13} color={c.readinessYellow} />
           <Text style={styles.painText}>
             {i18n.dcTrainingPain}: {painFlags.map((p) => `${p.bodyPart} (${p.pain_0_10}/10)`).join(', ')}
           </Text>
@@ -852,6 +860,8 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
 // ─── WorkoutStatus (web dashboard/WorkoutStatus) ───────────────────────
 
 export function WorkoutStatusCard({ planned }: { planned: number }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { data: workouts } = useRecentWorkouts();
 
@@ -874,19 +884,19 @@ export function WorkoutStatusCard({ planned }: { planned: number }) {
         </View>
         {allDone ? (
           <View style={styles.doneBadge}>
-            <Icon icon={CheckCircle2} size={13} color={colors.readinessGreen} />
+            <Icon icon={CheckCircle2} size={13} color={c.readinessGreen} />
             <Text style={styles.doneText}>{i18n.workoutStatusDone}</Text>
           </View>
         ) : done === 0 && planned > 0 ? (
           <View style={styles.notYetRow}>
-            <Icon icon={Clock} size={13} color={colors.mutedForeground} />
+            <Icon icon={Clock} size={13} color={c.mutedForeground} />
             <Text style={styles.notYetText}>{i18n.workoutStatusNotYet}</Text>
           </View>
         ) : null}
       </View>
 
       {planned > 0 && (
-        <ProgressBar pct={pct} color={colors.primary} height={6} radius={3} trackColor="rgba(24,24,27,0.3)" style={styles.statusTrack} />
+        <ProgressBar pct={pct} color={c.primary} height={6} radius={3} trackColor="rgba(24,24,27,0.3)" style={styles.statusTrack} />
       )}
 
       {todays.length > 0 && (
@@ -930,6 +940,8 @@ function medalOf(key: string) {
 }
 
 export function RecentAwardsCard() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { data: awards } = useRecentAwards(3);
@@ -945,7 +957,7 @@ export function RecentAwardsCard() {
           style={styles.viewAll}
           onPress={() => { Haptics.selectionAsync(); nav.push('/awards'); }}>
           <Text style={styles.viewAllText}>{i18n.dcViewAll}</Text>
-          <Icon icon={ChevronRight} size={12} color={colors.primary} />
+          <Icon icon={ChevronRight} size={12} color={c.primary} />
         </Pressable>
       </View>
       <View style={styles.awardList}>
@@ -991,7 +1003,7 @@ export function RecentAwardsCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   stackCard: { gap: spacing.md },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   headAccessories: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -1001,13 +1013,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
-  countText: { fontSize: 11, fontFamily: 'Menlo', color: colors.mutedForeground },
+  countText: { fontSize: 11, fontFamily: 'Menlo', color: c.mutedForeground },
 
   // Biometrics
   connRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  connText: { fontSize: 11, color: colors.mutedForeground, textTransform: 'capitalize' },
+  connText: { fontSize: 11, color: c.mutedForeground, textTransform: 'capitalize' },
   bioGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 4 },
   bioTile: {
     width: '47.5%',
@@ -1064,12 +1076,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1.4,
     textTransform: 'uppercase',
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   bioValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
-  bioValue: { fontSize: 19, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  bioUnit: { fontSize: 11, color: colors.mutedForeground },
-  bioLabel: { fontSize: 11, color: colors.mutedForeground },
+  bioValue: { fontSize: 19, fontFamily: 'Menlo', fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
+  bioUnit: { fontSize: 11, color: c.mutedForeground },
+  bioLabel: { fontSize: 11, color: c.mutedForeground },
 
   // Training
   prBadge: {
@@ -1083,7 +1095,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,217,61,0.2)',
   },
-  prText: { fontSize: 12, fontWeight: '700', color: colors.readinessYellow },
+  prText: { fontSize: 12, fontWeight: '700', color: c.readinessYellow },
   latestRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
   latestIcon: {
     width: 48,
@@ -1097,14 +1109,14 @@ const styles = StyleSheet.create({
   },
   latestInfo: { flex: 1, minWidth: 0, gap: 2 },
   latestTop: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
-  latestName: { flex: 1, fontSize: 15, fontWeight: '600', color: colors.foreground },
+  latestName: { flex: 1, fontSize: 15, fontWeight: '600', color: c.foreground },
   /* The fact the card was missing entirely. Muted while it is recent, amber
      once it is outside the window the numbers above are computed over — the
      colour is the difference between "trained Tuesday" and "has not trained". */
-  latestWhen: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  latestWhenStale: { color: colors.readinessYellow, fontWeight: '600' },
-  latestMeta: { fontSize: 12, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  emptyLine: { fontSize: 13, lineHeight: 19, color: colors.mutedForeground },
+  latestWhen: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  latestWhenStale: { color: c.readinessYellow, fontWeight: '600' },
+  latestMeta: { fontSize: 12, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  emptyLine: { fontSize: 13, lineHeight: 19, color: c.mutedForeground },
   /* The sentence, and what to do about it. Tinted by zone and outlined rather
      than filled: it is the loudest thing on the card and it is still text, so
      it should read as a highlighted paragraph and not as an alert. */
@@ -1115,7 +1127,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   verdictLine: { fontSize: 15, fontWeight: '700', lineHeight: 20 },
-  verdictWhy: { fontSize: 12, lineHeight: 17, color: colors.mutedForeground },
+  verdictWhy: { fontSize: 12, lineHeight: 17, color: c.mutedForeground },
   /* The two quantities the sentence compares, in one unit so the division is
      visible. Same shape as the old week row; what changed is that the right
      cell is now the thing the left cell is being measured against, rather than
@@ -1126,31 +1138,31 @@ const styles = StyleSheet.create({
     width: StyleSheet.hairlineWidth,
     alignSelf: 'stretch',
     marginHorizontal: spacing.md,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
   },
-  compareLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
+  compareLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, color: c.mutedForeground },
   compareValue: {
     fontSize: 17,
     fontFamily: 'Menlo',
     fontWeight: '700',
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
   /* The baseline is context, not a score — it should not compete with the
      number being judged against it. */
-  compareValueMuted: { color: colors.mutedForeground },
-  compareSub: { fontSize: 11, color: colors.mutedForeground },
+  compareValueMuted: { color: c.mutedForeground },
+  compareSub: { fontSize: 11, color: c.mutedForeground },
   strengthRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
-  strengthLabel: { flex: 1, fontSize: 12, color: colors.mutedForeground },
+  strengthLabel: { flex: 1, fontSize: 12, color: c.mutedForeground },
   pips: { flexDirection: 'row', gap: 4 },
   pip: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.18)' },
-  pipOn: { backgroundColor: colors.metricBeige },
-  strengthCount: { fontSize: 12, fontWeight: '600', color: colors.mutedForeground, minWidth: 26, textAlign: 'right' },
-  strengthCountOn: { color: colors.metricBeige },
-  staleNote: { fontSize: 12, lineHeight: 17, color: colors.readinessYellow },
+  pipOn: { backgroundColor: c.metricBeige },
+  strengthCount: { fontSize: 12, fontWeight: '600', color: c.mutedForeground, minWidth: 26, textAlign: 'right' },
+  strengthCountOn: { color: c.metricBeige },
+  staleNote: { fontSize: 12, lineHeight: 17, color: c.readinessYellow },
   trend: { gap: 6 },
   trendHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  trendTitle: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, color: colors.mutedForeground },
+  trendTitle: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.2, color: c.mutedForeground },
   /* Bars grow from the baseline, so they are bottom-aligned and the habit line
      is positioned from the bottom too — one origin for both, or the line and
      the bars would be measuring from different places. */
@@ -1164,10 +1176,10 @@ const styles = StyleSheet.create({
      iOS (see `DashedRule`). */
   habitLine: { position: 'absolute', left: 0, right: 0, height: 1 },
   trendLabels: { flexDirection: 'row', alignItems: 'center' },
-  trendEnd: { flex: 1, fontSize: 11, color: colors.mutedForeground },
-  trendNow: { textAlign: 'right', fontWeight: '600', color: colors.foreground },
+  trendEnd: { flex: 1, fontSize: 11, color: c.mutedForeground },
+  trendNow: { textAlign: 'right', fontWeight: '600', color: c.foreground },
   trendKey: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  trendKeyText: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  trendKeyText: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   painRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1179,13 +1191,13 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,217,61,0.2)',
   },
-  painText: { flex: 1, fontSize: 12, color: colors.readinessYellow },
+  painText: { flex: 1, fontSize: 12, color: c.readinessYellow },
 
   // Workout status
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   statusValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  statusDone: { fontSize: 30, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  statusPlanned: { fontSize: 14, color: colors.mutedForeground },
+  statusDone: { fontSize: 30, fontFamily: 'Menlo', fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
+  statusPlanned: { fontSize: 14, color: c.mutedForeground },
   doneBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1197,11 +1209,11 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(43,245,168,0.2)',
   },
-  doneText: { fontSize: 12, fontWeight: '600', color: colors.readinessGreen },
+  doneText: { fontSize: 12, fontWeight: '600', color: c.readinessGreen },
   notYetRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  notYetText: { fontSize: 12, color: colors.mutedForeground },
+  notYetText: { fontSize: 12, color: c.mutedForeground },
   statusTrack: { height: 6, borderRadius: 3, backgroundColor: 'rgba(24,24,27,0.3)', overflow: 'hidden' },
-  statusFill: { height: '100%', borderRadius: 3, backgroundColor: colors.primary },
+  statusFill: { height: '100%', borderRadius: 3, backgroundColor: c.primary },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   nameChip: {
     paddingHorizontal: spacing.sm + 2,
@@ -1211,7 +1223,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(168,175,189,0.2)',
   },
-  nameChipText: { fontSize: 11, fontWeight: '500', color: colors.primary },
+  nameChipText: { fontSize: 11, fontWeight: '500', color: c.primary },
 
   // Nudges
   nudgeList: { gap: spacing.sm + 2 },
@@ -1228,16 +1240,16 @@ const styles = StyleSheet.create({
   },
   nudgeAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 2 },
   nudgeInfo: { flex: 1, minWidth: 0, gap: 3 },
-  nudgeMsg: { fontSize: 14, color: colors.foreground, lineHeight: 19 },
-  nudgeMeta: { fontSize: 11, color: colors.mutedForeground },
+  nudgeMsg: { fontSize: 14, color: c.foreground, lineHeight: 19 },
+  nudgeMeta: { fontSize: 11, color: c.mutedForeground },
 
   // Awards
   viewAll: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-  viewAllText: { fontSize: 12, color: colors.primary },
+  viewAllText: { fontSize: 12, color: c.primary },
   awardList: { gap: spacing.sm + 2 },
   awardRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
   awardInfo: { flex: 1, minWidth: 0, gap: 1 },
-  awardTitle: { fontSize: 14, fontWeight: '600', color: colors.foreground },
-  awardDesc: { fontSize: 11, color: colors.mutedForeground },
+  awardTitle: { fontSize: 14, fontWeight: '600', color: c.foreground },
+  awardDesc: { fontSize: 11, color: c.mutedForeground },
   awardTier: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
-});
+}));

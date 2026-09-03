@@ -24,6 +24,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
+import { inCode } from './lib/code-mask.mjs';
+
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(path.join(NATIVE, p), 'utf8');
 const problems = [];
@@ -223,11 +225,40 @@ function tsFiles(dir) {
 }
 for (const full of tsFiles(path.join(NATIVE, 'src'))) {
   const src = readFileSync(full, 'utf8');
-  /* Dấu hiệu của một tệp CHƯA chuyển: stylesheet ở phạm vi module VÀ có đọc
-     token. Một trong hai thứ ấy một mình thì không phải nợ. */
-  if (!/const styles = StyleSheet\.create\(/.test(src)) continue;
-  if (!/\bcolors\./.test(src)) continue;
+  /*
+    Dấu hiệu của một tệp CHƯA chuyển: stylesheet ở phạm vi module VÀ có đọc
+    token. Một trong hai thứ ấy một mình thì không phải nợ.
+
+    ── và cả hai câu hỏi đều phải hỏi về MÃ, không phải về chú thích ──
+
+    Bản trước hỏi bằng `/\bcolors\./` trần và báo còn 3 tệp. Cả ba đều sai:
+    `constants/theme.ts` và `app/_layout.tsx` DẪN LẠI hình dạng cũ trong chú
+    thích để giải thích vì sao nó bị bỏ, còn `pick-row.tsx` kể lại một lỗi cũ
+    mà stylesheet của nó không có lấy một màu nào.
+
+    Một luật lỏng hơn thứ nó phải bắt không chỉ báo thừa. Nó ĐÓNG BĂNG con số:
+    "còn 3" là trạng thái vĩnh viễn, nên một tệp đóng băng THẬT thứ tư sẽ trông
+    y hệt như không có gì thay đổi.
+  */
+  if (!inCode(src, 'const styles = StyleSheet.create(')) continue;
+  if (!inCode(src, 'colors.')) continue;
   frozen.push(path.relative(NATIVE, full));
+}
+
+/*
+  Còn 0 tệp, nên nó thôi là một con số để đọc và thành một LUẬT.
+
+  Suốt đợt chuyển, dòng này in ra "còn N tệp" để không ai đọc "xong bước này"
+  thành "xong tất cả". Bây giờ N = 0, và một con số 0 in ra mỗi lần chạy không
+  bắt được gì: tệp thứ 116 đóng băng bảng màu sẽ chỉ làm nó thành 1, và một
+  dòng OK có chữ "còn 1 tệp" vẫn là một dòng OK.
+*/
+for (const f of frozen) {
+  problems.push(
+    `${f} còn \`StyleSheet.create\` ở phạm vi module đọc \`colors.\` — ` +
+      'màu bị đóng băng lúc import, nên theme sáng không với tới được nó. ' +
+      'Chạy `node tools/theme-migrate.mjs <tệp>`',
+  );
 }
 
 if (problems.length) {
@@ -244,5 +275,5 @@ console.log(
     'không hai bề mặt nào trùng màu, và champagne không rơi vào cùng một xám với goldLight; ' +
     'chất liệu tối không có bóng (RN vẽ bóng trên nền tối thành vành sáng) còn chất liệu sáng phải có; ' +
     'userInterfaceStyle là automatic nên mục "theo máy" có thật, và màn chờ có cả hai biến thể; ' +
-    `còn ${frozen.length} tệp đóng băng bảng màu trong \`StyleSheet.create\` — đó là phần chưa chuyển, không phải phần đã xong`,
+    'và không tệp nào còn đóng băng bảng màu trong một `StyleSheet.create` ở phạm vi module',
 );

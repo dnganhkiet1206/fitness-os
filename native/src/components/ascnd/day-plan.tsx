@@ -17,7 +17,9 @@ import { Retract } from '@/components/ascnd/retract';
 import { SEGMENT_SWAP } from '@/components/ascnd/segmented';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { duration, press } from '@/constants/motion';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles, type Palette, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -111,12 +113,19 @@ const RPE_CHOICES = [6, 7, 8, 9, 10] as const;
  * would say a light set is good and a hard one is bad, and effort is a
  * prescription, not a grade. Nothing here is green.
  */
-const EFFORT_TINT: Record<number, string> = {
-  8: colors.readinessYellow,
-  9: colors.metricOrange,
-  10: colors.readinessRed,
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+const EFFORT_TINT: Record<number, PaletteKey> = {
+  8: 'readinessYellow',
+  9: 'metricOrange',
+  10: 'readinessRed',
 };
-const tintFor = (rpe: number) => EFFORT_TINT[rpe] ?? colors.foreground;
+/* Nhận bảng màu qua THAM SỐ, không gọi hook: nó được gọi bên trong một `.map()`
+   của hàng bài tập, và một hook ở đó là một lỗi lúc chạy mà kiểu không thấy. */
+const tintFor = (c: Palette, rpe: number) => c[EFFORT_TINT[rpe] ?? 'foreground'];
 
 /** Rest moves in fifteens, which is how a gym clock is read. */
 const REST_STEP = 15;
@@ -286,6 +295,8 @@ export function DayPlan({
   i18n: ReturnType<typeof useI18n>;
   onEdit: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { weight: wUnit } = useUnits();
   const log = useLogWorkoutSession();
   const { user } = useAuth();
@@ -863,14 +874,14 @@ export function DayPlan({
   if (!template) {
     return (
       <GlassCard style={styles.empty}>
-        <Icon icon={Moon} size={22} color={colors.mutedForeground} />
+        <Icon icon={Moon} size={22} color={c.mutedForeground} />
         <Text style={styles.emptyText}>{isRest ? i18n.nRoutineRestDay : i18n.nRdEmptyPlan}</Text>
         <Text style={styles.emptyHint}>{i18n.nRoutineRestHint}</Text>
         <PressScale
           accessibilityRole="button"
           onPress={onEdit}
           style={styles.emptyBtn}>
-          <Icon icon={Pencil} size={13} color={colors.foreground} />
+          <Icon icon={Pencil} size={13} color={c.foreground} />
           <Text style={styles.emptyBtnText}>{i18n.nChooseWorkout}</Text>
         </PressScale>
       </GlassCard>
@@ -895,7 +906,7 @@ export function DayPlan({
           hitSlop={12}
           onPress={onEdit}
           style={styles.editBtn}>
-          <Icon icon={Pencil} size={14} color={colors.mutedForeground} />
+          <Icon icon={Pencil} size={14} color={c.mutedForeground} />
         </PressScale>
       </View>
 
@@ -903,7 +914,7 @@ export function DayPlan({
         const at = new Date(sn.date_time);
         return (
           <GlassCard key={sn.id} style={styles.loggedCard}>
-            <Icon icon={Check} size={16} color={colors.readinessGreen} />
+            <Icon icon={Check} size={16} color={c.readinessGreen} />
             <View style={styles.loggedText}>
               <Text style={styles.loggedName} numberOfLines={1}>
                 {sn.template_name || i18n.nRdAlready}
@@ -930,7 +941,7 @@ export function DayPlan({
         height={4}
         radius={2}
         trackColor={glass.bg}
-        color={colors.primary}
+        color={c.primary}
         delay={0}
         duration={duration.move}
       />
@@ -986,7 +997,7 @@ export function DayPlan({
                     to={press.deep}
                     onPress={() => removeExtra(added)}
                     style={styles.exRemove}>
-                    <Icon icon={X} size={14} color={colors.mutedForeground} />
+                    <Icon icon={X} size={14} color={c.mutedForeground} />
                   </PressScale>
                 ) : (
                   <Text style={styles.exPrescription} numberOfLines={1}>
@@ -1041,7 +1052,7 @@ export function DayPlan({
                   <Icon
                     icon={Check}
                     size={16}
-                    color={isDone ? colors.primaryForeground : 'rgba(255,255,255,0.22)'}
+                    color={isDone ? c.primaryForeground : 'rgba(255,255,255,0.22)'}
                     strokeWidth={3}
                   />
                 </PressScale>
@@ -1145,7 +1156,7 @@ export function DayPlan({
                   <Icon
                     icon={Timer}
                     size={11}
-                    color={secs === row.plannedRest ? 'rgba(255,255,255,0.30)' : colors.mutedForeground}
+                    color={secs === row.plannedRest ? 'rgba(255,255,255,0.30)' : c.mutedForeground}
                   />
                   <Text style={[styles.chipText, secs === row.plannedRest && styles.chipTextDefault]}>
                     {restLabel(secs)}
@@ -1164,7 +1175,7 @@ export function DayPlan({
                     effort === row.plannedRpe ? styles.chipDefault : null,
                     open && styles.chipOpen,
                     effort !== row.plannedRpe && EFFORT_TINT[effort]
-                      ? { borderColor: `${EFFORT_TINT[effort]}66` }
+                      ? { borderColor: alpha(c[EFFORT_TINT[effort]], 0.4) }
                       : null,
                   ]}>
                   <Text
@@ -1172,7 +1183,7 @@ export function DayPlan({
                       styles.chipText,
                       effort === row.plannedRpe
                         ? styles.chipTextDefault
-                        : { color: tintFor(effort) },
+                        : { color: tintFor(c, effort) },
                     ]}>
                     RPE {effort}
                   </Text>
@@ -1190,7 +1201,7 @@ export function DayPlan({
                         hitSlop={{ top: 8, bottom: 8 }}
                         onPress={() => bumpRest(row, -REST_STEP)}
                         style={styles.stepBtn}>
-                        <Icon icon={Minus} size={14} color={colors.foreground} strokeWidth={2.5} />
+                        <Icon icon={Minus} size={14} color={c.foreground} strokeWidth={2.5} />
                       </PressScale>
                       <Text style={styles.stepValue}>{restLabel(secs)}</Text>
                       <PressScale
@@ -1199,7 +1210,7 @@ export function DayPlan({
                         hitSlop={{ top: 8, bottom: 8 }}
                         onPress={() => bumpRest(row, REST_STEP)}
                         style={styles.stepBtn}>
-                        <Icon icon={Plus} size={14} color={colors.foreground} strokeWidth={2.5} />
+                        <Icon icon={Plus} size={14} color={c.foreground} strokeWidth={2.5} />
                       </PressScale>
                     </View>
                   </View>
@@ -1224,11 +1235,11 @@ export function DayPlan({
                           style={[styles.rpeOption, // Unselected still carries its colour, faintly — the
                             // ramp has to be readable *before* you choose, or it
                             // is a label on a decision already made.
-                            EFFORT_TINT[v] ? { borderColor: `${EFFORT_TINT[v]}59` } : null, v === effort && styles.rpeOptionOn, v === effort && EFFORT_TINT[v] ? { backgroundColor: EFFORT_TINT[v], borderColor: EFFORT_TINT[v] } : null]}>
+                            EFFORT_TINT[v] ? { borderColor: alpha(c[EFFORT_TINT[v]], 0.35) } : null, v === effort && styles.rpeOptionOn, v === effort && EFFORT_TINT[v] ? { backgroundColor: c[EFFORT_TINT[v]], borderColor: c[EFFORT_TINT[v]] } : null]}>
                           <Text
                             style={[
                               styles.rpeOptionText,
-                              { color: tintFor(v) },
+                              { color: tintFor(c, v) },
                               v === effort && styles.rpeOptionTextOn,
                             ]}>
                             {v}
@@ -1254,7 +1265,7 @@ export function DayPlan({
                 hitSlop={8}
                 onPress={() => addSet(added)}
                 style={styles.addSet}>
-                <Icon icon={Plus} size={13} color={colors.mutedForeground} strokeWidth={2.5} />
+                <Icon icon={Plus} size={13} color={c.mutedForeground} strokeWidth={2.5} />
                 <Text style={styles.addSetText}>{i18n.nRdAddSet}</Text>
               </PressScale>
             ) : null}
@@ -1279,7 +1290,7 @@ export function DayPlan({
         accessibilityLabel={i18n.nRdAddExercise}
         onPress={addExercise}
         style={styles.addEx}>
-        <Icon icon={Plus} size={15} color={colors.mutedForeground} strokeWidth={2.5} />
+        <Icon icon={Plus} size={15} color={c.mutedForeground} strokeWidth={2.5} />
         <Text style={styles.addExText}>{i18n.nRdAddExercise}</Text>
       </PressScale>
 
@@ -1306,7 +1317,7 @@ export function DayPlan({
         <Icon
           icon={Check}
           size={17}
-          color={logged ? colors.readinessGreen : colors.primaryForeground}
+          color={logged ? c.readinessGreen : c.primaryForeground}
           strokeWidth={2.5}
         />
         {/* A dimmed button with the same words on it is a button that looks
@@ -1353,11 +1364,11 @@ export function DayPlan({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   wrap: { gap: spacing.sm },
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
-  emptyText: { ...type.body, color: colors.foreground },
-  emptyHint: { ...type.footnote, color: colors.mutedForeground },
+  emptyText: { ...type.body, color: c.foreground },
+  emptyHint: { ...type.footnote, color: c.mutedForeground },
   emptyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1370,17 +1381,17 @@ const styles = StyleSheet.create({
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
   },
-  emptyBtnText: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
+  emptyBtnText: { ...type.footnote, color: c.foreground, fontWeight: '600' },
 
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headText: { flex: 1, minWidth: 0, gap: 2 },
-  tplName: { ...type.title2, color: colors.foreground },
-  progress: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  tplName: { ...type.title2, color: c.foreground },
+  progress: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   editBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   loggedCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm + 2 },
   loggedText: { flex: 1, minWidth: 0, gap: 1 },
-  loggedName: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
-  loggedMeta: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  loggedName: { ...type.footnote, color: c.foreground, fontWeight: '600' },
+  loggedMeta: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
 
   /* The exercise name is a heading over its sets, not a row of its own — the
      rows below it are the thing, and giving the name a card would make four
@@ -1393,9 +1404,9 @@ const styles = StyleSheet.create({
   exTitleRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   /* What every set of this movement shares, said once — the rows below spend
      their width on what varies instead. */
-  exPrescription: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  exPrescription: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   /* A hairline, not a gap: the rows belong to one thing. */
-  hair: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginLeft: spacing.md },
+  hair: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginLeft: spacing.md },
   setBlock: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   /* Untouched: still the same size and still tappable, just not shouting a
      number the header already gave. */
@@ -1403,7 +1414,7 @@ const styles = StyleSheet.create({
   chipTextDefault: { color: 'rgba(255,255,255,0.35)' },
   exName: {
     ...type.footnote,
-    color: colors.foreground,
+    color: c.foreground,
     fontWeight: '600',
     marginTop: spacing.sm,
     marginBottom: 2,
@@ -1423,11 +1434,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.3)',
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  checkOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checkOn: { backgroundColor: c.primary, borderColor: c.primary },
   setText: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 3 },
   setNo: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     fontVariant: ['tabular-nums'],
     width: 12,
     textAlign: 'center',
@@ -1443,7 +1454,7 @@ const styles = StyleSheet.create({
   */
   field: {
     ...type.footnote,
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
     textAlign: 'center',
     height: 28,
@@ -1473,7 +1484,7 @@ const styles = StyleSheet.create({
   /* Still a box, just not shouting: it holds what the plan said, and the plan
      is already stated in full one line above. */
   fieldPlan: { color: 'rgba(255,255,255,0.4)', backgroundColor: 'transparent', borderColor: 'transparent' },
-  unit: { ...type.caption, color: colors.mutedForeground },
+  unit: { ...type.caption, color: c.mutedForeground },
   unitPlan: { color: 'rgba(255,255,255,0.3)' },
   /* Room on both sides. At the row gap alone it sat against the unit and read
      as one clump, "kg ×", instead of separating the two numbers it is between. */
@@ -1488,9 +1499,9 @@ const styles = StyleSheet.create({
     height: 34,
     marginTop: spacing.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
-  addSetText: { ...type.caption, color: colors.mutedForeground },
+  addSetText: { ...type.caption, color: c.mutedForeground },
   addEx: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1508,7 +1519,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.16)',
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  addExText: { ...type.footnote, color: colors.mutedForeground },
+  addExText: { ...type.footnote, color: c.mutedForeground },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1520,17 +1531,17 @@ const styles = StyleSheet.create({
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
   },
-  chipOpen: { borderColor: colors.primary },
-  chipText: { ...type.caption, color: colors.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  chipOpen: { borderColor: c.primary },
+  chipText: { ...type.caption, color: c.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
 
   editors: {
     gap: spacing.sm,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   editorRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  editorLabel: { ...type.footnote, color: colors.mutedForeground, flexShrink: 1 },
+  editorLabel: { ...type.footnote, color: c.mutedForeground, flexShrink: 1 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   stepBtn: {
     width: 44,
@@ -1544,7 +1555,7 @@ const styles = StyleSheet.create({
   },
   stepValue: {
     ...type.footnote,
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
     minWidth: 54,
     textAlign: 'center',
@@ -1560,9 +1571,9 @@ const styles = StyleSheet.create({
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
   },
-  rpeOptionOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  rpeOptionText: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  rpeOptionTextOn: { color: colors.primaryForeground, fontWeight: '700' },
+  rpeOptionOn: { backgroundColor: c.primary, borderColor: c.primary },
+  rpeOptionText: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
+  rpeOptionTextOn: { color: c.primaryForeground, fontWeight: '700' },
 
   finish: {
     flexDirection: 'row',
@@ -1571,7 +1582,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     height: 52,
     borderRadius: radius.lg,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     marginTop: spacing.sm,
   },
   finishOff: { opacity: 0.4 },
@@ -1584,7 +1595,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(43,245,168,0.35)',
   },
-  finishTextDone: { color: colors.readinessGreen },
-  finishText: { ...type.body, color: colors.primaryForeground, fontWeight: '600' },
+  finishTextDone: { color: c.readinessGreen },
+  finishText: { ...type.body, color: c.primaryForeground, fontWeight: '600' },
 
-});
+}));

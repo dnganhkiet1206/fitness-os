@@ -1,7 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { FormSheet } from '@/components/ascnd/form-sheet';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
 import { ACWR_BANDS, type AcwrZoneKey } from '@/lib/training-card';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -45,6 +47,8 @@ const ZONE_WHAT: Record<AcwrZoneKey, { vi: string; en: string }> = {
  * there — and it took an audit of a different bug to find it.
  */
 export function ReadinessExplainer({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -190,9 +194,9 @@ export function ReadinessExplainer({ visible, onClose }: { visible: boolean; onC
         <Text style={styles.partTitle}>{vi ? 'Ba vùng màu' : 'The three zones'}</Text>
         <View style={styles.bands}>
           {[
-            { range: '75 – 100', tint: colors.readinessGreen, what: i18n.dcReadinessTrain },
-            { range: '50 – 74', tint: colors.readinessYellow, what: i18n.dcReadinessModerate },
-            { range: '0 – 49', tint: colors.readinessRed, what: i18n.dcReadinessRecover },
+            { range: '75 – 100', tint: c.readinessGreen, what: i18n.dcReadinessTrain },
+            { range: '50 – 74', tint: c.readinessYellow, what: i18n.dcReadinessModerate },
+            { range: '0 – 49', tint: c.readinessRed, what: i18n.dcReadinessRecover },
           ].map((b) => (
             <View key={b.range} style={styles.band}>
               <View style={[styles.bandDot, { backgroundColor: b.tint }]} />
@@ -217,26 +221,26 @@ export function ReadinessExplainer({ visible, onClose }: { visible: boolean; onC
   );
 }
 
-const styles = StyleSheet.create({
-  lede: { fontSize: 14, lineHeight: 20, color: colors.foreground },
+const stylesFor = makeStyles((c) => ({
+  lede: { fontSize: 14, lineHeight: 20, color: c.foreground },
   part: { gap: 6 },
   partHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   tag: {
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: radius.sm - 4,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
   tagText: {
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     fontVariant: ['tabular-nums'],
   },
-  partTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.foreground },
-  weight: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  body: { fontSize: 13, lineHeight: 19, color: colors.mutedForeground },
+  partTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: c.foreground },
+  weight: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  body: { fontSize: 13, lineHeight: 19, color: c.mutedForeground },
   bands: { gap: 6, marginTop: 2 },
   band: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   bandDot: { width: 7, height: 7, borderRadius: 3.5 },
@@ -244,16 +248,16 @@ const styles = StyleSheet.create({
     width: 78,
     fontSize: 12,
     fontFamily: 'Menlo',
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
-  bandWhat: { flex: 1, fontSize: 12, color: colors.mutedForeground },
+  bandWhat: { flex: 1, fontSize: 12, color: c.mutedForeground },
   caveat: {
     fontSize: 12,
     lineHeight: 18,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     padding: spacing.sm + 2,
     borderRadius: radius.md,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-});
+}));

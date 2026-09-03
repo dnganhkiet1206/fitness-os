@@ -10,7 +10,9 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { glass, radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import {
   HERO_DECK,
@@ -65,6 +67,8 @@ function useBreath(): SharedValue<number> {
 
 /** One block, at a height somebody has already measured. */
 export function SkeletonBlock({ height, style }: { height: number; style?: object }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const opacity = useBreath();
   const anim = useAnimatedStyle(() => ({ opacity: opacity.value }));
   return <Animated.View style={[styles.block, { height }, anim, style]} />;
@@ -166,6 +170,8 @@ export function TodaySkeleton({
   heroWidgets: string[];
   groups: { id: string; widgets: string[] }[];
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Pulls the remembered heights in from storage and re-renders once they
      land — see the note in `widget-heights.ts` about the read arriving after
      the first frame. */
@@ -247,6 +253,8 @@ export function NutritionSkeleton() {
  * lại những buổi tập đang có sẵn trên máy chủ, chỉ là chưa về tới.
  */
 export function WorkoutsSkeleton() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <SkeletonPage>
       <View style={styles.group}>
@@ -284,7 +292,7 @@ export function ProgressSkeleton({ tab }: { tab: 'weight' | 'measurements' }) {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* The card's own geometry, so a block sits exactly where its card will:
      same radius, same hairline, and a fill a shade above the page rather than
      a grey rectangle painted on top of it. */
@@ -292,9 +300,9 @@ const styles = StyleSheet.create({
     borderRadius: glass.radius ?? radius.lg,
     backgroundColor: 'rgba(255,255,255,0.045)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   stacked: { marginBottom: spacing.stack },
   group: { gap: spacing.sm + 4, marginTop: spacing.xs, marginBottom: spacing.stack },
   header: { width: 132, borderWidth: 0, backgroundColor: 'rgba(255,255,255,0.06)' },
-});
+}));

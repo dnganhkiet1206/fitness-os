@@ -27,7 +27,9 @@ import { readinessConfidence } from '@/lib/readiness-engine';
 import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
 import { SleepNoteBlock } from '@/components/ascnd/sleep-note-block';
 import { acwrZone } from '@/lib/training-card';
-import { colors, HERO_RING, radius, RING_TEXT_MAX_SCALE, spacing, type } from '@/constants/ascnd';
+import { HERO_RING, radius, RING_TEXT_MAX_SCALE, spacing, type } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
@@ -40,7 +42,7 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 /* Rãnh của mọi vòng tròn, lấy từ bảng màu chứ không gõ lại ở đây — xem
    `colors.ringTrack`. Con số cũ nằm trong tệp này kèm câu "used by every web
    ring", và đồng hồ nghỉ đã vẽ rãnh của nó bằng một giá trị khác. */
-const TRACK = colors.ringTrack;
+const TRACK = 'ringTrack' satisfies PaletteKey;
 
 const GRADIENTS: Record<string, [string, string]> = {
   green: ['#2bf5a8', '#3dff7a'],
@@ -48,10 +50,15 @@ const GRADIENTS: Record<string, [string, string]> = {
   red: ['#ff3b5c', '#ff2d8a'],
 };
 
-const STATUS_COLOR: Record<string, string> = {
-  green: colors.readinessGreen,
-  yellow: colors.readinessYellow,
-  red: colors.readinessRed,
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+const STATUS_COLOR: Record<string, PaletteKey> = {
+  green: 'readinessGreen',
+  yellow: 'readinessYellow',
+  red: 'readinessRed',
 };
 
 interface Props {
@@ -110,6 +117,8 @@ export function ReadinessGauge({
   onToggleDetail,
   onOpenDetail,
 }: Props) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -167,7 +176,7 @@ export function ReadinessGauge({
   // localize here so the copy follows the active language.
   const explainText = readinessExplainText(explain, lang);
   const recoText = readinessRecoText(recommendation, lang);
-  const color = STATUS_COLOR[status] ?? colors.readinessYellow;
+  const color = status in STATUS_COLOR ? c[STATUS_COLOR[status]] : c.readinessYellow;
 
   // Sub-score tiles: HRV / RHR / Sleep / Load (0–100) + the ACWR ratio
   /* Nhận xét về đêm qua — xem `lib/sleep-note.ts` cho luật và cho lý do nó là
@@ -175,7 +184,7 @@ export function ReadinessGauge({
 
   const subs = readinessSubscores(explain);
   const subColor = (v: number) =>
-    v >= 70 ? colors.readinessGreen : v >= 40 ? colors.readinessYellow : colors.readinessRed;
+    v >= 70 ? c.readinessGreen : v >= 40 ? c.readinessYellow : c.readinessRed;
   /*
     Màu của ô ACWR đọc CÙNG bảng mà thẻ tập luyện đọc.
 
@@ -192,7 +201,7 @@ export function ReadinessGauge({
     Băng thứ nhất sai về phía nguy hiểm: một cú tăng tải thật sự rủi ro được tô
     thành "để ý một chút". Người dùng đọc cả hai thẻ trong cùng một lần mở app.
   */
-  const acwrColor = acwr == null ? colors.mutedForeground : ACWR_TINT[acwrZone(acwr)];
+  const acwrColor = acwr == null ? c.mutedForeground : ACWR_TINT[acwrZone(acwr)];
   const tiles: { label: string; value: string; color: string; unit: string }[] = [];
   /*
     ── the chip counted a tile that was never drawn ──
@@ -255,7 +264,7 @@ export function ReadinessGauge({
 
     Giấc ngủ và tải tập thì một lần ghi là đủ, nên chúng nói đúng việc ấy.
   */
-  const empty = (unit: string) => ({ value: '—', color: colors.mutedForeground, unit });
+  const empty = (unit: string) => ({ value: '—', color: c.mutedForeground, unit });
   const NEED = {
     /* Con số 5 là ngưỡng baseline trong `readiness-engine.ts`; `tools/readiness-copy.mjs`
        đọc nó ra khỏi engine rồi so với các dòng chữ này. */
@@ -399,9 +408,9 @@ export function ReadinessGauge({
   }));
 
   const legend = [
-    { color: colors.readinessGreen, label: `75–100 · ${i18n.dcReadinessTrain}` },
-    { color: colors.readinessYellow, label: `50–74 · ${i18n.dcReadinessModerate}` },
-    { color: colors.readinessRed, label: `0–49 · ${i18n.dcReadinessRecover}` },
+    { color: c.readinessGreen, label: `75–100 · ${i18n.dcReadinessTrain}` },
+    { color: c.readinessYellow, label: `50–74 · ${i18n.dcReadinessModerate}` },
+    { color: c.readinessRed, label: `0–49 · ${i18n.dcReadinessRecover}` },
   ];
 
   return (
@@ -462,7 +471,7 @@ export function ReadinessGauge({
               <Stop offset="100%" stopColor={g1} />
             </LinearGradient>
           </Defs>
-          <Circle cx="60" cy="60" r={R} fill="none" stroke={TRACK} strokeWidth={6} />
+          <Circle cx="60" cy="60" r={R} fill="none" stroke={c[TRACK]} strokeWidth={6} />
           {/* soft glow approximation */}
           <AnimatedCircle
             cx="60" cy="60" r={R}
@@ -550,7 +559,7 @@ export function ReadinessGauge({
           <Animated.Text style={[styles.tapHint, styles.hintFace, hintOpenStyle]}>{hintOpen}</Animated.Text>
         </View>
         <Animated.View style={chevron}>
-          <Icon icon={ChevronDown} size={20} color={colors.mutedForeground} strokeWidth={2.5} />
+          <Icon icon={ChevronDown} size={20} color={c.mutedForeground} strokeWidth={2.5} />
         </Animated.View>
       </PressScale>
 
@@ -664,7 +673,7 @@ export function ReadinessGauge({
           }}
           style={styles.moreRow}>
           <Text style={styles.moreLabel}>{vi ? 'Xem sinh trắc học' : 'Open biometrics'}</Text>
-          <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+          <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
         </PressScale>
       ) : null}
       </View>
@@ -674,7 +683,7 @@ export function ReadinessGauge({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /*
     Không còn là một cái thẻ.
 
@@ -738,7 +747,7 @@ const styles = StyleSheet.create({
      dung, còn cái này là một lời mời nhạt đứng cạnh một icon. Chúng trùng tên
      một lần khi hai nhánh gặp nhau, và một `StyleSheet` có hai khoá cùng tên
      thì khoá sau lặng lẽ nuốt khoá trước. */
-  tapHint: { fontSize: 12, color: colors.mutedForeground, letterSpacing: 0.2 },
+  tapHint: { fontSize: 12, color: c.mutedForeground, letterSpacing: 0.2 },
   hintBox: { justifyContent: 'center' },
   /* Trong dòng chảy nhưng vô hình: nó không vẽ gì, việc của nó là giữ bề rộng
      bằng chuỗi DÀI HƠN để mũi tên bên cạnh đứng yên khi nhãn đổi. `opacity: 0`
@@ -759,7 +768,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: 'rgba(255,255,255,0.045)',
   },
-  moreLabel: { ...type.footnote, color: colors.foreground },
+  moreLabel: { ...type.footnote, color: c.foreground },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusDot: { width: 10, height: 10, borderRadius: 5 },
   title: {
@@ -767,7 +776,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   ringWrap: { width: 208, height: 208, alignItems: 'center', justifyContent: 'center' },
   ringGlow: {
@@ -797,13 +806,13 @@ const styles = StyleSheet.create({
      đã đi nơi khác là thứ người đọc sau sẽ tin. */
   confidence: {
     fontSize: 11,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     opacity: 0.8,
     paddingHorizontal: spacing.card,
     marginTop: 2,
   },
-  explain: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', lineHeight: 18, paddingHorizontal: spacing.card },
+  explain: { fontSize: 12, color: c.mutedForeground, textAlign: 'center', lineHeight: 18, paddingHorizontal: spacing.card },
   recoPill: {
     marginHorizontal: spacing.card,
     paddingHorizontal: spacing.md,
@@ -816,5 +825,5 @@ const styles = StyleSheet.create({
   legendRow: { flexDirection: 'row', gap: spacing.md, flexWrap: 'wrap', justifyContent: 'center' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendText: { fontSize: 11, color: colors.mutedForeground },
-});
+  legendText: { fontSize: 11, color: c.mutedForeground },
+}));

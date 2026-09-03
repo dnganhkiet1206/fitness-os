@@ -5,7 +5,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * A door with its name on it, and what is behind it already written down.
@@ -47,6 +49,8 @@ export function ShortcutRow({
   value?: string | null;
   onPress: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <PressScale
       accessibilityRole="button"
@@ -60,17 +64,17 @@ export function ShortcutRow({
       }}>
       <GlassCard style={styles.card}>
         <View style={styles.row}>
-          <Icon icon={icon} size={17} color={colors.mutedForeground} />
+          <Icon icon={icon} size={17} color={c.mutedForeground} />
           <Text style={styles.label} numberOfLines={1}>{label}</Text>
           {value ? <Text style={styles.value} numberOfLines={1}>{value}</Text> : null}
-          <Icon icon={ChevronRight} size={17} color={colors.mutedForeground} />
+          <Icon icon={ChevronRight} size={17} color={c.mutedForeground} />
         </View>
       </GlassCard>
     </PressScale>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* Shallower than a content card. These are not things to read, they are ways
      out, and a row with a card's full padding reads as heavier than the diary
      above it. */
@@ -79,6 +83,6 @@ const styles = StyleSheet.create({
   /* `flex: 1` on the label rather than on the value: the label is the thing
      that can be long enough to need truncating, and a value like "12/14" must
      never be the part that gets cut. */
-  label: { ...type.body, color: colors.foreground, flex: 1 },
-  value: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-});
+  label: { ...type.body, color: c.foreground, flex: 1 },
+  value: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+}));

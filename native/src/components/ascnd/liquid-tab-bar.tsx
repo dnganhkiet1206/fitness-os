@@ -32,7 +32,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -63,6 +65,8 @@ const GLASS = isLiquidGlassAvailable();
 
 /** The floating pill surface — glass on iOS 26, translucent fill elsewhere */
 function PillSurface({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={[styles.pill, !GLASS && styles.pillFallback, style]}>
       {GLASS && (
@@ -85,6 +89,8 @@ function PillSurface({ children, style }: { children: ReactNode; style?: StylePr
  * the open panel.
  */
 export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -179,7 +185,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
         <Icon
           icon={IconCmp}
           size={25}
-          color={active ? colors.foreground : colors.mutedForeground}
+          color={active ? c.foreground : c.mutedForeground}
           strokeWidth={active ? 2.3 : 2}
         />
         <Text
@@ -291,7 +297,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /*
     21pt in from the left, the right and the bottom — Apple's inset for the
     floating capsule. The bar used to hug its content and sit centred, which
@@ -363,9 +369,9 @@ const styles = StyleSheet.create({
   },
   tabSelectedFallback: { backgroundColor: 'rgba(255,255,255,0.14)' },
   tabsDimmed: { opacity: 0.45 },
-  tabLabel: { fontSize: 11, fontWeight: '500', color: colors.mutedForeground },
+  tabLabel: { fontSize: 11, fontWeight: '500', color: c.mutedForeground },
   // Selection is a tint and a heavier stroke on the icon, nothing else
-  tabLabelActive: { color: colors.foreground, fontWeight: '700' },
+  tabLabelActive: { color: c.foreground, fontWeight: '700' },
   // The coach, floating clear of the bar it travels with
   accessory: { alignSelf: 'flex-end', marginBottom: spacing.sm, paddingHorizontal: 4, paddingVertical: 4 },
   aiBtn: {
@@ -420,4 +426,4 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
   aiItemLabel: { fontSize: 11, fontWeight: '500', color: 'rgba(237,237,237,0.7)' },
-});
+}));

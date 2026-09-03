@@ -23,7 +23,9 @@ import { Segmented } from '@/components/ascnd/segmented';
 import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
@@ -114,6 +116,8 @@ function dateToTime(d: Date): string {
 }
 
 export default function EditProfileSheet() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { user } = useAuth();
   const { data: profile } = useProfile();
   const i18n = useI18n();
@@ -328,9 +332,9 @@ export default function EditProfileSheet() {
             onPress={() => save.mutate()}
             disabled={save.isPending || save.isSuccess || statsBad}>
             {save.isSuccess ? (
-              <Icon icon={Check} size={20} color={colors.primary} strokeWidth={3} />
+              <Icon icon={Check} size={20} color={c.primary} strokeWidth={3} />
             ) : save.isPending ? (
-              <ActivityIndicator color={colors.primary} size="small" />
+              <ActivityIndicator color={c.primary} size="small" />
             ) : (
               <Text style={[styles.headerSave, statsBad && styles.headerSaveOff]}>{i18n.save}</Text>
             )}
@@ -353,7 +357,7 @@ export default function EditProfileSheet() {
             value={form.name}
             onChangeText={(v) => set('name', v)}
             placeholder="—"
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
           />
         </Field>
 
@@ -470,7 +474,7 @@ export default function EditProfileSheet() {
         <PressScale
           style={styles.recalcBtn}
           onPress={recalcTargets}>
-          <Icon icon={RefreshCw} size={16} color={colors.primary} strokeWidth={2.5} />
+          <Icon icon={RefreshCw} size={16} color={c.primary} strokeWidth={2.5} />
           <Text style={styles.recalcText}>{i18n.settingsRecalcTargets}</Text>
         </PressScale>
 
@@ -638,7 +642,7 @@ export default function EditProfileSheet() {
           <TextInput
             style={styles.input}
             placeholder={i18n.onboardingDislikedFoodsPlaceholder}
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
             value={dislikes}
             onChangeText={setDislikes}
           />
@@ -650,6 +654,8 @@ export default function EditProfileSheet() {
 }
 
 function Field({ label, children, style }: { label: string; children: React.ReactNode; style?: object }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={[styles.field, style]}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -659,12 +665,14 @@ function Field({ label, children, style }: { label: string; children: React.Reac
 }
 
 function ChipGrid({ options, value, onChange }: { options: { key: string; label: string }[]; value: string; onChange: (v: string) => void }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <PickRow
       value={value}
       fill="rgba(168,178,196,0.12)"
-      slotFill={colors.secondary}
-      border={{ width: 1, color: colors.primary }}
+      slotFill={c.secondary}
+      border={{ width: 1, color: c.primary }}
       radius={radius.full}
       gap={spacing.sm}
       style={styles.chipGrid}>
@@ -685,8 +693,8 @@ function ChipGrid({ options, value, onChange }: { options: { key: string; label:
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.card },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.card },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -695,9 +703,9 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
   },
-  headerCancel: { ...type.body, color: colors.mutedForeground },
-  headerTitle: { ...type.headline, color: colors.foreground },
-  headerSave: { ...type.headline, color: colors.primary, fontWeight: '700' },
+  headerCancel: { ...type.body, color: c.mutedForeground },
+  headerTitle: { ...type.headline, color: c.foreground },
+  headerSave: { ...type.headline, color: c.primary, fontWeight: '700' },
   headerSaveOff: { opacity: 0.35 },
   chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   badge: {
@@ -705,35 +713,35 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  badgeActive: { borderColor: colors.primary, backgroundColor: `${colors.primary}22` },
-  badgeText: { ...type.footnote, color: colors.mutedForeground },
-  badgeTextActive: { color: colors.primary, fontWeight: '600' },
-  inputBad: { borderColor: colors.readinessRed, borderWidth: 1 },
-  fieldError: { ...type.footnote, color: colors.readinessRed, marginTop: -spacing.xs },
+  badgeActive: { borderColor: c.primary, backgroundColor: alpha(c.primary, 0.13) },
+  badgeText: { ...type.footnote, color: c.mutedForeground },
+  badgeTextActive: { color: c.primary, fontWeight: '600' },
+  inputBad: { borderColor: c.readinessRed, borderWidth: 1 },
+  fieldError: { ...type.footnote, color: c.readinessRed, marginTop: -spacing.xs },
   kav: { flex: 1 },
-  activityNote: { ...type.footnote, color: colors.mutedForeground, lineHeight: 18, marginTop: spacing.xs },
+  activityNote: { ...type.footnote, color: c.mutedForeground, lineHeight: 18, marginTop: spacing.xs },
   content: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xl * 2 },
   field: { gap: 6 },
-  fieldLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
+  fieldLabel: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
   input: {
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
     justifyContent: 'center',
   },
-  inputText: { color: colors.foreground, fontSize: 16 },
+  inputText: { color: c.foreground, fontSize: 16 },
   bigInput: { height: 56, fontSize: 24, fontWeight: '700', fontVariant: ['tabular-nums'] },
   row: { flexDirection: 'row', gap: spacing.sm },
   half: { flex: 1 },
   third: { flex: 1 },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginVertical: spacing.xs },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginVertical: spacing.xs },
   recalcBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -742,10 +750,10 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.primary,
-    backgroundColor: `${colors.primary}1a`,
+    borderColor: c.primary,
+    backgroundColor: alpha(c.primary, 0.1),
   },
-  recalcText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
+  recalcText: { ...type.footnote, color: c.primary, fontWeight: '600' },
   pickerWrap: { alignItems: 'flex-start' },
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
@@ -759,6 +767,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  gridChipText: { ...type.footnote, color: colors.secondaryForeground },
-  gridChipTextActive: { color: colors.foreground, fontWeight: '600' },
-});
+  gridChipText: { ...type.footnote, color: c.secondaryForeground },
+  gridChipTextActive: { color: c.foreground, fontWeight: '600' },
+}));

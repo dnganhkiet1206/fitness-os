@@ -6,7 +6,9 @@ import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withTiming } from '
 import { Icon } from '@/components/ascnd/icon';
 import { duration } from '@/constants/motion';
 import { PickRow } from '@/components/ascnd/pick-row';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * One segmented control, and the selection travels between segments.
@@ -84,6 +86,8 @@ export function Segmented<K extends string>({
    */
   variant?: 'pill' | 'capsule';
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Viên nang mỏng hơn: 2 điểm đệm thay vì 3, nên thumb gần sát mép ray như
      control của hệ thống. */
   const pad = variant === 'capsule' ? 2 : 3;
@@ -102,7 +106,7 @@ export function Segmented<K extends string>({
         không phải một miếng dán lên. Đó là khác biệt giữa "giống Apple" và
         "giống một segmented control mặc định".
       */
-      fill={cap ? colors.background : colors.accent}
+      fill={cap ? c.background : c.accent}
       border={cap ? { width: StyleSheet.hairlineWidth, color: glass.border } : undefined}
       radius={cap ? radius.full : compact ? radius.full : r - pad}
       height={cap ? CAP_H : height}
@@ -133,7 +137,7 @@ export function Segmented<K extends string>({
                 <Icon
                   icon={o.icon}
                   size={cap ? 15 : 13}
-                  color={cap || on ? colors.foreground : colors.mutedForeground}
+                  color={cap || on ? c.foreground : c.mutedForeground}
                 />
               ) : null}
               <Text
@@ -161,11 +165,11 @@ export function Segmented<K extends string>({
  */
 const CAP_H = 38;
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   row: { flexDirection: 'row', backgroundColor: 'rgba(24,24,27,0.6)' },
   seg: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
-  label: { ...type.caption, fontWeight: '600', color: colors.mutedForeground },
-  labelOn: { color: colors.foreground },
+  label: { ...type.caption, fontWeight: '600', color: c.mutedForeground },
+  labelOn: { color: c.foreground },
   inner: { flexDirection: 'row', alignItems: 'center', gap: 5 },
 
   /* ── biến thể viên nang ──
@@ -174,14 +178,14 @@ const styles = StyleSheet.create({
      chú ở `fill`, đó là chỗ dễ làm ngược nhất. */
   capRow: {
     flexDirection: 'row',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: glass.border,
   },
   /* 15 điểm, không phải 17. Thanh này là mục lục của màn; ở 17 điểm nó đọc ra
      nặng hơn chính cái tiêu đề nó dẫn tới. Nét 600 giữ lại độ chắc đã mất. */
   capLabel: { ...type.body, fontWeight: '600' },
-});
+}));
 
 /**
  * The panel under the control, when the control changes.

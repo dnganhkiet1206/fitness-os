@@ -38,7 +38,9 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { COMMON_ALLERGIES, parseDislikes } from '@/lib/food-preferences';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
@@ -88,6 +90,8 @@ function timeToHHMM(d: Date): string {
  * sleep, had nothing to work with on the one device where it could have.
  */
 export function OnboardingFlow() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
@@ -323,7 +327,7 @@ export function OnboardingFlow() {
         {/* Step header: icon tile + Step x/6 + title */}
         <View style={styles.stepHeader}>
           <View style={styles.stepIconTile}>
-            <Icon icon={StepIcon} size={16} color={colors.primary} />
+            <Icon icon={StepIcon} size={16} color={c.primary} />
           </View>
           <View>
             <Text style={styles.stepCount}>
@@ -343,7 +347,7 @@ export function OnboardingFlow() {
                   <TextInput
                     style={styles.input}
                     placeholder={i18n.nYourName}
-                    placeholderTextColor={colors.mutedForeground}
+                    placeholderTextColor={c.mutedForeground}
                     autoCapitalize="words"
                     value={name}
                     onChangeText={setName}
@@ -575,7 +579,7 @@ export function OnboardingFlow() {
                   <TextInput
                     style={styles.input}
                     placeholder={i18n.onboardingDislikedFoodsPlaceholder}
-                    placeholderTextColor={colors.mutedForeground}
+                    placeholderTextColor={c.mutedForeground}
                     value={dislikedFoods}
                     onChangeText={setDislikedFoods}
                   />
@@ -594,7 +598,7 @@ export function OnboardingFlow() {
                       onPress={() => toggleSupp(i)}
                       style={[styles.suppRow, selected && styles.suppRowActive]}>
                       <View style={[styles.checkbox, selected && styles.checkboxActive]}>
-                        {selected && <Icon icon={Check} size={13} color={colors.primaryForeground} />}
+                        {selected && <Icon icon={Check} size={13} color={c.primaryForeground} />}
                       </View>
                       <View style={styles.suppInfo}>
                         <Text style={styles.suppName}>{s.name}</Text>
@@ -694,7 +698,7 @@ export function OnboardingFlow() {
               // 20pt drawn; 12 of slop reaches 44
               hitSlop={12}
               style={[styles.checkbox, termsAccepted && styles.checkboxActive]}>
-              {termsAccepted && <Icon icon={Check} size={13} color={colors.primaryForeground} />}
+              {termsAccepted && <Icon icon={Check} size={13} color={c.primaryForeground} />}
             </Pressable>
             <Text style={styles.termsText}>
               {lang === 'vi' ? 'Tôi đã đọc và đồng ý với ' : 'I have read and agree to the '}
@@ -720,7 +724,7 @@ export function OnboardingFlow() {
             style={[styles.prevBtn, step === 0 && styles.disabled]}
             disabled={step === 0}
             onPress={goPrev}>
-            <Icon icon={ChevronLeft} size={16} color={colors.mutedForeground} />
+            <Icon icon={ChevronLeft} size={16} color={c.mutedForeground} />
             <Text style={styles.prevText}>{i18n.onboardingPrev}</Text>
           </PressScale>
 
@@ -733,7 +737,7 @@ export function OnboardingFlow() {
               disabled={step === 0 && statsBad}
               onPress={goNext}>
               <Text style={styles.nextText}>{i18n.onboardingNext}</Text>
-              <Icon icon={ChevronRight} size={16} color={colors.primaryForeground} />
+              <Icon icon={ChevronRight} size={16} color={c.primaryForeground} />
             </PressScale>
           ) : (
             <PressScale
@@ -741,10 +745,10 @@ export function OnboardingFlow() {
               disabled={!termsAccepted || statsBad || finish.isPending}
               onPress={() => finish.mutate()}>
               {finish.isPending ? (
-                <ActivityIndicator color={colors.primaryForeground} />
+                <ActivityIndicator color={c.primaryForeground} />
               ) : (
                 <>
-                  <Icon icon={Check} size={16} color={colors.primaryForeground} />
+                  <Icon icon={Check} size={16} color={c.primaryForeground} />
                   <Text style={styles.nextText}>{i18n.onboardingDone}</Text>
                 </>
               )}
@@ -773,7 +777,7 @@ export function OnboardingFlow() {
                 Haptics.selectionAsync();
                 setLegalTab(null);
               }}>
-              <Icon icon={X} size={18} color={colors.foreground} />
+              <Icon icon={X} size={18} color={c.foreground} />
             </PressScale>
           </View>
           <ScrollView contentContainerStyle={styles.legalContent}>
@@ -798,6 +802,8 @@ export function OnboardingFlow() {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -817,6 +823,8 @@ function Chip({
   onPress: () => void;
   wrap?: boolean;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <Pressable
       onPress={() => {
@@ -842,6 +850,8 @@ function OptionCard({
   active: boolean;
   onPress: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <PressScale
       onPress={() => {
@@ -886,16 +896,18 @@ function PermissionCard({
   granted: boolean;
   onPress: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.permCard}>
       <View style={styles.permHead}>
-        <Icon icon={icon} size={16} color={granted ? colors.primary : colors.foreground} />
+        <Icon icon={icon} size={16} color={granted ? c.primary : c.foreground} />
         <Text style={styles.permTitle}>{title}</Text>
       </View>
       <Text style={styles.permWhy}>{why}</Text>
       {granted ? (
         <View style={styles.permDone}>
-          <Icon icon={Check} size={13} color={colors.primary} />
+          <Icon icon={Check} size={13} color={c.primary} />
           <Text style={styles.permDoneText}>{done}</Text>
         </View>
       ) : (
@@ -908,6 +920,8 @@ function PermissionCard({
 }
 
 function CalcItem({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.calcItem}>
       <Text style={styles.calcLabel}>{label}:</Text>
@@ -916,8 +930,8 @@ function CalcItem({ label, value, highlight }: { label: string; value: string; h
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.background },
   content: { flexGrow: 1, paddingHorizontal: spacing.md, gap: spacing.lg },
 
   hero: { alignItems: 'center', gap: 4 },
@@ -925,18 +939,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     letterSpacing: 3.6,
-    color: colors.readinessGreen,
+    color: c.readinessGreen,
     textShadowColor: 'rgba(43,245,168,0.4)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
   },
-  heroSub: { ...type.footnote, color: colors.mutedForeground },
+  heroSub: { ...type.footnote, color: c.mutedForeground },
 
   dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.primary },
+  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.primary },
   dotActive: { transform: [{ scale: 1.3 }] },
   dotDone: { opacity: 0.6 },
-  dotFuture: { backgroundColor: colors.muted, opacity: 0.5 },
+  dotFuture: { backgroundColor: c.muted, opacity: 0.5 },
 
   stepHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   stepIconTile: {
@@ -947,38 +961,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepCount: { ...type.caption, color: colors.mutedForeground },
-  stepTitle: { ...type.headline, fontSize: 18, color: colors.foreground },
+  stepCount: { ...type.caption, color: c.mutedForeground },
+  stepTitle: { ...type.headline, fontSize: 18, color: c.foreground },
 
   card: { gap: spacing.md },
   field: { gap: spacing.sm },
-  fieldLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  fieldLabel: { ...type.footnote, fontWeight: '600', color: c.foreground },
   input: {
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     backgroundColor: 'rgba(7,7,8,0.5)',
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
   },
   /* Same two rules as `edit-profile`, which has always shown these — the point
      of this round is that one screen refused a bad stat and the other did not. */
-  inputBad: { borderColor: colors.readinessRed, borderWidth: 1 },
-  fieldError: { ...type.footnote, color: colors.readinessRed },
+  inputBad: { borderColor: c.readinessRed, borderWidth: 1 },
+  fieldError: { ...type.footnote, color: c.readinessRed },
   rowFields: { flexDirection: 'row', gap: spacing.md },
   halfField: { flex: 1 },
   pickerWrap: {
     borderRadius: radius.md,
     backgroundColor: 'rgba(7,7,8,0.5)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     overflow: 'hidden',
     alignItems: 'center',
   },
 
-  activityNote: { ...type.footnote, color: colors.mutedForeground, lineHeight: 18, marginTop: spacing.xs },
+  activityNote: { ...type.footnote, color: c.mutedForeground, lineHeight: 18, marginTop: spacing.xs },
   chips: { flexDirection: 'row', gap: spacing.sm },
   chipsWrap: { flexWrap: 'wrap' },
   chip: {
@@ -986,16 +1000,16 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     backgroundColor: 'rgba(24,24,27,0.3)',
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
   },
   chipWrap: { flexBasis: '30%', flexGrow: 1 },
-  chipActive: { borderColor: colors.primary, backgroundColor: 'rgba(168,175,189,0.1)' },
-  chipText: { ...type.footnote, fontWeight: '500', color: colors.mutedForeground },
-  chipTextActive: { color: colors.foreground },
+  chipActive: { borderColor: c.primary, backgroundColor: 'rgba(168,175,189,0.1)' },
+  chipText: { ...type.footnote, fontWeight: '500', color: c.mutedForeground },
+  chipTextActive: { color: c.foreground },
 
   optionCard: {
     padding: spacing.md,
@@ -1005,25 +1019,25 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(24,24,27,0.3)',
     gap: 2,
   },
-  optionCardActive: { borderColor: colors.primary, backgroundColor: 'rgba(168,175,189,0.1)' },
-  optionLabel: { ...type.footnote, fontSize: 14, fontWeight: '600', color: colors.foreground },
-  optionDesc: { ...type.caption, color: colors.mutedForeground },
+  optionCardActive: { borderColor: c.primary, backgroundColor: 'rgba(168,175,189,0.1)' },
+  optionLabel: { ...type.footnote, fontSize: 14, fontWeight: '600', color: c.foreground },
+  optionDesc: { ...type.caption, color: c.mutedForeground },
 
   calcBox: {
     padding: spacing.md,
     borderRadius: radius.md,
     backgroundColor: 'rgba(24,24,27,0.3)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     gap: spacing.sm,
   },
   calcHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  calcTitle: { ...type.caption, fontWeight: '600', color: colors.mutedForeground },
+  calcTitle: { ...type.caption, fontWeight: '600', color: c.mutedForeground },
   calcGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 6 },
   calcItem: { width: '50%', flexDirection: 'row', gap: 4 },
-  calcLabel: { ...type.footnote, color: colors.mutedForeground },
-  calcValue: { ...type.footnote, fontWeight: '600', color: colors.foreground },
-  calcValueHighlight: { color: colors.primary },
+  calcLabel: { ...type.footnote, color: c.mutedForeground },
+  calcValue: { ...type.footnote, fontWeight: '600', color: c.foreground },
+  calcValueHighlight: { color: c.primary },
 
   /*
     ── the allergy chips, and why the slop is exactly 4 ──
@@ -1044,13 +1058,13 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeActive: { backgroundColor: colors.primary, borderColor: colors.primary },
-  badgeText: { ...type.caption, fontWeight: '500', color: colors.mutedForeground },
-  badgeTextActive: { color: colors.primaryForeground },
+  badgeActive: { backgroundColor: c.primary, borderColor: c.primary },
+  badgeText: { ...type.caption, fontWeight: '500', color: c.mutedForeground },
+  badgeTextActive: { color: c.primaryForeground },
 
   suppRow: {
     flexDirection: 'row',
@@ -1062,50 +1076,50 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(43,43,49,0.5)',
     backgroundColor: 'rgba(24,24,27,0.3)',
   },
-  suppRowActive: { borderColor: colors.primary, backgroundColor: 'rgba(168,175,189,0.1)' },
+  suppRowActive: { borderColor: c.primary, backgroundColor: 'rgba(168,175,189,0.1)' },
   suppInfo: { flex: 1 },
-  suppName: { ...type.footnote, fontSize: 14, fontWeight: '600', color: colors.foreground },
-  suppMeta: { ...type.caption, color: colors.mutedForeground },
+  suppName: { ...type.footnote, fontSize: 14, fontWeight: '600', color: c.foreground },
+  suppMeta: { ...type.caption, color: c.mutedForeground },
   checkbox: {
     width: 20,
     height: 20,
     borderRadius: 6,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxActive: { backgroundColor: colors.primary, borderColor: colors.primary },
+  checkboxActive: { backgroundColor: c.primary, borderColor: c.primary },
 
   termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm + 2, paddingHorizontal: 4 },
-  termsText: { ...type.caption, color: colors.mutedForeground, flex: 1, lineHeight: 18 },
-  termsLink: { color: colors.primary, textDecorationLine: 'underline' },
+  termsText: { ...type.caption, color: c.mutedForeground, flex: 1, lineHeight: 18 },
+  termsLink: { color: c.primary, textDecorationLine: 'underline' },
 
-  connectIntro: { ...type.footnote, color: colors.mutedForeground, lineHeight: 19, marginBottom: spacing.md },
-  connectLater: { ...type.caption, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
+  connectIntro: { ...type.footnote, color: c.mutedForeground, lineHeight: 19, marginBottom: spacing.md },
+  connectLater: { ...type.caption, color: c.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
   permCard: {
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.muted,
+    borderColor: c.border,
+    backgroundColor: c.muted,
     padding: spacing.md,
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
   permHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  permTitle: { ...type.footnote, fontWeight: '600', color: colors.foreground },
-  permWhy: { ...type.caption, color: colors.mutedForeground, lineHeight: 18 },
+  permTitle: { ...type.footnote, fontWeight: '600', color: c.foreground },
+  permWhy: { ...type.caption, color: c.mutedForeground, lineHeight: 18 },
   permBtn: {
     alignSelf: 'flex-start',
     // 32 drawn + 12 vertical padding either side reaches the 44pt target
     paddingVertical: 12,
     paddingHorizontal: spacing.md,
     borderRadius: radius.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
-  permBtnText: { ...type.caption, fontWeight: '600', color: colors.primaryForeground },
+  permBtnText: { ...type.caption, fontWeight: '600', color: c.primaryForeground },
   permDone: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  permDoneText: { ...type.caption, fontWeight: '600', color: colors.primary },
+  permDoneText: { ...type.caption, fontWeight: '600', color: c.primary },
 
   nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   prevBtn: {
@@ -1116,7 +1130,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
   },
-  prevText: { ...type.headline, fontSize: 15, color: colors.mutedForeground },
+  prevText: { ...type.headline, fontSize: 15, color: c.mutedForeground },
   nextBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1124,12 +1138,12 @@ const styles = StyleSheet.create({
     height: 48,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
-  nextText: { ...type.headline, fontSize: 15, color: colors.primaryForeground },
+  nextText: { ...type.headline, fontSize: 15, color: c.primaryForeground },
   disabled: { opacity: 0.4 },
 
-  legalRoot: { flex: 1, backgroundColor: colors.background },
+  legalRoot: { flex: 1, backgroundColor: c.background },
   legalHeader: {
     height: 52,
     flexDirection: 'row',
@@ -1139,7 +1153,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: glass.borderWidth,
     borderBottomColor: glass.border,
   },
-  legalTitle: { flex: 1, fontSize: 17, fontWeight: '600', color: colors.foreground },
+  legalTitle: { flex: 1, fontSize: 17, fontWeight: '600', color: c.foreground },
   legalClose: {
     width: 40,
     height: 40,
@@ -1149,10 +1163,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
   legalContent: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
-  legalBlockTitle: { ...type.headline, color: colors.foreground, marginBottom: 4 },
-  legalBlockBody: { ...type.footnote, color: colors.mutedForeground, lineHeight: 20 },
-  legalIntro: { color: colors.foreground, marginBottom: spacing.xs },
+  legalBlockTitle: { ...type.headline, color: c.foreground, marginBottom: 4 },
+  legalBlockBody: { ...type.footnote, color: c.mutedForeground, lineHeight: 20 },
+  legalIntro: { color: c.foreground, marginBottom: spacing.xs },
   bulletRow: { flexDirection: 'row', gap: spacing.sm, marginTop: 6 },
-  bulletDot: { ...type.footnote, color: colors.primary },
-  bulletText: { ...type.footnote, color: colors.mutedForeground, flex: 1, lineHeight: 20 },
-});
+  bulletDot: { ...type.footnote, color: c.primary },
+  bulletText: { ...type.footnote, color: c.mutedForeground, flex: 1, lineHeight: 20 },
+}));

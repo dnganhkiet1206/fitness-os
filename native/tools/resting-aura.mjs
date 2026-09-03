@@ -92,8 +92,18 @@ function audit(W) {
   /* ── 2. wash nghỉ KHÔNG lấy màu từ thang readiness ───────────────────────
      Luật quan trọng nhất trong tệp. Xanh/vàng/đỏ là phát biểu về cơ thể người
      dùng; dùng một trong ba khi chưa đo gì là app tự bịa ra một kết quả. */
-  const restingLine = /const paint = tint \?\? (colors\.\w+);/.exec(W.aura)?.[1];
-  const secondLine = /const second = resting \? (colors\.\w+)/.exec(W.aura)?.[1];
+  /*
+    `c.` chứ không còn `colors.`.
+
+    Bảng màu bây giờ đọc lúc chạy, nên `readiness-aura.tsx` viết `c.primary` —
+    `c` là bảng màu của theme đang bật. Neo cũ (`colors\.`) thôi khớp, và tệp
+    này ĐỔ đúng như nó phải đổ: chốt "không đọc được hai màu" nổ và cả bước
+    kiểm báo HỎNG thay vì báo xanh trên một luật nó không còn kiểm được gì.
+
+    Đó là lý do chốt ấy tồn tại. Giữ nguyên nó, chỉ dời neo.
+  */
+  const restingLine = /const paint = tint \?\? (c\.\w+);/.exec(W.aura)?.[1];
+  const secondLine = /const second = resting \? (c\.\w+)/.exec(W.aura)?.[1];
   if (!restingLine || !secondLine) {
     out.push(`${AURA}: không đọc được hai màu của trạng thái nghỉ — luật dưới không kiểm được gì`);
   } else {
@@ -227,12 +237,12 @@ if (WORLD.bg && WORLD.silver && WORLD.muted) problems.push(...audit(WORLD));
   /* Luật 2 — và đây là ca đáng sợ nhất: ai đó thấy bạc "hơi nhạt". */
   broken(
     'wash nghỉ chuyển sang màu tín hiệu',
-    { aura: patched('const paint = tint ?? colors.primary;', 'const paint = tint ?? colors.readinessGreen;') },
+    { aura: patched('const paint = tint ?? c.primary;', 'const paint = tint ?? c.readinessGreen;') },
     /màu TÍN HIỆU/,
   );
   broken(
     'tông thứ hai ra ngoài nhóm nhận diện',
-    { aura: patched('const second = resting ? colors.goldLight', 'const second = resting ? colors.metricBlue') },
+    { aura: patched('const second = resting ? c.goldLight', 'const second = resting ? c.metricBlue') },
     /không thuộc nhóm bạc/,
   );
 
@@ -244,7 +254,7 @@ if (WORLD.bg && WORLD.silver && WORLD.muted) problems.push(...audit(WORLD));
   */
   broken(
     'không đọc được hai màu của trạng thái nghỉ',
-    { aura: patched('const paint = tint ?? colors.primary;', 'const paint = pickColour();') },
+    { aura: patched('const paint = tint ?? c.primary;', 'const paint = pickColour();') },
     /không đọc được hai màu/,
   );
   broken(

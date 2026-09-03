@@ -10,7 +10,9 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { toast } from '@/lib/toast';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { errorText } from '@/lib/error-copy';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -22,6 +24,8 @@ import {
 } from '@/hooks/use-library';
 
 export default function SupplementsScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là một cái
      lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
@@ -95,7 +99,7 @@ export default function SupplementsScreen() {
             Haptics.selectionAsync();
             setAdding((v) => !v);
           }}>
-          <Icon icon={adding ? X : Plus} size={18} color={adding ? colors.primary : colors.foreground} />
+          <Icon icon={adding ? X : Plus} size={18} color={adding ? c.primary : c.foreground} />
         </PressScale>
       }>
       {adding && (
@@ -105,7 +109,7 @@ export default function SupplementsScreen() {
           <TextInput
             style={styles.input}
             placeholder="Creatine"
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
             value={name}
             onChangeText={setName}
             autoCapitalize="words"
@@ -114,15 +118,15 @@ export default function SupplementsScreen() {
           <TextInput
             style={styles.input}
             placeholder="5g"
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
             value={dose}
             onChangeText={setDose}
           />
           <Text style={styles.fieldLabel}>{i18n.supplementsTiming}</Text>
           <PickRow
             value={timing}
-            fill={colors.primary}
-            slotFill={colors.secondary}
+            fill={c.primary}
+            slotFill={c.secondary}
             radius={radius.full}
               gap={spacing.sm}
             style={styles.chipRow}>
@@ -142,7 +146,7 @@ export default function SupplementsScreen() {
             disabled={!name.trim() || addSup.isPending}
             onPress={submit}>
             {addSup.isPending ? (
-              <ActivityIndicator color={colors.primaryForeground} size="small" />
+              <ActivityIndicator color={c.primaryForeground} size="small" />
             ) : (
               <Text style={styles.submitText}>{i18n.save}</Text>
             )}
@@ -183,7 +187,7 @@ export default function SupplementsScreen() {
                   </Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={8} onPress={() => confirmDelete(s.id, s.name)}>
-                  <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+                  <Icon icon={Trash2} size={15} color={c.mutedForeground} />
                 </Pressable>
               </View>
             </GlassCard>
@@ -200,7 +204,7 @@ export default function SupplementsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   headerAdd: {
     width: 34,
     height: 34,
@@ -212,16 +216,16 @@ const styles = StyleSheet.create({
   headerAddOn: { backgroundColor: 'rgba(168,175,189,0.16)' },
 
   form: { gap: spacing.sm },
-  formTitle: { ...type.headline, color: colors.foreground, marginBottom: 2 },
-  fieldLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4 },
+  formTitle: { ...type.headline, color: c.foreground, marginBottom: 2 },
+  fieldLabel: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 4 },
   input: {
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 15,
   },
   chipRow: { flexWrap: 'wrap' },
@@ -230,23 +234,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  chipText: { ...type.footnote, color: colors.secondaryForeground },
-  chipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
+  chipText: { ...type.footnote, color: c.secondaryForeground },
+  chipTextActive: { color: c.primaryForeground, fontWeight: '600' },
   submitBtn: {
     height: 46,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,
   },
   submitDisabled: { opacity: 0.4 },
-  submitText: { ...type.headline, color: colors.primaryForeground },
+  submitText: { ...type.headline, color: c.primaryForeground },
 
-  title: { ...type.headline, color: colors.foreground },
-  hint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
-  big: { ...type.largeTitle, color: colors.foreground, marginTop: spacing.sm },
-  muted: { color: colors.mutedForeground },
+  title: { ...type.headline, color: c.foreground },
+  hint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },
+  big: { ...type.largeTitle, color: c.foreground, marginTop: spacing.sm },
+  muted: { color: c.mutedForeground },
   itemCard: { paddingVertical: spacing.md },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   info: { flex: 1, minWidth: 0 },
@@ -255,9 +259,9 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxOn: { backgroundColor: colors.readinessGreen, borderColor: colors.readinessGreen },
-});
+  checkboxOn: { backgroundColor: c.readinessGreen, borderColor: c.readinessGreen },
+}));

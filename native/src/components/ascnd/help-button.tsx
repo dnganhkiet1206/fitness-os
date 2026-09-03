@@ -6,7 +6,9 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { noteHelpOpened, noteNudged, shouldNudge } from '@/lib/help-nudge';
 
@@ -78,6 +80,8 @@ export function HelpButton({
   onPress: () => void;
   style?: StyleProp<ViewStyle>;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <PressScale
       accessibilityRole="button"
@@ -85,7 +89,7 @@ export function HelpButton({
       hitSlop={14}
       onPress={onPress}
       style={[styles.btn, style]}>
-      <Icon icon={HelpCircle} size={17} color={colors.mutedForeground} />
+      <Icon icon={HelpCircle} size={17} color={c.mutedForeground} />
     </PressScale>
   );
 }
@@ -106,6 +110,8 @@ export function HelpNudge({
   onPress: () => void;
   onDismiss: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   return (
     <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)}>
@@ -113,7 +119,7 @@ export function HelpNudge({
         accessibilityRole="button"
         onPress={onPress}
         style={styles.nudge}>
-        <Icon icon={HelpCircle} size={14} color={colors.metricBlue} />
+        <Icon icon={HelpCircle} size={14} color={c.metricBlue} />
         <Text style={styles.nudgeText}>{text}</Text>
         <View>
           <Pressable
@@ -121,7 +127,7 @@ export function HelpNudge({
             accessibilityLabel={i18n.a11yClose}
             hitSlop={15}
             onPress={onDismiss}>
-            <Icon icon={X} size={14} color={colors.mutedForeground} />
+            <Icon icon={X} size={14} color={c.mutedForeground} />
           </Pressable>
         </View>
       </PressScale>
@@ -129,7 +135,7 @@ export function HelpNudge({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   btn: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   nudge: {
     /* Cards that centre their children would otherwise shrink-wrap this into a
@@ -145,5 +151,5 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(59,166,255,0.25)',
     backgroundColor: 'rgba(59,166,255,0.10)',
   },
-  nudgeText: { flex: 1, fontSize: 12, lineHeight: 17, color: colors.foreground },
-});
+  nudgeText: { flex: 1, fontSize: 12, lineHeight: 17, color: c.foreground },
+}));

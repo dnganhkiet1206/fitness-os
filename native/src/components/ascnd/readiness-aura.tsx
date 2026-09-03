@@ -11,7 +11,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { colors } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 /**
@@ -102,10 +103,15 @@ const OVERSCALE = 1.08;
 /** How far down the screen the wash reaches before it is gone. */
 const REACH = 0.52;
 
-const TINT: Record<string, string> = {
-  green: colors.readinessGreen,
-  yellow: colors.readinessYellow,
-  red: colors.readinessRed,
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+const TINT: Record<string, PaletteKey> = {
+  green: 'readinessGreen',
+  yellow: 'readinessYellow',
+  red: 'readinessRed',
 };
 
 export function ReadinessAura({
@@ -140,6 +146,8 @@ export function ReadinessAura({
    */
   tint2?: string;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { width, height } = useWindowDimensions();
   /*
     Ids in SVG are document-global on native rather than local to the `<Svg>`
@@ -149,7 +157,7 @@ export function ReadinessAura({
     specific lie: a screen showing one person's readiness colour under another
     screen's number.
   */
-  const tint = override ?? (status ? TINT[status] : null);
+  const tint = override ?? (status ? c[TINT[status]] : null);
   /*
     Chưa đo được thì KHÔNG tô màu readiness — nhưng cũng không để trang đen.
 
@@ -238,8 +246,8 @@ export function ReadinessAura({
 
      Ngoài trạng thái nghỉ: mặc định là chính `tint` — một màu vẫn vẽ được, chỉ
      là phẳng hơn; không bịa ra một tông thứ hai khi chỗ gọi chưa chọn. */
-  const paint = tint ?? colors.primary;
-  const second = resting ? colors.goldLight : (tint2 ?? paint);
+  const paint = tint ?? c.primary;
+  const second = resting ? c.goldLight : (tint2 ?? paint);
   /*
     Trần độ mờ của trạng thái nghỉ, ĐO chứ không chọn.
 
@@ -327,9 +335,9 @@ export function ReadinessAura({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* Behind everything, and out of the way of every touch. `zIndex` is not set:
      being first in the tree is what puts it at the back, and a z-index here
      would be a second answer to a question already answered. */
   fill: { position: 'absolute', top: 0, left: 0, right: 0 },
-});
+}));

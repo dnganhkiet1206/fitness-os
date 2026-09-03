@@ -15,7 +15,9 @@ import Animated, {
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascotSettings, useUnlockStats } from '@/hooks/use-mascot';
 import { enqueueMascot } from '@/lib/celebration-queue';
@@ -101,6 +103,8 @@ function makePieces(): Piece[] {
 }
 
 function ConfettiPiece({ progress, piece }: { progress: SharedValue<number>; piece: Piece }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const style = useAnimatedStyle(() => {
     const t = Math.min(Math.max((progress.value - piece.delay) / (1 - piece.delay), 0), 1);
     return {
@@ -127,6 +131,8 @@ function ConfettiPiece({ progress, piece }: { progress: SharedValue<number>; pie
 }
 
 export function MascotCelebrationModal({ mascot, onClose }: { mascot: MascotDef; onClose: () => void }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { setSelectedId } = useMascotSettings();
@@ -214,7 +220,7 @@ export function MascotCelebrationModal({ mascot, onClose }: { mascot: MascotDef;
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(4, 4, 6, 0.82)',
@@ -231,9 +237,9 @@ const styles = StyleSheet.create({
   card: {
     alignSelf: 'stretch',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radius.xl,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
@@ -241,7 +247,7 @@ const styles = StyleSheet.create({
   },
   kicker: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
@@ -268,10 +274,10 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 6 },
   },
-  name: { ...type.title, color: colors.foreground, fontWeight: '800' },
+  name: { ...type.title, color: c.foreground, fontWeight: '800' },
   tagline: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
@@ -289,5 +295,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  laterText: { ...type.footnote, color: colors.mutedForeground, fontWeight: '600' },
-});
+  laterText: { ...type.footnote, color: c.mutedForeground, fontWeight: '600' },
+}));

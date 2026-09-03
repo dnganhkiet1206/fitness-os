@@ -7,7 +7,9 @@ import { PickRow } from '@/components/ascnd/pick-row';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useReminders } from '@/hooks/use-reminders';
 import { useProfile } from '@/hooks/useTodayData';
@@ -29,6 +31,8 @@ function timeToDate(hour: number, minute: number) {
 }
 
 export default function RemindersScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { prefs, permission, available, toggle, setTime, setWaterInterval } = useReminders();
 
@@ -69,10 +73,10 @@ export default function RemindersScreen() {
 
   type TimedKey = 'supplements' | 'bedtime' | 'weighIn' | 'workout';
   const timed: { key: TimedKey; icon: LucideIcon; color: string; title: string }[] = [
-    { key: 'supplements', icon: Pill, color: colors.metricPurple, title: i18n.nReminderSupplements },
-    { key: 'workout', icon: Dumbbell, color: colors.primary, title: i18n.nReminderWorkout },
-    { key: 'weighIn', icon: Scale, color: colors.metricBlue, title: i18n.nReminderWeighIn },
-    { key: 'bedtime', icon: Moon, color: colors.metricOrange, title: i18n.nReminderBedtime },
+    { key: 'supplements', icon: Pill, color: c.metricPurple, title: i18n.nReminderSupplements },
+    { key: 'workout', icon: Dumbbell, color: c.primary, title: i18n.nReminderWorkout },
+    { key: 'weighIn', icon: Scale, color: c.metricBlue, title: i18n.nReminderWeighIn },
+    { key: 'bedtime', icon: Moon, color: c.metricOrange, title: i18n.nReminderBedtime },
   ];
 
   const showPermHint = available && !permission && Object.values(prefs).some((r) => r.enabled);
@@ -80,7 +84,7 @@ export default function RemindersScreen() {
   return (
     <Screen refreshable back title={i18n.nRemindersTitle}>
       <View style={styles.intro}>
-        <Icon icon={Bell} size={18} color={colors.primary} />
+        <Icon icon={Bell} size={18} color={c.primary} />
         <Text style={styles.introText}>{i18n.nRemindersDesc}</Text>
       </View>
 
@@ -105,14 +109,14 @@ export default function RemindersScreen() {
               Haptics.selectionAsync();
               toggle('water', v);
             }}
-            trackColor={{ true: colors.readinessGreen, false: colors.secondary }}
+            trackColor={{ true: c.readinessGreen, false: c.secondary }}
           />
         </View>
         {prefs.water.enabled && (
           <PickRow
             value={String(prefs.water.everyHours)}
-            fill={colors.primary}
-            slotFill={colors.secondary}
+            fill={c.primary}
+            slotFill={c.secondary}
             radius={radius.md}
               gap={spacing.sm}
             style={styles.intervalRow}>
@@ -172,7 +176,7 @@ export default function RemindersScreen() {
                     Haptics.selectionAsync();
                     toggle(key, v);
                   }}
-                  trackColor={{ true: colors.readinessGreen, false: colors.secondary }}
+                  trackColor={{ true: c.readinessGreen, false: c.secondary }}
                 />
               </View>
             </View>
@@ -204,15 +208,15 @@ export default function RemindersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   intro: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  introText: { ...type.footnote, color: colors.mutedForeground, flex: 1 },
+  introText: { ...type.footnote, color: c.mutedForeground, flex: 1 },
   warnCard: { backgroundColor: 'rgba(255,217,61,0.1)' },
-  warnText: { ...type.footnote, color: colors.readinessYellow },
+  warnText: { ...type.footnote, color: c.readinessYellow },
   rowHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   rowTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 },
   iconBadge: { width: 32, height: 32, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  rowTitle: { ...type.headline, color: colors.foreground, flexShrink: 1 },
+  rowTitle: { ...type.headline, color: c.foreground, flexShrink: 1 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   intervalRow: { marginTop: spacing.md },
   /* Quiet, and below the control it talks about: this is the app explaining
@@ -224,17 +228,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
-  smartText: { ...type.caption, color: colors.mutedForeground, flex: 1, minWidth: 0 },
+  smartText: { ...type.caption, color: c.mutedForeground, flex: 1, minWidth: 0 },
   smartBtn: {
     minHeight: 32,
     justifyContent: 'center',
     paddingHorizontal: spacing.md - 2,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  smartBtnText: { ...type.caption, fontWeight: '700', color: colors.primary },
+  smartBtnText: { ...type.caption, fontWeight: '700', color: c.primary },
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
      without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
@@ -247,6 +251,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  intervalText: { ...type.footnote, color: colors.secondaryForeground },
-  intervalTextActive: { color: colors.primaryForeground, fontWeight: '600' },
-});
+  intervalText: { ...type.footnote, color: c.secondaryForeground },
+  intervalTextActive: { color: c.primaryForeground, fontWeight: '600' },
+}));

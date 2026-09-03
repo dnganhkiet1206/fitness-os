@@ -1,7 +1,9 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { FormSheet } from '@/components/ascnd/form-sheet';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { ACWR_BANDS, type AcwrZoneKey } from '@/lib/training-card';
 
@@ -28,16 +30,18 @@ import { ACWR_BANDS, type AcwrZoneKey } from '@/lib/training-card';
  * worse than none, because it is believed.
  */
 export function TrainingExplainer({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
 
   const zoneTint: Record<AcwrZoneKey, string> = {
-    detraining: colors.readinessRed,
-    low: colors.readinessYellow,
-    optimal: colors.readinessGreen,
-    elevated: colors.readinessYellow,
-    spike: colors.readinessRed,
+    detraining: c.readinessRed,
+    low: c.readinessYellow,
+    optimal: c.readinessGreen,
+    elevated: c.readinessYellow,
+    spike: c.readinessRed,
   };
   const zoneWhat: Record<AcwrZoneKey, string> = {
     detraining: vi ? 'Tập quá thưa — đang mất nền' : 'Detraining — losing your base',
@@ -192,19 +196,19 @@ export function TrainingExplainer({ visible, onClose }: { visible: boolean; onCl
   );
 }
 
-const styles = StyleSheet.create({
-  lede: { fontSize: 14, lineHeight: 20, color: colors.foreground },
+const stylesFor = makeStyles((c) => ({
+  lede: { fontSize: 14, lineHeight: 20, color: c.foreground },
   section: {
     fontSize: 11,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 1.8,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     marginTop: spacing.sm,
   },
   row: { gap: 3 },
-  term: { fontSize: 13, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  body: { fontSize: 13, lineHeight: 19, color: colors.mutedForeground },
+  term: { fontSize: 13, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
+  body: { fontSize: 13, lineHeight: 19, color: c.mutedForeground },
   zones: { gap: 6, marginTop: 2 },
   zone: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   dot: { width: 7, height: 7, borderRadius: 3.5 },
@@ -212,17 +216,17 @@ const styles = StyleSheet.create({
     width: 84,
     fontSize: 12,
     fontFamily: 'Menlo',
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
-  zoneWhat: { flex: 1, fontSize: 12, color: colors.mutedForeground },
-  note: { fontSize: 12, lineHeight: 18, color: colors.mutedForeground, fontStyle: 'italic' },
+  zoneWhat: { flex: 1, fontSize: 12, color: c.mutedForeground },
+  note: { fontSize: 12, lineHeight: 18, color: c.mutedForeground, fontStyle: 'italic' },
   caveat: {
     fontSize: 12,
     lineHeight: 18,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     padding: spacing.sm + 2,
     borderRadius: radius.md,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-});
+}));

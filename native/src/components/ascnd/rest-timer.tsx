@@ -15,7 +15,9 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { restLabel } from '@/lib/prescription';
@@ -86,6 +88,8 @@ export function RestTimer({
   onAdjust: (delta: number) => void;
   onSkip: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const progress = useSharedValue(1);
   useEffect(() => {
     if (left === null || total <= 0) return;
@@ -163,7 +167,7 @@ export function RestTimer({
 
           <View style={styles.ringWrap}>
             <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
-              <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={colors.ringTrack} strokeWidth={W} />
+              <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={c.ringTrack} strokeWidth={W} />
 
               {/*
                 One ring, in the app's own silver.
@@ -180,7 +184,7 @@ export function RestTimer({
                 cy={SIZE / 2}
                 r={R}
                 fill="none"
-                stroke={colors.primary}
+                stroke={c.primary}
                 strokeWidth={W}
                 strokeLinecap="round"
                 strokeDasharray={CIRC}
@@ -224,7 +228,7 @@ export function RestTimer({
               accessibilityLabel={`${i18n.nRdResting} −15`}
               onPress={() => bump(-15)}
               style={styles.round}>
-              <Icon icon={Minus} size={14} color={colors.foreground} strokeWidth={2.5} />
+              <Icon icon={Minus} size={14} color={c.foreground} strokeWidth={2.5} />
               <Text style={styles.roundText}>15</Text>
             </PressScale>
 
@@ -241,7 +245,7 @@ export function RestTimer({
               accessibilityLabel={`${i18n.nRdResting} +15`}
               onPress={() => bump(15)}
               style={styles.round}>
-              <Icon icon={Plus} size={14} color={colors.foreground} strokeWidth={2.5} />
+              <Icon icon={Plus} size={14} color={c.foreground} strokeWidth={2.5} />
               <Text style={styles.roundText}>15</Text>
             </PressScale>
           </View>
@@ -251,7 +255,7 @@ export function RestTimer({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   backdrop: {
     flex: 1,
     alignItems: 'center',
@@ -287,13 +291,13 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.xl,
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   label: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
     fontWeight: '600',
@@ -303,8 +307,8 @@ const styles = StyleSheet.create({
   /* Tabular, so the whole thing does not shuffle sideways every time a 1 goes
      past. 34pt reads across a gym; the old 46 was not more legible, only
      louder. */
-  clock: { fontSize: 34, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  total: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
+  clock: { fontSize: 34, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
+  total: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
   /* Khối "tiếp theo", ngăn với đồng hồ bằng một đường mảnh. Căn giữa như mọi
      thứ khác trong thẻ: đây là một tấm thẻ đọc từ xa, không phải một hàng dữ
      liệu để dò bằng mắt. */
@@ -312,18 +316,18 @@ const styles = StyleSheet.create({
   rule: {
     height: StyleSheet.hairlineWidth,
     alignSelf: 'stretch',
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     marginBottom: spacing.sm,
   },
   nextLabel: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
     fontWeight: '600',
   },
-  nextName: { ...type.headline, color: colors.foreground, textAlign: 'center' },
-  nextSet: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  nextName: { ...type.headline, color: c.foreground, textAlign: 'center' },
+  nextSet: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
 
   controls: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
   /* Nút ±15 NÓI RA con số.
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
   },
-  roundText: { ...type.footnote, color: colors.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  roundText: { ...type.footnote, color: c.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
   /*
     Vẫn KHÔNG tô đặc, nhưng đã sáng hơn hẳn hai nút bên cạnh.
 
@@ -368,9 +372,9 @@ const styles = StyleSheet.create({
        tay: hai nút ±15 là kính trên nền thẻ, cái này đặc hơn hẳn chúng một bậc.
        Đủ để mắt biết đâu là đường ra mà không cần tô bạc đặc — xem ghi chú ở
        trên về vì sao nó vẫn không tô. */
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
   },
-  skipText: { ...type.body, color: colors.foreground, fontWeight: '700' },
-});
+  skipText: { ...type.body, color: c.foreground, fontWeight: '700' },
+}));

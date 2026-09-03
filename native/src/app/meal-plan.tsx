@@ -11,7 +11,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
   useDeleteMealPlan,
@@ -66,6 +68,8 @@ import { errorText } from '@/lib/error-copy';
  */
 
 export default function MealPlanScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { plan: planId } = useLocalSearchParams<{ plan?: string }>();
   const i18n = useI18n();
 
@@ -173,7 +177,7 @@ export default function MealPlanScreen() {
             accessibilityLabel={i18n.a11yDelete}
             hitSlop={14}
             onPress={removePlan}>
-            <Icon icon={Trash2} size={17} color={colors.mutedForeground} />
+            <Icon icon={Trash2} size={17} color={c.mutedForeground} />
           </Pressable>
         ) : undefined
       }>
@@ -258,7 +262,7 @@ export default function MealPlanScreen() {
 
       {meals.length === 0 ? (
         <View style={styles.empty}>
-          <Icon icon={UtensilsCrossed} size={20} color={colors.mutedForeground} />
+          <Icon icon={UtensilsCrossed} size={20} color={c.mutedForeground} />
           <Text style={styles.emptyText}>{i18n.nMpDayEmptyHint}</Text>
         </View>
       ) : null}
@@ -288,7 +292,7 @@ export default function MealPlanScreen() {
                 <Icon
                   icon={already ? Check : UtensilsCrossed}
                   size={11}
-                  color={colors.readinessGreen}
+                  color={c.readinessGreen}
                   strokeWidth={2.5}
                 />
                 <Text style={styles.eatText}>{already ? i18n.nMpEaten : i18n.nMpEatIt}</Text>
@@ -326,7 +330,7 @@ export default function MealPlanScreen() {
                         )
                       }
                       style={styles.rowX}>
-                      <Icon icon={X} size={13} color={colors.mutedForeground} />
+                      <Icon icon={X} size={13} color={c.mutedForeground} />
                     </PressScale>
                   </View>
                 </View>
@@ -344,7 +348,7 @@ export default function MealPlanScreen() {
           setAdding(true);
         }}
         style={styles.add}>
-        <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
+        <Icon icon={Plus} size={16} color={c.primary} strokeWidth={2.5} />
         <Text style={styles.addText}>{i18n.nMpAddFood}</Text>
       </PressScale>
 
@@ -361,7 +365,7 @@ export default function MealPlanScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   // ── the week ──
   strip: { flexDirection: 'row', justifyContent: 'space-between' },
   cell: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 2 },
@@ -371,43 +375,43 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  pillOn: { backgroundColor: colors.primary },
-  pillNum: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  pillNumOn: { color: colors.primaryForeground, fontWeight: '700' },
+  pillOn: { backgroundColor: c.primary },
+  pillNum: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
+  pillNumOn: { color: c.primaryForeground, fontWeight: '700' },
   /* Always drawn, transparent when the day is empty — a dot that comes and goes
      would shift the strip's height by five points as the plan is filled in. */
   dot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'transparent' },
-  dotOn: { backgroundColor: colors.primary },
+  dotOn: { backgroundColor: c.primary },
 
   // ── the day, said once ──
   summary: { gap: 2, marginTop: spacing.xs },
   eyebrow: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     fontWeight: '700',
   },
-  dayKcal: { ...type.largeTitle, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  dayKcalUnit: { ...type.body, color: colors.mutedForeground, fontWeight: '500' },
-  daySub: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  dayKcal: { ...type.largeTitle, color: c.foreground, fontVariant: ['tabular-nums'] },
+  dayKcalUnit: { ...type.body, color: c.mutedForeground, fontWeight: '500' },
+  daySub: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
 
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
-  emptyText: { ...type.footnote, color: colors.mutedForeground },
+  emptyText: { ...type.footnote, color: c.mutedForeground },
 
   // ── a meal ──
   section: { gap: 6 },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: 2 },
   sectionTitle: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     fontWeight: '700',
   },
-  sectionKcal: { ...type.caption, color: colors.mutedForeground, flex: 1, fontVariant: ['tabular-nums'] },
+  sectionKcal: { ...type.caption, color: c.mutedForeground, flex: 1, fontVariant: ['tabular-nums'] },
   eat: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -418,7 +422,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(43,245,168,0.10)',
   },
   eatDone: { backgroundColor: 'rgba(43,245,168,0.18)' },
-  eatText: { ...type.caption, color: colors.readinessGreen, fontWeight: '700' },
+  eatText: { ...type.caption, color: c.readinessGreen, fontWeight: '700' },
 
   /*
     The surface has to be delineated by its border, not by its fill.
@@ -440,9 +444,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, height: 46 },
   /* Inset from the left, the way a table view's separator is — a rule that runs
      the full width cuts the group into stripes instead of dividing it. */
-  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: colors.border },
-  rowName: { ...type.body, color: colors.foreground, flex: 1 },
-  rowKcal: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },
+  rowName: { ...type.body, color: c.foreground, flex: 1 },
+  rowKcal: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   rowX: { width: 28, alignItems: 'flex-end' },
 
   add: {
@@ -456,6 +460,6 @@ const styles = StyleSheet.create({
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
   },
-  addText: { ...type.body, color: colors.primary, fontWeight: '600' },
-  note: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
-});
+  addText: { ...type.body, color: c.primary, fontWeight: '600' },
+  note: { ...type.caption, color: c.mutedForeground, textAlign: 'center' },
+}));

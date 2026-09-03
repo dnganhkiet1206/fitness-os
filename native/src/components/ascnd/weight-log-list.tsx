@@ -12,7 +12,9 @@ import Animated, {
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWeight } from '@/hooks/use-fitness-data';
 import { getLocale } from '@/lib/i18n';
@@ -93,6 +95,8 @@ export function WeightLogList({
   i18n: ReturnType<typeof useI18n>;
   lang: 'vi' | 'en';
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const [open, setOpen] = useState(false);
   /**
    * Reset when the card closes, on purpose.
@@ -168,7 +172,7 @@ export function WeightLogList({
             : i18n.nWeightEntries.replace('{n}', String(rows.length))}
         </Text>
         <Animated.View style={chevron}>
-          <Icon icon={ChevronDown} size={18} color={colors.mutedForeground} />
+          <Icon icon={ChevronDown} size={18} color={c.mutedForeground} />
         </Animated.View>
       </PressScale>
 
@@ -198,7 +202,7 @@ export function WeightLogList({
                   {/* Muted, not red — a destructive glyph on every row makes
                       deletion the loudest thing in a list that is not about
                       deleting. The red belongs on the confirm button. */}
-                  <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+                  <Icon icon={Trash2} size={15} color={c.mutedForeground} />
                 </PressScale>
               </View>
             );
@@ -230,24 +234,24 @@ export function WeightLogList({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   card: { gap: 2, paddingVertical: spacing.md },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  title: { ...type.headline, color: colors.foreground },
-  count: { ...type.footnote, color: colors.mutedForeground, flex: 1, textAlign: 'right' },
+  title: { ...type.headline, color: c.foreground },
+  count: { ...type.footnote, color: c.mutedForeground, flex: 1, textAlign: 'right' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     paddingTop: spacing.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
-  date: { ...type.footnote, color: colors.mutedForeground, flex: 1 },
+  date: { ...type.footnote, color: c.mutedForeground, flex: 1 },
   value: {
     ...type.body,
     fontWeight: '600',
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
   del: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
@@ -260,7 +264,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: spacing.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
-  seeAllText: { ...type.footnote, fontWeight: '600', color: colors.primary },
-});
+  seeAllText: { ...type.footnote, fontWeight: '600', color: c.primary },
+}));

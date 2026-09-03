@@ -73,7 +73,19 @@ const glassSrc = read('src/components/ascnd/liquid-glass.tsx');
 /* xem ghi chú cùng nội dung trong `tools/resting-aura.mjs` */
 const palette = read('src/constants/palette.ts');
 
-const pools = [...aura.matchAll(/colour: (?:colors\.(\w+)|'(#[0-9a-fA-F]{6})'), peak: ([\d.]+)/g)].map((m) => ({
+/*
+  `colour` trong `POOLS` bây giờ là một HÀM của bảng màu.
+
+  Nó phải thế: `POOLS` là hằng ở phạm vi module, nên một mã màu ở đó bị đóng
+  băng lúc import và vũng `auraState` sẽ giữ tím của theme tối kể cả ở theme
+  sáng. Ba vũng kia là mã màu thật của riêng lớp hào quang, không phải token —
+  một kiểu chung cho cả bốn sẽ nói dối về ba trong số đó.
+
+  Nên neo đọc cả hai vế: `(c) => c.metricPurple` và `() => '#7b3dff'`. Khi hình
+  dạng đổi mà neo không đổi, `pools.length` tụt về 0 và chốt dưới cho cả bước
+  kiểm DỪNG — nó không báo xanh trên một phép đo nó không thực hiện được.
+*/
+const pools = [...aura.matchAll(/colour: \((?:c)?\) => (?:c\.(\w+)|'(#[0-9a-fA-F]{6})'), peak: ([\d.]+)/g)].map((m) => ({
   named: m[1],
   hex: m[2],
   peak: Number(m[3]),

@@ -18,7 +18,9 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -26,6 +28,8 @@ import { useGroceryItems, useGroceryMutations } from '@/hooks/use-extras';
 import { supabase } from '@/integrations/supabase/client';
 
 export default function GroceryScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là một cái
      lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
@@ -114,7 +118,7 @@ export default function GroceryScreen() {
           <TextInput
             style={styles.input}
             placeholder={i18n.nAddItem}
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
             value={draft}
             onChangeText={setDraft}
             onSubmitEditing={submit}
@@ -126,7 +130,7 @@ export default function GroceryScreen() {
             style={[styles.addBtn, !draft.trim() && styles.disabled]}
             disabled={!draft.trim()}
             onPress={submit}>
-            <Icon icon={Plus} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
+            <Icon icon={Plus} size={20} color={c.primaryForeground} strokeWidth={2.5} />
           </PressScale>
         </View>
 
@@ -152,7 +156,7 @@ export default function GroceryScreen() {
                   }}>
                   <Text style={styles.planChipText} numberOfLines={1}>{f.name}</Text>
                   <Text style={styles.planChipQty}>{amountOf(f)}</Text>
-                  <Icon icon={Plus} size={12} color={colors.primary} strokeWidth={2.5} />
+                  <Icon icon={Plus} size={12} color={c.primary} strokeWidth={2.5} />
                 </PressScale>
               ))}
             </View>
@@ -180,7 +184,7 @@ export default function GroceryScreen() {
                     {it.quantity ? <Text style={styles.qty}>  ×{it.quantity}</Text> : null}
                   </Text>
                   <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={10} onPress={() => remove.mutate(it.id)}>
-                    <Icon icon={X} size={15} color={colors.mutedForeground} />
+                    <Icon icon={X} size={15} color={c.mutedForeground} />
                   </Pressable>
                 </View>
               </GlassCard>
@@ -198,7 +202,7 @@ export default function GroceryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   kav: { flex: 1 },
   addRow: { flexDirection: 'row', gap: spacing.sm },
   input: {
@@ -206,21 +210,21 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderColor: c.border,
+    backgroundColor: c.card,
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
   },
   addBtn: {
     width: 48,
     height: 48,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addBtnText: { fontSize: 22, color: colors.primaryForeground, fontWeight: '600' },
+  addBtnText: { fontSize: 22, color: c.primaryForeground, fontWeight: '600' },
   disabled: { opacity: 0.4 },
   itemCard: { paddingVertical: spacing.md },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -229,21 +233,21 @@ const styles = StyleSheet.create({
     height: 24,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   checkboxOn: {
-    backgroundColor: colors.readinessGreen,
-    borderColor: colors.readinessGreen,
+    backgroundColor: c.readinessGreen,
+    borderColor: c.readinessGreen,
   },
   checkmark: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  itemName: { ...type.body, color: colors.foreground, flex: 1 },
-  itemChecked: { color: colors.mutedForeground, textDecorationLine: 'line-through' },
-  qty: { ...type.footnote, color: colors.mutedForeground },
-  remove: { color: colors.mutedForeground, fontSize: 15 },
-  emptyTitle: { ...type.headline, color: colors.foreground },
-  emptyHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
+  itemName: { ...type.body, color: c.foreground, flex: 1 },
+  itemChecked: { color: c.mutedForeground, textDecorationLine: 'line-through' },
+  qty: { ...type.footnote, color: c.mutedForeground },
+  remove: { color: c.mutedForeground, fontSize: 15 },
+  emptyTitle: { ...type.headline, color: c.foreground },
+  emptyHint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },
 
   planCard: { gap: spacing.sm },
   planHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -252,7 +256,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1.4,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   planChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   planChip: {
@@ -268,6 +272,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(168,175,189,0.3)',
     backgroundColor: 'rgba(168,175,189,0.06)',
   },
-  planChipQty: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  planChipText: { fontSize: 12, color: colors.foreground, flexShrink: 1 },
-});
+  planChipQty: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  planChipText: { fontSize: 12, color: c.foreground, flexShrink: 1 },
+}));

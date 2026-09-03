@@ -27,7 +27,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { WaterChart } from '@/components/ascnd/water-chart';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -49,6 +51,8 @@ import { toast } from '@/lib/toast';
 const MAX_ONE_GO = { ml: 2000, oz: 68 } as const;
 
 export default function WaterScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { unit: vUnit } = useVolumeUnit();
@@ -118,7 +122,7 @@ export default function WaterScreen() {
           </View>
           <Text style={styles.pct}>{Math.round(pct)}%</Text>
         </View>
-        <ProgressBar pct={pct} color={colors.metricBlue} height={10} radius={5} style={styles.barTrack} />
+        <ProgressBar pct={pct} color={c.metricBlue} height={10} radius={5} style={styles.barTrack} />
         <Text style={styles.quickLabel}>{i18n.nQuickAdd}</Text>
         <View style={styles.quickRow}>
           {/* Undo last entry (web: minus button) */}
@@ -143,7 +147,7 @@ export default function WaterScreen() {
                 onError: (e: Error) => toast.fail(e),
               })
             }>
-            <Icon icon={Minus} size={16} color={colors.foreground} strokeWidth={2.5} />
+            <Icon icon={Minus} size={16} color={c.foreground} strokeWidth={2.5} />
           </PressScale>
           {QUICK.map((amount) => (
             <PressScale
@@ -166,7 +170,7 @@ export default function WaterScreen() {
                   onError: (e: Error) => toast.fail(e),
                 });
               }}>
-              <Icon icon={Plus} size={14} color={colors.foreground} strokeWidth={2.5} />
+              <Icon icon={Plus} size={14} color={c.foreground} strokeWidth={2.5} />
               <Text style={styles.quickText}>{amount}</Text>
             </PressScale>
           ))}
@@ -181,7 +185,7 @@ export default function WaterScreen() {
             setManualText('');
             setManualOpen(true);
           }}>
-          <Icon icon={PencilLine} size={15} color={colors.mutedForeground} />
+          <Icon icon={PencilLine} size={15} color={c.mutedForeground} />
           <Text style={styles.customText}>{i18n.nWaterCustom}</Text>
         </PressScale>
       </GlassCard>
@@ -232,7 +236,7 @@ export default function WaterScreen() {
                 : i18n.nWaterEntries.replace('{n}', String(logs.length))}
             </Text>
             <Animated.View style={chevron}>
-              <Icon icon={ChevronDown} size={18} color={colors.mutedForeground} />
+              <Icon icon={ChevronDown} size={18} color={c.mutedForeground} />
             </Animated.View>
           </PressScale>
 
@@ -311,6 +315,8 @@ function ManualWaterSheet({
   onClose: () => void;
   onSave: (amount: number) => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const amount = Number(value.replace(',', '.'));
   const valid = Number.isFinite(amount) && amount > 0 && amount <= max;
   const tooMuch = Number.isFinite(amount) && amount > max;
@@ -345,7 +351,7 @@ function ManualWaterSheet({
                 autoFocus
                 selectTextOnFocus
                 placeholder="0"
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor={c.mutedForeground}
                 style={styles.input}
                 maxLength={6}
               />
@@ -380,30 +386,30 @@ function ManualWaterSheet({
   );
 }
 
-const styles = StyleSheet.create({
-  cardTitle: { ...type.headline, color: colors.foreground },
-  cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
+const stylesFor = makeStyles((c) => ({
+  cardTitle: { ...type.headline, color: c.foreground },
+  cardHint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  bigValue: { ...type.largeTitle, ...type.mono, color: colors.foreground },
-  pct: { ...type.title, color: colors.metricBlue, fontVariant: ['tabular-nums'] },
-  barTrack: { height: 10, borderRadius: 5, backgroundColor: colors.background, overflow: 'hidden', marginTop: spacing.md },
-  quickLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '600', marginTop: spacing.md },
+  bigValue: { ...type.largeTitle, ...type.mono, color: c.foreground },
+  pct: { ...type.title, color: c.metricBlue, fontVariant: ['tabular-nums'] },
+  barTrack: { height: 10, borderRadius: 5, backgroundColor: c.background, overflow: 'hidden', marginTop: spacing.md },
+  quickLabel: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '600', marginTop: spacing.md },
   quickRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
-  quickBtn: { flex: 1, height: 46, borderRadius: radius.md, backgroundColor: colors.secondary, flexDirection: 'row', gap: 2, alignItems: 'center', justifyContent: 'center' },
+  quickBtn: { flex: 1, height: 46, borderRadius: radius.md, backgroundColor: c.secondary, flexDirection: 'row', gap: 2, alignItems: 'center', justifyContent: 'center' },
   undoBtn: {
     width: 46,
     height: 46,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   undoDisabled: { opacity: 0.35 },
-  quickText: { ...type.headline, color: colors.foreground },
+  quickText: { ...type.headline, color: c.foreground },
   logSection: { gap: spacing.sm },
   logHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xs },
-  logCount: { ...type.footnote, color: colors.mutedForeground, flex: 1, textAlign: 'right' },
+  logCount: { ...type.footnote, color: c.mutedForeground, flex: 1, textAlign: 'right' },
   logCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2, paddingVertical: spacing.sm + 4 },
   logIcon: {
     width: 30,
@@ -413,9 +419,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logAmount: { ...type.body, color: colors.foreground, fontWeight: '600', fontVariant: ['tabular-nums'], flex: 1 },
-  logUnit: { ...type.footnote, fontWeight: '400', color: colors.mutedForeground },
-  logTime: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  logAmount: { ...type.body, color: c.foreground, fontWeight: '600', fontVariant: ['tabular-nums'], flex: 1 },
+  logUnit: { ...type.footnote, fontWeight: '400', color: c.mutedForeground },
+  logTime: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
 
   // ── manual entry ──
   customBtn: {
@@ -423,13 +429,13 @@ const styles = StyleSheet.create({
     height: 42,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs + 2,
   },
-  customText: { ...type.footnote, fontWeight: '600', color: colors.mutedForeground },
+  customText: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
   scrimFill: { flex: 1 },
   scrim: {
     flex: 1,
@@ -446,10 +452,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: '#1b1b1f',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
   },
-  sheetTitle: { ...type.headline, color: colors.foreground, textAlign: 'center' },
+  sheetTitle: { ...type.headline, color: c.foreground, textAlign: 'center' },
   inputField: {
     alignSelf: 'stretch',
     flexDirection: 'row',
@@ -465,14 +471,14 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     fontSize: 34,
     fontWeight: '700',
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
     padding: 0,
     backgroundColor: 'transparent',
     borderWidth: 0,
   },
-  inputUnit: { ...type.body, color: colors.mutedForeground },
-  sheetWarn: { ...type.caption, color: colors.readinessRed, textAlign: 'center' },
+  inputUnit: { ...type.body, color: c.mutedForeground },
+  sheetWarn: { ...type.caption, color: c.readinessRed, textAlign: 'center' },
   sheetWarnHidden: { opacity: 0 },
   sheetActions: { flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch', marginTop: spacing.xs },
   sheetBtn: {
@@ -483,8 +489,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  sheetBtnPrimary: { backgroundColor: colors.metricBlue },
+  sheetBtnPrimary: { backgroundColor: c.metricBlue },
   sheetBtnDisabled: { opacity: 0.4 },
-  sheetBtnText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  sheetBtnText: { ...type.footnote, fontWeight: '600', color: c.foreground },
   sheetBtnTextPrimary: { color: '#04121f' },
-});
+}));

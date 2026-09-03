@@ -18,7 +18,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { setPendingScan, stackHasMealSheet, type ScannedFood } from '@/lib/scan-bridge';
@@ -49,6 +51,8 @@ function normalize(items: RawItem[]): ScannedFood[] {
 }
 
 export default function ScanFoodScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* `from` is gone. It existed to tell this screen where to go afterwards, and
      that is now worked out from the navigation state — see `confirm` below. */
   const navState = useRootNavigationState();
@@ -233,7 +237,7 @@ export default function ScanFoodScreen() {
                           Haptics.selectionAsync();
                           setItems((prev) => prev.filter((_, i) => i !== idx));
                         }}>
-                        <Icon icon={X} size={15} color={colors.mutedForeground} />
+                        <Icon icon={X} size={15} color={c.mutedForeground} />
                       </Pressable>
                     </View>
                   ))}
@@ -317,22 +321,22 @@ export default function ScanFoodScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   root: { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)' },
-  permTitle: { ...type.title, color: colors.foreground },
-  permHint: { ...type.body, color: colors.mutedForeground, textAlign: 'center' },
+  permTitle: { ...type.title, color: c.foreground },
+  permHint: { ...type.body, color: c.mutedForeground, textAlign: 'center' },
   permBtn: {
     height: 48,
     paddingHorizontal: spacing.xl,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  permBtnText: { ...type.headline, color: colors.primaryForeground },
-  cancelText: { ...type.body, color: colors.mutedForeground },
+  permBtnText: { ...type.headline, color: c.primaryForeground },
+  cancelText: { ...type.body, color: c.mutedForeground },
   overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   frame: {
     width: 280,
@@ -400,7 +404,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.lg,
@@ -408,43 +412,43 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     maxHeight: '70%',
   },
-  reviewTitle: { ...type.title, color: colors.foreground, textAlign: 'center' },
-  reviewSource: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', marginTop: 4 },
-  reviewError: { ...type.body, color: colors.mutedForeground, textAlign: 'center', marginBottom: spacing.sm },
+  reviewTitle: { ...type.title, color: c.foreground, textAlign: 'center' },
+  reviewSource: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', marginTop: 4 },
+  reviewError: { ...type.body, color: c.mutedForeground, textAlign: 'center', marginBottom: spacing.sm },
   reviewList: { maxHeight: 280 },
   reviewListContent: { gap: spacing.sm },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
   },
   itemInfo: { flex: 1, minWidth: 0 },
-  itemName: { ...type.body, color: colors.foreground, fontWeight: '600' },
-  itemMacros: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
-  removeIcon: { color: colors.mutedForeground, fontSize: 15, padding: 4 },
+  itemName: { ...type.body, color: c.foreground, fontWeight: '600' },
+  itemMacros: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
+  removeIcon: { color: c.mutedForeground, fontSize: 15, padding: 4 },
   reviewActions: { flexDirection: 'row', gap: spacing.sm },
   primaryBtn: {
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
   primaryFlex: { flex: 1 },
-  primaryBtnText: { ...type.headline, color: colors.primaryForeground },
+  primaryBtnText: { ...type.headline, color: c.primaryForeground },
   secondaryBtn: {
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
   },
-  secondaryBtnText: { ...type.headline, color: colors.foreground },
+  secondaryBtnText: { ...type.headline, color: c.foreground },
   disabled: { opacity: 0.4 },
-});
+}));

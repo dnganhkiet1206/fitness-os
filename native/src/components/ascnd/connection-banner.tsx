@@ -15,7 +15,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, type } from '@/constants/ascnd';
+import { type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useNetStatus } from '@/hooks/use-online-status';
@@ -45,6 +47,8 @@ import { retryNow } from '@/lib/net-status';
  * người ta giục một việc đang chạy.
  */
 export function ConnectionBanner() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const status = useNetStatus();
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
@@ -52,7 +56,7 @@ export function ConnectionBanner() {
   if (status === 'online') return null;
 
   const offline = status === 'offline';
-  const tone = offline ? colors.readinessYellow : colors.metricBlue;
+  const tone = offline ? c.readinessYellow : c.metricBlue;
 
   return (
     <Animated.View
@@ -147,7 +151,7 @@ function tint(hex: string, alpha: number): string {
   return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${alpha})`;
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   banner: {
     position: 'absolute',
     top: 0,
@@ -173,4 +177,4 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   retryText: { ...type.caption, fontWeight: '700' },
-});
+}));

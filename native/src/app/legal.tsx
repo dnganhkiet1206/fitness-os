@@ -5,13 +5,17 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { getLegal, type LegalDoc } from '@/lib/legal-content';
 
 type Tab = 'terms' | 'privacy' | 'health' | 'data';
 
 export default function LegalScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { lang } = useAppSettings();
   const legal = getLegal(lang);
   const [tab, setTab] = useState<Tab>('terms');
@@ -60,13 +64,13 @@ export default function LegalScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  docTitle: { ...type.title, color: colors.foreground, marginTop: spacing.xs },
-  warnCard: { borderColor: colors.readinessRed, borderWidth: 1 },
-  blockTitle: { ...type.headline, color: colors.foreground, marginBottom: 4 },
-  blockBody: { ...type.footnote, color: colors.mutedForeground, lineHeight: 20 },
-  intro: { color: colors.foreground, marginBottom: spacing.xs },
+const stylesFor = makeStyles((c) => ({
+  docTitle: { ...type.title, color: c.foreground, marginTop: spacing.xs },
+  warnCard: { borderColor: c.readinessRed, borderWidth: 1 },
+  blockTitle: { ...type.headline, color: c.foreground, marginBottom: 4 },
+  blockBody: { ...type.footnote, color: c.mutedForeground, lineHeight: 20 },
+  intro: { color: c.foreground, marginBottom: spacing.xs },
   bulletRow: { flexDirection: 'row', gap: spacing.sm, marginTop: 6 },
-  bulletDot: { ...type.footnote, color: colors.primary },
-  bulletText: { ...type.footnote, color: colors.mutedForeground, flex: 1, lineHeight: 20 },
-});
+  bulletDot: { ...type.footnote, color: c.primary },
+  bulletText: { ...type.footnote, color: c.mutedForeground, flex: 1, lineHeight: 20 },
+}));

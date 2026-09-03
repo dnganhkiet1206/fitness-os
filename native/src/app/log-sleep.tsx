@@ -21,7 +21,9 @@ import {
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { SheetHeader } from '@/components/ascnd/sheet-header';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useInvalidateToday } from '@/hooks/useTodayData';
@@ -40,18 +42,25 @@ import { SLEEP_QUALITY_MAX } from '@/lib/sleep-note';
 
 // Face picks map onto the web's 1–10 quality scale (SleepCard shows
 // "x/10") — code-drawn lucide faces on a red→teal neon ramp
-const QUALITY: { value: number; icon: LucideIcon; color: string }[] = [
-  { value: 2, icon: Angry, color: colors.readinessRed },
-  { value: 4, icon: Frown, color: colors.metricOrange },
-  { value: 6, icon: Meh, color: colors.readinessYellow },
-  { value: 8, icon: Smile, color: colors.readinessGreen },
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+const QUALITY: { value: number; icon: LucideIcon; color: PaletteKey }[] = [
+  { value: 2, icon: Angry, color: 'readinessRed' },
+  { value: 4, icon: Frown, color: 'metricOrange' },
+  { value: 6, icon: Meh, color: 'readinessYellow' },
+  { value: 8, icon: Smile, color: 'readinessGreen' },
   /* Mặt cười cao nhất PHẢI bằng `SLEEP_QUALITY_MAX` — mẫu số hiển thị và chuỗi
      a11y đều đọc từ đó. Đổi thang mà quên một trong hai chỗ kia là lỗi đã xảy
      ra một lần: `/100` và "trên 5" cho một thang 1–10. */
-  { value: SLEEP_QUALITY_MAX, icon: Laugh, color: colors.metricCyan },
+  { value: SLEEP_QUALITY_MAX, icon: Laugh, color: 'metricCyan' },
 ];
 
 export default function LogSleepSheet() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
   const queryClient = useQueryClient();
@@ -241,7 +250,7 @@ export default function LogSleepSheet() {
               style={styles.stageInput}
               keyboardType="number-pad"
               placeholder="0"
-              placeholderTextColor={colors.mutedForeground}
+              placeholderTextColor={c.mutedForeground}
               value={s.value}
               onChangeText={(v) => s.set(decText(v))}
             />
@@ -268,9 +277,9 @@ export default function LogSleepSheet() {
               }}
               style={[
                 styles.chip,
-                active && { backgroundColor: `${q.color}24`, borderColor: q.color, borderWidth: 1 },
+                active && { backgroundColor: alpha(c[q.color], 0.14), borderColor: c[q.color], borderWidth: 1 },
               ]}>
-              <Icon icon={q.icon} size={24} color={active ? q.color : colors.mutedForeground} />
+              <Icon icon={q.icon} size={24} color={active ? c[q.color] : c.mutedForeground} />
             </Pressable>
           );
         })}
@@ -340,9 +349,9 @@ export default function LogSleepSheet() {
           save.mutate();
         }}>
         {save.isSuccess ? (
-          <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+          <Icon icon={Check} size={22} color={c.primaryForeground} strokeWidth={3} />
         ) : save.isPending ? (
-          <ActivityIndicator color={colors.primaryForeground} />
+          <ActivityIndicator color={c.primaryForeground} />
         ) : (
           <Text style={styles.saveText}>{i18n.nSaveSleep}</Text>
         )}
@@ -352,16 +361,16 @@ export default function LogSleepSheet() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.card },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.card },
   content: { padding: spacing.lg, gap: spacing.md },
-  title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
-  fieldLabel: { ...type.footnote, color: colors.mutedForeground },
+  title: { ...type.title, color: c.foreground, textAlign: 'center', marginBottom: spacing.sm },
+  fieldLabel: { ...type.footnote, color: c.mutedForeground },
   timeCard: {
     borderRadius: radius.md,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingHorizontal: spacing.md,
   },
   timeRow: {
@@ -371,51 +380,51 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingVertical: spacing.xs,
   },
-  timeRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
-  timeLabel: { ...type.body, color: colors.foreground },
-  duration: { ...type.headline, color: colors.foreground },
+  timeRowBorder: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  timeLabel: { ...type.body, color: c.foreground },
+  duration: { ...type.headline, color: c.foreground },
   stagesRow: { flexDirection: 'row', gap: spacing.sm },
   stageCell: {
     flex: 1,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     padding: spacing.sm + 2,
     alignItems: 'center',
     gap: 4,
   },
-  stageLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.8 },
+  stageLabel: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.8 },
   stageInput: {
     ...type.headline,
-    color: colors.foreground,
+    color: c.foreground,
     textAlign: 'center',
     minWidth: 56,
     paddingVertical: 2,
     fontVariant: ['tabular-nums'],
   },
-  stageUnit: { ...type.caption, color: colors.mutedForeground },
+  stageUnit: { ...type.caption, color: c.mutedForeground },
   chips: { flexDirection: 'row', gap: spacing.sm },
   chip: {
     flex: 1,
     height: 52,
     borderRadius: radius.md,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   chipActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
   saveButton: {
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,
   },
   saveDisabled: { opacity: 0.4 },
-  stageError: { ...type.footnote, color: colors.readinessRed },
-  saveText: { ...type.headline, color: colors.primaryForeground },
-});
+  stageError: { ...type.footnote, color: c.readinessRed },
+  saveText: { ...type.headline, color: c.primaryForeground },
+}));

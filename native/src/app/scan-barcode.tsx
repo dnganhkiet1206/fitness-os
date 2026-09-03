@@ -9,7 +9,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { setPendingScan, stackHasMealSheet } from '@/lib/scan-bridge';
@@ -41,6 +43,8 @@ async function lookupBarcode(code: string, lang: string) {
 }
 
 export default function ScanBarcodeScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const insets = useSafeAreaInsets();
   const navState = useRootNavigationState();
   const [permission, requestPermission] = useCameraPermissions();
@@ -123,21 +127,21 @@ export default function ScanBarcodeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   root: { flex: 1, backgroundColor: '#000' },
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
-  permTitle: { ...type.title, color: colors.foreground },
-  permHint: { ...type.body, color: colors.mutedForeground, textAlign: 'center' },
+  permTitle: { ...type.title, color: c.foreground },
+  permHint: { ...type.body, color: c.mutedForeground, textAlign: 'center' },
   permBtn: {
     height: 48,
     paddingHorizontal: spacing.xl,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  permBtnText: { ...type.headline, color: colors.primaryForeground },
-  cancelText: { ...type.body, color: colors.mutedForeground },
+  permBtnText: { ...type.headline, color: c.primaryForeground },
+  cancelText: { ...type.body, color: c.mutedForeground },
   overlay: {
     position: 'absolute',
     top: 0,
@@ -175,4 +179,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   closeText: { color: '#fff', fontSize: 16 },
-});
+}));

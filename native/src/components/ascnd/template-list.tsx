@@ -13,7 +13,9 @@ import Animated, {
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, type useI18n } from '@/hooks/use-app-settings';
 import { useExercises } from '@/hooks/use-library';
 import { useRise } from '@/lib/entrance';
@@ -176,6 +178,8 @@ export function TemplateRow({
   vi: boolean;
   onDelete: (id: string) => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY — xem `useRise`. Hàng này nằm trong một danh sách có
      thể dài, nên `rise(index)` hoãn tới 600ms; chạy quãng hoãn ấy ở lần vẽ đầu
      là để lại một danh sách đã chiếm chỗ mà chưa nhìn thấy. */
@@ -314,13 +318,13 @@ export function TemplateRow({
               accessibilityLabel={i18n.a11yDelete}
               hitSlop={8}
               onPress={() => onDelete(tpl.id)}>
-              <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+              <Icon icon={Trash2} size={15} color={c.mutedForeground} />
             </Pressable>
             {/* No chevron on an empty template: there is nothing to open, and a
                 control that does nothing is what this row had before. */}
             {exs.length > 0 ? (
               <Animated.View style={chevron}>
-                <Icon icon={ChevronDown} size={16} color={colors.mutedForeground} />
+                <Icon icon={ChevronDown} size={16} color={c.mutedForeground} />
               </Animated.View>
             ) : null}
           </View>
@@ -410,6 +414,8 @@ export function TemplateList({
   i18n: ReturnType<typeof useI18n>;
   onDelete: (id: string) => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /*
     Tra một lần cho cả danh sách, không phải một lần mỗi hàng.
 
@@ -448,7 +454,7 @@ export function TemplateList({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   tplStack: { gap: spacing.sm + 4 },
   /* Tighter than the card default (20), because the card holds two lines of
      text and a chevron — 20 all round would leave it mostly empty. */
@@ -461,19 +467,19 @@ const styles = StyleSheet.create({
   },
   tplInfo: { flex: 1, minWidth: 0, gap: 4 },
   tplTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  tplName: { fontSize: 14, fontWeight: '500', color: colors.foreground, flexShrink: 1 },
+  tplName: { fontSize: 14, fontWeight: '500', color: c.foreground, flexShrink: 1 },
   typeBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  typeText: { fontSize: 11, color: colors.mutedForeground, textTransform: 'capitalize' },
+  typeText: { fontSize: 11, color: c.mutedForeground, textTransform: 'capitalize' },
   /* Sáng hơn `tplMeta` một bậc, vì nó trả lời câu hỏi quan trọng hơn: chọn mẫu
      nào cho hôm nay là chọn theo NHÓM CƠ, còn số bài và số hiệp chỉ là cỡ của
      việc. Cùng màu thì hai dòng thành một khối xám và mắt phải đọc cả hai. */
-  tplMuscles: { fontSize: 13, fontWeight: '600', color: colors.foreground },
-  tplMeta: { fontSize: 12, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  tplMuscles: { fontSize: 13, fontWeight: '600', color: c.foreground },
+  tplMeta: { fontSize: 12, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   tplActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
   /* The prescription on the face of the card, under the count and volume.
      Same size and colour as the line above it because it is the same kind of
@@ -481,7 +487,7 @@ const styles = StyleSheet.create({
      effort look more important than the exercises they belong to. */
   tplRx: {
     fontSize: 12,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     fontVariant: ['tabular-nums'],
     marginTop: 1,
   },
@@ -498,18 +504,18 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     marginTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   exRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  exName: { fontSize: 13, color: colors.foreground, flex: 1, minWidth: 0 },
-  exSets: { fontSize: 12, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  exName: { fontSize: 13, color: c.foreground, flex: 1, minWidth: 0 },
+  exSets: { fontSize: 12, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   /* Dimmer than the sets line and indented by nothing: it is a note about the
      row above it, not a second row. */
   exRx: {
     fontSize: 11,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     opacity: 0.75,
     fontVariant: ['tabular-nums'],
     marginTop: 3,
   },
-});
+}));

@@ -24,7 +24,9 @@ import { MusicLaunch } from '@/components/ascnd/music-launch';
 import { Icon } from '@/components/ascnd/icon';
 import { RecordCelebration } from '@/components/ascnd/record-celebration';
 import type { TplExercise } from '@/components/ascnd/template-list';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
@@ -109,6 +111,8 @@ function rowsFromTemplate(exercises: TplExercise[], unit: WeightUnit): SetRow[] 
 
 
 export default function LogWorkoutSheet() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { weight: wUnit } = useUnits();
   const { user } = useAuth();
@@ -672,7 +676,7 @@ export default function LogWorkoutSheet() {
             accessibilityLabel={`${i18n.nRdPlanToday}: ${todaysPlan.name}`}
             onPress={usePlan}
             style={styles.planChip}>
-            <Icon icon={CalendarDays} size={14} color={colors.metricBlue} />
+            <Icon icon={CalendarDays} size={14} color={c.metricBlue} />
             <View style={styles.planText}>
               <Text style={styles.planLabel}>{i18n.nRdPlanToday}</Text>
               <Text style={styles.planName} numberOfLines={1}>{todaysPlan.name}</Text>
@@ -688,7 +692,7 @@ export default function LogWorkoutSheet() {
         <TextInput
           style={styles.input}
           placeholder={i18n.nWorkoutName}
-          placeholderTextColor={colors.mutedForeground}
+          placeholderTextColor={c.mutedForeground}
           value={name}
           onChangeText={setName}
         />
@@ -728,7 +732,7 @@ export default function LogWorkoutSheet() {
                 <TextInput
                   style={[styles.input, styles.setName]}
                   placeholder={i18n.nExercise}
-                  placeholderTextColor={colors.mutedForeground}
+                  placeholderTextColor={c.mutedForeground}
                   value={s.exerciseName}
                   onChangeText={(v) => updateSet(idx, 'exerciseName', v)}
                   onFocus={() => setFocusedRow(idx)}
@@ -740,7 +744,7 @@ export default function LogWorkoutSheet() {
                   // A dash, not "kg": the heading above already says the unit,
                   // and an empty box here means bodyweight rather than blank.
                   placeholder="—"
-                  placeholderTextColor={colors.mutedForeground}
+                  placeholderTextColor={c.mutedForeground}
                   keyboardType="decimal-pad"
                   value={s.weight}
                   onChangeText={(v) => updateSet(idx, 'weight', decText(v))}
@@ -749,7 +753,7 @@ export default function LogWorkoutSheet() {
                   accessibilityLabel={`${s.exerciseName || i18n.nExercise} ${setNumbers[idx]} ${i18n.nReps}`}
                   style={[styles.input, styles.setNum, !(Number(s.reps) > 0) && styles.needed]}
                   placeholder="—"
-                  placeholderTextColor={colors.mutedForeground}
+                  placeholderTextColor={c.mutedForeground}
                   keyboardType="number-pad"
                   value={s.reps}
                   onChangeText={(v) => updateSet(idx, 'reps', v)}
@@ -777,7 +781,7 @@ export default function LogWorkoutSheet() {
                   </Text>
                 </Pressable>
                 <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={8} onPress={() => removeSet(idx)} style={styles.removeSet}>
-                  <Icon icon={X} size={14} color={colors.mutedForeground} />
+                  <Icon icon={X} size={14} color={c.mutedForeground} />
                 </Pressable>
               </View>
               {/*
@@ -831,14 +835,14 @@ export default function LogWorkoutSheet() {
             accessibilityRole="button"
             style={styles.addSet}
             onPress={addSet}>
-            <Icon icon={Plus} size={15} color={colors.foreground} strokeWidth={2.5} />
+            <Icon icon={Plus} size={15} color={c.foreground} strokeWidth={2.5} />
             <Text style={styles.addSetText}>{i18n.nAddSet}</Text>
           </PressScale>
           <PressScale
             accessibilityRole="button"
             style={styles.addSet}
             onPress={addExercise}>
-            <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
+            <Icon icon={Plus} size={15} color={c.primary} strokeWidth={2.5} />
             <Text style={[styles.addSetText, styles.addExerciseText]}>{i18n.nLgNewExercise}</Text>
           </PressScale>
         </View>
@@ -891,8 +895,8 @@ export default function LogWorkoutSheet() {
         <Text style={styles.sectionLabel}>{i18n.nRpe}</Text>
         <PickRow
           value={String(rpe)}
-          fill={colors.primary}
-          slotFill={colors.secondary}
+          fill={c.primary}
+          slotFill={c.secondary}
           radius={radius.md}
           gap={spacing.sm}>
           {RPE_VALUES.map((v) => (
@@ -962,9 +966,9 @@ export default function LogWorkoutSheet() {
             save.mutate();
           }}>
           {save.isSuccess ? (
-            <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+            <Icon icon={Check} size={22} color={c.primaryForeground} strokeWidth={3} />
           ) : save.isPending ? (
-            <ActivityIndicator color={colors.primaryForeground} />
+            <ActivityIndicator color={c.primaryForeground} />
           ) : (
             <Text style={styles.saveText}>{i18n.nSaveWorkout}</Text>
           )}
@@ -981,10 +985,10 @@ export default function LogWorkoutSheet() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.card },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.card },
   content: { padding: spacing.lg, gap: spacing.sm + 4 },
-  title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
+  title: { ...type.title, color: c.foreground, textAlign: 'center', marginBottom: spacing.sm },
   /* An offer, styled as one: outlined and quiet, sitting above the form rather
      than inside it, so it reads as "here is what the week says" and not as a
      field you have to deal with. */
@@ -1000,21 +1004,21 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
   },
   planText: { flex: 1, minWidth: 0 },
-  planLabel: { ...type.caption, color: colors.mutedForeground },
-  planName: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
-  planUse: { ...type.footnote, color: colors.metricBlue, fontWeight: '700' },
+  planLabel: { ...type.caption, color: c.mutedForeground },
+  planName: { ...type.footnote, color: c.foreground, fontWeight: '600' },
+  planUse: { ...type.footnote, color: c.metricBlue, fontWeight: '700' },
   /* A quiet line, not a banner: it is information beside a decision, and a
      coloured card here would read as the app instructing somebody. */
-  loadHint: { ...type.caption, color: colors.mutedForeground, lineHeight: 17 },
-  sectionLabel: { ...type.footnote, color: colors.mutedForeground, marginTop: spacing.xs },
+  loadHint: { ...type.caption, color: c.mutedForeground, lineHeight: 17 },
+  sectionLabel: { ...type.footnote, color: c.mutedForeground, marginTop: spacing.xs },
   input: {
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
   },
   setRow: {
@@ -1024,7 +1028,7 @@ const styles = StyleSheet.create({
   },
   setIndex: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     width: 16,
     textAlign: 'center',
   },
@@ -1032,7 +1036,7 @@ const styles = StyleSheet.create({
      more rather than reused, because `setNum` and its siblings carry a 44pt
      height for the fields and a heading at 44pt is a second row of furniture. */
   colHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  colLabel: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
+  colLabel: { ...type.caption, color: c.mutedForeground, textAlign: 'center' },
   colIdx: { width: 16 },
   colName: { flex: 1, minWidth: 0, textAlign: 'left', paddingHorizontal: spacing.sm },
   colNum: { width: 64 },
@@ -1045,17 +1049,17 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   /* The one field a set cannot do without, marked while it is empty by
      brightening the border it already has. Not an error colour: the row is not
      wrong, it is unfinished, and red on something still being typed into reads
      as a mistake already made. */
-  needed: { borderColor: colors.mutedForeground },
+  needed: { borderColor: c.mutedForeground },
   addRow: { flexDirection: 'row', gap: spacing.sm },
-  addExerciseText: { color: colors.primary },
-  fieldHint: { ...type.caption, color: colors.mutedForeground },
-  rangeError: { ...type.caption, color: colors.readinessRed },
+  addExerciseText: { color: c.primary },
+  fieldHint: { ...type.caption, color: c.mutedForeground },
+  rangeError: { ...type.caption, color: c.readinessRed },
   /*
     `minWidth: 0`, and it is not cosmetic.
 
@@ -1077,13 +1081,13 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: radius.sm - 4,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  warmBtnOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  warmText: { ...type.caption, fontWeight: '700', color: colors.mutedForeground },
-  warmTextOn: { color: colors.primaryForeground },
+  warmBtnOn: { backgroundColor: c.primary, borderColor: c.primary },
+  warmText: { ...type.caption, fontWeight: '700', color: c.mutedForeground },
+  warmTextOn: { color: c.primaryForeground },
   lastRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 },
   suggestRow: {
     flexDirection: 'row',
@@ -1097,28 +1101,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md - 2,
     paddingVertical: 6,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  suggestText: { ...type.caption, color: colors.foreground },
-  removeText: { color: colors.mutedForeground, fontSize: 14 },
+  suggestText: { ...type.caption, color: c.foreground },
+  removeText: { color: c.mutedForeground, fontSize: 14 },
   addSet: {
     flex: 1,
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     flexDirection: 'row',
     gap: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addSetText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  addSetText: { ...type.footnote, fontWeight: '600', color: c.foreground },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  volume: { ...type.headline, color: colors.foreground },
+  volume: { ...type.headline, color: c.foreground },
   /* No background here on purpose: the row paints the resting box so the
      travelling highlight can sit between it and this label. */
   chip: {
@@ -1127,16 +1131,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipText: { ...type.headline, color: colors.secondaryForeground },
-  chipTextActive: { color: colors.primaryForeground },
+  chipText: { ...type.headline, color: c.secondaryForeground },
+  chipTextActive: { color: c.primaryForeground },
   saveButton: {
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,
   },
   saveDisabled: { opacity: 0.4 },
-  saveText: { ...type.headline, color: colors.primaryForeground },
-});
+  saveText: { ...type.headline, color: c.primaryForeground },
+}));

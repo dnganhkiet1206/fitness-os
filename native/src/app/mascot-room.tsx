@@ -61,7 +61,9 @@ import { RankJourney } from '@/components/ascnd/rank-journey';
 import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAwards, useWeeklyChallenges } from '@/hooks/use-extras';
 import { useMascot } from '@/hooks/use-mascot';
@@ -97,12 +99,20 @@ import { toast } from '@/lib/toast';
 
 
 // The five daily signals that power the buddy's energy meter
-const SIGNAL_META: Record<QuestKey, { icon: LucideIcon; color: string; labelKey: 'nRoomSigMeal' | 'nRoomSigWorkout' | 'nRoomSigWater' | 'nRoomSigSleep' | 'nRoomSigSteps' }> = {
-  meal: { icon: Utensils, color: colors.metricOrange, labelKey: 'nRoomSigMeal' },
-  workout: { icon: Dumbbell, color: '#e6485c', labelKey: 'nRoomSigWorkout' },
-  water: { icon: Droplets, color: colors.metricCyan, labelKey: 'nRoomSigWater' },
-  sleep: { icon: Moon, color: colors.metricPurple, labelKey: 'nRoomSigSleep' },
-  steps: { icon: Footprints, color: colors.readinessGreen, labelKey: 'nRoomSigSteps' },
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+/* `workout` từng viết thẳng `'#e6485c'` — đó chính là giá trị của `metricRose`
+   trong theme tối, tức một bản sao chép tay của một token đã có. Bản sao ấy sẽ
+   không đổi khi theme đổi; token thì có. */
+const SIGNAL_META: Record<QuestKey, { icon: LucideIcon; color: PaletteKey; labelKey: 'nRoomSigMeal' | 'nRoomSigWorkout' | 'nRoomSigWater' | 'nRoomSigSleep' | 'nRoomSigSteps' }> = {
+  meal: { icon: Utensils, color: 'metricOrange', labelKey: 'nRoomSigMeal' },
+  workout: { icon: Dumbbell, color: 'metricRose', labelKey: 'nRoomSigWorkout' },
+  water: { icon: Droplets, color: 'metricCyan', labelKey: 'nRoomSigWater' },
+  sleep: { icon: Moon, color: 'metricPurple', labelKey: 'nRoomSigSleep' },
+  steps: { icon: Footprints, color: 'readinessGreen', labelKey: 'nRoomSigSteps' },
 };
 
 // Rank → celebration tier (the confetti overlay speaks bronze/…/platinum)
@@ -128,6 +138,8 @@ const STAGE_KEEP_ALIVE = 120;
 
 /** Floating "+N coins" that rises off the scene on every claim */
 function CoinBurst({ trigger, amount }: { trigger: number; amount: number }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const y = useSharedValue(0);
   const op = useSharedValue(0);
   useEffect(() => {
@@ -165,6 +177,8 @@ const LEARNED_LABEL: Record<QuestKey, 'nThingMeal' | 'nThingWorkout' | 'nThingWa
 };
 
 export default function MascotRoomScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { mascot, message, mood } = useMascot();
@@ -557,7 +571,7 @@ export default function MascotRoomScreen() {
             <EnergyRing
               size={104}
               stroke={10}
-              segments={ENERGY_SIGNALS.map((k) => ({ on: questDone[k], color: SIGNAL_META[k].color }))}
+              segments={ENERGY_SIGNALS.map((k) => ({ on: questDone[k], color: c[SIGNAL_META[k].color] }))}
             />
             <View style={styles.ringCenter} pointerEvents="none">
               <Text style={styles.ringNum}>
@@ -581,10 +595,13 @@ export default function MascotRoomScreen() {
                 key={k}
                 style={[
                   styles.energyPip,
-                  on && { backgroundColor: `${meta.color}1f`, borderColor: `${meta.color}66` },
+                  on && {
+                    backgroundColor: alpha(c[meta.color], 0.12),
+                    borderColor: alpha(c[meta.color], 0.4),
+                  },
                 ]}>
-                <Icon icon={meta.icon} size={16} color={on ? meta.color : colors.mutedForeground} />
-                <Text style={[styles.energyPipLabel, on && { color: colors.foreground }]}>
+                <Icon icon={meta.icon} size={16} color={on ? c[meta.color] : c.mutedForeground} />
+                <Text style={[styles.energyPipLabel, on && { color: c.foreground }]}>
                   {i18n[meta.labelKey]}
                 </Text>
               </View>
@@ -604,7 +621,7 @@ export default function MascotRoomScreen() {
         <ActionChip
           icon={Shirt}
           label={i18n.nRoomDressing}
-          color={colors.metricPurple}
+          color={c.metricPurple}
           onPress={() => {
             Haptics.selectionAsync();
             nav.push('/shop');
@@ -613,7 +630,7 @@ export default function MascotRoomScreen() {
         <ActionChip
           icon={Cat}
           label={i18n.nRoomChangeBuddy}
-          color={colors.metricOrange}
+          color={c.metricOrange}
           onPress={() => {
             Haptics.selectionAsync();
             nav.push('/settings');
@@ -649,7 +666,7 @@ export default function MascotRoomScreen() {
             pct={(intoLevel / LEVEL_XP) * 100}
             height={6}
             radius={3}
-            trackColor={colors.secondary}
+            trackColor={c.secondary}
             color={rank.color}
           />
           <Text style={styles.levelHint}>
@@ -684,7 +701,7 @@ export default function MascotRoomScreen() {
       <GlassCard style={styles.freezeCard}>
         <View style={styles.freezeHead}>
           <View style={styles.freezeIcon}>
-            <Icon icon={Snowflake} size={18} color={colors.metricBlue} />
+            <Icon icon={Snowflake} size={18} color={c.metricBlue} />
           </View>
           <View style={styles.freezeText}>
             <Text style={styles.freezeTitle}>{i18n.nFreezeTitle}</Text>
@@ -739,7 +756,7 @@ export default function MascotRoomScreen() {
             )}
           </Text>
         </View>
-        <RankJourney ranks={RANKS} currentKey={rank.key} lang={lang} cardBg={colors.card} />
+        <RankJourney ranks={RANKS} currentKey={rank.key} lang={lang} cardBg={c.card} />
       </GlassCard>
 
       {/* Daily quests */}
@@ -782,7 +799,7 @@ export default function MascotRoomScreen() {
               */}
               {isClaimed ? (
                 <View style={styles.claimedChip}>
-                  <Icon icon={Check} size={13} color={colors.readinessGreen} strokeWidth={3} />
+                  <Icon icon={Check} size={13} color={c.readinessGreen} strokeWidth={3} />
                   <Text style={styles.claimedText}>{i18n.nRoomClaimed}</Text>
                 </View>
               ) : (
@@ -823,7 +840,7 @@ export default function MascotRoomScreen() {
             </View>
             {claimed.has(streakRefKey) ? (
               <View style={styles.claimedChip}>
-                <Icon icon={Check} size={13} color={colors.readinessGreen} strokeWidth={3} />
+                <Icon icon={Check} size={13} color={c.readinessGreen} strokeWidth={3} />
                 <Text style={styles.claimedText}>{i18n.nRoomClaimed}</Text>
               </View>
             ) : (
@@ -864,14 +881,14 @@ export default function MascotRoomScreen() {
       {completedWeekly.length > 0 && (
         <GlassCard style={styles.card}>
           <Text style={styles.cardTitle}>{i18n.nRoomWeeklyBonus}</Text>
-          {completedWeekly.map((c) => {
-            const t = CHALLENGE_TEXT[c.challenge_key];
-            const paid = CHALLENGE_REWARD[c.reward_tier ?? 'bronze'] ?? CHALLENGE_REWARD.bronze;
+          {completedWeekly.map((ch) => {
+            const t = CHALLENGE_TEXT[ch.challenge_key];
+            const paid = CHALLENGE_REWARD[ch.reward_tier ?? 'bronze'] ?? CHALLENGE_REWARD.bronze;
             return (
-              <View key={c.id} style={styles.questRow}>
+              <View key={ch.id} style={styles.questRow}>
                 <View style={styles.questInfo}>
                   <Text style={[styles.questName, styles.questNameDone]}>
-                    {t ? t.title[lang] : c.title}
+                    {t ? t.title[lang] : ch.title}
                   </Text>
                   <View style={styles.questCoins}>
                     <Icon icon={Coins} size={11} />
@@ -880,7 +897,7 @@ export default function MascotRoomScreen() {
                   </View>
                 </View>
                 <View style={styles.claimedChip}>
-                  <Icon icon={Check} size={13} color={colors.readinessGreen} strokeWidth={3} />
+                  <Icon icon={Check} size={13} color={c.readinessGreen} strokeWidth={3} />
                   <Text style={styles.claimedText}>{i18n.nRoomClaimed}</Text>
                 </View>
               </View>
@@ -945,6 +962,8 @@ function ActionChip({
   color: string;
   onPress: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <PressScale
       onPress={onPress}
@@ -962,7 +981,7 @@ function ActionChip({
 
 
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   coinPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -974,20 +993,20 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,217,61,0.35)',
   },
-  coinText: { ...type.footnote, fontWeight: '700', color: colors.readinessYellow, fontVariant: ['tabular-nums'] },
+  coinText: { ...type.footnote, fontWeight: '700', color: c.readinessYellow, fontVariant: ['tabular-nums'] },
 
   bubble: {
     alignSelf: 'center',
     maxWidth: '88%',
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
     marginTop: -spacing.sm,
   },
-  bubbleText: { ...type.footnote, color: colors.foreground, textAlign: 'center', lineHeight: 19 },
+  bubbleText: { ...type.footnote, color: c.foreground, textAlign: 'center', lineHeight: 19 },
 
   // Full-bleed hero: cancel the page's horizontal padding so the gym art
   // reaches both screen edges, and tuck the next content up into the bottom
@@ -1000,13 +1019,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  devChipOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  devChipText: { ...type.caption, color: colors.mutedForeground, fontWeight: '700' },
-  devChipTextOn: { color: colors.primaryForeground },
+  devChipOn: { backgroundColor: c.primary, borderColor: c.primary },
+  devChipText: { ...type.caption, color: c.mutedForeground, fontWeight: '700' },
+  devChipTextOn: { color: c.primaryForeground },
   burstWrap: {
     position: 'absolute',
     top: '30%',
@@ -1025,7 +1044,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,217,61,0.4)',
   },
-  burstText: { ...type.headline, fontWeight: '800', color: colors.readinessYellow, fontVariant: ['tabular-nums'] },
+  burstText: { ...type.headline, fontWeight: '800', color: c.readinessYellow, fontVariant: ['tabular-nums'] },
 
   energyCard: { gap: spacing.md },
   energyTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
@@ -1039,12 +1058,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ringNum: { ...type.title, fontSize: 26, fontWeight: '800', color: colors.foreground, lineHeight: 28, fontVariant: ['tabular-nums'] },
-  ringNumMax: { ...type.footnote, fontWeight: '700', color: colors.mutedForeground },
-  ringSub: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', color: colors.mutedForeground, marginTop: 3 },
+  ringNum: { ...type.title, fontSize: 26, fontWeight: '800', color: c.foreground, lineHeight: 28, fontVariant: ['tabular-nums'] },
+  ringNumMax: { ...type.footnote, fontWeight: '700', color: c.mutedForeground },
+  ringSub: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5, textTransform: 'uppercase', color: c.mutedForeground, marginTop: 3 },
   energyInfo: { flex: 1, minWidth: 0, gap: 4 },
-  energyTitle: { ...type.headline, color: colors.foreground },
-  energyHint: { ...type.footnote, color: colors.mutedForeground, lineHeight: 18 },
+  energyTitle: { ...type.headline, color: c.foreground },
+  energyHint: { ...type.footnote, color: c.mutedForeground, lineHeight: 18 },
   energyPips: { flexDirection: 'row', gap: spacing.sm - 2 },
   energyPip: {
     flex: 1,
@@ -1052,21 +1071,21 @@ const styles = StyleSheet.create({
     gap: 4,
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  energyPipLabel: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
+  energyPipLabel: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },
 
   journeyCard: { gap: spacing.md },
   journeyHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  journeyTitle: { ...type.headline, color: colors.foreground },
-  journeySub: { ...type.footnote, color: colors.mutedForeground },
+  journeyTitle: { ...type.headline, color: c.foreground },
+  journeySub: { ...type.footnote, color: c.mutedForeground },
 
   card: { gap: spacing.sm },
   gameRows: { gap: spacing.sm },
-  cardTitle: { ...type.headline, color: colors.foreground },
-  cardHint: { ...type.caption, color: colors.mutedForeground, marginTop: -4 },
+  cardTitle: { ...type.headline, color: c.foreground },
+  cardHint: { ...type.caption, color: c.mutedForeground, marginTop: -4 },
 
   levelCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   levelBadge: {
@@ -1083,9 +1102,9 @@ const styles = StyleSheet.create({
   levelTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   levelTitleWrap: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexShrink: 1, minWidth: 0 },
   rankName: { ...type.headline, fontWeight: '800' },
-  levelTitle: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  levelHint: { ...type.caption, color: colors.mutedForeground },
-  learned: { ...type.caption, color: colors.metricBlue, marginTop: 4 },
+  levelTitle: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },
+  levelHint: { ...type.caption, color: c.mutedForeground },
+  learned: { ...type.caption, color: c.metricBlue, marginTop: 4 },
   freezeCard: { gap: spacing.xs },
   freezeHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   freezeIcon: {
@@ -1097,8 +1116,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(88,166,255,0.12)',
   },
   freezeText: { flex: 1, minWidth: 0 },
-  freezeTitle: { ...type.headline, color: colors.foreground },
-  freezeHeld: { ...type.caption, color: colors.mutedForeground },
+  freezeTitle: { ...type.headline, color: c.foreground },
+  freezeHeld: { ...type.caption, color: c.mutedForeground },
   freezeBuy: {
     height: 36,
     paddingHorizontal: spacing.md,
@@ -1108,9 +1127,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
   },
   freezeBuyOff: { opacity: 0.45 },
-  freezeBuyText: { ...type.caption, fontWeight: '700', color: colors.foreground },
-  freezeHint: { ...type.caption, color: colors.mutedForeground },
-  freezeSaved: { ...type.caption, fontWeight: '600', color: colors.metricBlue },
+  freezeBuyText: { ...type.caption, fontWeight: '700', color: c.foreground },
+  freezeHint: { ...type.caption, color: c.mutedForeground },
+  freezeSaved: { ...type.caption, fontWeight: '600', color: c.metricBlue },
   streakChip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1120,19 +1139,19 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: 'rgba(240,138,58,0.12)',
   },
-  streakChipText: { ...type.caption, fontWeight: '700', color: colors.metricOrange },
+  streakChipText: { ...type.caption, fontWeight: '700', color: c.metricOrange },
   streakNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
   questRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
   questInfo: { flex: 1, minWidth: 0, gap: 3 },
-  questName: { ...type.body, color: colors.foreground },
-  questNameDone: { color: colors.mutedForeground },
+  questName: { ...type.body, color: c.foreground },
+  questNameDone: { color: c.mutedForeground },
   questCoins: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  questCoinText: { ...type.caption, fontWeight: '700', color: colors.readinessYellow, fontVariant: ['tabular-nums'] },
+  questCoinText: { ...type.caption, fontWeight: '700', color: c.readinessYellow, fontVariant: ['tabular-nums'] },
   questXpText: {
     ...type.caption,
     fontWeight: '700',
-    color: colors.metricPurple,
+    color: c.metricPurple,
     fontVariant: ['tabular-nums'],
     marginLeft: 4,
   },
@@ -1140,15 +1159,15 @@ const styles = StyleSheet.create({
     height: 32,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  claimBtnDisabled: { backgroundColor: colors.secondary },
-  claimText: { ...type.footnote, fontWeight: '700', color: colors.primaryForeground },
-  claimTextDisabled: { color: colors.mutedForeground },
+  claimBtnDisabled: { backgroundColor: c.secondary },
+  claimText: { ...type.footnote, fontWeight: '700', color: c.primaryForeground },
+  claimTextDisabled: { color: c.mutedForeground },
   claimedChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  claimedText: { ...type.footnote, color: colors.readinessGreen, fontWeight: '600' },
+  claimedText: { ...type.footnote, color: c.readinessGreen, fontWeight: '600' },
 
   chipRow: { flexDirection: 'row', gap: spacing.sm },
   chip: {
@@ -1159,9 +1178,9 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 46,
     borderRadius: radius.lg,
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     paddingHorizontal: spacing.sm,
   },
   chipIcon: {
@@ -1171,7 +1190,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipText: { ...type.caption, color: colors.foreground, fontWeight: '600', flexShrink: 1 },
+  chipText: { ...type.caption, color: c.foreground, fontWeight: '600', flexShrink: 1 },
 
   sheetBackdropWrap: { flex: 1, justifyContent: 'flex-end' },
   sheetBackdrop: {
@@ -1202,13 +1221,13 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
-  sheetTitle: { ...type.headline, color: colors.foreground, flex: 1 },
+  sheetTitle: { ...type.headline, color: c.foreground, flex: 1 },
   sheetCoins: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   sheetClose: {
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: spacing.sm,
@@ -1225,13 +1244,13 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  catIconOn: { backgroundColor: 'rgba(124,106,255,0.16)', borderColor: colors.primary },
-  catLabel: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  catLabelOn: { color: colors.foreground },
+  catIconOn: { backgroundColor: 'rgba(124,106,255,0.16)', borderColor: c.primary },
+  catLabel: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },
+  catLabelOn: { color: c.foreground },
 
   shopGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   shopItem: {
@@ -1250,7 +1269,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  itemName: { ...type.caption, color: colors.foreground, fontWeight: '600', textAlign: 'center' },
+  itemName: { ...type.caption, color: c.foreground, fontWeight: '600', textAlign: 'center' },
   rarityBadge: { paddingHorizontal: 8, height: 17, borderRadius: radius.full, justifyContent: 'center' },
   rarityText: { fontSize: 11, fontWeight: '700' },
   lockBtn: {
@@ -1262,12 +1281,12 @@ const styles = StyleSheet.create({
     minWidth: 64,
     paddingHorizontal: spacing.sm + 2,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  lockText: { ...type.caption, fontWeight: '700', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  lockText: { ...type.caption, fontWeight: '700', color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   emptyCat: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     paddingVertical: spacing.xl,
   },
@@ -1293,9 +1312,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(124,106,255,0.16)',
   },
   setsBannerText: { flex: 1, minWidth: 0, gap: 2 },
-  setsTitle: { ...type.headline, color: colors.foreground },
-  setsHint: { ...type.caption, color: colors.mutedForeground },
-  setsChevron: { fontSize: 24, color: colors.mutedForeground, marginRight: 4 },
+  setsTitle: { ...type.headline, color: c.foreground },
+  setsHint: { ...type.caption, color: c.mutedForeground },
+  setsChevron: { fontSize: 24, color: c.mutedForeground, marginRight: 4 },
   setsBadge: {
     minWidth: 22,
     height: 22,
@@ -1303,15 +1322,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.readinessGreen,
+    backgroundColor: c.readinessGreen,
   },
   setsBadgeText: { fontSize: 12, fontWeight: '800', color: '#04120c' },
   setCard: { gap: spacing.sm },
   setTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   setInfo: { flex: 1, minWidth: 0, gap: 3 },
-  setName: { ...type.body, fontWeight: '700', color: colors.foreground },
-  setProgressText: { ...type.footnote, color: colors.mutedForeground, fontWeight: '600', fontVariant: ['tabular-nums'] },
-  setTrack: { height: 6, borderRadius: 3, backgroundColor: colors.secondary, overflow: 'hidden' },
+  setName: { ...type.body, fontWeight: '700', color: c.foreground },
+  setProgressText: { ...type.footnote, color: c.mutedForeground, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  setTrack: { height: 6, borderRadius: 3, backgroundColor: c.secondary, overflow: 'hidden' },
   setFill: { height: '100%', borderRadius: 3 },
 
   buyBtn: {
@@ -1323,11 +1342,11 @@ const styles = StyleSheet.create({
     minWidth: 64,
     paddingHorizontal: spacing.sm + 2,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
-  buyBtnPoor: { backgroundColor: colors.secondary },
-  buyText: { ...type.caption, fontWeight: '700', color: colors.primaryForeground, fontVariant: ['tabular-nums'] },
-  buyTextPoor: { color: colors.mutedForeground },
+  buyBtnPoor: { backgroundColor: c.secondary },
+  buyText: { ...type.caption, fontWeight: '700', color: c.primaryForeground, fontVariant: ['tabular-nums'] },
+  buyTextPoor: { color: c.mutedForeground },
   ownedBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1337,9 +1356,9 @@ const styles = StyleSheet.create({
     minWidth: 64,
     paddingHorizontal: spacing.sm + 2,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
   wearingBtn: { backgroundColor: 'rgba(43,245,168,0.14)' },
-  ownedText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  wearingText: { color: colors.readinessGreen },
-});
+  ownedText: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },
+  wearingText: { color: c.readinessGreen },
+}));

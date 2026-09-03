@@ -10,7 +10,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { MicroLabel, SectionTitle } from '@/components/ascnd/section-title';
 import { AiMealSuggest } from '@/components/ascnd/ai-meal-suggest';
 import { NutritionCard, WaterWidget } from '@/components/ascnd/dashboard-cards';
-import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
+import { FoodCard, useFoodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
@@ -23,7 +23,9 @@ import { Screen } from '@/components/ascnd/screen';
 import { Measured, NutritionSkeleton, SK } from '@/components/ascnd/skeleton';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodayMeals } from '@/components/ascnd/today-meals';
-import { PAGE_TINT, colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { PAGE_TINT, glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -99,6 +101,9 @@ type Tab = 'today' | 'plan';
  * them only that they have not done a thing they may not have a name for.
  */
 function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boolean }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const foodList = useFoodListStyles();
   /* Lần vẽ đầu thì hiện ngay — xem `useRise`. */
   const rise = useRise();
   const { data: plans, isPending } = useMealPlans();
@@ -132,14 +137,14 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
     return (
       <>
         <GlassCard style={styles.planEmpty}>
-          <Icon icon={Utensils} size={22} color={colors.mutedForeground} />
+          <Icon icon={Utensils} size={22} color={c.mutedForeground} />
           <Text style={styles.planEmptyTitle}>{i18n.nMealPlanNone}</Text>
           <Text style={styles.planEmptyBody}>{i18n.nMealPlanWhat}</Text>
           <PressScale
             accessibilityRole="button"
             onPress={open}
             style={styles.planCreate}>
-            <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
+            <Icon icon={Plus} size={15} color={c.primaryForeground} strokeWidth={2.5} />
             <Text style={styles.planCreateText}>{i18n.nMealPlanNew}</Text>
           </PressScale>
         </GlassCard>
@@ -192,7 +197,7 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
               nav.push('/meal-plans');
             }}>
             <Text style={styles.planAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
-            <Icon icon={ChevronRight} size={13} color={colors.primary} />
+            <Icon icon={ChevronRight} size={13} color={c.primary} />
           </PressScale>
         ) : null}
       </View>
@@ -215,14 +220,14 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
         dưới danh sách tài khoản. Nó nói: đây là một danh sách, và đây là cách
         làm nó dài thêm.
 
-        Không tự dựng lại: `foodListStyles.group` / `.sep` là đúng thứ mà nửa
+        Không tự dựng lại: `foodList.group` / `.sep` là đúng thứ mà nửa
         dưới của chính trang này đã dùng cho danh sách thực phẩm. Hai danh sách
         trên một trang phải trông như nhau.
       */}
-      <View style={foodListStyles.group}>
+      <View style={foodList.group}>
         {plans.slice(0, PREVIEW).map((p, i) => (
           <Animated.View key={p.id} entering={rise(i)}>
-            {i > 0 ? <View style={foodListStyles.sep} /> : null}
+            {i > 0 ? <View style={foodList.sep} /> : null}
             <PlanRow
               name={p.name}
               goalText={[
@@ -244,12 +249,12 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
             />
           </Animated.View>
         ))}
-        <View style={foodListStyles.sep} />
+        <View style={foodList.sep} />
         <PressScale
           accessibilityRole="button"
           onPress={open}
           style={styles.planRow}>
-          <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
+          <Icon icon={Plus} size={16} color={c.primary} strokeWidth={2.5} />
           <Text style={styles.planAddText}>{i18n.nMealPlanNew}</Text>
         </PressScale>
       </View>
@@ -268,6 +273,9 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
 }
 
 export default function NutritionScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const foodList = useFoodListStyles();
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { user } = useAuth();
@@ -356,10 +364,10 @@ export default function NutritionScreen() {
    */
 
   const FoodGroup = ({ rows }: { rows: FoodItemRow[] }) => (
-    <View style={foodListStyles.group}>
+    <View style={foodList.group}>
       {rows.map((f, i) => (
         <View key={f.id}>
-          {i > 0 ? <View style={foodListStyles.sep} /> : null}
+          {i > 0 ? <View style={foodList.sep} /> : null}
           <FoodCard f={f} />
         </View>
       ))}
@@ -381,7 +389,7 @@ export default function NutritionScreen() {
       <Text style={styles.seeMoreText}>
         {lang === 'vi' ? `Xem thêm ${rest} món` : `See ${rest} more`}
       </Text>
-      <Icon icon={ChevronRight} size={15} color={colors.primary} />
+      <Icon icon={ChevronRight} size={15} color={c.primary} />
     </PressScale>
   );
 
@@ -431,7 +439,7 @@ export default function NutritionScreen() {
             Haptics.selectionAsync();
             nav.push({ pathname: '/food-editor', params: { id: f.id } });
           }}>
-          <Icon icon={Pencil} size={15} color={colors.mutedForeground} />
+          <Icon icon={Pencil} size={15} color={c.mutedForeground} />
         </Pressable>
       )}
       <Pressable
@@ -445,7 +453,7 @@ export default function NutritionScreen() {
         <Icon
           icon={Star}
           size={16}
-          color={f.is_favorite ? colors.readinessYellow : colors.mutedForeground}
+          color={f.is_favorite ? c.readinessYellow : c.mutedForeground}
           strokeWidth={f.is_favorite ? 2.5 : 2}
         />
       </Pressable>
@@ -693,7 +701,7 @@ export default function NutritionScreen() {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   nav.push('/food-editor');
                 }}>
-                <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
+                <Icon icon={Plus} size={15} color={c.primary} strokeWidth={2.5} />
                 <Text style={styles.addFoodText}>{i18n.foodAddCustom}</Text>
               </PressScale>
             </View>
@@ -701,11 +709,11 @@ export default function NutritionScreen() {
             {/* Search + add custom food (web: search flex-1 + Add button) */}
             <View style={styles.searchRow}>
               <View style={styles.searchWrap}>
-                <Icon icon={Search} size={15} color={colors.mutedForeground} />
+                <Icon icon={Search} size={15} color={c.mutedForeground} />
                 <TextInput
                   style={styles.searchInput}
                   placeholder={i18n.nutritionSearchFood}
-                  placeholderTextColor={colors.mutedForeground}
+                  placeholderTextColor={c.mutedForeground}
                   value={search}
                   onChangeText={setSearch}
                   autoCorrect={false}
@@ -728,7 +736,7 @@ export default function NutritionScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     nav.push('/scan-barcode');
                   }}>
-                  <Icon icon={Barcode} size={17} color={colors.mutedForeground} />
+                  <Icon icon={Barcode} size={17} color={c.mutedForeground} />
                 </PressScale>
               </View>
             </View>
@@ -797,10 +805,10 @@ export default function NutritionScreen() {
                 {recents && recents.length > 0 ? (
                   <View style={styles.foodSection}>
                     <MicroLabel>{i18n.nutritionRecent}</MicroLabel>
-                    <View style={foodListStyles.group}>
+                    <View style={foodList.group}>
                       {recents.slice(0, 4).map((r, i) => (
                         <View key={`${r.food_name}-${i}`}>
-                          {i > 0 ? <View style={foodListStyles.sep} /> : null}
+                          {i > 0 ? <View style={foodList.sep} /> : null}
                           <RecentFoodCard r={r} saved={myFoodNames.has(r.food_name.toLowerCase())} />
                         </View>
                       ))}
@@ -837,7 +845,7 @@ export default function NutritionScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
 
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
@@ -871,7 +879,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     /*
       Chỉ đổi NỀN, giữ nguyên viền.
 
@@ -899,8 +907,8 @@ const styles = StyleSheet.create({
     và chữ ở màu nhấn, `hitSlop` 8 giữ vùng chạm.
   */
   addFoodBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  addFoodText: { ...type.footnote, fontWeight: '600', color: colors.primary },
-  searchInput: { flex: 1, color: colors.foreground, fontSize: 15, height: '100%' },
+  addFoodText: { ...type.footnote, fontWeight: '600', color: c.primary },
+  searchInput: { flex: 1, color: c.foreground, fontSize: 15, height: '100%' },
 
   /* The heading, its group and its "see all" are one thing 10 apart, not three
      children of the page 20 apart — 20 is the distance between *sections*, and
@@ -927,7 +935,7 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
     backgroundColor: glass.bg,
   },
-  seeMoreText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  seeMoreText: { fontSize: 13, fontWeight: '600', color: c.primary },
   foodCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -936,15 +944,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     backgroundColor: 'rgba(24,24,27,0.3)',
   },
   foodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
   foodInfo: { flex: 1, minWidth: 0, gap: 2 },
-  foodName: { fontSize: 14, fontWeight: '500', color: colors.foreground },
-  foodBrand: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
-  foodMacros: { fontSize: 11, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  emptyText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.sm },
+  foodName: { fontSize: 14, fontWeight: '500', color: c.foreground },
+  foodBrand: { fontSize: 12, fontWeight: '400', color: c.mutedForeground },
+  foodMacros: { fontSize: 11, fontFamily: 'Menlo', color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  emptyText: { fontSize: 12, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.sm },
 
   // ── meal plans ──
   /*
@@ -979,7 +987,7 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
     backgroundColor: glass.bg,
   },
-  planAll: { ...type.footnote, fontWeight: '600', color: colors.primary },
+  planAll: { ...type.footnote, fontWeight: '600', color: c.primary },
   /* Một HÀNG trong khối, không phải một thẻ. Cao 56 để vượt sàn chạm 44 và để
      hai dòng chữ có chỗ thở. */
   planRow: {
@@ -1002,23 +1010,23 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 22,
     borderRadius: 3,
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
-  weekFill: { backgroundColor: colors.readinessGreen, borderRadius: 3 },
-  planName: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '600', color: colors.foreground },
-  planMeta: { fontSize: 12, color: colors.mutedForeground },
-  planAddText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  weekFill: { backgroundColor: c.readinessGreen, borderRadius: 3 },
+  planName: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '600', color: c.foreground },
+  planMeta: { fontSize: 12, color: c.mutedForeground },
+  planAddText: { fontSize: 13, fontWeight: '600', color: c.primary },
   planEmpty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
-  planEmptyTitle: { fontSize: 15, fontWeight: '600', color: colors.foreground },
+  planEmptyTitle: { fontSize: 15, fontWeight: '600', color: c.foreground },
   /* The sentence that says what the thing is. Somebody who has never made a
      meal plan is exactly who is reading this, and "none yet" tells them only
      that they have not done something they may not have a name for. */
   planEmptyBody: {
     fontSize: 13,
     lineHeight: 19,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     paddingHorizontal: spacing.sm,
   },
@@ -1030,7 +1038,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
     marginTop: spacing.xs,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
-  planCreateText: { fontSize: 14, fontWeight: '600', color: colors.primaryForeground },
-});
+  planCreateText: { fontSize: 14, fontWeight: '600', color: c.primaryForeground },
+}));

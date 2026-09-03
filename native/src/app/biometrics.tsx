@@ -10,7 +10,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBiometricHistory, useDeleteBiometricSample, type BiometricSample } from '@/hooks/use-biometrics';
 import { localStampStr } from '@/lib/local-date';
@@ -27,7 +29,12 @@ interface MetricDef {
   extract: (s: BiometricSample) => number | null;
 }
 
-const STATUS = { good: colors.readinessGreen, warn: colors.readinessYellow, bad: colors.readinessRed };
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+const STATUS = { good: 'readinessGreen', warn: 'readinessYellow', bad: 'readinessRed' } as const satisfies Record<string, PaletteKey>;
 
 function statusOf(v: number, [lo, hi]: [number, number]): keyof typeof STATUS {
   if (v >= lo && v <= hi) return 'good';
@@ -37,6 +44,8 @@ function statusOf(v: number, [lo, hi]: [number, number]): keyof typeof STATUS {
 }
 
 export default function BiometricsScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { data: history, isError, refetch, isRefetching } = useBiometricHistory(14);
   const { lang } = useAppSettings();
@@ -74,20 +83,20 @@ export default function BiometricsScreen() {
   const metrics: MetricDef[] = [
     { key: 'hr', label: i18n.biometricsHeartRate, unit: 'bpm', color: '#e6486e', range: [50, 100], extract: (s) => s.hr_bpm },
     ...(hrvKinds.sdnn
-      ? [{ key: 'hrvSdnn' as const, label: 'HRV · SDNN', unit: 'ms', color: colors.readinessGreen, range: [20, 100] as [number, number], extract: (s: BiometricSample) => s.hrv_sdnn_ms }]
+      ? [{ key: 'hrvSdnn' as const, label: 'HRV · SDNN', unit: 'ms', color: c.readinessGreen, range: [20, 100] as [number, number], extract: (s: BiometricSample) => s.hrv_sdnn_ms }]
       : []),
     ...(hrvKinds.rmssd
-      ? [{ key: 'hrv' as const, label: hrvKinds.sdnn ? 'HRV · RMSSD' : 'HRV', unit: 'ms', color: colors.metricPurple, range: [20, 100] as [number, number], extract: (s: BiometricSample) => s.hrv_rmssd_ms }]
+      ? [{ key: 'hrv' as const, label: hrvKinds.sdnn ? 'HRV · RMSSD' : 'HRV', unit: 'ms', color: c.metricPurple, range: [20, 100] as [number, number], extract: (s: BiometricSample) => s.hrv_rmssd_ms }]
       : []),
-    { key: 'spo2', label: 'SpO₂', unit: '%', color: colors.metricBlue, range: [95, 100], extract: (s) => s.spo2_pct },
+    { key: 'spo2', label: 'SpO₂', unit: '%', color: c.metricBlue, range: [95, 100], extract: (s) => s.spo2_pct },
     /* ml/kg is a mass fraction; VO₂max is a rate of oxygen uptake — mL/kg/min.
        Capital L because at 11pt a lowercase `l` and a `1` are the same three
        pixels, and this unit already has two numbers in it. */
-    { key: 'vo2max', label: 'VO₂max', unit: 'mL/kg/min', color: colors.metricOrange, range: [30, 60], extract: (s) => s.vo2max_mlkgmin },
+    { key: 'vo2max', label: 'VO₂max', unit: 'mL/kg/min', color: c.metricOrange, range: [30, 60], extract: (s) => s.vo2max_mlkgmin },
     /* `rpm` is revolutions per minute — an engine's unit. Breathing is counted
        in breaths, which has no international symbol, so the unit is translated
        rather than written here. Same string the Today card prints. */
-    { key: 'resp', label: i18n.biometricsBreathRate, unit: i18n.biometricsBreathUnit, color: colors.metricPurple, range: [12, 20], extract: (s) => s.resp_rate_rpm },
+    { key: 'resp', label: i18n.biometricsBreathRate, unit: i18n.biometricsBreathUnit, color: c.metricPurple, range: [12, 20], extract: (s) => s.resp_rate_rpm },
   ];
 
   const series = useMemo(() => {
@@ -121,7 +130,7 @@ export default function BiometricsScreen() {
             Haptics.selectionAsync();
             nav.push('/log-biometrics');
           }}>
-          <Icon icon={Plus} size={22} color={colors.primary} />
+          <Icon icon={Plus} size={22} color={c.primary} />
         </PressScale>
       }>
       {/* A failed read is not an empty history. `data` comes back undefined, the
@@ -152,7 +161,7 @@ export default function BiometricsScreen() {
             <GlassCard key={m.key}>
               <View style={styles.metricHead}>
                 <View style={styles.metricTitleRow}>
-                  {st && <View style={[styles.statusDot, { backgroundColor: STATUS[st] }]} />}
+                  {st && <View style={[styles.statusDot, { backgroundColor: c[STATUS[st]] }]} />}
                   <Text style={styles.metricLabel}>{m.label}</Text>
                 </View>
                 <View style={styles.metricValueRow}>
@@ -244,7 +253,7 @@ export default function BiometricsScreen() {
                     ],
                   );
                 }}>
-                <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
+                <Icon icon={Trash2} size={16} color={c.mutedForeground} />
               </PressScale>
             </GlassCard>
           ))}
@@ -268,48 +277,48 @@ function summarise(s: BiometricSample, vi: boolean): string {
   return bits.join(' · ') || (vi ? 'Không có giá trị' : 'No values');
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   logSection: { gap: spacing.sm, marginTop: spacing.xs },
   logTitle: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1.6,
   },
   logRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   logBody: { flex: 1, gap: 2 },
-  logWhen: { ...type.footnote, color: colors.foreground },
-  logVals: { ...type.caption, color: colors.mutedForeground },
+  logWhen: { ...type.footnote, color: c.foreground },
+  logVals: { ...type.caption, color: c.mutedForeground },
   logDelete: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   logBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  logBtnText: { fontSize: 22, color: colors.primary, lineHeight: 26 },
+  logBtnText: { fontSize: 22, color: c.primary, lineHeight: 26 },
   empty: { alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm },
-  emptyTitle: { ...type.body, color: colors.foreground, fontWeight: '600' },
-  emptyMsg: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
+  emptyTitle: { ...type.body, color: c.foreground, fontWeight: '600' },
+  emptyMsg: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
   emptyBtn: {
     marginTop: spacing.sm,
     height: 44,
     paddingHorizontal: spacing.xl,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyBtnText: { ...type.headline, color: colors.primaryForeground },
+  emptyBtnText: { ...type.headline, color: c.primaryForeground },
   metricHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   metricTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
-  metricLabel: { ...type.headline, color: colors.foreground },
+  metricLabel: { ...type.headline, color: c.foreground },
   metricValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   metricValue: { ...type.title, ...type.mono },
-  metricUnit: { ...type.footnote, color: colors.mutedForeground },
+  metricUnit: { ...type.footnote, color: c.mutedForeground },
   chart: { marginTop: spacing.sm },
-  disclaimer: { ...type.caption, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs, lineHeight: 16 },
-});
+  disclaimer: { ...type.caption, color: c.mutedForeground, textAlign: 'center', marginTop: spacing.xs, lineHeight: 16 },
+}));

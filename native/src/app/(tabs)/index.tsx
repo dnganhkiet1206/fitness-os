@@ -78,7 +78,9 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { BOUNCE, duration, spring } from '@/constants/motion';
 import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 
-import { HERO_RING, PAGE_TINT, colors, radius, spacing, type } from '@/constants/ascnd';
+import { HERO_RING, PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /** Độ đậm của lớp phủ dưới hero. Đủ để kéo tương phản về một mức, chưa đủ để
  *  giấu nền — vẫn phải nhìn xuyên qua thấy màu của vòng tròn phía trên. */
@@ -276,22 +278,28 @@ const HERO_COVER_FRACTION = 0.66;
   Nếu hai nhóm ra cùng một màu thì đó là tín hiệu đổi ICON của nhóm, không
   phải đè màu — đè màu là cách bảng tint bị vô hiệu hoá lần nữa.
 */
-const GROUP_ICONS: Record<string, { icon: LucideIcon; color: string }> = {
+/* `color: null` = "lấy từ bảng màu lúc vẽ". Bốn màu kia đến từ `iconTint()`,
+   thứ đọc bảng màu ở phạm vi module trong `constants/icon-tint.ts` và VẪN CÒN
+   đóng băng — bảng tint là một khoản nợ riêng, không phải một tệp màn hình. */
+const GROUP_ICONS: Record<string, { icon: LucideIcon; color: string | null }> = {
   '❤️': { icon: Heart, color: iconTint(Heart)! },
   '🍎': { icon: Apple, color: iconTint(Apple)! },
   '💪': { icon: Dumbbell, color: iconTint(Dumbbell)! },
   '✨': { icon: Sparkles, color: iconTint(Sparkles)! },
   /* `Pin` không có trong bảng tint — nó là ghim, không mang nghĩa miền nào.
      Nhóm "khác" giữ màu trung tính của chính nó. */
-  '📌': { icon: Pin, color: colors.mutedForeground },
+  '📌': { icon: Pin, color: null },
 };
 
 /** Neon-tinted icon chip for a widget group */
 function GroupIconBadge({ iconKey }: { iconKey: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const meta = GROUP_ICONS[iconKey] ?? GROUP_ICONS['📌'];
+  const tint = meta.color ?? c.mutedForeground;
   return (
-    <View style={[styles.groupIconBadge, { backgroundColor: `${meta.color}1f` }]}>
-      <Icon icon={meta.icon} size={13} color={meta.color} />
+    <View style={[styles.groupIconBadge, { backgroundColor: alpha(tint, 0.12) }]}>
+      <Icon icon={meta.icon} size={13} color={tint} />
     </View>
   );
 }
@@ -312,6 +320,8 @@ function GroupHeader({
   title: string;
   action?: React.ReactNode;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.groupHeader}>
       <GroupIconBadge iconKey={icon} />
@@ -367,6 +377,8 @@ function EditLayoutButton({
   a11yLabel: string;
   onPress: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <PressScale
       accessibilityRole="button"
@@ -374,7 +386,7 @@ function EditLayoutButton({
       hitSlop={{ top: 13, bottom: 13, left: 12, right: 12 }}
       onPress={onPress}>
       <View style={styles.groupActionRow}>
-        <Icon icon={Pencil} size={14} color={colors.mutedForeground} />
+        <Icon icon={Pencil} size={14} color={c.mutedForeground} />
         <Text style={styles.groupAction}>{label}</Text>
       </View>
     </PressScale>
@@ -382,6 +394,8 @@ function EditLayoutButton({
 }
 
 export default function TodayScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const insets = useSafeAreaInsets();
   const { data: profile } = useProfile();
   /**
@@ -1229,7 +1243,7 @@ export default function TodayScreen() {
           tint: own?.[0],
           /* Trang sẵn sàng không khai cặp: nó lấy màu theo trạng thái, và tông
              thứ hai là màu lạnh cạnh nó trên cùng thang. */
-          tint2: own?.[1] ?? (readinessStatus === 'red' ? colors.metricOrange : colors.metricBlue),
+          tint2: own?.[1] ?? (readinessStatus === 'red' ? c.metricOrange : c.metricBlue),
         };
       }),
     [config.heroWidgets, readinessScore, readinessStatus],
@@ -1270,7 +1284,7 @@ export default function TodayScreen() {
           <EmptyHero
             title={i18n.dashReadiness}
             message={i18n.dashReadinessMsg}
-            tint={colors.readinessYellow}
+            tint={c.readinessYellow}
             icon={Heart}
             detailOpen={expandedAt === heroIndex(key)}
             onToggleDetail={() => toggleHero(heroIndex(key))}
@@ -1546,7 +1560,7 @@ export default function TodayScreen() {
         <RefreshControl
           refreshing={refreshing}
           onRefresh={onRefresh}
-          tintColor={colors.mutedForeground}
+          tintColor={c.mutedForeground}
           progressViewOffset={insets.top + 12}
         />
       }
@@ -1966,7 +1980,7 @@ export default function TodayScreen() {
                   trung tính. `colors.primary` là bạc của chính thương hiệu, nên
                   wash đọc ra là ÁNH SÁNG chứ không phải một màu.
                 */}
-                <LiquidGlass style={styles.quickChip} radius={radius.full} tint={colors.primary} material="blur">
+                <LiquidGlass style={styles.quickChip} radius={radius.full} tint={c.primary} material="blur">
                   <View style={styles.quickChipInner}>
                     <Glyph name={a.glyph} size={16} />
                     <Text style={styles.quickChipText}>{a.label}</Text>
@@ -1991,7 +2005,7 @@ export default function TodayScreen() {
               disabled={healthSync.isPending}
               onPress={() => healthSync.mutate()}>
               {healthSync.isPending ? (
-                <ActivityIndicator color={colors.foreground} size="small" />
+                <ActivityIndicator color={c.foreground} size="small" />
               ) : (
                 <>
                   <Icon icon={Heart} size={14} />
@@ -2265,7 +2279,7 @@ export default function TodayScreen() {
             <TextInput
               style={styles.addGroupInput}
               placeholder={lang === 'vi' ? 'Tên nhóm mới…' : 'New group name…'}
-              placeholderTextColor={colors.mutedForeground}
+              placeholderTextColor={c.mutedForeground}
               value={newGroupName}
               onChangeText={setNewGroupName}
               onSubmitEditing={() => {
@@ -2283,7 +2297,7 @@ export default function TodayScreen() {
                 addGroup(newGroupName);
                 setNewGroupName('');
               }}>
-              <Icon icon={Plus} size={18} color={colors.primaryForeground} />
+              <Icon icon={Plus} size={18} color={c.primaryForeground} />
             </PressScale>
           </View>
 
@@ -2293,7 +2307,7 @@ export default function TodayScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               resetConfig();
             }}>
-            <Icon icon={RotateCcw} size={14} color={colors.mutedForeground} />
+            <Icon icon={RotateCcw} size={14} color={c.mutedForeground} />
             <Text style={styles.resetText}>
               {lang === 'vi' ? 'Khôi phục mặc định' : 'Reset to default'}
             </Text>
@@ -2351,7 +2365,7 @@ export default function TodayScreen() {
             accessibilityState={{ selected: true }}
             style={[styles.squareBtn, styles.squareBtnActive]}
             onPress={() => toggleEdit(false)}>
-            <Icon icon={Check} size={20} color={colors.primary} />
+            <Icon icon={Check} size={20} color={c.primary} />
           </PressScale>
           )}
           {!editMode && (
@@ -2510,6 +2524,8 @@ function MaybeRemovable({
  * cú hiện ra — nhưng vượt quá chỉ còn ~4 điểm.
  */
 function EditControls({ index, children }: { index: number; children: React.ReactNode }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const enter = useSharedValue(0);
   useEffect(() => {
     enter.value = withDelay(index * 40, withSpring(1, spring(0.4, BOUNCE.snappy)));
@@ -2535,6 +2551,8 @@ function ArrowBtn({
   disabled?: boolean;
   onPress: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <PressScale
       accessibilityRole="button"
@@ -2548,7 +2566,7 @@ function ArrowBtn({
         Haptics.selectionAsync();
         onPress();
       }}>
-      <Icon icon={icon} size={15} color={colors.mutedForeground} />
+      <Icon icon={icon} size={15} color={c.mutedForeground} />
     </PressScale>
   );
 }
@@ -2579,8 +2597,8 @@ function AuraLayer({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.background },
   // See the note at the top of the return — transparent so `AmbientLight`,
   // which sits behind this in the wrapper, is not painted over.
   scroller: { flex: 1, backgroundColor: 'transparent' },
@@ -2689,8 +2707,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   headerText: { flex: 1, minWidth: 0 },
-  greeting: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, color: colors.foreground, marginTop: 2 },
-  greetingName: { color: colors.primary },
+  greeting: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, color: c.foreground, marginTop: 2 },
+  greetingName: { color: c.primary },
   headerButtons: { flexDirection: 'row', gap: spacing.sm },
   squareBtn: {
     /* Cùng con số với `TOP_BAR_H`: hàng cao bằng nút, và phần đệm bù cho chỗ
@@ -2748,7 +2766,7 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: spacing.md,
   },
-  quickChipText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  quickChipText: { ...type.footnote, fontWeight: '600', color: c.foreground },
 
   syncButton: {
     flexDirection: 'row',
@@ -2761,7 +2779,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(43,43,49,0.3)',
     backgroundColor: 'rgba(24,24,27,0.2)',
   },
-  syncText: { fontSize: 13, fontWeight: '500', color: colors.foreground },
+  syncText: { fontSize: 13, fontWeight: '500', color: c.foreground },
 
   // Groups (web WidgetGroupSection)
   group: { gap: spacing.sm + 4, marginTop: spacing.xs },
@@ -2778,7 +2796,7 @@ const styles = StyleSheet.create({
      cho các viên chip và cho avatar: màu dành cho GIÁ TRỊ, không dành cho LỐI
      ĐI. Cỡ 13 để nó ngồi dưới tiêu đề 14 trong cùng một hàng chứ không tranh
      chỗ với nó. */
-  groupAction: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground },
+  groupAction: { fontSize: 13, fontWeight: '500', color: c.mutedForeground },
   /* `xs` (4 điểm) chứ không phải `sm`: icon và chữ ở đây là MỘT nhãn, không
      phải hai thứ cạnh nhau. Rộng hơn thì chúng rời ra và cái icon đọc ra như
      của mục bên trái. */
@@ -2786,12 +2804,12 @@ const styles = StyleSheet.create({
 
   // Empty states (web EmptyState)
   emptyCard: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
-  emptyTitle: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.7, color: colors.mutedForeground },
+  emptyTitle: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.7, color: c.mutedForeground },
   emptyMsg: { fontSize: 13, color: 'rgba(107,107,107,0.8)', textAlign: 'center', maxWidth: 220, lineHeight: 19 },
 
 
   // Edit mode (web widget-group edit)
-  editHint: { fontSize: 13, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
+  editHint: { fontSize: 13, color: c.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
   editGroup: { gap: spacing.sm },
   /* Lặp `gap` của `content`: gộp mấy đứa con vào một vỏ là gộp mấy khe giãn
      mà `content` vốn đặt giữa chúng thành một. */
@@ -2805,8 +2823,8 @@ const styles = StyleSheet.create({
   grip: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', gap: 3 },
   gripLine: { width: 15, height: 1.5, borderRadius: 1, backgroundColor: 'rgba(237,237,237,0.34)' },
   editGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  editGroupTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.foreground },
-  editEmpty: { fontSize: 12, color: colors.mutedForeground, fontStyle: 'italic', paddingVertical: 4 },
+  editGroupTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: c.foreground },
+  editEmpty: { fontSize: 12, color: c.mutedForeground, fontStyle: 'italic', paddingVertical: 4 },
   editRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -2816,7 +2834,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: 'rgba(24,24,27,0.4)',
   },
-  editRowLabel: { flex: 1, fontSize: 13, fontWeight: '500', color: colors.foreground },
+  editRowLabel: { flex: 1, fontSize: 13, fontWeight: '500', color: c.foreground },
   arrowBtn: {
     width: 30,
     height: 30,
@@ -2832,17 +2850,17 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     backgroundColor: 'rgba(7,7,8,0.5)',
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 15,
   },
   addGroupBtn: {
     width: 44,
     height: 44,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2854,5 +2872,5 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: radius.md,
   },
-  resetText: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground },
-});
+  resetText: { fontSize: 13, fontWeight: '500', color: c.mutedForeground },
+}));

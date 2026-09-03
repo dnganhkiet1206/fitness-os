@@ -11,7 +11,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SheetHeader } from '@/components/ascnd/sheet-header';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * The frame every "fill this in" sheet in the app uses.
@@ -63,6 +65,8 @@ export function FormSheet({
   footer?: ReactNode;
   children: ReactNode;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const insets = useSafeAreaInsets();
 
   return (
@@ -97,6 +101,8 @@ export function FormSheet({
  * it does.
  */
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -106,17 +112,17 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.background },
   body: { flex: 1 },
   bodyContent: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.md },
   foot: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   field: { gap: 6 },
-  fieldLabel: { ...type.footnote, color: colors.foreground, fontWeight: '700' },
-  fieldHint: { ...type.caption, color: colors.mutedForeground, marginTop: -2 },
-});
+  fieldLabel: { ...type.footnote, color: c.foreground, fontWeight: '700' },
+  fieldHint: { ...type.caption, color: c.mutedForeground, marginTop: -2 },
+}));

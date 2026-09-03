@@ -5,7 +5,9 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
   collectionProgress,
@@ -87,28 +89,30 @@ export function CategoryRow({
   lang: 'vi' | 'en';
   i18n: ReturnType<typeof useI18n>;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const cats: { id: ShopCategory | 'all'; label: string }[] = [
     { id: 'all', label: i18n.nRoomAll },
-    ...SHOP_CATEGORIES.map((c) => ({ id: c.id, label: c.name[lang] })),
+    ...SHOP_CATEGORIES.map((cat) => ({ id: cat.id, label: cat.name[lang] })),
   ];
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.catRow}>
-      {cats.map((c) => {
-        const on = current === c.id;
+      {cats.map((cat) => {
+        const on = current === cat.id;
         return (
-          <Pressable key={c.id} onPress={() => onPick(c.id)} style={styles.catItem}>
+          <Pressable key={cat.id} onPress={() => onPick(cat.id)} style={styles.catItem}>
             <View style={[styles.catIcon, on && styles.catIconOn]}>
               <Icon
-                icon={CAT_ICON[c.id]}
+                icon={CAT_ICON[cat.id]}
                 size={20}
-                color={on ? colors.primary : colors.mutedForeground}
+                color={on ? c.primary : c.mutedForeground}
               />
             </View>
             <Text style={[styles.catLabel, on && styles.catLabelOn]} numberOfLines={1}>
-              {c.label}
+              {cat.label}
             </Text>
           </Pressable>
         );
@@ -119,9 +123,9 @@ export function CategoryRow({
 
 /** One collection: name, reward, a progress bar, and a claim when it's full. */
 export function CollectionRow({
-  c, owned, claimed, pending, onClaim, lang, i18n,
+  set, owned, claimed, pending, onClaim, lang, i18n,
 }: {
-  c: Collection;
+  set: Collection;
   owned: Set<string>;
   claimed: boolean;
   pending: boolean;
@@ -129,21 +133,23 @@ export function CollectionRow({
   lang: 'vi' | 'en';
   i18n: ReturnType<typeof useI18n>;
 }) {
-  const { have, total, complete } = collectionProgress(c, owned);
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const { have, total, complete } = collectionProgress(set, owned);
   return (
     <GlassCard style={styles.setCard}>
       <View style={styles.setTop}>
         <View style={styles.setInfo}>
-          <Text style={styles.setName}>{c.name[lang]}</Text>
+          <Text style={styles.setName}>{set.name[lang]}</Text>
           <View style={styles.questCoins}>
             <Icon icon={Coins} size={11} />
-            <Text style={styles.questCoinText}>+{c.rewardCoins}</Text>
-            <Text style={styles.questXpText}>+{c.rewardXp} XP</Text>
+            <Text style={styles.questCoinText}>+{set.rewardCoins}</Text>
+            <Text style={styles.questXpText}>+{set.rewardXp} XP</Text>
           </View>
         </View>
         {claimed ? (
           <View style={styles.claimedChip}>
-            <Icon icon={Check} size={13} color={colors.readinessGreen} strokeWidth={3} />
+            <Icon icon={Check} size={13} color={c.readinessGreen} strokeWidth={3} />
             <Text style={styles.claimedText}>{i18n.nRoomSetClaimed}</Text>
           </View>
         ) : complete ? (
@@ -163,14 +169,14 @@ export function CollectionRow({
         pct={total ? (have / total) * 100 : 0}
         height={6}
         radius={3}
-        trackColor={colors.secondary}
-        color={complete ? colors.readinessGreen : colors.metricPurple}
+        trackColor={c.secondary}
+        color={complete ? c.readinessGreen : c.metricPurple}
       />
     </GlassCard>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   buyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -180,37 +186,37 @@ const styles = StyleSheet.create({
     minWidth: 64,
     paddingHorizontal: spacing.sm + 2,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
-  buyBtnPoor: { backgroundColor: colors.secondary },
-  buyText: { ...type.caption, fontWeight: '700', color: colors.primaryForeground, fontVariant: ['tabular-nums'] },
-  buyTextPoor: { color: colors.mutedForeground },
+  buyBtnPoor: { backgroundColor: c.secondary },
+  buyText: { ...type.caption, fontWeight: '700', color: c.primaryForeground, fontVariant: ['tabular-nums'] },
+  buyTextPoor: { color: c.mutedForeground },
   catIcon: {
     width: 48,
     height: 48,
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     borderWidth: 1,
     borderColor: 'transparent',
   },
-  catIconOn: { backgroundColor: 'rgba(124,106,255,0.16)', borderColor: colors.primary },
+  catIconOn: { backgroundColor: 'rgba(124,106,255,0.16)', borderColor: c.primary },
   catItem: { alignItems: 'center', gap: 5, width: 56 },
-  catLabel: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  catLabelOn: { color: colors.foreground },
+  catLabel: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },
+  catLabelOn: { color: c.foreground },
   catRow: { gap: spacing.md, paddingBottom: spacing.md, paddingHorizontal: 2 },
   claimBtn: {
     height: 32,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  claimText: { ...type.footnote, fontWeight: '700', color: colors.primaryForeground },
+  claimText: { ...type.footnote, fontWeight: '700', color: c.primaryForeground },
   claimedChip: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  claimedText: { ...type.footnote, color: colors.readinessGreen, fontWeight: '600' },
+  claimedText: { ...type.footnote, color: c.readinessGreen, fontWeight: '600' },
   itemIconWrap: {
     width: 44,
     height: 44,
@@ -218,7 +224,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  itemName: { ...type.caption, color: colors.foreground, fontWeight: '600', textAlign: 'center' },
+  itemName: { ...type.caption, color: c.foreground, fontWeight: '600', textAlign: 'center' },
   lockBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -228,9 +234,9 @@ const styles = StyleSheet.create({
     minWidth: 64,
     paddingHorizontal: spacing.sm + 2,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  lockText: { ...type.caption, fontWeight: '700', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  lockText: { ...type.caption, fontWeight: '700', color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   ownedBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -240,15 +246,15 @@ const styles = StyleSheet.create({
     minWidth: 64,
     paddingHorizontal: spacing.sm + 2,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  ownedText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  questCoinText: { ...type.caption, fontWeight: '700', color: colors.readinessYellow, fontVariant: ['tabular-nums'] },
+  ownedText: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },
+  questCoinText: { ...type.caption, fontWeight: '700', color: c.readinessYellow, fontVariant: ['tabular-nums'] },
   questCoins: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   questXpText: {
     ...type.caption,
     fontWeight: '700',
-    color: colors.metricPurple,
+    color: c.metricPurple,
     fontVariant: ['tabular-nums'],
     marginLeft: 4,
   },
@@ -256,8 +262,8 @@ const styles = StyleSheet.create({
   rarityText: { fontSize: 11, fontWeight: '700' },
   setCard: { gap: spacing.sm },
   setInfo: { flex: 1, minWidth: 0, gap: 3 },
-  setName: { ...type.body, fontWeight: '700', color: colors.foreground },
-  setProgressText: { ...type.footnote, color: colors.mutedForeground, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  setName: { ...type.body, fontWeight: '700', color: c.foreground },
+  setProgressText: { ...type.footnote, color: c.mutedForeground, fontWeight: '600', fontVariant: ['tabular-nums'] },
   setTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   shopGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   shopItem: {
@@ -270,5 +276,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   wearingBtn: { backgroundColor: 'rgba(43,245,168,0.14)' },
-  wearingText: { color: colors.readinessGreen },
-});
+  wearingText: { color: c.readinessGreen },
+}));

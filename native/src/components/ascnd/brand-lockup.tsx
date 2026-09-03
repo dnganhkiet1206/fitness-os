@@ -1,6 +1,7 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
-import { colors } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * Dấu hiệu của app: chữ A với con koala, cạnh chữ ASCND.
@@ -66,6 +67,8 @@ const BOX = 37;
 const WORD_MAX_SCALE = 1.3;
 
 export function BrandLockup() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     /*
       Cả cụm là MỘT phần tử với trình đọc màn hình.
@@ -97,7 +100,7 @@ export function BrandLockup() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* Cao bằng hàng nút (`TOP_BAR_H`) và canh giữa theo chiều dọc, để dấu hiệu
      nằm đúng trên trục của viên chuỗi ngày và avatar ở đầu kia. */
   row: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 7 },
@@ -116,6 +119,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     letterSpacing: 0.6,
-    color: colors.foreground,
+    color: c.foreground,
   },
-});
+}));

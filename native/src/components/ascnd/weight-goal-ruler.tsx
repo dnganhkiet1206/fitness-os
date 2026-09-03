@@ -8,7 +8,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Defs, Pattern, Rect, Svg } from 'react-native-svg';
 
-import { colors } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * The ruler: one static drawing that slides, not a list of marks.
@@ -167,6 +168,8 @@ export const Ruler = memo(function Ruler({
   onIndex: (index: number) => void;
   onContentSizeChange: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Nửa màn hình ở mỗi đầu, để giá trị đầu và cuối cũng tới được giữa. */
   const pad = (width - TICK_W) / 2;
   const total = pad * 2 + count * TICK_W;
@@ -288,7 +291,7 @@ export const Ruler = memo(function Ruler({
                 y={RULER_H - MAJOR_H}
                 width={MARK_W}
                 height={MAJOR_H}
-                fill={colors.foreground}
+                fill={c.foreground}
                 opacity={0.7}
               />
               {Array.from({ length: PER_UNIT - 1 }, (_, k) => (
@@ -298,7 +301,7 @@ export const Ruler = memo(function Ruler({
                   y={RULER_H - MINOR_H}
                   width={1}
                   height={MINOR_H}
-                  fill={colors.foreground}
+                  fill={c.foreground}
                   opacity={0.3}
                 />
               ))}
@@ -341,8 +344,8 @@ export const Ruler = memo(function Ruler({
   );
 });
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   root: { height: RULER_H, alignSelf: 'stretch' },
   paint: { position: 'absolute', top: 0, height: RULER_H },
-  cap: { position: 'absolute', top: 0, height: RULER_H, backgroundColor: colors.background },
-});
+  cap: { position: 'absolute', top: 0, height: RULER_H, backgroundColor: c.background },
+}));

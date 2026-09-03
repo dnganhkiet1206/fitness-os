@@ -233,6 +233,7 @@ const STEPS = [
     "xong" không bị đọc thành "xong hết".
   */
   ['bảng màu', 'node', ['tools/palette.mjs']],
+  ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['ngôn ngữ AI', 'node', ['tools/ai-language.mjs']],
   ['worklet đo được', 'node', ['tools/measured-worklet.mjs']],
   ['giọng linh vật', 'node', ['tools/mascot-voice.mjs']],

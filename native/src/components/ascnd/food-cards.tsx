@@ -5,7 +5,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { MACRO_TINT, colors, glass, radius, spacing } from '@/constants/ascnd';
+import { MACRO_TINT, glass, radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
   useCreateFoodItem,
@@ -65,19 +67,34 @@ import {
  * Con số vẫn mono và `tabular-nums`: ba số ở ba hàng chỉ thẳng cột khi chữ số
  * cùng bề rộng, và đó là toàn bộ lý do tiêu một mặt chữ mono ở đây.
  */
-function Macros({ p, c, f }: { p: number; c: number; f: number }) {
+/*
+  Ba tham số từng tên là `p`, `c`, `f`.
+
+  `c` ở đây là CARBS. Từ khi bảng màu đọc lúc chạy, `c` cũng là tên của bảng
+  màu trong mọi component của repo — nên `Macros` là một trong hai chỗ mà hai
+  nghĩa ấy đụng nhau, và `tools/theme-migrate.mjs` phải từ chối chạm vào nó.
+
+  Đổi tên ở đây chứ không đổi tên bảng màu: bảng màu xuất hiện trong 115 tệp,
+  ba tham số này trong ba chỗ gọi. Và `p`/`c`/`f` viết đủ chữ thì hàng dưới đọc
+  ra là protein/carbs/fat mà không cần đối chiếu với chữ cái đứng cạnh nó.
+*/
+function Macros({ protein, carbs, fat }: { protein: number; carbs: number; fat: number }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <Text style={styles.macros} numberOfLines={1}>
-      <Text style={{ color: MACRO_TINT.protein }}>P</Text> {Math.round(p)}g
+      <Text style={{ color: MACRO_TINT.protein }}>P</Text> {Math.round(protein)}g
       <Text style={styles.dot}> · </Text>
-      <Text style={{ color: MACRO_TINT.carbs }}>C</Text> {Math.round(c)}g
+      <Text style={{ color: MACRO_TINT.carbs }}>C</Text> {Math.round(carbs)}g
       <Text style={styles.dot}> · </Text>
-      <Text style={{ color: MACRO_TINT.fat }}>F</Text> {Math.round(f)}g
+      <Text style={{ color: MACRO_TINT.fat }}>F</Text> {Math.round(fat)}g
     </Text>
   );
 }
 
 export function FoodCard({ f }: { f: FoodItemRow }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const toggleFav = useToggleFavoriteFood();
 
@@ -95,7 +112,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
           {f.name}
           {f.brand ? <Text style={styles.brand}>  {f.brand}</Text> : null}
         </Text>
-        <Macros p={Number(f.protein_g)} c={Number(f.carbs_g)} f={Number(f.fat_g)} />
+        <Macros protein={Number(f.protein_g)} carbs={Number(f.carbs_g)} fat={Number(f.fat_g)} />
       </View>
 
       {/* Right-aligned, like the value in any table row — it is the number you
@@ -115,7 +132,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
         <Icon
           icon={Star}
           size={17}
-          color={f.is_favorite ? colors.readinessYellow : colors.mutedForeground}
+          color={f.is_favorite ? c.readinessYellow : c.mutedForeground}
           strokeWidth={f.is_favorite ? 2.5 : 2}
         />
       </Pressable>
@@ -125,6 +142,8 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
 
 /** A recently-logged food as a card; + saves it into My Foods (hidden if already saved). */
 export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const createFood = useCreateFoodItem();
 
@@ -146,7 +165,7 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
     <View style={styles.row}>
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>{r.food_name}</Text>
-        <Macros p={Number(r.protein_g)} c={Number(r.carbs_g)} f={Number(r.fat_g)} />
+        <Macros protein={Number(r.protein_g)} carbs={Number(r.carbs_g)} fat={Number(r.fat_g)} />
       </View>
       <Text style={styles.kcal}>{r.kcal} kcal</Text>
       {/* A fixed slot whether or not there is a button in it, so the kcal
@@ -159,7 +178,7 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
             hitSlop={13}
             disabled={createFood.isPending}
             onPress={quickAdd}>
-            <Icon icon={Plus} size={18} color={colors.primary} strokeWidth={2.5} />
+            <Icon icon={Plus} size={18} color={c.primary} strokeWidth={2.5} />
           </PressScale>
         ) : null}
       </View>
@@ -167,7 +186,7 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* No border and no fill: the group these sit in draws one border for all of
      them. A row that carries its own is a card, and twelve cards is what this
      screen looked like. */
@@ -180,8 +199,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
   },
   info: { flex: 1, minWidth: 0, gap: 2 },
-  name: { fontSize: 15, fontWeight: '500', color: colors.foreground },
-  brand: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
+  name: { fontSize: 15, fontWeight: '500', color: c.foreground },
+  brand: { fontSize: 12, fontWeight: '400', color: c.mutedForeground },
   /* Monospace, because three numbers in a column only line up if the digits
      are the same width — that is the whole reason to spend a mono face here. */
   /*
@@ -194,14 +213,14 @@ const styles = StyleSheet.create({
     Vẫn vừa hàng: hàng cao tối thiểu 52 với 10 điểm đệm mỗi đầu, nên phần chữ
     được 32 điểm; 15 + 2 + 12 = 29.
   */
-  macros: { fontSize: 12, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  macros: { fontSize: 12, fontFamily: 'Menlo', color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   /* Chữ cái mang màu chất, con số ở lại xám — xem `Macros`. */
   /* Dấu chấm ngăn ba chất mờ hơn cả con số: nó là dấu ngắt chứ không phải
      nội dung, và ở cùng độ sáng nó cạnh tranh với chính thứ nó ngăn ra. */
-  dot: { color: colors.border },
-  kcal: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  dot: { color: c.border },
+  kcal: { fontSize: 13, fontWeight: '500', color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   slot: { width: 18, alignItems: 'flex-end' },
-});
+}));
 
 /**
  * The group these rows live in, and the hairline between two of them.
@@ -210,8 +229,18 @@ const styles = StyleSheet.create({
  * its own approximation of one. The separator is a element, never a border on
  * the row: a `marginLeft` to inset a border moves the whole row, and the
  * trailing column stops lining up.
+ *
+ * ── vì sao nó là một HOOK chứ không còn là một hằng ──
+ *
+ * `StyleSheet.create` ở phạm vi module đóng băng màu lúc import, nên bản cũ vẽ
+ * đúng một `c.border` cho cả hai theme. Nó được xuất ra và dùng ở 11 chỗ trong
+ * 3 tệp, tức nó là một trong những chỗ mà một giá trị đóng băng lan xa nhất.
+ *
+ * Hook thay vì `foodListStylesFor(c)` để nơi gọi không phải tự đi lấy bảng màu
+ * rồi có cơ hội lấy nhầm — chữ ký cũ là `foodListStyles.group`, chữ ký mới là
+ * `useFoodListStyles().group`, và không có đường nào ở giữa để đi sai.
  */
-export const foodListStyles = StyleSheet.create({
+const foodListStylesFor = makeStyles((c) => ({
   group: {
     borderRadius: radius.md,
     backgroundColor: glass.bg,
@@ -219,5 +248,9 @@ export const foodListStyles = StyleSheet.create({
     borderColor: glass.border,
     overflow: 'hidden',
   },
-  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: colors.border },
-});
+  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },
+}));
+
+export function useFoodListStyles() {
+  return foodListStylesFor(usePalette());
+}

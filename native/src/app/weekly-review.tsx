@@ -26,7 +26,9 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { errorText } from '@/lib/error-copy';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -88,6 +90,7 @@ function WeekBars({
   unit?: string;
   days: string[];
 }) {
+  const barStyles = barStylesFor(usePalette());
   const max = Math.max(...data, target ?? 0, 1);
   return (
     <View style={barStyles.wrap}>
@@ -123,6 +126,8 @@ function WeekBars({
 }
 
 export default function WeeklyReviewScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là mười cái
      lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
@@ -477,8 +482,8 @@ export default function WeeklyReviewScreen() {
 
   const REC_STYLE = {
     warning: { color: '#dc2f2f', bg: 'rgba(220,47,47,0.1)', icon: AlertTriangle },
-    success: { color: colors.readinessGreen, bg: 'rgba(43,245,168,0.1)', icon: CheckCircle2 },
-    info: { color: colors.metricBlue, bg: 'rgba(59,166,255,0.1)', icon: Activity },
+    success: { color: c.readinessGreen, bg: 'rgba(43,245,168,0.1)', icon: CheckCircle2 },
+    info: { color: c.metricBlue, bg: 'rgba(59,166,255,0.1)', icon: Activity },
   } as const;
 
   const readinessPoints = chartData
@@ -499,7 +504,7 @@ export default function WeeklyReviewScreen() {
             setAsked(false);
             setWeekOffset((o) => o - 1);
           }}>
-          <Icon icon={ChevronLeft} size={16} color={colors.mutedForeground} />
+          <Icon icon={ChevronLeft} size={16} color={c.mutedForeground} />
         </PressScale>
         <Text style={styles.weekLabel}>{rangeLabel}</Text>
         <PressScale
@@ -513,35 +518,35 @@ export default function WeeklyReviewScreen() {
             setAsked(false);
             setWeekOffset((o) => Math.min(o + 1, 0));
           }}>
-          <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+          <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
         </PressScale>
       </View>
 
       {/* Summary stat tiles */}
       <Animated.View style={styles.statGrid} entering={rise(0)}>
-        {statCards.map((c, i) => (
+        {statCards.map((card, i) => (
           <GlassCard key={i} style={styles.statCard}>
             <View style={styles.statHead}>
               <View style={styles.statLabelRow}>
-                <Icon icon={c.icon} size={13} color={colors.mutedForeground} />
-                <Text style={styles.statLabel} numberOfLines={1}>{c.label}</Text>
+                <Icon icon={card.icon} size={13} color={c.mutedForeground} />
+                <Text style={styles.statLabel} numberOfLines={1}>{card.label}</Text>
               </View>
-              {c.d != null && c.d !== 0 && (
+              {card.d != null && card.d !== 0 && (
                 <View style={styles.deltaRow}>
                   <Icon
-                    icon={c.d > 0 ? TrendingUp : TrendingDown}
+                    icon={card.d > 0 ? TrendingUp : TrendingDown}
                     size={11}
-                    color={c.d > 0 ? colors.readinessGreen : '#dc2f2f'}
+                    color={card.d > 0 ? c.readinessGreen : '#dc2f2f'}
                   />
-                  <Text style={[styles.deltaText, { color: c.d > 0 ? colors.readinessGreen : '#dc2f2f' }]}>
-                    {Math.abs(c.d)}%
+                  <Text style={[styles.deltaText, { color: card.d > 0 ? c.readinessGreen : '#dc2f2f' }]}>
+                    {Math.abs(card.d)}%
                   </Text>
                 </View>
               )}
-              {c.d === 0 && <Icon icon={Minus} size={11} color={colors.mutedForeground} />}
+              {card.d === 0 && <Icon icon={Minus} size={11} color={c.mutedForeground} />}
             </View>
-            <Text style={styles.statValue}>{c.value}</Text>
-            <Text style={styles.statSub}>{c.sub}</Text>
+            <Text style={styles.statValue}>{card.value}</Text>
+            <Text style={styles.statSub}>{card.sub}</Text>
           </GlassCard>
         ))}
       </Animated.View>
@@ -566,7 +571,7 @@ export default function WeeklyReviewScreen() {
           <Animated.View entering={rise(3)}>
           <GlassCard>
             <Text style={styles.microTitle}>Volume Load</Text>
-            <WeekBars data={chartData.map((c) => c.volume)} color={colors.metricBlue} days={DAYS} />
+            <WeekBars data={chartData.map((c) => c.volume)} color={c.metricBlue} days={DAYS} />
           </GlassCard>
           </Animated.View>
 
@@ -583,7 +588,7 @@ export default function WeeklyReviewScreen() {
             <Animated.View entering={rise(5)}>
             <GlassCard>
               <View style={styles.microTitleRow}>
-                <Icon icon={Target} size={14} color={colors.readinessGreen} />
+                <Icon icon={Target} size={14} color={c.readinessGreen} />
                 <Text style={styles.microTitle}>{i18n.weeklyReviewRecommendations}</Text>
               </View>
               <View style={styles.recList}>
@@ -618,7 +623,7 @@ export default function WeeklyReviewScreen() {
                 disabled={analyze.isFetching}
                 onPress={() => setAsked(true)}>
                 {analyze.isFetching ? (
-                  <ActivityIndicator color={colors.primaryForeground} />
+                  <ActivityIndicator color={c.primaryForeground} />
                 ) : (
                   <Text style={styles.ctaText}>{i18n.nAnalyzeWeek}</Text>
                 )}
@@ -655,7 +660,7 @@ export default function WeeklyReviewScreen() {
                 <Animated.View key={`r${i}`} entering={rise(8 + i)}>
                 <GlassCard style={styles.itemCard}>
                   <View style={styles.row}>
-                    <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLOR[rec.priority] ?? colors.border }]} />
+                    <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLOR[rec.priority] ?? c.border }]} />
                     <View style={styles.info}>
                       <Text style={styles.itemTitle}>{rec.action}</Text>
                       <Text style={styles.hint}>{rec.reason}</Text>
@@ -676,7 +681,7 @@ export default function WeeklyReviewScreen() {
   );
 }
 
-const barStyles = StyleSheet.create({
+const barStylesFor = makeStyles((c) => ({
   wrap: { marginTop: spacing.sm },
   chart: {
     height: 120,
@@ -695,11 +700,11 @@ const barStyles = StyleSheet.create({
   barTrack: { width: '100%', height: '100%', justifyContent: 'flex-end' },
   bar: { width: '100%', borderTopLeftRadius: 4, borderTopRightRadius: 4, opacity: 0.85 },
   labels: { flexDirection: 'row', gap: 6, marginTop: 6 },
-  dayLabel: { fontSize: 11, color: colors.mutedForeground, textAlign: 'center' },
-  valLabel: { ...type.mono, fontSize: 11, color: colors.mutedForeground, textAlign: 'center' },
-});
+  dayLabel: { fontSize: 11, color: c.mutedForeground, textAlign: 'center' },
+  valLabel: { ...type.mono, fontSize: 11, color: c.mutedForeground, textAlign: 'center' },
+}));
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   weekNav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -715,7 +720,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  weekLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground, minWidth: 130, textAlign: 'center' },
+  weekLabel: { ...type.footnote, fontWeight: '600', color: c.foreground, minWidth: 130, textAlign: 'center' },
 
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 4 },
   statCard: { width: '47.5%', gap: 4, paddingVertical: spacing.md },
@@ -727,19 +732,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   deltaRow: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   deltaText: { ...type.mono, fontSize: 11 },
-  statValue: { ...type.mono, fontSize: 22, fontWeight: '700', color: colors.foreground },
-  statSub: { fontSize: 11, color: colors.mutedForeground },
+  statValue: { ...type.mono, fontSize: 22, fontWeight: '700', color: c.foreground },
+  statSub: { fontSize: 11, color: c.mutedForeground },
 
   microTitle: {
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   microTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 
@@ -751,30 +756,30 @@ const styles = StyleSheet.create({
     padding: spacing.sm + 4,
     borderRadius: radius.md,
   },
-  recText: { ...type.footnote, color: colors.secondaryForeground, flex: 1, lineHeight: 19 },
+  recText: { ...type.footnote, color: c.secondaryForeground, flex: 1, lineHeight: 19 },
 
-  title: { ...type.headline, color: colors.foreground },
+  title: { ...type.headline, color: c.foreground },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  hint: { ...type.footnote, color: colors.mutedForeground, marginTop: 4, lineHeight: 18 },
+  hint: { ...type.footnote, color: c.mutedForeground, marginTop: 4, lineHeight: 18 },
   cta: {
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.md,
   },
-  ctaText: { ...type.headline, color: colors.primaryForeground },
+  ctaText: { ...type.headline, color: c.primaryForeground },
   disabled: { opacity: 0.5 },
-  score: { fontSize: 44, fontWeight: '700', color: colors.foreground, marginTop: spacing.sm },
-  summary: { ...type.body, color: colors.secondaryForeground, marginTop: spacing.sm, lineHeight: 21 },
+  score: { fontSize: 44, fontWeight: '700', color: c.foreground, marginTop: spacing.sm },
+  summary: { ...type.body, color: c.secondaryForeground, marginTop: spacing.sm, lineHeight: 21 },
   itemCard: { paddingVertical: spacing.md },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
   /* Emoji bỏ qua `color`, nhưng khai nó ra để `tools/text-color.mjs` không
      cần một danh sách ngoại lệ mà người sau phải hiểu. */
-  iconEmoji: { fontSize: 22, color: colors.foreground },
+  iconEmoji: { fontSize: 22, color: c.foreground },
   info: { flex: 1, minWidth: 0 },
-  itemTitle: { ...type.body, fontWeight: '600', color: colors.foreground },
-  trendMark: { color: colors.mutedForeground },
+  itemTitle: { ...type.body, fontWeight: '600', color: c.foreground },
+  trendMark: { color: c.mutedForeground },
   priorityDot: { width: 10, height: 10, borderRadius: 5, marginTop: 5 },
-});
+}));

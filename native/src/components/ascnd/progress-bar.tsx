@@ -8,7 +8,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { colors } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 // Same decelerate curve the rings use, so bars and rings fill in sync
 const EASE = Easing.bezier(0.16, 1, 0.3, 1);
@@ -77,7 +78,7 @@ const EASE = Easing.bezier(0.16, 1, 0.3, 1);
  */
 export function ProgressBar({
   pct,
-  color = colors.primary,
+  color,
   height = 4,
   radius,
   trackColor = 'rgba(24,24,27,0.4)',
@@ -94,6 +95,7 @@ export function ProgressBar({
   duration?: number;
   style?: StyleProp<ViewStyle>;
 }) {
+  const c = usePalette();
   const r = radius ?? height / 2;
   const [track, setTrack] = useState(0);
 
@@ -107,7 +109,7 @@ export function ProgressBar({
       onLayout={measure}
       style={[{ height, borderRadius: r, backgroundColor: trackColor, overflow: 'hidden' }, style]}>
       {track > 0 ? (
-        <Fill track={track} pct={pct} color={color} radius={r} delay={delay} duration={duration} />
+        <Fill track={track} pct={pct} color={color ?? c.primary} radius={r} delay={delay} duration={duration} />
       ) : null}
     </View>
   );
@@ -144,6 +146,8 @@ function Fill({
   delay: number;
   duration: number;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /*
     `pct > 0` rather than `Math.max(pct, 0)`, and the difference is a crash-free
     wrong picture: `Math.max(NaN, 0)` is `NaN`, so a percentage computed as
@@ -173,6 +177,6 @@ function Fill({
   return <Animated.View style={[styles.fill, { borderRadius: radius, backgroundColor: color }, fill]} />;
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   fill: { height: '100%', width: '100%' },
-});
+}));

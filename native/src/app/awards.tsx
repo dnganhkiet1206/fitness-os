@@ -10,7 +10,9 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { ICON_MAP, Medal, TIER_CONFIG } from '@/components/ascnd/medal';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AWARD_DEFINITIONS, useAwardProgress, useAwards, useCheckAwards } from '@/hooks/use-extras';
@@ -105,6 +107,8 @@ function MedalCard({
   /** con số hiện tại của miền này, hoặc `null` khi chưa đọc được */
   current: number | null;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
   const AwardIcon = ICON_MAP[award.icon] ?? Trophy;
@@ -246,7 +250,7 @@ function MedalCard({
             accessibilityLabel={i18n.a11yShare}
             hitSlop={14}
             onPress={share}>
-            <Icon icon={Share2} size={16} color={colors.mutedForeground} />
+            <Icon icon={Share2} size={16} color={c.mutedForeground} />
           </PressScale>
         </View>
       )}
@@ -255,6 +259,8 @@ function MedalCard({
 }
 
 export default function AwardsScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { data: awards } = useAwards();
   const { data: sources } = useAwardProgress();
   const { checkAndGrant, ready } = useCheckAwards();
@@ -330,7 +336,7 @@ export default function AwardsScreen() {
               {/* Icon của chính miền, không phải Sparkles cho mọi mục — bản cũ
                   vẽ cùng một ngôi sao trên cả bốn tiêu đề, nên nó không phân
                   biệt được gì và chỉ là trang trí. */}
-              <Icon icon={ICON_MAP[list[0].icon] ?? Trophy} size={14} color={colors.mutedForeground} />
+              <Icon icon={ICON_MAP[list[0].icon] ?? Trophy} size={14} color={c.mutedForeground} />
               <Text style={styles.tierTitle}>{lang === 'vi' ? dom.vi : dom.en}</Text>
               <View style={styles.tierLine} />
               <Text style={styles.tierCount}>
@@ -357,7 +363,7 @@ export default function AwardsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   hero: { alignItems: 'center', gap: spacing.sm },
   heroTile: {
     width: 64,
@@ -373,8 +379,8 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 0 },
   },
-  heroCount: { ...type.footnote, color: colors.mutedForeground },
-  heroCountNum: { ...type.mono, fontWeight: '700', color: colors.foreground },
+  heroCount: { ...type.footnote, color: c.mutedForeground },
+  heroCountNum: { ...type.mono, fontWeight: '700', color: c.foreground },
   progressWrap: { width: 80, height: 80 },
   progressCenter: {
     position: 'absolute',
@@ -407,10 +413,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 2,
-    color: colors.foreground,
+    color: c.foreground,
   },
   tierLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(43,43,49,0.4)' },
-  tierCount: { ...type.mono, fontSize: 11, color: colors.mutedForeground },
+  tierCount: { ...type.mono, fontSize: 11, color: c.mutedForeground },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 4 },
   medalCard: {
@@ -431,10 +437,10 @@ const styles = StyleSheet.create({
   medalProgress: {
     ...type.footnote,
     fontWeight: '700',
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     fontVariant: ['tabular-nums'],
   },
-  medalTitle: { fontSize: 13, fontWeight: '700', color: colors.foreground, textAlign: 'center' },
+  medalTitle: { fontSize: 13, fontWeight: '700', color: c.foreground, textAlign: 'center' },
   /*
     `mutedForeground`, không phải xám 50% alpha.
 
@@ -444,8 +450,8 @@ const styles = StyleSheet.create({
     được đúng lúc nó cần thuyết phục người ta nhất. Kim loại xám đã nói "chưa
     mở" rồi — chữ không cần nói lại bằng cách tự xoá mình.
   */
-  medalTitleLocked: { color: colors.mutedForeground },
-  medalDesc: { fontSize: 11, color: colors.mutedForeground, textAlign: 'center', lineHeight: 14 },
+  medalTitleLocked: { color: c.mutedForeground },
+  medalDesc: { fontSize: 11, color: c.mutedForeground, textAlign: 'center', lineHeight: 14 },
   earnedRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  earnedDate: { ...type.mono, fontSize: 11, color: colors.mutedForeground },
-});
+  earnedDate: { ...type.mono, fontSize: 11, color: c.mutedForeground },
+}));

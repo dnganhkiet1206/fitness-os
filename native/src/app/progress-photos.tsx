@@ -21,7 +21,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { toast } from '@/lib/toast';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { PHOTO_QUALITY, pickPictureSize } from '@/lib/photo-size';
 import { parseLocalDate } from '@/lib/local-date';
@@ -35,6 +37,8 @@ import {
 type Pose = 'front' | 'side' | 'back';
 
 export default function ProgressPhotosScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { data: photos, isError, refetch, isRefetching } = useProgressPhotos();
@@ -71,13 +75,13 @@ export default function ProgressPhotosScreen() {
             Haptics.selectionAsync();
             setCapturing(true);
           }}>
-          <Icon icon={Plus} size={22} color={colors.primary} />
+          <Icon icon={Plus} size={22} color={c.primary} />
         </PressScale>
       }>
       {upload.isPending && (
         <GlassCard>
           <View style={styles.uploadingRow}>
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color={c.primary} />
             <Text style={styles.uploadingText}>{i18n.nPhotoUploading}</Text>
           </View>
         </GlassCard>
@@ -92,7 +96,7 @@ export default function ProgressPhotosScreen() {
       ) : !photos || photos.length === 0 ? (
         <GlassCard>
           <View style={styles.empty}>
-            <Icon icon={Camera} size={40} color={colors.mutedForeground} />
+            <Icon icon={Camera} size={40} color={c.mutedForeground} />
             <Text style={styles.emptyText}>{i18n.progressNoPhotos}</Text>
             <PressScale
               style={styles.emptyBtn}
@@ -146,6 +150,8 @@ function CaptureView({
   onClose: () => void;
   onCaptured: (base64: string, pose: Pose) => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
   const [permission, requestPermission] = useCameraPermissions();
@@ -254,29 +260,29 @@ function CaptureView({
   );
 }
 
-const styles = StyleSheet.create({
-  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.secondary, alignItems: 'center', justifyContent: 'center' },
-  addBtnText: { fontSize: 22, color: colors.primary, lineHeight: 26 },
+const stylesFor = makeStyles((c) => ({
+  addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center' },
+  addBtnText: { fontSize: 22, color: c.primary, lineHeight: 26 },
   uploadingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  uploadingText: { ...type.footnote, color: colors.mutedForeground },
+  uploadingText: { ...type.footnote, color: c.mutedForeground },
   empty: { alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm },
   emptyIcon: { fontSize: 40 },
-  emptyText: { ...type.body, color: colors.mutedForeground },
-  emptyBtn: { marginTop: spacing.sm, height: 44, paddingHorizontal: spacing.xl, borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  emptyBtnText: { ...type.headline, color: colors.primaryForeground },
+  emptyText: { ...type.body, color: c.mutedForeground },
+  emptyBtn: { marginTop: spacing.sm, height: 44, paddingHorizontal: spacing.xl, borderRadius: radius.full, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' },
+  emptyBtnText: { ...type.headline, color: c.primaryForeground },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  photoCell: { width: '47.8%', borderRadius: radius.md, overflow: 'hidden', backgroundColor: colors.card },
-  photo: { width: '100%', aspectRatio: 0.8, backgroundColor: colors.secondary },
+  photoCell: { width: '47.8%', borderRadius: radius.md, overflow: 'hidden', backgroundColor: c.card },
+  photo: { width: '100%', aspectRatio: 0.8, backgroundColor: c.secondary },
   photoMeta: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.sm, paddingVertical: 6 },
-  photoPose: { ...type.caption, color: colors.foreground, fontWeight: '600', textTransform: 'capitalize' },
-  photoDate: { ...type.caption, color: colors.mutedForeground },
+  photoPose: { ...type.caption, color: c.foreground, fontWeight: '600', textTransform: 'capitalize' },
+  photoDate: { ...type.caption, color: c.mutedForeground },
   // Capture
   captureRoot: { flex: 1, backgroundColor: '#000' },
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
-  permTitle: { ...type.title, color: colors.foreground },
-  permBtn: { height: 48, paddingHorizontal: spacing.xl, borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center' },
-  permBtnText: { ...type.headline, color: colors.primaryForeground },
-  cancelText: { ...type.body, color: colors.mutedForeground },
+  permTitle: { ...type.title, color: c.foreground },
+  permBtn: { height: 48, paddingHorizontal: spacing.xl, borderRadius: radius.full, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' },
+  permBtnText: { ...type.headline, color: c.primaryForeground },
+  cancelText: { ...type.body, color: c.mutedForeground },
   closeBtn: { position: 'absolute', right: spacing.md, zIndex: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },
   closeText: { color: '#fff', fontSize: 16 },
   poseRow: { position: 'absolute', alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.4)', padding: 4, borderRadius: radius.full },
@@ -287,4 +293,4 @@ const styles = StyleSheet.create({
   shutterRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   shutter: { width: 74, height: 74, borderRadius: 37, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#fff' },
-});
+}));

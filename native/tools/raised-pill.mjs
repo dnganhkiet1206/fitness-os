@@ -61,7 +61,9 @@ const problems = [];
  * Spotify), tức là danh tính chứ không phải trang trí — nó nói cho người dùng
  * biết nút mở cái gì trước khi họ đọc chữ.
  */
-const NEUTRAL = 'colors.primary';
+/* `c.primary`, không còn `colors.primary`: bảng màu đọc lúc chạy, và `c` là
+   bảng của theme đang bật — xem `constants/theme.ts`. */
+const NEUTRAL = 'c.primary';
 const USERS = [
   ['src/app/(tabs)/index.tsx', 1, 'bốn nút log trên Today (một chỗ render, lặp qua danh sách)', NEUTRAL],
   /*
@@ -155,7 +157,7 @@ console.log(
   `pill nổi OK — ${total} pill trên ${USERS.length} màn đều dùng <LiquidGlass>, cùng chất liệu với pill ` +
     '"đang chờ dữ liệu hôm nay" bên trợ lý. Mỗi cái vẫn truyền `tint`, vì material="blur" đã bỏ mép sáng ' +
     'nên lớp wash là nguồn sáng cuối cùng nhấc pill khỏi nền — nhưng pill ĐIỀU HƯỚNG nay dùng đúng MỘT ' +
-    'nguồn trung tính (colors.primary) thay vì mỗi cái một hue: màu dành cho giá trị, không dành cho lối ' +
+    'nguồn trung tính (c.primary) thay vì mỗi cái một hue: màu dành cho giá trị, không dành cho lối ' +
     'đi, và màu ở lại trong glyph. Hai chip nhạc được miễn có tên vì màu ở đó là danh tính dịch vụ. ' +
     'Không pill nào gắn thêm bóng đổ: đo trên ảnh chụp thì bóng đen dưới pill tối trên trang #070708 vẽ ' +
     'ra đúng không gì (điểm ảnh ngay ngoài pill là [9,9,9], y hệt nền), nên chiều sâu ở đây là việc của ' +

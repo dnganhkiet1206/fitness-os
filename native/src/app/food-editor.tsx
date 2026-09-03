@@ -20,7 +20,9 @@ import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { duration } from '@/constants/motion';
-import { MACRO_TINT, colors, radius, spacing, type } from '@/constants/ascnd';
+import { MACRO_TINT, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { toast } from '@/lib/toast';
 import {
@@ -58,6 +60,8 @@ const MACRO_COLORS = MACRO_TINT;
 
 /** Add/edit custom food — mirrors the web FoodItemDialog */
 export default function FoodEditorSheet() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEdit = !!id;
@@ -174,7 +178,7 @@ export default function FoodEditorSheet() {
                 style={styles.kcalInput}
                 keyboardType="number-pad"
                 placeholder="0"
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor={c.mutedForeground}
                 value={kcal}
                 onChangeText={(v) => setKcal(digits(v))}
               />
@@ -211,7 +215,7 @@ export default function FoodEditorSheet() {
                 style={styles.fiberInput}
                 keyboardType="number-pad"
                 placeholder="0"
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor={c.mutedForeground}
                 value={fiber}
                 onChangeText={(v) => setFiber(digits(v))}
               />
@@ -229,9 +233,9 @@ export default function FoodEditorSheet() {
               onPress={confirmDelete}
               disabled={remove.isPending || saved}>
               {remove.isPending ? (
-                <ActivityIndicator color={colors.readinessRed} size="small" />
+                <ActivityIndicator color={c.readinessRed} size="small" />
               ) : (
-                <Icon icon={Trash2} size={18} color={colors.readinessRed} />
+                <Icon icon={Trash2} size={18} color={c.readinessRed} />
               )}
             </PressScale>
           )}
@@ -240,9 +244,9 @@ export default function FoodEditorSheet() {
             disabled={!canSave}
             onPress={save}>
             {saved ? (
-              <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+              <Icon icon={Check} size={22} color={c.primaryForeground} strokeWidth={3} />
             ) : saving ? (
-              <ActivityIndicator color={colors.primaryForeground} />
+              <ActivityIndicator color={c.primaryForeground} />
             ) : (
               <Text style={styles.saveText}>{isEdit ? i18n.save : i18n.add}</Text>
             )}
@@ -258,13 +262,15 @@ function Field({
 }: {
   label: string; value: string; onChange: (v: string) => void; placeholder?: string;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
         style={styles.input}
         placeholder={placeholder}
-        placeholderTextColor={colors.mutedForeground}
+        placeholderTextColor={c.mutedForeground}
         value={value}
         onChangeText={onChange}
       />
@@ -277,6 +283,8 @@ function MacroField({
 }: {
   label: string; value: string; onChange: (v: string) => void; pct: number; color: string;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.macroCell}>
       <Text style={styles.macroLabel} numberOfLines={1}>{label}</Text>
@@ -284,7 +292,7 @@ function MacroField({
         style={styles.macroInput}
         keyboardType="number-pad"
         placeholder="0"
-        placeholderTextColor={colors.mutedForeground}
+        placeholderTextColor={c.mutedForeground}
         value={value}
         onChangeText={(v) => onChange(digits(v))}
       />
@@ -296,7 +304,7 @@ function MacroField({
         pct={pct}
         height={4}
         radius={2}
-        trackColor={colors.background}
+        trackColor={c.background}
         color={color}
         delay={0}
         duration={duration.move}
@@ -305,23 +313,23 @@ function MacroField({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.card },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.card },
   content: { padding: spacing.lg, gap: spacing.md },
-  title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
+  title: { ...type.title, color: c.foreground, textAlign: 'center', marginBottom: spacing.sm },
   field: { gap: 6 },
-  fieldLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
+  fieldLabel: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
   input: {
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
   },
-  unit: { ...type.footnote, color: colors.mutedForeground },
+  unit: { ...type.footnote, color: c.mutedForeground },
 
   servingRow: { gap: 6 },
   servingInputWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -330,19 +338,19 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     textAlign: 'center',
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
     fontVariant: ['tabular-nums'],
   },
 
   macroCard: {
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.md,
     gap: spacing.sm + 2,
   },
@@ -353,10 +361,10 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.secondary,
+    borderColor: c.border,
+    backgroundColor: c.secondary,
     textAlign: 'center',
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 18,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
@@ -365,35 +373,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  autoCalcText: { ...type.caption, color: colors.mutedForeground },
+  autoCalcText: { ...type.caption, color: c.mutedForeground },
   distBar: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden' },
   distSeg: { height: '100%' },
   macroGrid: { flexDirection: 'row', gap: spacing.sm },
   macroCell: {
     flex: 1,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     borderRadius: radius.md,
     padding: spacing.sm + 2,
     gap: 5,
   },
-  macroLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
+  macroLabel: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
   macroInput: {
     height: 34,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     textAlign: 'center',
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
     fontWeight: '700',
     fontVariant: ['tabular-nums'],
     paddingVertical: 0,
   },
   macroMetaRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  macroMeta: { fontSize: 11, color: colors.mutedForeground },
+  macroMeta: { fontSize: 11, color: c.mutedForeground },
   fiberRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   fiberInputWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   fiberInput: {
@@ -401,10 +409,10 @@ const styles = StyleSheet.create({
     height: 34,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.secondary,
+    borderColor: c.border,
+    backgroundColor: c.secondary,
     textAlign: 'center',
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 14,
     fontVariant: ['tabular-nums'],
     paddingVertical: 0,
@@ -424,10 +432,10 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   saveDisabled: { opacity: 0.4 },
-  saveText: { ...type.headline, color: colors.primaryForeground },
-});
+  saveText: { ...type.headline, color: c.primaryForeground },
+}));

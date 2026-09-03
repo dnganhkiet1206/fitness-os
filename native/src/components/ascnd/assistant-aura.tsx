@@ -11,7 +11,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { colors } from '@/constants/ascnd';
+import { makeStyles, type Palette } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 /**
@@ -84,7 +85,19 @@ const CURVE = [
 
 interface Pool {
   id: string;
-  colour: string;
+  /*
+    Một HÀM của bảng màu, không phải một mã màu.
+
+    `POOLS` phải ở phạm vi module — nó là hằng, và `LightPool` đọc từng phần tử
+    qua prop. Nhưng một mã màu ở phạm vi module bị đóng băng lúc import, nên
+    `auraState` sẽ giữ tím của theme tối kể cả ở theme sáng.
+
+    Ba vũng còn lại là mã màu THẬT của riêng lớp hào quang này, không phải token
+    — nên chúng không viết được thành khoá bảng màu, và một `PaletteKey` chung
+    cho cả bốn sẽ là nói dối về ba trong số đó. Một hàm nhận `c` là hình dạng
+    duy nhất chứa được cả hai loại mà không cần đoán lúc chạy.
+  */
+  colour: (c: Palette) => string;
   peak: number;
   /** where the pool sits, as a fraction of the layer */
   cx: number;
@@ -107,6 +120,8 @@ interface Pool {
  * straight edge is the one thing light never has.
  */
 function LightPool({ pool, tint, moving }: { pool: Pool; tint?: string; moving: boolean }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const t = useSharedValue(pool.phase);
 
   useEffect(() => {
@@ -153,7 +168,7 @@ function LightPool({ pool, tint, moving }: { pool: Pool; tint?: string; moving: 
     };
   });
 
-  const colour = tint ?? pool.colour;
+  const colour = tint ?? pool.colour(c);
 
   /*
     ── the gradient id has to be unique per mount, not per pool ──
@@ -199,12 +214,12 @@ function LightPool({ pool, tint, moving }: { pool: Pool; tint?: string; moving: 
 const POOLS: Pool[] = [
   /* The state pool. Its colour is overridden by today's readiness — it is the
      one that makes the screen mean something before you read it. */
-  { id: 'auraState', colour: colors.metricPurple, peak: 0.135, cx: 0.44, cy: 0.31, dx: 34, dy: 44, scale: 0.18, ms: 17000, phase: 0 },
-  { id: 'auraViolet', colour: '#7b3dff', peak: 0.10, cx: 0.62, cy: 0.24, dx: 44, dy: 30, scale: 0.15, ms: 23000, phase: 0.33 },
-  { id: 'auraCyan', colour: '#22b8ff', peak: 0.07, cx: 0.33, cy: 0.44, dx: 40, dy: 36, scale: 0.17, ms: 29000, phase: 0.66 },
+  { id: 'auraState', colour: (c) => c.metricPurple, peak: 0.135, cx: 0.44, cy: 0.31, dx: 34, dy: 44, scale: 0.18, ms: 17000, phase: 0 },
+  { id: 'auraViolet', colour: () => '#7b3dff', peak: 0.10, cx: 0.62, cy: 0.24, dx: 44, dy: 30, scale: 0.15, ms: 23000, phase: 0.33 },
+  { id: 'auraCyan', colour: () => '#22b8ff', peak: 0.07, cx: 0.33, cy: 0.44, dx: 40, dy: 36, scale: 0.17, ms: 29000, phase: 0.66 },
   /* A dim warm one low down, so the bottom of the page is not dead black and
      the cool pools have something to be cool *against*. */
-  { id: 'auraWarm', colour: '#ffb37a', peak: 0.03, cx: 0.68, cy: 0.66, dx: 28, dy: 24, scale: 0.13, ms: 13000, phase: 0.5 },
+  { id: 'auraWarm', colour: () => '#ffb37a', peak: 0.03, cx: 0.68, cy: 0.66, dx: 28, dy: 24, scale: 0.13, ms: 13000, phase: 0.5 },
 ];
 
 /**
@@ -334,6 +349,8 @@ function DustField({
   width: number;
   moving: boolean;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Unique per mount — see `LightPool`: two screens hold an aura at the same
      time, and an svg id is global to the document on web. */
   const uid = useId();
@@ -416,6 +433,8 @@ function DustField({
  * @param state today's readiness, if it is known — recolours the leading pool
  */
 export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | null }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /*
     The light comes up when you arrive.
 
@@ -451,11 +470,11 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
 
   const tint =
     state === 'green'
-      ? colors.readinessGreen
+      ? c.readinessGreen
       : state === 'yellow'
-        ? colors.readinessYellow
+        ? c.readinessYellow
         : state === 'red'
-          ? colors.readinessRed
+          ? c.readinessRed
           : undefined;
 
   /* The layer's own measured box. `null` until the first layout, and the dust
@@ -573,6 +592,8 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
  * the platform composites is free, what forces a re-raster is not.
  */
 function AuraFigure({ moving }: { moving: boolean }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const t = useSharedValue(0);
 
   useEffect(() => {
@@ -645,6 +666,8 @@ function AuraFigure({ moving }: { moving: boolean }) {
  * shape the mask had, inverted, since this paints where that hid.
  */
 function EdgeFade() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Same reason as `LightPool`, and this one is mine: a literal id here would
      be the fourth time this file hands the document two definitions of one
      name. */
@@ -654,10 +677,10 @@ function EdgeFade() {
     <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
       <Defs>
         <SvgLinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={colors.background} stopOpacity={1} />
-          <Stop offset="0.10" stopColor={colors.background} stopOpacity={0} />
-          <Stop offset="0.90" stopColor={colors.background} stopOpacity={0} />
-          <Stop offset="1" stopColor={colors.background} stopOpacity={1} />
+          <Stop offset="0" stopColor={c.background} stopOpacity={1} />
+          <Stop offset="0.10" stopColor={c.background} stopOpacity={0} />
+          <Stop offset="0.90" stopColor={c.background} stopOpacity={0} />
+          <Stop offset="1" stopColor={c.background} stopOpacity={1} />
         </SvgLinearGradient>
       </Defs>
       <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid})`} />
@@ -665,7 +688,7 @@ function EdgeFade() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   layer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' },
   /* Twice the layer, centred by the negative offsets — see `LightPool`: a pool
      needs room for its tail or its edge becomes a drawn line. */
@@ -692,4 +715,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   figureImage: { width: '86%', height: '100%' },
-});
+}));

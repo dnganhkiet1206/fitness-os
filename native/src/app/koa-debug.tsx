@@ -4,7 +4,9 @@ import { useState } from 'react';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useKoaContext } from '@/hooks/use-koa-context';
 import { KOA_LINE_KEY, type KoaContext, type KoaDecision } from '@/lib/koa-decide';
 import { comebackMagnitude, streakMagnitude, TIER_MAGNITUDE, type KoaEvent } from '@/lib/koa-event';
@@ -68,6 +70,8 @@ const SITUATIONS: (Situation | null)[] = [
 ];
 
 export default function KoaDebugScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const real = useKoaContext();
   const live = useKoaReaction();
   const [last, setLast] = useState<{ label: string; d: KoaDecision } | null>(null);
@@ -182,6 +186,8 @@ export default function KoaDebugScreen() {
 }
 
 function Row({ k, v }: { k: string; v: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.row}>
       <Text style={styles.k}>{k}</Text>
@@ -190,10 +196,10 @@ function Row({ k, v }: { k: string; v: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   body: { padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xl },
-  h: { ...type.caption, fontWeight: '800', color: colors.mutedForeground, marginTop: spacing.sm },
-  mono: { ...type.caption, color: colors.foreground },
+  h: { ...type.caption, fontWeight: '800', color: c.mutedForeground, marginTop: spacing.sm },
+  mono: { ...type.caption, color: c.foreground },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   btn: {
     minHeight: 44,
@@ -204,11 +210,11 @@ const styles = StyleSheet.create({
   },
   /* The forced situation has to be visible at a glance, or the whole screen
      starts lying about which context produced the decision below it. */
-  btnOn: { backgroundColor: colors.primary },
+  btnOn: { backgroundColor: c.primary },
   wide: { alignItems: 'center', marginTop: spacing.xs },
-  btnText: { ...type.caption, fontWeight: '600', color: colors.foreground },
+  btnText: { ...type.caption, fontWeight: '600', color: c.foreground },
   card: { gap: 4, padding: spacing.sm, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.05)' },
   row: { flexDirection: 'row', gap: spacing.sm },
-  k: { ...type.caption, color: colors.mutedForeground, width: 118 },
-  v: { ...type.caption, color: colors.foreground, flex: 1, minWidth: 0 },
-});
+  k: { ...type.caption, color: c.mutedForeground, width: 118 },
+  v: { ...type.caption, color: c.foreground, flex: 1, minWidth: 0 },
+}));

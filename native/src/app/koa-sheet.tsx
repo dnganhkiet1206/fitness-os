@@ -15,7 +15,9 @@ import {
   type Worn,
 } from '@/components/ascnd/koa/koa-flags';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * Koa · spec sheet — the character review screen.
@@ -59,6 +61,8 @@ const SLOT_LABEL: Record<KoaSlot, string> = {
 };
 
 export default function KoaSheetScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const [expression, setExpression] = useState<KoaExpression>('happy');
   const [pose, setPose] = useState<KoaPose>('idle');
   const [worn, setWorn] = useState<Worn>({});
@@ -184,7 +188,7 @@ export default function KoaSheetScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   hero: {
     alignItems: 'center',
     paddingVertical: spacing.lg,
@@ -193,15 +197,15 @@ const styles = StyleSheet.create({
   heroLabel: {
     ...type.caption,
     ...type.mono,
-    color: colors.foreground,
+    color: c.foreground,
     letterSpacing: 1.6,
     marginTop: spacing.sm,
   },
-  heroHint: { ...type.caption, color: colors.mutedForeground },
+  heroHint: { ...type.caption, color: c.mutedForeground },
   card: { gap: spacing.md, marginBottom: spacing.stack },
   cardHead: { gap: 2 },
-  section: { ...type.caption, ...type.mono, color: colors.primary, letterSpacing: 2.2 },
-  sectionSub: { ...type.caption, color: colors.mutedForeground },
+  section: { ...type.caption, ...type.mono, color: c.primary, letterSpacing: 2.2 },
+  sectionSub: { ...type.caption, color: c.mutedForeground },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   tile: {
     width: '31%',
@@ -210,12 +214,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
   },
-  tileOn: { borderColor: colors.primary },
+  tileOn: { borderColor: c.primary },
   // the figure is 104 × 130; keep the top 88 so the head fills the tile
   tileFace: { height: 88, width: 104, overflow: 'hidden' },
-  tileLabel: { ...type.caption, ...type.mono, fontSize: 11, color: colors.mutedForeground, letterSpacing: 1 },
-  tileLabelOn: { color: colors.foreground },
-});
+  tileLabel: { ...type.caption, ...type.mono, fontSize: 11, color: c.mutedForeground, letterSpacing: 1 },
+  tileLabelOn: { color: c.foreground },
+}));

@@ -20,7 +20,9 @@ import { Check } from 'lucide-react-native';
 import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { localDateStr } from '@/lib/local-date';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -36,6 +38,8 @@ import { decText } from '@/lib/number-input';
 type FieldKey = Exclude<keyof BodyMeasurementInput, 'date' | 'notes'>;
 
 export default function LogMeasurementSheet() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { height: lUnit } = useUnits();
   const { user } = useAuth();
@@ -211,9 +215,9 @@ export default function LogMeasurementSheet() {
           disabled={!canSave}
           onPress={save}>
           {upsert.isSuccess ? (
-            <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+            <Icon icon={Check} size={22} color={c.primaryForeground} strokeWidth={3} />
           ) : upsert.isPending ? (
-            <ActivityIndicator color={colors.primaryForeground} />
+            <ActivityIndicator color={c.primaryForeground} />
           ) : (
             <Text style={styles.saveText}>{i18n.save}</Text>
           )}
@@ -228,6 +232,8 @@ function Field({
 }: {
   label: string; value: string; onChange: (v: string) => void; style?: object; error?: string | null;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={[styles.field, style]}>
       <Text style={styles.fieldLabel} numberOfLines={1}>{label}</Text>
@@ -235,7 +241,7 @@ function Field({
         style={[styles.input, error ? styles.inputBad : null]}
         keyboardType="decimal-pad"
         placeholder="—"
-        placeholderTextColor={colors.mutedForeground}
+        placeholderTextColor={c.mutedForeground}
         value={value}
         onChangeText={(v) => onChange(decText(v))}
       />
@@ -244,28 +250,28 @@ function Field({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.card },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.card },
   content: { padding: spacing.lg, gap: spacing.md },
-  title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
+  title: { ...type.title, color: c.foreground, textAlign: 'center', marginBottom: spacing.sm },
   dateRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   field: { gap: 6 },
-  fieldLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
+  fieldLabel: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
   input: {
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
   },
-  inputBad: { borderColor: colors.readinessRed },
-  fieldError: { ...type.footnote, color: colors.readinessRed },
+  inputBad: { borderColor: c.readinessRed },
+  fieldError: { ...type.footnote, color: c.readinessRed },
   row: { flexDirection: 'row', gap: spacing.sm },
   half: { flex: 1 },
-  saveButton: { height: 50, borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
+  saveButton: { height: 50, borderRadius: radius.full, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
   saveDisabled: { opacity: 0.4 },
-  saveText: { ...type.headline, color: colors.primaryForeground },
-});
+  saveText: { ...type.headline, color: c.primaryForeground },
+}));

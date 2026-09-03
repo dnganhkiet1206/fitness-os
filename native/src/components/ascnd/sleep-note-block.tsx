@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, type } from '@/constants/ascnd';
+import { spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { sleepNote, sleepNoteText } from '@/lib/sleep-note';
 
@@ -40,6 +42,8 @@ export function SleepNoteBlock({
   targetMin: number | null | undefined;
   style?: object;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const note = sleepNote({ quality, durationMin, targetMin });
   if (!note) return null;
@@ -54,8 +58,8 @@ export function SleepNoteBlock({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   wrap: { gap: 3, paddingHorizontal: spacing.card },
-  text: { ...type.footnote, color: colors.foreground, lineHeight: 18 },
-  caveat: { ...type.footnote, color: colors.mutedForeground, opacity: 0.8 },
-});
+  text: { ...type.footnote, color: c.foreground, lineHeight: 18 },
+  caveat: { ...type.footnote, color: c.mutedForeground, opacity: 0.8 },
+}));

@@ -3,7 +3,9 @@ import { ChevronLeft, ChevronRight, Coins, Lock } from 'lucide-react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { RARITY, type ShopItem } from '@/lib/mascot-room';
@@ -71,6 +73,8 @@ export function ShopPager({
   lang: 'vi' | 'en';
   i18n: ReturnType<typeof useI18n>;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const item = items[index];
   if (!item) return null;
 
@@ -130,7 +134,7 @@ export function ShopPager({
 
       {locked ? (
         <View style={[styles.action, styles.actionLocked]}>
-          <Icon icon={Lock} size={14} color={colors.mutedForeground} />
+          <Icon icon={Lock} size={14} color={c.mutedForeground} />
           <Text style={styles.lockedText}>
             {i18n.nRoomLockLevel.replace('{n}', String(item.unlockLevel))}
           </Text>
@@ -141,13 +145,13 @@ export function ShopPager({
           style={[styles.action, styles.actionBuy, !affordable && styles.actionPoor]}
           onPress={() => onBuy(item)}>
           {buyingKey === item.key ? (
-            <ActivityIndicator size="small" color={colors.primaryForeground} />
+            <ActivityIndicator size="small" color={c.primaryForeground} />
           ) : (
             <>
               <Icon
                 icon={Coins}
                 size={15}
-                color={affordable ? colors.primaryForeground : colors.mutedForeground}
+                color={affordable ? c.primaryForeground : c.mutedForeground}
               />
               <Text style={[styles.buyText, !affordable && styles.poorText]}>{price}</Text>
             </>
@@ -183,6 +187,8 @@ function Arrow({
   onPress: () => void;
   disabled: boolean;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <PressScale
       accessibilityRole="button"
@@ -195,13 +201,13 @@ function Arrow({
       <Icon
         icon={dir === 'left' ? ChevronLeft : ChevronRight}
         size={24}
-        color={disabled ? colors.mutedForeground : colors.foreground}
+        color={disabled ? c.mutedForeground : c.foreground}
       />
     </PressScale>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   wrap: { gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   arrow: {
@@ -210,7 +216,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
   arrowOff: { opacity: 0.35 },
   plate: { flex: 1, alignItems: 'center', gap: 6 },
@@ -221,13 +227,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  name: { ...type.headline, color: colors.foreground, textAlign: 'center' },
+  name: { ...type.headline, color: c.foreground, textAlign: 'center' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rarity: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: radius.sm },
   rarityText: { ...type.caption, fontWeight: '700' },
-  count: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  count: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   pips: { flexDirection: 'row', justifyContent: 'center', gap: 5 },
-  pip: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: colors.border },
+  pip: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: c.border },
   action: {
     height: 46,
     borderRadius: radius.full,
@@ -236,14 +242,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  actionBuy: { backgroundColor: colors.primary },
-  actionPoor: { backgroundColor: colors.secondary },
-  actionWear: { backgroundColor: colors.secondary, borderWidth: 1, borderColor: colors.border },
-  actionOff: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border },
-  actionLocked: { backgroundColor: colors.secondary },
-  buyText: { ...type.headline, color: colors.primaryForeground, fontVariant: ['tabular-nums'] },
-  poorText: { color: colors.mutedForeground },
-  wearText: { ...type.headline, color: colors.foreground },
-  offText: { color: colors.mutedForeground },
-  lockedText: { ...type.footnote, color: colors.mutedForeground },
-});
+  actionBuy: { backgroundColor: c.primary },
+  actionPoor: { backgroundColor: c.secondary },
+  actionWear: { backgroundColor: c.secondary, borderWidth: 1, borderColor: c.border },
+  actionOff: { backgroundColor: 'transparent', borderWidth: 1, borderColor: c.border },
+  actionLocked: { backgroundColor: c.secondary },
+  buyText: { ...type.headline, color: c.primaryForeground, fontVariant: ['tabular-nums'] },
+  poorText: { color: c.mutedForeground },
+  wearText: { ...type.headline, color: c.foreground },
+  offText: { color: c.mutedForeground },
+  lockedText: { ...type.footnote, color: c.mutedForeground },
+}));

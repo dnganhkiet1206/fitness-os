@@ -6,7 +6,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { useMascotIdentity } from '@/hooks/use-mascot';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * The screen somebody sees before they have used it.
@@ -78,6 +80,8 @@ export function EmptyState({
    */
   companion?: boolean;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Identity only — the same rule the error card is built on. This renders
      *because* a read came back with nothing, and a hook that reads would put a
      fresh observer on the very query that came back empty. See
@@ -99,7 +103,7 @@ export function EmptyState({
         /* A tinted chip rather than a bare glyph: a lone outline icon on a dark
            card reads as a broken image. */
         <View style={styles.chip}>
-          <Icon icon={icon} size={24} color={colors.mutedForeground} />
+          <Icon icon={icon} size={24} color={c.mutedForeground} />
         </View>
       )}
       <Text style={styles.title}>{title}</Text>
@@ -140,7 +144,7 @@ export function EmptyState({
   a third of the width of "Nhập số đo", so the same component lands at three
   different sizes across three screens and stops reading as one thing.
 */
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   root: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
   chip: {
     width: 56,
@@ -151,17 +155,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing.xs,
   },
-  title: { ...type.title2, color: colors.foreground, textAlign: 'center' },
-  hint: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', lineHeight: 18, maxWidth: 280 },
+  title: { ...type.title2, color: c.foreground, textAlign: 'center' },
+  hint: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', lineHeight: 18, maxWidth: 280 },
   button: {
     marginTop: spacing.sm,
     height: 48,
     minWidth: 176,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: { ...type.headline, color: colors.primaryForeground },
-});
+  buttonText: { ...type.headline, color: c.primaryForeground },
+}));

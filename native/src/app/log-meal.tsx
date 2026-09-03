@@ -22,7 +22,9 @@ import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { SheetHeader } from '@/components/ascnd/sheet-header';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -71,6 +73,8 @@ interface AiSuggestion {
 }
 
 export default function LogMealSheet() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { user } = useAuth();
   const { lang } = useAppSettings();
   const invalidate = useInvalidateToday();
@@ -542,8 +546,8 @@ export default function LogMealSheet() {
         <PickRow
           scroll
           value={mealType}
-          fill={colors.primary}
-          slotFill={colors.secondary}
+          fill={c.primary}
+          slotFill={c.secondary}
           radius={radius.full}
           gap={spacing.sm}
           contentStyle={styles.chips}>
@@ -610,7 +614,7 @@ export default function LogMealSheet() {
           <TextInput
             style={[styles.input, styles.searchInput]}
             placeholder={i18n.nSearchFoods}
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
             value={search}
             onChangeText={setSearch}
             autoCorrect={false}
@@ -624,7 +628,7 @@ export default function LogMealSheet() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               nav.push('/scan-food');
             }}>
-            <Icon icon={Camera} size={20} color={colors.foreground} />
+            <Icon icon={Camera} size={20} color={c.foreground} />
           </PressScale>
           <PressScale
             accessibilityRole="button"
@@ -634,7 +638,7 @@ export default function LogMealSheet() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               nav.push('/scan-barcode');
             }}>
-            <Icon icon={ScanBarcode} size={20} color={colors.foreground} />
+            <Icon icon={ScanBarcode} size={20} color={c.foreground} />
           </PressScale>
         </View>
 
@@ -663,7 +667,7 @@ export default function LogMealSheet() {
                   Haptics.selectionAsync();
                   addItem(q);
                 }}>
-                <Icon icon={q.fav ? Star : Clock} size={12} color={colors.primary} />
+                <Icon icon={q.fav ? Star : Clock} size={12} color={c.primary} />
                 <Text style={styles.quickName} numberOfLines={1}>{q.food_name}</Text>
                 <Text style={styles.quickKcal}>{q.kcal}</Text>
               </PressScale>
@@ -680,14 +684,14 @@ export default function LogMealSheet() {
             <Text style={styles.aiToggleTitle}>{i18n.nAiSuggestTitle}</Text>
             <Text style={styles.aiToggleHint}>{i18n.nAiSuggestHint}</Text>
           </View>
-          <Icon icon={aiOpen ? ChevronDown : ChevronRight} size={20} color={colors.mutedForeground} />
+          <Icon icon={aiOpen ? ChevronDown : ChevronRight} size={20} color={c.mutedForeground} />
         </PressScale>
 
         {aiOpen && (
           <View style={styles.aiPanel}>
             {aiSuggest.isPending ? (
               <View style={styles.aiLoading}>
-                <ActivityIndicator color={colors.primary} />
+                <ActivityIndicator color={c.primary} />
                 <Text style={styles.aiLoadingText}>{i18n.nAiThinking}</Text>
               </View>
             ) : suggestions.length === 0 ? (
@@ -709,7 +713,7 @@ export default function LogMealSheet() {
                     hitSlop={2}
                     style={styles.addChip}
                     onPress={() => addSuggestion(s)}>
-                    <Icon icon={Plus} size={20} color={colors.primaryForeground} strokeWidth={2.5} />
+                    <Icon icon={Plus} size={20} color={c.primaryForeground} strokeWidth={2.5} />
                   </PressScale>
                 </View>
               ))
@@ -724,14 +728,14 @@ export default function LogMealSheet() {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             setCustomOpen((v) => !v);
           }}>
-          <Icon icon={PencilLine} size={18} color={colors.primary} />
+          <Icon icon={PencilLine} size={18} color={c.primary} />
           <View style={styles.aiToggleInfo}>
             <Text style={styles.aiToggleTitle}>{vi ? 'Tự nhập món ăn' : 'Custom food'}</Text>
             <Text style={styles.aiToggleHint}>
               {vi ? 'Nhập tên món và macro của riêng bạn' : 'Type your own dish with its macros'}
             </Text>
           </View>
-          <Icon icon={customOpen ? ChevronDown : ChevronRight} size={20} color={colors.mutedForeground} />
+          <Icon icon={customOpen ? ChevronDown : ChevronRight} size={20} color={c.mutedForeground} />
         </PressScale>
 
         {customOpen && (
@@ -739,7 +743,7 @@ export default function LogMealSheet() {
             <TextInput
               style={styles.input}
               placeholder={vi ? 'Tên món (VD: Cơm gà nhà làm)' : 'Dish name (e.g. Homemade chicken rice)'}
-              placeholderTextColor={colors.mutedForeground}
+              placeholderTextColor={c.mutedForeground}
               value={cName}
               onChangeText={setCName}
             />
@@ -763,7 +767,7 @@ export default function LogMealSheet() {
               style={[styles.customAddBtn, !canAddCustom && styles.customAddDisabled]}
               disabled={!canAddCustom}
               onPress={addCustom}>
-              <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
+              <Icon icon={Plus} size={15} color={c.primaryForeground} strokeWidth={2.5} />
               <Text style={styles.customAddText}>{vi ? 'Thêm vào bữa' : 'Add to meal'}</Text>
             </PressScale>
           </View>
@@ -787,15 +791,15 @@ export default function LogMealSheet() {
                   </Pressable>
                   <View style={styles.stepper}>
                     <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDecrease} hitSlop={8} style={styles.stepBtn} onPress={() => updateServings(idx, -0.5)}>
-                      <Icon icon={Minus} size={16} color={colors.foreground} />
+                      <Icon icon={Minus} size={16} color={c.foreground} />
                     </Pressable>
                     <Text style={styles.stepValue}>{it.servings}</Text>
                     <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yIncrease} hitSlop={8} style={styles.stepBtn} onPress={() => updateServings(idx, 0.5)}>
-                      <Icon icon={Plus} size={16} color={colors.foreground} />
+                      <Icon icon={Plus} size={16} color={c.foreground} />
                     </Pressable>
                   </View>
                   <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={8} onPress={() => removeItem(idx)}>
-                    <Icon icon={X} size={15} color={colors.mutedForeground} />
+                    <Icon icon={X} size={15} color={c.mutedForeground} />
                   </Pressable>
                 </View>
                 {editingIdx === idx && (
@@ -839,15 +843,15 @@ export default function LogMealSheet() {
             </Text>
             {macroG > 0 && (
               <View style={styles.macroBar}>
-                <View style={[styles.macroSeg, { flex: proteinPct, backgroundColor: colors.readinessYellow }]} />
-                <View style={[styles.macroSeg, { flex: carbsPct, backgroundColor: colors.metricBlue }]} />
-                <View style={[styles.macroSeg, { flex: fatPct, backgroundColor: colors.metricOrange }]} />
+                <View style={[styles.macroSeg, { flex: proteinPct, backgroundColor: c.readinessYellow }]} />
+                <View style={[styles.macroSeg, { flex: carbsPct, backgroundColor: c.metricBlue }]} />
+                <View style={[styles.macroSeg, { flex: fatPct, backgroundColor: c.metricOrange }]} />
               </View>
             )}
             <View style={styles.macroGrid}>
-              <MacroStat label={i18n.nProtein} value={Math.round(totals.protein_g)} color={colors.readinessYellow} />
-              <MacroStat label={i18n.nCarbs} value={Math.round(totals.carbs_g)} color={colors.metricBlue} />
-              <MacroStat label={i18n.nFat} value={Math.round(totals.fat_g)} color={colors.metricOrange} />
+              <MacroStat label={i18n.nProtein} value={Math.round(totals.protein_g)} color={c.readinessYellow} />
+              <MacroStat label={i18n.nCarbs} value={Math.round(totals.carbs_g)} color={c.metricBlue} />
+              <MacroStat label={i18n.nFat} value={Math.round(totals.fat_g)} color={c.metricOrange} />
             </View>
           </View>
         )}
@@ -868,9 +872,9 @@ export default function LogMealSheet() {
           disabled={!canSave}
           onPress={submit}>
           {save.isSuccess ? (
-            <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+            <Icon icon={Check} size={22} color={c.primaryForeground} strokeWidth={3} />
           ) : save.isPending ? (
-            <ActivityIndicator color={colors.primaryForeground} />
+            <ActivityIndicator color={c.primaryForeground} />
           ) : (
             <Text style={styles.saveText}>{i18n.nSaveMeal}</Text>
           )}
@@ -881,6 +885,8 @@ export default function LogMealSheet() {
 }
 
 function MacroInput({ label, value, onChange, bad }: { label: string; value: string; onChange: (v: string) => void; bad?: boolean }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.macroInputCell}>
       <Text style={styles.macroInputLabel} numberOfLines={1}>{label}</Text>
@@ -888,7 +894,7 @@ function MacroInput({ label, value, onChange, bad }: { label: string; value: str
         style={[styles.macroInputField, bad ? styles.macroInputBad : null]}
         keyboardType="number-pad"
         placeholder="0"
-        placeholderTextColor={colors.mutedForeground}
+        placeholderTextColor={c.mutedForeground}
         value={value}
         onChangeText={(v) => onChange(intText(v))}
       />
@@ -897,6 +903,8 @@ function MacroInput({ label, value, onChange, bad }: { label: string; value: str
 }
 
 function MacroStat({ label, value, color }: { label: string; value: number; color: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.macroStat}>
       <View style={[styles.macroDot, { backgroundColor: color }]} />
@@ -906,10 +914,10 @@ function MacroStat({ label, value, color }: { label: string; value: number; colo
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   repeatBlock: { gap: 2 },
-  repeatTitle: { ...type.headline, color: colors.foreground },
-  repeatHint: { ...type.caption, color: colors.mutedForeground, marginBottom: spacing.sm },
+  repeatTitle: { ...type.headline, color: c.foreground },
+  repeatHint: { ...type.caption, color: c.mutedForeground, marginBottom: spacing.sm },
   repeatRow: { gap: spacing.sm, paddingRight: spacing.md },
   /* Wide enough for two foods on a line and short enough that a second card
      shows past the edge — a row that looks scrollable gets scrolled. */
@@ -923,13 +931,13 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
   },
   repeatHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  repeatMeal: { ...type.footnote, fontWeight: '700', color: colors.foreground },
-  repeatWhen: { ...type.caption, color: colors.mutedForeground },
-  repeatFoods: { ...type.caption, color: colors.mutedForeground },
-  repeatKcal: { ...type.caption, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  root: { flex: 1, backgroundColor: colors.card },
+  repeatMeal: { ...type.footnote, fontWeight: '700', color: c.foreground },
+  repeatWhen: { ...type.caption, color: c.mutedForeground },
+  repeatFoods: { ...type.caption, color: c.mutedForeground },
+  repeatKcal: { ...type.caption, color: c.foreground, fontVariant: ['tabular-nums'] },
+  root: { flex: 1, backgroundColor: c.card },
   content: { padding: spacing.lg, gap: spacing.sm + 4 },
-  title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
+  title: { ...type.title, color: c.foreground, textAlign: 'center', marginBottom: spacing.sm },
   chips: { paddingRight: spacing.sm },
   /* No background and no radius: the row measures this chip and draws both the
      resting box and the travelling highlight to match. */
@@ -937,16 +945,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  chipText: { ...type.footnote, color: colors.secondaryForeground },
-  chipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
+  chipText: { ...type.footnote, color: c.secondaryForeground },
+  chipTextActive: { color: c.primaryForeground, fontWeight: '600' },
   input: {
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
   },
   searchRow: { flexDirection: 'row', gap: spacing.sm },
@@ -956,17 +964,17 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconGlyph: { fontSize: 20, color: colors.foreground },
+  iconGlyph: { fontSize: 20, color: c.foreground },
   results: {
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     overflow: 'hidden',
   },
   resultRow: {
@@ -978,9 +986,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   resultInfo: { flex: 1, minWidth: 0 },
-  resultName: { ...type.body, color: colors.foreground },
-  resultBrand: { ...type.caption, color: colors.mutedForeground },
-  resultKcal: { ...type.footnote, color: colors.mutedForeground },
+  resultName: { ...type.body, color: c.foreground },
+  resultBrand: { ...type.caption, color: c.mutedForeground },
+  resultKcal: { ...type.footnote, color: c.mutedForeground },
   quickRow: { gap: spacing.sm, paddingRight: spacing.sm },
   quickChip: {
     flexDirection: 'row',
@@ -990,11 +998,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  quickGlyph: { fontSize: 12, color: colors.primary },
-  quickName: { ...type.footnote, color: colors.foreground, flexShrink: 1 },
-  quickKcal: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  quickGlyph: { fontSize: 12, color: c.primary },
+  quickName: { ...type.footnote, color: c.foreground, flexShrink: 1 },
+  quickKcal: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   aiToggle: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1002,63 +1010,63 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
   },
-  aiToggleActive: { borderColor: colors.primary },
-  aiToggleIcon: { fontSize: 18, color: colors.primary },
+  aiToggleActive: { borderColor: c.primary },
+  aiToggleIcon: { fontSize: 18, color: c.primary },
   aiToggleInfo: { flex: 1, minWidth: 0 },
-  aiToggleTitle: { ...type.headline, color: colors.foreground },
-  aiToggleHint: { ...type.caption, color: colors.mutedForeground, marginTop: 2 },
-  aiChevron: { fontSize: 20, color: colors.mutedForeground },
+  aiToggleTitle: { ...type.headline, color: c.foreground },
+  aiToggleHint: { ...type.caption, color: c.mutedForeground, marginTop: 2 },
+  aiChevron: { fontSize: 20, color: c.mutedForeground },
   aiPanel: { gap: spacing.sm },
   aiLoading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md, justifyContent: 'center' },
-  aiLoadingText: { ...type.footnote, color: colors.mutedForeground },
-  aiEmpty: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
+  aiLoadingText: { ...type.footnote, color: c.mutedForeground },
+  aiEmpty: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
   suggestion: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderRadius: radius.md,
     padding: spacing.md,
   },
   suggestionInfo: { flex: 1, minWidth: 0, gap: 2 },
-  suggestionName: { ...type.headline, color: colors.foreground },
-  suggestionDesc: { ...type.footnote, color: colors.mutedForeground },
-  suggestionMacros: { ...type.caption, color: colors.secondaryForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
+  suggestionName: { ...type.headline, color: c.foreground },
+  suggestionDesc: { ...type.footnote, color: c.mutedForeground },
+  suggestionMacros: { ...type.caption, color: c.secondaryForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
   addChip: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  addChipText: { fontSize: 22, color: colors.primaryForeground, lineHeight: 26 },
-  emptyHint: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.lg },
+  addChipText: { fontSize: 22, color: c.primaryForeground, lineHeight: 26 },
+  emptyHint: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.lg },
 
   // Custom food entry + per-item macro editing
   customPanel: { gap: spacing.sm },
   macroInputRow: { flexDirection: 'row', gap: spacing.sm },
   macroInputCell: { flex: 1, gap: 4 },
-  macroInputLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, color: colors.mutedForeground },
+  macroInputLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5, color: c.mutedForeground },
   macroInputField: {
     height: 40,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     textAlign: 'center',
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 15,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
     paddingVertical: 0,
   },
-  macroInputBad: { borderColor: colors.readinessRed },
-  customBadText: { ...type.caption, color: colors.readinessRed },
-  customHint: { ...type.caption, color: colors.mutedForeground },
+  macroInputBad: { borderColor: c.readinessRed },
+  customBadText: { ...type.caption, color: c.readinessRed },
+  customHint: { ...type.caption, color: c.mutedForeground },
   customAddBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1066,22 +1074,22 @@ const styles = StyleSheet.create({
     gap: 5,
     height: 42,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
   customAddDisabled: { opacity: 0.4 },
-  customAddText: { ...type.footnote, fontWeight: '600', color: colors.primaryForeground },
+  customAddText: { ...type.footnote, fontWeight: '600', color: c.primaryForeground },
   editPanel: {
     gap: spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderRadius: radius.md,
     padding: spacing.md,
     marginTop: 4,
   },
-  editHint: { ...type.caption, color: colors.mutedForeground },
+  editHint: { ...type.caption, color: c.mutedForeground },
   itemsWrap: { gap: spacing.sm },
   sectionLabel: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
     fontWeight: '600',
@@ -1090,50 +1098,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
   },
   itemInfo: { flex: 1, minWidth: 0 },
-  itemName: { ...type.body, color: colors.foreground, fontWeight: '600' },
-  itemMacros: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
+  itemName: { ...type.body, color: c.foreground, fontWeight: '600' },
+  itemMacros: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   stepBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepGlyph: { fontSize: 16, color: colors.foreground },
-  stepValue: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'], minWidth: 26, textAlign: 'center' },
-  removeIcon: { color: colors.mutedForeground, fontSize: 15, padding: 4 },
+  stepGlyph: { fontSize: 16, color: c.foreground },
+  stepValue: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'], minWidth: 26, textAlign: 'center' },
+  removeIcon: { color: c.mutedForeground, fontSize: 15, padding: 4 },
   totalCard: {
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderRadius: radius.md,
     padding: spacing.md,
     gap: spacing.sm,
   },
-  totalKcal: { ...type.largeTitle, ...type.mono, color: colors.foreground },
-  totalKcalUnit: { ...type.body, color: colors.mutedForeground },
+  totalKcal: { ...type.largeTitle, ...type.mono, color: c.foreground },
+  totalKcalUnit: { ...type.body, color: c.mutedForeground },
   macroBar: { flexDirection: 'row', height: 8, borderRadius: 4, overflow: 'hidden' },
   macroSeg: { height: '100%' },
   macroGrid: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.xs },
   macroStat: { flex: 1, alignItems: 'center', gap: 2 },
   macroDot: { width: 8, height: 8, borderRadius: 4, marginBottom: 2 },
-  macroValue: { ...type.headline, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  macroLabel: { ...type.caption, color: colors.mutedForeground },
+  macroValue: { ...type.headline, color: c.foreground, fontVariant: ['tabular-nums'] },
+  macroLabel: { ...type.caption, color: c.mutedForeground },
   saveButton: {
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,
   },
   saveDisabled: { opacity: 0.4 },
-  rangeError: { ...type.caption, color: colors.readinessRed },
-  saveText: { ...type.headline, color: colors.primaryForeground },
-});
+  rangeError: { ...type.caption, color: c.readinessRed },
+  saveText: { ...type.headline, color: c.primaryForeground },
+}));

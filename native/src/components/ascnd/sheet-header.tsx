@@ -5,7 +5,9 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 
 /**
@@ -92,6 +94,8 @@ export function SheetHeader({
    */
   right?: ReactNode;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
 
   return (
@@ -110,7 +114,7 @@ export function SheetHeader({
             onClose();
           }}
           style={styles.close}>
-          <Icon icon={icon} size={18} color={colors.foreground} />
+          <Icon icon={icon} size={18} color={c.foreground} />
         </PressScale>
 
         <View style={styles.titleBox}>
@@ -158,7 +162,7 @@ export function SheetHeader({
  */
 const BTN = 44;
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   root: { paddingTop: spacing.sm },
   /*
    * 52 × 4, bo tròn hẳn.
@@ -175,7 +179,7 @@ const styles = StyleSheet.create({
     width: 52,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     alignSelf: 'center',
     marginBottom: spacing.sm,
   },
@@ -192,12 +196,12 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
   /* `flex: 1` ở giữa hai đầu bằng nhau là thứ làm nó căn giữa THẬT, kể cả khi
      tiêu đề dài và bị cắt bớt. */
   titleBox: { flex: 1, alignItems: 'center' },
-  title: { ...type.title2, textAlign: 'center', color: colors.foreground },
-  subtitle: { ...type.caption, textAlign: 'center', color: colors.mutedForeground },
+  title: { ...type.title2, textAlign: 'center', color: c.foreground },
+  subtitle: { ...type.caption, textAlign: 'center', color: c.mutedForeground },
   spacer: { width: BTN, height: BTN },
-});
+}));

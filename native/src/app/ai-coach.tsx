@@ -21,7 +21,9 @@ import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { MarkdownLite } from '@/components/ascnd/markdown-lite';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { toast } from '@/lib/toast';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
@@ -69,6 +71,8 @@ import { suggestionsFor } from '@/lib/assistant-suggestions';
 const litBy = (g: GlyphName) => GLYPH_TINT[g][1];
 
 export default function AiCoachScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -257,7 +261,7 @@ export default function AiCoachScreen() {
                          trong glyph, nơi nó phân biệt các câu hỏi. */
                       style={styles.promptChip}
                       radius={radius.full}
-                      tint={colors.primary} material="blur">
+                      tint={c.primary} material="blur">
                       <View style={styles.promptInner}>
                         <Glyph name={s.glyph} size={15} />
                         <Text style={styles.promptText}>{vi ? s.label.vi : s.label.en}</Text>
@@ -276,7 +280,7 @@ export default function AiCoachScreen() {
                   accessibilityRole="button"
                   onPress={newChat}
                   style={styles.chatBtn}>
-                  <Glyph name="plus" size={13} colour={colors.glassMuted} />
+                  <Glyph name="plus" size={13} colour={c.glassMuted} />
                   <Text style={styles.chatBtnText}>{vi ? 'Trò chuyện mới' : 'New chat'}</Text>
                 </PressScale>
               </View>
@@ -307,10 +311,10 @@ export default function AiCoachScreen() {
                          câu trả lời trong một cuộc trò chuyện dài là rất nhiều
                          tím cho một thông tin đã có avatar nói rồi. */
                       style={styles.bubble}
-                      tint={colors.primary}
+                      tint={c.primary}
                       radius={radius.lg}>
                       <View style={styles.bubbleInner}>
-                        <MarkdownLite text={m.content} mutedColor={colors.glassMuted} />
+                        <MarkdownLite text={m.content} mutedColor={c.glassMuted} />
                       </View>
                     </LiquidGlass>
                   ) : (
@@ -335,10 +339,10 @@ export default function AiCoachScreen() {
                   <LiquidGlass
                     /* Cùng luật với bong bóng ở trên. */
                     style={styles.bubble}
-                    tint={colors.primary}
+                    tint={c.primary}
                     radius={radius.lg}>
                     <View style={styles.bubbleInner}>
-                      <ActivityIndicator size="small" color={colors.glassMuted} />
+                      <ActivityIndicator size="small" color={c.glassMuted} />
                     </View>
                   </LiquidGlass>
                 </View>
@@ -364,7 +368,7 @@ export default function AiCoachScreen() {
               <TextInput
                 style={styles.composerInput}
                 placeholder={i18n.aiCoachPlaceholder}
-                placeholderTextColor={colors.glassMuted}
+                placeholderTextColor={c.glassMuted}
                 value={input}
                 onChangeText={setInput}
                 multiline
@@ -380,7 +384,7 @@ export default function AiCoachScreen() {
                 disabled={!input.trim() || isLoading}
                 onPress={() => submit()}
                 style={[styles.sendBtn, (!input.trim() || isLoading) && styles.sendDisabled]}>
-                <Glyph name="arrow" size={17} colour={colors.primaryForeground} />
+                <Glyph name="arrow" size={17} colour={c.primaryForeground} />
               </PressScale>
             </View>
           </LiquidGlass>
@@ -419,17 +423,17 @@ export default function AiCoachScreen() {
               <Text style={styles.historyHeader}>{i18n.aiCoachHistory}</Text>
               <ScrollView style={styles.historyScroll} keyboardShouldPersistTaps="handled">
                 {conversations && conversations.length > 0 ? (
-                  conversations.map((c) => (
+                  conversations.map((convo) => (
                     <PressScale
-                      key={c.id}
-                      style={[styles.historyRow, conversationId === c.id && styles.historyRowActive]}
+                      key={convo.id}
+                      style={[styles.historyRow, conversationId === convo.id && styles.historyRowActive]}
                       onPress={() => {
                         setShowHistory(false);
-                        loadConversation(c.id);
+                        loadConversation(convo.id);
                       }}>
-                      <Text style={styles.historyTitle} numberOfLines={1}>{c.title ?? '—'}</Text>
+                      <Text style={styles.historyTitle} numberOfLines={1}>{convo.title ?? '—'}</Text>
                       <Text style={styles.historyDate}>
-                        {new Date(c.updated_at).toLocaleDateString(vi ? 'vi-VN' : 'en-US', {
+                        {new Date(convo.updated_at).toLocaleDateString(vi ? 'vi-VN' : 'en-US', {
                           month: 'short',
                           day: 'numeric',
                         })}
@@ -445,14 +449,14 @@ export default function AiCoachScreen() {
                           /* Same reason as `coach-memory.tsx`: the delete can
                              now report that it touched nothing, and a report
                              nobody receives is the row silently reappearing. */
-                          deleteConvo.mutate(c.id, {
+                          deleteConvo.mutate(convo.id, {
                             onError: (e: Error) => toast.fail(e),
                           });
                         }}>
                         {/* Neutral in the list. The glyph's own tint is red —
                             deleting is the one irreversible thing here — but a
                             column of red bins pulls harder than the titles. */}
-                        <Glyph name="trash" size={14} colour={colors.glassMuted} />
+                        <Glyph name="trash" size={14} colour={c.glassMuted} />
                       </PressScale>
                     </PressScale>
                   ))
@@ -468,8 +472,8 @@ export default function AiCoachScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.background },
   // Transparent so the aura behind it in the wrapper is not painted over.
   kav: { flex: 1, backgroundColor: 'transparent' },
 
@@ -487,10 +491,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
   headerTitleWrap: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
-  headerTitle: { ...type.headline, color: colors.foreground },
+  headerTitle: { ...type.headline, color: c.foreground },
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -502,14 +506,14 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(180,92,255,0.35)',
   },
-  aiText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, color: colors.metricPurple },
+  aiText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, color: c.metricPurple },
 
   list: { flex: 1 },
   listContent: { padding: spacing.md, gap: spacing.sm + 4 },
   listContentEmpty: { flexGrow: 1, justifyContent: 'center' },
   empty: { alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.sm, paddingBottom: spacing.xl },
-  emptyTitle: { fontSize: 30, fontWeight: '700', letterSpacing: -0.7, color: colors.foreground, textAlign: 'center' },
-  emptyHint: { ...type.body, color: colors.glassMuted, textAlign: 'center', lineHeight: 21, maxWidth: 310 },
+  emptyTitle: { fontSize: 30, fontWeight: '700', letterSpacing: -0.7, color: c.foreground, textAlign: 'center' },
+  emptyHint: { ...type.body, color: c.glassMuted, textAlign: 'center', lineHeight: 21, maxWidth: 310 },
   prompts: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -525,7 +529,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md - 2,
     paddingVertical: spacing.sm + 2,
   },
-  promptText: { ...type.footnote, color: colors.foreground },
+  promptText: { ...type.footnote, color: c.foreground },
 
   transcript: { gap: spacing.sm + 4 },
   chatBar: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xs },
@@ -540,7 +544,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  chatBtnText: { ...type.caption, color: colors.glassMuted },
+  chatBtnText: { ...type.caption, color: c.glassMuted },
   msgRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   msgRowUser: { justifyContent: 'flex-end' },
   avatarAI: {
@@ -563,8 +567,8 @@ const styles = StyleSheet.create({
   },
   bubble: { maxWidth: '78%' },
   bubbleInner: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
-  bubbleUser: { backgroundColor: colors.primary, borderRadius: radius.lg },
-  bubbleUserText: { ...type.body, color: colors.primaryForeground },
+  bubbleUser: { backgroundColor: c.primary, borderRadius: radius.lg },
+  bubbleUserText: { ...type.body, color: c.primaryForeground },
 
   composerWrap: { paddingHorizontal: spacing.md, gap: 6 },
   composer: {},
@@ -590,7 +594,7 @@ const styles = StyleSheet.create({
   composerInput: {
     flex: 1,
     maxHeight: 110,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
     /* Zero on iOS or the text sits high in its own line box; the row's
        `alignItems: center` does the vertical centring. */
@@ -600,7 +604,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -612,7 +616,7 @@ const styles = StyleSheet.create({
     the bare aura rather than on glass, where `glassMuted` at 0.72 still measures
     6.19:1, and a disclaimer is meant to be quieter than what it sits under.
   */
-  disclaimer: { fontSize: 11, lineHeight: 15, color: colors.glassMuted, opacity: 0.72, flexShrink: 1 },
+  disclaimer: { fontSize: 11, lineHeight: 15, color: c.glassMuted, opacity: 0.72, flexShrink: 1 },
   disclaimerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -637,7 +641,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    color: colors.glassMuted,
+    color: c.glassMuted,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
@@ -651,14 +655,14 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
   },
   historyRowActive: { backgroundColor: 'rgba(255,255,255,0.10)' },
-  historyTitle: { ...type.footnote, color: colors.foreground, flex: 1 },
-  historyDate: { ...type.caption, color: colors.glassMuted },
+  historyTitle: { ...type.footnote, color: c.foreground, flex: 1 },
+  historyDate: { ...type.caption, color: c.glassMuted },
   historyDelete: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   historyEmpty: {
     ...type.footnote,
-    color: colors.glassMuted,
+    color: c.glassMuted,
     textAlign: 'center',
     paddingVertical: spacing.md,
   },
 
-});
+}));

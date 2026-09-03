@@ -11,7 +11,9 @@ import { HelpButton } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
 import type { LucideIcon } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, HERO_RING, radius, spacing, type, RING_TEXT_MAX_SCALE } from '@/constants/ascnd';
+import { HERO_RING, radius, spacing, type, RING_TEXT_MAX_SCALE } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { duration } from '@/constants/motion';
 
@@ -86,6 +88,8 @@ export function HeroPanel({
   /** the detail, revealed by the chevron */
   children?: React.ReactNode;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const spin = useSharedValue(0);
   useEffect(() => {
@@ -138,7 +142,7 @@ export function HeroPanel({
         }}
         style={styles.moreBtn}>
         <Animated.View style={chevron}>
-          <Icon icon={ChevronDown} size={20} color={colors.mutedForeground} strokeWidth={2.5} />
+          <Icon icon={ChevronDown} size={20} color={c.mutedForeground} strokeWidth={2.5} />
         </Animated.View>
       </PressScale>
 
@@ -156,7 +160,7 @@ export function HeroPanel({
               }}
               style={styles.moreRow}>
               <Text style={styles.moreLabel}>{more.label}</Text>
-              <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+              <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
             </PressScale>
           ) : null}
         </View>
@@ -226,6 +230,8 @@ export function HeroRing({
   icon?: LucideIcon;
   iconColor?: string;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* SVG ids are document-global on native, so four of these on one deck would
      all paint whichever gradient registered last. `status-scrim.tsx`: "this has
      caught the app three times; `useId` is the rule." */
@@ -260,7 +266,7 @@ export function HeroRing({
       </Svg>
       <View style={styles.ringCenter} pointerEvents="none">
         {icon ? (
-          <Icon icon={icon} size={20} color={iconColor ?? colors.mutedForeground} />
+          <Icon icon={icon} size={20} color={iconColor ?? c.mutedForeground} />
         ) : null}
         <AnimatedNumber
           value={value}
@@ -307,6 +313,8 @@ export function HeroTiles({
 }: {
   tiles: { label: string; value: string; unit: string; color?: string }[];
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   if (tiles.length === 0) return null;
   return (
     <View style={styles.grid}>
@@ -325,7 +333,7 @@ export function HeroTiles({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   grid: {
     alignSelf: 'stretch',
     flexDirection: 'row',
@@ -351,16 +359,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   tileValue: {
     fontSize: 30,
     fontWeight: '700',
     letterSpacing: -0.5,
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
-  tileUnit: { fontSize: 12, color: colors.mutedForeground },
+  tileUnit: { fontSize: 12, color: c.mutedForeground },
   /* One set of paddings for all four pages. Written per card, four numbers
      would agree today and drift the first time one page gained a line. */
   panel: {
@@ -395,7 +403,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 1.6,
     textTransform: 'uppercase',
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   /* 44 is Apple's floor for a touch target and `tools/tap-targets.mjs` measures
      it rather than trusting the eye. */
@@ -410,13 +418,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: 'rgba(255,255,255,0.045)',
   },
-  moreLabel: { ...type.footnote, color: colors.foreground },
+  moreLabel: { ...type.footnote, color: c.foreground },
   ringWrap: { alignItems: 'center', justifyContent: 'center' },
   ringCenter: { ...StyleSheet.absoluteFill, alignItems: 'center', justifyContent: 'center', gap: 2 },
-  value: { ...type.largeTitle, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  value: { ...type.largeTitle, color: c.foreground, fontVariant: ['tabular-nums'] },
   /* `AnimatedNumber` là một TextInput bên dưới, thứ không tự co theo nội dung —
      không có hai dòng này thì con số trôi khỏi tâm vòng tròn. Cùng bản sửa mà
      readiness-gauge.tsx đã ghi. */
   valueBox: { alignSelf: 'stretch', textAlign: 'center' },
   caption: { fontSize: 12, fontWeight: '700', letterSpacing: 1.4, textTransform: 'uppercase' },
-});
+}));

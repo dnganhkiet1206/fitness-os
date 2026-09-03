@@ -7,9 +7,11 @@ import { Alert, StyleSheet, Text, View } from 'react-native';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
-import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
+import { SessionRow, useSessionListStyles } from '@/components/ascnd/session-row';
 import { SwipeRow } from '@/components/ascnd/swipe-row';
-import { colors, spacing } from '@/constants/ascnd';
+import { spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
@@ -41,6 +43,9 @@ const DAYS = 90;
  * rows by eye.
  */
 export default function SessionsScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const sessionList = useSessionListStyles();
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -182,7 +187,7 @@ export default function SessionsScreen() {
                     <Text
                       style={[
                         styles.monthChange,
-                        { color: change > 0 ? colors.readinessGreen : colors.mutedForeground },
+                        { color: change > 0 ? c.readinessGreen : c.mutedForeground },
                       ]}>
                       {change > 0 ? '↑' : '↓'} {Math.abs(change)}%{' '}
                       {vi ? 'so với tháng trước' : 'vs previous'}
@@ -190,10 +195,10 @@ export default function SessionsScreen() {
                   ) : null}
                 </View>
               </View>
-              <View style={sessionListStyles.group}>
+              <View style={sessionList.group}>
                 {m.rows.map((s, i) => (
                   <View key={s.id}>
-                    {i > 0 ? <View style={sessionListStyles.sep} /> : null}
+                    {i > 0 ? <View style={sessionList.sep} /> : null}
                     {/*
                       Swipe to delete, and the button stays.
 
@@ -229,7 +234,7 @@ export default function SessionsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   month: { gap: spacing.sm },
   monthHead: { gap: 1 },
   monthName: {
@@ -237,12 +242,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
-  monthMeta: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  monthMeta: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   monthMetaRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, flexWrap: 'wrap' },
   /* Green only when it went up — a month with less volume is a deload as often
      as it is a lapse, and colouring it red would call every planned easy month
      a failure. Down is simply muted. */
   monthChange: { fontSize: 11, fontWeight: '600', fontVariant: ['tabular-nums'] },
-});
+}));

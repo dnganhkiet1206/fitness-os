@@ -19,7 +19,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
-import { MACRO_BAR, MACRO_TINT, colors, glass, radius, spacing } from '@/constants/ascnd';
+import { MACRO_BAR, MACRO_TINT, glass, radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -49,6 +51,8 @@ const SURPLUS_ALLOWANCE = 0.1;
 
 /** The web's card micro-title: 12px semibold uppercase, wide tracking */
 export function MicroTitle({ children }: { children: React.ReactNode }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return <Text style={styles.microTitle}>{children}</Text>;
 }
 
@@ -129,6 +133,8 @@ function SmallRing({
    */
   size?: number;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   // Thick, in the Move-ring proportion: the stroke is most of the difference
   // between the outer edge and the hole, so the ring reads as a band of colour
   // rather than as a line drawn round a circle.
@@ -386,6 +392,8 @@ function MacroSwap({
   color: string;
   i18n: ReturnType<typeof useI18n>;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const eatenNow = Math.round(current);
   const left = Math.round(target - current);
   const over = left < 0;
@@ -416,7 +424,7 @@ function MacroSwap({
    * with itself.
    */
   const overHard = current > target * (1 + SURPLUS_ALLOWANCE);
-  const overStyle = { color: overHard ? colors.readinessRed : color };
+  const overStyle = { color: overHard ? c.readinessRed : color };
 
   const swap = useSharedValue(showLeft ? 1 : 0);
   useEffect(() => {
@@ -532,6 +540,8 @@ export function NutritionCard({
   fiber,
   interactive = false,
 }: NutritionCardProps) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -596,15 +606,15 @@ export function NutritionCard({
   const overPct = calorieTarget > 0 ? Math.min((Math.max(delta, 0) / calorieTarget) * 100, 100) : 0;
 
   const ringGradient: [string, string] = overBudget
-    ? [colors.metricRose, colors.readinessRed]
+    ? [c.metricRose, c.readinessRed]
     : inBand
-      ? ['#ffc53d', colors.metricOrange]
+      ? ['#ffc53d', c.metricOrange]
       : ['#eaf1fb', '#b9dcf0'];
   const ringIconColor = overBudget
-    ? colors.readinessRed
+    ? c.readinessRed
     : inBand
-      ? colors.metricOrange
-      : colors.foreground;
+      ? c.metricOrange
+      : c.foreground;
 
   /**
    * Only the white ring glows. Amber and red are already saturated enough to
@@ -616,10 +626,10 @@ export function NutritionCard({
 
   // the delta line follows the same three states, so the card speaks once
   const deltaColor = overBudget
-    ? colors.readinessRed
+    ? c.readinessRed
     : inBand
-      ? colors.metricOrange
-      : colors.foreground;
+      ? c.metricOrange
+      : c.foreground;
 
   /**
    * Which reading the tiles are showing.
@@ -895,6 +905,8 @@ interface SleepCardProps {
 }
 
 export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, stages }: SleepCardProps) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const hours = Math.floor(totalMin / 60);
   const mins = totalMin % 60;
@@ -906,8 +918,8 @@ export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, s
   const stageTotal = stages ? stages.deep + stages.rem + stages.light : 0;
   const stageDefs = stages && stageTotal > 0
     ? [
-        { label: 'Deep', min: stages.deep, color: colors.metricPurple },
-        { label: 'REM', min: stages.rem, color: colors.metricCyan },
+        { label: 'Deep', min: stages.deep, color: c.metricPurple },
+        { label: 'REM', min: stages.rem, color: c.metricCyan },
         { label: 'Light', min: stages.light, color: '#3f4048' },
       ]
     : [];
@@ -922,7 +934,7 @@ export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, s
           gradId="sleep-ring"
           gradient={['#b45cff', '#22e3ff']}
           icon={Moon}
-          iconColor={colors.metricPurple}
+          iconColor={c.metricPurple}
           value={`${hours}h${String(mins).padStart(2, '0')}m`}
         />
         {/*
@@ -1010,6 +1022,8 @@ function MiniRing({
   gradient: [string, string];
   bg: string;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const SIZE = 40;
   const W = 4;
   const R = (SIZE - W) / 2;
@@ -1108,6 +1122,8 @@ function CompactWidget({
    */
   footer?: React.ReactNode;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <PressScale
       onPress={() => {
@@ -1199,6 +1215,8 @@ function CompactWidget({
  * `metricBlue` trên nền chip là **6,10:1**, thừa sàn 4,5:1.
  */
 function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const vl = volumeLabel(unit);
   const add = useAddWater();
@@ -1261,7 +1279,7 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
             Haptics.selectionAsync();
             undo.mutate({ onError: (e: Error) => toast.fail(e) });
           }}>
-          <Icon icon={Minus} size={16} color={colors.mutedForeground} strokeWidth={2.5} />
+          <Icon icon={Minus} size={16} color={c.mutedForeground} strokeWidth={2.5} />
         </PressScale>
       </View>
     </View>
@@ -1269,6 +1287,8 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
 }
 
 export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: number; labels: { title: string } }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { unit } = useVolumeUnit();
   const pct = Math.min(100, Math.round((ml / (targetMl || 1)) * 100));
   /*
@@ -1284,9 +1304,9 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
   return (
     <CompactWidget
       icon={Droplets}
-      iconColor={colors.metricBlue}
+      iconColor={c.metricBlue}
       iconBg="rgba(14,165,233,0.1)"
-      ring={[colors.metricBlue, colors.metricCyan]}
+      ring={[c.metricBlue, c.metricCyan]}
       label={labels.title}
       valueText={`${displayVolume(ml, unit)} / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
       pct={pct}
@@ -1311,13 +1331,13 @@ export function StepsWidget({ steps, target, labels }: { steps: number; target: 
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   microTitle: {
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   nutriHelp: { position: 'absolute', top: spacing.card, right: spacing.card, zIndex: 2 },
   stackCard: { gap: spacing.stack },
@@ -1325,14 +1345,14 @@ const styles = StyleSheet.create({
   // small ring
   smallRingWrap: { width: 100, height: 100 },
   smallRingCenter: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: 1 },
-  smallRingValue: { fontSize: 16, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  smallRingUnit: { fontSize: 11, color: colors.mutedForeground },
+  smallRingValue: { fontSize: 16, fontFamily: 'Menlo', fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
+  smallRingUnit: { fontSize: 11, color: c.mutedForeground },
   ringRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   ringSide: { flex: 1, gap: 6 },
   // 14, not 12. These three lines are the card's whole read-out beside the
   // ring — the target, what is left, and how far past it the day has gone —
   // and at 12 they were caption-sized next to a 16pt number in the ring.
-  sideLine: { fontSize: 14, color: colors.mutedForeground },
+  sideLine: { fontSize: 14, color: c.mutedForeground },
   // `gap: 6` rather than `spacing.sm` — the slash needs to sit closer to both
   // sides than the two facts sat from each other, or it reads as a third item.
   //
@@ -1341,15 +1361,15 @@ const styles = StyleSheet.create({
   // the row. The two texts are 14 and 13pt, close enough that centring them
   // costs nothing visible.
   sideTargetRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sideSlash: { fontSize: 13, color: colors.border },
+  sideSlash: { fontSize: 13, color: c.border },
   sidePct: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
-  sideMono: { fontFamily: 'Menlo', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  sideMonoStrong: { fontSize: 14, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  sideBarFill: { height: '100%', borderRadius: 2, backgroundColor: colors.metricOrange },
+  sideMono: { fontFamily: 'Menlo', color: c.foreground, fontVariant: ['tabular-nums'] },
+  sideMonoStrong: { fontSize: 14, fontFamily: 'Menlo', fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
+  sideBarFill: { height: '100%', borderRadius: 2, backgroundColor: c.metricOrange },
   qualityRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   timesRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
-  timeText: { fontSize: 12, fontFamily: 'Menlo', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  timeArrow: { fontSize: 12, color: colors.mutedForeground },
+  timeText: { fontSize: 12, fontFamily: 'Menlo', color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  timeArrow: { fontSize: 12, color: c.mutedForeground },
 
   // macros
   macroGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 4 },
@@ -1387,16 +1407,16 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: glass.border,
   },
-  macroLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
-  macroValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  macroTarget: { fontSize: 12, fontWeight: '400', color: colors.mutedForeground },
+  macroLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: c.mutedForeground },
+  macroValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
+  macroTarget: { fontSize: 12, fontWeight: '400', color: c.mutedForeground },
   // the second reading, stacked on the first — `left: 0, right: 0` so it wraps
   // and aligns exactly like the text underneath it rather than shrink-wrapping
   macroSwapAbs: { position: 'absolute', left: 0, right: 0, top: 0 },
   // headline and caption read as one block, so they sit closer to each other
   // than the tile's own `gap` puts the bar below them
   macroLines: { gap: 2 },
-  macroNote: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  macroNote: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'hidden' },
   macroBarFill: { height: '100%', borderRadius: 2 },
 
@@ -1406,7 +1426,7 @@ const styles = StyleSheet.create({
   stagesLegend: { flexDirection: 'row', justifyContent: 'space-between' },
   stageLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  stageLegendText: { fontSize: 11, color: colors.mutedForeground },
+  stageLegendText: { fontSize: 11, color: c.mutedForeground },
 
   // compact widgets
   /* `gap` chỉ sinh khoảng cách GIỮA các con. Thẻ Bước chân chỉ có một con
@@ -1422,9 +1442,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compactInfo: { flex: 1, minWidth: 0, gap: 2 },
-  compactLabel: { fontSize: 12, color: colors.mutedForeground },
-  compactValue: { fontSize: 14, fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  compactPct: { fontSize: 18, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
+  compactLabel: { fontSize: 12, color: c.mutedForeground },
+  compactValue: { fontSize: 14, fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },
+  compactPct: { fontSize: 18, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
 
   // hàng thêm nhanh của thẻ Nước
   quickWrap: { gap: spacing.sm + 4 },
@@ -1433,7 +1453,7 @@ const styles = StyleSheet.create({
      nằm giữa chứ không phải một ranh giới. */
   quickSep: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     marginHorizontal: -spacing.md,
   },
   quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -1461,8 +1481,8 @@ const styles = StyleSheet.create({
   quickText: {
     fontSize: 15,
     fontWeight: '700',
-    color: colors.metricBlue,
+    color: c.metricBlue,
     fontVariant: ['tabular-nums'],
   },
-  quickUnit: { fontSize: 11, fontWeight: '600', color: colors.metricBlue },
-});
+  quickUnit: { fontSize: 11, fontWeight: '600', color: c.metricBlue },
+}));

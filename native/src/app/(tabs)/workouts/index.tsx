@@ -16,7 +16,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
 import { Measured, SK, WorkoutsSkeleton } from '@/components/ascnd/skeleton';
-import { PAGE_TINT, colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { PAGE_TINT, glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useExercises, useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
@@ -26,7 +28,7 @@ import { toast } from '@/lib/toast';
 import { displayWeight, weightLabel } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
-import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
+import { SessionRow } from '@/components/ascnd/session-row';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
 import { TodayTraining } from '@/components/ascnd/today-training';
 import { MUSCLE_LABEL, muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
@@ -86,6 +88,8 @@ const PREVIEW = 3;
  * have saved and the sessions you have done.
  */
 export default function WorkoutsScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Lần vẽ đầu thì hiện ngay — xem `useRise`. */
   const rise = useRise();
   const i18n = useI18n();
@@ -268,7 +272,7 @@ export default function WorkoutsScreen() {
               Haptics.selectionAsync();
               nav.push('/workout-builder');
             }}>
-            <Icon icon={Plus} size={15} color={colors.primary} strokeWidth={2.5} />
+            <Icon icon={Plus} size={15} color={c.primary} strokeWidth={2.5} />
             <Text style={styles.addRowText}>{i18n.workoutsCreateNew}</Text>
           </PressScale>
         </Measured>
@@ -333,7 +337,7 @@ export default function WorkoutsScreen() {
             </Text>
           ) : null}
         </View>
-        <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+        <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
       </PressScale>
 
       <View style={styles.toolSep} />
@@ -350,7 +354,7 @@ export default function WorkoutsScreen() {
         <View style={styles.toolRowCopy}>
           <Text style={styles.toolRowText}>{i18n.nToolsInsight}</Text>
         </View>
-        <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+        <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
       </PressScale>
       </View>
 
@@ -358,7 +362,7 @@ export default function WorkoutsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* Tiêu đề mục và "Xem tất cả" của nó, một hàng. */
   libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   /* 13, và đây là vế thứ hai của một cặp — sửa một vế mà quên vế kia là đúng
@@ -366,7 +370,7 @@ const styles = StyleSheet.create({
      hạ xuống 18 mà số này ở nguyên, thành 0,83 — gần ngang hàng tiêu đề.
      Không tìm được con số Apple công bố riêng cho "See All"; tỉ lệ đọc được
      từ giao diện là khoảng 0,7, và 0,7 của 18 rơi đúng vào 13. */
-  libAll: { ...type.footnote, fontWeight: '600', color: colors.primary },
+  libAll: { ...type.footnote, fontWeight: '600', color: c.primary },
   /* Hàng "tạo mới" ở cuối danh sách.
 
      KHÔNG dùng viền đứt nét: `tools/training-card.mjs` đã ghi lại rằng trên iOS
@@ -384,7 +388,7 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
     backgroundColor: glass.bg,
   },
-  addRowText: { ...type.footnote, fontWeight: '600', color: colors.primary },
+  addRowText: { ...type.footnote, fontWeight: '600', color: c.primary },
   /* Hàng dẫn đi chỗ khác: hình dạng của một hàng Cài đặt, vì đó đúng là việc nó
      làm — nó không mang nội dung nào của riêng nó. */
   toolGroup: {
@@ -394,7 +398,7 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
     overflow: 'hidden',
   },
-  toolSep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: colors.border },
+  toolSep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },
   toolRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -403,8 +407,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   toolRowCopy: { flex: 1, minWidth: 0, gap: 1 },
-  toolRowText: { ...type.body, color: colors.foreground },
-  toolRowSub: { ...type.caption, color: colors.mutedForeground },
+  toolRowText: { ...type.body, color: c.foreground },
+  toolRowSub: { ...type.caption, color: c.mutedForeground },
   tplSection: { gap: spacing.sm },
-});
+}));
 

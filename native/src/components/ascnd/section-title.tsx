@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
-import { colors, type } from '@/constants/ascnd';
+import { type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * Tiêu đề của một MỤC trên trang.
@@ -38,6 +40,8 @@ import { colors, type } from '@/constants/ascnd';
  * sản phẩm.
  */
 export function SectionTitle({ children }: { children: ReactNode }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return <Text style={styles.title}>{children}</Text>;
 }
 
@@ -58,16 +62,18 @@ export function SectionTitle({ children }: { children: ReactNode }) {
  * này ngăn được là bộ số thứ BA ra đời.
  */
 export function MicroLabel({ children }: { children: ReactNode }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return <Text style={styles.micro}>{children}</Text>;
 }
 
-const styles = StyleSheet.create({
-  title: { ...type.title2, color: colors.foreground },
+const stylesFor = makeStyles((c) => ({
+  title: { ...type.title2, color: c.foreground },
   micro: {
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
-});
+}));

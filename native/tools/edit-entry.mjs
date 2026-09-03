@@ -310,7 +310,7 @@ const SELF = [
   },
   {
     name: 'bỏ icon, chỉ còn chữ (bản người dùng đã bác)',
-    mutate: (s) => s.replace('<Icon icon={Pencil} size={14} color={colors.mutedForeground} />\n        ', ''),
+    mutate: (s) => s.replace('<Icon icon={Pencil} size={14} color={c.mutedForeground} />\n        ', ''),
     expect: /không còn icon cạnh chữ/,
   },
   {

@@ -12,7 +12,9 @@ import { BAND_ASPECT } from '@/components/ascnd/shop/shop-camera';
 import { ShopScene } from '@/components/ascnd/shop/shop-scene';
 import { CategoryRow, CollectionRow } from '@/components/ascnd/shop/shop-grid';
 import { ShopPager } from '@/components/ascnd/shop/shop-pager';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascotIdentity } from '@/hooks/use-mascot';
 import { claimedList, useBuyItem, useClaimReward, useMascotInventory, useMascotWallet, useToggleEquip } from '@/hooks/use-mascot-room';
@@ -93,6 +95,8 @@ const asTab = (v: unknown): Tab =>
   (TABS as readonly string[]).includes(v as string) ? (v as Tab) : 'overview';
 
 export default function ShopScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   /* Identity only — the shop dresses the character, it has no opinion about
@@ -450,18 +454,18 @@ export default function ShopScreen() {
                 hitSlop={10}
                 onPress={() => setCollectionsOpen(false)}
                 style={styles.sheetClose}>
-                <Icon icon={X} size={18} color={colors.mutedForeground} />
+                <Icon icon={X} size={18} color={c.mutedForeground} />
               </Pressable>
             </View>
             <ScrollView contentContainerStyle={styles.sheetScroll} showsVerticalScrollIndicator={false}>
-              {COLLECTIONS.map((c) => (
+              {COLLECTIONS.map((set) => (
                 <CollectionRow
-                  key={c.id}
-                  c={c}
+                  key={set.id}
+                  set={set}
                   owned={owned}
-                  claimed={claimed.has(collectionRefKey(c.id))}
+                  claimed={claimed.has(collectionRefKey(set.id))}
                   pending={claim.isPending}
-                  onClaim={() => claimSet(c.id, c.rewardCoins)}
+                  onClaim={() => claimSet(set.id, set.rewardCoins)}
                   lang={lang}
                   i18n={i18n}
                 />
@@ -475,6 +479,8 @@ export default function ShopScreen() {
 }
 
 function Coin({ balance }: { balance: number }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.coinPill}>
       <Icon icon={Coins} size={13} />
@@ -483,7 +489,7 @@ function Coin({ balance }: { balance: number }) {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   // Edge to edge: the page pads its content by `spacing.md` and this takes it
   // back, the same way the Mascot Room's `sceneWrap` does.
   stage: { marginHorizontal: -spacing.md, marginBottom: spacing.xs },
@@ -509,10 +515,10 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(255,217,61,0.35)',
   },
-  coinText: { ...type.footnote, fontWeight: '700', color: colors.readinessYellow, fontVariant: ['tabular-nums'] },
+  coinText: { ...type.footnote, fontWeight: '700', color: c.readinessYellow, fontVariant: ['tabular-nums'] },
   emptyCat: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     paddingVertical: spacing.xl,
   },
@@ -522,9 +528,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.primary,
+    borderColor: c.primary,
   },
-  emptyClosetBtnText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
+  emptyClosetBtnText: { ...type.footnote, color: c.primary, fontWeight: '600' },
   setsBadge: {
     minWidth: 22,
     height: 22,
@@ -532,7 +538,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.readinessGreen,
+    backgroundColor: c.readinessGreen,
   },
   setsBadgeText: { fontSize: 12, fontWeight: '800', color: '#04120c' },
   setsBannerText: { flex: 1, minWidth: 0, gap: 2 },
@@ -544,9 +550,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(124,106,255,0.16)',
   },
-  setsChevron: { fontSize: 24, color: colors.mutedForeground, marginRight: 4 },
-  setsHint: { ...type.caption, color: colors.mutedForeground },
-  setsTitle: { ...type.headline, color: colors.foreground },
+  setsChevron: { fontSize: 24, color: c.mutedForeground, marginRight: 4 },
+  setsHint: { ...type.caption, color: c.mutedForeground },
+  setsTitle: { ...type.headline, color: c.foreground },
   sheet: {
     maxHeight: '78%',
     backgroundColor: '#101014',
@@ -570,7 +576,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 15,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: spacing.sm,
@@ -586,7 +592,7 @@ const styles = StyleSheet.create({
   },
   sheetHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
   sheetScroll: { paddingBottom: spacing.lg },
-  sheetTitle: { ...type.headline, color: colors.foreground, flex: 1 },
+  sheetTitle: { ...type.headline, color: c.foreground, flex: 1 },
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
      without a fixed `width` and a `flex: 1` segment has none. 44 is Apple's
@@ -594,9 +600,9 @@ const styles = StyleSheet.create({
      an afterthought. */
   overviewHint: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
   },
-});
+}));

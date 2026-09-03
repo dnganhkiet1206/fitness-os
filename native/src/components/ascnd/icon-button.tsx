@@ -4,7 +4,8 @@ import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /** Apple HIG's floor for anything a thumb has to hit. */
 const MIN_TARGET = 44;
@@ -53,7 +54,7 @@ export function IconButton({
   onPress,
   size = 36,
   iconSize,
-  color = colors.mutedForeground,
+  color,
   disabled = false,
   haptic = true,
   style,
@@ -79,6 +80,18 @@ export function IconButton({
   style?: StyleProp<ViewStyle>;
   testID?: string;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  /*
+    Mặc định được giải quyết TRONG THÂN HÀM, không ở danh sách tham số.
+
+    Giá trị mặc định của tham số được tính trong phạm vi của chính danh sách
+    tham số — trước cả `const c = usePalette()` ở dòng đầu thân hàm. Nên
+    `= c.…` ở chỗ khai báo tham số không đọc được bảng màu của component; nó chỉ
+    thấy một `c` ở phạm vi module, thứ không còn tồn tại từ khi bảng màu được
+    đọc lúc chạy.
+  */
+  const tint = color ?? c.mutedForeground;
   // Never negative: a box already at or over 44 needs no help.
   const slop = Math.max(0, Math.ceil((MIN_TARGET - size) / 2));
 
@@ -95,12 +108,12 @@ export function IconButton({
         onPress();
       }}
       style={[styles.base, { width: size, height: size }, disabled && styles.disabled, style]}>
-      <Icon icon={icon} size={iconSize ?? Math.round(size * 0.46)} color={color} />
+      <Icon icon={icon} size={iconSize ?? Math.round(size * 0.46)} color={tint} />
     </PressScale>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   base: { alignItems: 'center', justifyContent: 'center' },
   disabled: { opacity: 0.35 },
-});
+}));

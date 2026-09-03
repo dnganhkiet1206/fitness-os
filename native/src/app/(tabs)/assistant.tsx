@@ -19,7 +19,9 @@ import { MetricPanel } from '@/components/ascnd/metric-panel';
 import { ScrollProgress } from '@/components/ascnd/scroll-progress';
 import { Settle } from '@/components/ascnd/settle';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useCoachChat } from '@/hooks/use-coach-chat';
@@ -168,6 +170,8 @@ const TOOLS: Tool[] = [
 ];
 
 export default function AssistantScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
   const insets = useSafeAreaInsets();
@@ -228,7 +232,7 @@ export default function AssistantScreen() {
       note: hr == null
         ? { vi: 'Chưa có', en: 'No data' }
         : hr < 60 ? { vi: 'Thấp', en: 'Low' } : hr <= 80 ? { vi: 'Bình thường', en: 'Normal' } : { vi: 'Cao', en: 'High' },
-      noteTint: hr == null ? colors.glassMuted : hr <= 80 ? colors.readinessGreen : colors.readinessYellow,
+      noteTint: hr == null ? c.glassMuted : hr <= 80 ? c.readinessGreen : c.readinessYellow,
       kind: 'hr',
     },
     {
@@ -240,7 +244,7 @@ export default function AssistantScreen() {
       note: sleepMin === 0
         ? { vi: 'Chưa ghi', en: 'Not logged' }
         : sleepMin >= 420 ? { vi: 'Tốt', en: 'Good' } : { vi: 'Thiếu', en: 'Short' },
-      noteTint: sleepMin === 0 ? colors.glassMuted : sleepMin >= 420 ? colors.readinessGreen : colors.readinessYellow,
+      noteTint: sleepMin === 0 ? c.glassMuted : sleepMin >= 420 ? c.readinessGreen : c.readinessYellow,
       kind: 'sleep',
     },
     {
@@ -249,7 +253,7 @@ export default function AssistantScreen() {
       label: { vi: 'Calo', en: 'Calories' },
       value: kcal > 0 ? kcal.toLocaleString() : '—',
       note: { vi: 'Hôm nay', en: 'Today' },
-      noteTint: colors.metricBlue,
+      noteTint: c.metricBlue,
       kind: 'kcal',
     },
     {
@@ -262,8 +266,8 @@ export default function AssistantScreen() {
         : status === 'green' ? { vi: 'Tốt', en: 'Good' } : status === 'yellow' ? { vi: 'Vừa', en: 'Moderate' } : { vi: 'Thấp', en: 'Low' },
       noteTint:
         readiness == null
-          ? colors.glassMuted
-          : status === 'green' ? colors.readinessGreen : status === 'yellow' ? colors.readinessYellow : colors.readinessRed,
+          ? c.glassMuted
+          : status === 'green' ? c.readinessGreen : status === 'yellow' ? c.readinessYellow : c.readinessRed,
       kind: 'readiness',
     },
   ];
@@ -516,7 +520,7 @@ export default function AssistantScreen() {
                 <View
                   style={[
                     styles.stateDot,
-                    { backgroundColor: status === 'green' ? colors.readinessGreen : status === 'yellow' ? colors.readinessYellow : status === 'red' ? colors.readinessRed : colors.metricPurple },
+                    { backgroundColor: status === 'green' ? c.readinessGreen : status === 'yellow' ? c.readinessYellow : status === 'red' ? c.readinessRed : c.metricPurple },
                   ]}
                 />
                 <Text style={styles.stateText}>
@@ -598,11 +602,11 @@ export default function AssistantScreen() {
                màu, vì chúng hiện một GIÁ TRỊ; thẻ này hiện một câu văn. */
             style={styles.insight}
             radius={radius.lg}
-            tint={colors.primary} material="blur">
+            tint={c.primary} material="blur">
             <View style={styles.insightInner}>
               {insight.isPending ? (
                 <View style={styles.insightRow}>
-                  <ActivityIndicator size="small" color={colors.glassMuted} />
+                  <ActivityIndicator size="small" color={c.glassMuted} />
                   <Text style={styles.insightMuted}>
                     {vi ? 'Đang đọc dữ liệu hôm nay…' : 'Reading today’s data…'}
                   </Text>
@@ -640,10 +644,10 @@ export default function AssistantScreen() {
                           {
                             backgroundColor:
                               n.priority === 'high'
-                                ? colors.readinessRed
+                                ? c.readinessRed
                                 : n.priority === 'medium'
-                                  ? colors.readinessYellow
-                                  : colors.readinessGreen,
+                                  ? c.readinessYellow
+                                  : c.readinessGreen,
                           },
                         ]}
                       />
@@ -779,7 +783,7 @@ export default function AssistantScreen() {
             /* Thẻ mở AI Coach là một LỐI ĐI. Màu ở lại trong glyph. */
             style={styles.coachCard}
             radius={radius.xl}
-            tint={colors.primary} material="blur">
+            tint={c.primary} material="blur">
             <View style={styles.coachInner}>
               <View style={styles.coachHead}>
                 <View style={styles.coachIcon}>
@@ -802,7 +806,7 @@ export default function AssistantScreen() {
                 {/* The only left-pointing glyph in the set, turned around. A
                     second path would be the same shape twice. */}
                 <View style={styles.coachGo}>
-                  <Glyph name="chevron" size={14} colour={colors.glassMuted} />
+                  <Glyph name="chevron" size={14} colour={c.glassMuted} />
                 </View>
               </View>
 
@@ -814,7 +818,7 @@ export default function AssistantScreen() {
                   away behind it, invisible.
                 */
                 <View style={styles.coachResume}>
-                  <Glyph name="clock" size={13} colour={colors.glassMuted} />
+                  <Glyph name="clock" size={13} colour={c.glassMuted} />
                   <Text style={styles.coachResumeText} numberOfLines={1}>
                     {vi ? 'Tiếp tục: ' : 'Continue: '}
                     {lastAsked}
@@ -881,7 +885,7 @@ export default function AssistantScreen() {
                      màu ở lại trong glyph, nơi nó phân biệt các công cụ. */
                   style={styles.tool}
                   radius={radius.lg}
-                  tint={colors.primary} material="blur">
+                  tint={c.primary} material="blur">
                   <View style={styles.toolIcon}>
                     <Glyph name={t.glyph} size={19} />
                   </View>
@@ -912,15 +916,15 @@ export default function AssistantScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.background },
   scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.md, gap: spacing.lg },
 
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headText: { flex: 1, gap: 3 },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  title: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, color: colors.foreground },
+  title: { fontSize: 22, fontWeight: '700', letterSpacing: -0.4, color: c.foreground },
   aiBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -932,15 +936,15 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'rgba(180,92,255,0.35)',
   },
-  aiText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, color: colors.metricPurple },
-  subtitle: { ...type.footnote, color: colors.mutedForeground },
+  aiText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, color: c.metricPurple },
+  subtitle: { ...type.footnote, color: c.mutedForeground },
   iconBtn: {
     width: 46,
     height: 46,
     borderRadius: 23,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
 
   /* The lit zone. Not empty any more — see the comment at the call site. */
@@ -949,12 +953,12 @@ const styles = StyleSheet.create({
   statePill: { alignSelf: 'flex-start', marginTop: spacing.xs },
   stateInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 1 },
   stateDot: { width: 8, height: 8, borderRadius: 4 },
-  stateText: { ...type.footnote, color: colors.foreground },
+  stateText: { ...type.footnote, color: c.foreground },
 
   /* 34 against the title's 22. The greeting is the human moment and the title
      is a label; at the same size they compete and the eye lands on neither. */
-  greeting: { fontSize: 34, fontWeight: '700', letterSpacing: -0.8, color: colors.foreground },
-  greetBody: { ...type.body, color: colors.mutedForeground, lineHeight: 22, maxWidth: 330 },
+  greeting: { fontSize: 34, fontWeight: '700', letterSpacing: -0.8, color: c.foreground },
+  greetBody: { ...type.body, color: c.mutedForeground, lineHeight: 22, maxWidth: 330 },
   /* Sentences, one per line, with air between them. Run together as a
      paragraph they read as prose about you; separated they read as a list of
      things the app noticed, which is what they are. */
@@ -971,17 +975,17 @@ const styles = StyleSheet.create({
   /* `flex: 1` on the stamp rather than on the title: the title is the thing
      that must never be pushed off, and a stamp that takes the slack sits hard
      against the right edge without a spacer view to do it. */
-  insightStamp: { ...type.caption, color: colors.glassMuted, flex: 1, textAlign: 'right' },
+  insightStamp: { ...type.caption, color: c.glassMuted, flex: 1, textAlign: 'right' },
   insight: {},
   insightInner: { padding: spacing.md },
   insightRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  insightMuted: { ...type.footnote, color: colors.glassMuted, flex: 1 },
+  insightMuted: { ...type.footnote, color: c.glassMuted, flex: 1 },
   insightList: { gap: spacing.sm + 2 },
   insightItem: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   /* 7pt, nudged down 6 so it sits on the first line's centre rather than its
      top — a dot aligned to the text box reads as floating above the sentence. */
   insightDot: { width: 7, height: 7, borderRadius: 4, marginTop: 6 },
-  insightText: { ...type.footnote, color: colors.foreground, lineHeight: 20, flex: 1 },
+  insightText: { ...type.footnote, color: c.foreground, lineHeight: 20, flex: 1 },
 
   /* Inset to the row's own gutters rather than the scroll view's, which is
      pulled out to the screen edges so the tiles can bleed past them. */
@@ -991,16 +995,16 @@ const styles = StyleSheet.create({
   metricRow: { paddingHorizontal: spacing.md, gap: spacing.sm + 2 },
   metricCard: { width: 132, padding: spacing.md, gap: 6 },
   metricIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  metricLabel: { ...type.caption, color: colors.glassMuted },
+  metricLabel: { ...type.caption, color: c.glassMuted },
   metricValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
-  metricValue: { fontSize: 26, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  metricUnit: { fontSize: 12, color: colors.glassMuted },
+  metricValue: { fontSize: 26, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
+  metricUnit: { fontSize: 12, color: c.glassMuted },
   metricNoteRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   metricDot: { width: 6, height: 6, borderRadius: 3 },
-  metricNote: { ...type.caption, color: colors.glassMuted },
+  metricNote: { ...type.caption, color: c.glassMuted },
 
   section: { gap: spacing.sm + 2 },
-  sectionTitle: { ...type.headline, color: colors.foreground },
+  sectionTitle: { ...type.headline, color: c.foreground },
 
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   /* Inside the card, so these are outlined pills rather than their own glass.
@@ -1018,7 +1022,7 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
     backgroundColor: 'rgba(255,255,255,0.05)',
   },
-  chipText: { ...type.caption, color: colors.foreground },
+  chipText: { ...type.caption, color: c.foreground },
 
   toolGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   /* Two per row: `(100% − one gap) / 2`, as a fraction so it holds at any width
@@ -1035,8 +1039,8 @@ const styles = StyleSheet.create({
     /* Một hốc chung cho mọi công cụ; màu ở lại trong glyph. */
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  toolLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground },
-  toolHint: { ...type.caption, color: colors.glassMuted, lineHeight: 15 },
+  toolLabel: { ...type.footnote, fontWeight: '600', color: c.foreground },
+  toolHint: { ...type.caption, color: c.glassMuted, lineHeight: 15 },
 
   /* ── the coach card ──
      `radius.xl` and nothing else on the page uses it: the one surface that is
@@ -1054,8 +1058,8 @@ const styles = StyleSheet.create({
   },
   coachHeadText: { flex: 1, gap: 3 },
   coachTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  coachTitle: { ...type.headline, color: colors.foreground },
-  coachSub: { ...type.caption, color: colors.glassMuted, lineHeight: 16 },
+  coachTitle: { ...type.headline, color: c.foreground },
+  coachSub: { ...type.caption, color: c.glassMuted, lineHeight: 16 },
   /* Rotated, because the set has one chevron and it points left. */
   coachGo: { transform: [{ rotate: '180deg' }] },
   coachResume: {
@@ -1067,6 +1071,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  coachResumeText: { ...type.caption, color: colors.glassMuted, flex: 1 },
+  coachResumeText: { ...type.caption, color: c.glassMuted, flex: 1 },
 
-});
+}));

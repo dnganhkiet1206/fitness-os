@@ -4,7 +4,9 @@ import Svg, { Line } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { localDaysAgoStr } from '@/lib/local-date';
 
@@ -142,6 +144,8 @@ export function WeightChanges({
   goal?: string | null;
   i18n: ReturnType<typeof useI18n>;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const rows: Row[] = WINDOWS.map((days) => ({
     key: days == null ? 'all' : String(days),
     label: days == null ? i18n.nWcAllTime : i18n.nWcDays.replace('{n}', String(days)),
@@ -168,12 +172,12 @@ export function WeightChanges({
         const good = (goal === 'bulk' && up) || (goal === 'cut' && down);
         const bad = (goal === 'bulk' && down) || (goal === 'cut' && up);
         const tint = flat
-          ? colors.mutedForeground
+          ? c.mutedForeground
           : good
-            ? colors.readinessGreen
+            ? c.readinessGreen
             : bad
-              ? colors.metricOrange
-              : colors.metricBlue;
+              ? c.metricOrange
+              : c.metricBlue;
         const stroke = sparkLine(r.delta);
         return (
           <View key={r.key} style={styles.row}>
@@ -212,15 +216,15 @@ export function WeightChanges({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   card: { gap: spacing.xs },
-  title: { ...type.headline, color: colors.foreground, marginBottom: spacing.xs },
+  title: { ...type.headline, color: c.foreground, marginBottom: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 5 },
-  rowLabel: { ...type.footnote, color: colors.mutedForeground, width: 58 },
+  rowLabel: { ...type.footnote, color: c.mutedForeground, width: 58 },
   spark: { opacity: 0.9 },
   rowValue: {
     ...type.footnote,
-    color: colors.foreground,
+    color: c.foreground,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
     flex: 1,
@@ -228,5 +232,5 @@ const styles = StyleSheet.create({
   },
   trend: { flexDirection: 'row', alignItems: 'center', gap: 3, width: 104 },
   trendText: { ...type.footnote, fontWeight: '600' },
-  empty: { ...type.footnote, color: colors.mutedForeground, paddingVertical: spacing.md },
-});
+  empty: { ...type.footnote, color: c.mutedForeground, paddingVertical: spacing.md },
+}));

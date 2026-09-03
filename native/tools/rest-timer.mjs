@@ -194,12 +194,24 @@ const paletteProblems = (timerSrc, gaugeSrc) => {
   }
   /* Và rãnh vòng tròn dùng CHUNG một token với thẻ sẵn sàng — hai vòng cạnh
      nhau trong một app không được là hai màu. */
-  if (!/stroke=\{colors\.ringTrack\}/.test(timerSrc)) {
-    out.push(`${TIMER}: rãnh vòng tròn không lấy từ \`colors.ringTrack\``);
+  if (!/stroke=\{c\.ringTrack\}/.test(timerSrc)) {
+    out.push(`${TIMER}: rãnh vòng tròn không lấy từ \`c.ringTrack\``);
   }
-  if (!/const TRACK = colors\.ringTrack;/.test(gaugeSrc)) {
+  /*
+    Đồng hồ sẵn sàng giữ một KHOÁ, không giữ một giá trị.
+
+    `TRACK` ở đó nằm ngoài mọi component (một hằng ở phạm vi module), nên từ khi
+    bảng màu đọc lúc chạy nó không thể giữ `c.ringTrack` được nữa — một mã màu ở
+    phạm vi module bị đóng băng lúc import và sẽ ở lại màu của theme tối. Nó giữ
+    `'ringTrack'` và chỗ vẽ tra `c[TRACK]`.
+
+    `satisfies PaletteKey` là phần chịu lực và vì thế nằm trong neo: nó là thứ
+    làm một khoá viết sai thành lỗi biên dịch. Bỏ nó đi thì `TRACK` chỉ còn là
+    một chuỗi, và một chuỗi sai chỉ hiện ra thành `undefined` lúc vẽ.
+  */
+  if (!/const TRACK = 'ringTrack' satisfies PaletteKey;/.test(gaugeSrc)) {
     out.push(
-      `${GAUGE}: TRACK không còn lấy từ \`colors.ringTrack\` — ` +
+      `${GAUGE}: TRACK không còn là khoá \`'ringTrack'\` có \`satisfies PaletteKey\` — ` +
         'câu "track color used by every web ring" lại thành một lời khẳng định không ai giữ',
     );
   }
@@ -284,17 +296,17 @@ problems.push(...paletteProblems(timer, gauge));
   bad(
     'nền thẻ về màu tối thứ tư',
     'timer',
-    'backgroundColor: colors.card',
+    'backgroundColor: c.card',
     "backgroundColor: 'rgba(18,18,22,0.96)'",
     /màu gõ tay `rgba\(18,18,22,0\.96\)`/,
   );
-  bad('rãnh vòng tròn lệch khỏi thẻ sẵn sàng', 'timer', 'stroke={colors.ringTrack}', 'stroke="#1c1c21"', /rãnh vòng tròn/);
+  bad('rãnh vòng tròn lệch khỏi thẻ sẵn sàng', 'timer', 'stroke={c.ringTrack}', 'stroke="#1c1c21"', /rãnh vòng tròn/);
   bad(
     'thẻ sẵn sàng gõ lại hằng số của chính nó',
     'gauge',
-    'const TRACK = colors.ringTrack;',
+    "const TRACK = 'ringTrack' satisfies PaletteKey;",
     "const TRACK = '#17171c';",
-    /TRACK không còn lấy từ/,
+    /TRACK không còn là khoá/,
   );
 }
 
@@ -312,7 +324,7 @@ console.log(
     'cứng của Android; bỏ một lối ra chỉ an toàn khi lối kia còn nguyên, không thì thẻ thành cái ' +
     'bẫy kín cho tới khi đồng hồ chạy hết. Thẻ cũng nói nó đang chờ SET NÀO, và chỉ nói khi thật ' +
     'sự có set kế tiếp. Và thẻ được làm bằng bảng màu của app chứ không bằng số gõ tay — rãnh vòng ' +
-    'tròn dùng chung `colors.ringTrack` với thẻ sẵn sàng, nên hai vòng cạnh nhau không còn là hai ' +
+    'tròn dùng chung `c.ringTrack` với thẻ sẵn sàng, nên hai vòng cạnh nhau không còn là hai ' +
     'màu. Mười một bản hỏng đều bị bắt, mỗi bản là đúng giá trị đã từng nằm trong tệp — bộ chạy web mù ' +
     'với cả mười một vì nó không dựng được một quãng nghỉ đang chạy',
 );

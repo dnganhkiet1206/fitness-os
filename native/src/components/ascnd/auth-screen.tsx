@@ -22,7 +22,9 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { supabase } from '@/integrations/supabase/client';
 import { errorText } from '@/lib/error-copy';
 
@@ -33,6 +35,8 @@ type Mode = 'signin' | 'signup' | 'forgot';
  * ASCND wordmark, glass-card form, and the forgot-password flow.
  */
 export function AuthScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { signIn, signUp, signInWithApple } = useAuth();
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
@@ -129,7 +133,7 @@ export function AuthScreen() {
         {/* Not a choice, and not measured — only `PickRow.Item`s report a box,
             so a plain child like this sits in the row without the highlight
             ever being able to land on it. */}
-        <Icon icon={Globe} size={15} color={colors.mutedForeground} />
+        <Icon icon={Globe} size={15} color={c.mutedForeground} />
         {(['vi', 'en'] as const).map((l) => (
           <PickRow.Item
             key={l}
@@ -159,7 +163,7 @@ export function AuthScreen() {
 
         {mode === 'forgot' && (
           <Pressable style={styles.backRow} onPress={() => setMode('signin')}>
-            <Icon icon={ArrowLeft} size={15} color={colors.mutedForeground} />
+            <Icon icon={ArrowLeft} size={15} color={c.mutedForeground} />
             <Text style={styles.backText}>{i18n.authBackToLogin}</Text>
           </Pressable>
         )}
@@ -170,7 +174,7 @@ export function AuthScreen() {
             <TextInput
               style={styles.input}
               placeholder={i18n.nYourName}
-              placeholderTextColor={colors.mutedForeground}
+              placeholderTextColor={c.mutedForeground}
               autoCapitalize="words"
               value={name}
               onChangeText={setName}
@@ -179,7 +183,7 @@ export function AuthScreen() {
           <TextInput
             style={styles.input}
             placeholder={i18n.nEmail}
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
             autoCapitalize="none"
             autoComplete="email"
             keyboardType="email-address"
@@ -190,7 +194,7 @@ export function AuthScreen() {
             <TextInput
               style={styles.input}
               placeholder={i18n.nPassword}
-              placeholderTextColor={colors.mutedForeground}
+              placeholderTextColor={c.mutedForeground}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
@@ -208,7 +212,7 @@ export function AuthScreen() {
             onPress={submit}
             disabled={busy || !canSubmit}>
             {busy ? (
-              <ActivityIndicator color={colors.primaryForeground} />
+              <ActivityIndicator color={c.primaryForeground} />
             ) : (
               <Text style={styles.primaryButtonText}>
                 {mode === 'signin' ? i18n.nSignIn : mode === 'signup' ? i18n.nSignUp : i18n.authResetPassword}
@@ -242,10 +246,10 @@ export function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
   },
   langRow: {
     position: 'absolute',
@@ -257,8 +261,8 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     borderRadius: radius.sm - 4,
   },
-  langText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
-  langTextActive: { color: colors.primary },
+  langText: { fontSize: 12, fontWeight: '500', color: c.mutedForeground },
+  langTextActive: { color: c.primary },
   content: {
     flexGrow: 1,
     paddingHorizontal: spacing.lg,
@@ -274,18 +278,18 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: '700',
     letterSpacing: 4.5,
-    color: colors.readinessGreen,
+    color: c.readinessGreen,
     textShadowColor: 'rgba(43,245,168,0.4)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
   },
   subtitle: {
     ...type.body,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
   },
   backRow: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 4 },
-  backText: { ...type.footnote, color: colors.mutedForeground },
+  backText: { ...type.footnote, color: c.mutedForeground },
   form: {
     gap: spacing.sm + 4,
   },
@@ -293,15 +297,15 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     backgroundColor: 'rgba(7,7,8,0.5)',
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
   },
   forgotText: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'right',
   },
   /* Dimmed rather than recoloured: the button keeps its shape and place, so
@@ -311,26 +315,26 @@ const styles = StyleSheet.create({
   primaryButton: {
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.xs,
   },
   primaryButtonText: {
     ...type.headline,
-    color: colors.primaryForeground,
+    color: c.primaryForeground,
   },
   appleButton: {
     height: 48,
   },
   switchText: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     marginTop: spacing.sm,
   },
   switchAction: {
-    color: colors.foreground,
+    color: c.foreground,
     fontWeight: '600',
   },
-});
+}));

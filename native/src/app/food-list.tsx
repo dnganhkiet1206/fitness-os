@@ -8,11 +8,13 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { FoodCard, foodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
+import { FoodCard, useFoodListStyles, RecentFoodCard } from '@/components/ascnd/food-cards';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { glass, radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMyFoods, useMyFoodsSorted, useRecentFoods } from '@/hooks/use-nutrition';
 
@@ -53,6 +55,9 @@ type Segment = 'mine' | 'recent';
  * the tab's search box is the one that queries the database.
  */
 export default function FoodListScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const foodList = useFoodListStyles();
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -106,7 +111,7 @@ export default function FoodListScreen() {
     <Screen refreshable back title={vi ? 'Thực phẩm' : 'Foods'}>
       <PickRow
         value={seg}
-        fill={colors.accent}
+        fill={c.accent}
         radius={radius.sm - 3}
         gap={3}
         style={styles.segBar}>
@@ -129,11 +134,11 @@ export default function FoodListScreen() {
 
       <View style={styles.tools}>
         <View style={styles.searchWrap}>
-          <Icon icon={Search} size={15} color={colors.mutedForeground} />
+          <Icon icon={Search} size={15} color={c.mutedForeground} />
           <TextInput
             style={styles.searchInput}
             placeholder={vi ? 'Lọc trong danh sách' : 'Filter this list'}
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
             value={q}
             onChangeText={setQ}
             autoCorrect={false}
@@ -151,7 +156,7 @@ export default function FoodListScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               nav.push('/food-editor');
             }}>
-            <Icon icon={Plus} size={16} color={colors.primaryForeground} strokeWidth={2.5} />
+            <Icon icon={Plus} size={16} color={c.primaryForeground} strokeWidth={2.5} />
           </PressScale>
         ) : null}
       </View>
@@ -169,10 +174,10 @@ export default function FoodListScreen() {
           <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
         ) : seg === 'mine' ? (
           mineShown.length > 0 ? (
-            <View style={foodListStyles.group}>
+            <View style={foodList.group}>
               {mineShown.map((f, i) => (
                 <View key={f.id}>
-                  {i > 0 ? <View style={foodListStyles.sep} /> : null}
+                  {i > 0 ? <View style={foodList.sep} /> : null}
                   <FoodCard f={f} />
                 </View>
               ))}
@@ -181,10 +186,10 @@ export default function FoodListScreen() {
             <Text style={styles.empty}>{empty}</Text>
           )
         ) : recentsShown.length > 0 ? (
-          <View style={foodListStyles.group}>
+          <View style={foodList.group}>
             {recentsShown.map((r, i) => (
               <View key={`${r.food_name}-${i}`}>
-                {i > 0 ? <View style={foodListStyles.sep} /> : null}
+                {i > 0 ? <View style={foodList.sep} /> : null}
                 <RecentFoodCard r={r} saved={savedNames.has(r.food_name.toLowerCase())} />
               </View>
             ))}
@@ -205,7 +210,7 @@ export default function FoodListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   segBar: {
     flexDirection: 'row',
     backgroundColor: 'rgba(24,24,27,0.6)',
@@ -226,10 +231,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
-  segText: { fontSize: 13, fontWeight: '500', color: colors.mutedForeground },
-  segTextActive: { color: colors.foreground, fontWeight: '600' },
-  segCount: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  segCountActive: { color: colors.mutedForeground },
+  segText: { fontSize: 13, fontWeight: '500', color: c.mutedForeground },
+  segTextActive: { color: c.foreground, fontWeight: '600' },
+  segCount: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  segCountActive: { color: c.mutedForeground },
 
   tools: { flexDirection: 'row', gap: spacing.sm, marginTop: -spacing.sm },
   searchWrap: {
@@ -240,23 +245,23 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     backgroundColor: 'rgba(24,24,27,0.3)',
     paddingHorizontal: spacing.md - 4,
   },
-  searchInput: { flex: 1, color: colors.foreground, fontSize: 15, height: '100%' },
+  searchInput: { flex: 1, color: c.foreground, fontSize: 15, height: '100%' },
   addBtn: {
     width: 44,
     height: 44,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
 
   empty: {
     fontSize: 13,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     paddingVertical: spacing.lg,
     borderRadius: radius.md,
@@ -264,5 +269,5 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
     backgroundColor: glass.bg,
   },
-  hint: { fontSize: 12, color: colors.mutedForeground, marginTop: -spacing.sm },
-});
+  hint: { fontSize: 12, color: c.mutedForeground, marginTop: -spacing.sm },
+}));

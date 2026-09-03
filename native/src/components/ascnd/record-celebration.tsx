@@ -10,7 +10,9 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useMascotIdentity } from '@/hooks/use-mascot';
@@ -73,6 +75,8 @@ export function RecordCelebration({
   records: PersonalRecord[];
   onDone: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   /* Identity only: the face here is pinned to `proud`. */
   const { mascot } = useMascotIdentity();
@@ -156,11 +160,11 @@ export function RecordCelebration({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* Opaque, and the sheet's own colour. A translucent veil over a form of
      twenty text fields is a celebration you read through a keyboard. */
   root: {
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
@@ -175,18 +179,18 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.xl,
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   kicker: {
     fontSize: 11,
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 2.5,
-    color: colors.primary,
+    color: c.primary,
     marginBottom: 2,
   },
-  line: { ...type.headline, color: colors.foreground, textAlign: 'center' },
-  hint: { ...type.caption, color: colors.mutedForeground, marginTop: spacing.sm },
-});
+  line: { ...type.headline, color: c.foreground, textAlign: 'center' },
+  hint: { ...type.caption, color: c.mutedForeground, marginTop: spacing.sm },
+}));

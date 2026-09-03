@@ -3,7 +3,9 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { Glyph } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 
@@ -35,6 +37,8 @@ const TINT = '#ff3b5c';
  * will never work there.
  */
 export function HealthSourceCard() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
   const { available, sync } = useHealthSync();
@@ -63,7 +67,7 @@ export function HealthSourceCard() {
           </Text>
         </View>
         {sync.isPending ? (
-          <ActivityIndicator size="small" color={colors.glassMuted} />
+          <ActivityIndicator size="small" color={c.glassMuted} />
         ) : (
           <Text style={styles.action}>{vi ? 'Đồng bộ' : 'Sync'}</Text>
         )}
@@ -72,7 +76,7 @@ export function HealthSourceCard() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -81,9 +85,9 @@ const styles = StyleSheet.create({
   },
   icon: { width: 38, height: 38, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
   body: { flex: 1, gap: 2 },
-  title: { ...type.headline, color: colors.foreground },
+  title: { ...type.headline, color: c.foreground },
   /* `glassMuted`, not `mutedForeground`. This sits on glass over the aura,
      where #828282 measures 2.57:1 — see `tools/glass-legibility.mjs`. */
-  hint: { ...type.footnote, color: colors.glassMuted },
-  action: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
-});
+  hint: { ...type.footnote, color: c.glassMuted },
+  action: { ...type.footnote, color: c.foreground, fontWeight: '600' },
+}));

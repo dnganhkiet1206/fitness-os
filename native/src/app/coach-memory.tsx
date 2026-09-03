@@ -8,7 +8,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { toast } from '@/lib/toast';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -25,11 +27,16 @@ interface Memory {
 }
 
 /** The four kinds, in the order they change what a coach should say. */
-const GROUPS: { kind: Memory['kind']; vi: string; en: string; tint: string }[] = [
-  { kind: 'constraint', vi: 'Giới hạn', en: 'Limits', tint: colors.readinessRed },
-  { kind: 'goal', vi: 'Mục tiêu', en: 'Goals', tint: colors.readinessGreen },
-  { kind: 'preference', vi: 'Thói quen', en: 'Habits', tint: colors.metricBlue },
-  { kind: 'context', vi: 'Hoàn cảnh', en: 'Context', tint: colors.metricPurple },
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+const GROUPS: { kind: Memory['kind']; vi: string; en: string; tint: PaletteKey }[] = [
+  { kind: 'constraint', vi: 'Giới hạn', en: 'Limits', tint: 'readinessRed' },
+  { kind: 'goal', vi: 'Mục tiêu', en: 'Goals', tint: 'readinessGreen' },
+  { kind: 'preference', vi: 'Thói quen', en: 'Habits', tint: 'metricBlue' },
+  { kind: 'context', vi: 'Hoàn cảnh', en: 'Context', tint: 'metricPurple' },
 ];
 
 /**
@@ -57,6 +64,8 @@ const GROUPS: { kind: Memory['kind']; vi: string; en: string; tint: string }[] =
  * whole thing.
  */
 export default function CoachMemoryScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
   const { user } = useAuth();
@@ -132,7 +141,7 @@ export default function CoachMemoryScreen() {
           return (
             <View key={g.kind} style={styles.group}>
               <View style={styles.groupHead}>
-                <View style={[styles.dot, { backgroundColor: g.tint }]} />
+                <View style={[styles.dot, { backgroundColor: c[g.tint] }]} />
                 <Text style={styles.groupTitle}>{vi ? g.vi : g.en}</Text>
               </View>
               {items.map((m) => (
@@ -179,7 +188,7 @@ export default function CoachMemoryScreen() {
                         onError: (e: Error) => toast.fail(e),
                       });
                     }}>
-                    <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
+                    <Icon icon={Trash2} size={16} color={c.mutedForeground} />
                   </PressScale>
                 </GlassCard>
               ))}
@@ -220,23 +229,23 @@ export default function CoachMemoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  intro: { ...type.footnote, color: colors.mutedForeground, lineHeight: 19, marginBottom: spacing.xs },
-  muted: { ...type.footnote, color: colors.mutedForeground, lineHeight: 19 },
-  emptyTitle: { ...type.headline, color: colors.foreground, marginBottom: 4 },
+const stylesFor = makeStyles((c) => ({
+  intro: { ...type.footnote, color: c.mutedForeground, lineHeight: 19, marginBottom: spacing.xs },
+  muted: { ...type.footnote, color: c.mutedForeground, lineHeight: 19 },
+  emptyTitle: { ...type.headline, color: c.foreground, marginBottom: 4 },
   group: { gap: spacing.sm },
   groupHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.xs },
   dot: { width: 7, height: 7, borderRadius: 4 },
   groupTitle: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1.6,
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   rowBody: { flex: 1, gap: 2 },
-  fact: { ...type.body, color: colors.foreground, lineHeight: 20 },
-  meta: { ...type.caption, color: colors.mutedForeground },
+  fact: { ...type.body, color: c.foreground, lineHeight: 20 },
+  meta: { ...type.caption, color: c.mutedForeground },
   forgetBtn: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   clearAll: {
     marginTop: spacing.md,
@@ -244,7 +253,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  clearAllText: { ...type.headline, color: colors.readinessRed },
-});
+  clearAllText: { ...type.headline, color: c.readinessRed },
+}));

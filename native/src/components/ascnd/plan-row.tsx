@@ -3,7 +3,9 @@ import { ChevronRight } from 'lucide-react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, glass, radius, spacing } from '@/constants/ascnd';
+import { glass, radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { PLAN_DAYS } from '@/lib/planned-meal';
 
 /**
@@ -41,6 +43,8 @@ export function countFill(days?: Record<number, number>) {
  * Ngày rỗng vẫn vẽ ô: cái bảng phải đủ bảy ô thì mới là một tuần.
  */
 export function PlanWeek({ days, perDay }: { days?: Record<number, number>; perDay: number }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.week} pointerEvents="none">
       {PLAN_DAYS.map((d) => {
@@ -81,6 +85,8 @@ export function PlanWeek({ days, perDay }: { days?: Record<number, number>; perD
  * đặt thêm một nghĩa thứ hai lên cùng bảng màu.
  */
 function Monogram({ name }: { name: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* `[...name]` chứ không phải `name[0]`: tên tiếng Việt có dấu là một ký tự
      Unicode có thể gồm nhiều code unit, và `[0]` cắt giữa nó ra một ô vuông. */
   const first = [...name.trim()][0] ?? '?';
@@ -108,6 +114,8 @@ export function PlanRow({
   onPress: () => void;
   a11yLabel?: string;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const total = PLAN_DAYS.length * perDay;
   const filled = countFill(days);
   /*
@@ -138,7 +146,7 @@ export function PlanRow({
             nhau cho một câu hỏi.
           */}
           <Text style={[styles.pct, filled > 0 && styles.pctOn]}>{pct}%</Text>
-          <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+          <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
         </View>
         <Text style={styles.meta} numberOfLines={1}>
           {/* Con số làm bảy ô kia ĐỌC ĐƯỢC. Không có nó, một kế hoạch chưa có
@@ -152,7 +160,7 @@ export function PlanRow({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* Một HÀNG trong khối, không phải một thẻ. 56 để vượt sàn chạm 44 và để hai
      dòng chữ cộng bảng tuần có chỗ thở. */
   row: {
@@ -185,22 +193,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  monoText: { fontSize: 15, fontWeight: '700', color: colors.foreground },
+  monoText: { fontSize: 15, fontWeight: '700', color: c.foreground },
   /* Xám là mặc định, xanh là ngoại lệ — một kế hoạch chưa có món thì 0% không
      đáng sáng lên. */
-  pct: { fontSize: 13, fontWeight: '600', color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  pctOn: { color: colors.readinessGreen },
+  pct: { fontSize: 13, fontWeight: '600', color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  pctOn: { color: c.readinessGreen },
   /* Tên co giãn để mũi tên bị đẩy ra MÉP PHẢI. Không có `flex` thì mũi tên bám
      sát cái tên, và một hàng có mũi tên ở giữa đọc ra như một phần của tên. */
   top: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  name: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '600', color: colors.foreground },
-  meta: { fontSize: 12, color: colors.mutedForeground },
+  name: { flex: 1, minWidth: 0, fontSize: 15, fontWeight: '600', color: c.foreground },
+  meta: { fontSize: 12, color: c.mutedForeground },
   /* Khoảng cách 3 điểm: nhỏ hơn nữa thì bảy ô dính thành một dải và không còn
      đếm được là bảy. */
   week: { flexDirection: 'row', gap: 3, marginTop: 1 },
-  day: { flex: 1, height: 18, borderRadius: 4, backgroundColor: colors.accent },
+  day: { flex: 1, height: 18, borderRadius: 4, backgroundColor: c.accent },
   /* Có một phần: CÙNG màu với "đủ" nhưng nhạt, nên ba mức là một THANG chứ
      không phải ba màu rời. Mắt đọc thang nhanh hơn đọc bảng chú giải. */
-  some: { backgroundColor: colors.readinessGreen, opacity: 0.34 },
+  some: { backgroundColor: c.readinessGreen, opacity: 0.34 },
   full: { opacity: 1 },
-});
+}));

@@ -18,7 +18,9 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { ActivityExplainer } from '@/components/ascnd/activity-explainer';
 import { HelpButton, useHelpTopic } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, HERO_RING, radius, spacing } from '@/constants/ascnd';
+import { HERO_RING, radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { activityModel, type ActivityInput, type RingKey, type RingModel } from '@/lib/activity';
@@ -155,6 +157,8 @@ export function ActivityRingsCard({
   onLogWorkout,
   ...input
 }: Props) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { rings, hasAny } = activityModel(input);
   const { lang } = useAppSettings();
@@ -293,7 +297,7 @@ export function ActivityRingsCard({
         }}
         style={styles.moreBtn}>
         <Animated.View style={chevron}>
-          <Icon icon={ChevronDown} size={20} color={colors.mutedForeground} strokeWidth={2.5} />
+          <Icon icon={ChevronDown} size={20} color={c.mutedForeground} strokeWidth={2.5} />
         </Animated.View>
       </PressScale>
 
@@ -323,12 +327,14 @@ export function ActivityRingsCard({
 
 /** One ring, read out: what it is, how far along, out of what. */
 function Row({ ring, label, unit }: { ring: RingModel; label: string; unit: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const [tint] = RING_COLORS[ring.key];
   const dim = ring.source === 'none';
   return (
     <View style={styles.row}>
       <View style={styles.rowHead}>
-        <View style={[styles.dot, { backgroundColor: dim ? colors.mutedForeground : tint }]} />
+        <View style={[styles.dot, { backgroundColor: dim ? c.mutedForeground : tint }]} />
         <Text style={styles.rowLabel}>{label}</Text>
       </View>
       <View style={styles.rowValues}>
@@ -346,7 +352,7 @@ function Row({ ring, label, unit }: { ring: RingModel; label: string; unit: stri
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* Phần đệm mà GlassCard vốn cấp, viết lại vì khung đã bỏ — xem ghi chú cùng
      việc ở readiness-gauge.tsx. */
   /* Cùng lý do như readiness-gauge.tsx: đệm của một hero, và không để một gap
@@ -383,27 +389,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   body: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
   rows: { flex: 1, gap: spacing.sm + 2 },
   row: { gap: 1 },
   rowHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   dot: { width: 7, height: 7, borderRadius: 3.5 },
-  rowLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: colors.mutedForeground },
+  rowLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: c.mutedForeground },
   rowValues: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
   rowValue: {
     fontSize: 19,
     fontFamily: 'Menlo',
     fontWeight: '700',
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
   /* A ring nothing has reported on reads as absent, not as a score of nought. */
-  rowValueDim: { color: colors.mutedForeground, fontWeight: '400' },
-  rowTarget: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  note: { fontSize: 11, color: colors.mutedForeground },
+  rowValueDim: { color: c.mutedForeground, fontWeight: '400' },
+  rowTarget: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  note: { fontSize: 11, color: c.mutedForeground },
 
   /* Dimmed, not hidden: the button keeps its footprint so the card does not
      reflow under the finger that just pressed it. */
-});
+}));

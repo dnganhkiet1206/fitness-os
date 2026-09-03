@@ -8,7 +8,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useUnits } from '@/hooks/use-units';
@@ -42,6 +44,8 @@ function weekAvg(logs: { date: string; weight_kg: number }[], start: string, end
 }
 
 export default function SmartGoalsScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { user } = useAuth();
   const { data: profile, isError, refetch, isRefetching } = useProfile();
   const { lang } = useAppSettings();
@@ -251,7 +255,7 @@ export default function SmartGoalsScreen() {
             <View style={styles.chart}>
               <LineChart
                 points={analysis.valid.map((w) => ({ date: w.week, value: displayWeight(w.value, wUnit) }))}
-                color={colors.readinessGreen}
+                color={c.readinessGreen}
                 unit={wl}
               />
             </View>
@@ -263,7 +267,7 @@ export default function SmartGoalsScreen() {
               <Text style={styles.calloutTarget}>
                 {i18n.target}: {analysis.targetMin > 0 ? '+' : ''}{convertWeight(analysis.targetMin, wUnit).toFixed(2)} — {analysis.targetMax > 0 ? '+' : ''}{convertWeight(analysis.targetMax, wUnit).toFixed(2)} {wl}/{week}
               </Text>
-              <Text style={[styles.calloutStatus, { color: analysis.onTrack ? colors.readinessGreen : colors.readinessRed }]}>
+              <Text style={[styles.calloutStatus, { color: analysis.onTrack ? c.readinessGreen : c.readinessRed }]}>
                 {analysis.onTrack ? i18n.smartGoalsOnTrack : i18n.smartGoalsOffTrack}
               </Text>
             </View>
@@ -311,12 +315,12 @@ export default function SmartGoalsScreen() {
         {protein ? (
           <>
             <View style={styles.proteinGrid}>
-              <ProteinStat value={`${protein.target}g`} label={i18n.smartGoalsPerDay} color={colors.primary} />
-              <ProteinStat value={`${protein.perMeal}g`} label={i18n.smartGoalsPerMeal} color={colors.metricBlue} />
+              <ProteinStat value={`${protein.target}g`} label={i18n.smartGoalsPerDay} color={c.primary} />
+              <ProteinStat value={`${protein.perMeal}g`} label={i18n.smartGoalsPerMeal} color={c.metricBlue} />
               <ProteinStat
                 value={String(protein.lowDays)}
                 label={i18n.smartGoalsLowDays}
-                color={protein.lowDays > 0 ? colors.readinessRed : colors.readinessGreen}
+                color={protein.lowDays > 0 ? c.readinessRed : c.readinessGreen}
               />
             </View>
             <View style={styles.splitBox}>
@@ -338,6 +342,8 @@ export default function SmartGoalsScreen() {
 }
 
 function ProteinStat({ value, label, color }: { value: string; label: string; color: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.proteinStat}>
       <Text style={[styles.proteinValue, { color }]}>{value}</Text>
@@ -346,17 +352,17 @@ function ProteinStat({ value, label, color }: { value: string; label: string; co
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  cardTitle: { ...type.headline, color: colors.foreground },
+  cardTitle: { ...type.headline, color: c.foreground },
   goalPill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 3, borderRadius: radius.full, backgroundColor: 'rgba(168,178,196,0.14)' },
-  goalPillText: { ...type.caption, color: colors.primary, fontWeight: '600', textTransform: 'capitalize' },
+  goalPillText: { ...type.caption, color: c.primary, fontWeight: '600', textTransform: 'capitalize' },
   chart: { marginTop: spacing.md },
   callout: { marginTop: spacing.md, borderRadius: radius.md, padding: spacing.md, gap: 3 },
   calloutGood: { backgroundColor: 'rgba(32,181,131,0.1)' },
   calloutBad: { backgroundColor: 'rgba(220,47,47,0.1)' },
-  calloutValue: { ...type.headline, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  calloutTarget: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  calloutValue: { ...type.headline, color: c.foreground, fontVariant: ['tabular-nums'] },
+  calloutTarget: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   calloutStatus: { ...type.footnote, fontWeight: '600', marginTop: 2 },
   suggestion: {
     marginTop: spacing.md,
@@ -368,19 +374,19 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   suggestionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  suggestionTitle: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
-  suggestionValue: { ...type.title, color: colors.readinessYellow, fontVariant: ['tabular-nums'], marginTop: 2 },
-  suggestionDetail: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  suggestionTitle: { ...type.footnote, color: c.foreground, fontWeight: '600' },
+  suggestionValue: { ...type.title, color: c.readinessYellow, fontVariant: ['tabular-nums'], marginTop: 2 },
+  suggestionDetail: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xs },
-  emptyTitle: { ...type.body, color: colors.foreground, fontWeight: '600' },
-  emptyMsg: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', marginTop: spacing.sm },
+  emptyTitle: { ...type.body, color: c.foreground, fontWeight: '600' },
+  emptyMsg: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', marginTop: spacing.sm },
   proteinGrid: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
-  proteinStat: { flex: 1, alignItems: 'center', backgroundColor: colors.background, borderRadius: radius.md, paddingVertical: spacing.md, gap: 2 },
+  proteinStat: { flex: 1, alignItems: 'center', backgroundColor: c.background, borderRadius: radius.md, paddingVertical: spacing.md, gap: 2 },
   proteinValue: { ...type.title, fontVariant: ['tabular-nums'] },
-  proteinLabel: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
-  splitBox: { marginTop: spacing.md, backgroundColor: colors.background, borderRadius: radius.md, padding: spacing.md, gap: spacing.xs },
-  splitLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '600', marginBottom: 2 },
+  proteinLabel: { ...type.caption, color: c.mutedForeground, textAlign: 'center' },
+  splitBox: { marginTop: spacing.md, backgroundColor: c.background, borderRadius: radius.md, padding: spacing.md, gap: spacing.xs },
+  splitLabel: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 1, fontWeight: '600', marginBottom: 2 },
   splitRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  splitMeal: { ...type.footnote, color: colors.mutedForeground },
-  splitVal: { ...type.footnote, color: colors.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
-});
+  splitMeal: { ...type.footnote, color: c.mutedForeground },
+  splitVal: { ...type.footnote, color: c.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
+}));

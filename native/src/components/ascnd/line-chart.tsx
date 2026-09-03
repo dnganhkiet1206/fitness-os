@@ -27,7 +27,9 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { curveLength, onCurve, sampleCurve, yOnCurve, type CurvePoint } from '@/lib/curve';
 
 export interface ChartPoint {
@@ -231,6 +233,8 @@ function ScrubDot({
   curve: readonly CurvePoint[];
   color: string;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /*
     The marker rides the line at the rule's own x.
 
@@ -264,7 +268,7 @@ function ScrubDot({
       <AnimatedCircle fill={color} animatedProps={halo} />
       <AnimatedCircle
         fill={color}
-        stroke={colors.background}
+        stroke={c.background}
         strokeWidth={1.5}
         animatedProps={core}
       />
@@ -293,6 +297,8 @@ function ScrubChip({
   top: number;
   children: React.ReactNode;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /*
     Opacity from the same shared value as the rule and the marker, rather than
     Reanimated's `entering`/`exiting`.
@@ -361,7 +367,13 @@ export function niceTicks(lo: number, hi: number, want = 3): { ticks: number[]; 
  * The smoothing is safe to keep: the control points share their endpoints' y,
  * so the curve never bulges past a value that was recorded.
  */
-export function LineChart({ points, color = colors.primary, height = 140, unit = '', emptyLabel = 'Not enough data yet', goal, goalLabel, grid = false, ambient = false, labels = true, locale, onScrubbing }: LineChartProps) {
+export function LineChart({ points, color: colorProp, height = 140, unit = '', emptyLabel = 'Not enough data yet', goal, goalLabel, grid = false, ambient = false, labels = true, locale, onScrubbing }: LineChartProps) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  /* Mặc định giải quyết ở đây, không ở danh sách tham số: một giá trị mặc định
+     được tính TRƯỚC dòng `usePalette()` trên nó, nên `= c.primary` ở trên kia
+     không nhìn thấy bảng màu của component. */
+  const color = colorProp ?? c.primary;
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
@@ -820,7 +832,7 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                     x2={width}
                     y1={y(t)}
                     y2={y(t)}
-                    stroke={colors.foreground}
+                    stroke={c.foreground}
                     strokeOpacity={0.1}
                     strokeWidth={0.5}
                     strokeDasharray={[3, 4]}
@@ -830,14 +842,14 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
 
             {/* Date rules — fainter than the value lines, because a date is
                 where you look after you have read a value, not before. */}
-            {cols.slice(1, -1).map((c) => (
+            {cols.slice(1, -1).map((col) => (
               <Line
-                key={`v${c.x}`}
-                x1={c.x}
-                x2={c.x}
+                key={`v${col.x}`}
+                x1={col.x}
+                x2={col.x}
                 y1={0}
                 y2={height}
-                stroke={colors.foreground}
+                stroke={c.foreground}
                 strokeOpacity={0.06}
                 strokeWidth={0.5}
               />
@@ -854,7 +866,7 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                   y1={y(goal)}
                   x2={width}
                   y2={y(goal)}
-                  stroke={colors.mutedForeground}
+                  stroke={c.mutedForeground}
                   strokeWidth={1}
                   strokeDasharray="4 4"
                   opacity={0.75}
@@ -869,7 +881,7 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
                        cleared the goal line and a 12px drop cleared it from
                        below, and neither did at 11. */
                     y={y(goal) - 6 < 12 ? y(goal) + 14 : y(goal) - 6}
-                    fill={colors.mutedForeground}
+                    fill={c.mutedForeground}
                     fontSize={11}
                     opacity={0.9}>
                     {goalLabel} {Math.round(goal * 10) / 10}
@@ -923,7 +935,7 @@ export function LineChart({ points, color = colors.primary, height = 140, unit =
               cy={y(values[values.length - 1])}
               r={4.5}
               fill={color}
-              stroke={colors.background}
+              stroke={c.background}
               strokeWidth={2}
             />
 
@@ -1015,6 +1027,8 @@ interface MultiLineChartProps {
  * scale with per-point dots and a legend (web measurement-trend chart).
  */
 export function MultiLineChart({ series, height = 200, emptyLabel = 'Not enough data yet' }: MultiLineChartProps) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const [width, setWidth] = useState(0);
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
@@ -1088,21 +1102,21 @@ export function MultiLineChart({ series, height = 200, emptyLabel = 'Not enough 
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   empty: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptyText: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   // Absolutely placed at its own gridline's y, right-aligned into the gutter.
   axisValue: {
     position: 'absolute',
     left: 0,
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'right',
     fontVariant: ['tabular-nums'],
   },
@@ -1117,22 +1131,22 @@ const styles = StyleSheet.create({
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
     // Opaque: this sits over the line it is describing.
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
   scrubValue: {
     ...type.footnote,
     fontWeight: '700',
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
-  scrubDate: { ...type.caption, color: colors.mutedForeground },
+  scrubDate: { ...type.caption, color: c.mutedForeground },
   dateRow: { height: 16, marginTop: 4 },
   dateText: {
     position: 'absolute',
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     width: 64,
     marginLeft: -32,
     textAlign: 'center',
@@ -1146,10 +1160,10 @@ const styles = StyleSheet.create({
   },
   label: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   labelStrong: {
-    color: colors.foreground,
+    color: c.foreground,
     fontWeight: '600',
   },
   // Web trend legend: centered, wrapping, 2x2 rounded swatches
@@ -1162,4 +1176,4 @@ const styles = StyleSheet.create({
   },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   legendSwatch: { width: 8, height: 8, borderRadius: 2 },
-});
+}));

@@ -6,7 +6,9 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useMascotIdentity } from '@/hooks/use-mascot';
 
@@ -65,6 +67,8 @@ export function LoadFailed({
   /** the screen's refresh is already running — the button says so and waits */
   busy?: boolean;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Identity only, never the day. This card is on screen *because* a read
      failed; a hook that reads would remount an observer on the very query that
      failed and bounce the whole app between blank and this card for ever. See
@@ -79,7 +83,7 @@ export function LoadFailed({
         </View>
       ) : (
         <View style={styles.icon}>
-          <Icon icon={CloudOff} size={20} color={colors.mutedForeground} />
+          <Icon icon={CloudOff} size={20} color={c.mutedForeground} />
         </View>
       )}
       <Text style={styles.title}>{i18n.nLoadFailed}</Text>
@@ -94,7 +98,7 @@ export function LoadFailed({
             onRetry();
           }}
           style={[styles.retry, busy && styles.retryPressed]}>
-          <Icon icon={RotateCw} size={15} color={colors.foreground} />
+          <Icon icon={RotateCw} size={15} color={c.foreground} />
           <Text style={styles.retryText}>{i18n.nRetry}</Text>
         </PressScale>
       ) : null}
@@ -102,7 +106,7 @@ export function LoadFailed({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   card: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.lg },
   /* Same vertical space the icon chip took, so turning the mascot off in
      settings does not move the card's text. */
@@ -116,8 +120,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.05)',
     marginBottom: spacing.xs,
   },
-  title: { ...type.headline, color: colors.foreground, textAlign: 'center' },
-  hint: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
+  title: { ...type.headline, color: c.foreground, textAlign: 'center' },
+  hint: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
   retry: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -129,5 +133,5 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   retryPressed: { opacity: 0.75 },
-  retryText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
-});
+  retryText: { ...type.footnote, fontWeight: '600', color: c.foreground },
+}));

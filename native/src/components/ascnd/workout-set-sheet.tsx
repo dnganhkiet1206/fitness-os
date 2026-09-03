@@ -5,7 +5,9 @@ import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import type { TemplateExercise } from '@/hooks/use-library';
 import { DEFAULT_REST, DEFAULT_RPE, restLabel } from '@/lib/prescription';
@@ -87,6 +89,8 @@ function Stepper({
   a11yLabel: string;
   onChange: (n: number) => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const fmt = (n: number) => (decimals ? String(n) : String(Math.round(n)));
   const [num, setNum] = useState(initial);
   const [str, setStr] = useState(() => fmt(initial));
@@ -111,7 +115,7 @@ function Stepper({
         disabled={num <= min}
         onPress={() => bump(-1)}
         style={[styles.stepBtn, num <= min && styles.stepOff]}>
-        <Icon icon={Minus} size={16} color={colors.foreground} strokeWidth={2.5} />
+        <Icon icon={Minus} size={16} color={c.foreground} strokeWidth={2.5} />
       </PressScale>
 
       <TextInput
@@ -136,7 +140,7 @@ function Stepper({
         disabled={num >= max}
         onPress={() => bump(1)}
         style={[styles.stepBtn, num >= max && styles.stepOff]}>
-        <Icon icon={Plus} size={16} color={colors.foreground} strokeWidth={2.5} />
+        <Icon icon={Plus} size={16} color={c.foreground} strokeWidth={2.5} />
       </PressScale>
     </View>
   );
@@ -151,6 +155,8 @@ function Row({
   hint?: string;
   children: React.ReactNode;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.row}>
       <View style={styles.rowText}>
@@ -181,6 +187,8 @@ export function WorkoutSetPanel({
   onMove: (to: number) => void;
   onRemove: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const wl = weightLabel(unit);
 
   return (
@@ -265,7 +273,7 @@ export function WorkoutSetPanel({
             onMove(index - 1);
           }}
           style={[styles.action, index === 0 && styles.stepOff]}>
-          <Icon icon={ChevronUp} size={16} color={colors.foreground} />
+          <Icon icon={ChevronUp} size={16} color={c.foreground} />
           <Text style={styles.actionText}>{i18n.nWbMoveUp}</Text>
         </PressScale>
 
@@ -278,7 +286,7 @@ export function WorkoutSetPanel({
             onMove(index + 1);
           }}
           style={[styles.action, index >= total - 1 && styles.stepOff]}>
-          <Icon icon={ChevronDown} size={16} color={colors.foreground} />
+          <Icon icon={ChevronDown} size={16} color={c.foreground} />
           <Text style={styles.actionText}>{i18n.nWbMoveDown}</Text>
         </PressScale>
       </View>
@@ -290,18 +298,18 @@ export function WorkoutSetPanel({
           onRemove();
         }}
         style={styles.remove}>
-        <Icon icon={Trash2} size={15} color={colors.destructive} />
+        <Icon icon={Trash2} size={15} color={c.destructive} />
         <Text style={styles.removeText}>{i18n.nWbRemove}</Text>
       </PressScale>
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   body: { flex: 1 },
   bodyContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.xs },
-  name: { ...type.title2, color: colors.foreground },
-  position: { ...type.caption, color: colors.mutedForeground, marginBottom: spacing.sm },
+  name: { ...type.title2, color: c.foreground },
+  position: { ...type.caption, color: c.mutedForeground, marginBottom: spacing.sm },
 
   row: {
     flexDirection: 'row',
@@ -310,17 +318,17 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingVertical: spacing.sm + 2,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   rowText: { flex: 1, minWidth: 0, gap: 2 },
-  rowLabel: { ...type.body, color: colors.foreground },
-  rowHint: { ...type.caption, color: colors.mutedForeground },
+  rowLabel: { ...type.body, color: c.foreground },
+  rowHint: { ...type.caption, color: c.mutedForeground },
 
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
   // 44pt of target on each button — the platform minimum, which the old 40pt
   // boxes crammed five-across did not reach
@@ -330,7 +338,7 @@ const styles = StyleSheet.create({
     width: 62,
     height: 44,
     textAlign: 'center',
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 17,
     fontWeight: '600',
     fontVariant: ['tabular-nums'],
@@ -346,10 +354,10 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.secondary,
+    borderColor: c.border,
+    backgroundColor: c.secondary,
   },
-  actionText: { ...type.footnote, color: colors.foreground },
+  actionText: { ...type.footnote, color: c.foreground },
 
   remove: {
     flexDirection: 'row',
@@ -358,6 +366,6 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 44,
   },
-  removeText: { ...type.footnote, color: colors.destructive, fontWeight: '600' },
+  removeText: { ...type.footnote, color: c.destructive, fontWeight: '600' },
 
-});
+}));

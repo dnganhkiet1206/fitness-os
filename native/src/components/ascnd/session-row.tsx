@@ -4,7 +4,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, effortTint, radius, spacing } from '@/constants/ascnd';
+import { effortTint, radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { getLocale, type AppLang } from '@/lib/i18n';
 import { displayWeight, weightLabel, type WeightUnit } from '@/lib/units';
@@ -62,6 +64,8 @@ export function SessionRow({
    */
   volumeRatio?: number;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const vi = lang === 'vi';
   const name = session.template_name || (vi ? 'Buổi tập' : 'Workout');
   const at = new Date(session.date_time);
@@ -124,21 +128,21 @@ export function SessionRow({
           hitSlop={10}
           onPress={() => onDelete(session.id, session.date_time, `${name} · ${day}`)}
           style={styles.del}>
-          <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+          <Icon icon={Trash2} size={15} color={c.mutedForeground} />
         </PressScale>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   wrap: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
   info: { flex: 1, minWidth: 0, gap: 3 },
-  name: { fontSize: 14, fontWeight: '500', color: colors.foreground },
+  name: { fontSize: 14, fontWeight: '500', color: c.foreground },
   meta: {
     fontSize: 11,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     fontVariant: ['tabular-nums'],
     textTransform: 'capitalize',
   },
@@ -155,10 +159,15 @@ const styles = StyleSheet.create({
   /* Only the bits ProgressBar does not own. It draws its own height, radius,
      track colour and clip; this is where the bar sits and how wide it is. */
   barTrack: { width: 96, marginTop: 1 },
-});
+}));
 
-/** The group these rows sit in, and the hairline between two of them. */
-export const sessionListStyles = StyleSheet.create({
+/**
+ * The group these rows sit in, and the hairline between two of them.
+ *
+ * Là một HOOK vì nó được xuất ra và dùng ở ba màn khác — cùng lý do đã ghi ở
+ * `useFoodListStyles` trong `food-cards.tsx`.
+ */
+const sessionListStylesFor = makeStyles((c) => ({
   group: {
     borderRadius: radius.md,
     backgroundColor: 'rgba(255,255,255,0.06)',
@@ -166,5 +175,9 @@ export const sessionListStyles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.12)',
     overflow: 'hidden',
   },
-  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: colors.border },
-});
+  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },
+}));
+
+export function useSessionListStyles() {
+  return sessionListStylesFor(usePalette());
+}

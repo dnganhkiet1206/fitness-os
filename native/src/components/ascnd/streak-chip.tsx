@@ -5,7 +5,9 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useDailyStreak } from '@/hooks/use-mascot-room';
 
@@ -46,6 +48,8 @@ import { useDailyStreak } from '@/hooks/use-mascot-room';
  * the room, where the bonus is claimed — one tap, from where you are.
  */
 export function StreakChip() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { data } = useDailyStreak();
 
@@ -70,8 +74,8 @@ export function StreakChip() {
         <Icon
           icon={Flame}
           size={18}
-          color={lit ? colors.metricOrange : colors.mutedForeground}
-          fill={lit ? colors.metricOrange : 'transparent'}
+          color={lit ? c.metricOrange : c.mutedForeground}
+          fill={lit ? c.metricOrange : 'transparent'}
         />
         <Text style={[styles.count, !lit && styles.countRisk]}>{data.count}</Text>
       </View>
@@ -79,7 +83,7 @@ export function StreakChip() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* 44 tall to stand level with the header's square buttons — a pill of a
      different height beside them reads as something that fell in. */
   chip: {
@@ -98,6 +102,6 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(43,43,49,0.3)',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  count: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3, color: colors.metricOrange },
-  countRisk: { color: colors.mutedForeground },
-});
+  count: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3, color: c.metricOrange },
+  countRisk: { color: c.mutedForeground },
+}));

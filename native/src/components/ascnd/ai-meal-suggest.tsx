@@ -5,7 +5,9 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'rea
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
@@ -28,6 +30,8 @@ interface MealSuggestion {
  * with macros and ingredients.
  */
 export function AiMealSuggest({ mealType }: { mealType?: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { session } = useAuth();
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -65,7 +69,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
         disabled={loading}
         onPress={fetchSuggestions}>
         {loading ? (
-          <ActivityIndicator size="small" color={colors.primary} />
+          <ActivityIndicator size="small" color={c.primary} />
         ) : (
           <Icon icon={Sparkles} size={14} />
         )}
@@ -107,18 +111,18 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
               <Text style={styles.desc} numberOfLines={2}>{meal.description}</Text>
               <View style={styles.macroRow}>
                 <Text style={[styles.macro, styles.macroKcal]}>{meal.kcal} kcal</Text>
-                <Text style={[styles.macro, { color: colors.primary }]}>P{meal.protein_g}g</Text>
+                <Text style={[styles.macro, { color: c.primary }]}>P{meal.protein_g}g</Text>
                 <Text style={[styles.macro, { color: '#ef7c26' }]}>C{meal.carbs_g}g</Text>
                 <Text style={[styles.macro, { color: '#b45cff' }]}>F{meal.fat_g}g</Text>
               </View>
             </View>
             <View style={styles.cardMeta}>
-              <Icon icon={Clock} size={11} color={colors.mutedForeground} />
+              <Icon icon={Clock} size={11} color={c.mutedForeground} />
               <Text style={styles.prepTime}>{meal.prep_time_min}m</Text>
               <Icon
                 icon={expanded === i ? ChevronUp : ChevronDown}
                 size={14}
-                color={colors.mutedForeground}
+                color={c.mutedForeground}
               />
             </View>
           </View>
@@ -145,7 +149,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
         disabled={loading}
         onPress={fetchSuggestions}>
         {loading ? (
-          <ActivityIndicator size="small" color={colors.mutedForeground} />
+          <ActivityIndicator size="small" color={c.mutedForeground} />
         ) : (
           <Icon icon={Sparkles} size={13} />
         )}
@@ -157,7 +161,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   suggestBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -173,7 +177,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(168,175,189,0.3)',
     backgroundColor: 'rgba(168,175,189,0.05)',
   },
-  suggestBtnText: { fontSize: 12, fontWeight: '600', color: colors.primary },
+  suggestBtnText: { fontSize: 12, fontWeight: '600', color: c.primary },
 
   list: { gap: spacing.sm },
   headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -183,9 +187,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1.6,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
-  closeText: { fontSize: 11, color: colors.mutedForeground },
+  closeText: { fontSize: 11, color: c.mutedForeground },
 
   card: {
     borderRadius: radius.md,
@@ -198,13 +202,13 @@ const styles = StyleSheet.create({
   cardTop: { flexDirection: 'row', gap: spacing.sm },
   cardInfo: { flex: 1, gap: 3 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  name: { flex: 1, fontSize: 14, fontWeight: '600', color: colors.foreground },
-  desc: { fontSize: 11, color: colors.mutedForeground, lineHeight: 14 },
+  name: { flex: 1, fontSize: 14, fontWeight: '600', color: c.foreground },
+  desc: { fontSize: 11, color: c.mutedForeground, lineHeight: 14 },
   macroRow: { flexDirection: 'row', gap: spacing.sm + 4, marginTop: 2 },
-  macro: { ...type.mono, fontSize: 11, color: colors.mutedForeground },
-  macroKcal: { fontWeight: '700', color: colors.foreground },
+  macro: { ...type.mono, fontSize: 11, color: c.mutedForeground },
+  macroKcal: { fontWeight: '700', color: c.foreground },
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  prepTime: { fontSize: 11, color: colors.mutedForeground },
+  prepTime: { fontSize: 11, color: c.mutedForeground },
 
   ingredients: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -217,7 +221,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1.2,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   ingredientChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   ingredientChip: {
@@ -237,7 +241,7 @@ const styles = StyleSheet.create({
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  moreText: { fontSize: 12, fontWeight: '500', color: colors.mutedForeground },
-});
+  moreText: { fontSize: 12, fontWeight: '500', color: c.mutedForeground },
+}));

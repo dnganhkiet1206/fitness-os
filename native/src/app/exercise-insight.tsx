@@ -13,7 +13,9 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { INSIGHT_DAYS, useExerciseInsights } from '@/hooks/use-exercise-insights';
 import { useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
@@ -73,12 +75,17 @@ const TREND_ICON: Record<Trend, typeof TrendingUp> = {
   INSUFFICIENT_DATA: Activity,
 };
 
-const TREND_COLOR: Record<Trend, string> = {
-  IMPROVING: colors.readinessGreen,
-  DECLINING: colors.readinessRed,
-  PLATEAU: colors.readinessYellow,
-  STABLE: colors.mutedForeground,
-  INSUFFICIENT_DATA: colors.mutedForeground,
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+const TREND_COLOR: Record<Trend, PaletteKey> = {
+  IMPROVING: 'readinessGreen',
+  DECLINING: 'readinessRed',
+  PLATEAU: 'readinessYellow',
+  STABLE: 'mutedForeground',
+  INSUFFICIENT_DATA: 'mutedForeground',
 };
 
 /**
@@ -133,6 +140,8 @@ function seriesText(
 }
 
 function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: WeightUnit }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const [open, setOpen] = useState(false);
 
   const sets = i.evidence.find((e) => e.kind === 'best-sets');
@@ -146,7 +155,7 @@ function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weig
   const bwUnknown = i.evidence.some((e) => e.kind === 'bodyweight-unknown');
 
   const kg1 = (n: number) => Math.round(displayWeight(n, u) * 10) / 10;
-  const tint = TREND_COLOR[i.trend];
+  const tint = c[TREND_COLOR[i.trend]];
 
   /* The headline: the best set, in the shortest true form. */
   const headline = (() => {
@@ -225,7 +234,7 @@ function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weig
           <View style={styles.headlineWrap}>
             <Text style={styles.headline} numberOfLines={1}>{headline}</Text>
             {pct !== null ? (
-              <Text style={[styles.delta, { color: pct === 0 ? colors.mutedForeground : tint }]}>
+              <Text style={[styles.delta, { color: pct === 0 ? c.mutedForeground : tint }]}>
                 {pct > 0 ? '↑' : pct < 0 ? '↓' : '='}
                 {Math.abs(pct)}%
               </Text>
@@ -314,7 +323,7 @@ function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weig
         {/* A chevron rather than a word: the affordance has to be visible, and a
             button labelled "Details" on every card is six of them. */}
         <View style={[styles.more, open && styles.flip]}>
-          <Icon icon={ChevronDown} size={14} color={colors.mutedForeground} />
+          <Icon icon={ChevronDown} size={14} color={c.mutedForeground} />
         </View>
       </GlassCard>
     </PressScale>
@@ -322,6 +331,8 @@ function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weig
 }
 
 export default function ExerciseInsightScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { weight: u } = useUnits();
   const { insights, loading, failed } = useExerciseInsights();
@@ -461,15 +472,15 @@ export default function ExerciseInsightScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  summary: { ...type.footnote, color: colors.mutedForeground },
+const stylesFor = makeStyles((c) => ({
+  summary: { ...type.footnote, color: c.mutedForeground },
   singleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  showAll: { ...type.footnote, color: colors.primary, fontWeight: '700' },
-  emptyScope: { ...type.body, color: colors.foreground, fontWeight: '700' },
+  showAll: { ...type.footnote, color: c.primary, fontWeight: '700' },
+  emptyScope: { ...type.body, color: c.foreground, fontWeight: '700' },
   group: { gap: spacing.sm },
   groupTitle: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     fontWeight: '700',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
@@ -477,8 +488,8 @@ const styles = StyleSheet.create({
   card: { gap: spacing.sm },
   head: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   headText: { flex: 1, minWidth: 0, gap: 2 },
-  name: { ...type.headline, color: colors.foreground },
-  meta: { ...type.caption, color: colors.mutedForeground },
+  name: { ...type.headline, color: c.foreground },
+  meta: { ...type.caption, color: c.mutedForeground },
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -491,25 +502,25 @@ const styles = StyleSheet.create({
   chipText: { ...type.caption, fontWeight: '700' },
   figures: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headlineWrap: { flex: 1, minWidth: 0, gap: 2 },
-  headline: { ...type.title2, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  headline: { ...type.title2, color: c.foreground, fontVariant: ['tabular-nums'] },
   delta: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
   /* Half the row, so the number and the shape are read as one statement rather
      than as a figure with a decoration beside it. */
   spark: { width: '46%' },
-  warn: { ...type.caption, color: colors.readinessYellow },
+  warn: { ...type.caption, color: c.readinessYellow },
   detail: { gap: spacing.sm, paddingTop: spacing.sm },
   block: { gap: 3 },
-  label: { ...type.caption, color: colors.mutedForeground },
-  values: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  best: { ...type.footnote, color: colors.readinessGreen, fontWeight: '700' },
-  note: { ...type.caption, color: colors.mutedForeground },
+  label: { ...type.caption, color: c.mutedForeground },
+  values: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
+  best: { ...type.footnote, color: c.readinessGreen, fontWeight: '700' },
+  note: { ...type.caption, color: c.mutedForeground },
   foot: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   footRight: { alignItems: 'flex-end', gap: 2 },
-  ready: { ...type.footnote, color: colors.foreground, fontWeight: '700' },
-  e1rm: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-  conf: { ...type.caption, color: colors.mutedForeground },
+  ready: { ...type.footnote, color: c.foreground, fontWeight: '700' },
+  e1rm: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  conf: { ...type.caption, color: c.mutedForeground },
   more: { alignItems: 'center' },
   flip: { transform: [{ rotate: '180deg' }] },
-  footnote: { ...type.caption, color: colors.mutedForeground },
-  window: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
-});
+  footnote: { ...type.caption, color: c.mutedForeground },
+  window: { ...type.caption, color: c.mutedForeground, textAlign: 'center' },
+}));

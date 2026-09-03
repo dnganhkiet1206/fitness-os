@@ -15,7 +15,9 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { colors, glass } from '@/constants/ascnd';
+import { glass } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { BOUNCE, spring } from '@/constants/motion';
 
 /**
@@ -421,6 +423,8 @@ function Row({
   onScrolling: (on: boolean) => void;
   children: React.ReactNode;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /**
    * Vị trí đích cho quãng kéo hiện tại.
    *
@@ -736,7 +740,7 @@ function Row({
 }
 
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* Phủ kín thẻ và bo cùng bán kính với `GlassCard`, nếu không thì bốn góc lộ
      ra một mảng vuông đặc dưới góc bo của kính. */
   solid: {
@@ -746,6 +750,6 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     borderRadius: SOLID_RADIUS,
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
   },
-});
+}));

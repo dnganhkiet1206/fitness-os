@@ -6,7 +6,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/ascnd/icon';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { nav } from '@/lib/nav';
@@ -95,6 +97,8 @@ export function MuscleGrid({
   failed: boolean;
   vi: boolean;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const [open, setOpen] = useState(false);
   /*
@@ -178,18 +182,18 @@ export function MuscleGrid({
               ? `Xem thêm ${MUSCLE_TILES.length - TILES_COLLAPSED} nhóm`
               : `Show ${MUSCLE_TILES.length - TILES_COLLAPSED} more`}
         </Text>
-        <Icon icon={open ? ChevronUp : ChevronDown} size={14} color={colors.primary} />
+        <Icon icon={open ? ChevronUp : ChevronDown} size={14} color={c.primary} />
       </PressScale>
     </View>
   );
 }
 
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* Taller than the pills above it — it is what this tab is for. */
   libSection: { gap: spacing.sm },
   libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  libAll: { ...type.footnote, color: colors.primary },
+  libAll: { ...type.footnote, color: c.primary },
   libGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   /* Full width and centred, so it reads as the end of the grid rather than as
      an eleventh tile that lost its picture. */
@@ -207,7 +211,7 @@ const styles = StyleSheet.create({
   /* Full width, 52 tall, and a shade more border than the pills above it.
      It is the thing this tab is for, and it had been the flattest control on
      the page. */
-  libToggleText: { fontSize: 13, fontWeight: '600', color: colors.primary },
+  libToggleText: { fontSize: 13, fontWeight: '600', color: c.primary },
   /*
     Three across. Two makes each tile large enough to show the drawing's
     striations, which is detail nobody reads on a tile; four shrinks the figure
@@ -236,8 +240,8 @@ const styles = StyleSheet.create({
     borderWidth: glass.borderWidth,
     borderColor: glass.border,
   },
-  libName: { ...type.footnote, fontWeight: '600', color: colors.foreground, marginTop: 4 },
-  libCount: { ...type.caption, color: colors.mutedForeground },
+  libName: { ...type.footnote, fontWeight: '600', color: c.foreground, marginTop: 4 },
+  libCount: { ...type.caption, color: c.mutedForeground },
   /* The list's own section, spaced like the library's above it. */
   tplSection: { gap: spacing.sm },
   sessionsWrap: { gap: spacing.sm },
@@ -256,7 +260,7 @@ const styles = StyleSheet.create({
     as a block. With the pills at 44pt that put one button on the first row and
     two on the second, leaving a long empty gap. Flat, they pack.
   */
-  sectionLabel: { fontSize: 14, fontWeight: '600', color: colors.foreground },
+  sectionLabel: { fontSize: 14, fontWeight: '600', color: c.foreground },
   /* Hàng "tạo mới" ở cuối danh sách.
 
      KHÔNG dùng viền đứt nét: `tools/training-card.mjs` đã ghi lại rằng trên
@@ -275,4 +279,4 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
     backgroundColor: glass.bg,
   },
-});
+}));

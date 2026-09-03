@@ -9,7 +9,9 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles, type Palette } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
 import { useAuth } from '@/hooks/use-auth';
@@ -34,9 +36,17 @@ const NEUTRAL = '#9aa0aa';
  * overweight person it's reversed; in the normal range (or unknown BMI) any
  * change is neutral grey. `diff` sign is the direction; BMI decides meaning.
  */
-function weightDiffTone(bmi: number | null, diff: number): { color: string; bg: string } {
-  const green = { color: colors.readinessGreen, bg: 'rgba(32,181,131,0.12)' };
-  const red = { color: colors.readinessRed, bg: 'rgba(220,47,47,0.12)' };
+/*
+  Bảng màu vào bằng THAM SỐ, không bằng hook.
+
+  Đây không phải component — nó là một hàm thuần được gọi từ trong một `map`,
+  nên gọi `usePalette()` ở đây là gọi hook có điều kiện và trong vòng lặp: đúng
+  hai thứ quy tắc hook cấm. Cái duy nhất nó cần là ba mã màu, và tham số là cách
+  đưa chúng vào mà không kéo cả React vào theo.
+*/
+function weightDiffTone(c: Palette, bmi: number | null, diff: number): { color: string; bg: string } {
+  const green = { color: c.readinessGreen, bg: 'rgba(32,181,131,0.12)' };
+  const red = { color: c.readinessRed, bg: 'rgba(220,47,47,0.12)' };
   const neutral = { color: NEUTRAL, bg: 'rgba(154,160,170,0.12)' };
   if (bmi == null || (bmi >= 18.5 && bmi < 25)) return neutral; // normal / unknown
   const gaining = diff > 0;
@@ -46,6 +56,8 @@ function weightDiffTone(bmi: number | null, diff: number): { color: string; bg: 
 
 /** Weight check-in — shows today's weight vs profile, or an inline logger */
 export function WeightCheckinCard({ profileWeight }: { profileWeight: number | null }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { weight: wUnit } = useUnits();
   const { data: todayWeight } = useTodayWeight();
@@ -155,7 +167,7 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
             onFocus={() => beginInteraction()}
             onBlur={() => endInteraction(320)}
             placeholder="70.0"
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
           />
           <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
           <PressScale
@@ -186,7 +198,7 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
               logWeight.isPending || queue.isPending || queue.isSuccess || !!weightError
             }>
             {logWeight.isPending ? (
-              <ActivityIndicator color={colors.primaryForeground} size="small" />
+              <ActivityIndicator color={c.primaryForeground} size="small" />
             ) : (
               <Text style={styles.weightBtnText}>{i18n.nLogWeight}</Text>
             )}
@@ -201,7 +213,7 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
             <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
           </View>
           {diff != null && Math.abs(diff) >= 0.05 && (() => {
-            const tone = weightDiffTone(bmi, diff);
+            const tone = weightDiffTone(c, bmi, diff);
             return (
               <View style={[styles.diffPill, { backgroundColor: tone.bg }]}>
                 <Text style={[styles.diffText, { color: tone.color }]}>
@@ -219,6 +231,8 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
 
 /** Supplement checklist — tap to toggle taken; hidden when user has none */
 export function SupplementChecklistCard() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { data: supplements } = useSupplementChecklist();
   const toggle = useToggleSupplement();
@@ -238,7 +252,7 @@ export function SupplementChecklistCard() {
       </View>
       {allDone ? (
         <View style={styles.allDoneRow}>
-          <Icon icon={PartyPopper} size={15} color={colors.readinessYellow} />
+          <Icon icon={PartyPopper} size={15} color={c.readinessYellow} />
           <Text style={styles.allDone}>{i18n.nAllSupplementsDone}</Text>
         </View>
       ) : (
@@ -267,8 +281,10 @@ export function SupplementChecklistCard() {
   );
 }
 
-const readinessZone = (v: number) =>
-  v >= 75 ? colors.readinessGreen : v >= 50 ? colors.readinessYellow : colors.readinessRed;
+/* Nhận bảng màu qua THAM SỐ, không gọi hook: nó được gọi trong một `.map()`
+   của bảy cột, và một hook ở đó là lỗi lúc chạy mà kiểu không nhìn thấy. */
+const readinessZone = (c: Palette, v: number) =>
+  v >= 75 ? c.readinessGreen : v >= 50 ? c.readinessYellow : c.readinessRed;
 
 /**
  * Readiness 7-day analysis — matches the web "Phân tích": one bar per day
@@ -276,6 +292,8 @@ const readinessZone = (v: number) =>
  * until there are 2+ points.
  */
 export function ReadinessTrendCard() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { data: history } = useReadinessHistory(7);
@@ -294,9 +312,9 @@ export function ReadinessTrendCard() {
     { label: lang === 'vi' ? 'Thấp nhất' : 'Min', value: min },
   ];
   const legend = [
-    { c: colors.readinessGreen, t: lang === 'vi' ? '75+ Tập luyện' : '75+ Train' },
-    { c: colors.readinessYellow, t: lang === 'vi' ? '50–74 Vừa phải' : '50–74 Moderate' },
-    { c: colors.readinessRed, t: lang === 'vi' ? '<50 Phục hồi' : '<50 Recover' },
+    { c: c.readinessGreen, t: lang === 'vi' ? '75+ Tập luyện' : '75+ Train' },
+    { c: c.readinessYellow, t: lang === 'vi' ? '50–74 Vừa phải' : '50–74 Moderate' },
+    { c: c.readinessRed, t: lang === 'vi' ? '<50 Phục hồi' : '<50 Recover' },
   ];
 
   return (
@@ -313,7 +331,7 @@ export function ReadinessTrendCard() {
       <View style={styles.trendBars}>
         {history.map((h, i) => {
           const day = parseLocalDate(h.date).toLocaleDateString(locale, { weekday: 'short' });
-          const zone = readinessZone(h.value);
+          const zone = readinessZone(c, h.value);
           return (
             <View key={h.date} style={styles.trendRow}>
               <Text style={styles.trendDay}>{day}</Text>
@@ -328,7 +346,7 @@ export function ReadinessTrendCard() {
         {stats.map((s) => (
           <View key={s.label} style={styles.trendStat}>
             <Text style={styles.trendStatLabel}>{s.label}</Text>
-            <Text style={[styles.trendStatValue, { color: readinessZone(s.value) }]}>{s.value}</Text>
+            <Text style={[styles.trendStatValue, { color: readinessZone(c, s.value) }]}>{s.value}</Text>
           </View>
         ))}
       </View>
@@ -376,6 +394,8 @@ export function ReadinessTrendCard() {
  * genuinely does produce a different one.
  */
 export function SmartTipsCard() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -399,7 +419,7 @@ export function SmartTipsCard() {
       }}>
       <GlassCard style={styles.tipsCard}>
         <View style={styles.tipsChip}>
-          <Icon icon={Sparkles} size={20} color={colors.metricPurple} />
+          <Icon icon={Sparkles} size={20} color={c.metricPurple} />
         </View>
         <View style={styles.tipsCopy}>
           <Text style={styles.tipsLead} numberOfLines={1}>{i18n.nSmartTips}</Text>
@@ -417,23 +437,23 @@ export function SmartTipsCard() {
           */}
           <Text style={styles.tipsSub} numberOfLines={1}>{live ?? i18n.nTipsHint}</Text>
         </View>
-        <Icon icon={ChevronRight} size={17} color={colors.mutedForeground} />
+        <Icon icon={ChevronRight} size={17} color={c.mutedForeground} />
       </GlassCard>
     </PressScale>
   );
 }
 
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   // Web dashboard micro-title: 12px semibold uppercase, wide tracking
   cardTitle: {
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
-  cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
+  cardHint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },
   cardHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' },
 
   // Weight
@@ -487,12 +507,12 @@ const styles = StyleSheet.create({
     width: 104,
     paddingVertical: 2,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    color: colors.foreground,
+    borderBottomColor: c.border,
+    color: c.foreground,
     ...type.largeTitle,
     ...type.mono,
   },
-  weightUnit: { ...type.body, color: colors.mutedForeground },
+  weightUnit: { ...type.body, color: c.mutedForeground },
   /*
     Nút thôi là vật sáng nhất trên thẻ.
 
@@ -512,13 +532,13 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   weightBtnOff: { opacity: 0.4 },
-  weightBtnText: { ...type.footnote, fontWeight: '700', color: colors.primaryForeground },
-  weightError: { ...type.footnote, color: colors.readinessRed, marginTop: 6 },
+  weightBtnText: { ...type.footnote, fontWeight: '700', color: c.primaryForeground },
+  weightError: { ...type.footnote, color: c.readinessRed, marginTop: 6 },
   weightDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -528,7 +548,7 @@ const styles = StyleSheet.create({
   weightValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
   /* Cùng `gap` và cùng đường chân chữ như `weightLogger`, để hai trạng thái
      đặt số và đơn vị vào đúng một chỗ. */
-  weightValue: { ...type.largeTitle, ...type.mono, color: colors.foreground },
+  weightValue: { ...type.largeTitle, ...type.mono, color: c.foreground },
   diffPill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 4, borderRadius: radius.full },
   diffText: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
 
@@ -536,7 +556,7 @@ const styles = StyleSheet.create({
   trendCard: { gap: spacing.md },
   trendBars: { gap: spacing.sm },
   trendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  trendDay: { width: 34, fontSize: 11, color: colors.mutedForeground, textTransform: 'capitalize' },
+  trendDay: { width: 34, fontSize: 11, color: c.mutedForeground, textTransform: 'capitalize' },
   trendBar: { flex: 1 },
   trendVal: { width: 28, textAlign: 'right', fontSize: 12, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
   trendStats: {
@@ -544,18 +564,18 @@ const styles = StyleSheet.create({
     justifyContent: 'space-around',
     paddingTop: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   trendStat: { alignItems: 'center', gap: 2 },
-  trendStatLabel: { fontSize: 11, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
+  trendStatLabel: { fontSize: 11, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
   trendStatValue: { fontSize: 20, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
   trendLegend: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.md, rowGap: 4 },
   trendLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   trendLegendDot: { width: 7, height: 7, borderRadius: 4 },
-  trendLegendText: { fontSize: 11, color: colors.mutedForeground },
+  trendLegendText: { fontSize: 11, color: c.mutedForeground },
 
   // Supplements
-  allDone: { ...type.body, color: colors.readinessGreen },
+  allDone: { ...type.body, color: c.readinessGreen },
   allDoneRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
   suppList: { marginTop: spacing.sm },
   /*
@@ -569,7 +589,7 @@ const styles = StyleSheet.create({
   suppSep: {
     height: StyleSheet.hairlineWidth,
     marginLeft: 26 + spacing.md,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
   },
   /* Cao tối thiểu 44: đây là hàng BẤM ĐƯỢC và 44 là sàn chạm của Apple. Đệm
      dọc cũng cho hai hàng thở ra thay vì dính nhau. */
@@ -598,16 +618,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.28)',
-    backgroundColor: colors.background,
+    backgroundColor: c.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  checkboxOn: { backgroundColor: colors.readinessGreen, borderColor: colors.readinessGreen },
+  checkboxOn: { backgroundColor: c.readinessGreen, borderColor: c.readinessGreen },
   checkmark: { color: '#fff', fontSize: 15, fontWeight: '700' },
   suppInfo: { flex: 1, minWidth: 0 },
-  suppName: { ...type.body, color: colors.foreground },
-  suppNameDone: { color: colors.mutedForeground, textDecorationLine: 'line-through' },
-  suppDose: { ...type.caption, color: colors.mutedForeground },
+  suppName: { ...type.body, color: c.foreground },
+  suppNameDone: { color: c.mutedForeground, textDecorationLine: 'line-through' },
+  suppDose: { ...type.caption, color: c.mutedForeground },
 
   // Smart tips
   /*
@@ -637,11 +657,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: `${colors.metricPurple}1f`,
+    backgroundColor: alpha(c.metricPurple, 0.12),
   },
   tipsCopy: { flex: 1, minWidth: 0, gap: 1 },
   /* 17 điểm màu đầy, không phải 12 in hoa màu mờ: đây là tên của thẻ, và ở cỡ
      cũ nó đọc ra nhỏ hơn cả câu phụ nằm dưới nó. */
-  tipsLead: { ...type.body, fontWeight: '600', color: colors.foreground },
-  tipsSub: { ...type.footnote, color: colors.mutedForeground },
-});
+  tipsLead: { ...type.body, fontWeight: '600', color: c.foreground },
+  tipsSub: { ...type.footnote, color: c.mutedForeground },
+}));

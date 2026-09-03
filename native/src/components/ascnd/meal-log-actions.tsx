@@ -6,7 +6,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 
 /**
@@ -63,7 +65,7 @@ import type { useI18n } from '@/hooks/use-app-settings';
 interface Way {
   key: string;
   icon: typeof Camera;
-  color: string;
+  color: PaletteKey;
   /** the tile's own word — short enough to sit on one line at a quarter width */
   label: keyof ReturnType<typeof useI18n>;
   /** the full phrase, for VoiceOver, where there is no quarter width to fit */
@@ -77,8 +79,8 @@ interface Way {
  * nothing else knows the food.
  */
 const WAYS: Way[] = [
-  { key: 'camera', icon: Camera, color: colors.metricPurple, label: 'nWayPhoto', spoken: 'nAddCamera', route: '/scan-food' },
-  { key: 'barcode', icon: Barcode, color: colors.metricCyan, label: 'nWayBarcode', spoken: 'nAddBarcode', route: '/scan-barcode' },
+  { key: 'camera', icon: Camera, color: 'metricPurple', label: 'nWayPhoto', spoken: 'nAddCamera', route: '/scan-food' },
+  { key: 'barcode', icon: Barcode, color: 'metricCyan', label: 'nWayBarcode', spoken: 'nAddBarcode', route: '/scan-barcode' },
   /*
     ── this tile could not do the thing it is named after ──
 
@@ -98,11 +100,13 @@ const WAYS: Way[] = [
     genuinely different acts: one starts by looking a food up, the other by
     typing one in. What they now have in common is that both of them finish.
   */
-  { key: 'search', icon: Search, color: colors.metricBlue, label: 'nWaySearch', spoken: 'nAddSearch', route: '/log-meal?focus=search' },
-  { key: 'manual', icon: Pencil, color: colors.metricOrange, label: 'nWayManual', spoken: 'nAddManual', route: '/log-meal' },
+  { key: 'search', icon: Search, color: 'metricBlue', label: 'nWaySearch', spoken: 'nAddSearch', route: '/log-meal?focus=search' },
+  { key: 'manual', icon: Pencil, color: 'metricOrange', label: 'nWayManual', spoken: 'nAddManual', route: '/log-meal' },
 ];
 
 export function MealLogActions({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <GlassCard style={styles.card}>
       <Text style={styles.title}>{i18n.nLogMealBtn}</Text>
@@ -117,8 +121,8 @@ export function MealLogActions({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               nav.push(w.route as never);
             }}>
-            <View style={[styles.chip, { backgroundColor: `${w.color}1f` }]}>
-              <Icon icon={w.icon} size={20} color={w.color} />
+            <View style={[styles.chip, { backgroundColor: alpha(c[w.color], 0.12) }]}>
+              <Icon icon={w.icon} size={20} color={c[w.color]} />
             </View>
             <Text style={styles.label} numberOfLines={1}>
               {i18n[w.label] as string}
@@ -130,19 +134,19 @@ export function MealLogActions({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   card: { gap: spacing.sm + 2, padding: spacing.card },
   title: {
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   row: { flexDirection: 'row', gap: spacing.sm },
   /* 66pt tall, well past Apple's 44pt floor, and each tile is a quarter of the
      card — the whole width is live, not just the glyph in the middle of it. */
   tile: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: spacing.xs, borderRadius: radius.md },
   chip: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  label: { ...type.caption, color: colors.foreground },
-});
+  label: { ...type.caption, color: c.foreground },
+}));

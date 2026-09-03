@@ -6,7 +6,9 @@ import { Linking, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/ascnd/icon';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { MUSIC_APPS, offerable, type MusicApp } from '@/lib/music-app';
 
@@ -31,6 +33,8 @@ import { MUSIC_APPS, offerable, type MusicApp } from '@/lib/music-app';
  * ever. `tools/music-launch.mjs` compares the schemes against `app.json`.
  */
 export function MusicLaunch() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const [apps, setApps] = useState<MusicApp[] | null>(null);
 
@@ -58,7 +62,7 @@ export function MusicLaunch() {
 
   return (
     <View style={styles.row}>
-      <Icon icon={Music} size={14} color={colors.mutedForeground} />
+      <Icon icon={Music} size={14} color={c.mutedForeground} />
       <Text style={styles.label}>{i18n.nMusicLabel}</Text>
       {apps.map((a) => (
         <PressScale
@@ -86,9 +90,9 @@ export function MusicLaunch() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
-  label: { fontSize: 12, color: colors.mutedForeground, marginRight: 'auto' },
+  label: { fontSize: 12, color: c.mutedForeground, marginRight: 'auto' },
   /* 44 tall like every other pill in the app, and lifted the same way — see
      `raisedPill`. These two are the only pills with no glyph, so the colour
      comes from the service instead. */
@@ -107,5 +111,5 @@ const styles = StyleSheet.create({
   borderWidth: 1,
   },
   chipInner: { height: 44, justifyContent: 'center', paddingHorizontal: spacing.md },
-  chipText: { fontSize: 12, fontWeight: '600', color: colors.foreground },
-});
+  chipText: { fontSize: 12, fontWeight: '600', color: c.foreground },
+}));

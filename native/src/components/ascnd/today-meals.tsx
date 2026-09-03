@@ -15,7 +15,9 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { toast } from '@/lib/toast';
 import {
@@ -121,6 +123,8 @@ export function TodayMeals({
   i18n: ReturnType<typeof useI18n>;
   lang: 'vi' | 'en';
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const label: Record<string, string> = {
     breakfast: i18n.nBreakfast,
     lunch: i18n.nLunch,
@@ -263,6 +267,8 @@ function MealCard({
   onEdit: (it: LoggedItem) => void;
   onDelete: (it: LoggedItem) => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const [open, setOpen] = useState(false);
 
   /**
@@ -334,7 +340,7 @@ function MealCard({
           {g.kcal.toLocaleString()} <Text style={styles.unit}>kcal</Text>
         </Text>
         <Animated.View style={chevron}>
-          <Icon icon={ChevronDown} size={18} color={colors.mutedForeground} />
+          <Icon icon={ChevronDown} size={18} color={c.mutedForeground} />
         </Animated.View>
       </PressScale>
 
@@ -402,6 +408,8 @@ function MealRow({
   onEdit: (it: LoggedItem) => void;
   onDelete: (it: LoggedItem) => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const step = Math.min(0.12, 0.45 / Math.max(1, count - 1));
   const from = index * step;
 
@@ -449,7 +457,7 @@ function MealRow({
           onEdit(it);
         }}
         style={styles.rowBtn}>
-        <Icon icon={Pencil} size={15} color={colors.mutedForeground} />
+        <Icon icon={Pencil} size={15} color={c.mutedForeground} />
       </PressScale>
       <PressScale
         accessibilityRole="button"
@@ -466,7 +474,7 @@ function MealRow({
             food. The two actions are already told apart by their shapes, and
             the red belongs on the confirm dialog's button, where it is about to
             mean something. */}
-        <Icon icon={Trash2} size={15} color={colors.mutedForeground} />
+        <Icon icon={Trash2} size={15} color={c.mutedForeground} />
       </PressScale>
     </Animated.View>
   );
@@ -501,6 +509,8 @@ function EditServingsSheet({
   onSave: (servings: number) => void;
   busy: boolean;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const [servings, setServings] = useState(1);
 
   // Re-seed each time a different row opens the sheet. Without this the
@@ -537,7 +547,7 @@ function EditServingsSheet({
               accessibilityLabel={i18n.nServingsLess}
               onPress={() => step(-0.5)}
               style={styles.stepBtn}>
-              <Icon icon={Minus} size={18} color={colors.foreground} />
+              <Icon icon={Minus} size={18} color={c.foreground} />
             </PressScale>
             <Text style={styles.stepValue}>{servings % 1 === 0 ? servings : servings.toFixed(1)}</Text>
             <PressScale
@@ -545,7 +555,7 @@ function EditServingsSheet({
               accessibilityLabel={i18n.nServingsMore}
               onPress={() => step(0.5)}
               style={styles.stepBtn}>
-              <Icon icon={Plus} size={18} color={colors.foreground} />
+              <Icon icon={Plus} size={18} color={c.foreground} />
             </PressScale>
           </View>
 
@@ -575,7 +585,7 @@ function EditServingsSheet({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   list: { gap: spacing.sm },
   meal: { gap: 2, paddingVertical: spacing.md },
   // clipped, so the rows inside can lay out at full height while the box around
@@ -583,25 +593,25 @@ const styles = StyleSheet.create({
   body: { overflow: 'hidden' },
   mealHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   mealHeadText: { flex: 1, minWidth: 0, gap: 2 },
-  mealName: { ...type.headline, color: colors.foreground },
-  mealSub: { ...type.caption, color: colors.mutedForeground },
-  mealKcal: { ...type.headline, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  unit: { ...type.caption, color: colors.mutedForeground },
+  mealName: { ...type.headline, color: c.foreground },
+  mealSub: { ...type.caption, color: c.mutedForeground },
+  mealKcal: { ...type.headline, color: c.foreground, fontVariant: ['tabular-nums'] },
+  unit: { ...type.caption, color: c.mutedForeground },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     paddingTop: spacing.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   itemInfo: { flex: 1 },
-  itemName: { ...type.footnote, color: colors.foreground },
-  serving: { ...type.caption, color: colors.mutedForeground },
-  itemMacros: { ...type.caption, color: colors.mutedForeground },
-  itemKcal: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  itemName: { ...type.footnote, color: c.foreground },
+  serving: { ...type.caption, color: c.mutedForeground },
+  itemMacros: { ...type.caption, color: c.mutedForeground },
+  itemKcal: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
-  emptyText: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
+  emptyText: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
   pressed: { opacity: 0.9, transform: [{ scale: 0.99 }] },
 
   // ── per-row edit / delete ──
@@ -623,11 +633,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: '#1b1b1f',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
   },
-  sheetTitle: { ...type.headline, color: colors.foreground, textAlign: 'center' },
-  sheetSub: { ...type.caption, color: colors.mutedForeground },
+  sheetTitle: { ...type.headline, color: c.foreground, textAlign: 'center' },
+  sheetSub: { ...type.caption, color: c.mutedForeground },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, paddingVertical: spacing.xs },
   stepBtn: {
     width: 44,
@@ -642,10 +652,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 28,
     fontWeight: '700',
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
-  sheetPreview: { ...type.footnote, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  sheetPreview: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   sheetActions: { flexDirection: 'row', gap: spacing.sm, alignSelf: 'stretch', marginTop: spacing.xs },
   sheetBtn: {
     flex: 1,
@@ -655,7 +665,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.07)',
   },
-  sheetBtnPrimary: { backgroundColor: colors.primary },
-  sheetBtnText: { ...type.footnote, fontWeight: '600', color: colors.foreground },
+  sheetBtnPrimary: { backgroundColor: c.primary },
+  sheetBtnText: { ...type.footnote, fontWeight: '600', color: c.foreground },
   sheetBtnTextPrimary: { color: '#111' },
-});
+}));

@@ -6,7 +6,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
 import { useI18n } from '@/hooks/use-app-settings';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { dismissToast, useCurrentToast, type ToastKind } from '@/lib/toast';
 
 /** One nested entry keeps the dictionary off `Record<string, string>`, so the
@@ -18,11 +20,16 @@ function errorCopy(dict: Record<string, unknown>, key: string, fallback: string)
 
 const AUTO_HIDE_MS = 3000;
 
-const ACCENT: Record<ToastKind, string> = {
-  success: colors.readinessGreen,
-  warning: colors.readinessYellow,
-  error: colors.readinessRed,
-  info: colors.metricBlue,
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+const ACCENT: Record<ToastKind, PaletteKey> = {
+  success: 'readinessGreen',
+  warning: 'readinessYellow',
+  error: 'readinessRed',
+  info: 'metricBlue',
 };
 
 const ICONS: Record<ToastKind, LucideIcon> = {
@@ -39,6 +46,8 @@ const ICONS: Record<ToastKind, LucideIcon> = {
  * from '@/lib/toast'.
  */
 export function NeonToastHost() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const t = useCurrentToast();
   const i18n = useI18n();
   const insets = useSafeAreaInsets();
@@ -84,7 +93,7 @@ export function NeonToastHost() {
   }, [t, text]);
 
   if (!t) return null;
-  const accent = ACCENT[t.kind];
+  const accent = c[ACCENT[t.kind]];
 
   return (
     <View
@@ -116,7 +125,7 @@ export function NeonToastHost() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   wrap: {
     position: 'absolute',
     left: spacing.md,
@@ -154,5 +163,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  message: { ...type.footnote, color: colors.foreground, flex: 1, lineHeight: 18 },
-});
+  message: { ...type.footnote, color: c.foreground, flex: 1, lineHeight: 18 },
+}));

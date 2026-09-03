@@ -11,7 +11,9 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { Expander } from '@/components/ascnd/expander';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { radius, spacing } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { beginInteraction, endInteraction } from '@/lib/interaction';
 
 /**
@@ -167,6 +169,8 @@ export function CardDeck({
    */
   scrollRef?: React.RefObject<unknown>;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const pages = children.filter(Boolean);
   const [w, setW] = useState(0);
   const [heights, setHeights] = useState<number[]>([]);
@@ -541,6 +545,8 @@ function Page({
   onHeight: (index: number, height: number) => void;
   children: React.ReactNode;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const style = useAnimatedStyle(() => ({
     transform: [{ translateX: -at.value * width }],
   }));
@@ -601,6 +607,8 @@ function Measure({
  * UIKit's own page control does not resize its dots either.
  */
 function Pip({ index, at }: { index: number; at: SharedValue<number> }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const style = useAnimatedStyle(() => {
     const t = Math.min(1, Math.abs(at.value - index));
     return {
@@ -611,7 +619,7 @@ function Pip({ index, at }: { index: number; at: SharedValue<number> }) {
   return <Animated.View style={[styles.pip, style]} />;
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* Clipped, and that is what replaces the opaque backing the stack needed: a
      page one step away sits a full width to the side and is simply cut off, so
      no card has to paint over another and none of them has to be solid. */
@@ -653,5 +661,5 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: PIP_BLEED,
   },
-  pip: { width: DOT, height: DOT, borderRadius: radius.full, backgroundColor: colors.foreground },
-});
+  pip: { width: DOT, height: DOT, borderRadius: radius.full, backgroundColor: c.foreground },
+}));

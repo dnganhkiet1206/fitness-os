@@ -7,7 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Ruler, RULER_H, TICK_W } from '@/components/ascnd/weight-goal-ruler';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import type { WeightUnit } from '@/lib/units';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
@@ -99,6 +101,8 @@ export function WeightGoalDialog({
   onSave: (kg: number | null) => void;
   onClose: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const wl = weightLabel(unit);
@@ -292,18 +296,18 @@ export function WeightGoalDialog({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.background },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.background },
 
 
   // The number and the ruler sit together in the middle of the screen
   stage: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
-  intent: { ...type.body, color: colors.mutedForeground },
+  intent: { ...type.body, color: c.mutedForeground },
   value: {
     fontSize: 52,
     fontWeight: '700',
     letterSpacing: -1,
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
     marginBottom: spacing.lg,
   },
@@ -325,7 +329,7 @@ const styles = StyleSheet.create({
     width: 3,
     height: 68,
     borderRadius: 1.5,
-    backgroundColor: colors.foreground,
+    backgroundColor: c.foreground,
   },
 
   footer: { paddingHorizontal: spacing.md, gap: spacing.xs },
@@ -338,5 +342,5 @@ const styles = StyleSheet.create({
   },
   doneText: { ...type.headline, color: '#111111' },
   ghost: { alignItems: 'center', paddingVertical: spacing.sm },
-  ghostText: { ...type.footnote, color: colors.mutedForeground },
-});
+  ghostText: { ...type.footnote, color: c.mutedForeground },
+}));

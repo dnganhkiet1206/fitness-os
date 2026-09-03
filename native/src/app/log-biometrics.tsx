@@ -14,7 +14,9 @@ import {
 } from 'react-native';
 
 import { SheetHeader } from '@/components/ascnd/sheet-header';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { Check } from 'lucide-react-native';
 
@@ -27,6 +29,8 @@ import { offlineNow } from '@/lib/offline';
 import { decText } from '@/lib/number-input';
 
 export default function LogBiometricsSheet() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const log = useLogBiometrics();
   const [hr, setHr] = useState('');
@@ -171,9 +175,9 @@ export default function LogBiometricsSheet() {
           disabled={!canSave}
           onPress={save}>
           {log.isSuccess ? (
-            <Icon icon={Check} size={22} color={colors.primaryForeground} strokeWidth={3} />
+            <Icon icon={Check} size={22} color={c.primaryForeground} strokeWidth={3} />
           ) : log.isPending ? (
-            <ActivityIndicator color={colors.primaryForeground} />
+            <ActivityIndicator color={c.primaryForeground} />
           ) : (
             <Text style={styles.saveText}>{i18n.save}</Text>
           )}
@@ -194,6 +198,8 @@ function Field({
 }: {
   label: string; placeholder: string; unit: string; value: string; onChange: (v: string) => void; style?: object; error?: string | null;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={[styles.field, style]}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -202,7 +208,7 @@ function Field({
           style={styles.input}
           keyboardType="decimal-pad"
           placeholder={placeholder}
-          placeholderTextColor={colors.mutedForeground}
+          placeholderTextColor={c.mutedForeground}
           value={value}
           onChangeText={(v) => onChange(decText(v))}
         />
@@ -213,26 +219,26 @@ function Field({
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.card },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.card },
   content: { padding: spacing.lg, gap: spacing.md },
-  title: { ...type.title, color: colors.foreground, textAlign: 'center', marginBottom: spacing.sm },
+  title: { ...type.title, color: c.foreground, textAlign: 'center', marginBottom: spacing.sm },
   baselineNote: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     marginBottom: spacing.md,
   },
   field: { gap: 6 },
-  fieldLabel: { ...type.caption, color: colors.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.border, backgroundColor: colors.background, paddingRight: spacing.md },
-  input: { flex: 1, height: 48, paddingHorizontal: spacing.md, color: colors.foreground, fontSize: 16 },
-  unit: { ...type.footnote, color: colors.mutedForeground },
-  inputWrapBad: { borderColor: colors.readinessRed },
-  fieldError: { ...type.footnote, color: colors.readinessRed },
+  fieldLabel: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
+  inputWrap: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border, backgroundColor: c.background, paddingRight: spacing.md },
+  input: { flex: 1, height: 48, paddingHorizontal: spacing.md, color: c.foreground, fontSize: 16 },
+  unit: { ...type.footnote, color: c.mutedForeground },
+  inputWrapBad: { borderColor: c.readinessRed },
+  fieldError: { ...type.footnote, color: c.readinessRed },
   row: { flexDirection: 'row', gap: spacing.sm },
   half: { flex: 1 },
-  saveButton: { height: 50, borderRadius: radius.full, backgroundColor: colors.primary, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
+  saveButton: { height: 50, borderRadius: radius.full, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
   saveDisabled: { opacity: 0.4 },
-  saveText: { ...type.headline, color: colors.primaryForeground },
-});
+  saveText: { ...type.headline, color: c.primaryForeground },
+}));

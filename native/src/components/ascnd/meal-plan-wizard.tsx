@@ -8,7 +8,9 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { FormSheet } from '@/components/ascnd/form-sheet';
 import { Icon } from '@/components/ascnd/icon';
 import { Segmented } from '@/components/ascnd/segmented';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -70,6 +72,8 @@ export function MealPlanWizard({
   /** so the screen behind can open the plan that was just made */
   onPlanCreated?: (id: string) => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { user } = useAuth();
 
@@ -273,7 +277,7 @@ export function MealPlanWizard({
               <View style={styles.stepTop}>
                 <View style={[styles.rail, i === 0 && styles.railClear, steps[i - 1]?.done && styles.railOn]} />
                 <View style={[styles.dot, i === current && styles.dotNow, st.done && styles.dotOn]}>
-                  {st.done ? <Icon icon={Check} size={10} color={colors.primaryForeground} strokeWidth={3} /> : null}
+                  {st.done ? <Icon icon={Check} size={10} color={c.primaryForeground} strokeWidth={3} /> : null}
                 </View>
                 <View
                   style={[styles.rail, i === steps.length - 1 && styles.railClear, st.done && styles.railOn]}
@@ -310,7 +314,7 @@ export function MealPlanWizard({
           }}
           style={[styles.primary, !plan && (!name.trim() || createPlan.isPending) && styles.primaryOff]}>
           {createPlan.isPending ? (
-            <ActivityIndicator color={colors.primaryForeground} size="small" />
+            <ActivityIndicator color={c.primaryForeground} size="small" />
           ) : (
             <Text style={styles.primaryText}>
               {!plan
@@ -338,7 +342,7 @@ export function MealPlanWizard({
                 <TextInput
                   style={styles.input}
                   placeholder={i18n.nMpPlanNameEg}
-                  placeholderTextColor={colors.mutedForeground}
+                  placeholderTextColor={c.mutedForeground}
                   value={name}
                   onChangeText={setName}
                   returnKeyType="done"
@@ -459,11 +463,11 @@ export function MealPlanWizard({
               <Text style={styles.stepHead}>{i18n.nMpStepFood}</Text>
               <Text style={styles.stepHint}>{i18n.nMpStepFoodHint}</Text>
               <View style={styles.searchWrap}>
-                <Icon icon={Search} size={14} color={colors.mutedForeground} />
+                <Icon icon={Search} size={14} color={c.mutedForeground} />
                 <TextInput
                   style={styles.searchInput}
                   placeholder={i18n.nutritionSearchFood}
-                  placeholderTextColor={colors.mutedForeground}
+                  placeholderTextColor={c.mutedForeground}
                   value={query}
                   onChangeText={setQuery}
                   autoCorrect={false}
@@ -475,7 +479,7 @@ export function MealPlanWizard({
                     accessibilityLabel={i18n.a11yClearSearch}
                     hitSlop={10}
                     onPress={() => setQuery('')}>
-                    <Icon icon={X} size={14} color={colors.mutedForeground} />
+                    <Icon icon={X} size={14} color={c.mutedForeground} />
                   </Pressable>
                 ) : null}
               </View>
@@ -535,6 +539,8 @@ export function MealPlanWizard({
  * nó giải thích câu trả lời chứ không giải thích cái tên.
  */
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.field}>
       <Text style={styles.fieldLabel}>{label.toUpperCase()}</Text>
@@ -547,6 +553,8 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 }
 
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <Pressable
       accessibilityRole="button"
@@ -579,6 +587,8 @@ function FoodRow({
   i18n: ReturnType<typeof useI18n>;
   onAdd: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <PressScale
       accessibilityRole="button"
@@ -592,20 +602,20 @@ function FoodRow({
       <Icon
         icon={added ? Check : Plus}
         size={14}
-        color={added ? colors.readinessGreen : colors.primary}
+        color={added ? c.readinessGreen : c.primary}
         strokeWidth={2.5}
       />
     </PressScale>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   steps: {
     flexDirection: 'row',
     paddingHorizontal: spacing.sm,
     paddingBottom: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: c.border,
   },
   step: { flex: 1, alignItems: 'center', gap: 6 },
   stepTop: { flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch' },
@@ -616,30 +626,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: colors.border,
-    backgroundColor: colors.secondary,
+    borderColor: c.border,
+    backgroundColor: c.secondary,
   },
-  dotOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  dotOn: { backgroundColor: c.primary, borderColor: c.primary },
   /* Viền chứ không phải nền: bước ĐANG đứng chưa xong, nên nó không được trông
      giống một bước đã xong. Một vòng sáng đọc ra là "ở đây", một khối đặc đọc ra
      là "rồi". */
-  dotNow: { borderColor: colors.primary, borderWidth: 2.5 },
-  rail: { flex: 1, height: 2, backgroundColor: colors.border },
-  railOn: { backgroundColor: colors.primary },
+  dotNow: { borderColor: c.primary, borderWidth: 2.5 },
+  rail: { flex: 1, height: 2, backgroundColor: c.border },
+  railOn: { backgroundColor: c.primary },
   railClear: { backgroundColor: 'transparent' },
-  stepValue: { ...type.caption, color: colors.mutedForeground },
-  stepValueOn: { color: colors.foreground, fontWeight: '600' },
+  stepValue: { ...type.caption, color: c.mutedForeground },
+  stepValueOn: { color: c.foreground, fontWeight: '600' },
 
   /* The question, then what it means. A row of chips is only obviously a
      control once you know what it is choosing between. */
-  stepHead: { ...type.footnote, color: colors.foreground, fontWeight: '700', marginTop: spacing.sm },
+  stepHead: { ...type.footnote, color: c.foreground, fontWeight: '700', marginTop: spacing.sm },
 
   field: { gap: 7 },
   /* Nhỏ, hoa, giãn chữ, màu phụ — cùng cách `MicroTitle` viết tiêu đề mục ở
      phần còn lại của app, nên tấm này không mang một giọng riêng. */
   fieldLabel: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     fontWeight: '700',
     letterSpacing: 0.8,
     marginLeft: 2,
@@ -662,9 +672,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radius.lg,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  previewSum: { ...type.footnote, color: colors.foreground, fontWeight: '600' },
+  previewSum: { ...type.footnote, color: c.foreground, fontWeight: '600' },
   /* Các bữa là NHÃN, không phải nút — chúng không bấm được, nên chúng không
      được mang hình dạng của một thứ bấm được. Nền nhạt hơn nền khối chứa để
      chúng nổi lên mà không cần viền. */
@@ -673,18 +683,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: radius.full,
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
   },
-  previewSlotText: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  fieldHint: { ...type.caption, color: colors.mutedForeground },
-  stepHint: { ...type.caption, color: colors.mutedForeground, marginBottom: 2 },
+  previewSlotText: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },
+  fieldHint: { ...type.caption, color: c.mutedForeground },
+  stepHint: { ...type.caption, color: c.mutedForeground, marginBottom: 2 },
 
   input: {
     height: 46,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.secondary,
-    color: colors.foreground,
+    backgroundColor: c.secondary,
+    color: c.foreground,
     fontSize: 15,
   },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -692,11 +702,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 8,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  chipOn: { backgroundColor: colors.primary },
-  chipText: { ...type.footnote, color: colors.foreground },
-  chipTextOn: { color: colors.primaryForeground, fontWeight: '700' },
+  chipOn: { backgroundColor: c.primary },
+  chipText: { ...type.footnote, color: c.foreground },
+  chipTextOn: { color: c.primaryForeground, fontWeight: '700' },
 
   searchWrap: {
     flexDirection: 'row',
@@ -705,9 +715,9 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: spacing.md,
     borderRadius: radius.md,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  searchInput: { flex: 1, color: colors.foreground, fontSize: 15 },
+  searchInput: { flex: 1, color: c.foreground, fontSize: 15 },
   results: { gap: spacing.sm, paddingTop: spacing.xs },
   row: {
     flexDirection: 'row',
@@ -715,23 +725,23 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radius.md,
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   rowAdded: { opacity: 0.55 },
-  rowName: { ...type.body, color: colors.foreground, flex: 1 },
-  rowKcal: { ...type.caption, color: colors.mutedForeground },
-  pickLabel: { ...type.caption, color: colors.mutedForeground },
-  empty: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
+  rowName: { ...type.body, color: c.foreground, flex: 1 },
+  rowKcal: { ...type.caption, color: c.mutedForeground },
+  pickLabel: { ...type.caption, color: c.mutedForeground },
+  empty: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
 
   primary: {
     height: 50,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
   primaryOff: { opacity: 0.4 },
-  primaryText: { ...type.body, color: colors.primaryForeground, fontWeight: '700' },
-});
+  primaryText: { ...type.body, color: c.primaryForeground, fontWeight: '700' },
+}));

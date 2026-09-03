@@ -21,7 +21,9 @@ import Animated, {
 
 import { Icon } from '@/components/ascnd/icon';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useMascot } from '@/hooks/use-mascot';
@@ -110,6 +112,8 @@ export function Mascot({
 }: {
   hold?: SharedValue<boolean>;
 } = {}) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   /*
     `focused` giờ mang HAI câu hỏi: màn có đang xem không, VÀ tay có đang chạm
@@ -458,7 +462,7 @@ export function Mascot({
             pointerEvents={bubbleVisible ? 'auto' : 'none'}>
             <Text style={styles.bubbleText}>{message}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDismiss} hitSlop={10} onPress={() => setBubbleVisible(false)} style={styles.bubbleClose}>
-              <Icon icon={X} size={11} color={colors.mutedForeground} />
+              <Icon icon={X} size={11} color={c.mutedForeground} />
             </Pressable>
           </Animated.View>
         )}
@@ -504,7 +508,7 @@ export function Mascot({
                 is decoration. */}
             {quests.unclaimedCoins > 0 ? (
               <View style={styles.coinPill}>
-                <Icon icon={Coins} size={11} color={colors.readinessYellow} />
+                <Icon icon={Coins} size={11} color={c.readinessYellow} />
                 <Text style={styles.coinText}>+{quests.unclaimedCoins}</Text>
               </View>
             ) : null}
@@ -515,7 +519,7 @@ export function Mascot({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* The bubble and the strip share the column beside the buddy, so the strip
      sits under whatever Koa is saying rather than beside it. */
   side: { flex: 1, minWidth: 0, gap: 6 },
@@ -528,10 +532,10 @@ const styles = StyleSheet.create({
     height: 7,
     borderRadius: 3.5,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  dotOn: { backgroundColor: colors.readinessGreen, borderColor: colors.readinessGreen },
-  questCount: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  dotOn: { backgroundColor: c.readinessGreen, borderColor: c.readinessGreen },
+  questCount: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   coinPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -541,7 +545,7 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: 'rgba(255,217,61,0.12)',
   },
-  coinText: { fontSize: 11, fontWeight: '700', color: colors.readinessYellow },
+  coinText: { fontSize: 11, fontWeight: '700', color: c.readinessYellow },
 
   row: {
     flexDirection: 'row',
@@ -588,9 +592,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radius.lg,
     borderBottomLeftRadius: 6,
     paddingHorizontal: spacing.md,
@@ -598,7 +602,7 @@ const styles = StyleSheet.create({
   },
   bubbleText: {
     ...type.footnote,
-    color: colors.foreground,
+    color: c.foreground,
     flex: 1,
     lineHeight: 18,
   },
@@ -607,6 +611,6 @@ const styles = StyleSheet.create({
   },
   bubbleCloseText: {
     fontSize: 11,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
-});
+}));

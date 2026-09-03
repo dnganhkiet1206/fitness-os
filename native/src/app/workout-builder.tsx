@@ -25,7 +25,9 @@ import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
 import { DEFAULT_REST, estimatedMinutes, restLabel } from '@/lib/prescription';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
   useAddWorkoutTemplate,
@@ -187,6 +189,8 @@ function inferType(groups: Set<MuscleArtKey>): TemplateType {
 }
 
 export default function WorkoutBuilderSheet() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -496,11 +500,11 @@ export default function WorkoutBuilderSheet() {
         <>
           <View style={styles.pickerHead}>
             <View style={styles.searchBox}>
-              <Icon icon={Search} size={16} color={colors.mutedForeground} />
+              <Icon icon={Search} size={16} color={c.mutedForeground} />
               <TextInput
                 style={styles.searchInput}
                 placeholder={i18n.exercisesSearch}
-                placeholderTextColor={colors.mutedForeground}
+                placeholderTextColor={c.mutedForeground}
                 value={search}
                 onChangeText={setSearch}
                 autoCorrect={false}
@@ -512,7 +516,7 @@ export default function WorkoutBuilderSheet() {
                   accessibilityLabel={i18n.a11yClose}
                   hitSlop={8}
                   onPress={() => setSearch('')}>
-                  <Icon icon={X} size={15} color={colors.mutedForeground} />
+                  <Icon icon={X} size={15} color={c.mutedForeground} />
                 </Pressable>
               ) : null}
             </View>
@@ -573,7 +577,7 @@ export default function WorkoutBuilderSheet() {
             keyboardDismissMode="on-drag"
             ListEmptyComponent={
               isLoading ? (
-                <ActivityIndicator color={colors.mutedForeground} style={styles.empty} />
+                <ActivityIndicator color={c.mutedForeground} style={styles.empty} />
               ) : isError ? (
                 /*
                   Loading was already answered here; failure was not. A read that
@@ -597,7 +601,7 @@ export default function WorkoutBuilderSheet() {
                     accessibilityRole="button"
                     onPress={openLibrary}
                     style={styles.emptyCta}>
-                    <Icon icon={Plus} size={14} color={colors.primary} strokeWidth={2.5} />
+                    <Icon icon={Plus} size={14} color={c.primary} strokeWidth={2.5} />
                     <Text style={styles.emptyCtaText}>
                       {search.trim()
                         ? i18n.nWbCreateNamed.replace('{x}', search.trim())
@@ -613,7 +617,7 @@ export default function WorkoutBuilderSheet() {
                   accessibilityRole="button"
                   onPress={openLibrary}
                   style={styles.newRow}>
-                  <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
+                  <Icon icon={Plus} size={16} color={c.primary} strokeWidth={2.5} />
                   <Text style={styles.newRowText}>{i18n.nCreateExercise}</Text>
                 </PressScale>
               ) : null
@@ -639,7 +643,7 @@ export default function WorkoutBuilderSheet() {
                     </Text>
                   </View>
                   <View style={[styles.tick, on && styles.tickOn]}>
-                    {on ? <Icon icon={Check} size={14} color={colors.primaryForeground} strokeWidth={3} /> : null}
+                    {on ? <Icon icon={Check} size={14} color={c.primaryForeground} strokeWidth={3} /> : null}
                   </View>
                 </PressScale>
               );
@@ -661,7 +665,7 @@ export default function WorkoutBuilderSheet() {
               }}
               style={[styles.primary, items.length === 0 && styles.disabled]}>
               <Text style={styles.primaryText}>{i18n.nWbNext}</Text>
-              <Icon icon={ChevronRight} size={18} color={colors.primaryForeground} />
+              <Icon icon={ChevronRight} size={18} color={c.primaryForeground} />
             </PressScale>
           </View>
         </>
@@ -680,7 +684,7 @@ export default function WorkoutBuilderSheet() {
                 setName(t);
               }}
               placeholder={i18n.nTemplateName}
-              placeholderTextColor={colors.mutedForeground}
+              placeholderTextColor={c.mutedForeground}
               returnKeyType="done"
             />
             <Text style={styles.nameHint}>{i18n.nWbNameHint}</Text>
@@ -735,7 +739,7 @@ export default function WorkoutBuilderSheet() {
                     {`  ·  ${restLabel(ex.restSeconds ?? DEFAULT_REST)}`}
                   </Text>
                 </View>
-                <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+                <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
               </PressScale>
             ))}
 
@@ -746,7 +750,7 @@ export default function WorkoutBuilderSheet() {
                 setStep(1);
               }}
               style={styles.newRow}>
-              <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
+              <Icon icon={Plus} size={16} color={c.primary} strokeWidth={2.5} />
               <Text style={styles.newRowText}>{i18n.nWbAddMore}</Text>
             </PressScale>
           </ScrollView>
@@ -758,7 +762,7 @@ export default function WorkoutBuilderSheet() {
               onPress={save}
               style={[styles.primary, (items.length === 0 || addTemplate.isPending) && styles.disabled]}>
               {addTemplate.isPending ? (
-                <ActivityIndicator color={colors.primaryForeground} />
+                <ActivityIndicator color={c.primaryForeground} />
               ) : (
                 <Text style={styles.primaryText}>{i18n.nWbSave}</Text>
               )}
@@ -770,8 +774,8 @@ export default function WorkoutBuilderSheet() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.card },
+const stylesFor = makeStyles((c) => ({
+  root: { flex: 1, backgroundColor: c.card },
 
   header: {
     flexDirection: 'row',
@@ -781,12 +785,12 @@ const styles = StyleSheet.create({
     height: 56,
   },
   headerTitle: { flex: 1, alignItems: 'center' },
-  title: { ...type.headline, color: colors.foreground },
-  subtitle: { ...type.caption, color: colors.mutedForeground },
+  title: { ...type.headline, color: c.foreground },
+  subtitle: { ...type.caption, color: c.mutedForeground },
 
   progress: { flexDirection: 'row', gap: 4, paddingHorizontal: spacing.md, paddingBottom: spacing.sm },
-  segOn: { flex: 1, height: 3, borderRadius: 2, backgroundColor: colors.primary },
-  segOff: { flex: 1, height: 3, borderRadius: 2, backgroundColor: colors.border },
+  segOn: { flex: 1, height: 3, borderRadius: 2, backgroundColor: c.primary },
+  segOff: { flex: 1, height: 3, borderRadius: 2, backgroundColor: c.border },
 
   pickerHead: { paddingHorizontal: spacing.md, gap: spacing.sm },
   searchBox: {
@@ -796,9 +800,9 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  searchInput: { flex: 1, color: colors.foreground, fontSize: 16 },
+  searchInput: { flex: 1, color: c.foreground, fontSize: 16 },
 
   groupStrip: { gap: spacing.sm, paddingVertical: spacing.xs, paddingRight: spacing.md },
   groupTile: {
@@ -811,9 +815,9 @@ const styles = StyleSheet.create({
     borderWidth: glass.borderWidth,
     borderColor: 'transparent',
   },
-  groupTileOn: { borderColor: colors.primary, backgroundColor: 'rgba(168,175,189,0.16)' },
-  groupName: { ...type.caption, color: colors.mutedForeground },
-  groupNameOn: { color: colors.foreground, fontWeight: '700' },
+  groupTileOn: { borderColor: c.primary, backgroundColor: 'rgba(168,175,189,0.16)' },
+  groupName: { ...type.caption, color: c.mutedForeground },
+  groupNameOn: { color: c.foreground, fontWeight: '700' },
   // Stands in for the diagram on the "All" tile, holding the library's size
   allDot: {
     width: 34,
@@ -821,9 +825,9 @@ const styles = StyleSheet.create({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  allCount: { ...type.caption, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  allCount: { ...type.caption, color: c.foreground, fontVariant: ['tabular-nums'] },
 
   list: { flex: 1 },
   listContent: { padding: spacing.md, gap: spacing.sm },
@@ -839,21 +843,21 @@ const styles = StyleSheet.create({
     borderWidth: glass.borderWidth,
     borderColor: 'transparent',
   },
-  exRowOn: { borderColor: colors.primary, backgroundColor: 'rgba(168,175,189,0.14)' },
+  exRowOn: { borderColor: c.primary, backgroundColor: 'rgba(168,175,189,0.14)' },
   art: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   exText: { flex: 1, minWidth: 0, gap: 2 },
-  exName: { ...type.body, color: colors.foreground },
-  exMeta: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  exName: { ...type.body, color: c.foreground },
+  exMeta: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   tick: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: colors.border,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tickOn: { backgroundColor: colors.primary, borderColor: colors.primary },
+  tickOn: { backgroundColor: c.primary, borderColor: c.primary },
 
   newRow: {
     flexDirection: 'row',
@@ -863,31 +867,31 @@ const styles = StyleSheet.create({
     height: 46,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  newRowText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
+  newRowText: { ...type.footnote, color: c.primary, fontWeight: '600' },
 
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
-  emptyText: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
+  emptyText: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
   emptyCta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  emptyCtaText: { ...type.footnote, color: colors.primary, fontWeight: '600' },
+  emptyCtaText: { ...type.footnote, color: c.primary, fontWeight: '600' },
 
   nameInput: {
     ...type.title,
-    color: colors.foreground,
+    color: c.foreground,
     paddingVertical: spacing.sm,
   },
-  nameHint: { ...type.caption, color: colors.mutedForeground, marginTop: -spacing.xs },
+  nameHint: { ...type.caption, color: c.mutedForeground, marginTop: -spacing.xs },
   summary: {
     ...type.footnote,
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
     paddingVertical: spacing.sm,
     marginBottom: spacing.xs,
   },
   sectionLabel: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
     fontWeight: '600',
@@ -899,11 +903,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  chipOn: { backgroundColor: colors.primary },
-  chipText: { ...type.footnote, color: colors.secondaryForeground },
-  chipTextOn: { color: colors.primaryForeground, fontWeight: '700' },
+  chipOn: { backgroundColor: c.primary },
+  chipText: { ...type.footnote, color: c.secondaryForeground },
+  chipTextOn: { color: c.primaryForeground, fontWeight: '700' },
 
   planRow: {
     flexDirection: 'row',
@@ -921,19 +925,19 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  ordinalText: { ...type.caption, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  ordinalText: { ...type.caption, color: c.foreground, fontVariant: ['tabular-nums'] },
 
   footer: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.sm,
     gap: spacing.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    backgroundColor: colors.card,
+    borderTopColor: c.border,
+    backgroundColor: c.card,
   },
-  footerCount: { ...type.caption, color: colors.mutedForeground, textAlign: 'center' },
+  footerCount: { ...type.caption, color: c.mutedForeground, textAlign: 'center' },
   primary: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -941,10 +945,10 @@ const styles = StyleSheet.create({
     gap: 4,
     height: 52,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
-  primaryText: { ...type.headline, color: colors.primaryForeground },
+  primaryText: { ...type.headline, color: c.primaryForeground },
   disabled: { opacity: 0.4 },
 
 
-});
+}));

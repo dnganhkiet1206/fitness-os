@@ -5,7 +5,9 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { NativeStrings } from '@/lib/native-strings';
 import type { ExercisePerformance } from '@/lib/exercise-performance';
 import type { ExerciseInsight, Trend } from '@/lib/exercise-trend';
@@ -46,12 +48,17 @@ const ICON: Record<Trend, typeof TrendingUp> = {
   INSUFFICIENT_DATA: Minus,
 };
 
-const TINT: Record<Trend, string> = {
-  IMPROVING: colors.readinessGreen,
-  DECLINING: colors.readinessRed,
-  PLATEAU: colors.readinessYellow,
-  STABLE: colors.mutedForeground,
-  INSUFFICIENT_DATA: colors.mutedForeground,
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+const TINT: Record<Trend, PaletteKey> = {
+  IMPROVING: 'readinessGreen',
+  DECLINING: 'readinessRed',
+  PLATEAU: 'readinessYellow',
+  STABLE: 'mutedForeground',
+  INSUFFICIENT_DATA: 'mutedForeground',
 };
 
 /** Where the chip sends you, so the deep link is written in one place. */
@@ -116,6 +123,8 @@ export function ExerciseProgress({
   u: WeightUnit;
   i18n: NativeStrings;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Nothing at all when there is nothing to say. A row reading "no data" on
      every line of a new user's first plan is twelve pieces of furniture saying
      the same nothing. */
@@ -123,7 +132,7 @@ export function ExerciseProgress({
   if (!text) return null;
 
   const trend = insight?.trend ?? 'INSUFFICIENT_DATA';
-  const tint = TINT[trend];
+  const tint = c[TINT[trend]];
   const pct =
     insight && insight.changePct !== null ? Math.round(insight.changePct * 100) : null;
   const key = insight?.exerciseKey;
@@ -150,13 +159,13 @@ export function ExerciseProgress({
           </Text>
         ) : null}
         <View style={styles.spacer} />
-        {key ? <Icon icon={ChevronRight} size={14} color={colors.mutedForeground} /> : null}
+        {key ? <Icon icon={ChevronRight} size={14} color={c.mutedForeground} /> : null}
       </View>
     </PressScale>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /* A surface and a chevron. Without them it is a caption, and a caption is not
      something anybody tries to press. */
   strip: {
@@ -168,7 +177,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm,
     backgroundColor: 'rgba(255,255,255,0.045)',
   },
-  stripMain: { ...type.caption, color: colors.foreground, fontVariant: ['tabular-nums'] },
+  stripMain: { ...type.caption, color: c.foreground, fontVariant: ['tabular-nums'] },
   stripPct: { ...type.caption, fontWeight: '700', fontVariant: ['tabular-nums'] },
   spacer: { flex: 1, minWidth: 0 },
-});
+}));

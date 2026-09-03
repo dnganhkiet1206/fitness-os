@@ -15,12 +15,16 @@ import { Screen } from '@/components/ascnd/screen';
 import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { EXERCISE_KINDS, isExerciseKind, type ExerciseKind } from '@/lib/exercise-kind';
 import { errorText } from '@/lib/error-copy';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useAddExercise, useDeleteExercise, useExercises } from '@/hooks/use-library';
 
 export default function ExercisesScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { data: exercises, isError, refetch, isRefetching } = useExercises();
   const { user } = useAuth();
   const addEx = useAddExercise();
@@ -127,7 +131,7 @@ export default function ExercisesScreen() {
         <TextInput
           style={styles.search}
           placeholder={i18n.nSearchExercises}
-          placeholderTextColor={colors.mutedForeground}
+          placeholderTextColor={c.mutedForeground}
           value={search}
           onChangeText={setSearch}
           autoCorrect={false}
@@ -138,7 +142,7 @@ export default function ExercisesScreen() {
             Haptics.selectionAsync();
             setAdding((v) => !v);
           }}>
-          <Icon icon={Plus} size={14} color={colors.primaryForeground} strokeWidth={2.5} />
+          <Icon icon={Plus} size={14} color={c.primaryForeground} strokeWidth={2.5} />
           <Text style={styles.addBtnText}>{i18n.exercisesAdd}</Text>
         </PressScale>
       </View>
@@ -170,7 +174,7 @@ export default function ExercisesScreen() {
             disabled={!name.trim() || addEx.isPending}
             onPress={submit}>
             {addEx.isPending ? (
-              <ActivityIndicator color={colors.primaryForeground} size="small" />
+              <ActivityIndicator color={c.primaryForeground} size="small" />
             ) : (
               <Text style={styles.submitText}>{i18n.exercisesAddBtn}</Text>
             )}
@@ -180,7 +184,7 @@ export default function ExercisesScreen() {
           <TextInput
             style={styles.input}
             placeholder={lang === 'vi' ? 'VD: Bench Press' : 'e.g. Bench Press'}
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
             value={name}
             onChangeText={setName}
             autoFocus
@@ -192,8 +196,8 @@ export default function ExercisesScreen() {
         <Field label={i18n.exercisesMuscleGroup} hint={i18n.nExGroupHint}>
           <PickRow
             value={muscleGroup}
-            fill={colors.primary}
-            slotFill={colors.secondary}
+            fill={c.primary}
+            slotFill={c.secondary}
             radius={radius.full}
               gap={spacing.sm}
             style={styles.chipWrap}>
@@ -216,8 +220,8 @@ export default function ExercisesScreen() {
         <Field label={i18n.nExKind} hint={i18n.nExKindHint}>
           <PickRow
             value={kind ?? ''}
-            fill={colors.primary}
-            slotFill={colors.secondary}
+            fill={c.primary}
+            slotFill={c.secondary}
             radius={radius.full}
             gap={spacing.sm}
             style={styles.chipWrap}>
@@ -246,7 +250,7 @@ export default function ExercisesScreen() {
           <TextInput
             style={styles.input}
             placeholder="Barbell"
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
             value={equipment}
             onChangeText={setEquipment}
             returnKeyType="done"
@@ -287,7 +291,7 @@ export default function ExercisesScreen() {
                   {/* Only user-created exercises are deletable (seeds are shared) */}
                   {e.user_id === user?.id && (
                     <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={10} onPress={() => confirmDelete(e.id, e.name)}>
-                      <Icon icon={Trash2} size={14} color={colors.mutedForeground} />
+                      <Icon icon={Trash2} size={14} color={c.mutedForeground} />
                     </Pressable>
                   )}
                 </View>
@@ -305,17 +309,17 @@ export default function ExercisesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   topRow: { flexDirection: 'row', gap: spacing.sm },
   search: {
     flex: 1,
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.card,
+    borderColor: c.border,
+    backgroundColor: c.card,
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 16,
   },
   addBtn: {
@@ -325,18 +329,18 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: spacing.md - 2,
     borderRadius: radius.md,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
-  addBtnText: { fontSize: 12, fontWeight: '600', color: colors.primaryForeground },
+  addBtnText: { fontSize: 12, fontWeight: '600', color: c.primaryForeground },
 
   input: {
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: c.border,
+    backgroundColor: c.background,
     paddingHorizontal: spacing.md,
-    color: colors.foreground,
+    color: c.foreground,
     fontSize: 15,
   },
   chipWrap: { flexWrap: 'wrap' },
@@ -345,23 +349,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md - 2,
     paddingVertical: spacing.sm,
   },
-  chipText: { ...type.footnote, color: colors.secondaryForeground },
-  chipTextActive: { color: colors.primaryForeground, fontWeight: '600' },
+  chipText: { ...type.footnote, color: c.secondaryForeground },
+  chipTextActive: { color: c.primaryForeground, fontWeight: '600' },
   submitBtn: {
     height: 46,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,
   },
   submitDisabled: { opacity: 0.4 },
-  submitText: { ...type.headline, color: colors.primaryForeground },
+  submitText: { ...type.headline, color: c.primaryForeground },
 
   group: { gap: spacing.sm },
   groupTitle: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -375,22 +379,22 @@ const styles = StyleSheet.create({
   },
   rowBorder: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   /* `minWidth: 0` beside the flex: a long exercise name held the row open at
      its own width and pushed the badges off the card — the same failure
      measured on the log sheet's set row. */
-  name: { ...type.body, color: colors.foreground, flex: 1, minWidth: 0 },
-  equipment: { ...type.caption, color: colors.mutedForeground },
+  name: { ...type.body, color: c.foreground, flex: 1, minWidth: 0 },
+  equipment: { ...type.caption, color: c.mutedForeground },
   /* Quieter than the equipment beside it: the equipment is what you look for
      when scanning the list, and this is confirmation of something you set. */
   kind: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radius.full,
     paddingHorizontal: 7,
     paddingVertical: 1,
   },
-});
+}));

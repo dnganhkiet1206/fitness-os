@@ -23,7 +23,9 @@ import { Screen } from '@/components/ascnd/screen';
 import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
-import { PAGE_TINT, colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { PAGE_TINT, glass, radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -128,13 +130,26 @@ const BMI_MAX = 40;
  * `color` is the full-strength hue and is unchanged — it carries the badge, the
  * marker and the legend dot, where it sits on its own and needs no help.
  */
+/*
+  `color` là một KHOÁ của bảng màu, không phải một mã màu.
+
+  Bảng này ở phạm vi module — nó phải ở đó, vì `bmiStops()`, `bmiZoneIndex()` và
+  `bmiCategory()` đều đọc nó và không cái nào là component. Nhưng từ khi bảng
+  màu đọc lúc chạy, một mã màu ở phạm vi module là một mã màu ĐÓNG BĂNG lúc
+  import: nó sẽ giữ nguyên màu của theme tối kể cả khi người dùng bật theme
+  sáng, và không có gì trên màn hình nói rằng nó đã ngừng đổi.
+
+  Giữ khoá thay vì giá trị: bảng vẫn là hằng thật (không dựng lại mỗi lần vẽ),
+  `PaletteKey` bắt được một khoá viết sai lúc biên dịch, và chỗ VẼ — nơi luôn
+  có `c` — mới là chỗ đổi khoá thành màu.
+*/
 const BMI_ZONES = [
   {
     to: 18.5,
     vi: 'Thiếu cân',
     en: 'Underweight',
     range: '< 18.5',
-    color: colors.metricBlue,
+    color: 'metricBlue',
     alpha: 0.49,
   },
   {
@@ -142,7 +157,7 @@ const BMI_ZONES = [
     vi: 'Lành mạnh',
     en: 'Healthy',
     range: '18.5 – 24.9',
-    color: colors.readinessGreen,
+    color: 'readinessGreen',
     alpha: 0.36,
   },
   {
@@ -150,7 +165,7 @@ const BMI_ZONES = [
     vi: 'Thừa cân',
     en: 'Overweight',
     range: '25 – 29.9',
-    color: colors.readinessYellow,
+    color: 'readinessYellow',
     alpha: 0.36,
   },
   {
@@ -158,10 +173,10 @@ const BMI_ZONES = [
     vi: 'Béo phì',
     en: 'Obese',
     range: '≥ 30',
-    color: colors.readinessRed,
+    color: 'readinessRed',
     alpha: 0.59,
   },
-] as const;
+] as const satisfies readonly { to: number; vi: string; en: string; range: string; color: PaletteKey; alpha: number }[];
 
 /**
  * How far either side of a boundary the two colours blend, in BMI units.
@@ -192,7 +207,7 @@ const BMI_BAR_H = 8;
  * interpolates across the `2 × BMI_BLEND` gap between neighbours.
  */
 function bmiStops() {
-  const out: { at: number; color: string; alpha: number }[] = [];
+  const out: { at: number; color: PaletteKey; alpha: number }[] = [];
   BMI_ZONES.forEach((z, i) => {
     const lo = i === 0 ? BMI_MIN : BMI_ZONES[i - 1].to;
     // The outer two edges are the ends of the track, so nothing is blended past
@@ -220,6 +235,8 @@ function bmiCategory(v: number, vi: boolean) {
 }
 
 export default function ProgressScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Không chạy ở lần vẽ ĐẦU — xem `useRise`. Màn này xếp tầng mười hai khối,
      và khi khung hình bị bỏ lỡ thì thứ còn lại trên màn hình là giá trị đầu của
      hiệu ứng: nội dung đã dựng, đã chiếm chỗ, và vô hình. */
@@ -382,10 +399,10 @@ export default function ProgressScreen() {
       return raw != null ? convertLength(Number(raw), lHUnit) : null;
     });
   const trendSeries = [
-    { label: i18n.measureWaist, color: colors.readinessYellow, values: seriesOf('waist_cm') },
-    { label: i18n.measureChest, color: colors.metricBlue, values: seriesOf('chest_cm') },
-    { label: i18n.measureBicepL, color: colors.metricPurple, values: seriesOf('bicep_left_cm') },
-    { label: i18n.measureThighL, color: colors.metricCyan, values: seriesOf('thigh_left_cm') },
+    { label: i18n.measureWaist, color: c.readinessYellow, values: seriesOf('waist_cm') },
+    { label: i18n.measureChest, color: c.metricBlue, values: seriesOf('chest_cm') },
+    { label: i18n.measureBicepL, color: c.metricPurple, values: seriesOf('bicep_left_cm') },
+    { label: i18n.measureThighL, color: c.metricCyan, values: seriesOf('thigh_left_cm') },
   ];
 
   return (
@@ -467,13 +484,13 @@ export default function ProgressScreen() {
           {/* Stat tiles: current / change / records */}
           <Animated.View style={styles.tileRow} entering={rise(0)}>
             {[
-              { label: i18n.progressCurrent, value: currentWeight != null ? `${currentWeight}${wl}` : '—', color: colors.foreground },
+              { label: i18n.progressCurrent, value: currentWeight != null ? `${currentWeight}${wl}` : '—', color: c.foreground },
               {
                 label: i18n.progressChange,
                 value: weightDelta != null ? `${weightDelta > 0 ? '+' : ''}${weightDelta.toFixed(1)}${wl}` : '—',
-                color: weightDelta == null ? colors.foreground : deltaGood ? colors.readinessGreen : colors.foreground,
+                color: weightDelta == null ? c.foreground : deltaGood ? c.readinessGreen : c.foreground,
               },
-              { label: i18n.progressRecords, value: `${weightData.length}`, color: colors.foreground },
+              { label: i18n.progressRecords, value: `${weightData.length}`, color: c.foreground },
             ].map((c) => (
               <GlassCard key={c.label} style={styles.tile}>
                 <Text style={styles.tileLabel}>{c.label}</Text>
@@ -488,8 +505,8 @@ export default function ProgressScreen() {
             <View style={styles.bmiHead}>
               <Text style={styles.microTitle}>{vi ? 'Chỉ số BMI' : 'BMI Index'}</Text>
               {cat && (
-                <View style={[styles.bmiBadge, { backgroundColor: `${cat.color}1a` }]}>
-                  <Text style={[styles.bmiBadgeText, { color: cat.color }]}>{cat.label}</Text>
+                <View style={[styles.bmiBadge, { backgroundColor: alpha(c[cat.color], 0.1) }]}>
+                  <Text style={[styles.bmiBadgeText, { color: c[cat.color] }]}>{cat.label}</Text>
                 </View>
               )}
             </View>
@@ -528,7 +545,7 @@ export default function ProgressScreen() {
                               <Stop
                                 key={`${s.at}-${i}`}
                                 offset={`${s.at}%`}
-                                stopColor={s.color}
+                                stopColor={c[s.color]}
                                 stopOpacity={s.alpha}
                               />
                             ))}
@@ -544,7 +561,7 @@ export default function ProgressScreen() {
                         />
                       </Svg>
                     ) : null}
-                    <View style={[styles.bmiDot, { left: `${bmiPct}%`, backgroundColor: cat.color }]} />
+                    <View style={[styles.bmiDot, { left: `${bmiPct}%`, backgroundColor: c[cat.color] }]} />
                   </View>
                   {/* Boundary numbers sit at the boundaries — each one is placed
                       at its own position on the track, not spread evenly. */}
@@ -571,7 +588,7 @@ export default function ProgressScreen() {
                     const on = i === bmiZone;
                     return (
                       <View key={z.en} style={styles.legendRow}>
-                        <View style={[styles.legendDot, { backgroundColor: z.color, opacity: on ? 1 : 0.55 }]} />
+                        <View style={[styles.legendDot, { backgroundColor: c[z.color], opacity: on ? 1 : 0.55 }]} />
                         <Text style={[styles.legendName, on && styles.legendNameOn]} numberOfLines={1}>
                           {vi ? z.vi : z.en}
                         </Text>
@@ -618,7 +635,7 @@ export default function ProgressScreen() {
             </View>
             <LineChart
               points={chartPoints}
-              color={colors.metricBeige}
+              color={c.metricBeige}
               height={180}
               unit={wl}
               emptyLabel={i18n.nNotEnoughData}
@@ -684,14 +701,14 @@ export default function ProgressScreen() {
                 Haptics.selectionAsync();
                 setGoalOpen(true);
               }}>
-              <Icon icon={Target} size={14} color={colors.primary} />
+              <Icon icon={Target} size={14} color={c.primary} />
               <Text style={styles.goalLabel}>{i18n.nWeightGoalTitle}</Text>
               <Text style={goalDisplay == null ? styles.goalUnset : styles.goalValue}>
                 {goalDisplay == null
                   ? i18n.nWeightGoalSet
                   : `${goalDisplay.toFixed(1)}${wl}`}
               </Text>
-              <Icon icon={ChevronRight} size={15} color={colors.mutedForeground} />
+              <Icon icon={ChevronRight} size={15} color={c.mutedForeground} />
             </PressScale>
           </GlassCard>
           </Animated.View>
@@ -742,10 +759,10 @@ export default function ProgressScreen() {
               <GlassCard style={styles.calCard}>
                 <View style={styles.calHead}>
                   <View style={styles.calIcon}>
-                    <Icon icon={Target} size={17} color={colors.metricBeige} />
+                    <Icon icon={Target} size={17} color={c.metricBeige} />
                   </View>
                   <Text style={styles.calTitle}>{i18n.navSmartGoals}</Text>
-                  <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+                  <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
                 </View>
                 <Text style={styles.calHint}>{i18n.nCalibrateHint}</Text>
               </GlassCard>
@@ -778,7 +795,7 @@ export default function ProgressScreen() {
           <PressScale
             style={styles.addBtn}
             onPress={() => { Haptics.selectionAsync(); nav.push('/log-measurement'); }}>
-            <Icon icon={Plus} size={13} color={colors.primaryForeground} strokeWidth={2.5} />
+            <Icon icon={Plus} size={13} color={c.primaryForeground} strokeWidth={2.5} />
             <Text style={styles.addBtnText}>{i18n.progressAddMeasurement}</Text>
           </PressScale>
 
@@ -913,7 +930,7 @@ export default function ProgressScreen() {
                           ],
                         );
                       }}>
-                      <Icon icon={Trash2} size={14} color={colors.mutedForeground} />
+                      <Icon icon={Trash2} size={14} color={c.mutedForeground} />
                     </PressScale>
                   </View>
                 ))}
@@ -949,7 +966,7 @@ export default function ProgressScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   calCard: { gap: spacing.sm },
   calHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   calIcon: {
@@ -960,14 +977,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(214,197,168,0.12)',
   },
-  calTitle: { ...type.headline, color: colors.foreground, flex: 1 },
-  calHint: { ...type.footnote, color: colors.mutedForeground, lineHeight: 19 },
+  calTitle: { ...type.headline, color: c.foreground, flex: 1 },
+  calHint: { ...type.footnote, color: c.mutedForeground, lineHeight: 19 },
   microTitle: {
     fontSize: 12,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 2.4,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
 
   // Segmented tabs (web TabsList bg-secondary/60)
@@ -980,12 +997,12 @@ const styles = StyleSheet.create({
   // Stat tiles
   tileRow: { flexDirection: 'row', gap: spacing.sm },
   tile: { flex: 1, alignItems: 'center', gap: 3, padding: spacing.sm + 4 },
-  tileLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: colors.mutedForeground },
+  tileLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.4, color: c.mutedForeground },
   tileValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', fontVariant: ['tabular-nums'] },
 
   // Weight-chart goal
   chartHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
-  goalToGo: { fontSize: 11, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
+  goalToGo: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   goalRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -995,12 +1012,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md - 4,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     backgroundColor: 'rgba(24,24,27,0.3)',
   },
-  goalLabel: { flex: 1, fontSize: 13, color: colors.foreground },
-  goalValue: { fontSize: 13, fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
-  goalUnset: { fontSize: 12, fontWeight: '600', color: colors.primary },
+  goalLabel: { flex: 1, fontSize: 13, color: c.foreground },
+  goalValue: { fontSize: 13, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
+  goalUnset: { fontSize: 12, fontWeight: '600', color: c.primary },
 
   // BMI card
   bmiCard: { gap: spacing.md },
@@ -1013,10 +1030,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Menlo',
     fontWeight: '700',
     letterSpacing: -0.5,
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
-  bmiUnit: { fontSize: 12, color: colors.mutedForeground },
+  bmiUnit: { fontSize: 12, color: c.mutedForeground },
   // No radius here: the rounded ends belong to the `<Rect>`, which is what
   // `overflow: 'visible'` — needed so the marker can hang above — always
   // prevented this container from clipping.
@@ -1042,8 +1059,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.sm - 2,
     backgroundColor: 'rgba(255,255,255,0.09)',
   },
-  rangeText: { ...type.footnote, color: colors.mutedForeground },
-  rangeTextOn: { color: colors.foreground, fontWeight: '600' },
+  rangeText: { ...type.footnote, color: c.mutedForeground },
+  rangeTextOn: { color: c.foreground, fontWeight: '600' },
   bmiScale: { height: BMI_BAR_H, justifyContent: 'center', overflow: 'visible' },
   bmiDot: {
     position: 'absolute',
@@ -1053,7 +1070,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     marginLeft: -7,
     borderWidth: 2,
-    borderColor: colors.background,
+    borderColor: c.background,
   },
   // Ticks are absolutely placed at their own BMI position on the 15–40 track.
   // The box is a fixed 36 wide, pulled back half its width so the text centres
@@ -1066,7 +1083,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11,
     fontFamily: 'Menlo',
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
   bmiTickFirst: { marginLeft: 0, textAlign: 'left' },
   bmiTickLast: { marginLeft: -36, textAlign: 'right' },
@@ -1075,20 +1092,20 @@ const styles = StyleSheet.create({
   bmiLegend: { gap: 5 },
   legendRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
-  legendName: { flex: 1, fontSize: 11, color: colors.mutedForeground },
-  legendNameOn: { color: colors.foreground, fontWeight: '600' },
+  legendName: { flex: 1, fontSize: 11, color: c.mutedForeground },
+  legendNameOn: { color: c.foreground, fontWeight: '600' },
   legendRange: {
     fontSize: 11,
     fontFamily: 'Menlo',
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     fontVariant: ['tabular-nums'],
   },
-  legendRangeOn: { color: colors.foreground },
-  bmiInfo: { fontSize: 11, color: colors.mutedForeground },
-  bmiInfoStrong: { fontFamily: 'Menlo', color: colors.foreground },
+  legendRangeOn: { color: c.foreground },
+  bmiInfo: { fontSize: 11, color: c.mutedForeground },
+  bmiInfoStrong: { fontFamily: 'Menlo', color: c.foreground },
 
   chartCard: { gap: spacing.md },
-  emptyText: { fontSize: 12, color: colors.mutedForeground, textAlign: 'center', paddingVertical: spacing.md, lineHeight: 18 },
+  emptyText: { fontSize: 12, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.md, lineHeight: 18 },
 
   // Measurements
   measureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
@@ -1103,8 +1120,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: glass.border,
   },
-  measureLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, color: colors.mutedForeground },
-  measureValue: { fontSize: 15, fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
+  measureLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, color: c.mutedForeground },
+  measureValue: { fontSize: 15, fontFamily: 'Menlo', fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },
 
   // Measurements: add button (web: size-sm rounded-xl, right-aligned)
   addBtn: {
@@ -1115,9 +1132,9 @@ const styles = StyleSheet.create({
     height: 36,
     paddingHorizontal: spacing.md,
     borderRadius: radius.sm,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
-  addBtnText: { fontSize: 12, fontWeight: '600', color: colors.primaryForeground },
+  addBtnText: { fontSize: 12, fontWeight: '600', color: c.primaryForeground },
 
   // Measurement history table
   historyRow: {
@@ -1128,10 +1145,10 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(43,43,49,0.3)',
   },
   historyHead: { paddingVertical: 8 },
-  historyHeadText: { fontSize: 11, fontWeight: '500', color: colors.mutedForeground, textAlign: 'right' },
+  historyHeadText: { fontSize: 11, fontWeight: '500', color: c.mutedForeground, textAlign: 'right' },
   historyDateCol: { flex: 1.3, textAlign: 'left' },
   historyCol: { flex: 1 },
   historyDelete: { width: 22, alignItems: 'flex-end', justifyContent: 'center' },
-  historyDate: { fontSize: 11, color: colors.mutedForeground },
-  historyValue: { fontSize: 11, fontFamily: 'Menlo', color: colors.foreground, textAlign: 'right', fontVariant: ['tabular-nums'] },
-});
+  historyDate: { fontSize: 11, color: c.mutedForeground },
+  historyValue: { fontSize: 11, fontFamily: 'Menlo', color: c.foreground, textAlign: 'right', fontVariant: ['tabular-nums'] },
+}));

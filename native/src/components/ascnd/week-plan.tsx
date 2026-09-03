@@ -17,7 +17,9 @@ import {
   WeekStrip,
   dayStateOf,
 } from '@/components/ascnd/week-strip';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useRoutineDays, useUpsertRoutineDay, useWorkoutTemplates } from '@/hooks/use-library';
@@ -109,6 +111,8 @@ const WEEKS_BACK = 4;
 const WEEKS_FORWARD = 4;
 
 export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { data: days } = useRoutineDays();
   const { data: templates, isError: templatesFailed } = useWorkoutTemplates();
   const { lang } = useAppSettings();
@@ -236,7 +240,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
           disabled={weekOffset <= -WEEKS_BACK}
           style={[styles.navBtn, weekOffset <= -WEEKS_BACK && styles.navBtnOff]}
           onPress={() => step(-1)}>
-          <Icon icon={ChevronLeft} size={16} color={colors.mutedForeground} />
+          <Icon icon={ChevronLeft} size={16} color={c.mutedForeground} />
         </PressScale>
         <Text style={styles.weekLabel}>{rangeLabel}</Text>
         <PressScale
@@ -246,7 +250,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
           disabled={weekOffset >= WEEKS_FORWARD}
           style={[styles.navBtn, weekOffset >= WEEKS_FORWARD && styles.navBtnOff]}
           onPress={() => step(1)}>
-          <Icon icon={ChevronRight} size={16} color={colors.mutedForeground} />
+          <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
         </PressScale>
       </View>
 
@@ -270,8 +274,8 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
         ) : null}
         <View style={styles.headSpacer} />
         <View style={[styles.statePill, { backgroundColor: look.wash }]}>
-          <Icon icon={look.icon} size={12} color={look.tint} />
-          <Text style={[styles.stateText, { color: look.tint }]}>{stateLabel}</Text>
+          <Icon icon={look.icon} size={12} color={c[look.tint]} />
+          <Text style={[styles.stateText, { color: c[look.tint] }]}>{stateLabel}</Text>
         </View>
       </View>
 
@@ -354,7 +358,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                   nav.push({ pathname: '/workout-builder', params: { assignDay: String(day) } });
                 }}>
                 <View style={styles.pickerRowInner}>
-                  <Icon icon={Plus} size={16} color={colors.primary} strokeWidth={2.5} />
+                  <Icon icon={Plus} size={16} color={c.primary} strokeWidth={2.5} />
                   <Text style={styles.pickerNew}>{i18n.nPlanNewWorkout}</Text>
                 </View>
               </Pressable>
@@ -365,11 +369,11 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                 style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
                 onPress={() => picking !== null && assign(picking, null)}>
                 <View style={styles.pickerRowInner}>
-                  <Icon icon={Moon} size={16} color={colors.mutedForeground} />
+                  <Icon icon={Moon} size={16} color={c.mutedForeground} />
                   <Text style={styles.pickerRest}>{i18n.nRoutineRestDay}</Text>
                 </View>
                 {picking !== null && !byDay.get(picking)?.template_id ? (
-                  <Icon icon={CheckCircle2} size={16} color={colors.primary} />
+                  <Icon icon={CheckCircle2} size={16} color={c.primary} />
                 ) : null}
               </Pressable>
 
@@ -388,7 +392,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                     <Text style={styles.pickerName} numberOfLines={1}>{t.name}</Text>
                   </View>
                   {picking !== null && byDay.get(picking)?.template_id === t.id ? (
-                    <Icon icon={CheckCircle2} size={16} color={colors.primary} />
+                    <Icon icon={CheckCircle2} size={16} color={c.primary} />
                   ) : null}
                 </Pressable>
               ))}
@@ -419,7 +423,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                 <Switch
                   value={byDay.get(picking)?.is_deload ?? false}
                   onValueChange={(v) => toggleDeload(picking, v)}
-                  trackColor={{ true: colors.readinessYellow, false: colors.secondary }}
+                  trackColor={{ true: c.readinessYellow, false: c.secondary }}
                 />
               </View>
             ) : null}
@@ -430,7 +434,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   // ── which week ──
   weekNav: {
     flexDirection: 'row',
@@ -449,11 +453,11 @@ const styles = StyleSheet.create({
   /* Still drawn, still 32pt, just faded — a button that disappears at the end
      of the range takes the label with it as the row re-centres. */
   navBtnOff: { opacity: 0.3 },
-  weekLabel: { ...type.footnote, fontWeight: '600', color: colors.foreground, minWidth: 130, textAlign: 'center' },
+  weekLabel: { ...type.footnote, fontWeight: '600', color: c.foreground, minWidth: 130, textAlign: 'center' },
 
   // ── the open day ──
   dayHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },
-  dayName: { ...type.headline, color: colors.foreground },
+  dayName: { ...type.headline, color: c.foreground },
   headSpacer: { flex: 1 },
   statePill: {
     flexDirection: 'row',
@@ -470,7 +474,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: 'rgba(230,185,61,0.18)',
   },
-  deloadText: { ...type.caption, color: colors.readinessYellow, fontWeight: '600' },
+  deloadText: { ...type.caption, color: c.readinessYellow, fontWeight: '600' },
 
 
   // ── the day sheet ──
@@ -481,17 +485,17 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   pickerSheet: {
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     borderRadius: radius.xl,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: spacing.md,
     gap: spacing.xs,
     marginBottom: spacing.lg,
   },
   pickerTitle: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
     fontWeight: '600',
@@ -511,20 +515,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: radius.md,
   },
-  pickerRowPressed: { backgroundColor: colors.secondary },
+  pickerRowPressed: { backgroundColor: c.secondary },
   pickerRowInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 },
   /* Making a workout and choosing one are two different acts, so a line
      between them rather than a fourth row that looks like the other three. */
   pickerSep: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+    backgroundColor: c.border,
     marginHorizontal: spacing.sm,
     marginVertical: 2,
   },
-  pickerNew: { ...type.body, color: colors.primary, fontWeight: '600' },
-  pickerRest: { ...type.body, color: colors.mutedForeground },
-  pickerName: { ...type.body, color: colors.foreground, flexShrink: 1 },
-  pickerEmpty: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', padding: spacing.md },
+  pickerNew: { ...type.body, color: c.primary, fontWeight: '600' },
+  pickerRest: { ...type.body, color: c.mutedForeground },
+  pickerName: { ...type.body, color: c.foreground, flexShrink: 1 },
+  pickerEmpty: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', padding: spacing.md },
   deloadRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -533,8 +537,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     marginTop: spacing.xs,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    borderTopColor: c.border,
   },
   deloadCopy: { flex: 1 },
-  deloadLabel: { ...type.body, color: colors.foreground },
-});
+  deloadLabel: { ...type.body, color: c.foreground },
+}));

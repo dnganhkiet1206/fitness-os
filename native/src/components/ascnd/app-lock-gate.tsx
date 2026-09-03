@@ -3,7 +3,9 @@ import { Modal, StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAppLock } from '@/hooks/use-app-lock';
 
@@ -15,6 +17,8 @@ import { useAppLock } from '@/hooks/use-app-lock';
  * (same reason the celebration modals use it).
  */
 export function AppLockGate() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { locked, unlock } = useAppLock();
 
@@ -25,7 +29,7 @@ export function AppLockGate() {
       <View style={[StyleSheet.absoluteFill, styles.scrim]}>
         <View style={styles.center}>
           <View style={styles.badge}>
-            <Icon icon={Lock} size={34} color={colors.primary} />
+            <Icon icon={Lock} size={34} color={c.primary} />
           </View>
           <Text style={styles.title}>{i18n.nLockLocked}</Text>
           <PressScale style={styles.button} onPress={unlock}>
@@ -37,8 +41,8 @@ export function AppLockGate() {
   );
 }
 
-const styles = StyleSheet.create({
-  scrim: { backgroundColor: colors.background },
+const stylesFor = makeStyles((c) => ({
+  scrim: { backgroundColor: c.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
   badge: {
     width: 84,
@@ -48,14 +52,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { ...type.title, color: colors.foreground },
+  title: { ...type.title, color: c.foreground },
   button: {
     height: 50,
     paddingHorizontal: spacing.xl,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: { ...type.headline, color: colors.primaryForeground },
-});
+  buttonText: { ...type.headline, color: c.primaryForeground },
+}));

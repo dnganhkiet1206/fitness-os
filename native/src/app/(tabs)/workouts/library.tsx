@@ -5,10 +5,12 @@ import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { MuscleGrid } from '@/components/ascnd/muscle-grid';
 import { Screen } from '@/components/ascnd/screen';
-import { SessionRow, sessionListStyles } from '@/components/ascnd/session-row';
+import { SessionRow, useSessionListStyles } from '@/components/ascnd/session-row';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { LoadFailed } from '@/components/ascnd/load-failed';
-import { PAGE_TINT, colors, spacing, type } from '@/constants/ascnd';
+import { PAGE_TINT, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useExercises } from '@/hooks/use-library';
@@ -64,6 +66,9 @@ import { toast } from '@/lib/toast';
 const HISTORY_PREVIEW = 10;
 
 export default function WorkoutLibraryScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const sessionList = useSessionListStyles();
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { weight: wUnit } = useUnits();
@@ -140,10 +145,10 @@ export default function WorkoutLibraryScreen() {
         {sessionsFailed ? (
           <LoadFailed i18n={i18n} onRetry={retry} busy={busy || isRefetching} />
         ) : sessions && sessions.length > 0 ? (
-          <View style={sessionListStyles.group}>
+          <View style={sessionList.group}>
             {sessions.slice(0, HISTORY_PREVIEW).map((s, i) => (
               <View key={s.id}>
-                {i > 0 ? <View style={sessionListStyles.sep} /> : null}
+                {i > 0 ? <View style={sessionList.sep} /> : null}
                 <SessionRow
                   session={s}
                   wUnit={wUnit}
@@ -162,9 +167,9 @@ export default function WorkoutLibraryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   section: { gap: spacing.sm },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  label: { fontSize: 14, fontWeight: '600', color: colors.foreground },
-  all: { ...type.footnote, color: colors.primary },
-});
+  label: { fontSize: 14, fontWeight: '600', color: c.foreground },
+  all: { ...type.footnote, color: c.primary },
+}));

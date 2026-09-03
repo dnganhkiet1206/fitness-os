@@ -11,7 +11,9 @@ import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
 import { toast } from '@/lib/toast';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
@@ -38,6 +40,8 @@ import { weightLabel } from '@/lib/units';
  * makes you find your place twice.
  */
 export default function TemplatesScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -76,11 +80,11 @@ export default function TemplatesScreen() {
       */}
       {(templates?.length ?? 0) > 6 ? (
         <View style={styles.searchBox}>
-          <Icon icon={Search} size={16} color={colors.mutedForeground} />
+          <Icon icon={Search} size={16} color={c.mutedForeground} />
           <TextInput
             style={styles.searchInput}
             placeholder={vi ? 'Tìm buổi tập…' : 'Search workouts…'}
-            placeholderTextColor={colors.mutedForeground}
+            placeholderTextColor={c.mutedForeground}
             value={search}
             onChangeText={setSearch}
             autoCorrect={false}
@@ -92,7 +96,7 @@ export default function TemplatesScreen() {
               accessibilityLabel={i18n.a11yClose}
               hitSlop={8}
               onPress={() => setSearch('')}>
-              <Icon icon={X} size={15} color={colors.mutedForeground} />
+              <Icon icon={X} size={15} color={c.mutedForeground} />
             </Pressable>
           ) : null}
         </View>
@@ -139,14 +143,14 @@ export default function TemplatesScreen() {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           nav.push('/workout-builder');
         }}>
-        <Icon icon={Plus} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
+        <Icon icon={Plus} size={15} color={c.primaryForeground} strokeWidth={2.5} />
         <Text style={styles.createText}>{i18n.workoutsCreateNew}</Text>
       </PressScale>
     </Screen>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -154,9 +158,9 @@ const styles = StyleSheet.create({
     height: 44,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    backgroundColor: colors.secondary,
+    backgroundColor: c.secondary,
   },
-  searchInput: { flex: 1, color: colors.foreground, fontSize: 16 },
+  searchInput: { flex: 1, color: c.foreground, fontSize: 16 },
   createBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -164,7 +168,7 @@ const styles = StyleSheet.create({
     gap: 6,
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
   },
-  createText: { ...type.headline, color: colors.primaryForeground },
-});
+  createText: { ...type.headline, color: c.primaryForeground },
+}));

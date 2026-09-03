@@ -12,7 +12,9 @@ import {
   DAY_SHORT_VI,
   WeekStrip,
 } from '@/components/ascnd/week-strip';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
@@ -67,6 +69,8 @@ function exercisesOf(tpl: { exercises?: unknown } | null | undefined): TplExerci
 }
 
 export function TodayTraining() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { data: days, isPending: daysPending, isError: daysFailed } = useRoutineDays();
   const { data: templates } = useWorkoutTemplates();
   /* Cùng cửa sổ 14 ngày mà phần lịch sử bên dưới đã hỏi, nên khối này không tốn
@@ -147,9 +151,9 @@ export function TodayTraining() {
           {sub ? (
             <View style={styles.subRow}>
               {done && planned ? (
-                <Icon icon={CheckCircle2} size={13} color={colors.readinessGreen} />
+                <Icon icon={CheckCircle2} size={13} color={c.readinessGreen} />
               ) : day?.is_rest && !unknown ? (
-                <Icon icon={Moon} size={13} color={colors.metricPurple} />
+                <Icon icon={Moon} size={13} color={c.metricPurple} />
               ) : null}
               <Text style={styles.sub} numberOfLines={1}>{sub}</Text>
             </View>
@@ -187,7 +191,7 @@ export function TodayTraining() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
             }}>
-            <Icon icon={Play} size={15} color={colors.primaryForeground} strokeWidth={2.5} />
+            <Icon icon={Play} size={15} color={c.primaryForeground} strokeWidth={2.5} />
             <Text style={styles.primaryText}>{i18n.nStartWorkout}</Text>
           </PressScale>
           <PressScale
@@ -198,7 +202,7 @@ export function TodayTraining() {
               Haptics.selectionAsync();
               nav.push('/log-workout');
             }}>
-            <Icon icon={Plus} size={17} color={colors.foreground} strokeWidth={2.5} />
+            <Icon icon={Plus} size={17} color={c.foreground} strokeWidth={2.5} />
           </PressScale>
         </View>
       ) : (
@@ -214,7 +218,7 @@ export function TodayTraining() {
           <Icon
             icon={planned || day?.is_rest ? Plus : ChevronRight}
             size={15}
-            color={colors.foreground}
+            color={c.foreground}
             strokeWidth={2.5}
           />
           <Text style={styles.quietText}>
@@ -243,20 +247,20 @@ export function TodayTraining() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   card: { gap: spacing.sm, borderRadius: radius.xl },
   head: { flexDirection: 'row', alignItems: 'center' },
   headCopy: { flex: 1, minWidth: 0, gap: 2 },
   eyebrow: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
     fontWeight: '600',
   },
-  title: { ...type.title, color: colors.foreground },
+  title: { ...type.title, color: c.foreground },
   subRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  sub: { ...type.footnote, color: colors.mutedForeground, flexShrink: 1 },
+  sub: { ...type.footnote, color: c.mutedForeground, flexShrink: 1 },
   /* Nút đặc, cao 48 — nó là hành động chính của cả tab, không phải một pill
      trong một hàng pill. */
   primary: {
@@ -267,10 +271,10 @@ const styles = StyleSheet.create({
     gap: 7,
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: colors.primary,
+    backgroundColor: c.primary,
     marginTop: 2,
   },
-  primaryText: { ...type.headline, fontWeight: '700', color: colors.primaryForeground },
+  primaryText: { ...type.headline, fontWeight: '700', color: c.primaryForeground },
   quiet: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -281,8 +285,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.07)',
     marginTop: 2,
   },
-  quietText: { ...type.headline, fontWeight: '600', color: colors.foreground },
-  rule: { height: StyleSheet.hairlineWidth, backgroundColor: colors.border, marginTop: 2 },
+  quietText: { ...type.headline, fontWeight: '600', color: c.foreground },
+  rule: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginTop: 2 },
   /* Nút chính và nút phụ nằm cùng một hàng: nút phụ chỉ là một ô vuông mang dấu
      cộng, vì việc của nó đã được nói bằng nhãn trợ năng và bằng chỗ đứng. */
   actions: { flexDirection: 'row', gap: spacing.sm, marginTop: 2 },
@@ -294,4 +298,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.07)',
   },
-});
+}));

@@ -15,7 +15,9 @@ import Animated, {
 
 import { Icon } from '@/components/ascnd/icon';
 import { Medal, TIER_CONFIG } from '@/components/ascnd/medal';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 /* Từ `lib/`, không qua `hooks/use-extras`: một component không cần kéo theo cả
    tầng truy vấn chỉ để tra một danh mục tĩnh. */
 import { AWARD_DEFINITIONS } from '@/lib/award-grant';
@@ -93,6 +95,8 @@ function makePieces(): Piece[] {
 }
 
 function ConfettiPiece({ progress, piece }: { progress: SharedValue<number>; piece: Piece }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const style = useAnimatedStyle(() => {
     const t = Math.min(Math.max((progress.value - piece.delay) / (1 - piece.delay), 0), 1);
     return {
@@ -118,6 +122,8 @@ function ConfettiPiece({ progress, piece }: { progress: SharedValue<number>; pie
 }
 
 export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAward; onClose: () => void }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
@@ -175,7 +181,7 @@ export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAw
 
         <Animated.View style={[styles.card, { shadowColor: tier.color }, cardStyle]}>
           <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDismiss} style={styles.closeBtn} hitSlop={14} onPress={dismiss}>
-            <Icon icon={X} size={16} color={colors.mutedForeground} />
+            <Icon icon={X} size={16} color={c.mutedForeground} />
           </Pressable>
 
           {/*
@@ -227,7 +233,7 @@ export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAw
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(4, 4, 6, 0.75)',
@@ -244,9 +250,9 @@ const styles = StyleSheet.create({
   card: {
     alignSelf: 'stretch',
     alignItems: 'center',
-    backgroundColor: colors.card,
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: radius.xl,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
@@ -263,10 +269,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 2.5,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
   },
-  title: { ...type.title, color: colors.foreground, fontWeight: '800', textAlign: 'center' },
-  desc: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
+  title: { ...type.title, color: c.foreground, fontWeight: '800', textAlign: 'center' },
+  desc: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
   tierBadge: {
     marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
@@ -280,4 +286,4 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
     color: '#fff',
   },
-});
+}));

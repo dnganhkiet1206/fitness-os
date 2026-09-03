@@ -4,7 +4,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { HeroPanel, HeroRing, HeroTiles } from '@/components/ascnd/hero-panel';
 import { useHelpTopic } from '@/components/ascnd/help-button';
 import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { displayVolume, volumeLabel } from '@/lib/units';
@@ -57,6 +59,7 @@ export function NutritionHero({
   onToggleDetail?: () => void;
   onOpenDetail?: () => void;
 }) {
+  const c = usePalette();
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const target = calorieTarget > 0 ? calorieTarget : 1;
@@ -89,24 +92,24 @@ export function NutritionHero({
       ring={
         <HeroRing
           pct={kcal / target}
-          from={colors.readinessGreen}
-          to={colors.metricOrange}
+          from={c.readinessGreen}
+          to={c.metricOrange}
           /* Ngọn lửa cam — đúng biểu tượng và đúng màu mà thẻ dinh dưỡng cũ
              dùng, để cùng một phép đo không đổi mặt khi nó đổi chỗ. */
           icon={Flame}
-          iconColor={colors.metricOrange}
+          iconColor={c.metricOrange}
           value={Math.round(kcal)}
           /* Còn lại, không phải mục tiêu. Mục tiêu là con số bạn đã biết; số
              còn lại là con số quyết định bữa tới ăn gì. */
           caption={`${left} ${i18n.nKcalLeft}`}
-          captionColor={colors.mutedForeground}
+          captionColor={c.mutedForeground}
         />
       }>
       <HeroTiles
         tiles={[
-          { label: i18n.nProtein, value: String(Math.round(protein)), unit: 'g', color: colors.metricBlue },
-          { label: i18n.nCarbs, value: String(Math.round(carbs)), unit: 'g', color: colors.metricOrange },
-          { label: i18n.nFat, value: String(Math.round(fat)), unit: 'g', color: colors.metricPurple },
+          { label: i18n.nProtein, value: String(Math.round(protein)), unit: 'g', color: c.metricBlue },
+          { label: i18n.nCarbs, value: String(Math.round(carbs)), unit: 'g', color: c.metricOrange },
+          { label: i18n.nFat, value: String(Math.round(fat)), unit: 'g', color: c.metricPurple },
           { label: i18n.nKcalToday, value: String(Math.round(kcal)), unit: `/ ${Math.round(target)}` },
         ]}
       />
@@ -116,6 +119,8 @@ export function NutritionHero({
 }
 
 function Macro({ label, grams, tint }: { label: string; grams: number; tint: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.macro}>
       <View style={[styles.macroDot, { backgroundColor: tint }]} />
@@ -138,6 +143,7 @@ export function WaterHero({
   onToggleDetail?: () => void;
   onOpenDetail?: () => void;
 }) {
+  const c = usePalette();
   const i18n = useI18n();
   const { unit } = useVolumeUnit();
   const target = targetMl > 0 ? targetMl : 1;
@@ -152,17 +158,17 @@ export function WaterHero({
       ring={
         <HeroRing
           pct={ml / target}
-          from={colors.metricBlue}
-          to={colors.metricCyan}
+          from={c.metricBlue}
+          to={c.metricCyan}
           /* Giọt nước xanh #3ba6ff — cùng icon và cùng màu thẻ nước cũ. */
           icon={Droplets}
-          iconColor={colors.metricBlue}
+          iconColor={c.metricBlue}
           value={displayVolume(ml, unit)}
           /* `displayVolume` làm tròn ml về số nguyên và oz về một chữ số thập
              phân — nên số lẻ chỉ tồn tại ở oz. */
           decimals={unit === 'oz' ? 1 : 0}
           caption={volumeLabel(unit)}
-          captionColor={colors.mutedForeground}
+          captionColor={c.mutedForeground}
         />
       }>
       {/*
@@ -178,22 +184,22 @@ export function WaterHero({
             label: i18n.nWater,
             value: String(displayVolume(ml, unit)),
             unit: `/ ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`,
-            color: colors.metricBlue,
+            color: c.metricBlue,
           },
-          { label: '%', value: String(pct), unit: `/ 100`, color: colors.metricCyan },
+          { label: '%', value: String(pct), unit: `/ 100`, color: c.metricCyan },
         ]}
       />
     </HeroPanel>
   );
 }
 
-const styles = StyleSheet.create({
-  emptyLine: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center', lineHeight: 19 },
+const stylesFor = makeStyles((c) => ({
+  emptyLine: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', lineHeight: 19 },
   macro: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   macroDot: { width: 7, height: 7, borderRadius: 4 },
-  macroLabel: { ...type.footnote, color: colors.mutedForeground, flex: 1 },
-  macroValue: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-});
+  macroLabel: { ...type.footnote, color: c.mutedForeground, flex: 1 },
+  macroValue: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
+}));
 
 
 /**
@@ -223,6 +229,7 @@ export function SleepHero({
   onToggleDetail?: () => void;
   onOpenDetail?: () => void;
 }) {
+  const c = usePalette();
   const i18n = useI18n();
   const targetMin = targetHours > 0 ? targetHours * 60 : 1;
   const hours = Math.round((totalMin / 60) * 10) / 10;
@@ -237,19 +244,19 @@ export function SleepHero({
       ring={
         <HeroRing
           pct={totalMin / targetMin}
-          from={colors.metricPurple}
-          to={colors.metricBlue}
+          from={c.metricPurple}
+          to={c.metricBlue}
           value={hours}
           decimals={1}
           caption="h"
-          captionColor={colors.mutedForeground}
+          captionColor={c.mutedForeground}
           icon={Moon}
-          iconColor={colors.metricPurple}
+          iconColor={c.metricPurple}
         />
       }>
       <HeroTiles
         tiles={[
-          { label: i18n.nSleep, value: String(hours), unit: `/ ${targetHours} h`, color: colors.metricPurple },
+          { label: i18n.nSleep, value: String(hours), unit: `/ ${targetHours} h`, color: c.metricPurple },
           ...(quality != null
             ? [
                 {
@@ -275,7 +282,7 @@ export function SleepHero({
                     cái mẫu số sai làm hai thẻ trông như bất đồng dữ liệu.
                   */
                   unit: `/${SLEEP_QUALITY_MAX}`,
-                  color: colors.metricBlue,
+                  color: c.metricBlue,
                 },
               ]
             : []),
@@ -346,6 +353,8 @@ export function EmptyHero({
   onToggleDetail?: () => void;
   onOpenDetail?: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   return (
     <HeroPanel
@@ -360,9 +369,9 @@ export function EmptyHero({
           to={tint}
           value={0}
           caption="—"
-          captionColor={colors.mutedForeground}
+          captionColor={c.mutedForeground}
           icon={icon}
-          iconColor={colors.mutedForeground}
+          iconColor={c.mutedForeground}
         />
       }>
       <Text style={styles.emptyLine}>{message}</Text>

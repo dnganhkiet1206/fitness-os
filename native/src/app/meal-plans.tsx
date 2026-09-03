@@ -12,7 +12,9 @@ import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PlanRow } from '@/components/ascnd/plan-row';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useMealPlanFill, useMealPlans } from '@/hooks/use-library';
 import { useRise } from '@/lib/entrance';
@@ -47,6 +49,8 @@ import { useRise } from '@/lib/entrance';
  * bordered cards is three times the edges for what a table view says with one.
  */
 export default function MealPlansScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là một cái
      lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
@@ -114,7 +118,7 @@ export default function MealPlansScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   /*
     Delineated by its border, not its fill.
 
@@ -134,16 +138,16 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, height: 62 },
   /* Inset from the left, the way a table view's separator is — a rule running
      the full width cuts the group into stripes instead of dividing it. */
-  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: colors.border },
+  sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },
   text: { flex: 1, minWidth: 0, gap: 2 },
-  name: { ...type.body, color: colors.foreground, fontWeight: '600' },
-  meta: { ...type.footnote, color: colors.mutedForeground },
+  name: { ...type.body, color: c.foreground, fontWeight: '600' },
+  meta: { ...type.footnote, color: c.mutedForeground },
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
-  emptyTitle: { ...type.body, color: colors.foreground, fontWeight: '600' },
+  emptyTitle: { ...type.body, color: c.foreground, fontWeight: '600' },
   emptyBody: {
     ...type.footnote,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
   },
-});
+}));

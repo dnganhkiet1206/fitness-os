@@ -3,7 +3,9 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { MACRO_TINT, colors, spacing, type } from '@/constants/ascnd';
+import { MACRO_TINT, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 
 /**
@@ -62,11 +64,13 @@ export function QuickStats({
   waterTargetMl: number;
   i18n: ReturnType<typeof useI18n>;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const stats: Stat[] = [
     {
       key: 'kcal',
       icon: Flame,
-      color: colors.metricOrange,
+      color: c.metricOrange,
       label: i18n.nQuickCalories,
       value: kcal,
       target: calorieTarget,
@@ -84,7 +88,7 @@ export function QuickStats({
     {
       key: 'water',
       icon: Droplets,
-      color: colors.metricCyan,
+      color: c.metricCyan,
       label: i18n.nQuickWater,
       // millilitres are the wrong unit at a glance; litres to one decimal
       value: waterMl / 1000,
@@ -121,7 +125,7 @@ export function QuickStats({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   row: { flexDirection: 'row', gap: spacing.sm },
   tile: {
     flex: 1,
@@ -131,12 +135,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: 4,
   },
-  label: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
+  label: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },
   value: {
     ...type.headline,
-    color: colors.foreground,
+    color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
-  unit: { ...type.caption, color: colors.mutedForeground, fontWeight: '600' },
-  target: { ...type.caption, color: colors.mutedForeground, fontVariant: ['tabular-nums'] },
-});
+  unit: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },
+  target: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+}));

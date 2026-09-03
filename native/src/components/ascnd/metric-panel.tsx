@@ -3,7 +3,9 @@ import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
 import { ChartBar } from '@/components/ascnd/chart-bar';
-import { colors, glass, radius, spacing, type } from '@/constants/ascnd';
+import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import type { Analysis } from '@/lib/metric-analysis';
 
 /**
@@ -75,6 +77,8 @@ export function MetricPanel({
   format: (v: number) => string;
   onAsk: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const { headline, stats, bars, baseline } = analysis;
 
   /* The baseline is drawn in pixels, measured — a percentage inside `<Svg>`
@@ -248,10 +252,10 @@ export function MetricPanel({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   wrap: { padding: spacing.md, gap: spacing.sm + 2 },
   /* The largest thing in the panel, because it is the point of the panel. */
-  headline: { ...type.footnote, color: colors.foreground, lineHeight: 20 },
+  headline: { ...type.footnote, color: c.foreground, lineHeight: 20 },
   chart: { height: TRACK, flexDirection: 'row', alignItems: 'flex-end', gap: GAP },
   slot: { flex: 1, height: '100%', justifyContent: 'flex-end' },
   /* Same dark backing as the baseline label, for the same reason and a
@@ -289,13 +293,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   axis: { flexDirection: 'row', gap: GAP },
-  axisDay: { flex: 1, fontSize: 11, textAlign: 'center', color: colors.glassMuted },
-  axisToday: { fontWeight: '700', color: colors.foreground },
-  gapNote: { fontSize: 11, color: colors.glassMuted, marginTop: -4 },
+  axisDay: { flex: 1, fontSize: 11, textAlign: 'center', color: c.glassMuted },
+  axisToday: { fontWeight: '700', color: c.foreground },
+  gapNote: { fontSize: 11, color: c.glassMuted, marginTop: -4 },
   stats: { flexDirection: 'row', gap: spacing.lg, marginTop: 2 },
   stat: { gap: 2 },
-  statLabel: { fontSize: 11, color: colors.glassMuted },
-  statValue: { ...type.footnote, fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },
+  statLabel: { fontSize: 11, color: c.glassMuted },
+  statValue: { ...type.footnote, fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },
   ask: {
     ...type.caption,
     fontWeight: '600',
@@ -306,4 +310,4 @@ const styles = StyleSheet.create({
     marginBottom: -12,
   },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: glass.border, borderRadius: radius.sm },
-});
+}));

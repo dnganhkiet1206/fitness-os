@@ -3,7 +3,9 @@ import * as Haptics from 'expo-haptics';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
-import { colors, type } from '@/constants/ascnd';
+import { type } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { localDateStr } from '@/lib/local-date';
 
 /**
@@ -37,14 +39,19 @@ export const DAY_SHORT_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
  */
 export type DayState = 'rest' | 'done' | 'todo' | 'missed';
 
-export const STATE_STYLE: Record<DayState, { icon: typeof CheckCircle2; tint: string; wash: string }> = {
-  done: { icon: CheckCircle2, tint: colors.readinessGreen, wash: 'rgba(63,185,80,0.14)' },
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+export const STATE_STYLE: Record<DayState, { icon: typeof CheckCircle2; tint: PaletteKey; wash: string }> = {
+  done: { icon: CheckCircle2, tint: 'readinessGreen', wash: 'rgba(63,185,80,0.14)' },
   /* Silver, not yellow. A training day that has not happened yet is not a
      warning about anything — it is Thursday. Yellow is what this app uses for
      "approaching a limit", and spending it here would leave nothing to say
      that with. */
-  todo: { icon: CircleDashed, tint: colors.primary, wash: 'rgba(168,175,189,0.14)' },
-  missed: { icon: CircleDashed, tint: colors.mutedForeground, wash: 'rgba(255,255,255,0.06)' },
+  todo: { icon: CircleDashed, tint: 'primary', wash: 'rgba(168,175,189,0.14)' },
+  missed: { icon: CircleDashed, tint: 'mutedForeground', wash: 'rgba(255,255,255,0.06)' },
   /*
     Rest is purple, and it is the only state here that is a *choice*.
 
@@ -54,7 +61,7 @@ export const STATE_STYLE: Record<DayState, { icon: typeof CheckCircle2; tint: st
     week reads as a shape at a glance. Grey said "nothing here", which is the
     one thing a planned rest day is not.
   */
-  rest: { icon: Moon, tint: colors.metricPurple, wash: 'rgba(180,92,255,0.14)' },
+  rest: { icon: Moon, tint: 'metricPurple', wash: 'rgba(180,92,255,0.14)' },
 };
 
 /**
@@ -97,6 +104,8 @@ export function WeekStrip({
   shortNames: readonly string[];
   onPick: (idx: number) => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     /*
       Each cell is a button: the weekday, the date, and a dot underneath in the
@@ -131,7 +140,7 @@ export function WeekStrip({
             <View style={[styles.weekDate, isToday && styles.weekDateToday, isOpen && styles.weekDateOn]}>
               <Text style={[styles.weekNum, isOpen && styles.weekNumOn]}>{d.getDate()}</Text>
             </View>
-            <View style={[styles.weekDot, { backgroundColor: STATE_STYLE[state].tint }]} />
+            <View style={[styles.weekDot, { backgroundColor: c[STATE_STYLE[state].tint] }]} />
           </PressScale>
         );
       })}
@@ -139,11 +148,11 @@ export function WeekStrip({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
   weekCell: { alignItems: 'center', gap: 6, flex: 1, paddingVertical: 4 },
-  weekName: { ...type.caption, color: colors.mutedForeground },
-  weekNameOn: { color: colors.foreground, fontWeight: '700' },
+  weekName: { ...type.caption, color: c.mutedForeground },
+  weekNameOn: { color: c.foreground, fontWeight: '700' },
   weekDate: {
     width: 34,
     height: 34,
@@ -153,12 +162,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  weekDateToday: { borderColor: colors.primary },
-  weekDateOn: { backgroundColor: colors.primary, borderColor: colors.primary },
-  weekNum: { ...type.footnote, color: colors.foreground, fontVariant: ['tabular-nums'] },
-  weekNumOn: { color: colors.primaryForeground, fontWeight: '700' },
+  weekDateToday: { borderColor: c.primary },
+  weekDateOn: { backgroundColor: c.primary, borderColor: c.primary },
+  weekNum: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
+  weekNumOn: { color: c.primaryForeground, fontWeight: '700' },
   /* Always drawn, transparent when the day is empty — a dot that appears and
      disappears would shift the row's height by three points as the week is
      edited. */
   weekDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: 'transparent' },
-});
+}));

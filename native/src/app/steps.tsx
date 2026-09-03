@@ -9,7 +9,9 @@ import { ChartBar } from '@/components/ascnd/chart-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useStepsHistory } from '@/hooks/use-fitness-data';
@@ -17,6 +19,8 @@ import { useStepsGoal } from '@/hooks/use-steps-goal';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';
 
 export default function StepsScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { data: history } = useStepsHistory(14);
@@ -51,7 +55,7 @@ export default function StepsScreen() {
           </View>
           <Text style={styles.pct}>{Math.round(pct)}%</Text>
         </View>
-        <ProgressBar pct={pct} color={colors.primary} height={10} radius={5} style={styles.barTrack} />
+        <ProgressBar pct={pct} color={c.primary} height={10} radius={5} style={styles.barTrack} />
         {/* Goal stepper (web Settings inline editor, ±500) */}
         <View style={styles.goalRow}>
           <PressScale to={press.deep}
@@ -63,7 +67,7 @@ export default function StepsScreen() {
               Haptics.selectionAsync();
               setGoal(GOAL - 500);
             }}>
-            <Icon icon={Minus} size={14} color={colors.foreground} />
+            <Icon icon={Minus} size={14} color={c.foreground} />
           </PressScale>
           <Text style={styles.goalValue}>{GOAL.toLocaleString()}</Text>
           <PressScale to={press.deep}
@@ -75,7 +79,7 @@ export default function StepsScreen() {
               Haptics.selectionAsync();
               setGoal(GOAL + 500);
             }}>
-            <Icon icon={Plus} size={14} color={colors.foreground} />
+            <Icon icon={Plus} size={14} color={c.foreground} />
           </PressScale>
         </View>
       </GlassCard>
@@ -86,7 +90,7 @@ export default function StepsScreen() {
           <Text style={styles.statLabel}>{i18n.nDailyAvg}</Text>
         </GlassCard>
         <GlassCard style={styles.statCard}>
-          <Text style={[styles.statValue, { color: stats.trend >= 0 ? colors.readinessGreen : colors.readinessRed }]}>
+          <Text style={[styles.statValue, { color: stats.trend >= 0 ? c.readinessGreen : c.readinessRed }]}>
             {stats.trend >= 0 ? '↑' : '↓'} {Math.abs(Math.round(stats.trend))}%
           </Text>
           <Text style={styles.statLabel}>{i18n.nLast7Days}</Text>
@@ -103,7 +107,7 @@ export default function StepsScreen() {
             return (
               <View key={d.date} style={styles.barCol}>
                 <View style={styles.barColTrack}>
-                  <ChartBar heightPct={Math.max(3, h)} color={met ? colors.primary : colors.secondary} delay={i * 55} />
+                  <ChartBar heightPct={Math.max(3, h)} color={met ? c.primary : c.secondary} delay={i * 55} />
                 </View>
                 <Text style={styles.barColLabel}>{dayLetter}</Text>
               </View>
@@ -115,14 +119,14 @@ export default function StepsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  cardTitle: { ...type.headline, color: colors.foreground },
-  cardHint: { ...type.footnote, color: colors.mutedForeground, marginTop: 2 },
+const stylesFor = makeStyles((c) => ({
+  cardTitle: { ...type.headline, color: c.foreground },
+  cardHint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  bigValue: { ...type.largeTitle, ...type.mono, color: colors.foreground },
-  pct: { ...type.title, color: colors.primary, fontVariant: ['tabular-nums'] },
-  barTrack: { height: 10, borderRadius: 5, backgroundColor: colors.background, overflow: 'hidden', marginTop: spacing.md },
-  barFill: { height: '100%', borderRadius: 5, backgroundColor: colors.primary },
+  bigValue: { ...type.largeTitle, ...type.mono, color: c.foreground },
+  pct: { ...type.title, color: c.primary, fontVariant: ['tabular-nums'] },
+  barTrack: { height: 10, borderRadius: 5, backgroundColor: c.background, overflow: 'hidden', marginTop: spacing.md },
+  barFill: { height: '100%', borderRadius: 5, backgroundColor: c.primary },
   goalRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -138,16 +142,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  goalValue: { ...type.mono, fontSize: 15, fontWeight: '700', color: colors.foreground, minWidth: 64, textAlign: 'center' },
+  goalValue: { ...type.mono, fontSize: 15, fontWeight: '700', color: c.foreground, minWidth: 64, textAlign: 'center' },
   statRow: { flexDirection: 'row', gap: spacing.sm },
   statCard: { flex: 1, gap: 2 },
-  statValue: { ...type.title, ...type.mono, color: colors.foreground },
-  statLabel: { ...type.caption, color: colors.mutedForeground },
+  statValue: { ...type.title, ...type.mono, color: c.foreground },
+  statLabel: { ...type.caption, color: c.mutedForeground },
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, height: 130, marginTop: spacing.md },
   barCol: { flex: 1, alignItems: 'center', gap: 6 },
-  barColTrack: { width: '60%', height: 104, justifyContent: 'flex-end', backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden' },
+  barColTrack: { width: '60%', height: 104, justifyContent: 'flex-end', backgroundColor: c.background, borderRadius: 4, overflow: 'hidden' },
   barColFill: { width: '100%', borderRadius: 4 },
-  barColLabel: { ...type.caption, color: colors.mutedForeground },
-});
+  barColLabel: { ...type.caption, color: c.mutedForeground },
+}));

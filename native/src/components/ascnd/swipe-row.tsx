@@ -6,7 +6,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * A row you can swipe, with the action growing out from under it.
@@ -76,6 +78,8 @@ function Action({
   tint: string;
   onPress: () => void;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* `progress` is 1 at the open position and 0 closed, so the capsule reaches
      full size exactly when the row does — the two are the same drag. */
   const grow = useAnimatedStyle(() => ({
@@ -92,7 +96,7 @@ function Action({
     <View style={styles.actionWrap}>
       <Animated.View style={[styles.action, { backgroundColor: tint }, grow]}>
         <Text accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.hit} />
-        <Icon icon={icon} size={17} color={colors.primaryForeground} />
+        <Icon icon={icon} size={17} color={c.primaryForeground} />
         <Animated.Text style={[styles.actionText, word]} numberOfLines={1}>
           {label}
         </Animated.Text>
@@ -105,7 +109,7 @@ export function SwipeRow({
   children,
   icon,
   label,
-  tint = colors.readinessRed,
+  tint,
   onAction,
   bothEdges = false,
 }: {
@@ -127,6 +131,7 @@ export function SwipeRow({
    */
   bothEdges?: boolean;
 }) {
+  const c = usePalette();
   /* One tick, when the row crosses into "letting go will open this". Fired from
      the will-open callback rather than from a progress watcher so it cannot
      repeat while the finger wobbles on the line. */
@@ -144,7 +149,7 @@ export function SwipeRow({
             dragOffsetFromLeftEdge: HYSTERESIS,
             overshootLeft: false,
             renderLeftActions: (progress: SharedValue<number>) => (
-              <Action progress={progress} icon={icon} label={label} tint={tint} onPress={onAction} />
+              <Action progress={progress} icon={icon} label={label} tint={tint ?? c.readinessRed} onPress={onAction} />
             ),
           }
         : null)}
@@ -157,14 +162,14 @@ export function SwipeRow({
         buzzed.current = false;
       }}
       renderRightActions={(progress) => (
-        <Action progress={progress} icon={icon} label={label} tint={tint} onPress={onAction} />
+        <Action progress={progress} icon={icon} label={label} tint={tint ?? c.readinessRed} onPress={onAction} />
       )}>
       {children}
     </ReanimatedSwipeable>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   actionWrap: { width: OPEN_W, justifyContent: 'center', alignItems: 'center' },
   action: {
     flex: 1,
@@ -180,5 +185,5 @@ const styles = StyleSheet.create({
   /* The whole capsule is the target, laid over it rather than wrapping it — a
      Pressable around an Animated.View would fight the swipe for the gesture. */
   hit: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
-  actionText: { ...type.caption, color: colors.primaryForeground, fontWeight: '700' },
-});
+  actionText: { ...type.caption, color: c.primaryForeground, fontWeight: '700' },
+}));

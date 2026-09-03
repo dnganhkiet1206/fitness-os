@@ -2,7 +2,9 @@ import { User } from 'lucide-react-native';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
-import { colors, radius } from '@/constants/ascnd';
+import { radius } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { initialsFor } from '@/lib/initials';
 
 /**
@@ -34,6 +36,8 @@ import { initialsFor } from '@/lib/initials';
  * người dùng mới là một vòng tròn trống ở góc.
  */
 export function AccountAvatar({ name, email }: { name?: string | null; email?: string | null }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   const text = initialsFor(name, email);
   return (
     <View style={styles.ring}>
@@ -46,13 +50,13 @@ export function AccountAvatar({ name, email }: { name?: string | null; email?: s
           {text}
         </Text>
       ) : (
-        <Icon icon={User} size={20} color={colors.mutedForeground} />
+        <Icon icon={User} size={20} color={c.mutedForeground} />
       )}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c) => ({
   ring: {
     /* Bề rộng/cao KHÔNG đặt ở đây: chỗ gọi bọc nó trong `avatarBtn`, một ô
        `TOP_BAR_H × TOP_BAR_H` không viền không nền, để vùng chạm và chiều cao
@@ -75,6 +79,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     letterSpacing: 0.3,
-    color: colors.foreground,
+    color: c.foreground,
   },
-});
+}));

@@ -11,7 +11,9 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { colors, spacing, type } from '@/constants/ascnd';
+import { spacing, type } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useProfile, useSleepHistory } from '@/hooks/useTodayData';
@@ -20,11 +22,20 @@ import { getLocale } from '@/lib/i18n';
 import { asleepMinutes } from '@/lib/daily-log-service';
 import { toast } from '@/lib/toast';
 
-const DEEP = colors.metricPurple;
-const REM = colors.metricCyan;
+/*
+  Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
+  lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
+  Ba hằng này cũng vậy; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
+*/
+const DEEP = 'metricPurple' satisfies PaletteKey;
+const REM = 'metricCyan' satisfies PaletteKey;
+/* `LIGHT` không phải token: giấc ngủ nông là phần CÒN LẠI của một thanh, và nó
+   cố ý là một màu xám không mang nghĩa nào — xem 596 mã màu viết thẳng còn nợ. */
 const LIGHT = '#565663';
 
 export default function SleepInsightsScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là ba cái
      lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
@@ -166,16 +177,16 @@ export default function SleepInsightsScreen() {
         <>
           {/* Stat grid */}
           <Animated.View style={styles.statGrid} entering={rise(0)}>
-            <StatCard value={`${stats.avgTotal.toFixed(1)}h`} label={i18n.sleepAvg} color={colors.foreground} />
-            <StatCard value={`${stats.avgQuality.toFixed(1)}`} label={i18n.sleepAvgQuality} color={colors.readinessGreen} />
+            <StatCard value={`${stats.avgTotal.toFixed(1)}h`} label={i18n.sleepAvg} color={c.foreground} />
+            <StatCard value={`${stats.avgQuality.toFixed(1)}`} label={i18n.sleepAvgQuality} color={c.readinessGreen} />
             {/* An em-dash rather than "0.0h": nobody slept zero deep, the app
                 simply was not told. */}
             <StatCard
               value={stats.avgDeep === null ? '—' : `${stats.avgDeep.toFixed(1)}h`}
               label={i18n.sleepAvgDeep}
-              color={stats.avgDeep === null ? colors.mutedForeground : DEEP}
+              color={stats.avgDeep === null ? c.mutedForeground : c[DEEP]}
             />
-            <StatCard value={`${stats.debt.toFixed(1)}h`} label={i18n.sleepDebt} color={stats.debt > 5 ? colors.readinessRed : colors.mutedForeground} />
+            <StatCard value={`${stats.debt.toFixed(1)}h`} label={i18n.sleepDebt} color={stats.debt > 5 ? c.readinessRed : c.mutedForeground} />
           </Animated.View>
 
           {/* Stage chart */}
@@ -183,8 +194,8 @@ export default function SleepInsightsScreen() {
           <GlassCard>
             <Text style={styles.cardTitle}>{i18n.sleepStages}</Text>
             <View style={styles.legend}>
-              <LegendDot color={DEEP} label={i18n.sleepDeep} />
-              <LegendDot color={REM} label="REM" />
+              <LegendDot color={c[DEEP]} label={i18n.sleepDeep} />
+              <LegendDot color={c[REM]} label="REM" />
               <LegendDot color={LIGHT} label="Light" />
             </View>
             <View style={styles.chart}>
@@ -195,8 +206,8 @@ export default function SleepInsightsScreen() {
                     {n.stagesKnown ? (
                       <>
                         <View style={[styles.barSeg, { flexGrow: n.light_h, backgroundColor: LIGHT }]} />
-                        <View style={[styles.barSeg, { flexGrow: n.rem_h, backgroundColor: REM }]} />
-                        <View style={[styles.barSeg, { flexGrow: n.deep_h, backgroundColor: DEEP }]} />
+                        <View style={[styles.barSeg, { flexGrow: n.rem_h, backgroundColor: c[REM] }]} />
+                        <View style={[styles.barSeg, { flexGrow: n.deep_h, backgroundColor: c[DEEP] }]} />
                       </>
                     ) : (
                       /* The night's length is known and its breakdown is not.
@@ -218,7 +229,7 @@ export default function SleepInsightsScreen() {
             <Animated.View entering={rise(2)}>
             <GlassCard>
               <View style={styles.cardTitleRow}>
-                <Icon icon={Lightbulb} size={15} color={colors.readinessYellow} />
+                <Icon icon={Lightbulb} size={15} color={c.readinessYellow} />
                 <Text style={styles.cardTitle}>{i18n.sleepInsights}</Text>
               </View>
               <View style={styles.insightList}>
@@ -300,7 +311,7 @@ export default function SleepInsightsScreen() {
                       ],
                     );
                   }}>
-                  <Icon icon={Trash2} size={16} color={colors.mutedForeground} />
+                  <Icon icon={Trash2} size={16} color={c.mutedForeground} />
                 </PressScale>
               </GlassCard>
             );
@@ -312,6 +323,8 @@ export default function SleepInsightsScreen() {
 }
 
 function StatCard({ value, label, color }: { value: string; label: string; color: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <GlassCard style={styles.statCard}>
       <Text style={[styles.statValue, { color }]}>{value}</Text>
@@ -321,6 +334,8 @@ function StatCard({ value, label, color }: { value: string; label: string; color
 }
 
 function LegendDot({ color, label }: { color: string; label: string }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendDot, { backgroundColor: color }]} />
@@ -329,42 +344,42 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  cardTitle: { ...type.headline, color: colors.foreground },
+const stylesFor = makeStyles((c) => ({
+  cardTitle: { ...type.headline, color: c.foreground },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xs },
-  emptyTitle: { ...type.body, color: colors.foreground, fontWeight: '600' },
-  emptyMsg: { ...type.footnote, color: colors.mutedForeground, textAlign: 'center' },
+  emptyTitle: { ...type.body, color: c.foreground, fontWeight: '600' },
+  emptyMsg: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   statCard: { width: '47.5%', alignItems: 'flex-start', gap: 2 },
   statValue: { ...type.title, ...type.mono },
-  statLabel: { ...type.caption, color: colors.mutedForeground },
+  statLabel: { ...type.caption, color: c.mutedForeground },
   legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 9, height: 9, borderRadius: 2 },
-  legendText: { ...type.caption, color: colors.mutedForeground },
+  legendText: { ...type.caption, color: c.mutedForeground },
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, height: 160, marginTop: spacing.md },
   barCol: { flex: 1, alignItems: 'center', gap: 6 },
-  barTrack: { width: '70%', height: 140, flexDirection: 'column', backgroundColor: colors.background, borderRadius: 4, overflow: 'hidden' },
+  barTrack: { width: '70%', height: 140, flexDirection: 'column', backgroundColor: c.background, borderRadius: 4, overflow: 'hidden' },
   /* Neither of the three stage colours — it is not a stage, it is the absence
      of a breakdown, and giving it one of their colours would name it wrongly. */
   barUnknown: { backgroundColor: 'rgba(255,255,255,0.14)' },
   barSeg: { width: '100%', flexBasis: 0 },
-  barLabel: { ...type.caption, color: colors.mutedForeground },
+  barLabel: { ...type.caption, color: c.mutedForeground },
   insightList: { marginTop: spacing.sm, gap: spacing.sm },
   insightRow: { flexDirection: 'row', gap: spacing.sm },
-  insightBullet: { ...type.body, color: colors.primary },
-  insightText: { ...type.footnote, color: colors.foreground, flex: 1, lineHeight: 19 },
+  insightBullet: { ...type.body, color: c.primary },
+  insightText: { ...type.footnote, color: c.foreground, flex: 1, lineHeight: 19 },
   logSection: { gap: spacing.sm, marginTop: spacing.md },
   logTitle: {
     ...type.caption,
-    color: colors.mutedForeground,
+    color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1.6,
   },
   logRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   logBody: { flex: 1, gap: 2 },
-  logWhen: { ...type.footnote, color: colors.foreground },
-  logVals: { ...type.caption, color: colors.mutedForeground },
+  logWhen: { ...type.footnote, color: c.foreground },
+  logVals: { ...type.caption, color: c.mutedForeground },
   logDelete: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-});
+}));
