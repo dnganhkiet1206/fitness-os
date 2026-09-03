@@ -1,24 +1,20 @@
 import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import {
-  Activity,
   AlertTriangle,
   Beef,
   CalendarCheck,
   CheckCircle2,
   ChevronRight,
   Clock,
-  Droplets,
   Dumbbell,
   Flame,
   Footprints,
-  Heart,
   Moon,
   Target,
   Trophy,
   Wifi,
   WifiOff,
-  Wind,
   type LucideIcon,
 } from 'lucide-react-native';
 import { useState } from 'react';
@@ -26,6 +22,7 @@ import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react
 import Svg, { Line } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { BioGlyph, type BioGlyphName } from '@/components/ascnd/biometric-icons';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
@@ -131,6 +128,17 @@ function MicroTitle({ icon, children, color }: { icon?: LucideIcon; children: Re
 
 // ─── BiometricsCard (web dashboard/BiometricsCard) ─────────────────────
 
+/**
+ * Cỡ của năm dấu sinh trắc.
+ *
+ * 20, không phải 15 như trước. Con số ấy không phải khẩu vị: bộ hình được dựng
+ * ra và NHÌN ở 15/20/24/44 trên đúng nền thẻ này trước khi được nối vào đây, và
+ * ở 15 thì hai thuỳ phổi dính lại thành một cái chạc, còn vòng rỗng trong giọt
+ * bịt lại thành một cái chấm. Ở 20 cả năm hình đều tự đứng được, kể cả khi bỏ
+ * hết màu đi.
+ */
+const BIO_ICON = 20;
+
 export function BiometricsCard() {
   const i18n = useI18n();
   const { data: bio } = useTodayBiometrics();
@@ -157,7 +165,33 @@ export function BiometricsCard() {
   */
   const connectedSource = connectedSourceLabel(bio.source);
 
-  const metrics = [
+  /* Giờ của hàng mẫu, theo múi giờ của máy. `date_time` là `timestamptz`, nên
+     `Date` đọc ra đúng thời điểm; `toLocaleTimeString` đưa nó về giờ người đang
+     cầm máy. Một chuỗi không đọc được thì không hiện gì — thà thiếu một dòng
+     phụ còn hơn in ra `Invalid Date` cạnh những con số về cơ thể ai đó. */
+  const stamp = bio.date_time ? new Date(bio.date_time) : null;
+  const sampledAt =
+    stamp && !Number.isNaN(stamp.getTime())
+      /* 24 giờ, không theo locale của máy. `toLocaleTimeString` mặc định hỏi hệ
+         điều hành, và một máy đặt en-US in ra "10:15 PM" ngay giữa một thẻ tiếng
+         Việt — ngôn ngữ của app là thứ người dùng chọn trong app, không phải thứ
+         iOS đoán. Màn Sinh trắc học cũng in giờ 24. */
+      ? stamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false })
+      : null;
+
+  /*
+    ── bốn dấu hiệu tức thời, rồi VO₂max, và ranh giới giữa chúng là thật ──
+
+    Bốn cái đầu là thứ cơ thể đang làm ngay lúc lấy mẫu. VO₂max không phải:
+    nó là NĂNG LỰC, một ước lượng dựng trên nhiều tuần. Xếp nó làm ô thứ năm
+    trong cùng một lưới là nói rằng cả năm cùng một loại, và ở lưới hai cột
+    thì nó còn để lại một lỗ trống bên cạnh.
+
+    Tách ra thành một hàng riêng dưới một đường kẻ mảnh sửa cả hai chuyện bằng
+    một thay đổi: lưới còn 4 ô nên chia hết, và VO₂max được đọc như cái nó là.
+    Đơn vị dài của nó (`mL/kg/min`) cũng chỉ vừa khi có cả bề ngang.
+  */
+  const vitals: { key: string; label: string; value: number | null; unit: string; glyph: BioGlyphName }[] = [
     /*
       ── it is not heart rate, it is resting heart rate ──
 
@@ -168,7 +202,7 @@ export function BiometricsCard() {
       on their watch and conclude the app was wrong, or to log a live reading
       into the column the readiness score treats as resting.
     */
-    { label: i18n.biometricsHeartRate, value: bio.hr_bpm, unit: 'bpm', icon: Heart, color: colors.destructive },
+    { key: 'hr', label: i18n.biometricsHeartRate, value: bio.hr_bpm, unit: 'bpm', glyph: 'heartRest' as const },
     /*
       ── the HRV tile went blind for every Apple Health user ──
 
@@ -183,15 +217,20 @@ export function BiometricsCard() {
       Biometrics screen already does it.
     */
     bio.hrv_sdnn_ms != null
-      ? { label: 'HRV · SDNN', value: bio.hrv_sdnn_ms, unit: 'ms', icon: Activity, color: colors.primary }
-      : { label: 'HRV', value: bio.hrv_rmssd_ms, unit: 'ms', icon: Activity, color: colors.primary },
-    { label: 'SpO₂', value: bio.spo2_pct, unit: '%', icon: Droplets, color: colors.metricBlue },
-    // ml/kg is a mass fraction; VO₂max is a rate — ml/kg/min.
-    { label: 'VO₂max', value: bio.vo2max_mlkgmin, unit: 'ml/kg/min', icon: Wind, color: colors.metricCyan },
-    { label: i18n.biometricsBreathRate, value: bio.resp_rate_rpm, unit: 'rpm', icon: Wind, color: colors.metricPurple },
+      ? { key: 'hrv', label: 'HRV · SDNN', value: bio.hrv_sdnn_ms, unit: 'ms', glyph: 'hrv' as const }
+      : { key: 'hrv', label: 'HRV', value: bio.hrv_rmssd_ms, unit: 'ms', glyph: 'hrv' as const },
+    { key: 'spo2', label: i18n.biometricsBloodOxygen, value: bio.spo2_pct, unit: '%', glyph: 'bloodOxygen' as const },
+    /*
+      `rpm` là VÒNG TRÊN PHÚT — đơn vị của một động cơ. Nhịp thở đo bằng số hơi
+      thở mỗi phút, và không có ký hiệu quốc tế nào cho nó, nên đơn vị này phải
+      đi qua i18n chứ không phải là một chuỗi cứng.
+    */
+    { key: 'resp', label: i18n.biometricsBreathRate, value: bio.resp_rate_rpm, unit: i18n.biometricsBreathUnit, glyph: 'breath' as const },
   ].filter((m) => m.value != null);
 
-  if (metrics.length === 0) return null;
+  const vo2 = bio.vo2max_mlkgmin;
+
+  if (vitals.length === 0 && vo2 == null) return null;
 
   return (
     <PressScale onPress={() => { Haptics.selectionAsync(); nav.push('/biometrics'); }}>
@@ -207,27 +246,56 @@ export function BiometricsCard() {
             <Text style={styles.connText}>
               {connectedSource ?? i18n.dcBioNotConnected}
             </Text>
+            {/* Giờ của chính lần lấy mẫu này.
+
+                Thẻ vẽ năm con số cạnh nhau, và cạnh nhau thì đọc ra là "đo
+                cùng lúc". Bốn cái đầu ĐÚNG là cùng một hàng `biometric_samples`
+                — cùng một `date_time` — nên nói giờ ấy ra là một sự thật, chứ
+                không phải một lời hứa. Không bịa giờ riêng cho từng chỉ số:
+                lược đồ không có, và một cột không tồn tại thì không thể hiện. */}
+            {sampledAt ? <Text style={styles.connText}>· {sampledAt}</Text> : null}
           </View>
         </View>
-        <View style={styles.bioGrid}>
-          {metrics.map((m) => (
-            <View key={m.label} style={styles.bioTile}>
-              <Icon icon={m.icon} size={15} color={m.color} />
-              <View style={styles.bioTileInfo}>
-                <View style={styles.bioValueRow}>
-                  <Text style={styles.bioValue}>{Math.round(Number(m.value) * 10) / 10}</Text>
-                  <Text style={styles.bioUnit}>{m.unit}</Text>
+        {vitals.length > 0 && (
+          <View style={styles.bioGrid}>
+            {vitals.map((m) => (
+              <View key={m.key} style={styles.bioTile}>
+                <BioGlyph name={m.glyph} size={BIO_ICON} />
+                <View style={styles.bioTileInfo}>
+                  <View style={styles.bioValueRow}>
+                    <Text style={styles.bioValue}>{Math.round(Number(m.value) * 10) / 10}</Text>
+                    <Text style={styles.bioUnit}>{m.unit}</Text>
+                  </View>
+                  {/* The tile is a fixed share of a wrapping grid and the labels
+                      are identifiers, not sentences — "Nhịp tim nghỉ" is longer
+                      than what used to be here. Truncating one keeps the row of
+                      tiles level; letting it wrap makes one tile taller than
+                      the three beside it. */}
+                  <Text style={styles.bioLabel} numberOfLines={1}>{m.label}</Text>
                 </View>
-                {/* The tile is a fixed share of a wrapping grid and the labels
-                    are identifiers, not sentences — "Nhịp tim nghỉ" and
-                    "ml/kg/min" are both longer than what used to be here.
-                    Truncating one keeps the row of tiles level; letting it wrap
-                    makes one tile taller than the three beside it. */}
-                <Text style={styles.bioLabel} numberOfLines={1}>{m.label}</Text>
               </View>
+            ))}
+          </View>
+        )}
+        {vo2 != null && (
+          <View style={styles.bioFitness}>
+            <BioGlyph name="vo2max" size={BIO_ICON} />
+            <View style={styles.bioTileInfo}>
+              <View style={styles.bioValueRow}>
+                <Text style={styles.bioValue}>{Math.round(vo2 * 10) / 10}</Text>
+                {/* ml/kg là một phân số khối lượng; VO₂max là TỐC ĐỘ hấp thụ,
+                    nên phải có `/min`. Và chữ L viết hoa: ở 11pt, `l` thường
+                    và số `1` là cùng ba điểm ảnh, trong một đơn vị vốn đã có
+                    hai con số. `lib/plausible.ts` in ra đúng chuỗi này trong
+                    câu báo ngoài khoảng, và `tools/biometric-icons.mjs` giữ
+                    hai chỗ ấy không lệch nhau. */}
+                <Text style={styles.bioUnit}>mL/kg/min</Text>
+              </View>
+              <Text style={styles.bioLabel} numberOfLines={1}>VO₂max</Text>
             </View>
-          ))}
-        </View>
+            <Text style={styles.bioGroup}>{i18n.dcBioFitness}</Text>
+          </View>
+        )}
       </GlassCard>
 </PressScale>
   );
@@ -914,6 +982,10 @@ const styles = StyleSheet.create({
   bioTile: {
     width: '47.5%',
     flexDirection: 'row',
+    /* Dấu hiệu canh giữa khối hai dòng chứ không dính lên mép trên.
+       Mặc định của một hàng flex là `stretch`, và một `<Svg>` cao cố định thì
+       `stretch` đẩy nó lên đỉnh — cạnh một con số 19pt, nó đọc ra là lệch. */
+    alignItems: 'center',
     gap: spacing.sm + 2,
     /*
       Cùng cặp token với ô macro bên Dinh dưỡng, và cùng lý do đã đo ở đó.
@@ -934,6 +1006,36 @@ const styles = StyleSheet.create({
     borderColor: glass.border,
   },
   bioTileInfo: { flex: 1, minWidth: 0, gap: 2 },
+  /* VO₂max: cùng cách đọc như một ô, nhưng cả bề ngang và có một đường kẻ phía
+     trên. Đường kẻ là chỗ ranh giới "đang diễn ra" / "năng lực" được nói ra. */
+  bioFitness: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    paddingTop: spacing.sm + 6,
+    /* Bằng ĐÚNG `padding` của một ô lưới.
+
+       Hàng này không có nền ô, nên nếu không đệm thì dấu VO₂max nằm sát mép
+       thẻ trong khi bốn dấu trên nằm lùi vào 15px — đo được: x37 so với x52.
+       Hai đường dóng khác nhau cho năm thứ cùng một họ, và mắt đọc ra là cái
+       thứ năm thò ra ngoài. */
+    paddingHorizontal: spacing.sm + 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(43,43,49,0.55)',
+  },
+  /* 11, không phải 10.
+
+     `tools/type-scale.mjs` bắt được con số 10 tôi vừa viết ra: dưới sàn 11pt
+     của Apple HIG, và lời khuyên của nó đúng — "muốn dày đặc hơn thì bớt nhãn
+     đi, đừng thu nhỏ chữ". 11 cũng là cỡ của đơn vị và của nhãn chỉ số ngay
+     cạnh, nên thẻ này còn ba cỡ chữ thay vì bốn. Cái tách nhãn nhóm ra khỏi
+     chúng là chữ hoa và giãn chữ, không phải một cỡ riêng. */
+  bioGroup: {
+    fontSize: 11,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: colors.mutedForeground,
+  },
   bioValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
   bioValue: { fontSize: 19, fontFamily: 'Menlo', fontWeight: '700', color: colors.foreground, fontVariant: ['tabular-nums'] },
   bioUnit: { fontSize: 11, color: colors.mutedForeground },

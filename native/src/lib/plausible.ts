@@ -99,7 +99,7 @@ export const BOUNDS: Record<Quantity, Bound> = {
     Must still accept 97.5 ml/kg/min — Oskar Svendsen, 2012, the highest value
     ever recorded. The floor is where severe heart failure tests.
   */
-  vo2max_mlkgmin: { min: 10, max: 100, unit: 'ml/kg/min' },
+  vo2max_mlkgmin: { min: 10, max: 100, unit: 'mL/kg/min' },
 
   /* Normal adults breathe 12–20 a minute. 4 is profound respiratory depression and 60 is severe distress; both ends are real, anything outside is not. */
   resp_rpm: { min: 4, max: 60, unit: 'rpm' },

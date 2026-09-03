@@ -79,9 +79,14 @@ export default function BiometricsScreen() {
       ? [{ key: 'hrv' as const, label: hrvKinds.sdnn ? 'HRV · RMSSD' : 'HRV', unit: 'ms', color: colors.metricPurple, range: [20, 100] as [number, number], extract: (s: BiometricSample) => s.hrv_rmssd_ms }]
       : []),
     { key: 'spo2', label: 'SpO₂', unit: '%', color: colors.metricBlue, range: [95, 100], extract: (s) => s.spo2_pct },
-    // ml/kg is a mass fraction; VO₂max is a rate of oxygen uptake — ml/kg/min.
-    { key: 'vo2max', label: 'VO₂max', unit: 'ml/kg/min', color: colors.metricOrange, range: [30, 60], extract: (s) => s.vo2max_mlkgmin },
-    { key: 'resp', label: i18n.biometricsBreathRate, unit: 'rpm', color: colors.metricPurple, range: [12, 20], extract: (s) => s.resp_rate_rpm },
+    /* ml/kg is a mass fraction; VO₂max is a rate of oxygen uptake — mL/kg/min.
+       Capital L because at 11pt a lowercase `l` and a `1` are the same three
+       pixels, and this unit already has two numbers in it. */
+    { key: 'vo2max', label: 'VO₂max', unit: 'mL/kg/min', color: colors.metricOrange, range: [30, 60], extract: (s) => s.vo2max_mlkgmin },
+    /* `rpm` is revolutions per minute — an engine's unit. Breathing is counted
+       in breaths, which has no international symbol, so the unit is translated
+       rather than written here. Same string the Today card prints. */
+    { key: 'resp', label: i18n.biometricsBreathRate, unit: i18n.biometricsBreathUnit, color: colors.metricPurple, range: [12, 20], extract: (s) => s.resp_rate_rpm },
   ];
 
   const series = useMemo(() => {

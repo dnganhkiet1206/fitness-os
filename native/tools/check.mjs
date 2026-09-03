@@ -209,6 +209,12 @@ const STEPS = [
   */
   ['pill nổi', 'node', ['tools/raised-pill.mjs']],
   ['hình huy hiệu', 'node', ['tools/glyph-collision.mjs']],
+  /*
+    Cùng một lỗi "hai thứ đeo chung một dấu" như trên, nhưng ở thẻ Sinh trắc học
+    — nơi công cụ kia không soi tới, vì nó chỉ đọc trang trợ lý. Ở đó `Wind` đã
+    dùng cho cả VO₂max lẫn nhịp thở suốt thời gian ấy.
+  */
+  ['dấu sinh trắc', 'node', ['tools/biometric-icons.mjs']],
   ['ngôn ngữ AI', 'node', ['tools/ai-language.mjs']],
   ['worklet đo được', 'node', ['tools/measured-worklet.mjs']],
   ['giọng linh vật', 'node', ['tools/mascot-voice.mjs']],
