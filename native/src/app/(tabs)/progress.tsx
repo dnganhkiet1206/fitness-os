@@ -23,7 +23,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
-import { PAGE_TINT, colors, radius, spacing, type } from '@/constants/ascnd';
+import { PAGE_TINT, colors, glass, radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -1092,14 +1092,16 @@ const styles = StyleSheet.create({
 
   // Measurements
   measureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  /* Cùng cặp token và cùng lý do như ô macro bên Dinh dưỡng: trên nền gần
+     đen, nền không vẽ được ô, chỉ viền vẽ được. */
   measureCell: {
     width: '31%',
-    backgroundColor: 'rgba(24,24,27,0.2)',
+    backgroundColor: glass.bg,
     borderRadius: radius.sm,
     padding: spacing.sm + 2,
     gap: 2,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.2)',
+    borderColor: glass.border,
   },
   measureLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, color: colors.mutedForeground },
   measureValue: { fontSize: 15, fontFamily: 'Menlo', fontWeight: '600', color: colors.foreground, fontVariant: ['tabular-nums'] },

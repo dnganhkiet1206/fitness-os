@@ -32,7 +32,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { TrainingExplainer } from '@/components/ascnd/training-explainer';
 import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
-import { colors, radius, spacing } from '@/constants/ascnd';
+import { colors, glass, radius, spacing } from '@/constants/ascnd';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useProfile, useRecentWorkouts, useTodayBiometrics } from '@/hooks/useTodayData';
@@ -915,11 +915,23 @@ const styles = StyleSheet.create({
     width: '47.5%',
     flexDirection: 'row',
     gap: spacing.sm + 2,
-    backgroundColor: 'rgba(24,24,27,0.2)',
+    /*
+      Cùng cặp token với ô macro bên Dinh dưỡng, và cùng lý do đã đo ở đó.
+
+      Hai giá trị cũ — nền `rgba(24,24,27,0.2)`, viền `rgba(43,43,49,0.2)` —
+      là bản chép của đúng cặp đã làm ô macro tan vào thẻ. Đo trên mặt thẻ
+      #0e0e11: nền ra 1.015 và không cách nào cứu được (ngay cả alpha 0.9 chỉ
+      lên 1.077, đổi sang nền tối hơn cũng chỉ 1.045) — thẻ và mọi nền ứng
+      viên đều gần như đen. Viền thì lên 1.46 ở trắng 14%.
+
+      Nên thứ vẽ ra cái ô là VIỀN, không phải nền. `glass.bg`/`glass.border`
+      là cặp app đã dùng cho mọi khối nổi trên nền tối.
+    */
+    backgroundColor: glass.bg,
     borderRadius: radius.sm,
     padding: spacing.sm + 6,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.2)',
+    borderColor: glass.border,
   },
   bioTileInfo: { flex: 1, minWidth: 0, gap: 2 },
   bioValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 3 },
