@@ -163,6 +163,65 @@ async function journey(js) {
   frames(380, 0, -40);
   if (top() !== 1) bad.push('về tới đỉnh trang mà hàng nút không quay lại — đó là đường về duy nhất của nó');
 
+  /*
+    5. ĐỔI TAB giữa trang — hàng nút phải ở nguyên nơi vị trí cuộn để nó lại.
+
+    Đây là chặng mà bản trước KHÔNG có, và vì thế bước kiểm này xanh suốt trong
+    khi lỗi vẫn ở đó: `resetTabBar` ép `topChromeVisible` về 1 mỗi lần đổi tab.
+    Người dùng bấm sang tab khác rồi quay lại một Today còn cuộn dở, và ba cái
+    nút nở ra đè lên nội dung.
+
+    Diễn đàn nhà phát triển của Apple mô tả đúng triệu chứng ấy ở tiêu đề lớn
+    của `UINavigationBar` trong tab, và gọi nó là glitch — trạng thái nở/thu là
+    một hàm của vị trí cuộn, còn vị trí cuộn thì được giữ nguyên khi đổi tab.
+  */
+  frames(0, 400, 20);
+  if (top() !== 0) bad.push('cuộn sâu mà hàng nút chưa ẩn (chặng 5 chưa vào được đúng trạng thái)');
+  m.resetTabBar();
+  if (top() !== 0) {
+    bad.push(
+      'đổi tab thì hàng nút TỰ HIỆN LẠI dù trang vẫn đang ở giữa — quay lại Today là ba cái nút nở ra đè ' +
+        'lên nội dung, đúng thứ Apple gọi là glitch ở tiêu đề lớn trong tab',
+    );
+  }
+  if (tab() !== 1) {
+    bad.push(
+      'đổi tab mà thanh tab KHÔNG hiện lại — nó là điều hướng, và một tab vừa mở ra với thanh điều hướng ' +
+        'đang ẩn là một màn hình không có lối ra',
+    );
+  }
+
+  /*
+    6. MÀN KHÁC cuộn — không được chạm vào hàng nút của Today.
+
+    `handleTabScroll` là đường cuộn của `screen.tsx`, tức của mọi màn KHÁC;
+    Today đi qua `tabScrollFrame`. Bản trước cho nó gọi `applyTop` với lý do
+    "màn nào cũng phải nuôi cả hai tầng chrome" — nên cuộn Dinh dưỡng về đầu
+    trang sẽ bật hàng nút của Today lên, và quay lại Today vẫn ở giữa trang.
+  */
+  m.handleTabScroll(0);
+  if (top() !== 0) {
+    bad.push(
+      'một màn KHÁC cuộn về đầu trang của nó mà hàng nút của Today hiện lên — hàng nút chỉ tồn tại trên ' +
+        'Today, nên chỉ cú cuộn của Today mới được quyết định trạng thái của nó',
+    );
+  }
+
+  /*
+    7. Đường về CÓ CHỦ Ý — chạm lại đúng tab đang mở.
+
+    Đây là chỗ duy nhất còn được phép gọi hàng nút về mà không qua vị trí cuộn,
+    vì nó đi kèm một cú `scrollActiveToTop()` thật. Bước này canh hàm ấy còn
+    sống: nếu ai đó xoá `showTopChrome` cho gọn thì hàng nút chỉ về được ở khung
+    hình cuối của chuyển động cuộn, chậm hơn cú chạm khoảng ba phần mười giây.
+  */
+  if (typeof m.showTopChrome !== 'function') {
+    bad.push('không còn `showTopChrome` — chạm lại tab đang mở sẽ không gọi được hàng nút về');
+  } else {
+    m.showTopChrome();
+    if (top() !== 1) bad.push('gọi showTopChrome mà hàng nút không hiện lại');
+  }
+
   return bad;
 }
 
@@ -193,6 +252,36 @@ const SELF = [
       'if (y < 30)',
     ),
     expect: /cuộn lên mà thanh tab KHÔNG hiện lại/,
+  },
+  {
+    name: 'ép hàng nút hiện lại khi đổi tab (lỗi người dùng báo)',
+    /*
+      Neo vào ĐẦU thân hàm, không vào cuối.
+
+      Bản đầu thay chuỗi kết thúc `…withSpring(1, SPRING);\n}`, tức nó chỉ khớp
+      khi `resetTabBar` kết thúc đúng ở dòng ấy. Tôi thử làm hỏng mã THẬT theo
+      đúng cách người dùng đã báo — thêm lại hai dòng ép hàng nút về 1 — và bước
+      kiểm ra `exit 2 · không dựng được bản hỏng` thay vì nói ra điều nó vừa
+      thấy. Đúng là khác không, nên `check.mjs` vẫn đỏ; nhưng một guard chỉ hữu
+      ích khi nó gọi tên được thứ nó bắt.
+
+      `lastYUI.value = 0;` chỉ xuất hiện trong `resetTabBar` (chỗ khác là
+      `lastYUI.value = y;`), nên nó là cái neo ổn định bất kể thân hàm kết thúc
+      thế nào.
+    */
+    mutate: (s) => s.replace(
+      'lastYUI.value = 0;',
+      'lastYUI.value = 0;\n    topTarget.value = 1;\n    exports.topChromeVisible.value = 1;',
+    ),
+    expect: /đổi tab thì hàng nút TỰ HIỆN LẠI/,
+  },
+  {
+    name: 'để màn khác lái hàng nút của Today',
+    mutate: (s) => s.replace(
+      'lastScrollAt.value = Date.now();',
+      'lastScrollAt.value = Date.now();\n    applyTop(decideTop(y, delta));',
+    ),
+    expect: /một màn KHÁC cuộn về đầu trang/,
   },
   {
     name: 'bỏ đường về của hàng nút',
@@ -239,10 +328,14 @@ console.log(
   'hàng nút góc trên OK — LÁI THẬT một hành trình cuộn qua tabScrollFrame chứ không dò chữ, vì cả ba bản của ' +
     'hành vi này đều "trông đúng" khi đọc mã và chỉ khác nhau ở hành trình. Hàng nút đi ngay khi trang trôi ' +
     'được 40 điểm; cuộn LÊN giữa trang nó vẫn ở yên; ngừng cuộn hẳn nó cũng vẫn ở yên (hai bản trước bị ' +
-    'người dùng bác đúng ở hai chỗ ấy); và nó chỉ quay lại khi trang chạm ĐỈNH — một đường về duy nhất. Luật ' +
+    'người dùng bác đúng ở hai chỗ ấy); và nó chỉ quay lại khi trang chạm ĐỈNH — một đường về duy nhất. ' +
+    'ĐỔI TAB không đưa nó về: vị trí cuộn được giữ nguyên nên trạng thái cũng phải được giữ nguyên, và hành ' +
+    'vi ngược lại chính là thứ diễn đàn Apple ghi nhận như một glitch của tiêu đề lớn trong tab. Một màn ' +
+    'KHÁC cuộn về đầu trang của nó cũng không chạm được vào nó — hàng nút chỉ tồn tại trên Today. Luật ' +
     'canh cả tầng dưới để không ai "dọn cho gọn" thành một luật chung: thanh tab vẫn giữ ngưỡng riêng (còn ' +
     'hiện ở 40 điểm), vẫn quay lại khi cuộn lên, và vẫn quay lại sau 800ms ngừng cuộn — hẹn giờ ấy là của ' +
-    `nó, vì nó là điều hướng và phải luôn với tới được. ${SELF.length} phép thử ngược — trả lại nhánh ` +
+    `nó, vì nó là điều hướng và phải luôn với tới được. ${SELF.length} phép thử ngược — ép hàng nút hiện ` +
+    'lại khi đổi tab, để màn khác lái nó, trả lại nhánh ' +
     'cuộn-lên, trả lại hẹn giờ, áp luật hàng nút cho cả thanh tab, và bỏ hẳn đường về — đều đỏ đúng chỗ đã ' +
     'dự đoán và tất cả xanh trên bản thật',
 );

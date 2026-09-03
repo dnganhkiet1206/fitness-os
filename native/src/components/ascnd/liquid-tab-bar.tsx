@@ -37,7 +37,7 @@ import { press } from '@/constants/motion';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { scrollActiveToTop } from '@/lib/scroll-to-top';
-import { resetTabBar, tabBarVisible } from '@/lib/tab-bar-visibility';
+import { resetTabBar, showTopChrome, tabBarVisible } from '@/lib/tab-bar-visibility';
 
 const TAB_ICONS: Record<string, LucideIcon> = {
   index: Home,
@@ -115,6 +115,10 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
       // top would have shown it anyway.
       scrollActiveToTop();
       resetTabBar();
+      /* Chỉ ở nhánh NÀY — chạm lại tab đang mở là cử chỉ "về đầu trang". Đổi
+         sang tab khác thì hàng nút giữ nguyên trạng thái mà vị trí cuộn của tab
+         ấy quy định. */
+      showTopChrome();
       return;
     }
     resetTabBar();

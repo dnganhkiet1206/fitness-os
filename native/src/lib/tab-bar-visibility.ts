@@ -245,19 +245,63 @@ export function handleTabScroll(y: number) {
     target.value = next;
     tabBarVisible.value = withSpring(next, SPRING);
   }
-  /* Cùng `delta`, cùng một lần đo — xem `topChromeVisible`. Màn nào cuộn ở
-     luồng JS cũng phải nuôi cả hai tầng chrome, nếu không thì rời Today rồi
-     quay lại, hàng nút có thể kẹt ở trạng thái của màn khác. */
-  applyTop(decideTop(y, delta));
+  /*
+    KHÔNG nuôi chrome đỉnh từ đây.
+
+    Bản trước có `applyTop(decideTop(y, delta))` ở dòng này, với lý do "màn nào
+    cũng phải nuôi cả hai tầng, nếu không hàng nút kẹt ở trạng thái của màn
+    khác". Lập luận ấy ngược: hàng nút chỉ TỒN TẠI trên Today, và Today cuộn qua
+    `tabScrollFrame` chứ không qua đây. Hàm này là của `screen.tsx`, tức của mọi
+    màn KHÁC — nên nó đang để Dinh dưỡng và Tiến trình quyết định trạng thái một
+    hàng nút không nằm trên chúng.
+
+    Hệ quả người dùng thấy: cuộn Today xuống (hàng nút ẩn), sang tab khác, cuộn
+    tab ấy về đầu — `y <= TOP_AT` ở MÀN KIA bật hàng nút của Today lên — rồi
+    quay lại Today vẫn đang ở giữa trang và ba cái nút nằm đè lên nội dung.
+  */
   armTabBarRestore();
 }
 
-/** Called on tab switch — the web resets visibility per route */
+/**
+ * Đổi tab: thanh tab quay lại, hàng nút đỉnh thì KHÔNG.
+ *
+ * ── lỗi người dùng báo ──
+ *
+ * "Bấm từ bất kì trang nào khác rồi trở lại trang hôm nay thì mục này tự động
+ * hiện ra gây khó chịu." Đúng vậy: dòng cũ ở đây ép `topChromeVisible` về 1 mỗi
+ * lần đổi tab, bất kể Today đang ở đâu trong trang. Quay lại một trang còn cuộn
+ * dở thì hàng nút nở ra đè lên nội dung.
+ *
+ * ── và đó cũng là thứ Apple gọi là lỗi ──
+ *
+ * Diễn đàn nhà phát triển của Apple mô tả đúng triệu chứng này ở
+ * `UINavigationBar` tiêu đề lớn nằm trong tab: cuộn xuống cho tiêu đề thu lại,
+ * đổi tab, quay lại — nội dung vẫn ở chỗ cũ nhưng tiêu đề lớn đã nở ra và ĐÈ
+ * lên nội dung. Nó được ghi nhận là glitch, không phải hành vi mong muốn.
+ * Trạng thái nở/thu của tiêu đề lớn là một hàm của vị trí cuộn, và vị trí cuộn
+ * thì được giữ nguyên khi đổi tab — nên trạng thái cũng phải được giữ nguyên.
+ *
+ * Thanh tab thì vẫn về 1, và đó không phải sự thiếu nhất quán: nó là ĐIỀU
+ * HƯỚNG. Một tab vừa mở ra mà thanh điều hướng đang ẩn là một màn hình không có
+ * lối ra.
+ */
 export function resetTabBar() {
   lastY = 0;
   lastYUI.value = 0;
   target.value = 1;
   tabBarVisible.value = withSpring(1, SPRING);
+}
+
+/**
+ * Hàng nút đỉnh hiện lại — chỉ gọi khi trang THẬT SỰ đang về đỉnh.
+ *
+ * Một chỗ dùng duy nhất: chạm lại đúng tab đang mở, cử chỉ mà nền tảng quy ước
+ * là "về đầu trang". Cú cuộn ấy tự nó cũng sẽ bắn ra một khung hình ở y=0 và
+ * `decideTop` sẽ bật hàng nút lên — nhưng nói thẳng ra ở đây thì hàng nút và cú
+ * cuộn khởi hành cùng lúc, thay vì hàng nút đợi khung hình cuối của một chuyển
+ * động 300ms.
+ */
+export function showTopChrome() {
   topTarget.value = 1;
   topChromeVisible.value = withTiming(1, { duration: TOP_MS, easing: TOP_EASE });
 }

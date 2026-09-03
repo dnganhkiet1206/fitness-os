@@ -5,7 +5,7 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { colors } from '@/constants/ascnd';
 import { useI18n } from '@/hooks/use-app-settings';
 import { scrollActiveToTop } from '@/lib/scroll-to-top';
-import { resetTabBar } from '@/lib/tab-bar-visibility';
+import { resetTabBar, showTopChrome } from '@/lib/tab-bar-visibility';
 
 /**
  * Tapping the tab you are already on goes back to the top of it.
@@ -40,10 +40,16 @@ const CONTENT = { backgroundColor: colors.background } as const;
 
 const scrollToTopOnRetap = ({ navigation }: { navigation: { isFocused: () => boolean } }) => ({
   tabPress: () => {
-    // A tab you arrive at starts with its bar showing, whatever the last page
-    // left it as
+    // A tab you arrive at starts with its BAR showing, whatever the last page
+    // left it as — the bar is navigation and must always be reachable.
     resetTabBar();
-    if (navigation.isFocused()) scrollActiveToTop();
+    /* Hàng nút góc trên thì không: nó là hàm của vị trí cuộn, và vị trí cuộn
+       được giữ nguyên khi đổi tab. Chỉ cú chạm-lại-tab-đang-mở mới đưa nó về,
+       vì chỉ cú ấy mới thật sự đưa trang về đỉnh. */
+    if (navigation.isFocused()) {
+      scrollActiveToTop();
+      showTopChrome();
+    }
   },
 });
 
