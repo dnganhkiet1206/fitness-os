@@ -241,6 +241,36 @@ export default function AppTabs() {
         tối, vẫn không phải một màu neon (những màu ấy mang nghĩa ở khắp nơi).
         Chỉ có "bạc" giờ là bạc CỦA THEME ĐANG BẬT.
       */
+      /*
+        ── và nó Ở LẠI `primary`, dù `brand` giờ đã tồn tại ──
+
+        Token nhận diện `brand` ra đời để tách "ASCND tự nhận mình" khỏi "bấm
+        vào đây". Thanh tab là ứng viên rõ nhất — và là ứng viên DUY NHẤT: đọc
+        hết 40 chỗ dùng `c.primary` làm mực, tất cả đều là control, dấu dữ liệu
+        hoặc nhấn mạnh. Nhưng đo thì nó không qua.
+
+        Trên thanh tab SÁNG, tín hiệu "tab nào đang mở" là ĐỘ ĐẬM MỰC. Với màu
+        chưa chọn mà nguồn khai (`mutedForeground` #6b6559):
+
+            chọn = primary #1a1917   3,04×   ← tách rõ
+            chọn = brand   #525865   1,23×   ← dưới cả 1,74× của bản tối
+
+        1,23× là hai màu đọc ra như một. `brand` là một sắc TRUNG, và trên nền
+        sáng một sắc trung không thể vừa là nhận diện vừa là dấu đậm nhất trên
+        thanh — hai việc ấy đòi hai hướng ngược nhau.
+
+        Trên máy thật hôm nay thì `brand` vẫn qua (7,14:1 so với glyph TRẮNG mà
+        iOS 26 vẽ ra, xem đo ở trên). Nhưng chọn một màu chỉ đúng khi một prop
+        đang KHÔNG có tác dụng là đặt cược vào một lỗi của thư viện. Ghi chú
+        ngay trên đã lường trước ngày prop ấy hoạt động; với `brand` thì ngày
+        đó thanh tab hỏng, với `primary` thì không.
+
+        Nên `brand` tồn tại như một token và danh sách chỗ dùng của nó hiện
+        RỖNG. Đó là kết quả của phép đo, không phải một việc còn bỏ dở: để
+        `brand` lên thanh tab cần một màu chưa chọn SÁNG HƠN nó ở bản sáng, và
+        bảng màu chưa có một token nào như vậy. Thêm một token như thế là một
+        quyết định thiết kế, không phải một phép đổi tên.
+      */
       tintColor={c.primary}
       iconColor={{ default: c.mutedForeground }}
       labelStyle={{ default: { color: c.mutedForeground } }}

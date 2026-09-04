@@ -67,6 +67,9 @@ const r2 = (v) => Math.round(v * 100) / 100;
  */
 const ROLE = {
   foreground: 'text',
+  /* Nhận diện: nó xuất hiện dưới dạng CHỮ (dấu thương hiệu, nhãn tab đang
+     chọn), nên sàn của nó là sàn chữ chứ không phải sàn đồ hoạ. */
+  brand: 'text',
   mutedForeground: 'text',
   secondaryForeground: 'text',
   glassMuted: 'text',

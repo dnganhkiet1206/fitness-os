@@ -46,11 +46,28 @@ const tabs = strip(readFileSync(path.join(NATIVE, TABS), 'utf8'));
 const palette = readFileSync(path.join(NATIVE, PALETTE), 'utf8');
 const problems = [];
 
-/* Bảng màu đọc từ nguồn, không chép. */
-const token = (name) => {
-  const m = new RegExp(`\\n\\s*${name}: '(#[0-9a-fA-F]{3,8})'`).exec(palette);
-  if (!m) problems.push(`${PALETTE}: không đọc được token \`${name}\``);
-  return m?.[1];
+/**
+ * Bảng màu đọc từ nguồn, không chép — và đọc CẢ HAI bảng.
+ *
+ * ── vì sao "cả hai" là một sửa chữa, không phải một cải tiến ──
+ *
+ * Bản trước lấy khớp ĐẦU TIÊN của `name: '#…'` trong tệp bảng màu. `darkPalette`
+ * được khai trước, nên luật này chỉ từng đo bản TỐI — và nó vẫn xanh suốt thời
+ * gian bản sáng tồn tại, kể cả khi mọi con số của bản sáng khác hẳn.
+ *
+ * Nó lộ ra khi thử đổi tab đang chọn sang `brand`: bản tối vẫn qua (1,74× và
+ * 2,20×) trong khi bản SÁNG tụt xuống 1,23× so với màu chưa chọn mà nguồn khai
+ * — tức hai màu đọc ra như một, và không luật nào kêu.
+ */
+const tokens = (name) => {
+  const dark = /export const darkPalette = \{[\s\S]*?\n\} as const;/.exec(palette)?.[0] ?? '';
+  const light = /export const lightPalette: Palette = \{[\s\S]*?\n\};/.exec(palette)?.[0] ?? '';
+  const grab = (src, theme) => {
+    const m = new RegExp(`\\n\\s*${name}: '(#[0-9a-fA-F]{3,8})'`).exec(src);
+    if (!m) problems.push(`${PALETTE}: không đọc được token \`${name}\` ở bản ${theme}`);
+    return m?.[1];
+  };
+  return { dark: grab(dark, 'tối'), light: grab(light, 'sáng') };
 };
 
 const lin = (v) => {
@@ -82,32 +99,43 @@ if (!mutedName) {
 }
 
 if (!problems.length) {
-  const tint = token(tintName);
-  const muted = token(mutedName);
-  if (tint && muted) {
+  const tints = tokens(tintName);
+  const muteds = tokens(mutedName);
+  for (const theme of ['dark', 'light']) {
+    const tint = tints[theme];
+    const muted = muteds[theme];
+    if (!tint || !muted) continue;
     /*
       Hai ứng viên cho "màu tab chưa chọn":
         · thứ nguồn khai (`iconColor.default`)
         · TRẮNG — thứ máy thật vẽ ra khi khai ấy không có tác dụng
     */
     const against = [
-      [`màu nguồn khai (colors.${mutedName} = ${muted})`, muted],
+      [`màu nguồn khai (${mutedName} = ${muted})`, muted],
       ['trắng — thứ iOS 26 vẽ ra trên máy thật', '#ffffff'],
     ];
     for (const [what, hex] of against) {
       const r = ratio(tint, hex);
       if (r < FLOOR) {
         problems.push(
-          `${TABS}: tab đang chọn (colors.${tintName} = ${tint}) chỉ hơn ${what} ${r.toFixed(2)}:1 — ` +
-            `dưới sàn ${FLOOR}:1, tức nhìn vào thanh tab không biết mình đang ở tab nào`,
+          `${TABS}: bản ${theme === 'dark' ? 'TỐI' : 'SÁNG'} — tab đang chọn (${tintName} = ${tint}) ` +
+            `chỉ hơn ${what} ${r.toFixed(2)}:1, dưới sàn ${FLOOR}:1, tức nhìn vào thanh tab không biết ` +
+            'mình đang ở tab nào',
         );
       }
     }
+  }
+  {
+    const tint = tints.dark;
+    const muted = muteds.dark;
     if (!problems.length) {
       const a = ratio(tint, muted).toFixed(2);
       const b = ratio(tint, '#ffffff').toFixed(2);
+      const la = ratio(tints.light, muteds.light).toFixed(2);
+      const lb = ratio(tints.light, '#ffffff').toFixed(2);
       console.log(
-        `màu thanh tab OK — tab đang chọn là colors.${tintName} (${tint}), và nó tách khỏi CẢ HAI màu ` +
+        `màu thanh tab OK — ở CẢ HAI bảng màu. Tab đang chọn là \`${tintName}\`; bản sáng ${la}:1 so với ` +
+          `\`${mutedName}\` và ${lb}:1 so với trắng. Bản tối: ${tint}, và nó tách khỏi CẢ HAI màu ` +
           `chưa chọn có thể xảy ra: ${a}:1 so với colors.${mutedName} mà nguồn khai, ${b}:1 so với trắng mà ` +
           'iOS 26 thật sự vẽ ra khi khai ấy không có tác dụng. Luật đòi cả hai vì tôi không kiểm được iOS ' +
           `từ đây — bản đã ship trước đó là foreground trên nền trắng, 1,17:1, và không ai thấy nó suốt ` +

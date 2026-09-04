@@ -97,6 +97,37 @@ export const darkPalette = {
   glassMuted: '#c8ccd4',
   secondaryForeground: '#999999',
 
+  /**
+   * NHẬN DIỆN, tách khỏi HÀNH ĐỘNG.
+   *
+   * `primary` làm hai việc khác nhau bằng một màu: nó là nền nút "Lưu" và nó
+   * cũng là màu ASCND tự nhận mình. Ở bản TỐI hai việc ấy trùng nhau nên không
+   * ai phải chọn — bạc sáng vừa là hành động vừa là thương hiệu.
+   *
+   * Bản sáng buộc phải chọn. Một nút chính trên giấy phải GẦN ĐEN mới đọc ra
+   * là một nút (`primary` sáng = #1a1917, chữ trắng trên nó 17,6:1); nhưng
+   * "ASCND màu gần đen" thì không còn là một nhận diện, nó là mực.
+   *
+   * Nên hai vai, hai token. `brand` là THÉP LẠNH: 179° khỏi mực ấm trên vòng
+   * sắc, nên ở độ đậm tương đương nó đọc ra là một VẬT LIỆU khác chứ không
+   * phải một sắc độ khác — đúng điều một dấu nhận diện phải làm cạnh chữ.
+   * 6,51:1 trên trang, 7,14:1 trên thẻ.
+   *
+   * Bản tối là bản sao NGUYÊN VĂN của `primary` tối, nên bản tối không đổi một
+   * điểm ảnh: ở đó hai vai vẫn là một màu, và đó vẫn đúng.
+   *
+   * ── và nó KHÔNG được quét hàng loạt ──
+   *
+   * GĐ2A ước tính ~87 chỗ nhận diện. Đo lại theo vai: 107 chỗ dùng làm nền/
+   * viền/tint, 85 làm mực, 10 mơ hồ. Nhưng lấy mẫu 85 chỗ mực thì gần hết là
+   * CHỮ TƯƠNG TÁC — `termsLink`, `libToggleText`, `suggestBtnText`,
+   * `pickerNew` — thứ phải giữ `primary`, vì đổi chúng sang thép là làm một
+   * control thôi trông như bấm được. 85 là CẬN TRÊN, không phải khối lượng
+   * việc. Danh sách chỗ đổi được liệt kê bằng tay; chỗ nào mơ hồ thì giữ
+   * `primary`.
+   */
+  brand: '#a8afbd',
+
   // Brand (premium silver)
   primary: '#a8afbd',
   primaryForeground: '#070708',
@@ -240,6 +271,9 @@ export const lightPalette: Palette = {
   secondaryForeground: '#57524a',
   /** chữ mờ TRÊN KÍNH sáng — 6,9:1 trên mặt kính #fbf9f5 */
   glassMuted: '#5c564b',
+
+  /* ── nhận diện: thép lạnh, 179° khỏi mực ấm — xem `brand` ở bảng tối ── */
+  brand: '#525865',
 
   /* ── hành động chính: nút gần-đen, chữ trắng (17,6:1) ── */
   primary: '#1a1917',
