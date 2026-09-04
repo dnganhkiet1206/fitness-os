@@ -303,7 +303,9 @@ export default function AwardsScreen() {
                 <Stop offset="100%" stopColor="#ff9130" />
               </SvgGradient>
             </Defs>
-            <Circle cx={40} cy={40} r={R} fill="none" stroke="#17171c" strokeWidth={4} />
+            {/* Rãnh đọc từ bảng màu — `#17171c` viết cứng ở đây đo được 1,13:1 so với
+                nền, và không đổi theo bản sáng. Xem `palette.ts` → `ringTrack`. */}
+            <Circle cx={40} cy={40} r={R} fill="none" stroke={c.ringTrack} strokeWidth={4} />
             <Circle
               cx={40}
               cy={40}

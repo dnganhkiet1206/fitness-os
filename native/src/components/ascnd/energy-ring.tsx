@@ -3,6 +3,7 @@ import Animated, { Easing, useAnimatedProps, useReducedMotion, useSharedValue, w
 import Svg, { Circle, G } from 'react-native-svg';
 
 import { duration } from '@/constants/motion';
+import { usePalette } from '@/hooks/use-palette';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -53,6 +54,7 @@ function Segment({ on, color, arc, C, cx, cy, r, stroke, start }: {
   on: boolean; color: string; arc: number; C: number;
   cx: number; cy: number; r: number; stroke: number; start: number;
 }) {
+  const c = usePalette();
   const reduceMotion = useReducedMotion();
   const lit = useSharedValue(on ? 1 : 0);
 
@@ -70,7 +72,14 @@ function Segment({ on, color, arc, C, cx, cy, r, stroke, start }: {
   return (
     <G rotation={start} originX={cx} originY={cy}>
       <Circle
-        cx={cx} cy={cy} r={r} fill="none" stroke="#1c1c20"
+        /* `ringTrack` từ bảng màu, không phải `#1c1c20` viết cứng.
+
+           Giá trị cũ ở đây lệch một chút so với `#17171c` của các vòng khác —
+           đúng thứ mà chú thích của token `ringTrack` cảnh báo: "đủ để hai vòng
+           tròn cạnh nhau trong cùng một app đọc ra là hai thứ khác nhau mà
+           không ai chỉ được ra vì sao". Chính vì lệch mà nó thoát khỏi lượt tìm
+           kiếm `#17171c`, và `tools/ring-track.mjs` là thứ bắt được nó. */
+        cx={cx} cy={cy} r={r} fill="none" stroke={c.ringTrack}
         strokeWidth={stroke} strokeDasharray={[arc, C]} strokeLinecap="round"
       />
       <AnimatedCircle

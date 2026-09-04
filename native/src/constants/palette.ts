@@ -37,8 +37,23 @@ export const darkPalette = {
    * đọc ra là hai thứ khác nhau mà không ai chỉ được ra vì sao.
    *
    * Đưa lên đây thì câu ấy có một chỗ để đúng.
+   *
+   * ── và giá trị cũ KHÔNG NHÌN THẤY ĐƯỢC ──
+   *
+   * `#17171c` đo được **1,13:1** so với `background`. Đó không phải "kín đáo",
+   * đó là không có. Người dùng gửi ảnh khoanh đúng phần rãnh của hai vòng tròn
+   * ở đầu màn Hôm nay: chúng chìm hẳn vào nền.
+   *
+   * Repo này đã tìm ra điều đó MỘT LẦN rồi và không lan ra: `activity-rings.tsx`
+   * đo được 1,01:1 so với thẻ của nó, kết luận "indistinguishable, not subtle",
+   * rồi tự đặt một hằng số cục bộ `#3a3a42` cho riêng mình. Ba vòng tròn còn
+   * lại không nhận được kết luận ấy — đúng cái mà chú thích ngay trên vừa nói
+   * là lý do token này tồn tại.
+   *
+   * `#3a3a42` cho **1,79:1**: đủ để tìm thấy, còn xa mới tranh được với một
+   * vòng đã chạy ở 7:1 trở lên.
    */
-  ringTrack: '#17171c',
+  ringTrack: '#3a3a42',
 
   // Text
   foreground: '#ededed',
@@ -205,7 +220,16 @@ export const lightPalette: Palette = {
   accent: '#e9e3d8',
   border: '#dcd5c8',
   input: '#f4f0e8',
-  ringTrack: '#e6e0d4',
+  /*
+    Bản sáng có ĐÚNG cùng một lỗi, và nó không lộ ra cho tới khi có người nhìn
+    hai bản cạnh nhau: `#e6e0d4` chỉ hơn nền `#f7f4ef` **1,20:1**.
+
+    `#c4bcac` cho **1,72:1** — khớp với 1,79:1 của bản tối, nên một cái vòng
+    đọc ra giống nhau ở hai bản thay vì đậm ở bản này và mất tích ở bản kia.
+    Vẫn nằm trong họ màu ấm của bảng sáng (sắc ~40°), không phải một màu xám
+    trung tính lạc vào.
+  */
+  ringTrack: '#c4bcac',
 
   /* ── chữ: cùng THỨ TỰ prominence như bản tối ──
      tối:  foreground 16,5:1 > secondaryForeground 6,8:1 > mutedForeground 5,0:1

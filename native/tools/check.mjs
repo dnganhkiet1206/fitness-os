@@ -162,6 +162,7 @@ const STEPS = [
   ['màu thanh tab', 'node', ['tools/tab-tint.mjs']],
   ['đường cong điểm ngủ', 'node', ['tools/sleep-curve.mjs']],
   ['nhật ký sự cố', 'node', ['tools/crash-log.mjs']],
+  ['rãnh vòng tròn', 'node', ['tools/ring-track.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
   ['kiểu icon macro', 'node', ['tools/macro-icon-style.mjs']],

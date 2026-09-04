@@ -19,8 +19,10 @@ import { Icon } from '@/components/ascnd/icon';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
+/* Danh sách nhập của nhánh giao diện sáng (`macroBar` thay `MACRO_BAR`, bỏ
+   `glass`), cộng `PaletteKey` mà rãnh vòng tròn cần. */
 import { MACRO_TINT, macroBar, radius, spacing } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -31,7 +33,18 @@ import { displayVolume, volumeLabel, volumeToMl, type VolumeUnit } from '@/lib/u
 import { waterQuickAmounts } from '@/lib/water-presets';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const TRACK = '#17171c';
+/*
+  Rãnh vòng tròn đọc từ BẢNG MÀU, không viết cứng.
+
+  Nó là `'#17171c'` viết thẳng ở đây, và hai chuyện hỏng cùng lúc: nó đo được
+  1,13:1 so với nền nên gần như vô hình, và nó không đổi theo bản sáng — một
+  vòng tròn viền đen trên nền kem. Người dùng khoanh đúng phần rãnh của hai
+  vòng ở đầu màn Hôm nay khi đang dựng giao diện sáng.
+
+  `PaletteKey` chứ không phải một chuỗi: gõ sai tên token thì `tsc` đỏ ngay,
+  còn một chuỗi sai chỉ cho ra `undefined` rồi vẽ ra không màu.
+*/
+const TRACK = 'ringTrack' satisfies PaletteKey;
 
 /**
  * How far past a target still counts as hitting it.
@@ -206,7 +219,7 @@ function SmallRing({
             <Stop offset="100%" stopColor={c1} />
           </LinearGradient>
         </Defs>
-        <Circle cx="50" cy="50" r={R} fill="none" stroke={TRACK} strokeWidth={W} />
+        <Circle cx="50" cy="50" r={R} fill="none" stroke={c[TRACK]} strokeWidth={W} />
         {glow
           ? // Widest and faintest first. `W + 10` puts the outer edge at 48 in a
             // 100 box — the halo has to stay inside the viewBox or it is not a
@@ -1069,7 +1082,7 @@ function MiniRing({
         </Defs>
         {/* The tinted disc the icon used to sit on, now inside the ring */}
         <Circle cx={SIZE / 2} cy={SIZE / 2} r={R - W / 2} fill={bg} />
-        <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={TRACK} strokeWidth={W} />
+        <Circle cx={SIZE / 2} cy={SIZE / 2} r={R} fill="none" stroke={c[TRACK]} strokeWidth={W} />
         <AnimatedCircle
           cx={SIZE / 2}
           cy={SIZE / 2}

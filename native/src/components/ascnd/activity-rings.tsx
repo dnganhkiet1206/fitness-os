@@ -19,7 +19,7 @@ import { ActivityExplainer } from '@/components/ascnd/activity-explainer';
 import { HelpButton, useHelpTopic } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
 import { HERO_RING, radius, spacing } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -30,17 +30,22 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 /**
  * The unfilled part of a ring.
  *
- * It was `#17171c`, which measures **1.01:1** against the card behind it —
- * indistinguishable, not "subtle". That is why the card read as a placeholder:
- * two of its three rings were at zero because nothing wrote their columns, and
- * a ring at zero is nothing but its track, so the middle of the card was
- * genuinely, literally empty. Whatever the rings say, you should be able to
- * see that there are three of them.
+ * ── it used to be a local constant, and that was the bug one level up ──
  *
- * 1.60:1. Enough to find, nowhere near enough to compete with a lit ring at
- * 7:1 or better.
+ * This file found the problem first: the track was `#17171c`, which measures
+ * **1.01:1** against the card behind it — indistinguishable, not "subtle". Two
+ * of the three rings were at zero, and a ring at zero is nothing but its track,
+ * so the middle of the card was genuinely, literally empty.
+ *
+ * The fix was right and its home was wrong. Writing `#3a3a42` here cured three
+ * rings and left every other ring in the app on the invisible value — which is
+ * exactly what `palette.ts` says the `ringTrack` token exists to prevent. The
+ * user hit the leftover ones while building the light theme.
+ *
+ * So the number moved into the palette, where it also gets a light-theme twin.
+ * The reasoning stays with it there.
  */
-const TRACK = '#3a3a42';
+const TRACK = 'ringTrack' satisfies PaletteKey;
 
 const RING_COLORS: Record<RingKey, [string, string]> = {
   move: ['#ffc53d', '#ff9130'],
@@ -63,6 +68,7 @@ function Ring({
   gradId: string;
   pct: number;
 }) {
+  const c = usePalette();
   const circumference = 2 * Math.PI * radiusPx;
   const progress = useSharedValue(0);
   useEffect(() => {
@@ -81,7 +87,7 @@ function Ring({
         cy={center}
         r={radiusPx}
         fill="none"
-        stroke={TRACK}
+        stroke={c[TRACK]}
         strokeWidth={strokeWidth}
       />
       <AnimatedCircle

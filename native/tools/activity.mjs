@@ -195,9 +195,38 @@ try {
 
   /* ── and the card has to be visible and drawable ── */
   const card = read('src/components/ascnd/activity-rings.tsx');
-  const track = card.match(/const TRACK = '(#[0-9a-fA-F]{6})'/)?.[1];
+  /*
+    Màu rãnh nay nằm ở BẢNG MÀU, không phải một hằng số trong tệp này.
+
+    Nó từng là `const TRACK = '#3a3a42'` ngay trong `activity-rings.tsx`, và
+    chính chỗ cất đó là lỗi ở tầng trên: kết luận đúng chỉ chữa được ba vòng của
+    tệp chứa nó, còn năm vòng khác trong app ở lại trên giá trị vô hình cho tới
+    khi người dùng gặp chúng lúc dựng giao diện sáng.
+
+    Phép ĐO ở đây thì giữ nguyên và vẫn đáng giữ: `tools/ring-track.mjs` đo rãnh
+    so với NỀN TRANG, còn ba vòng này nằm trên một thẻ kính — một mặt sáng hơn,
+    tức một phép thử khác và chặt hơn. Bỏ nó đi là mất đúng con số đã bắt được
+    lỗi 1,01:1 lần đầu.
+  */
+  const track = read('src/constants/palette.ts')
+    .slice(0, read('src/constants/palette.ts').indexOf('export type PaletteKey'))
+    .match(/\n\s*ringTrack: '(#[0-9a-fA-F]{6})'/)?.[1];
+  /*
+    Khớp CHÍNH DÒNG GÁN, không khớp chữ "ringTrack" ở bất cứ đâu trong tệp.
+
+    Bản đầu viết `/ringTrack/.test(card)` và nó xanh cho một bản đã đổi token
+    sang `'border'` — vì đoạn chú thích ngay trên chỗ gán vẫn nhắc tên
+    `ringTrack`. Guard khớp chữ trong văn xuôi là guard xanh cho chính lỗi nó
+    sinh ra để bắt; `text-color.mjs` đã dính đúng chuyện này một lần trong repo.
+  */
+  if (!/const TRACK = 'ringTrack' satisfies PaletteKey;/.test(card)) {
+    problems.push(
+      "activity-rings: `const TRACK` không còn trỏ vào token `ringTrack` — rãnh sẽ lấy một màu khác, " +
+        'và nó không còn được phép đo nào ở đây canh nữa',
+    );
+  }
   if (!track) {
-    problems.push('activity-rings: không tìm thấy màu TRACK để đo');
+    problems.push('palette.ts: không đọc được `ringTrack` của bản tối để đo');
   } else {
     // glass.bg rgba(255,255,255,0.06) trên nền #070708
     const surface = over('#ffffff', 0.06, '#070708');
