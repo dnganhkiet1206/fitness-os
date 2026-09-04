@@ -73,10 +73,44 @@ const DARK_GRADIENTS: Record<string, [string, string]> = {
   red: ['#ff3b5c', '#ff2d8a'],
 };
 
+/**
+ * Điểm dừng SÁNG của bản sáng — cùng sắc, cùng chroma, chỉ khác độ sáng.
+ *
+ * ── dẫn ra, không chọn tay ──
+ *
+ * Mỗi giá trị là token trạng thái của chính nó trong OKLCH với `L + 0,055`,
+ * giữ nguyên C và H. Sắc lệch đo được ≤0,23° — nên hai điểm dừng là MỘT màu
+ * dưới hai lượng ánh sáng, không phải hai màu. Đó là khác biệt giữa "một vật
+ * bắt sáng" và "một dải chuyển màu".
+ *
+ * ── và độ dốc lấy từ bản TỐI, không lấy lớn nhất còn đạt sàn ──
+ *
+ * Bản đầu dẫn ΔL lớn nhất mà vẫn qua sàn 3:1: ra 1,91× giữa hai điểm dừng. Đo
+ * bản tối thì nó chạy 1,01× (đỏ), 1,07× (xanh), 1,26× (vàng) — nên 1,91× sẽ là
+ * một cung có độ dốc gấp rưỡi bất cứ thứ gì app từng vẽ, tức không phải "ánh
+ * sáng ban ngày dịu" mà là một dải màu mới. Chọn ΔL NHỎ NHẤT cho tỉ lệ ≥1,25:
+ *
+ *     xanh  #1f6747 → #317756   1,26×   CR thẻ 6,80 → 5,38
+ *     vàng  #695a1e → #796a2f   1,27×   CR thẻ 6,81 → 5,36
+ *     đỏ    #a92b3d → #bc3e4c   1,27×   CR thẻ 6,77 → 5,34
+ *
+ * Ba độ dốc BẰNG NHAU, cùng lý do ba token trải 0,036 điểm: một trạng thái có
+ * cung dốc hơn hai trạng thái kia là bảng màu tự chấm điểm. Và cả sáu giá trị
+ * đều trên sàn đồ hoạ 3:1, nên không đầu nào của cung biến mất.
+ */
+const LIGHT_ARC_LIT: Record<string, string> = {
+  green: '#317756',
+  yellow: '#796a2f',
+  red: '#bc3e4c',
+};
+
 function gradientFor(c: Palette, status: string): [string, string] {
   if (c === palettes.dark) return DARK_GRADIENTS[status] ?? DARK_GRADIENTS.yellow;
   const key = STATUS_COLOR[status] ?? STATUS_COLOR.yellow;
-  return [c[key], c[key]];
+  /* Đầu SÁNG ở offset 0%, tức góc trên-trái: cùng hướng đèn chính mà
+     `AmbientLight` đặt cho cả trang, và cùng hướng mặt sáng của `glass-card`.
+     Ánh sáng trong một app chỉ được đến từ một phía. */
+  return [LIGHT_ARC_LIT[status] ?? LIGHT_ARC_LIT.yellow, c[key]];
 }
 
 /*
@@ -516,17 +550,46 @@ export function ReadinessGauge({
             </LinearGradient>
           </Defs>
           <Circle cx="60" cy="60" r={R} fill="none" stroke={c[TRACK]} strokeWidth={6} />
-          {/* soft glow approximation */}
+          {/*
+            ── VẦNG SÁNG (tối) và BÓNG ĐỔ (sáng): cùng một vai, ngược vật liệu ──
+
+            Vòng dưới đây rộng 10 so với 6 của cung chính, nên nó thò ra hai bên
+            2 điểm. Ở bản tối, tô bằng chính màu cung ở độ mờ 0,25, đó là ánh
+            sáng RỌI RA từ một vật phát sáng.
+
+            Trên giấy thì không có gì phát sáng, và cùng đoạn mã ấy vẽ ra một
+            quầng màu 2 điểm quanh cung — chính là "hào quang màu" mà bản thiết
+            kế cấm. Nó KHÔNG được đóng cổng `m.lit` như cái quầng ở lớp ngoài,
+            nên nó đã sống sót qua GĐ1: hai cơ chế cùng một vai, chỉ một cái
+            được sửa.
+
+            Bản sáng thay bằng thứ giấy thật làm: một BÓNG ĐỔ. Cùng hình học,
+            cùng phần đã chạy (cùng `ringProps`, nên bóng không bao giờ dài hơn
+            cung), lệch xuống 2 điểm, tô bằng mực của theme ở 0,10 — composite
+            ra ~1,13:1 trên mặt thẻ, tức thấy được ở mép dưới mà không đọc ra
+            thành một vòng thứ hai.
+          */}
           <AnimatedCircle
-            cx="60" cy="60" r={R}
+            cx="60" cy="60"
+            r={R}
             fill="none"
-            stroke={g0}
-            opacity={0.25}
-            strokeWidth={10}
+            stroke={m.lit ? g0 : alpha(m.ink, 0.1)}
+            opacity={m.lit ? 0.25 : 1}
+            strokeWidth={m.lit ? 10 : 6}
             strokeLinecap="round"
             strokeDasharray={`${CIRC}`}
             animatedProps={ringProps}
-            transform="rotate(-90 60 60)"
+            /*
+              Độ lệch nằm ở TRANSFORM, không ở `cy` — và đó không phải chuyện
+              phong cách. `rotate(-90 60 60)` quay cả phần tử, nên một `cy={62}`
+              (xuống 2) sẽ bị quay thành sang PHẢI 2. Bóng đổ ngang là thứ không
+              có nguồn sáng nào giải thích được.
+
+              Danh sách transform áp từ phải sang trái, nên `translate` viết
+              TRƯỚC `rotate` là phép dịch xảy ra SAU phép quay: cung được quay
+              xong rồi mới hạ xuống 2 điểm, trong toạ độ cuối.
+            */
+            transform={m.lit ? 'rotate(-90 60 60)' : 'translate(0 2) rotate(-90 60 60)'}
           />
           <AnimatedCircle
             cx="60" cy="60" r={R}
