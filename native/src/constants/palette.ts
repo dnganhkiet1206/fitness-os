@@ -529,6 +529,65 @@ export const materials: Record<ThemeName, Material> = {
 };
 
 /**
+ * Ba giai đoạn ngủ, MỘT nguồn.
+ *
+ * ── vì sao nó không phải ba token trong bảng màu ──
+ *
+ * Bảng màu là những màu dùng được ở bất cứ đâu. Ba giá trị này chỉ có nghĩa
+ * cạnh nhau, trong một thanh, theo một THỨ TỰ — và thứ tự ấy là điều duy nhất
+ * chúng phải giữ. Đặt chúng vào bảng màu là mời chúng bị dùng lẻ, chỗ mà quan
+ * hệ giữa ba màu không còn tồn tại.
+ *
+ * ── cái đang hỏng ──
+ *
+ * Bản sáng mã hoá NGƯỢC. `dashboard-cards.tsx` vẽ giấc ngủ NÔNG bằng `#3f4048`
+ * — một mã màu viết thẳng, tức nó giữ nguyên ở cả hai theme — và trên giấy nó
+ * đo được **10,30:1**, tức nông là dải ĐẬM NHẤT trong ba dải. Còn sâu, thứ
+ * đáng đậm nhất, là `metricPurple` ở 4,96. Ba giai đoạn của một đêm đọc ra
+ * theo đúng chiều ngược với ý nghĩa của chúng.
+ *
+ * Và REM thì thậm chí không cùng họ màu: nó là `metricCyan`, xanh lơ.
+ *
+ * ── cái thay vào ──
+ *
+ * Một sắc TÍM, ba mật độ mực — tím vốn đã là màu của ban đêm trong
+ * `icon-tint.ts`. Trên mặt thẻ trắng:
+ *
+ *     nông  #b69fd3   2,36        đậm dần theo đúng chiều
+ *     REM   #9763ca   4,24        của độ sâu giấc ngủ
+ *     sâu   #7715b8   8,13
+ *
+ * Hai bậc CẠNH NHAU cách nhau 1,79 và 1,92 — thứ mắt thật sự phải tách trong
+ * một thanh liền, và cả hai đều xa ngưỡng "hai màu như một" (~1,2).
+ *
+ * `#b69fd3` ở 2,36 nằm DƯỚI sàn 3:1 của đồ hoạ. Nó được chấp nhận vì đây là
+ * một dải tô LỚN nằm sát hai dải đậm hơn và có chú giải chữ đi kèm — không
+ * phải một nét mảnh phải tự đứng. Nếu trên máy thật nó đọc yếu thì cả DẢI dịch
+ * đậm lên, không phải riêng một bậc: dịch một bậc là phá chính cái đều đặn là
+ * lý do dải này tồn tại.
+ *
+ * ── và một giá trị của bản TỐI đổi ở đây ──
+ *
+ * Cùng một khái niệm đang có HAI mã màu ở bản tối: `#3f4048` trong
+ * `dashboard-cards.tsx` và `#565663` trong `app/sleep-insights.tsx`. Một nguồn
+ * duy nhất không thể giữ cả hai. Chọn `#3f4048` — nó nằm trên thẻ Hôm nay (bề
+ * mặt người ta thấy mỗi ngày) và nó MỜ hơn (1,87 so với 2,67 trên thẻ tối),
+ * đúng vai "dải ít mực nhất". Nên màn Chi tiết giấc ngủ ở bản tối đổi một mã
+ * màu; đó là hệ quả trực tiếp của việc bỏ bản sao, và là thay đổi DUY NHẤT của
+ * bản tối trong cả giai đoạn này.
+ */
+export interface SleepRamp {
+  light: string;
+  rem: string;
+  deep: string;
+}
+
+export const sleepRamps: Record<ThemeName, SleepRamp> = {
+  dark: { light: '#3f4048', rem: darkPalette.metricCyan, deep: darkPalette.metricPurple },
+  light: { light: '#b69fd3', rem: '#9763ca', deep: '#7715b8' },
+};
+
+/**
  * Một token ở độ mờ nào đó.
  *
  * ── vì sao cần nó, và nó thay được bao nhiêu ──

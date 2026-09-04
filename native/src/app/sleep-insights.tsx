@@ -12,8 +12,8 @@ import { EmptyState } from '@/components/ascnd/empty-state';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { spacing, type } from '@/constants/ascnd';
-import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { alpha, makeStyles } from '@/constants/theme';
+import { useSleepRamp, usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useProfile, useSleepHistory } from '@/hooks/useTodayData';
@@ -27,14 +27,14 @@ import { toast } from '@/lib/toast';
   lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
   Ba hằng này cũng vậy; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
 */
-const DEEP = 'metricPurple' satisfies PaletteKey;
-const REM = 'metricCyan' satisfies PaletteKey;
-/* `LIGHT` không phải token: giấc ngủ nông là phần CÒN LẠI của một thanh, và nó
-   cố ý là một màu xám không mang nghĩa nào — xem 596 mã màu viết thẳng còn nợ. */
-const LIGHT = '#565663';
+/* Ba giai đoạn giờ đọc từ MỘT nguồn — `sleepRamps` trong `constants/palette.ts`.
+   Ba hằng cũ ở đây là bản thứ hai của cùng một quyết định, và hai bản đã trôi
+   khỏi nhau: giấc ngủ nông là `#565663` ở màn này và `#3f4048` ở thẻ Hôm nay.
+   Cùng một khái niệm, hai màu, không gì báo. */
 
 export default function SleepInsightsScreen() {
   const c = usePalette();
+  const sleep = useSleepRamp();
   const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là ba cái
@@ -184,7 +184,7 @@ export default function SleepInsightsScreen() {
             <StatCard
               value={stats.avgDeep === null ? '—' : `${stats.avgDeep.toFixed(1)}h`}
               label={i18n.sleepAvgDeep}
-              color={stats.avgDeep === null ? c.mutedForeground : c[DEEP]}
+              color={stats.avgDeep === null ? c.mutedForeground : sleep.deep}
             />
             <StatCard value={`${stats.debt.toFixed(1)}h`} label={i18n.sleepDebt} color={stats.debt > 5 ? c.readinessRed : c.mutedForeground} />
           </Animated.View>
@@ -194,9 +194,9 @@ export default function SleepInsightsScreen() {
           <GlassCard>
             <Text style={styles.cardTitle}>{i18n.sleepStages}</Text>
             <View style={styles.legend}>
-              <LegendDot color={c[DEEP]} label={i18n.sleepDeep} />
-              <LegendDot color={c[REM]} label="REM" />
-              <LegendDot color={LIGHT} label="Light" />
+              <LegendDot color={sleep.deep} label={i18n.sleepDeep} />
+              <LegendDot color={sleep.rem} label="REM" />
+              <LegendDot color={sleep.light} label="Light" />
             </View>
             <View style={styles.chart}>
               {nights.map((n, i) => (
@@ -205,9 +205,9 @@ export default function SleepInsightsScreen() {
                     <View style={{ flexGrow: Math.max(0, maxH - n.total_h) }} />
                     {n.stagesKnown ? (
                       <>
-                        <View style={[styles.barSeg, { flexGrow: n.light_h, backgroundColor: LIGHT }]} />
-                        <View style={[styles.barSeg, { flexGrow: n.rem_h, backgroundColor: c[REM] }]} />
-                        <View style={[styles.barSeg, { flexGrow: n.deep_h, backgroundColor: c[DEEP] }]} />
+                        <View style={[styles.barSeg, { flexGrow: n.light_h, backgroundColor: sleep.light }]} />
+                        <View style={[styles.barSeg, { flexGrow: n.rem_h, backgroundColor: sleep.rem }]} />
+                        <View style={[styles.barSeg, { flexGrow: n.deep_h, backgroundColor: sleep.deep }]} />
                       </>
                     ) : (
                       /* The night's length is known and its breakdown is not.

@@ -1,6 +1,6 @@
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppSettings } from '@/hooks/use-app-settings';
-import { materials, palettes, type Material, type Palette, type ThemeName } from '@/constants/theme';
+import { materials, palettes, sleepRamps, type Material, type Palette, type SleepRamp, type ThemeName } from '@/constants/theme';
 
 /**
  * Bảng màu đang dùng, và tên của nó.
@@ -54,4 +54,15 @@ export function usePalette(): Palette {
  */
 export function useMaterial(): Material {
   return materials[useThemeName()];
+}
+
+/**
+ * Dải ba giai đoạn ngủ của theme đang dùng.
+ *
+ * Không gộp vào `Material` dù cả hai cùng tra bằng tên theme: chất liệu nói bề
+ * mặt được LÀM BẰNG GÌ, còn đây là một phép mã hoá dữ liệu. Hai câu hỏi khác
+ * nhau đi chung một cái bọc là chỗ để cái sau bị sửa vì lý do của cái trước.
+ */
+export function useSleepRamp(): SleepRamp {
+  return sleepRamps[useThemeName()];
 }

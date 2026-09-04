@@ -23,7 +23,7 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
    `glass`), cộng `PaletteKey` mà rãnh vòng tròn cần. */
 import { MACRO_TINT, macroBar, radius, spacing } from '@/constants/ascnd';
 import { makeStyles, type PaletteKey } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useSleepRamp, usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -920,6 +920,7 @@ interface SleepCardProps {
 
 export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, stages }: SleepCardProps) {
   const c = usePalette();
+  const sleep = useSleepRamp();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const hours = Math.floor(totalMin / 60);
@@ -932,9 +933,13 @@ export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, s
   const stageTotal = stages ? stages.deep + stages.rem + stages.light : 0;
   const stageDefs = stages && stageTotal > 0
     ? [
-        { label: 'Deep', min: stages.deep, color: c.metricPurple },
-        { label: 'REM', min: stages.rem, color: c.metricCyan },
-        { label: 'Light', min: stages.light, color: '#3f4048' },
+        /* Một sắc tím, ba mật độ — xem `sleepRamps`. Trước đây ba giá trị này
+           là ba quyết định rời: hai token chỉ số và một mã màu viết thẳng, và
+           ở bản sáng mã màu ấy làm giấc ngủ NÔNG thành dải đậm nhất (10,30:1)
+           trong khi ngủ SÂU chỉ 4,96 — mã hoá ngược. */
+        { label: 'Deep', min: stages.deep, color: sleep.deep },
+        { label: 'REM', min: stages.rem, color: sleep.rem },
+        { label: 'Light', min: stages.light, color: sleep.light },
       ]
     : [];
 

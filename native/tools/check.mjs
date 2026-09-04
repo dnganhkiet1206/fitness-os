@@ -241,6 +241,12 @@ const STEPS = [
     commit trước sẽ không bao giờ bị bắt lại nữa.
   */
   ['bản tối đóng băng', 'node', ['tools/dark-frozen.mjs']],
+  /*
+    Ba giai đoạn ngủ chỉ có nghĩa CẠNH NHAU. Bản sáng mã hoá chúng ngược — nông
+    10,30:1 còn sâu 4,96 — vì ba màu được chọn ở ba chỗ bằng ba cách, và không
+    phép kiểm nào nhìn cả ba cùng lúc trên nền giấy.
+  */
+  ['dải giai đoạn ngủ', 'node', ['tools/sleep-ramp.mjs']],
   ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['bề mặt đóng băng', 'node', ['tools/frozen-surface.mjs']],
   ['khoá bảng màu', 'node', ['tools/palette-key.mjs']],
