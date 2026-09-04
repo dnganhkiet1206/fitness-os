@@ -7,7 +7,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { duration } from '@/constants/motion';
 import { PickRow } from '@/components/ascnd/pick-row';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 
 /**
@@ -167,7 +167,20 @@ export function Segmented<K extends string>({
 const CAP_H = 38;
 
 const stylesFor = makeStyles((c, m) => ({
-  row: { flexDirection: 'row', backgroundColor: 'rgba(24,24,27,0.6)' },
+  /*
+    Ray của biến thể thường — `secondary` ở 60%, KHÔNG phải một mã màu chép.
+
+    `rgba(24,24,27,0.6)` là 24,24,27 = `#18181b` = `secondary` của bản TỐI. Trên
+    giấy #f7f4ef nó composite ra **#717070**: một phiến xám đặc, 4,50:1 so với
+    chính trang — tức nó không đọc ra một cái rãnh mà một khối tối nằm đè lên.
+    Và hỏng nặng hơn ở chữ: nhãn mục chưa chọn (`mutedForeground` #6b6559) trên
+    phiến ấy đo được **1,17:1**. Nửa cái thanh Tiến trình không có chữ.
+
+    `alpha(c.secondary, 0.6)` giữ bản tối từng ký tự — `alpha('#18181b', 0.6)`
+    trả về đúng chuỗi cũ — và ở bản sáng cho 1,05 so với trang, 1,12 so với mặt
+    thẻ: đúng bậc mà bản tối vốn có (1,07), lần này theo đúng hướng của giấy.
+  */
+  row: { flexDirection: 'row', backgroundColor: alpha(c.secondary, 0.6) },
   seg: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   label: { ...type.caption, fontWeight: '600', color: c.mutedForeground },
   labelOn: { color: c.foreground },

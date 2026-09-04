@@ -138,7 +138,15 @@ export function MetricPanel({
             style={[styles.baseline, { bottom: (baseline.value / peak) * TRACK }]}
             pointerEvents="none">
             <Svg width={w} height={1}>
-              <Line x1={0} y1={0.5} x2={w} y2={0.5} stroke="rgba(255,255,255,0.5)" strokeWidth={1} strokeDasharray={[3, 4]} />
+              {/*
+                Mực của theme, không phải trắng: trên mặt thẻ TRẮNG, một nét
+                trắng 50% đo được **1,00:1** — đường trung bình của biểu đồ
+                không tồn tại ở bản sáng, và không có lỗi nào báo vì một chuỗi
+                vẫn là một chuỗi hợp lệ. `alpha(m.ink, 0.5)` giữ bản tối từng
+                ký tự (`ink` của bản tối LÀ `#ffffff`) và cho 3,36:1 ở bản
+                sáng — trên sàn 3:1 mà WCAG đòi cho một nét đồ hoạ.
+              */}
+              <Line x1={0} y1={0.5} x2={w} y2={0.5} stroke={alpha(m.ink, 0.5)} strokeWidth={1} strokeDasharray={[3, 4]} />
             </Svg>
             {/*
               On the line, at its **left** end.

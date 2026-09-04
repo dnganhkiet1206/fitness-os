@@ -234,6 +234,13 @@ const STEPS = [
     "xong" không bị đọc thành "xong hết".
   */
   ['bảng màu', 'node', ['tools/palette.mjs']],
+  /*
+    Giai đoạn 2 sửa bản SÁNG và hứa bản TỐI không đổi một ký tự. Bước này giữ
+    lời hứa ấy bằng một cái mốc ĐÓNG BĂNG thành dữ liệu, không phải bằng `git
+    diff` với `HEAD` — `HEAD` trôi theo từng commit, nên một thay đổi lọt qua ở
+    commit trước sẽ không bao giờ bị bắt lại nữa.
+  */
+  ['bản tối đóng băng', 'node', ['tools/dark-frozen.mjs']],
   ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['bề mặt đóng băng', 'node', ['tools/frozen-surface.mjs']],
   ['khoá bảng màu', 'node', ['tools/palette-key.mjs']],

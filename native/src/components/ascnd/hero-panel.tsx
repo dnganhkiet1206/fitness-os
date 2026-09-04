@@ -13,7 +13,7 @@ import type { LucideIcon } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { HERO_RING, radius, spacing, type, RING_TEXT_MAX_SCALE } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { duration } from '@/constants/motion';
 
@@ -231,6 +231,7 @@ export function HeroRing({
   iconColor?: string;
 }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   /* SVG ids are document-global on native, so four of these on one deck would
      all paint whichever gradient registered last. `status-scrim.tsx`: "this has
@@ -251,7 +252,17 @@ export function HeroRing({
             <Stop offset="100%" stopColor={to} />
           </LinearGradient>
         </Defs>
-        <Circle cx="60" cy="60" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth={6} />
+        {/*
+          Rãnh: chất liệu, không phải một lớp phủ trắng viết thẳng.
+
+          `rgba(255,255,255,0.08)` trên mặt thẻ TRẮNG của bản sáng đo được
+          **1,00:1** — vòng calo không có rãnh, chỉ có cung đã chạy trôi trong
+          khoảng trống. `m.ringTrack` giữ bản tối nguyên văn chuỗi này và cho
+          bản sáng #e6e0d4 (1,31:1). Xem `Material.ringTrack` để biết vì sao
+          nó KHÔNG phải `c.ringTrack` — token ấy là rãnh của vòng vẽ trên
+          TRANG, và trên mặt nổi nó tụt xuống 1,01:1 ở bản tối.
+        */}
+        <Circle cx="60" cy="60" r={R} fill="none" stroke={m.ringTrack} strokeWidth={6} />
         <Circle
           cx="60"
           cy="60"
