@@ -539,7 +539,11 @@ that nothing gets "fixed" until both the defect and the fix are proven.
 7. **§8 chia sẻ huy chương** — hai lỗi đã sửa; nội dung chia sẻ vẫn là một
    dòng chữ. Cần một tên miền (đường dẫn thật) hoặc `react-native-view-shot`
    (ảnh huy chương). Cả hai là quyết định ngoài mã, hoãn tới ngày phát hành.
-8. **`delete-account` does not exist yet** — no directory in
+8. **Bán khoá học $0.99** — ý tưởng người dùng ghi 2026-09-04, chưa làm. Nó
+   đi qua §3 (kinh tế phía server) nên không mở bán trước khi §3 xong. Toàn bộ
+   khảo sát — cái gì đã có, cái gì chưa, và câu hỏi sản phẩm phải trả lời
+   trước — nằm ở `docs/IDEAS.md` §1.
+9. **`delete-account` does not exist yet** — no directory in
    `supabase/functions/`, no entry in `config.toml`. The app's Settings
    screen already calls it and already says "the server has not enabled
    this yet" on a 404, so nothing is broken today; it is a release
