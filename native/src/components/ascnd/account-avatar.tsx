@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { radius } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { initialsFor } from '@/lib/initials';
 
@@ -70,8 +70,8 @@ const stylesFor = makeStyles((c) => ({
     bottom: 0,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(168,175,189,0.28)',
-    backgroundColor: 'rgba(168,175,189,0.12)',
+    borderColor: alpha(c.primary, 0.28),
+    backgroundColor: alpha(c.primary, 0.12),
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -16,7 +16,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import type { useI18n } from '@/hooks/use-app-settings';
@@ -268,7 +268,7 @@ const stylesFor = makeStyles((c, m) => ({
 
        Màu là `colors.background` viết dưới dạng rgba vì cần alpha — cùng một
        màu nền của trang, không phải một màu đen thứ hai. */
-    backgroundColor: 'rgba(7,7,8,0.55)',
+    backgroundColor: alpha(c.primaryForeground, 0.55),
   },
   /*
     Cùng mặt phẳng với mọi tấm nổi khác của app, không phải một màu tự chọn.

@@ -6,7 +6,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'rea
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -174,8 +174,8 @@ const stylesFor = makeStyles((c) => ({
     height: 44,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(168,175,189,0.3)',
-    backgroundColor: 'rgba(168,175,189,0.05)',
+    borderColor: alpha(c.primary, 0.3),
+    backgroundColor: alpha(c.primary, 0.05),
   },
   suggestBtnText: { fontSize: 12, fontWeight: '600', color: c.primary },
 
@@ -194,8 +194,8 @@ const stylesFor = makeStyles((c) => ({
   card: {
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.5)',
-    backgroundColor: 'rgba(24,24,27,0.3)',
+    borderColor: alpha(c.border, 0.5),
+    backgroundColor: alpha(c.secondary, 0.3),
     padding: spacing.sm + 4,
     gap: spacing.sm,
   },
@@ -212,7 +212,7 @@ const stylesFor = makeStyles((c) => ({
 
   ingredients: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(43,43,49,0.4)',
+    borderTopColor: alpha(c.border, 0.4),
     paddingTop: spacing.sm,
     gap: 6,
   },
@@ -228,9 +228,9 @@ const stylesFor = makeStyles((c) => ({
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(24,24,27,0.6)',
+    backgroundColor: alpha(c.secondary, 0.6),
   },
-  ingredientText: { fontSize: 11, color: 'rgba(237,237,237,0.8)' },
+  ingredientText: { fontSize: 11, color: alpha(c.foreground, 0.8) },
 
   moreBtn: {
     flexDirection: 'row',

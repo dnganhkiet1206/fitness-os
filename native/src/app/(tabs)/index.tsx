@@ -2726,8 +2726,8 @@ const stylesFor = makeStyles((c, m) => ({
     height: TOP_BAR_H,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.3)',
-    backgroundColor: 'rgba(24,24,27,0.2)',
+    borderColor: alpha(c.border, 0.3),
+    backgroundColor: alpha(c.secondary, 0.2),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -2736,7 +2736,7 @@ const stylesFor = makeStyles((c, m) => ({
      tròn do `AccountAvatar` tự vẽ, và một ô bo 16 nằm sau một vòng tròn là hai
      hình chồng nhau. */
   avatarBtn: { width: TOP_BAR_H, height: TOP_BAR_H, alignItems: 'center', justifyContent: 'center' },
-  squareBtnActive: { backgroundColor: 'rgba(168,175,189,0.2)', borderColor: 'rgba(168,175,189,0.4)' },
+  squareBtnActive: { backgroundColor: alpha(c.primary, 0.2), borderColor: alpha(c.primary, 0.4) },
 
   // Quick chips (web: rounded-xl bordered secondary/20)
   quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
@@ -2785,8 +2785,8 @@ const stylesFor = makeStyles((c, m) => ({
     height: 36,
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.3)',
-    backgroundColor: 'rgba(24,24,27,0.2)',
+    borderColor: alpha(c.border, 0.3),
+    backgroundColor: alpha(c.secondary, 0.2),
   },
   syncText: { fontSize: 13, fontWeight: '500', color: c.foreground },
 
@@ -2800,7 +2800,7 @@ const stylesFor = makeStyles((c, m) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  groupTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: 'rgba(237,237,237,0.8)' },
+  groupTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: alpha(c.foreground, 0.8) },
   /* Nút Sửa. Nhạt hơn tiêu đề một bậc và KHÔNG mang màu nhấn — cùng luật đã áp
      cho các viên chip và cho avatar: màu dành cho GIÁ TRỊ, không dành cho LỐI
      ĐI. Cỡ 13 để nó ngồi dưới tiêu đề 14 trong cùng một hàng chứ không tranh
@@ -2830,7 +2830,7 @@ const stylesFor = makeStyles((c, m) => ({
      nhịp, nhưng KHÔNG viền không nền: nó là kết cấu chứ không phải một nút —
      cả tấm thẻ mới là vùng kéo. */
   grip: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center', gap: 3 },
-  gripLine: { width: 15, height: 1.5, borderRadius: 1, backgroundColor: 'rgba(237,237,237,0.34)' },
+  gripLine: { width: 15, height: 1.5, borderRadius: 1, backgroundColor: alpha(c.foreground, 0.34) },
   editGroupHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   editGroupTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: c.foreground },
   editEmpty: { fontSize: 12, color: c.mutedForeground, fontStyle: 'italic', paddingVertical: 4 },
@@ -2841,7 +2841,7 @@ const stylesFor = makeStyles((c, m) => ({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.sm + 4,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(24,24,27,0.4)',
+    backgroundColor: alpha(c.secondary, 0.4),
   },
   editRowLabel: { flex: 1, fontSize: 13, fontWeight: '500', color: c.foreground },
   arrowBtn: {
@@ -2860,7 +2860,7 @@ const stylesFor = makeStyles((c, m) => ({
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    backgroundColor: 'rgba(7,7,8,0.5)',
+    backgroundColor: alpha(c.primaryForeground, 0.5),
     paddingHorizontal: spacing.md,
     color: c.foreground,
     fontSize: 15,

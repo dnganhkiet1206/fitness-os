@@ -19,7 +19,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -269,8 +269,8 @@ const stylesFor = makeStyles((c) => ({
     paddingVertical: 6,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(168,175,189,0.3)',
-    backgroundColor: 'rgba(168,175,189,0.06)',
+    borderColor: alpha(c.primary, 0.3),
+    backgroundColor: alpha(c.primary, 0.06),
   },
   planChipQty: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   planChipText: { fontSize: 12, color: c.foreground, flexShrink: 1 },

@@ -213,7 +213,7 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
     backgroundColor: alpha(m.ink, 0.06),
   },
-  headerAddOn: { backgroundColor: 'rgba(168,175,189,0.16)' },
+  headerAddOn: { backgroundColor: alpha(c.primary, 0.16) },
 
   form: { gap: spacing.sm },
   formTitle: { ...type.headline, color: c.foreground, marginBottom: 2 },

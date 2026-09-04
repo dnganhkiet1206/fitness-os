@@ -23,7 +23,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { supabase } from '@/integrations/supabase/client';
 import { errorText } from '@/lib/error-copy';
@@ -126,7 +126,7 @@ export function AuthScreen() {
       {/* Language selector (web top-right) */}
       <PickRow
         value={lang}
-        fill="rgba(168,175,189,0.15)"
+        fill={alpha(c.primary, 0.15)}
         radius={radius.sm - 4}
         gap={6}
         style={[styles.langRow, { top: insets.top + spacing.sm }]}>
@@ -279,7 +279,7 @@ const stylesFor = makeStyles((c) => ({
     fontWeight: '700',
     letterSpacing: 4.5,
     color: c.readinessGreen,
-    textShadowColor: 'rgba(43,245,168,0.4)',
+    textShadowColor: alpha(c.readinessGreen, 0.4),
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
   },
@@ -298,7 +298,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    backgroundColor: 'rgba(7,7,8,0.5)',
+    backgroundColor: alpha(c.primaryForeground, 0.5),
     paddingHorizontal: spacing.md,
     color: c.foreground,
     fontSize: 16,

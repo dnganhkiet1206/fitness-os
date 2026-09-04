@@ -12,7 +12,7 @@ import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
@@ -419,9 +419,9 @@ const stylesFor = makeStyles((c, m) => ({
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(43,245,168,0.10)',
+    backgroundColor: alpha(c.readinessGreen, 0.10),
   },
-  eatDone: { backgroundColor: 'rgba(43,245,168,0.18)' },
+  eatDone: { backgroundColor: alpha(c.readinessGreen, 0.18) },
   eatText: { ...type.caption, color: c.readinessGreen, fontWeight: '700' },
 
   /*

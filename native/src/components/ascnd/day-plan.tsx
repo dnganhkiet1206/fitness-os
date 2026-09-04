@@ -979,7 +979,7 @@ export function DayPlan({
                     accessibilityLabel={i18n.nRdExtraName}
                     style={[styles.exName, styles.exNameInput]}
                     placeholder={i18n.nRdExtraName}
-                    placeholderTextColor="rgba(255,255,255,0.3)"
+                    placeholderTextColor={alpha(m.ink, 0.3)}
                     value={block.name}
                     autoCapitalize="words"
                     onChangeText={(v) => renameExtra(added, v)}
@@ -1094,7 +1094,7 @@ export function DayPlan({
                     accessibilityLabel={`${row.exerciseName} ${i18n.nRdSet.replace('{n}', String(row.ordinal))} ${i18n.nWeight}`}
                     style={[styles.field, styles.fieldLoad, !loadOn && styles.fieldPlan]}
                     placeholder="—"
-                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    placeholderTextColor={alpha(m.ink, 0.25)}
                     keyboardType="decimal-pad"
                     returnKeyType="done"
                     selectTextOnFocus
@@ -1113,7 +1113,7 @@ export function DayPlan({
                     accessibilityLabel={`${row.exerciseName} ${i18n.nRdSet.replace('{n}', String(row.ordinal))} ${i18n.nReps}`}
                     style={[styles.field, styles.fieldReps, !repsOn && styles.fieldPlan]}
                     placeholder="—"
-                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    placeholderTextColor={alpha(m.ink, 0.25)}
                     keyboardType="number-pad"
                     returnKeyType="done"
                     selectTextOnFocus
@@ -1592,9 +1592,9 @@ const stylesFor = makeStyles((c, m) => ({
      finished job rather than as a button that stopped working. */
   finishDone: {
     opacity: 1,
-    backgroundColor: 'rgba(43,245,168,0.12)',
+    backgroundColor: alpha(c.readinessGreen, 0.12),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,245,168,0.35)',
+    borderColor: alpha(c.readinessGreen, 0.35),
   },
   finishTextDone: { color: c.readinessGreen },
   finishText: { ...type.body, color: c.primaryForeground, fontWeight: '600' },

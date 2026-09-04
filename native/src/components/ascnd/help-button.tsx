@@ -7,7 +7,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { radius, spacing } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { noteHelpOpened, noteNudged, shouldNudge } from '@/lib/help-nudge';
@@ -148,8 +148,8 @@ const stylesFor = makeStyles((c) => ({
     paddingHorizontal: spacing.sm + 2,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(59,166,255,0.25)',
-    backgroundColor: 'rgba(59,166,255,0.10)',
+    borderColor: alpha(c.metricBlue, 0.25),
+    backgroundColor: alpha(c.metricBlue, 0.10),
   },
   nudgeText: { flex: 1, fontSize: 12, lineHeight: 17, color: c.foreground },
 }));

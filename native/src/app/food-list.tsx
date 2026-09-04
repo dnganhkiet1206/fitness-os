@@ -13,7 +13,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMyFoods, useMyFoodsSorted, useRecentFoods } from '@/hooks/use-nutrition';
@@ -213,7 +213,7 @@ export default function FoodListScreen() {
 const stylesFor = makeStyles((c, m) => ({
   segBar: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(24,24,27,0.6)',
+    backgroundColor: alpha(c.secondary, 0.6),
     borderRadius: radius.sm,
     padding: 3,
   },
@@ -246,7 +246,7 @@ const stylesFor = makeStyles((c, m) => ({
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    backgroundColor: 'rgba(24,24,27,0.3)',
+    backgroundColor: alpha(c.secondary, 0.3),
     paddingHorizontal: spacing.md - 4,
   },
   searchInput: { flex: 1, color: c.foreground, fontSize: 15, height: '100%' },

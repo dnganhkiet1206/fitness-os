@@ -502,9 +502,9 @@ const stylesFor = makeStyles((c, m) => ({
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(180,92,255,0.16)',
+    backgroundColor: alpha(c.metricPurple, 0.16),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(180,92,255,0.35)',
+    borderColor: alpha(c.metricPurple, 0.35),
   },
   aiText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, color: c.metricPurple },
 
@@ -554,7 +554,7 @@ const stylesFor = makeStyles((c, m) => ({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
-    backgroundColor: 'rgba(180,92,255,0.16)',
+    backgroundColor: alpha(c.metricPurple, 0.16),
   },
   avatarUser: {
     width: 28,
@@ -586,7 +586,7 @@ const stylesFor = makeStyles((c, m) => ({
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(180,92,255,0.16)',
+    backgroundColor: alpha(c.metricPurple, 0.16),
   },
   /* No box of its own: the glass pill *is* the field. A bordered input inside a
      bordered pill is two controls drawn on top of each other. `maxHeight` still

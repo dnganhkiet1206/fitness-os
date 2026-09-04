@@ -24,7 +24,7 @@ import { Measured, NutritionSkeleton, SK } from '@/components/ascnd/skeleton';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodayMeals } from '@/components/ascnd/today-meals';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -945,7 +945,7 @@ const stylesFor = makeStyles((c, m) => ({
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    backgroundColor: 'rgba(24,24,27,0.3)',
+    backgroundColor: alpha(c.secondary, 0.3),
   },
   foodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
   foodInfo: { flex: 1, minWidth: 0, gap: 2 },

@@ -22,7 +22,7 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
 /* Danh sách nhập của nhánh giao diện sáng (`macroBar` thay `MACRO_BAR`, bỏ
    `glass`), cộng `PaletteKey` mà rãnh vòng tròn cần. */
 import { MACRO_TINT, macroBar, radius, spacing } from '@/constants/ascnd';
-import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
 import { useSleepRamp, usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -1436,12 +1436,12 @@ const stylesFor = makeStyles((c, m) => ({
   // than the tile's own `gap` puts the bar below them
   macroLines: { gap: 2 },
   macroNote: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
-  macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: 'rgba(24,24,27,0.4)', overflow: 'hidden' },
+  macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: alpha(c.secondary, 0.4), overflow: 'hidden' },
   macroBarFill: { height: '100%', borderRadius: 2 },
 
   // sleep stages
   stagesWrap: { gap: spacing.sm + 4 },
-  stagesBar: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', backgroundColor: 'rgba(24,24,27,0.3)' },
+  stagesBar: { flexDirection: 'row', height: 12, borderRadius: 6, overflow: 'hidden', backgroundColor: alpha(c.secondary, 0.3) },
   stagesLegend: { flexDirection: 'row', justifyContent: 'space-between' },
   stageLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 8, height: 8, borderRadius: 4 },
@@ -1492,7 +1492,7 @@ const stylesFor = makeStyles((c, m) => ({
     height: 44,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: 'rgba(59,166,255,0.28)',
+    borderColor: alpha(c.metricBlue, 0.28),
     backgroundColor: 'rgba(14,165,233,0.10)',
     alignItems: 'center',
     justifyContent: 'center',

@@ -1,6 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { View, type LayoutChangeEvent } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
+
+import { alpha, makeMaterialStyles } from '@/constants/theme';
+import { useMaterial } from '@/hooks/use-palette';
 
 /**
  * A bar that says there is more sideways, and how much.
@@ -48,6 +51,7 @@ export function ScrollProgress({
   content: number;
   tint: string;
 }) {
+  const styles = stylesFor(useMaterial());
   const [track, setTrack] = useState(0);
   const measure = (e: LayoutChangeEvent) => {
     const { width } = e.nativeEvent.layout;
@@ -86,15 +90,15 @@ export function ScrollProgress({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeMaterialStyles((m) => ({
   /* 3pt, and the same width as the row it belongs to. Thinner reads as a hair
      of noise under the cards; thicker starts to look like a control you can
      drag, which it is not. */
   track: {
     height: 3,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.10)',
+    backgroundColor: alpha(m.ink, 0.10),
     overflow: 'hidden',
   },
   thumb: { height: 3, borderRadius: 2, opacity: 0.65 },
-});
+}));

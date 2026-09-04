@@ -26,7 +26,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
 import { DEFAULT_REST, estimatedMinutes, restLabel } from '@/lib/prescription';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
@@ -815,7 +815,7 @@ const stylesFor = makeStyles((c, m) => ({
     borderWidth: m.inset.borderWidth,
     borderColor: 'transparent',
   },
-  groupTileOn: { borderColor: c.primary, backgroundColor: 'rgba(168,175,189,0.16)' },
+  groupTileOn: { borderColor: c.primary, backgroundColor: alpha(c.primary, 0.16) },
   groupName: { ...type.caption, color: c.mutedForeground },
   groupNameOn: { color: c.foreground, fontWeight: '700' },
   // Stands in for the diagram on the "All" tile, holding the library's size
@@ -843,7 +843,7 @@ const stylesFor = makeStyles((c, m) => ({
     borderWidth: m.inset.borderWidth,
     borderColor: 'transparent',
   },
-  exRowOn: { borderColor: c.primary, backgroundColor: 'rgba(168,175,189,0.14)' },
+  exRowOn: { borderColor: c.primary, backgroundColor: alpha(c.primary, 0.14) },
   art: { width: 30, height: 30, alignItems: 'center', justifyContent: 'center' },
   exText: { flex: 1, minWidth: 0, gap: 2 },
   exName: { ...type.body, color: c.foreground },

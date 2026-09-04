@@ -19,7 +19,7 @@ import {
 } from '@/components/ascnd/week-strip';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useRoutineDays, useUpsertRoutineDay, useWorkoutTemplates } from '@/hooks/use-library';
@@ -112,6 +112,7 @@ const WEEKS_FORWARD = 4;
 
 export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const { data: days } = useRoutineDays();
   const { data: templates, isError: templatesFailed } = useWorkoutTemplates();
@@ -273,7 +274,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
           </View>
         ) : null}
         <View style={styles.headSpacer} />
-        <View style={[styles.statePill, { backgroundColor: look.wash }]}>
+        <View style={[styles.statePill, { backgroundColor: look.wash(c, m) }]}>
           <Icon icon={look.icon} size={12} color={c[look.tint]} />
           <Text style={[styles.stateText, { color: c[look.tint] }]}>{stateLabel}</Text>
         </View>
@@ -478,6 +479,17 @@ const stylesFor = makeStyles((c, m) => ({
 
 
   // ── the day sheet ──
+  /*
+    ── LỚP 'rgba(0,0,0,0.6)' NÀY Ở LẠI, và đó là một phân loại, không phải bỏ sót ──
+
+    Nó KHÔNG phải một token của bản tối sống sót. Nó là ĐEN dùng đúng nghĩa đen:
+    việc của một lớp nền sau sheet là lấy bớt ánh sáng khỏi thứ phía sau, và
+    lấy bớt ánh sáng thì cả trên giấy lẫn trong phòng tối đều là làm tối đi.
+    iOS cũng làm mờ nền sau sheet bằng đen ở cả hai giao diện.
+
+    Khác hẳn một lớp phủ TRÊN một bề mặt — thứ mà trên nền đen thì cộng sáng
+    còn trên giấy thì trừ sáng, và là lý do 106 chỗ kia phải đổi.
+  */
   pickerBackdrop: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',

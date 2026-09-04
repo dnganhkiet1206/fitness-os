@@ -437,6 +437,17 @@ const stylesFor = makeStyles((c, m) => ({
   },
   customText: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
   scrimFill: { flex: 1 },
+  /*
+    ── LỚP 'rgba(0,0,0,0.6)' NÀY Ở LẠI, và đó là một phân loại, không phải bỏ sót ──
+
+    Nó KHÔNG phải một token của bản tối sống sót. Nó là ĐEN dùng đúng nghĩa đen:
+    việc của một lớp nền sau sheet là lấy bớt ánh sáng khỏi thứ phía sau, và
+    lấy bớt ánh sáng thì cả trên giấy lẫn trong phòng tối đều là làm tối đi.
+    iOS cũng làm mờ nền sau sheet bằng đen ở cả hai giao diện.
+
+    Khác hẳn một lớp phủ TRÊN một bề mặt — thứ mà trên nền đen thì cộng sáng
+    còn trên giấy thì trừ sáng, và là lý do 106 chỗ kia phải đổi.
+  */
   scrim: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',

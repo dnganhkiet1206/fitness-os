@@ -6,7 +6,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { effortTint, radius, spacing } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { getLocale, type AppLang } from '@/lib/i18n';
 import { displayWeight, weightLabel, type WeightUnit } from '@/lib/units';
@@ -65,6 +65,7 @@ export function SessionRow({
   volumeRatio?: number;
 }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const vi = lang === 'vi';
   const name = session.template_name || (vi ? 'Buổi tập' : 'Workout');
@@ -103,8 +104,8 @@ export function SessionRow({
               pct={Math.max(3, Math.min(volumeRatio, 1) * 100)}
               height={3}
               radius={1.5}
-              trackColor="rgba(255,255,255,0.09)"
-              color="rgba(255,255,255,0.32)"
+              trackColor={alpha(m.ink, 0.09)}
+              color={alpha(m.ink, 0.32)}
               style={styles.barTrack}
             />
           ) : null}

@@ -8,7 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 
 // Same decelerate curve the rings use, so bars and rings fill in sync
@@ -81,7 +81,7 @@ export function ProgressBar({
   color,
   height = 4,
   radius,
-  trackColor = 'rgba(24,24,27,0.4)',
+  trackColor,
   delay = 200,
   duration = 1000,
   style,
@@ -96,6 +96,11 @@ export function ProgressBar({
   style?: StyleProp<ViewStyle>;
 }) {
   const c = usePalette();
+  /* Mặc định phải giải ra TRONG THÂN, không ở danh sách tham số: `c` là kết quả
+     của một hook, nên nó chưa tồn tại lúc mặc định được tính. Giá trị cũ ở đây
+     là `rgba(24,24,27,0.4)` — `secondary` của bản TỐI, tức mọi thanh tiến độ
+     không truyền `trackColor` đều vẽ rãnh tối trên giấy. */
+  const trackFill = trackColor ?? alpha(c.secondary, 0.4);
   const r = radius ?? height / 2;
   const [track, setTrack] = useState(0);
 
@@ -107,7 +112,7 @@ export function ProgressBar({
   return (
     <View
       onLayout={measure}
-      style={[{ height, borderRadius: r, backgroundColor: trackColor, overflow: 'hidden' }, style]}>
+      style={[{ height, borderRadius: r, backgroundColor: trackFill, overflow: 'hidden' }, style]}>
       {track > 0 ? (
         <Fill track={track} pct={pct} color={color ?? c.primary} radius={r} delay={delay} duration={duration} />
       ) : null}

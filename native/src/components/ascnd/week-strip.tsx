@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { type } from '@/constants/ascnd';
-import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
+import { alpha, makeStyles, type Material, type Palette, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { localDateStr } from '@/lib/local-date';
 
@@ -44,18 +44,35 @@ export type DayState = 'rest' | 'done' | 'todo' | 'missed';
   lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
   Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
 */
-export const STATE_STYLE: Record<DayState, { icon: typeof CheckCircle2; tint: PaletteKey; wash: string }> = {
-  done: { icon: CheckCircle2, tint: 'readinessGreen', wash: 'rgba(63,185,80,0.14)' },
+/**
+ * `wash` là một HÀM của bảng màu, không phải một chuỗi.
+ *
+ * Bảng này sống ở phạm vi module, nên một mã màu viết vào đây bị đóng băng lúc
+ * import: bốn nền chip trạng thái giữ màu của bản TỐI kể cả khi người dùng bật
+ * bản sáng. Trước đây điều ấy được ghi lại như một món nợ vì `tint` không dẫn
+ * ra được `wash` — ba trong bốn thì dẫn được, còn `done` dùng một xanh cũ
+ * (#3fb950) khác hẳn `readinessGreen`, nên một phép dẫn CHUNG sẽ đổi bản tối.
+ *
+ * Một hàm giải được cả hai: nó không chạy lúc import, nên nó đọc được bảng màu
+ * ở chỗ vẽ; và mỗi trạng thái giữ công thức riêng của nó, nên `done` ở lại
+ * nguyên văn trong khi ba cái kia dẫn từ token. Không phải "sửa nửa vời" nữa —
+ * ba cái đúng được sửa, cái thứ tư là một quyết định thiết kế còn mở, và bây
+ * giờ nó là chỗ DUY NHẤT còn một mã màu.
+ */
+export const STATE_STYLE: Record<
+  DayState,
+  { icon: typeof CheckCircle2; tint: PaletteKey; wash: (c: Palette, m: Material) => string }
+> = {
+  /* QUYẾT ĐỊNH THIẾT KẾ CÒN MỞ: #3fb950 không phải token nào. Nó là xanh của
+     bản web cũ, và nó KHÔNG bằng `readinessGreen` ở theme nào cả. Giữ nguyên
+     văn cho tới khi có người quyết ngày đã tập nên mang màu gì. */
+  done: { icon: CheckCircle2, tint: 'readinessGreen', wash: () => 'rgba(63,185,80,0.14)' },
   /* Silver, not yellow. A training day that has not happened yet is not a
      warning about anything — it is Thursday. Yellow is what this app uses for
      "approaching a limit", and spending it here would leave nothing to say
      that with. */
-  todo: { icon: CircleDashed, tint: 'primary', wash: 'rgba(168,175,189,0.14)' },
-  /* `wash` vẫn là literal: bảng này ở phạm vi module nên không đọc được chất
-     liệu, và ba `wash` kia KHÔNG dẫn được từ `tint` — `done` dùng một xanh cũ
-     (#3fb950) khác hẳn `readinessGreen`, nên một phép dẫn chung sẽ đổi bản tối.
-     Ghi vào phần "còn nợ" thay vì sửa nửa vời. */
-  missed: { icon: CircleDashed, tint: 'mutedForeground', wash: 'rgba(255,255,255,0.06)' },
+  todo: { icon: CircleDashed, tint: 'primary', wash: (c) => alpha(c.primary, 0.14) },
+  missed: { icon: CircleDashed, tint: 'mutedForeground', wash: (_c, m) => alpha(m.ink, 0.06) },
   /*
     Rest is purple, and it is the only state here that is a *choice*.
 
@@ -65,7 +82,7 @@ export const STATE_STYLE: Record<DayState, { icon: typeof CheckCircle2; tint: Pa
     week reads as a shape at a glance. Grey said "nothing here", which is the
     one thing a planned rest day is not.
   */
-  rest: { icon: Moon, tint: 'metricPurple', wash: 'rgba(180,92,255,0.14)' },
+  rest: { icon: Moon, tint: 'metricPurple', wash: (c) => alpha(c.metricPurple, 0.14) },
 };
 
 /**

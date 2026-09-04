@@ -21,7 +21,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { duration } from '@/constants/motion';
 import { MACRO_TINT, radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { toast } from '@/lib/toast';
@@ -425,7 +425,7 @@ const stylesFor = makeStyles((c) => ({
     height: 50,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,59,92,0.4)',
+    borderColor: alpha(c.readinessRed, 0.4),
     alignItems: 'center',
     justifyContent: 'center',
   },

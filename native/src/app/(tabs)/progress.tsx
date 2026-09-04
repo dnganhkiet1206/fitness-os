@@ -1013,7 +1013,7 @@ const stylesFor = makeStyles((c, m) => ({
     borderRadius: radius.sm,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    backgroundColor: 'rgba(24,24,27,0.3)',
+    backgroundColor: alpha(c.secondary, 0.3),
   },
   goalLabel: { flex: 1, fontSize: 13, color: c.foreground },
   goalValue: { fontSize: 13, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
@@ -1046,7 +1046,7 @@ const stylesFor = makeStyles((c, m) => ({
     marginTop: spacing.sm,
     padding: 2,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(24,24,27,0.5)',
+    backgroundColor: alpha(c.secondary, 0.5),
   },
   // 34pt tall inside a 4pt-padded row: the touch target is the full segment
   // width, and seven-plus points wide is well past the 44pt floor.
@@ -1142,7 +1142,7 @@ const stylesFor = makeStyles((c, m) => ({
     alignItems: 'center',
     paddingVertical: 7,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(43,43,49,0.3)',
+    borderBottomColor: alpha(c.border, 0.3),
   },
   historyHead: { paddingVertical: 8 },
   historyHeadText: { fontSize: 11, fontWeight: '500', color: c.mutedForeground, textAlign: 'right' },

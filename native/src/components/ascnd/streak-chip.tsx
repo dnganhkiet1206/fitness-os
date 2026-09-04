@@ -6,7 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useDailyStreak } from '@/hooks/use-mascot-room';
@@ -94,12 +94,12 @@ const stylesFor = makeStyles((c) => ({
     justifyContent: 'center',
   },
   chipLit: {
-    backgroundColor: 'rgba(255,145,48,0.13)',
-    borderColor: 'rgba(255,145,48,0.28)',
+    backgroundColor: alpha(c.metricOrange, 0.13),
+    borderColor: alpha(c.metricOrange, 0.28),
   },
   chipRisk: {
-    backgroundColor: 'rgba(24,24,27,0.2)',
-    borderColor: 'rgba(43,43,49,0.3)',
+    backgroundColor: alpha(c.secondary, 0.2),
+    borderColor: alpha(c.border, 0.3),
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   count: { fontSize: 16, fontWeight: '800', letterSpacing: -0.3, color: c.metricOrange },

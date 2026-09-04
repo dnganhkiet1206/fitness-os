@@ -8,7 +8,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useReminders } from '@/hooks/use-reminders';
@@ -98,7 +98,7 @@ export default function RemindersScreen() {
       <GlassCard>
         <View style={styles.rowHead}>
           <View style={styles.rowTitleWrap}>
-            <View style={[styles.iconBadge, { backgroundColor: 'rgba(59,166,255,0.14)' }]}>
+            <View style={[styles.iconBadge, { backgroundColor: alpha(c.metricBlue, 0.14) }]}>
               <Icon icon={Droplets} size={16} />
             </View>
             <Text style={styles.rowTitle}>{i18n.nReminderWater}</Text>
@@ -211,7 +211,7 @@ export default function RemindersScreen() {
 const stylesFor = makeStyles((c) => ({
   intro: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   introText: { ...type.footnote, color: c.mutedForeground, flex: 1 },
-  warnCard: { backgroundColor: 'rgba(255,217,61,0.1)' },
+  warnCard: { backgroundColor: alpha(c.readinessYellow, 0.1) },
   warnText: { ...type.footnote, color: c.readinessYellow },
   rowHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   rowTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 },

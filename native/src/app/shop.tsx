@@ -511,9 +511,9 @@ const stylesFor = makeStyles((c, m) => ({
     paddingHorizontal: spacing.sm + 2,
     height: 30,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(255,217,61,0.12)',
+    backgroundColor: alpha(c.readinessYellow, 0.12),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,217,61,0.35)',
+    borderColor: alpha(c.readinessYellow, 0.35),
   },
   coinText: { ...type.footnote, fontWeight: '700', color: c.readinessYellow, fontVariant: ['tabular-nums'] },
   emptyCat: {

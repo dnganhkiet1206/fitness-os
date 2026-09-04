@@ -482,8 +482,8 @@ export default function WeeklyReviewScreen() {
 
   const REC_STYLE = {
     warning: { color: '#dc2f2f', bg: 'rgba(220,47,47,0.1)', icon: AlertTriangle },
-    success: { color: c.readinessGreen, bg: 'rgba(43,245,168,0.1)', icon: CheckCircle2 },
-    info: { color: c.metricBlue, bg: 'rgba(59,166,255,0.1)', icon: Activity },
+    success: { color: c.readinessGreen, bg: alpha(c.readinessGreen, 0.1), icon: CheckCircle2 },
+    info: { color: c.metricBlue, bg: alpha(c.metricBlue, 0.1), icon: Activity },
   } as const;
 
   const readinessPoints = chartData

@@ -11,8 +11,8 @@ import { Icon } from '@/components/ascnd/icon';
 import { ICON_MAP, Medal, TIER_CONFIG } from '@/components/ascnd/medal';
 import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { alpha, makeStyles } from '@/constants/theme';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AWARD_DEFINITIONS, useAwardProgress, useAwards, useCheckAwards } from '@/hooks/use-extras';
@@ -108,6 +108,7 @@ function MedalCard({
   current: number | null;
 }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const tier = TIER_CONFIG[award.tier] ?? TIER_CONFIG.bronze;
@@ -218,7 +219,7 @@ function MedalCard({
             pct={Math.max(0.02, pct)}
             color={tier.color}
             height={4}
-            trackColor="rgba(255,255,255,0.08)"
+            trackColor={alpha(m.ink, 0.08)}
           />
           <Text style={styles.medalProgress}>
             {current!.toLocaleString(locale)} / {need!.toLocaleString(locale)}
@@ -371,9 +372,9 @@ const stylesFor = makeStyles((c) => ({
     width: 64,
     height: 64,
     borderRadius: radius.lg,
-    backgroundColor: 'rgba(255,217,61,0.12)',
+    backgroundColor: alpha(c.readinessYellow, 0.12),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,217,61,0.25)',
+    borderColor: alpha(c.readinessYellow, 0.25),
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#ffd93d',
@@ -417,7 +418,7 @@ const stylesFor = makeStyles((c) => ({
     letterSpacing: 2,
     color: c.foreground,
   },
-  tierLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: 'rgba(43,43,49,0.4)' },
+  tierLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: alpha(c.border, 0.4) },
   tierCount: { ...type.mono, fontSize: 11, color: c.mutedForeground },
 
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm + 4 },
@@ -428,8 +429,8 @@ const stylesFor = makeStyles((c) => ({
     padding: spacing.md,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.5)',
-    backgroundColor: 'rgba(14,14,17,0.6)',
+    borderColor: alpha(c.border, 0.5),
+    backgroundColor: alpha(c.card, 0.6),
   },
   /* Số đứng riêng một dòng, chữ số đều bề rộng để cột không nhảy khi con số
      đổi từ 9 sang 10. */

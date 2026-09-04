@@ -6,7 +6,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
@@ -275,6 +275,6 @@ const stylesFor = makeStyles((c) => ({
     paddingHorizontal: spacing.sm,
     borderWidth: 1,
   },
-  wearingBtn: { backgroundColor: 'rgba(43,245,168,0.14)' },
+  wearingBtn: { backgroundColor: alpha(c.readinessGreen, 0.14) },
   wearingText: { color: c.readinessGreen },
 }));

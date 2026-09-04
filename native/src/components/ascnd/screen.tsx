@@ -542,6 +542,21 @@ const stylesFor = makeStyles((c, m) => ({
     color: c.foreground,
     textAlign: 'center',
   },
+  /*
+    ── QUYẾT ĐỊNH THIẾT KẾ CÒN MỞ, không phải một phép đổi token ──
+
+    Bóng đen sau chữ là đúng khi chữ SÁNG nằm trên một tấm ảnh. Ở bản sáng thì
+    không: `pageTitleFloat` không đặt lại màu, nên nó thừa `color: c.foreground`
+    = #1a1917 — chữ gần đen, và một bóng đen sau chữ gần đen không làm gì cả.
+    Cùng lúc đó mũi quay lại ngay cạnh nó bị ghim cứng `'#fff'` (dòng 389), nên
+    ở bản sáng hai thứ trong cùng một hàng đầu trang đang nói hai chuyện khác
+    nhau.
+
+    Hai màn dùng nó: `mascot-room` và `shop`. Cả hai chưa từng được chụp ở bản
+    sáng, và câu hỏi "đầu trang trong suốt trên nền sáng thì chữ màu gì" là một
+    quyết định thiết kế chưa ai ra, chứ không phải một mã màu chép nhầm. Ghi
+    lại ở đây thay vì đoán.
+  */
   pageTitleFloat: {
     fontWeight: '700',
     textShadowColor: 'rgba(0,0,0,0.55)',

@@ -907,7 +907,7 @@ export function WorkoutStatusCard({ planned }: { planned: number }) {
       </View>
 
       {planned > 0 && (
-        <ProgressBar pct={pct} color={c.primary} height={6} radius={3} trackColor="rgba(24,24,27,0.3)" style={styles.statusTrack} />
+        <ProgressBar pct={pct} color={c.primary} height={6} radius={3} trackColor={alpha(c.secondary, 0.3)} style={styles.statusTrack} />
       )}
 
       {todays.length > 0 && (
@@ -1074,7 +1074,7 @@ const stylesFor = makeStyles((c, m) => ({
        thứ năm thò ra ngoài. */
     paddingHorizontal: spacing.sm + 6,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(43,43,49,0.55)',
+    borderTopColor: alpha(c.border, 0.55),
   },
   /* 11, không phải 10.
 
@@ -1102,9 +1102,9 @@ const stylesFor = makeStyles((c, m) => ({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 3,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(255,217,61,0.15)',
+    backgroundColor: alpha(c.readinessYellow, 0.15),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,217,61,0.2)',
+    borderColor: alpha(c.readinessYellow, 0.2),
   },
   prText: { fontSize: 12, fontWeight: '700', color: c.readinessYellow },
   latestRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
@@ -1114,9 +1114,9 @@ const stylesFor = makeStyles((c, m) => ({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(168,175,189,0.12)',
+    backgroundColor: alpha(c.primary, 0.12),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(168,175,189,0.2)',
+    borderColor: alpha(c.primary, 0.2),
   },
   latestInfo: { flex: 1, minWidth: 0, gap: 2 },
   latestTop: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
@@ -1195,12 +1195,12 @@ const stylesFor = makeStyles((c, m) => ({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: 'rgba(255,217,61,0.1)',
+    backgroundColor: alpha(c.readinessYellow, 0.1),
     borderRadius: radius.sm,
     paddingHorizontal: spacing.sm + 4,
     paddingVertical: spacing.sm + 2,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,217,61,0.2)',
+    borderColor: alpha(c.readinessYellow, 0.2),
   },
   painText: { flex: 1, fontSize: 12, color: c.readinessYellow },
 
@@ -1216,23 +1216,23 @@ const stylesFor = makeStyles((c, m) => ({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 4,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(43,245,168,0.1)',
+    backgroundColor: alpha(c.readinessGreen, 0.1),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,245,168,0.2)',
+    borderColor: alpha(c.readinessGreen, 0.2),
   },
   doneText: { fontSize: 12, fontWeight: '600', color: c.readinessGreen },
   notYetRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   notYetText: { fontSize: 12, color: c.mutedForeground },
-  statusTrack: { height: 6, borderRadius: 3, backgroundColor: 'rgba(24,24,27,0.3)', overflow: 'hidden' },
+  statusTrack: { height: 6, borderRadius: 3, backgroundColor: alpha(c.secondary, 0.3), overflow: 'hidden' },
   statusFill: { height: '100%', borderRadius: 3, backgroundColor: c.primary },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   nameChip: {
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 4,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(168,175,189,0.1)',
+    backgroundColor: alpha(c.primary, 0.1),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(168,175,189,0.2)',
+    borderColor: alpha(c.primary, 0.2),
   },
   nameChipText: { fontSize: 11, fontWeight: '500', color: c.primary },
 
@@ -1242,11 +1242,11 @@ const stylesFor = makeStyles((c, m) => ({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.sm + 2,
-    backgroundColor: 'rgba(24,24,27,0.15)',
+    backgroundColor: alpha(c.secondary, 0.15),
     borderRadius: radius.sm,
     padding: spacing.sm + 6,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(43,43,49,0.2)',
+    borderColor: alpha(c.border, 0.2),
     overflow: 'hidden',
   },
   nudgeAccent: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 2 },
