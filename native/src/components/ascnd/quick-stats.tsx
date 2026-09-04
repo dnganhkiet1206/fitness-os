@@ -79,7 +79,7 @@ export function QuickStats({
     {
       key: 'protein',
       icon: Beef,
-      color: MACRO_TINT.protein,
+      color: c[MACRO_TINT.protein],
       label: i18n.nQuickProtein,
       value: Math.round(protein),
       target: proteinTarget,

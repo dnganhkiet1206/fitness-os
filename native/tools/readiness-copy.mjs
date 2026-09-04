@@ -286,7 +286,8 @@ if (!/ACWR_BANDS\.map/.test(sheet)) {
       'trong khi acwrZone chấm theo 5, nên ai có tỉ số 0.65–0.8 tra bảng không thấy mình ở đâu',
   );
 }
-const zoneKeys = [...card.matchAll(/^\s{2}(\w+): colors\.readiness/gm)].map((m) => m[1]);
+/* Khoá bảng màu thay cho mã màu — xem `acwr-tint.ts`. */
+const zoneKeys = [...card.matchAll(/^\s{2}(\w+): 'readiness/gm)].map((m) => m[1]);
 if (zoneKeys.length !== 5) {
   problems.push(`${CARD}: ACWR_TINT phải có đủ 5 băng, thấy ${zoneKeys.length}`);
 }

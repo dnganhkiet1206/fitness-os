@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Line, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
@@ -466,7 +466,7 @@ export function WaterChart({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   eyebrow: {
     ...type.caption,
     color: c.mutedForeground,
@@ -501,8 +501,8 @@ const stylesFor = makeStyles((c) => ({
     width: CALLOUT_W,
     height: CALLOUT_H,
     borderRadius: radius.sm,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
     // Opaque, not the glass fill — this sits over the bars it describes, and a
     // translucent chip with a neon column behind it is unreadable.
     backgroundColor: c.card,

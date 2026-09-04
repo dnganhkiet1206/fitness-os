@@ -1,7 +1,7 @@
 import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { usePalette, useThemeName } from '@/hooks/use-palette';
 
 /**
  * Dấu hiệu của app: chữ A với con koala, cạnh chữ ASCND.
@@ -34,15 +34,29 @@ import { usePalette } from '@/hooks/use-palette';
  * lý do dấu hiệu đọc ra là một CẶP với dòng chữ chứ không phải một hình đứng
  * cạnh một nhãn.
  *
- * ── và nét KHÔNG bị nhuộm màu ──
+ * ── và nét KHÔNG bị nhuộm màu — nhưng có HAI tệp ──
  *
  * `tintColor` sẽ đổi được nó thành `colors.foreground` cho khớp tuyệt đối với
  * dòng chữ. Nhưng đây là logo, và trắng tinh trên trang gần đen là cách nó
  * được vẽ ra để đọc. Chênh lệch với #ededed là 7% độ sáng — dưới ngưỡng nhìn
  * thấy khi hai thứ cách nhau 7 điểm, và không đáng đổi lấy việc sơn lại một
  * dấu hiệu thương hiệu ở một chỗ trong khi mọi chỗ khác giữ nguyên.
+ *
+ * Lập luận ấy giữ nguyên. Cái sai là nó chỉ có MỘT tệp: nét trắng trên giấy
+ * #f7f4ef đo được **1,00:1**, tức dấu hiệu biến mất hoàn toàn ở bản sáng, trong
+ * khi dòng chữ cạnh nó vẫn 17,57:1. Đầu trang hiện chữ mà không hiện dấu.
+ *
+ * Bản sáng của chính tệp ấy ĐÃ CÓ trong repo — `splash-icon-light.png`, mực
+ * #1a1917, đúng bằng `foreground` của bản sáng — và màn hình chờ đã chọn đúng
+ * tệp theo theme từ `app.json` suốt thời gian qua. Chỉ đầu trang là chưa.
+ *
+ * Nên vẫn KHÔNG nhuộm: chọn TỆP, không sơn lại nét. Mỗi theme lấy bản đã được
+ * vẽ cho nó, và cả hai đều là cùng một dấu hiệu tách khỏi cùng một icon.
  */
-const MARK = require('../../../assets/images/splash-icon.png');
+const MARK = {
+  dark: require('../../../assets/images/splash-icon.png'),
+  light: require('../../../assets/images/splash-icon-light.png'),
+} as const;
 
 /** Cạnh hộp ảnh. Nét thật cao 0,677 lần con số này — xem chú thích trên. */
 const BOX = 37;
@@ -69,6 +83,7 @@ const WORD_MAX_SCALE = 1.3;
 export function BrandLockup() {
   const c = usePalette();
   const styles = stylesFor(c);
+  const theme = useThemeName();
   return (
     /*
       Cả cụm là MỘT phần tử với trình đọc màn hình.
@@ -92,7 +107,7 @@ export function BrandLockup() {
       accessible
       accessibilityRole="header"
       accessibilityLabel="ASCND">
-      <Image source={MARK} style={styles.mark} resizeMode="contain" accessible={false} />
+      <Image source={MARK[theme]} style={styles.mark} resizeMode="contain" accessible={false} />
       <Text style={styles.word} accessible={false} maxFontSizeMultiplier={WORD_MAX_SCALE}>
         ASCND
       </Text>

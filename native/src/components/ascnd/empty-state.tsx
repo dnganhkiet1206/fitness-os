@@ -7,7 +7,7 @@ import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { useMascotIdentity } from '@/hooks/use-mascot';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 
 /**
@@ -144,13 +144,13 @@ export function EmptyState({
   a third of the width of "Nhập số đo", so the same component lands at three
   different sizes across three screens and stops reading as one thing.
 */
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.lg },
   chip: {
     width: 56,
     height: 56,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: alpha(m.ink, 0.05),
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.xs,

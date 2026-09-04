@@ -7,7 +7,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { MUSIC_APPS, offerable, type MusicApp } from '@/lib/music-app';
@@ -90,7 +90,7 @@ export function MusicLaunch() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md },
   label: { fontSize: 12, color: c.mutedForeground, marginRight: 'auto' },
   /* 44 tall like every other pill in the app, and lifted the same way — see
@@ -107,7 +107,7 @@ const stylesFor = makeStyles((c) => ({
      that outlines a whole panel disappears around something this small. So the
      edge is carried here, where the surface is little and the light behind it
      is low. */
-  borderColor: 'rgba(255,255,255,0.22)',
+  borderColor: alpha(m.ink, 0.22),
   borderWidth: 1,
   },
   chipInner: { height: 44, justifyContent: 'center', paddingHorizontal: spacing.md },

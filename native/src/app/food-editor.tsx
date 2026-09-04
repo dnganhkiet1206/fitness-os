@@ -56,6 +56,7 @@ const digits = (v: string) => {
   return trimmed;
 };
 
+/* Khoá, không phải màu — giải ra ở chỗ vẽ, nơi có `c`. */
 const MACRO_COLORS = MACRO_TINT;
 
 /** Add/edit custom food — mirrors the web FoodItemDialog */
@@ -196,16 +197,16 @@ export default function FoodEditorSheet() {
 
           {totalMacroG > 0 && (
             <View style={styles.distBar}>
-              <View style={[styles.distSeg, { flex: proteinPct, backgroundColor: MACRO_COLORS.protein }]} />
-              <View style={[styles.distSeg, { flex: carbsPct, backgroundColor: MACRO_COLORS.carbs }]} />
-              <View style={[styles.distSeg, { flex: fatPct, backgroundColor: MACRO_COLORS.fat }]} />
+              <View style={[styles.distSeg, { flex: proteinPct, backgroundColor: c[MACRO_COLORS.protein] }]} />
+              <View style={[styles.distSeg, { flex: carbsPct, backgroundColor: c[MACRO_COLORS.carbs] }]} />
+              <View style={[styles.distSeg, { flex: fatPct, backgroundColor: c[MACRO_COLORS.fat] }]} />
             </View>
           )}
 
           <View style={styles.macroGrid}>
-            <MacroField label={i18n.foodProtein} value={protein} onChange={setProtein} pct={proteinPct} color={MACRO_COLORS.protein} />
-            <MacroField label={i18n.foodCarbs} value={carbs} onChange={setCarbs} pct={carbsPct} color={MACRO_COLORS.carbs} />
-            <MacroField label={i18n.foodFat} value={fat} onChange={setFat} pct={fatPct} color={MACRO_COLORS.fat} />
+            <MacroField label={i18n.foodProtein} value={protein} onChange={setProtein} pct={proteinPct} color={c[MACRO_COLORS.protein]} />
+            <MacroField label={i18n.foodCarbs} value={carbs} onChange={setCarbs} pct={carbsPct} color={c[MACRO_COLORS.carbs]} />
+            <MacroField label={i18n.foodFat} value={fat} onChange={setFat} pct={fatPct} color={c[MACRO_COLORS.fat]} />
           </View>
 
           <View style={styles.fiberRow}>

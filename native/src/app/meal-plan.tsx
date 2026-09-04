@@ -11,7 +11,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { MealPlanWizard } from '@/components/ascnd/meal-plan-wizard';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -365,7 +365,7 @@ export default function MealPlanScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   // ── the week ──
   strip: { flexDirection: 'row', justifyContent: 'space-between' },
   cell: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: 2 },
@@ -436,9 +436,9 @@ const stylesFor = makeStyles((c) => ({
   */
   list: {
     borderRadius: radius.md,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
     overflow: 'hidden',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, height: 46 },
@@ -456,9 +456,9 @@ const stylesFor = makeStyles((c) => ({
     gap: 6,
     height: 46,
     borderRadius: radius.md,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   addText: { ...type.body, color: c.primary, fontWeight: '600' },
   note: { ...type.caption, color: c.mutedForeground, textAlign: 'center' },

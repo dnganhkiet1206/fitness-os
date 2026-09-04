@@ -19,7 +19,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { HelpButton, HelpNudge, useHelpTopic } from '@/components/ascnd/help-button';
 import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
-import { MACRO_BAR, MACRO_TINT, glass, radius, spacing } from '@/constants/ascnd';
+import { MACRO_TINT, macroBar, radius, spacing } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
@@ -685,12 +685,13 @@ export function NutritionCard({
 
     Bốn bóng khác nhau, nên chúng phân biệt được cả khi nhỏ tới mức chỉ còn bóng.
   */
+  /* Màu giải ra ở ĐÂY, nơi có `c` — bảng ở `ascnd.ts` chỉ giữ khoá. */
   const macros = [
-    { label: 'Protein', ...protein, icon: Beef, color: MACRO_TINT.protein, bar: [...MACRO_BAR.protein] as [string, string] },
-    { label: 'Carbs', ...carbs, icon: Wheat, color: MACRO_TINT.carbs, bar: [...MACRO_BAR.carbs] as [string, string] },
-    { label: 'Fat', ...fat, icon: Milk, color: MACRO_TINT.fat, bar: [...MACRO_BAR.fat] as [string, string] },
+    { label: 'Protein', ...protein, icon: Beef, color: c[MACRO_TINT.protein], bar: macroBar(c, 'protein') },
+    { label: 'Carbs', ...carbs, icon: Wheat, color: c[MACRO_TINT.carbs], bar: macroBar(c, 'carbs') },
+    { label: 'Fat', ...fat, icon: Milk, color: c[MACRO_TINT.fat], bar: macroBar(c, 'fat') },
     ...(fiber
-      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: MACRO_TINT.fiber, bar: [...MACRO_BAR.fiber] as [string, string] }]
+      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: c[MACRO_TINT.fiber], bar: macroBar(c, 'fiber') }]
       : []),
   ];
 
@@ -1331,7 +1332,7 @@ export function StepsWidget({ steps, target, labels }: { steps: number; target: 
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   microTitle: {
     fontSize: 12,
     fontWeight: '600',
@@ -1401,11 +1402,11 @@ const stylesFor = makeStyles((c) => ({
       nổi trên nền tối — không phải màu tôi bịa, và nó giữ ô macro cùng ngôn
       ngữ với `toolRow`, `tipsCard`, `group` của danh sách thực phẩm.
     */
-    backgroundColor: glass.bg,
+    backgroundColor: m.inset.bg,
     borderRadius: radius.sm,
     padding: spacing.sm + 4,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glass.border,
+    borderColor: m.inset.border,
   },
   macroLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: c.mutedForeground },
   macroValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
@@ -1462,8 +1463,8 @@ const stylesFor = makeStyles((c) => ({
     height: 44,
     borderRadius: radius.sm,
     borderWidth: 1,
-    borderColor: glass.border,
-    backgroundColor: glass.bg,
+    borderColor: m.inset.border,
+    backgroundColor: m.inset.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },

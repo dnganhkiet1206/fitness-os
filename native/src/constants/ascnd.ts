@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-import { darkPalette } from '@/constants/palette';
+import { darkPalette, type Palette, type PaletteKey } from '@/constants/palette';
 
 /**
  * ASCND design tokens — a faithful port of the web app's index.css
@@ -45,24 +45,31 @@ export const colors = darkPalette;
  * and a list where RPE 6 and RPE 10 look identical is a list you have to read
  * word by word instead of scanning.
  */
-export const effortTint = (rpe: number): string =>
-  ({ 8: colors.readinessYellow, 9: colors.metricOrange, 10: colors.readinessRed })[rpe] ??
-  colors.mutedForeground;
+/*
+  Trả về KHOÁ của bảng màu, không phải mã màu.
 
-/**
- * Liquid-glass surface recipe (dark) — the web renders cards as a 6%
- * white overlay with a hairline 12% white border and a faint top
- * highlight, over the near-black background. Replicated here without a
- * backdrop blur (nothing sits behind the card but the background, so the
- * blur is visually a no-op).
- */
-export const glass = {
-  bg: 'rgba(255,255,255,0.06)',
-  border: 'rgba(255,255,255,0.12)',
-  highlight: 'rgba(255,255,255,0.08)',
-  borderWidth: 0.5,
-  radius: 20,
-} as const;
+  Một mã màu ở phạm vi module bị đóng băng lúc import: bảng này đọc `colors`,
+  tức bản TỐI, nên trên giấy RPE 8 vẫn là vàng neon #ffd93d — 1,38:1 trên mặt
+  thẻ trắng. Khoá thì để mỗi theme tự trả lời, và bản sáng đã có giá trị riêng
+  cho cả ba token này.
+*/
+export const effortTint = (rpe: number): PaletteKey =>
+  ({ 8: 'readinessYellow', 9: 'metricOrange', 10: 'readinessRed' } as const)[rpe as 8 | 9 | 10] ??
+  'mutedForeground';
+
+/*
+  ── hằng `glass` đã bị BỎ ──
+
+  Nó là công thức bề mặt của bản TỐI, đóng băng lúc import, và 25 tệp vẽ ô con
+  bằng nó — nên trên giấy chúng vẽ ra một lớp phủ trắng 6% trên nền trắng ngà,
+  đo được 1,007:1. Tức là không có ô nào cả.
+
+  Vai nó từng giữ giờ là `Material.inset` trong `constants/palette.ts`, đọc lúc
+  chạy qua `makeStyles((c, m) => …)`. Bản tối giữ nguyên ba giá trị cũ từng ký
+  tự, nên không có điểm ảnh nào của bản tối đổi.
+
+  `tools/frozen-surface.mjs` canh cho nó không quay lại.
+*/
 
 export const radius = {
   sm: 12,
@@ -191,11 +198,11 @@ export const HERO_RING = 264;
  * lệ có sẵn từ trước — nó cũng là màu của chính tab Dinh dưỡng.
  */
 export const MACRO_TINT = {
-  protein: colors.metricRose,
-  carbs: colors.metricOrange,
-  fat: colors.metricBlue,
-  fiber: colors.readinessGreen,
-} as const;
+  protein: 'metricRose',
+  carbs: 'metricOrange',
+  fat: 'metricBlue',
+  fiber: 'readinessGreen',
+} as const satisfies Record<string, PaletteKey>;
 
 /**
  * Dải màu của thanh tiến độ từng chất.
@@ -211,16 +218,37 @@ export const MACRO_TINT = {
  * đọc ra là một dải chứ không phải hai màu ghép. Nên nó là một giá trị viết ra,
  * nhưng viết ra Ở ĐÂY, cạnh thứ nó phải hợp.
  */
+/*
+  ── chặng SAU của mỗi dải, và vì sao bản sáng tạm thời phẳng ──
+
+  Chặng đầu là chính `MACRO_TINT`, nên nó là một khoá và mỗi theme tự trả lời.
+
+  Chặng sau thì không phải token: `'#ff8095'`, `'#ffd93d'`, `'#2f9e6b'` là ba mã
+  màu chọn riêng cho bản tối để dải đọc ra là một dải. Không có bản sáng của
+  chúng, và bịa ra ba mã màu mới là một QUYẾT ĐỊNH THIẾT KẾ chứ không phải một
+  phép sửa hạ tầng — đúng thứ giai đoạn này không được làm.
+
+  Nên bản sáng tạm dùng lại chặng đầu: hai điểm dừng bằng nhau, tức một thanh
+  MỘT MÀU. Nó không sai màu, chỉ chưa có độ dốc. Đây là quyết định Giai đoạn 2.
+*/
 export const MACRO_BAR = {
-  protein: [colors.metricRose, '#ff8095'],
-  carbs: [colors.metricOrange, '#ffd93d'],
-  fat: [colors.metricBlue, colors.metricCyan],
-  fiber: [colors.readinessGreen, '#2f9e6b'],
-} as const satisfies Record<string, readonly [string, string]>;
+  protein: { from: 'metricRose', darkTo: '#ff8095' },
+  carbs: { from: 'metricOrange', darkTo: '#ffd93d' },
+  fat: { from: 'metricBlue', darkTo: 'metricCyan' },
+  fiber: { from: 'readinessGreen', darkTo: '#2f9e6b' },
+} as const satisfies Record<string, { from: PaletteKey; darkTo: string }>;
+
+/** Hai điểm dừng của một dải chất, đã giải ra màu cho theme đang bật. */
+export function macroBar(c: Palette, key: keyof typeof MACRO_BAR): [string, string] {
+  const { from, darkTo } = MACRO_BAR[key];
+  const start = c[from];
+  if (c !== colors) return [start, start];
+  return [start, darkTo.startsWith('#') ? darkTo : c[darkTo as PaletteKey]];
+}
 
 export const PAGE_TINT = {
-  activity: [colors.metricOrange, colors.metricPurple],
-  nutrition: [colors.readinessGreen, colors.metricOrange],
-  water: [colors.metricBlue, colors.metricCyan],
-  progress: [colors.metricPurple, colors.metricCyan],
-} as const satisfies Record<string, readonly [string, string]>;
+  activity: ['metricOrange', 'metricPurple'],
+  nutrition: ['readinessGreen', 'metricOrange'],
+  water: ['metricBlue', 'metricCyan'],
+  progress: ['metricPurple', 'metricCyan'],
+} as const satisfies Record<string, readonly [PaletteKey, PaletteKey]>;

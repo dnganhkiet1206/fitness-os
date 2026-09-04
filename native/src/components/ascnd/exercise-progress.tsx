@@ -6,7 +6,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { NativeStrings } from '@/lib/native-strings';
 import type { ExercisePerformance } from '@/lib/exercise-performance';
@@ -165,7 +165,7 @@ export function ExerciseProgress({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   /* A surface and a chevron. Without them it is a caption, and a caption is not
      something anybody tries to press. */
   strip: {
@@ -175,7 +175,7 @@ const stylesFor = makeStyles((c) => ({
     paddingHorizontal: spacing.sm,
     paddingVertical: 6,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(255,255,255,0.045)',
+    backgroundColor: alpha(m.ink, 0.045),
   },
   stripMain: { ...type.caption, color: c.foreground, fontVariant: ['tabular-nums'] },
   stripPct: { ...type.caption, fontWeight: '700', fontVariant: ['tabular-nums'] },

@@ -88,6 +88,21 @@ import { FIXTURES, REF, UID, day, jwt } from './live-world.mjs';
 
 const args = new Set(process.argv.slice(2));
 const wantShots = args.has('--shots');
+/*
+  ── theme, vì một bộ chạy chỉ vẽ được một thế giới ──
+
+  Bộ này bơm phiên đăng nhập vào `localStorage` trước khi trang chạy. Theme sống
+  ở cùng chỗ, dưới khoá `ascnd_theme` (xem `use-app-settings.tsx`), nên nó đi
+  cùng đường: một `addInitScript` nữa, chạy TRƯỚC mã của app.
+
+  Mặc định vẫn là không đặt gì — tức app tự quyết như trước, và mọi phép khẳng
+  định cũ vẫn chạy trên đúng thế giới cũ. `--theme=light` là để CHỤP bản sáng.
+*/
+const themeArg = [...args].find((a) => a.startsWith('--theme='))?.slice(8);
+if (themeArg && themeArg !== 'light' && themeArg !== 'dark') {
+  console.error(`--theme phải là light hoặc dark, nhận "${themeArg}"`);
+  process.exit(2);
+}
 
 /* Playwright is whatever the machine happens to have, exactly as in
    `check.mjs`. ESM ignores NODE_PATH, so the global root is required directly
@@ -246,6 +261,10 @@ async function openPage(chromium, route, mode, settleMs = 9000) {
     },
   })]);
 
+  /* Đặt TRƯỚC khi app chạy: `AppSettingsProvider` đọc khoá này trong effect đầu
+     tiên, nên một lần đặt sau đó là một lần vẽ lại mà ảnh chụp có thể bắt trượt. */
+  if (themeArg) await ctx.addInitScript((t) => { window.localStorage.setItem('ascnd_theme', t); }, themeArg);
+
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push('PAGEERROR: ' + e.message));
@@ -316,8 +335,9 @@ async function boot(chromium, route, mode, settleMs = 9000) {
   const text = await readable(page);
   const rootLen = await page.evaluate(() => document.getElementById('root')?.innerHTML?.length ?? 0);
   if (wantShots) {
-    mkdirSync(path.join(SHOTS, mode), { recursive: true });
-    await page.screenshot({ path: path.join(SHOTS, mode, `${route === '/' ? 'today' : route.slice(1)}.png`) });
+    const dir = path.join(SHOTS, themeArg ? `${themeArg}-${mode}` : mode);
+    mkdirSync(dir, { recursive: true });
+    await page.screenshot({ path: path.join(dir, `${route === '/' ? 'today' : route.slice(1).replace(/\//g, '-')}.png`) });
   }
   await browser.close();
   return { text, rootLen, errors };
@@ -985,7 +1005,7 @@ const SCENARIOS = [
  * but the real screen rendering the real fixture can put both on screen.
  */
 async function canary(chromium) {
-  const { text, rootLen } = await boot(chromium, '/', 'full');
+  const { text, rootLen, errors } = await boot(chromium, '/', 'full');
   const seen = {
     'tổng calo hôm nay': /1[,.]680/.test(text),
     'còn lại 770 kcal': /770/.test(text),
@@ -998,7 +1018,10 @@ async function canary(chromium) {
       'canary hỏng — bộ chạy KHÔNG nhìn thấy app thật, đừng tin kết quả nào bên dưới.\n' +
         `  thiếu: ${missing.join(', ')}\n` +
         '  Đây đúng là cách bản đầu tiên của công cụ này báo "30/30 màn khoẻ" trong khi\n' +
-        '  29 trong số đó là trang 404 của web server.',
+        '  29 trong số đó là trang 404 của web server.' +
+        /* Lỗi runtime là thứ DUY NHẤT nói được vì sao trang trống, và không in nó
+           ra thì người sửa chỉ biết "hỏng" mà không biết hỏng ở đâu. */
+        (errors.length ? `\n\n  lỗi trang:\n${errors.slice(0, 5).map((e) => `    ${e}`).join('\n')}` : '\n\n  (trang không ném lỗi nào — nhiều khả năng là server, không phải app)'),
     );
     process.exit(2);
   }

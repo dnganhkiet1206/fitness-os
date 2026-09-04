@@ -23,7 +23,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
-import { PAGE_TINT, glass, radius, spacing, type } from '@/constants/ascnd';
+import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
@@ -966,7 +966,7 @@ export default function ProgressScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   calCard: { gap: spacing.sm },
   calHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   calIcon: {
@@ -1057,7 +1057,7 @@ const stylesFor = makeStyles((c) => ({
     top: 2,
     bottom: 2,
     borderRadius: radius.sm - 2,
-    backgroundColor: 'rgba(255,255,255,0.09)',
+    backgroundColor: alpha(m.ink, 0.09),
   },
   rangeText: { ...type.footnote, color: c.mutedForeground },
   rangeTextOn: { color: c.foreground, fontWeight: '600' },
@@ -1113,12 +1113,12 @@ const stylesFor = makeStyles((c) => ({
      đen, nền không vẽ được ô, chỉ viền vẽ được. */
   measureCell: {
     width: '31%',
-    backgroundColor: glass.bg,
+    backgroundColor: m.inset.bg,
     borderRadius: radius.sm,
     padding: spacing.sm + 2,
     gap: 2,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glass.border,
+    borderColor: m.inset.border,
   },
   measureLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, color: c.mutedForeground },
   measureValue: { fontSize: 15, fontFamily: 'Menlo', fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },

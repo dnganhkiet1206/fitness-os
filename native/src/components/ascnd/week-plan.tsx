@@ -18,7 +18,7 @@ import {
   dayStateOf,
 } from '@/components/ascnd/week-strip';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
@@ -434,7 +434,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   // ── which week ──
   weekNav: {
     flexDirection: 'row',
@@ -448,7 +448,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: alpha(m.ink, 0.05),
   },
   /* Still drawn, still 32pt, just faded — a button that disappears at the end
      of the range takes the label with it as the row re-centres. */

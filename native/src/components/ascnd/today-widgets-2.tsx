@@ -26,9 +26,9 @@ import { Medal, TIER_CONFIG } from '@/components/ascnd/medal';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { TrainingExplainer } from '@/components/ascnd/training-explainer';
 import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
-import { glass, radius, spacing } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { radius, spacing } from '@/constants/ascnd';
+import { alpha, makeStyles, type Material } from '@/constants/theme';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useProfile, useRecentWorkouts, useTodayBiometrics } from '@/hooks/useTodayData';
@@ -97,7 +97,8 @@ import { displayWeight, weightLabel } from '@/lib/units';
  * because the key is a promise about the line: two literals drifting apart
  * would make the legend describe something the chart is not drawing.
  */
-const HABIT_COLOUR = 'rgba(255,255,255,0.55)';
+/* Hàm của chất liệu, không hằng: ở phạm vi module không đọc được theme nào. */
+const habitColour = (m: Material) => alpha(m.ink, 0.55);
 
 function DashedRule({ width, colour }: { width: number; colour: string }) {
   if (width <= 0) return null;
@@ -403,6 +404,7 @@ const whenLabel = (days: number, vi: boolean) => {
  * Everything on the card is now either a sentence, a weight, or a date.
  */
 export function TrainingCard({ acwr }: { acwr: number | null }) {
+  const m = useMaterial();
   const c = usePalette();
   const styles = stylesFor(c);
   /* The habit line spans the chart, and `DashedRule` needs that span in pixels
@@ -467,7 +469,16 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   const judged = acwr != null && acwr > 0;
   const a = acwr ?? 0;
   const zone = acwrZone(a);
-  const zoneTint = judged ? ZONE_TINT[zone] : 'rgba(255,255,255,0.20)';
+  /*
+    Nhánh CÓ chấm điểm giải ra từ bảng màu; nhánh chưa chấm vẫn là literal cũ.
+
+    `rgba(255,255,255,0.20)` là một lớp phủ trắng — loại A, phụ thuộc theme —
+    nhưng đổi nó đổi luôn bản TỐI, và giai đoạn này không được đổi bản tối.
+    Nó cũng đang có một lỗi có sẵn: hai chỗ dưới nối chuỗi `${zoneTint}44`, thứ
+    chỉ đúng với mã hex — với `rgba(…)` nó ra một chuỗi không hợp lệ. Cả hai
+    được ghi vào phần "còn nợ" thay vì sửa lén ở đây.
+  */
+  const zoneTint = judged ? c[ZONE_TINT[zone]] : alpha(m.ink, 0.20);
   const cmp = loadComparison(a);
 
   const weekSessions = week ?? [];
@@ -739,7 +750,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
             </Text>
             {habitVolume > 0 ? (
               <View style={styles.trendKey}>
-                <DashedRule width={14} colour={HABIT_COLOUR} />
+                <DashedRule width={14} colour={habitColour(m)} />
                 <Text style={styles.trendKeyText}>
                   {vi ? 'thói quen' : 'habit'} {kg(habitVolume)}
                 </Text>
@@ -765,10 +776,10 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
                       {
                         height: empty ? 2 : Math.max(3, (w.volume / (trendMax || 1)) * TREND_H),
                         backgroundColor: empty
-                          ? 'rgba(255,255,255,0.10)'
+                          ? alpha(m.ink, 0.10)
                           : last
                             ? zoneTint
-                            : 'rgba(255,255,255,0.20)',
+                            : alpha(m.ink, 0.20),
                       },
                     ]}
                   />
@@ -790,7 +801,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
               <View
                 style={[styles.habitLine, { bottom: (habitVolume / trendMax) * TREND_H }]}
                 pointerEvents="none">
-                <DashedRule width={chartW} colour={HABIT_COLOUR} />
+                <DashedRule width={chartW} colour={habitColour(m)} />
               </View>
             ) : null}
           </View>
@@ -1003,7 +1014,7 @@ export function RecentAwardsCard() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   stackCard: { gap: spacing.md },
   headRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   headAccessories: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -1041,11 +1052,11 @@ const stylesFor = makeStyles((c) => ({
       Nên thứ vẽ ra cái ô là VIỀN, không phải nền. `glass.bg`/`glass.border`
       là cặp app đã dùng cho mọi khối nổi trên nền tối.
     */
-    backgroundColor: glass.bg,
+    backgroundColor: m.inset.bg,
     borderRadius: radius.sm,
     padding: spacing.sm + 6,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glass.border,
+    borderColor: m.inset.border,
   },
   bioTileInfo: { flex: 1, minWidth: 0, gap: 2 },
   /* VO₂max: cùng cách đọc như một ô, nhưng cả bề ngang và có một đường kẻ phía
@@ -1155,7 +1166,7 @@ const stylesFor = makeStyles((c) => ({
   strengthRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.sm },
   strengthLabel: { flex: 1, fontSize: 12, color: c.mutedForeground },
   pips: { flexDirection: 'row', gap: 4 },
-  pip: { width: 7, height: 7, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.18)' },
+  pip: { width: 7, height: 7, borderRadius: 4, backgroundColor: alpha(m.ink, 0.18) },
   pipOn: { backgroundColor: c.metricBeige },
   strengthCount: { fontSize: 12, fontWeight: '600', color: c.mutedForeground, minWidth: 26, textAlign: 'right' },
   strengthCountOn: { color: c.metricBeige },

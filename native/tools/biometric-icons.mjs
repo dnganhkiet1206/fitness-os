@@ -257,7 +257,10 @@ export function tints(src) {
   const bad = [];
   const table = /export const BIO_TINT[^{]*\{([\s\S]*?)\n\};/.exec(strip(src));
   if (!table) return ['không đọc được bảng BIO_TINT'];
-  const picks = [...table[1].matchAll(/(\w+): colors\.(\w+),/g)].map((m) => [m[1], m[2]]);
+  /* Bảng giữ KHOÁ bảng màu (`hrv: 'metricPurple'`), không còn `colors.metricPurple`:
+     một mã màu ở phạm vi module đóng băng ở bản tối. Luật không đổi — nó vẫn hỏi
+     token nào cho chỉ số nào — chỉ chỗ đọc token đổi hình. */
+  const picks = [...table[1].matchAll(/(\w+): '(\w+)',/g)].map((m) => [m[1], m[2]]);
   if (picks.length !== 5) bad.push(`BIO_TINT có ${picks.length} mục, phải có 5`);
   if (/#[0-9a-fA-F]{3,8}/.test(table[1])) bad.push('BIO_TINT có mã màu viết thẳng — phải là token của app');
 
@@ -524,20 +527,20 @@ export function units(sources) {
   push('mất dấu VO₂max bị bắt', () => cardRules(goodCard.replace('name="vo2max"', 'name="hrv"')), true);
 
   const goodTints = [
-    'export const BIO_TINT: Record<BioGlyphName, string> = {',
-    '  heartRest: colors.readinessRed,',
-    '  hrv: colors.metricPurple,',
-    '  bloodOxygen: colors.metricBlue,',
-    '  breath: colors.metricBlue,',
-    '  vo2max: colors.champagne,',
+    'export const BIO_TINT: Record<BioGlyphName, PaletteKey> = {',
+    "  heartRest: 'readinessRed',",
+    "  hrv: 'metricPurple',",
+    "  bloodOxygen: 'metricBlue',",
+    "  breath: 'metricBlue',",
+    "  vo2max: 'champagne',",
     '};',
   ].join('\n');
   push('bảng màu đúng thì im', () => tints(goodTints), false);
-  push('trùng màu không khai báo bị bắt', () => tints(goodTints.replace('hrv: colors.metricPurple', 'hrv: colors.champagne')), true);
-  push('nhịp thở mang cyan (màu nước) bị bắt', () => tints(goodTints.replace('breath: colors.metricBlue', 'breath: colors.metricCyan')), true);
-  push('nhịp thở mang tím (màu đêm) bị bắt', () => tints(goodTints.replace('breath: colors.metricBlue', 'breath: colors.metricPurple')), true);
-  push('VO₂max rời màu thể lực bị bắt', () => tints(goodTints.replace('vo2max: colors.champagne', 'vo2max: colors.metricOrange')), true);
-  push('mã màu viết thẳng bị bắt', () => tints(goodTints.replace('colors.metricPurple', "'#b45cff'")), true);
+  push('trùng màu không khai báo bị bắt', () => tints(goodTints.replace("hrv: 'metricPurple'", "hrv: 'champagne'")), true);
+  push('nhịp thở mang cyan (màu nước) bị bắt', () => tints(goodTints.replace("breath: 'metricBlue'", "breath: 'metricCyan'")), true);
+  push('nhịp thở mang tím (màu đêm) bị bắt', () => tints(goodTints.replace("breath: 'metricBlue'", "breath: 'metricPurple'")), true);
+  push('VO₂max rời màu thể lực bị bắt', () => tints(goodTints.replace("vo2max: 'champagne'", "vo2max: 'metricOrange'")), true);
+  push('mã màu viết thẳng bị bắt', () => tints(goodTints.replace("'metricPurple'", "'#b45cff'")), true);
 
   const goodStamps = {
     screen: "<Text>{localStampStr(s.date_time) ?? '—'}</Text>",

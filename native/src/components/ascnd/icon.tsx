@@ -1,7 +1,19 @@
 import type { LucideIcon } from 'lucide-react-native';
 
-import { colors } from '@/constants/ascnd';
 import { iconTint } from '@/constants/icon-tint';
+import { type Palette } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
+
+/**
+ * Màu mặc định của một glyph, giải ra cho theme đang bật.
+ *
+ * `iconTint` trả về một KHOÁ; bảng của nó ở phạm vi module nên không đọc được
+ * theme. Chỗ duy nhất biết theme là đây, trong thân component.
+ */
+const tintOf = (icon: LucideIcon, c: Palette) => {
+  const key = iconTint(icon);
+  return key ? c[key] : c.mutedForeground;
+};
 
 /**
  * Thin wrapper over lucide-react-native so the whole app draws icons as
@@ -47,10 +59,11 @@ export function Icon({
    */
   fill?: string;
 }) {
+  const c = usePalette();
   return (
     <LucideCmp
       size={size}
-      color={color ?? iconTint(LucideCmp) ?? colors.mutedForeground}
+      color={color ?? tintOf(LucideCmp, c)}
       strokeWidth={strokeWidth}
       /*
         ── omitted, never passed as `undefined` ──

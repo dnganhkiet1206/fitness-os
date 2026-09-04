@@ -12,7 +12,7 @@ import { Icon } from '@/components/ascnd/icon';
 import type { LucideIcon } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { HERO_RING, radius, spacing, type, RING_TEXT_MAX_SCALE } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { duration } from '@/constants/motion';
@@ -333,7 +333,7 @@ export function HeroTiles({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   grid: {
     alignSelf: 'stretch',
     flexDirection: 'row',
@@ -347,12 +347,12 @@ const stylesFor = makeStyles((c) => ({
     width: '47%',
     alignItems: 'center',
     gap: 2,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: alpha(m.ink, 0.05),
     borderRadius: radius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.07)',
+    borderColor: alpha(m.ink, 0.07),
   },
   tileLabel: {
     fontSize: 11,
@@ -416,7 +416,7 @@ const stylesFor = makeStyles((c) => ({
     minHeight: 44,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(255,255,255,0.045)',
+    backgroundColor: alpha(m.ink, 0.045),
   },
   moreLabel: { ...type.footnote, color: c.foreground },
   ringWrap: { alignItems: 'center', justifyContent: 'center' },

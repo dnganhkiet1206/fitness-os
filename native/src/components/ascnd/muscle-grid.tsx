@@ -6,7 +6,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Icon } from '@/components/ascnd/icon';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -189,7 +189,7 @@ export function MuscleGrid({
 }
 
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   /* Taller than the pills above it — it is what this tab is for. */
   libSection: { gap: spacing.sm },
   libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -204,9 +204,9 @@ const stylesFor = makeStyles((c) => ({
     gap: 4,
     height: 38,
     borderRadius: radius.md,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
-    backgroundColor: glass.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
+    backgroundColor: m.inset.bg,
   },
   /* Full width, 52 tall, and a shade more border than the pills above it.
      It is the thing this tab is for, and it had been the flattest control on
@@ -236,9 +236,9 @@ const stylesFor = makeStyles((c) => ({
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm + 2,
     borderRadius: radius.md,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   libName: { ...type.footnote, fontWeight: '600', color: c.foreground, marginTop: 4 },
   libCount: { ...type.caption, color: c.mutedForeground },
@@ -275,8 +275,8 @@ const stylesFor = makeStyles((c) => ({
     gap: 6,
     height: 44,
     borderRadius: radius.md,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
-    backgroundColor: glass.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
+    backgroundColor: m.inset.bg,
   },
 }));

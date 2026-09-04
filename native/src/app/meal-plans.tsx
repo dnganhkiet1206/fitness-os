@@ -12,7 +12,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PlanRow } from '@/components/ascnd/plan-row';
 import { Screen } from '@/components/ascnd/screen';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -118,7 +118,7 @@ export default function MealPlansScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   /*
     Delineated by its border, not its fill.
 
@@ -130,9 +130,9 @@ const stylesFor = makeStyles((c) => ({
   */
   list: {
     borderRadius: radius.lg,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
     overflow: 'hidden',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, height: 62 },

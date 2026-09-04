@@ -19,8 +19,8 @@ import { MetricPanel } from '@/components/ascnd/metric-panel';
 import { ScrollProgress } from '@/components/ascnd/scroll-progress';
 import { Settle } from '@/components/ascnd/settle';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
@@ -916,7 +916,7 @@ export default function AssistantScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: c.background },
   scroll: { flex: 1 },
   content: { paddingHorizontal: spacing.md, gap: spacing.lg },
@@ -1019,8 +1019,8 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
     /* Viền chung, không còn lấy từ glyph — xem luật màu ở `index.tsx`. */
-    borderColor: glass.border,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: m.inset.border,
+    backgroundColor: alpha(m.ink, 0.05),
   },
   chipText: { ...type.caption, color: c.foreground },
 
@@ -1037,7 +1037,7 @@ const stylesFor = makeStyles((c) => ({
     justifyContent: 'center',
     marginBottom: 3,
     /* Một hốc chung cho mọi công cụ; màu ở lại trong glyph. */
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: alpha(m.ink, 0.06),
   },
   toolLabel: { ...type.footnote, fontWeight: '600', color: c.foreground },
   toolHint: { ...type.caption, color: c.glassMuted, lineHeight: 15 },
@@ -1069,7 +1069,7 @@ const stylesFor = makeStyles((c) => ({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: alpha(m.ink, 0.06),
   },
   coachResumeText: { ...type.caption, color: c.glassMuted, flex: 1 },
 

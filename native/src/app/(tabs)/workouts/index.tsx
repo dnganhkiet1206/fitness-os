@@ -16,7 +16,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
 import { Measured, SK, WorkoutsSkeleton } from '@/components/ascnd/skeleton';
-import { PAGE_TINT, glass, radius, spacing, type } from '@/constants/ascnd';
+import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -362,7 +362,7 @@ export default function WorkoutsScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   /* Tiêu đề mục và "Xem tất cả" của nó, một hàng. */
   libHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   /* 13, và đây là vế thứ hai của một cặp — sửa một vế mà quên vế kia là đúng
@@ -384,18 +384,18 @@ const stylesFor = makeStyles((c) => ({
     gap: 6,
     height: 44,
     borderRadius: radius.md,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
-    backgroundColor: glass.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
+    backgroundColor: m.inset.bg,
   },
   addRowText: { ...type.footnote, fontWeight: '600', color: c.primary },
   /* Hàng dẫn đi chỗ khác: hình dạng của một hàng Cài đặt, vì đó đúng là việc nó
      làm — nó không mang nội dung nào của riêng nó. */
   toolGroup: {
     borderRadius: radius.md,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
     overflow: 'hidden',
   },
   toolSep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },

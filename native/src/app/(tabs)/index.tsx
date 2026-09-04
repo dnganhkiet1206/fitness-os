@@ -79,7 +79,7 @@ import { BOUNCE, duration, spring } from '@/constants/motion';
 import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 
 import { HERO_RING, PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
-import { alpha, makeStyles } from '@/constants/theme';
+import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 
 /** Độ đậm của lớp phủ dưới hero. Đủ để kéo tương phản về một mức, chưa đủ để
@@ -278,10 +278,19 @@ const HERO_COVER_FRACTION = 0.66;
   Nếu hai nhóm ra cùng một màu thì đó là tín hiệu đổi ICON của nhóm, không
   phải đè màu — đè màu là cách bảng tint bị vô hiệu hoá lần nữa.
 */
-/* `color: null` = "lấy từ bảng màu lúc vẽ". Bốn màu kia đến từ `iconTint()`,
-   thứ đọc bảng màu ở phạm vi module trong `constants/icon-tint.ts` và VẪN CÒN
-   đóng băng — bảng tint là một khoản nợ riêng, không phải một tệp màn hình. */
-const GROUP_ICONS: Record<string, { icon: LucideIcon; color: string | null }> = {
+/*
+  Cả năm ô giữ KHOÁ bảng màu, và `null` nghĩa là "màu trung tính của theme".
+
+  `iconTint()` nay trả về `PaletteKey` chứ không phải mã màu — bảng tint đã hết
+  đóng băng. Bảng này vẫn cất thứ nó trả về, nên nó cũng cất khoá; chỗ vẽ ở
+  `GroupIconBadge` là nơi duy nhất có `c` để giải ra màu.
+
+  Lỗi mà chuyển đổi này SUÝT để lại: `alpha(tint, 0.12)` với `tint` là chuỗi
+  `"readinessRed"` biên dịch trót lọt — một khoá cũng là một `string` — và ném
+  lúc chạy, làm trắng cả màn hình Hôm nay. `alpha()` NÉM thay vì đoán, và đó là
+  lý do nó lộ ra ở lần chạy đầu thay vì thành một mảng màu sai lặng lẽ.
+*/
+const GROUP_ICONS: Record<string, { icon: LucideIcon; color: PaletteKey | null }> = {
   '❤️': { icon: Heart, color: iconTint(Heart)! },
   '🍎': { icon: Apple, color: iconTint(Apple)! },
   '💪': { icon: Dumbbell, color: iconTint(Dumbbell)! },
@@ -296,7 +305,7 @@ function GroupIconBadge({ iconKey }: { iconKey: string }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const meta = GROUP_ICONS[iconKey] ?? GROUP_ICONS['📌'];
-  const tint = meta.color ?? c.mutedForeground;
+  const tint = meta.color ? c[meta.color] : c.mutedForeground;
   return (
     <View style={[styles.groupIconBadge, { backgroundColor: alpha(tint, 0.12) }]}>
       <Icon icon={meta.icon} size={13} color={tint} />
@@ -1236,14 +1245,14 @@ export default function TodayScreen() {
       config.heroWidgets.map((key) => {
         /* Bảng ở `constants/ascnd.ts`, không ở đây: trang dinh dưỡng và trang
            tập luyện đọc CÙNG cặp màu, nên một bản sao là một lời hứa sẽ lệch. */
-        const own = (PAGE_TINT as Partial<Record<WidgetKey, readonly [string, string]>>)[key];
+        const own = (PAGE_TINT as Partial<Record<WidgetKey, readonly [PaletteKey, PaletteKey]>>)[key];
         return {
           key,
           status: own ? null : readinessScore != null ? readinessStatus : null,
-          tint: own?.[0],
+          tint: own ? c[own[0]] : undefined,
           /* Trang sẵn sàng không khai cặp: nó lấy màu theo trạng thái, và tông
              thứ hai là màu lạnh cạnh nó trên cùng thang. */
-          tint2: own?.[1] ?? (readinessStatus === 'red' ? c.metricOrange : c.metricBlue),
+          tint2: own ? c[own[1]] : readinessStatus === 'red' ? c.metricOrange : c.metricBlue,
         };
       }),
     [config.heroWidgets, readinessScore, readinessStatus],
@@ -2597,7 +2606,7 @@ function AuraLayer({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: c.background },
   // See the note at the top of the return — transparent so `AmbientLight`,
   // which sits behind this in the wrapper, is not painted over.
@@ -2756,7 +2765,7 @@ const stylesFor = makeStyles((c) => ({
      that outlines a whole panel disappears around something this small. So the
      edge is carried here, where the surface is little and the light behind it
      is low. */
-  borderColor: 'rgba(255,255,255,0.22)',
+  borderColor: alpha(m.ink, 0.22),
   borderWidth: 1,
   },
   quickChipInner: {
@@ -2841,7 +2850,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: alpha(m.ink, 0.06),
   },
   editDisabled: { opacity: 0.3 },
   addGroupRow: { flexDirection: 'row', gap: spacing.sm },

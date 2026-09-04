@@ -444,7 +444,7 @@ export function SmartTipsCard() {
 }
 
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   // Web dashboard micro-title: 12px semibold uppercase, wide tracking
   cardTitle: {
     fontSize: 12,
@@ -617,7 +617,7 @@ const stylesFor = makeStyles((c) => ({
     height: 26,
     borderRadius: 8,
     borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.28)',
+    borderColor: alpha(m.ink, 0.28),
     backgroundColor: c.background,
     alignItems: 'center',
     justifyContent: 'center',

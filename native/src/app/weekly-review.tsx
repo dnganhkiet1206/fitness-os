@@ -27,7 +27,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { errorText } from '@/lib/error-copy';
 import { useRise } from '@/lib/entrance';
@@ -681,7 +681,7 @@ export default function WeeklyReviewScreen() {
   );
 }
 
-const barStylesFor = makeStyles((c) => ({
+const barStylesFor = makeStyles((c, m) => ({
   wrap: { marginTop: spacing.sm },
   chart: {
     height: 120,
@@ -694,7 +694,7 @@ const barStylesFor = makeStyles((c) => ({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: alpha(m.ink, 0.15),
   },
   col: { flex: 1, alignItems: 'center' },
   barTrack: { width: '100%', height: '100%', justifyContent: 'flex-end' },
@@ -704,7 +704,7 @@ const barStylesFor = makeStyles((c) => ({
   valLabel: { ...type.mono, fontSize: 11, color: c.mutedForeground, textAlign: 'center' },
 }));
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   weekNav: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -718,7 +718,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: alpha(m.ink, 0.05),
   },
   weekLabel: { ...type.footnote, fontWeight: '600', color: c.foreground, minWidth: 130, textAlign: 'center' },
 

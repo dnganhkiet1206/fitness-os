@@ -13,7 +13,7 @@ import { ShopScene } from '@/components/ascnd/shop/shop-scene';
 import { CategoryRow, CollectionRow } from '@/components/ascnd/shop/shop-grid';
 import { ShopPager } from '@/components/ascnd/shop/shop-pager';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMascotIdentity } from '@/hooks/use-mascot';
@@ -489,7 +489,7 @@ function Coin({ balance }: { balance: number }) {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   // Edge to edge: the page pads its content by `spacing.md` and this takes it
   // back, the same way the Mascot Room's `sceneWrap` does.
   stage: { marginHorizontal: -spacing.md, marginBottom: spacing.xs },
@@ -559,7 +559,7 @@ const stylesFor = makeStyles((c) => ({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: alpha(m.ink, 0.12),
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.xl,
   },
@@ -586,7 +586,7 @@ const stylesFor = makeStyles((c) => ({
     width: 40,
     height: 5,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: alpha(m.ink, 0.18),
     marginTop: spacing.sm,
     marginBottom: spacing.sm,
   },

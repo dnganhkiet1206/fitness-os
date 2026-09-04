@@ -23,7 +23,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { Measured, NutritionSkeleton, SK } from '@/components/ascnd/skeleton';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodayMeals } from '@/components/ascnd/today-meals';
-import { PAGE_TINT, glass, radius, spacing, type } from '@/constants/ascnd';
+import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
@@ -845,7 +845,7 @@ export default function NutritionScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
 
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything
@@ -891,7 +891,7 @@ const stylesFor = makeStyles((c) => ({
       còn nền chỉ làm lòng ô bớt trống. Đây không phải chỗ tôi tưởng có vấn đề
       lúc đầu — tiền đề ban đầu của tôi sai một nửa.
     */
-    backgroundColor: glass.bg,
+    backgroundColor: m.inset.bg,
     paddingHorizontal: spacing.md - 4,
   },
   /*
@@ -931,9 +931,9 @@ const stylesFor = makeStyles((c) => ({
     gap: 2,
     height: 40,
     borderRadius: radius.md,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
-    backgroundColor: glass.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
+    backgroundColor: m.inset.bg,
   },
   seeMoreText: { fontSize: 13, fontWeight: '600', color: c.primary },
   foodCard: {
@@ -984,8 +984,8 @@ const stylesFor = makeStyles((c) => ({
     paddingRight: spacing.xs + 2,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glass.border,
-    backgroundColor: glass.bg,
+    borderColor: m.inset.border,
+    backgroundColor: m.inset.bg,
   },
   planAll: { ...type.footnote, fontWeight: '600', color: c.primary },
   /* Một HÀNG trong khối, không phải một thẻ. Cao 56 để vượt sàn chạm 44 và để

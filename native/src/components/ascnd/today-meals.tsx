@@ -16,7 +16,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { toast } from '@/lib/toast';
@@ -585,7 +585,7 @@ function EditServingsSheet({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   list: { gap: spacing.sm },
   meal: { gap: 2, paddingVertical: spacing.md },
   // clipped, so the rows inside can lay out at full height while the box around
@@ -645,7 +645,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: alpha(m.ink, 0.07),
   },
   stepValue: {
     minWidth: 64,
@@ -663,7 +663,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: alpha(m.ink, 0.07),
   },
   sheetBtnPrimary: { backgroundColor: c.primary },
   sheetBtnText: { ...type.footnote, fontWeight: '600', color: c.foreground },

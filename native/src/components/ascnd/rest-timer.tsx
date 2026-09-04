@@ -15,7 +15,7 @@ import Svg, { Circle } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
@@ -255,7 +255,7 @@ export function RestTimer({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   backdrop: {
     flex: 1,
     alignItems: 'center',
@@ -343,9 +343,9 @@ const stylesFor = makeStyles((c) => ({
     width: 56,
     height: 48,
     borderRadius: 24,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   roundText: { ...type.footnote, color: c.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
   /*
@@ -373,8 +373,8 @@ const stylesFor = makeStyles((c) => ({
        Đủ để mắt biết đâu là đường ra mà không cần tô bạc đặc — xem ghi chú ở
        trên về vì sao nó vẫn không tô. */
     backgroundColor: c.secondary,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   skipText: { ...type.body, color: c.foreground, fontWeight: '700' },
 }));

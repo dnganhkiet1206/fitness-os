@@ -95,8 +95,37 @@ const SHIMS = {
     };`,
   'ascnd.cjs': `
     module.exports = {
-      glass: { radius: 16, borderWidth: 1, border: 'rgba(255,255,255,0.10)' },
       radius: { lg: 16, full: 999 },
+    };`,
+  /*
+    Hai module giả MỚI: `liquid-glass.tsx` không còn đọc hằng `glass` đóng băng,
+    nó đọc CHẤT LIỆU của theme đang bật. Bước kiểm này đo bản TỐI — nó đếm node
+    mà chế độ blur dựng ra — nên hai shim trả về đúng chất liệu tối.
+
+    Giá trị lấy hình dạng thật, không phải hình dạng đoán: thiếu một trường thì
+    component dựng ra `undefined` và phép đếm node sẽ im lặng đo sai.
+  */
+  'theme.cjs': `
+    module.exports = {
+      makeStyles: (build) => {
+        const m = {
+          radius: 16,
+          inset: { borderWidth: 1, border: 'rgba(255,255,255,0.10)' },
+          aura: { hair: 'rgba(255,255,255,0.035)', base: 'rgba(13,13,18,0.62)', blurTint: 'dark', scrim: '#000000' },
+        };
+        const built = build({}, m);
+        return () => built;
+      },
+    };`,
+  'use-palette.cjs': `
+    module.exports = {
+      usePalette: () => ({}),
+      useMaterial: () => ({
+        radius: 16,
+        lit: true,
+        inset: { borderWidth: 1, border: 'rgba(255,255,255,0.10)' },
+        aura: { hair: 'rgba(255,255,255,0.035)', base: 'rgba(13,13,18,0.62)', blurTint: 'dark', scrim: '#000000' },
+      }),
     };`,
 };
 
@@ -130,7 +159,9 @@ function build(dir, mutate) {
       .replace(/require\("react-native"\)/g, `require("../../react-native.cjs")`)
       .replace(/require\("expo-blur"\)/g, `require("../../expo-blur.cjs")`)
       .replace(/require\("react-native-svg"\)/g, `require("../../react-native-svg.cjs")`)
-      .replace(/require\("@\/constants\/ascnd"\)/g, `require("../../ascnd.cjs")`);
+      .replace(/require\("@\/constants\/ascnd"\)/g, `require("../../ascnd.cjs")`)
+      .replace(/require\("@\/constants\/theme"\)/g, `require("../../theme.cjs")`)
+      .replace(/require\("@\/hooks\/use-palette"\)/g, `require("../../use-palette.cjs")`);
   writeFileSync(js, code);
   for (const [name, body] of Object.entries(SHIMS)) writeFileSync(path.join(dir, name), body);
   return js;

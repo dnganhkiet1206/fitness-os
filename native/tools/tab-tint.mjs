@@ -69,12 +69,14 @@ const ratio = (a, b) => {
 };
 
 /* Màu đang chọn: đọc thẳng biểu thức trong nguồn. */
-const tintName = /tintColor=\{colors\.(\w+)\}/.exec(tabs)?.[1];
+/* `c.` chứ không còn `colors.`: thanh tab nay đọc bảng màu ĐANG BẬT. Neo cũ
+   thôi khớp, và chốt "không tìm thấy" ngay dưới đã nổ đúng như nó phải nổ. */
+const tintName = /tintColor=\{c\.(\w+)\}/.exec(tabs)?.[1];
 if (!tintName) {
   problems.push(`${TABS}: không tìm thấy \`tintColor={colors.…}\` — luật này đang không kiểm gì`);
 }
 /* Màu chưa chọn mà NGUỒN khai. */
-const mutedName = /iconColor=\{\{ default: colors\.(\w+) \}\}/.exec(tabs)?.[1];
+const mutedName = /iconColor=\{\{ default: c\.(\w+) \}\}/.exec(tabs)?.[1];
 if (!mutedName) {
   problems.push(`${TABS}: không tìm thấy \`iconColor={{ default: colors.… }}\``);
 }

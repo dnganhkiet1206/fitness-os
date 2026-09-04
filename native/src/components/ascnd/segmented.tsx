@@ -6,9 +6,9 @@ import Animated, { FadeIn, useAnimatedStyle, useSharedValue, withTiming } from '
 import { Icon } from '@/components/ascnd/icon';
 import { duration } from '@/constants/motion';
 import { PickRow } from '@/components/ascnd/pick-row';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 
 /**
  * One segmented control, and the selection travels between segments.
@@ -87,6 +87,7 @@ export function Segmented<K extends string>({
   variant?: 'pill' | 'capsule';
 }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   /* Viên nang mỏng hơn: 2 điểm đệm thay vì 3, nên thumb gần sát mép ray như
      control của hệ thống. */
@@ -107,7 +108,7 @@ export function Segmented<K extends string>({
         "giống một segmented control mặc định".
       */
       fill={cap ? c.background : c.accent}
-      border={cap ? { width: StyleSheet.hairlineWidth, color: glass.border } : undefined}
+      border={cap ? { width: StyleSheet.hairlineWidth, color: m.inset.border } : undefined}
       radius={cap ? radius.full : compact ? radius.full : r - pad}
       height={cap ? CAP_H : height}
       gap={0}
@@ -165,7 +166,7 @@ export function Segmented<K extends string>({
  */
 const CAP_H = 38;
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   row: { flexDirection: 'row', backgroundColor: 'rgba(24,24,27,0.6)' },
   seg: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5 },
   label: { ...type.caption, fontWeight: '600', color: c.mutedForeground },
@@ -180,7 +181,7 @@ const stylesFor = makeStyles((c) => ({
     flexDirection: 'row',
     backgroundColor: c.secondary,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: glass.border,
+    borderColor: m.inset.border,
   },
   /* 15 điểm, không phải 17. Thanh này là mục lục của màn; ở 17 điểm nó đọc ra
      nặng hơn chính cái tiêu đề nó dẫn tới. Nét 600 giữ lại độ chắc đã mất. */

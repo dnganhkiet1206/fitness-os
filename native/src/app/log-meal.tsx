@@ -22,7 +22,7 @@ import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { SheetHeader } from '@/components/ascnd/sheet-header';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -914,7 +914,7 @@ function MacroStat({ label, value, color }: { label: string; value: number; colo
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   repeatBlock: { gap: 2 },
   repeatTitle: { ...type.headline, color: c.foreground },
   repeatHint: { ...type.caption, color: c.mutedForeground, marginBottom: spacing.sm },
@@ -926,9 +926,9 @@ const stylesFor = makeStyles((c) => ({
     gap: 3,
     padding: spacing.md - 4,
     borderRadius: radius.md,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   repeatHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   repeatMeal: { ...type.footnote, fontWeight: '700', color: c.foreground },

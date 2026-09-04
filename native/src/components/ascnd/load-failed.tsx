@@ -7,7 +7,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useMascotIdentity } from '@/hooks/use-mascot';
@@ -106,7 +106,7 @@ export function LoadFailed({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   card: { alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.lg },
   /* Same vertical space the icon chip took, so turning the mascot off in
      settings does not move the card's text. */
@@ -117,7 +117,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: alpha(m.ink, 0.05),
     marginBottom: spacing.xs,
   },
   title: { ...type.headline, color: c.foreground, textAlign: 'center' },
@@ -129,7 +129,7 @@ const stylesFor = makeStyles((c) => ({
     height: 44,
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: alpha(m.ink, 0.07),
     marginTop: spacing.sm,
   },
   retryPressed: { opacity: 0.75 },

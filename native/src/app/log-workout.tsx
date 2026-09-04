@@ -24,7 +24,7 @@ import { MusicLaunch } from '@/components/ascnd/music-launch';
 import { Icon } from '@/components/ascnd/icon';
 import { RecordCelebration } from '@/components/ascnd/record-celebration';
 import type { TplExercise } from '@/components/ascnd/template-list';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -985,7 +985,7 @@ export default function LogWorkoutSheet() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: c.card },
   content: { padding: spacing.lg, gap: spacing.sm + 4 },
   title: { ...type.title, color: c.foreground, textAlign: 'center', marginBottom: spacing.sm },
@@ -999,9 +999,9 @@ const stylesFor = makeStyles((c) => ({
     padding: spacing.sm + 2,
     borderRadius: radius.md,
     marginBottom: spacing.sm,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   planText: { flex: 1, minWidth: 0 },
   planLabel: { ...type.caption, color: c.mutedForeground },

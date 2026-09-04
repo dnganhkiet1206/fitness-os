@@ -1,6 +1,7 @@
 import Svg, { G, Path } from 'react-native-svg';
 
-import { colors } from '@/constants/ascnd';
+import { type PaletteKey } from '@/constants/palette';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * Năm dấu hiệu của thẻ Sinh trắc học.
@@ -166,10 +167,12 @@ const RISE_HEAD = 'M8.6 6 12 2.6l3.4 3.4';
  * một hệ. `tools/biometric-icons.mjs` bắt mọi lần trùng màu KHÔNG được khai
  * báo, đúng cách `glyph-collision.mjs` bắt trùng hình.
  */
-export const BIO_TINT: Record<BioGlyphName, string> = {
-  heartRest: colors.readinessRed,
-  hrv: colors.metricPurple,
-  bloodOxygen: colors.metricBlue,
+/* KHOÁ bảng màu — bảng ở phạm vi module đóng băng ở bản tối. Lập luận CHỌN
+   token nào cho chỉ số nào không đổi một chữ. */
+export const BIO_TINT: Record<BioGlyphName, PaletteKey> = {
+  heartRest: 'readinessRed',
+  hrv: 'metricPurple',
+  bloodOxygen: 'metricBlue',
   /* Cùng xanh với oxy máu, KHÔNG phải cyan.
      Cyan là màu app đã gán cho NƯỚC (`icon-tint.ts`), và thẻ Nước nằm cùng
      một màn cuộn với thẻ này — hai lá phổi màu nước là một câu nói sai. Dùng
@@ -177,8 +180,8 @@ export const BIO_TINT: Record<BioGlyphName, string> = {
      làm với bước chân và calo: hai chỉ số này là một hệ — oxy vào cơ thể —
      và hình của chúng đã khác nhau hoàn toàn nên màu không phải thứ phân
      biệt. Thẻ còn bốn màu thay vì năm. */
-  breath: colors.metricBlue,
-  vo2max: colors.champagne,
+  breath: 'metricBlue',
+  vo2max: 'champagne',
 };
 
 /**
@@ -205,7 +208,8 @@ export function BioGlyph({
   /** đè màu — dùng khi sắc thái được mang ở chỗ khác */
   color?: string;
 }) {
-  const stroke = color ?? BIO_TINT[name];
+  const c = usePalette();
+  const stroke = color ?? c[BIO_TINT[name]];
   const common = {
     stroke,
     strokeWidth: STROKE,

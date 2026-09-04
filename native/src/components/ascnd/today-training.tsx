@@ -13,7 +13,7 @@ import {
   WeekStrip,
 } from '@/components/ascnd/week-strip';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
@@ -247,7 +247,7 @@ export function TodayTraining() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   card: { gap: spacing.sm, borderRadius: radius.xl },
   head: { flexDirection: 'row', alignItems: 'center' },
   headCopy: { flex: 1, minWidth: 0, gap: 2 },
@@ -282,7 +282,7 @@ const stylesFor = makeStyles((c) => ({
     gap: 7,
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: alpha(m.ink, 0.07),
     marginTop: 2,
   },
   quietText: { ...type.headline, fontWeight: '600', color: c.foreground },
@@ -296,6 +296,6 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: alpha(m.ink, 0.07),
   },
 }));

@@ -125,9 +125,25 @@ function readConsts(src) {
   for (const m of src.matchAll(/const ([A-Z_]+) = ([\d.]+);/g)) table[m[1]] = Number(m[2]);
   return table;
 }
-function readStops(block, consts) {
-  return [...block.matchAll(/<Stop\s+offset="([\d.]+)"\s+stopColor="([^"]+)"\s+stopOpacity=(?:"([\d.]+)"|\{([A-Z_]+)\})/g)]
-    .map((m) => [Number(m[1]), m[2], m[3] !== undefined ? Number(m[3]) : consts[m[4]]]);
+/**
+ * Màu của lớp làm dịu, đọc từ BẢNG CHẤT LIỆU chứ không đoán.
+ *
+ * `stopColor` từng là `"#000"` viết thẳng. Nó nay là `{m.aura.scrim}`: lớp làm
+ * dịu đi theo theme, vì trên giấy thì thứ làm dịu một trang là chính màu giấy,
+ * không phải đen. Tệp kiểm này đo BẢN TỐI — nó hỏi lớp phủ có phải một lớp
+ * mỏng nhìn xuyên được không — nên nó giải `m.aura.scrim` bằng giá trị của bản
+ * tối, lấy từ `constants/palette.ts`.
+ *
+ * Đọc chứ không viết lại: nếu một ngày lớp làm dịu của bản tối thôi là đen,
+ * luật dưới đây phải BẮT ĐƯỢC, và nó chỉ bắt được khi nó đọc giá trị thật.
+ */
+const DARK_SCRIM = /aura: \{[^}]*?scrim: '(#[0-9a-fA-F]{3,8})'/.exec(
+  readFileSync(path.join(NATIVE, 'src/constants/palette.ts'), 'utf8'),
+)?.[1];
+
+function readStops(block, consts, scrim = DARK_SCRIM) {
+  return [...block.matchAll(/<Stop\s+offset="([\d.]+)"\s+stopColor=(?:"([^"]+)"|\{m\.aura\.scrim\})\s+stopOpacity=(?:"([\d.]+)"|\{([A-Z_]+)\})/g)]
+    .map((m) => [Number(m[1]), m[2] ?? scrim, m[3] !== undefined ? Number(m[3]) : consts[m[4]]]);
 }
 
 /**
@@ -190,11 +206,19 @@ function rampProblems(what, stops, { top, tol = 0.5 }) {
  */
 const WASH_CEILING = 0.15;
 
-function gradientProblems(src) {
+/*
+  `scrim` là tham số vì phép thử ngược phải đổi được nó.
+
+  Bản đầu của bản vá này để `DARK_SCRIM` là một hằng đọc lúc nạp module, và phép
+  thử "lớp phủ xám" — vốn thay `#000` trong NGUỒN — thành ra không đổi được gì:
+  nguồn không còn chứa `#000` nữa. Phép thử chạy trên một bản y hệt bản thật và
+  báo xanh, tức luật "lớp phủ phải là đen" thôi được kiểm mà không ai biết.
+*/
+function gradientProblems(src, scrim = DARK_SCRIM) {
   const consts = readConsts(src);
   const blocks = src.split('<LinearGradient').slice(1);
-  const wash = blocks.map((b) => readStops(b, consts)).find((st) => st.length && st[0][1].startsWith('#00'));
-  const mask = blocks.map((b) => readStops(b, consts)).find((st) => st.length && st[0][1] === '#fff');
+  const wash = blocks.map((b) => readStops(b, consts, scrim)).find((st) => st.length && st[0][1].startsWith('#00'));
+  const mask = blocks.map((b) => readStops(b, consts, scrim)).find((st) => st.length && st[0][1] === '#fff');
 
   const bad = [];
   if (!wash) return ['status-scrim: không thấy gradient đen — lớp phủ phải là đen, xám thành tấm nền, trắng thành sương'];
@@ -419,21 +443,25 @@ const SELF = [
       ).bad,
   ],
   // the grey rectangle — smooth, well-formed, and visible as an overlay
-  ['lớp phủ xám', () => gradientProblems(sub(/#000/g, '#3a3a3c'))],
+  /* Đổi CHÍNH màu của lớp làm dịu, thứ nay sống ở bảng chất liệu — thay một
+     chuỗi trong nguồn thì không còn đổi được gì. */
+  ['lớp phủ xám', () => gradientProblems(scrim, '#3a3a3c')],
   // dark enough to stop being something you see through
   ['lớp phủ quá đục', () => gradientProblems(sub('const GRADIENT_TOP = 0.12', 'const GRADIENT_TOP = 0.3'))],
   // a wash that never reaches zero: the edge moves to the last row of pixels
   [
     'lớp phủ chưa tan đã hết',
-    () => gradientProblems(sub('offset="1" stopColor="#000" stopOpacity="0"', 'offset="1" stopColor="#000" stopOpacity="0.04"')),
+    /* `#000` cứng nay là `{m.aura.scrim}` — lớp làm dịu đi theo theme (bản tối
+       vẫn là #000000). Neo dời, luật giữ nguyên. */
+    () => gradientProblems(sub('offset="1" stopColor={m.aura.scrim} stopOpacity="0"', 'offset="1" stopColor={m.aura.scrim} stopOpacity="0.04"')),
   ],
   // version two: held flat, then most of the fall in one span
   [
     'lớp phủ gãy dốc',
     () =>
       gradientProblems(
-        sub('<Stop offset="0.42" stopColor="#000" stopOpacity="0.07" />', '<Stop offset="0.42" stopColor="#000" stopOpacity="0.118" />')
-          .replace('<Stop offset="0.7" stopColor="#000" stopOpacity="0.05" />', '<Stop offset="0.7" stopColor="#000" stopOpacity="0.115" />'),
+        sub('<Stop offset="0.42" stopColor={m.aura.scrim} stopOpacity="0.07" />', '<Stop offset="0.42" stopColor={m.aura.scrim} stopOpacity="0.118" />')
+          .replace('<Stop offset="0.7" stopColor={m.aura.scrim} stopOpacity="0.05" />', '<Stop offset="0.7" stopColor={m.aura.scrim} stopOpacity="0.115" />'),
       ),
   ],
   // a mask that stops instead of fading — the blur then ends on a line again

@@ -1,6 +1,6 @@
 import { StyleSheet, type ImageStyle, type TextStyle, type ViewStyle } from 'react-native';
 
-import { type Material, type Palette } from '@/constants/palette';
+import { materials, themeOf, type Material, type Palette } from '@/constants/palette';
 
 /**
  * Cầu nối giữa bảng màu (dữ liệu thuần) và stylesheet của React Native.
@@ -66,8 +66,28 @@ function memoSheet<K extends object, T extends AnyStyles>(build: (k: K) => T): (
   };
 }
 
-/** Stylesheet đọc BẢNG MÀU. */
-export const makeStyles = <T extends AnyStyles>(build: (c: Palette) => T) => memoSheet(build);
+/**
+ * Stylesheet đọc BẢNG MÀU — và, khi cần, CHẤT LIỆU đi cùng bảng ấy.
+ *
+ * ── vì sao chất liệu vào bằng tham số thứ hai chứ không bằng một hook thứ hai ──
+ *
+ * 25 tệp vẽ bề mặt con bằng hằng `glass` đóng băng. Chúng cần chất liệu, nhưng
+ * chúng đã nhận bảng màu rồi — và hai thứ ấy KHÔNG độc lập: cả hai được chọn
+ * bởi cùng một cái tên theme. Bắt mỗi tệp gọi thêm `useMaterial()` là thêm một
+ * chỗ để hai câu trả lời lệch nhau (đọc bảng sáng, vẽ chất liệu tối), thứ mà
+ * TypeScript không thấy được.
+ *
+ * Nên chất liệu được TRA từ chính bảng màu vừa nhận. Một nguồn, không đồng bộ
+ * hoá gì cả, và khoá cache vẫn là một đối tượng duy nhất — nên `StyleSheet.create`
+ * vẫn chạy nhiều nhất hai lần mỗi component.
+ *
+ *     const stylesFor = makeStyles((c, m) => ({ … m.inset.bg … c.foreground … }));
+ *
+ * Tham số thứ hai bỏ được: `makeStyles((c) => …)` vẫn suy kiểu đúng như cũ, nên
+ * 112 chỗ gọi hiện có không phải đổi một ký tự nào.
+ */
+export const makeStyles = <T extends AnyStyles>(build: (c: Palette, m: Material) => T) =>
+  memoSheet((c: Palette) => build(c, materials[themeOf(c)]));
 
 /**
  * Stylesheet đọc CHẤT LIỆU thẻ.

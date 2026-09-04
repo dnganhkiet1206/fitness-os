@@ -27,7 +27,7 @@ import Svg, {
   Text as SvgText,
 } from 'react-native-svg';
 
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { curveLength, onCurve, sampleCurve, yOnCurve, type CurvePoint } from '@/lib/curve';
@@ -1102,7 +1102,7 @@ export function MultiLineChart({ series, height = 200, emptyLabel = 'Not enough 
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   empty: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -1128,8 +1128,8 @@ const stylesFor = makeStyles((c) => ({
     width: SCRUB_W,
     height: SCRUB_H,
     borderRadius: radius.sm,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
     // Opaque: this sits over the line it is describing.
     backgroundColor: c.card,
     alignItems: 'center',

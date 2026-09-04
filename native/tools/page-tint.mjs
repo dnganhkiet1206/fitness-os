@@ -37,8 +37,12 @@ if (!block) {
   for (const [key, tones] of pairs) {
     if (tones.length !== 2) problems.push(`PAGE_TINT.${key}: ${tones.length} tông, phải đúng 2`);
     for (const t of tones) {
-      if (!t.startsWith('colors.')) {
-        problems.push(`PAGE_TINT.${key}: "${t}" không phải một tông trong bảng màu — mã màu viết thẳng thì không ai đổi được ở một chỗ`);
+      /* Bảng giữ KHOÁ bảng màu (`'metricOrange'`), không còn `colors.metricOrange`:
+         một mã màu ở phạm vi module đóng băng ở bản tối, nên trang dinh dưỡng
+         mang nền xanh neon của nền đen kể cả trên giấy. Luật không đổi — mỗi
+         tông vẫn phải là một token, không phải một mã màu — chỉ hình dạng đổi. */
+      if (!/^'(metric|readiness)\w+'$/.test(t)) {
+        problems.push(`PAGE_TINT.${key}: "${t}" không phải một khoá tông trong bảng màu — mã màu viết thẳng thì không ai đổi được ở một chỗ`);
       }
     }
   }
@@ -79,7 +83,7 @@ const SCREENS = [
 ];
 for (const f of SCREENS) {
   const t = strip(read(f));
-  const local = [...t.matchAll(/\[colors\.(metric|readiness)\w+, colors\.(metric|readiness)\w+\]/g)];
+  const local = [...t.matchAll(/\[c\.(metric|readiness)\w+, c\.(metric|readiness)\w+\]/g)];
   if (local.length) {
     problems.push(`${f}: dựng ${local.length} cặp màu tại chỗ — phải đọc PAGE_TINT`);
   }

@@ -25,7 +25,7 @@ import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { WorkoutSetPanel } from '@/components/ascnd/workout-set-sheet';
 import { DEFAULT_REST, estimatedMinutes, restLabel } from '@/lib/prescription';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -774,7 +774,7 @@ export default function WorkoutBuilderSheet() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: c.card },
 
   header: {
@@ -811,8 +811,8 @@ const stylesFor = makeStyles((c) => ({
     gap: 2,
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
     borderColor: 'transparent',
   },
   groupTileOn: { borderColor: c.primary, backgroundColor: 'rgba(168,175,189,0.16)' },
@@ -839,8 +839,8 @@ const stylesFor = makeStyles((c) => ({
     gap: spacing.sm,
     padding: spacing.sm + 2,
     borderRadius: radius.md,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
     borderColor: 'transparent',
   },
   exRowOn: { borderColor: c.primary, backgroundColor: 'rgba(168,175,189,0.14)' },
@@ -915,9 +915,9 @@ const stylesFor = makeStyles((c) => ({
     gap: spacing.sm,
     padding: spacing.sm + 2,
     borderRadius: radius.md,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   ordinal: {
     width: 26,

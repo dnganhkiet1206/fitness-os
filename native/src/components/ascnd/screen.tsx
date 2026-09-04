@@ -25,7 +25,7 @@ import { StatusScrim } from '@/components/ascnd/status-scrim';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeMaterialStyles, makeStyles } from '@/constants/theme';
+import { makeMaterialStyles, makeStyles, type PaletteKey, alpha } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { setActiveScroller } from '@/lib/scroll-to-top';
@@ -120,7 +120,10 @@ interface ScreenProps extends ViewProps {
    *
    * Không truyền thì trang không có nền màu, đúng như trước.
    */
-  aura?: readonly [string, string];
+  /* Cặp KHOÁ bảng màu, không phải cặp mã màu: `PAGE_TINT` ở phạm vi module và
+     một mã màu ở đó bị đóng băng ở bản tối. `Screen` giải ra ngay dưới đây —
+     một chỗ giải cho cả sáu trang truyền nó vào. */
+  aura?: readonly [PaletteKey, PaletteKey];
   /** report the header height (insets.top + 44) so content can offset under it */
   onHeaderHeight?: (h: number) => void;
   /**
@@ -255,11 +258,12 @@ function ScrollFrame({ on, children }: { on: boolean; children: React.ReactNode 
 */
 const AURA_DIM = 0.44;
 
-function PageAura({ tint }: { tint: readonly [string, string] }) {
-  const styles = stylesFor(usePalette());
+function PageAura({ tint }: { tint: readonly [PaletteKey, PaletteKey] }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   return (
     <>
-      <ReadinessAura status={null} tint={tint[0]} tint2={tint[1]} />
+      <ReadinessAura status={null} tint={c[tint[0]]} tint2={c[tint[1]]} />
       <View pointerEvents="none" style={styles.auraDim} />
     </>
   );
@@ -507,8 +511,9 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
   );
 }
 
-const stylesFor = makeStyles((c) => ({
-  auraDim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: `rgba(0, 0, 0, ${AURA_DIM})` },
+const stylesFor = makeStyles((c, m) => ({
+  /* Làm dịu bằng màu của CHÍNH THEME, không phải luôn luôn đen — xem `Aura.scrim`. */
+  auraDim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: alpha(m.aura.scrim, AURA_DIM) },
   root: { flex: 1, backgroundColor: c.background },
   /**
    * Transparent, not `colors.background`.

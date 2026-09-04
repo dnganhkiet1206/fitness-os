@@ -3,7 +3,7 @@ import { ChevronRight } from 'lucide-react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { glass, radius, spacing } from '@/constants/ascnd';
+import { radius, spacing } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { PLAN_DAYS } from '@/lib/planned-meal';
@@ -160,7 +160,7 @@ export function PlanRow({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   /* Một HÀNG trong khối, không phải một thẻ. 56 để vượt sàn chạm 44 và để hai
      dòng chữ cộng bảng tuần có chỗ thở. */
   row: {
@@ -187,9 +187,9 @@ const stylesFor = makeStyles((c) => ({
     height: 36,
     marginTop: 2,
     borderRadius: radius.full,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
     alignItems: 'center',
     justifyContent: 'center',
   },

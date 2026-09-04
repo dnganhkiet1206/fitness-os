@@ -1,4 +1,4 @@
-import { colors } from '@/constants/ascnd';
+import { type PaletteKey } from '@/constants/palette';
 import type { AcwrZoneKey } from '@/lib/training-card';
 
 /**
@@ -30,10 +30,11 @@ import type { AcwrZoneKey } from '@/lib/training-card';
  * Ba mặt của một luật, hai tầng, và `tools/readiness-copy.mjs` là thứ giữ cho
  * không màn nào tự dựng mặt thứ tư.
  */
-export const ACWR_TINT: Record<AcwrZoneKey, string> = {
-  detraining: colors.readinessRed,
-  low: colors.readinessYellow,
-  optimal: colors.readinessGreen,
-  elevated: colors.readinessYellow,
-  spike: colors.readinessRed,
+/* KHOÁ bảng màu, không mã màu: bảng ở phạm vi module đóng băng ở bản tối. */
+export const ACWR_TINT: Record<AcwrZoneKey, PaletteKey> = {
+  detraining: 'readinessRed',
+  low: 'readinessYellow',
+  optimal: 'readinessGreen',
+  elevated: 'readinessYellow',
+  spike: 'readinessRed',
 };

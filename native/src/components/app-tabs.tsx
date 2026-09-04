@@ -2,7 +2,8 @@ import { usePathname } from 'expo-router';
 import { useRef } from 'react';
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
-import { colors } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { scrollActiveToTop } from '@/lib/scroll-to-top';
 import { resetTabBar, showTopChrome } from '@/lib/tab-bar-visibility';
@@ -36,7 +37,14 @@ import { resetTabBar, showTopChrome } from '@/lib/tab-bar-visibility';
  * going away and the next one drawing is then whatever the system's default
  * is — a pale flash on a dark app, on every single tab change.
  */
-const CONTENT = { backgroundColor: colors.background } as const;
+/*
+  Ở phạm vi module nó đóng băng ở #070708 — tức nền gần đen phía sau MỌI tab,
+  kể cả ở bản sáng. Đó chính là lỗi mà chú thích trên mô tả, chỉ lật ngược:
+  cái loé ra giữa hai tab thành một mảng tối trên một app sáng.
+
+  `makeStyles` để nó đi theo bảng màu đang bật, và `AppTabs` đọc nó trong thân.
+*/
+const contentFor = makeStyles((c) => ({ scene: { backgroundColor: c.background } }));
 
 const scrollToTopOnRetap = ({ navigation }: { navigation: { isFocused: () => boolean } }) => ({
   tabPress: () => {
@@ -130,6 +138,8 @@ const TAB_ROUTES = ['/', '/nutrition', '/workouts', '/progress', '/assistant'];
 export default function AppTabs() {
   const pathname = usePathname();
   const i18n = useI18n();
+  const c = usePalette();
+  const CONTENT = contentFor(c).scene;
 
   /*
     ── the bar's visibility is frozen while anything is pushed over it ──
@@ -218,9 +228,22 @@ export default function AppTabs() {
         nên một thanh tab xanh lá sẽ là màu xanh lá duy nhất trên màn hình không
         có nghĩa "tốt".
       */
-      tintColor={colors.primary}
-      iconColor={{ default: colors.mutedForeground }}
-      labelStyle={{ default: { color: colors.mutedForeground } }}
+      /*
+        ── ba giá trị này từng đóng băng ở bản tối, và một trong ba LẬT NGHĨA ──
+
+        `colors.primary` là bạc #a8afbd (L 0,427). `colors.mutedForeground` là
+        xám #828282 (L 0,223). Trên một thanh tab SÁNG của hệ thống, mục đang
+        chọn hoá ra NHẠT HƠN mục chưa chọn — tín hiệu chọn đảo chiều — và bạc
+        trên trắng chỉ đo được 2,20:1, dưới sàn 3:1 của một điều khiển không
+        phải chữ. Với `c.primary` của bản sáng (#1a1917) con số là 17,57:1.
+
+        Lập luận CHỌN token nào không đổi một chữ: vẫn là bạc nhận diện ở bản
+        tối, vẫn không phải một màu neon (những màu ấy mang nghĩa ở khắp nơi).
+        Chỉ có "bạc" giờ là bạc CỦA THEME ĐANG BẬT.
+      */
+      tintColor={c.primary}
+      iconColor={{ default: c.mutedForeground }}
+      labelStyle={{ default: { color: c.mutedForeground } }}
       /*
         Out of the way when you scroll down, back when you scroll up.
 

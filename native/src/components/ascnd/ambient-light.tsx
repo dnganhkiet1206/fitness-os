@@ -1,6 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import { useMaterial } from '@/hooks/use-palette';
+
 /**
  * Three lamps in a dark room, seen through frosted glass.
  *
@@ -119,6 +121,23 @@ function Pool({ id, s }: { id: string; s: Source }) {
 }
 
 export function AmbientLight() {
+  /*
+    ── giàn đèn này là ẩn dụ của một CĂN PHÒNG TỐI ──
+
+    Ba vũng sáng ấm đổ từ ngoài góc trên-trái là thứ làm mọi mặt thẻ của bản tối
+    bắt được cùng một nguồn sáng — `glass-card.tsx` viết ra đúng hướng ấy và
+    dựng mặt gradient theo nó.
+
+    Trên giấy thì không có phòng tối nào để thắp. Một vũng trắng 4,5% và một
+    vũng be 7,5% trên nền #f7f4ef gần như không đo được, nhưng chúng vẫn là ba
+    lớp `<Svg>` phủ kín màn hình được lấy mẫu lại mỗi khung hình cuộn — tức chi
+    phí có thật cho một hiệu ứng không nhìn thấy.
+
+    `m.lit` đã là đúng câu hỏi: chất liệu này có bắt sáng không. Bản sáng dựng
+    ra rỗng, cùng cách `GlassCard` bỏ mặt gradient của nó.
+  */
+  const m = useMaterial();
+  if (!m.lit) return null;
   return (
     <View style={styles.light} pointerEvents="none">
       <Svg width="100%" height="100%" preserveAspectRatio="none">

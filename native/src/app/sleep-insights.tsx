@@ -12,7 +12,7 @@ import { EmptyState } from '@/components/ascnd/empty-state';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { spacing, type } from '@/constants/ascnd';
-import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -344,7 +344,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   cardTitle: { ...type.headline, color: c.foreground },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xs },
@@ -363,7 +363,7 @@ const stylesFor = makeStyles((c) => ({
   barTrack: { width: '70%', height: 140, flexDirection: 'column', backgroundColor: c.background, borderRadius: 4, overflow: 'hidden' },
   /* Neither of the three stage colours — it is not a stage, it is the absence
      of a breakdown, and giving it one of their colours would name it wrongly. */
-  barUnknown: { backgroundColor: 'rgba(255,255,255,0.14)' },
+  barUnknown: { backgroundColor: alpha(m.ink, 0.14) },
   barSeg: { width: '100%', flexBasis: 0 },
   barLabel: { ...type.caption, color: c.mutedForeground },
   insightList: { marginTop: spacing.sm, gap: spacing.sm },

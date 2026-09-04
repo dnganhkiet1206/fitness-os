@@ -5,6 +5,8 @@ import { Platform, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
+import { useMaterial } from '@/hooks/use-palette';
+
 /**
  * The backdrop the phone's own status bar sits on.
  *
@@ -161,6 +163,7 @@ const fadeHeight = (top: number) => Math.max(88, top + 34);
 const GRADIENT_TOP = 0.12;
 
 export function StatusScrim() {
+  const m = useMaterial();
   const insets = useSafeAreaInsets();
   /*
     Ids in SVG are document-global on native, not local to the `<Svg>` that
@@ -238,11 +241,13 @@ export function StatusScrim() {
       */}
       <Svg style={StyleSheet.absoluteFill}>
         <Defs>
+          {/* Màu của lớp làm dịu đi theo theme — xem `Aura.scrim`. Bản tối vẫn
+              là `#000000`, tức đúng `#000` cũ viết đủ sáu chữ số. */}
           <LinearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#000" stopOpacity={GRADIENT_TOP} />
-            <Stop offset="0.42" stopColor="#000" stopOpacity="0.07" />
-            <Stop offset="0.7" stopColor="#000" stopOpacity="0.05" />
-            <Stop offset="1" stopColor="#000" stopOpacity="0" />
+            <Stop offset="0" stopColor={m.aura.scrim} stopOpacity={GRADIENT_TOP} />
+            <Stop offset="0.42" stopColor={m.aura.scrim} stopOpacity="0.07" />
+            <Stop offset="0.7" stopColor={m.aura.scrim} stopOpacity="0.05" />
+            <Stop offset="1" stopColor={m.aura.scrim} stopOpacity="0" />
           </LinearGradient>
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid})`} />

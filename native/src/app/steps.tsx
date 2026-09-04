@@ -10,7 +10,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -119,7 +119,7 @@ export default function StepsScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   cardTitle: { ...type.headline, color: c.foreground },
   cardHint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
@@ -140,7 +140,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: alpha(m.ink, 0.06),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
   },

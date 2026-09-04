@@ -444,8 +444,12 @@ try {
     Two literals is two chances to change one and not the other, and the failure
     is a caption describing a line the chart is not drawing.
   */
-  if (!/const HABIT_COLOUR = /.test(card)) {
-    problems.push('today-widgets-2: đường "thói quen" và chú giải không dùng chung một hằng màu');
+  /* Một HÀM của chất liệu thay cho một hằng: màu ấy là `alpha(m.ink, 0.55)`, tức
+     nó phụ thuộc theme và một hằng ở phạm vi module không đọc được theme nào.
+     Luật không đổi — hai chỗ vẽ vẫn phải lấy màu từ CÙNG MỘT nguồn — chỉ nguồn
+     ấy đổi từ một hằng thành một hàm. */
+  if (!/const habitColour = \(m: Material\) =>/.test(card)) {
+    problems.push('today-widgets-2: đường "thói quen" và chú giải không dùng chung một nguồn màu');
   }
   /*
     The English a Vietnamese card was printing verbatim.

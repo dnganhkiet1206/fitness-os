@@ -38,8 +38,8 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { COMMON_ALLERGIES, parseDislikes } from '@/lib/food-preferences';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -930,7 +930,7 @@ function CalcItem({ label, value, highlight }: { label: string; value: string; h
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: c.background },
   content: { flexGrow: 1, paddingHorizontal: spacing.md, gap: spacing.lg },
 
@@ -1150,8 +1150,8 @@ const stylesFor = makeStyles((c) => ({
     alignItems: 'center',
     paddingLeft: spacing.md,
     paddingRight: spacing.sm,
-    borderBottomWidth: glass.borderWidth,
-    borderBottomColor: glass.border,
+    borderBottomWidth: m.inset.borderWidth,
+    borderBottomColor: m.inset.border,
   },
   legalTitle: { flex: 1, fontSize: 17, fontWeight: '600', color: c.foreground },
   legalClose: {
@@ -1160,7 +1160,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: alpha(m.ink, 0.06),
   },
   legalContent: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
   legalBlockTitle: { ...type.headline, color: c.foreground, marginBottom: 4 },

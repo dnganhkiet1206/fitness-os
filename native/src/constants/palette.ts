@@ -241,6 +241,11 @@ export const lightPalette: Palette = {
 
 export const palettes: Record<ThemeName, Palette> = { light: lightPalette, dark: darkPalette };
 
+/** Tên theme của một bảng màu — khoá để tra chất liệu đi cùng nó. */
+export function themeOf(c: Palette): ThemeName {
+  return c === lightPalette ? 'light' : 'dark';
+}
+
 /**
  * Chất liệu của thẻ — và đây là chỗ hai theme KHÁC NHAU về bản chất, không về màu.
  *
@@ -267,6 +272,65 @@ export const palettes: Record<ThemeName, Palette> = { light: lightPalette, dark:
  * chỉ dùng ở bản sáng: đặt `shadowOpacity` khác 0 trên bản tối là đem lại đúng
  * cái vành sáng mà chú thích kia đã bỏ nó đi.
  */
+/**
+ * Bề mặt CON — ô macro, đĩa chữ cái, nhóm danh sách, rãnh thanh tiến độ.
+ *
+ * ── vì sao nó phải là một vai riêng, chứ không dùng lại mặt thẻ ──
+ *
+ * Ở bản tối, một lớp phủ trắng 6% làm được CẢ HAI việc: đặt trên trang #070708
+ * nó là một cái thẻ, đặt trên thẻ #0e0e11 nó là một ô con. Lớp phủ trong suốt
+ * cộng dồn, nên cùng một công thức đọc ra "cao hơn một bậc" ở bất kỳ bậc nào.
+ * Đó là lý do MỘT hằng số `glass` từng phục vụ được 25 tệp.
+ *
+ * Trên giấy thì không. Mặt thẻ là `#ffffff` ĐỤC, nên một ô con tô cũng `#ffffff`
+ * nằm trong thẻ là vô hình — trắng trên trắng. Ô con phải đi XUỐNG khỏi trắng,
+ * trong khi thẻ đi LÊN khỏi giấy. Hai hướng ngược nhau, nên hai vai.
+ *
+ * ── và cái vẽ ra ô là VIỀN, không phải nền ──
+ *
+ * `today-widgets-2.tsx` đã đo và ghi lại đúng câu ấy cho bản tối: nền ô đo được
+ * 1,015 trên mặt thẻ và không cách nào cứu được, còn viền lên 1,46. Nguyên tắc
+ * ấy chuyển sang giấy nguyên vẹn — viền tơ ấm làm việc, nền chỉ là một bậc nhẹ.
+ *
+ * Giá trị bản tối là BẢN SAO NGUYÊN VĂN của `glass` cũ, nên bản tối không đổi
+ * một điểm ảnh nào. Giá trị bản sáng dẫn từ chính bảng màu sáng, không phải mã
+ * màu mới bịa ra.
+ */
+export interface Inset {
+  bg: string;
+  border: string;
+  borderWidth: number;
+}
+
+/**
+ * Bề mặt trên một nền ĐANG CHUYỂN ĐỘNG — hai màn hình trợ lý, xem `liquid-glass.tsx`.
+ *
+ * Ở đó nền không phải một màu phẳng mà là bốn vũng màu trôi, nên bề mặt phải
+ * làm hai việc mà thẻ thường không phải làm: giữ được MÉP của mình khi vũng
+ * dưới nó tối/sáng bất thường, và giữ chữ ĐỌC ĐƯỢC khi màu trôi qua.
+ *
+ * Cả hai giá trị bản tối là bản chép nguyên văn của thứ đang chạy. Bản sáng
+ * dẫn từ token bằng đúng độ mờ ấy — `alpha(card, 0.62)` — chứ không phải một
+ * độ mờ mới chọn: đổi con số cùng lúc với đổi màu là hai thay đổi trong một, và
+ * chỉ một trong hai được yêu cầu ở giai đoạn này.
+ */
+export interface Aura {
+  /** một sợi màu DƯỚI lớp blur, để tấm không mất mép trên một vũng cực đoan */
+  hair: string;
+  /** nền đục giữ chữ đọc được khi vũng màu trôi qua dưới nó */
+  base: string;
+  /** `tint` của `BlurView` — vật liệu hệ thống, không phải một màu của app */
+  blurTint: 'light' | 'dark';
+  /**
+   * Màu của lớp LÀM DỊU phủ lên hào quang và lên dải đầu trang.
+   *
+   * Bản tối làm dịu bằng ĐEN — thêm bóng vào một phòng tối. Trên giấy, đen là
+   * một vệt xám bẩn: thứ làm dịu một trang giấy là chính màu giấy, chồng thêm
+   * lên. Cùng vai, ngược vật liệu, đúng như bóng đổ và mép sáng.
+   */
+  scrim: string;
+}
+
 export interface Material {
   /** mặt thẻ — trong suốt ở bản tối (kính), đục ở bản sáng (giấy) */
   bg: string;
@@ -277,6 +341,29 @@ export interface Material {
   lit: boolean;
   borderWidth: number;
   radius: number;
+  /**
+   * Màu mà một LỚP PHỦ MỜ được làm bằng.
+   *
+   * ── vì sao không phải `foreground` ──
+   *
+   * 101 chỗ trong app viết `rgba(255,255,255,0.3)` cho một dòng chữ mờ, một
+   * viền nhạt, một nền chip. Trên giấy chúng là trắng trên trắng: không nhìn
+   * thấy gì, và không có lỗi nào báo.
+   *
+   * Phép sửa hiển nhiên là `alpha(c.foreground, 0.3)`. Nhưng `foreground` của
+   * bản tối là `#ededed`, không phải `#ffffff` — nên phép ấy đổi bản tối ở cả
+   * 101 chỗ. Chênh 7% độ sáng ở độ mờ 30% thì mắt không thấy, nhưng "chắc là
+   * không ai thấy" không phải một lời bảo đảm, và giai đoạn này hứa bản tối
+   * không đổi MỘT ký tự nào.
+   *
+   * Nên đây là một vai riêng: mực thuần của theme. Bản tối `#ffffff` — đúng
+   * chữ đang chạy — và bản sáng là mực của giấy.
+   */
+  ink: string;
+  /** bề mặt con — xem `Inset` */
+  inset: Inset;
+  /** bề mặt trên nền động — xem `Aura` */
+  aura: Aura;
   shadow: {
     shadowColor: string;
     shadowOpacity: number;
@@ -302,6 +389,23 @@ export const materials: Record<ThemeName, Material> = {
     lit: true,
     borderWidth: 0.5,
     radius: 20,
+    ink: '#ffffff',
+    /* Đúng ba giá trị của hằng `glass` cũ, chép nguyên văn. Ở bản tối một lớp
+       phủ trong suốt cộng dồn, nên mặt thẻ và ô con dùng chung được một công
+       thức — và chúng PHẢI tiếp tục dùng chung, nếu không bản tối đổi. */
+    inset: {
+      bg: 'rgba(255,255,255,0.06)',
+      border: 'rgba(255,255,255,0.12)',
+      borderWidth: 0.5,
+    },
+    /* Ba giá trị đang chạy, chép nguyên văn khỏi `liquid-glass.tsx`. */
+    aura: {
+      hair: 'rgba(255,255,255,0.035)',
+      base: 'rgba(13,13,18,0.62)',
+      blurTint: 'dark',
+      /* `#000` nguyên văn — hai chỗ dùng nó đều viết `rgba(0,0,0,…)`/`"#000"`. */
+      scrim: '#000000',
+    },
     shadow: NO_SHADOW,
   },
   light: {
@@ -316,6 +420,24 @@ export const materials: Record<ThemeName, Material> = {
        tệp này cố ý không import react-native, nên con số được viết ra —
        `tools/palette.mjs` kiểm nó khớp với thứ RN trả về trên 2x và 3x. */
     borderWidth: 1 / 3,
+    ink: lightPalette.foreground,
+    /* Ô con đi XUỐNG khỏi mặt thẻ trắng, ngược hướng với thẻ đi lên khỏi giấy.
+       Cả hai giá trị DẪN từ bảng màu sáng chứ không phải mã màu mới: `secondary`
+       cách mặt thẻ 1,20 và cách trang 1,09, còn `border` cách mặt thẻ 1,46 —
+       đúng con số mà bản tối đã đo được cho viền và gọi là đủ. */
+    inset: {
+      bg: lightPalette.secondary,
+      border: lightPalette.border,
+      borderWidth: 1 / 3,
+    },
+    /* Sợi MỰC thay cho sợi trắng: trên giấy, một sợi trắng dưới lớp blur không
+       vẽ ra mép nào. Cùng độ mờ 0,035, đổi hướng chứ không đổi lượng. */
+    aura: {
+      hair: alpha(lightPalette.foreground, 0.035),
+      base: alpha(lightPalette.card, 0.62),
+      blurTint: 'light',
+      scrim: lightPalette.background,
+    },
     radius: 20,
     /* Thấp và mềm: lệch 1 điểm, toả 8. Thẻ nằm TRÊN trang, không bay phía trên
        nó — một bóng cao biến mọi thẻ thành một hộp nổi và trang thành một cái

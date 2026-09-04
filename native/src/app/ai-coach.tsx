@@ -22,7 +22,7 @@ import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
 import { MarkdownLite } from '@/components/ascnd/markdown-lite';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { toast } from '@/lib/toast';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -472,7 +472,7 @@ export default function AiCoachScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: c.background },
   // Transparent so the aura behind it in the wrapper is not painted over.
   kav: { flex: 1, backgroundColor: 'transparent' },
@@ -541,8 +541,8 @@ const stylesFor = makeStyles((c) => ({
     paddingVertical: 7,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: alpha(m.ink, 0.12),
+    backgroundColor: alpha(m.ink, 0.05),
   },
   chatBtnText: { ...type.caption, color: c.glassMuted },
   msgRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
@@ -563,7 +563,7 @@ const stylesFor = makeStyles((c) => ({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 4,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: alpha(m.ink, 0.08),
   },
   bubble: { maxWidth: '78%' },
   bubbleInner: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
@@ -654,7 +654,7 @@ const stylesFor = makeStyles((c) => ({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
   },
-  historyRowActive: { backgroundColor: 'rgba(255,255,255,0.10)' },
+  historyRowActive: { backgroundColor: alpha(m.ink, 0.10) },
   historyTitle: { ...type.footnote, color: c.foreground, flex: 1 },
   historyDate: { ...type.caption, color: c.glassMuted },
   historyDelete: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

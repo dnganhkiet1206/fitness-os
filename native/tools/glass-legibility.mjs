@@ -98,7 +98,15 @@ const fg = hexOf('foreground');
 const glassMuted = hexOf('glassMuted');
 const muted = hexOf('mutedForeground');
 
-const fill = Number(glassSrc.match(/backgroundColor: 'rgba\(255,255,255,([\d.]+)\)'/)?.[1]);
+/*
+  Sợi màu dưới lớp blur nay là `Material.aura.hair`, không còn một literal trong
+  `liquid-glass.tsx`: nó phụ thuộc theme (trắng trên nền tối, mực trên giấy).
+
+  Phép đo này là về BẢN TỐI — nó hỏi chữ có đọc được trên vũng sáng nhất mà lớp
+  hào quang tối dựng ra được — nên nó lấy giá trị của bản tối, và lấy từ chính
+  bảng chất liệu chứ không dò lại một mã màu ở đâu khác.
+*/
+const fill = Number(/hair: 'rgba\(255,255,255,([\d.]+)\)'/.exec(palette)?.[1]);
 const lit = Number(glassSrc.match(/id=\{lit\}[\s\S]*?stopOpacity=\{([\d.]+)\}/)?.[1]);
 const wash = Number(glassSrc.match(/id=\{wash\}[\s\S]*?stopOpacity=\{([\d.]+)\}/)?.[1]);
 

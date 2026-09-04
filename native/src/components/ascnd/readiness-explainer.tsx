@@ -143,7 +143,7 @@ export function ReadinessExplainer({ visible, onClose }: { visible: boolean; onC
         <View style={styles.bands}>
           {ACWR_BANDS.map((b) => (
             <View key={b.key} style={styles.band}>
-              <View style={[styles.bandDot, { backgroundColor: ACWR_TINT[b.key] }]} />
+              <View style={[styles.bandDot, { backgroundColor: c[ACWR_TINT[b.key]] }]} />
               <Text style={styles.bandRange}>{b.label}</Text>
               <Text style={styles.bandWhat}>{ZONE_WHAT[b.key][vi ? 'vi' : 'en']}</Text>
             </View>

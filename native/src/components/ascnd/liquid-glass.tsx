@@ -3,7 +3,9 @@ import { useId, useState } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
-import { glass, radius } from '@/constants/ascnd';
+import { radius } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 
 /**
  * A control you can see the room through.
@@ -78,7 +80,7 @@ import { glass, radius } from '@/constants/ascnd';
 export function LiquidGlass({
   children,
   style,
-  radius: r = glass.radius,
+  radius: r = radius.lg,
   intensity = 22,
   tint,
   material = 'glass',
@@ -139,6 +141,8 @@ export function LiquidGlass({
     Không phải giả thuyết: viên trạng thái của Assistant và ô soạn tin của
     Health Assistant đều là `blur` không tint, và cả hai nằm trên đường cuộn.
   */
+  const m = useMaterial();
+  const styles = stylesFor(usePalette());
   const face = lens || !!tint;
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const measure = (e: LayoutChangeEvent) => {
@@ -150,7 +154,16 @@ export function LiquidGlass({
 
   return (
     <View style={[styles.wrap, { borderRadius: r }, style]}>
-      <BlurView intensity={intensity} tint="dark" style={StyleSheet.absoluteFill} />
+      {/*
+        `tint` là VẬT LIỆU CỦA HỆ THỐNG, không phải một màu của app: UIKit dựng
+        một `UIVisualEffectView` sáng hay tối tuỳ giá trị này. Đóng cứng `"dark"`
+        có nghĩa là trên giấy, tấm này là một hình chữ nhật tối — và chữ đặt lên
+        nó vẫn là mực gần-đen của bản sáng.
+
+        Cường độ KHÔNG đổi: 22 ở cả hai bản. Xem đoạn "the intensity is low on
+        purpose" phía trên — con số ấy nói về tint của vật liệu, không về theme.
+      */}
+      <BlurView intensity={intensity} tint={m.aura.blurTint} style={StyleSheet.absoluteFill} />
       {/*
         The lit face, same diagonal as every other card in the app: bright at
         the top-left where `AmbientLight` puts the key, dark at the bottom
@@ -248,16 +261,17 @@ export function LiquidGlass({
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c, m) => ({
   wrap: {
     overflow: 'hidden',
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
     /* A hair of fill under the blur. On a very dark pool the material alone
-       can land almost black, and the card loses its own edge against the page. */
-    backgroundColor: 'rgba(255,255,255,0.035)',
+       can land almost black, and the card loses its own edge against the page.
+       Trên giấy nó phải là một sợi MỰC, cùng lượng và ngược hướng — xem `Aura`. */
+    backgroundColor: m.aura.hair,
   },
-});
+}));
 
 /**
  * The content surface that goes *under* the glass layer.
@@ -281,14 +295,15 @@ export function SolidCard({
   style?: StyleProp<ViewStyle>;
   radius?: number;
 }) {
+  const solid = solidFor(usePalette());
   return <View style={[solid.card, { borderRadius: r }, style]}>{children}</View>;
 }
 
-const solid = StyleSheet.create({
+const solidFor = makeStyles((c, m) => ({
   card: {
     overflow: 'hidden',
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
-    backgroundColor: 'rgba(13,13,18,0.62)',
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
+    backgroundColor: m.aura.base,
   },
-});
+}));

@@ -28,8 +28,8 @@ import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
 import { SleepNoteBlock } from '@/components/ascnd/sleep-note-block';
 import { acwrZone } from '@/lib/training-card';
 import { HERO_RING, radius, RING_TEXT_MAX_SCALE, spacing, type } from '@/constants/ascnd';
-import { makeStyles, type PaletteKey } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { alpha, makeStyles, type PaletteKey, palettes, type Palette } from '@/constants/theme';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { readinessExplainText, readinessRecoText, readinessSubscores } from '@/lib/readiness-i18n';
@@ -44,11 +44,40 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
    ring", và đồng hồ nghỉ đã vẽ rãnh của nó bằng một giá trị khác. */
 const TRACK = 'ringTrack' satisfies PaletteKey;
 
-const GRADIENTS: Record<string, [string, string]> = {
+/**
+ * Hai điểm dừng của CUNG đã chạy, theo trạng thái.
+ *
+ * ── vì sao sáu mã màu này là chỗ tệ nhất trong cả app ở bản sáng ──
+ *
+ * Chúng ở phạm vi module, nên chúng đóng băng ở bản tối. Trên mặt thẻ trắng,
+ * cung xanh đo được **1,43:1** và cung vàng **1,73:1** — sàn của một hình đồ
+ * hoạ là 3:1, nên cả hai trượt hơn một nửa. Chỉ trạng thái ĐỎ đạt (3,48), tức
+ * hình chính của cả app chỉ đọc được khi tin xấu.
+ *
+ * Tệ hơn: con số ở giữa vòng ĐÃ theo theme (`STATUS_COLOR` ngay dưới), nên cung
+ * và số của cùng một trạng thái là hai màu khác nhau trong cùng một hình tròn.
+ *
+ * ── bản tối giữ nguyên sáu mã màu; bản sáng dùng CHÍNH token của nó ──
+ *
+ * `#ffb800` và `#ff2d8a` không phải token của bảng nào — chúng là hai màu chọn
+ * riêng để cung tối có độ dốc. Bịa ra bản sáng của chúng là một QUYẾT ĐỊNH
+ * THIẾT KẾ, và giai đoạn này chỉ sửa hạ tầng.
+ *
+ * Nên bản sáng lấy hai điểm dừng BẰNG NHAU từ token trạng thái của chính nó:
+ * cung một màu, chưa có độ dốc, nhưng đúng màu và đọc được — 1,43 → 5,06. Độ
+ * dốc của bản sáng là quyết định Giai đoạn 2.
+ */
+const DARK_GRADIENTS: Record<string, [string, string]> = {
   green: ['#2bf5a8', '#3dff7a'],
   yellow: ['#ffb800', '#ffd93d'],
   red: ['#ff3b5c', '#ff2d8a'],
 };
+
+function gradientFor(c: Palette, status: string): [string, string] {
+  if (c === palettes.dark) return DARK_GRADIENTS[status] ?? DARK_GRADIENTS.yellow;
+  const key = STATUS_COLOR[status] ?? STATUS_COLOR.yellow;
+  return [c[key], c[key]];
+}
 
 /*
   Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
@@ -117,6 +146,7 @@ export function ReadinessGauge({
   onToggleDetail,
   onOpenDetail,
 }: Props) {
+  const m = useMaterial();
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -201,7 +231,7 @@ export function ReadinessGauge({
     Băng thứ nhất sai về phía nguy hiểm: một cú tăng tải thật sự rủi ro được tô
     thành "để ý một chút". Người dùng đọc cả hai thẻ trong cùng một lần mở app.
   */
-  const acwrColor = acwr == null ? c.mutedForeground : ACWR_TINT[acwrZone(acwr)];
+  const acwrColor = acwr == null ? c.mutedForeground : c[ACWR_TINT[acwrZone(acwr)]];
   const tiles: { label: string; value: string; color: string; unit: string }[] = [];
   /*
     ── the chip counted a tile that was never drawn ──
@@ -329,7 +359,7 @@ export function ReadinessGauge({
   */
   const measured = Object.keys(subs).length;
   const confidence = measured > 0 ? readinessConfidence(measured) : null;
-  const [g0, g1] = GRADIENTS[status] ?? GRADIENTS.yellow;
+  const [g0, g1] = gradientFor(c, status);
   const statusLabel =
     status === 'green' ? i18n.dcReadinessTrain : status === 'yellow' ? i18n.dcReadinessModerate : i18n.dcReadinessRecover;
 
@@ -459,11 +489,25 @@ export function ReadinessGauge({
         reading and its reasons are one glance instead of two.
       */}
       <View style={[styles.ringWrap, { width: ringSize, height: ringSize }]}>
-        {/* Neon halo behind the ring, tinted to the status colour (web glow) */}
-        <View
-          pointerEvents="none"
-          style={[styles.ringGlow, { shadowColor: color, backgroundColor: `${color}0d` }]}
-        />
+        {/*
+          Neon halo behind the ring, tinted to the status colour (web glow).
+
+          Chỉ vẽ khi chất liệu PHÁT SÁNG. `m.lit` đã là đúng câu hỏi ấy: bản tối
+          là kính bắt sáng, bản sáng là giấy. Một bóng màu bán kính 28 ở độ mờ
+          0,7 sau một vòng tròn trên nền đen là ánh sáng phát ra; trên giấy nó
+          là một vệt màu nhoè không có nguồn sáng nào biện minh cho nó.
+
+          Tắt hẳn chứ không hạ độ mờ: "vầng sáng mờ hơn" vẫn là ẩn dụ của bản
+          tối, chỉ nhỏ tiếng hơn. Bản sáng đã có cách nói độ sâu của riêng nó —
+          bóng đổ của `Material` — và cung vòng nay đọc được 5,06:1 nên nó không
+          cần vay thêm sự chú ý từ đâu cả.
+        */}
+        {m.lit ? (
+          <View
+            pointerEvents="none"
+            style={[styles.ringGlow, { shadowColor: color, backgroundColor: `${color}0d` }]}
+          />
+        ) : null}
         <Svg width={ringSize} height={ringSize} viewBox="0 0 120 120">
           <Defs>
             <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -683,7 +727,7 @@ export function ReadinessGauge({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   /*
     Không còn là một cái thẻ.
 
@@ -766,7 +810,7 @@ const stylesFor = makeStyles((c) => ({
     minHeight: 44,
     paddingHorizontal: spacing.sm,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(255,255,255,0.045)',
+    backgroundColor: alpha(m.ink, 0.045),
   },
   moreLabel: { ...type.footnote, color: c.foreground },
   titleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

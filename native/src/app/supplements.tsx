@@ -11,7 +11,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { toast } from '@/lib/toast';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { errorText } from '@/lib/error-copy';
@@ -204,14 +204,14 @@ export default function SupplementsScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   headerAdd: {
     width: 34,
     height: 34,
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: alpha(m.ink, 0.06),
   },
   headerAddOn: { backgroundColor: 'rgba(168,175,189,0.16)' },
 

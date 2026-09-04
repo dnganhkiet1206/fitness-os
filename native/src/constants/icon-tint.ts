@@ -27,7 +27,15 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 
-import { colors } from '@/constants/ascnd';
+/*
+  Bảng này trả về KHOÁ của bảng màu, không phải mã màu.
+
+  Bảy hằng dưới đây từng đọc `colors` — tức bản TỐI — ở phạm vi module, nên
+  trên giấy icon món ăn vẫn là xanh neon #2bf5a8, đo được 1,43:1 trên mặt thẻ
+  trắng. Khoá thì để mỗi theme tự trả lời, và bản sáng đã có giá trị riêng cho
+  cả bảy token này. Lập luận CHỌN token nào cho miền nào không đổi một chữ.
+*/
+import { type PaletteKey } from '@/constants/palette';
 
 /**
  * What colour an icon is, decided once for the whole app.
@@ -88,9 +96,9 @@ import { colors } from '@/constants/ascnd';
  */
 
 /** food and anything eaten */
-const FOOD = colors.readinessGreen;
+const FOOD = 'readinessGreen' satisfies PaletteKey;
 /** energy: burned, spent, or counted */
-const ENERGY = colors.metricOrange;
+const ENERGY = 'metricOrange' satisfies PaletteKey;
 /**
  * Tập luyện — KIM LOẠI, không phải xanh dương.
  *
@@ -114,17 +122,17 @@ const ENERGY = colors.metricOrange;
  * để cái tạ hoá thép trong khi nhịp tập vẫn xanh là tạo ra đúng vết nứt mà tệp
  * này sinh ra để hàn.
  */
-const TRAINING = colors.champagne;
+const TRAINING = 'champagne' satisfies PaletteKey;
 /** the body's own signals */
-const VITAL = colors.readinessRed;
+const VITAL = 'readinessRed' satisfies PaletteKey;
 /** water */
-const WATER = colors.metricCyan;
+const WATER = 'metricCyan' satisfies PaletteKey;
 /** night, and the assistant */
-const NIGHT = colors.metricPurple;
+const NIGHT = 'metricPurple' satisfies PaletteKey;
 /** anything won */
-const REWARD = colors.readinessYellow;
+const REWARD = 'readinessYellow' satisfies PaletteKey;
 
-const TINTS: [LucideIcon, string][] = [
+const TINTS: [LucideIcon, PaletteKey][] = [
   // food
   [Utensils, FOOD],
   [UtensilsCrossed, FOOD],
@@ -165,7 +173,7 @@ const TINTS: [LucideIcon, string][] = [
   [Star, REWARD],
 ];
 
-const BY_ICON = new Map<LucideIcon, string>(TINTS);
+const BY_ICON = new Map<LucideIcon, PaletteKey>(TINTS);
 
 /**
  * The colour this icon should be, or `undefined` if it is chrome.
@@ -174,6 +182,6 @@ const BY_ICON = new Map<LucideIcon, string>(TINTS);
  * produce a grey icon — an icon that is not in the table is not in the table
  * for a reason, and one that is cannot be misspelled.
  */
-export function iconTint(icon: LucideIcon): string | undefined {
+export function iconTint(icon: LucideIcon): PaletteKey | undefined {
   return BY_ICON.get(icon);
 }

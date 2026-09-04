@@ -28,7 +28,7 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { WaterChart } from '@/components/ascnd/water-chart';
 import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -386,7 +386,7 @@ function ManualWaterSheet({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   cardTitle: { ...type.headline, color: c.foreground },
   cardHint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
@@ -464,7 +464,7 @@ const stylesFor = makeStyles((c) => ({
     gap: spacing.xs,
     paddingVertical: spacing.sm,
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: alpha(m.ink, 0.05),
   },
   input: {
     width: 132,
@@ -487,7 +487,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: alpha(m.ink, 0.07),
   },
   sheetBtnPrimary: { backgroundColor: c.metricBlue },
   sheetBtnDisabled: { opacity: 0.4 },

@@ -12,7 +12,7 @@ import { FoodCard, useFoodListStyles, RecentFoodCard } from '@/components/ascnd/
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { glass, radius, spacing } from '@/constants/ascnd';
+import { radius, spacing } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -210,7 +210,7 @@ export default function FoodListScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   segBar: {
     flexDirection: 'row',
     backgroundColor: 'rgba(24,24,27,0.6)',
@@ -265,9 +265,9 @@ const stylesFor = makeStyles((c) => ({
     textAlign: 'center',
     paddingVertical: spacing.lg,
     borderRadius: radius.md,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
-    backgroundColor: glass.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
+    backgroundColor: m.inset.bg,
   },
   hint: { fontSize: 12, color: c.mutedForeground, marginTop: -spacing.sm },
 }));

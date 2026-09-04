@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { MACRO_TINT, glass, radius, spacing } from '@/constants/ascnd';
+import { MACRO_TINT, radius, spacing } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -83,11 +83,11 @@ function Macros({ protein, carbs, fat }: { protein: number; carbs: number; fat: 
   const styles = stylesFor(c);
   return (
     <Text style={styles.macros} numberOfLines={1}>
-      <Text style={{ color: MACRO_TINT.protein }}>P</Text> {Math.round(protein)}g
+      <Text style={{ color: c[MACRO_TINT.protein] }}>P</Text> {Math.round(protein)}g
       <Text style={styles.dot}> · </Text>
-      <Text style={{ color: MACRO_TINT.carbs }}>C</Text> {Math.round(carbs)}g
+      <Text style={{ color: c[MACRO_TINT.carbs] }}>C</Text> {Math.round(carbs)}g
       <Text style={styles.dot}> · </Text>
-      <Text style={{ color: MACRO_TINT.fat }}>F</Text> {Math.round(fat)}g
+      <Text style={{ color: c[MACRO_TINT.fat] }}>F</Text> {Math.round(fat)}g
     </Text>
   );
 }
@@ -240,12 +240,12 @@ const stylesFor = makeStyles((c) => ({
  * rồi có cơ hội lấy nhầm — chữ ký cũ là `foodListStyles.group`, chữ ký mới là
  * `useFoodListStyles().group`, và không có đường nào ở giữa để đi sai.
  */
-const foodListStylesFor = makeStyles((c) => ({
+const foodListStylesFor = makeStyles((c, m) => ({
   group: {
     borderRadius: radius.md,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
     overflow: 'hidden',
   },
   sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },

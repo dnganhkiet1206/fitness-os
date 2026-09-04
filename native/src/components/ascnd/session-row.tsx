@@ -5,7 +5,7 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { effortTint, radius, spacing } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { getLocale, type AppLang } from '@/lib/i18n';
@@ -113,8 +113,8 @@ export function SessionRow({
           /* Tinted by value, from the app's one effort ramp. A badge that is
              the same orange at 6 as at 10 is decoration — it takes up the
              position of a signal and carries none. */
-          <View style={[styles.rpeBadge, { backgroundColor: `${effortTint(rpe)}1f` }]}>
-            <Text style={[styles.rpeText, { color: effortTint(rpe) }]}>
+          <View style={[styles.rpeBadge, { backgroundColor: alpha(c[effortTint(rpe)], 0.12) }]}>
+            <Text style={[styles.rpeText, { color: c[effortTint(rpe)] }]}>
               {vi ? 'gắng sức' : 'effort'} {rpe}
             </Text>
           </View>
@@ -135,7 +135,7 @@ export function SessionRow({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   wrap: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
   info: { flex: 1, minWidth: 0, gap: 3 },
@@ -167,12 +167,12 @@ const stylesFor = makeStyles((c) => ({
  * Là một HOOK vì nó được xuất ra và dùng ở ba màn khác — cùng lý do đã ghi ở
  * `useFoodListStyles` trong `food-cards.tsx`.
  */
-const sessionListStylesFor = makeStyles((c) => ({
+const sessionListStylesFor = makeStyles((c, m) => ({
   group: {
     borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: alpha(m.ink, 0.06),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: alpha(m.ink, 0.12),
     overflow: 'hidden',
   },
   sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },

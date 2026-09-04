@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { type } from '@/constants/ascnd';
-import { makeStyles, type PaletteKey } from '@/constants/theme';
+import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { localDateStr } from '@/lib/local-date';
 
@@ -51,6 +51,10 @@ export const STATE_STYLE: Record<DayState, { icon: typeof CheckCircle2; tint: Pa
      "approaching a limit", and spending it here would leave nothing to say
      that with. */
   todo: { icon: CircleDashed, tint: 'primary', wash: 'rgba(168,175,189,0.14)' },
+  /* `wash` vẫn là literal: bảng này ở phạm vi module nên không đọc được chất
+     liệu, và ba `wash` kia KHÔNG dẫn được từ `tint` — `done` dùng một xanh cũ
+     (#3fb950) khác hẳn `readinessGreen`, nên một phép dẫn chung sẽ đổi bản tối.
+     Ghi vào phần "còn nợ" thay vì sửa nửa vời. */
   missed: { icon: CircleDashed, tint: 'mutedForeground', wash: 'rgba(255,255,255,0.06)' },
   /*
     Rest is purple, and it is the only state here that is a *choice*.
@@ -148,7 +152,7 @@ export function WeekStrip({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
   weekCell: { alignItems: 'center', gap: 6, flex: 1, paddingVertical: 4 },
   weekName: { ...type.caption, color: c.mutedForeground },

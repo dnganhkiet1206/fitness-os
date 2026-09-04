@@ -17,9 +17,9 @@ import { Retract } from '@/components/ascnd/retract';
 import { SEGMENT_SWAP } from '@/components/ascnd/segmented';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { duration, press } from '@/constants/motion';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles, type Palette, type PaletteKey } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -296,6 +296,7 @@ export function DayPlan({
   onEdit: () => void;
 }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const { weight: wUnit } = useUnits();
   const log = useLogWorkoutSession();
@@ -940,7 +941,7 @@ export function DayPlan({
         pct={rows.length ? (doneRows.length / rows.length) * 100 : 0}
         height={4}
         radius={2}
-        trackColor={glass.bg}
+        trackColor={m.inset.bg}
         color={c.primary}
         delay={0}
         duration={duration.move}
@@ -1052,7 +1053,7 @@ export function DayPlan({
                   <Icon
                     icon={Check}
                     size={16}
-                    color={isDone ? c.primaryForeground : 'rgba(255,255,255,0.22)'}
+                    color={isDone ? c.primaryForeground : alpha(m.ink, 0.22)}
                     strokeWidth={3}
                   />
                 </PressScale>
@@ -1156,7 +1157,7 @@ export function DayPlan({
                   <Icon
                     icon={Timer}
                     size={11}
-                    color={secs === row.plannedRest ? 'rgba(255,255,255,0.30)' : c.mutedForeground}
+                    color={secs === row.plannedRest ? alpha(m.ink, 0.30) : c.mutedForeground}
                   />
                   <Text style={[styles.chipText, secs === row.plannedRest && styles.chipTextDefault]}>
                     {restLabel(secs)}
@@ -1364,7 +1365,7 @@ export function DayPlan({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   wrap: { gap: spacing.sm },
   empty: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl },
   emptyText: { ...type.body, color: c.foreground },
@@ -1377,9 +1378,9 @@ const stylesFor = makeStyles((c) => ({
     paddingHorizontal: spacing.md,
     borderRadius: radius.sm,
     marginTop: spacing.xs,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   emptyBtnText: { ...type.footnote, color: c.foreground, fontWeight: '600' },
 
@@ -1411,7 +1412,7 @@ const stylesFor = makeStyles((c) => ({
   /* Untouched: still the same size and still tappable, just not shouting a
      number the header already gave. */
   chipDefault: { borderColor: 'transparent', backgroundColor: 'transparent' },
-  chipTextDefault: { color: 'rgba(255,255,255,0.35)' },
+  chipTextDefault: { color: alpha(m.ink, 0.35) },
   exName: {
     ...type.footnote,
     color: c.foreground,
@@ -1431,8 +1432,8 @@ const stylesFor = makeStyles((c) => ({
        card, plus a faint fill so it reads as an empty box rather than as a gap
        between two things. The ghosted tick inside says what it is for. */
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderColor: alpha(m.ink, 0.3),
+    backgroundColor: alpha(m.ink, 0.05),
   },
   checkOn: { backgroundColor: c.primary, borderColor: c.primary },
   setText: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 3 },
@@ -1443,7 +1444,7 @@ const stylesFor = makeStyles((c) => ({
     width: 12,
     textAlign: 'center',
   },
-  setNoDone: { color: 'rgba(255,255,255,0.28)' },
+  setNoDone: { color: alpha(m.ink, 0.28) },
   /*
     A box that looks like a box.
 
@@ -1464,9 +1465,9 @@ const stylesFor = makeStyles((c) => ({
        only, which is the kind of thing nobody sees until somebody reports it. */
     paddingVertical: 0,
     borderRadius: radius.sm,
-    backgroundColor: 'rgba(255,255,255,0.07)',
+    backgroundColor: alpha(m.ink, 0.07),
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.14)',
+    borderColor: alpha(m.ink, 0.14),
   },
   /*
     Căn phải, và không phải vì thẩm mỹ.
@@ -1483,12 +1484,12 @@ const stylesFor = makeStyles((c) => ({
   fieldReps: { minWidth: 34 },
   /* Still a box, just not shouting: it holds what the plan said, and the plan
      is already stated in full one line above. */
-  fieldPlan: { color: 'rgba(255,255,255,0.4)', backgroundColor: 'transparent', borderColor: 'transparent' },
+  fieldPlan: { color: alpha(m.ink, 0.4), backgroundColor: 'transparent', borderColor: 'transparent' },
   unit: { ...type.caption, color: c.mutedForeground },
-  unitPlan: { color: 'rgba(255,255,255,0.3)' },
+  unitPlan: { color: alpha(m.ink, 0.3) },
   /* Room on both sides. At the row gap alone it sat against the unit and read
      as one clump, "kg ×", instead of separating the two numbers it is between. */
-  times: { ...type.caption, color: 'rgba(255,255,255,0.3)', paddingHorizontal: 3 },
+  times: { ...type.caption, color: alpha(m.ink, 0.3), paddingHorizontal: 3 },
   exNameInput: { flex: 1, minWidth: 0, padding: 0 },
   exRemove: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   addSet: {
@@ -1516,8 +1517,8 @@ const stylesFor = makeStyles((c) => ({
        the same "this is available, it is not the main event" without betting on
        a border style. */
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: alpha(m.ink, 0.16),
+    backgroundColor: alpha(m.ink, 0.04),
   },
   addExText: { ...type.footnote, color: c.mutedForeground },
   chip: {
@@ -1527,9 +1528,9 @@ const stylesFor = makeStyles((c) => ({
     paddingHorizontal: spacing.sm,
     height: 26,
     borderRadius: radius.full,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   chipOpen: { borderColor: c.primary },
   chipText: { ...type.caption, color: c.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
@@ -1549,9 +1550,9 @@ const stylesFor = makeStyles((c) => ({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.sm,
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   stepValue: {
     ...type.footnote,
@@ -1567,9 +1568,9 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: glass.bg,
-    borderWidth: glass.borderWidth,
-    borderColor: glass.border,
+    backgroundColor: m.inset.bg,
+    borderWidth: m.inset.borderWidth,
+    borderColor: m.inset.border,
   },
   rpeOptionOn: { backgroundColor: c.primary, borderColor: c.primary },
   rpeOptionText: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },

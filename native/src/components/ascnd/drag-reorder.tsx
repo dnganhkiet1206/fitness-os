@@ -15,7 +15,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { glass } from '@/constants/ascnd';
+import { radius } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { BOUNCE, spring } from '@/constants/motion';
@@ -174,7 +174,10 @@ const RUBBER = 0.22;
  * `colors.card` là chính màu nền thẻ của hệ thiết kế — nên khi lớp này đục
  * hoàn toàn, thẻ trông đúng như một thẻ, không phải như một hình chữ nhật đen.
  */
-const SOLID_RADIUS = glass.radius;
+/* `radius.lg`, không phải chất liệu: bán kính là token DÙNG CHUNG — cả hai
+   chất liệu khai 20 — nên nó không phụ thuộc theme, và một hằng ở phạm vi
+   module không đọc được chất liệu nào. */
+const SOLID_RADIUS = radius.lg;
 
 /** Quãng tính từ mép khung nhìn mà tự-cuộn bắt đầu chạy. */
 const EDGE = 96;

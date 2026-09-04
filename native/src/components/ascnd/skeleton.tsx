@@ -10,8 +10,8 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { glass, radius, spacing } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { radius, spacing } from '@/constants/ascnd';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import {
@@ -292,17 +292,17 @@ export function ProgressSkeleton({ tab }: { tab: 'weight' | 'measurements' }) {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   /* The card's own geometry, so a block sits exactly where its card will:
      same radius, same hairline, and a fill a shade above the page rather than
      a grey rectangle painted on top of it. */
   block: {
-    borderRadius: glass.radius ?? radius.lg,
-    backgroundColor: 'rgba(255,255,255,0.045)',
+    borderRadius: m.radius,
+    backgroundColor: alpha(m.ink, 0.045),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
   },
   stacked: { marginBottom: spacing.stack },
   group: { gap: spacing.sm + 4, marginTop: spacing.xs, marginBottom: spacing.stack },
-  header: { width: 132, borderWidth: 0, backgroundColor: 'rgba(255,255,255,0.06)' },
+  header: { width: 132, borderWidth: 0, backgroundColor: alpha(m.ink, 0.06) },
 }));

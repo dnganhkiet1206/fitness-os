@@ -3,9 +3,9 @@ import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
 import { ChartBar } from '@/components/ascnd/chart-bar';
-import { glass, radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { alpha, makeStyles } from '@/constants/theme';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import type { Analysis } from '@/lib/metric-analysis';
 
 /**
@@ -78,6 +78,7 @@ export function MetricPanel({
   onAsk: () => void;
 }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const { headline, stats, bars, baseline } = analysis;
 
@@ -115,7 +116,7 @@ export function MetricPanel({
               heightPct={b.missing ? (3 / TRACK) * 100 : Math.max(4, (b.value / peak) * 100)}
               /* Today at full strength, the rest at 55%. Without it the column
                  that matters most is one of seven identical shapes. */
-              color={b.missing ? 'rgba(255,255,255,0.14)' : b.today ? tint : `${tint}8c`}
+              color={b.missing ? alpha(m.ink, 0.14) : b.today ? tint : `${tint}8c`}
               radius={3}
               delay={i * 30}
             />
@@ -252,7 +253,7 @@ export function MetricPanel({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   wrap: { padding: spacing.md, gap: spacing.sm + 2 },
   /* The largest thing in the panel, because it is the point of the panel. */
   headline: { ...type.footnote, color: c.foreground, lineHeight: 20 },
@@ -286,7 +287,7 @@ const stylesFor = makeStyles((c) => ({
     left: 0,
     bottom: 2,
     fontSize: 11,
-    color: 'rgba(255,255,255,0.72)',
+    color: alpha(m.ink, 0.72),
     backgroundColor: 'rgba(10,10,16,0.94)',
     paddingHorizontal: 3,
     borderRadius: 3,
@@ -309,5 +310,5 @@ const stylesFor = makeStyles((c) => ({
     paddingVertical: 14,
     marginBottom: -12,
   },
-  divider: { height: StyleSheet.hairlineWidth, backgroundColor: glass.border, borderRadius: radius.sm },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: m.inset.border, borderRadius: radius.sm },
 }));
