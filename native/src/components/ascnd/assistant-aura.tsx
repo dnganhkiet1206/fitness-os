@@ -12,7 +12,7 @@ import Animated, {
 import Svg, { Circle, Defs, LinearGradient as SvgLinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { makeStyles, type Palette } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 /**
@@ -98,6 +98,16 @@ interface Pool {
     duy nhất chứa được cả hai loại mà không cần đoán lúc chạy.
   */
   colour: (c: Palette) => string;
+  /**
+   * Đỉnh độ mờ ở bản SÁNG — một con số riêng, không phải `peak` nhân hệ số.
+   *
+   * Trên nền gần đen, một vũng sáng CỘNG thêm sáng và có 15 khẩu độ để cộng.
+   * Trên giấy #f7f4ef thì không còn chỗ: **trắng ĐẶC (α=1) chỉ nâng được
+   * 1,097:1** so với chính trang. Tức mọi phép "giữ nguyên độ mờ, đổi màu" đều
+   * cho ra một thứ mờ hơn bản tối bất kể chọn màu gì — đó là hình học của phép
+   * composite, không phải một lựa chọn.
+   */
+  peakLight: number;
   peak: number;
   /** where the pool sits, as a fraction of the layer */
   cx: number;
@@ -121,6 +131,7 @@ interface Pool {
  */
 function LightPool({ pool, tint, moving }: { pool: Pool; tint?: string; moving: boolean }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const t = useSharedValue(pool.phase);
 
@@ -168,7 +179,34 @@ function LightPool({ pool, tint, moving }: { pool: Pool; tint?: string; moving: 
     };
   });
 
-  const colour = tint ?? pool.colour(c);
+  /*
+    ── trên giấy, một lớp phủ màu KHÔNG THỂ là ánh sáng ──
+
+    Bốn vũng này là ánh sáng rọi ra: trên #070708 chúng CỘNG độ sáng, và đỉnh
+    sáng nhất nâng trang lên 1,125:1. Cùng bốn màu ấy trên giấy #f7f4ef thì
+    composite đi XUỐNG — tím ra #eedff1 (tối đi 1,163:1 và nhuốm màu), lơ ra
+    #e8f0f0. Đó là vệt lavender mà bản thiết kế cấm, và nó không sửa được bằng
+    cách hạ độ mờ: hướng đã sai, chỉ còn ít hơn.
+
+    ── mục tiêu ĐO ĐƯỢC, và cái trần buộc phải nói ra ──
+
+    Bản sáng nâng bằng TRẮNG, và đích là **1,05:1 ở vũng sáng nhất** so với
+    trang (α 0,50 trên `card`, ra #fbfaf7). Ba vũng còn lại giữ nguyên TỈ LỆ
+    của chúng với vũng ấy — 0,741 / 0,519 / 0,222 — nên bố cục của ánh sáng
+    không đổi, chỉ vật liệu đổi.
+
+    1,05 không phải một con số chọn cho đẹp: nó trên ngưỡng thấy được của một
+    mảng lớn mềm (~1,02) và bằng 46% của TRẦN 1,097 mà trắng đặc đạt tới. Tức
+    nếu trên máy thật nó quá mờ thì còn chỗ để đẩy, và chỗ ấy hữu hạn — đẩy hết
+    cỡ cũng không tới được 1,125 của bản tối. Không có màu nào sửa được điều
+    đó, nên đừng thêm màu.
+
+    Và `tint` — màu sẵn sàng của hôm nay — cũng tắt ở bản sáng: nó là chroma,
+    và nghĩa mà nó mang đã được vòng sẵn sàng nói bằng chữ và bằng cung.
+  */
+  const paper = !m.lit;
+  const colour = paper ? c.card : (tint ?? pool.colour(c));
+  const peak = paper ? pool.peakLight : pool.peak;
 
   /*
     ── the gradient id has to be unique per mount, not per pool ──
@@ -201,7 +239,7 @@ function LightPool({ pool, tint, moving }: { pool: Pool; tint?: string; moving: 
             ry={0.22}
             gradientUnits="objectBoundingBox">
             {CURVE.map((p) => (
-              <Stop key={p.at} offset={p.at} stopColor={colour} stopOpacity={pool.peak * p.of} />
+              <Stop key={p.at} offset={p.at} stopColor={colour} stopOpacity={peak * p.of} />
             ))}
           </RadialGradient>
         </Defs>
@@ -214,12 +252,12 @@ function LightPool({ pool, tint, moving }: { pool: Pool; tint?: string; moving: 
 const POOLS: Pool[] = [
   /* The state pool. Its colour is overridden by today's readiness — it is the
      one that makes the screen mean something before you read it. */
-  { id: 'auraState', colour: (c) => c.metricPurple, peak: 0.135, cx: 0.44, cy: 0.31, dx: 34, dy: 44, scale: 0.18, ms: 17000, phase: 0 },
-  { id: 'auraViolet', colour: () => '#7b3dff', peak: 0.10, cx: 0.62, cy: 0.24, dx: 44, dy: 30, scale: 0.15, ms: 23000, phase: 0.33 },
-  { id: 'auraCyan', colour: () => '#22b8ff', peak: 0.07, cx: 0.33, cy: 0.44, dx: 40, dy: 36, scale: 0.17, ms: 29000, phase: 0.66 },
+  { id: 'auraState', colour: (c) => c.metricPurple, peak: 0.135, peakLight: 0.5, cx: 0.44, cy: 0.31, dx: 34, dy: 44, scale: 0.18, ms: 17000, phase: 0 },
+  { id: 'auraViolet', colour: () => '#7b3dff', peak: 0.10, peakLight: 0.37, cx: 0.62, cy: 0.24, dx: 44, dy: 30, scale: 0.15, ms: 23000, phase: 0.33 },
+  { id: 'auraCyan', colour: () => '#22b8ff', peak: 0.07, peakLight: 0.26, cx: 0.33, cy: 0.44, dx: 40, dy: 36, scale: 0.17, ms: 29000, phase: 0.66 },
   /* A dim warm one low down, so the bottom of the page is not dead black and
      the cool pools have something to be cool *against*. */
-  { id: 'auraWarm', colour: () => '#ffb37a', peak: 0.03, cx: 0.68, cy: 0.66, dx: 28, dy: 24, scale: 0.13, ms: 13000, phase: 0.5 },
+  { id: 'auraWarm', colour: () => '#ffb37a', peak: 0.03, peakLight: 0.11, cx: 0.68, cy: 0.66, dx: 28, dy: 24, scale: 0.13, ms: 13000, phase: 0.5 },
 ];
 
 /**

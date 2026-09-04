@@ -253,6 +253,13 @@ const STEPS = [
     hai chiều — chứ không đo diện tích thật, thứ chỉ có lúc chạy.
   */
   ['diện tích màu tín hiệu', 'node', ['tools/tint-area.mjs']],
+  /*
+    Trên giấy, một lớp phủ MÀU không rọi sáng — nó nhuộm màu và làm tối đi. Và
+    trần thì thấp: trắng đặc trên giấy chỉ nâng được 1,097:1, dưới cả đỉnh
+    1,125:1 của bản tối. Bước này giữ dải nâng trong khoảng đo được, để không ai
+    bù phần thiếu bằng cách thêm màu.
+  */
+  ['ánh sáng môi trường trên giấy', 'node', ['tools/paper-ambient.mjs']],
   ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['bề mặt đóng băng', 'node', ['tools/frozen-surface.mjs']],
   ['khoá bảng màu', 'node', ['tools/palette-key.mjs']],

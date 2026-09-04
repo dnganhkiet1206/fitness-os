@@ -102,8 +102,18 @@ function audit(W) {
 
     Đó là lý do chốt ấy tồn tại. Giữ nguyên nó, chỉ dời neo.
   */
-  const restingLine = /const paint = tint \?\? (c\.\w+);/.exec(W.aura)?.[1];
-  const secondLine = /const second = resting \? (c\.\w+)/.exec(W.aura)?.[1];
+  /*
+    ── neo dời lần thứ hai, vì bản sáng có nhánh riêng ──
+
+    `readiness-aura.tsx` giờ chọn vật liệu trước rồi mới chọn màu: trên giấy cả
+    hai tông là `c.card` (một lớp nâng TRẮNG), còn trên nền tối thì vẫn là bạc
+    nhận diện. Luật này nói về NỀN TỐI — nó cấm tô một màu tín hiệu khi chưa có
+    số đo — nên nó phải đọc đúng nhánh tối, không đọc nhánh giấy.
+
+    Nhánh giấy không cần luật này: nó không có màu nào để mà nói sai.
+  */
+  const restingLine = /const paint = paper \? c\.card : \(tint \?\? (c\.\w+)\);/.exec(W.aura)?.[1];
+  const secondLine = /const second = paper \? c\.card : resting \? (c\.\w+)/.exec(W.aura)?.[1];
   if (!restingLine || !secondLine) {
     out.push(`${AURA}: không đọc được hai màu của trạng thái nghỉ — luật dưới không kiểm được gì`);
   } else {
@@ -237,12 +247,12 @@ if (WORLD.bg && WORLD.silver && WORLD.muted) problems.push(...audit(WORLD));
   /* Luật 2 — và đây là ca đáng sợ nhất: ai đó thấy bạc "hơi nhạt". */
   broken(
     'wash nghỉ chuyển sang màu tín hiệu',
-    { aura: patched('const paint = tint ?? c.primary;', 'const paint = tint ?? c.readinessGreen;') },
+    { aura: patched('const paint = paper ? c.card : (tint ?? c.primary);', 'const paint = paper ? c.card : (tint ?? c.readinessGreen);') },
     /màu TÍN HIỆU/,
   );
   broken(
     'tông thứ hai ra ngoài nhóm nhận diện',
-    { aura: patched('const second = resting ? c.goldLight', 'const second = resting ? c.metricBlue') },
+    { aura: patched('const second = paper ? c.card : resting ? c.goldLight', 'const second = paper ? c.card : resting ? c.metricBlue') },
     /không thuộc nhóm bạc/,
   );
 
@@ -254,7 +264,7 @@ if (WORLD.bg && WORLD.silver && WORLD.muted) problems.push(...audit(WORLD));
   */
   broken(
     'không đọc được hai màu của trạng thái nghỉ',
-    { aura: patched('const paint = tint ?? c.primary;', 'const paint = pickColour();') },
+    { aura: patched('const paint = paper ? c.card : (tint ?? c.primary);', 'const paint = pickColour();') },
     /không đọc được hai màu/,
   );
   broken(

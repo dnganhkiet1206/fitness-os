@@ -12,7 +12,7 @@ import Animated, {
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { makeStyles, type PaletteKey } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 
 /**
@@ -62,6 +62,18 @@ const AURA_ALPHA = 0.13;
  * trên 0,10 thì chữ phụ tụt xuống dưới 4,5:1 ở trường hợp xấu nhất.
  */
 const RESTING_ALPHA = 0.1;
+
+/**
+ * Đỉnh của lớp nâng trên GIẤY — 0,50 trắng, ra 1,05:1 so với trang.
+ *
+ * Không phải `AURA_ALPHA` đổi màu: hai con số ấy trả lời hai câu hỏi khác
+ * nhau. 0,13 là "bao nhiêu ánh sáng màu rọi lên một phòng tối trước khi chữ
+ * bắt đầu khó đọc"; 0,50 là "bao nhiêu trắng trên giấy thì thấy được mà chưa
+ * thành một cái đốm". Trần vật lý của câu thứ hai là 1,097:1 (trắng đặc), nên
+ * 0,50 dùng 46% quãng còn lại — thấy được, và còn chỗ để đẩy nếu máy thật nói
+ * là quá mờ.
+ */
+const PAPER_ALPHA = 0.5;
 
 /**
  * Nhịp trôi của trạng thái nghỉ, và vì sao chỉ trạng thái nghỉ mới trôi.
@@ -147,6 +159,7 @@ export function ReadinessAura({
   tint2?: string;
 }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const { width, height } = useWindowDimensions();
   /*
@@ -246,8 +259,34 @@ export function ReadinessAura({
 
      Ngoài trạng thái nghỉ: mặc định là chính `tint` — một màu vẫn vẽ được, chỉ
      là phẳng hơn; không bịa ra một tông thứ hai khi chỗ gọi chưa chọn. */
-  const paint = tint ?? c.primary;
-  const second = resting ? c.goldLight : (tint2 ?? paint);
+  /*
+    ── và trên GIẤY, cả hai tông đều là TRẮNG ──
+
+    Hai vũng này là ánh sáng của trạng thái rọi lên một trang gần đen: chúng
+    CỘNG sáng. Trên #f7f4ef thì phép composite đảo chiều — `readinessGreen` ở
+    13% không rọi xanh lên giấy, nó NHUỘM giấy thành xanh và làm tối đi. Đó
+    đúng là "rgba(state, 0.135) trên nền giấy" mà bản thiết kế cấm, và hạ độ
+    mờ không sửa được vì hướng đã sai.
+
+    Nên bản sáng nâng bằng TRẮNG, đích **1,05:1 ở đỉnh** so với trang — cùng
+    con số và cùng lý do với bốn vũng của `assistant-aura.tsx`; hai hệ ánh sáng
+    trong một app không được có hai định nghĩa "sáng lên bao nhiêu". Hình dạng
+    vẫn còn: hai radial ở hai vị trí khác nhau chồng lên nhau, và độ mờ vẫn đổ
+    dốc 1 → 0,42 → 0 như cũ. Chỉ MÀU biến mất.
+
+    Trần thì phải nói ra: trắng ĐẶC trên giấy chỉ nâng được 1,097:1. Đẩy hết cỡ
+    cũng không tới 1,125 của bản tối, và không màu nào sửa được điều đó.
+
+    ── và cái trần độ mờ ở dưới KHÔNG ràng bản sáng ──
+
+    `RESTING_ALPHA = 0.10` được đo từ ràng buộc "chữ phụ trên wash phải ≥4,5:1"
+    trên nền TỐI, nơi wash làm nền SÁNG lên và kéo chữ sáng lại gần nền. Trên
+    giấy, nâng về trắng làm nền sáng hơn và chữ MỰC càng tách ra — ràng buộc ấy
+    lỏng ra chứ không siết lại. Nên bản sáng dùng đích của riêng nó.
+  */
+  const paper = !m.lit;
+  const paint = paper ? c.card : (tint ?? c.primary);
+  const second = paper ? c.card : resting ? c.goldLight : (tint2 ?? paint);
   /*
     Trần độ mờ của trạng thái nghỉ, ĐO chứ không chọn.
 
@@ -272,7 +311,7 @@ export function ReadinessAura({
         const o=s.map((v,i)=>v*a+bg[i]*(1-a));
         console.log(((Math.max(L(m),L(o))+0.05)/(Math.min(L(m),L(o))+0.05)).toFixed(2))"
   */
-  const alpha = resting ? RESTING_ALPHA : AURA_ALPHA;
+  const alpha = paper ? PAPER_ALPHA : resting ? RESTING_ALPHA : AURA_ALPHA;
 
   const h = height * REACH;
 
