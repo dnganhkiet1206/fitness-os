@@ -74,7 +74,7 @@ export default function ChallengesScreen() {
           const { title, desc } = challengeText(ch.challenge_key, lang, { title: ch.title, desc: ch.description });
           return (
             <StaggerItem key={ch.id} index={i}>
-            <GlassCard>
+            <GlassCard elevation="inset">
               <View style={styles.headerRow}>
                 <View style={styles.iconWrap}>
                   <Icon icon={Target} size={20} color={c.primary} />

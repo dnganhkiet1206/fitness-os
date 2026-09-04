@@ -379,6 +379,43 @@ export interface Aura {
   scrim: string;
 }
 
+/**
+ * Bóng đổ của một bề mặt — bốn VAI, không phải một con số dùng chung.
+ *
+ * ── cái đang hỏng ──
+ *
+ * Một bóng duy nhất được đóng vào cả 116 chỗ dùng `<GlassCard>`. Riêng màn
+ * Tiến trình xếp 8 cái chồng nhau. Khi mọi thứ nổi lên bằng nhau thì không cái
+ * nào nổi lên cả: trang thành một đống thẻ bay, và thứ đáng chú ý nhất trông
+ * y hệt thứ ít đáng chú ý nhất.
+ *
+ * ── và MẶC ĐỊNH là vai ÊM NHẤT ──
+ *
+ * `secondary` nhẹ hơn con số cũ (0,05 so với 0,06). Đó là chủ ý: 116 thẻ chưa
+ * ai xem lại sẽ nhận vai mặc định, nên mặc định phải là vai mà một thẻ chưa
+ * duyệt có thể mang mà không nói dối. Đi từ êm lên ồn cần một lời khai rõ ràng
+ * ở chỗ gọi; đi ngược lại thì không cần gì cả, và đó là cách một hệ thống thứ
+ * bậc tự xoá mình sau vài tháng.
+ *
+ * ── bản tối KHÔNG có bóng, cả bốn vai ──
+ *
+ * `glass-card.tsx` đã ghi lý do: RN vẽ bóng trên nền tối thành một VÀNH SÁNG
+ * cứng chứ không phải một vệt mềm. Bốn vai của bản tối vì thế đều là
+ * `NO_SHADOW`, và `tools/dark-frozen.mjs` có một luật riêng bắt bất kỳ vai nào
+ * lỡ mang bóng ở bản tối — một vai mới thêm cho bản sáng mà quên đặt bản tối
+ * về 0 là đúng cái vành ấy quay lại, ở một chỗ chưa ai nhìn.
+ */
+export type ElevationRole = 'hero' | 'primary' | 'secondary' | 'inset';
+
+export interface Shadow {
+  shadowColor: string;
+  shadowOpacity: number;
+  shadowRadius: number;
+  shadowOffset: { width: number; height: number };
+  /** Android. `shadow*` là iOS. Cả hai phải có — một mình `elevation` thì iPhone không thấy gì. */
+  elevation: number;
+}
+
 export interface Material {
   /** mặt thẻ — trong suốt ở bản tối (kính), đục ở bản sáng (giấy) */
   bg: string;
@@ -437,13 +474,17 @@ export interface Material {
   inset: Inset;
   /** bề mặt trên nền động — xem `Aura` */
   aura: Aura;
-  shadow: {
-    shadowColor: string;
-    shadowOpacity: number;
-    shadowRadius: number;
-    shadowOffset: { width: number; height: number };
-    elevation: number;
-  };
+  /**
+   * Bóng của vai MẶC ĐỊNH, dưới cái tên cũ.
+   *
+   * Chỉ một chỗ đọc nó — `glass-card.tsx` — nhưng cái tên ở lại vì
+   * `tools/dark-frozen.mjs` đóng băng nó theo tên: mốc nói "thẻ của bản tối
+   * không có bóng", và đổi tên trường là làm cái mốc ngừng đo thứ nó dựng ra
+   * để đo.
+   */
+  shadow: Shadow;
+  /** bốn vai — xem `ElevationRole` */
+  elevation: Record<ElevationRole, Shadow>;
 }
 
 const NO_SHADOW = {
@@ -453,6 +494,49 @@ const NO_SHADOW = {
   shadowOffset: { width: 0, height: 0 },
   elevation: 0,
 } as const;
+
+/**
+ * Bốn vai bóng của bản SÁNG. Màu bóng là MỰC CHỮ, không phải đen thuần — cùng
+ * lý do như viền tơ: trên giấy ấm, một cái bóng xám lạnh đọc ra là bẩn.
+ *
+ * Ba con số đi CÙNG NHAU theo một chiều — mờ hơn, toả rộng hơn, rơi xa hơn —
+ * vì đó là cách một vật thật rời xa mặt bàn. Đổi một mình bán kính thì ra một
+ * vệt nhoè, đổi một mình độ lệch thì ra một hình dán bị trượt.
+ *
+ *   hero       .10 · r18 · y3 · e4   vật duy nhất được phép nằm TRÊN trang
+ *   primary    .07 · r12 · y2 · e3   một mục làm chủ cả màn hình
+ *   secondary  .05 · r7  · y1 · e2   MẶC ĐỊNH — mọi thẻ chưa ai xem lại
+ *   inset      không có               ô con: viền vẽ ra nó, không phải bóng
+ *
+ * `inset` là NO_SHADOW ở CẢ HAI theme, và đó không phải một chỗ trống bỏ quên:
+ * `today-widgets-2.tsx` đã đo và ghi lại — nền ô con đo được 1,015 trên mặt
+ * thẻ và không cứu được, còn VIỀN lên 1,46. Một ô con lún XUỐNG khỏi mặt thẻ
+ * thì không có bóng để mà đổ.
+ */
+const LIGHT_ELEVATION: Record<ElevationRole, Shadow> = {
+  hero: {
+    shadowColor: '#1a1917',
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+  },
+  primary: {
+    shadowColor: '#1a1917',
+    shadowOpacity: 0.07,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+  secondary: {
+    shadowColor: '#1a1917',
+    shadowOpacity: 0.05,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 2,
+  },
+  inset: NO_SHADOW,
+};
 
 export const materials: Record<ThemeName, Material> = {
   dark: {
@@ -482,6 +566,8 @@ export const materials: Record<ThemeName, Material> = {
       scrim: '#000000',
     },
     shadow: NO_SHADOW,
+    /* Cả bốn, vì cùng một lý do: RN vẽ bóng trên nền tối thành một vành sáng. */
+    elevation: { hero: NO_SHADOW, primary: NO_SHADOW, secondary: NO_SHADOW, inset: NO_SHADOW },
   },
   light: {
     bg: '#ffffff',
@@ -518,13 +604,8 @@ export const materials: Record<ThemeName, Material> = {
     /* Thấp và mềm: lệch 1 điểm, toả 8. Thẻ nằm TRÊN trang, không bay phía trên
        nó — một bóng cao biến mọi thẻ thành một hộp nổi và trang thành một cái
        kệ. Màu bóng là mực chữ chứ không phải đen thuần, cùng lý do như viền. */
-    shadow: {
-      shadowColor: '#1a1917',
-      shadowOpacity: 0.06,
-      shadowRadius: 8,
-      shadowOffset: { width: 0, height: 1 },
-      elevation: 2,
-    },
+    shadow: LIGHT_ELEVATION.secondary,
+    elevation: LIGHT_ELEVATION,
   },
 };
 

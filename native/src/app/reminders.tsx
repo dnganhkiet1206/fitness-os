@@ -152,7 +152,7 @@ export default function RemindersScreen() {
             ? suggested
             : null;
         return (
-          <GlassCard key={key}>
+          <GlassCard elevation="inset" key={key}>
             <View style={styles.rowHead}>
               <View style={styles.rowTitleWrap}>
                 <View style={[styles.iconBadge, { backgroundColor: `${color}22` }]}>

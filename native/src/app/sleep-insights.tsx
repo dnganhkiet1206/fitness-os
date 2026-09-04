@@ -269,7 +269,7 @@ export default function SleepInsightsScreen() {
             const mins = Math.round((wake.getTime() - bed.getTime()) / 60000);
             const t = (d: Date) => d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
             return (
-              <GlassCard key={s.id} style={styles.logRow}>
+              <GlassCard elevation="inset" key={s.id} style={styles.logRow}>
                 <View style={styles.logBody}>
                   <Text style={styles.logWhen}>
                     {wake.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}

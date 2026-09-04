@@ -2202,7 +2202,7 @@ export default function TodayScreen() {
               removable={isCustomGroup(group.id)}
               label={i18n.a11yDelete}
               onRemove={() => removeGroup(group.id)}>
-            <GlassCard
+            <GlassCard elevation="inset"
               style={styles.editGroup}
               accessibilityLabel={group.title[lang] ?? group.title.en}
               accessibilityActions={[

@@ -101,7 +101,7 @@ export function QuickStats({
   return (
     <View style={styles.row}>
       {stats.map((s) => (
-        <GlassCard key={s.key} style={styles.tile}>
+        <GlassCard elevation="inset" key={s.key} style={styles.tile}>
           <Icon icon={s.icon} size={15} color={s.color} />
           <Text style={styles.label} numberOfLines={1}>
             {s.label}

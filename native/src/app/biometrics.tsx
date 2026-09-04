@@ -158,7 +158,7 @@ export default function BiometricsScreen() {
           const latest = pts.length > 0 ? pts[pts.length - 1].value : null;
           const st = latest != null ? statusOf(latest, m.range) : null;
           return (
-            <GlassCard key={m.key}>
+            <GlassCard elevation="inset" key={m.key}>
               <View style={styles.metricHead}>
                 <View style={styles.metricTitleRow}>
                   {st && <View style={[styles.statusDot, { backgroundColor: c[STATUS[st]] }]} />}
@@ -201,7 +201,7 @@ export default function BiometricsScreen() {
         <View style={styles.logSection}>
           <Text style={styles.logTitle}>{vi ? 'Các lần đo' : 'Readings'}</Text>
           {rows.map((s) => (
-            <GlassCard key={s.id} style={styles.logRow}>
+            <GlassCard elevation="inset" key={s.id} style={styles.logRow}>
               <View style={styles.logBody}>
                 {/* Giờ của MÁY, không phải giờ UTC.
 

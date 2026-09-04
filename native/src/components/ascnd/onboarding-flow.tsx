@@ -782,7 +782,7 @@ export function OnboardingFlow() {
           </View>
           <ScrollView contentContainerStyle={styles.legalContent}>
             {legalDoc?.blocks.map((b, i) => (
-              <GlassCard key={i}>
+              <GlassCard elevation="inset" key={i}>
                 <Text style={styles.legalBlockTitle}>{b.title}</Text>
                 {b.body ? <Text style={styles.legalBlockBody}>{b.body}</Text> : null}
                 {b.intro ? <Text style={[styles.legalBlockBody, styles.legalIntro]}>{b.intro}</Text> : null}

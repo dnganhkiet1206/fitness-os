@@ -914,7 +914,7 @@ export function DayPlan({
       {sessions.map((sn) => {
         const at = new Date(sn.date_time);
         return (
-          <GlassCard key={sn.id} style={styles.loggedCard}>
+          <GlassCard elevation="inset" key={sn.id} style={styles.loggedCard}>
             <Icon icon={Check} size={16} color={c.readinessGreen} />
             <View style={styles.loggedText}>
               <Text style={styles.loggedName} numberOfLines={1}>
@@ -958,7 +958,7 @@ export function DayPlan({
         const added = block.rows[0].adHoc;
         return (
         <Animated.View key={block.rows[0].key} entering={SWAP}>
-          <GlassCard style={styles.exCard}>
+          <GlassCard elevation="inset" style={styles.exCard}>
             {/*
               The header states THE PLAN: what you came here to do.
 

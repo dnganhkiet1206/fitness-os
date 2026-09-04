@@ -145,7 +145,7 @@ export default function CoachMemoryScreen() {
                 <Text style={styles.groupTitle}>{vi ? g.vi : g.en}</Text>
               </View>
               {items.map((m) => (
-                <GlassCard key={m.id} style={styles.row}>
+                <GlassCard elevation="inset" key={m.id} style={styles.row}>
                   <View style={styles.rowBody}>
                     <Text style={styles.fact}>{m.fact}</Text>
                     {/* `localDateStr(new Date(…))`, not `.split('T')[0]`.

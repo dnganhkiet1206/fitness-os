@@ -165,7 +165,7 @@ export default function SupplementsScreen() {
           </GlassCard>
           {supplements.map((s, i) => (
             <Animated.View key={s.id} entering={rise(i)}>
-            <GlassCard style={styles.itemCard}>
+            <GlassCard elevation="inset" style={styles.itemCard}>
               <View style={styles.row}>
                 <Pressable
                   accessibilityRole="button"

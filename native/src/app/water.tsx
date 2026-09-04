@@ -244,7 +244,7 @@ export default function WaterScreen() {
               way closed — see `today-meals.tsx` for why the stagger is one-way */}
           {logsOpen
             ? logs.map((l, i) => (
-                <GlassCard
+                <GlassCard elevation="inset"
                   key={l.id}
                   style={styles.logCard}
                   entering={FadeInDown.duration(220).delay(i * 40).easing(Easing.out(Easing.cubic))}

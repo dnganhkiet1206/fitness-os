@@ -46,7 +46,7 @@ export default function LegalScreen() {
       */}
       {doc.blocks.map((b, i) => (
         <View key={i}>
-          <GlassCard style={tab === 'health' && i === 0 ? styles.warnCard : undefined}>
+          <GlassCard elevation="inset" style={tab === 'health' && i === 0 ? styles.warnCard : undefined}>
             <Text style={styles.blockTitle}>{b.title}</Text>
             {b.body ? <Text style={styles.blockBody}>{b.body}</Text> : null}
             {b.intro ? <Text style={[styles.blockBody, styles.intro]}>{b.intro}</Text> : null}

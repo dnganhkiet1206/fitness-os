@@ -268,7 +268,7 @@ export default function ExercisesScreen() {
         grouped.map(([group, list], gi) => (
           <StaggerItem key={group} index={gi} style={styles.group}>
             <Text style={styles.groupTitle}>{group}</Text>
-            <GlassCard style={styles.groupCard}>
+            <GlassCard elevation="inset" style={styles.groupCard}>
               {list.map((e, i) => (
                 <View key={e.id} style={[styles.row, i > 0 && styles.rowBorder]}>
                   <Text style={styles.name} numberOfLines={1}>{e.name}</Text>

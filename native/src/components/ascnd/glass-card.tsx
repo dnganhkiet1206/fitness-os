@@ -4,7 +4,7 @@ import Animated, { type AnimatedProps } from 'react-native-reanimated';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { spacing } from '@/constants/ascnd';
-import { makeMaterialStyles } from '@/constants/theme';
+import { makeMaterialStyles, type ElevationRole } from '@/constants/theme';
 import { useMaterial } from '@/hooks/use-palette';
 
 /**
@@ -95,7 +95,21 @@ import { useMaterial } from '@/hooks/use-palette';
  * does not move is a wrapper doing nothing.
  */
 type GlassCardProps = ViewProps &
-  Pick<AnimatedProps<ViewProps>, 'layout' | 'entering' | 'exiting'>;
+  Pick<AnimatedProps<ViewProps>, 'layout' | 'entering' | 'exiting'> & {
+    /**
+     * Thẻ này nổi lên bao nhiêu — xem `ElevationRole` trong `constants/palette.ts`.
+     *
+     * Mặc định là `secondary`, vai ÊM NHẤT có bóng. 116 chỗ gọi không khai gì
+     * cả, nên mặc định là thứ chúng nhận; nếu mặc định là vai ồn thì mỗi thẻ
+     * chưa ai xem lại đều đang tuyên bố nó quan trọng. Đi lên phải khai, đi
+     * xuống thì không — đó là chiều duy nhất giữ được một thứ bậc.
+     *
+     * `inset` = không bóng: cho hàng lặp lại và ô con, thứ mà VIỀN vẽ ra chứ
+     * không phải bóng. Một cái bóng trên mỗi hàng biến một danh sách thành một
+     * đống.
+     */
+    elevation?: ElevationRole;
+  };
 
 export function GlassCard({
   style,
@@ -103,6 +117,7 @@ export function GlassCard({
   layout,
   entering,
   exiting,
+  elevation = 'secondary',
   ...props
 }: GlassCardProps) {
   const m = useMaterial();
@@ -118,7 +133,7 @@ export function GlassCard({
 
   return (
     <Animated.View
-      style={[styles.card, style]}
+      style={[styles.card, m.elevation[elevation], style]}
       layout={layout}
       entering={entering}
       exiting={exiting}
@@ -184,7 +199,8 @@ const stylesFor = makeMaterialStyles((m) => ({
       có ai thêm một lớp tràn viền vào nhánh giấy, đây là dòng phải xét lại.
     */
     overflow: m.lit ? 'hidden' : 'visible',
-    ...m.shadow,
+    /* Bóng KHÔNG ở đây nữa: nó tuỳ vai, và vai đến từ chỗ gọi. Nó được ghép
+       vào `style` ở chỗ dựng — xem `m.elevation[elevation]` ở trên. */
   },
   face: {
     position: 'absolute',

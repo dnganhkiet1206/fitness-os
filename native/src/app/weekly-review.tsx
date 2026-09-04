@@ -525,7 +525,7 @@ export default function WeeklyReviewScreen() {
       {/* Summary stat tiles */}
       <Animated.View style={styles.statGrid} entering={rise(0)}>
         {statCards.map((card, i) => (
-          <GlassCard key={i} style={styles.statCard}>
+          <GlassCard elevation="inset" key={i} style={styles.statCard}>
             <View style={styles.statHead}>
               <View style={styles.statLabelRow}>
                 <Icon icon={card.icon} size={13} color={c.mutedForeground} />
@@ -642,7 +642,7 @@ export default function WeeklyReviewScreen() {
 
               {a.insights?.map((ins, i) => (
                 <Animated.View key={i} entering={rise(7 + i)}>
-                <GlassCard style={styles.itemCard}>
+                <GlassCard elevation="inset" style={styles.itemCard}>
                   <View style={styles.row}>
                     <Text style={styles.iconEmoji}>{ins.icon}</Text>
                     <View style={styles.info}>
@@ -658,7 +658,7 @@ export default function WeeklyReviewScreen() {
 
               {a.recommendations?.map((rec, i) => (
                 <Animated.View key={`r${i}`} entering={rise(8 + i)}>
-                <GlassCard style={styles.itemCard}>
+                <GlassCard elevation="inset" style={styles.itemCard}>
                   <View style={styles.row}>
                     <View style={[styles.priorityDot, { backgroundColor: PRIORITY_COLOR[rec.priority] ?? c.border }]} />
                     <View style={styles.info}>

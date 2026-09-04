@@ -492,7 +492,7 @@ export default function ProgressScreen() {
               },
               { label: i18n.progressRecords, value: `${weightData.length}`, color: c.foreground },
             ].map((c) => (
-              <GlassCard key={c.label} style={styles.tile}>
+              <GlassCard elevation="inset" key={c.label} style={styles.tile}>
                 <Text style={styles.tileLabel}>{c.label}</Text>
                 <Text style={[styles.tileValue, { color: c.color }]}>{c.value}</Text>
               </GlassCard>

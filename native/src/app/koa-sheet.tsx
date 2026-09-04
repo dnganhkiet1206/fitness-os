@@ -149,7 +149,7 @@ export default function KoaSheetScreen() {
       {KOA_SLOTS.map((slot) => {
         const open = openSlot === slot;
         return (
-          <GlassCard key={slot} style={styles.card}>
+          <GlassCard elevation="inset" key={slot} style={styles.card}>
             <Pressable
               onPress={() => {
                 Haptics.selectionAsync();

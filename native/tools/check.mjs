@@ -247,6 +247,12 @@ const STEPS = [
     phép kiểm nào nhìn cả ba cùng lúc trên nền giấy.
   */
   ['dải giai đoạn ngủ', 'node', ['tools/sleep-ramp.mjs']],
+  /*
+    Bề mặt trung tính giữ bố cục; màu tín hiệu là DẤU. Bước này bắt hình dạng
+    tĩnh của cái hỏng — một nền tín hiệu tự khai chiếm hết chỗ của cha theo cả
+    hai chiều — chứ không đo diện tích thật, thứ chỉ có lúc chạy.
+  */
+  ['diện tích màu tín hiệu', 'node', ['tools/tint-area.mjs']],
   ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['bề mặt đóng băng', 'node', ['tools/frozen-surface.mjs']],
   ['khoá bảng màu', 'node', ['tools/palette-key.mjs']],

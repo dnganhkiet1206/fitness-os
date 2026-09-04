@@ -174,7 +174,7 @@ export default function GroceryScreen() {
             <Animated.View key={it.id} entering={rise(i)}>
             <Pressable
               onPress={() => toggle.mutate({ id: it.id, checked: !it.checked })}>
-              <GlassCard style={styles.itemCard}>
+              <GlassCard elevation="inset" style={styles.itemCard}>
                 <View style={styles.itemRow}>
                   <View style={[styles.checkbox, it.checked && styles.checkboxOn]}>
                     {it.checked && <Icon icon={Check} size={13} color="#fff" strokeWidth={3} />}
