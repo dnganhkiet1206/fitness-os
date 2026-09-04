@@ -479,31 +479,6 @@ export interface Material {
    * chữ đang chạy — và bản sáng là mực của giấy.
    */
   ink: string;
-  /**
-   * Rãnh chưa chạy của một vòng vẽ TRÊN MỘT MẶT NỔI — không phải trên trang.
-   *
-   * ── vì sao đây không phải `c.ringTrack` ──
-   *
-   * Token `ringTrack` là rãnh của vòng vẽ trên TRANG: đồng hồ sẵn sàng và đồng
-   * hồ nghỉ đều nằm ở đó, và `#17171c` được chọn cho đúng nền ấy. `HeroRing`
-   * thì nằm trên một tấm kính nổi lên khỏi trang, và nó vẽ rãnh bằng một lớp
-   * phủ trắng 8% — CỘNG THÊM sáng vào bất cứ thứ gì bên dưới.
-   *
-   * Đổi thẳng sang `c.ringTrack` như bản hợp đồng GĐ2B ghi thì bản TỐI hỏng, và
-   * hỏng theo hướng khó thấy nhất — biến mất:
-   *
-   *     trên kính:  lớp phủ 8% → #29292a, 1,244:1 so với mặt kính
-   *                 c.ringTrack #17171c   → 1,012:1   ← rãnh không còn tồn tại
-   *     trên thẻ:   lớp phủ 8% → #212124, 1,200:1
-   *                 c.ringTrack #17171c   → 1,079:1
-   *
-   * Nên nó là một vai CHẤT LIỆU: bản tối giữ nguyên văn lớp phủ đang chạy, bản
-   * sáng lấy đúng token `ringTrack` của nó — trên giấy, một lớp phủ trắng trên
-   * thẻ trắng đo được **1,00:1**, tức vòng calo hôm nay không có rãnh nào cả.
-   * `#e6e0d4` cho 1,314:1, hơn cả `alpha(ink, 0.08)` (1,171) vì nó là một màu
-   * được chọn chứ không phải một phép hạ sáng cơ học.
-   */
-  ringTrack: string;
   /** bề mặt con — xem `Inset` */
   inset: Inset;
   /** bề mặt trên nền động — xem `Aura` */
@@ -581,8 +556,6 @@ export const materials: Record<ThemeName, Material> = {
     borderWidth: 0.5,
     radius: 20,
     ink: '#ffffff',
-    /* Nguyên văn lớp phủ mà `hero-panel.tsx` đang vẽ ở 9d04d55. */
-    ringTrack: 'rgba(255,255,255,0.08)',
     /* Đúng ba giá trị của hằng `glass` cũ, chép nguyên văn. Ở bản tối một lớp
        phủ trong suốt cộng dồn, nên mặt thẻ và ô con dùng chung được một công
        thức — và chúng PHẢI tiếp tục dùng chung, nếu không bản tối đổi. */
@@ -615,7 +588,6 @@ export const materials: Record<ThemeName, Material> = {
        tệp này cố ý không import react-native, nên con số được viết ra —
        `tools/palette.mjs` kiểm nó khớp với thứ RN trả về trên 2x và 3x. */
     borderWidth: 1 / 3,
-    ringTrack: lightPalette.ringTrack,
     ink: lightPalette.foreground,
     /* Ô con đi XUỐNG khỏi mặt thẻ trắng, ngược hướng với thẻ đi lên khỏi giấy.
        Cả hai giá trị DẪN từ bảng màu sáng chứ không phải mã màu mới: `secondary`

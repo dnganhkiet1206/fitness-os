@@ -13,7 +13,7 @@ import type { LucideIcon } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { HERO_RING, radius, spacing, type, RING_TEXT_MAX_SCALE } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
-import { useMaterial, usePalette } from '@/hooks/use-palette';
+import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { duration } from '@/constants/motion';
 
@@ -231,7 +231,6 @@ export function HeroRing({
   iconColor?: string;
 }) {
   const c = usePalette();
-  const m = useMaterial();
   const styles = stylesFor(c);
   /* SVG ids are document-global on native, so four of these on one deck would
      all paint whichever gradient registered last. `status-scrim.tsx`: "this has
@@ -253,16 +252,26 @@ export function HeroRing({
           </LinearGradient>
         </Defs>
         {/*
-          Rãnh: chất liệu, không phải một lớp phủ trắng viết thẳng.
+          Rãnh: token của bảng màu, không phải một lớp phủ trắng viết thẳng.
 
           `rgba(255,255,255,0.08)` trên mặt thẻ TRẮNG của bản sáng đo được
           **1,00:1** — vòng calo không có rãnh, chỉ có cung đã chạy trôi trong
-          khoảng trống. `m.ringTrack` giữ bản tối nguyên văn chuỗi này và cho
-          bản sáng #e6e0d4 (1,31:1). Xem `Material.ringTrack` để biết vì sao
-          nó KHÔNG phải `c.ringTrack` — token ấy là rãnh của vòng vẽ trên
-          TRANG, và trên mặt nổi nó tụt xuống 1,01:1 ở bản tối.
+          khoảng trống.
+
+          Vòng này là vòng THỨ SÁU, và nó không nằm trong lượt quét của
+          `292bec3` ("ở cả năm vòng") vì lúc ấy nó đã thôi viết cứng màu. Nay
+          nó nhận cùng một token như năm vòng kia:
+
+              tối   #3a3a42 trên mặt kính  1,61:1   (lớp phủ cũ: 1,24)
+              sáng  #c4bcac trên thẻ       1,89:1   (lớp phủ cũ: 1,00)
+
+          Bản tối ĐI LÊN chứ không đi xuống — đó là chỗ phép đo của tôi ở
+          commit fd6128b đã đúng lúc ấy và hết đúng sau `292bec3`: tôi đo token
+          CŨ (#17171c, 1,01:1 trên kính) và kết luận không được dùng nó, nên
+          dựng một vai chất liệu riêng. Token đã được sửa, nên vai ấy không còn
+          lý do tồn tại và đã bị bỏ.
         */}
-        <Circle cx="60" cy="60" r={R} fill="none" stroke={m.ringTrack} strokeWidth={6} />
+        <Circle cx="60" cy="60" r={R} fill="none" stroke={c.ringTrack} strokeWidth={6} />
         <Circle
           cx="60"
           cy="60"

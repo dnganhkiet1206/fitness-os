@@ -42,7 +42,19 @@ const FROZEN_PALETTE = {
   accent: '#1d1d20',
   border: '#2b2b31',
   input: '#303036',
-  ringTrack: '#17171c',
+  /*
+    ── giá trị này ĐỔI, và đó là một quyết định riêng, không phải tác dụng phụ ──
+
+    `292bec3` nâng rãnh vòng tròn ở CẢ HAI bảng sau khi người dùng gửi ảnh
+    khoanh đúng phần rãnh: "mấy cái này đang chìm vào background". Đo được
+    #17171c trên #070708 = 1,13:1 — không phải kín đáo mà là không có. #3a3a42
+    cho 1,79:1.
+
+    Cái mốc này đã BẮT thay đổi ấy đúng như nó phải bắt, và đây là chỗ ghi nhận
+    nó: mốc dời lên vì có người quyết định dời, chứ không vì một phép sửa bản
+    sáng vô tình chạm vào. Mọi giá trị khác vẫn neo ở 9d04d55.
+  */
+  ringTrack: '#3a3a42',
   foreground: '#ededed',
   mutedForeground: '#828282',
   glassMuted: '#c8ccd4',
@@ -72,11 +84,6 @@ const FROZEN_MATERIAL = {
   borderWidth: 0.5,
   radius: 20,
   ink: '#ffffff',
-  /* Vai này ra đời ở GĐ2 và không có trong `materials.dark` lúc 9d04d55 — nhưng
-     giá trị của nó thì CÓ: nó là nguyên văn lớp phủ mà `hero-panel.tsx` vẽ rãnh
-     HeroRing ở commit ấy. Đóng băng ở đây vì cái mốc là "bản tối RA SAO trên
-     màn hình", không phải "palette.ts chứa những khoá nào". */
-  ringTrack: 'rgba(255,255,255,0.08)',
   inset: { bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.12)', borderWidth: 0.5 },
   aura: {
     hair: 'rgba(255,255,255,0.035)',
