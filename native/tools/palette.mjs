@@ -185,6 +185,40 @@ for (const [name, ground] of [['dark', '#5d4d47'], ['light', '#fbf9f5']]) {
   if (cr < 4.5) problems.push(`${name}.glassMuted ${palettes[name].glassMuted} trên mặt kính ${ground}: ${r2(cr)}:1`);
 }
 
+/*
+  ── ba trạng thái sẵn sàng phải ĐỀU NHAU về độ nổi ──
+
+  Xanh / vàng / đỏ mã hoá ba trạng thái NGANG HÀNG: chúng nói người dùng đang ở
+  đâu, không nói cái nào đáng chú ý hơn cái nào. Nếu một trong ba nổi hơn hai
+  cái kia thì bảng màu đã chấm điểm trước khi người ta kịp đọc con số — và một
+  ngày xấu sẽ trông êm hơn một ngày tốt chỉ vì đỏ mờ hơn vàng.
+
+  Sàn 4,5:1 ở trên KHÔNG bắt được điều đó: ba màu đều đạt sàn mà vẫn lệch nhau
+  gấp đôi. Đây là phép đo thứ hai, về QUAN HỆ giữa ba màu chứ không về từng màu.
+
+  Chỉ áp cho bản SÁNG. Bản tối trải 14,62 (vàng) → 5,78 (đỏ) = 2,5×, tức nó
+  KHÔNG đạt tính chất này — và nó đã ship như vậy. Bắt nó tuân luật bây giờ là
+  đổi bản tối, đúng thứ giai đoạn này hứa không làm. Con số ấy được ghi ra ở
+  đây để nó là một điều đã biết chứ không phải một điều bị bỏ sót.
+*/
+{
+  const TRIAD = ['readinessGreen', 'readinessYellow', 'readinessRed'];
+  /* 0,1 điểm tương phản: dưới ngưỡng mà mắt tách được hai màu khác sắc thành
+     hai bậc. Nới rộng hơn là cho phép đúng cái thiên vị mà luật này cấm. */
+  const ISO = 0.1;
+  for (const ground of ['background', 'card']) {
+    const crs = TRIAD.map((k) => contrast(palettes.light[k], palettes.light[ground]));
+    const spread = Math.max(...crs) - Math.min(...crs);
+    if (spread > ISO) {
+      problems.push(
+        `bộ ba sẵn sàng của bản SÁNG lệch ${r2(spread)} điểm tương phản trên \`${ground}\` ` +
+          `(${TRIAD.map((k, i) => `${k} ${r2(crs[i])}`).join(', ')}) — ba trạng thái ngang hàng ` +
+          `phải đọc ra ngang hàng, ngưỡng ${ISO}`,
+      );
+    }
+  }
+}
+
 /* ── `alpha()` phải từ chối một token đã có alpha, không đoán ── */
 {
   if (alpha('#ff3b5c', 0.35) !== 'rgba(255,59,92,0.35)') problems.push('alpha() tính sai trên #rrggbb');

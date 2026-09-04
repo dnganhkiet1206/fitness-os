@@ -249,18 +249,42 @@ export const lightPalette: Palette = {
   champagne: '#6c6f79',
   goldLight: '#7d6733',
 
-  /* ── tín hiệu: dẫn ra từ bản tối bằng OKLCH, đều ≥4,5:1 trên CẢ nền và thẻ ── */
-  destructive: '#de0143',
-  readinessGreen: '#177e55',
-  readinessYellow: '#846e0b',
-  readinessRed: '#de0143',
-  metricBlue: '#0073bf',
-  metricPurple: '#9b40e3',
-  metricCyan: '#027b8b',
-  metricOrange: '#ac5b04',
-  metricRose: '#d0324b',
-  /** chỉ là ĐỒ HOẠ (đường cân nặng), nên ngưỡng của nó là 3:1 — đo được 3,03 */
-  metricBeige: '#a08a63',
+  /* ── tín hiệu: BA BẬC, không phải chín màu cùng một độ nổi ──
+     ┄ Daylight, GĐ2 ┄
+
+     Bản đầu dẫn từng màu tối xuống bằng OKLCH cho tới khi vừa qua sàn 4,5:1.
+     Phép ấy đúng về khả năng đọc và SAI về thứ bậc: khi mỗi màu dừng ngay chỗ
+     nó vừa đạt, cả chín rơi vào một dải 4,50–4,61 — trải **1,02×**. Tức bảng
+     màu không nói được cái gì quan trọng hơn cái gì; mọi thứ hét bằng một
+     giọng. Đó không phải một quyết định thiết kế mà là dấu vết của thuật toán.
+
+     Ba bậc, đo trên trang #f7f4ef:
+
+       sẵn sàng   6,18–6,21   trạng thái của người dùng — bậc trên cùng
+       chỉ số     5,38–5,43   miền dữ liệu — dưới một bậc thấy được (1,15×)
+       môi trường 3,58        beige: nét biểu đồ, sàn đồ hoạ 3:1
+
+     ── và bộ ba sẵn sàng phải ĐỀU NHAU ──
+
+     Xanh/vàng/đỏ mã hoá ba trạng thái NGANG HÀNG. Nếu một trong ba nổi hơn
+     hai cái kia thì bảng màu đã cho điểm trước khi người dùng đọc. Ba giá trị
+     này trải **0,036 điểm** trên trang (6,196/6,211/6,175) và 0,040 trên thẻ.
+
+     Bản TỐI không đạt tính chất ấy — vàng 14,62 so với đỏ 5,78, tức 2,5× — và
+     nó không được sửa ở đây: bản tối đã ship, và "sửa cho đẹp hơn" là đúng thứ
+     giai đoạn này hứa không làm. Bản sáng không thừa kế một khuyết điểm chỉ vì
+     bản tối có nó. */
+  destructive: '#a92b3d',
+  readinessGreen: '#1f6747',
+  readinessYellow: '#695a1e',
+  readinessRed: '#a92b3d',
+  metricBlue: '#1f67a3',
+  metricPurple: '#8c35d0',
+  metricCyan: '#246d7a',
+  metricOrange: '#935520',
+  metricRose: '#b83044',
+  /** chỉ là ĐỒ HOẠ (đường cân nặng), nên ngưỡng của nó là 3:1 — đo được 3,58 */
+  metricBeige: '#a17a2f',
 };
 
 export const palettes: Record<ThemeName, Palette> = { light: lightPalette, dark: darkPalette };
