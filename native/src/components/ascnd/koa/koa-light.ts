@@ -510,7 +510,113 @@ export const hasBody = (n: Node): boolean => BODY.has(n);
  * and `koa-figure.tsx` already rebuilds only when the flags change, so the
  * defs are rebuilt on the same terms.
  */
-export function rampsFor(flags: Flags): LightRamp[] {
+/**
+ * Koa trên GIẤY: một phép hạ độ sáng, không phải một lần vẽ lại 48 mã màu.
+ *
+ * ── đo trước ──
+ *
+ * Trên giấy #f7f4ef, nhân vật này gần như không có THÂN:
+ *
+ *     nét viền  #a9b2bc  41 chỗ   1,96:1   ← đọc được
+ *     thân      #bfc7cf  39 chỗ   1,56:1
+ *     bụng/mặt  #f4f6f8  32 chỗ   **1,01:1**  ← không tồn tại
+ *     điểm sáng #ffffff  16 chỗ   1,10:1
+ *
+ * Tức Koa đọc ra là một hình VIỀN rỗng: đường bao thì thấy, còn khối bên trong
+ * thì trùng luôn với tờ giấy. 25/48 mã màu nằm dưới sàn 3:1, 272/448 chỗ dùng.
+ *
+ * ── và vì sao là MỘT con số, không phải 48 quyết định ──
+ *
+ * `L' = L × 0,85` trong OKLCH, giữ nguyên H và C.
+ *
+ * Nhân trên độ sáng thì mọi QUAN HỆ giữ nguyên tỉ lệ: thân vẫn sáng hơn viền,
+ * viền vẫn sáng hơn mắt, và bậc giữa các tông lông không đổi. Giữ nguyên H và C
+ * thì nhân vật không thành đơn sắc và không thành bóng đen — hai điều bản
+ * hợp đồng cấm thẳng. Không mã màu nào được chọn tay, nên cũng không có 48 chỗ
+ * để một quyết định trôi khỏi những chỗ còn lại.
+ *
+ *     nét viền  #a9b2bc → #8e969f   1,96 → 2,99
+ *     thân      #bfc7cf → #a3abb3   1,56 → 2,41
+ *     bụng/mặt  #f4f6f8 → #cfd1d3   1,01 → **1,56**
+ *     mắt/nét   #20242a → #1b1e23  14,21 → 15,75
+ *     vàng      #e8b23a → #c4933a   1,76 → 2,73
+ *     đỏ        #d64545 → #b53b3f   3,99 → 5,84
+ *
+ * Sau phép ấy, mã màu DUY NHẤT còn dưới 1,5:1 là `#ffffff` (16 chỗ, 1,43) —
+ * và đó là đúng chỗ của nó: điểm sáng chuyên đậu trong vùng tối (mắt, răng),
+ * nên nó đọc so với hàng xóm chứ không so với tờ giấy. Ép nó tối thêm là làm
+ * phẳng chính chỗ mà bản vẽ cần sáng nhất.
+ *
+ * 0,85 chứ không phải 0,82 (con số dập tắt cả 16 chỗ ấy): bản hợp đồng nói
+ * "chỉ đổi thứ cần đổi cho khả năng đọc trên giấy", và một điểm sáng nằm trong
+ * hốc mắt thì không cần.
+ */
+const PAPER_L = 0.85;
+
+const srgbEnc = (v: number) => (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
+const srgbDec = (v: number) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+
+/** #rrggbb → OKLab → hạ độ sáng → #rrggbb. H và C không đổi. */
+function onPaper(hex: string): string {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex.trim());
+  if (!m) return hex;
+  const [r, g, b] = [0, 2, 4].map((i) => srgbDec(parseInt(m[1].slice(i, i + 2), 16) / 255));
+  const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+  const mm = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+  const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+  const L = (0.2104542553 * l + 0.7936177850 * mm - 0.0040720468 * s) * PAPER_L;
+  const A = 1.9779984951 * l - 2.4285922050 * mm + 0.4505937099 * s;
+  const B = 0.0259040371 * l + 0.7827717662 * mm - 0.8086757660 * s;
+  const toRgb = (k: number) => {
+    const l3 = (L + 0.3963377774 * A * k + 0.2158037573 * B * k) ** 3;
+    const m3 = (L - 0.1055613458 * A * k - 0.0638541728 * B * k) ** 3;
+    const s3 = (L - 0.0894841775 * A * k - 1.2914855480 * B * k) ** 3;
+    return [
+      srgbEnc(4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3),
+      srgbEnc(-1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3),
+      srgbEnc(-0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3),
+    ];
+  };
+
+  /*
+    ── hạ chroma cho vừa gamut, KHÔNG kẹp từng kênh ──
+
+    Bản đầu tính xong rồi kẹp mỗi kênh vào [0,1]. Với hai màu ấm — vàng
+    `#e8b23a` và cam `#c46a1c` — hạ độ sáng ở nguyên chroma đẩy kênh LAM xuống
+    âm (−0,111 và −0,115), và phép kẹp ấy đổi luôn SẮC: chính công cụ
+    `tools/koa-paper.mjs` bắt được, 3,67° lệch sắc trên một màu chroma 0,14 —
+    quá lớn để đổ cho làm tròn 8-bit.
+    
+    Kẹp kênh là hạ chroma theo một hướng ngẫu nhiên. Phép đúng là hạ chroma
+    theo hướng CỦA CHÍNH NÓ: giữ nguyên L và góc sắc, tìm hệ số lớn nhất còn
+    nằm trong gamut. Nhân vật mất một chút độ rực ở hai màu ấm và không lệch
+    sắc ở màu nào — đúng thứ tự ưu tiên cho một hình in trên giấy.
+  */
+  let lo = 0;
+  let hi = 1;
+  if (toRgb(1).some((v) => v < -1e-4 || v > 1 + 1e-4)) {
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (toRgb(mid).some((v) => v < -1e-4 || v > 1 + 1e-4)) hi = mid;
+      else lo = mid;
+    }
+  } else {
+    lo = 1;
+  }
+  const out = toRgb(lo);
+  return '#' + out.map((v) => Math.round(Math.min(1, Math.max(0, v)) * 255).toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Bản GIẤY của mọi dải, dựng một lần lúc import.
+ *
+ * Cảnh là dữ liệu tĩnh và phép đổi là thuần, nên không có lý do gì tính lại nó
+ * mỗi lần render. `id` giữ nguyên, nên `litProps` không phải biết gì về theme:
+ * nó vẫn trỏ tới cùng một cái tên, chỉ là cái tên ấy nay có hai bản màu.
+ */
+const ALL_PAPER: LightRamp[] = [];
+
+export function rampsFor(flags: Flags, paper = false): LightRamp[] {
   const want = new Set<string>();
   (function walk(nodes: Node[]) {
     for (const n of nodes) {
@@ -520,7 +626,12 @@ export function rampsFor(flags: Flags): LightRamp[] {
       if (n.kids) walk(n.kids);
     }
   })(NODES);
-  return ALL.filter((r) => want.has(r.id));
+  if (paper && ALL_PAPER.length === 0) {
+    for (const r of ALL) {
+      ALL_PAPER.push({ ...r, stops: r.stops.map(([o, c]) => [o, onPaper(c)] as [number, string]) });
+    }
+  }
+  return (paper ? ALL_PAPER : ALL).filter((r) => want.has(r.id));
 }
 
 /**

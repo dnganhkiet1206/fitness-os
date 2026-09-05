@@ -267,6 +267,12 @@ const STEPS = [
     cuộn" rồi hiện lại. Bước này giữ ranh giới ấy là một điều KIỂM ĐƯỢC.
   */
   ['ranh giới của Koa', 'node', ['tools/koa-boundary.mjs']],
+  /*
+    Trên giấy, bụng và mặt của Koa đo được 1,01:1 — khối bên trong trùng luôn
+    với tờ giấy, nên nhân vật đọc ra là một hình viền RỖNG. Bước này đo trên
+    chính màu sẽ được vẽ, và cố ý KHÔNG đòi mọi mảng trang trí đạt sàn WCAG.
+  */
+  ['Koa trên giấy', 'node', ['tools/koa-paper.mjs']],
   ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['bề mặt đóng băng', 'node', ['tools/frozen-surface.mjs']],
   ['khoá bảng màu', 'node', ['tools/palette-key.mjs']],

@@ -49,6 +49,7 @@ import {
   SHADOW_GRADIENT,
   SHADOW_STOPS,
 } from '@/components/ascnd/koa/koa-light';
+import { useMaterial } from '@/hooks/use-palette';
 import {
   eyeMatOf,
   gazeAt,
@@ -853,7 +854,11 @@ export function KoaFigure({
   // drives the motion without React seeing any of it.
   // the lamp's gradients, on the same terms as the tree: only what this pose
   // uses, rebuilt only when the flags change
-  const ramps = useMemo(() => rampsFor(flags), [flags]);
+  /* Bản GIẤY của các dải: xem `PAPER_L` trong `koa-light.ts`. Trên #f7f4ef,
+     bụng và mặt của nhân vật đo được 1,01:1 — tức khối bên trong trùng luôn
+     với tờ giấy, và Koa đọc ra là một hình viền rỗng. */
+  const paper = !useMaterial().lit;
+  const ramps = useMemo(() => rampsFor(flags, paper), [flags, paper]);
   const glows = useMemo(() => glowsFor(flags), [flags]);
   /**
    * The look, resolved once a frame.
