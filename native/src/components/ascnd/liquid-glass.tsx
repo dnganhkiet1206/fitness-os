@@ -143,7 +143,36 @@ export function LiquidGlass({
   */
   const m = useMaterial();
   const styles = stylesFor(usePalette());
-  const face = lens || !!tint;
+  /*
+    ── lớp wash CHỈ tồn tại trong phòng tối ──
+
+    Tiền đề của nó viết ngay ở đầu tệp: "một tấm kính có đèn màu phía sau thì
+    ăn màu đèn ấy". Đó là một câu về PHÒNG TỐI. Trên giấy không có đèn màu phía
+    sau — có tờ giấy trắng — và một lớp phủ có độ mờ trên giấy thì trừ độ sáng
+    chứ không cộng: nó không rọi màu, nó NHUỘM. Cùng một luật vật lý mà
+    `tools/paper-ambient.mjs` đã ghi cho hai hệ aura, ở đây là một tầng cao hơn.
+    Bốn màu của `GLYPH_TINT` composite ra như sau trên mặt thẻ trắng, ở đỉnh
+    0,16:
+
+        heart  #ff3b5c → #ffe0e5      moon   #8b5cff → #ece5ff
+        flame  #ff9130 → #ffedde      gauge  #2bf5a8 → #ddfdf1
+
+    Đó đúng là "thẻ hồng / thẻ oải hương / thẻ đào" mà bản QA máy thật liệt kê,
+    và `<Rect>` phủ 100% mặt thẻ — tức một vùng màu chiếm TOÀN BỘ thẻ, ở một
+    repo có luật ≤15% (`tools/tint-area.mjs`).
+
+    Vì sao `tint-area.mjs` không bắt: nó đọc `backgroundColor` trong các style
+    và so với token bảng màu. Ở đây màu là `GLYPH_TINT` — mã màu neon viết
+    cứng, KHÔNG có nhánh theme — và nó vào qua `fill` của một `<Rect>` SVG. Hai
+    lần ra ngoài tầm nhìn của luật ấy, đúng cùng một kiểu mù mà
+    `tools/palette.mjs` đã có với sắc độ ở GĐ2C.2.
+
+    Chữa bằng cách TẮT, không phải hạ độ mờ: hướng đã sai thì mờ hơn vẫn sai.
+    Màu giữ nguyên vai của nó ở những dấu nhỏ — ô tròn sau glyph, viền của tấm
+    đang chọn, chấm trạng thái — tức đúng chỗ ≤15% mà luật kia đòi.
+  */
+  const washed = !!tint && m.lit;
+  const face = lens || washed;
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const measure = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -221,7 +250,7 @@ export function LiquidGlass({
               <Stop offset="0.7" stopColor="#ffffff" stopOpacity={0} />
             </LinearGradient>
           ) : null}
-          {tint ? (
+          {washed ? (
             /* Anchored at the top-left, which is where the glyph sits on every
                card that passes a tint — the wash reads as coming *from* it. */
             <RadialGradient id={wash} cx="0.16" cy="0.16" rx="0.95" ry="0.85" gradientUnits="objectBoundingBox">
@@ -231,7 +260,7 @@ export function LiquidGlass({
             </RadialGradient>
           ) : null}
         </Defs>
-        {tint ? <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${wash})`} /> : null}
+        {washed ? <Rect x="0" y="0" width={size.w} height={size.h} fill={`url(#${wash})`} /> : null}
         {/* Ba lớp dưới đây LÀ chất liệu thấu kính — mặt sáng, bóng đổ, vệt
             specular. Chế độ `blur` bỏ đúng chúng và giữ mọi thứ khác. */}
         {lens ? (
