@@ -165,6 +165,19 @@ export const darkPalette = {
   // Readiness
   readinessGreen: '#2bf5a8',
   readinessYellow: '#ffd93d',
+  /**
+   * Cùng một màu với `readinessYellow` ở bản tối, và đó là điều đúng.
+   *
+   * Phòng tối không có ràng buộc bắt phải tách: `#ffd93d` trên `#070708` đo
+   * 11,6:1, thừa cho cả chữ lẫn đồ hoạ. Vai chỉ tách ra trên GIẤY, nơi gamut
+   * không cho một sắc ~95° vừa đọc được vừa tươi — xem chú thích ở bản sáng.
+   *
+   * Nên khoá này tồn tại ở bản tối chỉ để `PaletteKey` có nó, và giá trị bằng
+   * đúng `readinessYellow`: mọi chỗ chuyển sang khoá mới vẫn vẽ ra đúng từng
+   * điểm ảnh như cũ ở bản tối. `tools/yellow-role.mjs` canh cho hai giá trị ấy
+   * không tách nhau ra ở đây.
+   */
+  readinessYellowGraphic: '#ffd93d',
   readinessRed: '#ff3b5c',
 
   // Metrics
@@ -360,7 +373,41 @@ export const lightPalette: Palette = {
      cạnh nó. Đó là một quyết định về vai, không phải một phép chỉnh màu. */
   destructive: '#de0b44',
   readinessGreen: '#078055',
+  /**
+   * Vai CHỮ. Ô-liu-vàng có kiểm soát, và đó là đáy của gamut chứ không phải
+   * một lựa chọn thẩm mỹ: L 0,543 · C 0,110 · H 95 · 4,54:1 trên giấy ·
+   * 4,98:1 trên thẻ.
+   */
   readinessYellow: '#846e06',
+  /**
+   * Vai ĐỒ HOẠ — cùng một NGHĨA, một cường độ vẽ khác.
+   *
+   * L 0,644 · C 0,132 · H 95 · 3,02:1 trên giấy · 3,31:1 trên thẻ. Cùng sắc 95°
+   * với vai chữ, nên hai vai đọc ra một màu chứ không phải hai màu: khác nhau
+   * ở độ sáng, không ở sắc.
+   *
+   * ── vì sao tách, đo bằng số ──
+   *
+   * Trần chroma của sắc 95° đi lên theo độ sáng: 0,110 ở L 0,54 (sàn chữ) và
+   * 0,132 ở L 0,64 (sàn đồ hoạ). Một cái thanh hay một chấm chú giải KHÔNG nợ
+   * sàn 4,5:1 — nó không phải chữ — nên bắt nó xuống L 0,54 là trả một khoản
+   * thuế tương phản cho một thứ không ai đọc, và khoản ấy trả bằng 17% sắc độ.
+   * Đó chính là chỗ "vừa phải" ra ô-liu trong ảnh máy thật.
+   *
+   * ── và vì sao nó KHÔNG phải `metricBeige` ──
+   *
+   * `#a78b00` và `metricBeige` `#b28009` cách nhau 14° sắc và gần bằng nhau về
+   * tương phản (1,06×). Đó là một câu hỏi thật, và câu trả lời là ở CHỖ DÙNG:
+   * hai màu không bao giờ vẽ trong cùng một hình. Trên Tiến trình, `metricBeige`
+   * là đường cân nặng của một thẻ, còn vàng là đường vòng eo của thẻ đo vòng —
+   * hai biểu đồ khác nhau, và bốn đường của biểu đồ đo là vàng/lơ/tím/lục lam.
+   * Chúng không phải phân biệt với nhau, nên chúng được phép cùng một họ vàng.
+   *
+   * Dùng thẳng `metricBeige` cho vàng sẵn sàng thì mới sai: đó là TÁCH NGHĨA —
+   * vàng-sẵn-sàng và be-cân-nặng sẽ thành một khoá, và đổi một cái là đổi cái
+   * kia.
+   */
+  readinessYellowGraphic: '#a78b00',
   readinessRed: '#de0b44',
   metricBlue: '#0673be',
   metricPurple: '#8c35d0',
@@ -372,6 +419,36 @@ export const lightPalette: Palette = {
 };
 
 export const palettes: Record<ThemeName, Palette> = { light: lightPalette, dark: darkPalette };
+
+/**
+ * Token nào có một vai ĐỒ HOẠ riêng, và vai ấy tên gì.
+ *
+ * Hiện chỉ có một mục, và bảng này tồn tại thay vì một câu `if` rải rác là vì
+ * hình dạng của vấn đề, không vì số mục: một khoá bảng màu đi qua nhiều tầng
+ * (`BMI_ZONES[].color`, `STATUS_COLOR[status]`, `ACWR_TINT[zone]`) rồi mới tới
+ * chỗ vẽ, và chỗ vẽ mới biết nó đang tô CHỮ hay tô HÌNH. Viết `k === 'readiness
+ * Yellow' ? …` ở từng chỗ vẽ là chép cùng một luật ra năm chỗ, và chỗ thứ sáu
+ * sẽ quên.
+ *
+ * Nếu một ngày lục hay đỏ cũng cần tách vai, chỗ sửa là dòng dưới đây.
+ */
+export const GRAPHIC_ROLE: Partial<Record<PaletteKey, PaletteKey>> = {
+  readinessYellow: 'readinessYellowGraphic',
+};
+
+/**
+ * Đọc một khoá bảng màu ở vai ĐỒ HOẠ.
+ *
+ * Dùng ở chỗ vẽ một HÌNH — thanh, cung, chấm, nền pha loãng, đường biểu đồ.
+ * Token nào không có vai đồ hoạ riêng thì trả về chính nó, nên gọi hàm này ở
+ * một chỗ vẽ hình luôn đúng và không cần biết token nào đã tách.
+ *
+ * CHỮ thì đọc thẳng `c[k]`. Đó là toàn bộ giao ước, và `tools/yellow-role.mjs`
+ * canh cho nó không bị đảo ngược.
+ */
+export function graphicOf(c: Palette, k: PaletteKey): string {
+  return c[GRAPHIC_ROLE[k] ?? k];
+}
 
 /** Tên theme của một bảng màu — khoá để tra chất liệu đi cùng nó. */
 export function themeOf(c: Palette): ThemeName {
