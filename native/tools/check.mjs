@@ -273,6 +273,12 @@ const STEPS = [
     chính màu sẽ được vẽ, và cố ý KHÔNG đòi mọi mảng trang trí đạt sàn WCAG.
   */
   ['Koa trên giấy', 'node', ['tools/koa-paper.mjs']],
+  /*
+    `palette.mjs` đo TƯƠNG PHẢN, và một màu đạt 4,5:1 vẫn có thể là bùn — ảnh
+    máy thật cho thấy carbs ra nâu và "vừa phải" ra ô-liu trong khi cả hai đều
+    qua sàn. Bước này đo SẮC ĐỘ, thứ tương phản không nói được.
+  */
+  ['sắc độ màu tín hiệu', 'node', ['tools/signal-chroma.mjs']],
   ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['bề mặt đóng băng', 'node', ['tools/frozen-surface.mjs']],
   ['khoá bảng màu', 'node', ['tools/palette-key.mjs']],

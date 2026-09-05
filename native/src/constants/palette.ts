@@ -308,17 +308,67 @@ export const lightPalette: Palette = {
      nó không được sửa ở đây: bản tối đã ship, và "sửa cho đẹp hơn" là đúng thứ
      giai đoạn này hứa không làm. Bản sáng không thừa kế một khuyết điểm chỉ vì
      bản tối có nó. */
-  destructive: '#a92b3d',
-  readinessGreen: '#1f6747',
-  readinessYellow: '#695a1e',
-  readinessRed: '#a92b3d',
-  metricBlue: '#1f67a3',
+  /* ── GĐ2C.2: CHROMA, sau khi xem ảnh máy thật ──
+
+     Ảnh chụp iOS: thanh carbs và vòng kcal ra NÂU, các cột "vừa phải" ở Tiến
+     trình ra Ô-LIU, nước ra xanh xám. Còn protein thì đẹp. Đo thì lý do lộ ra
+     ngay — chroma mất bao nhiêu so với bản tối:
+
+         protein  −11%   ← đẹp trên máy
+         tím       −5%   ← đẹp trên máy
+         fat      −27%
+         carbs    −37%   ← nâu
+         nước     −49%
+         fiber    −52%
+         vàng     −52%   ← ô-liu
+
+     Thứ tự ấy khớp một-một với cái mắt thấy. Và bản TỐI là một GIA ĐÌNH vì bốn
+     chroma macro của nó gần bằng nhau (trải 1,20×); bản sáng trải 1,94×, tức
+     protein đậm gấp đôi fiber — đó là lý do bốn ô không đọc ra một hệ.
+
+     ── vì sao chroma mất, và nó KHÔNG phải một lựa chọn tồi ──
+
+     GĐ2B chọn độ sáng theo TƯƠNG PHẢN rồi lấy chroma còn lại. Nhưng trần
+     chroma của sRGB phụ thuộc mạnh vào sắc: ở L≈0,50, vàng và lục chỉ còn
+     ~0,09 trong khi đỏ tía còn ~0,20. Ép mọi sắc xuống cùng một bậc tương phản
+     là ép vàng và lục xuống đúng chỗ gamut không còn gì — nên chúng ra ô-liu.
+
+     Nay chiều ngược lại: giữ nguyên BẬC tương phản của từng vai, rồi lấy chroma
+     LỚN NHẤT còn nằm trong gamut ở bậc ấy, chặn trên bằng chroma của bản tối để
+     không màu nào rực hơn bản tối.
+
+         chỉ số     sàn 4,5   carbs +26%   fat +22%   nước +26%
+         sẵn sàng   sàn 4,5   lục +33%     vàng +37%   đỏ +40%   (iso trong 0,025)
+
+     Bộ ba sẵn sàng xuống CÙNG sàn 4,5 với nhóm chỉ số, tức bậc tương phản mà
+     GĐ2B dựng (sẵn sàng 6,2 > chỉ số 5,4) bị bỏ. Đó là một đánh đổi CÓ ĐO:
+     giữ bậc ấy thì lục chỉ về được 58% chroma bản tối — dưới ngưỡng mà chính
+     `tools/signal-chroma.mjs` đặt, và nó đã bắt đúng giá trị đầu tiên tôi thử.
+     Thứ bậc bằng tương phản là thứ bậc phải trả bằng sắc độ, và ảnh máy thật
+     nói sắc độ mới là cái đang thiếu.
+
+     `metricRose` và `metricPurple` KHÔNG đổi: chúng đã ở 89% và 95% chroma bản
+     tối, và máy thật nói chúng đẹp. Đổi thứ đang đúng là cách nhanh nhất làm
+     hỏng nó.
+
+     ── và một điều gamut không cho phép, ghi ra thay vì giấu ──
+
+     VÀNG trên giấy không thể vừa đọc được vừa tươi. Ở mọi độ sáng đạt sàn chữ
+     4,5:1, chroma tối đa của sắc ~95° là ~0,11, và một vàng chroma 0,11 ở
+     L 0,54 LÀ màu ô-liu. Muốn nó thành hổ phách thì phải lên L≈0,65, chỗ
+     tương phản chỉ còn 3,0 — đủ cho một cái thanh, không đủ cho con số 72 nằm
+     cạnh nó. Đó là một quyết định về vai, không phải một phép chỉnh màu. */
+  destructive: '#de0b44',
+  readinessGreen: '#078055',
+  readinessYellow: '#846e06',
+  readinessRed: '#de0b44',
+  metricBlue: '#0673be',
   metricPurple: '#8c35d0',
-  metricCyan: '#246d7a',
-  metricOrange: '#935520',
+  metricCyan: '#077b8b',
+  metricOrange: '#ac5b06',
   metricRose: '#b83044',
-  /** chỉ là ĐỒ HOẠ (đường cân nặng), nên ngưỡng của nó là 3:1 — đo được 3,58 */
-  metricBeige: '#a17a2f',
+  /** chỉ là ĐỒ HOẠ (đường cân nặng), nên ngưỡng của nó là 3:1 — đo được 3,25 */
+  metricBeige: '#b28009',
 };
 
 export const palettes: Record<ThemeName, Palette> = { light: lightPalette, dark: darkPalette };

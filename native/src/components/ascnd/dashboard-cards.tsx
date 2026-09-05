@@ -23,7 +23,7 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
    `glass`), cộng `PaletteKey` mà rãnh vòng tròn cần. */
 import { MACRO_TINT, macroBar, radius, spacing } from '@/constants/ascnd';
 import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
-import { useSleepRamp, usePalette } from '@/hooks/use-palette';
+import { useMaterial, useSleepRamp, usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
@@ -554,6 +554,7 @@ export function NutritionCard({
   interactive = false,
 }: NutritionCardProps) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -618,11 +619,40 @@ export function NutritionCard({
    */
   const overPct = calorieTarget > 0 ? Math.min((Math.max(delta, 0) / calorieTarget) * 100, 100) : 0;
 
+  /*
+    ── ba trạng thái, và hai trong ba từng là mã màu của bản TỐI ──
+
+    Ảnh chụp iOS: vòng calo ở màn Dinh dưỡng ra màu XANH NHẠT, trên một vòng mà
+    calo phải là màu ẤM. Nguyên nhân là cặp cuối — `['#eaf1fb', '#b9dcf0']`.
+
+    Ở bản tối đó là một vòng gần TRẮNG, nghĩa "chưa có gì để nói, vẫn đang đi",
+    và chú thích ngay dưới nói rõ nó là vòng duy nhất được phát sáng. Trên giấy
+    thì cùng hai mã màu ấy đo được **1,07:1** so với mặt thẻ trắng — không phải
+    kín đáo mà là không có — và phần nhìn thấy được lại nhuốm xanh, tức nó nói
+    sai cả về độ đậm lẫn về nghĩa.
+
+    Bản sáng vì thế đi theo một dải ẤM DẦN, và cả ba chặng đều là token:
+
+        dưới mức    beige  → orange    "đang đi"
+        trong dải   orange → rose      "đúng nhịp"
+        vượt        rose   → đỏ        "quá tay"
+
+    Mỗi chặng BẮT ĐẦU ở chỗ chặng trước kết thúc, nên ba trạng thái là một dải
+    nóng dần liên tục chứ không phải ba màu rời. `metricRose` ở đây là một điểm
+    dừng của dải, không phải một nhãn — nó không va vào vai "protein" của cùng
+    token, vì chỗ ấy nhãn mới mang nghĩa. Bản TỐI
+    giữ nguyên văn cả ba cặp cũ, kể cả mã amber `#ffc53d` vốn không phải token:
+    nó là một quyết định của bản tối, và bản tối đã ship.
+  */
   const ringGradient: [string, string] = overBudget
     ? [c.metricRose, c.readinessRed]
     : inBand
-      ? ['#ffc53d', c.metricOrange]
-      : ['#eaf1fb', '#b9dcf0'];
+      ? m.lit
+        ? ['#ffc53d', c.metricOrange]
+        : [c.metricOrange, c.metricRose]
+      : m.lit
+        ? ['#eaf1fb', '#b9dcf0']
+        : [c.metricBeige, c.metricOrange];
   const ringIconColor = overBudget
     ? c.readinessRed
     : inBand
