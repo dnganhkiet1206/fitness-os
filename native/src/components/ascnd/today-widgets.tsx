@@ -287,6 +287,25 @@ const readinessZone = (c: Palette, v: number) =>
   v >= 75 ? c.readinessGreen : v >= 50 ? c.readinessYellow : c.readinessRed;
 
 /**
+ * Cùng một vùng, vẽ cho một HÌNH thay vì cho một con số.
+ *
+ * ── vì sao phải có hai hàm ──
+ *
+ * Một giá trị 72 ở đây vẽ ra HAI thứ cạnh nhau: một cái thanh, và con số 72
+ * in bên phải nó. Trước đây cả hai lấy cùng một màu, nên cái thanh bị kéo
+ * xuống độ sáng của CHỮ — thứ duy nhất trong hai cái thật sự nợ 4,5:1. Trên
+ * giấy khoản thuế ấy trả bằng 17% sắc độ của sắc 95°, và đó là lý do dải
+ * "vừa phải" đọc ra ô-liu trong ảnh máy thật.
+ *
+ * Chỉ vàng tách; lục và đỏ giữ nguyên một giá trị cho cả hai vai vì gamut của
+ * chúng ở sàn chữ đã đủ sắc — xem `readinessYellowGraphic` trong `palette.ts`.
+ * Nên hai hàm này chỉ khác nhau ở đúng một nhánh, và đó là điều đúng: nếu một
+ * ngày lục cũng cần tách, chỗ sửa là ở đây chứ không phải ở bảy chỗ vẽ.
+ */
+const readinessZoneGraphic = (c: Palette, v: number) =>
+  v >= 75 ? c.readinessGreen : v >= 50 ? c.readinessYellowGraphic : c.readinessRed;
+
+/**
  * Readiness 7-day analysis — matches the web "Phân tích": one bar per day
  * coloured by zone, avg/max/min stats, and the three-zone legend. Hidden
  * until there are 2+ points.
@@ -311,9 +330,12 @@ export function ReadinessTrendCard() {
     { label: lang === 'vi' ? 'Cao nhất' : 'Max', value: max },
     { label: lang === 'vi' ? 'Thấp nhất' : 'Min', value: min },
   ];
+  /* Chú giải là các CHẤM, không phải chữ — chữ của nó là `trendLegendText`,
+     màu trung tính. Nên chúng đọc bảng đồ hoạ, cùng bảng với các thanh chúng
+     giải thích; một chấm sáng hơn cái thanh nó chú giải là sai. */
   const legend = [
     { c: c.readinessGreen, t: lang === 'vi' ? '75+ Tập luyện' : '75+ Train' },
-    { c: c.readinessYellow, t: lang === 'vi' ? '50–74 Vừa phải' : '50–74 Moderate' },
+    { c: c.readinessYellowGraphic, t: lang === 'vi' ? '50–74 Vừa phải' : '50–74 Moderate' },
     { c: c.readinessRed, t: lang === 'vi' ? '<50 Phục hồi' : '<50 Recover' },
   ];
 
@@ -331,11 +353,15 @@ export function ReadinessTrendCard() {
       <View style={styles.trendBars}>
         {history.map((h, i) => {
           const day = parseLocalDate(h.date).toLocaleDateString(locale, { weekday: 'short' });
+          /* Cùng một vùng, hai vai, cạnh nhau trên một dòng: cái thanh là
+             hình, con số là chữ. Đây là chỗ phép tách phải nhìn thấy được —
+             nếu hai bên trông như hai màu khác nhau thì đã tách sai. */
           const zone = readinessZone(c, h.value);
+          const zoneGraphic = readinessZoneGraphic(c, h.value);
           return (
             <View key={h.date} style={styles.trendRow}>
               <Text style={styles.trendDay}>{day}</Text>
-              <ProgressBar pct={h.value} color={zone} height={8} radius={4} delay={i * 60} style={styles.trendBar} />
+              <ProgressBar pct={h.value} color={zoneGraphic} height={8} radius={4} delay={i * 60} style={styles.trendBar} />
               <Text style={[styles.trendVal, { color: zone }]}>{Math.round(h.value)}</Text>
             </View>
           );

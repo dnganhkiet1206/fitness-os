@@ -28,7 +28,7 @@ import { ACWR_TINT } from '@/components/ascnd/acwr-tint';
 import { SleepNoteBlock } from '@/components/ascnd/sleep-note-block';
 import { acwrZone } from '@/lib/training-card';
 import { HERO_RING, radius, RING_TEXT_MAX_SCALE, spacing, type } from '@/constants/ascnd';
-import { alpha, makeStyles, type PaletteKey, palettes, type Palette } from '@/constants/theme';
+import { alpha, graphicOf, makeStyles, type PaletteKey, palettes, type Palette } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -241,6 +241,16 @@ export function ReadinessGauge({
   const explainText = readinessExplainText(explain, lang);
   const recoText = readinessRecoText(recommendation, lang);
   const color = status in STATUS_COLOR ? c[STATUS_COLOR[status]] : c.readinessYellow;
+  /*
+    Cùng trạng thái, vai ĐỒ HOẠ: chấm, quầng vòng, nền viên lời khuyên, chấm
+    chú giải. Chỉ vàng có hai giá trị — xem `readinessYellowGraphic` — nên với
+    xanh và đỏ dòng này trả về đúng `color`, và không có gì đổi ở hai vùng ấy.
+
+    `STATUS_COLOR` KHÔNG tách làm hai bảng: nó ánh xạ trạng thái sang NGHĨA, và
+    nghĩa thì chỉ có một. Cái tách ra là cường độ vẽ, nên nó tách ở đây, tại
+    chỗ đã có `c`.
+  */
+  const graphic = graphicOf(c, STATUS_COLOR[status] ?? STATUS_COLOR.yellow);
 
   // Sub-score tiles: HRV / RHR / Sleep / Load (0–100) + the ACWR ratio
   /* Nhận xét về đêm qua — xem `lib/sleep-note.ts` cho luật và cho lý do nó là
@@ -471,9 +481,11 @@ export function ReadinessGauge({
     strokeDashoffset: CIRC - progress.value * CIRC,
   }));
 
+  /* `color` ở đây chỉ đi vào `legendDot`; chữ của chú giải là `legendText`,
+     màu trung tính. Nên cả ba đọc bảng đồ hoạ. */
   const legend = [
     { color: c.readinessGreen, label: `75–100 · ${i18n.dcReadinessTrain}` },
-    { color: c.readinessYellow, label: `50–74 · ${i18n.dcReadinessModerate}` },
+    { color: c.readinessYellowGraphic, label: `50–74 · ${i18n.dcReadinessModerate}` },
     { color: c.readinessRed, label: `0–49 · ${i18n.dcReadinessRecover}` },
   ];
 
@@ -482,7 +494,7 @@ export function ReadinessGauge({
       {/* Title with pulsing status dot */}
       <View style={styles.titleRow}>
         <Animated.View
-          style={[styles.statusDot, { backgroundColor: color }, { transform: [{ scale: pulse }] }]}
+          style={[styles.statusDot, { backgroundColor: graphic }, { transform: [{ scale: pulse }] }]}
         />
         <Text style={styles.title}>{i18n.dcReadinessTitle}</Text>
       </View>
@@ -539,7 +551,7 @@ export function ReadinessGauge({
         {m.lit ? (
           <View
             pointerEvents="none"
-            style={[styles.ringGlow, { shadowColor: color, backgroundColor: `${color}0d` }]}
+            style={[styles.ringGlow, { shadowColor: graphic, backgroundColor: `${graphic}0d` }]}
           />
         ) : null}
         <Svg width={ringSize} height={ringSize} viewBox="0 0 120 120">
@@ -755,8 +767,11 @@ export function ReadinessGauge({
             : `Based on ${measured} measured input${measured === 1 ? '' : 's'}${confidence === 'low' ? ' — log sleep or a workout for a fuller reading' : ''}`}
         </Text>
       ) : null}
+      {/* Nền và viền là HÌNH (hai lớp pha loãng), chữ bên trong là CHỮ. Đây là
+          cặp mà phép tách được dựng cho: một vệt hổ phách nhạt, một dòng
+          ô-liu-vàng đọc được nằm trên nó. */}
       {recoText ? (
-        <View style={[styles.recoPill, { backgroundColor: `${color}1a`, borderColor: `${color}33` }]}>
+        <View style={[styles.recoPill, { backgroundColor: `${graphic}1a`, borderColor: `${graphic}33` }]}>
           <Text style={[styles.recoText, { color }]}>{recoText}</Text>
         </View>
       ) : null}

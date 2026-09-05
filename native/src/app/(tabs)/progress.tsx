@@ -24,7 +24,7 @@ import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
-import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
+import { alpha, graphicOf, makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useRise } from '@/lib/entrance';
@@ -399,7 +399,11 @@ export default function ProgressScreen() {
       return raw != null ? convertLength(Number(raw), lHUnit) : null;
     });
   const trendSeries = [
-    { label: i18n.measureWaist, color: c.readinessYellow, values: seriesOf('waist_cm') },
+    /* Bốn ĐƯỜNG của một biểu đồ — không đường nào là chữ, nên vàng ở đây đọc
+       bảng đồ hoạ. Đây cũng là chỗ trả lời câu hỏi "thế còn `metricBeige`":
+       be là đường CÂN NẶNG của một thẻ khác, và bốn đường dưới đây là
+       vàng/lơ/tím/lục lam — hai màu vàng không bao giờ gặp nhau trong một hình. */
+    { label: i18n.measureWaist, color: c.readinessYellowGraphic, values: seriesOf('waist_cm') },
     { label: i18n.measureChest, color: c.metricBlue, values: seriesOf('chest_cm') },
     { label: i18n.measureBicepL, color: c.metricPurple, values: seriesOf('bicep_left_cm') },
     { label: i18n.measureThighL, color: c.metricCyan, values: seriesOf('thigh_left_cm') },
@@ -504,8 +508,10 @@ export default function ProgressScreen() {
           <GlassCard style={styles.bmiCard}>
             <View style={styles.bmiHead}>
               <Text style={styles.microTitle}>{vi ? 'Chỉ số BMI' : 'BMI Index'}</Text>
+              {/* Nền viên là HÌNH, nhãn bên trong là CHỮ — cùng cặp vai với
+                  viên lời khuyên của `readiness-gauge`. */}
               {cat && (
-                <View style={[styles.bmiBadge, { backgroundColor: alpha(c[cat.color], 0.1) }]}>
+                <View style={[styles.bmiBadge, { backgroundColor: alpha(graphicOf(c, cat.color), 0.1) }]}>
                   <Text style={[styles.bmiBadgeText, { color: c[cat.color] }]}>{cat.label}</Text>
                 </View>
               )}
@@ -545,7 +551,7 @@ export default function ProgressScreen() {
                               <Stop
                                 key={`${s.at}-${i}`}
                                 offset={`${s.at}%`}
-                                stopColor={c[s.color]}
+                                stopColor={graphicOf(c, s.color)}
                                 stopOpacity={s.alpha}
                               />
                             ))}
@@ -561,7 +567,7 @@ export default function ProgressScreen() {
                         />
                       </Svg>
                     ) : null}
-                    <View style={[styles.bmiDot, { left: `${bmiPct}%`, backgroundColor: c[cat.color] }]} />
+                    <View style={[styles.bmiDot, { left: `${bmiPct}%`, backgroundColor: graphicOf(c, cat.color) }]} />
                   </View>
                   {/* Boundary numbers sit at the boundaries — each one is placed
                       at its own position on the track, not spread evenly. */}

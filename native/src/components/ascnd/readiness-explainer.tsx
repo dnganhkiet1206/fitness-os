@@ -195,7 +195,9 @@ export function ReadinessExplainer({ visible, onClose }: { visible: boolean; onC
         <View style={styles.bands}>
           {[
             { range: '75 – 100', tint: c.readinessGreen, what: i18n.dcReadinessTrain },
-            { range: '50 – 74', tint: c.readinessYellow, what: i18n.dcReadinessModerate },
+            /* `tint` chỉ vẽ `bandDot`; `bandRange` và `bandWhat` là chữ trung
+               tính. Chấm là hình, nên nó đọc bảng đồ hoạ. */
+            { range: '50 – 74', tint: c.readinessYellowGraphic, what: i18n.dcReadinessModerate },
             { range: '0 – 49', tint: c.readinessRed, what: i18n.dcReadinessRecover },
           ].map((b) => (
             <View key={b.range} style={styles.band}>

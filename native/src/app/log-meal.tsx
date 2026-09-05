@@ -843,13 +843,15 @@ export default function LogMealSheet() {
             </Text>
             {macroG > 0 && (
               <View style={styles.macroBar}>
-                <View style={[styles.macroSeg, { flex: proteinPct, backgroundColor: c.readinessYellow }]} />
+                {/* Đoạn thanh và chấm của `MacroStat` bên dưới là HÌNH; con số
+                    gam nằm cạnh chấm là `macroValue`, màu trung tính. */}
+                <View style={[styles.macroSeg, { flex: proteinPct, backgroundColor: c.readinessYellowGraphic }]} />
                 <View style={[styles.macroSeg, { flex: carbsPct, backgroundColor: c.metricBlue }]} />
                 <View style={[styles.macroSeg, { flex: fatPct, backgroundColor: c.metricOrange }]} />
               </View>
             )}
             <View style={styles.macroGrid}>
-              <MacroStat label={i18n.nProtein} value={Math.round(totals.protein_g)} color={c.readinessYellow} />
+              <MacroStat label={i18n.nProtein} value={Math.round(totals.protein_g)} color={c.readinessYellowGraphic} />
               <MacroStat label={i18n.nCarbs} value={Math.round(totals.carbs_g)} color={c.metricBlue} />
               <MacroStat label={i18n.nFat} value={Math.round(totals.fat_g)} color={c.metricOrange} />
             </View>
