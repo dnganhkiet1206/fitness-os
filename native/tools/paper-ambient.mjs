@@ -98,6 +98,29 @@ const peaks = [];
   }
 }
 
+/*
+  ── và trên giấy, KHÍ QUYỂN của phòng tối phải tắt hẳn ──
+
+  Bốn vũng đã chuyển sang nâng bằng trắng, nhưng `assistant-aura.tsx` còn hai
+  lớp nữa dựng cho một căn phòng tối: một thân người được rọi sáng, và bốn mặt
+  phẳng BỤI neon (`#22e6ff`, `#b45cff`, `#2bf5a8`, `#ffd9b3`). Chúng cộng ánh
+  sáng vào nền gần đen; trên giấy, một lớp phủ 12% tối hơn giấy là một vệt bẩn,
+  và bụi tím nhân với vài chục hạt chính là "ảnh hưởng lavender" mà ảnh chụp
+  máy thật chỉ ra.
+
+  Không hạ độ mờ — tắt. Một vệt bẩn mờ hơn vẫn là một vệt bẩn.
+*/
+{
+  const src = read('src/components/ascnd/assistant-aura.tsx');
+  if (!/\{m\.lit \? \(\s*<>\s*<AuraFigure/.test(src)) {
+    problems.push(
+      'src/components/ascnd/assistant-aura.tsx: `AuraFigure` và các lớp bụi không còn được đóng cổng ' +
+        '`m.lit` — trên giấy đó là một thân người mờ và bốn mặt phẳng bụi NEON, tức đúng vệt lavender ' +
+        'mà bản QA máy thật bác bỏ',
+    );
+  }
+}
+
 /* `readiness-aura.tsx` — một hằng cho cả hai vũng. */
 {
   const src = read('src/components/ascnd/readiness-aura.tsx');

@@ -472,6 +472,7 @@ function DustField({
  */
 export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | null }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   /*
     The light comes up when you arrive.
@@ -582,16 +583,42 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
             horizontal edge across a picture that is otherwise all soft falloff,
             which is the exact fault the fade was added to fix for the dust.
           */}
-          <AuraFigure moving={moving} />
-          {DUST.map((d) => (
-            /* Measured, not `useWindowDimensions`. Everything else here is
-               container-relative — the pools are sized in percentages — and the
-               dust alone was sized against the window. Those are the same
-               number on a plain full-screen page and different ones under a tab
-               bar, behind a header, or on an iPad in a split view, and when
-               they differ the canvas no longer lines up with what is on screen. */
-            <DustField key={d.key} layer={d} height={box.h} width={box.w} moving={moving} />
-          ))}
+          {/*
+            ── HÌNH và BỤI chỉ tồn tại ở bản TỐI ──
+
+            Cả hai là khí quyển của một căn phòng tối: một thân người được rọi
+            sáng, và bốn mặt phẳng bụi neon (`#22e6ff`, `#b45cff`, `#2bf5a8`,
+            `#ffd9b3`). Chúng CỘNG ánh sáng vào một trang gần đen, và đó là
+            toàn bộ lý do chúng đọc được ở đó.
+
+            Trên giấy thì không có gì để cộng vào. Một lớp phủ 12% hoặc TỐI hơn
+            giấy — thì nó là một vệt bẩn — hoặc sáng hơn giấy, và trần của
+            trắng trên giấy là 1,097:1 nên nó không tồn tại. Bụi tím `#b45cff`
+            rơi vào vế đầu: nhân với vài chục hạt, đó chính là "ảnh hưởng
+            lavender" mà ảnh chụp máy thật chỉ ra.
+
+            Nên chúng tắt hẳn, không hạ độ mờ: một vệt bẩn mờ hơn vẫn là một vệt
+            bẩn, và ẩn dụ "phòng tối có bụi bay" không dịch sang giấy được. Cùng
+            một quyết định, cùng một lý do, như hào quang vòng sẵn sàng và mặt
+            gradient của thẻ — cả hai đều đã đóng cổng `m.lit`.
+
+            Bản sáng còn lại đúng thứ nó nên có: một lớp NÂNG TRẮNG cục bộ
+            (`peakLight`, đỉnh 1,05:1) trên giấy ấm.
+          */}
+          {m.lit ? (
+            <>
+              <AuraFigure moving={moving} />
+              {DUST.map((d) => (
+                /* Measured, not `useWindowDimensions`. Everything else here is
+                   container-relative — the pools are sized in percentages — and the
+                   dust alone was sized against the window. Those are the same
+                   number on a plain full-screen page and different ones under a tab
+                   bar, behind a header, or on an iPad in a split view, and when
+                   they differ the canvas no longer lines up with what is on screen. */
+                <DustField key={d.key} layer={d} height={box.h} width={box.w} moving={moving} />
+              ))}
+            </>
+          ) : null}
           {/* Painted last, so it fades everything in this group and nothing
               outside it — the pools keep their own falloff. */}
           <EdgeFade />
