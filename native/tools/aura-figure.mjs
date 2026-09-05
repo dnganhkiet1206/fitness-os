@@ -145,11 +145,37 @@ const num = (re, what) => {
 
 /* ── 3. it is inside the faded group, and the fade comes last ── */
 {
-  const group = code.match(/\{box \? \([\s\S]*?\) : null\}/);
+  /*
+    ── khớp NGOẶC, không dùng regex lười ──
+
+    Bản trước là `/\{box \? \([\s\S]*?\) : null\}/`. Cái `*?` dừng ở dấu
+    `) : null}` ĐẦU TIÊN nó gặp — và từ lúc `AuraFigure` cùng các lớp bụi được
+    bọc trong một nhánh `{m.lit ? ( … ) : null}` của riêng chúng, dấu ấy nằm
+    NGAY GIỮA nhóm. Bộ quét cắt nhóm làm đôi rồi báo "không còn lớp EdgeFade"
+    cho một lớp vẫn nằm nguyên tại chỗ.
+
+    Một nhóm JSX lồng nhau thì phải đếm ngoặc mới đọc được. Đây là cùng bài học
+    mà `frozen-surface.mjs` đã ghi cho ngoặc nhọn.
+  */
+  const open = code.indexOf('{box ? (');
+  let group = null;
+  if (open >= 0) {
+    let depth = 0;
+    for (let i = code.indexOf('(', open); i < code.length; i++) {
+      if (code[i] === '(') depth++;
+      else if (code[i] === ')') {
+        depth--;
+        if (!depth) {
+          group = code.slice(open, i + 1);
+          break;
+        }
+      }
+    }
+  }
   if (!group) {
     problems.push('không tìm thấy nhóm được làm mờ mép — bộ quét hỏng');
   } else {
-    const g = group[0];
+    const g = group;
     if (!/<AuraFigure\b/.test(g)) {
       problems.push(
         'AuraFigure nằm NGOÀI nhóm được làm mờ mép — nó sẽ kết thúc ở đúng nơi cái hộp của nó kết ' +

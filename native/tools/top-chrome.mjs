@@ -68,8 +68,27 @@ function build(dir, mutate) {
   const js = path.join(dir, 'lib/tab-bar-visibility.js');
   let code = readFileSync(js, 'utf8');
   if (mutate) code = mutate(code);
-  writeFileSync(js, code.replace(/require\("react-native-reanimated"\)/g, `require("../rea.cjs")`));
+  /*
+    Hai thứ được thay bằng vỏ, và cái thứ hai là mới.
+
+    `tab-bar-visibility.ts` nay gọi `resetKoaBand()` khi đổi tab — dải mà Koa
+    đứng phải được đặt lại cùng lúc với thanh tab, nếu không một màn ngắn không
+    bắn `onScroll` sẽ thừa hưởng câu trả lời của màn trước. Tệp này dịch MỘT
+    module một mình nên `@/lib/koa-band` không phân giải được, và bước kiểm đổ
+    với `Cannot find module` — một lỗi trông như app hỏng và không phải.
+
+    Vỏ chứ không phải bỏ lời gọi: thứ tệp này đo là hành vi của thanh tab, và
+    `koa-band` là một shared value không liên quan. Việc "đổi tab thì đặt lại
+    dải" được canh ở `tools/koa-boundary.mjs`, đúng chỗ của nó.
+  */
+  writeFileSync(
+    js,
+    code
+      .replace(/require\("react-native-reanimated"\)/g, `require("../rea.cjs")`)
+      .replace(/require\("@\/lib\/koa-band"\)/g, `require("../koa-band.cjs")`),
+  );
   writeFileSync(path.join(dir, 'rea.cjs'), SHIM);
+  writeFileSync(path.join(dir, 'koa-band.cjs'), 'exports.resetKoaBand = () => {};\n');
   return js;
 }
 

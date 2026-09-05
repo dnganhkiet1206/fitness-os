@@ -154,6 +154,23 @@ function stripComments(src) {
         'nên phép nhân ở trên không đo gì cả',
     );
   }
+  /*
+    Và phải được ĐẶT LẠI khi đổi tab.
+
+    Một màn không cuộn được thì không bắn `onScroll` lần nào, nên `koaBandClear`
+    giữ nguyên câu trả lời của màn TRƯỚC — rời Tiến trình giữa trang (dải bận)
+    sang một tab ngắn thì Koa biến mất ở đó mà không có gì để nhìn thấy.
+
+    Luật này sống ở đây chứ không ở `tools/top-chrome.mjs`: tệp ấy dịch
+    `tab-bar-visibility.ts` một mình và phải thay `@/lib/koa-band` bằng một vỏ,
+    nên nó không thể canh được điều này.
+  */
+  if (!/resetKoaBand\(\);/.test(stripComments(read('src/lib/tab-bar-visibility.ts')))) {
+    problems.push(
+      'src/lib/tab-bar-visibility.ts: `resetTabBar` không gọi `resetKoaBand()` — đổi tab xong, dải của ' +
+        'Koa vẫn giữ câu trả lời của màn trước, nên Koa biến mất trên một trang ngắn mà không có dấu hiệu gì',
+    );
+  }
   const band = stripComments(read(BAND));
   if (!/remaining <= reserve/.test(band)) {
     problems.push(`${BAND}: luật "còn lại ≤ khoảng chừa" không còn ở đó — đó là toàn bộ định nghĩa của "dải trống"`);
