@@ -551,46 +551,49 @@ export function ReadinessGauge({
           </Defs>
           <Circle cx="60" cy="60" r={R} fill="none" stroke={c[TRACK]} strokeWidth={6} />
           {/*
-            ── VẦNG SÁNG (tối) và BÓNG ĐỔ (sáng): cùng một vai, ngược vật liệu ──
+            ── VẦNG SÁNG: chỉ bản TỐI, và bản sáng KHÔNG có gì thay thế ──
 
-            Vòng dưới đây rộng 10 so với 6 của cung chính, nên nó thò ra hai bên
-            2 điểm. Ở bản tối, tô bằng chính màu cung ở độ mờ 0,25, đó là ánh
-            sáng RỌI RA từ một vật phát sáng.
+            Vòng này rộng 10 so với 6 của cung chính nên nó thò ra hai bên 2
+            điểm. Ở bản tối, tô bằng chính màu cung ở độ mờ 0,25, đó là ánh sáng
+            rọi ra từ một vật phát sáng. Trên giấy không có gì phát sáng, và
+            cùng đoạn mã ấy vẽ ra một quầng màu quanh cung — thứ bản thiết kế
+            cấm. Nó không được đóng cổng `m.lit` cho tới GĐ2C.
 
-            Trên giấy thì không có gì phát sáng, và cùng đoạn mã ấy vẽ ra một
-            quầng màu 2 điểm quanh cung — chính là "hào quang màu" mà bản thiết
-            kế cấm. Nó KHÔNG được đóng cổng `m.lit` như cái quầng ở lớp ngoài,
-            nên nó đã sống sót qua GĐ1: hai cơ chế cùng một vai, chỉ một cái
-            được sửa.
+            ── và cái BÓNG ĐỔ dựng ở GĐ2B đã bị BỎ ──
 
-            Bản sáng thay bằng thứ giấy thật làm: một BÓNG ĐỔ. Cùng hình học,
-            cùng phần đã chạy (cùng `ringProps`, nên bóng không bao giờ dài hơn
-            cung), lệch xuống 2 điểm, tô bằng mực của theme ở 0,10 — composite
-            ra ~1,13:1 trên mặt thẻ, tức thấy được ở mép dưới mà không đọc ra
-            thành một vòng thứ hai.
+            GĐ2B thay quầng ấy bằng một bóng đổ cho bản sáng: cùng hình học,
+            lệch xuống 2 điểm, tô bằng mực ở 0,10. Nó đã được ghi ngay lúc dựng
+            là CẦN KIỂM TRÊN MÁY THẬT, vì React Native không đổ bóng cho một
+            phần tử SVG — thứ vẽ ra là một BẢN SAO LỆCH, không phải một vệt
+            nhoè.
+
+            Và một bản sao lệch thì hình học của nó đã tự nói: nét 6 điểm lệch
+            2 điểm để lại một lưỡi liềm 2 điểm MÉP CỨNG bên dưới cung. Một cái
+            bóng đọc ra là chiều sâu vì nó NHOÈ; một bản sao mép cứng đọc ra là
+            in lệch. Đó đúng là "doubled ring / misregistration" trong danh sách
+            loại bỏ của bản QA.
+
+            Không có ảnh chụp iOS nào để chứng minh điều ngược lại, và tiêu chí
+            hoàn thành đòi bóng này "hoặc chứng minh được trên máy, hoặc bỏ".
+            Nên nó bị bỏ. Vòng tròn không cần nó: thứ làm nó chủ đạo là kích
+            thước, khoảng trống và kiểu chữ — chiều sâu là phần thêm, không phải
+            phần bắt buộc. Nếu một ngày máy thật cho thấy vòng thiếu chiều, phép
+            sửa đúng là một bóng NHOÈ thật (filter SVG hoặc một lớp native),
+            không phải chỉnh độ mờ của một bản sao.
           */}
-          <AnimatedCircle
-            cx="60" cy="60"
-            r={R}
-            fill="none"
-            stroke={m.lit ? g0 : alpha(m.ink, 0.1)}
-            opacity={m.lit ? 0.25 : 1}
-            strokeWidth={m.lit ? 10 : 6}
-            strokeLinecap="round"
-            strokeDasharray={`${CIRC}`}
-            animatedProps={ringProps}
-            /*
-              Độ lệch nằm ở TRANSFORM, không ở `cy` — và đó không phải chuyện
-              phong cách. `rotate(-90 60 60)` quay cả phần tử, nên một `cy={62}`
-              (xuống 2) sẽ bị quay thành sang PHẢI 2. Bóng đổ ngang là thứ không
-              có nguồn sáng nào giải thích được.
-
-              Danh sách transform áp từ phải sang trái, nên `translate` viết
-              TRƯỚC `rotate` là phép dịch xảy ra SAU phép quay: cung được quay
-              xong rồi mới hạ xuống 2 điểm, trong toạ độ cuối.
-            */
-            transform={m.lit ? 'rotate(-90 60 60)' : 'translate(0 2) rotate(-90 60 60)'}
-          />
+          {m.lit ? (
+            <AnimatedCircle
+              cx="60" cy="60" r={R}
+              fill="none"
+              stroke={g0}
+              opacity={0.25}
+              strokeWidth={10}
+              strokeLinecap="round"
+              strokeDasharray={`${CIRC}`}
+              animatedProps={ringProps}
+              transform="rotate(-90 60 60)"
+            />
+          ) : null}
           <AnimatedCircle
             cx="60" cy="60" r={R}
             fill="none"
