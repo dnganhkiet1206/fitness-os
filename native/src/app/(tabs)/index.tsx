@@ -80,7 +80,7 @@ import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-nati
 
 import { HERO_RING, PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 
 /** Độ đậm của lớp phủ dưới hero. Đủ để kéo tương phản về một mức, chưa đủ để
  *  giấu nền — vẫn phải nhìn xuyên qua thấy màu của vòng tròn phía trên. */
@@ -405,6 +405,9 @@ function EditLayoutButton({
 export default function TodayScreen() {
   const c = usePalette();
   const styles = stylesFor(c);
+  /* Lớp phủ của tấm nội dung được làm bằng CHẤT LIỆU, không bằng một màu: xem
+     ghi chú ở chỗ dùng `m.aura.scrim`. */
+  const m = useMaterial();
   const insets = useSafeAreaInsets();
   const { data: profile } = useProfile();
   /**
@@ -1879,10 +1882,28 @@ export default function TodayScreen() {
                   </View>
                 </View>
               }>
-              <BlurView intensity={SHEET_BLUR} tint="dark" style={StyleSheet.absoluteFill} />
+              <BlurView intensity={SHEET_BLUR} tint={m.aura.blurTint} style={StyleSheet.absoluteFill} />
             </MaskedView>
             {/*
-              Lớp phủ tối, và nó phải TỐI DẦN chứ không bắt đầu ở mức đầy.
+              Lớp phủ, và nó ĐI VỀ PHÍA NỀN CỦA THEME — không phải về phía đen.
+
+              ── vì sao `m.aura.scrim` chứ không `#000` ──
+
+              Việc lớp này làm là DẬP thứ nằm sau tấm cho tới khi nó thôi tranh
+              với chữ. Trên một trang gần như đen, đi về phía đen là đúng. Trên
+              giấy, đúng cái lớp ấy phủ 62% đen lên cả tấm: nền trang đo được
+              `#8d8c89` thay vì `#f7f4ef`, mọi thẻ ngồi trên bùn, và các nhãn
+              nhóm chỉ đọc được NHỜ bùn — bỏ nó đi thì chúng biến mất, vì màu
+              của chúng cũng là một mã của bản tối.
+
+              `m.aura.scrim` là màu mà một lớp phủ của theme này được làm bằng:
+              `#000000` ở bản tối — đúng chuỗi cũ, không đổi một điểm ảnh nào —
+              và nền giấy ở bản sáng. Cùng một việc (kéo thứ phía sau về phía
+              nền), cùng một quãng, ngược hướng. `screen.tsx` đã dùng đúng vai
+              này cho `auraDim` của ba màn còn lại; Today không đi qua `Screen`
+              nên nó không tới được đây.
+
+              Và nó phải TỐI DẦN chứ không bắt đầu ở mức đầy.
 
               Việc nó làm: chữ ở đây nằm trên nền gradient của hero, và một
               gradient thì chỗ đậm chỗ nhạt — cùng một màu chữ đọc rõ ở khúc này
@@ -1908,10 +1929,10 @@ export default function TodayScreen() {
               <Svg width="100%" height="100%">
                 <Defs>
                   <SvgGradient id="sheetScrim" x1="0" y1="0" x2="0" y2="1">
-                    <Stop offset="0" stopColor="#000" stopOpacity="0" />
-                    <Stop offset="0.3" stopColor="#000" stopOpacity={SCRIM * 0.22} />
-                    <Stop offset="0.65" stopColor="#000" stopOpacity={SCRIM * 0.62} />
-                    <Stop offset="1" stopColor="#000" stopOpacity={SCRIM} />
+                    <Stop offset="0" stopColor={m.aura.scrim} stopOpacity="0" />
+                    <Stop offset="0.3" stopColor={m.aura.scrim} stopOpacity={SCRIM * 0.22} />
+                    <Stop offset="0.65" stopColor={m.aura.scrim} stopOpacity={SCRIM * 0.62} />
+                    <Stop offset="1" stopColor={m.aura.scrim} stopOpacity={SCRIM} />
                   </SvgGradient>
                 </Defs>
                 <Rect x="0" y="0" width="100%" height="100%" fill="url(#sheetScrim)" />
@@ -2662,13 +2683,16 @@ const stylesFor = makeStyles((c, m) => ({
      đặc sẽ đè lên chính dải đang làm việc tắt dần. */
   maskBody: { position: 'absolute', left: 0, right: 0, top: SCRIM_FADE, bottom: GLASS_TAIL, backgroundColor: '#fff' },
   maskTail: { position: 'absolute', left: 0, right: 0, bottom: 0, height: GLASS_TAIL },
+  /* Màu của lớp phủ là màu NỀN của theme, không phải đen — xem ghi chú dài ở
+     chỗ dựng nó. `alpha(m.aura.scrim, SCRIM)` cho ra `rgba(0,0,0,0.62)` ở bản
+     tối, tức đúng chuỗi từng viết thẳng ở đây. */
   scrimBody: {
     position: 'absolute',
     left: 0,
     right: 0,
     top: SCRIM_FADE,
     bottom: 0,
-    backgroundColor: `rgba(0, 0, 0, ${SCRIM})`,
+    backgroundColor: alpha(m.aura.scrim, SCRIM),
   },
   /*
     Hai lề âm của tấm, tách ra khỏi `sheet` — và việc tách là bắt buộc, không
@@ -2736,6 +2760,10 @@ const stylesFor = makeStyles((c, m) => ({
      tròn do `AccountAvatar` tự vẽ, và một ô bo 16 nằm sau một vòng tròn là hai
      hình chồng nhau. */
   avatarBtn: { width: TOP_BAR_H, height: TOP_BAR_H, alignItems: 'center', justifyContent: 'center' },
+  /* 168,175,189 là `primary` của bản tối. Ở bản sáng `primary` là mực
+     (`#1a1917`), nên nút "xong" nhận một mặt mực nhạt thay vì một mặt bạc vô
+     hình trên giấy — cùng câu "nút này đang bật", nói bằng màu chủ đạo của
+     theme đang chạy. */
   squareBtnActive: { backgroundColor: alpha(c.primary, 0.2), borderColor: alpha(c.primary, 0.4) },
 
   // Quick chips (web: rounded-xl bordered secondary/20)
@@ -2800,6 +2828,17 @@ const stylesFor = makeStyles((c, m) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  /* Mực của theme ở 80%, không phải `rgba(237,237,237,0.8)`.
+
+     237,237,237 LÀ `foreground` của bản tối, chép ra thành một chuỗi — nên trên
+     giấy nó là trắng trên trắng. Nó không lộ ra chừng nào lớp phủ tối còn nằm
+     dưới nó: tiêu đề nhóm đọc được là nhờ cái nền bùn mà lớp phủ tạo ra, không
+     nhờ màu của chính nó. Bỏ lớp phủ đi thì "Sức khoẻ" và "Thông tin chuyên
+     sâu" biến mất khỏi trang.
+
+     `alpha(c.foreground, 0.8)` cho ra đúng chuỗi cũ ở bản tối và mực giấy ở bản
+     sáng. Cùng một quyết định — nhạt hơn tiêu đề chính một bậc — đọc được ở cả
+     hai. */
   groupTitle: { flex: 1, fontSize: 14, fontWeight: '600', color: alpha(c.foreground, 0.8) },
   /* Nút Sửa. Nhạt hơn tiêu đề một bậc và KHÔNG mang màu nhấn — cùng luật đã áp
      cho các viên chip và cho avatar: màu dành cho GIÁ TRỊ, không dành cho LỐI
@@ -2814,7 +2853,11 @@ const stylesFor = makeStyles((c, m) => ({
   // Empty states (web EmptyState)
   emptyCard: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.sm },
   emptyTitle: { fontSize: 11, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 1.7, color: c.mutedForeground },
-  emptyMsg: { fontSize: 13, color: 'rgba(107,107,107,0.8)', textAlign: 'center', maxWidth: 220, lineHeight: 19 },
+  /* `rgba(107,107,107,0.8)` là `#6b6b6b` — đúng cái `mutedForeground` mà bảng
+     màu đã BỎ vì nó đo được 3,39:1 trên mặt thẻ, dưới 4,5:1 mà chữ cỡ này cần.
+     Một bản chép thì không nhận được phép sửa ấy, và 0,8 độ mờ còn kéo nó
+     xuống thấp hơn nữa. Token hiện hành, không có độ mờ chồng lên. */
+  emptyMsg: { fontSize: 13, color: c.mutedForeground, textAlign: 'center', maxWidth: 220, lineHeight: 19 },
 
 
   // Edit mode (web widget-group edit)

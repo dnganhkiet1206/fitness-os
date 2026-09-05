@@ -163,6 +163,7 @@ const STEPS = [
   ['đường cong điểm ngủ', 'node', ['tools/sleep-curve.mjs']],
   ['nhật ký sự cố', 'node', ['tools/crash-log.mjs']],
   ['rãnh vòng tròn', 'node', ['tools/ring-track.mjs']],
+  ['lớp phủ tấm nội dung', 'node', ['tools/sheet-scrim.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
   ['kiểu icon macro', 'node', ['tools/macro-icon-style.mjs']],
