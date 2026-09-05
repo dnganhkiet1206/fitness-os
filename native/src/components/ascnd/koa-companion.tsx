@@ -3,13 +3,7 @@ import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import Animated, {
-  Easing,
-  useAnimatedStyle,
-  useDerivedValue,
-  useSharedValue,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedProps, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomTabInset } from '@/constants/expo-template-theme';
@@ -22,6 +16,7 @@ import { useMascotIdentity, useMascotSettings } from '@/hooks/use-mascot';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { baseEmotion } from '@/lib/mascot-emotion';
 import { nextPerch, perchPoint, type PerchId } from '@/lib/koa-perch';
+import { koaBandClear } from '@/lib/koa-band';
 import { tabBarVisible } from '@/lib/tab-bar-visibility';
 
 /**
@@ -300,7 +295,31 @@ export function KoaCompanion() {
     half-visible over a paragraph is worse than either state, and the whole
     reason this sits at the edge is to not be in the way.
   */
-  const fade = useDerivedValue(() => tabBarVisible.value);
+  /*
+    Hai điều kiện, không phải một: đã ngừng cuộn, VÀ dải dưới chân đang trống.
+
+    Bản trước chỉ đọc `tabBarVisible` — tức chỉ hỏi "người dùng còn đang cuộn
+    không". Ảnh chụp máy thật cho thấy vì sao thế là chưa đủ: dừng cuộn giữa
+    trang thì Koa hiện lại NGAY TRÊN thứ vừa trôi tới chỗ nó — thanh chọn của
+    Tiến trình, thẻ Nước của Dinh dưỡng. Chỗ đậu không sai; giả định "dải này là
+    chỗ đã dành sẵn" mới sai, vì khoảng chừa nằm ở cuối NỘI DUNG chứ không ở
+    một điểm cố định trên khung nhìn.
+
+    `koaBandClear` trả lời câu còn thiếu. Xem `lib/koa-band.ts`.
+  */
+  const fade = useDerivedValue(() => tabBarVisible.value * koaBandClear.value);
+
+  /*
+    Và khi đã mờ hết thì nó cũng phải THÔI NHẬN CHẠM.
+
+    `opacity: 0` ở React Native không tắt vùng chạm: một Koa vô hình vẫn nuốt
+    cú chạm rơi vào 46 điểm cộng `hitSlop` 10 của nó. Tức trong lúc cuộn — đúng
+    lúc nó vô hình — nó vẫn có thể cướp một cú bấm nhắm vào cái nút bên dưới,
+    và người dùng thấy một màn hình không phản ứng chứ không thấy nguyên nhân.
+  */
+  const touchable = useAnimatedProps(() => ({
+    pointerEvents: (fade.value * surfaced.value > 0.5 ? 'auto' : 'none') as 'auto' | 'none',
+  }));
 
   const style = useAnimatedStyle(() => ({
     opacity: fade.value * surfaced.value,
@@ -329,7 +348,7 @@ export function KoaCompanion() {
       pointerEvents="box-none"
       onLayout={onLayout}>
       {box ? (
-        <Animated.View style={[styles.perch, style]} pointerEvents="box-none">
+        <Animated.View style={[styles.perch, style]} animatedProps={touchable}>
           <Pressable
             hitSlop={10}
             accessibilityRole="button"

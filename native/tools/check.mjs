@@ -261,6 +261,12 @@ const STEPS = [
     bù phần thiếu bằng cách thêm màu.
   */
   ['ánh sáng môi trường trên giấy', 'node', ['tools/paper-ambient.mjs']],
+  /*
+    Koa đứng đè lên thanh chọn của Tiến trình và thẻ Nước của Dinh dưỡng trên
+    máy thật. Chỗ đậu không sai — nội dung trôi tới chỗ nó, còn nó chỉ chờ "hết
+    cuộn" rồi hiện lại. Bước này giữ ranh giới ấy là một điều KIỂM ĐƯỢC.
+  */
+  ['ranh giới của Koa', 'node', ['tools/koa-boundary.mjs']],
   ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['bề mặt đóng băng', 'node', ['tools/frozen-surface.mjs']],
   ['khoá bảng màu', 'node', ['tools/palette-key.mjs']],

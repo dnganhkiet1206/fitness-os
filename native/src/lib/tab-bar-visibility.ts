@@ -1,5 +1,7 @@
 import { Easing, makeMutable, withSpring, withTiming } from 'react-native-reanimated';
 
+import { resetKoaBand } from '@/lib/koa-band';
+
 /**
  * Scroll-aware tab-bar visibility — port of the web BottomTabBar behavior:
  * scrolling down past a threshold hides the bar, scrolling up (or being near
@@ -290,6 +292,10 @@ export function resetTabBar() {
   lastYUI.value = 0;
   target.value = 1;
   tabBarVisible.value = withSpring(1, SPRING);
+  /* Cùng lý do, cho dải của Koa: một màn không cuộn được thì không bắn
+     `onScroll` lần nào, nên giá trị sẽ giữ nguyên thứ màn TRƯỚC để lại — và
+     Koa biến mất trên một trang ngắn mà không có gì để nhìn thấy. */
+  resetKoaBand();
 }
 
 /**

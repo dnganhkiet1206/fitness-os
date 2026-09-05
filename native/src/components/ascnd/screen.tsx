@@ -29,6 +29,7 @@ import { makeMaterialStyles, makeStyles, type PaletteKey, alpha } from '@/consta
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { setActiveScroller } from '@/lib/scroll-to-top';
+import { noteKoaBand } from '@/lib/koa-band';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
 
 /**
@@ -493,7 +494,15 @@ export function Screen({ title, eyebrow, headerRight, back, transparentHeader, a
           scrollEnabled={contentScrollEnabled}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
-          onScroll={(e) => handleTabScroll(e.nativeEvent.contentOffset.y)}
+          onScroll={(e) => {
+            const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
+            handleTabScroll(contentOffset.y);
+            /* Koa đứng ở dải sát đáy KHUNG NHÌN, còn khoảng chừa cho thanh tab
+               nằm ở cuối NỘI DUNG — hai chỗ chỉ trùng nhau khi trang đã cuộn
+               hết. Đây là chỗ duy nhất biết được cả ba con số, nên nó là chỗ
+               trả lời. Xem `lib/koa-band.ts`. */
+            noteKoaBand(contentOffset.y, contentSize.height, layoutMeasurement.height, BottomTabInset);
+          }}
           scrollEventThrottle={16}
           {...props}>
           <View style={styles.header}>
