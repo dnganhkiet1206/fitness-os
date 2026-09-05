@@ -279,6 +279,13 @@ const STEPS = [
     qua sàn. Bước này đo SẮC ĐỘ, thứ tương phản không nói được.
   */
   ['sắc độ màu tín hiệu', 'node', ['tools/signal-chroma.mjs']],
+  /*
+    Và vàng là sắc DUY NHẤT mà bước trên không cứu được bằng độ sáng: ở sắc 95°
+    trần chroma của sàn chữ là 0,110, hết. Nên nó được tách làm hai vai vẽ —
+    một cho chữ, một cho hình — và bước này canh cả hai vế: không lẫn vai, và
+    vẫn là MỘT màu.
+  */
+  ['hai vai của vàng', 'node', ['tools/yellow-role.mjs']],
   ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['bề mặt đóng băng', 'node', ['tools/frozen-surface.mjs']],
   ['khoá bảng màu', 'node', ['tools/palette-key.mjs']],
