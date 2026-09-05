@@ -40,13 +40,25 @@ import { codeMask } from './lib/code-mask.mjs';
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /**
- * Bốn hình dạng là một màu thật.
+ * Năm hình dạng là một màu thật.
  *
  * `c[…]` phải cho phép ngoặc LỒNG: `c[EFFORT_TINT[effort]]` là một khoá đã
  * giải, và một lớp `[^\]]+` từ chối đúng nó — bản đầu của luật này báo đỏ ba
  * chỗ hoàn toàn đúng vì thế.
+ *
+ * `graphicOf(c, KHOÁ)` là hình dạng thứ NĂM, thêm ở GĐ2C.3. Nó GIẢI khoá —
+ * thân nó là `c[GRAPHIC_ROLE[k] ?? k]`, tức đúng hình dạng thứ hai ở trên — nên
+ * thứ nó trả về là một mã màu, không phải một khoá. Luật này báo đỏ nó ở lần
+ * chạy đầu tiên sau khi hàm ấy ra đời, và đó là một BÁO THỪA: đúng câu hỏi,
+ * sai câu trả lời, vì danh sách này liệt kê hình dạng chứ không đọc kiểu.
+ *
+ * Nó được thêm vào đây chứ không được cho qua bằng một ngoại lệ theo tên tệp:
+ * điều làm nó an toàn là thân hàm, và thân hàm ấy đứng cạnh `alpha()` trong
+ * cùng một tệp — nếu ai đó đổi nó thành trả về khoá, `tools/yellow-role.mjs`
+ * đỏ vì `GRAPHIC_ROLE` không còn nối đúng, và bảng màu sẽ ném ngay ở chỗ vẽ.
  */
-const IS_COLOUR = /^(?:c\.\w+|c\[.+\]|m(?:\.\w+)+|'#[0-9a-fA-F]{3,8}'|`#[^`]*`)$/;
+const IS_COLOUR =
+  /^(?:c\.\w+|c\[.+\]|graphicOf\(c,\s*.+\)|m(?:\.\w+)+|'#[0-9a-fA-F]{3,8}'|`#[^`]*`)$/;
 
 function tsFiles(dir, out = []) {
   for (const name of readdirSync(dir)) {
@@ -153,5 +165,5 @@ if (problems.length) {
 
 console.log(
   'khoá bảng màu OK — mọi lời gọi `alpha()` nhận một màu thật (`c.x`, `c[khoá]`, ' +
-    'một trường chất liệu, hay một mã hex), không nhận một khoá chưa giải',
+    '`graphicOf(c, khoá)`, một trường chất liệu, hay một mã hex), không nhận một khoá chưa giải',
 );
