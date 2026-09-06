@@ -98,6 +98,21 @@ thì vẫn nằm ở đây.
 
 ---
 
+### A9. `MaskedView` là một view manager của KIẾN TRÚC CŨ, chạy trên một app chỉ có kiến trúc mới
+
+| | |
+|---|---|
+| **Triệu chứng** | Người dùng báo, lặp lại được: sang tab khác → quay lại Hôm nay → chạm vùng vòng tròn sẵn sàng → **app thoát ngay lập tức**. Không hộp thoại, không lỗi. Chạm liên tục **không rời màn** thì không bao giờ hỏng — 50 cú chạm ở hai tốc độ, 0 lỗi. Chuyến đi vòng qua tab khác là điều kiện bắt buộc. |
+| **Bằng chứng** | `@react-native-masked-view/masked-view@0.3.2` (bản `latest` trên npm) chứa đúng bốn tệp iOS. Toàn gói **không có một chuỗi nào** trong `ComponentView`, `Fabric`, `codegen`, `react/renderer`, `RCT_NEW_ARCH` — kiểm bằng `grep -ril` trên cả gói. `RNCMaskedViewManager.m` là `RCT_EXPORT_MODULE()` + `- (UIView *)view` trần; `RNCMaskedView.m` làm việc của nó trong `didUpdateReactSubviews` bằng `self.maskView = [self.reactSubviews firstObject]`. Cả hai đều là API của kiến trúc **cũ**. `podspec` còn ghi `:ios => "9.0"`. |
+| **Vì sao điều đó là lỗi ở đây** | App chạy RN 0.86 / Expo SDK 57, `newArchEnabled` không bị tắt trong `app.json` → kiến trúc mới. Kiến trúc cũ đã bị gỡ khỏi RN từ 0.82, nên gói này chỉ có thể chạy qua **lớp interop** (`RCTLegacyViewManagerInteropComponentView`). Fabric **tái sử dụng** (recycle) component view; `react-native-screens` tháo cây của một tab khi tab đó bị bỏ chọn và dựng lại từ pool khi quay về — tức chuyến đi vòng qua tab **chính là** một sự kiện recycle. `RNCMaskedView` không có `prepareForRecycle`, không có `mountChildComponentView`/`unmountChildComponentView`. |
+| **Thượng nguồn nói gì** | reactwg/react-native-new-architecture, thảo luận #80: *"We cannot find the right fabric method to get the reactSubviews and assign the first view to the `self.maskView`."* Đúng một dòng ấy là dòng làm việc trong tệp đang chạy. Một cách sửa được đề xuất năm 2022 (dùng `mountChildComponentView`) — và **chưa từng được phát hành**: 0.3.2 vẫn không có nó. |
+| **Bán kính** | Không chỉ Hôm nay. `StatusScrim` dựng một `MaskedView` trên **mọi màn có inset trên, ở iOS** (`screen.tsx:424,509` và `index.tsx:2479`). Khác biệt là hộp của nó không bao giờ đổi kích thước, nên không có gì chọc vào mặt nạ sau khi nó bị recycle. Cái ở `index.tsx:1832` thì nằm trong `<Expander open={!heroOpen}>` — hộp co giãn theo **đúng cú chạm được báo**. |
+| **Đã bác bỏ (đừng đi lại)** | (1) NaN trong hình học SVG — 0/50 cú chạm. (2) Vòng lặp bố cục `Expander` ↔ `CardDeck.onHeight` — chỉ 3 phần tử được ghi style, không phải hàng trăm. (3) Cây kính bị tháo/dựng lại khi chạm — **0 lần** trên 20 cú chạm. (4) `[unowned self]` trong `expo-blur/BlurEffectView.draw` — có thật và đúng triệu chứng, nhưng cần một lần dealloc mà đường này không tạo ra. (5) Lỗi JS — nhật ký sự cố trong app rỗng, và nó bắt được mọi lỗi JS. |
+| **Còn thiếu để sửa** | Một trong hai, và cả hai đều cần máy thật để xác nhận: **(a)** nâng phụ thuộc — 21 gói đang trễ, trong đó `react-native-screens` 4.25.2 → 4.26.0 và `react-native` 0.86.0 → 0.86.3, đúng chỗ các bản vá lỗi recycle đổ về; **(b)** bỏ `MaskedView` khỏi màn Hôm nay. (b) chắc chắn hơn nhưng đụng vào một lớp đã đo kỹ, và `status-scrim.tsx` đã ghi vì sao không thể thay mặt nạ bằng nhiều tấm kính chồng lên nhau ("cost four live effect views, compounded the material's tint from 22% to 37%, and banded"). |
+| **Cách xác nhận trong 30 giây** | Máy thật: **Cài đặt → Quyền riêng tư & Bảo mật → Phân tích & Cải tiến → Dữ liệu phân tích**, mở mục `ASCND-…` đúng ngày. Nếu dòng đầu là `RCTComponentViewRegistry: Attempt to recycle a mounted view` hoặc `EXC_BAD_ACCESS` trong `RNCMaskedView` / `RCTLegacyViewManagerInteropComponentView` thì mục này đúng. Nếu không, mục này sai và phải chuyển xuống C. |
+
+---
+
 ## B. **Chưa** chứng minh được — cấm sửa, cấm dùng làm căn cứ cho việc khác
 
 Những mục này tôi nói ra mà **không** kiểm từ nguồn. Chúng có thể đúng. Chúng
