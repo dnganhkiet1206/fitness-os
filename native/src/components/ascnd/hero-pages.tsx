@@ -93,11 +93,13 @@ export function NutritionHero({
         <HeroRing
           pct={kcal / target}
           from={c.readinessGreen}
-          to={c.metricOrange}
+          /* Cung vòng và ngọn lửa là HÌNH — vai đồ hoạ của cam. Con số bên
+             dưới (`HeroTiles`) là CHỮ và ở lại `metricOrange`. */
+          to={c.metricOrangeGraphic}
           /* Ngọn lửa cam — đúng biểu tượng và đúng màu mà thẻ dinh dưỡng cũ
              dùng, để cùng một phép đo không đổi mặt khi nó đổi chỗ. */
           icon={Flame}
-          iconColor={c.metricOrange}
+          iconColor={c.metricOrangeGraphic}
           value={Math.round(kcal)}
           /* Còn lại, không phải mục tiêu. Mục tiêu là con số bạn đã biết; số
              còn lại là con số quyết định bữa tới ăn gì. */

@@ -76,7 +76,7 @@ export default function RemindersScreen() {
     { key: 'supplements', icon: Pill, color: c.metricPurple, title: i18n.nReminderSupplements },
     { key: 'workout', icon: Dumbbell, color: c.primary, title: i18n.nReminderWorkout },
     { key: 'weighIn', icon: Scale, color: c.metricBlue, title: i18n.nReminderWeighIn },
-    { key: 'bedtime', icon: Moon, color: c.metricOrange, title: i18n.nReminderBedtime },
+    { key: 'bedtime', icon: Moon, color: c.metricOrangeGraphic, title: i18n.nReminderBedtime },
   ];
 
   const showPermHint = available && !permission && Object.values(prefs).some((r) => r.enabled);

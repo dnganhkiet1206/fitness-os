@@ -98,7 +98,7 @@ import { type PaletteKey } from '@/constants/palette';
 /** food and anything eaten */
 const FOOD = 'readinessGreen' satisfies PaletteKey;
 /** energy: burned, spent, or counted */
-const ENERGY = 'metricOrange' satisfies PaletteKey;
+const ENERGY = 'metricOrangeGraphic' satisfies PaletteKey;
 /**
  * Tập luyện — KIM LOẠI, không phải xanh dương.
  *

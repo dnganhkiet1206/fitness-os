@@ -70,7 +70,7 @@ export function QuickStats({
     {
       key: 'kcal',
       icon: Flame,
-      color: c.metricOrange,
+      color: c.metricOrangeGraphic,
       label: i18n.nQuickCalories,
       value: kcal,
       target: calorieTarget,

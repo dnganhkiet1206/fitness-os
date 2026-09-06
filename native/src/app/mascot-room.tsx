@@ -108,7 +108,7 @@ import { toast } from '@/lib/toast';
    trong theme tối, tức một bản sao chép tay của một token đã có. Bản sao ấy sẽ
    không đổi khi theme đổi; token thì có. */
 const SIGNAL_META: Record<QuestKey, { icon: LucideIcon; color: PaletteKey; labelKey: 'nRoomSigMeal' | 'nRoomSigWorkout' | 'nRoomSigWater' | 'nRoomSigSleep' | 'nRoomSigSteps' }> = {
-  meal: { icon: Utensils, color: 'metricOrange', labelKey: 'nRoomSigMeal' },
+  meal: { icon: Utensils, color: 'metricOrangeGraphic', labelKey: 'nRoomSigMeal' },
   workout: { icon: Dumbbell, color: 'metricRose', labelKey: 'nRoomSigWorkout' },
   water: { icon: Droplets, color: 'metricCyan', labelKey: 'nRoomSigWater' },
   sleep: { icon: Moon, color: 'metricPurple', labelKey: 'nRoomSigSleep' },
@@ -630,7 +630,7 @@ export default function MascotRoomScreen() {
         <ActionChip
           icon={Cat}
           label={i18n.nRoomChangeBuddy}
-          color={c.metricOrange}
+          color={c.metricOrangeGraphic}
           onPress={() => {
             Haptics.selectionAsync();
             nav.push('/settings');

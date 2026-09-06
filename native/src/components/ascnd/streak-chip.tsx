@@ -74,8 +74,8 @@ export function StreakChip() {
         <Icon
           icon={Flame}
           size={18}
-          color={lit ? c.metricOrange : c.mutedForeground}
-          fill={lit ? c.metricOrange : 'transparent'}
+          color={lit ? c.metricOrangeGraphic : c.mutedForeground}
+          fill={lit ? c.metricOrangeGraphic : 'transparent'}
         />
         <Text style={[styles.count, !lit && styles.countRisk]}>{data.count}</Text>
       </View>
@@ -93,9 +93,11 @@ const stylesFor = makeStyles((c) => ({
     borderWidth: StyleSheet.hairlineWidth,
     justifyContent: 'center',
   },
+  /* Nền và viền của viên là HÌNH; `count` bên trong là CHỮ và ở lại
+     `metricOrange`. Cùng cặp vai với viên lời khuyên của `readiness-gauge`. */
   chipLit: {
-    backgroundColor: alpha(c.metricOrange, 0.13),
-    borderColor: alpha(c.metricOrange, 0.28),
+    backgroundColor: alpha(c.metricOrangeGraphic, 0.13),
+    borderColor: alpha(c.metricOrangeGraphic, 0.28),
   },
   chipRisk: {
     backgroundColor: alpha(c.secondary, 0.2),

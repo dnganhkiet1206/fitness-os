@@ -49,7 +49,7 @@ import { SLEEP_QUALITY_MAX } from '@/lib/sleep-note';
 */
 const QUALITY: { value: number; icon: LucideIcon; color: PaletteKey }[] = [
   { value: 2, icon: Angry, color: 'readinessRed' },
-  { value: 4, icon: Frown, color: 'metricOrange' },
+  { value: 4, icon: Frown, color: 'metricOrangeGraphic' },
   { value: 6, icon: Meh, color: 'readinessYellow' },
   { value: 8, icon: Smile, color: 'readinessGreen' },
   /* Mặt cười cao nhất PHẢI bằng `SLEEP_QUALITY_MAX` — mẫu số hiển thị và chuỗi

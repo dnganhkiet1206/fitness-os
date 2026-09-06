@@ -21,8 +21,8 @@ import { NutritionExplainer } from '@/components/ascnd/nutrition-explainer';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 /* Danh sách nhập của nhánh giao diện sáng (`macroBar` thay `MACRO_BAR`, bỏ
    `glass`), cộng `PaletteKey` mà rãnh vòng tròn cần. */
-import { MACRO_TINT, macroBar, radius, spacing } from '@/constants/ascnd';
-import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
+import { MACRO_BAR, MACRO_TINT, macroBar, radius, spacing } from '@/constants/ascnd';
+import { alpha, graphicOf, makeStyles, type PaletteKey } from '@/constants/theme';
 import { useMaterial, useSleepRamp, usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -644,19 +644,21 @@ export function NutritionCard({
     giữ nguyên văn cả ba cặp cũ, kể cả mã amber `#ffc53d` vốn không phải token:
     nó là một quyết định của bản tối, và bản tối đã ship.
   */
+  /* Cung vòng và icon trong vòng là HÌNH, nên chúng đọc vai đồ hoạ của cam.
+     Ở bản tối hai vai bằng nhau nên nhánh `m.lit` không đổi một điểm ảnh nào. */
   const ringGradient: [string, string] = overBudget
     ? [c.metricRose, c.readinessRed]
     : inBand
       ? m.lit
         ? ['#ffc53d', c.metricOrange]
-        : [c.metricOrange, c.metricRose]
+        : [c.metricOrangeGraphic, c.metricRose]
       : m.lit
         ? ['#eaf1fb', '#b9dcf0']
-        : [c.metricBeige, c.metricOrange];
+        : [c.metricBeige, c.metricOrangeGraphic];
   const ringIconColor = overBudget
     ? c.readinessRed
     : inBand
-      ? c.metricOrange
+      ? c.metricOrangeGraphic
       : c.foreground;
 
   /**
@@ -728,13 +730,29 @@ export function NutritionCard({
 
     Bốn bóng khác nhau, nên chúng phân biệt được cả khi nhỏ tới mức chỉ còn bóng.
   */
-  /* Màu giải ra ở ĐÂY, nơi có `c` — bảng ở `ascnd.ts` chỉ giữ khoá. */
+  /*
+    Màu giải ra ở ĐÂY, nơi có `c` — bảng ở `ascnd.ts` chỉ giữ khoá.
+
+    ── và mỗi ô macro cần HAI màu, không một ──
+
+    `color` chỉ đi vào `<Glyph>` (một icon) và `barGraphic` chỉ đi vào
+    `<ProgressBar>` (một thanh): cả hai là HÌNH, nên cả hai đọc vai đồ hoạ.
+
+    `bar[0]` thì KHÔNG: nó còn đi vào `MacroSwap`, và ở trạng thái vượt ngưỡng
+    `overStyle` tô nó lên `macroValue`/`macroTarget`/`macroNote` — tức CHỮ. Nên
+    nó ở lại vai chữ. Cùng lý do `MACRO_TINT` và `MACRO_BAR` không tự đổi khoá:
+    `food-cards.tsx` in chữ "C" bằng `c[MACRO_TINT.carbs]`, nên một bảng đổi
+    khoá sẽ kéo cả chữ ấy theo.
+
+    `graphicOf` trả về chính token khi token đó không có vai đồ hoạ riêng, nên
+    ba macro kia không đổi một điểm ảnh nào.
+  */
   const macros = [
-    { label: 'Protein', ...protein, icon: Beef, color: c[MACRO_TINT.protein], bar: macroBar(c, 'protein') },
-    { label: 'Carbs', ...carbs, icon: Wheat, color: c[MACRO_TINT.carbs], bar: macroBar(c, 'carbs') },
-    { label: 'Fat', ...fat, icon: Milk, color: c[MACRO_TINT.fat], bar: macroBar(c, 'fat') },
+    { label: 'Protein', ...protein, icon: Beef, color: graphicOf(c, MACRO_TINT.protein), bar: macroBar(c, 'protein'), barGraphic: graphicOf(c, MACRO_BAR.protein.from) },
+    { label: 'Carbs', ...carbs, icon: Wheat, color: graphicOf(c, MACRO_TINT.carbs), bar: macroBar(c, 'carbs'), barGraphic: graphicOf(c, MACRO_BAR.carbs.from) },
+    { label: 'Fat', ...fat, icon: Milk, color: graphicOf(c, MACRO_TINT.fat), bar: macroBar(c, 'fat'), barGraphic: graphicOf(c, MACRO_BAR.fat.from) },
     ...(fiber
-      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: c[MACRO_TINT.fiber], bar: macroBar(c, 'fiber') }]
+      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: graphicOf(c, MACRO_TINT.fiber), bar: macroBar(c, 'fiber'), barGraphic: graphicOf(c, MACRO_BAR.fiber.from) }]
       : []),
   ];
 
@@ -887,7 +905,7 @@ export function NutritionCard({
                   left-to-go are the same bar read from opposite ends, and
                   flipping it would only make the tile look like it had changed
                   measurement. */}
-              <ProgressBar pct={pct} color={m.bar[0]} height={4} style={styles.macroBarTrack} delay={320} />
+              <ProgressBar pct={pct} color={m.barGraphic} height={4} style={styles.macroBarTrack} delay={320} />
             </View>
           );
         })}
@@ -1414,7 +1432,7 @@ const stylesFor = makeStyles((c, m) => ({
   sidePct: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
   sideMono: { fontFamily: 'Menlo', color: c.foreground, fontVariant: ['tabular-nums'] },
   sideMonoStrong: { fontSize: 14, fontFamily: 'Menlo', fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
-  sideBarFill: { height: '100%', borderRadius: 2, backgroundColor: c.metricOrange },
+  sideBarFill: { height: '100%', borderRadius: 2, backgroundColor: c.metricOrangeGraphic },
   qualityRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   timesRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 },
   timeText: { fontSize: 12, fontFamily: 'Menlo', color: c.mutedForeground, fontVariant: ['tabular-nums'] },

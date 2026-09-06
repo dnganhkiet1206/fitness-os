@@ -101,7 +101,7 @@ const WAYS: Way[] = [
     typing one in. What they now have in common is that both of them finish.
   */
   { key: 'search', icon: Search, color: 'metricBlue', label: 'nWaySearch', spoken: 'nAddSearch', route: '/log-meal?focus=search' },
-  { key: 'manual', icon: Pencil, color: 'metricOrange', label: 'nWayManual', spoken: 'nAddManual', route: '/log-meal' },
+  { key: 'manual', icon: Pencil, color: 'metricOrangeGraphic', label: 'nWayManual', spoken: 'nAddManual', route: '/log-meal' },
 ];
 
 export function MealLogActions({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
