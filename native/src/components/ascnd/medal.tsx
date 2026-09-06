@@ -96,12 +96,50 @@ export const ICON_MAP: Record<string, LucideIcon> = {
  *
  * `dim` giữ nguyên cho viên chữ hạng ở dưới thẻ.
  */
-export type Metal = { color: string; light: string; dark: string; dim: string; label: string };
+/**
+ * Một KIM LOẠI, và hai vai khác nhau của nó.
+ *
+ * ── `color` / `light` / `dark` / `dim` là MINH HOẠ ──
+ *
+ * Bốn trường ấy vẽ ra cái đĩa huy chương: mặt, cạnh bắt sáng, cạnh khuất, và
+ * nền pha loãng. Chúng KHÔNG đổi theo theme, và đó là điều đúng — một huy
+ * chương đồng thì màu đồng ở cả hai diện mạo, hệt như một tấm ảnh không đổi
+ * màu khi bật chế độ sáng.
+ *
+ * ── `onLight` / `onDark` là CHỈ BÁO CHỨC NĂNG ──
+ *
+ * Cùng một kim loại còn được dùng làm màu tô của `<ProgressBar>` tiến độ hạng.
+ * Ở đó nó không còn là minh hoạ mà là DỮ LIỆU, và dữ liệu thì phải đọc được
+ * trên bề mặt của diện mạo đang bật. Mặt đĩa vàng `#ffd93d` trên rãnh sáng
+ * `#eae9e7` đo được 1,14:1 — vô hình.
+ *
+ * Nên hai vai tách tên, và tên nói ra diện mạo chứ không nói ra sắc độ: bản
+ * trước dùng chính trường `dark` (vốn là "cạnh khuất của kim loại") làm màu
+ * cho bản SÁNG, một cách đọc đúng số nhưng sai nghĩa.
+ *
+ * `onDark` bằng đúng `color` ở cả bốn hạng: đó là thứ bản tối đang vẽ hôm nay,
+ * chép nguyên văn, nên bản tối không đổi một điểm ảnh.
+ */
+export type Metal = {
+  /** mặt đĩa — MINH HOẠ, không đổi theo theme */
+  color: string;
+  /** cạnh bắt sáng của đĩa — MINH HOẠ */
+  light: string;
+  /** cạnh khuất của đĩa — MINH HOẠ */
+  dark: string;
+  /** nền pha loãng của hạng — MINH HOẠ */
+  dim: string;
+  label: string;
+  /** vai CHỨC NĂNG trên bề mặt sáng (thanh tiến độ hạng) */
+  onLight: string;
+  /** vai CHỨC NĂNG trên bề mặt tối — bằng đúng `color`, tức bản tối giữ nguyên */
+  onDark: string;
+};
 export const TIER_CONFIG: Record<string, Metal> = {
-  bronze: { color: '#c47b3d', light: '#e8a86a', dark: '#7d4a20', dim: 'rgba(196,123,61,0.12)', label: 'Bronze' },
-  silver: { color: '#c7cad1', light: '#f2f4f8', dark: '#7e828c', dim: 'rgba(199,202,209,0.12)', label: 'Silver' },
-  gold: { color: '#ffd93d', light: '#fff3ab', dark: '#b0790a', dim: 'rgba(255,217,61,0.12)', label: 'Gold' },
-  platinum: { color: '#b45cff', light: '#ddb0ff', dark: '#6b2fa0', dim: 'rgba(180,92,255,0.12)', label: 'Platinum' },
+  bronze: { color: '#c47b3d', light: '#e8a86a', dark: '#7d4a20', dim: 'rgba(196,123,61,0.12)', label: 'Bronze', onLight: '#8f4f1f', onDark: '#c47b3d' },
+  silver: { color: '#c7cad1', light: '#f2f4f8', dark: '#7e828c', dim: 'rgba(199,202,209,0.12)', label: 'Silver', onLight: '#7f838d', onDark: '#c7cad1' },
+  gold: { color: '#ffd93d', light: '#fff3ab', dark: '#b0790a', dim: 'rgba(255,217,61,0.12)', label: 'Gold', onLight: '#b0790a', onDark: '#ffd93d' },
+  platinum: { color: '#b45cff', light: '#ddb0ff', dark: '#6b2fa0', dim: 'rgba(180,92,255,0.12)', label: 'Platinum', onLight: '#6f2da8', onDark: '#b45cff' },
 };
 
 /**
@@ -206,6 +244,16 @@ function medalPath(type: string, r: number): string | null {
 export const LOCKED: Metal = {
   color: '#4a4a55', light: '#5c5c68', dark: '#2a2a31',
   dim: 'rgba(24,24,27,0.4)', label: '',
+  /*
+    Hai vai TRÙNG NHAU ở đây, và đó là câu trả lời đúng chứ không phải chỗ
+    trống điền cho đủ kiểu: `LOCKED` chỉ vẽ ĐĨA huy chương chưa mở. Thanh tiến
+    độ hạng luôn đọc `TIER_CONFIG[award.tier]`, không bao giờ đọc `LOCKED` —
+    nên nó không có vai chức năng để tách.
+
+    Giữ đúng `color` thay vì bịa một xám sáng: `#4a4a55` là xám ĐẬM, nên nếu
+    một ngày nào đó nó có bị dùng làm màu tô thì trên giấy nó vẫn đọc được.
+  */
+  onLight: '#4a4a55', onDark: '#4a4a55',
 };
 
 

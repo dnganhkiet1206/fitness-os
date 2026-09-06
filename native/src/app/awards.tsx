@@ -217,7 +217,10 @@ function MedalCard({
           */}
           <ProgressBar
             pct={Math.max(0.02, pct)}
-            color={tier.color}
+            /* Vai CHỨC NĂNG của kim loại, không phải mặt đĩa: đây là dữ liệu,
+               và mặt đĩa vàng `#ffd93d` trên rãnh sáng đo 1,14:1. Mặt đĩa vẫn
+               giữ nguyên cho MINH HOẠ — xem `Metal` trong `medal.tsx`. */
+            color={m.lit ? tier.onDark : tier.onLight}
             height={4}
             trackColor={alpha(m.ink, 0.08)}
           />
@@ -261,6 +264,10 @@ function MedalCard({
 
 export default function AwardsScreen() {
   const c = usePalette();
+  /* Cần `m.lit` để chọn vai vàng theo diện mạo — icon và hai điểm dừng của
+     cung đều là màu ĐƯỢC VẼ, không phải style, nên chúng không đọc được `m`
+     qua `makeStyles`. */
+  const m = useMaterial();
   const styles = stylesFor(c);
   const { data: awards } = useAwards();
   const { data: sources } = useAwardProgress();
@@ -290,7 +297,10 @@ export default function AwardsScreen() {
       {/* Hero: medal tile + progress ring (web) */}
       <View style={styles.hero}>
         <View style={styles.heroTile}>
-          <Icon icon={MedalIcon} size={30} color="#ffd93d" />
+          {/* Vàng của huy chương theo diện mạo. `#ffd93d` viết cứng ở đây ĐÚNG
+              BẰNG `darkPalette.readinessYellow` — nó là token bản tối bị chép
+              thành hằng, không phải một màu thương hiệu tĩnh. */}
+          <Icon icon={MedalIcon} size={30} color={m.lit ? TIER_CONFIG.gold.onDark : TIER_CONFIG.gold.onLight} />
         </View>
         <Text style={styles.heroCount}>
           {i18n.awardsEarned} <Text style={styles.heroCountNum}>{earnedCount}</Text> / {totalCount}{' '}
@@ -300,8 +310,12 @@ export default function AwardsScreen() {
           <Svg width={80} height={80} viewBox="0 0 80 80">
             <Defs>
               <SvgGradient id="awards-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <Stop offset="0%" stopColor="#ffd93d" />
-                <Stop offset="100%" stopColor="#ff9130" />
+                {/* Đầu cung: vàng huy chương theo diện mạo. */}
+                <Stop offset="0%" stopColor={m.lit ? TIER_CONFIG.gold.onDark : TIER_CONFIG.gold.onLight} />
+                {/* Cuối cung: `metricOrangeGraphic` trả về ĐÚNG `#ff9130` ở bản
+                    tối và `#d87300` ở bản sáng, nên một token phục vụ cả hai và
+                    bản tối không đổi. */}
+                <Stop offset="100%" stopColor={c.metricOrangeGraphic} />
               </SvgGradient>
             </Defs>
             {/* Rãnh đọc từ bảng màu — `#17171c` viết cứng ở đây đo được 1,13:1 so với
@@ -366,7 +380,7 @@ export default function AwardsScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   hero: { alignItems: 'center', gap: spacing.sm },
   heroTile: {
     width: 64,
@@ -377,9 +391,21 @@ const stylesFor = makeStyles((c) => ({
     borderColor: alpha(c.readinessYellow, 0.25),
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#ffd93d',
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
+    /*
+      Đây là một QUẦNG SÁNG, không phải bóng đổ: bán kính 16, lệch 0/0. Nó là
+      ngôn ngữ của phòng tối — một vật phát sáng toả quầng ra nền gần đen.
+
+      Trên giấy không có gì phát sáng, và cùng đoạn mã ấy vẽ ra một vệt vàng
+      quanh ô. Nên bản sáng KHÔNG có quầng, chứ không phải có một quầng khác:
+      hạ độ mờ vẫn là một vệt mờ hơn. Cũng không mượn `m.elevation` — đó là
+      bóng ĐỔ của thẻ, và thay quầng bằng bóng đổ là thêm một phần tử thị giác
+      mới, không phải sửa theme.
+
+      Bản tối giữ nguyên từng tham số.
+    */
+    shadowColor: m.lit ? TIER_CONFIG.gold.onDark : 'transparent',
+    shadowOpacity: m.lit ? 0.2 : 0,
+    shadowRadius: m.lit ? 16 : 0,
     shadowOffset: { width: 0, height: 0 },
   },
   heroCount: { ...type.footnote, color: c.mutedForeground },
@@ -394,7 +420,16 @@ const stylesFor = makeStyles((c) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  progressPct: { ...type.mono, fontSize: 17, fontWeight: '700', color: '#ffd93d' },
+  /* Con số này là một GIÁ TRỊ, không phải một trạng thái — và anh em của nó
+     ngay phía trên (`heroCountNum`, "24 / 40") đã dùng `c.foreground`. Bản tối
+     giữ đúng vàng đang chạy. `#ffd93d` cũ đo 1,26:1 trên giấy, dưới sàn chữ
+     4,5:1 gần bốn lần. */
+  progressPct: {
+    ...type.mono,
+    fontSize: 17,
+    fontWeight: '700',
+    color: m.lit ? TIER_CONFIG.gold.onDark : c.foreground,
+  },
 
   tierSection: { gap: spacing.sm + 4 },
   tierHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
