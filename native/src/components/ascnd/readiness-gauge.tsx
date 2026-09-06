@@ -74,43 +74,72 @@ const DARK_GRADIENTS: Record<string, [string, string]> = {
 };
 
 /**
- * Điểm dừng SÁNG của bản sáng — cùng sắc, cùng chroma, chỉ khác độ sáng.
+ * Điểm dừng SÂU của bản sáng — cùng sắc, chỉ khác độ sáng.
  *
- * ── dẫn ra, không chọn tay ──
+ * ── vì sao nó tên là SÂU, sau khi từng tên là SÁNG ──
  *
- * Mỗi giá trị là token trạng thái của chính nó trong OKLCH với `L + 0,055`,
- * giữ nguyên C và H. Sắc lệch đo được ≤0,23° — nên hai điểm dừng là MỘT màu
- * dưới hai lượng ánh sáng, không phải hai màu. Đó là khác biệt giữa "một vật
- * bắt sáng" và "một dải chuyển màu".
+ * GĐ2B dẫn bảng này là token `L + 0,055`, tức đầu SÁNG, và cặp lúc ấy chạy
+ * `#1f6747 → #317756` (1,26×). Rồi GĐ2C.2 nâng chính các token lên để trả lại
+ * sắc độ cho bản sáng — và ba giá trị dưới đây, vốn dẫn từ token CŨ, ở nguyên.
+ * Kết quả là token vượt lên trên chúng: `#317756` L 0,515 so với
+ * `readinessGreen` L 0,530. Bảng "sáng" thành bảng sâu mà tên không đổi, và
+ * ΔL thiết kế 0,055 tụt còn 0,016.
  *
- * ── và độ dốc lấy từ bản TỐI, không lấy lớn nhất còn đạt sàn ──
+ * ĐÓ là "cung quá phẳng" mà ảnh chụp máy thật chỉ ra — không phải sai hướng.
+ * Hướng vẫn đúng và vẫn khớp bản tối (xem `gradientFor`); thứ mất là ĐỘ DỐC.
+ * Một hằng số dẫn xuất không tự đi theo thứ nó được dẫn từ đó là cái bẫy ở đây,
+ * và `tools/arc-slope.mjs` tồn tại để nó không im lặng lần thứ hai.
  *
- * Bản đầu dẫn ΔL lớn nhất mà vẫn qua sàn 3:1: ra 1,91× giữa hai điểm dừng. Đo
- * bản tối thì nó chạy 1,01× (đỏ), 1,07× (xanh), 1,26× (vàng) — nên 1,91× sẽ là
- * một cung có độ dốc gấp rưỡi bất cứ thứ gì app từng vẽ, tức không phải "ánh
- * sáng ban ngày dịu" mà là một dải màu mới. Chọn ΔL NHỎ NHẤT cho tỉ lệ ≥1,25:
+ * ── dẫn lại từ token ĐANG chạy, và lần này lấy chiều SÂU ──
  *
- *     xanh  #1f6747 → #317756   1,26×   CR thẻ 6,80 → 5,38
- *     vàng  #695a1e → #796a2f   1,27×   CR thẻ 6,81 → 5,36
- *     đỏ    #a92b3d → #bc3e4c   1,27×   CR thẻ 6,77 → 5,34
+ * Mỗi giá trị là token trạng thái của chính nó với `L − 0,055`, giữ nguyên H,
+ * hạ C theo gamut khi cần (91–92% C còn lại; hạ chroma dọc theo sắc của chính
+ * nó, KHÔNG kẹp kênh — kẹp làm xoay sắc, lỗi `koa-light.ts` đã ghi).
  *
- * Ba độ dốc BẰNG NHAU, cùng lý do ba token trải 0,036 điểm: một trạng thái có
- * cung dốc hơn hai trạng thái kia là bảng màu tự chấm điểm. Và cả sáu giá trị
- * đều trên sàn đồ hoạ 3:1, nên không đầu nào của cung biến mất.
+ *     xanh  #006e48 → #078055   1,27×   CR thẻ 6,32 → 4,97   lệch sắc 0,03°
+ *     vàng  #725e00 → #846e06   1,27×   CR thẻ 6,33 → 4,98   lệch sắc 0,36°
+ *     đỏ    #c30039 → #de0b44   1,25×   CR thẻ 6,21 → 4,96   lệch sắc 0,13°
+ *
+ * ── vì sao ĐÀO SÂU đuôi chứ không NÂNG SÁNG đầu ──
+ *
+ * Cả hai đều trả lại ΔL 0,055. Nâng đầu (`L + 0,055`) đưa đỉnh cung lên CR
+ * 3,94 và sáng hơn mọi thứ máy thật đã duyệt — tức đi về phía neon, đúng thứ
+ * bản QA bảo đừng. Đào sâu đuôi giữ ĐỈNH cung đúng bằng token đã được duyệt,
+ * ở chỗ mắt vào trước (12 giờ đến 45°), và thêm chiều bằng bóng. Trên giấy,
+ * chiều sâu đến từ bóng, không từ đèn.
+ *
+ * Ba độ dốc vẫn BẰNG NHAU (1,25–1,27×), cùng lý do như GĐ2B: một trạng thái có
+ * cung dốc hơn hai trạng thái kia là bảng màu tự chấm điểm.
  */
-const LIGHT_ARC_LIT: Record<string, string> = {
-  green: '#317756',
-  yellow: '#796a2f',
-  red: '#bc3e4c',
+const LIGHT_ARC_DEEP: Record<string, string> = {
+  green: '#006e48',
+  yellow: '#725e00',
+  red: '#c30039',
 };
 
 function gradientFor(c: Palette, status: string): [string, string] {
   if (c === palettes.dark) return DARK_GRADIENTS[status] ?? DARK_GRADIENTS.yellow;
   const key = STATUS_COLOR[status] ?? STATUS_COLOR.yellow;
-  /* Đầu SÁNG ở offset 0%, tức góc trên-trái: cùng hướng đèn chính mà
-     `AmbientLight` đặt cho cả trang, và cùng hướng mặt sáng của `glass-card`.
-     Ánh sáng trong một app chỉ được đến từ một phía. */
-  return [LIGHT_ARC_LIT[status] ?? LIGHT_ARC_LIT.yellow, c[key]];
+  /*
+    ── hướng, ĐO chứ không suy ──
+
+    Chú thích cũ ở đây nói "đầu sáng ở offset 0%, tức góc trên-trái". Câu ấy
+    đọc thẳng từ `x1="0%" y1="0%"` và BỎ QUA `transform="rotate(-90 60 60)"`
+    trên chính cái `<Circle>` dùng gradient này. Gradient là objectBoundingBox
+    nên nó quay THEO phần tử.
+
+    Dựng đúng cung ấy trong trình duyệt rồi đọc điểm ảnh: offset 0% rơi vào
+    225° (dưới-trái), offset 100% vào 45° (trên-phải). Cung bắt đầu ở 12 giờ và
+    chạy THUẬN kim đồng hồ, nên nó đi từ vùng 100% xuống vùng 0%:
+
+        đầu cung (12 giờ → 45°)  = offset 100%  → token, SÁNG
+        đuôi cung (→ 225°)       = offset 0%    → LIGHT_ARC_DEEP, SÂU
+
+    tức SÁNG → SÂU dọc theo cung, và cùng cách sắp của bản tối, nơi điểm dừng
+    100% cũng là điểm sáng hơn ở cả ba trạng thái (ΔL +0,020 / +0,065 / +0,002).
+    Thứ tự tuple vì thế KHÔNG đổi — chỉ giá trị đổi.
+  */
+  return [LIGHT_ARC_DEEP[status] ?? LIGHT_ARC_DEEP.yellow, c[key]];
 }
 
 /*
