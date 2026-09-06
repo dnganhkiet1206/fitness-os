@@ -174,7 +174,7 @@ export const darkPalette = {
    *
    * Nên khoá này tồn tại ở bản tối chỉ để `PaletteKey` có nó, và giá trị bằng
    * đúng `readinessYellow`: mọi chỗ chuyển sang khoá mới vẫn vẽ ra đúng từng
-   * điểm ảnh như cũ ở bản tối. `tools/yellow-role.mjs` canh cho hai giá trị ấy
+   * điểm ảnh như cũ ở bản tối. `tools/role-split.mjs` canh cho hai giá trị ấy
    * không tách nhau ra ở đây.
    */
   readinessYellowGraphic: '#ffd93d',
@@ -185,6 +185,18 @@ export const darkPalette = {
   metricPurple: '#b45cff',
   metricCyan: '#22e3ff',
   metricOrange: '#ff9130',
+  /**
+   * Cùng một màu với `metricOrange` ở bản tối, và đó là điều đúng.
+   *
+   * Trong phòng tối `#ff9130` đo 8,96:1 trên `background`: thừa cho cả chữ lẫn
+   * đồ hoạ, nên không có gì buộc phải tách. Vai chỉ tách trên GIẤY — xem chú
+   * thích ở bản sáng.
+   *
+   * Khoá này tồn tại ở bản tối để `PaletteKey` có nó, và giá trị bằng đúng
+   * `metricOrange`: mọi chỗ chuyển sang khoá mới vẫn vẽ ra từng điểm ảnh như cũ
+   * ở bản tối. `tools/role-split.mjs` canh cho hai giá trị ấy không tách nhau ra.
+   */
+  metricOrangeGraphic: '#ff9130',
   /**
    * Đỏ hồng của thịt — màu của protein.
    *
@@ -412,7 +424,41 @@ export const lightPalette: Palette = {
   metricBlue: '#0673be',
   metricPurple: '#8c35d0',
   metricCyan: '#077b8b',
+  /**
+   * Vai CHỮ của CAM. L 0,556 · C 0,133 · H 56,66 · 4,50:1 giấy · 4,94:1 thẻ.
+   *
+   * Ở độ sáng này cam ĐỌC RA LÀ NÂU, và đó không phải một khuyết điểm của giá
+   * trị — nó là chỗ gamut hết. Giữ nguyên, vì chữ nợ 4,5:1 và không có màu nào
+   * ở sắc 57° vừa đạt 4,5:1 vừa còn ra cam.
+   */
   metricOrange: '#ac5b06',
+  /**
+   * Vai ĐỒ HOẠ — cùng NGHĨA, một cường độ vẽ khác.
+   *
+   * L 0,658 · C 0,159 · H 56,85 · 3,00:1 giấy · 3,30:1 thẻ. Lệch sắc 0,20° so
+   * với vai chữ, nên hai vai đọc ra MỘT màu: khác độ sáng, không khác sắc.
+   *
+   * ── vì sao CAM là màu duy nhất trong bốn macro cần tách ──
+   *
+   * Trần chroma của sRGB đi theo SẮC, và mỗi sắc có đỉnh ở một độ sáng khác:
+   *
+   *     protein 17°   đỉnh C 0,240 ở L 0,60   ← đúng chỗ sàn chữ đặt nó
+   *     fat     248°  đỉnh C 0,175 ở L 0,65   ← gần chỗ sàn chữ đặt nó
+   *     carbs   57°   C còn tăng tới L 0,75   ← sàn chữ cắt nó ở L 0,556
+   *     fiber   161°  C còn tăng tới L 0,75   ← cũng bị cắt
+   *
+   * Protein và fat có đỉnh gamut ngay tại độ sáng của sàn chữ, nên chúng được
+   * màu đẹp nhất của mình miễn phí. Carbs và fiber thì không.
+   *
+   * Nhưng chỉ CARBS hỏng, và đo được vì sao: một màu lục bị làm tối vẫn là lục,
+   * còn một màu cam bị làm tối là NÂU. Danh tính của cam phụ thuộc độ sáng theo
+   * cách danh tính của lục thì không. Đó là lỗi về TÊN MÀU, không phải về độ
+   * tương phản — nên fiber ở 63% chroma bản tối vẫn được giữ nguyên, còn carbs
+   * ở 79% thì không.
+   *
+   * Vai này nâng chroma 0,133 → 0,159 (+20%), tức 79% → 95% chroma bản tối.
+   */
+  metricOrangeGraphic: '#d87300',
   metricRose: '#b83044',
   /** chỉ là ĐỒ HOẠ (đường cân nặng), nên ngưỡng của nó là 3:1 — đo được 3,25 */
   metricBeige: '#b28009',
@@ -434,6 +480,7 @@ export const palettes: Record<ThemeName, Palette> = { light: lightPalette, dark:
  */
 export const GRAPHIC_ROLE: Partial<Record<PaletteKey, PaletteKey>> = {
   readinessYellow: 'readinessYellowGraphic',
+  metricOrange: 'metricOrangeGraphic',
 };
 
 /**
@@ -443,7 +490,7 @@ export const GRAPHIC_ROLE: Partial<Record<PaletteKey, PaletteKey>> = {
  * Token nào không có vai đồ hoạ riêng thì trả về chính nó, nên gọi hàm này ở
  * một chỗ vẽ hình luôn đúng và không cần biết token nào đã tách.
  *
- * CHỮ thì đọc thẳng `c[k]`. Đó là toàn bộ giao ước, và `tools/yellow-role.mjs`
+ * CHỮ thì đọc thẳng `c[k]`. Đó là toàn bộ giao ước, và `tools/role-split.mjs`
  * canh cho nó không bị đảo ngược.
  */
 export function graphicOf(c: Palette, k: PaletteKey): string {
