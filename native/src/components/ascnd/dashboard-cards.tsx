@@ -1484,7 +1484,10 @@ const stylesFor = makeStyles((c, m) => ({
   // than the tile's own `gap` puts the bar below them
   macroLines: { gap: 2 },
   macroNote: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
-  macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: alpha(c.secondary, 0.4), overflow: 'hidden' },
+  /* `m.inset.track`, không phải `alpha(c.secondary, 0.4)`: ở bản sáng
+     `c.secondary` ĐÚNG BẰNG nền ô, nên biểu thức cũ vẽ ra một rãnh vô hình.
+     Bản tối nhận lại đúng biểu thức ấy qua trường mới — xem `Inset.track`. */
+  macroBarTrack: { height: 4, borderRadius: 2, backgroundColor: m.inset.track, overflow: 'hidden' },
   macroBarFill: { height: '100%', borderRadius: 2 },
 
   // sleep stages

@@ -556,6 +556,38 @@ export interface Inset {
   bg: string;
   border: string;
   borderWidth: number;
+  /**
+   * Rãnh của một thanh tiến độ NẰM TRONG bề mặt con.
+   *
+   * ── vì sao nó phải là một trường riêng ──
+   *
+   * Rãnh cũ là `alpha(c.secondary, 0.4)`. Ở bản TỐI đó là một lớp phủ trong
+   * suốt trên một mặt tối, nên nó cộng dồn và ra một rãnh nhìn thấy được. Ở bản
+   * SÁNG, `c.secondary` ĐÚNG BẰNG `inset.bg` — nên rãnh composite ra chính nền
+   * ô, và thanh macro của bản sáng KHÔNG CÓ RÃNH: người dùng chỉ thấy một mẩu
+   * màu trôi lơ lửng, không biết toàn phần dài bao nhiêu.
+   *
+   * ── vì sao TRẮNG, và vì sao trắng là trần ──
+   *
+   * Cả bốn màu macro đều ĐẬM hơn nền ô (ΔL 0,28–0,41), nên muốn tăng tương phản
+   * giữa phần đã chạy và rãnh thì rãnh phải NHẠT đi, không phải đậm đi. Đo cả
+   * dải: rãnh đậm hơn làm carbs tụt còn 2,26, rãnh trắng đưa nó lên 3,30 — và
+   * 3,30 là TRẦN, vì không có gì nhạt hơn trắng.
+   *
+   *     rãnh          carbs   protein   rãnh-vs-ô
+   *     #dcd5c8       2,26    4,06      1,22   ← đậm hơn: TỆ ĐI
+   *     #efeae1 (cũ)  2,75    4,94      1,00   ← vô hình
+   *     #f7f4ef       3,00    5,40      1,09
+   *     #ffffff       3,30    5,92      1,20   ← chọn
+   *
+   * Và trắng là giá trị duy nhất trong dải KHÔNG thêm một lớp be nữa vào hệ:
+   * mọi ứng viên khác vẫn mang sắc ấm. Câu chuyện vật liệu cũng khớp — ô macro
+   * là một chỗ LÕM vào mặt thẻ trắng, nên rãnh là chỗ mặt thẻ lộ trở lại.
+   *
+   * Bản TỐI giữ nguyên `alpha(secondary, 0.4)` từng ký tự: ràng buộc sinh ra
+   * phép sửa này chỉ có trên giấy.
+   */
+  track: string;
 }
 
 /**
@@ -737,6 +769,9 @@ export const materials: Record<ThemeName, Material> = {
       bg: 'rgba(255,255,255,0.06)',
       border: 'rgba(255,255,255,0.12)',
       borderWidth: 0.5,
+      /* ĐÚNG biểu thức cũ ở `dashboard-cards.tsx`, chép nguyên văn: bản tối
+         không đổi một điểm ảnh nào. */
+      track: alpha(darkPalette.secondary, 0.4),
     },
     /* Ba giá trị đang chạy, chép nguyên văn khỏi `liquid-glass.tsx`. */
     aura: {
@@ -771,6 +806,8 @@ export const materials: Record<ThemeName, Material> = {
       bg: lightPalette.secondary,
       border: lightPalette.border,
       borderWidth: 1 / 3,
+      /* Mặt thẻ lộ trở lại qua chỗ lõm — xem `Inset.track`. */
+      track: lightPalette.card,
     },
     /* Sợi MỰC thay cho sợi trắng: trên giấy, một sợi trắng dưới lớp blur không
        vẽ ra mép nào. Cùng độ mờ 0,035, đổi hướng chứ không đổi lượng. */
