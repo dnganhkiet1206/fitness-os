@@ -286,6 +286,13 @@ const STEPS = [
     vẫn là MỘT màu.
   */
   ['hai vai của vàng', 'node', ['tools/yellow-role.mjs']],
+  /*
+    Và một hằng số DẪN XUẤT phải đi theo thứ nó được dẫn từ đó. Ba điểm dừng
+    sâu của cung sẵn sàng dẫn từ token trạng thái; GĐ2C.2 nâng token mà bảng
+    dẫn xuất ở nguyên, nên độ dốc tụt từ ΔL 0,055 xuống 0,016 và không bước nào
+    thấy — phải tới ảnh chụp máy thật. Bước này dẫn lại rồi so.
+  */
+  ['độ dốc cung sẵn sàng', 'node', ['tools/arc-slope.mjs']],
   ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['bề mặt đóng băng', 'node', ['tools/frozen-surface.mjs']],
   ['khoá bảng màu', 'node', ['tools/palette-key.mjs']],
