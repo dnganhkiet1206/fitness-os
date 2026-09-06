@@ -285,7 +285,7 @@ const STEPS = [
     một cho chữ, một cho hình — và bước này canh cả hai vế: không lẫn vai, và
     vẫn là MỘT màu.
   */
-  ['hai vai của vàng', 'node', ['tools/yellow-role.mjs']],
+  ['vai chữ / vai đồ hoạ', 'node', ['tools/role-split.mjs']],
   /*
     Và một hằng số DẪN XUẤT phải đi theo thứ nó được dẫn từ đó. Ba điểm dừng
     sâu của cung sẵn sàng dẫn từ token trạng thái; GĐ2C.2 nâng token mà bảng

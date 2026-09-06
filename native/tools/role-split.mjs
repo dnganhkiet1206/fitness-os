@@ -1,22 +1,32 @@
 /**
- * Vàng có HAI vai vẽ và MỘT nghĩa. Cả hai vế đều phải giữ.
+ * Một màu tách làm HAI VAI VẼ phải giữ đúng MỘT NGHĨA. Cả hai vế đều phải giữ.
  *
- *     node tools/yellow-role.mjs
+ *     node tools/role-split.mjs
  *
- * ── vì sao vàng, và chỉ vàng ──
+ * ── vì sao chỉ hai màu trong bảng được tách ──
  *
- * Trần chroma của sRGB phụ thuộc SẮC. Ở sắc ~95°, nó đi lên theo độ sáng:
+ * Trần chroma của sRGB phụ thuộc SẮC, và mỗi sắc có đỉnh ở một độ sáng khác
+ * nhau. Với bốn macro cộng vàng sẵn sàng, đo ra:
  *
- *     L 0,54 (sàn chữ 4,5:1)     C tối đa 0,110   ← `readinessYellow`
- *     L 0,64 (sàn đồ hoạ 3:1)    C tối đa 0,132   ← `readinessYellowGraphic`
+ *     protein 17°   đỉnh C 0,240 ở L 0,60   ← ngay tại sàn chữ
+ *     fat     248°  đỉnh C 0,175 ở L 0,65   ← gần sàn chữ
+ *     fiber   161°  C còn tăng tới L 0,75   ← bị sàn chữ cắt
+ *     carbs   57°   C còn tăng tới L 0,75   ← bị sàn chữ cắt
+ *     vàng    95°   C còn tăng tới L 0,80   ← bị sàn chữ cắt
  *
- * Một cái thanh hay một chấm chú giải không phải chữ, nên nó không nợ 4,5:1.
- * Bắt nó xuống L 0,54 là trả một khoản thuế tương phản cho thứ không ai đọc,
- * và trên sắc này khoản ấy đúng bằng 17% sắc độ. Đó là chỗ dải "vừa phải" ra
- * ô-liu trong ảnh máy thật. Lục và đỏ KHÔNG tách vì gamut của chúng ở sàn chữ
- * đã đủ sắc — đây là một phép sửa gamut, không phải một sở thích.
+ * Protein và fat được màu đẹp nhất của mình miễn phí, nên chúng không tách.
  *
- * ── bốn tính chất ──
+ * Ba sắc còn lại đều bị cắt, nhưng chỉ HAI cái hỏng, và lý do đo được: một màu
+ * lục bị làm tối vẫn là lục, còn một màu cam hay vàng bị làm tối là NÂU và
+ * Ô-LIU. Danh tính của sắc ấm phụ thuộc độ sáng theo cách danh tính của lục thì
+ * không. Nên fiber ở 63% chroma bản tối vẫn được giữ, còn carbs ở 79% thì
+ * không — đây là lỗi về TÊN MÀU, không phải về độ tương phản, và một luật đo
+ * riêng tương phản sẽ không bao giờ thấy nó.
+ *
+ * Tách vai vì thế là một phép sửa GAMUT, không phải một sở thích, và bảng
+ * `PAIRS` dưới đây là danh sách đóng của những sắc đã chứng minh cần nó.
+ *
+ * ── bốn tính chất, áp cho TỪNG cặp ──
  *
  *  1. Vai ĐỒ HOẠ không được tô CHỮ. Nó ở 3:1; đặt một dòng chữ lên đó là hạ
  *     dưới sàn đọc, và không ai nhìn thấy điều đó cho tới khi nó ra máy thật.
@@ -52,8 +62,18 @@ import { codeMask } from './lib/code-mask.mjs';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
-const TEXT = 'readinessYellow';
-const GRAPHIC = 'readinessYellowGraphic';
+/**
+ * Danh sách ĐÓNG các cặp đã tách vai.
+ *
+ * `sàn` là ngưỡng tương phản mà vai chữ phải giữ trên mặt thẻ. Cả hai cặp dùng
+ * 4,5 — nhưng nó là một trường chứ không phải hằng số, vì nếu một ngày có một
+ * vai chữ chỉ dùng cho chữ LỚN (sàn 3:1 theo WCAG), luật này phải nói được
+ * điều đó thay vì báo đỏ sai.
+ */
+const PAIRS = [
+  { text: 'readinessYellow', graphic: 'readinessYellowGraphic', sàn: 4.5 },
+  { text: 'metricOrange', graphic: 'metricOrangeGraphic', sàn: 4.5 },
+];
 
 const problems = [];
 
@@ -103,9 +123,10 @@ const TYPOGRAPHIC = /\.\.\.type\.\w+|fontSize:|fontWeight:|lineHeight:|fontVaria
 for (const full of tsFiles(path.join(NATIVE, 'src'))) {
   const rel = path.relative(NATIVE, full);
   const raw = readFileSync(full, 'utf8');
-  if (!raw.includes(TEXT)) continue;
+  if (!PAIRS.some((p) => raw.includes(p.text))) continue;
   const src = blank(raw);
 
+  for (const { text: TEXT, graphic: GRAPHIC } of PAIRS) {
   /* ── 1. vai ĐỒ HOẠ không tô chữ ───────────────────────────────────────── */
 
   /* 1a. trong một style lá: `color:` cùng ô với dấu hiệu chữ. */
@@ -144,10 +165,11 @@ for (const full of tsFiles(path.join(NATIVE, 'src'))) {
       );
     }
   }
+  }
 }
 
 /* ── 3 + 4. hai vai, đo trên bảng màu thật ────────────────────────────────── */
-const out = mkdtempSync(path.join(tmpdir(), 'yellow-role-'));
+const out = mkdtempSync(path.join(tmpdir(), 'role-split-'));
 execFileSync(
   'npx',
   ['tsc', 'src/constants/palette.ts', '--ignoreConfig', '--outDir', out,
@@ -178,76 +200,93 @@ const contrast = (a, b) => {
 const r2 = (v) => Math.round(v * 100) / 100;
 const r3 = (v) => Math.round(v * 1000) / 1000;
 
-const lt = palettes.light[TEXT];
-const lg = palettes.light[GRAPHIC];
-const t = lch(lt);
-const g = lch(lg);
-
-/* Bảng phải THẬT SỰ nối hai vai — không có nó `graphicOf` trả về chính khoá cũ
-   ở mọi chỗ đi qua một bảng, và luật 2 vẫn xanh trong khi màu không đổi. */
-if (GRAPHIC_ROLE?.[TEXT] !== GRAPHIC) {
-  problems.push(
-    `src/constants/palette.ts: \`GRAPHIC_ROLE.${TEXT}\` không trỏ tới \`${GRAPHIC}\` — ` +
-      '`graphicOf` sẽ lặng lẽ trả về vai CHỮ ở mọi chỗ vẽ đi qua một bảng khoá (BMI, trạng thái sẵn sàng), ' +
-      'và phép tách chỉ còn đúng ở những chỗ gọi thẳng token',
-  );
-}
-
-/* Sắc: cùng một màu. Dung sai theo chroma — một bước 8-bit lệch sắc nhiều hơn
-   ở màu nhạt — cùng công thức `tools/koa-paper.mjs` đã đo và dùng. */
-const tol = Math.max(0.5, 0.07 / Math.min(t.C, g.C));
-if (Math.abs(t.H - g.H) > tol) {
-  problems.push(
-    `hai vai vàng lệch sắc ${r2(Math.abs(t.H - g.H))}° (chữ ${Math.round(t.H)}°, đồ hoạ ${Math.round(g.H)}°), ` +
-      `quá dung sai ${r2(tol)}° — đó không còn là hai cường độ của MỘT màu mà là hai màu, ` +
-      'và người dùng sẽ đọc chúng thành hai nghĩa',
-  );
-}
-
-/* Độ sáng và sắc độ: vai đồ hoạ phải thật sự mua được điều nó sinh ra để mua. */
-if (!(g.L > t.L && g.C > t.C)) {
-  problems.push(
-    `vai đồ hoạ ${lg} (L ${r3(g.L)}, C ${r3(g.C)}) không sáng hơn VÀ đậm sắc hơn vai chữ ${lt} ` +
-      `(L ${r3(t.L)}, C ${r3(t.C)}) — nếu nó không mua thêm sắc độ thì nó là một token trùng lặp, ` +
-      'và phép tách nên bị BỎ chứ không nên giữ một khoá không làm gì',
-  );
-}
-
-/* Và mỗi vai phải ở đúng sàn của nó. Nền là mặt THẺ: cả hai vai vẽ trên thẻ,
-   và thẻ trắng là nền khó hơn giấy ấm. */
 const CARD = palettes.light.card;
-if (contrast(lt, CARD) < 4.5) {
-  problems.push(
-    `vai chữ ${lt} chỉ đạt ${r2(contrast(lt, CARD))}:1 trên mặt thẻ — dưới sàn chữ 4,5:1. ` +
-      'Đó là vai phải đọc được; nếu nó cần sáng hơn thì thứ phải đổi là vai ĐỒ HOẠ',
-  );
-}
-if (contrast(lg, CARD) < 3) {
-  problems.push(
-    `vai đồ hoạ ${lg} chỉ đạt ${r2(contrast(lg, CARD))}:1 trên mặt thẻ — dưới sàn đồ hoạ 3:1. ` +
-      'Một cái thanh không nợ 4,5:1, nhưng nó vẫn phải nhìn thấy được',
-  );
-}
+const lines = [];
 
-/* Bản tối: một giá trị, không hai. */
-if (palettes.dark[TEXT] !== palettes.dark[GRAPHIC]) {
-  problems.push(
-    `bản TỐI có hai giá trị vàng khác nhau (${palettes.dark[TEXT]} và ${palettes.dark[GRAPHIC]}) — ` +
-      'ràng buộc sinh ra phép tách chỉ có trên GIẤY. Một giá trị tối khác đi là một thay đổi bản tối ' +
-      'lọt qua mà không ai quyết định',
+for (const { text: TEXT, graphic: GRAPHIC, sàn } of PAIRS) {
+  const lt = palettes.light[TEXT];
+  const lg = palettes.light[GRAPHIC];
+  if (!lt || !lg) {
+    problems.push(
+      `src/constants/palette.ts: cặp \`${TEXT}\`/\`${GRAPHIC}\` thiếu một vế ở bản sáng — ` +
+        'neo của luật này hỏng, đừng tin kết quả',
+    );
+    continue;
+  }
+  const t = lch(lt);
+  const g = lch(lg);
+
+  /* Bảng phải THẬT SỰ nối hai vai — không có nó `graphicOf` trả về chính khoá cũ
+     ở mọi chỗ đi qua một bảng, và luật 2 vẫn xanh trong khi màu không đổi. */
+  if (GRAPHIC_ROLE?.[TEXT] !== GRAPHIC) {
+    problems.push(
+      `src/constants/palette.ts: \`GRAPHIC_ROLE.${TEXT}\` không trỏ tới \`${GRAPHIC}\` — ` +
+        '`graphicOf` sẽ lặng lẽ trả về vai CHỮ ở mọi chỗ vẽ đi qua một bảng khoá (BMI, trạng thái ' +
+        'sẵn sàng, MACRO_TINT), và phép tách chỉ còn đúng ở những chỗ gọi thẳng token',
+    );
+  }
+
+  /* Sắc: cùng một màu. Dung sai theo chroma — một bước 8-bit lệch sắc nhiều hơn
+     ở màu nhạt — cùng công thức `tools/koa-paper.mjs` đã đo và dùng. */
+  const tol = Math.max(0.5, 0.07 / Math.min(t.C, g.C));
+  if (Math.abs(t.H - g.H) > tol) {
+    problems.push(
+      `hai vai của \`${TEXT}\` lệch sắc ${r2(Math.abs(t.H - g.H))}° ` +
+        `(chữ ${Math.round(t.H)}°, đồ hoạ ${Math.round(g.H)}°), quá dung sai ${r2(tol)}° — ` +
+        'đó không còn là hai cường độ của MỘT màu mà là hai màu, và người dùng sẽ đọc chúng thành hai nghĩa',
+    );
+  }
+
+  /* Độ sáng và sắc độ: vai đồ hoạ phải thật sự mua được điều nó sinh ra để mua. */
+  if (!(g.L > t.L && g.C > t.C)) {
+    problems.push(
+      `vai đồ hoạ của \`${TEXT}\` là ${lg} (L ${r3(g.L)}, C ${r3(g.C)}) — không sáng hơn VÀ đậm sắc hơn ` +
+        `vai chữ ${lt} (L ${r3(t.L)}, C ${r3(t.C)}). Nếu nó không mua thêm sắc độ thì nó là một token ` +
+        'trùng lặp, và phép tách nên bị BỎ chứ không nên giữ một khoá không làm gì',
+    );
+  }
+
+  /* Và mỗi vai phải ở đúng sàn của nó. Nền là mặt THẺ: cả hai vai vẽ trên thẻ,
+     và thẻ trắng là nền khó hơn giấy ấm. */
+  if (contrast(lt, CARD) < sàn) {
+    problems.push(
+      `vai chữ \`${TEXT}\` = ${lt} chỉ đạt ${r2(contrast(lt, CARD))}:1 trên mặt thẻ — dưới sàn chữ ${sàn}:1. ` +
+        'Đó là vai phải đọc được; nếu nó cần sáng hơn thì thứ phải đổi là vai ĐỒ HOẠ',
+    );
+  }
+  if (contrast(lg, CARD) < 3) {
+    problems.push(
+      `vai đồ hoạ \`${GRAPHIC}\` = ${lg} chỉ đạt ${r2(contrast(lg, CARD))}:1 trên mặt thẻ — ` +
+        'dưới sàn đồ hoạ 3:1 (WCAG 2.2 SC 1.4.11). Một cái thanh không nợ 4,5:1, nhưng nó vẫn phải ' +
+        'nhìn thấy được',
+    );
+  }
+
+  /* Bản tối: một giá trị, không hai. */
+  if (palettes.dark[TEXT] !== palettes.dark[GRAPHIC]) {
+    problems.push(
+      `bản TỐI có hai giá trị khác nhau cho \`${TEXT}\` (${palettes.dark[TEXT]} và ` +
+        `${palettes.dark[GRAPHIC]}) — ràng buộc sinh ra phép tách chỉ có trên GIẤY. Một giá trị tối ` +
+        'khác đi là một thay đổi bản tối lọt qua mà không ai quyết định',
+    );
+  }
+
+  lines.push(
+    `${TEXT}: chữ ${lt} (L ${r3(t.L)} · C ${r3(t.C)} · ${r2(contrast(lt, CARD))}:1) → ` +
+      `đồ hoạ ${lg} (L ${r3(g.L)} · C ${r3(g.C)} · ${r2(contrast(lg, CARD))}:1), lệch sắc ` +
+      `${r2(Math.abs(t.H - g.H))}°, +${Math.round((g.C / t.C - 1) * 100)}% sắc độ, bản tối một giá trị ` +
+      `(${palettes.dark[TEXT]})`,
   );
 }
 
 if (problems.length) {
-  console.log('hai vai của vàng CÓ LỖI:\n');
+  console.log('vai chữ / vai đồ hoạ CÓ LỖI:\n');
   for (const p of problems) console.log(`  • ${p}`);
   process.exit(1);
 }
 
 console.log(
-  `hai vai của vàng OK — chữ ${lt} (L ${r3(t.L)} · C ${r3(t.C)} · ${r2(contrast(lt, CARD))}:1 trên thẻ) và ` +
-    `đồ hoạ ${lg} (L ${r3(g.L)} · C ${r3(g.C)} · ${r2(contrast(lg, CARD))}:1) cách nhau ` +
-    `${r2(Math.abs(t.H - g.H))}° sắc nên vẫn là MỘT màu, vai đồ hoạ mua thêm ` +
-    `${Math.round((g.C / t.C - 1) * 100)}% sắc độ, không chỗ chữ nào dùng vai đồ hoạ và không điểm dừng ` +
-    `gradient hay thanh tiến độ nào còn dùng vai chữ; bản tối vẫn một giá trị (${palettes.dark[TEXT]})`,
+  `vai chữ / vai đồ hoạ OK — ${PAIRS.length} cặp, mỗi cặp vẫn là MỘT màu ở hai cường độ vẽ; ` +
+    'không chỗ chữ nào dùng vai đồ hoạ và không điểm dừng gradient hay thanh tiến độ nào còn dùng vai chữ:\n  ' +
+    lines.join('\n  '),
 );

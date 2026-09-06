@@ -54,7 +54,7 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
  *
  * Nó được thêm vào đây chứ không được cho qua bằng một ngoại lệ theo tên tệp:
  * điều làm nó an toàn là thân hàm, và thân hàm ấy đứng cạnh `alpha()` trong
- * cùng một tệp — nếu ai đó đổi nó thành trả về khoá, `tools/yellow-role.mjs`
+ * cùng một tệp — nếu ai đó đổi nó thành trả về khoá, `tools/role-split.mjs`
  * đỏ vì `GRAPHIC_ROLE` không còn nối đúng, và bảng màu sẽ ném ngay ở chỗ vẽ.
  */
 const IS_COLOUR =
