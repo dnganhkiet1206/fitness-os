@@ -443,7 +443,15 @@ export default function ShopScreen() {
         animationType="slide"
         onRequestClose={() => setCollectionsOpen(false)}>
         <View style={styles.sheetBackdropWrap}>
-          <Pressable style={styles.sheetBackdrop} onPress={() => setCollectionsOpen(false)} />
+          {/* Tấm nền ở đây là ANH EM của sheet, không phải cha nó, nên nó không
+              nuốt gì cả — nhưng nó vẫn là một nút không tên trong cây trợ năng,
+              và sheet đã có nút đóng có nhãn ngay bên dưới. Xem
+              `tools/a11y-swallow.mjs`. */}
+          <Pressable
+            accessible={false}
+            style={styles.sheetBackdrop}
+            onPress={() => setCollectionsOpen(false)}
+          />
           <View style={styles.sheet}>
             <View style={styles.sheetHandle} />
             <View style={styles.sheetHeader}>

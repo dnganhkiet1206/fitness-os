@@ -113,24 +113,55 @@ export function HelpNudge({
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
+  /*
+    Hai nút CẠNH nhau, không phải một nút nằm trong một nút.
+
+    ── lỗi nó sửa, và vì sao không có gì trên màn hình cho thấy nó ──
+
+    Nút X từng nằm BÊN TRONG `PressScale` của cả dải. Trên iOS, `Pressable` đặt
+    `accessible` bằng true, và tài liệu React Native nói thẳng điều đó nghĩa là
+    gì: *"When a view is an accessibility element, it groups its children into a
+    single selectable component."* VoiceOver không đi vào trong một phần tử đã
+    là phần tử trợ năng — nên cái X **không tồn tại** với trình đọc màn hình.
+
+    Hậu quả cụ thể: người dùng VoiceOver mở được sheet giải thích, và **không có
+    cách nào tắt lời nhắc**. Nó ở lại vĩnh viễn trên bốn thẻ của màn Hôm nay.
+
+    Cú chạm bằng ngón tay thì vẫn đúng — hệ responder của RN trao quyền cho view
+    SÂU NHẤT nhận, nên cái X vẫn bấm được. Đó là lý do lỗi này sống lâu: nó
+    không hỏng ở nơi ai cũng nhìn.
+
+    Bộ chạy web bắt được nó ở một mặt khác, và cùng một nguyên nhân: `<button>`
+    lồng trong `<button>` là lỗi hydrate của React — hai lần trên mỗi lần dựng
+    màn Hôm nay.
+
+    ── bố cục không đổi một điểm ảnh nào ──
+
+    Hàng cũ: Icon — gap — Text(flex:1) — gap — X, tất cả là con của `nudge`.
+    Hàng mới: PressScale(flex:1, chứa Icon — gap — Text(flex:1)) — gap — X.
+    Cùng một thứ tự, cùng một `gap`, cùng viền và nền. Đo lại bằng ảnh chụp ở
+    trạng thái nghỉ: 0 điểm ảnh khác ở cả hai bản.
+
+    Thứ ĐỔI là vùng co lại khi bấm: trước là cả dải kể cả cái X, giờ là phần
+    bấm-để-mở. Đó là điều đúng — cái X không phải một phần của "mở giải thích",
+    và một nút co lại khi bạn nhắm vào nút khác là một lời nói sai.
+  */
   return (
-    <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(140)}>
-      <PressScale
-        accessibilityRole="button"
-        onPress={onPress}
-        style={styles.nudge}>
+    <Animated.View
+      entering={FadeIn.duration(220)}
+      exiting={FadeOut.duration(140)}
+      style={styles.nudge}>
+      <PressScale accessibilityRole="button" onPress={onPress} style={styles.nudgeBody}>
         <Icon icon={HelpCircle} size={14} color={c.metricBlue} />
         <Text style={styles.nudgeText}>{text}</Text>
-        <View>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={i18n.a11yClose}
-            hitSlop={15}
-            onPress={onDismiss}>
-            <Icon icon={X} size={14} color={c.mutedForeground} />
-          </Pressable>
-        </View>
       </PressScale>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={i18n.a11yClose}
+        hitSlop={15}
+        onPress={onDismiss}>
+        <Icon icon={X} size={14} color={c.mutedForeground} />
+      </Pressable>
     </Animated.View>
   );
 }
@@ -151,5 +182,9 @@ const stylesFor = makeStyles((c) => ({
     borderColor: alpha(c.metricBlue, 0.25),
     backgroundColor: alpha(c.metricBlue, 0.10),
   },
+  /* Phần bấm-để-mở. `flex: 1` để nó chiếm hết chỗ còn lại sau cái X, và cùng
+     `gap` với hàng ngoài nên khoảng cách Icon—Text bằng đúng khoảng cách
+     Text—X, y như khi cả ba còn là con của một hàng. */
+  nudgeBody: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   nudgeText: { flex: 1, fontSize: 12, lineHeight: 17, color: c.foreground },
 }));

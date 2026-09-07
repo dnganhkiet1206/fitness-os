@@ -533,9 +533,15 @@ function EditServingsSheet({
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable style={styles.scrim} onPress={onClose}>
+      {/* `accessible={false}`: đây là một vùng NUỐT CHẠM, không phải một nút.
+              React Native đặt `accessible: accessible !== false` cho mọi
+              `Pressable` (Pressable.js:252), và tài liệu RN nói phần tử trợ năng
+              "groups its children into a single selectable component" — nên tấm
+              này gộp cả sheet thành MỘT nút không tên và VoiceOver không vào
+              được nút nào bên trong. Xem `tools/a11y-swallow.mjs`. */}
+      <Pressable accessible={false} style={styles.scrim} onPress={onClose}>
         {/* The card swallows taps so pressing inside it does not dismiss */}
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable accessible={false} style={styles.sheet} onPress={() => {}}>
           <Text style={styles.sheetTitle} numberOfLines={2}>
             {item.food_name}
           </Text>
