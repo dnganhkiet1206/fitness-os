@@ -427,7 +427,7 @@ từ chối repo thuộc người khác. Không lần nào là lỗi của mã �
 
 ---
 
-## GitHub Actions — CHẠY THẬT LẦN ĐẦU (2026-09-08), còn ĐỎ
+## GitHub Actions — ĐÃ KIỂM CHỨNG TRÊN RUNNER THẬT (2026-09-08)
 
 Không còn là "chuẩn bị xong". Workflow đã chạy hai lượt trên runner thật của
 GitHub, và **cả hai đỏ**. Ghi ra vì một trang trạng thái nói "đã chuẩn bị" trong
@@ -435,8 +435,27 @@ khi runner đang đỏ là trang nói dối.
 
 | Lượt | Commit | Kết quả | Dài |
 |---|---|---|---|
-| #1 | `be8aea7` | **failure** | ~56s |
-| #2 | `4ad659b` | **failure** | ~74s |
+| #1 | `be8aea7` | failure | ~56s |
+| #2 | `4ad659b` | failure | ~74s |
+| **#3** | **`af46909`** | **success** | **9 phút 13 giây** |
+
+Lượt #3: run `34274088152`, runner `ubuntu-24.04`, job `gate`, **cả 9 bước
+success**. Bộ kiểm kết thúc bằng `tất cả đều xanh`.
+
+| Bước | Thời gian |
+|---|---|
+| `npm ci` (kèm `patch-package`) | 20s |
+| cài PostgreSQL 16 | 6s |
+| Playwright + Chromium | 16s |
+| **tiền kiểm** | **<1s** |
+| TypeScript | 12s |
+| **bộ kiểm đầy đủ** | **8 phút 10 giây** |
+
+**Và các bước cơ sở dữ liệu THẬT SỰ chạy, không bỏ qua.** Log của runner có
+`trên PostgreSQL 16.13 dựng từ toàn bộ migration` ở `độ tin cậy điểm sẵn sàng`
+và `neo cửa sổ điểm sẵn sàng`. Đó là điều cả `ci-preflight` lẫn `pg-harness`
+tồn tại để bảo đảm, và nó nay là một phép đo trên runner chứ không phải một suy
+luận.
 
 ### Lỗi thật đầu tiên, và nó hỏng ĐÚNG CHỖ nó phải hỏng
 
@@ -481,10 +500,16 @@ Bốn điều kiện còn lại của `ci-preflight` **đều xanh** trên runne
 
 Và `npm ci` (kèm `patch-package` qua `postinstall`) chạy xong không lỗi.
 
-### Còn lại
+### Điều này đổi một chữ trong tài liệu
 
-Lượt chạy tiếp theo là phép kiểm chứng của bản sửa. **Chưa được gọi là ĐÃ KIỂM
-CHỨNG cho tới khi một lượt kết thúc `success`.**
+Trước: "chuẩn bị xong, chưa chạy lần nào". Nay: **ĐÃ KIỂM CHỨNG** — một lượt
+kết thúc `success` trên runner thật của GitHub, với các bước PostgreSQL và
+Playwright chạy thật.
+
+Và nó đóng luôn một chỗ trước đây chỉ *suy ra* được: chạy toàn bộ bộ kiểm dưới
+một người dùng **không phải root** là được — điều mà container này không chứng
+minh nổi vì cây thuộc `root` và thao tác đổi chủ bị chặn. Runner chạy dưới
+`runner`, và 215 bước xanh.
 
 ---
 

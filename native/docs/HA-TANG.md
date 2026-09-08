@@ -13,7 +13,7 @@ biến nhất khiến một app nhỏ mang một hoá đơn của app lớn.
 | # | Dịch vụ | Trạng thái |
 |---|---|---|
 | 1 | **Sentry** — sự cố native + lỗi JS | bộ lọc riêng tư **XONG**; SDK chờ khoá + máy dựng native |
-| 2 | **GitHub Actions** — tsc + bộ kiểm | đã chạy trên runner thật **2 lượt, cả hai ĐỎ**; lỗi gốc đã sửa, chờ lượt xác nhận |
+| 2 | **GitHub Actions** — tsc + bộ kiểm | **ĐÃ KIỂM CHỨNG** trên runner thật (lượt #3, `af46909`, success, 9m13s) |
 | 3 | Expo OTA | sau khi có hạ tầng phát hành |
 | 4 | PostHog | sau |
 | 5 | Resend | sau |
@@ -211,7 +211,10 @@ nó — hai chỗ khác nhau; và `sudo npx playwright install` tải trình duy
 `typescript` + `tsconfig`, và **cây làm việc ghi được** (điều mà ở container chỉ
 suy ra được). Chi tiết ở `docs/AUDIT_STATE.md`.
 
-Chưa gọi là ĐÃ KIỂM CHỨNG cho tới khi một lượt kết thúc `success`.
+**Lượt #3 (`af46909`) kết thúc `success` sau 9 phút 13 giây** — cả 9 bước xanh,
+bộ kiểm in `tất cả đều xanh`, và log có `trên PostgreSQL 16.13 dựng từ toàn bộ
+migration`, tức các bước cơ sở dữ liệu chạy thật chứ không bỏ qua. Nên mục này
+nay là **ĐÃ KIỂM CHỨNG**, không còn là "đã chuẩn bị".
 
 **Không cần khoá nào.** `GITHUB_TOKEN` là mặc định.
 
