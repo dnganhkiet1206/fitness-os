@@ -88,11 +88,25 @@ jobs:
 
       # Hai việc, không phải một: thư viện, rồi bản Chromium. Có cái đầu mà
       # thiếu cái sau thì 6 bước hỏng ở lúc MỞ trình duyệt — sau khi đã dựng
-      # xong mọi thứ. `--with-deps` cần root, nên nó đi qua sudo.
+      # xong mọi thứ.
+      #
+      # ── và KHÔNG `sudo`, đây là lỗi đã làm lượt chạy đầu tiên đỏ ──
+      #
+      # `sudo npm install -g` cài vào prefix npm của ROOT, còn `npm root -g` của
+      # người chạy job trỏ vào toolcache của nó
+      # (`/opt/hostedtoolcache/node/22.x/x64/lib/node_modules`). Hai chỗ khác
+      # nhau, nên thư viện có mặt mà không ai tìm thấy. Và `sudo npx playwright
+      # install` tải trình duyệt về `/root/.cache/ms-playwright`, thư mục 0700
+      # mà người chạy job không đọc được.
+      #
+      # `--with-deps` KHÔNG cần sudo ở ngoài: Playwright tự leo quyền cho phần
+      # apt của nó — `playwright-core/lib/server/registry/dependencies.js` dựng
+      # `{ command: "sudo", args: ["--", "sh", "-c", …] }` khi nó không phải
+      # root. Đọc từ chính gói đang cài, không phải từ tài liệu.
       - name: Playwright + Chromium
         run: |
-          sudo npm install -g playwright
-          sudo npx playwright install --with-deps chromium
+          npm install -g playwright
+          npx playwright install --with-deps chromium
 
       # Trước bộ kiểm, và cố ý. Một môi trường dựng thiếu hỏng ở đây trong ba
       # mươi giây, kèm câu nói đúng cái đang thiếu, thay vì hỏng ở phút thứ

@@ -6,8 +6,8 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-08 · sau ERRBOUND + CI-PG · commit `8f266b3` ·
-nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-08 · sau ERRBOUND + CI-PG + lượt CI thật đầu tiên ·
+commit `afc2361` · nhánh `claude/ios-fitness-rebuild-omgulr`
 
 ---
 
@@ -427,11 +427,131 @@ từ chối repo thuộc người khác. Không lần nào là lỗi của mã �
 
 ---
 
+## GitHub Actions — CHẠY THẬT LẦN ĐẦU (2026-09-08), còn ĐỎ
+
+Không còn là "chuẩn bị xong". Workflow đã chạy hai lượt trên runner thật của
+GitHub, và **cả hai đỏ**. Ghi ra vì một trang trạng thái nói "đã chuẩn bị" trong
+khi runner đang đỏ là trang nói dối.
+
+| Lượt | Commit | Kết quả | Dài |
+|---|---|---|---|
+| #1 | `be8aea7` | **failure** | ~56s |
+| #2 | `4ad659b` | **failure** | ~74s |
+
+### Lỗi thật đầu tiên, và nó hỏng ĐÚNG CHỖ nó phải hỏng
+
+```
+✗ không nạp được playwright (đã tìm:
+  /home/runner/work/fitness-os/fitness-os/native/node_modules,
+  /opt/hostedtoolcache/node/22.23.2/x64/lib/node_modules).
+  6 bước chạy trình duyệt sẽ hỏng
+```
+
+`ci-preflight` dừng job ở **giây thứ 30** với câu nói đúng cái đang thiếu — thay
+vì 6 bước đỏ ở phút thứ mười với sáu stack trace về trình duyệt. Đó là toàn bộ
+lý do bước ấy tồn tại, và đây là lần đầu nó được kiểm chứng ở nơi nó dùng để
+chạy.
+
+### Nguyên nhân gốc — của tôi, không phải của runner
+
+`sudo npm install -g playwright` cài vào prefix npm của **root**, còn
+`npm root -g` của người chạy job trỏ vào toolcache của chính nó. Hai chỗ khác
+nhau, nên thư viện có mặt mà không ai tìm thấy. Và `sudo npx playwright install`
+tải trình duyệt về `/root/.cache/ms-playwright` — thư mục 0700 mà người chạy job
+không đọc được.
+
+`--with-deps` **không** cần `sudo` ở ngoài: Playwright tự leo quyền cho phần apt
+của nó. Đọc từ chính gói đang cài —
+`playwright-core/lib/server/registry/dependencies.js:356-358` dựng
+`{ command: "sudo", args: ["--", "sh", "-c", …] }` khi nó không phải root — chứ
+không đọc từ tài liệu.
+
+**Sửa: bỏ `sudo` khỏi đúng hai dòng ấy.** Không nới lỏng bước kiểm nào, không
+đổi lỗi thành bỏ qua.
+
+### Đã được runner thật xác nhận (đo, không suy ra)
+
+Bốn điều kiện còn lại của `ci-preflight` **đều xanh** trên runner:
+
+- **PostgreSQL 16** cài được và tìm thấy đúng chỗ các bước kiểm đi tìm
+- `node_modules/pg` có mặt sau `npm ci` (tức không bị `--omit=dev`)
+- `node_modules/typescript` + `tsconfig.json` có mặt
+- **cây làm việc ghi được** — điều mà ở container này chỉ *suy ra* được, vì
+  thao tác đổi chủ cây bị chặn. Nay nó là một phép đo.
+
+Và `npm ci` (kèm `patch-package` qua `postinstall`) chạy xong không lỗi.
+
+### Còn lại
+
+Lượt chạy tiếp theo là phép kiểm chứng của bản sửa. **Chưa được gọi là ĐÃ KIỂM
+CHỨNG cho tới khi một lượt kết thúc `success`.**
+
+---
+
+## ERRBOUND-2 — MỞ, và nó là một QUYẾT ĐỊNH THIẾT KẾ
+
+Không cài đặt gì ở đây. Trang này ghi đủ để người quyết định không phải đọc lại
+mã, và cố ý dừng trước chỗ phải chọn.
+
+### Nó bắt cái gì mà biên hiện tại không bắt
+
+Biên hiện tại nằm quanh `<Gate />`. Bảy thứ ở **trên** nó ném ra thì không ai
+bắt, và app trắng màn đúng như trước:
+
+`GestureHandlerRootView` · `PersistQueryClientProvider` · `AppSettingsProvider` ·
+`AuthProvider` · `NavTheme` · `LockedApp` · `AppLockProvider` ·
+`CoachChatProvider`
+
+Xác suất thấp hơn hẳn một màn hình — chúng không dựng lại theo dữ liệu — nhưng
+hậu quả **nặng hơn**: một màn hỏng là một màn; một provider hỏng là cả app, mọi
+lần mở, không có đường ra.
+
+### Chỗ phải chọn, và vì sao không tự quyết được
+
+Fallback của biên thứ hai **không đọc được** `usePalette` hay `useI18n`: cả hai
+là context do đúng những provider vừa ném cung cấp. Nên nó buộc phải:
+
+1. **Chọn một màu** mà không biết người dùng đang ở theme nào.
+2. **Chọn một ngôn ngữ** mà không biết họ đang đọc tiếng gì.
+
+Cả hai là câu hỏi thiết kế, không phải câu hỏi kỹ thuật, và đoán sai thì cái
+người dùng thấy vào khoảnh khắc tệ nhất là một màn hình **sai theme, sai tiếng**.
+
+### Ba lựa chọn nhỏ nhất, và cái giá của từng cái
+
+| | Cách làm | Được | Mất |
+|---|---|---|---|
+| **A** | Một biên ngoài cùng, fallback **một màu trung tính** (không đen không trắng) + **một ngôn ngữ** | Rẻ nhất; ~20 dòng; không phụ thuộc gì | Sai theme với một nửa người dùng; sai tiếng với một nửa |
+| **B** | Như A, nhưng đọc theme + ngôn ngữ **từ AsyncStorage** trước khi dựng | Đúng theme và đúng tiếng trong hầu hết trường hợp | Đọc bất đồng bộ ⇒ một nhịp trống trước khi vẽ; và nếu chính `AppSettingsProvider` hỏng vì kho hỏng thì phép đọc này hỏng cùng lý do |
+| **C** | Không thêm biên; để `ErrorUtils` + nhật ký sự cố ghi lại, app vẫn trắng | Không thêm mã, không thêm chỗ hỏng | Người dùng vẫn không có đường ra; chỉ có người đọc log biết |
+
+**B là cách duy nhất tránh được "sai theme, sai tiếng"**, và nó là cách duy nhất
+có một chế độ hỏng chung với thứ nó đang cứu. Đó chính là chỗ cần một người
+quyết định chứ không phải một phép đo.
+
+### Câu hỏi cần trả lời để mở khoá mục này
+
+1. **A, B hay C?**
+2. Nếu A: **màu nào** và **tiếng nào**? (Gợi ý mặc định của app: `vi`.)
+3. Fallback ấy có nút gì? "Thử lại" ở đây nghĩa là dựng lại **toàn bộ** cây,
+   tức mất mọi state trong bộ nhớ — khác hẳn nút thử lại của biên hiện tại.
+
+### Đã biết trước, để khỏi đo lại
+
+- Biên hiện tại **không** cần đổi cho việc này; biên thứ hai là một lớp bọc
+  thêm ở ngoài `GestureHandlerRootView`.
+- `tools/error-boundary.mjs` dựng sẵn cho việc này: đổi thêm một kịch bản là đủ,
+  không phải viết lại bộ khung.
+- `recordCrash` đã lọc riêng tư, nên biên thứ hai ghi log được ngay mà không
+  cần thêm gì.
+
+---
+
 ## Còn mở
 
 | ID | Mức | Vấn đề | Việc tiếp theo |
 |---|---|---|---|
-| ERRBOUND-2 | P3 | Không có biên thứ hai ở ngoài các provider | Cần một **quyết định thiết kế**: fallback ấy không đọc được theme hay ngôn ngữ, nên phải viết cứng màu và chọn một ngôn ngữ |
+| ERRBOUND-2 | P3 | Không có biên thứ hai ở ngoài các provider | **Quyết định thiết kế** — ba lựa chọn và ba câu hỏi đã viết sẵn ở mục ERRBOUND-2 bên trên. Không cài đặt suy đoán. |
 | DEP-1 | P2 | 21 gói trễ, gồm `react-native-screens` 4.25.2→4.26.0 và `react-native` 0.86.0→0.86.3 | Cần dựng lại native để xác nhận — quyết định của chủ dự án |
 | A3 | P1 | Ghi khi mất mạng không sống sót (xem `SO-GHI-LOI.md`) | Cần một bước kiểm chứng minh cả ~30 mutation đặt đúng key **trước khi** bắt đầu |
 | A7 | P2 | Xoá buổi tập không dựng lại các ngày ở giữa | xem `SO-GHI-LOI.md` |

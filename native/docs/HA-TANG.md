@@ -13,7 +13,7 @@ biến nhất khiến một app nhỏ mang một hoá đơn của app lớn.
 | # | Dịch vụ | Trạng thái |
 |---|---|---|
 | 1 | **Sentry** — sự cố native + lỗi JS | bộ lọc riêng tư **XONG**; SDK chờ khoá + máy dựng native |
-| 2 | **GitHub Actions** — tsc + bộ kiểm | workflow **XONG**, **chưa chạy trên runner thật lần nào** |
+| 2 | **GitHub Actions** — tsc + bộ kiểm | đã chạy trên runner thật **2 lượt, cả hai ĐỎ**; lỗi gốc đã sửa, chờ lượt xác nhận |
 | 3 | Expo OTA | sau khi có hạ tầng phát hành |
 | 4 | PostHog | sau |
 | 5 | Resend | sau |
@@ -187,13 +187,31 @@ chưa chạy một dòng SQL. Và không ai đọc log của một job đã xanh
 `ci-preflight` **không** nằm trong 211 bước, và đó là chủ ý: trên máy của người
 đang viết mã, thiếu PostgreSQL là chuyện bình thường và bỏ qua là đúng.
 
-### Phải nói thẳng
+### Đã chạy thật — và tiền kiểm làm đúng việc
 
-**Workflow chưa từng chạy.** Không có runner ở nơi nó được viết. Mọi dòng trong
-nó là một giả định cho tới lần chạy đầu tiên — nên nó được viết để hỏng **to và
-sớm**: tiền kiểm là bước đầu, và một giả định sai lộ ra trong ba mươi giây kèm
-câu nói đúng cái đang thiếu, thay vì sau mười lăm phút bằng một stack trace về
-`initdb`.
+Hai lượt trên runner thật của GitHub, **cả hai đỏ**, và cả hai dừng ở
+`ci-preflight` **giây thứ 30** với đúng một dòng nói cái đang thiếu:
+
+```
+✗ không nạp được playwright (đã tìm: …/native/node_modules,
+  /opt/hostedtoolcache/node/22.23.2/x64/lib/node_modules)
+```
+
+Thay vì 6 bước đỏ ở phút thứ mười với sáu stack trace về trình duyệt. Đó là toàn
+bộ lý do bước ấy tồn tại.
+
+**Nguyên nhân gốc là của tôi:** `sudo npm install -g playwright` cài vào prefix
+npm của root, còn `npm root -g` của người chạy job trỏ vào toolcache của chính
+nó — hai chỗ khác nhau; và `sudo npx playwright install` tải trình duyệt về
+`/root/.cache/ms-playwright`, thư mục 0700. Đã bỏ `sudo` khỏi đúng hai dòng ấy;
+`--with-deps` không cần nó vì Playwright tự leo quyền cho phần apt
+(`dependencies.js:356-358`, đọc từ gói đang cài).
+
+**Runner thật đã xác nhận bốn điều kiện còn lại** — PostgreSQL 16, `pg`,
+`typescript` + `tsconfig`, và **cây làm việc ghi được** (điều mà ở container chỉ
+suy ra được). Chi tiết ở `docs/AUDIT_STATE.md`.
+
+Chưa gọi là ĐÃ KIỂM CHỨNG cho tới khi một lượt kết thúc `success`.
 
 **Không cần khoá nào.** `GITHUB_TOKEN` là mặc định.
 
