@@ -191,7 +191,25 @@ for (const file of walk(SRC)) {
     const hasIcon = /<Icon\b|icon=\{/.test(body);
     const hasText = /<Text\b|<Animated\.Text\b/.test(body);
     const named = /accessibilityLabel/.test(attrs);
-    if (hasIcon && !hasText && !named) {
+    /*
+      `accessible={false}` — không phải một lối thoát, mà là một câu trả lời khác.
+
+      Luật này tồn tại vì "VoiceOver đọc một nút không tên là 'button'". Một
+      node đã khai `accessible={false}` thì KHÔNG nằm trong cây trợ năng:
+      VoiceOver không bao giờ tới nó, nên không có gì để đọc và một cái nhãn ở
+      đó là một cái tên không ai nghe được.
+
+      Chỗ dùng đúng của nó là một BẢN SAO cảm ứng của một nút đã có tên:
+      `template-list.tsx` để mũi tên nhận cùng hành động với hàng, để mép phải
+      không thành một dải chết ~41 điểm sau khi nút xoá tách ra thành anh em —
+      còn với trình đọc màn hình thì hàng đã có tên rồi, và đọc nó hai lần là
+      tệ hơn.
+
+      Ngoại lệ này CHẶT: bỏ `accessible={false}` đi là nút quay lại cây trợ
+      năng, và bước kiểm đỏ trở lại ngay. Nó không nới cho một nút thật nào.
+    */
+    const hidden = /accessible=\{false\}/.test(attrs);
+    if (hasIcon && !hasText && !named && !hidden) {
       unnamed.push(`${rel}:${lineOf(p.start)}`);
     }
 

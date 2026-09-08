@@ -424,9 +424,30 @@ export default function AiCoachScreen() {
               <ScrollView style={styles.historyScroll} keyboardShouldPersistTaps="handled">
                 {conversations && conversations.length > 0 ? (
                   conversations.map((convo) => (
-                    <PressScale
+                    /*
+                      Chọn và xoá là hai nút CẠNH nhau, hàng chỉ là một View.
+
+                      Nút xoá từng nằm bên trong nút chọn. Trên iOS, React
+                      Native đặt `accessible` bằng true cho mọi `Pressable`
+                      (`Pressable.js:252`), và một phần tử trợ năng "groups its
+                      children into a single selectable component" — nên
+                      VoiceOver chỉ thấy một nút KHÔNG TÊN (hàng cũ không có
+                      `accessibilityRole` lẫn `accessibilityLabel`) và không
+                      với tới được nút xoá.
+
+                      Phần đệm ở lại trên HÀNG để chiều cao không đổi một điểm
+                      nào; `hitSlop` trả lại đúng phần đệm ấy cho vùng chạm của
+                      nút chọn, nên nó vẫn cao trọn hàng như trước.
+                    */
+                    <View
                       key={convo.id}
-                      style={[styles.historyRow, conversationId === convo.id && styles.historyRowActive]}
+                      style={[styles.historyRow, conversationId === convo.id && styles.historyRowActive]}>
+                    <PressScale
+                      accessibilityRole="button"
+                      accessibilityLabel={convo.title ?? '—'}
+                      accessibilityState={{ selected: conversationId === convo.id }}
+                      style={styles.historyPick}
+                      hitSlop={{ top: spacing.sm + 2, bottom: spacing.sm + 2, left: spacing.md }}
                       onPress={() => {
                         setShowHistory(false);
                         loadConversation(convo.id);
@@ -438,6 +459,7 @@ export default function AiCoachScreen() {
                           day: 'numeric',
                         })}
                       </Text>
+                    </PressScale>
                       <PressScale
                         accessibilityRole="button"
                         accessibilityLabel={i18n.a11yDelete}
@@ -458,7 +480,7 @@ export default function AiCoachScreen() {
                             column of red bins pulls harder than the titles. */}
                         <Glyph name="trash" size={14} colour={c.glassMuted} />
                       </PressScale>
-                    </PressScale>
+                    </View>
                   ))
                 ) : (
                   <Text style={styles.historyEmpty}>{i18n.aiCoachNoHistory}</Text>
@@ -655,6 +677,9 @@ const stylesFor = makeStyles((c, m) => ({
     paddingVertical: spacing.sm + 2,
   },
   historyRowActive: { backgroundColor: alpha(m.ink, 0.10) },
+  /* Vùng bấm chọn hội thoại: chiếm hết chỗ còn lại trước nút xoá, cùng `gap`
+     với hàng nên khe tiêu đề↔ngày bằng đúng khe ngày↔thùng rác như cũ. */
+  historyPick: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', alignSelf: 'stretch', gap: spacing.sm },
   historyTitle: { ...type.footnote, color: c.foreground, flex: 1 },
   historyDate: { ...type.caption, color: c.glassMuted },
   historyDelete: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },

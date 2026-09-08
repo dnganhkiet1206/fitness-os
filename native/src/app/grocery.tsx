@@ -172,10 +172,35 @@ export default function GroceryScreen() {
         ) : items && items.length > 0 ? (
           items.map((it, i) => (
             <Animated.View key={it.id} entering={rise(i)}>
-            <Pressable
-              onPress={() => toggle.mutate({ id: it.id, checked: !it.checked })}>
-              <GlassCard elevation="inset" style={styles.itemCard}>
-                <View style={styles.itemRow}>
+            {/*
+              Ô tick và nút xoá là ANH EM, không lồng nhau.
+
+              Cả thẻ từng là một `Pressable` bọc ngoài, và nút xoá nằm trong nó.
+              Trên iOS, React Native đặt `accessible` bằng true cho mọi
+              `Pressable` (`Pressable.js:252`), và một phần tử trợ năng "groups
+              its children into a single selectable component" — nên VoiceOver
+              chỉ thấy một nút KHÔNG TÊN (thẻ ngoài không có `accessibilityRole`
+              lẫn `accessibilityLabel`) và không với tới được nút xoá.
+
+              Bộ chạy web không thấy lỗi này: thiếu `accessibilityRole` nên
+              react-native-web dựng thẻ ngoài thành `div` chứ không phải
+              `button`, và phép đo "nút lồng trong nút" trên web trả về 0. Chỉ
+              `tools/a11y-swallow.mjs` — đọc mã nguồn — bắt được.
+
+              Vai là `checkbox` chứ không phải `button`: món trong danh sách đi
+              chợ có trạng thái đã lấy / chưa lấy, và đó là thứ VoiceOver cần
+              đọc ra. `hitSlop` trả lại đúng phần đệm của thẻ mà vùng chạm vừa
+              mất khi nó thôi là cả thẻ.
+            */}
+            <GlassCard elevation="inset" style={styles.itemCard}>
+              <View style={styles.itemRow}>
+                <Pressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: !!it.checked }}
+                  accessibilityLabel={it.quantity ? `${it.name}, ${it.quantity}` : it.name}
+                  style={styles.itemToggle}
+                  hitSlop={{ top: spacing.md, bottom: spacing.md, left: spacing.md }}
+                  onPress={() => toggle.mutate({ id: it.id, checked: !it.checked })}>
                   <View style={[styles.checkbox, it.checked && styles.checkboxOn]}>
                     {it.checked && <Icon icon={Check} size={13} color="#fff" strokeWidth={3} />}
                   </View>
@@ -183,12 +208,12 @@ export default function GroceryScreen() {
                     {it.name}
                     {it.quantity ? <Text style={styles.qty}>  ×{it.quantity}</Text> : null}
                   </Text>
-                  <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={10} onPress={() => remove.mutate(it.id)}>
-                    <Icon icon={X} size={15} color={c.mutedForeground} />
-                  </Pressable>
-                </View>
-              </GlassCard>
-            </Pressable>
+                </Pressable>
+                <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={10} onPress={() => remove.mutate(it.id)}>
+                  <Icon icon={X} size={15} color={c.mutedForeground} />
+                </Pressable>
+              </View>
+            </GlassCard>
             </Animated.View>
           ))
         ) : (
@@ -228,6 +253,9 @@ const stylesFor = makeStyles((c) => ({
   disabled: { opacity: 0.4 },
   itemCard: { paddingVertical: spacing.md },
   itemRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  /* Cùng `gap` với hàng ngoài, nên khe ô-tick↔tên bằng đúng khe tên↔nút xoá,
+     y như khi cả ba còn là con của một hàng. */
+  itemToggle: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   checkbox: {
     width: 24,
     height: 24,

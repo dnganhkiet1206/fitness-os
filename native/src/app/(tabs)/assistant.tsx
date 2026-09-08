@@ -775,16 +775,31 @@ export default function AssistantScreen() {
           the thing this screen is for.
         */}
         <Settle index={4}>
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={vi ? 'Mở AI Coach' : 'Open AI Coach'}
-          onPress={() => askCoach()}>
+        {/*
+          Vùng bấm "mở AI Coach" bọc PHẦN ĐẦU thẻ, không bọc cả thẻ.
+
+          Nó từng bọc cả `LiquidGlass`, và các chip hỏi nhanh nằm bên trong nó.
+          Trên iOS, React Native đặt `accessible` bằng true cho mọi `Pressable`
+          (`Pressable.js:252`), và một phần tử trợ năng "groups its children
+          into a single selectable component" — nên VoiceOver chỉ nghe thấy
+          "Mở AI Coach" và bốn câu hỏi gợi ý không tồn tại với nó. Chính chú
+          thích của các chip nói chúng có nhãn riêng vì "VoiceOver should hear
+          the second one"; nhãn ấy chưa từng tới được ai.
+
+          Phần đầu và dòng "tiếp tục" ở lại trong vùng bấm — cả hai đều có
+          nghĩa là "mở coach". Các chip ra ngoài, thành anh em.
+        */}
           <LiquidGlass
             /* Thẻ mở AI Coach là một LỐI ĐI. Màu ở lại trong glyph. */
             style={styles.coachCard}
             radius={radius.xl}
             tint={c.primary} material="blur">
             <View style={styles.coachInner}>
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel={vi ? 'Mở AI Coach' : 'Open AI Coach'}
+                style={styles.coachOpen}
+                onPress={() => askCoach()}>
               <View style={styles.coachHead}>
                 <View style={styles.coachIcon}>
                   <Glyph name="spark" size={22} />
@@ -824,7 +839,10 @@ export default function AssistantScreen() {
                     {lastAsked}
                   </Text>
                 </View>
-              ) : (
+              ) : null}
+              </PressScale>
+
+              {chatting ? null : (
                 <View style={styles.chips}>
                   {suggestions.map((s) => (
                     <PressScale
@@ -847,7 +865,6 @@ export default function AssistantScreen() {
               )}
             </View>
           </LiquidGlass>
-        </PressScale>
         </Settle>
 
         <Settle index={5}>
@@ -1047,6 +1064,10 @@ const stylesFor = makeStyles((c, m) => ({
      a destination rather than a reading. */
   coachCard: { marginTop: spacing.xs },
   coachInner: { padding: spacing.md, gap: spacing.md - 2 },
+  /* Vùng bấm mở coach: phần đầu, cộng dòng "tiếp tục" khi có. Cùng `gap` với
+     `coachInner`, nên khi cả hai cùng hiện thì khe giữa chúng không đổi, và khi
+     chỉ có phần đầu thì nó không thêm một khe nào. */
+  coachOpen: { gap: spacing.md - 2 },
   coachHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
   coachIcon: {
     width: 44,

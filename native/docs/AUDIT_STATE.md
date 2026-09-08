@@ -6,7 +6,7 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-08 · commit `f7a3341` · nhánh
+**Vòng gần nhất:** 2026-09-08 · sau A11Y-2 · nhánh
 `claude/ios-fitness-rebuild-omgulr`
 
 ---
@@ -16,9 +16,10 @@ gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trư�
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json`, chạy từ `native/` |
-| `node tools/check.mjs` | **XANH** | exit 0, **210** bước. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối |
-| Quét runtime 45 route | **XANH** | không route nào trắng, không route nào ném |
-| Đổi theme, 9 màn | **XANH** | 0 lỗi JS, không màn nào trắng, cả hai chiều |
+| `node tools/check.mjs` | **XANH** | exit 0, **210** bước, tất cả xanh. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối |
+| Quét runtime 45 route | **XANH** | không route nào trắng, không route nào ném; còn đúng 1 cảnh báo web-only trên `settings` (P3-1) |
+| Đổi theme, 9 màn | **XANH** | lỗi JS khi đổi theme: **5 → 1** sau A11Y-2; không màn nào trắng, cả hai chiều |
+| Nút lồng trong nút, 6 tab chính | **XANH** | 0/6 màn còn nút lồng (trước: Hôm nay 2, Dinh dưỡng 1, Tập luyện 1) |
 | ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 210 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
 
@@ -80,11 +81,55 @@ hiểu.
 
 ---
 
+## A11Y-2 — XONG (2026-09-08)
+
+Nút trong nút. Trên iOS, `Pressable.js:252` đặt `accessible: accessible !== false`
+cho MỌI `Pressable`, và [tài liệu trợ năng của React
+Native](https://reactnative.dev/docs/accessibility) nói phần tử ấy *"groups its
+children into a single selectable component"* — UIKit không đi vào bên trong.
+Nút bên trong không tồn tại với VoiceOver, trong khi ngón tay vẫn bấm được. Đó
+là lý do lớp lỗi này sống lâu: nó không hỏng ở nơi ai cũng nhìn.
+
+Bảy chỗ, mỗi chỗ đo riêng trước và sau:
+
+| Chỗ | Đã làm gì | Đo được |
+|---|---|---|
+| `food-cards.tsx` | ngôi sao thành anh em; phần đệm xuống hai con để vùng chạm không tụt | **0 điểm ảnh lệch**; 3 → 0 nút lồng; vùng chạm sao 17×17 → **38×54** |
+| `template-list.tsx` | nút xoá thành anh em; mũi tên giữ cú chạm với `accessible={false}` | **0 điểm ảnh lệch**; 1 → 0 |
+| `grocery.tsx` | ô tick thành `checkbox` có nhãn, nút xoá thành anh em | **0 điểm ảnh lệch** |
+| `assistant.tsx` | vùng bấm bọc phần đầu thẻ, các chip hỏi nhanh ra ngoài | lệch **111** điểm, dưới sàn nhiễu **186** của chính màn ấy |
+| `ai-coach.tsx` | chọn/xoá hội thoại thành anh em, hàng chọn có nhãn | lệch **3** điểm; 3 hàng từ `div` → **3 nút có tên** |
+| `week-plan.tsx` | **thêm nút đóng có nhãn** vào hàng tiêu đề, rồi mới `accessible={false}` cho tấm nền và tấm nuốt chạm | vùng danh sách: **0 điểm ảnh lệch**; thay đổi gói trong dải tiêu đề |
+| `dashboard-cards.tsx` | nút `?` của thẻ dinh dưỡng thành anh em | nút `?` dịch **1 điểm ảnh** (nét viền của thẻ); 1 → 0 |
+
+`week-plan` là chỗ duy nhất được thêm giao diện, và chỉ đúng phần tối thiểu:
+một chữ X 14 điểm trong hàng tiêu đề **đã có sẵn**, cùng mẫu với sheet bộ sưu
+tập ở `shop.tsx`. Sáu phép kiểm chức năng chạy ở **cả hai theme**, đều xanh: mở
+sheet · 5 điều khiển chọn buổi tập còn đủ · nút đóng có nhãn tồn tại · bấm nó
+thì sheet đóng · chạm nền vẫn đóng · chọn một buổi tập vẫn đóng.
+
+### Hai bài học của vòng này
+
+**Bước kiểm tĩnh có một điểm mù, và phép đo lúc chạy tìm ra nó.** Chỗ thứ bảy
+(`dashboard-cards.tsx`) lồng nhau qua HAI lớp gián tiếp: một biến (`{card}`) rồi
+một component (`HelpButton` trả về `PressScale`). `tools/a11y-swallow.mjs` báo
+xanh trên đúng tệp hỏng; bộ chạy web bắt được. Bản sửa đầu chỉ đi theo biến và
+VẪN xanh — phép thử ngược bắt được điều đó trước khi tôi tin nó. Bước kiểm nay
+quét ra danh sách component-nào-là-nút từ chính mã nguồn.
+
+**Bước kiểm bắt được một hồi quy tôi vừa gây ra.** Mũi tên mới ở
+`template-list.tsx` là nút chỉ có icon và không có nhãn → `tools/tap-targets.mjs`
+đỏ. Ngoại lệ được thêm là một câu trả lời chứ không phải một lối thoát: một node
+đã khai `accessible={false}` không nằm trong cây trợ năng, nên một cái nhãn ở đó
+là cái tên không ai nghe được. Ngoại lệ đã được thử ngược: bỏ `accessible={false}`
+ra thì nó đỏ lại ngay.
+
+---
+
 ## Còn mở
 
 | ID | Mức | Vấn đề | Việc tiếp theo |
 |---|---|---|---|
-| A11Y-2 | P2 | 6 chỗ nút-trong-nút còn lại. Trên iOS nút ngoài nuốt nút trong (`Pressable.js:252` + tài liệu trợ năng RN), nên nút bên trong không có với VoiceOver | `week-plan` cần thêm hàng "Huỷ" **trước** khi đặt `accessible={false}`, nếu không là nhốt người dùng VoiceOver. Năm chỗ còn lại bố cục lại như `help-button.tsx`. Guard `tools/a11y-swallow.mjs` chặn chỗ MỚI |
 | DEP-1 | P2 | 21 gói trễ, gồm `react-native-screens` 4.25.2→4.26.0 và `react-native` 0.86.0→0.86.3 | Cần dựng lại native để xác nhận — quyết định của chủ dự án |
 | A3 | P1 | Ghi khi mất mạng không sống sót (xem `SO-GHI-LOI.md`) | Cần một bước kiểm chứng minh cả ~30 mutation đặt đúng key **trước khi** bắt đầu |
 | A7 | P2 | Xoá buổi tập không dựng lại các ngày ở giữa | xem `SO-GHI-LOI.md` |

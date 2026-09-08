@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { CheckCircle2, ChevronLeft, ChevronRight, Dumbbell, Moon, Plus } from 'lucide-react-native';
+import { CheckCircle2, ChevronLeft, ChevronRight, Dumbbell, Moon, Plus, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -333,9 +333,43 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
         transparent
         animationType="fade"
         onRequestClose={() => setPicking(null)}>
-        <Pressable style={styles.pickerBackdrop} onPress={() => setPicking(null)}>
-          <Pressable style={styles.pickerSheet}>
-            <Text style={styles.pickerTitle}>{picking !== null ? longNames[picking] : ''}</Text>
+        {/*
+          `accessible={false}` ở cả hai tấm: chúng là vùng NUỐT CHẠM, không phải
+          nút. React Native đặt `accessible: accessible !== false` cho mọi
+          `Pressable` (`Pressable.js:252`), và tài liệu trợ năng của nó nói phần
+          tử ấy "groups its children into a single selectable component" — nên
+          tấm nền gộp cả sheet thành MỘT nút không tên, và VoiceOver không vào
+          được hàng chọn buổi tập nào, cũng không tới được công tắc deload.
+
+          Tấm trong thậm chí không có `onPress`: nó tồn tại đúng để chặn cú
+          chạm rơi xuống tấm nền. Một thứ không làm gì cả mà lại là nút duy nhất
+          trình đọc màn hình thấy được là trường hợp rõ nhất của lỗi này.
+
+          Nút "đóng" ở hàng tiêu đề bên dưới là điều kiện để đặt được cờ này:
+          bỏ tấm nền khỏi cây trợ năng khi sheet chưa có lối ra có nhãn là nhốt
+          người dùng VoiceOver lại — tệ hơn hẳn lỗi đang sửa.
+        */}
+        <Pressable accessible={false} style={styles.pickerBackdrop} onPress={() => setPicking(null)}>
+          <Pressable accessible={false} style={styles.pickerSheet}>
+            {/* Lối ra có nhãn, đặt trong hàng tiêu đề ĐÃ CÓ nên không thêm một
+                điểm chiều cao nào. Cùng mẫu với sheet bộ sưu tập ở `shop.tsx`:
+                tiêu đề `flex: 1`, nút đóng nằm cuối hàng. */}
+            <View style={styles.pickerHead}>
+              <Text style={styles.pickerTitle}>{picking !== null ? longNames[picking] : ''}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={i18n.a11yClose}
+                /* 14 điểm vẽ ra — cùng cỡ với chữ X của `help-button.tsx`, và
+                   vừa đúng bằng chiều cao dòng của tiêu đề, nên hàng KHÔNG cao
+                   thêm một điểm nào (đo: 0 điểm ảnh lệch). 15 điểm hitSlop mỗi
+                   phía đưa vùng chạm lên 44, sàn của HIG, mà không cần một cái
+                   đĩa nền. */
+                hitSlop={15}
+                style={styles.pickerClose}
+                onPress={() => setPicking(null)}>
+                <Icon icon={X} size={14} color={c.mutedForeground} />
+              </Pressable>
+            </View>
 
             <ScrollView style={styles.pickerScroll} keyboardShouldPersistTaps="handled">
               {/*
@@ -505,15 +539,21 @@ const stylesFor = makeStyles((c, m) => ({
     gap: spacing.xs,
     marginBottom: spacing.lg,
   },
+  /* Hàng tiêu đề mang luôn `paddingBottom` mà tiêu đề từng tự giữ, nên nút đóng
+     canh giữa theo CHỮ chứ không theo chữ-cộng-khoảng-đệm. */
+  pickerHead: { flexDirection: 'row', alignItems: 'center', paddingBottom: spacing.xs },
   pickerTitle: {
+    flex: 1,
     ...type.caption,
     color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
     fontWeight: '600',
     paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.xs,
   },
+  /* Lề phải bằng `paddingHorizontal` của tiêu đề, nên hai đầu hàng thụt vào
+     bằng nhau. */
+  pickerClose: { marginRight: spacing.sm },
   /* Bounded, because the list is as long as the number of workouts you have
      saved — at a dozen it would otherwise push the deload row off the bottom of
      the screen, and the sheet has no way to scroll to it. */

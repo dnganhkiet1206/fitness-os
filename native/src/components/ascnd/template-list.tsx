@@ -243,27 +243,38 @@ export function TemplateRow({
     turn.value = withTiming(open ? 1 : 0, { duration: OPEN_MS, easing: OPEN_EASE });
   }, [open, turn]);
   const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.value * 180}deg` }] }));
+  /* Một hàm, hai chỗ bấm — hàng và mũi tên. Hai bản sao sẽ lệch ngay lần đầu
+     ai đó sửa một bên. */
+  const toggle = () => {
+    if (exs.length === 0) return;
+    Haptics.selectionAsync();
+    setOpen((v) => !v);
+  };
 
   return (
     <Animated.View entering={rise(index)}>
       <GlassCard style={styles.tplCard}>
+        {/*
+          Nút mở/thu và nút xoá là ANH EM, không lồng nhau.
+
+          Nút xoá từng nằm bên trong `PressScale` này, và chú thích cũ ở đúng
+          chỗ đó đã thấy có gì không ổn: *"whether RN's `disabled` blocks a
+          nested pressable is a detail I could not verify without a device"*.
+          Câu trả lời không nằm ở `disabled`: trên iOS, React Native đặt
+          `accessible` bằng true cho mọi `Pressable` (`Pressable.js:252`), và
+          một phần tử trợ năng "groups its children into a single selectable
+          component" — nên VoiceOver chỉ thấy MỘT nút "mở mẫu tập này", và
+          không có cách nào xoá một mẫu.
+
+          Cái `return` sớm vẫn ở lại: nó là câu trả lời cho một câu hỏi khác
+          (mẫu rỗng thì không có gì để mở), và nó vẫn đúng.
+        */}
+        <View style={styles.tplRow}>
         <PressScale
           accessibilityRole="button"
           accessibilityState={{ expanded: open, disabled: exs.length === 0 }}
-          /*
-            Guarded here rather than with `disabled`.
-
-            The delete button is a `Pressable` inside this one, and whether RN's
-            `disabled` blocks a nested pressable is a detail I could not verify
-            without a device. Returning early cannot: an empty template does
-            nothing when tapped, and its delete button keeps working either way.
-          */
-          onPress={() => {
-            if (exs.length === 0) return;
-            Haptics.selectionAsync();
-            setOpen((v) => !v);
-          }}
-          style={styles.tplRow}>
+          onPress={toggle}
+          style={styles.tplPress}>
           <View style={styles.tplInfo}>
             <View style={styles.tplTitleRow}>
               <Icon icon={Dumbbell} size={16} />
@@ -312,6 +323,7 @@ export function TemplateRow({
             */}
             {sharedLine ? <Text style={styles.tplRx}>{sharedLine}</Text> : null}
           </View>
+        </PressScale>
           <View style={styles.tplActions}>
             <Pressable
               accessibilityRole="button"
@@ -323,12 +335,23 @@ export function TemplateRow({
             {/* No chevron on an empty template: there is nothing to open, and a
                 control that does nothing is what this row had before. */}
             {exs.length > 0 ? (
-              <Animated.View style={chevron}>
-                <Icon icon={ChevronDown} size={16} color={c.mutedForeground} />
-              </Animated.View>
+              /*
+                Mũi tên vẫn bấm được, và cố ý KHÔNG có trong cây trợ năng.
+
+                Nó rời khỏi vùng chạm của hàng khi hai nút tách ra, và một dải
+                chết ~41 điểm ở mép phải một hàng bấm được là một hồi quy thật.
+                Nên nó nhận đúng hành động của hàng — nhưng `accessible={false}`,
+                vì với VoiceOver nó là một BẢN SAO của nút đã có tên ngay bên
+                trái, không phải một hành động thứ hai.
+              */
+              <Pressable accessible={false} onPress={toggle}>
+                <Animated.View style={chevron}>
+                  <Icon icon={ChevronDown} size={16} color={c.mutedForeground} />
+                </Animated.View>
+              </Pressable>
             ) : null}
           </View>
-        </PressScale>
+        </View>
 
         {/*
           Mounted only when open, rather than kept in a clipped box.
@@ -465,6 +488,9 @@ const stylesFor = makeStyles((c) => ({
     justifyContent: 'space-between',
     gap: spacing.md,
   },
+  /* Vùng bấm của hàng: chiếm hết chỗ còn lại sau cụm nút, và cao trọn hàng nên
+     vùng chạm không tụt xuống chỉ bằng chiều cao của chữ. */
+  tplPress: { flex: 1, minWidth: 0, alignSelf: 'stretch', justifyContent: 'center' },
   tplInfo: { flex: 1, minWidth: 0, gap: 4 },
   tplTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   tplName: { fontSize: 14, fontWeight: '500', color: c.foreground, flexShrink: 1 },

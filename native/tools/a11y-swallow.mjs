@@ -62,13 +62,41 @@ const PORTAL = new Set(['Modal', 'FormSheet', 'Portal']);
  * viết ra, không phải một cách làm bước kiểm im lặng.
  */
 const NỢ = new Map([
-  ['components/ascnd/week-plan.tsx', 'tấm chọn buổi tập không có nút đóng có nhãn NÀO trong sheet, nên `accessible={false}` cho tấm nền sẽ nhốt người dùng VoiceOver lại. Sửa đúng là thêm một hàng "Huỷ" trước — đó là thêm giao diện, không phải một thuộc tính'],
-  ['components/ascnd/food-cards.tsx', 'ngôi sao yêu thích nằm trong thẻ món ăn; cần bố cục lại như `help-button.tsx` đã làm'],
-  ['components/ascnd/template-list.tsx', 'nút phụ trong hàng mẫu tập; cùng dạng với food-cards'],
-  ['app/(tabs)/assistant.tsx', 'thẻ gợi ý có nút bên trong'],
-  ['app/ai-coach.tsx', 'hai tầng trong bong bóng chat'],
-  ['app/grocery.tsx', 'ô tick nằm trong hàng bấm được'],
 ]);
+
+/**
+ * Các COMPONENT mà bản thân chúng LÀ một phần tử bấm được.
+ *
+ * ── vì sao danh sách này phải được tính, không được gõ ──
+ *
+ * `dashboard-cards.tsx` viết `const card = (<GlassCard>… <HelpButton/> …)` rồi
+ * `<PressScale>{card}</PressScale>`. Chuỗi lồng nhau đi qua HAI lớp gián tiếp:
+ * một biến, rồi một component. `HelpButton` không có chữ `Pressable` nào trong
+ * tệp gọi nó — nó chỉ là một cái tên — nhưng thân nó ở `help-button.tsx` trả về
+ * một `PressScale`. Bộ chạy web tìm ra chỗ này (`<button>` trong `<button>`,
+ * hai lần mỗi lần dựng tab Dinh dưỡng) trong khi bước kiểm báo xanh.
+ *
+ * Bản đầu của phép sửa chỉ đi theo BIẾN và vẫn xanh trên đúng tệp hỏng — phép
+ * thử ngược bắt được điều đó trước khi tôi tin nó. Nên danh sách này được quét
+ * ra từ mã nguồn: một component có `return (` mà thẻ mở đầu tiên là một phần tử
+ * bấm được thì chính nó là một phần tử bấm được, ở mọi chỗ gọi nó.
+ */
+function pressableComponents(allFiles) {
+  const names = new Set();
+  for (const f of allFiles) {
+    const src = strip(readFileSync(f, 'utf8'));
+    const re = /export function ([A-Z]\w*)\s*\(/g;
+    let m;
+    while ((m = re.exec(src))) {
+      const from = m.index;
+      const nextExport = src.indexOf('\nexport ', from + 1);
+      const body = src.slice(from, nextExport < 0 ? src.length : nextExport);
+      const ret = /return\s*\(\s*<([A-Z]\w*)/.exec(body);
+      if (ret && PRESS.has(ret[1])) names.add(m[1]);
+    }
+  }
+  return names;
+}
 
 const files = [];
 (function walk(d) {
@@ -105,10 +133,46 @@ function openTag(src, i) {
   return null;
 }
 
+/**
+ * Các biến trong tệp mang sẵn một phần tử bấm được.
+ *
+ * ── vì sao cần bước này ──
+ *
+ * `dashboard-cards.tsx` viết `const card = (<GlassCard>… <HelpButton/> …</GlassCard>)`
+ * rồi `<PressScale>{card}</PressScale>`. Đó là một nút trong một nút, và phép
+ * đi theo thẻ ở dưới KHÔNG thấy: lồng nhau đi qua một biến chứ không qua JSX
+ * lồng chữ. Bộ chạy web tìm ra nó — `<button>` trong `<button>`, hai lần mỗi
+ * lần dựng tab Dinh dưỡng — trong khi bước này báo xanh.
+ *
+ * Một tầng, không phải mọi tầng: `const a = <X/>; const b = <Y>{a}</Y>;` rồi
+ * `{b}` là chuyện có thể viết ra nhưng không có trong repo này, và một phép
+ * lần vết đầy đủ cần một trình phân tích cú pháp thật. Một tầng bắt được đúng
+ * hình dạng đã xảy ra, và khi nó không đủ thì phép đo lúc chạy vẫn còn đó.
+ */
+function carriers(src) {
+  const out = new Set();
+  const re = /\bconst\s+(\w+)\s*=\s*\(/g;
+  let m;
+  while ((m = re.exec(src))) {
+    let depth = 0;
+    let i = m.index + m[0].length - 1;
+    for (; i < src.length; i++) {
+      if (src[i] === '(') depth++;
+      else if (src[i] === ')') { depth--; if (depth === 0) break; }
+    }
+    const body = src.slice(m.index, i);
+    if ([...PRESS].some((n) => new RegExp(`<${n}\\b`).test(body))) out.add(m[1]);
+  }
+  return out;
+}
+
+for (const n of pressableComponents(files)) PRESS.add(n);
+
 const found = new Map();
 for (const f of files) {
   const rel = path.relative(ROOT, f);
   const src = strip(readFileSync(f, 'utf8'));
+  const carried = carriers(src);
   const stack = [];
   for (let i = 0; i < src.length; i++) {
     if (src[i] !== '<') continue;
@@ -133,6 +197,27 @@ for (const f of files) {
       }
     }
     if (!t.selfClose) {
+      /* `<PressScale>{card}</PressScale>`: nếu thân của thẻ vừa mở có `{NAME}`
+         và NAME mang sẵn một nút, thì đây là một nút trong một nút. */
+      if (PRESS.has(t.name) && carried.size) {
+        let d = 0, j = t.end, close = src.length;
+        for (; j < src.length; j++) {
+          if (src[j] === '<' && src[j + 1] === '/') { if (d === 0) { close = j; break; } d--; }
+          else if (src[j] === '<' && /[A-Za-z]/.test(src[j + 1] ?? '')) {
+            const nt = openTag(src, j);
+            if (nt && !nt.selfClose) d++;
+          }
+        }
+        const body = src.slice(t.end, close);
+        for (const name of carried) {
+          if (new RegExp(`\\{\\s*${name}\\s*\\}`).test(body)) {
+            const line = src.slice(0, i).split('\n').length;
+            if (!found.has(rel)) found.set(rel, []);
+            found.get(rel).push(`dòng ${line}: <${t.name}> chứa {${name}}, và ${name} mang sẵn một nút`);
+            break;
+          }
+        }
+      }
       stack.push({
         name: t.name,
         line: src.slice(0, i).split('\n').length,

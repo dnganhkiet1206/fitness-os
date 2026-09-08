@@ -765,11 +765,6 @@ export function NutritionCard({
           costs the card nothing. `spacing.card` rather than `spacing.md`
           because that is this card's own padding, so the glyph lines up with
           the content edge instead of floating inside it. */}
-      <HelpButton
-        label={vi ? 'Giải thích mục tiêu calo' : 'Explain the calorie target'}
-        onPress={help.openHelp}
-        style={styles.nutriHelp}
-      />
 
       <View style={styles.ringRow}>
         <SmallRing
@@ -913,9 +908,38 @@ export function NutritionCard({
     </GlassCard>
   );
 
+  /*
+    Nút `?` là ANH EM của mặt thẻ, không nằm trong nó.
+
+    Nó từng nằm trong `card`, và `card` được bọc bởi một `PressScale` ở nhánh
+    `interactive` bên dưới — tức một nút trong một nút. Trên iOS, React Native
+    đặt `accessible` bằng true cho mọi `Pressable` (`Pressable.js:252`), và một
+    phần tử trợ năng "groups its children into a single selectable component",
+    nên VoiceOver không với tới được nút `?`.
+
+    `tools/a11y-swallow.mjs` KHÔNG thấy chỗ này: lồng nhau đi qua một BIẾN
+    (`<PressScale>{card}</PressScale>`), không phải qua JSX lồng chữ. Bộ chạy
+    web tìm ra nó — `<button>` trong `<button>`, hai lần mỗi lần dựng tab Dinh
+    dưỡng. Đó là lý do luật ấy nay đi theo một tầng biến.
+
+    Vị trí không đổi: nút vẫn `position: 'absolute'` với đúng `top`/`right` cũ,
+    chỉ là mốc của nó nay là vỏ bọc thay vì mặt thẻ — và vỏ bọc ôm đúng mặt
+    thẻ, nên toạ độ ra cùng một điểm.
+  */
+  const helpBtn = (
+    <HelpButton
+      label={vi ? 'Giải thích mục tiêu calo' : 'Explain the calorie target'}
+      onPress={help.openHelp}
+      style={styles.nutriHelp}
+    />
+  );
+
   const withHelp = (
     <>
-      {card}
+      <View>
+        {card}
+        {helpBtn}
+      </View>
       {help.nudge ? (
         <HelpNudge
           text={vi
@@ -933,14 +957,17 @@ export function NutritionCard({
 
   return (
     <>
-      <PressScale
-        accessibilityRole="button"
-        onPress={() => {
-          Haptics.selectionAsync();
-          setShowLeft((v) => !v);
-        }}>
-        {card}
-      </PressScale>
+      <View>
+        <PressScale
+          accessibilityRole="button"
+          onPress={() => {
+            Haptics.selectionAsync();
+            setShowLeft((v) => !v);
+          }}>
+          {card}
+        </PressScale>
+        {helpBtn}
+      </View>
       {help.nudge ? (
         <HelpNudge
           text={vi

@@ -99,32 +99,58 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
   const toggleFav = useToggleFavoriteFood();
 
   return (
-    <PressScale
-      accessibilityRole="button"
-      accessibilityLabel={`${f.name}, ${Math.round(Number(f.kcal))} kcal`}
-      style={styles.row}
-      onPress={() => {
-        Haptics.selectionAsync();
-        nav.push({ pathname: '/food-editor', params: { id: f.id } });
-      }}>
-      <View style={styles.info}>
+    /*
+      Hàng là một VIEW, hai nút nằm CẠNH nhau trong nó.
+
+      Ngôi sao từng nằm bên trong `PressScale` của cả hàng. Trên iOS, React
+      Native đặt `accessible` bằng true cho mọi `Pressable`
+      (`Pressable.js:252`), và một phần tử trợ năng "groups its children into a
+      single selectable component" — nên VoiceOver chỉ thấy MỘT nút "mở món
+      này" và không có cách nào bật/tắt yêu thích. Ngón tay thì vẫn bấm được
+      sao, nên lỗi này không hỏng ở nơi ai cũng nhìn.
+
+      ── phần đệm đi XUỐNG hai đứa con, và đó không phải chuyện thẩm mỹ ──
+
+      Nếu để `paddingVertical`/`paddingHorizontal` ở hàng ngoài thì hai đứa con
+      chỉ cao bằng hộp bên trong phần đệm — 52 − 2×10 = 32 điểm — và vùng chạm
+      "mở món này" tụt từ 54 xuống 32, dưới sàn 44 mà `tools/tap-target.mjs`
+      canh. Nên hàng ngoài chỉ còn `minHeight`, còn phần đệm nằm trên từng con,
+      cộng `alignSelf: 'stretch'` để cả hai cao trọn hàng.
+
+      Khe 10 điểm giữa kcal và ngôi sao được CHIA ĐÔI thành hai nửa 5 điểm,
+      mỗi nửa thuộc về một nút — tổng bề rộng và mọi mép nhìn thấy được giữ
+      nguyên, nhưng khe ấy nay là vùng chạm của một trong hai nút chứ không
+      phải một dải chết.
+    */
+    <View style={styles.row}>
+      <PressScale
+        accessibilityRole="button"
+        accessibilityLabel={`${f.name}, ${Math.round(Number(f.kcal))} kcal`}
+        style={styles.rowBody}
+        onPress={() => {
+          Haptics.selectionAsync();
+          nav.push({ pathname: '/food-editor', params: { id: f.id } });
+        }}>
+        <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>
           {f.name}
           {f.brand ? <Text style={styles.brand}>  {f.brand}</Text> : null}
         </Text>
-        <Macros protein={Number(f.protein_g)} carbs={Number(f.carbs_g)} fat={Number(f.fat_g)} />
-      </View>
+          <Macros protein={Number(f.protein_g)} carbs={Number(f.carbs_g)} fat={Number(f.fat_g)} />
+        </View>
 
-      {/* Right-aligned, like the value in any table row — it is the number you
-          scan a list of food for, and it was buried mid-sentence between the
-          macros. */}
-      <Text style={styles.kcal}>{Math.round(Number(f.kcal))} kcal</Text>
+        {/* Right-aligned, like the value in any table row — it is the number you
+            scan a list of food for, and it was buried mid-sentence between the
+            macros. */}
+        <Text style={styles.kcal}>{Math.round(Number(f.kcal))} kcal</Text>
+      </PressScale>
 
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={i18n.a11yFavourite}
         accessibilityState={{ selected: !!f.is_favorite }}
         hitSlop={12}
+        style={styles.fav}
         onPress={() => {
           Haptics.selectionAsync();
           toggleFav.mutate({ id: f.id, is_favorite: !f.is_favorite });
@@ -136,7 +162,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
           strokeWidth={f.is_favorite ? 2.5 : 2}
         />
       </Pressable>
-    </PressScale>
+    </View>
   );
 }
 
@@ -186,17 +212,34 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
   );
 }
 
+/** Khe giữa các cột của một hàng món, và cũng là phần đệm dọc của nó. */
+const ROW_GAP = spacing.sm + 2;
+
 const stylesFor = makeStyles((c) => ({
   /* No border and no fill: the group these sit in draws one border for all of
      them. A row that carries its own is a card, and twelve cards is what this
      screen looked like. */
-  row: {
+  /* Hàng chỉ còn hình dạng và chiều cao tối thiểu — phần đệm nằm trên hai đứa
+     con, xem ghi chú ở chỗ dựng. `ROW_GAP / 2` cho mỗi bên nên khe giữa kcal và
+     ngôi sao vẫn đúng `ROW_GAP` điểm như cũ. */
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: 52 },
+  rowBody: {
+    flex: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm + 2,
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
-    minHeight: 52,
+    alignSelf: 'stretch',
+    gap: ROW_GAP,
+    paddingVertical: ROW_GAP,
+    paddingLeft: spacing.md,
+    paddingRight: ROW_GAP / 2,
+  },
+  fav: {
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    paddingVertical: ROW_GAP,
+    paddingLeft: ROW_GAP / 2,
+    paddingRight: spacing.md,
   },
   info: { flex: 1, minWidth: 0, gap: 2 },
   name: { fontSize: 15, fontWeight: '500', color: c.foreground },
