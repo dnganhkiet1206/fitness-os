@@ -188,6 +188,7 @@ export function HeroRing({
   from,
   to,
   value,
+  placeholder,
   decimals = 0,
   caption,
   captionColor,
@@ -212,6 +213,27 @@ export function HeroRing({
    * lúc thay vì con số xong trước khi vòng bắt đầu.
    */
   value: number;
+  /**
+   * Chữ thay cho số, khi KHÔNG CÓ số.
+   *
+   * ── vì sao là một prop riêng chứ không phải nới `value` ra thành string ──
+   *
+   * `value: number` có lý do được ghi ngay ở trên: dấu phân cách theo ngôn ngữ,
+   * và cú đếm lên khớp với nét quét của vòng. Nới nó ra là gỡ một bản sửa mà
+   * canary của `live.mjs` từng bắt được. Nên chỗ này thêm một đường thứ hai
+   * thay vì làm hỏng đường thứ nhất.
+   *
+   * ── và vì sao "không có số" cần một đường riêng ──
+   *
+   * Vẽ `0` khi chưa đo được gì là nói một câu app KHÔNG định nói. `/progress`
+   * đã làm đúng: `CURRENT —`, `CHANGE —`, còn `RECORDS 0` — vì 0 bản ghi là
+   * một phép đếm THẬT. Engine cũng vậy: `computeReadiness` trả "không có điểm"
+   * chứ không trả điểm kém khi thiếu số đo.
+   *
+   * Vòng hero là chỗ duy nhất còn vẽ `0` cho "chưa đo". Đây là đường để nó
+   * thôi làm thế.
+   */
+  placeholder?: string;
   decimals?: number;
   caption: string;
   captionColor: string;
@@ -288,6 +310,13 @@ export function HeroRing({
         {icon ? (
           <Icon icon={icon} size={20} color={iconColor ?? c.mutedForeground} />
         ) : null}
+        {placeholder != null ? (
+          <Text
+            style={[styles.value, styles.valueBox]}
+            maxFontSizeMultiplier={RING_TEXT_MAX_SCALE}>
+            {placeholder}
+          </Text>
+        ) : (
         <AnimatedNumber
           value={value}
           decimals={decimals}
@@ -298,6 +327,7 @@ export function HeroRing({
              `RING_TEXT_MAX_SCALE`. Bốn trang hero còn lại dùng chung chỗ này. */
           maxFontSizeMultiplier={RING_TEXT_MAX_SCALE}
         />
+        )}
         <Text
           maxFontSizeMultiplier={RING_TEXT_MAX_SCALE}
           style={[styles.caption, { color: captionColor }]}

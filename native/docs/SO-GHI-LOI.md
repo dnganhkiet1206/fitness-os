@@ -137,6 +137,21 @@ thì vẫn nằm ở đây.
 
 ---
 
+### ~~A11. Vòng Sẵn Sàng vẽ `0` khi chưa đo được gì~~ — ĐÃ SỬA 2026-09-08
+
+| | |
+|---|---|
+| **Triệu chứng** | Tài khoản mới, chưa có dữ liệu: hero "Sẵn Sàng" trên màn Hôm nay vẽ số **`0`** giữa vòng tròn. Lời giải thích *"Chưa đủ dữ liệu để tính điểm sẵn sàng…"* có tồn tại nhưng nằm trong `<Expander open={detailOpen}>`, tức **thu lại mặc định** — người mới không thấy nó. |
+| **Bằng chứng** | Ảnh chụp bản dựng thật, `tools/live.mjs --shots`, trạng thái `empty`. |
+| **Vì sao là lỗi, không phải sở thích** | App **tự mâu thuẫn với chính nó**. `/progress` dùng `CURRENT —` và `CHANGE —` cho "chưa đo", `RECORDS 0` cho một phép đếm THẬT; huy chương dùng `Earned 0/29` — cũng đếm thật. Vòng hero là chỗ **duy nhất** trong app vẽ `0` cho "chưa đo". |
+| **Và engine đứng ngược lại** | `computeReadiness` trả "không có điểm" chứ không trả điểm kém khi thiếu số đo — `tools/readiness-confidence.mjs` đã canh đúng điều đó. Giao diện đang nói một câu mà engine cố ý từ chối nói. |
+| **Vì sao nó nặng hơn một chi tiết** | Đây là app sức khoẻ, và `0` là chữ số app dùng cho một điểm thật. Nó đọc thành "điểm sẵn sàng của bạn là 0" — đáy thang — cho một người chưa làm gì sai. |
+| **Đã sửa thế nào** | `HeroRing` nhận thêm `placeholder?: string`; `EmptyHero` truyền `—` và bỏ trống caption (hai gạch chồng nhau không nói thêm gì). **KHÔNG** đổi `value: number` thành `string`: prop ấy có lý do ghi sẵn — dấu phân cách theo ngôn ngữ và cú đếm khớp nét quét vòng — và canary của `live.mjs` từng bắt một hồi quy ở đúng chỗ đó. |
+| **Kiểm chứng** | Dựng lại và chụp lại: vòng nay hiện một gạch, không còn `0`. Bộ chạy 32 màn × 3 trạng thái vẫn xanh. `EmptyHero` chỉ dùng ở đúng MỘT chỗ nên bán kính là một màn. |
+| **Trạng thái** | **ĐÓNG.** |
+
+---
+
 ## B. **Chưa** chứng minh được — cấm sửa, cấm dùng làm căn cứ cho việc khác
 
 Những mục này tôi nói ra mà **không** kiểm từ nguồn. Chúng có thể đúng. Chúng

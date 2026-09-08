@@ -369,8 +369,25 @@ export function EmptyHero({
           pct={0}
           from={tint}
           to={tint}
+          /*
+            `—`, không phải `0`.
+
+            Bản trước vẽ `0` ở giữa vòng và `—` ở dòng dưới. `0` là ký tự app
+            dùng cho một PHÉP ĐẾM THẬT — `RECORDS 0` ở /progress, `Earned 0/29`
+            ở huy chương — nên ở đây nó đọc thành "điểm sẵn sàng của bạn là 0",
+            tức chỗ tệ nhất của thang. Sự thật là chưa đo được gì.
+
+            `/progress` đã có sẵn quy ước đúng cho chuyện này: `CURRENT —`,
+            `CHANGE —`, một nhãn và một gạch. Nên vòng lấy gạch, và dòng caption
+            bên dưới bỏ trống — hai gạch chồng nhau không nói gì thêm.
+
+            Engine cũng đứng cùng phía: `computeReadiness` trả "không có điểm"
+            chứ không trả điểm kém khi thiếu số đo. Chỗ này là nơi duy nhất
+            trong app còn nói ngược lại nó.
+          */
           value={0}
-          caption="—"
+          placeholder="—"
+          caption=""
           captionColor={c.mutedForeground}
           icon={icon}
           iconColor={c.mutedForeground}

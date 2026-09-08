@@ -6,8 +6,8 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-08 · sau Sentry (nối xong, native chưa kiểm) ·
-commit `150765b` · nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-08 · sau Sentry + audit sản phẩm vòng 1 ·
+commit `__H__` · nhánh `claude/ios-fitness-rebuild-omgulr`
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
 > Trạng thái ở `docs/AI-TRIEN-KHAI.md` giữ nguyên, không đụng vào.
@@ -563,6 +563,87 @@ Không ship thứ chưa ai gọi.
 
 ---
 
+## AUDIT SẢN PHẨM TRƯỚC RA MẮT — vòng 1 (2026-09-08)
+
+Đi qua app như một người chưa từng thấy nó, dựa trên **ảnh chụp bản dựng thật**
+(`tools/live.mjs --shots`), không dựa trên việc đọc mã rồi đoán. 32 màn × 3
+trạng thái (đủ dữ liệu / **tài khoản trống** / mọi truy vấn hỏng).
+
+**Luật lọc nhiễu, lấy từ chính `live.mjs`:** *"Anything that is layout, platform
+or chrome seen here is noise."* Mọi phát hiện dưới đây đã được hỏi "nó có biến
+mất trên điện thoại không?" trước khi được ghi.
+
+### Câu hỏi trung tâm: 5 phút đầu
+
+**Trả lời được.** Sau onboarding, màn Hôm nay có bốn nút hành động rõ ràng —
+*Ghi bữa · Ghi buổi tập · Ghi giấc ngủ · Nhập chỉ số* — và mỗi màn chính có một
+việc tiếp theo nói thành lời. Không màn nào trong 32 màn bị trắng, không màn nào
+ném lỗi runtime, và không chuỗi `NaN`/`undefined` nào lọt ra.
+
+### Cái đang làm ĐÚNG (ghi lại để không ai "sửa" mất)
+
+| Màn | Vì sao nó tốt |
+|---|---|
+| **Tập luyện** (trống) | *"Chưa có buổi tập nào hôm nay — Chọn một buổi, hoặc cứ ghi lại thứ bạn làm."* Nói việc tiếp theo VÀ cho phép bỏ qua bước lập kế hoạch |
+| **Tiến trình** (trống) | `CURRENT —` · `CHANGE —` · `RECORDS 0`; *"Cần cân nặng và chiều cao để tính BMI"*; *"Chưa đủ dữ liệu"* trên biểu đồ |
+| **Huy chương** (trống) | `0/29`, và **mỗi** huy chương nói điều kiện của nó (*"Ghi 3 ngày liên tiếp"*) kèm tiến độ `0/3` |
+| **Mọi truy vấn hỏng** | *"Không tải được dữ liệu / Dữ liệu của bạn vẫn an toàn, chỉ là app chưa lấy được"* + nút **Thử lại**. Người dùng hồi phục được mà không phải mở lại app |
+| **Onboarding** | 7 bước, mỗi quyền xin kèm một dòng **vì sao**, và có "để sau". Nút Tiếp bị chặn ở bước 0 **có nói lý do** ngay tại ô nhập |
+| **Cài đặt** | Mỗi công tắc có một dòng giải thích tác dụng |
+
+### Phát hiện
+
+#### P-01 — vòng Sẵn Sàng vẽ `0` khi chưa đo được gì · **P2** · ĐÃ SỬA
+
+| | |
+|---|---|
+| **Màn** | Hôm nay → hero "Sẵn Sàng", trạng thái tài khoản trống |
+| **Quan sát** | Vòng tròn hiện số **`0`**, dưới là một gạch. Lời giải thích nằm trong `<Expander open={detailOpen}>` nên **thu lại mặc định** — người mới không thấy nó |
+| **Mong đợi** | Không vẽ một chữ số khi chưa có phép đo nào |
+| **Bằng chứng** | Ảnh `empty/today.png`. Và app **tự mâu thuẫn với chính nó**: `/progress` dùng `CURRENT —`, `CHANGE —` cho "chưa đo" và `RECORDS 0` cho một phép đếm thật; huy chương dùng `Earned 0/29` — cũng là đếm thật. Vòng hero là chỗ **duy nhất** vẽ `0` cho "chưa đo" |
+| **Nguyên nhân** | `EmptyHero` (`hero-pages.tsx`) truyền `value={0}` cho `HeroRing` |
+| **Vì sao nó quan trọng** | Đây là app sức khoẻ. `0` là chữ số app dùng cho một điểm THẬT, nên nó đọc thành "điểm sẵn sàng của bạn là 0" — đáy thang — cho một người chưa làm gì sai. Engine đứng ngược lại: `computeReadiness` trả "không có điểm" chứ không trả điểm kém khi thiếu số đo, và bước kiểm `readiness-confidence` đã canh đúng điều đó |
+| **Độ chắc** | Cao — quy ước có sẵn trong app, ở hai chỗ |
+| **Đã sửa** | `HeroRing` nhận thêm `placeholder?: string`; `EmptyHero` truyền `—`. **Không** đổi `value: number` thành string — prop ấy có lý do ghi sẵn (dấu phân cách theo ngôn ngữ + cú đếm khớp nét quét vòng), và canary của `live.mjs` từng bắt một hồi quy ở đúng chỗ đó |
+| **An toàn tự sửa** | Có — `EmptyHero` chỉ dùng ở **đúng một** chỗ |
+
+#### P-02 — tiêu đề đầu trang trong suốt, ở bản SÁNG · **P2** · KHÔNG SỬA, cần quyết định
+
+| | |
+|---|---|
+| **Màn** | `/shop` và `/mascot-room` |
+| **Quan sát** | "Dressing Room" gần như không đọc được: chữ gần đen trên dải cảnh tối |
+| **Nguyên nhân** | `pageTitleFloat` không đặt lại `color`, nên nó thừa `c.foreground` = `#1a1917`. Cùng hàng ấy, mũi quay lại bị ghim cứng `'#fff'` (`screen.tsx:390`) — **hai thứ trong một hàng đang nói hai chuyện khác nhau** |
+| **Trạng thái** | Mã **đã ghi sẵn** đây là *"QUYẾT ĐỊNH THIẾT KẾ CÒN MỞ, không phải một phép đổi token"*, kèm câu *"Cả hai màn chưa từng được chụp ở bản sáng"* |
+| **Đóng góp của vòng này** | **Nay đã chụp.** `empty/shop.png` là bằng chứng đầu tiên rằng vấn đề dự đoán ấy có thật và nhìn thấy được |
+| **An toàn tự sửa** | **Không.** Chọn màu chữ cho một đầu trang trong suốt trên nền sáng là quyết định thiết kế; mã đã nói thế và tôi không đè lên |
+
+#### P-03 — Cài đặt không nói app có gửi báo cáo sự cố đi không · **P3** · cần quyết định
+
+| | |
+|---|---|
+| **Bối cảnh** | Vòng này vừa nối Sentry. Khi `EXPO_PUBLIC_SENTRY_DSN` được đặt, app **gửi dữ liệu ra bên thứ ba** — và màn Cài đặt không nói gì cả |
+| **Hôm nay** | Chưa thành vấn đề: không có DSN thì không một byte nào rời máy |
+| **Mong đợi** | Ngày bật DSN, Cài đặt phải nói ra — lý tưởng là kèm công tắc |
+| **An toàn tự sửa** | **Không** — đây là chữ hiển thị cho người dùng và một lựa chọn sản phẩm. Tôi đã **gỡ** `observabilityEnabled` khỏi `observability.ts` chính vì không ship một hàm cho một màn chưa tồn tại |
+
+#### P-04 — gợi ý nói về việc người dùng chưa làm · **P3** · quan sát, chưa kết luận
+
+Ở `empty/nutrition.png`, thẻ gợi ý ghi *"Trained today and the calories did not
+go up? Tap here."* cho một tài khoản chưa ghi buổi tập nào. Có thể là mẹo xoay
+vòng chứ không phải một khẳng định về trạng thái — **chưa đủ bằng chứng để gọi
+là lỗi**, và không sửa.
+
+### Cái audit này KHÔNG kiểm được
+
+Bộ chạy là web. VoiceOver, `UIVisualEffectView`, cảm giác cuộn, độ trễ chuyển
+màn và mọi thứ thuộc về chạm — không thứ nào ở đây. Trợ năng, đổi theme, bàn
+phím, i18n vẫn được canh bằng các bước kiểm tĩnh trong cổng
+(`a11y-swallow`, `tap-targets`, `theme-shape`, `i18n`, `bàn phím`) và chúng xanh
+— nhưng "xanh ở bước kiểm" không phải "đã dùng thử trên máy thật".
+
+---
+
 ## ERRBOUND-2 — MỞ, và nó là một QUYẾT ĐỊNH THIẾT KẾ
 
 Không cài đặt gì ở đây. Trang này ghi đủ để người quyết định không phải đọc lại
@@ -632,6 +713,8 @@ quyết định chứ không phải một phép đo.
 | A7 | P2 | Xoá buổi tập không dựng lại các ngày ở giữa | xem `SO-GHI-LOI.md` |
 | A8 | P2 | Android không có blur thật sau status bar | Giới hạn có chủ ý |
 | AI-DEPLOY | P1 | Không function nào được deploy; sáu tính năng AI không có backend | Chủ dự án: `docs/AI-TRIEN-KHAI.md` mục 3–5. Cần `supabase` CLI + quyền |
+| SHOP-HDR | P2 | Tiêu đề đầu trang trong suốt gần như không đọc được ở bản SÁNG (`/shop`, `/mascot-room`) | **Quyết định thiết kế** — `screen.tsx` đã ghi rõ là quyết định chưa ai ra. Ảnh `empty/shop.png` là bằng chứng đầu tiên. Không tự sửa |
+| SENTRY-UI | P3 | Cài đặt không nói app có gửi báo cáo sự cố đi không | Chỉ thành vấn đề khi `EXPO_PUBLIC_SENTRY_DSN` được đặt. Cần chữ hiển thị + có thể một công tắc — lựa chọn sản phẩm |
 | P3-1 | P3 | `settings` / `mascot-room`: `transform-origin` là thuộc tính DOM sai trên web | Chuỗi CSS của Koa; bản native đọc đúng qua `koa-figure.tsx:461`. Chỉ là tiếng ồn trên web |
 
 ---
