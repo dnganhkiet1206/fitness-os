@@ -16,17 +16,22 @@
 # kiểm để một môi trường dựng thiếu hỏng trong ba mươi giây thay vì mười lăm
 # phút, kèm câu nói đúng cái đang thiếu.
 #
-# ── vì sao chạy dưới root ──
+# ── vì sao KHÔNG cần sudo ──
 #
-# Đo được: 11 trong 14 bước cơ sở dữ liệu gọi `su postgres` không có đường lui,
-# và dưới một người dùng thường chúng hỏng với "su: Authentication failure" —
-# một lỗi không nói gì về mã vừa sửa. Ba bước còn lại có `|| pg_ctl` nên chúng
-# chạy được dưới bất kỳ ai.
+# Bản đầu của tệp này chạy bộ kiểm qua `sudo`, vì các bước cơ sở dữ liệu gọi
+# `su postgres` và `su` chỉ chạy được khi đang là root.
 #
-# Hai đường sửa, và ở đây chọn đường không đụng vào 11 tệp đang chạy đúng:
-# `sudo` cho bước chạy bộ kiểm. Đường kia — thêm `|| pg_ctl` cho cả 11 — tốt hơn
-# về lâu dài vì nó giúp cả người chạy trên máy mình, và nó được ghi lại ở
-# `docs/AUDIT_STATE.md` như một việc còn mở chứ không bị quên.
+# Điều kiện ấy đã được sửa ở đúng chỗ của nó. `initdb` từ chối chạy dưới root,
+# nên mỗi bước nay rẽ theo QUYỀN: là root thì hạ quyền, không phải root thì chạy
+# thẳng. Cả mười bốn bước đã được CHẠY THẬT dưới một người dùng thường và đều
+# xanh, với PostgreSQL thật chứ không phải một lần bỏ qua.
+#
+# Nên không còn `sudo` ở đây. Đó không phải một sự gọn gàng: `sudo` đổi HOME và
+# PATH, và một bước kiểm chạy dưới một môi trường khác với môi trường người ta
+# gỡ lỗi là một bước kiểm hỏng theo cách khó tìm nhất.
+#
+# `tools/pg-harness.mjs` nằm trong bộ kiểm và giữ tính chất ấy: một bước mới
+# viết theo lối cũ bị bắt ở đúng chỗ nó được viết ra.
 #
 # ── và điều phải nói thẳng ──
 #
@@ -94,7 +99,7 @@ jobs:
       # mười lăm bằng một stack trace về `initdb`.
       - name: Tiền kiểm môi trường
         working-directory: native
-        run: sudo -E env "PATH=$PATH" node tools/ci-preflight.mjs
+        run: node tools/ci-preflight.mjs
 
       # Tách khỏi bộ kiểm dù bộ kiểm cũng chạy `tsc`: lỗi kiểu là lỗi hay gặp
       # nhất và rẻ nhất để đọc, nên nó phải hiện ra thành một bước riêng chứ
@@ -103,12 +108,8 @@ jobs:
         working-directory: native
         run: npx tsc --noEmit -p tsconfig.json
 
-      # `sudo` vì 11 bước cơ sở dữ liệu gọi `su postgres`. `-E env "PATH=$PATH"`
-      # giữ node của setup-node — `sudo` trần dùng secure_path và sẽ tìm thấy
-      # một node khác, hoặc không tìm thấy node nào.
-      #
-      # Không `continue-on-error`, không `|| true`. Một cổng chạy được mà không
-      # chặn được thì chỉ là một cái đèn.
-      - name: 211 bước
+      # Không `sudo` — xem phần đầu tệp. Không `continue-on-error`, không
+      # `|| true`: một cổng chạy được mà không chặn được thì chỉ là một cái đèn.
+      - name: Bộ kiểm đầy đủ
         working-directory: native
-        run: sudo -E env "PATH=$PATH" node tools/check.mjs
+        run: node tools/check.mjs

@@ -29,7 +29,7 @@ mkdirSync(CACHE, { recursive: true });
 try {
   execFileSync(
     'npx',
-    ['tsc', 'src/lib/crash-log.ts', '--ignoreConfig', '--outDir', CACHE,
+    ['tsc', 'src/lib/crash-log.ts', 'src/lib/telemetry-scrub.ts', '--ignoreConfig', '--outDir', CACHE,
       '--rootDir', 'src', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck', '--lib', 'es2020'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
@@ -50,10 +50,15 @@ writeFileSync(
 );
 writeFileSync(
   js,
-  readFileSync(js, 'utf8').replace(
-    /require\("@react-native-async-storage\/async-storage"\)/g,
-    'require("../store.cjs")',
-  ),
+  readFileSync(js, 'utf8')
+    .replace(
+      /require\("@react-native-async-storage\/async-storage"\)/g,
+      'require("../store.cjs")',
+    )
+    /* `@/lib/telemetry-scrub` là bộ lọc riêng tư, và nó được biên dịch THẬT
+       cạnh tệp này chứ không bị vỏ đi: điều đáng kiểm nhất ở đây là một mục ghi
+       vào nhật ký đã sạch hay chưa, và một vỏ giả sẽ trả lời hộ câu ấy. */
+    .replace(/require\("@\/lib\/telemetry-scrub"\)/g, 'require("./telemetry-scrub.js")'),
 );
 
 const problems = [];
@@ -81,6 +86,42 @@ if (!first) problems.push('installCrashHandler không đặt handler nào');
 mod.installCrashHandler();
 if (installedHandler !== first) {
   problems.push('gọi lần hai bọc thêm một lớp — mỗi sự cố sẽ được ghi hai lần và handler cũ chạy hai lần');
+}
+
+/* ── 1b. nhật ký này RỜI KHỎI MÁY, nên nó phải sạch ──
+
+   `settings.tsx` có nút "chạm để gửi đi" và nó gọi `Share.share` với toàn bộ
+   nội dung. Tức đây là một đường telemetry thật, chỉ khác là người bấm nút là
+   người dùng. Thông điệp của một lỗi thật mang theo thứ nó vừa chạm vào: một
+   URL PostgREST có `user_id=eq.<uuid>`, một câu 401 kèm access token, một mảnh
+   `image_base64`. Người dùng gửi nhật ký đi nhờ giúp là gửi cả những thứ ấy.
+
+   Lọc ở CHỖ GHI chứ không ở nút chia sẻ: một đường gửi thứ hai thêm sau này sẽ
+   tự động sạch. */
+if (first) {
+  const UID = '6f1c2a3b-4d5e-6f70-8192-a3b4c5d6e7f8';
+  const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.aaaaaaaaaaaa';
+  const dirty = new Error(`GET /rest/v1/daily_logs?user_id=eq.${UID} 401 token=${JWT}`);
+  dirty.stack = `Error: ${dirty.message}\n  at fetch (app:///lib/edge.ts:1:1)`;
+  first(dirty, false);
+  await sleep();
+  const [entry] = await mod.readCrashLog();
+  const flat = JSON.stringify(entry ?? {});
+  for (const [label, secret] of [['UUID người dùng', UID], ['access token', JWT]]) {
+    if (flat.includes(secret)) {
+      problems.push(
+        `mục ghi vào nhật ký còn ${label}. Nhật ký này gửi đi được bằng một cú chạm ở màn Cài đặt, `
+        + 'nên chưa lọc ở đây nghĩa là người dùng gửi đi thứ họ không biết mình đang gửi',
+      );
+    }
+  }
+  if (!flat.includes('daily_logs')) {
+    problems.push('lọc quá tay: mất luôn tên bảng, thứ nói lên lỗi nằm ở đâu và không nói người dùng nào');
+  }
+  await mod.clearCrashLog();
+  /* Trả lại trạng thái chung: các luật bên dưới ĐẾM số lần handler cũ chạy, nên
+     một lỗi thêm vào ở đây sẽ làm chúng đo nhầm. */
+  prevCalls = [];
 }
 
 /* ── 2. một lỗi chí mạng được ghi lại, ĐỦ ba thứ đáng đọc ── */

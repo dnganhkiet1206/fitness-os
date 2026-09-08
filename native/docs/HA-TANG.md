@@ -13,7 +13,7 @@ biến nhất khiến một app nhỏ mang một hoá đơn của app lớn.
 | # | Dịch vụ | Trạng thái |
 |---|---|---|
 | 1 | **Sentry** — sự cố native + lỗi JS | bộ lọc riêng tư **XONG**; SDK chờ khoá + máy dựng native |
-| 2 | **GitHub Actions** — tsc + 211 bước | workflow **XONG**, chưa chạy lần nào |
+| 2 | **GitHub Actions** — tsc + bộ kiểm | workflow **XONG**, **chưa chạy trên runner thật lần nào** |
 | 3 | Expo OTA | sau khi có hạ tầng phát hành |
 | 4 | PostHog | sau |
 | 5 | Resend | sau |
@@ -123,12 +123,15 @@ Thiếu cái thứ hai thì sự cố native về **không có tên hàm** — c
 Giữ `crash-log.ts`. Nó không thừa: nó là thứ duy nhất đọc được **khi máy đang
 offline**, và nó không gửi gì đi đâu cả.
 
-### Một việc chưa làm, cố ý ghi ra
+### ERRBOUND — XONG (2026-09-08)
 
-`src/` **không có `ErrorBoundary`** — chỉ có một câu nhắc về nó trong chú thích
-của `crash-log.ts`. Một lỗi khi dựng cây làm app trắng màn thay vì hiện một thứ
-gì đó. Đó là việc về giao diện chứ không phải về hạ tầng, cần một màn hình được
-thiết kế, nên nó không bị nhét vào vòng này.
+Mục này từng ghi "chưa làm, cố ý". Đã làm: `AppErrorBoundary` bọc `<Gate />`.
+Chi tiết ở `docs/AUDIT_STATE.md`.
+
+Một chỗ nối vào đây: biên **ghi lỗi qua `recordCrash`**, và `recordCrash` nay
+lọc qua `telemetry-scrub` trước khi ghi. Lý do là `settings.tsx` có nút "chạm để
+gửi đi" gọi `Share.share` với toàn bộ nhật ký — tức nhật ký này **rời khỏi máy**,
+và một thông điệp lỗi thật mang theo `user_id=eq.<uuid>` hay một access token.
 
 ---
 
@@ -152,14 +155,14 @@ Không có gì cả — không `.github/`, không CI. `package.json` có `lint`,
 | Bộ kiểm cần gì? | đếm trong `tools/` | **14** bước cần PostgreSQL, **6** cần Playwright |
 | Thiếu PostgreSQL thì sao? | đọc mã | **5** bước in "BỎ QUA" rồi **vẫn thoát 0** |
 | Chạy dưới người dùng thường thì sao? | `su nobody -c 'node tools/acwr-consistency.mjs'` | **exit 1**: `su: Authentication failure` |
-| Bao nhiêu bước bị thế? | đếm `su postgres` không có `\|\|` | **11 / 14**. Ba bước kia có `\|\| pg_ctl` nên chạy được dưới mọi người dùng |
+| Bao nhiêu bước bị thế? | đếm `su postgres` không có `\|\|` | **11 / 14** — ⚠️ **con số này SAI**; thật ra là **8**, xem mục CI-PG |
 | `pg`, `playwright` ở đâu? | `package.json` | `pg` là devDependency ✅ · **`playwright` không phải phụ thuộc gì cả** — phải cài riêng trên CI |
 
 Hai kết luận, và cả hai đổi hình dạng workflow:
 
-**Job phải chạy dưới root**, nếu không 11 bước hỏng vì một lý do không liên quan
-gì tới mã vừa sửa — đúng điều phần đầu `check.mjs` cảnh báo: *"the check failing
-for a reason that has nothing to do with what it checks."*
+~~**Job phải chạy dưới root**~~ — đúng lúc viết, **không còn đúng**. Điều kiện
+ấy đã được sửa ở đúng chỗ của nó (mục CI-PG bên dưới), nên workflow nay chạy
+dưới người dùng thường và `sudo` chỉ còn ở hai bước cài gói hệ thống.
 
 **Một job xanh không đủ để tin.** Nếu runner thiếu PostgreSQL, 5 bước bỏ qua
 trong im lặng và dấu tích vẫn xanh — nói "211 bước đều xanh" trong khi năm bước
@@ -194,12 +197,80 @@ câu nói đúng cái đang thiếu, thay vì sau mười lăm phút bằng mộ
 
 **Không cần khoá nào.** `GITHUB_TOKEN` là mặc định.
 
-### Việc còn mở
+### CI-PG — XONG (2026-09-08), và con số ở trên đã sai
 
-Thêm `|| pg_ctl` cho 11 bước gọi `su postgres` không có đường lui. Nó tốt hơn
-`sudo`: nó giúp cả người chạy trên máy mình mà không phải root. Chưa làm vòng
-này vì đó là 11 tệp đang chạy đúng, và đổi chúng cần một vòng riêng có thử
-ngược cho từng tệp.
+Bảng trên ghi "11/14 không có đường lui". **Sai.** Nó đếm bằng
+`grep -c "su postgres"` trừ số dòng có `||`, và ba tệp trong danh sách
+(`economic-integrity`, `quest-lifecycle`, `streak-freeze`) đã có nhánh quyền
+đúng từ trước. Con số thật là **8**. Một phép đếm chữ không phải một phép đo
+hành vi.
+
+**Và `|| pg_ctl` là câu trả lời sai.** `initdb` **từ chối chạy dưới root**, nên
+thử-rồi-lui sẽ chạy initdb bằng root ở lần thử thứ hai và nhận
+`cannot be run as root` — đổi một lỗi rõ ràng lấy một lỗi khó đọc hơn. Điều kiện
+là QUYỀN, nên phép rẽ phải là quyền:
+
+```js
+const asPg = sh('id -u postgres').code === 0 && process.getuid() === 0;
+const run = (c) => (asPg ? sh(`su postgres -c ${JSON.stringify(c)}`) : sh(c));
+```
+
+`chown` cũng phải nằm trong nhánh ấy — dưới người dùng thường nó không có quyền,
+và thư mục đã thuộc về chính người đang chạy.
+
+Tám tệp, **sửa và kiểm từng cái**, mỗi cái chạy hai lần và mỗi lần phải thấy
+`PostgreSQL 16.13` thật chứ không phải một lần bỏ qua:
+
+| # | Tệp | root | người dùng thường |
+|---|---|---|---|
+| 1 | `acwr-consistency` | exit 0 · PG thật | exit 0 · PG thật *(trước: exit 1)* |
+| 2 | `error-copy` | exit 0 · PG thật | exit 0 · PG thật |
+| 3 | `nutrition-averages` | exit 0 · PG thật | exit 0 · PG thật |
+| 4 | `readiness-anchor` | exit 0 · PG thật | exit 0 · PG thật |
+| 5 | `readiness-confidence` | exit 0 · PG thật | exit 0 · PG thật |
+| 6 | `readiness-integrity` | exit 0 · PG thật | exit 0 · PG thật |
+| 7 | `workload-volume` | exit 0 · PG thật | exit 0 · PG thật |
+| 8 | `workout-sync-integrity` | exit 0 · PG thật | exit 0 · PG thật |
+
+**Một lỗi CI thứ hai, tìm ra khi đang kiểm.** `nutrition-averages` gọi `npx tsc`
+với `cwd` là thư mục tạm, nên npx không thấy `node_modules` của dự án và đi ra
+registry tìm một gói **tên là `tsc`** — một stub đã ngừng bảo trì, không phải
+TypeScript. Trên máy này nó im lặng vì npm cache của root đã có; dưới một người
+dùng mới, đo được: `npm error request to https://registry.npmjs.org/tsc failed`.
+Đã đổi sang gọi thẳng `node_modules/typescript/bin/tsc`, giữ nguyên `cwd`.
+
+**Và dụng cụ đo của tôi sai một lần nữa.** Phép thử đầu chạy dưới `nobody`, vốn
+có HOME `/nonexistent` — nên `npx` hỏng vì lý do đó chứ không vì quyền. Đã đổi
+sang một người dùng thường có HOME ghi được, giống runner thật.
+
+**`tools/pg-harness.mjs`** (mới, trong bộ kiểm) giữ tính chất bằng một luật
+tĩnh, và nó tìm ra **hai tệp nữa** mà phép phân loại của tôi bỏ sót. Nó phân
+biệt đúng chỗ cần: dạng `su … || pg_ctl` vẫn được phép cho lệnh **dừng** (an
+toàn ở cả hai chiều, ba tệp dùng nó đã chạy thật dưới người dùng thường) nhưng
+**không** cho `initdb`/`start`. Nó cũng phải trừ chính mình — các chuỗi luật của
+nó khớp mọi mẫu nó đi tìm.
+
+**Hệ quả: workflow bỏ `sudo` cho bước chạy bộ kiểm.** `sudo` đổi HOME và PATH,
+và một bước kiểm chạy dưới môi trường khác môi trường người ta gỡ lỗi là bước
+kiểm hỏng theo cách khó tìm nhất. `sudo` chỉ còn ở hai chỗ cài gói hệ thống.
+
+**Và đây là phần CHƯA đo được.** Chạy TOÀN BỘ bộ kiểm dưới một người dùng thường
+ở máy này ra **17 bước đỏ** — nhưng cả 17 đều là `EACCES` khi ghi vào cây nguồn
+(`typed-routes` viết `.expo/types/router.d.ts`), vì cây ở đây thuộc `root` còn
+người thử thì không. Trên một runner thật `actions/checkout` tạo cây thuộc chính
+người chạy, nên điều kiện ấy đúng theo thiết kế. Phép đo dứt điểm cần đổi chủ cả
+cây, và thao tác đó bị chặn ở môi trường này — nên nó **chưa được chứng minh**,
+chỉ được suy ra từ việc mọi lỗi còn lại đều là quyền ghi.
+
+Cái chưa biết ấy được biến thành một lỗi **được chẩn đoán**: `ci-preflight` nay
+thử ghi một tệp vào `native/` và nói thẳng nếu không được — một dòng thay cho
+mười bảy stack trace. Thử ngược: chạy dưới người dùng không sở hữu cây → đỏ với
+đúng câu ấy.
+
+**Ba lần dụng cụ đo sai trong vòng này**, và mỗi lần đều tạo ra một lỗi giả:
+`nobody` có HOME `/nonexistent` (npx đi tải gói về) · PATH mặc định của nó trỏ
+node 20 chứ không phải 22 (sai runtime) · git từ chối một repo thuộc người khác
+("dubious ownership"). Không lần nào là lỗi của mã đang kiểm.
 
 ---
 

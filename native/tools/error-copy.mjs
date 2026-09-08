@@ -260,11 +260,17 @@ try {
       try { return { code: 0, text: execFileSync('bash', ['-lc', cmd], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) }; }
       catch (e) { return { code: e.status ?? 1, text: (e.stdout || '') + (e.stderr || '') }; }
     };
+    /* Nhánh theo QUYỀN, không phải một cách gọi: `initdb`/`pg_ctl` từ chối chạy
+       dưới root nên root phải hạ quyền và `chown` thư mục; còn người dùng
+       thường thì `su` đòi mật khẩu và `chown` không có quyền, nên chạy thẳng
+       mới đúng. Xem `acwr-consistency.mjs` cho lập luận đầy đủ. */
+    const asPg = sh('id -u postgres').code === 0 && process.getuid && process.getuid() === 0;
+    const run = (c) => (asPg ? sh(`su postgres -c ${JSON.stringify(c)}`) : sh(c));
     try {
       mkdirSync(DATA, { recursive: true });
-      sh(`chmod 755 ${pgOut} && chown postgres:postgres ${DATA} && chmod 700 ${DATA}`);
-      sh(`su postgres -c "${PGBIN}/initdb -D ${DATA} -U postgres --auth=trust"`);
-      const started = sh(`su postgres -c "${PGBIN}/pg_ctl -D ${DATA} -o '-p ${PORT} -c listen_addresses=127.0.0.1 -k ${DATA}' -l ${DATA}/log -w -t 60 start"`);
+      if (asPg) sh(`chmod 755 ${pgOut} && chown postgres:postgres ${DATA} && chmod 700 ${DATA}`);
+      run(`${PGBIN}/initdb -D ${DATA} -U postgres --auth=trust`);
+      const started = run(`${PGBIN}/pg_ctl -D ${DATA} -o "-p ${PORT} -c listen_addresses=127.0.0.1 -k ${DATA}" -l ${DATA}/log -w -t 60 start`);
       if (started.code !== 0) throw new Error(`không khởi động được PostgreSQL: ${started.text.slice(0, 200)}`);
       const live = sh(`psql -h 127.0.0.1 -p ${PORT} -U postgres -tAc "SHOW data_directory"`).text.trim();
       if (live !== DATA) throw new Error(`nói chuyện với cluster KHÁC: ${live} != ${DATA}`);
@@ -319,7 +325,7 @@ try {
     } catch (e) {
       problems.push(`không dựng được phép thử cơ sở dữ liệu: ${e.message}`);
     } finally {
-      sh(`su postgres -c "${PGBIN}/pg_ctl -D ${DATA} stop -m immediate" 2>/dev/null`);
+      run(`${PGBIN}/pg_ctl -D ${DATA} stop -m immediate 2>/dev/null`);
       rmSync(pgOut, { recursive: true, force: true });
     }
   }

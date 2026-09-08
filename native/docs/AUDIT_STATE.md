@@ -6,8 +6,8 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-08 · sau vòng hạ tầng (Sentry + CI) · commit `3b20c8c`
-· nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-08 · sau ERRBOUND + CI-PG · commit `c7b2639` ·
+nhánh `claude/ios-fitness-rebuild-omgulr`
 
 ---
 
@@ -15,12 +15,12 @@ gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trư�
 
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
-| TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, không một dòng lỗi |
-| `node tools/check.mjs` | **XANH** | exit 0, **213** bước, tất cả xanh. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối |
-| Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này không đụng một dòng nào trong `native/src` — chỉ `supabase/functions`, `native/tools`, `native/docs`. Số gần nhất (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | lý do như trên. Số gần nhất (vòng A11Y-2): lỗi JS 5 → 1, không màn nào trắng, cả hai chiều |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | lý do như trên; `tools/a11y-swallow.mjs` nằm trong 213 bước và vẫn xanh. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 213 bước ở trên |
+| TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
+| `node tools/check.mjs` | **XANH** | exit 0, **215** bước, tất cả xanh. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối |
+| Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` vẫn 6 tệp, 8 nhánh, và nó nằm trong 215 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 215 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 215 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
 
 ---
@@ -283,16 +283,159 @@ vốn **không còn phân giải được**. Viết lại lịch sử đụng v�
 
 ---
 
+## ERRBOUND — XONG (2026-09-08)
+
+### Chỗ trống là chỗ trống gì
+
+`src/` chưa từng có error boundary; `crash-log.ts` đã ghi điều đó trong chú
+thích của chính nó. Hệ quả không phải "khó chẩn đoán" mà là một hành vi: React
+**tháo toàn bộ cây** khi một component ném lúc render và không ai bắt. Bản dev
+hiện hộp đỏ; bản phát hành **trắng màn, vĩnh viễn**, và mở lại app thì lặp lại.
+
+### Biên nằm ở đâu, và vì sao đúng chỗ ấy
+
+```
+GestureHandlerRootView → PersistQueryClientProvider → AppSettingsProvider
+  → AuthProvider → NavTheme → LockedApp → AppLockProvider → CoachChatProvider
+    → [AppErrorBoundary] → Gate → AuthScreen | OnboardingFlow | <Stack> (mọi route)
+    ConnectionBanner · NeonToastHost · AppLockGate   ← anh em, NGOÀI biên
+```
+
+Hẹp nhất còn đúng: **mọi màn nằm dưới `Gate`**, và biên nằm *trong*
+`AppSettingsProvider` + `AuthProvider` nên fallback đọc được bảng màu và ngôn
+ngữ. Đặt cao hơn thì fallback không có theme, không có tiếng Việt, và phải là
+một màn viết cứng bằng màu gõ tay. Ba anh em ở ngoài là chủ ý: dải báo mất mạng,
+toast và cổng khoá vẫn sống khi màn chính đã hỏng.
+
+### Ngoài biên — ghi ra chứ không giấu
+
+| Không bắt | Vì sao |
+|---|---|
+| Lỗi ném từ chính các provider ở trên nó | Cần một biên **thứ hai** ở ngoài cùng, và fallback của nó không đọc được theme hay ngôn ngữ — đó là một **quyết định thiết kế** (viết cứng màu và chọn một ngôn ngữ), không phải một dòng code. Chưa tự quyết. |
+| Lỗi trong handler sự kiện, promise, `setTimeout` | React không bắt loại nào trong đó, ở đâu cũng vậy. Chúng vẫn đi tới `ErrorUtils` và vẫn vào nhật ký. |
+| Sự cố **native** — lớp lỗi của A9 | Không mã JS nào bắt được. Đó là mục Sentry. |
+
+### Fallback: cố ý KHÔNG dùng `LoadFailed`
+
+`LoadFailed` là card lỗi sẵn có và về ngôn ngữ thiết kế thì đúng — nhưng nó dựng
+trên `GlassCard` + `MascotFigure`, tức **lớp kính** và **rig nhân vật**. Lớp
+kính là đúng chỗ A9 nổ, và `glass-card.tsx:154` còn nằm trong danh sách nhánh
+theo theme mà `theme-shape.mjs` đóng băng.
+
+Một màn hình dựng ra *vì* có thứ vừa hỏng không được chia phụ thuộc với chỗ hay
+hỏng nhất — nếu fallback cũng ném, React tháo luôn cả biên và ta quay lại đúng
+màn trắng. Nên nó dựng bằng **token** (`usePalette`, `spacing`, `type`,
+`radius`): cùng ngôn ngữ thiết kế, cùng theme, không kính, không SVG, không
+Reanimated. `Pressable` trần thay `PressScale` vì cùng lý do.
+
+**Và nó không nói lỗi là gì** — không thông điệp, không stack, không mã.
+
+### Hồi phục: vòng lặp đo bằng THỜI GIAN
+
+Nút "Thử lại" đặt lại state. Hỏng **ngay** sau hai lần thử → ngừng mời và đổi
+sang "đóng app rồi mở lại". Nhưng một sự cố khác **một phút sau** thì lại được
+mời: một bộ đếm trần thì sai cả hai chiều — coi hai sự cố cách nhau nửa tiếng là
+một vòng lặp, và không bao giờ mời thử lại nữa sau đó.
+
+### Một hệ quả phải bù lại
+
+`ErrorUtils` **không thấy** lỗi đã bị boundary bắt. Nên thêm boundary vào một app
+đang ghi nhật ký sự cố là lặng lẽ làm nhật ký ấy **thôi ghi** đúng loại lỗi nó
+sinh ra để bắt — đổi khả năng *nhìn thấy* lấy khả năng *hồi phục*. Không đổi:
+`componentDidCatch` gọi `recordCrash` kèm `componentStack` (thứ duy nhất nói
+được **màn nào** hỏng khi stack của bundle đã minify thì không).
+
+Và `recordCrash` **lọc qua `telemetry-scrub`** trước khi ghi: `settings.tsx:126`
+có nút "chạm để gửi đi" gọi `Share.share` với toàn bộ nhật ký, nên đây là một
+đường telemetry thật. Thử ngược: bỏ `scrubText` ra → 2 lỗi (UUID, token).
+
+### Kiểm chứng — chạy thật, không đọc mã
+
+`tools/error-boundary.mjs` nạp **React 19 + ReactDOM thật vào một trình duyệt
+thật**, nạp component đã biên dịch, và cho một con **ném lúc render**. Bảy nhóm
+khẳng định, **năm phép thử ngược, tất cả bắt được**:
+
+| Thử ngược | Nó nói gì |
+|---|---|
+| gõ sai `getDerivedStateFromError` | fallback không hiện — tức **màn trắng**, đúng lỗi mà biên sinh ra để chặn |
+| nút thử lại không đặt lại state | con không dựng lại |
+| boundary không ghi vào nhật ký | 3 lỗi: 0 mục, sai `fatal`, thiếu `componentStack` |
+| đếm vòng lặp bằng **số lần** | sự cố sau một phút vẫn bị coi là vòng lặp |
+| fallback mượn `GlassCard` | luật tĩnh đỏ |
+
+Và nó chứng minh fallback **không in** token, UUID, tên bảng hay chữ "Error".
+
+**Không chứng minh:** nó chạy trong DOM, không phải iOS. Bố cục,
+`UIVisualEffectView` và lớp interop cần một bản dựng thật.
+
+**Một bước kiểm cũ bắt được tôi:** `crash-log.mjs` đỏ vì tôi thêm một phụ thuộc
+mà nó chưa biết. Đã dạy nó, và thêm luật cho tính chất mới (mục ghi phải sạch).
+
+---
+
+## CI-PG — XONG (2026-09-08)
+
+Chi tiết đầy đủ ở `docs/HA-TANG.md`. Ở đây là phần đáng nhớ.
+
+**Con số vòng trước SAI.** "11/14 không có đường lui" được đếm bằng
+`grep -c "su postgres"` trừ số dòng có `||`, và ba tệp trong danh sách đã có
+nhánh quyền đúng từ trước. Thật ra là **8**. Một phép đếm chữ không phải một
+phép đo hành vi — cùng bài học với `theme-shape` và `scan-food-boundary`.
+
+**`|| pg_ctl` là câu trả lời sai.** `initdb` **từ chối chạy dưới root**, nên
+thử-rồi-lui sẽ chạy nó bằng root ở lần thử thứ hai và nhận `cannot be run as
+root` — đổi một lỗi rõ ràng lấy một lỗi khó đọc hơn. Điều kiện là QUYỀN, nên
+phép rẽ phải là quyền. `chown` cũng phải nằm trong nhánh ấy.
+
+**Tám tệp, sửa và kiểm từng cái**, mỗi cái hai lần, và mỗi lần phải thấy
+`PostgreSQL 16.13` thật chứ không phải một lần bỏ qua: `acwr-consistency` ·
+`error-copy` · `nutrition-averages` · `readiness-anchor` ·
+`readiness-confidence` · `readiness-integrity` · `workload-volume` ·
+`workout-sync-integrity`. **8/8 exit 0 dưới root và 8/8 exit 0 dưới người dùng
+thường** (trước đó `acwr-consistency` là exit 1).
+
+**Một lỗi CI thứ hai, tìm ra khi đang kiểm.** `nutrition-averages` gọi `npx tsc`
+với `cwd` là thư mục tạm, nên npx đi ra registry tìm một gói **tên là `tsc`** —
+một stub đã ngừng bảo trì, không phải TypeScript. Đo được dưới một người dùng
+mới: `npm error request to https://registry.npmjs.org/tsc failed`. Đã gọi thẳng
+`node_modules/typescript/bin/tsc`.
+
+**Dụng cụ đo của tôi sai một lần nữa.** Phép thử đầu chạy dưới `nobody`, vốn có
+HOME `/nonexistent`, nên `npx` hỏng vì lý do đó chứ không vì quyền. Đã đổi sang
+một người dùng có HOME ghi được, giống runner thật.
+
+**`tools/pg-harness.mjs`** (mới, trong cổng) giữ tính chất bằng luật tĩnh, và nó
+tìm ra **hai tệp nữa** mà phép phân loại của tôi bỏ sót. Nó phân biệt đúng chỗ
+cần: `su … || pg_ctl` vẫn được phép cho lệnh **dừng** (an toàn hai chiều) nhưng
+không cho `initdb`/`start`. Nó cũng phải **trừ chính mình** — chuỗi luật của nó
+khớp mọi mẫu nó đi tìm.
+
+**Hệ quả: workflow bỏ `sudo`** cho bước chạy bộ kiểm; nó chỉ còn ở hai bước cài
+gói hệ thống. `ci-preflight` bỏ luật `su postgres` — một luật canh một điều kiện
+đã hết chỉ còn chặn nhầm.
+
+**Chưa đo được:** chạy TOÀN BỘ bộ kiểm dưới người dùng thường ở máy này ra **17
+bước đỏ**, nhưng cả 17 là `EACCES` ghi vào cây nguồn — cây ở đây thuộc `root`.
+Trên runner thật, `actions/checkout` tạo cây thuộc chính người chạy. Phép đo dứt
+điểm cần đổi chủ cả cây và thao tác ấy bị chặn ở môi trường này, nên điều này
+được **suy ra**, không được chứng minh. `ci-preflight` nay thử ghi vào `native/`
+và nói thẳng nếu không được — một dòng thay cho mười bảy stack trace.
+
+**Ba lần dụng cụ đo sai trong vòng này**, mỗi lần tạo một lỗi giả: HOME
+`/nonexistent` của `nobody` (npx đi tải gói) · PATH trỏ node 20 thay vì 22 · git
+từ chối repo thuộc người khác. Không lần nào là lỗi của mã đang kiểm.
+
+---
+
 ## Còn mở
 
 | ID | Mức | Vấn đề | Việc tiếp theo |
 |---|---|---|---|
+| ERRBOUND-2 | P3 | Không có biên thứ hai ở ngoài các provider | Cần một **quyết định thiết kế**: fallback ấy không đọc được theme hay ngôn ngữ, nên phải viết cứng màu và chọn một ngôn ngữ |
 | DEP-1 | P2 | 21 gói trễ, gồm `react-native-screens` 4.25.2→4.26.0 và `react-native` 0.86.0→0.86.3 | Cần dựng lại native để xác nhận — quyết định của chủ dự án |
 | A3 | P1 | Ghi khi mất mạng không sống sót (xem `SO-GHI-LOI.md`) | Cần một bước kiểm chứng minh cả ~30 mutation đặt đúng key **trước khi** bắt đầu |
 | A7 | P2 | Xoá buổi tập không dựng lại các ngày ở giữa | xem `SO-GHI-LOI.md` |
 | A8 | P2 | Android không có blur thật sau status bar | Giới hạn có chủ ý |
-| CI-PG | P3 | 11 bước kiểm gọi `su postgres` không có đường lui → không chạy được dưới người dùng thường | Thêm `\|\| pg_ctl` như 3 bước kia đã có. 11 tệp đang chạy đúng, cần một vòng riêng có thử ngược từng tệp |
-| ERRBOUND | P2 | `src/` không có `ErrorBoundary` — lỗi khi dựng cây làm trắng màn | Cần một màn hình được thiết kế; là việc giao diện, không phải hạ tầng |
 | AI-DEPLOY | P1 | Không function nào được deploy; sáu tính năng AI không có backend | Chủ dự án: `docs/AI-TRIEN-KHAI.md` mục 3–5. Cần `supabase` CLI + quyền |
 | P3-1 | P3 | `settings` / `mascot-room`: `transform-origin` là thuộc tính DOM sai trên web | Chuỗi CSS của Koa; bản native đọc đúng qua `koa-figure.tsx:461`. Chỉ là tiếng ồn trên web |
 

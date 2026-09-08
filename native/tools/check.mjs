@@ -162,6 +162,13 @@ const STEPS = [
   ['màu thanh tab', 'node', ['tools/tab-tint.mjs']],
   ['đường cong điểm ngủ', 'node', ['tools/sleep-curve.mjs']],
   ['nhật ký sự cố', 'node', ['tools/crash-log.mjs']],
+  /* Cạnh nhật ký sự cố, vì hai bước trả lời hai nửa của cùng một câu: cái gì
+     GHI LẠI được khi app hỏng, và app có còn đứng được sau đó không. */
+  ['biên bắt lỗi', 'node', ['tools/error-boundary.mjs']],
+  /* Bộ khung của 14 bước dùng PostgreSQL — một luật TĨNH, nên nó rẻ và nó chạy
+     ngay cả trên máy không có PostgreSQL, đúng chỗ cần: bắt một bước mới viết
+     theo lối chỉ-chạy-dưới-root ở ngày nó được viết. */
+  ['bộ khung PostgreSQL', 'node', ['tools/pg-harness.mjs']],
   /* Ngay sau nhật ký sự cố, vì hai tệp trả lời hai nửa của cùng một câu hỏi:
      cái gì được GHI LẠI khi app chết, và cái gì được phép RỜI KHỎI máy. */
   ['lọc telemetry', 'node', ['tools/telemetry-scrub.mjs']],

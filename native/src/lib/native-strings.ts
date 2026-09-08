@@ -151,6 +151,9 @@ const en = {
   // weight history.
   nLoadFailed: 'Could not load your data',
   nLoadFailedHint: 'Your data is safe. The app just could not reach it.',
+  nCrashTitle: 'This screen stopped working',
+  nCrashHint: 'Your data is safe — nothing was lost. Open the screen again.',
+  nCrashStuck: 'It still will not open. Close the app and start it again.',
   // What the target-calibration card promises, and it has to be true: this
   // runs on the device, not on a model.
   nCalibrateHint:
@@ -937,6 +940,9 @@ const vi: typeof en = {
   // Cố ý không nhắc "hôm nay": thẻ này còn hiện ở Tiến trình và Buổi tập.
   nLoadFailed: 'Không tải được dữ liệu',
   nLoadFailedHint: 'Dữ liệu của bạn vẫn an toàn, chỉ là app chưa lấy được.',
+  nCrashTitle: 'Màn hình này vừa dừng lại',
+  nCrashHint: 'Dữ liệu của bạn vẫn an toàn, không mất gì cả. Thử mở lại màn hình.',
+  nCrashStuck: 'Vẫn chưa mở lại được. Hãy đóng app rồi khởi động lại.',
   nCalibrateHint:
     'Đo tiêu hao thật của bạn từ lượng ăn và biến động cân nặng, rồi đề xuất mục tiêu calo khớp với nó.',
   nRetry: 'Thử lại',

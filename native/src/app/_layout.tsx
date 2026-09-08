@@ -19,6 +19,7 @@ import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { makeStyles } from '@/constants/theme';
 import { usePalette, useThemeName } from '@/hooks/use-palette';
 import { AppLockProvider } from '@/hooks/use-app-lock';
+import { AppErrorBoundary } from '@/components/ascnd/error-boundary';
 import { installCrashHandler } from '@/lib/crash-log';
 import { AppSettingsProvider, useI18n } from '@/hooks/use-app-settings';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
@@ -236,7 +237,39 @@ function LockedApp() {
         reads.
       */}
       <CoachChatProvider>
-        <Gate />
+        {/*
+          Biên bắt lỗi, và đây là chỗ HẸP NHẤT còn đúng.
+
+          Mọi màn hình của app nằm dưới `Gate` — `AuthScreen`, `OnboardingFlow`,
+          và cả `<Stack>` với toàn bộ route. Nên một lỗi lúc dựng cây ở bất kỳ
+          màn nào đều đi qua đây.
+
+          Và nó nằm TRONG `AppSettingsProvider` với `AuthProvider`, nên màn thay
+          thế đọc được bảng màu và ngôn ngữ. Đặt cao hơn — trên các provider —
+          thì fallback không có theme, không có tiếng Việt, và phải là một màn
+          hình viết cứng bằng màu gõ tay.
+
+          Ba anh em bên dưới ở NGOÀI biên, và đó là chủ ý: dải báo mất mạng, chỗ
+          hiện toast và cổng khoá app vẫn sống khi màn hình chính đã hỏng.
+
+          ── cái biên này KHÔNG bắt ──
+
+          Lỗi ném từ chính các provider ở trên nó (`AppSettingsProvider`,
+          `AuthProvider`, `NavTheme`, `LockedApp`, `AppLockProvider`,
+          `CoachChatProvider`) — muốn bắt thì cần một biên thứ hai ở ngoài cùng,
+          và fallback của nó không đọc được theme hay ngôn ngữ. Đó là một quyết
+          định về thiết kế, không phải một dòng code, nên nó được ghi ở
+          `docs/AUDIT_STATE.md` chứ không tự quyết ở đây.
+
+          Lỗi trong handler sự kiện, trong promise, trong `setTimeout` — React
+          không bắt loại nào trong đó, ở đâu cũng vậy. Chúng vẫn đi tới
+          `ErrorUtils` và vẫn vào nhật ký sự cố.
+
+          Và sự cố NATIVE — lớp lỗi của A9 — thì không mã JS nào bắt được.
+        */}
+        <AppErrorBoundary>
+          <Gate />
+        </AppErrorBoundary>
       </CoachChatProvider>
       <ConnectionBanner />
       <NeonToastHost />

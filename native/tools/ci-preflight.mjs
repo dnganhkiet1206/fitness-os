@@ -15,27 +15,24 @@
  * Nên: cùng một bộ kiểm, hai ngữ cảnh, và chỗ khác nhau được nói ra ở đây chứ
  * không giấu vào một cờ `--strict` mà rồi ai đó sẽ bỏ đi cho job xanh lại.
  *
- * ── và vì sao có luật về QUYỀN ──
+ * ── và vì sao KHÔNG còn luật về quyền ──
  *
- * Đo được, ở đúng máy này: `tools/acwr-consistency.mjs` chạy với một người dùng
- * không phải root thì
+ * Bản đầu của tệp này chặn khi `su postgres` không chạy được, vì mười một bước
+ * kiểm gọi nó không có đường lui và sẽ hỏng với "su: Authentication failure"
+ * dưới một người dùng thường.
  *
- *     • không dựng được phép thử ACWR: không khởi động được PostgreSQL:
- *       Password: su: Authentication failure
+ * Con số ấy SAI. Nó đếm bằng `grep -c "su postgres"` trừ đi số dòng có `||`, và
+ * ba tệp trong danh sách đã có nhánh quyền đúng từ trước. Con số thật là tám.
+ * Một phép đếm chữ không phải một phép đo hành vi.
  *
- * và thoát 1. Mười một trong mười bốn bước dùng cơ sở dữ liệu gọi `su postgres`
- * mà không có đường lui; ba bước còn lại (`awards-concurrency`,
- * `daily-log-concurrency`, `logged-day`) có `|| pg_ctl` nên chúng chạy được
- * dưới bất kỳ người dùng nào.
- *
- * Runner mặc định của GitHub chạy dưới `runner`, không phải root. Nên một
- * workflow ngây thơ sẽ ĐỎ vì một lý do không liên quan gì tới mã vừa sửa — đúng
- * cái mà phần đầu `check.mjs` đã cảnh báo về `tsconfig` và Playwright: *"the
- * check failing for a reason that has nothing to do with what it checks."*
- * Bước này nói ra điều đó bằng một câu, trước khi mất mười lăm phút.
+ * Cả tám nay đã rẽ theo quyền, và cả mười bốn đã được CHẠY THẬT dưới một người
+ * dùng thường. Nên điều kiện ấy không còn tồn tại, và một luật canh một điều
+ * kiện đã hết là một luật chỉ còn chặn nhầm. `tools/pg-harness.mjs` giữ chỗ
+ * ấy bằng một luật TĨNH, trong bộ kiểm, để một bước mới viết theo lối cũ bị bắt
+ * ở đúng chỗ nó được viết ra.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
@@ -67,29 +64,7 @@ if (!existsSync(path.join(NATIVE, 'node_modules', 'pg'))) {
   );
 }
 
-/* ── 3. quyền: `su postgres` có chạy được không ──
-   Hỏi bằng cách THỬ, không bằng cách đọc uid: một container chạy dưới root thì
-   được, một runner có sudo không mật khẩu cũng có thể được, và đoán sai theo
-   chiều nào cũng dẫn tới một job đỏ vì lý do sai. */
-let canSu = false;
-try {
-  execFileSync('su', ['postgres', '-c', 'true'], { stdio: 'ignore', timeout: 15000 });
-  canSu = true;
-} catch { /* không được thì thôi — câu trả lời nằm ở dưới */ }
-if (PGBIN && !canSu) {
-  problems.push(
-    '`su postgres` không chạy được ở đây. 11 trong 14 bước dùng cơ sở dữ liệu gọi nó KHÔNG CÓ đường lui '
-    + '(acwr-consistency, economic-integrity, error-copy, nutrition-averages, quest-lifecycle, '
-    + 'readiness-anchor, readiness-confidence, readiness-integrity, streak-freeze, workload-volume, '
-    + 'workout-sync-integrity) và sẽ hỏng với "su: Authentication failure" — một lỗi không nói gì về mã '
-    + 'vừa sửa. Chạy job dưới root (`container:` của GitHub Actions mặc định là root), hoặc thêm `|| pg_ctl` '
-    + 'cho 11 bước ấy như 3 bước kia đã có',
-  );
-} else if (canSu) {
-  notes.push('su postgres: được');
-}
-
-/* ── 4. Playwright, và CẢ trình duyệt ──
+/* ── 3. Playwright, và CẢ trình duyệt ──
    Hai chuyện khác nhau: `npm i playwright` cho thư viện, `playwright install`
    cho bản Chromium. Có cái đầu mà thiếu cái sau thì 6 bước hỏng ở lúc mở trình
    duyệt — muộn, sau khi đã dựng xong mọi thứ. */
@@ -115,7 +90,33 @@ if (!pw) {
   }
 }
 
-/* ── 5. TypeScript, và tsconfig mà `check.mjs` phụ thuộc vào ── */
+/* ── 4. cây làm việc phải GHI ĐƯỢC bởi người đang chạy ──
+
+   Nhiều bước ghi vào chính cây nguồn: `typed-routes` viết
+   `.expo/types/router.d.ts`, vài bước dùng `node_modules/.cache`. Nếu người
+   chạy job không sở hữu cây thì chúng hỏng hàng loạt với `EACCES` — đo được ở
+   máy này: 17 bước đỏ, và cả 17 đều là quyền ghi, không bước nào nói gì về mã.
+
+   Trên một runner thật `actions/checkout` tạo cây thuộc chính người chạy, nên
+   điều kiện này gần như luôn đúng. "Gần như luôn" là đúng lý do để hỏi ở đây:
+   ngày nó sai, câu trả lời phải là một dòng chứ không phải mười bảy stack
+   trace. */
+{
+  const probe = path.join(NATIVE, `.preflight-write-${process.pid}`);
+  try {
+    writeFileSync(probe, 'x');
+    rmSync(probe, { force: true });
+    notes.push('cây làm việc: ghi được');
+  } catch (e) {
+    problems.push(
+      `không ghi được vào \`native/\` (${e.code ?? e.message}). Nhiều bước ghi vào chính cây nguồn — `
+      + '`typed-routes` viết `.expo/types/router.d.ts` — nên chúng sẽ đỏ hàng loạt với EACCES, và không '
+      + 'stack trace nào nói gì về mã vừa sửa. Người chạy job phải sở hữu cây đã checkout',
+    );
+  }
+}
+
+/* ── 4. TypeScript, và tsconfig mà `check.mjs` phụ thuộc vào ── */
 if (!existsSync(path.join(NATIVE, 'node_modules', 'typescript'))) {
   problems.push('thiếu `node_modules/typescript` — bước `tsc --noEmit` sẽ hỏng');
 }

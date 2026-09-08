@@ -177,13 +177,19 @@ if (!PGBIN || !existsSync(PGCLIENT)) {
     try { return { code: 0, text: execFileSync('bash', ['-lc', cmd], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) }; }
     catch (e) { return { code: e.status ?? 1, text: (e.stdout || '') + (e.stderr || '') }; }
   };
-  const stopPg = () => sh(`su postgres -c "${PGBIN}/pg_ctl -D ${DATA} stop -m immediate" 2>/dev/null`);
+  /* Nhánh theo QUYỀN, không phải một cách gọi: `initdb`/`pg_ctl` từ chối chạy
+     dưới root nên root phải hạ quyền và `chown` thư mục dữ liệu; còn người dùng
+     thường thì `su` đòi mật khẩu và `chown` không có quyền, nên chạy thẳng mới
+     đúng. Lập luận đầy đủ ở `acwr-consistency.mjs`. */
+  const asPg = sh('id -u postgres').code === 0 && process.getuid && process.getuid() === 0;
+  const run = (c) => (asPg ? sh(`su postgres -c ${JSON.stringify(c)}`) : sh(c));
+  const stopPg = () => run(`${PGBIN}/pg_ctl -D ${DATA} stop -m immediate 2>/dev/null`);
 
   try {
     mkdirSync(DATA, { recursive: true });
-    sh(`chmod 755 ${work} && chown postgres:postgres ${DATA} && chmod 700 ${DATA}`);
-    sh(`su postgres -c "${PGBIN}/initdb -D ${DATA} -U postgres --auth=trust"`);
-    const started = sh(`su postgres -c "${PGBIN}/pg_ctl -D ${DATA} -o '-p ${PORT} -c listen_addresses=127.0.0.1 -k ${DATA} -c max_connections=200' -l ${DATA}/log -w -t 60 start"`);
+    if (asPg) sh(`chmod 755 ${work} && chown postgres:postgres ${DATA} && chmod 700 ${DATA}`);
+    run(`${PGBIN}/initdb -D ${DATA} -U postgres --auth=trust`);
+    const started = run(`${PGBIN}/pg_ctl -D ${DATA} -o "-p ${PORT} -c listen_addresses=127.0.0.1 -k ${DATA} -c max_connections=200" -l ${DATA}/log -w -t 60 start`);
     if (started.code !== 0) throw new Error(`không khởi động được PostgreSQL: ${started.text.slice(0, 300)}`);
 
     /* An orphan postmaster on this port would measure a different database

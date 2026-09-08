@@ -210,13 +210,19 @@ if (!PGBIN || !existsSync(PGCLIENT)) {
     try { return { code: 0, text: execFileSync('bash', ['-lc', cmd], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) }; }
     catch (e) { return { code: e.status ?? 1, text: (e.stdout || '') + (e.stderr || '') }; }
   };
-  const stopPg = () => sh(`su postgres -c "${PGBIN}/pg_ctl -D ${DATA} stop -m immediate" 2>/dev/null`);
+  /* Nhánh theo QUYỀN, không phải một cách gọi: `initdb`/`pg_ctl` từ chối chạy
+     dưới root nên root phải hạ quyền và `chown` thư mục dữ liệu; còn người dùng
+     thường thì `su` đòi mật khẩu và `chown` không có quyền, nên chạy thẳng mới
+     đúng. Lập luận đầy đủ ở `acwr-consistency.mjs`. */
+  const asPg = sh('id -u postgres').code === 0 && process.getuid && process.getuid() === 0;
+  const run = (c) => (asPg ? sh(`su postgres -c ${JSON.stringify(c)}`) : sh(c));
+  const stopPg = () => run(`${PGBIN}/pg_ctl -D ${DATA} stop -m immediate 2>/dev/null`);
 
   try {
     mkdirSync(DATA, { recursive: true });
-    sh(`chmod 755 ${out} && chown postgres:postgres ${DATA} && chmod 700 ${DATA}`);
-    sh(`su postgres -c "${PGBIN}/initdb -D ${DATA} -U postgres --auth=trust"`);
-    const started = sh(`su postgres -c "${PGBIN}/pg_ctl -D ${DATA} -o '-p ${PORT} -c listen_addresses=127.0.0.1 -k ${DATA}' -l ${DATA}/log -w -t 60 start"`);
+    if (asPg) sh(`chmod 755 ${out} && chown postgres:postgres ${DATA} && chmod 700 ${DATA}`);
+    run(`${PGBIN}/initdb -D ${DATA} -U postgres --auth=trust`);
+    const started = run(`${PGBIN}/pg_ctl -D ${DATA} -o "-p ${PORT} -c listen_addresses=127.0.0.1 -k ${DATA}" -l ${DATA}/log -w -t 60 start`);
     if (started.code !== 0) throw new Error(`không khởi động được PostgreSQL: ${started.text.slice(0, 300)}`);
 
     const psql = (sql, db = 'postgres') => {
@@ -261,8 +267,24 @@ if (!PGBIN || !existsSync(PGCLIENT)) {
     writeFileSync(path.join(out, 'src', 'nutrition-mean.ts'), read('src/lib/nutrition-mean.ts'));
     writeFileSync(path.join(out, 'src', 'edge.ts'),
       edgeMean + '\n' + edgeDays + '\nexport { nutritionMean, nutritionDays as edgeNutritionDays };\n');
-    execFileSync('npx', ['tsc', 'src/nutrition-mean.ts', 'src/edge.ts', '--ignoreConfig', '--outDir', out,
-      '--rootDir', 'src', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+    /*
+      `tsc` của DỰ ÁN, gọi thẳng — không qua `npx`.
+
+      `cwd` ở đây là thư mục tạm (các tệp .ts được chép vào đó), nên `npx` không
+      thấy `node_modules` của dự án và đi ra registry tìm một gói TÊN LÀ `tsc` —
+      một stub đã ngừng bảo trì, không phải TypeScript. Trên máy này nó im lặng
+      vì npm cache của root đã có sẵn; dưới một người dùng mới, đo được:
+
+          npm error request to https://registry.npmjs.org/tsc failed
+
+      Một bước kiểm phụ thuộc vào mạng là một bước kiểm đỏ vào ngày mạng hỏng,
+      với một thông báo không nói gì về dinh dưỡng. `cwd` giữ nguyên vì các tệp
+      nguồn nằm ở đó.
+    */
+    execFileSync(process.execPath,
+      [path.join(NATIVE, 'node_modules/typescript/bin/tsc'),
+        'src/nutrition-mean.ts', 'src/edge.ts', '--ignoreConfig', '--outDir', out,
+        '--rootDir', 'src', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: out, stdio: ['ignore', 'pipe', 'pipe'] });
 
     writeFileSync(path.join(out, 'drive.cjs'), DRIVER(PORT, PGCLIENT));

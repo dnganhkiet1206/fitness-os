@@ -173,13 +173,34 @@ if (!PGBIN || !existsSync(PGCLIENT)) {
     try { return { code: 0, text: execFileSync('bash', ['-lc', cmd], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }) }; }
     catch (e) { return { code: e.status ?? 1, text: (e.stdout || '') + (e.stderr || '') }; }
   };
-  const stopPg = () => sh(`su postgres -c "${PGBIN}/pg_ctl -D ${DATA} stop -m immediate" 2>/dev/null`);
+  /*
+    `su postgres` là một NHÁNH THEO QUYỀN, không phải một cách gọi.
+
+    `initdb` và `pg_ctl` từ chối chạy dưới root, nên khi phiên này LÀ root thì
+    bắt buộc phải hạ quyền — và phải `chown` thư mục dữ liệu, vì `mkdtempSync`
+    tạo nó 0700 thuộc root và initdb không đọc được.
+
+    Khi phiên KHÔNG phải root thì cả hai điều đó sai: `su` đòi mật khẩu và hỏng
+    với "Authentication failure", còn `chown` không có quyền. Lúc ấy chạy thẳng
+    mới đúng, và thư mục đã thuộc về chính người đang chạy.
+
+    Đo được, trước bản này: dưới một người dùng thường, bước này thoát 1 với
+    "su: Authentication failure" — một lỗi không nói gì về ACWR. Đó là đúng cái
+    `check.mjs` cảnh báo ở đầu tệp: một bước hỏng vì lý do không liên quan gì
+    tới thứ nó kiểm.
+
+    Không phải `|| pg_ctl`: thử-rồi-lui sẽ chạy initdb dưới root ở lần thử thứ
+    hai và nhận một lỗi khác. Điều kiện là QUYỀN, nên phép rẽ cũng phải là quyền.
+  */
+  const asPg = sh('id -u postgres').code === 0 && process.getuid && process.getuid() === 0;
+  const run = (c) => (asPg ? sh(`su postgres -c ${JSON.stringify(c)}`) : sh(c));
+  const stopPg = () => run(`${PGBIN}/pg_ctl -D ${DATA} stop -m immediate 2>/dev/null`);
 
   try {
     mkdirSync(DATA, { recursive: true });
-    sh(`chmod 755 ${out} && chown postgres:postgres ${DATA} && chmod 700 ${DATA}`);
-    sh(`su postgres -c "${PGBIN}/initdb -D ${DATA} -U postgres --auth=trust"`);
-    const started = sh(`su postgres -c "${PGBIN}/pg_ctl -D ${DATA} -o '-p ${PORT} -c listen_addresses=127.0.0.1 -k ${DATA}' -l ${DATA}/log -w -t 60 start"`);
+    if (asPg) sh(`chmod 755 ${out} && chown postgres:postgres ${DATA} && chmod 700 ${DATA}`);
+    run(`${PGBIN}/initdb -D ${DATA} -U postgres --auth=trust`);
+    const started = run(`${PGBIN}/pg_ctl -D ${DATA} -o "-p ${PORT} -c listen_addresses=127.0.0.1 -k ${DATA}" -l ${DATA}/log -w -t 60 start`);
     if (started.code !== 0) throw new Error(`không khởi động được PostgreSQL: ${started.text.slice(0, 300)}`);
 
     const psql = (sql, db = 'postgres') => {
