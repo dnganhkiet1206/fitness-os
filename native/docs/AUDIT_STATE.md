@@ -7,7 +7,7 @@ là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên co
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
 **Vòng gần nhất:** 2026-09-08 · sau ERRBOUND + CI-PG + lượt CI thật đầu tiên ·
-commit `afc2361` · nhánh `claude/ios-fitness-rebuild-omgulr`
+commit `ceb39f0` · nhánh `claude/ios-fitness-rebuild-omgulr`
 
 ---
 
