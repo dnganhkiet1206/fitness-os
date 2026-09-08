@@ -21,6 +21,7 @@ import { usePalette, useThemeName } from '@/hooks/use-palette';
 import { AppLockProvider } from '@/hooks/use-app-lock';
 import { AppErrorBoundary } from '@/components/ascnd/error-boundary';
 import { installCrashHandler } from '@/lib/crash-log';
+import { initObservability } from '@/lib/observability';
 import { AppSettingsProvider, useI18n } from '@/hooks/use-app-settings';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { CoachChatProvider } from '@/hooks/use-coach-chat';
@@ -290,6 +291,17 @@ export default function RootLayout() {
     `installCrashHandler` tự chốt một lần, nên gọi ở mỗi lần render không tốn gì.
   */
   installCrashHandler();
+  /*
+    Và lớp thứ ba, cho thứ hai lớp kia không nghe thấy.
+
+    `installCrashHandler` bắt lỗi JS chưa ai bắt; `AppErrorBoundary` bên dưới
+    bắt lỗi lúc dựng cây. Cả hai là mã JS, nên cả hai mù với một sự cố NATIVE —
+    lớp lỗi của A9, nơi tiến trình chết trước khi JS biết.
+
+    `initObservability` KHÔNG làm gì khi chưa đặt `EXPO_PUBLIC_SENTRY_DSN`, nên
+    tới ngày có DSN thì app chạy y hệt hôm nay: không một request nào.
+  */
+  initObservability();
   return (
     /*
       Every gesture in the app hangs off this, and its absence was a crash.

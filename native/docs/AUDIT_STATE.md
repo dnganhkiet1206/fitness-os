@@ -6,8 +6,11 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-08 · sau ERRBOUND + CI-PG + lượt CI thật đầu tiên ·
-commit `ceb39f0` · nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-08 · sau Sentry (nối xong, native chưa kiểm) ·
+commit `__H__` · nhánh `claude/ios-fitness-rebuild-omgulr`
+
+> **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
+> Trạng thái ở `docs/AI-TRIEN-KHAI.md` giữ nguyên, không đụng vào.
 
 ---
 
@@ -510,6 +513,53 @@ Và nó đóng luôn một chỗ trước đây chỉ *suy ra* được: chạy 
 một người dùng **không phải root** là được — điều mà container này không chứng
 minh nổi vì cây thuộc `root` và thao tác đổi chủ bị chặn. Runner chạy dưới
 `runner`, và 215 bước xanh.
+
+---
+
+## SENTRY — ĐÃ NỐI (2026-09-08), native CHƯA kiểm
+
+Chi tiết ở `docs/HA-TANG.md` mục 1. Ở đây là ba điều đáng nhớ.
+
+### Ranh giới cũ của tôi SAI, và cả hai vế đều đo được
+
+Vòng trước tôi ghi "không cài SDK từ máy này — cài mà không dựng lại thì import
+ném lúc chạy". Sai:
+
+- **Repo dùng CNG** (không có `ios/`, `android/`) → thêm native module là thay
+  đổi **cấu hình**, native sinh lúc dựng.
+- **Import không ném**: `wrapper.js:35` dùng `TurboModuleRegistry?.get()`.
+  `getEnforcing` chỉ ở `NativeRNSentry.js` và chú thích của Sentry nói nó ở đó
+  *"to pass codegen even if not used"*.
+
+Và **bài học A9 đã áp dụng trước khi cài**: gói khai `codegenConfig`
+`"type": "all"` — có kiến trúc mới. MaskedView 0.3.2 của A9 **không có dòng
+nào**. Đó là phép kiểm bắt buộc trước mọi native module trong app này.
+
+Bản: **`~7.11.0`** — danh sách tương thích của chính Expo cho SDK 57, không phải
+npm `latest` (8.25.0). `sentry-expo` không dùng (bản cuối 2024-02-15).
+
+### Hai móc, và cái thứ hai là cái quan trọng
+
+`beforeSend` chỉ chạy khi **JS còn sống**. Một sự cố native giết tiến trình: lớp
+native dựng báo cáo rồi gửi ở lần mở sau, và `beforeSend` **không bao giờ chạy
+cho nó**. Thứ duy nhất của JS còn vào được báo cáo ấy là breadcrumb, vì SDK
+chuyển tiếp từng cái sang native lúc chúng xảy ra — nên `beforeBreadcrumb` là
+chỗ chặn **duy nhất** cho đúng lớp lỗi Sentry được thêm vào để phục vụ.
+
+Thiếu nó thì Sentry vẫn "chạy" và mỗi báo cáo native mang theo URL PostgREST có
+`user_id=eq.<uuid>` cùng tên bảng sức khoẻ. Nó **trông như thành công**.
+
+### Ba mức "đã kiểm" — KHÔNG gộp
+
+| Mức | | Bằng chứng |
+|---|---|---|
+| Tĩnh | ✅ | luật 8 của `telemetry-scrub.mjs`; **4 phép thử ngược** đều bắt được: bỏ `beforeBreadcrumb`, bỏ `beforeSend`, bật `attachScreenshot`, DSN viết thẳng |
+| JS / runtime | ✅ | `scrubBreadcrumb` chạy thật; **cổng 215/215 xanh với SDK đã cài**, gồm 6 bước dựng bundle web + mở trình duyệt |
+| **Native (iOS)** | ❌ | Linux không dựng được iOS. **Chưa có gì** chứng minh sự cố native được bắt, được gửi, hay báo cáo ấy đã sạch |
+
+`tools/linked.mjs` bắt được một miễn trừ đã cũ (`scrubEvent` nay đã nối) và tôi
+gỡ luôn `observabilityEnabled` — một hàm viết cho một màn Cài đặt chưa tồn tại.
+Không ship thứ chưa ai gọi.
 
 ---
 

@@ -43,7 +43,7 @@ try {
   process.exit(1);
 }
 const req = createRequire(path.join(out, 'x.cjs'));
-const { scrubText, scrubUrl, scrubEvent, REDACTED } = req('./telemetry-scrub.js');
+const { scrubText, scrubUrl, scrubEvent, scrubBreadcrumb, REDACTED } = req('./telemetry-scrub.js');
 
 /** Còn sót một thứ đáng lẽ phải ẩn? */
 const leaks = (s, secret) => String(s).includes(secret);
@@ -186,36 +186,83 @@ const leaks = (s, secret) => String(s).includes(secret);
   want(scrubEvent({}) !== null, 'scrubEvent({}) trả null — một sự kiện bị chặn là một lỗi không ai biết');
 }
 
-/* ═══ 7. Bộ lọc phải được NỐI VÀO, không chỉ tồn tại ═══
+/* ═══ 7. scrubBreadcrumb — biên riêng tư cho sự cố NATIVE ═══
 
-   Ngày Sentry được cài, `scrubEvent` phải là `beforeSend`. Một bộ lọc viết xong
-   rồi để đó là bộ lọc không lọc gì — và đó là một chế độ hỏng lặng lẽ hơn hẳn
-   việc không có bộ lọc, vì có tệp thì người ta tin là đã xong.
+   Với một sự cố JS, `beforeSend` thấy cả sự kiện và lọc là đủ. Với một sự cố
+   NATIVE thì không: tiến trình chết, không mã JS nào chạy, và báo cáo do lớp
+   native dựng rồi gửi ở lần mở sau — `beforeSend` KHÔNG BAO GIỜ chạy cho nó.
 
-   Hôm nay chưa có SDK nên luật này chỉ canh chiều ngược: nếu Sentry ĐÃ được cài
-   mà `scrubEvent` không được truyền vào `beforeSend`, đỏ. */
+   Thứ duy nhất của JS còn đi được vào một báo cáo như thế là breadcrumb, vì SDK
+   chuyển tiếp từng cái sang native lúc chúng xảy ra. Nên đây là chỗ chặn duy
+   nhất cho đúng lớp lỗi mà Sentry được thêm vào để phục vụ. */
 {
-  const { readFileSync, existsSync } = await import('node:fs');
-  const pkg = JSON.parse(readFileSync(path.join(NATIVE, 'package.json'), 'utf8'));
+  const UID = '6f1c2a3b-4d5e-6f70-8192-a3b4c5d6e7f8';
+  const JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.aaaaaaaaaaaa';
+  const got = scrubBreadcrumb({
+    category: 'xhr',
+    type: 'http',
+    message: `GET hồ sơ của ai@example.com`,
+    data: { url: `https://x.supabase.co/rest/v1/sleep_logs?user_id=eq.${UID}`, method: 'GET', token: JWT },
+  });
+  const flat = JSON.stringify(got);
+  for (const [label, secret] of [['UUID', UID], ['token', JWT], ['email', 'ai@example.com']]) {
+    want(!leaks(flat, secret),
+      `scrubBreadcrumb còn ${label}: ${flat.slice(0, 160)} — breadcrumb đi SANG NATIVE trước khi có sự cố, `
+      + 'nên chưa lọc ở đây nghĩa là một báo cáo sự cố native mang theo nó, và `beforeSend` không cứu được');
+  }
+  want(got.category === 'xhr' && got.data.method === 'GET' && flat.includes('sleep_logs'),
+    `scrubBreadcrumb lọc quá tay, mất category/method/tên bảng: ${flat.slice(0, 160)}`);
+  want(flat.includes('?…'), 'scrubBreadcrumb không đánh dấu URL đã có query bị bỏ');
+}
+
+/* ═══ 8. Bộ lọc phải được NỐI VÀO, không chỉ tồn tại ═══
+
+   Ngày Sentry được cài, `scrubEvent` phải là `beforeSend` và `scrubBreadcrumb`
+   phải là `beforeBreadcrumb`. Một bộ lọc viết xong rồi để đó là bộ lọc không lọc
+   gì — và đó là một chế độ hỏng lặng lẽ hơn hẳn việc không có bộ lọc, vì có tệp
+   thì người ta tin là đã xong. */
+{
+  const { readFileSync: rf, existsSync: ex, readdirSync, statSync } = await import('node:fs');
+  const pkg = JSON.parse(rf(path.join(NATIVE, 'package.json'), 'utf8'));
   const hasSdk = Object.keys({ ...pkg.dependencies, ...pkg.devDependencies })
     .some((d) => /^@sentry\//.test(d));
   if (hasSdk) {
-    const { readdirSync, statSync } = await import('node:fs');
     const src = path.join(NATIVE, 'src');
-    let wired = false;
+    let all = '';
     const walk = (d) => {
       for (const e of readdirSync(d)) {
         const f = path.join(d, e);
         if (statSync(f).isDirectory()) { walk(f); continue; }
-        if (!/\.tsx?$/.test(f)) continue;
-        const t = readFileSync(f, 'utf8');
-        if (/beforeSend/.test(t) && /scrubEvent/.test(t)) wired = true;
+        if (/\.tsx?$/.test(f)) all += rf(f, 'utf8');
       }
     };
-    if (existsSync(src)) walk(src);
-    want(wired,
-      'SDK theo dõi sự cố đã được cài nhưng `scrubEvent` không được truyền làm `beforeSend` ở đâu cả — '
-      + 'một bộ lọc không được nối vào thì mọi thứ tệp này liệt kê đều đang rời khỏi máy người dùng');
+    if (ex(src)) walk(src);
+
+    want(/beforeSend[^\n]*scrubEvent/.test(all),
+      'SDK theo dõi sự cố đã cài nhưng `scrubEvent` không được truyền làm `beforeSend` — mọi thứ tệp này '
+      + 'liệt kê đang rời khỏi máy người dùng');
+    want(/beforeBreadcrumb[^\n]*scrubBreadcrumb/.test(all),
+      '`scrubBreadcrumb` không được truyền làm `beforeBreadcrumb`. Đó là chỗ chặn DUY NHẤT cho một sự cố '
+      + 'NATIVE — lớp lỗi của A9, và đúng lý do Sentry được thêm vào. Thiếu nó thì Sentry vẫn "chạy", vẫn '
+      + 'gửi được sự cố native, và mỗi báo cáo mang theo URL PostgREST có user_id cùng tên bảng sức khoẻ');
+
+    /* Và ba thứ KHÔNG bao giờ được bật ở app này: màn hình app LÀ dữ liệu sức
+       khoẻ, nên một ảnh chụp lúc sự cố là hồ sơ sức khoẻ gửi ra ngoài — và
+       không bộ lọc chữ nào đọc được một tấm ảnh. */
+    for (const [opt, why] of [
+      ['attachScreenshot', 'ảnh chụp màn hình là hồ sơ sức khoẻ, và không bộ lọc chữ nào đọc được một tấm ảnh'],
+      ['attachViewHierarchy', 'cây view mang theo mọi chuỗi đang hiện trên màn'],
+      ['sendDefaultPii', 'nó bật IP và header của request'],
+    ]) {
+      const m = new RegExp(`${opt}:\\s*(\\w+)`).exec(all);
+      want(m && m[1] === 'false',
+        `\`${opt}\` phải được đặt TƯỜNG MINH là false (thấy: ${m ? m[1] : 'không đặt'}) — ${why}. `
+        + 'Mặc định đúng hôm nay là một giá trị có thể đổi ở bản sau mà không ai đọc changelog');
+    }
+
+    /* Và không DSN nào được nằm trong repo. */
+    const dsnHit = /https:\/\/[0-9a-f]{16,}@[\w.-]*sentry\.io/.exec(all);
+    want(!dsnHit, `DSN Sentry viết thẳng trong src: ${dsnHit && dsnHit[0].slice(0, 30)}… — nó phải tới từ biến môi trường`);
   }
 }
 

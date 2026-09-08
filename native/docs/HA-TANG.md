@@ -12,7 +12,7 @@ biến nhất khiến một app nhỏ mang một hoá đơn của app lớn.
 
 | # | Dịch vụ | Trạng thái |
 |---|---|---|
-| 1 | **Sentry** — sự cố native + lỗi JS | bộ lọc riêng tư **XONG**; SDK chờ khoá + máy dựng native |
+| 1 | **Sentry** — sự cố native + lỗi JS | SDK đã cài & nối, **kiểm tĩnh + JS xong**; **native CHƯA kiểm** — chờ DSN + một bản dựng iOS thật |
 | 2 | **GitHub Actions** — tsc + bộ kiểm | **ĐÃ KIỂM CHỨNG** trên runner thật (lượt #3, `af46909`, success, 9m13s) |
 | 3 | Expo OTA | sau khi có hạ tầng phát hành |
 | 4 | PostHog | sau |
@@ -94,12 +94,65 @@ xuất hiện trong `package.json` mà `scrubEvent` không được truyền là
 ở đâu cả. Một bộ lọc viết xong rồi để đó lặng lẽ hơn hẳn việc không có bộ lọc —
 vì có tệp thì người ta tin là đã xong.
 
-### Dừng ở đây, và đây là ranh giới
+### SDK ĐÃ CÀI (2026-09-08) — và ranh giới cũ của tôi đã sai
 
-**Không cài SDK từ máy này.** `@sentry/react-native` là một native module: cài nó
-đòi một bản dựng native, và môi trường này là Linux không dựng được iOS. Cài mà
-không dựng lại thì import ném lúc chạy — tức đổi một app đang chạy lấy một app
-không mở được, để lấy một tính năng chưa dùng được.
+Vòng trước tôi viết "không cài SDK từ máy này… cài mà không dựng lại thì import
+ném lúc chạy". **Cả hai vế đều sai, và cả hai đã được đo:**
+
+**Repo dùng CNG.** Không có `ios/` hay `android/` trong cây — native được sinh
+lúc dựng. Nên thêm một native module là một thay đổi CẤU HÌNH, không phải một
+thay đổi cần máy dựng tại chỗ.
+
+**Import KHÔNG ném.** `wrapper.js:35` dùng `TurboModuleRegistry?.get('RNSentry')`
+— bản **không ném**. `getEnforcing` có trong `NativeRNSentry.js` nhưng chú thích
+nguồn của chính Sentry nói nó ở đó *"to pass codegen even if not used"* và nó
+không nằm trên đường chạy. Gói còn có `rnlibraries.web.js`, tức có bản cho web.
+
+**Và bài học A9 đã được áp dụng:** `@sentry/react-native` khai `codegenConfig`
+`"type": "all"` — có hỗ trợ kiến trúc mới. `@react-native-masked-view` 0.3.2,
+thứ đã điều tra trong A9, **không có một dòng nào**. Đó là phép kiểm phải chạy
+trước khi thêm bất kỳ native module nào vào app này.
+
+**Bản đã chọn: `~7.11.0`, không phải `latest` (8.25.0).** Danh sách tương thích
+của chính Expo cho SDK 57 chốt `~7.11.0`; đó là bản `npx expo install` chọn và
+`expo-doctor` kiểm. `sentry-expo` (Expo cũng liệt kê) **không dùng** — bản cuối
+của nó là 2024-02-15.
+
+### Đã nối, và nối ở HAI chỗ
+
+| Móc | Chạy cho | Vì sao cần |
+|---|---|---|
+| `beforeSend: scrubEvent` | sự kiện phía **JS** | lọc cả sự kiện |
+| `beforeBreadcrumb: scrubBreadcrumb` | **mọi** breadcrumb | ← chỗ chặn **duy nhất** cho sự cố NATIVE |
+
+Cái thứ hai là cái quan trọng và dễ bỏ sót nhất. Một sự cố native giết tiến
+trình: lớp native dựng báo cáo rồi gửi ở lần mở sau, và **`beforeSend` của JS
+không bao giờ chạy cho nó**. Thứ duy nhất của JS còn đi được vào báo cáo ấy là
+breadcrumb, vì SDK chuyển tiếp từng cái sang native lúc chúng xảy ra.
+
+Thiếu nó thì Sentry vẫn "chạy", vẫn gửi được sự cố native, và mỗi báo cáo mang
+theo URL PostgREST có `user_id=eq.<uuid>` cùng tên bảng sức khoẻ. **Chế độ hỏng
+tệ nhất ở đây: nó trông như thành công.**
+
+Ba tuỳ chọn được đặt **tường minh** là `false` dù mặc định đã thế —
+`sendDefaultPii`, `attachScreenshot`, `attachViewHierarchy` — vì màn hình app
+này **là** dữ liệu sức khoẻ, và không bộ lọc chữ nào đọc được một tấm ảnh. Một
+mặc định đúng hôm nay có thể đổi ở bản sau mà không ai đọc changelog.
+`tracesSampleRate: 0`: trace mang theo tham số của mọi request, tức đúng thứ bộ
+lọc đang gỡ ra.
+
+**Không đặt `EXPO_PUBLIC_SENTRY_DSN` thì `initObservability()` trả về ngay** —
+app chạy y hệt trước khi có Sentry, không một byte nào rời máy.
+
+### Ba mức "đã kiểm", KHÔNG được gộp
+
+| Mức | Trạng thái | Bằng chứng |
+|---|---|---|
+| **Tĩnh** | ✅ | `tools/telemetry-scrub.mjs` luật 8: đỏ nếu `@sentry/*` có mà `scrubEvent`/`scrubBreadcrumb` chưa nối, nếu ba tuỳ chọn kia không phải `false`, hoặc nếu có DSN viết thẳng. 4 phép thử ngược, tất cả bắt được |
+| **JS / runtime** | ✅ | `scrubBreadcrumb` chạy thật trên hình dạng breadcrumb của app; cổng 215/215 xanh **với SDK đã cài**, gồm cả 6 bước dựng bundle web và mở trình duyệt — tức thêm Sentry không làm hỏng app |
+| **Native (iOS)** | ❌ **CHƯA** | Không dựng được iOS ở Linux. Chưa có gì chứng minh sự cố native được bắt, được gửi, hay báo cáo ấy đã sạch |
+
+**Không được gộp ba mức này thành một chữ "đã kiểm chứng".**
 
 **Khoá còn thiếu — chính xác ba thứ, không cái nào được đặt vào git:**
 
@@ -112,13 +165,17 @@ không mở được, để lấy một tính năng chưa dùng được.
 Thiếu cái thứ hai thì sự cố native về **không có tên hàm** — chỉ là địa chỉ. Với
 đúng lớp lỗi như A9, đó là mất phần duy nhất cần đọc. Nên nó không phải tuỳ chọn.
 
-### Ba bước còn lại, khi có khoá và có máy dựng
+### Còn lại — và cả ba đều cần thứ không có ở đây
 
-1. `npx expo install @sentry/react-native` · thêm plugin vào `app.json`.
-2. Gọi `Sentry.init` cạnh `installCrashHandler()`, **no-op khi không có DSN** —
-   không đặt DSN thì app chạy y hệt hôm nay, và đó là điều kiện để bản thêm này
-   an toàn.
-3. `beforeSend: scrubEvent` — bước kiểm sẽ đỏ nếu quên.
+1. Đặt `EXPO_PUBLIC_SENTRY_DSN` (`.env` cục bộ + EAS secret). Chưa đặt thì mọi
+   thứ ở trên đã sẵn sàng và **im lặng**.
+2. Đặt `SENTRY_AUTH_TOKEN` + `SENTRY_ORG` + `SENTRY_PROJECT` làm EAS secret.
+   Config plugin đọc chúng từ env khi `app.json` không khai — và nó **tự xoá**
+   `authToken` khỏi config để khoá không lọt vào gói app.
+3. **Một bản dựng iOS thật**, rồi ép một sự cố native (`Sentry.nativeCrash()`),
+   rồi đọc báo cáo trên Sentry và **kiểm bằng mắt** rằng không có UUID, token
+   hay tên bảng nào trong breadcrumb. Chỉ bước ấy mới đổi ô "Native" ở trên
+   thành ✅.
 
 Giữ `crash-log.ts`. Nó không thừa: nó là thứ duy nhất đọc được **khi máy đang
 offline**, và nó không gửi gì đi đâu cả.

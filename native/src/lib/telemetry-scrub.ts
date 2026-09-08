@@ -41,10 +41,16 @@
  */
 
 /** Hình dạng tối thiểu của một sự kiện — khớp cấu trúc với Sentry, không import. */
+export interface Crumb {
+  message?: unknown;
+  data?: Record<string, unknown>;
+  [k: string]: unknown;
+}
+
 export interface TelemetryEvent {
   message?: unknown;
   exception?: { values?: { type?: unknown; value?: unknown }[] };
-  breadcrumbs?: { message?: unknown; data?: Record<string, unknown> }[];
+  breadcrumbs?: Crumb[];
   request?: { url?: unknown; query_string?: unknown; data?: unknown; headers?: unknown };
   user?: Record<string, unknown>;
   extra?: Record<string, unknown>;
@@ -130,6 +136,37 @@ export function scrubUrl(value: unknown): string {
 }
 
 /**
+ * Một breadcrumb đã lọc.
+ *
+ * ── vì sao nó là một hàm RIÊNG, không chỉ là một vòng lặp trong `scrubEvent` ──
+ *
+ * Với một sự cố JS, `beforeSend` thấy cả sự kiện và lọc là đủ. Với một sự cố
+ * NATIVE thì không: tiến trình chết, không mã JS nào chạy, và báo cáo được lớp
+ * native dựng lên rồi gửi ở lần mở app sau. `beforeSend` của JS **không bao giờ
+ * chạy cho nó**.
+ *
+ * Nhưng breadcrumb thì đi sang native TRƯỚC đó — SDK chuyển tiếp từng cái qua
+ * `RNSentry.addBreadcrumb` để lớp native có ngữ cảnh khi nó tự dựng báo cáo.
+ * Trên đường ấy có đúng một chỗ chặn được: `beforeBreadcrumb`.
+ *
+ * Nên hàm này là biên riêng tư cho lớp lỗi mà cả `crash-log.ts` lẫn error
+ * boundary đều không với tới được — tức đúng lớp lỗi của A9, và đúng lý do
+ * Sentry được thêm vào.
+ */
+export function scrubBreadcrumb(b: Crumb): Crumb {
+  const data = b.data ? { ...b.data } : undefined;
+  if (data) {
+    /* `url` là trường mà SDK tự điền cho mọi lời gọi mạng — chỗ rò nhiều nhất,
+       và chỗ duy nhất cần biết tên riêng. */
+    if ('url' in data) data.url = scrubUrl(data.url);
+    for (const k of Object.keys(data)) {
+      if (k !== 'url' && typeof data[k] === 'string') data[k] = scrubText(data[k]);
+    }
+  }
+  return { ...b, message: scrubText(b.message), ...(data ? { data } : {}) };
+}
+
+/**
  * Sự kiện đã lọc — hoặc `null` để KHÔNG gửi gì cả.
  *
  * Truyền thẳng làm `beforeSend`. Trả `null` chỉ khi sự kiện không còn nghĩa gì,
@@ -149,20 +186,7 @@ export function scrubEvent(event: TelemetryEvent | null | undefined): TelemetryE
     };
   }
 
-  if (Array.isArray(e.breadcrumbs)) {
-    e.breadcrumbs = e.breadcrumbs.map((b) => {
-      const data = b.data ? { ...b.data } : undefined;
-      if (data) {
-        /* `url` là trường mà SDK tự điền cho mọi lời gọi mạng — chỗ rò nhiều
-           nhất, và chỗ duy nhất cần biết tên riêng. */
-        if ('url' in data) data.url = scrubUrl(data.url);
-        for (const k of Object.keys(data)) {
-          if (k !== 'url' && typeof data[k] === 'string') data[k] = scrubText(data[k]);
-        }
-      }
-      return { ...b, message: scrubText(b.message), ...(data ? { data } : {}) };
-    });
-  }
+  if (Array.isArray(e.breadcrumbs)) e.breadcrumbs = e.breadcrumbs.map(scrubBreadcrumb);
 
   if (e.request) {
     /*
