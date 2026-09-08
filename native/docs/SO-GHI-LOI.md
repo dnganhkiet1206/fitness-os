@@ -98,7 +98,7 @@ thì vẫn nằm ở đây.
 
 ---
 
-### A9. `MaskedView` là một view manager của KIẾN TRÚC CŨ, chạy trên một app chỉ có kiến trúc mới
+### ~~A9. App thoát khi chạm vùng vòng tròn sẵn sàng sau khi đổi tab~~ — ĐÃ SỬA 2026-09-08
 
 | | |
 |---|---|
@@ -110,6 +110,12 @@ thì vẫn nằm ở đây.
 | **Đã bác bỏ (đừng đi lại)** | (1) NaN trong hình học SVG — 0/50 cú chạm. (2) Vòng lặp bố cục `Expander` ↔ `CardDeck.onHeight` — chỉ 3 phần tử được ghi style, không phải hàng trăm. (3) Cây kính bị tháo/dựng lại khi chạm — **0 lần** trên 20 cú chạm. (4) `[unowned self]` trong `expo-blur/BlurEffectView.draw` — có thật và đúng triệu chứng, nhưng cần một lần dealloc mà đường này không tạo ra. (5) Lỗi JS — nhật ký sự cố trong app rỗng, và nó bắt được mọi lỗi JS. |
 | **Còn thiếu để sửa** | Một trong hai, và cả hai đều cần máy thật để xác nhận: **(a)** nâng phụ thuộc — 21 gói đang trễ, trong đó `react-native-screens` 4.25.2 → 4.26.0 và `react-native` 0.86.0 → 0.86.3, đúng chỗ các bản vá lỗi recycle đổ về; **(b)** bỏ `MaskedView` khỏi màn Hôm nay. (b) chắc chắn hơn nhưng đụng vào một lớp đã đo kỹ, và `status-scrim.tsx` đã ghi vì sao không thể thay mặt nạ bằng nhiều tấm kính chồng lên nhau ("cost four live effect views, compounded the material's tint from 22% to 37%, and banded"). |
 | **Cách xác nhận trong 30 giây** | Máy thật: **Cài đặt → Quyền riêng tư & Bảo mật → Phân tích & Cải tiến → Dữ liệu phân tích**, mở mục `ASCND-…` đúng ngày. Nếu dòng đầu là `RCTComponentViewRegistry: Attempt to recycle a mounted view` hoặc `EXC_BAD_ACCESS` trong `RNCMaskedView` / `RCTLegacyViewManagerInteropComponentView` thì mục này đúng. Nếu không, mục này sai và phải chuyển xuống C. |
+| **NGUYÊN NHÂN GỐC (chốt bởi chủ dự án, 2026-09-08)** | Đường dựng KHÁC NHAU giữa hai theme. Bản tối dựng lớp kính/lớp phủ; bản sáng bỏ lớp ấy đi. Hai theme đi hai đường dựng khác nhau, và chính chỗ lệch đó làm app thoát trên iOS. |
+| **Trạng thái theme bị ảnh hưởng** | Cả hai — nhưng chỉ ở CHỖ LỆCH giữa chúng, không phải ở một theme riêng. Vì thế nó chỉ xuất hiện sau khi bản sáng ra đời, và chỉ khi người dùng đi qua một sự kiện dựng lại (đổi tab rồi quay lại, hoặc đổi theme). |
+| **Đã sửa thế nào** | Cho hai theme dùng CHUNG một đường dựng thay vì cho bản sáng bỏ bớt lớp. |
+| **Kiểm chứng** | Chủ dự án xác nhận trên máy thật, 2026-09-08: thao tác đã lặp lại được (đổi tab → về Hôm nay → chạm vùng vòng tròn) không còn làm app thoát. |
+| **`MaskedView` thì sao** | KHÔNG phải nguyên nhân gốc, và **không được gỡ hay thay chỉ vì sự cố này**. Phần điều tra ở trên vẫn đúng như một phép đo — gói 0.3.2 thật sự không có mã kiến trúc mới — nhưng nó mô tả một *điều kiện*, không phải nguyên nhân. Chỉ mở lại nếu có bằng chứng ĐỘC LẬP mới. |
+| **Trạng thái** | **ĐÓNG.** Không được xếp A9 là P0 đang mở sau mốc này. |
 
 ---
 

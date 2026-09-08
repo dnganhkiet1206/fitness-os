@@ -165,6 +165,7 @@ const STEPS = [
   ['rãnh vòng tròn', 'node', ['tools/ring-track.mjs']],
   ['lớp phủ tấm nội dung', 'node', ['tools/sheet-scrim.mjs']],
   ['nút lồng trong nút', 'node', ['tools/a11y-swallow.mjs']],
+  ['hình dạng cây theo theme', 'node', ['tools/theme-shape.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
   ['kiểu icon macro', 'node', ['tools/macro-icon-style.mjs']],
