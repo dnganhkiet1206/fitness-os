@@ -1,0 +1,114 @@
+# Cổng chất lượng — 211 bước, chạy trên máy của người khác.
+#
+# ── vì sao workflow này trông "nặng" hơn một `npm test` ──
+#
+# Bộ kiểm của repo này không phải unit test. Trong 211 bước có 14 bước dựng một
+# PostgreSQL thật từ toàn bộ migration rồi chạy SQL trên đó, và 6 bước mở một
+# trình duyệt thật. Không có hai thứ ấy thì bộ kiểm vẫn CHẠY — và đó chính là
+# vấn đề: 5 trong 14 bước cơ sở dữ liệu in "BỎ QUA phần hành vi" rồi thoát 0.
+#
+# Trên máy của người đang viết mã, hành vi ấy đúng: bắt họ dựng PostgreSQL để
+# sửa một cái nút là một cái giá vô lý. Trên CI thì nó thành một lời nói dối —
+# dấu tích xanh nói "211 bước đều xanh" trong khi năm bước chưa chạy dòng SQL
+# nào, và không ai đọc log của một job đã xanh.
+#
+# `tools/ci-preflight.mjs` là chỗ nói ra chỗ khác nhau ấy, và nó chạy TRƯỚC bộ
+# kiểm để một môi trường dựng thiếu hỏng trong ba mươi giây thay vì mười lăm
+# phút, kèm câu nói đúng cái đang thiếu.
+#
+# ── vì sao chạy dưới root ──
+#
+# Đo được: 11 trong 14 bước cơ sở dữ liệu gọi `su postgres` không có đường lui,
+# và dưới một người dùng thường chúng hỏng với "su: Authentication failure" —
+# một lỗi không nói gì về mã vừa sửa. Ba bước còn lại có `|| pg_ctl` nên chúng
+# chạy được dưới bất kỳ ai.
+#
+# Hai đường sửa, và ở đây chọn đường không đụng vào 11 tệp đang chạy đúng:
+# `sudo` cho bước chạy bộ kiểm. Đường kia — thêm `|| pg_ctl` cho cả 11 — tốt hơn
+# về lâu dài vì nó giúp cả người chạy trên máy mình, và nó được ghi lại ở
+# `docs/AUDIT_STATE.md` như một việc còn mở chứ không bị quên.
+#
+# ── và điều phải nói thẳng ──
+#
+# Tệp này CHƯA TỪNG CHẠY. Không có runner nào ở nơi nó được viết ra, nên mọi
+# dòng dưới đây là một giả định cho tới lần chạy đầu tiên. Nó được viết để hỏng
+# TO và SỚM nếu một giả định sai, chứ không phải để trông như đã xanh.
+
+name: Cổng chất lượng
+
+on:
+  push:
+    branches: ['claude/**', main]
+  pull_request:
+  workflow_dispatch:
+
+# Đẩy commit mới lên cùng một nhánh thì huỷ lượt đang chạy: bộ kiểm mất hàng
+# chục phút, và kết quả của một commit đã bị thay thế không ai dùng.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    # Ghim 24.04 chứ không dùng `ubuntu-latest`: `postgresql-16` là gói của
+    # noble, và ngày nhãn `latest` nhảy sang một bản Ubuntu khác thì bước cài
+    # đặt hỏng — với một thông báo về tên gói, không về mã vừa sửa.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+
+      # KHÔNG `--omit=dev`. `pg` và `typescript` đều là devDependency, và thiếu
+      # `pg` thì các bước cơ sở dữ liệu bỏ qua trong im lặng — đúng chế độ hỏng
+      # workflow này tồn tại để chặn. `npm ci` cũng chạy `postinstall`, tức
+      # `patch-package` áp hai bản vá trong `native/patches/`.
+      - name: Cài phụ thuộc
+        working-directory: native
+        run: npm ci
+
+      # Ubuntu 24.04 đã có sẵn PostgreSQL, nhưng cài tường minh thì bỏ được một
+      # giả định: nếu ảnh runner đổi, chỗ hỏng là dòng này chứ không phải một
+      # bước kiểm bỏ qua trong im lặng ở phút thứ mười.
+      - name: PostgreSQL 16
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-16
+
+      # Hai việc, không phải một: thư viện, rồi bản Chromium. Có cái đầu mà
+      # thiếu cái sau thì 6 bước hỏng ở lúc MỞ trình duyệt — sau khi đã dựng
+      # xong mọi thứ. `--with-deps` cần root, nên nó đi qua sudo.
+      - name: Playwright + Chromium
+        run: |
+          sudo npm install -g playwright
+          sudo npx playwright install --with-deps chromium
+
+      # Trước bộ kiểm, và cố ý. Một môi trường dựng thiếu hỏng ở đây trong ba
+      # mươi giây, kèm câu nói đúng cái đang thiếu, thay vì hỏng ở phút thứ
+      # mười lăm bằng một stack trace về `initdb`.
+      - name: Tiền kiểm môi trường
+        working-directory: native
+        run: sudo -E env "PATH=$PATH" node tools/ci-preflight.mjs
+
+      # Tách khỏi bộ kiểm dù bộ kiểm cũng chạy `tsc`: lỗi kiểu là lỗi hay gặp
+      # nhất và rẻ nhất để đọc, nên nó phải hiện ra thành một bước riêng chứ
+      # không lẫn vào một log dài.
+      - name: TypeScript
+        working-directory: native
+        run: npx tsc --noEmit -p tsconfig.json
+
+      # `sudo` vì 11 bước cơ sở dữ liệu gọi `su postgres`. `-E env "PATH=$PATH"`
+      # giữ node của setup-node — `sudo` trần dùng secure_path và sẽ tìm thấy
+      # một node khác, hoặc không tìm thấy node nào.
+      #
+      # Không `continue-on-error`, không `|| true`. Một cổng chạy được mà không
+      # chặn được thì chỉ là một cái đèn.
+      - name: 211 bước
+        working-directory: native
+        run: sudo -E env "PATH=$PATH" node tools/check.mjs

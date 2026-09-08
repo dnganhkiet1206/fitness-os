@@ -51,14 +51,16 @@ thì vẫn nằm ở đây.
 | **Đã làm 2026-08-10** | Điều kiện trên được tôn trọng: `tools/offline-durable.mjs` viết **trước**. Và thiết kế tránh hẳn "30 mutationFn" — tài liệu TanStack gọi cách đó là gần như bất khả thi với 20+ mutation. Thay vào đó **một khoá, một hàm mặc định**, thứ thay đổi là *dữ liệu*: `OfflineWrite` là object thuần, không bắt closure, không giữ `user` từ hook. Thao tác được **đặt tên** chứ không phải ghi bảng thô, vì có việc không chỉ là một câu lệnh — ghi buổi tập còn phải dựng lại readiness, và hàng đợi insert thô sẽ replay insert rồi lặng lẽ bỏ bước dựng lại. |
 | **Đã chuyển 3/30** | `water_logs`, `workout_sessions`, `weight_logs` — những chỗ thật sự xảy ra ở nơi mất sóng. **Chưa chuyển** phần còn lại; luật trong công cụ áp cho mọi chỗ *đã* dùng khoá, chưa ép mọi chỗ *phải* dùng. Đây là mở rộng dần, không phải đã xong. |
 
-### A4. `.env` nằm trong git
+### ~~A4. `.env` nằm trong git~~ — ĐÃ ĐÓNG 2026-09-08
 
 | | |
 |---|---|
-| **Bằng chứng** | Chạy **từ gốc repo**, không phải từ `native/` — file nằm ở gốc: `git ls-files .env` trả về `.env`, `git check-ignore -v .env` không khớp luật nào. (Chạy nhầm từ `native/` thì cả hai đều im lặng, và im lặng ở đây trông y hệt "đã sạch".) |
-| **Hiện tại** | Chỉ chứa giá trị công khai (anon key), nên **chưa lộ gì**. |
-| **Vì sao vẫn ghi** | Nguy hiểm là thói quen: người tiếp theo thêm một secret thật vào file đó sẽ publish nó mà không biết. |
-| **Còn thiếu để sửa** | Quyết định của chủ dự án: chỉ `git rm --cached` (lịch sử vẫn còn) hay viết lại lịch sử. Cái thứ hai đụng vào mọi clone và mọi PR đang mở — **không được tự quyết**. |
+| **Bằng chứng lúc mở** | Chạy **từ gốc repo**, không phải từ `native/`: `git ls-files .env` trả về `.env`, `git check-ignore -v .env` không khớp luật nào. (Chạy nhầm từ `native/` thì cả hai đều im lặng, và im lặng ở đây trông y hệt "đã sạch".) |
+| **Đã sửa phần theo dõi** | Commit `ce8c73f` gỡ tệp khỏi git. Đo lại 2026-09-08: `git ls-files .env` **rỗng**, và `git check-ignore -v .env` nay khớp `.gitignore:38`. Tệp cũng không còn trên đĩa. |
+| **Phần lịch sử — đã đo, KHÔNG cần viết lại** | Mục này từng để mở với câu "chỉ `git rm --cached` (lịch sử vẫn còn) hay viết lại lịch sử". Nay đã đọc mọi bản `.env` từng được commit, **chỉ lấy tên biến**: `VITE_SUPABASE_PROJECT_ID`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_URL`. Cả ba là giá trị công khai theo thiết kế (khoá publishable ship trong client), và cả ba mang tiền tố `VITE_` của project Lovable cũ — thứ mà bằng chứng runtime 2026-09-08 cho thấy **không còn phân giải được**. |
+| **Vì sao đóng chứ không "để đó"** | Viết lại lịch sử đụng vào mọi clone và mọi PR đang mở. Cái giá ấy chỉ đáng cho một secret THẬT bị lộ, và ở đây không có secret nào — nên để mục này mở là để một việc nguy hiểm nằm trong danh sách việc-nên-làm mà không ai dám đụng. |
+| **Luật còn lại** | `.gitignore` gốc dòng 37–40 giữ `.env`, `.env.*`, chừa `!.env.example`. Khoá thật đi vào EAS secret / Supabase secret, không vào tệp nào trong repo. |
+| **Trạng thái** | **ĐÓNG.** Mở lại chỉ khi có bằng chứng một secret THẬT từng nằm trong lịch sử. |
 
 ### ~~A5. Bucket `progress-photos` không giới hạn dung lượng hay kiểu file~~ — ĐÃ SỬA 2026-08-10
 

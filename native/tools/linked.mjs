@@ -88,6 +88,19 @@ const KNOWN = {
   'components/ascnd/studio/live-regions.ts: areaOf': 'chỉ tool ngân sách vẽ dùng',
   'hooks/use-library.ts: useWorkoutTemplateNames': 'danh sách tên mẫu, chưa màn nào cần',
   'lib/backend.ts: describeBackend': 'câu mô tả backend cho màn chẩn đoán chưa dựng',
+  /* Bộ lọc riêng tư cho Sentry, viết TRƯỚC khi SDK được cài — cố ý, và đây là
+     chỗ ghi vì sao cái "chưa nối" ấy không phải một sơ suất.
+
+     SDK là native module: cài nó đòi một bản dựng native, và không dựng lại thì
+     import ném lúc chạy. Còn bật theo dõi rồi mới viết bộ lọc thì đã gửi đi một
+     lần — URL PostgREST mang `user_id=eq.<uuid>` cùng tên bảng sức khoẻ, và
+     `scan-food` mang ảnh bữa ăn dưới dạng base64. Cái đã gửi thì không gọi về
+     được, nên thứ tự đúng là lọc trước, SDK sau.
+
+     Nó KHÔNG nằm chờ mà không ai canh: `tools/telemetry-scrub.mjs` luật 7 đỏ
+     ngay khi `@sentry/*` xuất hiện trong package.json mà `scrubEvent` chưa được
+     truyền làm `beforeSend`. Dòng miễn này bỏ đi cùng ngày đó. */
+  'lib/telemetry-scrub.ts: scrubEvent': 'beforeSend cho Sentry, viết trước SDK — xem docs/HA-TANG.md mục 1',
   'lib/i18n.ts: formatPrice': 'định dạng giá — chờ IAP',
   'lib/i18n.ts: useTranslation': 'API cũ của bản web, useI18n thay thế',
   'lib/training-card.ts: acwrPercent': 'chỉ tools/training-card.mjs kiểm',

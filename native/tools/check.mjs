@@ -162,6 +162,13 @@ const STEPS = [
   ['màu thanh tab', 'node', ['tools/tab-tint.mjs']],
   ['đường cong điểm ngủ', 'node', ['tools/sleep-curve.mjs']],
   ['nhật ký sự cố', 'node', ['tools/crash-log.mjs']],
+  /* Ngay sau nhật ký sự cố, vì hai tệp trả lời hai nửa của cùng một câu hỏi:
+     cái gì được GHI LẠI khi app chết, và cái gì được phép RỜI KHỎI máy. */
+  ['lọc telemetry', 'node', ['tools/telemetry-scrub.mjs']],
+  /* `ci-preflight` KHÔNG nằm ở đây: trên máy của người viết mã, thiếu PostgreSQL
+     là chuyện bình thường và bỏ qua là đúng. `ci-workflow` thì có, vì nó chỉ đọc
+     một tệp YAML và nó canh chỗ dễ mục nhất — một cổng vẫn chạy mà thôi chặn. */
+  ['cổng CI', 'node', ['tools/ci-workflow.mjs']],
   ['rãnh vòng tròn', 'node', ['tools/ring-track.mjs']],
   ['lớp phủ tấm nội dung', 'node', ['tools/sheet-scrim.mjs']],
   ['nút lồng trong nút', 'node', ['tools/a11y-swallow.mjs']],

@@ -6,7 +6,7 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-08 · sau vòng đường-AI · commit `bd03927` · nhánh
+**Vòng gần nhất:** 2026-09-08 · sau vòng hạ tầng (Sentry + CI) · nhánh
 `claude/ios-fitness-rebuild-omgulr`
 
 ---
@@ -16,11 +16,11 @@ gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trư�
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, không một dòng lỗi |
-| `node tools/check.mjs` | **XANH** | exit 0, **211** bước, tất cả xanh. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối |
+| `node tools/check.mjs` | **XANH** | exit 0, **213** bước, tất cả xanh. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối |
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này không đụng một dòng nào trong `native/src` — chỉ `supabase/functions`, `native/tools`, `native/docs`. Số gần nhất (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
 | Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | lý do như trên. Số gần nhất (vòng A11Y-2): lỗi JS 5 → 1, không màn nào trắng, cả hai chiều |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | lý do như trên; `tools/a11y-swallow.mjs` nằm trong 211 bước và vẫn xanh. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 211 bước ở trên |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | lý do như trên; `tools/a11y-swallow.mjs` nằm trong 213 bước và vẫn xanh. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 213 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
 
 ---
@@ -200,6 +200,89 @@ xanh trên bản deploy thật.
 
 ---
 
+## Hạ tầng — vòng 1 (2026-09-08)
+
+Kế hoạch đầy đủ, kèm lý do từng dịch vụ: **`docs/HA-TANG.md`**. Luật của trang
+ấy: một dịch vụ mới phải chỉ ra được **giới hạn đo được** của thứ đang có.
+
+### Sentry — bộ lọc XONG, SDK dừng ở ranh giới khoá
+
+**Nhu cầu, từ sổ lỗi của chính repo này.** A9 là app thoát hẳn, và cách duy nhất
+để xác nhận nó (ghi ở `SO-GHI-LOI.md` A9) là chủ dự án **cầm máy, vào Cài đặt
+của iOS, đọc bằng mắt**.
+
+**Giới hạn của `crash-log.ts`**, cả bốn đều là chỗ A9 rơi qua: nó gắn vào
+`ErrorUtils` nên **chỉ bắt lỗi JS** — A9 là `EXC_BAD_ACCESS`, tiến trình chết
+trước khi JS biết; nó nằm **trên máy người dùng**; giữ **5 mục**; **không gộp**
+được nên không biết một người hay ba trăm người dính. Không cái nào sửa được
+bằng cách viết thêm mã trong app.
+
+**Đã làm:** `src/lib/telemetry-scrub.ts` — bộ lọc riêng tư thuần, **không import
+Sentry**, kiểu khớp cấu trúc với `beforeSend`. Viết TRƯỚC vì SDK tự thêm
+breadcrumb cho mọi lời gọi mạng, và mạng của app này là PostgREST:
+`?user_id=eq.<uuid>&date=…` là *ai*, *bảng sức khoẻ nào*, *ngày nào* — còn
+`scan-food` gửi `image_base64`, tức **ảnh bữa ăn**. Bật rồi mới lọc là đã gửi đi
+một lần.
+
+`tools/telemetry-scrub.mjs` chạy thật cả ba hàm trên hình dạng dữ liệu app này
+sinh ra. **Năm phép thử ngược**, tất cả đỏ đúng chỗ — và phép thứ năm hạ ngưỡng
+base64 xuống 8 để chứng minh chiều **ẩn quá tay** cũng bị bắt: một bộ lọc biến
+mọi báo cáo thành `[đã ẩn]` cũng là một bộ lọc hỏng. Thứ tự luật có lý do: JWT
+phải bắt **trước** base64 chung, nếu không một khoá và một bức ảnh ẩn thành cùng
+một khối.
+
+**Ranh giới:** không cài SDK từ đây — nó là native module, môi trường này là
+Linux. Ba khoá còn thiếu, không cái nào vào git: `EXPO_PUBLIC_SENTRY_DSN`,
+`SENTRY_AUTH_TOKEN` (thiếu nó thì sự cố native **không có tên hàm**, tức mất
+đúng phần cần đọc cho lớp lỗi như A9), org + project slug.
+
+**`tools/linked.mjs` bắt được nó**, và điều đó đúng: "viết ra mà chưa nối" là
+một chế độ hỏng thật. Đã thêm vào danh sách miễn **kèm lý do**, và luật 7 của
+`telemetry-scrub.mjs` sẽ đỏ ngay khi `@sentry/*` xuất hiện mà `scrubEvent` chưa
+được truyền làm `beforeSend`.
+
+### GitHub Actions — workflow XONG, chưa chạy lần nào
+
+**Đo trước khi viết**, và hai số đo đổi hình dạng workflow:
+
+| Câu hỏi | Kết quả |
+|---|---|
+| Bộ kiểm cần gì | **14** bước cần PostgreSQL, **6** cần Playwright |
+| Thiếu PostgreSQL | **5** bước in "BỎ QUA" rồi **vẫn thoát 0** |
+| Chạy không phải root | `su nobody -c 'node tools/acwr-consistency.mjs'` → **exit 1**, `su: Authentication failure` |
+| Bao nhiêu bước thế | **11/14** gọi `su postgres` không có đường lui; 3 bước kia có `\|\| pg_ctl` |
+| `playwright` | **không phải phụ thuộc gì cả** — phải cài riêng trên CI |
+
+Nên: job chạy dưới **root**, và **một job xanh không đủ để tin** —
+`tools/ci-preflight.mjs` biến "bỏ qua trong im lặng" thành một lần hỏng to và
+sớm (kiểm cả `su postgres` **bằng cách thử thật**, và cả **bản Chromium** chứ
+không chỉ thư viện). `tools/ci-workflow.mjs` nằm trong cổng, **phân tích** YAML
+chứ không dò chữ, canh chỗ dễ mục nhất: cổng vẫn chạy mà thôi chặn. Sáu phép thử
+ngược, tất cả đỏ đúng chỗ.
+
+**Workflow chưa từng chạy** — không có runner ở nơi nó được viết. Nó được viết
+để hỏng to và sớm nếu một giả định sai. **Không cần khoá nào.**
+
+### Không thêm
+
+Stripe · Clerk · Upstash/Redis · Pinecone · backend/auth/CSDL thứ hai. Chưa có
+phép đo nào nói stack hiện tại không làm được việc của chúng. Ngày có, nó được
+ghi vào `docs/HA-TANG.md` **trước khi** gói được cài.
+
+---
+
+## A4 — ĐÓNG (2026-09-08)
+
+`.env` trong git. Đã đo lại: `git ls-files .env` **rỗng**, `git check-ignore -v
+.env` khớp `.gitignore:38`, tệp không còn trên đĩa (sửa ở `ce8c73f`). Phần lịch
+sử — thứ mục này để mở — nay cũng đã đo: mọi bản `.env` từng commit chỉ chứa
+`VITE_SUPABASE_PROJECT_ID`, `VITE_SUPABASE_PUBLISHABLE_KEY`,
+`VITE_SUPABASE_URL`, đều công khai theo thiết kế và đều thuộc project Lovable cũ
+vốn **không còn phân giải được**. Viết lại lịch sử đụng vào mọi clone và mọi PR
+đang mở; cái giá ấy chỉ đáng cho một secret THẬT. Không có secret nào → đóng.
+
+---
+
 ## Còn mở
 
 | ID | Mức | Vấn đề | Việc tiếp theo |
@@ -208,6 +291,8 @@ xanh trên bản deploy thật.
 | A3 | P1 | Ghi khi mất mạng không sống sót (xem `SO-GHI-LOI.md`) | Cần một bước kiểm chứng minh cả ~30 mutation đặt đúng key **trước khi** bắt đầu |
 | A7 | P2 | Xoá buổi tập không dựng lại các ngày ở giữa | xem `SO-GHI-LOI.md` |
 | A8 | P2 | Android không có blur thật sau status bar | Giới hạn có chủ ý |
+| CI-PG | P3 | 11 bước kiểm gọi `su postgres` không có đường lui → không chạy được dưới người dùng thường | Thêm `\|\| pg_ctl` như 3 bước kia đã có. 11 tệp đang chạy đúng, cần một vòng riêng có thử ngược từng tệp |
+| ERRBOUND | P2 | `src/` không có `ErrorBoundary` — lỗi khi dựng cây làm trắng màn | Cần một màn hình được thiết kế; là việc giao diện, không phải hạ tầng |
 | AI-DEPLOY | P1 | Không function nào được deploy; sáu tính năng AI không có backend | Chủ dự án: `docs/AI-TRIEN-KHAI.md` mục 3–5. Cần `supabase` CLI + quyền |
 | P3-1 | P3 | `settings` / `mascot-room`: `transform-origin` là thuộc tính DOM sai trên web | Chuỗi CSS của Koa; bản native đọc đúng qua `koa-figure.tsx:461`. Chỉ là tiếng ồn trên web |
 
