@@ -138,6 +138,32 @@ ra thì nó đỏ lại ngay.
 
 ---
 
+## Bàn giao — vòng sau bắt đầu từ đâu
+
+**Việc đáng làm nhất mà KHÔNG cần máy thật: A3 (P1).** Và bắt đầu bằng bước kiểm,
+không bằng bản sửa — `SO-GHI-LOI.md` A3 đã ghi vì sao: cách sửa thật là persist
+mutation cache cộng `mutationKey` + `setMutationDefaults` cho khoảng ba mươi
+mutation, và *"một call site đặt sai key thì mutation đó **âm thầm** ngừng
+resume — không lỗi, không cảnh báo, chỉ là dữ liệu biến mất"*. Ba mươi chỗ để
+sai và không chỗ nào tự kêu. Nên thứ tự bắt buộc là: dựng một bước kiểm chứng
+minh được cả ba mươi chỗ đều đúng, **rồi mới** sửa.
+
+**Hai việc đang chờ chủ dự án, không ai khác làm được:**
+
+- **DEP-1** — 21 gói trễ. Cần một máy dựng native để đánh giá; đã được dặn
+  KHÔNG tự nâng.
+- Bản dựng iOS thật cho mọi thứ vòng này đã sửa. Bộ chạy web chứng minh được
+  cây trợ năng và bố cục; nó **không** chạy VoiceOver, không chạy
+  `UIVisualEffectView`, và không chạy lớp interop của kiến trúc mới.
+
+**Phối hợp:** một phiên song song đang đẩy vào CÙNG nhánh
+`claude/ios-fitness-rebuild-omgulr` (giai đoạn giao diện sáng, GĐ2C). Trước mỗi
+lần commit: `git fetch` rồi rebase. Khi đụng đúng dòng họ vừa sửa mà thay đổi
+của mình làm ĐỔI bản tối, nhường bản của họ — `tools/dark-frozen.mjs` đang giữ
+lời hứa "bản tối không đổi một ký tự nào" của giai đoạn đó.
+
+---
+
 ## Cách cập nhật trang này
 
 Sau mỗi vòng rà soát: đổi commit và ngày ở đầu, chạy lại bảng cổng chất lượng,
