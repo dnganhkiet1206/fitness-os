@@ -107,6 +107,33 @@ const providerFault = (status: number) =>
   status === 402 || status === 408 || status === 429 || status === 401 || status === 403 || status >= 500;
 
 /**
+ * Bao lâu thì coi như một bên KHÔNG TRẢ LỜI.
+ *
+ * ── vì sao cần một con số, và vì sao nó chỉ tính tới HEADER ──
+ *
+ * `fetch` trần không có hạn giờ. Một bên từ chối hay một bên hỏng mạng thì cơ
+ * chế dự phòng bên dưới chạy được — nhưng một bên TREO thì không: không có phản
+ * hồi, không có lỗi, nên vòng lặp đứng lại ở đúng bên hỏng và bên thứ hai không
+ * bao giờ được thử. Đó là chế độ hỏng duy nhất mà danh sách dự phòng không cứu
+ * được, và nó là chế độ dễ gặp nhất ở một nhà cung cấp vừa đổi.
+ *
+ * Hạn giờ này bao TỚI LÚC CÓ HEADER, rồi tắt. Không phải vì tiện: `signal`
+ * truyền vào `fetch` cũng huỷ luôn phần THÂN đang chảy, nên một hạn giờ bao cả
+ * request sẽ cắt ngang một cuộc trò chuyện dài ở giây thứ N — biến một tính năng
+ * đang chạy đúng thành một tính năng tự ngắt. `ai-coach` stream, và stream thì
+ * header tới gần như tức thì rồi thân chảy tiếp lâu tuỳ câu trả lời.
+ *
+ * ── phần nó KHÔNG bao ──
+ *
+ * Với lời gọi không stream, chỗ gọi mới là nơi đọc thân (`res.json()`), và phép
+ * đọc đó nằm ngoài hạn giờ này. Một bên trả header rồi treo giữa thân vẫn treo
+ * được. Nói ra ở đây thay vì để người sau tưởng đã kín: cứu nó cần một hạn giờ
+ * thứ hai ở mỗi chỗ gọi, tức đúng thứ "đừng lặp lại sáu lần" mà lớp này sinh ra
+ * để tránh — nên nó chờ một lý do thật, không phải một khả năng.
+ */
+const TIMEOUT_MS = Number(Deno.env.get("ASCND_AI_TIMEOUT_MS") ?? 20_000);
+
+/**
  * Gọi AI, thử lần lượt cho tới khi có bên trả lời.
  *
  * `body` KHÔNG mang `model` — mỗi bên có tên model riêng, và để chỗ gọi tự điền
@@ -133,17 +160,25 @@ export async function callAI(
   let last: Response | null = null;
   for (const p of list) {
     let res: Response;
+    /* Một controller cho mỗi bên: huỷ bên A không được đụng tới bên B. */
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
       res = await fetch(p.url, {
         method: "POST",
         headers: { Authorization: `Bearer ${p.key}`, "Content-Type": "application/json" },
         body: JSON.stringify({ ...body, model: opts.vision ? p.visionModel : p.model }),
+        signal: ctrl.signal,
       });
     } catch (e) {
-      /* Mạng hỏng hoặc DNS không phân giải được: coi như bên đó không tồn tại.
+      /* Mạng hỏng, DNS không phân giải được, hoặc hết giờ: cả ba đều là "bên đó
+         không trả lời", và câu trả lời đúng cho cả ba là thử bên tiếp theo.
          Log ở server — thông báo này mang theo hostname. */
       console.error("ai provider unreachable", e);
       continue;
+    } finally {
+      /* Tắt NGAY khi có header. Để nó chạy tiếp là để nó huỷ thân đang stream. */
+      clearTimeout(timer);
     }
     if (res.ok) return res;
     last = res;

@@ -1,7 +1,7 @@
 import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, corsHeaders, localDate, oneOf, opaque, quotaExceeded, recordTokens, requireUser, tokensOf } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, localDate, oneOf, opaque, quotaExceeded, recordTokens, requireUser, tokensOf, toolArgs } from "../_shared/guard.ts";
 import { localHour } from "../_shared/sleep.ts";
 
 /** Output ceiling — the reply is a short list of meals. */
@@ -194,15 +194,11 @@ NGUYÊN TẮC:
     /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
        lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
     await recordTokens(supabase, "ai-meal-suggest", tokensOf(result), gate === "overage");
-    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
-    let suggestions: any[] = [];
-
-    if (toolCall?.function?.arguments) {
-      try {
-        const parsed = JSON.parse(toolCall.function.arguments);
-        suggestions = parsed.suggestions || [];
-      } catch { /* empty */ }
-    }
+    /* Thiếu tool call là HỎNG, không phải "không có gợi ý nào" — xem `toolArgs`.
+       Danh sách rỗng bên trong một tool call hợp lệ thì vẫn là câu trả lời thật. */
+    const args = toolArgs(result, "suggest_meals");
+    if (!args) return opaque(new Error("model returned no usable tool call"), "ai_incomplete", 502);
+    const suggestions: any[] = Array.isArray(args.suggestions) ? args.suggestions : [];
 
     return new Response(JSON.stringify({ suggestions }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

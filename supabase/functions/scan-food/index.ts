@@ -1,7 +1,7 @@
 import { aiKey, aiUrl, aiVisionModel, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, corsHeaders, json, opaque, quotaExceeded, recordTokens, requireUser, tokensOf } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, json, opaque, quotaExceeded, recordTokens, requireUser, tokensOf, toolArgs } from "../_shared/guard.ts";
 
 /** Output ceiling — the reply is a small JSON object, never prose. */
 const MAX_TOKENS = 1500;
@@ -327,14 +327,11 @@ ${
     /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
        lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
     await recordTokens(supabase, "scan-food", tokensOf(data), gate === "overage");
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-
-    if (!toolCall) {
-      return new Response(
-        JSON.stringify({ items: [] }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    /* `{ items: [] }` kèm HTTP 200 từng là câu trả lời ở đây, và nó đọc ra là
+       "ảnh này không có món nào" — trong khi sự thật là model chưa bao giờ trả
+       lời. Xem `toolArgs`. */
+    const parsed = toolArgs(data, "analyze_food");
+    if (!parsed) return opaque(new Error("model returned no usable tool call"), "ai_incomplete", 502);
 
     /*
       The model's arguments, which are a suggestion until they are checked.
@@ -376,18 +373,15 @@ ${
       difference between a person retaking the picture and a person thinking the
       app is broken.
 
-      Parsed here rather than inside `clampItems`, which takes a value: keeping
-      that function about *what the numbers are* is what lets `tools/ai-coach.mjs`
-      drive it directly.
+      Phân giải nằm ở `toolArgs` chứ không ở trong `clampItems` — giữ cho hàm ấy
+      chỉ nói về *các con số là gì*, thứ khiến `tools/ai-coach.mjs` lái được nó
+      trực tiếp.
+
+      Khối `JSON.parse` từng đứng ở đây đã đi cùng `toolArgs`: nó bắt lỗi parse
+      rồi trả `{ items: [] }` kèm HTTP 200 — lần thứ hai trong cùng một hàm mà
+      "model không trả lời được" bị kể lại thành "ảnh này không có món nào".
     */
-    let args: unknown;
-    try {
-      args = JSON.parse(toolCall.function.arguments);
-    } catch {
-      console.error("scan-food: tool arguments were not JSON");
-      return json({ items: [] });
-    }
-    const result = clampItems(args);
+    const result = clampItems(parsed);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

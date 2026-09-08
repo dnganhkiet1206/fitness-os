@@ -1,7 +1,7 @@
 import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, corsHeaders, json, localDate, opaque, quotaExceeded, recordTokens, requireUser, tokensOf } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, json, localDate, opaque, quotaExceeded, recordTokens, requireUser, tokensOf, toolArgs } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 
 /** Output ceiling — the reply is a structured review, not an essay. */
@@ -242,14 +242,17 @@ Trả về insights (quan sát từ dữ liệu) và recommendations (hành đ�
     /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
        lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
     await recordTokens(supabase, "ai-weekly-review", tokensOf(result), gate === "overage");
-    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
-    let analysis = { summary: "", score: 0, insights: [], recommendations: [] };
+    /*
+      Không còn giá trị mặc định.
 
-    if (toolCall?.function?.arguments) {
-      try {
-        analysis = JSON.parse(toolCall.function.arguments);
-      } catch { /* use default */ }
-    }
+      Bản cũ trả `{ summary:"", score:0, … }` khi model không gọi hàm — tức một
+      con số 0 về TUẦN CỦA NGƯỜI DÙNG mà không ai từng nói ra. Đó không phải một
+      giá trị an toàn, đó là một lời bịa; và nó đi ra ngoài kèm HTTP 200 nên
+      không có gì trông như hỏng. Xem `toolArgs`.
+    */
+    const args = toolArgs(result, "weekly_analysis");
+    if (!args) return opaque(new Error("model returned no usable tool call"), "ai_incomplete", 502);
+    const analysis = args as { summary?: string; score?: number; insights?: unknown[]; recommendations?: unknown[] };
 
     return new Response(JSON.stringify(analysis), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

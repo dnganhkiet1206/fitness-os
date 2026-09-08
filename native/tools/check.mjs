@@ -419,6 +419,7 @@ const STEPS = [
   ['copy lỗi', 'node', ['tools/error-copy.mjs']],
   ['ranh giới AI', 'node', ['tools/ai-boundary.mjs']],
   ['xác thực edge function', 'node', ['tools/edge-auth.mjs']],
+  ['đường tới nhà cung cấp AI', 'node', ['tools/ai-provider.mjs']],
   ['ranh giới ảnh quét', 'node', ['tools/scan-food-boundary.mjs']],
   ['xoá tài khoản', 'node', ['tools/delete-account.mjs']],
   ['webhook cửa hàng', 'node', ['tools/store-webhook.mjs']],

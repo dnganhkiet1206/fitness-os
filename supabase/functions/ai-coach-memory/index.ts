@@ -299,6 +299,23 @@ serve(async (req) => {
         max_tokens: 1200,
     });
 
+    /*
+      `null` nghĩa là KHÔNG CÓ nhà cung cấp nào được cấu hình — khác hẳn với
+      "bên nào đó trả lỗi". Cổng cũ hỏi `if (!AI_KEY)`, và câu đó nay sai: thiếu
+      khoá CHÍNH không còn nghĩa là thiếu AI, vì bên dự phòng có thể đã có.
+
+      ── vì sao chốt này phải đứng ở ĐÂY ──
+
+      Nó từng nằm cách dưới 38 dòng, sau `res.ok`, `res.text()` và `res.json()`.
+      Ở đó nó là mã CHẾT: nếu `res` là null thì `res.ok` đã ném `TypeError`
+      trước khi tới nơi, và hàm trả về 500 kèm một dòng log nói sai chuyện gì
+      vừa xảy ra. Năm function AI còn lại đều chốt đúng chỗ; chỉ tệp này lệch.
+
+      Và trạng thái ấy không hiếm: "chưa có nhà cung cấp nào" chính là khoảnh
+      khắc đang xoay khoá — tức đúng lúc chuyển nhà cung cấp.
+    */
+    if (!res) return opaque(new Error("no ai provider configured"), "ai_unavailable");
+
     if (!res.ok) {
       console.error("memory gateway error", res.status, await res.text());
       return json({ error: "ai_unavailable" }, 502);
@@ -333,11 +350,6 @@ serve(async (req) => {
       dbUrl(),
       dbServiceKey(),
     );
-
-    /* `null` nghĩa là KHÔNG CÓ nhà cung cấp nào được cấu hình — khác hẳn với
-       "bên nào đó trả lỗi". Cổng cũ hỏi `if (!AI_KEY)`, và câu đó nay sai: thiếu
-       khoá CHÍNH không còn nghĩa là thiếu AI, vì bên dự phòng có thể đã có. */
-    if (!res) return opaque(new Error("no ai provider configured"), "ai_unavailable");
 
     const now = new Date().toISOString();
 

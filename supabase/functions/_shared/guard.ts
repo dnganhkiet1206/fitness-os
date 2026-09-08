@@ -206,7 +206,24 @@ export async function recordTokens(
   tokens: number,
   overage: boolean,
 ): Promise<void> {
-  if (!Number.isFinite(tokens) || tokens <= 0) return;
+  /*
+    Không có token để ghi thì NÓI RA, đừng lặng lẽ trả về.
+
+    Đường này từng `return` im lặng, và im lặng ở đây không phải "không có gì
+    xảy ra" — nó là "một lượt gọi AI vừa được phục vụ và không ai tính tiền".
+    Hai chuyện đó trông giống hệt nhau trong log, và cái thứ hai là chế độ hỏng
+    dễ gặp nhất khi đổi nhà cung cấp: một bên không trả `usage` thì mọi thứ vẫn
+    chạy đúng, chỉ có sổ sách về 0.
+
+    KHÔNG bịa ra một con số thay thế. Ghi một ước lượng vào `ai_usage` là biến
+    một chỗ trống thành một dữ kiện sai, và đó đúng là tội mà `ai-weekly-review`
+    vừa bị gỡ (`score: 0` cho một tuần mà model chưa từng chấm). Chỗ trống phải
+    ở lại là chỗ trống — nhưng phải đếm được.
+  */
+  if (!Number.isFinite(tokens) || tokens <= 0) {
+    console.error(`UNMETERED ${kind} — nhà cung cấp không trả usage.total_tokens; lượt gọi này không được tính tiền`);
+    return;
+  }
   const { error } = await supabase.rpc("spend_ai_tokens", {
     p_kind: kind,
     p_tokens: Math.round(tokens),
@@ -222,6 +239,60 @@ export async function recordTokens(
  * một bên không gửi thì lượt đó không tính tiền được — đó là mất mát về phía
  * mình, không phải về phía người dùng, nên nó im lặng trả 0.
  */
+/**
+ * Đối số của tool call mà chỗ gọi đã ÉP model phải gọi — hoặc `null`.
+ *
+ * ── lỗi nó sửa, và vì sao nó im lặng ──
+ *
+ * Bốn function gửi `tool_choice: {type:"function", function:{name}}`, tức bắt
+ * model gọi đúng một hàm. Khi điều đó KHÔNG xảy ra — model trả văn xuôi, hoặc
+ * nhà cung cấp bỏ qua tham số ép — bốn chỗ gọi từng làm cùng một việc:
+ *
+ *     let suggestions = [];
+ *     if (toolCall?.function?.arguments) { …parse… }
+ *     // rồi trả về HTTP 200 với danh sách rỗng
+ *
+ * Người dùng thấy một tính năng không có gì trong đó, không có lỗi nào, và
+ * `ai_usage` đã ghi token cho lượt gọi ấy. `ai-weekly-review` còn tệ hơn: nó
+ * trả về `{ summary:"", score:0, … }` — một con số 0 về tuần của người dùng mà
+ * model chưa từng nói.
+ *
+ * Đó chính là chế độ hỏng mà một nhà cung cấp mới dễ gây ra nhất: HTTP 200,
+ * thân hợp lệ, chỉ thiếu đúng thứ mình cần. Nên chỗ này biến nó thành một câu
+ * trả lời rõ ràng thay vì một khoảng trống.
+ *
+ * ── ba lần từ chối, và một lần KHÔNG từ chối ──
+ *
+ * `null` khi: không có tool call; tên hàm khác tên đã ép; hoặc `arguments`
+ * không parse ra một object.
+ *
+ * KHÔNG `null` khi danh sách bên trong rỗng. "Không có gợi ý nào cho hôm nay"
+ * là một câu trả lời thật của model, khác hẳn với "model chưa bao giờ trả lời".
+ * Gộp hai thứ đó lại là dựng lại đúng cái mù mà hàm này sinh ra để bỏ.
+ *
+ * ── vì sao không tự chuyển sang nhà cung cấp khác ──
+ *
+ * Vì `callAI` chọn nhà cung cấp TRƯỚC khi có thân phản hồi, và để nó đọc thân
+ * thì phải tiêu mất dòng stream của `ai-coach`. Một tool call thiếu cũng thường
+ * là chuyện của MODEL chứ không phải của nhà cung cấp, nên thử lại cùng một
+ * yêu cầu ở bên thứ hai là tiêu hai lượt gọi cho cùng một câu trả lời — đúng
+ * điều `providerFault` đã từ chối làm với 400/422.
+ */
+export function toolArgs(payload: unknown, name: string): Record<string, unknown> | null {
+  const fn = (payload as {
+    choices?: { message?: { tool_calls?: { function?: { name?: unknown; arguments?: unknown } }[] } }[];
+  })?.choices?.[0]?.message?.tool_calls?.[0]?.function;
+  if (!fn || typeof fn.arguments !== "string") return null;
+  if (typeof fn.name === "string" && fn.name !== name) return null;
+  try {
+    const parsed = JSON.parse(fn.arguments);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    return parsed as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 export function tokensOf(payload: unknown): number {
   const u = (payload as { usage?: { total_tokens?: unknown } })?.usage;
   const n = Number(u?.total_tokens);
@@ -280,7 +351,10 @@ export function meterStream(
     } catch (e) {
       console.error(`meterStream ${kind}`, e);
     }
-    if (total > 0) await recordTokens(supabase, kind, total, overage);
+    /* `total === 0` nghĩa là dòng đã chảy hết mà chưa từng có chunk `usage`.
+       Đó KHÔNG phải "cuộc trò chuyện này không tốn gì" — xem `recordTokens`.
+       Gọi nó với 0 để đúng một chỗ nói ra câu ấy, thay vì hai chỗ. */
+    await recordTokens(supabase, kind, total, overage);
   })();
 }
 

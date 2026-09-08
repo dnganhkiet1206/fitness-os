@@ -46,11 +46,20 @@
  * and the sheet appends it to B's meal. `SCAN_TTL_MS` bounds it to five
  * minutes, which is the whole difference between this and the Chain E bugs.
  *
- * **One unusable model reply escaped as a 500.** Every other shape lands on
+ * **One unusable model reply escaped as a 500.** Every other shape landed on
  * `{items: []}` — no tool call, empty `choices`, numbers that are not
  * measurements. Malformed tool *arguments* threw out of `JSON.parse` and the
  * outer catch handed the caller the parser's own sentence, after the quota had
  * been spent.
+ *
+ * Rule D has since split in two, and the split is the point. "The model never
+ * answered" and "the model answered and every number was rejected" were landing
+ * on one ending, and only the second of those makes `{items: []}` a true
+ * sentence — the first makes it a claim about the photograph. The never-answered
+ * group now ends on **502 `ai_incomplete`**; the clamped group still ends on
+ * `{items: []}`. Both properties the rule was really built on — uniform within a
+ * group, and no parser sentence reaching the client — are still asserted, and
+ * now asserted directly rather than through the literal that stood in for them.
  *
  * ── what these rules cannot tell you ──
  *
@@ -336,13 +345,63 @@ try {
       'clampItems phải DỰNG LẠI từng món chứ không lan truyền',
   );
 
-  /* ── D ── */
-  for (const [label, x] of Object.entries(r.replies)) {
+  /* ── D ── hai NHÓM, không phải một
+
+     Luật này canh hai tính chất, và cái kết cụ thể không phải một trong hai.
+     Thứ nó tìm ra ban đầu: một hình dạng (args hỏng) kết thúc KHÁC những hình
+     dạng kia, và nó ném 500 kèm nguyên câu của bộ phân tích JSON, sau khi hạn
+     mức đã bị trừ.
+
+     Bản đầu khẳng định `{"items":[]}` + 200 cho TẤT CẢ — tức nó canh cách sửa
+     đã chọn, và nó gộp hai chuyện khác nhau:
+
+       · MÔ HÌNH KHÔNG TRẢ LỜI — không có tool call, `choices` rỗng, args không
+         phải JSON, args rỗng, args ra một mảng thay vì object của schema.
+         `{"items":[]}` ở đây đọc ra là "ảnh này không có món nào", một lời về
+         BỨC ẢNH — trong khi sự thật là chưa có câu trả lời nào. Phải là lỗi.
+
+       · MÔ HÌNH CÓ TRẢ LỜI, và `clampItems` từ chối các con số — âm, vô hạn,
+         quá lớn, null. `{"items":[]}` ở đây ĐÚNG: đã có câu trả lời, và không
+         gì trong đó dùng được làm phép đo.
+
+     Gộp hai nhóm là xoá mất đúng phân biệt ấy. Nên: đồng nhất TRONG mỗi nhóm,
+     và hai nhóm phải KHÁC nhau. Chặt hơn bản cũ ở cả ba vế. */
+  {
+    const NEVER_ANSWERED = ['itemsIsArray', 'noToolCall', 'emptyChoices', 'argsNotJson', 'argsEmpty'];
+    const sig = (x) => `${x.status} ${x.body}`;
+    const bad = NEVER_ANSWERED.map((n) => [n, r.replies[n]]).filter(([, x]) => x);
+    const clamped = Object.entries(r.replies).filter(([n]) => !NEVER_ANSWERED.includes(n));
+
+    for (const [label, x] of bad) {
+      want(
+        sig(x) === sig(bad[0][1]),
+        `mô hình không trả lời (${label}) ra ${sig(x)}, khác với (${bad[0][0]}) ra ${sig(bad[0][1])} — ` +
+          'mọi hình dạng trong nhóm này phải kết thúc GIỐNG NHAU; bản đã ship để args hỏng ném ra 500 ' +
+          'kèm nguyên câu của bộ phân tích JSON, sau khi hạn mức đã bị trừ',
+      );
+      want(
+        x.status >= 400,
+        `mô hình không trả lời (${label}) ra ${sig(x)} — một tính năng RỖNG kèm HTTP 2xx đọc ra là ` +
+          '"ảnh này không có món nào", một lời về bức ảnh mà model chưa bao giờ nói',
+      );
+      want(
+        !/JSON|Unexpected token|SyntaxError/i.test(x.body),
+        `mô hình không trả lời (${label}) rò câu của bộ phân tích ra client: ${x.body.slice(0, 120)}`,
+      );
+    }
+
+    for (const [label, x] of clamped) {
+      want(
+        x.status === 200 && x.body.startsWith('{"items":[]}'),
+        `số đo bị clamp loại bỏ (${label}) ra ${sig(x)} thay vì 200 {"items":[]} — ở nhóm này mô hình ĐÃ ` +
+          'trả lời và không con số nào dùng được, nên "không có món dùng được" là một câu đúng',
+      );
+    }
+
     want(
-      x.status === 200 && x.body.startsWith('{"items":[]}'),
-      `phản hồi mô hình không dùng được (${label}) ra ${x.status} ${x.body} thay vì {"items":[]} — ` +
-        'mọi hình dạng không dùng được phải kết thúc giống nhau; bản đã ship để args hỏng ném ra 500 kèm ' +
-        'nguyên câu của bộ phân tích JSON, sau khi hạn mức đã bị trừ',
+      bad.length > 0 && clamped.length > 0 && sig(bad[0][1]) !== sig(clamped[0][1]),
+      'hai nhóm kết thúc giống hệt nhau — "mô hình không trả lời" và "các con số bị loại" là hai chuyện ' +
+        'khác nhau, và gộp chúng là xoá mất phân biệt mà luật này tồn tại để giữ',
     );
   }
   want(r.manyItems <= 20, `200 món trả về ${r.manyItems} — trần là 20`);
@@ -393,10 +452,13 @@ console.log(
     'từ URL, ảnh đi inline trong một data: URL nên nhà cung cấp cũng không tải gì. 4.000.000 ký tự qua, ' +
     '4.000.001 ra 413 với 0 lượt hạn mức và 0 lần gọi nhà cung cấp — chốt kích thước nằm TRƯỚC claimCall. ' +
     'mealId/entry_id/userId trong thân yêu cầu bị bỏ qua hoàn toàn, và user_id/meal_id/entry_id/reward do mô ' +
-    'hình bịa ra không ra khỏi hàm vì clampItems dựng lại từng món. Mọi phản hồi không dùng được — kcal âm, ' +
-    'Infinity, khổng lồ, null, items là mảng, không có tool call, choices rỗng, args không phải JSON — đều ' +
-    'ra {"items":[]} (bản đã ship để args hỏng ném 500 kèm nguyên câu của bộ phân tích, sau khi đã trừ hạn ' +
-    'mức), 200 món bị chặn ở 20. Không token/token rác/khoá anon đều 401 và không gọi nhà cung cấp. Và ô ' +
+    'hình bịa ra không ra khỏi hàm vì clampItems dựng lại từng món. Phản hồi không dùng được chia HAI nhóm ' +
+    'và hai nhóm kết thúc khác nhau: mô hình KHÔNG trả lời (không có tool call, choices rỗng, args không ' +
+    'phải JSON, args rỗng, args ra mảng) đều ra 502 ai_incomplete, đồng nhất và không rò câu của bộ phân ' +
+    'tích — vì {"items":[]} ở đó là một lời về BỨC ẢNH mà mô hình chưa bao giờ nói; còn mô hình CÓ trả lời ' +
+    'mà số bị clamp loại (kcal âm, Infinity, khổng lồ, null) vẫn ra 200 {"items":[]}, vì ở đó câu ấy đúng. ' +
+    '(Bản đã ship để args hỏng ném 500 kèm nguyên câu của bộ phân tích, sau khi đã trừ hạn mức, và gộp cả ' +
+    'hai nhóm vào một cái kết.) 200 món bị chặn ở 20. Không token/token rác/khoá anon đều 401 và không gọi nhà cung cấp. Và ô ' +
     'bàn giao ảnh quét KHÔNG còn sống sót qua đăng xuất (bản đã ship: B nhận đúng đĩa ăn A vừa chụp), vẫn ' +
     'hết hạn sau 5 phút và vẫn chỉ đọc được một lần',
 );

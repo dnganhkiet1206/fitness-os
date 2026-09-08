@@ -1,7 +1,7 @@
 import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, corsHeaders, localDate, opaque, quotaExceeded, recordTokens, requireUser, tokensOf } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, localDate, opaque, quotaExceeded, recordTokens, requireUser, tokensOf, toolArgs } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes, localHour, SLEEP_COLUMNS } from "../_shared/sleep.ts";
 
@@ -212,17 +212,10 @@ NGUYÊN TẮC QUAN TRỌNG:
     /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
        lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
     await recordTokens(supabase, "ai-smart-nudges", tokensOf(result), gate === "overage");
-    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
-    let nudges = [];
-
-    if (toolCall?.function?.arguments) {
-      try {
-        const parsed = JSON.parse(toolCall.function.arguments);
-        nudges = parsed.nudges || [];
-      } catch {
-        nudges = [];
-      }
-    }
+    /* Xem `toolArgs`: thiếu tool call là hỏng, mảng rỗng thì không. */
+    const args = toolArgs(result, "generate_nudges");
+    if (!args) return opaque(new Error("model returned no usable tool call"), "ai_incomplete", 502);
+    const nudges = Array.isArray(args.nudges) ? args.nudges : [];
 
     return new Response(JSON.stringify({ nudges }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
