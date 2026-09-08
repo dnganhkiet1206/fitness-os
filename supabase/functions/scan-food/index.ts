@@ -1,7 +1,7 @@
-import { aiKey, aiUrl, aiVisionModel, callAI } from "../_shared/ai.ts";
+import { callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, corsHeaders, json, opaque, quotaExceeded, recordTokens, requireUser, tokensOf, toolArgs } from "../_shared/guard.ts";
+import { aiGate, aiPayload, corsHeaders, json, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
 
 /** Output ceiling — the reply is a small JSON object, never prose. */
 const MAX_TOKENS = 1500;
@@ -323,10 +323,12 @@ ${
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
-    const data = await response.json();
-    /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
-       lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
-    await recordTokens(supabase, "scan-food", tokensOf(data), gate === "overage");
+    /* Ghi TOKEN, không ghi lượt: hai lượt cùng loại chênh nhau hai bậc, nên
+       lượt gọi chặn được lạm dụng còn token mới tính được tiền. Đọc thân và ghi
+       sổ là MỘT bước — tách ra thì một thân không đọc được sẽ ném qua dòng ghi
+       sổ và thành một 500 không ai đếm. Xem `aiPayload`. */
+    const data = await aiPayload(supabase, "scan-food", response, gate === "overage");
+    if (!data) return opaque(new Error("provider returned a non-JSON body"), "ai_incomplete", 502);
     /* `{ items: [] }` kèm HTTP 200 từng là câu trả lời ở đây, và nó đọc ra là
        "ảnh này không có món nào" — trong khi sự thật là model chưa bao giờ trả
        lời. Xem `toolArgs`. */

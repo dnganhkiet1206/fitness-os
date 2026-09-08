@@ -1,7 +1,7 @@
-import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
+import { callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, corsHeaders, json, localDate, opaque, quotaExceeded, recordTokens, requireUser, tokensOf, toolArgs } from "../_shared/guard.ts";
+import { aiGate, aiPayload, corsHeaders, json, localDate, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 
 /** Output ceiling — the reply is a structured review, not an essay. */
@@ -238,10 +238,12 @@ Trả về insights (quan sát từ dữ liệu) và recommendations (hành đ�
       return new Response(JSON.stringify({ error: "ai_unavailable" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const result = await response.json();
-    /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
-       lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
-    await recordTokens(supabase, "ai-weekly-review", tokensOf(result), gate === "overage");
+    /* Ghi TOKEN, không ghi lượt: hai lượt cùng loại chênh nhau hai bậc, nên
+       lượt gọi chặn được lạm dụng còn token mới tính được tiền. Đọc thân và ghi
+       sổ là MỘT bước — tách ra thì một thân không đọc được sẽ ném qua dòng ghi
+       sổ và thành một 500 không ai đếm. Xem `aiPayload`. */
+    const result = await aiPayload(supabase, "ai-weekly-review", response, gate === "overage");
+    if (!result) return opaque(new Error("provider returned a non-JSON body"), "ai_incomplete", 502);
     /*
       Không còn giá trị mặc định.
 

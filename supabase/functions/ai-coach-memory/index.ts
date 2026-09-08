@@ -1,8 +1,8 @@
-import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
+import { callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-import { aiGate, corsHeaders, dbServiceKey, dbUrl, json, opaque, quotaExceeded, recordTokens, requireUser, tokensOf } from "../_shared/guard.ts";
+import { aiGate, aiPayload, corsHeaders, dbServiceKey, dbUrl, json, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
 
 /**
  * What the coach should still know next week.
@@ -321,11 +321,20 @@ serve(async (req) => {
       return json({ error: "ai_unavailable" }, 502);
     }
 
-    const data = await res.json();
-    /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
-       lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
-    await recordTokens(supabase, "ai-coach-memory", tokensOf(data), gate === "overage");
-    const { add, confirm, drop } = parseResult(data?.choices?.[0]?.message?.content ?? "");
+    /* Ghi TOKEN, không ghi lượt: hai lượt cùng loại chênh nhau hai bậc, nên
+       lượt gọi chặn được lạm dụng còn token mới tính được tiền. Đọc thân và ghi
+       sổ là MỘT bước — tách ra thì một thân không đọc được sẽ ném qua dòng ghi
+       sổ và thành một 500 không ai đếm. Xem `aiPayload`. */
+    const data = await aiPayload(supabase, "ai-coach-memory", res, gate === "overage");
+    if (!data) return opaque(new Error("provider returned a non-JSON body"), "ai_incomplete", 502);
+    /* `aiPayload` trả `unknown`, và chuỗi `?.` cũ chạy được chỉ vì `res.json()`
+       trả `any` — tức nó chưa bao giờ kiểm rằng `content` là một chuỗi. Một
+       model trả `content: null` (chuyện thường khi model chọn gọi tool) từng
+       rơi vào `?? ""`; một model trả `content: {…}` thì không, và `parseResult`
+       nhận một object. Kiểm ở đây rẻ hơn là tin. */
+    const content = (data as { choices?: { message?: { content?: unknown } }[] })
+      ?.choices?.[0]?.message?.content;
+    const { add, confirm, drop } = parseResult(typeof content === "string" ? content : "");
 
     /*
       Nothing to do is a real answer.

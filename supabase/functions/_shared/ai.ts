@@ -51,6 +51,29 @@ export const aiModel = () => env("ASCND_AI_MODEL", "google/gemini-3-flash-previe
  */
 export const aiVisionModel = () => env("ASCND_AI_VISION_MODEL", "google/gemini-2.5-flash");
 
+/*
+  Khoá mới cắm vào endpoint cũ — sai lầm dễ gặp nhất của ngày chuyển đổi.
+
+  `aiKey()` và `aiUrl()` có fallback ĐỘC LẬP: đặt `ASCND_AI_KEY` mà quên
+  `ASCND_AI_URL` thì khoá là của nhà cung cấp mới còn địa chỉ vẫn là gateway cũ.
+  Sự độc lập ấy là cố ý và phải giữ — hôm nay `LOVABLE_API_KEY` chạy một mình,
+  không có `ASCND_AI_URL` nào, và bắt phải có cả hai là tắt bản đang chạy.
+
+  Nhưng "hợp lệ" không có nghĩa là "có chủ ý". Cặp lệch này hiện ra ở đầu kia là
+  một chuỗi 401 — thứ `providerFault` coi là lỗi CỦA BÊN ĐÓ, nên nó lặng lẽ tụt
+  xuống bên dự phòng và tính tiền vào đấy. Không có gì trong log nói rằng bên
+  thứ nhất chưa bao giờ được cấu hình xong.
+
+  Nên: một dòng, ở lúc khởi động, ngay tại chỗ biết được điều đó. Không từ chối
+  — một người cố ý xoay khoá Lovable qua tên mới vẫn phải chạy được.
+*/
+if (Deno.env.get("ASCND_AI_KEY") && !Deno.env.get("ASCND_AI_URL")) {
+  console.error(
+    "ASCND_AI_KEY đã đặt nhưng ASCND_AI_URL thì chưa — request sẽ mang khoá mới tới gateway MẶC ĐỊNH. " +
+    "Nếu đó không phải ý định thì đây là một lần chuyển nhà cung cấp làm dở, và nó chỉ hiện ra là 401.",
+  );
+}
+
 
 /**
  * Danh sách nhà cung cấp, theo thứ tự ưu tiên.
@@ -131,7 +154,35 @@ const providerFault = (status: number) =>
  * thứ hai ở mỗi chỗ gọi, tức đúng thứ "đừng lặp lại sáu lần" mà lớp này sinh ra
  * để tránh — nên nó chờ một lý do thật, không phải một khả năng.
  */
-const TIMEOUT_MS = Number(Deno.env.get("ASCND_AI_TIMEOUT_MS") ?? 20_000);
+/*
+  ── và vì sao con số này được KIỂM, không chỉ được đọc ──
+
+  `Number(Deno.env.get(...) ?? 20_000)` đọc thì gọn nhưng nó tin vào một chuỗi
+  do người gõ. `Number("")` là 0, `Number("20s")` là NaN, và `setTimeout` quy cả
+  hai về 0 — đo được: một `setTimeout(fn, NaN)` chạy sau 0ms. Nghĩa là
+
+      supabase secrets set ASCND_AI_TIMEOUT_MS=20s
+
+  huỷ MỌI request trước khi nó rời máy, ở cả sáu function cùng lúc. Và nó không
+  trông như một lỗi cấu hình: mỗi bên đều "không trả lời", vòng dự phòng chạy
+  hết danh sách, log đầy `ai provider unreachable`, và người đọc đi tìm một sự
+  cố mạng không tồn tại.
+
+  Một secret gõ sai phải hỏng ở chỗ nó được gõ, không phải ở chỗ nó được dùng.
+*/
+const TIMEOUT_MS = (() => {
+  const raw = Deno.env.get("ASCND_AI_TIMEOUT_MS");
+  if (raw === undefined) return 20_000;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n <= 0) {
+    console.error(
+      `ASCND_AI_TIMEOUT_MS=${JSON.stringify(raw)} không phải số mili-giây dương — dùng 20000. ` +
+      "Để nguyên giá trị này thì mọi lời gọi AI bị huỷ trước khi gửi đi.",
+    );
+    return 20_000;
+  }
+  return n;
+})();
 
 /**
  * Gọi AI, thử lần lượt cho tới khi có bên trả lời.

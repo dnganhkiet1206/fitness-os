@@ -6,7 +6,7 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-08 · sau A11Y-2 · nhánh
+**Vòng gần nhất:** 2026-09-08 · sau vòng đường-AI · nhánh
 `claude/ios-fitness-rebuild-omgulr`
 
 ---
@@ -15,12 +15,12 @@ gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trư�
 
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
-| TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json`, chạy từ `native/` |
-| `node tools/check.mjs` | **XANH** | exit 0, **210** bước, tất cả xanh. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối |
-| Quét runtime 45 route | **XANH** | không route nào trắng, không route nào ném; còn đúng 1 cảnh báo web-only trên `settings` (P3-1) |
-| Đổi theme, 9 màn | **XANH** | lỗi JS khi đổi theme: **5 → 1** sau A11Y-2; không màn nào trắng, cả hai chiều |
-| Nút lồng trong nút, 6 tab chính | **XANH** | 0/6 màn còn nút lồng (trước: Hôm nay 2, Dinh dưỡng 1, Tập luyện 1) |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 210 bước ở trên |
+| TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, không một dòng lỗi |
+| `node tools/check.mjs` | **XANH** | exit 0, **211** bước, tất cả xanh. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối |
+| Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này không đụng một dòng nào trong `native/src` — chỉ `supabase/functions`, `native/tools`, `native/docs`. Số gần nhất (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | lý do như trên. Số gần nhất (vòng A11Y-2): lỗi JS 5 → 1, không màn nào trắng, cả hai chiều |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | lý do như trên; `tools/a11y-swallow.mjs` nằm trong 211 bước và vẫn xanh. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 211 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
 
 ---
@@ -126,6 +126,80 @@ ra thì nó đỏ lại ngay.
 
 ---
 
+## Đường AI — XONG phần LÀM ĐƯỢC Ở ĐÂY (2026-09-08)
+
+Sổ tay triển khai đầy đủ: **`docs/AI-TRIEN-KHAI.md`**. Trang này chỉ ghi vòng
+rà soát đã đo được gì.
+
+### Đã sửa
+
+| # | Lỗi | Nó im lặng ở chỗ nào |
+|---|---|---|
+| E1 | `if (!res)` của `ai-coach-memory` nằm SAU `res.ok`/`res.text()`/`res.json()` | mã chết: `res` null thì `TypeError` nổ trước câu kiểm |
+| E2 | `fetch` không hạn giờ | một bên TREO thì vòng dự phòng đứng lại ở đó và bên thứ hai không bao giờ được thử |
+| P3 | `recordTokens` chỉ ghi khi `total > 0` | bên không trả `usage` ⇒ AI phục vụ miễn phí, sổ về 0, không gì trông như hỏng |
+| P4 | bốn function trả 200 kèm kết quả rỗng khi model không gọi tool | người dùng đọc ra "không có gì cho bạn"; token đã bị tính |
+| **A** | `await res.json()` đứng TRƯỚC `recordTokens` ở cả năm function không-stream | 200 kèm thân không phải JSON (trang HTML của proxy, thân rỗng) ⇒ ném qua dòng ghi sổ ⇒ lượt gọi đã tiêu tiền không để lại **cả một dòng `UNMETERED`** |
+| **B** | `Number(Deno.env.get("ASCND_AI_TIMEOUT_MS") ?? 20_000)` | `Number("")`=0 và `Number("20s")`=NaN, `setTimeout` quy cả hai về 0 (**đo được: fires sau 0ms**) ⇒ một secret gõ sai huỷ MỌI request ở cả sáu function, và nó trông như mạng hỏng |
+| **C** | `response.body!.tee()` trong `ai-coach` | một 204 có `ok===true` và `body===null` ⇒ `TypeError` ⇒ 500, và `meterStream` không bao giờ chạy |
+| **D** | `aiUrl`/`aiKey`/`aiModel` import vào cả sáu function, **không dùng ở đâu** | vô hại hôm nay, nhưng là cái móc sẵn cho một bản sửa vội — và `aiUrl()` mặc định vẫn trỏ Lovable |
+
+A, B, C, D là vòng này. `aiPayload` (A) gộp cặp `res.json()` + `recordTokens`
+thành **một** lời gọi, nên không còn cách nào đọc được thân mà bỏ qua sổ.
+
+### Bước kiểm
+
+`tools/ai-provider.mjs` — **14 nhóm luật** (mới), chạy MÃ THẬT (`callAI`,
+`meterStream`, `recordTokens`, `toolArgs`, `aiPayload`) trên `fetch` và
+`Deno.env` giả. Mỗi luật mới đã thử ngược và cả bốn phép đều bắt được:
+
+| Thử ngược | Nó nói gì |
+|---|---|
+| `aiPayload` → `res.json()` trần | 6 lỗi: ba thân hỏng đều NÉM và đều IM LẶNG |
+| `TIMEOUT_MS` → `Number(... ?? 20_000)` | 10 lỗi trên `""`, `"20s"`, `"0"`, `"-5"`, `"null"` |
+| trả lại `aiUrl` vào `scan-food` | `scan-food/index.ts (aiUrl)` |
+| trả lại `response.body!` | `ai-coach/index.ts:342` — và **342 đúng là dòng thật** |
+
+**Một bước kiểm CŨ khẳng định cách chữa, không phải tính chất.**
+`tools/ai-boundary.mjs` luật 4 đòi thấy chữ `recordTokens(` trong mỗi tệp — đúng
+chừng nào phép ghi sổ còn được gõ tay ở từng chỗ gọi. `aiPayload` gộp nó vào,
+năm function được đếm chặt hơn trước, và **cổng đỏ 2/211** (bước ấy đăng ký hai
+lần). Cùng lỗi với luật D của `scan-food-boundary` vòng trước. Đã viết lại theo
+tính chất: *không có đường nào đọc được thân của nhà cung cấp mà không đi qua
+sổ* — ba lối hợp lệ (`meterStream`, `aiPayload`, `recordTokens` trần), và
+**cấm** `res.json()`/`response.json()` trần (`req.json()` là thân của người gọi,
+không dính). Thử ngược hai chiều: bỏ hẳn ghi sổ ⇒ 2 lỗi; **giữ** ghi sổ nhưng
+đọc thân bằng tay ⇒ 1 lỗi — và vế thứ hai chính là mã đã ship, thứ luật cũ xanh.
+
+**Hai lần dụng cụ tự sai, và cả hai đều là bài học cũ lặp lại:**
+
+- Bản đầu của luật 10 **sập** thay vì báo — cú ném nổi lên tới đỉnh, node in
+  stack trace và thoát 1: đúng mã thoát, nhưng không nói được luật nào hỏng.
+  Cùng lớp với vụ treo ở `never`. Nay có `settle()`: một cú ném là một kết quả.
+- Luật 13 báo `ai-coach/index.ts:239` khi dòng thật là **342** — bóc comment
+  bằng `.replace(/\/\*…\*\//g, '')` xoá hẳn dòng. Nay thay bằng khoảng trắng
+  giữ nguyên số dòng.
+
+### Sẵn sàng triển khai — kiểm được không cần khoá
+
+Chín function khai đủ trong `config.toml`; `ai_gate`, `spend_ai_tokens`,
+`claim_ai_call` đều có migration. Nghĩa là **đặt secret rồi deploy, không sửa mã**.
+
+### Chưa làm được ở đây, và vì sao
+
+Môi trường này **không có `supabase` CLI, không đăng nhập, không quyền deploy**.
+Nên Phase 5 (đặt secret), 6 (deploy + khói) và 7 (cắt Lovable) là việc của chủ
+dự án. `docs/AI-TRIEN-KHAI.md` mục 3–5 là đúng những lệnh và bảy phép khói ấy.
+
+Và bằng chứng runtime đã đổi tiền đề của Phase 7: **không có function nào đang
+chạy ở bất kỳ đâu** (cả chín trả `NOT_FOUND` giống hệt một tên vô nghĩa làm đối
+chứng), còn ref Lovable cũ thì **không phân giải**. Nên hôm nay không có phụ
+thuộc Lovable sống nào để cắt, và không có bản triển khai cũ để quay lui.
+`LOVABLE_API_KEY` **chưa thu hồi** và chưa nên thu hồi cho tới khi bảy phép khói
+xanh trên bản deploy thật.
+
+---
+
 ## Còn mở
 
 | ID | Mức | Vấn đề | Việc tiếp theo |
@@ -134,6 +208,7 @@ ra thì nó đỏ lại ngay.
 | A3 | P1 | Ghi khi mất mạng không sống sót (xem `SO-GHI-LOI.md`) | Cần một bước kiểm chứng minh cả ~30 mutation đặt đúng key **trước khi** bắt đầu |
 | A7 | P2 | Xoá buổi tập không dựng lại các ngày ở giữa | xem `SO-GHI-LOI.md` |
 | A8 | P2 | Android không có blur thật sau status bar | Giới hạn có chủ ý |
+| AI-DEPLOY | P1 | Không function nào được deploy; sáu tính năng AI không có backend | Chủ dự án: `docs/AI-TRIEN-KHAI.md` mục 3–5. Cần `supabase` CLI + quyền |
 | P3-1 | P3 | `settings` / `mascot-room`: `transform-origin` là thuộc tính DOM sai trên web | Chuỗi CSS của Koa; bản native đọc đúng qua `koa-figure.tsx:461`. Chỉ là tiếng ồn trên web |
 
 ---

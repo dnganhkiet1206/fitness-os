@@ -300,6 +300,57 @@ export function tokensOf(payload: unknown): number {
 }
 
 /**
+ * Thân của một câu trả lời AI, ĐÃ GHI SỔ — hoặc `null` nếu nó không phải JSON.
+ *
+ * ── hai dòng giống hệt nhau ở năm chỗ, và chỗ hở giữa chúng ──
+ *
+ * Năm function không-stream đều viết đúng cặp này:
+ *
+ *     const data = await response.json();
+ *     await recordTokens(supabase, kind, tokensOf(data), overage);
+ *
+ * Đọc trước, ghi sổ sau. Thứ tự ấy đúng — không đọc thì không biết số — nhưng
+ * nó để hở đúng một trường hợp: `res.json()` NÉM. Một bên trả 200 kèm một
+ * trang HTML của proxy, một `Content-Type: text/plain`, một thân rỗng — cả ba
+ * đều là 200 hợp lệ với một thân không parse được, và cả ba đều nhảy thẳng ra
+ * `catch` ngoài cùng, TRƯỚC dòng ghi sổ.
+ *
+ * Kết quả là đúng cái mà Phase 3 vừa bịt ở chỗ khác: một lượt gọi AI đã được
+ * nhà cung cấp phục vụ, đã tính tiền ở phía họ, và `ai_usage` không có một
+ * dòng nào — lần này còn không có cả dòng `UNMETERED`, vì `recordTokens` chưa
+ * kịp chạy. Nó chỉ hiện ra là `ai_failed`, thứ trông y hệt một lỗi mạng.
+ *
+ * ── vì sao gộp lại thay vì thêm một `try` ở mỗi chỗ ──
+ *
+ * Vì cái hở này sinh ra từ việc HAI bước rời nhau, nên bịt nó bằng cách thêm
+ * bước thứ ba ở năm chỗ là để nguyên nguyên nhân. Gộp lại thì không còn cách
+ * nào đọc được thân mà bỏ qua sổ: một lời gọi, và sổ đã ghi khi nó trả về.
+ *
+ * `null` thay vì ném: chỗ gọi đã có sẵn một câu trả lời cho "model không trả
+ * lời được" (`ai_incomplete` 502, xem `toolArgs`), và một thân không đọc được
+ * chính là trường hợp ấy — chỉ là hỏng sớm hơn một bậc.
+ */
+export async function aiPayload(
+  supabase: SupabaseClient,
+  kind: string,
+  res: Response,
+  overage: boolean,
+): Promise<unknown | null> {
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch (e) {
+    /* Ghi 0 để `recordTokens` nói câu UNMETERED của nó — lượt này đã tiêu tiền
+       và không đếm được, và đó là thứ phải đọc thấy trong log. */
+    await recordTokens(supabase, kind, 0, overage);
+    console.error(`ai body not json ${kind}`, res.status, res.headers.get("content-type"), e);
+    return null;
+  }
+  await recordTokens(supabase, kind, tokensOf(data), overage);
+  return data;
+}
+
+/**
  * Đọc con số token ra khỏi một dòng SSE, ở nền.
  *
  * ── vì sao nó không được `await` ──

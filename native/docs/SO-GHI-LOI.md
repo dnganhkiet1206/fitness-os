@@ -119,6 +119,22 @@ thì vẫn nằm ở đây.
 
 ---
 
+### ~~A10. Đường AI nuốt lỗi ở bốn chỗ, và cả bốn đều tiêu tiền~~ — ĐÃ SỬA 2026-09-08
+
+| | |
+|---|---|
+| **Triệu chứng** | Không có triệu chứng. Đó chính là mục này: bốn chế độ hỏng khác nhau trên đường gọi AI, không cái nào để lại một dòng log phân biệt được, và cả bốn đều xảy ra SAU khi nhà cung cấp đã tính tiền. |
+| **A. Thân 200 không phải JSON** | Năm function không-stream đều viết `const d = await res.json();` rồi mới `recordTokens(...)`. Thứ tự ấy đúng — không đọc thì không biết số — nhưng `res.json()` **ném** khi bên kia trả 200 kèm một trang HTML của proxy, một thân rỗng, hay JSON cụt. Cú ném nhảy thẳng ra `catch` ngoài cùng, **trước** dòng ghi sổ. Kết quả: lượt gọi đã được phục vụ, `ai_usage` trống, và không có cả dòng `UNMETERED` — nó chỉ hiện ra là `ai_failed`, thứ trông y hệt lỗi mạng. |
+| **B. `ASCND_AI_TIMEOUT_MS` gõ sai** | `Number(Deno.env.get(...) ?? 20_000)` tin vào một chuỗi do người gõ. **Đo được:** `setTimeout(fn, NaN)` chạy sau **0 ms**. `Number("")` là 0, `Number("20s")` là NaN — nên `supabase secrets set ASCND_AI_TIMEOUT_MS=20s` huỷ MỌI request trước khi nó rời máy, ở cả sáu function cùng lúc. Và nó không trông như lỗi cấu hình: mỗi bên đều "không trả lời", vòng dự phòng chạy hết danh sách, log đầy `ai provider unreachable`, người đọc đi tìm một sự cố mạng không tồn tại. |
+| **C. `response.body!` trong `ai-coach`** | Dấu `!` đọc ra là "một 2xx thì luôn có thân", và HTTP không hứa thế: 204/205 có `ok === true` và `body === null`. `.tee()` trên null ném `TypeError` → `catch` ngoài → 500, và nhánh `meterStream` **không bao giờ chạy**. |
+| **D. Bốn import chết** | `aiUrl`/`aiKey`/`aiModel`/`aiVisionModel` được import vào cả sáu function và không dùng ở đâu cả. Vô hại lúc chạy — nhưng chúng là đúng những cái tên một bản sửa vội sẽ với tay tới, và `aiUrl()` mặc định vẫn trỏ về gateway cũ. |
+| **Đã sửa thế nào** | (A) `aiPayload()` gộp `res.json()` + `recordTokens` thành **một** lời gọi, nên không còn cách nào đọc được thân mà bỏ qua sổ; thân không đọc được ⇒ ghi 0 (tức nói `UNMETERED`) rồi trả `null`, và chỗ gọi trả 502 `ai_incomplete`. (B) giá trị không phải số dương rơi về 20000 **và in ra tên biến sai**. (C) `!response.body` ⇒ ghi 0 rồi 502. (D) cả sáu chỉ còn import `callAI`. |
+| **Kiểm chứng** | `tools/ai-provider.mjs`, 14 nhóm luật, chạy **mã thật** trên `fetch`/`Deno.env` giả. Bốn phép thử ngược, mỗi luật mới một phép, tất cả đều bắt được — chi tiết ở `docs/AUDIT_STATE.md`. |
+| **Chưa kiểm được** | Hành vi của **nhà cung cấp thật**. Bước kiểm chứng minh logic của mình đúng với một nhà cung cấp cư xử theo từng kiểu; nó không chứng minh nhà cung cấp thật cư xử theo kiểu nào. Bảy phép khói ở `docs/AI-TRIEN-KHAI.md` mục 5 là phần ấy, và chúng cần một bản deploy. |
+| **Không được mở lại** | Đừng biến 502 `ai_incomplete` trở lại thành 200 rỗng; đừng bịa một con số token khi nhà cung cấp không gửi `usage`; đừng viết lại sáu function để đổi nhà cung cấp. Ba điều này có lý do viết sẵn ở `docs/AI-TRIEN-KHAI.md` mục 7. |
+
+---
+
 ## B. **Chưa** chứng minh được — cấm sửa, cấm dùng làm căn cứ cho việc khác
 
 Những mục này tôi nói ra mà **không** kiểm từ nguồn. Chúng có thể đúng. Chúng

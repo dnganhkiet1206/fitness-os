@@ -84,6 +84,33 @@ const never = (init) => new Promise((_, reject) => {
   });
 });
 
+/** Trả lời sau `ms`, nhưng vẫn ném nếu bị huỷ trước đó — như một `fetch` thật. */
+const slow = (ms, make) => (init) => new Promise((resolve, reject) => {
+  const t = setTimeout(() => resolve(make()), ms);
+  init?.signal?.addEventListener('abort', () => {
+    clearTimeout(t);
+    reject(Object.assign(new Error('The signal has been aborted'), { name: 'AbortError' }));
+  });
+});
+
+/*
+  Một cú NÉM cũng là một kết quả.
+
+  Cùng bài học với `within` ở dưới: bước kiểm này sinh ra để bắt một hàm ném ra
+  ngoài dòng ghi sổ, nên nếu chính nó để cú ném ấy nổi lên tới đỉnh thì node in
+  một stack trace và thoát — đúng, nhưng KHÔNG nói được là luật nào hỏng và vì
+  sao. Một dụng cụ đo phải sống lâu hơn thứ nó đo.
+*/
+const settle = async (p) => { try { return await p; } catch (e) { return { __threw: e }; } };
+
+/** Chạy một đoạn và thu lại những gì nó nói ra console.error. */
+const spokenBy = async (fn) => {
+  const spoke = [];
+  const real = console.error;
+  console.error = (...a) => spoke.push(a.map(String).join(' '));
+  try { return { value: await fn(), spoke }; } finally { console.error = real; }
+};
+
 /** Một `fetch` giả trả lời theo URL. `hits` ghi lại thứ tự đã gọi. */
 function fakeFetch(byUrl, hits) {
   return async (url, init) => {
@@ -320,6 +347,161 @@ for (const [status, shouldFallback] of [[500, true], [402, true], [429, true], [
     'trong một function sẽ tiếp tục tính tiền vào tài khoản cũ sau khi mọi thứ khác đã chuyển, và không có gì báo');
 }
 
+/* ═══ 10. một thân KHÔNG PHẢI JSON trên 200 vẫn phải vào sổ ═══
+
+   Cặp `await res.json()` rồi `recordTokens` từng đứng rời nhau ở năm function,
+   và `res.json()` NÉM khi bên kia trả 200 kèm một trang HTML của proxy hay một
+   thân rỗng. Cú ném ấy nhảy qua dòng ghi sổ: lượt gọi đã tiêu tiền, `ai_usage`
+   trống, và trong log nó chỉ là `ai_failed` — trông y hệt một lỗi mạng. */
+{
+  const g = load('guard');
+  const rpc = [];
+  const db = { rpc: async (n, a) => { rpc.push([n, a]); return { error: null }; } };
+
+  const good = await spokenBy(() => settle(g.aiPayload(db, 'scan-food',
+    jsonRes(200, { usage: { total_tokens: 42 }, choices: [] }), false)));
+  want(good.value && !good.value.__threw && good.value.usage.total_tokens === 42, 'aiPayload: thân JSON hợp lệ phải đi qua nguyên vẹn');
+  want(rpc.length === 1 && rpc[0][1].p_tokens === 42, `aiPayload: ghi ${JSON.stringify(rpc)} — phải ghi 42 token`);
+
+  for (const [label, res] of [
+    ['trang HTML của proxy', new Response('<html>502</html>', { status: 200, headers: { 'Content-Type': 'text/html' } })],
+    ['thân rỗng', new Response('', { status: 200, headers: { 'Content-Type': 'application/json' } })],
+    ['JSON cụt', new Response('{"choices":', { status: 200, headers: { 'Content-Type': 'application/json' } })],
+  ]) {
+    const before = rpc.length;
+    const r = await spokenBy(() => settle(g.aiPayload(db, 'scan-food', res, false)));
+    want(r.value === null,
+      r.value?.__threw
+        ? `aiPayload(${label}): NÉM \`${r.value.__threw}\` — cú ném ấy nhảy qua dòng ghi sổ ở chỗ gọi, `
+          + 'nên lượt gọi đã tiêu tiền không để lại dòng nào và hiện ra là một 500 giống hệt lỗi mạng'
+        : `aiPayload(${label}): trả ${JSON.stringify(r.value)} — phải là null`);
+    want(rpc.length === before, `aiPayload(${label}): ghi một con số vào sổ — không được bịa số cho một thân không đọc được`);
+    want(r.spoke.some((x) => /UNMETERED/.test(x)),
+      `aiPayload(${label}): kết thúc trong IM LẶNG. Lượt này đã được nhà cung cấp phục vụ và tính tiền; ` +
+      `không có dòng nào thì nó lẫn vào lỗi mạng. Log thấy: ${JSON.stringify(r.spoke).slice(0, 140)}`);
+  }
+}
+
+/* ═══ 11. một ASCND_AI_TIMEOUT_MS gõ sai không được tắt AI trong im lặng ═══
+
+   `Number("")` là 0 và `Number("20s")` là NaN; `setTimeout` quy cả hai về 0.
+   Nên một secret gõ sai huỷ MỌI request trước khi nó rời máy, ở cả sáu
+   function — và nó không trông như lỗi cấu hình, nó trông như mạng hỏng. */
+for (const bad of ['', '20s', '0', '-5', 'null']) {
+  clearEnv();
+  ENV.ASCND_AI_URL = A; ENV.ASCND_AI_KEY = 'ka'; ENV.ASCND_AI_TIMEOUT_MS = bad;
+  const hits = [];
+  globalThis.fetch = fakeFetch({ [A]: slow(60, () => jsonRes(200, { ok: true })) }, hits);
+  const r = await spokenBy(() => within(load('ai').callAI({ messages: [] }), 'timeout-bad'));
+  const res = r.value;
+  want(!res?.__stalled && res !== null && res.status === 200,
+    `ASCND_AI_TIMEOUT_MS=${JSON.stringify(bad)}: callAI trả ${res?.__stalled ? 'TREO' : String(res && res.status)} ` +
+    '— một giá trị không đọc được phải rơi về 20000, chứ không phải về 0 (huỷ mọi request trước khi gửi)');
+  want(r.spoke.some((x) => /ASCND_AI_TIMEOUT_MS/.test(x)),
+    `ASCND_AI_TIMEOUT_MS=${JSON.stringify(bad)}: bị bỏ qua trong im lặng — một secret gõ sai phải hỏng ở chỗ nó được gõ`);
+}
+{
+  /* …và một giá trị ĐÚNG vẫn phải được tôn trọng, nếu không thì "sửa" ở trên
+     chỉ là bỏ hẳn hạn giờ đi. */
+  clearEnv();
+  ENV.ASCND_AI_URL = A; ENV.ASCND_AI_KEY = 'ka'; ENV.ASCND_AI_TIMEOUT_MS = '80';
+  const hits = [];
+  globalThis.fetch = fakeFetch({ [A]: slow(600, () => jsonRes(200, { ok: true })) }, hits);
+  const res = await within(load('ai').callAI({ messages: [] }), 'timeout-good');
+  want(!res?.__stalled && res === null,
+    `ASCND_AI_TIMEOUT_MS=80 với một bên trả lời sau 600ms: kết quả ${res?.__stalled ? 'TREO' : String(res)} — phải là null (hết giờ)`);
+}
+
+/* ═══ 12. chỉ `_shared/ai.ts` được biết endpoint, khoá và tên model ═══
+
+   Bốn hàm `aiUrl`/`aiKey`/`aiModel`/`aiVisionModel` từng được import vào cả sáu
+   function và không dùng ở đâu cả. Vô hại hôm nay — nhưng chúng là đúng những
+   cái tên mà một bản sửa vội sẽ với tay tới ("chỉ log cái URL ra xem"), và
+   `aiUrl()` mặc định vẫn trỏ về Lovable. Một import chết là một cái móc sẵn. */
+{
+  const FNS = path.resolve(NATIVE, '..', 'supabase/functions');
+  const { readdirSync, statSync } = await import('node:fs');
+  const stray = [];
+  const walk = (d) => {
+    for (const e of readdirSync(d)) {
+      const f = path.join(d, e);
+      if (statSync(f).isDirectory()) { walk(f); continue; }
+      if (!/\.ts$/.test(f)) continue;
+      const rel = path.relative(FNS, f);
+      if (rel === '_shared/ai.ts') continue;
+      const src = readFileSync(f, 'utf8');
+      const bad = ['aiUrl', 'aiKey', 'aiModel', 'aiVisionModel'].filter((n) => new RegExp(`\\b${n}\\b`).test(src));
+      if (bad.length) stray.push(`${rel} (${bad.join(', ')})`);
+    }
+  };
+  walk(FNS);
+  want(stray.length === 0,
+    `endpoint/khoá/tên model được nhắc ngoài \`_shared/ai.ts\`: ${stray.join('; ')} — ` +
+    'cả sáu function chỉ cần `callAI`; mọi cái tên khác là một đường vòng quanh lớp gom lại, ' +
+    'và `aiUrl()` mặc định vẫn là gateway cũ');
+}
+
+/* ═══ 13. không `!` nào trên thân của một response ═══
+
+   `response.body!` đọc ra là "một 2xx thì luôn có thân", và HTTP không hứa thế:
+   204 và 205 có `ok === true` và `body === null`. `.tee()` trên null NÉM, cú ném
+   rơi vào `catch` ngoài cùng thành một 500 — và nhánh đếm token không bao giờ
+   chạy, nên lượt gọi ấy không để lại cả một dòng UNMETERED.
+
+   Luật này tĩnh vì thứ nó cấm là tĩnh: một dấu `!` là một lời hứa viết trong mã
+   chứ không phải một hành vi lúc chạy. */
+{
+  const FNS = path.resolve(NATIVE, '..', 'supabase/functions');
+  const { readdirSync, statSync } = await import('node:fs');
+  const bangs = [];
+  const walk = (d) => {
+    for (const e of readdirSync(d)) {
+      const f = path.join(d, e);
+      if (statSync(f).isDirectory()) { walk(f); continue; }
+      if (!/\.ts$/.test(f)) continue;
+      /* Bóc comment mà GIỮ NGUYÊN số dòng — một khối bị xoá hẳn thì mọi số dòng
+         sau nó lệch, và một bước kiểm chỉ sai chỗ thì tệ hơn là không chỉ. */
+      const src = readFileSync(f, 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '))
+        .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+      src.split('\n').forEach((line, i) => {
+        if (/\b\w*[Rr]es(ponse)?\??\.body!/.test(line)) bangs.push(`${path.relative(FNS, f)}:${i + 1}`);
+      });
+    }
+  };
+  walk(FNS);
+  want(bangs.length === 0,
+    `\`.body!\` trên một response: ${bangs.join(', ')} — một 204 có ok===true và body===null, nên \`!\` ở đó ` +
+    'là một TypeError chờ sẵn, và nó nổ TRƯỚC nhánh đếm token');
+}
+
+/* ═══ 14. khoá mới cắm vào endpoint cũ phải NÓI RA ═══
+
+   `aiKey()` và `aiUrl()` rơi về mặc định độc lập với nhau, và sự độc lập ấy
+   phải giữ: hôm nay `LOVABLE_API_KEY` chạy một mình. Nhưng cặp lệch
+   (khoá mới + địa chỉ cũ) chỉ hiện ra ở đầu kia là 401 — mà 401 thì
+   `providerFault` coi là lỗi của bên đó và lặng lẽ tụt xuống bên dự phòng. */
+{
+  clearEnv();
+  ENV.ASCND_AI_KEY = 'k-moi';
+  const lech = await spokenBy(async () => load('ai'));
+  want(lech.spoke.some((x) => /ASCND_AI_URL/.test(x)),
+    'đặt ASCND_AI_KEY mà không đặt ASCND_AI_URL: không có cảnh báo nào. Khoá mới sẽ đi tới gateway cũ, ' +
+    `và nó chỉ hiện ra là một chuỗi 401 rồi tụt xuống bên dự phòng. Log thấy: ${JSON.stringify(lech.spoke)}`);
+
+  clearEnv();
+  ENV.ASCND_AI_KEY = 'k-moi'; ENV.ASCND_AI_URL = A;
+  const du = await spokenBy(async () => load('ai'));
+  want(!du.spoke.some((x) => /ASCND_AI_URL/.test(x)),
+    `đặt đủ cả hai mà vẫn cảnh báo: ${JSON.stringify(du.spoke)} — một cảnh báo kêu cả lúc đúng thì không ai đọc nó nữa`);
+
+  clearEnv();
+  ENV.LOVABLE_API_KEY = 'k-cu';
+  const cu = await spokenBy(async () => load('ai'));
+  want(!cu.spoke.some((x) => /ASCND_AI_URL/.test(x)),
+    `cấu hình ĐANG CHẠY (chỉ LOVABLE_API_KEY) bị cảnh báo: ${JSON.stringify(cu.spoke)} — bản mặc định phải im lặng`);
+}
+
 if (problems.length) {
   console.error('đường tới nhà cung cấp AI:');
   for (const p of problems) console.error(`  ✗ ${p}`);
@@ -333,5 +515,5 @@ console.log(
   'nó tự ngắt một cuộc trò chuyện dài. 402/429/401/403/5xx chuyển bên; 400/422 thì không. Mỗi bên nhận tên ' +
   'model của chính nó, kể cả model thị giác. Sổ token: usage thiếu, rác, âm, hay dòng đứt giữa chừng đều KHÔNG ' +
   'ghi số bịa và đều nói ra UNMETERED — im lặng ở đó nghĩa là một lượt AI được phục vụ mà không ai tính tiền. ' +
-  'toolArgs từ chối chín hình dạng không dùng được và vẫn cho một mảng rỗng hợp lệ đi qua',
+  'toolArgs từ chối chín hình dạng không dùng được và vẫn cho một mảng rỗng hợp lệ đi qua. Một thân 200 KHÔNG phải JSON (trang HTML của proxy, thân rỗng, JSON cụt) trả null và nói UNMETERED thay vì ném qua dòng ghi sổ. Một ASCND_AI_TIMEOUT_MS gõ sai (rỗng, "20s", 0, âm) rơi về 20000 và NÓI RA, chứ không quy về 0 và huỷ mọi request trước khi gửi; một giá trị đúng thì vẫn cắt. Và ngoài `_shared/ai.ts` không tệp nào nhắc tới endpoint, khoá hay tên model',
 );

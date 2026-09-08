@@ -1,8 +1,8 @@
 import { looksHostile, refusalStream, scopeRule } from "../_shared/scope.ts";
-import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
+import { callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, corsHeaders, json, meterStream, opaque, quotaExceeded, requireUser } from "../_shared/guard.ts";
+import { aiGate, corsHeaders, json, meterStream, opaque, quotaExceeded, recordTokens, requireUser } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes } from "../_shared/sleep.ts";
 
@@ -324,7 +324,22 @@ NGUYÊN TẮC QUAN TRỌNG:
       Không `await` nhánh đếm. Nó chạy sau khi response đã trả về, và bắt nó chờ
       nghĩa là bắt người dùng chờ một phép ghi sổ.
     */
-    const [toClient, toMeter] = response.body!.tee();
+    /*
+      `!` ở đây từng là một lời hứa mà HTTP không giữ.
+
+      `response.body` là `null` cho một 204/205, và một 204 có `res.ok === true`
+      — nên `.tee()` ném `TypeError`, `catch` ngoài cùng biến nó thành 500
+      `ai_failed`, và `meterStream` không bao giờ chạy. Lượt gọi ấy đã tiêu tiền
+      ở phía nhà cung cấp và không để lại một dòng nào, kể cả `UNMETERED`.
+
+      Một gateway trả 204 khi nó không có gì để stream không phải chuyện lạ; nó
+      là đúng thứ một bên mới cấu hình sai sẽ làm.
+    */
+    if (!response.body) {
+      await recordTokens(supabase, "ai-coach", 0, gate === "overage");
+      return opaque(new Error(`stream response has no body (${response.status})`), "ai_incomplete", 502);
+    }
+    const [toClient, toMeter] = response.body.tee();
     meterStream(supabase, "ai-coach", toMeter, gate === "overage");
 
     return new Response(toClient, {

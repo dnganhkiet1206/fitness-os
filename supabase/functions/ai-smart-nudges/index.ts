@@ -1,7 +1,7 @@
-import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
+import { callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, corsHeaders, localDate, opaque, quotaExceeded, recordTokens, requireUser, tokensOf, toolArgs } from "../_shared/guard.ts";
+import { aiGate, aiPayload, corsHeaders, localDate, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
 import { recoveryMeasured } from "../_shared/readiness.ts";
 import { asleepMinutes, localHour, SLEEP_COLUMNS } from "../_shared/sleep.ts";
 
@@ -208,10 +208,12 @@ NGUYÊN TẮC QUAN TRỌNG:
       });
     }
 
-    const result = await response.json();
-    /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
-       lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
-    await recordTokens(supabase, "ai-smart-nudges", tokensOf(result), gate === "overage");
+    /* Ghi TOKEN, không ghi lượt: hai lượt cùng loại chênh nhau hai bậc, nên
+       lượt gọi chặn được lạm dụng còn token mới tính được tiền. Đọc thân và ghi
+       sổ là MỘT bước — tách ra thì một thân không đọc được sẽ ném qua dòng ghi
+       sổ và thành một 500 không ai đếm. Xem `aiPayload`. */
+    const result = await aiPayload(supabase, "ai-smart-nudges", response, gate === "overage");
+    if (!result) return opaque(new Error("provider returned a non-JSON body"), "ai_incomplete", 502);
     /* Xem `toolArgs`: thiếu tool call là hỏng, mảng rỗng thì không. */
     const args = toolArgs(result, "generate_nudges");
     if (!args) return opaque(new Error("model returned no usable tool call"), "ai_incomplete", 502);

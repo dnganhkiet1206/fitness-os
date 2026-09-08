@@ -1,7 +1,7 @@
-import { aiKey, aiModel, aiUrl, callAI } from "../_shared/ai.ts";
+import { callAI } from "../_shared/ai.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-import { aiGate, corsHeaders, localDate, oneOf, opaque, quotaExceeded, recordTokens, requireUser, tokensOf, toolArgs } from "../_shared/guard.ts";
+import { aiGate, aiPayload, corsHeaders, localDate, oneOf, opaque, quotaExceeded, requireUser, toolArgs } from "../_shared/guard.ts";
 import { localHour } from "../_shared/sleep.ts";
 
 /** Output ceiling — the reply is a short list of meals. */
@@ -190,10 +190,12 @@ NGUYÊN TẮC:
       return new Response(JSON.stringify({ error: "ai_unavailable" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const result = await response.json();
-    /* Ghi TOKEN, không ghi lượt. Hai lượt cùng loại chênh nhau hai bậc, nên
-       lượt gọi chặn được lạm dụng còn token mới tính được tiền. */
-    await recordTokens(supabase, "ai-meal-suggest", tokensOf(result), gate === "overage");
+    /* Ghi TOKEN, không ghi lượt: hai lượt cùng loại chênh nhau hai bậc, nên
+       lượt gọi chặn được lạm dụng còn token mới tính được tiền. Đọc thân và ghi
+       sổ là MỘT bước — tách ra thì một thân không đọc được sẽ ném qua dòng ghi
+       sổ và thành một 500 không ai đếm. Xem `aiPayload`. */
+    const result = await aiPayload(supabase, "ai-meal-suggest", response, gate === "overage");
+    if (!result) return opaque(new Error("provider returned a non-JSON body"), "ai_incomplete", 502);
     /* Thiếu tool call là HỎNG, không phải "không có gợi ý nào" — xem `toolArgs`.
        Danh sách rỗng bên trong một tool call hợp lệ thì vẫn là câu trả lời thật. */
     const args = toolArgs(result, "suggest_meals");

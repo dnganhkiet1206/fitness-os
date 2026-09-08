@@ -127,8 +127,36 @@ const problems = [];
     if (!/aiGate\(supabase, "/.test(code)) {
       problems.push(`${f}/index.ts: không đi qua aiGate — cổng hai trạng thái không phân biệt được "hết hạn mức" với "vượt nhưng có ví"`);
     }
-    const meters = /recordTokens\(|meterStream\(/.test(code);
+    /*
+      Luật này từng khẳng định CÁCH CHỮA, không phải tính chất.
+
+      Nó đòi thấy chữ `recordTokens(` trong tệp — và điều đó đúng chừng nào phép
+      ghi sổ còn được gõ tay ở mỗi chỗ gọi. Ngày `aiPayload` gộp cặp
+      `res.json()` + `recordTokens` lại làm một, năm function vẫn được đếm y như
+      trước, chặt hơn trước, và bước này đỏ.
+
+      Tính chất thật sự là: **không có đường nào đọc được thân của nhà cung cấp
+      mà không đi qua sổ.** Có ba lối hợp lệ, và ai-coach dùng hai trong ba:
+      `meterStream` cho dòng stream, `aiPayload` cho lời gọi thường,
+      `recordTokens` trần cho những nhánh biết chắc là 0 token.
+    */
+    const meters = /recordTokens\(|meterStream\(|aiPayload\(/.test(code);
     if (!meters) problems.push(`${f}/index.ts: không ghi token nào — lượt gọi này không bao giờ tính được tiền`);
+
+    /*
+      Và mặt kia của cùng một tính chất: đọc thân BẰNG TAY thì lối đi qua sổ trở
+      lại thành tuỳ chọn. `res.json()` NÉM trên một thân 200 không phải JSON —
+      một trang HTML của proxy, một thân rỗng — và cú ném ấy nhảy thẳng ra
+      `catch` ngoài cùng, TRƯỚC dòng ghi sổ. Lượt gọi đã tiêu tiền, `ai_usage`
+      trống, và không có cả một dòng `UNMETERED`: nó chỉ hiện ra là `ai_failed`,
+      thứ trông y hệt lỗi mạng. `req.json()` (thân của NGƯỜI GỌI) không dính.
+    */
+    if (/\b(res|response)\.json\(\)/.test(code)) {
+      problems.push(
+        `${f}/index.ts: đọc thân của nhà cung cấp bằng res.json() thay vì aiPayload — ` +
+        'nó ném trên một thân 200 không phải JSON, và cú ném đi vòng qua dòng ghi sổ',
+      );
+    }
     /* Và phần vượt phải được ĐÁNH DẤU. Ghi token mà không nói lượt nào là
        overage thì có số liệu mà không có hoá đơn. */
     if (meters && !/gate === "overage"/.test(code)) {
