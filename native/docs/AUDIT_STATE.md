@@ -6,8 +6,8 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-08 · sau vòng hạ tầng (Sentry + CI) · nhánh
-`claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-08 · sau vòng hạ tầng (Sentry + CI) · commit `3b20c8c`
+· nhánh `claude/ios-fitness-rebuild-omgulr`
 
 ---
 
