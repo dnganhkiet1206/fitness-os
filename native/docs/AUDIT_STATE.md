@@ -6,8 +6,8 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-09 · nâng có kiểm soát cho HERMES-MEM ·
-commit `fb53951` · nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-09 · lượt đánh bóng sản phẩm (0 thay đổi mã) ·
+commit `__H__` · nhánh `claude/ios-fitness-rebuild-omgulr`
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
 > Trạng thái ở `docs/AI-TRIEN-KHAI.md` giữ nguyên, không đụng vào.
@@ -641,6 +641,42 @@ màn và mọi thứ thuộc về chạm — không thứ nào ở đây. Trợ 
 phím, i18n vẫn được canh bằng các bước kiểm tĩnh trong cổng
 (`a11y-swallow`, `tap-targets`, `theme-shape`, `i18n`, `bàn phím`) và chúng xanh
 — nhưng "xanh ở bước kiểm" không phải "đã dùng thử trên máy thật".
+
+---
+
+## LƯỢT ĐÁNH BÓNG SẢN PHẨM — 0 khiếm khuyết, 0 thay đổi mã (2026-09-09)
+
+Đầy đủ ở **`docs/PRE-LAUNCH-POLISH.md`**. Tóm tắt:
+
+Một lượt rà soát UX / chuyển động / hiệu năng / hệ thống kết thúc bằng **không
+sửa gì**, và đó là kết quả chứ không phải một lần bỏ cuộc. Lý do: **211 bước
+kiểm có tên** đã phủ gần hết những gì một lượt như thế đi tìm — thang chữ, bảng
+màu, hình dạng cây theo theme, Dynamic Type, vùng chạm, ngân sách vẽ/ảnh/xuất
+hiện, khởi động lạnh, tầng import, phạm vi hook, một-khái-niệm-một-tên.
+
+**Hệ chuyển động đã tồn tại** (`src/constants/motion.ts`) và tốt hơn thứ một lượt
+làm mới sẽ tạo ra: bốn `duration` đặt tên vì app ĐÃ nói bằng bốn con số ấy ở bảy
+chỗ, lò xo viết bằng `spring(duration, bounce)` của Apple, và nó ghi rõ hai thứ
+**cố ý không** token hoá (rig nhân vật, dải xuất hiện) vì chúng là choreography.
+Bước kiểm `mô hình lò xo` còn bắt được rằng công thức damping trên slide WWDC23
+của Apple **là sai** và đã được chính Apple đính chính.
+
+Ba thứ được kiểm trong lượt này, cả ba đều **đủ**:
+
+| | Kết quả |
+|---|---|
+| **Reduce Motion** | grep chỉ 4 khoảng trống · đọc ra **0**. `drag-reorder` từ chối có chủ ý và có ghi lý do (đóng băng cú tự-cuộn khi đang kéo là gỡ tính năng — khớp ý định của Apple). Reanimated mặc định `ReduceMotion.System`, chỉ `useFrameCallback` là không, và đúng hai đồng hồ ấy đã nối |
+| **Hành động phá huỷ** | **13/13** hook xoá có xác nhận. grep chỉ 1 ứng viên · đọc ra đó là một **chú thích**. Không có bước kiểm canh tính chất này — ghi là khoảng trống đã biết, **không thêm luật cho một thứ đang đúng** |
+| **Haptics** | nhất quán theo mô hình Apple: selection 188 · Light 66 · Success 45 · Medium 16 · Warning 7 · Error 2 |
+
+**Bài học, và nó lặp lại lần thứ ba:** grep chỉ ra khoảng trống, đọc cho ra
+không có. Reduce Motion 4→0 · xoá-không-xác-nhận 1→0 · và lượt trước
+"11/14 bước PostgreSQL" thật ra là 8. Repo này chống lại phép đo bằng chuỗi, vì
+lý do của mỗi quyết định nằm ngay cạnh nó — và một chú thích giải thích *vì sao
+không làm X* trông y hệt mã *quên làm X* với một biểu thức chính quy.
+
+**Không nghiên cứu web trong lượt này**, vì không đổi hành vi hoạt hoạ và không
+đụng API nào — ghi ra chứ không dựng một mục "nghiên cứu" cho có.
 
 ---
 
