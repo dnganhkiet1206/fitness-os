@@ -23,6 +23,36 @@ Mọi ô trong danh sách dưới đây mặc định là **CHƯA KIỂM** cho t
 
 ## 0. Trước khi dựng — điều kiện, và cái chặn
 
+### CHẠY MỌI LỆNH TRONG `native/` — kho này có HAI package.json
+
+Triệu chứng: `npm ls @sentry/react-native` ra `(empty)`,
+`ls node_modules/@sentry/react-native` ra "No such file or directory", và
+`expo` hỏng lúc phân giải config plugin `@sentry/react-native/expo`.
+
+Đọc ra thì đó **không** phải một phụ thuộc bị thiếu. Gốc kho
+(`fitness-os/`) còn một `package.json` thứ hai — dự án web Vite/Capacitor
+cũ tên `vite_react_shadcn_ts`, React 18, không liên quan gì tới app Expo.
+Nó **không** có `@sentry/react-native`, và nó cũng không có `app.json`. Chạy
+`npm ls` hay `npm install` ở đó thì ra đúng ba triệu chứng trên, và cả ba
+đều nói thật về thư mục đang đứng chứ không nói gì về app.
+
+| Chạy ở | `npm ls @sentry/react-native` |
+|---|---|
+| `fitness-os/` | `(empty)` — dự án web cũ |
+| `fitness-os/native/` | `@sentry/react-native@7.11.0` ✅ |
+
+**Nên:** `cd native` trước, luôn luôn. Và nếu đã lỡ `npm install` ở gốc thì
+nó tạo một `node_modules/` ở gốc — thư mục ấy không dùng cho app Expo.
+
+Khả năng còn lại, nếu đã đứng đúng trong `native/`: `node_modules` cũ. Sentry
+vào kho ở commit `150765b`; ai `git pull` qua commit ấy mà chưa cài lại thì
+thiếu gói. Chữa bằng `npm install` (hoặc `npm ci`) trong `native/` — **không
+phải** bằng cách thêm gì vào `package.json`, thứ đã khai sẵn và đúng.
+
+Bản ghim `~7.11.0` không phải một lựa chọn tự do: nó **bằng đúng** con số
+Expo SDK 57 tự ghim trong `node_modules/expo/bundledNativeModules.json`, tức
+đúng bản `npx expo install @sentry/react-native` sẽ chọn.
+
 ### CHẶN: chưa liên kết dự án EAS
 
 `app.json` không có `extra.eas.projectId`, và `eas.json` đặt
