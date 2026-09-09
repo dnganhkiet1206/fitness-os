@@ -268,7 +268,19 @@ const num = (re, what) => {
           'mười sáu hoạt hoạ cùng lúc',
       );
     }
-    if (!/<AuraFigure moving=\{moving\}/.test(code)) {
+    /*
+      Prop `moving` PHẢI được truyền, và biểu thức của nó phải chứa `moving`.
+
+      Bản trước bắt đúng chuỗi `<AuraFigure moving={moving}`, và nó báo đỏ ngày
+      09/09 khi chỗ gọi thành `moving={moving && m.lit}` — một BÁO THỪA: cổng
+      dừng vẫn được bật, chỉ có thêm một điều kiện thứ hai (bản sáng không chạy
+      hoạt hoạ cho thứ nó không tô).
+
+      Nới đúng một bước, không hơn: vẫn phải có `moving=` và trong biểu thức
+      vẫn phải có chính biến `moving`. `moving={true}` hay `moving={m.lit}` —
+      hai cách làm cổng dừng mất tác dụng — vẫn đỏ.
+    */
+    if (!/<AuraFigure[^>]*\bmoving=\{[^}]*\bmoving\b/.test(code)) {
       problems.push('AuraFigure không được truyền `moving` — cổng dừng có tồn tại nhưng không ai bật nó');
     }
     /* Reduce Motion reaches it through the same `moving` both dust and pools

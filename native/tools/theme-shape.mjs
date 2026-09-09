@@ -1,5 +1,5 @@
 /**
- * Hai theme được phép khác MÀU. Chỗ chúng khác HÌNH DẠNG CÂY là một danh sách đóng.
+ * Hai theme được phép khác MÀU. Chúng KHÔNG được dựng hai cây khác nhau.
  *
  * ── vì sao luật này tồn tại ──
  *
@@ -14,21 +14,31 @@
  * Trên kiến trúc mới của React Native, mỗi cây con bị gỡ là một component view
  * trả về pool tái sử dụng. Đó là điều kiện đã sinh ra A9.
  *
- * ── nhưng luật KHÔNG phải "cấm lệch" ──
+ * ── luật từng là "danh sách đóng", nay là "cấm" ──
  *
- * Năm nhánh hiện có đều là quyết định hiệu năng có chủ ý, mỗi cái có lý do viết
- * ngay bên cạnh nó: trên giấy, ánh sáng môi trường và các mặt gradient là những
- * lớp `<Svg>` phủ kín màn hình mà không nhìn thấy được. Bắt chúng dựng ra để
- * cho "nhất quán" là trả tiền cho một hiệu ứng vô hình.
+ * Bản đầu cho phép tám nhánh lệch, mỗi nhánh một lý do hiệu năng. Lý do lớn
+ * nhất trong số đó — "ba lớp `<Svg>` phủ kín màn hình được lấy mẫu lại mỗi
+ * khung hình cuộn" của `ambient-light` — đã được ĐO ngày 09/09 và nó SAI: một
+ * `<Svg>` chứa ba `<Rect>`, mọi prop là hằng ở phạm vi module, lớp ấy nằm
+ * ngoài ScrollView, và `MutationObserver` gắn vào đúng nó đếm được **0 lần DOM
+ * bị chạm qua 181 khung hình cuộn thật**. Phần "── on cost ──" ở đầu chính tệp
+ * ấy đã nói đúng như thế từ đầu; chú thích tiếng Việt bên dưới nó thì không.
  *
- * Nên luật là: **tập hợp các chỗ được phép lệch là một danh sách ĐÓNG.** Thêm
- * một nhánh mới là một quyết định phải viết ra, không phải một dòng lọt vào.
+ * Khi lý do đắt nhất hoá ra không đắt, "danh sách đóng" hết chỗ đứng. Cả tám
+ * nhánh nay đã hết, và giá thật là vài node trong suốt cộng một lần raster
+ * tĩnh — `assistant-aura` còn không trả cả cái đó, vì `moving={… && m.lit}`
+ * làm animation của nó không khởi động ở bản sáng.
  *
  * ── phân loại, và vì sao phải phân loại ──
  *
  * `m.lit` dùng để chọn MÀU (`color={m.lit ? a : b}`) không đổi hình dạng cây và
  * không liên quan gì tới luật này. Chỉ những chỗ DỰNG-HOẶC-KHÔNG mới tính. Gộp
  * cả hai lại sẽ đóng băng 30 chỗ vô hại và làm luật thành thứ người ta nới ra.
+ *
+ * Và phép phân loại ấy nay chia đôi cách xử lý: hai dạng ĐẦU là cổng dựng thật
+ * — luôn đỏ, không danh sách nào cứu được. Dạng THỨ BA là một cờ dẫn xuất mà
+ * luật không đọc được mục đích, nên nó đi qua `CO_MAU`, nơi mỗi mục đã được
+ * đọc bằng mắt và ghi ra nó dùng để làm gì.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -38,25 +48,30 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = path.join(NATIVE, process.env.THEME_SHAPE_ROOT ?? 'src');
 
 /**
- * Các chỗ được phép dựng khác nhau giữa hai theme, và vì sao.
+ * ── 2026-09-09: KHÔNG CÒN CỔNG DỰNG NÀO, và luật siết theo ──
  *
- * Con số là SỐ NHÁNH đổi hình dạng trong tệp đó. Nó chỉ được đi xuống, hoặc đi
- * lên kèm một dòng lý do mới ở đây.
+ * Danh sách này từng là "các chỗ được phép dựng khác nhau giữa hai theme": 6
+ * tệp, 8 nhánh. Cả tám nay đã hết — `readiness-gauge`, `ambient-light`,
+ * `glass-card`, `liquid-glass`, `assistant-aura` đều dựng cùng số node ở hai
+ * theme và bản sáng tô rỗng.
+ *
+ * Nên luật đổi hình: một CỔNG DỰNG thật (`if (!m.lit) return null` hoặc
+ * `{m.lit ? (` mở một cây con) nay **luôn đỏ, không có ngoại lệ**. Không còn
+ * cách nào thêm một chỗ lệch mà chỉ cần ghi thêm một dòng vào đây.
+ *
+ * Thứ còn lại trong bảng này là chuyện khác hẳn: một CỜ DẪN XUẤT
+ * (`const paper = !m.lit`) mà regex thứ ba bắt vì nó **cố ý đoán về phía im
+ * lặng** — nó không đọc được cờ ấy dùng để làm gì. Cả ba mục dưới đây đã được
+ * đọc bằng mắt và cả ba chỉ chọn MÀU hoặc ĐỘ MỜ, không dựng thêm hay bớt một
+ * node nào. Chúng ở đây để luật thôi báo nhầm, không phải để cho phép lệch.
+ *
+ * Con số là số cờ trong tệp đó. Thêm một cờ mới là phải đọc nó rồi ghi ra đây.
  */
-const CHO_PHEP = new Map([
-  ['components/ascnd/ambient-light.tsx', [1, 'trên giấy không có phòng tối nào để thắp: ba lớp <Svg> phủ kín màn hình, lấy mẫu lại mỗi khung hình cuộn, cho một hiệu ứng không đo được']],
-  ['components/ascnd/glass-card.tsx', [1, 'mặt gradient chéo là mô hình của KÍNH; trên giấy một dải sáng-tối 8% là một vệt bẩn']],
-  /* `readiness-gauge.tsx` ĐÃ RỜI danh sách này — đừng thêm lại mà không đọc
-     đoạn dưới. Hai nhánh của nó (hào quang và mép sáng của vòng) là hai chỗ
-     lệch nằm ĐÚNG dưới thao tác lặp lại được của A9: đổi tab → về Hôm nay →
-     chạm vùng vòng tròn. Nay cả hai node được dựng ở cả hai theme và bản sáng
-     tô rỗng, nên chúng không còn là chỗ dựng-hoặc-không. Giá: một `<View>`
-     trong suốt và một `<Circle>` `opacity` 0 — không phải một lớp `<Svg>` phủ
-     kín màn hình, nên lập luận hiệu năng của bốn tệp còn lại không áp dụng. */
-  ['components/ascnd/assistant-aura.tsx', [2, 'khí quyển phòng tối tắt trên giấy']],
-  ['components/ascnd/readiness-aura.tsx', [1, 'cùng lý do với assistant-aura']],
-  ['components/ascnd/liquid-glass.tsx', [1, 'lớp wash của kính không tồn tại trên giấy']],
-]);
+const CO_MAU = new Map([
+  ['components/ascnd/readiness-aura.tsx', [1, '`const paper = !m.lit` — chỉ chọn `paint`, `second` và `alpha`; thân hàm dựng y hệt số node ở hai theme']],
+  ['components/ascnd/assistant-aura.tsx', [1, '`const paper = !m.lit` — chỉ chọn `colour` và `peak` của vũng sáng']],
+  ['components/ascnd/liquid-glass.tsx', [1, '`const washAt = m.lit ? 1 : 0` — nhân vào `stopOpacity` của lớp wash; các node của wash dựng ở cả hai theme']],
+])
 
 const files = [];
 (function walk(d) {
@@ -99,31 +114,49 @@ for (const f of files) {
   const hits = [];
   lines.forEach((l, i) => {
     if (!/\bm\.lit\b/.test(l)) return;
-    if (SHAPE.some((re) => re.test(l))) hits.push(i + 1);
+    /* Hai dạng đầu là cổng DỰNG; dạng thứ ba là một cờ dẫn xuất. Phân biệt
+       ngay lúc quét, vì hai loại đi hai đường xử lý khác nhau. */
+    if (SHAPE[0].test(l) || SHAPE[1].test(l)) hits.push({ line: i + 1, gate: true });
+    else if (SHAPE[2].test(l)) hits.push({ line: i + 1, gate: false });
   });
   if (hits.length) found.set(rel, hits);
 }
 
 const problems = [];
 for (const [rel, hits] of found) {
-  const allowed = CHO_PHEP.get(rel);
+  /* Cổng DỰNG thật: luôn đỏ. Không tra `CO_MAU` — không có ngoại lệ nào ở đây,
+     và đó là điểm khác biệt so với bản trước 09/09. */
+  const gates = hits.filter((h) => h.gate);
+  if (gates.length) {
+    problems.push(
+      `${rel}: ${gates.length} CỔNG DỰNG theo theme (dòng ${gates.map((h) => h.line).join(', ')}) — ` +
+        'hai theme dựng hai cây khác nhau là ĐIỀU KIỆN đã sinh ra A9. Không có danh sách cho phép nữa: ' +
+        'dựng node ở CẢ HAI theme rồi tô rỗng ở bản không dùng (opacity 0 / màu trong suốt), ' +
+        'và nếu nó có animation thì tắt bằng chính cổng `moving` của nó',
+    );
+  }
+  /* Cờ dẫn xuất: đi qua danh sách, vì luật không đọc được nó dùng để làm gì. */
+  const flags = hits.filter((h) => !h.gate);
+  if (!flags.length) continue;
+  const allowed = CO_MAU.get(rel);
   if (!allowed) {
     problems.push(
-      `${rel}: ${hits.length} nhánh dựng-hoặc-không theo theme (dòng ${hits.join(', ')}) — chưa có trong danh sách. ` +
-        'Hai theme dựng hai cây khác nhau là ĐIỀU KIỆN đã sinh ra A9; thêm một chỗ như thế là một quyết định phải viết ra',
+      `${rel}: ${flags.length} cờ dẫn xuất từ \`m.lit\` (dòng ${flags.map((h) => h.line).join(', ')}) — chưa có trong CO_MAU. ` +
+        'Đọc xem cờ ấy dùng để chọn MÀU hay để gác JSX, rồi ghi ra một dòng lý do; ' +
+        'nếu nó gác JSX thì đó là một cổng dựng và phải bỏ, không phải ghi vào danh sách',
     );
-  } else if (hits.length !== allowed[0]) {
+  } else if (flags.length !== allowed[0]) {
     problems.push(
-      `${rel}: có ${hits.length} nhánh (dòng ${hits.join(', ')}), danh sách ghi ${allowed[0]} — ` +
-        (hits.length > allowed[0]
-          ? 'một nhánh mới đã được thêm mà không ai quyết định'
-          : 'một nhánh đã bỏ; sửa con số trong danh sách để nó thôi nói dối'),
+      `${rel}: có ${flags.length} cờ (dòng ${flags.map((h) => h.line).join(', ')}), CO_MAU ghi ${allowed[0]} — ` +
+        (flags.length > allowed[0]
+          ? 'một cờ mới đã được thêm mà chưa ai đọc nó dùng để làm gì'
+          : 'một cờ đã bỏ; sửa con số trong danh sách để nó thôi nói dối'),
     );
   }
 }
 if (!process.env.THEME_SHAPE_ROOT) {
-  for (const [rel] of CHO_PHEP) {
-    if (!found.has(rel)) problems.push(`${rel}: không còn nhánh nào — bỏ nó khỏi danh sách trong tools/theme-shape.mjs`);
+  for (const [rel] of CO_MAU) {
+    if (!found.has(rel)) problems.push(`${rel}: không còn cờ nào — bỏ nó khỏi CO_MAU trong tools/theme-shape.mjs`);
   }
 }
 
@@ -133,4 +166,7 @@ if (problems.length) {
   process.exit(1);
 }
 const total = [...found.values()].reduce((a, h) => a + h.length, 0);
-console.log(`hình dạng cây theo theme: ${files.length} tệp · ${found.size} tệp được phép lệch, ${total} nhánh, mỗi tệp có lý do viết ra`);
+console.log(
+  `hình dạng cây theo theme: ${files.length} tệp · 0 cổng dựng theo theme (cấm hẳn từ 09/09), ` +
+    `${total} cờ dẫn xuất ở ${found.size} tệp, mỗi cờ đã đọc và ghi ra nó chọn MÀU gì`,
+);

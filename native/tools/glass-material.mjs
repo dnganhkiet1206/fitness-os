@@ -202,26 +202,33 @@ function census(node, acc = {}) {
   kính". Từ lúc có nhánh ấy, một bảng chỉ chạy một phía là một bảng che đúng
   nửa hợp đồng.
 
-  Và nửa mới không chỉ là "bớt một hình": trên giấy, `blur` CÓ tint rơi về đúng
-  trạng thái của `blur` không tint — không `<Svg>`, không `<View onLayout>`,
-  không `setState` mỗi tấm. Bốn ô đo của Health Assistant nằm trên đường cuộn
-  ngang, nên đó là bốn cái vỏ đo biến mất khỏi bản sáng, không phải một con số
-  trang trí.
+  ── 09/09: hợp đồng ĐẢO CHIỀU, và bảng này nói ra điều đó ──
+
+  Bản trước của bảng khẳng định: trên giấy, `blur` CÓ tint rơi về đúng trạng
+  thái của `blur` không tint — không `<Svg>`, không `<View onLayout>`. Đó chính
+  là một CỔNG DỰNG theo theme, tức điều kiện đã sinh ra A9
+  (`docs/SO-GHI-LOI.md`), và nó do GĐ2C.3 thêm vào.
+
+  Nay hình dạng của tấm kính KHÔNG còn đọc theme: nó chỉ phụ thuộc `material` và
+  `tint`, hai thứ đến từ chỗ gọi. Thứ theme quyết định là ĐỘ MỜ — `washAt` nhân
+  0 trên giấy.
+
+  Nên bốn hàng giấy nay BẰNG ĐÚNG bốn hàng phòng tối, và bảng còn khẳng định
+  thẳng điều đó ở dưới thay vì để hai nửa trùng nhau một cách tình cờ.
 */
 const EXPECT = [
-  /* ── phòng tối: lớp wash tồn tại ── */
+  /* ── phòng tối ── */
   { lit: true, material: 'glass', tint: '#ff9f0a', want: { BlurView: 1, Svg: 1, LinearGradient: 3, RadialGradient: 1, Rect: 4, onLayout: 1 } },
   { lit: true, material: 'glass', tint: undefined, want: { BlurView: 1, Svg: 1, LinearGradient: 3, RadialGradient: 0, Rect: 3, onLayout: 1 } },
   { lit: true, material: 'blur', tint: '#ff9f0a', want: { BlurView: 1, Svg: 1, LinearGradient: 0, RadialGradient: 1, Rect: 1, onLayout: 1 } },
-  /* Không hình nào để vẽ — nên không đo, không Svg, không node nào cả. */
+  /* Không hình nào để vẽ — nên không đo, không Svg, không node nào cả. Đây KHÔNG
+     phải một nhánh theme: `tint` là prop của chỗ gọi, giống nhau ở hai diện mạo. */
   { lit: true, material: 'blur', tint: undefined, want: { BlurView: 1, Svg: 0, LinearGradient: 0, RadialGradient: 0, Rect: 0, onLayout: 0 } },
 
-  /* ── giấy: KHÔNG có wash, dù có truyền tint hay không ── */
-  { lit: false, material: 'glass', tint: '#ff9f0a', want: { BlurView: 1, Svg: 1, LinearGradient: 3, RadialGradient: 0, Rect: 3, onLayout: 1 } },
+  /* ── giấy: TỪNG chữ số bằng phòng tối ── */
+  { lit: false, material: 'glass', tint: '#ff9f0a', want: { BlurView: 1, Svg: 1, LinearGradient: 3, RadialGradient: 1, Rect: 4, onLayout: 1 } },
   { lit: false, material: 'glass', tint: undefined, want: { BlurView: 1, Svg: 1, LinearGradient: 3, RadialGradient: 0, Rect: 3, onLayout: 1 } },
-  /* Ô đo của Health Assistant: có tint, nhưng trên giấy nó không vẽ gì — nên cả
-     cái vỏ đo cũng phải biến mất, giống hệt ô không tint bên dưới. */
-  { lit: false, material: 'blur', tint: '#ff9f0a', want: { BlurView: 1, Svg: 0, LinearGradient: 0, RadialGradient: 0, Rect: 0, onLayout: 0 } },
+  { lit: false, material: 'blur', tint: '#ff9f0a', want: { BlurView: 1, Svg: 1, LinearGradient: 0, RadialGradient: 1, Rect: 1, onLayout: 1 } },
   { lit: false, material: 'blur', tint: undefined, want: { BlurView: 1, Svg: 0, LinearGradient: 0, RadialGradient: 0, Rect: 0, onLayout: 0 } },
 ];
 
@@ -243,6 +250,25 @@ async function run(js) {
     for (const [k, n] of Object.entries(c.want)) {
       const have = got[k] ?? 0;
       if (have !== n) bad.push(`${label(c)}: ${k} = ${have}, phải là ${n}`);
+    }
+    /* Bất biến A9, nói THẲNG chứ không để hai nửa bảng trùng nhau tình cờ: cùng
+       `material` + `tint`, hai diện mạo phải dựng đúng cùng một phép đếm. Một
+       cổng dựng mới ở bất kỳ đâu trong tệp này sẽ đỏ ở đây kể cả khi ai đó sửa
+       luôn con số `want` cho khớp. */
+    if (!c.lit) {
+      pal.default._lit(true);
+      react.default._size({ w: 120, h: 44 });
+      const dark = census(mod.LiquidGlass({ material: c.material, tint: c.tint }));
+      pal.default._lit(false);
+      for (const k of Object.keys(c.want)) {
+        if ((dark[k] ?? 0) !== (got[k] ?? 0)) {
+          bad.push(
+            `${label(c)}: ${k} = ${got[k] ?? 0} nhưng phòng tối dựng ${dark[k] ?? 0} — ` +
+              'hai theme dựng hai cây khác nhau là ĐIỀU KIỆN đã sinh ra A9; ' +
+              'tắt bằng độ mờ, không bằng việc gỡ node',
+          );
+        }
+      }
     }
     /* Và bản chưa đo không được vẽ hình nào, ở mọi tổ hợp — nếu không thì
        phần trăm-thay-vì-điểm-ảnh đã quay lại (xem chú thích trong tệp gốc). */
@@ -304,19 +330,26 @@ const BREAKS = [
     trang trí, và cả nhánh giấy vẫn không có ai canh.
   */
   {
-    name: 'trả lớp wash về cho bản giấy',
+    name: 'dựng lại cổng theme cho lớp wash',
     mutate: (code) => {
-      const n = (code.match(/const washed = !!tint && m\.lit;/g) ?? []).length;
+      const n = (code.match(/const washed = !!tint;/g) ?? []).length;
       if (n !== 1) throw new Error(`phép thử ngược sai chỗ: thấy ${n} khai báo \`washed\`, phải là 1`);
-      return code.replace('const washed = !!tint && m.lit;', 'const washed = !!tint;');
+      return code.replace('const washed = !!tint;', 'const washed = !!tint && m.lit;');
     },
-    /* `glass` giấy lấy lại một RadialGradient và một Rect; `blur` giấy lấy lại
-       cả cái vỏ đo mà nó vừa bỏ được. */
+    /*
+      Phép thử này ĐẢO CHIỀU ngày 09/09.
+
+      Trước đó nó hoàn nguyên `!!tint && m.lit` về `!!tint` và chờ bảng đỏ vì
+      giấy "lấy lại" lớp wash. Nay chính `!!tint && m.lit` mới là bản HỎNG: nó
+      là một cổng dựng theo theme, tức điều kiện đã sinh ra A9.
+
+      Và nó phải đỏ ở BẤT BIẾN, không chỉ ở con số `want` — nếu ai đó sửa luôn
+      bốn hàng giấy cho khớp cổng ấy, bất biến vẫn bắt được.
+    */
     expect: [
-      /giấy · glass \+ tint: RadialGradient = 1, phải là 0/,
-      /giấy · glass \+ tint: Rect = 4, phải là 3/,
-      /giấy · blur \+ tint: Svg = 1, phải là 0/,
-      /giấy · blur \+ tint: onLayout = 1, phải là 0/,
+      /giấy · glass \+ tint: RadialGradient = 0 nhưng phòng tối dựng 1/,
+      /giấy · blur \+ tint: Svg = 0 nhưng phòng tối dựng 1/,
+      /giấy · blur \+ tint: onLayout = 0 nhưng phòng tối dựng 1/,
     ],
   },
 ];
@@ -362,8 +395,9 @@ console.log(
     '(glass/blur × có/không tint × phòng tối/giấy) và đếm node sinh ra: ' +
     'blur bỏ đúng ba lớp thấu kính VÀ ba <LinearGradient> định nghĩa chúng (trước đây vẫn dựng cho mỗi tấm dù không Rect nào dùng); ' +
     'blur không tint không dựng vỏ đo, không <Svg>, không setState nào — vì nó không còn hình nào để vẽ; ' +
-    'trên GIẤY lớp wash không tồn tại ở cả hai chất liệu, nên `blur` CÓ tint cũng rơi về không-vỏ-đo — ' +
-    'bốn ô đo của Health Assistant nằm trên đường cuộn ngang, và đó là bốn cái vỏ biến mất khỏi bản sáng; ' +
+    'hình dạng KHÔNG đọc theme (từ 09/09): bốn tổ hợp trên GIẤY dựng đúng từng chữ số như phòng tối, và ' +
+    'bất biến ấy được khẳng định THẲNG chứ không để hai nửa bảng trùng nhau một cách tình cờ — lớp wash ' +
+    'tắt bằng ĐỘ MỜ (`washAt` nhân 0), không bằng việc gỡ node, vì gỡ node theo theme là điều kiện đã sinh ra A9; ' +
     'BlurView vẫn có ở cả hai chất liệu (bỏ nó là đổi thiết kế, không phải tối ưu); ' +
     'không chế độ nào vẽ <Rect> trước khi đo được hộp; ' +
     `${BREAKS.length} phép thử ngược hoàn nguyên đúng ba chỗ sửa và cả ba đều đỏ đúng ô đã dự đoán`,

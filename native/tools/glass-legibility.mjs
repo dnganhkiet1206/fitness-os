@@ -106,14 +106,39 @@ const muted = hexOf('mutedForeground');
   hào quang tối dựng ra được — nên nó lấy giá trị của bản tối, và lấy từ chính
   bảng chất liệu chứ không dò lại một mã màu ở đâu khác.
 */
-const fill = Number(/hair: 'rgba\(255,255,255,([\d.]+)\)'/.exec(palette)?.[1]);
-const lit = Number(glassSrc.match(/id=\{lit\}[\s\S]*?stopOpacity=\{([\d.]+)\}/)?.[1]);
-const wash = Number(glassSrc.match(/id=\{wash\}[\s\S]*?stopOpacity=\{([\d.]+)\}/)?.[1]);
+/*
+  ── vì sao có `(?:\s*\*\s*\w+)?`, và vì sao có cổng `> 0` ──
 
-if (pools.length < 4 || !pageBg || !fg || !glassMuted || ![fill, lit, wash].every(Number.isFinite)) {
+  Ngày 09/09 `liquid-glass.tsx` đổi đỉnh wash thành `stopOpacity={0.16 * washAt}`
+  (bản sáng nhân 0, để lớp wash được DỰNG ở cả hai theme mà không tô — điều kiện
+  A9). Regex cũ đòi `}` ngay sau số, nên nó KHÔNG khớp ở `<Stop>` đầu; `[\s\S]*?`
+  lười nên nó trượt xuống `<Stop>` cuối và đọc ra `wash = 0`.
+
+  Số 0 là hữu hạn, nên cổng `isFinite` cho qua và cả mô hình phòng tối im lặng
+  chạy tiếp với lớp wash bằng KHÔNG. Không có gì đỏ — trừ `selfTest` "aura sáng
+  gấp đôi", thứ tồn tại đúng cho tình huống này và đã bắt được.
+
+  Nên hai thứ được thêm: chấp nhận một hệ số nhân sau con số, và đòi cả ba giá
+  trị phải > 0. Một thông số phòng bằng 0 nghĩa là đọc trượt, không phải một căn
+  phòng không có kính.
+*/
+const fill = Number(/hair: 'rgba\(255,255,255,([\d.]+)\)'/.exec(palette)?.[1]);
+const OPACITY = (id) =>
+  Number(glassSrc.match(new RegExp(`id=\\{${id}\\}[\\s\\S]*?stopOpacity=\\{([\\d.]+)(?:\\s*\\*\\s*\\w+)?\\}`))?.[1]);
+const lit = OPACITY('lit');
+const wash = OPACITY('wash');
+
+if (
+  pools.length < 4 ||
+  !pageBg ||
+  !fg ||
+  !glassMuted ||
+  ![fill, lit, wash].every((v) => Number.isFinite(v) && v > 0)
+) {
   console.log(
     'không đọc được thông số phòng — aura/liquid-glass/bảng màu đã đổi hình dạng, ' +
-      `(pools ${pools.length}, fill ${fill}, lit ${lit}, wash ${wash})`,
+      `(pools ${pools.length}, fill ${fill}, lit ${lit}, wash ${wash}). ` +
+      'Một giá trị 0 gần như luôn là đọc TRƯỢT sang <Stop> cuối, không phải một thông số thật',
   );
   process.exit(1);
 }

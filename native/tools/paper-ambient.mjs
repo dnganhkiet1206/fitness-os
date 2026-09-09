@@ -109,15 +109,88 @@ const peaks = [];
   máy thật chỉ ra.
 
   Không hạ độ mờ — tắt. Một vệt bẩn mờ hơn vẫn là một vệt bẩn.
+
+  ── 09/09: điều phải đúng KHÔNG đổi, cách đạt được nó thì đổi ──
+
+  Bản trước bắt đúng một chuỗi: `{m.lit ? (<><AuraFigure`. Cổng ấy nay đã bỏ,
+  vì nó là một cổng DỰNG — hai theme dựng hai cây khác nhau là điều kiện đã
+  sinh ra A9 (`docs/SO-GHI-LOI.md`). Nhưng thứ luật này bảo vệ — trên giấy
+  KHÔNG được có thân người và bụi neon — vẫn nguyên giá trị: nó là một phát
+  hiện từ ảnh chụp máy thật, không phải một sở thích.
+
+  Nên luật thôi kiểm CÚ PHÁP và kiểm CHUỖI DẪN tới chỗ tô, cả bốn mắt xích:
+
+    1. cả hai chỗ gọi nhận `lit={m.lit}`,
+    2. cả hai component đặt `lit ? null : HIDDEN` lên style gốc của nó,
+    3. `HIDDEN` thật sự là `opacity: 0`,
+    4. và `moving` của chúng bị `m.lit` chặn, để bản sáng không chạy hoạt hoạ
+       cho thứ không ai thấy.
+
+  Bốn mắt xích ấy mạnh hơn cú pháp cũ: bản cũ chỉ thấy CÓ một cái cổng, không
+  thấy cổng ấy có nối tới chỗ vẽ hay không.
 */
 {
   const src = read('src/components/ascnd/assistant-aura.tsx');
-  if (!/\{m\.lit \? \(\s*<>\s*<AuraFigure/.test(src)) {
+  const need = [
+    [/<AuraFigure[^>]*\blit=\{m\.lit\}/, '`AuraFigure` không nhận `lit={m.lit}`'],
+    [/<DustField[^>]*\blit=\{m\.lit\}/, 'các lớp bụi không nhận `lit={m.lit}`'],
+    [/<AuraFigure[^>]*\bmoving=\{[^}]*\bm\.lit\b/, '`AuraFigure` vẫn chạy hoạt hoạ ở bản sáng (`moving` không bị `m.lit` chặn)'],
+    [/<DustField[^>]*\bmoving=\{[^}]*\bm\.lit\b/, 'các lớp bụi vẫn chạy hoạt hoạ ở bản sáng'],
+    [/const HIDDEN = \{ opacity: 0 \}/, '`HIDDEN` không còn là `opacity: 0`'],
+    [/styles\.figure,[^\]]*\blit \? null : HIDDEN/, '`AuraFigure` không tắt theo `lit` ở style gốc'],
+    [/styles\.dust,[^\]]*\blit \? null : HIDDEN/, 'lớp bụi không tắt theo `lit` ở style gốc'],
+  ];
+  for (const [re, what] of need) {
+    if (!re.test(src)) {
+      problems.push(
+        `src/components/ascnd/assistant-aura.tsx: ${what} — trên giấy đó là một thân người mờ và bốn ` +
+          'mặt phẳng bụi NEON, tức đúng vệt lavender mà bản QA máy thật bác bỏ. Chúng được DỰNG ở cả hai ' +
+          'theme (điều kiện A9), nên thứ giữ cho giấy sạch là chuỗi `lit` → `HIDDEN`, không phải một cổng dựng',
+      );
+    }
+  }
+}
+
+/*
+  ── lớp wash của `liquid-glass.tsx` cũng phải tắt trên giấy ──
+
+  Cho tới 09/09, điều này được bảo đảm bằng HÌNH DẠNG: bản sáng không dựng lớp
+  wash, và `tools/glass-material.mjs` đếm node nên nó canh giúp.
+
+  Nay hình dạng thôi đọc theme (điều kiện A9), và thứ giữ cho giấy sạch là một
+  phép NHÂN. Phép đếm node không nhìn thấy một phép nhân — nên nếu không có
+  bước này, một tính chất vốn có luật canh sẽ đổi thành một tính chất không ai
+  canh, và đó là một cách âm thầm để mất chính thứ vừa sửa.
+
+  Ba mắt xích: hệ số phải bằng 0 trên giấy, nó phải được nhân vào các `<Stop>`
+  của lớp wash, và đỉnh wash phải còn là một con số thật (không phải 0 ở cả hai
+  diện mạo, thứ sẽ làm bước này xanh vì lý do sai).
+*/
+{
+  const src = read('src/components/ascnd/liquid-glass.tsx');
+  const factor = /const washAt = m\.lit \? 1 : 0;/.test(src);
+  if (!factor) {
     problems.push(
-      'src/components/ascnd/assistant-aura.tsx: `AuraFigure` và các lớp bụi không còn được đóng cổng ' +
-        '`m.lit` — trên giấy đó là một thân người mờ và bốn mặt phẳng bụi NEON, tức đúng vệt lavender ' +
-        'mà bản QA máy thật bác bỏ',
+      'src/components/ascnd/liquid-glass.tsx: không còn `const washAt = m.lit ? 1 : 0` — ' +
+        'lớp wash nay được DỰNG ở cả hai theme, nên thứ duy nhất giữ cho giấy không bị nhuộm là hệ số này',
     );
+  }
+  const stops = [...src.matchAll(/id=\{wash\}[\s\S]*?<\/RadialGradient>/g)][0]?.[0] ?? '';
+  const peaks = [...stops.matchAll(/stopOpacity=\{([\d.]+)(?:\s*\*\s*(\w+))?\}/g)];
+  const positive = peaks.filter(([, v]) => Number(v) > 0);
+  if (!positive.length) {
+    problems.push(
+      'src/components/ascnd/liquid-glass.tsx: không đọc được đỉnh nào của lớp wash — ' +
+        'bước này sẽ xanh vì lý do sai nếu để nguyên',
+    );
+  }
+  for (const [, v, mul] of positive) {
+    if (mul !== 'washAt') {
+      problems.push(
+        `src/components/ascnd/liquid-glass.tsx: \`stopOpacity={${v}${mul ? ` * ${mul}` : ''}}\` của lớp wash ` +
+          'không nhân với `washAt` — trên giấy nó sẽ NHUỘM mặt thẻ, đúng thứ "thẻ hồng / oải hương / đào" mà bản QA máy thật bác bỏ',
+      );
+    }
   }
 }
 
