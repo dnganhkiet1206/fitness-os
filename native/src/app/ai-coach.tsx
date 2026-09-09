@@ -656,7 +656,7 @@ const stylesFor = makeStyles((c, m) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(10,10,16,0.82)',
+    backgroundColor: alpha(m.paper, 0.82),
   },
   historyHeader: {
     fontSize: 11,

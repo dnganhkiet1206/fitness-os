@@ -685,6 +685,23 @@ export interface Material {
    * chữ đang chạy — và bản sáng là mực của giấy.
    */
   ink: string;
+  /**
+   * GIẤY của theme — vế đối của `ink`, và nó tồn tại vì một lỗi thật.
+   *
+   * Nhãn "Trung bình" trên biểu đồ có một tấm lót để nó còn đọc được khi cắt
+   * ngang một cột đặc. Tấm lót ấy từng được ghi cứng `rgba(10,10,16,0.94)` —
+   * đúng thứ chú thích của `alpha()` gọi là một BẢN CHÉP: nó không đổi khi
+   * bảng màu đổi. Chữ thì đọc `ink`, mà `ink` bản sáng là mực của giấy. Nên ở
+   * bản sáng thành mực đậm trên nền gần đen: một ô ĐEN ĐẶC, không đọc được gì.
+   *
+   * Bản tối `#0a0a10` — `alpha('#0a0a10', 0.94)` trả về đúng chuỗi cũ, từng ký
+   * tự, nên bản tối không đổi một điểm ảnh nào. Bản sáng là mặt thẻ.
+   *
+   * KHÔNG phải `background` hay `card`: bản tối của hai token ấy là `#070708`
+   * và `#0e0e11`, không token nào tái tạo được `#0a0a10`. Đây là một vai riêng,
+   * đúng như `ink` đã là một vai riêng.
+   */
+  paper: string;
   /** bề mặt con — xem `Inset` */
   inset: Inset;
   /** bề mặt trên nền động — xem `Aura` */
@@ -762,6 +779,8 @@ export const materials: Record<ThemeName, Material> = {
     borderWidth: 0.5,
     radius: 20,
     ink: '#ffffff',
+    /* `alpha('#0a0a10', 0.94)` === `'rgba(10,10,16,0.94)'`, chuỗi cũ nguyên văn. */
+    paper: '#0a0a10',
     /* Đúng ba giá trị của hằng `glass` cũ, chép nguyên văn. Ở bản tối một lớp
        phủ trong suốt cộng dồn, nên mặt thẻ và ô con dùng chung được một công
        thức — và chúng PHẢI tiếp tục dùng chung, nếu không bản tối đổi. */
@@ -798,6 +817,9 @@ export const materials: Record<ThemeName, Material> = {
        `tools/palette.mjs` kiểm nó khớp với thứ RN trả về trên 2x và 3x. */
     borderWidth: 1 / 3,
     ink: lightPalette.foreground,
+    /* Mặt thẻ, chứ không phải trang: tấm lót nằm TRÊN thẻ, và trên giấy nó phải
+       biến mất chỗ không có cột và che chỗ có. */
+    paper: lightPalette.card,
     /* Ô con đi XUỐNG khỏi mặt thẻ trắng, ngược hướng với thẻ đi lên khỏi giấy.
        Cả hai giá trị DẪN từ bảng màu sáng chứ không phải mã màu mới: `secondary`
        cách mặt thẻ 1,20 và cách trang 1,09, còn `border` cách mặt thẻ 1,46 —
