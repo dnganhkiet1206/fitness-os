@@ -7,7 +7,7 @@ là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên co
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
 **Vòng gần nhất:** 2026-09-09 · lượt đánh bóng sản phẩm (0 thay đổi mã) ·
-commit `__H__` · nhánh `claude/ios-fitness-rebuild-omgulr`
+commit `efb851d` · nhánh `claude/ios-fitness-rebuild-omgulr`
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
 > Trạng thái ở `docs/AI-TRIEN-KHAI.md` giữ nguyên, không đụng vào.
