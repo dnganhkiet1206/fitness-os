@@ -445,15 +445,40 @@ export default function ExerciseInsightScreen() {
             </>
           )}
 
-          {/* An empty scope is not an empty history, and saying "no exercises
-              logged" here would be a statement about their training rather than
-              about their plan. */}
+          {/*
+            An empty scope is not an empty history, and saying "no exercises
+            logged" here would be a statement about their training rather than
+            about their plan.
+
+            ── and it is TWO states, which this told apart wrongly ──
+
+            `shown` is empty for two different reasons and the old copy asserted
+            the first one for both:
+
+              keys.size === 0   the plan really has nothing on it
+              keys.size  >  0   the plan has exercises, none of them logged in
+                                the last 90 days
+
+            In the second case "your weekly plan has no exercises on it yet" is
+            simply FALSE — they built the plan — and the hint under it told them
+            to go and build one. Wrong sentence and wrong advice, to the person
+            who had already done the thing being asked for.
+
+            The second case reuses `nXiEmptyHint`, which is the true advice
+            there: the plan is fine, what is missing is a logged session.
+          */}
           {shown.length === 0 ? (
             <GlassCard>
               <Text style={styles.emptyScope}>
-                {scope === 'today' ? i18n.nXiScopeEmptyToday : i18n.nXiScopeEmptyWeek}
+                {keys !== null && keys.size > 0
+                  ? i18n.nXiScopeUnlogged
+                  : scope === 'today'
+                    ? i18n.nXiScopeEmptyToday
+                    : i18n.nXiScopeEmptyWeek}
               </Text>
-              <Text style={styles.note}>{i18n.nXiScopeHint}</Text>
+              <Text style={styles.note}>
+                {keys !== null && keys.size > 0 ? i18n.nXiEmptyHint : i18n.nXiScopeHint}
+              </Text>
             </GlassCard>
           ) : null}
 
