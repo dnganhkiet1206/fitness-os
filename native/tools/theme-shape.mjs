@@ -46,7 +46,13 @@ const ROOT = path.join(NATIVE, process.env.THEME_SHAPE_ROOT ?? 'src');
 const CHO_PHEP = new Map([
   ['components/ascnd/ambient-light.tsx', [1, 'trên giấy không có phòng tối nào để thắp: ba lớp <Svg> phủ kín màn hình, lấy mẫu lại mỗi khung hình cuộn, cho một hiệu ứng không đo được']],
   ['components/ascnd/glass-card.tsx', [1, 'mặt gradient chéo là mô hình của KÍNH; trên giấy một dải sáng-tối 8% là một vệt bẩn']],
-  ['components/ascnd/readiness-gauge.tsx', [2, 'mép sáng và hào quang của vòng — giấy không phát sáng']],
+  /* `readiness-gauge.tsx` ĐÃ RỜI danh sách này — đừng thêm lại mà không đọc
+     đoạn dưới. Hai nhánh của nó (hào quang và mép sáng của vòng) là hai chỗ
+     lệch nằm ĐÚNG dưới thao tác lặp lại được của A9: đổi tab → về Hôm nay →
+     chạm vùng vòng tròn. Nay cả hai node được dựng ở cả hai theme và bản sáng
+     tô rỗng, nên chúng không còn là chỗ dựng-hoặc-không. Giá: một `<View>`
+     trong suốt và một `<Circle>` `opacity` 0 — không phải một lớp `<Svg>` phủ
+     kín màn hình, nên lập luận hiệu năng của bốn tệp còn lại không áp dụng. */
   ['components/ascnd/assistant-aura.tsx', [2, 'khí quyển phòng tối tắt trên giấy']],
   ['components/ascnd/readiness-aura.tsx', [1, 'cùng lý do với assistant-aura']],
   ['components/ascnd/liquid-glass.tsx', [1, 'lớp wash của kính không tồn tại trên giấy']],

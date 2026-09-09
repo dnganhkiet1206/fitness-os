@@ -567,22 +567,39 @@ export function ReadinessGauge({
         {/*
           Neon halo behind the ring, tinted to the status colour (web glow).
 
-          Chỉ vẽ khi chất liệu PHÁT SÁNG. `m.lit` đã là đúng câu hỏi ấy: bản tối
-          là kính bắt sáng, bản sáng là giấy. Một bóng màu bán kính 28 ở độ mờ
-          0,7 sau một vòng tròn trên nền đen là ánh sáng phát ra; trên giấy nó
-          là một vệt màu nhoè không có nguồn sáng nào biện minh cho nó.
+          Bản sáng KHÔNG vẽ nó: một bóng màu bán kính 28 ở độ mờ 0,7 sau một
+          vòng tròn trên nền đen là ánh sáng phát ra; trên giấy nó là một vệt
+          màu nhoè không có nguồn sáng nào biện minh cho nó. Bản sáng đã có cách
+          nói độ sâu của riêng nó — bóng đổ của `Material` — và cung vòng nay
+          đọc được 5,06:1 nên nó không cần vay thêm sự chú ý từ đâu cả.
 
-          Tắt hẳn chứ không hạ độ mờ: "vầng sáng mờ hơn" vẫn là ẩn dụ của bản
-          tối, chỉ nhỏ tiếng hơn. Bản sáng đã có cách nói độ sâu của riêng nó —
-          bóng đổ của `Material` — và cung vòng nay đọc được 5,06:1 nên nó không
-          cần vay thêm sự chú ý từ đâu cả.
+          ── nhưng "không vẽ" KHÔNG được là "không dựng" ──
+
+          Bản trước là `{m.lit ? <View…/> : null}`, tức bản sáng GỠ HẲN cây con
+          này. Đó là điều kiện đã sinh ra A9 (`docs/SO-GHI-LOI.md`): trên kiến
+          trúc mới, mỗi cây con bị gỡ là một component view trả về pool tái sử
+          dụng, và `react-native-screens` tháo cây của một tab khi đổi tab rồi
+          dựng lại từ pool khi quay về. Thao tác lặp lại được trong A9 — đổi tab
+          → về Hôm nay → chạm vùng vòng tròn — đi qua đúng chỗ này.
+
+          Nên node LUÔN được dựng ở cả hai theme, và bản sáng tô rỗng. Giá phải
+          trả là một `<View>` trong suốt 168×168 không nhận chạm; đó là một node,
+          không phải một lớp `<Svg>` phủ kín màn hình như `ambient-light`, nên
+          lập luận hiệu năng vốn biện minh cho việc gỡ ở những chỗ kia không áp
+          dụng được ở đây.
+
+          `shadowOpacity`/`shadowRadius` là iOS, `elevation` là Android — phải
+          tắt CẢ HAI, không thì Android vẫn đổ bóng cho một ô trong suốt.
         */}
-        {m.lit ? (
-          <View
-            pointerEvents="none"
-            style={[styles.ringGlow, { shadowColor: graphic, backgroundColor: `${graphic}0d` }]}
-          />
-        ) : null}
+        <View
+          pointerEvents="none"
+          style={[
+            styles.ringGlow,
+            m.lit
+              ? { shadowColor: graphic, backgroundColor: `${graphic}0d` }
+              : { shadowColor: 'transparent', shadowOpacity: 0, shadowRadius: 0, elevation: 0, backgroundColor: 'transparent' },
+          ]}
+        />
         <Svg width={ringSize} height={ringSize} viewBox="0 0 120 120">
           <Defs>
             <LinearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
@@ -592,13 +609,14 @@ export function ReadinessGauge({
           </Defs>
           <Circle cx="60" cy="60" r={R} fill="none" stroke={c[TRACK]} strokeWidth={6} />
           {/*
-            ── VẦNG SÁNG: chỉ bản TỐI, và bản sáng KHÔNG có gì thay thế ──
+            ── VẦNG SÁNG: chỉ TÔ ở bản tối, và bản sáng KHÔNG có gì thay thế ──
 
             Vòng này rộng 10 so với 6 của cung chính nên nó thò ra hai bên 2
             điểm. Ở bản tối, tô bằng chính màu cung ở độ mờ 0,25, đó là ánh sáng
             rọi ra từ một vật phát sáng. Trên giấy không có gì phát sáng, và
             cùng đoạn mã ấy vẽ ra một quầng màu quanh cung — thứ bản thiết kế
-            cấm. Nó không được đóng cổng `m.lit` cho tới GĐ2C.
+            cấm. Nó không được đóng cổng `m.lit` cho tới GĐ2C, và cái cổng ấy
+            là một cổng DỰNG cho tới lượt sửa A9 — nay nó là một cổng TÔ.
 
             ── và cái BÓNG ĐỔ dựng ở GĐ2B đã bị BỎ ──
 
@@ -622,19 +640,25 @@ export function ReadinessGauge({
             sửa đúng là một bóng NHOÈ thật (filter SVG hoặc một lớp native),
             không phải chỉnh độ mờ của một bản sao.
           */}
-          {m.lit ? (
-            <AnimatedCircle
-              cx="60" cy="60" r={R}
-              fill="none"
-              stroke={g0}
-              opacity={0.25}
-              strokeWidth={10}
-              strokeLinecap="round"
-              strokeDasharray={`${CIRC}`}
-              animatedProps={ringProps}
-              transform="rotate(-90 60 60)"
-            />
-          ) : null}
+          {/*
+            Cũng vì A9: node được dựng ở CẢ HAI theme, bản sáng để `opacity` 0.
+
+            Bản trước đóng cổng bằng `{m.lit ? … : null}` và bản sáng gỡ hẳn
+            `<Circle>` này ra khỏi cây SVG — lý do đầy đủ ở khối chú thích của
+            `ringGlow` phía trên. `opacity={0}` giữ nguyên số node, và một hình
+            SVG trong suốt không tô một điểm ảnh nào.
+          */}
+          <AnimatedCircle
+            cx="60" cy="60" r={R}
+            fill="none"
+            stroke={g0}
+            opacity={m.lit ? 0.25 : 0}
+            strokeWidth={10}
+            strokeLinecap="round"
+            strokeDasharray={`${CIRC}`}
+            animatedProps={ringProps}
+            transform="rotate(-90 60 60)"
+          />
           <AnimatedCircle
             cx="60" cy="60" r={R}
             fill="none"
