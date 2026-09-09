@@ -7,7 +7,7 @@ là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên co
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
 **Vòng gần nhất:** 2026-09-09 · nâng có kiểm soát cho HERMES-MEM ·
-commit `__H__` · nhánh `claude/ios-fitness-rebuild-omgulr`
+commit `fb53951` · nhánh `claude/ios-fitness-rebuild-omgulr`
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
 > Trạng thái ở `docs/AI-TRIEN-KHAI.md` giữ nguyên, không đụng vào.
