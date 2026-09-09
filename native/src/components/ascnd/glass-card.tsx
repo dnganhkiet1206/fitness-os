@@ -147,12 +147,21 @@ export function GlassCard({
         — clipped, so harmless, and wrong for no reason. It also leaves the
         caller's own `onLayout` alone.
       */}
-      {/* Mặt gradient chỉ tồn tại ở chất liệu KÍNH. Ở bản giấy, `onLayout`
-          cũng đi theo: không có gì cần đo khi không có gì được vẽ, và một
-          `setState` mỗi lần thẻ đổi cỡ để dựng ra rỗng là công thừa trên đúng
-          53 tệp. */}
-      {m.lit ? (
-      <View style={styles.face} pointerEvents="none" onLayout={measure}>
+      {/*
+        Mặt gradient chỉ TÔ ở chất liệu KÍNH — trên giấy một dải sáng-tối 8% là
+        một vệt bẩn, không phải một mặt kính.
+
+        Nhưng nó được DỰNG ở cả hai theme. Bản trước gác bằng `{m.lit ? … :
+        null}`, tức bản sáng gỡ hẳn cây con này, và hai theme dựng hai cây khác
+        nhau là điều kiện đã sinh ra A9 (`docs/SO-GHI-LOI.md`). `onLayout` phải
+        ở lại theo: nếu bản sáng không đo thì `size` đứng `null`, và nhánh
+        `{size ? …}` bên trong lại thành một chỗ lệch nữa — đúng thứ vừa bỏ.
+
+        Giá còn lại là một `setState` mỗi lần thẻ ĐỔI CỠ ở bản sáng. Thẻ đổi cỡ
+        hiếm (mở/đóng, xoay máy), không phải mỗi khung hình cuộn — và `measure`
+        ngay trên đây đã bỏ qua khi số đo không đổi.
+      */}
+      <View style={[styles.face, m.lit ? null : styles.faceUnlit]} pointerEvents="none" onLayout={measure}>
         {size ? (
         <Svg width={size.w} height={size.h}>
           <Defs>
@@ -175,9 +184,18 @@ export function GlassCard({
         </Svg>
         ) : null}
       </View>
-      ) : null}
-      {/* Bright inner top edge (--glass-inner-shadow) — kính mới có */}
-      {m.highlight ? <View style={styles.topLine} pointerEvents="none" /> : null}
+      {/*
+        Mép sáng trong ở đỉnh thẻ (--glass-inner-shadow) — chỉ KÍNH mới có.
+
+        Cổng cũ ở đây là `{m.highlight ? … : null}`, và đó cũng là một cổng DỰNG
+        theo theme: `m.highlight` là `null` ở bản sáng. `tools/theme-shape.mjs`
+        KHÔNG thấy nó — luật ấy chỉ tìm `m.lit` — nên nó là một chỗ lệch nằm
+        ngoài cả danh sách lẫn phép đếm.
+
+        Không cần cổng: `topLine` bên dưới đã là `m.highlight ?? 'transparent'`,
+        tức bản sáng vốn đã tô rỗng. Bỏ cổng đi là đủ.
+      */}
+      <View style={styles.topLine} pointerEvents="none" />
       {children}
     </Animated.View>
   );
@@ -211,6 +229,8 @@ const stylesFor = makeMaterialStyles((m) => ({
     borderRadius: m.radius,
     overflow: 'hidden',
   },
+  /* Bản sáng: cùng số node, không tô. Xem khối chú thích ở chỗ dựng mặt kính. */
+  faceUnlit: { opacity: 0 },
   topLine: {
     position: 'absolute',
     top: 0,

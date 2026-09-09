@@ -129,17 +129,30 @@ export function AmbientLight() {
     dựng mặt gradient theo nó.
 
     Trên giấy thì không có phòng tối nào để thắp. Một vũng trắng 4,5% và một
-    vũng be 7,5% trên nền #f7f4ef gần như không đo được, nhưng chúng vẫn là ba
-    lớp `<Svg>` phủ kín màn hình được lấy mẫu lại mỗi khung hình cuộn — tức chi
-    phí có thật cho một hiệu ứng không nhìn thấy.
+    vũng be 7,5% trên nền #f7f4ef gần như không đo được, nên bản sáng không tô
+    chúng.
 
-    `m.lit` đã là đúng câu hỏi: chất liệu này có bắt sáng không. Bản sáng dựng
-    ra rỗng, cùng cách `GlassCard` bỏ mặt gradient của nó.
+    ── nhưng nó KHÔNG còn `return null`, và lý do cũ đã bị ĐO là sai ──
+
+    Bản trước trả `null` ở bản sáng, tức hai theme dựng hai cây khác nhau —
+    điều kiện đã sinh ra A9 (`docs/SO-GHI-LOI.md`). Lý do biện minh cho việc gỡ
+    là câu "ba lớp `<Svg>` phủ kín màn hình được lấy mẫu lại mỗi khung hình
+    cuộn". Câu ấy SAI ở cả hai vế, và phần "── on cost ──" ở đầu chính tệp này
+    đã nói ngược lại từ đầu:
+
+      · MỘT `<Svg>` chứa ba `<Rect>`, không phải ba lớp `<Svg>`.
+      · Đo trên bản dựng thật, bản tối, `MutationObserver` gắn vào đúng svg ấy:
+        cuộn thật trong ScrollView, **181 khung hình trôi qua, 0 lần DOM bị
+        chạm**. Mọi prop ở đây là hằng ở phạm vi module, và lớp này nằm NGOÀI
+        ScrollView nên nó còn không dịch chuyển.
+
+    Nên giá của việc dựng nó ở bản sáng là một lần raster tĩnh lúc mount, rồi
+    composite — không có công việc nào theo khung hình. `opacity: 0` giữ nguyên
+    số node và không tô một điểm ảnh nào.
   */
   const m = useMaterial();
-  if (!m.lit) return null;
   return (
-    <View style={styles.light} pointerEvents="none">
+    <View style={[styles.light, m.lit ? null : styles.unlit]} pointerEvents="none">
       <Svg width="100%" height="100%" preserveAspectRatio="none">
         <Defs>
           <Pool id="lightKey" s={KEY} />
@@ -164,4 +177,7 @@ const styles = StyleSheet.create({
     // clipping the layer early would put back the edge the tail removes.
     bottom: 0,
   },
+  /* Bản sáng: cùng số node, không một điểm ảnh nào. Xem khối chú thích ở
+     `AmbientLight` — giá của nó là một lần raster tĩnh, đã đo. */
+  unlit: { opacity: 0 },
 });

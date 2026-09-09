@@ -171,8 +171,24 @@ export function LiquidGlass({
     Màu giữ nguyên vai của nó ở những dấu nhỏ — ô tròn sau glyph, viền của tấm
     đang chọn, chấm trạng thái — tức đúng chỗ ≤15% mà luật kia đòi.
   */
-  const washed = !!tint && m.lit;
+  /*
+    ── `washed` là một cổng DỰNG, nên nó không được đọc theme ──
+
+    Bản GĐ2C.3 viết `!!tint && m.lit`, và vì `face = lens || washed` gác cả cái
+    vỏ `<View onLayout>` + `<Svg>` bên dưới, một tấm `blur` CÓ tint dựng ra hai
+    cây khác nhau ở hai theme. Đó là điều kiện đã sinh ra A9
+    (`docs/SO-GHI-LOI.md`), và nó do chính GĐ2C.3 thêm vào.
+
+    Nay hình dạng chỉ phụ thuộc `tint` và `material` — hai thứ đến từ chỗ gọi,
+    không đổi theo theme. Thứ theme quyết định là ĐỘ MỜ: `WASH` ở dưới nhân với
+    0 trên giấy, nên các node còn nguyên và không tô một điểm ảnh nào.
+  */
+  const washed = !!tint;
   const face = lens || washed;
+  /* Trên giấy lớp wash không tồn tại — lý do đầy đủ ở khối chú thích dài phía
+     trên (một lớp phủ trên giấy NHUỘM chứ không rọi). Ở đây nó tắt bằng số 0,
+     không bằng việc gỡ node. */
+  const washAt = m.lit ? 1 : 0;
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const measure = (e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
@@ -254,8 +270,8 @@ export function LiquidGlass({
             /* Anchored at the top-left, which is where the glyph sits on every
                card that passes a tint — the wash reads as coming *from* it. */
             <RadialGradient id={wash} cx="0.16" cy="0.16" rx="0.95" ry="0.85" gradientUnits="objectBoundingBox">
-              <Stop offset="0" stopColor={tint} stopOpacity={0.16} />
-              <Stop offset="0.45" stopColor={tint} stopOpacity={0.07} />
+              <Stop offset="0" stopColor={tint} stopOpacity={0.16 * washAt} />
+              <Stop offset="0.45" stopColor={tint} stopOpacity={0.07 * washAt} />
               <Stop offset="1" stopColor={tint} stopOpacity={0} />
             </RadialGradient>
           ) : null}

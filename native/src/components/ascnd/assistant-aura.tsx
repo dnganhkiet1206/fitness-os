@@ -74,6 +74,11 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
  * animation somebody wrote.
  */
 
+/* Bản sáng dựng đủ node nhưng không tô một điểm ảnh nào. Là hằng ở phạm vi
+   module để cả hai chỗ dùng đúng một đối tượng style — xem chỗ gọi
+   `AuraFigure`/`DustField`. */
+const HIDDEN = { opacity: 0 } as const;
+
 /** Falloff shared with `AmbientLight`: steep, then a tail that never lands. */
 const CURVE = [
   { at: 0, of: 1 },
@@ -381,11 +386,14 @@ function DustField({
   height,
   width,
   moving,
+  lit,
 }: {
   layer: DustLayer;
   height: number;
   width: number;
   moving: boolean;
+  /** Bản sáng dựng đủ node nhưng không tô — xem chỗ gọi. */
+  lit: boolean;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -431,7 +439,7 @@ function DustField({
      first: there are no filter primitives on native. Two circles per speck is
      the whole trick, and both are static. */
   return (
-    <Animated.View style={[styles.dust, { width, height: height * 2 }, style]} pointerEvents="none">
+    <Animated.View style={[styles.dust, { width, height: height * 2 }, style, lit ? null : HIDDEN]} pointerEvents="none">
       <Svg width={width} height={height * 2}>
         <Defs>
           {DUST_HUES.map((h) => (
@@ -605,9 +613,26 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
             Bản sáng còn lại đúng thứ nó nên có: một lớp NÂNG TRẮNG cục bộ
             (`peakLight`, đỉnh 1,05:1) trên giấy ấm.
           */}
-          {m.lit ? (
+          {/*
+            Dựng ở CẢ HAI theme, tô rỗng và ĐỨNG YÊN ở bản sáng.
+
+            Cổng cũ `{m.lit ? … : null}` gỡ hẳn nhân vật và bốn tầng bụi khỏi
+            cây ở bản sáng — điều kiện đã sinh ra A9 (`docs/SO-GHI-LOI.md`).
+
+            Chỗ này KHÁC ba chỗ kia: nội dung ở đây có animation chạy vô hạn
+            (`withRepeat`), nên dựng ra mà cứ để chạy là trả tiền thật cho thứ
+            không nhìn thấy. Nhưng `moving` vốn ĐÃ là cổng dừng của chúng — nó
+            là `focused && !reduceMotion` — nên bản sáng chỉ cần truyền `false`
+            là `useEffect` bên trong `AuraFigure`/`DustField` gọi
+            `cancelAnimation` và không khởi động gì cả.
+
+            `moving` KHÔNG được sửa ở nguồn: `LightPool` cũng đọc nó và các vũng
+            sáng vẫn phải trôi ở bản sáng. Nên cổng đặt ở đây, đúng hai component
+            cần đứng yên.
+          */}
+          {(
             <>
-              <AuraFigure moving={moving} />
+              <AuraFigure moving={moving && m.lit} lit={m.lit} />
               {DUST.map((d) => (
                 /* Measured, not `useWindowDimensions`. Everything else here is
                    container-relative — the pools are sized in percentages — and the
@@ -615,10 +640,10 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
                    number on a plain full-screen page and different ones under a tab
                    bar, behind a header, or on an iPad in a split view, and when
                    they differ the canvas no longer lines up with what is on screen. */
-                <DustField key={d.key} layer={d} height={box.h} width={box.w} moving={moving} />
+                <DustField key={d.key} layer={d} height={box.h} width={box.w} moving={moving && m.lit} lit={m.lit} />
               ))}
             </>
-          ) : null}
+          )}
           {/* Painted last, so it fades everything in this group and nothing
               outside it — the pools keep their own falloff. */}
           <EdgeFade />
@@ -656,7 +681,7 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
  * never touched after mount. Same constraint the pools are built around: what
  * the platform composites is free, what forces a re-raster is not.
  */
-function AuraFigure({ moving }: { moving: boolean }) {
+function AuraFigure({ moving, lit }: { moving: boolean; /** Bản sáng dựng đủ node nhưng không tô — xem chỗ gọi. */ lit: boolean }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const t = useSharedValue(0);
@@ -675,7 +700,7 @@ function AuraFigure({ moving }: { moving: boolean }) {
   }));
 
   return (
-    <Animated.View style={[styles.figure, style]} pointerEvents="none">
+    <Animated.View style={[styles.figure, style, lit ? null : HIDDEN]} pointerEvents="none">
       <Image
         source={require('../../../assets/aura/figure.png')}
         style={styles.figureImage}
