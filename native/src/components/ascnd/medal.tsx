@@ -119,6 +119,25 @@ export const ICON_MAP: Record<string, LucideIcon> = {
  *
  * `onDark` bằng đúng `color` ở cả bốn hạng: đó là thứ bản tối đang vẽ hôm nay,
  * chép nguyên văn, nên bản tối không đổi một điểm ảnh.
+ *
+ * ── vì sao `gold.onLight` KHÁC `gold.dark` ──
+ *
+ * Ba hạng kia có `onLight` trùng số với `dark` vì cạnh khuất của kim loại tình
+ * cờ cũng đủ tương phản. Vàng thì không, và cái hỏng của nó không phải tương
+ * phản mà là TÊN MÀU: `#b0790a` nằm ở sắc 76,3° — NGOÀI dải mà thế giới gọi là
+ * vàng (84°–98,3°, từ goldenrod tới vegas gold) — nên nó đọc ra đồng thau,
+ * và chỉ cách `metricOrangeGraphic` 19,5°. Không một luật tương phản nào thấy
+ * được lỗi ấy: nó đo 2,95:1 trên ô hero, tức còn TRƯỢT 3:1 nữa.
+ *
+ * `#a47a00` ở sắc 84,3° — trùng sắc goldenrod (84,0°) trong 0,3° — tách 27,5°
+ * khỏi cam, và đo 3,08 / 3,23 / 3,57 / 3,79:1 trên ô hero · rãnh thanh · nền
+ * giấy · thẻ. Đi cao hơn nữa thì hỏng theo chiều kia: ở L≈0,60 thì sắc 90°
+ * (kiểu Apple systemYellow) đọc ra ô liu, vì tên của một sắc ấm KHÔNG sống sót
+ * qua việc nén độ sáng. Cửa sổ vàng ở độ sáng này hẹp: chừng 82°–86°.
+ *
+ * Không có màu nào thế giới gọi là vàng đạt 3:1 ở đây (vàng kim loại 1,92,
+ * goldenrod 2,04, `#ffd93d` 1,26) — vàng thật sống ở L 0,73–0,77 còn trần 3:1
+ * là L≈0,62. Nên bản sáng là kim loại TRONG BÓNG, không phải ánh lấp lánh.
  */
 export type Metal = {
   /** mặt đĩa — MINH HOẠ, không đổi theo theme */
@@ -138,7 +157,7 @@ export type Metal = {
 export const TIER_CONFIG: Record<string, Metal> = {
   bronze: { color: '#c47b3d', light: '#e8a86a', dark: '#7d4a20', dim: 'rgba(196,123,61,0.12)', label: 'Bronze', onLight: '#8f4f1f', onDark: '#c47b3d' },
   silver: { color: '#c7cad1', light: '#f2f4f8', dark: '#7e828c', dim: 'rgba(199,202,209,0.12)', label: 'Silver', onLight: '#7f838d', onDark: '#c7cad1' },
-  gold: { color: '#ffd93d', light: '#fff3ab', dark: '#b0790a', dim: 'rgba(255,217,61,0.12)', label: 'Gold', onLight: '#b0790a', onDark: '#ffd93d' },
+  gold: { color: '#ffd93d', light: '#fff3ab', dark: '#b0790a', dim: 'rgba(255,217,61,0.12)', label: 'Gold', onLight: '#a47a00', onDark: '#ffd93d' },
   platinum: { color: '#b45cff', light: '#ddb0ff', dark: '#6b2fa0', dim: 'rgba(180,92,255,0.12)', label: 'Platinum', onLight: '#6f2da8', onDark: '#b45cff' },
 };
 
