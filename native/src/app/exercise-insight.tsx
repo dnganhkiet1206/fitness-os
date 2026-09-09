@@ -422,11 +422,25 @@ export default function ExerciseInsightScreen() {
                   { key: 'all' as const, label: i18n.nXiScopeAll },
                 ]}
               />
-              {/* The answer to "is anything wrong", before a single number. */}
+              {/*
+                The answer to "is anything wrong", before a single number.
+
+                It counted two of the three groups. With one exercise, logged
+                once, the page printed "0 improving · 0 worth a look" directly
+                above a card — a screen contradicting itself in two lines.
+
+                Those are different states and they need different sentences:
+                nothing is going wrong, versus nothing has enough sessions to
+                say anything yet. The second is the honest reading of a plan
+                that is new, and it names what is missing instead of reporting
+                two zeroes about it.
+              */}
               <Text style={styles.summary}>
-                {i18n.nXiSummary
-                  .replace('{a}', String(groups.fine.length))
-                  .replace('{b}', String(groups.attention.length))}
+                {groups.fine.length === 0 && groups.attention.length === 0 && groups.thin.length > 0
+                  ? i18n.nXiSummaryThin.replace('{n}', String(groups.thin.length))
+                  : i18n.nXiSummary
+                      .replace('{a}', String(groups.fine.length))
+                      .replace('{b}', String(groups.attention.length))}
               </Text>
             </>
           )}
@@ -465,7 +479,13 @@ export default function ExerciseInsightScreen() {
           {/* Said once. It was on every card that had an estimate — four times
               on this screen, in a grey the same size as everything else. */}
           <Text style={styles.footnote}>{i18n.nXiFootnote}</Text>
-          <Text style={styles.window}>{`${INSIGHT_DAYS}d`}</Text>
+          {/* Was a bare `90d`, centred, a full screen below the sparklines it
+              was meant to label — and the only place in the app that used the
+              `Nd` shorthand at all (`nLast30d` is "30 ngày qua"). A window is a
+              sentence here, next to the note that already explains the page. */}
+          <Text style={styles.footnote}>
+            {i18n.nXiWindowNote.replace('{n}', String(INSIGHT_DAYS))}
+          </Text>
         </>
       )}
     </Screen>
@@ -522,5 +542,4 @@ const stylesFor = makeStyles((c) => ({
   more: { alignItems: 'center' },
   flip: { transform: [{ rotate: '180deg' }] },
   footnote: { ...type.caption, color: c.mutedForeground },
-  window: { ...type.caption, color: c.mutedForeground, textAlign: 'center' },
 }));
