@@ -162,7 +162,22 @@ thì vẫn nằm ở đây.
 | **Đã sửa thế nào** | `patches/expo-modules-jsi+57.1.0.patch`: annotation thành **có điều kiện theo toolchain**, không gỡ hẳn — `#if defined(__apple_build_version__) && __apple_build_version__ >= 18000000` (clang Xcode 27 là 1800.x, Xcode 26.x là 1700.x). Gỡ hẳn sẽ làm cảnh báo Xcode 27 quay lại đúng lúc chủ dự án nâng máy; đây là lý do annotation tồn tại và nó được giữ. Patch cũ `+57.0.3` bị **xoá** vì đã chứng minh là no-op, không phải vì nó vướng. |
 | **Kiểm chứng** | Tiền xử lý hai chiều: không có `__apple_build_version__` → constructor **trần**; ép `=18000000` → `__attribute__((swift_attr("returns_retained")))` **còn nguyên**. `clang++ -std=c++20 -fblocks -fsyntax-only` xanh ở cả hai nhánh. Trả header về bản gốc rồi chạy `npx patch-package`: `expo-modules-jsi@57.1.0 ✔`, **cảnh báo lệch phiên bản biến mất**. |
 | **Chưa kiểm được ở đây** | Chẩn đoán Swift **không tái hiện được trên Linux** — clang mã nguồn mở không chạy ClangImporter của Swift. Bằng chứng ở đây là bản dựng iOS thật của chủ dự án, cộng bốn báo cáo trùng khớp ở thượng nguồn. |
-| **Trạng thái** | **ĐÓNG khi bản dựng iOS đi qua được hai lỗi ấy.** Gỡ patch khi Expo phát hành một bản `expo-modules-jsi` có guard riêng — theo dõi expo/expo#49214. |
+| **Trạng thái** | **ĐÓNG** — chủ dự án xác nhận 2026-09-09: hai lỗi ấy biến mất, bản dựng đi tiếp và dừng ở A13. Ngưỡng `18000000` rơi đúng khe giữa clang **1700** (Xcode 26.2) và **2100** (Xcode 26.4), nên sau khi nâng máy annotation BẬT LẠI và patch cho ra kết quả tiền xử lý y hệt bản gốc — không cần nhớ gỡ nó để nâng. Gỡ hẳn khi thượng nguồn tự guard (theo dõi expo/expo#49214). |
+
+
+### A13. `JavaScriptRuntime.swift` — 7 lỗi data race, cùng gốc toolchain với A12 — MỞ, KHÔNG VÁ
+
+| | |
+|---|---|
+| **Triệu chứng** | Sau khi A12 được vá, Xcode 26.2 / Swift 6.2.3 báo **7 lỗi** trong `node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI/Runtime/JavaScriptRuntime.swift`: `sending 'resultPtr'/'thisPtr'/'argumentsPtr' risks causing data races` — dòng 193, 786, 787, 789, 829, 830, 831. |
+| **Cơ chế** | `JavaScriptActor` là `@globalActor`, và `assumeIsolated` nhận `operation: @JavaScriptActor () -> T` — một closure **đã bị cô lập**. Truyền `UnsafeMutablePointer<facebook.jsi.Value>` (pointee là kiểu C++, không Sendable) vào đó là *gửi* nó qua ranh giới cô lập, tức phân tích **region-based isolation**. |
+| **Điểm quyết định** | **Expo ĐÃ áp đúng biện pháp chuẩn**: `nonisolated(unsafe) let resultPtr = resultPtr` ở dòng 188, 777–779, 820–822. Lỗi rơi ở **chỗ DÙNG** (193, 786–789, 829–831), không ở chỗ khai. Nghĩa là Swift **6.2.3 không tôn trọng** `nonisolated(unsafe)` cho giá trị gửi vào closure global-actor; **6.3 thì có**. Không có cách viết nào khác diễn đạt được — đây là khác biệt của TRÌNH BIÊN DỊCH, không phải của mã. |
+| **Gốc** | Giống A12: máy ở **Xcode 26.2 / Swift 6.2.3**, Expo SDK 56+ đòi **Xcode 26.4 / Swift 6.3**. expo/expo#47539 cho thấy **SDK 57 trên Xcode 26.3 / Swift 6.2.4 cũng đỏ** với cùng họ chẩn đoán (`sending 'emitter'…` trong `expo-modules-core`). |
+| **Không có phiên bản nào cứu** | `nonisolated(unsafe)` trong tệp này: 57.0.3→57.0.7 có **7**, 57.0.8→57.1.0 có **10**, canary SDK 58 có **10**. Lùi phiên bản chỉ BỚT phòng vệ. Và **10 tệp** trong `expo-modules-core` dùng cùng mẫu — cả dòng SDK 57 nhắm Swift 6.3. |
+| **Vì sao KHÔNG vá** | Mọi lối vá khả dĩ — `@unchecked Sendable`, `@preconcurrency`, `nonisolated`, tắt kiểm tra concurrency — đều gỡ một bảo đảm an toàn luồng khỏi mã chạy **mỗi lời gọi host function**. Đó là đổi một lỗi biên dịch lấy một lỗi chỉ hiện dưới tải, ở tầng native: **đúng lớp lỗi A9**. Maintainer Expo cũng nói thẳng patch-package ở đây *"hide the real cause and may break on CI"*. |
+| **Cách sửa** | **Nâng Xcode lên 26.4+.** Nó gỡ cả A12 lẫn A13, và làm patch của A12 thành vô hiệu (annotation bật lại, giống bản gốc). |
+| **Quan sát chưa đủ kết luận** | 16 chỗ `weak let` trong `expo-modules-core`/`expo-modules-jsi`, gồm cả khai báo thuộc tính. Maintainer Expo nói cú pháp ấy *"landed in Swift 6.3"*. **Nhưng bản dựng không báo lỗi nào ở đó** — hoặc 6.2.3 nhận nó, hoặc trình biên dịch dừng trước. Ghi để để mắt, **không dùng làm căn cứ**. |
+| **Trạng thái** | **MỞ.** Đóng khi máy nâng lên 26.4+ và bản dựng đi qua. Không sửa mã nào cho mục này. |
 
 
 ---

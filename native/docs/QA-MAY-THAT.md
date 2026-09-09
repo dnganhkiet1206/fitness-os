@@ -53,24 +53,45 @@ Bản ghim `~7.11.0` không phải một lựa chọn tự do: nó **bằng đú
 Expo SDK 57 tự ghim trong `node_modules/expo/bundledNativeModules.json`, tức
 đúng bản `npx expo install @sentry/react-native` sẽ chọn.
 
-### Toolchain — đo được 2026-09-09, và một patch phụ thuộc vào nó
+### CHẶN: toolchain thấp hơn mức Expo đòi — đo được 2026-09-09
 
-| | Đo được trên máy chủ dự án | Expo SDK 57 công bố |
+| | Trên máy chủ dự án | Expo SDK 56+ đòi |
 |---|---|---|
 | Xcode | **26.2** (17C52) | **26.4** |
-| Swift | **6.2.3** (swiftlang-6.2.3.3.21) | — |
-| iOS SDK | **26.2** | — |
+| Swift | **6.2.3** | **6.3** |
+| clang | **1700**.6.3.2 | **2100**.0.119.1 |
+| iOS SDK | 26.2 | — |
 
-Máy đang **thấp hơn** mức Expo công bố. Nhưng đó KHÔNG phải nguyên nhân của A12:
-annotation `SWIFT_RETURNS_RETAINED` trong `RuntimeScheduler.h` được Expo viết cho
-**Xcode 27** (expo/expo#49120), nên 26.4 nhiều khả năng cũng đỏ — Swift 6.2.x
-không hiểu annotation ấy trên constructor ở bất kỳ bản vá nào. Nâng lên 26.4 vẫn
-nên làm, nhưng **đừng chờ nó gỡ A12**.
+> Changelog SDK 56: *"Minimum Xcode bumped to 26.4."* Maintainer Expo (@tsapeta,
+> expo/expo#46242): *"SDK 56 requires **Xcode 26.4+ (Swift 6.3)**."* SDK 57 giữ
+> nguyên mức ấy. Release notes Xcode 26.4: clang 2100.0.119.1 + Swift 6.3.
 
-`patches/expo-modules-jsi+57.1.0.patch` bật/tắt annotation theo
-`__apple_build_version__ >= 18000000`, nên **nó tự đúng ở cả hai phía** khi máy
-nâng lên Xcode 27. Không cần nhớ gỡ patch để nâng máy; chỉ cần gỡ khi thượng
-nguồn tự guard (theo dõi expo/expo#49214).
+**Đây là chặn thật, và nó chặn HAI thứ** — cả A12 lẫn A13 trong `SO-GHI-LOI.md`
+đều là hệ quả của cùng một khoảng cách toolchain, không phải hai lỗi riêng.
+
+#### ĐÍNH CHÍNH — bản trước của trang này nói sai
+
+Bản viết lúc 2026-09-09 (commit `f28da14`) ghi *"26.4 nhiều khả năng cũng đỏ"*
+và *"đừng chờ nó gỡ A12"*. **Sai.** Nó dựa trên giả định 26.4 chỉ là một bản vá
+của Swift 6.2. Không phải: **26.4 mang Swift 6.3 và clang 2100**, một bậc hẳn —
+và Expo dựng CI trên đúng bản ấy với annotation đó tại chỗ.
+
+Nâng lên **Xcode 26.4+ là cách đúng cho cả hai**, và nên chọn nó thay vì nuôi
+patch cục bộ. Maintainer Expo nói thẳng patch-package ở đây *"hide the real cause
+and may break on CI"*.
+
+#### Patch `RuntimeScheduler` tự tắt sau khi nâng
+
+`__apple_build_version__ >= 18000000` rơi đúng **khe giữa clang 1700 (26.2) và
+2100 (26.4)**:
+
+| Xcode | annotation | nghĩa là |
+|---|---|---|
+| 26.2 | tắt | tránh lỗi cứng của Swift 6.2.3 |
+| 26.4+ | **bật** | kết quả tiền xử lý **y hệt bản gốc** |
+
+Nên không cần nhớ gỡ patch để nâng máy. Tự kiểm:
+`echo | clang -dM -E - | grep __apple_build_version__`.
 
 ### CHẶN: chưa liên kết dự án EAS
 
