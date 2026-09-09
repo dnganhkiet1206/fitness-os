@@ -10,7 +10,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { alpha, makeStyles, type Palette } from '@/constants/theme';
+import { alpha, makeStyles, palettes, type Palette } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
@@ -28,7 +28,32 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 import { decText } from '@/lib/number-input';
 import { beginInteraction, endInteraction } from '@/lib/interaction';
 
-const NEUTRAL = '#9aa0aa';
+/**
+ * Tông TRUNG TÍNH của chip cân nặng — hai vai, vì bản tối đang đóng băng.
+ *
+ * `#9aa0aa` từng là một mã màu viết cứng dùng cho CẢ HAI diện mạo, cạnh hai
+ * tông kia vốn đã đọc token (`c.readinessGreen`, `c.readinessRed`). Trên giấy
+ * nó đo được **2,39:1** — chữ 13px/700 cần 4,5.
+ *
+ * Vai sáng KHÔNG phải một màu bịa ra: nó là `champagne` của bản sáng
+ * (`#6c6f79`), và lý do nó khớp đã ghi trong `palette.ts` — champagne giữ THÉP
+ * lạnh, đúng nghĩa "không xanh không đỏ" mà tông này mang. Ở bản tối, mã cứng
+ * cũ và `champagne` (`#9fa3ad`) chỉ lệch ΔEok **0,0115**, dưới một JND — tức
+ * đây là một mã màu đã TRÔI khỏi token của chính nó, không phải một màu riêng.
+ *
+ * Nhưng vai tối vẫn giữ đúng `#9aa0aa`: "gần như không thấy" không phải "không
+ * thấy", và bản tối đang đóng băng.
+ *
+ *     tối   #9aa0aa trên rgba(154,160,170,0.12)/#0e0e11 → 6,19:1
+ *     sáng  #6c6f79 trên cùng nền ấy trên thẻ trắng     → 4,55:1  ✓
+ *
+ * Nền 12% ở dưới KHÔNG đổi theo token, và đó là một phép đo chứ không phải một
+ * chỗ bỏ sót: chuyển nó sang `alpha(token, 0.12)` làm nền chip ĐẬM hơn trên
+ * giấy và kéo chữ xuống — trung tính 4,55 → 4,32, xanh 4,43 → 4,23, đỏ
+ * 4,14 → 4,05. Sửa cho "nhất quán" ở đây là đổi một con số đạt thành một con
+ * số trượt.
+ */
+const NEUTRAL_DARK = '#9aa0aa';
 
 /**
  * Colour a weight change by health goal, not just direction: for an
@@ -47,7 +72,11 @@ const NEUTRAL = '#9aa0aa';
 function weightDiffTone(c: Palette, bmi: number | null, diff: number): { color: string; bg: string } {
   const green = { color: c.readinessGreen, bg: 'rgba(32,181,131,0.12)' };
   const red = { color: c.readinessRed, bg: 'rgba(220,47,47,0.12)' };
-  const neutral = { color: NEUTRAL, bg: 'rgba(154,160,170,0.12)' };
+  /* Vai tối / vai sáng — xem `NEUTRAL_DARK`. Nhận diện theme bằng cách so bảng
+     màu, cùng cách `gradientFor` trong `readiness-gauge.tsx` làm: hàm này là
+     một hàm thuần nhận `c`, không phải component, nên nó không gọi hook được. */
+  const neutralColour = c === palettes.dark ? NEUTRAL_DARK : c.champagne;
+  const neutral = { color: neutralColour, bg: 'rgba(154,160,170,0.12)' };
   if (bmi == null || (bmi >= 18.5 && bmi < 25)) return neutral; // normal / unknown
   const gaining = diff > 0;
   if (bmi < 18.5) return gaining ? green : red; // underweight: gain good

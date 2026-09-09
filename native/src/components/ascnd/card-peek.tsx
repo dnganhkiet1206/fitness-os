@@ -14,6 +14,8 @@ import Animated, {
 
 import { MascotFigure } from '@/components/ascnd/mascot-figure';
 import { radius } from '@/constants/ascnd';
+import { alpha, makeStyles } from '@/constants/theme';
+import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useMascotIdentity } from '@/hooks/use-mascot';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
@@ -93,6 +95,8 @@ export function CardPeek({
   hold?: number;
   children: React.ReactNode;
 }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
   /* Identity only. `useMascot()` is five query subscriptions deep, and this
      component is mounted around **seven** widgets on the dashboard — so the
      peek wrappers alone were putting thirty-five observers on Today's queries
@@ -289,7 +293,7 @@ export function PeekHost({ quest, children }: { quest: QuestKey; children: React
   );
 }
 
-const styles = StyleSheet.create({
+const stylesFor = makeStyles((c, m) => ({
   wrap: { position: 'relative' },
   /* The band, ending flush with the card's top edge. `bottom: '100%'` of the
      wrapper would be the whole card; anchoring to `top: -PEEK` with a fixed
@@ -323,14 +327,37 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: radius.full,
-    backgroundColor: 'rgba(255,209,102,0.16)',
+    /*
+      ── vai TỐI giữ nguyên từng byte; vai SÁNG là một viên chip trắng ──
+
+      Ba giá trị dưới đây từng là mã màu viết cứng trong một tệp KHÔNG import
+      bảng màu lần nào, nên chúng giữ vàng của phòng tối ở cả hai diện mạo:
+      `#ffd166` trên nền giấy đo được **1,25:1** — con số của chữ vô hình, và
+      đây là con số `+N` của một phần thưởng.
+
+      Vì sao KHÔNG dùng thẳng `c.readinessYellow` như `mascot.tsx` làm cho pill
+      xu của nó: token ấy ở bản tối là `#ffd93d`, không phải `#ffd166`, và
+      ΔEok giữa hai màu là **0,0408** — chừng hai JND, tức thấy được cạnh nhau.
+      Bản tối đang đóng băng, nên chỗ này tách vai chứ không gộp token.
+
+      Và trên giấy, lớp tint KHÔNG đi cùng hướng: một lớp vàng 16% trên giấy
+      NHUỘM chứ không rọi (cùng luật `m.aura.hair` và `m.inset.track` đã ghi),
+      nên vai sáng lấy mặt thẻ trắng làm nền và để viền vàng vẽ ra viên chip.
+      Đo trên bề mặt THẬT của pill — băng `clip` không có nền, nên nó nằm trên
+      nền TRANG:
+
+          tối   #ffd166 trên rgba(255,209,102,0.16)/#070708 → 10,23:1
+          sáng  #846e06 trên #ffffff                        →  4,98:1
+          (giữ nguyên lớp tint vàng thì chỉ 4,32 — dưới sàn 4,5 của chữ 12px)
+    */
+    backgroundColor: m.lit ? 'rgba(255,209,102,0.16)' : c.card,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,209,102,0.34)',
+    borderColor: m.lit ? 'rgba(255,209,102,0.34)' : alpha(c.readinessYellow, 0.34),
   },
-  coinsText: { fontSize: 12, fontWeight: '800', color: '#ffd166' },
+  coinsText: { fontSize: 12, fontWeight: '800', color: m.lit ? '#ffd166' : c.readinessYellow },
   /* The figure is taller than the band and must stay that way: a flex child
      that shrinks to its container would squash Koa down to the band's height
      instead of being cropped to it. React Native already defaults to 0, and this says so
      out loud next to the one layout that would break if it ever did not. */
   figure: { flexShrink: 0 },
-});
+}));
