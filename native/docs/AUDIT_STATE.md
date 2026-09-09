@@ -6,8 +6,8 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-08 · sau Sentry + audit sản phẩm vòng 1 ·
-commit `1c7e164` · nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-09 · chuẩn bị QA máy thật · commit `__H__` ·
+nhánh `claude/ios-fitness-rebuild-omgulr`
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
 > Trạng thái ở `docs/AI-TRIEN-KHAI.md` giữ nguyên, không đụng vào.
@@ -641,6 +641,78 @@ màn và mọi thứ thuộc về chạm — không thứ nào ở đây. Trợ 
 phím, i18n vẫn được canh bằng các bước kiểm tĩnh trong cổng
 (`a11y-swallow`, `tap-targets`, `theme-shape`, `i18n`, `bàn phím`) và chúng xanh
 — nhưng "xanh ở bước kiểm" không phải "đã dùng thử trên máy thật".
+
+---
+
+## CHUẨN BỊ KIỂM TRÊN MÁY THẬT (2026-09-09)
+
+Danh sách đi từng bước: **`docs/QA-MAY-THAT.md`**. Ở đây là những gì audit cấu
+hình tìm ra.
+
+### CHẶN — chưa liên kết dự án EAS
+
+`app.json` không có `extra.eas.projectId`, và `eas.json` đặt
+`"appVersionSource": "remote"` — thứ **đòi** một dự án đã liên kết. `eas build`
+chưa chạy được ở chế độ không tương tác.
+
+**Cần:** tài khoản Expo + `eas init` trong `native/`. **Không bịa được** — tôi
+không tạo ra một UUID dự án của người khác.
+
+### RỦI RO CAO — Hermes V1 có hồi quy bộ nhớ đã biết
+
+`npx expo-doctor` chạy hôm nay, **2/21 phép kiểm đỏ**. Phép quan trọng:
+
+> This project uses Hermes V1 with expo@57.0.6, which is affected by a known
+> memory regression. Detected Hermes V1 **250829098.0.14**. …**250829098.0.16**
+> is the first version that contains the fix.
+
+Khắc phục theo chính Expo: `expo@^57.0.9` / React Native **≥ 0.86.2**. Repo
+đang ở `expo ~57.0.6`, `react-native 0.86.0`.
+
+**Vì sao nó là mục quan trọng nhất của vòng này:** một hồi quy **bộ nhớ** hiện
+ra trên máy thật đúng như *"app chậm dần"*, *"app bị hệ thống giết"*, *"app
+thoát sau một lúc"* — tức lẫn hoàn toàn vào những triệu chứng mà QA máy thật đi
+tìm, và vào chính lớp triệu chứng của A9. Chạy QA trên một bản dựng có hồi quy
+đã biết là đo hai thứ cùng lúc mà không tách được chúng.
+
+**KHÔNG tự nâng.** DEP-1 đã ghi là quyết định của chủ dự án, và nâng `expo` +
+`react-native` đòi một bản dựng native để xác nhận. Nhưng khuyến nghị: **nâng
+TRƯỚC khi chạy danh sách QA**, nếu không mọi phát hiện về hiệu năng đều mang một
+dấu hỏi. Phép kiểm đỏ thứ hai chỉ là "22 gói trễ" = DEP-1, đã theo dõi.
+
+### Chưa xác minh được ở đây
+
+`eas.json` khai `channel: preview`/`production` nhưng **`expo-updates` không có
+trong `package.json`**. Tài liệu Expo không nói build sẽ lỗi, cảnh báo hay bỏ
+qua. **Không sửa `eas.json` theo phỏng đoán** — đọc log lần `eas build` đầu rồi
+quyết.
+
+### Bản dựng miễn phí kiểm được cái gì
+
+`EXPO_FREE_TEST=1` gỡ HealthKit, Sign In with Apple và Push để dựng bằng Apple
+ID miễn phí. Nên trên bản ấy, ba mục đó phải ghi **"không áp dụng"**, không được
+ghi "đạt". Và Android push chưa dựng được: không có `google-services.json`.
+
+### Đã sửa vòng này — một thứ, và nó là tài liệu
+
+Phần đầu `.github/workflows/quality-gate.yml` còn ghi *"211 bước"* và *"Tệp này
+CHƯA TỪNG CHẠY"*. Cả hai nay sai (215 bước; lượt #3 đã `success`). Đã sửa cho
+khớp phép đo, kèm số của lượt xanh. Không đổi một dòng hành vi nào.
+
+---
+
+## BA MỨC BẰNG CHỨNG — bảng tổng, không được gộp
+
+| Hạng mục | TĨNH | RUNTIME (web) | **MÁY THẬT** |
+|---|---|---|---|
+| Cổng 215 bước | ✅ | ✅ | — không áp dụng |
+| CI trên runner GitHub | ✅ | ✅ | — không áp dụng |
+| Biên bắt lỗi React | ✅ | ✅ | ❌ **chưa** |
+| Bộ lọc riêng tư Sentry | ✅ | ✅ | ❌ **chưa** |
+| **Sentry bắt sự cố NATIVE** | ✅ (nối đúng) | — không kiểm được | ❌ **chưa — đây là mục chính** |
+| P-01 vòng sẵn sàng `—` | ✅ | ✅ (ảnh chụp) | ❌ **chưa** |
+| A11Y-2 nút lồng nút | ✅ | ✅ | ❌ **chưa — VoiceOver chưa từng chạy** |
+| A9 (chạm vùng vòng sau khi đổi tab) | — | — | ✅ chủ dự án xác nhận 2026-09-08 · **cần kiểm lại** sau khi thêm biên + Sentry |
 
 ---
 

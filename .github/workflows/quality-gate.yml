@@ -1,15 +1,15 @@
-# Cổng chất lượng — 211 bước, chạy trên máy của người khác.
+# Cổng chất lượng — toàn bộ bộ kiểm, chạy trên máy của người khác.
 #
 # ── vì sao workflow này trông "nặng" hơn một `npm test` ──
 #
-# Bộ kiểm của repo này không phải unit test. Trong 211 bước có 14 bước dựng một
+# Bộ kiểm của repo này không phải unit test. Trong đó có 14 bước dựng một
 # PostgreSQL thật từ toàn bộ migration rồi chạy SQL trên đó, và 6 bước mở một
 # trình duyệt thật. Không có hai thứ ấy thì bộ kiểm vẫn CHẠY — và đó chính là
 # vấn đề: 5 trong 14 bước cơ sở dữ liệu in "BỎ QUA phần hành vi" rồi thoát 0.
 #
 # Trên máy của người đang viết mã, hành vi ấy đúng: bắt họ dựng PostgreSQL để
 # sửa một cái nút là một cái giá vô lý. Trên CI thì nó thành một lời nói dối —
-# dấu tích xanh nói "211 bước đều xanh" trong khi năm bước chưa chạy dòng SQL
+# dấu tích xanh nói "tất cả đều xanh" trong khi năm bước chưa chạy dòng SQL
 # nào, và không ai đọc log của một job đã xanh.
 #
 # `tools/ci-preflight.mjs` là chỗ nói ra chỗ khác nhau ấy, và nó chạy TRƯỚC bộ
@@ -33,11 +33,16 @@
 # `tools/pg-harness.mjs` nằm trong bộ kiểm và giữ tính chất ấy: một bước mới
 # viết theo lối cũ bị bắt ở đúng chỗ nó được viết ra.
 #
-# ── và điều phải nói thẳng ──
+# ── đã chạy thật ──
 #
-# Tệp này CHƯA TỪNG CHẠY. Không có runner nào ở nơi nó được viết ra, nên mọi
-# dòng dưới đây là một giả định cho tới lần chạy đầu tiên. Nó được viết để hỏng
-# TO và SỚM nếu một giả định sai, chứ không phải để trông như đã xanh.
+# Lượt #3 (`af46909`, run 34274088152, ubuntu-24.04) kết thúc `success` sau 9
+# phút 13 giây, cả 9 bước xanh. Hai lượt trước đó ĐỎ, và cả hai dừng ở tiền kiểm
+# trong ba mươi giây với đúng một dòng nói cái đang thiếu — đó là toàn bộ lý do
+# bước ấy đứng trước.
+#
+# Log của lượt xanh có `trên PostgreSQL 16.13 dựng từ toàn bộ migration`, tức
+# các bước cơ sở dữ liệu chạy THẬT chứ không bỏ qua. Đừng bỏ tiền kiểm đi vì
+# "nó luôn xanh": nó luôn xanh vì nó đang canh.
 
 name: Cổng chất lượng
 

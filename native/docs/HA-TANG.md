@@ -12,7 +12,7 @@ biến nhất khiến một app nhỏ mang một hoá đơn của app lớn.
 
 | # | Dịch vụ | Trạng thái |
 |---|---|---|
-| 1 | **Sentry** — sự cố native + lỗi JS | SDK đã cài & nối, **kiểm tĩnh + JS xong**; **native CHƯA kiểm** — chờ DSN + một bản dựng iOS thật |
+| 1 | **Sentry** — sự cố native + lỗi JS | tĩnh ✅ · JS ✅ · **native ❌** — quy trình chứng minh 7 bước ở `docs/QA-MAY-THAT.md` mục G |
 | 2 | **GitHub Actions** — tsc + bộ kiểm | **ĐÃ KIỂM CHỨNG** trên runner thật (lượt #3, `af46909`, success, 9m13s) |
 | 3 | Expo OTA | sau khi có hạ tầng phát hành |
 | 4 | PostHog | sau |
@@ -164,6 +164,17 @@ app chạy y hệt trước khi có Sentry, không một byte nào rời máy.
 
 Thiếu cái thứ hai thì sự cố native về **không có tên hàm** — chỉ là địa chỉ. Với
 đúng lớp lỗi như A9, đó là mất phần duy nhất cần đọc. Nên nó không phải tuỳ chọn.
+
+### Chặn trước cả ba: chưa liên kết dự án EAS
+
+`app.json` không có `extra.eas.projectId` và `eas.json` đặt
+`appVersionSource: "remote"` — thứ đòi một dự án đã liên kết. Cần tài khoản Expo
++ `eas init`. Không bịa được.
+
+Và **`expo-doctor` báo Hermes V1 250829098.0.14 có hồi quy bộ nhớ đã biết**
+(sửa ở RN ≥ 0.86.2 / expo ≥ 57.0.9). Nó không chặn việc dựng, nhưng nó làm mọi
+phát hiện hiệu năng trên máy thật trở nên không đọc được — xem
+`docs/AUDIT_STATE.md`.
 
 ### Còn lại — và cả ba đều cần thứ không có ở đây
 
