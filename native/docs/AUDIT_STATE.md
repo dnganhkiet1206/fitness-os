@@ -21,7 +21,7 @@ commit `efb851d` · nhánh `claude/ios-fitness-rebuild-omgulr`
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
 | `node tools/check.mjs` | **XANH** | exit 0, **215** bước, tất cả xanh. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối |
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` vẫn 6 tệp, 8 nhánh, và nó nằm trong 215 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 215 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
 | Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 215 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
 | ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 215 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
@@ -35,9 +35,16 @@ App thoát khi chạm vùng vòng tròn sẵn sàng sau khi đổi tab rồi qua
 **Nguyên nhân gốc:** đường dựng khác nhau giữa hai theme — bản tối dựng lớp
 kính/lớp phủ, bản sáng bỏ lớp ấy đi.
 
-**Đã sửa:** hai theme dùng chung một đường dựng.
+**~~Đã sửa:~~** ~~hai theme dùng chung một đường dựng.~~ — **SAI, đính chính
+2026-09-09: chưa từng có commit nào làm việc đó.** `12362b9` (commit đóng A9)
+chỉ chạm docs + `check.mjs` + `theme-shape.mjs`, không một tệp `.tsx`; và
+`git log -S"m.lit" --all -- 'native/src/**'` cho thấy commit cuối cùng đổi một
+dòng `m.lit` là `b9037ab`, **06/09**. Thay đổi mã duy nhất trên màn Hôm nay
+trước lần kiểm máy thật là `f7a3341` + `ddfbcd7` (nút-trong-nút, có chạm
+`today-meals.tsx` và `dashboard-cards.tsx`). Chi tiết ở `SO-GHI-LOI.md` A9.
 
-**Kiểm chứng:** chủ dự án xác nhận trên máy thật, 2026-09-08.
+**Kiểm chứng:** chủ dự án xác nhận trên máy thật, 2026-09-08. Bằng chứng này
+vẫn đúng — thứ sai là phép gán nguyên nhân cho nó.
 
 **`MaskedView` không phải nguyên nhân gốc** và không được gỡ hay thay chỉ vì sự
 cố này. Chi tiết đầy đủ ở `SO-GHI-LOI.md` mục A9.
@@ -48,6 +55,15 @@ cố này. Chi tiết đầy đủ ở `SO-GHI-LOI.md` mục A9.
 
 A9 khép lại rồi, nhưng ĐIỀU KIỆN của nó thì đo được, và ở commit `f7a3341` nó
 vẫn còn. Ghi ra đây vì đó là thứ phải giữ cho "nhất quán và có chủ ý".
+
+> **Cảnh báo 2026-09-09 — bảng dưới đây KHÔNG phải một phép đo.** Đếm node cả
+> trang không lặp lại được: cùng một bản dựng, không đổi một dòng nào, ba lần
+> chạy ra `931 / 931 / 942` node ở bản sáng và `1084 / 1084 / 1073` ở bản tối.
+> Biên độ ±11 lớn hơn chính con số `−6` mà bảng này dùng làm kết luận. Giữ bảng
+> lại vì nó chỉ ĐÚNG NGUỒN — năm nhánh `m.lit` liệt kê bên dưới là có thật và
+> đọc được trong mã — nhưng đừng trích các con số này như một số đo, và đừng
+> dùng thước ấy để so trước/sau. Thước đúng là đếm ĐÚNG node đang xét; xem mục
+> A9 ở `SO-GHI-LOI.md`.
 
 Đo trên bộ chạy web, đổi `prefers-color-scheme` ngay trên màn đang mở:
 
@@ -66,7 +82,11 @@ nhánh `m.lit` dựng-hoặc-không:
 
 - `ambient-light.tsx:140` — `if (!m.lit) return null` (cả component)
 - `glass-card.tsx:154` — mặt gradient
-- `readiness-gauge.tsx:580, 625`
+- ~~`readiness-gauge.tsx:580, 625`~~ — **ĐÃ BỎ 2026-09-09.** Hai nhánh này nằm
+  đúng dưới thao tác lặp lại được của A9 (đổi tab → về Hôm nay → chạm vùng vòng
+  tròn). Nay cả hai node dựng ở cả hai theme, bản sáng tô rỗng. Giá: một `<View>`
+  trong suốt và một `<circle>` `opacity` 0 — không phải một lớp `<Svg>` phủ kín
+  màn hình, nên lập luận hiệu năng của bốn chỗ còn lại không áp dụng ở đây.
 - `assistant-aura.tsx:608`
 - `liquid-glass.tsx:174` — lớp wash
 
@@ -76,7 +96,8 @@ không phải "cấm lệch", mà là: **tập hợp các chỗ được phép l
 đóng.** Một nhánh `m.lit` mới xuất hiện mà không ai quyết định là chỗ điều kiện
 của A9 mọc lại.
 
-`tools/theme-shape.mjs` giữ danh sách ấy: 6 tệp, 8 nhánh, mỗi tệp một lý do.
+`tools/theme-shape.mjs` giữ danh sách ấy: **5 tệp, 6 nhánh** kể từ 09/09, mỗi tệp
+một lý do. (`readiness-gauge.tsx` đã rời danh sách — xem gạch ngang ở trên.)
 Nó phân biệt HÌNH DẠNG với MÀU — `color={m.lit ? a : b}` không dựng thêm hay
 bớt một node nào và không tính. Bản đầu của luật gộp cả hai và báo nhầm
 `awards.tsx` ba lần; đó là lý do phép phân biệt được viết ra chứ không ngầm

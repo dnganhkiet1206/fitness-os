@@ -114,10 +114,27 @@ thì vẫn nằm ở đây.
 | **Cách xác nhận trong 30 giây** | Máy thật: **Cài đặt → Quyền riêng tư & Bảo mật → Phân tích & Cải tiến → Dữ liệu phân tích**, mở mục `ASCND-…` đúng ngày. Nếu dòng đầu là `RCTComponentViewRegistry: Attempt to recycle a mounted view` hoặc `EXC_BAD_ACCESS` trong `RNCMaskedView` / `RCTLegacyViewManagerInteropComponentView` thì mục này đúng. Nếu không, mục này sai và phải chuyển xuống C. |
 | **NGUYÊN NHÂN GỐC (chốt bởi chủ dự án, 2026-09-08)** | Đường dựng KHÁC NHAU giữa hai theme. Bản tối dựng lớp kính/lớp phủ; bản sáng bỏ lớp ấy đi. Hai theme đi hai đường dựng khác nhau, và chính chỗ lệch đó làm app thoát trên iOS. |
 | **Trạng thái theme bị ảnh hưởng** | Cả hai — nhưng chỉ ở CHỖ LỆCH giữa chúng, không phải ở một theme riêng. Vì thế nó chỉ xuất hiện sau khi bản sáng ra đời, và chỉ khi người dùng đi qua một sự kiện dựng lại (đổi tab rồi quay lại, hoặc đổi theme). |
-| **Đã sửa thế nào** | Cho hai theme dùng CHUNG một đường dựng thay vì cho bản sáng bỏ bớt lớp. |
-| **Kiểm chứng** | Chủ dự án xác nhận trên máy thật, 2026-09-08: thao tác đã lặp lại được (đổi tab → về Hôm nay → chạm vùng vòng tròn) không còn làm app thoát. |
+| **~~Đã sửa thế nào~~** | ~~Cho hai theme dùng CHUNG một đường dựng thay vì cho bản sáng bỏ bớt lớp.~~ — **CÂU NÀY SAI. Xem ĐÍNH CHÍNH ngay dưới bảng (2026-09-09).** |
+| **Kiểm chứng** | Chủ dự án xác nhận trên máy thật, 2026-09-08: thao tác đã lặp lại được (đổi tab → về Hôm nay → chạm vùng vòng tròn) không còn làm app thoát. Phần này VẪN ĐÚNG — thứ sai là câu giải thích vì sao. |
 | **`MaskedView` thì sao** | KHÔNG phải nguyên nhân gốc, và **không được gỡ hay thay chỉ vì sự cố này**. Phần điều tra ở trên vẫn đúng như một phép đo — gói 0.3.2 thật sự không có mã kiến trúc mới — nhưng nó mô tả một *điều kiện*, không phải nguyên nhân. Chỉ mở lại nếu có bằng chứng ĐỘC LẬP mới. |
 | **Trạng thái** | **ĐÓNG.** Không được xếp A9 là P0 đang mở sau mốc này. |
+
+#### ĐÍNH CHÍNH 2026-09-09 — bản sửa ghi ở trên chưa từng có trong repo
+
+Người dùng báo màn Hôm nay **vẫn thoát**. Truy lại thì dòng "đã sửa thế nào" ở
+trên không có một commit nào đứng sau.
+
+| | |
+|---|---|
+| **Commit đóng A9** | `12362b9`. Diffstat của nó: `docs/AUDIT_STATE.md`, `docs/SO-GHI-LOI.md`, `tools/check.mjs`, `tools/theme-shape.mjs`. **Không một tệp `.tsx` nào.** |
+| **Truy rộng hơn, không dựa vào một commit** | `git log -S"m.lit" --all -- 'native/src/**'`: mọi commit từng đổi một dòng có `m.lit` đều là commit **dựng bản sáng**, cái cuối cùng là `b9037ab` (**06/09**). Tám commit ngày 08/09 đều có **0** dòng ± chứa `m.lit`. Và không commit nào từ `45e89f8` tới nay chạm cây dựng của Hôm nay ngoài `99c65fa`, vốn chỉ đổi MÀU của cung. |
+| **Vậy ngày 08/09 đã sửa cái gì trên màn Hôm nay** | `f7a3341` + `ddfbcd7` — nút-trong-nút. Chúng CÓ chạm `today-meals.tsx` và `dashboard-cards.tsx`, cả hai đều nằm trên màn Hôm nay, và đó là thay đổi mã **duy nhất** ở màn ấy trước lần kiểm máy thật. |
+| **Đọc lại A9 thế nào cho đúng** | Bằng chứng máy thật là thật và ở nguyên. Thứ không có bằng chứng là phép GÁN nguyên nhân: cơ chế được nêu tên — "hai đường dựng" — chưa từng được đụng vào, nên nó không thể là thứ đã sửa. Ở đây KHÔNG kết luận cái nào trong hai cái làm triệu chứng biến mất; chưa đủ dữ liệu để nói. |
+| **Và bảng số ở `AUDIT_STATE.md` không phải một phép đo** | Đếm node cả trang KHÔNG lặp lại được. Cùng một bản dựng, không đổi một dòng nào, ba lần chạy: bản sáng `931 / 931 / 942`, bản tối `1084 / 1084 / 1073`. Con số `1.073 → 1.031` là **một mẫu** của một thước đo nhiễu ±11, không phải một số đo. Một phép so sánh trước/sau bằng thước ấy đã suýt làm tôi báo ngược kết quả. |
+| **Đã làm gì ở lượt này** | Bỏ chỗ lệch ở `ReadinessGauge` — hai nhánh nằm **đúng dưới** thao tác lặp lại được của A9. Cả hai node nay được dựng ở cả hai theme; bản sáng tô rỗng (`opacity` 0, nền trong suốt, bóng tắt cả iOS lẫn Android). |
+| **Đo bằng thước nhắm đúng hai node đó** | Trước: tối `<circle stroke-width=10>` 1 / sáng 0, hào quang 168×168 tối 1 / sáng 0. Sau: **tối 1 / sáng 1 ở cả hai**. Bản tối không đổi một giá trị nào — `opacity` vẫn `0.25`, nền vẫn `rgba(255,217,61,0.05)`, bóng vẫn `rgb(255,217,61)`. Bản sáng: `opacity` `0`, nền `rgba(0,0,0,0)`, bóng `rgba(0,0,0,0) 0px 0px 0px 0px`. |
+| **Còn lại, chưa làm** | `ambient-light.tsx:140`, `glass-card.tsx:154`, `liquid-glass.tsx:174` vẫn gỡ cây con ở bản sáng trên màn Hôm nay; `assistant-aura.tsx` ở màn Trợ lý. Bốn chỗ ấy vẫn nằm trong danh sách của `tools/theme-shape.mjs`, mỗi chỗ một lý do hiệu năng có thật (chúng là những lớp `<Svg>` phủ kín màn hình, khác hẳn hai node vừa sửa). |
+| **Trạng thái sau đính chính** | A9 giữ nguyên **ĐÓNG** theo quyết định của chủ dự án — không tự ý mở lại. Nhưng ĐIỀU KIỆN của nó **chưa hết**, và hồ sơ trước đây nói ngược lại. |
 
 ---
 
