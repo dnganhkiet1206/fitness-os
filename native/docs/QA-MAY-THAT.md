@@ -53,6 +53,25 @@ Bản ghim `~7.11.0` không phải một lựa chọn tự do: nó **bằng đú
 Expo SDK 57 tự ghim trong `node_modules/expo/bundledNativeModules.json`, tức
 đúng bản `npx expo install @sentry/react-native` sẽ chọn.
 
+### Toolchain — đo được 2026-09-09, và một patch phụ thuộc vào nó
+
+| | Đo được trên máy chủ dự án | Expo SDK 57 công bố |
+|---|---|---|
+| Xcode | **26.2** (17C52) | **26.4** |
+| Swift | **6.2.3** (swiftlang-6.2.3.3.21) | — |
+| iOS SDK | **26.2** | — |
+
+Máy đang **thấp hơn** mức Expo công bố. Nhưng đó KHÔNG phải nguyên nhân của A12:
+annotation `SWIFT_RETURNS_RETAINED` trong `RuntimeScheduler.h` được Expo viết cho
+**Xcode 27** (expo/expo#49120), nên 26.4 nhiều khả năng cũng đỏ — Swift 6.2.x
+không hiểu annotation ấy trên constructor ở bất kỳ bản vá nào. Nâng lên 26.4 vẫn
+nên làm, nhưng **đừng chờ nó gỡ A12**.
+
+`patches/expo-modules-jsi+57.1.0.patch` bật/tắt annotation theo
+`__apple_build_version__ >= 18000000`, nên **nó tự đúng ở cả hai phía** khi máy
+nâng lên Xcode 27. Không cần nhớ gỡ patch để nâng máy; chỉ cần gỡ khi thượng
+nguồn tự guard (theo dõi expo/expo#49214).
+
 ### CHẶN: chưa liên kết dự án EAS
 
 `app.json` không có `extra.eas.projectId`, và `eas.json` đặt

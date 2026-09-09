@@ -176,6 +176,11 @@ const STEPS = [
      là chuyện bình thường và bỏ qua là đúng. `ci-workflow` thì có, vì nó chỉ đọc
      một tệp YAML và nó canh chỗ dễ mục nhất — một cổng vẫn chạy mà thôi chặn. */
   ['cổng CI', 'node', ['tools/ci-workflow.mjs']],
+  /* Cạnh cổng CI, vì cùng một loại: cả hai canh thứ chạy TRƯỚC mã app và hỏng
+     theo kiểu không ai đọc. Patch chạy ở `postinstall`, tức trước mọi thứ, và
+     một patch lệch phiên bản vẫn in `✔` — nó chỉ để lại một cảnh báo đứng cạnh
+     lỗi biên dịch của người khác và trông như thủ phạm (A12). */
+  ['trôi patch', 'node', ['tools/patch-drift.mjs']],
   ['rãnh vòng tròn', 'node', ['tools/ring-track.mjs']],
   ['lớp phủ tấm nội dung', 'node', ['tools/sheet-scrim.mjs']],
   ['nút lồng trong nút', 'node', ['tools/a11y-swallow.mjs']],

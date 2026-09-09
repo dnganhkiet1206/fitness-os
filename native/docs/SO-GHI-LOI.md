@@ -150,6 +150,21 @@ thì vẫn nằm ở đây.
 | **Kiểm chứng** | Dựng lại và chụp lại: vòng nay hiện một gạch, không còn `0`. Bộ chạy 32 màn × 3 trạng thái vẫn xanh. `EmptyHero` chỉ dùng ở đúng MỘT chỗ nên bán kính là một màn. |
 | **Trạng thái** | **ĐÓNG.** |
 
+### ~~A12. Bản dựng iOS chết ở `RuntimeScheduler.h` vì một annotation viết cho Xcode 27~~ — ĐÃ VÁ 2026-09-09
+
+| | |
+|---|---|
+| **Triệu chứng** | `xcodebuild` thoát 65 với đúng hai lỗi, dòng 53 và 61 của `node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h`: *"'RuntimeScheduler' cannot be annotated with either SWIFT_RETURNS_RETAINED or SWIFT_RETURNS_UNRETAINED because it is not returning a SWIFT_SHARED_REFERENCE type"*. |
+| **Mồi nhử** | Ngay trước đó patch-package in *"Patch file created for expo-modules-jsi@57.0.3 applied to expo-modules-jsi@57.1.0"*. Cảnh báo ấy có thật nhưng **không liên quan**: patch cũ chỉ đụng `JavaScriptCodable+Date.swift`, không đụng `RuntimeScheduler.h`. `diff` bản cài với bản gốc 57.1.0 cho ra **giống hệt** ở cả hai tệp — patch cũ đã thành **no-op** từ khi thượng nguồn nhận cùng bản sửa `abs()` → `.magnitude` ở 57.0.5 (expo/expo#49039). |
+| **Gốc thật** | `expo-modules-jsi` ≥ **57.0.5** annotate cả hai constructor bằng `SWIFT_RETURNS_RETAINED` để dập một **cảnh báo mới của Xcode 27** (expo/expo#49120, ghi thẳng trong CHANGELOG của gói). Swift 6.2.3 (Xcode 26.2) xét **kiểu trả về** để hợp lệ hoá annotation ấy; constructor trả về `void`, nên nó thành **lỗi cứng**. Đã có bốn báo cáo: expo/expo#49214, #49426, **#49667 (đúng "Xcode 26.2 / Swift 6.2.3")**, và #49740 — PR gỡ annotation, **đã bị bỏ**. |
+| **Nó vào kho lúc nào** | Bản nâng Hermes (`fb53951`) đưa `expo` 57.0.6 → 57.0.9, thứ đòi `expo-modules-core ~57.0.8`. npm lấy bản mới nhất trong dải là **57.0.17**, và core 57.0.17 dịch `expo-modules-jsi` từ `~57.0.8` sang `~57.1.0` — **một bản PATCH của core kéo theo một MINOR của jsi**. Lúc ấy tôi báo cáo *"không gói nào của app đổi"*: đúng về `dependencies`, **sai về cây thật**. |
+| **Vì sao không lùi phiên bản** | Annotation có từ **57.0.5**, không phải 57.1.0. Lùi jsi về 57.0.8 vẫn đỏ. Lùi tới 57.0.4 thì phải kéo `expo-modules-core` về 57.0.5 và `expo` về 57.0.6 — tức **trả lại hồi quy bộ nhớ Hermes** đã sửa ở fb53951. Và canary SDK 58 (2026-09-08) **vẫn giữ nguyên** annotation, nên không có bản nào để chạy tới. |
+| **Đã sửa thế nào** | `patches/expo-modules-jsi+57.1.0.patch`: annotation thành **có điều kiện theo toolchain**, không gỡ hẳn — `#if defined(__apple_build_version__) && __apple_build_version__ >= 18000000` (clang Xcode 27 là 1800.x, Xcode 26.x là 1700.x). Gỡ hẳn sẽ làm cảnh báo Xcode 27 quay lại đúng lúc chủ dự án nâng máy; đây là lý do annotation tồn tại và nó được giữ. Patch cũ `+57.0.3` bị **xoá** vì đã chứng minh là no-op, không phải vì nó vướng. |
+| **Kiểm chứng** | Tiền xử lý hai chiều: không có `__apple_build_version__` → constructor **trần**; ép `=18000000` → `__attribute__((swift_attr("returns_retained")))` **còn nguyên**. `clang++ -std=c++20 -fblocks -fsyntax-only` xanh ở cả hai nhánh. Trả header về bản gốc rồi chạy `npx patch-package`: `expo-modules-jsi@57.1.0 ✔`, **cảnh báo lệch phiên bản biến mất**. |
+| **Chưa kiểm được ở đây** | Chẩn đoán Swift **không tái hiện được trên Linux** — clang mã nguồn mở không chạy ClangImporter của Swift. Bằng chứng ở đây là bản dựng iOS thật của chủ dự án, cộng bốn báo cáo trùng khớp ở thượng nguồn. |
+| **Trạng thái** | **ĐÓNG khi bản dựng iOS đi qua được hai lỗi ấy.** Gỡ patch khi Expo phát hành một bản `expo-modules-jsi` có guard riêng — theo dõi expo/expo#49214. |
+
+
 ---
 
 ## B. **Chưa** chứng minh được — cấm sửa, cấm dùng làm căn cứ cho việc khác

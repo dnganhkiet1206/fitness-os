@@ -900,6 +900,54 @@ quyết định chứ không phải một phép đo.
 
 ---
 
+## A12 — BẢN DỰNG iOS: annotation viết cho Xcode 27, gặp Xcode 26.2 (2026-09-09)
+
+Bản dựng native thật lần đầu đi tới Xcode và chết ở **đúng hai lỗi**, dòng 53 và
+61 của `RuntimeScheduler.h` trong `expo-modules-jsi`. Chi tiết đầy đủ ở
+`SO-GHI-LOI.md` mục **A12**; đây là phần thuộc về trạng thái hạ tầng.
+
+### Cảnh báo đứng gần nhất KHÔNG phải nguyên nhân
+
+patch-package in *"created for 57.0.3, applied to 57.1.0"* ngay trước hai lỗi.
+Loại trừ bằng `diff`, không bằng suy đoán: patch cũ đụng một tệp **Swift** khác,
+và bản cài của cả hai tệp **giống hệt** bản gốc 57.1.0 — tức patch ấy đã là
+**no-op** từ khi thượng nguồn nhận cùng bản sửa ở 57.0.5.
+
+**Bài học đã được đóng thành luật.** `tools/patch-drift.mjs` (bước *trôi patch*)
+bắt đúng trạng thái đã đánh lừa vòng này: tên tệp patch không khớp phiên bản
+trên đĩa, và patch rỗng. Đã phá thử **bốn chiều**, cả bốn đỏ, khôi phục lại xanh.
+
+### Đường phụ thuộc — chỗ tôi báo cáo thiếu ở HERMES-MEM
+
+```
+expo 57.0.6 → 57.0.9    đòi expo-modules-core ~57.0.8
+  core 57.0.5 → 57.0.17
+    core 57.0.16 → jsi ~57.0.8
+    core 57.0.17 → jsi ~57.1.0     ← PATCH của core, MINOR của jsi
+      jsi 57.0.3 → 57.1.0
+```
+
+Ở `fb53951` tôi viết *"không gói nào của app đổi"*. Đúng về `dependencies` trong
+`package.json`, **sai về cây thật** — và một bản nâng "hẹp" vẫn dịch được hai
+gói bắc cầu. Vòng sau: đọc `git diff package-lock.json` theo GÓI, không theo số
+dòng.
+
+### Vì sao không lùi phiên bản
+
+Annotation có từ **57.0.5**, nên lùi tới 57.0.8 vẫn đỏ; lùi tới 57.0.4 phải kéo
+`expo` về 57.0.6 và **trả lại hồi quy bộ nhớ Hermes**. Canary SDK 58 vẫn giữ
+nguyên annotation, và PR gỡ nó ở thượng nguồn (expo/expo#49740) **đã bị bỏ**.
+Không có bản nào để chạy tới — patch cục bộ là đường duy nhất.
+
+### Toolchain
+
+Đo được: **Xcode 26.2 · Swift 6.2.3 · iOS SDK 26.2**. Expo SDK 57 công bố cần
+**Xcode 26.4**. Máy đang thấp hơn, nhưng đó **không** phải nguyên nhân: annotation
+được viết cho **Xcode 27**, nên 26.4 nhiều khả năng cũng đỏ. Patch rẽ theo
+`__apple_build_version__ >= 18000000` nên **tự đúng ở cả hai phía** khi máy nâng.
+
+---
+
 ## Còn mở
 
 | ID | Mức | Vấn đề | Việc tiếp theo |

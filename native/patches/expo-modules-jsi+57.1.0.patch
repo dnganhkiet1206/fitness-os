@@ -1,0 +1,49 @@
+diff --git a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h
+index 6115e87..996ba24 100644
+--- a/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h
++++ b/node_modules/expo-modules-jsi/apple/Sources/ExpoModulesJSI-Cxx/include/RuntimeScheduler.h
+@@ -5,6 +5,26 @@
+ #include <atomic>
+ #include <swift/bridging>
+ 
++/*
++ Xcode 27 bắt đầu cảnh báo "cannot infer ownership of foreign reference value
++ returned by 'init()'" cho constructor của một SWIFT_SHARED_REFERENCE, và
++ expo/expo#49120 dập nó bằng SWIFT_RETURNS_RETAINED trên cả hai constructor.
++
++ Swift 6.2.3 (Xcode 26.2) thì chưa hiểu annotation ấy trên constructor: nó xét
++ KIỂU TRẢ VỀ, mà constructor trả về `void`, nên nó bắn LỖI CỨNG
++ "cannot be annotated ... because it is not returning a SWIFT_SHARED_REFERENCE
++ type" — expo/expo#49214, #49426, #49667.
++
++ Nên annotation phải theo toolchain chứ không gỡ hẳn: clang của Xcode 27 là
++ 1800.x (__apple_build_version__ >= 18000000), của Xcode 26.x là 1700.x. Gỡ hẳn
++ sẽ làm cảnh báo Xcode 27 quay lại đúng lúc chủ dự án nâng máy.
++ */
++#if defined(__apple_build_version__) && __apple_build_version__ >= 18000000
++#define EXPO_RUNTIME_SCHEDULER_RETURNS_RETAINED SWIFT_RETURNS_RETAINED
++#else
++#define EXPO_RUNTIME_SCHEDULER_RETURNS_RETAINED
++#endif
++
+ namespace expo {
+ 
+ /**
+@@ -50,7 +70,7 @@ public:
+    `scheduleTask` dispatches through `fn`, which the host implements against
+    the real react::RuntimeScheduler.
+    */
+-  SWIFT_RETURNS_RETAINED RuntimeScheduler(void *scheduler, ScheduleFn fn) noexcept
++  EXPO_RUNTIME_SCHEDULER_RETURNS_RETAINED RuntimeScheduler(void *scheduler, ScheduleFn fn) noexcept
+       : nativeScheduler(scheduler), scheduleFn(fn) {}
+ 
+   /**
+@@ -58,7 +78,7 @@ public:
+    caller's thread — intended for standalone runtimes (e.g. tests) that have
+    no React scheduler.
+    */
+-  SWIFT_RETURNS_RETAINED RuntimeScheduler() {}
++  EXPO_RUNTIME_SCHEDULER_RETURNS_RETAINED RuntimeScheduler() {}
+ 
+   RuntimeScheduler(const RuntimeScheduler &) = delete;
+ 

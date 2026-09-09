@@ -270,7 +270,7 @@ const selfTest = [
   ['prop bị gỡ', () => navigatorProblems('<NativeTabs minimizeBehavior="onScrollDown">')],
   ['so thẳng pathname', () => navigatorProblems(GOOD_TABS.replace('hidden={hidden}', "hidden={pathname === '/assistant'}"))],
   ['thiếu một tab', () => navigatorProblems(GOOD_TABS.replace("'/progress', ", ''))],
-  ['không có bản vá', () => patchProblems(['expo-modules-jsi+57.0.3.patch'], '4.25.2', '')],
+  ['không có bản vá', () => patchProblems(['expo-modules-jsi+57.1.0.patch'], '4.25.2', '')],
   ['bản vá sai phiên bản', () => patchProblems(['react-native-screens+4.20.0.patch'], '4.25.2', GOOD_PATCH)],
   ['bản vá chỉ sửa một chỗ', () => patchProblems(['react-native-screens+4.25.2.patch'], '4.25.2', HALF_PATCH)],
   ['postinstall chưa chạy', () => installedProblems('[_controller setTabBarHidden:_tabBarHidden animated:NO];\n'.repeat(2))],
