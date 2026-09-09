@@ -46,12 +46,27 @@ trước lần kiểm máy thật là `f7a3341` + `ddfbcd7` (nút-trong-nút, c�
 **Kiểm chứng:** chủ dự án xác nhận trên máy thật, 2026-09-08. Bằng chứng này
 vẫn đúng — thứ sai là phép gán nguyên nhân cho nó.
 
+**ĐÍNH CHÍNH THỨ HAI, 2026-09-09 — nguyên nhân THẬT đã có.** Báo cáo sự cố từ
+máy thật (`089fbd5`) cho `SIGABRT` trên luồng JS: `jsi::Value::getObject` →
+`JSIWorkletsModuleProxy::toOptimizedObject` → `JSScheduler::scheduleOnJS` —
+dùng-sau-khi-giải-phóng một JSI Value trong `runOnJS`, khớp thượng nguồn
+#9786/#9751, vá ở #9789 (worklets 0.10.1). Nó bác bỏ **cả hai** giả thuyết:
+không phải `MaskedView` (chữ ký là SIGABRT, không phải EXC_BAD_ACCESS), và
+không phải lệch theme (bản dựng đã có `7587f57`, chỗ lệch ở `ReadinessGauge`
+đã bỏ, mà **vẫn thoát**).
+
+Nên phần "Kiến trúc dựng theo theme" bên dưới **không còn là hồ sơ nguyên nhân
+A9**. Công việc bỏ 8 chỗ lệch (`7587f57`, `9f5fb2f`, `553b6f9`) đứng bằng lý do
+riêng của nó — cây ổn định giữa hai diện mạo, và một lần đổi theme thật thôi
+tháo/dựng lại sáu cây con — chứ không phải vì nó sửa A9. A9 **chưa đóng lại**:
+bản sửa là thay đổi native, phải dựng lại máy thật mới biết.
+
 **`MaskedView` không phải nguyên nhân gốc** và không được gỡ hay thay chỉ vì sự
 cố này. Chi tiết đầy đủ ở `SO-GHI-LOI.md` mục A9.
 
 ---
 
-## Kiến trúc dựng theo theme — điều kiện đã sinh ra A9
+## Kiến trúc dựng theo theme — ~~điều kiện đã sinh ra A9~~ (bác bỏ 09/09, xem trên)
 
 A9 khép lại rồi, nhưng ĐIỀU KIỆN của nó thì đo được, và ở commit `f7a3341` nó
 vẫn còn. Ghi ra đây vì đó là thứ phải giữ cho "nhất quán và có chủ ý".

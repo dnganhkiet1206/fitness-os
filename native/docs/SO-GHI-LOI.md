@@ -136,6 +136,20 @@ trên không có một commit nào đứng sau.
 | **Còn lại, chưa làm** | `ambient-light.tsx:140`, `glass-card.tsx:154`, `liquid-glass.tsx:174` vẫn gỡ cây con ở bản sáng trên màn Hôm nay; `assistant-aura.tsx` ở màn Trợ lý. Bốn chỗ ấy vẫn nằm trong danh sách của `tools/theme-shape.mjs`, mỗi chỗ một lý do hiệu năng có thật (chúng là những lớp `<Svg>` phủ kín màn hình, khác hẳn hai node vừa sửa). |
 | **Trạng thái sau đính chính** | A9 giữ nguyên **ĐÓNG** theo quyết định của chủ dự án — không tự ý mở lại. Nhưng ĐIỀU KIỆN của nó **chưa hết**, và hồ sơ trước đây nói ngược lại. |
 
+#### ĐÍNH CHÍNH THỨ HAI, cùng ngày — nguyên nhân thật đã có, và nó KHÔNG phải lệch theme
+
+Báo cáo sự cố từ máy thật về tới (`089fbd5`) và nó bác bỏ **cả hai** giả thuyết
+trong sổ, kể cả giả thuyết của chính mục đính chính phía trên.
+
+| | |
+|---|---|
+| **Chữ ký thật** | `EXC_CRASH / SIGABRT` trên `com.facebook.react.runtime.JavaScript` → `__assert_rtn` → `jsi::Value::getObject` → `worklets::JSIWorkletsModuleProxy::toOptimizedObject` → `JSScheduler::scheduleOnJS`. Dùng-sau-khi-giải-phóng một JSI Value trong `runOnJS`, khớp từng chữ với thượng nguồn #9786 / #9751, đã vá ở #9789. |
+| **Vì sao KHÔNG phải MaskedView** | Giả thuyết (a) dự đoán `EXC_BAD_ACCESS` trong `RNCMaskedView`. Thực tế là `SIGABRT`. |
+| **Vì sao KHÔNG phải lệch theme** | Bản dựng của chủ dự án ĐÃ có `7587f57` — chỗ lệch ở `ReadinessGauge` đã bỏ — và **vẫn thoát**. Giả thuyết (b), tức chính thứ mục đính chính phía trên đang theo đuổi, sai. |
+| **Nên đọc lại công việc lệch theme thế nào** | `7587f57` + `9f5fb2f` + `553b6f9` bỏ cả 8 chỗ lệch và siết luật lại. Việc ấy **không phải bản sửa A9** và không được ghi là thế. Nó đứng được bằng lý do riêng: cây ổn định giữa hai diện mạo là thứ rẻ hơn để suy luận, và một lần đổi theme thật (khởi động nguội với lựa chọn khác `system`, người dùng tự đổi, máy tự đổi) thôi tháo/dựng lại sáu cây con. Không hơn thế. |
+| **Câu "điều kiện đã sinh ra A9" trong các chú thích ấy** | Viết lúc giả thuyết (b) còn đứng. Nay nó SAI, và chỗ đúng để đọc là mục này chứ không phải câu trong chú thích. Không viết lại tám khối chú thích chỉ để đổi một mệnh đề — nhưng cũng không được để ai đọc chúng rồi tin rằng lệch theme làm app thoát. |
+| **Trạng thái** | A9 **CHƯA đóng lại**: bản sửa của `089fbd5` là thay đổi native, phải dựng lại máy thật rồi lặp lại thao tác mới biết. Không đánh dấu đã sửa trước khi có xác nhận — đúng cái lỗi mục này đã mắc một lần. |
+
 ---
 
 ### ~~A10. Đường AI nuốt lỗi ở bốn chỗ, và cả bốn đều tiêu tiền~~ — ĐÃ SỬA 2026-09-08
