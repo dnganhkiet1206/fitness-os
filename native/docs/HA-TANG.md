@@ -171,10 +171,10 @@ Thiếu cái thứ hai thì sự cố native về **không có tên hàm** — c
 `appVersionSource: "remote"` — thứ đòi một dự án đã liên kết. Cần tài khoản Expo
 + `eas init`. Không bịa được.
 
-Và **`expo-doctor` báo Hermes V1 250829098.0.14 có hồi quy bộ nhớ đã biết**
-(sửa ở RN ≥ 0.86.2 / expo ≥ 57.0.9). Nó không chặn việc dựng, nhưng nó làm mọi
-phát hiện hiệu năng trên máy thật trở nên không đọc được — xem
-`docs/AUDIT_STATE.md`.
+~~Và `expo-doctor` báo Hermes V1 có hồi quy bộ nhớ đã biết~~ — **đã nâng
+2026-09-09**: `expo` 57.0.9, `react-native` 0.86.2, `hermes-compiler` .0.16.
+Tổ hợp nhỏ nhất gỡ được hồi quy, không gói nào của app đổi. Bộ nhớ trên máy thật
+vẫn **chưa đo** — xem `docs/AUDIT_STATE.md` mục HERMES-MEM.
 
 ### Còn lại — và cả ba đều cần thứ không có ở đây
 

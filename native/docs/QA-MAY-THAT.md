@@ -1,6 +1,6 @@
 # Kiểm trên máy thật — danh sách đi từng bước
 
-**Viết:** 2026-09-08 · commit `6c58bea` · **chưa ai chạy danh sách này.**
+**Viết:** 2026-09-08 · cập nhật 2026-09-09 sau bản nâng Hermes · **chưa ai chạy danh sách này.**
 
 Trang này tồn tại vì một lý do hẹp: **215 bước kiểm tự động và một bộ chạy web
 không chứng minh được app dùng được trên một chiếc iPhone.** Chúng chứng minh
@@ -33,25 +33,18 @@ Mọi ô trong danh sách dưới đây mặc định là **CHƯA KIỂM** cho t
 `projectId` vào `app.json`). **Không bịa được** — tôi không tạo ra một UUID dự
 án của người khác.
 
-### RỦI RO CAO: Hermes V1 có hồi quy bộ nhớ đã biết
+### ~~RỦI RO CAO: Hermes V1 có hồi quy bộ nhớ~~ — ĐÃ NÂNG 2026-09-09
 
-`npx expo-doctor` (chạy hôm nay) báo:
+Đã sửa bằng một bản nâng hẹp: `expo` 57.0.6 → **57.0.9**, `react-native` 0.86.0
+→ **0.86.2**, và `hermes-compiler` trong lockfile **250829098.0.14 →
+250829098.0.16** — đúng bản Expo nêu là bản đầu tiên có bản sửa. Phép kiểm
+Hermes của `expo-doctor` biến mất khỏi danh sách đỏ (19/21 → 20/21). Không gói
+nào của app đổi. Chi tiết ở `docs/AUDIT_STATE.md`.
 
-> This project uses Hermes V1 with expo@57.0.6, which is affected by a known
-> memory regression. Detected Hermes V1 **250829098.0.14**. …**250829098.0.16**
-> is the first version that contains the fix.
-
-Khắc phục theo chính Expo: `expo@^57.0.9` / React Native **≥ 0.86.2**. Repo
-đang ở `expo ~57.0.6`, `react-native 0.86.0`.
-
-**Vì sao nó đứng ở đầu trang này:** một hồi quy BỘ NHỚ hiện ra trên máy thật
-đúng như "app chậm dần", "app bị hệ thống giết", "app thoát sau một lúc" — tức
-lẫn hoàn toàn vào những thứ danh sách này đi tìm. Kiểm QA trên một bản dựng có
-hồi quy đã biết là đo hai thứ cùng lúc và không tách được chúng.
-
-**Không tự nâng.** DEP-1 đã ghi là quyết định của chủ dự án, và nâng `expo` +
-`react-native` đòi một bản dựng native để xác nhận. Nhưng **nên nâng TRƯỚC khi
-chạy danh sách này**, nếu không mọi phát hiện về hiệu năng đều mang một dấu hỏi.
+**Nhưng đừng đọc điều đó là "bộ nhớ đã ổn".** Doctor đọc SỐ PHIÊN BẢN, nó không
+đo bộ nhớ. Mục **E6** bên dưới vẫn là phép đo duy nhất kết luận được — khác biệt
+là nay nó chạy **không kèm dấu hỏi**: một kết quả xấu ở E6 giờ nói về app, chứ
+không còn lẫn với một hồi quy đã biết của runtime.
 
 ### Chưa xác minh được ở đây
 
@@ -163,9 +156,9 @@ Cả hai đặt làm **EAS secret**, không vào git. Config plugin của Sentry
 | E6 | Mở app 20 phút, đi qua mọi tab | Không nóng bất thường, không chậm dần | ☐ |
 | E7 | Vùng chạm nhỏ nhất (sao, X, chevron) | Bấm trúng bằng ngón cái | ☐ |
 
-> **E6 là chỗ hồi quy Hermes ở mục 0 sẽ hiện ra.** Nếu nó xảy ra trên bản dựng
-> chưa nâng, ghi lại nhưng ĐỪNG kết luận là lỗi app cho tới khi đo lại trên bản
-> đã nâng.
+> **E6 nay đọc được.** Hồi quy Hermes đã được gỡ ở mức phiên bản (mục 0), nên
+> một kết quả xấu ở đây nói về APP chứ không còn lẫn với một lỗi đã biết của
+> runtime. Đây là phép đo duy nhất kết luận được về bộ nhớ.
 
 ## F. Trợ năng — **chỉ tick khi đã bật VoiceOver trên máy thật**
 

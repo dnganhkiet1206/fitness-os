@@ -6,8 +6,8 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-09 · chuẩn bị QA máy thật · commit `1acfa6f` ·
-nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-09 · nâng có kiểm soát cho HERMES-MEM ·
+commit `__H__` · nhánh `claude/ios-fitness-rebuild-omgulr`
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
 > Trạng thái ở `docs/AI-TRIEN-KHAI.md` giữ nguyên, không đụng vào.
@@ -644,6 +644,95 @@ phím, i18n vẫn được canh bằng các bước kiểm tĩnh trong cổng
 
 ---
 
+## HERMES-MEM — ĐÃ NÂNG CÓ KIỂM SOÁT (2026-09-09)
+
+Một bản nâng hẹp, cho đúng một lý do. **Không** nâng chung, **không** đụng gói
+nào của app.
+
+### TRƯỚC → SAU
+
+| | TRƯỚC | SAU |
+|---|---|---|
+| `expo` (manifest) | `~57.0.6` | `~57.0.9` |
+| `expo` (đã cài) | 57.0.6 | **57.0.9** |
+| `react-native` | `0.86.0` | **`0.86.2`** |
+| **`hermes-compiler`** | **250829098.0.14** | **250829098.0.16** |
+| expo-doctor | 19/21 · **2 đỏ** | 20/21 · **1 đỏ** |
+| gói trễ | 22 | **20** |
+| TypeScript | xanh | xanh, đầu ra rỗng |
+| Cổng | 215/215 | **215/215** |
+| Bộ chạy web | 32×3 xanh | **32×3 xanh** (bundle Metro dựng lại trên chuỗi công cụ mới) |
+
+Node v22.22.2 · npm 10.9.7, không đổi.
+
+### Vì sao ĐÚNG hai phiên bản này
+
+`expo-doctor` nói: *"Detected Hermes V1 250829098.0.14… **250829098.0.16** is
+the first version that contains the fix"*, và khuyến nghị `expo@^57.0.9` /
+React Native **≥ 0.86.2**.
+
+Đọc `bundledNativeModules.json` của từng bản expo — không đoán:
+
+| expo | ghim react-native |
+|---|---|
+| **57.0.9** | **0.86.2** ← ngưỡng tối thiểu |
+| 57.0.21 (mới nhất) | 0.86.3 |
+
+Nên **57.0.9 + 0.86.2** là tổ hợp NHỎ NHẤT gỡ được hồi quy, và đó là cái được
+chọn. Không lên 57.0.21: nó không sửa thêm gì cho mục này và đổi nhiều hơn.
+
+### `expo install --fix` bị BỎ, và đó là điểm quan trọng nhất của vòng này
+
+Đó là "đường chính thức", nên tôi thử nó trước. Nó làm **đúng thứ bản nâng này
+bị cấm làm**:
+
+- đặt `expo` thành `~57.0.21`, **không** phải 57.0.9
+- đổi 20 dòng trong `package.json`
+- **hạ MAJOR** `@react-native-async-storage/async-storage` `^3.1.1` → `2.2.0`
+
+Cái thứ ba là lớp lưu trữ của app — thứ giữ cache persist, hàng đợi ghi offline
+và mọi khoá người dùng. Một bản hạ major ở đó không có chỗ trong một bản nâng
+"sửa Hermes".
+
+Đã hoàn nguyên `package.json` + `package-lock.json` về đúng bản commit, rồi cài
+tay đúng hai gói. **Đường chính thức không phải lúc nào cũng là đường hẹp.**
+
+### Lockfile: nhiễu là gì
+
+77 gói đổi phiên bản, 9 thêm, 2 bỏ. Phân theo họ: **expo 26 · react-native 14 ·
+khác 37** — và cả 37 "khác" đều là chuỗi công cụ đi kèm (metro 0.84.4→0.84.5,
+babel-preset-expo, lightningcss, terser, postcss). Trong đó có đúng dòng đáng
+đọc: `hermes-compiler 250829098.0.14 → 250829098.0.16`.
+
+**Không gói nào của app đổi.** `async-storage`, `react-native-reanimated`
+(4.5.0), `react-native-screens` (4.25.2), `@supabase/*`, `@sentry/react-native`
+(~7.11.0) — nguyên vẹn.
+
+Cây phụ thuộc: **một** `react-native` ở tầng chạy. Có vài `@react-native/*`
+0.86.3 lồng dưới `expo/` và `babel-preset-expo/` — đó là công cụ dev/dựng
+(debugger, codegen), không phải runtime thứ hai.
+
+### Doctor còn một phép đỏ, và nó KHÔNG phải mục này
+
+*"Check that packages match versions required by installed Expo SDK"* = **20 gói
+trễ** = DEP-1, đã theo dõi, là quyết định của chủ dự án. Nó đỏ **trước** bản nâng
+và vẫn đỏ. Điều đáng nói là bản nâng làm nó **tốt hơn**: 22 → 20, và **không gói
+nào mới trễ** (`expo-constants`, `expo-font` hết trễ nhờ đi theo expo 57.0.9).
+
+### BA MỨC BẰNG CHỨNG cho HERMES-MEM — không gộp
+
+| Mức | | Bằng chứng |
+|---|---|---|
+| **A. Phiên bản / cấu hình** | ✅ | `hermes-compiler` trong lockfile là **250829098.0.16**, đúng bản Expo nêu tên. Phép kiểm Hermes của doctor biến mất khỏi danh sách đỏ |
+| **B. Kiểm tĩnh / runtime** | ✅ | TypeScript exit 0 · cổng 215/215 · bộ chạy web 32 màn × 3 trạng thái xanh trên bundle Metro dựng lại |
+| **C. Bộ nhớ trên iPhone thật** | ❌ **CHƯA** | Không có máy. **Không được nói hồi quy bộ nhớ "đã sửa" chỉ vì doctor xanh** — doctor đọc số phiên bản, không đo bộ nhớ |
+
+Mục **E6** của `docs/QA-MAY-THAT.md` (mở app 20 phút, đi qua mọi tab) là phép đo
+duy nhất kết luận được, và nay nó chạy được **không kèm dấu hỏi** — đó chính là
+điều bản nâng này mua về.
+
+---
+
 ## CHUẨN BỊ KIỂM TRÊN MÁY THẬT (2026-09-09)
 
 Danh sách đi từng bước: **`docs/QA-MAY-THAT.md`**. Ở đây là những gì audit cấu
@@ -658,7 +747,7 @@ chưa chạy được ở chế độ không tương tác.
 **Cần:** tài khoản Expo + `eas init` trong `native/`. **Không bịa được** — tôi
 không tạo ra một UUID dự án của người khác.
 
-### RỦI RO CAO — Hermes V1 có hồi quy bộ nhớ đã biết
+### ~~RỦI RO CAO — Hermes V1 có hồi quy bộ nhớ đã biết~~ → ĐÃ NÂNG, xem mục HERMES-MEM ở trên
 
 `npx expo-doctor` chạy hôm nay, **2/21 phép kiểm đỏ**. Phép quan trọng:
 
