@@ -747,12 +747,37 @@ export function NutritionCard({
     `graphicOf` trả về chính token khi token đó không có vai đồ hoạ riêng, nên
     ba macro kia không đổi một điểm ảnh nào.
   */
+  /*
+    Mỗi ô mang MÀU CỦA CHẤT NÓ ĐO — và chỉ trên giấy.
+
+    Chú thích ở `macroTile` ghi lại một phép đo kết luận "cái NỀN không bao giờ
+    vẽ được ô này, chỉ cái VIỀN vẽ được". Phép đo ấy đúng, và nó đo trên mặt thẻ
+    `#0e0e11`: bản TỐI. Ở đó thẻ và mọi nền ứng viên đều gần như đen, nên chênh
+    lệch không có chỗ tồn tại — nâng alpha từ 0.2 lên 0.9 chỉ đi từ 1.015 tới
+    1.077.
+
+    Trên giấy thì ràng buộc ấy KHÔNG có. Mặt thẻ là `#ffffff`, nên một lớp tô
+    10% có cả một dải để sống trong đó.
+
+    Đo trước khi chọn, chữ phụ `#6b6559` trên nền ô:
+
+        nền hiện tại (secondary #efeae1)   4,83:1
+        tô 10%  protein 4,96 · carbs 5,18 · fat 5,04 · fiber 5,05
+
+    Nên 0.10: cả bốn ĐỌC RÕ HƠN nền trung tính đang dùng, không phải đổi rõ lấy
+    màu. 0.12 đưa protein xuống 4,80 — dưới mức hôm nay — nên đó là trần.
+
+    Bản tối nhận `null` và rơi về `m.inset.bg` như cũ, không đổi một điểm ảnh.
+  */
+  const TILE_TINT = 0.1;
+  const tileBg = (k: PaletteKey) => (m.lit ? null : alpha(graphicOf(c, k), TILE_TINT));
+
   const macros = [
-    { label: 'Protein', ...protein, icon: Beef, color: graphicOf(c, MACRO_TINT.protein), bar: macroBar(c, 'protein'), barGraphic: graphicOf(c, MACRO_BAR.protein.from) },
-    { label: 'Carbs', ...carbs, icon: Wheat, color: graphicOf(c, MACRO_TINT.carbs), bar: macroBar(c, 'carbs'), barGraphic: graphicOf(c, MACRO_BAR.carbs.from) },
-    { label: 'Fat', ...fat, icon: Milk, color: graphicOf(c, MACRO_TINT.fat), bar: macroBar(c, 'fat'), barGraphic: graphicOf(c, MACRO_BAR.fat.from) },
+    { label: 'Protein', ...protein, icon: Beef, color: graphicOf(c, MACRO_TINT.protein), bar: macroBar(c, 'protein'), barGraphic: graphicOf(c, MACRO_BAR.protein.from), bg: tileBg(MACRO_TINT.protein) },
+    { label: 'Carbs', ...carbs, icon: Wheat, color: graphicOf(c, MACRO_TINT.carbs), bar: macroBar(c, 'carbs'), barGraphic: graphicOf(c, MACRO_BAR.carbs.from), bg: tileBg(MACRO_TINT.carbs) },
+    { label: 'Fat', ...fat, icon: Milk, color: graphicOf(c, MACRO_TINT.fat), bar: macroBar(c, 'fat'), barGraphic: graphicOf(c, MACRO_BAR.fat.from), bg: tileBg(MACRO_TINT.fat) },
     ...(fiber
-      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: graphicOf(c, MACRO_TINT.fiber), bar: macroBar(c, 'fiber'), barGraphic: graphicOf(c, MACRO_BAR.fiber.from) }]
+      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: graphicOf(c, MACRO_TINT.fiber), bar: macroBar(c, 'fiber'), barGraphic: graphicOf(c, MACRO_BAR.fiber.from), bg: tileBg(MACRO_TINT.fiber) }]
       : []),
   ];
 
@@ -877,7 +902,11 @@ export function NutritionCard({
           return (
             <View
               key={m.label}
-              style={[styles.macroTile, { flexBasis: macros.length === 4 ? '47%' : 0 }]}>
+              style={[
+                styles.macroTile,
+                { flexBasis: macros.length === 4 ? '47%' : 0 },
+                m.bg ? { backgroundColor: m.bg } : null,
+              ]}>
               <View style={styles.macroHead}>
                 {/* Màu riêng của từng macro. Không truyền màu nền vào nữa: bộ
                     cũ vẽ vết khoét bằng chính màu nền, thứ chỉ đúng khi phía sau

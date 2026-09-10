@@ -71,6 +71,10 @@ const CO_MAU = new Map([
   ['components/ascnd/readiness-aura.tsx', [1, '`const paper = !m.lit` — chỉ chọn `paint`, `second` và `alpha`; thân hàm dựng y hệt số node ở hai theme']],
   ['components/ascnd/assistant-aura.tsx', [1, '`const paper = !m.lit` — chỉ chọn `colour` và `peak` của vũng sáng']],
   ['components/ascnd/liquid-glass.tsx', [1, '`const washAt = m.lit ? 1 : 0` — nhân vào `stopOpacity` của lớp wash; các node của wash dựng ở cả hai theme']],
+  ['components/ascnd/dashboard-cards.tsx', [1, '`tileBg = (k) => m.lit ? null : alpha(graphicOf(c, k), 0.1)` — chỉ chọn MÀU NỀN của ô macro. '
+    + 'Bốn ô dựng y hệt ở hai theme; bản tối nhận `null` và rơi về `m.inset.bg` như cũ. Nền tô chỉ có trên giấy vì phép đo '
+    + 'ở `macroTile` chứng minh nền không vẽ được ô trên mặt thẻ #0e0e11 (1.015 → 1.077 khi alpha đi từ 0.2 lên 0.9), '
+    + 'ràng buộc không tồn tại trên #ffffff']],
 ])
 
 const files = [];
