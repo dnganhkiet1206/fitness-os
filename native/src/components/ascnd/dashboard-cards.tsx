@@ -11,7 +11,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -1360,13 +1360,23 @@ function CompactWidget({
  * cả hai hệ đều đọc được.
  */
 const CHIP_FILL = '#0ea5e9';
-const CHIP_ALPHA = [0.1, 0.16, 0.24];
+/* Đầu NHẠT của mọi viên — gần như trắng, đúng bản mẫu. */
+const CHIP_HEAD = 0.02;
+/* Đầu ĐẬM, sâu dần theo lượng. Đo chữ `metricBlue` ngay tại đây, chỗ xấu nhất:
+   sáng 4,34 / 4,00 / 3,68 · tối 5,72 / 4,95 / 4,22 — cả sáu trên sàn 3:1 của
+   chữ lớn. Ở đầu nhạt là 4,90 (sáng) và 6,81 (tối). */
+const CHIP_TAIL = [0.14, 0.22, 0.3];
 
 function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const vl = volumeLabel(unit);
+  /* `useId` chứ không phải một chuỗi cố định: thẻ Nước dựng ở CẢ Hôm nay lẫn
+     Dinh dưỡng, hai tab cùng nằm trong cây, nên hai hàng chip cùng tồn tại. Id
+     gradient trùng nhau thì cái sau đè cái trước — `readiness-aura` đã trả giá
+     cho đúng bài học này. */
+  const gid = useId();
   const add = useAddWater();
   const undo = useRemoveLastWater();
   /* Kết quả cố ý không dùng ở đây. Gọi nó là để `today_water_logs` NẰM trong
@@ -1401,14 +1411,27 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
                ml", không nói đây là nước hay bấm vào thì xảy ra gì. `a11yAddWater`
                là câu đã có sẵn cho đúng nút này ở màn `/water`. */
             accessibilityLabel={i18n.a11yAddWater.replace('{x}', String(amount)).replace('{unit}', vl)}
-            style={[styles.quickBtn, { backgroundColor: alpha(CHIP_FILL, CHIP_ALPHA[i] ?? CHIP_ALPHA[0]) }]}
+            style={styles.quickBtn}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               add.mutate(volumeToMl(amount, unit), { onError: (e: Error) => toast.fail(e) });
             }}>
-            <Text style={styles.quickText}>
-              +{amount}
-            </Text>
+            {/* Gradient NGANG, không phải một màu phẳng: bản mẫu đọc ra thành
+                một thang chảy từ trái sang, và ba viên phẳng cạnh nhau đọc
+                thành ba ô rời. Viên bo tròn cắt hình bằng `overflow: hidden`
+                của chính nó, nên `Rect` ở đây là hình vuông đơn giản. */}
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+              <Svg width="100%" height="100%">
+                <Defs>
+                  <LinearGradient id={`${gid}-${amount}`} x1="0" y1="0" x2="1" y2="0">
+                    <Stop offset="0" stopColor={CHIP_FILL} stopOpacity={CHIP_HEAD} />
+                    <Stop offset="1" stopColor={CHIP_FILL} stopOpacity={CHIP_TAIL[i] ?? CHIP_TAIL[0]} />
+                  </LinearGradient>
+                </Defs>
+                <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid}-${amount})`} />
+              </Svg>
+            </View>
+            <Text style={styles.quickText}>+ {amount}</Text>
           </PressScale>
         ))}
       </View>
@@ -1591,9 +1614,11 @@ const stylesFor = makeStyles((c, m) => ({
   },
   quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   quickUndo: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.sm,
+    /* Thấp hơn ba viên một chút và vẫn là hộp bo góc, không phải viên thuốc:
+       nó không cùng hạng với chúng. Vẫn 48 nên vượt sàn chạm 44. */
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
     borderWidth: 1,
     borderColor: m.inset.border,
     backgroundColor: m.inset.bg,
@@ -1611,19 +1636,29 @@ const stylesFor = makeStyles((c, m) => ({
   },
   quickBtn: {
     flex: 1,
-    height: 44,
-    /* Viên thuốc, không phải hộp bo góc: ba chip nay đậm dần, và một dãy hình
-       viên đọc ra thành một thang liên tục — hộp vuông góc đọc thành ba ô rời. */
+    height: 52,
+    /*
+      Viên thuốc, KHÔNG viền.
+
+      Bản trước giữ viền `alpha(c.metricBlue, 0.28)` vì chú thích cũ nói "VIỀN
+      mới là thứ vẽ ra hình nút" — nhưng phép đo sau câu ấy là trên THẺ TỐI, nơi
+      nền chip chỉ hơn mặt thẻ 1,14:1. Trên giấy, và với một gradient chạy tới
+      0,30, hình nút tự hiện ra. Giữ viền lại thì bốn nút đọc thành ô nhập liệu
+      chứ không thành kính — đó đúng là chỗ chủ dự án nói "nhìn xấu".
+
+      `overflow: hidden` để bo tròn cắt luôn tấm gradient bên trong.
+    */
     borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: alpha(c.metricBlue, 0.28),
-    /* Nền đi theo từng chip — xem `CHIP_ALPHA`. */
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   quickText: {
-    fontSize: 15,
-    fontWeight: '700',
+    /* 17/600, và khoảng trắng sau dấu cộng — bản mẫu đọc thành "cộng, hai trăm
+       năm mươi", không thành một mã. 17pt ĐẬM vẫn là chữ lớn theo WCAG (>=14pt
+       bold) nên sàn là 3:1, thứ cho phép đầu gradient đậm tới 0,30. */
+    fontSize: 17,
+    fontWeight: '600',
     color: c.metricBlue,
     fontVariant: ['tabular-nums'],
   },
