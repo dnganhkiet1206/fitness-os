@@ -1363,12 +1363,9 @@ function CompactWidget({
  * Ba chip là hành động của thẻ; dấu trừ là đường lùi. Cùng màu thì bốn nút
  * thành một dãy đồng hạng và mắt phải đọc chữ mới biết cái nào làm gì.
  *
- * Nền chip là `rgba(14,165,233,0.10)` — đúng nền của icon giọt nước ở hàng
- * trên. Đo trên mặt thẻ thật (`glass.bg` phủ trên `colors.background`, ra
- * rgb(22,22,23)), một mình nó chỉ hơn nền thẻ **1,14:1** — gần như vô hình,
- * đúng cái bẫy đã nuốt mấy ô macro và ô sinh trắc trong phiên này. Nên VIỀN mới
- * là thứ vẽ ra hình nút: `rgba(59,166,255,0.28)` đạt **1,64:1**. Chữ
- * `metricBlue` trên nền chip là **6,10:1**, thừa sàn 4,5:1.
+ * (Những con số đo cụ thể của lớp wash — màu gốc, ba mức alpha, tương phản
+ * chữ ở cả hai theme — nay nằm ở `CHIP_HEAD`/`CHIP_TAIL` bên dưới, dựng lại từ
+ * bản mẫu. Đoạn này chỉ giữ lại LÝ DO, thứ không đổi theo màu.)
  */
 /**
  * Nền chip đậm dần theo lượng nước — và cái ghim nó không phải con số.
@@ -1380,36 +1377,54 @@ function CompactWidget({
  *
  * Con số thì không bị: `quickText` là 17pt/700, tức chữ lớn theo WCAG (≥14pt
  * bold), sàn 3:1. Nên đơn vị chuyển lên hàng nhãn — nói MỘT lần cho cả hàng —
- * và ba chip được tự do đậm dần:
- *
- *              chữ trên nền chip        sàn
- *     a=0.10   sáng 4,52 · tối 6,10     ✓ (cả sàn 4,5 lẫn 3)
- *     a=0.16   sáng 4,25 · tối 5,53     ✓ chữ lớn
- *     a=0.24   sáng 3,91 · tối 4,76     ✓ chữ lớn
+ * và ba chip được tự do đậm dần. Bảng tương phản của dải hiện tại nằm ở
+ * `CHIP_TAIL`; kể từ khi chữ đổi sang `metricBlueInk` thì cả ba mức đều qua
+ * luôn sàn 4,5:1 của chữ NHỎ, nên ràng buộc kể trên không còn bó nữa.
  *
  * Đưa đơn vị lên nhãn còn sửa một chuyện khác: `waterQuickAmounts` trả hai bộ
  * số rời nhau — `ml: [250,500,750]` và `oz: [8,12,16]` — nên một chip chỉ ghi
  * "+8" mà không có đơn vị là vô nghĩa với người dùng oz. Nhãn mang đơn vị thì
  * cả hai hệ đều đọc được.
  */
-const CHIP_FILL = '#0ea5e9';
-/* Đầu NHẠT của mọi viên — gần như trắng, đúng bản mẫu. */
+/*
+  Màu wash lấy từ TOKEN, không phải một mã chép tay.
+
+  Bản trước gõ cứng `#0ea5e9`. Giải mã điểm ảnh bản mẫu ra thì màu nền của viên
+  không phải màu ấy: tỉ lệ hụt của ba kênh so với trắng đo được 1 : 0,455 :
+  0,015, tức một màu gần như KHÔNG hụt kênh lam. `#0ea5e9` cho 1 : 0,373 :
+  0,091 — hụt lam gấp sáu lần, nên nó ngả lục lam. Màu khớp là `#3ba6ff`
+  (1 : 0,454 : 0,000), và đó chính là `metricBlue` của bản TỐI, nay tách thành
+  vai riêng `metricBlueWash` để cả hai theme cùng gọi tên nó.
+
+  Dựng lại từ token rồi so với ảnh mẫu, lệch ≤3 mỗi kênh — bảng ở `palette.ts`.
+*/
+/* Đầu NHẠT của mọi viên — gần như trắng, đúng bản mẫu (đo 2–3%). */
 const CHIP_HEAD = 0.02;
 /*
-  Đầu ĐẬM, sâu dần theo lượng.
+  Đuôi ĐẬM, sâu dần theo lượng — ĐO trên bản mẫu, không còn chọn tay.
 
-  Đo chữ `metricBlue` ngay tại đuôi — chỗ nền đậm nhất, tức chỗ xấu nhất:
+  Giải ngược từ điểm ảnh: nền viên = trắng phủ `metricBlueWash` ở alpha nào?
 
-      đầu 0,02   sáng 4,90 · tối 6,81
-      0,16       sáng 4,25 · tối 5,53
-      0,26       sáng 3,83 · tối 4,57
-      0,36       sáng 3,46 · tối 3,72
+      viên      đo trên ảnh   dựng lại từ token   alpha
+      +250        #e5f0fb        #e6f3ff          0,13
+      +500        #d0e8fd        #d0eaff          0,24
+      +750        #bde1fe        #bce1ff          0,34
 
-  Cả sáu trên sàn 3:1 của chữ lớn — `quickText` là 17pt/700, tức chữ lớn theo
-  nhánh "≥14pt đậm" của WCAG. Dải này sâu hơn bản trước (0,14/0,22/0,30) vì chủ dự án nói màu
-  còn nhạt so với bản mẫu.
+  Bản trước là 0,16/0,26/0,36 — đoán, và đậm hơn mẫu chừng một phần năm.
+
+  Tương phản của `metricBlueInk` tại ĐUÔI, chỗ nền đậm nhất tức chỗ xấu nhất:
+
+      alpha    giấy     tối
+      0,02    11,35    7,27
+      0,13    10,27    6,21
+      0,24     9,31    5,06
+      0,34     8,46    4,03
+
+  Bản giấy nay qua cả sàn 4,5:1 của chữ NHỎ, chứ không chỉ sàn 3:1 của chữ lớn
+  như `metricBlue` cũ (3,65:1 ở đuôi — sát sàn, không còn chỗ lùi). Nghĩa là cỡ
+  chữ ở đây về sau đổi thế nào cũng không kéo tương phản xuống dưới sàn.
 */
-const CHIP_TAIL = [0.16, 0.26, 0.36];
+const CHIP_TAIL = [0.13, 0.24, 0.34];
 
 function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }) {
   const c = usePalette();
@@ -1445,7 +1460,20 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
             Haptics.selectionAsync();
             undo.mutate({ onError: (e: Error) => toast.fail(e) });
           }}>
-          <Icon icon={Minus} size={16} color={c.mutedForeground} strokeWidth={2.5} />
+          {/*
+            18 và màu CHỮ ĐẦY, đo trên bản mẫu: nét ngang rộng 56 trên nút rộng
+            232 (24%) và dày 9 trên nút cao 217 (4,1%). Quy về nút 44: rộng
+            10,6 và dày 1,8. Lucide vẽ `M5 12h14` trong khung 24, tức nét rộng
+            58% cỡ icon — size 18 cho 10,5 (size 16 chỉ cho 9,3), và
+            `strokeWidth` 2,5 quy ra 1,88.
+
+            Màu thì đây là chỗ tôi BỎ một lập luận cũ của chính mình. Chú thích
+            phía trên viết "dấu trừ là đường lùi" nên nó mang `mutedForeground`.
+            Bản mẫu đo ra #0d0d11 — gần như đen, tức hạng CHỮ ĐẦY. Chủ dự án đã
+            hai lần nói màu chưa giống, nên mẫu thắng. Vai "đường lùi" vẫn còn,
+            chỉ là nó do NỀN nhạt và góc vuông nói, không do chữ nhạt nữa.
+          */}
+          <Icon icon={Minus} size={18} color={c.foreground} strokeWidth={2.5} />
         </PressScale>
         {waterQuickAmounts(unit).map((amount, i) => (
           <PressScale
@@ -1460,16 +1488,21 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               add.mutate(volumeToMl(amount, unit), { onError: (e: Error) => toast.fail(e) });
             }}>
-            {/* Gradient NGANG, không phải một màu phẳng: bản mẫu đọc ra thành
-                một thang chảy từ trái sang, và ba viên phẳng cạnh nhau đọc
-                thành ba ô rời. Viên bo tròn cắt hình bằng `overflow: hidden`
-                của chính nó, nên `Rect` ở đây là hình vuông đơn giản. */}
+            {/* Gradient CHÉO, không phải ngang, và không phải một màu phẳng.
+
+                Bản trước chạy `x2=1 y2=0` — ngang thuần. Đo lại bản mẫu ở hai
+                độ cao thì nó không ngang: viên +750 ở 85% bề ngang đọc #cee7fc
+                gần đỉnh nhưng #bde1fe gần đáy, tức lớp wash còn sâu thêm theo
+                chiều XUỐNG. `y2=1` bắt lấy đúng chỗ đó.
+
+                Viên bo tròn cắt hình bằng `overflow: hidden` của chính nó, nên
+                `Rect` ở đây là hình vuông đơn giản. */}
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
               <Svg width="100%" height="100%">
                 <Defs>
-                  <LinearGradient id={`${gid}-${amount}`} x1="0" y1="0" x2="1" y2="0">
-                    <Stop offset="0" stopColor={CHIP_FILL} stopOpacity={CHIP_HEAD} />
-                    <Stop offset="1" stopColor={CHIP_FILL} stopOpacity={CHIP_TAIL[i] ?? CHIP_TAIL[0]} />
+                  <LinearGradient id={`${gid}-${amount}`} x1="0" y1="0" x2="1" y2="1">
+                    <Stop offset="0" stopColor={c.metricBlueWash} stopOpacity={CHIP_HEAD} />
+                    <Stop offset="1" stopColor={c.metricBlueWash} stopOpacity={CHIP_TAIL[i] ?? CHIP_TAIL[0]} />
                   </LinearGradient>
                 </Defs>
                 <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid}-${amount})`} />
@@ -1735,7 +1768,33 @@ const stylesFor = makeStyles((c, m) => ({
 
       `overflow: hidden` để bo tròn cắt luôn tấm gradient bên trong.
     */
-    borderRadius: radius.full,
+    /*
+      HỘP BO GÓC, không phải viên thuốc — và đây là chỗ sai hình dạng lớn nhất.
+
+      Bản trước là `radius.full`, tức hai đầu nửa hình tròn. Bản mẫu KHÔNG thế.
+      Đo bán kính bằng cách cắt ngang nút ở nhiều độ cao rồi giải ngược độ lùi
+      của mép về bán kính cung tròn:
+
+          cách đỉnh   lùi mỗi bên   bán kính suy ra
+             4 px        50,0            73,5
+             8 px        41,5            74,5
+            14 px        31,5            74,5
+            18 px        26,5            74,5
+            26 px        18,5            74,5
+            40 px         9,0            74,5
+
+      Sáu lát cho cùng một con số, nên đó là cung tròn thật chứ không phải hiệu
+      ứng nén ảnh: r ≈ 74,5 trên nút cao 217, tức r/h = 0,343. Viên thuốc thì
+      r/h phải là 0,5 — ở lát 18 px nó lùi 48,6 chứ không phải 26,5, gần gấp
+      đôi. Hai hình khác hẳn nhau.
+
+      Nút cao 44 nên r = 0,343 × 44 = 15,1, và `radius.md` (16) cho 0,364 —
+      lệch 2%. `radius.sm` (12) cho 0,27, hụt hẳn.
+
+      Ô trừ đo ra CÙNG bán kính 74,5, nên nó cũng là `radius.md`: hai hạng khác
+      nhau nhưng cùng một họ góc, đúng như bản mẫu.
+    */
+    borderRadius: radius.md,
     overflow: 'hidden',
     /*
       Viền KÍNH, không phải viền xanh.
@@ -1777,7 +1836,11 @@ const stylesFor = makeStyles((c, m) => ({
        chứ không phải sửa lỗi. Độ tương phản đã thừa sàn (bảng ở CHIP_TAIL). */
     fontSize: 17,
     fontWeight: '700',
-    color: c.metricBlue,
+    /* Chàm sẫm, không phải `metricBlue`. Đo trên bản mẫu ba lần ra #043a6f ·
+       #053763 · #103c67; `metricBlueInk` trên giấy là #073a68. Xem `palette.ts`
+       để biết vì sao xanh dương phải tách làm hai vai. Bản TỐI không đổi: ở đó
+       `metricBlueInk` vẫn đúng bằng `metricBlue`. */
+    color: c.metricBlueInk,
     fontVariant: ['tabular-nums'],
   },
 }));

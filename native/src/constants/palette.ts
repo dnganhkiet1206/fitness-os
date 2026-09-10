@@ -182,6 +182,36 @@ export const darkPalette = {
 
   // Metrics
   metricBlue: '#3ba6ff',
+  /**
+   * Hai vai TÁCH RA của xanh dương, đo trên bản mẫu chủ dự án gửi.
+   *
+   * `metricBlue` là MỘT màu làm cả hai việc: vẽ đồ hoạ, và viết chữ. Trên bản
+   * tối điều đó không sao — `#3ba6ff` sáng nên vừa wash được vừa đọc được.
+   * Trên GIẤY nó gãy: `#0673be` đủ đậm để làm chữ nhưng quá đậm để làm một lớp
+   * wash nhạt, và ngược lại.
+   *
+   * Bản mẫu tách hẳn hai vai, và tôi giải mã điểm ảnh ra được đúng con số:
+   *
+   *     nền viên  = trắng + `#3ba6ff` ở alpha 0,13 / 0,24 / 0,34
+   *     đo trên ảnh   #e5f0fb   #d0e8fd   #bde1fe
+   *     dựng lại      #e6f3ff   #d0eaff   #bce1ff     (lệch ≤3/kênh)
+   *
+   *     chữ = chàm sẫm, đo được #043a6f · #053763 · #103c67
+   *
+   * `metricBlueWash` GIỐNG NHAU ở hai theme, và đó là chủ ý: ở alpha 2–34% một
+   * lớp wash đọc ra như nhau dù nằm trên thẻ trắng hay thẻ gần đen, nên tách
+   * làm hai giá trị chỉ tạo ra một khoá nữa để lệch nhau.
+   *
+   * `metricBlueInk` thì PHẢI tách: trên giấy là chàm sẫm, trong phòng tối vẫn
+   * là `#3ba6ff` — tức bản tối không đổi một điểm ảnh nào so với trước.
+   *
+   * Vì sao không dùng thẳng `metricBlue`: trên giấy nó cho 3,65:1 ở đuôi
+   * gradient, tức chỉ qua được sàn 3:1 của CHỮ LỚN và không còn chỗ lùi. Chàm
+   * sẫm cho 8,46:1 — qua cả sàn 4,5:1 của chữ nhỏ, nên cỡ chữ ở đó về sau muốn
+   * đổi thế nào cũng được.
+   */
+  metricBlueWash: '#3ba6ff',
+  metricBlueInk: '#3ba6ff',
   metricPurple: '#b45cff',
   metricCyan: '#22e3ff',
   metricOrange: '#ff9130',
@@ -422,6 +452,11 @@ export const lightPalette: Palette = {
   readinessYellowGraphic: '#a78b00',
   readinessRed: '#de0b44',
   metricBlue: '#0673be',
+  /* Hai vai tách ra của xanh dương — xem chú thích dài ở bảng TỐI. Wash giữ
+     nguyên `#3ba6ff` như bản tối (một lớp 2–34% đọc như nhau trên cả hai mặt
+     thẻ); mực thì đổi sang chàm sẫm, đo từ bản mẫu. */
+  metricBlueWash: '#3ba6ff',
+  metricBlueInk: '#073a68',
   metricPurple: '#8c35d0',
   metricCyan: '#077b8b',
   /**
