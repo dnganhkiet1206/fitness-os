@@ -1337,6 +1337,31 @@ function CompactWidget({
  * là thứ vẽ ra hình nút: `rgba(59,166,255,0.28)` đạt **1,64:1**. Chữ
  * `metricBlue` trên nền chip là **6,10:1**, thừa sàn 4,5:1.
  */
+/**
+ * Nền chip đậm dần theo lượng nước — và cái ghim nó không phải con số.
+ *
+ * Bản cũ tô cả ba chip một alpha, và ghi đơn vị BÊN TRONG mỗi chip ở 11pt.
+ * Đo ra thì đậm dần bị chặn bởi đúng chữ ấy: 11pt là chữ nhỏ, sàn 4,5:1 — và
+ * trên giấy chip đã ở
+ * **4,52:1**, sát sàn, nên nhích một nấc là tụt xuống dưới.
+ *
+ * Con số thì không bị: `quickText` là 15pt ĐẬM, tức chữ lớn theo WCAG (≥14pt
+ * bold), sàn 3:1. Nên đơn vị chuyển lên hàng nhãn — nói MỘT lần cho cả hàng —
+ * và ba chip được tự do đậm dần:
+ *
+ *              chữ trên nền chip        sàn
+ *     a=0.10   sáng 4,52 · tối 6,10     ✓ (cả sàn 4,5 lẫn 3)
+ *     a=0.16   sáng 4,25 · tối 5,53     ✓ chữ lớn
+ *     a=0.24   sáng 3,91 · tối 4,76     ✓ chữ lớn
+ *
+ * Đưa đơn vị lên nhãn còn sửa một chuyện khác: `waterQuickAmounts` trả hai bộ
+ * số rời nhau — `ml: [250,500,750]` và `oz: [8,12,16]` — nên một chip chỉ ghi
+ * "+8" mà không có đơn vị là vô nghĩa với người dùng oz. Nhãn mang đơn vị thì
+ * cả hai hệ đều đọc được.
+ */
+const CHIP_FILL = '#0ea5e9';
+const CHIP_ALPHA = [0.1, 0.16, 0.24];
+
 function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -1353,46 +1378,10 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
   return (
     <View style={styles.quickWrap}>
       <View style={styles.quickSep} />
+      {/* Hàng này nay CÓ nhãn, và điều đó đổi chỗ đứng của dấu trừ — xem ghi
+          chú ở nút ấy. Nhãn mang luôn đơn vị cho cả ba chip. */}
+      <Text style={styles.quickLabel}>{`${i18n.nQuickAdd}  ·  ${vl}`}</Text>
       <View style={styles.quickRow}>
-        {waterQuickAmounts(unit).map((amount) => (
-          <PressScale
-            key={amount}
-            accessibilityRole="button"
-            /* Nhãn hiện ra là "+250 ml" — đọc lên thành "cộng hai trăm năm mươi
-               ml", không nói đây là nước hay bấm vào thì xảy ra gì. `a11yAddWater`
-               là câu đã có sẵn cho đúng nút này ở màn `/water`. */
-            accessibilityLabel={i18n.a11yAddWater.replace('{x}', String(amount)).replace('{unit}', vl)}
-            style={styles.quickBtn}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              add.mutate(volumeToMl(amount, unit), { onError: (e: Error) => toast.fail(e) });
-            }}>
-            <Text style={styles.quickText}>
-              +{amount}
-              {/* Đơn vị nhỏ hơn số, CÙNG màu chứ không mờ đi. Bản mờ
-                  `rgba(59,166,255,0.65)` chỉ đạt 3,40:1 trên nền chip — dưới
-                  sàn 4,5:1 của chữ nhỏ. Thu nhỏ thì thứ bậc vẫn còn mà độ
-                  tương phản không mất gì (vẫn 6,10:1).
-                  Lồng trong cùng một `Text` chứ không phải hai `Text` cạnh
-                  nhau: chữ lồng tự nằm trên một đường chân, không cần
-                  `alignItems: 'baseline'` — thứ đã kéo lệch ô cân nặng trong
-                  phiên này. */}
-              <Text style={styles.quickUnit}> {vl}</Text>
-            </Text>
-          </PressScale>
-        ))}
-        {/*
-          Dấu trừ đứng CUỐI hàng, không phải đầu.
-
-          Màn `/water` đặt nó trước, và ở đó nó đúng: hàng ấy có nhãn "THÊM
-          NHANH" phía trên nên không nút nào phải tự giới thiệu. Ở đây hàng
-          không có nhãn, nên nút đầu tiên là thứ nói cho biết hàng này để làm
-          gì — và mở đầu bằng một ô xám mờ (trạng thái mặc định của nó vào buổi
-          sáng, khi chưa uống gì) là mở đầu bằng đường lùi.
-
-          Ba chip là lý do hàng này tồn tại; dấu trừ là ngoại lệ. Đọc từ trái
-          sang thì gặp việc thường làm trước, việc hiếm sau.
-        */}
         <PressScale
           accessibilityRole="button"
           accessibilityLabel={i18n.a11yRemove}
@@ -1404,6 +1393,24 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
           }}>
           <Icon icon={Minus} size={16} color={c.mutedForeground} strokeWidth={2.5} />
         </PressScale>
+        {waterQuickAmounts(unit).map((amount, i) => (
+          <PressScale
+            key={amount}
+            accessibilityRole="button"
+            /* Nhãn hiện ra là "+250 ml" — đọc lên thành "cộng hai trăm năm mươi
+               ml", không nói đây là nước hay bấm vào thì xảy ra gì. `a11yAddWater`
+               là câu đã có sẵn cho đúng nút này ở màn `/water`. */
+            accessibilityLabel={i18n.a11yAddWater.replace('{x}', String(amount)).replace('{unit}', vl)}
+            style={[styles.quickBtn, { backgroundColor: alpha(CHIP_FILL, CHIP_ALPHA[i] ?? CHIP_ALPHA[0]) }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              add.mutate(volumeToMl(amount, unit), { onError: (e: Error) => toast.fail(e) });
+            }}>
+            <Text style={styles.quickText}>
+              +{amount}
+            </Text>
+          </PressScale>
+        ))}
       </View>
     </View>
   );
@@ -1594,13 +1601,23 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
   },
   quickOff: { opacity: 0.35 },
+  /* Nhãn của cả hàng — và nó mang ĐƠN VỊ, nên chip không phải mang. */
+  quickLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: c.mutedForeground,
+  },
   quickBtn: {
     flex: 1,
     height: 44,
-    borderRadius: radius.sm,
+    /* Viên thuốc, không phải hộp bo góc: ba chip nay đậm dần, và một dãy hình
+       viên đọc ra thành một thang liên tục — hộp vuông góc đọc thành ba ô rời. */
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: alpha(c.metricBlue, 0.28),
-    backgroundColor: 'rgba(14,165,233,0.10)',
+    /* Nền đi theo từng chip — xem `CHIP_ALPHA`. */
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1610,5 +1627,4 @@ const stylesFor = makeStyles((c, m) => ({
     color: c.metricBlue,
     fontVariant: ['tabular-nums'],
   },
-  quickUnit: { fontSize: 11, fontWeight: '600', color: c.metricBlue },
 }));
