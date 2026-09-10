@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
@@ -146,9 +145,18 @@ export function useAddWater() {
         ...logs,
       ]),
     onError: (_e, _vars, ctx) => rollbackWater(queryClient, ctx),
-    onSuccess: () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    },
+    /*
+      KHÔNG rung ở đây — chỗ gọi đã rung rồi.
+
+      Cả hai chỗ dùng hook này (`dashboard-cards.tsx` và `water.tsx`) tự bắn
+      haptic ngay trong `onPress`, nên `onSuccess` bắn thêm một cái nữa là NGƯỜI
+      DÙNG THẤY HAI LẦN. Chủ dự án báo đúng chuyện đó.
+
+      Và bỏ ở đây chứ không bỏ ở chỗ gọi, vì thời điểm mới là lý do: mutation
+      này lạc quan (`onMutate` vá cache ngay), nên `onSuccess` là lúc SERVER
+      trả lời — muộn hơn ngón tay hàng trăm mili-giây. Một cú rung nói "đã ghi"
+      thì phải rơi vào lúc bấm, không phải lúc mạng xong.
+    */
     onSettled: (_d, _e, w) => {
       queryClient.invalidateQueries({ queryKey: ['today_water', user?.id, w.date] });
       queryClient.invalidateQueries({ queryKey: ['today_water_logs', user?.id, w.date] });
@@ -233,9 +241,18 @@ export function useRemoveLastWater() {
     },
     onMutate: (dateStr) => patchWater(queryClient, user?.id, dateStr, (logs) => logs.slice(1)),
     onError: (_e, _vars, ctx) => rollbackWater(queryClient, ctx),
-    onSuccess: () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    },
+    /*
+      KHÔNG rung ở đây — chỗ gọi đã rung rồi.
+
+      Cả hai chỗ dùng hook này (`dashboard-cards.tsx` và `water.tsx`) tự bắn
+      haptic ngay trong `onPress`, nên `onSuccess` bắn thêm một cái nữa là NGƯỜI
+      DÙNG THẤY HAI LẦN. Chủ dự án báo đúng chuyện đó.
+
+      Và bỏ ở đây chứ không bỏ ở chỗ gọi, vì thời điểm mới là lý do: mutation
+      này lạc quan (`onMutate` vá cache ngay), nên `onSuccess` là lúc SERVER
+      trả lời — muộn hơn ngón tay hàng trăm mili-giây. Một cú rung nói "đã ghi"
+      thì phải rơi vào lúc bấm, không phải lúc mạng xong.
+    */
     onSettled: (_d, _e, dateStr) => {
       queryClient.invalidateQueries({ queryKey: ['today_water', user?.id, dateStr] });
       queryClient.invalidateQueries({ queryKey: ['today_water_logs', user?.id, dateStr] });

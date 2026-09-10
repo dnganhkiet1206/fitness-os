@@ -1247,36 +1247,69 @@ function CompactWidget({
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
-  return (
-    <PressScale
-      onPress={() => {
-        Haptics.selectionAsync();
-        onPress();
-      }}>
-      {/*
-        This used the children-as-function form to dim the `GlassCard` inside,
-        which was the only way to reach the pressed state from a child. The
-        press now animates the pressable itself and the card comes with it, so
-        the function — and the second style — are no longer carrying anything.
-      */}
-      <GlassCard style={styles.compactCard}>
-        <View style={styles.compactRow}>
-          {ring ? (
-            <MiniRing pct={pct} icon={icon} color={iconColor} gradient={ring} bg={iconBg} />
-          ) : (
-            <View style={[styles.compactIcon, { backgroundColor: iconBg }]}>
-              <Icon icon={icon} size={20} color={iconColor} />
-            </View>
-          )}
-          <View style={styles.compactInfo}>
-            <Text style={styles.compactLabel}>{label}</Text>
-            <Text style={styles.compactValue}>{valueText}</Text>
-          </View>
-          <Text style={styles.compactPct}>{pct}%</Text>
+  const row = (
+    <View style={styles.compactRow}>
+      {ring ? (
+        <MiniRing pct={pct} icon={icon} color={iconColor} gradient={ring} bg={iconBg} />
+      ) : (
+        <View style={[styles.compactIcon, { backgroundColor: iconBg }]}>
+          <Icon icon={icon} size={20} color={iconColor} />
         </View>
-        {footer}
-      </GlassCard>
-    </PressScale>
+      )}
+      <View style={styles.compactInfo}>
+        <Text style={styles.compactLabel}>{label}</Text>
+        <Text style={styles.compactValue}>{valueText}</Text>
+      </View>
+      <Text style={styles.compactPct}>{pct}%</Text>
+    </View>
+  );
+
+  const press = () => {
+    Haptics.selectionAsync();
+    onPress();
+  };
+
+  /*
+    Không có footer: cả thẻ là MỘT nút, y như trước — kể cả phần đệm quanh hàng.
+
+    This used the children-as-function form to dim the `GlassCard` inside,
+    which was the only way to reach the pressed state from a child. The press
+    now animates the pressable itself and the card comes with it, so the
+    function — and the second style — are no longer carrying anything.
+  */
+  if (!footer) {
+    return (
+      <PressScale onPress={press}>
+        <GlassCard style={styles.compactCard}>{row}</GlassCard>
+      </PressScale>
+    );
+  }
+
+  /*
+    ── có footer: mặt thẻ và hàng nút là ANH EM, không lồng nhau ──
+
+    Footer từng nằm TRONG `PressScale` của cả thẻ, nên mọi cú chạm lên một chip
+    thêm nước cũng rơi vào thẻ và mở `/water`. Chủ dự án báo đúng chuyện đó:
+    "nhấn nút trừ hay nút thêm nhanh thì tự động mở thẻ, rất phiền".
+
+    Đây là lỗi mà tệp này ĐÃ gặp một lần và đã ghi cách chữa, ở nút `?` của thẻ
+    Dinh dưỡng: *"Nút `?` là ANH EM của mặt thẻ, không nằm trong nó."* Lý do ở
+    đó là VoiceOver — iOS đặt `accessible` true cho mọi `Pressable`, và một
+    phần tử trợ năng "groups its children into a single selectable component",
+    nên nút con không với tới được. Cùng một cấu trúc sai, hai triệu chứng.
+
+    Nên thẻ nay là `GlassCard` bọc HAI anh em: mặt thẻ bấm được, và footer
+    không bấm được cùng nó. Mở `/water` giờ chỉ xảy ra khi chạm vào MẶT THẺ —
+    đúng như yêu cầu "mở thẻ khi nhấn ở vùng khác ngoài mấy cái nút".
+
+    Cái giá: cú bấm nay co lại HÀNG chứ không co cả thẻ. Đó là điều đúng — hàng
+    nút bên dưới không nên nhúc nhích khi người ta bấm vào mặt thẻ.
+  */
+  return (
+    <GlassCard style={styles.compactCard}>
+      <PressScale onPress={press}>{row}</PressScale>
+      {footer}
+    </GlassCard>
   );
 }
 
@@ -1362,10 +1395,21 @@ function CompactWidget({
 const CHIP_FILL = '#0ea5e9';
 /* Đầu NHẠT của mọi viên — gần như trắng, đúng bản mẫu. */
 const CHIP_HEAD = 0.02;
-/* Đầu ĐẬM, sâu dần theo lượng. Đo chữ `metricBlue` ngay tại đây, chỗ xấu nhất:
-   sáng 4,34 / 4,00 / 3,68 · tối 5,72 / 4,95 / 4,22 — cả sáu trên sàn 3:1 của
-   chữ lớn. Ở đầu nhạt là 4,90 (sáng) và 6,81 (tối). */
-const CHIP_TAIL = [0.14, 0.22, 0.3];
+/*
+  Đầu ĐẬM, sâu dần theo lượng.
+
+  Đo chữ `metricBlue` ngay tại đuôi — chỗ nền đậm nhất, tức chỗ xấu nhất:
+
+      đầu 0,02   sáng 4,90 · tối 6,81
+      0,16       sáng 4,25 · tối 5,53
+      0,26       sáng 3,83 · tối 4,57
+      0,36       sáng 3,46 · tối 3,72
+
+  Cả sáu trên sàn 3:1 của chữ lớn (`quickText` là 17pt/600, và WCAG tính chữ
+  lớn từ 14pt đậm). Dải này sâu hơn bản trước (0,14/0,22/0,30) vì chủ dự án nói
+  màu còn nhạt so với bản mẫu.
+*/
+const CHIP_TAIL = [0.16, 0.26, 0.36];
 
 function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }) {
   const c = usePalette();
@@ -1650,6 +1694,24 @@ const stylesFor = makeStyles((c, m) => ({
     */
     borderRadius: radius.full,
     overflow: 'hidden',
+    /*
+      Viền KÍNH, không phải viền xanh.
+
+      Bản trước bỏ viền hẳn, và ở bản TỐI viên thuốc mất luôn mép trái: đầu nhạt
+      của gradient là 0,02 trên một mặt thẻ gần đen, tức không có gì để nhìn.
+      Đó đúng là điều chú thích cũ đã đo — "VIỀN mới là thứ vẽ ra hình nút" —
+      và nó vẫn đúng CHO BẢN TỐI.
+
+      Nhưng viền phải là mép kính của app (`m.inset.border`: trắng 12% ở bản
+      tối, mực 8% trên giấy), không phải `alpha(metricBlue, 0.28)`. Một đường
+      XANH quanh lớp wash đọc ra thành ô nhập liệu; một mép trung tính đọc ra
+      thành cạnh của một tấm kính. Bản mẫu có mép ấy.
+
+      Một dòng, hai theme, không cờ nào — nên `hình dạng cây theo theme` không
+      phải biết tới chỗ này.
+    */
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: m.inset.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
