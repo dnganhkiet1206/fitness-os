@@ -207,11 +207,33 @@ export function CardDeck({
      lý do nào để đổi sang thẻ khác. */
   const locked = expandedAt !== null && expandedAt !== undefined;
 
-  /* Chạy ở JS thread — `runOnJS` gọi nó từ worklet. */
-  const settle = (index: number) => {
-    setPage(index);
-    onPageChange?.(index);
-  };
+  /*
+    Chạy ở JS thread — `runOnJS` gọi nó từ worklet. Và nó phải có MỘT danh
+    tính, không phải một cái mới mỗi lần render.
+
+    `runOnJS(fn)` dựng một `SerializableRemoteFunction` cho `fn` và gắn nó lên
+    chính hàm ấy. Một `fn` mới ở mỗi render nghĩa là một serializable mới ở mỗi
+    render, và những cái cũ chết. Upstream đã ghi lớp lỗi đó thành hồ sơ —
+    reanimated#9751 và #9789: một serializable đã chết bị dùng lại trên luồng JS
+    ra `Value::getObject()` assert rồi `SIGABRT`, và issue nêu đích danh
+    "runOnJS() within gesture handlers".
+
+    Bản trước là một arrow trần, tạo lại mỗi render. Deps ở đây thật sự ổn định
+    (`setPage` là setState, và chỗ gọi duy nhất truyền một `useCallback([])`),
+    nên `useCallback` cho đúng một danh tính suốt đời component.
+
+    Đây là một lỗi tiềm ẩn có thật. Nó KHÔNG được chứng minh là nguyên nhân của
+    A9: trên một cú CHẠM, hai đích chạy là `beginInteraction` và
+    `endInteraction`, cả hai là import cấp module nên serializable của chúng
+    tạo một lần và không bao giờ chết. `settle` chỉ chạy khi cú vuốt ĐỔI trang.
+  */
+  const settle = useCallback(
+    (index: number) => {
+      setPage(index);
+      onPageChange?.(index);
+    },
+    [onPageChange],
+  );
 
   /** Trục của cú chạm hiện tại: 0 chưa chốt, 1 ngang, 2 dọc. */
   const axis = useSharedValue(0);

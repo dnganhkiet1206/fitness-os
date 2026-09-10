@@ -1378,7 +1378,7 @@ function CompactWidget({
  * trên giấy chip đã ở
  * **4,52:1**, sát sàn, nên nhích một nấc là tụt xuống dưới.
  *
- * Con số thì không bị: `quickText` là 15pt ĐẬM, tức chữ lớn theo WCAG (≥14pt
+ * Con số thì không bị: `quickText` là 19pt ĐẬM, tức chữ lớn theo WCAG (≥14pt
  * bold), sàn 3:1. Nên đơn vị chuyển lên hàng nhãn — nói MỘT lần cho cả hàng —
  * và ba chip được tự do đậm dần:
  *
@@ -1405,9 +1405,10 @@ const CHIP_HEAD = 0.02;
       0,26       sáng 3,83 · tối 4,57
       0,36       sáng 3,46 · tối 3,72
 
-  Cả sáu trên sàn 3:1 của chữ lớn (`quickText` là 17pt/600, và WCAG tính chữ
-  lớn từ 14pt đậm). Dải này sâu hơn bản trước (0,14/0,22/0,30) vì chủ dự án nói
-  màu còn nhạt so với bản mẫu.
+  Cả sáu trên sàn 3:1 của chữ lớn — `quickText` là 19pt/600, tức chữ lớn theo
+  CẢ hai lối WCAG tính (≥18pt thường, và ≥14pt đậm), nên sàn 3:1 chắc chứ không
+  chỉ vừa đủ. Dải này sâu hơn bản trước (0,14/0,22/0,30) vì chủ dự án nói màu
+  còn nhạt so với bản mẫu.
 */
 const CHIP_TAIL = [0.16, 0.26, 0.36];
 
@@ -1658,14 +1659,36 @@ const stylesFor = makeStyles((c, m) => ({
   },
   quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   quickUndo: {
-    /* Thấp hơn ba viên một chút và vẫn là hộp bo góc, không phải viên thuốc:
-       nó không cùng hạng với chúng. Vẫn 48 nên vượt sàn chạm 44. */
-    width: 48,
-    height: 48,
+    /* VUÔNG và cùng chiều cao với ba viên — đo trên bản mẫu: ô trừ rộng đúng
+       bằng chiều cao viên (205/205), còn viên thì rộng gấp ~2,1 lần chiều cao.
+       Vẫn là hộp bo góc chứ không phải viên thuốc: nó không cùng hạng. */
+    width: 52,
+    height: 52,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: m.inset.border,
-    backgroundColor: m.inset.bg,
+    /*
+      MẶT THẺ, không phải bề mặt lõm.
+
+      Nó từng là `m.inset.bg`, mà trên giấy đó là `secondary` #efeae1 — màu kem
+      ẤM của ASCND. Cạnh ba viên xanh lạnh, ô ấy dựng ra thành một vệt be và
+      ảnh dựng cho thấy nó chọi hẳn; bản mẫu thì gần như trắng.
+
+      `c.background` là màu TRANG của chính theme đang bật. Trên giấy nó là
+      #f7f4ef, nhạt hơn mặt thẻ vừa đủ để thấy — đo so mặt thẻ ra 1,097, trong
+      khi `secondary` là 1,198 (quá đậm, thành vệt be) và `card` là 1,000 (biến
+      mất hẳn). Ô trừ đọc ra thành một chỗ KHOÉT khỏi thẻ, đúng vai của nó:
+      đường lùi, cố ý lùi về sau.
+
+      KHÔNG lấy đúng màu bản mẫu (#f4f6f8): nó hơi LẠNH (r−b = −4), còn mọi sắc
+      gần trắng của ASCND đều ẤM (+8 tới +17) vì bảng màu sáng là giấy kem. Nhập
+      một tông lạnh vào đây là đổi thương hiệu để khớp một bản vẽ, không phải
+      sửa một lỗi.
+
+      Một token, hai theme, không cờ điều kiện nào: bản tối nhận #070708, tối
+      hơn mặt thẻ #0e0e11, nên nó cũng đọc thành một chỗ lõm.
+    */
+    backgroundColor: c.background,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1716,10 +1739,18 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
   },
   quickText: {
-    /* 17/600, và khoảng trắng sau dấu cộng — bản mẫu đọc thành "cộng, hai trăm
-       năm mươi", không thành một mã. 17pt ĐẬM vẫn là chữ lớn theo WCAG (>=14pt
-       bold) nên sàn là 3:1, thứ cho phép đầu gradient đậm tới 0,30. */
-    fontSize: 17,
+    /* 19/600, và khoảng trắng sau dấu cộng — bản mẫu đọc thành "cộng, hai trăm
+       năm mươi", không thành một mã. 19pt là chữ lớn theo WCAG kể cả khi bỏ nét
+       đậm đi (>=18pt thường, >=14pt đậm) nên sàn là 3:1, thứ cho phép đuôi
+       gradient đậm tới 0,36. Con số 19 đo từ bản mẫu: thân chữ chiếm ~27% chiều
+       cao viên, mà viên cao 52.
+
+       MÀU thì cố ý lệch bản mẫu. Mẫu dùng một sắc chàm sẫm (#1c4e80, độ sáng
+       71); `metricBlue` #0673be sáng hơn một bậc (97). Nhưng metricBlue là màu
+       app ĐÃ dùng cho nước ở mọi chỗ khác, còn bảng màu không có token chàm sẫm
+       nào — nhập một cái vào đây là thêm màu vào hệ thống để khớp một bản vẽ,
+       chứ không phải sửa lỗi. Độ tương phản đã thừa sàn (bảng ở CHIP_TAIL). */
+    fontSize: 19,
     fontWeight: '600',
     color: c.metricBlue,
     fontVariant: ['tabular-nums'],
