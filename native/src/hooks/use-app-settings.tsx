@@ -53,15 +53,56 @@ const SettingsContext = createContext<{
 export function AppSettingsProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<AppLang>(deviceDefaultLang);
   const [theme, setThemeState] = useState<ThemeChoice>('system');
+  /*
+    ── vì sao app KHÔNG được vẽ trước khi biết theme ──
+
+    Bản trước vẽ ngay bằng `'system'`, rồi `AsyncStorage` trả lời vài trăm mili
+    giây sau và `setThemeState('light')` LẬT cả bảng màu. Bảng màu là KHOÁ
+    CACHE của `makeStyles` (xem chú thích `value` bên dưới), nên một cú lật là
+    111 stylesheet đổi và CẢ CÂY dựng lại — đúng vào lúc người dùng vừa mở app
+    và đang chạm ngón tay xuống màn Hôm nay.
+
+    Đó là cái cửa sổ mà `runOnJS` chết trong đó. `card-deck.tsx:266` gọi
+    `runOnJS(beginInteraction)()` ngay ở `.onBegin`, tức lúc ngón tay CHẠM
+    XUỐNG; nếu cây đang bị dựng lại quanh lúc đó thì hàm từ xa của worklet có
+    thể bị giải phóng trước khi nó chạy — `SIGABRT` trong
+    `JSIWorkletsModuleProxy::toOptimizedObject`, đúng chữ ký trong nhật ký sự
+    cố của máy thật (xem `docs/SO-GHI-LOI.md` A9).
+
+    Và nó giải thích vì sao lỗi XUẤT HIỆN cùng lúc với giao diện sáng: trước đó
+    chỉ có một bảng màu, không có cú lật nào để dựng lại cây. Cú lật chỉ xảy ra
+    khi lựa chọn đã lưu KHÁC `'system'` — tức đúng người đang thử bản sáng.
+
+    Cổng này KHÔNG được biến thành cái bẫy mà `_layout.tsx` đã ghi lại ("one
+    query must not hold the whole app hostage"): đọc hỏng cũng là một câu trả
+    lời, và một lần đọc treo bị hết giờ sau 1,5 giây. Splash vẫn đang che, nên
+    người dùng không thấy thêm một khung hình trống nào.
+  */
+  const [booted, setBooted] = useState(false);
 
   useEffect(() => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      setBooted(true);
+    };
     // A stored choice always wins over the device default
-    AsyncStorage.getItem(LANG_KEY).then((v) => {
-      if (v === 'vi' || v === 'en') setLangState(v);
-    });
-    AsyncStorage.getItem(THEME_KEY).then((v) => {
-      if (v === 'system' || v === 'light' || v === 'dark') setThemeState(v);
-    });
+    Promise.all([
+      AsyncStorage.getItem(LANG_KEY)
+        .then((v) => {
+          if (v === 'vi' || v === 'en') setLangState(v);
+        })
+        .catch(() => {}),
+      AsyncStorage.getItem(THEME_KEY)
+        .then((v) => {
+          if (v === 'system' || v === 'light' || v === 'dark') setThemeState(v);
+        })
+        .catch(() => {}),
+    ]).then(finish, finish);
+    /* Đĩa treo cũng không được giữ app: 1,5 giây rồi đi tiếp bằng mặc định. */
+    const t = setTimeout(finish, 1500);
+    return () => clearTimeout(t);
   }, []);
 
   const setLang = (l: AppLang) => {
@@ -83,6 +124,10 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
     đó là thứ phải đúng ngay từ đầu chứ không phải tối ưu về sau.
   */
   const value = useMemo(() => ({ lang, setLang, theme, setTheme }), [lang, theme]);
+
+  /* Splash vẫn che (xem `SplashScreen.preventAutoHideAsync()` ở `_layout.tsx`),
+     nên đây là không-vẽ-gì, không phải một khung hình trống. */
+  if (!booted) return null;
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;
 }
