@@ -212,6 +212,21 @@ export const darkPalette = {
    */
   metricBlueWash: '#3ba6ff',
   metricBlueInk: '#3ba6ff',
+  /**
+   * Mặt của một nút LÙI VỀ SAU — ô trừ ở hàng thêm nhanh nước.
+   *
+   * Bản tối giữ đúng `background` #070708, tức tối hơn mặt thẻ #0e0e11: chỗ
+   * lõm đọc ra bằng cách sẫm đi. Không đổi một điểm ảnh nào so với trước.
+   *
+   * Chỗ tách là bản SÁNG — xem chú thích ở đó.
+   */
+  recessBg: '#070708',
+  /**
+   * Mép của ô trừ. `#2b2b2f` là ĐÚNG cái mà `rgba(255,255,255,0.12)` composite
+   * ra trên mặt thẻ `#0e0e11` — tức bản tối giữ nguyên vẻ cũ, chỉ đổi từ một
+   * lớp phủ trong suốt sang một mã đặc để bản sáng có chỗ tách ra.
+   */
+  recessBorder: '#2b2b2f',
   metricPurple: '#b45cff',
   metricCyan: '#22e3ff',
   metricOrange: '#ff9130',
@@ -457,6 +472,31 @@ export const lightPalette: Palette = {
      thẻ); mực thì đổi sang chàm sẫm, đo từ bản mẫu. */
   metricBlueWash: '#3ba6ff',
   metricBlueInk: '#073a68',
+  /**
+   * Cùng độ sáng với `background`, khác NHIỆT — và đây là một ngoại lệ có chủ ý
+   * với luật "mọi sắc gần trắng của ASCND đều ấm".
+   *
+   * Ô trừ từng lấy `background` #f7f4ef. Cùng độ sáng 247 với mã đo trên bản
+   * mẫu (#f7f9fa) nhưng ngược nhiệt: r−b = +8 so với −3. Một mình thì không ai
+   * thấy; NẰM CẠNH ba viên xanh lạnh thì mắt đọc ra ngay là một ô be, và chủ
+   * dự án đã nói đúng chữ ấy.
+   *
+   * Vì sao là token chứ không phải `alpha(metricBlueWash, 0.04)`: lớp trong
+   * suốt ấy trên bản tối sẽ làm ô trừ SÁNG hơn mặt thẻ, tức lật ngược vai "lõm
+   * xuống" của nó. Một token, hai giá trị, mỗi theme giữ đúng hướng của mình.
+   *
+   * Đây KHÔNG phải giấy đổi nhiệt. Chỉ đúng một nút này, vì chỉ đúng nút này
+   * ngồi kề một dải lạnh đậm.
+   */
+  recessBg: '#f7f9fa',
+  /**
+   * Mép LẠNH, đo trên bản mẫu: #dce0e3 (r−b = −7).
+   *
+   * Trước đó ô trừ lấy `inset.border`, trên giấy là `border` #dcd5c8 — cùng độ
+   * sáng nhưng ẤM (r−b = +20). Trong ảnh dựng nó hiện ra thành một vòng NÂU
+   * quanh một mặt lạnh, và đó là thứ dễ thấy hơn cả chính mặt nút.
+   */
+  recessBorder: '#dce0e3',
   metricPurple: '#8c35d0',
   metricCyan: '#077b8b',
   /**

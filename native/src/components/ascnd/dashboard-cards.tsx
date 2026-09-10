@@ -1425,6 +1425,25 @@ const CHIP_HEAD = 0.02;
   chữ ở đây về sau đổi thế nào cũng không kéo tương phản xuống dưới sàn.
 */
 const CHIP_TAIL = [0.13, 0.24, 0.34];
+/*
+  Nét viền đậm hơn ruột bao nhiêu — cũng đo, không đoán.
+
+  Bản mẫu không kẻ viền xám: mép viên đi THEO chính lớp wash, đậm dần cùng
+  hướng. Giải ngược alpha ở mép rồi trừ đi alpha của ruột ngay cạnh:
+
+      viên     mép trái          mép phải
+      +250   #e6f0fb  +0,11    #d3e7f7  +0,09
+      +500   #ddecfb  +0,15    #c4e0f9  +0,06
+      +750   #e1edfb  +0,13    #a1d2fa  +0,14
+
+  Trung bình +0,11, nên MỘT hằng số cộng vào cả hai đầu là đủ — không cần bảng
+  riêng cho mép.
+
+  Nét kính trung tính (`m.inset.border`) vẫn giữ trên chính `View`, và nó vẫn
+  cần thiết: ở bản TỐI đầu nhạt của wash chỉ 0,02 trên mặt thẻ gần đen, tức
+  không có gì vẽ ra mép trái. Hai lớp, mỗi lớp lo một theme.
+*/
+const CHIP_EDGE = 0.11;
 
 function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }) {
   const c = usePalette();
@@ -1504,8 +1523,29 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
                     <Stop offset="0" stopColor={c.metricBlueWash} stopOpacity={CHIP_HEAD} />
                     <Stop offset="1" stopColor={c.metricBlueWash} stopOpacity={CHIP_TAIL[i] ?? CHIP_TAIL[0]} />
                   </LinearGradient>
+                  <LinearGradient id={`${gid}-${amount}-e`} x1="0" y1="0" x2="1" y2="1">
+                    <Stop offset="0" stopColor={c.metricBlueWash} stopOpacity={CHIP_HEAD + CHIP_EDGE} />
+                    <Stop
+                      offset="1"
+                      stopColor={c.metricBlueWash}
+                      stopOpacity={(CHIP_TAIL[i] ?? CHIP_TAIL[0]) + CHIP_EDGE}
+                    />
+                  </LinearGradient>
                 </Defs>
-                <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${gid}-${amount})`} />
+                {/* `strokeWidth` 2 nhưng `overflow: hidden` của viên cắt mất
+                    nửa ngoài, nên nét hiện ra dày 1 và nằm TRONG mép — không
+                    có nửa nét nào thò ra ngoài góc bo. `rx` phải khớp
+                    `radius.md` của viên, nếu không nét sẽ trượt khỏi góc. */}
+                <Rect
+                  x="0"
+                  y="0"
+                  width="100%"
+                  height="100%"
+                  rx={radius.md}
+                  fill={`url(#${gid}-${amount})`}
+                  stroke={`url(#${gid}-${amount}-e)`}
+                  strokeWidth={2}
+                />
               </Svg>
             </View>
             <Text style={styles.quickText}>+ {amount}</Text>
@@ -1717,40 +1757,38 @@ const stylesFor = makeStyles((c, m) => ({
     height: 44,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: m.inset.border,
+    borderColor: c.recessBorder,
     /*
-      MẶT THẺ, không phải bề mặt lõm.
+      Màu LÙI VỀ SAU, và nó là token riêng chứ không phải màu trang.
 
-      Nó từng là `m.inset.bg`, mà trên giấy đó là `secondary` #efeae1 — màu kem
-      ẤM của ASCND. Cạnh ba viên xanh lạnh, ô ấy dựng ra thành một vệt be và
-      ảnh dựng cho thấy nó chọi hẳn; bản mẫu thì gần như trắng.
+      Ô này từng lấy `m.inset.bg` (trên giấy là `secondary` #efeae1 — kem đậm,
+      dựng ra thành một vệt be), rồi `c.background` #f7f4ef. Cái sau đúng độ
+      sáng nhưng sai NHIỆT: r−b = +8 trong khi bản mẫu đo được #f7f9fa, r−b =
+      −3. Kề ba viên xanh lạnh thì 11 điểm lệch ở kênh lam là thứ nhìn ra ngay.
 
-      `c.background` là màu TRANG của chính theme đang bật. Trên giấy nó là
-      #f7f4ef, nhạt hơn mặt thẻ vừa đủ để thấy — đo so mặt thẻ ra 1,097, trong
-      khi `secondary` là 1,198 (quá đậm, thành vệt be) và `card` là 1,000 (biến
-      mất hẳn). Ô trừ đọc ra thành một chỗ KHOÉT khỏi thẻ, đúng vai của nó:
-      đường lùi, cố ý lùi về sau.
-
-      KHÔNG lấy đúng màu bản mẫu (#f4f6f8): nó hơi LẠNH (r−b = −4), còn mọi sắc
-      gần trắng của ASCND đều ẤM (+8 tới +17) vì bảng màu sáng là giấy kem. Nhập
-      một tông lạnh vào đây là đổi thương hiệu để khớp một bản vẽ, không phải
-      sửa một lỗi.
-
-      Một token, hai theme, không cờ điều kiện nào: bản tối nhận #070708, tối
-      hơn mặt thẻ #0e0e11, nên nó cũng đọc thành một chỗ lõm.
+      `recessBg` giữ nguyên vai ấy cho cả hai theme mà không phải cài cờ: giấy
+      nhận màu lạnh đo từ mẫu, phòng tối vẫn nhận #070708 sẫm hơn mặt thẻ. Lý
+      do đầy đủ nằm ở `palette.ts`.
     */
-    backgroundColor: c.background,
+    backgroundColor: c.recessBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   quickOff: { opacity: 0.35 },
   /* Nhãn của cả hàng — và nó mang ĐƠN VỊ, nên chip không phải mang. */
   quickLabel: {
+    /* 11 và CHỮ ĐẦY, đo trên bản mẫu: chữ hoa cao 38 trên nút cao 217 (17,5%),
+       quy về nút 44 là 7,7 — tức cỡ ~10,9. Nhãn cách đỉnh nút 41/217, quy ra
+       8,3, đúng `spacing.sm` mà hàng này đã dùng.
+
+       Màu là chỗ thứ hai tôi bỏ mặc định của app để theo mẫu: nhãn mục ở đây
+       vốn luôn `mutedForeground`, còn mẫu đo ra #20262d — hạng CHỮ ĐẦY. Nếu
+       sau này thấy nó tranh chỗ với con số thì đây là dòng cần lùi lại. */
     fontSize: 11,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 1,
-    color: c.mutedForeground,
+    color: c.foreground,
   },
   quickBtn: {
     /* `flex: 1` nên bề rộng tự chia — chỉ chiều cao và khe là số gõ tay, và cả
@@ -1813,7 +1851,28 @@ const stylesFor = makeStyles((c, m) => ({
       phải biết tới chỗ này.
     */
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: m.inset.border,
+    /*
+      Mép kính này chỉ còn ở BẢN TỐI, và đó là chỗ sửa sau khi đặt ảnh dựng
+      cạnh bản mẫu.
+
+      Nay viên đã có nét riêng vẽ bằng SVG, đi theo chính lớp wash (`CHIP_EDGE`).
+      Giữ thêm vòng trung tính này nữa thành HAI mép chồng nhau, và trên giấy nó
+      hiện ra thành một vòng xám cứng — bốn nút đọc ra thành ô nhập liệu, đúng
+      cái vẻ mà chủ dự án gọi là "không giống hình".
+
+      Đo cho thấy nét SVG một mình là đủ trên giấy: nét/ruột ra 1,11:1, còn bản
+      mẫu đo được 1,09:1 ở viên nhạt nhất và 1,17:1 ở viên đậm nhất. Cùng một
+      hạng.
+
+      Trên bản TỐI thì không đủ: đầu wash chỉ 0,13 alpha, nét SVG so mặt thẻ ra
+      1,19:1 trong khi mép kính cũ đạt 1,37:1 — và mép trái biến mất chính là
+      lỗi chủ dự án đã báo trước đây ("nút chưa có viền"). Nên bản tối giữ.
+
+      `transparent` chứ không phải `borderWidth: 0`: bề rộng giữ nguyên thì hộp
+      không đổi kích thước giữa hai theme, `hình dạng cây theo theme` không phải
+      biết tới chỗ này, và không có cú nhảy layout nào khi đổi theme.
+    */
+    borderColor: m.lit ? m.inset.border : 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
