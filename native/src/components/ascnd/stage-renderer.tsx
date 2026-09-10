@@ -25,6 +25,7 @@ import { SCENE_BOTTOM, STAGE_MARK, STUDIO_SKINS, STUDIO_W } from '@/components/a
 import { useMascotEmotion } from '@/hooks/use-mascot-emotion';
 import type { MascotMood } from '@/hooks/use-mascot';
 import type { MascotDef } from '@/lib/mascots';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * The Stage: Koa Studio with the buddy standing in it.
@@ -63,7 +64,6 @@ import type { MascotDef } from '@/lib/mascots';
 const Studio = memo(KoaStudio);
 
 const ASPECT = SCENE_BOTTOM / STUDIO_W;
-const PAGE = '#070708';
 
 interface Props {
   mascot: MascotDef;
@@ -105,6 +105,27 @@ export function StageRenderer({
   animated = true,
   hold,
 }: Props) {
+  /*
+    ── `PAGE` phải LÀ màu trang, và nó đang đóng băng ở màu trang bản TỐI ──
+
+    Hằng cũ là `'#070708'`, TRÙNG TỪNG KÝ TỰ với `darkPalette.background`. Đó
+    chính là bằng chứng về ý định: nó tồn tại để bằng nền trang, và nó được
+    dùng làm các điểm dừng gradient TAN VÀO trang (`stopOpacity` 1 ở mép).
+
+    Trên giấy, cái đáng lẽ tan dần thành một dải ĐEN cắt ngang: đo trên bản
+    dựng thật, hộp cảnh trả về `rgb(7,7,8)` ở CẢ HAI diện mạo, và `#070708`
+    trên `#f7f4ef` là 18,35:1.
+
+    Đọc token thì bản tối bất biến theo CẤU TẠO — `c.background` ở bản tối đúng
+    là `#070708`, không phải "gần bằng".
+
+    Cảnh TỐI bên trong KHÔNG đổi: nó là minh hoạ, và minh hoạ không đi theo
+    theme — cùng luật `medal.tsx` ghi cho mặt đĩa huy chương. Thứ đổi chỉ là
+    lớp tan vào trang.
+  */
+  const c = usePalette();
+  const PAGE = c.background;
+
   const emotion = useMascotEmotion();
   /**
    * The stage's width, measured — with a first guess of the **full** window.
@@ -217,7 +238,7 @@ export function StageRenderer({
   }));
 
   return (
-    <View style={styles.scene} onLayout={onLayout}>
+    <View style={[styles.scene, { backgroundColor: PAGE }]} onLayout={onLayout}>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         {/* The room is three canvases, not one: the plants sway, and anything
             that moves needs a canvas to itself — but they also have to stay
@@ -336,9 +357,12 @@ const styles = StyleSheet.create({
    * ever changes. RN's `aspectRatio` is width ÷ height, which is the reciprocal
    * of `ASPECT`.
    */
+  /* `backgroundColor` KHÔNG ở đây: nó là màu trang, và màu trang đọc theo
+     theme lúc chạy. Một stylesheet ở phạm vi module đóng băng giá trị lúc
+     import — đúng cái bẫy `constants/theme.ts` đã ghi — nên nền đi vào chỗ
+     dựng, cạnh `PAGE`. */
   scene: {
     overflow: 'hidden',
-    backgroundColor: PAGE,
     width: '100%',
     aspectRatio: STUDIO_W / SCENE_BOTTOM,
   },

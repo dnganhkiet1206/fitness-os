@@ -15,6 +15,7 @@ import {
 } from '@/components/ascnd/shop/shop-camera';
 import { ShopRoom } from '@/components/ascnd/shop/shop-room';
 import type { MascotDef } from '@/lib/mascots';
+import { usePalette } from '@/hooks/use-palette';
 
 /**
  * One room, and a camera that moves between the shop's tabs.
@@ -74,8 +75,6 @@ import type { MascotDef } from '@/lib/mascots';
 /** how far above scene resolution the whole scene is drawn — see above */
 const SS = 2;
 
-/** the page the scene fades into — `stage-renderer.tsx`'s own constant */
-const PAGE = '#070708';
 
 /**
  * How the camera moves.
@@ -122,6 +121,19 @@ export function ShopScene({
    */
   dress?: boolean;
 }) {
+  /*
+    ── `PAGE` phải LÀ màu trang, và nó đang đóng băng ở màu trang bản TỐI ──
+
+    Cùng lỗi và cùng cách sửa với `stage-renderer.tsx` — xem khối chú thích ở
+    đó. Hằng cũ `'#070708'` trùng từng ký tự với `darkPalette.background`, và
+    nó nuôi các điểm dừng gradient TAN VÀO trang (`stopOpacity` 1 ở mép), nên
+    trên giấy nó vẽ ra một dải ĐEN thay vì tan dần.
+
+    Đọc token thì bản tối bất biến theo cấu tạo.
+  */
+  const c = usePalette();
+  const PAGE = c.background;
+
   /**
    * The shot itself is the animated thing — four springs, one per edge.
    *
