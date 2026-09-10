@@ -1378,7 +1378,7 @@ function CompactWidget({
  * trên giấy chip đã ở
  * **4,52:1**, sát sàn, nên nhích một nấc là tụt xuống dưới.
  *
- * Con số thì không bị: `quickText` là 19pt ĐẬM, tức chữ lớn theo WCAG (≥14pt
+ * Con số thì không bị: `quickText` là 17pt/700, tức chữ lớn theo WCAG (≥14pt
  * bold), sàn 3:1. Nên đơn vị chuyển lên hàng nhãn — nói MỘT lần cho cả hàng —
  * và ba chip được tự do đậm dần:
  *
@@ -1405,9 +1405,8 @@ const CHIP_HEAD = 0.02;
       0,26       sáng 3,83 · tối 4,57
       0,36       sáng 3,46 · tối 3,72
 
-  Cả sáu trên sàn 3:1 của chữ lớn — `quickText` là 19pt/600, tức chữ lớn theo
-  CẢ hai lối WCAG tính (≥18pt thường, và ≥14pt đậm), nên sàn 3:1 chắc chứ không
-  chỉ vừa đủ. Dải này sâu hơn bản trước (0,14/0,22/0,30) vì chủ dự án nói màu
+  Cả sáu trên sàn 3:1 của chữ lớn — `quickText` là 17pt/700, tức chữ lớn theo
+  nhánh "≥14pt đậm" của WCAG. Dải này sâu hơn bản trước (0,14/0,22/0,30) vì chủ dự án nói màu
   còn nhạt so với bản mẫu.
 */
 const CHIP_TAIL = [0.16, 0.26, 0.36];
@@ -1657,13 +1656,32 @@ const stylesFor = makeStyles((c, m) => ({
     backgroundColor: c.border,
     marginHorizontal: -spacing.md,
   },
-  quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /*
+    Khe HẸP, vì tỉ lệ viên mới là thứ phải đúng.
+
+    Bề ngang trong thẻ đo được 336 (mép 33..368 trên ảnh dựng 402pt). Hàng là
+    ô-trừ + 3 viên + 3 khe, và bản mẫu ràng hai tỉ lệ cùng lúc: ô trừ VUÔNG và
+    cao đúng bằng viên, viên rộng gấp 2,1 lần chiều cao. Giải ra:
+
+        h + 3·(2,1h) + 3·khe = 336   →   7,3h = 336 − 3·khe
+
+    khe 8 cho h = 42,7 — DƯỚI sàn chạm 44. khe 4 cho h = 44,4, làm tròn 44:
+    viên thành 93 rộng, tỉ lệ 2,11 so với 2,1 của bản mẫu.
+
+    Nói cách khác: trên màn 402pt, tỉ lệ bản mẫu và sàn chạm 44 chỉ vừa đúng
+    gặp nhau ở khe 4. Rộng hơn thì phải bóp viên xuống dưới sàn.
+  */
+  quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   quickUndo: {
     /* VUÔNG và cùng chiều cao với ba viên — đo trên bản mẫu: ô trừ rộng đúng
        bằng chiều cao viên (205/205), còn viên thì rộng gấp ~2,1 lần chiều cao.
-       Vẫn là hộp bo góc chứ không phải viên thuốc: nó không cùng hạng. */
-    width: 52,
-    height: 52,
+       Vẫn là hộp bo góc chứ không phải viên thuốc: nó không cùng hạng.
+
+       44 chứ không phải 52: xem phép giải ở `quickRow`. 52 làm viên chỉ còn tỉ
+       lệ 1,67 — ảnh dựng đo ra 87×52 — tức MẬP hơn hẳn bản mẫu, và đó là chỗ
+       chủ dự án nói hình dạng chưa giống. 44 cũng đúng bằng sàn chạm. */
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: m.inset.border,
@@ -1702,8 +1720,10 @@ const stylesFor = makeStyles((c, m) => ({
     color: c.mutedForeground,
   },
   quickBtn: {
+    /* `flex: 1` nên bề rộng tự chia — chỉ chiều cao và khe là số gõ tay, và cả
+       hai giải ra từ tỉ lệ 2,1 của bản mẫu ở `quickRow`. 44 cho viên 93 rộng. */
     flex: 1,
-    height: 52,
+    height: 44,
     /*
       Viên thuốc, KHÔNG viền.
 
@@ -1742,16 +1762,21 @@ const stylesFor = makeStyles((c, m) => ({
     /* 19/600, và khoảng trắng sau dấu cộng — bản mẫu đọc thành "cộng, hai trăm
        năm mươi", không thành một mã. 19pt là chữ lớn theo WCAG kể cả khi bỏ nét
        đậm đi (>=18pt thường, >=14pt đậm) nên sàn là 3:1, thứ cho phép đuôi
-       gradient đậm tới 0,36. Con số 19 đo từ bản mẫu: thân chữ chiếm ~27% chiều
-       cao viên, mà viên cao 52.
+       gradient đậm tới 0,36. Con số đo từ bản mẫu: thân chữ chiếm ~27% chiều
+       cao viên. Viên cao 44 nên thân chữ ~12, tức cỡ ~17.
+
+       17 thì phải 700 chứ không 600. Ở 19 điều đó không quan trọng — 19 đã qua
+       ngưỡng "chữ lớn" kiểu ≥18pt THƯỜNG nên sàn 3:1 chắc bất kể nét. Ở 17 thì
+       chữ chỉ lớn nhờ nhánh "≥14pt ĐẬM", mà 600 là semibold chứ chưa phải bold.
+       700 gỡ chỗ mập mờ ấy, và bản mẫu vốn cũng in số đậm.
 
        MÀU thì cố ý lệch bản mẫu. Mẫu dùng một sắc chàm sẫm (#1c4e80, độ sáng
        71); `metricBlue` #0673be sáng hơn một bậc (97). Nhưng metricBlue là màu
        app ĐÃ dùng cho nước ở mọi chỗ khác, còn bảng màu không có token chàm sẫm
        nào — nhập một cái vào đây là thêm màu vào hệ thống để khớp một bản vẽ,
        chứ không phải sửa lỗi. Độ tương phản đã thừa sàn (bảng ở CHIP_TAIL). */
-    fontSize: 19,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     color: c.metricBlue,
     fontVariant: ['tabular-nums'],
   },
