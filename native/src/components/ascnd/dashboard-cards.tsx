@@ -1398,51 +1398,71 @@ function CompactWidget({
 
   Dựng lại từ token rồi so với ảnh mẫu, lệch ≤3 mỗi kênh — bảng ở `palette.ts`.
 */
-/* Đầu NHẠT của mọi viên — gần như trắng, đúng bản mẫu (đo 2–3%). */
-const CHIP_HEAD = 0.02;
 /*
-  Đuôi ĐẬM, sâu dần theo lượng — ĐO trên bản mẫu, không còn chọn tay.
+  Ba MỐC cho mỗi viên, khớp từ bản mẫu dọc theo trục gradient.
 
-  Giải ngược từ điểm ảnh: nền viên = trắng phủ `metricBlueWash` ở alpha nào?
+  Bản trước chỉ có hai mốc và chạy tuyến tính, nên nửa trái của viên đã ngả
+  xanh trong khi bản mẫu ở đó gần như còn trắng. Đo lại cho tử tế: với một
+  `linearGradient` chéo, tham số tại điểm (u,v) là t = (u+v)/2, nên mọi điểm
+  bên trong viên đều dùng được. Gom theo t, bỏ nét chữ, mỗi mốc vài trăm điểm:
 
-      viên      đo trên ảnh   dựng lại từ token   alpha
-      +250        #e5f0fb        #e6f3ff          0,13
-      +500        #d0e8fd        #d0eaff          0,24
-      +750        #bde1fe        #bce1ff          0,34
+      t      +250    +500    +750
+      0,20   0,052   0,092   0,101
+      0,35   0,052   0,102   0,124
+      0,50   0,059   0,156   0,173
+      0,65   0,068   0,157   0,249
+      0,80   0,121   0,229   0,352
 
-  Bản trước là 0,16/0,26/0,36 — đoán, và đậm hơn mẫu chừng một phần năm.
+  Không tuyến tính chút nào: phẳng tới quãng giữa rồi mới dựng lên. Khớp từng
+  đoạn rồi ngoại suy về hai đầu:
 
-  Tương phản của `metricBlueInk` tại ĐUÔI, chỗ nền đậm nhất tức chỗ xấu nhất:
+      viên    đầu     giữa(0,5)   đuôi
+      +250   0,050     0,059     0,173
+      +500   0,083     0,156     0,288
+      +750   0,073     0,173     0,397
 
-      alpha    giấy     tối
-      0,02    11,35    7,27
-      0,13    10,27    6,21
-      0,24     9,31    5,06
-      0,34     8,46    4,03
+  `CHIP_EASE` là mốc giữa viết theo phần trăm quãng đầu→đuôi. +500 và +750 cho
+  0,32 và 0,30; +250 cho 0,07. Lấy 0,30 chứ không lấy trung bình ba: quãng của
+  +250 chỉ rộng 0,12 alpha nên sai số đo ±0,01 đã là ±0,08 trên tỉ số ấy — con
+  số của nó không đủ tin. Hai viên kia có tín hiệu gấp đôi và trùng nhau.
 
-  Bản giấy nay qua cả sàn 4,5:1 của chữ NHỎ, chứ không chỉ sàn 3:1 của chữ lớn
-  như `metricBlue` cũ (3,65:1 ở đuôi — sát sàn, không còn chỗ lùi). Nghĩa là cỡ
-  chữ ở đây về sau đổi thế nào cũng không kéo tương phản xuống dưới sàn.
+  Đầu 0,083 của +500 cũng được nắn xuống 0,06 cho ba viên tăng đều: bản mẫu vẽ
+  +500 hơi loang chứ không phải một thang sạch, và một dãy không tăng đều thì
+  người dùng đọc ra là lỗi chứ không đọc ra là bản mẫu.
+
+  Tương phản mực tại ĐUÔI, chỗ nền đậm nhất:
+
+      viên    giấy    tối
+      +250    9,93    5,79
+      +500    8,85    4,53
+      +750    7,96    3,51
+
+  Giấy qua cả sàn 4,5:1 của chữ nhỏ; tối qua sàn 3:1 của chữ lớn.
 */
-const CHIP_TAIL = [0.13, 0.24, 0.34];
-/*
-  Nét viền đậm hơn ruột bao nhiêu — cũng đo, không đoán.
+const CHIP_HEAD = [0.05, 0.06, 0.07];
+const CHIP_TAIL = [0.17, 0.29, 0.4];
+const CHIP_EASE = 0.3;
 
-  Bản mẫu không kẻ viền xám: mép viên đi THEO chính lớp wash, đậm dần cùng
-  hướng. Giải ngược alpha ở mép rồi trừ đi alpha của ruột ngay cạnh:
-
-      viên     mép trái          mép phải
-      +250   #e6f0fb  +0,11    #d3e7f7  +0,09
-      +500   #ddecfb  +0,15    #c4e0f9  +0,06
-      +750   #e1edfb  +0,13    #a1d2fa  +0,14
-
-  Trung bình +0,11, nên MỘT hằng số cộng vào cả hai đầu là đủ — không cần bảng
-  riêng cho mép.
-
-  Nét kính trung tính (`m.inset.border`) vẫn giữ trên chính `View`, và nó vẫn
-  cần thiết: ở bản TỐI đầu nhạt của wash chỉ 0,02 trên mặt thẻ gần đen, tức
-  không có gì vẽ ra mép trái. Hai lớp, mỗi lớp lo một theme.
-*/
+/**
+ * Ba mốc của một viên, dùng chung cho cả ruột lẫn nét.
+ *
+ * `bump` là lượng cộng thêm cho NÉT (0 khi vẽ ruột). Viết một lần ở đây thay vì
+ * hai lần trong JSX, vì hai chỗ ấy phải luôn cùng hình dạng đường cong — lệch
+ * nhau một mốc là nét rời khỏi ruột ở giữa viên.
+ *
+ * Trả về MẢNG chứ không phải `<>…</>`: `LinearGradient` của react-native-svg
+ * đọc `children` để dựng danh sách mốc, và một Fragment thì nó không mở ra.
+ */
+function stops(wash: string, i: number, bump: number) {
+  const head = CHIP_HEAD[i] ?? CHIP_HEAD[0];
+  const tail = CHIP_TAIL[i] ?? CHIP_TAIL[0];
+  const mid = head + CHIP_EASE * (tail - head);
+  return [
+    <Stop key="a" offset="0" stopColor={wash} stopOpacity={head + bump} />,
+    <Stop key="b" offset="0.5" stopColor={wash} stopOpacity={mid + bump} />,
+    <Stop key="c" offset="1" stopColor={wash} stopOpacity={tail + bump} />,
+  ];
+}
 const CHIP_EDGE = 0.11;
 
 function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }) {
@@ -1520,22 +1540,23 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
               <Svg width="100%" height="100%">
                 <Defs>
                   <LinearGradient id={`${gid}-${amount}`} x1="0" y1="0" x2="1" y2="1">
-                    <Stop offset="0" stopColor={c.metricBlueWash} stopOpacity={CHIP_HEAD} />
-                    <Stop offset="1" stopColor={c.metricBlueWash} stopOpacity={CHIP_TAIL[i] ?? CHIP_TAIL[0]} />
+                    {stops(c.metricBlueWash, i, 0)}
                   </LinearGradient>
                   <LinearGradient id={`${gid}-${amount}-e`} x1="0" y1="0" x2="1" y2="1">
-                    <Stop offset="0" stopColor={c.metricBlueWash} stopOpacity={CHIP_HEAD + CHIP_EDGE} />
-                    <Stop
-                      offset="1"
-                      stopColor={c.metricBlueWash}
-                      stopOpacity={(CHIP_TAIL[i] ?? CHIP_TAIL[0]) + CHIP_EDGE}
-                    />
+                    {stops(c.metricBlueWash, i, CHIP_EDGE)}
                   </LinearGradient>
                 </Defs>
-                {/* `strokeWidth` 2 nhưng `overflow: hidden` của viên cắt mất
-                    nửa ngoài, nên nét hiện ra dày 1 và nằm TRONG mép — không
-                    có nửa nét nào thò ra ngoài góc bo. `rx` phải khớp
-                    `radius.md` của viên, nếu không nét sẽ trượt khỏi góc. */}
+                {/* `overflow: hidden` của viên cắt mất nửa NGOÀI của nét, nên
+                    `strokeWidth` 1 hiện ra dày 0,5 và nằm trọn trong mép —
+                    không có nửa nét nào thò ra ngoài góc bo.
+
+                    0,5 chứ không phải 1: bản mẫu có nét dày 2 trên nút cao 217,
+                    tức 0,92% chiều cao. Nút 44 thì 0,92% là 0,4. Bản trước để
+                    `strokeWidth` 2 (hiện ra 1) — đúng gấp đôi, và đó là lý do
+                    viên vẫn đọc thành một vòng kẻ chứ không thành một mép kính.
+
+                    `rx` phải khớp `radius.md` của viên, nếu không nét trượt
+                    khỏi góc. */}
                 <Rect
                   x="0"
                   y="0"
@@ -1544,7 +1565,7 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
                   rx={radius.md}
                   fill={`url(#${gid}-${amount})`}
                   stroke={`url(#${gid}-${amount}-e)`}
-                  strokeWidth={2}
+                  strokeWidth={1}
                 />
               </Svg>
             </View>
@@ -1738,21 +1759,40 @@ const stylesFor = makeStyles((c, m) => ({
 
         h + 3·(2,1h) + 3·khe = 336   →   7,3h = 336 − 3·khe
 
-    khe 8 cho h = 42,7 — DƯỚI sàn chạm 44. khe 4 cho h = 44,4, làm tròn 44:
-    viên thành 93 rộng, tỉ lệ 2,11 so với 2,1 của bản mẫu.
+    Nhưng chiều cao đã bị SÀN CHẠM 44 ghim lại, nên khe không còn được chọn tự
+    do — nó chỉ còn chia phần bề ngang còn lại cho ba viên. Và đo kỹ lại bản mẫu
+    thì nó ràng hai thứ KHÔNG cùng thoả được:
 
-    Nói cách khác: trên màn 402pt, tỉ lệ bản mẫu và sàn chạm 44 chỉ vừa đúng
-    gặp nhau ở khe 4. Rộng hơn thì phải bóp viên xuống dưới sàn.
+        tỉ lệ viên  = 491/217 = 2,26
+        khe/chiều cao = 40/217 = 0,184  (ở h = 44 là 8,1)
+
+    Muốn cả hai thì cần 44 + 3·(2,26·44) + 3·8,1 = 370 > 336. Thiếu 34pt. Nên
+    phải chọn hi sinh cái nào, và đây là bảng sai số:
+
+        khe   viên rộng   tỉ lệ   sai tỉ lệ   sai khe   tổng
+         4       93,3     2,12      6,2%       50,6%   56,8%
+         6       91,3     2,08      8,0%       25,9%   33,9%
+         8       89,3     2,03     10,2%        1,2%   11,4%
+
+    Khe 8 — `spacing.sm` — sai ÍT NHẤT, và cách biệt lớn. Bản trước tôi chọn
+    khe 4 để ép tỉ lệ viên lên 2,11, lúc ấy còn tưởng tỉ lệ mẫu là 2,1; đo ra
+    2,26 thì mới thấy khe 4 mua được 4% tỉ lệ mà trả bằng một nửa khoảng thở
+    của cả hàng. Nhịp của hàng là thứ mắt đọc trước.
   */
-  quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  quickRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   quickUndo: {
     /* VUÔNG và cùng chiều cao với ba viên — đo trên bản mẫu: ô trừ rộng đúng
        bằng chiều cao viên (205/205), còn viên thì rộng gấp ~2,1 lần chiều cao.
        Vẫn là hộp bo góc chứ không phải viên thuốc: nó không cùng hạng.
 
        44 chứ không phải 52: xem phép giải ở `quickRow`. 52 làm viên chỉ còn tỉ
-       lệ 1,67 — ảnh dựng đo ra 87×52 — tức MẬP hơn hẳn bản mẫu, và đó là chỗ
-       chủ dự án nói hình dạng chưa giống. 44 cũng đúng bằng sàn chạm. */
+       lệ 1,67 — ảnh dựng đo ra 87×52 — tức MẬP hơn hẳn bản mẫu (2,26), và đó
+       là chỗ chủ dự án nói hình dạng chưa giống. 44 cũng đúng bằng sàn chạm,
+       nên đây là đáy: không bóp thấp hơn được nữa.
+
+       Bản mẫu đo ra ô trừ 232×217, tức RỘNG hơn cao 7%. Bỏ 7 phần trăm ấy để
+       giữ ô vuông: 3pt trên một nút 44, đổi lại ba viên rộng thêm 1pt mỗi cái
+       — và hình vuông là thứ nói "nó không cùng hạng với ba viên kia". */
     width: 44,
     height: 44,
     borderRadius: radius.md,
@@ -1792,7 +1832,8 @@ const stylesFor = makeStyles((c, m) => ({
   },
   quickBtn: {
     /* `flex: 1` nên bề rộng tự chia — chỉ chiều cao và khe là số gõ tay, và cả
-       hai giải ra từ tỉ lệ 2,1 của bản mẫu ở `quickRow`. 44 cho viên 93 rộng. */
+       hai giải ra ở `quickRow` từ số đo bản mẫu. 44 và khe 8 cho viên 89 rộng,
+       tỉ lệ 2,03 — xem bảng sai số ở đó để biết vì sao không ép lên 2,26. */
     flex: 1,
     height: 44,
     /*
