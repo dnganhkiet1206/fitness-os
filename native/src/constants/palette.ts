@@ -895,12 +895,37 @@ export const materials: Record<ThemeName, Material> = {
     /* Mặt thẻ, chứ không phải trang: tấm lót nằm TRÊN thẻ, và trên giấy nó phải
        biến mất chỗ không có cột và che chỗ có. */
     paper: lightPalette.card,
-    /* Ô con đi XUỐNG khỏi mặt thẻ trắng, ngược hướng với thẻ đi lên khỏi giấy.
-       Cả hai giá trị DẪN từ bảng màu sáng chứ không phải mã màu mới: `secondary`
-       cách mặt thẻ 1,20 và cách trang 1,09, còn `border` cách mặt thẻ 1,46 —
-       đúng con số mà bản tối đã đo được cho viền và gọi là đủ. */
+    /*
+      Ô con đi XUỐNG khỏi mặt thẻ trắng, ngược hướng với thẻ đi lên khỏi giấy.
+      Giá trị DẪN từ bảng màu sáng chứ không phải mã màu mới, và `border` cách
+      mặt thẻ 1,46 — đúng con số bản tối đã đo cho viền và gọi là đủ.
+
+      ── nền: `background`, không phải `secondary` ──
+
+      Nó từng là `secondary` #efeae1: cách mặt thẻ 1,20. Đủ để THẤY, nhưng đo
+      trên máy thật thì nó đọc ra là một phiến KEM ĐẬM nằm trong thẻ trắng chứ
+      không phải một chỗ lõm — chủ dự án khoanh đúng khung danh sách kế hoạch ăn
+      và chỉ sang khối dinh dưỡng trong sheet "Thêm thực phẩm", vốn là #f7f4ef,
+      nói cho tôi biết cái nào đúng.
+
+      Đây là lần thứ BA cùng một phép đo ấy quay lại. Nút trừ ở hàng thêm nhanh
+      nước cũng từng lấy `inset.bg` và cũng bị gọi là be; lần ấy tôi chữa riêng
+      một nút bằng `recessBg`. Hai lần trước là chữa triệu chứng — nguồn nằm ở
+      đây, và 30 chỗ dùng `m.inset.bg` đều mang cùng vết ấy.
+
+      `background` #f7f4ef cách mặt thẻ 1,10: vẫn là một bậc đọc được, nhẹ hơn
+      một nấc, và nó KHỚP chính xác thứ mà sheet đã làm đúng.
+
+      ── chỗ nó KHÔNG còn vẽ ra được, và vì sao vẫn ổn ──
+
+      Một ô con đặt thẳng trên TRANG (cũng #f7f4ef) nay trùng khít nền: 1,00.
+      Cái vẽ ra hình nó ở đó là `border` #dcd5c8 — 1,33 so với trang — chứ không
+      còn là nền. Đó là cùng một giao ước mà bản TỐI vốn đã sống bằng: chú thích
+      ở `quickBtn` đã ghi "VIỀN mới là thứ vẽ ra hình nút". Ô con trên giấy nay
+      cũng thế.
+    */
     inset: {
-      bg: lightPalette.secondary,
+      bg: lightPalette.background,
       border: lightPalette.border,
       borderWidth: 1 / 3,
       /* Mặt thẻ lộ trở lại qua chỗ lõm — xem `Inset.track`. */
