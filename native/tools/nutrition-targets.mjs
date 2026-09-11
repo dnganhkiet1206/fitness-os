@@ -61,6 +61,35 @@ try {
   const fc = path.join(out, 'fitness-calc.js');
   writeFileSync(fc, readFileSync(fc, 'utf8').replace("'@/lib/plausible'", "'./plausible.js'"));
 }
+/*
+  ── và ĐƯỜNG DỰ PHÒNG, thứ bước quét ở trên không bao giờ chạm ──
+
+  Bước quét trên đi qua `calcPlan`, tức con đường của người ĐÃ qua onboarding.
+  Nhưng màn Hôm nay và tab Dinh dưỡng không gọi `calcPlan`; chúng gọi
+  `macro-targets.ts`, nơi mỗi trường có giá trị dự phòng RIÊNG. Suốt thời gian
+  bước quét này xanh, bộ dự phòng ấy cho ra 150P/250C/70F = 2.230 kcal cạnh một
+  vòng calo nói 2.200 — và với hồ sơ thiếu dữ liệu một phần thì lệch tới
+  +1.030 kcal (nữ đang cut 1.200). Một luật quét sạch nửa không có lỗi.
+
+  `edit-profile.tsx` ghi năm trường độc lập (`Number(x) || null`), nên xoá trắng
+  MỘT ô là vào đúng nửa ấy. Nó không phải một hàng dữ liệu hỏng, nó là một thao
+  tác trong app.
+*/
+{
+  try {
+    execFileSync(
+      'npx',
+      ['tsc', 'src/lib/macro-targets.ts', '--ignoreConfig', '--outDir', out,
+       '--module', 'esnext', '--target', 'es2020', '--moduleResolution', 'bundler', '--skipLibCheck'],
+      { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch { /* `@/` chưa map — TS2307, vẫn emit */ }
+  const mt = path.join(out, 'macro-targets.js');
+  writeFileSync(mt, readFileSync(mt, 'utf8').replace("'@/lib/fitness-calc'", "'./fitness-calc.js'"));
+}
+const { calorieTargetFor, macroTargetsFor } = await import(
+  pathToFileURL(path.join(out, 'macro-targets.js')).href
+);
 const {
   calcBMR, calcTDEE, calcTargetCalories, calcMacros, calcWaterTarget, proteinReferenceWeight, FIBER_G_PER_1000_KCAL,
 } = await import(pathToFileURL(path.join(out, 'fitness-calc.js')).href);
@@ -313,6 +342,69 @@ const SELF = [
     return rawCarbs < 0 && sum - target > 150; // tinh bột âm, và tổng vượt >150 kcal
   }],
 ];
+/*
+  Bất biến của đường dự phòng: khi hồ sơ THIẾU bất kỳ macro nào, bốn mục tiêu
+  phải nói cùng một câu với mục tiêu calo. Đủ cả bốn thì KHÔNG kiểm — một người
+  tự gõ bốn con số là một người đang nói ý mình, và bước này không được ghi đè
+  lên đó.
+
+  Quét mọi tổ hợp thiếu-trường (15 mask khác rỗng) trên các mức calo thật mà
+  `calcTargetCalories` sinh ra, gồm cả hai sàn 1200/1500 và một mức bulk.
+*/
+const MACRO_KEYS = ['macro_protein_g', 'macro_carbs_g', 'macro_fat_g', 'macro_fiber_g'];
+let fallbackCases = 0;
+let fallbackWorst = 0;
+for (const kcal of [1200, 1399, 1500, 1800, 2045, 2200, 2800, 3200, null]) {
+  for (let mask = 1; mask < 16; mask++) {
+    const prof = {
+      tdee_target_kcal: kcal,
+      macro_protein_g: 150, macro_carbs_g: 180, macro_fat_g: 60, macro_fiber_g: 30,
+    };
+    MACRO_KEYS.forEach((k, i) => { if (mask & (1 << i)) prof[k] = null; });
+    const t = macroTargetsFor(prof);
+    const target = calorieTargetFor(prof);
+    const sum = t.protein * 4 + t.carbs * 4 + t.fat * 9;
+    fallbackCases++;
+    fallbackWorst = Math.max(fallbackWorst, Math.abs(sum - target));
+    if (Math.abs(sum - target) > 4) {
+      problems.push(
+        `dự phòng: calo ${target} nhưng ${t.protein}P/${t.carbs}C/${t.fat}F = ${sum} kcal ` +
+          `(lệch ${sum - target}) khi thiếu ${MACRO_KEYS.filter((_, i) => mask & (1 << i)).join(', ')} — ` +
+          'bốn vòng macro nói một câu khác vòng calo ngay trên chúng',
+      );
+    }
+    if (t.protein < 0 || t.carbs < 0 || t.fat < 0 || t.fiber < 0) {
+      problems.push(`dự phòng: macro âm ở calo ${target}, mask ${mask}`);
+    }
+  }
+}
+/* Số 0 ở cột calo là một hàng THIẾU, không phải một kế hoạch 0 kcal. App không
+   ghi được nó nhưng một hàng cũ thì có, và một mục tiêu 0 kcal là con số nguy
+   hiểm nhất màn ăn uống có thể hiện. */
+for (const empty of [0, null, undefined, '', -5, NaN]) {
+  const got = calorieTargetFor({ tdee_target_kcal: empty });
+  if (got !== 2200) {
+    problems.push(`dự phòng: \`tdee_target_kcal\` = ${String(empty)} cho ra ${got} kcal, phải rơi về 2200`);
+  }
+}
+/* Nhưng 0 ở một macro thì CÓ nghĩa — 0 g tinh bột là một kế hoạch keto thật. */
+{
+  const t = macroTargetsFor({ tdee_target_kcal: 2000, macro_protein_g: 150, macro_carbs_g: 0, macro_fat_g: 155, macro_fiber_g: 25 });
+  if (t.carbs !== 0) problems.push(`dự phòng: 0 g tinh bột bị coi là "chưa đặt" (ra ${t.carbs} g) — keto là một kế hoạch có thật`);
+}
+
+/* Và đủ cả bốn thì phải dùng NGUYÊN VĂN — không suy lại, không ghi đè. */
+{
+  const prof = { tdee_target_kcal: 1999, macro_protein_g: 111, macro_carbs_g: 122, macro_fat_g: 33, macro_fiber_g: 44 };
+  const t = macroTargetsFor(prof);
+  if (t.protein !== 111 || t.carbs !== 122 || t.fat !== 33 || t.fiber !== 44) {
+    problems.push(
+      `dự phòng: hồ sơ ĐỦ bốn macro bị ghi đè (${t.protein}/${t.carbs}/${t.fat}/${t.fiber} ` +
+        'thay vì 111/122/33/44) — bốn con số người dùng tự gõ là ý của họ',
+    );
+  }
+}
+
 const missed = SELF.filter(([, fn]) => !fn()).map(([l]) => l);
 if (missed.length) {
   console.error(`phép tự kiểm hỏng — ${missed.join('; ')}; đừng tin kết quả`);
@@ -331,5 +423,7 @@ console.log(
     `đạm + tinh bột + béo luôn bằng đúng mục tiêu calo (lệch lớn nhất ${worst.identity} kcal do làm tròn), nên no đủ ba vòng macro không thể vượt vòng calo; ` +
     `chất xơ 14g/1000kcal thay vì 30g cố định; ` +
     `đạm tính trên cân nặng chặn ở BMI 30 (bít ở ${capBound.toLocaleString('vi-VN')} hồ sơ), không hồ sơ nào chạm chốt tinh bột bằng 0; ` +
-    'nhánh bù trừ được gọi thẳng để thử vì chuỗi tính của app không còn kích hoạt nó',
+    'nhánh bù trừ được gọi thẳng để thử vì chuỗi tính của app không còn kích hoạt nó; ' +
+    `và ĐƯỜNG DỰ PHÒNG của macro-targets.ts — thứ hai màn ăn uống thật sự gọi — được quét ${fallbackCases} tổ hợp thiếu-trường: `+
+    `tổng macro luôn khớp mục tiêu calo (lệch lớn nhất ${fallbackWorst} kcal do làm tròn), và hồ sơ đủ bốn macro không bị ghi đè`,
 );

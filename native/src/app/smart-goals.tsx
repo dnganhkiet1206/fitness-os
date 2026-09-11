@@ -21,6 +21,7 @@ import { calcTargetCalories } from '@/lib/fitness-calc';
 import { localDateStr, weekStartOf } from '@/lib/local-date';
 import { nutritionDays } from '@/lib/nutrition-mean';
 import { convertWeight, displayWeight, weightLabel } from '@/lib/units';
+import { calorieTargetFor } from '@/lib/macro-targets';
 
 /*
   `weekStartOf` rather than a fourth copy of the arithmetic. The line here was
@@ -95,7 +96,10 @@ export default function SmartGoalsScreen() {
        one place that can lower somebody's target is the one place with no
        lower bound on it. */
     const sex = (profile.sex as 'male' | 'female' | 'other') || 'other';
-    const currentCal = Number(profile.tdee_target_kcal) || 2200;
+    /* Qua `calorieTargetFor`, không phải một bản sao thứ ba của số 2200. Chú
+       thích đầu `macro-targets.ts` nói đúng lý do: một giá trị mặc định viết
+       hai lần là một giá trị mặc định sẽ lệch nhau. */
+    const currentCal = calorieTargetFor(profile);
 
     const weekAvgs: { week: string; value: number | null }[] = [];
     for (let i = 3; i >= 0; i--) {

@@ -73,7 +73,7 @@ export const FIBER_G_PER_1000_KCAL = 14;
 
 /** Fat below this share of calories stops being a diet and starts being a problem — the low end of the IOM's acceptable range (20–35%). */
 const FAT_FLOOR_FRACTION = 0.2;
-const FAT_TARGET_FRACTION = 0.25;
+export const FAT_TARGET_FRACTION = 0.25;
 
 /** Carbohydrate is the remainder, but not all the way to nothing. */
 const MIN_CARB_G = 50;
