@@ -1,5 +1,5 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Appearance, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -22,7 +22,7 @@ import { AppLockProvider } from '@/hooks/use-app-lock';
 import { AppErrorBoundary } from '@/components/ascnd/error-boundary';
 import { installCrashHandler } from '@/lib/crash-log';
 import { initObservability } from '@/lib/observability';
-import { AppSettingsProvider, useI18n } from '@/hooks/use-app-settings';
+import { AppSettingsProvider, useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { CoachChatProvider } from '@/hooks/use-coach-chat';
 import { useAutoHealthSync } from '@/hooks/use-health-sync';
@@ -48,6 +48,69 @@ SplashScreen.preventAutoHideAsync();
 function NavTheme({ children }: { children: ReactNode }) {
   const name = useThemeName();
   const c = usePalette();
+  const { theme } = useAppSettings();
+
+  /*
+    ── nói cho TẦNG NATIVE biết app đang ở theme nào ──
+
+    Triệu chứng chủ dự án báo: máy để chế độ tối, app để sáng, gõ vào ô nhập
+    thì BÀN PHÍM hiện ra tối trên một tờ giấy trắng.
+
+    Không phải lỗi của bảng màu. `keyboardAppearance` của `TextInput` mặc định
+    là `UIKeyboardAppearance.default`, và "default" nghĩa là theo HỆ ĐIỀU HÀNH
+    chứ không theo app. Cả 56 ô nhập trong kho này đều để mặc định, nên cả 56
+    đều hỏng theo cùng một cách — và không chỉ bàn phím: Alert, Picker, thanh
+    cuộn, con trỏ, menu chọn chữ đều đọc cùng một đặc trưng ấy.
+
+    `userInterfaceStyle` trong `app.json` không chữa được: nó TĨNH, quyết lúc
+    dựng, còn theme của app đổi lúc chạy. Để `automatic` là đúng — đổi thành
+    `light` thì app mất hẳn bản tối.
+
+    `Appearance.setColorScheme` là thứ React Native làm ra cho đúng việc này:
+    "Forces the application to always adopt a light or dark interface style.
+    The change applies to the application and all native elements within it
+    (Alerts, Pickers, etc.)" — một lần ở gốc, không phải 56 chỗ.
+
+    ── vì sao truyền `theme` chứ không phải `name` ──
+
+    `name` là kết quả đã giải (`light` hoặc `dark`). Truyền nó vào đây thì khi
+    người dùng chọn "theo máy" mà máy đang tối, ta ghi đè một giá trị 'dark' —
+    và cái đè ấy KHOÁ luôn: `useColorScheme()` từ đó trả về giá trị đè, nên máy
+    có chuyển sang sáng thì `useThemeName` không bao giờ thấy. "Theo máy" sẽ
+    thôi theo máy.
+
+    Nên nhánh ở đây phản chiếu đúng nhánh trong `useThemeName`: chọn tay thì đè,
+    chọn "theo máy" thì GỠ đè, để `useColorScheme()` đọc lại máy thật. Một luật,
+    hai chỗ đọc, không chỗ nào đoán.
+
+    ── `'unspecified'`, KHÔNG phải `'auto'` ──
+
+    Trang tài liệu của React Native ghi chữ ký là `'light' | 'dark' | 'auto' |
+    'unspecified'` và gọi `'unspecified'` là đã bỏ. Bản 0.86 CÀI TRONG KHO NÀY
+    thì ngược lại — `Libraries/Utilities/Appearance.d.ts` khai
+    `type ColorSchemeName = 'light' | 'dark' | 'unspecified'`, không có `'auto'`.
+
+    Và khác biệt không chỉ ở tên. Đọc thân hàm trong `Appearance.js`: chỉ đúng
+    nhánh `'unspecified'` mới đọc LẠI `NativeAppearance.getColorScheme()` để lấy
+    giá trị máy thật. Truyền thứ khác thì nó ghi thẳng chuỗi ấy vào state, nên
+    `useColorScheme()` sẽ trả về chính cái ta vừa truyền — đúng cái vòng khoá mà
+    đoạn trên vừa nói phải tránh.
+
+    ── cái nó KHÔNG chắc chữa ──
+
+    Apple có một lỗi đã ghi nhận (DTS, FB22146889) rằng bàn phím đôi khi vẫn
+    không theo `overrideUserInterfaceStyle` của cửa sổ — bản báo cáo ấy nói về
+    `decimalPad`. Nếu sau thay đổi này còn đúng MỘT loại bàn phím ương bướng thì
+    lối chữa tiếp theo là đặt thẳng `keyboardAppearance` lên ô nhập ấy; chưa làm
+    trước cho cả 56 chỗ, vì đó là 56 chỗ để trôi mà chưa có bằng chứng là cần.
+
+    `?.` chứ không gọi thẳng: kho này còn dựng bản web cho `tools/live.mjs`, và
+    react-native-web không cài hàm này. Một dấu chấm hỏi rẻ hơn một nhánh
+    `Platform.OS`.
+  */
+  useEffect(() => {
+    Appearance.setColorScheme?.(theme === 'light' || theme === 'dark' ? theme : 'unspecified');
+  }, [theme]);
   const value = useMemo(() => {
     const base = name === 'dark' ? DarkTheme : DefaultTheme;
     return {
