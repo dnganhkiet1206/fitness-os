@@ -137,6 +137,39 @@ build sẽ lỗi, cảnh báo, hay bỏ qua. **Không sửa `eas.json` theo ph�
 đăng nhập Apple, và thông báo đẩy — ba mục dưới đây phải ghi "không áp dụng cho
 bản dựng này" chứ không được ghi "đạt".
 
+### CHẶN: `prebuild --clean` mà quên `EXPO_FREE_TEST=1`
+
+Cả hai cơ chế gỡ entitlement đều là **no-op trừ khi biến ấy được đặt** —
+`with-free-test-entitlements.js` thoát ngay ở dòng đầu, và `app.config.js` chỉ
+lọc plugin HealthKit khi thấy nó. Không đặt thì `prebuild` dựng lại `ios/` với
+đủ ba entitlement, và Apple ID miễn phí không ký được chúng:
+
+```
+❌ Provisioning Profile "iOS Team Provisioning Profile: com.ascnd.fitnessos"
+   does not support the HealthKit capability.
+   … the Push Notifications capability.
+   … the Sign In with Apple capability.
+❌ doesn't include the aps-environment, com.apple.developer.applesignin,
+   and com.apple.developer.healthkit entitlements.
+xcodebuild exited with error code 65
+```
+
+Bốn dòng ấy **không phải lỗi mã nguồn**. Chúng có nghĩa đúng một điều: lần
+`prebuild` gần nhất chạy mà không có biến.
+
+Cái bẫy nằm ở chỗ nó **im lặng cho tới khi `--clean`**. Một thư mục `ios/` đã
+sinh đúng một lần với biến ấy sẽ tiếp tục dựng được mãi, vì `expo run:ios`
+không dựng lại entitlements khi cấu hình không đổi. Ngày nào đó chạy `--clean`
+là mất, và lỗi hiện ra cách xa nguyên nhân cả tuần.
+
+Nên **dùng script chứ đừng gõ tay**:
+
+    npm run prebuild:free      # EXPO_FREE_TEST=1 expo prebuild -p ios --clean
+    npm run ios:free -- --device
+
+Tài khoản trả phí thì dùng `npm run ios` như cũ — hai script trên không dành
+cho bản phát hành, vì chúng dựng ra một app KHÔNG có HealthKit.
+
 ### Sentry — hai biến, và cái thiếu làm hỏng đúng phần cần đọc
 
 | Biến | Thiếu thì sao |

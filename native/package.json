@@ -59,6 +59,8 @@
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "SENTRY_DISABLE_AUTO_UPLOAD=true expo run:ios",
+    "prebuild:free": "EXPO_FREE_TEST=1 expo prebuild -p ios --clean",
+    "ios:free": "EXPO_FREE_TEST=1 SENTRY_DISABLE_AUTO_UPLOAD=true expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint",
     "postinstall": "patch-package"
