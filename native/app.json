@@ -11,6 +11,10 @@
       "bundleIdentifier": "com.ascnd.fitnessos",
       "supportsTablet": false,
       "buildNumber": "1",
+      "icon": {
+        "light": "./assets/images/icon-light.png",
+        "dark": "./assets/images/icon.png"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleAllowMixedLocalizations": true,

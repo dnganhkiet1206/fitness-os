@@ -1,5 +1,6 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { Appearance, StyleSheet, View } from 'react-native';
+import * as SystemUI from 'expo-system-ui';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
@@ -111,6 +112,27 @@ function NavTheme({ children }: { children: ReactNode }) {
   useEffect(() => {
     Appearance.setColorScheme?.(theme === 'light' || theme === 'dark' ? theme : 'unspecified');
   }, [theme]);
+
+  /*
+    ── nền GỐC của cửa sổ, thứ nằm sau mọi React view ──
+
+    `app.json` có `backgroundColor: "#08080a"` và đó là một hằng: tài liệu cấu
+    hình của Expo SDK 57 ghi rõ nó nhận "6 character long hex color string",
+    không có dạng rẽ theo theme. Nên trên bản SÁNG, tấm nằm sau toàn bộ app là
+    một mặt gần ĐEN. Bình thường không thấy vì mọi màn đều tự tô nền — nó lộ ra
+    ở đúng những khe mà người dùng nhìn thấy chuyển động: lúc đẩy màn, lúc kéo
+    quá đà ở đầu danh sách, lúc xoay máy, và khung hình đầu sau splash.
+
+    `expo-system-ui` đặt được nó lúc chạy, nên giá trị trong `app.json` chỉ còn
+    là mặc định TRƯỚC khi JS chạy, còn từ khi app sống thì nó theo bảng màu.
+
+    `void` chứ không `await`: đây là một lệnh gửi xuống native, không có gì ở
+    đây phụ thuộc vào lúc nó xong, và làm effect thành async là tạo ra một
+    promise không ai huỷ khi component tháo.
+  */
+  useEffect(() => {
+    void SystemUI.setBackgroundColorAsync(c.background);
+  }, [c.background]);
   const value = useMemo(() => {
     const base = name === 'dark' ? DarkTheme : DefaultTheme;
     return {

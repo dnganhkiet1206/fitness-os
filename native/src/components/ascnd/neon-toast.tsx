@@ -7,8 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ascnd/icon';
 import { useI18n } from '@/hooks/use-app-settings';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles, type PaletteKey } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { dismissToast, useCurrentToast, type ToastKind } from '@/lib/toast';
 
 /** One nested entry keeps the dictionary off `Record<string, string>`, so the
@@ -47,6 +47,7 @@ const ICONS: Record<ToastKind, LucideIcon> = {
  */
 export function NeonToastHost() {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const t = useCurrentToast();
   const i18n = useI18n();
@@ -105,8 +106,25 @@ export function NeonToastHost() {
         // Calm entrance: a short fade + gentle drop, no spring overshoot
         entering={FadeInDown.duration(240).easing(Easing.out(Easing.quad))}
         exiting={FadeOutUp.duration(180)}
-        // Colored shadow = the neon glow; border picks up the same accent
-        style={[styles.toast, { borderColor: `${accent}59`, shadowColor: accent }]}>
+        /*
+          Viền lấy màu theo loại toast ở cả hai theme. BÓNG thì không.
+
+          Bản tối: bóng MÀU chính là quầng neon — tên component nói thế, và trên
+          một trang gần đen thì một quầng xanh lá 55% đọc ra là ánh sáng.
+
+          Bản sáng: cùng con số ấy đọc ra là một vệt màu loang trên giấy. Thang
+          bóng của bản sáng là mực #1a1917 ở độ mờ 0,05–0,10 — toast đang dùng
+          0,55, tức ĐẬM GẤP NĂM LẦN rưỡi cái bóng nặng nhất của cả app, và lại
+          còn có màu. Nên trên giấy nó mượn đúng vai `hero`: cùng một hộp thoại
+          nổi cao nhất màn hình, cùng một loại bóng mà mọi thẻ khác đã dùng.
+
+          `m.lit` là bản TỐI.
+        */
+        style={[
+          styles.toast,
+          { borderColor: `${accent}59` },
+          m.lit ? NEON_GLOW(accent) : m.elevation.hero,
+        ]}>
         <Pressable
           accessibilityRole="button"
           /* The message is the label: a bar that announces "button" and nothing
@@ -125,7 +143,17 @@ export function NeonToastHost() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+/* Quầng neon của bản tối, tách ra thành hàm vì nó nhận màu theo loại toast —
+   `makeStyles` chỉ biết theme, không biết đây là success hay error. */
+const NEON_GLOW = (accent: string) => ({
+  shadowColor: accent,
+  shadowOpacity: 0.55,
+  shadowRadius: 14,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 10,
+});
+
+const stylesFor = makeStyles((c, m) => ({
   wrap: {
     position: 'absolute',
     left: spacing.md,
@@ -137,11 +165,31 @@ const stylesFor = makeStyles((c) => ({
     alignSelf: 'stretch',
     borderRadius: radius.md,
     borderWidth: 1,
-    backgroundColor: 'rgba(12,12,16,0.94)',
-    shadowOpacity: 0.55,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 10,
+    /*
+      MẶT GIẤY của theme, không phải một tấm đen gõ cứng.
+
+      Nó từng là `rgba(12,12,16,0.94)` — không nhánh theme — trong khi chữ ngay
+      trong nó là `c.foreground` theo theme. Trên bản SÁNG thành chữ gần-đen
+      #1a1917 trên tấm gần-đen #1a1a1d: **1,01:1**. Không phải khó đọc, mà là
+      KHÔNG CÓ CHỮ NÀO. Mọi toast của bản sáng — cả 35 chỗ `toast.success` lẫn
+      43 chỗ `toast.fail` — đều hiện ra thành một thanh tối có sọc màu và một
+      icon, không lời nào.
+
+      Vì sao không cổng nào bắt: `same-color.mjs` so CHUỖI biểu thức, và
+      `c.foreground` với `'rgba(12,12,16,0.94)'` là hai chuỗi khác nhau — nó chỉ
+      bắt được khi hai vế viết giống hệt. Một mã màu hợp lệ, khác chuỗi, mà
+      trùng sáng thì đi thẳng qua.
+
+      `alpha(m.paper, 0.94)` là đúng công thức mà ba tấm nền khác trong app đã
+      chuyển sang. Giấy: #fffefe, chữ ra **17,45:1**. Tối: #0a0a10, chữ ra
+      **16,86:1**.
+
+      Bản tối lệch 2/255 ở kênh đỏ và lục (12,12,16 → 10,10,16) vì `m.paper` của
+      bản tối là #0a0a10. Ở độ mờ 94% trên một trang gần đen thì đó là dưới
+      ngưỡng nhìn thấy, và cái đổi lại là toast thôi là tấm nền DUY NHẤT trong
+      app còn tự gõ màu riêng.
+    */
+    backgroundColor: alpha(m.paper, 0.94),
   },
   row: {
     flexDirection: 'row',
