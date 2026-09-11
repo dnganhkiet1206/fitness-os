@@ -107,7 +107,26 @@ export function Segmented<K extends string>({
         không phải một miếng dán lên. Đó là khác biệt giữa "giống Apple" và
         "giống một segmented control mặc định".
       */
-      fill={cap ? c.background : c.accent}
+      /*
+        ── SỬA: chú thích trên đúng, mã dưới thì không ──
+
+        Dòng này từng là `cap ? c.background : c.accent`, KHÔNG nhánh theme —
+        tức công thức của bản TỐI gửi cho cả hai. Trên giấy hậu quả là thumb
+        nhận #f7f4ef, **đúng bằng hex nền trang** (1,00:1), và chỉ 1,09:1 so
+        với ray #efeae1.
+
+        Nặng hơn bình thường vì biến thể viên nang cố ý tô CẢ HAI nhãn ở
+        `foreground` — xem chú thích ở `PickRow.Item`, nó viết rõ "thứ bậc do
+        VỊ TRÍ của thumb kể". Nên thumb là tín hiệu chọn DUY NHẤT, và trên giấy
+        tín hiệu ấy gần như bằng không.
+
+        `m.lit` là bản TỐI, nên nhánh này giữ bản tối từng điểm ảnh (vẫn
+        `background` #070708, 1,14:1 so ray #18181b — cái rãnh như cũ) và chỉ
+        đổi bản sáng sang `card` #ffffff: 1,20:1 so ray, 1,10:1 so trang, và là
+        vật sáng nhất trong ba lớp. Đó đúng là hướng mà chú thích ngay trên mô
+        tả — thumb NỔI LÊN khỏi ray trên nền sáng.
+      */
+      fill={cap ? (m.lit ? c.background : c.card) : c.accent}
       border={cap ? { width: StyleSheet.hairlineWidth, color: m.inset.border } : undefined}
       radius={cap ? radius.full : compact ? radius.full : r - pad}
       height={cap ? CAP_H : height}

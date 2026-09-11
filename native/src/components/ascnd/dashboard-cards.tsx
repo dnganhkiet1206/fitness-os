@@ -1652,7 +1652,27 @@ const stylesFor = makeStyles((c, m) => ({
   // the row. The two texts are 14 and 13pt, close enough that centring them
   // costs nothing visible.
   sideTargetRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  sideSlash: { fontSize: 13, color: c.border },
+  /*
+    Màu CHỮ, không phải màu viền.
+
+    Nó từng là `c.border`: trên giấy #dcd5c8 trên mặt thẻ trắng đo được
+    **1,46:1**, bản tối #2b2b31 trên #0e0e11 ra **1,37:1**. Sàn chữ nhỏ là
+    4,5:1 — hụt gấp ba.
+
+    Không cổng nào bắt được, và lý do đáng ghi lại vì nó là một lỗ hổng chứ
+    không phải một lần xui: `text-color.mjs` chỉ kiểm tra một style chữ CÓ khai
+    báo màu; `same-color.mjs` chỉ bắt chữ TRÙNG KHÍT nền nó nằm trên. Một mã
+    màu hợp lệ, khác nền, mà không đọc được thì lọt qua cả hai.
+
+    Cũng không viện được diện "chữ trang trí" của WCAG: chú thích ngay chỗ dựng
+    nó nói dấu này có tải nghĩa — không có nó thì "2.200 kcal 70%" bị đọc một
+    lần thành một con số rồi mới đọc lại cho đúng.
+
+    `mutedForeground` cho 5,78:1 trên giấy và 5,02:1 trong phòng tối, và nó
+    đúng bằng màu của `sideLine` ngay bên trái — dấu phân cách thuộc về vế
+    trầm hơn trong hai vế nó ngăn ra, chứ không thuộc về con số phần trăm.
+  */
+  sideSlash: { fontSize: 13, color: c.mutedForeground },
   sidePct: { fontSize: 13, fontWeight: '700', fontVariant: ['tabular-nums'] },
   sideMono: { fontFamily: 'Menlo', color: c.foreground, fontVariant: ['tabular-nums'] },
   sideMonoStrong: { fontSize: 14, fontFamily: 'Menlo', fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
