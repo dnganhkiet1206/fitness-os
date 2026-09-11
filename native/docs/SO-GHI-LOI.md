@@ -150,6 +150,34 @@ trong sổ, kể cả giả thuyết của chính mục đính chính phía trê
 | **Câu "điều kiện đã sinh ra A9" trong các chú thích ấy** | Viết lúc giả thuyết (b) còn đứng. Nay nó SAI, và chỗ đúng để đọc là mục này chứ không phải câu trong chú thích. Không viết lại tám khối chú thích chỉ để đổi một mệnh đề — nhưng cũng không được để ai đọc chúng rồi tin rằng lệch theme làm app thoát. |
 | **Trạng thái** | A9 **CHƯA đóng lại**: bản sửa của `089fbd5` là thay đổi native, phải dựng lại máy thật rồi lặp lại thao tác mới biết. Không đánh dấu đã sửa trước khi có xác nhận — đúng cái lỗi mục này đã mắc một lần. |
 
+#### RÀ LẠI 2026-09-11 — sáu giả thuyết nữa, cả sáu đều SẠCH
+
+Chủ dự án báo đã dựng lại và **vẫn thoát**, và hỏi liệu các lượt đổi design
+có để lại code chết hay nút chồng nhau gây ra chuyện này. Rà cả màn Hôm nay
+cùng 12 component mà **chỉ** Hôm nay dùng — tức đúng bán kính của một lỗi
+chỉ xảy ra ở một màn.
+
+| Giả thuyết | Kết quả |
+|---|---|
+| `headerBar` (thanh nút nổi tuyệt đối) nuốt cú chạm rơi xuống hero | SẠCH — `pointerEvents: shown < 0.02 ? 'none' : 'box-none'` có thật trong style động `topBar` |
+| `measure()` trả `null` rồi bị đọc `.height` trên luồng UI | SẠCH — cả màn có đúng 1 lời gọi (`settleOffscreen`), và nó chặn `m === null` |
+| `runOnJS` sinh `SerializableRemoteFunction` mới mỗi render ở `card-deck` | Đã vá trước đó (`settle` → `useCallback`) |
+| … ở `drag-reorder` — 7 chỗ `runOnJS`, 11 shared value, **chưa từng được rà** | SẠCH — `tick` là `[]`, `setScrolling` là `[autoScroll]`, `commit` là `[onMove,…]` và `onMove` = `moveGroupTo` = `useCallback([setConfig])`, ổn định vĩnh viễn |
+| Chia cho 0 → `Infinity`/`NaN` chảy vào transform trong worklet cử chỉ | SẠCH — `const span = w > 0 ? w : 1` |
+| `runOnJS(wake)` và `runOnJS(armTabBarRestore)` trong scroll handler | SẠCH — `wake` là `useCallback([idle])` với `idle` là shared value (ref ổn định); `armTabBarRestore` là export cấp module |
+
+**Và phép kiểm quyết định:** bản vá thượng nguồn #9789 **CÓ** trong
+`node_modules` — `react-native-worklets` đúng `0.10.1`, **một** bản sao duy
+nhất, `Common/cpp/worklets/Tools/RNRuntimeStatus.h` tồn tại và
+`SerializableRemoteFunction.h` tham chiếu nó.
+
+| | |
+|---|---|
+| **Suy ra** | Mọi đích `runOnJS` trên màn Hôm nay đều có danh tính ổn định, và bản vá C++ có trong cây phụ thuộc. Hai điều ấy cùng đúng mà triệu chứng còn thì khả năng nổi bật nhất là **bản trên MÁY chưa có bản vá**. |
+| **Vì sao rất dễ xảy ra** | `worklets` là C++ trong một **pod**. Nạp lại Metro không lấy được nó; bấm Run lại trên một `ios/` đã sinh trước đó cũng không. Phải `pod install` rồi dựng lại. |
+| **Phép thử dứt điểm** | `rm -rf ios && npx expo prebuild -p ios --clean` → dựng từ Xcode → lặp lại thao tác → nếu còn thoát thì lấy lại 10 dòng đầu của báo cáo sự cố. **Còn** `JSScheduler::scheduleOnJS` = bản dựng chưa lấy pod mới. **Đổi** chữ ký = một lỗi khác, và khi ấy mới có đầu mối mới. |
+| **Đã loại trừ dứt khoát khỏi danh sách nghi ngờ** | Code chết và nút chồng nhau do các lượt đổi design. Đã rà: code chết có thật (9 chỗ, đã dọn ở `9b35e38`) nhưng không chỗ nào chạm luồng worklet; nút chồng nhau **không có**; sáng/tối ở màn này **không lệch** — cả tệp 2.900 dòng có đúng một mã màu gõ cứng và nó là mặt nạ. |
+
 ---
 
 ### ~~A10. Đường AI nuốt lỗi ở bốn chỗ, và cả bốn đều tiêu tiền~~ — ĐÃ SỬA 2026-09-08
