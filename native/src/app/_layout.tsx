@@ -1,5 +1,5 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { Appearance, StyleSheet, View } from 'react-native';
+import { Appearance, Image, StyleSheet, View } from 'react-native';
 import * as SystemUI from 'expo-system-ui';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
@@ -18,7 +18,7 @@ import { ConnectionBanner } from '@/components/ascnd/connection-banner';
 import { useReducedMotionSync } from '@/hooks/use-reduced-motion';
 import { OnboardingFlow } from '@/components/ascnd/onboarding-flow';
 import { makeStyles } from '@/constants/theme';
-import { usePalette, useThemeName } from '@/hooks/use-palette';
+import { useMaterial, usePalette, useThemeName } from '@/hooks/use-palette';
 import { AppLockProvider } from '@/hooks/use-app-lock';
 import { AppErrorBoundary } from '@/components/ascnd/error-boundary';
 import { installCrashHandler } from '@/lib/crash-log';
@@ -157,6 +157,38 @@ function HealthAutoSync() {
   return null;
 }
 
+/**
+ * Splash do APP vẽ, cùng bố cục với splash native nhưng theo theme của app.
+ *
+ * Cùng nền (`background`), cùng mark, cùng bề rộng 120 — đúng ba giá trị trong
+ * khối `expo-splash-screen` của `app.json`, nên hai tấm nối nhau liền mạch khi
+ * theme app trùng diện mạo máy, và tấm này thay thế đúng chỗ khi chúng lệch.
+ *
+ * `m.lit` là bản TỐI, và cặp ảnh đảo tên so với trực giác: bản tối dùng
+ * `splash-icon.png` (mark SÁNG trên nền trong suốt), bản sáng dùng
+ * `splash-icon-light.png` (mark TỐI). Giống hệt cách `app.json` ghép.
+ */
+function ThemedSplash() {
+  const c = usePalette();
+  const m = useMaterial();
+  return (
+    <View style={[splashStyles.wrap, { backgroundColor: c.background }]}>
+      <Image
+        source={m.lit ? require('../../assets/images/splash-icon.png') : require('../../assets/images/splash-icon-light.png')}
+        style={splashStyles.mark}
+        resizeMode="contain"
+      />
+    </View>
+  );
+}
+
+const splashStyles = StyleSheet.create({
+  wrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  /* 120, đúng `imageWidth` trong `app.json`. Ảnh vuông 936×936 nên cao bằng
+     rộng; `contain` giữ nguyên tỉ lệ nếu ảnh có đổi. */
+  mark: { width: 120, height: 120 },
+});
+
 function Gate() {
   const i18n = useI18n();
   /* Nền của các sheet modal đọc bảng màu đang dùng. Bản cũ đóng băng
@@ -191,11 +223,34 @@ function Gate() {
   */
   const ready = !loading && (!user || !profileLoading || profileFailed);
 
-  useEffect(() => {
-    if (ready) SplashScreen.hideAsync();
-  }, [ready]);
+  /*
+    ── vì sao splash native được ẩn NGAY, không chờ `ready` ──
 
-  if (!ready) return null; // splash stays up
+    Trước đây hai dòng này giữ splash native cho tới khi auth và profile xong,
+    và trả `null` trong lúc chờ. Hệ quả là pha ấy dài đúng bằng một chuyến
+    MẠNG, và suốt chuyến ấy màn hình là splash native.
+
+    Splash native đọc diện mạo của HỆ ĐIỀU HÀNH, không đọc theme của app —
+    storyboard được hệ thống vẽ trước khi tiến trình app có UI, nên không có
+    cách nào cho nó biết người dùng đã chọn gì trong app. Máy tối + app sáng
+    thì đó là một khoảng TỐI kéo dài cả giây, rồi cắt phựt sang giấy trắng khi
+    `hideAsync` chạy. Đó đúng là thứ chủ dự án báo.
+
+    Ta không sửa được storyboard, nhưng sửa được phần SAU nó. Khi `Gate` dựng
+    thì `AppSettingsProvider` đã `booted` — nó trả `null` cho tới khi đọc xong
+    AsyncStorage, và đó là một phép đọc CỤC BỘ, xong gần như tức thì. Nghĩa là
+    tại đây theme đã biết chắc chắn, sớm hơn hẳn `ready`.
+
+    Nên: ẩn splash native ngay, rồi tự vẽ một splash ĐÚNG THEME trong suốt
+    chuyến mạng. Khoảng tối rút từ "bao lâu mạng chạy" xuống còn "khung hình
+    khởi động của hệ thống", và cú cắt cứng biến mất — hai tấm liền nhau cùng
+    nền, cùng mark, chỉ khác là tấm sau ở đúng màu app.
+  */
+  useEffect(() => {
+    SplashScreen.hideAsync();
+  }, []);
+
+  if (!ready) return <ThemedSplash />;
   if (!user) return <AuthScreen />;
 
   /*
