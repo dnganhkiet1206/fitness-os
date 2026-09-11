@@ -18,17 +18,15 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, RefreshControl, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import Animated, {
-  FadeIn,
   FadeInDown,
   interpolate,
   measure,
   runOnJS,
   type SharedValue,
-  useAnimatedProps,
   useAnimatedRef,
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -75,7 +73,7 @@ import {
 import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { BOUNCE, duration, spring } from '@/constants/motion';
+import { BOUNCE, spring } from '@/constants/motion';
 import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 
 import { HERO_RING, PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
@@ -199,7 +197,7 @@ import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { useTodayWater } from '@/hooks/use-water';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
 import type { QuestKey } from '@/lib/mascot-room';
-import { Glyph, GLYPH_TINT } from '@/components/ascnd/assistant-icons';
+import { Glyph } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { isCustomGroup, useWidgetConfig, WIDGET_META, type WidgetKey } from '@/hooks/use-widget-config';
 import { CardDeck } from '@/components/ascnd/card-deck';
@@ -221,7 +219,6 @@ import { armTabBarRestore, topChromeVisible, tabScrollFrame } from '@/lib/tab-ba
  * không phải một tỉ lệ màn hình, vì thứ nó đo là VÒNG TRÒN, và vòng tròn có
  * cùng một cỡ trên mọi máy.
  */
-const HERO_FADE = HERO_RING;
 
 /**
  * Hero giữ nguyên độ đậm trong quãng đầu này trước khi bắt đầu mờ.
@@ -456,8 +453,6 @@ export default function TodayScreen() {
   /* Id riêng cho dải tắt ở đáy. Id của gradient là TOÀN CỤC trên native, nên
      hai gradient dùng chung một tên thì cái đăng ký sau vẽ cho cả hai. */
   const sheetTail = `sheetBlurTail-${useId()}`;
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
   const onRefresh = useCallback(async () => {
     // The gesture has no button to press, so the tap it never gets is repaid
     // here: the pull is confirmed the moment it takes, not when data lands.
@@ -524,11 +519,6 @@ export default function TodayScreen() {
     }, []),
   );
 
-  const now = new Date();
-  const greeting =
-    now.getHours() < 12 ? i18n.goodMorning : now.getHours() < 18 ? i18n.goodAfternoon : i18n.goodEvening;
-  const userName = profile?.name || i18n.authYourName;
-
   // Readiness (same mapping as web Index)
   const readinessScore = dailyLog?.readiness_score != null ? Math.round(Number(dailyLog.readiness_score)) : null;
   const readinessStatus = (dailyLog?.readiness_status as 'green' | 'yellow' | 'red') || 'yellow';
@@ -593,11 +583,17 @@ export default function TodayScreen() {
    * bây giờ đúng bằng `groupsUp` — CÙNG biểu thức mà JSX dùng, không thêm một
    * vế nào mà JSX không có.
    *
-   * ── vì sao là state chứ không phải `mounted` ──
+   * ── vì sao là state chứ không phải một cờ "đã gắn" ──
    *
-   * `mounted` thành true ngay sau lần commit đầu, mà lần commit đầu thường là
-   * lúc `dayPending` còn true — các thẻ nhóm CHƯA có mặt. Gắn vào `mounted` sẽ
-   * giết luôn cascade ở lần mở app, tức bỏ mất đúng cái lần duy nhất nó đúng.
+   * Một cờ như thế thành true ngay sau lần commit đầu, mà lần commit đầu thường
+   * là lúc `dayPending` còn true — các thẻ nhóm CHƯA có mặt. Gắn vào nó sẽ giết
+   * luôn cascade ở lần mở app, tức bỏ mất đúng cái lần duy nhất nó đúng.
+   *
+   * Từng có một `const [mounted, setMounted] = useState(false)` ở đầu component
+   * đúng cho mục đích ấy. Nó bị bỏ lại sau khi cờ này thay thế, không ai đọc
+   * nữa, và vẫn trả giá: một `setState` trong `useEffect` ngay sau lần commit
+   * đầu là MỘT LẦN DỰNG LẠI cả màn Hôm nay — 2.900 dòng, deck, các lớp hào
+   * quang — mỗi lần mở app, để lấy một giá trị không ai dùng. Đã bỏ.
    *
    * Nên cờ này bám vào chính sự kiện cần đếm: các thẻ nhóm đã hiện ra lần nào
    * chưa. Ghi trong `useEffect` chứ không ghi thẳng trong thân render, để lần
