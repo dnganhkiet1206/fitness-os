@@ -1,5 +1,5 @@
 import { Droplets, Flame, Moon, type LucideIcon } from 'lucide-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { HeroPanel, HeroRing, HeroTiles } from '@/components/ascnd/hero-panel';
 import { useHelpTopic } from '@/components/ascnd/help-button';

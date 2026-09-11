@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text } from 'react-native';
+import { Text } from 'react-native';
 
 import { type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';

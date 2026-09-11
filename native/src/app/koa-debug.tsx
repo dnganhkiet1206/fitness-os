@@ -1,5 +1,5 @@
 import { nav } from '@/lib/nav';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useState } from 'react';
 
 import { PressScale } from '@/components/ascnd/press-scale';

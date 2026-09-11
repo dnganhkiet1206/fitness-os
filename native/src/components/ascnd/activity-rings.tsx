@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
-import { ChevronDown, HeartPulse } from 'lucide-react-native';
+import { ChevronDown } from 'lucide-react-native';
 import { useEffect, useId } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -18,7 +18,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { ActivityExplainer } from '@/components/ascnd/activity-explainer';
 import { HelpButton, useHelpTopic } from '@/components/ascnd/help-button';
 import { Icon } from '@/components/ascnd/icon';
-import { HERO_RING, radius, spacing } from '@/constants/ascnd';
+import { HERO_RING, spacing } from '@/constants/ascnd';
 import { makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';

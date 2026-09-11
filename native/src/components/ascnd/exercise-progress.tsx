@@ -1,7 +1,7 @@
 import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { ChevronRight, Minus, TrendingDown, TrendingUp } from 'lucide-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';

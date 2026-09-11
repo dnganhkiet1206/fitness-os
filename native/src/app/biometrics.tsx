@@ -2,7 +2,7 @@ import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { Plus, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';

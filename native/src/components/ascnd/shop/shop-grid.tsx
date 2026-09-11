@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Backpack, Check, Coins, Crown, Droplets, Dumbbell, Flame, Footprints, Ghost, Gift, Glasses, Headphones, LayoutGrid, Moon, Shirt, Snowflake, Sparkles, Star, Store, Trophy, Wind, type LucideIcon } from 'lucide-react-native';
 
 import { ProgressBar } from '@/components/ascnd/progress-bar';

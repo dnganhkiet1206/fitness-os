@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Dumbbell } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 
 import { MuscleGrid } from '@/components/ascnd/muscle-grid';
 import { Screen } from '@/components/ascnd/screen';

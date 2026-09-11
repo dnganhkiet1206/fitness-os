@@ -1,7 +1,7 @@
 import { useIsFocused } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,

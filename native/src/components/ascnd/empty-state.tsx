@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import type { LucideIcon } from 'lucide-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { MascotFigure } from '@/components/ascnd/mascot-figure';

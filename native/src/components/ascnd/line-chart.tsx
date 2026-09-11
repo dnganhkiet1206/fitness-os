@@ -9,7 +9,6 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import {
-  StyleSheet,
   Text,
   View,
   type GestureResponderEvent,

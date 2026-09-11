@@ -1,7 +1,7 @@
 import { Music } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useState } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { Linking, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { LiquidGlass } from '@/components/ascnd/liquid-glass';

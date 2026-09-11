@@ -1,5 +1,5 @@
 import { HERO_W, KOA_ASPECT } from '@/components/ascnd/koa/koa-frame';
-import { CLOSET, SHOP_H, SHOP_W, STAGE_MARK, STAGE_X } from '@/components/ascnd/shop/shop-plan';
+import { SHOP_H, SHOP_W, STAGE_MARK, STAGE_X } from '@/components/ascnd/shop/shop-plan';
 
 /**
  * One room, four shots — the camera the shop's tabs move.

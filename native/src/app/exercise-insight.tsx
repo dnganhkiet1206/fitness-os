@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Activity, ChevronDown, Minus, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Expander } from '@/components/ascnd/expander';

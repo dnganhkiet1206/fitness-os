@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { FormSheet } from '@/components/ascnd/form-sheet';
 import { radius, spacing } from '@/constants/ascnd';

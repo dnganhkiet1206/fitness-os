@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -19,7 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { AssistantAura } from '@/components/ascnd/assistant-aura';
 import { Glyph, GLYPH_TINT, type GlyphName } from '@/components/ascnd/assistant-icons';
-import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';
+import { LiquidGlass } from '@/components/ascnd/liquid-glass';
 import { MarkdownLite } from '@/components/ascnd/markdown-lite';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';

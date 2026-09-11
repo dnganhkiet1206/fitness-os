@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { ChevronRight, UtensilsCrossed } from 'lucide-react-native';
+import { UtensilsCrossed } from 'lucide-react-native';
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';

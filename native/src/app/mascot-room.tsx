@@ -1,18 +1,11 @@
 import {
-  Backpack,
   Cat,
   Check,
   Coins,
-  Crown,
   Droplets,
   Dumbbell,
   Flame,
   Footprints,
-  Ghost,
-  Gift,
-  Glasses,
-  Headphones,
-  LayoutGrid,
   Medal,
   Moon,
   Shirt,
@@ -30,7 +23,6 @@ import { nav } from '@/lib/nav';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Dimensions,
-  ActivityIndicator,
   Modal,
   Pressable,
   ScrollView,

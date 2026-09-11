@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Lightbulb, Moon, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';

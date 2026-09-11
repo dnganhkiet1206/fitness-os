@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { ChevronDown, ChevronRight, ChevronUp, Dumbbell, Plus } from 'lucide-react-native';
+import { ChevronRight, Dumbbell, Plus } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -25,13 +25,13 @@ import { useExercises, useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/h
 import { useUnits } from '@/hooks/use-units';
 import { getLocale } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
-import { displayWeight, weightLabel } from '@/lib/units';
+import { weightLabel } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { SessionRow } from '@/components/ascnd/session-row';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
 import { TodayTraining } from '@/components/ascnd/today-training';
-import { MUSCLE_LABEL, muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
+import { MUSCLE_LABEL, type MuscleArtKey } from '@/lib/muscle-group';
 
 /**
  * The tiles, in the order a body is worked rather than alphabetically.

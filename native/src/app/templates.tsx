@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Dumbbell, Plus, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, Text, TextInput, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';

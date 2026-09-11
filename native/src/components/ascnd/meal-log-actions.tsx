@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Barcode, Camera, Pencil, Search } from 'lucide-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';

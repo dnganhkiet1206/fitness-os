@@ -9,9 +9,7 @@ import { LOGGED_DAY_FILTER, missedDates, streakFrom, STREAK_WINDOW, type Streak 
 import { offlineNow } from '@/lib/offline';
 import { onUserScopedReset } from '@/lib/user-scoped-reset';
 import {
-  buyRefKey,
   conflictingKeys,
-  getShopItem,
   xpForRefKey,
   type ShopItem,
   type ShopItemKey,

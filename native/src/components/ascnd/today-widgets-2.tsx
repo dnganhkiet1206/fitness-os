@@ -7,7 +7,6 @@ import {
   ChevronRight,
   Clock,
   Dumbbell,
-  Heart,
   Trophy,
   Wifi,
   WifiOff,

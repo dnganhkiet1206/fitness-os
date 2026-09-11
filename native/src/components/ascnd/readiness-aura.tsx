@@ -1,6 +1,6 @@
 import { useIsFocused } from 'expo-router';
 import { useEffect, useId } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,

@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { Medal as MedalIcon, Share2, Sparkles, Trophy } from 'lucide-react-native';
+import { Medal as MedalIcon, Share2, Trophy } from 'lucide-react-native';
 import { useEffect, useRef } from 'react';
 import { Share, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';

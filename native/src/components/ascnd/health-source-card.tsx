@@ -1,4 +1,4 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { Glyph } from '@/components/ascnd/assistant-icons';
 import { LiquidGlass, tintBorder } from '@/components/ascnd/liquid-glass';

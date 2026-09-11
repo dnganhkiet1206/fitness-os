@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { MuscleArt } from '@/components/ascnd/muscle-art';

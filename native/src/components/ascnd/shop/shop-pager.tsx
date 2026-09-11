@@ -1,4 +1,4 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { ChevronLeft, ChevronRight, Coins, Lock } from 'lucide-react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';

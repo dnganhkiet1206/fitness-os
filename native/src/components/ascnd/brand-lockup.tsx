@@ -1,4 +1,4 @@
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
 
 import { makeStyles } from '@/constants/theme';
 import { usePalette, useThemeName } from '@/hooks/use-palette';

@@ -1,6 +1,6 @@
 import { CheckCircle2, CircleDashed, Moon } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { type } from '@/constants/ascnd';

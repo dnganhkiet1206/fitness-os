@@ -1,11 +1,11 @@
 import * as Haptics from 'expo-haptics';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { Screen } from '@/components/ascnd/screen';
-import { radius, spacing, type } from '@/constants/ascnd';
+import { spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings } from '@/hooks/use-app-settings';

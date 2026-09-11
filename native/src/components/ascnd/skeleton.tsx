@@ -10,7 +10,7 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { radius, spacing } from '@/constants/ascnd';
+import { spacing } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';

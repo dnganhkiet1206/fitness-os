@@ -3,7 +3,7 @@ import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { Camera, ChevronRight, Plus, Ruler, Scale, Target, Trash2 } from 'lucide-react-native';
 import { useCallback, useEffect, useId, useState } from 'react';
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,

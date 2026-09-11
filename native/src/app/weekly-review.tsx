@@ -18,7 +18,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';

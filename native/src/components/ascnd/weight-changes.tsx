@@ -1,5 +1,5 @@
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';

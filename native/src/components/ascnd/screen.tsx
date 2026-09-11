@@ -9,7 +9,6 @@ import {
   Platform,
   RefreshControl,
   ScrollView,
-  StyleSheet,
   Text,
   View,
   type ScrollViewProps,

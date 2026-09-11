@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { HelpCircle, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';

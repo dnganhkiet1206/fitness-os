@@ -6,7 +6,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import * as Crypto from 'expo-crypto';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,

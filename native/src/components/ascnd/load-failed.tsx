@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { CloudOff, RotateCw } from 'lucide-react-native';
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';

@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Modal, Text, View, useWindowDimensions } from 'react-native';
 import type Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 

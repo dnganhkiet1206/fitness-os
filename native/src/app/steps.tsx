@@ -9,7 +9,7 @@ import { ChartBar } from '@/components/ascnd/chart-bar';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
-import { radius, spacing, type } from '@/constants/ascnd';
+import { spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';

@@ -7,7 +7,6 @@ import { Camera, Check, ChevronDown, ChevronRight, Clock, Minus, PencilLine, Plu
 import { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,

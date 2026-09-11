@@ -3,7 +3,6 @@ import { nav } from '@/lib/nav';
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   StyleSheet,
   Text,
   TextInput,
