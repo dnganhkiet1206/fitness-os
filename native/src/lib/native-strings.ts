@@ -92,6 +92,10 @@ const en = {
 
   // Settings
   nDailyTarget: 'Daily target',
+  /* Một câu SỰ VIỆC, không phải một lời mắng. Nó nói ra con số và chiều, rồi
+     dừng — người dùng có thể cố ý muốn một tỉ lệ khác, và app không chặn lưu. */
+  nMacroDriftOver: 'These four add up to {sum} kcal — {drift} over your daily target.',
+  nMacroDriftUnder: 'These four add up to {sum} kcal — {drift} under your daily target.',
   nGoal: 'Goal',
   nTrainingLevel: 'Training level',
   nAbout: 'About',
@@ -890,6 +894,8 @@ const vi: typeof en = {
   nSaveSleep: 'Lưu giấc ngủ',
 
   nDailyTarget: 'Mục tiêu ngày',
+  nMacroDriftOver: 'Bốn số này cộng lại {sum} kcal — vượt mục tiêu ngày {drift}.',
+  nMacroDriftUnder: 'Bốn số này cộng lại {sum} kcal — thiếu so với mục tiêu ngày {drift}.',
   nGoal: 'Mục tiêu',
   nTrainingLevel: 'Trình độ tập',
   nAbout: 'Thông tin',

@@ -87,7 +87,7 @@ try {
   const mt = path.join(out, 'macro-targets.js');
   writeFileSync(mt, readFileSync(mt, 'utf8').replace("'@/lib/fitness-calc'", "'./fitness-calc.js'"));
 }
-const { calorieTargetFor, macroTargetsFor } = await import(
+const { calorieTargetFor, macroTargetsFor, macroDriftFor, MACRO_DRIFT_TOLERANCE_KCAL } = await import(
   pathToFileURL(path.join(out, 'macro-targets.js')).href
 );
 const {
@@ -405,6 +405,64 @@ for (const empty of [0, null, undefined, '', -5, NaN]) {
   }
 }
 
+/*
+  ── cảnh báo lệch macro: phải kêu khi có bất đồng, và IM khi không ──
+
+  `macroTargetsFor` cố ý không ghi đè một bộ đủ bốn, nên bất đồng ấy phải được
+  NÓI RA thay vì sửa lén. Bước này canh cả hai chiều, và chiều IM quan trọng
+  hơn: một cảnh báo kêu oan trên chính con số app tự tính ra sẽ bị người dùng
+  học cách phớt lờ, và lúc đó nó vô dụng đúng lúc cần nhất.
+*/
+let driftSweep = 0;
+{
+  let falseAlarm = 0;
+  /* 1) Im trên MỌI bộ do chuỗi tính của app sinh ra — làm tròn không được kêu. */
+  for (const kg of [45, 60, 75, 90, 110, 140, 180]) {
+    for (const cm of [150, 165, 180, 195]) {
+      for (const sex of SEXES) {
+        for (const goal of GOALS) {
+          const target = calcTargetCalories(calcTDEE(calcBMR(kg, cm, 35, sex), 'moderate'), goal, sex);
+          const m = calcMacros(target, kg, goal, cm);
+          driftSweep++;
+          if (macroDriftFor({
+            tdee_target_kcal: target,
+            macro_protein_g: m.protein_g, macro_carbs_g: m.carbs_g,
+            macro_fat_g: m.fat_g, macro_fiber_g: m.fiber_g,
+          })) falseAlarm++;
+        }
+      }
+    }
+  }
+  if (falseAlarm > 0) {
+    problems.push(
+      `cảnh báo lệch macro kêu OAN ${falseAlarm}/${driftSweep} lần trên chính bộ macro app tự tính — ` +
+        'một cảnh báo kêu trên số đúng là một cảnh báo người dùng học cách bỏ qua',
+    );
+  }
+
+  /* 2) Im khi hồ sơ THIẾU trường — chỗ đó đã được suy ra cho khớp rồi. */
+  if (macroDriftFor({ tdee_target_kcal: 1399, macro_protein_g: 139, macro_carbs_g: null, macro_fat_g: 39, macro_fiber_g: 20 })) {
+    problems.push('cảnh báo lệch macro kêu trên hồ sơ THIẾU trường — đường suy ra đã làm nó khớp, không có bất đồng để nói');
+  }
+  if (macroDriftFor(null)) problems.push('cảnh báo lệch macro kêu trên hồ sơ rỗng');
+
+  /* 3) Và nó phải KÊU đúng ca nó sinh ra để bắt. */
+  const real = macroDriftFor({ tdee_target_kcal: 1399, macro_protein_g: 139, macro_carbs_g: 250, macro_fat_g: 39, macro_fiber_g: 20 });
+  if (!real || real.drift !== 508) {
+    problems.push(
+      `cảnh báo lệch macro không bắt được ca 250 g tinh bột trên kế hoạch 1.399 kcal (chờ +508, nhận ${real ? real.drift : 'im'})`,
+    );
+  }
+
+  /* 4) Ngưỡng phải nằm TRÊN biên làm tròn lý thuyết, nếu không nó kêu vì làm tròn. */
+  if (MACRO_DRIFT_TOLERANCE_KCAL < 9) {
+    problems.push(
+      `ngưỡng lệch macro ${MACRO_DRIFT_TOLERANCE_KCAL} kcal nằm DƯỚI biên làm tròn lý thuyết 9 kcal ` +
+        '(đạm ±2 + tinh bột ±2 + mỡ ±4,5 + mục tiêu ±0,5)',
+    );
+  }
+}
+
 const missed = SELF.filter(([, fn]) => !fn()).map(([l]) => l);
 if (missed.length) {
   console.error(`phép tự kiểm hỏng — ${missed.join('; ')}; đừng tin kết quả`);
@@ -425,5 +483,6 @@ console.log(
     `đạm tính trên cân nặng chặn ở BMI 30 (bít ở ${capBound.toLocaleString('vi-VN')} hồ sơ), không hồ sơ nào chạm chốt tinh bột bằng 0; ` +
     'nhánh bù trừ được gọi thẳng để thử vì chuỗi tính của app không còn kích hoạt nó; ' +
     `và ĐƯỜNG DỰ PHÒNG của macro-targets.ts — thứ hai màn ăn uống thật sự gọi — được quét ${fallbackCases} tổ hợp thiếu-trường: `+
-    `tổng macro luôn khớp mục tiêu calo (lệch lớn nhất ${fallbackWorst} kcal do làm tròn), và hồ sơ đủ bốn macro không bị ghi đè`,
+    `tổng macro luôn khớp mục tiêu calo (lệch lớn nhất ${fallbackWorst} kcal do làm tròn), và hồ sơ đủ bốn macro không bị ghi đè; ` +
+    `cảnh báo lệch macro IM trên cả ${driftSweep} bộ app tự tính và trên hồ sơ thiếu trường, nhưng KÊU đúng ca +508 kcal`,
 );

@@ -121,3 +121,65 @@ export const macroTargetsFor = (p: MacroProfile | undefined | null) => {
     fiber: fiber ?? Math.round((kcal / 1000) * FIBER_G_PER_1000_KCAL),
   };
 };
+
+/**
+ * Bốn con số người dùng tự gõ có nói cùng một câu với mục tiêu calo không.
+ *
+ * ── vì sao đây là một CẢNH BÁO chứ không phải một bản sửa ──
+ *
+ * `macroTargetsFor` ở trên cố ý KHÔNG ghi đè một bộ đủ bốn: một người gõ đủ bốn
+ * ô là một người đang nói ý mình, và suy lại hộ họ là bịa. Nhưng "tôn trọng con
+ * số ấy" không có nghĩa là "im lặng khi nó mâu thuẫn với mục tiêu calo ngay
+ * phía trên nó" — người gõ 250 g carb vào một kế hoạch 1.399 kcal gần như chắc
+ * chắn không định ăn vượt 508 kcal mỗi ngày, họ chỉ chưa cộng lại.
+ *
+ * Nên app nói ra con số và để người ta quyết định. Không chặn lưu.
+ *
+ * ── ngưỡng 10 kcal là một phép ĐO, không phải một lựa chọn ──
+ *
+ * Cả bốn giá trị đều làm tròn tới gram, nên một bộ HOÀN TOÀN nhất quán vẫn lệch
+ * được một ít. Biên lý thuyết tối đa:
+ *
+ *     đạm ±0,5 g × 4  = ±2      tinh bột ±0,5 g × 4 = ±2
+ *     mỡ  ±0,5 g × 9  = ±4,5    mục tiêu calo       = ±0,5
+ *     ────────────────────────────────────────────── ±9 kcal
+ *
+ * Đường thật đo được nhiều nhất **2 kcal** trên 401.940 hồ sơ
+ * (`tools/nutrition-targets.mjs`). Ngưỡng đặt ở 10 — trên cả biên lý thuyết —
+ * nên bước này không bao giờ kêu vì làm tròn, chỉ kêu khi có bất đồng thật.
+ */
+export const MACRO_DRIFT_TOLERANCE_KCAL = 10;
+
+export interface MacroDrift {
+  /** Năng lượng bốn macro cộng lại. */
+  sum: number;
+  /** `sum` trừ mục tiêu calo. Dương là ăn vượt. */
+  drift: number;
+  kcalTarget: number;
+}
+
+/**
+ * `null` khi không có gì để cảnh báo — và có BA cách để không có gì:
+ *
+ *   · hồ sơ thiếu macro → `macroTargetsFor` đã suy ra cho khớp, không thể lệch;
+ *   · lệch nằm trong biên làm tròn;
+ *   · không đọc được mục tiêu calo.
+ *
+ * `null` chứ không phải `drift: 0`: "không có bất đồng" và "chưa xét" là hai
+ * câu khác nhau, và màn hình phải phân biệt được.
+ */
+export function macroDriftFor(p: MacroProfile | undefined | null): MacroDrift | null {
+  const protein = stored(p?.macro_protein_g);
+  const carbs = stored(p?.macro_carbs_g);
+  const fat = stored(p?.macro_fat_g);
+  /* Thiếu một trường nào đó thì `macroTargetsFor` suy ra cho khớp — không có
+     bất đồng để nói. Chất xơ không mang năng lượng trong phép cộng này nên nó
+     không tham gia, nhưng nó vẫn phải CÓ: thiếu nó là hồ sơ đi đường suy ra. */
+  if (protein === null || carbs === null || fat === null || stored(p?.macro_fiber_g) === null) return null;
+
+  const kcalTarget = calorieTargetFor(p);
+  const sum = protein * 4 + carbs * 4 + fat * 9;
+  const drift = sum - kcalTarget;
+  if (Math.abs(drift) < MACRO_DRIFT_TOLERANCE_KCAL) return null;
+  return { sum, drift, kcalTarget };
+}

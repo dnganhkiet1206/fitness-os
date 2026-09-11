@@ -31,6 +31,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
+import { macroDriftFor } from '@/lib/macro-targets';
 import { confirmWrite } from '@/lib/write-result';
 import { toast } from '@/lib/toast';
 import { planFromEntry } from '@/lib/fitness-calc';
@@ -172,6 +173,23 @@ export default function EditProfileSheet() {
   }, [profile]);
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
+
+  /*
+    Đọc từ `form`, KHÔNG từ `profile`.
+
+    Cảnh báo này tồn tại để người ta sửa ngay lúc đang gõ, nên nó phải nói về
+    những con số đang ở trên màn hình. Đọc hồ sơ ĐÃ LƯU thì nó im suốt lúc
+    người dùng gõ sai và chỉ kêu sau khi bấm Lưu — tức đúng lúc không còn sửa
+    được nữa mà không mở lại màn này.
+  */
+  const macroDrift = macroDriftFor({
+    tdee_target_kcal: form.tdee_target_kcal,
+    macro_protein_g: form.macro_protein_g,
+    macro_carbs_g: form.macro_carbs_g,
+    macro_fat_g: form.macro_fat_g,
+    macro_fiber_g: form.macro_fiber_g,
+  });
+
 
   /*
     ── one reading, three consumers ──
@@ -508,6 +526,24 @@ export default function EditProfileSheet() {
           </Field>
         </View>
 
+        {/*
+          Bốn con số này có nói cùng một câu với mục tiêu calo ngay trên chúng
+          không. Xem `macroDriftFor` — ngưỡng 10 kcal nằm trên biên làm tròn lý
+          thuyết (9), nên dòng này không bao giờ hiện vì làm tròn.
+
+          Nó KHÔNG chặn lưu: một tỉ lệ macro khác là điều người ta được quyền
+          chọn. Nó chỉ nói ra con số, vì người gõ 250 g tinh bột vào một kế
+          hoạch 1.399 kcal gần như chắc chắn chưa cộng lại chứ không định ăn
+          vượt 508 kcal mỗi ngày.
+        */}
+        {macroDrift ? (
+          <Text style={styles.macroDrift}>
+            {(macroDrift.drift > 0 ? i18n.nMacroDriftOver : i18n.nMacroDriftUnder)
+              .replace('{sum}', macroDrift.sum.toLocaleString())
+              .replace('{drift}', `${Math.abs(macroDrift.drift).toLocaleString()} kcal`)}
+          </Text>
+        ) : null}
+
         {/* Water target (entered in the user's volume unit) */}
         <View style={styles.row}>
           <Field label={`${i18n.settingsWaterTarget} (${vUnit})`} style={styles.half}>
@@ -739,6 +775,10 @@ const stylesFor = makeStyles((c) => ({
   inputText: { color: c.foreground, fontSize: 16 },
   bigInput: { height: 56, fontSize: 24, fontWeight: '700', fontVariant: ['tabular-nums'] },
   row: { flexDirection: 'row', gap: spacing.sm },
+  /* Màu cảnh báo, không phải màu lỗi: đây là một sự việc đáng xem lại, không
+     phải một thứ hỏng. `readinessYellow` là vai CHỮ của sắc ấy — đã đo 4,54:1
+     trên giấy và 4,98 trên mặt thẻ ở GĐ2C.3. */
+  macroDrift: { ...type.footnote, color: c.readinessYellow, marginTop: spacing.xs },
   half: { flex: 1 },
   third: { flex: 1 },
   divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginVertical: spacing.xs },
