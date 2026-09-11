@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { DailyLogRebuildError, recomputeDailyLog } from '@/lib/daily-log-service';
 import { todayKeys } from '@/lib/today-keys';
-import { localDateStr } from '@/lib/local-date';
+import { diaryStamp, localDateStr, localDayRangeISO } from '@/lib/local-date';
 import { offlineNow } from '@/lib/offline';
 import { foldRecentMeals } from '@/lib/recent-meals';
 export type { RecentMeal, RepeatFood } from '@/lib/recent-meals';
@@ -321,9 +321,9 @@ export interface LoggedMeal {
  * `log-meal.tsx`, which writes `kcal * servings`. Nothing is divided back here:
  * a diary shows what was eaten, not what one portion of it would have been.
  */
-export function useTodayLog() {
+export function useTodayLog(date?: string) {
   const { user } = useAuth();
-  const dateStr = localDateStr();
+  const dateStr = date ?? localDateStr();
 
   /**
    * The local day, as two absolute instants.
@@ -332,18 +332,22 @@ export function useTodayLog() {
    * against one is read in the *server's* zone — UTC. At UTC+7 that window is
    * 07:00 today to 07:00 tomorrow in local terms, so anything eaten before
    * seven in the morning lands in yesterday and a breakfast logged at six never
-   * appears. `setHours(0,0,0,0)` then `toISOString()` gives the real instants
-   * either side of the local day, whatever the zone.
+   * appears. `localDayRangeISO` gives the real instants either side of the
+   * local day, whatever the zone.
+   *
+   * It used to build that window from `new Date()` directly. That was correct
+   * while the only readable day was today, and WRONG the moment `date` can be
+   * something else: the window has to come from the day being asked for, not
+   * from the clock. The shared helper already does exactly this and is what
+   * `useSupplementChecklist` uses, so there is now one implementation instead
+   * of two that agree by coincidence.
    *
    * The rest of the app still compares date strings this way — `useTodayMeals`,
    * `useTodaySleep`, `useTodayBiometrics`. They have the same edge and are not
    * touched here; that is a change to make deliberately rather than as a side
    * effect of adding a diary.
    */
-  const from = new Date();
-  from.setHours(0, 0, 0, 0);
-  const to = new Date(from);
-  to.setDate(to.getDate() + 1);
+  const { start: from, end: to } = localDayRangeISO(dateStr);
 
   return useQuery({
     queryKey: ['today_meals_detail', user?.id, dateStr],
@@ -353,8 +357,8 @@ export function useTodayLog() {
         .from('meal_entries')
         .select('id, meal_type, date_time, total_kcal, total_protein_g, total_carbs_g, total_fat_g')
         .eq('user_id', user!.id)
-        .gte('date_time', from.toISOString())
-        .lt('date_time', to.toISOString())
+        .gte('date_time', from)
+        .lt('date_time', to)
         .order('date_time', { ascending: true });
       if (error) throw error;
       if (!entries || entries.length === 0) return [];
@@ -469,9 +473,14 @@ async function resyncMealEntry(entryId: string) {
 async function patchDiary(
   qc: ReturnType<typeof useQueryClient>,
   userId: string | undefined,
+  /* NGÀY của bản ghi đang sửa, không phải hôm nay. Trước đây hai thứ ấy luôn
+     trùng nhau nên `localDateStr()` gọi thẳng ở đây là đúng; từ khi nhật ký mở
+     được ngày khác thì gọi thế là vá vào cache của SAI NGÀY — màn hình thứ Ba
+     không đổi gì, còn hôm nay thì mất một dòng chưa ai xoá. */
+  dateStr: string,
   edit: (items: LoggedItem[]) => LoggedItem[],
 ) {
-  const key = ['today_meals_detail', userId, localDateStr()];
+  const key = ['today_meals_detail', userId, dateStr];
   // See `@/lib/offline`: a paused write is never rolled back, so patching now
   // would leave a row deleted on screen and present on the server.
   if (offlineNow()) return { key, previous: undefined };
@@ -539,9 +548,10 @@ function rollbackUnlessRebuilt(
 }
 
 /** Remove one logged food from today's diary. */
-export function useDeleteMealItem() {
+export function useDeleteMealItem(date?: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const dateStr = date ?? localDateStr();
   return useMutation({
     mutationFn: async ({ itemId, entryId }: { itemId: string; entryId: string }) => {
       await confirmWrite(
@@ -549,12 +559,12 @@ export function useDeleteMealItem() {
         'Không cập nhật được món trong bữa ăn',
       );
       await resyncMealEntry(entryId);
-      await recomputeDailyLog(user!.id, localDateStr());
+      await recomputeDailyLog(user!.id, dateStr);
     },
     onMutate: ({ itemId }) =>
-      patchDiary(qc, user?.id, (items) => items.filter((it) => it.id !== itemId)),
+      patchDiary(qc, user?.id, dateStr, (items) => items.filter((it) => it.id !== itemId)),
     onError: (e, _vars, ctx) => rollbackUnlessRebuilt(qc, e, ctx),
-    onSettled: () => invalidateLogQueries(qc, user?.id),
+    onSettled: () => invalidateLogQueries(qc, user?.id, dateStr),
   });
 }
 
@@ -571,9 +581,10 @@ export function useDeleteMealItem() {
  * the daily log totals it, and a macro that only some code paths maintain is a
  * macro that drifts.
  */
-export function useUpdateMealItemServings() {
+export function useUpdateMealItemServings(date?: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const dateStr = date ?? localDateStr();
   return useMutation({
     mutationFn: async ({
       itemId,
@@ -624,10 +635,10 @@ export function useUpdateMealItemServings() {
       );
 
       await resyncMealEntry(entryId);
-      await recomputeDailyLog(user!.id, localDateStr());
+      await recomputeDailyLog(user!.id, dateStr);
     },
     onMutate: ({ itemId, servings }) =>
-      patchDiary(qc, user?.id, (items) =>
+      patchDiary(qc, user?.id, dateStr, (items) =>
         items.map((it) => {
           if (it.id !== itemId) return it;
           // the same ratio the server will apply, so the optimistic figures and
@@ -644,7 +655,7 @@ export function useUpdateMealItemServings() {
         }),
       ),
     onError: (e, _vars, ctx) => rollbackUnlessRebuilt(qc, e, ctx),
-    onSettled: () => invalidateLogQueries(qc, user?.id),
+    onSettled: () => invalidateLogQueries(qc, user?.id, dateStr),
   });
 }
 
@@ -656,8 +667,8 @@ export function useUpdateMealItemServings() {
  * repeated here. They were, and the two copies drifted twice; the second time
  * it left the streak grey for somebody who had already logged.
  */
-function invalidateLogQueries(qc: ReturnType<typeof useQueryClient>, userId?: string) {
-  for (const key of todayKeys(userId, localDateStr())) {
+function invalidateLogQueries(qc: ReturnType<typeof useQueryClient>, userId: string | undefined, dateStr: string) {
+  for (const key of todayKeys(userId, dateStr)) {
     qc.invalidateQueries({ queryKey: key });
   }
 }
@@ -725,9 +736,10 @@ export interface PlannedFood {
  * fibre, it is that the plan never recorded any. Fixing it properly is a
  * migration, not a change here.
  */
-export function useLogPlannedMeal() {
+export function useLogPlannedMeal(date?: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
+  const dateStr = date ?? localDateStr();
   return useMutation({
     mutationFn: async ({ mealType, foods }: { mealType: string; foods: PlannedFood[] }) => {
       if (!user) throw new Error('Not signed in');
@@ -748,6 +760,7 @@ export function useLogPlannedMeal() {
           total_fat_g: Math.round(total('fat_g')),
           // See the note above: the plan has no fibre to carry over.
           total_fiber_g: 0,
+          ...diaryStamp(dateStr),
         })
         .select('id')
         .single();
@@ -769,9 +782,9 @@ export function useLogPlannedMeal() {
       );
       if (itemsError) throw itemsError;
 
-      await recomputeDailyLog(user.id, localDateStr());
+      await recomputeDailyLog(user.id, dateStr);
     },
-    onSuccess: () => invalidateLogQueries(qc, user?.id),
+    onSuccess: () => invalidateLogQueries(qc, user?.id, dateStr),
   });
 }
 

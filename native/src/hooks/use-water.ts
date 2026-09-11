@@ -87,9 +87,9 @@ function rollbackWater(qc: ReturnType<typeof useQueryClient>, ctx?: WaterCtx) {
   if (ctx.prevTotal !== undefined) qc.setQueryData(ctx.totalKey, ctx.prevTotal);
 }
 
-export function useTodayWater() {
+export function useTodayWater(date?: string) {
   const { user } = useAuth();
-  const dateStr = today();
+  const dateStr = date ?? today();
   return useQuery({
     queryKey: ['today_water', user?.id, dateStr],
     enabled: !!user,
@@ -105,7 +105,24 @@ export function useTodayWater() {
   });
 }
 
-export function useAddWater() {
+/**
+ * Ngày mà một lần ghi thuộc về, đọc ở THỜI ĐIỂM ghi — nay có thêm một ngày
+ * được chọn đè lên.
+ *
+ * Luật cũ (xem chú thích `today` ngay trên) vẫn nguyên: khi nhật ký đang ở HÔM
+ * NAY thì ngày phải đọc lúc chạm chứ không lúc render, nếu không một chiếc điện
+ * thoại để trên bàn ngủ qua nửa đêm sẽ ghi ly nước vào hôm qua.
+ *
+ * Khi người dùng đã chọn một ngày CỤ THỂ thì ngày ấy là hằng số — đọc lúc nào
+ * cũng như nhau — nên cùng một hàm phục vụ được cả hai, và cái bẫy nửa đêm
+ * không quay lại: nó chỉ tồn tại ở nhánh không có ngày chọn, và nhánh ấy vẫn
+ * đọc đồng hồ ngay tại chỗ chạm.
+ *
+ * Viết thành HÀM chứ không phải hằng là điều kiện để cả hai tính chất ấy cùng
+ * đúng. `const d = date ?? today()` trong thân hook là quay lại đúng lỗi cũ.
+ */
+export function useAddWater(date?: string) {
+  const dayOf = () => date ?? today();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -200,8 +217,9 @@ export function useAddWater() {
           rowId: Crypto.randomUUID(),
           amountMl,
           /* Read here, in the tap. See the note on `today` above: the hook body
-             runs at render, and an app left open crosses midnight. */
-          date: today(),
+             runs at render, and an app left open crosses midnight. `dayOf`
+             giữ nguyên tính chất ấy khi không có ngày chọn. */
+          date: dayOf(),
           at: new Date().toISOString(),
         },
         options,
@@ -211,9 +229,10 @@ export function useAddWater() {
 }
 
 /** Undo the most recent water entry today (web: minus button) */
-export function useRemoveLastWater() {
+export function useRemoveLastWater(date?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const dayOf = () => date ?? today();
   /*
     The date is the mutation's *variable* rather than a capture, which is what
     lets one reading reach the find, the optimistic patch and the invalidation.
@@ -272,14 +291,14 @@ export function useRemoveLastWater() {
   */
   return {
     ...m,
-    mutate: (options?: Parameters<typeof m.mutate>[1]) => m.mutate(today(), options),
+    mutate: (options?: Parameters<typeof m.mutate>[1]) => m.mutate(dayOf(), options),
   };
 }
 
 /** Today's individual water entries — the detail list on the Water screen */
-export function useTodayWaterLogs() {
+export function useTodayWaterLogs(date?: string) {
   const { user } = useAuth();
-  const dateStr = today();
+  const dateStr = date ?? today();
   return useQuery({
     queryKey: ['today_water_logs', user?.id, dateStr],
     enabled: !!user,

@@ -42,7 +42,7 @@ import { outOfRangeMessage } from '@/lib/plausible';
 import { toast } from '@/lib/toast';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
-import { localDateStr } from '@/lib/local-date';
+import { diaryStampAt, localDateStr } from '@/lib/local-date';
 import { consumePendingScan } from '@/lib/scan-bridge';
 import { intText } from '@/lib/number-input';
 
@@ -77,7 +77,21 @@ export default function LogMealSheet() {
   const styles = stylesFor(c);
   const { user } = useAuth();
   const { lang } = useAppSettings();
-  const invalidate = useInvalidateToday();
+  const { focus, date: dateParam } = useLocalSearchParams<{ focus?: string; date?: string }>();
+  /*
+    NGÀY đang được ghi vào, đến từ route.
+
+    Màn Dinh dưỡng mở màn này bằng `/log-meal?date=YYYY-MM-DD` khi người dùng
+    đang xem một ngày khác. Không có tham số thì là hôm nay, nên mọi lối vào cũ
+    — nút máy ảnh, quét mã, các màn khác — không đổi hành vi.
+
+    Đọc bằng `?? localDateStr()` chứ không để `undefined` chảy xuống dưới: cả
+    dấu thời gian lẫn lượt vô hiệu cache đều cần một chuỗi ngày thật, và một
+    `undefined` lọt qua đây sẽ im lặng rơi về hôm nay ở MỘT trong hai chỗ chứ
+    không phải cả hai — đúng kiểu lệch ngày mà cả thay đổi này sinh ra để chặn.
+  */
+  const dateStr = dateParam ?? localDateStr();
+  const invalidate = useInvalidateToday(dateStr);
   const queryClient = useQueryClient();
   const i18n = useI18n();
 
@@ -111,7 +125,6 @@ export default function LogMealSheet() {
     yank focus back into the search box while somebody is typing a dish name
     into the custom form below.
   */
-  const { focus } = useLocalSearchParams<{ focus?: string }>();
   const [focusSearch] = useState(() => focus === 'search');
   const [debounced, setDebounced] = useState('');
   const [aiOpen, setAiOpen] = useState(false);
@@ -484,7 +497,10 @@ export default function LogMealSheet() {
       kind: 'meal',
       userId: user.id,
       entryId: Crypto.randomUUID(),
-      dateTime: new Date().toISOString(),
+      /* Hôm nay thì vẫn là GIỜ thật của bữa ăn; ngày quá khứ thì giữa trưa
+         địa phương — xem `diaryStampAt`. Để `new Date()` ở đây khi đang ghi
+         cho thứ Ba là làm bữa ấy rơi vào hôm nay, không lỗi, không cảnh báo. */
+      dateTime: diaryStampAt(dateStr),
       mealType,
       totals: {
         kcal: Math.round(totals.kcal),

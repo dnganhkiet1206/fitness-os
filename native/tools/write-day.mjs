@@ -119,7 +119,20 @@ for (const f of files) {
       scannedMutations++;
     }
 
-    const bound = [...chunk.matchAll(/^ {2}const (\w+) = (?:today\(\)|localDateStr\(\));/gm)].map(
+    /*
+      ── hai dạng, không phải một ──
+
+      `const dateStr = today();` là dạng gốc. Dạng thứ hai xuất hiện khi nhật ký
+      mở được ngày khác hôm nay: `const dateStr = date ?? today();`. Nó trông
+      như đã sửa — có `date` trong đó — nhưng nếu nằm ở THÂN HOOK thì nhánh
+      `?? today()` vẫn đóng băng ở lúc render, nên khi không có ngày chọn (tức
+      trường hợp thường ngày) lỗi nửa đêm quay lại nguyên vẹn.
+
+      Cách đúng là một HÀM: `const dayOf = () => date ?? today();`, gọi tại chỗ
+      ghi. Regex dưới cố ý KHÔNG khớp dạng ấy — `=>` đứng giữa — nên hàm đi
+      qua còn hằng bị bắt. Đó chính là ranh giới cần canh.
+    */
+    const bound = [...chunk.matchAll(/^ {2}const (\w+) = (?:date \?\? )?(?:today\(\)|localDateStr\(\));/gm)].map(
       (m) => m[1],
     );
     if (bound.length === 0) continue;
@@ -175,21 +188,48 @@ for (const [k, why] of EXEMPT) {
 }
 
 /* ── and the three that were wrong stay right ── */
+/*
+  Ba chỗ này từng hỏng thật, nên chúng được ghim riêng chứ không chỉ dựa vào
+  luật chung ở trên.
+
+  ── vì sao hình dạng ghim đổi ──
+
+  Ghim cũ tìm đúng chuỗi đã ship: `date: today()`, `const dateStr = today();`,
+  `todayKeys(user?.id, today())`. Khi nhật ký mở được ngày khác hôm nay thì cả
+  ba phải nhận thêm một ngày chọn, nên chuỗi ấy không còn tồn tại — và ghim
+  trượt trong khi tính chất nó canh vẫn còn nguyên giá trị.
+
+  Nên ghim nay canh TÍNH CHẤT: ngày được đọc tại chỗ ghi, không phải tại chỗ
+  render. Trong hình dạng mới điều đó có nghĩa là một HÀM `() => date ?? today()`
+  gọi ở chỗ ghi, hoặc một `const` đọc BÊN TRONG `mutationFn`.
+
+  Điều quan trọng là ghim không hề yếu đi: viết `const dayOf = date ?? today();`
+  — bỏ mũi tên, tức đóng băng lại ở lúc render — vẫn đỏ, vì ghim đòi có `=>`.
+  Đó đúng là cách mà lỗi cũ sẽ quay lại trong mã mới.
+*/
 {
   const water = strip(readFileSync(path.join(NATIVE, 'src/hooks/use-water.ts'), 'utf8'));
-  if (!/date: today\(\)/.test(water)) {
-    problems.push("use-water.ts không còn ghi `date: today()` trong thân hàm mutate — cốc nước sau nửa đêm sẽ rơi vào hôm qua");
+  if (!/const dayOf = \(\) => date \?\? today\(\);/.test(water) || !/date: dayOf\(\)/.test(water)) {
+    problems.push(
+      'use-water.ts không còn đọc ngày tại chỗ ghi — cần `const dayOf = () => date ?? today();` và ' +
+        '`date: dayOf()` trong thân hàm mutate. Thiếu mũi tên là ngày đóng băng lúc render và cốc ' +
+        'nước sau nửa đêm rơi vào hôm qua',
+    );
   }
   const lib = strip(readFileSync(path.join(NATIVE, 'src/hooks/use-library.ts'), 'utf8'));
   const toggle = lib.slice(lib.indexOf('useToggleSupplement'));
-  if (!/mutationFn:[\s\S]{0,400}const dateStr = today\(\);/.test(toggle)) {
-    problems.push('useToggleSupplement không đọc ngày bên trong mutationFn — bỏ tick sau nửa đêm sẽ xoá nhầm ngày');
+  if (!/mutationFn:[\s\S]{0,400}const dateStr = date \?\? today\(\);/.test(toggle)) {
+    problems.push(
+      'useToggleSupplement không đọc ngày BÊN TRONG mutationFn — bỏ tick sau nửa đêm sẽ xoá nhầm ngày',
+    );
   }
   const td = strip(readFileSync(path.join(NATIVE, 'src/hooks/useTodayData.ts'), 'utf8'));
-  if (!/todayKeys\(user\?\.id, today\(\)\)/.test(td)) {
+  const inv = td.slice(td.indexOf('export function useInvalidateToday'));
+  if (!/const dayOf = \(\) => date \?\? today\(\);/.test(inv) || !/todayKeys\(user\?\.id, dayOf\(\)\)/.test(inv)) {
     problems.push(
-      'useInvalidateToday không đọc ngày lúc chạy — lần ghi đầu sau nửa đêm sẽ làm mới khoá của HÔM QUA ' +
-        'và màn hình đứng nguyên như chưa ghi gì',
+      'useInvalidateToday không đọc ngày lúc CHẠY — cần `const dayOf = () => date ?? today();` và ' +
+        '`todayKeys(user?.id, dayOf())`. Lần ghi đầu sau nửa đêm sẽ làm mới khoá của HÔM QUA và màn ' +
+        'hình đứng nguyên như chưa ghi gì',
     );
   }
 }

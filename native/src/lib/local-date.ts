@@ -105,6 +105,38 @@ export function localDayRangeISO(dateStr: string): { start: string; end: string 
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
+/**
+ * Dấu thời gian cho một dòng nhật ký ghi vào một ngày ĐƯỢC CHỌN.
+ *
+ * Trả về `{}` khi ngày ấy là hôm nay, để cột `date_time` giữ `now()` — nhật ký
+ * xếp theo dấu này, nên đóng đinh bữa sáng vừa ghi vào giữa trưa sẽ đẩy nó
+ * xuống dưới bữa tối ghi lúc bảy giờ.
+ *
+ * Ngày quá khứ thì lấy GIỮA TRƯA địa phương, không phải nửa đêm: nửa đêm nằm
+ * đúng chỗ DST dịch ±1 giờ nên ở vùng đổi giờ nó rơi được sang ngày bên cạnh.
+ * Giữa trưa cách cả hai mép sáu tiếng.
+ *
+ * Vì sao là hàm dùng chung chứ không chép hai bản: đây là chỗ hỏng ÂM THẦM.
+ * Để `now()` khi ghi vào thứ Ba thì thứ Ba trống trơn còn hôm nay mọc thêm một
+ * bữa không ai ăn — không lỗi, không cảnh báo, sai ở hai ngày cùng lúc. Một
+ * bản sao thứ hai trôi khỏi bản này là lỗi ấy quay lại ở đúng một nửa số chỗ.
+ */
+export function diaryStampAt(dateStr: string): string {
+  return dateStr === localDateStr()
+    ? new Date().toISOString()
+    : new Date(`${dateStr}T12:00:00`).toISOString();
+}
+
+/**
+ * Cùng luật, dạng SPREAD — cho những chỗ muốn bỏ hẳn trường đi khi là hôm nay
+ * và để `now()` mặc định của cột đứng. Viết qua `diaryStampAt` chứ không chép
+ * lại phép so, để một luật chỉ có một chỗ sửa.
+ */
+export function diaryStamp(dateStr: string): { date_time?: string } {
+  if (dateStr === localDateStr()) return {};
+  return { date_time: diaryStampAt(dateStr) };
+}
+
 /** YYYY-MM-DD `days` local days from `dateStr`. Negative goes backwards. */
 export function shiftLocalDate(dateStr: string, days: number): string {
   const d = parseLocalDate(dateStr);

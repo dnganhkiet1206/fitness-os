@@ -3,16 +3,16 @@ import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
-import { localDateStr, localDayRangeISO } from '@/lib/local-date';
+import { diaryStamp, localDateStr, localDayRangeISO } from '@/lib/local-date';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
 
 const today = () => localDateStr();
 
 /** Supplements with today's taken state (same shape as the web checklist) */
-export function useSupplementChecklist() {
+export function useSupplementChecklist(date?: string) {
   const { user } = useAuth();
-  const dateStr = today();
+  const dateStr = date ?? today();
   return useQuery({
     queryKey: ['supplement_checklist', user?.id, dateStr],
     enabled: !!user,
@@ -35,7 +35,7 @@ export function useSupplementChecklist() {
   });
 }
 
-export function useToggleSupplement() {
+export function useToggleSupplement(date?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useMutation({
@@ -54,7 +54,11 @@ export function useToggleSupplement() {
         one it was removed instead. The checkbox bounced back and a day that was
         already finished quietly lost an entry.
       */
-      const dateStr = today();
+      /* `date ?? today()` đọc ở đây, trong thân mutation — tức lúc CHẠM, không
+         phải lúc render. Cùng lý do đã ghi dài ở `use-water.ts`: một ứng dụng
+         mở qua nửa đêm mà đọc ngày lúc render sẽ ghi vào hôm qua. Có ngày chọn
+         thì nó là hằng số và tính chất ấy không mất đi. */
+      const dateStr = date ?? today();
       if (taken) {
         const { error } = await supabase.from('supplement_intake_logs').insert({
           user_id: user!.id,
@@ -62,8 +66,13 @@ export function useToggleSupplement() {
           taken: true,
           /* Stamped here rather than left to the column default. It changes
              nothing while this write is online — which it always is, see below
-             — but it is the honest value and costs nothing. */
-          date_time: new Date().toISOString(),
+             — but it is the honest value and costs nothing.
+
+             `diaryStamp` thay cho `new Date()`: đường XOÁ ngay dưới đã lọc theo
+             `localDayRangeISO(dateStr)`, nên nếu dòng insert vẫn đóng dấu "bây
+             giờ" thì tick cho thứ Ba ghi vào hôm nay rồi bỏ tick lại không tìm
+             thấy nó. Hai nửa của cùng một nút phải nói cùng một ngày. */
+          ...diaryStamp(dateStr),
         });
         if (error) throw error;
       } else {

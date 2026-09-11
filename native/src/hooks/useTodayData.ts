@@ -45,9 +45,9 @@ export function useProfile() {
   });
 }
 
-export function useDailyLog() {
+export function useDailyLog(date?: string) {
   const { user } = useAuth();
-  const dateStr = today();
+  const dateStr = date ?? today();
   return useQuery({
     queryKey: ['daily_log', user?.id, dateStr],
     enabled: !!user,
@@ -174,9 +174,13 @@ export function useSleepHistory(days = 7) {
   });
 }
 
-export function useInvalidateToday() {
+export function useInvalidateToday(date?: string) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  /* HÀM, không phải hằng — cùng lý do đã ghi ngay dưới: ngày phải đọc lúc
+     refresh chạy chứ không lúc hook render. Có `date` thì nó là hằng số và
+     tính chất ấy không mất; không có thì vẫn đọc đồng hồ tại chỗ. */
+  const dayOf = () => date ?? today();
   /* The list is `lib/today-keys.ts`, shared with the mutation callbacks in
      `use-nutrition` that cannot call a hook. It used to be written out twice,
      and the two copies had already drifted twice — the second time it left the
@@ -196,16 +200,16 @@ export function useInvalidateToday() {
       screen as they were, showing nothing logged, while the row was already in
       the database. The one moment the refresh exists for is the one it missed.
     */
-    for (const key of todayKeys(user?.id, today())) {
+    for (const key of todayKeys(user?.id, dayOf())) {
       queryClient.invalidateQueries({ queryKey: key });
     }
   };
 }
 
 // Native-only addition: today's meal entries for the Nutrition tab
-export function useTodayMeals() {
+export function useTodayMeals(date?: string) {
   const { user } = useAuth();
-  const dateStr = today();
+  const dateStr = date ?? today();
   return useQuery({
     queryKey: ['today_meals', user?.id, dateStr],
     enabled: !!user,
