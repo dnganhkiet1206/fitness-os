@@ -13,7 +13,8 @@
       "buildNumber": "1",
       "icon": {
         "light": "./assets/images/icon-light.png",
-        "dark": "./assets/images/icon.png"
+        "dark": "./assets/images/icon.png",
+        "tinted": "./assets/images/icon.png"
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
