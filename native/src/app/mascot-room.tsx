@@ -12,9 +12,7 @@ import {
   Snowflake,
   Star,
   Swords,
-  Trophy,
   Utensils,
-  Wind,
   type LucideIcon,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -22,10 +20,7 @@ import { useIsFocused } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Dimensions,
-  Modal,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -61,12 +56,9 @@ import { useAwards, useWeeklyChallenges } from '@/hooks/use-extras';
 import { useMascot } from '@/hooks/use-mascot';
 import { habitFor, usePersonalModel } from '@/lib/personal-model';
 import { DEV_EMOTIONS, setDevEmotion } from '@/hooks/use-mascot-emotion';
-import { claimedList, useBuyFreeze, useBuyItem, useClaimReward, useDailyStreak, useMascotInventory, useMascotWallet, useToggleEquip } from '@/hooks/use-mascot-room';
+import { claimedList, useBuyFreeze, useClaimReward, useDailyStreak, useMascotInventory, useMascotWallet } from '@/hooks/use-mascot-room';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
-import { useTodayWater } from '@/hooks/use-water';
-import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { CHALLENGE_TEXT } from '@/lib/gamification-i18n';
-import { localDateStr } from '@/lib/local-date';
 import {
   DAILY_QUESTS,
   CHALLENGE_REWARD,
@@ -75,14 +67,12 @@ import {
   FREEZE_PRICE,
   LEVEL_XP,
   RANKS,
-  SHOP_CATEGORIES,
   STREAK_XP,
   levelFromXp,
   nextRank,
   questRefKey,
   rankForLevel,
   streakCoins,
-  type Collection,
   type QuestKey,
 } from '@/lib/mascot-room';
 import { toast } from '@/lib/toast';
@@ -208,13 +198,20 @@ export default function MascotRoomScreen() {
       .replace('{time}', clock);
   }, [personal.hours, i18n]);
   const claim = useClaimReward();
-  const buy = useBuyItem();
-  const equip = useToggleEquip();
+  /*
+    ── bốn truy vấn đã bỏ, và chúng KHÔNG phải rác vô hại ──
 
-  const { data: dailyLog } = useDailyLog();
-  const { data: profile } = useProfile();
-  const { data: waterMl } = useTodayWater();
-  const { data: sleep } = useTodaySleep();
+    `useDailyLog`, `useProfile`, `useTodayWater`, `useTodaySleep` đều là
+    `useQuery` thật. Màn này gọi cả bốn rồi không đọc kết quả nào — mỗi lần mở
+    phòng linh vật là bốn vòng gọi Supabase cho một thứ không ai dùng.
+
+    Cùng chỗ ấy còn `useBuyItem` và `useToggleEquip`: hai hook mutation của gian
+    hàng, còn lại từ hồi cửa hàng nằm trong màn này. Cửa hàng nay có màn riêng
+    (`components/ascnd/shop/`), và `owned` — cái `Set` dựng từ `inventory` để
+    biết món nào đã mua — chết theo.
+
+    `useWeeklyChallenges` thì GIỮ: `challenges` có bảy chỗ đọc.
+  */
   const { data: challenges } = useWeeklyChallenges();
   const { data: awards } = useAwards();
 
@@ -300,7 +297,6 @@ export default function MascotRoomScreen() {
      mà repo này đã áp cho personal-model: một giá trị lưu hỏng không được phép
      thành một giá trị đang chạy. */
   const claimed = useMemo(() => new Set(claimedList(wallet?.claimed)), [wallet?.claimed]);
-  const owned = new Set((inventory ?? []).map((r) => r.item_key));
   const equippedOutfits = new Set(
     (inventory ?? []).filter((r) => r.equipped).map((r) => r.item_key),
   );
@@ -396,7 +392,6 @@ export default function MascotRoomScreen() {
    * animated in, and a band that resizes on the second frame reads as a jump.
    * `sheetPad` is the sheet's own horizontal padding, doubled.
    */
-  const sheetW = Dimensions.get('window').width - spacing.md * 2;
   const intoLevel = xp % LEVEL_XP;
   const rank = rankForLevel(level);
   const upcomingRank = nextRank(level);

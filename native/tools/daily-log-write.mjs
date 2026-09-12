@@ -147,7 +147,18 @@ const ALLOWED_SWALLOW = 'src/lib/offline-write.ts';
     ['src/app/sleep-insights.tsx', 'remove.mutate('],
     ['src/app/(tabs)/progress.tsx', 'removeMeasurement.mutate('],
     ['src/app/sessions.tsx', 'del.mutate('],
-    ['src/app/(tabs)/workouts/index.tsx', 'delSession.mutate('],
+    /* Ghim ĐÃ CHĨA LẠI, không nới ra.
+
+       Nó từng trỏ vào `workouts/index.tsx`. Chỗ ấy có một bản CHÉP của
+       `confirmDeleteSession` — khai báo rồi không ai gọi, cùng với `delSession`
+       mà nó là chỗ dùng duy nhất, tức một `useMutation` dựng ra mỗi lần mở tab
+       để không làm gì. Bản chép đã bỏ; bản đang chạy ở `library.tsx` và nó có
+       `onError`.
+
+       Cách SAI khi một ghim mất mục tiêu là bỏ dòng ghim đi cho cổng xanh lại:
+       thế là đổi một cảnh báo lấy một điểm mù, và lần sau ai đó xoá luôn cả
+       `onError` ở `library.tsx` thì không gì báo. Ghim theo chỗ CÒN SỐNG. */
+    ['src/app/(tabs)/workouts/library.tsx', 'delSession.mutate('],
     ['src/components/ascnd/today-meals.tsx', 'del.mutate('],
   ];
   for (const [file, call] of MUST_REPORT) {

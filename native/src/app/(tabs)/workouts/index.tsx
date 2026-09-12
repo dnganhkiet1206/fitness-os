@@ -11,7 +11,6 @@ import { useRise } from '@/lib/entrance';
 import { Glyph } from '@/components/ascnd/assistant-icons';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { SectionTitle } from '@/components/ascnd/section-title';
-import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
@@ -20,18 +19,14 @@ import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
-import { useExercises, useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
+import { useWorkoutSessions } from '@/hooks/use-fitness-data';
+import { useDeleteWorkoutTemplate, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
-import { getLocale } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
 import { weightLabel } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
-import { MuscleArt } from '@/components/ascnd/muscle-art';
-import { SessionRow } from '@/components/ascnd/session-row';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
 import { TodayTraining } from '@/components/ascnd/today-training';
-import { MUSCLE_LABEL, type MuscleArtKey } from '@/lib/muscle-group';
 
 /**
  * The tiles, in the order a body is worked rather than alphabetically.
@@ -45,19 +40,8 @@ import { MUSCLE_LABEL, type MuscleArtKey } from '@/lib/muscle-group';
  * matching data already filed under it, and a tile caption has no such
  * obligation.
  */
-const MUSCLE_TILES: { key: MuscleArtKey; vi: string; en: string }[] = (
-  /* The first six are what the grid shows collapsed — two rows of three — so
-     they are the six biggest movements rather than the first six alphabetically
-     or the order they were typed in. Legs sat seventh and would have been
-     hidden behind Calves, which is a menu with the main course missing.
-
-     Thứ tự ở đây, nhãn ở `MUSCLE_LABEL`. Thứ tự là quyết định của lưới này;
-     tên gọi thì không, và mặt thẻ mẫu tập cũng cần đúng những tên ấy. */
-  ['chest', 'back', 'legs', 'shoulders', 'biceps', 'triceps', 'abs', 'glutes', 'calves', 'cardio'] as MuscleArtKey[]
-).map((key) => ({ key, ...MUSCLE_LABEL[key] }));
 
 /** Two rows of three — what the library shows before you open it up. */
-const TILES_COLLAPSED = 6;
 
 /** How many of the saved workouts the tab shows before "See all" takes over. */
 const PREVIEW = 3;
@@ -101,9 +85,6 @@ export default function WorkoutsScreen() {
      chỉ hỏi `isError` thì "đang tải" và "đã tải xong, không có gì" thành cùng
      một nhánh, và nhánh ấy nói rằng người dùng chưa từng lưu buổi tập nào. */
   const { data: templates, isError: templatesFailed, isPending: templatesPending } = useWorkoutTemplates();
-  // The library already loads on the Exercises screen and is cached under the
-  // same key, so the grid costs a read only the first time either is opened.
-  const { data: exercises, isError: exercisesFailed } = useExercises();
   // Recent sessions needs no failure notice of its own: the block only renders
   // when there are sessions, so a failed read makes it absent rather than
   // wrong — and it fails alongside the templates above it, which do say so.
@@ -120,7 +101,6 @@ export default function WorkoutsScreen() {
     setRetrying(false);
   }, [queryClient]);
   const del = useDeleteWorkoutTemplate();
-  const delSession = useDeleteWorkoutSession();
 
   const confirmDelete = (id: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -143,27 +123,19 @@ export default function WorkoutsScreen() {
    * makes a mistap catchable by reading the alert rather than by noticing the
    * chart afterwards.
    */
-  const confirmDeleteSession = (id: string, date_time: string, label: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    Alert.alert(i18n.nDeleteSession, i18n.nDeleteSessionMsg.replace('{x}', label), [
-      { text: i18n.cancel, style: 'cancel' },
-      {
-        text: i18n.delete,
-        style: 'destructive',
-        onPress: () =>
-          delSession.mutate(
-            { id, date_time },
-            {
-              onSuccess: () => {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                toast.success(i18n.deleted);
-              },
-              onError: (e: Error) => toast.fail(e),
-            },
-          ),
-      },
-    ]);
-  };
+  /*
+    `confirmDeleteSession` đã bỏ khỏi tệp này, và nó KHÔNG phải một tính năng
+    mất — nó là một bản CHÉP bị bỏ lại.
+
+    Bản đang chạy ở `workouts/library.tsx:93`, có nối dây thật (`onDelete=` ở
+    dòng 157 của tệp ấy). Bản ở đây được khai báo rồi không ai gọi, cùng với
+    `delSession` mà nó là chỗ dùng duy nhất — tức cả một `useMutation` được dựng
+    mỗi lần mở tab Tập luyện để không làm gì.
+
+    Nếu sau này màn này lại cần xoá buổi tập: gọi sang bản ở `library.tsx` hoặc
+    nâng nó thành hook dùng chung, ĐỪNG chép lại lần thứ hai — hai bản chính là
+    thứ vừa được dọn đi.
+  */
 
   /*
     "Templates (0)" and "No templates yet — tap + to create your first" is

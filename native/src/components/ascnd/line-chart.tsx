@@ -233,7 +233,6 @@ function ScrubDot({
   color: string;
 }) {
   const c = usePalette();
-  const styles = stylesFor(c);
   /*
     The marker rides the line at the rule's own x.
 

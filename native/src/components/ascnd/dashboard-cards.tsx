@@ -1579,7 +1579,6 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
 
 export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: number; labels: { title: string } }) {
   const c = usePalette();
-  const styles = stylesFor(c);
   const { unit } = useVolumeUnit();
   const pct = Math.min(100, Math.round((ml / (targetMl || 1)) * 100));
   /*

@@ -757,7 +757,6 @@ function AuraFigure({ moving, lit }: { moving: boolean; /** Bản sáng dựng �
  */
 function EdgeFade() {
   const c = usePalette();
-  const styles = stylesFor(c);
   /* Same reason as `LightPool`, and this one is mine: a literal id here would
      be the fourth time this file hands the document two definitions of one
      name. */
