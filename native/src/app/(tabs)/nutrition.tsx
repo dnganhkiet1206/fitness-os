@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { Barcode, ChevronRight, ClipboardList, Pencil, Pill, Plus, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
+import { ChevronRight, ClipboardList, Pencil, Pill, Plus, ScanBarcode, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -736,7 +736,7 @@ export default function NutritionScreen() {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                     nav.push('/scan-barcode');
                   }}>
-                  <Icon icon={Barcode} size={17} color={c.mutedForeground} />
+                  <Icon icon={ScanBarcode} size={17} color={c.mutedForeground} />
                 </PressScale>
               </View>
             </View>

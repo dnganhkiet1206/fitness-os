@@ -765,7 +765,23 @@ export default function ProgressScreen() {
               <GlassCard style={styles.calCard}>
                 <View style={styles.calHead}>
                   <View style={styles.calIcon}>
-                    <Icon icon={Target} size={17} color={c.metricBeige} />
+                    {/*
+                      Trung tính, không phải `metricBeige`.
+
+                      Be trong tệp này có NGHĨA, và nghĩa ấy được ghi ngay ở
+                      `trendSeries`: nó là màu đường CÂN NẶNG. Tô cái bia ngắm
+                      của cửa vào Smart Goals bằng đúng màu ấy là mượn một nghĩa
+                      đang dùng cho việc khác — người đọc học được "be = cân
+                      nặng" ở nửa trên trang rồi gặp be ở một cửa không nói gì
+                      về cân nặng.
+
+                      `Target` còn được vẽ ở hai chỗ khác với hai màu khác nữa
+                      (`primary` ở nút đặt mục tiêu ngay trên, `readinessGreen`
+                      ở màn Tuần qua) — đúng căn bệnh mà `constants/icon-tint`
+                      sinh ra để chữa. Luật áp ở đây: icon làm NHÃN thì trung
+                      tính, icon là HÀNH ĐỘNG thì mang `primary`.
+                    */}
+                    <Icon icon={Target} size={17} color={c.mutedForeground} />
                   </View>
                   <Text style={styles.calTitle}>{i18n.navSmartGoals}</Text>
                   <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />

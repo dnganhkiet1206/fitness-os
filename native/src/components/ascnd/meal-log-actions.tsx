@@ -1,13 +1,13 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { Barcode, Camera, Pencil, Search } from 'lucide-react-native';
+import { Camera, Pencil, ScanBarcode, Search } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 
@@ -65,7 +65,24 @@ import type { useI18n } from '@/hooks/use-app-settings';
 interface Way {
   key: string;
   icon: typeof Camera;
-  color: PaletteKey;
+  /**
+   * TRỌNG SỐ, không phải màu.
+   *
+   * Trước đây trường này là `color: PaletteKey` và mỗi ô mang một sắc riêng:
+   * tím, lục lam, xanh dương, cam. Bốn sắc cho bốn nút CÙNG LÀM MỘT VIỆC — ghi
+   * một bữa ăn — nên không sắc nào mang tin gì. Đó là màu dùng để phân biệt cho
+   * có, và nó là chữ ký rõ nhất của một giao diện máy sinh.
+   *
+   * Tệ hơn: nó nói ngược. Chú thích ngay dưới ghi máy ảnh là "cái người ta với
+   * tới và cái app này nhanh nhất", rồi vẽ nó y hệt nút nhập tay — đường lùi
+   * cuối cùng. Bốn ô nặng bằng nhau thì thứ tự không nói được gì.
+   *
+   * Nay chỉ còn hai hạng: `lead` cho đường nhanh nhất, và mặc định cho ba cái
+   * còn lại. Màu của `lead` là MÀU THỰC PHẨM của app (`readinessGreen`, xem
+   * `constants/icon-tint`), tức nó vẫn mang nghĩa — "đây là thẻ thức ăn" —
+   * chứ không phải một sắc bốc ra để cho khác.
+   */
+  lead?: true;
   /** the tile's own word — short enough to sit on one line at a quarter width */
   label: keyof ReturnType<typeof useI18n>;
   /** the full phrase, for VoiceOver, where there is no quarter width to fit */
@@ -79,8 +96,8 @@ interface Way {
  * nothing else knows the food.
  */
 const WAYS: Way[] = [
-  { key: 'camera', icon: Camera, color: 'metricPurple', label: 'nWayPhoto', spoken: 'nAddCamera', route: '/scan-food' },
-  { key: 'barcode', icon: Barcode, color: 'metricCyan', label: 'nWayBarcode', spoken: 'nAddBarcode', route: '/scan-barcode' },
+  { key: 'camera', icon: Camera, lead: true, label: 'nWayPhoto', spoken: 'nAddCamera', route: '/scan-food' },
+  { key: 'barcode', icon: ScanBarcode, label: 'nWayBarcode', spoken: 'nAddBarcode', route: '/scan-barcode' },
   /*
     ── this tile could not do the thing it is named after ──
 
@@ -100,8 +117,8 @@ const WAYS: Way[] = [
     genuinely different acts: one starts by looking a food up, the other by
     typing one in. What they now have in common is that both of them finish.
   */
-  { key: 'search', icon: Search, color: 'metricBlue', label: 'nWaySearch', spoken: 'nAddSearch', route: '/log-meal?focus=search' },
-  { key: 'manual', icon: Pencil, color: 'metricOrangeGraphic', label: 'nWayManual', spoken: 'nAddManual', route: '/log-meal' },
+  { key: 'search', icon: Search, label: 'nWaySearch', spoken: 'nAddSearch', route: '/log-meal?focus=search' },
+  { key: 'manual', icon: Pencil, label: 'nWayManual', spoken: 'nAddManual', route: '/log-meal' },
 ];
 
 export function MealLogActions({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
@@ -121,8 +138,8 @@ export function MealLogActions({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               nav.push(w.route as never);
             }}>
-            <View style={[styles.chip, { backgroundColor: alpha(c[w.color], 0.12) }]}>
-              <Icon icon={w.icon} size={20} color={c[w.color]} />
+            <View style={[styles.chip, w.lead ? styles.chipLead : styles.chipPlain]}>
+              <Icon icon={w.icon} size={20} color={w.lead ? c.readinessGreen : c.mutedForeground} />
             </View>
             <Text style={styles.label} numberOfLines={1}>
               {i18n[w.label] as string}
@@ -134,7 +151,7 @@ export function MealLogActions({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   card: { gap: spacing.sm + 2, padding: spacing.card },
   title: {
     fontSize: 12,
@@ -148,5 +165,12 @@ const stylesFor = makeStyles((c) => ({
      card — the whole width is live, not just the glyph in the middle of it. */
   tile: { flex: 1, alignItems: 'center', gap: 6, paddingVertical: spacing.xs, borderRadius: radius.md },
   chip: { width: 40, height: 40, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  /* Đường nhanh nhất: một lớp wash mỏng của chính màu thực phẩm. 0,12 là đúng
+     con số cả bốn ô từng dùng — chỉ khác là nay chỉ MỘT ô mang nó, nên nó đọc
+     ra là "bắt đầu ở đây" thay vì "bốn cái này khác nhau". */
+  chipLead: { backgroundColor: alpha(c.readinessGreen, 0.12) },
+  /* Ba ô còn lại lùi về bề mặt lõm chung của app — cùng thứ mà mọi ô con khác
+     đang dùng, nên chúng thôi là bốn vật thể riêng và thành một hàng. */
+  chipPlain: { backgroundColor: m.inset.bg },
   label: { ...type.caption, color: c.foreground },
 }));

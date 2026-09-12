@@ -588,7 +588,10 @@ export default function WeeklyReviewScreen() {
             <Animated.View entering={rise(5)}>
             <GlassCard>
               <View style={styles.microTitleRow}>
-                <Icon icon={Target} size={14} color={c.readinessGreen} />
+                {/* Nhãn mục, nên trung tính — xem luật ở `progress.tsx` chỗ cùng icon này.
+                    Lục ở app này nghĩa là THỰC PHẨM và nghĩa là XONG; một cái
+                    bia ngắm màu lục không mang nghĩa nào trong hai nghĩa ấy. */}
+                <Icon icon={Target} size={14} color={c.mutedForeground} />
                 <Text style={styles.microTitle}>{i18n.weeklyReviewRecommendations}</Text>
               </View>
               <View style={styles.recList}>
