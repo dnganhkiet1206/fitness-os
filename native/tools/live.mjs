@@ -157,6 +157,13 @@ const ROUTES = [
   */
   '/log-workout',
   /*
+    Nhật ký bữa ăn của một ngày bất kỳ — màn DUY NHẤT trong app đọc dữ liệu của
+    một ngày không phải hôm nay. Nó có ba trạng thái mà không màn nào khác có
+    cùng lúc: đang tải một ngày mới, một ngày rỗng, và một ngày đọc hỏng; cộng
+    một điều khiển không thể đứng yên (mũi tên "ngày sau" tắt đúng ở hôm nay).
+  */
+  '/diary',
+  /*
     The panel people tick sets off on while they are training. It was
     `/routine`, a root-level screen; it is `/workouts/plan` now — a page inside
     the training tab rather than one pushed over the whole tab bar. Same
@@ -1126,6 +1133,104 @@ const SCENARIOS = [
       }
       if (!/Could not load your data|Không tải được dữ liệu/.test(out.body)) {
         return 'đọc món hỏng mà màn hình không báo gì';
+      }
+      return null;
+    },
+  },
+  {
+    /*
+      ── `/diary`: tham số `date` có THẬT SỰ chảy tới truy vấn không ──
+
+      Mười ba hook nhận `date?` và trước màn này không chỗ gọi nào truyền, nên
+      cả bộ tham số ấy chưa từng chạy khác mặc định một lần nào. Một màn mới gọi
+      chúng mà không ai đo thì "xem được ngày khác" vẫn có thể chỉ là một nhãn
+      ngày đổi chữ trên đúng dữ liệu của hôm nay.
+
+      ── và vì sao nó đo YÊU CẦU MẠNG chứ không đo các hàng hiện ra ──
+
+      Bản đầu của bước này khẳng định "hôm nay có hai bữa, hôm qua không có bữa
+      nào, nên lùi một ngày mà vẫn thấy Breakfast là đỏ". Nó đỏ thật, và nó SAI:
+      route giả ở `openPage` trả về `FIXTURES[table]` NGUYÊN BẢNG, không đọc một
+      tham số lọc nào. `?date_time=gte.…&date_time=lt.…` bị bỏ qua hoàn toàn,
+      nên mọi ngày đều nhận đúng hai bữa ấy.
+
+      Đó là một giới hạn có thật của bộ chạy — nó KHÔNG kiểm được bất kỳ lỗi lọc
+      theo ngày nào của bất kỳ màn nào — và ghi ở đây để người sau không lại
+      dựng một phép khẳng định lên trên nó lần nữa.
+
+      Thứ đo được, và đúng ra là thứ nên đo ngay từ đầu, là YÊU CẦU mà app gửi
+      đi: nếu `date` thật sự chảy tới `useTodayLog` thì sau cú bấm phải có một
+      request `meal_entries` mang `date_time=gte.` của một ngày TRƯỚC hôm nay.
+      Cái đó không phụ thuộc vào việc server giả có biết lọc hay không.
+
+      Và vế cuối là vế dễ hỏng nhất: nút ghi thêm trên một ngày đã qua phải mở
+      form ghi vào NGÀY ẤY. Thiếu một tham số ở đó thì người dùng vừa được mời
+      sửa thứ Năm lại ghi thêm một bữa vào hôm nay, im lặng.
+    */
+    name: 'nhật ký ngày khác: lùi một ngày thì DỮ LIỆU đổi, và ghi thêm vẫn đúng ngày ấy',
+    route: '/diary', mode: 'full',
+    async run(page) {
+      const read = () => page.evaluate(() => document.body.innerText);
+
+      const atToday = await read();
+      if (!/Today|Hôm nay/.test(atToday)) return 'mở /diary mà không thấy nhãn "Hôm nay"';
+      if (!/Breakfast|Bữa sáng/.test(atToday)) return 'ngày hôm nay trong /diary không có bữa nào — fixture hay truy vấn hỏng';
+
+      /* Mũi tên "ngày sau" phải TẮT ở hôm nay: một nhật ký đi được vào tương lai
+         là một nhật ký hứa dữ liệu không thể tồn tại. */
+      const nextDisabled = await page.evaluate(() => {
+        const el = [...document.querySelectorAll('[aria-label]')]
+          .find((e) => /Next day|Ngày sau/.test(e.getAttribute('aria-label')));
+        if (!el) return 'missing';
+        return el.getAttribute('aria-disabled') === 'true' || el.disabled === true;
+      });
+      if (nextDisabled === 'missing') return 'không tìm thấy nút "ngày sau"';
+      if (nextDisabled !== true) return 'đang ở hôm nay mà nút "ngày sau" vẫn bấm được — nhật ký đi được vào tương lai';
+
+      /* Ngày hôm nay theo ĐỒNG HỒ CỦA TRANG, không theo đồng hồ của Node: hai
+         thứ ấy lệch nhau được, và khi lệch thì bước này đỏ vì múi giờ. */
+      const todayStr = await page.evaluate(() => new Date().toLocaleDateString('en-CA'));
+
+      /* Bắt đầu nghe TỪ ĐÂY, nên mọi request bên dưới đều là hệ quả của cú bấm. */
+      const asked = [];
+      page.on('request', (r) => asked.push(decodeURIComponent(r.url())));
+
+      const prev = page.locator('[aria-label="Previous day"], [aria-label="Ngày trước"]').first();
+      if ((await prev.count()) === 0) return 'không tìm thấy nút "ngày trước"';
+      await prev.click();
+      await page.waitForTimeout(3500);
+
+      const atYesterday = await read();
+      if (!/Yesterday|Hôm qua/.test(atYesterday)) {
+        return 'bấm lùi một ngày mà nhãn không đổi thành "Hôm qua"';
+      }
+
+      const windows = asked
+        .filter((u) => /\/rest\/v1\/meal_entries/.test(u))
+        .map((u) => u.match(/date_time=gte\.(\d{4}-\d{2}-\d{2})/)?.[1])
+        .filter(Boolean);
+      if (!windows.length) {
+        return 'bấm lùi một ngày mà app không hỏi lại `meal_entries` lần nào — nhãn đổi, truy vấn thì không';
+      }
+      if (!windows.some((d) => d < todayStr)) {
+        return `bấm lùi một ngày mà cửa sổ truy vấn vẫn bắt đầu từ hôm nay (${windows.join(', ')}) — ` +
+          '`date` không tới được useTodayLog, nên màn chỉ đổi nhãn chứ không đổi dữ liệu';
+      }
+
+      /* Ghi thêm vào CHÍNH ngày đang xem. */
+      const add = page.getByText(/Log a meal for this day|Ghi một bữa cho ngày này/).first();
+      if ((await add.count()) === 0) return 'ngày đã qua không có lối ghi thêm bữa nào';
+      await add.click();
+      await page.waitForTimeout(2500);
+      const url = page.url();
+      if (!/log-meal/.test(url)) return `bấm ghi thêm mà không mở màn ghi bữa: ${url}`;
+      const carried = /[?&]date=(\d{4}-\d{2}-\d{2})/.exec(url)?.[1];
+      if (!carried) {
+        return `mở màn ghi bữa mà KHÔNG mang ngày theo (${url.replace(/^.*8731/, '')}) — ` +
+          'người dùng đang sửa hôm qua sẽ ghi thêm một bữa vào hôm nay';
+      }
+      if (!(carried < todayStr)) {
+        return `mở màn ghi bữa với ngày ${carried}, mà màn đang đứng ở một ngày TRƯỚC ${todayStr}`;
       }
       return null;
     },

@@ -22,7 +22,7 @@ import { useGroceryItems } from '@/hooks/use-extras';
 import { Screen } from '@/components/ascnd/screen';
 import { Measured, NutritionSkeleton, SK } from '@/components/ascnd/skeleton';
 import { LoadFailed } from '@/components/ascnd/load-failed';
-import { TodayMeals } from '@/components/ascnd/today-meals';
+import { DayMeals } from '@/components/ascnd/today-meals';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
@@ -606,10 +606,37 @@ export default function NutritionScreen() {
             */}
             {diaryFailed ? null : (
               <>
-                <SectionTitle>
-                  {lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}
-                </SectionTitle>
-                <TodayMeals meals={today ?? []} i18n={i18n} lang={lang} />
+                {/*
+                  ── "Ngày khác" đứng trên hàng tiêu đề, không phải dưới danh sách ──
+
+                  Tab này là HÔM NAY, cả tab: vòng calo, nước, thực phẩm bổ sung
+                  đều của hôm nay. Nên ngày khác không được chen vào đây, nó
+                  phải là một màn riêng — `/diary` — và chỗ đúng để mời sang đó
+                  là ngay cạnh cái tiêu đề nói "hôm nay", nơi câu hỏi "thế còn
+                  hôm qua?" thật sự nảy ra.
+
+                  Cùng khuôn với "Xem tất cả" của mục Kế hoạch ăn: chữ nhỏ màu
+                  thương hiệu cộng một mũi tên, trên hàng tiêu đề. Một hàng tắt
+                  cao 56 ở đây sẽ là vật to nhất giữa hai thứ nó ngăn cách.
+                */}
+                <View style={styles.diaryHead}>
+                  <SectionTitle>
+                    {lang === 'vi' ? 'Bữa ăn hôm nay' : "Today's meals"}
+                  </SectionTitle>
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel={i18n.nDiaryOtherDays}
+                    hitSlop={8}
+                    style={styles.planAllPill}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      nav.push('/diary');
+                    }}>
+                    <Text style={styles.planAll}>{i18n.nDiaryOtherDays}</Text>
+                    <Icon icon={ChevronRight} size={13} color={c.primary} />
+                  </PressScale>
+                </View>
+                <DayMeals meals={today ?? []} i18n={i18n} lang={lang} />
               </>
             )}
           </>
@@ -970,6 +997,10 @@ const stylesFor = makeStyles((c, m) => ({
   */
   planSection: { gap: spacing.sm + 4 },
   planHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  /* Cùng hàng với `planHead`, nhưng `SectionTitle` mang sẵn `marginTop` của
+     riêng nó nên hàng này chỉ căn ngang; thêm khoảng cách dọc ở đây sẽ cộng
+     dồn với cái đã có và đẩy tiêu đề rời khỏi danh sách nó đặt tên. */
+  diaryHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   /* 13, và đây là vế thứ hai của một cặp — sửa một vế mà quên vế kia là đúng
      cái đã xảy ra: 15 được chọn khi tiêu đề còn 22 (tỉ lệ 0,68), rồi tiêu đề
      hạ xuống 18 mà số này ở nguyên, thành 0,83 — gần ngang hàng tiêu đề.

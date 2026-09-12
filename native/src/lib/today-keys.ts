@@ -42,9 +42,28 @@ export function todayKeys(userId: string | undefined, dateStr: string): unknown[
     /* Lifetime counters — they drive the mascot unlocks, so a fresh log can pop
        the unlock celebration straight away. */
     ['mascot_unlock_stats', userId],
-    /* The streak, and the freezes that cover it. Derived from `daily_logs`, so
-       the first log of the day is exactly when it becomes wrong — see above. */
-    ['mascot_streak', userId, dateStr],
+    /*
+      The streak, and the freezes that cover it. Derived from `daily_logs`, so
+      the first log of the day is exactly when it becomes wrong — see above.
+
+      ── KHÔNG mang `dateStr`, và đó là cả điểm ──
+
+      Truy vấn chuỗi ngày khoá theo `localDateStr()` — HÔM NAY, luôn luôn, dù
+      dữ liệu vừa đổi là của ngày nào (`use-mascot-room.ts`). Còn `dateStr` ở
+      đây là ngày VỪA BỊ GHI, và từ khi có màn `/diary` nó có thể là thứ Ba
+      tuần trước.
+
+      Ghép hai thứ ấy lại thành `['mascot_streak', userId, '2026-09-02']`, một
+      khoá không observer nào mang — nên xoá bữa cuối cùng của một ngày cũ sẽ
+      bẻ chuỗi ngày trong cơ sở dữ liệu mà ngọn lửa trên màn hình vẫn cháy tới
+      lần khởi động lại sau. Đúng cái lỗi mà khối chú thích đầu tệp này kể, chỉ
+      lệch đi một tầng: khoá có trong danh sách, nhưng khớp 0 thứ.
+
+      Bỏ đoạn cuối đi thì nó thành TIỀN TỐ, và `invalidateQueries` khớp theo
+      tiền tố — nên nó bắt được truy vấn ấy ở bất kỳ ngày nào. Cùng dạng mà
+      `use-mascot-room.ts` đã tự dùng ở hai chỗ khác.
+    */
+    ['mascot_streak', userId],
     /* The wallet: quests pay out on the same transitions, and a balance that
        lags makes the shop refuse something already earned. */
     ['mascot_wallet', userId],

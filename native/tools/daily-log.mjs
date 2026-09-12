@@ -309,13 +309,27 @@ const SERVICE = 'src/lib/daily-log-service.ts';
    * `recompute(day)` then `recompute(today)`; the ones that can only ever write
    * today are listed with the reason they cannot be backdated.
    */
+  /*
+    ── `use-nutrition.ts` RỜI khỏi danh sách này ngày 2026-09-12 ──
+
+    Lý do nó từng được miễn là "sổ ăn chỉ hiển thị và sửa được HÔM NAY —
+    TodayMeals chỉ được dựng ở tab Nutrition với dữ liệu hôm nay". Câu ấy đúng
+    cho tới khi có màn `/diary`, nơi `DayMeals` nhận `date` và hai lệnh ghi
+    dựng lại đúng ngày đang xem.
+
+    Nó không còn cần miễn: `recomputeDailyLog(user!.id, dateStr)` với
+    `dateStr = date ?? localDateStr()` đã tự qua được luật. Để lại một dòng
+    miễn trừ mang lý do đã sai thì lần sau ai đọc cũng tin rằng sổ ăn vẫn
+    không lùi ngày được — và đó là cách một danh sách miễn trừ biến thành một
+    tài liệu nói dối.
+  */
   const TODAY_ONLY = new Map([
-    ['src/hooks/use-nutrition.ts',
-     'sổ ăn chỉ hiển thị và sửa được HÔM NAY — TodayMeals chỉ được dựng ở tab Nutrition với dữ liệu hôm nay'],
     ['src/app/log-sleep.tsx',
      'sleepSpan đặt waketime lên NGÀY THAM CHIẾU, nên đêm vừa ghi luôn thuộc hôm nay'],
-    ['src/hooks/use-health-sync.ts',
-     'đồng bộ nền chỉ hỏi HealthKit về hôm nay; phần backfill chỉ ghi cột steps, mà recompute không tính cột đó'],
+    /* `src/hooks/use-health-sync.ts` đã rời khỏi đây cùng ngày: tệp ấy KHÔNG
+       CÒN gọi `recomputeDailyLog` một lần nào — chuỗi ấy chỉ còn nằm trong một
+       khối chú thích. Một mục miễn cho một lời gọi không tồn tại không miễn
+       điều gì cả; nó chỉ làm danh sách trông như đã được rà. */
   ]);
 
   const files = execFileSync('git', ['ls-files', 'src'], { cwd: NATIVE, encoding: 'utf8' })
@@ -323,13 +337,32 @@ const SERVICE = 'src/lib/daily-log-service.ts';
     .filter((f) => /\.tsx?$/.test(f) && f !== SERVICE);
 
   let seen = 0;
+  const stillTodayOnly = new Set();
   for (const f of files) {
     let src;
     try { src = strip(read(f)); } catch { continue; }
     if (!/recomputeDailyLog\(/.test(src)) continue;
     seen++;
-    const calls = [...src.matchAll(/recomputeDailyLog\(\s*[^,]+,\s*([^)]+)\)/g)].map((m) => m[1].trim());
+    /*
+      ── regex này từng MÙ đúng chỗ nó phải nhìn ──
+
+      Bản cũ bắt đối số thứ hai bằng `([^)]+)`, thứ không thể chứa một dấu
+      ngoặc. Nên với `recomputeDailyLog(user.id, localDateStr())` — dạng viết
+      của chính những chỗ chỉ-dựng-hôm-nay mà luật này tồn tại để tìm — nó bắt
+      được `localDateStr(` cụt đuôi, rồi phép thử `/localDateStr\(\)/` trượt, và
+      `todayOnly` ra FALSE. Tức luật im lặng với đúng hình dạng nó đi săn.
+
+      Phát hiện ra nhờ phép kiểm ngược bên dưới: `log-sleep.tsx` nằm trong danh
+      sách miễn mà lại không được tính là today-only, một mâu thuẫn chỉ có thể
+      đến từ phép đo.
+
+      `(?:[^()]|\([^()]*\))*` nuốt được một tầng ngoặc, đủ cho mọi dạng đang
+      dùng: `dateStr`, `localDateStr()`, `day`.
+    */
+    const calls = [...src.matchAll(/recomputeDailyLog\(\s*[^,]+,\s*((?:[^()]|\([^()]*\))*)\)/g)]
+      .map((m) => m[1].trim());
     const todayOnly = calls.every((c) => /localDateStr\(\)|today|todayStr/.test(c));
+    if (todayOnly) stillTodayOnly.add(f);
     if (todayOnly && !TODAY_ONLY.has(f)) {
       problems.push(
         `${f}: chỉ dựng lại NGÀY HÔM NAY (${calls.join(', ')}) — ` +
@@ -338,6 +371,26 @@ const SERVICE = 'src/lib/daily-log-service.ts';
           'hoặc ghi vào danh sách miễn kèm lý do vì sao nó không thể lùi ngày',
       );
     }
+  }
+  /*
+    ── và chiều NGƯỢC LẠI, thứ luật này thiếu cho tới 2026-09-12 ──
+
+    Một mục miễn trừ chỉ đúng chừng nào tệp ấy còn thật sự chỉ ghi được hôm nay.
+    Khi `use-nutrition.ts` học được cách lùi ngày, lý do miễn của nó thành sai —
+    và không có gì ở đây báo, nên nó sẽ nằm lại mãi, kể một câu chuyện cũ về
+    một tệp đã đổi. Danh sách miễn trừ mà không ai kiểm lại chính là chỗ những
+    lời khẳng định hết hạn đến sống.
+
+    Nên: mục nào không còn today-only — hoặc tệp không còn gọi recompute nữa —
+    là đỏ, kèm câu bảo bỏ nó đi.
+  */
+  for (const [f, why] of TODAY_ONLY) {
+    if (stillTodayOnly.has(f)) continue;
+    problems.push(
+      `${f}: nằm trong danh sách miễn ("${why}") nhưng nay đã dựng lại theo NGÀY CỦA BẢN GHI ` +
+        '(hoặc không còn gọi recomputeDailyLog) — bỏ nó khỏi TODAY_ONLY trong tools/daily-log.mjs, ' +
+        'vì một lý do miễn đã hết đúng là một câu nói dối để lại trong luật',
+    );
   }
   if (seen < 5) {
     problems.push(`chỉ thấy ${seen} file gọi recomputeDailyLog — bộ quét lạc mục tiêu, đừng tin kết quả`);
@@ -379,7 +432,12 @@ console.log(
     'ảnh chụp đầy đủ và không gì dựng lại một ngày không ai ghi thêm. Token phiên bản được đọc ' +
     'TRƯỚC khối đọc nguồn và trên một request riêng — đặt nó trong cùng Promise.all thì nó có thể ' +
     'được đọc SAU nguồn và lại ra 500. Mọi chỗ gọi recomputeDailyLog đều dựng lại ngày của bản ghi, ' +
-    'hoặc nằm trong danh sách miễn kèm lý do vì sao nó không thể lùi ngày. Và useStepsAvailable hỏi ' +
+    'hoặc nằm trong danh sách miễn kèm lý do vì sao nó không thể lùi ngày — và từ 12/09 danh sách ấy ' +
+    'được kiểm CẢ HAI CHIỀU: một mục có lý do đã hết đúng (tệp học được cách lùi ngày, hoặc thôi gọi ' +
+    'recompute) là đỏ, chứ không nằm lại kể một câu chuyện cũ. Chính phép kiểm ngược ấy phơi ra rằng ' +
+    'regex đọc đối số thứ hai không chứa nổi một dấu ngoặc, nên `recomputeDailyLog(user.id, ' +
+    'localDateStr())` — đúng hình dạng luật này đi săn — chưa bao giờ bị tính là chỉ-dựng-hôm-nay. ' +
+    'Và useStepsAvailable hỏi ' +
     'steps > 0 chứ không phải IS NOT NULL: cột có DEFAULT 0 và recompute không đặt tên nó, nên ' +
     'IS NOT NULL đúng với MỌI dòng, và mọi tài khoản không có HealthKit bị hiện một nhiệm vụ ' +
     'không bao giờ hoàn thành được',

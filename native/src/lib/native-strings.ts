@@ -599,10 +599,24 @@ const en = {
   nDiaryItems: '{n} items',
   nDiaryItemsOne: '1 item',
   nDiaryEntries: '{n} meals',
+
+  // A day that is not today — the `/diary` screen
+  nDiaryOtherDays: 'Other days',
+  nDiaryTitle: 'Meal diary',
+  nDiaryToday: 'Today',
+  nDiaryYesterday: 'Yesterday',
+  nDiaryPrevDay: 'Previous day',
+  nDiaryNextDay: 'Next day',
+  nDiaryDayTotal: 'Day total',
+  nDiaryAddMeal: 'Log a meal for this day',
   // editing what is already logged
   nItemEdit: 'Edit servings',
   nItemDelete: 'Remove from log',
   nItemDeleteMsg: 'Remove {name} from today\'s log?',
+  /* The same question about a day that is not today. Kept as a second string
+     rather than making the first one vaguer: "today's log" is the more precise
+     sentence and it is the one asked almost every time. */
+  nItemDeleteMsgDay: 'Remove {name} from this day\'s log?',
   /* Vuốt trên thẻ bữa ăn — nhãn ngắn vì chúng ngồi trong một ô chừng 76 điểm. */
   nMealSwipeAdd: 'Add',
   nMealSwipeDelete: 'Delete',
@@ -1381,10 +1395,21 @@ const vi: typeof en = {
   nDiaryItems: '{n} món',
   nDiaryItemsOne: '1 món',
   nDiaryEntries: '{n} bữa',
+
+  // A day that is not today — the `/diary` screen
+  nDiaryOtherDays: 'Ngày khác',
+  nDiaryTitle: 'Nhật ký bữa ăn',
+  nDiaryToday: 'Hôm nay',
+  nDiaryYesterday: 'Hôm qua',
+  nDiaryPrevDay: 'Ngày trước',
+  nDiaryNextDay: 'Ngày sau',
+  nDiaryDayTotal: 'Tổng cả ngày',
+  nDiaryAddMeal: 'Ghi một bữa cho ngày này',
   // editing what is already logged
   nItemEdit: 'Sửa khẩu phần',
   nItemDelete: 'Xoá khỏi nhật ký',
   nItemDeleteMsg: 'Xoá {name} khỏi nhật ký hôm nay?',
+  nItemDeleteMsgDay: 'Xoá {name} khỏi nhật ký ngày này?',
   nMealSwipeAdd: 'Thêm',
   nMealSwipeDelete: 'Xoá',
   nMealDeleteTitle: 'Xoá {meal}?',

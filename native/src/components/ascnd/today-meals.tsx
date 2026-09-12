@@ -22,6 +22,7 @@ import { BOUNCE, spring } from '@/constants/motion';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
+import { localDateStr } from '@/lib/local-date';
 import { toast } from '@/lib/toast';
 import {
   useDeleteMealItem,
@@ -59,6 +60,27 @@ import {
  * draw two "Breakfast" cards that each told half the story. One card now, with
  * the totals added up and the entry count beside the item count, so `1,632
  * kcal · 2 meals · 8 items` is the whole of breakfast in one line.
+ *
+ * ── `DayMeals`, trong một tệp vẫn tên `today-meals.tsx` ──
+ *
+ * Thành phần này nay vẽ được MỘT NGÀY BẤT KỲ: màn `/diary` truyền `date` để
+ * xem và sửa một ngày đã qua. Nên cái tên `TodayMeals` thành một câu nói sai —
+ * đổi rồi.
+ *
+ * TÊN TỆP thì giữ nguyên, và đó là một lựa chọn chứ không phải lười: mười chỗ
+ * khác trong repo trích `today-meals.tsx` như một tiền lệ đã đo
+ * (`expander.tsx`, `swipe-row.tsx`, `hero-panel.tsx`, `retract.tsx`,
+ * `weight-log-list.tsx`, `water.tsx`, `sessions.tsx`, `use-nutrition.ts`), và
+ * `tools/motion.mjs` khoá luật của nó theo ĐƯỜNG DẪN. Đổi tệp là biến mười câu
+ * trích đúng thành mười câu trỏ vào chỗ không có, để sửa một cái tên. Đổi cái
+ * tên sai, giữ đường dẫn đúng.
+ *
+ * `date` đi thẳng xuống hai hook ghi, và chúng tự `?? localDateStr()` — nên chỗ
+ * này không đặt mặc định, hai tầng cùng đặt là hai chỗ để lệch nhau.
+ *
+ * Nhưng CHỮ hiện ra thì so ngày thật chứ không so `date == null`: màn `/diary`
+ * truyền ngày ở mọi lượt, kể cả khi ngày ấy đúng là hôm nay, nên "còn `date` là
+ * ngày khác" sẽ nói "ngày này" giữa lúc đang đứng ở hôm nay.
  */
 
 /** One duration and one curve for everything an opening card moves: its
@@ -202,17 +224,22 @@ function groupByType(meals: LoggedMeal[]): MealGroup[] {
     .sort((a, b) => ORDER.indexOf(a.type) - ORDER.indexOf(b.type));
 }
 
-export function TodayMeals({
+export function DayMeals({
   meals,
   i18n,
   lang,
+  date,
 }: {
   meals: LoggedMeal[];
   i18n: ReturnType<typeof useI18n>;
   lang: 'vi' | 'en';
+  /** ngày đang xem, `YYYY-MM-DD`. Bỏ trống là hôm nay — xem đầu tệp. */
+  date?: string;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
+  /** Ngày đang vẽ có phải hôm nay không — quyết định chữ, không quyết định ghi. */
+  const isToday = (date ?? localDateStr()) === localDateStr();
   const label: Record<string, string> = {
     breakfast: i18n.nBreakfast,
     lunch: i18n.nLunch,
@@ -224,8 +251,8 @@ export function TodayMeals({
 
   const groups = groupByType(meals);
 
-  const del = useDeleteMealItem();
-  const edit = useUpdateMealItemServings();
+  const del = useDeleteMealItem(date);
+  const edit = useUpdateMealItemServings(date);
   const [editing, setEditing] = useState<LoggedItem | null>(null);
 
   /**
@@ -275,7 +302,10 @@ export function TodayMeals({
   const confirmDelete = (it: LoggedItem) => {
     Alert.alert(
       i18n.nItemDelete,
-      i18n.nItemDeleteMsg.replace('{name}', it.food_name),
+      /* "khỏi nhật ký HÔM NAY" là một lời hứa cụ thể, và trên một ngày đã qua
+         nó sai — đúng kiểu câu xác nhận khiến người ta bấm Xoá vì tưởng mình
+         đang xoá thứ khác. */
+      (isToday ? i18n.nItemDeleteMsg : i18n.nItemDeleteMsgDay).replace('{name}', it.food_name),
       [
         { text: i18n.cancel, style: 'cancel' },
         {
@@ -312,14 +342,20 @@ export function TodayMeals({
       <PressScale
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          nav.push('/log-meal');
+          /* Mang NGÀY theo. Không có nó thì nút "chưa ghi bữa nào" trên một
+             ngày đã qua mở ra form ghi vào HÔM NAY, và người dùng vừa được mời
+             sửa thứ Ba lại ghi nhầm thêm một bữa vào thứ Sáu. */
+          nav.push(isToday ? '/log-meal' : `/log-meal?date=${date}`);
         }}>
         <GlassCard style={styles.empty}>
           <Icon icon={UtensilsCrossed} size={20} />
           <Text style={styles.emptyText}>
-            {lang === 'vi'
-              ? 'Chưa ghi bữa nào hôm nay — nhấn để ghi'
-              : 'Nothing logged today — tap to log a meal'}
+            {/* "hôm nay" chỉ đúng khi đang là hôm nay. Trên một ngày đã qua câu
+                ấy là sai, nên ngày khác dùng câu không nhắc tới hôm nào — nhãn
+                ngày đã nằm ngay phía trên ở màn `/diary`. */}
+            {isToday
+              ? (lang === 'vi' ? 'Chưa ghi bữa nào hôm nay — nhấn để ghi' : 'Nothing logged today — tap to log a meal')
+              : (lang === 'vi' ? 'Ngày này chưa ghi bữa nào — nhấn để ghi' : 'Nothing logged this day — tap to log a meal')}
           </Text>
         </GlassCard>
 </PressScale>
