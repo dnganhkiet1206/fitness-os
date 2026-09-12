@@ -1,4 +1,3 @@
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { materials, palettes, sleepRamps, type Material, type Palette, type SleepRamp, type ThemeName } from '@/constants/theme';
 
@@ -20,10 +19,13 @@ import { materials, palettes, sleepRamps, type Material, type Palette, type Slee
  * hai câu trả lời lệch nhau.
  */
 export function useThemeName(): ThemeName {
-  const { theme } = useAppSettings();
-  const system = useColorScheme();
-  if (theme === 'light' || theme === 'dark') return theme;
-  return system === 'light' ? 'light' : 'dark';
+  /* Một phép đọc context, KHÔNG đăng ký sự kiện.
+
+     Hàm này từng tự gọi `useColorScheme()`, và vì `usePalette` gọi nó ở 230
+     chỗ, mỗi component đang gắn lại gắn thêm một listener `Appearance` của
+     riêng mình. Phép giải nay nằm ở `AppSettingsProvider` — chú thích đầy đủ ở
+     `themeName` trong đó — nên hệ thống chỉ bị hỏi một lần cho cả app. */
+  return useAppSettings().themeName;
 }
 
 /**

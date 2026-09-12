@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import { t, type AppLang } from '@/lib/i18n';
 import { nativeStrings } from '@/lib/native-strings';
 
@@ -48,7 +49,29 @@ const SettingsContext = createContext<{
   setLang: (l: AppLang) => void;
   theme: ThemeChoice;
   setTheme: (t: ThemeChoice) => void;
-}>({ lang: 'en', setLang: () => {}, theme: 'system', setTheme: () => {} });
+  /**
+   * Theme đã GIẢI — `light` hoặc `dark`, không còn `system`.
+   *
+   * ── vì sao nó nằm ở đây chứ không tính lại ở mỗi chỗ đọc ──
+   *
+   * `useThemeName` từng tự gọi `useColorScheme()`. Đọc thì vô hại, nhưng
+   * `useColorScheme` của React Native là `useSyncExternalStore` bọc quanh
+   * `Appearance.addChangeListener`, mà hàm ấy là
+   * `eventEmitter.addListener('change', …)` — MỘT listener thật cho MỖI lần
+   * gọi.
+   *
+   * `usePalette()` gọi `useThemeName()`, và `usePalette()` có mặt ở 230 chỗ
+   * trong 128 tệp. Nên mỗi component đang gắn mang theo một listener riêng vào
+   * cùng một sự kiện của hệ thống. Bật/tắt sáng-tối trên máy là emitter phải
+   * duyệt hết chừng ấy listener, rồi React lên lịch chừng ấy lượt dựng — đó
+   * đúng là độ trễ chủ dự án báo.
+   *
+   * Nay hệ thống được hỏi ĐÚNG MỘT LẦN, ở đây, và kết quả đi xuống bằng chính
+   * context đã có sẵn. 230 đăng ký còn 1; chỗ đọc không đổi một dòng nào vì
+   * `useThemeName` giữ nguyên chữ ký.
+   */
+  themeName: 'light' | 'dark';
+}>({ lang: 'en', setLang: () => {}, theme: 'system', setTheme: () => {}, themeName: 'dark' });
 
 export function AppSettingsProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<AppLang>(deviceDefaultLang);
@@ -123,7 +146,17 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
     thì mọi consumer render lại theo — và với 111 stylesheet sắp treo vào đây,
     đó là thứ phải đúng ngay từ đầu chứ không phải tối ưu về sau.
   */
-  const value = useMemo(() => ({ lang, setLang, theme, setTheme }), [lang, theme]);
+  /* Luật giải y hệt bản cũ ở `useThemeName`, chép nguyên văn để không đổi một
+     điểm ảnh nào: chọn tay thì đó là câu trả lời; "theo máy" thì hỏi máy, và
+     `unspecified` KHÔNG phải "sáng" — mặc định của app là tối. */
+  const system = useColorScheme();
+  const themeName: 'light' | 'dark' =
+    theme === 'light' || theme === 'dark' ? theme : system === 'light' ? 'light' : 'dark';
+
+  const value = useMemo(
+    () => ({ lang, setLang, theme, setTheme, themeName }),
+    [lang, theme, themeName],
+  );
 
   /* Splash vẫn che (xem `SplashScreen.preventAutoHideAsync()` ở `_layout.tsx`),
      nên đây là không-vẽ-gì, không phải một khung hình trống. */
