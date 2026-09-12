@@ -129,10 +129,41 @@ const SWIPE_SNAP = { ...spring(0.24, BOUNCE.snappy), overshootClamping: false };
 /**
  * Một tấm hành động sau thẻ bữa ăn.
  *
- * `drag` là quãng lệch NGANG của thẻ so với vị trí đóng — âm khi vuốt sang
- * trái. Dịch tấm theo `drag` cộng/trừ bề ngang của chính nó là điều làm nó
- * DÍNH vào mép thẻ trong suốt cú kéo thay vì đứng yên chờ thẻ trượt qua; đó là
- * khác biệt giữa "một tấm lộ ra" và "một tấm bị bỏ lại".
+ * ── NỞ RA, không TRƯỢT VÀO ──
+ *
+ * Bản trước dịch cả tấm theo `drag ± ACTION_W`: tấm rộng đủ 76 ngay từ điểm
+ * ảnh đầu rồi trượt vào như một cánh cửa. Dựng thật lên rồi nhìn thì thấy ngay
+ * nó sai ở đâu — kéo được 40 điểm, cái hiện ra là NỬA PHẢI của tấm: chữ
+ * "Delete" cụt còn "De", biểu tượng thùng rác nằm ngoài mép, chưa kịp thấy.
+ *
+ * iOS làm ngược lại. Nút bám mép sau của hàng và tự NỞ từ 0 ra bề ngang của
+ * nó, còn ruột (biểu tượng trên, nhãn dưới) luôn nằm giữa phần ĐANG LỘ. Kéo 40
+ * điểm thì được một dải đỏ rộng 40 với thùng rác nằm chính giữa nó. Nhìn ra
+ * thành thị sai khác: một bên là vật thể bị che bớt, một bên là vật thể đang
+ * lớn lên.
+ *
+ * Nên thứ chạy theo `drag` là bề ngang của lớp MÀU, còn ruột giữ nguyên bề
+ * ngang `ACTION_W` và được `alignItems: 'center'` giữ ở giữa — hẹp hơn ruột
+ * thì nó tràn ĐỀU hai bên rồi bị `overflow: 'hidden'` cắt, nên biểu tượng ló
+ * ra từ mép đúng kiểu thị sai của iOS. `Math.abs` vì `drag` âm khi vuốt trái.
+ *
+ * KHÔNG kẹp ở `ACTION_W`: kéo quá bề ngang nút thì lớp màu NỞ THEO. Nếu kẹp,
+ * đoạn ghì thêm của `overshootFriction` sẽ mở ra một khe giữa mép hàng và mép
+ * nút, và khe ấy lọt màu NỀN TRANG — hở đúng cái lỗ mà đoạn trên vừa vá. Nở
+ * theo cũng chính là điều iOS làm: nút giãn ra chứ không bỏ lại chỗ trống.
+ *
+ * ── và vì sao có HAI lớp chứ không một ──
+ *
+ * Cho `width` của chính tấm chạy theo `drag` thì thẻ ĐỨNG YÊN, không mở nổi.
+ * Mất nửa buổi mới thấy tại sao, và lý do nằm trong thư viện: `Swipeable` đo
+ * bề ngang TỰ NHIÊN của tấm hành động (`rightLayoutRef` đặt sau các con, đọc
+ * qua `onLayout`) để biết hàng được phép mở xa tới đâu, rồi `overshootRight`
+ * kẹp quãng lệch vào đúng số đó. Lúc nghỉ `drag` bằng 0, nên tấm đo được 0, và
+ * quãng lệch bị kẹp về 0 — kéo bao nhiêu cũng không nhúc nhích.
+ *
+ * Vậy lớp NGOÀI giữ `ACTION_W` tĩnh để phép đo ấy còn đúng, lớp TRONG mới là
+ * lớp nở. Lớp trong dán vào mép ngoài của hàng bằng `alignSelf`, nên nó nở vào
+ * phía trong đúng chiều iOS nở.
  *
  * `methods.close()` trước khi chạy hành động: nếu không, thẻ ở lại trạng thái
  * mở sau khi hộp thoại xác nhận đóng, và người dùng phải tự vuốt ngược nó về.
@@ -156,25 +187,31 @@ function SwipeAction({
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: drag.value + (side === 'right' ? ACTION_W : -ACTION_W) }],
-  }));
-  const fg = tone === 'destructive' ? c.destructiveForeground : c.foreground;
+  const grow = useAnimatedStyle(() => ({ width: Math.abs(drag.value) }));
+  const fg = tone === 'destructive' ? c.destructiveForeground : c.primaryForeground;
   return (
-    <Animated.View style={[styles.swipeAction, tone === 'destructive' && styles.swipeDanger, style]}>
-      <PressScale
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        style={styles.swipeHit}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          methods.close();
-          onPress();
-        }}>
-        <Icon icon={icon} size={18} color={fg} />
-        <Text style={[styles.swipeLabel, { color: fg }]}>{label}</Text>
-      </PressScale>
-    </Animated.View>
+    <View style={styles.swipeAction}>
+      <Animated.View
+        style={[
+          styles.swipeFill,
+          side === 'left' ? styles.swipeFillLeft : styles.swipeFillRight,
+          tone === 'destructive' && styles.swipeDanger,
+          grow,
+        ]}>
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={label}
+          style={styles.swipeHit}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            methods.close();
+            onPress();
+          }}>
+          <Icon icon={icon} size={18} color={fg} />
+          <Text style={[styles.swipeLabel, { color: fg }]}>{label}</Text>
+        </PressScale>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -576,14 +613,29 @@ function MealCard({
         thêm cái chưa từng có. Hai lớp, hai câu trả lời khác nhau, và đó là lý
         do câu cũ không bị xoá.
 
-        Tấm hành động KHÔNG tràn ra mép thẻ. `glass-card.tsx` ghi rõ ở dòng
-        `overflow` rằng bản giấy phải để `visible` để không cắt mất bóng đổ, và
-        "nếu sau này có ai thêm một lớp tràn viền vào nhánh giấy, đây là dòng
-        phải xét lại". Tràn viền ở đây là đổi lấy bóng của cả app để lấy 20
-        điểm bề ngang — nên tấm nằm trong lề, tự bo góc và tự cắt.
+        ── TẤM CHẠM MÉP THẺ, mà KHÔNG đụng tới `overflow` của thẻ ──
+
+        Bản trước để tấm nằm gọn trong lề thẻ, và dựng lên nhìn thì nó đọc ra
+        một VIÊN THUỐC nổi giữa nền trắng: trắng ở trên, ở dưới và cả bên phải
+        nó. Của Apple là một DẢI ĐẶC cao hết hàng, sát mép, chỉ bo ở hai góc
+        ngoài theo đúng góc của hàng. Hai hình khác nhau về loại, không phải về
+        mức độ — nên đây mới là chỗ phải sửa.
+
+        Cách sửa KHÔNG phải là cho tấm tràn ra ngoài thẻ. `glass-card.tsx` ghi
+        ở dòng `overflow` rằng bản giấy phải để `visible` để không cắt mất bóng
+        đổ, và câu ấy vẫn đứng: dòng đó không bị đụng tới. Thay vào đó `meal`
+        bỏ hẳn đệm của thẻ (`padding: 0`) và trả đệm ấy xuống cho hàng đầu và
+        cho thân. Hộp vuốt vì thế rộng đúng bằng thẻ và cao đúng bằng hàng đầu,
+        nên tấm đã sát mép sẵn — không cần ai tràn đi đâu cả.
+
+        Bo góc thì đặt trên chính hộp vuốt (`swipeBox`), bằng `m.radius` của
+        thẻ, và thư viện đã tự để `overflow: 'hidden'` trên hộp ấy
+        (`ReanimatedSwipeable.tsx`, `styles.container`) nên không phải thêm.
+        Khi thẻ MỞ, hai góc dưới vuông lại: lúc đó hàng đầu không còn là đáy
+        thẻ nữa, và một dải đỏ bo góc ở GIỮA thẻ là thứ iOS không bao giờ vẽ.
       */}
       <ReanimatedSwipeable
-        containerStyle={styles.swipeBox}
+        containerStyle={[styles.swipeBox, open && styles.swipeBoxOpen]}
         /* 1, không phải 2. `friction` CHIA quãng kéo, nên 2 làm thẻ đi được
            nửa quãng ngón tay đi — ngón và thẻ rời nhau ngay từ điểm ảnh đầu.
            Ở Reminders hàng bám ngón 1:1 cho tới khi tấm lộ hết rồi mới ghì
@@ -593,8 +645,19 @@ function MealCard({
         /* Một nhịp chạm khi tấm CHỐT mở — cùng chỗ iOS đánh nhịp. Không đánh
            lúc bắt đầu kéo: cú kéo đã là phản hồi của chính nó. */
         onSwipeableWillOpen={() => Haptics.selectionAsync()}
-        overshootLeft={false}
-        overshootRight={false}
+        /* GHÌ, chứ không CHẶN CỨNG.
+
+           Bản trước để `overshootLeft/Right={false}`, và trong thư viện cái đó
+           không phải "ghì lại" — nó là kẹp thẳng: `interpolate` mất hẳn đoạn
+           dốc sau `-rightWidth`, nên qua 76 điểm là hàng ĐỨNG IM dưới ngón còn
+           đang đi. iOS không làm thế; kéo quá bề ngang nút thì hàng vẫn theo
+           ngón, chỉ chậm hẳn lại, và chính chỗ chậm ấy nói cho tay biết đã hết
+           đường.
+
+           `overshootFriction` là số CHIA đoạn dốc thêm ấy (mặc định 1, tức
+           theo ngón 1:1 — quá lỏng). 8 cho ra: kéo quá 100 điểm thì đi thêm
+           12,5. Đủ để tay thấy hàng còn sống, không đủ để nút hở ra. */
+        overshootFriction={8}
         leftThreshold={ACTION_W / 2}
         rightThreshold={ACTION_W / 2}
         renderLeftActions={(_p, drag, methods) => (
@@ -647,7 +710,7 @@ function MealCard({
         around it currently is.
       */}
       <Animated.View style={[styles.body, body]} pointerEvents={open ? 'auto' : 'none'}>
-        <View onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
+        <View style={styles.bodyInner} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
           {g.items.map((it, i) => (
             <MealRow
               key={it.id}
@@ -913,34 +976,63 @@ function EditServingsSheet({
 
 const stylesFor = makeStyles((c, m) => ({
   list: { gap: spacing.sm },
-  meal: { gap: 2, paddingVertical: spacing.md },
+  meal: { padding: 0 },
   // clipped, so the rows inside can lay out at full height while the box around
   // them is still opening
   body: { overflow: 'hidden' },
+  bodyInner: { paddingHorizontal: spacing.card, paddingBottom: spacing.md },
   /*
-    Hộp của cú vuốt: CẮT, nhưng KHÔNG bo góc.
+    Hộp của cú vuốt: bo đúng bán kính THẺ, và bán kính nằm ở ĐÂY chứ không ở
+    trên tấm hành động.
 
-    Bản đầu để `borderRadius: radius.md` ở đây cho tấm hành động lộ ra như một
-    viên bo tròn. Ảnh dựng bắt được cái giá: hàng tiêu đề chỉ cao chừng 44, nên
-    một bán kính 16 ăn vào đúng vùng có chữ — dòng "Breakfast" mất nét trái của
-    chữ B ở góc TRÊN-trái, và dòng macro mất nửa trái của số đầu ở góc
-    DƯỚI-trái. Hai vết cắt ở hai góc khác nhau chính là thứ chỉ ra bán kính chứ
-    không phải một mép thẳng.
+    Từng có một vòng ngược lại: bán kính đặt trên chính tấm, để tấm lộ ra như
+    một viên bo tròn. Hồi ấy hộp này chỉ rộng 330 cao 34 — nằm lọt trong lề
+    thẻ — nên một bán kính 16 trên hộp ăn vào đúng vùng có chữ, và ảnh dựng bắt
+    được: chữ "Breakfast" mất nét trái của chữ B ở góc TRÊN-trái, dòng macro
+    mất nửa trái số đầu ở góc DƯỚI-trái. Hai vết cắt ở hai góc khác nhau chính
+    là thứ chỉ ra bán kính chứ không phải một mép thẳng.
 
-    `overflow: 'hidden'` thì phải giữ — không có nó tấm hành động tràn ra ngoài
-    thẻ khi kéo. Nên bán kính chuyển sang chính TẤM, nơi nó vốn thuộc về: cái
-    cần trông như một viên là tấm Xoá/Thêm, không phải cái hộp vô hình quanh
-    hàng chữ.
+    Giờ hộp rộng đúng bằng thẻ và cao đúng bằng hàng đầu, còn chữ đã có đệm 20
+    của riêng `mealHead` đẩy vào trong. Cung của bán kính 20 tại mép trên của
+    chữ (cách đỉnh 16) chỉ thụt vào 20 − √(20² − 4²) ≈ 0,4 điểm — nên vết cắt
+    cũ không thể quay lại, và ảnh dựng lại xác nhận chữ nguyên vẹn.
+
+    `overflow: 'hidden'` KHÔNG cần khai ở đây: `ReanimatedSwipeable` đã đặt sẵn
+    trên `styles.container` của chính nó.
   */
-  swipeBox: { overflow: 'hidden' },
-  swipeAction: {
-    width: ACTION_W,
+  swipeBox: { borderRadius: m.radius },
+  swipeBoxOpen: { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
+  swipeAction: { width: ACTION_W },
+  /*
+     Tấm TRUNG TÍNH lấy `primary`, không lấy `inset.bg`.
+
+     Bản trước lấy `inset.bg`, mà trên giấy `inset.bg` CHÍNH LÀ nền trang. Dựng
+     lên nhìn thì tấm "Thêm" không đọc ra cái nút: nó đọc ra một lỗ thủng trên
+     thẻ, vì đúng là nó cùng màu với thứ nằm sau thẻ. Apple không bao giờ để
+     hành động vuốt mang màu nền — của họ luôn là một mảng ĐẶC có nhãn tương
+     phản, kể cả hành động phụ (xám đặc, như "More" trong Mail).
+
+     `primary`/`primaryForeground` là cặp nút SẴN CÓ của app, nên chỗ này không
+     đẻ thêm màu nào — đúng hướng "đưa màu về chủ đề" — mà vẫn đặc: giấy ra mực
+     đen chữ trắng, tối ra xám sáng chữ đen. Tương phản khỏi phải đo lại: nó là
+     cặp mà mọi nút chính trong app đã dùng. */
+  swipeFill: {
+    height: '100%',
+    alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: m.inset.bg,
-    borderRadius: radius.md,
+    overflow: 'hidden',
+    backgroundColor: c.primary,
   },
+  swipeFillLeft: { alignSelf: 'flex-start' },
+  swipeFillRight: { alignSelf: 'flex-end' },
   swipeDanger: { backgroundColor: c.destructive },
-  swipeHit: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  swipeHit: {
+    width: ACTION_W,
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
   /*
      14/700, không phải `type.caption` (11/500).
 
@@ -952,7 +1044,13 @@ const stylesFor = makeStyles((c, m) => ({
      Tấm "Thêm" không cần điều đó (chữ `foreground` trên `inset.bg`), nhưng hai
      tấm dùng chung một cỡ vì chúng nằm cạnh nhau trong cùng một cử chỉ. */
   swipeLabel: { fontSize: 14, fontWeight: '700' },
-  mealHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  mealHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.card,
+    paddingVertical: spacing.md,
+  },
   mealHeadText: { flex: 1, minWidth: 0, gap: 2 },
   mealName: { ...type.headline, color: c.foreground },
   mealSub: { ...type.caption, color: c.mutedForeground },
