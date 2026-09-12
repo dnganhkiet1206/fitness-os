@@ -1049,10 +1049,25 @@ const SCENARIOS = [
           const r = el.getBoundingClientRect();
           if (r.height <= 30 || r.height >= 120) continue;
           el.setAttribute('data-probe', 'mealhead');
-          /* Thẻ là tổ tiên gần nhất cao hơn hàng tiêu đề — đo nó để biết đã mở */
-          const card = el.parentElement;
-          card?.setAttribute('data-probe-card', '1');
-          return { h: Math.round(card?.getBoundingClientRect().height ?? 0) };
+          /*
+            Thẻ là tổ tiên gần nhất CAO HƠN hàng tiêu đề — phải đi tìm, không
+            lấy `parentElement`.
+
+            Bản đầu lấy cha trực tiếp và nó đúng cho tới khi thẻ bữa ăn được
+            bọc trong `ReanimatedSwipeable`: cây nay có hai lớp bọc cao 0 xen
+            vào, nên phép đo ra "0 → 0px" và bước này đỏ trong khi app chạy
+            đúng (đo thật: 70 → 202px). Một phép đo bám vào hình dạng cây là
+            một phép đo hỏng ở lần đổi cây kế tiếp.
+          */
+          const headH = r.height;
+          let card = el.parentElement;
+          for (let i = 0; i < 6 && card; i++) {
+            if (card.getBoundingClientRect().height > headH) break;
+            card = card.parentElement;
+          }
+          if (!card) return null;
+          card.setAttribute('data-probe-card', '1');
+          return { h: Math.round(card.getBoundingClientRect().height) };
         }
         return null;
       });
