@@ -289,8 +289,52 @@ export const FIXTURES = {
     id: `rd${i}`, user_id: UID, day_of_week: i, is_rest: false, is_deload: false,
     notes: '', template_id: 't1',
   })),
-  meal_entries: [{
-    id: 'm1', user_id: UID, date_time: day(0.25), meal_type: 'breakfast',
-    total_kcal: 520, total_protein_g: 38, total_carbs_g: 54, total_fat_g: 14, total_fiber_g: 7,
-  }],
+  /*
+    ── hai bữa, và mỗi bữa CÓ MÓN ──
+
+    Bảng này từng có `meal_entries` mà không có `meal_entry_items`, và hệ quả
+    lớn hơn một dòng fixture thiếu: `live.mjs` **chưa bao giờ vẽ một thẻ bữa ăn
+    có món**. Nhật ký mở ra rỗng ở mọi lượt chạy, nên phần mở thẻ, các hàng
+    món, hai nút sửa/xoá trên từng hàng và sheet khẩu phần chưa từng được bộ
+    chạy chạm tới — trong khi đó là đúng những thứ người dùng dùng để sửa một
+    bữa ăn ghi nhầm.
+
+    Tệ hơn: trạng thái mà bộ chạy ngồi trong suốt thời gian ấy — thẻ ghi đủ
+    calo nhưng `0 món` — chính là trạng thái LỖI mà `useTodayLog` sinh ra khi
+    nuốt lỗi đọc món. Bộ chạy sống trong bằng chứng của một lỗi mà không có
+    cách nào nhận ra, vì nó không biết hình dạng ĐÚNG trông thế nào.
+
+    Số liệu khớp theo HAI chiều, và cả hai đều cố ý:
+
+      · tổng các món = tổng của bữa, từng macro một;
+      · mỗi món tự khớp Atwater (P×4 + C×4 + F×9 = kcal của chính nó).
+
+    Chiều thứ hai không bắt buộc với thức ăn thật — chất xơ, làm tròn, rượu đều
+    làm lệch vài kcal — nhưng một fixture tự mâu thuẫn sẽ che đúng loại lỗi mà
+    nhật ký sinh ra để bắt, nên ở đây nó khớp tuyệt đối.
+  */
+  meal_entries: [
+    {
+      id: 'm1', user_id: UID, date_time: day(0.25), meal_type: 'breakfast',
+      total_kcal: 540, total_protein_g: 36, total_carbs_g: 63, total_fat_g: 16, total_fiber_g: 8,
+    },
+    {
+      id: 'm2', user_id: UID, date_time: day(0.15), meal_type: 'lunch',
+      total_kcal: 660, total_protein_g: 49, total_carbs_g: 71, total_fat_g: 20, total_fiber_g: 9,
+    },
+  ],
+  meal_entry_items: [
+    /* bữa sáng — 184+89+155+112 = 540 kcal · 36 P · 63 C · 16 F */
+    { id: 'mi1', meal_entry_id: 'm1', food_name: 'Yến mạch 50g', servings: 1, kcal: 184, protein_g: 7, carbs_g: 30, fat_g: 4, fiber_g: 5 },
+    { id: 'mi2', meal_entry_id: 'm1', food_name: 'Sữa chua Hy Lạp 0% 150g', servings: 1, kcal: 89, protein_g: 15, carbs_g: 5, fat_g: 1, fiber_g: 0 },
+    /* khẩu phần khác 1 — hàng DUY NHẤT hiện chữ `×2`, và là hàng để thử sheet
+       sửa khẩu phần. Không có nó thì nhánh `it.servings !== 1` không bao giờ
+       chạy trong bộ chạy. */
+    { id: 'mi3', meal_entry_id: 'm1', food_name: 'Trứng luộc', servings: 2, kcal: 155, protein_g: 13, carbs_g: 1, fat_g: 11, fiber_g: 0 },
+    { id: 'mi4', meal_entry_id: 'm1', food_name: 'Chuối', servings: 1, kcal: 112, protein_g: 1, carbs_g: 27, fat_g: 0, fiber_g: 3 },
+    /* bữa trưa — 265+269+126 = 660 kcal · 49 P · 71 C · 20 F */
+    { id: 'mi5', meal_entry_id: 'm2', food_name: 'Cơm trắng 200g', servings: 1, kcal: 265, protein_g: 8, carbs_g: 56, fat_g: 1, fiber_g: 1 },
+    { id: 'mi6', meal_entry_id: 'm2', food_name: 'Ức gà áp chảo 150g', servings: 1, kcal: 269, protein_g: 38, carbs_g: 0, fat_g: 13, fiber_g: 0 },
+    { id: 'mi7', meal_entry_id: 'm2', food_name: 'Rau xào 200g', servings: 1, kcal: 126, protein_g: 3, carbs_g: 15, fat_g: 6, fiber_g: 8 },
+  ],
 };

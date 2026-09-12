@@ -993,6 +993,143 @@ const SCENARIOS = [
       return null;
     },
   },
+  {
+    /*
+      ── nhật ký bữa ăn: thứ bộ chạy này chưa bao giờ nhìn thấy ──
+
+      `live-world.mjs` có `meal_entries` mà không có `meal_entry_items`, nên ở
+      MỌI lượt chạy trước, mọi thẻ bữa ăn đều mở ra rỗng và tóm tắt ghi
+      `0 items · 520 kcal`. Phần mở thẻ, các hàng món, hai nút sửa/xoá trên
+      từng hàng — tức đúng những thứ người dùng dùng để sửa một bữa ghi nhầm —
+      chưa từng được chạm tới, trong khi 32 màn vẫn báo xanh.
+
+      Bước này canh cả ba: tóm tắt đếm đúng, thẻ MỞ RA CAO LÊN thật, và mỗi
+      hàng món có hai nút bấm được.
+    */
+    name: 'nhật ký: thẻ bữa ăn mở ra có món, mỗi món có nút sửa và xoá',
+    route: '/nutrition', mode: 'full',
+    async run(page) {
+      /* 1. Tóm tắt phải ĐẾM ĐÚNG.
+
+         Đọc từ chính các hàng tiêu đề bữa ăn, KHÔNG từ `body.innerText`: chuỗi
+         `{n} món` còn là của danh sách đi chợ (`nGroceryLeft`) và của thực đơn
+         (`nRmFoods`), nên quét cả trang là để một fixture thêm vào ngày mai làm
+         bước này đỏ vì một lý do chẳng liên quan gì. */
+      const heads = await page.evaluate(() => {
+        const seen = new Set();
+        for (const el of document.querySelectorAll('div')) {
+          const t = (el.innerText ?? '').trim();
+          if (!/^(Breakfast|Lunch|Dinner|Bữa sáng|Bữa trưa|Bữa tối)/.test(t)) continue;
+          if (!/kcal/.test(t) || t.length > 90) continue;
+          const r = el.getBoundingClientRect();
+          if (r.height <= 30 || r.height >= 120) continue;
+          seen.add(t.replace(/\n/g, ' | '));
+        }
+        return [...seen];
+      });
+      if (heads.length < 2) return `nhật ký chỉ có ${heads.length} thẻ bữa ăn, chờ ít nhất 2: ${JSON.stringify(heads)}`;
+      const zero = heads.find((t) => /\b0 (items|món)\b/.test(t));
+      if (zero) return `thẻ bữa ăn ghi "0 món" — fixture thiếu món, hoặc lượt đọc món hỏng mà bị nuốt: ${zero}`;
+      if (!heads.some((t) => /^(Breakfast|Bữa sáng)/.test(t) && /\b4 (items|món)\b/.test(t))) {
+        return `bữa sáng không ghi "4 món": ${JSON.stringify(heads)}`;
+      }
+
+      /* 2. Mở thẻ bữa sáng. */
+      const head = await page.evaluate(() => {
+        for (const el of document.querySelectorAll('div')) {
+          const t = (el.innerText ?? '').trim();
+          if (!/^(Breakfast|Bữa sáng)/.test(t) || !/kcal/.test(t) || t.length > 90) continue;
+          const r = el.getBoundingClientRect();
+          if (r.height <= 30 || r.height >= 120) continue;
+          el.setAttribute('data-probe', 'mealhead');
+          /* Thẻ là tổ tiên gần nhất cao hơn hàng tiêu đề — đo nó để biết đã mở */
+          const card = el.parentElement;
+          card?.setAttribute('data-probe-card', '1');
+          return { h: Math.round(card?.getBoundingClientRect().height ?? 0) };
+        }
+        return null;
+      });
+      if (!head) return 'không tìm thấy thẻ bữa sáng trong nhật ký';
+
+      await page.click('[data-probe="mealhead"]');
+      await page.waitForTimeout(1500);
+
+      const after = await page.evaluate(() => {
+        const card = document.querySelector('[data-probe-card]');
+        const labels = ['Sửa khẩu phần', 'Xoá khỏi nhật ký', 'Edit servings', 'Remove from log'];
+        const btns = [...(card?.querySelectorAll('[aria-label]') ?? [])]
+          .filter((e) => labels.includes(e.getAttribute('aria-label')))
+          .filter((e) => {
+            const r = e.getBoundingClientRect();
+            return r.width > 0 && r.height > 0;
+          });
+        return {
+          h: Math.round(card?.getBoundingClientRect().height ?? 0),
+          btns: btns.length,
+          text: (card?.innerText ?? '').replace(/\n/g, ' | '),
+        };
+      });
+
+      /* 3. Cao lên thật — không phải chỉ đổi một thuộc tính */
+      if (after.h <= head.h) return `bấm mở mà thẻ không cao lên (${head.h} → ${after.h}px)`;
+      /* 4. Bốn món, mỗi món hai nút */
+      if (after.btns !== 8) return `mở ra chỉ thấy ${after.btns} nút sửa/xoá, phải là 8 (4 món × 2)`;
+      /* 5. Tên món có thật trên màn, và nhánh "khẩu phần khác 1" có chạy */
+      if (!/Yến mạch/.test(after.text)) return `mở ra không thấy tên món: ${after.text.slice(0, 120)}`;
+      if (!/×2/.test(after.text)) return 'không thấy dấu ×2 — nhánh khẩu phần khác 1 chưa từng được vẽ';
+      return null;
+    },
+  },
+  {
+    /*
+      ── và nếu lượt đọc MÓN hỏng, màn hình phải nói ra ──
+
+      `useTodayLog` đọc hai lượt: `meal_entries` cho tổng, rồi `meal_entry_items`
+      cho chi tiết. Lượt đầu hỏng thì ném và tab hiện `LoadFailed`. Lượt thứ hai
+      từng bị nuốt lỗi, nên truy vấn vẫn THÀNH CÔNG với dữ liệu thiếu một nửa:
+      mỗi bữa đủ calo, `items: []`, và người dùng nhìn một thẻ "0 món · 540 kcal"
+      mở ra rỗng, không có hàng nào để bấm sửa hay xoá — tức đúng lúc dữ liệu
+      đáng ngờ nhất thì đường sửa nó biến mất, trong im lặng.
+
+      Chỉ chặn ĐÚNG bảng món, không chặn `meal_entries`: đó là điều phân biệt
+      bước này với chế độ `fail`, nơi mọi truy vấn đều hỏng và lượt đọc đầu che
+      mất lượt thứ hai.
+    */
+    name: 'nhật ký: đọc món hỏng thì NÓI RA, không vẽ "0 món"',
+    route: '/nutrition', mode: 'full',
+    async run(page) {
+      await page.route(
+        (u) => u.pathname.includes('/rest/v1/meal_entry_items'),
+        (r) => r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' }),
+      );
+      /* Cache bền được nạp lại lúc khởi động và `staleTime` là 60s, nên không
+         xoá nó thì lần tải sau phục vụ lại KẾT QUẢ CŨ ĐÃ THÀNH CÔNG và bước này
+         xanh vì một lý do không liên quan gì tới điều nó hỏi. */
+      await page.evaluate(() => window.localStorage.removeItem('ascnd_rq_cache'));
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.waitForTimeout(12000);
+
+      const out = await page.evaluate(() => {
+        const heads = new Set();
+        for (const el of document.querySelectorAll('div')) {
+          const t = (el.innerText ?? '').trim();
+          if (!/^(Breakfast|Lunch|Dinner|Bữa sáng|Bữa trưa|Bữa tối)/.test(t)) continue;
+          if (!/kcal/.test(t) || t.length > 90) continue;
+          const r = el.getBoundingClientRect();
+          if (r.height > 30 && r.height < 120) heads.add(t.replace(/\n/g, ' | '));
+        }
+        return { heads: [...heads], body: document.body.innerText };
+      });
+      if (out.heads.length) {
+        return 'đọc món hỏng mà vẫn vẽ thẻ bữa ăn kèm đủ calo — lỗi bị nuốt, và người dùng ' +
+          `mất luôn đường sửa: ${JSON.stringify(out.heads)}`;
+      }
+      if (!/Could not load your data|Không tải được dữ liệu/.test(out.body)) {
+        return 'đọc món hỏng mà màn hình không báo gì';
+      }
+      return null;
+    },
+  },
 ];
 
 // ── the canary ────────────────────────────────────────────────────────────

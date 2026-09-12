@@ -23,12 +23,18 @@ export function useSupplementChecklist(date?: string) {
         .eq('user_id', user!.id)
         .order('timing');
       if (supErr) throw supErr;
-      const { data: intakes } = await supabase
+      /* Cùng một hình dạng lỗi với `useTodayLog`: lượt đọc đầu ném, lượt thứ
+         hai thì không. Bỏ `error` ở đây làm `intakes` thành `undefined`, mọi
+         thực phẩm bổ sung hiện ra là CHƯA uống, và hàng tắt ở tab Dinh dưỡng
+         ghi `0/4 hôm nay` cho một người đã tích đủ bốn. Không phân biệt được
+         với một ngày chưa uống gì — nên người ta uống lại liều thứ hai. */
+      const { data: intakes, error: intakeErr } = await supabase
         .from('supplement_intake_logs')
         .select('supplement_id, taken')
         .eq('user_id', user!.id)
         .gte('date_time', localDayRangeISO(dateStr).start)
         .lt('date_time', localDayRangeISO(dateStr).end);
+      if (intakeErr) throw intakeErr;
       const takenIds = new Set((intakes ?? []).filter((i) => i.taken).map((i) => i.supplement_id));
       return (supplements ?? []).map((s) => ({ ...s, taken: takenIds.has(s.id) }));
     },

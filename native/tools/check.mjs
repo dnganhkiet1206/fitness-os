@@ -486,6 +486,10 @@ const STEPS = [
   ['giờ nhắc nhở', 'node', ['tools/reminder-timing.mjs']],
   ['đã nối chưa', 'node', ['tools/linked.mjs']],
   ['ghi ngày', 'node', ['tools/daily-log-write.mjs']],
+  /* Đối xứng với bước trên: đó là lệnh GHI hỏng mà bị nuốt, đây là lượt ĐỌC
+     hỏng mà bị nuốt. Cùng một hậu quả — màn hình nói một câu tự tin về dữ liệu
+     nó không có — chỉ khác chiều. */
+  ['đọc nửa vời', 'node', ['tools/query-partial.mjs']],
   ['phép chiếu ngày', 'node', ['tools/daily-log.mjs']],
   ['bàn giao quét', 'node', ['tools/scan-handoff.mjs']],
   /*

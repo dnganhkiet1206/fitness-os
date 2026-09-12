@@ -363,10 +363,33 @@ export function useTodayLog(date?: string) {
       if (error) throw error;
       if (!entries || entries.length === 0) return [];
 
-      const { data: items } = await supabase
+      /*
+        ── lỗi của lượt đọc THỨ HAI cũng phải ném ──
+
+        Dòng này từng là `const { data: items } = await …`, bỏ `error` đi. Lượt
+        đọc đầu (entries) hỏng thì ném, và tab bắt được qua `diaryFailed` rồi
+        hiện `LoadFailed`. Lượt đọc này hỏng thì `items` là `undefined`,
+        `byEntry` rỗng, và hàm vẫn trả về THÀNH CÔNG — mỗi bữa ăn mang đủ tổng
+        calo và macro nhưng `items: []`.
+
+        Người dùng thấy một thẻ ghi **"0 món · 520 kcal"**, mở ra rỗng, không có
+        hàng nào để bấm sửa hay xoá. Tức đúng lúc dữ liệu đáng ngờ nhất thì app
+        lại gỡ mất đường sửa nó, và không nói một tiếng nào.
+
+        React Query chỉ có MỘT kênh để nói "dữ liệu này không tin được" — kênh
+        lỗi. Một hàm trả về thành công với dữ liệu thiếu một nửa thì màn hình
+        không có cách nào phân biệt "bữa ăn rỗng" với "chưa đọc được món", và
+        nó chọn nhầm cái vô hại hơn.
+
+        Đây đúng hình dạng lỗi mà chú thích `groups.length === 0` trong
+        `today-meals.tsx` đã tả một tầng bên trên: *"A failed read also left
+        `meals` empty"*. Tầng ấy được bịt, tầng này thì không.
+      */
+      const { data: items, error: itemsError } = await supabase
         .from('meal_entry_items')
         .select('id, meal_entry_id, food_name, servings, kcal, protein_g, carbs_g, fat_g')
         .in('meal_entry_id', entries.map((e) => e.id));
+      if (itemsError) throw itemsError;
 
       const byEntry = new Map<string, LoggedItem[]>();
       for (const it of items ?? []) {
