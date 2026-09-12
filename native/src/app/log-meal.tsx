@@ -76,7 +76,7 @@ export default function LogMealSheet() {
   const styles = stylesFor(c);
   const { user } = useAuth();
   const { lang } = useAppSettings();
-  const { focus, date: dateParam } = useLocalSearchParams<{ focus?: string; date?: string }>();
+  const { focus, date: dateParam, meal: mealParam } = useLocalSearchParams<{ focus?: string; date?: string; meal?: string }>();
   /*
     NGÀY đang được ghi vào, đến từ route.
 
@@ -104,7 +104,21 @@ export default function LogMealSheet() {
   ] as const;
 
   const vi = lang === 'vi';
-  const [mealType, setMealType] = useState<MealType>('lunch');
+  /*
+    Bữa nào — từ route khi có, 'lunch' khi không.
+
+    Thẻ bữa ăn ở nhật ký vuốt sang phải mở màn này để thêm món vào ĐÚNG bữa
+    đang mở, nên nó gửi kèm `?meal=`. Không có tham số thì mọi lối vào cũ —
+    nút máy ảnh, quét mã, ô tìm món — vẫn rơi vào 'lunch' như trước.
+
+    Kiểm tư cách bằng chính `MEAL_KEYS` chứ không ép kiểu: tham số route là
+    chuỗi tuỳ ý từ bên ngoài, và một giá trị lạ lọt vào `mealType` sẽ ghi một
+    bữa mà bộ lọc của nhật ký không bao giờ gom lại — món biến mất mà không
+    có lỗi nào.
+  */
+  const [mealType, setMealType] = useState<MealType>(() =>
+    (MEAL_KEYS as readonly string[]).includes(mealParam ?? '') ? (mealParam as MealType) : 'lunch',
+  );
   const [items, setItems] = useState<MealItem[]>([]);
   const [search, setSearch] = useState('');
   /*

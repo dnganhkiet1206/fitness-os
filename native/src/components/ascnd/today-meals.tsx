@@ -1,6 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { ChevronDown, Minus, Pencil, Plus, Trash2, UtensilsCrossed } from 'lucide-react-native';
+import { ChevronDown, Minus, Pencil, Plus, Trash2, UtensilsCrossed, type LucideIcon } from 'lucide-react-native';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import type { SwipeableMethods } from 'react-native-gesture-handler/lib/typescript/components/ReanimatedSwipeable/ReanimatedSwipeableProps';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -16,6 +18,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 
 import { radius, spacing, type } from '@/constants/ascnd';
+import { BOUNCE, spring } from '@/constants/motion';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
@@ -65,6 +68,91 @@ const OPEN_EASE = Easing.out(Easing.cubic);
 
 /** the six `meal_type` values `log-meal.tsx` writes, in the order a day runs */
 const ORDER = ['breakfast', 'lunch', 'dinner', 'snack', 'preworkout', 'postworkout'];
+
+/* Bề ngang một tấm hành động. 76 vì nó phải chứa một icon 18 và một chữ
+   `caption` ở giữa, và vì `leftThreshold`/`rightThreshold` lấy một nửa số này
+   làm ngưỡng chốt — dưới nửa đường thì thẻ đóng lại, đúng cách Apple làm. */
+const ACTION_W = 76;
+
+/**
+ * Lò xo khi THẢ TAY — và vì sao mặc định của thư viện không dùng được.
+ *
+ * `ReanimatedSwipeable` dựng sẵn `{ mass: 2, damping: 1000, stiffness: 700,
+ * overshootClamping: true }`. Tỉ số tắt dần của bộ ấy là
+ * `1000 / (2√(700×2))` ≈ 13,4 — tức cản gấp hơn MƯỜI BA LẦN mức tới hạn. Nó
+ * không phải một lò xo; nó là một cú trượt về, và trượt về là thứ đọc ra "hoạt
+ * hình" chứ không đọc ra "vật thể".
+ *
+ * `animationOptions` được trải CUỐI trong `animateRow`, nên nó đè được cả ba
+ * con số lẫn `overshootClamping`. Cố ý KHÔNG truyền `velocity`: thư viện tự
+ * chiếu vận tốc ném vào đó (`DRAG_TOSS`), và đó chính là thứ làm cú hất nhanh
+ * mở thẳng ra thay vì bò.
+ *
+ * `0,24` giây là `duration.move` — chú thích ở `constants/motion` gọi nó là
+ * "một control trượt sang vị trí mới", đúng việc đang làm. `BOUNCE.snappy` thì
+ * tệp ấy viết thẳng cho trường hợp này: "cho thứ NGƯỜI DÙNG VỪA BUÔNG: một vật
+ * rơi vào chỗ của nó".
+ *
+ * `overshootClamping: false` là bắt buộc, nếu không thì `bounce` 0,15 bị chính
+ * mặc định của thư viện kẹp mất và ta quay lại đúng cú trượt vô hồn.
+ *
+ * `reduceMotion: ReduceMotion.System` của thư viện KHÔNG bị đụng tới — ba khoá
+ * `spring()` trả về không trùng nó — nên người bật "Giảm chuyển động" vẫn được
+ * tôn trọng.
+ */
+const SWIPE_SNAP = { ...spring(0.24, BOUNCE.snappy), overshootClamping: false };
+
+/**
+ * Một tấm hành động sau thẻ bữa ăn.
+ *
+ * `drag` là quãng lệch NGANG của thẻ so với vị trí đóng — âm khi vuốt sang
+ * trái. Dịch tấm theo `drag` cộng/trừ bề ngang của chính nó là điều làm nó
+ * DÍNH vào mép thẻ trong suốt cú kéo thay vì đứng yên chờ thẻ trượt qua; đó là
+ * khác biệt giữa "một tấm lộ ra" và "một tấm bị bỏ lại".
+ *
+ * `methods.close()` trước khi chạy hành động: nếu không, thẻ ở lại trạng thái
+ * mở sau khi hộp thoại xác nhận đóng, và người dùng phải tự vuốt ngược nó về.
+ */
+function SwipeAction({
+  side,
+  drag,
+  methods,
+  icon,
+  label,
+  tone,
+  onPress,
+}: {
+  side: 'left' | 'right';
+  drag: SharedValue<number>;
+  methods: SwipeableMethods;
+  icon: LucideIcon;
+  label: string;
+  tone: 'plain' | 'destructive';
+  onPress: () => void;
+}) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateX: drag.value + (side === 'right' ? ACTION_W : -ACTION_W) }],
+  }));
+  const fg = tone === 'destructive' ? c.destructiveForeground : c.foreground;
+  return (
+    <Animated.View style={[styles.swipeAction, tone === 'destructive' && styles.swipeDanger, style]}>
+      <PressScale
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={styles.swipeHit}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          methods.close();
+          onPress();
+        }}>
+        <Icon icon={icon} size={18} color={fg} />
+        <Text style={[styles.swipeLabel, { color: fg }]}>{label}</Text>
+      </PressScale>
+    </Animated.View>
+  );
+}
 
 /** one meal type's whole day: totals, every item, and how many entries made it */
 interface MealGroup {
@@ -148,6 +236,42 @@ export function TodayMeals({
    * wrong line is caught by reading the alert rather than by noticing the ring
    * move afterwards.
    */
+  /**
+   * Xoá cả một bữa — hỏi trước, và hỏi bằng con số.
+   *
+   * Cùng luật với `confirmDelete` ngay dưới: câu hỏi phải nói ra thứ sắp mất.
+   * Ở đây thứ sắp mất không phải một dòng mà là N dòng, nên câu hỏi mang N —
+   * "xoá cả 3 món đã ghi trong Bữa trưa" khác hẳn "bạn chắc chứ", và nó là
+   * khác biệt giữa một cú vuốt nhầm được bắt lại và một bữa biến mất.
+   *
+   * Xoá theo TỪNG MÓN chứ không xoá thẳng bản ghi bữa: `resyncMealEntry` tự
+   * dọn bản ghi rỗng sau món cuối, nên đi đường này thì tổng ngày được tính
+   * lại đúng một lần cho mỗi món, giống hệt đường xoá một món đã chạy lâu nay.
+   * Thêm một đường ghi thứ hai cho cùng một việc là thêm một chỗ để hai đường
+   * lệch nhau.
+   */
+  const confirmDeleteGroup = (g: MealGroup, label: string) => {
+    if (g.items.length === 0) return;
+    Alert.alert(
+      i18n.nMealDeleteTitle.replace('{meal}', label),
+      i18n.nMealDeleteMsg.replace('{n}', String(g.items.length)).replace('{meal}', label),
+      [
+        { text: i18n.cancel, style: 'cancel' },
+        {
+          text: i18n.delete,
+          style: 'destructive',
+          onPress: () => {
+            for (const it of g.items) {
+              del.mutate({ itemId: it.id, entryId: it.entry_id }, { onError: (e: Error) => toast.fail(e) });
+            }
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            toast.success(i18n.deleted);
+          },
+        },
+      ],
+    );
+  };
+
   const confirmDelete = (it: LoggedItem) => {
     Alert.alert(
       i18n.nItemDelete,
@@ -216,6 +340,8 @@ export function TodayMeals({
           i18n={i18n}
           onEdit={setEditing}
           onDelete={confirmDelete}
+          onDeleteGroup={() => confirmDeleteGroup(g, label[g.type] ?? g.type)}
+          onAddTo={() => nav.push(`/log-meal?meal=${g.type}` as never)}
         />
       ))}
 
@@ -260,12 +386,16 @@ function MealCard({
   i18n,
   onEdit,
   onDelete,
+  onDeleteGroup,
+  onAddTo,
 }: {
   g: MealGroup;
   label: string;
   i18n: ReturnType<typeof useI18n>;
   onEdit: (it: LoggedItem) => void;
   onDelete: (it: LoggedItem) => void;
+  onDeleteGroup: () => void;
+  onAddTo: () => void;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -323,6 +453,61 @@ function MealCard({
 
   return (
     <GlassCard style={styles.meal}>
+      {/*
+        ── VUỐT trên thẻ bữa, nút trên hàng món ──
+
+        Chú thích ở `MealRow` phía dưới nói "không vuốt, không giữ lâu", và câu
+        ấy VẪN ĐÚNG ở đó: hàng món đã nằm sau một cú chạm để mở thẻ, nên giấu
+        thêm một cử chỉ vào trong là giấu hai lớp.
+
+        Thẻ này thì khác hẳn — nó LUÔN hiện, và tới trước thay đổi này nó không
+        có hành động nào ngoài mở ra. Một cử chỉ ở đây không giấu cái gì cả; nó
+        thêm cái chưa từng có. Hai lớp, hai câu trả lời khác nhau, và đó là lý
+        do câu cũ không bị xoá.
+
+        Tấm hành động KHÔNG tràn ra mép thẻ. `glass-card.tsx` ghi rõ ở dòng
+        `overflow` rằng bản giấy phải để `visible` để không cắt mất bóng đổ, và
+        "nếu sau này có ai thêm một lớp tràn viền vào nhánh giấy, đây là dòng
+        phải xét lại". Tràn viền ở đây là đổi lấy bóng của cả app để lấy 20
+        điểm bề ngang — nên tấm nằm trong lề, tự bo góc và tự cắt.
+      */}
+      <ReanimatedSwipeable
+        containerStyle={styles.swipeBox}
+        /* 1, không phải 2. `friction` CHIA quãng kéo, nên 2 làm thẻ đi được
+           nửa quãng ngón tay đi — ngón và thẻ rời nhau ngay từ điểm ảnh đầu.
+           Ở Reminders hàng bám ngón 1:1 cho tới khi tấm lộ hết rồi mới ghì
+           lại, và `overshootLeft/Right={false}` bên dưới lo đúng phần ghì ấy. */
+        friction={1}
+        animationOptions={SWIPE_SNAP}
+        /* Một nhịp chạm khi tấm CHỐT mở — cùng chỗ iOS đánh nhịp. Không đánh
+           lúc bắt đầu kéo: cú kéo đã là phản hồi của chính nó. */
+        onSwipeableWillOpen={() => Haptics.selectionAsync()}
+        overshootLeft={false}
+        overshootRight={false}
+        leftThreshold={ACTION_W / 2}
+        rightThreshold={ACTION_W / 2}
+        renderLeftActions={(_p, drag, methods) => (
+          <SwipeAction
+            side="left"
+            drag={drag}
+            methods={methods}
+            icon={Plus}
+            label={i18n.nMealSwipeAdd}
+            tone="plain"
+            onPress={onAddTo}
+          />
+        )}
+        renderRightActions={(_p, drag, methods) => (
+          <SwipeAction
+            side="right"
+            drag={drag}
+            methods={methods}
+            icon={Trash2}
+            label={i18n.nMealSwipeDelete}
+            tone="destructive"
+            onPress={onDeleteGroup}
+          />
+        )}>
       <PressScale
         onPress={() => {
           Haptics.selectionAsync();
@@ -343,6 +528,7 @@ function MealCard({
           <Icon icon={ChevronDown} size={18} color={c.mutedForeground} />
         </Animated.View>
       </PressScale>
+      </ReanimatedSwipeable>
 
       {/*
         Always mounted, clipped to an animated height. The inner View is what
@@ -597,6 +783,23 @@ const stylesFor = makeStyles((c, m) => ({
   // clipped, so the rows inside can lay out at full height while the box around
   // them is still opening
   body: { overflow: 'hidden' },
+  /* Hộp của cú vuốt: tự cắt, và bo cùng bán kính ô con của app nên tấm hành
+     động lộ ra như một viên nằm TRONG thẻ chứ không như một mảng dán đè. */
+  swipeBox: { borderRadius: radius.md, overflow: 'hidden' },
+  swipeAction: { width: ACTION_W, justifyContent: 'center', backgroundColor: m.inset.bg },
+  swipeDanger: { backgroundColor: c.destructive },
+  swipeHit: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  /*
+     14/700, không phải `type.caption` (11/500).
+
+     Trắng trên `destructive` đo được 4,96:1 trên giấy nhưng chỉ 3,48:1 ở bản
+     tối. 3,48 hụt sàn 4,5 của chữ NHỎ — nên nhãn này phải là chữ LỚN để rơi
+     vào sàn 3:1, và WCAG tính chữ lớn từ 14pt ĐẬM. 13pt/700 KHÔNG đủ; ngưỡng
+     là 14 chẵn.
+
+     Tấm "Thêm" không cần điều đó (chữ `foreground` trên `inset.bg`), nhưng hai
+     tấm dùng chung một cỡ vì chúng nằm cạnh nhau trong cùng một cử chỉ. */
+  swipeLabel: { fontSize: 14, fontWeight: '700' },
   mealHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   mealHeadText: { flex: 1, minWidth: 0, gap: 2 },
   mealName: { ...type.headline, color: c.foreground },

@@ -161,6 +161,19 @@ export const darkPalette = {
 
   // Semantic
   destructive: '#ff3b5c',
+  /**
+   * Chữ và icon ĐẶT TRÊN nền `destructive`.
+   *
+   * App có `destructive` nhưng chưa từng có thứ đặt lên nó — mọi chỗ dùng đỏ
+   * trước đây đều dùng nó làm MÀU CHỮ trên nền trung tính, nên câu hỏi không
+   * nảy ra. Tấm "Xoá" lộ ra khi vuốt thẻ bữa ăn là chỗ đầu tiên đỏ thành NỀN.
+   *
+   * Trắng ở cả hai theme, vì cả hai sắc đỏ đều đủ đậm: 4,96:1 trên #de0b44
+   * (giấy) và 3,48:1 trên #ff3b5c (tối). Con số thứ hai hụt sàn 4,5 của chữ
+   * NHỎ, nên nhãn ở đó phải là chữ LỚN — 14pt/700 theo nhánh "≥14pt đậm" của
+   * WCAG, và luật ấy được ghi ngay cạnh `swipeLabel`.
+   */
+  destructiveForeground: '#ffffff',
 
   // Readiness
   readinessGreen: '#2bf5a8',
@@ -429,6 +442,8 @@ export const lightPalette: Palette = {
      tương phản chỉ còn 3,0 — đủ cho một cái thanh, không đủ cho con số 72 nằm
      cạnh nó. Đó là một quyết định về vai, không phải một phép chỉnh màu. */
   destructive: '#de0b44',
+  /* Xem chú thích ở bảng TỐI — trắng ở cả hai, vì cả hai sắc đỏ đều đủ đậm. */
+  destructiveForeground: '#ffffff',
   readinessGreen: '#078055',
   /**
    * Vai CHỮ. Ô-liu-vàng có kiểm soát, và đó là đáy của gamut chứ không phải
