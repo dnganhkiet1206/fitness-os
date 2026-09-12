@@ -257,11 +257,19 @@ const stylesFor = makeStyles((c, m) => ({
   dayBox: { flex: 1, minWidth: 0, alignItems: 'center', gap: 1 },
   day: { ...type.headline, color: c.foreground },
   daySub: { ...type.caption, color: c.mutedForeground },
+  /* 44, không 32. Bản đầu để 32 và `tools/tap-target.mjs` bắt đúng: dưới sàn
+     chạm 44 của Apple HIG mà không có `hitSlop` bù.
+
+     Chọn cao lên thật chứ không vá bằng `hitSlop`, vì đây là lối THOÁT duy
+     nhất khỏi một ngày ở xa — lùi bảy ngày rồi bấm mũi tên bảy lần là thứ nó
+     tồn tại để khỏi phải làm. `sheet-header.tsx` đã ghi lý do cho đúng lựa
+     chọn này: hitSlop là vô hình, nên nó không làm một nút 32 điểm bớt TRÔNG
+     như một nút 32 điểm. */
   todayPill: {
     alignSelf: 'center',
-    paddingHorizontal: spacing.md,
-    height: 32,
-    borderRadius: 16,
+    paddingHorizontal: spacing.lg,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: alpha(m.ink, 0.07),

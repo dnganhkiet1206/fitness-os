@@ -281,7 +281,13 @@ export function DayMeals({
     if (g.items.length === 0) return;
     Alert.alert(
       i18n.nMealDeleteTitle.replace('{meal}', label),
-      i18n.nMealDeleteMsg.replace('{n}', String(g.items.length)).replace('{meal}', label),
+      /* Cùng lý do với `confirmDelete`: câu này kết thúc bằng "hôm nay", và
+         trên một ngày đã qua đó là một lời hứa sai nằm trong một hộp thoại
+         phá huỷ. Người đọc "xoá cả 3 món đã ghi trong Bữa trưa hôm nay" mà
+         đang đứng ở thứ Ba sẽ bấm Xoá vì tưởng mình đang xoá thứ khác. */
+      (isToday ? i18n.nMealDeleteMsg : i18n.nMealDeleteMsgDay)
+        .replace('{n}', String(g.items.length))
+        .replace('{meal}', label),
       [
         { text: i18n.cancel, style: 'cancel' },
         {
@@ -377,7 +383,18 @@ export function DayMeals({
           onEdit={setEditing}
           onDelete={confirmDelete}
           onDeleteGroup={() => confirmDeleteGroup(g, label[g.type] ?? g.type)}
-          onAddTo={() => nav.push(`/log-meal?meal=${g.type}` as never)}
+          /* NGÀY phải đi cùng, y như lối vào ở thẻ rỗng phía trên.
+
+             Cú vuốt "Thêm" được viết khi nhật ký chỉ có hôm nay, nên nó chỉ
+             mang `meal`. Từ khi có `/diary`, thiếu `date` ở đây nghĩa là vuốt
+             Thêm trên Bữa trưa của thứ Ba sẽ ghi một bữa trưa vào HÔM NAY —
+             không báo gì, và sai ở hai ngày cùng lúc. `tools/day-carry.mjs`
+             canh đúng chỗ này. */
+          onAddTo={() =>
+            nav.push((isToday
+              ? `/log-meal?meal=${g.type}`
+              : `/log-meal?meal=${g.type}&date=${date}`) as never)
+          }
         />
       ))}
 

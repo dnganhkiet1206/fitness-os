@@ -490,6 +490,9 @@ const STEPS = [
      hỏng mà bị nuốt. Cùng một hậu quả — màn hình nói một câu tự tin về dữ liệu
      nó không có — chỉ khác chiều. */
   ['đọc nửa vời', 'node', ['tools/query-partial.mjs']],
+  /* Cùng họ với hai bước trên, vế ĐIỀU HƯỚNG: một màn biết ngày mà đi tay
+     không thì thao tác trên ngày cũ rơi vào hôm nay, im lặng. */
+  ['mang ngày theo', 'node', ['tools/day-carry.mjs']],
   ['phép chiếu ngày', 'node', ['tools/daily-log.mjs']],
   ['bàn giao quét', 'node', ['tools/scan-handoff.mjs']],
   /*
