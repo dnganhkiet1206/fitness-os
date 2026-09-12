@@ -26,7 +26,9 @@ import { localDateStr } from '@/lib/local-date';
 import { toast } from '@/lib/toast';
 import {
   useDeleteMealItem,
+  useRestoreMealItem,
   useUpdateMealItemServings,
+  type DeletedMealItem,
   type LoggedItem,
   type LoggedMeal,
 } from '@/hooks/use-nutrition';
@@ -252,7 +254,47 @@ export function DayMeals({
   const groups = groupByType(meals);
 
   const del = useDeleteMealItem(date);
+  const restore = useRestoreMealItem(date);
   const edit = useUpdateMealItemServings(date);
+
+  /**
+   * "Đã xoá" kèm một đường về — nhưng chỉ khi thật sự có đường về.
+   *
+   * `useDeleteMealItem` trả `null` khi không chụp lại được hàng trước lúc xoá.
+   * Mời hoàn tác trong trường hợp ấy là hứa một việc app không làm được, nên
+   * thanh rơi về câu báo thường. Một nút bấm vào rồi báo lỗi còn tệ hơn không
+   * có nút.
+   */
+  const sayDeleted = (snaps: (DeletedMealItem | null)[]) => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const keep = snaps.filter((s): s is DeletedMealItem => s != null);
+    if (keep.length === 0) {
+      toast.success(i18n.deleted);
+      return;
+    }
+    toast.undo(i18n.deleted, i18n.nUndo, () => {
+      /* Đếm cho tới hàng cuối rồi mới nói "đã lấy lại": xoá cả một bữa là N
+         lệnh ghi, và báo thành công ở lệnh đầu là nói thay cho N-1 lệnh chưa
+         biết kết quả. Một lệnh hỏng thì thanh lỗi được giữ nguyên — nó là tin
+         quan trọng hơn. */
+      let left = keep.length;
+      let broke = false;
+      for (const s of keep) {
+        restore.mutate(s, {
+          onError: (e: Error) => {
+            broke = true;
+            toast.fail(e);
+          },
+          onSettled: () => {
+            left -= 1;
+            if (left > 0 || broke) return;
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            toast.success(i18n.nItemRestored);
+          },
+        });
+      }
+    });
+  };
   const [editing, setEditing] = useState<LoggedItem | null>(null);
 
   /**
@@ -294,11 +336,30 @@ export function DayMeals({
           text: i18n.delete,
           style: 'destructive',
           onPress: () => {
+            /* Chờ CẢ N lệnh rồi mới báo, vì hoàn tác phải mang được cả N hàng
+               về. Bản trước bắn toast ngay sau vòng lặp, tức nói "đã xoá"
+               trong lúc N lệnh còn đang bay — và với một nút Hoàn tác thì câu
+               ấy còn hứa thêm một thứ chưa có ảnh chụp nào để giữ. */
+            const snaps: (DeletedMealItem | null)[] = [];
+            let left = g.items.length;
+            let broke = false;
             for (const it of g.items) {
-              del.mutate({ itemId: it.id, entryId: it.entry_id }, { onError: (e: Error) => toast.fail(e) });
+              del.mutate(
+                { itemId: it.id, entryId: it.entry_id },
+                {
+                  onSuccess: (snap) => snaps.push(snap),
+                  onError: (e: Error) => {
+                    broke = true;
+                    toast.fail(e);
+                  },
+                  onSettled: () => {
+                    left -= 1;
+                    if (left > 0 || broke) return;
+                    sayDeleted(snaps);
+                  },
+                },
+              );
             }
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            toast.success(i18n.deleted);
           },
         },
       ],
@@ -321,10 +382,7 @@ export function DayMeals({
             del.mutate(
               { itemId: it.id, entryId: it.entry_id },
               {
-                onSuccess: () => {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                  toast.success(i18n.deleted);
-                },
+                onSuccess: (snap) => sayDeleted([snap]),
                 onError: (e: Error) => toast.fail(e),
               },
             ),
@@ -686,6 +744,29 @@ function MealRow({
         inside something hidden is a feature only its author finds. The two
         buttons cost a little width on a row that had spare, and they say what
         is possible without being tried.
+
+        ── và chúng từng KHÔNG đọc ra là nút ──
+
+        Chủ dự án hỏi "có nên thêm tuỳ chọn xoá/sửa món đã log không" — trong
+        khi hai nút ấy đã đứng sẵn ở đây từ lâu. Đi đo thì ra lý do, và nó
+        không phải chuyện tương phản:
+
+            mặt thẻ  chữ macro (TĨNH)   nút (hiện tại)   nút nếu foreground
+            tối      #828282  5,02:1    #828282  5,02:1  #ededed  16,46:1
+            sáng     #6b6559  5,78:1    #6b6559  5,78:1  #1a1917  17,57:1
+
+        Hai nút dùng ĐÚNG Y HỆT màu với dòng chữ tĩnh nằm ngay cạnh chúng trên
+        cùng một hàng. Cả hai đều vượt sàn 3:1 của WCAG 1.4.11 cho đồ hoạ, nên
+        không luật nào bắt được — nhưng không có gì phân biệt một thứ bấm được
+        với một cái nhãn. Mắt đọc cả hàng thành một khối chữ mờ.
+
+        `foreground` tách nút khỏi chữ tĩnh 3,28× (tối) và 3,04× (sáng), và
+        giữ nguyên tỉ lệ ấy ở cả hai diện mạo.
+
+        KHÔNG dùng đỏ, và lập luận ấy ở ngay dưới — nó vẫn đúng nguyên vẹn:
+        cái cần tách là "bấm được / không bấm được", không phải "nguy hiểm".
+        `foreground` chính là màu của TÊN MÓN trên cùng hàng, nên hai nút đọc
+        ngang hàng với thứ chúng thao tác lên, không hơn.
       */}
       <PressScale
         accessibilityRole="button"
@@ -696,7 +777,7 @@ function MealRow({
           onEdit(it);
         }}
         style={styles.rowBtn}>
-        <Icon icon={Pencil} size={15} color={c.mutedForeground} />
+        <Icon icon={Pencil} size={16} color={c.foreground} />
       </PressScale>
       <PressScale
         accessibilityRole="button"
@@ -713,7 +794,7 @@ function MealRow({
             food. The two actions are already told apart by their shapes, and
             the red belongs on the confirm dialog's button, where it is about to
             mean something. */}
-        <Icon icon={Trash2} size={15} color={c.mutedForeground} />
+        <Icon icon={Trash2} size={16} color={c.foreground} />
       </PressScale>
     </Animated.View>
   );

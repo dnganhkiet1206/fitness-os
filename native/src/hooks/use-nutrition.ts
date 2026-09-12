@@ -570,23 +570,118 @@ function rollbackUnlessRebuilt(
   qc.setQueryData(ctx.key, ctx.previous);
 }
 
-/** Remove one logged food from today's diary. */
+/** Đủ để dựng lại một món đã xoá, nguyên văn — kể cả id của nó. */
+export interface DeletedMealItem {
+  item: Record<string, unknown>;
+  entry: Record<string, unknown>;
+}
+
+/* Bộ cột ĐẦY ĐỦ của hai bảng, viết ra một lần để lượt đọc-trước-khi-xoá và
+   lượt chèn-lại không thể lệch nhau. `fiber_g` là lý do phải có danh sách này:
+   `useTodayLog` KHÔNG select nó, nên dựng lại từ dữ liệu đang hiện trên màn sẽ
+   âm thầm đặt chất xơ về 0 — và chất xơ đi thẳng vào `daily_logs`, tức vòng
+   chất xơ của cả ngày tụt xuống sau một lần hoàn tác. */
+const ITEM_COLS = 'id, meal_entry_id, food_item_id, food_name, servings, kcal, protein_g, carbs_g, fat_g, fiber_g';
+const ENTRY_COLS =
+  'id, user_id, meal_type, date_time, total_kcal, total_protein_g, total_carbs_g, total_fat_g, total_fiber_g';
+
+/**
+ * Remove one logged food from the diary — và chụp lại đủ để lấy nó về.
+ *
+ * ── vì sao phải ĐỌC trước khi xoá ──
+ *
+ * Hoàn tác dựng lại hàng từ ảnh chụp này chứ không từ `LoggedItem` đang hiện
+ * trên màn, vì `useTodayLog` không select `fiber_g` và không select
+ * `food_item_id`. Dựng lại từ màn hình sẽ trả về một hàng TRÔNG giống hệt mà
+ * mất chất xơ và mất liên kết tới món trong thư viện — một lần hoàn tác làm hư
+ * dữ liệu là tệ hơn hẳn việc không có nút hoàn tác.
+ *
+ * Và phải đọc cả bản ghi BỮA: `resyncMealEntry` xoá luôn bữa khi món cuối cùng
+ * rời đi, nên hoàn tác một món đơn độc phải dựng lại cả hai.
+ *
+ * ── ảnh chụp hỏng thì vẫn XOÁ ──
+ *
+ * Hai lượt đọc này cố ý nuốt lỗi và trả `null`. Người dùng yêu cầu xoá; chặn
+ * việc ấy lại vì một tính năng tiện lợi không đọc được là đặt sai thứ tự ưu
+ * tiên. Không có ảnh chụp thì đơn giản là không mời hoàn tác — `today-meals`
+ * chỉ hiện nút khi có ảnh. (Luật `tools/query-partial.mjs` cố ý không soi
+ * `mutationFn` đúng vì những chỗ như thế này; lý do nằm ngay đây, cạnh code.)
+ */
 export function useDeleteMealItem(date?: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const dateStr = date ?? localDateStr();
   return useMutation({
-    mutationFn: async ({ itemId, entryId }: { itemId: string; entryId: string }) => {
+    mutationFn: async ({ itemId, entryId }: { itemId: string; entryId: string }): Promise<DeletedMealItem | null> => {
+      const [itemRead, entryRead] = await Promise.all([
+        supabase.from('meal_entry_items').select(ITEM_COLS).eq('id', itemId).maybeSingle(),
+        supabase.from('meal_entries').select(ENTRY_COLS).eq('id', entryId).maybeSingle(),
+      ]);
+      const snapshot =
+        itemRead.data && entryRead.data
+          ? { item: itemRead.data as Record<string, unknown>, entry: entryRead.data as Record<string, unknown> }
+          : null;
+
       await confirmWrite(
         supabase.from('meal_entry_items').delete().eq('id', itemId),
         'Không cập nhật được món trong bữa ăn',
       );
       await resyncMealEntry(entryId);
       await recomputeDailyLog(user!.id, dateStr);
+      return snapshot;
     },
     onMutate: ({ itemId }) =>
       patchDiary(qc, user?.id, dateStr, (items) => items.filter((it) => it.id !== itemId)),
     onError: (e, _vars, ctx) => rollbackUnlessRebuilt(qc, e, ctx),
+    onSettled: () => invalidateLogQueries(qc, user?.id, dateStr),
+  });
+}
+
+/**
+ * Đặt lại một món vừa bị xoá, nguyên văn.
+ *
+ * ── xoá THẬT rồi mới mời hoàn tác, không hoãn lệnh xoá ──
+ *
+ * Cách rẻ hơn là giữ lệnh xoá lại vài giây và huỷ nó nếu người dùng bấm Hoàn
+ * tác. Nó rẻ vì không cần hàm này — và nó sai: app bị đóng, hết pin, hay chỉ
+ * là chuyển sang ứng dụng khác trong quãng ấy thì lệnh xoá không bao giờ chạy,
+ * trong khi màn hình đã nói "Đã xoá" và vòng calo đã trừ đi. Người dùng tin
+ * một việc đã xong mà nó chưa xong, và không có gì báo.
+ *
+ * Nên xoá là xoá, và hoàn tác là một lệnh GHI thứ hai, thật như lệnh đầu.
+ *
+ * ── `ignoreDuplicates`, vì hoàn tác phải chạy được hai lần ──
+ *
+ * Bấm Hoàn tác xong mạng chập chờn rồi bấm lại là chuyện thường. Cả hai lượt
+ * chèn đều `upsert` theo id có sẵn với `ignoreDuplicates`, nên lượt thứ hai
+ * không ném lỗi khoá chính và cũng không đè lên hàng vừa dựng. Cùng khuôn với
+ * đường phát lại ngoại tuyến, vì cùng một yêu cầu: chạy lại không được đổi kết
+ * quả.
+ *
+ * Bản ghi BỮA được chèn trước — món mang khoá ngoại tới nó — và `ignoreDuplicates`
+ * ở đây còn một việc nữa: khi bữa vẫn còn (món bị xoá không phải món cuối),
+ * tổng cũ trong ảnh chụp KHÔNG được phép đè lên tổng hiện tại. `resyncMealEntry`
+ * ngay sau đó tính lại tổng từ các món thật, nên kết quả đúng ở cả hai đường.
+ */
+export function useRestoreMealItem(date?: string) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const dateStr = date ?? localDateStr();
+  return useMutation({
+    mutationFn: async ({ item, entry }: DeletedMealItem) => {
+      const { error: entryErr } = await supabase
+        .from('meal_entries')
+        .upsert(entry as never, { onConflict: 'id', ignoreDuplicates: true });
+      if (entryErr) throw entryErr;
+
+      const { error: itemErr } = await supabase
+        .from('meal_entry_items')
+        .upsert(item as never, { onConflict: 'id', ignoreDuplicates: true });
+      if (itemErr) throw itemErr;
+
+      await resyncMealEntry(String(item.meal_entry_id));
+      await recomputeDailyLog(user!.id, dateStr);
+    },
     onSettled: () => invalidateLogQueries(qc, user?.id, dateStr),
   });
 }

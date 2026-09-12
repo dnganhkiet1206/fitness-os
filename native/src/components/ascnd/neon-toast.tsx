@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle2, Info, XCircle, type LucideIcon } from 'lucide-react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AccessibilityInfo, Pressable, Text, View } from 'react-native';
 import Animated, { Easing, FadeInDown, FadeOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +9,30 @@ import { useI18n } from '@/hooks/use-app-settings';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
-import { dismissToast, useCurrentToast, type ToastKind } from '@/lib/toast';
+import { dismissToast, toastHideMs, useCurrentToast, type ToastKind } from '@/lib/toast';
+
+/**
+ * Trình đọc màn hình có đang bật không — cùng khuôn với `use-reduced-motion`.
+ *
+ * Để ở đây chứ không thành một hook chung, vì hiện chỉ một chỗ cần biết, và
+ * thứ nó quyết định cũng chỉ nằm trong tệp này: một thanh có nút thì không
+ * được tự tắt. Khi có chỗ thứ hai cần, hãy nâng nó lên `hooks/`.
+ */
+function useScreenReader(): boolean {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    AccessibilityInfo.isScreenReaderEnabled().then((v) => {
+      if (alive) setOn(v);
+    });
+    const sub = AccessibilityInfo.addEventListener('screenReaderChanged', setOn);
+    return () => {
+      alive = false;
+      sub.remove();
+    };
+  }, []);
+  return on;
+}
 
 /** One nested entry keeps the dictionary off `Record<string, string>`, so the
  *  lookup is checked rather than cast. */
@@ -17,8 +40,6 @@ function errorCopy(dict: Record<string, unknown>, key: string, fallback: string)
   const copy = dict[key];
   return typeof copy === 'string' ? copy : fallback;
 }
-
-const AUTO_HIDE_MS = 3000;
 
 /*
   Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
@@ -52,6 +73,7 @@ export function NeonToastHost() {
   const t = useCurrentToast();
   const i18n = useI18n();
   const insets = useSafeAreaInsets();
+  const screenReader = useScreenReader();
 
   /*
     ── the sentence, resolved here and nowhere else ──
@@ -89,9 +111,16 @@ export function NeonToastHost() {
       the same idea. Both are cheap and neither is a substitute for the other.
     */
     AccessibilityInfo.announceForAccessibility(text);
-    const timer = setTimeout(() => dismissToast(t.id), AUTO_HIDE_MS);
+    /*
+      Thanh CÓ NÚT mà trình đọc màn hình đang bật thì KHÔNG hẹn giờ — xem
+      `ACTION_HIDE_MS`. Câu chữ đẩy được, cái nút thì không; để nó tự tắt là
+      đặt một điều khiển ngoài tầm với rồi gọi đó là tính năng.
+    */
+    const ms = toastHideMs(!!t.action, screenReader);
+    if (ms === null) return;
+    const timer = setTimeout(() => dismissToast(t.id), ms);
     return () => clearTimeout(timer);
-  }, [t, text]);
+  }, [t, text, screenReader]);
 
   if (!t) return null;
   const accent = c[ACCENT[t.kind]];
@@ -125,19 +154,62 @@ export function NeonToastHost() {
           { borderColor: `${accent}59` },
           m.lit ? NEON_GLOW(accent) : m.elevation.hero,
         ]}>
-        <Pressable
-          accessibilityRole="button"
-          /* The message is the label: a bar that announces "button" and nothing
-             else is what an unlabelled control sounds like. */
-          accessibilityLabel={text}
-          style={styles.row}
-          onPress={() => dismissToast(t.id)}>
-          <View style={[styles.neonBar, { backgroundColor: accent }]} />
-          <View style={[styles.iconWrap, { backgroundColor: `${accent}24` }]}>
-            <Icon icon={ICONS[t.kind]} size={16} color={accent} />
+        {/*
+          ── hai nút ANH EM, không phải nút trong nút ──
+
+          Không có hành động thì giữ nguyên hình cũ: cả thanh là một `Pressable`
+          để tắt, và nhãn trợ năng của nó là chính câu chữ.
+
+          Có hành động thì hàng ngoài phải thành một `View` thường. Đặt nút
+          Hoàn tác BÊN TRONG `Pressable` kia sẽ rơi đúng lỗi mà
+          `tools/a11y-swallow.mjs` được viết ra để chặn: React Native đặt
+          `accessible` cho mọi `Pressable`, và một phần tử trợ năng *"groups its
+          children into a single selectable component"* — UIKit không đi vào
+          bên trong. Cú chạm bằng ngón tay vẫn đúng, nên lỗi ấy không hỏng ở
+          chỗ ai cũng nhìn; nó hỏng ở chỗ không ai nhìn, đúng như lần trước.
+        */}
+        {t.action ? (
+          <View style={styles.row}>
+            <View style={[styles.neonBar, { backgroundColor: accent }]} />
+            <View style={[styles.iconWrap, { backgroundColor: `${accent}24` }]}>
+              <Icon icon={ICONS[t.kind]} size={16} color={accent} />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={text}
+              style={styles.messageHit}
+              onPress={() => dismissToast(t.id)}>
+              <Text style={styles.message} numberOfLines={2}>{text}</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t.action.label}
+              style={styles.actionBtn}
+              onPress={() => {
+                /* Đóng TRƯỚC khi chạy: việc hoàn tác tự bắn toast của nó
+                   (thành công hoặc lỗi), và kho chỉ giữ một thanh — để thanh
+                   cũ sống tiếp là để nó đè lên câu trả lời. */
+                dismissToast(t.id);
+                t.action?.run();
+              }}>
+              <Text style={[styles.actionText, { color: accent }]}>{t.action.label}</Text>
+            </Pressable>
           </View>
-          <Text style={styles.message} numberOfLines={2}>{text}</Text>
-        </Pressable>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            /* The message is the label: a bar that announces "button" and nothing
+               else is what an unlabelled control sounds like. */
+            accessibilityLabel={text}
+            style={styles.row}
+            onPress={() => dismissToast(t.id)}>
+            <View style={[styles.neonBar, { backgroundColor: accent }]} />
+            <View style={[styles.iconWrap, { backgroundColor: `${accent}24` }]}>
+              <Icon icon={ICONS[t.kind]} size={16} color={accent} />
+            </View>
+            <Text style={styles.message} numberOfLines={2}>{text}</Text>
+          </Pressable>
+        )}
       </Animated.View>
     </View>
   );
@@ -212,4 +284,16 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
   },
   message: { ...type.footnote, color: c.foreground, flex: 1, lineHeight: 18 },
+
+  /* ── chỉ dùng khi thanh CÓ nút ── */
+  /* Vùng chữ thành một nút riêng để tắt, nên nó phải tự đạt sàn chạm 44 —
+     ở nhánh không có hành động thì cả thanh là nút và chuyện này không đặt ra. */
+  messageHit: { flex: 1, minWidth: 0, minHeight: 44, justifyContent: 'center' },
+  /* 44 cao, và chữ chứ không phải icon: một nút Hoàn tác chỉ có mũi tên vòng
+     lại là thứ người ta phải đoán, trong khi thứ đang bị đe doạ là một dòng
+     nhật ký vừa biến mất. */
+  actionBtn: { minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.sm },
+  /* Màu của loại toast, đậm hơn chữ thường: đây là thứ DUY NHẤT trên thanh
+     bấm vào thì có chuyện xảy ra ngoài việc nó đóng lại. */
+  actionText: { ...type.footnote, fontWeight: '700' },
 }));

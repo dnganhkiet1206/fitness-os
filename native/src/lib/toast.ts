@@ -24,6 +24,22 @@ export interface ToastData {
    * re-words a toast that is still on screen.
    */
   failureKey?: string;
+  /**
+   * Một việc người dùng có thể làm từ chính thanh toast — hiện chỉ có Hoàn tác.
+   *
+   * Tách khỏi `message` chứ không nhét vào chữ, vì nó phải là một NÚT: người
+   * dùng VoiceOver cần một phần tử để vuốt tới và kích hoạt, và một câu chữ
+   * thì không cho họ thứ đó. Xem `neon-toast.tsx` — thanh có nút thì đổi cả
+   * cách tự tắt, không chỉ đổi cách vẽ.
+   */
+  action?: ToastAction;
+}
+
+export interface ToastAction {
+  /** chữ trên nút, đã dịch sẵn — kho này không có ngôn ngữ trong tay */
+  label: string;
+  /** chạy khi bấm. Thanh tự đóng sau đó, nên hàm này không phải tự đóng. */
+  run: () => void;
 }
 
 let current: ToastData | null = null;
@@ -34,8 +50,8 @@ function emit() {
   listeners.forEach((l) => l());
 }
 
-export function showToast(kind: ToastKind, message: string, failureKey?: string) {
-  current = { id: ++seq, kind, message, failureKey };
+export function showToast(kind: ToastKind, message: string, failureKey?: string, action?: ToastAction) {
+  current = { id: ++seq, kind, message, failureKey, action };
   emit();
 }
 
@@ -59,6 +75,17 @@ export const toast = {
     const raw = err instanceof Error ? err.message : String(err ?? '');
     showToast('error', key ? '' : raw, key ?? undefined);
   },
+  /**
+   * "Đã xoá" kèm một nút lấy lại.
+   *
+   * `success` chứ không phải `info`: việc người dùng yêu cầu ĐÃ xảy ra thật —
+   * dòng đã bị xoá trên server trước khi thanh này hiện ra. Nút chỉ là đường
+   * về, không phải một cái hẹn giờ đang đếm ngược một việc chưa làm. Hoãn lệnh
+   * xoá lại vài giây để "hoàn tác cho rẻ" là cách app bị đóng giữa chừng rồi
+   * dòng ấy không bao giờ bị xoá, trong khi màn hình đã nói là xong.
+   */
+  undo: (message: string, label: string, run: () => void) =>
+    showToast('success', message, undefined, { label, run }),
 };
 
 /** Dismiss the current toast; pass an id to only dismiss that instance
@@ -67,6 +94,59 @@ export function dismissToast(id?: number) {
   if (id != null && current?.id !== id) return;
   current = null;
   emit();
+}
+
+/** Thanh KHÔNG có nút: đủ lâu để đọc. */
+export const AUTO_HIDE_MS = 3000;
+
+/**
+ * Thanh CÓ NÚT ở lại lâu hơn — và với trình đọc màn hình thì không tự tắt.
+ *
+ * ── vế trình đọc màn hình là bắt buộc, không phải chiều lòng ──
+ *
+ * `neon-toast.tsx` đã ghi sẵn phép đo ngay cạnh lời gọi
+ * `announceForAccessibility` của nó: thanh này *"tự gỡ sau `AUTO_HIDE_MS`,
+ * ngắn hơn thời gian vuốt tới nó"*, nên thông điệp phải được ĐẨY ra chứ không
+ * để người ta tự tìm.
+ *
+ * Một câu chữ thì đẩy được. Một cái NÚT thì không. Gắn Hoàn tác vào một thanh
+ * biến mất trước khi vuốt tới được là thêm một điều khiển mà người khiếm thị
+ * không bao giờ bấm được — và chính phép đo ấy đã chứng minh điều đó từ trước.
+ *
+ * Nên khi có nút và trình đọc màn hình đang bật: KHÔNG hẹn giờ. Đúng cách
+ * Material làm — SnackBar có action không hết giờ khi TalkBack/VoiceOver bật,
+ * và hướng dẫn của họ là tránh đặt thời lượng cho loại có action. Nó cũng là
+ * phía đúng của WCAG 2.2.1 (Timing Adjustable), thứ mà một thanh tự tắt vốn
+ * là một giới hạn thời gian và không lọt vào ngoại lệ nào.
+ *
+ * ── còn 8 giây là một LỰA CHỌN, và nói thẳng ra thế ──
+ *
+ * Không nguồn nào cho một con số cho trường hợp này: Material bảo đừng đặt
+ * thời lượng, iOS không có thành phần tương đương. 8 giây là ước lượng của
+ * "đọc một câu ngắn, nhận ra mình vừa xoá nhầm, đưa ngón tay lên" cộng biên —
+ * gấp hơn hai lần 3 giây của thanh không nút, vì thanh không nút chỉ cần được
+ * ĐỌC còn thanh này cần được BẤM. Nếu ai đo được số tốt hơn thì thay.
+ */
+export const ACTION_HIDE_MS = 8000;
+
+/**
+ * Thanh này sống bao lâu — `null` nghĩa là KHÔNG tự tắt.
+ *
+ * Tách ra khỏi `neon-toast.tsx` để `tools/undo-safe.mjs` CHẠY được nó trên cả
+ * bốn tổ hợp, thay vì dò xem có một câu `if` trông đúng hay không. Repo này đã
+ * dính hai lần cái bẫy "luật kiểm một khai báo chứ không kiểm dây nối".
+ *
+ * Luật, một câu: một cái NÚT mà người dùng trình đọc màn hình không với tới
+ * được thì không phải một tính năng. `neon-toast.tsx` đã tự đo và ghi lại rằng
+ * thanh này *"tự gỡ sau AUTO_HIDE_MS, ngắn hơn thời gian vuốt tới nó"* — câu
+ * chữ thì đẩy ra được bằng `announceForAccessibility`, cái nút thì không.
+ *
+ * Cùng cách Material làm (SnackBar có action không hết giờ khi TalkBack/
+ * VoiceOver bật) và là phía đúng của WCAG 2.2.1.
+ */
+export function toastHideMs(hasAction: boolean, screenReader: boolean): number | null {
+  if (!hasAction) return AUTO_HIDE_MS;
+  return screenReader ? null : ACTION_HIDE_MS;
 }
 
 export function useCurrentToast(): ToastData | null {

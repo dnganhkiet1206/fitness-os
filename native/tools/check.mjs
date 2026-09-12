@@ -493,6 +493,9 @@ const STEPS = [
   /* Cùng họ với hai bước trên, vế ĐIỀU HƯỚNG: một màn biết ngày mà đi tay
      không thì thao tác trên ngày cũ rơi vào hôm nay, im lặng. */
   ['mang ngày theo', 'node', ['tools/day-carry.mjs']],
+  /* Và vế LẤY LẠI: một nút Hoàn tác phải dựng lại đủ cột, và phải với tới
+     được — hai cái bẫy im lặng của cùng một tính năng. */
+  ['hoàn tác', 'node', ['tools/undo-safe.mjs']],
   ['phép chiếu ngày', 'node', ['tools/daily-log.mjs']],
   ['bàn giao quét', 'node', ['tools/scan-handoff.mjs']],
   /*
