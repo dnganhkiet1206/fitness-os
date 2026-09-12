@@ -783,10 +783,28 @@ const stylesFor = makeStyles((c, m) => ({
   // clipped, so the rows inside can lay out at full height while the box around
   // them is still opening
   body: { overflow: 'hidden' },
-  /* Hộp của cú vuốt: tự cắt, và bo cùng bán kính ô con của app nên tấm hành
-     động lộ ra như một viên nằm TRONG thẻ chứ không như một mảng dán đè. */
-  swipeBox: { borderRadius: radius.md, overflow: 'hidden' },
-  swipeAction: { width: ACTION_W, justifyContent: 'center', backgroundColor: m.inset.bg },
+  /*
+    Hộp của cú vuốt: CẮT, nhưng KHÔNG bo góc.
+
+    Bản đầu để `borderRadius: radius.md` ở đây cho tấm hành động lộ ra như một
+    viên bo tròn. Ảnh dựng bắt được cái giá: hàng tiêu đề chỉ cao chừng 44, nên
+    một bán kính 16 ăn vào đúng vùng có chữ — dòng "Breakfast" mất nét trái của
+    chữ B ở góc TRÊN-trái, và dòng macro mất nửa trái của số đầu ở góc
+    DƯỚI-trái. Hai vết cắt ở hai góc khác nhau chính là thứ chỉ ra bán kính chứ
+    không phải một mép thẳng.
+
+    `overflow: 'hidden'` thì phải giữ — không có nó tấm hành động tràn ra ngoài
+    thẻ khi kéo. Nên bán kính chuyển sang chính TẤM, nơi nó vốn thuộc về: cái
+    cần trông như một viên là tấm Xoá/Thêm, không phải cái hộp vô hình quanh
+    hàng chữ.
+  */
+  swipeBox: { overflow: 'hidden' },
+  swipeAction: {
+    width: ACTION_W,
+    justifyContent: 'center',
+    backgroundColor: m.inset.bg,
+    borderRadius: radius.md,
+  },
   swipeDanger: { backgroundColor: c.destructive },
   swipeHit: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
   /*
