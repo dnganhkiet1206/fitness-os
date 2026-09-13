@@ -97,6 +97,30 @@ const mono = Platform.select({ ios: 'Menlo', default: 'monospace' });
  */
 
 export const type = {
+  /**
+   * Con số TRẢ LỜI cả màn — một bậc, và chỉ một, ở trên `largeTitle`.
+   *
+   * ── vì sao nó nhẹ chứ không đậm ──
+   *
+   * Bậc nào cũng nặng dần khi to ra (`largeTitle` 700, `title` 700), nên bậc
+   * kế tiếp theo đà ấy sẽ là 44/700. Ở 44 điểm thì 700 không còn là nhấn mạnh
+   * mà là ồn: nét dày tới mức chữ mất hình dáng riêng và cả khối đọc ra như
+   * một biển hiệu. Cỡ ĐÃ là thứ nói "đây là điều quan trọng nhất"; độ đậm
+   * thêm vào đó không nói gì mới.
+   *
+   * 300 là mức nhẹ nhất mà SF vẫn giữ được nét ở cỡ này. Apple dùng đúng dải
+   * ấy cho số lớn trong Health và Fitness.
+   *
+   * ── và nó KHÔNG dùng `mono` ──
+   *
+   * Bốn thẻ chỉ số ở màn Sleep đang vẽ `7.2h` `8.0` `1.5h` `48.8h` bằng Menlo.
+   * Monospace có một việc đúng: giữ cột số thẳng hàng khi chúng ĐỔI liên tục
+   * (đồng hồ nghỉ, bộ đếm). Một con số đứng yên trên thẻ thì không cần cột, và
+   * Menlo ở cỡ lớn đọc ra là một dòng terminal chứ không phải một chỉ số sức
+   * khoẻ. `fontVariant: tabular-nums` cho đúng phần lợi ích ấy mà không đổi
+   * mặt chữ — xem `HeroMetric`.
+   */
+  hero: { fontSize: 44, fontWeight: '300' as const, letterSpacing: -1.2 },
   largeTitle: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.4 },
   title: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.3 },
   title2: { fontSize: 18, fontWeight: '700' as const, letterSpacing: -0.2 },

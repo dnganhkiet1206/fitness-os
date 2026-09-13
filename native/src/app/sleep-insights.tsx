@@ -6,6 +6,8 @@ import { Alert, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { HeroMetric } from '@/components/ascnd/hero-metric';
+import { MetricPill } from '@/components/ascnd/metric-pill';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { EmptyState } from '@/components/ascnd/empty-state';
@@ -14,6 +16,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useSleepRamp, usePalette } from '@/hooks/use-palette';
+import { useMuted } from '@/hooks/use-wash';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useProfile, useSleepHistory } from '@/hooks/useTodayData';
@@ -35,6 +38,9 @@ import { toast } from '@/lib/toast';
 export default function SleepInsightsScreen() {
   const c = usePalette();
   const sleep = useSleepRamp();
+  /* Màn này bật `aura`, nên chữ hạng hai dùng token của kính-trên-wash —
+     xem `use-wash.tsx` và phép đo trong chú thích ở `return` bên dưới. */
+  const muted = useMuted();
   const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là ba cái
@@ -153,8 +159,32 @@ export default function SleepInsightsScreen() {
 
   const maxH = Math.max(8, ...nights.map((n) => n.total_h));
 
+  /*
+    ── lớp sáng của TRANG, và nó đã chờ sẵn ở đây từ lâu ──
+
+    `Screen` có prop `aura` dựng `PageAura` phía sau nội dung, kèm một lớp
+    dập `AURA_DIM = 0.44` đã được hiệu chỉnh trên máy thật. Nó **chưa có một
+    chỗ gọi nào** trong cả app — cơ chế dựng xong rồi không màn nào dùng,
+    đúng hình dạng mà `?date=` của `log-meal` đã mắc.
+
+    Đây là chỗ gọi đầu tiên. Tím → lơ, vì giấc ngủ trong app này là tím
+    (`sleepRamps.deep` = `metricPurple`) và lơ là sắc lạnh kề nó.
+
+    ── và vì sao chữ phụ dưới đây đổi sang `glassMuted` ──
+
+    Đo cả chồng — trang → wash → lớp dập → mặt kính → chữ:
+
+        `mutedForeground` #828282 trên kính primary phủ wash   4,37:1  ✗
+        cùng chỗ, kính elevated                                3,53:1  ✗
+        `glassMuted` #c8ccd4 ở đúng hai chỗ ấy          10,44 · 8,44   ✓
+
+    Không phải một token mới: `glassMuted` đã sinh ra cho đúng tình huống này
+    ở hai màn trợ lý, và chú thích của nó ghi rõ `mutedForeground` chỉ được
+    đo trên "một mặt phẳng tối và ĐỨNG YÊN". Trang có wash thì không còn là
+    mặt phẳng ấy nữa. `tools/glass-stack.mjs` canh cả chồng.
+  */
   return (
-    <Screen refreshable back title={i18n.sleepTitle}>
+    <Screen refreshable back title={i18n.sleepTitle} aura={['metricPurple', 'metricBlue']}>
       {/* A failed read is not an empty history. `data` comes back undefined, the
         zero branch below renders, and the screen tells somebody they have
         never recorded anything — a statement about their account, not about
@@ -175,22 +205,53 @@ export default function SleepInsightsScreen() {
         </GlassCard>
       ) : (
         <>
-          {/* Stat grid */}
-          <Animated.View style={styles.statGrid} entering={rise(0)}>
-            <StatCard value={`${stats.avgTotal.toFixed(1)}h`} label={i18n.sleepAvg} color={c.foreground} />
-            <StatCard value={`${stats.avgQuality.toFixed(1)}`} label={i18n.sleepAvgQuality} color={c.readinessGreen} />
-            {/* An em-dash rather than "0.0h": nobody slept zero deep, the app
-                simply was not told. */}
-            <StatCard
-              value={stats.avgDeep === null ? '—' : `${stats.avgDeep.toFixed(1)}h`}
+          {/*
+            ── MỘT câu trả lời, ba con số chống lưng ──
+
+            Bản trước là bốn thẻ bằng nhau: giấc trung bình, chất lượng, deep,
+            nợ ngủ — cùng cỡ, cùng mặt nền, cùng viền. Bốn câu trả lời ngang
+            hàng cho một màn chỉ hỏi một câu, nên mắt phải tự chọn cái nào
+            quan trọng. Quyết hộ người đọc chính là việc của thứ bậc thị giác.
+
+            Màn này hỏi: "tuần rồi tôi ngủ đủ chưa?" Giờ ngủ trung bình là câu
+            trả lời; ba con số kia là bằng chứng, và chúng lùi xuống `MetricPill`.
+
+            `caption` là dòng đáng giá nhất và là dòng bản cũ không có: `7.2h`
+            là dữ liệu, `7.2h · thiếu 0,8h so với mục tiêu` là một câu trả lời.
+          */}
+          <Animated.View entering={rise(0)}>
+            <GlassCard>
+              <HeroMetric
+                eyebrow={vi ? '7 đêm gần nhất' : 'Last 7 nights'}
+                value={stats.avgTotal.toFixed(1)}
+                unit="h"
+                caption={
+                  stats.avgTotal >= targetHours
+                    ? vi
+                      ? `Đạt mục tiêu ${targetHours}h`
+                      : `Meeting your ${targetHours}h target`
+                    : vi
+                      ? `Thiếu ${(targetHours - stats.avgTotal).toFixed(1)}h so với mục tiêu ${targetHours}h`
+                      : `${(targetHours - stats.avgTotal).toFixed(1)}h short of your ${targetHours}h target`
+                }
+              />
+            </GlassCard>
+          </Animated.View>
+
+          <Animated.View style={styles.pillRow} entering={rise(1)}>
+            <MetricPill label={i18n.sleepAvgQuality} value={stats.avgQuality.toFixed(1)} />
+            {/* Dấu gạch ngang chứ không phải "0.0h": không ai ngủ deep bằng 0,
+                app chỉ là không được cho biết. */}
+            <MetricPill
               label={i18n.sleepAvgDeep}
-              color={stats.avgDeep === null ? c.mutedForeground : sleep.deep}
+              value={stats.avgDeep === null ? '—' : `${stats.avgDeep.toFixed(1)}h`}
+              tint={stats.avgDeep === null ? undefined : sleep.deep}
             />
-            <StatCard value={`${stats.debt.toFixed(1)}h`} label={i18n.sleepDebt} color={stats.debt > 5 ? c.readinessRed : c.mutedForeground} />
+            <MetricPill label={i18n.sleepDebt} value={`${stats.debt.toFixed(1)}h`} />
           </Animated.View>
 
           {/* Stage chart */}
-          <Animated.View entering={rise(1)}>
+          <Animated.View entering={rise(2)}>
           <GlassCard>
             <Text style={styles.cardTitle}>{i18n.sleepStages}</Text>
             <View style={styles.legend}>
@@ -217,7 +278,7 @@ export default function SleepInsightsScreen() {
                       <View style={[styles.barSeg, styles.barUnknown, { flexGrow: n.total_h }]} />
                     )}
                   </View>
-                  <Text style={styles.barLabel}>{n.day}</Text>
+                  <Text style={[styles.barLabel, { color: muted }]}>{n.day}</Text>
                 </View>
               ))}
             </View>
@@ -226,7 +287,7 @@ export default function SleepInsightsScreen() {
 
           {/* Insights */}
           {insights.length > 0 && (
-            <Animated.View entering={rise(2)}>
+            <Animated.View entering={rise(3)}>
             <GlassCard>
               <View style={styles.cardTitleRow}>
                 <Icon icon={Lightbulb} size={15} color={c.readinessYellow} />
@@ -262,7 +323,7 @@ export default function SleepInsightsScreen() {
       */}
       {(sleepLogs ?? []).length > 0 ? (
         <View style={styles.logSection}>
-          <Text style={styles.logTitle}>{vi ? 'Các đêm đã ghi' : 'Logged nights'}</Text>
+          <Text style={[styles.logTitle, { color: muted }]}>{vi ? 'Các đêm đã ghi' : 'Logged nights'}</Text>
           {[...(sleepLogs ?? [])].reverse().map((s) => {
             const bed = new Date(s.bedtime);
             const wake = new Date(s.waketime);
@@ -274,7 +335,7 @@ export default function SleepInsightsScreen() {
                   <Text style={styles.logWhen}>
                     {wake.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}
                   </Text>
-                  <Text style={styles.logVals}>
+                  <Text style={[styles.logVals, { color: muted }]}>
                     {`${t(bed)} → ${t(wake)} · ${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}`}
                   </Text>
                 </View>
@@ -311,7 +372,7 @@ export default function SleepInsightsScreen() {
                       ],
                     );
                   }}>
-                  <Icon icon={Trash2} size={16} color={c.mutedForeground} />
+                  <Icon icon={Trash2} size={16} color={muted} />
                 </PressScale>
               </GlassCard>
             );
@@ -322,24 +383,15 @@ export default function SleepInsightsScreen() {
   );
 }
 
-function StatCard({ value, label, color }: { value: string; label: string; color: string }) {
-  const c = usePalette();
-  const styles = stylesFor(c);
-  return (
-    <GlassCard style={styles.statCard}>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={styles.statLabel} numberOfLines={1}>{label}</Text>
-    </GlassCard>
-  );
-}
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   const c = usePalette();
+  const muted = useMuted();
   const styles = stylesFor(c);
   return (
     <View style={styles.legendItem}>
       <View style={[styles.legendDot, { backgroundColor: color }]} />
-      <Text style={styles.legendText}>{label}</Text>
+      <Text style={[styles.legendText, { color: muted }]}>{label}</Text>
     </View>
   );
 }
@@ -350,10 +402,7 @@ const stylesFor = makeStyles((c, m) => ({
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xs },
   emptyTitle: { ...type.body, color: c.foreground, fontWeight: '600' },
   emptyMsg: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
-  statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  statCard: { width: '47.5%', alignItems: 'flex-start', gap: 2 },
-  statValue: { ...type.title, ...type.mono },
-  statLabel: { ...type.caption, color: c.mutedForeground },
+  pillRow: { flexDirection: 'row', gap: spacing.sm },
   legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   legendDot: { width: 9, height: 9, borderRadius: 2 },

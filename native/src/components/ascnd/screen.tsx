@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { AmbientLight } from '@/components/ascnd/ambient-light';
 import { ReadinessAura } from '@/components/ascnd/readiness-aura';
+import { WashProvider } from '@/hooks/use-wash';
 import { Icon } from '@/components/ascnd/icon';
 import { StatusScrim } from '@/components/ascnd/status-scrim';
 import { BottomTabInset } from '@/constants/expo-template-theme';
@@ -269,7 +270,26 @@ function PageAura({ tint }: { tint: readonly [PaletteKey, PaletteKey] }) {
   );
 }
 
-export function Screen({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, refreshable = false, children, style, ...props }: ScreenProps) {
+/**
+ * Vỏ mỏng, và nó chỉ làm một việc: nói cho cây bên dưới biết trang này có lớp
+ * sáng phía sau hay không.
+ *
+ * Bọc ở ĐÂY chứ không ở ba nhánh `return` bên dưới. Ba chỗ cùng dựng một
+ * provider là ba chỗ để lệch nhau, và tệp này đã có sẵn một ví dụ: `PageAura`
+ * được gọi ba lần vì đúng lý do ấy, kèm chú thích "hai câu rời nhau sẽ lệch
+ * ngay lần đầu ai đó chỉnh một bên".
+ *
+ * Vì sao cần biết: chữ hạng hai đổi token khi có wash — xem `use-wash.tsx`.
+ */
+export function Screen(props: ScreenProps) {
+  return (
+    <WashProvider washed={!!props.aura}>
+      <ScreenBody {...props} />
+    </WashProvider>
+  );
+}
+
+function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, refreshable = false, children, style, ...props }: ScreenProps) {
   const c = usePalette();
   const m = useMaterial();
   const styles = stylesFor(c);

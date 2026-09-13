@@ -737,6 +737,54 @@ export interface Aura {
  */
 export type ElevationRole = 'hero' | 'primary' | 'secondary' | 'inset';
 
+/**
+ * ── BỐN TẦNG KÍNH ──
+ *
+ * `Material.bg` là MỘT mặt kính, dùng cho mọi thẻ. Hệ quả nhìn thấy được: mở
+ * một màn ra thì mọi thứ nổi lên cùng một độ cao, nên không có gì nói cho mắt
+ * biết đâu là thứ quan trọng nhất. Bốn thẻ chỉ số ở màn Sleep hiện ra cùng
+ * kích thước, cùng mặt nền, cùng viền — và một trong bốn đáng lẽ là câu trả
+ * lời của cả màn.
+ *
+ * Bốn tầng, theo VAI chứ không theo chỗ dùng:
+ *
+ *   primary    mặt của thứ màn hình này tồn tại để nói
+ *   secondary  thông tin đi kèm, đọc khi người ta muốn thêm
+ *   floating   điều khiển nổi trên nội dung — segmented, nút, thanh
+ *   elevated   thứ đang được chọn, hoặc sheet nằm trên tất cả
+ *
+ * ── và `blur` ở đây là một CON SỐ, không phải một lời hứa ──
+ *
+ * Trên iOS mỗi `BlurView` là một `UIVisualEffectView` thật, lấy mẫu lại nội
+ * dung phía sau mỗi khung hình. Rải nó lên mười thẻ của một trang cuộn là cách
+ * chắc chắn nhất để mất 60fps, và nó cũng không đẹp hơn: mười bề mặt cùng làm
+ * mờ nền thì không bề mặt nào còn nổi lên.
+ *
+ * Nên luật của hệ này: **nền môi trường blur một lần; thẻ chỉ tô trong suốt.**
+ * `blur` chỉ khác 0 ở hai tầng nổi (`floating`, `elevated`), nơi bề mặt thật
+ * sự trượt lên trên một thứ khác và cần tách khỏi nó. Đó cũng là cách Apple
+ * dùng `.ultraThinMaterial`: trên rất ít bề mặt, không phải trên mọi thẻ.
+ *
+ * ── bản tối vẫn ĐÓNG BĂNG ──
+ *
+ * Không một giá trị nào dưới đây sửa `darkPalette` hay `materials.dark`. Đây
+ * là token MỚI, thứ mà `tools/dark-frozen.mjs` cho phép — mốc của nó là một
+ * phép so MỘT CHIỀU: mọi khoá đã có phải còn nguyên, thêm khoá mới thì không
+ * sao. Bản tối vẫn đổi diện mạo, nhưng đổi bằng CÁCH XẾP LỚP chứ không bằng
+ * cách sơn lại nền.
+ */
+export type GlassTier = 'primary' | 'secondary' | 'floating' | 'elevated';
+
+export interface GlassSurface {
+  bg: string;
+  border: string;
+  borderWidth: number;
+  /** `BlurView.intensity`. 0 nghĩa là KHÔNG dựng BlurView — xem chú thích trên. */
+  blur: number;
+  /** vệt sáng mép trên, hoặc `null` khi mặt phẳng ấy không bắt sáng */
+  highlight: string | null;
+}
+
 export interface Shadow {
   shadowColor: string;
   shadowOpacity: number;
@@ -807,7 +855,56 @@ export interface Material {
   shadow: Shadow;
   /** bốn vai — xem `ElevationRole` */
   elevation: Record<ElevationRole, Shadow>;
+  /** Bốn tầng kính — xem `GlassTier`. `bg`/`border` ở trên là tầng CŨ, giữ
+   *  nguyên cho tới khi từng màn được chuyển sang; không phá một lượt. */
+  glass: Record<GlassTier, GlassSurface>;
 }
+
+/**
+ * Thang blur, cho những chỗ THẬT SỰ blur.
+ *
+ * Bốn nấc thay cho một `intensity = 22` gõ cứng ở `liquid-glass.tsx`: một
+ * thanh điều khiển nổi và một sheet phủ kín màn hình cần hai mức tách khác
+ * nhau khỏi thứ phía sau, và khi chỉ có một con số thì một trong hai luôn sai.
+ */
+export const blurScale = { sm: 12, md: 18, lg: 24, xl: 30 } as const;
+
+/**
+ * Bốn tầng của BẢN TỐI, trên trang `#070708` và mặt thẻ `#0e0e11`.
+ *
+ * Bậc `bg` đi 0.04 → 0.07 → 0.10 → 0.14. Khoảng cách ấy không chọn cho đều:
+ * `Material.bg` hiện tại là 0.06, nằm GIỮA `secondary` và `primary`, nên mọi
+ * thẻ đang chạy khi chuyển sang tầng mới chỉ dịch một bậc nhỏ chứ không nhảy.
+ */
+const DARK_GLASS: Record<GlassTier, GlassSurface> = {
+  secondary: { bg: 'rgba(255,255,255,0.04)', border: 'rgba(255,255,255,0.08)', borderWidth: 0.5, blur: 0, highlight: null },
+  primary: { bg: 'rgba(255,255,255,0.07)', border: 'rgba(255,255,255,0.13)', borderWidth: 0.5, blur: 0, highlight: 'rgba(255,255,255,0.08)' },
+  floating: { bg: 'rgba(255,255,255,0.10)', border: 'rgba(255,255,255,0.16)', borderWidth: 0.5, blur: blurScale.lg, highlight: 'rgba(255,255,255,0.10)' },
+  elevated: { bg: 'rgba(255,255,255,0.14)', border: 'rgba(255,255,255,0.20)', borderWidth: 0.5, blur: blurScale.xl, highlight: 'rgba(255,255,255,0.12)' },
+};
+
+/**
+ * Bốn tầng của BẢN SÁNG, trên trang `#f7f4ef` — giấy ấm, không phải trắng.
+ *
+ * Đây là chỗ hai diện mạo KHÔNG đối xứng, và cố ý.
+ *
+ * Trong phòng tối, kính là ánh sáng cộng thêm: càng nổi càng sáng. Trên giấy
+ * phép ấy đi ngược — một mặt trắng 0.14 trên nền `#f7f4ef` gần như không thấy
+ * được, vì giấy vốn đã gần trắng. Thứ làm một bề mặt nổi lên khỏi giấy không
+ * phải độ SÁNG mà là độ ĐỤC: càng nổi càng che kín nền phía sau, và bóng đổ
+ * làm nốt phần còn lại.
+ *
+ * Nên bậc ở đây là độ đục 0.55 → 0.78 → 0.88 → 0.96, và `highlight` là `null`
+ * ở cả bốn tầng: một vệt trắng trên mặt gần-trắng là một vệt không ai thấy.
+ * `tools/theme-shape.mjs` vẫn xanh vì đó là MÀU chứ không phải hình dạng — node
+ * vẫn dựng ở cả hai bên, chỉ tô trong suốt.
+ */
+const LIGHT_GLASS: Record<GlassTier, GlassSurface> = {
+  secondary: { bg: 'rgba(255,255,255,0.55)', border: 'rgba(26,25,23,0.05)', borderWidth: 1 / 3, blur: 0, highlight: null },
+  primary: { bg: 'rgba(255,255,255,0.78)', border: 'rgba(26,25,23,0.07)', borderWidth: 1 / 3, blur: 0, highlight: null },
+  floating: { bg: 'rgba(255,255,255,0.88)', border: 'rgba(26,25,23,0.10)', borderWidth: 1 / 3, blur: blurScale.lg, highlight: null },
+  elevated: { bg: 'rgba(255,255,255,0.96)', border: 'rgba(26,25,23,0.12)', borderWidth: 1 / 3, blur: blurScale.xl, highlight: null },
+};
 
 const NO_SHADOW = {
   shadowColor: 'transparent',
@@ -893,6 +990,7 @@ export const materials: Record<ThemeName, Material> = {
     shadow: NO_SHADOW,
     /* Cả bốn, vì cùng một lý do: RN vẽ bóng trên nền tối thành một vành sáng. */
     elevation: { hero: NO_SHADOW, primary: NO_SHADOW, secondary: NO_SHADOW, inset: NO_SHADOW },
+    glass: DARK_GLASS,
   },
   light: {
     bg: '#ffffff',
@@ -960,6 +1058,7 @@ export const materials: Record<ThemeName, Material> = {
        kệ. Màu bóng là mực chữ chứ không phải đen thuần, cùng lý do như viền. */
     shadow: LIGHT_ELEVATION.secondary,
     elevation: LIGHT_ELEVATION,
+    glass: LIGHT_GLASS,
   },
 };
 

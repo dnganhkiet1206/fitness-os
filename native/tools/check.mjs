@@ -497,6 +497,9 @@ const STEPS = [
   /* Và vế LẤY LẠI: một nút Hoàn tác phải dựng lại đủ cột, và phải với tới
      được — hai cái bẫy im lặng của cùng một tính năng. */
   ['hoàn tác', 'node', ['tools/undo-safe.mjs']],
+  /* Redesign kính: chữ hạng hai phải sống sót qua CẢ chồng trang → wash → lớp
+     dập → mặt kính, và hai diện mạo hỏng ngược chiều nhau. */
+  ['chồng kính', 'node', ['tools/glass-stack.mjs']],
   ['phép chiếu ngày', 'node', ['tools/daily-log.mjs']],
   ['bàn giao quét', 'node', ['tools/scan-handoff.mjs']],
   /*
