@@ -1,9 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Lightbulb, Moon, Trash2 } from 'lucide-react-native';
-import { useMemo } from 'react';
-import { Alert, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import { useEffect, useMemo } from 'react';
+import { Alert, StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { HeroMetric } from '@/components/ascnd/hero-metric';
@@ -13,7 +13,8 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { BOUNCE, spring } from '@/constants/motion';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useSleepRamp, usePalette } from '@/hooks/use-palette';
 import { useMuted } from '@/hooks/use-wash';
@@ -34,6 +35,12 @@ import { toast } from '@/lib/toast';
    Ba hằng cũ ở đây là bản thứ hai của cùng một quyết định, và hai bản đã trôi
    khỏi nhau: giấc ngủ nông là `#565663` ở màn này và `#3f4048` ở thẻ Hôm nay.
    Cùng một khái niệm, hai màu, không gì báo. */
+
+/* Chiều cao của một cột và của hàng nhãn thứ dưới nó. Hai con số này được
+   DÙNG CHUNG giữa `styles.barTrack` và mốc mục tiêu — đặt rời hai chỗ là để
+   đường mục tiêu trôi khỏi các cột nó đang đo. */
+const BAR_H = 140;
+const LABEL_H = 22;
 
 export default function SleepInsightsScreen() {
   const c = usePalette();
@@ -157,7 +164,18 @@ export default function SleepInsightsScreen() {
     return out;
   }, [stats, targetHours, lang]);
 
-  const maxH = Math.max(8, ...nights.map((n) => n.total_h));
+  /*
+    Trần của thang, và nó chừa KHOẢNG THỞ trên mốc mục tiêu.
+
+    `Math.max(8, …)` cũ đặt trần đúng bằng đêm dài nhất, nên khi đêm ấy vừa
+    chạm mục tiêu thì đường mốc bị đẩy sát mép trên và đọc ra như một cái viền
+    của thẻ chứ không phải một mốc để đối chiếu. Nhân 1,15 cho mục tiêu là cách
+    quen thuộc của một trục biểu đồ: luôn còn chỗ phía trên đường tham chiếu để
+    mắt thấy nó là một đường NẰM TRONG khung.
+
+    Vẫn `Math.max` với đêm dài nhất, nên một đêm 10h không bao giờ bị cắt cụt.
+  */
+  const maxH = Math.max(targetHours * 1.15, ...nights.map((n) => n.total_h));
 
   /*
     ── lớp sáng của TRANG, và nó đã chờ sẵn ở đây từ lâu ──
@@ -223,7 +241,7 @@ export default function SleepInsightsScreen() {
             <GlassCard>
               <HeroMetric
                 eyebrow={vi ? '7 đêm gần nhất' : 'Last 7 nights'}
-                value={stats.avgTotal.toFixed(1)}
+                value={stats.avgTotal}
                 unit="h"
                 caption={
                   stats.avgTotal >= targetHours
@@ -260,26 +278,28 @@ export default function SleepInsightsScreen() {
               <LegendDot color={sleep.light} label="Light" />
             </View>
             <View style={styles.chart}>
+              {/*
+                ── mốc mục tiêu: thứ biến bảy cột thành một câu trả lời ──
+
+                Không có nó, biểu đồ nói "bảy đêm dài thế này" và để người đọc
+                tự nhớ mục tiêu của mình rồi tự so. Có nó, cùng bảy cột ấy nói
+                "bốn đêm dưới mục tiêu" mà không cần đọc một con số nào — đúng
+                thứ brief gọi là contextual highlight, và đúng câu mà cả màn
+                này sinh ra để trả lời.
+
+                Đặt theo cùng phép tỉ lệ mà các cột dùng (`/ maxH`), nên nó
+                không thể lệch khỏi chúng: `maxH` đã kẹp sàn ở 8, và khi có một
+                đêm dài hơn mục tiêu thì cả cột lẫn đường cùng co lại.
+
+                Một nét tóc màu mực mờ, không phải một đường kẻ: nó là thứ để
+                ĐỐI CHIẾU, không phải thứ để nhìn.
+              */}
+              <View pointerEvents="none" style={[styles.targetLine, { bottom: BAR_H * (targetHours / maxH) + LABEL_H }]}>
+                <View style={styles.targetRule} />
+                <Text style={styles.targetTag}>{`${targetHours}h`}</Text>
+              </View>
               {nights.map((n, i) => (
-                <View key={i} style={styles.barCol}>
-                  <View style={styles.barTrack}>
-                    <View style={{ flexGrow: Math.max(0, maxH - n.total_h) }} />
-                    {n.stagesKnown ? (
-                      <>
-                        <View style={[styles.barSeg, { flexGrow: n.light_h, backgroundColor: sleep.light }]} />
-                        <View style={[styles.barSeg, { flexGrow: n.rem_h, backgroundColor: sleep.rem }]} />
-                        <View style={[styles.barSeg, { flexGrow: n.deep_h, backgroundColor: sleep.deep }]} />
-                      </>
-                    ) : (
-                      /* The night's length is known and its breakdown is not.
-                         One plain bar says both of those; three segments summing
-                         to zero would draw nothing at all and read as a night
-                         that never happened. */
-                      <View style={[styles.barSeg, styles.barUnknown, { flexGrow: n.total_h }]} />
-                    )}
-                  </View>
-                  <Text style={[styles.barLabel, { color: muted }]}>{n.day}</Text>
-                </View>
+                <StageBar key={i} n={n} maxH={maxH} index={i} muted={muted} />
               ))}
             </View>
           </GlassCard>
@@ -290,7 +310,10 @@ export default function SleepInsightsScreen() {
             <Animated.View entering={rise(3)}>
             <GlassCard>
               <View style={styles.cardTitleRow}>
-                <Icon icon={Lightbulb} size={15} color={c.readinessYellow} />
+                {/* Mực mờ, không phải vàng rực. Brief mục 11: icon đỡ thứ bậc chứ không
+                    tranh chỗ với số liệu — và ở đây nó đứng cạnh một tiêu đề đã
+                    đủ rõ, nên màu của nó không mang thêm nghĩa nào. */}
+                <Icon icon={Lightbulb} size={15} color={muted} />
                 <Text style={styles.cardTitle}>{i18n.sleepInsights}</Text>
               </View>
               <View style={styles.insightList}>
@@ -384,6 +407,78 @@ export default function SleepInsightsScreen() {
 }
 
 
+/**
+ * Một đêm, và nó MỌC LÊN từ mặt đất.
+ *
+ * ── vì sao `scaleY` chứ không phải chiều cao ──
+ *
+ * Cột lớn lên là chuyện của một cái thước đo đang được đọc, và Health của Apple
+ * làm đúng thế. Nhưng animate `flexGrow` hay `height` ở đây sẽ phạm luật của
+ * `tools/motion.mjs` — `useAnimatedStyle` chỉ được chạm `transform` và
+ * `opacity` — và luật ấy có lý do: mọi thứ khác chạy trên luồng JS qua một
+ * vòng bố cục mỗi khung hình.
+ *
+ * `scaleY` neo ở ĐÁY cho đúng hình ảnh ấy mà chỉ chạm transform. Khác với
+ * `today-meals.tsx`, nơi animate chiều cao là ĐÚNG vì thứ bên dưới phải đi
+ * theo từng khung hình: ở đây không có gì bên dưới để mang theo, cột chỉ cao
+ * lên trong chỗ của nó.
+ *
+ * ── nhịp so le, và vì sao 45ms ──
+ *
+ * Bảy cột cùng mọc một lúc đọc ra là một khối nhảy lên; so le thì mắt đi từ
+ * trái sang phải và đọc ra là một tuần đang được kể lại. 45 × 6 = 270ms cho cột
+ * cuối — dưới `duration.swap` (320), nên cả hàng xong trước khi người ta kịp
+ * thấy nó chậm. Apple gọi đây là "quick, precise": đủ để thấy, không đủ để chờ.
+ *
+ * Lò xo `smooth` (bounce 0) vì một cái thước đo không nhún: nó dừng ở con số
+ * nó đo được. `withSpring` của Reanimated tôn trọng Giảm chuyển động sẵn.
+ */
+function StageBar({
+  n,
+  maxH,
+  index,
+  muted,
+}: {
+  n: { day: string; total_h: number; deep_h: number; rem_h: number; light_h: number; stagesKnown: boolean };
+  maxH: number;
+  index: number;
+  muted: string;
+}) {
+  const c = usePalette();
+  const sleep = useSleepRamp();
+  const styles = stylesFor(c);
+  const grow = useSharedValue(0);
+  useEffect(() => {
+    grow.value = withDelay(index * 45, withSpring(1, spring(0.42, BOUNCE.smooth)));
+  }, [grow, index]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scaleY: grow.value }] }));
+
+  return (
+    <View style={styles.barCol}>
+      <View style={styles.barTrack}>
+        <View style={{ flexGrow: Math.max(0, maxH - n.total_h) }} />
+        {/* Hộp mọc: neo đáy, nên cột dâng lên chứ không phình ra hai đầu. */}
+        <Animated.View style={[styles.barGrow, { flexGrow: n.total_h }, style]}>
+          {n.stagesKnown ? (
+            <>
+              <View style={[styles.barSeg, { flexGrow: n.light_h, backgroundColor: sleep.light }]} />
+              <View style={[styles.barSeg, { flexGrow: n.rem_h, backgroundColor: sleep.rem }]} />
+              <View style={[styles.barSeg, { flexGrow: n.deep_h, backgroundColor: sleep.deep }]} />
+            </>
+          ) : (
+            /* The night's length is known and its breakdown is not.
+               One plain bar says both of those; three segments summing
+               to zero would draw nothing at all and read as a night
+               that never happened. */
+            <View style={[styles.barSeg, styles.barUnknown, { flexGrow: 1 }]} />
+          )}
+        </Animated.View>
+      </View>
+      <Text style={[styles.barLabel, { color: muted }]}>{n.day}</Text>
+    </View>
+  );
+}
+
 function LegendDot({ color, label }: { color: string; label: string }) {
   const c = usePalette();
   const muted = useMuted();
@@ -405,16 +500,46 @@ const stylesFor = makeStyles((c, m) => ({
   pillRow: { flexDirection: 'row', gap: spacing.sm },
   legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  legendDot: { width: 9, height: 9, borderRadius: 2 },
+  /* Tròn, 8: một ô vuông 9 điểm đọc ra là một mẫu tô, một chấm tròn đọc ra là
+     một nhãn. Chú giải là nhãn. */
+  legendDot: { width: 8, height: 8, borderRadius: radius.full },
   legendText: { ...type.caption, color: c.mutedForeground },
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, height: 160, marginTop: spacing.md },
   barCol: { flex: 1, alignItems: 'center', gap: 6 },
-  barTrack: { width: '70%', height: 140, flexDirection: 'column', backgroundColor: c.background, borderRadius: 4, overflow: 'hidden' },
+  /*
+    ── cái rãnh, không phải một cái hộp đen ──
+
+    Nền cũ là `c.background` (#070708), TỐI HƠN mặt thẻ nó nằm trên (#0e0e11),
+    nên phần chưa lấp đọc ra là một lỗ thủng chứ không phải phần còn trống của
+    một thanh đo. Trên giấy cũng cùng lỗi ấy, lộn ngược.
+
+    `m.inset.track` là token của đúng vai này — rãnh chưa chạy của mọi vòng và
+    thanh tiến trình trong app — nên thanh ngủ thôi tự phát minh một nền riêng.
+
+    Bo TRÒN HẲN và `maxWidth` 28: bảy đêm thì mỗi cột rộng ~46 và thanh 70% ra
+    vừa đẹp, nhưng MỘT đêm thì cột là cả bề ngang thẻ và thanh phình thành một
+    khối màu 258 điểm. Brief gọi đúng thứ đó — "không dùng màu quá bão hoà" là
+    chuyện DIỆN TÍCH nhiều hơn chuyện sắc.
+  */
+  barTrack: {
+    width: '70%',
+    maxWidth: 28,
+    height: BAR_H,
+    flexDirection: 'column',
+    backgroundColor: m.inset.track,
+    borderRadius: radius.full,
+    overflow: 'hidden',
+  },
   /* Neither of the three stage colours — it is not a stage, it is the absence
      of a breakdown, and giving it one of their colours would name it wrongly. */
   barUnknown: { backgroundColor: alpha(m.ink, 0.14) },
   barSeg: { width: '100%', flexBasis: 0 },
+  /* `transformOrigin` ở đáy là thứ biến một cú phóng to thành một cú MỌC LÊN. */
+  barGrow: { width: '100%', flexBasis: 0, flexDirection: 'column', transformOrigin: 'bottom' },
   barLabel: { ...type.caption, color: c.mutedForeground },
+  targetLine: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  targetRule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: alpha(m.ink, 0.22) },
+  targetTag: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   insightList: { marginTop: spacing.sm, gap: spacing.sm },
   insightRow: { flexDirection: 'row', gap: spacing.sm },
   insightBullet: { ...type.body, color: c.primary },

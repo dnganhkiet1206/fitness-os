@@ -75,10 +75,32 @@ export const FIXTURES = {
     sleep_duration_min: 431, workout_count: 1, volume_load: 8450,
     acwr: 1.08, hrv_today: 62, rhr_today: 54,
   }],
-  sleep_logs: [{
-    id: 's1', user_id: UID, bedtime: day(1), waketime: day(0.7), quality: 8,
-    deep_min: 92, rem_min: 104, light_min: 235, asleep_min: 431, source: 'apple_health',
-  }],
+  /*
+    ── BẢY đêm, không phải một ──
+
+    Một đêm là một biểu đồ suy biến: `sleep-insights` vẽ một cột duy nhất giữa
+    một thẻ rỗng, nên không lượt chạy nào từng nhìn thấy hình dạng thật của nó
+    — bảy cột cạnh nhau, cao thấp khác nhau, ba tầng chồng trong mỗi cột. Đúng
+    hình dạng mà `meal_entry_items` đã thiếu.
+
+    Sáu đêm có tầng (HealthKit ghi) và MỘT đêm không — `stagesKnown` là thứ
+    phân biệt "bạn không ngủ sâu" với "không ai đo giấc sâu của bạn", và nhánh
+    ấy chỉ chạy khi có một đêm như thế trong bảng.
+
+    Độ dài đi từ 5,8h tới 8,1h quanh mục tiêu 8h, nên cả nhánh "thiếu giờ" lẫn
+    nhánh "đạt mục tiêu" của câu tóm tắt đều có dữ liệu để chạy.
+  */
+  sleep_logs: [
+    { id: 's1', user_id: UID, bedtime: day(1), waketime: day(0.7), quality: 8, deep_min: 92, rem_min: 104, light_min: 235, asleep_min: 431, source: 'apple_health' },
+    { id: 's2', user_id: UID, bedtime: day(2), waketime: day(1.68), quality: 7, deep_min: 78, rem_min: 96, light_min: 246, asleep_min: 420, source: 'apple_health' },
+    { id: 's3', user_id: UID, bedtime: day(3), waketime: day(2.72), quality: 9, deep_min: 104, rem_min: 118, light_min: 264, asleep_min: 486, source: 'apple_health' },
+    { id: 's4', user_id: UID, bedtime: day(4), waketime: day(3.76), quality: 6, deep_min: 61, rem_min: 74, light_min: 213, asleep_min: 348, source: 'apple_health' },
+    { id: 's5', user_id: UID, bedtime: day(5), waketime: day(4.69), quality: 8, deep_min: 88, rem_min: 112, light_min: 252, asleep_min: 452, source: 'apple_health' },
+    { id: 's6', user_id: UID, bedtime: day(6), waketime: day(5.71), quality: 7, deep_min: 95, rem_min: 88, light_min: 258, asleep_min: 441, source: 'apple_health' },
+    /* Đêm gõ tay: có giờ đi ngủ và giờ dậy, KHÔNG có tầng. Nhánh `stagesKnown`
+       của biểu đồ và nhánh `avgDeep === null` của thẻ chỉ chạy nhờ đêm này. */
+    { id: 's7', user_id: UID, bedtime: day(7), waketime: day(6.74), quality: 5, deep_min: 0, rem_min: 0, light_min: 0, asleep_min: 374, source: 'manual' },
+  ],
   biometric_samples: [{
     id: 'b1', user_id: UID, date_time: day(0.2), hr_bpm: 54, hrv_sdnn_ms: 62,
     hrv_rmssd_ms: null, spo2_pct: 97, resp_rate_rpm: 14, vo2max_mlkgmin: 48,

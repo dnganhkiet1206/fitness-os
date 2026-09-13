@@ -44,7 +44,11 @@ export function MetricPill({
         {/* Chấm luôn được dựng, tô trong suốt khi không có `tint`: gỡ node
             theo dữ liệu làm hai hàng cạnh nhau lệch nhau một khoảng gap. */}
         <View style={[styles.dot, { backgroundColor: tint ?? 'transparent' }]} />
-        <Text style={[styles.label, { color: muted }]} numberOfLines={1}>
+        {/* HAI dòng, không một. "Weekly Sleep Debt" bị cắt thành "Weekly Sleep…"
+            ở một phần ba bề ngang 370 điểm — một nhãn bị cắt là một nhãn thôi
+            làm nhãn. Ba viên `flex: 1` trong một hàng tự kéo bằng chiều cao
+            nhau, nên viên hai dòng không làm hàng lệch. */}
+        <Text style={[styles.label, { color: muted }]} numberOfLines={2}>
           {label}
         </Text>
       </View>
@@ -56,7 +60,21 @@ export function MetricPill({
 }
 
 const stylesFor = makeStyles((c) => ({
-  wrap: { flex: 1, minWidth: 0, gap: 3, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.sm + 4 },
+  /*
+    `space-between` chứ không `gap`: nhãn một dòng và nhãn hai dòng đứng cạnh
+    nhau thì `gap` đẩy con số của viên hai dòng xuống thấp hơn, và một hàng ba
+    con số không thẳng nhau đọc ra là ba thứ không cùng loại. Đẩy số xuống ĐÁY
+    thì chúng thẳng hàng bất kể nhãn dài bao nhiêu.
+  */
+  wrap: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'space-between',
+    gap: 3,
+    minHeight: 72,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.sm + 4,
+  },
   labelRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   dot: { width: 6, height: 6, borderRadius: 3 },
   label: { ...type.caption, color: c.mutedForeground, flexShrink: 1 },
