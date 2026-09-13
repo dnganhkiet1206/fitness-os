@@ -1116,9 +1116,52 @@ export interface SleepRamp {
   deep: string;
 }
 
+/*
+  ── câu hỏi chưa ai đặt: dải so với CÁI RÃNH nó nằm trong ──
+
+  `tools/sleep-ramp.mjs` đo ba dải với MẶT THẺ và bắt được bản sáng mã hoá
+  ngược. Nó không đo thứ mắt thật sự làm trong một cột chồng: phân biệt phần
+  ĐÃ LẤP với phần CÒN TRỐNG. Đo bổ sung trên chính ảnh đã dựng:
+
+      bản sáng   nông #b69fd3 vs rãnh (giấy)   2,36:1   ✗
+      bản tối    nông #3f4048 vs rãnh          1,81:1   ✗
+
+  WCAG 1.4.11 đòi 3,0 cho "phần của đồ hoạ cần để hiểu nội dung", và ranh giới
+  giữa có-dữ-liệu và không-có-dữ-liệu đúng là phần ấy. Hậu quả đọc được ngay
+  trên ảnh: một đêm lấp đầy 100% cột trông như lấp 45%, vì dải NÔNG — dải lớn
+  nhất của mọi đêm, ~55% — đọc ra là chỗ trống.
+
+  ── vì sao ba giá trị đổi chứ không phải một ──
+
+  Nâng riêng `nông` lên 3,0 thì nó chạm gót REM: REM đang ở 4,24 nên trần của
+  `nông` là 4,24/1,4 = 3,03. Cửa sổ rộng 0,03 — đó không phải một lời giải, đó
+  là một con số may mắn. Giải lại cả ba trên CÙNG một đường trắng→`#7715b8` thì
+  mỗi bậc có biên:
+
+      nông #b077d6  3,25 với giấy      nông↔REM  1,49×   (luật đòi 1,40)
+      REM  #994fca  4,85               REM↔sâu   1,67×
+      sâu  #7715b8  8,13  (không đổi)
+
+  Vẫn một sắc, ba mật độ, vẫn đậm dần theo độ sâu — chỉ là dải nhạt nhất thôi
+  biến mất vào nền giấy.
+
+  ── bản TỐI thì KHÔNG đổi ở đây, và đó là một quyết định có chủ ──
+
+  `sleep-ramp.mjs` luật 4 đóng băng đúng ba giá trị tối đã ship, kèm lý do; và
+  `#3f4048` là một màu xám nên không nâng được mà vẫn giữ họ tím. Sửa nó là
+  mở lại bản tối. Con số 1,81 ghi ở đây để lần mở ấy có một đích cụ thể chứ
+  không phải một cảm giác.
+
+  ── và một giá trị của bản TỐI đã đổi ở đây, trước đó ──
+
+  Cùng một khái niệm từng có HAI mã màu ở bản tối: `#3f4048` trong
+  `dashboard-cards.tsx` và `#565663` trong `app/sleep-insights.tsx`. Một nguồn
+  duy nhất không thể giữ cả hai. Chọn `#3f4048` — nó nằm trên thẻ Hôm nay (bề
+  mặt người ta thấy mỗi ngày) và nó MỜ hơn, đúng vai "dải ít mực nhất".
+*/
 export const sleepRamps: Record<ThemeName, SleepRamp> = {
   dark: { light: '#3f4048', rem: darkPalette.metricCyan, deep: darkPalette.metricPurple },
-  light: { light: '#b69fd3', rem: '#9763ca', deep: '#7715b8' },
+  light: { light: '#b077d6', rem: '#994fca', deep: '#7715b8' },
 };
 
 /**

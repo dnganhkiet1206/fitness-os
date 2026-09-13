@@ -500,6 +500,13 @@ const STEPS = [
   /* Redesign kính: chữ hạng hai phải sống sót qua CẢ chồng trang → wash → lớp
      dập → mặt kính, và hai diện mạo hỏng ngược chiều nhau. */
   ['chồng kính', 'node', ['tools/glass-stack.mjs']],
+  /* Bộ chạy soi app; bước này soi BỘ CHẠY. Máy chủ giả bỏ qua `.order()` nên
+     nó không đỏ — nó BỊA, và một ảnh chụp bịa còn tệ hơn không có ảnh nào. */
+  ['máy chủ giả', 'node', ['tools/fake-rest.mjs']],
+  /* Cùng họ với `daily-log.mjs` (một phép chiếu, một chỗ): một đại lượng có
+     hàm sở hữu rồi thì không màn nào được tự tính lại — cái bẫy đã sập bốn
+     lần, lần gần nhất là hai con số cho cùng một đêm trên cùng một màn. */
+  ['một định nghĩa', 'node', ['tools/one-definition.mjs']],
   ['phép chiếu ngày', 'node', ['tools/daily-log.mjs']],
   ['bàn giao quét', 'node', ['tools/scan-handoff.mjs']],
   /*

@@ -15,7 +15,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { BOUNCE, spring } from '@/constants/motion';
-import { alpha, makeStyles } from '@/constants/theme';
+import { makeStyles } from '@/constants/theme';
 import { useSleepRamp, usePalette } from '@/hooks/use-palette';
 import { useMuted } from '@/hooks/use-wash';
 import { useRise } from '@/lib/entrance';
@@ -293,14 +293,22 @@ export default function SleepInsightsScreen() {
 
                 Một nét tóc màu mực mờ, không phải một đường kẻ: nó là thứ để
                 ĐỐI CHIẾU, không phải thứ để nhìn.
+
+                ── và nó vẽ SAU các cột, không trước ──
+
+                Bản đầu đặt nó trước, nên cột nào CHẠM mục tiêu sẽ che mất đúng
+                đoạn đường ở chỗ nó chạm. Đo trên ảnh: đêm thứ Sáu 8,10h vượt
+                mốc 8h, và đó lại là đêm duy nhất không nhìn thấy mốc. Một
+                đường tham chiếu bị dữ liệu che ở đúng chỗ đáng xem nhất thì
+                thôi làm tham chiếu.
               */}
+              {nights.map((n, i) => (
+                <StageBar key={i} n={n} maxH={maxH} index={i} muted={muted} />
+              ))}
               <View pointerEvents="none" style={[styles.targetLine, { bottom: BAR_H * (targetHours / maxH) + LABEL_H }]}>
                 <View style={styles.targetRule} />
                 <Text style={styles.targetTag}>{`${targetHours}h`}</Text>
               </View>
-              {nights.map((n, i) => (
-                <StageBar key={i} n={n} maxH={maxH} index={i} muted={muted} />
-              ))}
             </View>
           </GlassCard>
           </Animated.View>
@@ -350,7 +358,30 @@ export default function SleepInsightsScreen() {
           {[...(sleepLogs ?? [])].reverse().map((s) => {
             const bed = new Date(s.bedtime);
             const wake = new Date(s.waketime);
-            const mins = Math.round((wake.getTime() - bed.getTime()) / 60000);
+            /*
+              ── NGỦ bao lâu, không phải NẰM TRÊN GIƯỜNG bao lâu ──
+
+              Dòng này từng là `Math.round((wake - bed) / 60000)`, tức thời gian
+              trên giường. Cả phần còn lại của màn — hero, biểu đồ, nợ ngủ, và
+              điểm sẵn sàng mà hộp thoại xoá hứa sẽ tính lại — đọc
+              `asleepMinutes`, thứ ưu tiên `asleep_min` do HealthKit ghi. Hai
+              định nghĩa cho một đêm, cách nhau 260 dòng trong cùng một tệp.
+
+              Chênh lệch KHÔNG nhỏ và không phải lý thuyết: đo trên một đêm
+              HealthKit hình dạng thật, 23:00 → 06:40 là 7h40 trên giường và
+              7h11 ngủ. Thẻ trên cùng nói 7.2h, hàng ngay dưới nói 7h40, không
+              gì trên màn giải thích vì sao.
+
+              Chính là điều `useKcalHistory` đã ghi thành luật cho mình: "đọc
+              lại từ bảng nguồn nghĩa là tự tính một khoảng thời gian ở đây rồi
+              HY VỌNG nó khớp với thứ đã viết ra cột kia".
+
+              Và vì con số thôi bằng hiệu của hai giờ in ngay cạnh nó, nó phải
+              được GỌI TÊN — không thì người đọc trừ nhẩm rồi tưởng app tính
+              sai. Cùng cách Sức khoẻ của Apple tách "Time in Bed" khỏi "Time
+              Asleep": hai con số khác nhau thì phải có hai cái tên.
+            */
+            const mins = asleepMinutes(s);
             const t = (d: Date) => d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
             return (
               <GlassCard elevation="inset" key={s.id} style={styles.logRow}>
@@ -359,7 +390,9 @@ export default function SleepInsightsScreen() {
                     {wake.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}
                   </Text>
                   <Text style={[styles.logVals, { color: muted }]}>
-                    {`${t(bed)} → ${t(wake)} · ${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}`}
+                    {`${t(bed)} → ${t(wake)} · ${
+                      vi ? 'ngủ ' : ''
+                    }${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}${vi ? '' : ' asleep'}`}
                   </Text>
                 </View>
                 <PressScale
@@ -466,10 +499,28 @@ function StageBar({
               <View style={[styles.barSeg, { flexGrow: n.deep_h, backgroundColor: sleep.deep }]} />
             </>
           ) : (
-            /* The night's length is known and its breakdown is not.
-               One plain bar says both of those; three segments summing
-               to zero would draw nothing at all and read as a night
-               that never happened. */
+            /*
+              ── đêm không ai đo tầng: RỖNG RUỘT, không phải một màu khác ──
+
+              Trước đây nó là một khối xám đặc `alpha(ink, 0.14)`. Đo ra: khối
+              ấy cách dải NÔNG đúng 1,22:1 ở bản tối và 1,77:1 ở bản sáng — tức
+              "bạn ngủ nông chừng này" và "không ai đo tầng của bạn" hiện ra
+              gần như CÙNG một diện mạo. Hai nghĩa, một hình.
+
+              Và nó không sửa được bằng màu: giải lại dải sáng xong, khoảng cách
+              vẫn chỉ 2,44. Mọi màu đặc đều rơi vào giữa ba dải thật hoặc vào
+              chính cái rãnh.
+
+              Nên đổi HẠNG của hình, không đổi màu: rỗng ruột, một nét viền.
+              Đặc/rỗng là một khác biệt về loại chứ không về sắc, nên nó không
+              va vào dải nào được — kể cả khi dải đổi màu sau này.
+
+              Viền là `mutedForeground` vì đó là token DUY NHẤT đạt ≥3,0 với
+              rãnh ở cả hai diện mạo (4,87 tối · 5,78 sáng); `border` chỉ được
+              1,33 và 1,46, tức một đường không ai thấy. Ruột để trong suốt vì
+              mọi độ mờ thử qua đều ≤1,38 với rãnh — một lớp mực không nhìn
+              thấy thì chỉ làm bẩn phép đo.
+            */
             <View style={[styles.barSeg, styles.barUnknown, { flexGrow: 1 }]} />
           )}
         </Animated.View>
@@ -507,38 +558,73 @@ const stylesFor = makeStyles((c, m) => ({
   chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, height: 160, marginTop: spacing.md },
   barCol: { flex: 1, alignItems: 'center', gap: 6 },
   /*
-    ── cái rãnh, không phải một cái hộp đen ──
+    ── KHÔNG có rãnh, và đó là kết luận của phép đo chứ không phải sự lười ──
 
     Nền cũ là `c.background` (#070708), TỐI HƠN mặt thẻ nó nằm trên (#0e0e11),
-    nên phần chưa lấp đọc ra là một lỗ thủng chứ không phải phần còn trống của
-    một thanh đo. Trên giấy cũng cùng lỗi ấy, lộn ngược.
+    nên phần chưa lấp đọc ra là một lỗ thủng. Bản vá đầu đổi sang
+    `m.inset.track` — token của đúng vai ấy — và đó là một lỗi khác: giao ước
+    của token ghi ngay cạnh nó là "mặt thẻ lộ trở lại qua chỗ LÕM", tức nó giả
+    định rãnh nằm trong một mặt lõm. Đặt thẳng lên mặt thẻ thì ở bản sáng
+    `inset.track` ĐÚNG BẰNG `card`: rãnh biến mất hoàn toàn (1,00:1). Ở bản tối
+    nó được 1,03 — cũng gần như không có.
 
-    `m.inset.track` là token của đúng vai này — rãnh chưa chạy của mọi vòng và
-    thanh tiến trình trong app — nên thanh ngủ thôi tự phát minh một nền riêng.
+    Thử giải bằng `alpha(m.ink, α)`, thứ tự lật chiều theo theme. Bảng đo:
 
-    Bo TRÒN HẲN và `maxWidth` 28: bảy đêm thì mỗi cột rộng ~46 và thanh 70% ra
-    vừa đẹp, nhưng MỘT đêm thì cột là cả bề ngang thẻ và thanh phình thành một
-    khối màu 258 điểm. Brief gọi đúng thứ đó — "không dùng màu quá bão hoà" là
-    chuyện DIỆN TÍCH nhiều hơn chuyện sắc.
+        α       tối rãnh↔thẻ   nông↔rãnh      sáng rãnh↔thẻ   nông↔rãnh
+        0,04        1,09         1,72             1,08          3,01
+        0,06        1,13         1,65             1,13          2,88
+        0,10        1,28         1,46             1,23          2,65
+
+    Đọc ra một thứ không thương lượng được: **rãnh càng nhìn thấy thì dữ liệu
+    càng chìm**, vì rãnh sáng lên là rãnh đi VỀ PHÍA dải nông. Ở bản sáng, mọi
+    độ mờ đủ để thấy rãnh đều đẩy dải nông xuống dưới ngưỡng 3,0 của WCAG
+    1.4.11. Hai thứ ấy không cùng tồn tại được với dải màu này.
+
+    Nên bỏ rãnh. Nó đang vô hình sẵn (1,00 và 1,03), nên không mất gì; và câu
+    "còn thiếu bao nhiêu" đã có mốc 8h trả lời, ở 4,87:1 và 5,78:1 — rõ hơn bất
+    kỳ cái rãnh nào vừa đo. Brief nói readability đứng trên hiệu ứng; đây là
+    đúng lúc áp dụng nó cho một thứ trang trí.
+
+    Hộp vẫn còn vì nó còn hai việc: kẹp bề ngang, và BO đáy cột thành viên
+    thuốc. Bo TRÒN HẲN và `maxWidth` 28 — bảy đêm thì mỗi cột rộng ~46 và thanh
+    70% ra vừa đẹp, nhưng MỘT đêm thì cột là cả bề ngang thẻ và thanh phình
+    thành một khối màu 258 điểm. "Không dùng màu quá bão hoà" là chuyện DIỆN
+    TÍCH nhiều hơn chuyện sắc.
   */
   barTrack: {
     width: '70%',
     maxWidth: 28,
     height: BAR_H,
     flexDirection: 'column',
-    backgroundColor: m.inset.track,
     borderRadius: radius.full,
     overflow: 'hidden',
   },
   /* Neither of the three stage colours — it is not a stage, it is the absence
-     of a breakdown, and giving it one of their colours would name it wrongly. */
-  barUnknown: { backgroundColor: alpha(m.ink, 0.14) },
+     of a breakdown, and giving it one of their colours would name it wrongly.
+     Xem chú thích ở chỗ vẽ: rỗng ruột là khác biệt về LOẠI, nên không màu nào
+     va vào được. */
+  /* `borderRadius` của CHÍNH nó, không mượn mặt nạ của hộp: một khung vuông
+     nằm trong một mặt nạ viên thuốc thì đáy khung bị gọt mất hai góc và phần
+     còn lại hiện ra thành một mẩu gạch trôi lơ lửng — thấy rõ ở ảnh đối chiếu.
+     Cho viền đi đúng hình thì nó khép kín. Và đầu TRÒN trong khi ba dải thật
+     đầu phẳng lại càng nói đúng điều cần nói: đây không cùng loại với chúng. */
+  barUnknown: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: c.mutedForeground,
+    borderRadius: radius.full,
+  },
   barSeg: { width: '100%', flexBasis: 0 },
   /* `transformOrigin` ở đáy là thứ biến một cú phóng to thành một cú MỌC LÊN. */
   barGrow: { width: '100%', flexBasis: 0, flexDirection: 'column', transformOrigin: 'bottom' },
   barLabel: { ...type.caption, color: c.mutedForeground },
   targetLine: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  targetRule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: alpha(m.ink, 0.22) },
+  /* Cùng token với nhãn `8h` đứng cạnh nó, nên nét và chữ đọc ra là MỘT vật.
+     `alpha(m.ink, 0.22)` cũ chỉ đo được ~2,2 với rãnh ở bản tối — dưới ngưỡng
+     3,0 của WCAG 1.4.11 cho một vật thể đồ hoạ; `mutedForeground` đo 4,87 tối
+     và 5,78 sáng. Vẫn là một nét tóc: chiều dày mới là thứ giữ nó khiêm tốn,
+     không phải độ mờ. */
+  targetRule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: c.mutedForeground },
   targetTag: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   insightList: { marginTop: spacing.sm, gap: spacing.sm },
   insightRow: { flexDirection: 'row', gap: spacing.sm },

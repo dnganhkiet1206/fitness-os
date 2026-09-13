@@ -53,6 +53,122 @@ export const day = (n) => new Date(Date.now() - n * 864e5).toISOString();
 export const dayStr = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
 
 /**
+ * Một đêm ngủ có hình dạng của một đêm ngủ thật.
+ *
+ * ── ba thứ bộ cố định cũ nói dối, và cả ba đều che một lỗi ──
+ *
+ * 1. **Giờ.** `bedtime: day(1), waketime: day(0.7)` là "24 giờ trước" và "16,8
+ *    giờ trước", nên ảnh chụp in ra `04:37 PM → 10:51 PM`: một đêm bắt đầu lúc
+ *    bốn giờ chiều. Không ai nhìn một ảnh như thế mà tin được phần định dạng
+ *    giờ của màn là đúng, và không lượt chạy nào từng thử một đêm VẮT QUA nửa
+ *    đêm — tức hình dạng của mọi đêm thật.
+ *
+ * 2. **Thời gian trên giường bằng đúng thời gian ngủ.** `asleep_min` của đêm cũ
+ *    khớp tới từng phút với `waketime - bedtime`, mà HealthKit không bao giờ
+ *    ghi như vậy: luôn có thời gian nằm chờ ngủ và những lần tỉnh giấc. Hai con
+ *    số ấy bằng nhau thì mọi chỗ trong app trộn lẫn chúng đều trông đúng.
+ *    `inBedMin > asleepMin` là thứ phân biệt chúng, và bộ chạy cần sự phân biệt
+ *    ấy để một chỗ nào đó dùng nhầm con số sẽ LỘ RA.
+ *
+ * 3. **Thứ trong tuần.** Bảy `day(n)` với phần lẻ khác nhau rơi vào chỉ năm
+ *    ngày lịch — ảnh chụp có HAI thứ Bảy, HAI thứ Tư, không có thứ Ba và thứ
+ *    Sáu. Neo theo giờ trên đồng hồ thì bảy đêm ra đúng bảy ngày liền nhau.
+ *
+ * Tầng ngủ vẫn cộng đúng bằng `asleepMin` — đó là điều HealthKit bảo đảm, và
+ * một fixture tự mâu thuẫn sẽ che đúng loại lỗi biểu đồ sinh ra để bắt.
+ *
+ * Neo theo giờ UTC vì bộ chạy chạy ở UTC; đổi múi giờ của trình duyệt thì giờ
+ * hiện ra đổi theo, y như trên máy thật.
+ */
+function night(daysAgo, bedH, bedM, inBedMin, asleepMin, { id, quality, deep, rem, light, source = 'apple_health' }) {
+  if (deep + rem + light > 0 && deep + rem + light !== asleepMin) {
+    throw new Error(`live-world: đêm ${id} có tầng cộng lại ${deep + rem + light} ≠ asleep_min ${asleepMin}`);
+  }
+  if (inBedMin < asleepMin) {
+    throw new Error(`live-world: đêm ${id} ngủ ${asleepMin} phút trong ${inBedMin} phút trên giường`);
+  }
+  const bed = new Date(Date.now() - daysAgo * 864e5);
+  bed.setUTCHours(bedH, bedM, 0, 0);
+  const wake = new Date(bed.getTime() + inBedMin * 60000);
+  return {
+    id, user_id: UID,
+    bedtime: bed.toISOString(),
+    waketime: wake.toISOString(),
+    quality,
+    deep_min: deep, rem_min: rem, light_min: light,
+    asleep_min: asleepMin,
+    source,
+  };
+}
+
+/**
+ * `?order=…` và `?limit=…`, vì một bảng KHÔNG có thứ tự cố định nào đúng.
+ *
+ * ── lỗi nó sinh ra để sửa ──
+ *
+ * Máy chủ giả trả `FIXTURES[table]` nguyên bảng theo đúng thứ tự tôi gõ trong
+ * tệp này. Đo được: trong 27 chỗ app gọi `.order()`, **sáu bảng** đang nằm ở
+ * thứ tự app không bao giờ hỏi — nên mọi ảnh chụp và mọi kịch bản chạy trên
+ * một danh sách đảo ngược, và không ai phân biệt được "app sắp sai" với
+ * "fixture gõ ngược".
+ *
+ * Nó vừa xảy ra thật: biểu đồ bảy đêm của `sleep-insights` vẽ đêm mới nhất ở
+ * BÊN TRÁI trong ảnh chụp — ngược mọi quy ước chuỗi thời gian — và app thì
+ * đúng: `useSleepHistory` gọi `.order('waketime', { ascending: true })`.
+ *
+ * ── vì sao không sắp lại fixture bằng tay ──
+ *
+ * Vì không có thứ tự nào đúng được. `sleep_logs` bị hỏi `waketime.asc` bởi
+ * `useSleepHistory` và `waketime.desc` bởi `useTodaySleep`, trong CÙNG một
+ * phiên; `meal_entries` cũng thế với `date_time`. Một mảng chỉ có một thứ tự.
+ * Nên thứ phải biết sắp xếp là máy chủ, đúng như Postgres — và khi máy chủ
+ * biết sắp, thứ tự tôi gõ trong fixture thôi mang nghĩa gì, tức thôi nói dối
+ * được.
+ *
+ * Lọc theo ngày (`gte`/`lt`) thì VẪN bị bỏ qua, và đó vẫn là giới hạn đã ghi
+ * trong `live.mjs`. Đây chỉ là thứ tự và số lượng.
+ */
+export function applyQuery(rows, url) {
+  let out = rows;
+
+  /* PostgREST: `order=col.asc,col2.desc.nullsfirst`. supabase-js nối nhiều lần
+     gọi `.order()` vào cùng tham số ấy, nên tách theo dấu phẩy là đủ. */
+  const order = url.searchParams.get('order');
+  if (order) {
+    const keys = order.split(',').map((part) => {
+      const [col, ...mods] = part.split('.');
+      const desc = mods.includes('desc');
+      /* Mặc định của Postgres, không phải của JS: ASC đặt NULL sau cùng, DESC
+         đặt NULL lên đầu. Gõ ngược thì một hàng thiếu dữ liệu sẽ nhảy lên đầu
+         danh sách trong ảnh chụp và trông như một lỗi của app. */
+      const nullsFirst = mods.includes('nullsfirst') ? true : mods.includes('nullslast') ? false : desc;
+      return { col, desc, nullsFirst };
+    });
+    out = [...out].sort((a, b) => {
+      for (const { col, desc, nullsFirst } of keys) {
+        const x = a[col];
+        const y = b[col];
+        const xn = x === null || x === undefined;
+        const yn = y === null || y === undefined;
+        if (xn && yn) continue;
+        if (xn || yn) return (xn ? 1 : -1) * (nullsFirst ? -1 : 1);
+        /* Boolean trước số trước chuỗi: `is_favorite.desc` phải đưa `true` lên
+           đầu, mà `true > false` chỉ đúng sau khi ép sang số. */
+        const cx = typeof x === 'boolean' ? Number(x) : x;
+        const cy = typeof y === 'boolean' ? Number(y) : y;
+        const cmp = cx < cy ? -1 : cx > cy ? 1 : 0;
+        if (cmp) return desc ? -cmp : cmp;
+      }
+      return 0;
+    });
+  }
+
+  const limit = Number(url.searchParams.get('limit'));
+  if (Number.isFinite(limit) && limit > 0) out = out.slice(0, limit);
+  return out;
+}
+
+/**
  * What the server answers in `full` mode.
  *
  * The numbers are chosen so the canary can recognise them. `1,680 / 2,450 kcal`
@@ -91,15 +207,16 @@ export const FIXTURES = {
     nhánh "đạt mục tiêu" của câu tóm tắt đều có dữ liệu để chạy.
   */
   sleep_logs: [
-    { id: 's1', user_id: UID, bedtime: day(1), waketime: day(0.7), quality: 8, deep_min: 92, rem_min: 104, light_min: 235, asleep_min: 431, source: 'apple_health' },
-    { id: 's2', user_id: UID, bedtime: day(2), waketime: day(1.68), quality: 7, deep_min: 78, rem_min: 96, light_min: 246, asleep_min: 420, source: 'apple_health' },
-    { id: 's3', user_id: UID, bedtime: day(3), waketime: day(2.72), quality: 9, deep_min: 104, rem_min: 118, light_min: 264, asleep_min: 486, source: 'apple_health' },
-    { id: 's4', user_id: UID, bedtime: day(4), waketime: day(3.76), quality: 6, deep_min: 61, rem_min: 74, light_min: 213, asleep_min: 348, source: 'apple_health' },
-    { id: 's5', user_id: UID, bedtime: day(5), waketime: day(4.69), quality: 8, deep_min: 88, rem_min: 112, light_min: 252, asleep_min: 452, source: 'apple_health' },
-    { id: 's6', user_id: UID, bedtime: day(6), waketime: day(5.71), quality: 7, deep_min: 95, rem_min: 88, light_min: 258, asleep_min: 441, source: 'apple_health' },
     /* Đêm gõ tay: có giờ đi ngủ và giờ dậy, KHÔNG có tầng. Nhánh `stagesKnown`
-       của biểu đồ và nhánh `avgDeep === null` của thẻ chỉ chạy nhờ đêm này. */
-    { id: 's7', user_id: UID, bedtime: day(7), waketime: day(6.74), quality: 5, deep_min: 0, rem_min: 0, light_min: 0, asleep_min: 374, source: 'manual' },
+       của biểu đồ và nhánh `avgDeep === null` của thẻ chỉ chạy nhờ đêm này —
+       và đúng vì nó gõ tay nên `asleep_min` BẰNG thời gian trên giường. */
+    night(7, 23, 25, 374, 374, { id: 's7', quality: 5, deep: 0, rem: 0, light: 0, source: 'manual' }),
+    night(6, 23, 5, 470, 441, { id: 's6', quality: 7, deep: 95, rem: 88, light: 258 }),
+    night(5, 22, 50, 482, 452, { id: 's5', quality: 8, deep: 88, rem: 112, light: 252 }),
+    night(4, 23, 50, 375, 348, { id: 's4', quality: 6, deep: 61, rem: 74, light: 213 }),
+    night(3, 22, 35, 515, 486, { id: 's3', quality: 9, deep: 104, rem: 118, light: 264 }),
+    night(2, 23, 15, 448, 420, { id: 's2', quality: 7, deep: 78, rem: 96, light: 246 }),
+    night(1, 23, 0, 460, 431, { id: 's1', quality: 8, deep: 92, rem: 104, light: 235 }),
   ],
   biometric_samples: [{
     id: 'b1', user_id: UID, date_time: day(0.2), hr_bpm: 54, hrv_sdnn_ms: 62,
@@ -347,16 +464,16 @@ export const FIXTURES = {
   ],
   meal_entry_items: [
     /* bữa sáng — 184+89+155+112 = 540 kcal · 36 P · 63 C · 16 F */
-    { id: 'mi1', meal_entry_id: 'm1', food_name: 'Yến mạch 50g', servings: 1, kcal: 184, protein_g: 7, carbs_g: 30, fat_g: 4, fiber_g: 5 },
-    { id: 'mi2', meal_entry_id: 'm1', food_name: 'Sữa chua Hy Lạp 0% 150g', servings: 1, kcal: 89, protein_g: 15, carbs_g: 5, fat_g: 1, fiber_g: 0 },
+    { id: 'mi1', created_at: day(0.251), meal_entry_id: 'm1', food_name: 'Yến mạch 50g', servings: 1, kcal: 184, protein_g: 7, carbs_g: 30, fat_g: 4, fiber_g: 5 },
+    { id: 'mi2', created_at: day(0.2503), meal_entry_id: 'm1', food_name: 'Sữa chua Hy Lạp 0% 150g', servings: 1, kcal: 89, protein_g: 15, carbs_g: 5, fat_g: 1, fiber_g: 0 },
     /* khẩu phần khác 1 — hàng DUY NHẤT hiện chữ `×2`, và là hàng để thử sheet
        sửa khẩu phần. Không có nó thì nhánh `it.servings !== 1` không bao giờ
        chạy trong bộ chạy. */
-    { id: 'mi3', meal_entry_id: 'm1', food_name: 'Trứng luộc', servings: 2, kcal: 155, protein_g: 13, carbs_g: 1, fat_g: 11, fiber_g: 0 },
-    { id: 'mi4', meal_entry_id: 'm1', food_name: 'Chuối', servings: 1, kcal: 112, protein_g: 1, carbs_g: 27, fat_g: 0, fiber_g: 3 },
+    { id: 'mi3', created_at: day(0.2496), meal_entry_id: 'm1', food_name: 'Trứng luộc', servings: 2, kcal: 155, protein_g: 13, carbs_g: 1, fat_g: 11, fiber_g: 0 },
+    { id: 'mi4', created_at: day(0.2489), meal_entry_id: 'm1', food_name: 'Chuối', servings: 1, kcal: 112, protein_g: 1, carbs_g: 27, fat_g: 0, fiber_g: 3 },
     /* bữa trưa — 265+269+126 = 660 kcal · 49 P · 71 C · 20 F */
-    { id: 'mi5', meal_entry_id: 'm2', food_name: 'Cơm trắng 200g', servings: 1, kcal: 265, protein_g: 8, carbs_g: 56, fat_g: 1, fiber_g: 1 },
-    { id: 'mi6', meal_entry_id: 'm2', food_name: 'Ức gà áp chảo 150g', servings: 1, kcal: 269, protein_g: 38, carbs_g: 0, fat_g: 13, fiber_g: 0 },
-    { id: 'mi7', meal_entry_id: 'm2', food_name: 'Rau xào 200g', servings: 1, kcal: 126, protein_g: 3, carbs_g: 15, fat_g: 6, fiber_g: 8 },
+    { id: 'mi5', created_at: day(0.151), meal_entry_id: 'm2', food_name: 'Cơm trắng 200g', servings: 1, kcal: 265, protein_g: 8, carbs_g: 56, fat_g: 1, fiber_g: 1 },
+    { id: 'mi6', created_at: day(0.1503), meal_entry_id: 'm2', food_name: 'Ức gà áp chảo 150g', servings: 1, kcal: 269, protein_g: 38, carbs_g: 0, fat_g: 13, fiber_g: 0 },
+    { id: 'mi7', created_at: day(0.1496), meal_entry_id: 'm2', food_name: 'Rau xào 200g', servings: 1, kcal: 126, protein_g: 3, carbs_g: 15, fat_g: 6, fiber_g: 8 },
   ],
 };

@@ -56,7 +56,7 @@ execFileSync(
    '--module', 'esnext', '--target', 'es2020', '--moduleResolution', 'bundler', '--skipLibCheck'],
   { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
 );
-const { palettes, sleepRamps } = await import(pathToFileURL(path.join(out, 'palette.js')).href);
+const { palettes, materials, sleepRamps } = await import(pathToFileURL(path.join(out, 'palette.js')).href);
 
 const lin = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
 function lum(hex) {
@@ -114,6 +114,102 @@ const problems = [];
         `bản tối: \`sleepRamps.dark.${k}\` = ${sleepRamps.dark[k]}, đã ship là ${v} — ` +
           'bản tối không đổi trong giai đoạn này',
       );
+    }
+  }
+}
+
+/* ── 5. mỗi dải so với CÁI RÃNH nó nằm trong ───────────────────────────────── */
+/**
+ * Luật 1 đo ba dải với MẶT THẺ. Nhưng trong một cột chồng, việc mắt thật sự
+ * làm là phân biệt phần ĐÃ LẤP với phần CÒN TRỐNG — và phần còn trống không
+ * phải mặt thẻ, nó là cái rãnh (`inset.track`), tối hơn/sáng hơn mặt thẻ.
+ *
+ * Phép đo ấy chưa ai làm, và nó đỏ ở CẢ HAI diện mạo lúc được làm lần đầu:
+ * nông 2,36 ở bản sáng, 1,81 ở bản tối, so với ngưỡng 3,0 của WCAG 1.4.11 cho
+ * "phần của đồ hoạ cần để hiểu nội dung". Hậu quả đọc được trên ảnh: một đêm
+ * lấp đầy 100% cột trông như lấp 45%.
+ *
+ * Bản sáng đã giải xong (nông 3,25). Bản TỐI thì `#3f4048` là một màu xám, và
+ * luật 4 ngay trên đây đóng băng nó — nên chỗ này là một NGOẠI LỆ có số đo và
+ * có hạn: nó ghi chính con số đang hỏng, và sẽ đỏ nếu con số ấy TỆ ĐI, hoặc
+ * nếu bản tối được sửa mà ngoại lệ không được gỡ. Một ngoại lệ không biết tự
+ * hết hạn là một lỗ hổng vĩnh viễn.
+ */
+{
+  const parseC = (s) => {
+    const m = /^#([0-9a-f]{6})$/i.exec(s.trim());
+    if (m) return [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16)).concat(1);
+    const r = /rgba?\(([^)]+)\)/.exec(s);
+    if (!r) throw new Error(`sleep-ramp: không đọc được màu "${s}"`);
+    const p = r[1].split(',').map(Number);
+    return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1];
+  };
+  const over = (fg, bg) => [0, 1, 2].map((i) => Math.round(fg[i] * fg[3] + bg[i] * (1 - fg[3]))).concat(1);
+  const lumC = (c) => {
+    const f = [c[0], c[1], c[2]].map((v) => lin(v / 255));
+    return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+  };
+  const crC = (a, b) => {
+    const [x, y] = [lumC(a), lumC(b)].sort((p, q) => q - p);
+    return (x + 0.05) / (y + 0.05);
+  };
+
+  /** Đã biết hỏng, kèm số đo và lý do vì sao chưa sửa được. */
+  const BIET_HONG = {
+    'dark.light':
+      'luật 4 đóng băng ba giá trị của bản tối, và `#3f4048` là màu XÁM nên không nâng được mà vẫn giữ họ tím — ' +
+      'sửa nó là mở lại bản tối',
+  };
+  const FLOOR = 3.0;
+
+  for (const theme of ['dark', 'light']) {
+    const card = parseC(palettes[theme].card);
+    const track = over(parseC(materials[theme].inset.track), card);
+    for (const [key, name] of [['light', 'nông'], ['rem', 'REM'], ['deep', 'sâu']]) {
+      const band = parseC(sleepRamps[theme][key]);
+      const v = crC(band, track);
+      const id = `${theme}.${key}`;
+      const known = BIET_HONG[id];
+      if (v >= FLOOR) {
+        if (known) {
+          problems.push(
+            `\`${id}\` giờ đã đạt ${r2(v)}:1 với rãnh — gỡ nó khỏi BIET_HONG trong tools/sleep-ramp.mjs, ` +
+              'không thì ngoại lệ ấy che luôn lần hỏng sau',
+          );
+        }
+        continue;
+      }
+      if (!known) {
+        problems.push(
+          `${theme}: dải \`${name}\` (${sleepRamps[theme][key]}) chỉ ${r2(v)}:1 với RÃNH — ` +
+            'WCAG 1.4.11 đòi 3,0 cho phần đồ hoạ cần để hiểu nội dung, và ranh giới giữa ĐÃ LẤP và CÒN TRỐNG ' +
+            'đúng là phần ấy: một đêm lấp đầy cột sẽ trông như lấp một nửa',
+        );
+      }
+    }
+  }
+
+  /* ── 6. cột "không rõ tầng" không được là một KHỐI ĐẶC ────────────────────
+     Nó từng là `alpha(ink, 0.14)` và đo được 1,22:1 với dải nông ở bản tối,
+     1,77 ở bản sáng — "bạn ngủ nông chừng này" và "không ai đo tầng của bạn"
+     hiện ra gần như cùng một hình. Màu không cứu được (2,44 kể cả sau khi giải
+     lại dải sáng), nên lời giải là đổi HẠNG của hình: rỗng ruột, một nét viền.
+     Luật canh đúng điều ấy — ruột trong suốt và CÓ viền — chứ không canh một
+     mã màu, vì mã màu là thứ vừa được chứng minh là không giải được bài này. */
+  const chart = readFileSync(path.join(NATIVE, 'src/app/sleep-insights.tsx'), 'utf8');
+  const decl = /barUnknown:\s*\{([^}]*)\}/.exec(chart);
+  if (!decl) {
+    problems.push('src/app/sleep-insights.tsx không còn style `barUnknown` — cột "không rõ tầng" vẽ bằng gì?');
+  } else {
+    const body = decl[1];
+    if (!/backgroundColor:\s*'transparent'/.test(body)) {
+      problems.push(
+        '`barUnknown` có ruột ĐẶC — nó sẽ rơi vào giữa ba dải thật lần nữa (đo được 1,22:1 với dải nông ở ' +
+          'bản tối lần trước). Rỗng ruột là khác biệt về LOẠI, và đó là thứ duy nhất không va vào màu nào được',
+      );
+    }
+    if (!/borderWidth:\s*[0-9]/.test(body) || !/borderColor:/.test(body)) {
+      problems.push('`barUnknown` rỗng ruột mà KHÔNG có viền — một cột vô hình không nói được "đêm này có thật"');
     }
   }
 }
@@ -202,5 +298,8 @@ console.log(
   'dải giai đoạn ngủ OK — bản sáng đậm dần theo độ sâu ' +
     `(nông ${r2(contrast(L.light, g))} < REM ${r2(contrast(L.rem, g))} < sâu ${r2(contrast(L.deep, g))} trên mặt thẻ), ` +
     `hai bậc cạnh nhau tách ${r2(contrast(L.light, L.rem))}× và ${r2(contrast(L.rem, L.deep))}×; ` +
-    'bản tối giữ đúng ba giá trị đã ship; và không tệp nào tự đặt màu giai đoạn ngủ nữa',
+    'bản tối giữ đúng ba giá trị đã ship; không tệp nào tự đặt màu giai đoạn ngủ nữa; ' +
+    'mỗi dải đạt ≥3,0 với chính cái RÃNH nó nằm trong (WCAG 1.4.11 — ranh giới giữa đã lấp và còn trống), ' +
+    'trừ `dark.light` đang ở 1,81 với lý do ghi trong BIET_HONG và sẽ đỏ ngay khi lý do ấy hết đúng; ' +
+    'và cột "không rõ tầng" vẽ RỖNG RUỘT kèm viền, nên nó không thể trùng diện mạo với một dải thật',
 );

@@ -84,7 +84,7 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(NATIVE, 'tools', '.live-build');
 const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
-import { FIXTURES, REF, UID, day, jwt } from './live-world.mjs';
+import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
 
 const args = new Set(process.argv.slice(2));
 const wantShots = args.has('--shots');
@@ -290,7 +290,13 @@ async function openPage(chromium, route, mode, settleMs = 9000) {
         return r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' });
       }
       const table = u.pathname.split('/')[3];
-      const rows = mode === 'empty' && table !== 'profiles' ? [] : (FIXTURES[table] ?? []);
+      /* `applyQuery` đọc `order=` và `limit=` — xem chú thích của nó trong
+         `live-world.mjs`. Không đọc `gte`/`lt`; giới hạn ấy ghi ở kịch bản
+         "nhật ký ngày khác" bên dưới và vẫn còn nguyên. */
+      const rows = applyQuery(
+        mode === 'empty' && table !== 'profiles' ? [] : (FIXTURES[table] ?? []),
+        u,
+      );
       const single = (r.request().headers()['accept'] ?? '').includes('vnd.pgrst.object');
       return r.fulfill({
         status: 200, contentType: 'application/json',
