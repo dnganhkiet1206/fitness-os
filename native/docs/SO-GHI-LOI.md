@@ -178,6 +178,53 @@ nhất, `Common/cpp/worklets/Tools/RNRuntimeStatus.h` tồn tại và
 | **Phép thử dứt điểm** | `rm -rf ios && npx expo prebuild -p ios --clean` → dựng từ Xcode → lặp lại thao tác → nếu còn thoát thì lấy lại 10 dòng đầu của báo cáo sự cố. **Còn** `JSScheduler::scheduleOnJS` = bản dựng chưa lấy pod mới. **Đổi** chữ ký = một lỗi khác, và khi ấy mới có đầu mối mới. |
 | **Đã loại trừ dứt khoát khỏi danh sách nghi ngờ** | Code chết và nút chồng nhau do các lượt đổi design. Đã rà: code chết có thật (9 chỗ, đã dọn ở `9b35e38`) nhưng không chỗ nào chạm luồng worklet; nút chồng nhau **không có**; sáng/tối ở màn này **không lệch** — cả tệp 2.900 dòng có đúng một mã màu gõ cứng và nó là mặt nạ. |
 
+#### ĐỌC BÁO CÁO SỰ CỐ 2026-09-12 — tệp `.ips` thật, và nó SỬA LẠI lý do ghi ở `089fbd5`
+
+Chủ dự án gửi `47910945-ASCND-2026-09-05-212000.ips`. Đây là lần đầu mục này
+có TỆP chứ chỉ có mô tả, nên lần này đọc được cả những thứ chữ ký không nói.
+
+**Việc đầu tiên phải nói: tệp này KHÔNG kiểm được bản sửa nào.** Nó ghi
+`2026-09-05 21:19:58 -0500`. `089fbd5` (nâng worklets) là **09/09**, cổng
+`booted` ở `use-app-settings` là **10/09**. Báo cáo ra đời trước cả hai, nên
+mọi câu kiểu "sửa rồi mà vẫn hỏng" **không** rút ra được từ đây.
+
+| Đọc được gì | |
+|---|---|
+| **Chữ ký** | `EXC_CRASH` / `SIGABRT`, `Abort trap: 6`. Luồng gây lỗi là **1**, `com.facebook.react.runtime.JavaScript`: `__assert_rtn` → `jsi::Value::getObject` → `JSIWorkletsModuleProxy::toOptimizedObject` → `JSScheduler::scheduleOnJS`. Khớp đúng thứ đã ghi. |
+| **Máy và bản dựng** | iPhone17,2, iOS 27.0 beta (24A5370h), ASCND 1.0.0 (1). Ảnh nhị phân là `ASCND.debug.dylib`, và có luồng `com.facebook.SocketRocket.NetworkThread` — **bản debug đang nối Metro**. Chạy được 65 giây rồi thoát. |
+| **LUỒNG CHÍNH đang làm gì** | Thứ chữ ký không nói, và là manh mối thật: `-[UIScrollView handlePan:]` → `_updatePanGesture` → `_pushTrackingRunLoopModeIfNecessaryForReason:`. **Ngón tay đang ở trên màn, đang kéo.** Khớp với câu đã ghi ở `use-app-settings.tsx`: `card-deck.tsx` gọi `runOnJS(beginInteraction)()` ngay ở `.onBegin`, tức đúng lúc chạm xuống. |
+| **Hai luồng `hades` KHÔNG phải bằng chứng** | Ghi lại để người sau khỏi đọc nhầm: hades là GC của Hermes, mỗi runtime một cái. Hai cái = runtime RN + runtime worklet. Đó là **bình thường** trong app có Reanimated, không phải dấu hiệu runtime bị dựng lại. |
+
+**Cơ chế, đọc thẳng từ mã 0.10.0 — tức bản đã dựng ra tệp này.** Dòng vỡ là
+`JSIWorkletsModuleProxy.cpp`, trong `scheduleOnRN`:
+`remoteFunction->toJSValue(rnRuntime).getObject(rnRuntime)`. Ở 0.10.0,
+`RNOrigin::toJSValue` **không** giữ hàm; nó tra một sổ đăng ký phía JS:
+`__remoteFunctionRegistry.get(remoteId_)`. Và `~RNOriginProxy()` lên lịch
+`__remoteFunctionRegistry.delete(id)` trên luồng JS. Hai việc ấy đua nhau: lệnh
+xoá chạy trước một `scheduleOnRN` còn đang bay thì `get` trả về **`undefined`**,
+và `getObject` trên `undefined` là đúng cái `assert` đã nổ.
+
+Chi tiết xác nhận hướng này: lỗi là `assert`, **không phải** `EXC_BAD_ACCESS`.
+Một con trỏ JSI đã giải phóng thì chạm vào là lỗi bộ nhớ; `undefined` lại là một
+`Value` HỢP LỆ mang sai thẻ loại — đúng thứ `assert(isObject())` bắt. Chữ ký
+chọn giữa hai giả thuyết, và nó chọn "tra sổ hụt", không chọn "bộ nhớ hỏng".
+
+| Đo trên ba bản gói (tải từ npm, so từng tệp) | |
+|---|---|
+| **0.10.0 → 0.10.1** | 0.10.1 **XOÁ HẲN** cơ chế trên: không còn `__remoteFunctionRegistry`, không còn `RNOrigin`/`RNOriginProxy`, không còn lệnh `delete` nào được lên lịch. Hàm từ xa của runtime RN quay lại tự giữ `unique_ptr<jsi::Value>`, và `RNRuntimeStatus` chỉ canh **hàm huỷ**. Nghĩa là **đường vỡ trong tệp `.ips` này không tồn tại trong bản đang nằm trong cây**. |
+| **0.10.1 → 0.10.4** | Toàn bộ `Common/cpp` chỉ khác **một** tệp: `RunLoop/AsyncQueueImpl.cpp` thêm autorelease pool cho luồng hàng đợi trên iOS. Không đụng đường này. **Không cần nâng để sửa A9**; chỉ là một bản vá bộ nhớ iOS, tuỳ chọn. |
+
+| Phải sửa lại điều gì trong sổ | |
+|---|---|
+| **Câu ở `089fbd5`** | Commit ấy ghi 0.10.1 "mang bản vá #9789". Đo ra thì 0.10.0 → 0.10.1 là thượng nguồn **BỎ** thiết kế sổ đăng ký, không phải thêm một cái chốt vào đường này. Kết quả với A9 vẫn đứng — đường vỡ biến mất thật — nhưng LÝ DO ghi trong sổ thì sai. Số hiệu PR nào làm việc gì thì lần này **không kiểm**, nên không được trích #9789 như một phép đo. |
+| **Câu "bản trên MÁY chưa có bản vá" ở mục rà 11/09** | Vẫn là khả năng đứng vững nhất, và nay có thêm một lý do độc lập: tệp này ra đời **trước** cả bản nâng lẫn cổng `booted`. |
+| **Đừng suy ra "bản Release thì an toàn"** | `assert()` bị `NDEBUG` gỡ đi, nên đúng là bản Release **không abort ở dòng này**. Nhưng khi ấy nó dựng một `Object` từ một `Value` không phải object — hành vi không xác định. Release hỏng chỗ khác, không phải Release không hỏng. |
+
+**Còn thiếu để đóng** — đúng một thứ: một tệp `.ips` sinh ra từ bản dựng của
+**cây hiện tại** (`npm run prebuild:free` → `npm run ios:free -- --device`), sau
+khi lặp lại thao tác. Còn `JSScheduler::scheduleOnJS` ⇒ máy vẫn chưa lấy pod
+mới. Đổi chữ ký ⇒ lỗi khác, và khi ấy mới có đầu mối mới.
+
 ---
 
 ### ~~A10. Đường AI nuốt lỗi ở bốn chỗ, và cả bốn đều tiêu tiền~~ — ĐÃ SỬA 2026-09-08
