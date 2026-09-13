@@ -141,16 +141,31 @@ const REACH = 0.52;
  * Đẩy tới 0,26 thì đáy vượt đỉnh (1,09×) và phép đo ở đỉnh thôi là ca xấu
  * nhất — lúc ấy mọi luật đang canh nhầm chỗ. 0,18 để lại biên.
  *
- * ── trên GIẤY thì nó là một thứ khác ──
+ * ── trên GIẤY nó KHÔNG được là một sắc lạnh, và đó là một lỗi đã xảy ra ──
  *
- * Hai vũng trên giấy nâng bằng TRẮNG (xem `paint`), vì tint ở độ mờ cao nhuộm
- * giấy chứ không rọi lên nó. Nhưng lớp nền này ở độ mờ THẤP, và ở mức ấy một
- * sắc tint không nhuộm — nó làm đáy trang sâu đi một chút, đúng quãng đi mà
- * bản tối có. Nên giấy dùng tint ở `FLOOR_ALPHA_PAPER`, không dùng trắng:
- * trắng trên giấy trắng không vẽ ra quãng nào cả.
+ * Bản đầu của lớp này tô `tint2` lên giấy ở độ mờ 0,10, kèm một câu tôi tự
+ * khẳng định chứ không đo: "ở độ mờ THẤP một sắc tint không nhuộm". Chủ dự án
+ * nhìn ảnh và nói app mất màu be. Đo lại trên chính ảnh đã dựng:
+ *
+ *     giấy khai trong bảng  #f7f4ef   hue  38°   bão hoà 33,3%
+ *     đáy trang, trước      #f7f4ef   hue  38°   bão hoà 33,3%
+ *     đáy trang, sau        #eceeed   hue 150°   bão hoà  5,6%
+ *
+ * Hue LẬT từ hổ phách sang lục-lam và bão hoà sập còn một phần sáu. Một sắc
+ * lạnh phủ lên một nền ấm không làm nó sâu hơn, nó TRUNG HOÀ nền ấy — và 0,10
+ * đã quá đủ cho một tờ giấy chỉ bão hoà 33%. Đúng điều chú thích của `paint`
+ * ngay dưới đây đã ghi, chỉ ở một độ mờ thấp hơn mức họ đang nói tới.
+ *
+ * Nên giấy đi sâu bằng CHÍNH HỌ MÀU CỦA NÓ: `accent` #e9e3d8, một sắc be đậm
+ * hơn. Đo ở 0,34 ra #f2eee7 — hue 38°, đúng bằng hue của giấy, bão hoà 29,7%,
+ * chữ phụ 5,00:1. Đáy sâu lại thấy được mà không mất một độ ấm nào.
+ *
+ * `tools/paper-warmth.mjs` canh đúng phép đo ấy, vì lỗi này `tsc` không thấy,
+ * bảng màu không thấy, và luật tương phản không thấy: cả ba chỉ số đều đạt
+ * trong khi màu nhận diện của app biến mất.
  */
 const FLOOR_ALPHA = 0.18;
-const FLOOR_ALPHA_PAPER = 0.1;
+const FLOOR_ALPHA_PAPER = 0.34;
 
 /*
   Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
@@ -352,12 +367,14 @@ export function ReadinessAura({
   const alpha = paper ? PAPER_ALPHA : resting ? RESTING_ALPHA : AURA_ALPHA;
 
   const h = height * REACH;
-  /* Lớp nền lấy màu của vũng THỨ HAI, không của vũng thứ nhất: vũng một neo ở
-     trên trái và vũng hai ở phải-giữa, nên đi từ trên xuống là đi từ tông một
-     sang tông hai. Lớp nền nối tiếp quãng ấy thay vì lặp lại tông đã ở trên.
-     Trên giấy `second` là trắng, nên ở đó nó lấy chính `tint2` — xem chú thích
-     của `FLOOR_ALPHA_PAPER`. */
-  const floorPaint = paper ? (tint2 ?? tint ?? c.primary) : second;
+  /* Trên nền TỐI: màu của vũng THỨ HAI. Vũng một neo trên trái, vũng hai ở
+     phải-giữa, nên đi từ trên xuống là đi từ tông một sang tông hai; lớp nền
+     nối tiếp quãng ấy thay vì lặp lại tông đã ở trên.
+
+     Trên GIẤY: `accent`, không phải một tông của trang. Lý do và phép đo ở
+     chú thích của `FLOOR_ALPHA_PAPER` — một sắc lạnh ở đây đã từng xoá mất
+     màu be của app. */
+  const floorPaint = paper ? c.accent : second;
   const floorAlpha = paper ? FLOOR_ALPHA_PAPER : FLOOR_ALPHA;
 
   return (
