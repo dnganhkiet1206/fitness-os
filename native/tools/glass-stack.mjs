@@ -37,68 +37,22 @@
  * ≥ 4,5:1 ở điểm xấu nhất. Nếu không thì hoặc hạ tầng, hoặc hạ wash, hoặc dùng
  * `glassMuted` — và luật nói ra cả ba lối.
  */
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import os from 'node:os';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
-import { fileURLToPath } from 'node:url';
 
-const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/* Phép chồng "trang → hai vũng → lớp dập → mặt kính" và các hằng thật của nó
+   sống ở `lib/stack.mjs`, vì `sleep-ramp.mjs` cũng đo trên đúng cái nền ấy —
+   cho MÀU CỘT thay vì cho CHỮ. Hai bản chép sẽ cùng xanh trong khi đo hai cái
+   nền khác nhau, và đó là hạng lỗi kho này đã ghi lại bằng chữ của nó. */
+import {
+  AURA_ALPHA, AURA_DIM, NATIVE, PAPER_ALPHA,
+  auraScreens, faceFor, hex, loadPalette, ratio, rgba, strip,
+} from './lib/stack.mjs';
+
 const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
-const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const problems = [];
-
-/* ── các hằng THẬT, đọc ra khỏi nguồn ── */
-const auraSrc = strip(read('src/components/ascnd/readiness-aura.tsx'));
-const screenSrc = strip(read('src/components/ascnd/screen.tsx'));
-const num = (src, name, where) => {
-  const m = src.match(new RegExp(`const ${name}\\s*=\\s*([\\d.]+)`));
-  if (!m) throw new Error(`không đọc được ${name} thật từ ${where} — luật này đã lạc mục tiêu`);
-  return Number(m[1]);
-};
-const AURA_ALPHA = num(auraSrc, 'AURA_ALPHA', 'readiness-aura.tsx');
-const PAPER_ALPHA = num(auraSrc, 'PAPER_ALPHA', 'readiness-aura.tsx');
-const AURA_DIM = num(screenSrc, 'AURA_DIM', 'screen.tsx');
-
-/* ── màn nào bật aura, và với sắc gì ── */
-const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', 'src'], {
-  cwd: NATIVE, encoding: 'utf8',
-}).split('\n').filter((f) => /\.tsx$/.test(f));
-const screens = [];
-for (const f of files) {
-  for (const m of strip(read(f)).matchAll(/aura=\{\[\s*'(\w+)'\s*,\s*'(\w+)'\s*\]\}/g)) {
-    screens.push({ file: f, tints: [m[1], m[2]] });
-  }
-}
-
-/* ── bảng màu thật ── */
-const out = mkdtempSync(path.join(os.tmpdir(), 'glass-stack-'));
-mkdirSync(path.join(out, 'src'), { recursive: true });
-writeFileSync(path.join(out, 'src', 'palette.ts'), read('src/constants/palette.ts'));
-execFileSync(process.execPath,
-  [path.join(NATIVE, 'node_modules/typescript/bin/tsc'), 'src/palette.ts',
-    '--ignoreConfig', '--outDir', out, '--rootDir', 'src', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
-  { cwd: out, stdio: ['ignore', 'pipe', 'pipe'] });
-const { palettes, materials } = createRequire(path.join(out, 'x.cjs'))(path.join(out, 'palette.js'));
-
-const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
-const lum = (r) => {
-  const q = r.map((v) => v / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-  return 0.2126 * q[0] + 0.7152 * q[1] + 0.0722 * q[2];
-};
-const ratio = (a, b) => {
-  const x = lum(a), y = lum(b);
-  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
-};
-const overC = (c, bg, a) => c.map((v, i) => Math.round(a * v + (1 - a) * bg[i]));
-const over = (fg, bg, a) => overC(hex(fg), bg, a);
-/** `rgba(r,g,b,a)` → [[r,g,b], a] */
-const rgba = (s) => {
-  const m = /rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+))?/.exec(s);
-  if (!m) return null;
-  return [[+m[1], +m[2], +m[3]], m[4] === undefined ? 1 : Number(m[4])];
-};
+const screens = auraScreens();
+const { palettes, materials } = loadPalette();
 
 const FLOOR = 4.5;
 let checked = 0;
@@ -107,25 +61,15 @@ for (const { file, tints } of screens) {
   for (const theme of ['dark', 'light']) {
     const p = palettes[theme];
     const m = materials[theme];
-    const lit = theme === 'dark';
-    const alphaA = lit ? AURA_ALPHA : PAPER_ALPHA;
-
-    /* trang → hai vũng ở đỉnh → lớp dập */
-    let wash = over(p[tints[0]], hex(p.background), alphaA);
-    wash = over(p[tints[1]], wash, alphaA * 0.85);
-    wash = over(lit ? '#000000' : p.background, wash, AURA_DIM);
 
     for (const tier of ['secondary', 'primary', 'floating', 'elevated']) {
-      const g = m.glass[tier];
-      const parsed = rgba(g.bg);
-      if (!parsed) { problems.push(`${theme}.glass.${tier}.bg không phải rgba(): "${g.bg}"`); continue; }
-      const [rgb, a] = parsed;
-      /* Điểm xấu nhất của tầng NỔI là đặt trên một thẻ `primary`, không trên
-         trang trần — một segmented nằm trong thẻ, một sheet nằm trên nội dung. */
-      const base = tier === 'floating' || tier === 'elevated'
-        ? overC(rgba(m.glass.primary.bg)[0], wash, rgba(m.glass.primary.bg)[1])
-        : wash;
-      const face = overC(rgb, base, a);
+      if (!rgba(m.glass[tier].bg)) {
+        problems.push(`${theme}.glass.${tier}.bg không phải rgba(): "${m.glass[tier].bg}"`);
+        continue;
+      }
+      /* Điểm xấu nhất của tầng NỔI — trên một thẻ `primary` chứ không trên
+         trang trần — nằm trong `faceFor`; xem chú thích của nó. */
+      const face = faceFor(theme, tints, tier);
       const asHex = '#' + face.map((v) => v.toString(16).padStart(2, '0')).join('');
       const rMuted = ratio(hex(p.mutedForeground), face);
       const rGlass = ratio(hex(p.glassMuted), face);

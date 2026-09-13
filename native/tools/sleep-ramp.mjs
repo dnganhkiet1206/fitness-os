@@ -22,9 +22,10 @@
  *
  * ── luật ──
  *
- * 1. Bản SÁNG: nông < REM < sâu về ĐỘ ĐẬM MỰC (tương phản với mặt thẻ). Đây là
- *    quan hệ, không phải ba ngưỡng rời — một dải mã hoá độ sâu mà không đơn
- *    điệu thì không mã hoá gì cả.
+ * 1. CẢ HAI diện mạo: nông < REM < sâu về ĐỘ ĐẬM MỰC (tương phản với nền). Đây
+ *    là quan hệ, không phải ba ngưỡng rời — một dải mã hoá độ sâu mà không đơn
+ *    điệu thì không mã hoá gì cả. Ở bản sáng "đậm hơn" là tối hơn, ở bản tối là
+ *    sáng hơn; phép đo tương phản nói cùng một câu cho cả hai.
  *
  * 2. Hai bậc cạnh nhau phải TÁCH ĐƯỢC: ≥1,4× tương phản với nhau. Đơn điệu
  *    thôi thì chưa đủ — ba màu xếp đúng thứ tự mà cách nhau 1,05× vẫn đọc ra
@@ -34,161 +35,113 @@
  *    Đó là cách bản sao cũ ra đời: `#3f4048` ở `dashboard-cards.tsx` và
  *    `#565663` ở `app/sleep-insights.tsx` — cùng một khái niệm, hai màu.
  *
- * Bản TỐI cố ý KHÔNG bị luật 1 và 2 ràng: nó dùng hai token chỉ số (lơ và tím)
- * mà độ sáng của chúng không xếp theo độ sâu, và nó đã ship như thế. Ràng nó
- * bây giờ là đổi bản tối. Thứ bản tối phải giữ là ba giá trị hiện có, và
- * `tools/dark-frozen.mjs` không soi tới đây — nên luật 4 làm việc ấy.
+ * 4. Mỗi dải ≥3,0 với NỀN NÓ NẰM TRÊN, đo ở cả hai nền dải này thật sự gặp:
+ *    mặt kính phủ wash (màn Chi tiết giấc ngủ, có `aura`) và mặt thẻ trần (thẻ
+ *    Hôm nay, không aura). Xem chú thích của chính luật ấy bên dưới.
+ *
+ * 5. Cột "không rõ tầng" phải RỖNG RUỘT kèm viền, không phải một khối đặc.
+ *
+ * ── bản TỐI từng được miễn luật 1 và 2, và nay thì không ──
+ *
+ * Nó dùng hai token chỉ số (lơ và tím) mà độ sáng không xếp theo độ sâu, cộng
+ * một màu xám `#3f4048` cho giấc nông. Miễn trừ ấy đứng được chừng nào chưa ai
+ * đo dải với NỀN: đo rồi thì `#3f4048` chỉ cách nền 1,81:1, và hậu quả nhìn
+ * thấy được trên ảnh — một đêm lấp đầy 100% cột trông như lấp 45%, vì giấc
+ * nông là ~55% của mọi đêm.
+ *
+ * Chủ dự án đã cho mở riêng ba giá trị ấy sau khi xem ảnh đối chiếu hai diện
+ * mạo. Nên luật 4 cũ (đóng băng ba giá trị tối) bỏ đi, và bản tối nay chịu
+ * đúng những luật bản sáng chịu.
  */
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
 
 import { codeMask } from './lib/code-mask.mjs';
+import { NATIVE, faceFor, hex as hexOf, loadPalette, ratio, toHex } from './lib/stack.mjs';
 
-const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const { palettes, sleepRamps } = loadPalette();
 
-const out = mkdtempSync(path.join(tmpdir(), 'sleep-ramp-'));
-execFileSync(
-  'npx',
-  ['tsc', 'src/constants/palette.ts', '--ignoreConfig', '--outDir', out,
-   '--module', 'esnext', '--target', 'es2020', '--moduleResolution', 'bundler', '--skipLibCheck'],
-  { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
-);
-const { palettes, materials, sleepRamps } = await import(pathToFileURL(path.join(out, 'palette.js')).href);
-
-const lin = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
-function lum(hex) {
-  const h = hex.replace('#', '');
-  const c = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255).map(lin);
-  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-}
-const contrast = (a, b) => {
-  const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
-  return (x + 0.05) / (y + 0.05);
-};
+const contrast = (a, b) => ratio(typeof a === 'string' ? hexOf(a) : a, typeof b === 'string' ? hexOf(b) : b);
 const r2 = (v) => Math.round(v * 100) / 100;
+
+/**
+ * Hai cái nền mà dải này thật sự gặp, và vì sao phải là HAI.
+ *
+ * Màn Chi tiết giấc ngủ bật `aura`, nên sau các cột là mặt kính `primary` phủ
+ * lên wash: `#232433` ở bản tối, `#edeff8` ở bản sáng. Thẻ Hôm nay không có
+ * aura, nên ở đó nền là mặt thẻ trần. Hai nền ấy nằm về hai phía của nhau —
+ * wash làm nền tối SÁNG LÊN (khó hơn cho dải sáng) và nền sáng TỐI ĐI (khó hơn
+ * cho dải tối) — nên đạt ở một nền không suy ra được nền kia.
+ *
+ * Phép chồng lấy từ `tools/lib/stack.mjs`, cùng một chỗ `glass-stack.mjs` lấy.
+ * Chép lại ở đây thì hai luật cùng xanh trong khi đo hai cái nền khác nhau, và
+ * không ai biết cái nào đúng.
+ */
+const AURA_TINTS = ['metricPurple', 'metricBlue'];
+const grounds = (theme) => [
+  { name: 'mặt kính trên wash (màn Chi tiết giấc ngủ)', rgb: faceFor(theme, AURA_TINTS, 'primary') },
+  { name: 'mặt thẻ trần (thẻ Hôm nay)', rgb: hexOf(palettes[theme].card) },
+];
 
 const problems = [];
 
-/* ── 1 + 2. bản SÁNG: đơn điệu, và các bậc tách được ───────────────────────── */
-{
-  const ramp = sleepRamps.light;
-  const ground = palettes.light.card;
-  const steps = [
-    ['nông', ramp.light],
-    ['REM', ramp.rem],
-    ['sâu', ramp.deep],
-  ].map(([name, hex]) => ({ name, hex, cr: contrast(hex, ground) }));
+/* ── 1 + 2 + 4. cả hai diện mạo: đơn điệu, bậc tách được, và đủ trên NỀN ──── */
+const NAMES = [['light', 'nông'], ['rem', 'REM'], ['deep', 'sâu']];
+const FLOOR = 3.0;
+const report = {};
 
-  for (let i = 1; i < steps.length; i++) {
-    const prev = steps[i - 1];
-    const cur = steps[i];
-    if (cur.cr <= prev.cr) {
-      problems.push(
-        `bản sáng: \`${cur.name}\` (${cur.hex}, ${r2(cur.cr)}:1) KHÔNG đậm hơn \`${prev.name}\` ` +
-          `(${prev.hex}, ${r2(prev.cr)}:1) — dải phải đậm dần theo độ sâu giấc ngủ`,
-      );
-      continue;
+for (const theme of ['dark', 'light']) {
+  const ramp = sleepRamps[theme];
+  report[theme] = {};
+
+  for (const g of grounds(theme)) {
+    const steps = NAMES.map(([key, name]) => ({ name, hex: ramp[key], cr: contrast(ramp[key], g.rgb) }));
+    report[theme][g.name] = steps.map((s2) => r2(s2.cr));
+
+    /* 4. sàn WCAG 1.4.11 cho một phần đồ hoạ cần để hiểu nội dung. Dải mờ nhất
+       là dải hay hỏng, và nó cũng là dải LỚN NHẤT của mọi đêm (~55%), nên khi
+       nó chìm thì cả cột đọc ra là một cột gần rỗng. */
+    for (const s2 of steps) {
+      if (s2.cr < FLOOR) {
+        problems.push(
+          `${theme}: dải \`${s2.name}\` (${s2.hex}) chỉ ${r2(s2.cr)}:1 trên ${g.name} ` +
+            `(${toHex(g.rgb)}) — WCAG 1.4.11 đòi ${FLOOR} cho phần đồ hoạ cần để hiểu nội dung, và ` +
+            'ranh giới giữa ĐÃ LẤP và CÒN TRỐNG đúng là phần ấy: một đêm lấp đầy cột sẽ trông như lấp một nửa',
+        );
+      }
     }
-    /* Tách hai bậc bằng tương phản GIỮA CHÚNG, không bằng hiệu hai con số trên
-       nền: hai màu cùng đo 5,0 và 6,0 trên giấy vẫn có thể gần như một màu với
-       nhau. Cái mắt làm trong một thanh liền là so hai dải cạnh nhau. */
-    const gap = contrast(prev.hex, cur.hex);
+
+    /* 1. đơn điệu theo độ sâu. Đo trên TỪNG nền, vì một dải đơn điệu trên mặt
+       thẻ trần vẫn có thể đảo thứ tự sau khi wash kéo nền đi. */
+    for (let i = 1; i < steps.length; i++) {
+      const prev = steps[i - 1];
+      const cur = steps[i];
+      if (cur.cr <= prev.cr) {
+        problems.push(
+          `${theme} trên ${g.name}: \`${cur.name}\` (${cur.hex}, ${r2(cur.cr)}:1) KHÔNG đậm hơn ` +
+            `\`${prev.name}\` (${prev.hex}, ${r2(prev.cr)}:1) — dải phải đậm dần theo độ sâu giấc ngủ`,
+        );
+      }
+    }
+  }
+
+  /* 2. hai bậc cạnh nhau tách được. Đo GIỮA HAI DẢI, nên không phụ thuộc nền:
+     hai màu cùng đo 5,0 và 6,0 trên giấy vẫn có thể gần như một màu với nhau.
+     Cái mắt làm trong một thanh liền là so hai dải cạnh nhau. */
+  for (let i = 1; i < NAMES.length; i++) {
+    const [ka, na] = NAMES[i - 1];
+    const [kb, nb] = NAMES[i];
+    const gap = contrast(ramp[ka], ramp[kb]);
     if (gap < 1.4) {
       problems.push(
-        `bản sáng: \`${prev.name}\` và \`${cur.name}\` chỉ cách nhau ${r2(gap)}× — ` +
+        `${theme}: \`${na}\` và \`${nb}\` chỉ cách nhau ${r2(gap)}× — ` +
           'hai dải cạnh nhau trong một thanh liền cần ≥1,4× mới đọc ra hai bậc',
       );
     }
   }
 }
 
-/* ── 4. bản TỐI giữ đúng ba giá trị đã ship ────────────────────────────────── */
 {
-  const FROZEN = { light: '#3f4048', rem: '#22e3ff', deep: '#b45cff' };
-  for (const [k, v] of Object.entries(FROZEN)) {
-    if (sleepRamps.dark[k] !== v) {
-      problems.push(
-        `bản tối: \`sleepRamps.dark.${k}\` = ${sleepRamps.dark[k]}, đã ship là ${v} — ` +
-          'bản tối không đổi trong giai đoạn này',
-      );
-    }
-  }
-}
-
-/* ── 5. mỗi dải so với CÁI RÃNH nó nằm trong ───────────────────────────────── */
-/**
- * Luật 1 đo ba dải với MẶT THẺ. Nhưng trong một cột chồng, việc mắt thật sự
- * làm là phân biệt phần ĐÃ LẤP với phần CÒN TRỐNG — và phần còn trống không
- * phải mặt thẻ, nó là cái rãnh (`inset.track`), tối hơn/sáng hơn mặt thẻ.
- *
- * Phép đo ấy chưa ai làm, và nó đỏ ở CẢ HAI diện mạo lúc được làm lần đầu:
- * nông 2,36 ở bản sáng, 1,81 ở bản tối, so với ngưỡng 3,0 của WCAG 1.4.11 cho
- * "phần của đồ hoạ cần để hiểu nội dung". Hậu quả đọc được trên ảnh: một đêm
- * lấp đầy 100% cột trông như lấp 45%.
- *
- * Bản sáng đã giải xong (nông 3,25). Bản TỐI thì `#3f4048` là một màu xám, và
- * luật 4 ngay trên đây đóng băng nó — nên chỗ này là một NGOẠI LỆ có số đo và
- * có hạn: nó ghi chính con số đang hỏng, và sẽ đỏ nếu con số ấy TỆ ĐI, hoặc
- * nếu bản tối được sửa mà ngoại lệ không được gỡ. Một ngoại lệ không biết tự
- * hết hạn là một lỗ hổng vĩnh viễn.
- */
-{
-  const parseC = (s) => {
-    const m = /^#([0-9a-f]{6})$/i.exec(s.trim());
-    if (m) return [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16)).concat(1);
-    const r = /rgba?\(([^)]+)\)/.exec(s);
-    if (!r) throw new Error(`sleep-ramp: không đọc được màu "${s}"`);
-    const p = r[1].split(',').map(Number);
-    return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1];
-  };
-  const over = (fg, bg) => [0, 1, 2].map((i) => Math.round(fg[i] * fg[3] + bg[i] * (1 - fg[3]))).concat(1);
-  const lumC = (c) => {
-    const f = [c[0], c[1], c[2]].map((v) => lin(v / 255));
-    return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
-  };
-  const crC = (a, b) => {
-    const [x, y] = [lumC(a), lumC(b)].sort((p, q) => q - p);
-    return (x + 0.05) / (y + 0.05);
-  };
-
-  /** Đã biết hỏng, kèm số đo và lý do vì sao chưa sửa được. */
-  const BIET_HONG = {
-    'dark.light':
-      'luật 4 đóng băng ba giá trị của bản tối, và `#3f4048` là màu XÁM nên không nâng được mà vẫn giữ họ tím — ' +
-      'sửa nó là mở lại bản tối',
-  };
-  const FLOOR = 3.0;
-
-  for (const theme of ['dark', 'light']) {
-    const card = parseC(palettes[theme].card);
-    const track = over(parseC(materials[theme].inset.track), card);
-    for (const [key, name] of [['light', 'nông'], ['rem', 'REM'], ['deep', 'sâu']]) {
-      const band = parseC(sleepRamps[theme][key]);
-      const v = crC(band, track);
-      const id = `${theme}.${key}`;
-      const known = BIET_HONG[id];
-      if (v >= FLOOR) {
-        if (known) {
-          problems.push(
-            `\`${id}\` giờ đã đạt ${r2(v)}:1 với rãnh — gỡ nó khỏi BIET_HONG trong tools/sleep-ramp.mjs, ` +
-              'không thì ngoại lệ ấy che luôn lần hỏng sau',
-          );
-        }
-        continue;
-      }
-      if (!known) {
-        problems.push(
-          `${theme}: dải \`${name}\` (${sleepRamps[theme][key]}) chỉ ${r2(v)}:1 với RÃNH — ` +
-            'WCAG 1.4.11 đòi 3,0 cho phần đồ hoạ cần để hiểu nội dung, và ranh giới giữa ĐÃ LẤP và CÒN TRỐNG ' +
-            'đúng là phần ấy: một đêm lấp đầy cột sẽ trông như lấp một nửa',
-        );
-      }
-    }
-  }
-
   /* ── 6. cột "không rõ tầng" không được là một KHỐI ĐẶC ────────────────────
      Nó từng là `alpha(ink, 0.14)` và đo được 1,22:1 với dải nông ở bản tối,
      1,77 ở bản sáng — "bạn ngủ nông chừng này" và "không ai đo tầng của bạn"
@@ -292,14 +245,17 @@ if (problems.length) {
   process.exit(1);
 }
 
-const L = sleepRamps.light;
-const g = palettes.light.card;
+const line = (theme) => {
+  const r = sleepRamps[theme];
+  const parts = grounds(theme).map((g) => `${g.name.split(' (')[0]} ${report[theme][g.name].join('/')}`);
+  return `${theme} (nông→sâu, ${parts.join(' · ')}), bậc ` +
+    `${r2(contrast(r.light, r.rem))}× và ${r2(contrast(r.rem, r.deep))}×`;
+};
 console.log(
-  'dải giai đoạn ngủ OK — bản sáng đậm dần theo độ sâu ' +
-    `(nông ${r2(contrast(L.light, g))} < REM ${r2(contrast(L.rem, g))} < sâu ${r2(contrast(L.deep, g))} trên mặt thẻ), ` +
-    `hai bậc cạnh nhau tách ${r2(contrast(L.light, L.rem))}× và ${r2(contrast(L.rem, L.deep))}×; ` +
-    'bản tối giữ đúng ba giá trị đã ship; không tệp nào tự đặt màu giai đoạn ngủ nữa; ' +
-    'mỗi dải đạt ≥3,0 với chính cái RÃNH nó nằm trong (WCAG 1.4.11 — ranh giới giữa đã lấp và còn trống), ' +
-    'trừ `dark.light` đang ở 1,81 với lý do ghi trong BIET_HONG và sẽ đỏ ngay khi lý do ấy hết đúng; ' +
-    'và cột "không rõ tầng" vẽ RỖNG RUỘT kèm viền, nên nó không thể trùng diện mạo với một dải thật',
+  'dải giai đoạn ngủ OK — một sắc, ba mật độ, đậm dần theo độ sâu ở CẢ HAI diện mạo, đo trên CẢ HAI nền ' +
+    'dải này thật sự gặp (mặt kính phủ wash và mặt thẻ trần): ' +
+    `${line('dark')}; ${line('light')}. ` +
+    'Mọi dải ≥3,0 — WCAG 1.4.11 cho phần đồ hoạ cần để hiểu nội dung, tức ranh giới giữa ĐÃ LẤP và CÒN TRỐNG; ' +
+    'hai bậc cạnh nhau ≥1,4×; cột "không rõ tầng" vẽ RỖNG RUỘT kèm viền nên không thể trùng diện mạo với một ' +
+    'dải thật; và không tệp nào ngoài palette.ts tự đặt màu giai đoạn ngủ',
 );

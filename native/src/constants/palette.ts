@@ -1117,7 +1117,40 @@ export interface SleepRamp {
 }
 
 /*
-  ── câu hỏi chưa ai đặt: dải so với CÁI RÃNH nó nằm trong ──
+  ── giải lại CẢ HAI diện mạo trên đúng cái nền chúng nằm ──
+
+  Bản trước giải bản sáng trên MẶT THẺ TRẦN. Đó là sai nền: màn Chi tiết giấc
+  ngủ bật `aura`, nên thứ ở sau các cột là mặt kính `primary` phủ lên wash —
+  `#edeff8` ở bản sáng, `#232433` ở bản tối, tính bằng chính phép chồng mà
+  `glass-stack.mjs` dùng (nay tách sang `tools/lib/stack.mjs` để hai luật khỏi
+  có hai bản). Dải `nông` giải trên giấy trắng ra 3,25 nhưng trên nền thật chỉ
+  còn 2,83 — vẫn dưới ngưỡng.
+
+  Và ngưỡng ấy ép trần của cả dải. Ba bậc, mỗi bậc ≥1,4× (luật 2), bậc thấp
+  nhất ≥3,0 với nền (WCAG 1.4.11) ⟹ bậc cao nhất ≥ 3,0 × 1,4 × 1,4 = 5,88.
+  Ở bản TỐI điều đó có nghĩa `sâu` phải SÁNG HƠN `metricPurple` (5,43 trên thẻ
+  trần, còn thấp hơn trên nền thật) — nên `sâu` thôi là token chỉ số và thành
+  một giá trị của riêng dải này. Đó là hệ quả số học, không phải sở thích.
+
+  Lời giải, một sắc 272° cho cả hai, bão hoà TĂNG theo độ sâu vì `sâu` là dải
+  mang nghĩa nhất:
+
+                  nền thật   thẻ trần    bậc
+      tối  nông #935dc2   3,34     4,21
+           REM  #b17be0   4,94     6,22    1,48×
+           sâu  #cfa0f7   7,31     9,20    1,48×
+      sáng nông #9f6bce   3,35     3,84
+           REM  #8c3ad5   4,97     5,70    1,49×
+           sâu  #6e0cc3   7,31     8,39    1,47×
+
+  Hai diện mạo là ảnh gương của nhau: bản sáng đậm dần theo độ sâu, bản tối
+  SÁNG dần theo độ sâu. Cùng một quy tắc — "dải sâu mang nhiều mực nhất" —
+  đọc trên hai nền ngược chiều.
+
+  Đo trên CẢ HAI nền là cố ý: dải này còn vẽ thẻ Hôm nay, nơi không có aura.
+  Nền thật là ca khó hơn ở bản sáng và ca dễ hơn ở bản tối, nên phải qua cả hai.
+
+  ── câu hỏi chưa ai đặt: dải so với CÁI NỀN nó nằm trên ──
 
   `tools/sleep-ramp.mjs` đo ba dải với MẶT THẺ và bắt được bản sáng mã hoá
   ngược. Nó không đo thứ mắt thật sự làm trong một cột chồng: phân biệt phần
@@ -1160,8 +1193,8 @@ export interface SleepRamp {
   mặt người ta thấy mỗi ngày) và nó MỜ hơn, đúng vai "dải ít mực nhất".
 */
 export const sleepRamps: Record<ThemeName, SleepRamp> = {
-  dark: { light: '#3f4048', rem: darkPalette.metricCyan, deep: darkPalette.metricPurple },
-  light: { light: '#b077d6', rem: '#994fca', deep: '#7715b8' },
+  dark: { light: '#935dc2', rem: '#b17be0', deep: '#cfa0f7' },
+  light: { light: '#9f6bce', rem: '#8c3ad5', deep: '#6e0cc3' },
 };
 
 /**

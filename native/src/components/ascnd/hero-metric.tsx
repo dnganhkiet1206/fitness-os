@@ -128,7 +128,7 @@ export function HeroMetric({
               {value}
             </Text>
           )}
-          {unit ? <Text style={[styles.unit, { color: muted }]}>{` ${unit}`}</Text> : null}
+          {unit ? <Text style={[styles.unit, { color: muted }]}>{unit}</Text> : null}
         </View>
         {caption ? (
           <Text style={[styles.caption, { color: muted }]} numberOfLines={2}>
@@ -163,7 +163,16 @@ const stylesFor = makeStyles((c) => ({
        mà một chỉ số đứng yên thật sự cần. Xem `type.hero`. */
     fontVariant: ['tabular-nums'],
   },
-  unit: { ...type.title2, color: c.mutedForeground, fontWeight: '400' },
+  /*
+    Khoảng cách số↔đơn vị là một KHOẢNG MỎNG, không phải một dấu cách.
+
+    Bản trước viết `{` ${unit}`}`, tức một dấu cách chữ ở cỡ `title2` — khoảng
+    6 điểm — nên `7.0` và `h` đọc ra là hai từ rời. SI đòi có khoảng giữa trị số
+    và đơn vị, nhưng quy ước sắp chữ cho khoảng ấy là khoảng MỎNG, cỡ 1/6 em;
+    ở 22 điểm là ~3,7. `marginLeft` đặt được đúng lượng ấy, còn một ký tự cách
+    thì không.
+  */
+  unit: { ...type.title2, color: c.mutedForeground, fontWeight: '400', marginLeft: 4 },
   caption: { ...type.footnote, color: c.mutedForeground },
   trailing: { alignItems: 'center', justifyContent: 'center' },
 }));

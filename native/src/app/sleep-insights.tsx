@@ -7,7 +7,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring } fro
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { HeroMetric } from '@/components/ascnd/hero-metric';
-import { MetricPill } from '@/components/ascnd/metric-pill';
+import { MetricColumn } from '@/components/ascnd/metric-column';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { EmptyState } from '@/components/ascnd/empty-state';
@@ -253,29 +253,47 @@ export default function SleepInsightsScreen() {
                       : `${(targetHours - stats.avgTotal).toFixed(1)}h short of your ${targetHours}h target`
                 }
               />
-            </GlassCard>
-          </Animated.View>
+              {/*
+                Ba con số chống lưng nằm TRONG cái chúng chống lưng.
 
-          <Animated.View style={styles.pillRow} entering={rise(1)}>
-            <MetricPill label={i18n.sleepAvgQuality} value={stats.avgQuality.toFixed(1)} />
-            {/* Dấu gạch ngang chứ không phải "0.0h": không ai ngủ deep bằng 0,
-                app chỉ là không được cho biết. */}
-            <MetricPill
-              label={i18n.sleepAvgDeep}
-              value={stats.avgDeep === null ? '—' : `${stats.avgDeep.toFixed(1)}h`}
-              tint={stats.avgDeep === null ? undefined : sleep.deep}
-            />
-            <MetricPill label={i18n.sleepDebt} value={`${stats.debt.toFixed(1)}h`} />
+                Trước đây chúng là một hàng ba viên kính rời bên dưới thẻ, cách
+                hero và cách biểu đồ đúng bằng nhau — nên không gì nói chúng
+                giải thích con số nào. Một nét ngăn và cùng một mặt kính thì
+                nói ngay, mà không tốn thêm chữ nào. Xem `MetricColumn`.
+              */}
+              <View style={styles.statRule} />
+              <View style={styles.statRow}>
+                <MetricColumn label={i18n.sleepAvgQuality} value={stats.avgQuality.toFixed(1)} />
+                <View style={styles.statVRule} />
+                {/* Dấu gạch ngang chứ không phải "0.0h": không ai ngủ deep bằng 0,
+                    app chỉ là không được cho biết. */}
+                <MetricColumn
+                  label={i18n.sleepAvgDeep}
+                  value={stats.avgDeep === null ? '—' : `${stats.avgDeep.toFixed(1)}h`}
+                  tint={stats.avgDeep === null ? undefined : sleep.deep}
+                />
+                <View style={styles.statVRule} />
+                <MetricColumn label={i18n.sleepDebt} value={`${stats.debt.toFixed(1)}h`} />
+              </View>
+            </GlassCard>
           </Animated.View>
 
           {/* Stage chart */}
           <Animated.View entering={rise(2)}>
           <GlassCard>
             <Text style={styles.cardTitle}>{i18n.sleepStages}</Text>
+            {/*
+              Thứ tự chú giải ĐI THEO thứ tự trong cột, không theo thứ tự quan
+              trọng. Cột xếp nông trên · REM giữa · sâu dưới (quy ước hypnogram:
+              càng sâu càng thấp), nên chú giải đọc trái sang phải cũng phải là
+              nông · REM · sâu. Bản trước đặt `sâu` đầu tiên vì nó là tầng đáng
+              nói nhất, và hậu quả là mắt phải đảo thứ tự trong đầu mỗi lần
+              tra — đúng việc mà một chú giải sinh ra để khỏi phải làm.
+            */}
             <View style={styles.legend}>
-              <LegendDot color={sleep.deep} label={i18n.sleepDeep} />
-              <LegendDot color={sleep.rem} label="REM" />
               <LegendDot color={sleep.light} label="Light" />
+              <LegendDot color={sleep.rem} label="REM" />
+              <LegendDot color={sleep.deep} label={i18n.sleepDeep} />
             </View>
             <View style={styles.chart}>
               {/*
@@ -355,7 +373,21 @@ export default function SleepInsightsScreen() {
       {(sleepLogs ?? []).length > 0 ? (
         <View style={styles.logSection}>
           <Text style={[styles.logTitle, { color: muted }]}>{vi ? 'Các đêm đã ghi' : 'Logged nights'}</Text>
-          {[...(sleepLogs ?? [])].reverse().map((s) => {
+          {/*
+            ── MỘT thẻ, bảy hàng — không phải bảy thẻ ──
+
+            Trước đây mỗi đêm là một `GlassCard` riêng: bảy hộp giống hệt nhau,
+            mỗi hộp đựng đúng hai dòng chữ. Craft-floor của skill gọi thẳng tên
+            nó — "same-size cards as the page structure; cards are the lazy
+            container" — và ở đây nó còn tốn thật: bảy mặt kính chồng lên nhau
+            trong khi brief mục hiệu năng dặn đừng dựng hàng trăm lớp blur.
+
+            Một danh sách có nét ngăn nói đúng thứ dữ liệu này là: một cuốn sổ.
+            Và nó cho phép cột GIÁ TRỊ thẳng hàng bên phải, thứ bảy cái hộp rời
+            không bao giờ làm được — giờ ngủ của bảy đêm đọc dọc xuống được.
+          */}
+          <GlassCard style={styles.logCard}>
+          {[...(sleepLogs ?? [])].reverse().map((s, i, all) => {
             const bed = new Date(s.bedtime);
             const wake = new Date(s.waketime);
             /*
@@ -384,16 +416,20 @@ export default function SleepInsightsScreen() {
             const mins = asleepMinutes(s);
             const t = (d: Date) => d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
             return (
-              <GlassCard elevation="inset" key={s.id} style={styles.logRow}>
+              <View key={s.id} style={[styles.logRow, i < all.length - 1 ? styles.logRule : null]}>
                 <View style={styles.logBody}>
                   <Text style={styles.logWhen}>
                     {wake.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}
                   </Text>
-                  <Text style={[styles.logVals, { color: muted }]}>
-                    {`${t(bed)} → ${t(wake)} · ${
-                      vi ? 'ngủ ' : ''
-                    }${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}${vi ? '' : ' asleep'}`}
+                  <Text style={[styles.logVals, { color: muted }]}>{`${t(bed)} → ${t(wake)}`}</Text>
+                </View>
+                {/* Cột giá trị: con số bằng mực thường, chữ chú bằng mực mờ,
+                    thẳng chân nhau — cùng cách hero ghép số với đơn vị. */}
+                <View style={styles.logDur}>
+                  <Text style={styles.logDurNum}>
+                    {`${Math.floor(mins / 60)}h${String(mins % 60).padStart(2, '0')}`}
                   </Text>
+                  <Text style={[styles.logDurUnit, { color: muted }]}>{vi ? 'ngủ' : 'asleep'}</Text>
                 </View>
                 <PressScale
                   accessibilityRole="button"
@@ -430,9 +466,10 @@ export default function SleepInsightsScreen() {
                   }}>
                   <Icon icon={Trash2} size={16} color={muted} />
                 </PressScale>
-              </GlassCard>
+              </View>
             );
           })}
+          </GlassCard>
         </View>
       ) : null}
     </Screen>
@@ -548,7 +585,12 @@ const stylesFor = makeStyles((c, m) => ({
   empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xs },
   emptyTitle: { ...type.body, color: c.foreground, fontWeight: '600' },
   emptyMsg: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
-  pillRow: { flexDirection: 'row', gap: spacing.sm },
+  /* Nét ngang tách hero khỏi ba cột, nét dọc tách ba cột với nhau. Cùng một
+     token `border` với danh sách đêm bên dưới, nên cả màn chỉ có MỘT cách nói
+     "hai thứ này rời nhau". */
+  statRule: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginTop: spacing.md },
+  statRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  statVRule: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: c.border },
   legend: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   /* Tròn, 8: một ô vuông 9 điểm đọc ra là một mẫu tô, một chấm tròn đọc ra là
@@ -637,9 +679,25 @@ const stylesFor = makeStyles((c, m) => ({
     textTransform: 'uppercase',
     letterSpacing: 1.6,
   },
-  logRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  /* Thẻ tự bỏ đệm ngang: nét ngăn phải chạy HẾT bề ngang thẻ, còn đệm thì
+     thuộc về từng hàng. Nét ngăn thụt vào hai bên đọc ra là một đường trang
+     trí; nét chạy hết đọc ra là một cuốn sổ có dòng kẻ. */
+  logCard: { paddingHorizontal: 0, paddingVertical: 0 },
+  logRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  logRule: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.border },
   logBody: { flex: 1, gap: 2 },
   logWhen: { ...type.footnote, color: c.foreground },
   logVals: { ...type.caption, color: c.mutedForeground },
+  logDur: { flexDirection: 'row', alignItems: 'baseline' },
+  logDurNum: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
+  /* Khoảng mỏng, cùng lý do đã ghi ở `hero-metric.tsx`: ở cỡ caption 1/6 em
+     là ~2 điểm, còn một ký tự cách là ~4. */
+  logDurUnit: { ...type.caption, color: c.mutedForeground, marginLeft: 2 },
   logDelete: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
 }));
