@@ -89,14 +89,32 @@ export function auraScreens() {
   return screens;
 }
 
-/** Nền TRANG sau khi phủ hai vũng sáng và lớp dập. */
+/**
+ * Nền TRANG sau khi phủ hai vũng sáng và lớp dập.
+ *
+ * ── trên GIẤY hai vũng là TRẮNG, không phải màu tint ──
+ *
+ * `readiness-aura.tsx` viết `const paint = paper ? c.card : (tint ?? ...)`, kèm
+ * lý do đã đo: trên nền gần đen hai vũng CỘNG sáng, còn trên `#f7f4ef` thì
+ * `rgba(tint, 0.5)` không rọi màu lên giấy mà NHUỘM giấy và làm tối đi — đúng
+ * thứ bản thiết kế cấm.
+ *
+ * `glass-stack.mjs` composite màu tint cho cả hai diện mạo ngay từ bản đầu, nên
+ * số liệu bản sáng của nó là của một cái wash chưa bao giờ tồn tại. Sai theo
+ * chiều KHẮT KHE hơn thực tế — wash tím tối hơn wash trắng, mà chữ trên giấy
+ * là chữ mực — nên nó chưa bao giờ cho lọt cái gì. Nhưng một luật đo một thứ
+ * app không làm là một luật sẽ chặn nhầm một thiết kế đúng, và sẽ dạy người
+ * đọc một con số sai.
+ */
 export function washFor(theme, tints) {
   const { palettes } = loadPalette();
   const p = palettes[theme];
   const lit = theme === 'dark';
   const a = lit ? AURA_ALPHA : PAPER_ALPHA;
-  let wash = over(p[tints[0]], hex(p.background), a);
-  wash = over(p[tints[1]], wash, a * 0.85);
+  const first = lit ? p[tints[0]] : p.card;
+  const second = lit ? p[tints[1]] : p.card;
+  let wash = over(first, hex(p.background), a);
+  wash = over(second, wash, a * 0.85);
   return over(lit ? '#000000' : p.background, wash, AURA_DIM);
 }
 

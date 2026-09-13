@@ -5,6 +5,7 @@ import { useEffect, useMemo } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 
+import { CardHeader } from '@/components/ascnd/card-header';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { HeroMetric } from '@/components/ascnd/hero-metric';
 import { MetricColumn } from '@/components/ascnd/metric-column';
@@ -237,10 +238,25 @@ export default function SleepInsightsScreen() {
             `caption` là dòng đáng giá nhất và là dòng bản cũ không có: `7.2h`
             là dữ liệu, `7.2h · thiếu 0,8h so với mục tiêu` là một câu trả lời.
           */}
+          {/*
+            ── MỘT thẻ, ba tầng: câu trả lời · bằng chứng · hình dạng ──
+
+            Trước đây là hai thẻ: một thẻ chỉ có con số với ba cột, và một thẻ
+            chỉ có biểu đồ. Cả hai nói về CÙNG bảy đêm ấy, nên tách ra bắt
+            người đọc dựng lại bối cảnh hai lần — và thẻ đầu thừa nửa bên phải
+            trống trong khi thẻ sau thừa một tiêu đề lặp lại điều thẻ đầu vừa
+            nói.
+
+            Gộp lại thì thẻ này thành CHỦ THỂ của màn: một đầu thẻ, con số, ba
+            cột bằng chứng, rồi hình dạng của chính con số ấy. Đúng cách ảnh
+            tham chiếu xếp — đầu thẻ và biểu đồ luôn nằm chung một mặt kính,
+            không bao giờ là một thẻ tiêu đề rồi một thẻ đồ thị.
+          */}
           <Animated.View entering={rise(0)}>
             <GlassCard>
+              <CardHeader icon={Moon} title={vi ? '7 đêm gần nhất' : 'Last 7 nights'} />
               <HeroMetric
-                eyebrow={vi ? '7 đêm gần nhất' : 'Last 7 nights'}
+                style={styles.heroInCard}
                 value={stats.avgTotal}
                 unit="h"
                 caption={
@@ -275,14 +291,8 @@ export default function SleepInsightsScreen() {
                 <View style={styles.statVRule} />
                 <MetricColumn label={i18n.sleepDebt} value={`${stats.debt.toFixed(1)}h`} />
               </View>
-            </GlassCard>
-          </Animated.View>
-
-          {/* Stage chart */}
-          <Animated.View entering={rise(2)}>
-          <GlassCard>
-            <Text style={styles.cardTitle}>{i18n.sleepStages}</Text>
-            {/*
+              <View style={styles.statRule} />
+              {/*
               Thứ tự chú giải ĐI THEO thứ tự trong cột, không theo thứ tự quan
               trọng. Cột xếp nông trên · REM giữa · sâu dưới (quy ước hypnogram:
               càng sâu càng thấp), nên chú giải đọc trái sang phải cũng phải là
@@ -327,21 +337,15 @@ export default function SleepInsightsScreen() {
                 <View style={styles.targetRule} />
                 <Text style={styles.targetTag}>{`${targetHours}h`}</Text>
               </View>
-            </View>
-          </GlassCard>
+              </View>
+            </GlassCard>
           </Animated.View>
 
           {/* Insights */}
           {insights.length > 0 && (
             <Animated.View entering={rise(3)}>
             <GlassCard>
-              <View style={styles.cardTitleRow}>
-                {/* Mực mờ, không phải vàng rực. Brief mục 11: icon đỡ thứ bậc chứ không
-                    tranh chỗ với số liệu — và ở đây nó đứng cạnh một tiêu đề đã
-                    đủ rõ, nên màu của nó không mang thêm nghĩa nào. */}
-                <Icon icon={Lightbulb} size={15} color={muted} />
-                <Text style={styles.cardTitle}>{i18n.sleepInsights}</Text>
-              </View>
+              <CardHeader icon={Lightbulb} title={i18n.sleepInsights} />
               <View style={styles.insightList}>
                 {insights.map((text, i) => (
                   <View key={i} style={styles.insightRow}>
@@ -588,6 +592,9 @@ const stylesFor = makeStyles((c, m) => ({
   /* Nét ngang tách hero khỏi ba cột, nét dọc tách ba cột với nhau. Cùng một
      token `border` với danh sách đêm bên dưới, nên cả màn chỉ có MỘT cách nói
      "hai thứ này rời nhau". */
+  /* Hero lùi xuống dưới đầu thẻ, không còn tự mở đầu — nên nó cần khoảng thở
+     riêng thay cho `eyebrow` mà `CardHeader` vừa thay vai. */
+  heroInCard: { marginTop: spacing.md },
   statRule: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginTop: spacing.md },
   statRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   statVRule: { width: StyleSheet.hairlineWidth, alignSelf: 'stretch', backgroundColor: c.border },
@@ -661,13 +668,33 @@ const stylesFor = makeStyles((c, m) => ({
   barGrow: { width: '100%', flexBasis: 0, flexDirection: 'column', transformOrigin: 'bottom' },
   barLabel: { ...type.caption, color: c.mutedForeground },
   targetLine: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  /* Cùng token với nhãn `8h` đứng cạnh nó, nên nét và chữ đọc ra là MỘT vật.
-     `alpha(m.ink, 0.22)` cũ chỉ đo được ~2,2 với rãnh ở bản tối — dưới ngưỡng
-     3,0 của WCAG 1.4.11 cho một vật thể đồ hoạ; `mutedForeground` đo 4,87 tối
-     và 5,78 sáng. Vẫn là một nét tóc: chiều dày mới là thứ giữ nó khiêm tốn,
-     không phải độ mờ. */
-  targetRule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: c.mutedForeground },
-  targetTag: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  /*
+    ── ĐIỂM NÓNG DUY NHẤT của màn, và vì sao là chỗ này ──
+
+    Cả màn là tím trên tím cộng chữ xám: không có một chỗ nào để mắt rơi vào.
+    Ảnh tham chiếu thì có đúng một sắc nóng, diện tích rất nhỏ, và đó là thứ
+    làm nó ra "có điểm nhấn".
+
+    Chỗ đáng được tô không phải một cái trang trí mà là thứ cả màn sinh ra để
+    đối chiếu: mốc mục tiêu. Thẻ trên cùng viết "thiếu 1,0h so với mục tiêu
+    8h", rồi biểu đồ vẽ đúng cái mốc ấy bằng màu IM NHẤT nó có. Tô nó là nối
+    câu trả lời với chỗ đọc ra câu trả lời.
+
+    `metricOrange` chứ không phải một sắc tím đậm hơn: một sắc trong cùng họ
+    với bảy cái cột sẽ đọc ra như một cột thứ tám. Màu bù thì không lẫn được —
+    và nó đã là token sẵn, đo được 6,81:1 trên mặt kính bản tối, 4,86 bản sáng,
+    đều trên ngưỡng 3,0 của WCAG 1.4.11.
+
+    Diện tích là thứ giữ nó không hét: một nét tóc và bốn ký tự. Brief dặn
+    "không dùng màu quá bão hoà" — điều đó nói về DIỆN TÍCH nhiều hơn về sắc,
+    và đây là sắc bão hoà nhất trên màn ở diện tích nhỏ nhất trên màn.
+  */
+  targetRule: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: c.metricOrangeGraphic },
+  /* `metricOrange`, KHÔNG phải `metricOrangeGraphic`: hai token cùng màu ở bản
+     tối nhưng khác hẳn ở bản sáng, vì vai đồ hoạ chỉ cần 3:1 còn chữ cần 4,5.
+     `role-split.mjs` bắt được ngay lần chạy đầu — nét kẻ bên cạnh giữ vai đồ
+     hoạ, chữ thì không được mượn nó. Đo: 6,81:1 tối · 4,86:1 sáng. */
+  targetTag: { ...type.caption, color: c.metricOrange, fontVariant: ['tabular-nums'], fontWeight: '600' },
   insightList: { marginTop: spacing.sm, gap: spacing.sm },
   insightRow: { flexDirection: 'row', gap: spacing.sm },
   insightBullet: { ...type.body, color: c.primary },

@@ -9,7 +9,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { makeStyles, type PaletteKey } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
@@ -112,8 +112,45 @@ const DRIFT = 0.06;
  */
 const OVERSCALE = 1.08;
 
-/** How far down the screen the wash reaches before it is gone. */
+/** How far down the screen the two POOLS reach before they are gone. */
 const REACH = 0.52;
+
+/**
+ * Và dưới hai vũng ấy, cả trang vẫn có không khí.
+ *
+ * ── lỗi nó sinh ra để sửa ──
+ *
+ * `REACH = 0.52` nói hai vũng tắt ở giữa màn. Dưới mốc ấy, trang là nền TRẦN —
+ * `#070708` ở bản tối. Dựng ảnh cả màn Chi tiết giấc ngủ thì thấy rõ: một phần
+ * ba trên có bầu trời, hai phần ba dưới là một tấm đen phẳng có mấy cái thẻ
+ * nổi trên đó. Ảnh tham chiếu chủ dự án gửi thì ngược lại — nền của nó đi một
+ * quãng từ trên xuống dưới, và đó là thứ làm nó ra "một không gian" chứ không
+ * phải "một danh sách thẻ".
+ *
+ * ── vì sao nó KHÔNG đụng tới một phép đo nào ──
+ *
+ * Mọi luật tương phản của kho này đo ĐỈNH: `glass-stack.mjs` dựng wash ở đúng
+ * độ mờ đầy của hai vũng, `sleep-ramp.mjs` đo dải ngủ trên mặt kính của cái
+ * wash ấy. Lớp nền này bắt đầu ở **0 tại đỉnh** và chỉ dày lên khi đi xuống,
+ * nên đỉnh không đổi một count nào. Đo ra:
+ *
+ *     đỉnh wash  #121324  L 0.0072      ← không đổi
+ *     đáy trang  #150c1d  L 0.0051      ← 0,71× đỉnh, tức vẫn dưới ca xấu nhất
+ *     trên đáy:  chữ phụ 6,48 · dải ngủ 3,55 · chữ chính 8,91   (sàn 4,5 / 3,0)
+ *
+ * Đẩy tới 0,26 thì đáy vượt đỉnh (1,09×) và phép đo ở đỉnh thôi là ca xấu
+ * nhất — lúc ấy mọi luật đang canh nhầm chỗ. 0,18 để lại biên.
+ *
+ * ── trên GIẤY thì nó là một thứ khác ──
+ *
+ * Hai vũng trên giấy nâng bằng TRẮNG (xem `paint`), vì tint ở độ mờ cao nhuộm
+ * giấy chứ không rọi lên nó. Nhưng lớp nền này ở độ mờ THẤP, và ở mức ấy một
+ * sắc tint không nhuộm — nó làm đáy trang sâu đi một chút, đúng quãng đi mà
+ * bản tối có. Nên giấy dùng tint ở `FLOOR_ALPHA_PAPER`, không dùng trắng:
+ * trắng trên giấy trắng không vẽ ra quãng nào cả.
+ */
+const FLOOR_ALPHA = 0.18;
+const FLOOR_ALPHA_PAPER = 0.1;
 
 /*
   Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
@@ -251,6 +288,7 @@ export function ReadinessAura({
   const uid = useId();
   const gid = `readinessAura-${uid}`;
   const gid2 = `readinessAura2-${uid}`;
+  const gid3 = `readinessAura3-${uid}`;
 
 
   /* Ở trạng thái nghỉ, hai tông là hai sắc bạc cạnh nhau trên cùng thang —
@@ -314,11 +352,29 @@ export function ReadinessAura({
   const alpha = paper ? PAPER_ALPHA : resting ? RESTING_ALPHA : AURA_ALPHA;
 
   const h = height * REACH;
+  /* Lớp nền lấy màu của vũng THỨ HAI, không của vũng thứ nhất: vũng một neo ở
+     trên trái và vũng hai ở phải-giữa, nên đi từ trên xuống là đi từ tông một
+     sang tông hai. Lớp nền nối tiếp quãng ấy thay vì lặp lại tông đã ở trên.
+     Trên giấy `second` là trắng, nên ở đó nó lấy chính `tint2` — xem chú thích
+     của `FLOOR_ALPHA_PAPER`. */
+  const floorPaint = paper ? (tint2 ?? tint ?? c.primary) : second;
+  const floorAlpha = paper ? FLOOR_ALPHA_PAPER : FLOOR_ALPHA;
 
   return (
     <View style={styles.fill} pointerEvents="none">
       <Animated.View style={drift}>
-      <Svg width={width} height={h}>
+      {/*
+        `<Svg>` cao HẾT màn, nhưng hai `<Rect>` của vũng vẫn cao đúng `h`.
+
+        Gradient toả dùng `objectBoundingBox`, tức hệ quy chiếu là CHÍNH hình
+        được tô chứ không phải `<Svg>` — nên nới `<Svg>` không kéo giãn hai
+        vũng một chút nào. Đó là điều kiện để câu "đỉnh không đổi một count
+        nào" ở trên đúng theo nghĩa đen, và là lý do lớp nền được thêm vào
+        cùng một `<Svg>` thay vì một lớp thứ hai: một `<Svg>` phủ màn hình nữa
+        là một bề mặt nữa mà `UIVisualEffectView` phải lấy mẫu lại mỗi khung
+        hình cuộn — đúng chi phí mà `aura-window.mjs` đã đo và cắt.
+      */}
+      <Svg width={width} height={height}>
         <Defs>
           {/*
             The shape being filled and the gradient's frame are the same box,
@@ -365,7 +421,17 @@ export function ReadinessAura({
             <Stop offset="0.6" stopColor={second} stopOpacity={alpha * 0.3} />
             <Stop offset="1" stopColor={second} stopOpacity={0} />
           </RadialGradient>
+          {/* 0 ở đỉnh — nên nó cộng đúng 0 vào chỗ mọi luật đang đo — rồi dày
+              dần xuống đáy. Mốc giữa ở 0,45 để quãng đi phi tuyến: nửa trên
+              gần như không có gì, nửa dưới mới thật sự sâu lại. */}
+          <LinearGradient id={gid3} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={floorPaint} stopOpacity={0} />
+            <Stop offset="0.45" stopColor={floorPaint} stopOpacity={floorAlpha * 0.28} />
+            <Stop offset="1" stopColor={floorPaint} stopOpacity={floorAlpha} />
+          </LinearGradient>
         </Defs>
+        {/* Nền đi TRƯỚC: hai vũng phải nằm trên nó, không phải dưới. */}
+        <Rect x={0} y={0} width={width} height={height} fill={`url(#${gid3})`} />
         <Rect x={0} y={0} width={width} height={h} fill={`url(#${gid})`} />
         <Rect x={0} y={0} width={width} height={h} fill={`url(#${gid2})`} />
       </Svg>

@@ -46,7 +46,18 @@ export function HeroMetric({
   trailing,
   style,
 }: {
-  eyebrow: string;
+  /**
+   * Nhãn nhỏ trên con số — và nó KHÔNG bắt buộc.
+   *
+   * Ba dòng (eyebrow · value · caption) là hình dạng của một hero đứng một
+   * mình. Khi hero nằm dưới một `CardHeader` thì đầu thẻ đã nói "cái này đang
+   * nói về gì", và một eyebrow nữa là câu ấy nói hai lần, cách nhau 8 điểm.
+   * Craft-floor của skill gọi đúng thứ đó là thứ duy nhất nó cấm thẳng chứ
+   * không chỉ khuyến nghị: "a kicker above a heading — this one is a ban".
+   *
+   * Nên nó là tuỳ chọn: bỏ trống khi có đầu thẻ, truyền vào khi không có.
+   */
+  eyebrow?: string;
   /**
    * Chuỗi thì vẽ nguyên văn; SỐ thì ĐẾM LÊN.
    *
@@ -75,9 +86,11 @@ export function HeroMetric({
   return (
     <View style={[styles.wrap, style]}>
       <View style={styles.textCol}>
-        <Text style={[styles.eyebrow, { color: muted }]} numberOfLines={1}>
-          {eyebrow}
-        </Text>
+        {eyebrow ? (
+          <Text style={[styles.eyebrow, { color: muted }]} numberOfLines={1}>
+            {eyebrow}
+          </Text>
+        ) : null}
         {/*
           `adjustsFontSizeToFit` KHÔNG dùng ở đây, và đó là một lựa chọn.
 
