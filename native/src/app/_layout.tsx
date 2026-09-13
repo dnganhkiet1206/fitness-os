@@ -21,6 +21,7 @@ import { makeStyles } from '@/constants/theme';
 import { useMaterial, usePalette, useThemeName } from '@/hooks/use-palette';
 import { AppLockProvider } from '@/hooks/use-app-lock';
 import { AppErrorBoundary } from '@/components/ascnd/error-boundary';
+import { warnWorkletsVersionSkew } from '@/lib/worklets-version';
 import { installCrashHandler } from '@/lib/crash-log';
 import { initObservability } from '@/lib/observability';
 import { AppSettingsProvider, useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -248,6 +249,13 @@ function Gate() {
   */
   useEffect(() => {
     SplashScreen.hideAsync();
+  }, []);
+
+  /* Một dòng cảnh báo khi pod worklets trên máy cũ hơn gói JS. Phép kiểm sẵn
+     có của worklets bỏ qua số patch, mà bản vá A9 đúng là một bước patch —
+     xem `lib/worklets-version.ts`. Chỉ chạy ở `__DEV__`. */
+  useEffect(() => {
+    warnWorkletsVersionSkew();
   }, []);
 
   if (!ready) return <ThemedSplash />;

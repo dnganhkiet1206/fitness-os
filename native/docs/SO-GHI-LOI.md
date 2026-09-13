@@ -271,6 +271,51 @@ mục này đã hai lần gán nguyên nhân quá sớm và phải tự đính c
 được là hàm inline, bất kể A9. Xác nhận vẫn cần đúng thứ cũ — một tệp `.ips`
 từ bản dựng của cây hiện tại, sau khi lặp lại thao tác.
 
+#### BÁO CÁO THỨ BA 2026-09-13 — và lần này đọc được một thứ đã bỏ lỡ hai lần
+
+`b6c8b9f2-ASCND-2026-09-13-170509.ips`. Chữ ký y hệt, lambda vẫn `$_23`, và
+luồng chính lại ở trong `-[UIScrollView handlePan:]` — **ba trên ba**.
+
+**`slice_uuid` là thứ đáng đọc nhất, và tôi đã bỏ qua nó hai lần.** Đó là UUID
+của chính lát nhị phân đang chạy:
+
+| Tệp | `slice_uuid` |
+|---|---|
+| 05/09 | `496863f5-a961-349d-9a5f-c64b3c05290e` |
+| 12/09 | `2335563e-7c08-3645-9335-94a5ad884053` |
+| 13/09 | `2335563e-7c08-3645-9335-94a5ad884053` ← **y hệt 12/09** |
+
+Nghĩa là: giữa 05/09 và 12/09 máy CÓ dựng lại; giữa 12/09 và 13/09 thì
+**KHÔNG** — cùng một nhị phân. Lớp native không đổi, nên báo cáo thứ ba không
+kiểm được phần native của bất cứ bản sửa nào. Bản sửa `runOnJS` hôm 12/09 là
+JS thuần nên Metro có thể đã nạp, nhưng điều đó không đọc ra được từ tệp.
+
+**Và đây là chỗ hở đã làm câu hỏi "máy đang chạy pod nào" ba lần không trả lời
+được.** Worklets có sẵn `checkCppVersion` ném lỗi khi JS lệch native, nên dễ
+tưởng "app mở được ⇒ pod đã mới". Đọc `matchVersion` thì không phải:
+
+    // x.y.z, compare only major and minor, skip patch
+
+Nó **bỏ qua số patch**. Mà bản vá A9 đúng là một bước patch: `0.10.0` →
+`0.10.1`. Một máy còn pod `0.10.0` chạy cùng JS `0.10.1` khởi động **êm ru,
+không một lời cảnh báo**.
+
+| | |
+|---|---|
+| **Đã bịt** | `src/lib/worklets-version.ts`, gọi từ `_layout`. So `_WORKLETS_VERSION_CPP` với `_WORKLETS_VERSION_JS` — **cả hai đều do chính thư viện đặt lên global**, nên tệp này không import gì và không gõ số phiên bản nào, không có chỗ để lệch. Chỉ chạy ở `__DEV__` (bản phát hành thì pod đi kèm nhị phân, không lệch được) và **cảnh báo chứ không ném**: một lệch patch chưa chắc đã hỏng, ném là biến câu cảnh báo thành app không mở được. |
+| **Kiểm 30 giây, KHÔNG cần dựng** | Trên máy Mac: `grep -i -A1 worklets native/ios/Podfile.lock`. Ra `0.10.0` ⇒ pod chưa cài lại, và đó là toàn bộ câu chuyện. Ra `0.10.1` ⇒ pod đã mới, và khi ấy giả thuyết pod cũ chết, phải đi tìm chỗ khác. |
+
+**Rà nốt mặt `runOnJS` còn lại, và nó SẠCH** — ghi lại để không ai rà lại:
+
+| | |
+|---|---|
+| 9 đích `runOnJS` viết trong code app | `beginInteraction`, `settle`, `endInteraction`, `onTick`, `onScrolling`, `onCommit`, `wake`, `armTabBarRestore` đã rà 11/09. Thêm `onIndex` ở `weight-goal-ruler` — **chưa từng rà** vì bản 11/09 chỉ soi màn Hôm nay — và nó là `useCallback` ở `weight-goal-dialog:193`. Ổn định. |
+| Thư viện khác cũng gọi `runOnJS` trên prop | Trong `react-native-gesture-handler` chỉ còn `ReanimatedDrawerLayout`, và app **không dùng** drawer nào (`grep DrawerLayout src/` rỗng). Ngoài gesture-handler, không gói nào trong cây làm việc ấy. |
+| `Gesture.Pan()` dựng lại mỗi render ở `card-deck:241` và `drag-reorder:510` | KHÔNG phải nguồn của lỗi này. `scheduleOnRN` đọc `fun.getProperty(rt, "__remoteFunction")`, tức hàm từ xa được gắn lên chính đối tượng hàm JS và dùng lại; worklet bao ngoài dựng lại không đẻ ra hàm từ xa mới chừng nào hàm bị bắt còn ổn định — và cả ba hàm ở hai chỗ ấy đều ổn định. Đây là chuyện hiệu năng, để riêng. |
+
+**Trạng thái:** A9 vẫn chưa đóng, nhưng câu hỏi chặn nó nay đã trả lời được
+bằng một dòng lệnh thay vì một vòng dựng máy.
+
 ---
 
 ### ~~A10. Đường AI nuốt lỗi ở bốn chỗ, và cả bốn đều tiêu tiền~~ — ĐÃ SỬA 2026-09-08
