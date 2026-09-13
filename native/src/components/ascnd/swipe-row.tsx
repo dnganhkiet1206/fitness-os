@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import type { LucideIcon } from 'lucide-react-native';
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { interpolate, useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
 
@@ -137,6 +137,35 @@ export function SwipeRow({
      repeat while the finger wobbles on the line. */
   const buzzed = useRef(false);
 
+  /*
+    ── HAI HÀM NÀY PHẢI ỔN ĐỊNH, và đó là một lỗi ĐÃ LÀM APP THOÁT ──
+
+    `onSwipeableWillOpen`/`WillClose` KHÔNG phải callback thường: thư viện gọi
+    chúng qua `runOnJS` từ trong một worklet (`ReanimatedSwipeable.tsx`,
+    `dispatchImmediateEvents`), và cái worklet ấy `useCallback` trên đúng danh
+    tính của hai prop này. Truyền arrow inline ⇒ mỗi lần render là một danh
+    tính mới ⇒ worklet dựng lại ⇒ một `SerializableRemoteFunction` MỚI, cái cũ
+    bị thả. Một lệnh đã lên lịch còn đang bay lúc ấy sẽ đi tìm một hàm không
+    còn nữa — `SIGABRT` trong `JSScheduler::scheduleOnJS`, đúng chữ ký A9
+    trong hai báo cáo sự cố từ máy thật.
+
+    Bản rà 11/09 không bắt được chỗ này vì nó đi tìm chữ `runOnJS` VIẾT TRONG
+    code app. Ở đây không có chữ ấy: `runOnJS` nằm trong thư viện, còn app chỉ
+    truyền một hàm. Cùng một lỗi, khác chỗ nhìn.
+
+    `[]` là danh sách ĐÚNG, không phải danh sách rỗng cho tiện: `buzzed` là
+    `useRef` nên danh tính của nó cố định trọn đời component, và hai hàm không
+    đọc gì khác. `tools/runonjs-stable.mjs` canh để chỗ này không quay lại.
+  */
+  const onWillOpen = useCallback(() => {
+    if (buzzed.current) return;
+    buzzed.current = true;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+  const onWillClose = useCallback(() => {
+    buzzed.current = false;
+  }, []);
+
   return (
     <ReanimatedSwipeable
       friction={2}
@@ -153,14 +182,8 @@ export function SwipeRow({
             ),
           }
         : null)}
-      onSwipeableWillOpen={() => {
-        if (buzzed.current) return;
-        buzzed.current = true;
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }}
-      onSwipeableWillClose={() => {
-        buzzed.current = false;
-      }}
+      onSwipeableWillOpen={onWillOpen}
+      onSwipeableWillClose={onWillClose}
       renderRightActions={(progress) => (
         <Action progress={progress} icon={icon} label={label} tint={tint ?? c.readinessRed} onPress={onAction} />
       )}>

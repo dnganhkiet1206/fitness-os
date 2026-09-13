@@ -153,6 +153,7 @@ const STEPS = [
   ['kéo thả đổi thứ tự', 'node', ['tools/drag-reorder.mjs']],
   ['cú đáp khi thả', 'node', ['tools/drag-settle.mjs']],
   ['mô hình lò xo', 'node', ['tools/spring-model.mjs']],
+  ['đích runOnJS', 'node', ['tools/runonjs-stable.mjs']],
   ['hàng nút góc trên', 'node', ['tools/top-chrome.mjs']],
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
   ['màu chữ', 'node', ['tools/text-color.mjs']],

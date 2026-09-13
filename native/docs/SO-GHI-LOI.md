@@ -225,6 +225,52 @@ chọn giữa hai giả thuyết, và nó chọn "tra sổ hụt", không chọn
 khi lặp lại thao tác. Còn `JSScheduler::scheduleOnJS` ⇒ máy vẫn chưa lấy pod
 mới. Đổi chữ ký ⇒ lỗi khác, và khi ấy mới có đầu mối mới.
 
+#### BÁO CÁO THỨ HAI 2026-09-12 — SAU cả hai bản vá, và lần này tìm ra một lỗi THẬT trong code app
+
+`390e08dc-ASCND-2026-09-12-184438.ips`. Lần này tệp ghi **12/09 18:44**, tức
+sau bản nâng worklets (09/09) và sau cổng `booted` (10/09). Đây đúng là phép
+thử mà mục trên nói còn thiếu.
+
+**Kết quả: vẫn thoát, chữ ký KHÔNG đổi.** `__assert_rtn` → `jsi::Value::getObject`
+→ `toOptimizedObject::$_23` → `JSScheduler::scheduleOnJS`.
+
+| | |
+|---|---|
+| **Khác gì lần trước** | iOS 27.0 **bản phát hành** `24A435` (lần trước là beta `24A5370h`). Thẻ ABI của libc++ trong ảnh nhị phân app đổi từ `de200100` sang `dee210106` — tức app dylib ĐÃ được biên dịch lại bằng một toolchain khác. Chạy 119 giây rồi thoát (lần trước 65). |
+| **Giống gì lần trước, và đây mới là chỗ đáng đọc** | Luồng chính lại đang ở trong `-[UIScrollView handlePan:]` → `_updatePanGesture` → `translationInView:`. **Hai lần thoát, cách nhau một tuần, khác iOS, khác toolchain — cả hai lần ngón tay đều đang kéo.** |
+| **Một giả thuyết của tôi ĐÃ CHẾT, ghi lại để không ai thử lại** | Tôi tưởng số lambda `$_23` là dấu vân tay phiên bản, tức đọc được máy đang chạy 0.10.0 hay 0.10.1. Đo ra thì KHÔNG: `scheduleOnRN` là lambda thứ 23 trong `toOptimizedObject` ở **cả hai** bản (mỗi bản 46 lambda `addMethod`, cùng thứ tự). Ngăn xếp không nói được phiên bản, và cũng không cần nữa — xem dưới. |
+
+**Và lần này tìm ra một lỗi thật, trong code của app, không phải trong pod.**
+
+`ReanimatedSwipeable` gọi sáu prop của nó qua `runOnJS` từ trong một worklet
+(`dispatchImmediateEvents`, `dispatchEndEvents`, `panGesture`), và mấy worklet
+ấy `useCallback` trên đúng danh tính của những prop đó. App truyền **arrow
+inline** vào ba chỗ:
+
+| Chỗ | |
+|---|---|
+| `swipe-row.tsx:156,161` | `onSwipeableWillOpen` và `onSwipeableWillClose`. `SwipeRow` được dùng ở **`(tabs)/index.tsx` và `card-deck.tsx`** — tức màn Hôm nay, đúng màn của A9 — và nó vào cây từ **24/08**, tức trước cả báo cáo 05/09. |
+| `today-meals.tsx:647` | `onSwipeableWillOpen`. Mới, từ bản vuốt thẻ bữa ăn 12/09. |
+
+Mỗi lần render là một danh tính mới ⇒ worklet dựng lại ⇒ một
+`SerializableRemoteFunction` MỚI, cái cũ bị thả. Một lệnh đã lên lịch còn đang
+bay lúc ấy đi tìm một hàm không còn nữa. Và những callback này bay **đúng lúc
+ngón tay đang kéo** — khớp với cả hai lần luồng chính nằm trong `handlePan:`.
+
+| | |
+|---|---|
+| **Vì sao bản rà 11/09 bỏ lọt** | Bản ấy đi tìm chữ `runOnJS` **viết trong code app**, và rà rất kỹ — mọi đích `runOnJS` trên Hôm nay đều ổn định, kết luận ấy vẫn đúng. Nhưng ở ba chỗ này trong code app KHÔNG CÓ chữ `runOnJS` nào: nó nằm trong thư viện, app chỉ truyền một hàm. Cùng một lỗi, khác chỗ nhìn. |
+| **Đã sửa** | Cả ba. `swipe-row` dùng `useCallback([])` — `buzzed` là `useRef` nên `[]` là danh sách ĐÚNG chứ không phải rỗng cho tiện. `today-meals` dùng hằng cấp module vì hàm ấy không đọc gì. |
+| **Bước gác** | `tools/runonjs-stable.mjs`. Danh sách prop được **trích ra khỏi mã thư viện đang cài** chứ không gõ tay, nên thư viện thêm một prop `runOnJS` nữa ở bản sau thì bước này tự gác luôn cái mới. Thử phá hai kiểu, cả hai đều đỏ: inline lại một chỗ (đỏ, chỉ đúng dòng), và giấu mã thư viện đi (đỏ, chứ không im lặng coi là sạch). |
+| **Bước gác ấy suýt xanh giả** | Ghi lại vì nó đúng loại lỗi mục này đang nói: bản đầu gọi `exec` trước `matchAll` trên cùng một regex có cờ `g`, nên `lastIndex` bị đẩy và nó đếm **0 chỗ truyền** trong khi có 3 — rồi báo OK. Nay có thêm một chốt: app CÓ dùng `ReanimatedSwipeable` mà soi ra 0 chỗ truyền thì ĐỎ, vì đó là bộ dò hỏng chứ không phải code sạch. |
+
+**Đừng đọc mục này thành "đã tìm ra nguyên nhân A9".** Đây là một lỗi có thật,
+đúng lớp, đúng màn, đúng thời điểm, và có mặt từ trước báo cáo đầu tiên — nhưng
+mục này đã hai lần gán nguyên nhân quá sớm và phải tự đính chính. Ba chỗ sửa
+đứng được bằng lý do riêng: một prop mà thư viện gửi qua `runOnJS` thì không
+được là hàm inline, bất kể A9. Xác nhận vẫn cần đúng thứ cũ — một tệp `.ips`
+từ bản dựng của cây hiện tại, sau khi lặp lại thao tác.
+
 ---
 
 ### ~~A10. Đường AI nuốt lỗi ở bốn chỗ, và cả bốn đều tiêu tiền~~ — ĐÃ SỬA 2026-09-08

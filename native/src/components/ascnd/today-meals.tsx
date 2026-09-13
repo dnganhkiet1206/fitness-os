@@ -126,6 +126,11 @@ const ACTION_W = 76;
  */
 const SWIPE_SNAP = { ...spring(0.24, BOUNCE.snappy), overshootClamping: false };
 
+/** Nhịp chạm lúc tấm chốt mở. Ngoài component vì thư viện gửi nó qua `runOnJS`. */
+function swipeOpenHaptic() {
+  Haptics.selectionAsync();
+}
+
 /**
  * Một tấm hành động sau thẻ bữa ăn.
  *
@@ -643,8 +648,14 @@ function MealCard({
         friction={1}
         animationOptions={SWIPE_SNAP}
         /* Một nhịp chạm khi tấm CHỐT mở — cùng chỗ iOS đánh nhịp. Không đánh
-           lúc bắt đầu kéo: cú kéo đã là phản hồi của chính nó. */
-        onSwipeableWillOpen={() => Haptics.selectionAsync()}
+           lúc bắt đầu kéo: cú kéo đã là phản hồi của chính nó.
+
+           Hằng cấp MODULE, không phải arrow inline: thư viện gọi prop này qua
+           `runOnJS`, nên một danh tính mới mỗi render là một hàm từ xa mới mỗi
+           render — xem khối chú thích dài ở `swipe-row.tsx`, nơi cùng lỗi ấy
+           đã làm app thoát. Hàm này không đọc gì ngoài `Haptics`, nên chỗ đúng
+           của nó là ngoài component, nơi danh tính cố định vĩnh viễn. */
+        onSwipeableWillOpen={swipeOpenHaptic}
         /* GHÌ, chứ không CHẶN CỨNG.
 
            Bản trước để `overshootLeft/Right={false}`, và trong thư viện cái đó
