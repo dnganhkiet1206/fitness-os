@@ -137,6 +137,45 @@ build sẽ lỗi, cảnh báo, hay bỏ qua. **Không sửa `eas.json` theo ph�
 đăng nhập Apple, và thông báo đẩy — ba mục dưới đây phải ghi "không áp dụng cho
 bản dựng này" chứ không được ghi "đạt".
 
+### CHẶN: nâng worklets/reanimated mà quên xoá cache Metro
+
+Sau một lần nâng `react-native-worklets` (hay `react-native-reanimated`), app
+ném ngay lúc khởi động:
+
+```
+[Worklets] Mismatch between JavaScript code version and Worklets Babel plugin
+version (0.10.1 vs. 0.10.0).
+    Offending code was: `function guardImplementation_…`
+```
+
+Đọc thì tưởng còn sót một bản sao gói cũ. **Không phải.** Đo ra thì:
+
+* Babel plugin của worklets **đóng dấu phiên bản vào từng worklet** lúc biến
+  đổi — `plugin/index.js` lấy số từ `require("../package.json").version`.
+* Metro băm **NỘI DUNG TỆP** để làm khoá cache, **không** băm phiên bản plugin.
+* Và `src/guardImplementation.native.ts` của worklets **giống hệt từng byte**
+  giữa 0.10.0 và 0.10.1 (cùng md5 `d128cf8a…`).
+
+Ba điều ấy cộng lại: nội dung không đổi ⇒ Metro dùng lại bản dịch CŨ ⇒ trong
+đó còn dấu `0.10.0` ⇒ lúc chạy, gói JS đã là 0.10.1 ⇒ lệch ⇒ ném. Càng nâng
+"sạch" (chỉ đổi số patch, ít tệp đổi nội dung) thì càng dễ dính, vì càng nhiều
+tệp giữ nguyên nội dung.
+
+Cách sửa, một cửa sổ:
+
+```bash
+npx expo start --clear
+```
+
+để nó chạy, rồi cửa sổ thứ hai:
+
+```bash
+npm run ios:free -- --device
+```
+
+`npm run ios:free` gọi `expo run:ios`, mà `expo run:ios` **không** tự xoá cache
+Metro — nên chạy thẳng nó sau khi nâng gói là dính lại đúng chỗ này.
+
 ### CHẶN: `prebuild --clean` mà quên `EXPO_FREE_TEST=1`
 
 Cả hai cơ chế gỡ entitlement đều là **no-op trừ khi biến ấy được đặt** —
