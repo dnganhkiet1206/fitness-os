@@ -316,6 +316,44 @@ không một lời cảnh báo**.
 **Trạng thái:** A9 vẫn chưa đóng, nhưng câu hỏi chặn nó nay đã trả lời được
 bằng một dòng lệnh thay vì một vòng dựng máy.
 
+#### TRẢ LỜI ĐƯỢC 2026-09-13 — máy dựng chưa từng CÀI bản vá, và ba lớp đều im lặng
+
+Chủ dự án chạy phép kiểm một dòng trên máy Mac. Kết quả:
+
+    ios/Podfile.lock                                        RNWorklets (0.10.0)
+    node -p "require('react-native-worklets/package.json').version"   0.10.0
+
+Còn `package.json` trong repo ghim **0.10.1** từ `089fbd5` (09/09).
+
+**Nguyên nhân tầm thường đến khó chịu: kéo code về mà chưa `npm install`.** Pod
+cũ chỉ là hệ quả — podspec của worklets đặt `s.version = package["version"]`,
+tức nó lấy số từ gói ĐÃ CÀI, nên `node_modules` còn 0.10.0 thì pod cũng 0.10.0,
+và cả `Podfile.lock` cũng ghi đúng 0.10.0 một cách trung thực.
+
+Điều đáng ghi không phải cái lỗi, mà là **không lớp nào nói ra**:
+
+| Lớp | Vì sao nó im |
+|---|---|
+| `tsc` | đọc KIỂU, không đọc số phiên bản. Kiểu của 0.10.0 và 0.10.1 giống nhau. |
+| `checkCppVersion` của worklets | so major với minor rồi **bỏ qua patch** — mà bản vá A9 là một bước patch. |
+| `ios/Podfile.lock` | ghi đúng 0.10.0, vì đó là sự thật về gói đã cài. Nó không biết chỗ ghim là 0.10.1. |
+| 217 bước gác của repo | không bước nào so chỗ ghim với thứ ĐÃ CÀI. |
+
+Bốn lớp im, nên lỗi chỉ hiện ra ở đầu kia: **ba tệp `.ips` trong bốn ngày**.
+
+| | |
+|---|---|
+| **Đã bịt** | `tools/native-pin.mjs`, hai phép kiểm. **A**: mọi gói ghim CHÍNH XÁC trong `package.json` (8 gói, đọc ra khỏi chính tệp ấy chứ không gõ tay) phải được cài đúng số đó. **B**: nếu có `ios/Podfile.lock` thì mọi pod trỏ vào `node_modules/<gói>` mà podspec của nó lấy phiên bản từ `package.json` phải khớp gói đã cài — bắt được lỗi KẾ TIẾP trong cùng chuỗi, tức cài rồi mà chưa `pod install`. |
+| **`ios/` vắng thì sao** | CNG sinh ra `ios/` và nó bị gitignore, nên container không có. Bước này **NÓI RA** là đã bỏ qua phần B chứ không im lặng tính là xanh — một phép kiểm không chạy mà báo xanh đúng là cái bẫy đã dựng nên cả mục này. |
+| **Thử phá** | Cả hai phần, và phần B dựng lại ĐÚNG tình huống trên máy thật (pod 0.10.0 / gói 0.10.1). Cả hai đỏ đúng chỗ, vá xong thì xanh lại. |
+| **Còn `lib/worklets-version.ts` hôm qua thì sao** | Nó so native với JS, nên ở tình huống này nó sẽ **KHÔNG** kêu: cả hai đều 0.10.0. Nó vẫn đứng, nhưng nó canh khâu SAU — cài rồi mà pod chưa theo. Khâu bị hở là khâu TRƯỚC đó, và `native-pin.mjs` mới là chỗ bịt. |
+
+**Trạng thái A9:** nguyên nhân vì sao bản sửa chưa từng được KIỂM thì đã rõ và
+đã bịt. Bản thân bản sửa thì **vẫn chưa được kiểm** — cần một vòng
+`npm install` → `npm run prebuild:free` → dựng máy thật → lặp lại thao tác.
+Không đánh dấu đã sửa trước khi có xác nhận; mục này đã mắc đúng lỗi ấy một
+lần rồi.
+
 ---
 
 ### ~~A10. Đường AI nuốt lỗi ở bốn chỗ, và cả bốn đều tiêu tiền~~ — ĐÃ SỬA 2026-09-08
