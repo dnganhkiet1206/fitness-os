@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock,
-  Dumbbell,
   Trophy,
   Wifi,
   WifiOff,
@@ -828,9 +827,25 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
           nav.push('/sessions');
         }}
         style={styles.latestRow}>
-        <View style={styles.latestIcon}>
-          <Icon icon={Dumbbell} size={20} />
-        </View>
+        {/*
+          KHÔNG có ô icon ở đầu hàng, và chỗ này từng có.
+
+          Nó vẽ một cái tạ 48 điểm trong một ô bo góc, cách cái tạ ở huy hiệu
+          mục "Thể lực" đúng một thẻ. Chủ dự án chụp lại hai cái và nói "bị
+          trùng icon" — lần thứ hai cho cùng cặp ấy: lần trước chúng khác MÀU
+          (cam ở huy hiệu, xanh ở đây) và bản sửa cho chúng cùng màu, tức làm
+          chúng giống nhau HƠN.
+
+          Cái tạ ở huy hiệu mang thông tin: nó đặt tên cho mục. Cái ở đây thì
+          không — mọi hàng trong danh sách này đều là buổi tập, nên hình ấy
+          nhắc lại thứ đã được nói bởi tên buổi, số set và chính cái mục chứa
+          nó. `SessionRow`, hàng buổi tập chính tắc mà /sessions và Thư viện
+          dùng, chưa bao giờ có ô icon nào — cái ô này là thứ được nghĩ thêm
+          ở riêng màn Hôm nay, và đúng nó là thứ đụng.
+
+          48 điểm trả lại cho chữ: "Tập Ngực · 3 set · 620 kg · gắng sức 7/10"
+          là hàng dài nhất thẻ.
+        */}
         <View style={styles.latestInfo}>
           <View style={styles.latestTop}>
             <Text style={styles.latestName} numberOfLines={1}>
@@ -1107,16 +1122,6 @@ const stylesFor = makeStyles((c, m) => ({
   },
   prText: { fontSize: 12, fontWeight: '700', color: c.readinessYellow },
   latestRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
-  latestIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: alpha(c.primary, 0.12),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: alpha(c.primary, 0.2),
-  },
   latestInfo: { flex: 1, minWidth: 0, gap: 2 },
   latestTop: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   latestName: { flex: 1, fontSize: 15, fontWeight: '600', color: c.foreground },
