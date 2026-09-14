@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Check, ChevronDown, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -198,9 +198,21 @@ function adHocRows(list: AdHoc[]): SetRow[] {
         reps: 0,
         plannedRest: DEFAULT_REST,
         plannedRpe: DEFAULT_RPE,
-        /* Always true, so two unnamed additions do not merge into one card the
-           way two planned rows of the same movement deliberately do. */
-        heads: true,
+        /*
+          Chỉ hàng ĐẦU của mỗi bài thêm vào mới mở thẻ mới.
+
+          Dòng này từng là `heads: true` cho MỌI hàng, với lý do đúng nhưng
+          quá tay: cần tách hai bài thêm vào chưa đặt tên khỏi nhau, vì chúng
+          cùng mang tên rỗng và `blocks` gom theo tên. Đặt cờ cho mọi hàng thì
+          tách được điều đó — và tách luôn cả các HIỆP của cùng một bài, nên
+          bấm "thêm hiệp" đẻ ra một thẻ rời thứ hai thay vì thêm một dòng vào
+          thẻ đang có.
+
+          `n === 0` tách đúng thứ cần tách: bài mới mở thẻ mới, hiệp mới nối
+          vào thẻ của chính bài nó — kể cả khi hai bài thêm vào trùng tên, vì
+          hàng đầu của bài thứ hai vẫn mang cờ.
+        */
+        heads: n === 0,
         adHoc: e.id,
       });
     }
@@ -724,7 +736,18 @@ export function DayPlan({
     return mergeProgress(done, rows, sets);
   }, [done, rows, sessions]);
 
-  const toggle = useCallback(
+  /*
+    ── BỎ tích thì hỏi lại; TÍCH thì không ──
+
+    Hai chiều không đối xứng. Tích là ghi lại một việc vừa làm, và hỏi lại ở đó
+    là chen một hộp thoại vào giữa hiệp tập — đúng lúc người ta đang thở.
+
+    Bỏ tích là nói "việc ấy KHÔNG xảy ra", và nó xoá một set khỏi thứ sắp được
+    ghi. Ở một bài phát sinh, bỏ tích set cuối làm nút nối tắt hẳn mà không có
+    dòng nào nói vì sao. Một chạm nhầm vào ô vuông 28 điểm không nên làm được
+    chuyện đó lặng lẽ.
+  */
+  const doToggle = useCallback(
     (row: SetRow) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const secs = rest[row.key] ?? row.plannedRest;
@@ -754,6 +777,20 @@ export function DayPlan({
     [rest, rows, shown],
   );
 
+  const toggle = useCallback(
+    (row: SetRow) => {
+      if (!shown[row.key]) {
+        doToggle(row);
+        return;
+      }
+      Alert.alert(i18n.nRdUntickTitle, i18n.nRdUntickMsg, [
+        { text: i18n.cancel, style: 'cancel' },
+        { text: i18n.nRdUntickConfirm, style: 'destructive', onPress: () => doToggle(row) },
+      ]);
+    },
+    [doToggle, i18n, shown],
+  );
+
   const bumpRest = (row: SetRow, by: number) => {
     Haptics.selectionAsync();
     setRest((prev) => ({
@@ -779,6 +816,26 @@ export function DayPlan({
     return sessionTicks(rows, sets);
   }, [rows, sessions]);
   const pendingRows = doneRows.filter((r) => !proven[r.key]);
+  /*
+    ── một bài phát sinh chỉ được ghi khi nó ĐỦ ──
+
+    Thẻ thêm vào sinh ra rỗng: chưa có tên, chưa có rep. Ghi một hàng như thế
+    là ghi một set tên "Exercise" với 0 rep vào buổi tập — một dòng rác trong
+    chính cái bảng mà khối lượng, ACWR và mọi kỷ lục đọc từ đó.
+
+    Nên "đủ" ở đây là hai thứ người dùng phải tự cấp: TÊN và SỐ REP (hoặc số
+    giây, với bài giữ tư thế — `performed` đã trả `durationSec` cho đúng ca ấy,
+    và một plank 45 giây không có rep nào).
+
+    Thiếu thì nút KHÔNG sống: nó ở nguyên trạng thái "đã ghi", đúng như chủ dự
+    án yêu cầu — một nút bấm được rồi không làm gì là tệ hơn một nút tắt.
+  */
+  const rowReady = (r: SetRow) => {
+    if (r.exerciseName.trim() === '') return false;
+    const p = performed(r);
+    return p.reps > 0 || (p.durationSec ?? 0) > 0;
+  };
+  const pendingReady = pendingRows.length > 0 && pendingRows.every(rowReady);
   /*
     One save per visit to this day. `isSuccess` never goes back to false on its
     own, and this panel is remounted whenever the selected day changes, so the
@@ -832,7 +889,7 @@ export function DayPlan({
     Luật chặn ghi trùng không hề nới ra: mở lại một ngày đã ghi mà không thêm gì
     thì `pendingRows` rỗng và nút vẫn tắt, đúng như cũ.
   */
-  const appending = logged && pendingRows.length > 0 && !future;
+  const appending = logged && pendingReady && !future;
   const canFinish = appending
     ? !append.isPending
     : doneRows.length > 0 && !log.isPending && !logged && !future;
@@ -1635,18 +1692,33 @@ export function DayPlan({
         accessibilityState={{ disabled: !canFinish }}
         disabled={!canFinish}
         onPress={finish}
-        style={[styles.finish, !canFinish && styles.finishOff, logged && styles.finishDone]}>
+        style={[
+          styles.finish,
+          !canFinish && styles.finishOff,
+          logged && styles.finishDone,
+          /* Nút NỐI THÊM phải đọc ra là một việc KHÁC, không phải "ghi buổi
+             tập" lần nữa: bài này không có trong kế hoạch, và người bấm cần
+             biết mình đang thêm chứ không đang lặp lại. Nên nó lấy viền và mực
+             của `primary` thay vì mảng xanh "đã xong", và mang dấu `Plus` thay
+             vì dấu `Check` — một dấu tích ở đây nói sai, vì chưa có gì xong. */
+          appending && styles.finishAppend,
+        ]}>
         <Icon
-          icon={Check}
+          icon={appending ? Plus : Check}
           size={17}
-          color={logged ? c.readinessGreen : c.primaryForeground}
+          color={appending ? c.primary : logged ? c.readinessGreen : c.primaryForeground}
           strokeWidth={2.5}
         />
         {/* A dimmed button with the same words on it is a button that looks
             broken. On a day that has not happened the label says which of the
             three things is true, the same way it already does for one that has
             been logged. */}
-        <Text style={[styles.finishText, logged && styles.finishTextDone]}>
+        <Text
+          style={[
+            styles.finishText,
+            logged && styles.finishTextDone,
+            appending && styles.finishTextAppend,
+          ]}>
           {appending
             ? i18n.nRdAppend
             : logged
@@ -2021,6 +2093,14 @@ const stylesFor = makeStyles((c, m) => ({
     borderColor: alpha(c.readinessGreen, 0.35),
   },
   finishTextDone: { color: c.readinessGreen },
+  /* Viền chứ không mảng đặc: đây là việc PHỤ của tấm, và một nút đặc thứ hai
+     cạnh nút chính làm người đọc phải chọn giữa hai thứ trông ngang nhau. */
+  finishAppend: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: c.primary,
+  },
+  finishTextAppend: { color: c.primary },
   finishText: { ...type.body, color: c.primaryForeground, fontWeight: '600' },
   /* Nhẹ hơn nút chính một bậc: đây là lối ra cho trường hợp HIẾM, không phải
      việc chính của tấm này. Đặt ngang nút để nó đọc ra là phần tiếp theo của

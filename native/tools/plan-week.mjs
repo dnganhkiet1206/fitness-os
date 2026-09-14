@@ -152,6 +152,12 @@ const canFinishSrc = /const canFinish = ([^;]+);/.exec(panel)?.[1];
    chế độ thứ hai, và nó được đọc ra để chạy cùng chứ không bị giả định. */
 const appendingSrc = /const appending = ([^;]+);/.exec(panel)?.[1];
 if (!appendingSrc) fatal(`${PANEL}: không đọc được \`appending\``);
+/* Và điều kiện "bài phát sinh đã ĐỦ chưa": phải có tên, và phải có rep (hoặc
+   số giây, với bài giữ tư thế). Ghi một hàng thiếu là ghi một set tên
+   "Exercise" với 0 rep vào đúng cái bảng mà khối lượng, ACWR và mọi kỷ lục
+   đọc từ đó. */
+const readySrc = /const pendingReady = ([^;]+);/.exec(panel)?.[1];
+if (!readySrc) fatal(`${PANEL}: không đọc được \`pendingReady\``);
 if (!futureSrc || !canFinishSrc) fatal(`${PANEL}: không đọc được \`future\` hoặc \`canFinish\``);
 
 /* Moved out of the builder when Plan grew a second caller: the page reads the
@@ -342,7 +348,7 @@ try {
   {
     const futureFn = new Function('dateStr', 'localDateStr', `return (${futureSrc});`);
     const ARGS = ['doneRows', 'log', 'logged', 'future', 'pendingRows', 'append', 'appending'];
-    const appendingFn = new Function('logged', 'pendingRows', 'future', `return (${appendingSrc});`);
+    const appendingFn = new Function('logged', 'pendingReady', 'future', `return (${appendingSrc});`);
     const finishFn = new Function(...ARGS, `return (${canFinishSrc});`);
 
     /* A day that is plainly ahead, a day that is plainly behind, and today —
@@ -381,7 +387,7 @@ try {
        và cửa ấy mở ra thì luật trên chỉ còn chặn được một nửa. */
     for (const [dateStr, wantFuture, what] of cases) {
       const isFuture = futureFn(dateStr, clock);
-      const app = appendingFn(true, [{}], isFuture);
+      const app = appendingFn(true, true, isFuture);
       const can = finishFn([{}], { isPending: false }, true, isFuture, [{}], { isPending: false }, app);
       if (can === wantFuture) {
         problems.push(
@@ -390,9 +396,66 @@ try {
         );
       }
     }
+    /* Bài phát sinh THIẾU thì không nối được, và nút phải ở nguyên trạng thái
+       "đã ghi" — một nút bấm được rồi không làm gì tệ hơn một nút tắt. */
+    {
+      const readyFn = new Function('pendingRows', 'rowReady', `return (${readySrc});`);
+      const full = { name: 'Cable Fly', reps: 12, dur: 0 };
+      const noName = { name: '   ', reps: 12, dur: 0 };
+      const noReps = { name: 'Cable Fly', reps: 0, dur: 0 };
+      const held = { name: 'Plank', reps: 0, dur: 45 };
+      const ok = (r) => r.name.trim() !== '' && (r.reps > 0 || r.dur > 0);
+      const cases = [
+        [[full], true, 'đủ tên và rep'],
+        [[noName], false, 'thiếu tên'],
+        [[noReps], false, 'thiếu rep'],
+        [[held], true, 'bài giữ tư thế, tính bằng giây'],
+        [[full, noReps], false, 'một hàng đủ một hàng thiếu'],
+        [[], false, 'không có hàng nào'],
+      ];
+      for (const [rows, want, what] of cases) {
+        const got = readyFn(rows, ok);
+        if (got !== want) {
+          problems.push(`${PANEL}: \`pendingReady\` trả ${got} cho "${what}" — phải là ${want}`);
+        }
+      }
+      /*
+        `rowReady` gọi `performed(row)` nên không chạy rời ra được ở đây — phép
+        kiểm trên chỉ chứng minh `pendingReady` gộp ĐÚNG (mọi hàng phải đạt),
+        không chứng minh phép đạt ấy hỏi đúng câu. Nên hỏi thẳng mã: nó phải
+        soi TÊN, và phải soi rep HOẶC số giây. Xoá một trong hai nửa là đỏ.
+      */
+      const readyFn2 = /const rowReady = [\s\S]*?\n  \};/.exec(panel)?.[0] ?? '';
+      if (!/exerciseName/.test(readyFn2)) {
+        problems.push(
+          `${PANEL}: \`rowReady\` không soi \`exerciseName\` — một bài phát sinh chưa đặt tên sẽ ` +
+            'vào bảng thành một set tên "Exercise"',
+        );
+      }
+      if (!/reps/.test(readyFn2) || !/durationSec/.test(readyFn2)) {
+        problems.push(
+          `${PANEL}: \`rowReady\` không soi đủ cả \`reps\` lẫn \`durationSec\` — thiếu vế đầu thì ` +
+            'một set 0 rep ghi được; thiếu vế sau thì một bài giữ tư thế 45 giây không bao giờ ghi được',
+        );
+      }
+
+      /* Và khi chưa đủ thì `appending` phải tắt, tức nút giữ nguyên "đã ghi". */
+      if (appendingFn(true, true, false) && !readyFn([noReps], ok)) {
+        /* `appending` đọc `pendingReady`, nên nếu nó vẫn sống trong khi
+           `pendingReady` sai thì hai thứ đã rời nhau. */
+        const src = appendingSrc.replace(/\s+/g, ' ');
+        if (!/pendingReady/.test(src)) {
+          problems.push(
+            `${PANEL}: \`appending\` không đọc \`pendingReady\` — một bài phát sinh thiếu tên ` +
+              'hoặc thiếu rep vẫn ghi được, và nó vào bảng như một set tên "Exercise" với 0 rep',
+          );
+        }
+      }
+    }
+
     /* Và một ngày đã ghi ĐỦ thì không còn gì để nối: nút phải chết. */
     if (finishFn([{}], { isPending: false }, true, false, [], { isPending: false },
-      appendingFn(true, [], false)) !== false) {
+      appendingFn(true, false, false)) !== false) {
       problems.push(`${PANEL}: ngày đã ghi đủ mà nút vẫn sống — luật chặn ghi trùng đã hở`);
     }
 
