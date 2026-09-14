@@ -22,91 +22,70 @@
  * shared value.
  */
 
-/** Khung vẽ của cốc. */
-export const GLASS_W = 52;
-export const GLASS_H = 70;
-
 /*
-  ── vì sao có phối cảnh, sau khi đã bỏ nó một lần ──
+  ── vẽ lại, lần này theo NHÀ chứ không theo ý tôi ──
 
-  Bản trước vẽ cốc hoàn toàn PHẲNG: miệng là một đoạn thẳng ngang, mặt nước là
-  một đường ngang. Chủ dự án xem rồi nói "cốc nước xấu quá không có chiều sâu".
+  Bản trước dựng một cái cốc có phối cảnh: vành elip, mặt nước elip, thân tô
+  chuyển sắc cho ra khối trụ. Chủ dự án xem rồi nói "lần này thì tệ quá".
 
-  Một đoạn thẳng ngang không đọc ra là cái miệng cốc — nó đọc ra là nắp. Thứ
-  làm mắt người thấy một cái cốc là VÀNH ELIP: ta luôn nhìn cốc hơi từ trên
-  xuống, nên miệng tròn chiếu thành elip. Đó là một tín hiệu mạnh hơn mọi bóng
-  đổ, và nó không tốn một lớp nào.
+  Đi tìm thì câu trả lời nằm ngay trong `node_modules`. `lucide-react-native` —
+  thư viện vẽ MỌI icon khác trong app này — có sẵn `GlassWater`, và nó nói
+  ngược lại tôi ở đúng hai chỗ tôi vừa bỏ công dựng:
 
-  Kèm theo là hệ quả thứ hai, quan trọng không kém: mặt nước cũng thành elip,
-  nên khối nước có một MẶT TRÊN nhìn thấy được. Nước trong cốc phẳng thì chỉ là
-  một mảng màu; nước có mặt trên thì là một khối.
+      cốc   M5.116 4.104A1 1 0 0 1 6.11 3h11.78a1 1 0 0 1 .994 1.105
+            L17.19 20.21A2 2 0 0 1 15.2 22H8.8a2 2 0 0 1-2-1.79z
+      nước  M6 12a5 5 0 0 1 6 0 5 5 0 0 0 6 0
+
+  · Miệng cốc là một ĐƯỜNG THẲNG với hai góc bo, không phải elip. Nhìn thẳng,
+    không nhìn chếch.
+  · Mặt nước là một đường cong chữ S — hai cung ngược chiều. Chất lỏng được kể
+    bằng một gợn sóng, không bằng phối cảnh.
+
+  Một cái cốc 3D ngồi giữa ba mươi icon nét phẳng thì nó không "có chiều sâu
+  hơn", nó chỉ LẠC. Đó là thứ bản trước làm, và là thứ chú thích này tồn tại để
+  ngăn lần sau.
+
+  Nên hình cốc dưới đây là ĐÚNG đường của lucide, từng ký tự, trong đúng lưới
+  24 của nó — không phải bản tôi vẽ lại cho giống. Chép lại bằng tay là mở cửa
+  cho sai số, và sai số ở đây là "gần giống các icon khác", thứ khó chịu hơn
+  khác hẳn.
+
+  Cái app thêm vào là thứ lucide không làm được vì nó là icon tĩnh: mực nước
+  ĐỔ ĐẦY theo ngày, và mặt nước động khi vừa có người uống.
 */
 
-/** Vành miệng cốc. */
-export const RIM = { cx: 26, cy: 9, rx: 22, ry: 5.5 } as const;
-/** Đáy cốc. */
-export const BASE = { cx: 26, cy: 61, rx: 14, ry: 3.5 } as const;
+/** Lưới của lucide. Giữ nguyên 24 để đường của họ dùng được nguyên vẹn. */
+export const GLASS_VIEW = 24;
 
 /**
- * Nửa bề ngang của lòng cốc tại một độ cao — thành cốc loe nên nó đổi theo y.
+ * Thân cốc — `GlassWater` của lucide-react-native v1.24.0, nguyên văn.
  *
- * Mọi thứ nằm trong cốc đều phải hỏi hàm này: mặt nước ở lưng chừng hẹp hơn
- * miệng và rộng hơn đáy, và nếu vẽ nó bằng một bề ngang cố định thì mặt nước
- * sẽ thò ra ngoài thành cốc ở trên và hụt vào trong ở dưới.
+ * Vừa là đường viền vẽ ra, vừa là vùng cắt cho khối nước. Một đường cho cả hai
+ * việc nên nước không bao giờ lệch khỏi thành cốc.
  */
-export function rxAt(y: number): number {
-  'worklet';
-  const t = (y - RIM.cy) / (BASE.cy - RIM.cy);
-  return RIM.rx + (BASE.rx - RIM.rx) * Math.min(Math.max(t, 0), 1);
-}
+export const GLASS_PATH =
+  'M5.116 4.104A1 1 0 0 1 6.11 3h11.78a1 1 0 0 1 .994 1.105L17.19 20.21A2 2 0 0 1 15.2 22H8.8a2 2 0 0 1-2-1.79z';
 
-/** Bán trục đứng của elip tại một độ cao — giữ đúng tỉ lệ với vành miệng. */
-export function ryAt(y: number): number {
-  'worklet';
-  return (RIM.ry * rxAt(y)) / RIM.rx;
-}
-
-/**
- * Bóng của cả cái cốc: vành sau ở trên, hai thành, đáy ở dưới.
- *
- * Dựng bằng cung bậc ba với hằng số 0,5523 — phép xấp xỉ cung tròn một phần tư
- * bằng Bézier — chứ không dùng lệnh `A`. Hai lý do: cờ `large-arc`/`sweep` của
- * `A` là thứ sai một bit thì ra hình lộn ngược mà không ai đọc ra từ chuỗi, và
- * cung Bézier thì tính được bằng số học nên bước gác kiểm được từng điểm.
- */
-const K = 0.5523;
-export const GLASS_PATH = [
-  `M${RIM.cx - RIM.rx} ${RIM.cy}`,
-  `C${RIM.cx - RIM.rx} ${RIM.cy - K * RIM.ry} ${RIM.cx - K * RIM.rx} ${RIM.cy - RIM.ry} ${RIM.cx} ${RIM.cy - RIM.ry}`,
-  `C${RIM.cx + K * RIM.rx} ${RIM.cy - RIM.ry} ${RIM.cx + RIM.rx} ${RIM.cy - K * RIM.ry} ${RIM.cx + RIM.rx} ${RIM.cy}`,
-  `L${BASE.cx + BASE.rx} ${BASE.cy}`,
-  `C${BASE.cx + BASE.rx} ${BASE.cy + K * BASE.ry} ${BASE.cx + K * BASE.rx} ${BASE.cy + BASE.ry} ${BASE.cx} ${BASE.cy + BASE.ry}`,
-  `C${BASE.cx - K * BASE.rx} ${BASE.cy + BASE.ry} ${BASE.cx - BASE.rx} ${BASE.cy + K * BASE.ry} ${BASE.cx - BASE.rx} ${BASE.cy}`,
-  'Z',
-].join(' ');
-
-/**
- * Cung TRƯỚC của vành miệng — nửa dưới của elip.
- *
- * Vẽ riêng và vẽ SAU khối nước, vì đây là phần vành nằm giữa người xem và lòng
- * cốc. Không có nó thì miệng cốc chỉ còn một nửa và cái cốc đọc ra như bị cắt
- * ngang.
- */
-export const RIM_FRONT = [
-  `M${RIM.cx - RIM.rx} ${RIM.cy}`,
-  `C${RIM.cx - RIM.rx} ${RIM.cy + K * RIM.ry} ${RIM.cx - K * RIM.rx} ${RIM.cy + RIM.ry} ${RIM.cx} ${RIM.cy + RIM.ry}`,
-  `C${RIM.cx + K * RIM.rx} ${RIM.cy + RIM.ry} ${RIM.cx + RIM.rx} ${RIM.cy + K * RIM.ry} ${RIM.cx + RIM.rx} ${RIM.cy}`,
-].join(' ');
-
-/** Tâm mặt nước khi đầy — ngay dưới mặt phẳng vành, không tràn qua. */
-export const WATER_CEIL = 12;
-/** Tâm mặt nước khi cạn — ngay trên đáy. */
-export const WATER_FLOOR = 58;
-/** Quãng mà tâm mặt nước đi được. */
+/** Mép trong của vành, trừ đi nửa nét. */
+export const WATER_CEIL = 5.2;
+/** Mặt trong của đáy. */
+export const WATER_FLOOR = 20.6;
+/** Quãng mặt nước đi được. */
 export const WATER_SPAN = WATER_FLOOR - WATER_CEIL;
 
+/**
+ * Biên độ gợn lúc NGHỈ.
+ *
+ * Không phải 0. Mặt nước của lucide luôn là một chữ S kể cả khi icon đứng im —
+ * đó là cách hình vẽ nói "đây là chất lỏng" mà không cần chuyển động. Đo cung
+ * của họ: dây cung 6, bán kính 5, nên độ phồng là 5 − √(25−9) = 1.
+ */
+export const REST_AMP = 0.5;
+/** Biên độ lúc vừa có người uống — gợn to hơn rồi lặng về `REST_AMP`. */
+export const WAVE_AMP = 1.15;
+
 export interface WaterFill {
-  /** Tâm mặt nước, theo toạ độ SVG (y nhỏ = cao). */
+  /** Mép trên mặt nước, toạ độ SVG (y nhỏ = cao). */
   y: number;
   /** Chiều cao cột nước. */
   height: number;
@@ -115,10 +94,9 @@ export interface WaterFill {
 /**
  * Mực nước cho một phần trăm đã hoàn thành.
  *
- * Kẹp hai đầu, và cả hai đầu đều là ca THẬT chứ không phải phòng xa: trên 100%
- * xảy ra mỗi ngày ai đó uống vượt mục tiêu, và 0% là ngày chưa uống ngụm nào —
- * nó phải cho chiều cao ĐÚNG BẰNG 0, vì một vệt xanh mỏng ở đáy đọc ra là "đã
- * uống một chút".
+ * Kẹp hai đầu, và cả hai đều là ca THẬT: trên 100% xảy ra mỗi ngày ai đó uống
+ * vượt mục tiêu, còn 0% là ngày chưa uống ngụm nào — nó phải cho chiều cao
+ * ĐÚNG BẰNG 0, vì một vệt xanh mỏng ở đáy đọc ra là "đã uống một chút".
  */
 export function waterFill(pct: number): WaterFill {
   const level = Math.min(Math.max(Number.isFinite(pct) ? pct : 0, 0), 100) / 100;
@@ -126,24 +104,24 @@ export function waterFill(pct: number): WaterFill {
 }
 
 /**
- * Kẹp một chiều cao cột nước về khoảng hợp lệ, rồi suy ra tâm mặt nước từ nó.
+ * Kẹp chiều cao về khoảng hợp lệ rồi suy ra mép trên từ chính nó.
  *
- * ── vì sao hàm này tồn tại, đo được chứ không phỏng đoán ──
+ * ── vì sao hàm này tồn tại, ĐO ĐƯỢC chứ không phỏng đoán ──
  *
  * `waterFill` đã kẹp phần trăm nên ĐÍCH luôn hợp lệ. Cái không hợp lệ là một
- * khung hình Ở GIỮA. Đo trên trình duyệt, bẫy ngay tại chỗ ghi thuộc tính:
+ * khung hình Ở GIỮA. Bẫy ngay tại chỗ ghi thuộc tính trên trình duyệt:
  *
  *     t=845    y 50      height 0          nghỉ ở đáy, đúng
  *     t=1079   y 92.31   height -42.31     ← MỘT khung, vọt NGƯỢC hướng
  *     t=1117   y 37.82   height 12.17      rồi hội tụ bình thường
  *
- * Giải ngược ra tiến độ −1,36: cặp `withDelay(200, withTiming(...))` phát đúng
- * một khung có tiến độ ngoại suy trước khi phần trễ kết thúc.
+ * Giải ngược ra tiến độ −1,36: `withDelay(200, withTiming(...))` phát đúng một
+ * khung có tiến độ ngoại suy trước khi phần trễ kết thúc.
  *
  * `MiniRing` dùng đúng cặp ấy và cũng nhận khung âm, nhưng nó ghi vào
- * `strokeDashoffset` — một giá trị không có miền xác định — nên chỉ mất một
- * khung cung tròn mà không ai thấy. Lỗi không mới; cái cốc chỉ là hình đầu
- * tiên có ràng buộc đủ chặt để nó phải lộ mặt.
+ * `strokeDashoffset` — không có miền xác định — nên chỉ mất một khung cung
+ * tròn mà không ai thấy. Lỗi không mới; cái cốc chỉ là hình đầu tiên có ràng
+ * buộc đủ chặt để nó phải lộ mặt.
  */
 export function clampFill(height: number): WaterFill {
   'worklet';
@@ -151,71 +129,39 @@ export function clampFill(height: number): WaterFill {
   return { y: WATER_FLOOR - h, height: h };
 }
 
-/**
- * Biên độ sóng lớn nhất, theo toạ độ khung vẽ.
- *
- * 2,2 trên một cái cốc rộng 52 là hơn 4% bề ngang — đủ để mắt bắt được mặt
- * nước ĐANG động, không đủ để thành hoạt hình.
- */
-export const WAVE_AMP = 2.2;
-
-/** Số điểm lấy mẫu trên mỗi cung mặt nước. 14 là đủ mượt ở cỡ 52 điểm. */
-const STEPS = 14;
+/** Số điểm lấy mẫu trên mặt nước. */
+const STEPS = 16;
 
 /**
- * Một cung của mặt nước, lấy mẫu thành đường gấp khúc.
+ * Khối nước: mặt gợn ở trên, đổ xuống hết đáy.
  *
- * Gấp khúc chứ không phải cung Bézier, vì mặt nước còn phải cộng thêm SÓNG:
- * một cung Bézier gợn sóng cần điều khiển mỗi đỉnh riêng, còn lấy mẫu thì sóng
- * chỉ là một số hạng cộng vào y. Ở cỡ này, 14 điểm cho một cung 44 điểm ngang
- * là dưới một nửa điểm ảnh mỗi đoạn.
+ * Bị cắt theo chính đường cốc ở chỗ vẽ, nên hai bên cứ việc chạy rộng ra ngoài
+ * — và vì vùng cắt LÀ đường cốc, mặt nước không bao giờ lệch khỏi thành.
  *
- * @param front true là cung TRƯỚC (nửa dưới elip), false là cung SAU
+ * Gấp khúc lấy mẫu chứ không phải cung Bézier: mặt nước phải cộng thêm sóng, mà
+ * một cung Bézier gợn sóng cần điều khiển từng đỉnh, còn lấy mẫu thì sóng chỉ
+ * là một số hạng cộng vào y. Ở lưới 24, mười sáu đoạn là dưới một phần mười
+ * đơn vị mỗi đoạn.
+ *
+ * `'worklet'` vì nó chạy trong `useAnimatedProps`, trên luồng UI — cùng cái bẫy
+ * đã ghi ở `clampFill`: thiếu chỉ thị thì nó ném trên máy thật, còn bản dựng
+ * web không nói gì.
  */
-function arcPoints(cy: number, amp: number, phase: number, front: boolean): string[] {
+export function waterPath(height: number, amp: number, phase: number): string {
   'worklet';
-  const rx = rxAt(cy);
-  const ry = ryAt(cy);
+  const { y: top } = clampFill(height);
+  const a = Math.min(Math.max(Number.isFinite(amp) ? amp : 0, 0), WAVE_AMP);
+  const left = 4;
+  const right = 20;
   const pts: string[] = [];
   for (let i = 0; i <= STEPS; i++) {
     const t = i / STEPS;
-    const x = RIM.cx - rx * Math.cos(Math.PI * t);
-    /* Sóng CHỈ cộng vào cung trước: đó là mép nước gần người xem. Cộng vào cả
-       cung sau thì mặt trên của khối nước phình ra co vào như một cái bong
-       bóng, chứ không phải một mặt chất lỏng đang dập dềnh. */
-    const wave = front ? amp * Math.sin(2 * Math.PI * (2 * t + phase)) : 0;
-    const y = cy + (front ? ry : -ry) * Math.sin(Math.PI * t) + wave;
+    const x = left + (right - left) * t;
+    /* Một chu kỳ trọn trên bề ngang cốc, đúng như chữ S của lucide: một bụng
+       lên rồi một bụng xuống. Nhiều hơn thì nó thành sóng lăn tăn của một mặt
+       hồ, không phải của một cốc nước. */
+    const y = top + a * Math.sin(2 * Math.PI * (t + phase));
     pts.push(`${x.toFixed(2)} ${y.toFixed(2)}`);
   }
-  return pts;
-}
-
-/**
- * Khối nước nhìn qua thành cốc: mép trước của mặt nước, rồi đổ xuống hết đáy.
- *
- * Bị cắt theo bóng cốc ở chỗ vẽ, nên hai bên cứ việc chạy rộng ra ngoài.
- */
-export function waterBody(height: number, amp: number, phase: number): string {
-  'worklet';
-  const { y: cy } = clampFill(height);
-  const a = Math.min(Math.max(Number.isFinite(amp) ? amp : 0, 0), WAVE_AMP);
-  const pts = arcPoints(cy, a, phase, true);
-  return `M${pts.join(' L')} L${GLASS_W + 8} ${GLASS_H + 6} L-8 ${GLASS_H + 6} Z`;
-}
-
-/**
- * MẶT TRÊN của khối nước: khoảng giữa mép sau và mép trước của mặt nước.
- *
- * Đây là thứ làm nước thành một KHỐI thay vì một mảng màu, và là nửa còn lại
- * của câu trả lời cho "không có chiều sâu". Vẽ bằng chính token nước, còn thân
- * nước thì tối dần xuống đáy — nên mặt trên tự đọc ra là sáng nhất mà không
- * cần thêm một màu nào.
- */
-export function waterFace(height: number, amp: number, phase: number): string {
-  'worklet';
-  const { y: cy } = clampFill(height);
-  const a = Math.min(Math.max(Number.isFinite(amp) ? amp : 0, 0), WAVE_AMP);
-  const back = arcPoints(cy, a, phase, false);
-  const front = arcPoints(cy, a, phase, true).reverse();
-  return `M${back.join(' L')} L${front.join(' L')} Z`;
+  return `M${pts.join(' L')} L${right} ${GLASS_VIEW + 2} L${left} ${GLASS_VIEW + 2} Z`;
 }

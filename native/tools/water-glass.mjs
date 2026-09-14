@@ -44,8 +44,8 @@ try {
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
   const {
-    waterFill, clampFill, waterBody, waterFace, rxAt, ryAt,
-    WATER_CEIL, WATER_FLOOR, WATER_SPAN, WAVE_AMP, GLASS_W, GLASS_PATH, RIM, BASE,
+    waterFill, clampFill, waterPath,
+    WATER_CEIL, WATER_FLOOR, WATER_SPAN, WAVE_AMP, REST_AMP, GLASS_VIEW, GLASS_PATH,
   } = createRequire(import.meta.url)(path.join(out, 'lib', 'water-glass.js'));
 
   const problems = [];
@@ -117,7 +117,10 @@ try {
   eq('vọt quá đầy thì dừng ở đầy', clampFill(WATER_SPAN + 20).height, WATER_SPAN);
   eq('… và không lên quá vành', clampFill(WATER_SPAN + 20).y, WATER_CEIL);
   eq('NaN thì rỗng', clampFill(Number.NaN).height, 0);
-  eq('giá trị hợp lệ thì đi thẳng qua', clampFill(17.5).height, 17.5);
+  /* Giá trị giữa khoảng đi thẳng qua. Lấy theo WATER_SPAN chứ không gõ một số
+     cụ thể: bản trước gõ 17,5 và nó thành sai ngay khi lưới đổi sang 24 của
+     lucide — một ca gác chỉ đúng với một hình cụ thể là một ca sẽ đỏ oan. */
+  eq('giá trị hợp lệ thì đi thẳng qua', clampFill(WATER_SPAN / 2).height, WATER_SPAN / 2);
 
   /*
     Kẹp CHIỀU CAO rồi SUY RA mép trên, chứ không kẹp hai giá trị độc lập: kẹp
@@ -132,103 +135,105 @@ try {
     }
   }
 
-  /* ── thẻ vẽ đúng thứ đã hứa ── */
   /*
-    ── mặt nước có PHỐI CẢNH ──
+    ── hình cốc phải là hình của NHÀ, từng ký tự ──
 
-    Chủ dự án xem bản phẳng rồi nói "cốc nước xấu quá không có chiều sâu". Bản
-    phẳng vẽ miệng cốc bằng một đoạn thẳng — thứ đọc ra là cái NẮP, không phải
-    cái miệng. Nay vành là elip, và hệ quả là mặt nước cũng phải là elip.
+    Bản trước dựng một cái cốc có phối cảnh — vành elip, mặt nước elip, thân tô
+    chuyển sắc — và chủ dự án gọi nó là "tệ quá". Câu trả lời nằm sẵn trong
+    `node_modules`: lucide-react-native, thư viện vẽ MỌI icon khác trong app,
+    có GlassWater, và nó nhìn THẲNG — miệng là một đường thẳng bo góc, mặt nước
+    là một chữ S.
 
-    Tính chất quan trọng nhất của phối cảnh ấy, và là thứ mắt không kiểm được ở
-    cỡ 52 điểm: BỀ NGANG mặt nước phải bằng đúng bề ngang lòng cốc TẠI ĐỘ CAO
-    ĐÓ. Thành cốc loe, nên một mặt nước bề ngang cố định sẽ thò ra ngoài thành
-    ở trên và hụt vào trong ở dưới — và cái hụt ấy chỉ lộ ra ở một mức nước cụ
-    thể, tức đúng loại lỗi không ai gặp lúc dựng.
+    Một cái cốc 3D ngồi giữa ba mươi icon nét phẳng thì không "sâu hơn", nó
+    LẠC. Nên luật này so đường cốc với chính gói thư viện, đọc lúc chạy: một
+    bản chép tay "cho giống" sẽ trôi, và cái trôi ấy đúng là thứ khó chịu hơn
+    khác hẳn.
+
+    Nó còn bắt được một chuyện thứ hai mà không luật nào khác thấy: lucide nâng
+    cấp và đổi hình GlassWater mà thẻ Nước không đi theo.
   */
+  cases++;
+  {
+    const pkg = readFileSync(
+      path.join(NATIVE, 'node_modules/lucide-react-native/dist/esm/icons/glass-water.mjs'),
+      'utf8',
+    );
+    const theirs = pkg.match(/d: "([^"]+)"/)?.[1];
+    if (!theirs) {
+      problems.push('không đọc được đường GlassWater từ lucide-react-native — bộ dò này đang tự xanh');
+    } else if (theirs !== GLASS_PATH) {
+      problems.push(
+        `đường cốc không còn trùng lucide GlassWater.\n      kho:    ${GLASS_PATH}\n      lucide: ${theirs}`,
+      );
+    }
+  }
+
+  /*
+    ── mặt nước ──
+
+    REST_AMP KHÔNG được bằng 0. Mặt nước của lucide luôn là một chữ S kể cả khi
+    icon đứng im — đó là cách hình vẽ nói "đây là chất lỏng" mà không cần
+    chuyển động. Một mặt phẳng tuyệt đối lúc nghỉ là bản mà chủ dự án đã bác:
+    "chuyển động xấu, không phải không có".
+  */
+  cases++;
+  if (!(REST_AMP > 0)) {
+    problems.push('REST_AMP = 0 — mặt nước lúc nghỉ phẳng lì, mất đúng dấu hiệu chất lỏng mà lucide dùng');
+  }
+  cases++;
+  if (!(WAVE_AMP > REST_AMP)) {
+    problems.push('gợn lúc vừa uống không lớn hơn lúc nghỉ — cú bấm không có phản hồi nào trên mặt nước');
+  }
+
   const xsOf = (d) => [...d.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((m) => Number(m[1]));
   const ysOf = (d) => [...d.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((m) => Number(m[2]));
 
-  for (const pctCase of [0, 25, 50, 75, 100]) {
-    cases++;
-    const h = waterFill(pctCase).height;
-    const cy = clampFill(h).y;
-    const face = waterFace(h, 0, 0);
-    const xs = xsOf(face);
-    const wantHalf = rxAt(cy);
-    const gotHalf = (Math.max(...xs) - Math.min(...xs)) / 2;
-    if (Math.abs(gotHalf - wantHalf) > 0.02) {
-      problems.push(
-        `${pctCase}%: mặt nước rộng ${(gotHalf * 2).toFixed(2)} trong khi lòng cốc ở độ cao ấy rộng ${(wantHalf * 2).toFixed(2)} — mặt nước không khớp thành cốc`,
-      );
-    }
-    cases++;
-    if (Math.abs((Math.max(...xs) + Math.min(...xs)) / 2 - RIM.cx) > 0.02) {
-      problems.push(`${pctCase}%: mặt nước lệch tâm cốc`);
-    }
-  }
-
-  /* Loe: lòng cốc ở đáy phải HẸP hơn ở miệng, nếu không nó là một cái ống. */
   cases++;
-  if (!(rxAt(BASE.cy) < rxAt(RIM.cy))) {
-    problems.push('cốc không loe — lòng ở đáy rộng bằng hoặc hơn miệng');
+  if (waterPath(8, REST_AMP, 0) === waterPath(8, WAVE_AMP, 0)) {
+    problems.push('đổi biên độ mà hình không đổi — sóng không được vẽ');
   }
-  /* Và `rxAt` phải kẹp ngoài khoảng, kẻo mặt nước ở mức tràn cho bề ngang âm. */
+  /* Một chu kỳ trọn trên bề ngang cốc: dịch trọn một vòng phải ra đúng hình cũ,
+     nếu không sóng sẽ nhảy một cái ở chỗ nối. */
   cases++;
-  if (rxAt(-100) !== rxAt(RIM.cy) || rxAt(999) !== rxAt(BASE.cy)) {
-    problems.push('rxAt không kẹp ngoài khoảng miệng–đáy');
-  }
-  cases++;
-  if (!(ryAt(RIM.cy) > ryAt(BASE.cy))) {
-    problems.push('elip mặt nước không thu nhỏ theo bề ngang — phối cảnh sai ở dưới đáy');
-  }
-
-  /*
-    ── sóng ──
-
-    "Chuyển động xấu, không phải không có": một mặt phẳng tuyệt đối trượt lên là
-    chuyển động của một cái THANH. Sóng chỉ cộng vào cung TRƯỚC — mép nước gần
-    người xem. Cộng vào cả cung sau thì mặt trên phình ra co vào như bong bóng.
-  */
-  cases++;
-  if (waterBody(20, 0, 0) === waterBody(20, WAVE_AMP, 0)) {
-    problems.push('có biên độ mà thân nước không đổi — sóng không được vẽ');
-  }
-  cases++;
-  {
-    /* Cung SAU của mặt trên không được đổi theo sóng. Lấy nửa đầu danh sách
-       điểm, vốn là cung sau theo cách `waterFace` ghép. */
-    const a = ysOf(waterFace(20, 0, 0)).slice(0, 15).join();
-    const b = ysOf(waterFace(20, WAVE_AMP, 0.3)).slice(0, 15).join();
-    if (a !== b) problems.push('sóng ăn cả vào mép SAU của mặt nước — mặt trên sẽ phình ra co vào như bong bóng');
-  }
-  cases++;
-  if (waterBody(20, WAVE_AMP, 0) !== waterBody(20, WAVE_AMP, 1)) {
+  if (waterPath(8, WAVE_AMP, 0) !== waterPath(8, WAVE_AMP, 1)) {
     problems.push('dịch trọn một chu kỳ ra hình khác — sóng sẽ nhảy ở chỗ nối');
   }
-  cases++;
-  if (waterBody(20, WAVE_AMP, 0.25) !== waterBody(20, WAVE_AMP, 3.25)) {
-    problems.push('pha không lấy phần lẻ — sóng chạy lâu sẽ trôi ra khỏi cốc');
-  }
 
-  /* Thân nước phải phủ quá bề ngang cốc ở mọi mức, kẻo lộ mép cắt giữa thân. */
-  for (const h of [0, 12, 30, WATER_SPAN]) {
+  /* Phủ quá bề ngang thân cốc ở mọi mức, kẻo lộ mép cắt giữa thân. Thành cốc
+     của lucide rộng nhất ở khoảng x = 5,1..18,9. */
+  for (const h of [0, 4, 10, WATER_SPAN]) {
     cases++;
-    const xs = xsOf(waterBody(h, WAVE_AMP, 0.4));
-    if (Math.min(...xs) > 0 || Math.max(...xs) < GLASS_W) {
-      problems.push(`mực ${h}: thân nước chỉ phủ ${Math.min(...xs)}..${Math.max(...xs)}, không kín 0..${GLASS_W}`);
+    const xs = xsOf(waterPath(h, WAVE_AMP, 0.4));
+    if (Math.min(...xs) > 5 || Math.max(...xs) < 19) {
+      problems.push(`mực ${h}: thân nước chỉ phủ ${Math.min(...xs)}..${Math.max(...xs)}, không kín thành cốc`);
     }
   }
 
-  /* Kẹp: số âm và quá đầy đều phải hiền, ở CẢ HAI hàm vẽ. */
-  for (const fn of [waterBody, waterFace]) {
-    cases++;
-    if (fn(-999, WAVE_AMP, 0) !== fn(0, WAVE_AMP, 0)) problems.push('chiều cao âm không được kẹp về rỗng');
-    cases++;
-    if (fn(WATER_SPAN + 999, 0, 0) !== fn(WATER_SPAN, 0, 0)) problems.push('quá đầy không được kẹp về đầy');
+  /* Đỉnh sóng không được vượt quá vành cộng biên độ, kẻo nước đọc ra như đang
+     tràn ra ngoài. */
+  cases++;
+  {
+    const top = Math.min(...ysOf(waterPath(WATER_SPAN, WAVE_AMP, 0.25)));
+    if (top < WATER_CEIL - WAVE_AMP - 1e-9) {
+      problems.push(`đầy 100% mà đỉnh sóng lên tới ${top.toFixed(2)}, cao hơn cả biên độ cho phép`);
+    }
   }
 
-  /* Mặt nước cao dần theo lượng uống, và đầy đúng mức vành. */
+  /* Kẹp ở cả ba tham số. */
+  cases++;
+  if (waterPath(-999, WAVE_AMP, 0) !== waterPath(0, WAVE_AMP, 0)) {
+    problems.push('chiều cao âm không được kẹp về rỗng');
+  }
+  cases++;
+  if (waterPath(WATER_SPAN + 999, REST_AMP, 0) !== waterPath(WATER_SPAN, REST_AMP, 0)) {
+    problems.push('quá đầy không được kẹp về đầy');
+  }
+  cases++;
+  if (waterPath(8, -5, 0) !== waterPath(8, 0, 0)) {
+    problems.push('biên độ âm không được kẹp về 0');
+  }
+
+  /* Mặt nước cao dần theo lượng uống, và đúng mức ở hai đầu. */
   let prevTop = Infinity;
   for (let h = 0; h <= WATER_SPAN; h += WATER_SPAN / 20) {
     cases++;
@@ -236,11 +241,24 @@ try {
     if (t > prevTop + 1e-9) problems.push(`mặt nước tụt xuống ở chiều cao ${h.toFixed(1)}`);
     prevTop = t;
   }
+  /* So có dung sai, không so bằng `!==`: `WATER_SPAN` là một hiệu số thực nên
+     `WATER_FLOOR − WATER_SPAN` lệch `WATER_CEIL` ở chữ số thứ mười sáu. Bản đầu
+     so bằng và đỏ oan — một bước gác đỏ vì dấu phẩy động là một bước gác người
+     ta sẽ tắt đi. */
   cases++;
-  if (clampFill(WATER_SPAN).y !== WATER_CEIL) problems.push('đầy 100% mà tâm mặt nước không ở mức vành');
+  if (Math.abs(clampFill(WATER_SPAN).y - WATER_CEIL) > 1e-9) {
+    problems.push(`đầy 100% mà mặt nước ở ${clampFill(WATER_SPAN).y}, đáng lẽ ${WATER_CEIL}`);
+  }
   cases++;
-  if (clampFill(0).y !== WATER_FLOOR) problems.push('cạn 0% mà tâm mặt nước không ở đáy');
+  if (Math.abs(clampFill(0).y - WATER_FLOOR) > 1e-9) {
+    problems.push('cạn 0% mà mặt nước không ở đáy');
+  }
+  cases++;
+  if (!(WATER_CEIL > 0 && WATER_FLOOR < GLASS_VIEW)) {
+    problems.push('quãng mặt nước nằm ngoài lưới 24 của lucide');
+  }
 
+  /* ── thẻ vẽ đúng thứ đã hứa ── */
   const card = stripComments(read('src/components/ascnd/dashboard-cards.tsx'));
   const water = card.slice(card.indexOf('export function WaterWidget'), card.indexOf('export function StepsWidget'));
   if (!/figure=\{<WaterGlass/.test(water)) {
@@ -310,17 +328,15 @@ try {
     Worklet PHẢI đi qua `clampFill`, không được đọc thẳng shared value: đọc
     thẳng là trả lại đúng khung hình âm đã đo ở trên.
   */
-  for (const fn of ['waterBody', 'waterFace']) {
-    cases++;
-    if (!new RegExp(`${fn}\\(`).test(body)) {
-      problems.push(`WaterGlass không dựng ${fn} — mực nước lại được vẽ tại chỗ, ngoài tầm với của bước gác này`);
-    }
-  }
-  /* Vành TRƯỚC phải được vẽ, nếu không miệng cốc chỉ còn một nửa và cái cốc
-     đọc ra như bị cắt ngang — mất đúng tín hiệu phối cảnh. */
   cases++;
-  if (!/RIM_FRONT/.test(body)) {
-    problems.push('không vẽ vành trước — miệng cốc chỉ còn nửa sau, cốc đọc ra như bị cắt ngang');
+  if (!/waterPath\(/.test(body)) {
+    problems.push('WaterGlass không dựng waterPath — mực nước lại được vẽ tại chỗ, ngoài tầm với của bước gác này');
+  }
+  /* Và nét phải mang đúng bộ thuộc tính của lucide, kẻo cái cốc lạc khỏi mọi
+     icon còn lại trên cùng màn hình. */
+  for (const attr of ['strokeLinecap="round"', 'strokeLinejoin="round"']) {
+    cases++;
+    if (!body.includes(attr)) problems.push(`nét cốc thiếu ${attr} — lucide vẽ mọi icon với nó`);
   }
   /*
     Và `clampFill` — thứ DUY NHẤT được phép chạy trong worklet ở đây — phải
@@ -328,7 +344,7 @@ try {
     UI: ném trên máy thật, im lặng trên web.
   */
   const lib = read('src/lib/water-glass.ts');
-  for (const fnName of ['clampFill', 'waterBody', 'waterFace', 'rxAt', 'ryAt']) {
+  for (const fnName of ['clampFill', 'waterPath']) {
     cases++;
     const fn = lib.slice(lib.indexOf(`export function ${fnName}`));
     if (!/^\s*'worklet';\s*$/m.test(fn.slice(0, fn.indexOf('return')))) {
@@ -440,7 +456,7 @@ try {
   }
 
   console.log(
-    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy — và nước có khoá RIÊNG cũng qua sàn ấy. PHỐI CẢNH: bề ngang mặt nước khớp đúng bề ngang lòng cốc tại mọi độ cao (thành cốc loe, nên một mặt nước bề ngang cố định sẽ thò ra ở trên và hụt vào ở dưới), và sóng chỉ ăn vào mép TRƯỚC — ăn cả mép sau thì mặt trên phình ra co vào như bong bóng. Dịch trọn một chu kỳ ra đúng hình cũ nên sóng không nhảy ở chỗ nối`,
+    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy — và nước có khoá RIÊNG cũng qua sàn ấy. Và hình cốc trùng TỪNG KÝ TỰ với GlassWater của lucide, đọc thẳng từ node_modules lúc chạy — một cái cốc 3D ngồi giữa ba mươi icon nét phẳng thì không sâu hơn, nó lạc; luật này cũng bắt được lucide nâng cấp mà thẻ không đi theo. Mặt nước lúc NGHỈ vẫn gợn, đúng như chữ S của lucide, và dịch trọn một chu kỳ ra đúng hình cũ nên sóng không nhảy ở chỗ nối`,
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

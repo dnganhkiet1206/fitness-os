@@ -34,15 +34,21 @@ import { toast } from '@/lib/toast';
 import { displayVolume, volumeLabel, volumeToMl, type VolumeUnit } from '@/lib/units';
 import { waterQuickAmounts } from '@/lib/water-presets';
 import {
-  GLASS_H,
   GLASS_PATH,
-  GLASS_W,
-  RIM_FRONT,
+  GLASS_VIEW,
+  REST_AMP,
   WAVE_AMP,
-  waterBody,
-  waterFace,
   waterFill,
+  waterPath,
 } from '@/lib/water-glass';
+
+/*
+  Cỡ vẽ trên màn, tách khỏi lưới 24 của lucide.
+
+  Lưới là của hình; cỡ là của thẻ. Trộn hai thứ vào một hằng số thì đổi cỡ sẽ
+  kéo theo đổi hình, và đó đúng là cái bẫy đã làm bản trước phải vẽ lại.
+*/
+const GLASS_SIZE = 58;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -1281,21 +1287,17 @@ function WaterGlass({ pct }: { pct: number }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const uid = useId();
-  /* Id của `<ClipPath>` là TOÀN CỤC trên native — cùng bài học mà ba chỗ trong
-     kho này đã phải học lại. Thẻ Nước hiện ở cả Hôm nay lẫn Dinh dưỡng, nên
-     "vẽ hai lần trong một cây" không phải giả định. */
+  /* Id của `<ClipPath>` và `<LinearGradient>` là TOÀN CỤC trên native — bài học
+     mà ba chỗ trong kho này đã phải học lại. Thẻ Nước hiện ở cả Hôm nay lẫn
+     Dinh dưỡng, nên "vẽ hai lần trong một cây" không phải giả định. */
   const clipId = `glass-${uid.replace(/:/g, '')}`;
+  const fillId = `glassfill-${uid.replace(/:/g, '')}`;
 
   /* MỘT biến cho mực nước; mép trên suy ra từ chiều cao nên hai giá trị không
      thể lệch nhau. Bắt đầu ở 0 — thẻ mở ra với cốc rỗng rồi nước dâng lên. */
   const depth = useSharedValue(0);
-  /*
-    ── hai biến chỉ sống trong lúc có gì đó vừa đổi ──
-
-    `slosh` là biên độ sóng, `phase` là chỗ sóng đang trượt tới. Cả hai chạy về
-    đích rồi ĐỨNG IM: không có vòng lặp vô hạn nào chạy nền. Một mặt nước gợn
-    mãi mãi vừa tốn pin vừa nói dối — nó bảo "vừa có gì đó xảy ra" suốt cả ngày.
-  */
+  /* Gợn THÊM khi vừa có người uống, rồi lặng về `REST_AMP` chứ không về 0: mặt
+     nước của lucide luôn là một chữ S kể cả lúc icon đứng im. */
   const slosh = useSharedValue(0);
   const phase = useSharedValue(0);
 
@@ -1304,96 +1306,74 @@ function WaterGlass({ pct }: { pct: number }) {
     /* Tính trên luồng JS, KHÔNG trong worklet — xem `lib/water-glass.ts`. */
     const fill = waterFill(pct);
     /*
-      420ms cho một cú bấm, 620ms cho lần chào.
-
-      Bản trước lấy 1100ms từ `MiniRing`, và Apple đặt tương tác trong trang ở
-      dưới 200ms, chuyển cả trang 300–500ms. 1100 là con số của một màn chào
-      cho thứ không ai đang chờ; ở đây người dùng VỪA bấm thêm nước, nên nó là
-      phản hồi. `MiniRing` giờ cũng không còn ai gọi, nên nó thôi là quy ước
-      chung và chỉ còn là một con số mồ côi.
+      420ms cho một cú bấm, 620ms cho lần chào. Apple đặt tương tác trong trang
+      dưới 200ms và chuyển trang 300–500ms; 1100ms của bản cũ là nhịp của một
+      màn chào cho thứ không ai đang chờ, còn ở đây người dùng VỪA bấm.
     */
     const rise = withTiming(fill.height, {
       duration: greeted.current ? 420 : 620,
       easing: Easing.bezier(0.16, 1, 0.3, 1),
     });
     depth.value = greeted.current ? rise : withDelay(140, rise);
-    /*
-      Sóng: bật nhanh rồi lặng dần. Nước bị đổ thêm vào thì động trước, yên sau
-      — nên nhịp lên phải ngắn hơn hẳn nhịp xuống, không đối xứng.
-    */
+    /* Bật nhanh, lặng chậm: nước bị đổ thêm thì động trước, yên sau. */
     slosh.value = withSequence(
       withTiming(1, { duration: 130 }),
       withTiming(0, { duration: 820, easing: Easing.out(Easing.quad) }),
     );
-    /* Hai chu kỳ trượt trong đúng quãng sóng còn sống; tuyến tính, vì nước
+    /* Một chu kỳ trượt trong đúng quãng sóng còn sống. Tuyến tính, vì nước
        không tăng tốc rồi hãm lại khi nó chỉ đang dập dềnh. */
     phase.value = 0;
-    phase.value = withTiming(2, { duration: 950, easing: Easing.linear });
+    phase.value = withTiming(1, { duration: 950, easing: Easing.linear });
     greeted.current = true;
   }, [pct, depth, slosh, phase]);
 
   /*
-    Một `d` duy nhất vẽ cả sóng lẫn thân nước, nên không có đường ghép nào giữa
+    Một `d` duy nhất vẽ cả mặt gợn lẫn thân nước, nên không có đường ghép giữa
     hai lớp để lệch nhau trong lúc chuyển động.
 
-    `waterPath` kẹp sẵn bên trong — cùng lý do đã đo ở `clampFill`:
-    `withDelay` + `withTiming` phát đúng một khung có tiến độ ÂM (đo được
-    p = −1,36), và một `d` dựng từ số âm là một hình lộn ngược chứ không phải
-    một lỗi mà trình duyệt chịu nói ra.
+    `waterPath` kẹp sẵn bên trong — cùng lý do đã ĐO ở `clampFill`: `withDelay`
+    + `withTiming` phát đúng một khung có tiến độ âm (đo được p = −1,36), và
+    một `d` dựng từ số âm là một hình lộn ngược chứ không phải một lỗi mà trình
+    duyệt chịu nói ra.
   */
-  const bodyProps = useAnimatedProps(() => ({
-    d: waterBody(depth.value, slosh.value * WAVE_AMP, phase.value),
-  }));
-  const faceProps = useAnimatedProps(() => ({
-    d: waterFace(depth.value, slosh.value * WAVE_AMP, phase.value),
+  const animatedProps = useAnimatedProps(() => ({
+    d: waterPath(depth.value, REST_AMP + slosh.value * (WAVE_AMP - REST_AMP), phase.value),
   }));
 
   const tint = graphicOf(c, 'metricBlue');
   const water = graphicOf(c, 'waterFill');
-  const bodyId = `glassbody-${uid.replace(/:/g, '')}`;
-  const wallId = `glasswall-${uid.replace(/:/g, '')}`;
 
   return (
     <View style={styles.glassWrap}>
-      <Svg width={GLASS_W} height={GLASS_H} viewBox={`0 0 ${GLASS_W} ${GLASS_H}`}>
+      {/* Lưới 24 của lucide, giữ nguyên. Nét 1,4 trong lưới ấy ra khoảng 3 điểm
+          trên màn — đậm hơn icon thường của app, đúng phần việc của một hình
+          CHÍNH trên thẻ, mà vẫn cùng một ngôn ngữ nét. */}
+      <Svg width={GLASS_SIZE} height={GLASS_SIZE} viewBox={`0 0 ${GLASS_VIEW} ${GLASS_VIEW}`}>
         <Defs>
           <ClipPath id={clipId}>
             <Path d={GLASS_PATH} />
           </ClipPath>
-          {/*
-            Nước tối dần xuống đáy. Đây là nửa còn lại của chiều sâu: mặt trên
-            vẽ bằng token nguyên bản nên nó TỰ là chỗ sáng nhất, không phải nhờ
-            một màu thứ ba nào thêm vào.
-          */}
-          <LinearGradient id={bodyId} x1="0%" y1="0%" x2="0%" y2="100%">
+          {/* Nước sẫm dần xuống đáy. Đây là toàn bộ phần "chiều sâu" mà ngôn
+              ngữ nét phẳng cho phép — và là phần duy nhất đáng giữ lại từ bản
+              phối cảnh đã bỏ. */}
+          <LinearGradient id={fillId} x1="0%" y1="0%" x2="0%" y2="100%">
             <Stop offset="0%" stopColor={water} />
             <Stop offset="100%" stopColor={tint} />
-          </LinearGradient>
-          {/*
-            Lòng cốc rỗng: đậm ở hai mép, nhạt ở giữa. Một khối trụ nhận sáng
-            thì đúng như thế, và đó là lý do nó đọc ra TRÒN thay vì dẹt — cùng
-            một việc mà vành elip làm ở trên, làm thêm một lần ở thân.
-          */}
-          <LinearGradient id={wallId} x1="0%" y1="0%" x2="100%" y2="0%">
-            <Stop offset="0%" stopColor={alpha(tint, 0.16)} />
-            <Stop offset="42%" stopColor={alpha(tint, 0.03)} />
-            <Stop offset="100%" stopColor={alpha(tint, 0.16)} />
           </LinearGradient>
         </Defs>
         {/* Lòng cốc khi chưa có nước. Nó KHÔNG gánh việc hiện hình — đo được
             1,15:1 — viền mới là thứ gánh. */}
-        <Path d={GLASS_PATH} fill={`url(#${wallId})`} />
-        <AnimatedPath fill={`url(#${bodyId})`} clipPath={`url(#${clipId})`} animatedProps={bodyProps} />
-        <AnimatedPath fill={water} clipPath={`url(#${clipId})`} animatedProps={faceProps} />
-        {/*
-          Viền vẽ SAU khối nước, và ĐẬM: 2,2 trên một cái cốc rộng 52.
-
-          Vành TRƯỚC vẽ riêng, sau cùng: đó là phần vành nằm giữa người xem và
-          lòng cốc. Không có nó thì miệng cốc chỉ còn một nửa và cái cốc đọc ra
-          như bị cắt ngang — mất đúng cái tín hiệu phối cảnh vừa dựng lên.
-        */}
-        <Path d={GLASS_PATH} fill="none" stroke={tint} strokeWidth={2.2} strokeLinejoin="round" />
-        <Path d={RIM_FRONT} fill="none" stroke={tint} strokeWidth={2.2} strokeLinecap="round" />
+        <Path d={GLASS_PATH} fill={alpha(tint, 0.08)} />
+        <AnimatedPath fill={`url(#${fillId})`} clipPath={`url(#${clipId})`} animatedProps={animatedProps} />
+        {/* Viền vẽ SAU khối nước, với đúng bộ thuộc tính nét của lucide. */}
+        <Path
+          d={GLASS_PATH}
+          fill="none"
+          stroke={tint}
+          strokeWidth={1.4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </Svg>
     </View>
   );
