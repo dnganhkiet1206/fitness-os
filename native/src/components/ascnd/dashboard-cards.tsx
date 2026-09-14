@@ -31,13 +31,7 @@ import { useAddWater, useRemoveLastWater, useTodayWaterLogs } from '@/hooks/use-
 import { toast } from '@/lib/toast';
 import { displayVolume, volumeLabel, volumeToMl, type VolumeUnit } from '@/lib/units';
 import { waterQuickAmounts } from '@/lib/water-presets';
-import {
-  GLASS_H,
-  GLASS_PATH,
-  GLASS_W,
-  WATER_FLOOR,
-  waterFill,
-} from '@/lib/water-glass';
+import { clampFill, GLASS_H, GLASS_PATH, GLASS_W, waterFill } from '@/lib/water-glass';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedRect = Animated.createAnimatedComponent(Rect);
@@ -1282,9 +1276,9 @@ function WaterGlass({ pct }: { pct: number }) {
   const clipId = `glass-${uid.replace(/:/g, '')}`;
   const gradId = `glassfill-${uid.replace(/:/g, '')}`;
 
-  /* Bắt đầu ở đáy: mọi thẻ mở ra với một cái cốc rỗng rồi nước dâng lên tới
-     mức của ngày — kể cả khi ngày ấy đã đầy. */
-  const top = useSharedValue(WATER_FLOOR);
+  /* MỘT biến, không phải hai: mép trên suy ra từ chiều cao nên hai giá trị
+     không thể lệch nhau. Bắt đầu ở 0 — mọi thẻ mở ra với cái cốc rỗng rồi nước
+     dâng lên tới mức của ngày, kể cả khi ngày ấy đã đầy. */
   const depth = useSharedValue(0);
   /* Cùng luật hai-chuyển-động với `MiniRing`, và cùng lý do: lần đầu là màn
      chào 1100ms, còn mọi lần sau là PHẢN HỒI cho một cú bấm thêm nước. Giữ
@@ -1299,16 +1293,23 @@ function WaterGlass({ pct }: { pct: number }) {
       duration: greeted.current ? duration.swap : 1100,
       easing: Easing.bezier(0.16, 1, 0.3, 1),
     };
-    /* Hai giá trị, một tham số: `y` và `height` đều tuyến tính theo mực nước và
-       tổng của chúng luôn bằng `WATER_FLOOR`, nên chạy cùng easing thì đáy cột
-       nước đứng yên tuyệt đối trong suốt chuyển động. */
-    const ride = (v: number) => (greeted.current ? v : withDelay(200, v));
-    top.value = ride(withTiming(fill.y, cfg));
-    depth.value = ride(withTiming(fill.height, cfg));
+    const rise = withTiming(fill.height, cfg);
+    depth.value = greeted.current ? rise : withDelay(200, rise);
     greeted.current = true;
-  }, [pct, top, depth]);
+  }, [pct, depth]);
 
-  const animatedProps = useAnimatedProps(() => ({ y: top.value, height: depth.value }));
+  /*
+    KẸP trong worklet, và đây là một lỗi ĐÃ ĐO chứ không phải một phép phòng xa.
+
+    `withDelay(200, withTiming(...))` phát đúng một khung có tiến độ ÂM trước
+    khi phần trễ kết thúc — đo được p = −1,36 — nên cột nước nhảy ra ngoài cốc
+    trong một khung và `height` thành số âm, thứ mà `<rect>` từ chối.
+
+    `clampFill` kẹp chiều cao rồi SUY RA mép trên từ chính nó, nên `y + height`
+    luôn bằng đáy cốc theo cấu tạo. Xem `lib/water-glass.ts` cho phép đo đầy đủ
+    và cho lý do vì sao `MiniRing` dính đúng lỗi này mà không ai thấy.
+  */
+  const animatedProps = useAnimatedProps(() => clampFill(depth.value));
 
   const tint = graphicOf(c, 'metricBlue');
   const crest = graphicOf(c, 'metricCyan');

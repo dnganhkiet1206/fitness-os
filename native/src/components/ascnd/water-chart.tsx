@@ -204,10 +204,22 @@ function Bar({
     grow.value = withDelay(index * 55, withTiming(1, { duration: GROW_MS, easing: GROW_EASE }));
   }, [index, grow]);
 
-  const rect = useAnimatedProps(() => ({
-    y: PLOT_H - full * grow.value,
-    height: full * grow.value,
-  }));
+  /*
+    Kẹp, cùng lý do đã đo ở thẻ Nước — xem `lib/water-glass.ts`.
+
+    `withDelay(index * 55, withTiming(...))` phát đúng một khung có tiến độ ÂM
+    trước khi phần trễ kết thúc (đo được p = −1,36 ở chỗ kia, cùng cặp hàm).
+    Ở đây nó nhân với `full` rồi ghi thẳng vào `height` của một `<rect>`, và
+    chiều cao âm là giá trị mà SVG từ chối.
+
+    Chưa ai báo, vì màn này có `index * 55` nên mỗi cột lệch pha và cái khung
+    hỏng của cột đầu rơi vào lúc biểu đồ vừa xuất hiện. Cùng một lỗi, chỉ khác
+    chỗ nó chịu lộ mặt.
+  */
+  const rect = useAnimatedProps(() => {
+    const g = Math.min(Math.max(grow.value, 0), 1);
+    return { y: PLOT_H - full * g, height: full * g };
+  });
 
   if (value <= 0) return null;
 

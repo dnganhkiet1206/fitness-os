@@ -43,9 +43,9 @@ try {
       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  const { waterFill, WATER_CEIL, WATER_FLOOR, GLASS_PATH } = createRequire(import.meta.url)(
-    path.join(out, 'water-glass.js'),
-  );
+  const { waterFill, clampFill, WATER_CEIL, WATER_FLOOR, WATER_SPAN, GLASS_PATH } = createRequire(
+    import.meta.url,
+  )(path.join(out, 'water-glass.js'));
 
   const problems = [];
   let cases = 0;
@@ -97,6 +97,38 @@ try {
     const h = waterFill(p).height;
     if (h < prev - 1e-9) problems.push(`mực nước tụt xuống ở ${p}%`);
     prev = h;
+  }
+
+  /*
+    ── phép kẹp, và con số đã ĐO ──
+
+    `waterFill` kẹp phần trăm nên ĐÍCH luôn hợp lệ. Cái không hợp lệ là một
+    khung hình ở giữa: `withDelay(200, withTiming(...))` phát đúng một khung có
+    tiến độ ÂM trước khi phần trễ kết thúc. Đo trên trình duyệt, ghi từng lượt
+    ghi lên thuộc tính của `<rect>`, ra `y = 92,31` và `height = −42,31` — giải
+    ngược là tiến độ −1,36.
+
+    Nên ca đầu tiên dưới đây là CHÍNH con số đã đo, không phải một số tròn tôi
+    nghĩ ra.
+  */
+  eq('khung tiến độ âm đã đo vẫn cho chiều cao hợp lệ', clampFill(-42.31762386200287).height, 0);
+  eq('… và mép trên về đúng đáy cốc', clampFill(-42.31762386200287).y, WATER_FLOOR);
+  eq('vọt quá đầy thì dừng ở đầy', clampFill(WATER_SPAN + 20).height, WATER_SPAN);
+  eq('… và không lên quá vành', clampFill(WATER_SPAN + 20).y, WATER_CEIL);
+  eq('NaN thì rỗng', clampFill(Number.NaN).height, 0);
+  eq('giá trị hợp lệ thì đi thẳng qua', clampFill(17.5).height, 17.5);
+
+  /*
+    Kẹp CHIỀU CAO rồi SUY RA mép trên, chứ không kẹp hai giá trị độc lập: kẹp
+    riêng thì cả hai có thể hợp lệ mà vẫn không ăn khớp, và cột nước nhấc khỏi
+    đáy cốc trong một khung.
+  */
+  for (const h of [-100, -42.3, 0, 1, 22.25, 44.5, 60, 1e9]) {
+    cases++;
+    const f = clampFill(h);
+    if (Math.abs(f.y + f.height - WATER_FLOOR) > 1e-9) {
+      problems.push(`clampFill(${h}): y+height=${f.y + f.height}, đáng lẽ ${WATER_FLOOR}`);
+    }
   }
 
   /* Thành cốc phải LOE: đáy hẹp hơn miệng, nếu không thì nó là một cái hộp. */
@@ -188,6 +220,23 @@ try {
   if (!/waterFill\(pct\)/.test(body)) {
     problems.push('WaterGlass không gọi waterFill(pct) — mực nước lại được tính tại chỗ, ngoài tầm với của bước gác này');
   }
+  /*
+    Worklet PHẢI đi qua `clampFill`, không được đọc thẳng shared value: đọc
+    thẳng là trả lại đúng khung hình âm đã đo ở trên.
+  */
+  if (!/clampFill\(/.test(body)) {
+    problems.push('WaterGlass không kẹp mực nước — khung tiến độ âm của withDelay sẽ lại ghi height âm vào <rect>');
+  }
+  /*
+    Và `clampFill` — thứ DUY NHẤT được phép chạy trong worklet ở đây — phải
+    mang chỉ thị `'worklet'`. Thiếu nó thì nó là một hàm thường nằm giữa luồng
+    UI: ném trên máy thật, im lặng trên web.
+  */
+  const lib = read('src/lib/water-glass.ts');
+  const fn = lib.slice(lib.indexOf('export function clampFill'));
+  if (!/^\s*'worklet';\s*$/m.test(fn.slice(0, fn.indexOf('return')))) {
+    problems.push("clampFill thiếu chỉ thị 'worklet' — nó được gọi trên luồng UI, và thiếu chỉ thị thì nó ném trên máy thật trong khi web không nói gì");
+  }
 
   if (problems.length) {
     console.error('cốc nước sai:\n');
@@ -196,7 +245,7 @@ try {
   }
 
   console.log(
-    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Và phép tính nằm NGOÀI worklet — thứ mà live.mjs mù vì web không có luồng UI để mà ném`,
+    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra`,
   );
 } finally {
   rmSync(out, { recursive: true, force: true });
