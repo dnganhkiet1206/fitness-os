@@ -413,6 +413,17 @@ try {
   */
   /* Năm thứ đọc từ ảnh mẫu phải CÓ MẶT trong thẻ, không chỉ tồn tại trong thư
      viện hình học. */
+  /*
+    Ở 0% thì KHÔNG có mặt nước. Bản đầu vẽ đường viền ở mọi mức, nên cốc cạn
+    vẫn có một vệt xanh sẫm nằm dưới đáy — đọc ra như một ngụm còn sót, đúng
+    thứ mà `waterFill` đã bỏ công trả chiều cao BẰNG 0 để tránh.
+  */
+  cases++;
+  if (!/strokeOpacity:/.test(body)) {
+    problems.push('đường mặt nước không mờ theo mực nước — ở 0% nó để lại một vệt xanh dưới đáy cốc cạn');
+  }
+
+
   for (const piece of ['waterPath', 'waterLine', 'GLASS_STROKE_PATH', 'strokeLinecap="round"', 'fillOpacity']) {
     cases++;
     if (!body.includes(piece)) {

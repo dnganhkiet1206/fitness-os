@@ -1347,6 +1347,17 @@ function WaterGlass({ pct }: { pct: number }) {
   }));
   const lineProps = useAnimatedProps(() => ({
     d: waterLine(depth.value, REST_AMP + slosh.value * (WAVE_AMP - REST_AMP), phase.value),
+    /*
+      Không có nước thì KHÔNG có mặt nước.
+
+      Bản đầu vẽ đường này ở mọi mức, nên ở 0% nó để lại một vệt xanh sẫm nằm
+      dưới đáy cốc — đọc ra như một ngụm nước còn sót, đúng thứ mà `waterFill`
+      đã bỏ công trả về chiều cao BẰNG 0 để tránh.
+
+      Mờ dần trong hai đơn vị đầu chứ không tắt đột ngột: một đường viền bật ra
+      giữa chuyển động dâng nước là một khung hình giật.
+    */
+    strokeOpacity: Math.min(Math.max(depth.value / 2, 0), 1),
   }));
 
   const water = graphicOf(c, 'waterFill');
