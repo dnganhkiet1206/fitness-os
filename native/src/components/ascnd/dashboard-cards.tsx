@@ -1882,8 +1882,12 @@ export function StepsWidget({ steps, target, labels }: { steps: number; target: 
       label={labels.title}
       valueText={`${steps.toLocaleString()} / ${target.toLocaleString()}`}
       pct={pct}
-      /* Hình duy nhất trên thẻ này. Thẻ Nước có vòng quanh icon; thẻ Bước đi
-         trước đó chỉ nói tiến độ bằng chữ. Xem `bar` trong `CompactWidget`. */
+      /* Hình duy nhất trên thẻ này; trước đó thẻ Bước đi chỉ nói tiến độ bằng
+         chữ. Xem `bar` trong `CompactWidget`.
+
+         Câu gốc ở đây viết "Thẻ Nước có vòng quanh icon" — không còn đúng: thẻ
+         Nước nay vẽ một cái cốc và KHÔNG truyền `ring` nữa, nên `MiniRing`
+         không còn chỗ gọi nào trong cả kho. */
       bar
       onPress={() => nav.push('/steps')}
     />
