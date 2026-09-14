@@ -1229,6 +1229,7 @@ function CompactWidget({
   pct,
   onPress,
   ring,
+  bar,
   footer,
 }: {
   icon: LucideIcon;
@@ -1244,6 +1245,28 @@ function CompactWidget({
    * and has not been asked for one.
    */
   ring?: [string, string];
+  /**
+   * Một THANH tiến độ dưới hai dòng chữ.
+   *
+   * ── vì sao thẻ Bước đi cần nó, và vì sao là thanh chứ không phải vòng ──
+   *
+   * Không có nó, tiến độ trong ngày của thẻ Bước đi chỉ tồn tại dưới dạng CHỮ:
+   * "0 / 1.000" và "0%". Thẻ Nước ngay bên cạnh có vòng quanh icon và đọc được
+   * từ xa một tầm tay; thẻ Bước đi thì phải đọc mới biết. Chú thích của `ring`
+   * ở trên ghi đúng lý do: nó opt-in, và bước chân "has not been asked for
+   * one". Nay đã được hỏi — nhưng hỏi một cái THANH.
+   *
+   * Thanh chứ không phải vòng, và đó là quyết định của chủ dự án chứ không phải
+   * suy ra từ đo đạc. Cái đo được là: màn `/steps` — đúng nơi thẻ này mở ra —
+   * đã vẽ một thanh `c.primary` từ trước (`app/steps.tsx:58`). Nên thẻ và màn
+   * nó dẫn tới nay nói cùng một hình, thay vì thẻ nói bằng chữ còn màn nói bằng
+   * thanh.
+   *
+   * Hệ quả phải nhận: hai thẻ compact anh em nay mang hai HÌNH khác nhau cho
+   * cùng một đại lượng — Nước một vòng, Bước đi một thanh. Ghi ra ở đây để
+   * người sau thấy đó là một lựa chọn đã biết, không phải một chỗ bị bỏ quên.
+   */
+  bar?: boolean;
   /**
    * Thêm một hàng dưới hàng chính, bên trong cùng thẻ.
    *
@@ -1267,6 +1290,39 @@ function CompactWidget({
       <View style={styles.compactInfo}>
         <Text style={styles.compactLabel}>{label}</Text>
         <Text style={styles.compactValue}>{valueText}</Text>
+        {/*
+          `color` và `trackColor` đều truyền THẲNG, không dựa vào mặc định của
+          `ProgressBar` — và cái thứ hai là bắt buộc. Đo rãnh mặc định
+          (`alpha(c.secondary, 0.4)`) trên đúng mặt thẻ này:
+
+              sáng  #f9f7f3 trên #ffffff  1,070
+              tối   #171719 trên #161617  1,010   ← không còn là một cái rãnh
+
+          Cả `m.inset.track` của thanh macro cũng vậy, và còn tệ hơn ở bản sáng:
+          1,000 chằn chặn, vì trường ấy CÓ NGHĨA là "mặt thẻ lộ lại qua chỗ lõm"
+          — đúng khi thanh nằm trong một ô lõm, vô hình khi nó nằm thẳng trên
+          mặt thẻ. Cùng một cái bẫy mà `Material.onPage` đã phải sinh ra để gỡ.
+
+          `c.ringTrack` là rãnh của MỌI vòng tiến độ trong app, kể cả vòng của
+          thẻ Nước ngay bên cạnh — tức nó đã được chứng minh trên đúng mặt này,
+          ở đúng cỡ này:
+
+              rãnh vs mặt thẻ   sáng 1,886 · tối 1,605
+              tô   vs rãnh      sáng 9,32  · tối 5,11   (sàn 1.4.11 là 3:1)
+
+          Thanh ở đây cao 4pt, mỏng hơn thanh 10pt của màn `/steps` — mà màn ấy
+          lấy rãnh là `c.background`, chỉ 1,097 trên mặt thẻ. Mỏng hơn thì cần
+          NHIỀU tương phản hơn, không phải ít, nên hai chỗ không dùng chung một
+          rãnh và đó là cố ý.
+        */}
+        {bar ? (
+          <ProgressBar
+            pct={pct}
+            color={c.primary}
+            trackColor={c.ringTrack}
+            style={styles.compactBar}
+          />
+        ) : null}
       </View>
       <Text style={styles.compactPct}>{pct}%</Text>
     </View>
@@ -1624,6 +1680,9 @@ export function StepsWidget({ steps, target, labels }: { steps: number; target: 
       label={labels.title}
       valueText={`${steps.toLocaleString()} / ${target.toLocaleString()}`}
       pct={pct}
+      /* Hình duy nhất trên thẻ này. Thẻ Nước có vòng quanh icon; thẻ Bước đi
+         trước đó chỉ nói tiến độ bằng chữ. Xem `bar` trong `CompactWidget`. */
+      bar
       onPress={() => nav.push('/steps')}
     />
   );
@@ -1766,6 +1825,16 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
   },
   compactInfo: { flex: 1, minWidth: 0, gap: 2 },
+  /*
+    8, không phải 2 của `gap` bên trên.
+
+    Nhãn và con số là MỘT khối đọc liền — `gap: 2` giữ chúng dính nhau đúng như
+    thế. Thanh là một thứ khác loại, và ở 2pt nó đọc ra như dòng chữ thứ ba.
+
+    8 là con số đã đo ở `macroTile`: khối chữ (`macroLines`, gap 2) cách thanh
+    của nó đúng 8. Cùng quan hệ, nên cùng khoảng cách — không phải một số mới.
+  */
+  compactBar: { marginTop: 8 },
   compactLabel: { fontSize: 12, color: c.mutedForeground },
   compactValue: { fontSize: 14, fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },
   compactPct: { fontSize: 18, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },

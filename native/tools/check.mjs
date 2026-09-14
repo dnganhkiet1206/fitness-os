@@ -692,6 +692,14 @@ const STEPS = [
       đầu vào SS    một đầu vào chỉ được kể tên nếu có thứ thật sự cấp nó
       điều kiện sổ  chạy lại đúng lệnh mà một mục "cấm sửa" tự dặn phải chạy
   */
+  /*
+    Thẻ Bước đi được thêm một thanh tiến độ, và cách hiển nhiên để làm nó —
+    chép thanh macro ngay trên trong cùng tệp — vẽ ra một cái rãnh 1,000:1 trên
+    mặt thẻ sáng. `m.inset.track` có nghĩa là "mặt thẻ lộ lại qua chỗ LÕM", nên
+    nó đúng trong một ô lõm và vô hình ngay trên mặt thẻ: cùng cái bẫy
+    `Material.onPage` đã sinh ra để gỡ, lần này ở vai cái rãnh.
+  */
+  ['rãnh thanh', 'node', ['tools/bar-track.mjs']],
   ['số bước', 'node', ['tools/gate-count.mjs']],
   ['đầu vào SS', 'node', ['tools/readiness-inputs.mjs']],
   ['điều kiện sổ', 'node', ['tools/ledger-live.mjs']],
