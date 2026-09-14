@@ -145,6 +145,26 @@ export function clampFill(height: number): WaterFill {
 const STEPS = 18;
 
 /**
+ * Biên độ THẬT ở một mực nước — sóng tắt dần khi cốc gần cạn.
+ *
+ * ── lỗi đã đo, không phải phòng xa ──
+ *
+ * Ở 0% mặt nước nằm đúng đáy, nhưng sóng vẫn dao động ±`REST_AMP`. Nửa dưới
+ * của sóng rơi xuống dưới mặt đáy, nên đa giác nước còn một dải mỏng — ảnh
+ * dựng cốc CẠN vẫn có một vệt xanh nhạt nằm dưới cùng.
+ *
+ * Vật lý cũng nói đúng thế: không có nước thì không có gì để dập dềnh. Hai đơn
+ * vị đầu là quãng tắt, đủ ngắn để không ai thấy sóng "yếu đi" ở mức thường
+ * ngày, đủ dài để không bật ra một cái giữa lúc nước đang dâng.
+ */
+function ampAt(height: number, amp: number): number {
+  'worklet';
+  const h = Math.min(Math.max(Number.isFinite(height) ? height : 0, 0), WATER_SPAN);
+  const a = Math.min(Math.max(Number.isFinite(amp) ? amp : 0, 0), WAVE_AMP);
+  return a * Math.min(h / 2, 1);
+}
+
+/**
  * Khối nước: mặt sóng ở trên, đổ xuống hết đáy.
  *
  * Bị cắt theo chính hình cốc ở chỗ vẽ, nên hai bên cứ việc chạy rộng ra ngoài.
@@ -158,7 +178,7 @@ const STEPS = 18;
 export function waterPath(height: number, amp: number, phase: number): string {
   'worklet';
   const { y: top } = clampFill(height);
-  const a = Math.min(Math.max(Number.isFinite(amp) ? amp : 0, 0), WAVE_AMP);
+  const a = ampAt(height, amp);
   const left = TOP_LEFT - 4;
   const right = TOP_RIGHT + 4;
   const pts: string[] = [];
@@ -194,7 +214,7 @@ export function waterPath(height: number, amp: number, phase: number): string {
 export function waterLine(height: number, amp: number, phase: number): string {
   'worklet';
   const { y: top } = clampFill(height);
-  const a = Math.min(Math.max(Number.isFinite(amp) ? amp : 0, 0), WAVE_AMP);
+  const a = ampAt(height, amp);
   const left = TOP_LEFT - 4;
   const right = TOP_RIGHT + 4;
   const pts: string[] = [];

@@ -214,6 +214,24 @@ try {
   }
 
   /*
+    Cốc CẠN thì không một điểm nước nào được nằm trên mặt đáy.
+
+    Bản đầu để sóng dao động ±REST_AMP ở mọi mức, nên ở 0% nửa dưới của sóng
+    rơi xuống dưới đáy và đa giác nước còn một dải mỏng — ảnh dựng cốc cạn vẫn
+    có một vệt xanh nhạt. Vật lý cũng nói đúng thế: không có nước thì không có
+    gì để dập dềnh.
+  */
+  for (const ph of [0, 0.25, 0.5, 0.75]) {
+    cases++;
+    const ys = [...waterPath(0, WAVE_AMP, ph).matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((mm) =>
+      Number(mm[2]),
+    );
+    if (Math.min(...ys) < WATER_FLOOR - 1e-9) {
+      problems.push(`cốc cạn, pha ${ph}: có điểm nước ở ${Math.min(...ys)}, cao hơn mặt đáy ${WATER_FLOOR}`);
+    }
+  }
+
+  /*
     ── sóng ──
 
     REST_AMP không được bằng 0, và cũng không được bé: sóng trong ảnh mẫu RÕ.
