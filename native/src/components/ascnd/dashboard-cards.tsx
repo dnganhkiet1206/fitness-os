@@ -1327,7 +1327,7 @@ function WaterGlass({ pct }: { pct: number }) {
     depth.value = greeted.current ? rise : withDelay(140, rise);
     /* Bật nhanh, lặng chậm: nước bị đổ thêm thì động trước, yên sau. */
     slosh.value = withSequence(
-      withTiming(1, { duration: 130 }),
+      withTiming(1, { duration: duration.toggle }),
       withTiming(0, { duration: 820, easing: Easing.out(Easing.quad) }),
     );
     phase.value = 0;
