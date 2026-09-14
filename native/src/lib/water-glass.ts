@@ -192,37 +192,3 @@ export function waterPath(height: number, amp: number, phase: number): string {
   }
   return `M${pts.join(' L')} L${right} ${GLASS_H + 4} L${left} ${GLASS_H + 4} Z`;
 }
-
-/**
- * CHỈ đường mặt nước — cùng các điểm ấy nhưng không khép xuống đáy.
- *
- * ── vì sao tách ra một hàm riêng ──
- *
- * Chủ dự án chỉ vào một ảnh và nói "màu cho giống hình này nè". Màu ấy là xanh
- * da trời nhạt, và đo ra thì nó cho 11,23:1 trên nền ĐEN của app trong ảnh mà
- * chỉ 1,76:1 trên mặt thẻ TRẮNG của app này. Đẹp ở đó, gần như tan vào nền ở
- * đây.
- *
- * Lối ra không phải chọn một trong hai. Phần TÔ giữ đúng màu ấy — nó mang tính
- * cách — còn phần THÔNG TIN, tức mực nước cao tới đâu, chuyển sang đường viền
- * này, vẽ bằng một token sẫm đủ qua sàn tương phản.
- *
- * Tách ra hàm riêng chứ không stroke luôn `waterPath`: `waterPath` khép xuống
- * đáy, nên stroke nó sẽ viền cả hai thành và đáy cốc — ba đường không ai cần,
- * và chúng chạy chồng lên nét cốc.
- */
-export function waterLine(height: number, amp: number, phase: number): string {
-  'worklet';
-  const { y: top } = clampFill(height);
-  const a = ampAt(height, amp);
-  const left = TOP_LEFT - 4;
-  const right = TOP_RIGHT + 4;
-  const pts: string[] = [];
-  for (let i = 0; i <= STEPS; i++) {
-    const t = i / STEPS;
-    const x = left + (right - left) * t;
-    const y = top + a * Math.sin(2 * Math.PI * (t + phase));
-    pts.push(`${x.toFixed(2)} ${y.toFixed(2)}`);
-  }
-  return `M${pts.join(' L')}`;
-}
