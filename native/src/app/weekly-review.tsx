@@ -29,6 +29,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
+import { asleepMinutes } from '@/lib/daily-log-service';
 import { errorText } from '@/lib/error-copy';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -200,7 +201,7 @@ export default function WeeklyReviewScreen() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('sleep_logs')
-        .select('waketime, deep_min, rem_min, light_min')
+        .select('bedtime, waketime, asleep_min, deep_min, rem_min, light_min')
         .eq('user_id', user!.id)
         .gte('waketime', localDayRangeISO(startStr).start)
         .lt('waketime', localDayRangeISO(endStr).start);
@@ -315,9 +316,15 @@ export default function WeeklyReviewScreen() {
      row is not a meal. */
   const { mean: avgKcal } = metricMean(logs, (l) => Number(l.kcal));
   const { mean: avgProtein, count: proteinDays } = metricMean(logs, (l) => Number(l.protein_g));
-  const avgSleepMin = avg(
-    (sleepLogs ?? []).map((s) => (s.deep_min ?? 0) + (s.rem_min ?? 0) + (s.light_min ?? 0)),
-  );
+  /*
+    Độ dài một đêm là `asleepMinutes`, không phải tổng ba giai đoạn.
+
+    Hai dòng trong tệp này từng cộng `deep + rem + light`, và với một đêm ghi
+    tay KHÔNG nhập giai đoạn nào thì tổng ấy bằng 0 — tức bản tổng kết tuần
+    báo người ta ngủ 0 tiếng. Đó đúng là lỗi `sleep-insights.tsx` đã ghi lại
+    rằng mình từng mắc rồi sửa; bản chuẩn sống ở `daily-log-service.ts`.
+  */
+  const avgSleepMin = avg((sleepLogs ?? []).map((s) => asleepMinutes(s)));
   const avgSleepH = avgSleepMin / 60;
   const totalVolume = sum(logs.map((l) => Number(l.volume_load) || 0));
   const workoutCount = (workouts ?? []).length;
@@ -345,7 +352,7 @@ export default function WeeklyReviewScreen() {
     const sleep = (sleepLogs ?? []).find(
       (s) => localDateStr(new Date(s.waketime)) === dateStr,
     );
-    const sleepMin = sleep ? (sleep.deep_min ?? 0) + (sleep.rem_min ?? 0) + (sleep.light_min ?? 0) : 0;
+    const sleepMin = sleep ? asleepMinutes(sleep) : 0;
     return {
       day,
       date: dateStr,

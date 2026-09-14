@@ -194,6 +194,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodaySkeleton } from '@/components/ascnd/skeleton';
 import { useTodayActiveKcal, useTodayTrainingMinutes } from '@/hooks/use-fitness-data';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
+import { asleepMinutes } from '@/lib/daily-log-service';
 import { energyProfileFrom } from '@/lib/energy';
 import { useTodayWater } from '@/hooks/use-water';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
@@ -1156,8 +1157,27 @@ export default function TodayScreen() {
   const stages = sleep
     ? { deep: sleep.deep_min ?? 0, rem: sleep.rem_min ?? 0, light: sleep.light_min ?? 0 }
     : null;
-  const stageSum = stages ? stages.deep + stages.rem + stages.light : 0;
-  const sleepTotalMin = stageSum > 0 ? stageSum : Number(dailyLog?.sleep_duration_min) || 0;
+  /*
+    ── ĐỘ DÀI một đêm là `asleepMinutes`, KHÔNG phải tổng ba giai đoạn ──
+
+    Dòng này từng là `stageSum > 0 ? stageSum : dailyLog.sleep_duration_min`,
+    tức nó tự dựng một định nghĩa thứ hai cho "ngủ bao lâu". Người dùng báo
+    đúng hậu quả: ghi 8 tiếng nhưng nhập light/rem/deep cộng lại ra 6 thì thẻ
+    này hiện 6 còn thẻ bảy đêm hiện 8 — hai thẻ cạnh nhau nói hai con số về
+    cùng một đêm.
+
+    `sleep-insights.tsx` đã ghi rõ bản chuẩn: "`asleepMinutes` is the app's one
+    definition of a night's length and it now lives in one place", và ghi thêm
+    rằng cùng lỗi ấy đã phải sửa HAI lần — ở engine sẵn sàng và ở hai hàm AI.
+    Đây là lần thứ ba, nên nó không được sửa bằng cách chép lại bản chuẩn vào
+    đây mà bằng cách GỌI bản chuẩn.
+
+    Ba giai đoạn vẫn ở nguyên chỗ của chúng: chúng là một PHÂN RÃ, và một phân
+    rã không buộc phải cộng lại bằng tổng. HealthKit không tính phần thức giấc
+    vào ba giai đoạn; người nhập tay thì đang ước lượng. Phần chênh là phần
+    không ai đo, và gọi nó là "tổng thời gian ngủ" là bịa.
+  */
+  const sleepTotalMin = sleep ? asleepMinutes(sleep) : Number(dailyLog?.sleep_duration_min) || 0;
   const sleepTargetHours = Number(profile?.sleep_target_hours) || 8;
 
   const waterTarget = Number(profile?.water_target_ml) || 2500;
