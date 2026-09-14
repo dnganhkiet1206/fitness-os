@@ -700,7 +700,7 @@ const STEPS = [
     nó đúng trong một ô lõm và vô hình ngay trên mặt thẻ: cùng cái bẫy
     `Material.onPage` đã sinh ra để gỡ, lần này ở vai cái rãnh.
   */
-  ['rãnh thanh', 'node', ['tools/bar-track.mjs']],
+  ['thẻ Bước đi', 'node', ['tools/bar-track.mjs']],
   ['số bước', 'node', ['tools/gate-count.mjs']],
   ['đầu vào SS', 'node', ['tools/readiness-inputs.mjs']],
   ['điều kiện sổ', 'node', ['tools/ledger-live.mjs']],

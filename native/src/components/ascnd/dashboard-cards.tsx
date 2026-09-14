@@ -1824,13 +1824,55 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
   );
 }
 
+/**
+ * Thẻ Bước đi.
+ *
+ * ── vì sao thẻ này là MỰC, không phải xanh ──
+ *
+ * `iconColor` ở đây từng là `'#2bf5a8'` viết thẳng. Đó là một màu của bản TỐI,
+ * và trên ô icon của chính nó ở bản sáng nó đo được **1,31:1** — dưới sàn 3:1
+ * của WCAG 1.4.11 cho một hình mang nghĩa. Tức trên giấy, cái icon bàn chân gần
+ * như không có ở đó.
+ *
+ * `icon-tint.ts` ghi lại đúng lớp lỗi ấy đã được dọn một lần: *"icon món ăn vẫn
+ * là xanh neon #2bf5a8, đo được 1,43:1 trên mặt thẻ trắng"*. Đợt ấy chuyển bảy
+ * bảng tint sang KHOÁ bảng màu để mỗi theme tự trả lời — nhưng nó dọn cái bảng,
+ * còn chỗ vẽ này gõ màu thẳng nên không bảng nào với tới. Không luật nào bắt
+ * được: `palette-key.mjs` chỉ gác tham số của `alpha()`, và một mã màu hợp lệ
+ * thì `tsc` không có ý kiến gì.
+ *
+ * Chủ dự án chọn đưa thẻ về MỰC thay vì trả icon cho `iconTint` (bảng trả về
+ * cam `metricOrangeGraphic`, 3,02 — qua sàn nhưng sát) hay đi tìm một sắc xanh
+ * khác. Nên cả ba thứ trên thẻ — icon, thanh, con số — nay cùng một mực, và mực
+ * là thứ duy nhất trong bảng màu tự lật theo theme: `#1a1917` trên giấy,
+ * `#a8afbd` trong phòng tối.
+ *
+ *     icon trên ô     sáng 15,00 · tối 7,21
+ *     ô trên mặt thẻ  sáng 1,171 · tối 1,139
+ *
+ * ── ô icon: 8% mực, và con số ấy là chỗ DUY NHẤT qua được cả hai theme ──
+ *
+ * Ô 40pt phải tách khỏi mặt thẻ, nếu không nó thôi là một cái ô. Lấy bậc bề mặt
+ * cố ý nhỏ nhất của iOS (1,134) làm sàn rồi đo hết các ứng viên:
+ *
+ *     ô icon                     sáng    tối
+ *     rgba(34,197,94,.1) (cũ)    1,090   1,170   ← sáng hụt
+ *     c.secondary                1,198   1,021   ← tối gần như biến mất
+ *     m.inset.bg                 1,097   1,166   ← sáng hụt, và ô này KHÔNG lõm
+ *     alpha(c.primary, 0.06)     1,129   1,099   ← cả hai hụt
+ *     alpha(c.primary, 0.08)     1,171   1,139   ← chọn
+ *
+ * Không phải "8% nghe hợp lý" — 6% hụt cả hai bên và 10% thì bắt đầu đọc ra
+ * thành một cái nút bấm được. 8 là chỗ duy nhất trong dải vừa đủ cả hai.
+ */
 export function StepsWidget({ steps, target, labels }: { steps: number; target: number; labels: { title: string } }) {
+  const c = usePalette();
   const pct = Math.min(100, Math.round((steps / (target || 1)) * 100));
   return (
     <CompactWidget
       icon={Footprints}
-      iconColor="#2bf5a8"
-      iconBg="rgba(34,197,94,0.1)"
+      iconColor={c.primary}
+      iconBg={alpha(c.primary, 0.08)}
       label={labels.title}
       valueText={`${steps.toLocaleString()} / ${target.toLocaleString()}`}
       pct={pct}

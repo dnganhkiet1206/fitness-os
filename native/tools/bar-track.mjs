@@ -1,7 +1,13 @@
 /**
- * Rãnh của thanh Bước đi phải nhìn thấy được trên mặt nó thật sự nằm.
+ * Mọi dấu trên thẻ Bước đi phải nhìn thấy được trên mặt nó thật sự nằm.
  *
  *     node tools/bar-track.mjs
+ *
+ * Bốn cái dấu, hai câu hỏi. Thanh tiến độ (rãnh + màu tô) và cái icon (glyph +
+ * ô 40pt) đều hỏi đúng một thứ: *cái này có tách khỏi thứ nó tựa lên không* —
+ * nên chúng dùng chung một bộ đo ở đây thay vì hai luật với hai bản sao của
+ * cùng một phép composite. Hai bản sao của một phép đo là thứ `lib/stack.mjs`
+ * được viết ra để chặn.
  *
  * ── lỗi nó sinh ra để chặn ──
  *
@@ -83,6 +89,9 @@ const over = (v, ground) => {
 /** Mặt thẻ THẬT của một theme, dựng lại chứ không gõ lại. */
 const cardFace = (t) => over(materials[t].bg, hex(palettes[t].background));
 
+/** Mọi cặp "dấu trên mặt nào" đã đo được, để câu xanh nói ra số chứ không hứa. */
+const lines = [];
+
 const src = readFileSync(path.join(NATIVE, CARD), 'utf8');
 /* Chú thích bị bỏ đi trước khi tìm: đoạn giải thích ngay trên chỗ vẽ có nhắc
    tên cả hai token bị loại, và một cái neo bắt được chính lời giải thích về nó
@@ -98,6 +107,82 @@ if (!/^\s*bar\s*$/m.test(stepsBody)) {
     `${CARD}: \`StepsWidget\` không còn truyền \`bar\` — thẻ Bước đi đã thôi vẽ thanh tiến độ, nên luật `
       + 'này đang đo một chỗ vẽ không ai bật. Nếu thanh bị gỡ thật thì gỡ luôn luật; nếu không thì đây là lỗi',
   );
+}
+
+/*
+  ── cái ICON, cùng một câu hỏi, cùng một cái thẻ ──
+
+  Không tách ra thành luật riêng, vì nó dùng lại đúng bộ đo ở trên: cùng mặt
+  thẻ dựng lại từ bảng màu, cùng hai cái sàn. Hai luật với hai bản sao của một
+  phép composite là đúng thứ `stack.mjs` được viết ra để chặn.
+
+  `iconColor` ở đây từng là `'#2bf5a8'` gõ thẳng — một màu của bản TỐI, đo được
+  1,31:1 trên ô icon của chính nó ở bản sáng. Nó sống sót vì KHÔNG cửa nào có
+  thẩm quyền: `icon-tint.ts` dọn cái BẢNG tint, còn chỗ vẽ này gõ màu thẳng nên
+  bảng không với tới; `palette-key.mjs` chỉ gác tham số của `alpha()`; và một mã
+  màu hợp lệ thì `tsc` không có ý kiến gì.
+
+  Nên vế cứng nhất ở đây không phải con số — mà là: chỗ vẽ KHÔNG ĐƯỢC viết một
+  mã màu thẳng. Một mã màu viết thẳng không lật được theo theme, và đó chính xác
+  là cách một màu của phòng tối đi ra giấy.
+*/
+const HEX = /#[0-9a-fA-F]{3,8}/;
+const iconMarks = [
+  { prop: 'iconColor', what: 'màu icon bàn chân' },
+  { prop: 'iconBg', what: 'ô icon 40pt' },
+];
+const iconVals = {};
+for (const { prop, what } of iconMarks) {
+  const m = new RegExp(`${prop}=\\{([^}]*(?:\\{[^}]*\\})?[^}]*)\\}|${prop}="([^"]*)"`).exec(stepsBody);
+  const raw = (m?.[1] ?? m?.[2] ?? '').trim();
+  if (!raw) {
+    problems.push(
+      `${CARD}: \`StepsWidget\` không còn khai \`${prop}\` — ${what} đã được viết lại. Đọc lại bằng mắt `
+        + 'rồi sửa luật, đừng để nó xanh suông',
+    );
+    continue;
+  }
+  if (HEX.test(raw)) {
+    problems.push(
+      `${CARD}: \`${prop}\` là một mã màu viết thẳng (\`${raw}\`). Một mã màu viết thẳng KHÔNG lật theo `
+        + 'theme, và đó đúng là cách `#2bf5a8` — một màu của bản tối — đi ra giấy và nằm đó ở 1,31:1. Dùng '
+        + 'một token của bảng màu, thứ tự trả lời khác nhau cho hai theme',
+    );
+    continue;
+  }
+  const tok = /^c\.(\w+)$/.exec(raw) ?? /^alpha\(c\.(\w+),\s*([\d.]+)\)$/.exec(raw);
+  if (!tok) {
+    problems.push(
+      `${CARD}: \`${prop}\` là \`${raw}\` — luật này chỉ đo được \`c.X\` hoặc \`alpha(c.X, n)\`. Nếu chỗ vẽ `
+        + 'đổi sang một hình dạng khác thì mở luật ra đọc lại, đừng để nó bỏ qua',
+    );
+    continue;
+  }
+  iconVals[prop] = { key: tok[1], a: tok[2] ? Number(tok[2]) : 1, raw };
+}
+
+if (iconVals.iconColor && iconVals.iconBg) {
+  for (const t of ['light', 'dark']) {
+    const p = palettes[t];
+    const card = cardFace(t);
+    const tile = overC(hex(p[iconVals.iconBg.key]), card, iconVals.iconBg.a);
+    const glyph = overC(hex(p[iconVals.iconColor.key]), tile, iconVals.iconColor.a);
+    lines.push(`${t} icon/ô ${ratio(glyph, tile).toFixed(2)} · ô/thẻ ${ratio(tile, card).toFixed(3)}`);
+    if (ratio(glyph, tile) < GRAPHIC) {
+      problems.push(
+        `${t}: icon bàn chân (\`${iconVals.iconColor.raw}\`) trên ô của nó (${toHex(tile)}) chỉ `
+          + `${ratio(glyph, tile).toFixed(2)}:1, dưới sàn ${GRAPHIC} của WCAG 1.4.11. Đây đúng con số mà `
+          + '`#2bf5a8` từng cho trên giấy: 1,31',
+      );
+    }
+    if (ratio(tile, card) < GROOVE) {
+      problems.push(
+        `${t}: ô icon (${toHex(tile)}) chỉ tách khỏi mặt thẻ (${toHex(card)}) `
+          + `${ratio(tile, card).toFixed(3)}:1, dưới ${GROOVE}. Dưới ngưỡng ấy nó thôi là một cái ô và icon `
+          + 'đọc ra như đang trôi trên mặt thẻ',
+      );
+    }
+  }
 }
 
 /*
@@ -129,7 +214,6 @@ const readProp = (attrs, name) => {
   return m ? m[1] : null;
 };
 
-const lines = [];
 if (barM) {
   const attrs = barM[1];
   const fillKey = readProp(attrs, 'color');
@@ -219,8 +303,12 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `rãnh thanh Bước đi OK — đọc màu tô và rãnh RA KHỎI chỗ vẽ rồi composite lên mặt thẻ dựng lại từ bảng màu `
-    + `đang ship: ${lines.join(' · ')} (sàn rãnh ${GROOVE}, sàn hình ${GRAPHIC}:1 của WCAG 1.4.11). Vế hai giữ `
+  `thẻ Bước đi OK — bốn cái dấu trên thẻ (icon, ô icon, rãnh thanh, màu tô) được ĐỌC RA khỏi chỗ vẽ rồi `
+    + `composite lên mặt thẻ dựng lại từ bảng màu đang ship: ${lines.join(' · ')} (sàn rãnh ${GROOVE}, sàn `
+    + `hình ${GRAPHIC}:1 của WCAG 1.4.11). Chỗ vẽ còn bị cấm viết một mã màu thẳng, vì đó đúng là cách `
+    + '`#2bf5a8` — một màu của bản TỐI — ra tới giấy và nằm đó ở 1,31:1 mà không cửa nào có thẩm quyền: '
+    + '`icon-tint.ts` dọn cái BẢNG tint chứ không với tới một màu gõ thẳng, `palette-key.mjs` chỉ gác tham '
+    + `số của \`alpha()\`, và \`tsc\` không có ý kiến về một mã màu hợp lệ. Vế hai giữ `
     + `cho lựa chọn ấy còn lý do: hai ứng viên hiển nhiên vẫn hỏng trên chính mặt ấy — ${rejects.join(' · ')} `
     + '— nên `ringTrack` chưa thành một biệt lệ thừa. Đây là một CÁI CHỐT cho MỘT thanh, không phải định luật '
     + 'cho mọi thanh, và đó là kết luận có đo: bản đầu bắt mọi `<ProgressBar>` khai rãnh tường minh thì đỏ ở '
