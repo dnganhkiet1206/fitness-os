@@ -23,7 +23,13 @@ import { makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { activityModel, type ActivityInput, type RingKey, type RingModel } from '@/lib/activity';
+import {
+  activityModel,
+  ringTargetText,
+  ringValueText,
+  type ActivityInput,
+  type RingKey,
+} from '@/lib/activity';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -316,8 +322,12 @@ export function ActivityRingsCard({
           <HeroTiles
             tiles={rings.map((r) => ({
               label: label[r.key],
-              value: String(Math.round(r.current)),
-              unit: `/ ${Math.round(r.target)} ${unit[r.key]}`,
+              /* Dấu ngã và dấu phân cách nghìn đều nằm trong `lib/activity.ts`,
+                 vì dòng chú ngay dưới lưới này hứa có dấu ngã và một lời hứa
+                 vẽ thẳng trong JSX là lời hứa bị bỏ lại ở lần gom giao diện
+                 kế tiếp — đúng thứ đã xảy ra một lần. */
+              value: ringValueText(r),
+              unit: ringTargetText(r, unit[r.key]),
               color: RING_COLORS[r.key][0],
             }))}
           />
@@ -327,33 +337,6 @@ export function ActivityRingsCard({
       </Expander>
 
       <ActivityExplainer visible={help.open} onClose={help.close} stepsTarget={input.stepsTarget} />
-    </View>
-  );
-}
-
-/** One ring, read out: what it is, how far along, out of what. */
-function Row({ ring, label, unit }: { ring: RingModel; label: string; unit: string }) {
-  const c = usePalette();
-  const styles = stylesFor(c);
-  const [tint] = RING_COLORS[ring.key];
-  const dim = ring.source === 'none';
-  return (
-    <View style={styles.row}>
-      <View style={styles.rowHead}>
-        <View style={[styles.dot, { backgroundColor: dim ? c.mutedForeground : tint }]} />
-        <Text style={styles.rowLabel}>{label}</Text>
-      </View>
-      <View style={styles.rowValues}>
-        <Text style={[styles.rowValue, dim && styles.rowValueDim]}>
-          {/* The tilde is the whole disclosure at a glance; the line under the
-              card says what it means. */}
-          {ring.source === 'estimated' ? '~' : ''}
-          {ring.current.toLocaleString()}
-        </Text>
-        <Text style={styles.rowTarget}>
-          / {ring.target.toLocaleString()} {unit}
-        </Text>
-      </View>
     </View>
   );
 }
@@ -397,23 +380,7 @@ const stylesFor = makeStyles((c) => ({
     letterSpacing: 2.4,
     color: c.mutedForeground,
   },
-  body: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg },
-  rows: { flex: 1, gap: spacing.sm + 2 },
-  row: { gap: 1 },
-  rowHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  dot: { width: 7, height: 7, borderRadius: 3.5 },
-  rowLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: c.mutedForeground },
-  rowValues: { flexDirection: 'row', alignItems: 'baseline', gap: 4 },
-  rowValue: {
-    fontSize: 19,
-    fontFamily: 'Menlo',
-    fontWeight: '700',
-    color: c.foreground,
-    fontVariant: ['tabular-nums'],
-  },
   /* A ring nothing has reported on reads as absent, not as a score of nought. */
-  rowValueDim: { color: c.mutedForeground, fontWeight: '400' },
-  rowTarget: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   note: { fontSize: 11, color: c.mutedForeground },
 
   /* Dimmed, not hidden: the button keeps its footprint so the card does not

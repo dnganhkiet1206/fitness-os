@@ -18,7 +18,7 @@
  * still visibly an estimate by the time it reaches the glass.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -50,6 +50,14 @@ const over = (fg, alpha, bg) => {
   );
 };
 
+/* Cùng hình dạng với `one-definition.mjs`: giữ nguyên độ dài để số dòng không
+   trôi, và để một bộ dò không đỏ vì chính đoạn văn kể lại lỗi nó đi bắt. */
+const blank = (s) => s.replace(/[^\n]/g, ' ');
+const stripComments = (s) =>
+  s
+    .replace(/\/\*[\s\S]*?\*\//g, blank)
+    .replace(/(^|[^:'"`\\])\/\/[^\n]*/g, (m, lead) => lead + blank(m.slice(lead.length)));
+
 try {
   execFileSync(
     'npx',
@@ -57,12 +65,17 @@ try {
       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  const { activityModel, trainingMinutes } = createRequire(import.meta.url)(
-    path.join(out, 'activity.js'),
-  );
+  const { activityModel, trainingMinutes, ringValueText, ringTargetText } = createRequire(
+    import.meta.url,
+  )(path.join(out, 'activity.js'));
 
   const problems = [];
+  /* Đếm tại chỗ thay vì gõ tay vào dòng xanh: con số "18 ca" ở dòng ấy đã đứng
+     im qua vài lần thêm ca, và một dòng xanh nói sai số lượng là một dòng xanh
+     không ai đọc nữa. */
+  let CASES = 0;
   const eq = (what, got, want) => {
+    CASES++;
     if (got !== want) problems.push(`${what}: ${got}, đáng lẽ ${want}`);
   };
 
@@ -250,6 +263,86 @@ try {
     problems.push('activity-rings: còn id gradient viết cứng');
   }
 
+  /*
+    ── đến tận mặt kính ──
+
+    Dòng mở đầu tệp này hứa canh "whether an estimate is still visibly an
+    estimate by the time it reaches the glass". Suốt một thời gian dài nó KHÔNG
+    canh: mọi ca ở trên đọc trường `source` của MÔ HÌNH, còn cái dấu trên màn
+    hình thì không ai kiểm — trong khi dòng xanh cuối tệp vẫn in "ước tính luôn
+    bị đánh dấu".
+
+    `d439b2b` gom năm trang hero về chung một lưới ô và bỏ lại component vẽ ba
+    hàng cũ: không xoá, chỉ thôi được gọi. Dấu ngã nằm trong component ấy. Nên
+    `source` vẫn 'estimated', mười chín ca trên vẫn xanh, `grep '~'` vẫn ra kết
+    quả, `tsc` vẫn sạch — và trên thẻ thì 214 kcal ƯỚC TÍNH trông y hệt 214 kcal
+    ĐO ĐƯỢC, ngay dưới một dòng chú nói rằng số không có dấu là số đo. Dòng chú
+    ấy biến một thứ thiếu thành một thứ SAI.
+  */
+  const tile = { key: 'move', current: 214, target: 300, source: 'measured', pct: 0.71 };
+  eq('ước tính mang dấu ngã', ringValueText({ ...tile, source: 'estimated' }), '~214');
+  eq('số đo không mang dấu ngã', ringValueText({ ...tile, source: 'measured' }), '214');
+  eq('không có số thì cũng không có dấu', ringValueText({ ...tile, current: 0, source: 'none' }), '0');
+  eq('in ra số nguyên', ringValueText({ ...tile, current: 213.6, source: 'measured' }), '214');
+  /*
+    Dấu phân cách nghìn kiểm bằng HÌNH DẠNG, không bằng ký tự: `toLocaleString`
+    đọc locale của máy đang chạy, nên khoá cứng dấu phẩy là khoá cứng máy CI.
+    Thứ cần canh là có một dấu ngăn giữa "10" và "000", bất kể nó là gì.
+  */
+  const target10k = ringTargetText({ ...tile, target: 10000 }, 'bước');
+  if (!/^\/ 10[.,   ]000 bước$/.test(target10k)) {
+    problems.push(
+      `mục tiêu bước in ra "${target10k}" — mất dấu phân cách nghìn, và bốn chữ số liền nhau ở ô số to nhất thẻ là thứ người ta phải đếm bằng mắt`,
+    );
+  }
+
+  const cardCode = stripComments(card);
+  if (!/value: ringValueText\(r\)/.test(cardCode) || !/unit: ringTargetText\(r,/.test(cardCode)) {
+    problems.push(
+      'activity-rings: ô số không đi qua ringValueText/ringTargetText — dấu ngã lại nằm trong JSX, đúng chỗ đã đánh mất nó một lần',
+    );
+  }
+  /*
+    Và KHÔNG một dấu ngã viết cứng nào trong tệp thẻ. Đây chính là thứ đã che
+    lỗi: một nhánh chết giữ ký tự `'~'` làm cả grep lẫn người đọc tin rằng thẻ
+    còn vẽ nó. Dấu chỉ được sinh ở một chỗ, và chỗ ấy chạy rời được nên kiểm
+    được.
+  */
+  if (/['"`]~/.test(cardCode)) {
+    problems.push(
+      "activity-rings: còn một dấu ngã viết cứng trong thẻ — dấu phải đến từ ringValueText, kẻo một nhánh chết giữ dấu và làm mọi phép tìm kiếm tin rằng nó còn được vẽ",
+    );
+  }
+  /*
+    Lời hứa và cái dấu phải đi cùng nhau: màn nào in dòng chú `dcActivityEstimated`
+    thì màn ấy phải gọi `ringValueText`. Ngược lại — chú thích còn, dấu mất — là
+    ca đã xảy ra, và nó tệ hơn cả hai thứ cùng mất.
+  */
+  const screens = [];
+  (function walk(d) {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const q = path.join(d, e.name);
+      if (e.isDirectory()) walk(q);
+      else if (/\.tsx?$/.test(e.name) && !q.endsWith(path.join('lib', 'i18n.ts'))) screens.push(q);
+    }
+  })(path.join(NATIVE, 'src'));
+  let promised = 0;
+  for (const f of screens) {
+    const src = stripComments(readFileSync(f, 'utf8'));
+    if (!/\bdcActivityEstimated\b/.test(src)) continue;
+    promised++;
+    if (!/\bringValueText\b/.test(src)) {
+      problems.push(
+        `${path.relative(NATIVE, f)}: in dòng chú "số có dấu ngã là ước tính" nhưng không gọi ringValueText — hứa một cái dấu mà không vẽ nó`,
+      );
+    }
+  }
+  if (promised === 0) {
+    problems.push(
+      'không màn nào in dcActivityEstimated — hoặc dòng chú đã mất, hoặc bộ dò này đang tự xanh vì không tìm thấy gì',
+    );
+  }
+
   if (problems.length) {
     console.error('vòng hoạt động sai:\n');
     for (const p of problems) console.error(`  ${p}`);
@@ -257,7 +350,7 @@ try {
   }
 
   console.log(
-    'vòng hoạt động OK — 18 ca; số đo thắng ước tính nhưng số đo 0 thì không, ước tính luôn bị đánh dấu; Health là nơi duy nhất ghi active_kcal/active_minutes; rãnh vòng nhìn thấy được; bản "lấy số lớn hơn" vẫn bị bắt',
+    `vòng hoạt động OK — ${CASES} ca; số đo thắng ước tính nhưng số đo 0 thì không; ước tính bị đánh dấu ĐẾN TẬN Ô SỐ (dấu ngã sinh ở một chỗ, và màn nào hứa thì màn ấy phải gọi); Health là nơi duy nhất ghi active_kcal/active_minutes; rãnh vòng nhìn thấy được; bản "lấy số lớn hơn" vẫn bị bắt`,
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

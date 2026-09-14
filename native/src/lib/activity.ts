@@ -212,3 +212,38 @@ export function activityModel(input: ActivityInput): ActivityModel {
     hasAny: rings.some((r) => r.current > 0),
   };
 }
+
+/**
+ * Chữ số của một vòng, và dấu ngã đi kèm nếu đó là ước tính.
+ *
+ * ── vì sao là hàm trong tệp này, không phải một dòng trong JSX ──
+ *
+ * Dòng chú dưới thẻ HỨA một dấu: "Số có dấu ngã là ước tính từ buổi tập bạn đã
+ * ghi, không phải số đo từ thiết bị." Lời hứa ấy chỉ đúng khi có thứ vẽ ra dấu
+ * ngã, và suốt một thời gian thì không.
+ *
+ * `d439b2b` gom năm trang hero về chung một lưới ô. Bản cũ vẽ ba hàng bằng một
+ * component riêng trong tệp thẻ, và chính component ấy mang dấu ngã. Đổi sang
+ * lưới chung thì ba hàng ấy bị bỏ lại — không xoá, chỉ thôi được gọi — nên
+ * `'~'` vẫn nằm trong tệp, `grep` vẫn thấy, `tsc` vẫn sạch, và trên màn hình
+ * thì con số ước tính trông y hệt một phép đo. Dòng chú thì vẫn ở đó, chỉ vào
+ * một dấu không còn tồn tại: tệ hơn là không có dòng chú nào, vì nó nói rằng
+ * những số KHÔNG có dấu đều là số đo.
+ *
+ * Ở trong này thì nó chạy rời được, nên bước gác KIỂM được cái dấu thay vì tin
+ * rằng nó còn đó. Xem `tools/activity.mjs` — phần "đến tận mặt kính".
+ */
+export function ringValueText(ring: RingModel): string {
+  return `${ring.source === 'estimated' ? '~' : ''}${Math.round(ring.current).toLocaleString()}`;
+}
+
+/**
+ * Vế "trên tổng bao nhiêu" của một vòng.
+ *
+ * Cũng mất trong cùng lần đổi ấy, và mất `toLocaleString()`: mục tiêu bước đi
+ * từ "10.000" thành "10000". Bốn chữ số không dấu phân cách là thứ người ta
+ * phải đếm bằng mắt, ở đúng ô số to nhất thẻ.
+ */
+export function ringTargetText(ring: RingModel, unit: string): string {
+  return `/ ${Math.round(ring.target).toLocaleString()} ${unit}`;
+}
