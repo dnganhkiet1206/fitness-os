@@ -337,6 +337,26 @@ try {
   }
 
   /*
+    ── con số đếm, và cái bẫy TextInput ──
+
+    `AnimatedNumber` vẽ bằng `TextInput` bên dưới, và một `TextInput` KHÔNG tự
+    co theo nội dung. Bản đầu đặt nó cạnh một `<Text>` đuôi trong một hàng, và
+    dòng số vỡ đôi trên ảnh dựng: "59,2" dạt trái, "/ 84,5 oz" dạt tận phải.
+
+    Kho đã ghi sẵn cái bẫy này ở `hero-panel.tsx` và `readiness-gauge.tsx`. Nên
+    luật: phần đuôi phải đi vào `suffix` của chính component, không được là một
+    phần tử anh em.
+  */
+  cases++;
+  if (!/suffix=\{/.test(water)) {
+    problems.push('dòng số không dùng `suffix` của AnimatedNumber — TextInput sẽ giãn hết hàng và đẩy phần đuôi ra mép');
+  }
+  cases++;
+  if (/<AnimatedNumber[\s\S]{0,400}?<Text/.test(water)) {
+    problems.push('AnimatedNumber đứng cạnh một <Text> trong cùng khối — đó đúng là bản làm dòng số vỡ đôi');
+  }
+
+  /*
     Phần trăm rời khỏi màn hình nên phải quay lại bằng LỜI. Một cái hình mang
     nghĩa mà không có lời đi kèm là một cái hình chỉ người sáng mắt đọc được.
   */

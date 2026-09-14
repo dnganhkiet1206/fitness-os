@@ -1960,17 +1960,27 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
         sits beside one and the two should land together".
       */
       valueNode={
-        <View style={styles.waterValueRow}>
-          <AnimatedNumber
-            value={displayVolume(ml, unit)}
-            decimals={unit === 'oz' ? 1 : 0}
-            duration={420}
-            style={styles.compactValueLead}
-          />
-          <Text style={styles.compactValueLead}>
-            {` / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
-          </Text>
-        </View>
+        /*
+          Phần đuôi đi vào `suffix` của chính `AnimatedNumber`, KHÔNG phải một
+          `<Text>` đứng cạnh trong một hàng.
+
+          Bản đầu dựng một hàng hai phần tử và nó vỡ đôi: "59,2" dạt trái,
+          "/ 84,5 oz" dạt tận phải. Nguyên nhân là cái bẫy mà kho đã ghi sẵn ở
+          `hero-panel.tsx` — "`AnimatedNumber` là một TextInput bên dưới, thứ
+          không tự co theo nội dung" — nên nó giãn hết chỗ còn lại và đẩy phần
+          đuôi ra mép.
+
+          Một TextInput duy nhất mang cả chuỗi thì không có gì để đẩy, và chỉ
+          phần số đổi theo từng khung. `accessibilityLabel` của nó cũng gộp sẵn
+          cả đuôi.
+        */
+        <AnimatedNumber
+          value={displayVolume(ml, unit)}
+          decimals={unit === 'oz' ? 1 : 0}
+          suffix={` / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
+          duration={420}
+          style={styles.compactValueLead}
+        />
       }
       pct={pct}
       figure={<WaterGlass pct={pct} />}
@@ -2200,9 +2210,7 @@ const stylesFor = makeStyles((c, m) => ({
      ngụm và chữ số không được nhảy bề ngang. */
   compactValueLead: { fontSize: 15, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   glassWrap: { alignItems: 'center', justifyContent: 'center' },
-  /* `AnimatedNumber` là một TextInput bên dưới, thứ không tự co theo nội dung —
-     nên nó đứng trong một hàng cùng phần đuôi tĩnh thay vì lồng trong một Text. */
-  waterValueRow: { flexDirection: 'row', alignItems: 'baseline' },
+
   compactValue: { fontSize: 14, fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },
   compactPct: { fontSize: 18, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
 
