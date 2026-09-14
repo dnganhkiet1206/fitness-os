@@ -223,8 +223,15 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
         Không tự dựng lại: `foodList.group` / `.sep` là đúng thứ mà nửa
         dưới của chính trang này đã dùng cho danh sách thực phẩm. Hai danh sách
         trên một trang phải trông như nhau.
+
+        ── và ở ĐÂY nó dùng biến thể không mặt ──
+
+        Danh sách này nằm TRONG một thẻ, còn danh sách thực phẩm bên dưới nằm
+        thẳng trên trang. `group` mang mặt `inset` cho trường hợp thứ hai; ở
+        trường hợp thứ nhất mặt ấy là lớp thứ hai, và trên giấy nó ra một khối
+        BE lồng trong một thẻ TRẮNG. Xem `groupOnCard`.
       */}
-      <View style={foodList.group}>
+      <View style={foodList.groupOnCard}>
         {plans.slice(0, PREVIEW).map((p, i) => (
           <Animated.View key={p.id} entering={rise(i)}>
             {i > 0 ? <View style={foodList.sep} /> : null}
@@ -1016,7 +1023,32 @@ const stylesFor = makeStyles((c, m) => ({
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.inset.border,
-    backgroundColor: m.inset.bg,
+    /*
+      ── ruột viên nang: TRẮNG trên giấy, `inset.bg` trên nền tối ──
+
+      Dòng này từng là `m.inset.bg` cho cả hai diện mạo. Đo ra thì đó là hai
+      kết quả trái ngược, vì `inset.bg` được định nghĩa khác nhau ở hai bảng:
+
+          tối    composite #161617   1,113:1 so với trang   ← nổi lên, đúng
+          sáng             #f7f4ef   1,000:1 so với trang   ← ĐÚNG BẰNG trang
+
+      Trên giấy `inset.bg` CHÍNH LÀ `background`, và giao ước của nó nói vì
+      sao: mặt thẻ lộ trở lại qua chỗ LÕM. Nhưng viên nang này không nằm trong
+      một chỗ lõm nào — nó nằm thẳng trên trang, cạnh một tiêu đề — nên "lộ
+      trang qua nó" biến nó thành một cái viền rỗng. Chủ dự án nhìn trên máy
+      thật và gọi đúng tên: nó trộn vào màu be bên dưới.
+
+      Đây là lần thứ ba cùng một cái bẫy trong kho này. `segmented.tsx` đã ghi
+      lại nó bằng chính con số ấy — "thumb nhận #f7f4ef, đúng bằng hex nền
+      trang (1,00:1)" — và sửa bằng đúng nhánh này; `today-meals.tsx` cũng ghi
+      "trên giấy `inset.bg` CHÍNH LÀ nền trang".
+
+      `m.lit` giữ bản tối từng điểm ảnh và chỉ đổi bản sáng sang `card`
+      #ffffff: 1,097:1 so với trang — ngang với 1,113 của bản tối — và khác
+      hẳn về SẮC (trung tính 0% trên một tờ giấy bão hoà 33%), thứ mà tỉ số
+      tương phản một mình không nói ra. Chữ `primary` trên nền mới: 17,57:1.
+    */
+    backgroundColor: m.lit ? m.inset.bg : c.card,
   },
   planAll: { ...type.footnote, fontWeight: '600', color: c.primary },
   /* Một HÀNG trong khối, không phải một thẻ. Cao 56 để vượt sàn chạm 44 và để

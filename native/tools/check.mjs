@@ -511,6 +511,10 @@ const STEPS = [
      khi nền giấy lật từ hổ phách sang lục-lam — lỗi ấy do chủ dự án nhìn ảnh
      mà tìm ra, không phải công cụ. */
   ['giấy còn là giấy', 'node', ['tools/paper-warmth.mjs']],
+  /* Chỗ hổng giữa bốn luật màu: token thì được đo, còn một biểu thức
+     `alpha(m.ink, x)` dựng tại chỗ thì không cửa nào có thẩm quyền — và sáu
+     chỗ như thế đã tụt xuống 1,84–3,17:1. */
+  ['mực mờ', 'node', ['tools/ink-alpha.mjs']],
   /* Cùng họ với `daily-log.mjs` (một phép chiếu, một chỗ): một đại lượng có
      hàm sở hữu rồi thì không màn nào được tự tính lại — cái bẫy đã sập bốn
      lần, lần gần nhất là hai con số cho cùng một đêm trên cùng một màn. */

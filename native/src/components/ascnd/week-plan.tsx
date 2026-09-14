@@ -1,9 +1,17 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { CheckCircle2, ChevronLeft, ChevronRight, Dumbbell, Moon, Plus, X } from 'lucide-react-native';
-import { useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 
+import { BOUNCE, duration, spring } from '@/constants/motion';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { MusicLaunch } from '@/components/ascnd/music-launch';
 import { Icon } from '@/components/ascnd/icon';
@@ -121,6 +129,97 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
   const upsert = useUpsertRoutineDay();
   const [picking, setPicking] = useState<number | null>(null);
   /*
+    ── sheet phải DÂNG LÊN, và nó cần sống qua cả lúc đi ra ──
+
+    `animationType="fade"` cũ làm cả tấm nền lẫn sheet hiện ra TẠI CHỖ. Một
+    bottom sheet không có điểm xuất phát thì không đọc ra là "một lớp vừa được
+    kéo lên từ mép dưới"; nó chỉ xuất hiện. Đó là thứ Apple không bao giờ làm
+    với sheet — trong HIG, sheet là một tấm TRƯỢT VÀO từ cạnh nó neo.
+
+    Nhưng `<Modal>` gỡ cây con ngay khi `visible` thành false, nên một hiệu ứng
+    đi ra sẽ không kịp chạy: sheet biến mất tức thì rồi mới tới lượt tấm nền.
+    Vì thế `mounted` tách khỏi `picking`: `picking` là câu hỏi "đang chọn ngày
+    nào", còn `mounted` là "cây con còn phải tồn tại bao lâu nữa".
+
+    Cùng cách `mascot-unlock.tsx` đã dựng — `animationType="none"` rồi
+    Reanimated lo cả hai chiều.
+  */
+  const [mounted, setMounted] = useState(false);
+  const t = useSharedValue(0);
+  /*
+    Chiều cao là một SHARED VALUE, không phải một `useRef`.
+
+    `useAnimatedStyle` chạy trên luồng UI; một ref của React sống ở luồng JS và
+    Reanimated không bảo đảm `.current` đọc được từ worklet — nó "chạy được"
+    trong dev rồi hỏng lặng lẽ ở chỗ khác. Shared value là thứ được thiết kế để
+    hai luồng cùng thấy.
+  */
+  const sheetH = useSharedValue(320);
+  const closing = useRef(false);
+  /* Hẹn giờ gỡ cây con. Giữ lại để HUỶ được: mở lại trong lúc nó đang đếm thì
+     cú gỡ cũ vẫn nổ và sheet biến mất ngay sau khi vừa dâng lên. */
+  const unmountAt = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (picking === null) return;
+    closing.current = false;
+    if (unmountAt.current) {
+      clearTimeout(unmountAt.current);
+      unmountAt.current = null;
+    }
+    setMounted(true);
+    /*
+      Nền mờ theo TIMING, tấm theo LÒ XO — hai vật khác chất thì đi khác nhau.
+      Một lớp mực không có khối lượng nên nó không nảy; một tấm thì có.
+
+      `BOUNCE.smooth` (0) chứ không `snappy`: một sheet nảy lên rồi lún xuống
+      đọc ra là vui tính, và đây là hộp thoại hỏi "ngày này tập gì". Apple
+      trình bày sheet không có overshoot nhìn thấy được.
+
+      0,46 giây là chu kỳ CẢM NHẬN của `spring(duration, bounce)` — xem
+      `constants/motion.ts`, công thức WWDC23 hai tham số.
+    */
+    t.value = withSpring(1, spring(0.46, BOUNCE.smooth));
+  }, [picking, t]);
+
+  /*
+    Lối RA nhanh hơn lối vào, và bằng timing chứ không lò xo.
+
+    iOS đóng sheet dứt khoát hơn lúc mở: mở là một lời mời, đóng là một câu trả
+    lời đã xong. Một lò xo đi xuống còn kéo theo đuôi lún, tức tấm còn nấn ná
+    sau khi người dùng đã quyết.
+  */
+  /*
+    `duration.move` (240), không phải một con số tôi tự chọn.
+
+    Bản đầu viết 220, và `tools/motion.mjs` đỏ đúng câu nó cần nói: "đặt tên
+    cho một con số không làm nó thoát khỏi thang". Thang có bốn nhịp và mỗi
+    nhịp có một VAI; vai ở đây là `move` — "một mặt trượt về một vị trí mới",
+    đúng thứ tấm này đang làm khi nó tụt xuống khỏi mép.
+  */
+  const EXIT_MS = duration.move;
+  const close = useCallback(() => {
+    if (closing.current) return;
+    closing.current = true;
+    setPicking(null);
+    t.value = withTiming(0, { duration: EXIT_MS, easing: Easing.in(Easing.cubic) });
+    unmountAt.current = setTimeout(() => setMounted(false), EXIT_MS + 20);
+  }, [t]);
+
+  /* Rời màn giữa chừng thì hẹn giờ vẫn còn treo và sẽ gọi `setMounted` trên
+     một component đã gỡ. */
+  useEffect(() => () => {
+    if (unmountAt.current) clearTimeout(unmountAt.current);
+  }, []);
+
+  const backdropStyle = useAnimatedStyle(() => ({ opacity: t.value }));
+  const sheetStyle = useAnimatedStyle(() => ({
+    /* Đi đúng CHIỀU CAO CỦA CHÍNH NÓ, đo qua `onLayout`: một hằng số sẽ hoặc
+       để hở một dải sheet ở mép dưới lúc bắt đầu (danh sách dài), hoặc bắt nó
+       đi thừa một quãng vô hình (danh sách ngắn) và cú dâng ra chậm giả tạo. */
+    transform: [{ translateY: (1 - t.value) * sheetH.value }],
+  }));
+  /*
     The day the page was opened on.
 
     `initialDay` is what the training tab's card passes when you tap a cell on
@@ -173,6 +272,35 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
           { day: 'numeric', month: 'short' },
         )}`;
 
+  /*
+    Tên nào xuất hiện nhiều hơn một lần trong chính danh sách này.
+
+    Tính từ `templates` chứ không hỏi máy chủ: mơ hồ là chuyện của DANH SÁCH
+    đang bày ra, không phải của cả bảng. Hai buổi trùng tên nhưng chỉ một cái
+    lọt vào đây thì không có gì để phân biệt cả.
+  */
+  const dupNames = useMemo(() => {
+    const seen = new Map<string, number>();
+    for (const t of templates ?? []) seen.set(t.name, (seen.get(t.name) ?? 0) + 1);
+    return new Set([...seen].filter(([, n]) => n > 1).map(([name]) => name));
+  }, [templates]);
+
+  /**
+   * Dòng phụ của một hàng trong bộ chọn.
+   *
+   * `n bài` luôn có vì nó hữu ích mọi lúc — nó nói buổi tập ấy NẶNG cỡ nào mà
+   * không phải mở ra xem. Ngày tạo chỉ thêm vào khi tên bị trùng: đó là lúc
+   * duy nhất người đọc cần một thứ để tách hai hàng ra, và rải ngày lên mọi
+   * hàng khi không có gì để tách là thêm nhiễu chứ không thêm nghĩa.
+   */
+  const templateMeta = (t: { name: string; exercises: unknown; created_at?: string | null }) => {
+    const n = Array.isArray(t.exercises) ? t.exercises.length : 0;
+    const count = vi ? `${n} bài` : `${n} exercise${n === 1 ? '' : 's'}`;
+    if (!dupNames.has(t.name) || !t.created_at) return count;
+    const made = new Date(t.created_at).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+    return `${count} · ${vi ? `tạo ${made}` : `added ${made}`}`;
+  };
+
   const byDay = new Map((days ?? []).map((d) => [d.day_of_week, d]));
   const templateFor = (id: string | null | undefined) =>
     id ? templates?.find((t) => t.id === id) ?? null : null;
@@ -192,7 +320,10 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
       // it; the day is still part of the week's plan either way.
       is_deload: d?.is_deload ?? false,
     });
-    setPicking(null);
+    /* `close()`, không phải `setPicking(null)`: chọn xong cũng là một lối ra,
+       và một lối ra không chạy hiệu ứng sẽ để `mounted` kẹt lại — sheet đứng
+       nguyên trên màn. Mọi đường thoát khỏi sheet này đều đi qua một cửa. */
+    close();
   };
 
   const toggleDeload = (dayOfWeek: number, isDeload: boolean) => {
@@ -329,10 +460,11 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
         are asked in the same place.
       */}
       <Modal
-        visible={picking !== null}
+        visible={mounted}
         transparent
-        animationType="fade"
-        onRequestClose={() => setPicking(null)}>
+        statusBarTranslucent
+        animationType="none"
+        onRequestClose={close}>
         {/*
           `accessible={false}` ở cả hai tấm: chúng là vùng NUỐT CHẠM, không phải
           nút. React Native đặt `accessible: accessible !== false` cho mọi
@@ -349,7 +481,13 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
           bỏ tấm nền khỏi cây trợ năng khi sheet chưa có lối ra có nhãn là nhốt
           người dùng VoiceOver lại — tệ hơn hẳn lỗi đang sửa.
         */}
-        <Pressable accessible={false} style={styles.pickerBackdrop} onPress={() => setPicking(null)}>
+        <Animated.View style={[styles.pickerBackdropFill, backdropStyle]} pointerEvents="none" />
+        <Pressable accessible={false} style={styles.pickerBackdrop} onPress={close}>
+          <Animated.View
+            style={sheetStyle}
+            onLayout={(e) => {
+              sheetH.value = e.nativeEvent.layout.height;
+            }}>
           <Pressable accessible={false} style={styles.pickerSheet}>
             {/* Lối ra có nhãn, đặt trong hàng tiêu đề ĐÃ CÓ nên không thêm một
                 điểm chiều cao nào. Cùng mẫu với sheet bộ sưu tập ở `shop.tsx`:
@@ -366,7 +504,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                    đĩa nền. */
                 hitSlop={15}
                 style={styles.pickerClose}
-                onPress={() => setPicking(null)}>
+                onPress={close}>
                 <Icon icon={X} size={14} color={c.mutedForeground} />
               </Pressable>
             </View>
@@ -389,7 +527,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                   const day = picking;
                   if (day === null) return;
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setPicking(null);
+                  close();
                   nav.push({ pathname: '/workout-builder', params: { assignDay: String(day) } });
                 }}>
                 <View style={styles.pickerRowInner}>
@@ -412,6 +550,21 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                 ) : null}
               </Pressable>
 
+              {/*
+                ── hai hàng CÙNG TÊN là một danh sách không chọn được ──
+
+                Người dùng chụp màn hình này: bộ chọn bày "Tập Ngực" hai lần,
+                không gì phân biệt. Trùng tên là trạng thái HỢP LỆ — chú thích
+                của `useCreateWorkoutTemplate` đã ghi thẳng "two workouts are
+                allowed to share a name" — và chính chú thích ấy đã lường trước
+                mối nguy: "the second one would silently schedule the first".
+                Nó lường cho MÃ; ở đây người mới là bên chọn nhầm.
+
+                Nên mỗi hàng có một dòng phụ. `n bài` luôn hiện vì nó hữu ích
+                mọi lúc; NGÀY TẠO chỉ hiện khi có hàng khác trùng tên — thêm
+                thông tin đúng lúc có mơ hồ, chứ không rải ngày lên mọi hàng
+                khi chẳng có gì để phân biệt.
+              */}
               {(templates ?? []).map((t) => (
                 <Pressable
                   key={t.id}
@@ -424,7 +577,10 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                         trang trí — hàng này đã bấm được rồi, icon không cần
                         nói lại. */}
                     <Icon icon={Dumbbell} size={16} />
-                    <Text style={styles.pickerName} numberOfLines={1}>{t.name}</Text>
+                    <View style={styles.pickerText}>
+                      <Text style={styles.pickerName} numberOfLines={1}>{t.name}</Text>
+                      <Text style={styles.pickerMeta} numberOfLines={1}>{templateMeta(t)}</Text>
+                    </View>
                   </View>
                   {picking !== null && byDay.get(picking)?.template_id === t.id ? (
                     <Icon icon={CheckCircle2} size={16} color={c.primary} />
@@ -463,6 +619,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
               </View>
             ) : null}
           </Pressable>
+          </Animated.View>
         </Pressable>
       </Modal>
     </>
@@ -524,9 +681,17 @@ const stylesFor = makeStyles((c, m) => ({
     Khác hẳn một lớp phủ TRÊN một bề mặt — thứ mà trên nền đen thì cộng sáng
     còn trên giấy thì trừ sáng, và là lý do 106 chỗ kia phải đổi.
   */
+  /*
+    Màu của tấm nền tách sang một lớp RIÊNG nằm dưới.
+
+    Nếu để `backgroundColor` trên chính `Pressable` rồi cho nó `opacity`, cả
+    cây con — kể cả sheet — mờ theo, vì `opacity` áp cho cả nhóm. Tách ra thì
+    lớp mực mờ dần một mình còn tấm thì dâng lên với độ đục đầy đủ, đúng như
+    hai vật khác nhau phải cư xử.
+  */
+  pickerBackdropFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
   pickerBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'flex-end',
     padding: spacing.md,
   },
@@ -579,7 +744,9 @@ const stylesFor = makeStyles((c, m) => ({
   },
   pickerNew: { ...type.body, color: c.primary, fontWeight: '600' },
   pickerRest: { ...type.body, color: c.mutedForeground },
+  pickerText: { flex: 1, minWidth: 0, gap: 1 },
   pickerName: { ...type.body, color: c.foreground, flexShrink: 1 },
+  pickerMeta: { ...type.caption, color: c.mutedForeground },
   pickerEmpty: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', padding: spacing.md },
   deloadRow: {
     flexDirection: 'row',

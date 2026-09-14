@@ -4,7 +4,7 @@ import { ChevronRight } from 'lucide-react-native';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { PLAN_DAYS } from '@/lib/planned-meal';
 
@@ -38,9 +38,40 @@ export function countFill(days?: Record<number, number>) {
  *
  * Tỉ lệ liên tục cần chiều cao mới đọc được, mà chiều cao ở đây bị chặn bởi một
  * hàng danh sách. Nên BA TRẠNG THÁI rời rạc: chưa có gì, có một phần, đủ cả
- * ngày. Ba mức phân biệt được ở 18 điểm.
+ * ngày.
  *
  * Ngày rỗng vẫn vẽ ô: cái bảng phải đủ bảy ô thì mới là một tuần.
+ *
+ * ── ba mức ấy từng được vẽ bằng ba SẮC ĐỘ, và hai trong ba không hiện ra ──
+ *
+ * Bản trước: rỗng = `c.accent`, một phần = green ở 34%, đủ = green. Đo trên
+ * đúng nền chúng nằm:
+ *
+ *     ô RỖNG        1,16:1 sáng · 1,01:1 tối
+ *     ô MỘT PHẦN    1,59    · 2,49
+ *     ô ĐỦ          4,53    · 11,92
+ *
+ * Sàn WCAG 1.4.11 cho một phần đồ hoạ cần để hiểu nội dung là 3,0. Ở bản tối
+ * ô rỗng đo 1,01 — tức không tồn tại. Nên câu "bảng phải đủ bảy ô thì mới là
+ * một tuần" ngay trên đây là một chủ ý KHÔNG được thực hiện: một kế hoạch 0%
+ * hiện ra bảy ô không nhìn thấy, đúng thứ chú thích ấy sinh ra để chặn.
+ *
+ * ── và vì sao lời giải KHÔNG phải ba sắc độ đậm hơn ──
+ *
+ * Ba bậc tách được cần bậc trên ≥ 3,0 × 1,4 × 1,4 = 5,88 với nền (cùng số học
+ * đã ghi ở `sleepRamps`). `readinessGreen` bản sáng là `#078055`, chỉ 4,97.
+ * Ba sắc độ KHÔNG vừa, và đẩy bậc trên lên là đổi màu tín hiệu của app.
+ *
+ * Nên đổi HÌNH thay vì đổi sắc, cùng nước đi đã dùng cho cột "không rõ tầng"
+ * của biểu đồ ngủ: một ô rỗng là một KHUNG, một ô đầy là một khối, và một ô
+ * một phần là khối ấy lấp NỬA DƯỚI. Ba hình khác loại nhau thì không cần một
+ * khoảng tương phản nào giữa chúng — mỗi hình chỉ cần đủ 3,0 với mặt thẻ, và
+ * `readinessGreen` đã có (4,97 · 13,52), còn nét khung lấy `alpha(m.ink, 0.52)`
+ * (3,59 · 5,67).
+ *
+ * Nửa dưới chứ không phải tỉ lệ thật: phản đối ghi ở trên vẫn đúng — 1/6 của
+ * một ô là một sợi ba điểm. Một nửa thì luôn đọc được, và "có nhưng chưa đủ"
+ * là đúng ba chữ nó cần nói.
  */
 export function PlanWeek({ days, perDay }: { days?: Record<number, number>; perDay: number }) {
   const c = usePalette();
@@ -51,11 +82,11 @@ export function PlanWeek({ days, perDay }: { days?: Record<number, number>; perD
         /* `?.[]` chứ không phải `.get()`: dữ liệu đi qua cache được persist nên
            nó là object thuần — xem `useMealPlanFill`. */
         const got = days?.[d] ?? 0;
+        const full = perDay > 0 && got >= perDay;
         return (
-          <View
-            key={d}
-            style={[styles.day, got > 0 && styles.some, perDay > 0 && got >= perDay && styles.full]}
-          />
+          <View key={d} style={styles.day}>
+            {got > 0 ? <View style={[styles.fill, full ? styles.fillAll : styles.fillHalf]} /> : null}
+          </View>
         );
       })}
     </View>
@@ -206,9 +237,20 @@ const stylesFor = makeStyles((c, m) => ({
   /* Khoảng cách 3 điểm: nhỏ hơn nữa thì bảy ô dính thành một dải và không còn
      đếm được là bảy. */
   week: { flexDirection: 'row', gap: 3, marginTop: 1 },
-  day: { flex: 1, height: 18, borderRadius: 4, backgroundColor: c.accent },
-  /* Có một phần: CÙNG màu với "đủ" nhưng nhạt, nên ba mức là một THANG chứ
-     không phải ba màu rời. Mắt đọc thang nhanh hơn đọc bảng chú giải. */
-  some: { backgroundColor: c.readinessGreen, opacity: 0.34 },
-  full: { opacity: 1 },
+  /* Cái KHUNG — nó là "ngày này có tồn tại", nên nó phải thấy được ngay cả khi
+     rỗng: `alpha(m.ink, 0.52)` đo 3,59:1 sáng và 5,67 tối với mặt thẻ. `overflow`
+     để nửa lấp không tràn qua góc bo. */
+  day: {
+    flex: 1,
+    height: 18,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: alpha(m.ink, 0.52),
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  /* Lấp từ ĐÁY lên, như mọi thứ đầy dần trong app này. */
+  fill: { backgroundColor: c.readinessGreen },
+  fillHalf: { height: '50%' },
+  fillAll: { height: '100%' },
 }));

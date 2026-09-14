@@ -116,7 +116,13 @@ export function MetricPanel({
               heightPct={b.missing ? (3 / TRACK) * 100 : Math.max(4, (b.value / peak) * 100)}
               /* Today at full strength, the rest at 55%. Without it the column
                  that matters most is one of seven identical shapes. */
-              color={b.missing ? alpha(m.ink, 0.14) : b.today ? tint : `${tint}8c`}
+              /* `mutedForeground`, không phải `alpha(m.ink, 0.14)` (1,33:1).
+                 Mẩu này PHẢI thấy được — nó là thứ phân biệt "ngày không ai đo"
+                 với "ngày không thuộc tuần này", và ai không thấy nó sẽ đếm ra
+                 sáu ngày thay vì bảy. Cao 3 điểm là thứ giữ nó khiêm tốn, chứ
+                 không phải độ mờ; xem cùng lập luận ở cột "không rõ tầng" của
+                 `sleep-insights`. */
+              color={b.missing ? c.mutedForeground : b.today ? tint : `${tint}8c`}
               radius={3}
               delay={i * 30}
             />

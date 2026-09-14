@@ -291,6 +291,25 @@ const foodListStylesFor = makeStyles((c, m) => ({
     borderColor: m.inset.border,
     overflow: 'hidden',
   },
+  /**
+   * Cùng một danh sách, nhưng ĐÃ nằm trên một mặt thẻ.
+   *
+   * `group` tự mang mặt `inset` vì nó thường nằm thẳng trên trang và cần một
+   * mặt để đứng lên. Khi nó nằm TRONG một `GlassCard` thì mặt ấy thành lớp thứ
+   * hai — và trên giấy `inset.bg` đúng bằng màu trang, nên thứ hiện ra là một
+   * khối BE lồng trong một thẻ TRẮNG. Chủ dự án khoanh đúng khối ấy và nói
+   * muốn nó mang màu thẻ như bên Tập luyện, nơi mỗi mẫu buổi tập là một mặt
+   * trắng.
+   *
+   * Lời giải không phải tô trắng lên khối — trắng trong trắng thì chỉ còn cái
+   * viền vẽ ra nó, tức lại thêm một đường kẻ cho một thứ không cần ranh giới.
+   * Lời giải là BỎ lớp ấy: mặt thẻ đã là mặt của danh sách rồi. Craft-floor
+   * gọi đúng tên lớp thừa này — "nested cards are always wrong".
+   *
+   * Bo góc vẫn giữ để hàng đầu và hàng cuối không đâm vào góc thẻ khi có nền
+   * nhấn lúc bấm.
+   */
+  groupOnCard: { borderRadius: radius.md, overflow: 'hidden' },
   sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },
 }));
 

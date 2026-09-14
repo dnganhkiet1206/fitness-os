@@ -120,7 +120,10 @@ export function SessionRow({
               height={3}
               radius={1.5}
               trackColor={alpha(m.ink, 0.09)}
-              color={alpha(m.ink, 0.32)}
+              /* Ruột thanh là DỮ LIỆU (khối lượng so với lần trước), nên
+                 nó chịu sàn 3,0 của WCAG 1.4.11; `alpha(m.ink, 0.32)` chỉ được
+                 2,05:1. Rãnh phía sau vẫn là nền nên vẫn được mờ. */
+              color={c.mutedForeground}
               style={styles.barTrack}
             />
           ) : null}

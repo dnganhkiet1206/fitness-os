@@ -1050,12 +1050,20 @@ export function DayPlan({
                   hitSlop={12}
                   onPress={() => toggle(row)}
                   style={[styles.check, isDone && styles.checkOn]}>
-                  <Icon
-                    icon={Check}
-                    size={16}
-                    color={isDone ? c.primaryForeground : alpha(m.ink, 0.22)}
-                    strokeWidth={3}
-                  />
+                  {/*
+                    Ô CHƯA tick thì không vẽ dấu tick.
+
+                    Bản trước vẽ nó ở `alpha(m.ink, 0.22)` — 1,60:1, một vết
+                    nhoè. Và vấn đề nặng hơn khả năng đọc: một dấu tick mờ
+                    trong một ô chưa tick đọc ra là "tick một nửa". Ảnh chủ dự
+                    án gửi có ba ô như thế nằm cạnh hai ô đã tick đặc, và ba ô
+                    kia trông như đang ở một trạng thái thứ ba không tồn tại.
+
+                    Tô đậm lên là sai hướng — càng giống ô ĐÃ tick. Trạng thái
+                    chưa tick vốn đã có hình của nó: cái ô rỗng cùng đường
+                    viền. Thêm một glyph vào đó là nói hai lần và nói ngược.
+                  */}
+                  {isDone ? <Icon icon={Check} size={16} color={c.primaryForeground} strokeWidth={3} /> : null}
                 </PressScale>
 
                 {/*
@@ -1154,11 +1162,12 @@ export function DayPlan({
                     secs === row.plannedRest ? styles.chipDefault : null,
                     open && styles.chipOpen,
                   ]}>
-                  <Icon
-                    icon={Timer}
-                    size={11}
-                    color={secs === row.plannedRest ? alpha(m.ink, 0.30) : c.mutedForeground}
-                  />
+                  {/* Một màu cho cả hai nhánh: nhánh "chưa đổi" từng là
+                      `alpha(m.ink, 0.30)` — 1,94:1, dưới cả sàn 3,0 của một
+                      vật thể đồ hoạ. Cái phân biệt đã-đổi với chưa-đổi là CHIP
+                      (nền + viền), không phải icon; xem chú thích ở
+                      `chipTextDefault`. */}
+                  <Icon icon={Timer} size={11} color={c.mutedForeground} />
                   <Text style={[styles.chipText, secs === row.plannedRest && styles.chipTextDefault]}>
                     {restLabel(secs)}
                   </Text>
@@ -1412,7 +1421,36 @@ const stylesFor = makeStyles((c, m) => ({
   /* Untouched: still the same size and still tappable, just not shouting a
      number the header already gave. */
   chipDefault: { borderColor: 'transparent', backgroundColor: 'transparent' },
-  chipTextDefault: { color: alpha(m.ink, 0.35) },
+  /*
+    ── "im tiếng" KHÔNG được mua bằng độ tương phản ──
+
+    Năm style dưới đây từng tô chữ bằng `alpha(m.ink, 0.28–0.40)`. Chủ ý ghi ở
+    các chú thích quanh chúng là đúng và giữ nguyên: một giá trị VẪN ĐÚNG như
+    kế hoạch thì không cần hét, để mắt bắt được cái set bạn đã sửa. Cách thực
+    hiện thì sai — nó trả cho chủ ý ấy bằng khả năng đọc:
+
+        chipTextDefault  α=0,35   2,20:1 sáng · 3,17:1 tối
+        setNoDone        α=0,28   1,84    · 2,44
+        fieldPlan        α=0,40   2,52    · 3,79   ← CON SỐ kg và reps
+        unitPlan         α=0,30   1,94    · 2,63
+        times            α=0,30   1,94    · 2,63
+
+    Sàn WCAG cho chữ thường là 4,5:1. Cả năm trượt ở cả hai diện mạo, bốn trong
+    năm trượt dưới cả 3,0 — tức dưới sàn của một VẬT THỂ ĐỒ HOẠ, chứ đừng nói
+    chữ. Và cái tệ thứ hai là `fieldPlan`: con số kg và số lần, dữ liệu chính
+    của hàng, ở 2,52:1.
+
+    Chủ dự án nhìn trên máy thật và nói "tự nhiên các chữ bị mờ mà không có một
+    lý do và không thể hiện đúng chủ đích". Vế sau là chẩn đoán chính xác: chủ
+    đích có thật, nhưng thứ hiện ra là chữ hỏng chứ không phải chữ khiêm tốn.
+
+    Chủ đích ấy đã có một người mang: giá trị ĐÃ ĐỔI đội một cái chip — nền
+    cộng viền. Đó là một khác biệt về HÌNH, mạnh hơn hẳn một khoảng chênh
+    tương phản, và nó không tốn gì của bên còn lại. Nên bên còn lại thôi phải
+    trả: `mutedForeground`, token chữ hạng hai của app, 5,78:1 sáng và 5,02
+    tối. Vẫn lùi một bậc so với `foreground`, nhưng lùi trong vùng đọc được.
+  */
+  chipTextDefault: { color: c.mutedForeground },
   exName: {
     ...type.footnote,
     color: c.foreground,
@@ -1444,7 +1482,7 @@ const stylesFor = makeStyles((c, m) => ({
     width: 12,
     textAlign: 'center',
   },
-  setNoDone: { color: alpha(m.ink, 0.28) },
+  setNoDone: { color: c.mutedForeground },
   /*
     A box that looks like a box.
 
@@ -1484,12 +1522,12 @@ const stylesFor = makeStyles((c, m) => ({
   fieldReps: { minWidth: 34 },
   /* Still a box, just not shouting: it holds what the plan said, and the plan
      is already stated in full one line above. */
-  fieldPlan: { color: alpha(m.ink, 0.4), backgroundColor: 'transparent', borderColor: 'transparent' },
+  fieldPlan: { color: c.mutedForeground, backgroundColor: 'transparent', borderColor: 'transparent' },
   unit: { ...type.caption, color: c.mutedForeground },
-  unitPlan: { color: alpha(m.ink, 0.3) },
+  unitPlan: { color: c.mutedForeground },
   /* Room on both sides. At the row gap alone it sat against the unit and read
      as one clump, "kg ×", instead of separating the two numbers it is between. */
-  times: { ...type.caption, color: alpha(m.ink, 0.3), paddingHorizontal: 3 },
+  times: { ...type.caption, color: c.mutedForeground, paddingHorizontal: 3 },
   exNameInput: { flex: 1, minWidth: 0, padding: 0 },
   exRemove: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   addSet: {
