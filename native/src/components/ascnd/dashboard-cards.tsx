@@ -1380,10 +1380,9 @@ function CompactWidget({
    * ── vì sao thẻ Bước đi cần nó, và vì sao là thanh chứ không phải vòng ──
    *
    * Không có nó, tiến độ trong ngày của thẻ Bước đi chỉ tồn tại dưới dạng CHỮ:
-   * "0 / 1.000" và "0%". Thẻ Nước ngay bên cạnh có vòng quanh icon và đọc được
-   * từ xa một tầm tay; thẻ Bước đi thì phải đọc mới biết. Chú thích của `ring`
-   * ở trên ghi đúng lý do: nó opt-in, và bước chân "has not been asked for
-   * one". Nay đã được hỏi — nhưng hỏi một cái THANH.
+   * "0 / 1.000" và "0%" — phải đọc mới biết. Chú thích của `ring` ở trên ghi
+   * đúng lý do nó vắng mặt: hình là opt-in, và bước chân "has not been asked
+   * for one". Nay đã được hỏi — nhưng hỏi một cái THANH.
    *
    * Thanh chứ không phải vòng, và đó là quyết định của chủ dự án chứ không phải
    * suy ra từ đo đạc. Cái đo được là: màn `/steps` — đúng nơi thẻ này mở ra —
@@ -1391,9 +1390,15 @@ function CompactWidget({
    * nó dẫn tới nay nói cùng một hình, thay vì thẻ nói bằng chữ còn màn nói bằng
    * thanh.
    *
-   * Hệ quả phải nhận: hai thẻ compact anh em nay mang hai HÌNH khác nhau cho
-   * cùng một đại lượng — Nước một vòng, Bước đi một thanh. Ghi ra ở đây để
-   * người sau thấy đó là một lựa chọn đã biết, không phải một chỗ bị bỏ quên.
+   * Hệ quả phải nhận: ba thẻ compact anh em nay mang ba HÌNH khác nhau — Nước
+   * một cái cốc (`figure`), Bước đi một cái thanh, và `ring` vẫn còn đó cho
+   * thẻ nào xin. Ghi ra để người sau thấy đó là một lựa chọn đã biết, không
+   * phải một chỗ bị bỏ quên.
+   *
+   * (Câu này từng ghi "Nước một vòng". Sai trong vòng một giờ: `f1bb788` thay
+   * vòng nước bằng cái cốc. Chú thích nói về thẻ BÊN CẠNH là chú thích sẽ cũ
+   * đi mà chẳng gì báo — nên nó nay nói về `figure` và `ring`, hai thứ nằm
+   * ngay trong tệp này và đổi thì `tsc` thấy.)
    */
   bar?: boolean;
   /**
