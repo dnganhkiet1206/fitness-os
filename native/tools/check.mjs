@@ -209,6 +209,12 @@ const STEPS = [
      CHẠY thật hàm quyết định, gồm đúng ca giao 7,5 mà nâng 10), và thân thẻ bị
      GỠ thay vì bị cắt — trông y hệt trên ảnh, nhưng số vừa gõ chưa lưu bay mất. */
   ['thu thẻ bài tập', 'node', ['tools/plan-collapse.mjs']],
+  /* Một truy vấn về HÔM NAY mà không ai làm cũ đi thì màn hình ĐANG MỞ giữ số
+     cũ tới khi người dùng tự kéo. `live.mjs` không bao giờ thấy được lỗi này —
+     mỗi ảnh chụp là một lần mount, tức đúng ca duy nhất nó không xảy ra. Hai
+     khoá nuôi thẻ Hoạt động đã nằm ngoài mọi danh sách, và chủ dự án nhìn thấy
+     trước công cụ. */
+  ['hôm nay còn tươi', 'node', ['tools/today-fresh.mjs']],
   ['quyền của migration', 'node', ['tools/migration-privileges.mjs']],
   ['deck thẻ', 'node', ['tools/card-deck.mjs']],
   ['tài liệu nối backend', 'node', ['tools/backend-doc.mjs']],

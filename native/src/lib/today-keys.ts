@@ -36,6 +36,41 @@ export function todayKeys(userId: string | undefined, dateStr: string): unknown[
     ['today_water', userId, dateStr],
     ['recent_workouts', userId],
     ['workout_sessions', userId],
+    /*
+      Hai con số nuôi thẻ Hoạt động trên Hôm nay, và chúng KHÔNG được
+      `workout_sessions` ở trên bao lấy.
+
+      ── lỗi, và ai tìm ra ──
+
+      Chủ dự án: "thẻ hoạt động ở dashboard hiện dữ liệu từ việc log bị chậm,
+      bắt buộc phải refresh thì mới hiện". Đúng như thế, và lý do không nằm ở
+      mạng: hai khoá này xuất hiện đúng MỘT lần mỗi cái trong cả kho — ở chỗ
+      khai báo — nên không một lượt ghi nào trong app làm chúng cũ đi. Chúng
+      chỉ đổi khi React Query tự nạp lại lúc mount hoặc khi người dùng kéo để
+      làm mới. Mà dashboard thì đang mở sẵn lúc buổi tập được ghi, nên "lúc
+      mount" không bao giờ tới.
+
+      `['workout_sessions', userId]` không cứu được: khớp tiền tố của React
+      Query so từng PHẦN TỬ của mảng, nên một khoá tên khác là một khoá khác,
+      dù hai truy vấn đọc cùng một bảng.
+
+      Đây là lần thứ ba đúng cái lỗi mà khối chú thích đầu tệp này kể — một
+      truy vấn dẫn xuất từ dữ liệu hôm nay mà không có mặt trong danh sách.
+      Lần trước là chuỗi ngày.
+
+      ── vì sao KHÔNG mang `dateStr` ──
+
+      Cùng lý do như `mascot_streak` bên dưới: hai truy vấn này khoá theo HÔM
+      NAY (`localDateStr()` trong chính `queryFn`), còn `dateStr` ở đây là ngày
+      vừa bị ghi, có thể là thứ Ba tuần trước. Ghép vào thì ra một khoá không
+      observer nào mang. Bỏ đoạn cuối đi thì nó thành tiền tố và bắt được.
+
+      `today_active_kcal` còn mang thêm một `profile` ở đoạn thứ ba, nên tiền
+      tố hai đoạn cũng là cách duy nhất bắt được nó mà không phải dựng lại cái
+      hồ sơ ấy ở đây.
+    */
+    ['today_training_minutes', userId],
+    ['today_active_kcal', userId],
     ['readiness_history', userId],
     ['recent_foods', userId],
     ['profile', userId],
