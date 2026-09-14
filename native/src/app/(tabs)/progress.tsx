@@ -1,7 +1,16 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
-import { Camera, ChevronRight, Plus, Ruler, Scale, Target, Trash2 } from 'lucide-react-native';
+import {
+  Camera,
+  ChevronRight,
+  Plus,
+  Ruler,
+  Scale,
+  SlidersHorizontal,
+  Target,
+  Trash2,
+} from 'lucide-react-native';
 import { useCallback, useEffect, useId, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -711,7 +720,7 @@ export default function ProgressScreen() {
               <Text style={styles.goalLabel}>{i18n.nWeightGoalTitle}</Text>
               <Text style={goalDisplay == null ? styles.goalUnset : styles.goalValue}>
                 {goalDisplay == null
-                  ? i18n.nWeightGoalSet
+                  ? i18n.nWeightGoalUnset
                   : `${goalDisplay.toFixed(1)}${wl}`}
               </Text>
               <Icon icon={ChevronRight} size={15} color={c.mutedForeground} />
@@ -780,8 +789,22 @@ export default function ProgressScreen() {
                       ở màn Tuần qua) — đúng căn bệnh mà `constants/icon-tint`
                       sinh ra để chữa. Luật áp ở đây: icon làm NHÃN thì trung
                       tính, icon là HÀNH ĐỘNG thì mang `primary`.
+
+                      ── và MÀU thôi thì chưa đủ ──
+
+                      Bản trước chỉ đổi màu và giữ nguyên hình, nên trang này
+                      có HAI bia ngắm: một ở hàng "Cân nặng mục tiêu" ngay trên,
+                      một ở đây. Chủ dự án chỉ vào cả hai: "bị trùng lặp chữ
+                      cùng một chức năng và trùng icon". Hai cửa đi hai nơi mà
+                      mang cùng một hình thì đọc ra là một cửa vẽ hai lần —
+                      màu nhạt đi không gỡ được chuyện đó, vì hình mới là thứ
+                      người ta nhận ra trước.
+
+                      `SlidersHorizontal` là hình của việc HIỆU CHỈNH, đúng
+                      chữ trên nhãn. Bia ngắm ở lại với thứ thật sự là một cái
+                      đích: cân nặng mục tiêu.
                     */}
-                    <Icon icon={Target} size={17} color={c.mutedForeground} />
+                    <Icon icon={SlidersHorizontal} size={17} color={c.mutedForeground} />
                   </View>
                   <Text style={styles.calTitle}>{i18n.navSmartGoals}</Text>
                   <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
