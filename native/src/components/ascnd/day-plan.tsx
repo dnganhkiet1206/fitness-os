@@ -32,7 +32,7 @@ import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useAppendToSession, useLogWorkoutSession } from '@/hooks/use-fitness-data';
+import { useAppendToSession, useLogWorkoutSession, useRemoveSetFromSession, useRestoreSession } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
 import { exerciseKey } from '@/lib/personal-record';
 import { mergeProgress, sessionTicks, type SessionSet } from '@/lib/day-progress';
@@ -357,6 +357,8 @@ export function DayPlan({
   const { weight: wUnit } = useUnits();
   const log = useLogWorkoutSession();
   const append = useAppendToSession();
+  const cutSet = useRemoveSetFromSession();
+  const restore = useRestoreSession();
   const { user } = useAuth();
   /*
     ── the durable twin, which this screen did not have ──
@@ -747,6 +749,38 @@ export function DayPlan({
     dòng nào nói vì sao. Một chạm nhầm vào ô vuông 28 điểm không nên làm được
     chuyện đó lặng lẽ.
   */
+  /*
+    ── một hàng "đủ" là hàng có TÊN và có REP (hoặc số giây) ──
+
+    Dùng ở hai chỗ và vì thế nằm trên cả hai: ô tích không cho tích một bài
+    thêm vào còn trống, và nút nối thêm không sống nếu còn một hàng như thế.
+    Hai luật ấy phải hỏi CÙNG một câu — nếu không thì tích được mà không ghi
+    được, và người dùng không có cách nào biết vì sao.
+  */
+  /*
+    ── hàng nào buổi ĐÃ GHI đã chứng minh, và hàng nào chưa ──
+
+    `shown` trộn ô người dùng tích với thứ buổi tập chứng minh, nên sau khi ghi
+    xong thì cả hai loại trông giống hệt nhau. Để nối thêm được, phải tách ra:
+    `sessionTicks` là đúng hàm ấy — nó đã sống ở `day-progress.ts` cho việc
+    trộn, và đây là cùng một câu hỏi hỏi riêng.
+
+    Bài PHÁT SINH thêm sau khi đã ghi nằm đúng ở phần chênh: nó không có trong
+    buổi cũ, nên nó là thứ được nối vào.
+  */
+  const proven = useMemo(() => {
+    const sets = sessions.flatMap((sn) => (Array.isArray(sn.sets) ? (sn.sets as SessionSet[]) : []));
+    return sessionTicks(rows, sets);
+  }, [rows, sessions]);
+  const rowReady = useCallback(
+    (r: SetRow) => {
+      if (r.exerciseName.trim() === '') return false;
+      const p = performed(r);
+      return p.reps > 0 || (p.durationSec ?? 0) > 0;
+    },
+    [performed],
+  );
+
   const doToggle = useCallback(
     (row: SetRow) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -780,15 +814,70 @@ export function DayPlan({
   const toggle = useCallback(
     (row: SetRow) => {
       if (!shown[row.key]) {
+        /*
+          ── chưa đủ thì KHÔNG tích được ──
+
+          Chỉ áp cho bài THÊM VÀO. Một hàng theo kế hoạch luôn có tên và có số
+          rep từ template, nên nó không bao giờ rơi vào đây; còn thẻ thêm vào
+          sinh ra rỗng, và tích một hàng rỗng là nói "xong" về một bài chưa có
+          tên lẫn số lần.
+
+          Nói ra lý do chứ không lặng lẽ bỏ qua: một ô tích bấm mà không nhúc
+          nhích là thứ người ta bấm lại ba lần rồi kết luận app hỏng.
+        */
+        if (row.adHoc && !rowReady(row)) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          toast.error(i18n.nRdNeedInfo);
+          return;
+        }
         doToggle(row);
         return;
       }
       Alert.alert(i18n.nRdUntickTitle, i18n.nRdUntickMsg, [
         { text: i18n.cancel, style: 'cancel' },
-        { text: i18n.nRdUntickConfirm, style: 'destructive', onPress: () => doToggle(row) },
+        {
+          text: i18n.nRdUntickConfirm,
+          style: 'destructive',
+          onPress: () => {
+            doToggle(row);
+            /*
+              ── và bản GHI phải nghe thấy ──
+
+              Chỉ khi buổi tập đã CHỨNG MINH hàng ấy. Bỏ tích một hàng chỉ mới
+              tích trong máy thì không có gì ngoài kia để gỡ — và gọi lệnh xoá
+              cho nó sẽ cắt nhầm một set của bài trùng tên mà buổi tập đang
+              giữ thật.
+
+              Không có chuyện này thì ô vuông nói "chưa làm" trong khi
+              `workout_sessions` vẫn giữ set ấy, và khối lượng, ACWR lẫn kỷ
+              lục vẫn đọc nó — hai câu trái nhau trên cùng một màn.
+            */
+            const sessionId = sessions[0]?.id;
+            if (!proven[row.key] || !sessionId) return;
+            if (offlineNow()) {
+              toast.error(i18n.nRdAppendOffline);
+              return;
+            }
+            cutSet.mutate(
+              { sessionId, exerciseName: row.exerciseName, date: dateStr },
+              {
+                onSuccess: (snapshot) => {
+                  /* Cửa sổ hoàn tác là `ACTION_HIDE_MS` của chính app — 8
+                     giây, trong khoảng 4–10 Material đặt cho thanh có nút, và
+                     KHÔNG tự tắt khi trình đọc màn hình đang bật. Không chọn
+                     một con số thứ hai cho cùng một câu hỏi. */
+                  toast.undo(i18n.nRdSetRemoved, i18n.nUndo, () => {
+                    restore.mutate({ row: snapshot as Record<string, unknown>, date: dateStr });
+                  });
+                },
+                onError: (e: Error) => toast.fail(e),
+              },
+            );
+          },
+        },
       ]);
     },
-    [doToggle, i18n, shown],
+    [cutSet, dateStr, doToggle, i18n, proven, restore, rowReady, sessions, shown],
   );
 
   const bumpRest = (row: SetRow, by: number) => {
@@ -800,21 +889,6 @@ export function DayPlan({
   };
 
   const doneRows = rows.filter((r) => shown[r.key]);
-  /*
-    ── hàng nào buổi ĐÃ GHI đã chứng minh, và hàng nào chưa ──
-
-    `shown` trộn ô người dùng tích với thứ buổi tập chứng minh, nên sau khi ghi
-    xong thì cả hai loại trông giống hệt nhau. Để nối thêm được, phải tách ra:
-    `sessionTicks` là đúng hàm ấy — nó đã sống ở `day-progress.ts` cho việc
-    trộn, và đây là cùng một câu hỏi hỏi riêng.
-
-    Bài PHÁT SINH thêm sau khi đã ghi nằm đúng ở phần chênh: nó không có trong
-    buổi cũ, nên nó là thứ được nối vào.
-  */
-  const proven = useMemo(() => {
-    const sets = sessions.flatMap((sn) => (Array.isArray(sn.sets) ? (sn.sets as SessionSet[]) : []));
-    return sessionTicks(rows, sets);
-  }, [rows, sessions]);
   const pendingRows = doneRows.filter((r) => !proven[r.key]);
   /*
     ── một bài phát sinh chỉ được ghi khi nó ĐỦ ──
@@ -830,11 +904,6 @@ export function DayPlan({
     Thiếu thì nút KHÔNG sống: nó ở nguyên trạng thái "đã ghi", đúng như chủ dự
     án yêu cầu — một nút bấm được rồi không làm gì là tệ hơn một nút tắt.
   */
-  const rowReady = (r: SetRow) => {
-    if (r.exerciseName.trim() === '') return false;
-    const p = performed(r);
-    return p.reps > 0 || (p.durationSec ?? 0) > 0;
-  };
   const pendingReady = pendingRows.length > 0 && pendingRows.every(rowReady);
   /*
     One save per visit to this day. `isSuccess` never goes back to false on its
@@ -1417,7 +1486,13 @@ export function DayPlan({
                   accessibilityLabel={`${row.exerciseName} ${i18n.nRdSet.replace('{n}', String(row.ordinal))}`}
                   hitSlop={12}
                   onPress={() => toggle(row)}
-                  style={[styles.check, isDone && styles.checkOn]}>
+                  /* Mờ đi khi chưa đủ: "không bấm được" phải NHÌN THẤY được
+                     trước khi người ta bấm, chứ không chỉ được nói sau đó. */
+                  style={[
+                    styles.check,
+                    isDone && styles.checkOn,
+                    row.adHoc && !isDone && !rowReady(row) && styles.checkNotReady,
+                  ]}>
                   {/*
                     Ô CHƯA tick thì không vẽ dấu tick.
 
@@ -2092,6 +2167,7 @@ const stylesFor = makeStyles((c, m) => ({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: alpha(c.readinessGreen, 0.35),
   },
+  checkNotReady: { opacity: 0.35 },
   finishTextDone: { color: c.readinessGreen },
   /* Viền chứ không mảng đặc: đây là việc PHỤ của tấm, và một nút đặc thứ hai
      cạnh nút chính làm người đọc phải chọn giữa hai thứ trông ngang nhau. */

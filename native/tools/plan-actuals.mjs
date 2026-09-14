@@ -301,6 +301,38 @@ const slice = (from, to) => {
 }
 
 /*
+  ── bỏ tích một hàng ĐÃ GHI thì bản ghi phải nghe thấy, và phải hoàn tác được ──
+
+  Bỏ tích là nói "việc ấy KHÔNG xảy ra". Nếu nó chỉ lật một cờ trong máy thì ô
+  vuông nói chưa làm trong khi `workout_sessions` vẫn giữ set ấy — và khối
+  lượng, ACWR lẫn kỷ lục vẫn đọc nó. Hai câu trái nhau trên cùng một màn, đúng
+  loại mâu thuẫn mà `mergeProgress` đã ra đời để dập.
+
+  Và vì nó xoá dữ liệu thật, nó phải có đường lùi: `toast.undo`. Ba thứ đi
+  thành một bộ, nên gác cả bộ — gỡ một cái là hai cái kia thành sai.
+*/
+{
+  const panel = readFileSync(path.join(NATIVE, 'src/components/ascnd/day-plan.tsx'), 'utf8');
+  const i = panel.indexOf('nRdUntickConfirm');
+  const block = i >= 0 ? panel.slice(i, i + 2200) : '';
+  if (!/proven\[row\.key\]/.test(block)) {
+    problems.push(
+      'bỏ tích không hỏi `proven` — hoặc nó không gỡ gì cả, hoặc nó gỡ cả hàng mà buổi tập chưa ' +
+        'từng chứng minh, và khi ấy nó cắt nhầm set của một bài trùng tên',
+    );
+  }
+  if (!/cutSet\.mutate\(/.test(block)) {
+    problems.push(
+      'bỏ tích không gỡ set khỏi bản ghi — ô vuông sẽ nói "chưa làm" trong khi `workout_sessions` ' +
+        'vẫn giữ set ấy cho khối lượng, ACWR và kỷ lục đọc',
+    );
+  }
+  if (!/toast\.undo\(/.test(block)) {
+    problems.push('bỏ tích xoá dữ liệu thật mà không có `toast.undo` — một thao tác xoá không có đường lùi');
+  }
+}
+
+/*
   ── và nhánh NỐI THÊM phải gửi đúng `pendingRows` ──
 
   Phép chạy thật ngay dưới chứng minh `sessionTicks` tính đúng phần chênh; nó

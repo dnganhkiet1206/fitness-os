@@ -439,6 +439,18 @@ try {
         );
       }
 
+      /*
+        Và ô TÍCH cũng phải hỏi cùng câu ấy. Chặn ở nút ghi mà không chặn ở ô
+        tích thì người dùng tích được một bài rỗng, thấy nó xanh, rồi nút vẫn
+        chết — và không có gì nói vì sao. Hai chỗ, một câu hỏi.
+      */
+      if (!/row\.adHoc && !rowReady\(row\)/.test(panel)) {
+        problems.push(
+          `${PANEL}: ô tích không hỏi \`rowReady\` — một bài thêm vào chưa có tên hoặc chưa có rep ` +
+            'vẫn tích được, rồi nút ghi vẫn chết mà không dòng nào nói vì sao',
+        );
+      }
+
       /* Và khi chưa đủ thì `appending` phải tắt, tức nút giữ nguyên "đã ghi". */
       if (appendingFn(true, true, false) && !readyFn([noReps], ok)) {
         /* `appending` đọc `pendingReady`, nên nếu nó vẫn sống trong khi

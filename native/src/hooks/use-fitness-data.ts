@@ -579,6 +579,118 @@ export function useAppendToSession() {
   });
 }
 
+/**
+ * Gỡ MỘT set khỏi buổi tập đã ghi — và trả lại đủ thứ để hoàn tác.
+ *
+ * ── vì sao bỏ tích phải chạm tới bản ghi ──
+ *
+ * Trước đây bỏ tích chỉ lật một cờ trong máy. Với một hàng mà buổi tập ĐÃ
+ * chứng minh, điều đó để lại hai câu trái nhau trên cùng một màn: ô vuông nói
+ * "chưa làm", còn bảng `workout_sessions` vẫn giữ set ấy, và khối lượng, ACWR
+ * lẫn kỷ lục vẫn đọc nó. Bỏ tích là nói việc ấy KHÔNG xảy ra, nên bản ghi phải
+ * nghe thấy.
+ *
+ * ── gỡ set nào ──
+ *
+ * Set CUỐI mang đúng tên bài ấy. `day-progress.sessionTicks` gán hàng cho set
+ * theo tên rồi theo thứ tự, nên hàng cuối của một bài ứng với set cuối của nó;
+ * gỡ set đầu sẽ làm mọi hàng còn lại tụt một bậc và các dấu tích nhảy chỗ.
+ *
+ * ── hoàn tác bằng ẢNH CHỤP, không bằng phép tính ngược ──
+ *
+ * Hàm trả về nguyên hàng cũ, và hoàn tác chỉ việc `upsert` nó lại. Dựng lại
+ * bằng cách cộng ngược `volume_load` thì sai ngay khi có hai máy cùng sửa, và
+ * còn phải đoán lại `session_rpe` vốn là một phép `max` đã mất thông tin.
+ *
+ * Gỡ set cuối cùng thì XOÁ hẳn hàng: một buổi tập không còn set nào vẫn được
+ * `workout_count` đếm là một buổi, và ACWR vẫn thấy một ngày có tập. `upsert`
+ * của bước hoàn tác dựng lại được cả hàng đã xoá vì ảnh chụp mang theo `id`.
+ */
+export function useRemoveSetFromSession() {
+  const { user } = useAuth();
+  const invalidate = useInvalidateToday();
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      exerciseName,
+      date,
+    }: {
+      sessionId: string;
+      exerciseName: string;
+      date: string;
+    }) => {
+      if (!user) throw new Error('Not signed in');
+      const { data: row, error: readErr } = await supabase
+        .from('workout_sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .eq('user_id', user.id)
+        .single();
+      if (readErr) throw readErr;
+
+      const old = setsFromJson(row.sets);
+      const want = exerciseName.trim().toLowerCase();
+      let cut = -1;
+      for (let i = old.length - 1; i >= 0; i--) {
+        if (String(old[i]?.exerciseName ?? '').trim().toLowerCase() === want) {
+          cut = i;
+          break;
+        }
+      }
+      if (cut < 0) throw new Error('Set not found');
+
+      const left = old.filter((_, i) => i !== cut);
+      if (left.length === 0) {
+        await confirmWrite(
+          supabase.from('workout_sessions').delete().eq('id', sessionId).eq('user_id', user.id),
+          'Không gỡ được hiệp khỏi buổi tập',
+        );
+      } else {
+        await confirmWrite(
+          supabase
+            .from('workout_sessions')
+            .update({
+              sets: left.map((x, i) => ({ ...x, setIndex: i + 1 })) as never,
+              volume_load: Math.round(
+                left.reduce((sum, x) => sum + (Number(x.weight) || 0) * (Number(x.reps) || 0), 0),
+              ),
+              session_rpe: Math.max(
+                1,
+                ...left.map((x) => Number(x.rpe) || 0),
+              ),
+            })
+            .eq('id', sessionId)
+            .eq('user_id', user.id),
+          'Không gỡ được hiệp khỏi buổi tập',
+        );
+      }
+      await recomputeDailyLog(user.id, date);
+      /* Ảnh chụp của hàng TRƯỚC khi sửa — tất cả những gì bước hoàn tác cần. */
+      return row;
+    },
+    onSuccess: () => invalidate(),
+  });
+}
+
+/**
+ * Đặt lại nguyên hàng buổi tập từ ảnh chụp — bước hoàn tác của hàm trên.
+ */
+export function useRestoreSession() {
+  const { user } = useAuth();
+  const invalidate = useInvalidateToday();
+  return useMutation({
+    mutationFn: async ({ row, date }: { row: Record<string, unknown>; date: string }) => {
+      if (!user) throw new Error('Not signed in');
+      const { error } = await supabase
+        .from('workout_sessions')
+        .upsert(row as never, { onConflict: 'id' });
+      if (error) throw error;
+      await recomputeDailyLog(user.id, date);
+    },
+    onSuccess: () => invalidate(),
+  });
+}
+
 export function useTodayActiveKcal(profile: EnergyProfile | null) {
   const { user } = useAuth();
   return useQuery({
