@@ -223,6 +223,11 @@ const STEPS = [
      lời, muộn hơn ngón tay hàng trăm mili-giây — và web thì không có haptic để
      `live.mjs` nhìn thấy. */
   ['phản hồi chạm', 'node', ['tools/tap-feedback.mjs']],
+  /* Số LẦN phải mang nhãn, y như tạ mang `kg` — chủ dự án khoanh đỏ cả một cột
+     số và hỏi nó là gì. Một CÁI CHỐT chứ không phải định luật: bản tổng quát
+     đòi mọi dấu `×` phải có đơn vị đã đỏ ở ba màn, vì `×2` cho hai phần ăn tự
+     nói hết nghĩa. `live.mjs` chụp được dãy số ấy mà không đọc được nó. */
+  ['đơn vị số lần', 'node', ['tools/rep-unit.mjs']],
   ['quyền của migration', 'node', ['tools/migration-privileges.mjs']],
   ['deck thẻ', 'node', ['tools/card-deck.mjs']],
   ['tài liệu nối backend', 'node', ['tools/backend-doc.mjs']],

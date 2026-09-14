@@ -81,8 +81,12 @@ function lastSetText(
   if (p.bestReps === null) return null;
   const kg = (n: number) => Math.round(displayWeight(n, u) * 10) / 10;
   const load = (p.bodyweightKg ?? 0) * (p.kind === 'bodyweight' ? 1 : 0) + (p.bestWeightKg ?? 0);
-  if (load <= 0) return `${p.bestReps} × ${i18n.nRdBodyweight.toLowerCase()}`;
-  return `${kg(load)} ${weightLabel(u)} × ${p.bestReps}`;
+  /* Số lần mang nhãn, y như tạ mang `kg` — chủ dự án khoanh đúng cột này ở
+     `day-plan.tsx` và câu hỏi giống hệt ở đây: "25 kg × 10" thì 10 là gì.
+     `i18n.nReps` là đúng cái tên mà ô nhập bên kia dùng, nên hai màn không
+     đẻ ra hai chữ cho một thứ. */
+  if (load <= 0) return `${p.bestReps} ${i18n.nReps} × ${i18n.nRdBodyweight.toLowerCase()}`;
+  return `${kg(load)} ${weightLabel(u)} × ${p.bestReps} ${i18n.nReps}`;
 }
 
 /**

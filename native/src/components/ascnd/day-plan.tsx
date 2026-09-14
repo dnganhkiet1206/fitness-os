@@ -1032,7 +1032,8 @@ export function DayPlan({
       const load = s.weightKg > 0
         ? `${Math.round(displayWeight(s.weightKg, wUnit) * 10) / 10} ${wl}`
         : i18n.nRdBodyweight;
-      return `${s.sets} × ${s.reps}  ·  ${load}`;
+      /* Cùng lối với đơn thuốc ở tiêu đề: nhãn ở con số đuôi. */
+      return `${s.sets} × ${s.reps} ${i18n.nReps}  ·  ${load}`;
     }
     const sets = i18n.nRdSetsN.replace('{n}', String(s.sets));
     return s.volumeKg > 0
@@ -1390,7 +1391,11 @@ export function DayPlan({
                     nhau cho cùng một bài — "7,5" đã giao và "10" đã nâng. */}
                 {!added && expanded ? (
                   <Text style={styles.exPrescription} numberOfLines={1}>
-                    {block.rows.length} × {block.rows[0].reps}
+                    {/* "3 × 10 reps", không phải "3 × 10". Gắn nhãn cho con số
+                        ĐUÔI là đủ: khi đuôi đã nói "reps" thì "3 ×" ở đầu chỉ
+                        còn một nghĩa — ba lượt mười cái. Rẻ hơn một chữ so với
+                        gắn nhãn cả hai, và hết mơ hồ như nhau. */}
+                    {block.rows.length} × {block.rows[0].reps} {i18n.nReps}
                     {'  ·  '}
                     {block.rows[0].weight > 0
                       ? `${Math.round(displayWeight(block.rows[0].weight, wUnit) * 10) / 10} ${wl}`
@@ -1571,6 +1576,32 @@ export function DayPlan({
                     value={repsOf(row)}
                     onChangeText={(v) => setRepsText((prev) => ({ ...prev, [row.key]: intText(v) }))}
                   />
+                  {/*
+                    Con số sau dấu × cũng phải nói nó là gì.
+
+                    Chủ dự án khoanh đúng cột này: "dãy số này là gì phải ghi
+                    rõ". Hàng đọc ra "25 kg × 10" — vế trái có đơn vị, vế phải
+                    không có gì, và hai con số trông giống hệt nhau.
+
+                    Nhãn KHÔNG phải chữ mới: `i18n.nReps` đã tồn tại ở cả hai
+                    ngôn ngữ và đã là thứ VoiceOver đọc cho chính ô này ở dòng
+                    `accessibilityLabel` ngay trên. Tức người dùng trình đọc màn
+                    hình vẫn luôn nghe "reps"; chỉ người nhìn bằng mắt là không
+                    được cho biết. Dùng lại đúng cái tên ấy thì hai bên nghe và
+                    thấy cùng một từ, và không có bản thứ hai để lệch.
+
+                    ── vì sao nó CÓ ĐIỀU KIỆN ──
+
+                    Ô này giữ HAI thứ khác nhau (`lib/rep-entry.ts`): một số
+                    lần, hoặc một lần giữ tính bằng giây khi gõ "60s". Bản thứ
+                    hai đã tự mang đơn vị trong chính chữ của nó, nên dán thêm
+                    "reps" vào sẽ ra "60s reps". Và ô trống thì không có gì để
+                    đặt đơn vị lên — đúng cùng một lý lẽ đã ghi vài dòng trên
+                    cho `kg`: "No unit beside an empty box."
+                  */}
+                  {parseRepEntry(repsOf(row)).reps > 0 ? (
+                    <Text style={styles.unit}>{i18n.nReps}</Text>
+                  ) : null}
                 </View>
 
                 {/*
