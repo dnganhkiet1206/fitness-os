@@ -1,13 +1,20 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { Check, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
+import { Check, ChevronDown, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import * as Crypto from 'expo-crypto';
 
 import { ExerciseProgress } from '@/components/ascnd/exercise-progress';
+import { Expander } from '@/components/ascnd/expander';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { nav } from '@/lib/nav';
@@ -17,6 +24,7 @@ import { RestTimer } from '@/components/ascnd/rest-timer';
 import { Retract } from '@/components/ascnd/retract';
 import { SEGMENT_SWAP } from '@/components/ascnd/segmented';
 import type { TplExercise } from '@/components/ascnd/template-list';
+import { summarizeSets } from '@/lib/set-summary';
 import { duration, press } from '@/constants/motion';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles, type Palette, type PaletteKey } from '@/constants/theme';
@@ -258,6 +266,41 @@ async function pruneOldProgress() {
   } catch {
     // nothing here is worth interrupting a workout for
   }
+}
+
+/**
+ * Mũi tên của một hàng disclosure, QUAY chứ không đổi glyph.
+ *
+ * ── vì sao không phải `ChevronDown` đổi sang `ChevronUp` ──
+ *
+ * Thân thẻ mất `duration.move` để co lại. Một mũi tên đổi glyph thì xong trong
+ * một khung hình, nên mắt thấy hai sự kiện: mũi tên lật, rồi thẻ đóng. Cùng
+ * một con số, cùng một đường cong, thì đó là một sự kiện — và đó đúng là thứ
+ * `craft-floor` gọi là "one authored moment".
+ *
+ * `rotate` là một transform, nên nó không rơi vào điều `tools/motion.mjs` cấm:
+ * luật ấy cấm thuộc tính LAYOUT bên trong `useAnimatedStyle` (thứ bắt chạy lại
+ * layout mỗi khung hình trên luồng JS). Một phép quay chạy thẳng trên luồng UI.
+ *
+ * `useReducedMotion` vì `expander.tsx` ngay bên cạnh cũng đọc nó: nếu thân thẻ
+ * mở tức thì mà mũi tên vẫn quay 240ms thì phần bị tắt lại là phần duy nhất
+ * người dùng còn thấy chuyển động.
+ */
+function Chevron({ open, color }: { open: boolean; color: string }) {
+  const reduceMotion = useReducedMotion();
+  const t = useSharedValue(open ? 1 : 0);
+  useEffect(() => {
+    const to = open ? 1 : 0;
+    t.value = reduceMotion
+      ? to
+      : withTiming(to, { duration: duration.move, easing: Easing.out(Easing.cubic) });
+  }, [open, reduceMotion, t]);
+  const spin = useAnimatedStyle(() => ({ transform: [{ rotate: `${t.value * 180}deg` }] }));
+  return (
+    <Animated.View style={spin}>
+      <Icon icon={ChevronDown} size={15} color={color} />
+    </Animated.View>
+  );
 }
 
 export function DayPlan({
@@ -799,6 +842,78 @@ export function DayPlan({
     return s + p.weight * p.reps;
   }, 0);
 
+  /**
+   * Một bài đã xong thì THU LẠI.
+   *
+   * ── vì sao ──
+   *
+   * Tấm này chỉ có một hình dạng: hình của việc ĐANG TẬP. Mỗi bài mở sẵn với
+   * đủ ô nhập tạ, ô nhập reps, ô tick, hai chip và một hàng "thêm hiệp". Đó
+   * đúng thứ bạn cần khi đang giữa buổi.
+   *
+   * Khi buổi đã xong thì không còn việc gì để làm với chúng, mà chúng vẫn
+   * chiếm chỗ y hệt: ảnh chủ dự án gửi có bốn thẻ, hai mươi ô nhập và sáu ô
+   * tick, tất cả đã tick, trải dài hơn hai màn hình. Thứ người ta mở lên để
+   * xem — hôm ấy đã tập gì — phải cuộn mới đọc hết.
+   *
+   * Nên mặc định theo TRẠNG THÁI chứ không theo một cú bấm: chưa xong thì mở,
+   * xong thì thu. `opened[key]` chỉ ghi đè khi có người tự bấm, và khi ấy nó
+   * thắng — kể cả mở lại một bài đã xong để sửa một con số.
+   *
+   * Chú ý một điều KHÔNG làm: ô nhập vẫn nằm trong cây (xem `Expander` — thân
+   * bị cắt bởi một hộp cao 0 chứ không bị gỡ), nên chữ đang gõ dở không mất khi
+   * thẻ thu lại, và mọi giá trị vẫn sửa được sau khi mở ra. Yêu cầu là "gọn",
+   * không phải "bớt tính năng".
+   */
+  const [opened, setOpened] = useState<Record<string, boolean>>({});
+  /* Khoá theo hàng ĐẦU, y như `key` của React ở chỗ vẽ — tên bài đổi theo từng
+     ký tự khi người ta đang gõ tên một bài phát sinh, và một khoá chứa tên thì
+     trạng thái thu/mở nhảy mất sau mỗi chữ cái. */
+  const blockKey = (b: { rows: SetRow[] }) => b.rows[0].key;
+  const blockDone = (b: { rows: SetRow[] }) => b.rows.every((r) => shown[r.key]);
+  /* CHƯA xong thì luôn mở, bấm gì cũng thế. Cho thu một bài dở nghe tiện hơn
+     cho tới khi hỏi dòng tóm tắt sẽ viết gì: nó không có một bộ số nào để nói,
+     và một hàng mang dấu tick xanh cho ba hiệp còn trống là một lời nói dối.
+     Thu lại là việc của thứ đã XONG, đúng như yêu cầu đặt ra. */
+  const blockOpen = (b: { rows: SetRow[] }) => !blockDone(b) || (opened[blockKey(b)] ?? false);
+  const toggleBlock = (b: { rows: SetRow[] }) => {
+    Haptics.selectionAsync();
+    setOpened((prev) => ({ ...prev, [blockKey(b)]: !blockOpen(b) }));
+  };
+
+  /**
+   * Bài ấy hoá ra đã thành cái gì — dòng thay cho cả thẻ khi nó thu lại.
+   *
+   * Nó nói việc ĐÃ LÀM, không nói kế hoạch. Tấm này vốn phân vai rõ: dòng
+   * tiêu đề là thứ được giao, các hàng dưới là thứ đã xảy ra, và hai bên im
+   * lặng khi chúng khớp nhau. Thu thẻ lại thì các hàng biến mất, nên dòng tiêu
+   * đề phải gánh nốt vế kia — nếu nó vẫn đọc kế hoạch thì ảnh chủ dự án gửi sẽ
+   * tóm tắt Bench Press thành "7,5 kg" trong khi ba hiệp đều ghi 10 kg.
+   *
+   * Hai hình dạng, và ranh giới giữa chúng là một phép đo chứ không phải một
+   * lựa chọn: các hiệp GIỐNG nhau thì một dòng "3 × 8 · 10 kg" là đủ và đúng;
+   * khác nhau thì không có một bộ số nào đại diện được, nên nó lùi về thứ vẫn
+   * đúng — số hiệp và tổng tạ. Một hiệp tính bằng THỜI GIAN cũng rơi vào nhánh
+   * sau, vì "× 0" là một lời nói dối gọn gàng.
+   */
+  const blockSummary = (b: { rows: SetRow[] }) => {
+    /* `performed`, không phải `row.weight`: cái sau là thứ kế hoạch GIAO. Xem
+       `set-summary.ts` — quyết định nằm ở đó và được chạy thật trong
+       `tools/plan-collapse.mjs`; ở đây chỉ còn đơn vị và chữ. */
+    const s = summarizeSets(b.rows.filter((r) => shown[r.key]).map(performed));
+    if (!s) return '';
+    if (s.kind === 'uniform') {
+      const load = s.weightKg > 0
+        ? `${Math.round(displayWeight(s.weightKg, wUnit) * 10) / 10} ${wl}`
+        : i18n.nRdBodyweight;
+      return `${s.sets} × ${s.reps}  ·  ${load}`;
+    }
+    const sets = i18n.nRdSetsN.replace('{n}', String(s.sets));
+    return s.volumeKg > 0
+      ? `${sets}  ·  ${Math.round(displayWeight(s.volumeKg, wUnit)).toLocaleString()} ${wl}`
+      : sets;
+  };
+
   const finish = () => {
     if (!canFinish) return;
 
@@ -994,41 +1109,72 @@ export function DayPlan({
         </PressScale>
       </View>
 
+      {/*
+        Buổi đã ghi: MỘT DÒNG, không phải một thẻ.
+
+        ── cái gì được gộp, và vì sao ──
+
+        Nó từng là một `GlassCard` in tên template làm tiêu đề — ngay dưới một
+        tiêu đề đã in đúng cái tên ấy. Ảnh chủ dự án gửi có "Tập Ngực" hai lần,
+        cách nhau ba dòng, cái thứ hai trong một thẻ lồng vào tấm. Tên chỉ được
+        in khi nó KHÁC tên ở trên: buổi ghi cho ngày này có thể là một template
+        khác, và lúc ấy cái tên là thông tin thật chứ không phải tiếng vọng.
+
+        ── và vì sao cái nhãn "Đã ghi" phải có ──
+
+        Dòng này mang một số kg, và dòng tiêu đề ngay trên cũng mang một số kg.
+        Trong ảnh ấy là 720 và 220 — hai con số khác nhau, cùng đơn vị, không
+        cái nào nói mình là cái gì. Chúng KHÔNG mâu thuẫn: một cái là tổng của
+        những hiệp đang tick trên màn, cái kia là thứ đã được ghi vào lúc 18:36.
+        Nhưng không đọc ra được điều đó, nên lời giải không phải bỏ đi một cái —
+        mỗi cái có việc của nó — mà là để mỗi cái tự xưng tên. "6/6 set" gọi tên
+        cái thứ nhất; "Đã ghi lúc 18:36" gọi tên cái thứ hai.
+      */}
       {sessions.map((sn) => {
         const at = new Date(sn.date_time);
+        const otherName = sn.template_name && sn.template_name !== template.name
+          ? sn.template_name
+          : null;
         return (
-          <GlassCard elevation="inset" key={sn.id} style={styles.loggedCard}>
-            <Icon icon={Check} size={16} color={c.readinessGreen} />
-            <View style={styles.loggedText}>
-              <Text style={styles.loggedName} numberOfLines={1}>
-                {sn.template_name || i18n.nRdAlready}
-              </Text>
-              <Text style={styles.loggedMeta}>
-                {i18n.nRdLoggedAt.replace(
-                  '{t}',
-                  `${at.getHours()}:${String(at.getMinutes()).padStart(2, '0')}`,
-                )}
-                {sn.volume_load
-                  ? `  ·  ${Math.round(displayWeight(Number(sn.volume_load), wUnit)).toLocaleString()} ${wl}`
-                  : ''}
-                {sn.session_rpe ? `  ·  RPE ${sn.session_rpe}` : ''}
-              </Text>
-            </View>
-          </GlassCard>
+          <View key={sn.id} style={styles.loggedLine}>
+            <Icon icon={Check} size={14} color={c.readinessGreen} strokeWidth={2.5} />
+            <Text style={styles.loggedMeta} numberOfLines={1}>
+              {otherName ? `${otherName}  ·  ` : ''}
+              {i18n.nRdLoggedAt.replace(
+                '{t}',
+                `${at.getHours()}:${String(at.getMinutes()).padStart(2, '0')}`,
+              )}
+              {sn.volume_load
+                ? `  ·  ${Math.round(displayWeight(Number(sn.volume_load), wUnit)).toLocaleString()} ${wl}`
+                : ''}
+              {sn.session_rpe ? `  ·  RPE ${sn.session_rpe}` : ''}
+            </Text>
+          </View>
         );
       })}
 
       {/* A bar rather than a percentage: what you want mid-workout is "how much
-          is left", which is a length, not a number to read. */}
-      <ProgressBar
-        pct={rows.length ? (doneRows.length / rows.length) * 100 : 0}
-        height={4}
-        radius={2}
-        trackColor={m.inset.bg}
-        color={c.primary}
-        delay={0}
-        duration={duration.move}
-      />
+          is left", which is a length, not a number to read.
+
+          Và nó đi khi không còn gì còn lại. Chú thích ngay trên là lý do: câu
+          hỏi nó trả lời chỉ tồn tại GIỮA buổi. Đầy kín thì nó không nói thêm gì
+          so với "6/6 set" ba mươi điểm phía trên — mà nó lại hét: đo trên giấy,
+          ruột thanh là `primary` #1a1917, tức 17,57:1 so với mặt thẻ, chạy hết
+          bề ngang. Đó là vệt đậm nhất màn hình, đậm hơn cả tiêu đề, và trong
+          ảnh chủ dự án gửi nó đọc ra như một thanh kẻ đen chắn ngang chứ không
+          phải một lời chúc mừng. (Bản tối là #a8afbd — 8,21:1 — nên lần nữa,
+          mức độ chỉ nặng ở một diện mạo.) */}
+      {doneRows.length < rows.length ? (
+        <ProgressBar
+          pct={rows.length ? (doneRows.length / rows.length) * 100 : 0}
+          height={4}
+          radius={2}
+          trackColor={m.inset.bg}
+          color={c.primary}
+          delay={0}
+          duration={duration.move}
+        />
+      ) : null}
 
       {blocks.map((block) => {
         /* Keyed by the first row, never by the name.
@@ -1039,21 +1185,49 @@ export function DayPlan({
            the keyboard shuts. The row key is stable for the life of the
            movement, which is exactly what a key is supposed to be. */
         const added = block.rows[0].adHoc;
+        const done = blockDone(block);
+        const expanded = blockOpen(block);
         return (
         <Animated.View key={block.rows[0].key} entering={SWAP}>
           <GlassCard elevation="inset" style={styles.exCard}>
             {/*
-              The header states THE PLAN: what you came here to do.
+              MỘT tiêu đề, cho cả hai trạng thái.
 
-              It used to be phrased as "what every set shares, so the rows do
-              not repeat it", and that stopped being true when the rows became
-              editable. They are not repeating it — they start at it. The
-              distinction is the whole point of the screen now: this line is
-              what was asked for, the lines below are what happened, and on a
-              good day they agree and the rows stay grey.
+              ── vì sao không phải hai ──
+
+              Bản đầu dựng hai hàng rời và đổi qua lại: một hàng tóm tắt khi
+              thu, hàng tiêu đề cũ khi mở. Nó sai về CHUYỂN ĐỘNG. Tiêu đề cũ
+              mang theo `ExerciseProgress` bên trong, nên lúc đóng nó bị gỡ
+              trong một khung hình trong khi thân thẻ co dần suốt 240ms — thẻ
+              giật tụt một đoạn rồi mới đóng. Một cú đóng, hai nhịp.
+
+              Ở đây tiêu đề KHÔNG BAO GIỜ bị gỡ. Nó đứng yên, các ô của nó đổi
+              nội dung, và toàn bộ chuyển động nằm ở một chỗ duy nhất là thân
+              thẻ — đúng hình dạng của một hàng disclosure trên iOS.
+
+              ── các ô, và ô nào nói gì khi nào ──
+
+              The header states THE PLAN: what you came here to do — nhưng chỉ
+              khi thẻ đang MỞ, vì lúc ấy các hàng bên dưới nói vế còn lại. Tấm
+              này vốn phân vai như vậy: dòng này là thứ được giao, các hàng là
+              thứ đã xảy ra, và hai bên im lặng khi chúng khớp. Thu thẻ lại thì
+              các hàng biến mất, nên chính ô ấy phải gánh nốt vế kia và đổi sang
+              nói KẾT QUẢ. Nếu không, ảnh chủ dự án gửi sẽ tóm tắt Bench Press
+              thành "7,5 kg" trong khi ba hiệp đều ghi 10 kg.
+
+              Nút xoá của một bài phát sinh chỉ có khi mở: thu lại là chế độ
+              ĐỌC. Ô nhập tên thì ở lại — nó là ô duy nhất chứa dữ liệu người
+              dùng gõ, và gỡ nó đi để "gọn" là đổi gọn lấy mất.
             */}
-            <View style={styles.exHead}>
+            <View style={[styles.exHead, !expanded && styles.exHeadShut]}>
               <View style={styles.exTitleRow}>
+                {/* Hàng này căn theo BASELINE để tên và đơn thuốc thẳng chân
+                    chữ; một dấu tick không có chân chữ, nên nó tự căn giữa. */}
+                {done ? (
+                  <View style={styles.exTick}>
+                    <Icon icon={Check} size={14} color={c.readinessGreen} strokeWidth={2.5} />
+                  </View>
+                ) : null}
                 {added ? (
                   /* An added movement has no plan to state, so the header holds
                      the one thing only you can supply — its name — and the way
@@ -1070,7 +1244,7 @@ export function DayPlan({
                 ) : (
                   <Text style={styles.exName} numberOfLines={1}>{block.name}</Text>
                 )}
-                {added ? (
+                {added && expanded ? (
                   <PressScale
                     accessibilityRole="button"
                     accessibilityLabel={i18n.a11yRemove}
@@ -1083,7 +1257,12 @@ export function DayPlan({
                     style={styles.exRemove}>
                     <Icon icon={X} size={14} color={c.mutedForeground} />
                   </PressScale>
-                ) : (
+                ) : null}
+
+                {/* Kế hoạch chỉ nói khi thẻ đang MỞ. Lúc thu, ô bên phải đã do
+                    kết quả chiếm, và in cả hai thì hàng mang hai con số tạ khác
+                    nhau cho cùng một bài — "7,5" đã giao và "10" đã nâng. */}
+                {!added && expanded ? (
                   <Text style={styles.exPrescription} numberOfLines={1}>
                     {block.rows.length} × {block.rows[0].reps}
                     {'  ·  '}
@@ -1091,8 +1270,58 @@ export function DayPlan({
                       ? `${Math.round(displayWeight(block.rows[0].weight, wUnit) * 10) / 10} ${wl}`
                       : i18n.nRdBodyweight}
                   </Text>
-                )}
+                ) : null}
+
+                {/*
+                  Kết quả + mũi tên là MỘT cái nút, không phải chữ cạnh một nút.
+
+                  Mũi tên một mình rộng 24 điểm; cả cụm thì rộng bằng dòng chữ
+                  cộng nó, nên ngón tay có chỗ đặt mà không phải nhắm. Cả HÀNG
+                  thì không được: hàng ấy chứa ô nhập tên của bài phát sinh, và
+                  một vùng bấm trùm lên một ô nhập là hai ý nghĩa cho một cú
+                  chạm.
+                */}
+                {done ? (
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityState={{ expanded }}
+                    accessibilityLabel={`${block.name || i18n.nRdExtraName}  ${blockSummary(block)}`}
+                    hitSlop={{ top: 10, bottom: 10, right: 8 }}
+                    onPress={() => toggleBlock(block)}
+                    style={styles.exFold}>
+                    {!expanded ? (
+                      <Text style={styles.exDoneMeta} numberOfLines={1}>
+                        {blockSummary(block)}
+                      </Text>
+                    ) : null}
+                    <Chevron open={expanded} color={c.mutedForeground} />
+                  </PressScale>
+                ) : null}
               </View>
+            </View>
+
+            {/*
+              Thân thẻ mở và đóng bằng CHIỀU CAO THẬT, không phải bằng mount.
+
+              `Expander` giữ thân nằm trong cây, bị cắt bởi một hộp cao 0 —
+              chính vì thế mọi ô nhập giữ nguyên chữ đang gõ dở khi thẻ thu lại,
+              và thứ sửa được trước khi thu vẫn sửa được sau khi mở. Đây là chỗ
+              "gọn" không được đổi thành "mất tính năng".
+
+              Và chiều cao là thứ KÉO THEO hàng xóm: thẻ bên dưới đi lên đúng
+              bằng lượng thẻ này co lại, từng khung hình — `today-meals.tsx` đã
+              đo cái thay thế và ghi lại rằng một `LinearTransition` để lại một
+              lỗ 94px vì nó chỉ động cái view nó đứng trên.
+
+              `reveal="clip"` chứ không phải `"fade"`: một `opacity` đặt trên
+              view NHIỀU CON buộc iOS gộp cả nhóm ra một bề mặt riêng mỗi khung
+              hình, và nhóm ở đây là hai mươi ô nhập chứ không phải vài cái chấm.
+            */}
+            <Expander open={expanded} reveal="clip">
+            {/* Gợi ý "lần trước bao nhiêu" nằm TRONG phần co được, không ở tiêu
+                đề. Nó là thứ đọc TRƯỚC khi làm một hiệp; thẻ đã thu nghĩa là
+                bài ấy xong rồi, và lúc đó nó chỉ còn là một dòng chữ nữa. */}
+            <View style={styles.exSub}>
               <ExerciseProgress
                 insight={insightFor(block.name)}
                 last={lastFor(block.name)}
@@ -1101,7 +1330,6 @@ export function DayPlan({
                 i18n={i18n}
               />
             </View>
-
             {block.rows.map((row, ri) => {
               const isDone = !!shown[row.key];
               const effort = rpe[row.key] ?? row.plannedRpe;
@@ -1362,6 +1590,7 @@ export function DayPlan({
                 <Text style={styles.addSetText}>{i18n.nRdAddSet}</Text>
               </PressScale>
             ) : null}
+            </Expander>
           </GlassCard>
         </Animated.View>
         );
@@ -1512,10 +1741,16 @@ const stylesFor = makeStyles((c, m) => ({
   tplName: { ...type.title2, color: c.foreground },
   progress: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   editBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  loggedCard: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm + 2 },
-  loggedText: { flex: 1, minWidth: 0, gap: 1 },
-  loggedName: { ...type.footnote, color: c.foreground, fontWeight: '600' },
-  loggedMeta: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  /* Một dòng, không thụt vào, không có mặt của riêng nó — nó thuộc về khối
+     tiêu đề ngay trên chứ không phải một mục thứ hai của trang. */
+  loggedLine: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -spacing.xs },
+  loggedMeta: {
+    ...type.caption,
+    color: c.mutedForeground,
+    fontVariant: ['tabular-nums'],
+    flex: 1,
+    minWidth: 0,
+  },
 
   /* The exercise name is a heading over its sets, not a row of its own — the
      rows below it are the thing, and giving the name a card would make four
@@ -1525,6 +1760,43 @@ const stylesFor = makeStyles((c, m) => ({
      separate boxes were failing to do. */
   exCard: { padding: 0, overflow: 'hidden', gap: 0 },
   exHead: { gap: 6, paddingHorizontal: spacing.md, paddingTop: spacing.md, paddingBottom: spacing.sm },
+  /*
+    Khi thẻ thu lại, tiêu đề LÀ cả cái thẻ — nên đệm của nó phải cân.
+
+    Bản mở nặng đầu có lý do: 16 ở đỉnh cộng `marginTop` 8 của chính cái tên
+    là 24 phía trên, còn phía dưới chỉ 10 vì còn cả thân thẻ nối tiếp. Bỏ
+    nguyên con số ấy cho một hàng đứng một mình thì hàng ấy dính lên nóc thẻ
+    và hở một khoảng dưới chân. 4 ở đỉnh đưa nó về 12 trên / 10 dưới.
+  */
+  exHeadShut: { paddingTop: spacing.xs },
+  /* Kết quả của bài đã xong, khi thẻ thu lại. */
+  exDoneMeta: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  exTick: { alignSelf: 'center' },
+  /*
+    Cụm "kết quả + mũi tên", cuối hàng tiêu đề.
+
+    `marginLeft: 'auto'` để nó tự ra mép phải — tên bài không co giãn, nên nếu
+    không đẩy thì cụm này bám sát cái tên và đọc ra như một phần của tên.
+    `alignSelf: 'center'` vì hàng ấy căn theo BASELINE (cho tên và đơn thuốc
+    thẳng chân chữ), mà một mũi tên không có chân chữ để mà thẳng.
+
+    Cao 32 chứ không phải chiều cao tự nhiên của một glyph 15 điểm: cộng với
+    `hitSlop` 10 trên dưới thì vùng chạm qua sàn 44 của Apple mà hàng không
+    phải cao thêm điểm nào.
+  */
+  exFold: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginLeft: 'auto',
+    alignSelf: 'center',
+    minHeight: 32,
+  },
+  /* Chỉ đệm NGANG, không đệm dọc. `ExerciseProgress` trả `null` khi bài này
+     chưa có gì để kể, và một hộp có đệm dọc quanh một đứa con vô hình là một
+     khoảng trống không ai giải thích được. Khoảng thở đã có sẵn: đệm đáy của
+     tiêu đề ở trên và đệm đỉnh của hàng set đầu tiên ở dưới. */
+  exSub: { paddingHorizontal: spacing.md },
   exTitleRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm },
   /* What every set of this movement shares, said once — the rows below spend
      their width on what varies instead. */

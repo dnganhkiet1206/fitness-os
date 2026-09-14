@@ -204,6 +204,11 @@ const STEPS = [
   ['dữ liệu truy vấn', 'node', ['tools/persisted-query.mjs']],
   ['mép lớp nền', 'node', ['tools/aura-edge.mjs']],
   ['số thật của buổi tập', 'node', ['tools/plan-actuals.mjs']],
+  /* Thẻ bài tập đã xong thì thu lại, và thu lại không được làm mất gì. Hai
+     cách hỏng đều im lặng: dòng tóm tắt đọc KẾ HOẠCH thay vì thứ đã làm (luật
+     CHẠY thật hàm quyết định, gồm đúng ca giao 7,5 mà nâng 10), và thân thẻ bị
+     GỠ thay vì bị cắt — trông y hệt trên ảnh, nhưng số vừa gõ chưa lưu bay mất. */
+  ['thu thẻ bài tập', 'node', ['tools/plan-collapse.mjs']],
   ['quyền của migration', 'node', ['tools/migration-privileges.mjs']],
   ['deck thẻ', 'node', ['tools/card-deck.mjs']],
   ['tài liệu nối backend', 'node', ['tools/backend-doc.mjs']],

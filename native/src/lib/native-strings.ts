@@ -291,6 +291,8 @@ const en = {
   nRoutineNoTemplates: 'No saved workouts yet — build one first.',
   nRdSet: 'Set {n}',
   nRdProgress: '{done}/{total} sets',
+  /* Số hiệp khi KHÔNG có một bộ số nào đại diện được — xem `blockSummary`. */
+  nRdSetsN: '{n} sets',
   nRdFinish: 'Finish workout',
   nRdFuture: 'Not this day yet',
   nRestNext: 'Up next',
@@ -1102,6 +1104,7 @@ const vi: typeof en = {
   nRoutineNoTemplates: 'Chưa lưu buổi tập nào — tạo một cái trước đã.',
   nRdSet: 'Set {n}',
   nRdProgress: '{done}/{total} set',
+  nRdSetsN: '{n} hiệp',
   nRdFinish: 'Hoàn thành buổi tập',
   nRdFuture: 'Chưa tới ngày này',
   nRestNext: 'Tiếp theo',
