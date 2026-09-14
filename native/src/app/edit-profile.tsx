@@ -1,4 +1,3 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
@@ -17,6 +16,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+import { DateField } from '@/components/ascnd/date-field';
 
 import { PickRow } from '@/components/ascnd/pick-row';
 import { Segmented } from '@/components/ascnd/segmented';
@@ -385,12 +386,11 @@ export default function EditProfileSheet() {
             <Text style={styles.inputText}>{form.dob || '—'}</Text>
           </Pressable>
           {showDob && (
-            <DateTimePicker
+            <DateField
               value={form.dob ? parseLocalDate(form.dob) : new Date(2000, 0, 1)}
               mode="date"
               display="spinner"
               maximumDate={new Date()}
-              themeVariant="dark"
               onChange={(_, d) => {
                 if (d) set('dob', localDateStr(d));
               }}
@@ -588,11 +588,10 @@ export default function EditProfileSheet() {
         <View style={styles.row}>
           <Field label={i18n.settingsBedtime} style={styles.half}>
             <View style={styles.pickerWrap}>
-              <DateTimePicker
+              <DateField
                 value={timeToDate(form.sleep_target_bedtime)}
                 mode="time"
                 display="compact"
-                themeVariant="dark"
                 onChange={(_, d) => {
                   if (d) set('sleep_target_bedtime', dateToTime(d));
                 }}
@@ -601,11 +600,10 @@ export default function EditProfileSheet() {
           </Field>
           <Field label={i18n.settingsWakeTime} style={styles.half}>
             <View style={styles.pickerWrap}>
-              <DateTimePicker
+              <DateField
                 value={timeToDate(form.sleep_target_waketime)}
                 mode="time"
                 display="compact"
-                themeVariant="dark"
                 onChange={(_, d) => {
                   if (d) set('sleep_target_waketime', dateToTime(d));
                 }}

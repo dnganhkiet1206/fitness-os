@@ -517,6 +517,10 @@ const STEPS = [
      `alpha(m.ink, x)` dựng tại chỗ thì không cửa nào có thẩm quyền — và sáu
      chỗ như thế đã tụt xuống 1,84–3,17:1. */
   ['mực mờ', 'node', ['tools/ink-alpha.mjs']],
+  /* Một thứ KHÔNG đo được trong mã: `themeVariant` là chỉ thị gửi sang UIKit,
+     màu do hệ điều hành chọn ở phía bên kia. Mười chỗ đã gõ cứng `"dark"` trên
+     một app CÓ bản sáng, và chỉ máy thật mới lộ ra. */
+  ['bộ chọn ngày', 'node', ['tools/date-field.mjs']],
   /* Cùng họ với `daily-log.mjs` (một phép chiếu, một chỗ): một đại lượng có
      hàm sở hữu rồi thì không màn nào được tự tính lại — cái bẫy đã sập bốn
      lần, lần gần nhất là hai con số cho cùng một đêm trên cùng một màn. */

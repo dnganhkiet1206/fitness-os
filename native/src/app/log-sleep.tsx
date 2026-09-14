@@ -1,4 +1,3 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
@@ -17,6 +16,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+import { DateField } from '@/components/ascnd/date-field';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
@@ -279,21 +280,19 @@ export default function LogSleepSheet() {
       <View style={styles.timeCard}>
         <View style={styles.timeRow}>
           <Text style={styles.timeLabel}>{i18n.nBedtime}</Text>
-          <DateTimePicker
+          <DateField
             value={bedtime}
             mode="time"
             display="compact"
-            themeVariant="dark"
             onChange={(_, d) => d && setBedtime(d)}
           />
         </View>
         <View style={[styles.timeRow, styles.timeRowBorder]}>
           <Text style={styles.timeLabel}>{i18n.nWakeUp}</Text>
-          <DateTimePicker
+          <DateField
             value={waketime}
             mode="time"
             display="compact"
-            themeVariant="dark"
             onChange={(_, d) => d && setWaketime(d)}
           />
         </View>

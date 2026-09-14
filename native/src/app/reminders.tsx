@@ -1,7 +1,8 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Bell, Droplets, Dumbbell, type LucideIcon, Moon, Pill, Scale } from 'lucide-react-native';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+
+import { DateField } from '@/components/ascnd/date-field';
 
 import { PickRow } from '@/components/ascnd/pick-row';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -162,11 +163,10 @@ export default function RemindersScreen() {
               </View>
               <View style={styles.rowRight}>
                 {r.enabled && (
-                  <DateTimePicker
+                  <DateField
                     value={timeToDate(r.hour, r.minute)}
                     mode="time"
                     display="compact"
-                    themeVariant="dark"
                     onChange={(_, d) => d && setTime(key, d.getHours(), d.getMinutes())}
                   />
                 )}

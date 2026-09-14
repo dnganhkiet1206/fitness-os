@@ -1,5 +1,4 @@
 import { useMutation } from '@tanstack/react-query';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { useState } from 'react';
@@ -13,6 +12,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+import { DateField } from '@/components/ascnd/date-field';
 
 import { Check } from 'lucide-react-native';
 
@@ -173,11 +174,10 @@ export default function LogMeasurementSheet() {
 
         <View style={styles.dateRow}>
           <Text style={styles.fieldLabel}>{i18n.progressDate}</Text>
-          <DateTimePicker
+          <DateField
             value={date}
             mode="date"
             display="compact"
-            themeVariant="dark"
             maximumDate={new Date()}
             onChange={(_, d) => d && setDate(d)}
           />

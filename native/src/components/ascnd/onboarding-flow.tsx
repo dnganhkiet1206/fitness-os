@@ -1,4 +1,3 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import {
@@ -31,6 +30,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+
+import { DateField } from '@/components/ascnd/date-field';
 import Animated, { FadeIn, SlideInLeft, SlideInRight } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -366,11 +367,10 @@ export function OnboardingFlow() {
                 </Field>
                 <Field label={i18n.settingsDob}>
                   <View style={styles.pickerWrap}>
-                    <DateTimePicker
+                    <DateField
                       value={dob}
                       mode="date"
                       display="spinner"
-                      themeVariant="dark"
                       maximumDate={new Date()}
                       onChange={(_, d) => d && setDob(d)}
                     />
@@ -486,11 +486,10 @@ export function OnboardingFlow() {
                   <View style={styles.halfField}>
                     <Field label={i18n.onboardingWakeTime}>
                       <View style={styles.pickerWrap}>
-                        <DateTimePicker
+                        <DateField
                           value={waketime}
                           mode="time"
                           display="spinner"
-                          themeVariant="dark"
                           onChange={(_, d) => d && setWaketime(d)}
                         />
                       </View>
@@ -499,11 +498,10 @@ export function OnboardingFlow() {
                   <View style={styles.halfField}>
                     <Field label={i18n.onboardingSleepTime}>
                       <View style={styles.pickerWrap}>
-                        <DateTimePicker
+                        <DateField
                           value={bedtime}
                           mode="time"
                           display="spinner"
-                          themeVariant="dark"
                           onChange={(_, d) => d && setBedtime(d)}
                         />
                       </View>
