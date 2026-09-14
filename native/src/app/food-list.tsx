@@ -265,9 +265,11 @@ const stylesFor = makeStyles((c, m) => ({
     textAlign: 'center',
     paddingVertical: spacing.lg,
     borderRadius: radius.md,
-    borderWidth: m.inset.borderWidth,
-    borderColor: m.inset.border,
-    backgroundColor: m.inset.bg,
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
+    /* Tấm rỗng này đứng trên trang, cùng chỗ với `foodList.group` mà nó thay
+       thế khi danh sách trống — nên cùng một mặt. Xem `Material.onPage`. */
+    backgroundColor: m.onPage,
   },
   hint: { fontSize: 12, color: c.mutedForeground, marginTop: -spacing.sm },
 }));

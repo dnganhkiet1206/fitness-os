@@ -842,6 +842,47 @@ export interface Material {
   paper: string;
   /** bề mặt con — xem `Inset` */
   inset: Inset;
+  /**
+   * Mặt của một khối đứng THẲNG TRÊN TRANG — vế đối của `inset`.
+   *
+   * ── vì sao nó phải tồn tại, và cái giá của việc nó không tồn tại ──
+   *
+   * `inset.bg` là mặt của một chỗ LÕM: giao ước của nó (xem `Inset`) là "thẻ lộ
+   * trở lại qua chỗ lõm", nên trên giấy nó được định nghĩa ĐÚNG BẰNG `background`.
+   * Đó là giá trị đúng khi có một mặt thẻ ở sau. Khi không có — khi khối nằm
+   * thẳng trên trang — thì "lộ thứ ở sau" nghĩa là lộ chính cái trang, và khối
+   * biến mất.
+   *
+   * Kho này không có tên cho vai thứ hai ấy, nên mỗi chỗ gặp nó phải tự nghĩ ra
+   * một lời giải, và bốn chỗ đã nghĩ ra cùng một lời giải sai:
+   *
+   *     segmented.tsx      thumb    "đúng bằng hex nền trang (1,00:1)"
+   *     today-meals.tsx    tấm      "trên giấy `inset.bg` CHÍNH LÀ nền trang"
+   *     nutrition.tsx      pill     chủ dự án: "trộn vào màu be bên dưới"
+   *     workouts/index     2 khối   chủ dự án khoanh đỏ ba chỗ một lúc
+   *
+   * Ba lần đầu được chữa tại chỗ bằng `m.lit ? m.inset.bg : c.card` viết tay.
+   * Chữa tại chỗ lần thứ tư là chấp nhận sẽ có lần thứ năm — nên vai này có tên,
+   * và `tools/on-page-fill.mjs` canh cho không chỗ nào trên trang còn lấy `inset`.
+   *
+   * ── con số ──
+   *
+   * Bậc mà một khối trên trang phải tạo ra, đo bằng tỉ số với chính trang ấy:
+   *
+   *     tối    rgba(255,255,255,0.06) → #161617   1,113:1   ← đang chạy, giữ nguyên
+   *     sáng   #ffffff                            1,097:1   ← `inset.bg` cho 1,000
+   *
+   * Hai diện mạo nay cùng một bậc, và bậc ấy KHÔNG phải do tôi chọn: danh sách
+   * gom nhóm của iOS đi từ `systemGroupedBackground` #f2f2f7 lên
+   * `secondarySystemGroupedBackground` #ffffff, tức **1,134:1**. Cả ba con số
+   * nằm trong cùng một khoảng. Apple ship bậc ấy KHÔNG kèm viền, nên ở đây viền
+   * cũng lùi về `m.border` (sợi tơ của thẻ) thay vì `inset.border` — một đường
+   * kẻ nâu trên mặt trắng là thứ chỉ cần khi mặt ấy vô hình.
+   *
+   * Và đây là chỗ tỉ số tương phản một mình không nói hết: trắng trung tính 0%
+   * trên tờ giấy bão hoà 33% khác về SẮC, không chỉ về độ sáng.
+   */
+  onPage: string;
   /** bề mặt trên nền động — xem `Aura` */
   aura: Aura;
   /**
@@ -979,6 +1020,11 @@ export const materials: Record<ThemeName, Material> = {
          không đổi một điểm ảnh nào. */
       track: alpha(darkPalette.secondary, 0.4),
     },
+    /* ĐÚNG giá trị `inset.bg` của bản tối, chép nguyên văn: trên nền tối một
+       lớp phủ mờ cộng dồn, nên "lõm vào" và "đứng trên trang" tình cờ ra cùng
+       một mặt — và bản tối không đổi một điểm ảnh. Cái tên tách hai vai ra là
+       để bản SÁNG nói được điều mà bản tối không cần nói. */
+    onPage: 'rgba(255,255,255,0.06)',
     /* Ba giá trị đang chạy, chép nguyên văn khỏi `liquid-glass.tsx`. */
     aura: {
       hair: 'rgba(255,255,255,0.035)',
@@ -1029,13 +1075,25 @@ export const materials: Record<ThemeName, Material> = {
       `background` #f7f4ef cách mặt thẻ 1,10: vẫn là một bậc đọc được, nhẹ hơn
       một nấc, và nó KHỚP chính xác thứ mà sheet đã làm đúng.
 
-      ── chỗ nó KHÔNG còn vẽ ra được, và vì sao vẫn ổn ──
+      ── chỗ nó KHÔNG còn vẽ ra được, và vì sao ĐÃ TƯỞNG là vẫn ổn ──
 
       Một ô con đặt thẳng trên TRANG (cũng #f7f4ef) nay trùng khít nền: 1,00.
       Cái vẽ ra hình nó ở đó là `border` #dcd5c8 — 1,33 so với trang — chứ không
       còn là nền. Đó là cùng một giao ước mà bản TỐI vốn đã sống bằng: chú thích
-      ở `quickBtn` đã ghi "VIỀN mới là thứ vẽ ra hình nút". Ô con trên giấy nay
-      cũng thế.
+      ở `quickBtn` đã ghi "VIỀN mới là thứ vẽ ra hình nút".
+
+      Đoạn trên là một DỰ ĐOÁN, và nó SAI. Nó được viết ở đây, chưa từng nhìn
+      thấy, và chủ dự án đã bác nó ba lần bằng ảnh chụp máy thật — lần cuối là
+      khoanh đỏ ba khối một lúc ở tab Tập luyện. Chỗ hổng trong lập luận: bản
+      TỐI có viền RỒI VẪN CÒN một bậc nền 1,113:1 phía sau nó, nên ở đó viền là
+      thứ *thêm vào*; trên giấy 1,000 nghĩa là viền là thứ DUY NHẤT, và một
+      đường kẻ nâu 1,33 quanh một khoảng trống không đọc ra là một khối — nó
+      đọc ra như một cái khung rỗng ai đó quên tô.
+
+      Nên chỗ này không còn là nơi trả lời câu hỏi ấy: một khối trên trang lấy
+      `onPage` ngay dưới đây, và `tools/on-page-fill.mjs` canh cho không chỗ
+      nào trên trang còn với tay sang `inset`. `inset` giữ nguyên giao ước hẹp
+      của nó — một chỗ lõm vào một mặt CÓ THẬT.
     */
     inset: {
       bg: lightPalette.background,
@@ -1044,6 +1102,9 @@ export const materials: Record<ThemeName, Material> = {
       /* Mặt thẻ lộ trở lại qua chỗ lõm — xem `Inset.track`. */
       track: lightPalette.card,
     },
+    /* Mặt thẻ. Một khối trên trang đi LÊN khỏi giấy, cùng hướng với thẻ — ngược
+       hướng với ô con ngay phía trên, và đó đúng là chỗ hai vai tách ra. */
+    onPage: lightPalette.card,
     /* Sợi MỰC thay cho sợi trắng: trên giấy, một sợi trắng dưới lớp blur không
        vẽ ra mép nào. Cùng độ mờ 0,035, đổi hướng chứ không đổi lượng. */
     aura: {

@@ -521,6 +521,12 @@ const STEPS = [
      màu do hệ điều hành chọn ở phía bên kia. Mười chỗ đã gõ cứng `"dark"` trên
      một app CÓ bản sáng, và chỉ máy thật mới lộ ra. */
   ['bộ chọn ngày', 'node', ['tools/date-field.mjs']],
+  /* Lỗi KHÔNG nằm trong style mà nằm ở chỗ style ấy được TREO LÊN: cùng dòng
+     `backgroundColor: m.inset.bg` là đúng trong một thẻ và vô hình trên trang,
+     vì trên giấy `inset.bg` được định nghĩa đúng bằng `background`. Bốn luật
+     màu kia đọc StyleSheet như một bảng giá trị rời nên không cửa nào có thẩm
+     quyền; luật này đi cây JSX. Cái bẫy đã sập năm lần. */
+  ['mặt trên trang', 'node', ['tools/on-page-fill.mjs']],
   /* Cùng họ với `daily-log.mjs` (một phép chiếu, một chỗ): một đại lượng có
      hàm sở hữu rồi thì không màn nào được tự tính lại — cái bẫy đã sập bốn
      lần, lần gần nhất là hai con số cho cùng một đêm trên cùng một màn. */

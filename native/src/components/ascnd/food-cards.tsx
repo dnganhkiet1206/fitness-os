@@ -286,9 +286,13 @@ const stylesFor = makeStyles((c) => ({
 const foodListStylesFor = makeStyles((c, m) => ({
   group: {
     borderRadius: radius.md,
-    backgroundColor: m.inset.bg,
-    borderWidth: m.inset.borderWidth,
-    borderColor: m.inset.border,
+    /* Đây là biến thể TRÊN TRANG — vế kia là `groupOnCard` ngay dưới, và cặp
+       tên ấy chính là chỗ ghi lại lựa chọn. Nên mặt của nó là `m.onPage`: bản
+       cũ lấy `m.inset.bg`, thứ mà trên giấy được định nghĩa đúng bằng
+       `background`, nên cả khối danh sách chỉ còn cái viền vẽ ra nó. */
+    backgroundColor: m.onPage,
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
     overflow: 'hidden',
   },
   /**

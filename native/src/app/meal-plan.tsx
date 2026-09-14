@@ -433,12 +433,21 @@ const stylesFor = makeStyles((c, m) => ({
     fill alone — `colors.secondary` is 1.137 — which is exactly why every other
     surface in this app is `glass.bg` *plus* a 12%-white hairline. The border is
     what the eye finds; the fill only stops it looking hollow.
+
+    ── và vế SÁNG của cùng phép đo ──
+
+    Đoạn trên đo bản TỐI, và kết luận của nó chỉ đúng ở đó. Trên giấy mặt này
+    từng là `m.inset.bg`, thứ được định nghĩa đúng bằng `background` — nên "cái
+    fill chỉ để khối khỏi rỗng" thành ra không có fill nào cả: 1,000:1, và chỉ
+    còn một đường kẻ nâu #dcd5c8 vẽ ra cả nhóm. `m.onPage` cho 1,097:1 trên
+    giấy và giữ nguyên từng điểm ảnh của bản tối; viền lùi về sợi tơ của thẻ,
+    vì một đường kẻ đậm là thứ chỉ cần khi mặt vô hình. Xem `Material.onPage`.
   */
   list: {
     borderRadius: radius.md,
-    backgroundColor: m.inset.bg,
-    borderWidth: m.inset.borderWidth,
-    borderColor: m.inset.border,
+    backgroundColor: m.onPage,
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
     overflow: 'hidden',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, height: 46 },
@@ -456,9 +465,10 @@ const stylesFor = makeStyles((c, m) => ({
     gap: 6,
     height: 46,
     borderRadius: radius.md,
-    backgroundColor: m.inset.bg,
-    borderWidth: m.inset.borderWidth,
-    borderColor: m.inset.border,
+    /* Hàng "thêm món" đứng ngay dưới `list` và trên trang như nó — cùng mặt. */
+    backgroundColor: m.onPage,
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
   },
   addText: { ...type.body, color: c.primary, fontWeight: '600' },
   note: { ...type.caption, color: c.mutedForeground, textAlign: 'center' },

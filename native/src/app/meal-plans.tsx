@@ -128,11 +128,15 @@ const stylesFor = makeStyles((c, m) => ({
     reason: at these luminances the border is what the eye finds, and the fill
     only stops the group looking hollow.
   */
+  /* Vế SÁNG của phép đo ngay trên, vốn chỉ đo bản tối: trên giấy `m.inset.bg`
+     được định nghĩa đúng bằng `background`, nên "fill để khối khỏi rỗng" thành
+     không có fill (1,000:1) và cả nhóm chỉ còn một đường kẻ nâu. Xem
+     `Material.onPage` — 1,097 giấy, bản tối không đổi một điểm ảnh. */
   list: {
     borderRadius: radius.lg,
-    backgroundColor: m.inset.bg,
-    borderWidth: m.inset.borderWidth,
-    borderColor: m.inset.border,
+    backgroundColor: m.onPage,
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
     overflow: 'hidden',
   },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, height: 62 },

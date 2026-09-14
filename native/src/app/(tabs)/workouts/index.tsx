@@ -356,18 +356,25 @@ const stylesFor = makeStyles((c, m) => ({
     gap: 6,
     height: 44,
     borderRadius: radius.md,
-    borderWidth: m.inset.borderWidth,
-    borderColor: m.inset.border,
-    backgroundColor: m.inset.bg,
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
+    /* `m.onPage`, không phải `m.inset.bg` — hàng này nằm THẲNG trên trang, dưới
+       ba thẻ mẫu tập, không nằm trong một chỗ lõm nào. Xem `Material.onPage`:
+       trên giấy `inset.bg` được định nghĩa đúng bằng `background`, nên nó ra
+       1,000:1 so với trang và hàng này biến mất. Chủ dự án khoanh đỏ đúng nó. */
+    backgroundColor: m.onPage,
   },
   addRowText: { ...type.footnote, fontWeight: '600', color: c.primary },
   /* Hàng dẫn đi chỗ khác: hình dạng của một hàng Cài đặt, vì đó đúng là việc nó
      làm — nó không mang nội dung nào của riêng nó. */
   toolGroup: {
     borderRadius: radius.md,
-    backgroundColor: m.inset.bg,
-    borderWidth: m.inset.borderWidth,
-    borderColor: m.inset.border,
+    /* Cùng lý do như `addRow` ngay trên: khối này đứng trên trang, không lõm
+       vào mặt nào. Bậc mà nó tạo ra so với trang nay bằng nhau ở hai diện mạo
+       — 1,097 giấy / 1,113 tối — ngang bậc danh sách gom nhóm của iOS. */
+    backgroundColor: m.onPage,
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
     overflow: 'hidden',
   },
   toolSep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },

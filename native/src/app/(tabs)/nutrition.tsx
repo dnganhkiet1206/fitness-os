@@ -370,8 +370,12 @@ export default function NutritionScreen() {
    * stops lining up with the row above it.
    */
 
+  /* `groupOnCard`, không phải `group`: cả hai chỗ gọi `FoodGroup` nằm TRONG
+     `<GlassCard style={styles.foodLibrary}>`. Quyết định ấy đã được ghi ở
+     `food-cards.tsx` khi `groupOnCard` ra đời ("nested cards are always wrong")
+     nhưng chỉ áp cho danh sách thực đơn, và hai chỗ này bị bỏ lại. */
   const FoodGroup = ({ rows }: { rows: FoodItemRow[] }) => (
-    <View style={foodList.group}>
+    <View style={foodList.groupOnCard}>
       {rows.map((f, i) => (
         <View key={f.id}>
           {i > 0 ? <View style={foodList.sep} /> : null}
@@ -839,7 +843,8 @@ export default function NutritionScreen() {
                 {recents && recents.length > 0 ? (
                   <View style={styles.foodSection}>
                     <MicroLabel>{i18n.nutritionRecent}</MicroLabel>
-                    <View style={foodList.group}>
+                    {/* Trong `foodLibrary`, một `GlassCard` — xem `FoodGroup`. */}
+                    <View style={foodList.groupOnCard}>
                       {recents.slice(0, 4).map((r, i) => (
                         <View key={`${r.food_name}-${i}`}>
                           {i > 0 ? <View style={foodList.sep} /> : null}
@@ -1047,8 +1052,16 @@ const stylesFor = makeStyles((c, m) => ({
       #ffffff: 1,097:1 so với trang — ngang với 1,113 của bản tối — và khác
       hẳn về SẮC (trung tính 0% trên một tờ giấy bão hoà 33%), thứ mà tỉ số
       tương phản một mình không nói ra. Chữ `primary` trên nền mới: 17,57:1.
+
+      ── và nay nó có TÊN ──
+
+      Dòng dưới từng là chính cái nhánh `m.lit ? m.inset.bg : c.card` ấy, viết
+      tay. Nó đúng, nhưng nó không dạy được gì cho chỗ tiếp theo gặp cùng câu
+      hỏi — và chỗ tiếp theo (hai khối ở tab Tập luyện) lại trả lời sai, đúng
+      như lần này. `m.onPage` là chính hai giá trị ấy, từng ký tự, dưới một cái
+      tên nói ra VÌ SAO. Xem `Material.onPage`.
     */
-    backgroundColor: m.lit ? m.inset.bg : c.card,
+    backgroundColor: m.onPage,
   },
   planAll: { ...type.footnote, fontWeight: '600', color: c.primary },
   /* Một HÀNG trong khối, không phải một thẻ. Cao 56 để vượt sàn chạm 44 và để
