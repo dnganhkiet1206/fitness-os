@@ -70,7 +70,19 @@ try {
         noEmitOnError: false,
         outDir: out,
         rootDir: LIB,
-        paths: { '@/*': [path.join(NATIVE, 'src', '*')] },
+        /* CỐ Ý không có `paths`.
+
+           Bản đầu có, và hậu quả là `tsc` đi theo `@/integrations/supabase/client`
+           ra ngoài `src/lib`, rồi vì `rootDir` là `src/lib` nên nó không ánh xạ
+           được mấy tệp ấy vào `outDir` và PHÁT THẲNG `.js` cạnh tệp nguồn. Bốn
+           tệp sinh tự động lọt vào cây nguồn và vào một commit, và bước gác lại
+           là thứ đã tạo ra chúng.
+
+           Không có `paths` thì `tsc` báo không phân giải được mấy import ấy —
+           lỗi đã bị nuốt ở dưới — nhưng vẫn phát đủ `src/lib` vào `outDir`, và
+           không đụng một tệp nào ngoài đó. Còn lúc CHẠY thì `Module._resolveFilename`
+           lo phần phân giải: `@/lib/*` trỏ vào bản vừa biên dịch, phần còn lại
+           trỏ vào khối rỗng. */
       },
       files: readdirSync(LIB)
         .filter((f) => f.endsWith('.ts'))
