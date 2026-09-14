@@ -177,19 +177,35 @@ export function applyQuery(rows, url) {
  */
 export const FIXTURES = {
   profiles: [{
-    user_id: UID, name: 'Kiệt', sex: 'male', date_of_birth: '1996-04-12',
+    /* `dob`, KHÔNG phải `date_of_birth`.
+
+       Cột thật tên `dob` (migration gốc, dòng 11) và cả app đọc `profile.dob`.
+       Fixture này gõ `date_of_birth` — một cột không tồn tại — nên mọi lần
+       dựng đều thấy một hồ sơ KHÔNG CÓ NGÀY SINH, lặng lẽ, không ai đỏ. Bắt
+       được nó khi ước lượng calo buổi tập ra 0 ở mọi màn: `energyProfileFrom`
+       trả `null` vì thiếu `dob`, và một máy chủ giả sai kiểu này không báo lỗi
+       — nó BỊA ra một thế giới nơi tính năng không chạy. */
+    user_id: UID, name: 'Kiệt', sex: 'male', dob: '1996-04-12',
     height_cm: 174, weight_kg: 71.5, goal: 'recomp', activity_level: 'moderate',
     training_level: 'intermediate', onboarding_completed: true,
     tdee_target_kcal: 2450, macro_protein_g: 160, macro_carbs_g: 250,
     macro_fat_g: 75, macro_fiber_g: 30, sleep_target_hours: 8,
-    waketime: '06:30', bedtime: '23:00', dietary_preference: 'omnivore', coins: 1240,
+    /* Tên cột THẬT là `sleep_target_*`. Hai khoá cũ (`waketime`, `bedtime`)
+       không tồn tại trong schema, nên `edit-profile` và onboarding luôn thấy
+       mục tiêu giấc ngủ trống ở mọi lần dựng. */
+    sleep_target_waketime: '06:30', sleep_target_bedtime: '23:00',
+    dietary_preference: 'omnivore', coins: 1240,
   }],
   daily_logs: [{
     id: 'dl1', user_id: UID, date: dayStr(0), kcal: 1680, protein_g: 118,
     carbs_g: 165, fat_g: 52, fiber_g: 21, steps: 8432, active_kcal: 486,
-    active_minutes: 41, water_ml: 1750, readiness_score: 74,
+    active_minutes: 41, readiness_score: 74,
     sleep_duration_min: 431, workout_count: 1, volume_load: 8450,
-    acwr: 1.08, hrv_today: 62, rhr_today: 54,
+    acwr: 1.08,
+    /* `water_ml`, `hrv_today`, `rhr_today` đã bỏ: ba khoá ấy không phải cột
+       của `daily_logs`. Nước đọc từ `water_logs`, còn HRV với nhịp nghỉ đọc
+       từ `biometric_samples` — fixture vẫn có đủ cả hai bảng, nên không màn
+       nào mất dữ liệu vì lần dọn này. */
   }],
   /*
     ── BẢY đêm, không phải một ──
