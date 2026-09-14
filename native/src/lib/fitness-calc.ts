@@ -9,6 +9,42 @@ export function calcBMR(weight_kg: number, height_cm: number, age: number, sex: 
   return Math.round(base + 5); // male / other
 }
 
+/**
+ * Mức chuyển hoá NGHỈ của một cơ thể, tính bằng kcal mỗi phút.
+ *
+ * ── vì sao nó ở ĐÂY chứ không ở `lib/energy.ts` ──
+ *
+ * `profile-onboarding.mjs` giữ một luật: ngoài tệp này ra, không ai được gọi
+ * thẳng `calcBMR`/`calcMacros`/`calcWaterTarget`/`proteinReferenceWeight` —
+ * mọi thứ nhận một CƠ THỂ phải đi qua đây, vì chuỗi ấy từng được chép tay
+ * thành hai bản và hai bản đã lệch nhau (175 với 170 cho cùng một cột).
+ *
+ * Ước lượng calo tiêu hao của một buổi tập cần đúng một mảnh của chuỗi ấy:
+ * mức nghỉ. Nó KHÔNG cần mục tiêu hay mức vận động, nên gọi `calcPlan` rồi vứt
+ * bốn phần năm kết quả là bịa ra hai đầu vào chỉ để lấy một trường. Chỗ đúng
+ * là thêm mắt xích ở đây, trong tệp vốn sở hữu chuỗi — luật nói chuỗi phải
+ * sống MỘT chỗ, và đây chính là chỗ ấy.
+ *
+ * ── vì sao trả `null` chứ không NÉM như `calcPlan` ──
+ *
+ * `calcPlan` ném vì nó dựng mục tiêu calo, và một mục tiêu sai thì thà không
+ * có. Còn đây là một con số phụ trên thẻ buổi tập: thiếu chiều cao thì mất
+ * dòng calo, chứ không được làm sập màn hình. Và `null` chứ không phải `0` là
+ * luật A11 — `0` là một phép ĐO nói rằng không tiêu hao gì.
+ */
+export function restingKcalPerMin(i: {
+  weight_kg: number;
+  height_cm: number;
+  age: number;
+  sex: Sex;
+}): number | null {
+  if (!Number.isFinite(i.weight_kg) || !plausible('weight_kg', i.weight_kg)) return null;
+  if (!Number.isFinite(i.height_cm) || !plausible('height_cm', i.height_cm)) return null;
+  if (!Number.isFinite(i.age) || i.age < 0 || i.age > 130) return null;
+  const bmr = calcBMR(i.weight_kg, i.height_cm, i.age, i.sex);
+  return bmr > 0 ? bmr / 1440 : null;
+}
+
 const ACTIVITY_MULTIPLIERS: Record<string, number> = {
   sedentary: 1.2,
   light: 1.375,

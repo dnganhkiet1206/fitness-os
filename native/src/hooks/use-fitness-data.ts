@@ -5,6 +5,7 @@ import { confirmWrite } from '@/lib/write-result';
 import { syncProfileWeight } from '@/lib/weight-sync';
 // aliased: this file already has its own `LoggedSet`, a much richer row
 import { trainingMinutes, type LoggedSet as TimedSet } from '@/lib/activity';
+import { sessionKcalOf, type EnergyProfile } from '@/lib/energy';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { localDateStr, localDaysAgoStr, localDayRangeISO } from '@/lib/local-date';
 import {
@@ -448,6 +449,46 @@ export function useTodayTrainingMinutes() {
         Array.isArray(s.sets) ? (s.sets as unknown as TimedSet[]) : [],
       );
       return trainingMinutes(all);
+    },
+  });
+}
+
+/**
+ * Calo HOẠT ĐỘNG ước lượng cho các buổi tập ghi hôm nay.
+ *
+ * Anh em của `useTodayTrainingMinutes` ngay trên, và cố ý là một truy vấn
+ * RIÊNG chứ không mở rộng cái kia: cái kia trả về phút và có nhiều chỗ đọc,
+ * còn cái này cần thêm `session_rpe` và cần tính theo TỪNG buổi — hai buổi
+ * cùng tổng số phút nhưng khác RPE không ra cùng một con số, nên gộp set của
+ * cả ngày lại rồi tính một lần là sai.
+ *
+ * `null` khi chưa đủ dữ liệu hồ sơ, không phải 0. Xem `sessionActiveKcal`.
+ */
+export function useTodayActiveKcal(profile: EnergyProfile | null) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['today_active_kcal', user?.id, profile],
+    enabled: !!user,
+    queryFn: async () => {
+      const day = localDayRangeISO(localDateStr());
+      const { data, error } = await supabase
+        .from('workout_sessions')
+        .select('sets, session_rpe')
+        .eq('user_id', user!.id)
+        .gte('date_time', day.start)
+        .lt('date_time', day.end);
+      if (error) throw error;
+      if (!profile) return null;
+      let total = 0;
+      let counted = 0;
+      for (const row of data ?? []) {
+        const kcal = sessionKcalOf(row, profile);
+        if (kcal != null) {
+          total += kcal;
+          counted += 1;
+        }
+      }
+      return counted > 0 ? total : null;
     },
   });
 }

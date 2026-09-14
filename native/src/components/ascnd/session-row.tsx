@@ -41,6 +41,7 @@ export function SessionRow({
   onDelete,
   compactDate = false,
   volumeRatio,
+  activeKcal,
 }: {
   session: SessionSummary;
   wUnit: WeightUnit;
@@ -63,6 +64,13 @@ export function SessionRow({
    * nothing to compare against — one row, or a list with no volumes.
    */
   volumeRatio?: number;
+  /**
+   * Calo HOẠT ĐỘNG ước lượng của buổi này — `null` khi hồ sơ chưa đủ để tính.
+   *
+   * Tính ở chỗ gọi chứ không ở đây: hàng này được vẽ trong một danh sách, và
+   * một component hàng tự đi lấy hồ sơ là N lần truy vấn cho N hàng.
+   */
+  activeKcal?: number | null;
 }) {
   const c = usePalette();
   const m = useMaterial();
@@ -89,6 +97,13 @@ export function SessionRow({
             {session.volume_load != null
               ? `  ·  ${Math.round(displayWeight(Number(session.volume_load), wUnit)).toLocaleString()} ${wl}`
               : ''}
+            {/*
+              Dấu ngã ở đây mang đúng nghĩa nó mang trên ba vòng hoạt động:
+              con số này là ƯỚC LƯỢNG, không phải số đo từ thiết bị. Cùng một
+              ký hiệu cho cùng một loại khẳng định, để người đọc chỉ phải học
+              nó một lần.
+            */}
+            {activeKcal != null ? `  ·  ~${activeKcal.toLocaleString()} kcal` : ''}
           </Text>
           {/*
             The meter, inside the text column and 96pt wide.

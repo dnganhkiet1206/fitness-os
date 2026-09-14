@@ -116,6 +116,11 @@ export function trainingMinutes(sets: LoggedSet[]): number {
 export interface ActivityInput {
   /** daily_logs.active_kcal — null when Health has never written it */
   moveKcal: number | null;
+  /**
+   * Ước lượng calo hoạt động từ các buổi tập đã ghi hôm nay — `null` khi chưa
+   * đủ dữ liệu hồ sơ để tính. Xem `lib/energy.ts`.
+   */
+  estimatedMoveKcal: number | null;
   /** daily_logs.active_minutes — null when Health has never written it */
   healthMinutes: number | null;
   /** worked out from today's logged sets; 0 when nothing was logged */
@@ -149,9 +154,24 @@ export interface ActivityModel {
  * workout: `healthMinutes: 0` means Health watched you sit still, which is not
  * a claim about the barbell session it never saw. Only a positive reading
  * displaces the estimate.
+ *
+ * ── và nay vòng MOVE theo đúng luật ấy ──
+ *
+ * Trước đây Move chỉ có một nguồn: `daily_logs.active_kcal`, mà cột ấy CHỈ
+ * `use-health-sync` ghi. Nên máy không nối Apple Health — kể cả bản dựng
+ * `EXPO_FREE_TEST=1` vốn gỡ hẳn HealthKit — tập xong, ghi đủ set, mà Move vẫn
+ * đứng ở 0 vĩnh viễn. Đó không phải một phép đo bằng 0; đó là không có phép đo
+ * nào, và vẽ nó thành 0 là nói sai đúng kiểu `A11` đã bắt phải bỏ.
+ *
+ * Nên Move nhận thêm một ước lượng và đi CÙNG luật với Exercise: Health dương
+ * thì Health thắng, không thì lấy ước lượng, và thẻ nói rõ là cái nào. Lý do
+ * không cộng dồn hai nguồn nằm ở `lib/energy.ts` — cộng là đếm hai lần ở đúng
+ * nhóm người đã đo cẩn thận nhất.
  */
 export function activityModel(input: ActivityInput): ActivityModel {
   const move = Number(input.moveKcal) || 0;
+  const moveEst = Number(input.estimatedMoveKcal) || 0;
+  const moveShown = move > 0 ? move : moveEst;
   const health = Number(input.healthMinutes) || 0;
   const logged = Math.max(0, Math.round(input.loggedMinutes));
   const steps = Math.max(0, Math.round(input.steps));
@@ -165,10 +185,10 @@ export function activityModel(input: ActivityInput): ActivityModel {
   const rings: RingModel[] = [
     {
       key: 'move',
-      current: Math.round(move),
+      current: Math.round(moveShown),
       target: MOVE_TARGET_KCAL,
-      source: move > 0 ? 'measured' : 'none',
-      pct: move / MOVE_TARGET_KCAL,
+      source: move > 0 ? 'measured' : moveEst > 0 ? 'estimated' : 'none',
+      pct: moveShown / MOVE_TARGET_KCAL,
     },
     {
       key: 'exercise',

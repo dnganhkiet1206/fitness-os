@@ -14,6 +14,8 @@ import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
+import { useProfile } from '@/hooks/useTodayData';
+import { energyProfileFrom, sessionKcalOf } from '@/lib/energy';
 import { useUnits } from '@/hooks/use-units';
 import { getLocale } from '@/lib/i18n';
 import { localDateStr } from '@/lib/local-date';
@@ -52,6 +54,10 @@ export default function SessionsScreen() {
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
   const { data: sessions, isError, refetch, isRefetching } = useWorkoutSessions(DAYS);
+  /* Hồ sơ lấy MỘT lần cho cả danh sách. Mỗi hàng tự đi lấy là N truy vấn cho
+     N hàng, và con số chúng cần là cùng một con số. */
+  const { data: profile } = useProfile();
+  const energyProfile = useMemo(() => energyProfileFrom(profile), [profile]);
   const del = useDeleteWorkoutSession();
 
   const confirmDelete = (id: string, date_time: string, label: string) => {
@@ -221,6 +227,7 @@ export default function SessionsScreen() {
                       onDelete={confirmDelete}
                       compactDate
                       volumeRatio={m.peak > 0 ? (Number(s.volume_load) || 0) / m.peak : undefined}
+                      activeKcal={sessionKcalOf(s, energyProfile)}
                     />
                     </SwipeRow>
                   </View>

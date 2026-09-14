@@ -192,8 +192,9 @@ import { useHealthSync } from '@/hooks/use-health-sync';
 import { useReminderSync } from '@/hooks/use-reminders';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodaySkeleton } from '@/components/ascnd/skeleton';
-import { useTodayTrainingMinutes } from '@/hooks/use-fitness-data';
+import { useTodayActiveKcal, useTodayTrainingMinutes } from '@/hooks/use-fitness-data';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
+import { energyProfileFrom } from '@/lib/energy';
 import { useTodayWater } from '@/hooks/use-water';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
 import type { QuestKey } from '@/lib/mascot-room';
@@ -1139,6 +1140,10 @@ export default function TodayScreen() {
   */
   const steps = dailyLog?.steps ?? 0;
   const { data: trainingMin } = useTodayTrainingMinutes();
+  /* Ước lượng calo hoạt động từ buổi tập đã ghi — chỉ được dùng khi Apple
+     Health không có số. Luật ấy sống ở `activityModel`, không ở đây. */
+  const energyProfile = useMemo(() => energyProfileFrom(profile), [profile]);
+  const { data: sessionKcal } = useTodayActiveKcal(energyProfile);
 
   // Nutrition
   const kcal = Math.round(Number(dailyLog?.kcal) || 0);
@@ -1310,6 +1315,7 @@ export default function TodayScreen() {
             detailOpen={expandedAt === heroIndex(key)}
             onToggleDetail={() => toggleHero(heroIndex(key))}
             moveKcal={dailyLog?.active_kcal != null ? Number(dailyLog.active_kcal) : null}
+            estimatedMoveKcal={sessionKcal ?? null}
             healthMinutes={dailyLog?.active_minutes ?? null}
             loggedMinutes={trainingMin ?? 0}
             steps={steps}

@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Dumbbell } from 'lucide-react-native';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 
 import { MuscleGrid } from '@/components/ascnd/muscle-grid';
@@ -14,7 +14,9 @@ import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useExercises } from '@/hooks/use-library';
+import { useProfile } from '@/hooks/useTodayData';
 import { useUnits } from '@/hooks/use-units';
+import { energyProfileFrom, sessionKcalOf } from '@/lib/energy';
 import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
 
@@ -74,6 +76,10 @@ export default function WorkoutLibraryScreen() {
   const { weight: wUnit } = useUnits();
   const vi = lang === 'vi';
   const { data: sessions, isError: sessionsFailed, refetch, isRefetching } = useWorkoutSessions(14);
+
+  /* Hồ sơ lấy MỘT lần cho cả danh sách — xem `sessions.tsx`. */
+  const { data: profile } = useProfile();
+  const energyProfile = useMemo(() => energyProfileFrom(profile), [profile]);
   const { data: exercises, isError: exercisesFailed } = useExercises();
   const delSession = useDeleteWorkoutSession();
   const [busy, setBusy] = useState(false);
@@ -155,6 +161,7 @@ export default function WorkoutLibraryScreen() {
                   lang={lang}
                   i18n={i18n}
                   onDelete={confirmDeleteSession}
+                  activeKcal={sessionKcalOf(s, energyProfile)}
                 />
               </View>
             ))}
