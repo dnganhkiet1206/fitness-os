@@ -238,21 +238,27 @@ export const darkPalette = {
    * cả hai dùng chung một khoá thì cái thành cốc biến mất hoàn toàn vào mặt
    * nước, và cái cốc mất hình ở đúng lúc nó đầy — tức đúng lúc đáng nhìn nhất.
    *
-   * Chủ dự án xin "xanh nhạt tươi như ảnh mẫu", rồi sau đó xem trên máy thật và
-   * nói "màu không được đẹp cho lắm". Hai câu ấy không mâu thuẫn, và chỗ tôi
-   * hiểu sai nằm giữa chúng: trong ảnh mẫu nước SÁNG vì nền TỐI. Trên mặt thẻ
-   * TRẮNG, bản tương đương của "mềm" không phải là NHẠT mà là ÍT BÃO HOÀ —
-   * xanh nhạt trên trắng thì rơi khỏi sàn tương phản ngay (#4aa3e8 chỉ
-   * 2,73:1), còn xanh bão hoà thì đọc ra chói.
+   * Chủ dự án chỉ vào một ảnh chụp app khác: "màu cho giống hình này nè". Màu
+   * ấy là xanh da trời nhạt, khoảng #8ccbf0. Đo nó trên HAI nền:
    *
-   * Nên khoá này giảm bão hoà chứ không làm nhạt: #3b90c9 cho **3,49:1** trên
-   * giấy — vẫn trên sàn 3:1 của WCAG 1.4.11 — và mềm hơn hẳn #2189d9 cũ vốn
-   * cùng độ sáng nhưng bão hoà hơn nhiều.
+   *     trên nền ĐEN của app trong ảnh   11,23:1
+   *     trên mặt thẻ TRẮNG của app này    1,76:1
    *
-   * Bản tối thì nền sẫm nên nhạt là dễ, và cũng giảm bão hoà cho cùng lý do:
-   * #6fb6e0.
+   * Cùng một màu, hai thế giới. Nó đẹp ở đó vì nền tối, và trên thẻ trắng nó
+   * gần như tan vào nền.
+   *
+   * Nên khoá này GIỮ ĐÚNG màu chủ dự án chỉ, và phần THÔNG TIN chuyển sang chỗ
+   * khác: mặt nước nay có một ĐƯỜNG VIỀN riêng bằng `metricBlue` (5,00:1 trên
+   * giấy). Phần tô mang tính cách, đường viền mang số liệu — tách hai việc ra
+   * thì không phải chọn giữa đẹp và đọc được.
+   *
+   * Dùng CHUNG một giá trị cho cả hai diện mạo, khác với mọi khoá khác trong
+   * bảng: nước thì vẫn là nước, và trên nền tối màu này cho 11:1 nên không cần
+   * một bản riêng.
+   *
+
    */
-  waterFill: '#6fb6e0',
+  waterFill: '#8ccbf0',
   /**
    * Hai vai TÁCH RA của xanh dương, đo trên bản mẫu chủ dự án gửi.
    *
@@ -548,7 +554,7 @@ export const lightPalette: Palette = {
      hơn nhiều, và trên một mặt thẻ trắng nó đọc ra chói. Làm nhạt thì rơi khỏi
      sàn ngay (#4aa3e8 chỉ 2,73:1); giảm bão hoà thì mềm đi mà vẫn giữ
      tương phản. */
-  waterFill: '#3b90c9',
+  waterFill: '#8ccbf0',
   /* Hai vai tách ra của xanh dương — xem chú thích dài ở bảng TỐI. Wash giữ
      nguyên `#3ba6ff` như bản tối (một lớp 2–34% đọc như nhau trên cả hai mặt
      thẻ); mực thì đổi sang chàm sẫm, đo từ bản mẫu. */

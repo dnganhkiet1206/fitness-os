@@ -53,6 +53,7 @@ import {
   STROKE,
   WAVE_AMP,
   waterFill,
+  waterLine,
   waterPath,
 } from '@/lib/water-glass';
 
@@ -1344,9 +1345,20 @@ function WaterGlass({ pct }: { pct: number }) {
   const animatedProps = useAnimatedProps(() => ({
     d: waterPath(depth.value, REST_AMP + slosh.value * (WAVE_AMP - REST_AMP), phase.value),
   }));
+  const lineProps = useAnimatedProps(() => ({
+    d: waterLine(depth.value, REST_AMP + slosh.value * (WAVE_AMP - REST_AMP), phase.value),
+  }));
 
   const water = graphicOf(c, 'waterFill');
-  const deep = graphicOf(c, 'metricBlue');
+  /*
+    `metricBlueInk`, không phải `metricBlue`.
+
+    Đường mặt nước là một nét mảnh MANG THÔNG TIN, không phải một mảng tô — nên
+    nó đọc vai MỰC chứ không đọc vai đồ hoạ. Và phép đo chốt lựa chọn ấy: trên
+    giấy `metricBlue` chỉ cho 2,83:1 so với phần tô xanh nhạt, dưới sàn; vai
+    mực cho 6,56:1.
+  */
+  const deep = c.metricBlueInk;
 
   return (
     <View style={styles.glassWrap}>
@@ -1361,13 +1373,38 @@ function WaterGlass({ pct }: { pct: number }) {
             máy thật, nên điểm dừng thành màu đặc. Web thì tôn trọng nó, nên
             ảnh dựng đẹp trong khi máy thật xấu — cái bẫy đã tốn một lượt.
           */}
+          {/*
+            Xanh da trời nhạt như ảnh chủ dự án chỉ, sẫm nhẹ xuống đáy. Cả hai
+            điểm dừng đều là màu NHẠT — phần tô mang tính cách, không mang số
+            liệu; số liệu nằm ở đường mặt nước bên dưới.
+          */}
           <LinearGradient id={`gf${id}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <Stop offset="0%" stopColor={water} stopOpacity={1} />
-            <Stop offset="100%" stopColor={deep} stopOpacity={1} />
+            <Stop offset="100%" stopColor={water} stopOpacity={0.78} />
           </LinearGradient>
         </Defs>
 
         <AnimatedPath fill={`url(#gf${id})`} clipPath={`url(#gc${id})`} animatedProps={animatedProps} />
+        {/*
+          ── đường mặt nước, và vì sao nó phải tồn tại ──
+
+          Chủ dự án chỉ vào một ảnh: "màu cho giống hình này nè". Đo màu ấy:
+          11,23:1 trên nền ĐEN của app trong ảnh, 1,76:1 trên mặt thẻ TRẮNG của
+          app này. Đẹp ở đó, gần như tan vào nền ở đây.
+
+          Lối ra không phải chọn một trong hai. Phần TÔ giữ đúng màu ấy; phần
+          THÔNG TIN — mực nước cao tới đâu — chuyển sang đường này, vẽ bằng
+          `metricBlue` ở 5,00:1. Tách hai việc ra thì không phải chọn giữa đẹp
+          và đọc được.
+        */}
+        <AnimatedPath
+          fill="none"
+          stroke={deep}
+          strokeWidth={1.6}
+          strokeLinecap="round"
+          clipPath={`url(#gc${id})`}
+          animatedProps={lineProps}
+        />
 
         {/*
           Vệt sáng trong lòng nước — chi tiết nhỏ nhất trong ảnh mẫu và là thứ

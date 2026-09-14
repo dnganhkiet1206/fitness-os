@@ -44,7 +44,7 @@ try {
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
   const {
-    waterFill, clampFill, waterPath,
+    waterFill, clampFill, waterPath, waterLine,
     WATER_CEIL, WATER_FLOOR, WATER_SPAN, WAVE_AMP, REST_AMP, STROKE,
     GLASS_W, GLASS_H, GLASS_STROKE_PATH, GLASS_CLIP_PATH,
     TOP_Y, BOT_Y, TOP_LEFT, TOP_RIGHT, BOT_LEFT, BOT_RIGHT,
@@ -192,6 +192,24 @@ try {
     const lowest = Math.max(...pts.map((q) => q[1]));
     if (Math.abs(lowest - BOT_Y) > 0.01) {
       problems.push(`đáy đường cốc ở ${lowest}, đáng lẽ ${BOT_Y}`);
+    }
+  }
+
+  /*
+    Đường mặt nước phải là ĐƯỜNG, không khép xuống đáy: khép thì stroke sẽ viền
+    cả hai thành và đáy cốc — ba đường không ai cần, chạy chồng lên nét cốc.
+  */
+  cases++;
+  if (/Z\s*$/.test(waterLine(10, REST_AMP, 0))) {
+    problems.push('đường mặt nước bị khép — stroke sẽ viền cả thành và đáy cốc');
+  }
+  /* Và nó phải đi ĐÚNG trên mép trên của khối nước, không lệch một đơn vị nào. */
+  for (const h of [0, 12, WATER_SPAN]) {
+    cases++;
+    const lineY = [...waterLine(h, REST_AMP, 0.3).matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((mm) => mm[2]);
+    const bodyY = [...waterPath(h, REST_AMP, 0.3).matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((mm) => mm[2]);
+    if (lineY.join() !== bodyY.slice(0, lineY.length).join()) {
+      problems.push(`mực ${h}: đường mặt nước không trùng mép trên khối nước — hai thứ sẽ trôi khỏi nhau khi sóng động`);
     }
   }
 
@@ -375,7 +393,7 @@ try {
   */
   /* Năm thứ đọc từ ảnh mẫu phải CÓ MẶT trong thẻ, không chỉ tồn tại trong thư
      viện hình học. */
-  for (const piece of ['waterPath', 'GLASS_STROKE_PATH', 'strokeLinecap="round"', 'fillOpacity']) {
+  for (const piece of ['waterPath', 'waterLine', 'GLASS_STROKE_PATH', 'strokeLinecap="round"', 'fillOpacity']) {
     cases++;
     if (!body.includes(piece)) {
       problems.push(`WaterGlass không vẽ ${piece} — mất một thứ trong ảnh mẫu, tức quay lại một bản đã bị bác`);
@@ -399,7 +417,7 @@ try {
     UI: ném trên máy thật, im lặng trên web.
   */
   const lib = read('src/lib/water-glass.ts');
-  for (const fnName of ['clampFill', 'waterPath']) {
+  for (const fnName of ['clampFill', 'waterPath', 'waterLine']) {
     cases++;
     const fn = lib.slice(lib.indexOf(`export function ${fnName}`));
     if (!/^\s*'worklet';\s*$/m.test(fn.slice(0, fn.indexOf('return')))) {
@@ -476,15 +494,52 @@ try {
         problems.push(`nét cốc ${strokeTok} chỉ ${cStroke.toFixed(2)}:1 so với mặt thẻ bản ${name} — dưới sàn 3:1, và ở mức 0% cái cốc là thứ DUY NHẤT còn nhìn thấy`);
       }
     }
+    /*
+      ── phần TÔ cố ý KHÔNG phải chỗ mang số liệu ──
+
+      Chủ dự án chỉ vào một ảnh: "màu cho giống hình này nè". Đo màu ấy trên
+      hai nền:
+
+          trên nền ĐEN của app trong ảnh   11,23:1
+          trên mặt thẻ TRẮNG của app này    1,76:1
+
+      Cùng một màu, hai thế giới. Nên luật KHÔNG đòi phần tô qua sàn — đòi thế
+      là ép chủ dự án bỏ màu họ chọn. Thứ phải qua sàn là ĐƯỜNG MẶT NƯỚC, chỗ
+      thật sự nói mực nước cao tới đâu.
+
+      Ghi lại để không ai "sửa" ngược: 1,76:1 của phần tô là CỐ Ý, và nó chỉ
+      đúng chừng nào đường mặt nước còn đó.
+    */
     cases++;
     const w = TOKEN[name].waterFill;
     if (!w) {
       problems.push(`bảng màu bản ${name} chưa có khoá waterFill`);
       continue;
     }
-    const cWater = contrast(w, surf);
-    if (cWater < 3) {
-      problems.push(`nước ${w} chỉ ${cWater.toFixed(2)}:1 so với mặt thẻ bản ${name} — dưới sàn 3:1 của WCAG 1.4.11`);
+    /*
+      ── HOẶC phần tô, HOẶC đường mặt nước — mỗi diện mạo một chỗ ──
+
+      Bước gác bản đầu đòi đường mặt nước qua sàn ở CẢ HAI diện mạo, và nó đỏ ở
+      bản tối. Đỏ đúng con số nhưng sai kết luận: trên nền TỐI, phần tô xanh
+      nhạt đã cho 11:1 so với mặt thẻ, tức chính nó đang mang thông tin. Đường
+      viền ở đó là thừa, không phải thiếu.
+
+      Việc của đường mặt nước KHÁC NHAU theo diện mạo, và luật phải nói đúng
+      thế: mỗi diện mạo phải có ÍT NHẤT MỘT chỗ qua sàn 3:1 — hoặc phần tô so
+      với mặt thẻ, hoặc đường viền so với phần tô. Đòi cả hai là đòi một thứ
+      không tồn tại trên bảng màu này.
+    */
+    cases++;
+    const lineTok = read('src/components/ascnd/dashboard-cards.tsx').match(
+      /stroke=\{(\w+)\}\s*\n\s*strokeWidth=\{1\.6\}/,
+    )?.[1];
+    const lineHex = lineTok === 'deep' ? TOKEN[name].metricBlueInk : null;
+    const cFillVsCard = contrast(w, surf);
+    const cLineVsFill = lineHex ? contrast(lineHex, w) : 0;
+    if (cFillVsCard < 3 && cLineVsFill < 3) {
+      problems.push(
+        `bản ${name}: phần tô ${w} chỉ ${cFillVsCard.toFixed(2)}:1 so với mặt thẻ, và đường mặt nước ${lineHex ?? '(không đọc được)'} chỉ ${cLineVsFill.toFixed(2)}:1 so với phần tô — không chỗ nào nói được mực nước cao tới đâu`,
+      );
     }
     /*
       ── một luật ĐÃ VIẾT RỒI GỠ, và lý do ở lại ──
@@ -522,7 +577,7 @@ try {
   }
 
   console.log(
-    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy — và nước có khoá RIÊNG cũng qua sàn ấy. Và năm thứ đọc từ ẢNH chủ dự án gửi đều được canh từng thứ: miệng HỞ (đường không khép, hai đầu nét cách nhau ở mép trên), nét DÀY, nét TRUNG TÍNH, đáy BO và thành THUÔN, sóng RÕ. Bỏ mất một cái là quay lại đúng một trong bốn bản đã bị bác — và lần nào tôi cũng bỏ mất chính cái miệng hở. Cộng một luật quét TOÀN KHO cho cái bẫy chỉ máy thật mới lộ: <Stop> không được nhét alpha() vào stopColor — react-native-svg bỏ qua nó và điểm dừng thành màu ĐẶC, thứ mà live.mjs chụp trên web không bao giờ thấy`,
+    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy — và ĐƯỜNG MẶT NƯỚC qua sàn ấy so với phần tô — phần tô thì CỐ Ý không, vì nó mang màu chủ dự án chọn chứ không mang số liệu. Và năm thứ đọc từ ẢNH chủ dự án gửi đều được canh từng thứ: miệng HỞ (đường không khép, hai đầu nét cách nhau ở mép trên), nét DÀY, nét TRUNG TÍNH, đáy BO và thành THUÔN, sóng RÕ. Bỏ mất một cái là quay lại đúng một trong bốn bản đã bị bác — và lần nào tôi cũng bỏ mất chính cái miệng hở. Cộng một luật quét TOÀN KHO cho cái bẫy chỉ máy thật mới lộ: <Stop> không được nhét alpha() vào stopColor — react-native-svg bỏ qua nó và điểm dừng thành màu ĐẶC, thứ mà live.mjs chụp trên web không bao giờ thấy`,
   );
 } finally {
   rmSync(out, { recursive: true, force: true });
