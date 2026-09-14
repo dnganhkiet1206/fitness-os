@@ -10,6 +10,7 @@ import * as Crypto from 'expo-crypto';
 import { ExerciseProgress } from '@/components/ascnd/exercise-progress';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { nav } from '@/lib/nav';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { RestTimer } from '@/components/ascnd/rest-timer';
@@ -1340,6 +1341,31 @@ export function DayPlan({
       </PressScale>
 
       {/*
+        ── đường ra cho bài PHÁT SINH, và vì sao nó phải hiện ra ở đây ──
+
+        Chú thích của luật một-lần-lưu ngay trên có một câu: "the rare case has
+        somewhere to go" — ý là sổ ghi tự do vẫn nhận buổi thứ hai. Câu ấy đúng
+        về mã, và SAI về màn hình: sau khi ghi xong, tấm này chỉ đổi nút thành
+        "Đã ghi buổi tập" rồi tắt, và không có một chữ nào nói sổ ấy ở đâu.
+
+        Chủ dự án báo đúng hậu quả: tập hết template, hệ thống ghi xong, rồi
+        phát sinh thêm một bài — và từ chỗ đang đứng thì app trông như đã đóng
+        cửa. Cả màn Plan KHÔNG có một liên kết nào tới `/log-workout`.
+
+        Nên luật một-lần-lưu GIỮ NGUYÊN — nó chặn cái lỗi thường gặp là ghi hai
+        lần cùng một buổi khi quay lại một ngày đã có — còn cái được thêm là
+        chỗ đi tiếp. Hai việc khác nhau, và trước đây chỉ có việc thứ nhất.
+      */}
+      {logged ? (
+        <PressScale
+          accessibilityRole="button"
+          onPress={() => nav.push('/log-workout')}
+          style={styles.extraLink}>
+          <Text style={styles.extraLinkText}>{i18n.nRdExtra}</Text>
+        </PressScale>
+      ) : null}
+
+      {/*
         The rest clock is a screen of its own — see `rest-timer`.
 
         It was a bar pinned above this list, and a bar is the polite version of
@@ -1636,5 +1662,10 @@ const stylesFor = makeStyles((c, m) => ({
   },
   finishTextDone: { color: c.readinessGreen },
   finishText: { ...type.body, color: c.primaryForeground, fontWeight: '600' },
+  /* Nhẹ hơn nút chính một bậc: đây là lối ra cho trường hợp HIẾM, không phải
+     việc chính của tấm này. Đặt ngang nút để nó đọc ra là phần tiếp theo của
+     cùng một câu, chứ không phải một hành động rời. */
+  extraLink: { alignItems: 'center', paddingVertical: spacing.sm },
+  extraLinkText: { ...type.footnote, color: c.mutedForeground, textDecorationLine: 'underline' },
 
 }));

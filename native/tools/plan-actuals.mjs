@@ -258,12 +258,54 @@ const slice = (from, to) => {
   }
 }
 
+/*
+  ── chặn ghi lần hai thì phải NÓI chỗ đi tiếp ──
+
+  Tấm này chỉ nhận một lần lưu cho mỗi ngày, và luật ấy đúng: lỗi thường gặp là
+  ghi hai lần cùng một buổi khi quay lại một ngày đã có. Chú thích của luật tự
+  bào chữa bằng một câu — "the rare case has somewhere to go", ý là sổ ghi tự do
+  vẫn nhận buổi thứ hai.
+
+  Câu ấy đúng về mã và từng SAI về màn hình. Sau khi ghi xong, tấm chỉ đổi nút
+  thành "Đã ghi buổi tập" rồi tắt, và cả màn Plan không có một liên kết nào tới
+  `/log-workout`. Chủ dự án báo đúng hậu quả: tập hết template, hệ thống ghi
+  xong, phát sinh thêm một bài, và từ chỗ đang đứng thì app trông như đã đóng
+  cửa.
+
+  Nên luật này gác cái CẶP: còn chặn thì còn phải có đường ra, và một bản sửa
+  sau gỡ liên kết đi mà giữ nguyên chỗ chặn sẽ đỏ ở đây.
+*/
+{
+  const panel = readFileSync(path.join(NATIVE, 'src/components/ascnd/day-plan.tsx'), 'utf8');
+  const blocks = /const logged =/.test(panel) && /!logged/.test(panel);
+  const wayOut = /nav\.push\('\/log-workout'\)/.test(panel);
+  if (blocks && !wayOut) {
+    problems.push(
+      'tấm ngày CHẶN lần ghi thứ hai mà không có đường nào tới `/log-workout` — chú thích của chính ' +
+        'luật ấy hứa "the rare case has somewhere to go", nên hoặc phải có chỗ đi, hoặc phải bỏ câu hứa',
+    );
+  }
+  /* `\b` sau tên: tấm này đã có sẵn `nRdExtraName` (đặt tên cho bài thêm vào
+     trong buổi), và một regex không chặn đuôi sẽ coi nhãn ấy là nhãn của liên
+     kết — tức xanh trong khi liên kết không có tên nào cả. */
+  if (wayOut && !/i18n\.nRdExtra\b/.test(panel)) {
+    problems.push(
+      'có đường tới `/log-workout` nhưng không có nhãn `nRdExtra` — một liên kết không tên thì người ' +
+        'đang đứng trước nút đã tắt không biết nó dẫn đi đâu',
+    );
+  }
+}
+
 if (problems.length) {
   console.log('số thật của buổi tập CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);
   process.exit(1);
 }
 
+console.log(
+  'buổi phát sinh có chỗ đi: tấm ngày chặn lần ghi thứ hai VÀ chỉ đường sang sổ ghi tự do — ' +
+    'trước đây nó chỉ chặn, và cả màn Plan không có liên kết nào tới `/log-workout`.',
+);
 console.log(
   'số thật của buổi tập OK — panel lịch tập tuần ghi lại NHỮNG GÌ ĐÃ TẬP chứ không ghi lại kế hoạch: ' +
     'mỗi set có ô tạ và ô rep điền sẵn theo kế hoạch, phần nộp đi qua MỘT hàm performed() duy nhất ' +
