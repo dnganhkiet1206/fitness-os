@@ -44,9 +44,10 @@ try {
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
   const {
-    waterFill, clampFill, waterBody, waterFace, rxAt, ryAt,
-    WATER_CEIL, WATER_FLOOR, WATER_SPAN, WAVE_AMP, REST_AMP,
-    GLASS_W, GLASS_H, GLASS_PATH, BASE_PATH, RIM_FRONT, RIM, FOOT, BASE_TOP,
+    waterFill, clampFill, waterPath,
+    WATER_CEIL, WATER_FLOOR, WATER_SPAN, WAVE_AMP, REST_AMP, STROKE,
+    GLASS_W, GLASS_H, GLASS_STROKE_PATH, GLASS_CLIP_PATH,
+    TOP_Y, BOT_Y, TOP_LEFT, TOP_RIGHT, BOT_LEFT, BOT_RIGHT,
   } = createRequire(import.meta.url)(path.join(out, 'lib', 'water-glass.js'));
 
   const problems = [];
@@ -137,76 +138,72 @@ try {
   }
 
   /*
-    ── bốn thứ làm nên "chiều sâu", và cả bốn đều ĐO ĐƯỢC ──
+    ── năm thứ đọc ra từ ẢNH chủ dự án gửi, và cả năm đều canh được ──
 
-    Ba bản cốc trước đều bị bác. Bản một là icon nét phẳng, bản hai dựng phối
-    cảnh nhưng thô, bản ba lấy đúng đường `GlassWater` của lucide — chặt chẽ về
-    hệ thống icon và vẫn "xấu quá", vì nó trả lời sai câu hỏi.
+    Bốn bản cốc trước đều bị bác: icon nét phẳng, phối cảnh elip, đường của
+    lucide, rồi bản phối cảnh có đáy dày. Rồi chủ dự án gửi ảnh chụp một app
+    khác — thứ họ thấy đẹp — và nó nói năm điều:
 
-    Đọc lại ẢNH MẪU chủ dự án đưa từ đầu thì cái cốc ở đó không phải icon. Bốn
-    thứ làm nên nó, và luật dưới đây canh từng thứ một — không phải vì đẹp là
-    đo được, mà vì BỎ MẤT một trong bốn là quay lại đúng bản đã bị bác:
+      1. miệng cốc HỞ, không đường ngang, hai đầu nét bo tròn
+      2. nét RẤT DÀY, màu TRUNG TÍNH, không phải xanh
+      3. đáy bo tròn rộng, thành hơi thuôn
+      4. sóng mặt nước RÕ và LỚN
+      5. một vệt sáng nhỏ trong lòng nước
 
-      1. vành là ELIP, không phải đoạn thẳng
-      2. ĐÁY DÀY — khối thuỷ tinh đặc ở dưới
-      3. thân LOE và trong suốt
-      4. có BÓNG ĐỔ, nên cốc đứng trên mặt phẳng
+    Luật dưới đây canh từng thứ. Không phải vì "đẹp" đo được, mà vì bỏ mất một
+    trong năm là quay lại đúng một trong bốn bản đã bị bác — và lần nào tôi
+    cũng bỏ mất chính cái miệng hở.
   */
   cases++;
-  if (!(RIM.ry > 0)) {
-    problems.push('vành cốc dẹt thành đoạn thẳng — mất tín hiệu phối cảnh mạnh nhất, và đó đúng là bản đã bị bác');
+  if (/Z\s*$/.test(GLASS_STROKE_PATH)) {
+    problems.push('đường thành cốc bị KHÉP — một đường ngang vắt qua miệng biến cái cốc thành cái hộp, và đó đúng là bản đã bị bác');
   }
   cases++;
-  if (!(FOOT.rx < RIM.rx)) {
-    problems.push('cốc không loe — đáy rộng bằng hoặc hơn miệng, nên nó là một cái ống');
+  if (GLASS_CLIP_PATH !== `${GLASS_STROKE_PATH} Z`) {
+    problems.push('vùng cắt không còn là chính hình cốc khép lại — nước sẽ lệch khỏi thành khi dáng cốc đổi');
   }
   cases++;
-  if (!(BASE_TOP > RIM.cy && BASE_TOP < FOOT.cy)) {
-    problems.push('khối đáy đặc không nằm giữa miệng và chân cốc — đáy dày biến mất');
+  if (!(STROKE >= 3.5)) {
+    problems.push(`nét cốc chỉ ${STROKE} — chủ dự án chốt "nét đậm", và nét mảnh là bản đã bị bác`);
   }
   cases++;
-  if (!BASE_PATH.includes('C') || BASE_PATH.length < 40) {
-    problems.push('đường khối đáy không còn là một hình — đáy dày biến mất');
+  if (!(BOT_LEFT > TOP_LEFT && BOT_RIGHT < TOP_RIGHT)) {
+    problems.push('cốc không thuôn — đáy rộng bằng hoặc hơn miệng, nên nó là một cái ống');
   }
   cases++;
-  if (!RIM_FRONT.startsWith(`M${RIM.cx - RIM.rx} ${RIM.cy}`)) {
-    problems.push('vành trước không bắt đầu ở mép trái miệng cốc');
+  if (!GLASS_STROKE_PATH.includes('Q')) {
+    problems.push('đáy cốc không bo — góc vuông ở đáy là hình của một cái hộp');
   }
-
-  /*
-    Nửa elip dựng bằng Bézier phải THẬT SỰ đi qua đỉnh: đảo chiều một cung bậc
-    ba KHÔNG phải là đảo thứ tự các token của nó, và bản đầu của tệp này viết
-    đúng như thế. Kiểm bằng cách đọc điểm cuối của mỗi cung.
-  */
+  /* Hai đầu nét phải cùng nằm ở mép trên và cách xa nhau: đó LÀ cái miệng hở. */
   cases++;
   {
-    const nums = [...GLASS_PATH.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((mm) => [
+    const pts = [...GLASS_STROKE_PATH.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((mm) => [
       Number(mm[1]),
       Number(mm[2]),
     ]);
-    const top = Math.min(...nums.map((q) => q[1]));
-    const bottom = Math.max(...nums.map((q) => q[1]));
-    if (Math.abs(top - (RIM.cy - RIM.ry)) > 0.01) {
-      problems.push(`đỉnh đường bao ở ${top}, đáng lẽ ${RIM.cy - RIM.ry} — cung vành sau không đi qua đỉnh elip`);
+    const [x0, y0] = pts[0];
+    const [x1, y1] = pts[pts.length - 1];
+    if (Math.abs(y0 - TOP_Y) > 0.01 || Math.abs(y1 - TOP_Y) > 0.01) {
+      problems.push('hai đầu nét không nằm ở mép miệng cốc');
     }
-    if (Math.abs(bottom - (FOOT.cy + FOOT.ry)) > 0.01) {
-      problems.push(`đáy đường bao ở ${bottom}, đáng lẽ ${FOOT.cy + FOOT.ry} — cung đáy đảo chiều sai`);
+    if (Math.abs(x1 - x0) < 20) {
+      problems.push(`hai đầu nét chỉ cách nhau ${Math.abs(x1 - x0)} — miệng cốc gần như khép lại`);
     }
-    const xs = nums.map((q) => q[0]);
-    if (Math.abs(Math.min(...xs) - (RIM.cx - RIM.rx)) > 0.01 || Math.abs(Math.max(...xs) - (RIM.cx + RIM.rx)) > 0.01) {
-      problems.push('bề ngang đường bao không khớp bán trục vành');
+    const lowest = Math.max(...pts.map((q) => q[1]));
+    if (Math.abs(lowest - BOT_Y) > 0.01) {
+      problems.push(`đáy đường cốc ở ${lowest}, đáng lẽ ${BOT_Y}`);
     }
   }
 
   /*
-    ── mặt nước ──
+    ── sóng ──
 
-    REST_AMP không được bằng 0: mặt chất lỏng không bao giờ phẳng lì, và bản
-    phẳng đã bị bác bằng đúng chữ "chuyển động xấu, không phải không có".
+    REST_AMP không được bằng 0, và cũng không được bé: sóng trong ảnh mẫu RÕ.
+    Bản phẳng đã bị bác bằng đúng chữ "chuyển động xấu, không phải không có".
   */
   cases++;
-  if (!(REST_AMP > 0)) {
-    problems.push('REST_AMP = 0 — mặt nước lúc nghỉ phẳng lì');
+  if (!(REST_AMP >= 1)) {
+    problems.push(`REST_AMP = ${REST_AMP} — sóng lúc nghỉ quá bé để đọc ra là mặt nước; ảnh mẫu có sóng rõ`);
   }
   cases++;
   if (!(WAVE_AMP > REST_AMP)) {
@@ -214,70 +211,36 @@ try {
   }
 
   const xsOf = (d) => [...d.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((mm) => Number(mm[1]));
-  const ysOf = (d) => [...d.matchAll(/(-?\d+(?:\.\d+)?) (-?\d+(?:\.\d+)?)/g)].map((mm) => Number(mm[2]));
-
-  /*
-    Tính chất mắt không kiểm được ở cỡ 50 điểm: BỀ NGANG mặt nước phải bằng
-    đúng bề ngang lòng cốc TẠI ĐỘ CAO ĐÓ. Thành loe, nên một mặt nước bề ngang
-    cố định sẽ thò ra ngoài thành ở trên và hụt vào trong ở dưới — và cái hụt
-    ấy chỉ lộ ở một mức nước cụ thể.
-  */
-  for (const pctCase of [0, 25, 50, 75, 100]) {
-    cases++;
-    const h = waterFill(pctCase).height;
-    const cy = clampFill(h).y;
-    const xs = xsOf(waterFace(h, 0, 0));
-    const gotHalf = (Math.max(...xs) - Math.min(...xs)) / 2;
-    if (Math.abs(gotHalf - rxAt(cy)) > 0.02) {
-      problems.push(
-        `${pctCase}%: mặt nước rộng ${(gotHalf * 2).toFixed(2)} trong khi lòng cốc ở độ cao ấy rộng ${(rxAt(cy) * 2).toFixed(2)}`,
-      );
-    }
-    cases++;
-    if (Math.abs((Math.max(...xs) + Math.min(...xs)) / 2 - RIM.cx) > 0.02) {
-      problems.push(`${pctCase}%: mặt nước lệch tâm cốc`);
-    }
-  }
 
   cases++;
-  if (ryAt(RIM.cy) <= ryAt(FOOT.cy)) {
-    problems.push('elip mặt nước không thu nhỏ theo bề ngang — phối cảnh sai ở dưới đáy');
-  }
-  cases++;
-  if (rxAt(-100) !== rxAt(RIM.cy) || rxAt(999) !== rxAt(FOOT.cy)) {
-    problems.push('rxAt không kẹp ngoài khoảng miệng–chân');
-  }
-
-  cases++;
-  if (waterBody(10, REST_AMP, 0) === waterBody(10, WAVE_AMP, 0)) {
+  if (waterPath(10, REST_AMP, 0) === waterPath(10, WAVE_AMP, 0)) {
     problems.push('đổi biên độ mà hình không đổi — sóng không được vẽ');
   }
   cases++;
-  {
-    const a = ysOf(waterFace(10, 0, 0)).slice(0, 17).join();
-    const b = ysOf(waterFace(10, WAVE_AMP, 0.3)).slice(0, 17).join();
-    if (a !== b) problems.push('sóng ăn cả vào mép SAU — mặt trên sẽ phình ra co vào như bong bóng');
-  }
-  cases++;
-  if (waterBody(10, WAVE_AMP, 0) !== waterBody(10, WAVE_AMP, 1)) {
+  if (waterPath(10, WAVE_AMP, 0) !== waterPath(10, WAVE_AMP, 1)) {
     problems.push('dịch trọn một chu kỳ ra hình khác — sóng sẽ nhảy ở chỗ nối');
   }
 
+  /* Phủ quá bề ngang cốc ở mọi mức, kẻo lộ mép cắt giữa thân. */
   for (const h of [0, 8, 20, WATER_SPAN]) {
     cases++;
-    const xs = xsOf(waterBody(h, WAVE_AMP, 0.4));
-    if (Math.min(...xs) > 0 || Math.max(...xs) < GLASS_W) {
-      problems.push(`mực ${h}: thân nước chỉ phủ ${Math.min(...xs)}..${Math.max(...xs)}, không kín 0..${GLASS_W}`);
+    const xs = xsOf(waterPath(h, WAVE_AMP, 0.4));
+    if (Math.min(...xs) > TOP_LEFT || Math.max(...xs) < TOP_RIGHT) {
+      problems.push(`mực ${h}: thân nước chỉ phủ ${Math.min(...xs)}..${Math.max(...xs)}, không kín thành cốc`);
     }
   }
 
-  for (const fn of [waterBody, waterFace]) {
-    cases++;
-    if (fn(-999, WAVE_AMP, 0) !== fn(0, WAVE_AMP, 0)) problems.push('chiều cao âm không được kẹp về rỗng');
-    cases++;
-    if (fn(WATER_SPAN + 999, REST_AMP, 0) !== fn(WATER_SPAN, REST_AMP, 0)) problems.push('quá đầy không được kẹp về đầy');
-    cases++;
-    if (fn(10, -5, 0) !== fn(10, 0, 0)) problems.push('biên độ âm không được kẹp về 0');
+  cases++;
+  if (waterPath(-999, WAVE_AMP, 0) !== waterPath(0, WAVE_AMP, 0)) {
+    problems.push('chiều cao âm không được kẹp về rỗng');
+  }
+  cases++;
+  if (waterPath(WATER_SPAN + 999, REST_AMP, 0) !== waterPath(WATER_SPAN, REST_AMP, 0)) {
+    problems.push('quá đầy không được kẹp về đầy');
+  }
+  cases++;
+  if (waterPath(10, -5, 0) !== waterPath(10, 0, 0)) {
+    problems.push('biên độ âm không được kẹp về 0');
   }
 
   let prevTop = Infinity;
@@ -288,11 +251,11 @@ try {
     prevTop = t;
   }
   cases++;
-  if (Math.abs(clampFill(WATER_SPAN).y - WATER_CEIL) > 1e-9) problems.push('đầy 100% mà mặt nước không ở mức vành');
+  if (Math.abs(clampFill(WATER_SPAN).y - WATER_CEIL) > 1e-9) problems.push('đầy 100% mà mặt nước không ở mức trên');
   cases++;
-  if (Math.abs(clampFill(0).y - WATER_FLOOR) > 1e-9) problems.push('cạn 0% mà mặt nước không ở mặt khối đáy');
+  if (Math.abs(clampFill(0).y - WATER_FLOOR) > 1e-9) problems.push('cạn 0% mà mặt nước không ở đáy');
   cases++;
-  if (!(WATER_CEIL > RIM.cy && WATER_FLOOR <= BASE_TOP)) {
+  if (!(WATER_CEIL > TOP_Y && WATER_FLOOR < BOT_Y)) {
     problems.push('quãng mặt nước chạy ra ngoài lòng cốc');
   }
 
@@ -410,13 +373,19 @@ try {
     Worklet PHẢI đi qua `clampFill`, không được đọc thẳng shared value: đọc
     thẳng là trả lại đúng khung hình âm đã đo ở trên.
   */
-  /* Bốn lớp làm nên chiều sâu phải CÓ MẶT trong thẻ, không chỉ tồn tại trong
-     thư viện hình học. */
-  for (const piece of ['waterBody', 'waterFace', 'BASE_PATH', 'RIM_FRONT', 'RadialGradient']) {
+  /* Năm thứ đọc từ ảnh mẫu phải CÓ MẶT trong thẻ, không chỉ tồn tại trong thư
+     viện hình học. */
+  for (const piece of ['waterPath', 'GLASS_STROKE_PATH', 'strokeLinecap="round"', 'fillOpacity']) {
     cases++;
     if (!body.includes(piece)) {
-      problems.push(`WaterGlass không vẽ ${piece} — mất một trong bốn thứ làm nên chiều sâu, tức quay lại bản đã bị bác`);
+      problems.push(`WaterGlass không vẽ ${piece} — mất một thứ trong ảnh mẫu, tức quay lại một bản đã bị bác`);
     }
+  }
+  /* Nét cốc TRUNG TÍNH, không phải xanh: trong ảnh mẫu cái cốc là thuỷ tinh
+     xám, và chỉ có nước mới mang màu. */
+  cases++;
+  if (!/stroke=\{c\.mutedForeground\}/.test(body)) {
+    problems.push('nét cốc không còn màu trung tính — cốc xanh thì cái cốc và cái nước nói cùng một màu, mất ranh giới');
   }
   /* Và nét phải mang đúng bộ thuộc tính của lucide, kẻo cái cốc lạc khỏi mọi
      icon còn lại trên cùng màn hình. */
@@ -430,7 +399,7 @@ try {
     UI: ném trên máy thật, im lặng trên web.
   */
   const lib = read('src/lib/water-glass.ts');
-  for (const fnName of ['clampFill', 'waterBody', 'waterFace', 'rxAt', 'ryAt']) {
+  for (const fnName of ['clampFill', 'waterPath']) {
     cases++;
     const fn = lib.slice(lib.indexOf(`export function ${fnName}`));
     if (!/^\s*'worklet';\s*$/m.test(fn.slice(0, fn.indexOf('return')))) {
@@ -478,11 +447,18 @@ try {
      `stroke={c[TRACK]}` của `MiniRing` ở phía trên — một bộ dò tìm thấy thứ
      đầu tiên hợp dạng là một bộ dò trả lời câu hỏi khác. */
   const glassBody = card.slice(card.indexOf('function WaterGlass'), card.indexOf('function CompactWidget'));
-  const strokeLine = glassBody.match(/stroke=\{([^}]+)\}\s+strokeWidth/);
-  if (!strokeLine || !/^tint$/.test(strokeLine[1].trim())) {
-    problems.push(
-      `viền cốc không còn là token đặc (đọc được "${strokeLine?.[1]?.trim() ?? 'không thấy'}") — bản mờ 0,5 đo được 2,11:1 trên giấy, dưới sàn 3:1`,
-    );
+  /*
+    Nét cốc phải là một TOKEN ĐẶC, không phải một lớp mờ — và tên token đọc
+    THẲNG từ mã rồi tra bảng màu, chứ không gõ cứng ở đây. Bản đầu của luật này
+    khoá chặt vào `tint`, nên khi nét đổi sang màu trung tính theo ảnh mẫu thì
+    nó đỏ oan: một luật gác khoá vào MỘT lựa chọn thiết kế sẽ chặn đúng lần
+    thiết kế đổi.
+
+    Bản mờ đã đo: `alpha(tint, 0.5)` cho 2,11:1 trên giấy — dưới sàn 3:1.
+  */
+  const strokeLine = glassBody.match(/stroke=\{c\.([A-Za-z]+)\}/);
+  if (!strokeLine) {
+    problems.push('không đọc được token nét cốc — nó phải là một token đặc `c.<tên>`, không phải một lớp mờ');
   }
   /* Nước dùng khoá RIÊNG, không dùng chung với viền: dùng chung thì thành cốc
      tan vào mặt nước đúng lúc cốc đầy. */
@@ -491,10 +467,14 @@ try {
   }
   for (const [name, surf] of Object.entries(SURFACE)) {
     cases++;
-    const tint = TOKEN[name].metricBlue;
-    const cStroke = contrast(tint, surf);
-    if (cStroke < 3) {
-      problems.push(`viền cốc ${tint} chỉ ${cStroke.toFixed(2)}:1 so với mặt thẻ bản ${name} — dưới sàn 3:1, và ở mức 0% cái cốc là thứ DUY NHẤT còn nhìn thấy`);
+    const strokeTok = strokeLine ? TOKEN[name][strokeLine[1]] : null;
+    if (!strokeTok) {
+      problems.push(`bảng màu bản ${name} không có token nét cốc \`${strokeLine?.[1]}\``);
+    } else {
+      const cStroke = contrast(strokeTok, surf);
+      if (cStroke < 3) {
+        problems.push(`nét cốc ${strokeTok} chỉ ${cStroke.toFixed(2)}:1 so với mặt thẻ bản ${name} — dưới sàn 3:1, và ở mức 0% cái cốc là thứ DUY NHẤT còn nhìn thấy`);
+      }
     }
     cases++;
     const w = TOKEN[name].waterFill;
@@ -542,7 +522,7 @@ try {
   }
 
   console.log(
-    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy — và nước có khoá RIÊNG cũng qua sàn ấy. Và bốn thứ làm nên chiều sâu đều được canh từng thứ: vành ELIP, ĐÁY DÀY, thân LOE, BÓNG ĐỔ — bỏ mất một cái là quay lại đúng bản đã bị bác. Cộng tính chất mắt không thấy: bề ngang mặt nước khớp bề ngang lòng cốc ở MỌI độ cao, và cung Bézier đảo chiều phải thật sự đi qua đỉnh elip chứ không phải đảo thứ tự token. Cộng một luật quét TOÀN KHO cho cái bẫy chỉ máy thật mới lộ: <Stop> không được nhét alpha() vào stopColor — react-native-svg bỏ qua nó và điểm dừng thành màu ĐẶC, thứ mà live.mjs chụp trên web không bao giờ thấy`,
+    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy — và nước có khoá RIÊNG cũng qua sàn ấy. Và năm thứ đọc từ ẢNH chủ dự án gửi đều được canh từng thứ: miệng HỞ (đường không khép, hai đầu nét cách nhau ở mép trên), nét DÀY, nét TRUNG TÍNH, đáy BO và thành THUÔN, sóng RÕ. Bỏ mất một cái là quay lại đúng một trong bốn bản đã bị bác — và lần nào tôi cũng bỏ mất chính cái miệng hở. Cộng một luật quét TOÀN KHO cho cái bẫy chỉ máy thật mới lộ: <Stop> không được nhét alpha() vào stopColor — react-native-svg bỏ qua nó và điểm dừng thành màu ĐẶC, thứ mà live.mjs chụp trên web không bao giờ thấy`,
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

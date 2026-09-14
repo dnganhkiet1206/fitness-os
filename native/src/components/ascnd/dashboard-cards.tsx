@@ -44,16 +44,16 @@ import { toast } from '@/lib/toast';
 import { displayVolume, volumeLabel, volumeToMl, type VolumeUnit } from '@/lib/units';
 import { waterQuickAmounts } from '@/lib/water-presets';
 import {
-  BASE_PATH,
+  BOT_Y,
+  GLASS_CLIP_PATH,
   GLASS_H,
-  GLASS_PATH,
+  GLASS_STROKE_PATH,
   GLASS_W,
   REST_AMP,
-  RIM_FRONT,
+  STROKE,
   WAVE_AMP,
-  waterBody,
-  waterFace,
   waterFill,
+  waterPath,
 } from '@/lib/water-glass';
 
 /*
@@ -62,7 +62,7 @@ import {
   Khung là của hình; cỡ là của thẻ. Trộn hai thứ vào một hằng số thì đổi cỡ sẽ
   kéo theo đổi hình — đúng cái bẫy đã làm hai bản trước phải vẽ lại.
 */
-const GLASS_DRAW_W = 50;
+const GLASS_DRAW_W = 48;
 const GLASS_DRAW_H = Math.round((GLASS_DRAW_W * GLASS_H) / GLASS_W);
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -1300,17 +1300,16 @@ function MiniRing({
 */
 function WaterGlass({ pct }: { pct: number }) {
   const c = usePalette();
-  const m = useMaterial();
   const styles = stylesFor(c);
   const uid = useId();
-  /* Id của `<ClipPath>` và mọi gradient là TOÀN CỤC trên native — bài học mà ba
-     chỗ trong kho này đã phải học lại. Thẻ Nước hiện ở cả Hôm nay lẫn Dinh
-     dưỡng, nên "vẽ hai lần trong một cây" không phải giả định. */
+  /* Id của `<ClipPath>` và gradient là TOÀN CỤC trên native — bài học mà ba chỗ
+     trong kho này đã phải học lại. Thẻ Nước hiện ở cả Hôm nay lẫn Dinh dưỡng,
+     nên "vẽ hai lần trong một cây" không phải giả định. */
   const id = uid.replace(/:/g, '');
 
   const depth = useSharedValue(0);
   /* Gợn THÊM khi vừa có người uống, rồi lặng về `REST_AMP` chứ không về 0: mặt
-     chất lỏng không bao giờ phẳng lì. */
+     chất lỏng không bao giờ phẳng lì, và sóng trong ảnh mẫu rất rõ. */
   const slosh = useSharedValue(0);
   const phase = useSharedValue(0);
 
@@ -1337,81 +1336,70 @@ function WaterGlass({ pct }: { pct: number }) {
   }, [pct, depth, slosh, phase]);
 
   /*
-    `waterBody`/`waterFace` kẹp sẵn bên trong — cùng lý do đã ĐO ở `clampFill`:
-    `withDelay` + `withTiming` phát đúng một khung có tiến độ âm (đo được
-    p = −1,36), và một `d` dựng từ số âm là một hình lộn ngược chứ không phải
-    một lỗi mà trình duyệt chịu nói ra.
+    `waterPath` kẹp sẵn bên trong — cùng lý do đã ĐO ở `clampFill`: `withDelay`
+    + `withTiming` phát đúng một khung có tiến độ âm (đo được p = −1,36), và
+    một `d` dựng từ số âm là một hình lộn ngược chứ không phải một lỗi mà trình
+    duyệt chịu nói ra.
   */
-  const bodyProps = useAnimatedProps(() => ({
-    d: waterBody(depth.value, REST_AMP + slosh.value * (WAVE_AMP - REST_AMP), phase.value),
-  }));
-  const faceProps = useAnimatedProps(() => ({
-    d: waterFace(depth.value, REST_AMP + slosh.value * (WAVE_AMP - REST_AMP), phase.value),
+  const animatedProps = useAnimatedProps(() => ({
+    d: waterPath(depth.value, REST_AMP + slosh.value * (WAVE_AMP - REST_AMP), phase.value),
   }));
 
-  const tint = graphicOf(c, 'metricBlue');
   const water = graphicOf(c, 'waterFill');
+  const deep = graphicOf(c, 'metricBlue');
 
   return (
     <View style={styles.glassWrap}>
       <Svg width={GLASS_DRAW_W} height={GLASS_DRAW_H} viewBox={`0 0 ${GLASS_W} ${GLASS_H}`}>
         <Defs>
           <ClipPath id={`gc${id}`}>
-            <Path d={GLASS_PATH} />
+            <Path d={GLASS_CLIP_PATH} />
           </ClipPath>
           {/*
-            Thân thuỷ tinh: sáng ở giữa, tối dần ra hai mép. Đây là cách một
-            khối TRONG SUỐT hình trụ đọc ra tròn — và là thứ ảnh mẫu có mà hai
-            bản trước của tôi không có.
+            `stopOpacity` TÁCH RIÊNG, không nhét `alpha()` vào `stopColor`:
+            react-native-svg BỎ QUA alpha trong chuỗi màu của `stopColor` trên
+            máy thật, nên điểm dừng thành màu đặc. Web thì tôn trọng nó, nên
+            ảnh dựng đẹp trong khi máy thật xấu — cái bẫy đã tốn một lượt.
           */}
-          {/*
-            `stopOpacity` TÁCH RIÊNG, không nhét `alpha()` vào `stopColor`.
-
-            Bản đầu viết `stopColor={alpha(tint, 0.22)}`. Trên web nó chạy đúng
-            và ảnh dựng đẹp; trên máy thật react-native-svg BỎ QUA phần alpha
-            trong chuỗi rgba của `stopColor`, nên cả bốn điểm dừng thành
-            `metricBlue` đặc — cái cốc ra một khối xanh đặc, và bóng đổ ra một
-            vệt đen cứng.
-
-            Cả kho đã viết đúng cách từ trước — `water-chart`, `status-scrim`,
-            và chính tệp này ở chỗ khác đều tách `stopOpacity`. Tôi là chỗ duy
-            nhất làm khác, và nó chỉ lộ ra trên ảnh chụp từ máy của chủ dự án.
-          */}
-          <LinearGradient id={`gw${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <Stop offset="0%" stopColor={tint} stopOpacity={0.22} />
-            <Stop offset="26%" stopColor={tint} stopOpacity={0.05} />
-            <Stop offset="62%" stopColor={tint} stopOpacity={0.04} />
-            <Stop offset="100%" stopColor={tint} stopOpacity={0.24} />
-          </LinearGradient>
-          {/* Nước sẫm dần xuống sâu; mặt trên vẽ bằng token nguyên bản nên nó
-              TỰ là chỗ sáng nhất, không cần một màu thứ ba nào. */}
           <LinearGradient id={`gf${id}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <Stop offset="0%" stopColor={water} />
-            <Stop offset="100%" stopColor={tint} />
+            <Stop offset="0%" stopColor={water} stopOpacity={1} />
+            <Stop offset="100%" stopColor={deep} stopOpacity={1} />
           </LinearGradient>
-          {/* Bóng đổ: một vệt mờ dần ra mép, không phải một hình bầu dục đặc. */}
-          <RadialGradient id={`gs${id}`} cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={m.ink} stopOpacity={0.18} />
-            <Stop offset="100%" stopColor={m.ink} stopOpacity={0} />
-          </RadialGradient>
         </Defs>
 
-        {/* Bóng đổ dưới chân — thứ đặt cái cốc lên một mặt phẳng thay vì thả
-            nó lơ lửng. */}
-        <Ellipse cx={GLASS_W / 2} cy={74} rx={21} ry={3.4} fill={`url(#gs${id})`} />
+        <AnimatedPath fill={`url(#gf${id})`} clipPath={`url(#gc${id})`} animatedProps={animatedProps} />
 
-        <Path d={GLASS_PATH} fill={`url(#gw${id})`} />
-        <AnimatedPath fill={`url(#gf${id})`} clipPath={`url(#gc${id})`} animatedProps={bodyProps} />
-        <AnimatedPath fill={water} clipPath={`url(#gc${id})`} animatedProps={faceProps} />
-        {/* Khối thuỷ tinh ĐẶC ở đáy: phần sẫm nhất của cái cốc, và không phải
-            trang trí — đáy thật dày hơn thành nên nó khúc xạ nhiều hơn. */}
-        <Path d={BASE_PATH} fill={tint} fillOpacity={0.26} clipPath={`url(#gc${id})`} />
+        {/*
+          Vệt sáng trong lòng nước — chi tiết nhỏ nhất trong ảnh mẫu và là thứ
+          nói "đây là thuỷ tinh có nước" thay vì "đây là một ô màu". Cắt theo
+          lòng cốc nên nó biến mất khi nước chưa tới.
+        */}
+        <Rect
+          x={GLASS_W - 20}
+          y={BOT_Y - 20}
+          width={3.5}
+          height={9}
+          rx={1.75}
+          fill={c.primaryForeground}
+          fillOpacity={0.5}
+          clipPath={`url(#gc${id})`}
+        />
 
-        {/* Đường bao mảnh và vành trước. Mảnh vì ảnh mẫu không có nét kiểu
-            icon; đủ sắc vì mặt thẻ của app TRẮNG, còn thẻ trong ảnh mẫu nằm
-            trên nền xanh-xám nhạt. */}
-        <Path d={GLASS_PATH} fill="none" stroke={tint} strokeWidth={1.5} strokeLinejoin="round" />
-        <Path d={RIM_FRONT} fill="none" stroke={tint} strokeWidth={1.5} strokeLinecap="round" />
+        {/*
+          Thành cốc: nét DÀY, màu TRUNG TÍNH, và miệng HỞ.
+
+          Ba thứ ấy là ba thứ tôi thiếu suốt ba bản trước. Miệng hở là chi tiết
+          quyết định nhất: một đường ngang vắt qua miệng biến cái cốc thành cái
+          hộp. `strokeLinecap="round"` cho hai đầu nét ở miệng, đúng như ảnh.
+        */}
+        <Path
+          d={GLASS_STROKE_PATH}
+          fill="none"
+          stroke={c.mutedForeground}
+          strokeWidth={STROKE}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </Svg>
     </View>
   );
