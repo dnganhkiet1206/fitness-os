@@ -233,6 +233,11 @@ const STEPS = [
      khi mọi màn đọc nó đã tắt vĩnh viễn. `pain_flags` sống như thế từ ngày ra
      đời, và chủ dự án tìm ô nhập không thấy mới lộ. */
   ['người ghi rỗng', 'node', ['tools/empty-writer.mjs']],
+  /* Chỗ hổng TẦNG THỨ BA: mọi luật màu khác đo chữ trên trang hoặc trên thẻ,
+     không luật nào hỏi "còn khi nó nằm trong một ô lõm TRONG thẻ thì sao". Bản
+     tối cộng dồn lớp phủ trắng nên tầng ba sáng hơn hẳn, và chữ mờ ở đó chỉ
+     còn 4,04:1 — dưới sàn, suốt từ khi ô macro ra đời. */
+  ['nền của chữ mờ', 'node', ['tools/muted-ground.mjs']],
   ['quyền của migration', 'node', ['tools/migration-privileges.mjs']],
   ['deck thẻ', 'node', ['tools/card-deck.mjs']],
   ['tài liệu nối backend', 'node', ['tools/backend-doc.mjs']],

@@ -74,6 +74,42 @@ export const darkPalette = {
    */
   mutedForeground: '#828282',
   /**
+   * Chữ mờ khi nó nằm trên một ô LÕM trong một thẻ — tầng thứ ba của chồng.
+   *
+   * ── lỗi nó sinh ra để sửa ──
+   *
+   * `mutedForeground` được chọn khi chữ mờ đứng trên TRANG hoặc trên MẶT THẺ.
+   * Đo cả bốn nền thật của bản tối:
+   *
+   *     trang            #070708   5,24:1  ✓
+   *     mặt thẻ          #161617   4,71:1  ✓
+   *     khối trên trang  #161617   4,71:1  ✓
+   *     ô lõm trong thẻ  #242425   4,04:1  ✗ dưới sàn 4,5
+   *
+   * Bản tối dựng mặt bằng cách CỘNG DỒN lớp phủ trắng — trang, rồi thẻ +6%,
+   * rồi ô lõm +6% nữa — nên tầng thứ ba sáng hơn hẳn hai tầng đầu và ăn hết
+   * biên của chữ mờ. Bản SÁNG không có vấn đề ấy: ở đó ô lõm đi XUỐNG khỏi mặt
+   * thẻ trắng, nên nền tối đi và chữ vẫn được 5,27:1.
+   *
+   * ── vì sao một token MỚI, không phải sửa `mutedForeground` ──
+   *
+   * `tools/dark-frozen.mjs` đóng băng giá trị bản tối và nói rõ ranh giới:
+   * "Token MỚI thêm vào bản tối không phải là lỗi… Thứ bị cấm là ĐỔI hoặc BỎ
+   * một giá trị đã có." Nên `mutedForeground` ở nguyên, và vai thứ hai — thứ
+   * chỉ xuất hiện ở tầng ba — có tên riêng.
+   *
+   * ── con số ──
+   *
+   * `#8b8b8b`: giá trị xám nhỏ nhất đạt sàn, **4,55:1** trên ô lõm. Chín bậc
+   * sáng hơn `#828282` — mắt gần như không thấy khác, mà nó qua được vạch. Và
+   * thứ bậc không mất: nó vẫn tối hơn `foreground` 3,28 lần độ sáng, nên chữ
+   * mờ vẫn đọc ra là chữ phụ.
+   *
+   * Bản SÁNG dùng lại đúng `mutedForeground`: ở đó không có gì để sửa, và một
+   * giá trị khác đi sẽ là đổi bản sáng vì một ràng buộc của bản tối.
+   */
+  mutedOnInset: '#8b8b8b',
+  /**
    * Secondary text, but on glass over the assistant's aura.
    *
    * `mutedForeground` is measured against a card — a dark, still surface. The
@@ -351,6 +387,9 @@ export const lightPalette: Palette = {
      Thứ tự ấy là thứ mắt đã học ở bản tối; đảo nó là bắt học lại. */
   foreground: '#1a1917',
   mutedForeground: '#6b6559',
+  /* Bản sáng không có ràng buộc của bản tối — xem `mutedOnInset` ở bảng TỐI.
+     Ô lõm trên giấy đi XUỐNG khỏi mặt thẻ trắng, nên chữ mờ vẫn được 5,27:1. */
+  mutedOnInset: '#6b6559',
   secondaryForeground: '#57524a',
   /** chữ mờ TRÊN KÍNH sáng — 6,9:1 trên mặt kính #fbf9f5 */
   glassMuted: '#5c564b',

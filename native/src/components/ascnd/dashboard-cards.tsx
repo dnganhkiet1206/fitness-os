@@ -1725,16 +1725,19 @@ const stylesFor = makeStyles((c, m) => ({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.inset.border,
   },
-  macroLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: c.mutedForeground },
+  /* `mutedOnInset`, không phải `mutedForeground`: ba dòng chữ này nằm trên
+     `macroTile`, tức một ô LÕM trong một thẻ — tầng thứ ba của chồng bản tối,
+     nơi `mutedForeground` chỉ còn 4,04:1. Xem token ấy để biết phép đo. */
+  macroLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 1.5, color: c.mutedOnInset },
   macroValue: { fontSize: 18, fontFamily: 'Menlo', fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
-  macroTarget: { fontSize: 12, fontWeight: '400', color: c.mutedForeground },
+  macroTarget: { fontSize: 12, fontWeight: '400', color: c.mutedOnInset },
   // the second reading, stacked on the first — `left: 0, right: 0` so it wraps
   // and aligns exactly like the text underneath it rather than shrink-wrapping
   macroSwapAbs: { position: 'absolute', left: 0, right: 0, top: 0 },
   // headline and caption read as one block, so they sit closer to each other
   // than the tile's own `gap` puts the bar below them
   macroLines: { gap: 2 },
-  macroNote: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  macroNote: { fontSize: 11, color: c.mutedOnInset, fontVariant: ['tabular-nums'] },
   /* `m.inset.track`, không phải `alpha(c.secondary, 0.4)`: ở bản sáng
      `c.secondary` ĐÚNG BẰNG nền ô, nên biểu thức cũ vẽ ra một rãnh vô hình.
      Bản tối nhận lại đúng biểu thức ấy qua trường mới — xem `Inset.track`. */
