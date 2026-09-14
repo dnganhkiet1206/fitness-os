@@ -310,7 +310,9 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
   });
 
   const assign = (dayOfWeek: number, templateId: string | null) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    /* KHÔNG rung ở đây — `useUpsertRoutineDay` rung trong `onMutate`, tức cùng
+       khoảnh khắc này. Hai chỗ cùng rung thì người dùng thấy hai lần; đó đúng
+       lỗi mà `use-water.ts` đã ghi lại và chủ dự án đã báo một lần. */
     const d = byDay.get(dayOfWeek);
     upsert.mutate({
       day_of_week: dayOfWeek,

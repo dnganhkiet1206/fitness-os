@@ -41,6 +41,17 @@ export function useSupplementChecklist(date?: string) {
   });
 }
 
+/**
+ * Một dòng của danh sách như `useSupplementChecklist` trả về.
+ *
+ * Chỉ `id` và `taken` được luật vá lạc quan bên dưới đụng tới; các trường còn
+ * lại có mặt để `setQueryData` giữ nguyên chúng chứ không phải để đọc.
+ */
+interface SuppRow {
+  id: string;
+  taken: boolean;
+}
+
 export function useToggleSupplement(date?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -92,9 +103,75 @@ export function useToggleSupplement(date?: string) {
         if (error) throw error;
       }
     },
-    onSuccess: () => {
+    /**
+     * Ô tích đổi NGAY, không đợi mạng.
+     *
+     * ── lỗi nó sinh ra để sửa ──
+     *
+     * Chủ dự án: "khi tích vào ô thực phẩm bổ sung còn bị delay".
+     *
+     * Bản cũ chỉ có `onSuccess`, nên một cú chạm phải đi hết BA lượt mạng
+     * trước khi cái ô đổi hình: lượt ghi ở trên, rồi `invalidateQueries` bắt
+     * `useSupplementChecklist` nạp lại, và truy vấn ấy là HAI lượt đọc
+     * (`supplements` cộng `supplement_intake_logs`). Cả cú rung xác nhận cũng
+     * nằm trong `onSuccess`, nên ngón tay rời ô rồi mà máy mới rung.
+     *
+     * Đây là đúng bài mà nút Nước đã giải và ghi lại: "Adding water is the
+     * most-tapped button in the app and the round trip was the only reason it
+     * ever felt like it had not registered." Ô tích này bấm mỗi ngày vài lần,
+     * cùng hạng.
+     *
+     * ── và một chỗ nó KHÔNG giống nút Nước ──
+     *
+     * `patchWater` BỎ QUA phép vá khi offline, vì lượt ghi nước được hàng đợi
+     * giữ lại: nó không bao giờ hỏng, nên cũng không bao giờ được hoàn tác, và
+     * một phép vá còn lại trong cache bền là nước không ai uống.
+     *
+     * Tích bổ sung thì KHÔNG nằm trong hàng đợi ấy, và đó là một quyết định có
+     * ghi lý do (xem `lib/offline-write.ts`): nó hai chiều — tích thì insert,
+     * bỏ tích thì delete — nên một hàng đợi chỉ giữ nửa insert sẽ ghi âm thầm
+     * điều không đúng. Chú thích ấy kết luận rằng hành vi hiện tại "fails
+     * visibly offline, which is recoverable", và câu đó chính là ràng buộc ở
+     * đây: offline thì lượt ghi HỎNG NGAY, `onError` trả ô về trạng thái thật,
+     * và người dùng thấy nó bật lại. Nên ở đây vá cả khi offline — bỏ vá mới
+     * là thứ phá mất tính chất ấy.
+     */
+    onMutate: async ({ supplementId, taken }) => {
+      /* Rung ở LÚC CHẠM. Trước đây nó nằm trong `onSuccess`, tức lúc máy chủ
+         trả lời — muộn hơn ngón tay hàng trăm mili-giây. Cùng câu mà
+         `use-water.ts` đã ghi: một cú rung nói "đã ghi" thì phải rơi vào lúc
+         bấm. Khác một điều: bên ấy phải BỎ vì chỗ gọi đã tự rung, còn hai chỗ
+         gọi ở đây không rung, nên cú rung được DỜI chứ không bỏ. */
       Haptics.selectionAsync();
-      queryClient.invalidateQueries({ queryKey: ['supplement_checklist'] });
+      /* Đọc đồng hồ ở đây, trong cú chạm — cùng lý do đã ghi dài trong
+         `mutationFn` ngay trên. `onMutate` chạy ngay trước nó nên hai bên nói
+         cùng một ngày. */
+      const key = ['supplement_checklist', user?.id, date ?? today()];
+      /* Nếu không huỷ, một lượt nạp lại đang bay về sẽ đáp xuống SAU phép vá
+         này và xoá nó đi — ô tích bật lại một nhịp rồi mới đúng. */
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<SuppRow[]>(key);
+      if (prev) {
+        queryClient.setQueryData<SuppRow[]>(
+          key,
+          prev.map((s) => (s.id === supplementId ? { ...s, taken } : s)),
+        );
+      }
+      return { key, prev };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.prev !== undefined) queryClient.setQueryData(ctx.key, ctx.prev);
+    },
+    /*
+      `onSettled`, không phải `onSuccess`: hỏng thì cũng phải hỏi lại máy chủ,
+      nếu không cái ô sống bằng bản vá đã hoàn tác mà không ai kiểm lại.
+
+      Khoá lấy từ `ctx` chứ không dựng lại: đó ĐÚNG khoá vừa được vá, nên không
+      có đường nào để hai bên lệch ngày. `ctx` chỉ vắng khi `onMutate` ném, và
+      khi ấy lùi về khoá rộng.
+    */
+    onSettled: (_d, _e, _v, ctx) => {
+      queryClient.invalidateQueries({ queryKey: ctx?.key ?? ['supplement_checklist'] });
       queryClient.invalidateQueries({ queryKey: ['daily_log'] });
     },
   });
@@ -198,8 +275,14 @@ export function useAddExercise() {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    /* Rung lúc chạm. `selectionAsync` nghĩa là "một lựa chọn đang đổi", nên
+       đặt nó sau một vòng mạng là nói sai thời điểm của chính thứ nó đại diện;
+       báo KẾT QUẢ thì đã có `notificationAsync`, và 27 chỗ khác trong app dùng
+       đúng nó. Xem `tools/tap-feedback.mjs`. */
+    onMutate: () => {
       Haptics.selectionAsync();
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['exercises', user?.id] });
     },
   });
@@ -349,8 +432,14 @@ export function useUpsertRoutineDay() {
         .upsert({ user_id: user!.id, ...day }, { onConflict: 'user_id,day_of_week' });
       if (error) throw error;
     },
-    onSuccess: () => {
+    /* Rung lúc chạm — và MỘT lần. `week-plan.tsx` có hai chỗ gọi: `assign`
+       từng tự rung thêm ở `onPress` nên nó rung hai lần (một lúc chạm, một khi
+       mạng xong), còn `toggleDeload` thì không rung gì cho tới khi mạng xong.
+       Đặt ở đây thì cả hai chỗ có đúng một cú, đúng lúc. */
+    onMutate: () => {
       Haptics.selectionAsync();
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['routine_days', user?.id] });
     },
   });
@@ -517,8 +606,12 @@ export function useAddMealPlanItem() {
       const { error } = await supabase.from('meal_plan_items').insert(item);
       if (error) throw error;
     },
-    onSuccess: (_data, item) => {
+    /* Rung lúc chạm — `impact` là hai vật vừa va nhau, và cái va ấy là ngón
+       tay, không phải gói tin trả về. Xem `tools/tap-feedback.mjs`. */
+    onMutate: () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    onSuccess: (_data, item) => {
       queryClient.invalidateQueries({ queryKey: ['meal_plan_items', item.meal_plan_id] });
       /* `meal_plan_fill` cũng phải hết hiệu lực, không thì ô ngày trên danh
          sách thực đơn chỉ sáng lên sau khi tải lại trang — đã bị báo đúng như

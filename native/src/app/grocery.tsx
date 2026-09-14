@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
 import { Check, Plus, UtensilsCrossed, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
@@ -151,7 +150,10 @@ export default function GroceryScreen() {
                   accessibilityLabel={`${f.name}, ${amountOf(f)}`}
                   style={styles.planChip}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    /* KHÔNG rung ở đây: `add` rung trong `onMutate`, cùng
+                       khoảnh khắc. Chỗ gọi kia (gõ tên rồi thêm) không rung,
+                       nên trước đây một nút rung hai lần và nút kia không lần
+                       nào cho tới khi mạng xong. */
                     add.mutate({ name: f.name, quantity: amountOf(f) });
                   }}>
                   <Text style={styles.planChipText} numberOfLines={1}>{f.name}</Text>

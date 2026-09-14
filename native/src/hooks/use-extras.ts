@@ -754,6 +754,12 @@ export function useUpdateChallengeProgress() {
   });
 }
 
+/** Chỉ hai trường mà phép vá lạc quan ở `toggle` đụng tới. */
+interface GroceryRow {
+  id: string;
+  checked: boolean;
+}
+
 export function useGroceryItems() {
   const { user } = useAuth();
   return useQuery({
@@ -796,10 +802,15 @@ export function useGroceryMutations() {
         .insert({ user_id: user.id, name, quantity: quantity ?? null, checked: false });
       if (error) throw error;
     },
-    onSuccess: () => {
+    /* Rung ở LÚC CHẠM, không phải lúc máy chủ trả lời — `impact` theo định
+       nghĩa của Apple là hai vật vừa va nhau, và cái va ấy là ngón tay. Chỗ gọi
+       thứ hai (`grocery.tsx`, thêm từ thực đơn) từng tự rung thêm một cái nữa,
+       nên trước đây nó rung HAI lần: một lúc chạm, một khi mạng xong. Nay chỉ
+       còn cái ở đây, và nó phục vụ cả hai chỗ gọi. */
+    onMutate: () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      invalidate();
     },
+    onSettled: () => invalidate(),
   });
 
   const toggle = useMutation({
@@ -809,10 +820,44 @@ export function useGroceryMutations() {
         'Không cập nhật được danh sách đi chợ',
       );
     },
-    onSuccess: () => {
+    /**
+     * Ô tích đổi NGAY — cùng một lỗi với ô thực phẩm bổ sung, ở một màn khác.
+     *
+     * Chủ dự án báo cái ở màn Bổ sung; cái này chưa ai báo, nhưng nó giống đến
+     * từng chi tiết: một ô tích vẽ trạng thái của mình TỪ một truy vấn, lật
+     * bằng một mutation không có `onMutate`, và một `selectionAsync` đặt trong
+     * `onSuccess`. Nên chạm xong phải đợi lượt ghi rồi đợi lượt đọc lại thì ô
+     * mới đổi, và máy rung sau khi ngón tay đã rời.
+     *
+     * Ranh giới giữa "rung ở đây là đúng" và "rung ở đây là muộn" không phải
+     * do tôi đặt: `selectionAsync` của Apple là phản hồi cho một lựa chọn ĐANG
+     * đổi, còn `notificationAsync` báo KẾT QUẢ một việc. 27 chỗ trong app dùng
+     * cái thứ hai trong `onSuccess` và chúng đúng; chỗ này dùng cái thứ nhất.
+     *
+     * KHÔNG đụng tới thứ tự. Truy vấn sắp theo `checked` rồi mới tới ngày tạo,
+     * nên món vừa tích sẽ tụt xuống cuối — nhưng chỉ ở lượt đọc lại, tức vài
+     * trăm mili-giây sau. Đó là hành vi vốn có và nó tình cờ đúng: món nhảy đi
+     * ngay dưới ngón tay thì bỏ tích nhầm sẽ phải đi tìm.
+     */
+    onMutate: async ({ id, checked }) => {
       Haptics.selectionAsync();
-      invalidate();
+      const key = ['grocery_items', user?.id];
+      await queryClient.cancelQueries({ queryKey: key });
+      const prev = queryClient.getQueryData<GroceryRow[]>(key);
+      if (prev) {
+        queryClient.setQueryData<GroceryRow[]>(
+          key,
+          prev.map((g) => (g.id === id ? { ...g, checked } : g)),
+        );
+      }
+      return { key, prev };
     },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.prev !== undefined) queryClient.setQueryData(ctx.key, ctx.prev);
+    },
+    /* `onSettled`: hỏng thì cũng phải hỏi lại máy chủ, nếu không cái ô sống
+       bằng một bản vá đã hoàn tác mà không ai kiểm lại. */
+    onSettled: () => invalidate(),
   });
 
   const remove = useMutation({

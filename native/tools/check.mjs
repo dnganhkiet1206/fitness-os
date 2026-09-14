@@ -215,6 +215,12 @@ const STEPS = [
      khoá nuôi thẻ Hoạt động đã nằm ngoài mọi danh sách, và chủ dự án nhìn thấy
      trước công cụ. */
   ['hôm nay còn tươi', 'node', ['tools/today-fresh.mjs']],
+  /* Anh em của luật trên, cùng một họ: cả hai canh THỜI ĐIỂM, thứ mà ảnh chụp
+     không có trục để đo. Một cú rung `selection`/`impact` nghĩa là "tôi nhận
+     rồi" nên phải nổ lúc chạm; đặt trong `onSuccess` thì nó nổ khi máy chủ trả
+     lời, muộn hơn ngón tay hàng trăm mili-giây — và web thì không có haptic để
+     `live.mjs` nhìn thấy. */
+  ['phản hồi chạm', 'node', ['tools/tap-feedback.mjs']],
   ['quyền của migration', 'node', ['tools/migration-privileges.mjs']],
   ['deck thẻ', 'node', ['tools/card-deck.mjs']],
   ['tài liệu nối backend', 'node', ['tools/backend-doc.mjs']],
