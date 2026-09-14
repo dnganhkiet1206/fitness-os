@@ -14,6 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Circle, ClipPath, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
+import { AnimatedNumber } from '@/components/ascnd/animated-number';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -32,7 +33,16 @@ import { useAddWater, useRemoveLastWater, useTodayWaterLogs } from '@/hooks/use-
 import { toast } from '@/lib/toast';
 import { displayVolume, volumeLabel, volumeToMl, type VolumeUnit } from '@/lib/units';
 import { waterQuickAmounts } from '@/lib/water-presets';
-import { GLASS_H, GLASS_PATH, GLASS_W, WAVE_AMP, waterFill, waterPath } from '@/lib/water-glass';
+import {
+  GLASS_H,
+  GLASS_PATH,
+  GLASS_W,
+  RIM_FRONT,
+  WAVE_AMP,
+  waterBody,
+  waterFace,
+  waterFill,
+} from '@/lib/water-glass';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedPath = Animated.createAnimatedComponent(Path);
@@ -1331,12 +1341,17 @@ function WaterGlass({ pct }: { pct: number }) {
     p = −1,36), và một `d` dựng từ số âm là một hình lộn ngược chứ không phải
     một lỗi mà trình duyệt chịu nói ra.
   */
-  const animatedProps = useAnimatedProps(() => ({
-    d: waterPath(depth.value, slosh.value * WAVE_AMP, phase.value),
+  const bodyProps = useAnimatedProps(() => ({
+    d: waterBody(depth.value, slosh.value * WAVE_AMP, phase.value),
+  }));
+  const faceProps = useAnimatedProps(() => ({
+    d: waterFace(depth.value, slosh.value * WAVE_AMP, phase.value),
   }));
 
   const tint = graphicOf(c, 'metricBlue');
   const water = graphicOf(c, 'waterFill');
+  const bodyId = `glassbody-${uid.replace(/:/g, '')}`;
+  const wallId = `glasswall-${uid.replace(/:/g, '')}`;
 
   return (
     <View style={styles.glassWrap}>
@@ -1345,21 +1360,40 @@ function WaterGlass({ pct }: { pct: number }) {
           <ClipPath id={clipId}>
             <Path d={GLASS_PATH} />
           </ClipPath>
+          {/*
+            Nước tối dần xuống đáy. Đây là nửa còn lại của chiều sâu: mặt trên
+            vẽ bằng token nguyên bản nên nó TỰ là chỗ sáng nhất, không phải nhờ
+            một màu thứ ba nào thêm vào.
+          */}
+          <LinearGradient id={bodyId} x1="0%" y1="0%" x2="0%" y2="100%">
+            <Stop offset="0%" stopColor={water} />
+            <Stop offset="100%" stopColor={tint} />
+          </LinearGradient>
+          {/*
+            Lòng cốc rỗng: đậm ở hai mép, nhạt ở giữa. Một khối trụ nhận sáng
+            thì đúng như thế, và đó là lý do nó đọc ra TRÒN thay vì dẹt — cùng
+            một việc mà vành elip làm ở trên, làm thêm một lần ở thân.
+          */}
+          <LinearGradient id={wallId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <Stop offset="0%" stopColor={alpha(tint, 0.16)} />
+            <Stop offset="42%" stopColor={alpha(tint, 0.03)} />
+            <Stop offset="100%" stopColor={alpha(tint, 0.16)} />
+          </LinearGradient>
         </Defs>
-        {/* Lòng cốc khi chưa có nước: một sắc xanh rất nhạt, đủ để cái cốc là
-            một vật chứ không phải một đường viền rỗng. Nó KHÔNG gánh việc hiện
-            hình — đo được 1,15:1 — viền mới là thứ gánh. */}
-        <Path d={GLASS_PATH} fill={alpha(tint, 0.08)} />
-        <AnimatedPath fill={water} clipPath={`url(#${clipId})`} animatedProps={animatedProps} />
+        {/* Lòng cốc khi chưa có nước. Nó KHÔNG gánh việc hiện hình — đo được
+            1,15:1 — viền mới là thứ gánh. */}
+        <Path d={GLASS_PATH} fill={`url(#${wallId})`} />
+        <AnimatedPath fill={`url(#${bodyId})`} clipPath={`url(#${clipId})`} animatedProps={bodyProps} />
+        <AnimatedPath fill={water} clipPath={`url(#${clipId})`} animatedProps={faceProps} />
         {/*
-          Viền vẽ SAU mặt nước, và ĐẬM: 2,5 trên một cái cốc rộng 52.
+          Viền vẽ SAU khối nước, và ĐẬM: 2,2 trên một cái cốc rộng 52.
 
-          Chủ dự án chốt "phẳng, tối giản, nét đậm", và ở đây nét đậm còn làm
-          một việc đo được: nước nay là `waterFill` nhạt hơn hẳn, nên nếu viền
-          mảnh thì thành cốc sẽ tan vào mặt nước đúng lúc cốc đầy — tức mất hình
-          ở đúng lúc đáng nhìn nhất.
+          Vành TRƯỚC vẽ riêng, sau cùng: đó là phần vành nằm giữa người xem và
+          lòng cốc. Không có nó thì miệng cốc chỉ còn một nửa và cái cốc đọc ra
+          như bị cắt ngang — mất đúng cái tín hiệu phối cảnh vừa dựng lên.
         */}
-        <Path d={GLASS_PATH} fill="none" stroke={tint} strokeWidth={2.5} strokeLinejoin="round" />
+        <Path d={GLASS_PATH} fill="none" stroke={tint} strokeWidth={2.2} strokeLinejoin="round" />
+        <Path d={RIM_FRONT} fill="none" stroke={tint} strokeWidth={2.2} strokeLinecap="round" />
       </Svg>
     </View>
   );
@@ -1378,6 +1412,7 @@ function CompactWidget({
   footer,
   figure,
   lead,
+  valueNode,
 }: {
   /**
    * Huy hiệu đầu hàng. KHÔNG bắt buộc — thẻ Nước bỏ nó đi vì cái cốc bên phải
@@ -1447,6 +1482,14 @@ function CompactWidget({
    * thì không còn gì gọi tên nó nữa, nên cái tên phải tự đứng được.
    */
   lead?: boolean;
+  /**
+   * Thay dòng giá trị bằng một nút tuỳ ý — để con số ĐẾM thay vì nhảy cóc.
+   *
+   * `valueText` vẫn phải truyền và không thừa: nó là thứ đi vào nhãn trợ năng.
+   * `AnimatedNumber` vẽ bằng `TextInput` bên dưới, và một `TextInput` đang đếm
+   * không phải là một chuỗi mà VoiceOver đọc ra tử tế.
+   */
+  valueNode?: React.ReactNode;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -1461,7 +1504,9 @@ function CompactWidget({
       ) : null}
       <View style={styles.compactInfo}>
         <Text style={lead ? styles.compactLead : styles.compactLabel}>{label}</Text>
-        <Text style={lead ? styles.compactValueLead : styles.compactValue}>{valueText}</Text>
+        {valueNode ?? (
+          <Text style={lead ? styles.compactValueLead : styles.compactValue}>{valueText}</Text>
+        )}
         {/*
           `color` và `trackColor` đều truyền THẲNG, không dựa vào mặc định của
           `ProgressBar` — và cái thứ hai là bắt buộc. Đo rãnh mặc định
@@ -1824,6 +1869,7 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
 }
 
 export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: number; labels: { title: string } }) {
+  const styles = stylesFor(usePalette());
   const { unit } = useVolumeUnit();
   const pct = Math.min(100, Math.round((ml / (targetMl || 1)) * 100));
   /*
@@ -1843,6 +1889,34 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
       lead
       label={labels.title}
       valueText={`${displayVolume(ml, unit)} / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
+      /*
+        Con số ĐẾM lên chứ không nhảy cóc.
+
+        Chủ dự án: "cái số bên dưới chữ nước uống không có animation". Đúng —
+        cái cốc dâng trong 420ms còn con số đổi trong một khung hình, nên hai
+        thứ nói cùng một việc mà không đi cùng nhau, và cú bấm đọc ra như thể
+        con số mới là cái đã xong trước.
+
+        Chỉ vế ĐẦU đếm. Mục tiêu là một con số đứng yên: cho nó đếm theo là
+        bịa ra một chuyển động cho thứ không hề đổi.
+
+        420ms trùng đúng nhịp nước dâng, nên hai thứ về đích cùng lúc — chú
+        thích của `AnimatedNumber` đã đặt ra luật ấy: "a counter almost always
+        sits beside one and the two should land together".
+      */
+      valueNode={
+        <View style={styles.waterValueRow}>
+          <AnimatedNumber
+            value={displayVolume(ml, unit)}
+            decimals={unit === 'oz' ? 1 : 0}
+            duration={420}
+            style={styles.compactValueLead}
+          />
+          <Text style={styles.compactValueLead}>
+            {` / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
+          </Text>
+        </View>
+      }
       pct={pct}
       figure={<WaterGlass pct={pct} />}
       onPress={() => nav.push('/water')}
@@ -2071,6 +2145,9 @@ const stylesFor = makeStyles((c, m) => ({
      ngụm và chữ số không được nhảy bề ngang. */
   compactValueLead: { fontSize: 15, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   glassWrap: { alignItems: 'center', justifyContent: 'center' },
+  /* `AnimatedNumber` là một TextInput bên dưới, thứ không tự co theo nội dung —
+     nên nó đứng trong một hàng cùng phần đuôi tĩnh thay vì lồng trong một Text. */
+  waterValueRow: { flexDirection: 'row', alignItems: 'baseline' },
   compactValue: { fontSize: 14, fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },
   compactPct: { fontSize: 18, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
 
