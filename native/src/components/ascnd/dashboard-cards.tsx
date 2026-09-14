@@ -1,6 +1,6 @@
 import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
-import { Beef, Droplets, Flame, Footprints, Milk, Minus, Moon, Salad, Star, Sunrise, Target, Wheat, type LucideIcon } from 'lucide-react-native';
+import { Beef, Flame, Footprints, Milk, Minus, Moon, Salad, Star, Sunrise, Target, Wheat, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useId, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -11,7 +11,7 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -31,8 +31,16 @@ import { useAddWater, useRemoveLastWater, useTodayWaterLogs } from '@/hooks/use-
 import { toast } from '@/lib/toast';
 import { displayVolume, volumeLabel, volumeToMl, type VolumeUnit } from '@/lib/units';
 import { waterQuickAmounts } from '@/lib/water-presets';
+import {
+  GLASS_H,
+  GLASS_PATH,
+  GLASS_W,
+  WATER_FLOOR,
+  waterFill,
+} from '@/lib/water-glass';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
 /*
   Rãnh vòng tròn đọc từ BẢNG MÀU, không viết cứng.
 
@@ -715,18 +723,23 @@ export function NutritionCard({
       sữa    chai ĐỨNG, cạnh thẳng  — hình duy nhất là hình chữ nhật
       xà lách bát RỘNG, đáy bằng    — hình duy nhất nằm ngang
 
-    `Droplet` đúng nghĩa hơn cho chất béo — một giọt dầu. Nhưng màn dinh dưỡng
-    có luôn thẻ Nước, và nước dùng `Droplets`: một giọt nằm cách hai giọt vài
+    `Droplet` đúng nghĩa hơn cho chất béo — một giọt dầu. Ràng buộc ấy đến từ
+    thẻ Nước ở cùng màn, vốn dùng `Droplets`: một giọt nằm cách hai giọt vài
     trăm điểm là đúng cái bẫy tác giả bộ cũ đã ghi lại. Chai sữa không đụng ai.
+
+    Thẻ Nước nay KHÔNG vẽ giọt nào nữa — nó vẽ một cái cốc — nên ràng buộc ấy
+    đã hết. Vẫn giữ `Milk`: đổi lại thành `Droplet` là mua một lần học lại hình
+    cho một ô macro không có gì sai, và bốn bóng dưới đây vẫn phân biệt được.
 
     ── một chỗ chồng màu đã biết ──
 
-    Chất béo giờ mang `metricBlue`, và thẻ Nước ở cuối tệp này cũng vẽ icon bằng
-    đúng `#3ba6ff`. Hai thứ cùng nằm trên màn dinh dưỡng.
+    Chất béo mang `metricBlue`, và thẻ Nước ở cuối tệp này vẽ cái cốc bằng đúng
+    token ấy. Hai thứ cùng nằm trên màn dinh dưỡng.
 
-    Để nguyên vì đây là màu được yêu cầu, và vì hai chỗ đó khác hình (chai đứng
-    so với hai giọt) lẫn khác ngữ cảnh (một ô macro trong thẻ dinh dưỡng so với
-    một hàng riêng phía dưới). Nếu đọc ra vẫn lẫn thì `metricCyan` là một từ.
+    Để nguyên vì đây là màu được yêu cầu, và vì hai chỗ đó khác hình (chai sữa
+    so với một cái cốc đang đầy dần) lẫn khác ngữ cảnh (một ô macro trong thẻ
+    dinh dưỡng so với một hàng riêng phía dưới). Nếu đọc ra vẫn lẫn thì
+    `metricCyan` là một từ.
 
     Bốn bóng khác nhau, nên chúng phân biệt được cả khi nhỏ tới mức chỉ còn bóng.
   */
@@ -1220,6 +1233,116 @@ function MiniRing({
   );
 }
 
+/*
+  ── cái cốc, và mực nước trong nó ──
+
+  Chủ dự án vẽ tay đúng thứ họ muốn: bỏ huy hiệu giọt nước bên trái, chữ "Nước
+  uống" to lên, và một cái cốc bên phải mà mỗi lần ghi thì mực nước dâng lên
+  theo mục tiêu, đầy cốc là 100%.
+
+  ── vì sao một cái cốc nói được nhiều hơn một vòng tròn ──
+
+  Vòng tròn ở đây vốn đã là một bản sửa: chú thích của `MiniRing` kể rằng thẻ
+  này từng đếm cùng một con số hai lần — dòng "0 / 1890 ml" và số phần trăm —
+  và không cái nào là một HÌNH. Vòng tròn là hình, nhưng nó là hình dùng chung
+  cho mọi thứ đo được: calo, bước chân, phút tập.
+
+  Nước thì có một hình của riêng nó, và ai cũng đã biết đọc nó từ trước khi mở
+  app. Một cái cốc đầy một nửa không cần chú giải, không cần học, và không cần
+  đọc con số nào để biết hôm nay còn thiếu.
+
+  Nên số phần trăm ĐI THEO. Nó là lần thứ ba cùng một sự thật được nói trên một
+  hàng, và mực nước nói nó rõ hơn. Con số chính xác vẫn còn nguyên ở dòng
+  "0 / 1890 ml" ngay bên trái — cốc trả lời "còn bao xa", dòng chữ trả lời
+  "chính xác bao nhiêu", và một cái liếc mắt hỏi câu thứ nhất.
+
+  Nhưng VoiceOver không liếc được, nên phần trăm không được rơi mất: nó chuyển
+  thành lời trong `accessibilityLabel` của mặt thẻ. Một cái hình mang nghĩa mà
+  không có lời đi kèm là một cái hình chỉ người sáng mắt đọc được.
+
+  ── hình học ──
+
+  Cốc hơi loe, đáy bo — hình một cái ly thật, không phải một hình chữ nhật. Mặt
+  nước là một chữ nhật bị CẮT theo chính đường viền cốc, nên ở gần đáy nó tự
+  hẹp lại đúng theo độ loe. Vẽ mặt nước bằng một hình thang tự tính sẽ phải lặp
+  lại phép loe ấy ở chỗ thứ hai, và hai chỗ thì sẽ có ngày lệch nhau.
+
+  `CEIL` là 5,5 chứ không phải 3 (mép cốc): đầy 100% là đầy tới trong lòng cốc,
+  không phải tràn qua vành. `FLOOR` 50 là mặt trong của đáy, nên 0% cho chiều
+  cao đúng bằng 0 chứ không phải một vệt xanh mỏng ở một cái cốc chưa uống
+  ngụm nào.
+*/
+function WaterGlass({ pct }: { pct: number }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const uid = useId();
+  /* Id của `<ClipPath>` và `<LinearGradient>` là TOÀN CỤC trên native — cùng
+     bài học mà ba chỗ trong kho này đã phải học lại. Thẻ Nước hiện ở cả Hôm
+     nay lẫn Dinh dưỡng, nên "vẽ hai lần trong một cây" không phải giả định. */
+  const clipId = `glass-${uid.replace(/:/g, '')}`;
+  const gradId = `glassfill-${uid.replace(/:/g, '')}`;
+
+  /* Bắt đầu ở đáy: mọi thẻ mở ra với một cái cốc rỗng rồi nước dâng lên tới
+     mức của ngày — kể cả khi ngày ấy đã đầy. */
+  const top = useSharedValue(WATER_FLOOR);
+  const depth = useSharedValue(0);
+  /* Cùng luật hai-chuyển-động với `MiniRing`, và cùng lý do: lần đầu là màn
+     chào 1100ms, còn mọi lần sau là PHẢN HỒI cho một cú bấm thêm nước. Giữ
+     1100 cho lần sau thì mực nước hoá ra thứ chậm nhất thẻ, trong khi con số
+     bên cạnh đã nhảy ngay vì ghi lạc quan. */
+  const greeted = useRef(false);
+  useEffect(() => {
+    /* Tính trên luồng JS, KHÔNG trong worklet — xem `lib/water-glass.ts` cho
+       lý do, và cho lý do vì sao bản dựng web sẽ không bao giờ lộ nó. */
+    const fill = waterFill(pct);
+    const cfg = {
+      duration: greeted.current ? duration.swap : 1100,
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+    };
+    /* Hai giá trị, một tham số: `y` và `height` đều tuyến tính theo mực nước và
+       tổng của chúng luôn bằng `WATER_FLOOR`, nên chạy cùng easing thì đáy cột
+       nước đứng yên tuyệt đối trong suốt chuyển động. */
+    const ride = (v: number) => (greeted.current ? v : withDelay(200, v));
+    top.value = ride(withTiming(fill.y, cfg));
+    depth.value = ride(withTiming(fill.height, cfg));
+    greeted.current = true;
+  }, [pct, top, depth]);
+
+  const animatedProps = useAnimatedProps(() => ({ y: top.value, height: depth.value }));
+
+  const tint = graphicOf(c, 'metricBlue');
+  const crest = graphicOf(c, 'metricCyan');
+
+  return (
+    <View style={styles.glassWrap}>
+      <Svg width={GLASS_W} height={GLASS_H} viewBox={`0 0 ${GLASS_W} ${GLASS_H}`}>
+        <Defs>
+          <LinearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
+            <Stop offset="0%" stopColor={crest} />
+            <Stop offset="100%" stopColor={tint} />
+          </LinearGradient>
+          <ClipPath id={clipId}>
+            <Path d={GLASS_PATH} />
+          </ClipPath>
+        </Defs>
+        {/* Lòng cốc khi chưa có nước: một sắc xanh rất nhạt, đủ để cái cốc là
+            một vật chứ không phải một đường viền rỗng. */}
+        <Path d={GLASS_PATH} fill={alpha(tint, 0.07)} />
+        <AnimatedRect
+          x={0}
+          width={GLASS_W}
+          fill={`url(#${gradId})`}
+          clipPath={`url(#${clipId})`}
+          animatedProps={animatedProps}
+        />
+        {/* Viền vẽ SAU mặt nước, nên nước nằm gọn trong thành cốc thay vì đè
+            lên nó. */}
+        <Path d={GLASS_PATH} fill="none" stroke={alpha(tint, 0.5)} strokeWidth={1.75} />
+      </Svg>
+    </View>
+  );
+}
+
 function CompactWidget({
   icon,
   iconColor,
@@ -1231,10 +1354,16 @@ function CompactWidget({
   ring,
   bar,
   footer,
+  figure,
+  lead,
 }: {
-  icon: LucideIcon;
-  iconColor: string;
-  iconBg: string;
+  /**
+   * Huy hiệu đầu hàng. KHÔNG bắt buộc — thẻ Nước bỏ nó đi vì cái cốc bên phải
+   * đã là hình của nó, và hai hình cho một con số là một hình thừa.
+   */
+  icon?: LucideIcon;
+  iconColor?: string;
+  iconBg?: string;
   label: string;
   valueText: string;
   pct: number;
@@ -1275,21 +1404,37 @@ function CompactWidget({
    * không phải mọc thêm một nhánh `if` mà nó không dùng.
    */
   footer?: React.ReactNode;
+  /**
+   * Vẽ một HÌNH ở cuối hàng thay cho con số phần trăm.
+   *
+   * Opt-in, cùng lý do `ring` là opt-in: thẻ Bước chân dùng chung component
+   * này và chưa ai xin cho nó một cái hình nào. Khi có hình thì phần trăm
+   * không biến mất mà chuyển thành LỜI — xem `accessibilityLabel` dưới đây.
+   */
+  figure?: React.ReactNode;
+  /**
+   * Tên thẻ đọc TRƯỚC con số: 17 điểm, đậm, màu chữ chính.
+   *
+   * Mặc định thì nhãn là dòng phụ 12 điểm nằm trên con số — đúng cho một thẻ
+   * có huy hiệu ở đầu hàng, vì cái huy hiệu đã gọi tên thẻ rồi. Bỏ huy hiệu đi
+   * thì không còn gì gọi tên nó nữa, nên cái tên phải tự đứng được.
+   */
+  lead?: boolean;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const row = (
     <View style={styles.compactRow}>
-      {ring ? (
-        <MiniRing pct={pct} icon={icon} color={iconColor} gradient={ring} bg={iconBg} />
-      ) : (
+      {ring && icon ? (
+        <MiniRing pct={pct} icon={icon} color={iconColor ?? c.foreground} gradient={ring} bg={iconBg ?? 'transparent'} />
+      ) : icon ? (
         <View style={[styles.compactIcon, { backgroundColor: iconBg }]}>
           <Icon icon={icon} size={20} color={iconColor} />
         </View>
-      )}
+      ) : null}
       <View style={styles.compactInfo}>
-        <Text style={styles.compactLabel}>{label}</Text>
-        <Text style={styles.compactValue}>{valueText}</Text>
+        <Text style={lead ? styles.compactLead : styles.compactLabel}>{label}</Text>
+        <Text style={lead ? styles.compactValueLead : styles.compactValue}>{valueText}</Text>
         {/*
           `color` và `trackColor` đều truyền THẲNG, không dựa vào mặc định của
           `ProgressBar` — và cái thứ hai là bắt buộc. Đo rãnh mặc định
@@ -1324,7 +1469,7 @@ function CompactWidget({
           />
         ) : null}
       </View>
-      <Text style={styles.compactPct}>{pct}%</Text>
+      {figure ?? <Text style={styles.compactPct}>{pct}%</Text>}
     </View>
   );
 
@@ -1332,6 +1477,16 @@ function CompactWidget({
     Haptics.selectionAsync();
     onPress();
   };
+
+  /*
+    Phần trăm bị gỡ khỏi màn hình khi có hình, nên nó phải quay lại bằng lời.
+
+    iOS gộp con của một `Pressable` thành MỘT phần tử trợ năng — chính chuyện
+    đã được ghi ngay dưới đây cho hàng thêm nhanh — nên mặc định VoiceOver đọc
+    đúng những `Text` còn lại, và con số phần trăm sẽ mất hẳn với người không
+    nhìn thấy cái cốc. Nhãn này nói lại nó.
+  */
+  const a11y = figure ? `${label}: ${valueText}, ${pct}%` : undefined;
 
   /*
     Không có footer: cả thẻ là MỘT nút, y như trước — kể cả phần đệm quanh hàng.
@@ -1343,7 +1498,7 @@ function CompactWidget({
   */
   if (!footer) {
     return (
-      <PressScale onPress={press}>
+      <PressScale onPress={press} accessibilityLabel={a11y}>
         <GlassCard style={styles.compactCard}>{row}</GlassCard>
       </PressScale>
     );
@@ -1371,7 +1526,7 @@ function CompactWidget({
   */
   return (
     <GlassCard style={styles.compactCard}>
-      <PressScale onPress={press}>{row}</PressScale>
+      <PressScale onPress={press} accessibilityLabel={a11y}>{row}</PressScale>
       {footer}
     </GlassCard>
   );
@@ -1642,28 +1797,27 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
 }
 
 export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: number; labels: { title: string } }) {
-  const c = usePalette();
   const { unit } = useVolumeUnit();
   const pct = Math.min(100, Math.round((ml / (targetMl || 1)) * 100));
   /*
     Nước dùng cùng token với `MACRO_BAR.fat`, và sự trùng đó là CÓ THẬT chứ không
     phải tình cờ: chất béo mang `metricBlue` theo yêu cầu, còn nước vốn đã là
-    xanh dương. Hai thứ nằm trên cùng một màn.
+    xanh dương. Hai thứ nằm trên cùng một màn — xem ghi chú ở `NutritionCard`.
 
-    Để nguyên vì đây là màu được yêu cầu, và vì hai chỗ khác hình (chai đứng so
-    với hai giọt) lẫn khác ngữ cảnh. Nhưng viết bằng TOKEN chứ không phải mã chép
-    lại — nếu một ngày phải tách hai màu ra thì chỗ sửa là bảng màu, không phải
-    đi tìm `#3ba6ff` rải rác khắp nơi.
+    Màu nay giải ra trong `WaterGlass`, qua `graphicOf`: cái cốc là một HÌNH, và
+    giao ước của bảng màu là hình đọc vai đồ hoạ còn chữ đọc thẳng token.
   */
   return (
     <CompactWidget
-      icon={Droplets}
-      iconColor={c.metricBlue}
-      iconBg="rgba(14,165,233,0.1)"
-      ring={[c.metricBlue, c.metricCyan]}
+      /*
+        Không huy hiệu, không vòng tròn, không phần trăm — cái cốc làm cả ba
+        việc ấy và làm rõ hơn. Xem `WaterGlass` cho lý do đầy đủ.
+      */
+      lead
       label={labels.title}
       valueText={`${displayVolume(ml, unit)} / ${displayVolume(targetMl, unit)} ${volumeLabel(unit)}`}
       pct={pct}
+      figure={<WaterGlass pct={pct} />}
       onPress={() => nav.push('/water')}
       footer={<WaterQuickAdd unit={unit} canUndo={ml > 0} />}
     />
@@ -1836,6 +1990,14 @@ const stylesFor = makeStyles((c, m) => ({
   */
   compactBar: { marginTop: 8 },
   compactLabel: { fontSize: 12, color: c.mutedForeground },
+  /* 17, và nó là dòng ĐẦU chứ không phải dòng phụ. Ở 12 điểm màu nhạt, cái tên
+     là chú thích cho một huy hiệu; bỏ huy hiệu đi thì nó phải tự gọi tên thẻ. */
+  compactLead: { fontSize: 17, fontWeight: '600', color: c.foreground },
+  /* Con số tụt xuống hàng phụ về SẮC nhưng không về cỡ: nó vẫn là dữ liệu, chỉ
+     không còn là thứ đọc trước. `tabular-nums` giữ nguyên vì nó đếm lên từng
+     ngụm và chữ số không được nhảy bề ngang. */
+  compactValueLead: { fontSize: 15, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  glassWrap: { alignItems: 'center', justifyContent: 'center' },
   compactValue: { fontSize: 14, fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },
   compactPct: { fontSize: 18, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
 

@@ -161,6 +161,7 @@ const STEPS = [
   ['Health làm chủ chỉ số', 'node', ['tools/health-owned.mjs']],
   ['thẻ hôm nay mời gì', 'node', ['tools/today-cta.mjs']],
   ['icon một nghĩa', 'node', ['tools/glyph-meaning.mjs']],
+  ['cốc nước', 'node', ['tools/water-glass.mjs']],
   ['cột trong fixture', 'node', ['tools/fixture-schema.mjs']],
   ['hàng nút góc trên', 'node', ['tools/top-chrome.mjs']],
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
