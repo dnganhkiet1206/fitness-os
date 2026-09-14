@@ -24,10 +24,10 @@ import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useLogWorkoutSession } from '@/hooks/use-fitness-data';
+import { useAppendToSession, useLogWorkoutSession } from '@/hooks/use-fitness-data';
 import { useUnits } from '@/hooks/use-units';
 import { exerciseKey } from '@/lib/personal-record';
-import { mergeProgress, type SessionSet } from '@/lib/day-progress';
+import { mergeProgress, sessionTicks, type SessionSet } from '@/lib/day-progress';
 import { dayProgressKey, localDateStr, staleDayProgress } from '@/lib/local-date';
 import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
@@ -301,6 +301,7 @@ export function DayPlan({
   const styles = stylesFor(c);
   const { weight: wUnit } = useUnits();
   const log = useLogWorkoutSession();
+  const append = useAppendToSession();
   const { user } = useAuth();
   /*
     ── the durable twin, which this screen did not have ──
@@ -720,6 +721,22 @@ export function DayPlan({
 
   const doneRows = rows.filter((r) => shown[r.key]);
   /*
+    ── hàng nào buổi ĐÃ GHI đã chứng minh, và hàng nào chưa ──
+
+    `shown` trộn ô người dùng tích với thứ buổi tập chứng minh, nên sau khi ghi
+    xong thì cả hai loại trông giống hệt nhau. Để nối thêm được, phải tách ra:
+    `sessionTicks` là đúng hàm ấy — nó đã sống ở `day-progress.ts` cho việc
+    trộn, và đây là cùng một câu hỏi hỏi riêng.
+
+    Bài PHÁT SINH thêm sau khi đã ghi nằm đúng ở phần chênh: nó không có trong
+    buổi cũ, nên nó là thứ được nối vào.
+  */
+  const proven = useMemo(() => {
+    const sets = sessions.flatMap((sn) => (Array.isArray(sn.sets) ? (sn.sets as SessionSet[]) : []));
+    return sessionTicks(rows, sets);
+  }, [rows, sessions]);
+  const pendingRows = doneRows.filter((r) => !proven[r.key]);
+  /*
     One save per visit to this day. `isSuccess` never goes back to false on its
     own, and this panel is remounted whenever the selected day changes, so the
     lifetime of the guard is exactly the lifetime of the workout being logged.
@@ -761,7 +778,21 @@ export function DayPlan({
     waits until the day arrives.
   */
   const future = dateStr > localDateStr();
-  const canFinish = doneRows.length > 0 && !log.isPending && !logged && !future;
+  /*
+    ── ghi MỚI, hay ghi THÊM ──
+
+    Trước đây tấm chỉ biết một việc: chưa ghi thì ghi, ghi rồi thì tắt. Nay có
+    hai, và chúng loại trừ nhau: ngày chưa có buổi thì nút ghi cả buổi; ngày đã
+    có buổi mà xuất hiện hàng chưa được chứng minh — tức bài phát sinh vừa thêm
+    — thì nút NỐI chúng vào chính buổi ấy.
+
+    Luật chặn ghi trùng không hề nới ra: mở lại một ngày đã ghi mà không thêm gì
+    thì `pendingRows` rỗng và nút vẫn tắt, đúng như cũ.
+  */
+  const appending = logged && pendingRows.length > 0 && !future;
+  const canFinish = appending
+    ? !append.isPending
+    : doneRows.length > 0 && !log.isPending && !logged && !future;
   /* What was lifted, not what was written down for you to lift. */
   const volume = doneRows.reduce((s, r) => {
     const p = performed(r);
@@ -770,6 +801,57 @@ export function DayPlan({
 
   const finish = () => {
     if (!canFinish) return;
+
+    /*
+      ── nhánh NỐI THÊM ──
+
+      Chỉ gửi `pendingRows`, không gửi `doneRows`: buổi cũ đã giữ phần của nó,
+      và gửi lại cả nắm là nhân đôi mọi set đã ghi — đúng cái lỗi mà luật chặn
+      ghi trùng sinh ra để tránh, chỉ là ở trong một hàng thay vì hai.
+
+      Offline thì KHÔNG đi đường này. Hàng đợi bền chỉ biết CHÈN một buổi mới,
+      và một lệnh nối cần đọc hàng hiện tại trước khi ghi — thứ không làm được
+      khi không có sóng. Nên khi mất mạng, nút nối tắt và người dùng vẫn còn sổ
+      ghi tự do; hứa một lệnh nối rồi phát lại thành một buổi thứ hai thì tệ
+      hơn hẳn là nói thẳng bây giờ chưa nối được.
+    */
+    if (appending) {
+      /* Chú thích trên nói đường này không chạy khi mất mạng — và câu ấy phải
+         được THỰC THI chứ không chỉ được viết. Không có dòng này thì lệnh nối
+         bị React Query treo ở trạng thái chờ vô hạn, đúng cái lỗi mà
+         `log-biometrics.tsx` đã ghi lại: "A paused mutation never calls
+         `onSuccess`", nên nút quay lại như chưa bấm và không ai biết vì sao. */
+      if (offlineNow()) {
+        toast.error(i18n.nRdAppendOffline);
+        return;
+      }
+      const sessionId = sessions[0]?.id;
+      if (!sessionId) return;
+      const extra = pendingRows.map((r) => ({
+        exerciseId: '',
+        exerciseName: r.exerciseName,
+        ...performed(r),
+        rpe: rpe[r.key] ?? r.plannedRpe,
+      }));
+      append.mutate(
+        {
+          sessionId,
+          sets: extra,
+          sessionRpe: Math.max(...extra.map((x) => x.rpe)),
+          date: dateStr,
+        },
+        {
+          onSuccess: () => {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            if (storeKey) AsyncStorage.removeItem(storeKey).catch(() => {});
+            toast.success(i18n.nRdAppended);
+          },
+          onError: (e: Error) => toast.fail(e),
+        },
+      );
+      return;
+    }
+
     const sets = doneRows.map((r) => ({
       exerciseId: '',
       exerciseName: r.exerciseName,
@@ -1336,7 +1418,13 @@ export function DayPlan({
             three things is true, the same way it already does for one that has
             been logged. */}
         <Text style={[styles.finishText, logged && styles.finishTextDone]}>
-          {logged ? i18n.nRdAlready : future ? i18n.nRdFuture : i18n.nRdFinish}
+          {appending
+            ? i18n.nRdAppend
+            : logged
+              ? i18n.nRdAlready
+              : future
+                ? i18n.nRdFuture
+                : i18n.nRdFinish}
         </Text>
       </PressScale>
 
@@ -1356,7 +1444,7 @@ export function DayPlan({
         lần cùng một buổi khi quay lại một ngày đã có — còn cái được thêm là
         chỗ đi tiếp. Hai việc khác nhau, và trước đây chỉ có việc thứ nhất.
       */}
-      {logged ? (
+      {logged && !appending ? (
         <PressScale
           accessibilityRole="button"
           onPress={() => nav.push('/log-workout')}

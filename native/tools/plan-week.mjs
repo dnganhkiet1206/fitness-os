@@ -147,6 +147,11 @@ if (!dayPlanEl) fatal(`${PLAN}: không tìm thấy phần tử <DayPlan />`);
 
 const futureSrc = /const future = ([^;]+);/.exec(panel)?.[1];
 const canFinishSrc = /const canFinish = ([^;]+);/.exec(panel)?.[1];
+/* Tấm nay có HAI chế độ ghi — ghi mới, và nối thêm vào buổi đã có — nên luật
+   "không ghi cho ngày chưa tới" phải phủ cả hai. `appending` là điều kiện của
+   chế độ thứ hai, và nó được đọc ra để chạy cùng chứ không bị giả định. */
+const appendingSrc = /const appending = ([^;]+);/.exec(panel)?.[1];
+if (!appendingSrc) fatal(`${PANEL}: không đọc được \`appending\``);
 if (!futureSrc || !canFinishSrc) fatal(`${PANEL}: không đọc được \`future\` hoặc \`canFinish\``);
 
 /* Moved out of the builder when Plan grew a second caller: the page reads the
@@ -336,10 +341,9 @@ try {
   // ── 4. no session is written for a day that has not happened ─────────────
   {
     const futureFn = new Function('dateStr', 'localDateStr', `return (${futureSrc});`);
-    const finishFn = new Function(
-      'doneRows', 'log', 'logged', 'future',
-      `return (${canFinishSrc});`,
-    );
+    const ARGS = ['doneRows', 'log', 'logged', 'future', 'pendingRows', 'append', 'appending'];
+    const appendingFn = new Function('logged', 'pendingRows', 'future', `return (${appendingSrc});`);
+    const finishFn = new Function(...ARGS, `return (${canFinishSrc});`);
 
     /* A day that is plainly ahead, a day that is plainly behind, and today —
        the boundary, where an off-by-one would mean you cannot log the workout
@@ -361,7 +365,8 @@ try {
         );
         continue;
       }
-      const can = finishFn([{}], { isPending: false }, false, isFuture);
+      /* Chế độ GHI MỚI: ngày chưa có buổi nào. */
+      const can = finishFn([{}], { isPending: false }, false, isFuture, [], { isPending: false }, false);
       if (can === wantFuture) {
         problems.push(
           `${PANEL}: nút hoàn thành ${can ? 'vẫn sống' : 'đã chết'} ở ${what} (${dateStr}) — ` +
@@ -370,13 +375,34 @@ try {
         );
       }
     }
+    /* Chế độ NỐI THÊM: ngày đã có buổi, và có một bài phát sinh chưa được ghi.
+       Ngày chưa tới thì nó cũng phải chết — một buổi "nối thêm" vào thứ Năm
+       tuần sau vẫn là một hàng trong `workout_sessions` cho ngày chưa xảy ra,
+       và cửa ấy mở ra thì luật trên chỉ còn chặn được một nửa. */
+    for (const [dateStr, wantFuture, what] of cases) {
+      const isFuture = futureFn(dateStr, clock);
+      const app = appendingFn(true, [{}], isFuture);
+      const can = finishFn([{}], { isPending: false }, true, isFuture, [{}], { isPending: false }, app);
+      if (can === wantFuture) {
+        problems.push(
+          `${PANEL}: nút NỐI THÊM ${can ? 'vẫn sống' : 'đã chết'} ở ${what} (${dateStr}) — ` +
+            'nối thêm vào một ngày chưa tới vẫn là ghi cho ngày chưa xảy ra',
+        );
+      }
+    }
+    /* Và một ngày đã ghi ĐỦ thì không còn gì để nối: nút phải chết. */
+    if (finishFn([{}], { isPending: false }, true, false, [], { isPending: false },
+      appendingFn(true, [], false)) !== false) {
+      problems.push(`${PANEL}: ngày đã ghi đủ mà nút vẫn sống — luật chặn ghi trùng đã hở`);
+    }
+
     /* Self-test: the version without the guard — what shipped before the
        arrows existed, and what a tidy-up would delete first. */
     const ungated = new Function(
-      'doneRows', 'log', 'logged', 'future',
+      ...ARGS,
       `return (${canFinishSrc.replace(/\s*&&\s*!future/, '')});`,
     );
-    if (ungated([{}], { isPending: false }, false, true) !== true) {
+    if (ungated([{}], { isPending: false }, false, true, [], { isPending: false }, false) !== true) {
       fatal('bản bỏ chốt ngày tương lai đáng lẽ phải cho bấm hoàn thành');
     }
     /* …and the one that reads the wrong way round, which passes "today" and

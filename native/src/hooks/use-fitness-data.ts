@@ -464,6 +464,121 @@ export function useTodayTrainingMinutes() {
  *
  * `null` khi chưa đủ dữ liệu hồ sơ, không phải 0. Xem `sessionActiveKcal`.
  */
+/**
+ * Nối thêm set vào buổi tập ĐÃ GHI của một ngày.
+ *
+ * ── vì sao không phải một buổi thứ hai ──
+ *
+ * Chủ dự án báo: tập hết template, hệ thống ghi xong, rồi phát sinh thêm một
+ * bài — và người ta muốn nó nằm TIẾP THEO trong cùng buổi hôm ấy, không phải
+ * thành một buổi riêng. Đó cũng là hình dạng cả app đang giả định: `daysSince`,
+ * `workout_count`, ACWR và dải "đã tập hôm nay" đều đếm HÀNG, nên một bài phụ
+ * biến thành hàng thứ hai sẽ đọc ra là hai buổi tập.
+ *
+ * ── đọc lại hàng trước khi ghi đè ──
+ *
+ * `sets` là JSONB và lệnh này CỘNG vào nó, nên nó phải đọc bản mới nhất chứ
+ * không dùng bản trong cache: giữa lúc mở tấm và lúc bấm, một máy khác có thể
+ * đã nối rồi. Đọc-rồi-ghi vẫn có cửa sổ đua, nhưng cửa sổ ấy hẹp hơn hẳn so
+ * với ghi đè bằng một mảng dựng từ cache có thể đã cũ hàng phút.
+ *
+ * ── kỷ lục vẫn được xét, và lịch sử phải LOẠI chính buổi này ──
+ *
+ * Cùng lý do đường ghi mới nêu: đọc trước khi ghi, kẻo buổi đang lưu thành một
+ * phần lịch sử của chính nó và mọi set tự hoà kỷ lục của mình. Ở đây mạnh hơn
+ * một bậc — buổi ấy đã NẰM trong bảng — nên phải `.neq('id', …)` để loại nó
+ * ra. Và `pr_detected` chỉ được bật lên, không bao giờ tắt đi: một kỷ lục đã
+ * lập ở lượt ghi đầu không mất đi vì lượt nối thêm không có kỷ lục nào.
+ */
+export function useAppendToSession() {
+  const { user } = useAuth();
+  const invalidate = useInvalidateToday();
+  return useMutation({
+    mutationFn: async ({
+      sessionId,
+      sets,
+      sessionRpe,
+      date,
+    }: {
+      sessionId: string;
+      sets: LoggedSet[];
+      sessionRpe: number;
+      date: string;
+    }) => {
+      if (!user) throw new Error('Not signed in');
+      if (sets.length === 0) throw new Error('No sets');
+
+      const { data: row, error: readErr } = await supabase
+        .from('workout_sessions')
+        .select('sets, volume_load, session_rpe, pr_detected')
+        .eq('id', sessionId)
+        .eq('user_id', user.id)
+        .single();
+      if (readErr) throw readErr;
+
+      const old = setsFromJson(row.sets);
+      const added = sets.map((s, i) => ({
+        exerciseId: s.exerciseId,
+        exerciseName: s.exerciseName.trim() || 'Exercise',
+        setIndex: old.length + i + 1,
+        weight: Math.round(s.weight * 100) / 100,
+        reps: s.reps,
+        rpe: s.rpe != null && s.rpe >= 1 && s.rpe <= 10 ? s.rpe : null,
+        ...(s.durationSec ? { durationSec: s.durationSec } : {}),
+      }));
+
+      let records: PersonalRecord[] = [];
+      try {
+        const { data: past } = await supabase
+          .from('workout_sessions')
+          .select('sets')
+          .eq('user_id', user.id)
+          .neq('id', sessionId)
+          .order('date_time', { ascending: false })
+          .limit(PR_HISTORY);
+        if (past && past.length > 0) {
+          const bests = bestsFrom(past.flatMap((r) => setsFromJson(r.sets)));
+          records = findRecords(
+            sets.map((s) => ({ exerciseName: s.exerciseName, weight: s.weight, reps: s.reps })),
+            bests,
+          );
+        }
+      } catch {
+        records = [];
+      }
+
+      const addedVolume = sets.reduce((sum, s) => sum + s.weight * s.reps, 0);
+      /*
+        `confirmWrite`, không phải `error == null`.
+
+        PostgREST trả `error: null` y hệt nhau cho "sửa một dòng" và "không
+        chạm dòng nào", và ở đây "không chạm dòng nào" là chuyện có thật: buổi
+        ấy có thể vừa bị xoá từ một máy khác giữa lúc mở tấm và lúc bấm. Không
+        kiểm thì người dùng thấy "đã ghi thêm" cho một lệnh không ghi gì.
+      */
+      await confirmWrite(
+        supabase
+          .from('workout_sessions')
+          .update({
+            sets: [...old, ...added] as never,
+            volume_load: Math.round((Number(row.volume_load) || 0) + addedVolume),
+            session_rpe: Math.max(Number(row.session_rpe) || 0, sessionRpe),
+            pr_detected: Boolean(row.pr_detected) || records.length > 0,
+          })
+          .eq('id', sessionId)
+          .eq('user_id', user.id),
+        'Không ghi thêm được vào buổi tập',
+      );
+
+      /* Cùng lý do đường ghi mới có dòng này: một hàng mới mà ngày không dựng
+         lại thì điểm sẵn sàng vẫn đến từ một ngày không còn khớp với nó. */
+      await recomputeDailyLog(user.id, date);
+      return records;
+    },
+    onSuccess: () => invalidate(),
+  });
+}
+
 export function useTodayActiveKcal(profile: EnergyProfile | null) {
   const { user } = useAuth();
   return useQuery({

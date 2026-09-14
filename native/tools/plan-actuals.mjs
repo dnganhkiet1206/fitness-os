@@ -28,7 +28,11 @@
  * Not about a control existing. A box you can type in that is then ignored on
  * submit is the same bug wearing a keyboard.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import Module from 'node:module';
+import { createRequire } from 'node:module';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -293,6 +297,103 @@ const slice = (from, to) => {
       'có đường tới `/log-workout` nhưng không có nhãn `nRdExtra` — một liên kết không tên thì người ' +
         'đang đứng trước nút đã tắt không biết nó dẫn đi đâu',
     );
+  }
+}
+
+/*
+  ── và nhánh NỐI THÊM phải gửi đúng `pendingRows` ──
+
+  Phép chạy thật ngay dưới chứng minh `sessionTicks` tính đúng phần chênh; nó
+  KHÔNG chứng minh được tấm gửi đúng phần ấy. Lỗi người ta thật sự mắc là gõ
+  `doneRows` — cái tên nằm ngay trên, dùng cho nhánh ghi mới — và khi ấy mọi
+  set đã ghi bị gửi lại lần nữa vào chính hàng cũ.
+*/
+{
+  const panel = readFileSync(path.join(NATIVE, 'src/components/ascnd/day-plan.tsx'), 'utf8');
+  const i = panel.indexOf('if (appending) {');
+  if (i >= 0) {
+    /* Cắt tới `append.mutate(`, KHÔNG tới `return;` đầu tiên: chốt offline ngay
+       đầu nhánh cũng là một `return;`, nên lát cũ dừng trước cả dòng map và
+       báo thiếu thứ đang có. Và cắt ở đây cũng loại được `doneRows.map(` của
+       nhánh ghi mới, vốn nằm ngay sau nhánh này. */
+    const block = panel.slice(i, panel.indexOf('append.mutate(', i));
+    if (!/pendingRows\.map\(/.test(block)) {
+      problems.push(
+        'nhánh nối thêm không map qua `pendingRows` — nếu nó map qua `doneRows` thì mọi set buổi cũ ' +
+          'đã chứng minh bị gửi lại lần nữa, tức nhân đôi ngay bên trong một hàng',
+      );
+    }
+    if (/doneRows\.map\(/.test(block)) {
+      problems.push('nhánh nối thêm đang map qua `doneRows` — xem ngay trên vì sao đó là nhân đôi');
+    }
+  }
+}
+
+/*
+  ── nối thêm KHÔNG được gửi lại những hàng buổi cũ đã chứng minh ──
+
+  Sau khi ngày đã có buổi ghi, tấm cho tích tiếp một bài phát sinh rồi NỐI nó
+  vào chính buổi ấy. Phần dễ sai nhất là gửi nhầm cả nắm: `doneRows` lúc đó
+  chứa CẢ những hàng mà buổi cũ đã chứng minh, vì `shown` trộn ô người dùng
+  tích với bằng chứng từ buổi tập. Gửi cả nắm là nhân đôi mọi set đã ghi —
+  đúng cái lỗi mà luật chặn ghi trùng sinh ra để tránh, chỉ là ở trong MỘT
+  hàng thay vì hai, nên không ai nhìn ra bằng số buổi.
+
+  Nên chạy thật `sessionTicks` và kiểm phần chênh.
+*/
+{
+  const out = mkdtempSync(path.join(tmpdir(), 'ascnd-plan-'));
+  try {
+    const LIB = path.join(NATIVE, 'src', 'lib');
+    const cfg = path.join(out, 'tsconfig.json');
+    writeFileSync(
+      cfg,
+      JSON.stringify({
+        compilerOptions: {
+          module: 'commonjs', target: 'es2020', skipLibCheck: true, esModuleInterop: true,
+          outDir: out, rootDir: LIB,
+        },
+        files: [path.join(LIB, 'day-progress.ts'), path.join(LIB, 'exercise-key.ts')],
+      }),
+    );
+    try {
+      execFileSync('npx', ['tsc', '-p', cfg], { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch {
+      /* bí danh `@/` không phân giải lúc biên dịch — cố ý, xem `sleep-length.mjs` */
+    }
+    const orig = Module._resolveFilename;
+    Module._resolveFilename = function (r, ...a) {
+      if (r.startsWith('@/lib/')) return path.join(out, `${r.slice('@/lib/'.length)}.js`);
+      return orig.call(this, r, ...a);
+    };
+    const { sessionTicks } = createRequire(import.meta.url)(path.join(out, 'day-progress.js'));
+    const rows = [
+      { key: 'bench#1', exerciseName: 'Bench Press' },
+      { key: 'bench#2', exerciseName: 'Bench Press' },
+      { key: 'pull#1', exerciseName: 'Pull-up' },
+      { key: 'fly#1', exerciseName: 'Cable Fly' },
+    ];
+    const proven = sessionTicks(rows, [
+      { exerciseName: 'Bench Press' }, { exerciseName: 'Bench Press' }, { exerciseName: 'Pull-up' },
+    ]);
+    const pending = rows.map((r) => r.key).filter((k) => !proven[k]);
+    if (pending.join(',') !== 'fly#1') {
+      problems.push(
+        `phần NỐI THÊM sẽ gửi [${pending.join(', ')}] trong khi chỉ bài phát sinh mới được nối — ` +
+          'gửi lại một hàng buổi cũ đã chứng minh là nhân đôi set ấy ngay bên trong một hàng',
+      );
+    }
+    /* Và không có bài phát sinh nào thì KHÔNG có gì để nối — nút phải tắt. */
+    const none = sessionTicks(rows.slice(0, 3), [
+      { exerciseName: 'Bench Press' }, { exerciseName: 'Bench Press' }, { exerciseName: 'Pull-up' },
+    ]);
+    if (rows.slice(0, 3).some((r) => !none[r.key])) {
+      problems.push('một ngày đã ghi đủ vẫn còn hàng "chưa chứng minh" — nút nối sẽ sống dậy không lý do');
+    }
+  } catch (e) {
+    problems.push(`không chạy được \`sessionTicks\`: ${String(e.message ?? e).slice(0, 200)}`);
+  } finally {
+    rmSync(out, { recursive: true, force: true });
   }
 }
 

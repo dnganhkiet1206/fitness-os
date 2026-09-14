@@ -34,7 +34,7 @@ import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useExercises, useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
 import { useUserState } from '@/hooks/use-user-state';
-import { useDailyLog, useProfile } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useRecentWorkouts } from '@/hooks/useTodayData';
 import { emitKoa } from '@/lib/koa-stage';
 import {
   exerciseKey,
@@ -139,8 +139,24 @@ export default function LogWorkoutSheet() {
   const { data: routineDays } = useRoutineDays();
   const { data: templates } = useWorkoutTemplates();
   const [planUsed, setPlanUsed] = useState(false);
+  /*
+    ── và KHÔNG đề xuất nữa khi hôm nay đã có buổi ghi ──
+
+    Chip này điền cả template vào form bằng một chạm. Trước một ngày đã ghi
+    xong, đó không còn là tiện — đó là một lời mời ghi lần hai đúng cái buổi
+    vừa ghi, và tấm kế hoạch nay có một liên kết dẫn thẳng sang đây cho bài
+    PHÁT SINH, nên người đọc tới màn này với đúng ý định ghi thêm MỘT bài sẽ
+    thấy một nút đổ lại cả sáu bài.
+
+    Sổ tự do vẫn nhận buổi thứ hai — luật ấy không đổi, và tập hai buổi một
+    ngày là có thật. Thứ biến mất là lời ĐỀ XUẤT, không phải khả năng.
+  */
+  const { data: recent } = useRecentWorkouts();
+  const loggedToday = (recent ?? []).some(
+    (w) => localDateStr(new Date(String(w.date_time))) === localDateStr(),
+  );
   const todaysPlan = (() => {
-    if (planUsed) return null;
+    if (planUsed || loggedToday) return null;
     const today = routineDays?.find((d) => d.day_of_week === routineIndex(new Date()));
     if (!today?.template_id || today.is_rest) return null;
     return templates?.find((t) => t.id === today.template_id) ?? null;
