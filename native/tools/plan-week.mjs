@@ -572,6 +572,43 @@ try {
   rmSync(out, { recursive: true, force: true });
 }
 
+/*
+  5. HÔM NAY PHẢI CÒN LÀ HÔM NAY KHI NÓ ĐANG ĐƯỢC CHỌN.
+
+  `week-strip.tsx` tự khai giao ước của nó: "Today is ringed and the open day
+  is filled. They are different marks." Câu ấy chỉ đúng khi hai dấu ở hai ô.
+  Khi trùng ô — tức phần lớn thời gian, vì màn Plan mở ra là chọn sẵn hôm nay —
+  lớp tô phủ kín và XOÁ cái vòng, nên một đĩa đen trên thứ Hai không nói được
+  nó là "hôm nay" hay chỉ là "ngày đang mở".
+
+  Chủ dự án nhìn hai màn cạnh nhau mới gọi ra: cùng ngày 14, thẻ Hôm nay vẽ một
+  vòng rỗng còn Plan vẽ một đĩa đặc.
+
+  Đây là một CÁI CHỐT, không phải một định luật: nó canh đúng hai dòng giữ cho
+  hai dấu độc lập nhau, và mỗi dòng mang cái neo của nó nên mã bị viết lại thì
+  luật tự khai đã mất mục tiêu. Không luật nào khác có thẩm quyền — `tsc` thấy
+  hai style hợp lệ, mọi luật màu đo được cả vòng lẫn đĩa (chúng đều 17,57:1
+  trên giấy), và ảnh chụp thấy một đĩa đen trông hoàn toàn bình thường.
+*/
+{
+  const STRIP = 'src/components/ascnd/week-strip.tsx';
+  const src = readFileSync(path.join(NATIVE, STRIP), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ');
+  if (!/isOpen\s*&&\s*!isToday\s*&&\s*styles\.weekDateOn/.test(src)) {
+    problems.push(
+      `${STRIP}: lớp tô "ngày đang mở" không còn bị chặn ở hôm nay (\`isOpen && !isToday\`) — nên khi ` +
+        'hôm nay đang được chọn nó phủ kín ô và xoá cái vòng. Hai dấu thành một, và cái còn lại không ' +
+        'nói được nó là dấu nào. Màn Plan mở ra là chọn sẵn hôm nay, nên đây là ca THƯỜNG chứ không hiếm',
+    );
+  }
+  if (!/isOpen\s*&&\s*isToday\s*\?\s*<View style=\{styles\.weekDateFill\}/.test(src)) {
+    problems.push(
+      `${STRIP}: không còn đĩa thụt vào (\`weekDateFill\`) cho ca hôm-nay-đang-mở — chặn lớp tô mà ` +
+        'không vẽ gì thay thế thì ngày đang mở mất dấu hiệu của nó',
+    );
+  }
+}
+
 if (problems.length) {
   console.error('kế hoạch tuần CÓ LỖI:\n');
   for (const p of problems) console.error(`  • ${p}`);
@@ -589,5 +626,8 @@ console.log(
     '"0x3", "٣", mảng rỗng và mọi thứ không phải một trong bảy ô, vì giá trị đó đi vào ' +
     'routine_days.day_of_week — và CẢ HAI màn đọc param đều đi qua nó. Cộng với chỗ ở: Plan nằm ở ' +
     'src/app/(tabs)/workouts/plan.tsx dưới một _layout Stack, không phải route gốc — cùng một màn, ' +
-    'cùng một diff, khác nhau ở chỗ thanh tab còn hay mất khi bạn đang đọc tuần của mình',
+    'cùng một diff, khác nhau ở chỗ thanh tab còn hay mất khi bạn đang đọc tuần của mình. Và một cái ' +
+    'chốt nữa ở `week-strip`: lớp tô "ngày đang mở" bị chặn ở hôm nay và thay bằng một đĩa THỤT VÀO, ' +
+    'nên cái vòng "hôm nay" còn chỗ để thấy — trước đây lớp tô xoá nó, và vì màn Plan mở ra là chọn sẵn ' +
+    'hôm nay nên đó là ca thường chứ không hiếm',
 );

@@ -139,6 +139,24 @@ export function WeekStrip({
       time they are not: reading Saturday's plan on a Tuesday, you need to see
       both which day you are reading and which day it is. On any week but this
       one the ring is simply absent — today is not in it.
+
+      ── và câu trên đã SAI ở đúng ca nó nêu ra ──
+
+      "Hai dấu khác nhau" chỉ đúng khi chúng ở hai ô. Khi trùng ô — tức phần
+      lớn thời gian, vì màn Plan mở ra là chọn sẵn hôm nay — lớp tô phủ kín ô
+      và XOÁ cái vòng. Hai dấu thành một, và cái còn lại không nói được nó là
+      dấu nào: một đĩa đen trên thứ Hai có thể là "hôm nay" hoặc chỉ là "ngày
+      bạn đang mở".
+
+      Chủ dự án nhìn hai màn cạnh nhau và gọi ra: cùng ngày 14, thẻ Hôm nay vẽ
+      một vòng rỗng còn màn Plan vẽ một đĩa đặc. Khác biệt ấy CÓ chủ đích —
+      `today-training` cố ý truyền `selected={null}` — nhưng nó phơi ra chuyện
+      hôm nay không giữ được một dấu hiệu nào chung giữa hai màn.
+
+      Nên lớp tô nay THỤT VÀO khi ô ấy cũng là hôm nay: vòng ở ngoài, đĩa ở
+      trong, cách nhau 2,5 điểm. Hôm nay giữ nguyên cái vòng ở mọi màn và mọi
+      trạng thái, còn lớp tô vẫn nói "đây là ngày đang mở". Hai kênh, hai dấu,
+      đúng như câu đầu đã hứa.
     */
     <View style={styles.weekRow}>
       {dates.map((d, idx) => {
@@ -158,7 +176,15 @@ export function WeekStrip({
             }}
             style={styles.weekCell}>
             <Text style={[styles.weekName, isOpen && styles.weekNameOn]}>{shortNames[idx]}</Text>
-            <View style={[styles.weekDate, isToday && styles.weekDateToday, isOpen && styles.weekDateOn]}>
+            <View
+              style={[
+                styles.weekDate,
+                isToday && styles.weekDateToday,
+                /* Tô TRÀN chỉ khi ô ấy không phải hôm nay. Trùng hôm nay thì
+                   lớp tô đi vào `weekDateFill` bên trong, để cái vòng còn chỗ. */
+                isOpen && !isToday && styles.weekDateOn,
+              ]}>
+              {isOpen && isToday ? <View style={styles.weekDateFill} /> : null}
               <Text style={[styles.weekNum, isOpen && styles.weekNumOn]}>{d.getDate()}</Text>
             </View>
             <View style={[styles.weekDot, { backgroundColor: c[STATE_STYLE[state].tint] }]} />
@@ -185,6 +211,26 @@ const stylesFor = makeStyles((c, m) => ({
   },
   weekDateToday: { borderColor: c.primary },
   weekDateOn: { backgroundColor: c.primary, borderColor: c.primary },
+  /*
+    Đĩa "đang mở" khi ô ấy CŨNG là hôm nay — thụt vào để cái vòng còn thấy.
+
+    Ô ngoài 34, viền 1,5, nên hộp trong còn 31; thụt 2,5 mỗi phía cho một đĩa
+    26 và một khe 2,5 điểm (7,5 điểm ảnh trên màn 3x) giữa đĩa và vòng. Khe hẹp
+    hơn thì hai đường cong dính vào nhau và lại thành một dấu; rộng hơn thì con
+    số bắt đầu chạm mép đĩa.
+
+    Bán kính 13 = 26/2, nên đĩa tròn thật chứ không phải một hình vuông bo góc
+    mạnh — ở cỡ này mắt phân biệt được.
+  */
+  weekDateFill: {
+    position: 'absolute',
+    top: 2.5,
+    left: 2.5,
+    right: 2.5,
+    bottom: 2.5,
+    borderRadius: 13,
+    backgroundColor: c.primary,
+  },
   weekNum: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
   weekNumOn: { color: c.primaryForeground, fontWeight: '700' },
   /* Always drawn, transparent when the day is empty — a dot that appears and
