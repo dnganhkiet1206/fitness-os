@@ -1380,8 +1380,20 @@ function WaterGlass({ pct }: { pct: number }) {
           width={3.5}
           height={9}
           rx={1.75}
-          fill={c.primaryForeground}
-          fillOpacity={0.5}
+          /*
+            Trắng VIẾT THẲNG, và đây là một trong rất ít chỗ đúng để làm thế.
+
+            Bản đầu dùng `c.primaryForeground`, và token ấy ĐẢO giữa hai diện
+            mạo — `#ffffff` trên giấy, `#070708` trong phòng tối. Vệt sáng trên
+            mặt nước sẽ thành một vệt ĐEN ở bản tối, thứ không ảnh chụp bản
+            sáng nào lộ ra.
+
+            Một điểm loé sáng phản chiếu thì trắng ở MỌI diện mạo — nó là ánh
+            sáng, không phải một vai trong bảng màu. `status-scrim.tsx` đã viết
+            `stopColor="#fff"` cho đúng lý do ấy.
+          */
+          fill="#ffffff"
+          fillOpacity={0.55}
           clipPath={`url(#gc${id})`}
         />
 

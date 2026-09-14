@@ -238,16 +238,21 @@ export const darkPalette = {
    * cả hai dùng chung một khoá thì cái thành cốc biến mất hoàn toàn vào mặt
    * nước, và cái cốc mất hình ở đúng lúc nó đầy — tức đúng lúc đáng nhìn nhất.
    *
-   * Chủ dự án xin "xanh nhạt tươi như ảnh mẫu", nên khoá này là NHẠT HƠN vai
-   * đồ hoạ, ngược chiều với thói quen thường gặp. Giới hạn đo được: trên giấy
-   * nó nằm trên mặt thẻ TRẮNG, và sàn của WCAG 1.4.11 cho đồ hoạ mang nghĩa là
-   * 3:1. Quét thang xanh thì #4aa3e8 cho 2,73:1 — hụt — còn #2189d9 cho
-   * **3,72:1**, tức cái nhạt nhất vẫn còn BIÊN ĐỘ chứ không phải cái nhạt nhất
-   * vừa đủ chạm sàn (#3a9ae4, 3,03:1, không có chỗ lùi cho khử răng cưa).
+   * Chủ dự án xin "xanh nhạt tươi như ảnh mẫu", rồi sau đó xem trên máy thật và
+   * nói "màu không được đẹp cho lắm". Hai câu ấy không mâu thuẫn, và chỗ tôi
+   * hiểu sai nằm giữa chúng: trong ảnh mẫu nước SÁNG vì nền TỐI. Trên mặt thẻ
+   * TRẮNG, bản tương đương của "mềm" không phải là NHẠT mà là ÍT BÃO HOÀ —
+   * xanh nhạt trên trắng thì rơi khỏi sàn tương phản ngay (#4aa3e8 chỉ
+   * 2,73:1), còn xanh bão hoà thì đọc ra chói.
    *
-   * Bản tối thì nền sẫm nên nhạt là dễ: #4db2ff cho 7,86:1.
+   * Nên khoá này giảm bão hoà chứ không làm nhạt: #3b90c9 cho **3,49:1** trên
+   * giấy — vẫn trên sàn 3:1 của WCAG 1.4.11 — và mềm hơn hẳn #2189d9 cũ vốn
+   * cùng độ sáng nhưng bão hoà hơn nhiều.
+   *
+   * Bản tối thì nền sẫm nên nhạt là dễ, và cũng giảm bão hoà cho cùng lý do:
+   * #6fb6e0.
    */
-  waterFill: '#4db2ff',
+  waterFill: '#6fb6e0',
   /**
    * Hai vai TÁCH RA của xanh dương, đo trên bản mẫu chủ dự án gửi.
    *
@@ -538,9 +543,12 @@ export const lightPalette: Palette = {
   readinessYellowGraphic: '#a78b00',
   readinessRed: '#de0b44',
   metricBlue: '#0673be',
-  /* Xem chú thích ở bảng TỐI. 3,72:1 trên mặt thẻ trắng — trên sàn 3:1, và
-     còn biên độ, khác với #3a9ae4 vừa đủ chạm sàn. */
-  waterFill: '#2189d9',
+  /* Xem chú thích ở bảng TỐI. 3,49:1 trên mặt thẻ trắng — trên sàn 3:1.
+     GIẢM BÃO HOÀ, không phải làm nhạt: #2189d9 cũ cùng độ sáng nhưng bão hoà
+     hơn nhiều, và trên một mặt thẻ trắng nó đọc ra chói. Làm nhạt thì rơi khỏi
+     sàn ngay (#4aa3e8 chỉ 2,73:1); giảm bão hoà thì mềm đi mà vẫn giữ
+     tương phản. */
+  waterFill: '#3b90c9',
   /* Hai vai tách ra của xanh dương — xem chú thích dài ở bảng TỐI. Wash giữ
      nguyên `#3ba6ff` như bản tối (một lớp 2–34% đọc như nhau trên cả hai mặt
      thẻ); mực thì đổi sang chàm sẫm, đo từ bản mẫu. */

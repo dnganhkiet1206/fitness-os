@@ -64,8 +64,14 @@ export const BOT_LEFT = 14;
 export const BOT_RIGHT = 42;
 /** Chỗ thành cốc bắt đầu cong vào đáy. */
 const CURVE_Y = 56;
-/** Bề dày nét. Dày, vì đó là thứ làm cái cốc có mặt. */
-export const STROKE = 4;
+/**
+ * Bề dày nét. Dày, vì đó là thứ làm cái cốc có mặt — nhưng 3,6 chứ không phải 4.
+ *
+ * Trong ảnh mẫu nét dày đọc ra MỀM vì nền tối và nét là xám sáng. Trên mặt thẻ
+ * trắng, cùng bề dày ấy với mực xám sẫm đọc ra NẶNG. Giảm nửa đơn vị là đủ để
+ * nó thôi đè lên cột nước mà vẫn là một nét đậm.
+ */
+export const STROKE = 3.6;
 
 /**
  * Thành cốc — đường HỞ, không khép ở miệng.
