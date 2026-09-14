@@ -43,7 +43,6 @@ const FLOOR = 44;
 */
 const NỢ = new Set([
   'src/app/(tabs)/index.tsx::resetBtn',
-  'src/app/(tabs)/index.tsx::syncButton',
   'src/app/(tabs)/progress.tsx::addBtn',
   'src/app/(tabs)/progress.tsx::rangeBtn',
   'src/app/log-meal.tsx::customAddBtn',

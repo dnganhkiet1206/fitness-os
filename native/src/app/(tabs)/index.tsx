@@ -2082,6 +2082,21 @@ export default function TodayScreen() {
               rưỡi con số cũ. Bề rộng và chiều cao giữ nguyên; chỉ vật liệu đổi.
             */
             <PressScale
+              /*
+                36 vẽ ra, 44 chạm được.
+
+                Hàng này cao 36 vì nó là một hành động phụ đứng dưới bốn chip
+                cao 44 — nâng nó lên 44 làm nó nặng ngang chúng. `hitSlop` 4
+                mỗi phía đưa vùng chạm lên đúng sàn của Apple mà không đổi một
+                điểm ảnh nào khi nhìn; `tools/tap-target.mjs` tự khuyên đúng
+                cách ấy trong chú thích danh sách nợ của nó.
+
+                Trả nợ THẬT, không phải đổi tên: bản trước dời `height: 36`
+                sang `syncInner` khi đổi vật liệu, và luật tưởng nợ đã trả
+                trong khi vùng chạm vẫn 36. Một danh sách nợ ngắn đi vì ai đó
+                đổi tên style là một danh sách nói dối.
+              */
+              hitSlop={4}
               disabled={healthSync.isPending}
               onPress={() => healthSync.mutate()}>
               <LiquidGlass style={styles.syncButton} radius={radius.sm} tint={c.primary} material="blur">
