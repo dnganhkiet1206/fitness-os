@@ -186,7 +186,7 @@ export default function WeeklyReviewScreen() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workout_sessions')
-        .select('id, date_time, pain_flags')
+        .select('id, date_time')
         .eq('user_id', user!.id)
         .gte('date_time', localDayRangeISO(startStr).start)
         .lt('date_time', localDayRangeISO(endStr).start);
@@ -379,14 +379,6 @@ export default function WeeklyReviewScreen() {
   */
   const acwr = latestAcwr(logs);
 
-  // Pain flags
-  const painFlags = (workouts ?? []).flatMap((w) => {
-    const flags = Array.isArray(w.pain_flags)
-      ? (w.pain_flags as { bodyPart: string; pain_0_10: number }[])
-      : [];
-    return flags.filter((f) => f.pain_0_10 >= 5);
-  });
-
   // Adaptive training recommendations (web rules) — localized per lang
   const L = (vi: string, en: string) => (lang === 'vi' ? vi : en);
   const recommendations: { kind: 'success' | 'warning' | 'info'; text: string }[] = [];
@@ -458,12 +450,6 @@ export default function WeeklyReviewScreen() {
     recommendations.push({ kind: 'info', text: L(
       `Protein thấp (${Math.round(avgProtein)}g vs ${targets.protein}g). Tăng protein để hỗ trợ phục hồi.`,
       `Low protein (${Math.round(avgProtein)}g vs ${targets.protein}g). Increase protein to support recovery.`) });
-  }
-  if (painFlags.length > 0) {
-    const parts = [...new Set(painFlags.map((f) => f.bodyPart))].join(', ');
-    recommendations.push({ kind: 'warning', text: L(
-      `Có cảnh báo đau: ${parts}. Tránh bài tập trực tiếp vùng này hoặc giảm tải.`,
-      `Pain flagged: ${parts}. Avoid direct work on these areas or reduce load.`) });
   }
   if (totalVolume > prevTotalVolume * 1.15 && prevTotalVolume > 0) {
     recommendations.push({ kind: 'info', text: L(

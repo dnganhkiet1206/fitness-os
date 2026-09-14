@@ -384,7 +384,36 @@ export function useLogWorkoutSession() {
         volume_load: Math.round(
           sets.reduce((sum, s) => (s.warmup === true ? sum : sum + s.weight * s.reps), 0),
         ),
-        pain_flags: [],
+        /*
+          `pain_flags` KHÔNG còn được ghi, và cột thì vẫn ở lại — hai nửa của
+          cùng một quyết định.
+
+          ── vì sao bỏ ──
+
+          Dòng này từng ghi `pain_flags: []`, gõ cứng, ở mọi buổi tập. Không màn
+          nào trong app hỏi người dùng một con số đau nào, nên mảng ấy không bao
+          giờ có phần tử. Hai chỗ ĐỌC nó — hàng cảnh báo trên thẻ Tập luyện ở
+          màn Hôm nay, và một lời khuyên trong Tổng kết tuần — vì thế đã tắt
+          vĩnh viễn từ ngày chúng ra đời: dựng được, không lỗi, và không bao giờ
+          có gì để hiện.
+
+          Cùng lớp lỗi mà `tools/activity.mjs` được viết ra để chặn ("a screen
+          reading a column with no writer… it typechecks, it renders, it is
+          simply always zero"), chỉ ngược chiều: người ghi CÓ, nhưng luôn ghi
+          rỗng — nên luật ấy không bắt được.
+
+          Chủ dự án quyết định không dựng ô nhập đau, và nêu lý do sản phẩm: đau
+          thì người ta đặt một ngày nghỉ vào lịch, và lịch ấy đã có
+          (`routine_days.is_rest` / `is_deload`). Thứ đáng giữ là mức GẮNG SỨC,
+          vì nó là đầu vào thật của tải nội sinh — xem `lib/session-load.ts`.
+
+          ── vì sao cột vẫn ở lại ──
+
+          Cùng lý lẽ `tools/dead-schema.mjs` đã ghi cho bốn bảng khác: xoá một
+          cột là việc không hoàn tác được, còn cái giá thật nằm ở các truy vấn
+          và ở màn hình — và cả hai đã bỏ. Một cột im lặng không tốn gì; một
+          lần migration mất dữ liệu thì có.
+        */
         pr_detected: records.length > 0,
       });
       if (error) throw error;

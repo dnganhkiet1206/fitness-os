@@ -760,7 +760,6 @@ interface Translations {
   dcNudgesActive: string;
   dcTrainingTitle: string;
   dcTraining7dVolume: string;
-  dcTrainingPain: string;
   dcRecentAwards: string;
   dcViewAll: string;
   dcSupplementToday: string;
@@ -1548,7 +1547,6 @@ const vi: Translations = {
   dcNudgesActive: 'đang bật',
   dcTrainingTitle: 'Tập Luyện',
   dcTraining7dVolume: 'Khối lượng 7 ngày',
-  dcTrainingPain: 'Đau',
   dcRecentAwards: 'Huy Chương Gần Đây',
   dcViewAll: 'Tất cả',
   dcSupplementToday: 'Supplement Hôm Nay',
@@ -2295,7 +2293,6 @@ const en: Translations = {
   dcNudgesActive: 'active',
   dcTrainingTitle: 'Training',
   dcTraining7dVolume: '7-day volume',
-  dcTrainingPain: 'Pain',
   dcRecentAwards: 'Recent Awards',
   dcViewAll: 'View all',
   dcSupplementToday: 'Supplements Today',

@@ -228,6 +228,11 @@ const STEPS = [
      đòi mọi dấu `×` phải có đơn vị đã đỏ ở ba màn, vì `×2` cho hai phần ăn tự
      nói hết nghĩa. `live.mjs` chụp được dãy số ấy mà không đọc được nó. */
   ['đơn vị số lần', 'node', ['tools/rep-unit.mjs']],
+  /* Vùng mù nằm GIỮA `dead-schema` (hỏi cả bảng) và `activity` (hỏi cột có ai
+     ghi): một cột được ghi bằng hằng RỖNG gõ cứng thoả cả hai câu hỏi ấy trong
+     khi mọi màn đọc nó đã tắt vĩnh viễn. `pain_flags` sống như thế từ ngày ra
+     đời, và chủ dự án tìm ô nhập không thấy mới lộ. */
+  ['người ghi rỗng', 'node', ['tools/empty-writer.mjs']],
   ['quyền của migration', 'node', ['tools/migration-privileges.mjs']],
   ['deck thẻ', 'node', ['tools/card-deck.mjs']],
   ['tài liệu nối backend', 'node', ['tools/backend-doc.mjs']],

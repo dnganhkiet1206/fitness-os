@@ -1,7 +1,6 @@
 import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import {
-  AlertTriangle,
   CalendarCheck,
   CheckCircle2,
   ChevronRight,
@@ -311,10 +310,6 @@ export function BiometricsCard() {
 
 // ─── TrainingCard (web dashboard/TrainingCard) ─────────────────────────
 
-interface PainFlag {
-  bodyPart?: string;
-  pain_0_10?: number;
-}
 
 /**
  * How tall the eight-week chart is — named so the bars and the habit line
@@ -430,10 +425,15 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
     engine's own `training_load_7d` and `training_load_28d` — which is what lets
     the card show them beside the verdict and have the division come out.
 
-    `latest` still comes from `useRecentWorkouts`: the top row needs
-    `pain_flags`, which the sessions query does not select, and "the most recent
-    session" is genuinely not a windowed question — that is the whole reason it
-    has to say how long ago it was.
+    `latest` still comes from `useRecentWorkouts`, and nay vì một lý do KHÁC
+    với lý do được ghi ở đây trước: câu cũ nói nó cần `pain_flags`, cột mà truy
+    vấn buổi tập không select. Cột ấy đã bỏ khỏi app (xem `use-fitness-data.ts`
+    ở chỗ chèn buổi tập), nên lý do ấy hết hiệu lực.
+
+    Nó ở lại vì vế thứ hai của chính câu cũ, và vế ấy vẫn đúng: "buổi gần nhất"
+    không phải một câu hỏi có cửa sổ. Hàng trên cùng in tên buổi, các set, mức
+    gắng sức và ĐÃ BAO LÂU — con số cuối là thứ chỉ trả lời được khi biết buổi
+    gần nhất là buổi nào, chứ không phải khi biết bảy ngày qua có gì.
   */
   const { data: week } = useWorkoutSessions(7);
   const { data: month } = useWorkoutSessions(28);
@@ -549,9 +549,6 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
   const trendMax = Math.max(...trend.map((w) => w.volume), habitVolume);
 
   const sets = Array.isArray(latest?.sets) ? latest.sets : [];
-  const painFlags = (Array.isArray(latest?.pain_flags) ? (latest.pain_flags as PainFlag[]) : []).filter(
-    (p) => (p.pain_0_10 ?? 0) > 0,
-  );
   const age = latest ? daysSince(latest.date_time) : null;
   const stale = age != null && age >= STALE_AFTER_DAYS;
   const kg = (v: number) => `${Math.round(displayWeight(v, wUnit)).toLocaleString()} ${wl}`;
@@ -867,15 +864,6 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
         </View>
         <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
       </PressScale>
-
-      {painFlags.length > 0 && (
-        <View style={styles.painRow}>
-          <Icon icon={AlertTriangle} size={13} color={c.readinessYellow} />
-          <Text style={styles.painText}>
-            {i18n.dcTrainingPain}: {painFlags.map((p) => `${p.bodyPart} (${p.pain_0_10}/10)`).join(', ')}
-          </Text>
-        </View>
-      )}
 
       <TrainingExplainer visible={help.open} onClose={help.close} />
     </GlassCard>
@@ -1195,18 +1183,6 @@ const stylesFor = makeStyles((c, m) => ({
   trendNow: { textAlign: 'right', fontWeight: '600', color: c.foreground },
   trendKey: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   trendKeyText: { fontSize: 11, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
-  painRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: alpha(c.readinessYellow, 0.1),
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm + 4,
-    paddingVertical: spacing.sm + 2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: alpha(c.readinessYellow, 0.2),
-  },
-  painText: { flex: 1, fontSize: 12, color: c.readinessYellow },
 
   // Workout status
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },

@@ -178,14 +178,6 @@ export function TrainingExplainer({ visible, onClose }: { visible: boolean; onCl
             : 'A session in the last 7 days hit a personal record on at least one lift.'}
         </Text>
       </View>
-      <View style={styles.row}>
-        <Text style={styles.term}>{i18n.dcTrainingPain}</Text>
-        <Text style={styles.body}>
-          {vi
-            ? 'Chỗ đau bạn đã đánh dấu trong buổi gần nhất, kèm mức 0–10. Chỉ hiện khi mức lớn hơn 0.'
-            : 'Pain you flagged during the latest session, with its 0–10 level. Only shown when the level is above zero.'}
-        </Text>
-      </View>
 
       <Text style={styles.caveat}>
         {vi
