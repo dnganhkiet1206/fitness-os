@@ -9,6 +9,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, ClipPath, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
@@ -31,10 +32,10 @@ import { useAddWater, useRemoveLastWater, useTodayWaterLogs } from '@/hooks/use-
 import { toast } from '@/lib/toast';
 import { displayVolume, volumeLabel, volumeToMl, type VolumeUnit } from '@/lib/units';
 import { waterQuickAmounts } from '@/lib/water-presets';
-import { clampFill, GLASS_H, GLASS_PATH, GLASS_W, waterFill } from '@/lib/water-glass';
+import { GLASS_H, GLASS_PATH, GLASS_W, WAVE_AMP, waterFill, waterPath } from '@/lib/water-glass';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 /*
   Rãnh vòng tròn đọc từ BẢNG MÀU, không viết cứng.
 
@@ -1270,80 +1271,77 @@ function WaterGlass({ pct }: { pct: number }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const uid = useId();
-  /* Id của `<ClipPath>` và `<LinearGradient>` là TOÀN CỤC trên native — cùng
-     bài học mà ba chỗ trong kho này đã phải học lại. Thẻ Nước hiện ở cả Hôm
-     nay lẫn Dinh dưỡng, nên "vẽ hai lần trong một cây" không phải giả định. */
+  /* Id của `<ClipPath>` là TOÀN CỤC trên native — cùng bài học mà ba chỗ trong
+     kho này đã phải học lại. Thẻ Nước hiện ở cả Hôm nay lẫn Dinh dưỡng, nên
+     "vẽ hai lần trong một cây" không phải giả định. */
   const clipId = `glass-${uid.replace(/:/g, '')}`;
-  const gradId = `glassfill-${uid.replace(/:/g, '')}`;
 
-  /* MỘT biến, không phải hai: mép trên suy ra từ chiều cao nên hai giá trị
-     không thể lệch nhau. Bắt đầu ở 0 — mọi thẻ mở ra với cái cốc rỗng rồi nước
-     dâng lên tới mức của ngày, kể cả khi ngày ấy đã đầy. */
+  /* MỘT biến cho mực nước; mép trên suy ra từ chiều cao nên hai giá trị không
+     thể lệch nhau. Bắt đầu ở 0 — thẻ mở ra với cốc rỗng rồi nước dâng lên. */
   const depth = useSharedValue(0);
-  /* Cùng luật hai-chuyển-động với `MiniRing`, và cùng lý do: lần đầu là màn
-     chào 1100ms, còn mọi lần sau là PHẢN HỒI cho một cú bấm thêm nước. Giữ
-     1100 cho lần sau thì mực nước hoá ra thứ chậm nhất thẻ, trong khi con số
-     bên cạnh đã nhảy ngay vì ghi lạc quan. */
+  /*
+    ── hai biến chỉ sống trong lúc có gì đó vừa đổi ──
+
+    `slosh` là biên độ sóng, `phase` là chỗ sóng đang trượt tới. Cả hai chạy về
+    đích rồi ĐỨNG IM: không có vòng lặp vô hạn nào chạy nền. Một mặt nước gợn
+    mãi mãi vừa tốn pin vừa nói dối — nó bảo "vừa có gì đó xảy ra" suốt cả ngày.
+  */
+  const slosh = useSharedValue(0);
+  const phase = useSharedValue(0);
+
   const greeted = useRef(false);
   useEffect(() => {
-    /* Tính trên luồng JS, KHÔNG trong worklet — xem `lib/water-glass.ts` cho
-       lý do, và cho lý do vì sao bản dựng web sẽ không bao giờ lộ nó. */
+    /* Tính trên luồng JS, KHÔNG trong worklet — xem `lib/water-glass.ts`. */
     const fill = waterFill(pct);
-    const cfg = {
-      duration: greeted.current ? duration.swap : 1100,
+    /*
+      420ms cho một cú bấm, 620ms cho lần chào.
+
+      Bản trước lấy 1100ms từ `MiniRing`, và Apple đặt tương tác trong trang ở
+      dưới 200ms, chuyển cả trang 300–500ms. 1100 là con số của một màn chào
+      cho thứ không ai đang chờ; ở đây người dùng VỪA bấm thêm nước, nên nó là
+      phản hồi. `MiniRing` giờ cũng không còn ai gọi, nên nó thôi là quy ước
+      chung và chỉ còn là một con số mồ côi.
+    */
+    const rise = withTiming(fill.height, {
+      duration: greeted.current ? 420 : 620,
       easing: Easing.bezier(0.16, 1, 0.3, 1),
-    };
-    const rise = withTiming(fill.height, cfg);
-    depth.value = greeted.current ? rise : withDelay(200, rise);
+    });
+    depth.value = greeted.current ? rise : withDelay(140, rise);
+    /*
+      Sóng: bật nhanh rồi lặng dần. Nước bị đổ thêm vào thì động trước, yên sau
+      — nên nhịp lên phải ngắn hơn hẳn nhịp xuống, không đối xứng.
+    */
+    slosh.value = withSequence(
+      withTiming(1, { duration: 130 }),
+      withTiming(0, { duration: 820, easing: Easing.out(Easing.quad) }),
+    );
+    /* Hai chu kỳ trượt trong đúng quãng sóng còn sống; tuyến tính, vì nước
+       không tăng tốc rồi hãm lại khi nó chỉ đang dập dềnh. */
+    phase.value = 0;
+    phase.value = withTiming(2, { duration: 950, easing: Easing.linear });
     greeted.current = true;
-  }, [pct, depth]);
+  }, [pct, depth, slosh, phase]);
 
   /*
-    KẸP trong worklet, và đây là một lỗi ĐÃ ĐO chứ không phải một phép phòng xa.
+    Một `d` duy nhất vẽ cả sóng lẫn thân nước, nên không có đường ghép nào giữa
+    hai lớp để lệch nhau trong lúc chuyển động.
 
-    `withDelay(200, withTiming(...))` phát đúng một khung có tiến độ ÂM trước
-    khi phần trễ kết thúc — đo được p = −1,36 — nên cột nước nhảy ra ngoài cốc
-    trong một khung và `height` thành số âm, thứ mà `<rect>` từ chối.
-
-    `clampFill` kẹp chiều cao rồi SUY RA mép trên từ chính nó, nên `y + height`
-    luôn bằng đáy cốc theo cấu tạo. Xem `lib/water-glass.ts` cho phép đo đầy đủ
-    và cho lý do vì sao `MiniRing` dính đúng lỗi này mà không ai thấy.
+    `waterPath` kẹp sẵn bên trong — cùng lý do đã đo ở `clampFill`:
+    `withDelay` + `withTiming` phát đúng một khung có tiến độ ÂM (đo được
+    p = −1,36), và một `d` dựng từ số âm là một hình lộn ngược chứ không phải
+    một lỗi mà trình duyệt chịu nói ra.
   */
-  const animatedProps = useAnimatedProps(() => clampFill(depth.value));
+  const animatedProps = useAnimatedProps(() => ({
+    d: waterPath(depth.value, slosh.value * WAVE_AMP, phase.value),
+  }));
 
-  /*
-    ── màu chọn bằng PHÉP ĐO, và bản đầu trượt sàn ──
-
-    Đo trên ảnh dựng bản sáng: viền cốc `alpha(tint, 0.5)` chỉ **2,11:1** so với
-    mặt thẻ, bản tối 2,64:1 — dưới sàn 3:1 mà WCAG 1.4.11 đặt cho đồ hoạ mang
-    nghĩa. Và lòng cốc rỗng, ở MỌI mức alpha thử qua (0,07 → 0,22), chỉ nằm
-    trong khoảng 1,1–1,4:1.
-
-    Tức cái lòng cốc không bao giờ gánh nổi việc làm cái cốc hiện hình, nên
-    VIỀN phải gánh. Ở mức 0% — ngày chưa uống ngụm nào — bản cũ cho một cái cốc
-    gần như vô hình, đúng lỗi mà `tools/activity.mjs` đã ghi cho vòng hoạt động
-    ở mức 0: "một vòng ở mức 0 sẽ không thấy gì".
-
-    Viền nay là token ĐẶC: 5,00:1 trên giấy, 6,96:1 trong phòng tối. Cùng ngôn
-    ngữ nét với mọi icon khác trong app — lucide vẽ nét đặc, không vẽ nét mờ.
-
-    Nước bỏ `metricCyan`: trên giấy token ấy là #077b8b, một sắc TEAL sẫm, nên
-    mặt nước phía trên đọc ra xanh lục chứ không phải xanh nước. Chiều sâu nay
-    làm bằng cùng MỘT token ở hai độ mờ — nhạt ở mặt, đặc ở đáy, đúng cách nước
-    thật sẫm dần theo độ sâu — và cả hai đầu đều trên sàn: 3,6:1 và 5,00:1 trên
-    giấy.
-  */
   const tint = graphicOf(c, 'metricBlue');
-  const crest = alpha(tint, 0.82);
+  const water = graphicOf(c, 'waterFill');
 
   return (
     <View style={styles.glassWrap}>
       <Svg width={GLASS_W} height={GLASS_H} viewBox={`0 0 ${GLASS_W} ${GLASS_H}`}>
         <Defs>
-          <LinearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
-            <Stop offset="0%" stopColor={crest} />
-            <Stop offset="100%" stopColor={tint} />
-          </LinearGradient>
           <ClipPath id={clipId}>
             <Path d={GLASS_PATH} />
           </ClipPath>
@@ -1351,17 +1349,17 @@ function WaterGlass({ pct }: { pct: number }) {
         {/* Lòng cốc khi chưa có nước: một sắc xanh rất nhạt, đủ để cái cốc là
             một vật chứ không phải một đường viền rỗng. Nó KHÔNG gánh việc hiện
             hình — đo được 1,15:1 — viền mới là thứ gánh. */}
-        <Path d={GLASS_PATH} fill={alpha(tint, 0.1)} />
-        <AnimatedRect
-          x={0}
-          width={GLASS_W}
-          fill={`url(#${gradId})`}
-          clipPath={`url(#${clipId})`}
-          animatedProps={animatedProps}
-        />
-        {/* Viền vẽ SAU mặt nước, nên nước nằm gọn trong thành cốc thay vì đè
-            lên nó. */}
-        <Path d={GLASS_PATH} fill="none" stroke={tint} strokeWidth={1.5} />
+        <Path d={GLASS_PATH} fill={alpha(tint, 0.08)} />
+        <AnimatedPath fill={water} clipPath={`url(#${clipId})`} animatedProps={animatedProps} />
+        {/*
+          Viền vẽ SAU mặt nước, và ĐẬM: 2,5 trên một cái cốc rộng 52.
+
+          Chủ dự án chốt "phẳng, tối giản, nét đậm", và ở đây nét đậm còn làm
+          một việc đo được: nước nay là `waterFill` nhạt hơn hẳn, nên nếu viền
+          mảnh thì thành cốc sẽ tan vào mặt nước đúng lúc cốc đầy — tức mất hình
+          ở đúng lúc đáng nhìn nhất.
+        */}
+        <Path d={GLASS_PATH} fill="none" stroke={tint} strokeWidth={2.5} strokeLinejoin="round" />
       </Svg>
     </View>
   );

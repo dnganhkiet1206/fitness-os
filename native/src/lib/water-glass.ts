@@ -23,8 +23,8 @@
  */
 
 /** Khung vẽ của cốc. */
-export const GLASS_W = 44;
-export const GLASS_H = 56;
+export const GLASS_W = 52;
+export const GLASS_H = 66;
 
 /**
  * Thành cốc: hơi loe, đáy bo — hình một cái ly thật.
@@ -33,14 +33,14 @@ export const GLASS_H = 56;
  * tự hẹp lại đúng theo độ loe. Vẽ mặt nước bằng một hình thang tự tính sẽ phải
  * lặp lại phép loe ở chỗ thứ hai, và hai chỗ thì sẽ có ngày lệch nhau.
  */
-export const GLASS_PATH = 'M3 3 L41 3 L37 46 A5 5 0 0 1 32 51 L12 51 A5 5 0 0 1 7 46 Z';
+export const GLASS_PATH = 'M4 4 L48 4 L43 55 A5 5 0 0 1 38 60 L14 60 A5 5 0 0 1 9 55 Z';
 
 /**
  * Đầy 100% là đầy tới TRONG LÒNG cốc, không phải tràn qua vành (vành ở y=3).
  */
-export const WATER_CEIL = 5.5;
+export const WATER_CEIL = 7;
 /** Mặt trong của đáy. */
-export const WATER_FLOOR = 50;
+export const WATER_FLOOR = 58.5;
 /** Chiều cao cột nước khi đầy. */
 export const WATER_SPAN = WATER_FLOOR - WATER_CEIL;
 
@@ -122,4 +122,71 @@ export function clampFill(height: number): WaterFill {
   'worklet';
   const h = Math.min(Math.max(Number.isFinite(height) ? height : 0, 0), WATER_SPAN);
   return { y: WATER_FLOOR - h, height: h };
+}
+
+
+/**
+ * Biên độ sóng lớn nhất, tính theo toạ độ của khung vẽ cốc.
+ *
+ * 2,2 trên một cái cốc rộng 52 là hơn 4% bề ngang — đủ để mắt bắt được là mặt
+ * nước ĐANG động, và không đủ để thành một hoạt hình. Chủ dự án chốt "phẳng,
+ * tối giản", nên sóng ở đây là một gợn chứ không phải một con sóng.
+ */
+export const WAVE_AMP = 2.2;
+
+/**
+ * Đường viền của khối nước, kể cả mặt sóng ở trên.
+ *
+ * ── vì sao mặt nước phải gợn ──
+ *
+ * Bản đầu vẽ khối nước bằng một `<rect>`: mặt nước là một cạnh thẳng tuyệt đối
+ * trượt lên. Chủ dự án xem rồi nói "chuyển động xấu, không phải không có" —
+ * đúng, vì một mặt phẳng trượt lên là chuyển động của một cái THANH, không
+ * phải của nước. Nước bị đổ thêm vào thì nó động, rồi lặng dần.
+ *
+ * Nên `amp` không phải một hằng số trang trí: nó là thứ chạy về 0 sau mỗi lần
+ * ghi. Lúc yên, `waterPath` trả về đúng một mặt phẳng — không có chuyển động
+ * vĩnh viễn nào chạy nền, thứ vừa tốn pin vừa trái với "một khoảnh khắc có chủ
+ * ý" mà tấm nào trong app cũng theo.
+ *
+ * ── vì sao trả về CHUỖI, và vì sao nó là worklet ──
+ *
+ * Một `d` duy nhất vẽ cả sóng lẫn thân nước, nên chỉ có MỘT thuộc tính động và
+ * không có đường ghép nào giữa hai lớp để lệch nhau. Dựng chuỗi trên luồng UI
+ * mỗi khung là việc rẻ với một đường ngắn thế này.
+ *
+ * `'worklet'` vì nó được gọi trong `useAnimatedProps` — cùng lý do đã ghi ở
+ * `clampFill`, và cùng cái bẫy: thiếu chỉ thị thì nó ném trên máy thật trong
+ * khi bản dựng web không nói gì.
+ *
+ * @param height chiều cao cột nước (sẽ được kẹp)
+ * @param amp    biên độ sóng hiện tại, 0 là mặt phẳng
+ * @param phase  pha sóng theo chu kỳ, dùng phần lẻ nên chạy bao nhiêu cũng được
+ */
+export function waterPath(height: number, amp: number, phase: number): string {
+  'worklet';
+  const { y: top } = clampFill(height);
+  const bottom = GLASS_H + 6;
+  const a = Math.min(Math.max(Number.isFinite(amp) ? amp : 0, 0), WAVE_AMP);
+  /* Dưới ngưỡng này sóng không còn đọc ra là sóng, chỉ còn là một đường răng
+     cưa. Trả mặt phẳng luôn: rẻ hơn, và sạch hơn ở khung cuối của mỗi lần lặng. */
+  if (a < 0.05) return `M-8 ${top} L${GLASS_W + 8} ${top} L${GLASS_W + 8} ${bottom} L-8 ${bottom} Z`;
+
+  /* Chu kỳ ĐÚNG BẰNG bề ngang cốc, nên dịch pha một chu kỳ là về đúng hình cũ:
+     sóng trượt liên tục mà không có chỗ nối. Ba chu kỳ, bắt đầu từ trái màn, để
+     mọi pha đều phủ kín 0..GLASS_W. */
+  const P = GLASS_W;
+  const x0 = -P + (phase - Math.floor(phase)) * P;
+  /* 1,33 là hệ số quen thuộc để một cung bậc hai chạm đúng đỉnh của hình sin;
+     thiếu nó thì đỉnh sóng bẹt và gợn đọc ra như một nếp gấp. */
+  const k = a * 1.33;
+  let d = `M${x0.toFixed(2)} ${top.toFixed(2)}`;
+  for (let i = 0; i < 6; i++) {
+    const dir = i % 2 === 0 ? -1 : 1;
+    const cx = x0 + (i + 0.5) * (P / 2);
+    const ex = x0 + (i + 1) * (P / 2);
+    d += ` Q${cx.toFixed(2)} ${(top + dir * k).toFixed(2)} ${ex.toFixed(2)} ${top.toFixed(2)}`;
+  }
+  const xEnd = x0 + 3 * P;
+  return `${d} L${xEnd.toFixed(2)} ${bottom} L${x0.toFixed(2)} ${bottom} Z`;
 }

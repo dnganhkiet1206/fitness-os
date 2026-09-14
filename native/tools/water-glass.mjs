@@ -43,9 +43,8 @@ try {
       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  const { waterFill, clampFill, WATER_CEIL, WATER_FLOOR, WATER_SPAN, GLASS_PATH } = createRequire(
-    import.meta.url,
-  )(path.join(out, 'lib', 'water-glass.js'));
+  const { waterFill, clampFill, waterPath, WATER_CEIL, WATER_FLOOR, WATER_SPAN, WAVE_AMP, GLASS_W, GLASS_PATH } =
+    createRequire(import.meta.url)(path.join(out, 'lib', 'water-glass.js'));
 
   const problems = [];
   let cases = 0;
@@ -155,6 +154,69 @@ try {
   }
 
   /* ── thẻ vẽ đúng thứ đã hứa ── */
+  /*
+    ── mặt sóng ──
+
+    Chủ dự án xem bản `<rect>` rồi nói "chuyển động xấu, không phải không có":
+    một mặt phẳng tuyệt đối trượt lên là chuyển động của một cái THANH. Nước bị
+    đổ thêm thì động trước, lặng sau.
+
+    Nên `waterPath` nhận một biên độ, và mọi ca dưới đây kiểm CHÍNH chuỗi nó trả
+    về chứ không kiểm ý định.
+  */
+  const flat = waterPath(20, 0, 0);
+  cases++;
+  if (/Q/.test(flat)) problems.push('biên độ 0 mà mặt nước vẫn cong — lúc lặng phải là mặt phẳng, không phải một đường răng cưa');
+  cases++;
+  if (!/Q/.test(waterPath(20, WAVE_AMP, 0))) problems.push('có biên độ mà mặt nước vẫn phẳng — sóng không được vẽ');
+
+  /*
+    Chu kỳ đúng bằng bề ngang cốc, nên dịch TRỌN một chu kỳ phải ra hình y hệt.
+    Không có tính chất này thì sóng trượt tới cuối vòng sẽ nhảy một cái.
+  */
+  cases++;
+  if (waterPath(20, WAVE_AMP, 0) !== waterPath(20, WAVE_AMP, 1)) {
+    problems.push('dịch trọn một chu kỳ ra hình khác — sóng sẽ nhảy ở chỗ nối');
+  }
+  cases++;
+  if (waterPath(20, WAVE_AMP, 0.25) !== waterPath(20, WAVE_AMP, 3.25)) {
+    problems.push('pha không lấy phần lẻ — sóng chạy lâu sẽ trôi ra khỏi cốc');
+  }
+
+  /* Phủ kín bề ngang cốc ở MỌI pha, kể cả pha lẻ: hụt một đầu là một mép nước
+     bị cắt cụt lộ ra giữa thân cốc. */
+  for (const ph of [0, 0.17, 0.5, 0.83, 0.99]) {
+    cases++;
+    const xs = [...waterPath(20, WAVE_AMP, ph).matchAll(/[ML]?(-?\d+(?:\.\d+)?) -?\d/g)].map((m) => Number(m[1]));
+    if (Math.min(...xs) > 0 || Math.max(...xs) < GLASS_W) {
+      problems.push(`pha ${ph}: đường nước chỉ phủ ${Math.min(...xs)}..${Math.max(...xs)}, không kín 0..${GLASS_W}`);
+    }
+  }
+
+  /* Cùng luật kẹp với `clampFill`: số âm và quá đầy đều phải hiền. */
+  cases++;
+  if (waterPath(-999, WAVE_AMP, 0) !== waterPath(0, WAVE_AMP, 0)) {
+    problems.push('chiều cao âm không được kẹp về rỗng trong waterPath');
+  }
+  cases++;
+  if (waterPath(WATER_SPAN + 999, 0, 0) !== waterPath(WATER_SPAN, 0, 0)) {
+    problems.push('quá đầy không được kẹp về đầy trong waterPath');
+  }
+
+  /* Mặt nước cao dần theo lượng uống — đọc thẳng toạ độ y đầu tiên của chuỗi. */
+  const topOf = (h) => Number(waterPath(h, 0, 0).match(/^M-?[\d.]+ (-?[\d.]+)/)[1]);
+  let prevTop = Infinity;
+  for (let h = 0; h <= WATER_SPAN; h += WATER_SPAN / 20) {
+    cases++;
+    const t = topOf(h);
+    if (t > prevTop + 1e-9) problems.push(`mặt nước tụt xuống ở chiều cao ${h.toFixed(1)}`);
+    prevTop = t;
+  }
+  cases++;
+  if (Math.abs(topOf(WATER_SPAN) - WATER_CEIL) > 1e-9) {
+    problems.push(`đầy 100% thì mặt nước ở ${topOf(WATER_SPAN)}, đáng lẽ ${WATER_CEIL}`);
+  }
+
   const card = stripComments(read('src/components/ascnd/dashboard-cards.tsx'));
   const water = card.slice(card.indexOf('export function WaterWidget'), card.indexOf('export function StepsWidget'));
   if (!/figure=\{<WaterGlass/.test(water)) {
@@ -224,8 +286,8 @@ try {
     Worklet PHẢI đi qua `clampFill`, không được đọc thẳng shared value: đọc
     thẳng là trả lại đúng khung hình âm đã đo ở trên.
   */
-  if (!/clampFill\(/.test(body)) {
-    problems.push('WaterGlass không kẹp mực nước — khung tiến độ âm của withDelay sẽ lại ghi height âm vào <rect>');
+  if (!/waterPath\(/.test(body)) {
+    problems.push('WaterGlass không dựng đường nước qua waterPath — mực nước lại được vẽ tại chỗ, ngoài tầm với của bước gác này');
   }
   /*
     Và `clampFill` — thứ DUY NHẤT được phép chạy trong worklet ở đây — phải
@@ -233,9 +295,12 @@ try {
     UI: ném trên máy thật, im lặng trên web.
   */
   const lib = read('src/lib/water-glass.ts');
-  const fn = lib.slice(lib.indexOf('export function clampFill'));
-  if (!/^\s*'worklet';\s*$/m.test(fn.slice(0, fn.indexOf('return')))) {
-    problems.push("clampFill thiếu chỉ thị 'worklet' — nó được gọi trên luồng UI, và thiếu chỉ thị thì nó ném trên máy thật trong khi web không nói gì");
+  for (const fnName of ['clampFill', 'waterPath']) {
+    cases++;
+    const fn = lib.slice(lib.indexOf(`export function ${fnName}`));
+    if (!/^\s*'worklet';\s*$/m.test(fn.slice(0, fn.indexOf('return')))) {
+      problems.push(`${fnName} thiếu chỉ thị 'worklet' — nó chạy trên luồng UI, và thiếu chỉ thị thì nó ném trên máy thật trong khi web không nói gì`);
+    }
   }
 
   /*
@@ -284,10 +349,10 @@ try {
       `viền cốc không còn là token đặc (đọc được "${strokeLine?.[1]?.trim() ?? 'không thấy'}") — bản mờ 0,5 đo được 2,11:1 trên giấy, dưới sàn 3:1`,
     );
   }
-  /* Độ mờ của mặt nước đọc ra từ mã, rồi đo. */
-  const crestA = Number(glassBody.match(/const crest = alpha\(tint, ([\d.]+)\)/)?.[1]);
-  if (!Number.isFinite(crestA)) {
-    problems.push('không đọc được độ mờ mặt nước từ mã');
+  /* Nước dùng khoá RIÊNG, không dùng chung với viền: dùng chung thì thành cốc
+     tan vào mặt nước đúng lúc cốc đầy. */
+  if (!/graphicOf\(c, 'waterFill'\)/.test(glassBody)) {
+    problems.push('nước không còn đọc khoá `waterFill` — dùng chung khoá với viền thì thành cốc tan vào mặt nước đúng lúc cốc đầy');
   }
   for (const [name, surf] of Object.entries(SURFACE)) {
     cases++;
@@ -296,14 +361,35 @@ try {
     if (cStroke < 3) {
       problems.push(`viền cốc ${tint} chỉ ${cStroke.toFixed(2)}:1 so với mặt thẻ bản ${name} — dưới sàn 3:1, và ở mức 0% cái cốc là thứ DUY NHẤT còn nhìn thấy`);
     }
-    if (Number.isFinite(crestA)) {
-      cases++;
-      const crest = over(tint, crestA, surf);
-      const cCrest = contrast(crest, surf);
-      if (cCrest < 3) {
-        problems.push(`mặt nước ${crest} chỉ ${cCrest.toFixed(2)}:1 so với mặt thẻ bản ${name} — dưới sàn 3:1`);
-      }
+    cases++;
+    const w = TOKEN[name].waterFill;
+    if (!w) {
+      problems.push(`bảng màu bản ${name} chưa có khoá waterFill`);
+      continue;
     }
+    const cWater = contrast(w, surf);
+    if (cWater < 3) {
+      problems.push(`nước ${w} chỉ ${cWater.toFixed(2)}:1 so với mặt thẻ bản ${name} — dưới sàn 3:1 của WCAG 1.4.11`);
+    }
+    /*
+      ── một luật ĐÃ VIẾT RỒI GỠ, và lý do ở lại ──
+
+      Bản đầu của bước này đòi thành cốc phải tương phản ≥1,5:1 với mặt nước,
+      sợ rằng cốc đầy thì mất hình. Nó đỏ ngay: 1,34:1 trên giấy, 1,13:1 bản
+      tối.
+
+      Nhưng kết luận ấy SAI, và cái sai nằm ở chỗ nó đo một đại lượng có thật
+      rồi suy ra một hậu quả không có thật. Nét viền vẽ CHỒNG LÊN đường biên,
+      tức một nửa nét nằm ngoài đường ấy. Nước thì bị cắt theo ĐÚNG đường ấy,
+      nên nó chỉ dâng tới TIM nét. Nửa ngoài của nét — 1,25 trên nét 2,5 — luôn
+      nằm trên mặt thẻ, và nó đo 5,00:1 trên giấy.
+
+      Nên hình cái cốc do nửa ngoài giữ, và nó không phụ thuộc mực nước chút
+      nào. Thứ đáng canh là nét-với-mặt-thẻ, và nó đã được canh ngay trên.
+
+      Ghi lại thay vì xoá lặng lẽ: con số 1,34:1 là thật, và người tiếp theo
+      nhìn thấy nó sẽ muốn "sửa" đúng như tôi đã suýt làm.
+    */
   }
   /*
     Và nước phải là XANH NƯỚC. `metricCyan` trên giấy là #077b8b — một sắc teal
@@ -321,7 +407,7 @@ try {
   }
 
   console.log(
-    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Và viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy`,
+    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy — và nước có khoá RIÊNG cũng qua sàn ấy. Mặt sóng: lặng thì phẳng, động thì cong, dịch trọn một chu kỳ ra đúng hình cũ nên không nhảy ở chỗ nối, và phủ kín bề ngang ở mọi pha`,
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

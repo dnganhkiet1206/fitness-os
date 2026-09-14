@@ -232,6 +232,23 @@ export const darkPalette = {
   // Metrics
   metricBlue: '#3ba6ff',
   /**
+   * Nước trong cốc — và vì sao nó là một khoá RIÊNG chứ không phải `metricBlue`.
+   *
+   * Thẻ Nước vẽ một cái cốc: viền bằng `metricBlue`, lòng cốc đổ đầy dần. Nếu
+   * cả hai dùng chung một khoá thì cái thành cốc biến mất hoàn toàn vào mặt
+   * nước, và cái cốc mất hình ở đúng lúc nó đầy — tức đúng lúc đáng nhìn nhất.
+   *
+   * Chủ dự án xin "xanh nhạt tươi như ảnh mẫu", nên khoá này là NHẠT HƠN vai
+   * đồ hoạ, ngược chiều với thói quen thường gặp. Giới hạn đo được: trên giấy
+   * nó nằm trên mặt thẻ TRẮNG, và sàn của WCAG 1.4.11 cho đồ hoạ mang nghĩa là
+   * 3:1. Quét thang xanh thì #4aa3e8 cho 2,73:1 — hụt — còn #2189d9 cho
+   * **3,72:1**, tức cái nhạt nhất vẫn còn BIÊN ĐỘ chứ không phải cái nhạt nhất
+   * vừa đủ chạm sàn (#3a9ae4, 3,03:1, không có chỗ lùi cho khử răng cưa).
+   *
+   * Bản tối thì nền sẫm nên nhạt là dễ: #4db2ff cho 7,86:1.
+   */
+  waterFill: '#4db2ff',
+  /**
    * Hai vai TÁCH RA của xanh dương, đo trên bản mẫu chủ dự án gửi.
    *
    * `metricBlue` là MỘT màu làm cả hai việc: vẽ đồ hoạ, và viết chữ. Trên bản
@@ -521,6 +538,9 @@ export const lightPalette: Palette = {
   readinessYellowGraphic: '#a78b00',
   readinessRed: '#de0b44',
   metricBlue: '#0673be',
+  /* Xem chú thích ở bảng TỐI. 3,72:1 trên mặt thẻ trắng — trên sàn 3:1, và
+     còn biên độ, khác với #3a9ae4 vừa đủ chạm sàn. */
+  waterFill: '#2189d9',
   /* Hai vai tách ra của xanh dương — xem chú thích dài ở bảng TỐI. Wash giữ
      nguyên `#3ba6ff` như bản tối (một lớp 2–34% đọc như nhau trên cả hai mặt
      thẻ); mực thì đổi sang chàm sẫm, đo từ bản mẫu. */
