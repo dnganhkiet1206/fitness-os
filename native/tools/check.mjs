@@ -679,7 +679,39 @@ const STEPS = [
     on purpose.
   */
   ['bảng chết', 'node', ['tools/dead-schema.mjs']],
+  /*
+    Ba bước cuối cùng canh TÀI LIỆU, và chúng ở cạnh nhau vì cùng một lý do.
+
+    Mọi luật phía trên hỏi mã có đúng không. Nhưng thứ người tiếp theo đọc trước
+    khi đọc mã là mấy trang trong `docs/`, và một trang thì chưa bao giờ phải
+    đúng: không gì biên dịch nó, không gì chạy nó. Rà 09/14 tìm được bảy lời giải
+    thích sai ở đó, và sáu trong bảy đã sai từ trước — chúng chỉ chờ đủ lâu để
+    khoảng cách lộ ra.
+
+      số bước       cổng có bao nhiêu bước, hỏi thẳng `STEPS.length` ngay dưới
+      đầu vào SS    một đầu vào chỉ được kể tên nếu có thứ thật sự cấp nó
+      điều kiện sổ  chạy lại đúng lệnh mà một mục "cấm sửa" tự dặn phải chạy
+  */
+  ['số bước', 'node', ['tools/gate-count.mjs']],
+  ['đầu vào SS', 'node', ['tools/readiness-inputs.mjs']],
+  ['điều kiện sổ', 'node', ['tools/ledger-live.mjs']],
 ];
+
+/*
+  Cổng này có bao nhiêu bước — hỏi chính mảng trên.
+
+  Hai trang tài liệu ghi con số ấy ra bằng chữ ở sáu câu, và nó đã sai HAI lần:
+  lần đầu `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), lần thứ hai
+  bảng cổng của `AUDIT_STATE.md` ghi 215 khi cổng đã 241.
+
+  `tools/gate-count.mjs` giữ sáu chỗ ấy khớp, và nó phải đọc con số ở ĐÂY chứ
+  không được đếm lại bằng một bộ phân tích thứ hai. Hai bộ đếm là hai thứ trôi
+  khỏi nhau, và cái trôi sẽ là cái không ai chạy.
+*/
+if (process.env.GATE_COUNT_ONLY) {
+  console.log(STEPS.length);
+  process.exit(0);
+}
 
 let failed = 0;
 for (const [label, cmd, args] of STEPS) {

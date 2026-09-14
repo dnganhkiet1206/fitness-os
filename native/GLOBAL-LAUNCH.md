@@ -42,8 +42,18 @@ code.
    fitness data, account email). HealthKit data stays on-device unless
    the user syncs; describe accurately.
 4. **HealthKit review notes** — Apple hand-reviews HealthKit apps.
-   Explain in the review notes that HR/HRV/sleep/steps feed the daily
-   readiness score, and that the app never diagnoses.
+   Explain in the review notes that HR/HRV/sleep feed the daily readiness
+   score, that steps and active energy feed the activity rings and the
+   step challenges but **not** readiness, and that the app never
+   diagnoses.
+
+   > Sửa 2026-09-14: dòng này từng ghi *"HR/HRV/sleep/**steps** feed the
+   > daily readiness score"*. Sai, và sai ở chỗ đắt nhất — đây là chữ viết
+   > cho người duyệt của Apple. `ReadinessInput` không có trường bước chân
+   > nào; sheet trong app nói thẳng *"Bước chân và calo hoạt động không nằm
+   > trong công thức nào"*, và `tools/readiness-copy.mjs` giữ câu ấy đúng.
+   > Mô tả một luồng HealthKit không tồn tại trong hồ sơ duyệt là thứ không
+   > ai muốn phải giải thích lại sau.
 5. **Age rating** — likely 4+ (no objectionable content); the AI coach is
    constrained to habit reminders, not medical advice.
 6. **Add more languages (optional)** — extend `AppLang` in

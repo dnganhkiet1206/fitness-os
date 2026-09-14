@@ -4381,10 +4381,28 @@ Bốn hàm còn lại **không** gửi tên. **KHÔNG tự chọn.**
 Dấu thời gian chính xác chứ không phải thời lượng đã tóm tắt. Tính năng có thể
 cần chúng ("bạn đi ngủ muộn dần"). **KHÔNG tự chọn.**
 
-### PS-3. `pain_flags` đi sang nhà cung cấp
+### ~~PS-3. `pain_flags` đi sang nhà cung cấp~~ — ĐÃ BỎ 2026-09-14, và câu hỏi hoá ra không phải câu hỏi
 
 `ai-coach` và `ai-weekly-review` đều gửi. Đây là thông tin sức khoẻ. Nhiều khả
-năng cần cho lời khuyên tập luyện, nhưng đáng để nói rõ. **KHÔNG tự chọn.**
+năng cần cho lời khuyên tập luyện, nhưng đáng để nói rõ. ~~**KHÔNG tự chọn.**~~
+
+**Không có gì để chọn.** Mục này hỏi *"có nên gửi dữ liệu đau sang nhà cung cấp
+không"* và giả định rằng có dữ liệu đau. Không có: `use-fitness-data.ts` gõ cứng
+`pain_flags: []` ở **mọi** buổi tập và không màn nào từng có ô nhập (gỡ ở
+`da7af7d`). Thứ rời khỏi hàm edge suốt từ ngày viết là một mảng rỗng.
+
+Nên cả ba vế đều rỗng cùng lúc: không có rủi ro riêng tư để cân, không có giá
+trị cho lời khuyên để tiếc, và dòng prompt *"If there are pain flags, only advise
+reducing load and resting"* là một mệnh lệnh chưa bao giờ có điều kiện để kích
+hoạt. Đã bỏ khỏi câu chọn, khỏi payload, và khỏi prompt ở cả hai ngôn ngữ.
+
+**Chưa triển khai.** Hàm edge deploy riêng; sửa trong repo không đổi thứ đang
+chạy trên Supabase cho tới lần deploy kế tiếp.
+
+Bài học ngang với chính bản sửa: mục này nằm ở nhóm "KHÔNG tự chọn" — đúng, vì
+nó là quyết định về dữ liệu sức khoẻ của người dùng. Nhưng suốt thời gian ấy
+**không ai kiểm tiền đề**, và tiền đề sai làm cả câu hỏi tan. Cùng hình dạng với
+C1 trong `SO-GHI-LOI.md`, và đó là lý do `tools/ledger-live.mjs` tồn tại.
 
 ### PS-4. Lưu trữ phía nhà cung cấp
 

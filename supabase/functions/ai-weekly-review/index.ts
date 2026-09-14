@@ -51,7 +51,9 @@ serve(async (req) => {
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("*").eq("user_id", userId).gte("date", monthStart.toISOString().split("T")[0]).lte("date", endStr).order("date"),
       supabase.from("sleep_logs").select("*").eq("user_id", userId).gte("waketime", `${week_start}T00:00:00`).lte("waketime", `${endStr}T23:59:59`).order("waketime"),
-      supabase.from("workout_sessions").select("template_name, volume_load, session_rpe, pain_flags, date_time").eq("user_id", userId).gte("date_time", `${week_start}T00:00:00`).lte("date_time", `${endStr}T23:59:59`).order("date_time"),
+      /* `pain_flags` đã bỏ — cột ấy chưa bao giờ được ghi bằng gì khác một mảng
+         rỗng gõ cứng. Xem chú thích cùng nội dung trong `ai-coach/index.ts`. */
+      supabase.from("workout_sessions").select("template_name, volume_load, session_rpe, date_time").eq("user_id", userId).gte("date_time", `${week_start}T00:00:00`).lte("date_time", `${endStr}T23:59:59`).order("date_time"),
       supabase.from("daily_logs").select("date, kcal, protein_g, volume_load, readiness_score").eq("user_id", userId).gte("date", monthStart.toISOString().split("T")[0]).lt("date", week_start).order("date"),
     ]);
 
@@ -129,7 +131,7 @@ serve(async (req) => {
         */
         logs: weekLogs.map(l => ({ date: l.date, kcal: l.kcal, protein_g: l.protein_g, carbs_g: l.carbs_g, fat_g: l.fat_g, volume_load: l.volume_load, readiness: l.readiness_score, readiness_status: l.readiness_status, recovery_measured: recoveryMeasured(l.readiness_explain), steps: l.steps, sleep_min: l.sleep_duration_min })),
         sleep: sleepLogs.map(s => ({ date: new Date(s.waketime).toISOString().split("T")[0], quality: s.quality, deep_min: s.deep_min, rem_min: s.rem_min, light_min: s.light_min })),
-        workouts: workouts.map(w => ({ date: new Date(w.date_time).toISOString().split("T")[0], name: w.template_name, volume: w.volume_load, rpe: w.session_rpe, pain_flags: w.pain_flags })),
+        workouts: workouts.map(w => ({ date: new Date(w.date_time).toISOString().split("T")[0], name: w.template_name, volume: w.volume_load, rpe: w.session_rpe })),
       },
       month_context: { total_logs: allLogs.length, avg_volume_28d: allLogs.reduce((s: number, l: any) => s + (Number(l.volume_load) || 0), 0) / Math.max(allLogs.length, 1) },
     };

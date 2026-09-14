@@ -71,11 +71,29 @@ biết, không thêm bước kiểm trong lượt này**: tính chất đang đ�
 khiếm khuyết nào, và thêm luật cho một thứ đang đúng là làm ra việc. Nếu app
 thêm hook xoá thứ 14, đây là chỗ để nhớ.
 
-### 3. Haptics — nhất quán
+### 3. Haptics — ~~nhất quán~~ **KẾT LUẬN NÀY SAI, đính chính 2026-09-14**
 
 `selectionAsync` 188 · `Light` 66 · `Success` 45 · `Medium` 16 · `Warning` 7 ·
 `Error` 2 · `Heavy` 1. Đó đúng là mô hình ngữ nghĩa của Apple: chọn lựa, va
-chạm nhẹ, và ba loại thông báo kết quả. Không có chỗ nào dùng lẫn.
+chạm nhẹ, và ba loại thông báo kết quả. ~~Không có chỗ nào dùng lẫn.~~
+
+**Có năm chỗ dùng lẫn, và phép đếm trên không có trục để thấy chúng.**
+
+Bảng trên đếm **LOẠI** máy rung. Ngữ nghĩa của Apple còn vế thứ hai là **THỜI
+ĐIỂM**: `selection` và `impact` là phản hồi cho cú chạm, nên phải nổ **lúc
+chạm**; `notification` báo kết quả một việc, nên nổ **lúc có kết quả**. Một
+`selectionAsync` đặt trong `onSuccess` của một mutation vẫn là một
+`selectionAsync` hoàn toàn đúng loại — và nó rung sau khi ngón tay đã rời khỏi
+màn hình, sau hai lượt mạng.
+
+`8262eee` tìm ra 5 chỗ như thế (chủ dự án báo trước: *"khi tích vào ô thực phẩm
+bổ sung còn bị delay"*). `tools/tap-feedback.mjs` nay quét 92 callback
+`onSuccess`/`onSettled`: không chỗ nào còn bắn `selection`/`impact`, trong khi
+27 chỗ bắn `notification` ở đó và được để yên — đó chính là ranh giới.
+
+Ghi lại vì bài học không nằm ở haptics: **một lượt rà đếm được thứ nó đếm, rồi
+kết luận về thứ nó không đếm.** Ảnh chụp không có trục thời gian, và web không
+có haptic — nên chỉ có một luật chạy được mới hỏi được câu "lúc nào".
 
 ---
 

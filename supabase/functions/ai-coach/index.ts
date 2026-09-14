@@ -124,7 +124,12 @@ serve(async (req) => {
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("*").eq("user_id", userId).gte("date", weekAgo).order("date", { ascending: false }).limit(7),
       supabase.from("sleep_logs").select("*").eq("user_id", userId).gte("waketime", `${weekAgo}T00:00:00Z`).order("waketime", { ascending: false }).limit(7),
-      supabase.from("workout_sessions").select("template_name, volume_load, session_rpe, pain_flags, date_time, sets").eq("user_id", userId).gte("date_time", `${weekAgo}T00:00:00Z`).order("date_time", { ascending: false }).limit(7),
+      /* `pain_flags` đã bỏ khỏi cả câu chọn lẫn payload (2026-09-14, cùng lượt
+         với `da7af7d`). Không màn nào từng ghi vào cột ấy — `use-fitness-data`
+         gõ cứng `[]` cho mọi buổi tập — nên thứ gửi sang nhà cung cấp luôn là
+         một mảng rỗng, và dòng prompt dặn mô hình xử lý "pain flags" chưa bao
+         giờ có gì để xử lý. Xem PS-3 trong `docs/FORENSIC-AUDIT.md`. */
+      supabase.from("workout_sessions").select("template_name, volume_load, session_rpe, date_time, sets").eq("user_id", userId).gte("date_time", `${weekAgo}T00:00:00Z`).order("date_time", { ascending: false }).limit(7),
       supabase.from("biometric_samples").select("hr_bpm, hrv_rmssd_ms, hrv_sdnn_ms, date_time").eq("user_id", userId).order("date_time", { ascending: false }).limit(3),
       /* What this person has told the coach in past conversations. The logs
          above are what the app measured; this is what it was told, and it is
@@ -203,7 +208,6 @@ serve(async (req) => {
         name: w.template_name,
         volume_load: w.volume_load,
         rpe: w.session_rpe,
-        pain_flags: w.pain_flags,
       })),
       latest_biometrics: biometrics.map(b => ({
         date: localDay(b.date_time),
@@ -241,7 +245,6 @@ IMPORTANT PRINCIPLES:
 - ONLY suggest simple lifestyle habits that ordinary people know but forget (drink water, sleep enough, eat enough protein, rest after training, etc.)
 - Use the user's real data for personalized reminders
 - Low readiness means lower training capacity today, NOT that the user is poorly recovered. Recovery advice is appropriate only when recovery_measured is true and the recovery readings themselves point that way; when recovery_measured is false, never say or imply the user is tired, fatigued, under-recovered or has not recovered — the app did not measure it. Low readiness from training load alone may still justify conservative load advice, described as load rather than as fatigue
-- If there are pain flags, only advise reducing load and resting — do NOT speculate on medical causes
 - Use markdown formatting for clarity
 - Always end with a reminder: see a doctor if you have any health concerns`
       : `Bạn là AI hỗ trợ theo dõi fitness, dinh dưỡng và phục hồi. Trả lời bằng tiếng Việt, ngắn gọn, thực tế và dựa trên dữ liệu.
@@ -267,7 +270,6 @@ NGUYÊN TẮC QUAN TRỌNG:
 - CHỈ gợi ý những thói quen sinh hoạt đơn giản mà người bình thường đều biết nhưng hay quên (uống nước, ngủ đủ giấc, ăn đủ protein, nghỉ ngơi sau tập, v.v.)
 - Dựa trên dữ liệu thực của người dùng để nhắc nhở cá nhân hóa
 - Readiness thấp nghĩa là khả năng tập hôm nay thấp hơn, KHÔNG phải là người dùng chưa phục hồi. Chỉ khuyên về phục hồi khi recovery_measured là true và chính các chỉ số phục hồi nói vậy; khi recovery_measured là false, tuyệt đối không nói hay ám chỉ người dùng đang mệt, kiệt sức, chưa hồi hay hồi phục kém — app KHÔNG đo được điều đó. Readiness thấp chỉ do tải tập vẫn có thể dẫn tới lời khuyên giữ tải thận trọng, nhưng phải nói theo TẢI TẬP chứ không nói theo mệt mỏi
-- Nếu có pain flags, chỉ khuyên giảm tải và nghỉ ngơi, KHÔNG suy đoán nguyên nhân y tế
 - Sử dụng markdown formatting cho rõ ràng
 - Luôn kết thúc với nhắc nhở: nếu có vấn đề sức khoẻ hãy gặp bác sĩ`;
 

@@ -20,7 +20,7 @@ liệu được gán một con số, con số ấy được dùng tiếp, và kh
 | | |
 |---|---|
 | **Định nghĩa** | Hôm nay cơ thể đang ở đâu so với **nền của chính người đó** |
-| **Đầu vào** | HRV, nhịp tim nghỉ, giấc ngủ đêm qua, tải tập 7d/28d (+ cờ ốm, cờ đau, mức đau nhức) |
+| **Đầu vào** | HRV, nhịp tim nghỉ, giấc ngủ đêm qua, tải tập 7d/28d — **bốn, hết** |
 | **Công thức** | Trung bình có trọng số của các chiều **đo được**, chuẩn hoá lại theo tổng trọng số hiện diện. HRV/nhịp nghỉ chấm bằng robust z-score (`1.4826 × MAD`, có sàn theo đơn vị của phép đo) |
 | **Khoảng** | 0–100, hoặc `null` |
 | **Nghĩa** | ≥ 75 xanh · 50–74 vàng · < 50 đỏ |
@@ -30,6 +30,38 @@ liệu được gán một con số, con số ấy được dùng tiếp, và kh
 
 Nền HRV và nhịp nghỉ cần **≥ 5 lần đo**: một median và một MAD dựng từ bốn điểm
 không phải một baseline, nó là bốn điểm.
+
+### Ba đầu vào mà dòng trên từng kể ra, và vì sao chúng bị bỏ đi
+
+Cho tới 2026-09-14 dòng **Đầu vào** còn ghi *"(+ cờ ốm, cờ đau, mức đau nhức)"*.
+Ba thứ ấy **tồn tại trong engine** và không thứ nào tới được nó:
+
+```
+readiness-engine.ts:202   soreness > 6            → trừ điểm tải tập
+readiness-engine.ts:365   illness_flag            → chặn trần 35
+readiness-engine.ts:366   pain_flag_max >= 7      → chặn trần 45
+
+daily-log-service.ts      soreness_today: undefined
+                          illness_flag: false
+                          pain_flag_max: undefined      ← gõ cứng, chỗ DUY NHẤT dựng input
+```
+
+Không màn nào hỏi ba câu đó, nên không có gì để điền. Ba nhánh trên chưa từng
+chạy một lần nào trong đời app.
+
+Đây cùng một hình dạng với `pain_flags: []` (gỡ ở `da7af7d`): **một giá trị hằng
+đi vào chỗ đáng lẽ là dữ liệu**, và mọi thứ phía sau nó dựng được, không lỗi, chỉ
+là không bao giờ đúng. `tools/empty-writer.mjs` bắt hình dạng ấy ở đường GHI
+xuống cơ sở dữ liệu; `tools/readiness-inputs.mjs` bắt nó ở đường TÀI LIỆU — một
+đầu vào chỉ được phép kể tên ở đây nếu có thứ thật sự cấp nó.
+
+**Mã ba nhánh thì GIỮ.** Chúng đúng, rẻ, và là chỗ để cắm vào nếu sau này có ô
+nhập. Cái phải bỏ là **lời hứa rằng chúng đang chạy** — và nơi duy nhất lời hứa
+ấy tồn tại là trang này.
+
+Sheet trong app (`readiness-explainer.tsx`) vẫn luôn nói đúng: nó kể **bốn**
+nguồn, kèm trọng số, và `tools/readiness-confidence.mjs` giữ nó khớp engine.
+Tức người dùng chưa từng bị nói sai — chỉ người đọc repo.
 
 ## 2. ACWR — tỉ lệ tải cấp tính / mạn tính
 

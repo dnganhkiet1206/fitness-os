@@ -414,6 +414,28 @@ lần rồi.
 | **Quan sát chưa đủ kết luận** | 16 chỗ `weak let` trong `expo-modules-core`/`expo-modules-jsi`, gồm cả khai báo thuộc tính. Maintainer Expo nói cú pháp ấy *"landed in Swift 6.3"*. **Nhưng bản dựng không báo lỗi nào ở đó** — hoặc 6.2.3 nhận nó, hoặc trình biên dịch dừng trước. Ghi để để mắt, **không dùng làm căn cứ**. |
 | **Trạng thái** | **MỞ.** Đóng khi máy nâng lên 26.4+ và bản dựng đi qua. Không sửa mã nào cho mục này. |
 
+### A14. Tích thực phẩm bổ sung không tính vào chuỗi ngày — **chuyển từ C1 lên, 2026-09-14**
+
+Mục này nằm ở nhóm C ("đã kiểm, KHÔNG phải lỗi, cấm sửa") suốt từ đầu. Nó lên
+đây vì **điều kiện hết hiệu lực mà chính C1 viết sẵn đã xảy ra**, và không ai
+quay lại chạy lệnh nó dặn.
+
+| | |
+|---|---|
+| **C1 nói gì** | `useToggleSupplement` ghi `supplement_intake_logs` rồi `invalidateQueries(['daily_log'])` **mà không** `recomputeDailyLog`. Không phải lỗi, vì `supplement_taken`/`supplement_planned` **không ai đọc** ngoài chính tệp ghi ra chúng. Kèm một câu điều kiện: *"Nếu sau này có màn hình đọc hai cột đó thì mục này thành lỗi thật. Kiểm bằng đúng lệnh grep trên trước khi kết luận."* |
+| **Chạy lại đúng lệnh ấy** | `grep -rn "supplement_taken\|supplement_planned" src/` — nay ra **`src/lib/streak.ts:88`**: `LOGGED_DAY_FILTER = 'kcal.gt.0,workout_count.gt.0,sleep_duration_min.gt.0,supplement_taken.gt.0'`. Đó là một nơi đọc. Điều kiện đã xảy ra. |
+| **Vào từ đâu** | `a63b566` ("Cài app, không ghi gì, và đã có chuỗi 13 ngày cùng hai huy hiệu") — lượt siết định nghĩa "một ngày có ghi", chính nó thêm supplement vào danh sách nguồn hợp lệ. Chú thích ở `use-extras.ts:547` kể tên supplement như một nguồn của chuỗi. |
+| **Hai nơi đọc, không phải một** | `use-extras.ts:99` (chuỗi + huy chương) và `use-mascot-room.ts:179` (phòng linh vật). Cả hai lọc `daily_logs` bằng `LOGGED_DAY_FILTER`. |
+| **Hậu quả** | `supplement_taken` chỉ được viết bởi `recomputeDailyLog`, và **không lời gọi nào** nằm trong `use-library.ts`. Nên một ngày mà việc duy nhất người ta làm là tích bổ sung: hàng `daily_logs` giữ nguyên `supplement_taken` cũ, bộ lọc trượt, **ngày ấy không vào chuỗi** — cho tới khi có thứ khác (bữa ăn, buổi tập, giấc ngủ, cân, đồng bộ) dựng lại đúng ngày đó. Chuỗi có huy chương gắn vào, và `awards` thì không ai thu hồi. |
+| **Chưa chứng minh** | Tần suất thật. "Ngày chỉ có mỗi supplement" nghe hiếm, nhưng chưa đo — và C1 bị kẹt đúng vì một suy đoán kiểu ấy. |
+| **Vì sao KHÔNG sửa ngay** | Cách sửa hiển nhiên là gọi `recomputeDailyLog` trong `useToggleSupplement`, và C1 đã đo cái giá: **11 truy vấn sau mỗi lần tích một checkbox**. Đúng cái ô vừa được làm lạc quan ở `8262eee` để bỏ ba lượt mạng. Nhét 11 lượt vào `onSettled` là trả lại phần lớn thứ vừa lấy được, để chữa một cột chỉ chuỗi ngày mới đọc. |
+| **Còn thiếu để sửa** | Một trong ba, và phải CHỌN chứ không phải đoán: (a) đo xem "ngày chỉ có supplement" có thật không — nếu gần bằng 0 thì mục này về lại nhóm C kèm số đo; (b) một đường dựng lại **hẹp**, chỉ đụng hai cột supplement, thay vì `recomputeDailyLog` đủ 11 truy vấn; (c) dựng lại **trễ** — gộp lại và chạy một lần khi rời màn. |
+| **Cấm** | Cấm gọi thẳng `recomputeDailyLog` trong `onSuccess`/`onSettled` của `useToggleSupplement` mà chưa làm (a). Đó là sửa cho hết cảm giác áy náy, không phải sửa theo phép đo. |
+
+**Bài học của mục này, và nó lớn hơn chính nó:** C1 đã làm đúng mọi thứ — kết
+luận có bằng chứng, ghi rõ điều kiện hết hiệu lực, kèm sẵn lệnh để kiểm lại. Vẫn
+sai, vì **một điều kiện không ai chạy thì không phải một điều kiện**. Trong repo
+này thứ tương đương "có người chạy nó" là một bước trong `check.mjs`.
 
 ---
 
@@ -489,20 +511,25 @@ Chỉ làm khi có một lý do cụ thể (ví dụ: làm theme sáng), không 
 Mục này quan trọng ngang nhóm A. Mỗi cái dưới đây **trông** như lỗi, và người
 tiếp theo đọc code sẽ tưởng là lỗi. Chúng đã được kiểm. Đừng sửa lại.
 
-### C1. `useToggleSupplement` invalidate `daily_log` mà không recompute
+### ~~C1. `useToggleSupplement` invalidate `daily_log` mà không recompute~~ — HẾT HIỆU LỰC 2026-09-14, XEM **A14**
 
-`use-library.ts:62` ghi `supplement_intake_logs` rồi
-`invalidateQueries(['daily_log'])` mà không gọi `recomputeDailyLog` — tức là nạp
-lại đúng cái dòng cũ chưa được tính lại. Trông y hệt lớp lỗi đã sửa ở
-`useDeleteWorkoutSession`.
+`use-library.ts` ghi `supplement_intake_logs` rồi `invalidateQueries(['daily_log'])`
+mà không gọi `recomputeDailyLog` — tức là nạp lại đúng cái dòng cũ chưa được tính
+lại. Trông y hệt lớp lỗi đã sửa ở `useDeleteWorkoutSession`.
 
-**Không phải lỗi.** `grep -rn "supplement_taken\|supplement_planned" src/` cho ra
-**0 nơi đọc** ngoài chính file ghi ra chúng (`daily-log-service.ts`). Thêm
-recompute vào đây là nhét **11 truy vấn** vào sau mỗi lần tích một checkbox, để
-chữa một cột không màn hình nào hiển thị.
+~~**Không phải lỗi.** `grep -rn "supplement_taken\|supplement_planned" src/` cho
+ra **0 nơi đọc** ngoài chính file ghi ra chúng (`daily-log-service.ts`).~~
 
-Nếu sau này có màn hình đọc hai cột đó thì mục này thành lỗi thật. Kiểm bằng
-đúng lệnh grep trên trước khi kết luận.
+**Kết luận ấy nay SAI.** `src/lib/streak.ts:88` đọc `supplement_taken` trong
+`LOGGED_DAY_FILTER`, từ `a63b566`. Chính mục này đã viết sẵn điều kiện — *"Nếu
+sau này có màn hình đọc hai cột đó thì mục này thành lỗi thật"* — và điều kiện
+ấy đã xảy ra mà không ai chạy lại lệnh grep nó dặn.
+
+Mục đã chuyển lên **A14** (đã chứng minh là lỗi, chưa chứng minh được cách sửa
+an toàn). Phần đo về giá 11 truy vấn vẫn đúng và được chép sang đó.
+
+`tools/ledger-live.mjs` nay chạy lại chính lệnh grep này mỗi lần cổng chạy, để
+không có mục thứ hai chết lặng như thế.
 
 ### C2. `.limit(1)` gọi **trước** `.order(...)` ở `daily-log-service.ts:66`
 

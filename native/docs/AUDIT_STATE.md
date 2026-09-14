@@ -6,11 +6,19 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-09 · lượt đánh bóng sản phẩm (0 thay đổi mã) ·
-commit `efb851d` · nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-14 · rà pháp y theo những gì chủ dự án nhìn thấy trên
+máy thật · commit `cf687a2` · nhánh `claude/ios-fitness-rebuild-omgulr`
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
 > Trạng thái ở `docs/AI-TRIEN-KHAI.md` giữ nguyên, không đụng vào.
+
+> **Trang này đã từng lỗi thời 90 commit, và đó là lỗi đắt nhất một trang như
+> thế mắc phải.** Tới 2026-09-14 nó vẫn ghi vòng gần nhất là `efb851d` (09/09,
+> *"0 thay đổi mã"*) trong khi giữa hai mốc ấy có **90 commit, 127 tệp `src`
+> đổi và 26 luật mới** (27 tệp thêm vào `tools/`, một trong đó là thư viện dùng
+> chung `lib/stack.mjs`). Cả trang tồn tại để trả lời "hôm nay app đứng ở đâu",
+> nên lỗi thời ở đây không phải một chi tiết cũ — nó là toàn bộ câu trả lời sai,
+> đưa cho đúng người đọc nó đầu tiên. Xem mục **RÀ PHÁP Y 09/14** bên dưới.
 
 ---
 
@@ -19,12 +27,70 @@ commit `efb851d` · nhánh `claude/ios-fitness-rebuild-omgulr`
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
-| `node tools/check.mjs` | **XANH** | exit 0, **215** bước, tất cả xanh. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối |
+| `node tools/check.mjs` | **XANH** | exit 0, **244** bước, tất cả xanh — **đo lại vòng này** trên đúng cây đã đẩy (`cf687a2`). Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 215 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 215 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 215 bước ở trên |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 244 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 244 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 244 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## RÀ PHÁP Y 09/14 — và một lượt rà chính TÀI LIỆU
+
+Từ `efb851d` (09/09) tới `cf687a2` (09/14): **90 commit**, 127 tệp `src`, 26
+luật mới. Gần hết bắt nguồn từ một câu của chủ dự án về thứ họ nhìn thấy trên
+iPhone thật — và đó là nguồn phát hiện mạnh nhất repo này có, vì nó ở phía bên
+kia của mọi thứ cổng đo được.
+
+Danh sách đầy đủ nằm trong `git log`; trang này **không** chép lại 90 commit,
+vì một bản tóm tắt không đo lại được thì cũng chỉ là một lời hứa nữa.
+
+### Cái vòng này đo lại, trên đúng cây đã đẩy
+
+| | |
+|---|---|
+| `node tools/check.mjs` | **244/244 xanh**, exit 0 |
+| `npx tsc --noEmit` | exit 0, đầu ra rỗng |
+| Máy thật | ❌ **không**. Ba thứ còn treo: vòng đếm ngược của thanh Hoàn tác ở đáy, thẻ bài tập lúc thu lại có giật không, dấu tích xanh ở tiêu đề bài tập có lệch baseline không |
+
+### Cái vòng này TÌM RA — bảy lời giải thích sai, và không lời nào do mã sai
+
+Lượt rà 09/14 hỏi một câu hẹp: **90 commit ấy làm những trang hướng dẫn nào
+thành sai?** Kết quả là bảy chỗ, và đáng ghi lại vì cả bảy đều *đọc như đúng*:
+
+1. **Chính bảng cổng phía trên** ghi `215` bước khi cổng đã `241` (số lúc phát
+   hiện; ba luật của chính vòng này nâng nó lên `244`). Repo từng
+   mắc đúng lỗi này ở `quality-gate.yml` (211 khi đã 215, sửa 09/09) — tức lần
+   thứ hai, cùng một hình dạng. Nay có `tools/gate-count.mjs`.
+2. **`docs/QA-MAY-THAT.md`** mở đầu bằng cùng con số cũ, trong chính câu định
+   nghĩa lý do trang ấy tồn tại.
+3. **`docs/fitness-scores.md`** liệt kê *"cờ ốm, cờ đau, mức đau nhức"* trong
+   đầu vào của điểm sẵn sàng. Cả ba được gõ cứng thành hằng số ở
+   `daily-log-service.ts` và không bao giờ tới được engine. Nay có
+   `tools/readiness-inputs.mjs`.
+4. **`docs/SO-GHI-LOI.md` mục C1** cấm sửa `useToggleSupplement`, dựa trên
+   *"0 nơi đọc"* hai cột supplement. `streak.ts` đã đọc một trong hai từ
+   `a63b566`. Chính C1 viết sẵn điều kiện hết hiệu lực ấy; không ai quay lại
+   chạy lệnh nó dặn. Đã chuyển sang nhóm A.
+5. **`docs/PRE-LAUNCH-POLISH.md`** kết luận haptics *"không có chỗ nào dùng
+   lẫn"*. Nó đếm LOẠI máy rung, không đo THỜI ĐIỂM; `8262eee` tìm ra 5 chỗ bắn
+   phản hồi-chạm trong `onSuccess`/`onSettled`.
+6. **`GLOBAL-LAUNCH.md` mục 4** — chữ để viết vào **ghi chú duyệt HealthKit** —
+   ghi *"HR/HRV/sleep/**steps** feed the daily readiness score"*. Bước chân
+   không nằm trong `ReadinessInput`, và sheet trong app nói thẳng điều ngược
+   lại. Đây là chỗ đắt nhất trong bảy chỗ: người đọc nó là người duyệt của
+   Apple. Nay `readiness-inputs.mjs` canh cả dòng ấy.
+7. **Prompt của `ai-coach`** dặn mô hình *"If there are pain flags, only advise
+   reducing load and resting"*, và cả hai hàm edge còn gửi `pain_flags` sang nhà
+   cung cấp. Cột ấy chưa bao giờ được ghi bằng gì khác một mảng rỗng gõ cứng,
+   nên đó là một mệnh lệnh không bao giờ có điều kiện để kích hoạt. Đã bỏ khỏi
+   câu chọn, payload và prompt ở cả hai ngôn ngữ — xem PS-3 trong
+   `FORENSIC-AUDIT.md`. **Chưa deploy.**
+
+Sáu trong bảy chỗ **không** phải do 90 commit làm sai — chúng sai từ trước và
+90 commit chỉ làm khoảng cách đủ lớn để nhìn thấy. Đó là lý do lượt rà này
+không dừng ở việc sửa chữ: ba luật mới đo lại đúng những câu đã trôi.
 
 ---
 
