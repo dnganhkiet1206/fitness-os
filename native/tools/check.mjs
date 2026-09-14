@@ -158,6 +158,7 @@ const STEPS = [
   ['calo tiêu hao', 'node', ['tools/energy-model.mjs']],
   ['độ dài một đêm', 'node', ['tools/sleep-length.mjs']],
   ['src sạch', 'node', ['tools/src-clean.mjs']],
+  ['Health làm chủ chỉ số', 'node', ['tools/health-owned.mjs']],
   ['hàng nút góc trên', 'node', ['tools/top-chrome.mjs']],
   ['màu của trang', 'node', ['tools/page-tint.mjs']],
   ['màu chữ', 'node', ['tools/text-color.mjs']],

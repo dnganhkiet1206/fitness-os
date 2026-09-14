@@ -1,7 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -22,6 +23,12 @@ import { Check } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { useLogBiometrics } from '@/hooks/use-biometrics';
+import { useTodayBiometrics } from '@/hooks/useTodayData';
+import {
+  HEALTH_OWNED_BIOMETRICS,
+  healthValues,
+  overriddenFields,
+} from '@/lib/health-owned';
 import { outOfRangeMessage } from '@/lib/plausible';
 import { toast } from '@/lib/toast';
 import { offlineNow } from '@/lib/offline';
@@ -37,6 +44,33 @@ export default function LogBiometricsSheet() {
   const [spo2, setSpo2] = useState('');
   const [vo2, setVo2] = useState('');
   const [resp, setResp] = useState('');
+
+  /*
+    ── ô nào Apple Health đã trả lời ──
+
+    Không thêm truy vấn mới: `useTodayBiometrics` đã `select('*')` nên hàng nó
+    trả về mang sẵn cả `source` lẫn các số. Luật "hàng này có phải Health ghi
+    không" thì sống ở `lib/health-owned.ts`, không viết lại ở đây.
+  */
+  const { data: todayBio } = useTodayBiometrics();
+  const owned = healthValues(todayBio, HEALTH_OWNED_BIOMETRICS);
+  const ownedKeys = Object.keys(owned) as (keyof typeof owned)[];
+
+  /*
+    Điền sẵn ĐÚNG MỘT LẦN, và chỉ vào ô người dùng chưa gõ.
+
+    Điền mỗi lần `todayBio` đổi sẽ giật chữ ra khỏi tay người đang gõ: truy vấn
+    này làm mới khi app quay lại tiền cảnh, và đồng bộ Health chạy mười lăm
+    phút một lần. `prefilled` là cái chốt cho điều đó.
+  */
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current || ownedKeys.length === 0) return;
+    prefilled.current = true;
+    if (owned.hr_bpm != null) setHr(String(owned.hr_bpm));
+    if (owned.spo2_pct != null) setSpo2(String(owned.spo2_pct));
+    if (owned.resp_rate_rpm != null) setResp(String(owned.resp_rate_rpm));
+  }, [owned, ownedKeys.length]);
 
   const num = (v: string) => (v.trim() ? Number(v) : null);
 
@@ -91,7 +125,35 @@ export default function LogBiometricsSheet() {
     resp_rate_rpm: num(resp),
   });
 
+  /*
+    ── hỏi lại khi đang ĐỔI một số của Apple Health ──
+
+    Chỉ hỏi khi thật sự có thay đổi: gõ lại đúng con số Health đưa không phải
+    một lần ghi đè, và hỏi khi không có gì đổi là cách nhanh nhất dạy người ta
+    bấm "Đồng ý" mà không đọc. Phép đếm ấy nằm ở `overriddenFields`.
+  */
   const save = () => {
+    const v = values();
+    const changed = overriddenFields(owned, {
+      hr_bpm: v.hr_bpm,
+      spo2_pct: v.spo2_pct,
+      resp_rate_rpm: v.resp_rate_rpm,
+    });
+    if (changed.length > 0) {
+      Alert.alert(
+        i18n.healthOverrideTitle,
+        i18n.healthOverrideMsg.replace('{n}', String(changed.length)),
+        [
+          { text: i18n.cancel, style: 'cancel' },
+          { text: i18n.healthOverrideConfirm, onPress: commit },
+        ],
+      );
+      return;
+    }
+    commit();
+  };
+
+  const commit = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     /*
       ── offline closes now; online waits for an answer ──
@@ -147,6 +209,16 @@ export default function LogBiometricsSheet() {
           Apple Health ghi, và được chấm y hệt.
         */}
         <Text style={styles.baselineNote}>{i18n.logBioBaselineNote}</Text>
+
+        {/*
+          Chỉ hiện khi Apple Health THẬT SỰ đã đưa số cho hôm nay. Một câu nói
+          về Health trên màn của người chưa nối Health là một câu nói về thứ
+          không tồn tại — và nó dựng lên đúng cái hiểu nhầm mà chú thích ngay
+          trên vừa dập: rằng mấy số này đòi phải có Apple Watch.
+        */}
+        {ownedKeys.length > 0 ? (
+          <Text style={styles.baselineNote}>{i18n.healthOwnedNote}</Text>
+        ) : null}
 
         <Field label={i18n.logBioHR} placeholder="60" unit="bpm" value={hr} onChange={setHr} error={errors.hr} />
         <Field label={i18n.logBioHRV} placeholder="62" unit="ms" value={hrv} onChange={setHrv} error={errors.hrv} />

@@ -473,6 +473,14 @@ interface Translations {
   logBioVO2: string;
   logBioResp: string;
   logBioSaved: string;
+  /** Ghi chú dưới các ô mà Apple Health đã điền sẵn. */
+  healthOwnedNote: string;
+  /** Tiêu đề hộp thoại khi người dùng sửa một số của Apple Health. */
+  healthOverrideTitle: string;
+  /** Thân hộp thoại ấy. `{n}` là số chỉ số đang bị đổi. */
+  healthOverrideMsg: string;
+  /** Nút xác nhận trong hộp thoại ấy. */
+  healthOverrideConfirm: string;
   /** Shown under a field whose value is outside anything a body produces. Carries {min}, {max}, {unit}. */
   outOfRange: string;
   /** Refusing to work out a plan for a body nobody has described yet. */
@@ -1263,6 +1271,11 @@ const vi: Translations = {
   logBioVO2: 'VO₂max (ml/kg/min) — ước tính',
   logBioResp: 'Nhịp thở (rpm)',
   logBioSaved: 'Đã lưu chỉ số sinh trắc!',
+  healthOwnedNote: 'Apple Health đã đo các số này. Bạn sửa được, nhưng không thêm số mới.',
+  healthOverrideTitle: 'Thay số của Apple Health?',
+  healthOverrideMsg:
+    'Bạn đang đổi {n} chỉ số Apple Health đã đo. Lưu xong app dùng số của bạn, và Apple Health sẽ không ghi đè lên nữa.',
+  healthOverrideConfirm: 'Dùng số của tôi',
   outOfRange: 'Cần nằm trong khoảng {min}–{max} {unit}',
   statsRequired: 'Cần chiều cao, cân nặng và ngày sinh hợp lệ trước khi tính',
   sleepStagesOverrun: 'Các giai đoạn cộng lại {sum} phút, dài hơn cả đêm ({total} phút)',
@@ -2016,6 +2029,11 @@ const en: Translations = {
   logBioVO2: 'VO₂max (ml/kg/min) — estimate',
   logBioResp: 'Respiratory rate (rpm)',
   logBioSaved: 'Biometrics saved!',
+  healthOwnedNote: 'Apple Health measured these. You can edit them, but not add new ones.',
+  healthOverrideTitle: 'Replace the Apple Health reading?',
+  healthOverrideMsg:
+    'You are changing {n} reading(s) Apple Health measured. Save and the app uses yours, and Apple Health will not overwrite it again.',
+  healthOverrideConfirm: 'Use mine',
   outOfRange: 'Must be between {min} and {max} {unit}',
   statsRequired: 'A valid height, weight and date of birth are needed first',
   sleepStagesOverrun: 'Stages add up to {sum} min, longer than the night itself ({total} min)',

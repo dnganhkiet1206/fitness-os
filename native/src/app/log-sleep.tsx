@@ -3,10 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Angry, Check, Frown, Laugh, Meh, Smile, type LucideIcon } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import * as Crypto from 'expo-crypto';
 import {
   ActivityIndicator,
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -25,7 +26,7 @@ import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useInvalidateToday } from '@/hooks/useTodayData';
+import { useInvalidateToday, useTodaySleep } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
@@ -36,6 +37,7 @@ import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { sleepRowToReplace } from '@/lib/same-day-entry';
 import { confirmWrite } from '@/lib/write-result';
 import { sleepSpan } from '@/lib/sleep-window';
+import { fromHealth, healthValues, overriddenFields } from '@/lib/health-owned';
 import { decText } from '@/lib/number-input';
 import { SLEEP_QUALITY_MAX } from '@/lib/sleep-note';
 
@@ -73,12 +75,75 @@ export default function LogSleepSheet() {
   const [lightMin, setLightMin] = useState('');
 
   /*
+    ── đêm qua Apple Health đã ghi chưa ──
+
+    `useTodaySleep` đã `select('*')` nên hàng nó trả về mang sẵn `source`. Nếu
+    đêm ấy do Health ghi thì màn này chuyển sang SỬA nó: điền sẵn giờ và ba
+    giai đoạn, rồi hỏi lại trước khi lưu.
+
+    Không chặn cứng nút lưu. `use-health-sync` đã có luật "một đêm ai đó ghi
+    tay thì để yên", nên một bản sửa của người dùng sẽ thắng vĩnh viễn ở những
+    lần đồng bộ sau — và hộp thoại là chỗ nói ra đúng điều đó.
+  */
+  const { data: todaySleep } = useTodaySleep();
+  const healthNight = fromHealth(todaySleep) ? todaySleep : null;
+  const healthStages = healthValues(healthNight, ['deep_min', 'rem_min', 'light_min'] as const);
+
+  /* Điền sẵn ĐÚNG MỘT LẦN — truy vấn này làm mới mỗi lần app về tiền cảnh, và
+     điền lại lúc ấy là giật chữ ra khỏi tay người đang gõ. */
+  const prefilled = useRef(false);
+  useEffect(() => {
+    if (prefilled.current || !healthNight) return;
+    prefilled.current = true;
+    setBedtime(new Date(String(healthNight.bedtime)));
+    setWaketime(new Date(String(healthNight.waketime)));
+    if (healthStages.deep_min != null) setDeepMin(String(healthStages.deep_min));
+    if (healthStages.rem_min != null) setRemMin(String(healthStages.rem_min));
+    if (healthStages.light_min != null) setLightMin(String(healthStages.light_min));
+  }, [healthNight, healthStages]);
+
+  /*
     Which day each time belongs to is `lib/sleep-window.ts`'s question — it is
     a rule whose failures are all at the edges (a nap once became a 26-hour
     night here), so it lives where `tools/sleep-window.mjs` can run it against a
     table of cases rather than inside this screen where nothing could.
   */
   const { bedDate, wakeDate, minutes: durationMin } = sleepSpan(bedtime, waketime);
+
+  /*
+    ── hỏi lại khi đang ĐỔI đêm Apple Health đã ghi ──
+
+    Đếm đúng những thứ khác đi: hai mốc giờ và ba giai đoạn. Mở màn rồi bấm lưu
+    ngay mà không sửa gì thì không hỏi — hỏi khi không có gì đổi là cách nhanh
+    nhất dạy người ta bấm "Đồng ý" mà không đọc.
+  */
+  const healthChanges = () => {
+    if (!healthNight) return 0;
+    let n = overriddenFields(healthStages, {
+      deep_min: deepMin.trim() === '' ? null : Number(deepMin),
+      rem_min: remMin.trim() === '' ? null : Number(remMin),
+      light_min: lightMin.trim() === '' ? null : Number(lightMin),
+    }).length;
+    if (+new Date(String(healthNight.bedtime)) !== +bedDate) n += 1;
+    if (+new Date(String(healthNight.waketime)) !== +wakeDate) n += 1;
+    return n;
+  };
+
+  const runSave = () => {
+    const n = healthChanges();
+    if (n > 0) {
+      Alert.alert(
+        i18n.healthOverrideTitle,
+        i18n.healthOverrideMsg.replace('{n}', String(n)),
+        [
+          { text: i18n.cancel, style: 'cancel' },
+          { text: i18n.healthOverrideConfirm, onPress: () => save.mutate() },
+        ],
+      );
+      return;
+    }
+    save.mutate();
+  };
 
   /*
     And the span still has to be a possible night. The pickers make the
@@ -203,6 +268,11 @@ export default function LogSleepSheet() {
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <SheetHeader title={i18n.nLogSleepTitle} onClose={nav.back} />
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      {/*
+        Chỉ hiện khi Apple Health THẬT SỰ đã ghi đêm ấy. Một câu nói về Health
+        trên màn của người chưa nối Health là một câu nói về thứ không tồn tại.
+      */}
+      {healthNight ? <Text style={styles.healthNote}>{i18n.healthOwnedNote}</Text> : null}
 
       {/* Bed/wake times — compact pickers in settings-style rows (the old
           half-width spinners clipped horizontally) */}
@@ -345,7 +415,7 @@ export default function LogSleepSheet() {
             });
             return;
           }
-          save.mutate();
+          runSave();
         }}>
         {save.isSuccess ? (
           <Icon icon={Check} size={22} color={c.primaryForeground} strokeWidth={3} />
@@ -425,5 +495,6 @@ const stylesFor = makeStyles((c) => ({
   },
   saveDisabled: { opacity: 0.4 },
   stageError: { ...type.footnote, color: c.readinessRed },
+  healthNote: { ...type.footnote, color: c.mutedForeground },
   saveText: { ...type.headline, color: c.primaryForeground },
 }));
