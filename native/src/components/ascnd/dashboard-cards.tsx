@@ -1311,8 +1311,30 @@ function WaterGlass({ pct }: { pct: number }) {
   */
   const animatedProps = useAnimatedProps(() => clampFill(depth.value));
 
+  /*
+    ── màu chọn bằng PHÉP ĐO, và bản đầu trượt sàn ──
+
+    Đo trên ảnh dựng bản sáng: viền cốc `alpha(tint, 0.5)` chỉ **2,11:1** so với
+    mặt thẻ, bản tối 2,64:1 — dưới sàn 3:1 mà WCAG 1.4.11 đặt cho đồ hoạ mang
+    nghĩa. Và lòng cốc rỗng, ở MỌI mức alpha thử qua (0,07 → 0,22), chỉ nằm
+    trong khoảng 1,1–1,4:1.
+
+    Tức cái lòng cốc không bao giờ gánh nổi việc làm cái cốc hiện hình, nên
+    VIỀN phải gánh. Ở mức 0% — ngày chưa uống ngụm nào — bản cũ cho một cái cốc
+    gần như vô hình, đúng lỗi mà `tools/activity.mjs` đã ghi cho vòng hoạt động
+    ở mức 0: "một vòng ở mức 0 sẽ không thấy gì".
+
+    Viền nay là token ĐẶC: 5,00:1 trên giấy, 6,96:1 trong phòng tối. Cùng ngôn
+    ngữ nét với mọi icon khác trong app — lucide vẽ nét đặc, không vẽ nét mờ.
+
+    Nước bỏ `metricCyan`: trên giấy token ấy là #077b8b, một sắc TEAL sẫm, nên
+    mặt nước phía trên đọc ra xanh lục chứ không phải xanh nước. Chiều sâu nay
+    làm bằng cùng MỘT token ở hai độ mờ — nhạt ở mặt, đặc ở đáy, đúng cách nước
+    thật sẫm dần theo độ sâu — và cả hai đầu đều trên sàn: 3,6:1 và 5,00:1 trên
+    giấy.
+  */
   const tint = graphicOf(c, 'metricBlue');
-  const crest = graphicOf(c, 'metricCyan');
+  const crest = alpha(tint, 0.82);
 
   return (
     <View style={styles.glassWrap}>
@@ -1327,8 +1349,9 @@ function WaterGlass({ pct }: { pct: number }) {
           </ClipPath>
         </Defs>
         {/* Lòng cốc khi chưa có nước: một sắc xanh rất nhạt, đủ để cái cốc là
-            một vật chứ không phải một đường viền rỗng. */}
-        <Path d={GLASS_PATH} fill={alpha(tint, 0.07)} />
+            một vật chứ không phải một đường viền rỗng. Nó KHÔNG gánh việc hiện
+            hình — đo được 1,15:1 — viền mới là thứ gánh. */}
+        <Path d={GLASS_PATH} fill={alpha(tint, 0.1)} />
         <AnimatedRect
           x={0}
           width={GLASS_W}
@@ -1338,7 +1361,7 @@ function WaterGlass({ pct }: { pct: number }) {
         />
         {/* Viền vẽ SAU mặt nước, nên nước nằm gọn trong thành cốc thay vì đè
             lên nó. */}
-        <Path d={GLASS_PATH} fill="none" stroke={alpha(tint, 0.5)} strokeWidth={1.75} />
+        <Path d={GLASS_PATH} fill="none" stroke={tint} strokeWidth={1.5} />
       </Svg>
     </View>
   );

@@ -39,13 +39,13 @@ const stripComments = (s) =>
 try {
   execFileSync(
     'npx',
-    ['tsc', 'src/lib/water-glass.ts', '--ignoreConfig', '--outDir', out,
+    ['tsc', 'src/lib/water-glass.ts', 'src/constants/palette.ts', '--ignoreConfig', '--outDir', out,
       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
   const { waterFill, clampFill, WATER_CEIL, WATER_FLOOR, WATER_SPAN, GLASS_PATH } = createRequire(
     import.meta.url,
-  )(path.join(out, 'water-glass.js'));
+  )(path.join(out, 'lib', 'water-glass.js'));
 
   const problems = [];
   let cases = 0;
@@ -238,6 +238,82 @@ try {
     problems.push("clampFill thiếu chỉ thị 'worklet' — nó được gọi trên luồng UI, và thiếu chỉ thị thì nó ném trên máy thật trong khi web không nói gì");
   }
 
+  /*
+    ── cái cốc phải NHÌN THẤY ĐƯỢC khi rỗng ──
+
+    Đây là bài học đã ghi sẵn ở `tools/activity.mjs` cho vòng hoạt động: rãnh
+    vòng đo 1,01:1 so với thẻ, nên một vòng ở mức 0 "sẽ không thấy gì", và lỗi
+    được báo là "nhìn hơi placeholder" chứ không ai gọi tên được nó.
+
+    Cái cốc có đúng rủi ro ấy, mạnh hơn: lòng cốc rỗng ở MỌI mức alpha chỉ cho
+    1,1–1,4:1, nên nó không bao giờ gánh nổi việc hiện hình. VIỀN gánh, và viền
+    phải qua sàn 3:1 của WCAG 1.4.11 cho đồ hoạ mang nghĩa — trên CẢ HAI diện
+    mạo, vì bản đầu qua được bản tối mà trượt bản sáng thì vẫn là trượt.
+
+    Giá trị đọc THẲNG từ mã đang ship, không gõ tay: một con số chép lại là một
+    con số sẽ lệch ở lần sửa kế tiếp.
+  */
+  const pal = createRequire(import.meta.url)(path.join(out, 'constants', 'palette.js'));
+  const chan = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+  const lin = (v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+  const lum = (h) => {
+    const [r, g, b] = chan(h).map(lin);
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contrast = (a, b) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  const over = (fg, a, bg) => {
+    const f = chan(fg);
+    const b = chan(bg);
+    return '#' + f.map((v, i) => Math.round((v * a + b[i] * (1 - a)) * 255).toString(16).padStart(2, '0')).join('');
+  };
+  /* Mặt thẻ: giấy là trắng (đo trên ảnh dựng); tối là glass 6% trắng trên nền. */
+  const SURFACE = { 'giấy': '#ffffff', 'tối': over('#ffffff', 0.06, '#070708') };
+  const TOKEN = { 'giấy': pal.lightPalette, 'tối': pal.colors ?? pal.darkPalette };
+
+  /* Viền phải là token ĐẶC, không phải một lớp mờ. */
+  /* Cắt đúng thân `WaterGlass` trước khi dò: bản đầu quét cả tệp và bắt trúng
+     `stroke={c[TRACK]}` của `MiniRing` ở phía trên — một bộ dò tìm thấy thứ
+     đầu tiên hợp dạng là một bộ dò trả lời câu hỏi khác. */
+  const glassBody = card.slice(card.indexOf('function WaterGlass'), card.indexOf('function CompactWidget'));
+  const strokeLine = glassBody.match(/stroke=\{([^}]+)\}\s+strokeWidth/);
+  if (!strokeLine || !/^tint$/.test(strokeLine[1].trim())) {
+    problems.push(
+      `viền cốc không còn là token đặc (đọc được "${strokeLine?.[1]?.trim() ?? 'không thấy'}") — bản mờ 0,5 đo được 2,11:1 trên giấy, dưới sàn 3:1`,
+    );
+  }
+  /* Độ mờ của mặt nước đọc ra từ mã, rồi đo. */
+  const crestA = Number(glassBody.match(/const crest = alpha\(tint, ([\d.]+)\)/)?.[1]);
+  if (!Number.isFinite(crestA)) {
+    problems.push('không đọc được độ mờ mặt nước từ mã');
+  }
+  for (const [name, surf] of Object.entries(SURFACE)) {
+    cases++;
+    const tint = TOKEN[name].metricBlue;
+    const cStroke = contrast(tint, surf);
+    if (cStroke < 3) {
+      problems.push(`viền cốc ${tint} chỉ ${cStroke.toFixed(2)}:1 so với mặt thẻ bản ${name} — dưới sàn 3:1, và ở mức 0% cái cốc là thứ DUY NHẤT còn nhìn thấy`);
+    }
+    if (Number.isFinite(crestA)) {
+      cases++;
+      const crest = over(tint, crestA, surf);
+      const cCrest = contrast(crest, surf);
+      if (cCrest < 3) {
+        problems.push(`mặt nước ${crest} chỉ ${cCrest.toFixed(2)}:1 so với mặt thẻ bản ${name} — dưới sàn 3:1`);
+      }
+    }
+  }
+  /*
+    Và nước phải là XANH NƯỚC. `metricCyan` trên giấy là #077b8b — một sắc teal
+    sẫm — nên bản đầu cho một mặt nước xanh lục. Đo bằng sắc độ, không bằng tên.
+  */
+  cases++;
+  if (/metricCyan/.test(glassBody)) {
+    problems.push("cốc lại dùng metricCyan — trên giấy nó là #077b8b, teal sẫm, nên mặt nước đọc ra xanh lục chứ không phải xanh nước");
+  }
+
   if (problems.length) {
     console.error('cốc nước sai:\n');
     for (const p of problems) console.error(`  ${p}`);
@@ -245,7 +321,7 @@ try {
   }
 
   console.log(
-    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra`,
+    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Và viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy`,
   );
 } finally {
   rmSync(out, { recursive: true, force: true });
