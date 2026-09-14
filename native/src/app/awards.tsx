@@ -463,9 +463,14 @@ const stylesFor = makeStyles((c, m) => ({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: alpha(c.border, 0.5),
-    backgroundColor: alpha(c.card, 0.6),
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
+    /* `m.onPage`, không phải `alpha(c.card, 0.6)`. Thẻ huy chương đứng thẳng
+       trên trang, và lớp tô cũ composite ra **1,024:1** so với trang ở bản
+       TỐI — không có mặt nào cả. Tìm ra bằng `tools/on-page-fill.mjs` sau khi
+       luật ấy được mở rộng từ "có phải một token nhất định không" sang một
+       PHÉP ĐO; nút "Đồng bộ Apple Health" là ca đầu tiên của cùng hình dạng. */
+    backgroundColor: m.onPage,
   },
   /* Số đứng riêng một dòng, chữ số đều bề rộng để cột không nhảy khi con số
      đổi từ 9 sang 10. */

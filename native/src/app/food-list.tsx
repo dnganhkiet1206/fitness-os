@@ -244,9 +244,13 @@ const stylesFor = makeStyles((c, m) => ({
     gap: spacing.sm,
     height: 44,
     borderRadius: radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: alpha(c.secondary, 0.3),
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
+    /* Ô TÌM KIẾM mà không có mặt: `alpha(c.secondary, 0.3)` composite ra
+       **1,026:1** so với trang ở bản sáng. Một ô nhập không có hình thì người
+       ta không biết chạm vào đâu — và nó ở đây suốt, không ai báo, vì "không
+       có mặt" trông y hệt "mặt rất kín đáo". `m.onPage` cho 1,097 / 1,113. */
+    backgroundColor: m.onPage,
     paddingHorizontal: spacing.md - 4,
   },
   searchInput: { flex: 1, color: c.foreground, fontSize: 15, height: '100%' },

@@ -72,6 +72,22 @@
  * khối lồng trong một thẻ, rồi hai chỗ trong `nutrition.tsx` vẫn gọi `group`
  * bên trong một `GlassCard` — quyết định trôi mất ngay trong tệp đã ghi nó.
  *
+ * ── và luật đã phải RỘNG hơn một cái tên ──
+ *
+ * Bản đầu chỉ hỏi "có phải `m.inset.bg` không". Nút "Đồng bộ Apple Health" ở
+ * màn Hôm nay chìm hẳn vào nền mà vẫn đi qua, vì nó tô bằng một biểu thức
+ * KHÁC: `alpha(c.secondary, 0.2)` — composite ra 1,018:1 so với trang, ở cả
+ * hai diện mạo. Cùng triệu chứng, khác token, và chủ dự án lại là người tìm ra.
+ *
+ * Nên thứ được canh không còn là một cái tên mà là một PHÉP ĐO: composite biểu
+ * thức lên trang rồi hỏi nó có tách ra khỏi trang không, sàn 1,05. Mở rộng ấy
+ * lập tức tìm thêm hai chỗ chưa ai báo — một thẻ huy chương (1,024 ở bản tối)
+ * và một Ô TÌM KIẾM (1,026 ở bản sáng), tức một ô nhập không có hình.
+ *
+ * Chỉ hình dạng `alpha(x, n)` được đánh giá, vì nó đọc được bằng một tra bảng
+ * và một phép trộn. Biểu thức có nhánh thì luật KHÔNG đoán — đoán giá trị màu
+ * sẽ sai ở đúng chỗ khó kiểm nhất.
+ *
  * ── luật KHÔNG biết gì, và nó nói ra ──
  *
  * Một component không có `<Screen>` và cũng không tự khai nền ở gốc thì luật
@@ -160,8 +176,21 @@ function readTable(f, obj) {
     for (const q of p.initializer.properties) {
       if (!ts.isPropertyAssignment(q)) continue;
       if (q.name.getText(f.sf).replace(/['"]/g, '') !== 'backgroundColor') continue;
-      hasBg = true;
       bg = txt(f, q.initializer);
+      /*
+        `'transparent'` KHÔNG phải một mặt.
+
+        `hasBg` quyết định element ấy có che mất thứ phía sau hay không — tức
+        con cháu nó có còn đứng trên TRANG nữa không. Một nền trong suốt không
+        che gì cả.
+
+        Bản đầu chỉ hỏi "có thuộc tính `backgroundColor` không" và trả giá ngay:
+        `Animated.ScrollView` của màn Hôm nay khai `backgroundColor:
+        'transparent'` — CỐ Ý, để `AmbientLight` phía sau không bị tô đè — nên
+        luật coi nó là một mặt và MỌI THỨ trên màn ấy tụt xuống độ sâu 1. Cả
+        màn hình biến mất khỏi tầm luật, và đó đúng là màn chứa lỗi được báo.
+      */
+      hasBg = !/^['"]transparent['"]$/.test(bg);
     }
     out.set(name, { hasBg, bg, line: line(f, p) });
   }
@@ -232,6 +261,8 @@ const pairs = new Set();    // cặp `X`/`XOnCard` dùng sai phía
    "không biết", và con số vùng mù in ra sẽ vô nghĩa — bản đầu của luật này
    đúng như vậy, và nó khai báo 20 chỗ mù trong khi 18 chỗ đã được xét. */
 const reached = new Set();
+const opaque = new Set();   // biểu thức màu luật không đánh giá được
+const stepOK = new Set();   // lớp tô alpha trên trang, đo xong và đủ bậc
 const onPageOK = [];
 
 function tagName(el) {
@@ -247,15 +278,20 @@ function stylesOn(f, el, aliases) {
   );
   if (!attr?.initializer || !ts.isJsxExpression(attr.initializer)) return [];
   const hits = [];
-  const walk = (n) => {
+  /* `cond` = style này đứng sau một điều kiện (`a && styles.x`, `c ? x : y`).
+     Nó quyết định style nào là nền CÓ HIỆU LỰC — xem `effectiveBg`. */
+  const walk = (n, cond) => {
     if (ts.isPropertyAccessExpression(n) && ts.isIdentifier(n.expression)) {
       const table = aliases.get(n.expression.text);
       const entry = table?.get(n.name.text);
-      if (entry) hits.push({ alias: n.expression.text, prop: n.name.text, entry, table });
+      if (entry) hits.push({ alias: n.expression.text, prop: n.name.text, entry, table, cond });
     }
-    ts.forEachChild(n, walk);
+    const gate = cond
+      || (ts.isBinaryExpression(n) && n.operatorToken.kind === ts.SyntaxKind.AmpersandAmpersandToken)
+      || ts.isConditionalExpression(n);
+    ts.forEachChild(n, (ch) => walk(ch, gate));
   };
-  walk(attr.initializer);
+  walk(attr.initializer, false);
   return hits;
 }
 
@@ -326,13 +362,79 @@ function judgePair(f, hit, depth, at) {
   );
 }
 
-function judge(f, hit, depth, at) {
+/**
+ * Lớp tô `alpha(token, α)` trên trang phải TẠO RA một bậc.
+ *
+ * ── vì sao luật này phải rộng hơn một cái tên ──
+ *
+ * Vế trên chỉ hỏi "có phải `m.inset.bg` không". Nút "Đồng bộ Apple Health" ở
+ * màn Hôm nay chìm hẳn vào nền mà vẫn đi qua, vì nó tô bằng một biểu thức
+ * KHÁC: `alpha(c.secondary, 0.2)`, viền `alpha(c.border, 0.3)`. Đo trên trang:
+ * nền **1,018:1**, viền **1,084:1**, ở cả hai diện mạo. Cùng triệu chứng, khác
+ * token — và chủ dự án lại là người tìm ra.
+ *
+ * Nên cái được canh không còn là một cái tên mà là một PHÉP ĐO: composite biểu
+ * thức ấy lên trang rồi hỏi nó có tách ra khỏi trang không.
+ *
+ * ── vì sao chỉ hình dạng `alpha(x, n)` ──
+ *
+ * Nó đánh giá được mà không cần một trình thông dịch: một tra bảng màu và một
+ * phép trộn. Biểu thức có nhánh (`m.lit ? a : b`) hay gọi hàm khác thì luật
+ * KHÔNG đoán — chúng được đếm vào phần "không đánh giá được" của dòng xanh, vì
+ * một luật đoán giá trị màu sẽ sai ở đúng chỗ khó kiểm nhất.
+ *
+ * ── sàn 1,05 ──
+ *
+ * Không phải một con số tròn chọn bừa. `m.onPage` — vai dựng ra cho đúng việc
+ * này — cho 1,097 trên giấy và 1,113 trong tối, và bậc mà danh sách gom nhóm
+ * của iOS tạo ra là 1,134. 1,05 nằm dưới cả ba với chỗ dư, nên nó bắt cái
+ * KHÔNG CÓ BẬC (1,018) chứ không ép mọi mặt phải bằng `onPage`.
+ */
+const ALPHA_FLOOR = 1.05;
+const tokenOf = (t, name) => {
+  const [ns, key] = name.split('.');
+  if (ns === 'c') return palettes[t][key];
+  if (ns === 'm') return key === 'ink' ? materials[t].ink : materials[t][key];
+  return null;
+};
+
+function judgeAlphaFill(f, hit, depth, at) {
+  if (depth > 0) return 'trong-mặt';
+  const m = /^alpha\((c|m)\.(\w+),([\d.]+)\)$/.exec(hit.entry.bg ?? '');
+  if (!m) return 'không-đánh-giá-được';
+  const raw = tokenOf('light', `${m[1]}.${m[2]}`);
+  if (!raw) return 'không-đánh-giá-được';
+  const a = Number(m[3]);
+  for (const t of ['light', 'dark']) {
+    const page = hex(palettes[t].background);
+    const tok = tokenOf(t, `${m[1]}.${m[2]}`);
+    const step = ratio(comp(String(tok), page) && overC(hex(String(tok)), page, a), page);
+    if (step >= ALPHA_FLOOR) continue;
+    problems.push(
+      `${f.rel}:${at} style \`${hit.alias}.${hit.prop}\` tô nền bằng \`${hit.entry.bg}\` trên TRANG — ` +
+        `composite ra ${step.toFixed(3)}:1 so với trang ở bản ${t}. Đó không phải một mặt kín đáo, đó là ` +
+        'KHÔNG CÓ MẶT: một hàng chữ trôi trên nền. Đúng hình dạng của nút "Đồng bộ Apple Health", thứ ' +
+        `chủ dự án khoanh đỏ. Dùng \`${GOOD}\` (1,097 giấy / 1,113 tối), hoặc mượn vật liệu mà hàng chip ` +
+        'cạnh nó đã dùng — `LiquidGlass` blur với mép `alpha(m.ink, 0.22)`, đo ra 1,589 / 1,883',
+    );
+    return 'đỏ';
+  }
+  return 'đủ-bậc';
+}
+
+function judge(f, hit, depth, at, drawsBg) {
   judgePair(f, hit, depth, at);
   const key = `${f.rel}:${hit.alias}.${hit.prop}`;
   reached.add(`${hit.table.file}:${hit.prop}`);
   if (seen.has(key)) return;
   if (hit.entry.bg !== BAD) {
     if (hit.entry.bg === GOOD) onPageOK.push(key);
+    else if (hit.entry.hasBg && drawsBg && !seen.has(key)) {
+      const verdict = judgeAlphaFill(f, hit, depth, at);
+      if (verdict === 'đỏ') seen.add(key);
+      else if (verdict === 'không-đánh-giá-được') opaque.add(key);
+      else if (verdict === 'đủ-bậc') stepOK.add(key);
+    }
     return;
   }
   if (depth > 0) return;     // có một mặt ở sau — `inset` đúng việc của nó
@@ -353,7 +455,19 @@ function walkJsx(f, node, depth, aliases, comps, stack) {
   if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node)) {
     const tag = tagName(node);
     const hits = stylesOn(f, node, aliases);
-    for (const h of hits) judge(f, h, depth, line(f, node));
+    /*
+      React Native GHÉP mảng style và cái sau thắng, nên chỉ MỘT trong các
+      style ấy thật sự vẽ ra nền. Bản đầu xét từng cái rời và báo động giả
+      ngay: `[styles.squareBtn, styles.squareBtnActive]` — nền của cái đầu
+      không bao giờ hiện vì cái sau luôn đè lên, mà luật vẫn đo cái đầu.
+
+      "Không điều kiện cuối cùng" là cái đúng để đo: một style đứng sau `&&`
+      hay `?:` có thể vắng mặt, nên nó không thay được nền cơ sở — còn nền cơ
+      sở thì luôn vẽ.
+    */
+    const at = line(f, node);
+    const effective = [...hits].reverse().find((h) => h.entry.hasBg && !h.cond);
+    for (const h of hits) judge(f, h, depth, at, h === effective || !effective);
     const isSurface = SURFACE_TAGS.includes(tag) || hits.some((h) => h.entry.hasBg);
     const next = depth + (isSurface ? 1 : 0);
 
@@ -444,13 +558,29 @@ function defaultExportRoot(f, comps) {
   visit(f.sf);
   const body = comps.get(name);
   if (!body) return null;
+
+  /*
+    Thứ được TRẢ VỀ, không phải JSX đầu tiên gặp trong thân hàm.
+
+    Bản đầu quét cả thân và lấy element đầu tiên. Phép thử ngược lộ ra ngay:
+    `TodayScreen` dài hơn nghìn dòng và dựng nhiều mảnh JSX vào biến trước khi
+    `return`, nên cái "gốc" luật nhặt được là một mảnh giữa bài — không khai
+    nền, nên luật kết luận "không biết màn này đứng trên gì" và bỏ qua cả màn.
+    Mà đó đúng là màn chứa lỗi được báo.
+
+    `return` ở cấp cao nhất của thân hàm là chỗ duy nhất trả lời đúng câu hỏi
+    "cái gì nằm dưới cùng mọi thứ trên màn này".
+  */
+  const stmts = ts.isBlock(body) ? body.statements : null;
+  const ret = stmts?.find((st) => ts.isReturnStatement(st));
+  const from = ret?.expression ?? body;
   let root = null;
   const find = (n) => {
     if (root) return;
     if (ts.isJsxElement(n) || ts.isJsxSelfClosingElement(n)) { root = n; return; }
     ts.forEachChild(n, find);
   };
-  find(body);
+  find(from);
   return root;
 }
 

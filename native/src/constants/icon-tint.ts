@@ -18,6 +18,7 @@ import {
   Moon,
   ScanBarcode,
   Sparkles,
+  TrendingUp,
   Star,
   Sunrise,
   Trophy,
@@ -131,6 +132,31 @@ const WATER = 'metricCyan' satisfies PaletteKey;
 const NIGHT = 'metricPurple' satisfies PaletteKey;
 /** anything won */
 const REWARD = 'readinessYellow' satisfies PaletteKey;
+/**
+ * Phân tích — thứ app ĐỌC RA từ dữ liệu, không phải một miền của cơ thể.
+ *
+ * ── vì sao nó phải là một miền riêng ──
+ *
+ * Mục "Phân tích" ở màn Hôm nay đeo huy hiệu `Sparkles`, và ngay dưới nó thẻ
+ * "Gợi ý thông minh" cũng đeo `Sparkles` — cùng glyph, cùng màu tím, cách nhau
+ * sáu mươi điểm. Chủ dự án khoanh cả hai và gọi ra chỗ trùng.
+ *
+ * Cái phải đổi là huy hiệu MỤC, không phải thẻ: `Sparkles` ánh xạ sang `NIGHT`
+ * — "đêm, và trợ lý" — nên nó THUỘC VỀ thẻ AI. Tab bar cũng dùng đúng nó cho
+ * AI Coach, và `ai-meal-suggest` dùng nó ba lần. Mục thì chỉ đang mượn.
+ *
+ * `TrendingUp` là glyph của mục ấy: widget đầu tiên trong nó là biểu đồ xu
+ * hướng sẵn sàng. Nhưng không miền nào có sẵn nhận được nó — nó không phải
+ * thức ăn, năng lượng, thép, cơ thể, nước, đêm hay phần thưởng. Nên miền thứ
+ * bảy, chứ không phải nhét bừa vào một miền cũ: chú thích của `TRAINING` ngay
+ * trên đã ghi bài học "đổi ở HẰNG SỐ chứ không ở riêng một icon".
+ *
+ * `metricBlue` là khoá tự do duy nhất còn lại trong bảng, và chú thích của
+ * chính nó đã ghi "MỘT màu làm cả hai việc: vẽ đồ hoạ, và viết chữ" — nên nó
+ * hợp lệ cho một icon. Đo trên nền huy hiệu (chính nó ở 12%): **4,23:1** trên
+ * giấy và **5,85:1** trong tối, trên sàn 3,0 của vật thể đồ hoạ.
+ */
+const INSIGHT = 'metricBlue' satisfies PaletteKey;
 
 const TINTS: [LucideIcon, PaletteKey][] = [
   // food
@@ -164,6 +190,9 @@ const TINTS: [LucideIcon, PaletteKey][] = [
   [Sunrise, NIGHT],
   [Sparkles, NIGHT],
   [Bot, NIGHT],
+
+  // phân tích
+  [TrendingUp, INSIGHT],
 
   // won
   [Coins, REWARD],

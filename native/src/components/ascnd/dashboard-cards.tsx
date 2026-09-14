@@ -748,36 +748,45 @@ export function NutritionCard({
     ba macro kia không đổi một điểm ảnh nào.
   */
   /*
-    Mỗi ô mang MÀU CỦA CHẤT NÓ ĐO — và chỉ trên giấy.
+    Bốn ô MỘT màu. Màu ở lại trong glyph và trong thanh.
 
-    Chú thích ở `macroTile` ghi lại một phép đo kết luận "cái NỀN không bao giờ
-    vẽ được ô này, chỉ cái VIỀN vẽ được". Phép đo ấy đúng, và nó đo trên mặt thẻ
-    `#0e0e11`: bản TỐI. Ở đó thẻ và mọi nền ứng viên đều gần như đen, nên chênh
-    lệch không có chỗ tồn tại — nâng alpha từ 0.2 lên 0.9 chỉ đi từ 1.015 tới
-    1.077.
+    ── lỗi, và ai gọi ra ──
 
-    Trên giấy thì ràng buộc ấy KHÔNG có. Mặt thẻ là `#ffffff`, nên một lớp tô
-    10% có cả một dải để sống trong đó.
+    Mỗi ô từng mang lớp tô 10% màu của chính chất nó đo: hồng, cam, xanh dương,
+    xanh lá, bốn mặt cạnh nhau. Chủ dự án nhìn màn Dinh dưỡng và yêu cầu "đưa
+    màu macro về cùng một màu trừ icon".
 
-    Đo trước khi chọn, chữ phụ `#6b6559` trên nền ô:
+    ── và đó là một quyết định KHO NÀY ĐÃ GHI, ở một chỗ khác ──
 
-        nền hiện tại (secondary #efeae1)   4,83:1
-        tô 10%  protein 4,96 · carbs 5,18 · fat 5,04 · fiber 5,05
+    Hàng chip hành động nhanh ở màn Hôm nay đã đi qua đúng câu hỏi này, và chú
+    thích của nó kết luận: "Màu dành cho GIÁ TRỊ, không dành cho LỐI ĐI… bốn
+    viên cạnh nhau, bốn hue khác nhau, cho bốn thứ mà cái NHÃN đã nói rõ là gì.
+    Màu ở đó không thêm thông tin nào, chỉ tiêu mất sự kiềm chế. Màu không biến
+    mất — nó DỜI vào glyph."
 
-    Nên 0.10: cả bốn ĐỌC RÕ HƠN nền trung tính đang dùng, không phải đổi rõ lấy
-    màu. 0.12 đưa protein xuống 4,80 — dưới mức hôm nay — nên đó là trần.
+    Bốn ô macro là cùng một hình dạng: cái nhãn đã in "PROTEIN" rồi, nên lớp tô
+    không nói thêm gì. Nên đây là áp một kết luận cũ vào chỗ nó chưa với tới,
+    không phải một sở thích mới.
 
-    Bản tối nhận `null` và rơi về `m.inset.bg` như cũ, không đổi một điểm ảnh.
+    ── và nó KHÔNG trả bằng khả năng đọc ──
+
+    Phép đo cũ chọn 0.10 vì các lớp tô đọc RÕ HƠN nền trung tính `secondary`
+    (4,83:1) mà chúng thay. Nhưng nền trung tính hôm nay không còn là
+    `secondary` — nó là `m.inset.bg` ở `macroTile`, tức #f7f4ef, và nhãn trên
+    đó ra **5,27:1**: cao hơn cả bốn lớp tô (4,96–5,18) lẫn con số 4,83 mà phép
+    đo ấy so với. Bỏ lớp tô là được cả hai.
+
+    Bản TỐI không đổi một điểm ảnh: `tileBg` vốn đã trả `null` ở đó.
+
+    Thứ GIỮ màu: glyph (`color`) và thanh tiến độ (`bar`). Thanh là một GIÁ TRỊ
+    — đúng vế đầu của câu luật ở trên — nên nó không nằm trong phạm vi này.
   */
-  const TILE_TINT = 0.1;
-  const tileBg = (k: PaletteKey) => (m.lit ? null : alpha(graphicOf(c, k), TILE_TINT));
-
   const macros = [
-    { label: 'Protein', ...protein, icon: Beef, color: graphicOf(c, MACRO_TINT.protein), bar: macroBar(c, 'protein'), barGraphic: graphicOf(c, MACRO_BAR.protein.from), bg: tileBg(MACRO_TINT.protein) },
-    { label: 'Carbs', ...carbs, icon: Wheat, color: graphicOf(c, MACRO_TINT.carbs), bar: macroBar(c, 'carbs'), barGraphic: graphicOf(c, MACRO_BAR.carbs.from), bg: tileBg(MACRO_TINT.carbs) },
-    { label: 'Fat', ...fat, icon: Milk, color: graphicOf(c, MACRO_TINT.fat), bar: macroBar(c, 'fat'), barGraphic: graphicOf(c, MACRO_BAR.fat.from), bg: tileBg(MACRO_TINT.fat) },
+    { label: 'Protein', ...protein, icon: Beef, color: graphicOf(c, MACRO_TINT.protein), bar: macroBar(c, 'protein'), barGraphic: graphicOf(c, MACRO_BAR.protein.from) },
+    { label: 'Carbs', ...carbs, icon: Wheat, color: graphicOf(c, MACRO_TINT.carbs), bar: macroBar(c, 'carbs'), barGraphic: graphicOf(c, MACRO_BAR.carbs.from) },
+    { label: 'Fat', ...fat, icon: Milk, color: graphicOf(c, MACRO_TINT.fat), bar: macroBar(c, 'fat'), barGraphic: graphicOf(c, MACRO_BAR.fat.from) },
     ...(fiber
-      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: graphicOf(c, MACRO_TINT.fiber), bar: macroBar(c, 'fiber'), barGraphic: graphicOf(c, MACRO_BAR.fiber.from), bg: tileBg(MACRO_TINT.fiber) }]
+      ? [{ label: 'Fiber', ...fiber, icon: Salad, color: graphicOf(c, MACRO_TINT.fiber), bar: macroBar(c, 'fiber'), barGraphic: graphicOf(c, MACRO_BAR.fiber.from) }]
       : []),
   ];
 
@@ -905,7 +914,6 @@ export function NutritionCard({
               style={[
                 styles.macroTile,
                 { flexBasis: macros.length === 4 ? '47%' : 0 },
-                m.bg ? { backgroundColor: m.bg } : null,
               ]}>
               <View style={styles.macroHead}>
                 {/* Màu riêng của từng macro. Không truyền màu nền vào nữa: bộ

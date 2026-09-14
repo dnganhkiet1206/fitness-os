@@ -15,6 +15,7 @@ import {
   Plus,
   RotateCcw,
   Sparkles,
+  TrendingUp,
   type LucideIcon,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
@@ -293,7 +294,13 @@ const GROUP_ICONS: Record<string, { icon: LucideIcon; color: PaletteKey | null }
   '❤️': { icon: Heart, color: iconTint(Heart)! },
   '🍎': { icon: Apple, color: iconTint(Apple)! },
   '💪': { icon: Dumbbell, color: iconTint(Dumbbell)! },
-  '✨': { icon: Sparkles, color: iconTint(Sparkles)! },
+  /* `TrendingUp`, không phải `Sparkles`: thẻ "Gợi ý thông minh" NẰM TRONG mục
+     này và đã đeo `Sparkles` — cùng glyph, cùng màu tím, cách nhau sáu mươi
+     điểm. `Sparkles` thuộc về thẻ ấy (nó ánh xạ sang miền "đêm, và trợ lý", và
+     tab bar cũng dùng nó cho AI Coach); mục chỉ đang mượn. Khoá emoji giữ
+     nguyên vì nó nằm trong bố cục người dùng đã lưu. Xem `INSIGHT` ở
+     `constants/icon-tint.ts`. */
+  '✨': { icon: TrendingUp, color: iconTint(TrendingUp)! },
   /* `Pin` không có trong bảng tint — nó là ghim, không mang nghĩa miền nào.
      Nhóm "khác" giữ màu trung tính của chính nó. */
   '📌': { icon: Pin, color: null },
@@ -2052,18 +2059,43 @@ export default function TodayScreen() {
               chạy 240ms trên một cái vỏ RỖNG, và mắt vẫn thấy đúng nhát cắt mà
               cả thay đổi này sinh ra để bỏ. */}
           {healthAvailable && (
+            /*
+              CÙNG vật liệu với bốn chip ngay trên nó.
+
+              ── lỗi ──
+
+              Nút này tô `alpha(c.secondary, 0.2)` và viền `alpha(c.border, 0.3)`.
+              Đo trên trang: nền ra **1,018:1**, viền **1,084:1** — ở cả hai diện
+              mạo. Không phải kín đáo, là không có: một hàng chữ trôi trên nền,
+              và chủ dự án khoanh đúng nó.
+
+              ── vì sao không tự chọn một màu khác ──
+
+              Câu trả lời đã nằm ngay trên, cách sáu mươi dòng, trong chú thích
+              của chính hàng chip: "that pill reads as sitting ON the page, and
+              the reason is the material… A drop shadow cannot do it, because
+              #070708 under #070708 is nothing." Bốn chip ấy nhìn thấy được
+              trong cùng bức ảnh mà nút này biến mất.
+
+              Nên nút mượn đúng thứ ấy: `LiquidGlass` blur, viền `alpha(m.ink,
+              0.22)` — đo ra **1,589:1** trên giấy và **1,883:1** trong tối, gấp
+              rưỡi con số cũ. Bề rộng và chiều cao giữ nguyên; chỉ vật liệu đổi.
+            */
             <PressScale
-              style={styles.syncButton}
               disabled={healthSync.isPending}
               onPress={() => healthSync.mutate()}>
-              {healthSync.isPending ? (
-                <ActivityIndicator color={c.foreground} size="small" />
-              ) : (
-                <>
-                  <Icon icon={Heart} size={14} />
-                  <Text style={styles.syncText}>{i18n.nSyncHealth}</Text>
-                </>
-              )}
+              <LiquidGlass style={styles.syncButton} radius={radius.sm} tint={c.primary} material="blur">
+                <View style={styles.syncInner}>
+                  {healthSync.isPending ? (
+                    <ActivityIndicator color={c.foreground} size="small" />
+                  ) : (
+                    <>
+                      <Icon icon={Heart} size={14} />
+                      <Text style={styles.syncText}>{i18n.nSyncHealth}</Text>
+                    </>
+                  )}
+                </View>
+              </LiquidGlass>
             </PressScale>
           )}
 
@@ -2827,16 +2859,20 @@ const stylesFor = makeStyles((c, m) => ({
   },
   quickChipText: { ...type.footnote, fontWeight: '600', color: c.foreground },
 
+  /* Mép, không phải nền: `LiquidGlass` mang mặt, chỗ này chỉ mang đường viền —
+     cùng `alpha(m.ink, 0.22)` ở 1 điểm mà `quickChip` đã đo và chọn, vì cùng
+     một lý do: một bề mặt nhỏ trên trang cần mép cứng hơn mép của một tấm lớn. */
   syncButton: {
+    borderRadius: radius.sm,
+    borderColor: alpha(m.ink, 0.22),
+    borderWidth: 1,
+  },
+  syncInner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
     height: 36,
-    borderRadius: radius.sm,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: alpha(c.border, 0.3),
-    backgroundColor: alpha(c.secondary, 0.2),
   },
   syncText: { fontSize: 13, fontWeight: '500', color: c.foreground },
 
@@ -2923,9 +2959,13 @@ const stylesFor = makeStyles((c, m) => ({
     flex: 1,
     height: 44,
     borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: alpha(c.primaryForeground, 0.5),
+    borderWidth: m.borderWidth,
+    borderColor: m.border,
+    /* `alpha(c.primaryForeground, 0.5)` composite ra ĐÚNG 1,000:1 so với trang:
+       ô nhập không có mặt nào. Tìm ra bằng `tools/on-page-fill.mjs` sau khi sửa
+       hai lỗi trong chính luật ấy — nó từng coi một `ScrollView` nền
+       `'transparent'` là một mặt, nên cả màn Hôm nay nằm ngoài tầm nó. */
+    backgroundColor: m.onPage,
     paddingHorizontal: spacing.md,
     color: c.foreground,
     fontSize: 15,
