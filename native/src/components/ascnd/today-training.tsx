@@ -20,6 +20,7 @@ import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { estimatedMinutes } from '@/lib/prescription';
+import { todayCta } from '@/lib/today-cta';
 import { localDateStr, routineIndex, weekDates } from '@/lib/local-date';
 import { nav } from '@/lib/nav';
 
@@ -113,6 +114,11 @@ export function TodayTraining() {
   */
   const unknown = daysPending || daysFailed;
 
+  /* Bốn cờ, mười sáu tổ hợp, và cái sai cũ là một tổ hợp chứ không phải một
+     dòng gõ nhầm — nên quyết định nằm ở `lib/today-cta.ts` để bước gác chạy
+     được đủ cả mười sáu. */
+  const cta = todayCta({ unknown, planned, rest: !!day?.is_rest, done });
+
   const items = exercisesOf(tpl);
   const line = planned
     ? `${i18n.nExerciseCount.replace('{n}', String(items.length))} · ${i18n.nAboutMinutes.replace(
@@ -168,7 +174,7 @@ export function TodayTraining() {
         chưa tập. Mọi trường hợp khác dùng nút nhạt — không có gì đang chờ, nên
         không có gì phải sáng lên.
       */}
-      {unknown ? null : planned && !done ? (
+      {cta === 'none' ? null : cta === 'start' ? (
         /*
           HAI nút, không phải một.
 
@@ -205,24 +211,45 @@ export function TodayTraining() {
             <Icon icon={Plus} size={17} color={c.foreground} strokeWidth={2.5} />
           </PressScale>
         </View>
+      ) : cta === 'extra' ? (
+        /*
+          Đã tập xong thì đường đi vẫn còn, nhưng nó KHÔNG còn là hành động
+          chính — nên nó thôi làm viên nút.
+
+          Một viên 48 điểm chạy hết bề ngang, ngay dưới dòng "✓ Đã tập hôm
+          nay", đọc ra là "vẫn còn việc phải làm" dù chữ trên nó nói gì. Ở đây
+          không còn gì đang chờ: việc duy nhất còn lại là cái hiếm — hôm nay
+          phát sinh thêm một buổi — nên nó mang đúng hình dạng của tấm kế
+          hoạch cho cùng việc ấy (`nRdExtra`), một dòng chữ gạch chân.
+        */
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={i18n.nTodayExtra}
+          style={styles.extraLink}
+          onPress={() => {
+            Haptics.selectionAsync();
+            nav.push('/log-workout');
+          }}>
+          <Text style={styles.extraLinkText}>{i18n.nTodayExtra}</Text>
+        </PressScale>
       ) : (
         <PressScale
           accessibilityRole="button"
-          accessibilityLabel={planned || day?.is_rest ? i18n.nLogFree : i18n.nTodayPick}
+          accessibilityLabel={cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
           style={styles.quiet}
           onPress={() => {
             Haptics.selectionAsync();
-            if (!planned && !day?.is_rest) nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
+            if (cta === 'pick') nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
             else nav.push('/log-workout');
           }}>
           <Icon
-            icon={planned || day?.is_rest ? Plus : ChevronRight}
+            icon={cta === 'log-free' ? Plus : ChevronRight}
             size={15}
             color={c.foreground}
             strokeWidth={2.5}
           />
           <Text style={styles.quietText}>
-            {planned || day?.is_rest ? i18n.nLogFree : i18n.nTodayPick}
+            {cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
           </Text>
         </PressScale>
       )}
@@ -286,6 +313,11 @@ const stylesFor = makeStyles((c, m) => ({
     marginTop: 2,
   },
   quietText: { ...type.headline, fontWeight: '600', color: c.foreground },
+  /* Cùng hình dạng với liên kết "Tập thêm bài phát sinh?" ở tấm kế hoạch: cùng
+     một việc thì cùng một giọng, kẻo hai màn hình nói hai kiểu về cùng cái
+     hiếm ấy. */
+  extraLink: { alignItems: 'center', paddingVertical: spacing.sm, marginTop: 2 },
+  extraLinkText: { ...type.footnote, color: c.mutedForeground, textDecorationLine: 'underline' },
   rule: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginTop: 2 },
   /* Nút chính và nút phụ nằm cùng một hàng: nút phụ chỉ là một ô vuông mang dấu
      cộng, vì việc của nó đã được nói bằng nhãn trợ năng và bằng chỗ đứng. */
