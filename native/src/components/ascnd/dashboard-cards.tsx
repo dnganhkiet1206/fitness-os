@@ -1364,11 +1364,24 @@ function WaterGlass({ pct }: { pct: number }) {
             khối TRONG SUỐT hình trụ đọc ra tròn — và là thứ ảnh mẫu có mà hai
             bản trước của tôi không có.
           */}
+          {/*
+            `stopOpacity` TÁCH RIÊNG, không nhét `alpha()` vào `stopColor`.
+
+            Bản đầu viết `stopColor={alpha(tint, 0.22)}`. Trên web nó chạy đúng
+            và ảnh dựng đẹp; trên máy thật react-native-svg BỎ QUA phần alpha
+            trong chuỗi rgba của `stopColor`, nên cả bốn điểm dừng thành
+            `metricBlue` đặc — cái cốc ra một khối xanh đặc, và bóng đổ ra một
+            vệt đen cứng.
+
+            Cả kho đã viết đúng cách từ trước — `water-chart`, `status-scrim`,
+            và chính tệp này ở chỗ khác đều tách `stopOpacity`. Tôi là chỗ duy
+            nhất làm khác, và nó chỉ lộ ra trên ảnh chụp từ máy của chủ dự án.
+          */}
           <LinearGradient id={`gw${id}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <Stop offset="0%" stopColor={alpha(tint, 0.22)} />
-            <Stop offset="26%" stopColor={alpha(tint, 0.05)} />
-            <Stop offset="62%" stopColor={alpha(tint, 0.04)} />
-            <Stop offset="100%" stopColor={alpha(tint, 0.24)} />
+            <Stop offset="0%" stopColor={tint} stopOpacity={0.22} />
+            <Stop offset="26%" stopColor={tint} stopOpacity={0.05} />
+            <Stop offset="62%" stopColor={tint} stopOpacity={0.04} />
+            <Stop offset="100%" stopColor={tint} stopOpacity={0.24} />
           </LinearGradient>
           {/* Nước sẫm dần xuống sâu; mặt trên vẽ bằng token nguyên bản nên nó
               TỰ là chỗ sáng nhất, không cần một màu thứ ba nào. */}
@@ -1378,8 +1391,8 @@ function WaterGlass({ pct }: { pct: number }) {
           </LinearGradient>
           {/* Bóng đổ: một vệt mờ dần ra mép, không phải một hình bầu dục đặc. */}
           <RadialGradient id={`gs${id}`} cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={alpha(m.ink, 0.22)} />
-            <Stop offset="100%" stopColor={alpha(m.ink, 0)} />
+            <Stop offset="0%" stopColor={m.ink} stopOpacity={0.18} />
+            <Stop offset="100%" stopColor={m.ink} stopOpacity={0} />
           </RadialGradient>
         </Defs>
 
@@ -1392,7 +1405,7 @@ function WaterGlass({ pct }: { pct: number }) {
         <AnimatedPath fill={water} clipPath={`url(#gc${id})`} animatedProps={faceProps} />
         {/* Khối thuỷ tinh ĐẶC ở đáy: phần sẫm nhất của cái cốc, và không phải
             trang trí — đáy thật dày hơn thành nên nó khúc xạ nhiều hơn. */}
-        <Path d={BASE_PATH} fill={alpha(tint, 0.26)} clipPath={`url(#gc${id})`} />
+        <Path d={BASE_PATH} fill={tint} fillOpacity={0.26} clipPath={`url(#gc${id})`} />
 
         {/* Đường bao mảnh và vành trước. Mảnh vì ảnh mẫu không có nét kiểu
             icon; đủ sắc vì mặt thẻ của app TRẮNG, còn thẻ trong ảnh mẫu nằm

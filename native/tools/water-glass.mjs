@@ -20,7 +20,7 @@
  * tính mực nước phải ở ngoài worklet, và bước này canh đúng chuyện đó.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -296,6 +296,50 @@ try {
     problems.push('quãng mặt nước chạy ra ngoài lòng cốc');
   }
 
+  /*
+    ── một cái bẫy CHỈ máy thật mới lộ ──
+
+    Chủ dự án chụp màn từ iPhone: cái cốc là một khối xanh ĐẶC, và dưới chân là
+    một vệt đen CỨNG thay vì bóng mờ.
+
+    Nguyên nhân không phải thẩm mỹ. Bản đầu viết `stopColor={alpha(tint, 0.22)}`
+    — nhét phần trong suốt vào chuỗi màu. Trên web nó chạy đúng và ảnh dựng
+    đẹp; react-native-svg trên máy thật thì BỎ QUA alpha trong `stopColor`, nên
+    mọi điểm dừng thành màu đặc.
+
+    Cả kho đã viết đúng cách từ trước — `water-chart`, `status-scrim`, và chính
+    `dashboard-cards` ở chỗ khác đều tách `stopOpacity`. Sáu điểm dừng tôi thêm
+    là chỗ DUY NHẤT làm khác, và chúng chỉ lộ ra trên ảnh chụp từ máy của chủ
+    dự án — `live.mjs` chụp trên web nên nó mù với đúng loại lỗi này.
+
+    Quét TOÀN KHO chứ không riêng thẻ Nước: cái bẫy không thuộc về cái cốc, nó
+    thuộc về react-native-svg. Đo trước khi chọn phạm vi — sau bản sửa, toàn
+    kho còn 0 chỗ, nên luật này không kêu oan chỗ nào.
+  */
+  {
+    const tsx = [];
+    (function walk(d) {
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        const q = path.join(d, e.name);
+        if (e.isDirectory()) walk(q);
+        else if (q.endsWith('.tsx')) tsx.push(q);
+      }
+    })(path.join(NATIVE, 'src'));
+    let scanned = 0;
+    for (const f of tsx) {
+      const src = stripComments(readFileSync(f, 'utf8'));
+      scanned++;
+      for (const mm of src.matchAll(/<Stop[^>]*stopColor=\{alpha\(/g)) {
+        const line = src.slice(0, mm.index).split('\n').length;
+        problems.push(
+          `${path.relative(NATIVE, f)}:${line}: <Stop> nhét alpha() vào stopColor — react-native-svg bỏ qua nó trên máy thật, điểm dừng sẽ thành màu ĐẶC. Tách ra \`stopOpacity\`.`,
+        );
+      }
+    }
+    cases++;
+    if (scanned < 50) problems.push(`chỉ quét được ${scanned} tệp tsx — bộ dò hỏng chứ không phải kho sạch`);
+  }
+
   /* ── thẻ vẽ đúng thứ đã hứa ── */
   const card = stripComments(read('src/components/ascnd/dashboard-cards.tsx'));
   const water = card.slice(card.indexOf('export function WaterWidget'), card.indexOf('export function StepsWidget'));
@@ -498,7 +542,7 @@ try {
   }
 
   console.log(
-    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy — và nước có khoá RIÊNG cũng qua sàn ấy. Và bốn thứ làm nên chiều sâu đều được canh từng thứ: vành ELIP, ĐÁY DÀY, thân LOE, BÓNG ĐỔ — bỏ mất một cái là quay lại đúng bản đã bị bác. Cộng tính chất mắt không thấy: bề ngang mặt nước khớp bề ngang lòng cốc ở MỌI độ cao, và cung Bézier đảo chiều phải thật sự đi qua đỉnh elip chứ không phải đảo thứ tự token`,
+    `cốc nước OK — ${cases} ca CHẠY THẬT: rỗng là rỗng hẳn, đầy là đầy tới trong lòng cốc, vượt mục tiêu vẫn là đầy chứ không tràn, đáy cột nước đứng yên tuyệt đối, và mực nước không bao giờ tụt khi uống thêm. Thẻ bỏ huy hiệu + vòng tròn, tên thẻ tự đứng, phần trăm rời màn hình nhưng quay lại bằng lời cho VoiceOver. Phép tính đích nằm NGOÀI worklet, còn phép kẹp ở trong và mang chỉ thị 'worklet'. Ca kẹp đầu tiên là CHÍNH con số đo được trên trình duyệt (−42,31), không phải số tròn nghĩ ra. Viền cốc qua sàn 3:1 của WCAG 1.4.11 trên CẢ HAI diện mạo — vì ở mức 0% nó là thứ duy nhất còn nhìn thấy — và nước có khoá RIÊNG cũng qua sàn ấy. Và bốn thứ làm nên chiều sâu đều được canh từng thứ: vành ELIP, ĐÁY DÀY, thân LOE, BÓNG ĐỔ — bỏ mất một cái là quay lại đúng bản đã bị bác. Cộng tính chất mắt không thấy: bề ngang mặt nước khớp bề ngang lòng cốc ở MỌI độ cao, và cung Bézier đảo chiều phải thật sự đi qua đỉnh elip chứ không phải đảo thứ tự token. Cộng một luật quét TOÀN KHO cho cái bẫy chỉ máy thật mới lộ: <Stop> không được nhét alpha() vào stopColor — react-native-svg bỏ qua nó và điểm dừng thành màu ĐẶC, thứ mà live.mjs chụp trên web không bao giờ thấy`,
   );
 } finally {
   rmSync(out, { recursive: true, force: true });
