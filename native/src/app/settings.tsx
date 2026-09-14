@@ -270,8 +270,12 @@ export default function SettingsScreen() {
           // The account is gone; the session and the cached copy of its data
           // must go with it, or the next launch reads a dead user out of the
           // persisted cache and shows their meals to whoever signs in next.
+          /*
+            KHÔNG điều hướng sau `signOut`. Cổng ở `_layout.tsx` làm việc ấy:
+            `if (!user) return <AuthScreen />` — cả cây điều hướng bị THAY,
+            không phải bị pop. Xem chú thích ở `confirmSignOut` cho lỗi đo được.
+          */
           await signOut();
-          nav.dismissAll();
           Alert.alert('ASCND', i18n.nDeleteAccountDone);
         },
       },
@@ -286,8 +290,25 @@ export default function SettingsScreen() {
         text: i18n.nSignOut,
         style: 'destructive',
         onPress: async () => {
+          /*
+            ── vì sao KHÔNG có `nav.dismissAll()` ở đây nữa ──
+
+            Nó từng có, và nó gây ra một lỗi thật trên máy:
+
+                The action 'POP_TO_TOP' was not handled by any navigator.
+                Is there any screen to go back to?
+
+            Cổng ở `_layout.tsx` dòng 262 là `if (!user) return <AuthScreen />`.
+            Khi `signOut` xong, `user` thành null và cả cây điều hướng bị THAY —
+            `Stack` bị gỡ khỏi cây, không phải bị pop.
+
+            expo-router thì XẾP HÀNG lệnh điều hướng (`routingQueue`) và xả
+            chúng ở lần focus kế tiếp. Ngăn xếp lúc ấy đã biến mất, nên
+            `POP_TO_TOP` rơi vào chỗ không có navigator nào nhận.
+
+            Tức lệnh này vừa THỪA vừa ĐUA: cổng đã dọn xong trước khi nó chạy.
+          */
           await signOut();
-          nav.dismissAll();
         },
       },
     ]);

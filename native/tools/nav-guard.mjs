@@ -37,7 +37,7 @@
  * một nút không có chốt, và nó trông y hệt mọi nút khác trong diff.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -196,12 +196,68 @@ try {
 
   /* Và `nav.ts` thật sự phải HỎI chốt, chứ không chỉ bọc router lại. */
   const navSrc = strip(read('src/lib/nav.ts'));
-  for (const fn of ['push', 'replace', 'navigate', 'back', 'dismissAll']) {
+  /*
+    `dismissAll` KHÔNG còn trong danh sách, và nó không còn trong `nav.ts`.
+
+    Nó từng có, gọi từ hai chỗ trong Cài đặt sau `signOut`, và gây một lỗi thật
+    trên máy: "The action 'POP_TO_TOP' was not handled by any navigator."
+    Xem luật ngay dưới đây.
+  */
+  for (const fn of ['push', 'replace', 'navigate', 'back']) {
     const re = new RegExp(`${fn}\\([^)]*\\)\\s*:\\s*void\\s*\\{[^}]*allow\\(`);
     if (!re.test(navSrc)) {
       problems.push(`src/lib/nav.ts: \`nav.${fn}\` không đi qua \`allow\` — vỏ bọc mà không có chốt`);
     }
   }
+}
+
+/*
+  ── không điều hướng sau `signOut` ──
+
+  Chủ dự án gặp lỗi này trên máy thật:
+
+      The action 'POP_TO_TOP' was not handled by any navigator.
+      Is there any screen to go back to?
+
+  Cổng ở `_layout.tsx` là `if (!user) return <AuthScreen />`. Mất phiên thì cả
+  cây điều hướng bị THAY — `Stack` bị gỡ khỏi cây, không phải bị pop. Mà
+  expo-router XẾP HÀNG lệnh điều hướng (`routingQueue`) và xả ở lần focus kế
+  tiếp, lúc ngăn xếp đã biến mất.
+
+  Nên mọi lệnh điều hướng đặt sau `signOut` đều vừa THỪA vừa ĐUA: cổng đã dọn
+  xong trước khi nó chạy. Luật này canh đúng cặp ấy thay vì cấm một hàm.
+
+  Ngăn xếp gọi trong báo lỗi chỉ tới `LogBoxData` và `ExpoRoot`, không tới mã
+  của app — nên không ai đọc nó ra được chỗ gọi. Đó là lý do nó đáng thành một
+  bước gác chứ không phải một dòng chú thích.
+*/
+{
+  const files = [];
+  (function walk(d) {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const q = path.join(d, e.name);
+      if (e.isDirectory()) walk(q);
+      else if (/\.tsx?$/.test(q)) files.push(q);
+    }
+  })(path.join(NATIVE, 'src'));
+  let scanned = 0;
+  for (const f of files) {
+    const src = strip(readFileSync(f, 'utf8'));
+    scanned++;
+    for (const m of src.matchAll(/\bsignOut\(\)/g)) {
+      /* Cửa sổ 200 ký tự: đủ để bắt lệnh ngay sau, không đủ để quét sang một
+         handler khác. */
+      const after = src.slice(m.index, m.index + 200);
+      const hit = after.match(/\b(nav|router)\.(push|replace|navigate|back|dismissAll)\(/);
+      if (hit) {
+        const line = src.slice(0, m.index).split('\n').length;
+        problems.push(
+          `${path.relative(NATIVE, f)}:${line}: \`${hit[0]}\` đặt ngay sau \`signOut()\` — cổng auth đã THAY cả cây điều hướng, nên lệnh này rơi vào chỗ không có navigator (POP_TO_TOP không ai nhận)`,
+        );
+      }
+    }
+  }
+  if (scanned < 50) problems.push(`chỉ quét được ${scanned} tệp — bộ dò hỏng chứ không phải kho sạch`);
 }
 
 if (problems.length) {
@@ -217,5 +273,5 @@ console.log(
     'hơn lỗi này; A, B, A không mở A hai lần (bộ nhớ theo TỪNG đích — bản chốt-một-ô dễ viết nhất ' +
     'để lọt ca đó và bị phép tự kiểm bắt); và mở lại sau khi cửa sổ đóng thì không bị cản. Cộng ' +
     'phần cấu trúc: không tệp nào trong src ngoài lib/nav.ts còn gọi thẳng router.push/replace/' +
-    'back/navigate/dismissAll, và cả năm hàm trong nav.ts đều thật sự hỏi `allow`',
+    'back/navigate/dismissAll, và cả bốn hàm trong nav.ts đều thật sự hỏi `allow`. Cộng: KHÔNG lệnh điều hướng nào đặt sau `signOut()` — cổng auth thay cả cây, nên lệnh ấy rơi vào chỗ không có navigator, và ngăn xếp gọi của lỗi ấy không chỉ tới một dòng mã nào của app',
 );

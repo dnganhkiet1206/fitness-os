@@ -93,9 +93,19 @@ export const nav = {
   back(): void {
     if (allow(' back')) router.back();
   },
-  dismissAll(): void {
-    if (allow('dismissAll')) router.dismissAll();
-  },
+  /*
+    KHÔNG có `dismissAll` ở đây, và chỗ trống này là cố ý.
+
+    Nó từng có, gọi từ hai chỗ trong Cài đặt sau `signOut`, và gây ra một lỗi
+    thật trên máy: "The action 'POP_TO_TOP' was not handled by any navigator."
+
+    Cổng ở `_layout.tsx` là `if (!user) return <AuthScreen />` — mất phiên thì
+    cả cây điều hướng bị THAY, không phải bị pop. expo-router xếp hàng lệnh
+    điều hướng và xả ở lần focus kế tiếp, lúc ngăn xếp đã biến mất.
+
+    Ai cần dismiss một chồng sheet thì cứ thêm lại — nhưng đọc đoạn này trước,
+    và đừng gọi nó sau `signOut`.
+  */
   canGoBack(): boolean {
     return router.canGoBack();
   },
