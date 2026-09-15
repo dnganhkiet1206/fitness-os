@@ -9,6 +9,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { DateField } from '@/components/ascnd/date-field';
 import { WeightEntry } from '@/components/ascnd/weight-entry';
 import { radius, spacing, type } from '@/constants/ascnd';
+import { iconTint } from '@/constants/icon-tint';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
@@ -89,30 +90,34 @@ const ICON: Record<TodoKey, LucideIcon> = {
 };
 
 /*
-  Icon ĐƠN SẮC, cả năm.
+  Màu icon ĐẾN TỪ bảng chuẩn của app, không từ một bảng gõ tay ở đây.
 
-  ── bảng màu cũ, và vì sao nó đi ──
+  ── một vòng nữa, và lần này nó dừng ở chỗ đúng ──
 
-  Chỗ này từng có một bảng `TINT` gán cho mỗi dòng một màu riêng (cam, xanh
-  dương, tím, đỏ, lam), theo đúng nửa sau của luật ở `tools/raised-pill.mjs`:
-  "màu không biến mất, nó DỜI vào glyph, nơi nó phân biệt năm hành động".
+  Bản đầu có bảng `TINT` riêng (cam, xanh dương, tím, đỏ, lam) — tức bảng màu
+  thứ hai cho cùng những khái niệm. Chủ dự án cho về đơn sắc, rồi nói lại: trả
+  màu về, nhưng "màu cần chuẩn và có ý nghĩa hơn theo mặt nghĩa đen".
 
-  Chủ dự án nhìn bản dựng thật và quyết định khác: "tôi muốn tất cả icon ở mục
-  này về đơn sắc". Nửa đầu của luật ấy vẫn nguyên — màu dành cho GIÁ TRỊ, không
-  dành cho lối đi — và năm dòng này là năm lối đi. Cái nhãn đã nói rõ từng dòng
-  là gì, nên năm hue chỉ còn là trang trí.
+  Đúng chỗ để lấy là `constants/icon-tint.ts` — bảng app đã dựng sẵn cho việc
+  này, và nó đã suy luận theo đúng nghĩa đen: *"Tạ, đĩa tạ, đòn gánh: thứ người
+  ta cầm lên đều bằng thép. Một cái tạ màu xanh neon là một cái tạ không ai từng
+  thấy."* Nên ở đây không còn bảng nào cả, chỉ một lời gọi `iconTint()`:
 
-  ── mực, không phải mực nhạt ──
+      Utensils   → FOOD      readinessGreen   thức ăn
+      Dumbbell   → TRAINING  champagne        thép, thứ người ta cầm lên
+      Moon       → NIGHT     metricPurple     đêm
+      HeartPulse → VITAL     readinessRed     tín hiệu của cơ thể
+      Scale      → VITAL     readinessRed     cân nặng cũng là tín hiệu ấy
 
-  `c.foreground` trên mặt ô (`m.inset.bg`) đo được **16,01:1** ở bản sáng và
-  **14,52:1** ở bản tối; `mutedForeground` chỉ 5,27 và 4,42. Với một thẻ mà chủ
-  dự án vừa phải nói là nút quá nhỏ cho người lớn tuổi, chọn vế nhạt hơn ở đây
-  là đi ngược lại chính lý do đã làm mọi thứ to lên.
+  Hai dòng cuối CÙNG màu, và đó là bảng kia làm đúng việc: màu nói MIỀN, không
+  nói danh tính. Hai dòng phân biệt nhau bằng hình và bằng nhãn — thêm một miền
+  thứ chín chỉ để chúng khác màu là quay lại "mỗi icon một màu".
 
-  Dòng ĐÃ XONG thì ngược lại: chữ nhạt đi, nên dấu tích nhạt theo. Trạng thái
-  ấy vẫn không phụ thuộc vào màu — nó có HÌNH (dấu tích thay cho glyph việc) và
-  có CHỮ ("Đã ghi"), tức WCAG 1.4.1 được thoả bằng hai đường chứ không bằng sắc
-  độ.
+  Đo trên mặt ô icon, cả bốn màu: 4,52–5,41:1 ở bản sáng và 4,79–11,92:1 ở bản
+  tối, trên sàn 3:1 của WCAG 1.4.11 cho vật thể đồ hoạ.
+
+  Dòng ĐÃ XONG thì không lấy màu miền: chữ nhạt đi nên dấu tích nhạt theo. Trạng
+  thái ấy vẫn không phụ thuộc màu — nó có HÌNH (dấu tích) và có CHỮ ("Đã ghi").
 */
 /*
   Mỗi dòng hẹn được giờ, và giờ ấy là một lời nhắc THẬT.
@@ -265,7 +270,7 @@ function TodoRow({
     <View style={styles.rowOpen}>
       <View style={styles.rowTop}>
         <View style={styles.tile}>
-          <Icon icon={ICON[itemKey]} size={20} color={c.foreground} />
+          <Icon icon={ICON[itemKey]} size={20} color={c[iconTint(ICON[itemKey]) ?? 'foreground']} />
         </View>
         <View style={styles.text}>
           <Text style={styles.label} numberOfLines={1}>
@@ -445,23 +450,26 @@ const stylesFor = makeStyles((c, m) => ({
      trắng là thứ chủ dự án gọi là "trông ghê quá" — và đúng: thứ được báo hỏng
      là CỠ, không phải hình dáng.
 
-     Nên hình dáng quay về đúng bản không ai chê, còn cỡ ở lại trên sàn:
-     44 cao × tối thiểu 72 rộng ≈ 12×7,3mm, và chữ to lên từ `footnote` (13)
-     sang `body` (17) — đọc được mà không phải tô đen cả viên.
+     ── và nền đặc quay lại, theo yêu cầu ──
 
-     Cùng lý do "đặc là hành động chính, viền là hành động phụ" mà nút Sign in
-     with Apple ở màn đăng nhập đã phải chọn: ở đây năm dòng ngang hàng nhau,
-     nên không dòng nào được đọc ra là chính. */
+     Chủ dự án xem bản viền rỗng rồi chốt: "nút ghi nên để màu đen". Thứ từng
+     bị chê là CỠ — 48 cao, tối thiểu 96 rộng, năm mảng gần-đen chạy dọc thẻ —
+     chứ không phải bản thân màu. Nên nền đặc trở lại ở cỡ đã hạ: 44 cao (sàn
+     Apple HIG / WCAG 2.5.5) × tối thiểu 72 rộng ≈ 12×7,3mm, so với 48×96 của
+     bản bị chê. Chữ giữ `body` (17) thay cho `footnote` (13).
+
+     `c.primary` chứ không phải một mã đen gõ tay: bản sáng nó là `#1a1917`,
+     bản tối là bạc `#a8afbd` — tức nút vẫn đọc được ở cả hai diện mạo, còn một
+     chữ "đen" viết cứng sẽ biến mất trên trang gần đen. */
   action: {
     minWidth: 72,
     height: 44,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: c.border,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionText: { ...type.body, fontWeight: '600', color: c.foreground },
+  actionText: { ...type.body, fontWeight: '600', color: c.primaryForeground },
 
 }));

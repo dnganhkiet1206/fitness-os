@@ -16,16 +16,17 @@ import {
   HeartPulse,
   Medal,
   Moon,
+  Scale,
   ScanBarcode,
   Sparkles,
-  TrendingUp,
   Star,
   Sunrise,
+  TrendingUp,
   Trophy,
+  type LucideIcon,
   Utensils,
   UtensilsCrossed,
   Zap,
-  type LucideIcon,
 } from 'lucide-react-native';
 
 /*
@@ -180,6 +181,28 @@ const TINTS: [LucideIcon, PaletteKey][] = [
   // the body
   [Heart, VITAL],
   [HeartPulse, VITAL],
+  /*
+    Cái cân, và vì sao nó là CƠ THỂ chứ không phải thép.
+
+    Đọc theo nghĩa đen thì một cái cân phòng tắm là kim loại và kính, nên
+    `TRAINING` (thép) là câu trả lời dễ. Nhưng chú thích của chính `TRAINING`
+    nói rõ miền ấy là gì: "tạ, đĩa tạ, đòn gánh — thứ người ta CẦM LÊN". Cái
+    cân không ai cầm lên; nó đo.
+
+    Và thứ nó đo là cơ thể. `VITAL` giữ nhịp tim với HRV, tức những con số cơ
+    thể nói ra về chính nó — cân nặng là con số như thế, và là con số cũ nhất
+    trong số đó.
+
+    Hệ quả phải nói ra: trên thẻ "Cần làm hôm nay", dòng Cân nặng và dòng Sinh
+    trắc do đó CÙNG một màu. Đó là bảng này làm đúng việc của nó — màu ở đây
+    nói MIỀN, không nói danh tính; hai dòng phân biệt nhau bằng hình và bằng
+    nhãn. Tách ra một miền thứ chín chỉ để hai dòng khác màu là quay lại đúng
+    kiểu "mỗi icon một màu" mà tệp này sinh ra để dẹp.
+
+    Đo trên mặt ô icon: 4,52:1 ở bản sáng, 4,88:1 ở bản tối — trên sàn 3:1 của
+    WCAG 1.4.11 cho vật thể đồ hoạ.
+  */
+  [Scale, VITAL],
 
   // water
   [Droplets, WATER],

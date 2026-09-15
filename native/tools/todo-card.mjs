@@ -226,9 +226,17 @@ try {
   CASES++;
   if (/const TINT\b/.test(src) || /graphicOf\(/.test(src)) {
     problems.push(
-      `${CARD}: có bảng màu cho từng dòng (\`TINT\` hoặc \`graphicOf\`). Năm dòng ở đây là năm LỐI ĐI ` +
-        'và cái nhãn đã nói rõ từng dòng là gì, nên hue chỉ còn là trang trí — chủ dự án đã yêu cầu ' +
-        'đơn sắc sau khi xem bản dựng thật',
+      `${CARD}: có bảng màu RIÊNG cho từng dòng (\`TINT\` hoặc \`graphicOf\`). Màu icon phải đến từ ` +
+        '`constants/icon-tint.ts`, bảng app đã dựng cho đúng việc này và đã suy luận theo nghĩa đen ' +
+        '("một cái tạ màu xanh neon là một cái tạ không ai từng thấy"). Một bảng thứ hai cho cùng ' +
+        'những khái niệm là chỗ hai bên sẽ trôi khỏi nhau',
+    );
+  }
+  CASES++;
+  if (!/iconTint\(ICON\[/.test(src)) {
+    problems.push(
+      `${CARD}: không lấy màu icon từ \`iconTint()\` — đó là nguồn chuẩn, và nó khoá theo CHÍNH ` +
+        'component icon chứ không theo một cái tên gõ tay',
     );
   }
 
@@ -300,6 +308,30 @@ try {
   }
 }
 
+/* ── 5b. mọi icon của thẻ đều CÓ miền trong bảng chuẩn ──
+
+   `iconTint()` trả `undefined` cho icon không nằm trong bảng, và chỗ gọi ngã
+   về `foreground`. Một dòng xám giữa bốn dòng có màu đọc ra là lỗi chứ không
+   đọc ra là "icon này không thuộc miền nào" — nên nếu thẻ thêm một việc thứ
+   sáu, icon của nó phải được xếp miền ở `icon-tint.ts` chứ không lặng lẽ xám.
+   Luật CHẠY chính bảng ấy thay vì đọc bằng mắt. */
+{
+  const tint = readFileSync(path.join(NATIVE, 'src/constants/icon-tint.ts'), 'utf8');
+  const listed = new Set([...tint.matchAll(/\[(\w+),\s*[A-Z]+\]/g)].map((m) => m[1]));
+  const used = [...strip(read(CARD)).matchAll(/^\s*(\w+): (\w+),$/gm)]
+    .filter(([, , v]) => /^[A-Z]/.test(v))
+    .map(([, , v]) => v);
+  for (const icon of new Set(used)) {
+    CASES++;
+    if (!listed.has(icon)) {
+      problems.push(
+        `${CARD}: icon \`${icon}\` không có miền nào trong \`constants/icon-tint.ts\`, nên nó sẽ ngã ` +
+          'về màu chữ và đứng xám giữa những dòng có màu',
+      );
+    }
+  }
+}
+
 /* ── 6. lời mời thứ hai không mọc lại trên Today ── */
 {
   const src = strip(read(TODAY));
@@ -364,6 +396,8 @@ console.log(
     'nhưng không nới cái người ta phải ngắm. Đồng hồ gọn của iOS được miễn có tên — WCAG 2.5.8 loại ' +
     'trừ "User agent control" — và nút tắt lời nhắc là một nhãn CHỮ chứ không phải một glyph 13 điểm. ' +
     'Icon của cả năm dòng là ĐƠN SẮC: không bảng hue nào cho lối đi, và trạng thái đã-ghi vẫn đọc ' +
-    'được bằng HÌNH (dấu tích) cộng CHỮ ("Đã ghi") chứ không bằng sắc độ. Ô icon là hình tròn, viết ' +
+    'được bằng HÌNH (dấu tích) cộng CHỮ ("Đã ghi") chứ không bằng sắc độ. Màu icon đến từ ' +
+    '`constants/icon-tint.ts` chứ không từ một bảng gõ tay ở thẻ, và mọi icon của thẻ đều có miền ' +
+    'trong bảng ấy. Ô icon là hình tròn, viết ' +
     'bằng `radius.full` để bán kính đi theo cạnh thay vì được gõ tay',
 );
