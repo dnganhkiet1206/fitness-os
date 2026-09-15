@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Bell, BellPlus, Check, Dumbbell, HeartPulse, type LucideIcon, Moon, Scale, Utensils } from 'lucide-react-native';
 import { useState } from 'react';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -278,18 +278,24 @@ function TodoRow({
 }
 
 /**
- * Hàng hẹn giờ: một đích chạm chiếm hết cột chữ, cao 44.
+ * Hàng hẹn giờ: đồng hồ GỐC của iOS, cộng một nút tắt bằng CHỮ.
  *
- * ── vì sao cái đồng hồ gọn của iOS bị bỏ ──
+ * ── một vòng đi và về, và cả hai chiều đều có lý do ──
  *
- * Bản trước đặt `DateField display="compact"` thẳng vào hàng. Nó là control
- * native, nên vùng chạm của nó là đúng cái viên ~70×34 mà nó tự vẽ — bọc thêm
- * bao nhiêu `View` cũng không nới ra được. Cạnh nó là một icon 13 điểm để tắt.
- * Hai thứ ấy là hai đích nhỏ nhất trên cả thẻ.
+ * Bản đầu: `DateField display="compact"` cạnh một icon tắt **13 điểm**. Chủ dự
+ * án báo cả cụm quá nhỏ, nên bản sau thay bằng một tấm riêng có bánh xe
+ * `spinner`. Xem xong tấm ấy, chủ dự án đòi trả lại đồng hồ gọn: "cái đó nhìn
+ * mượt hơn đẹp hơn". Đúng — và việc trả lại KHÔNG mâu thuẫn với lý do đã gỡ:
  *
- * Nay hàng này chỉ là một CÁI NÚT to mở tấm chọn giờ, và tấm ấy dùng bánh xe
- * `spinner` — kiểu chọn giờ lớn nhất iOS có. Nút tắt nhắc nằm trong tấm, chiếm
- * hết bề ngang, thay cho cái icon 13 điểm.
+ *   `DateField compact`  là control của HỆ ĐIỀU HÀNH. WCAG 2.2 · 2.5.8 miễn
+ *                        trừ hẳn nhóm này ("User agent control": cỡ do user
+ *                        agent quyết định và tác giả không sửa). Nó cũng là
+ *                        thứ iOS dạy người dùng từ app Đồng hồ và Lịch.
+ *   icon tắt 13 điểm     do TÔI vẽ, nên không có miễn trừ nào cả. Đó mới là
+ *                        thứ đáng gỡ, và nó không quay lại.
+ *
+ * Nên: đồng hồ gọn trở lại nguyên trạng, còn chỗ tắt thành một nút CHỮ cao 44.
+ * Một từ đọc được ở mọi cỡ mắt; một cái chuông gạch chéo 13 điểm thì không.
  *
  * Trạng thái thứ ba vẫn là im lặng: `available` là `false` ngoài iOS, và ở đó
  * hàng này KHÔNG dựng — một nút hẹn giờ không bao giờ bắn được thông báo thì
@@ -307,113 +313,47 @@ function ReminderRow({ itemKey, label }: { itemKey: TodoKey; label: string }) {
     lịch được chặn bằng chữ ký đã lưu, nên hai mount không đặt lịch hai lần.
   */
   const { prefs, available, toggle, setTime } = useReminders();
-  const [open, setOpen] = useState(false);
 
   if (!available) return null;
   const key = TODO_REMINDER[itemKey];
   const r = prefs[key];
-  const clock = `${r.hour}:${String(r.minute).padStart(2, '0')}`;
 
-  return (
-    <>
+  if (!r.enabled) {
+    return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={
-          r.enabled ? `${i18n.nTodoRemindAt} ${clock} — ${label}` : `${i18n.nTodoSetReminder} — ${label}`
-        }
+        accessibilityLabel={`${i18n.nTodoSetReminder} — ${label}`}
         style={styles.remind}
         onPress={() => {
           Haptics.selectionAsync();
-          if (!r.enabled) toggle(key, true);
-          setOpen(true);
+          toggle(key, true);
         }}>
-        <Icon icon={r.enabled ? Bell : BellPlus} size={16} color={c.mutedForeground} />
-        <Text style={[styles.remindText, r.enabled && styles.remindTextOn]}>
-          {r.enabled ? `${i18n.nTodoRemindAt} ${clock}` : i18n.nTodoSetReminder}
-        </Text>
+        <Icon icon={BellPlus} size={16} color={c.mutedForeground} />
+        <Text style={styles.remindText}>{i18n.nTodoSetReminder}</Text>
       </Pressable>
-      <ReminderSheet
-        visible={open}
-        label={label}
-        hour={r.hour}
-        minute={r.minute}
-        onPick={(h, m) => setTime(key, h, m)}
-        onClear={() => {
-          toggle(key, false);
-          setOpen(false);
-        }}
-        onClose={() => setOpen(false)}
-      />
-    </>
-  );
-}
+    );
+  }
 
-/**
- * Tấm chọn giờ: bánh xe `spinner`, và mọi nút chiếm hết bề ngang.
- *
- * `spinner` chứ không `compact`: bánh xe là kiểu chọn giờ lớn nhất iOS có, và
- * cả tấm này tồn tại vì cái `compact` quá nhỏ để ngắm. Hai nút bên dưới cao 52
- * và rộng hết tấm — ở đây không còn lý do gì để tiết kiệm bề ngang.
- */
-function ReminderSheet({
-  visible,
-  label,
-  hour,
-  minute,
-  onPick,
-  onClear,
-  onClose,
-}: {
-  visible: boolean;
-  label: string;
-  hour: number;
-  minute: number;
-  onPick: (hour: number, minute: number) => void;
-  onClear: () => void;
-  onClose: () => void;
-}) {
-  const c = usePalette();
-  const styles = stylesFor(c);
-  const i18n = useI18n();
-  if (!visible) return null;
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      {/* `accessible={false}`: đây là một vùng NUỐT CHẠM, không phải một nút —
-          xem `tools/a11y-swallow.mjs`. */}
-      <Pressable accessible={false} style={styles.scrim} onPress={onClose}>
-        <Pressable accessible={false} style={styles.sheet} onPress={() => {}}>
-          <Text style={styles.sheetTitle} numberOfLines={2}>
-            {i18n.nTodoReminderSheet.replace('{what}', label.toLowerCase())}
-          </Text>
-          <DateField
-            value={timeToDate(hour, minute)}
-            mode="time"
-            display="spinner"
-            onChange={(_, d) => d && onPick(d.getHours(), d.getMinutes())}
-          />
-          <PressScale
-            accessibilityRole="button"
-            accessibilityLabel={i18n.nTodoSaveTime}
-            style={styles.sheetPrimary}
-            onPress={() => {
-              Haptics.selectionAsync();
-              onClose();
-            }}>
-            <Text style={styles.sheetPrimaryText}>{i18n.nTodoSaveTime}</Text>
-          </PressScale>
-          <PressScale
-            accessibilityRole="button"
-            accessibilityLabel={i18n.nTodoReminderClear}
-            style={styles.sheetQuiet}
-            onPress={() => {
-              Haptics.selectionAsync();
-              onClear();
-            }}>
-            <Text style={styles.sheetQuietText}>{i18n.nTodoReminderClear}</Text>
-          </PressScale>
-        </Pressable>
+    <View style={styles.remind}>
+      <Icon icon={Bell} size={16} color={c.mutedForeground} />
+      <DateField
+        value={timeToDate(r.hour, r.minute)}
+        mode="time"
+        display="compact"
+        onChange={(_, d) => d && setTime(key, d.getHours(), d.getMinutes())}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${i18n.nTodoReminderOff} — ${label}`}
+        style={styles.remindOff}
+        onPress={() => {
+          Haptics.selectionAsync();
+          toggle(key, false);
+        }}>
+        <Text style={styles.remindOffText}>{i18n.nTodoOff}</Text>
       </Pressable>
-    </Modal>
+    </View>
   );
 }
 
@@ -469,7 +409,10 @@ const stylesFor = makeStyles((c, m) => ({
     paddingRight: spacing.sm,
   },
   remindText: { ...type.footnote, color: c.mutedForeground },
-  remindTextOn: { color: c.foreground, fontWeight: '600' },
+  /* Nút tắt là một TỪ cao 44, không phải một cái chuông gạch chéo 13 điểm.
+     Chữ đọc được ở mọi cỡ mắt và nói rõ nó làm gì; glyph thì phải đoán. */
+  remindOff: { height: 44, paddingHorizontal: spacing.sm, justifyContent: 'center' },
+  remindOffText: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
 
   /* 48 cao, tối thiểu 96 rộng — ≈16×8mm. Apple đặt sàn 44; nghiên cứu về
      người cao tuổi nói hiệu năng còn cải thiện tới ~17,5mm, nên bề NGANG là
@@ -485,32 +428,4 @@ const stylesFor = makeStyles((c, m) => ({
   },
   actionText: { ...type.headline, color: c.primaryForeground },
 
-  scrim: {
-    flex: 1,
-    backgroundColor: alpha(m.ink, 0.45),
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-  },
-  sheet: {
-    width: '100%',
-    maxWidth: 420,
-    borderRadius: radius.lg,
-    backgroundColor: c.card,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  sheetTitle: { ...type.headline, color: c.foreground, textAlign: 'center' },
-  /* 52, và rộng hết tấm. Trong một tấm mở riêng để chọn giờ thì không còn lý
-     do gì để tiết kiệm bề ngang. */
-  sheetPrimary: {
-    height: 52,
-    borderRadius: radius.full,
-    backgroundColor: c.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sheetPrimaryText: { ...type.headline, color: c.primaryForeground },
-  sheetQuiet: { height: 52, alignItems: 'center', justifyContent: 'center' },
-  sheetQuietText: { ...type.body, color: c.mutedForeground },
 }));

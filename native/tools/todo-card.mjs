@@ -188,7 +188,17 @@ try {
      được". `hitSlop` KHÔNG được tính là đã sửa: nó nới vùng chạm mà không nới
      thứ mắt nhìn thấy, và người phải ngắm thì nhắm vào cái nhìn thấy. */
   const FLOOR = 44;
-  const SIZED = ['tile', 'remind', 'action', 'sheetPrimary', 'sheetQuiet'];
+  /*
+    `DateField display="compact"` KHÔNG nằm trong danh sách này, và đó là một
+    miễn trừ có tên chứ không phải một chỗ bỏ sót: WCAG 2.2 · 2.5.8 loại trừ
+    hẳn "User agent control" — đích chạm mà cỡ do hệ điều hành quyết định và
+    tác giả không sửa. Đồng hồ gọn của iOS là đúng nhóm ấy, và chủ dự án đòi
+    giữ nó vì nó mượt hơn mọi thứ tự vẽ.
+
+    Thứ KHÔNG được miễn là mọi bề mặt do app tự vẽ — kể cả nút tắt lời nhắc,
+    vốn từng là một icon 13 điểm.
+  */
+  const SIZED = ['tile', 'remind', 'remindOff', 'action'];
   for (const name of SIZED) {
     CASES++;
     /* Đếm ngoặc, KHÔNG regex tới `\n  },` — bản đầu làm thế và các style viết
@@ -207,6 +217,17 @@ try {
       );
     }
   }
+  /* Nút tắt lời nhắc phải là CHỮ, không phải glyph. Một từ đọc được ở mọi cỡ
+     mắt; một cái chuông gạch chéo thì phải đoán — và bản có glyph là bản chủ
+     dự án đã phải nói ra là quá nhỏ. */
+  CASES++;
+  if (!/styles\.remindOffText/.test(src) || /icon=\{BellOff\}/.test(src)) {
+    problems.push(
+      `${CARD}: nút tắt lời nhắc không còn là một nhãn CHỮ. Bản dùng icon \`BellOff\` 13 điểm là bản ` +
+        'chủ dự án đã phải báo là bấm không nổi',
+    );
+  }
+
   CASES++;
   if (/hitSlop/.test(src)) {
     problems.push(
@@ -306,7 +327,8 @@ console.log(
     'giờ qua đúng bộ lập lịch của app chứ không phải một cái hẹn riêng, dòng giấc ngủ trỏ vào ' +
     '`sleepLog` chứ không mượn `bedtime` (một cái là ghi lại đêm qua vào buổi sáng, một cái là nhắc ' +
     'đi ngủ và không bao giờ xong), và nút hẹn giờ không dựng ở nơi hệ điều hành không bắn thông báo. ' +
-    'Việc đã ghi Ở LẠI trên thẻ thay vì biến mất dưới ngón tay, và năm bề mặt bấm được đều ≥44 điểm ' +
+    'Việc đã ghi Ở LẠI trên thẻ thay vì biến mất dưới ngón tay, và mọi bề mặt do APP tự vẽ đều ≥44 điểm ' +
     '— sàn của Apple HIG và của WCAG 2.5.5 — mà không cái nào bù bằng `hitSlop`, thứ nới vùng chạm ' +
-    'nhưng không nới cái người ta phải ngắm',
+    'nhưng không nới cái người ta phải ngắm. Đồng hồ gọn của iOS được miễn có tên — WCAG 2.5.8 loại ' +
+    'trừ "User agent control" — và nút tắt lời nhắc là một nhãn CHỮ chứ không phải một glyph 13 điểm',
 );
