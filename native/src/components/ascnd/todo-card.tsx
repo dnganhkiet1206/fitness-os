@@ -231,7 +231,7 @@ function TodoRow({
         <View style={[styles.tile, styles.tileDone]}>
           <Icon icon={Check} size={20} color={graphicOf(c, 'readinessGreen')} />
         </View>
-        <Text style={[styles.label, styles.labelDone]} numberOfLines={1}>
+        <Text style={[styles.label, styles.labelFill, styles.labelDone]} numberOfLines={1}>
           {label}
         </Text>
         <Text style={styles.doneText}>{i18n.nTodoDone}</Text>
@@ -395,6 +395,9 @@ const stylesFor = makeStyles((c, m) => ({
 
   text: { flex: 1, gap: 2 },
   label: { ...type.body, color: c.foreground },
+  /* Chỉ dòng ĐÃ XONG cần vế này: ở đó chữ nằm thẳng trong hàng, nên nó phải tự
+     đẩy "Đã ghi" ra mép phải. Dòng chưa xong đã có cột `text` lo việc đó. */
+  labelFill: { flex: 1 },
   labelDone: { color: c.mutedForeground },
   doneText: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
 
@@ -414,18 +417,32 @@ const stylesFor = makeStyles((c, m) => ({
   remindOff: { height: 44, paddingHorizontal: spacing.sm, justifyContent: 'center' },
   remindOffText: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
 
-  /* 48 cao, tối thiểu 96 rộng — ≈16×8mm. Apple đặt sàn 44; nghiên cứu về
-     người cao tuổi nói hiệu năng còn cải thiện tới ~17,5mm, nên bề NGANG là
-     chỗ rẻ nhất để trả thêm. Nền đặc vì đây là hành động chính của dòng. */
+  /* 44 cao — SÀN của Apple HIG và WCAG 2.5.5 — và viền rỗng, không nền đặc.
+
+     ── hai thứ đã đổi cùng lúc, và chỉ một trong hai là thứ phải đổi ──
+
+     Lượt trước nút đi từ 32 lên 48 VÀ từ viền rỗng sang nền `c.primary`, mà
+     `c.primary` bản sáng là `#1a1917`. Năm viên gần-đen xếp dọc trên một thẻ
+     trắng là thứ chủ dự án gọi là "trông ghê quá" — và đúng: thứ được báo hỏng
+     là CỠ, không phải hình dáng.
+
+     Nên hình dáng quay về đúng bản không ai chê, còn cỡ ở lại trên sàn:
+     44 cao × tối thiểu 72 rộng ≈ 12×7,3mm, và chữ to lên từ `footnote` (13)
+     sang `body` (17) — đọc được mà không phải tô đen cả viên.
+
+     Cùng lý do "đặc là hành động chính, viền là hành động phụ" mà nút Sign in
+     with Apple ở màn đăng nhập đã phải chọn: ở đây năm dòng ngang hàng nhau,
+     nên không dòng nào được đọc ra là chính. */
   action: {
-    minWidth: 96,
-    height: 48,
+    minWidth: 72,
+    height: 44,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    borderWidth: 1,
+    borderColor: c.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionText: { ...type.headline, color: c.primaryForeground },
+  actionText: { ...type.body, fontWeight: '600', color: c.foreground },
 
 }));
