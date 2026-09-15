@@ -68,6 +68,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { hex, loadPalette, over, overC, ratio } from './lib/stack.mjs';
+
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const PLAN = 'src/components/ascnd/week-plan.tsx';
 const PANEL = 'src/components/ascnd/day-plan.tsx';
@@ -82,6 +84,8 @@ const CARD = 'src/components/ascnd/today-training.tsx';
 const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
 
 const problems = [];
+/** Hai con số đo được của dải lịch, để câu xanh nói ra số chứ không hứa. */
+const stripMarks = [];
 const fatal = (m) => {
   console.error(`phép tự kiểm hỏng — ${m}, đừng tin kết quả`);
   process.exit(1);
@@ -573,39 +577,114 @@ try {
 }
 
 /*
-  5. HÔM NAY PHẢI CÒN LÀ HÔM NAY KHI NÓ ĐANG ĐƯỢC CHỌN.
+  5. HÔM NAY PHẢI ĐỌC RA GIỐNG NHAU Ở HAI MÀN, VÀ MẠNH HƠN NGÀY ĐANG MỞ.
 
-  `week-strip.tsx` tự khai giao ước của nó: "Today is ringed and the open day
-  is filled. They are different marks." Câu ấy chỉ đúng khi hai dấu ở hai ô.
-  Khi trùng ô — tức phần lớn thời gian, vì màn Plan mở ra là chọn sẵn hôm nay —
-  lớp tô phủ kín và XOÁ cái vòng, nên một đĩa đen trên thứ Hai không nói được
-  nó là "hôm nay" hay chỉ là "ngày đang mở".
+  ── lỗi gốc, và vì sao vế của luật này đã đổi ──
 
   Chủ dự án nhìn hai màn cạnh nhau mới gọi ra: cùng ngày 14, thẻ Hôm nay vẽ một
-  vòng rỗng còn Plan vẽ một đĩa đặc.
+  VÒNG RỖNG còn màn Plan vẽ một ĐĨA ĐẶC. Cùng một ngày, hai hình.
 
-  Đây là một CÁI CHỐT, không phải một định luật: nó canh đúng hai dòng giữ cho
-  hai dấu độc lập nhau, và mỗi dòng mang cái neo của nó nên mã bị viết lại thì
-  luật tự khai đã mất mục tiêu. Không luật nào khác có thẩm quyền — `tsc` thấy
-  hai style hợp lệ, mọi luật màu đo được cả vòng lẫn đĩa (chúng đều 17,57:1
-  trên giấy), và ảnh chụp thấy một đĩa đen trông hoàn toàn bình thường.
+  Bản luật đầu chữa bằng cách tách hai kênh: viền là hôm nay, lớp tô là ngày
+  đang mở, trùng ô thì lớp tô thụt vào 2,5 điểm cho viền còn chỗ. Nó đóng được
+  sự mơ hồ, nhưng KHÔNG đóng được lỗi gốc — hôm nay vẫn là vòng ở màn này và
+  vòng-bọc-đĩa ở màn kia — và ảnh chụp ở 3× cho thấy cái giá: một khe sáng chạy
+  quanh viên đen, đọc ra như nhãn dán có quầng, ở đúng ca thường gặp nhất (mở
+  màn Plan là chọn sẵn hôm nay).
+
+  Bản đang chạy đảo vai: **hôm nay là viên ĐẶC ở mọi màn và mọi trạng thái**,
+  ngày đang mở là viên NHẠT, và dấu của hôm nay không còn phụ thuộc vào việc có
+  ngày nào đang mở hay không — đó mới là thứ làm hai màn khớp nhau. Lý lẽ đầy đủ
+  nằm cạnh `weekChipToday` trong `week-strip.tsx`, kèm cả thứ nó chấp nhận mất.
+
+  Nên luật này đổi vế theo, và ba vế mới canh đúng ba thứ giữ cho lỗi gốc không
+  quay lại:
+
+    a. dấu của hôm nay KHÔNG có điều kiện `isOpen` nào — thêm một cái là hôm nay
+       lại đổi hình theo màn, đúng lỗi chủ dự án đã bắt;
+    b. dấu "ngày đang mở" BỊ CHẶN ở hôm nay (`isOpen && !isToday`) — không thì
+       hai lớp tô chồng lên một ô;
+    c. viên đặc phải THẬT SỰ mạnh hơn viên nhạt, đo bằng cách dựng lại cả hai
+       trên mặt trang của từng diện mạo. Vế (a) và (b) chỉ là hai cái neo chữ;
+       vế (c) là vế không thể lách bằng cách đổi tên style.
+
+  Vẫn là một CÁI CHỐT chứ không phải định luật, và vẫn không luật nào khác có
+  thẩm quyền: `tsc` thấy hai style hợp lệ, và ảnh chụp thấy một viên đen trông
+  hoàn toàn bình thường.
 */
 {
   const STRIP = 'src/components/ascnd/week-strip.tsx';
   const src = readFileSync(path.join(NATIVE, STRIP), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, ' ');
-  if (!/isOpen\s*&&\s*!isToday\s*&&\s*styles\.weekDateOn/.test(src)) {
+
+  /* (a) hôm nay không nhìn vào `isOpen`. */
+  if (!/isToday\s*&&\s*styles\.weekChipToday/.test(src)) {
     problems.push(
-      `${STRIP}: lớp tô "ngày đang mở" không còn bị chặn ở hôm nay (\`isOpen && !isToday\`) — nên khi ` +
-        'hôm nay đang được chọn nó phủ kín ô và xoá cái vòng. Hai dấu thành một, và cái còn lại không ' +
-        'nói được nó là dấu nào. Màn Plan mở ra là chọn sẵn hôm nay, nên đây là ca THƯỜNG chứ không hiếm',
+      `${STRIP}: dấu "hôm nay" không còn là \`isToday && styles.weekChipToday\` trần. Nếu nó mọc thêm một ` +
+        'điều kiện `isOpen` thì hôm nay lại đổi hình tuỳ màn — thẻ Hôm nay truyền `selected={null}`, nên ' +
+        'đúng ngày ấy sẽ là một hình ở đó và một hình khác ở màn Plan. Đó là lỗi chủ dự án đã bắt: "cùng ' +
+        'một kiểu nhưng 2 cái lại khác nhau"',
     );
   }
-  if (!/isOpen\s*&&\s*isToday\s*\?\s*<View style=\{styles\.weekDateFill\}/.test(src)) {
+
+  /* (b) ngày đang mở nhường ô cho hôm nay. */
+  if (!/isOpen\s*&&\s*!isToday\s*&&\s*styles\.weekChipOpen/.test(src)) {
     problems.push(
-      `${STRIP}: không còn đĩa thụt vào (\`weekDateFill\`) cho ca hôm-nay-đang-mở — chặn lớp tô mà ` +
-        'không vẽ gì thay thế thì ngày đang mở mất dấu hiệu của nó',
+      `${STRIP}: lớp tô "ngày đang mở" không còn bị chặn ở hôm nay (\`isOpen && !isToday\`) — hai lớp tô ` +
+        'chồng lên một ô, và ca này là ca THƯỜNG chứ không hiếm: màn Plan mở ra là chọn sẵn hôm nay',
     );
+  }
+
+  /* (c) và viên đặc phải đo được là mạnh hơn viên nhạt. */
+  const readFill = (name) => {
+    const m = new RegExp(`${name}:\\s*\\{([^}]*)\\}`).exec(src);
+    if (!m) return null;
+    const bg = /backgroundColor:\s*(c\.(\w+)|alpha\(c\.(\w+),\s*([\d.]+)\))/.exec(m[1]);
+    if (!bg) return null;
+    return { key: bg[2] ?? bg[3], a: bg[4] ? Number(bg[4]) : 1 };
+  };
+  const today = readFill('weekChipToday');
+  const open = readFill('weekChipOpen');
+  if (!today || !open) {
+    problems.push(
+      `${STRIP}: không đọc được \`backgroundColor\` của \`${today ? 'weekChipOpen' : 'weekChipToday'}\` ` +
+        'dưới dạng `c.X` hoặc `alpha(c.X, n)`. Hai viên đã được viết lại bằng hình dạng khác — mở ra đọc ' +
+        'bằng mắt rồi sửa luật, đừng để nó xanh suông',
+    );
+  } else {
+    const { palettes, materials } = loadPalette();
+    for (const t of ['light', 'dark']) {
+      const p = palettes[t];
+      if (!p[today.key] || !p[open.key]) {
+        problems.push(`${STRIP}: bảng ${t} không còn token \`${p[today.key] ? open.key : today.key}\``);
+        continue;
+      }
+      /* Mặt trang thật, dựng lại chứ không gõ lại: dải lịch nằm thẳng trên nền
+         màn Plan, không nằm trong thẻ. */
+      const page = over(materials[t].bg, hex(p.background), 1);
+      const tFill = overC(hex(p[today.key]), page, today.a);
+      const oFill = overC(hex(p[open.key]), page, open.a);
+      const tOnPage = ratio(tFill, page);
+      const oOnPage = ratio(oFill, page);
+      stripMarks.push(`${t} đặc/trang ${tOnPage.toFixed(2)} · nhạt/trang ${oOnPage.toFixed(3)}`);
+      /* Viên nhạt vẫn phải THẤY được — nó là dấu duy nhất ở một tuần không chứa
+         hôm nay. Bậc bề mặt cố ý nhỏ nhất của iOS, cùng con số `bar-track.mjs`
+         dùng và vì cùng lý do. */
+      if (oOnPage < 1.134) {
+        problems.push(
+          `${STRIP}: ${t} — viên "ngày đang mở" chỉ tách khỏi trang ${oOnPage.toFixed(3)}:1. Ở một tuần ` +
+            'không chứa hôm nay thì nó là dấu DUY NHẤT của cả dải; mờ hơn thế là không còn dấu nào',
+        );
+      }
+      /* Và viên đặc phải mạnh hơn hẳn, không chỉ mạnh hơn một chút — hai dấu
+         gần nhau thì người ta đọc ra hai ô "cùng loại". */
+      if (tOnPage < oOnPage * 3) {
+        problems.push(
+          `${STRIP}: ${t} — viên hôm nay ${tOnPage.toFixed(2)}:1 so với trang, viên ngày đang mở ` +
+            `${oOnPage.toFixed(3)}:1. Chưa gấp ba, nên hai dấu đọc ra cùng một bậc và "hôm nay" thôi là ` +
+            'dấu mạnh nhất của dải — thứ tự bậc ấy chính là cái thay cho hai kênh riêng của bản trước',
+        );
+      }
+    }
   }
 }
 
@@ -627,7 +706,12 @@ console.log(
     'routine_days.day_of_week — và CẢ HAI màn đọc param đều đi qua nó. Cộng với chỗ ở: Plan nằm ở ' +
     'src/app/(tabs)/workouts/plan.tsx dưới một _layout Stack, không phải route gốc — cùng một màn, ' +
     'cùng một diff, khác nhau ở chỗ thanh tab còn hay mất khi bạn đang đọc tuần của mình. Và một cái ' +
-    'chốt nữa ở `week-strip`: lớp tô "ngày đang mở" bị chặn ở hôm nay và thay bằng một đĩa THỤT VÀO, ' +
-    'nên cái vòng "hôm nay" còn chỗ để thấy — trước đây lớp tô xoá nó, và vì màn Plan mở ra là chọn sẵn ' +
-    'hôm nay nên đó là ca thường chứ không hiếm',
+    'chốt nữa ở `week-strip`: dấu của HÔM NAY không nhìn vào `isOpen` nên nó là cùng một viên đặc ở cả ' +
+    'thẻ Hôm nay lẫn màn Plan — lỗi gốc chủ dự án bắt được là cùng ngày 14 mà một màn vẽ vòng rỗng, màn ' +
+    'kia vẽ đĩa đặc; lớp tô "ngày đang mở" nhường ô cho hôm nay; và thứ tự hai bậc được ĐO chứ không hứa, ' +
+    `bằng cách dựng lại cả hai viên trên mặt trang của từng diện mạo: ${stripMarks.join(' · ')} (viên nhạt ` +
+    'phải qua bậc bề mặt 1,134 vì ở một tuần không chứa hôm nay nó là dấu duy nhất, và viên đặc phải mạnh ' +
+    'gấp ba nó). Vế đo ấy là vế không lách được bằng cách đổi tên style. Bản luật trước canh một giao ước ' +
+    'khác — viền là hôm nay, lớp tô là ngày đang mở, trùng ô thì thụt vào 2,5 — và nó đóng được sự mơ hồ ' +
+    'mà KHÔNG đóng được lỗi gốc, lại còn vẽ ra một khe sáng quanh viên đen ở đúng ca thường gặp nhất',
 );

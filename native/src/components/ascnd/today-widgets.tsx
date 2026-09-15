@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Check, ChevronRight, PartyPopper, Sparkles } from 'lucide-react-native';
-import { Fragment, useEffect, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -13,12 +13,13 @@ import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles, palettes, type Palette } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
+import { useReadinessHistory, useTodayWeight, useWeightHistory } from '@/hooks/use-fitness-data';
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
 import { useSmartNudges } from '@/hooks/use-smart-nudges';
 import { useProfile } from '@/hooks/useTodayData';
 import { useUnits } from '@/hooks/use-units';
-import { parseLocalDate } from '@/lib/local-date';
+import { getLocale } from '@/lib/i18n';
+import { localDateStr, parseLocalDate } from '@/lib/local-date';
 import { displayWeight, weightLabel } from '@/lib/units';
 
 /**
@@ -62,6 +63,49 @@ const NEUTRAL_DARK = '#9aa0aa';
   hai thứ quy tắc hook cấm. Cái duy nhất nó cần là ba mã màu, và tham số là cách
   đưa chúng vào mà không kéo cả React vào theo.
 */
+/**
+ * Dưới ngưỡng này thì chênh lệch là dư âm của phép làm tròn, không phải thay
+ * đổi. Cùng con số `weight-changes.tsx` dùng, và vì cùng một lý do:
+ * `displayWeight` chốt ở một chữ số thập phân, nên 0,05 là nửa bước cuối cùng
+ * mà màn hình còn phân biệt được.
+ */
+const WEIGHT_EPS = 0.05;
+
+/** Bao nhiêu lần cân CŨ hiện dưới số lớn — xem ghi chú ở chỗ vẽ danh sách. */
+const WEIGHT_ROWS = 3;
+
+/**
+ * `↑ 0.4` / `↓ 0.3` — một chỗ, nên bốn ô chênh lệch trên cùng một thẻ không
+ * thể viết khác nhau.
+ *
+ * Mũi tên ĐÃ mang dấu, nên số bỏ dấu đi. Bản cũ in `↓ -0.3`: dấu trừ lặp lại
+ * điều mũi tên vừa nói. Bản cũ chỉ có MỘT ô nên chuyện đó là chuyện thẩm mỹ; ở
+ * đây bốn ô nằm thẳng hàng, và một cột số có cái thò dấu trừ ra cái không thì
+ * đọc lệch hẳn.
+ */
+function deltaText(delta: number): string {
+  return `${delta > 0 ? '↑' : '↓'} ${Math.abs(delta).toFixed(1)}`;
+}
+
+/**
+ * `T4, 10 thg 9` — cùng ba trường và cùng thứ tự như danh sách cân nặng bên
+ * màn Tiến trình (`weight-log-list.tsx`), để một ngày trông giống nhau ở cả hai
+ * chỗ app in ra lần cân.
+ *
+ * Thứ trong tuần không phải trang trí: cân buổi sáng thứ Hai và cân buổi sáng
+ * Chủ nhật là hai phép đo khác nhau, và thứ là thứ duy nhất nói ra điều đó.
+ *
+ * `parseLocalDate` chứ không phải `new Date(iso)`: chuỗi `YYYY-MM-DD` trần
+ * được `Date` hiểu là UTC, nên ở Hà Nội mọi hàng lùi một ngày.
+ */
+function dayLabel(date: string, lang: 'vi' | 'en'): string {
+  return parseLocalDate(date).toLocaleDateString(getLocale(lang), {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
 function weightDiffTone(c: Palette, bmi: number | null, diff: number): { color: string; bg: string } {
   const green = { color: c.readinessGreen, bg: 'rgba(32,181,131,0.12)' };
   const red = { color: c.readinessRed, bg: 'rgba(220,47,47,0.12)' };
@@ -76,14 +120,57 @@ function weightDiffTone(c: Palette, bmi: number | null, diff: number): { color: 
   return gaining ? red : green; // overweight (bmi >= 25): lose good
 }
 
-/** Weight check-in — today's weight against the profile, and the way to set it */
+/**
+ * Weight check-in — the latest reading, what it changed, and the readings
+ * behind it. The logger is one tap in.
+ *
+ * ── vì sao thẻ này thôi mở sẵn ô nhập ──
+ *
+ * Chủ dự án chỉ vào thẻ: *"vì phía trên đã có ghi cân nặng rồi, thẻ này giờ chỉ
+ * dùng để hiện thông tin — ví dụ thay nút ghi bằng lịch sử thay đổi cân nặng
+ * sau mỗi lần log"*.
+ *
+ * Câu "phía trên đã có ghi cân nặng rồi" là ĐÚNG, và đúng từ chính lượt tách
+ * `weight-entry.tsx` ra: thẻ *Cần làm hôm nay* dựng cùng ô nhập ấy, ngay tại
+ * chỗ, và nó nằm TRÊN cả dãy nhóm widget trong `(tabs)/index.tsx` — nên trên
+ * một màn hình có đúng hai ô nhập cân nặng, cái ở trên biết hôm nay đã ghi hay
+ * chưa còn cái ở đây thì không. Chú thích của chính `TodoCard` đã đếm ra điều
+ * đó trước: *"năm chỗ cho một câu hỏi, trên một trang phải cuộn"*, và ô nhập
+ * trong thẻ Cân nặng là một trong năm.
+ *
+ * Nên ô nhập ở đây KHÔNG bị xoá — nó lùi vào sau một cú chạm lên mặt thẻ, đúng
+ * cử chỉ mà trạng thái "đã ghi" vốn đã có — và mặt thẻ trả lại cho thứ thẻ này
+ * làm tốt hơn thẻ kia: nói cân nặng đang đi đâu.
+ *
+ * ── và cái bị thay không phải một thứ đang chạy ──
+ *
+ * Viên chênh lệch cũ tính `todayWeight − profileWeight`, mà `useLogWeight` gọi
+ * `syncProfileWeight` rồi `invalidate(['profile'])`: ghi xong thì
+ * `profiles.weight_kg` CHÍNH LÀ số vừa ghi, hiệu bằng 0, và viên tự ẩn. Nó chỉ
+ * hiện trong khoảnh khắc giữa lúc ghi và lúc `profile` tải lại. Tức thứ đáng lẽ
+ * nói "hôm nay thay đổi bao nhiêu" thực tế gần như không bao giờ nói được gì.
+ *
+ * Lịch sử bên dưới lấy hiệu giữa hai LẦN CÂN liền nhau, nên nó không phụ thuộc
+ * vào một cột mà chính lần ghi ấy vừa sửa.
+ */
 export function WeightCheckinCard({ profileWeight }: { profileWeight: number | null }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const { weight: wUnit } = useUnits();
   const { data: todayWeight } = useTodayWeight();
   const { data: profile } = useProfile();
+  /*
+    90 ngày, KHÔNG phải 30 — và không phải vì thẻ này cần 90 ngày.
+
+    Thẻ chỉ vẽ bốn lần cân gần nhất. Nhưng `['weight_history', uid, days]` có
+    `days` trong khoá, nên một cửa sổ khác là một khoá khác là một lượt mạng
+    khác. Màn Tiến trình đã đọc đúng `useWeightHistory(90)`; dùng lại con số ấy
+    thì hai màn dùng chung một bản cache, còn hạ xuống 30 sẽ tạo thêm một mục
+    cache thứ hai cho cùng một bảng.
+  */
+  const { data: weightHistory } = useWeightHistory(90);
   const [editing, setEditing] = useState(false);
 
   // BMI from the current weight (kg) + height decides how a change reads
@@ -92,11 +179,49 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
   const bmi = heightCm > 0 && currentKg > 0 ? currentKg / Math.pow(heightCm / 100, 2) : null;
 
   // Stored values are kg; show in the user's unit
-  const todayDisp = todayWeight != null ? displayWeight(todayWeight, wUnit) : null;
   const profileDisp = profileWeight != null ? displayWeight(profileWeight, wUnit) : null;
 
-  const diff = todayDisp != null && profileDisp != null ? todayDisp - profileDisp : null;
-  const showLogger = editing || todayWeight == null;
+  /*
+    Mỗi lần cân, và lần ấy làm cân nặng đổi bao nhiêu. Mới nhất trước.
+
+    Đổi đơn vị TRƯỚC rồi mới trừ. `displayWeight` làm tròn về một chữ số thập
+    phân, nên hiệu của hai số ĐÃ làm tròn đúng bằng hiệu của hai số đang in ra
+    màn hình. Trừ trong kg rồi mới đổi thì ở bản lb hai hàng 165.3 và 165.1 có
+    thể in ra chênh lệch 0.3 — đúng kiểu sai mà `weight-log-list.tsx` đã ghi
+    lại một lần.
+
+    Hàng cũ nhất trong cửa sổ không có hàng nào trước nó, nên `delta` là `null`
+    — không phải 0. Đó là "không biết", và 0 là "không đổi"; in 0 ở đó là bịa
+    ra một lần cân không hề tồn tại.
+  */
+  const entries = useMemo(() => {
+    const src = weightHistory ?? [];
+    const out: { date: string; value: number; delta: number | null }[] = [];
+    for (let i = src.length - 1; i >= 0; i--) {
+      const v = displayWeight(src[i].value, wUnit);
+      const prev = i > 0 ? displayWeight(src[i - 1].value, wUnit) : null;
+      out.push({ date: src[i].date, value: v, delta: prev == null ? null : v - prev });
+    }
+    return out;
+  }, [weightHistory, wUnit]);
+
+  /*
+    Số lớn là LẦN CÂN GẦN NHẤT, không còn là "cân nặng hôm nay".
+
+    Trước đây chưa cân hôm nay thì thẻ không có số để vẽ, nên nó bật thẳng ô
+    nhập. Nay thẻ luôn có thứ để nói: lần cân gần nhất trong 90 ngày, và nếu
+    ngay cả thế cũng không có thì `profiles.weight_kg` — con số onboarding đã
+    hỏi. Chỉ khi cả hai đều rỗng thẻ mới thật sự trống.
+  */
+  const latest = entries[0] ?? null;
+  const headDisp = latest?.value ?? profileDisp;
+  const diff = latest?.delta ?? null;
+  const olderRows = entries.slice(1, 1 + WEIGHT_ROWS);
+  const showLogger = editing;
+
+  /** Ngày của số lớn, chỉ khi nó không phải hôm nay. */
+  const staleOn =
+    latest != null && latest.date !== localDateStr() ? dayLabel(latest.date, lang) : null;
 
   /*
     ── ô nhập ở `weight-entry.tsx`, không còn ở đây ──
@@ -107,6 +232,11 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
     trong nó: quy đổi kg/lb, ngưỡng hợp lý theo giá trị sẽ được LƯU, và đường
     ghi offline có `mutationKey` bền. Nên nó được CHUYỂN đi, không nhân đôi;
     chú thích của từng lỗi đã trả giá đi theo mã sang tệp ấy.
+
+    Và vì nó chạy được ở hai chỗ, `showLogger` ở đây mới hạ được xuống còn
+    `editing`: trước kia nó là `editing || todayWeight == null`, tức mỗi ngày
+    trước lần cân đầu tiên thẻ tự bung ô nhập — hai ô nhập cùng mở trên một
+    trang, cho cùng một con số.
   */
   return (
     <GlassCard>
@@ -114,23 +244,89 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
       {showLogger ? (
         <WeightEntry onLogged={() => setEditing(false)} />
       ) : (
-        <PressScale style={styles.weightDisplay} onPress={() => setEditing(true)}>
-          <View style={styles.weightValueRow}>
-            <Text style={styles.weightValue}>{todayDisp}</Text>
-            <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
-          </View>
-          {diff != null && Math.abs(diff) >= 0.05 && (() => {
-            const tone = weightDiffTone(c, bmi, diff);
-            return (
-              <View style={[styles.diffPill, { backgroundColor: tone.bg }]}>
-                <Text style={[styles.diffText, { color: tone.color }]}>
-                  {diff > 0 ? '↑ +' : '↓ '}
-                  {diff.toFixed(1)}
-                </Text>
+        <View>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.nWeightTitle}
+            /* Thẻ mất cái nút, nên lối vào giờ là chính mặt thẻ. Với người dùng
+               VoiceOver thì "chạm được" không suy ra được từ bố cục, phải nói. */
+            accessibilityHint={i18n.nWeightTapToLog}
+            style={styles.weightDisplay}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setEditing(true);
+            }}>
+            <View style={styles.weightValueRow}>
+              <Text style={styles.weightValue}>{headDisp != null ? headDisp.toFixed(1) : '—'}</Text>
+              <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
+              {/*
+                Số lớn chỉ mang ngày khi ngày ấy KHÔNG phải hôm nay.
+
+                Một con số trên trang tổng quan mặc định đọc là "bây giờ", nên
+                dán "hôm nay" vào nó là nói thừa. Nhưng khi số gần nhất là của
+                ba hôm trước thì im lặng thành nói dối — cùng một chỗ, cùng một
+                cỡ chữ, mà nghĩa đã khác.
+              */}
+              {staleOn ? <Text style={styles.weightWhen}>{staleOn}</Text> : null}
+            </View>
+            {/*
+              Ô bên phải luôn có đúng một việc, và việc ấy là việc đang sống:
+              chưa cân hôm nay thì nói cách cân, cân rồi thì nói nó đổi bao nhiêu.
+            */}
+            {todayWeight == null ? (
+              <Text style={styles.weightTapHint}>{i18n.nWeightTapToLog}</Text>
+            ) : diff != null && Math.abs(diff) >= WEIGHT_EPS ? (() => {
+              const tone = weightDiffTone(c, bmi, diff);
+              return (
+                <View style={[styles.diffPill, { backgroundColor: tone.bg }]}>
+                  <Text style={[styles.diffText, { color: tone.color }]}>{deltaText(diff)}</Text>
+                </View>
+              );
+            })() : null}
+          </PressScale>
+
+          {/*
+            ── lịch sử: những lần cân ĐỨNG SAU số lớn ──
+
+            `slice(1, …)`, không phải `slice(0, …)`: số lớn ở trên CHÍNH LÀ
+            `entries[0]`, nên cho nó xuống hàng đầu danh sách là in một lần cân
+            hai lần, cách nhau hai mươi điểm — cùng con số, cùng chênh lệch.
+
+            Ba hàng. Thẻ này sống trên màn Hôm nay, nơi câu hỏi là "đang đi
+            hướng nào", không phải "hàng nào sai" — hàng nào sai là việc của
+            `WeightLogList` bên màn Tiến trình, nơi có nút xoá. Cùng với số lớn
+            là bốn lần cân: đủ để thấy ba bước liên tiếp, tức đủ để phân biệt
+            một lần nhiễu với một chiều hướng.
+          */}
+          {olderRows.length > 0 ? (
+            <>
+              <View style={styles.weightSep} />
+              <View style={styles.weightHistory}>
+                {olderRows.map((e) => (
+                  <View key={e.date} style={styles.weightHistRow}>
+                    <Text style={styles.weightHistWhen} numberOfLines={1}>{dayLabel(e.date, lang)}</Text>
+                    <Text style={styles.weightHistValue}>
+                      {e.value.toFixed(1)}
+                      <Text style={styles.weightHistUnit}> {weightLabel(wUnit)}</Text>
+                    </Text>
+                    {/* `—` là "không có lần cân nào trước nó để so", khác hẳn
+                        `0.0` là "cân rồi, không đổi". */}
+                    {e.delta == null ? (
+                      <Text style={styles.weightHistFlat}>—</Text>
+                    ) : Math.abs(e.delta) < WEIGHT_EPS ? (
+                      <Text style={styles.weightHistFlat}>{i18n.nWcNoChange}</Text>
+                    ) : (
+                      <Text
+                        style={[styles.weightHistDelta, { color: weightDiffTone(c, bmi, e.delta).color }]}>
+                        {deltaText(e.delta)}
+                      </Text>
+                    )}
+                  </View>
+                ))}
               </View>
-            );
-          })()}
-        </PressScale>
+            </>
+          ) : null}
+        </View>
       )}
     </GlassCard>
   );
@@ -434,8 +630,84 @@ const stylesFor = makeStyles((c, m) => ({
   /* Cùng `gap` và cùng đường chân chữ như ô nhập ở `weight-entry.tsx`, để hai
      trạng thái đặt số và đơn vị vào đúng một chỗ. */
   weightValue: { ...type.largeTitle, ...type.mono, color: c.foreground },
+  /* Ngày của số lớn: cùng đường chân chữ với "kg", nhưng nhỏ hơn một bậc và
+     mang màu phụ — nó chú thích con số, không đứng ngang hàng với nó. */
+  weightWhen: { ...type.footnote, color: c.mutedForeground, marginLeft: 2 },
+  /* Lời mời chạm, KHÔNG phải một cái nút giả.
+     Không nền, không viền, không bo góc — ba thứ ấy là chữ ký của một vùng
+     chạm riêng, mà ở đây vùng chạm là cả hàng. Vẽ chúng ra là hứa một cú chạm
+     nhỏ hơn cú chạm thật. */
+  weightTapHint: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
   diffPill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 4, borderRadius: radius.full },
   diffText: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
+
+  /*
+    ── lịch sử cân nặng ──
+
+    Một đường kẻ ngang chia số lớn với danh sách. Đây là chỗ DUY NHẤT trong thẻ
+    cần một đường: trên nó là "bây giờ", dưới nó là "trước đó", và hai thứ ấy
+    trả lời hai câu hỏi khác nhau. Không có đường thì bốn con số cùng cỡ đọc ra
+    thành một khối, và số lớn mất vai trò dẫn dắt.
+
+    Tràn hết bề rộng thẻ (`-spacing.card`, đúng padding của `GlassCard`) vì lý
+    do `quickSep` bên `dashboard-cards.tsx` đã ghi: đường ngắn hơn thẻ đọc ra
+    thành đồ trang trí nằm giữa chứ không phải một ranh giới. Và `c.border` là
+    màu mà `suppSep` ngay trong tệp này đã dùng — một mã cứng ở đây sẽ trôi
+    khỏi hai diện mạo ngay lượt sửa bảng màu tiếp theo.
+  */
+  weightSep: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: c.border,
+    marginHorizontal: -spacing.card,
+    marginTop: spacing.md,
+  },
+  weightHistory: {
+    marginTop: spacing.sm,
+    gap: 2,
+  },
+  weightHistRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    /* 28, không phải 44. Hàng này KHÔNG chạm được — nó nằm trong vùng chạm của
+       cả thẻ, và sàn 44 điểm của Apple áp cho mục tiêu chạm, không cho dòng
+       chữ. Nhét ba dòng cao 44 vào một thẻ tổng quan là dựng một cái bảng. */
+    minHeight: 28,
+    gap: spacing.sm,
+  },
+  weightHistWhen: { ...type.footnote, color: c.mutedForeground, flex: 1 },
+  /*
+    Cùng `type.mono` như số lớn, nên chữ số của ba hàng thẳng cột với nhau.
+    Chữ số tỷ lệ sẽ làm ba hàng so le.
+
+    Và cột được CHỐT bề rộng, canh phải. Mono giữ cho các chữ số bằng nhau
+    nhưng không giữ cho SỐ CHỮ SỐ bằng nhau: một hàng `72.1 kg` cạnh một hàng
+    `100.5 kg` lệch nhau đúng một ô chữ, và cột số nào lệch thì so hàng này với
+    hàng kia phải đọc chứ không liếc được nữa. 76 là chỗ cho `100.5 kg` — giá
+    trị dài nhất hợp lý ở cả kg lẫn lb.
+  */
+  weightHistValue: {
+    ...type.footnote,
+    ...type.mono,
+    color: c.foreground,
+    minWidth: 76,
+    textAlign: 'right',
+  },
+  weightHistUnit: { color: c.mutedForeground },
+  /* Chốt bề rộng để cột chênh lệch thẳng hàng dù hàng trên là `↑ 0.4`, hàng
+     dưới là `—` hay `Không đổi`. */
+  weightHistDelta: {
+    ...type.footnote,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+    minWidth: 58,
+    textAlign: 'right',
+  },
+  weightHistFlat: {
+    ...type.footnote,
+    color: c.mutedForeground,
+    minWidth: 58,
+    textAlign: 'right',
+  },
 
   // Readiness 7-day analysis
   trendCard: { gap: spacing.md },

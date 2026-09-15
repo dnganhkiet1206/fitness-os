@@ -157,29 +157,26 @@ export function WeekStrip({
       seven pixels — green behind you, silver ahead, purple where you chose to
       rest.
 
-      Today is ringed and the open day is filled. They are usually the same cell
-      and they are different marks, because the one time it matters is the one
-      time they are not: reading Saturday's plan on a Tuesday, you need to see
-      both which day you are reading and which day it is. On any week but this
-      one the ring is simply absent — today is not in it.
+      ── hai dấu, và dấu MẠNH thuộc về hôm nay ──
 
-      ── và câu trên đã SAI ở đúng ca nó nêu ra ──
+      Hôm nay là viên ĐẶC; ngày đang mở, nếu khác hôm nay, là viên NHẠT. Dấu
+      của hôm nay không nhìn vào `isOpen` chút nào, và đó là cả điểm của nó:
+      thẻ Hôm nay truyền `selected={null}`, nên bất cứ điều kiện nào buộc hai
+      thứ ấy vào nhau đều làm cùng một ngày mang hai hình ở hai màn.
 
-      "Hai dấu khác nhau" chỉ đúng khi chúng ở hai ô. Khi trùng ô — tức phần
-      lớn thời gian, vì màn Plan mở ra là chọn sẵn hôm nay — lớp tô phủ kín ô
-      và XOÁ cái vòng. Hai dấu thành một, và cái còn lại không nói được nó là
-      dấu nào: một đĩa đen trên thứ Hai có thể là "hôm nay" hoặc chỉ là "ngày
-      bạn đang mở".
+      Đó đúng là lỗi chủ dự án đã bắt: cùng ngày 14, thẻ Hôm nay vẽ một vòng
+      rỗng còn màn Plan vẽ một đĩa đặc.
 
-      Chủ dự án nhìn hai màn cạnh nhau và gọi ra: cùng ngày 14, thẻ Hôm nay vẽ
-      một vòng rỗng còn màn Plan vẽ một đĩa đặc. Khác biệt ấy CÓ chủ đích —
-      `today-training` cố ý truyền `selected={null}` — nhưng nó phơi ra chuyện
-      hôm nay không giữ được một dấu hiệu nào chung giữa hai màn.
+      Bản trước chữa bằng hai kênh riêng — viền là hôm nay, lớp tô là ngày đang
+      mở, trùng ô thì lớp tô thụt vào 2,5 điểm cho viền còn chỗ. Nó đóng được
+      sự mơ hồ nhưng không đóng được lỗi gốc, và ảnh chụp 3× cho thấy cái giá:
+      một khe sáng chạy quanh viên đen, ở đúng ca thường gặp nhất (mở màn Plan
+      là chọn sẵn hôm nay). Lý lẽ đầy đủ của lượt đảo vai nằm cạnh
+      `weekChipToday` bên dưới, kèm cả thứ nó chấp nhận mất.
 
-      Nên lớp tô nay THỤT VÀO khi ô ấy cũng là hôm nay: vòng ở ngoài, đĩa ở
-      trong, cách nhau 2,5 điểm. Hôm nay giữ nguyên cái vòng ở mọi màn và mọi
-      trạng thái, còn lớp tô vẫn nói "đây là ngày đang mở". Hai kênh, hai dấu,
-      đúng như câu đầu đã hứa.
+      `tools/plan-week.mjs` canh cả ba vế, và vế thứ ba là một phép ĐO: nó dựng
+      lại hai viên trên mặt trang của từng diện mạo và đòi viên đặc mạnh gấp ba
+      viên nhạt — vế duy nhất không lách được bằng cách đổi tên style.
     */
     <View style={styles.weekRow}>
       {dates.map((d, idx) => {

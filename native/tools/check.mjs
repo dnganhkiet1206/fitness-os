@@ -713,6 +713,15 @@ const STEPS = [
   ['số bước', 'node', ['tools/gate-count.mjs']],
   ['đầu vào SS', 'node', ['tools/readiness-inputs.mjs']],
   ['điều kiện sổ', 'node', ['tools/ledger-live.mjs']],
+  /*
+    Thẻ cân nặng bỏ ô nhập khỏi mặt thẻ để thành thẻ thông tin, theo yêu cầu —
+    và làm thế được là VÌ `TodoCard` ở phía trên đã dựng cùng ô nhập ấy. Luật
+    canh chữ "vì": mất `<WeightEntry>` trong `TodoCard`, hoặc mất chỗ gọi
+    `useLogWeight` cuối cùng, thì lời giải thích ngồi cạnh thẻ Cân nặng thành
+    sai và quyết định ngồi trên nó mất cơ sở — mà không màn hình nào báo lỗi,
+    vì không có gì hỏng.
+  */
+  ['thẻ cân nặng', 'node', ['tools/weight-card.mjs']],
 ];
 
 /*

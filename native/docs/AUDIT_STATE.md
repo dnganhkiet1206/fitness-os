@@ -6,8 +6,9 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-14 · rà pháp y theo những gì chủ dự án nhìn thấy trên
-máy thật · commit `cf687a2` · nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-15 · thẻ cân nặng thành thẻ thông tin, và một cổng ĐỎ
+đã đẩy đi mà không ai thấy · nhánh `claude/ios-fitness-rebuild-omgulr`
+(vòng rà pháp y đầy đủ gần nhất: 2026-09-14, commit `cf687a2`)
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
 > Trạng thái ở `docs/AI-TRIEN-KHAI.md` giữ nguyên, không đụng vào.
@@ -27,12 +28,88 @@ máy thật · commit `cf687a2` · nhánh `claude/ios-fitness-rebuild-omgulr`
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
-| `node tools/check.mjs` | **XANH** | exit 0, **248** bước, tất cả xanh — **đo lại vòng này** trên đúng cây đã đẩy (`cf687a2`). Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
+| `node tools/check.mjs` | **XANH** | exit 0, **249** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 248 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 248 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 248 bước ở trên |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 249 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 249 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 249 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## 15/09 — thẻ cân nặng, và một cổng ĐỎ đã đẩy đi mà không ai thấy
+
+### Cái đáng ghi trước tiên: cổng đã đỏ ở `aae4484`
+
+Lượt sửa dải lịch màn Plan (ba commit, `8bcf922` → `aae4484`) được báo cáo là
+xong và được đẩy lên **mà không chạy lại `tools/check.mjs`**. Chạy lại ở lượt
+này thì `plan-week.mjs` **đỏ**, và đã đỏ từ `8bcf922`. Không có gì che nó —
+`tsc` xanh, ảnh chụp đẹp, và chính tôi đã nhìn ảnh chụp rồi kết luận là đạt.
+Bài học không phải "chạy cổng đi", mà hẹp hơn: **một lượt sửa được nghiệm thu
+bằng ảnh chụp vẫn phải qua cổng**, vì ảnh chụp chỉ trả lời câu hỏi mình đang
+hỏi, còn cổng trả lời những câu mình đã quên.
+
+Nội dung lỗi: mục 5 của `plan-week.mjs` canh giao ước CŨ của `week-strip` —
+viền là hôm nay, lớp tô là ngày đang mở, trùng ô thì thụt vào. Lượt sửa lịch
+đảo vai hai dấu **có lý do và có ghi lý do** (cạnh `weekChipToday`), nhưng để
+lại hai thứ nói điều đã hết hiệu lực: cái luật, và một đoạn chú thích JSX ngay
+trên chỗ vẽ mâu thuẫn với đoạn chú thích cách nó bốn mươi dòng. Cả hai đã viết
+lại theo giao ước đang chạy, và vế thứ ba của luật mới là một **phép đo** —
+dựng lại hai viên trên mặt trang của từng diện mạo và đòi viên đặc mạnh gấp ba
+viên nhạt — nên nó không lách được bằng cách đổi tên style. Năm phép thử ngược.
+
+### Thẻ cân nặng: bỏ ô nhập — và một tiền đề tôi đo SAI vì đo trên cây cũ
+
+Chủ dự án yêu cầu thẻ `GHI CÂN NẶNG` thành thẻ chỉ hiện thông tin, thay nút ghi
+bằng lịch sử thay đổi sau mỗi lần log, **"vì phía trên đã có ghi cân nặng rồi"**.
+
+Tôi đo tiền đề ấy và kết luận nó **sai** — `useLogWeight` chỉ được gọi ở một chỗ,
+`/biometrics` không nhận cân nặng, `/log-measurement` không nhắc tới nó, bốn pill
+thao tác nhanh đi chỗ khác — rồi viết kết luận ấy vào chú thích, vào luật, vào
+thông điệp commit.
+
+**Kết luận ấy sai, và sai vì tôi đo trên một cây đã cũ.** Người cộng tác đã đẩy
+mười commit trong lúc đó, một trong số đó tách `weight-entry.tsx` ra để thẻ *Cần
+làm hôm nay* ghi cân nặng **ngay tại chỗ** — và thẻ ấy nằm trước cả dãy nhóm
+widget trong `(tabs)/index.tsx`. Tức "phía trên" là có thật, đúng nghĩa đen, và
+chủ dự án mô tả đúng màn hình của họ. Chú thích của chính `TodoCard` đã đếm ra
+điều đó trước tôi: *"năm chỗ cho một câu hỏi, trên một trang phải cuộn"*, và ô
+nhập trong thẻ Cân nặng là một trong năm.
+
+Bài học hẹp, và không phải "hãy fetch trước": **một tiền đề của người dùng về
+màn hình của chính họ được kiểm bằng cây ĐANG CHẠY, không bằng cây mình đang
+cầm** — nhất là trên một nhánh hai người thay nhau đẩy. Cây tôi cầm cũ hơn màn
+hình họ nhìn, nên phép đo trả lời đúng một câu hỏi khác.
+
+Việc làm ra thì không đổi (thẻ thành thẻ thông tin, lịch sử thay cho nút), nhưng
+lý do đổi hẳn, nên `tools/weight-card.mjs` cũng đổi vế: nó thôi canh "đây là lối
+ghi duy nhất" và quay sang canh **chữ "vì"** — `TodoCard` phải còn dựng
+`WeightEntry`, vì đó là thứ làm câu của chủ dự án đúng và làm quyết định này có
+cơ sở. Năm vế; và vế đếm chỗ gọi `useLogWeight` giữ nguyên bài học riêng của nó:
+bản đầu (`grep -rl useLogWeight src`) xanh với ba tệp, mà hai trong ba chỉ **nhắc
+tên** nó trong chú thích — luật nay bỏ chú thích rồi mới tìm, và tìm một cú
+**gọi**.
+
+### Và cái bị thay không phải một thứ đang chạy
+
+Viên chênh lệch cũ tính `todayWeight − profileWeight`. `useLogWeight` gọi
+`syncProfileWeight` rồi `invalidate(['profile'])`, nên ghi xong thì
+`profiles.weight_kg` chính là số vừa ghi, hiệu bằng 0, và viên **tự ẩn**. Thứ
+đáng lẽ nói "hôm nay thay đổi bao nhiêu" gần như không bao giờ nói được gì. Lịch
+sử mới lấy hiệu giữa hai **lần cân** liền nhau nên không phụ thuộc vào một cột
+mà chính lần ghi ấy vừa sửa. `BUG-05` trong `FORENSIC-AUDIT.md` cũng đóng nốt
+nửa còn lại nhờ `showLogger` nay là `editing` và chỉ `editing`.
+
+### Một vùng mù của bộ chạy web, ghi lại để lần sau không đọc nhầm
+
+Ảnh chụp đầu tiên cho thấy thẻ vẽ trạng thái *chưa cân hôm nay* trong khi bộ cố
+định **có** một lần cân hôm nay. Không phải lỗi app: `applyQuery` trong
+`tools/live-world.mjs` chỉ làm `order` và `limit`, **không lọc**. Nên
+`.eq('date', hôm nay).maybeSingle()` nhận cả ba dòng, postgrest-js thấy
+`length > 1` và trả `PGRST116`, và hook ra `undefined`. Script chụp tự lọc lấy;
+`live-world.mjs` **không** sửa ở lượt này, vì đổi hành vi lọc của bộ chạy dùng
+chung là đổi dữ liệu mà mọi bước khác của cổng đang nhìn thấy, và đó là một thay
+đổi phải đo riêng.
 
 ---
 
@@ -50,7 +127,7 @@ vì một bản tóm tắt không đo lại được thì cũng chỉ là một 
 
 | | |
 |---|---|
-| `node tools/check.mjs` | **248/248 xanh**, exit 0 |
+| `node tools/check.mjs` | **249/249 xanh**, exit 0 |
 | `npx tsc --noEmit` | exit 0, đầu ra rỗng |
 | Máy thật | ❌ **không**. Ba thứ còn treo: vòng đếm ngược của thanh Hoàn tác ở đáy, thẻ bài tập lúc thu lại có giật không, dấu tích xanh ở tiêu đề bài tập có lệch baseline không |
 

@@ -189,7 +189,7 @@ người sau sẽ chép.
 |---|---|
 | **AREA** | Weight → adaptiveTDEE · `src/components/ascnd/today-widgets.tsx` |
 | **SEVERITY** | P3 |
-| **STATUS** | ĐÃ SỬA (một nửa; nửa còn lại là quyết định, xem dưới) |
+| **STATUS** | ĐÃ SỬA (cả hai nửa — nửa sau đóng lại ngày 15/09, xem dưới) |
 
 **TRIGGER** Offline → mở ô cân nặng trên Today → nhập số → bấm "Ghi".
 
@@ -208,6 +208,17 @@ ngày** `todayWeight` là null — và không có sóng thì nó sẽ không th�
 rollback, nên một số cân lạc quan sẽ nằm lại trong cache đã persist như một lần
 cân không ai thực hiện. Đóng nút là nửa trung thực; toast đã nói xong phần còn
 lại.
+
+**Nguyên nhân (b) đóng lại ngày 15/09, và không phải để sửa lỗi này.** Thẻ được
+viết lại thành thẻ thông tin theo yêu cầu của chủ dự án, nên `showLogger` nay là
+`editing` và chỉ `editing`. `setEditing(false)` từ đó đóng biểu mẫu thật, kể cả
+ở lần cân đầu tiên trong ngày và kể cả khi không có sóng — `todayWeight` không
+còn tham gia vào quyết định ấy nữa. `disabled` ở trên vẫn cần: nó chặn cú chạm
+thứ hai trong mấy khung hình trước khi state kịp chốt.
+
+`tools/weight-card.mjs` giữ cho nguyên nhân (b) không quay lại: nó đòi
+`showLogger` đúng bằng `editing`, và phép thử ngược dựng lại chính biểu thức cũ
+(`editing || todayWeight == null`) để chứng minh luật bắt được.
 
 ---
 
