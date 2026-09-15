@@ -163,6 +163,7 @@ const STEPS = [
   ['thẻ cần làm', 'node', ['tools/todo-card.mjs']],
   ['gọi được từ worklet', 'node', ['tools/worklet-callable.mjs']],
   ['icon một nghĩa', 'node', ['tools/glyph-meaning.mjs']],
+  ['mốc giấc ngủ', 'node', ['tools/sleep-goal-line.mjs']],
   ['cốc nước', 'node', ['tools/water-glass.mjs']],
   ['cột trong fixture', 'node', ['tools/fixture-schema.mjs']],
   ['hàng nút góc trên', 'node', ['tools/top-chrome.mjs']],

@@ -41,7 +41,20 @@ import { toast } from '@/lib/toast';
    DÙNG CHUNG giữa `styles.barTrack` và mốc mục tiêu — đặt rời hai chỗ là để
    đường mục tiêu trôi khỏi các cột nó đang đo. */
 const BAR_H = 140;
-const LABEL_H = 22;
+/**
+ * Chiều cao dòng của nhãn mốc, ÁP LÊN chính `<Text>` chứ không phỏng đoán.
+ *
+ * Hằng cũ ở đây tên `LABEL_H = 22`: một con số đoán xem nhãn thứ-trong-tuần
+ * dưới mỗi cột cao bao nhiêu, dùng để dời đường mốc lên khỏi hàng nhãn. Nó
+ * đoán sai (nhãn thật ~14), và nó đoán một thứ lẽ ra không ai phải đoán — xem
+ * `bars`/`barLabels`, nơi đường mốc nay nằm TRONG khung cột nên không còn phải
+ * biết nhãn cao bao nhiêu nữa.
+ *
+ * Con số còn lại này khác hẳn về hạng: nó được ĐẶT vào `targetTag.lineHeight`,
+ * nên hàng chứa đường mốc cao đúng bằng nó. Nhờ thế dời nửa chiều cao là một
+ * phép tính đúng, chứ không phải một phỏng đoán thứ hai.
+ */
+const TAG_LINE_H = 14;
 
 export default function SleepInsightsScreen() {
   const c = usePalette();
@@ -315,9 +328,17 @@ export default function SleepInsightsScreen() {
                 thứ brief gọi là contextual highlight, và đúng câu mà cả màn
                 này sinh ra để trả lời.
 
-                Đặt theo cùng phép tỉ lệ mà các cột dùng (`/ maxH`), nên nó
-                không thể lệch khỏi chúng: `maxH` đã kẹp sàn ở 8, và khi có một
-                đêm dài hơn mục tiêu thì cả cột lẫn đường cùng co lại.
+                Đặt theo cùng phép tỉ lệ mà các cột dùng (`/ maxH`), và — từ
+                bản này — đo từ CÙNG MỘT GỐC với chúng: nó là con tuyệt đối của
+                `bars`, khung cao đúng `BAR_H`, nên `bottom` của nó bắt đầu ở
+                đúng đáy cột.
+
+                Câu ở đây từng là "cùng phép tỉ lệ nên không thể lệch khỏi
+                chúng", và câu ấy sai theo đúng kiểu khó thấy nhất: tỉ lệ đúng,
+                gốc khác. Đường đo từ đáy THẺ rồi cộng một hằng đoán chiều cao
+                hàng nhãn, cột đo từ đáy CỘT — và chủ dự án bắt được bằng một
+                đêm đúng 8 tiếng không chạm mốc 8 tiếng. Chín điểm lệch, tính
+                ra ở chú thích của `chart` bên dưới.
 
                 Một nét tóc màu mực mờ, không phải một đường kẻ: nó là thứ để
                 ĐỐI CHIẾU, không phải thứ để nhìn.
@@ -330,12 +351,24 @@ export default function SleepInsightsScreen() {
                 đường tham chiếu bị dữ liệu che ở đúng chỗ đáng xem nhất thì
                 thôi làm tham chiếu.
               */}
-              {nights.map((n, i) => (
-                <StageBar key={i} n={n} maxH={maxH} index={i} muted={muted} />
-              ))}
-              <View pointerEvents="none" style={[styles.targetLine, { bottom: BAR_H * (targetHours / maxH) + LABEL_H }]}>
-                <View style={styles.targetRule} />
-                <Text style={styles.targetTag}>{`${targetHours}h`}</Text>
+              <View style={styles.bars}>
+                {nights.map((n, i) => (
+                  <StageBar key={i} n={n} maxH={maxH} index={i} />
+                ))}
+                <View
+                  pointerEvents="none"
+                  style={[styles.targetLine, { bottom: BAR_H * (targetHours / maxH) - TAG_LINE_H / 2 }]}
+                >
+                  <View style={styles.targetRule} />
+                  <Text style={styles.targetTag}>{`${targetHours}h`}</Text>
+                </View>
+              </View>
+              <View style={styles.barLabels}>
+                {nights.map((n, i) => (
+                  <Text key={i} style={[styles.barLabel, { color: muted }]} numberOfLines={1}>
+                    {n.day}
+                  </Text>
+                ))}
               </View>
               </View>
             </GlassCard>
@@ -511,12 +544,10 @@ function StageBar({
   n,
   maxH,
   index,
-  muted,
 }: {
   n: { day: string; total_h: number; deep_h: number; rem_h: number; light_h: number; stagesKnown: boolean };
   maxH: number;
   index: number;
-  muted: string;
 }) {
   const c = usePalette();
   const sleep = useSleepRamp();
@@ -566,7 +597,6 @@ function StageBar({
           )}
         </Animated.View>
       </View>
-      <Text style={[styles.barLabel, { color: muted }]}>{n.day}</Text>
     </View>
   );
 }
@@ -604,8 +634,37 @@ const stylesFor = makeStyles((c, m) => ({
      một nhãn. Chú giải là nhãn. */
   legendDot: { width: 8, height: 8, borderRadius: radius.full },
   legendText: { ...type.caption, color: c.mutedForeground },
-  chart: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, height: 160, marginTop: spacing.md },
-  barCol: { flex: 1, alignItems: 'center', gap: 6 },
+  /*
+    ── vì sao biểu đồ tách làm HAI hàng, và cái gì đã sai khi nó là một ──
+
+    Chủ dự án hỏi: "sao thứ 2 ngủ được 8 tiếng mà đồng hồ không chạm đích 8
+    tiếng vậy". Đo trên chính ảnh gửi kèm: cột Chủ nhật 10h cao 420px, cột thứ
+    Hai 8h cao 336px — tỉ lệ 0,800, tức HAI CỘT ĐÚNG. Sai là đường mốc: nó nằm
+    ở y=1207 trong khi mốc 8h thật ở 1234, cao hơn 27px = 9 điểm.
+
+    Chín điểm ấy là hai phỏng đoán cộng lại, và cả hai đều về chiều cao chữ:
+
+      +2  `LABEL_H = 22` đoán hàng nhãn dưới cột cao 22, thật ra ~14 cộng khe 6
+      +7  `bottom` neo MÉP DƯỚI của hàng chứa đường, nhưng cái người ta đọc là
+          nét kẻ nằm GIỮA hàng ấy — tức cao hơn nửa chiều cao hàng
+
+    Chú thích cũ ngay trên đường mốc tự tin rằng nó "đặt theo cùng phép tỉ lệ mà
+    các cột dùng nên không thể lệch khỏi chúng". Đúng về TỈ LỆ và sai về GỐC:
+    hai cái đo từ hai đáy khác nhau, và không phép tỉ lệ nào cứu được chuyện đó.
+
+    Nên bỏ hẳn cả hai phỏng đoán thay vì chỉnh lại con số. Cột nằm trong `bars`,
+    một khung cao ĐÚNG `BAR_H`; đường mốc là con tuyệt đối của chính khung ấy,
+    nên `bottom` của nó đo từ đáy cột — cùng một gốc, theo cấu trúc chứ không
+    theo một hằng ai đó phải nhớ giữ cho khớp. Nhãn xuống hàng riêng bên dưới.
+
+    `height: 160` cũ cũng đi theo: nó là 140 + 6 + 14, tức cùng một phỏng đoán
+    viết lần thứ hai. Hàng nhãn tự cao bao nhiêu thì thẻ cao thêm bấy nhiêu, nên
+    Cỡ chữ động không đẩy được cột ra khỏi khung nữa.
+  */
+  chart: { gap: 6, marginTop: spacing.md },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, height: BAR_H },
+  barLabels: { flexDirection: 'row', gap: spacing.sm },
+  barCol: { flex: 1, alignItems: 'center' },
   /*
     ── KHÔNG có rãnh, và đó là kết luận của phép đo chứ không phải sự lười ──
 
@@ -666,7 +725,7 @@ const stylesFor = makeStyles((c, m) => ({
   barSeg: { width: '100%', flexBasis: 0 },
   /* `transformOrigin` ở đáy là thứ biến một cú phóng to thành một cú MỌC LÊN. */
   barGrow: { width: '100%', flexBasis: 0, flexDirection: 'column', transformOrigin: 'bottom' },
-  barLabel: { ...type.caption, color: c.mutedForeground },
+  barLabel: { ...type.caption, color: c.mutedForeground, flex: 1, textAlign: 'center' },
   targetLine: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', alignItems: 'center', gap: 6 },
   /*
     ── ĐIỂM NÓNG DUY NHẤT của màn, và vì sao là chỗ này ──
@@ -694,7 +753,16 @@ const stylesFor = makeStyles((c, m) => ({
      tối nhưng khác hẳn ở bản sáng, vì vai đồ hoạ chỉ cần 3:1 còn chữ cần 4,5.
      `role-split.mjs` bắt được ngay lần chạy đầu — nét kẻ bên cạnh giữ vai đồ
      hoạ, chữ thì không được mượn nó. Đo: 6,81:1 tối · 4,86:1 sáng. */
-  targetTag: { ...type.caption, color: c.metricOrange, fontVariant: ['tabular-nums'], fontWeight: '600' },
+  /* `lineHeight` ÁP VÀO đây là thứ làm hàng chứa đường mốc cao đúng
+     `TAG_LINE_H`, nên phép dời nửa chiều cao ở trên là một phép tính chứ
+     không phải một phỏng đoán thứ hai. Xem chú thích của hằng ấy. */
+  targetTag: {
+    ...type.caption,
+    lineHeight: TAG_LINE_H,
+    color: c.metricOrange,
+    fontVariant: ['tabular-nums'],
+    fontWeight: '600',
+  },
   insightList: { marginTop: spacing.sm, gap: spacing.sm },
   insightRow: { flexDirection: 'row', gap: spacing.sm },
   insightBullet: { ...type.body, color: c.primary },
