@@ -89,7 +89,34 @@ export const duration = {
  * Nguồn: developer.apple.com/videos/play/wwdc2023/10158 và đính chính ở
  * developer.apple.com/forums/thread/739811.
  */
+/*
+  ── `'worklet'`, và nó KHÔNG phải trang trí ──
+
+  Hàm này được gọi từ bên trong một worklet: `riseIn` ở `neon-toast.tsx` là
+  animation VÀO-CÂY của thanh toast, và animation vào-cây chạy trên luồng UI.
+  Gọi một hàm không-worklet từ đó là ném thẳng, và một lỗi JS ném ra từ luồng
+  UI thì React Native không bắt được — nó đi qua `throwPendingError` rồi
+  `std::terminate`. App THOÁT, không phải hiện màn đỏ.
+
+  Đo trên `.ips` chủ dự án gửi (2026-09-14 23:30, hai lần cách nhau 20 giây):
+  `SIGABRT`, luồng chính, và stack đọc thẳng ra chuỗi
+
+      RCTMountingManager performTransaction
+        → LayoutAnimationsProxy_Legacy::startEnteringAnimation
+        → LayoutAnimationsManager::startLayoutAnimation
+        → jsi::Function::call  → HermesRuntimeImpl::throwPendingError
+        → __cxa_throw → std::terminate → abort
+
+  Toast hiện mỗi lần ghi xong một thứ, nên triệu chứng là "cứ log là thoát".
+
+  Chữ ký này KHÁC A9 (`__assert_rtn` → `JSScheduler::scheduleOnJS`), và
+  `docs/SO-GHI-LOI.md` đã viết sẵn cách đọc: "Đổi chữ ký = một lỗi khác".
+
+  `tools/worklet-callable.mjs` canh cho mọi hàm của app được gọi từ trong một
+  worklet đều mang chỉ thị này.
+*/
 export function spring(duration: number, bounce: number) {
+  'worklet';
   const stiffness = (2 * Math.PI) / duration;
   return {
     mass: 1,
