@@ -344,6 +344,34 @@ export const darkPalette = {
    * is a legibility gain as well as a warmer one.
    */
   metricBeige: '#ffe6bd',
+  /**
+   * Tím của glyph `moon`, và thép của glyph `dumbbell`.
+   *
+   * ── vì sao hai màu này phải thành token, còn mười tám màu kia thì không ──
+   *
+   * `GLYPH_TINT` trong `assistant-icons.tsx` là bảng tint THỨ TÁM — bảy bảng
+   * kia đã được chuyển sang khoá bảng màu từ đợt hạ tầng GĐ1, bảng này bị bỏ
+   * sót. Chú thích của chính nó nói các giá trị ấy "are the app's own palette
+   * entries rather than free choices", và câu đó đúng về Ý ĐỊNH: đo ngược lại
+   * thì **18 trong 20** màu nhận diện trùng KHÍT một token của bản tối —
+   * `#ff3b5c` là `readinessRed`, `#2bf5a8` là `readinessGreen`, `#a8afbd` là
+   * `primary`, và cứ thế. Chúng chỉ bị gõ ra thành mã màu thay vì gọi tên.
+   *
+   * Hai màu này là hai ngoại lệ: không token nào của bản tối mang chúng. Nên
+   * chúng thành token ở đây — giá trị TỐI giữ nguyên từng byte, và bản sáng có
+   * câu trả lời riêng, thay vì cả bảng tiếp tục chỉ biết một theme.
+   *
+   * `liquid-glass.tsx` đã ghi lại một nửa của lỗi này và chữa nửa ấy: nó TẮT
+   * lớp wash trên giấy, vì một vùng neon phủ 100% mặt thẻ là "thẻ hồng / thẻ
+   * oải hương / thẻ đào" mà bản QA máy thật liệt kê. Câu kết của nó nói rõ nửa
+   * còn lại được cố ý để nguyên: *"Màu giữ nguyên vai của nó ở những dấu nhỏ —
+   * ô tròn sau glyph, viền của tấm đang chọn, chấm trạng thái."* Nửa ấy chưa ai
+   * đo. Đo ra thì trên kính trắng, **16/20 glyph không đạt sàn 3:1** của WCAG
+   * 1.4.11, và đầu NHẠT của gradient nằm ở 1,00–1,55 — `arrow`, `chevron`,
+   * `plus` bắt đầu từ đúng `#ffffff` trên một mặt trắng.
+   */
+  metricViolet: '#8b5cff',
+  metricSteel: '#7f9cc4',
 } as const;
 
 export type PaletteKey = keyof typeof darkPalette;
@@ -625,6 +653,19 @@ export const lightPalette: Palette = {
   metricRose: '#b83044',
   /** chỉ là ĐỒ HOẠ (đường cân nặng), nên ngưỡng của nó là 3:1 — đo được 3,25 */
   metricBeige: '#b28009',
+  /*
+    Hai màu glyph không có token — xem chú thích ở bản TỐI.
+
+    Cách dựng không phải chọn tay: giữ nguyên sắc và hướng chroma của giá trị
+    tối rồi hạ độ sáng tới khi tỉ lệ trên kính trắng chạm ~4,9 — đúng khoảng mà
+    cả họ metric của bản sáng đang đứng (`readinessRed` 4,87 · `metricBlue` 4,91
+    · `metricCyan` 4,89). Không phải một sàn mới, mà là cùng một cái sàn.
+
+        #8b5cff × 89%  →  #7c52e3   4,94:1 trên kính trắng
+        #7f9cc4 × 73%  →  #5d728f   4,83:1
+  */
+  metricViolet: '#7c52e3',
+  metricSteel: '#5d728f',
 };
 
 export const palettes: Record<ThemeName, Palette> = { light: lightPalette, dark: darkPalette };

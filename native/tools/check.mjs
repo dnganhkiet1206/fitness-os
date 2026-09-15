@@ -701,6 +701,14 @@ const STEPS = [
     `Material.onPage` đã sinh ra để gỡ, lần này ở vai cái rãnh.
   */
   ['thẻ Bước đi', 'node', ['tools/bar-track.mjs']],
+  /*
+    Bảng tint THỨ TÁM. Bảy bảng kia chuyển sang khoá bảng màu từ đợt GĐ1;
+    `GLYPH_TINT` bị bỏ sót và giữ hai mã màu neon của bản tối cho mỗi glyph, nên
+    trên kính trắng 16/20 glyph dưới sàn 3:1 và `arrow`/`chevron`/`plus` bắt đầu
+    từ đúng #ffffff. `liquid-glass.tsx` đã ghi lại một nửa lỗi ấy và cố ý để lại
+    nửa còn lại ở "những dấu nhỏ"; đây là nửa còn lại.
+  */
+  ['màu glyph', 'node', ['tools/glyph-theme.mjs']],
   ['số bước', 'node', ['tools/gate-count.mjs']],
   ['đầu vào SS', 'node', ['tools/readiness-inputs.mjs']],
   ['điều kiện sổ', 'node', ['tools/ledger-live.mjs']],

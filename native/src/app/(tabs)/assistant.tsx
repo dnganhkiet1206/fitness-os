@@ -109,7 +109,6 @@ interface Metric {
 
 
 /** The colour a glyph lights its panel with — the saturated half of its own gradient. */
-const litBy = (g: GlyphName) => GLYPH_TINT[g][1];
 
 interface Tool {
   key: string;
@@ -171,6 +170,10 @@ const TOOLS: Tool[] = [
 
 export default function AssistantScreen() {
   const c = usePalette();
+  /* `GLYPH_TINT` trả về một KHOÁ bảng màu, nên chỗ giải nó phải biết theme —
+     xem `glyphStops` trong `assistant-icons.tsx`. Trước đây nó trả thẳng một mã
+     màu của bản TỐI, và đó là lý do màn này sai màu trên giấy. */
+  const litBy = (g: GlyphName) => c[GLYPH_TINT[g]];
   const styles = stylesFor(c);
   const { lang } = useAppSettings();
   const vi = lang === 'vi';

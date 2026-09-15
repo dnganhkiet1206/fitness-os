@@ -1,6 +1,10 @@
 import { useId } from 'react';
 import Svg, { Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 
+import { type PaletteKey } from '@/constants/palette';
+import { type Palette } from '@/constants/theme';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
+
 /**
  * The assistant screen's own glyphs.
  *
@@ -127,39 +131,117 @@ const PATHS: Record<GlyphName, string> = {
 };
 
 /**
- * Each glyph's two stops: a pale highlight and the colour it is known by.
+ * Màu NHẬN DIỆN của từng glyph — một KHOÁ bảng màu, không phải một mã màu.
  *
- * The second value is the one the card's glass picks up, so these are the
- * app's own palette entries rather than free choices — a tile tinted a colour
- * that appears nowhere else would be a fifth accent nobody agreed to.
+ * ── vì sao nó từng là mã màu, và vì sao điều đó hỏng ──
+ *
+ * Bảng này vốn giữ hai mã màu cho mỗi glyph, và chú thích cũ của nó nói đúng ý
+ * định: *"these are the app's own palette entries rather than free choices — a
+ * tile tinted a colour that appears nowhere else would be a fifth accent nobody
+ * agreed to."* Đo ngược lại thì ý ấy là thật: **18 trong 20** màu nhận diện
+ * trùng KHÍT một token của bản TỐI. Chúng chỉ bị gõ ra thành giá trị thay vì
+ * gọi tên — nên cả bảng chỉ biết một theme.
+ *
+ * Đây là bảng tint THỨ TÁM; bảy bảng kia đã chuyển sang khoá từ đợt GĐ1, và
+ * chú thích của `icon-tint.ts` kể lại đúng cái giá: *"trên giấy icon món ăn vẫn
+ * là xanh neon #2bf5a8, đo được 1,43:1 trên mặt thẻ trắng"*.
+ *
+ * Trên kính trắng của Health Assistant, đo cả bảng: **16/20 glyph dưới sàn 3:1**
+ * của WCAG 1.4.11, và đầu NHẠT của gradient nằm ở 1,00–1,55 — `arrow`,
+ * `chevron`, `plus` bắt đầu từ đúng `#ffffff` trên một mặt trắng.
+ *
+ * `liquid-glass.tsx` đã ghi lại một nửa lỗi này và chữa nửa ấy bằng cách TẮT
+ * lớp wash trên giấy. Câu kết của nó nói rõ nửa còn lại được cố ý để nguyên:
+ * *"Màu giữ nguyên vai của nó ở những dấu nhỏ — ô tròn sau glyph, viền của tấm
+ * đang chọn, chấm trạng thái."* Nửa ấy là nửa này.
+ *
+ * Bản TỐI không đổi một điểm ảnh nào: mỗi khoá dưới đây trả về đúng mã màu cũ.
  */
-export const GLYPH_TINT: Record<GlyphName, readonly [string, string]> = {
-  heart: ['#ff8fa8', '#ff3b5c'],
-  moon: ['#d9c4ff', '#8b5cff'],
-  flame: ['#ffd08a', '#ff9130'],
-  bolt: ['#fff0a8', '#ffd93d'],
-  leaf: ['#a8ffd9', '#2bf5a8'],
-  pulse: ['#a8d4ff', '#3ba6ff'],
-  spark: ['#e0c4ff', '#b45cff'],
-  gauge: ['#a8ffd9', '#2bf5a8'],
-  sliders: ['#e8e8ee', '#a8afbd'],
-  arrow: ['#ffffff', '#c8ccd4'],
-  camera: ['#ffd08a', '#ff9130'],
-  calendar: ['#a8f4ff', '#22e3ff'],
-  home: ['#f2f3f6', '#a8afbd'],
-  chevron: ['#ffffff', '#c8ccd4'],
-  plus: ['#ffffff', '#c8ccd4'],
-  clock: ['#f2f3f6', '#a8afbd'],
+export const GLYPH_TINT: Record<GlyphName, PaletteKey> = {
+  heart: 'readinessRed',
+  moon: 'metricViolet',
+  flame: 'metricOrange',
+  bolt: 'readinessYellow',
+  leaf: 'readinessGreen',
+  pulse: 'metricBlue',
+  spark: 'metricPurple',
+  gauge: 'readinessGreen',
+  sliders: 'primary',
+  arrow: 'glassMuted',
+  camera: 'metricOrange',
+  calendar: 'metricCyan',
+  home: 'primary',
+  chevron: 'glassMuted',
+  plus: 'glassMuted',
+  clock: 'primary',
   /* Red, alone among the chrome glyphs. Deleting a conversation is the one
      irreversible thing on that screen and the only one worth colouring. */
-  trash: ['#ff8fa8', '#ff3b5c'],
-  user: ['#e8e8ee', '#a8afbd'],
-  alert: ['#fff0a8', '#ffd93d'],
+  trash: 'readinessRed',
+  user: 'primary',
+  alert: 'readinessYellow',
   /* Steel. Nothing else in the set owns a cool grey-blue, and it is what the
      object is made of — the one glyph here where the literal reading is also
      the distinctive one. */
-  dumbbell: ['#cfe0f5', '#7f9cc4'],
+  dumbbell: 'metricSteel',
 };
+
+/**
+ * Đầu NHẠT của gradient — CHỈ tồn tại ở bản tối.
+ *
+ * ── vì sao bản sáng không có đầu nhạt, và đó không phải bỏ bớt ──
+ *
+ * Trong phòng tối, một điểm dừng nhạt hơn màu nhận diện đọc ra là ÁNH SÁNG rọi
+ * lên glyph. Trên kính TRẮNG thì không có chỗ cho nó: nhạt hơn màu nhận diện
+ * nghĩa là gần mặt kính hơn, và đó chính xác là con số đã đo — 1,00 cho
+ * `arrow`, `chevron`, `plus`, vì chúng bắt đầu từ đúng `#ffffff`.
+ *
+ * Vế đối của một ánh sáng trên giấy là một cái BÓNG, tức đầu kia phải ĐẬM hơn
+ * chứ không nhạt hơn. Đó là một quyết định thiết kế chưa ai đặt ra, và bịa ra
+ * hai mươi sắc đậm ở đây là dựng một bảng màu thứ hai — đúng thứ vừa gỡ đi.
+ *
+ * Nên trên giấy glyph tô PHẲNG bằng chính màu nhận diện của nó: một màu, đã có
+ * token, đã đo, và tương phản tối thiểu của cả hình bằng đúng tương phản của
+ * token ấy. `liquid-glass.tsx` đã rút ra cùng một kết luận cho lớp wash và ghi
+ * lại bằng câu của nó: *"Chữa bằng cách TẮT, không phải hạ độ mờ: hướng đã sai
+ * thì mờ hơn vẫn sai."*
+ *
+ * Bảng này ĐÓNG BĂNG: nó chỉ mô tả bản tối đang ship, và không giá trị nào ở
+ * đây được đổi mà không đo lại bản tối.
+ */
+const DARK_HILITE: Record<GlyphName, string> = {
+  heart: '#ff8fa8',
+  moon: '#d9c4ff',
+  flame: '#ffd08a',
+  bolt: '#fff0a8',
+  leaf: '#a8ffd9',
+  pulse: '#a8d4ff',
+  spark: '#e0c4ff',
+  gauge: '#a8ffd9',
+  sliders: '#e8e8ee',
+  arrow: '#ffffff',
+  camera: '#ffd08a',
+  calendar: '#a8f4ff',
+  home: '#f2f3f6',
+  chevron: '#ffffff',
+  plus: '#ffffff',
+  clock: '#f2f3f6',
+  trash: '#ff8fa8',
+  user: '#e8e8ee',
+  alert: '#fff0a8',
+  dumbbell: '#cfe0f5',
+};
+
+/**
+ * Hai điểm dừng của một glyph, cho theme đang bật.
+ *
+ * Đây là chỗ DUY NHẤT biết theme — `GLYPH_TINT` trả về một KHOÁ, đúng khuôn
+ * `icon-tint.ts` đặt cho bảy bảng tint kia: bảng ở phạm vi module nên không đọc
+ * được theme, và chỗ duy nhất đọc được là trong thân component.
+ */
+export function glyphStops(name: GlyphName, c: Palette, lit: boolean): readonly [string, string] {
+  const ink = c[GLYPH_TINT[name]];
+  return lit ? [DARK_HILITE[name], ink] : [ink, ink];
+}
 
 /** Glyphs whose shape needs a hole punched through it. */
 const EVENODD: Partial<Record<GlyphName, true>> = { camera: true, calendar: true, clock: true, alert: true };
@@ -185,7 +267,9 @@ export function Glyph({
 }) {
   const uid = useId();
   const id = `gl-${name}-${uid}`;
-  const [from, to] = GLYPH_TINT[name];
+  const c = usePalette();
+  const m = useMaterial();
+  const [from, to] = glyphStops(name, c, m.lit);
 
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">

@@ -68,10 +68,13 @@ import { suggestionsFor } from '@/lib/assistant-suggestions';
  */
 
 /** The colour a glyph lights its panel with — the saturated half of its gradient. */
-const litBy = (g: GlyphName) => GLYPH_TINT[g][1];
 
 export default function AiCoachScreen() {
   const c = usePalette();
+  /* `GLYPH_TINT` trả về một KHOÁ bảng màu, nên chỗ giải nó phải biết theme —
+     xem `glyphStops` trong `assistant-icons.tsx`. Trước đây nó trả thẳng một mã
+     màu của bản TỐI, và đó là lý do màn này sai màu trên giấy. */
+  const litBy = (g: GlyphName) => c[GLYPH_TINT[g]];
   const styles = stylesFor(c);
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
