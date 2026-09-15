@@ -331,6 +331,37 @@ function declOf(body, name) {
     if (!re.test(src)) problems.push(`${COMPONENT}: ${why}`);
   }
 
+  /* ── cụm nút phải nằm CHÍNH GIỮA chiều cao hàng ──
+
+     Tấm nút là con của một khung `absoluteFill` cao bằng cả hàng, còn cột nút
+     có chiều cao riêng (`ACTION_H`). Trong một hàng flex mà cha để `alignItems`
+     mặc định `stretch`, một đứa con đã có chiều cao sẽ rơi về cross-start — tức
+     dính MÉP TRÊN. Bản đã ship mắc đúng lỗi ấy: viên nang đội lên gần chạm tiêu
+     đề thẻ, chữ dưới nó thò quá đáy hàng.
+
+     `tsc` không biết flexbox và bộ chạy web vẽ ra đúng cái lệch ấy, nên không có
+     gì đỏ. Chỉ ảnh chụp máy thật của chủ dự án mới thấy. */
+  for (const name of ['styles_panelRight', 'styles_panelLeft']) {
+    const decl = new RegExp(`const ${name} = \\{([^}]*)\\}`).exec(src);
+    if (!decl) {
+      problems.push(`${COMPONENT}: không đọc được \`${name}\``);
+    } else if (!/alignItems: 'center'/.test(decl[1])) {
+      problems.push(
+        `${COMPONENT}: \`${name}\` không căn giữa theo chiều dọc, nên cột nút dính mép TRÊN của hàng ` +
+          '— đúng lỗi đã ship: viên nang đội lên gần tiêu đề thẻ và chữ thò quá đáy hàng',
+      );
+    }
+  }
+
+  /* Chiều cao dòng chữ phải được ÁP, không để phông quyết định: `ACTION_H` cộng
+     đúng con số ấy, nên thiếu nó thì chiều cao cột là một phỏng đoán. */
+  if (!/lineHeight: ACTION_LABEL_H/.test(src)) {
+    problems.push(
+      `${COMPONENT}: dòng chữ dưới nút không áp \`lineHeight: ACTION_LABEL_H\`, nên \`ACTION_H\` ` +
+        'đang cộng một con số không ai bảo đảm và chữ sẽ nhô ra khỏi cột trên một hàng thấp',
+    );
+  }
+
   /* Bo góc phải chạy theo CÚ KÉO, không phải một animation chạy song song. */
   if (!/borderRadius: interpolate\(openness\.value/.test(src)) {
     problems.push(

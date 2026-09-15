@@ -97,7 +97,8 @@ const CAPSULE_GAP = 4;
  * được, nên vùng chạm là 72 × 51. Trên sàn 44 của Apple HIG và WCAG 2.5.5 ở cả
  * hai chiều, và nó là vùng NHÌN THẤY chứ không phải một `hitSlop` vô hình.
  */
-const ACTION_H = CAPSULE_H + CAPSULE_GAP + 13;
+const ACTION_LABEL_H = 13;
+const ACTION_H = CAPSULE_H + CAPSULE_GAP + ACTION_LABEL_H;
 
 /**
  * Where the action commits.
@@ -546,8 +547,25 @@ function FullSwipeWatch({
   actions from the outside edge inward"), nên ở mép PHẢI hàng phải đảo chiều —
   một `flexDirection: 'row'` thường sẽ đặt nút đầu vào trong cùng.
 */
-const styles_panelRight = { flexDirection: 'row-reverse' } as const;
-const styles_panelLeft = { flexDirection: 'row' } as const;
+/*
+  `alignItems: 'center'` — và đây là một LỖI ĐÃ SHIP, không phải một tuỳ chọn.
+
+  Tấm nút là con của một khung `StyleSheet.absoluteFill` do thư viện dựng, tức
+  nó CAO BẰNG CẢ HÀNG. Cột nút thì có chiều cao cố định (`ACTION_H`), và trong
+  một hàng flex mà cha để `alignItems` mặc định là `stretch`, một đứa con đã có
+  chiều cao riêng sẽ rơi về cross-start — tức DÍNH MÉP TRÊN.
+
+  Trên máy thật điều đó đọc ra đúng như chủ dự án chụp lại: viên nang đội lên
+  cao hơn nút "Ghi" của hàng và gần chạm tiêu đề thẻ, còn dòng chữ dưới nó thì
+  thò xuống quá đáy hàng. Ở Nhắc nhở của iOS thì cả cụm nút nằm CHÍNH GIỮA
+  chiều cao hàng — đó là chỗ khác nhau duy nhất, và nó chỉ là một dòng.
+
+  Không màn nào đỏ vì chuyện này: `tsc` không biết flexbox, và bộ chạy web dựng
+  ra đúng cái lệch ấy mà không có gì báo. Nên nó thành một luật ở
+  `tools/swipe.mjs`.
+*/
+const styles_panelRight = { flexDirection: 'row-reverse', alignItems: 'center' } as const;
+const styles_panelLeft = { flexDirection: 'row', alignItems: 'center' } as const;
 /* `overflow: hidden` là thứ biến `borderRadius` thành một cú CẮT: không có nó
    thì nền của hàng vẫn vuông và góc bo chẳng thấy đâu. */
 const styles_clip = { overflow: 'hidden' } as const;
@@ -581,5 +599,9 @@ const stylesFor = makeStyles((c) => ({
   hit: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, zIndex: 1 },
   /* Chữ nằm NGOÀI ô, bên dưới nó, và mang màu chữ của trang chứ không mang mực
      của ô: nó đứng trên nền hàng, không đứng trên nền màu. */
-  actionText: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },
+  /* `lineHeight` ÁP VÀO đây, không để phông quyết định: `ACTION_H` cộng đúng
+     con số này, nên thiếu nó thì chiều cao cột là một phỏng đoán và dòng chữ
+     sẽ nhô ra khỏi cột trên một hàng thấp. Cùng bài học với `TAG_LINE_H` ở
+     `sleep-insights.tsx`. */
+  actionText: { ...type.caption, lineHeight: ACTION_LABEL_H, color: c.mutedForeground, fontWeight: '600' },
 }));
