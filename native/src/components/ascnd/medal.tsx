@@ -27,7 +27,6 @@ import {
   TrendingUp,
   Trophy,
   Utensils,
-  Weight,
   Zap,
 } from 'lucide-react-native';
 import { useId } from 'react';
@@ -35,6 +34,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 
 import { Icon } from '@/components/ascnd/icon';
+import { BodyScale } from '@/constants/app-icons';
 
 /**
  * Tấm huy chương, vẽ MỘT chỗ.
@@ -102,8 +102,9 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   /* Khoá `'scale'` là DỮ LIỆU — nó nằm trong `award-grant.ts` và trong những
      huy hiệu đã trao — nên nó ở nguyên. Thứ đổi là hình nó trỏ tới: lucide
      `Scale` là cán cân CÔNG LÝ, còn huy hiệu này ("weigh_10") nói về cân nặng.
-     Xem `constants/icon-tint.ts`, nơi cả app vừa đổi sang `Weight`. */
-  scale: Weight,
+     `BodyScale` là hình app tự vẽ cho đúng cái cân điện tử; xem
+     `constants/app-icons.ts`, và `icon-tint.ts` nơi cả app dùng chung nó. */
+  scale: BodyScale,
   shield: Shield,
   sunrise: Sunrise,
   target: Target,

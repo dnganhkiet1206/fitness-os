@@ -256,6 +256,54 @@ if (!/i18n\.nWeightGoalUnset/.test(progress)) {
   problems.push('progress: hàng cân nặng mục tiêu không còn dùng nWeightGoalUnset cho chỗ trống');
 }
 
+/* ── một khái niệm = MỘT hình, trên toàn app ──
+
+   Luật trên hỏi "một hình có hai nghĩa không". Luật này hỏi chiều ngược lại, và
+   nó có vì cân nặng đã trượt HAI lần ở đúng chỗ ấy:
+
+     `Scale`   cán cân CÔNG LÝ, hai đĩa treo trên đòn cân — nghĩa là so sánh
+     `Weight`  quả cân hình thang có quai — quả cân CỦA cái cân đòn
+
+   Cả hai đều không phải cái cân người ta bước lên, và mỗi lần sửa thì chỗ này
+   đổi còn chỗ khác ở lại, nên app từng vẽ cân nặng bằng hai hình cùng lúc. Bản
+   thứ ba là `BodyScale` ở `constants/app-icons.ts`, hình app tự vẽ.
+
+   Luật đơn giản nhất giữ được kết quả ấy là CẤM hai cái tên cũ quay lại từ
+   lucide: khi chúng không nhập được nữa thì chỉ còn một hình cho khái niệm này,
+   và chỗ dùng thứ tư mọc ra ngày mai không lặng lẽ lệch được. */
+{
+  const banned = ['Scale', 'Weight'];
+  /* `\b` hai đầu để không dính `WeightEntry`, `fontWeight`, `displayWeight`. */
+  const inImport = (src, name) =>
+    [...src.matchAll(/import \{([\s\S]*?)\} from 'lucide-react-native';/g)].some((m) =>
+      new RegExp(`(^|[,\\s])${name}\\s*(,|$)`, 'm').test(m[1]),
+    );
+
+  /* tiền đề được CHẠY: phép dò phải phân biệt được `Weight` với `WeightEntry` */
+  if (!inImport("import { Moon, Weight } from 'lucide-react-native';", 'Weight')) {
+    problems.push('tự kiểm hỏng — không thấy `Weight` trong một import có nó');
+  }
+  if (inImport("import { WeightEntry } from 'lucide-react-native';", 'Weight')) {
+    problems.push('tự kiểm hỏng — nhận nhầm `WeightEntry` thành `Weight`');
+  }
+
+  let users = 0;
+  for (const file of files) {
+    const src = readFileSync(file, 'utf8');
+    if (/BodyScale/.test(src)) users++;
+    for (const name of banned) {
+      if (inImport(src, name)) {
+        problems.push(
+          `${path.relative(NATIVE, file)}: nhập \`${name}\` từ lucide. Cân nặng của app là ` +
+            '`BodyScale` ở `constants/app-icons.ts` — `Scale` là cán cân công lý và `Weight` là quả ' +
+            'cân của cân đòn; cả hai đã bị chủ dự án khoanh và thay',
+        );
+      }
+    }
+  }
+  globalThis.__oneGlyphUsers = users;
+}
+
 if (problems.length) {
   console.error('icon và chữ trùng nghĩa:\n');
   for (const p of problems) console.error(`  ${p}`);
@@ -263,5 +311,5 @@ if (problems.length) {
 }
 
 console.log(
-  `icon một nghĩa OK — ${doors} cửa có hình trong ${scanned} tệp, không hình nào dẫn tới hai nơi. Luật hỏi HAI NGHĨA chứ không hỏi lặp: 21 tệp vẽ lặp icon và gần hết là đúng (ChevronRight ×5 là nội thất, Coins ×5 là một nghĩa vẽ nhiều chỗ), nên "cấm lặp" sẽ kêu oan 20 lần. Kèm luật CHỨA: ${globalThis.__glyphChecked} widget không được vẽ lại hình của mục chứa nó${globalThis.__glyphAllowed.length ? ` (miễn có lý do: ${globalThis.__glyphAllowed.join('; ')})` : ''}. Và hàng cân nặng mục tiêu: chỗ trống không được nhắc lại nhãn`,
+  `icon một nghĩa OK — ${doors} cửa có hình trong ${scanned} tệp, không hình nào dẫn tới hai nơi. Luật hỏi HAI NGHĨA chứ không hỏi lặp: 21 tệp vẽ lặp icon và gần hết là đúng (ChevronRight ×5 là nội thất, Coins ×5 là một nghĩa vẽ nhiều chỗ), nên "cấm lặp" sẽ kêu oan 20 lần. Kèm luật CHỨA: ${globalThis.__glyphChecked} widget không được vẽ lại hình của mục chứa nó${globalThis.__glyphAllowed.length ? ` (miễn có lý do: ${globalThis.__glyphAllowed.join('; ')})` : ''}. Và hàng cân nặng mục tiêu: chỗ trống không được nhắc lại nhãn. Kèm luật NGƯỢC LẠI — một khái niệm một hình: lucide Scale và Weight không nhập lại được, nên ${globalThis.__oneGlyphUsers} tệp vẽ cân nặng đều vẽ cùng BodyScale, thay vì mỗi lần sửa lại bỏ sót một chỗ như hai lần trước`,
 );

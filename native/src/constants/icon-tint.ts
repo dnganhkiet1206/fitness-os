@@ -27,7 +27,6 @@ import {
   type LucideIcon,
   Utensils,
   UtensilsCrossed,
-  Weight,
   Zap,
 } from 'lucide-react-native';
 
@@ -39,6 +38,7 @@ import {
   trắng. Khoá thì để mỗi theme tự trả lời, và bản sáng đã có giá trị riêng cho
   cả bảy token này. Lập luận CHỌN token nào cho miền nào không đổi một chữ.
 */
+import { BodyScale } from '@/constants/app-icons';
 import { type PaletteKey } from '@/constants/palette';
 
 /**
@@ -185,32 +185,6 @@ const TINTS: [LucideIcon, PaletteKey][] = [
   // the body
   [Heart, VITAL],
   [HeartPulse, VITAL],
-  /*
-    Quả cân, và vì sao nó là CƠ THỂ chứ không phải thép.
-
-    Đọc theo nghĩa đen thì một quả cân là kim loại, nên `TRAINING` (thép) là câu
-    trả lời dễ. Nhưng chú thích của chính `TRAINING` nói rõ miền ấy là gì: "tạ,
-    đĩa tạ, đòn gánh — thứ người ta CẦM LÊN". Con số này không ai cầm lên; nó
-    được ĐO. Và thứ được đo là cơ thể, nên nó về cùng chỗ với nhịp tim và HRV:
-    những con số cơ thể nói ra về chính nó.
-
-    ── `Weight` chứ không phải `Scale`, và đây là một chỗ SAI NGHĨA đã sửa ──
-
-    Lucide `Scale` là CÁN CÂN CÔNG LÝ — hai đĩa treo trên một đòn cân. Nó mang
-    nghĩa so sánh, công bằng, đánh đổi; nó không phải cái cân sức khoẻ người ta
-    bước lên. App đã dùng nó cho cân nặng ở ba chỗ, và cả ba đều đang mượn một
-    biểu tượng của khái niệm khác.
-
-    Hệ quả phải nói ra: trên thẻ "Cần làm hôm nay", dòng Cân nặng và dòng Sinh
-    trắc do đó CÙNG một màu. Đó là bảng này làm đúng việc của nó — màu ở đây
-    nói MIỀN, không nói danh tính; hai dòng phân biệt nhau bằng hình và bằng
-    nhãn. Tách ra một miền thứ chín chỉ để hai dòng khác màu là quay lại đúng
-    kiểu "mỗi icon một màu" mà tệp này sinh ra để dẹp.
-
-    Đo trên mặt ô icon: 4,52:1 ở bản sáng, 4,88:1 ở bản tối — trên sàn 3:1 của
-    WCAG 1.4.11 cho vật thể đồ hoạ.
-  */
-  [Weight, VITAL],
 
   // water
   [Droplets, WATER],
@@ -224,6 +198,46 @@ const TINTS: [LucideIcon, PaletteKey][] = [
 
   // phân tích
   [TrendingUp, INSIGHT],
+  /*
+    Cân nặng — cùng miền với xu hướng, và ĐỎ là một chỗ sai đã sửa.
+
+    ── vì sao không còn là `VITAL` ──
+
+    Chủ dự án khoanh dòng Cân nặng trên thẻ "Cần làm hôm nay": "tại sao nó lại
+    là màu đỏ, cân nặng thì liên quan gì đến màu đỏ". Đúng. `VITAL` là
+    `readinessRed`, và đỏ trong app này nói hai điều — máu, và báo động
+    (`destructive` cũng đỏ). Không điều nào là con số bạn bước lên cân để đọc.
+    Lý lẽ cũ ở đây là "thứ được ĐO thì về cùng chỗ với nhịp tim"; nó đúng về
+    phân loại và sai về thứ người ta THẤY.
+
+    ── vì sao là `INSIGHT` chứ không phải một miền thứ tám ──
+
+    Đã đi tìm một khoá tự do để mở miền riêng, và KHÔNG có. `metricSteel` từng
+    là ứng viên tốt nhất — cân là kính với thép, và nó đo được 4,48:1 trên giấy,
+    6,04:1 trong tối. Nhưng `assistant-icons.tsx` đã gán `dumbbell: metricSteel`,
+    và glyph tạ ấy đang hiện thật ở đầu màn Buổi tập. Lấy nó cho cân nặng là làm
+    một token mang hai nghĩa — đúng loại trôi mà tệp này sinh ra để chặn.
+    `metricBeige` thì bản tối là kem nhạt, đo 14,01:1: nó đọc ra là icon TRẮNG
+    chưa được tô màu chứ không ra một miền. `metricRose` là đỏ lần nữa.
+
+    Nên đây là chia sẻ thứ ba, cùng kiểu với bước-đi/calo và đêm/trợ lý, và nó
+    có lý do riêng: cân nặng trong app này SỐNG như một xu hướng. Tab Cân nặng ở
+    Tiến trình là một biểu đồ có đường mục tiêu, `WeightChanges` đọc ra nó tăng
+    hay giảm — cùng một ý mà `TrendingUp` đang mang. Nó không phải một tín hiệu
+    cơ thể phát ra như nhịp tim; nó là một con số bạn nhìn nó đi đâu.
+
+    Và nó dẹp một mâu thuẫn có sẵn thay vì tạo thêm: `app/reminders.tsx` đã tô
+    lời nhắc cân nặng bằng `c.metricBlue` từ trước. Trước thay đổi này, cùng một
+    việc có hai màu ở hai màn.
+
+    Đo trên nền ô icon của thẻ (`m.inset.bg`): **4,55:1** bản sáng, **6,54:1**
+    bản tối — trên sàn 3:1 của WCAG 1.4.11, và đều cao hơn màu đỏ nó thay
+    (4,52 / 4,88).
+
+    Trên thẻ To-do, năm dòng giờ là năm màu khác nhau: xanh lá, thép, tím, đỏ,
+    xanh dương. Dòng Sinh trắc giữ đỏ một mình, đúng nghĩa của nó.
+  */
+  [BodyScale, INSIGHT],
 
   // won
   [Coins, REWARD],

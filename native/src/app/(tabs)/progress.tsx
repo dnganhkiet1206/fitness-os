@@ -5,8 +5,8 @@ import {
   Camera,
   ChevronRight,
   Plus,
+  type LucideIcon,
   Ruler,
-  Weight,
   SlidersHorizontal,
   Target,
   Trash2,
@@ -32,6 +32,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { ShortcutRow } from '@/components/ascnd/shortcut-row';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
+import { BodyScale } from '@/constants/app-icons';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { alpha, graphicOf, makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
@@ -368,8 +369,8 @@ export default function ProgressScreen() {
   const [bmiW, setBmiW] = useState(0);
   const bmiGrad = `bmiScale-${useId()}`;
 
-  const tabs: { key: Tab; label: string; icon: typeof Weight }[] = [
-    { key: 'weight', label: i18n.progressWeight, icon: Weight },
+  const tabs: { key: Tab; label: string; icon: LucideIcon }[] = [
+    { key: 'weight', label: i18n.progressWeight, icon: BodyScale },
     { key: 'measurements', label: i18n.progressMeasurements, icon: Ruler },
   ];
 

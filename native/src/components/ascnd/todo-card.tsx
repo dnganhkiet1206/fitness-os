@@ -8,7 +8,6 @@ import {
   type LucideIcon,
   Moon,
   Soup,
-  Weight,
 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -18,6 +17,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { DateField } from '@/components/ascnd/date-field';
 import { WeightEntry } from '@/components/ascnd/weight-entry';
+import { BodyScale } from '@/constants/app-icons';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { iconTint } from '@/constants/icon-tint';
 import { alpha, makeStyles } from '@/constants/theme';
@@ -98,13 +98,19 @@ const ROUTE = {
 
     Soup          bát tròn, miệng rộng, có hơi bốc — dáng NGANG
     BicepsFlexed  bắp tay gập, một khối cong đặc — dáng CHÉO
-    Weight        quả cân, hình thang có quai — dáng ĐỨNG
+    BodyScale     cân điện tử, mặt vuông có màn hình — dáng VUÔNG
 
-  ── và `Weight` sửa luôn một chỗ SAI NGHĨA ──
+  ── `BodyScale` là hình DUY NHẤT app tự vẽ, và đây là lý do ──
 
-  Lucide `Scale` là cán cân CÔNG LÝ: hai đĩa treo trên một đòn cân. Nó nói về
-  so sánh và công bằng, không phải cái cân người ta bước lên. App mượn nó cho
-  cân nặng ở ba chỗ; cả ba nay dùng `Weight`, để một khái niệm giữ một hình.
+  Dòng này đã trượt hai lần. Lucide `Scale` là cán cân CÔNG LÝ — hai đĩa treo
+  trên một đòn cân — nên nó nói về so sánh, không phải cái cân người ta bước
+  lên. Thay bằng `Weight` thì gần hơn nhưng vẫn sai: đó là QUẢ CÂN của cái cân
+  đòn. Chủ dự án khoanh lại lần nữa: "nó phải là một cái cân điện tử hình vuông".
+
+  Đã dựng cả bộ ứng viên vuông của lucide ở đúng 20pt rồi nhìn — không cái nào
+  là cân sức khoẻ; gần nhất là `panel-bottom`, một tấm panel giao diện. Nên
+  `constants/app-icons.ts` vẽ đúng MỘT hình, bằng chính `createLucideIcon` của
+  lucide, theo bố cục chủ dự án gửi kèm.
 
   ── `BicepsFlexed` cũng gỡ một chỗ trùng ──
 
@@ -112,15 +118,16 @@ const ROUTE = {
   Cùng một hình cho một mục và cho một dòng việc, cách nhau vài trăm điểm, là
   đúng cái bẫy `tools/glyph-meaning.mjs` được viết ra để bắt.
 
-  Không vẽ tay hình nào: cả ba đến từ lucide, đúng bài học `macro-icon-style.mjs`
-  đã trả giá một lần — bản vẽ tay thứ hai luôn trôi khỏi bản gốc.
+  Bốn trong năm hình đến từ lucide, và hình thứ năm dựng bằng factory của chính
+  lucide chứ không bằng một `<Svg>` tự ráp — đúng bài học `macro-icon-style.mjs`
+  đã trả giá một lần: một bộ vẽ tay ĐỘC LẬP luôn trôi khỏi bộ gốc.
 */
 const ICON: Record<TodoKey, LucideIcon> = {
   meal: Soup,
   workout: BicepsFlexed,
   sleep: Moon,
   biometrics: HeartPulse,
-  weight: Weight,
+  weight: BodyScale,
 };
 
 /*
@@ -141,14 +148,19 @@ const ICON: Record<TodoKey, LucideIcon> = {
       BicepsFlexed → TRAINING  champagne        thép, thứ người ta cầm lên
       Moon         → NIGHT     metricPurple     đêm
       HeartPulse   → VITAL     readinessRed     tín hiệu của cơ thể
-      Weight       → VITAL     readinessRed     cân nặng cũng là tín hiệu ấy
+      BodyScale    → INSIGHT   metricBlue       con số bạn nhìn nó đi đâu
 
-  Hai dòng cuối CÙNG màu, và đó là bảng kia làm đúng việc: màu nói MIỀN, không
-  nói danh tính. Hai dòng phân biệt nhau bằng hình và bằng nhãn — thêm một miền
-  thứ chín chỉ để chúng khác màu là quay lại "mỗi icon một màu".
+  ── dòng cuối KHÔNG còn đỏ, và đó là một chỗ sai đã sửa ──
 
-  Đo trên mặt ô icon, cả bốn màu: 4,52–5,41:1 ở bản sáng và 4,79–11,92:1 ở bản
-  tối, trên sàn 3:1 của WCAG 1.4.11 cho vật thể đồ hoạ.
+  Hai dòng cuối từng cùng `VITAL`, tức cùng đỏ, và lời biện hộ ở đây là "màu nói
+  MIỀN chứ không nói danh tính". Chủ dự án khoanh đúng dòng ấy: "cân nặng thì
+  liên quan gì đến màu đỏ". Đỏ trong app nói máu và nói báo động; không cái nào
+  là con số bạn bước lên cân để đọc. Lý do đổi nằm ở `icon-tint.ts` cạnh chính
+  mục ấy — gồm cả vì sao KHÔNG mở một miền thứ tám.
+
+  Đo trên mặt ô icon, cả năm màu: 4,52–5,41:1 ở bản sáng và 4,79–11,92:1 ở bản
+  tối, trên sàn 3:1 của WCAG 1.4.11 cho vật thể đồ hoạ; riêng màu mới đo
+  4,55:1 và 6,54:1, cao hơn màu đỏ nó thay.
 
   Dòng ĐÃ XONG thì không lấy màu miền: chữ nhạt đi nên dấu tích nhạt theo. Trạng
   thái ấy vẫn không phụ thuộc màu — nó có HÌNH (dấu tích) và có CHỮ ("Đã ghi").
