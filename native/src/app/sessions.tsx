@@ -216,9 +216,13 @@ export default function SessionsScreen() {
                       other list on the phone does.
                     */}
                     <SwipeRow
-                      icon={Trash2}
-                      label={i18n.a11yDelete}
-                      onAction={() => confirmDelete(s.id, s.date_time, s.template_name ?? '')}>
+                      right={[
+                        {
+                          icon: Trash2,
+                          label: i18n.a11yDelete,
+                          onPress: () => confirmDelete(s.id, s.date_time, s.template_name ?? ''),
+                        },
+                      ]}>
                     <SessionRow
                       session={s}
                       wUnit={wUnit}

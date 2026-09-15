@@ -65,26 +65,58 @@ const COMMIT = OPEN_W * 0.66;
 /** Movement before the gesture takes the row, so a scroll can drift. */
 const HYSTERESIS = 10;
 
-function Action({
-  progress,
-  icon,
-  label,
-  tint,
-  onPress,
-}: {
-  progress: SharedValue<number>;
+/**
+ * Một hành động vuốt.
+ *
+ * Là một KIỂU chứ không phải bốn prop rời, vì từ bản này một hàng mở ra được
+ * nhiều nút mỗi bên — thẻ "Cần làm hôm nay" đòi ba nút ở mép phải (sửa lại,
+ * hẹn giờ, bật/tắt nhắc) và một nút ở mép trái. Bốn prop rời thì con số ấy
+ * không diễn đạt được.
+ */
+export type SwipeAction = {
   icon: LucideIcon;
   label: string;
-  tint: string;
+  tint?: string;
   onPress: () => void;
+};
+
+/**
+ * Bao nhiêu nút là quá nhiều.
+ *
+ * Apple để tối đa 3–4 nút mỗi mép. Ở đây chốt 3: mỗi nút rộng `OPEN_W`, nên ba
+ * nút đã chiếm 252 điểm trên một màn 393 — hàng chỉ còn 141 điểm để nhìn thấy
+ * mình là hàng nào. Nút thứ tư biến cú vuốt thành một thực đơn.
+ */
+const MAX_ACTIONS = 3;
+
+function Action({
+  progress,
+  action,
+  index,
+  count,
+}: {
+  progress: SharedValue<number>;
+  action: SwipeAction;
+  index: number;
+  count: number;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
-  /* `progress` is 1 at the open position and 0 closed, so the capsule reaches
-     full size exactly when the row does — the two are the same drag. */
+  /*
+    `progress` is 1 at the open position and 0 closed, so the capsule reaches
+    full size exactly when the row does — the two are the same drag.
+
+    ── và vì sao có `lag` ──
+
+    Nhiều nút xuất hiện CÙNG một lúc đọc ra là một khối đặc trượt vào. iOS thì
+    mở lần lượt từ mép vào trong. `lag` đẩy điểm bắt đầu của từng nút theo thứ
+    tự ấy — nút ngoài cùng (index 0, sát mép) mở trước — nhưng cả ba vẫn về
+    đích ở cùng `progress` 1, nên không nút nào còn đang bò khi hàng đã dừng.
+  */
+  const lag = (index / Math.max(count, 1)) * 0.35;
   const grow = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(progress.value, [0, 1], [0.72, 1], 'clamp') }],
-    opacity: interpolate(progress.value, [0, 0.35, 1], [0, 0.6, 1], 'clamp'),
+    transform: [{ scale: interpolate(progress.value, [lag, 1], [0.72, 1], 'clamp') }],
+    opacity: interpolate(progress.value, [lag, lag + 0.35, 1], [0, 0.6, 1], 'clamp'),
   }));
   /* The word arrives only once the row is committed. Before that it would be a
      label on a button you have not decided to press. */
@@ -94,11 +126,16 @@ function Action({
 
   return (
     <View style={styles.actionWrap}>
-      <Animated.View style={[styles.action, { backgroundColor: tint }, grow]}>
-        <Text accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.hit} />
-        <Icon icon={icon} size={17} color={c.primaryForeground} />
+      <Animated.View style={[styles.action, { backgroundColor: action.tint ?? c.readinessRed }, grow]}>
+        <Text
+          accessibilityRole="button"
+          accessibilityLabel={action.label}
+          onPress={action.onPress}
+          style={styles.hit}
+        />
+        <Icon icon={action.icon} size={17} color={c.primaryForeground} />
         <Animated.Text style={[styles.actionText, word]} numberOfLines={1}>
-          {label}
+          {action.label}
         </Animated.Text>
       </Animated.View>
     </View>
@@ -107,31 +144,26 @@ function Action({
 
 export function SwipeRow({
   children,
-  icon,
-  label,
-  tint,
-  onAction,
-  bothEdges = false,
+  right,
+  left,
 }: {
   children: React.ReactNode;
-  icon: LucideIcon;
-  label: string;
-  tint?: string;
-  onAction: () => void;
   /**
-   * Mở được từ CẢ HAI mép, không chỉ mép phải.
+   * Mép PHẢI — vuốt từ phải sang trái.
    *
-   * Mặc định là false vì hàng bữa ăn và hàng buổi tập đã sống một thời gian với
-   * đúng một chiều, và đổi thói quen của một cử chỉ đang dùng được là một cái
-   * giá không ai xin.
-   *
-   * Thẻ NHÓM ở chế độ sắp xếp thì bật: ở đó không có nút xoá nào trên màn hình
-   * cả, nên cú vuốt là đường DUY NHẤT — và một đường duy nhất thì không nên bắt
-   * người ta đoán đúng chiều.
+   * Apple để mép này cho thao tác kết thúc ngữ cảnh hoặc phá huỷ (Xoá, Lưu
+   * trữ) và cho nhóm nhiều nút. Nút ĐẦU danh sách nằm ngoài cùng, sát mép,
+   * đúng thứ tự `UISwipeActionsConfiguration` dựng.
    */
-  bothEdges?: boolean;
+  right: SwipeAction[];
+  /**
+   * Mép TRÁI — vuốt từ trái sang phải. Thường chỉ MỘT nút.
+   *
+   * Apple để mép này cho một lối tắt ngữ cảnh: Ghim, Đã đọc, Yêu thích. Không
+   * phải chỗ của thao tác phá huỷ, và không phải chỗ của một thực đơn.
+   */
+  left?: SwipeAction[];
 }) {
-  const c = usePalette();
   /* One tick, when the row crosses into "letting go will open this". Fired from
      the will-open callback rather than from a progress watcher so it cannot
      repeat while the finger wobbles on the line. */
@@ -166,31 +198,68 @@ export function SwipeRow({
     buzzed.current = false;
   }, []);
 
+  const rightSet = right.slice(0, MAX_ACTIONS);
+  const leftSet = (left ?? []).slice(0, MAX_ACTIONS);
+
+  /*
+    Mọi hành động vuốt cũng là một hành động TRỢ NĂNG.
+
+    Một cú vuốt vô hình với VoiceOver: người dùng rotor không có cách nào đoán
+    ra nó. `accessibilityActions` là cách hệ điều hành hỏi "hàng này làm được
+    gì", nên mỗi nút ở đây phải có mặt trong câu trả lời ấy — xem chú thích
+    "a swipe is never the only way" ở đầu tệp, và `tools/swipe.mjs`.
+  */
+  const all = [...leftSet, ...rightSet];
+
   return (
-    <ReanimatedSwipeable
-      friction={2}
-      rightThreshold={COMMIT}
-      dragOffsetFromRightEdge={HYSTERESIS}
-      overshootRight={false}
-      {...(bothEdges
-        ? {
-            leftThreshold: COMMIT,
-            dragOffsetFromLeftEdge: HYSTERESIS,
-            overshootLeft: false,
-            renderLeftActions: (progress: SharedValue<number>) => (
-              <Action progress={progress} icon={icon} label={label} tint={tint ?? c.readinessRed} onPress={onAction} />
-            ),
-          }
-        : null)}
-      onSwipeableWillOpen={onWillOpen}
-      onSwipeableWillClose={onWillClose}
-      renderRightActions={(progress) => (
-        <Action progress={progress} icon={icon} label={label} tint={tint ?? c.readinessRed} onPress={onAction} />
-      )}>
-      {children}
-    </ReanimatedSwipeable>
+    <View
+      accessibilityActions={all.map((a) => ({ name: a.label, label: a.label }))}
+      onAccessibilityAction={(e) => {
+        all.find((a) => a.label === e.nativeEvent.actionName)?.onPress();
+      }}>
+      <ReanimatedSwipeable
+        friction={2}
+        rightThreshold={COMMIT}
+        dragOffsetFromRightEdge={HYSTERESIS}
+        overshootRight={false}
+        {...(leftSet.length
+          ? {
+              leftThreshold: COMMIT,
+              dragOffsetFromLeftEdge: HYSTERESIS,
+              overshootLeft: false,
+              renderLeftActions: (progress: SharedValue<number>) => (
+                <View style={styles_panelLeft}>
+                  {leftSet.map((a, i) => (
+                    <Action key={a.label} progress={progress} action={a} index={i} count={leftSet.length} />
+                  ))}
+                </View>
+              ),
+            }
+          : null)}
+        onSwipeableWillOpen={onWillOpen}
+        onSwipeableWillClose={onWillClose}
+        renderRightActions={(progress) => (
+          <View style={styles_panelRight}>
+            {rightSet.map((a, i) => (
+              <Action key={a.label} progress={progress} action={a} index={i} count={rightSet.length} />
+            ))}
+          </View>
+        )}>
+        {children}
+      </ReanimatedSwipeable>
+    </View>
   );
 }
+
+/*
+  Thứ tự nút: cái ĐẦU danh sách nằm sát mép người ta vuốt từ đó.
+
+  iOS dựng như thế (`UISwipeActionsConfiguration`: "the system arranges the
+  actions from the outside edge inward"), nên ở mép PHẢI hàng phải đảo chiều —
+  một `flexDirection: 'row'` thường sẽ đặt nút đầu vào trong cùng.
+*/
+const styles_panelRight = { flexDirection: 'row-reverse' } as const;
+const styles_panelLeft = { flexDirection: 'row' } as const;
 
 const stylesFor = makeStyles((c) => ({
   actionWrap: { width: OPEN_W, justifyContent: 'center', alignItems: 'center' },

@@ -34,6 +34,7 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const COMPONENT = 'src/components/ascnd/swipe-row.tsx';
 const src = readFileSync(path.join(NATIVE, COMPONENT), 'utf8');
 const problems = [];
+let checked = 0;
 
 /* ── 1. the mechanics, read out of the component ── */
 {
@@ -98,65 +99,96 @@ const problems = [];
     if (!/<SwipeRow/.test(body)) continue;
 
     /*
-      What the swipe calls — gọi thẳng `onAction={() => fn(…)}` hoặc trao tham
-      chiếu `onAction={fn}`. Bản đầu chỉ đọc dạng thứ nhất và báo "không đọc
-      được hàm nó gọi" trên một chỗ dùng hoàn toàn hợp lệ.
+      Những hàm cú vuốt gọi tới.
+
+      API của `SwipeRow` từ bản nhiều-nút là hai mảng `right`/`left`, mỗi phần
+      tử có `onPress`. Bản trước đọc một prop `onAction` duy nhất, và khi API
+      đổi thì nó không đỏ vì API sai — nó đỏ vì "không đọc được hàm nó gọi",
+      tức một thông báo đúng về chuyện sai.
+
+      Nhận cả hai dạng viết: `onPress: () => fn(...)` và `onPress: fn`.
     */
-    const m =
-      body.match(/<SwipeRow[\s\S]*?onAction=\{\(\) => (\w+)\(/) ??
-      body.match(/<SwipeRow[\s\S]*?onAction=\{(\w+)\}/);
-    if (!m) {
-      problems.push(`${rel} dùng <SwipeRow> nhưng không đọc được hàm nó gọi`);
-      continue;
+    for (const tag of [...body.matchAll(/<SwipeRow\b/g)]) {
+      /* Cả thẻ mở, từ `<SwipeRow` tới `}>` đóng nó — đó là chỗ hai mảng nằm. */
+      const open = body.slice(tag.index, body.indexOf('}>', tag.index) + 2);
+      /*
+        Hành động viết THẲNG trong thẻ, và hành động đặt tên rồi truyền vào.
+
+        Dạng thứ hai có thật và hợp lệ: dashboard dùng CÙNG một nút ở cả hai
+        mép, nên nó khai `const remove = { … }` một lần rồi đưa vào cả hai mảng
+        — chép đôi ở đó mới là cái sai. Luật phải đi theo một bước ấy, không thì
+        nó bắt người viết chép đôi để làm vừa lòng nó.
+      */
+      const named = [...open.matchAll(/[[{]\s*(\w+)\s*[,\]}]/g)].map((x) => x[1]);
+      const sources = [
+        open,
+        ...named.map((n) => {
+          const d = new RegExp(`const ${n} = \\{[^}]*\\}`).exec(body);
+          return d ? d[0] : '';
+        }),
+      ];
+      const fns = [
+        ...new Set(
+          sources
+            .flatMap((src2) => [...src2.matchAll(/onPress: (?:\(\) => )?(\w+)/g)].map((x) => x[1]))
+            .filter((n) => n !== 'undefined'),
+        ),
+      ];
+      if (!fns.length) {
+        problems.push(`${rel} dùng <SwipeRow> nhưng không đọc được hàm nào nó gọi`);
+        continue;
+      }
+      for (const fn of fns) {
+        checked++;
+        const rest = body
+          .replace(open, '')
+          .replace(new RegExp(`(const|function) ${fn}\\b`), '__decl__');
+        if (!new RegExp(`\\b${fn}\\b`).test(rest)) {
+          problems.push(
+            `${rel}: \`${fn}\` chỉ tới được bằng cú vuốt — today-meals.tsx đã ghi vì sao điều đó không ` +
+              'đủ: "cả hai đều vô hình cho tới khi đoán ra". Phải còn một lối khác trong chính tệp này',
+          );
+        }
+      }
     }
-    const fn = m[1];
-    /*
-      Reachable from somewhere OTHER than the swipe — by any route, not by a
-      call.
+  }
+}
 
-      The first version counted `fn(` and failed on the real code: `sessions.tsx`
-      hands the function to `SessionRow` as `onDelete={confirmDelete}`, which is
-      a reference and not a call, and that component draws the visible bin
-      button. The rule reported a screen that has both paths as having only one.
+/* ── 3. lối cho VoiceOver nằm ở CHÍNH component, và nó phải lấy từ danh sách thật ──
 
-      So: cut the `<SwipeRow>` block and the declaration out of the file, and ask
-      whether the name is still mentioned anywhere. Anything left is another way
-      to reach it.
-    */
-    const swipeBlock = body.slice(m.index, body.indexOf('>', m.index + m[0].length) + 1);
-    const rest = body
-      .replace(swipeBlock, '')
-      .replace(new RegExp(`(const|function) ${fn}\\b`), '__decl__');
-    /*
-      ── luật này được CHUYỂN HƯỚNG, không nới ──
-
-      Bất biến thật là: một cú vuốt là VÔ HÌNH, nên hành động phải còn một lối
-      khác. Bản đầu cài nó thành "phải còn một nút nhìn thấy được", và đó là
-      MỘT cách thoả, không phải bất biến.
-
-      Chế độ sắp xếp dashboard bỏ hẳn nút xoá — đúng cách iOS làm ở Mail và Nhắc
-      nhở: xoá đứng thường trực cạnh tên, ngang hàng với hai thao tác vô hại,
-      trên một hàng người ta lướt qua, là một thao tác không hoàn tác được đặt
-      sai chỗ. Lối khác ở đó là một accessibility ACTION, và đó chính là thứ
-      VoiceOver dùng — nó không bao giờ "thấy" cái nút kia.
-
-      Nên luật nhận CẢ HAI, và vẫn đỏ khi không có lối nào: một nút khác gọi tới
-      cùng hàm, hoặc một action khai `accessibilityActions` kèm
-      `onAccessibilityAction` xử lý nó. Khai mà không xử lý thì không tính —
-      VoiceOver đọc ra một việc rồi bấm vào không có gì xảy ra.
-    */
-    const viaButton = new RegExp(`\\b${fn}\\b`).test(rest);
-    const viaA11y =
-      /accessibilityActions=\{/.test(body) &&
-      /onAccessibilityAction=\{/.test(body) &&
-      new RegExp(`actionName === '(\\w+)'\\)\\s*${fn}\\(|name: '(\\w+)', label:`).test(body);
-    if (!viaButton && !viaA11y) {
-      problems.push(
-        `${rel}: \`${fn}\` chỉ tới được bằng cú vuốt — today-meals.tsx đã ghi vì sao điều đó không đủ: ` +
-          '"cả hai đều vô hình cho tới khi đoán ra". Phải còn một lối khác: một nút nhìn thấy được, hoặc ' +
-          'một accessibility action có khai VÀ có xử lý',
-      );
-    }
+   Bản trước để mỗi chỗ dùng tự khai `accessibilityActions`, nên một chỗ dùng
+   mới rất dễ quên. Từ bản nhiều-nút, `SwipeRow` tự khai — nhưng chỉ đúng khi
+   nó khai từ ĐÚNG danh sách nó vẽ ra. Một danh sách gõ tay sẽ trôi khỏi danh
+   sách thật mà không có gì báo, và VoiceOver sẽ đọc ra một việc đã đổi tên
+   hoặc bỏ sót việc mới. */
+{
+  const has = (re) => re.test(src);
+  if (!has(/accessibilityActions=\{all\.map\(/)) {
+    problems.push(
+      `${COMPONENT}: \`accessibilityActions\` không lấy từ chính danh sách hành động đang vẽ — một ` +
+        'danh sách gõ tay sẽ trôi khỏi nó mà không có gì báo',
+    );
+  }
+  if (!has(/onAccessibilityAction=\{/) || !has(/all\.find\(/)) {
+    problems.push(
+      `${COMPONENT}: khai \`accessibilityActions\` mà không xử lý — VoiceOver đọc ra một việc rồi bấm ` +
+        'vào không có gì xảy ra',
+    );
+  }
+  const max = /const MAX_ACTIONS = (\d+);/.exec(src);
+  if (!max) {
+    problems.push(`${COMPONENT}: không đọc được \`MAX_ACTIONS\``);
+  } else if (Number(max[1]) < 1 || Number(max[1]) > 4) {
+    problems.push(
+      `${COMPONENT}: \`MAX_ACTIONS\` = ${max[1]} — Apple để tối đa 3–4 nút mỗi mép, và mỗi nút ở đây ` +
+        'rộng OPEN_W nên quá số ấy là hàng không còn chỗ để nhìn thấy mình là hàng nào',
+    );
+  }
+  if (!/row-reverse/.test(src)) {
+    problems.push(
+      `${COMPONENT}: mép phải không đảo chiều, nên nút ĐẦU danh sách nằm trong cùng. iOS dựng từ mép ` +
+        'ngoài vào trong, nên thứ tự người viết khai và thứ tự người dùng thấy đang ngược nhau',
+    );
   }
 }
 
@@ -171,9 +203,13 @@ console.log(
     'với cuộn; nút hành động đọc THẲNG `progress.value` của cú kéo nên nó bám ngón tay từng khung ' +
     'hình chứ không "chạy tới trạng thái khi thả"; có ngưỡng cam kết nằm trong khoảng mở (để có ' +
     'khoảnh khắc nhãn kịp hiện trước khi thả), có độ trễ để cuộn dọc hơi lệch không bóc hàng ra, và ' +
-    'haptic nổ đúng lúc cam kết với chốt một-lần; và mọi hành động vuốt được đều còn một LỐI KHÁC — ' +
-    'today-meals.tsx đã ghi vì sao: "cả hai đều vô hình cho tới khi đoán ra". Lối ấy là một nút nhìn thấy ' +
-    'được, HOẶC một accessibility action có khai và có xử lý: chế độ sắp xếp dashboard bỏ hẳn nút xoá — ' +
-    'đúng cách iOS làm ở Mail và Nhắc nhở, vì một thao tác không hoàn tác được không nên đứng thường trực ' +
-    'ngang hàng với hai thao tác vô hại — và ở đó VoiceOver vốn không bao giờ "thấy" cái nút kia',
+    `haptic nổ đúng lúc cam kết với chốt một-lần. ${checked} hành động vuốt trên mọi chỗ dùng đều còn ` +
+    'một LỐI KHÁC trong chính tệp của nó — today-meals.tsx đã ghi vì sao: "cả hai đều vô hình cho tới ' +
+    'khi đoán ra" — và luật đi theo được một bước khi hành động được ĐẶT TÊN rồi truyền vào, vì dashboard ' +
+    'dùng cùng một nút ở cả hai mép và chép đôi ở đó mới là cái sai. Lối cho VoiceOver thì không còn là ' +
+    'việc của từng chỗ dùng nữa: `SwipeRow` tự khai `accessibilityActions` TỪ CHÍNH danh sách nó đang vẽ ' +
+    'và có xử lý — một danh sách gõ tay sẽ trôi khỏi danh sách thật mà không có gì báo. Cộng hai luật của ' +
+    'bản nhiều-nút: tối đa 3 nút mỗi mép (Apple để 3–4, mà mỗi nút ở đây rộng OPEN_W nên ba nút đã chiếm ' +
+    '252 trên 393 điểm), và mép phải phải đảo chiều để nút ĐẦU danh sách nằm ngoài cùng, đúng cách ' +
+    '`UISwipeActionsConfiguration` dựng từ mép ngoài vào trong',
 );

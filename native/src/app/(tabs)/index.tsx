@@ -2532,8 +2532,16 @@ function MaybeRemovable({
   children: React.ReactNode;
 }) {
   if (!removable) return <>{children}</>;
+  /*
+    CÙNG một nút ở cả hai mép — đúng ý của `bothEdges` mà API cũ có.
+
+    Ở chế độ sắp xếp dashboard không có nút xoá nào trên màn hình, nên cú vuốt
+    là đường DUY NHẤT nhìn thấy được; một đường duy nhất thì không nên bắt
+    người ta đoán đúng chiều. Xem `tools/swipe.mjs`, nơi ngoại lệ ấy được ghi.
+  */
+  const remove = { icon: CircleMinus, label, onPress: onRemove };
   return (
-    <SwipeRow bothEdges icon={CircleMinus} label={label} onAction={onRemove}>
+    <SwipeRow right={[remove]} left={[remove]}>
       {children}
     </SwipeRow>
   );
