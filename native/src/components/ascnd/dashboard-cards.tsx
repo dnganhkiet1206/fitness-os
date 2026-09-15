@@ -24,7 +24,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
-import { AnimatedNumber } from '@/components/ascnd/animated-number';
+import { AnimatedNumber, formatCount } from '@/components/ascnd/animated-number';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -1516,7 +1516,7 @@ function CompactWidget({
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
-  const row = (
+  const line = (
     <View style={styles.compactRow}>
       {ring && icon ? (
         <MiniRing pct={pct} icon={icon} color={iconColor ?? c.foreground} gradient={ring} bg={iconBg ?? 'transparent'} />
@@ -1530,41 +1530,55 @@ function CompactWidget({
         {valueNode ?? (
           <Text style={lead ? styles.compactValueLead : styles.compactValue}>{valueText}</Text>
         )}
-        {/*
-          `color` và `trackColor` đều truyền THẲNG, không dựa vào mặc định của
-          `ProgressBar` — và cái thứ hai là bắt buộc. Đo rãnh mặc định
-          (`alpha(c.secondary, 0.4)`) trên đúng mặt thẻ này:
-
-              sáng  #f9f7f3 trên #ffffff  1,070
-              tối   #171719 trên #161617  1,010   ← không còn là một cái rãnh
-
-          Cả `m.inset.track` của thanh macro cũng vậy, và còn tệ hơn ở bản sáng:
-          1,000 chằn chặn, vì trường ấy CÓ NGHĨA là "mặt thẻ lộ lại qua chỗ lõm"
-          — đúng khi thanh nằm trong một ô lõm, vô hình khi nó nằm thẳng trên
-          mặt thẻ. Cùng một cái bẫy mà `Material.onPage` đã phải sinh ra để gỡ.
-
-          `c.ringTrack` là rãnh của MỌI vòng tiến độ trong app, kể cả vòng của
-          thẻ Nước ngay bên cạnh — tức nó đã được chứng minh trên đúng mặt này,
-          ở đúng cỡ này:
-
-              rãnh vs mặt thẻ   sáng 1,886 · tối 1,605
-              tô   vs rãnh      sáng 9,32  · tối 5,11   (sàn 1.4.11 là 3:1)
-
-          Thanh ở đây cao 4pt, mỏng hơn thanh 10pt của màn `/steps` — mà màn ấy
-          lấy rãnh là `c.background`, chỉ 1,097 trên mặt thẻ. Mỏng hơn thì cần
-          NHIỀU tương phản hơn, không phải ít, nên hai chỗ không dùng chung một
-          rãnh và đó là cố ý.
-        */}
-        {bar ? (
-          <ProgressBar
-            pct={pct}
-            color={c.primary}
-            trackColor={c.ringTrack}
-            style={styles.compactBar}
-          />
-        ) : null}
       </View>
       {figure ?? <Text style={styles.compactPct}>{pct}%</Text>}
+    </View>
+  );
+
+  /*
+    ── cái thanh là của CẢ THẺ, không phải cái gạch chân của con số ──
+
+    Bản đầu đặt thanh TRONG `compactInfo`, tức cùng cột với nhãn và con số. Chụp
+    lại ở 3× thì nó hiện ra đúng bản chất của chỗ đứng ấy: một vạch bắt đầu ở
+    mép trái của CHỮ, kết thúc trước con số phần trăm, và đọc ra như gạch chân
+    cho "8.432 / 10.000" chứ không như tiến độ của cái thẻ.
+
+    Màn `/steps` — nơi thẻ này mở ra — đã cho thanh tràn hết bề ngang thẻ từ
+    trước. Nên thanh ra khỏi cột chữ và thành em của cả HÀNG: từ mép icon tới
+    mép phải. Cùng một hình ở hai nơi, và lần này cùng cả chiều dài.
+
+    Bọc thêm một lớp CHỈ KHI có thanh: thẻ Nước không có thanh, và một nút bố
+    cục thừa cho một thứ không tồn tại là thứ không ai gỡ về sau.
+  */
+  const row = !bar ? line : (
+    <View>
+      {line}
+      {/*
+        `color` và `trackColor` đều truyền THẲNG, không dựa vào mặc định của
+        `ProgressBar` — và cái thứ hai là bắt buộc. Đo rãnh mặc định
+        (`alpha(c.secondary, 0.4)`) trên đúng mặt thẻ này:
+
+        sáng  #f9f7f3 trên #ffffff  1,070
+        tối   #171719 trên #161617  1,010   ← không còn là một cái rãnh
+
+        Cả `m.inset.track` của thanh macro cũng vậy, và còn tệ hơn ở bản sáng:
+        1,000 chằn chặn, vì trường ấy CÓ NGHĨA là "mặt thẻ lộ lại qua chỗ lõm"
+        — đúng khi thanh nằm trong một ô lõm, vô hình khi nó nằm thẳng trên
+        mặt thẻ. Cùng một cái bẫy mà `Material.onPage` đã phải sinh ra để gỡ.
+
+        `c.ringTrack` là rãnh của MỌI vòng tiến độ trong app, kể cả vòng của
+        thẻ Nước ngay bên cạnh — tức nó đã được chứng minh trên đúng mặt này,
+        ở đúng cỡ này:
+
+        rãnh vs mặt thẻ   sáng 1,886 · tối 1,605
+        tô   vs rãnh      sáng 9,32  · tối 5,11   (sàn 1.4.11 là 3:1)
+
+        Thanh ở đây cao 4pt, mỏng hơn thanh 10pt của màn `/steps` — mà màn ấy
+        lấy rãnh là `c.background`, chỉ 1,097 trên mặt thẻ. Mỏng hơn thì cần
+        NHIỀU tương phản hơn, không phải ít, nên hai chỗ không dùng chung một
+        rãnh và đó là cố ý.
+      */}
+      <ProgressBar pct={pct} color={c.primary} trackColor={c.ringTrack} style={styles.compactBar} />
     </View>
   );
 
@@ -2001,6 +2015,8 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
  */
 export function StepsWidget({ steps, target, labels }: { steps: number; target: number; labels: { title: string } }) {
   const c = usePalette();
+  const styles = stylesFor(c);
+  const { lang } = useAppSettings();
   const pct = Math.min(100, Math.round((steps / (target || 1)) * 100));
   return (
     <CompactWidget
@@ -2008,7 +2024,40 @@ export function StepsWidget({ steps, target, labels }: { steps: number; target: 
       iconColor={c.primary}
       iconBg={alpha(c.primary, 0.08)}
       label={labels.title}
-      valueText={`${steps.toLocaleString()} / ${target.toLocaleString()}`}
+      /* Vẫn phải truyền dù `valueNode` thay chỗ vẽ: đây là thứ đi vào nhãn
+         trợ năng — xem chú thích của `valueNode` trong `CompactWidget`. */
+      valueText={`${formatCount(steps, lang)} / ${formatCount(target, lang)}`}
+      /*
+        Con số CHẠY cùng cái thanh, không đứng yên bên cạnh nó.
+
+        Trước đó thanh quét từ 0 lên 84% trong một giây trong khi "8.432" đã nằm
+        sẵn ở đó — hai thứ nói cùng một điều mà chỉ một thứ chuyển động, nên cú
+        quét đọc ra như đồ trang trí. Chú thích của `AnimatedNumber` đã ghi sẵn
+        lời giải: *"Matches `ProgressBar`'s fill by default, since a counter
+        almost always sits beside one and the two should land together."*
+
+        `delay` 200 là để CÙNG XUẤT PHÁT: `ProgressBar` mặc định chờ 200ms rồi
+        quét 1000ms, và `AnimatedNumber` mặc định 1000ms nhưng không chờ. Thiếu
+        dòng này thì số về đích trước thanh đúng 200ms.
+
+        Một `AnimatedNumber` duy nhất mang cả chuỗi, phần đuôi đi vào `suffix` —
+        không phải một `<Text>` đứng cạnh trong một hàng. Đó là cái bẫy `4ce1a1d`
+        vừa dẫm phải ở thẻ Nước: `AnimatedNumber` là một `TextInput`, thứ không
+        tự co theo nội dung, nên nó giãn hết chỗ và đẩy phần đuôi ra tận mép.
+
+        Và phần đuôi định dạng bằng `formatCount`, KHÔNG phải `toLocaleString()`:
+        cái sau đọc locale của HỆ ĐIỀU HÀNH còn chữ số chạy đọc ngôn ngữ của
+        APP, nên một máy để tiếng Anh với app tiếng Việt cho ra "8.432 / 10,000"
+        — hai kiểu phân cách trong đúng một dòng.
+      */
+      valueNode={
+        <AnimatedNumber
+          value={steps}
+          suffix={` / ${formatCount(target, lang)}`}
+          delay={200}
+          style={styles.compactValue}
+        />
+      }
       pct={pct}
       /* Hình duy nhất trên thẻ này; trước đó thẻ Bước đi chỉ nói tiến độ bằng
          chữ. Xem `bar` trong `CompactWidget`.

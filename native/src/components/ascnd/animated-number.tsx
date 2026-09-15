@@ -84,8 +84,7 @@ export function AnimatedNumber({
   suffix?: string;
 }) {
   const { lang } = useAppSettings();
-  const sep = lang === 'vi' ? '.' : ',';
-  const dot = lang === 'vi' ? ',' : '.';
+  const { sep, dot } = separatorsFor(lang);
 
   const n = useSharedValue(0);
   useEffect(() => {
@@ -119,6 +118,32 @@ export function AnimatedNumber({
       style={[styles.base, style]}
     />
   );
+}
+
+/**
+ * Dấu phân cách của một ngôn ngữ — MỘT định nghĩa.
+ *
+ * Nó từng nằm thẳng trong thân component, nên bất cứ ai cần định dạng một con
+ * số ĐỨNG CẠNH chữ số chạy phải chép lại quy tắc — hoặc, dễ hơn, gọi
+ * `toLocaleString()`. Cái thứ hai là một cái bẫy: `toLocaleString()` đọc locale
+ * của HỆ ĐIỀU HÀNH, còn `AnimatedNumber` đọc ngôn ngữ của APP. Một chiếc iPhone
+ * để tiếng Anh với app đặt tiếng Việt cho ra "8.432 / 10,000" — hai kiểu phân
+ * cách trong đúng một dòng.
+ */
+export function separatorsFor(lang: string): { sep: string; dot: string } {
+  return { sep: lang === 'vi' ? '.' : ',', dot: lang === 'vi' ? ',' : '.' };
+}
+
+/**
+ * Cùng phép định dạng ấy, cho phần chữ đứng cạnh chữ số chạy.
+ *
+ * Chú thích của `format` dưới đây nói "cùng một hàm chạy trên cả hai luồng nên
+ * nhãn đã yên và chữ số đang chạy không bao giờ lệch nhau về định dạng". Phần
+ * ĐUÔI nằm trong cùng một ô chữ ấy, nên nó nợ đúng lời hứa đó.
+ */
+export function formatCount(v: number, lang: string, decimals = 0): string {
+  const { sep, dot } = separatorsFor(lang);
+  return format(v, decimals, true, sep, dot);
 }
 
 /**
