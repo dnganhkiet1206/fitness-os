@@ -366,6 +366,20 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
         32pt buttons around a centred label — so somebody who has moved through
         weeks on one screen already knows how on this one.
       */}
+      {/*
+        Tiêu đề tuần và dải lịch là MỘT khối, không phải hai anh em rời.
+
+        Trước đây chúng là hai con trực tiếp của `Screen`, nên khe giữa chúng là
+        khe mà `Screen` đặt giữa các KHỐI của trang — đo trên ảnh chụp 3× là
+        ~49pt. Khe ấy đúng cho hai khối khác nhau và sai ở đây: dòng "Tuần này"
+        không phải một khối riêng, nó là nhãn của chính dải lịch bên dưới.
+
+        Ảnh mẫu chủ dự án gửi không có dòng tiêu đề nào — cả khối lịch ở đó chỉ
+        là một hàng ngày. Bỏ hẳn thì mất đường sang tuần khác, nên thứ bỏ là
+        KHOẢNG CÁCH: gộp lại một khối, khe 10, và dòng tiêu đề thôi trôi lơ lửng
+        ở giữa một vùng trống cao hơn chính cái lịch.
+      */}
+      <View style={styles.weekBlock}>
       <View style={styles.weekNav}>
         <PressScale
           accessibilityRole="button"
@@ -398,6 +412,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
         shortNames={shortNames}
         onPick={setSelected}
       />
+      </View>
 
       <View style={styles.dayHead}>
         <Text style={styles.dayName}>{longNames[selected]}</Text>
@@ -630,6 +645,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
 
 const stylesFor = makeStyles((c, m) => ({
   // ── which week ──
+  weekBlock: { gap: 10 },
   weekNav: {
     flexDirection: 'row',
     alignItems: 'center',

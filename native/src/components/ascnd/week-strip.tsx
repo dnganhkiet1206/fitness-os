@@ -28,7 +28,30 @@ import { localDateStr } from '@/lib/local-date';
 
 export const DAY_LONG_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 export const DAY_LONG_VI = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
-export const DAY_SHORT_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+/**
+ * Chữ ngày trong dải tuần — dạng HẸP NHẤT mà mỗi ngôn ngữ có.
+ *
+ * ── vì sao tiếng Anh một chữ, tiếng Việt hai ──
+ *
+ * Unicode CLDR định nghĩa ba bậc cho tên thứ: `wide` (Monday), `abbreviated`
+ * (Mon) và `narrow` — bậc hẹp nhất, sinh ra đúng cho một hàng bảy cột nơi VỊ
+ * TRÍ đã nói ngày nào, nên `M T W T F S S` trùng chữ vẫn đọc được.
+ *
+ * Bảng tiếng Anh ở đây trước là `abbreviated`, không phải `narrow` — tức app
+ * đang dùng bậc rộng hơn mức cần ở đúng chỗ CLDR làm ra bậc hẹp. Ảnh mẫu chủ
+ * dự án gửi dùng một chữ, và đó không phải gu riêng của app kia: đó là
+ * `narrow`.
+ *
+ * Tiếng Việt thì `narrow` ĐÃ là `T2…T7, CN` — hai ký tự, vì thứ trong tiếng
+ * Việt là một con SỐ chứ không phải một cái tên, nên không có chữ cái nào để
+ * rút về. Tra CLDR cho `vi-VN` để chắc chứ không suy: bảng narrow của nó đúng
+ * bằng bảng dưới đây. Nghĩa là bản tiếng Việt KHÔNG thể giống ảnh mẫu ở điểm
+ * này, và đó là giới hạn của ngôn ngữ chứ không phải một chỗ chưa làm.
+ *
+ * Không mất gì cho trình đọc màn hình: `accessibilityLabel` của mỗi ô lấy từ
+ * `longNames`, nên VoiceOver vẫn đọc "Monday" / "Thứ 2".
+ */
+export const DAY_SHORT_EN = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 export const DAY_SHORT_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
 /**
@@ -195,13 +218,24 @@ export function WeekStrip({
               style={[
                 styles.weekChip,
                 isToday && styles.weekChipToday,
-                /* Tô TRÀN chỉ khi ô ấy không phải hôm nay. Trùng hôm nay thì
-                   lớp tô đi vào `weekChipFill` bên trong, để cái viền còn chỗ. */
-                isOpen && !isToday && styles.weekChipOn,
+                isOpen && !isToday && styles.weekChipOpen,
               ]}>
-              {isOpen && isToday ? <View style={styles.weekChipFill} /> : null}
-              <Text style={[styles.weekName, isOpen && styles.weekNameOn]}>{shortNames[idx]}</Text>
-              <Text style={[styles.weekNum, isOpen && styles.weekNumOn]}>{d.getDate()}</Text>
+              <Text
+                style={[
+                  styles.weekName,
+                  isToday && styles.weekNameToday,
+                  isOpen && !isToday && styles.weekNameOpen,
+                ]}>
+                {shortNames[idx]}
+              </Text>
+              <Text
+                style={[
+                  styles.weekNum,
+                  isToday && styles.weekNumToday,
+                  isOpen && !isToday && styles.weekNumOpen,
+                ]}>
+                {d.getDate()}
+              </Text>
             </View>
             <View style={[styles.weekDot, { backgroundColor: c[STATE_STYLE[state].tint] }]} />
           </PressScale>
@@ -235,33 +269,50 @@ const stylesFor = makeStyles((c, m) => ({
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  weekChipToday: { borderColor: c.primary },
-  weekChipOn: { backgroundColor: c.primary, borderColor: c.primary },
   /*
-    Lớp tô "đang mở" khi ô ấy CŨNG là hôm nay — thụt vào để cái viền còn thấy.
+    ── HAI dấu, và dấu MẠNH thuộc về HÔM NAY ──
 
-    Thụt 2,5 mỗi phía cho một khe 2,5 điểm (7,5 điểm ảnh trên màn 3x) giữa lớp
-    tô và viền. Khe hẹp hơn thì hai đường cong dính vào nhau và lại thành MỘT
-    dấu — đúng lỗi lượt trước đã sửa; rộng hơn thì chữ bắt đầu chạm mép.
+    Bản trước cho lớp tô đặc cho "ngày đang mở" và cái viền cho "hôm nay", rồi
+    khi trùng ô thì thụt lớp tô vào 2,5 để viền còn chỗ. Ảnh chụp ở 3× cho thấy
+    kết quả: một khe sáng chạy vòng quanh viên đen, đọc ra như một cái nhãn dán
+    có quầng — và đó là trường hợp THƯỜNG GẶP NHẤT, vì mở màn Plan là chọn sẵn
+    hôm nay.
 
-    Bán kính 9,5 = 12 − 2,5, nên hai đường cong đồng tâm. Gõ 12 ở cả hai chỗ là
-    lớp trong bo mạnh hơn lớp ngoài và khe hở rộng dần ra bốn góc.
+    Đảo vai thì cả ba ca đều đúng và ca thường gặp còn đúng MỘT viên, như ảnh
+    mẫu chủ dự án gửi:
+
+        hôm nay                 viên ĐẶC          (dấu mạnh nhất)
+        ngày đang mở, khác hôm nay   viên NHẠT + viền
+        tuần khác, hôm nay không có  chỉ còn viên nhạt của ngày đang mở
+
+    Và nó sửa luôn cái mà chủ dự án từng bắt — "cùng một kiểu nhưng 2 cái lại
+    khác nhau": thẻ Hôm nay truyền `selected={null}` nên trước đây hôm nay ở đó
+    là một cái VÒNG, còn ở màn Plan là một cái ĐĨA. Nay hôm nay mang cùng một
+    viên đặc ở cả hai màn, vì dấu của nó không còn phụ thuộc vào việc có ngày
+    nào đang mở hay không.
+
+    Thứ mất đi: khi hôm nay CŨNG là ngày đang mở thì chỉ còn một dấu. Không mất
+    gì cả — hai điều ấy cùng đúng về cùng một ô, nên một dấu nói đủ. Sự mơ hồ
+    mà bản trước lo chỉ tồn tại khi hai ngày KHÁC nhau, và ở đúng ca ấy hai dấu
+    vẫn còn đủ hai.
   */
-  weekChipFill: {
-    position: 'absolute',
-    top: 2.5,
-    left: 2.5,
-    right: 2.5,
-    bottom: 2.5,
-    borderRadius: 9.5,
-    backgroundColor: c.primary,
-  },
+  weekChipToday: { backgroundColor: c.primary, borderColor: c.primary },
+  /*
+    Viên NHẠT: một lớp mực 12% chứ không phải chỉ một cái viền.
+
+    Chỉ viền thì ở tuần khác — nơi hôm nay không có mặt — cả dải không còn một
+    mảng đặc nào và ngày đang mở đọc ra như một ô rỗng. 12% đủ để nó là một cái
+    viên, và vẫn nhẹ hơn hẳn viên đặc của hôm nay.
+  */
+  weekChipOpen: { backgroundColor: alpha(c.primary, 0.12), borderColor: alpha(c.primary, 0.35) },
   weekName: { ...type.caption, color: c.mutedForeground },
   /* `primaryForeground`, không phải `foreground`: chữ ngày nay nằm TRONG viên,
-     nên khi viên được tô thì nó đứng trên `primary` chứ không trên trang. */
-  weekNameOn: { color: c.primaryForeground, fontWeight: '700' },
+     nên khi viên được tô đặc thì nó đứng trên `primary` chứ không trên trang. */
+  weekNameToday: { color: c.primaryForeground, fontWeight: '700' },
+  weekNameOpen: { color: c.foreground, fontWeight: '600' },
   weekNum: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
-  weekNumOn: { color: c.primaryForeground, fontWeight: '700' },
+  weekNumToday: { color: c.primaryForeground, fontWeight: '700' },
+  weekNumOpen: { color: c.foreground, fontWeight: '700' },
   /* Always drawn, transparent when the day is empty — a dot that appears and
      disappears would shift the row's height by three points as the week is
      edited. */
