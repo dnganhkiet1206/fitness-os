@@ -44,11 +44,30 @@ export type TodoDone = Record<TodoKey, boolean>;
   app không dùng. Thêm lại nó chỉ đúng khi có một màn THẬT cần hỏi "còn việc gì".
 */
 
-/** Đã ghi mấy việc trên tổng số. */
-export function todoProgress(done: TodoDone): { done: number; total: number } {
+/**
+ * Đã ghi mấy việc trên tổng số — và việc BỎ QUA rời khỏi cả hai vế.
+ *
+ * ── vì sao mẫu số co lại ──
+ *
+ * Bỏ qua trả lời "hôm nay việc này không áp dụng": ngày nghỉ tập, hoặc nhà
+ * không có cân. Giữ nó trong mẫu số là để app nói `4/5` mãi mãi cho một người
+ * đã làm hết những gì có thể làm — đúng cái làm một danh sách việc thôi đáng
+ * tin. Nó cũng là cách Nhắc nhở của iOS đọc một danh sách: thứ đã xử lý không
+ * còn đếm vào phần phải xử lý.
+ *
+ * Dòng bị bỏ qua vẫn Ở LẠI trên thẻ, chỉ nhạt đi — biến mất là đúng cái chủ dự
+ * án đã bác một lần ("khi log xong thì lại bị mất cả"), và lối lấy lại phải
+ * nằm ngay chỗ đã bỏ.
+ *
+ * Một việc vừa ghi vừa bỏ qua thì tính là BỎ QUA, không phải ghi: bỏ qua là câu
+ * trả lời mới hơn, và nếu người ta ghi sau khi bỏ qua thì chính lượt ghi ấy gỡ
+ * cờ bỏ qua ở chỗ gọi.
+ */
+export function todoProgress(done: TodoDone, skipped: readonly TodoKey[] = []): { done: number; total: number } {
+  const live = TODO_ORDER.filter((k) => !skipped.includes(k));
   return {
-    done: TODO_ORDER.filter((k) => done[k]).length,
-    total: TODO_ORDER.length,
+    done: live.filter((k) => done[k]).length,
+    total: live.length,
   };
 }
 

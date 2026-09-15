@@ -1,11 +1,14 @@
 import * as Haptics from 'expo-haptics';
 import {
   Bell,
+  BellOff,
   BellPlus,
   BicepsFlexed,
   HeartPulse,
   type LucideIcon,
+  Minus,
   Moon,
+  SquarePen,
   Soup,
 } from 'lucide-react-native';
 import { useState } from 'react';
@@ -14,6 +17,7 @@ import { Pressable, Text, View } from 'react-native';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { SwipeRow, type SwipeAction } from '@/components/ascnd/swipe-row';
 import { DateField } from '@/components/ascnd/date-field';
 import { WeightEntry } from '@/components/ascnd/weight-entry';
 import { BodyScale } from '@/constants/app-icons';
@@ -26,6 +30,7 @@ import { useTodayWeight } from '@/hooks/use-fitness-data';
 import { usePalette } from '@/hooks/use-palette';
 import { useTodayBiometrics } from '@/hooks/useTodayData';
 import { useReminders } from '@/hooks/use-reminders';
+import { useTodoSkip } from '@/hooks/use-todo-skip';
 import { nav } from '@/lib/nav';
 import type { TimedReminderKey } from '@/lib/reminder-plan';
 import { timeToDate } from '@/lib/reminder-timing';
@@ -227,6 +232,7 @@ export function TodoCard() {
   const styles = stylesFor(c);
   const i18n = useI18n();
   const quests = useDailyQuests();
+  const skip = useTodoSkip();
   const { data: bio } = useTodayBiometrics();
   const { data: todayWeight } = useTodayWeight();
 
@@ -246,10 +252,11 @@ export function TodoCard() {
     weight: todayWeight != null,
   };
 
-  /* Chưa đọc xong ngày thì chưa nói gì — xem chú thích `ready` ở trên. */
-  if (!quests.ready) return null;
+  /* Chưa đọc xong ngày thì chưa nói gì — xem chú thích `ready` ở trên. Kho bỏ
+     qua cũng phải xong: đếm trước khi đĩa trả lời là để con số nhảy một nhịp. */
+  if (!quests.ready || !skip.ready) return null;
 
-  const progress = todoProgress(done);
+  const progress = todoProgress(done, skip.skipped);
 
   return (
     <GlassCard style={styles.card}>
@@ -274,7 +281,14 @@ export function TodoCard() {
         nữa là chuyện thường.
       */}
       {TODO_ORDER.map((key) => (
-        <TodoRow key={key} itemKey={key} label={label[key]} done={done[key]} />
+        <TodoRow
+          key={key}
+          itemKey={key}
+          label={label[key]}
+          done={done[key]}
+          skipped={skip.skipped.includes(key)}
+          onSkip={() => skip.toggle(key)}
+        />
       ))}
     </GlassCard>
   );
@@ -310,15 +324,20 @@ function TodoRow({
   itemKey,
   label,
   done,
+  skipped,
+  onSkip,
 }: {
   itemKey: TodoKey;
   label: string;
   done: boolean;
+  skipped: boolean;
+  onSkip: () => void;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const [editing, setEditing] = useState(false);
+  const { prefs, available, toggle } = useReminders();
 
   /*
     Cân nặng ghi TẠI CHỖ, vì nó không có màn riêng nào để mở. Ô nhập là
@@ -328,9 +347,88 @@ function TodoRow({
   */
   const press = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    /* Bấm để ghi trên một dòng đã bỏ qua là đổi ý, nên nó gỡ cờ luôn — lời hứa
+       ở chú thích `todoProgress` ("chính lượt ghi ấy gỡ cờ bỏ qua"). Không gỡ
+       thì việc vừa ghi vẫn nằm ngoài mẫu số và con số không nhúc nhích. */
+    if (skipped) onSkip();
     if (itemKey === 'weight') setEditing((v) => !v);
     else nav.push(ROUTE[itemKey as Exclude<TodoKey, 'weight'>]);
   };
+
+  /*
+    ── cú vuốt, và vì sao mỗi mép mang một loại việc ──
+
+    Apple chia hai mép theo NGHĨA, không theo chỗ trống: mép phải (vuốt sang
+    trái) cho thao tác kết thúc ngữ cảnh và cho nhóm nhiều nút; mép trái cho
+    đúng MỘT lối tắt ngữ cảnh — Ghim, Đã đọc, Yêu thích.
+
+    mép trái   BỎ QUA HÔM NAY. Họ hàng thẳng của "Đánh dấu đã đọc": lấy một
+               dòng ra khỏi danh sách phải xử lý mà không giả vờ đã xử lý. Chủ
+               dự án chốt hình: "chỉ cần một dấu trừ màu trắng nền đỏ" — nên nó
+               là `glyphOnly`, và mực lấy `destructiveForeground` vì token ấy
+               trắng ở CẢ HAI diện mạo, khác `primaryForeground` vốn đảo màu.
+               Vuốt lần nữa để lấy lại, nên cùng một hàm.
+
+    mép phải   SỬA LẠI (chỉ khi đã ghi — trước khi ghi thì nút "Ghi" ngay trên
+               dòng đã làm đúng việc ấy rồi, và một nút thừa là một nút chết),
+               cộng lời nhắc.
+
+    ── vì sao lời nhắc là MỘT nút lật chứ không phải hai ──
+
+    Chủ dự án đặt "nút hẹn giờ và nút bật tắt thông báo", tức hai. Tôi làm một,
+    và đây là lý do: đồng hồ chọn giờ của iOS ở chế độ `compact` KHÔNG mở được
+    bằng mã — nó chỉ mở khi ngón tay chạm đúng nó. Nên một nút "Hẹn giờ" trên
+    một dòng ĐÃ có giờ sẽ không làm được gì cả, và app này đã hai lần bị chính
+    chủ dự án bảo dọn nút chết.
+
+    Thứ làm được, và làm được luôn: bật lời nhắc lên thì đồng hồ gọn của iOS
+    hiện ra ngay trong dòng để chạm vào; tắt thì nó biến mất. Nên nút lật theo
+    trạng thái, đúng hình dạng "Đã đọc / Chưa đọc" của Mail.
+  */
+  const reminderKey = TODO_REMINDER[itemKey];
+  const reminderOn = available && prefs[reminderKey].enabled;
+
+  const skipAction: SwipeAction = {
+    icon: Minus,
+    label: skipped ? i18n.nTodoUnskip : i18n.nTodoSkip,
+    tint: c.destructive,
+    ink: c.destructiveForeground,
+    glyphOnly: true,
+    onPress: onSkip,
+  };
+
+  /*
+    ── màu của hai nút mép phải: `primary`, KHÔNG phải màu miền ──
+
+    Bản đầu tô "Sửa lại" xanh dương và "Tắt nhắc" tím. Cả hai đo đủ tương phản
+    (5,00 và 5,94 bản sáng), và cả hai vẫn SAI: `icon-tint.ts` đã tiêu xanh
+    dương cho cân nặng và tím cho giấc ngủ, nên một viên thuốc tím trượt ra cạnh
+    dòng Giấc ngủ đang nói hai điều khác nhau bằng cùng một màu. Bảng ấy sinh ra
+    để dẹp đúng chuyện đó.
+
+    Còn lại đúng một cặp không mang nghĩa miền nào: `primary` với
+    `primaryForeground` — cặp app đã định nghĩa cho HÀNH ĐỘNG, và là cặp có dư
+    địa lớn nhất (17,57:1 bản sáng · 9,14:1 bản tối). Hai nút cùng màu ấy phân
+    biệt nhau bằng HÌNH và bằng CHỮ, đúng cách Mail xếp "More" xám cạnh những
+    nút khác. Màu duy nhất trên cả hàng là cái nút đỏ ở mép kia — và đó là chủ
+    ý, vì nó là cái duy nhất thay đổi hôm nay của bạn.
+  */
+  const rightActions: SwipeAction[] = [
+    ...(done ? [{ icon: SquarePen, label: i18n.nTodoEdit, tint: c.primary, onPress: press }] : []),
+    ...(available
+      ? [
+          {
+            icon: reminderOn ? BellOff : BellPlus,
+            label: reminderOn ? i18n.nTodoRemindOff : i18n.nTodoSetReminder,
+            tint: c.primary,
+            onPress: () => {
+              Haptics.selectionAsync();
+              toggle(reminderKey, !reminderOn);
+            },
+          },
+        ]
+      : []),
+  ];
 
   /*
     MỘT hình dạng dòng, `done` chỉ đổi sắc độ.
@@ -341,32 +439,36 @@ function TodoRow({
     sai, đổi giờ nhắc — không còn chỗ nào để làm.
   */
   const tint = c[iconTint(ICON[itemKey]) ?? 'foreground'];
+  /* Bỏ qua và đã ghi cùng một sắc độ: cả hai đều là "dòng này xong việc của
+     hôm nay". Chữ trên nút mới là thứ nói chúng khác nhau thế nào. */
+  const quiet = done || skipped;
+  const word = skipped ? i18n.nTodoSkipped : done ? i18n.nTodoDone : i18n.nTodoLog;
 
   return (
-    <View style={styles.rowOpen}>
+    <SwipeRow left={[skipAction]} right={rightActions}>
+      <View style={[styles.rowOpen, styles.rowSwipe]}>
       <View style={styles.rowTop}>
         <View style={styles.tile}>
-          <Icon icon={ICON[itemKey]} size={20} color={done ? alpha(tint, DONE_ICON_ALPHA) : tint} />
+          <Icon icon={ICON[itemKey]} size={20} color={quiet ? alpha(tint, DONE_ICON_ALPHA) : tint} />
         </View>
         <View style={styles.text}>
-          <Text style={[styles.label, done && styles.labelDone]} numberOfLines={1}>
+          <Text style={[styles.label, quiet && styles.labelDone]} numberOfLines={1}>
             {label}
           </Text>
           <ReminderRow itemKey={itemKey} label={label} />
         </View>
         <PressScale
           accessibilityRole="button"
-          accessibilityLabel={`${done ? i18n.nTodoDone : i18n.nTodoLog} — ${label}`}
+          accessibilityLabel={`${word} — ${label}`}
           accessibilityState={itemKey === 'weight' ? { expanded: editing } : undefined}
-          style={[styles.action, done && styles.actionDone]}
+          style={[styles.action, quiet && styles.actionDone]}
           onPress={press}>
-          <Text style={[styles.actionText, done && styles.actionTextDone]}>
-            {done ? i18n.nTodoDone : i18n.nTodoLog}
-          </Text>
+          <Text style={[styles.actionText, quiet && styles.actionTextDone]}>{word}</Text>
         </PressScale>
       </View>
       {itemKey === 'weight' && editing ? <WeightEntry onLogged={() => setEditing(false)} /> : null}
-    </View>
+      </View>
+    </SwipeRow>
   );
 }
 
@@ -465,6 +567,11 @@ const stylesFor = makeStyles((c, m) => ({
      danh sách việc, và nó cũng là thứ giữ cho thẻ không cao 500 điểm ở ngày
      chưa ghi gì: hai dòng xong là hai dòng 56 thay vì hai dòng 96. */
   rowOpen: { gap: spacing.sm, paddingVertical: spacing.xs },
+  /* Hàng vuốt được phải có NỀN ĐẶC, không thì viên thuốc đỏ phía dưới hiện
+     xuyên qua trong lúc kéo và đọc ra là một vệt màu chứ không phải một hàng
+     đang trượt đi. `m.bg` là chính mặt thẻ To-do, nên khi hàng đóng lại không
+     ai thấy có lớp nào ở đây cả. */
+  rowSwipe: { backgroundColor: m.bg },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
 
   /* 44, không 30. Ô icon không bấm được, nhưng nó là thứ mắt tìm dòng bằng —

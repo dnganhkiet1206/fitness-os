@@ -72,29 +72,47 @@ try {
      không còn phép lọc nào để sai, và `linked.mjs` gọi ra rằng một hàm chỉ
      còn phép kiểm của chính nó gọi tới là mã chết đội lốt vùng phủ.
 
-     Thứ CÒN sống là con số `x/5` trên đầu thẻ, nên đó là thứ được chạy. Nó vẫn
-     giữ nguyên tính chất quan trọng nhất: đếm đúng ở MỌI tổ hợp, chứ không chỉ
-     ở ca rỗng và ca đầy. */
-  for (let mask = 0; mask < 32; mask++) {
-    const done = {};
-    WANT.forEach((k, i) => (done[k] = !!(mask & (1 << i))));
-    const prog = todoProgress(done);
-    CASES++;
+     Thứ CÒN sống là con số trên đầu thẻ, nên đó là thứ được chạy — và từ khi có
+     "bỏ qua hôm nay" nó có HAI chiều, nên chạy cả 32 × 32 = 1.024 tổ hợp
+     xong/chưa × bỏ/không. Con số ấy rẻ, và nó phủ đúng chỗ dễ sai nhất: một
+     việc VỪA ghi VỪA bị bỏ qua. */
+  for (let dm = 0; dm < 32; dm++) {
+    for (let sm = 0; sm < 32; sm++) {
+      const done = {};
+      WANT.forEach((k, i) => (done[k] = !!(dm & (1 << i))));
+      const skipped = WANT.filter((_, i) => !!(sm & (1 << i)));
+      const prog = todoProgress(done, skipped);
+      CASES++;
 
-    const expectDone = WANT.filter((k) => done[k]).length;
-    if (prog.done !== expectDone || prog.total !== WANT.length) {
-      problems.push(
-        `tổ hợp ${JSON.stringify(done)}: tiến độ ${prog.done}/${prog.total}, đáng lẽ ` +
-          `${expectDone}/${WANT.length}`,
-      );
+      /* Đáp án được suy từ ĐỊNH NGHĨA, không chép lại phép tính: việc còn sống
+         là việc không bị bỏ qua; tử số là việc còn sống đã ghi. */
+      const live = WANT.filter((k) => !skipped.includes(k));
+      const expectDone = live.filter((k) => done[k]).length;
+      if (prog.done !== expectDone || prog.total !== live.length) {
+        problems.push(
+          `xong ${JSON.stringify(done)} · bỏ [${skipped.join(',')}]: tiến độ ${prog.done}/${prog.total}, ` +
+            `đáng lẽ ${expectDone}/${live.length}`,
+        );
+      }
+      /* Tử số không bao giờ vượt mẫu số. Bản dễ sai nhất của hàm này cộng việc
+         đã ghi vào tử mà trừ nó khỏi mẫu, và ra `3/2`. */
+      if (prog.done > prog.total) {
+        problems.push(`xong ${JSON.stringify(done)} · bỏ [${skipped.join(',')}]: ${prog.done}/${prog.total}`);
+      }
     }
   }
 
-  /* Tổng LUÔN là năm, kể cả khi chưa ghi gì: thẻ hứa "x/5" chứ không hứa "x
-     trên số việc còn lại", và một mẫu số biết co lại là một tiến độ biết đi lùi. */
+  /* Không bỏ qua gì thì mẫu số là năm: bỏ qua là câu trả lời cho HÔM NAY, nên
+     mặc định phải là "vẫn hỏi đủ". */
   CASES++;
   if (todoProgress(Object.fromEntries(WANT.map((x) => [x, false]))).total !== WANT.length) {
-    problems.push('chưa ghi gì thì mẫu số không còn là năm');
+    problems.push('chưa ghi gì và chưa bỏ qua gì thì mẫu số không còn là năm');
+  }
+  /* Bỏ qua HẾT thì mẫu số về 0 chứ không âm và không kẹt ở năm. */
+  CASES++;
+  const all = todoProgress(Object.fromEntries(WANT.map((x) => [x, true])), WANT);
+  if (all.total !== 0 || all.done !== 0) {
+    problems.push(`bỏ qua hết năm việc ra ${all.done}/${all.total}, đáng lẽ 0/0`);
   }
 } catch (e) {
   problems.push(`không chạy được lib/todo.ts: ${e.message.split('\n')[0]}`);
@@ -299,8 +317,21 @@ try {
      cho người đã ghi suốt buổi sáng. Hook `useDailyQuests` đặt hẳn một cờ vì app
      đã gặp lỗi ấy nhiều lần. */
   CASES++;
-  if (!/if \(!quests\.ready\) return null;/.test(src)) {
+  /* Từ khi có "bỏ qua hôm nay", con số trên đầu thẻ đọc HAI kho: ngày, và danh
+     sách bỏ qua. Cái nào chưa đọc xong cũng làm con số nhảy một nhịp, nên cổng
+     phải hỏi cả hai — luật đòi từng cái có mặt trong cùng một câu `return null`
+     chứ không đòi một chuỗi ký tự cố định, để thêm kho thứ ba không phải sửa
+     luật. */
+  const gate = /if \(([^)]*)\) return null;/g;
+  const gates = [...src.matchAll(gate)].map((m) => m[1]);
+  const ready = gates.find((g) => g.includes('quests.ready'));
+  if (!ready) {
     problems.push(`${CARD}: không chặn theo \`quests.ready\` — ngày chưa đọc xong sẽ hiện ra thành 0/5`);
+  } else if (!ready.includes('skip.ready')) {
+    problems.push(
+      `${CARD}: cổng "đã đọc xong" chỉ hỏi \`quests.ready\` mà không hỏi kho bỏ qua — trong khoảnh ` +
+        'khắc trước khi đĩa trả lời, một việc đã bỏ qua vẫn nằm trong mẫu số và con số sẽ nhấp nháy',
+    );
   }
 }
 
@@ -314,7 +345,20 @@ try {
 {
   const tint = readFileSync(path.join(NATIVE, 'src/constants/icon-tint.ts'), 'utf8');
   const listed = new Set([...tint.matchAll(/\[(\w+),\s*[A-Z]+\]/g)].map((m) => m[1]));
-  const used = [...strip(read(CARD)).matchAll(/^\s*(\w+): (\w+),$/gm)]
+  /*
+    Chỉ soi BẢNG `ICON`, không soi mọi cặp `khoá: Giá trị,` trong tệp.
+
+    Bản trước quét cả tệp, và khi thẻ có thêm nút vuốt thì nó bắt luôn `icon:
+    Minus` của nút "bỏ qua" rồi đòi `Minus` phải có một miền màu. Sai tiền đề:
+    lý lẽ của luật này là "icon không có miền sẽ ngã về màu chữ và đứng XÁM
+    giữa những dòng có màu", mà icon trên một viên thuốc vuốt không nằm trên ô
+    icon và không lấy màu từ `iconTint` — nó có nền riêng và mực riêng.
+  */
+  const table = /const ICON: Record<TodoKey, LucideIcon> = \{([\s\S]*?)\n\};/.exec(strip(read(CARD)));
+  if (!table) {
+    problems.push(`${CARD}: không đọc được bảng \`ICON\` để soi miền màu`);
+  }
+  const used = [...(table?.[1] ?? '').matchAll(/^\s*(\w+): (\w+),$/gm)]
     .filter(([, , v]) => /^[A-Z]/.test(v))
     .map(([, , v]) => v);
   for (const icon of new Set(used)) {
@@ -454,10 +498,10 @@ if (problems.length) {
 
 console.log(
   `thẻ cần làm OK — ${CASES} ca, và danh sách được CHẠY chứ không đọc: cả 32 tổ hợp xong/chưa của ` +
-    'năm việc đều đếm ra đúng con số `x/5` trên đầu thẻ, và mẫu số LUÔN là năm kể cả khi chưa ghi ' +
-    'gì — một mẫu số biết co lại là một tiến độ biết đi lùi. Phép lọc "việc nào còn phải làm" ' +
-    'từng được chạy ở đây và đã đi cùng hàm nó canh: thẻ nay vẽ ĐỦ năm dòng và đánh dấu dòng đã ' +
-    'ghi, nên không còn phép lọc nào để sai. Thứ tự năm dòng là thứ tự chủ dự án đọc ra. Ba bảng vẽ (icon, màu, đích ' +
+    'năm việc × 32 tổ hợp bỏ-qua/không — 1.024 ca — đều đếm ra đúng con số trên đầu thẻ, đáp án suy ' +
+    'từ ĐỊNH NGHĨA chứ không chép lại phép tính, và tử số không bao giờ vượt mẫu số (bản dễ sai nhất ' +
+    'cộng việc đã ghi vào tử mà trừ nó khỏi mẫu, ra `3/2`). Bỏ qua hết năm việc ra 0/0, không âm và ' +
+    'không kẹt ở năm. Thứ tự năm dòng là thứ tự chủ dự án đọc ra. Ba bảng vẽ (icon, màu, đích ' +
     'đến) và bảng nhãn phủ đúng năm khoá, nên một khoá thứ sáu không dựng ra được một dòng không có ' +
     'hình. Trạng thái ba việc đầu ĐỌC từ `useDailyQuests` chứ không tự đo lại, và thẻ im lặng tới ' +
     'khi ngày được đọc xong. Trên Today, hàng chip cũ không mọc lại. Và `useLogWeight()` chỉ có một ' +

@@ -160,6 +160,7 @@ const USER_KEYS = [
   'ascnd-weight-goal-kg',
   'ascnd-steps-goal',
   'ascnd-help-nudge',
+  'ascnd-todo-skip',
   'ascnd-widget-config',
   /* Cả hai phiên bản: khoá cũ vẫn nằm trên máy của người đã cài bản trước, và
      đăng xuất mà để lại nó là để lại số đo của người này cho người sau. Xoá một

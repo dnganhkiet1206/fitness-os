@@ -85,6 +85,41 @@ let checked = 0;
   }
 }
 
+/**
+ * Thân của `const <tên> = { … }` hoặc `const <tên> = [ … ]`, cắt bằng ĐẾM NGOẶC.
+ *
+ * Bản đầu dùng `const ${n} = \{[^}]*\}` và nó trượt trên chính mã thật: khai
+ * báo có chú kiểu (`const skipAction: SwipeAction = {`) không khớp, và một mảng
+ * (`const rightActions: SwipeAction[] = [`) thì không phải ngoặc nhọn. Cả hai
+ * lần luật đều báo "không đọc được hàm nào nó gọi" — một thông báo đúng về
+ * chuyện sai, và là cách nhanh nhất để một luật bị người ta tắt đi.
+ */
+function declOf(body, name) {
+  const m = new RegExp(`const ${name}(?:\\s*:[^=]+)?\\s*=\\s*`).exec(body);
+  if (!m) return '';
+  let i = m.index + m[0].length;
+  const openCh = body[i];
+  const closeCh = openCh === '{' ? '}' : openCh === '[' ? ']' : null;
+  if (!closeCh) return '';
+  let depth = 0;
+  for (let k = i; k < body.length; k++) {
+    if (body[k] === openCh) depth++;
+    else if (body[k] === closeCh) {
+      depth--;
+      if (depth === 0) return body.slice(i, k + 1);
+    }
+  }
+  return '';
+}
+
+/* tiền đề được CHẠY: phép cắt phải lấy được cả hai dạng khai báo thật */
+{
+  const probe = 'const a: SwipeAction = { onPress: doA };\nconst b: SwipeAction[] = [{ onPress: () => doB(1) }];\n';
+  if (!declOf(probe, 'a').includes('doA')) problems.push('tự kiểm hỏng — không cắt được một khai báo có chú kiểu');
+  if (!declOf(probe, 'b').includes('doB')) problems.push('tự kiểm hỏng — không cắt được một khai báo MẢNG');
+  if (declOf(probe, 'zzz') !== '') problems.push('tự kiểm hỏng — cắt ra thân cho một tên không tồn tại');
+}
+
 /* ── 2. every swipe action is also a visible control ── */
 {
   const walk = (dir) =>
@@ -120,13 +155,7 @@ let checked = 0;
         nó bắt người viết chép đôi để làm vừa lòng nó.
       */
       const named = [...open.matchAll(/[[{]\s*(\w+)\s*[,\]}]/g)].map((x) => x[1]);
-      const sources = [
-        open,
-        ...named.map((n) => {
-          const d = new RegExp(`const ${n} = \\{[^}]*\\}`).exec(body);
-          return d ? d[0] : '';
-        }),
-      ];
+      const sources = [open, ...named.map((n) => declOf(body, n))];
       const fns = [
         ...new Set(
           sources

@@ -75,8 +75,34 @@ const HYSTERESIS = 10;
  */
 export type SwipeAction = {
   icon: LucideIcon;
+  /**
+   * Luôn phải có, kể cả khi KHÔNG vẽ ra.
+   *
+   * Nó là thứ VoiceOver đọc và là tên của accessibility action, nên một nút chỉ
+   * có glyph vẫn phải khai. `glyphOnly` chỉ quyết định có in chữ ấy lên nút hay
+   * không, chứ không quyết định nó có tồn tại hay không.
+   */
   label: string;
   tint?: string;
+  /**
+   * Màu mực trên viên thuốc, khi mặc định không đúng.
+   *
+   * Mặc định là `primaryForeground`, và nó ĐẢO giữa hai diện mạo: trắng ở bản
+   * sáng, gần đen ở bản tối. Với CHỮ trên nền đỏ điều đó đúng (5,78:1 bản tối).
+   * Nhưng chủ dự án đặt hàng nút bỏ qua là "một dấu trừ màu TRẮNG nền đỏ", và
+   * trắng ở cả hai diện mạo thì token đúng là `destructiveForeground` — thứ vốn
+   * sinh ra cho mực trên mặt đỏ. Đo: 4,96:1 bản sáng · 3,48:1 bản tối, trên sàn
+   * 3:1 của WCAG 1.4.11 cho một vật thể đồ hoạ mang nghĩa.
+   */
+  ink?: string;
+  /**
+   * Chỉ vẽ glyph, không in chữ lên nút.
+   *
+   * Dành cho hành động mà hình đã nói hết: một dấu trừ trên nền đỏ. Chữ ở đây
+   * là chữ thứ hai nói lại cùng một điều trên một viên thuốc rộng 84 điểm. Glyph
+   * được phóng 17 → 22 để nó nhận phần chỗ mà chữ trả lại.
+   */
+  glyphOnly?: boolean;
   onPress: () => void;
 };
 
@@ -124,6 +150,8 @@ function Action({
     opacity: interpolate(progress.value, [0.66, 0.95], [0, 1], 'clamp'),
   }));
 
+  const ink = action.ink ?? c.primaryForeground;
+
   return (
     <View style={styles.actionWrap}>
       <Animated.View style={[styles.action, { backgroundColor: action.tint ?? c.readinessRed }, grow]}>
@@ -133,10 +161,12 @@ function Action({
           onPress={action.onPress}
           style={styles.hit}
         />
-        <Icon icon={action.icon} size={17} color={c.primaryForeground} />
-        <Animated.Text style={[styles.actionText, word]} numberOfLines={1}>
-          {action.label}
-        </Animated.Text>
+        <Icon icon={action.icon} size={action.glyphOnly ? 22 : 17} color={ink} />
+        {action.glyphOnly ? null : (
+          <Animated.Text style={[styles.actionText, { color: ink }, word]} numberOfLines={1}>
+            {action.label}
+          </Animated.Text>
+        )}
       </Animated.View>
     </View>
   );
