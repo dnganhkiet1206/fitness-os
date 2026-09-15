@@ -166,9 +166,53 @@ function worstSurface(poolList, { fill: f, lit: l, wash: w }, tints) {
   return worst;
 }
 
-/* Every colour a panel is lit by — the saturated half of each glyph gradient. */
+/*
+  Every colour a panel is lit by — the saturated half of each glyph gradient.
+
+  ── cái neo này đã gãy một lần, và nó gãy IM LẶNG ──
+
+  Bản trước cào cặp `['#aaaaaa', '#bbbbbb']` ra khỏi `assistant-icons.tsx`. Khi
+  `GLYPH_TINT` chuyển sang KHOÁ bảng màu — để bản sáng có câu trả lời riêng, xem
+  `tools/glyph-theme.mjs` — thì không cặp nào còn khớp, `tints` về rỗng, và
+  `worstSurface` đi tìm mặt sáng nhất trong một danh sách trống.
+
+  Nó không báo sai màu. Nó làm PHÉP TỰ KIỂM của chính tệp này trượt: vũng sáng
+  gấp ba không còn đủ sáng để dìm `glassMuted`, nên bước kiểm nói "không bắt
+  được: aura sáng gấp đôi" — một luật khai rằng nó đã mất khả năng bắt lỗi, thay
+  vì xanh suông trên một phép đo nó không còn thực hiện được. Đó đúng là điều
+  chốt `< 8` bên dưới và cổng `pools.length > 0` phía trên được viết ra để làm.
+
+  Nay neo đọc KHOÁ và giải qua `hexOf`, cùng đường mà `pools` đã dùng cho
+  `(c) => c.metricPurple` — tức bảng màu là một nguồn, không phải hai.
+*/
 const icons = read('src/components/ascnd/assistant-icons.tsx');
-const tints = [...icons.matchAll(/\['#[0-9a-fA-F]{6}', '(#[0-9a-fA-F]{6})'\]/g)].map((m) => m[1]);
+const tintTable = icons.slice(icons.indexOf('export const GLYPH_TINT'), icons.indexOf('\n};', icons.indexOf('export const GLYPH_TINT')));
+const tintEntries = [...tintTable.matchAll(/^\s{2}(\w+):\s*'([^']+)'/gm)].map((m) => m[2]);
+const tintKeys = [...new Set(tintEntries.filter((v) => /^[A-Za-z]\w*$/.test(v)))];
+const tints = tintKeys.map(hexOf).filter(Boolean);
+/*
+  Chốt là MỘT-ĐỔI-MỘT, không phải một con số sàn.
+
+  Bản đầu viết `< 8`, và phép thử ngược cho thấy nó quá lỏng: trả BỐN ô về mã
+  màu thì `tints` tụt 11 → 10 và luật vẫn xanh — vẫn đo, nhưng đo thiếu, và
+  thiếu đúng những màu vừa bị hỏng. Một chốt sàn chỉ bắt được lúc cái neo gãy
+  HẲN; hỏng dần thì nó im.
+
+  Nên: mọi ô của bảng phải là một khoá, và mọi khoá phải giải ra được.
+*/
+const notKeys = tintEntries.filter((v) => !/^[A-Za-z]\w*$/.test(v));
+if (notKeys.length) {
+  problems.push(
+    `${notKeys.length} ô của \`GLYPH_TINT\` không phải khoá bảng màu (${notKeys.slice(0, 3).join(', ')}…) — `
+      + 'luật này giải tint qua bảng màu, nên một mã màu viết thẳng ở đó vừa là lỗi theme (xem '
+      + '`tools/glyph-theme.mjs`) vừa là một màu mặt kính này không còn tính tới',
+  );
+}
+if (tints.length !== tintKeys.length) {
+  problems.push(
+    `${tintKeys.length - tints.length} khoá tint không giải ra được mã màu nào trong bảng màu`,
+  );
+}
 if (tints.length < 8) problems.push(`chỉ đọc được ${tints.length} màu tint từ assistant-icons — đáng lẽ phải nhiều hơn`);
 
 const surface = worstSurface(pools, { fill, lit, wash }, tints);
