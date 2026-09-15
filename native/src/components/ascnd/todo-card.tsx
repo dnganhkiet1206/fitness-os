@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import {
+  AlarmClock,
   Bell,
   BellOff,
-  BellPlus,
   BicepsFlexed,
   HeartPulse,
   type LucideIcon,
@@ -398,28 +398,50 @@ function TodoRow({
   };
 
   /*
-    ── màu của hai nút mép phải: `primary`, KHÔNG phải màu miền ──
+    ── BA nút ở mép phải, theo đúng đặt hàng ──
+
+      Sửa lại   mở chỗ ghi để chữa một lượt ghi sai. Trên dòng CHƯA ghi nó đi
+                cùng chỗ với nút "Ghi", nên nó luôn làm được việc.
+      Hẹn giờ   bật lời nhắc lên; đồng hồ gọn của iOS hiện ra ngay trong dòng
+                để kéo. Khi nhắc ĐÃ bật, nó vẫn đóng hàng lại và đưa mắt về
+                đúng cái đồng hồ ấy — chỗ yếu nhất trong ba nút, và tôi nói
+                thẳng chứ không giấu: nếu chủ dự án thấy thừa thì bỏ nó đi,
+                hai nút còn lại đứng được một mình.
+      Bật/Tắt   công tắc. Nhãn LẬT theo trạng thái — "nếu người dùng bật thông
+                báo rồi thì nút sẽ hiện thành tắt còn nếu người dùng tắt nhắc
+                nhở thì nút sẽ hiện thành bật" — đúng hình dạng "Đã đọc / Chưa
+                đọc" của Mail.
+
+    ── màu: `primary`, KHÔNG phải màu miền ──
 
     Bản đầu tô "Sửa lại" xanh dương và "Tắt nhắc" tím. Cả hai đo đủ tương phản
-    (5,00 và 5,94 bản sáng), và cả hai vẫn SAI: `icon-tint.ts` đã tiêu xanh
-    dương cho cân nặng và tím cho giấc ngủ, nên một viên thuốc tím trượt ra cạnh
-    dòng Giấc ngủ đang nói hai điều khác nhau bằng cùng một màu. Bảng ấy sinh ra
-    để dẹp đúng chuyện đó.
+    (5,00 và 5,94 bản sáng), và cả hai vẫn sai: `icon-tint.ts` đã tiêu xanh
+    dương cho cân nặng và tím cho giấc ngủ, nên một ô tím trượt ra cạnh dòng
+    Giấc ngủ đang nói hai điều khác nhau bằng cùng một màu.
 
     Còn lại đúng một cặp không mang nghĩa miền nào: `primary` với
-    `primaryForeground` — cặp app đã định nghĩa cho HÀNH ĐỘNG, và là cặp có dư
-    địa lớn nhất (17,57:1 bản sáng · 9,14:1 bản tối). Hai nút cùng màu ấy phân
-    biệt nhau bằng HÌNH và bằng CHỮ, đúng cách Mail xếp "More" xám cạnh những
-    nút khác. Màu duy nhất trên cả hàng là cái nút đỏ ở mép kia — và đó là chủ
-    ý, vì nó là cái duy nhất thay đổi hôm nay của bạn.
+    `primaryForeground` — cặp app định nghĩa cho HÀNH ĐỘNG, và là cặp có dư địa
+    lớn nhất (17,57:1 bản sáng · 9,14:1 bản tối). Ba nút phân biệt nhau bằng
+    HÌNH và bằng CHỮ, đúng cách Mail xếp "More" xám cạnh những nút khác. Màu duy
+    nhất trên cả hàng là cái nút đỏ ở mép kia — và đó là chủ ý, vì nó là cái duy
+    nhất thay đổi hôm nay của bạn.
   */
   const rightActions: SwipeAction[] = [
-    ...(done ? [{ icon: SquarePen, label: i18n.nTodoEdit, tint: c.primary, onPress: press }] : []),
+    { icon: SquarePen, label: i18n.nTodoEdit, tint: c.primary, onPress: press },
     ...(available
       ? [
           {
-            icon: reminderOn ? BellOff : BellPlus,
-            label: reminderOn ? i18n.nTodoRemindOff : i18n.nTodoSetReminder,
+            icon: AlarmClock,
+            label: i18n.nTodoSetReminder,
+            tint: c.primary,
+            onPress: () => {
+              Haptics.selectionAsync();
+              if (!reminderOn) toggle(reminderKey, true);
+            },
+          },
+          {
+            icon: reminderOn ? BellOff : Bell,
+            label: reminderOn ? i18n.nTodoOff : i18n.nTodoOn,
             tint: c.primary,
             onPress: () => {
               Haptics.selectionAsync();
@@ -430,14 +452,6 @@ function TodoRow({
       : []),
   ];
 
-  /*
-    MỘT hình dạng dòng, `done` chỉ đổi sắc độ.
-
-    Bản trước trả về sớm một dòng KHÁC hẳn khi đã ghi: ô icon thành dấu tích,
-    hàng hẹn giờ biến mất, nút biến mất. Tức việc ghi xong vừa đổi trạng thái
-    vừa đổi cả bố cục, và hai thứ đáng làm được trên dòng ấy — sửa lại lượt ghi
-    sai, đổi giờ nhắc — không còn chỗ nào để làm.
-  */
   const tint = c[iconTint(ICON[itemKey]) ?? 'foreground'];
   /* Bỏ qua và đã ghi cùng một sắc độ: cả hai đều là "dòng này xong việc của
      hôm nay". Chữ trên nút mới là thứ nói chúng khác nhau thế nào. */
@@ -445,7 +459,7 @@ function TodoRow({
   const word = skipped ? i18n.nTodoSkipped : done ? i18n.nTodoDone : i18n.nTodoLog;
 
   return (
-    <SwipeRow left={[skipAction]} right={rightActions}>
+    <SwipeRow fullSwipe left={[skipAction]} right={rightActions}>
       <View style={[styles.rowOpen, styles.rowSwipe]}>
       <View style={styles.rowTop}>
         <View style={styles.tile}>
@@ -455,7 +469,7 @@ function TodoRow({
           <Text style={[styles.label, quiet && styles.labelDone]} numberOfLines={1}>
             {label}
           </Text>
-          <ReminderRow itemKey={itemKey} label={label} />
+          <ReminderRow itemKey={itemKey} />
         </View>
         <PressScale
           accessibilityRole="button"
@@ -496,7 +510,7 @@ function TodoRow({
  * hàng này KHÔNG dựng — một nút hẹn giờ không bao giờ bắn được thông báo thì
  * tệ hơn là không có nút.
  */
-function ReminderRow({ itemKey, label }: { itemKey: TodoKey; label: string }) {
+function ReminderRow({ itemKey }: { itemKey: TodoKey }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -507,28 +521,36 @@ function ReminderRow({ itemKey, label }: { itemKey: TodoKey; label: string }) {
     lại lần app đã trả giá cho việc mỗi mount giữ một bản riêng. Và lượt ghi
     lịch được chặn bằng chữ ký đã lưu, nên hai mount không đặt lịch hai lần.
   */
-  const { prefs, available, toggle, setTime } = useReminders();
+  const { prefs, available, setTime } = useReminders();
 
   if (!available) return null;
   const key = TODO_REMINDER[itemKey];
   const r = prefs[key];
 
-  if (!r.enabled) {
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${i18n.nTodoSetReminder} — ${label}`}
-        style={styles.remind}
-        onPress={() => {
-          Haptics.selectionAsync();
-          toggle(key, true);
-        }}>
-        <Icon icon={BellPlus} size={16} color={c.mutedForeground} />
-        <Text style={styles.remindText}>{i18n.nTodoSetReminder}</Text>
-      </Pressable>
-    );
-  }
+  /*
+    ── NHẮC ĐANG TẮT: dòng không nói gì cả ──
 
+    Chủ dự án: "nếu tắt thông báo thì nút này biến mất khỏi thẻ", và "xoá chữ
+    tắt trên thẻ vì đã có nút rồi".
+
+    Bản trước để hai thứ ở đây mà cú vuốt nay đã mang: một nút "Hẹn giờ" để bật
+    nhắc, và một nút chữ "Tắt" để tắt. Giữ lại là hai lối vào cho cùng một công
+    tắc, cách nhau mười điểm — và trên máy thật nó đọc ra đúng như vậy: mỗi dòng
+    có một chữ "Tắt" lửng lơ cạnh giờ.
+
+    Nên khi nhắc tắt, dòng chỉ còn NHÃN VIỆC. Sạch, và đúng thứ tự người ta gặp
+    nó: bật nhắc là một quyết định hiếm, đổi giờ là việc làm sau đó.
+  */
+  if (!r.enabled) return null;
+
+  /*
+    ── NHẮC ĐANG BẬT: chỉ còn đúng cái đồng hồ ──
+
+    `display="compact"` là đồng hồ gọn của iOS — chủ dự án đã một lần bảo trả nó
+    lại sau khi tôi thay bằng một tấm chọn tự vẽ ("lúc nãy cái đó nhìn mượt hơn
+    đẹp hơn"). Nó tự lo phần kéo/chọn giờ, và WCAG 2.5.8 loại trừ "User agent
+    control" khỏi sàn kích thước, nên nó không cần một khung 44 điểm quanh mình.
+  */
   return (
     <View style={styles.remind}>
       <Icon icon={Bell} size={16} color={c.mutedForeground} />
@@ -538,16 +560,6 @@ function ReminderRow({ itemKey, label }: { itemKey: TodoKey; label: string }) {
         display="compact"
         onChange={(_, d) => d && setTime(key, d.getHours(), d.getMinutes())}
       />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${i18n.nTodoReminderOff} — ${label}`}
-        style={styles.remindOff}
-        onPress={() => {
-          Haptics.selectionAsync();
-          toggle(key, false);
-        }}>
-        <Text style={styles.remindOffText}>{i18n.nTodoOff}</Text>
-      </Pressable>
     </View>
   );
 }

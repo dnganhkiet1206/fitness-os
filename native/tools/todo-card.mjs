@@ -271,14 +271,51 @@ try {
     }
   }
 
-  /* Nút tắt lời nhắc phải là CHỮ, không phải glyph. Một từ đọc được ở mọi cỡ
-     mắt; một cái chuông gạch chéo thì phải đoán — và bản có glyph là bản chủ
-     dự án đã phải nói ra là quá nhỏ. */
+  /* ── công tắc lời nhắc: không bao giờ là một glyph tí hon ──
+
+     Bất biến thật là KÍCH THƯỚC, không phải chữ. Bản đầu cài nó thành "phải có
+     nhãn `remindOffText`", và đó là MỘT cách thoả — cách duy nhất đúng khi công
+     tắc còn nằm trong dòng, cạnh đồng hồ, ở 13 điểm.
+
+     Chủ dự án đã chuyển nó đi: "xoá chữ tắt trên thẻ vì đã có nút rồi". Nay nó
+     là một ô vuốt, và ô ấy to hơn hẳn — nên luật đo CHỖ MỚI thay vì đòi chỗ cũ.
+     Hai vế: công tắc phải nằm trong danh sách nút vuốt, và ô nút phải ≥44 điểm,
+     sàn của Apple HIG và WCAG 2.5.5. */
   CASES++;
-  if (!/styles\.remindOffText/.test(src) || /icon=\{BellOff\}/.test(src)) {
+  {
+    const swipe = readFileSync(path.join(NATIVE, 'src/components/ascnd/swipe-row.tsx'), 'utf8');
+    const cap = /const CAPSULE = (\d+);/.exec(swipe);
+    const hasToggle = /label: reminderOn \? i18n\.nTodoOff : i18n\.nTodoOn/.test(src);
+    if (!hasToggle) {
+      problems.push(
+        `${CARD}: không còn nút LẬT bật/tắt lời nhắc. Nhãn phải đổi theo trạng thái — một công tắc ` +
+          'mang tên cố định thì không nói được nó đang ở đâu',
+      );
+    }
+    if (/styles\.remindOffText/.test(src)) {
+      problems.push(
+        `${CARD}: chữ "Tắt" quay lại trong dòng. Công tắc nay nằm ở nút vuốt, và hai lối vào cho cùng ` +
+          'một công tắc cách nhau mười điểm là đúng cái chủ dự án bảo dọn',
+      );
+    }
+    if (!cap) {
+      problems.push('swipe-row.tsx: không đọc được `CAPSULE` để đo nút công tắc');
+    } else if (Number(cap[1]) < 44) {
+      problems.push(
+        `swipe-row.tsx: ô nút vuốt chỉ ${cap[1]} điểm, dưới sàn 44 của Apple HIG và WCAG 2.5.5. Công ` +
+          'tắc lời nhắc sống ở đây, và bản 13 điểm là bản chủ dự án đã phải báo là bấm không nổi',
+      );
+    }
+  }
+
+  /* ── đồng hồ chỉ hiện khi lời nhắc đang BẬT ──
+     "nếu tắt thông báo thì nút này biến mất khỏi thẻ". Một ô chọn giờ cho một
+     lời nhắc không bắn là một ô hứa suông. */
+  CASES++;
+  if (!/if \(!r\.enabled\) return null;/.test(src)) {
     problems.push(
-      `${CARD}: nút tắt lời nhắc không còn là một nhãn CHỮ. Bản dùng icon \`BellOff\` 13 điểm là bản ` +
-        'chủ dự án đã phải báo là bấm không nổi',
+      `${CARD}: hàng giờ không tự ẩn khi lời nhắc tắt — người ta sẽ đặt được một giờ cho một thông ` +
+        'báo không bao giờ bắn',
     );
   }
 
@@ -537,7 +574,9 @@ console.log(
     'Việc đã ghi Ở LẠI trên thẻ thay vì biến mất dưới ngón tay, và mọi bề mặt do APP tự vẽ đều ≥44 điểm ' +
     '— sàn của Apple HIG và của WCAG 2.5.5 — mà không cái nào bù bằng `hitSlop`, thứ nới vùng chạm ' +
     'nhưng không nới cái người ta phải ngắm. Đồng hồ gọn của iOS được miễn có tên — WCAG 2.5.8 loại ' +
-    'trừ "User agent control" — và nút tắt lời nhắc là một nhãn CHỮ chứ không phải một glyph 13 điểm. ' +
+    'trừ "User agent control" — và công tắc lời nhắc nay sống ở một ô vuốt ≥44 điểm, đọc THẲNG khỏi ' +
+    '`swipe-row.tsx`, chứ không phải một glyph 13 điểm trong dòng; nhãn của nó LẬT theo trạng thái, và ' +
+    'hàng giờ tự ẩn khi lời nhắc tắt để không ai đặt được giờ cho một thông báo không bắn. ' +
     'Icon của cả năm dòng là ĐƠN SẮC: không bảng hue nào cho lối đi, và trạng thái đã-ghi đọc được ' +
     'bằng CHỮ ("Đã ghi" trên chính nút) chứ không bằng sắc độ. Dòng đã ghi nhạt đi bằng TOKEN và ' +
     'bằng một độ mờ chỉ áp cho icon, không phải bằng `opacity` cả dòng — cách ấy đã được đo và bác: ' +

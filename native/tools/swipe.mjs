@@ -221,6 +221,94 @@ function declOf(body, name) {
   }
 }
 
+/* ── 4. hình dạng nút, cú kéo dài, và cú bo góc ──
+
+   Ba thứ chủ dự án đặt hàng sau khi nhìn ảnh Nhắc nhở của iOS trên máy thật:
+   "icon phải nhỏ hơn thẻ và chữ xuất hiện bên dưới icon", "các nút tách ra như
+   apple làm", "kéo dài ra và xoá thẻ mà không cần bấm nút", "thẻ chính khi vuốt
+   sẽ có hiệu ứng bo góc lại".
+
+   Cả ba đều là loại chi tiết biến mất trong một lần "dọn dẹp" mà không ai thấy,
+   vì không màn nào đỏ khi thiếu chúng. */
+{
+  const num = (name) => {
+    const m = new RegExp(`const ${name} = ([\\d.]+);`).exec(src);
+    return m ? Number(m[1]) : null;
+  };
+  const cap = num('CAPSULE');
+  const icon = num('CAPSULE_ICON');
+  const openW = num('OPEN_W');
+  const full = num('FULL_SWIPE_AT');
+
+  if (cap === null || icon === null || openW === null || full === null) {
+    problems.push(
+      `${COMPONENT}: không đọc được một trong CAPSULE / CAPSULE_ICON / OPEN_W / FULL_SWIPE_AT — ` +
+        'luật hình dạng đang không kiểm gì cả',
+    );
+  } else {
+    /* icon phải NHỎ HƠN ô, và nhỏ rõ chứ không nhỏ một điểm. Trong ảnh tham
+       chiếu nó chiếm chưa tới một nửa bề ngang ô. */
+    if (icon / cap > 0.55) {
+      problems.push(
+        `${COMPONENT}: icon ${icon} trên ô ${cap} là ${Math.round((icon / cap) * 100)}% bề ngang — ` +
+          'đặt hàng là "icon phải nhỏ hơn thẻ", và trên ảnh tham chiếu nó chưa tới một nửa',
+      );
+    }
+    /* Ô phải hẹp hơn cột của nó, không thì các nút dính thành một dải. */
+    if (cap >= openW) {
+      problems.push(
+        `${COMPONENT}: ô ${cap} rộng bằng hoặc hơn cột ${openW}, nên ba nút dính liền nhau — đặt hàng ` +
+          'là "các nút tách ra như apple làm"',
+      );
+    }
+    /* Ngưỡng kéo dài phải nằm trong tầm ngón cái và phải xa hơn hẳn ngưỡng mở
+       thường, không thì một cú vuốt bình thường cũng kích hoạt nó. */
+    if (full < 0.3 || full > 0.6) {
+      problems.push(
+        `${COMPONENT}: ngưỡng kéo-dài ${full} nằm ngoài khoảng dùng được — dưới 0,3 thì một cú vuốt ` +
+          'thường cũng kích hoạt, trên 0,6 thì phải rướn quá nửa màn',
+      );
+    }
+  }
+
+  /* Chữ nằm NGOÀI ô: nếu nó còn nằm trong `capsule` thì bố cục đã quay lại bản
+     cũ — một khối đen to bằng cả dòng với icon và chữ chồng nhau. */
+  const capsuleBody = /capsule: \{([\s\S]*?)\n  \},/.exec(src);
+  if (capsuleBody && /actionText/.test(capsuleBody[1])) {
+    problems.push(`${COMPONENT}: chữ vẽ bên trong ô, đáng lẽ nằm bên dưới nó`);
+  }
+  if (!/<\/Animated.View>\s*\)?\s*\}?\s*\n\s*\{action\.glyphOnly \? null : \(/.test(src)) {
+    problems.push(
+      `${COMPONENT}: dòng chữ không còn đứng SAU ô trong cây — đặt hàng là "chữ xuất hiện bên dưới icon"`,
+    );
+  }
+
+  /* Cú kéo dài: phải có cờ, có haptic NẶNG hơn tiếng cam kết thường, và phải
+     đóng hàng lại sau khi làm — để lại một hàng mở sau khi đã làm xong là nói
+     rằng chưa làm. */
+  for (const [re, why] of [
+    [/overshootLeft=\{fullSwipe\}/, 'không cho kéo quá bề rộng nút, nên không có chỗ nào để kéo dài'],
+    [/ImpactFeedbackStyle\.Medium/, 'không có tiếng haptic riêng cho ngưỡng kéo-dài'],
+    [/methods\.current\?\.close\(\)/, 'không đóng hàng lại sau khi cú kéo dài đã làm xong việc'],
+  ]) {
+    if (!re.test(src)) problems.push(`${COMPONENT}: ${why}`);
+  }
+
+  /* Bo góc phải chạy theo CÚ KÉO, không phải một animation chạy song song. */
+  if (!/borderRadius: interpolate\(openness\.value/.test(src)) {
+    problems.push(
+      `${COMPONENT}: bán kính góc không nội suy từ độ mở của cú kéo — một hiệu ứng chạy song song sẽ ` +
+        'lệch khỏi ngón tay, đúng thứ làm swipe của một app thấy rẻ tiền',
+    );
+  }
+  if (!/overflow: 'hidden'/.test(src)) {
+    problems.push(
+      `${COMPONENT}: lớp bo góc thiếu \`overflow: hidden\`, nên nền hàng vẫn vuông và góc bo không ` +
+        'nhìn thấy được',
+    );
+  }
+}
+
 if (problems.length) {
   console.log('hàng vuốt CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);
