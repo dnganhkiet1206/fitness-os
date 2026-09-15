@@ -3,7 +3,6 @@ import {
   Bell,
   BellPlus,
   BicepsFlexed,
-  Check,
   HeartPulse,
   type LucideIcon,
   Moon,
@@ -178,6 +177,41 @@ const ICON: Record<TodoKey, LucideIcon> = {
   Năm khoá cũ chỉ phủ hai dòng (buổi tập, cân nặng), nên ba khoá `meal`,
   `biometrics`, `sleepLog` được thêm vào chính bộ ấy — xem `ReminderKey`.
 */
+/**
+ * Việc ĐÃ GHI nhạt đi bao nhiêu, và vì sao không nhạt hơn được.
+ *
+ * ── đặt hàng ──
+ *
+ * Chủ dự án: "khi đã được ghi thì chỉ nút ghi hiện đã ghi, còn thẻ và icon giữ
+ * nguyên chỉ mờ đi so với các thẻ còn lại".
+ *
+ * ── vì sao KHÔNG phải một `opacity` trên cả dòng ──
+ *
+ * Đó là cách hiển nhiên, và nó phá sàn tương phản của chính app. Đo trên mặt
+ * thẻ ở cả hai diện mạo: ở `opacity` 0,75 thì chữ nhắc tụt còn 3,20:1 và icon
+ * buổi tập còn 2,96:1 — dưới 4,5:1 của WCAG 1.4.3 và 3:1 của 1.4.11. Lý do là
+ * hai thứ ấy vốn đã sát sàn khi CHƯA mờ (4,71 và 4,57), nên chúng không có chỗ
+ * để nhạt. Một `opacity` mờ đủ để nhìn ra thì đã mờ quá mức đọc được.
+ *
+ * Và ngoại lệ "thành phần không hoạt động" của 1.4.3 KHÔNG cứu được chỗ này:
+ * nó chỉ áp cho thứ "nhìn thấy nhưng không thao tác được". Dòng đã ghi ở đây
+ * vẫn bấm được (để sửa) và vẫn vuốt được, nên nó là thành phần ĐANG hoạt động.
+ *
+ * ── nên nhạt bằng hai đường khác, mỗi đường có số của nó ──
+ *
+ *   chữ   đổi TOKEN chứ không mờ: `foreground` → `mutedForeground`, tức
+ *         17,57→5,78 bản sáng và 15,46→4,71 bản tối. Rơi rất nhiều về thị
+ *         giác mà vẫn trên sàn 4,5.
+ *   nút   bỏ nền đen đặc, còn lại một nút chữ. Đây là chỗ rơi nặng nhất, và
+ *         đúng chỗ chủ dự án chỉ: "chỉ nút ghi hiện đã ghi".
+ *   icon  mờ 0,80 NHƯNG ô icon giữ nguyên, nên icon nhạt về phía ô chứ không
+ *         về phía thẻ. Đo cả năm miền: thấp nhất 3,16:1 ở 0,80, còn 0,75 đã
+ *         là 2,90 — nên 0,80 là SÀN, không phải một con số cho đẹp.
+ *
+ * Trạng thái vẫn không phụ thuộc sắc độ: nút ghi hẳn chữ "Đã ghi" (WCAG 1.4.1).
+ */
+const DONE_ICON_ALPHA = 0.8;
+
 const TODO_REMINDER: Record<TodoKey, TimedReminderKey> = {
   meal: 'meal',
   workout: 'workout',
@@ -286,20 +320,6 @@ function TodoRow({
   const i18n = useI18n();
   const [editing, setEditing] = useState(false);
 
-  if (done) {
-    return (
-      <View style={styles.rowDone}>
-        <View style={styles.tile}>
-          <Icon icon={Check} size={20} color={c.mutedForeground} />
-        </View>
-        <Text style={[styles.label, styles.labelFill, styles.labelDone]} numberOfLines={1}>
-          {label}
-        </Text>
-        <Text style={styles.doneText}>{i18n.nTodoDone}</Text>
-      </View>
-    );
-  }
-
   /*
     Cân nặng ghi TẠI CHỖ, vì nó không có màn riêng nào để mở. Ô nhập là
     `WeightEntry` — đúng cái đã nằm trong thẻ Cân nặng, tách ra dùng chung chứ
@@ -312,25 +332,37 @@ function TodoRow({
     else nav.push(ROUTE[itemKey as Exclude<TodoKey, 'weight'>]);
   };
 
+  /*
+    MỘT hình dạng dòng, `done` chỉ đổi sắc độ.
+
+    Bản trước trả về sớm một dòng KHÁC hẳn khi đã ghi: ô icon thành dấu tích,
+    hàng hẹn giờ biến mất, nút biến mất. Tức việc ghi xong vừa đổi trạng thái
+    vừa đổi cả bố cục, và hai thứ đáng làm được trên dòng ấy — sửa lại lượt ghi
+    sai, đổi giờ nhắc — không còn chỗ nào để làm.
+  */
+  const tint = c[iconTint(ICON[itemKey]) ?? 'foreground'];
+
   return (
     <View style={styles.rowOpen}>
       <View style={styles.rowTop}>
         <View style={styles.tile}>
-          <Icon icon={ICON[itemKey]} size={20} color={c[iconTint(ICON[itemKey]) ?? 'foreground']} />
+          <Icon icon={ICON[itemKey]} size={20} color={done ? alpha(tint, DONE_ICON_ALPHA) : tint} />
         </View>
         <View style={styles.text}>
-          <Text style={styles.label} numberOfLines={1}>
+          <Text style={[styles.label, done && styles.labelDone]} numberOfLines={1}>
             {label}
           </Text>
           <ReminderRow itemKey={itemKey} label={label} />
         </View>
         <PressScale
           accessibilityRole="button"
-          accessibilityLabel={`${i18n.nTodoLog} ${label}`}
+          accessibilityLabel={`${done ? i18n.nTodoDone : i18n.nTodoLog} — ${label}`}
           accessibilityState={itemKey === 'weight' ? { expanded: editing } : undefined}
-          style={styles.action}
+          style={[styles.action, done && styles.actionDone]}
           onPress={press}>
-          <Text style={styles.actionText}>{i18n.nTodoLog}</Text>
+          <Text style={[styles.actionText, done && styles.actionTextDone]}>
+            {done ? i18n.nTodoDone : i18n.nTodoLog}
+          </Text>
         </PressScale>
       </View>
       {itemKey === 'weight' && editing ? <WeightEntry onLogged={() => setEditing(false)} /> : null}
@@ -434,12 +466,6 @@ const stylesFor = makeStyles((c, m) => ({
      chưa ghi gì: hai dòng xong là hai dòng 56 thay vì hai dòng 96. */
   rowOpen: { gap: spacing.sm, paddingVertical: spacing.xs },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
-  rowDone: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm + 2,
-    minHeight: 56,
-  },
 
   /* 44, không 30. Ô icon không bấm được, nhưng nó là thứ mắt tìm dòng bằng —
      và ở cỡ 30 với một glyph 16 thì nó là một chấm màu, không phải một dấu
@@ -465,11 +491,7 @@ const stylesFor = makeStyles((c, m) => ({
 
   text: { flex: 1, gap: 2 },
   label: { ...type.body, color: c.foreground },
-  /* Chỉ dòng ĐÃ XONG cần vế này: ở đó chữ nằm thẳng trong hàng, nên nó phải tự
-     đẩy "Đã ghi" ra mép phải. Dòng chưa xong đã có cột `text` lo việc đó. */
-  labelFill: { flex: 1 },
   labelDone: { color: c.mutedForeground },
-  doneText: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
 
   /* Hàng hẹn giờ: cao 44 và chiếm hết cột chữ. Đích chạm ra ~33×7,3mm, thay
      cho một icon 13 điểm. */
@@ -517,5 +539,11 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
   },
   actionText: { ...type.body, fontWeight: '600', color: c.primaryForeground },
+  /* Nút của dòng ĐÃ GHI: bỏ nền đen đặc, giữ nguyên khung 44×72 để đích chạm
+     không co lại — nó vẫn là lối nhìn thấy được để sửa một lượt ghi sai, và
+     `tools/swipe.mjs` đòi mọi hành động vuốt phải còn một lối khác. Chữ dùng
+     `mutedForeground`: 5,78:1 bản sáng · 4,71:1 bản tối, trên sàn 4,5. */
+  actionDone: { backgroundColor: 'transparent' },
+  actionTextDone: { color: c.mutedForeground },
 
 }));

@@ -27,6 +27,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { styleBody } from './lib/code-mask.mjs';
+import { hex, loadPalette, overC, ratio } from './lib/stack.mjs';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(path.join(NATIVE, rel), 'utf8');
@@ -327,6 +328,83 @@ try {
   }
 }
 
+/* ── 5c. dòng ĐÃ GHI nhạt đi, nhưng không nhạt xuống dưới sàn ──
+
+   Chủ dự án đặt hàng: "khi đã được ghi thì chỉ nút ghi hiện đã ghi, còn thẻ và
+   icon giữ nguyên chỉ mờ đi". Cách hiển nhiên — một `opacity` trên cả dòng —
+   ĐÃ được đo và bị bác: ở 0,75 thì chữ nhắc còn 3,20:1 và icon buổi tập còn
+   2,96:1, dưới 4,5 của WCAG 1.4.3 và 3,0 của 1.4.11. Ngoại lệ "thành phần
+   không hoạt động" của 1.4.3 không cứu được, vì dòng đã ghi vẫn bấm và vuốt
+   được, tức vẫn ĐANG hoạt động.
+
+   Nên chỉ ICON nhạt, và nhạt về phía Ô ICON chứ không về phía thẻ. Luật này
+   CHẠY chính phép đo ấy trên chính bảng màu đang ship: đọc `DONE_ICON_ALPHA`
+   ra khỏi thẻ, đọc miền màu của cả năm icon ra khỏi `icon-tint.ts`, rồi hỏi
+   từng cái có còn ≥3:1 trên nền ô icom ở CẢ HAI diện mạo không. Hạ hằng ấy
+   xuống 0,75 là đỏ. */
+{
+  const { palettes, materials } = loadPalette();
+  const card = strip(read(CARD));
+  const tint = strip(readFileSync(path.join(NATIVE, 'src/constants/icon-tint.ts'), 'utf8'));
+
+  const mAlpha = /const DONE_ICON_ALPHA = ([\d.]+);/.exec(card);
+  CASES++;
+  if (!mAlpha) {
+    problems.push(`${CARD}: không đọc được \`DONE_ICON_ALPHA\` — luật độ mờ đang không kiểm gì cả`);
+  } else {
+    const a = Number(mAlpha[1]);
+
+    /* miền của từng icon, đọc ra khỏi hai bảng thật */
+    const domain = Object.fromEntries(
+      [...tint.matchAll(/\[(\w+),\s*([A-Z]+)\]/g)].map((m) => [m[1], m[2]]),
+    );
+    const key = Object.fromEntries(
+      [...tint.matchAll(/const ([A-Z]+) = '(\w+)' satisfies PaletteKey;/g)].map((m) => [m[1], m[2]]),
+    );
+    const icons = [...card.matchAll(/^\s*(\w+): (\w+),$/gm)]
+      .filter(([, , v]) => /^[A-Z]/.test(v) && domain[v])
+      .map(([, , v]) => v);
+    CASES++;
+    if (icons.length !== 5) {
+      problems.push(`${CARD}: đọc ra ${icons.length} icon có miền, đáng lẽ 5 — phép đo dưới đây đang hụt`);
+    }
+
+    for (const theme of ['light', 'dark']) {
+      /* nền ô icon = `m.inset.bg` của diện mạo ấy, dựng đúng chồng mặt: trang →
+         mặt thẻ (GlassCard `onPage`) → ô lõm. */
+      const page = hex(palettes[theme].background);
+      const m = materials[theme];
+      const face = /rgba/.test(m.onPage)
+        ? overC([255, 255, 255], page, Number(/,\s*([\d.]+)\)/.exec(m.onPage)[1]))
+        : hex(m.onPage);
+      const tile = /rgba/.test(m.inset.bg)
+        ? overC([255, 255, 255], face, Number(/,\s*([\d.]+)\)/.exec(m.inset.bg)[1]))
+        : hex(m.inset.bg);
+
+      for (const icon of icons) {
+        CASES++;
+        const colour = hex(palettes[theme][key[domain[icon]]]);
+        const r = ratio(overC(colour, tile, a), tile);
+        if (r < 3) {
+          problems.push(
+            `${CARD}: icon \`${icon}\` của dòng đã ghi chỉ còn ${r.toFixed(2)}:1 trên ô icon bản ` +
+              `${theme === 'light' ? 'sáng' : 'tối'} ở độ mờ ${a} — dưới sàn 3:1 của WCAG 1.4.11`,
+          );
+        }
+      }
+    }
+  }
+
+  /* Và trạng thái KHÔNG được chỉ nằm ở sắc độ: nút phải đổi CHỮ. */
+  CASES++;
+  if (!/done \? i18n\.nTodoDone : i18n\.nTodoLog/.test(card)) {
+    problems.push(
+      `${CARD}: nút của dòng không đổi chữ theo \`done\`. Sau khi bỏ dấu tích, CHỮ là thứ duy nhất ` +
+        'còn mang trạng thái mà không phải màu — thiếu nó là vi phạm WCAG 1.4.1',
+    );
+  }
+}
+
 /* ── 6. lời mời thứ hai không mọc lại trên Today ── */
 {
   const src = strip(read(TODAY));
@@ -391,8 +469,12 @@ console.log(
     '— sàn của Apple HIG và của WCAG 2.5.5 — mà không cái nào bù bằng `hitSlop`, thứ nới vùng chạm ' +
     'nhưng không nới cái người ta phải ngắm. Đồng hồ gọn của iOS được miễn có tên — WCAG 2.5.8 loại ' +
     'trừ "User agent control" — và nút tắt lời nhắc là một nhãn CHỮ chứ không phải một glyph 13 điểm. ' +
-    'Icon của cả năm dòng là ĐƠN SẮC: không bảng hue nào cho lối đi, và trạng thái đã-ghi vẫn đọc ' +
-    'được bằng HÌNH (dấu tích) cộng CHỮ ("Đã ghi") chứ không bằng sắc độ. Màu icon đến từ ' +
+    'Icon của cả năm dòng là ĐƠN SẮC: không bảng hue nào cho lối đi, và trạng thái đã-ghi đọc được ' +
+    'bằng CHỮ ("Đã ghi" trên chính nút) chứ không bằng sắc độ. Dòng đã ghi nhạt đi bằng TOKEN và ' +
+    'bằng một độ mờ chỉ áp cho icon, không phải bằng `opacity` cả dòng — cách ấy đã được đo và bác: ' +
+    'ở 0,75 chữ nhắc còn 3,20:1 và icon buổi tập còn 2,96:1, mà ngoại lệ "thành phần không hoạt ' +
+    'động" của 1.4.3 không áp được vì dòng ấy vẫn bấm và vuốt được. Độ mờ icon được CHẠY trên bảng ' +
+    'màu đang ship, cả năm miền × hai diện mạo, trên nền ô icon dựng đúng chồng mặt. Màu icon đến từ ' +
     '`constants/icon-tint.ts` chứ không từ một bảng gõ tay ở thẻ, và mọi icon của thẻ đều có miền ' +
     'trong bảng ấy. Ô icon là hình tròn, viết ' +
     'bằng `radius.full` để bán kính đi theo cạnh thay vì được gõ tay',
