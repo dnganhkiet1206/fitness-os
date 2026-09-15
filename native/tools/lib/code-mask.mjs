@@ -47,3 +47,23 @@ export function inCode(src, needle) {
   }
   return false;
 }
+
+/**
+ * Thân của một style trong một bảng `makeStyles`, cắt bằng ĐẾM NGOẶC.
+ *
+ * Không dò tới `}` hay `\n  },` đầu tiên: một bảng style có cả entry viết một
+ * dòng (`tileDone: { ... },`) lẫn entry nhiều dòng, và phép dò ấy làm entry một
+ * dòng nuốt luôn block kế tiếp — `tools/todo-card.mjs` đã báo "không đọc được
+ * style" cho ba style đang có thật trước khi đổi sang cách này.
+ */
+export function styleBody(code, name) {
+  const at = code.search(new RegExp(`\\n\\s*${name}:\\s*\\{`));
+  if (at < 0) return null;
+  const open = code.indexOf('{', at);
+  let depth = 0;
+  for (let i = open; i < code.length; i++) {
+    if (code[i] === '{') depth++;
+    else if (code[i] === '}' && --depth === 0) return code.slice(open, i + 1);
+  }
+  return null;
+}

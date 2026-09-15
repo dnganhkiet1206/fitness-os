@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
-import { Bell, BellOff, Dumbbell, HeartPulse, type LucideIcon, Moon, Scale, Utensils } from 'lucide-react-native';
+import { Bell, BellPlus, Check, Dumbbell, HeartPulse, type LucideIcon, Moon, Scale, Utensils } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -9,7 +9,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { DateField } from '@/components/ascnd/date-field';
 import { WeightEntry } from '@/components/ascnd/weight-entry';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { graphicOf, makeStyles, type PaletteKey } from '@/constants/theme';
+import { alpha, graphicOf, makeStyles, type PaletteKey } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useTodayWeight } from '@/hooks/use-fitness-data';
@@ -19,7 +19,7 @@ import { useReminders } from '@/hooks/use-reminders';
 import { nav } from '@/lib/nav';
 import type { TimedReminderKey } from '@/lib/reminder-plan';
 import { timeToDate } from '@/lib/reminder-timing';
-import { TODO_ORDER, todoOpen, todoProgress, type TodoDone, type TodoKey } from '@/lib/todo';
+import { TODO_ORDER, todoProgress, type TodoDone, type TodoKey } from '@/lib/todo';
 
 /**
  * Một chỗ duy nhất trả lời "hôm nay còn phải ghi gì".
@@ -153,7 +153,6 @@ export function TodoCard() {
   /* Chưa đọc xong ngày thì chưa nói gì — xem chú thích `ready` ở trên. */
   if (!quests.ready) return null;
 
-  const open = todoOpen(done);
   const progress = todoProgress(done);
 
   return (
@@ -164,74 +163,139 @@ export function TodoCard() {
           {progress.done}/{progress.total}
         </Text>
       </View>
-      {open.length === 0 ? (
-        <Text style={styles.allDone}>{i18n.nTodoAllDone}</Text>
-      ) : (
-        open.map((key) => (
-          <TodoRow key={key} itemKey={key} label={label[key]} action={i18n.nTodoLog} />
-        ))
-      )}
+      {/*
+        NĂM dòng, luôn luôn — việc đã ghi Ở LẠI.
+
+        Bản trước chỉ vẽ việc chưa xong, và chủ dự án báo: "khi log xong thì
+        lại bị mất cả". Đúng: một dòng biến mất ngay dưới ngón tay vừa bấm là
+        thứ không xác nhận được gì. Bạn không thấy nó đã được ghi, không sửa
+        lại được lời nhắc của nó, và nếu bấm nhầm thì không còn gì để bấm lại.
+        Ở ngày đã ghi đủ, cả thẻ co về một dòng chữ — tức chỗ trả lời "hôm nay
+        thế nào" biến mất đúng lúc nó đáng được đọc nhất.
+
+        Nay việc xong đổi HÌNH chứ không biến mất: ô icon thành dấu tích, chữ
+        nhạt đi, và bên phải ghi "Đã ghi". Dòng vẫn bấm được — ghi thêm một bữa
+        nữa là chuyện thường.
+      */}
+      {TODO_ORDER.map((key) => (
+        <TodoRow key={key} itemKey={key} label={label[key]} done={done[key]} />
+      ))}
     </GlassCard>
   );
 }
 
-function TodoRow({ itemKey, label, action }: { itemKey: TodoKey; label: string; action: string }) {
+/**
+ * Một dòng việc, và mọi thứ bấm được trên nó đều ≥ 44 điểm.
+ *
+ * ── số đo, không phải cảm giác ──
+ *
+ * Bản trước: nút "Ghi" cao 32 với `hitSlop` bù, và nút tắt nhắc là một icon
+ * **13 điểm**. Chủ dự án nói thẳng: "người già dùng nút nhỏ như vậy sao họ bấm
+ * được". Số liệu đứng về phía câu ấy:
+ *
+ *   Apple HIG            44×44pt là SÀN cho một đích chạm
+ *   WCAG 2.2 · 2.5.5     44×44 (AAA); 2.5.8 chỉ 24×24 (AA)
+ *   nghiên cứu người già hiệu năng còn cải thiện tới ~17,5mm, và người ngón
+ *                        tay kém linh hoạt cần ≥19mm
+ *
+ * 44pt trên iPhone ≈ 7,3mm — tức đúng cái SÀN, không phải cái đủ. Nên hình
+ * dạng ở đây không chỉ nâng lên 44: nó đổi để đích chạm RỘNG ra theo chiều
+ * ngang, thứ rẻ nhất mà bố cục cho phép.
+ *
+ *   ô icon        30 → 44
+ *   nút ghi       32 cao × chữ ngắn → 48 cao, tối thiểu 96 rộng (≈16×8mm)
+ *   hàng hẹn giờ  icon 13 → cả một hàng cao 44 chiếm hết cột chữ (≈33×7,3mm)
+ *   tắt nhắc      icon 13 → một nút chiếm hết bề ngang trong tấm chọn giờ
+ *
+ * `hitSlop` bị bỏ ở đây, và đó là chủ ý: nó nới vùng chạm mà KHÔNG nới thứ mắt
+ * nhìn thấy. Với người phải ngắm, cái nhìn thấy mới là cái họ nhắm vào.
+ */
+function TodoRow({
+  itemKey,
+  label,
+  done,
+}: {
+  itemKey: TodoKey;
+  label: string;
+  done: boolean;
+}) {
   const c = usePalette();
   const styles = stylesFor(c);
+  const i18n = useI18n();
   const tint = graphicOf(c, TINT[itemKey]);
+  const [editing, setEditing] = useState(false);
 
-  /*
-    Cân nặng ghi TẠI CHỖ, vì nó không có màn riêng nào để mở.
-
-    Ô nhập là `WeightEntry`, đúng cái đã nằm trong thẻ Cân nặng — được tách ra
-    một tệp dùng chung chứ không chép lại. Nó mang theo cả phần khó: quy đổi
-    kg/lb, ngưỡng hợp lý, và đường ghi offline. Chép nó sang đây sẽ là bản thứ
-    hai của một logic ghi dữ liệu, và bản thứ hai luôn trôi.
-  */
-  if (itemKey === 'weight') {
-    return <WeightRow label={label} action={action} tint={tint} />;
+  if (done) {
+    return (
+      <View style={styles.rowDone}>
+        <View style={[styles.tile, styles.tileDone]}>
+          <Icon icon={Check} size={20} color={graphicOf(c, 'readinessGreen')} />
+        </View>
+        <Text style={[styles.label, styles.labelDone]} numberOfLines={1}>
+          {label}
+        </Text>
+        <Text style={styles.doneText}>{i18n.nTodoDone}</Text>
+      </View>
+    );
   }
 
+  /*
+    Cân nặng ghi TẠI CHỖ, vì nó không có màn riêng nào để mở. Ô nhập là
+    `WeightEntry` — đúng cái đã nằm trong thẻ Cân nặng, tách ra dùng chung chứ
+    không chép. Nó mang cả phần khó: quy đổi kg/lb, ngưỡng hợp lý, đường ghi
+    offline.
+  */
+  const press = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (itemKey === 'weight') setEditing((v) => !v);
+    else nav.push(ROUTE[itemKey as Exclude<TodoKey, 'weight'>]);
+  };
+
   return (
-    <View style={styles.row}>
-      <View style={styles.tile}>
-        <Icon icon={ICON[itemKey]} size={16} color={tint} />
+    <View style={styles.rowOpen}>
+      <View style={styles.rowTop}>
+        <View style={styles.tile}>
+          <Icon icon={ICON[itemKey]} size={20} color={tint} />
+        </View>
+        <View style={styles.text}>
+          <Text style={styles.label} numberOfLines={1}>
+            {label}
+          </Text>
+          <ReminderRow itemKey={itemKey} label={label} />
+        </View>
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={`${i18n.nTodoLog} ${label}`}
+          accessibilityState={itemKey === 'weight' ? { expanded: editing } : undefined}
+          style={styles.action}
+          onPress={press}>
+          <Text style={styles.actionText}>{i18n.nTodoLog}</Text>
+        </PressScale>
       </View>
-      <View style={styles.text}>
-        <Text style={styles.label}>{label}</Text>
-        <ReminderLine itemKey={itemKey} />
-      </View>
-      <PressScale
-        accessibilityRole="button"
-        accessibilityLabel={`${action} ${label}`}
-        /* Mảng màu 32 điểm, vùng chạm 44 — cùng cách trả nợ mà `tools/tap-target.mjs`
-           tự khuyên: nút cao bằng một control cạnh dòng chữ, không bằng một tấm biển. */
-        hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}
-        style={styles.action}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          nav.push(ROUTE[itemKey as Exclude<TodoKey, 'weight'>]);
-        }}>
-        <Text style={styles.actionText}>{action}</Text>
-      </PressScale>
+      {itemKey === 'weight' && editing ? <WeightEntry onLogged={() => setEditing(false)} /> : null}
     </View>
   );
 }
 
 /**
- * Dòng giờ dưới tên việc.
+ * Hàng hẹn giờ: một đích chạm chiếm hết cột chữ, cao 44.
  *
- * ── ba trạng thái, và trạng thái thứ ba là im lặng ──
+ * ── vì sao cái đồng hồ gọn của iOS bị bỏ ──
  *
- * Chưa hẹn thì hiện một lối vào nhạt ("Hẹn giờ"). Đã hẹn thì hiện đúng cái
- * đồng hồ của iOS — cùng `DateField` mà màn Nhắc nhở dùng, nên giờ sửa ở đây
- * hay ở đó đều là một giá trị, một lịch.
+ * Bản trước đặt `DateField display="compact"` thẳng vào hàng. Nó là control
+ * native, nên vùng chạm của nó là đúng cái viên ~70×34 mà nó tự vẽ — bọc thêm
+ * bao nhiêu `View` cũng không nới ra được. Cạnh nó là một icon 13 điểm để tắt.
+ * Hai thứ ấy là hai đích nhỏ nhất trên cả thẻ.
  *
- * Trạng thái thứ ba: `available` là `false` ngoài iOS, và ở đó dòng này KHÔNG
- * dựng. Một nút hẹn giờ không bao giờ bắn được thông báo thì tệ hơn là không
- * có nút: nó hứa một việc mà nền tảng không làm.
+ * Nay hàng này chỉ là một CÁI NÚT to mở tấm chọn giờ, và tấm ấy dùng bánh xe
+ * `spinner` — kiểu chọn giờ lớn nhất iOS có. Nút tắt nhắc nằm trong tấm, chiếm
+ * hết bề ngang, thay cho cái icon 13 điểm.
+ *
+ * Trạng thái thứ ba vẫn là im lặng: `available` là `false` ngoài iOS, và ở đó
+ * hàng này KHÔNG dựng — một nút hẹn giờ không bao giờ bắn được thông báo thì
+ * tệ hơn là không có nút.
  */
-function ReminderLine({ itemKey }: { itemKey: TodoKey }) {
+function ReminderRow({ itemKey, label }: { itemKey: TodoKey; label: string }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -243,87 +307,113 @@ function ReminderLine({ itemKey }: { itemKey: TodoKey }) {
     lịch được chặn bằng chữ ký đã lưu, nên hai mount không đặt lịch hai lần.
   */
   const { prefs, available, toggle, setTime } = useReminders();
+  const [open, setOpen] = useState(false);
 
   if (!available) return null;
   const key = TODO_REMINDER[itemKey];
   const r = prefs[key];
-
-  if (!r.enabled) {
-    return (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${i18n.nTodoSetReminder} — ${i18n.nReminderTime}`}
-        hitSlop={8}
-        style={styles.remindOff}
-        onPress={() => {
-          Haptics.selectionAsync();
-          toggle(key, true);
-        }}>
-        <Icon icon={Bell} size={12} color={c.mutedForeground} />
-        <Text style={styles.remindOffText}>{i18n.nTodoSetReminder}</Text>
-      </Pressable>
-    );
-  }
+  const clock = `${r.hour}:${String(r.minute).padStart(2, '0')}`;
 
   return (
-    <View style={styles.remindOn}>
-      <Text style={styles.remindLabel}>{i18n.nTodoRemindAt}</Text>
-      <DateField
-        value={timeToDate(r.hour, r.minute)}
-        mode="time"
-        display="compact"
-        onChange={(_, d) => d && setTime(key, d.getHours(), d.getMinutes())}
-      />
+    <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={i18n.nTodoReminderOff}
-        hitSlop={10}
+        accessibilityLabel={
+          r.enabled ? `${i18n.nTodoRemindAt} ${clock} — ${label}` : `${i18n.nTodoSetReminder} — ${label}`
+        }
+        style={styles.remind}
         onPress={() => {
           Haptics.selectionAsync();
-          toggle(key, false);
+          if (!r.enabled) toggle(key, true);
+          setOpen(true);
         }}>
-        <Icon icon={BellOff} size={13} color={c.mutedForeground} />
+        <Icon icon={r.enabled ? Bell : BellPlus} size={16} color={c.mutedForeground} />
+        <Text style={[styles.remindText, r.enabled && styles.remindTextOn]}>
+          {r.enabled ? `${i18n.nTodoRemindAt} ${clock}` : i18n.nTodoSetReminder}
+        </Text>
       </Pressable>
-    </View>
+      <ReminderSheet
+        visible={open}
+        label={label}
+        hour={r.hour}
+        minute={r.minute}
+        onPick={(h, m) => setTime(key, h, m)}
+        onClear={() => {
+          toggle(key, false);
+          setOpen(false);
+        }}
+        onClose={() => setOpen(false)}
+      />
+    </>
   );
 }
 
 /**
- * Dòng cân nặng: cùng hình dạng với bốn dòng kia cho tới khi được bấm.
+ * Tấm chọn giờ: bánh xe `spinner`, và mọi nút chiếm hết bề ngang.
  *
- * Nút vẫn là đúng nút ấy — năm dòng phải trông như nhau, vì chúng là năm việc
- * ngang hàng. Khác biệt duy nhất nằm sau cú bấm: bốn dòng kia mở một màn, dòng
- * này mở một ô nhập ngay bên dưới, vì cân nặng không có màn nào để mở.
+ * `spinner` chứ không `compact`: bánh xe là kiểu chọn giờ lớn nhất iOS có, và
+ * cả tấm này tồn tại vì cái `compact` quá nhỏ để ngắm. Hai nút bên dưới cao 52
+ * và rộng hết tấm — ở đây không còn lý do gì để tiết kiệm bề ngang.
  */
-function WeightRow({ label, action, tint }: { label: string; action: string; tint: string }) {
+function ReminderSheet({
+  visible,
+  label,
+  hour,
+  minute,
+  onPick,
+  onClear,
+  onClose,
+}: {
+  visible: boolean;
+  label: string;
+  hour: number;
+  minute: number;
+  onPick: (hour: number, minute: number) => void;
+  onClear: () => void;
+  onClose: () => void;
+}) {
   const c = usePalette();
   const styles = stylesFor(c);
-  const [editing, setEditing] = useState(false);
+  const i18n = useI18n();
+  if (!visible) return null;
   return (
-    <View>
-      <View style={styles.row}>
-        <View style={styles.tile}>
-          <Icon icon={ICON.weight} size={16} color={tint} />
-        </View>
-        <View style={styles.text}>
-          <Text style={styles.label}>{label}</Text>
-          <ReminderLine itemKey="weight" />
-        </View>
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={`${action} ${label}`}
-          accessibilityState={{ expanded: editing }}
-          hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}
-          style={styles.action}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setEditing((v) => !v);
-          }}>
-          <Text style={styles.actionText}>{action}</Text>
-        </PressScale>
-      </View>
-      {editing ? <WeightEntry onLogged={() => setEditing(false)} /> : null}
-    </View>
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      {/* `accessible={false}`: đây là một vùng NUỐT CHẠM, không phải một nút —
+          xem `tools/a11y-swallow.mjs`. */}
+      <Pressable accessible={false} style={styles.scrim} onPress={onClose}>
+        <Pressable accessible={false} style={styles.sheet} onPress={() => {}}>
+          <Text style={styles.sheetTitle} numberOfLines={2}>
+            {i18n.nTodoReminderSheet.replace('{what}', label.toLowerCase())}
+          </Text>
+          <DateField
+            value={timeToDate(hour, minute)}
+            mode="time"
+            display="spinner"
+            onChange={(_, d) => d && onPick(d.getHours(), d.getMinutes())}
+          />
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.nTodoSaveTime}
+            style={styles.sheetPrimary}
+            onPress={() => {
+              Haptics.selectionAsync();
+              onClose();
+            }}>
+            <Text style={styles.sheetPrimaryText}>{i18n.nTodoSaveTime}</Text>
+          </PressScale>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.nTodoReminderClear}
+            style={styles.sheetQuiet}
+            onPress={() => {
+              Haptics.selectionAsync();
+              onClear();
+            }}>
+            <Text style={styles.sheetQuietText}>{i18n.nTodoReminderClear}</Text>
+          </PressScale>
+        </Pressable>
+      </Pressable>
+    </Modal>
   );
 }
 
@@ -337,38 +427,90 @@ const stylesFor = makeStyles((c, m) => ({
   /* Tiến độ, không phải một nhãn: số cùng cỡ chữ phụ và cùng màu chữ phụ, nên
      nó đọc ra là ghi chú của tiêu đề chứ không tranh chỗ với tiêu đề. */
   count: { ...type.footnote, fontWeight: '600', color: c.mutedForeground, fontVariant: ['tabular-nums'] },
-  /* 44 là sàn chạm của Apple, và cả hàng là vùng chạm chứ không riêng cái nút. */
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2, minHeight: 44 },
-  /* Ô trung tính: `m.inset.bg` là mặt của một chỗ lõm TRÊN THẺ — cùng vai mà
-     màn đăng nhập vừa phải sửa sang, và cùng lý do: một mảng tô tự chế trên mặt
-     thẻ trắng thì composite ra đúng mặt thẻ. */
+
+  /* Việc CHƯA xong chiếm chỗ; việc đã xong thì không. Đó là thứ bậc của một
+     danh sách việc, và nó cũng là thứ giữ cho thẻ không cao 500 điểm ở ngày
+     chưa ghi gì: hai dòng xong là hai dòng 56 thay vì hai dòng 96. */
+  rowOpen: { gap: spacing.sm, paddingVertical: spacing.xs },
+  rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
+  rowDone: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm + 2,
+    minHeight: 56,
+  },
+
+  /* 44, không 30. Ô icon không bấm được, nhưng nó là thứ mắt tìm dòng bằng —
+     và ở cỡ 30 với một glyph 16 thì nó là một chấm màu, không phải một dấu
+     hiệu. */
   tile: {
-    width: 30,
-    height: 30,
-    borderRadius: 9,
+    width: 44,
+    height: 44,
+    borderRadius: 13,
     backgroundColor: m.inset.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  /* Chữ và giờ nằm CHUNG một cột, để cái nút bên phải canh theo cả khối chứ
-     không canh theo riêng dòng chữ. */
+  tileDone: { backgroundColor: alpha(graphicOf(c, 'readinessGreen'), 0.14) },
+
   text: { flex: 1, gap: 2 },
   label: { ...type.body, color: c.foreground },
-  remindOn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  remindLabel: { ...type.caption, color: c.mutedForeground },
-  remindOff: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  remindOffText: { ...type.caption, color: c.mutedForeground },
-  /* Viền chứ không đặc: năm dòng với năm nút đặc trên một thẻ là năm hành động
-     chính, và không có hành động nào là chính cả — chúng ngang hàng nhau. */
+  labelDone: { color: c.mutedForeground },
+  doneText: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
+
+  /* Hàng hẹn giờ: cao 44 và chiếm hết cột chữ. Đích chạm ra ~33×7,3mm, thay
+     cho một icon 13 điểm. */
+  remind: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    height: 44,
+    alignSelf: 'flex-start',
+    paddingRight: spacing.sm,
+  },
+  remindText: { ...type.footnote, color: c.mutedForeground },
+  remindTextOn: { color: c.foreground, fontWeight: '600' },
+
+  /* 48 cao, tối thiểu 96 rộng — ≈16×8mm. Apple đặt sàn 44; nghiên cứu về
+     người cao tuổi nói hiệu năng còn cải thiện tới ~17,5mm, nên bề NGANG là
+     chỗ rẻ nhất để trả thêm. Nền đặc vì đây là hành động chính của dòng. */
   action: {
-    height: 32,
+    minWidth: 96,
+    height: 48,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: c.border,
+    backgroundColor: c.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  actionText: { ...type.footnote, fontWeight: '700', color: c.foreground },
-  allDone: { ...type.footnote, color: c.mutedForeground },
+  actionText: { ...type.headline, color: c.primaryForeground },
+
+  scrim: {
+    flex: 1,
+    backgroundColor: alpha(m.ink, 0.45),
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  sheet: {
+    width: '100%',
+    maxWidth: 420,
+    borderRadius: radius.lg,
+    backgroundColor: c.card,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  sheetTitle: { ...type.headline, color: c.foreground, textAlign: 'center' },
+  /* 52, và rộng hết tấm. Trong một tấm mở riêng để chọn giờ thì không còn lý
+     do gì để tiết kiệm bề ngang. */
+  sheetPrimary: {
+    height: 52,
+    borderRadius: radius.full,
+    backgroundColor: c.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetPrimaryText: { ...type.headline, color: c.primaryForeground },
+  sheetQuiet: { height: 52, alignItems: 'center', justifyContent: 'center' },
+  sheetQuietText: { ...type.body, color: c.mutedForeground },
 }));

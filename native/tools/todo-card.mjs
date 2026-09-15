@@ -26,6 +26,8 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { styleBody } from './lib/code-mask.mjs';
+
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(path.join(NATIVE, rel), 'utf8');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -157,8 +159,60 @@ try {
     );
   }
   CASES++;
-  if (!/<ReminderLine\b/.test(src)) {
-    problems.push(`${CARD}: không còn dựng <ReminderLine /> — mỗi dòng phải hẹn được giờ`);
+  if (!/<ReminderRow\b/.test(src)) {
+    problems.push(`${CARD}: không còn dựng <ReminderRow /> — mỗi dòng phải hẹn được giờ`);
+  }
+
+  /* ── 3d. việc đã ghi Ở LẠI trên thẻ ──
+
+     Bản đầu chỉ vẽ việc chưa xong, và chủ dự án báo "khi log xong thì lại bị
+     mất cả": dòng biến mất ngay dưới ngón tay vừa bấm, nên không xác nhận được
+     gì, không sửa lại được lời nhắc của nó, và bấm nhầm thì không còn gì để
+     bấm lại. Thẻ phải lặp qua CẢ `TODO_ORDER`. */
+  CASES++;
+  if (!/TODO_ORDER\.map\(/.test(src)) {
+    problems.push(
+      `${CARD}: không lặp qua \`TODO_ORDER\` — nếu chỉ vẽ việc chưa xong thì một dòng vừa ghi sẽ ` +
+        'biến mất ngay dưới ngón tay, không để lại gì để xác nhận hay sửa lại',
+    );
+  }
+
+  /* ── 3e. mọi đích chạm trên thẻ ≥ 44 điểm, và KHÔNG bù bằng hitSlop ──
+
+     Apple đặt sàn 44×44pt; WCAG 2.2 · 2.5.5 (AAA) cũng 44×44. Nghiên cứu về
+     người cao tuổi còn đi xa hơn: hiệu năng cải thiện tới ~17,5mm và người
+     ngón tay kém linh hoạt cần ≥19mm, trong khi 44pt trên iPhone chỉ ≈7,3mm.
+
+     Bản đầu của thẻ này có nút ghi cao 32 và một nút tắt nhắc 13 điểm, và chủ
+     dự án hỏi đúng câu phải hỏi: "người già dùng nút nhỏ như vậy sao họ bấm
+     được". `hitSlop` KHÔNG được tính là đã sửa: nó nới vùng chạm mà không nới
+     thứ mắt nhìn thấy, và người phải ngắm thì nhắm vào cái nhìn thấy. */
+  const FLOOR = 44;
+  const SIZED = ['tile', 'remind', 'action', 'sheetPrimary', 'sheetQuiet'];
+  for (const name of SIZED) {
+    CASES++;
+    /* Đếm ngoặc, KHÔNG regex tới `\n  },` — bản đầu làm thế và các style viết
+       một dòng (`tileDone`, `remindText`) nuốt luôn block kế tiếp, nên luật
+       báo "không đọc được style" cho những style đang có thật. */
+    const found = styleBody(src, name);
+    if (found == null) {
+      problems.push(`${CARD}: không đọc được style \`${name}\``);
+      continue;
+    }
+    const h = /\bheight: (\d+)/.exec(found);
+    if (!h || Number(h[1]) < FLOOR) {
+      problems.push(
+        `${CARD}: \`${name}\` cao ${h ? h[1] : '?'} điểm, dưới sàn ${FLOOR} của Apple HIG và WCAG 2.5.5. ` +
+          'Thẻ này đã có một nút 32 và một nút 13 điểm, và chủ dự án đã phải nói ra',
+      );
+    }
+  }
+  CASES++;
+  if (/hitSlop/.test(src)) {
+    problems.push(
+      `${CARD}: còn dùng \`hitSlop\`. Nó nới vùng chạm mà không nới thứ nhìn thấy được, nên nó trả ` +
+        'nợ với `tools/tap-target.mjs` chứ không trả nợ với người đang phải ngắm cái nút',
+    );
   }
 
   CASES++;
@@ -251,5 +305,8 @@ console.log(
     'chỗ gọi duy nhất: cân nặng ghi được ở hai nơi nhưng chỉ bằng MỘT đường ghi. Mỗi dòng hẹn được ' +
     'giờ qua đúng bộ lập lịch của app chứ không phải một cái hẹn riêng, dòng giấc ngủ trỏ vào ' +
     '`sleepLog` chứ không mượn `bedtime` (một cái là ghi lại đêm qua vào buổi sáng, một cái là nhắc ' +
-    'đi ngủ và không bao giờ xong), và nút hẹn giờ không dựng ở nơi hệ điều hành không bắn thông báo',
+    'đi ngủ và không bao giờ xong), và nút hẹn giờ không dựng ở nơi hệ điều hành không bắn thông báo. ' +
+    'Việc đã ghi Ở LẠI trên thẻ thay vì biến mất dưới ngón tay, và năm bề mặt bấm được đều ≥44 điểm ' +
+    '— sàn của Apple HIG và của WCAG 2.5.5 — mà không cái nào bù bằng `hitSlop`, thứ nới vùng chạm ' +
+    'nhưng không nới cái người ta phải ngắm',
 );

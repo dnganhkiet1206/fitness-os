@@ -32,6 +32,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { styleBody } from './lib/code-mask.mjs';
 import { hex, loadPalette, overC, ratio } from './lib/stack.mjs';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -203,19 +204,6 @@ for (const t of ['light', 'dark']) {
     );
   }
 }
-
-/** Thân của một style trong bảng, đếm ngoặc chứ không dò tới `}` đầu tiên. */
-const styleBody = (code, name) => {
-  const at = code.search(new RegExp(`\\n\\s*${name}:\\s*\\{`));
-  if (at < 0) return null;
-  const open = code.indexOf('{', at);
-  let depth = 0;
-  for (let i = open; i < code.length; i++) {
-    if (code[i] === '{') depth++;
-    else if (code[i] === '}' && --depth === 0) return code.slice(open, i + 1);
-  }
-  return null;
-};
 
 let onPage = 0;
 for (const [file, , what, , ground] of USERS) {
