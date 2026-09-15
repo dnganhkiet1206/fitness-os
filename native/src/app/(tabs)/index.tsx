@@ -1335,7 +1335,6 @@ export default function TodayScreen() {
               vòng tròn này. Để cả hai là hai nút cùng một việc ở hai chỗ, và
               cái nằm trên hero thì dính vào một trang mà nó không thuộc về.
             */
-            onLogWorkout={() => nav.push('/log-workout')}
           />
         );
       case 'biometrics':
@@ -1367,12 +1366,19 @@ export default function TodayScreen() {
             />
           </PressScale>
         ) : (
-          <PressScale onPress={() => nav.push('/log-sleep')}>
-            <GlassCard style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>{i18n.dashSleep}</Text>
-              <Text style={styles.emptyMsg}>{i18n.dashSleepMsg}</Text>
-            </GlassCard>
-          </PressScale>
+          /*
+            Thẻ rỗng NÓI, không mời.
+
+            Nó từng bọc trong một `PressScale` dẫn tới `/log-sleep` — và kể từ
+            khi thẻ "Cần làm hôm nay" đứng ngay đầu trang, đó là lời mời thứ hai
+            cho đúng một việc, cách nhau một quãng cuộn. Thứ mất đi chỉ là một
+            lối tắt; thứ giữ lại là câu trả lời "vì sao ô này trống", và đó mới
+            là việc của một trạng thái rỗng.
+          */
+          <GlassCard style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>{i18n.dashSleep}</Text>
+            <Text style={styles.emptyMsg}>{i18n.dashSleepMsg}</Text>
+          </GlassCard>
         );
       case 'steps':
         return <StepsWidget steps={steps} target={stepsGoal} labels={{ title: lang === 'vi' ? 'Bước đi' : 'Steps' }} />;

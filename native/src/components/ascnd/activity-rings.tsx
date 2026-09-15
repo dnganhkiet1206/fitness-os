@@ -118,22 +118,6 @@ interface Props extends ActivityInput {
    *  lại của Today, nên quyết định đó thuộc về trang chứ không về thẻ này. */
   detailOpen?: boolean;
   onToggleDetail?: () => void;
-  /**
-   * Whether that connect is already running.
-   *
-   * ── why the button needed one ──
-   *
-   * It had no pending state of any kind: no `disabled`, no spinner, no change
-   * of label. And it is shown *only* in the empty state — to somebody who has
-   * no health data yet, whose sync is therefore the slowest one the app ever
-   * does: a permission sheet, six HealthKit queries, up to five writes and an
-   * eleven-query rebuild. Seconds of nothing visibly happening, on the one
-   * button whose whole purpose is to make something happen.
-   *
-   * Two taps started two full syncs against the same day. Same shape as the
-   * offline double-submit Chain A found, minus the offline part.
-   */
-  onLogWorkout?: () => void;
 }
 
 /**
@@ -166,7 +150,6 @@ export function ActivityRingsCard({
   size = HERO_RING,
   detailOpen = false,
   onToggleDetail,
-  onLogWorkout,
   ...input
 }: Props) {
   const c = usePalette();
