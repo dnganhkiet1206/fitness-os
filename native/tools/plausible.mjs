@@ -266,7 +266,17 @@ const REGISTRY = [
     covers: ['meal_kcal', 'macro_g'],
   },
   {
-    file: 'src/components/ascnd/today-widgets.tsx',
+    /*
+      Ô nhập cân nặng đã RỜI `today-widgets.tsx`.
+
+      Thẻ "Cần làm hôm nay" cũng cần ghi cân nặng, và cân nặng là việc duy nhất
+      không có màn riêng để mở — nên ô nhập phải chạy được ở hai chỗ, và nó
+      được CHUYỂN sang một tệp dùng chung thay vì chép ra bản thứ hai. Chốt
+      chặn đi theo mã: `tools/todo-card.mjs` canh cho `useLogWeight()` chỉ có
+      đúng một chỗ gọi, nên một bản thứ hai không thể lặng lẽ mọc ra ngoài tầm
+      của mục này.
+    */
+    file: 'src/components/ascnd/weight-entry.tsx',
     gate: 'weightError',
     save: 'const submit = ',
     covers: ['weight_kg'],
