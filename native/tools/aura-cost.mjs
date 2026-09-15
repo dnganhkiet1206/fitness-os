@@ -71,12 +71,17 @@ function gateProblems(src) {
     Every loop needs its own switch, and the count is what says so.
 
     This read `cancels < 2`, which was the number of looping components on the
-    day it was written. A third arrived — `AuraFigure`, the background figure —
-    and the rule went quiet about it: with three loops and only two cancels the
-    comparison is still false, so removing the figure's off switch left this
-    step green. The paragraph above already claimed to be counting *"a fifth
-    pool or a fifth dust layer added later"*, so the rule was not doing what it
-    said about itself.
+    day it was written. A third arrived — `AuraFigure`, a background figure
+    behind both assistant screens — and the rule went quiet about it: with three
+    loops and only two cancels the comparison is still false, so removing the
+    figure's off switch left this step green. The paragraph above already
+    claimed to be counting *"a fifth pool or a fifth dust layer added later"*,
+    so the rule was not doing what it said about itself.
+
+    That figure has since been deleted at the project owner's request, which is
+    exactly why the floor stays tied to `loops` rather than going back to a
+    literal 2: the count followed the component out again without anybody
+    editing this line.
 
     Tying the floor to `loops` is the shape of the fault rather than a bigger
     constant: whatever gets added next brings its own `withRepeat`, and the
@@ -105,7 +110,6 @@ function gateProblems(src) {
   for (const [what, re] of [
     ['LightPool', /function LightPool\(\{[^}]*moving[^}]*\}/],
     ['DustField', /function DustField\(\{[\s\S]{0,200}?moving[\s\S]{0,200}?\}\)/],
-    ['AuraFigure', /function AuraFigure\(\{[^}]*moving[^}]*\}/],
   ]) {
     if (!re.test(code)) bad.push(`aura: ${what} không nhận cờ dừng — nó sẽ chạy kể cả khi màn hình bị che`);
   }

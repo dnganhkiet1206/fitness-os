@@ -290,10 +290,12 @@ console.log(`dấu hiệu trong ảnh gốc: ${bounds.w}×${bounds.h} (${((bound
     Math.round((side - bounds.h) / 2),
   );
   /* Left at its natural crop size instead of forced up to 1024.
-     `make-aura-figure.mjs` states the rule this was breaking — never upscale,
-     the source is the better picture by definition — and 1024 was an arbitrary
-     number anyway: Expo draws this at `imageWidth: 120`, so the crop is already
-     nearly eight times the size it is ever seen at. */
+     The rule this was breaking: never upscale — a scaler invents pixels, so the
+     source is the better picture by definition. (It used to be stated in
+     `make-aura-figure.mjs`, deleted along with the background figure it wrote;
+     stating it here keeps it where it is being obeyed.) And 1024 was an
+     arbitrary number anyway: Expo draws this at `imageWidth: 120`, so the crop
+     is already nearly eight times the size it is ever seen at. */
   splash.colorType(6);
   splash.deflateLevel(9);
   await write(splash, IMG('splash-icon.png'));

@@ -431,7 +431,6 @@ const STEPS = [
     alpha channel and nothing throws, the screen simply gains a black rectangle
     with straight edges over the cards, because #000 is not the app's #070708.
   */
-  ['hình nền trợ lý', 'node', ['tools/aura-figure.mjs']],
   /*
     Nothing in the app renders its own icon: no screen shows it, nothing imports
     it, and every build succeeds whatever the file contains. The feedback comes

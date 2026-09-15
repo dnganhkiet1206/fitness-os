@@ -1,6 +1,6 @@
 import { useIsFocused } from 'expo-router';
 import { useEffect, useId, useMemo, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -75,8 +75,22 @@ import { useReducedMotion } from '@/hooks/use-reduced-motion';
  */
 
 /* Bản sáng dựng đủ node nhưng không tô một điểm ảnh nào. Là hằng ở phạm vi
-   module để cả hai chỗ dùng đúng một đối tượng style — xem chỗ gọi
-   `AuraFigure`/`DustField`. */
+   module để chỗ dùng có đúng một đối tượng style — xem `DustField`.
+
+   ── và nó CHỈ hoạt động vì `DustField` không animate opacity ──
+
+   Một style tĩnh đặt sau một animated style trong cùng mảng KHÔNG thắng được
+   animated style ở thuộc tính mà cả hai cùng đặt: Reanimated ghi thẳng giá trị
+   của nó lên view chứ không đi qua phép làm phẳng mảng. `AuraFigure` — thân
+   người từng nằm sau hai màn trợ lý — đã hỏng đúng vì thế: animated style của
+   nó đặt `opacity`, nên `HIDDEN` phía sau không có tác dụng và hình vẫn hiện ở
+   BẢN SÁNG dù mã đọc ra là đã tắt. Đo trên ảnh chụp máy của chủ dự án: vùng
+   giữa màn có 36.373/123.410 điểm LẠNH (B > R) trong khi hai lề có đúng 0, trên
+   một trang giấy ấm.
+
+   `DustField` chỉ animate `transform`, nên ở đây không có va chạm. Nếu một
+   ngày nó cần animate opacity thì cổng phải chuyển VÀO trong worklet
+   (`opacity: lit ? … : 0`), không phải xếp thêm một style nữa ra sau. */
 const HIDDEN = { opacity: 0 } as const;
 
 /** Falloff shared with `AmbientLight`: steep, then a tail that never lands. */
@@ -274,12 +288,14 @@ const POOLS: Pool[] = [
  * forty or more of them, and forty animated views to draw forty circles is a
  * lot of machinery for very little ink.
  *
- * These are four layers instead, each holding a dozen static specks and each
- * rising at its own speed. That reads as independent dust for the same reason
- * a parallax starfield does — the eye reconstructs depth from the speed
- * difference and never audits whether two specks in the same plane keep their
- * spacing. Four animated views, a hundred-odd circles, none of the circles
- * ever touched after mount.
+ * These are layers instead — two of them now, four when this was written; see
+ * `DUST` for why the two nearest were dropped — each holding a dozen static
+ * specks and each rising at its own speed. That reads as independent dust for
+ * the same reason a parallax starfield does: the eye reconstructs depth from
+ * the speed difference and never audits whether two specks in the same plane
+ * keep their spacing. Two animated views and 112 circles — 13 + 15 specks,
+ * each duplicated one screen down for the seam, each drawn as a core plus a
+ * halo — none of them ever touched after mount.
  *
  * ── the loop is seamless by construction ──
  *
@@ -298,25 +314,6 @@ const POOLS: Pool[] = [
  * other thing, a lit core falling off into its own halo, which is what "neon"
  * means at this size.
  */
-
-/**
- * How strongly the figure is allowed to be there.
- *
- * The single knob for this layer, deliberately. The artwork itself is written
- * out at its natural brightness by `tools/make-aura-figure.mjs`, which is a
- * decision and not an oversight: dimming the file *and* dimming it here would
- * be one number living in two places, and this repository has had to unpick
- * that six times. Tuning it means changing this line, not re-encoding a png.
- *
- * The value came from looking at it on a rendered screen rather than from
- * reasoning about it, and the test it had to pass is the one written at the top
- * of this file: the metric tiles have to be readable without noticing it, and
- * it has to be there when you stop reading.
- */
-const FIGURE_PEAK = 0.12;
-
-/** One breath, slower than every dust layer. */
-const FIGURE_MS = 40000;
 
 /** The four neon hues, and one gradient each rather than one per speck. */
 const DUST_HUES = [
@@ -357,18 +354,25 @@ const DUST: DustLayer[] = [
      the failure the layering exists to avoid. So when this needs adjusting
      again, scale them all by the same factor rather than picking new numbers.
 
-     ── and why the two nearest planes are gone ──
+     ── và vì sao chỉ còn HAI mặt phẳng ──
 
-     `AuraFigure` now sits behind this, and it is a far stronger presence than
-     any speck: a body, which the eye finds before it finds anything else on a
-     screen. Keeping `near` at 0.19 and `mid` at 0.13 in front of it made two
-     subjects competing over the same cards.
+     Từng có bốn. Hai mặt gần nhất — `near` ở 0.19 và `mid` ở 0.13 — bị gỡ vì
+     `AuraFigure`, một thân người nằm sau cả hai màn trợ lý: một cái bóng người
+     là thứ mắt tìm thấy trước mọi thứ khác trên màn, nên giữ chúng ở phía
+     trước nó là để hai chủ thể tranh nhau cùng mấy cái thẻ.
 
-     The two that remain are the two that were always closest to being weather
-     rather than objects, and they keep their 1.5× spacing to each other — so
-     what is left is still two planes at different depths, not one flat sheet.
-     Their job now is smaller and more specific: something moves, so the figure
-     reads as *held still* rather than as a picture that failed to load. */
+     Nhân vật ấy nay đã bị xoá theo yêu cầu của chủ dự án, nhưng hai mặt phẳng
+     KHÔNG được dựng lại — và đó là một quyết định, không phải bỏ sót. Chú thích
+     này chỉ ghi lại `opacity` của chúng; `ms`, `sway`, `min`, `max`, `count`,
+     `seed` thì không ai ghi, và `bb87be5` là commit GỐC của kho nên không có
+     trạng thái "trước khi có nhân vật" để lấy lại. Dựng lại bằng số tự chế là
+     bịa ra bốn tham số rồi gọi đó là khôi phục.
+
+     Hai mặt còn lại là hai mặt vốn gần với "thời tiết" hơn là "vật thể" nhất,
+     và chúng giữ đúng khoảng cách 1.5× với nhau — nên thứ còn lại vẫn là hai
+     mặt phẳng ở hai độ sâu, không phải một tấm bẹt. Nếu căn phòng tối đọc ra
+     là TRỐNG thì việc cần làm là chọn lại bốn tham số ấy bằng mắt trên một màn
+     dựng thật, không phải đoán chúng ở đây. */
   { key: 'far', ms: 54000, sway: 7, min: 1.0, max: 2.0, opacity: 0.09, count: 13, seed: 41 },
   { key: 'haze', ms: 74000, sway: 4, min: 0.8, max: 1.5, opacity: 0.06, count: 15, seed: 89 },
 ];
@@ -577,27 +581,21 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
         them, and would also break the loop, because the seam is only invisible
         while the two copies of the pattern are identical.
 
-        One mask around all four layers rather than one each: they share a
-        screen and therefore share a fade, and four full-screen masked layers to
+        One mask around both layers rather than one each: they share a screen
+        and therefore share a fade, and a full-screen masked layer per plane to
         express one gradient is the kind of thing that made this file's own
         comments about a warm phone necessary.
       */}
       {box ? (
         <View style={StyleSheet.absoluteFill} pointerEvents="none">
           {/*
-            Inside the faded group, and first — so it is behind the specks and,
-            more importantly, so it is seen through the same vertical fade.
-            Without that, the figure ends wherever its box ends: a straight
-            horizontal edge across a picture that is otherwise all soft falloff,
-            which is the exact fault the fade was added to fix for the dust.
-          */}
-          {/*
-            ── HÌNH và BỤI chỉ tồn tại ở bản TỐI ──
+            ── BỤI chỉ tồn tại ở bản TỐI ──
 
-            Cả hai là khí quyển của một căn phòng tối: một thân người được rọi
-            sáng, và bốn mặt phẳng bụi neon (`#22e6ff`, `#b45cff`, `#2bf5a8`,
-            `#ffd9b3`). Chúng CỘNG ánh sáng vào một trang gần đen, và đó là
-            toàn bộ lý do chúng đọc được ở đó.
+            Hai mặt phẳng bụi, tô bằng bốn hue neon (`#22e6ff`, `#b45cff`,
+            `#2bf5a8`, `#ffd9b3`), là khí quyển của một căn phòng tối: chúng CỘNG
+            ánh sáng vào một trang gần đen, và đó là toàn bộ lý do chúng đọc
+            được ở đó. (Bốn là số HUE, không phải số mặt phẳng — chú thích cũ ở
+            cả ba chỗ quanh đây đều đếm nhầm hai thứ ấy làm một.)
 
             Trên giấy thì không có gì để cộng vào. Một lớp phủ 12% hoặc TỐI hơn
             giấy — thì nó là một vệt bẩn — hoặc sáng hơn giấy, và trần của
@@ -616,23 +614,22 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
           {/*
             Dựng ở CẢ HAI theme, tô rỗng và ĐỨNG YÊN ở bản sáng.
 
-            Cổng cũ `{m.lit ? … : null}` gỡ hẳn nhân vật và bốn tầng bụi khỏi
-            cây ở bản sáng — điều kiện đã sinh ra A9 (`docs/SO-GHI-LOI.md`).
+            Cổng cũ `{m.lit ? … : null}` gỡ hẳn các tầng bụi khỏi cây ở bản
+            sáng — điều kiện đã sinh ra A9 (`docs/SO-GHI-LOI.md`).
 
             Chỗ này KHÁC ba chỗ kia: nội dung ở đây có animation chạy vô hạn
             (`withRepeat`), nên dựng ra mà cứ để chạy là trả tiền thật cho thứ
             không nhìn thấy. Nhưng `moving` vốn ĐÃ là cổng dừng của chúng — nó
             là `focused && !reduceMotion` — nên bản sáng chỉ cần truyền `false`
-            là `useEffect` bên trong `AuraFigure`/`DustField` gọi
-            `cancelAnimation` và không khởi động gì cả.
+            là `useEffect` bên trong `DustField` gọi `cancelAnimation` và không
+            khởi động gì cả.
 
             `moving` KHÔNG được sửa ở nguồn: `LightPool` cũng đọc nó và các vũng
-            sáng vẫn phải trôi ở bản sáng. Nên cổng đặt ở đây, đúng hai component
-            cần đứng yên.
+            sáng vẫn phải trôi ở bản sáng. Nên cổng đặt ở đây, đúng chỗ cần
+            đứng yên.
           */}
           {(
             <>
-              <AuraFigure moving={moving && m.lit} lit={m.lit} />
               {DUST.map((d) => (
                 /* Measured, not `useWindowDimensions`. Everything else here is
                    container-relative — the pools are sized in percentages — and the
@@ -654,68 +651,7 @@ export function AssistantAura({ state }: { state?: 'green' | 'yellow' | 'red' | 
 }
 
 /**
- * The figure the room is lit around.
- *
- * ── what it replaced, and what it must not become ──
- *
- * Two of the four dust planes. The specks were weather; this is a body, and a
- * body is the one shape a person's eye finds before anything else on a screen.
- * That is the whole risk of putting it here, and it is why this file's oldest
- * note — *"anything back here bright enough to be looked at is competing with
- * those numbers, and it will win"* — applies harder to this layer than to
- * anything that came before it.
- *
- * So `FIGURE_PEAK` is set below the brightest speck plane that used to exist,
- * not above it. The figure is more legible than a dot at the same opacity, so
- * matching the dots' number would not match their presence.
- *
- * ── why it barely moves ──
- *
- * A ~40 second breath, a two-percent scale and a slow opacity swell. Slower and
- * shallower than any dust layer, because motion is what makes the eye come back
- * to something, and this is the element that least needs the eye coming back.
- * Stopped — off-screen, or under Reduce Motion — it simply holds, which is what
- * that setting asks for and costs nothing to honour.
- *
- * Only `transform` and `opacity` are animated, and the `<Image>`'s own props are
- * never touched after mount. Same constraint the pools are built around: what
- * the platform composites is free, what forces a re-raster is not.
- */
-function AuraFigure({ moving, lit }: { moving: boolean; /** Bản sáng dựng đủ node nhưng không tô — xem chỗ gọi. */ lit: boolean }) {
-  const c = usePalette();
-  const styles = stylesFor(c);
-  const t = useSharedValue(0);
-
-  useEffect(() => {
-    if (!moving) {
-      cancelAnimation(t);
-      return;
-    }
-    t.value = withRepeat(withTiming(1, { duration: FIGURE_MS, easing: Easing.inOut(Easing.sin) }), -1, true);
-  }, [moving, t]);
-
-  const style = useAnimatedStyle(() => ({
-    opacity: FIGURE_PEAK * (0.85 + t.value * 0.15),
-    transform: [{ scale: 1 + t.value * 0.02 }],
-  }));
-
-  return (
-    <Animated.View style={[styles.figure, style, lit ? null : HIDDEN]} pointerEvents="none">
-      <Image
-        source={require('../../../assets/aura/figure.png')}
-        style={styles.figureImage}
-        resizeMode="contain"
-        /* It is decoration with no information in it — the readiness colour is
-           carried by the pools, not by this. A screen reader announcing "image"
-           here would be announcing nothing. */
-        accessible={false}
-      />
-    </Animated.View>
-  );
-}
-
-/**
- * The fade the figure and the specks are seen through.
+ * The fade the specks are seen through.
  *
  * ── it was a mask, and a mask did not survive the web ──
  *
@@ -729,10 +665,10 @@ function AuraFigure({ moving, lit }: { moving: boolean; /** Bản sáng dựng �
  *       return React.createElement(View, props, maskElement);
  *     }
  *
- * It drops `children` and renders **the mask itself**. So on web the specks and
- * the figure were not dimmed at the edges — they were not drawn at all — and
- * the mask's own white gradient became a visible white block on a near-black
- * screen. It had been that way since the mask was introduced.
+ * It drops `children` and renders **the mask itself**. So on web the specks
+ * were not dimmed at the edges — they were not drawn at all — and the mask's
+ * own white gradient became a visible white block on a near-black screen. It
+ * had been that way since the mask was introduced.
  *
  * ── and why a scrim is not a workaround ──
  *
@@ -791,17 +727,4 @@ const stylesFor = makeStyles((c) => ({
   /* Starts at the top and travels up by exactly one screen height. It is two
      screens tall, so the half below the fold is always ready to take over. */
   dust: { position: 'absolute', left: 0, top: 0 },
-  /* Upper-middle, and taller than it is wide — the artwork is a 2:3 portrait
-     and `contain` keeps it that shape whatever the container does. It sits high
-     because the cards stack downward from the top of the screen, so the busiest
-     part of the picture ends up behind the quietest part of the page. */
-  figure: {
-    position: 'absolute',
-    top: '4%',
-    left: 0,
-    right: 0,
-    height: '62%',
-    alignItems: 'center',
-  },
-  figureImage: { width: '86%', height: '100%' },
 }));
