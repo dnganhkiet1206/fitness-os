@@ -9,7 +9,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { DateField } from '@/components/ascnd/date-field';
 import { WeightEntry } from '@/components/ascnd/weight-entry';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { alpha, graphicOf, makeStyles, type PaletteKey } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useTodayWeight } from '@/hooks/use-fitness-data';
@@ -89,20 +89,31 @@ const ICON: Record<TodoKey, LucideIcon> = {
 };
 
 /*
-  Màu ở lại trong GLYPH, ô sau nó trung tính.
+  Icon ĐƠN SẮC, cả năm.
 
-  Cùng luật với hàng chip mà thẻ này thay thế: "màu dành cho GIÁ TRỊ, không
-  dành cho LỐI ĐI" — và màu không biến mất, nó dời vào chính cái hình, nơi nó
-  phân biệt năm hành động. Xem `tools/raised-pill.mjs`.
+  ── bảng màu cũ, và vì sao nó đi ──
+
+  Chỗ này từng có một bảng `TINT` gán cho mỗi dòng một màu riêng (cam, xanh
+  dương, tím, đỏ, lam), theo đúng nửa sau của luật ở `tools/raised-pill.mjs`:
+  "màu không biến mất, nó DỜI vào glyph, nơi nó phân biệt năm hành động".
+
+  Chủ dự án nhìn bản dựng thật và quyết định khác: "tôi muốn tất cả icon ở mục
+  này về đơn sắc". Nửa đầu của luật ấy vẫn nguyên — màu dành cho GIÁ TRỊ, không
+  dành cho lối đi — và năm dòng này là năm lối đi. Cái nhãn đã nói rõ từng dòng
+  là gì, nên năm hue chỉ còn là trang trí.
+
+  ── mực, không phải mực nhạt ──
+
+  `c.foreground` trên mặt ô (`m.inset.bg`) đo được **16,01:1** ở bản sáng và
+  **14,52:1** ở bản tối; `mutedForeground` chỉ 5,27 và 4,42. Với một thẻ mà chủ
+  dự án vừa phải nói là nút quá nhỏ cho người lớn tuổi, chọn vế nhạt hơn ở đây
+  là đi ngược lại chính lý do đã làm mọi thứ to lên.
+
+  Dòng ĐÃ XONG thì ngược lại: chữ nhạt đi, nên dấu tích nhạt theo. Trạng thái
+  ấy vẫn không phụ thuộc vào màu — nó có HÌNH (dấu tích thay cho glyph việc) và
+  có CHỮ ("Đã ghi"), tức WCAG 1.4.1 được thoả bằng hai đường chứ không bằng sắc
+  độ.
 */
-const TINT: Record<TodoKey, PaletteKey> = {
-  meal: 'metricOrange',
-  workout: 'metricBlue',
-  sleep: 'metricViolet',
-  biometrics: 'readinessRed',
-  weight: 'metricCyan',
-};
-
 /*
   Mỗi dòng hẹn được giờ, và giờ ấy là một lời nhắc THẬT.
 
@@ -222,14 +233,13 @@ function TodoRow({
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
-  const tint = graphicOf(c, TINT[itemKey]);
   const [editing, setEditing] = useState(false);
 
   if (done) {
     return (
       <View style={styles.rowDone}>
-        <View style={[styles.tile, styles.tileDone]}>
-          <Icon icon={Check} size={20} color={graphicOf(c, 'readinessGreen')} />
+        <View style={styles.tile}>
+          <Icon icon={Check} size={20} color={c.mutedForeground} />
         </View>
         <Text style={[styles.label, styles.labelFill, styles.labelDone]} numberOfLines={1}>
           {label}
@@ -255,7 +265,7 @@ function TodoRow({
     <View style={styles.rowOpen}>
       <View style={styles.rowTop}>
         <View style={styles.tile}>
-          <Icon icon={ICON[itemKey]} size={20} color={tint} />
+          <Icon icon={ICON[itemKey]} size={20} color={c.foreground} />
         </View>
         <View style={styles.text}>
           <Text style={styles.label} numberOfLines={1}>
@@ -391,7 +401,6 @@ const stylesFor = makeStyles((c, m) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tileDone: { backgroundColor: alpha(graphicOf(c, 'readinessGreen'), 0.14) },
 
   text: { flex: 1, gap: 2 },
   label: { ...type.body, color: c.foreground },

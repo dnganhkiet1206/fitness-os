@@ -119,7 +119,6 @@ try {
   const order = ['meal', 'workout', 'sleep', 'biometrics', 'weight'];
   for (const [name, expect] of [
     ['ICON', order],
-    ['TINT', order],
     /* `weight` cố ý KHÔNG có route: nó là việc duy nhất ghi tại chỗ. */
     ['ROUTE', order.filter((k) => k !== 'weight')],
   ]) {
@@ -217,6 +216,22 @@ try {
       );
     }
   }
+  /* ── 3f. icon trên thẻ này ĐƠN SẮC ──
+
+     Thẻ từng có bảng `TINT` gán cho mỗi dòng một hue, theo nửa sau của luật ở
+     `raised-pill.mjs` ("màu dời vào glyph"). Chủ dự án nhìn bản dựng thật rồi
+     quyết định khác: "tôi muốn tất cả icon ở mục này về đơn sắc". Nửa ĐẦU của
+     luật ấy vẫn nguyên và nay áp trọn — màu dành cho GIÁ TRỊ, không dành cho
+     lối đi — nên bảng màu không được mọc lại. */
+  CASES++;
+  if (/const TINT\b/.test(src) || /graphicOf\(/.test(src)) {
+    problems.push(
+      `${CARD}: có bảng màu cho từng dòng (\`TINT\` hoặc \`graphicOf\`). Năm dòng ở đây là năm LỐI ĐI ` +
+        'và cái nhãn đã nói rõ từng dòng là gì, nên hue chỉ còn là trang trí — chủ dự án đã yêu cầu ' +
+        'đơn sắc sau khi xem bản dựng thật',
+    );
+  }
+
   /* Nút tắt lời nhắc phải là CHỮ, không phải glyph. Một từ đọc được ở mọi cỡ
      mắt; một cái chuông gạch chéo thì phải đoán — và bản có glyph là bản chủ
      dự án đã phải nói ra là quá nhỏ. */
@@ -330,5 +345,7 @@ console.log(
     'Việc đã ghi Ở LẠI trên thẻ thay vì biến mất dưới ngón tay, và mọi bề mặt do APP tự vẽ đều ≥44 điểm ' +
     '— sàn của Apple HIG và của WCAG 2.5.5 — mà không cái nào bù bằng `hitSlop`, thứ nới vùng chạm ' +
     'nhưng không nới cái người ta phải ngắm. Đồng hồ gọn của iOS được miễn có tên — WCAG 2.5.8 loại ' +
-    'trừ "User agent control" — và nút tắt lời nhắc là một nhãn CHỮ chứ không phải một glyph 13 điểm',
+    'trừ "User agent control" — và nút tắt lời nhắc là một nhãn CHỮ chứ không phải một glyph 13 điểm. ' +
+    'Icon của cả năm dòng là ĐƠN SẮC: không bảng hue nào cho lối đi, và trạng thái đã-ghi vẫn đọc ' +
+    'được bằng HÌNH (dấu tích) cộng CHỮ ("Đã ghi") chứ không bằng sắc độ',
 );
