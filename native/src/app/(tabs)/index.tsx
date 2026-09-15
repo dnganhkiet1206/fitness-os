@@ -74,6 +74,7 @@ import {
 import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { TodoCard } from '@/components/ascnd/todo-card';
 import { BOUNCE, spring } from '@/constants/motion';
 import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
 
@@ -1189,30 +1190,6 @@ export default function TodayScreen() {
 
   const waterTarget = Number(profile?.water_target_ml) || 2500;
 
-  /*
-    ── the four ways in, and why they stopped looking alike ──
-
-    These shipped as four identical chips: the same grey `+`, the same hairline
-    box, the same near-transparent fill. Nothing but the words told them apart,
-    so reading the row meant reading four labels — and this is the row somebody
-    uses several times a day, which is exactly the row that should be
-    recognisable without reading.
-
-    Each one now carries the glyph the app already uses for that part of itself:
-    `flame` is calories wherever they appear, `moon` is sleep, `heart` is
-    biometrics, and `pulse` is training load in every assistant suggestion. The
-    row teaches nothing new — it just stops hiding what it already knows.
-
-    The `+` is gone with them. Once a chip has its own mark, a plus in front of
-    it is a second icon saying something the shape of the row already said.
-  */
-  const quickActions = [
-    { label: i18n.dashLogMealAction, route: '/log-meal' as const, glyph: 'flame' as const },
-    { label: i18n.dashLogWorkoutAction, route: '/log-workout' as const, glyph: 'pulse' as const },
-    { label: i18n.dashLogSleepAction, route: '/log-sleep' as const, glyph: 'moon' as const },
-    { label: i18n.dashEnterBiometrics, route: '/log-biometrics' as const, glyph: 'heart' as const },
-  ];
-
   // Web Index renderWidget — one place mapping WidgetKey → card
   /**
    * Which widget Koa comes up behind when a quest lands.
@@ -1981,73 +1958,19 @@ export default function TodayScreen() {
                 <Mascot hold={hold} />
               </Animated.View>
 
-          {/* Quick log actions (web chips row) */}
-          <View style={styles.quickRow}>
-            {quickActions.map((a) => (
-              <PressScale
-                key={a.route}
-                accessibilityRole="button"
-                accessibilityLabel={a.label}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  nav.push(a.route);
-                }}>
-                {/*
-                  The same material as the assistant's state pill — blurred
-                  glass with a lit top edge — rather than a flat fill with a
-                  border. That pill reads as sitting *on* the page, and the
-                  reason is the material: a lit edge and a dark shade at the
-                  bottom right are what make a surface look raised on a page
-                  this dark. A drop shadow cannot do it, because #070708 under
-                  #070708 is nothing.
+          {/*
+            Một thẻ "Cần làm hôm nay" thay cho hàng bốn chip.
 
-                  `tint` is the glyph's own colour, washed across the glass from
-                  the top-left — where the glyph sits. The pill is lit by the
-                  thing it contains.
-                */}
-                {/*
-                  Viên pill KHÔNG còn mang màu của glyph.
+            Hàng chip mời ghi bốn thứ, nhưng nó không biết thứ nào ĐÃ ghi: nó
+            vẫn mời "Ghi bữa ăn" sau bữa thứ ba, và ba lời mời nữa cùng nghĩa
+            nằm rải trong các thẻ bên dưới (CTA rỗng của Giấc ngủ, Dinh dưỡng,
+            Tập luyện) cộng ô nhập trong thẻ Cân nặng. Năm chỗ cho một câu hỏi,
+            trên một trang phải cuộn.
 
-                  ── luật, và nó áp cho cả app ──
-
-                  Màu dành cho GIÁ TRỊ, không dành cho LỐI ĐI. Vòng tròn, điểm
-                  số, macro, biểu đồ — những thứ mà màu NÓI RA một điều gì đó —
-                  giữ nguyên. Chip, nút, viền, ô icon điều hướng thì về đơn sắc.
-
-                  Chú thích trước đây ở đây lập luận "viên pill được thắp bằng
-                  chính thứ nó chứa". Câu ấy đẹp và nó là THẨM MỸ, không phải một
-                  phép đo — và cái giá của nó đọc được ngay trên hàng này: bốn
-                  viên cạnh nhau, bốn hue khác nhau, cho bốn thứ mà cái NHÃN đã
-                  nói rõ là gì. Màu ở đó không thêm thông tin nào, chỉ tiêu mất
-                  sự kiềm chế.
-
-                  Màu không biến mất — nó DỜI vào glyph, nơi nó phân biệt bốn
-                  hành động. Bề mặt thôi tranh phần với thứ nó chứa.
-
-                  ── nhưng `tint` KHÔNG bị gỡ, và đó là chỗ `tools/raised-pill.mjs`
-                     đúng một nửa ──
-
-                  Luật ấy đòi mỗi pill có `tint` với lý do "kính không màu là
-                  kính xám". Nửa ấy là THẬT ở đây: pill này là `material="blur"`,
-                  thứ vốn đã bỏ mép sáng và bóng đổ trong lòng kính, nên lớp
-                  wash theo tint là NGUỒN SÁNG CUỐI CÙNG còn lại. Gỡ nó đi là
-                  trả pill về nằm bẹt trên trang #070708 — đúng chế độ hỏng mà
-                  luật ấy được đo để chặn.
-
-                  Nửa còn lại — "tint phải là màu của glyph" — mới là thứ đổi.
-                  Nên: giữ nguyên một nguồn sáng, nhưng là MỘT nguồn duy nhất và
-                  trung tính. `colors.primary` là bạc của chính thương hiệu, nên
-                  wash đọc ra là ÁNH SÁNG chứ không phải một màu.
-                */}
-                <LiquidGlass style={styles.quickChip} radius={radius.full} tint={c.primary} material="blur">
-                  <View style={styles.quickChipInner}>
-                    <Glyph name={a.glyph} size={16} />
-                    <Text style={styles.quickChipText}>{a.label}</Text>
-                  </View>
-                </LiquidGlass>
-              </PressScale>
-            ))}
-          </View>
+            Thẻ mới đọc trạng thái thật và chỉ vẽ việc CÒN LẠI — xem
+            `components/ascnd/todo-card.tsx` và `lib/todo.ts`.
+          */}
+          <TodoCard />
             </View>
 
           {/* HealthKit sync (native-only necessity, styled as a quick chip row) */}
@@ -2836,88 +2759,32 @@ const stylesFor = makeStyles((c, m) => ({
   squareBtnActive: { backgroundColor: alpha(c.primary, 0.2), borderColor: alpha(c.primary, 0.4) },
 
   // Quick chips (web: rounded-xl bordered secondary/20)
-  quickRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  /*
-    A pill, and 44 points tall.
-
-    `radius.sm` made these read as small buttons; the pill is what the
-    assistant's chips already are, and matching it means the app has one shape
-    for "a thing you tap to go somewhere" instead of two.
-
-    The height is Apple's floor for a touch target, and it was 36. That is not a
-    rounding error — `tools/tap-targets.mjs` exists in this repository because
-    of exactly this, and its note quotes the same 44. A row used several times a
-    day is the last place to be eight points short.
-  */
-  /* The glass carries the shape; the padding lives inside it — the same split
-     the assistant's state pill uses. */
-  quickChip: {
-    borderRadius: radius.full,
-  /* Mặt của một khối đứng THẲNG TRÊN TRANG, không phải mặt của một chỗ lõm.
-
-     ── lỗi, đo trên ảnh chụp máy của chủ dự án ──
-
-     Bốn chip này chỉ có chất liệu: `m.aura.hair` (3,5% mực) dưới lớp blur, cộng
-     lớp wash 16% → 0 neo ở góc trên-trái. Đo mặt chip so với trang ngay cạnh nó:
-
-         "Ghi bữa ăn"    #efece5 trên #f6f3ec   1,056:1
-         "Ghi giấc ngủ"  #ece9e2 trên #efece5   1,028:1
-         nút Apple Health                        1,105:1
-
-     Trên cùng bức ảnh, thẻ trắng của app tách khỏi trang 1,148:1 và pill tab
-     đang chọn 1,317:1. Bốn chip là mặt NHẠT NHẤT trang — chủ dự án khoanh đỏ cả
-     cụm và viết "4 thẻ này đang cùng màu".
-
-     ── vì sao chất liệu một mình không đủ, và chỉ trên GIẤY ──
-
-     Mọi lập luận đã ghi quanh hàng này đều đo trên trang `#070708`: "bóng đổ vẽ
-     ra đúng không gì, điểm ảnh ngay ngoài pill là [9,9,9]". Câu ấy vẫn đúng.
-     Nhưng nó nói về bản TỐI. Trên giấy, một lớp blur làm sáng một trang vốn đã
-     sáng thì cũng vẽ ra đúng không gì — cùng một chế độ hỏng, soi gương.
-
-     ── và vai này đã có tên ──
-
-     `m.onPage`, do `tools/on-page-fill.mjs` đặt ra sau đúng một lần khoanh đỏ
-     như lần này. Số của nó: sáng #ffffff → 1,097:1, tối rgba(255,255,255,0.06)
-     → 1,113:1, neo theo bậc `systemGroupedBackground` → `secondarySystemGrouped`
-     của iOS (1,134:1). Tự chế `alpha(m.ink, 0.08)` thì ra 1,259:1 — dựng lên
-     nhìn thì xám đục cạnh nền kem, và nó là đúng thứ luật ấy sinh ra để chặn:
-     bịa một biểu thức mới trong khi kho đã có tên cho vai đó.
-
-     Nền nằm ở `wrap` tức DƯỚI lớp blur, nên lớp wash vẫn vẽ nguyên trên nó —
-     không phải "mảng màu phẳng phủ kín viên pill" mà `liquid-glass.tsx` đã ghi
-     lại là từng bị bắt. */
-  backgroundColor: m.onPage,
-  /* A firmer edge than a card's.
-
-     `glass.border` is 12% white at half a point, and that is right for a large
-     panel sitting in the aura on the assistant screen, where there is light
-     behind the glass for the edge to catch. Today has `AmbientLight`, which is
-     much quieter, and a pill is a fraction of a card's area — the same hairline
-     that outlines a whole panel disappears around something this small. So the
-     edge is carried here, where the surface is little and the light behind it
-     is low. */
-  borderColor: alpha(m.ink, 0.22),
-  borderWidth: 1,
-  },
-  quickChipInner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    height: 44,
-    paddingHorizontal: spacing.md,
-  },
-  quickChipText: { ...type.footnote, fontWeight: '600', color: c.foreground },
-
-  /* Mép, không phải nền: `LiquidGlass` mang mặt, chỗ này chỉ mang đường viền —
-     cùng `alpha(m.ink, 0.22)` ở 1 điểm mà `quickChip` đã đo và chọn, vì cùng
-     một lý do: một bề mặt nhỏ trên trang cần mép cứng hơn mép của một tấm lớn. */
+  /* Mép, không phải nền: `LiquidGlass` mang mặt, chỗ này chỉ mang đường viền.
+     Một bề mặt nhỏ trên trang cần mép cứng hơn mép của một tấm lớn — `glass.border`
+     (12% trắng, nửa điểm) là đúng cho một tấm panel có ánh sáng phía sau, và nó
+     biến mất quanh một thứ cỡ này. */
   syncButton: {
     borderRadius: radius.sm,
     borderColor: alpha(m.ink, 0.22),
     borderWidth: 1,
-    /* Cùng mặt `m.onPage` với bốn chip ngay trên — nó nằm trong cùng cái khoanh
-       đỏ, và đo ra 1,105:1, tức cùng một lỗi. */
+    /* Mặt của một khối đứng THẲNG TRÊN TRANG.
+
+       ── phép đo, trên ảnh chụp máy của chủ dự án (bản sáng) ──
+
+       Hàng bốn chip từng đứng ngay trên nút này chỉ có chất liệu kính, và đo ra
+       1,056:1 và 1,028:1 so với trang ngay cạnh; nút này 1,105:1. Trên cùng bức
+       ảnh, thẻ trắng của app tách khỏi trang 1,148:1 và pill tab đang chọn
+       1,317:1 — cả cụm là chỗ nhạt nhất trang, và chủ dự án khoanh đỏ đúng nó:
+       "4 thẻ này đang cùng màu".
+
+       Mọi lập luận cũ quanh hàng ấy đo trên trang `#070708`. Trên giấy thì một
+       lớp blur làm sáng một trang vốn đã sáng cũng vẽ ra đúng không gì — cùng
+       một chế độ hỏng, soi gương. `m.onPage` là vai đã có tên cho bậc này
+       (sáng 1,097:1 · tối 1,113:1), do `tools/on-page-fill.mjs` đặt ra.
+
+       Hàng chip nay đã được thay bằng thẻ "Cần làm hôm nay", nên nút này là
+       pill kính duy nhất còn lại trên màn — và `tools/raised-pill.mjs` luật 5
+       canh đúng dòng dưới đây. */
     backgroundColor: m.onPage,
   },
   syncInner: {

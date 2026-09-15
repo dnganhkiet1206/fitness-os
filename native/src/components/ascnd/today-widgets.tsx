@@ -1,32 +1,25 @@
-import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
 import { Check, ChevronRight, PartyPopper, Sparkles } from 'lucide-react-native';
 import { Fragment, useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
+import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { WeightEntry } from '@/components/ascnd/weight-entry';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles, palettes, type Palette } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useLogWeight, useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
-import { useAuth } from '@/hooks/use-auth';
-import { offlineNow } from '@/lib/offline';
-import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
-import { BOUNDS, plausible } from '@/lib/plausible';
-import { toast } from '@/lib/toast';
+import { useReadinessHistory, useTodayWeight } from '@/hooks/use-fitness-data';
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
 import { useSmartNudges } from '@/hooks/use-smart-nudges';
 import { useProfile } from '@/hooks/useTodayData';
 import { useUnits } from '@/hooks/use-units';
-import { localDateStr, parseLocalDate } from '@/lib/local-date';
-import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
-import { decText } from '@/lib/number-input';
-import { beginInteraction, endInteraction } from '@/lib/interaction';
+import { parseLocalDate } from '@/lib/local-date';
+import { displayWeight, weightLabel } from '@/lib/units';
 
 /**
  * Tông TRUNG TÍNH của chip cân nặng — hai vai, vì bản tối đang đóng băng.
@@ -83,7 +76,7 @@ function weightDiffTone(c: Palette, bmi: number | null, diff: number): { color: 
   return gaining ? red : green; // overweight (bmi >= 25): lose good
 }
 
-/** Weight check-in — shows today's weight vs profile, or an inline logger */
+/** Weight check-in — today's weight against the profile, and the way to set it */
 export function WeightCheckinCard({ profileWeight }: { profileWeight: number | null }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -91,151 +84,36 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
   const { weight: wUnit } = useUnits();
   const { data: todayWeight } = useTodayWeight();
   const { data: profile } = useProfile();
-  const logWeight = useLogWeight();
-  const { user } = useAuth();
-  /* The durable twin — no local `mutationFn`, because what comes back from
-     storage after a restart is the default registered in `offline-write`. */
-  const queue = useMutation<void, Error, OfflineWrite>({ mutationKey: [...OFFLINE_WRITE_KEY] });
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState('');
 
   // BMI from the current weight (kg) + height decides how a change reads
   const heightCm = Number(profile?.height_cm) || 0;
   const currentKg = todayWeight ?? profileWeight ?? 0;
   const bmi = heightCm > 0 && currentKg > 0 ? currentKg / Math.pow(heightCm / 100, 2) : null;
 
-  // Stored values are kg; show + accept entry in the user's unit
+  // Stored values are kg; show in the user's unit
   const todayDisp = todayWeight != null ? displayWeight(todayWeight, wUnit) : null;
   const profileDisp = profileWeight != null ? displayWeight(profileWeight, wUnit) : null;
-
-  useEffect(() => {
-    setValue(todayDisp?.toString() ?? profileDisp?.toString() ?? '');
-  }, [todayDisp, profileDisp]);
 
   const diff = todayDisp != null && profileDisp != null ? todayDisp - profileDisp : null;
   const showLogger = editing || todayWeight == null;
 
   /*
-    ── checked in kg, typed in whatever they use ──
+    ── ô nhập ở `weight-entry.tsx`, không còn ở đây ──
 
-    The box holds the display unit, so 300 is a plausible weight in pounds
-    (136 kg) and an impossible one in kilograms. Judging the typed number
-    against a kg range would refuse a real reading from anybody on lb, which is
-    worse than the bug being fixed. So the conversion happens first and the
-    bound is applied to the value that will actually be stored.
-
-    Worth being clear about what this cannot do: 175 for a 75 kg person passes,
-    because 175 kg is a weight a person can have. That typo is the one this
-    card's own delete button exists for. What this stops is the slipped decimal
-    and the wrong unit — and weight is the input with the longest tail, running
-    through the BMI band, the chart's scale, and `adaptiveTDEE`'s least-squares
-    fit, which has no outlier defence and now sets a suggested calorie target.
+    Thẻ "Cần làm hôm nay" cũng cần ghi cân nặng, và cân nặng là việc duy nhất
+    không có màn riêng để mở — nên ô nhập phải chạy được ở hai chỗ. Chép nó
+    sang thẻ kia sẽ là bản thứ hai của một logic GHI, mà mọi thứ khó đều nằm
+    trong nó: quy đổi kg/lb, ngưỡng hợp lý theo giá trị sẽ được LƯU, và đường
+    ghi offline có `mutationKey` bền. Nên nó được CHUYỂN đi, không nhân đôi;
+    chú thích của từng lỗi đã trả giá đi theo mã sang tệp ấy.
   */
-  const typed = parseFloat(value);
-  const kg = isNaN(typed) ? null : weightToKg(typed, wUnit);
-  const weightError = kg == null || kg <= 0 ? null : plausible('weight_kg', kg) ? null
-    : i18n.outOfRange
-        .replace('{min}', String(displayWeight(BOUNDS.weight_kg.min, wUnit)))
-        .replace('{max}', String(displayWeight(BOUNDS.weight_kg.max, wUnit)))
-        .replace('{unit}', weightLabel(wUnit));
-
-  const submit = () => {
-    if (kg == null || kg <= 0 || weightError) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    /*
-      ── offline, down the durable pipe; and either way it says what happened ──
-
-      Two faults met in this one line. Fired offline the mutation paused, the
-      tile sat in its editing state for ever, and the paused write was restored
-      on the next launch with no `mutationFn` registered for its key and
-      dropped — a weigh-in silently gone. And online, a rejected write had no
-      `onError` at all, so the field simply closed as though it had worked.
-
-      Weight is not a cosmetic number here: `adaptiveTDEE` runs a least-squares
-      regression over fourteen days of it to suggest a calorie target.
-
-      `kind: 'weight'` and its handler have been in `lib/offline-write.ts` since
-      that file was written, with nothing ever producing one.
-    */
-    if (offlineNow() && user) {
-      /* Closed here rather than in a callback: a paused mutation never calls
-         one, which is the whole failure being fixed. */
-      setEditing(false);
-      queue.mutate({ kind: 'weight', userId: user.id, kg, date: localDateStr() });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      toast.success(i18n.logMealQueued);
-      return;
-    }
-    logWeight.mutate(kg, {
-      onSuccess: () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setEditing(false);
-      },
-      onError: (e: Error) => toast.fail(e),
-    });
-  };
-
   return (
     <GlassCard>
       <Text style={styles.cardTitle}>{i18n.nWeightTitle}</Text>
       {showLogger ? (
-        <View style={styles.weightLogger}>
-          <TextInput
-            style={styles.weightInput}
-            keyboardType="decimal-pad"
-            value={value}
-            onChangeText={(v) => setValue(decText(v))}
-            /*
-              Ô đang gõ cũng là "tay đang chạm". Bàn phím mở ra làm cả trang
-              co giãn, và đó đúng là lúc không nên chia ngân sách khung hình cho
-              một hoạt ảnh trang trí — xem `lib/interaction`.
-
-              Cặp focus/blur luôn khớp nhau, kể cả khi ô mất focus vì trang bị
-              rời đi, nên bộ đếm không kẹt.
-            */
-            onFocus={() => beginInteraction()}
-            onBlur={() => endInteraction(320)}
-            placeholder="70.0"
-            placeholderTextColor={c.mutedForeground}
-          />
-          <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
-          <PressScale
-            style={[styles.weightBtn, weightError ? styles.weightBtnOff : null]}
-            /* Mảng màu 36 điểm, vùng chạm 44+ — xem ghi chú ở `weightBtn`. */
-            hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}
-            onPress={submit}
-            /*
-              ── the offline branch is a submit too ──
-
-              `logWeight` is the online mutation; offline the tap goes to
-              `queue`, whose state nothing here read, so the button stayed live.
-
-              And it stays *visible*: `setEditing(false)` above is meant to close
-              the logger, but `showLogger` is `editing || todayWeight == null`,
-              and on the first weigh-in of a day `todayWeight` is null and — with
-              no signal — is not going to stop being null. So the form sat open
-              with the number still typed in it, one tap away from a second
-              write, which is exactly the shape that produces one.
-
-              The value is not patched into the cache to close it, deliberately:
-              `lib/offline.ts` is the rule that a paused mutation never rolls
-              back, so an optimistic weight would sit in the persisted cache as a
-              reading nobody took. Disabling is the honest half — the toast has
-              already said what happened.
-            */
-            disabled={
-              logWeight.isPending || queue.isPending || queue.isSuccess || !!weightError
-            }>
-            {logWeight.isPending ? (
-              <ActivityIndicator color={c.primaryForeground} size="small" />
-            ) : (
-              <Text style={styles.weightBtnText}>{i18n.nLogWeight}</Text>
-            )}
-          </PressScale>
-        </View>
-      ) : null}
-      {showLogger && weightError ? <Text style={styles.weightError}>{weightError}</Text> : null}
-      {showLogger ? null : (
+        <WeightEntry onLogged={() => setEditing(false)} />
+      ) : (
         <PressScale style={styles.weightDisplay} onPress={() => setEditing(true)}>
           <View style={styles.weightValueRow}>
             <Text style={styles.weightValue}>{todayDisp}</Text>
@@ -545,55 +423,7 @@ const stylesFor = makeStyles((c, m) => ({
     thiết kế. `center` cho ra hình gần như y hệt ở cỡ chữ này, nên đây là chỗ
     nhường rẻ nhất: giữ toàn bộ phần nhìn, bỏ đúng một dòng đắt.
   */
-  weightLogger: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
-  weightInput: {
-    /*
-      Bề rộng CHỐT, không phải `minWidth`.
-
-      Với `minWidth` thì ô nhập giãn chiếm hết chỗ trống tới tận cái nút: gạch
-      chân kéo dài lê thê sau một con số ngắn, và "kg" bị đẩy văng sang phải,
-      dính vào nút, tách khỏi chính con số nó thuộc về. Đo được trên bản dựng:
-      số hết ở ~100px, vạch chạy tới ~285px.
-
-      104 là chỗ cho năm ký tự mono ở 28 điểm — "100.5", giá trị dài nhất hợp
-      lý ở cả kg lẫn lb — cộng chỗ cho con trỏ. Phần thừa sau số ngắn là có ý:
-      nó nói còn chỗ để gõ, đúng việc của một ô nhập.
-    */
-    width: 104,
-    paddingVertical: 2,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
-    color: c.foreground,
-    ...type.largeTitle,
-    ...type.mono,
-  },
   weightUnit: { ...type.body, color: c.mutedForeground },
-  /*
-    Nút thôi là vật sáng nhất trên thẻ.
-
-    `colors.primary` là #a8afbd — bạc sáng — trên thẻ tối, nên ở 44 điểm với
-    đệm 24 nó là mảng tương phản mạnh nhất ở đây. Một thẻ nói về MỘT CON SỐ mà
-    thứ mắt bắt trước tiên lại là cái nút thì thứ bậc đang ngược.
-
-    Nhỏ lại còn 36 và chữ 13/600 thì nó đọc ra là một control cạnh con số, chứ
-    không phải một tấm biển. Vẫn nền đặc, vì đây vẫn là hành động chính duy
-    nhất của thẻ — hạ xuống viền rỗng là nói dối về vai trò của nó.
-
-    36 dưới sàn chạm 44 điểm, nên `hitSlop` bù lại: vùng chạm không đổi, chỉ
-    có mảng màu nhỏ đi.
-  */
-  weightBtn: {
-    marginLeft: 'auto',
-    height: 36,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    backgroundColor: c.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  weightBtnOff: { opacity: 0.4 },
-  weightBtnText: { ...type.footnote, fontWeight: '700', color: c.primaryForeground },
-  weightError: { ...type.footnote, color: c.readinessRed, marginTop: 6 },
   weightDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -601,8 +431,8 @@ const stylesFor = makeStyles((c, m) => ({
     marginTop: spacing.sm,
   },
   weightValueRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs },
-  /* Cùng `gap` và cùng đường chân chữ như `weightLogger`, để hai trạng thái
-     đặt số và đơn vị vào đúng một chỗ. */
+  /* Cùng `gap` và cùng đường chân chữ như ô nhập ở `weight-entry.tsx`, để hai
+     trạng thái đặt số và đơn vị vào đúng một chỗ. */
   weightValue: { ...type.largeTitle, ...type.mono, color: c.foreground },
   diffPill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 4, borderRadius: radius.full },
   diffText: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },

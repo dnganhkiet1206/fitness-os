@@ -127,10 +127,6 @@ interface Translations {
   dashSleepMsg: string;
   dashSupplements: string;
   dashSupplementsMsg: string;
-  dashEnterBiometrics: string;
-  dashLogWorkoutAction: string;
-  dashLogMealAction: string;
-  dashLogSleepAction: string;
 
   // Weight Checkin
   weightTitle: string;
@@ -947,10 +943,6 @@ const vi: Translations = {
   dashSleepMsg: 'Chưa ghi giấc ngủ. Nhấn để ghi.',
   dashSupplements: 'Supplements',
   dashSupplementsMsg: 'Thêm supplements trong Settings.',
-  dashEnterBiometrics: 'Nhập sinh trắc',
-  dashLogWorkoutAction: 'Ghi buổi tập',
-  dashLogMealAction: 'Ghi bữa ăn',
-  dashLogSleepAction: 'Ghi giấc ngủ',
 
   weightTitle: 'Cân Nặng',
   weightSave: 'Lưu',
@@ -1704,10 +1696,6 @@ const en: Translations = {
   dashSleepMsg: 'No sleep logged. Tap to log.',
   dashSupplements: 'Supplements',
   dashSupplementsMsg: 'Add supplements in Settings.',
-  dashEnterBiometrics: 'Enter biometrics',
-  dashLogWorkoutAction: 'Log workout',
-  dashLogMealAction: 'Log meal',
-  dashLogSleepAction: 'Log sleep',
 
   weightTitle: 'Weight',
   weightSave: 'Save',

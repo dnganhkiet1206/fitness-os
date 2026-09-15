@@ -71,7 +71,7 @@ const NEUTRAL = 'c.primary';
    trên một mặt thẻ thì không, và bắt nó mang `m.onPage` sẽ là một mặt trắng
    chồng lên một mặt trắng. */
 const USERS = [
-  ['src/app/(tabs)/index.tsx', 1, 'bốn nút log trên Today (một chỗ render, lặp qua danh sách)', NEUTRAL, 'page'],
+  ['src/app/(tabs)/index.tsx', 1, 'nút Đồng bộ Apple Health trên Today', NEUTRAL, 'page'],
   /*
     Tab Tập luyện không còn pill kính nào, và đó là chủ ý.
 
