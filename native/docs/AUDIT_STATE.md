@@ -85,10 +85,57 @@ Việc làm ra thì không đổi (thẻ thành thẻ thông tin, lịch sử th
 lý do đổi hẳn, nên `tools/weight-card.mjs` cũng đổi vế: nó thôi canh "đây là lối
 ghi duy nhất" và quay sang canh **chữ "vì"** — `TodoCard` phải còn dựng
 `WeightEntry`, vì đó là thứ làm câu của chủ dự án đúng và làm quyết định này có
-cơ sở. Năm vế; và vế đếm chỗ gọi `useLogWeight` giữ nguyên bài học riêng của nó:
-bản đầu (`grep -rl useLogWeight src`) xanh với ba tệp, mà hai trong ba chỉ **nhắc
-tên** nó trong chú thích — luật nay bỏ chú thích rồi mới tìm, và tìm một cú
-**gọi**.
+cơ sở. Vế đếm chỗ gọi `useLogWeight` giữ nguyên bài học riêng của nó: bản đầu
+(`grep -rl useLogWeight src`) xanh với ba tệp, mà hai trong ba chỉ **nhắc tên**
+nó trong chú thích — luật nay bỏ chú thích rồi mới tìm, và tìm một cú **gọi**.
+
+### Lượt hai, cùng ngày: tắt hẳn, không chỉ giấu đi
+
+Chủ dự án, ngay sau đó: **"tắt cái nút ghi đi không cho ghi nữa vì đã nằm ở todo
+rồi"**. Lượt đầu ô nhập mới chỉ lùi lại sau một cú chạm lên mặt thẻ; lượt này gỡ
+hẳn — thẻ không còn `onPress`, không còn state `editing`, không dựng
+`WeightEntry`, không gọi `useLogWeight`. `PressScale` đổi thành `View`, và chuỗi
+`nWeightTapToLog` bị xoá khỏi cả hai ngôn ngữ vì không còn ai đọc nó.
+
+Viên chênh lệch thôi gác sau "hôm nay đã cân chưa". Cái gác ấy tồn tại vì ô bên
+phải phải chia chỗ với lời mời chạm; không còn lời mời thì nó chỉ còn là một cách
+giấu thông tin đúng — chênh lệch của lần cân gần nhất là thật dù lần ấy là thứ Ba
+tuần trước, và `staleOn` ngay bên trái đã nói lần ấy là khi nào.
+
+**Một cái giá tôi cảnh báo, rồi phải rút lại.** `useLogWeight` upsert theo
+`(user_id, date)`, nên **sửa** số của hôm nay chính là ghi lại lần nữa — thứ một
+thẻ chỉ-đọc không làm được. Lúc tôi bắt đầu, dòng To-do "cân nặng" sau khi ghi là
+một dòng **tĩnh, không bấm được**, nên đường sửa là ba bước trên hai màn (Tiến
+trình → xoá trong `WeightLogList` → dòng To-do hiện lại). Tôi nói điều đó ra
+trước khi làm, và nói đúng **vào lúc ấy**.
+
+Nó hết đúng trước khi tôi đẩy xong. `e0e1d82` của người cộng tác — độc lập, cùng
+ngày — cho dòng To-do **giữ nguyên hình** khi đã ghi: nút vẫn ở đó mang nhãn "Đã
+ghi", vẫn `onPress={press}`, tức vẫn mở `WeightEntry`; cộng một thao tác *Sửa*
+khi vuốt. Chú thích của chính họ nói ra lý do: *"hai thứ đáng làm được trên dòng
+ấy — sửa lại lượt ghi sai, đổi giờ nhắc — không còn chỗ nào để làm"*.
+
+Nên **không có cái giá nào**: sửa lần cân của hôm nay là một cú chạm, trên chính
+dòng ngay phía trên thẻ. Ghi lại cả hai nửa vì bài học không phải "cảnh báo thừa"
+mà là: trên một nhánh hai người thay nhau đẩy, một phép đo về màn hình có hạn sử
+dụng tính bằng commit — đây là **lần thứ hai trong cùng một ngày** tôi kết luận
+đúng trên cây mình cầm và sai trên cây đang chạy.
+
+`tools/weight-card.mjs` đổi chiều theo: nó nay **cấm** thẻ Cân nặng có `onPress`,
+dựng `<WeightEntry>` hoặc gọi `useLogWeight`, đồng thời vẫn đòi `TodoCard` giữ
+`WeightEntry` và đòi thẻ vẫn còn `olderRows` — hai chiều hỏng ngược nhau, vì một
+thẻ cân nặng không bấm được trông như thiếu sót, và đó là chỗ dễ bị "sửa" lại
+nhất. Cấm cả `onPress` chứ không chỉ lệnh ghi: một `PressScale` không làm gì vẫn
+co lại dưới ngón tay, tức vẫn hứa một hành động rồi nuốt lời, và
+`accessibilityRole="button"` sẽ đọc cho VoiceOver một cái nút không tồn tại. Mười
+phép thử ngược.
+
+Và một chú thích trôi được bắt trong lúc kiểm: `weight-entry.tsx` mang theo đoạn
+giải thích cũ nói rằng caller để biểu mẫu mở vì `showLogger = editing ||
+todayWeight == null`. Không caller nào còn làm thế — `TodoCard` gate bằng
+`editing` trần, và thẻ Cân nặng thì không dựng nó nữa. Đã viết lại thành thì quá
+khứ. (Phần sửa `disabled` của **BUG-05 (a)** thì đi theo mã sang tệp ấy và vẫn
+còn nguyên — đã kiểm bằng mắt, không phải suy ra.)
 
 ### Và cái bị thay không phải một thứ đang chạy
 

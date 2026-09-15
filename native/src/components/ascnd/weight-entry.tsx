@@ -156,11 +156,19 @@ export function WeightEntry({ onLogged }: { onLogged?: () => void }) {
             `logWeight` is the online mutation; offline the tap goes to
             `queue`, whose state nothing here read, so the button stayed live.
 
-            And it stays *visible*: the caller closes the form on `onLogged`,
-            but on the first weigh-in of a day `todayWeight` is null and — with
-            no signal — is not going to stop being null. So the form sat open
-            with the number still typed in it, one tap away from a second
-            write, which is exactly the shape that produces one.
+            It also used to stay *visible*, and that half is now closed by the
+            callers rather than here. The old weight card gated the form on
+            `editing || todayWeight == null`, so on the first weigh-in of a day
+            `onLogged` set `editing` false and the form stayed open anyway —
+            `todayWeight` is null and, with no signal, is not going to stop
+            being null. The form sat open with the number still typed in it,
+            one tap away from a second write.
+
+            No caller does that now: `TodoCard` gates on `editing` alone, and
+            the weight card no longer mounts this component at all (chủ dự án:
+            *"tắt cái nút ghi đi không cho ghi nữa vì đã nằm ở todo rồi"*). So
+            `disabled` below is what stops the second tap in the frames before
+            the caller's state settles, not the only thing stopping it.
 
             The value is not patched into the cache to close it, deliberately:
             `lib/offline.ts` is the rule that a paused mutation never rolls

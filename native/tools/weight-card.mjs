@@ -1,41 +1,44 @@
 /**
- * Thẻ cân nặng được phép thôi là một cái biểu mẫu — vì có chỗ khác ghi. Luật
- * này canh chữ "vì".
+ * Thẻ cân nặng KHÔNG ghi — và nó chỉ được phép không ghi chừng nào chỗ kia còn
+ * ghi. Luật này canh cả hai vế.
  *
  *     node tools/weight-card.mjs
  *
  * ── vì sao luật này tồn tại ──
  *
- * Chủ dự án yêu cầu: *"vì phía trên đã có ghi cân nặng rồi, thẻ này giờ chỉ
- * dùng để hiện thông tin — ví dụ thay nút ghi bằng lịch sử thay đổi cân nặng
- * sau mỗi lần log"*.
+ * Chủ dự án, hai lượt. Lượt đầu: *"vì phía trên đã có ghi cân nặng rồi, thẻ này
+ * giờ chỉ dùng để hiện thông tin — ví dụ thay nút ghi bằng lịch sử thay đổi cân
+ * nặng sau mỗi lần log"*. Lượt hai: *"tắt cái nút ghi đi không cho ghi nữa vì
+ * đã nằm ở todo rồi"*.
  *
- * Câu ấy ĐÚNG, và nó đúng nhờ một lượt sửa khác: `weight-entry.tsx` được tách
- * ra để thẻ *Cần làm hôm nay* ghi cân nặng ngay tại chỗ, và thẻ ấy nằm TRÊN cả
- * dãy nhóm widget trong `(tabs)/index.tsx`. Bỏ ô nhập khỏi mặt thẻ Cân nặng là
- * an toàn **chính xác vì** lối ghi kia tồn tại.
+ * Nên thẻ Cân nặng nay là một thẻ CHỈ ĐỌC, và điều đó chỉ đúng đắn nhờ một sự
+ * thật nằm ở tệp khác: `weight-entry.tsx` được tách ra để thẻ *Cần làm hôm nay*
+ * ghi cân nặng ngay tại chỗ, và thẻ ấy nằm TRÊN cả dãy nhóm widget trong
+ * `(tabs)/index.tsx`.
  *
- * Nên thứ phải canh không phải cái thẻ — mà là **mệnh đề nó dựa lên**. Nếu
- * `TodoCard` thôi dựng `WeightEntry`, hoặc `useLogWeight` mất chỗ gọi cuối
- * cùng, thì đoạn chú thích trong `today-widgets.tsx` thành một lời giải thích
- * sai, và quyết định thiết kế ngồi trên nó mất cơ sở — **mà không màn hình nào
- * báo lỗi**, vì không có gì hỏng: chỉ là không còn đường vào.
+ * Hai vế ấy hỏng theo hai hướng ngược nhau, và luật canh cả hai:
  *
- * `tsc` không bắt được: gỡ một `<WeightEntry />` là mã hợp lệ. Ảnh chụp không
- * bắt được: cả hai thẻ vẫn vẽ ra đúng như thiết kế. Thứ mất đi là một khả năng,
- * và khả năng thì chỉ có luật mới canh được.
+ *   · Ai đó thấy một thẻ cân nặng không bấm được, tưởng là thiếu sót, và gắn
+ *     lại một `onPress` hay một `<WeightEntry>` — **đi ngược yêu cầu tường
+ *     minh của chủ dự án**, mà không gì trong repo phản đối.
+ *   · Hoặc `TodoCard` thôi dựng `WeightEntry`, và lúc ấy app KHÔNG CÒN chỗ nào
+ *     ghi cân nặng trên màn Hôm nay — **mà không màn hình nào báo lỗi**, vì
+ *     không có gì hỏng: chỉ là không còn đường vào.
  *
- * ── năm vế ──
+ * `tsc` không bắt được: thêm hay bớt một `onPress` đều là mã hợp lệ. Ảnh chụp
+ * không bắt được: cả hai thẻ vẫn vẽ ra đúng như thiết kế. Thứ mất đi là một
+ * khả năng — hoặc một điều cấm — và những thứ ấy chỉ có luật mới canh được.
+ *
+ * ── bốn vế ──
  *
  * 1. `useLogWeight` còn ít nhất một chỗ GỌI ngoài tệp hook.
- * 2. `TodoCard` còn dựng `WeightEntry` — đây là vế giữ cho câu "phía trên đã có
- *    ghi cân nặng rồi" còn đúng.
- * 3. Thẻ Cân nặng vẫn còn một đường mở ô nhập (`setEditing(true)` + dựng
- *    `WeightEntry`): lối thứ hai lùi lại một cú chạm, không biến mất.
- * 4. Ô nhập KHÔNG tự bung: `showLogger` là `editing` và chỉ `editing`. Thêm
- *    `todayWeight == null` vào là hai ô nhập cùng mở trên một trang, cho cùng
- *    một con số.
- * 5. Lịch sử cắt từ chỉ số 1. `entries[0]` là con số lớn ở trên, nên
+ * 2. `TodoCard` còn dựng `WeightEntry` — vế giữ cho câu "đã nằm ở todo rồi"
+ *    còn đúng, và vì thế giữ cho vế 3 còn đúng đắn.
+ * 3. Thẻ Cân nặng KHÔNG ghi: thân component không có `onPress`, không dựng
+ *    `WeightEntry`, không gọi `useLogWeight`. Cả `onPress` cũng bị cấm, không
+ *    chỉ lệnh ghi — một `PressScale` không làm gì vẫn co lại dưới ngón tay,
+ *    tức vẫn HỨA một hành động rồi không làm gì cả.
+ * 4. Lịch sử cắt từ chỉ số 1. `entries[0]` là con số lớn ở trên, nên
  *    `slice(0, …)` in một lần cân hai lần cách nhau hai mươi điểm.
  */
 import { readFileSync, readdirSync } from 'node:fs';
@@ -84,7 +87,8 @@ const body = at < 0 ? '' : code.slice(at, code.indexOf('\nexport function ', at 
   cùng bị xoá, chừng nào hai đoạn chú thích kia còn nằm đó.
 
   Nên: đọc từng tệp, BỎ chú thích, rồi mới tìm — và tìm `useLogWeight(`, một cú
-  gọi, không phải một cái tên.
+  gọi, không phải một cái tên. Cùng phép ấy dùng lại ở vế 3, nơi nó canh chiều
+  ngược lại.
 */
 const CALL = /\buseLogWeight\s*\(/;
 const callers = sources(path.join(NATIVE, 'src'))
@@ -110,53 +114,43 @@ if (!/export function useLogWeight\b/.test(hooks)) {
   );
 }
 
-/* ── vế 2: mệnh đề "phía trên đã có ghi cân nặng rồi" ── */
+/* ── vế 2: mệnh đề "đã nằm ở todo rồi" ── */
 const todo = strip(readFileSync(path.join(NATIVE, TODO), 'utf8'));
 if (!/<WeightEntry\b/.test(todo)) {
   problems.push(
     `${TODO}: thẻ "Cần làm hôm nay" không còn dựng \`<WeightEntry>\`. Đây là LÝ DO thẻ Cân nặng được phép `
-      + 'bỏ ô nhập khỏi mặt thẻ — chủ dự án nói "vì phía trên đã có ghi cân nặng rồi", và thẻ này chính là '
-      + '"phía trên" ấy (nó nằm trước cả dãy nhóm widget trong `(tabs)/index.tsx`). Bỏ nó đi thì đoạn chú '
-      + 'thích trong `today-widgets.tsx` thành một lời giải thích sai, và quyết định ngồi trên nó mất cơ sở',
+      + 'KHÔNG ghi — chủ dự án nói "tắt cái nút ghi đi không cho ghi nữa vì đã nằm ở todo rồi", và thẻ này '
+      + 'chính là cái "todo" ấy (nó nằm trước cả dãy nhóm widget trong `(tabs)/index.tsx`). Bỏ nó đi thì '
+      + 'màn Hôm nay không còn chỗ nào ghi cân nặng, và thẻ Cân nặng — vốn đã cố ý chỉ-đọc — không đỡ lại '
+      + 'được',
   );
 }
 
-/* ── vế 3: thẻ còn đường mở ô nhập ── */
-if (body && !/setEditing\(true\)/.test(body)) {
-  problems.push(
-    `${CARD}: \`WeightCheckinCard\` không còn chỗ nào gọi \`setEditing(true)\`. Nút ghi đã rời mặt thẻ theo `
-      + 'đúng yêu cầu, nên cú chạm lên mặt thẻ LÀ lối vào còn lại của thẻ này. Gỡ nó đi thì thẻ thành '
-      + 'chỉ-đọc thật, và lối ghi cân nặng của app tụt từ hai xuống một',
-  );
-}
-if (body && !/<WeightEntry\b/.test(body)) {
-  problems.push(
-    `${CARD}: \`WeightCheckinCard\` không còn dựng \`<WeightEntry>\`. \`setEditing(true)\` ở trên khi ấy bật `
-      + 'một trạng thái không vẽ ra gì',
-  );
-}
-
-/* ── vế 4: ô nhập không tự bung ── */
-const showLogger = /const\s+showLogger\s*=\s*([^;]+);/.exec(body ?? '');
-if (body && !showLogger) {
-  problems.push(
-    `${CARD}: không còn \`const showLogger = …\`. Cái chốt quyết định thẻ mở ra ở dạng biểu mẫu hay dạng `
-      + 'thông tin đã được viết lại. Đọc lại chỗ ấy bằng mắt rồi sửa luật',
-  );
-} else if (showLogger) {
-  const expr = showLogger[1].trim();
-  notes.push(`showLogger = ${expr}`);
-  if (expr !== 'editing') {
+/* ── vế 3: và thẻ Cân nặng thì KHÔNG được ghi ── */
+const BANNED = [
+  ['onPress', /\bonPress[=\s]/, 'một cú chạm. Kể cả khi nó không ghi gì: `PressScale` vẫn co lại dưới ngón '
+    + 'tay, tức vẫn HỨA một hành động rồi không làm gì cả, và `accessibilityRole="button"` sẽ đọc cho '
+    + 'VoiceOver một cái nút không tồn tại'],
+  ['<WeightEntry>', /<WeightEntry\b/, 'ô nhập cân nặng — đúng thứ chủ dự án bảo tắt'],
+  ['useLogWeight()', CALL, 'một lệnh ghi cân nặng'],
+];
+for (const [what, re, why] of BANNED) {
+  if (body && re.test(body)) {
     problems.push(
-      `${CARD}: \`showLogger\` là \`${expr}\`, không phải \`editing\`. Bản cũ là `
-        + '`editing || todayWeight == null`, tức mỗi ngày trước lần cân đầu tiên thẻ tự bung ô nhập — và từ '
-        + 'khi `TodoCard` cũng dựng `WeightEntry`, đó là HAI ô nhập cùng mở trên một trang cho cùng một con '
-        + 'số. Bất kỳ vế nào ngoài `editing` đều là một đường để nó tự bung trở lại',
+      `${CARD}: \`WeightCheckinCard\` lại có \`${what}\` — ${why}. Chủ dự án yêu cầu TƯỜNG MINH: "tắt cái `
+        + 'nút ghi đi không cho ghi nữa vì đã nằm ở todo rồi". Một thẻ cân nặng không bấm được trông như '
+        + 'thiếu sót, nên đây là chỗ dễ bị "sửa" lại nhất — và không gì khác trong repo phản đối',
     );
   }
 }
+if (body && !/const\s+olderRows\s*=/.test(body)) {
+  problems.push(
+    `${CARD}: không còn \`olderRows\` — phần LỊCH SỬ, thứ thay cho cái nút, đã biến mất. Vế 3 cấm thẻ ghi; `
+      + 'nếu nó cũng thôi hiện thông tin thì thẻ chẳng còn việc gì',
+  );
+}
 
-/* ── vế 5: lịch sử không in lại con số lớn ── */
+/* ── vế 4: lịch sử không in lại con số lớn ── */
 const slice = /entries\.slice\(\s*(\d+)/.exec(body ?? '');
 if (body && !slice) {
   problems.push(
@@ -171,17 +165,18 @@ if (body && !slice) {
 }
 
 if (problems.length) {
-  console.error('thẻ cân nặng: thẻ bỏ được ô nhập VÌ có chỗ khác ghi — và chữ "vì" ấy đang hỏng:');
+  console.error('thẻ cân nặng: thẻ chỉ-đọc được VÌ chỗ khác còn ghi — một trong hai vế đang hỏng:');
   for (const p of problems) console.error(`  ✗ ${p}`);
   process.exit(1);
 }
 console.log(
-  'thẻ cân nặng OK — ô nhập đã rời mặt thẻ theo yêu cầu, và năm vế giữ cho LÝ DO của việc ấy còn đúng: '
-    + `\`useLogWeight\` còn chỗ gọi (${notes.join(' · ')}), \`TodoCard\` — cái "phía trên" mà chủ dự án nói `
-    + 'tới — còn dựng `WeightEntry`, thẻ Cân nặng vẫn còn `setEditing(true)` và vẫn dựng `WeightEntry` nên '
-    + 'lối thứ hai chỉ lùi lại một cú chạm chứ không mất, ô nhập chỉ mở khi được chạm chứ không tự bung, và '
-    + 'lịch sử cắt từ chỉ số 1 nên con số lớn không bị in lại ở hàng đầu. Vế đếm chỗ gọi quét cả `src/` chứ '
-    + 'không riêng thẻ: dời lối ghi sang màn khác là hợp lệ, xoá hẳn thì không — cân nặng là chỉ số duy nhất '
-    + 'không có màn riêng để ghi. Và nó BỎ CHÚ THÍCH rồi mới tìm, vì bản đầu (`grep -rl useLogWeight src`) '
-    + 'xanh với ba tệp mà hai trong ba chỉ nhắc tên nó trong một đoạn giải thích',
+  'thẻ cân nặng OK — thẻ KHÔNG ghi, theo đúng yêu cầu, và bốn vế canh cả hai chiều hỏng: thẻ không có '
+    + '`onPress`, không dựng `<WeightEntry>`, không gọi `useLogWeight` (cấm cả `onPress` chứ không chỉ lệnh '
+    + 'ghi — một `PressScale` không làm gì vẫn hứa một hành động rồi nuốt lời), nhưng vẫn còn `olderRows` '
+    + `nên nó vẫn làm việc của mình; \`TodoCard\` — cái "todo" mà chủ dự án nói tới — còn dựng `
+    + `\`WeightEntry\`; \`useLogWeight\` còn chỗ gọi (${notes.join(' · ')}); và lịch sử cắt từ chỉ số 1 nên `
+    + 'con số lớn không bị in lại ở hàng đầu. Vế đếm chỗ gọi quét cả `src/` chứ không riêng thẻ: dời lối ghi '
+    + 'sang màn khác là hợp lệ, xoá hẳn thì không — cân nặng là chỉ số duy nhất không có màn riêng để ghi. '
+    + 'Và nó BỎ CHÚ THÍCH rồi mới tìm, vì bản đầu (`grep -rl useLogWeight src`) xanh với ba tệp mà hai trong '
+    + 'ba chỉ nhắc tên nó trong một đoạn giải thích',
 );

@@ -466,10 +466,23 @@ try {
 }
 
 /* ── 7. ô ghi cân nặng chỉ có MỘT bản ──
-   Cân nặng là việc duy nhất không có màn riêng, nên nó được ghi tại chỗ ở hai
-   nơi: thẻ Cân nặng và dòng cân nặng trong thẻ Cần làm. Chép ô nhập sang chỗ
-   thứ hai là nhân đôi một logic GHI DỮ LIỆU — quy đổi kg/lb, ngưỡng hợp lý, và
-   đường ghi offline có `mutationKey` bền, thứ đã từng nuốt mất một lần cân. */
+   Cân nặng là việc duy nhất không có màn riêng, nên nó phải được ghi tại chỗ.
+   Chép ô nhập sang chỗ thứ hai là nhân đôi một logic GHI DỮ LIỆU — quy đổi
+   kg/lb, ngưỡng hợp lý, và đường ghi offline có `mutationKey` bền, thứ đã từng
+   nuốt mất một lần cân.
+
+   ── và mục này đã phải sửa một lần, 15/09 ──
+
+   Bản đầu đòi CẢ HAI tệp — thẻ Cần làm và `today-widgets.tsx` — dựng
+   `<WeightEntry>`. Vế thứ hai chết khi chủ dự án nói *"tắt cái nút ghi đi không
+   cho ghi nữa vì đã nằm ở todo rồi"*: thẻ Cân nặng nay là thẻ CHỈ ĐỌC, nên đòi
+   nó dựng ô nhập là đòi ngược lại một yêu cầu tường minh.
+
+   Thứ mục này thật sự canh vẫn còn nguyên và nằm ở vế `useLogWeight()` bên
+   dưới: **đúng một** tệp được gọi nó, và tệp ấy là `weight-entry.tsx`. Vế
+   "phải dựng" nay chỉ áp cho thẻ Cần làm, nơi ô nhập thật sự phải có mặt.
+   Chiều ngược lại — thẻ Cân nặng KHÔNG được ghi — thuộc về
+   `tools/weight-card.mjs`, và hai luật không được nói ngược nhau. */
 {
   CASES++;
   const callers = [];
@@ -483,10 +496,20 @@ try {
     );
   }
   CASES++;
-  for (const f of [CARD, 'src/components/ascnd/today-widgets.tsx']) {
-    if (!/<WeightEntry\b/.test(strip(read(f)))) {
-      problems.push(`${f}: không dựng <WeightEntry /> — chỗ ghi cân nặng phải là bản dùng chung`);
-    }
+  if (!/<WeightEntry\b/.test(strip(read(CARD)))) {
+    problems.push(`${CARD}: không dựng <WeightEntry /> — chỗ ghi cân nặng phải là bản dùng chung`);
+  }
+  /* Và tệp KHÔNG được ghi cũng không được tự dựng lại ô nhập bằng tay. Vế
+     `useLogWeight()` ở trên bắt được một lệnh ghi; vế này bắt được nửa còn lại
+     của cùng logic ấy — phép quy đổi kg/lb, thứ chỉ một ô NHẬP mới cần. */
+  CASES++;
+  const TW = 'src/components/ascnd/today-widgets.tsx';
+  if (/\bweightToKg\s*\(/.test(strip(read(TW)))) {
+    problems.push(
+      `${TW}: gọi \`weightToKg()\` — đó là phép quy đổi của một ô NHẬP cân nặng, và thẻ này không được ` +
+        'ghi (xem `tools/weight-card.mjs`). Nếu một ô nhập cần mọc lại ở đây thì nó phải là `<WeightEntry>`, ' +
+        'không phải một bản chép',
+    );
   }
 }
 
@@ -505,7 +528,9 @@ console.log(
     'đến) và bảng nhãn phủ đúng năm khoá, nên một khoá thứ sáu không dựng ra được một dòng không có ' +
     'hình. Trạng thái ba việc đầu ĐỌC từ `useDailyQuests` chứ không tự đo lại, và thẻ im lặng tới ' +
     'khi ngày được đọc xong. Trên Today, hàng chip cũ không mọc lại. Và `useLogWeight()` chỉ có một ' +
-    'chỗ gọi duy nhất: cân nặng ghi được ở hai nơi nhưng chỉ bằng MỘT đường ghi. Mỗi dòng hẹn được ' +
+    'chỗ gọi duy nhất — `weight-entry.tsx` — và thẻ này là nơi DUY NHẤT dựng nó, từ khi chủ dự án tắt ' +
+    'ô nhập của thẻ Cân nặng ("đã nằm ở todo rồi"); thẻ ấy nay còn bị cấm gọi `weightToKg()`, nửa còn ' +
+    'lại của cùng logic ghi, nên nó không dựng lại được một ô nhập bằng tay. Mỗi dòng hẹn được ' +
     'giờ qua đúng bộ lập lịch của app chứ không phải một cái hẹn riêng, dòng giấc ngủ trỏ vào ' +
     '`sleepLog` chứ không mượn `bedtime` (một cái là ghi lại đêm qua vào buổi sáng, một cái là nhắc ' +
     'đi ngủ và không bao giờ xong), và nút hẹn giờ không dựng ở nơi hệ điều hành không bắn thông báo. ' +

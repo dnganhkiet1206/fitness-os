@@ -715,12 +715,12 @@ const STEPS = [
   ['đầu vào SS', 'node', ['tools/readiness-inputs.mjs']],
   ['điều kiện sổ', 'node', ['tools/ledger-live.mjs']],
   /*
-    Thẻ cân nặng bỏ ô nhập khỏi mặt thẻ để thành thẻ thông tin, theo yêu cầu —
-    và làm thế được là VÌ `TodoCard` ở phía trên đã dựng cùng ô nhập ấy. Luật
-    canh chữ "vì": mất `<WeightEntry>` trong `TodoCard`, hoặc mất chỗ gọi
-    `useLogWeight` cuối cùng, thì lời giải thích ngồi cạnh thẻ Cân nặng thành
-    sai và quyết định ngồi trên nó mất cơ sở — mà không màn hình nào báo lỗi,
-    vì không có gì hỏng.
+    Thẻ cân nặng nay KHÔNG ghi — "tắt cái nút ghi đi không cho ghi nữa vì đã
+    nằm ở todo rồi". Luật canh hai chiều hỏng ngược nhau: ai đó thấy một thẻ
+    cân nặng không bấm được, tưởng là thiếu sót, và gắn lại một `onPress` (đi
+    ngược yêu cầu tường minh); hoặc `TodoCard` thôi dựng `<WeightEntry>` và màn
+    Hôm nay hết chỗ ghi cân nặng — mà không màn hình nào báo lỗi, vì không có
+    gì hỏng.
   */
   ['thẻ cân nặng', 'node', ['tools/weight-card.mjs']],
 ];

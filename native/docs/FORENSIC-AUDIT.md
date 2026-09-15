@@ -209,16 +209,20 @@ rollback, nên một số cân lạc quan sẽ nằm lại trong cache đã pers
 cân không ai thực hiện. Đóng nút là nửa trung thực; toast đã nói xong phần còn
 lại.
 
-**Nguyên nhân (b) đóng lại ngày 15/09, và không phải để sửa lỗi này.** Thẻ được
-viết lại thành thẻ thông tin theo yêu cầu của chủ dự án, nên `showLogger` nay là
-`editing` và chỉ `editing`. `setEditing(false)` từ đó đóng biểu mẫu thật, kể cả
-ở lần cân đầu tiên trong ngày và kể cả khi không có sóng — `todayWeight` không
-còn tham gia vào quyết định ấy nữa. `disabled` ở trên vẫn cần: nó chặn cú chạm
-thứ hai trong mấy khung hình trước khi state kịp chốt.
+**Nguyên nhân (b) không còn CHỖ để xảy ra, từ 15/09.** Hai lượt, cùng một ngày.
+Lượt đầu thẻ thành thẻ thông tin và `showLogger` hạ xuống còn `editing`. Lượt
+hai chủ dự án bảo *"tắt cái nút ghi đi không cho ghi nữa vì đã nằm ở todo rồi"*,
+nên thẻ **không còn `editing`, không còn `showLogger`, không còn ô nhập nào**.
+Biểu mẫu từng không đóng được nay không tồn tại trên thẻ này.
 
-`tools/weight-card.mjs` giữ cho nguyên nhân (b) không quay lại: nó đòi
-`showLogger` đúng bằng `editing`, và phép thử ngược dựng lại chính biểu thức cũ
-(`editing || todayWeight == null`) để chứng minh luật bắt được.
+Ô nhập ấy còn sống ở `weight-entry.tsx` — thẻ *Cần làm hôm nay* dựng nó — và
+**bản sửa (a) đi theo nó sang tệp đó**: `disabled` vẫn cộng
+`queue.isPending || queue.isSuccess`. Nên nguyên nhân (a) vẫn đang được vá ở
+chỗ nó có thể xảy ra; (b) thì hết chỗ.
+
+`tools/weight-card.mjs` canh chiều NGƯỢC LẠI so với bản luật đầu: nó cấm thẻ
+Cân nặng có `onPress`, dựng `<WeightEntry>` hoặc gọi `useLogWeight` — và phép
+thử ngược gắn lại từng thứ một để chứng minh luật bắt được.
 
 ---
 

@@ -8,7 +8,6 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { WeightEntry } from '@/components/ascnd/weight-entry';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles, palettes, type Palette } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
@@ -122,27 +121,38 @@ function weightDiffTone(c: Palette, bmi: number | null, diff: number): { color: 
 
 /**
  * Weight check-in — the latest reading, what it changed, and the readings
- * behind it. The logger is one tap in.
+ * behind it. It does not log, on purpose.
  *
- * ── vì sao thẻ này thôi mở sẵn ô nhập ──
+ * ── thẻ này KHÔNG ghi ──
  *
- * Chủ dự án chỉ vào thẻ: *"vì phía trên đã có ghi cân nặng rồi, thẻ này giờ chỉ
- * dùng để hiện thông tin — ví dụ thay nút ghi bằng lịch sử thay đổi cân nặng
- * sau mỗi lần log"*.
+ * Chủ dự án, hai lượt: *"vì phía trên đã có ghi cân nặng rồi, thẻ này giờ chỉ
+ * dùng để hiện thông tin"* rồi *"tắt cái nút ghi đi không cho ghi nữa vì đã nằm
+ * ở todo rồi"*. Lượt đầu ô nhập còn lùi lại sau một cú chạm; lượt hai gỡ hẳn.
  *
- * Câu "phía trên đã có ghi cân nặng rồi" là ĐÚNG, và đúng từ chính lượt tách
- * `weight-entry.tsx` ra: thẻ *Cần làm hôm nay* dựng cùng ô nhập ấy, ngay tại
- * chỗ, và nó nằm TRÊN cả dãy nhóm widget trong `(tabs)/index.tsx` — nên trên
- * một màn hình có đúng hai ô nhập cân nặng, cái ở trên biết hôm nay đã ghi hay
- * chưa còn cái ở đây thì không. Chú thích của chính `TodoCard` đã đếm ra điều
- * đó trước: *"năm chỗ cho một câu hỏi, trên một trang phải cuộn"*, và ô nhập
- * trong thẻ Cân nặng là một trong năm.
+ * Câu "đã nằm ở todo rồi" ĐÚNG, và đây là chỗ ghi lại vì sao nó chịu được sức
+ * nặng của quyết định này: `weight-entry.tsx` được tách ra để thẻ *Cần làm hôm
+ * nay* ghi cân nặng NGAY TẠI CHỖ, và thẻ ấy nằm TRÊN cả dãy nhóm widget trong
+ * `(tabs)/index.tsx`. Chú thích của chính `TodoCard` đã đếm ra vấn đề trước:
+ * *"năm chỗ cho một câu hỏi, trên một trang phải cuộn"* — và ô nhập trong thẻ
+ * này là một trong năm. Nay còn bốn.
  *
- * Nên ô nhập ở đây KHÔNG bị xoá — nó lùi vào sau một cú chạm lên mặt thẻ, đúng
- * cử chỉ mà trạng thái "đã ghi" vốn đã có — và mặt thẻ trả lại cho thứ thẻ này
- * làm tốt hơn thẻ kia: nói cân nặng đang đi đâu.
+ * ── còn đường SỬA thì ở dòng To-do, không ở đây ──
  *
- * ── và cái bị thay không phải một thứ đang chạy ──
+ * `useLogWeight` upsert theo `(user_id, date)`, nên SỬA số của hôm nay chính là
+ * ghi lại lần nữa — và một thẻ chỉ-đọc không làm được việc ấy. Câu hỏi đúng là
+ * "thế thì sửa ở đâu", và câu trả lời nằm ở `todo-card.tsx`: dòng To-do giữ
+ * NGUYÊN hình sau khi ghi (`quiet` chỉ đổi sắc độ), nút vẫn ở đó mang nhãn
+ * *"Đã ghi"*, và nó vẫn `onPress={press}` — tức vẫn mở `WeightEntry`. Cộng một
+ * thao tác *Sửa* khi vuốt. Sửa lần cân của hôm nay là một cú chạm, trên chính
+ * dòng ngay phía trên.
+ *
+ * Ghi lại vì nó SUÝT không đúng: lúc ô nhập ở thẻ này bị tắt, dòng To-do đã ghi
+ * còn là một dòng tĩnh không bấm được, và đường sửa khi ấy là ba bước trên hai
+ * màn (Tiến trình → xoá trong `WeightLogList` → dòng To-do hiện lại). `e0e1d82`
+ * gỡ đúng chỗ ấy, độc lập với lượt sửa này. Nếu dòng To-do có ngày quay lại
+ * hình cũ thì cái giá ấy quay lại theo — và `tools/todo-card.mjs` là chỗ canh.
+ *
+ * ── cái bị thay không phải một thứ đang chạy ──
  *
  * Viên chênh lệch cũ tính `todayWeight − profileWeight`, mà `useLogWeight` gọi
  * `syncProfileWeight` rồi `invalidate(['profile'])`: ghi xong thì
@@ -151,7 +161,9 @@ function weightDiffTone(c: Palette, bmi: number | null, diff: number): { color: 
  * nói "hôm nay thay đổi bao nhiêu" thực tế gần như không bao giờ nói được gì.
  *
  * Lịch sử bên dưới lấy hiệu giữa hai LẦN CÂN liền nhau, nên nó không phụ thuộc
- * vào một cột mà chính lần ghi ấy vừa sửa.
+ * vào một cột mà chính lần ghi ấy vừa sửa — và vì thẻ thôi ghi, viên chênh lệch
+ * cũng thôi hỏi "hôm nay đã cân chưa": nó nói về lần cân gần nhất, bất kể lần
+ * ấy là hôm nay hay thứ Ba tuần trước.
  */
 export function WeightCheckinCard({ profileWeight }: { profileWeight: number | null }) {
   const c = usePalette();
@@ -171,7 +183,6 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
     cache thứ hai cho cùng một bảng.
   */
   const { data: weightHistory } = useWeightHistory(90);
-  const [editing, setEditing] = useState(false);
 
   // BMI from the current weight (kg) + height decides how a change reads
   const heightCm = Number(profile?.height_cm) || 0;
@@ -217,45 +228,29 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
   const headDisp = latest?.value ?? profileDisp;
   const diff = latest?.delta ?? null;
   const olderRows = entries.slice(1, 1 + WEIGHT_ROWS);
-  const showLogger = editing;
 
   /** Ngày của số lớn, chỉ khi nó không phải hôm nay. */
   const staleOn =
     latest != null && latest.date !== localDateStr() ? dayLabel(latest.date, lang) : null;
 
   /*
-    ── ô nhập ở `weight-entry.tsx`, không còn ở đây ──
+    Một `View`, không phải `PressScale`.
 
-    Thẻ "Cần làm hôm nay" cũng cần ghi cân nặng, và cân nặng là việc duy nhất
-    không có màn riêng để mở — nên ô nhập phải chạy được ở hai chỗ. Chép nó
-    sang thẻ kia sẽ là bản thứ hai của một logic GHI, mà mọi thứ khó đều nằm
-    trong nó: quy đổi kg/lb, ngưỡng hợp lý theo giá trị sẽ được LƯU, và đường
-    ghi offline có `mutationKey` bền. Nên nó được CHUYỂN đi, không nhân đôi;
-    chú thích của từng lỗi đã trả giá đi theo mã sang tệp ấy.
+    Đây là vế "không cho ghi nữa" viết thành mã: thẻ không có `onPress`, không
+    có state `editing`, không dựng `WeightEntry`, nên không có đường nào từ đây
+    tới một lệnh ghi. Để lại một `PressScale` không làm gì thì còn tệ hơn cả
+    việc giữ cái nút — nó vẫn co lại dưới ngón tay, tức vẫn HỨA một hành động,
+    rồi không làm gì cả; và `accessibilityRole="button"` sẽ đọc cho VoiceOver
+    một cái nút không tồn tại.
 
-    Và vì nó chạy được ở hai chỗ, `showLogger` ở đây mới hạ được xuống còn
-    `editing`: trước kia nó là `editing || todayWeight == null`, tức mỗi ngày
-    trước lần cân đầu tiên thẻ tự bung ô nhập — hai ô nhập cùng mở trên một
-    trang, cho cùng một con số.
+    `tools/weight-card.mjs` canh đúng ba chữ ấy (`onPress`, `WeightEntry`,
+    `useLogWeight`) ở trong thân component này.
   */
   return (
     <GlassCard>
       <Text style={styles.cardTitle}>{i18n.nWeightTitle}</Text>
-      {showLogger ? (
-        <WeightEntry onLogged={() => setEditing(false)} />
-      ) : (
-        <View>
-          <PressScale
-            accessibilityRole="button"
-            accessibilityLabel={i18n.nWeightTitle}
-            /* Thẻ mất cái nút, nên lối vào giờ là chính mặt thẻ. Với người dùng
-               VoiceOver thì "chạm được" không suy ra được từ bố cục, phải nói. */
-            accessibilityHint={i18n.nWeightTapToLog}
-            style={styles.weightDisplay}
-            onPress={() => {
-              Haptics.selectionAsync();
-              setEditing(true);
-            }}>
+      <View>
+          <View style={styles.weightDisplay}>
             <View style={styles.weightValueRow}>
               <Text style={styles.weightValue}>{headDisp != null ? headDisp.toFixed(1) : '—'}</Text>
               <Text style={styles.weightUnit}>{weightLabel(wUnit)}</Text>
@@ -266,16 +261,23 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
                 dán "hôm nay" vào nó là nói thừa. Nhưng khi số gần nhất là của
                 ba hôm trước thì im lặng thành nói dối — cùng một chỗ, cùng một
                 cỡ chữ, mà nghĩa đã khác.
+
+                Và từ khi thẻ thôi ghi, đây là thứ DUY NHẤT nói ra "hôm nay chưa
+                cân" — trước kia câu ấy do lời mời chạm nói, mà lời mời ấy nay
+                sẽ là một lời hứa suông.
               */}
               {staleOn ? <Text style={styles.weightWhen}>{staleOn}</Text> : null}
             </View>
             {/*
-              Ô bên phải luôn có đúng một việc, và việc ấy là việc đang sống:
-              chưa cân hôm nay thì nói cách cân, cân rồi thì nói nó đổi bao nhiêu.
+              Viên chênh lệch thôi hỏi `todayWeight`.
+
+              Bản trước gác nó sau "đã cân hôm nay chưa", vì ô bên phải còn phải
+              chia chỗ với lời mời chạm. Không còn lời mời thì không còn gì để
+              chia, và cái gác ấy chỉ còn là một cách giấu đi thông tin đúng:
+              chênh lệch của lần cân gần nhất là thật dù lần ấy là thứ Ba tuần
+              trước — `staleOn` ngay bên trái đã nói lần ấy là khi nào.
             */}
-            {todayWeight == null ? (
-              <Text style={styles.weightTapHint}>{i18n.nWeightTapToLog}</Text>
-            ) : diff != null && Math.abs(diff) >= WEIGHT_EPS ? (() => {
+            {diff != null && Math.abs(diff) >= WEIGHT_EPS ? (() => {
               const tone = weightDiffTone(c, bmi, diff);
               return (
                 <View style={[styles.diffPill, { backgroundColor: tone.bg }]}>
@@ -283,7 +285,7 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
                 </View>
               );
             })() : null}
-          </PressScale>
+          </View>
 
           {/*
             ── lịch sử: những lần cân ĐỨNG SAU số lớn ──
@@ -326,8 +328,7 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
               </View>
             </>
           ) : null}
-        </View>
-      )}
+      </View>
     </GlassCard>
   );
 }
@@ -633,11 +634,6 @@ const stylesFor = makeStyles((c, m) => ({
   /* Ngày của số lớn: cùng đường chân chữ với "kg", nhưng nhỏ hơn một bậc và
      mang màu phụ — nó chú thích con số, không đứng ngang hàng với nó. */
   weightWhen: { ...type.footnote, color: c.mutedForeground, marginLeft: 2 },
-  /* Lời mời chạm, KHÔNG phải một cái nút giả.
-     Không nền, không viền, không bo góc — ba thứ ấy là chữ ký của một vùng
-     chạm riêng, mà ở đây vùng chạm là cả hàng. Vẽ chúng ra là hứa một cú chạm
-     nhỏ hơn cú chạm thật. */
-  weightTapHint: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
   diffPill: { paddingHorizontal: spacing.sm + 2, paddingVertical: 4, borderRadius: radius.full },
   diffText: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
 
