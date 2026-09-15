@@ -175,16 +175,32 @@ export function WeekStrip({
               onPick(idx);
             }}
             style={styles.weekCell}>
-            <Text style={[styles.weekName, isOpen && styles.weekNameOn]}>{shortNames[idx]}</Text>
+            {/*
+              Một VIÊN ôm cả chữ lẫn số, không phải một chữ rời nằm trên một
+              vòng tròn quanh số.
+
+              Chủ dự án khoanh đỏ cả khối lịch và gửi kèm ảnh một app khác: ở đó
+              ngày đang chọn là một viên bo tròn bọc cả hai dòng, các ngày khác
+              mờ đi. Hình cũ tách làm hai — chữ ngày trôi tự do bên trên, số nằm
+              trong một đĩa tròn — nên cái dấu chỉ nói được về CON SỐ, còn chữ
+              ngày thì không thuộc về ô nào.
+
+              Hai kênh của lượt trước GIỮ NGUYÊN, chỉ đổi hình học: viền là hôm
+              nay, lớp tô là ngày đang mở, và khi trùng ô thì lớp tô thụt vào
+              trong để cái viền còn chỗ. Cùng một mẹo đã đo cho hình tròn, áp
+              lên hình chữ nhật bo góc — bán kính trong 9,5 = 12 − 2,5, nên hai
+              đường cong vẫn đồng tâm.
+            */}
             <View
               style={[
-                styles.weekDate,
-                isToday && styles.weekDateToday,
+                styles.weekChip,
+                isToday && styles.weekChipToday,
                 /* Tô TRÀN chỉ khi ô ấy không phải hôm nay. Trùng hôm nay thì
-                   lớp tô đi vào `weekDateFill` bên trong, để cái vòng còn chỗ. */
-                isOpen && !isToday && styles.weekDateOn,
+                   lớp tô đi vào `weekChipFill` bên trong, để cái viền còn chỗ. */
+                isOpen && !isToday && styles.weekChipOn,
               ]}>
-              {isOpen && isToday ? <View style={styles.weekDateFill} /> : null}
+              {isOpen && isToday ? <View style={styles.weekChipFill} /> : null}
+              <Text style={[styles.weekName, isOpen && styles.weekNameOn]}>{shortNames[idx]}</Text>
               <Text style={[styles.weekNum, isOpen && styles.weekNumOn]}>{d.getDate()}</Text>
             </View>
             <View style={[styles.weekDot, { backgroundColor: c[STATE_STYLE[state].tint] }]} />
@@ -197,40 +213,53 @@ export function WeekStrip({
 
 const stylesFor = makeStyles((c, m) => ({
   weekRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 2 },
-  weekCell: { alignItems: 'center', gap: 6, flex: 1, paddingVertical: 4 },
-  weekName: { ...type.caption, color: c.mutedForeground },
-  weekNameOn: { color: c.foreground, fontWeight: '700' },
-  weekDate: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+  weekCell: { alignItems: 'center', gap: 5, flex: 1, paddingVertical: 2 },
+  /*
+    Viên ôm cả hai dòng.
+
+    40 rộng: bảy ô trên khung 402 có 370 bề ngang trong lề, tức 52,8 mỗi ô —
+    viên 40 để lại 12,8 khe, đủ để hai viên cạnh nhau không chạm nhau khi hai
+    ngày liền kề cùng được đánh dấu.
+
+    Bán kính 12, không phải một nửa chiều cao: đây là một viên bo góc như ảnh
+    mẫu, không phải một viên con nhộng. Nửa chiều cao (~21) sẽ bo thành hình
+    thuốc con nhộng và đó là một hình khác hẳn.
+  */
+  weekChip: {
+    width: 40,
+    paddingVertical: 6,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 2,
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
-  weekDateToday: { borderColor: c.primary },
-  weekDateOn: { backgroundColor: c.primary, borderColor: c.primary },
+  weekChipToday: { borderColor: c.primary },
+  weekChipOn: { backgroundColor: c.primary, borderColor: c.primary },
   /*
-    Đĩa "đang mở" khi ô ấy CŨNG là hôm nay — thụt vào để cái vòng còn thấy.
+    Lớp tô "đang mở" khi ô ấy CŨNG là hôm nay — thụt vào để cái viền còn thấy.
 
-    Ô ngoài 34, viền 1,5, nên hộp trong còn 31; thụt 2,5 mỗi phía cho một đĩa
-    26 và một khe 2,5 điểm (7,5 điểm ảnh trên màn 3x) giữa đĩa và vòng. Khe hẹp
-    hơn thì hai đường cong dính vào nhau và lại thành một dấu; rộng hơn thì con
-    số bắt đầu chạm mép đĩa.
+    Thụt 2,5 mỗi phía cho một khe 2,5 điểm (7,5 điểm ảnh trên màn 3x) giữa lớp
+    tô và viền. Khe hẹp hơn thì hai đường cong dính vào nhau và lại thành MỘT
+    dấu — đúng lỗi lượt trước đã sửa; rộng hơn thì chữ bắt đầu chạm mép.
 
-    Bán kính 13 = 26/2, nên đĩa tròn thật chứ không phải một hình vuông bo góc
-    mạnh — ở cỡ này mắt phân biệt được.
+    Bán kính 9,5 = 12 − 2,5, nên hai đường cong đồng tâm. Gõ 12 ở cả hai chỗ là
+    lớp trong bo mạnh hơn lớp ngoài và khe hở rộng dần ra bốn góc.
   */
-  weekDateFill: {
+  weekChipFill: {
     position: 'absolute',
     top: 2.5,
     left: 2.5,
     right: 2.5,
     bottom: 2.5,
-    borderRadius: 13,
+    borderRadius: 9.5,
     backgroundColor: c.primary,
   },
+  weekName: { ...type.caption, color: c.mutedForeground },
+  /* `primaryForeground`, không phải `foreground`: chữ ngày nay nằm TRONG viên,
+     nên khi viên được tô thì nó đứng trên `primary` chứ không trên trang. */
+  weekNameOn: { color: c.primaryForeground, fontWeight: '700' },
   weekNum: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
   weekNumOn: { color: c.primaryForeground, fontWeight: '700' },
   /* Always drawn, transparent when the day is empty — a dot that appears and

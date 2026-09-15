@@ -636,13 +636,26 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
     gap: spacing.sm,
   },
+  /*
+    Không còn ô nền xám.
+
+    Ảnh mẫu chủ dự án gửi không có nút điều hướng nào; cả khối lịch ở đó chỉ là
+    một hàng ngày. Bỏ hẳn hai nút thì mất đường sang tuần khác — một khả năng,
+    không phải một trang trí — nên thứ bỏ đi là CÁI NỀN, không phải cái nút.
+
+    Hai ô `alpha(m.ink, 0.05)` là hai khối xám đặc nhất trên đầu màn, và chúng
+    đứng cạnh một dải lịch mà mọi ngày chưa chọn đều mờ. Mắt đọc thứ tự theo độ
+    đậm, nên cặp nút ấy đang to tiếng hơn chính cái lịch.
+
+    Vùng chạm KHÔNG đổi: hộp vẫn 32 và `hitSlop` vẫn 8 ở chỗ gọi, tức 48 — trên
+    sàn 44 của Apple. Bỏ nền là bỏ mực, không phải bỏ chỗ để ngón tay đặt vào.
+  */
   navBtn: {
     width: 32,
     height: 32,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: alpha(m.ink, 0.05),
   },
   /* Still drawn, still 32pt, just faded — a button that disappears at the end
      of the range takes the label with it as the row re-centres. */
