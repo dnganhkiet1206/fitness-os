@@ -47,7 +47,7 @@ try {
       '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
-  const { TODO_ORDER, todoOpen, todoProgress } = createRequire(import.meta.url)(
+  const { TODO_ORDER, todoProgress } = createRequire(import.meta.url)(
     path.join(out, 'todo.js'),
   );
 
@@ -63,42 +63,37 @@ try {
     );
   }
 
-  /* ── 2. chạy thật, cả 32 tổ hợp ── */
+  /* ── 2. chạy thật, cả 32 tổ hợp ──
+
+     Bản trước chạy `todoOpen()` ở đây: 32 tổ hợp × "việc đã ghi không được còn
+     nằm trong danh sách cần làm", đúng lỗi hàng chip cũ mắc. Phép kiểm ấy đã đi
+     cùng hàm nó canh — thẻ nay vẽ ĐỦ năm dòng và đánh dấu dòng đã ghi, nên
+     không còn phép lọc nào để sai, và `linked.mjs` gọi ra rằng một hàm chỉ
+     còn phép kiểm của chính nó gọi tới là mã chết đội lốt vùng phủ.
+
+     Thứ CÒN sống là con số `x/5` trên đầu thẻ, nên đó là thứ được chạy. Nó vẫn
+     giữ nguyên tính chất quan trọng nhất: đếm đúng ở MỌI tổ hợp, chứ không chỉ
+     ở ca rỗng và ca đầy. */
   for (let mask = 0; mask < 32; mask++) {
     const done = {};
     WANT.forEach((k, i) => (done[k] = !!(mask & (1 << i))));
-    const open = todoOpen(done);
     const prog = todoProgress(done);
     CASES++;
 
-    const expectOpen = WANT.filter((k) => !done[k]);
-    if (open.join(',') !== expectOpen.join(',')) {
+    const expectDone = WANT.filter((k) => done[k]).length;
+    if (prog.done !== expectDone || prog.total !== WANT.length) {
       problems.push(
-        `tổ hợp ${JSON.stringify(done)}: còn lại ${open.join(', ') || '(rỗng)'} chứ không phải ` +
-          `${expectOpen.join(', ') || '(rỗng)'}`,
+        `tổ hợp ${JSON.stringify(done)}: tiến độ ${prog.done}/${prog.total}, đáng lẽ ` +
+          `${expectDone}/${WANT.length}`,
       );
-    }
-    if (prog.done !== 5 - expectOpen.length || prog.total !== 5) {
-      problems.push(`tổ hợp ${JSON.stringify(done)}: tiến độ ${prog.done}/${prog.total}, đáng lẽ ${5 - expectOpen.length}/5`);
-    }
-    /* Việc đã ghi KHÔNG được xuất hiện trong danh sách việc cần làm. Đây chính
-       là lỗi mà hàng chip cũ mắc, viết thành một phép kiểm. */
-    for (const k of WANT) {
-      if (done[k] && open.includes(k)) {
-        problems.push(`\`${k}\` đã ghi xong nhưng vẫn nằm trong danh sách cần làm`);
-      }
     }
   }
 
-  /* Thứ tự tương đối KHÔNG đổi khi bớt một việc: danh sách rút ngắn chứ không
-     sắp lại, nếu không thì mỗi lần ghi xong một thứ là một lần cả thẻ nhảy chỗ. */
-  for (const k of WANT) {
-    CASES++;
-    const none = todoOpen(Object.fromEntries(WANT.map((x) => [x, false])));
-    const one = todoOpen(Object.fromEntries(WANT.map((x) => [x, x === k])));
-    if (one.join(',') !== none.filter((x) => x !== k).join(',')) {
-      problems.push(`ghi xong \`${k}\` làm các dòng còn lại đổi thứ tự: ${one.join(', ')}`);
-    }
+  /* Tổng LUÔN là năm, kể cả khi chưa ghi gì: thẻ hứa "x/5" chứ không hứa "x
+     trên số việc còn lại", và một mẫu số biết co lại là một tiến độ biết đi lùi. */
+  CASES++;
+  if (todoProgress(Object.fromEntries(WANT.map((x) => [x, false]))).total !== WANT.length) {
+    problems.push('chưa ghi gì thì mẫu số không còn là năm');
   }
 } catch (e) {
   problems.push(`không chạy được lib/todo.ts: ${e.message.split('\n')[0]}`);
@@ -381,9 +376,10 @@ if (problems.length) {
 
 console.log(
   `thẻ cần làm OK — ${CASES} ca, và danh sách được CHẠY chứ không đọc: cả 32 tổ hợp xong/chưa của ` +
-    'năm việc đều trả đúng phần còn lại, việc đã ghi không bao giờ còn nằm trong danh sách (đúng lỗi ' +
-    'mà hàng chip cũ mắc: nó mời "Ghi bữa ăn" sau bữa thứ ba), và bớt một việc không làm các dòng ' +
-    'còn lại đổi thứ tự. Thứ tự năm dòng là thứ tự chủ dự án đọc ra. Ba bảng vẽ (icon, màu, đích ' +
+    'năm việc đều đếm ra đúng con số `x/5` trên đầu thẻ, và mẫu số LUÔN là năm kể cả khi chưa ghi ' +
+    'gì — một mẫu số biết co lại là một tiến độ biết đi lùi. Phép lọc "việc nào còn phải làm" ' +
+    'từng được chạy ở đây và đã đi cùng hàm nó canh: thẻ nay vẽ ĐỦ năm dòng và đánh dấu dòng đã ' +
+    'ghi, nên không còn phép lọc nào để sai. Thứ tự năm dòng là thứ tự chủ dự án đọc ra. Ba bảng vẽ (icon, màu, đích ' +
     'đến) và bảng nhãn phủ đúng năm khoá, nên một khoá thứ sáu không dựng ra được một dòng không có ' +
     'hình. Trạng thái ba việc đầu ĐỌC từ `useDailyQuests` chứ không tự đo lại, và thẻ im lặng tới ' +
     'khi ngày được đọc xong. Trên Today, hàng chip cũ không mọc lại. Và `useLogWeight()` chỉ có một ' +

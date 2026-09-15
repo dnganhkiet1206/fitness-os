@@ -31,10 +31,18 @@ export const TODO_ORDER: readonly TodoKey[] = ['meal', 'workout', 'sleep', 'biom
 
 export type TodoDone = Record<TodoKey, boolean>;
 
-/** Những việc chưa ghi, theo đúng thứ tự trên. */
-export function todoOpen(done: TodoDone): TodoKey[] {
-  return TODO_ORDER.filter((k) => !done[k]);
-}
+/*
+  KHÔNG có `todoOpen()` ở đây, và chỗ trống này là cố ý.
+
+  Bản đầu của thẻ chỉ vẽ việc CHƯA xong, nên nó cần một phép lọc. Chủ dự án bác:
+  "khi log xong thì lại bị mất cả" — một dòng biến mất ngay dưới ngón tay vừa
+  bấm thì người dùng không biết mình vừa làm được gì. Thẻ nay vẽ đủ năm dòng và
+  đánh dấu dòng đã ghi, nên phép lọc ấy không còn ai gọi.
+
+  Nó vẫn nằm lại một thời gian, và `tools/linked.mjs` bắt đúng chuyện đó: một
+  hàm chỉ còn phép kiểm của chính nó gọi tới thì phép kiểm ấy đang canh một thứ
+  app không dùng. Thêm lại nó chỉ đúng khi có một màn THẬT cần hỏi "còn việc gì".
+*/
 
 /** Đã ghi mấy việc trên tổng số. */
 export function todoProgress(done: TodoDone): { done: number; total: number } {
