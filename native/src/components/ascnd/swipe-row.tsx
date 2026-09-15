@@ -6,18 +6,20 @@ import type {
 } from 'react-native-gesture-handler/lib/typescript/components/ReanimatedSwipeable/ReanimatedSwipeableProps';
 import type { LucideIcon } from 'lucide-react-native';
 import { useCallback, useRef } from 'react';
-import { Text, View, type LayoutChangeEvent } from 'react-native';
+import { Alert, Text, View, type LayoutChangeEvent } from 'react-native';
 import Animated, {
   interpolate,
   runOnJS,
   useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
+  withSpring,
   type SharedValue,
 } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
 import { radius, spacing, type } from '@/constants/ascnd';
+import { BOUNCE, spring } from '@/constants/motion';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 
@@ -169,6 +171,19 @@ export type SwipeAction = {
   ink?: string;
   /** Chỉ vẽ ô và glyph, không in chữ bên dưới. */
   glyphOnly?: boolean;
+  /**
+   * Hỏi lại trước khi làm, bằng hộp thoại của HỆ ĐIỀU HÀNH.
+   *
+   * Chỉ dùng cho cú KÉO DÀI: bấm thẳng vào nút là một hành động có chủ đích và
+   * hỏi lại ở đó chỉ làm phiền. Cú kéo dài thì khác — nó bắt đầu giống hệt một
+   * cú vuốt thường và chỉ khác ở chỗ ngón tay dừng lại, nên nó là cú dễ lỡ tay
+   * nhất trong cả bộ cử chỉ. Đó cũng là cách Nhắc nhở của iOS làm: kéo hết cỡ
+   * rồi thả ra thì hàng ĐỨNG YÊN ở chỗ đã kéo và một hộp thoại hệ thống hỏi
+   * lại, chứ không làm luôn.
+   *
+   * `Alert.alert` là hộp thoại thật của hệ điều hành, không phải một tấm tự vẽ.
+   */
+  confirm?: { title: string; message?: string; ok: string };
   onPress: () => void;
 };
 
@@ -199,12 +214,17 @@ let openRow: SwipeableMethods | null = null;
 
 function Action({
   progress,
+  translation,
+  full,
   action,
   index,
   count,
   side,
 }: {
   progress: SharedValue<number>;
+  translation: SharedValue<number>;
+  /** 0 → 1 khi cú kéo đã đủ tầm để làm luôn. Có lò xo, nên nó NẢY. */
+  full: SharedValue<number>;
   action: SwipeAction;
   index: number;
   count: number;
@@ -241,18 +261,66 @@ function Action({
     PHẢI lúc đóng, và ngược lại ở mép trái.
   */
   const stack = index * OPEN_W * (side === 'right' ? 1 : -1);
+  /*
+    ── cái NẢY lúc hàng mở xong ──
+
+    Chủ dự án: "các nút có hiệu ứng sinh động nảy như apple". Phần bám ngón tay
+    thì không được nảy — kéo tới đâu nút phải ở đúng đó, và `tools/swipe.mjs`
+    canh chính chuyện ấy. Cái nảy thuộc về khoảnh khắc KHÁC: lúc thả ra và hàng
+    tự chạy nốt tới vị trí mở.
+
+    Nên nó là một giá trị riêng, chạy bằng lò xo `bouncy` khi `progress` vượt
+    ngưỡng cam kết, và nhân vào phép phóng to bám-ngón-tay. Lò xo vượt quá 1 rồi
+    lắng về 1, nên nút nhún một cái đúng lúc nó tới nơi.
+
+    `pop` lùi về 0 khi hàng đóng lại, nên lần mở sau nảy lại chứ không nảy một
+    lần rồi thôi.
+  */
+  const pop = useSharedValue(0);
+  useAnimatedReaction(
+    () => progress.value > 0.92,
+    (open, before) => {
+      if (before !== null && open === before) return;
+      pop.value = open ? withSpring(1, spring(0.3, BOUNCE.bouncy)) : 0;
+    },
+  );
   const grow = useAnimatedStyle(() => ({
     transform: [
       { translateX: interpolate(progress.value, [0, 1], [stack, 0], 'clamp') },
-      { scale: interpolate(progress.value, [lag, 1], [0.86, 1], 'clamp') },
+      {
+        scale:
+          interpolate(progress.value, [lag, 1], [0.86, 1], 'clamp') *
+          interpolate(pop.value, [0, 1], [0.94, 1]),
+      },
     ],
     opacity: interpolate(progress.value, [lag, lag + 0.25, 1], [0, 0.85, 1], 'clamp'),
   }));
   /* The word arrives only once the row is committed. Before that it would be a
      label on a button you have not decided to press. */
   const word = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0.66, 0.95], [0, 1], 'clamp'),
+    opacity: interpolate(progress.value, [0.66, 0.95], [0, 1], 'clamp') * (1 - full.value),
   }));
+
+  /*
+    ── nút NỞ RA khi cú kéo đã đủ tầm ──
+
+    Chủ dự án gửi bốn ảnh: ở Nhắc nhở và ở Nhạc, kéo quá nửa màn thì nút ngoài
+    cùng phình ra chiếm hết khoảng đã kéo, chữ dưới nó biến mất, và chỉ còn cái
+    glyph. Đó là cách iOS nói "thả ra là làm" mà không cần một dòng chữ nào.
+
+    Bề rộng bám THẲNG `translation` — khoảng ngón tay đã kéo — nên nút lớn lên
+    đúng bằng chỗ nó sắp chiếm, chứ không chạy tới một con số định sẵn.
+    `full` có lò xo `bouncy`, nên lúc vượt ngưỡng nó NẢY một cái: `BOUNCE` ghi
+    0,3 là trần và "chưa chỗ nào trong app cần tới đây" — chỗ này là chỗ đầu
+    tiên, vì đây đúng là khoảnh khắc cần một cái nảy để báo đã sang ngưỡng khác.
+
+    Chỉ nút NGOÀI CÙNG nở: nó là nút cú kéo dài sẽ kích hoạt.
+  */
+  const swell = useAnimatedStyle(() => {
+    if (index !== 0) return {};
+    const span = Math.max(CAPSULE_W, Math.abs(translation.value) - spacing.sm * 2);
+    return { width: CAPSULE_W + (span - CAPSULE_W) * full.value };
+  });
 
   const ink = action.ink ?? c.primaryForeground;
 
@@ -266,9 +334,9 @@ function Action({
         onPress={action.onPress}
         style={styles.hit}
       />
-      <View style={[styles.capsule, { backgroundColor: action.tint ?? c.readinessRed }]}>
+      <Animated.View style={[styles.capsule, { backgroundColor: action.tint ?? c.readinessRed }, swell]}>
         <Icon icon={action.icon} size={CAPSULE_ICON} color={ink} />
-      </View>
+      </Animated.View>
       {action.glyphOnly ? null : (
         <Animated.Text style={[styles.actionText, word]} numberOfLines={1}>
           {action.label}
@@ -302,6 +370,7 @@ export function SwipeRow({
   right,
   left,
   fullSwipe = false,
+  cancelLabel,
 }: {
   children: React.ReactNode;
   /**
@@ -327,10 +396,19 @@ export function SwipeRow({
    * khác ở chỗ ngón tay dừng lại. Xem `FULL_SWIPE_AT`.
    */
   fullSwipe?: boolean;
+  /**
+   * Chữ trên nút huỷ của hộp thoại xác nhận.
+   *
+   * Truyền vào chứ không gọi `useI18n()` ở đây: component này là hạ tầng dùng
+   * chung, và một chuỗi dịch nằm trong hạ tầng là chỗ để bảng dịch và component
+   * trôi khỏi nhau. Chỗ dùng nào cần `confirm` thì chỗ ấy đưa chữ.
+   */
+  cancelLabel?: string;
 }) {
   /* One tick, when the row crosses into "letting go will open this". Fired from
      the will-open callback rather than from a progress watcher so it cannot
      repeat while the finger wobbles on the line. */
+  const i18nCancel = cancelLabel ?? 'Cancel';
   const buzzed = useRef(false);
   /* Cú kéo dài: cờ được bật trên luồng UI, đọc lúc thả. */
   const armed = useRef(false);
@@ -340,6 +418,11 @@ export function SwipeRow({
      của lần render ấy — tức 0 ở lần đầu, khi `onLayout` còn chưa chạy. */
   const width = useSharedValue(0);
   const openness = useSharedValue(0);
+  /* 0 → 1 khi cú kéo đã đủ tầm để làm luôn; có lò xo nên nó NẢY sang. */
+  const full = useSharedValue(0);
+  /* Mép phải không có cú kéo dài, nên nó nhận một giá trị đứng yên ở 0 thay vì
+     một nhánh `if` trong `useAnimatedStyle` — hook thì không có điều kiện. */
+  const zero = useSharedValue(0);
 
   const rightSet = right.slice(0, MAX_ACTIONS);
   const leftSet = (left ?? []).slice(0, MAX_ACTIONS);
@@ -371,31 +454,69 @@ export function SwipeRow({
       if (openRow && openRow !== methods.current) openRow.close();
       openRow = methods.current;
 
+      /*
+        ── cú kéo dài: hàng ĐỨNG YÊN, rồi hệ điều hành hỏi lại ──
+
+        Chủ dự án mô tả đúng luồng của Nhắc nhở: "thẻ sẽ dừng ở điểm kéo đó sau
+        đó sẽ có pop up hệ thống hiện lên hỏi có chắc chắn muốn xoá không".
+
+        Nên ở đây KHÔNG đóng hàng. Hàng ở nguyên chỗ đã mở — nó là ngữ cảnh của
+        câu hỏi, và đóng nó lại trước khi hỏi là hỏi về một thứ vừa biến mất.
+        Chỉ sau khi người ta trả lời thì hàng mới đi: đồng ý thì làm rồi đóng,
+        huỷ thì đóng suông.
+
+        Không có `confirm` thì làm luôn — một hành động hoàn tác được không cần
+        ai hỏi lại.
+      */
       if (armed.current && direction === 'left' && firstLeft) {
         armed.current = false;
-        firstLeft.onPress();
-        methods.current?.close();
+        const done = () => {
+          full.value = 0;
+          methods.current?.close();
+        };
+        if (!firstLeft.confirm) {
+          firstLeft.onPress();
+          done();
+          return;
+        }
+        const { title, message, ok } = firstLeft.confirm;
+        Alert.alert(title, message, [
+          { text: i18nCancel, style: 'cancel', onPress: done },
+          {
+            text: ok,
+            style: 'destructive',
+            onPress: () => {
+              firstLeft.onPress();
+              done();
+            },
+          },
+        ]);
         return;
       }
       if (buzzed.current) return;
       buzzed.current = true;
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
-    [firstLeft],
+    [firstLeft, full, i18nCancel],
   );
   const onWillClose = useCallback(() => {
     buzzed.current = false;
     armed.current = false;
+    full.value = 0;
     if (openRow === methods.current) openRow = null;
-  }, []);
+  }, [full]);
 
   /* Ngưỡng kéo-dài đã qua: một tiếng NẶNG hơn tiếng cam kết thường, vì đây là
      một ngưỡng khác chứ không phải cùng một ngưỡng lặp lại. */
-  const armFull = useCallback((on: boolean) => {
-    if (armed.current === on) return;
-    armed.current = on;
-    if (on) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-  }, []);
+  const armFull = useCallback(
+    (on: boolean) => {
+      if (armed.current === on) return;
+      armed.current = on;
+      full.value = withSpring(on ? 1 : 0, spring(0.34, BOUNCE.bouncy));
+      if (on) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    },
+    [full],
+  );
 
   const onLayout = useCallback(
     (e: LayoutChangeEvent) => {
@@ -450,7 +571,16 @@ export function SwipeRow({
           <FullSwipeWatch translation={translation} width={width} onArm={armFull} />
         ) : null}
         {set.map((a, i) => (
-          <Action key={a.label} progress={progress} action={a} index={i} count={set.length} side={side} />
+          <Action
+            key={a.label}
+            progress={progress}
+            translation={translation}
+            full={side === 'left' ? full : zero}
+            action={a}
+            index={i}
+            count={set.length}
+            side={side}
+          />
         ))}
       </View>
     );

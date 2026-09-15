@@ -5,7 +5,7 @@ import {
   BicepsFlexed,
   HeartPulse,
   type LucideIcon,
-  Minus,
+  CircleMinus,
   Moon,
   SquarePen,
   Soup,
@@ -389,12 +389,34 @@ function TodoRow({
   const reminderKey = TODO_REMINDER[itemKey];
   const reminderOn = available && prefs[reminderKey].enabled;
 
+  /*
+    ── nút bỏ qua, và vì sao CHỈ chiều bỏ mới hỏi lại ──
+
+    Chủ dự án gửi ảnh Nhạc và Nhắc nhở của iOS: nút là một viên nang ĐỎ với một
+    dấu trừ TRÒN màu trắng, và kéo hết cỡ thì nó nở ra chiếm hết khoảng đã kéo
+    rồi một hộp thoại hệ thống hỏi lại.
+
+    Hỏi lại chỉ gắn vào cú KÉO DÀI, và chỉ khi đang BỎ QUA. Lấy lại một việc đã
+    bỏ thì không cần hỏi — nó chỉ trả mọi thứ về như cũ. Hỏi ở đó là hỏi một câu
+    không có hậu quả nào, và đó là cách nhanh nhất để người ta thôi đọc hộp
+    thoại.
+
+    Câu hỏi nói ra ĐÚNG hai hậu quả, vì đây không phải một cú xoá: việc quay lại
+    vào ngày mai, và hôm nay bớt đi một việc (mẫu số co lại — xem `todoProgress`).
+  */
   const skipAction: SwipeAction = {
-    icon: Minus,
+    icon: CircleMinus,
     label: skipped ? i18n.nTodoUnskip : i18n.nTodoSkip,
     tint: c.destructive,
     ink: c.destructiveForeground,
     glyphOnly: true,
+    confirm: skipped
+      ? undefined
+      : {
+          title: i18n.nTodoSkipAsk.replace('{n}', label.toLocaleLowerCase()),
+          message: i18n.nTodoSkipWhy,
+          ok: i18n.nTodoSkip,
+        },
     onPress: onSkip,
   };
 
@@ -422,7 +444,7 @@ function TodoRow({
   const word = skipped ? i18n.nTodoSkipped : done ? i18n.nTodoDone : i18n.nTodoLog;
 
   return (
-    <SwipeRow fullSwipe left={[skipAction]} right={rightActions}>
+    <SwipeRow fullSwipe cancelLabel={i18n.cancel} left={[skipAction]} right={rightActions}>
       <View style={[styles.rowOpen, styles.rowSwipe]}>
       <View style={styles.rowTop}>
         <View style={styles.tile}>

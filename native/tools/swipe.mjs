@@ -314,7 +314,7 @@ function declOf(body, name) {
   if (capsuleBody && /actionText/.test(capsuleBody[1])) {
     problems.push(`${COMPONENT}: chữ vẽ bên trong ô, đáng lẽ nằm bên dưới nó`);
   }
-  if (!/<\/View>\s*\n\s*\{action\.glyphOnly \? null : \(/.test(src)) {
+  if (!/<\/(?:Animated\.)?View>\s*\n\s*\{action\.glyphOnly \? null : \(/.test(src)) {
     problems.push(
       `${COMPONENT}: dòng chữ không còn đứng SAU ô trong cây — đặt hàng là "chữ xuất hiện bên dưới icon"`,
     );
@@ -359,6 +359,46 @@ function declOf(body, name) {
     problems.push(
       `${COMPONENT}: dòng chữ dưới nút không áp \`lineHeight: ACTION_LABEL_H\`, nên \`ACTION_H\` ` +
         'đang cộng một con số không ai bảo đảm và chữ sẽ nhô ra khỏi cột trên một hàng thấp',
+    );
+  }
+
+  /* ── cú kéo dài: nút NỞ RA, hàng ĐỨNG YÊN, hệ điều hành hỏi lại ──
+
+     Chủ dự án gửi bốn ảnh Nhắc nhở và Nhạc của iOS kèm mô tả: "khi kéo đến giữa
+     màn hình nút trừ sẽ kéo đến gần thẻ và kích hoạt nút xoá và thẻ sẽ dừng ở
+     điểm kéo đó sau đó sẽ có pop up hệ thống hiện lên hỏi có chắc chắn muốn xoá
+     không". Ba mệnh đề, ba luật — vì mất bất kỳ cái nào thì hai cái kia vẫn
+     chạy và không có gì đỏ. */
+  if (!/const span = Math\.max\(CAPSULE_W, Math\.abs\(translation\.value\)/.test(src)) {
+    problems.push(
+      `${COMPONENT}: nút ngoài cùng không nở theo khoảng ĐÃ KÉO. Chạy tới một bề rộng định sẵn thì nó ` +
+        'rời khỏi ngón tay, còn không nở gì thì không có gì nói "thả ra là làm"',
+    );
+  }
+  if (!/Alert\.alert\(/.test(src) || !/style: 'destructive'/.test(src)) {
+    problems.push(
+      `${COMPONENT}: cú kéo dài không hỏi lại bằng hộp thoại của HỆ ĐIỀU HÀNH. Nó là cú dễ lỡ tay nhất ` +
+        'trong cả bộ cử chỉ — bắt đầu giống hệt một cú vuốt thường và chỉ khác ở chỗ ngón tay dừng lại',
+    );
+  }
+  /* Hàng phải ĐỨNG YÊN cho tới khi có câu trả lời: `close()` chỉ được gọi
+     TRONG nhánh trả lời, không phải trước khi hỏi. */
+  {
+    const ask = /if \(armed\.current && direction === 'left' && firstLeft\) \{([\s\S]*?)\n      \}/.exec(src);
+    if (!ask) {
+      problems.push(`${COMPONENT}: không đọc được nhánh cú-kéo-dài để kiểm thứ tự đóng hàng`);
+    } else if (!/onPress: done/.test(ask[1]) || !/const done = \(\)/.test(ask[1])) {
+      problems.push(
+        `${COMPONENT}: hàng không đứng yên chờ câu trả lời — đóng nó lại trước khi hỏi là hỏi về một ` +
+          'thứ vừa biến mất khỏi màn hình',
+      );
+    }
+  }
+  /* Cái nảy: có, và KHÔNG được nằm trong phần bám ngón tay. */
+  if (!/withSpring\(1, spring\([\d.]+, BOUNCE\.bouncy\)\)/.test(src)) {
+    problems.push(
+      `${COMPONENT}: nút không nảy khi hàng mở xong — đặt hàng là "hiệu ứng sinh động nảy như apple", ` +
+        'và cái nảy thuộc khoảnh khắc THẢ RA chứ không thuộc phần kéo',
     );
   }
 

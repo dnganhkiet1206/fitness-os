@@ -134,6 +134,13 @@ const BOUNDED_LAYOUT = {
     'mở một mục bằng height thật, vì đó chính là cơ chế: chỉ có height mới đẩy được ' +
     'phần bên dưới xuống theo từng frame — today-meals.tsx đã đo LinearTransition và ' +
     'nó để lại khoảng hở 94px',
+  'src/components/ascnd/swipe-row.tsx':
+    'nút cú-kéo-dài NỞ RA bám theo khoảng ngón tay đã kéo, đúng cách Nhắc nhở và Nhạc của iOS làm. ' +
+    'scaleX là cách rẻ hơn và nó SAI ở đây: viên nang bo tròn hết cạnh, kéo ngang bằng scale sẽ biến ' +
+    'hai đầu tròn thành hai đầu bầu dục, và cái glyph ở giữa cũng bị dẹt theo. Một lớp nền riêng để ' +
+    'scaleX rồi đặt glyph ngoài nó thì gỡ được phần glyph nhưng hai đầu vẫn méo. Giới hạn: đúng một ' +
+    'view, chỉ trong lúc một ngón tay đang kéo, và bề rộng bị kẹp trong khoảng đã kéo nên nó không ' +
+    'lặp và không chạy khi không ai chạm vào',
   'src/components/ascnd/chart-bar.tsx':
     'cột biểu đồ phải chạy mượt giữa hai giá trị khi đổi ô chỉ số; scaleY sẽ nhảy, ' +
     'còn translateY thì bị cắt mất đáy bo tròn vì metric-panel không clip còn steps thì có',
