@@ -1,5 +1,15 @@
 import * as Haptics from 'expo-haptics';
-import { Bell, BellPlus, Check, Dumbbell, HeartPulse, type LucideIcon, Moon, Scale, Utensils } from 'lucide-react-native';
+import {
+  Bell,
+  BellPlus,
+  BicepsFlexed,
+  Check,
+  HeartPulse,
+  type LucideIcon,
+  Moon,
+  Soup,
+  Weight,
+} from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -73,20 +83,44 @@ const ROUTE = {
 } as const satisfies Record<Exclude<TodoKey, 'weight'>, string>;
 
 /*
-  Icon lấy từ bộ đã dùng, không vẽ mới.
+  Năm hình, và chúng phải khác nhau ở KHỐI chứ không chỉ ở chi tiết.
 
-  `Scale` đã là cân nặng ở `reminders.tsx` và ở tab Tiến trình; `Dumbbell` và
-  `Moon` cũng đến từ `reminders.tsx`, tức đúng bộ mà app dùng cho "những việc
-  nhắc người ta ghi". Bộ `Glyph` riêng của app không có hình nào cho cân nặng,
-  và thêm một hình vẽ tay vào đó là đúng cái giá mà `macro-icon-style.mjs` đã
-  trả một lần.
+  ── vì sao ba cái phải đổi ──
+
+  Chủ dự án nói ba dòng đầu nhìn giống nhau quá. Dựng thử cả bộ ứng viên ở đúng
+  cỡ 20pt rồi nhìn thì lý do hiện ra ngay: `Utensils`, `Dumbbell` và `Scale`
+  đều là hình MẢNH, THƯA, gần như chỉ mấy nét thẳng — trong khi `Moon` là một
+  khối lưỡi liềm đặc và `HeartPulse` là một hình khép kín. Ba dòng không có
+  khối đứng cạnh hai dòng có khối thì đọc ra là "ba cái giống nhau", dù chúng
+  vẽ ba vật hoàn toàn khác.
+
+  Nên ba cái mới đều là hình KHÉP KÍN, và mỗi cái một dáng:
+
+    Soup          bát tròn, miệng rộng, có hơi bốc — dáng NGANG
+    BicepsFlexed  bắp tay gập, một khối cong đặc — dáng CHÉO
+    Weight        quả cân, hình thang có quai — dáng ĐỨNG
+
+  ── và `Weight` sửa luôn một chỗ SAI NGHĨA ──
+
+  Lucide `Scale` là cán cân CÔNG LÝ: hai đĩa treo trên một đòn cân. Nó nói về
+  so sánh và công bằng, không phải cái cân người ta bước lên. App mượn nó cho
+  cân nặng ở ba chỗ; cả ba nay dùng `Weight`, để một khái niệm giữ một hình.
+
+  ── `BicepsFlexed` cũng gỡ một chỗ trùng ──
+
+  `Dumbbell` là glyph của MỤC "Thể lực" ngay bên dưới thẻ này, cùng màu thép.
+  Cùng một hình cho một mục và cho một dòng việc, cách nhau vài trăm điểm, là
+  đúng cái bẫy `tools/glyph-meaning.mjs` được viết ra để bắt.
+
+  Không vẽ tay hình nào: cả ba đến từ lucide, đúng bài học `macro-icon-style.mjs`
+  đã trả giá một lần — bản vẽ tay thứ hai luôn trôi khỏi bản gốc.
 */
 const ICON: Record<TodoKey, LucideIcon> = {
-  meal: Utensils,
-  workout: Dumbbell,
+  meal: Soup,
+  workout: BicepsFlexed,
   sleep: Moon,
   biometrics: HeartPulse,
-  weight: Scale,
+  weight: Weight,
 };
 
 /*
@@ -103,11 +137,11 @@ const ICON: Record<TodoKey, LucideIcon> = {
   ta cầm lên đều bằng thép. Một cái tạ màu xanh neon là một cái tạ không ai từng
   thấy."* Nên ở đây không còn bảng nào cả, chỉ một lời gọi `iconTint()`:
 
-      Utensils   → FOOD      readinessGreen   thức ăn
-      Dumbbell   → TRAINING  champagne        thép, thứ người ta cầm lên
-      Moon       → NIGHT     metricPurple     đêm
-      HeartPulse → VITAL     readinessRed     tín hiệu của cơ thể
-      Scale      → VITAL     readinessRed     cân nặng cũng là tín hiệu ấy
+      Soup         → FOOD      readinessGreen   thức ăn
+      BicepsFlexed → TRAINING  champagne        thép, thứ người ta cầm lên
+      Moon         → NIGHT     metricPurple     đêm
+      HeartPulse   → VITAL     readinessRed     tín hiệu của cơ thể
+      Weight       → VITAL     readinessRed     cân nặng cũng là tín hiệu ấy
 
   Hai dòng cuối CÙNG màu, và đó là bảng kia làm đúng việc: màu nói MIỀN, không
   nói danh tính. Hai dòng phân biệt nhau bằng hình và bằng nhãn — thêm một miền

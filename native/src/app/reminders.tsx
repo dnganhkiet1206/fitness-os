@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { Bell, Droplets, Dumbbell, HeartPulse, type LucideIcon, Moon, Pill, Scale, Sunrise, Utensils } from 'lucide-react-native';
+import { Bell, Droplets, Dumbbell, HeartPulse, type LucideIcon, Moon, Pill, Sunrise, Utensils, Weight } from 'lucide-react-native';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { DateField } from '@/components/ascnd/date-field';
@@ -83,7 +83,7 @@ export default function RemindersScreen() {
     { key: 'meal', icon: Utensils, color: c.metricOrangeGraphic, title: i18n.nReminderMeal },
     { key: 'supplements', icon: Pill, color: c.metricPurple, title: i18n.nReminderSupplements },
     { key: 'workout', icon: Dumbbell, color: c.primary, title: i18n.nReminderWorkout },
-    { key: 'weighIn', icon: Scale, color: c.metricBlue, title: i18n.nReminderWeighIn },
+    { key: 'weighIn', icon: Weight, color: c.metricBlue, title: i18n.nReminderWeighIn },
     { key: 'biometrics', icon: HeartPulse, color: c.readinessRed, title: i18n.nReminderBiometrics },
     { key: 'sleepLog', icon: Sunrise, color: c.metricCyan, title: i18n.nReminderSleepLog },
     { key: 'bedtime', icon: Moon, color: c.metricOrangeGraphic, title: i18n.nReminderBedtime },

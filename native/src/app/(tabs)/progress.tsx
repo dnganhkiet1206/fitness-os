@@ -6,7 +6,7 @@ import {
   ChevronRight,
   Plus,
   Ruler,
-  Scale,
+  Weight,
   SlidersHorizontal,
   Target,
   Trash2,
@@ -368,8 +368,8 @@ export default function ProgressScreen() {
   const [bmiW, setBmiW] = useState(0);
   const bmiGrad = `bmiScale-${useId()}`;
 
-  const tabs: { key: Tab; label: string; icon: typeof Scale }[] = [
-    { key: 'weight', label: i18n.progressWeight, icon: Scale },
+  const tabs: { key: Tab; label: string; icon: typeof Weight }[] = [
+    { key: 'weight', label: i18n.progressWeight, icon: Weight },
     { key: 'measurements', label: i18n.progressMeasurements, icon: Ruler },
   ];
 

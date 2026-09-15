@@ -1,4 +1,35 @@
-import { Activity, BedDouble, CalendarCheck, CalendarDays, CalendarRange, ChartLine, ChefHat, Crown, Droplet, Droplets, Dumbbell, Flame, Footprints, Gem, GlassWater, Medal as MedalIcon, Moon, MoonStar, Mountain, Route, Salad, Scale, Shield, Sunrise, Target, TrendingUp, Trophy, Utensils, Zap, type LucideIcon } from 'lucide-react-native';
+import {
+  Activity,
+  BedDouble,
+  CalendarCheck,
+  CalendarDays,
+  CalendarRange,
+  ChartLine,
+  ChefHat,
+  Crown,
+  Droplet,
+  Droplets,
+  Dumbbell,
+  Flame,
+  Footprints,
+  Gem,
+  GlassWater,
+  type LucideIcon,
+  Medal as MedalIcon,
+  Moon,
+  MoonStar,
+  Mountain,
+  Route,
+  Salad,
+  Shield,
+  Sunrise,
+  Target,
+  TrendingUp,
+  Trophy,
+  Utensils,
+  Weight,
+  Zap,
+} from 'lucide-react-native';
 import { useId } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, RadialGradient, Stop } from 'react-native-svg';
@@ -68,7 +99,11 @@ export const ICON_MAP: Record<string, LucideIcon> = {
   mountain: Mountain,
   route: Route,
   salad: Salad,
-  scale: Scale,
+  /* Khoá `'scale'` là DỮ LIỆU — nó nằm trong `award-grant.ts` và trong những
+     huy hiệu đã trao — nên nó ở nguyên. Thứ đổi là hình nó trỏ tới: lucide
+     `Scale` là cán cân CÔNG LÝ, còn huy hiệu này ("weigh_10") nói về cân nặng.
+     Xem `constants/icon-tint.ts`, nơi cả app vừa đổi sang `Weight`. */
+  scale: Weight,
   shield: Shield,
   sunrise: Sunrise,
   target: Target,

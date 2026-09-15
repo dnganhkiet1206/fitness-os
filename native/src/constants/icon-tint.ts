@@ -3,6 +3,7 @@ import {
   Apple,
   Award,
   Bed,
+  BicepsFlexed,
   Bot,
   Camera,
   ChefHat,
@@ -16,8 +17,8 @@ import {
   HeartPulse,
   Medal,
   Moon,
-  Scale,
   ScanBarcode,
+  Soup,
   Sparkles,
   Star,
   Sunrise,
@@ -26,6 +27,7 @@ import {
   type LucideIcon,
   Utensils,
   UtensilsCrossed,
+  Weight,
   Zap,
 } from 'lucide-react-native';
 
@@ -161,6 +163,7 @@ const INSIGHT = 'metricBlue' satisfies PaletteKey;
 
 const TINTS: [LucideIcon, PaletteKey][] = [
   // food
+  [Soup, FOOD],
   [Utensils, FOOD],
   [UtensilsCrossed, FOOD],
   [ChefHat, FOOD],
@@ -175,6 +178,7 @@ const TINTS: [LucideIcon, PaletteKey][] = [
   [Footprints, ENERGY],
 
   // training
+  [BicepsFlexed, TRAINING],
   [Dumbbell, TRAINING],
   [Activity, TRAINING],
 
@@ -182,16 +186,20 @@ const TINTS: [LucideIcon, PaletteKey][] = [
   [Heart, VITAL],
   [HeartPulse, VITAL],
   /*
-    Cái cân, và vì sao nó là CƠ THỂ chứ không phải thép.
+    Quả cân, và vì sao nó là CƠ THỂ chứ không phải thép.
 
-    Đọc theo nghĩa đen thì một cái cân phòng tắm là kim loại và kính, nên
-    `TRAINING` (thép) là câu trả lời dễ. Nhưng chú thích của chính `TRAINING`
-    nói rõ miền ấy là gì: "tạ, đĩa tạ, đòn gánh — thứ người ta CẦM LÊN". Cái
-    cân không ai cầm lên; nó đo.
+    Đọc theo nghĩa đen thì một quả cân là kim loại, nên `TRAINING` (thép) là câu
+    trả lời dễ. Nhưng chú thích của chính `TRAINING` nói rõ miền ấy là gì: "tạ,
+    đĩa tạ, đòn gánh — thứ người ta CẦM LÊN". Con số này không ai cầm lên; nó
+    được ĐO. Và thứ được đo là cơ thể, nên nó về cùng chỗ với nhịp tim và HRV:
+    những con số cơ thể nói ra về chính nó.
 
-    Và thứ nó đo là cơ thể. `VITAL` giữ nhịp tim với HRV, tức những con số cơ
-    thể nói ra về chính nó — cân nặng là con số như thế, và là con số cũ nhất
-    trong số đó.
+    ── `Weight` chứ không phải `Scale`, và đây là một chỗ SAI NGHĨA đã sửa ──
+
+    Lucide `Scale` là CÁN CÂN CÔNG LÝ — hai đĩa treo trên một đòn cân. Nó mang
+    nghĩa so sánh, công bằng, đánh đổi; nó không phải cái cân sức khoẻ người ta
+    bước lên. App đã dùng nó cho cân nặng ở ba chỗ, và cả ba đều đang mượn một
+    biểu tượng của khái niệm khác.
 
     Hệ quả phải nói ra: trên thẻ "Cần làm hôm nay", dòng Cân nặng và dòng Sinh
     trắc do đó CÙNG một màu. Đó là bảng này làm đúng việc của nó — màu ở đây
@@ -202,7 +210,7 @@ const TINTS: [LucideIcon, PaletteKey][] = [
     Đo trên mặt ô icon: 4,52:1 ở bản sáng, 4,88:1 ở bản tối — trên sàn 3:1 của
     WCAG 1.4.11 cho vật thể đồ hoạ.
   */
-  [Scale, VITAL],
+  [Weight, VITAL],
 
   // water
   [Droplets, WATER],
