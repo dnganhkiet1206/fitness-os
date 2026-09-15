@@ -82,10 +82,22 @@ import { usePalette } from '@/hooks/use-palette';
  * — ảnh không nằm trên đĩa để đo. Tỉ lệ icon/ô ≈ 20/46, tức icon chiếm chưa
  * tới một nửa bề ngang ô, đúng cái làm nó "nhỏ hơn thẻ".
  */
-const CAPSULE = 46;
-const CAPSULE_ICON = 20;
-/** Ô + khe + dòng chữ. Ba nút là 216 điểm trên một màn 393. */
+const CAPSULE_H = 34;
+const CAPSULE_ICON = 18;
+/** Nút + khe + dòng chữ. Hai nút là 144 điểm trên một màn 393. */
 const OPEN_W = 72;
+/** Viên nang hẹp hơn cột, nên hai nút tách rời chứ không dính thành một dải. */
+const CAPSULE_W = OPEN_W - 12;
+/** Khe giữa viên nang và chữ dưới nó. */
+const CAPSULE_GAP = 4;
+/**
+ * Chiều cao NHÌN THẤY của cả nút: viên nang + khe + dòng chữ.
+ *
+ * Đây mới là đích chạm, không phải riêng viên nang — cả cột `OPEN_W` đều bấm
+ * được, nên vùng chạm là 72 × 51. Trên sàn 44 của Apple HIG và WCAG 2.5.5 ở cả
+ * hai chiều, và nó là vùng NHÌN THẤY chứ không phải một `hitSlop` vô hình.
+ */
+const ACTION_H = CAPSULE_H + CAPSULE_GAP + 13;
 
 /**
  * Where the action commits.
@@ -168,16 +180,34 @@ export type SwipeAction = {
  */
 const MAX_ACTIONS = 3;
 
+/**
+ * Hàng nào đang mở — đúng MỘT, trên toàn app.
+ *
+ * Chủ dự án: "khi một thẻ đang được kéo, khi kéo một thẻ khác thì thẻ đã được
+ * kéo tự động thu về". Đó là cách iOS làm và `ReanimatedSwipeable` không làm:
+ * mỗi hàng là một component độc lập, không hàng nào biết hàng khác tồn tại, nên
+ * ba hàng mở cùng lúc là chuyện bình thường với nó — và trên máy thật chủ dự án
+ * chụp được đúng cảnh ấy.
+ *
+ * Một biến ở phạm vi module là chỗ đúng: "đang mở" là một sự thật của CẢ MÀN
+ * chứ không của một hàng, y như cách `use-steps-goal` giữ mục tiêu bước chân.
+ * Không cần context, vì không có gì phải render lại — chỉ cần gọi `close()` lên
+ * cái cũ.
+ */
+let openRow: SwipeableMethods | null = null;
+
 function Action({
   progress,
   action,
   index,
   count,
+  side,
 }: {
   progress: SharedValue<number>;
   action: SwipeAction;
   index: number;
   count: number;
+  side: 'left' | 'right';
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -193,9 +223,29 @@ function Action({
     đích ở cùng `progress` 1, nên không nút nào còn đang bò khi hàng đã dừng.
   */
   const lag = (index / Math.max(count, 1)) * 0.35;
+  /*
+    ── mỗi nút CHẠY THEO NÚT GẦN NHẤT, không chạy đồng loạt ──
+
+    Chủ dự án: "nó phải chạy theo từng nút gần nhất chứ không phải là đồng loạt".
+    Bản trước chỉ lệch nhau ở `lag` của phép phóng to, nên ba nút vẫn nằm sẵn ở
+    đúng chỗ ngay từ đầu và chỉ lớn dần lên — mắt đọc ra là cả cụm hiện cùng lúc.
+
+    Ở iOS thì các nút nằm YÊN ở mép, và HÀNG trượt qua chúng, nên cái ngoài cùng
+    lộ ra trước rồi tới cái kế. Dựng lại đúng chuyện đó: ở lúc đóng, nút thứ `i`
+    bị đẩy thêm `i` cột về phía mép — tức cả ba chồng lên nhau ngay dưới hàng —
+    rồi giãn về chỗ của mình khi hàng đi ra. Nút ngoài cùng (index 0) không lệch
+    gì cả, nên nó lộ ra ngay từ điểm ảnh đầu tiên.
+
+    Dấu phụ thuộc mép: mép phải hàng đi sang TRÁI nên các nút phải bị đẩy sang
+    PHẢI lúc đóng, và ngược lại ở mép trái.
+  */
+  const stack = index * OPEN_W * (side === 'right' ? 1 : -1);
   const grow = useAnimatedStyle(() => ({
-    transform: [{ scale: interpolate(progress.value, [lag, 1], [0.72, 1], 'clamp') }],
-    opacity: interpolate(progress.value, [lag, lag + 0.35, 1], [0, 0.6, 1], 'clamp'),
+    transform: [
+      { translateX: interpolate(progress.value, [0, 1], [stack, 0], 'clamp') },
+      { scale: interpolate(progress.value, [lag, 1], [0.86, 1], 'clamp') },
+    ],
+    opacity: interpolate(progress.value, [lag, lag + 0.25, 1], [0, 0.85, 1], 'clamp'),
   }));
   /* The word arrives only once the row is committed. Before that it would be a
      label on a button you have not decided to press. */
@@ -206,22 +256,24 @@ function Action({
   const ink = action.ink ?? c.primaryForeground;
 
   return (
-    <View style={styles.actionWrap}>
-      <Animated.View style={[styles.capsule, { backgroundColor: action.tint ?? c.readinessRed }, grow]}>
-        <Text
-          accessibilityRole="button"
-          accessibilityLabel={action.label}
-          onPress={action.onPress}
-          style={styles.hit}
-        />
+    <Animated.View style={[styles.actionWrap, grow]}>
+      {/* Cả cột là đích chạm, phủ lên chứ không bọc quanh — một `Pressable` bọc
+          ngoài sẽ tranh cử chỉ với chính cú vuốt. */}
+      <Text
+        accessibilityRole="button"
+        accessibilityLabel={action.label}
+        onPress={action.onPress}
+        style={styles.hit}
+      />
+      <View style={[styles.capsule, { backgroundColor: action.tint ?? c.readinessRed }]}>
         <Icon icon={action.icon} size={CAPSULE_ICON} color={ink} />
-      </Animated.View>
+      </View>
       {action.glyphOnly ? null : (
         <Animated.Text style={[styles.actionText, word]} numberOfLines={1}>
           {action.label}
         </Animated.Text>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -282,7 +334,10 @@ export function SwipeRow({
   /* Cú kéo dài: cờ được bật trên luồng UI, đọc lúc thả. */
   const armed = useRef(false);
   const methods = useRef<SwipeableMethods | null>(null);
-  const width = useRef(0);
+  /* Bề rộng hàng là SHARED VALUE, không phải ref: ngưỡng kéo-dài được so trên
+     luồng UI, và một `ref.current` đọc lúc render thì worklet nhìn thấy giá trị
+     của lần render ấy — tức 0 ở lần đầu, khi `onLayout` còn chưa chạy. */
+  const width = useSharedValue(0);
   const openness = useSharedValue(0);
 
   const rightSet = right.slice(0, MAX_ACTIONS);
@@ -311,6 +366,10 @@ export function SwipeRow({
   */
   const onWillOpen = useCallback(
     (direction: SwipeDirection) => {
+      /* Hàng khác đang mở thì thu nó về TRƯỚC, không thì hai hàng cùng mở. */
+      if (openRow && openRow !== methods.current) openRow.close();
+      openRow = methods.current;
+
       if (armed.current && direction === 'left' && firstLeft) {
         armed.current = false;
         firstLeft.onPress();
@@ -326,6 +385,7 @@ export function SwipeRow({
   const onWillClose = useCallback(() => {
     buzzed.current = false;
     armed.current = false;
+    if (openRow === methods.current) openRow = null;
   }, []);
 
   /* Ngưỡng kéo-dài đã qua: một tiếng NẶNG hơn tiếng cam kết thường, vì đây là
@@ -336,9 +396,12 @@ export function SwipeRow({
     if (on) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }, []);
 
-  const onLayout = useCallback((e: LayoutChangeEvent) => {
-    width.current = e.nativeEvent.layout.width;
-  }, []);
+  const onLayout = useCallback(
+    (e: LayoutChangeEvent) => {
+      width.value = e.nativeEvent.layout.width;
+    },
+    [width],
+  );
 
   /*
     Hàng bo góc lại khi bị kéo ra.
@@ -386,7 +449,7 @@ export function SwipeRow({
           <FullSwipeWatch translation={translation} width={width} onArm={armFull} />
         ) : null}
         {set.map((a, i) => (
-          <Action key={a.label} progress={progress} action={a} index={i} count={set.length} />
+          <Action key={a.label} progress={progress} action={a} index={i} count={set.length} side={side} />
         ))}
       </View>
     );
@@ -446,15 +509,31 @@ function FullSwipeWatch({
   onArm,
 }: {
   translation: SharedValue<number>;
-  width: React.RefObject<number>;
+  width: SharedValue<number>;
   onArm: (on: boolean) => void;
 }) {
-  const at = Math.max(width.current * FULL_SWIPE_AT, OPEN_W * 1.6);
+  /*
+    Cả phép so chạy TRÊN LUỒNG UI, và nó so `translation` với một ngưỡng tính
+    từ bề rộng hàng đo được — không phải từ một hằng đoán trước.
+
+    Bản trước tính ngưỡng ở thân component, tức trên luồng JS, từ một `ref` mà
+    `onLayout` có thể chưa kịp điền. Khi nó là 0 thì ngưỡng rơi về `OPEN_W *
+    1,6` = 115 điểm, gần bằng bề rộng một tấm nút — nên cú kéo hoặc không bao
+    giờ đủ dài, hoặc kích hoạt ngay khi vừa mở. Chủ dự án báo đúng triệu chứng:
+    "nút xoá vẫn chưa kéo hết và xoá được".
+
+    Điều kiện đổi-trạng-thái cũng được viết rõ ra thay vì dựa vào thứ tự ưu tiên
+    toán tử: bản trước là `now !== prev > at`, đọc ra là `now !== (prev > at)` —
+    đúng một cách tình cờ, và không ai đọc nổi.
+  */
   useAnimatedReaction(
-    () => translation.value,
-    (v, prev) => {
-      const now = v > at;
-      if (prev === null || now !== prev > at) runOnJS(onArm)(now);
+    () => {
+      const at = Math.max(width.value * FULL_SWIPE_AT, OPEN_W * 1.6);
+      return translation.value > at;
+    },
+    (now, before) => {
+      if (before !== null && now === before) return;
+      runOnJS(onArm)(now);
     },
   );
   return null;
@@ -477,23 +556,29 @@ const stylesFor = makeStyles((c) => ({
   /* Ô + chữ xếp DỌC, căn giữa theo cả hai chiều của cột `OPEN_W`. `gap` là khe
      giữa ô và chữ; khe giữa các NÚT do `paddingHorizontal` tạo ra, nên ba nút
      tách rời nhau như trong ảnh chứ không dính thành một dải. */
+  /* Cột cao ĐÚNG phần nhìn thấy, không kéo dài theo hàng: hàng cao bao nhiêu
+     cũng được, nút không bị cắt mất dòng chữ. Trước bản này cột `stretch` theo
+     hàng, nên khi đồng hồ biến mất và hàng co lại thì chữ dưới nút bị `overflow:
+     hidden` của thư viện xén ngang — đúng cái chủ dự án chụp lại. */
   actionWrap: {
     width: OPEN_W,
-    paddingHorizontal: spacing.xs,
+    height: ACTION_H,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 5,
+    gap: CAPSULE_GAP,
   },
+  /* CÙNG hình với nút "Ghi" trên hàng — `radius.full`, không phải một ô vuông
+     bo góc. Chủ dự án: "nhỏ hơn và cùng hình dạng với nút ghi". */
   capsule: {
-    width: CAPSULE,
-    height: CAPSULE,
-    borderRadius: radius.md,
+    width: CAPSULE_W,
+    height: CAPSULE_H,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
   /* The whole capsule is the target, laid over it rather than wrapping it — a
      Pressable around an Animated.View would fight the swipe for the gesture. */
-  hit: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
+  hit: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, zIndex: 1 },
   /* Chữ nằm NGOÀI ô, bên dưới nó, và mang màu chữ của trang chứ không mang mực
      của ô: nó đứng trên nền hàng, không đứng trên nền màu. */
   actionText: { ...type.caption, color: c.mutedForeground, fontWeight: '600' },

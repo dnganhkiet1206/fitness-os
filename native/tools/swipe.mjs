@@ -231,34 +231,71 @@ function declOf(body, name) {
    Cả ba đều là loại chi tiết biến mất trong một lần "dọn dẹp" mà không ai thấy,
    vì không màn nào đỏ khi thiếu chúng. */
 {
+  /* Hằng ở đây có thứ viết bằng BIỂU THỨC (`OPEN_W - 12`), nên đọc số trần là
+     không đủ — luật sẽ báo "không đọc được" trên mã hoàn toàn hợp lệ, đúng kiểu
+     thông báo đúng về chuyện sai đã xảy ra hai lần trong phiên này. Nên lấy vế
+     phải rồi CHẠY nó, với các hằng đã đọc được làm biến. */
+  const scope = {};
   const num = (name) => {
-    const m = new RegExp(`const ${name} = ([\\d.]+);`).exec(src);
-    return m ? Number(m[1]) : null;
+    const m = new RegExp(`const ${name} = ([^;]+);`).exec(src);
+    if (!m) return null;
+    try {
+      const args = Object.keys(scope);
+      const v = Number(new Function(...args, `return ${m[1]};`)(...args.map((k) => scope[k])));
+      if (!Number.isFinite(v)) return null;
+      scope[name] = v;
+      return v;
+    } catch {
+      return null;
+    }
   };
-  const cap = num('CAPSULE');
-  const icon = num('CAPSULE_ICON');
   const openW = num('OPEN_W');
+  const cap = num('CAPSULE_H');
+  const capW = num('CAPSULE_W');
+  const icon = num('CAPSULE_ICON');
   const full = num('FULL_SWIPE_AT');
 
-  if (cap === null || icon === null || openW === null || full === null) {
+  if (cap === null || capW === null || icon === null || openW === null || full === null) {
     problems.push(
-      `${COMPONENT}: không đọc được một trong CAPSULE / CAPSULE_ICON / OPEN_W / FULL_SWIPE_AT — ` +
-        'luật hình dạng đang không kiểm gì cả',
+      `${COMPONENT}: không đọc được một trong CAPSULE_H / CAPSULE_W / CAPSULE_ICON / OPEN_W / ` +
+        'FULL_SWIPE_AT — luật hình dạng đang không kiểm gì cả',
     );
   } else {
     /* icon phải NHỎ HƠN ô, và nhỏ rõ chứ không nhỏ một điểm. Trong ảnh tham
        chiếu nó chiếm chưa tới một nửa bề ngang ô. */
-    if (icon / cap > 0.55) {
+    if (icon / cap > 0.62) {
       problems.push(
         `${COMPONENT}: icon ${icon} trên ô ${cap} là ${Math.round((icon / cap) * 100)}% bề ngang — ` +
           'đặt hàng là "icon phải nhỏ hơn thẻ", và trên ảnh tham chiếu nó chưa tới một nửa',
       );
     }
     /* Ô phải hẹp hơn cột của nó, không thì các nút dính thành một dải. */
-    if (cap >= openW) {
+    if (capW >= openW) {
       problems.push(
-        `${COMPONENT}: ô ${cap} rộng bằng hoặc hơn cột ${openW}, nên ba nút dính liền nhau — đặt hàng ` +
-          'là "các nút tách ra như apple làm"',
+        `${COMPONENT}: viên nang ${capW} rộng bằng hoặc hơn cột ${openW}, nên các nút dính liền nhau ` +
+          '— đặt hàng là "các nút tách ra như apple làm"',
+      );
+    }
+    /* CÙNG hình với nút "Ghi" trên hàng: viên nang, không phải ô vuông bo góc. */
+    if (!/borderRadius: radius\.full/.test(src)) {
+      problems.push(
+        `${COMPONENT}: viên nang không dùng \`radius.full\` — chủ dự án đặt hàng "cùng hình dạng với ` +
+          'nút ghi", và nút ghi là một viên nang',
+      );
+    }
+    /* Mở LẦN LƯỢT: nút thứ i phải bị đẩy `i` cột lúc đóng, không thì cả cụm
+       hiện cùng lúc — "nó phải chạy theo từng nút gần nhất chứ không đồng loạt". */
+    if (!/const stack = index \* OPEN_W/.test(src)) {
+      problems.push(
+        `${COMPONENT}: các nút không xếp chồng theo chỉ số lúc đóng, nên chúng lộ ra ĐỒNG LOẠT thay ` +
+          'vì lần lượt từ mép vào',
+      );
+    }
+    /* Hàng đang mở phải tự thu về khi một hàng khác mở ra. */
+    if (!/let openRow: SwipeableMethods \| null = null;/.test(src) || !/openRow\.close\(\)/.test(src)) {
+      problems.push(
+        `${COMPONENT}: không có sổ ghi hàng đang mở, nên hai hàng mở cùng lúc được — iOS thu hàng cũ ` +
+          'về, và chủ dự án chụp được đúng cảnh hai hàng cùng mở',
       );
     }
     /* Ngưỡng kéo dài phải nằm trong tầm ngón cái và phải xa hơn hẳn ngưỡng mở
@@ -277,7 +314,7 @@ function declOf(body, name) {
   if (capsuleBody && /actionText/.test(capsuleBody[1])) {
     problems.push(`${COMPONENT}: chữ vẽ bên trong ô, đáng lẽ nằm bên dưới nó`);
   }
-  if (!/<\/Animated.View>\s*\)?\s*\}?\s*\n\s*\{action\.glyphOnly \? null : \(/.test(src)) {
+  if (!/<\/View>\s*\n\s*\{action\.glyphOnly \? null : \(/.test(src)) {
     problems.push(
       `${COMPONENT}: dòng chữ không còn đứng SAU ô trong cây — đặt hàng là "chữ xuất hiện bên dưới icon"`,
     );

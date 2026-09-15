@@ -208,10 +208,20 @@ try {
     tác giả không sửa. Đồng hồ gọn của iOS là đúng nhóm ấy, và chủ dự án đòi
     giữ nó vì nó mượt hơn mọi thứ tự vẽ.
 
-    Thứ KHÔNG được miễn là mọi bề mặt do app tự vẽ — kể cả nút tắt lời nhắc,
-    vốn từng là một icon 13 điểm.
+    Thứ KHÔNG được miễn là mọi bề mặt do app tự vẽ.
+
+    `remind` RỜI khỏi danh sách này ở bản "đồng hồ cùng dòng", và đó là một
+    miễn trừ CÓ ĐIỀU KIỆN, không phải một lần nới tay: hàng ấy nay không chứa
+    một nút nào do app vẽ nữa — chỉ còn đúng cái đồng hồ gọn của hệ thống. Điều
+    kiện ấy được KIỂM ngay dưới đây, nên ngày nào một `Pressable` quay lại nằm
+    trong hàng ấy thì luật đỏ.
+
+    Lý do bỏ ràng buộc 44 khỏi nó: ép một hàng chỉ chứa control của hệ thống
+    phải cao 44 là ép cả dòng cao thêm cho một thứ không cần, và đó đúng là
+    chuyện chủ dự án báo — "sửa luôn kích thước đồng hồ vì nó ảnh hưởng đến toàn
+    bộ kích thước thẻ".
   */
-  const SIZED = ['tile', 'remind', 'remindOff', 'action'];
+  const SIZED = ['tile', 'action'];
   for (const name of SIZED) {
     CASES++;
     /* Đếm ngoặc, KHÔNG regex tới `\n  },` — bản đầu làm thế và các style viết
@@ -284,7 +294,7 @@ try {
   CASES++;
   {
     const swipe = readFileSync(path.join(NATIVE, 'src/components/ascnd/swipe-row.tsx'), 'utf8');
-    const cap = /const CAPSULE = (\d+);/.exec(swipe);
+    const cap = /const ACTION_H = ([^;]+);/.exec(swipe) && /const CAPSULE_H = (\d+);/.exec(swipe);
     const hasToggle = /label: reminderOn \? i18n\.nTodoOff : i18n\.nTodoOn/.test(src);
     if (!hasToggle) {
       problems.push(
@@ -298,13 +308,33 @@ try {
           'một công tắc cách nhau mười điểm là đúng cái chủ dự án bảo dọn',
       );
     }
-    if (!cap) {
-      problems.push('swipe-row.tsx: không đọc được `CAPSULE` để đo nút công tắc');
-    } else if (Number(cap[1]) < 44) {
-      problems.push(
-        `swipe-row.tsx: ô nút vuốt chỉ ${cap[1]} điểm, dưới sàn 44 của Apple HIG và WCAG 2.5.5. Công ` +
-          'tắc lời nhắc sống ở đây, và bản 13 điểm là bản chủ dự án đã phải báo là bấm không nổi',
-      );
+    /*
+      Đích chạm của nút vuốt là CẢ CỘT — viên nang cộng khe cộng dòng chữ, và cả
+      cột ấy bấm được (`styles.hit` phủ kín `actionWrap`). Đo riêng viên nang là
+      đo sai vật: chủ dự án đã bảo làm nó "nhỏ hơn và cùng hình dạng với nút
+      ghi", nên viên nang CỐ Ý nhỏ hơn 44.
+    */
+    const capH = /const CAPSULE_H = (\d+);/.exec(swipe);
+    const gap = /const CAPSULE_GAP = (\d+);/.exec(swipe);
+    const w = /const OPEN_W = (\d+);/.exec(swipe);
+    const wrapH = /height: ACTION_H/.test(swipe);
+    if (!capH || !gap || !w) {
+      problems.push('swipe-row.tsx: không đọc được hình học nút vuốt để đo đích chạm');
+    } else {
+      const h = Number(capH[1]) + Number(gap[1]) + 13;
+      if (h < 44 || Number(w[1]) < 44) {
+        problems.push(
+          `swipe-row.tsx: đích chạm nút vuốt ${w[1]}×${h} điểm, dưới sàn 44 của Apple HIG và WCAG ` +
+            '2.5.5. Công tắc lời nhắc sống ở đây, và bản 13 điểm là bản chủ dự án đã phải báo là bấm ' +
+            'không nổi',
+        );
+      }
+      if (!wrapH) {
+        problems.push(
+          'swipe-row.tsx: cột nút không cao đúng `ACTION_H`. Để nó giãn theo hàng là để `overflow: ' +
+            'hidden` của thư viện xén mất dòng chữ khi hàng co lại — đúng cái chủ dự án chụp được',
+        );
+      }
     }
   }
 
@@ -317,6 +347,21 @@ try {
       `${CARD}: hàng giờ không tự ẩn khi lời nhắc tắt — người ta sẽ đặt được một giờ cho một thông ` +
         'báo không bao giờ bắn',
     );
+  }
+
+  /* ── điều kiện của miễn trừ trên: hàng hẹn giờ chỉ chứa control HỆ THỐNG ── */
+  CASES++;
+  {
+    const body = /function ReminderRow\([\s\S]*?\n\}\n/.exec(src)?.[0] ?? '';
+    if (!body) {
+      problems.push(`${CARD}: không đọc được \`ReminderRow\` để kiểm miễn trừ 44 điểm`);
+    } else if (/Pressable|PressScale|onPress/.test(body)) {
+      problems.push(
+        `${CARD}: hàng hẹn giờ lại có một nút do APP vẽ. Miễn trừ 44 điểm của nó chỉ đúng khi trong ` +
+          'đó chỉ có `DateField` — control của hệ thống, thứ WCAG 2.5.8 loại trừ. Có nút app vẽ thì ' +
+          'sàn 44 áp lại, và `remind` phải quay vào danh sách SIZED',
+      );
+    }
   }
 
   CASES++;

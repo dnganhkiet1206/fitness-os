@@ -1,6 +1,5 @@
 import * as Haptics from 'expo-haptics';
 import {
-  AlarmClock,
   Bell,
   BellOff,
   BicepsFlexed,
@@ -356,34 +355,36 @@ function TodoRow({
   };
 
   /*
-    ── cú vuốt, và vì sao mỗi mép mang một loại việc ──
+    ── HAI nút ở mép phải, và vì sao nút thứ ba bị gỡ ──
 
-    Apple chia hai mép theo NGHĨA, không theo chỗ trống: mép phải (vuốt sang
-    trái) cho thao tác kết thúc ngữ cảnh và cho nhóm nhiều nút; mép trái cho
-    đúng MỘT lối tắt ngữ cảnh — Ghim, Đã đọc, Yêu thích.
+    Đặt hàng là ba. Sau khi dùng thử trên máy thật, chủ dự án báo lại: "tôi thấy
+    nút hẹn giờ hiện tại là nút rỗng không có ý nghĩa, nút sửa lại cũng vậy".
+    Cả hai đều đúng, và mỗi cái sai một kiểu:
 
-    mép trái   BỎ QUA HÔM NAY. Họ hàng thẳng của "Đánh dấu đã đọc": lấy một
-               dòng ra khỏi danh sách phải xử lý mà không giả vờ đã xử lý. Chủ
-               dự án chốt hình: "chỉ cần một dấu trừ màu trắng nền đỏ" — nên nó
-               là `glyphOnly`, và mực lấy `destructiveForeground` vì token ấy
-               trắng ở CẢ HAI diện mạo, khác `primaryForeground` vốn đảo màu.
-               Vuốt lần nữa để lấy lại, nên cùng một hàm.
+      Hẹn giờ   khi lời nhắc ĐÃ bật thì nó không làm được gì — đồng hồ gọn của
+                iOS không mở được bằng mã, nó chỉ mở khi ngón tay chạm đúng nó.
+                Mà khi lời nhắc CHƯA bật thì nó trùng y hệt nút "Bật" bên cạnh.
+                Không trạng thái nào nó có việc riêng, nên nó bị gỡ hẳn: đồng hồ
+                NGAY TRÊN HÀNG chính là chỗ hẹn giờ.
+      Sửa lại   trên dòng chưa ghi, nó đi đúng chỗ mà nút "Ghi" ngay cạnh đã đi.
+                Một lối tắt tới thứ đang hiện ngay đó không phải một lối tắt.
+                Nên nó chỉ còn trên dòng ĐÃ GHI, nơi nó là đường duy nhất để
+                chữa một lượt ghi sai.
 
-    mép phải   SỬA LẠI (chỉ khi đã ghi — trước khi ghi thì nút "Ghi" ngay trên
-               dòng đã làm đúng việc ấy rồi, và một nút thừa là một nút chết),
-               cộng lời nhắc.
+    Còn lại: dòng chưa ghi có một nút, dòng đã ghi có hai. Ít hơn đặt hàng, và
+    tôi nói thẳng chứ không lặng lẽ giữ hai cái nút không bấm được.
 
-    ── vì sao lời nhắc là MỘT nút lật chứ không phải hai ──
+    ── màu: `primary`, KHÔNG phải màu miền ──
 
-    Chủ dự án đặt "nút hẹn giờ và nút bật tắt thông báo", tức hai. Tôi làm một,
-    và đây là lý do: đồng hồ chọn giờ của iOS ở chế độ `compact` KHÔNG mở được
-    bằng mã — nó chỉ mở khi ngón tay chạm đúng nó. Nên một nút "Hẹn giờ" trên
-    một dòng ĐÃ có giờ sẽ không làm được gì cả, và app này đã hai lần bị chính
-    chủ dự án bảo dọn nút chết.
+    Bản đầu tô "Sửa lại" xanh dương và "Tắt nhắc" tím. Cả hai đo đủ tương phản
+    (5,00 và 5,94 bản sáng), và cả hai vẫn sai: `icon-tint.ts` đã tiêu xanh
+    dương cho cân nặng và tím cho giấc ngủ, nên một viên nang tím trượt ra cạnh
+    dòng Giấc ngủ đang nói hai điều khác nhau bằng cùng một màu.
 
-    Thứ làm được, và làm được luôn: bật lời nhắc lên thì đồng hồ gọn của iOS
-    hiện ra ngay trong dòng để chạm vào; tắt thì nó biến mất. Nên nút lật theo
-    trạng thái, đúng hình dạng "Đã đọc / Chưa đọc" của Mail.
+    Còn lại đúng một cặp không mang nghĩa miền nào: `primary` với
+    `primaryForeground` — cặp app định nghĩa cho HÀNH ĐỘNG, và là cặp có dư địa
+    lớn nhất (17,57:1 bản sáng · 9,14:1 bản tối). Hai nút phân biệt nhau bằng
+    HÌNH và bằng CHỮ. Màu duy nhất trên cả hàng là cái nút đỏ ở mép kia.
   */
   const reminderKey = TODO_REMINDER[itemKey];
   const reminderOn = available && prefs[reminderKey].enabled;
@@ -397,48 +398,10 @@ function TodoRow({
     onPress: onSkip,
   };
 
-  /*
-    ── BA nút ở mép phải, theo đúng đặt hàng ──
-
-      Sửa lại   mở chỗ ghi để chữa một lượt ghi sai. Trên dòng CHƯA ghi nó đi
-                cùng chỗ với nút "Ghi", nên nó luôn làm được việc.
-      Hẹn giờ   bật lời nhắc lên; đồng hồ gọn của iOS hiện ra ngay trong dòng
-                để kéo. Khi nhắc ĐÃ bật, nó vẫn đóng hàng lại và đưa mắt về
-                đúng cái đồng hồ ấy — chỗ yếu nhất trong ba nút, và tôi nói
-                thẳng chứ không giấu: nếu chủ dự án thấy thừa thì bỏ nó đi,
-                hai nút còn lại đứng được một mình.
-      Bật/Tắt   công tắc. Nhãn LẬT theo trạng thái — "nếu người dùng bật thông
-                báo rồi thì nút sẽ hiện thành tắt còn nếu người dùng tắt nhắc
-                nhở thì nút sẽ hiện thành bật" — đúng hình dạng "Đã đọc / Chưa
-                đọc" của Mail.
-
-    ── màu: `primary`, KHÔNG phải màu miền ──
-
-    Bản đầu tô "Sửa lại" xanh dương và "Tắt nhắc" tím. Cả hai đo đủ tương phản
-    (5,00 và 5,94 bản sáng), và cả hai vẫn sai: `icon-tint.ts` đã tiêu xanh
-    dương cho cân nặng và tím cho giấc ngủ, nên một ô tím trượt ra cạnh dòng
-    Giấc ngủ đang nói hai điều khác nhau bằng cùng một màu.
-
-    Còn lại đúng một cặp không mang nghĩa miền nào: `primary` với
-    `primaryForeground` — cặp app định nghĩa cho HÀNH ĐỘNG, và là cặp có dư địa
-    lớn nhất (17,57:1 bản sáng · 9,14:1 bản tối). Ba nút phân biệt nhau bằng
-    HÌNH và bằng CHỮ, đúng cách Mail xếp "More" xám cạnh những nút khác. Màu duy
-    nhất trên cả hàng là cái nút đỏ ở mép kia — và đó là chủ ý, vì nó là cái duy
-    nhất thay đổi hôm nay của bạn.
-  */
   const rightActions: SwipeAction[] = [
-    { icon: SquarePen, label: i18n.nTodoEdit, tint: c.primary, onPress: press },
+    ...(done ? [{ icon: SquarePen, label: i18n.nTodoEdit, tint: c.primary, onPress: press }] : []),
     ...(available
       ? [
-          {
-            icon: AlarmClock,
-            label: i18n.nTodoSetReminder,
-            tint: c.primary,
-            onPress: () => {
-              Haptics.selectionAsync();
-              if (!reminderOn) toggle(reminderKey, true);
-            },
-          },
           {
             icon: reminderOn ? BellOff : Bell,
             label: reminderOn ? i18n.nTodoOff : i18n.nTodoOn,
@@ -608,19 +571,33 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
   },
 
-  text: { flex: 1, gap: 2 },
-  label: { ...type.body, color: c.foreground },
+  /*
+    ── nhãn và đồng hồ nằm CÙNG một dòng ──
+
+    Chủ dự án: "tôi muốn thẻ giữ nguyên kích thước mặc định khi chưa có đồng hồ".
+    Bản trước xếp dọc — nhãn trên, hàng hẹn giờ dưới — nên mỗi lời nhắc được bật
+    là hàng ấy cao thêm một dòng, và thẻ phình ra theo. Trên máy thật ba dòng có
+    giờ cao gần gấp đôi hai dòng không có.
+
+    Nay xếp NGANG: đồng hồ đứng cạnh nhãn, và vì nó thấp hơn ô icon 44 điểm nên
+    nó không quyết định chiều cao hàng nữa — ô icon quyết. Bật hay tắt lời nhắc,
+    hàng vẫn đúng một chiều cao.
+  */
+  text: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minWidth: 0 },
+  label: { ...type.body, color: c.foreground, flexShrink: 1 },
   labelDone: { color: c.mutedForeground },
 
   /* Hàng hẹn giờ: cao 44 và chiếm hết cột chữ. Đích chạm ra ~33×7,3mm, thay
      cho một icon 13 điểm. */
+  /* Không còn `height: 44` và không còn chiếm hết cột chữ: hàng hẹn giờ nay chỉ
+     là cái đồng hồ, và đồng hồ gọn của iOS tự lo đích chạm của nó — WCAG 2.5.8
+     loại trừ "User agent control" khỏi sàn kích thước. Ràng nó về 44 là ép hàng
+     cao thêm cho một thứ không cần. */
   remind: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    height: 44,
-    alignSelf: 'flex-start',
-    paddingRight: spacing.sm,
+    gap: 4,
+    flexShrink: 0,
   },
   remindText: { ...type.footnote, color: c.mutedForeground },
   /* Nút tắt là một TỪ cao 44, không phải một cái chuông gạch chéo 13 điểm.
