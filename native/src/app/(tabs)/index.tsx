@@ -2805,10 +2805,13 @@ const stylesFor = makeStyles((c, m) => ({
   // Groups (web WidgetGroupSection)
   group: { gap: spacing.sm + 4, marginTop: spacing.xs },
   groupHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: 4 },
+  /* Tròn, cùng một quyết định với ô icon của thẻ "Cần làm hôm nay" ngay trên
+     nó — hai thứ nằm cách nhau vài chục điểm trên cùng một màn, nên để một cái
+     vuông bo và một cái tròn là chỗ lệch đọc ra ngay. */
   groupIconBadge: {
     width: 22,
     height: 22,
-    borderRadius: 7,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },

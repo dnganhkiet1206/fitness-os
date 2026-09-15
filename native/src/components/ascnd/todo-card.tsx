@@ -393,10 +393,20 @@ const stylesFor = makeStyles((c, m) => ({
   /* 44, không 30. Ô icon không bấm được, nhưng nó là thứ mắt tìm dòng bằng —
      và ở cỡ 30 với một glyph 16 thì nó là một chấm màu, không phải một dấu
      hiệu. */
+  /* TRÒN, không vuông bo.
+
+     Chủ dự án yêu cầu, và tra HIG thì Apple KHÔNG có quy tắc nào cho ô icon
+     trong một hàng danh sách — chính app của họ dùng cả hai (Cài đặt vuông bo,
+     Danh bạ/Thể dục tròn). Nên đây là một lựa chọn, không phải một chuẩn, và
+     nó được ghi lại đúng như thế.
+
+     `radius.full` chứ không phải `22`: React Native tự kẹp bán kính về nửa
+     cạnh ngắn, nên một con số gõ tay sẽ thành sai ngay lần đầu ai đó đổi cạnh
+     ô — mà cạnh ấy vừa đi từ 30 lên 44 ở lượt trước. */
   tile: {
     width: 44,
     height: 44,
-    borderRadius: 13,
+    borderRadius: radius.full,
     backgroundColor: m.inset.bg,
     alignItems: 'center',
     justifyContent: 'center',

@@ -224,7 +224,10 @@ const stylesFor = makeStyles((c) => ({
   warnText: { ...type.footnote, color: c.readinessYellow },
   rowHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   rowTitleWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flex: 1, minWidth: 0 },
-  iconBadge: { width: 32, height: 32, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
+  /* Tròn: màn này liệt kê ĐÚNG những việc mà thẻ "Cần làm hôm nay" đã liệt kê,
+     chỉ ở một chỗ khác. Hai danh sách cùng nội dung mà khác hình ô icon thì
+     đọc ra là hai hệ thống. */
+  iconBadge: { width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   rowTitle: { ...type.headline, color: c.foreground, flexShrink: 1 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   intervalRow: { marginTop: spacing.md },

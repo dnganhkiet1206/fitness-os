@@ -232,6 +232,23 @@ try {
     );
   }
 
+  /* ── 3g. ô icon TRÒN, và bán kính không được gõ tay ──
+
+     Chủ dự án chọn hình tròn (HIG không có quy tắc nào cho ô icon trong hàng
+     danh sách — chính app Apple dùng cả hai). `radius.full` chứ không phải một
+     con số: React Native tự kẹp bán kính về nửa cạnh ngắn, nên một số gõ tay
+     thành sai ngay lần đầu ai đó đổi cạnh — mà cạnh ấy vừa đi từ 30 lên 44. */
+  CASES++;
+  {
+    const tile = styleBody(src, 'tile') ?? '';
+    if (!/borderRadius: radius\.full/.test(tile)) {
+      problems.push(
+        `${CARD}: \`tile\` không dùng \`radius.full\` — ô icon ở đây là hình TRÒN, và một bán kính gõ ` +
+          'tay sẽ lệch ngay lần đầu cạnh ô đổi',
+      );
+    }
+  }
+
   /* Nút tắt lời nhắc phải là CHỮ, không phải glyph. Một từ đọc được ở mọi cỡ
      mắt; một cái chuông gạch chéo thì phải đoán — và bản có glyph là bản chủ
      dự án đã phải nói ra là quá nhỏ. */
@@ -347,5 +364,6 @@ console.log(
     'nhưng không nới cái người ta phải ngắm. Đồng hồ gọn của iOS được miễn có tên — WCAG 2.5.8 loại ' +
     'trừ "User agent control" — và nút tắt lời nhắc là một nhãn CHỮ chứ không phải một glyph 13 điểm. ' +
     'Icon của cả năm dòng là ĐƠN SẮC: không bảng hue nào cho lối đi, và trạng thái đã-ghi vẫn đọc ' +
-    'được bằng HÌNH (dấu tích) cộng CHỮ ("Đã ghi") chứ không bằng sắc độ',
+    'được bằng HÌNH (dấu tích) cộng CHỮ ("Đã ghi") chứ không bằng sắc độ. Ô icon là hình tròn, viết ' +
+    'bằng `radius.full` để bán kính đi theo cạnh thay vì được gõ tay',
 );
