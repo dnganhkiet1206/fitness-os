@@ -18,13 +18,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { BrandLockup } from '@/components/ascnd/brand-lockup';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { usePalette, useThemeName } from '@/hooks/use-palette';
 import { supabase } from '@/integrations/supabase/client';
 import { errorText } from '@/lib/error-copy';
 
@@ -37,6 +38,7 @@ type Mode = 'signin' | 'signup' | 'forgot';
 export function AuthScreen() {
   const c = usePalette();
   const styles = stylesFor(c);
+  const theme = useThemeName();
   const { signIn, signUp, signInWithApple } = useAuth();
   const insets = useSafeAreaInsets();
   const i18n = useI18n();
@@ -157,7 +159,21 @@ export function AuthScreen() {
         ]}
         keyboardShouldPersistTaps="handled">
         <View style={styles.hero}>
-          <Text style={styles.brand}>ASCND</Text>
+          {/*
+            Cụm thương hiệu THẬT, không phải bản vẽ tay thứ hai.
+
+            Chỗ này từng là `<Text>` chữ "ASCND" tô `readinessGreen` kèm quầng
+            sáng 12pt — bản sao của trang web cũ, và app có tới BA cách vẽ cùng
+            một cái tên: cụm thật ở đầu Today, bản này (30pt, giãn 4,5), và một
+            bản nữa trong `onboarding-flow.tsx` (24pt, giãn 3,6). Hai bản vẽ tay
+            lệch nhau đúng như `brand-lockup.tsx` đã cảnh báo sẽ xảy ra.
+
+            `scale` 1,4 giữ đúng sức nặng của dòng chữ cũ (22 × 1,4 = 30,8 so
+            với 30) và thêm vào thứ bản cũ không có: dấu hiệu koala, đúng hình
+            người dùng chạm trên màn hình chính điện thoại, và mỗi theme lấy
+            đúng tệp đã vẽ cho nó.
+          */}
+          <BrandLockup scale={1.4} />
           <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
 
@@ -221,9 +237,40 @@ export function AuthScreen() {
           </PressScale>
 
           {Platform.OS === 'ios' && appleAvailable && mode !== 'forgot' && (
+            /*
+              Kiểu nút đi theo THEME, và bản sáng lấy viền chứ không lấy đen.
+
+              ── lỗi ──
+
+              Nút ghi cứng `WHITE`. Mặt thẻ bản sáng là `#ffffff`, nên đo trên
+              ảnh chụp máy của chủ dự án: nền nút `#ffffff`, so với mặt thẻ
+              **1,000:1**. Không phải kín đáo — là không có. Chủ dự án viết
+              "nút sign in with apple bị tan vào trong nền".
+
+              ── vì sao KHÔNG phải `BLACK`, vốn là câu trả lời hiển nhiên ──
+
+              Hướng dẫn của Apple cho nền sáng là nút đen. Nhưng nút chính của
+              app ngay phía trên tô `c.primary`, mà `c.primary` bản sáng là
+              `#1a1917` — so với `#000000` chỉ **1,204:1**. Hai viên pill đen
+              giống hệt nhau chồng lên nhau, và cái thứ hai đọc ra là một nút
+              chính thứ hai.
+
+              Apple để sẵn đúng một lối cho ca này: `WHITE_OUTLINE`, bản dành
+              cho nền sáng khi một nút đen quá nặng. Viền vẽ ra hình viên pill ở
+              tương phản đầy đủ, còn phần tô thì nhường cho nút chính — tức thứ
+              tự "đặc là hành động chính, viền là hành động phụ" đọc được mà
+              không cần một dòng chữ nào giải thích.
+
+              Bản tối giữ `WHITE`: mặt thẻ ở đó là `#0e0e11`, và đen trên gần
+              đen là đúng cái lỗi vừa sửa, soi gương.
+            */
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+              buttonStyle={
+                theme === 'dark'
+                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                  : AppleAuthentication.AppleAuthenticationButtonStyle.WHITE_OUTLINE
+              }
               cornerRadius={radius.full}
               style={styles.appleButton}
               onPress={apple}
@@ -246,7 +293,7 @@ export function AuthScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: {
     flex: 1,
     backgroundColor: c.background,
@@ -273,16 +320,6 @@ const stylesFor = makeStyles((c) => ({
     alignItems: 'center',
     gap: spacing.sm + 4,
   },
-  // Web wordmark: green gradient + glow, wide tracking
-  brand: {
-    fontSize: 30,
-    fontWeight: '700',
-    letterSpacing: 4.5,
-    color: c.readinessGreen,
-    textShadowColor: alpha(c.readinessGreen, 0.4),
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
-  },
   subtitle: {
     ...type.body,
     color: c.mutedForeground,
@@ -298,7 +335,19 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
-    backgroundColor: alpha(c.primaryForeground, 0.5),
+    /* Một chỗ LÕM trong mặt thẻ, và đây là vai có tên cho nó.
+
+       Cũ: `alpha(c.primaryForeground, 0.5)`. `primaryForeground` ĐẢO giữa hai
+       theme — `#ffffff` bản sáng — nên trên mặt thẻ trắng nó composite ra đúng
+       `#ffffff`: đo trên ảnh chụp máy ra **1,000:1**, ô nhập không có mặt nào,
+       chỉ còn sợi viền vẽ ra nó. Cùng một lỗi với nút Apple ngay dưới, cùng
+       một nguyên nhân: một biểu thức tự chế thay cho một vai đã có tên.
+
+       `m.inset.bg` là mặt của một chỗ lõm TRÊN THẺ — 1,097:1 trên thẻ trắng,
+       1,147:1 trên thẻ `#0e0e11`. `tools/on-page-fill.mjs` canh chiều ngược
+       lại (không được dùng vai này khi đứng thẳng trên trang); ở đây có một
+       mặt thẻ ở sau, nên đây đúng là chỗ nó dành cho. */
+    backgroundColor: m.inset.bg,
     paddingHorizontal: spacing.md,
     color: c.foreground,
     fontSize: 16,

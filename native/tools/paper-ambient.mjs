@@ -101,12 +101,32 @@ const peaks = [];
 /*
   ── và trên giấy, KHÍ QUYỂN của phòng tối phải tắt hẳn ──
 
-  Bốn vũng đã chuyển sang nâng bằng trắng, nhưng `assistant-aura.tsx` còn hai
-  lớp nữa dựng cho một căn phòng tối: một thân người được rọi sáng, và bốn mặt
-  phẳng BỤI neon (`#22e6ff`, `#b45cff`, `#2bf5a8`, `#ffd9b3`). Chúng cộng ánh
-  sáng vào nền gần đen; trên giấy, một lớp phủ 12% tối hơn giấy là một vệt bẩn,
-  và bụi tím nhân với vài chục hạt chính là "ảnh hưởng lavender" mà ảnh chụp
-  máy thật chỉ ra.
+  Bốn vũng đã chuyển sang nâng bằng trắng, nhưng `assistant-aura.tsx` còn một
+  lớp nữa dựng cho một căn phòng tối: các mặt phẳng BỤI neon (`#22e6ff`,
+  `#b45cff`, `#2bf5a8`, `#ffd9b3`). Chúng cộng ánh sáng vào nền gần đen; trên
+  giấy, một lớp phủ 12% tối hơn giấy là một vệt bẩn, và bụi tím nhân với vài
+  chục hạt chính là "ảnh hưởng lavender" mà ảnh chụp máy thật chỉ ra.
+
+  ── và lớp thứ hai KHÔNG còn ở đây để canh ──
+
+  Cho tới 09/15 còn một thân người được rọi sáng (`AuraFigure`) đứng sau cả hai
+  màn trợ lý, và luật này canh nó bằng đúng ba mắt xích như canh bụi. Chủ dự án
+  đã cho xoá hẳn nó ở CẢ HAI theme, nên ba mắt xích ấy được gỡ khỏi đây — một
+  luật đòi một component không còn tồn tại thì đỏ mãi mãi và không nói được gì
+  về thứ đang chạy.
+
+  Đáng ghi lại vì sao nó phải bị xoá chứ không phải sửa cổng: chuỗi `lit` →
+  `HIDDEN` mà luật này canh KHÔNG hoạt động cho lớp ấy. Animated style của
+  `AuraFigure` đặt `opacity`, và Reanimated ghi thẳng giá trị animated lên view
+  chứ không đi qua phép làm phẳng mảng style — nên `HIDDEN` xếp sau nó không có
+  tác dụng, và thân người vẫn hiện trên giấy đúng như ảnh chụp máy của chủ dự án
+  cho thấy (36.373/123.410 điểm LẠNH giữa màn, hai lề đúng 0). Luật đọc ra là
+  xanh suốt thời gian ấy vì nó kiểm CHUỖI DẪN chứ không đo điểm ảnh.
+
+  Bụi thì không dính: animated style của `DustField` chỉ đặt `transform`, nên
+  không có va chạm và `HIDDEN` vẫn là thứ quyết định. Nếu một ngày lớp bụi cần
+  animate opacity thì ba mắt xích dưới đây KHÔNG còn đủ, và cổng phải chuyển
+  vào trong worklet.
 
   Không hạ độ mờ — tắt. Một vệt bẩn mờ hơn vẫn là một vệt bẩn.
 
@@ -115,16 +135,16 @@ const peaks = [];
   Bản trước bắt đúng một chuỗi: `{m.lit ? (<><AuraFigure`. Cổng ấy nay đã bỏ,
   vì nó là một cổng DỰNG — hai theme dựng hai cây khác nhau là điều kiện đã
   sinh ra A9 (`docs/SO-GHI-LOI.md`). Nhưng thứ luật này bảo vệ — trên giấy
-  KHÔNG được có thân người và bụi neon — vẫn nguyên giá trị: nó là một phát
-  hiện từ ảnh chụp máy thật, không phải một sở thích.
+  KHÔNG được có bụi neon — vẫn nguyên giá trị: nó là một phát hiện từ ảnh chụp
+  máy thật, không phải một sở thích.
 
   Nên luật thôi kiểm CÚ PHÁP và kiểm CHUỖI DẪN tới chỗ tô, cả bốn mắt xích:
 
-    1. cả hai chỗ gọi nhận `lit={m.lit}`,
-    2. cả hai component đặt `lit ? null : HIDDEN` lên style gốc của nó,
+    1. chỗ gọi nhận `lit={m.lit}`,
+    2. component đặt `lit ? null : HIDDEN` lên style gốc của nó,
     3. `HIDDEN` thật sự là `opacity: 0`,
-    4. và `moving` của chúng bị `m.lit` chặn, để bản sáng không chạy hoạt hoạ
-       cho thứ không ai thấy.
+    4. và `moving` của nó bị `m.lit` chặn, để bản sáng không chạy hoạt hoạ cho
+       thứ không ai thấy.
 
   Bốn mắt xích ấy mạnh hơn cú pháp cũ: bản cũ chỉ thấy CÓ một cái cổng, không
   thấy cổng ấy có nối tới chỗ vẽ hay không.
@@ -132,20 +152,17 @@ const peaks = [];
 {
   const src = read('src/components/ascnd/assistant-aura.tsx');
   const need = [
-    [/<AuraFigure[^>]*\blit=\{m\.lit\}/, '`AuraFigure` không nhận `lit={m.lit}`'],
     [/<DustField[^>]*\blit=\{m\.lit\}/, 'các lớp bụi không nhận `lit={m.lit}`'],
-    [/<AuraFigure[^>]*\bmoving=\{[^}]*\bm\.lit\b/, '`AuraFigure` vẫn chạy hoạt hoạ ở bản sáng (`moving` không bị `m.lit` chặn)'],
     [/<DustField[^>]*\bmoving=\{[^}]*\bm\.lit\b/, 'các lớp bụi vẫn chạy hoạt hoạ ở bản sáng'],
     [/const HIDDEN = \{ opacity: 0 \}/, '`HIDDEN` không còn là `opacity: 0`'],
-    [/styles\.figure,[^\]]*\blit \? null : HIDDEN/, '`AuraFigure` không tắt theo `lit` ở style gốc'],
     [/styles\.dust,[^\]]*\blit \? null : HIDDEN/, 'lớp bụi không tắt theo `lit` ở style gốc'],
   ];
   for (const [re, what] of need) {
     if (!re.test(src)) {
       problems.push(
-        `src/components/ascnd/assistant-aura.tsx: ${what} — trên giấy đó là một thân người mờ và bốn ` +
-          'mặt phẳng bụi NEON, tức đúng vệt lavender mà bản QA máy thật bác bỏ. Chúng được DỰNG ở cả hai ' +
-          'theme (điều kiện A9), nên thứ giữ cho giấy sạch là chuỗi `lit` → `HIDDEN`, không phải một cổng dựng',
+        `src/components/ascnd/assistant-aura.tsx: ${what} — trên giấy đó là các mặt phẳng bụi NEON, ` +
+          'tức đúng vệt lavender mà bản QA máy thật bác bỏ. Chúng được DỰNG ở cả hai theme (điều kiện ' +
+          'A9), nên thứ giữ cho giấy sạch là chuỗi `lit` → `HIDDEN`, không phải một cổng dựng',
       );
     }
   }

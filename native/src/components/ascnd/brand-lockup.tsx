@@ -80,10 +80,23 @@ const BOX = 37;
  */
 const WORD_MAX_SCALE = 1.3;
 
-export function BrandLockup() {
+/**
+ * Cùng một cụm, phóng to cho một màn mà thương hiệu LÀ nội dung.
+ *
+ * Màn đăng nhập từng vẽ tay chữ "ASCND" xanh phát sáng — bản thứ hai của một
+ * thứ đã có bản gốc, và `onboarding-flow.tsx` có bản thứ BA với số khác hẳn
+ * (24pt/3.6 so với 30pt/4.5). Đó đúng là thứ chú thích trên đầu tệp này cảnh
+ * báo, đã xảy ra, hai lần.
+ *
+ * Nên chỗ nào cần cụm to hơn thì nhân cụm NÀY lên, không vẽ lại: một tham số
+ * duy nhất nhân đều cả ba số, nên tỉ lệ 1,6 giữa nét và chữ hoa — thứ làm cụm
+ * đọc ra là một CẶP — không đổi ở bất kỳ cỡ nào.
+ */
+export function BrandLockup({ scale = 1 }: { scale?: number } = {}) {
   const c = usePalette();
   const styles = stylesFor(c);
   const theme = useThemeName();
+  const up = scale === 1 ? null : scale;
   return (
     /*
       Cả cụm là MỘT phần tử với trình đọc màn hình.
@@ -102,13 +115,21 @@ export function BrandLockup() {
       năng chứ không theo cây chạm, nên nhãn bên dưới vẫn được đọc.
     */
     <View
-      style={styles.row}
+      style={[styles.row, up ? { height: 44 * up, gap: 7 * up } : null]}
       pointerEvents="none"
       accessible
       accessibilityRole="header"
       accessibilityLabel="ASCND">
-      <Image source={MARK[theme]} style={styles.mark} resizeMode="contain" accessible={false} />
-      <Text style={styles.word} accessible={false} maxFontSizeMultiplier={WORD_MAX_SCALE}>
+      <Image
+        source={MARK[theme]}
+        style={[styles.mark, up ? { width: BOX * up, height: BOX * up } : null]}
+        resizeMode="contain"
+        accessible={false}
+      />
+      <Text
+        style={[styles.word, up ? { fontSize: 22 * up, letterSpacing: 0.6 * up } : null]}
+        accessible={false}
+        maxFontSizeMultiplier={WORD_MAX_SCALE}>
         ASCND
       </Text>
     </View>
