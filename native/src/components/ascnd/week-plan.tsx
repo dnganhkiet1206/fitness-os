@@ -667,8 +667,8 @@ const stylesFor = makeStyles((c, m) => ({
     sàn 44 của Apple. Bỏ nền là bỏ mực, không phải bỏ chỗ để ngón tay đặt vào.
   */
   navBtn: {
-    width: 32,
-    height: 32,
+    width: 28,
+    height: 28,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -676,7 +676,19 @@ const stylesFor = makeStyles((c, m) => ({
   /* Still drawn, still 32pt, just faded — a button that disappears at the end
      of the range takes the label with it as the row re-centres. */
   navBtnOff: { opacity: 0.3 },
-  weekLabel: { ...type.footnote, fontWeight: '600', color: c.foreground, minWidth: 130, textAlign: 'center' },
+  /*
+    Nhãn tuần là CHROME, không phải nội dung.
+
+    Ảnh chụp 3× cho thấy nó là phần tử to tiếng nhất của cả khối: 13pt đậm, màu
+    chữ chính, căn giữa, rộng nhất hàng — trong khi ảnh mẫu chủ dự án gửi không
+    có dòng tiêu đề nào ở đó. Và ở tuần hiện tại nó nói "Tuần này", điều mà cái
+    viên đặc dưới nó đã nói rồi.
+
+    Nên nó xuống 11pt và màu chữ mờ: vẫn đọc được (5,68:1 trên giấy, 5,24:1
+    trong phòng tối — trên sàn 4,5 của chữ nhỏ), vẫn trả lời được "tuần nào",
+    nhưng thôi tranh phần với chính cái lịch.
+  */
+  weekLabel: { ...type.caption, fontWeight: '600', color: c.mutedForeground, minWidth: 130, textAlign: 'center' },
 
   // ── the open day ──
   dayHead: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.xs },
