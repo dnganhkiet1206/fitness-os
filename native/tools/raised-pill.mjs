@@ -32,6 +32,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { hex, loadPalette, overC, ratio } from './lib/stack.mjs';
+
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(path.join(NATIVE, rel), 'utf8');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
@@ -64,8 +66,12 @@ const problems = [];
 /* `c.primary`, không còn `colors.primary`: bảng màu đọc lúc chạy, và `c` là
    bảng của theme đang bật — xem `constants/theme.ts`. */
 const NEUTRAL = 'c.primary';
+/* Cột thứ năm: pill ấy đứng trên cái gì. Xem luật 5 — chất liệu một mình đo ra
+   gần đúng 1,00:1 so với TRANG, nên pill trên trang phải có mặt riêng; pill nằm
+   trên một mặt thẻ thì không, và bắt nó mang `m.onPage` sẽ là một mặt trắng
+   chồng lên một mặt trắng. */
 const USERS = [
-  ['src/app/(tabs)/index.tsx', 1, 'bốn nút log trên Today (một chỗ render, lặp qua danh sách)', NEUTRAL],
+  ['src/app/(tabs)/index.tsx', 1, 'bốn nút log trên Today (một chỗ render, lặp qua danh sách)', NEUTRAL, 'page'],
   /*
     Tab Tập luyện không còn pill kính nào, và đó là chủ ý.
 
@@ -80,7 +86,10 @@ const USERS = [
     định, không phải một lần nới lỏng — nếu tab mọc lại pill kính, nó phải quay
     vào danh sách này.
   */
-  ['src/components/ascnd/music-launch.tsx', 1, 'hai chip nhạc (một chỗ render)', null],
+  /* `card`, không phải `page`: `MusicLaunch` chỉ dựng ở hai chỗ — trong sheet
+     `log-workout.tsx` (gốc tô `c.card`, xem `on-page-fill.mjs`) và trong tấm
+     tuần ở `week-plan.tsx`. Cả hai đều có một mặt ở sau nó. */
+  ['src/components/ascnd/music-launch.tsx', 1, 'hai chip nhạc (một chỗ render)', null, 'card'],
 ];
 
 for (const [file, want, what, neutral] of USERS) {
@@ -129,6 +138,120 @@ for (const [file, want, what, neutral] of USERS) {
   }
 }
 
+/* ── 5. và pill ĐỨNG TRÊN TRANG phải có mặt của riêng nó ──
+
+   Mọi lập luận ở luật 1–3 đo trên trang `#070708`, và câu kết luận của chúng —
+   "chiều sâu ở đây là việc của chất liệu" — đúng ở đó. Trên GIẤY thì không:
+   một lớp blur làm sáng một trang vốn đã sáng cũng vẽ ra đúng không gì, y như
+   bóng đen dưới pill tối. Cùng một chế độ hỏng, soi gương.
+
+   Đo trên ảnh chụp máy của chủ dự án (bản sáng), mặt chip so với trang ngay
+   cạnh: 1,056:1 và 1,028:1, còn nút Đồng bộ 1,105:1 — trong khi thẻ trắng của
+   chính app tách ra 1,148:1 và pill tab đang chọn 1,317:1. Bốn chip là mặt
+   nhạt nhất trang. Chủ dự án khoanh đỏ cả cụm: "4 thẻ này đang cùng màu".
+
+   Luật 1 KHÔNG bắt được, và đó là điều đáng nói: `<LiquidGlass>` vẫn ở nguyên
+   đó, `tint` vẫn được truyền, không ai gắn bóng đổ. Luật ấy hỏi pill được làm
+   BẰNG GÌ; nó không hỏi kết quả có tách khỏi trang không. `on-page-fill.mjs`
+   thì đo đúng câu đó nhưng chỉ nhìn element CÓ `backgroundColor` — một pill
+   không khai nền nào là đúng vùng mù của nó.
+
+   Tiền đề được CHẠY chứ không chép — và bản đầu của nó SAI, luật tự bắt được.
+   Nó viết "hair composite lên trang thì dưới sàn 1,05", chạy ra 1,074 và 1,059,
+   tức trên sàn. Hạ sàn cho luật xanh là gọt tiền đề cho vừa kết luận.
+
+   Câu đúng là câu SO SÁNH, không cần một cái sàn tự chế: `m.aura.hair` — mặt
+   duy nhất pill tự khai trước thay đổi này — phải là một bậc NHỎ HƠN `m.onPage`,
+   vai mà chính kho này đã đặt tên cho "một khối đứng trên trang". 1,074 < 1,097
+   trên giấy và 1,059 < 1,113 trong tối. Nếu một ngày hair thành bậc lớn hơn thì
+   luật mất lý do tồn tại và phải tự nói ra, chứ không canh theo quán tính.
+
+   Và phải nói rõ phép tính ấy là một MÔ HÌNH: nó không có lớp blur trong đó.
+   Con số THẬT là ảnh chụp máy — 1,056 và 1,028 — thấp hơn cả mô hình, vì lớp
+   wash tắt dần về 0 và blur làm sáng một trang vốn đã sáng. Mô hình chỉ đang nói
+   TRẦN của thứ pill có thể tự đòi trước thay đổi này. Trần ấy vẫn dưới bậc có
+   tên. */
+const { palettes, materials } = loadPalette();
+const comp = (v, ground) => {
+  const m = /rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?\)/.exec(v);
+  if (!m) return hex(v);
+  const to2 = (n) => Math.round(n).toString(16).padStart(2, '0');
+  return overC(hex(`#${to2(+m[1])}${to2(+m[2])}${to2(+m[3])}`), ground, m[4] === undefined ? 1 : +m[4]);
+};
+/* Sàn của `on-page-fill.mjs`, dùng để canh chính `m.onPage` còn là một bậc. */
+const FLOOR = 1.05;
+const alone = {};
+const withFill = {};
+for (const t of ['light', 'dark']) {
+  const page = hex(palettes[t].background);
+  alone[t] = ratio(comp(materials[t].aura.hair, page), page);
+  withFill[t] = ratio(comp(materials[t].onPage, page), page);
+}
+for (const t of ['light', 'dark']) {
+  if (alone[t] >= withFill[t]) {
+    problems.push(
+      `tiền đề của luật 5 không còn đúng ở bản ${t}: mặt pill tự khai (\`m.aura.hair\`) nay đo ra ` +
+        `${alone[t].toFixed(3)}:1 so với trang, tức KHÔNG còn nhỏ hơn bậc có tên \`m.onPage\` ` +
+        `(${withFill[t].toFixed(3)}:1). Luật này đòi mượn vai ấy vì vai ấy là bậc lớn hơn — nếu điều ` +
+        'đó hết đúng thì luật phải được đọc lại, không phải được giữ theo quán tính',
+    );
+  }
+  if (withFill[t] < FLOOR) {
+    problems.push(
+      `\`m.onPage\` ở bản ${t} chỉ còn ${withFill[t].toFixed(3)}:1 so với trang — dưới sàn ${FLOOR}. ` +
+        'Luật này bảo pill mượn vai ấy, nên vai ấy phải còn là một bậc',
+    );
+  }
+}
+
+/** Thân của một style trong bảng, đếm ngoặc chứ không dò tới `}` đầu tiên. */
+const styleBody = (code, name) => {
+  const at = code.search(new RegExp(`\\n\\s*${name}:\\s*\\{`));
+  if (at < 0) return null;
+  const open = code.indexOf('{', at);
+  let depth = 0;
+  for (let i = open; i < code.length; i++) {
+    if (code[i] === '{') depth++;
+    else if (code[i] === '}' && --depth === 0) return code.slice(open, i + 1);
+  }
+  return null;
+};
+
+let onPage = 0;
+for (const [file, , what, , ground] of USERS) {
+  if (ground !== 'page') continue;
+  onPage++;
+  const code = strip(read(file));
+  const styled = [...code.matchAll(/<LiquidGlass[^>]*\bstyle=\{styles\.(\w+)\}/g)].map((m) => m[1]);
+  /* Đếm, không chỉ hỏi "có cái nào không". Phép phá thứ tư của luật này bọc
+     style vào một mảng — `style={[styles.quickChip]}` — và chip biến mất khỏi
+     tầm đo trong khi nút Đồng bộ vẫn giữ luật xanh. Một pill lọt khỏi biểu thức
+     là một pill không ai đo, và nó im lặng y như một pill đúng. */
+  const glasses = [...code.matchAll(/<LiquidGlass\b/g)].length;
+  if (styled.length !== glasses) {
+    problems.push(
+      `${file}: ${glasses} pill kính nhưng chỉ đọc được mặt của ${styled.length} (${what}). Luật 5 đo ` +
+        'qua `style={styles.X}`; pill dựng kiểu khác — mảng style, style nội tuyến, style truyền từ ' +
+        'ngoài vào — thì không ai đo được nó có mặt riêng hay không',
+    );
+    continue;
+  }
+  for (const name of new Set(styled)) {
+    const body = styleBody(code, name);
+    if (body === null) {
+      problems.push(`${file}: pill dùng \`styles.${name}\` nhưng không tìm thấy style ấy trong tệp`);
+    } else if (!/backgroundColor:\s*m\.onPage/.test(body)) {
+      problems.push(
+        `${file}: \`${name}\` là pill đứng thẳng trên trang mà không có mặt của riêng nó. Chất liệu ` +
+          `một mình đòi được nhiều nhất ${alone.light.toFixed(3)}:1 trên giấy và ` +
+          `${alone.dark.toFixed(3)}:1 trong tối, còn ĐO TRÊN MÁY thì ra 1,056 và 1,028 — dưới bậc có ` +
+          'tên. Dùng `m.onPage` (vai ấy do `on-page-fill.mjs` đặt ra ' +
+          'sau đúng một lần khoanh đỏ như thế này), đừng chế một biểu thức mới',
+      );
+    }
+  }
+}
+
 /* ── 4. and the glass keeps its own recipe in one place ── */
 {
   const lg = strip(read('src/components/ascnd/liquid-glass.tsx'));
@@ -161,5 +284,11 @@ console.log(
     'đi, và màu ở lại trong glyph. Hai chip nhạc được miễn có tên vì màu ở đó là danh tính dịch vụ. ' +
     'Không pill nào gắn thêm bóng đổ: đo trên ảnh chụp thì bóng đen dưới pill tối trên trang #070708 vẽ ' +
     'ra đúng không gì (điểm ảnh ngay ngoài pill là [9,9,9], y hệt nền), nên chiều sâu ở đây là việc của ' +
-    'chất liệu chứ không phải của shadow',
+    'chất liệu chứ không phải của shadow. VÀ pill đứng thẳng trên trang có mặt của riêng nó: câu ' +
+    '"chiều sâu là việc của chất liệu" đo trên trang #070708 và trên GIẤY thì sai — đo ảnh chụp máy, ' +
+    `bốn chip Today ra 1,056:1 và 1,028:1 so với trang, nhạt hơn mọi mặt khác trên cùng màn. ${onPage} ` +
+    `pill trên trang nay mượn \`m.onPage\` (${withFill.light.toFixed(3)}:1 trên giấy, ` +
+    `${withFill.dark.toFixed(3)}:1 trong tối), và tiền đề được chạy chứ không chép: mặt pill tự khai ` +
+    `chỉ đòi được ${alone.light.toFixed(3)} và ${alone.dark.toFixed(3)}, vẫn dưới bậc có tên — bản đầu ` +
+    'của tiền đề ấy viết sai và chính luật này bắt được',
 );

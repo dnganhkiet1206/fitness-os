@@ -2853,6 +2853,41 @@ const stylesFor = makeStyles((c, m) => ({
      the assistant's state pill uses. */
   quickChip: {
     borderRadius: radius.full,
+  /* Mặt của một khối đứng THẲNG TRÊN TRANG, không phải mặt của một chỗ lõm.
+
+     ── lỗi, đo trên ảnh chụp máy của chủ dự án ──
+
+     Bốn chip này chỉ có chất liệu: `m.aura.hair` (3,5% mực) dưới lớp blur, cộng
+     lớp wash 16% → 0 neo ở góc trên-trái. Đo mặt chip so với trang ngay cạnh nó:
+
+         "Ghi bữa ăn"    #efece5 trên #f6f3ec   1,056:1
+         "Ghi giấc ngủ"  #ece9e2 trên #efece5   1,028:1
+         nút Apple Health                        1,105:1
+
+     Trên cùng bức ảnh, thẻ trắng của app tách khỏi trang 1,148:1 và pill tab
+     đang chọn 1,317:1. Bốn chip là mặt NHẠT NHẤT trang — chủ dự án khoanh đỏ cả
+     cụm và viết "4 thẻ này đang cùng màu".
+
+     ── vì sao chất liệu một mình không đủ, và chỉ trên GIẤY ──
+
+     Mọi lập luận đã ghi quanh hàng này đều đo trên trang `#070708`: "bóng đổ vẽ
+     ra đúng không gì, điểm ảnh ngay ngoài pill là [9,9,9]". Câu ấy vẫn đúng.
+     Nhưng nó nói về bản TỐI. Trên giấy, một lớp blur làm sáng một trang vốn đã
+     sáng thì cũng vẽ ra đúng không gì — cùng một chế độ hỏng, soi gương.
+
+     ── và vai này đã có tên ──
+
+     `m.onPage`, do `tools/on-page-fill.mjs` đặt ra sau đúng một lần khoanh đỏ
+     như lần này. Số của nó: sáng #ffffff → 1,097:1, tối rgba(255,255,255,0.06)
+     → 1,113:1, neo theo bậc `systemGroupedBackground` → `secondarySystemGrouped`
+     của iOS (1,134:1). Tự chế `alpha(m.ink, 0.08)` thì ra 1,259:1 — dựng lên
+     nhìn thì xám đục cạnh nền kem, và nó là đúng thứ luật ấy sinh ra để chặn:
+     bịa một biểu thức mới trong khi kho đã có tên cho vai đó.
+
+     Nền nằm ở `wrap` tức DƯỚI lớp blur, nên lớp wash vẫn vẽ nguyên trên nó —
+     không phải "mảng màu phẳng phủ kín viên pill" mà `liquid-glass.tsx` đã ghi
+     lại là từng bị bắt. */
+  backgroundColor: m.onPage,
   /* A firmer edge than a card's.
 
      `glass.border` is 12% white at half a point, and that is right for a large
@@ -2881,6 +2916,9 @@ const stylesFor = makeStyles((c, m) => ({
     borderRadius: radius.sm,
     borderColor: alpha(m.ink, 0.22),
     borderWidth: 1,
+    /* Cùng mặt `m.onPage` với bốn chip ngay trên — nó nằm trong cùng cái khoanh
+       đỏ, và đo ra 1,105:1, tức cùng một lỗi. */
+    backgroundColor: m.onPage,
   },
   syncInner: {
     flexDirection: 'row',
