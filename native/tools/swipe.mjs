@@ -384,7 +384,7 @@ function declOf(body, name) {
   /* Hàng phải ĐỨNG YÊN cho tới khi có câu trả lời: `close()` chỉ được gọi
      TRONG nhánh trả lời, không phải trước khi hỏi. */
   {
-    const ask = /if \(armed\.current && direction === 'left' && firstLeft\) \{([\s\S]*?)\n      \}/.exec(src);
+    const ask = /if \(armed\.current && direction === '\w+' && firstLeft\) \{([\s\S]*?)\n      \}/.exec(src);
     if (!ask) {
       problems.push(`${COMPONENT}: không đọc được nhánh cú-kéo-dài để kiểm thứ tự đóng hàng`);
     } else if (!/onPress: done/.test(ask[1]) || !/const done = \(\)/.test(ask[1])) {
@@ -400,6 +400,90 @@ function declOf(body, name) {
       `${COMPONENT}: nút không nảy khi hàng mở xong — đặt hàng là "hiệu ứng sinh động nảy như apple", ` +
         'và cái nảy thuộc khoảnh khắc THẢ RA chứ không thuộc phần kéo',
     );
+  }
+
+  /* ── ngưỡng kéo-dài phải VỚI TỚI ĐƯỢC, và luật CHẠY công thức của thư viện ──
+
+     Bản đã ship có `friction: 2` và `overshootFriction: 8`. Cả hai đều là con số
+     hợp lệ, cả hai đều đọc ra rất hợp lý, và cộng lại chúng đẩy ngưỡng kéo-dài
+     ra ngoài tầm vật lý: ngón tay phải đi 1.592 điểm trên một màn rộng 393.
+     Cú kéo dài không bao giờ xảy ra được, và không luật nào của tôi thấy —
+     chúng kiểm HÌNH DẠNG mã, không kiểm vật lý.
+
+     Nên luật này dựng lại đúng phép nội suy của thư viện
+     (`ReanimatedSwipeable.js`: `interpolate` với extrapolation EXTEND, nên quá
+     bề rộng tấm nút thì mỗi điểm `offsetDrag` chỉ sinh `1/overshootFriction`
+     điểm dịch chuyển) và hỏi: trên màn hẹp nhất app hỗ trợ, ngón tay có với
+     tới ngưỡng không. */
+  {
+    const prop = (name) => {
+      const m = new RegExp(`${name}=\\{([^}]+)\\}`).exec(src);
+      return m ? m[1].trim() : null;
+    };
+    const friction = Number(prop('friction'));
+    const oF = Number(prop('overshootFriction'));
+    /* iPhone SE: 375 điểm. Thẻ To-do trừ đệm hai bên còn ~343. */
+    const SCREEN = 375;
+    const ROW = SCREEN - 32;
+    if (!Number.isFinite(friction) || !Number.isFinite(oF)) {
+      problems.push(`${COMPONENT}: không đọc được \`friction\`/\`overshootFriction\` để chạy phép nội suy`);
+    } else if (full !== null && openW !== null) {
+      const applied = (finger) => {
+        const d = finger / friction;
+        return d <= openW ? d : openW + (d - openW) / oF;
+      };
+      const target = full * ROW;
+      let need = Infinity;
+      for (let x = 1; x <= 4000; x++) {
+        if (applied(x) >= target) {
+          need = x;
+          break;
+        }
+      }
+      if (need > SCREEN) {
+        problems.push(
+          `${COMPONENT}: ngưỡng kéo-dài cần ${need === Infinity ? '∞' : need} điểm ngón tay trên một ` +
+            `màn rộng ${SCREEN} — không với tới được. friction ${friction} × overshootFriction ${oF} ` +
+            `đang nhân khoảng phải kéo lên; chạy lại công thức của ReanimatedSwipeable.js`,
+        );
+      }
+    }
+  }
+
+  /* ── tên hướng của thư viện được ĐỌC RA khỏi chính nó ──
+
+     `onSwipeableWillOpen` đặt tên hướng theo chiều HÀNG DỊCH CHUYỂN, không theo
+     mép nào mở: mở tấm bên TRÁI thì `toValue` dương và nó báo `RIGHT`. Bản đã
+     ship so với `'left'`, nên nhánh cú-kéo-dài không bao giờ chạy.
+
+     Luật không gõ cứng `'right'`: nó đọc dòng dispatch trong mã thư viện đang
+     cài và suy ra tên đúng, nên một bản thư viện đổi quy ước sẽ làm đỏ thay vì
+     làm hỏng lặng lẽ. */
+  {
+    const lib = 'node_modules/react-native-gesture-handler/lib/module/components/ReanimatedSwipeable/ReanimatedSwipeable.js';
+    let libSrc = null;
+    try {
+      libSrc = readFileSync(path.join(NATIVE, lib), 'utf8');
+    } catch {
+      /* thư viện chưa cài — bước `ghim gói native` lo việc đó */
+    }
+    if (libSrc) {
+      const m = /onSwipeableWillOpen\)\(toValue > 0 \? SwipeDirection\.(\w+)/.exec(libSrc);
+      if (!m) {
+        problems.push(`${COMPONENT}: không đọc được quy ước tên hướng trong ${lib}`);
+      } else {
+        const want = m[1].toLowerCase();
+        const used = /direction === '(\w+)' && firstLeft/.exec(src);
+        if (!used) {
+          problems.push(`${COMPONENT}: không đọc được phép so hướng ở nhánh cú-kéo-dài`);
+        } else if (used[1] !== want) {
+          problems.push(
+            `${COMPONENT}: nhánh cú-kéo-dài so hướng với '${used[1]}', nhưng thư viện báo '${want}' khi ` +
+              'tấm nút bên TRÁI mở ra — nó đặt tên theo chiều HÀNG dịch chuyển, không theo mép nào mở',
+          );
+        }
+      }
+    }
   }
 
   /* Bo góc phải chạy theo CÚ KÉO, không phải một animation chạy song song. */
@@ -436,5 +520,5 @@ console.log(
     'và có xử lý — một danh sách gõ tay sẽ trôi khỏi danh sách thật mà không có gì báo. Cộng hai luật của ' +
     'bản nhiều-nút: tối đa 3 nút mỗi mép (Apple để 3–4, mà mỗi nút ở đây rộng OPEN_W nên ba nút đã chiếm ' +
     '252 trên 393 điểm), và mép phải phải đảo chiều để nút ĐẦU danh sách nằm ngoài cùng, đúng cách ' +
-    '`UISwipeActionsConfiguration` dựng từ mép ngoài vào trong',
+    '`UISwipeActionsConfiguration` dựng từ mép ngoài vào trong. Và hai luật CHẠY chứ không đọc hình dạng: phép nội suy của chính ReanimatedSwipeable được dựng lại để hỏi ngón tay có với tới ngưỡng kéo-dài trên màn hẹp nhất không (bản đã ship đòi 1.592 điểm trên một màn 393, tức cú kéo dài KHÔNG THỂ xảy ra), và tên hướng được đọc ra khỏi mã thư viện đang cài thay vì gõ cứng — thư viện đặt tên theo chiều HÀNG dịch chuyển nên mở tấm bên TRÁI lại báo `right`, và bản đã ship so với `left` nên nhánh ấy không bao giờ chạy',
 );

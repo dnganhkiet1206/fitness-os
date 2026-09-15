@@ -468,7 +468,22 @@ export function SwipeRow({
         Không có `confirm` thì làm luôn — một hành động hoàn tác được không cần
         ai hỏi lại.
       */
-      if (armed.current && direction === 'left' && firstLeft) {
+      /*
+        ── `'right'`, KHÔNG phải `'left'` — và đây là lỗi thứ hai ──
+
+        Thư viện đặt tên hướng theo chiều HÀNG DỊCH CHUYỂN, không theo mép nào
+        mở ra. `ReanimatedSwipeable.js:76`:
+
+            runOnJS(onSwipeableWillOpen)(toValue > 0 ? RIGHT : LEFT)
+
+        Mở tấm nút bên TRÁI nghĩa là `toValue = leftWidth`, một số DƯƠNG, nên nó
+        báo `RIGHT`. Bản trước so với `'left'`, tức nhánh cú-kéo-dài không bao
+        giờ chạy dù cờ đã bật đúng.
+
+        `armed` tự nó đã đủ — chỉ tấm nút bên trái mới bật được nó — nhưng phép
+        so vẫn giữ lại làm lưới chắn, với đúng giá trị và đúng lý do ghi cạnh.
+      */
+      if (armed.current && direction === 'right' && firstLeft) {
         armed.current = false;
         const done = () => {
           full.value = 0;
@@ -594,14 +609,37 @@ export function SwipeRow({
         all.find((a) => a.label === e.nativeEvent.actionName)?.onPress();
       }}>
       <ReanimatedSwipeable
-        friction={2}
+        /*
+          ── `friction` 1, và vì sao 2 là con số làm cú kéo dài KHÔNG THỂ xảy ra ──
+
+          Tài liệu thư viện: "value of 1 will indicate that the swipeable panel
+          should exactly follow the gesture, 2 means it is going to be two times
+          slower". iOS thì bám ngón tay 1:1, nên 1 vốn đã là con số đúng.
+
+          Nhưng quan trọng hơn: `overshootFriction` 8 CỘNG với friction 2 đẩy
+          ngưỡng kéo-dài ra ngoài tầm vật lý. Chạy chính công thức của thư viện
+          (`ReanimatedSwipeable.js:69` — `interpolate` với extrapolation EXTEND,
+          nên quá bề rộng nút thì mỗi điểm `offsetDrag` chỉ sinh `1/overshootFriction`
+          điểm dịch chuyển):
+
+              friction 2 · overshoot 8 → ngón tay phải đi 1.592 điểm
+              friction 2 · overshoot 1 → 325 điểm
+              friction 1 · overshoot 1 → 163 điểm
+
+          Màn hình rộng 393. Nên bản đã ship đòi một cú kéo dài GẤP BỐN LẦN bề
+          ngang máy — đó là lý do thật của "nút xoá vẫn chưa kéo hết và xoá
+          được", chứ không phải chỗ tôi sửa lượt trước.
+
+          163 điểm là đúng cái chủ dự án mô tả: "kéo đến giữa màn hình".
+        */
+        friction={1}
         rightThreshold={COMMIT}
         dragOffsetFromRightEdge={HYSTERESIS}
         overshootRight={false}
-        /* Kéo quá bề rộng nút chỉ có nghĩa khi cú kéo dài được bật; ma sát 8 là
-           con số tài liệu của thư viện gọi là "for a native feel". */
+        /* Kéo quá bề rộng nút chỉ có nghĩa khi cú kéo dài được bật, và khi bật
+           thì KHÔNG thêm ma sát: hàng phải theo ngón tay tới giữa màn hình. */
         overshootLeft={fullSwipe}
-        overshootFriction={8}
+        overshootFriction={1}
         {...(leftSet.length
           ? {
               leftThreshold: COMMIT,
