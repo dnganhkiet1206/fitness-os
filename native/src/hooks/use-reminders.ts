@@ -6,7 +6,7 @@ import { useRoutineDays } from '@/hooks/use-library';
 import { useSupplementChecklist } from '@/hooks/use-library';
 import { useTodayWater } from '@/hooks/use-water';
 import { useTodayWeight, useWorkoutSessions } from '@/hooks/use-fitness-data';
-import { useProfile } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useTodayBiometrics, useTodaySleep } from '@/hooks/useTodayData';
 import { localDateStr } from '@/lib/local-date';
 import {
   DEFAULT_REMINDERS,
@@ -17,7 +17,14 @@ import {
   type ReminderCopy,
   type ReminderPrefs,
 } from '@/lib/notifications';
-import { planReminders, planSignature, type PlannedReminder, type ReminderContext } from '@/lib/reminder-plan';
+import {
+  planReminders,
+  planSignature,
+  type PlannedReminder,
+  type ReminderContext,
+  type TimedReminderKey,
+} from '@/lib/reminder-plan';
+import { mealDone, sleepDone } from '@/lib/todo';
 import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
 const PREFS_KEY = 'ascnd_reminders';
@@ -32,6 +39,13 @@ function merge(stored: Partial<ReminderPrefs> | null): ReminderPrefs {
     bedtime: { ...DEFAULT_REMINDERS.bedtime, ...stored.bedtime },
     weighIn: { ...DEFAULT_REMINDERS.weighIn, ...stored.weighIn },
     workout: { ...DEFAULT_REMINDERS.workout, ...stored.workout },
+    /* Ba khoá thêm sau. `merge` LÀ chỗ di trú: thiết bị nào đã lưu bộ cũ thì
+       `stored.meal` là `undefined`, và spread lên mặc định trả về đúng mặc định
+       — tắt, đúng giờ đã chọn. Thiếu một dòng ở đây là một khoá `undefined` đi
+       thẳng vào `planReminders`, nơi `prefs.meal.enabled` sẽ ném. */
+    meal: { ...DEFAULT_REMINDERS.meal, ...stored.meal },
+    biometrics: { ...DEFAULT_REMINDERS.biometrics, ...stored.biometrics },
+    sleepLog: { ...DEFAULT_REMINDERS.sleepLog, ...stored.sleepLog },
   };
 }
 
@@ -142,6 +156,9 @@ export function useReminders() {
     bedtime: { title: i18n.nReminderBedtime, body: i18n.nReminderBedtimeBody },
     weighIn: { title: i18n.nReminderWeighIn, body: i18n.nReminderWeighInBody },
     workout: { title: i18n.nReminderWorkout, body: i18n.nReminderWorkoutBody },
+    meal: { title: i18n.nReminderMeal, body: i18n.nReminderMealBody },
+    biometrics: { title: i18n.nReminderBiometrics, body: i18n.nReminderBiometricsBody },
+    sleepLog: { title: i18n.nReminderSleepLog, body: i18n.nReminderSleepLogBody },
   };
 
   /*
@@ -155,6 +172,11 @@ export function useReminders() {
   const { data: supplements } = useSupplementChecklist();
   const { data: waterMl } = useTodayWater();
   const { data: profile } = useProfile();
+  /* Ba truy vấn cho ba khoá mới. Cùng lý do với các dòng trên: màn Hôm nay đã
+     hỏi cả ba, nên ở đây chúng đọc từ cache chứ không gọi lại. */
+  const { data: dailyLog } = useDailyLog();
+  const { data: todaySleep } = useTodaySleep();
+  const { data: todayBio } = useTodayBiometrics();
 
   const ctx: ReminderContext = {
     workedOutToday: (sessions ?? []).some(
@@ -164,6 +186,12 @@ export function useReminders() {
     // An empty stack is "nothing to take", not "you forgot" — `every` on an
     // empty list is true, which is the reading wanted here.
     supplementsDone: (supplements ?? []).every((s) => s.taken),
+    /* Vị từ dùng CHUNG với `use-daily-quests` — xem `lib/todo.ts`. Một lời nhắc
+       "ghi bữa ăn" bắn sau khi đã ghi là đúng thứ vế `isToday` sinh ra để chặn,
+       và nó chỉ chặn được nếu hai nơi đồng ý "đã ghi" nghĩa là gì. */
+    mealLoggedToday: mealDone(dailyLog?.kcal),
+    sleepLoggedToday: sleepDone(todaySleep != null, dailyLog?.sleep_duration_min),
+    bioLoggedToday: todayBio != null,
     waterDone: (waterMl ?? 0) >= (Number(profile?.water_target_ml) || 2500),
     // `undefined` while the read is in flight means "not known", which the
     // planner treats as no information rather than as a week of rest days.
@@ -230,7 +258,7 @@ export function useReminders() {
   );
 
   const setTime = useCallback(
-    (key: 'supplements' | 'bedtime' | 'weighIn' | 'workout', hour: number, minute: number) => {
+    (key: TimedReminderKey, hour: number, minute: number) => {
       apply({ ...prefs, [key]: { ...prefs[key], hour, minute } });
     },
     [prefs, apply],

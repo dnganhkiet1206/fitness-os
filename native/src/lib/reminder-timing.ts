@@ -45,7 +45,23 @@
  * about going to bed — and never from that.
  */
 
-export type TimedReminder = 'supplements' | 'bedtime' | 'weighIn' | 'workout';
+/**
+ * Mọi khoá có MỘT giờ cố định — cùng tập với `TimedReminderKey` ở
+ * `reminder-plan.ts`, và `tools/reminders.mjs` canh cho hai bên không lệch.
+ *
+ * Danh sách này rộng hơn tập "đoán được giờ": `suggestedTime` trả `null` cho
+ * khoá nào app chưa học được gì. Để nó hẹp lại thì một khoá mới sẽ không lọt
+ * vào bảng gợi ý, và chỗ tra bảng sẽ ngã ra `undefined` thay vì `null` — tức
+ * một lỗi kiểu ở chỗ người đọc tưởng là "chưa có gợi ý".
+ */
+export type TimedReminder =
+  | 'supplements'
+  | 'bedtime'
+  | 'weighIn'
+  | 'workout'
+  | 'meal'
+  | 'biometrics'
+  | 'sleepLog';
 
 export interface Clock {
   hour: number;
@@ -107,6 +123,9 @@ export function toClock(minutes: number): Clock {
  * time and says nothing, which is the correct behaviour for a first launch and
  * for anybody who never answered the sleep questions.
  */
+/** Ngồi ghi lại đêm qua muộn hơn lúc bước lên cân bao lâu. */
+const SLEEP_LOG_LAG_MIN = 45;
+
 export function suggestedTime(key: TimedReminder, known: Known): Clock | null {
   switch (key) {
     case 'bedtime': {
@@ -124,7 +143,30 @@ export function suggestedTime(key: TimedReminder, known: Known): Clock | null {
       if (h == null || !Number.isFinite(h)) return null;
       return toClock(h * 60 - WORKOUT_LEAD_MIN);
     }
+    /*
+      Ghi lại đêm qua là việc làm SAU KHI THỨC DẬY, nên nó đoán được từ đúng
+      con số mà `weighIn` đang dùng — `sleep_target_waketime`. Lệch nhau ở độ
+      trễ: cân thì cân ngay khi dậy, còn ngồi ghi lại giấc ngủ thì muộn hơn một
+      chút, khi người ta đã tỉnh hẳn.
+    */
+    case 'sleepLog': {
+      const wake = parseClock(known.waketime);
+      return wake === null ? null : toClock(wake + AFTER_WAKE_MIN + SLEEP_LOG_LAG_MIN);
+    }
+    /*
+      Ba khoá app chưa học được gì để đoán.
+
+      `supplements` không có nguồn nào từ trước. `meal` thì có vẻ đoán được từ
+      giờ ăn quen thuộc — nhưng lời nhắc ấy nghĩa là "hôm nay CHƯA ghi bữa
+      nào", nên giờ đúng của nó là cuối ngày chứ không phải giờ ăn. `biometrics`
+      cần giờ thức dậy thật của đồng hồ, thứ app chưa đọc.
+
+      Trả `null` là nói "chưa biết", và màn Nhắc nhở không hiện dòng gợi ý nào.
+      Đó là câu trả lời trung thực, khác hẳn với việc bịa một giờ.
+    */
     case 'supplements':
+    case 'meal':
+    case 'biometrics':
       return null;
   }
 }
@@ -146,3 +188,15 @@ export function worthOffering(current: Clock, suggested: Clock): boolean {
 /** `7:05` — for the one-line explanation beside the offer. */
 export const formatClock = (c: Clock): string =>
   `${c.hour}:${String(c.minute).padStart(2, '0')}`;
+
+/**
+ * Một `Date` hôm nay ở đúng giờ ấy — thứ `RNDateTimePicker` nhận vào.
+ *
+ * Ở đây chứ không phải trong một màn: hai chỗ đặt giờ (màn Nhắc nhở và thẻ Cần
+ * làm) đều cần nó, và bốn dòng chép ra hai bản vẫn là hai bản.
+ */
+export function timeToDate(hour: number, minute: number): Date {
+  const d = new Date();
+  d.setHours(hour, minute, 0, 0);
+  return d;
+}

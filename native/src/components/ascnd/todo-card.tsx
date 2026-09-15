@@ -1,11 +1,12 @@
 import * as Haptics from 'expo-haptics';
-import { Dumbbell, HeartPulse, type LucideIcon, Moon, Scale, Utensils } from 'lucide-react-native';
+import { Bell, BellOff, Dumbbell, HeartPulse, type LucideIcon, Moon, Scale, Utensils } from 'lucide-react-native';
 import { useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { DateField } from '@/components/ascnd/date-field';
 import { WeightEntry } from '@/components/ascnd/weight-entry';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { graphicOf, makeStyles, type PaletteKey } from '@/constants/theme';
@@ -14,7 +15,10 @@ import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useTodayWeight } from '@/hooks/use-fitness-data';
 import { usePalette } from '@/hooks/use-palette';
 import { useTodayBiometrics } from '@/hooks/useTodayData';
+import { useReminders } from '@/hooks/use-reminders';
 import { nav } from '@/lib/nav';
+import type { TimedReminderKey } from '@/lib/reminder-plan';
+import { timeToDate } from '@/lib/reminder-timing';
 import { TODO_ORDER, todoOpen, todoProgress, type TodoDone, type TodoKey } from '@/lib/todo';
 
 /**
@@ -99,6 +103,29 @@ const TINT: Record<TodoKey, PaletteKey> = {
   weight: 'metricCyan',
 };
 
+/*
+  Mỗi dòng hẹn được giờ, và giờ ấy là một lời nhắc THẬT.
+
+  ── vì sao nó đọc hệ nhắc có sẵn thay vì đẻ ra một cái hẹn riêng ──
+
+  App đã có bộ lập lịch thông báo: `reminder-plan.ts` dựng kế hoạch bảy ngày,
+  tự im ở HÔM NAY khi việc ấy đã xong, và cắt theo trần 64 yêu cầu chờ của iOS.
+  Một cái "hẹn giờ" riêng của thẻ này sẽ là một lịch thứ hai trong cùng một app
+  — hai nơi cùng nói về một buổi sáng, và chỉ một trong hai bắn được thông báo.
+
+  Năm khoá cũ chỉ phủ hai dòng (buổi tập, cân nặng), nên ba khoá `meal`,
+  `biometrics`, `sleepLog` được thêm vào chính bộ ấy — xem `ReminderKey`.
+*/
+const TODO_REMINDER: Record<TodoKey, TimedReminderKey> = {
+  meal: 'meal',
+  workout: 'workout',
+  /* KHÔNG phải `bedtime`: đó là "đi ngủ đi", còn dòng này là "ghi lại đêm qua",
+     một việc của buổi sáng. Xem chú thích ở `ReminderKey`. */
+  sleep: 'sleepLog',
+  biometrics: 'biometrics',
+  weight: 'weighIn',
+};
+
 export function TodoCard() {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -170,7 +197,10 @@ function TodoRow({ itemKey, label, action }: { itemKey: TodoKey; label: string; 
       <View style={styles.tile}>
         <Icon icon={ICON[itemKey]} size={16} color={tint} />
       </View>
-      <Text style={styles.label}>{label}</Text>
+      <View style={styles.text}>
+        <Text style={styles.label}>{label}</Text>
+        <ReminderLine itemKey={itemKey} />
+      </View>
       <PressScale
         accessibilityRole="button"
         accessibilityLabel={`${action} ${label}`}
@@ -184,6 +214,76 @@ function TodoRow({ itemKey, label, action }: { itemKey: TodoKey; label: string; 
         }}>
         <Text style={styles.actionText}>{action}</Text>
       </PressScale>
+    </View>
+  );
+}
+
+/**
+ * Dòng giờ dưới tên việc.
+ *
+ * ── ba trạng thái, và trạng thái thứ ba là im lặng ──
+ *
+ * Chưa hẹn thì hiện một lối vào nhạt ("Hẹn giờ"). Đã hẹn thì hiện đúng cái
+ * đồng hồ của iOS — cùng `DateField` mà màn Nhắc nhở dùng, nên giờ sửa ở đây
+ * hay ở đó đều là một giá trị, một lịch.
+ *
+ * Trạng thái thứ ba: `available` là `false` ngoài iOS, và ở đó dòng này KHÔNG
+ * dựng. Một nút hẹn giờ không bao giờ bắn được thông báo thì tệ hơn là không
+ * có nút: nó hứa một việc mà nền tảng không làm.
+ */
+function ReminderLine({ itemKey }: { itemKey: TodoKey }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const i18n = useI18n();
+  /*
+    Instance thứ ba của `useReminders`, và điều đó AN TOÀN theo đúng thiết kế
+    của nó: `prefs` sống ở một store phạm vi module có listener — chú thích
+    "the switches are one person's answer, and there were two copies of it" ghi
+    lại lần app đã trả giá cho việc mỗi mount giữ một bản riêng. Và lượt ghi
+    lịch được chặn bằng chữ ký đã lưu, nên hai mount không đặt lịch hai lần.
+  */
+  const { prefs, available, toggle, setTime } = useReminders();
+
+  if (!available) return null;
+  const key = TODO_REMINDER[itemKey];
+  const r = prefs[key];
+
+  if (!r.enabled) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${i18n.nTodoSetReminder} — ${i18n.nReminderTime}`}
+        hitSlop={8}
+        style={styles.remindOff}
+        onPress={() => {
+          Haptics.selectionAsync();
+          toggle(key, true);
+        }}>
+        <Icon icon={Bell} size={12} color={c.mutedForeground} />
+        <Text style={styles.remindOffText}>{i18n.nTodoSetReminder}</Text>
+      </Pressable>
+    );
+  }
+
+  return (
+    <View style={styles.remindOn}>
+      <Text style={styles.remindLabel}>{i18n.nTodoRemindAt}</Text>
+      <DateField
+        value={timeToDate(r.hour, r.minute)}
+        mode="time"
+        display="compact"
+        onChange={(_, d) => d && setTime(key, d.getHours(), d.getMinutes())}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={i18n.nTodoReminderOff}
+        hitSlop={10}
+        onPress={() => {
+          Haptics.selectionAsync();
+          toggle(key, false);
+        }}>
+        <Icon icon={BellOff} size={13} color={c.mutedForeground} />
+      </Pressable>
     </View>
   );
 }
@@ -205,7 +305,10 @@ function WeightRow({ label, action, tint }: { label: string; action: string; tin
         <View style={styles.tile}>
           <Icon icon={ICON.weight} size={16} color={tint} />
         </View>
-        <Text style={styles.label}>{label}</Text>
+        <View style={styles.text}>
+          <Text style={styles.label}>{label}</Text>
+          <ReminderLine itemKey="weight" />
+        </View>
         <PressScale
           accessibilityRole="button"
           accessibilityLabel={`${action} ${label}`}
@@ -247,7 +350,14 @@ const stylesFor = makeStyles((c, m) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  label: { ...type.body, color: c.foreground, flex: 1 },
+  /* Chữ và giờ nằm CHUNG một cột, để cái nút bên phải canh theo cả khối chứ
+     không canh theo riêng dòng chữ. */
+  text: { flex: 1, gap: 2 },
+  label: { ...type.body, color: c.foreground },
+  remindOn: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  remindLabel: { ...type.caption, color: c.mutedForeground },
+  remindOff: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  remindOffText: { ...type.caption, color: c.mutedForeground },
   /* Viền chứ không đặc: năm dòng với năm nút đặc trên một thẻ là năm hành động
      chính, và không có hành động nào là chính cả — chúng ngang hàng nhau. */
   action: {

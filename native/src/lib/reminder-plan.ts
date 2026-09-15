@@ -37,7 +37,49 @@
  * runs the real rules against real dates.
  */
 
-export type ReminderKey = 'water' | 'supplements' | 'bedtime' | 'weighIn' | 'workout';
+/**
+ * ── ba khoá cho ba việc trong thẻ "Cần làm hôm nay" ──
+ *
+ * `meal`, `biometrics` và `sleepLog` ra đời khi chủ dự án yêu cầu mỗi dòng
+ * trong thẻ ấy đặt được giờ và bắn thông báo thật. Năm khoá cũ chỉ phủ được
+ * hai dòng — buổi tập (`workout`) và cân nặng (`weighIn`).
+ *
+ * `sleepLog` KHÔNG phải `bedtime`, và đây là chỗ dễ gộp nhầm nhất: `bedtime`
+ * nhắc bạn đi ngủ, tức một việc làm buổi tối và không bao giờ "xong" (chú
+ * thích trong `planReminders` nói rõ nó không có trạng thái nào làm nó thừa).
+ * `sleepLog` nhắc bạn GHI LẠI đêm qua — một việc làm buổi sáng, và nó xong hẳn
+ * ngay khi có một bản ghi cho hôm nay. Hai giờ khác nhau, hai hành động khác
+ * nhau, hai điều kiện tắt khác nhau.
+ *
+ * ── giá của ba khoá này, đo chứ không đoán ──
+ *
+ * iOS chỉ giữ `MAX_PENDING` = 64 yêu cầu chờ, và ở cài đặt mặc định bộ lập lịch
+ * đã xin 77 (xem chú thích ở đó). Ba khoá mới là ba thông báo một lần mỗi ngày,
+ * tức +21 trên tầm 7 ngày nếu bật hết.
+ *
+ * Nó không rơi vào người chưa xin: cả ba mặc định `enabled: false`, đúng như
+ * năm khoá có trước. Ai bật hết thì tầm nhìn ngắn lại — và đó là sự đánh đổi
+ * người ấy tự chọn, không phải thứ mặc định áp lên tất cả.
+ */
+export type ReminderKey =
+  | 'water'
+  | 'supplements'
+  | 'bedtime'
+  | 'weighIn'
+  | 'workout'
+  | 'meal'
+  | 'biometrics'
+  | 'sleepLog';
+
+/**
+ * Khoá có MỘT giờ cố định — tức mọi khoá trừ `water`, vốn là một khoảng lặp.
+ *
+ * Dẫn ra bằng `Exclude` chứ không gõ lại: hai chỗ từng giữ danh sách này bằng
+ * tay (`setTime` trong `use-reminders`, `TimedKey` trong màn Nhắc nhở), nên
+ * thêm một khoá mới là ba lần sửa, và cái bị quên sẽ không báo lỗi — nó chỉ im
+ * lặng không cho đặt giờ.
+ */
+export type TimedReminderKey = Exclude<ReminderKey, 'water'>;
 
 export interface ReminderPrefs {
   water: { enabled: boolean; everyHours: number };
@@ -45,6 +87,9 @@ export interface ReminderPrefs {
   bedtime: { enabled: boolean; hour: number; minute: number };
   weighIn: { enabled: boolean; hour: number; minute: number };
   workout: { enabled: boolean; hour: number; minute: number };
+  meal: { enabled: boolean; hour: number; minute: number };
+  biometrics: { enabled: boolean; hour: number; minute: number };
+  sleepLog: { enabled: boolean; hour: number; minute: number };
 }
 
 /** What is already true today, and what the week says about training. */
@@ -55,6 +100,12 @@ export interface ReminderContext {
   weighedToday: boolean;
   /** every supplement on the stack is ticked, or there are none to take */
   supplementsDone: boolean;
+  /** at least one meal is logged for today */
+  mealLoggedToday: boolean;
+  /** a biometric sample exists for today */
+  bioLoggedToday: boolean;
+  /** last night's sleep is written down */
+  sleepLoggedToday: boolean;
   /** today's water has reached the target */
   waterDone: boolean;
   /**
@@ -162,6 +213,29 @@ export function planReminders(
 
     if (prefs.weighIn.enabled && !(isToday && ctx.weighedToday)) {
       push('weighIn', at(now, day, prefs.weighIn.hour, prefs.weighIn.minute));
+    }
+
+    /*
+      Ba việc của thẻ "Cần làm hôm nay" mà năm khoá cũ không với tới.
+
+      Cùng một hình dạng với `weighIn`: một lần mỗi ngày, và HÔM NAY thì im nếu
+      việc ấy đã xong. Vế `isToday &&` là thứ giữ cho các ngày sau vẫn được đặt
+      — hôm nay đã ghi bữa ăn không nói gì về ngày mai.
+    */
+    if (prefs.meal.enabled && !(isToday && ctx.mealLoggedToday)) {
+      push('meal', at(now, day, prefs.meal.hour, prefs.meal.minute));
+    }
+
+    if (prefs.biometrics.enabled && !(isToday && ctx.bioLoggedToday)) {
+      push('biometrics', at(now, day, prefs.biometrics.hour, prefs.biometrics.minute));
+    }
+
+    /*
+      `sleepLog` tắt được, `bedtime` thì không — xem chú thích ở `ReminderKey`.
+      Ghi lại đêm qua là việc xong hẳn khi đã có bản ghi; đi ngủ thì không.
+    */
+    if (prefs.sleepLog.enabled && !(isToday && ctx.sleepLoggedToday)) {
+      push('sleepLog', at(now, day, prefs.sleepLog.hour, prefs.sleepLog.minute));
     }
 
     /*

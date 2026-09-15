@@ -28,7 +28,7 @@
  * 10. the old always-on behaviour is rebuilt and required to fail rules 2 and 3
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -54,12 +54,20 @@ try {
     bedtime: { enabled: true, hour: 22, minute: 30 },
     weighIn: { enabled: true, hour: 7, minute: 0 },
     workout: { enabled: true, hour: 17, minute: 0 },
+    /* Ba khoá của thẻ "Cần làm hôm nay". Bật hết ở đây là cố ý: luật này đo
+       trường hợp NẶNG NHẤT, và trần 64 yêu cầu chờ chỉ có nghĩa khi đo ở đó. */
+    meal: { enabled: true, hour: 20, minute: 0 },
+    biometrics: { enabled: true, hour: 7, minute: 30 },
+    sleepLog: { enabled: true, hour: 8, minute: 0 },
   };
   const CLEAR = {
     workedOutToday: false,
     weighedToday: false,
     supplementsDone: false,
     waterDone: false,
+    mealLoggedToday: false,
+    bioLoggedToday: false,
+    sleepLoggedToday: false,
     trainingDays: null,
   };
   /** a Wednesday, mid-morning — before every reminder time except water's first */
@@ -177,7 +185,41 @@ try {
     problems.push('the rebuilt old behaviour no longer nudges on rest days — this proves nothing');
   }
 
-  if (problems.length) {
+  /* ── mọi khoá CÓ GIỜ đều sửa được ở màn Nhắc nhở ──
+
+   Thẻ "Cần làm hôm nay" bật được lời nhắc cho từng dòng, nhưng nó chỉ cho đổi
+   GIỜ của dòng đang hiện — và dòng biến mất ngay khi việc ấy xong. Màn Nhắc
+   nhở là chỗ duy nhất thấy được tất cả cùng lúc, nên một khoá vắng mặt ở đó là
+   một lời nhắc bật được mà không tắt được, cho tới ngày hôm sau.
+
+   Danh sách được ĐỌC từ hai nguồn chứ không gõ lại: union `ReminderKey` trong
+   `reminder-plan.ts` trừ `water` (vốn là một khoảng lặp, không có giờ), so với
+   các khoá trong mảng `timed` của màn. */
+{
+  const plan = readFileSync(path.join(NATIVE, 'src/lib/reminder-plan.ts'), 'utf8');
+  const union = /export type ReminderKey =([\s\S]*?);/.exec(plan);
+  const screen = readFileSync(path.join(NATIVE, 'src/app/reminders.tsx'), 'utf8');
+  const arr = /const timed: \{[^}]*\}\[\] = \[([\s\S]*?)\n  \];/.exec(screen);
+  if (!union || !arr) {
+    problems.push('không đọc được danh sách khoá nhắc (union ReminderKey hoặc mảng `timed`)');
+  } else {
+    const keys = [...union[1].matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1]).filter((k) => k !== 'water');
+    const shown = [...arr[1].matchAll(/key: '([a-zA-Z]+)'/g)].map((m) => m[1]);
+    const missing = keys.filter((k) => !shown.includes(k));
+    if (missing.length) {
+      problems.push(
+        `màn Nhắc nhở thiếu ${missing.length} khoá có giờ: ${missing.join(', ')} — bật được từ thẻ Cần ` +
+          'làm mà không sửa hay tắt được ở đâu cả',
+      );
+    }
+    const extra = shown.filter((k) => !keys.includes(k));
+    if (extra.length) {
+      problems.push(`màn Nhắc nhở còn hiện ${extra.join(', ')} — khoá ấy không còn trong ReminderKey`);
+    }
+  }
+}
+
+if (problems.length) {
     console.error('nhắc nhở CÓ LỖI:');
     for (const p of problems) console.error(`  - ${p}`);
     process.exit(1);

@@ -41,6 +41,24 @@ export const DEFAULT_REMINDERS: ReminderPrefs = {
   bedtime: { enabled: false, hour: 22, minute: 30 },
   weighIn: { enabled: false, hour: 7, minute: 0 },
   workout: { enabled: false, hour: 17, minute: 0 },
+  /*
+    Ba giờ mặc định, và mỗi cái đến từ LÚC việc ấy làm được, không phải từ một
+    con số tròn:
+
+      meal       20:00  — lời nhắc này nghĩa là "hôm nay chưa ghi bữa nào", nên
+                          nó chỉ có ích ở cuối ngày, khi câu ấy còn sửa được.
+      sleepLog   08:00  — đêm qua được ghi sau khi thức dậy, không phải trước
+                          khi đi ngủ. Đây là chỗ nó khác `bedtime` 22:30.
+      biometrics 07:30  — nhịp tim nghỉ và HRV là số đo buổi sáng; lệch nửa
+                          tiếng khỏi `weighIn` (07:00) để hai chuông không rơi
+                          vào cùng một phút.
+
+    Cả ba `enabled: false` như năm khoá có trước: một khoá mới không được tự ý
+    thêm thông báo vào máy của ai.
+  */
+  meal: { enabled: false, hour: 20, minute: 0 },
+  biometrics: { enabled: false, hour: 7, minute: 30 },
+  sleepLog: { enabled: false, hour: 8, minute: 0 },
 };
 
 /** Copy for each reminder in the active language. */
@@ -50,6 +68,9 @@ export interface ReminderCopy {
   bedtime: { title: string; body: string };
   weighIn: { title: string; body: string };
   workout: { title: string; body: string };
+  meal: { title: string; body: string };
+  biometrics: { title: string; body: string };
+  sleepLog: { title: string; body: string };
 }
 
 export function notificationsAvailable(): boolean {

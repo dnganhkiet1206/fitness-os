@@ -129,6 +129,38 @@ try {
       problems.push(`${CARD}: bảng \`${name}\` có [${got.join(', ')}], cần [${expect.join(', ')}]`);
     }
   }
+  /* ── 3b. mỗi dòng hẹn được giờ, và dòng giấc ngủ KHÔNG mượn `bedtime` ──
+
+     `bedtime` nhắc bạn đi ngủ: một việc buổi tối, không bao giờ "xong", và
+     `planReminders` cố ý không tắt nó theo trạng thái nào. Dòng To-do thì là
+     GHI LẠI đêm qua: việc buổi sáng, xong hẳn khi đã có bản ghi. Gộp hai cái là
+     bắn "ghi đêm qua" lúc 22:30 cho một đêm chưa xảy ra, và không bao giờ im
+     dù đã ghi. Đây là chỗ duy nhất trong bảng mà tên gần giống nhau. */
+  CASES++;
+  const remind = keysOf('TODO_REMINDER');
+  if (!remind || remind.join(',') !== order.join(',')) {
+    problems.push(`${CARD}: bảng \`TODO_REMINDER\` có [${remind?.join(', ') ?? '?'}], cần [${order.join(', ')}]`);
+  }
+  CASES++;
+  if (!/^\s*sleep: 'sleepLog',$/m.test(src)) {
+    problems.push(
+      `${CARD}: dòng giấc ngủ không trỏ vào \`sleepLog\`. Nếu nó mượn \`bedtime\` thì lời nhắc "ghi ` +
+        'lại đêm qua" bắn lúc đi ngủ, cho một đêm chưa xảy ra, và không bao giờ im dù đã ghi',
+    );
+  }
+  /* ── 3c. không hứa một thông báo mà nền tảng không bắn ── */
+  CASES++;
+  if (!/if \(!available\) return null;/.test(src)) {
+    problems.push(
+      `${CARD}: dòng hẹn giờ không chặn theo \`available\` — ngoài iOS thì \`notificationsAvailable()\` ` +
+        'là false, và một nút hẹn giờ không bao giờ bắn được gì thì tệ hơn là không có nút',
+    );
+  }
+  CASES++;
+  if (!/<ReminderLine\b/.test(src)) {
+    problems.push(`${CARD}: không còn dựng <ReminderLine /> — mỗi dòng phải hẹn được giờ`);
+  }
+
   CASES++;
   const labels = /const label: Record<TodoKey, string> = \{([\s\S]*?)\n  \};/.exec(src);
   const labelKeys = labels ? [...labels[1].matchAll(/^\s*(\w+):/gm)].map((x) => x[1]) : null;
@@ -216,5 +248,8 @@ console.log(
     'đến) và bảng nhãn phủ đúng năm khoá, nên một khoá thứ sáu không dựng ra được một dòng không có ' +
     'hình. Trạng thái ba việc đầu ĐỌC từ `useDailyQuests` chứ không tự đo lại, và thẻ im lặng tới ' +
     'khi ngày được đọc xong. Trên Today, hàng chip cũ không mọc lại. Và `useLogWeight()` chỉ có một ' +
-    'chỗ gọi duy nhất: cân nặng ghi được ở hai nơi nhưng chỉ bằng MỘT đường ghi',
+    'chỗ gọi duy nhất: cân nặng ghi được ở hai nơi nhưng chỉ bằng MỘT đường ghi. Mỗi dòng hẹn được ' +
+    'giờ qua đúng bộ lập lịch của app chứ không phải một cái hẹn riêng, dòng giấc ngủ trỏ vào ' +
+    '`sleepLog` chứ không mượn `bedtime` (một cái là ghi lại đêm qua vào buổi sáng, một cái là nhắc ' +
+    'đi ngủ và không bao giờ xong), và nút hẹn giờ không dựng ở nơi hệ điều hành không bắn thông báo',
 );

@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { Bell, Droplets, Dumbbell, type LucideIcon, Moon, Pill, Scale } from 'lucide-react-native';
+import { Bell, Droplets, Dumbbell, HeartPulse, type LucideIcon, Moon, Pill, Scale, Sunrise, Utensils } from 'lucide-react-native';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { DateField } from '@/components/ascnd/date-field';
@@ -15,21 +15,17 @@ import { useI18n } from '@/hooks/use-app-settings';
 import { useReminders } from '@/hooks/use-reminders';
 import { useProfile } from '@/hooks/useTodayData';
 import type { ReminderPrefs } from '@/lib/notifications';
+import type { TimedReminderKey } from '@/lib/reminder-plan';
 import { habitFor, usePersonalModel } from '@/lib/personal-model';
 import {
   formatClock,
   suggestedTime,
-  worthOffering,
+  timeToDate,
   type TimedReminder,
+  worthOffering,
 } from '@/lib/reminder-timing';
 
 const WATER_INTERVALS = [1, 2, 3, 4];
-
-function timeToDate(hour: number, minute: number) {
-  const d = new Date();
-  d.setHours(hour, minute, 0, 0);
-  return d;
-}
 
 export default function RemindersScreen() {
   const c = usePalette();
@@ -69,14 +65,27 @@ export default function RemindersScreen() {
     workout: workout
       ? i18n.nSmartWorkout.replace('{t}', formatClock({ hour: Math.round(workout.hour), minute: 0 }))
       : null,
+    sleepLog: known.waketime
+      ? i18n.nSmartWake.replace('{t}', String(known.waketime).slice(0, 5))
+      : null,
     supplements: null,
+    meal: null,
+    biometrics: null,
   };
 
-  type TimedKey = 'supplements' | 'bedtime' | 'weighIn' | 'workout';
+  /*
+    Bảy khoá có giờ, và danh sách này phải ĐỦ: kiểu đến từ `reminder-plan`, nên
+    thiếu một khoá là một lời nhắc bật được từ thẻ Cần làm mà màn này không sửa
+    được giờ. `tools/reminders.mjs` đếm lại.
+  */
+  type TimedKey = TimedReminderKey;
   const timed: { key: TimedKey; icon: LucideIcon; color: string; title: string }[] = [
+    { key: 'meal', icon: Utensils, color: c.metricOrangeGraphic, title: i18n.nReminderMeal },
     { key: 'supplements', icon: Pill, color: c.metricPurple, title: i18n.nReminderSupplements },
     { key: 'workout', icon: Dumbbell, color: c.primary, title: i18n.nReminderWorkout },
     { key: 'weighIn', icon: Scale, color: c.metricBlue, title: i18n.nReminderWeighIn },
+    { key: 'biometrics', icon: HeartPulse, color: c.readinessRed, title: i18n.nReminderBiometrics },
+    { key: 'sleepLog', icon: Sunrise, color: c.metricCyan, title: i18n.nReminderSleepLog },
     { key: 'bedtime', icon: Moon, color: c.metricOrangeGraphic, title: i18n.nReminderBedtime },
   ];
 

@@ -7,6 +7,7 @@ import { useTodayWater } from '@/hooks/use-water';
 import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
 import { DAILY_QUESTS, questRefKey, type QuestKey } from '@/lib/mascot-room';
 import { localDateStr } from '@/lib/local-date';
+import { mealDone, sleepDone } from '@/lib/todo';
 
 /**
  * Today's five quests, in one place, for every screen that needs them.
@@ -91,10 +92,12 @@ export function useDailyQuests(): DailyQuests {
 
   return useMemo(() => {
     const done: Record<QuestKey, boolean> = {
-      meal: (Number(dailyLog?.kcal) || 0) > 0,
+      /* Vị từ ở `lib/todo.ts`: bộ lập lịch nhắc giờ phải trả lời đúng hai câu
+         này, và hai bản sẽ lệch nhau. */
+      meal: mealDone(dailyLog?.kcal),
       workout: (dailyLog?.workout_count ?? 0) > 0,
       water: (waterMl ?? 0) >= (Number(profile?.water_target_ml) || 2500),
-      sleep: sleep != null || (Number(dailyLog?.sleep_duration_min) || 0) > 0,
+      sleep: sleepDone(sleep != null, dailyLog?.sleep_duration_min),
       /*
         ── the app had three opinions about how far a day's walk is ──
 

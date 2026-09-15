@@ -43,3 +43,33 @@ export function todoProgress(done: TodoDone): { done: number; total: number } {
     total: TODO_ORDER.length,
   };
 }
+
+/**
+ * "Xong" nghĩa là gì, cho hai việc mà nhiều nơi cùng phải trả lời.
+ *
+ * ── vì sao hai vị từ này phải rời khỏi chỗ chúng sinh ra ──
+ *
+ * `use-daily-quests` đã định nghĩa chúng cho phòng Koa, và từ khi có hẹn giờ
+ * thì bộ lập lịch cũng phải trả lời đúng hai câu ấy — một lời nhắc "ghi bữa
+ * ăn" bắn ra sau khi đã ghi là đúng cái phiền mà `!(isToday && ...)` sinh ra để
+ * chặn. Viết lại điều kiện ở chỗ thứ hai là mở đường cho hai nơi lệch nhau,
+ * kiểu app đã trả giá với "ba ý kiến về một ngày đi bộ bao xa".
+ *
+ * Nên chúng ở đây, và cả hai chỗ GỌI. `tools/todo-card.mjs` chạy chúng.
+ */
+
+/** Có calo ghi cho hôm nay thì coi như đã ghi bữa. */
+export function mealDone(kcal: unknown): boolean {
+  return (Number(kcal) || 0) > 0;
+}
+
+/**
+ * Đêm qua đã được ghi chưa.
+ *
+ * Hai nguồn, vì app nhận giấc ngủ theo hai đường: một hàng `sleep_logs` do
+ * người dùng hoặc HealthKit ghi, hoặc một con số phút nằm thẳng trong nhật ký
+ * ngày. Thiếu vế nào cũng thành "chưa ghi" cho một đêm đã có dữ liệu.
+ */
+export function sleepDone(hasSleepRow: boolean, minutes: unknown): boolean {
+  return hasSleepRow || (Number(minutes) || 0) > 0;
+}

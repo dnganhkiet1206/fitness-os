@@ -151,18 +151,25 @@ try {
      const { planReminders, planSignature, MAX_PENDING, HORIZON_DAYS } = require('./reminder-plan.js');
 
      const COPY = { water:{title:'water',body:'b'}, supplements:{title:'supp',body:'b'},
-       bedtime:{title:'bed',body:'b'}, weighIn:{title:'weigh',body:'b'}, workout:{title:'work',body:'b'} };
+       bedtime:{title:'bed',body:'b'}, weighIn:{title:'weigh',body:'b'}, workout:{title:'work',body:'b'},
+       meal:{title:'meal',body:'b'}, biometrics:{title:'bio',body:'b'}, sleepLog:{title:'slog',body:'b'} };
      const ALL = (every) => ({
        water: { enabled: true, everyHours: every },
        supplements: { enabled: true, hour: 9, minute: 0 },
        bedtime: { enabled: true, hour: 22, minute: 30 },
        weighIn: { enabled: true, hour: 7, minute: 0 },
        workout: { enabled: true, hour: 17, minute: 0 },
+       meal: { enabled: true, hour: 20, minute: 0 },
+       biometrics: { enabled: true, hour: 7, minute: 30 },
+       sleepLog: { enabled: true, hour: 8, minute: 0 },
      });
      const OFF = {
        water: { enabled: false, everyHours: 2 }, supplements: { enabled: false, hour: 9, minute: 0 },
        bedtime: { enabled: false, hour: 22, minute: 30 }, weighIn: { enabled: false, hour: 7, minute: 0 },
        workout: { enabled: false, hour: 17, minute: 0 },
+       meal: { enabled: false, hour: 20, minute: 0 },
+       biometrics: { enabled: false, hour: 7, minute: 30 },
+       sleepLog: { enabled: false, hour: 8, minute: 0 },
      };
      const CTX = { workedOutToday:false, weighedToday:false, supplementsDone:false, waterDone:false, trainingDays:null };
      const NOW = new Date(2026, 7, 18, 6, 0, 0);
@@ -191,7 +198,10 @@ try {
        o.hourlyRequested = r1.requested;
        o.hourlyScheduled = r1.scheduled;
        o.hourlyPending = pending();
-       /* every kind still represented, and in time order */
+       /* every kind still represented, and in time order.
+          wantedKinds duoc DAN tu chinh ke hoach vua xin, khong go tay — xem
+          chu thich o cho khang dinh ben duoi. */
+       o.wantedKinds = [...new Set(big.map((x) => COPY[x.key].title))].sort().join(',');
        o.kinds = [...new Set(notif.__state.pending.map((p) => p.title))].sort().join(',');
        o.ordered = notif.__state.pending.every((p, i, a) => i === 0 || a[i - 1].date <= p.date);
 
@@ -279,9 +289,19 @@ try {
     r.hourlyRequested === r.hourlyScheduled && r.hourlyPending === r.hourlyRequested,
     `xin ${r.hourlyRequested} nhưng đặt được ${r.hourlyScheduled}, hệ điều hành giữ ${r.hourlyPending}`,
   );
+  /*
+    `wantedKinds` được DẪN từ chính kế hoạch vừa xin, không gõ tay.
+
+    Bản trước so với chuỗi cứng `'bed,supp,water,weigh,work'`, nên ngày thêm ba
+    khoá cho thẻ "Cần làm hôm nay" thì luật đỏ — trong khi điều nó bảo vệ, "cắt
+    theo trần chỉ rút ngắn chân trời chứ không xoá hẳn một LOẠI", vẫn đúng
+    nguyên. Một luật chỉ đúng với đúng năm khoá là một luật chặn việc thêm khoá
+    thứ sáu, không phải chặn lỗi.
+  */
   want(
-    r.kinds === 'bed,supp,water,weigh,work' && r.ordered,
-    `cắt theo trần làm mất hẳn một LOẠI nhắc chứ không phải rút ngắn chân trời: còn ${r.kinds} ` +
+    r.kinds === r.wantedKinds && r.ordered,
+    `cắt theo trần làm mất hẳn một LOẠI nhắc chứ không phải rút ngắn chân trời: xin ${r.wantedKinds}, ` +
+      `còn ${r.kinds} ` +
       `(thứ tự thời gian: ${r.ordered}). Cắt phần đuôi của một danh sách đã sắp theo giờ nghĩa là ` +
       '"đặt xa nhất trong khả năng của hệ điều hành", không phải "bỏ hẳn nhắc đi ngủ"',
   );
