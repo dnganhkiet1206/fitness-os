@@ -118,6 +118,13 @@ const OPEN_W = 72;
 /** Viên nang hẹp hơn cột, nên hai nút tách rời chứ không dính thành một dải. */
 const CAPSULE_W = OPEN_W - 12;
 /**
+ * Mép trái viên nang, tính từ mép cột.
+ *
+ * Là một hằng riêng vì nó làm hai việc: căn giữa viên nang trong cột khi chưa
+ * nở, và làm ĐIỂM NEO khi nở. Xem `swell`.
+ */
+const CAPSULE_INSET = (OPEN_W - CAPSULE_W) / 2;
+/**
  * Chiều cao NHÌN THẤY của cả nút: viên nang + khe + dòng chữ.
  *
  * Đây mới là đích chạm, không phải riêng viên nang — cả cột `OPEN_W` đều bấm
@@ -335,7 +342,16 @@ function Action({
   */
   const swell = useAnimatedStyle(() => {
     if (index !== 0) return {};
-    const span = Math.max(CAPSULE_W, Math.abs(translation.value) - spacing.sm * 2);
+    /*
+      Bề rộng để mép phải viên nang dừng cách nội dung hàng đúng `CAPSULE_INSET`
+      — cùng khe với mép trái, nên nút lấp KÍN khoảng hàng vừa nhường ra.
+
+      Bản trước tính `|translation| - spacing.sm * 2` và để viên nang căn GIỮA
+      trong cột 72. Nở ra thì nó giãn đều hai phía: với một cú kéo 250 điểm,
+      77 điểm chạy ra ngoài mép trái và bị cắt, còn mép phải chỉ tới 149 — để
+      hở 101 điểm trắng giữa nút và thẻ. Đúng ảnh chủ dự án chụp.
+    */
+    const span = Math.max(CAPSULE_W, Math.abs(translation.value) - CAPSULE_INSET * 2);
     return { width: CAPSULE_W + (span - CAPSULE_W) * full.value };
   });
 
@@ -778,12 +794,34 @@ const stylesFor = makeStyles((c) => ({
   },
   /* CÙNG hình với nút "Ghi" trên hàng — `radius.full`, không phải một ô vuông
      bo góc. Chủ dự án: "nhỏ hơn và cùng hình dạng với nút ghi". */
+  /*
+    ── viên nang NEO vào mép, không căn giữa ──
+
+    `position: absolute` + `left` cố định là thứ biến phép nở thành một chiều:
+    nó lớn về phía nội dung hàng và đứng yên ở phía kia. Căn giữa thì nó giãn
+    đều hai bên, một nửa chạy ra ngoài khung và bị cắt.
+
+    Khi CHƯA nở, `left: CAPSULE_INSET` đặt nó đúng giữa cột — 6 điểm mỗi bên —
+    nên hai nút không nở vẫn cân.
+
+    ── glyph cũng neo trái, và đó là cách Apple làm ──
+
+    `justifyContent: 'flex-start'` với một khoảng đệm bằng nửa phần thừa: chưa
+    nở thì glyph nằm đúng giữa viên nang; nở ra thì nó ĐỨNG YÊN cách mép trái
+    đúng khoảng ấy trong khi viên nang dài ra. Đối chiếu ảnh Nhạc của iOS: lúc
+    nút đã nở hết, dấu trừ nằm sát mép người ta vuốt từ đó, không trôi ra giữa.
+  */
   capsule: {
+    position: 'absolute',
+    left: CAPSULE_INSET,
+    top: 0,
     width: CAPSULE_W,
     height: CAPSULE_H,
     borderRadius: radius.full,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    paddingLeft: (CAPSULE_W - CAPSULE_ICON) / 2,
   },
   /* The whole capsule is the target, laid over it rather than wrapping it — a
      Pressable around an Animated.View would fight the swipe for the gesture. */

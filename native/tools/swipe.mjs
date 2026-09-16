@@ -387,6 +387,55 @@ function declOf(body, name) {
         'rời khỏi ngón tay, còn không nở gì thì không có gì nói "thả ra là làm"',
     );
   }
+
+  /* ── nút nở phải LẤP KÍN khoảng hàng nhường ra, và luật CHẠY phép tính ──
+
+     Bản đã ship nở đúng theo `translation` nhưng để viên nang CĂN GIỮA trong
+     cột, nên nó giãn đều hai phía: với một cú kéo 250 điểm, 77 điểm chạy ra
+     ngoài khung và bị cắt, còn mép phải chỉ tới 149 — hở 101 điểm trắng giữa
+     nút và thẻ. Chủ dự án chụp lại đúng mảng trắng ấy.
+
+     Luật dựng lại chính phép tính trong `swell` rồi hỏi hai câu: có bị cắt
+     không, và còn hở bao nhiêu. Nó không đọc chữ `position: absolute` — nó đo
+     KẾT QUẢ, nên một cách neo khác mà đúng vẫn xanh. */
+  {
+    const inset = /const CAPSULE_INSET = \(OPEN_W - CAPSULE_W\) \/ 2;/.test(src)
+      ? (openW - capW) / 2
+      : null;
+    /*
+      Đọc THÂN style `capsule`, không quét cả tệp: bản đầu của luật này hỏi
+      `/position: 'absolute'/` trên toàn bộ nguồn, mà `hit` cũng tuyệt đối — nên
+      nó vẫn xanh sau khi tôi gỡ hẳn phép neo ra để thử phá. Một luật xanh trên
+      đúng bản đã hỏng là một luật không tồn tại.
+    */
+    const capsuleBody = /\n  capsule: \{([\s\S]*?)\n  \},/.exec(src)?.[1] ?? '';
+    const anchored = /left: CAPSULE_INSET/.test(capsuleBody) && /position: 'absolute'/.test(capsuleBody);
+    const sub = /Math\.abs\(translation\.value\) - ([A-Za-z_]+) \* 2/.exec(src);
+    if (inset === null || !sub) {
+      problems.push(`${COMPONENT}: không đọc được phép neo/nở của nút để đo khoảng hở`);
+    } else {
+      const minus = sub[1] === 'CAPSULE_INSET' ? inset : NaN;
+      for (const drag of [120, 180, 250, 340]) {
+        const span = Math.max(capW, drag - (Number.isNaN(minus) ? 24 : minus * 2));
+        const left = anchored ? inset : openW / 2 - span / 2;
+        const right = left + span;
+        if (left < 0) {
+          problems.push(
+            `${COMPONENT}: kéo ${drag} điểm thì nút bị cắt mất ${Math.round(-left)} điểm bên trái — nó ` +
+              'giãn đều hai phía thay vì neo một mép',
+          );
+          break;
+        }
+        if (drag - right > inset + 1) {
+          problems.push(
+            `${COMPONENT}: kéo ${drag} điểm thì còn hở ${Math.round(drag - right)} điểm trắng giữa nút ` +
+              'và thẻ — nút nở phải lấp KÍN khoảng hàng vừa nhường ra',
+          );
+          break;
+        }
+      }
+    }
+  }
   if (!/Alert\.alert\(/.test(src) || !/style: 'destructive'/.test(src)) {
     problems.push(
       `${COMPONENT}: cú kéo dài không hỏi lại bằng hộp thoại của HỆ ĐIỀU HÀNH. Nó là cú dễ lỡ tay nhất ` +
