@@ -480,12 +480,43 @@ function declOf(body, name) {
       );
     }
   }
-  /* Cái nảy: có, và KHÔNG được nằm trong phần bám ngón tay. */
-  if (!/withSpring\(1, spring\([\d.]+, BOUNCE\.bouncy\)\)/.test(src)) {
+  /* ── cái nảy: PHẢI CÓ, và phải nằm NGOÀI phần bám ngón tay ──
+
+     Hai vế, và vế sau mới là vế khó. Phần bám ngón tay phải là một phép nội suy
+     thuần theo `progress`: kéo tới đâu nút ở đúng đó. Nhét lò xo vào đó là để
+     nút trôi sau ngón tay, đúng thứ làm swipe của một app thấy rẻ tiền. */
+  if (!/withSpring\([^)]*spring\([\d.]+, BOUNCE\.bouncy\)\)/.test(src)) {
     problems.push(
-      `${COMPONENT}: nút không nảy khi hàng mở xong — đặt hàng là "hiệu ứng sinh động nảy như apple", ` +
-        'và cái nảy thuộc khoảnh khắc THẢ RA chứ không thuộc phần kéo',
+      `${COMPONENT}: không còn lò xo \`bouncy\` nào — đặt hàng là "hiệu ứng sinh động nảy như apple"`,
     );
+  }
+  {
+    const grow = /const grow = useAnimatedStyle\(\(\) => \(\{([\s\S]*?)\n  \}\)\);/.exec(src)?.[1] ?? '';
+    if (/withSpring|withTiming/.test(grow)) {
+      problems.push(
+        `${COMPONENT}: phần bám ngón tay có lò xo trong đó, nên nút trôi SAU ngón tay thay vì ở đúng ` +
+          'chỗ đã kéo tới',
+      );
+    }
+    /* ── và nó KHÔNG được mờ hay thu nhỏ trong lúc kéo ──
+
+       Nút nằm DƯỚI hàng và được hàng trượt đi để lộ ra; cho nó chạy `opacity`
+       hay `scale` theo cú kéo là vẽ thêm một thứ không có ở iOS, và suốt quãng
+       kéo nó vừa nhạt vừa nhỏ hơn chỗ nó chiếm — chủ dự án báo đúng bằng câu
+       "trong quá trình di chuyển nút bị mờ". Với nút NỞ thì `scale` còn sai về
+       hình học: thu 0,86 một viên nang 238 làm khe 6 điểm thành 39. */
+    if (/opacity:/.test(grow)) {
+      problems.push(
+        `${COMPONENT}: nút mờ dần theo cú kéo. Nó phải ĐẶC và được hàng trượt đi để lộ ra, không phải ` +
+          'hiện lên — mặt thẻ ánh qua thì nó đọc ra là một tấm mờ đang trôi tới',
+      );
+    }
+    if (/scale:/.test(grow)) {
+      problems.push(
+        `${COMPONENT}: nút thu nhỏ theo cú kéo, nên nó nhỏ hơn chỗ nó chiếm; với nút NỞ thì nó còn phá ` +
+          'luôn cái khe vừa tính kỹ giữa nút và thẻ',
+      );
+    }
   }
 
   /* ── ngưỡng kéo-dài phải VỚI TỚI ĐƯỢC, và luật CHẠY công thức của thư viện ──

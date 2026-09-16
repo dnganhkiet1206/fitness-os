@@ -273,73 +273,32 @@ function Action({
     tự ấy — nút ngoài cùng (index 0, sát mép) mở trước — nhưng cả ba vẫn về
     đích ở cùng `progress` 1, nên không nút nào còn đang bò khi hàng đã dừng.
   */
-  const lag = (index / Math.max(count, 1)) * 0.35;
   /*
-    ── mỗi nút CHẠY THEO NÚT GẦN NHẤT, không chạy đồng loạt ──
+    ── nút được LỘ RA, không phải hiện lên ──
 
-    Chủ dự án: "nó phải chạy theo từng nút gần nhất chứ không phải là đồng loạt".
-    Bản trước chỉ lệch nhau ở `lag` của phép phóng to, nên ba nút vẫn nằm sẵn ở
-    đúng chỗ ngay từ đầu và chỉ lớn dần lên — mắt đọc ra là cả cụm hiện cùng lúc.
+    Chủ dự án: "trong quá trình di chuyển nút bị mờ". Đúng, và nó là một phỏng
+    đoán sai của tôi chứ không phải một lỗi cài đặt: bản trước cho nút chạy từ
+    `opacity` 0 lên 1 và từ `scale` 0,86 lên 1 theo cú kéo, nên suốt quãng kéo
+    nó vừa nhạt vừa nhỏ hơn chỗ nó chiếm — mặt thẻ ánh qua và nó đọc ra là một
+    tấm mờ đang trôi tới.
 
-    Ở iOS thì các nút nằm YÊN ở mép, và HÀNG trượt qua chúng, nên cái ngoài cùng
-    lộ ra trước rồi tới cái kế. Dựng lại đúng chuyện đó: ở lúc đóng, nút thứ `i`
-    bị đẩy thêm `i` cột về phía mép — tức cả ba chồng lên nhau ngay dưới hàng —
-    rồi giãn về chỗ của mình khi hàng đi ra. Nút ngoài cùng (index 0) không lệch
-    gì cả, nên nó lộ ra ngay từ điểm ảnh đầu tiên.
+    iOS không làm thế. Nút ở đó sẵn, đặc, đủ cỡ, NẰM DƯỚI hàng; thứ chuyển động
+    là HÀNG, và nút lộ ra đúng bằng phần hàng đã đi khỏi. Cấu trúc ở đây vốn đã
+    đúng để làm vậy — tấm nút là `absoluteFill` nằm sau, còn hàng có nền đặc phủ
+    kín — nên chỉ cần thôi vẽ thêm.
 
-    Dấu phụ thuộc mép: mép phải hàng đi sang TRÁI nên các nút phải bị đẩy sang
-    PHẢI lúc đóng, và ngược lại ở mép trái.
+    Và với nút NỞ, `scale` còn sai về hình học: thu nhỏ 0,86 một viên nang rộng
+    238 làm nó còn 205, tức cái khe 6 điểm vừa tính kỹ ở lượt trước biến thành
+    39 điểm suốt quãng kéo.
+
+    Còn lại đúng một phép: `translateX` xếp chồng các nút lúc đóng để chúng lộ
+    ra LẦN LƯỢT từ mép vào, chứ không đồng loạt.
   */
   const stack = index * OPEN_W * (side === 'right' ? 1 : -1);
-  /*
-    ── cái NẢY lúc hàng mở xong ──
-
-    Chủ dự án: "các nút có hiệu ứng sinh động nảy như apple". Phần bám ngón tay
-    thì không được nảy — kéo tới đâu nút phải ở đúng đó, và `tools/swipe.mjs`
-    canh chính chuyện ấy. Cái nảy thuộc về khoảnh khắc KHÁC: lúc thả ra và hàng
-    tự chạy nốt tới vị trí mở.
-
-    Nên nó là một giá trị riêng, chạy bằng lò xo `bouncy` khi `progress` vượt
-    ngưỡng cam kết, và nhân vào phép phóng to bám-ngón-tay. Lò xo vượt quá 1 rồi
-    lắng về 1, nên nút nhún một cái đúng lúc nó tới nơi.
-
-    `pop` lùi về 0 khi hàng đóng lại, nên lần mở sau nảy lại chứ không nảy một
-    lần rồi thôi.
-  */
-  const pop = useSharedValue(0);
-  useAnimatedReaction(
-    () => progress.value > 0.92,
-    (open, before) => {
-      if (before !== null && open === before) return;
-      pop.value = open ? withSpring(1, spring(0.3, BOUNCE.bouncy)) : 0;
-    },
-  );
   const grow = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: interpolate(progress.value, [0, 1], [stack, 0], 'clamp') },
-      {
-        scale:
-          interpolate(progress.value, [lag, 1], [0.86, 1], 'clamp') *
-          interpolate(pop.value, [0, 1], [0.94, 1]),
-      },
-    ],
-    opacity: interpolate(progress.value, [lag, lag + 0.25, 1], [0, 0.85, 1], 'clamp'),
+    transform: [{ translateX: interpolate(progress.value, [0, 1], [stack, 0], 'clamp') }],
   }));
-  /*
-    ── nút NỞ RA khi cú kéo đã đủ tầm ──
 
-    Chủ dự án gửi bốn ảnh: ở Nhắc nhở và ở Nhạc, kéo quá nửa màn thì nút ngoài
-    cùng phình ra chiếm hết khoảng đã kéo, chữ dưới nó biến mất, và chỉ còn cái
-    glyph. Đó là cách iOS nói "thả ra là làm" mà không cần một dòng chữ nào.
-
-    Bề rộng bám THẲNG `translation` — khoảng ngón tay đã kéo — nên nút lớn lên
-    đúng bằng chỗ nó sắp chiếm, chứ không chạy tới một con số định sẵn.
-    `full` có lò xo `bouncy`, nên lúc vượt ngưỡng nó NẢY một cái: `BOUNCE` ghi
-    0,3 là trần và "chưa chỗ nào trong app cần tới đây" — chỗ này là chỗ đầu
-    tiên, vì đây đúng là khoảnh khắc cần một cái nảy để báo đã sang ngưỡng khác.
-
-    Chỉ nút NGOÀI CÙNG nở: nó là nút cú kéo dài sẽ kích hoạt.
-  */
   /*
     ── nút GIÃN THEO THẺ từ điểm ảnh đầu tiên, không chờ ngưỡng ──
 
