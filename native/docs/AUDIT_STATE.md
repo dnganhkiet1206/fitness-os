@@ -6,8 +6,8 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-16 · cú vuốt: ngưỡng theo số nút, hàng vuốt được phải
-ĐỤC, và một lần `node_modules` bị xoá sạch giữa chừng · nhánh
+**Vòng gần nhất:** 2026-09-16 · cú vuốt: trượt chậm lại, nút hiện ra như nút
+"Ghi", và một `transform` bị nuốt im lặng · nhánh
 `claude/ios-fitness-rebuild-omgulr`
 (vòng rà pháp y đầy đủ gần nhất: 2026-09-14, commit `cf687a2`)
 
@@ -29,12 +29,101 @@ gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trư�
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
-| `node tools/check.mjs` | **XANH** | exit 0, **252** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
+| `node tools/check.mjs` | **XANH** | exit 0, **253** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 252 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 252 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 252 bước ở trên |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 253 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 253 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 253 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## 16/09 (b) — "trượt từ từ hơn", và một `transform` bị nuốt im lặng
+
+Chủ dự án, hai việc: *"thanh trượt thẻ của todo còn hơi nhanh… làm nó trượt từ
+từ nên mượt hơn"* và *"cho mấy cái nút action đằng sau thẻ có hiệu ứng hiện ra
+như nút ghi"*.
+
+### 1. Trượt chậm lại — `spring(0.24)` → `spring(0.34)`
+
+`duration` của `spring()` tỉ lệ nghịch với ω₀ (`stiffness = (2π/duration)²`),
+nên kéo dài nó là **hạ tần số riêng, giữ nguyên tỉ số giảm chấn** — hàng hạ cánh
+y hệt, chỉ đi quãng ấy chậm hơn. Đó đúng là "trượt từ từ" chứ không phải "nảy
+nhiều hơn". Đo bằng lò xo thật của Reanimated, quãng 72 điểm:
+
+| duration | ω₀ | 90% | settle | vọt lố khi bắn mạnh |
+|---|---|---|---|---|
+| 0,24 (cũ) | 26,2 | 133ms | 433ms | 0,7đ |
+| **0,34** | **18,5** | **183ms** | **600ms** | **1,4đ** |
+| 0,40 | 15,7 | 217ms | 717ms | 2,4đ |
+| 0,50 | 12,6 | 267ms | 883ms | 5,4đ |
+
+Dừng ở 0,34 vì vọt lố là thứ trả giá: vọt qua 0 là hàng trượt sang phía **đối
+diện**, và tấm nút bên ấy nằm ngay dưới. Từ 0,40 con số ấy tăng nhanh hơn hẳn
+phần "chậm rãi" thu được. `SWIPE_SNAP` dùng ở hai chỗ nên `today-meals.tsx` chậm
+theo — đúng điều chú thích của chính hằng ấy đã lập luận: một cử chỉ, một nhịp.
+
+### 2. Một `transform` bị nuốt im lặng — và nó giải thích luôn lời phàn nàn cũ
+
+`<Animated.View style={[styles.actionWrap, grow, bounce]}>`, với `grow` viết
+`transform: [{ translateX }]` và `bounce` viết `transform: [{ scale }]`. **React
+Native gộp style theo THUỘC TÍNH**, không gộp bên trong mảng `transform`: cái sau
+thay thế trọn vẹn cái trước. Đo trên bản dựng, nút mép phải:
+
+    matrix(0.9, 0, 0, 0.9, 0, 0)   ở CẢ BỐN vị trí kéo và cả sau khi mở hẳn
+
+Tức parallax **đứng yên ở 0**, và `scale` kẹt ở **0,9 vĩnh viễn** — vì `pop`
+khởi tạo 0 và `interpolate(pop, [0,1], [0.9,1])` trả về đáy 0,9 ở mọi lúc trừ
+đúng khoảnh khắc vượt ngưỡng. Một "cái nhún" mà trạng thái nghỉ là 0,9 thì không
+phải cái nhún, nó là một phép thu nhỏ thường trực.
+
+Không cửa nào có thẩm quyền: `tsc` thấy hai style hợp lệ; `motion.mjs` canh nhịp
+chứ không canh phép gộp; ảnh chụp trạng thái MỞ thấy nút đúng chỗ, vì nó tới nơi
+bằng đường khác. Đây là lý do thật đằng sau *"hiệu ứng khi nút mở ra chưa rõ"*.
+
+Nay một `useAnimatedStyle` duy nhất trả một mảng `transform` duy nhất, `pop` là
+hệ số nhân nghỉ ở 1, và cú nhún là một cái **hích** (`POP_KICK` 1,06 rồi lò xo
+về 1). `tools/transform-merge.mjs` quét toàn `src` cho đúng lớp lỗi ấy — 43 tệp,
+68 mảng `style={[…]}` — và có một phép thử chống kêu oan (opacity + transform
+phải vẫn xanh).
+
+### 3. "Hiện ra như nút ghi" — một cặp số dùng chung, không phải hai bản chép
+
+Nút "Ghi" nhường chỗ bằng `opacity 1→0` và `scale 1→0,82` trong `[0, 0,55]` của
+độ mở. Nút vuốt nay làm **đúng phép ấy đảo chiều, trong đúng khoảng ấy**, và hai
+bên đọc chung `HANDOVER_AT` / `HANDOVER_SCALE` xuất từ `swipe-row.tsx` — lệch
+nhau thì có một quãng hai nút cùng hiện, hoặc một quãng không nút nào.
+
+Đây **không** phải cái "fade-in độc lập" đã bị bác trước đó: bản bị bác chạy
+opacity tới tận `progress` 1 nên nút nhạt suốt cú kéo (*"trong quá trình di
+chuyển nút bị mờ"*); bản này xong ở 55% và lái bằng cùng một giá trị với chuyển
+động của hàng.
+
+Đo trên bản dựng, hàng đã-ghi, kéo mở nút phải:
+
+| kéo | opacity | scale | translateX |
+|---|---|---|---|
+| 15% | 0,30 | 0,87 | 36,0 |
+| 40% | 0,76 | 0,96 | 25,2 |
+| 70% | **1** | **1** | 14,4 |
+| 100% | 1 | **1,017** ← cú hích | 0 |
+| sau khi thả | 1 | **1** | 0 |
+
+### Bốn lần cái NEO của phép đo sai trong một buổi, và cả bốn đều do tôi
+
+1. Quét transform lớn nhất cả trang → bắt phải deck hero.
+2. Hàm đóng hàng chỉ kéo một chiều → đọc phải trạng thái sót lại.
+3. Hệ số bám tính cả mẫu đã kẹp → ra 0,689 và **trông như lỗi của phiên kia**.
+4. Lần này: quét cả trang rồi lấy ba kết quả đầu → bắt phải viên nút của một
+   hàng **khác**, hàng có `progress` đứng yên ở 0. Hai lượt liền đọc ra "giá trị
+   không đổi ở mọi vị trí kéo", và cả hai lần con số ấy **đúng** — nó chỉ không
+   nói về hàng tôi đang kéo.
+
+Cộng hai lần phép đo không kéo nổi hàng và tôi suýt kết luận là mình vừa làm
+hỏng cử chỉ: một lần vì kéo bằng **một bước nhảy** thay vì nhiều bước nhỏ (RNGH
+trên web cần một chuỗi pointermove), một lần vì hàng ấy **không có nút bên phải**
+(chưa ghi thì `rightActions` rỗng). Bài học hẹp: một phép đo sai neo nguy hơn
+không đo, vì nó nói ra một câu nghe rất chắc chắn.
 
 ---
 
@@ -319,7 +408,7 @@ vì một bản tóm tắt không đo lại được thì cũng chỉ là một 
 
 | | |
 |---|---|
-| `node tools/check.mjs` | **252/252 xanh**, exit 0 |
+| `node tools/check.mjs` | **253/253 xanh**, exit 0 |
 | `npx tsc --noEmit` | exit 0, đầu ra rỗng |
 | Máy thật | ❌ **không**. Ba thứ còn treo: vòng đếm ngược của thanh Hoàn tác ở đáy, thẻ bài tập lúc thu lại có giật không, dấu tích xanh ở tiêu đề bài tập có lệch baseline không |
 

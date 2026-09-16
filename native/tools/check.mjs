@@ -143,6 +143,13 @@ const STEPS = [
     khác chứ không nằm trong một luật. Chỉ lộ ra ở GIỮA một cú kéo.
   */
   ['hàng vuốt đục', 'node', ['tools/swipe-opaque.mjs']],
+  /*
+    Và một lớp lỗi rộng hơn cú vuốt: hai style hoạt hoạ cùng đặt `transform`
+    trên một View thì RN gộp theo THUỘC TÍNH — cái sau xoá trọn vẹn cái trước.
+    Thứ bị mất vẫn chạy đúng trên UI thread, chỉ là không ai nhìn thấy nó nữa.
+    Đã xảy ra thật ở `swipe-row.tsx` và không cửa nào khác bắt được.
+  */
+  ['gộp transform', 'node', ['tools/transform-merge.mjs']],
   ['hiệu ứng thu lại', 'node', ['tools/retract.mjs']],
   ['gốc cử chỉ', 'node', ['tools/gesture-root.mjs']],
   ['hero khi cuộn', 'node', ['tools/hero-scroll.mjs']],

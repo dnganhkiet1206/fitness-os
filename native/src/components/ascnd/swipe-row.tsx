@@ -171,6 +171,30 @@ const HYSTERESIS = 10;
 const PARALLAX = 0.6;
 
 /**
+ * Cuộc BÀN GIAO giữa nút của hàng và nút vuốt, bằng MỘT cặp số dùng chung.
+ *
+ * Nút "Ghi" của thẻ To-do nhường chỗ bằng `opacity 1 → 0` và
+ * `scale 1 → HANDOVER_SCALE` trong khoảng `[0, HANDOVER_AT]` của độ mở; nút
+ * vuốt làm đúng phép ấy ĐẢO CHIỀU trong đúng khoảng ấy. Hai bên đọc chung hai
+ * hằng số này chứ không chép, nên chúng không thể lệch nhau — mà lệch nhau thì
+ * có một quãng hai nút cùng hiện, hoặc một quãng không nút nào.
+ *
+ * `0,55` chứ không `1`: cuộc bàn giao phải XONG trước khi hàng tới nơi. Chạy
+ * tới 1 thì nút vuốt còn nhạt và còn nhỏ hơn chỗ nó chiếm ở gần hết quãng kéo,
+ * và đó đúng là bản chủ dự án đã bác — "trong quá trình di chuyển nút bị mờ".
+ */
+export const HANDOVER_AT = 0.55;
+export const HANDOVER_SCALE = 0.82;
+
+/**
+ * Cú hích của cái nhún lúc hàng tới nơi.
+ *
+ * 6% trên một viên nang 60 điểm là 3,6 điểm — thấy được mà không chồm sang ô
+ * bên cạnh, vốn chỉ cách nó `CAPSULE_INSET × 2` = 12 điểm.
+ */
+const POP_KICK = 1.06;
+
+/**
  * Kéo quá đây là LÀM LUÔN, không cần bấm nút.
  *
  * ── vì sao phải tự dựng ──
@@ -328,39 +352,92 @@ function Action({
     HƠN hàng, nên nó như đang đuổi theo.
   */
   const stack = (index + PARALLAX) * OPEN_W * (side === 'right' ? 1 : -1);
-  const grow = useAnimatedStyle(() => ({
-    transform: [{ translateX: interpolate(progress.value, [0, 1], [stack, 0], 'clamp') }],
-  }));
 
   /*
-    ── cái nảy lúc hàng MỞ XONG, và vì sao nó không nằm trong `grow` ──
+    ── cái nhún lúc hàng MỞ XONG, và vì sao nó nghỉ ở 1 ──
 
-    Lượt trước tôi gỡ `scale` khỏi `grow` vì nó buộc vào `progress`: nút nhỏ hơn
-    chỗ nó chiếm suốt quãng kéo, và với nút NỞ thì nó phá luôn cái khe 6 điểm.
-    Đúng, nhưng gỡ xong thì nút không còn chuyển động riêng nào nữa — chủ dự án
-    báo "animation của mấy cái nút bị mất rồi làm lại".
+    Nó quay lại ở ĐÚNG CHỖ sau khi `scale` bị gỡ khỏi phép bám ngón tay: một
+    giá trị riêng, chạy bằng lò xo khi hàng đã tới nơi. Kéo tới đâu nút vẫn ở
+    đúng đó; cái nhún chỉ xảy ra ở khoảnh khắc thả tay, và lệch nhau theo chỉ
+    số nên ba nút nhún nối tiếp chứ không cùng lúc.
 
-    Nên nó quay lại ở ĐÚNG CHỖ: một giá trị riêng, chạy bằng lò xo khi hàng đã
-    tới nơi, không dính vào phép nội suy bám ngón tay. Kéo tới đâu nút vẫn ở
-    đúng đó; cái nhún chỉ xảy ra ở khoảnh khắc thả tay, và lệch nhau theo chỉ số
-    nên ba nút nảy nối tiếp chứ không cùng lúc.
+    Bản trước viết nó là `interpolate(pop, [0, 1], [0.9, 1])` với `pop` khởi
+    tạo 0. `pop` chỉ rời 0 khi vượt ngưỡng, nên MỌI lúc khác `scale` là 0,9 —
+    nút bị vẽ ở 90% cỡ suốt cú kéo VÀ cả khi đã mở hẳn. Đo trên bản dựng:
+    `matrix(0.9, 0, 0, 0.9, 0, 0)` ở mọi vị trí kéo, không đổi sau khi thả.
+    Một "cái nhún" mà trạng thái nghỉ của nó là 0,9 thì không phải cái nhún, nó
+    là một phép thu nhỏ thường trực.
 
-    Nút NỞ (mép trái, index 0) KHÔNG nảy: nó đang ôm sát cạnh thẻ, một cú phình
-    1,06 ở đó là nó chồm lên thẻ. Cái nảy của nó nằm ở glyph — xem `glyphPop`.
+    Nay `pop` LÀ hệ số nhân, nghỉ ở 1, và cú nhún là một cái HÍCH: gán thẳng
+    `POP_KICK` rồi thả lò xo về 1.
+
+    Nút NỞ (mép trái, index 0) vẫn không nhún: nó đang ôm sát cạnh thẻ và bề
+    rộng của nó bám ngón tay qua `swell`, nên một cú phình ở đó vừa chồm lên
+    thẻ vừa đánh nhau với phép bám. Cái nảy của nó nằm ở glyph — xem `glyphPop`.
   */
-  const pop = useSharedValue(0);
+  const pop = useSharedValue(1);
+  const nudges = !(side === 'left' && index === 0);
   useAnimatedReaction(
     () => progress.value > 0.92,
     (open, before) => {
       if (before !== null && open === before) return;
-      pop.value = open ? withSpring(1, spring(0.26 + index * 0.05, BOUNCE.bouncy)) : 0;
+      if (open && nudges) {
+        pop.value = POP_KICK;
+        pop.value = withSpring(1, spring(0.26 + index * 0.05, BOUNCE.bouncy));
+      } else {
+        pop.value = 1;
+      }
     },
   );
-  const bounce = useAnimatedStyle(() =>
-    side === 'left' && index === 0
-      ? {}
-      : { transform: [{ scale: interpolate(pop.value, [0, 1], [0.9, 1]) }] },
-  );
+
+  /*
+    ── MỘT style, vì hai style cùng đặt `transform` thì cái sau THAY THẾ ──
+
+    Bản trước là `style={[styles.actionWrap, grow, bounce]}` với `grow` đặt
+    `transform: [{ translateX }]` và `bounce` đặt `transform: [{ scale }]`.
+    React Native gộp style theo THUỘC TÍNH, không gộp bên trong một mảng
+    `transform`: cái sau thắng trọn vẹn. Nên `translateX` của parallax bị nuốt
+    sạch ở mọi nút trừ nút NỞ (nút duy nhất `bounce` trả về `{}`).
+
+    Đo trên bản dựng, nút mép phải: `matrix(0.9, 0, 0, 0.9, 0, 0)` — scale 0,9,
+    translateX **0** — ở cả bốn vị trí kéo và cả sau khi thả. Parallax đã chết
+    im lặng, và chủ dự án báo đúng bằng câu "hiệu ứng khi nút mở ra chưa rõ".
+
+    `tsc` không thấy: hai style hợp lệ. Ảnh chụp không thấy: nút vẫn ở đúng chỗ
+    nó phải tới khi mở hẳn. Chỉ có transform đọc ra khỏi DOM mới nói được.
+
+    ── và hiệu ứng HIỆN RA, soi theo nút "Ghi" ──
+
+    Chủ dự án: *"cho mấy cái nút action đằng sau thẻ có hiệu ứng hiện ra như
+    nút ghi"*. Nút "Ghi" của thẻ To-do NHƯỜNG CHỖ bằng đúng hai phép, lái bằng
+    chính `openness` của cú kéo (`todo-card.tsx`):
+
+        opacity  1 → 0     trong khoảng [0, HANDOVER_AT]
+        scale    1 → HANDOVER_SCALE
+
+    Nên nút vuốt làm ĐÚNG phép ấy, đảo chiều, trong đúng khoảng ấy — hai thứ
+    dùng CHUNG hằng số chứ không chép, nên một bên đổi là bên kia đổi theo. Cái
+    người ta thấy là một cuộc bàn giao: "Ghi" lùi đi đúng lúc nút vuốt tới.
+
+    Đây KHÔNG phải cái "fade-in độc lập" đã bị bác ở lượt trước. Bản bị bác
+    chạy opacity tới tận `progress` 1, nên nút nhạt suốt cú kéo — chủ dự án gọi
+    đúng tên: "trong quá trình di chuyển nút bị mờ". Bản này xong ở 55%, và nó
+    lái bằng cùng một giá trị với chuyển động của hàng chứ không có thời gian
+    biểu riêng.
+  */
+  const reveal = useAnimatedStyle(() => {
+    const t = interpolate(progress.value, [0, HANDOVER_AT], [0, 1], 'clamp');
+    /* Nút NỞ giữ nguyên cỡ: bề rộng của nó đã bám ngón tay qua `swell`, và một
+       `scale` chồng lên đó là hai phép cùng đòi một kích thước. */
+    const grow_ = nudges ? interpolate(t, [0, 1], [HANDOVER_SCALE, 1]) : 1;
+    return {
+      opacity: t,
+      transform: [
+        { translateX: interpolate(progress.value, [0, 1], [stack, 0], 'clamp') },
+        { scale: grow_ * pop.value },
+      ],
+    };
+  });
 
   /*
     ── nút GIÃN THEO THẺ từ điểm ảnh đầu tiên, không chờ ngưỡng ──
@@ -402,7 +479,7 @@ function Action({
   const ink = action.ink ?? c.primaryForeground;
 
   return (
-    <Animated.View style={[styles.actionWrap, grow, bounce]}>
+    <Animated.View style={[styles.actionWrap, reveal]}>
       {/* Cả cột là đích chạm, phủ lên chứ không bọc quanh — một `Pressable` bọc
           ngoài sẽ tranh cử chỉ với chính cú vuốt. */}
       <Text

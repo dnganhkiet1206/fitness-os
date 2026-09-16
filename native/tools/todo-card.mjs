@@ -356,11 +356,28 @@ try {
 
      "Đồng bộ" là phần luật phải canh: nó phải chạy theo CHÍNH `openness` —
      giá trị `SwipeRow` đã dùng cho góc bo và mặt hàng — chứ không phải một
-     animation riêng bắt đầu khi hàng mở xong. */
+     animation riêng bắt đầu khi hàng mở xong.
+
+     ── và cái neo đã phải đổi một lần ──
+
+     Bản trước neo vào con số VIẾT THẲNG: `[0, 0.55]` và `[1, 0]`. Rồi cửa sổ
+     nhường chỗ ấy thành `HANDOVER_AT`/`HANDOVER_SCALE` xuất từ `swipe-row.tsx`
+     — vì nút VUỐT phải làm đúng phép này đảo chiều trong đúng khoảng này, và
+     hai bản chép của một con số thì sẽ lệch nhau. Luật đỏ ngay, đúng như nó
+     nên đỏ khi mã đổi hình dạng; nhưng thứ nó canh không hề hỏng.
+
+     Nên nay nó canh HÀNH VI, và canh chặt hơn bản cũ: phải nội suy từ
+     `openness`, phải dùng ĐÚNG hằng số dùng chung (không phải một số tự gõ),
+     và phải đổi CẢ `opacity` lẫn `scale` — một nút mờ dần tại chỗ đọc ra là
+     hỏng, một nút co lại đọc ra là nhường chỗ. */
   CASES++;
   {
     const yields = /useSwipeOpenness\(\)/.test(src);
-    const synced = /interpolate\(openness\.value, \[0, [\d.]+\], \[1, 0\]/.test(src);
+    const shared = /HANDOVER_AT/.test(src) && /HANDOVER_SCALE/.test(src)
+      && /from '@\/components\/ascnd\/swipe-row'/.test(src);
+    const fades = /opacity:\s*interpolate\(openness\.value, \[0, HANDOVER_AT\], \[1, 0\]/.test(src);
+    const shrinks = /scale:\s*interpolate\(openness\.value, \[0, HANDOVER_AT\], \[1, HANDOVER_SCALE\]/.test(src);
+    const synced = shared && fades && shrinks;
     const wrapped = /<Animated\.View style=\{yield_\}>[\s\S]{0,200}?<PressScale/.test(src);
     if (!yields || !synced || !wrapped) {
       problems.push(

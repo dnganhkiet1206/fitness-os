@@ -162,8 +162,35 @@ export const BOUNCE = { smooth: 0, snappy: 0.15, bouncy: 0.3 } as const;
  * `snappy` chứ không `smooth`: chú thích của `BOUNCE` đã chọn sẵn — "cho thứ
  * NGƯỜI DÙNG VỪA BUÔNG: một vật rơi vào chỗ của nó". Và `overshootClamping:
  * false` để cái nảy ấy thật sự xảy ra; mặc định của thư viện kẹp nó lại.
+ *
+ * ── 0,34 chứ không 0,24, và con số ấy được đo ──
+ *
+ * Chủ dự án: *"thanh trượt thẻ của todo còn hơi nhanh nên không tạo ra được
+ * cảm giác mượt apple, làm nó trượt từ từ nên mượt hơn"*.
+ *
+ * `duration` ở đây là tham số của `spring()`, và nó tỉ lệ NGHỊCH với ω₀:
+ * `stiffness = (2π/duration)²`. Nên kéo dài nó là hạ tần số riêng, giữ nguyên
+ * tỉ số giảm chấn — hàng vẫn hạ cánh y hệt, chỉ đi quãng ấy chậm hơn. Đó đúng
+ * là "trượt từ từ" chứ không phải "nảy nhiều hơn".
+ *
+ * Đo bằng ba hàm lò xo trích nguyên văn khỏi bản Reanimated đang cài, tích
+ * phân theo đúng vòng lặp `spring.ts` ở 60fps, trên quãng mở 72 điểm:
+ *
+ *     duration  ω₀     90%      settle   vọt lố khi bắn mạnh
+ *     0,24      26,2   133ms    433ms    0,7 điểm
+ *     0,34      18,5   183ms    600ms    1,4 điểm     ← bản này
+ *     0,40      15,7   217ms    717ms    2,4 điểm
+ *     0,50      12,6   267ms    883ms    5,4 điểm
+ *
+ * Dừng ở 0,34 vì vọt lố là thứ trả giá: hàng vọt qua 0 là hàng trượt sang phía
+ * ĐỐI DIỆN, và tấm nút bên ấy nằm ngay dưới — vọt lố lớn là một vệt màu của
+ * cái nút người dùng không hề vuốt tới, nháy lên rồi tắt. Từ 0,40 trở đi con số
+ * ấy tăng nhanh hơn hẳn phần "chậm rãi" thu được.
+ *
+ * Hằng này dùng ở HAI chỗ (`swipe-row.tsx`, `today-meals.tsx`), nên cả hai cùng
+ * chậm lại — đúng điều đoạn trên vừa lập luận: một cử chỉ, một nhịp.
  */
-export const SWIPE_SNAP = { ...spring(0.24, BOUNCE.snappy), overshootClamping: false };
+export const SWIPE_SNAP = { ...spring(0.34, BOUNCE.snappy), overshootClamping: false };
 
 /**
  * How a press answers.

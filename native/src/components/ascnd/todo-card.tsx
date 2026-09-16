@@ -17,7 +17,7 @@ import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-n
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { SwipeRow, useSwipeOpenness, type SwipeAction } from '@/components/ascnd/swipe-row';
+import { HANDOVER_AT, HANDOVER_SCALE, SwipeRow, useSwipeOpenness, type SwipeAction } from '@/components/ascnd/swipe-row';
 import { DateField } from '@/components/ascnd/date-field';
 import { WeightEntry } from '@/components/ascnd/weight-entry';
 import { BodyScale } from '@/constants/app-icons';
@@ -518,9 +518,12 @@ function RowBody({
   */
   const fallback = useSharedValue(0);
   const openness = useSwipeOpenness() ?? fallback;
+  /* Hai hằng số ĐỌC từ `swipe-row.tsx`, không chép: nút vuốt làm đúng phép này
+     đảo chiều trong đúng khoảng này, và hai bên lệch nhau thì có một quãng hai
+     nút cùng hiện hoặc một quãng không nút nào. Xem `HANDOVER_AT`. */
   const yield_ = useAnimatedStyle(() => ({
-    opacity: interpolate(openness.value, [0, 0.55], [1, 0], 'clamp'),
-    transform: [{ scale: interpolate(openness.value, [0, 0.55], [1, 0.82], 'clamp') }],
+    opacity: interpolate(openness.value, [0, HANDOVER_AT], [1, 0], 'clamp'),
+    transform: [{ scale: interpolate(openness.value, [0, HANDOVER_AT], [1, HANDOVER_SCALE], 'clamp') }],
   }));
 
   return (
