@@ -308,16 +308,37 @@ function declOf(body, name) {
     }
   }
 
-  /* Chữ nằm NGOÀI ô: nếu nó còn nằm trong `capsule` thì bố cục đã quay lại bản
-     cũ — một khối đen to bằng cả dòng với icon và chữ chồng nhau. */
-  const capsuleBody = /capsule: \{([\s\S]*?)\n  \},/.exec(src);
-  if (capsuleBody && /actionText/.test(capsuleBody[1])) {
-    problems.push(`${COMPONENT}: chữ vẽ bên trong ô, đáng lẽ nằm bên dưới nó`);
-  }
-  if (!/<\/(?:Animated\.)?View>\s*\n\s*\{action\.glyphOnly \? null : \(/.test(src)) {
-    problems.push(
-      `${COMPONENT}: dòng chữ không còn đứng SAU ô trong cây — đặt hàng là "chữ xuất hiện bên dưới icon"`,
-    );
+  /* ── viên nang phải THẲNG HÀNG với nút của chính hàng ──
+
+     Chủ dự án chụp màn hình lần thứ hai: viên nang vẫn không nằm cùng một
+     đường với nút "Ghi" ngay cạnh. Đó không phải chuyện thẩm mỹ, nó là số học.
+
+     Hàng To-do cao 52 (ô icon 44 + đệm 4 hai bên), nút "Ghi" cao 44 căn giữa
+     nên tâm ở 26. Một cột "viên nang + khe + chữ" cao 51 căn giữa trong 52 đặt
+     tâm viên nang ở 17,5 — lệch 8,5 điểm. Chỉ có hai lối: bỏ dòng chữ và cho
+     viên nang cao đúng 44, hoặc kéo hàng lên 69 điểm. Ràng buộc "thẻ giữ nguyên
+     kích thước mặc định" loại lối thứ hai.
+
+     Nên luật ĐO: viên nang phải cao đúng bằng nút của hàng, và cột nút không
+     được có gì nằm dưới viên nang nữa. */
+  {
+    const card = readFileSync(path.join(NATIVE, 'src/components/ascnd/todo-card.tsx'), 'utf8');
+    const btn = /\n  action: \{[\s\S]*?height: (\d+)/.exec(card);
+    if (!btn) {
+      problems.push(`${COMPONENT}: không đọc được chiều cao nút "Ghi" ở todo-card.tsx để so hàng`);
+    } else if (cap !== null && cap !== Number(btn[1])) {
+      problems.push(
+        `${COMPONENT}: viên nang cao ${cap} còn nút của hàng cao ${btn[1]} — hai cái căn giữa trong ` +
+          `cùng một hàng sẽ lệch nhau ${Math.abs(cap - Number(btn[1])) / 2} điểm, đúng chỗ chủ dự án ` +
+          'chụp lại hai lần',
+      );
+    }
+    if (/const ACTION_H = CAPSULE_H \+/.test(src)) {
+      problems.push(
+        `${COMPONENT}: cột nút lại cao hơn viên nang, tức có gì đó nằm dưới nó. Bất cứ thứ gì thêm vào ` +
+          'dưới viên nang đều đẩy tâm nó lên khỏi đường của nút hàng — xem phép tính ở `CAPSULE_H`',
+      );
+    }
   }
 
   /* Cú kéo dài: phải có cờ, có haptic NẶNG hơn tiếng cam kết thường, và phải
@@ -351,15 +372,6 @@ function declOf(body, name) {
           '— đúng lỗi đã ship: viên nang đội lên gần tiêu đề thẻ và chữ thò quá đáy hàng',
       );
     }
-  }
-
-  /* Chiều cao dòng chữ phải được ÁP, không để phông quyết định: `ACTION_H` cộng
-     đúng con số ấy, nên thiếu nó thì chiều cao cột là một phỏng đoán. */
-  if (!/lineHeight: ACTION_LABEL_H/.test(src)) {
-    problems.push(
-      `${COMPONENT}: dòng chữ dưới nút không áp \`lineHeight: ACTION_LABEL_H\`, nên \`ACTION_H\` ` +
-        'đang cộng một con số không ai bảo đảm và chữ sẽ nhô ra khỏi cột trên một hàng thấp',
-    );
   }
 
   /* ── cú kéo dài: nút NỞ RA, hàng ĐỨNG YÊN, hệ điều hành hỏi lại ──

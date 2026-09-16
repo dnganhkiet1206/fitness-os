@@ -6,7 +6,14 @@ import type {
 } from 'react-native-gesture-handler/lib/typescript/components/ReanimatedSwipeable/ReanimatedSwipeableProps';
 import type { LucideIcon } from 'lucide-react-native';
 import { useCallback, useRef } from 'react';
-import { Alert, Text, View, type LayoutChangeEvent } from 'react-native';
+import {
+  Alert,
+  Text,
+  View,
+  type LayoutChangeEvent,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import Animated, {
   interpolate,
   runOnJS,
@@ -84,14 +91,32 @@ import { usePalette } from '@/hooks/use-palette';
  * — ảnh không nằm trên đĩa để đo. Tỉ lệ icon/ô ≈ 20/46, tức icon chiếm chưa
  * tới một nửa bề ngang ô, đúng cái làm nó "nhỏ hơn thẻ".
  */
-const CAPSULE_H = 34;
-const CAPSULE_ICON = 18;
+/**
+ * Viên nang cao ĐÚNG BẰNG nút "Ghi" của hàng, và đó là số học chứ không phải
+ * thẩm mỹ.
+ *
+ * Hàng To-do cao 52 (ô icon 44 + đệm 4 hai bên). Nút "Ghi" cao 44, căn giữa,
+ * nên tâm nó ở 26. Một cột "viên nang + khe + dòng chữ" cao 51 căn giữa trong
+ * 52 sẽ đặt tâm viên nang ở 17,5 — LỆCH 8,5 điểm so với nút "Ghi" ngay cạnh.
+ * Chạy phép tính ấy ra hai lối, và chỉ hai:
+ *
+ *     bỏ dòng chữ, viên nang 44   → lệch 0,0
+ *     giữ dòng chữ, thẳng hàng    → hàng phải cao 69 thay vì 52
+ *
+ * Chủ dự án đã chốt "thẻ giữ nguyên kích thước mặc định", nên lối thứ hai bị
+ * loại bởi chính ràng buộc ấy: 17 điểm × năm hàng là 85 điểm thẻ dài thêm.
+ *
+ * Dòng chữ vì thế đi, và nó không mất nghĩa: `label` vẫn là thứ VoiceOver đọc
+ * và vẫn là tên của accessibility action. Cái mất là một từ in ra; cái được là
+ * hai nút nằm đúng một đường với nút của hàng — thứ chủ dự án gọi là "cùng hình
+ * dạng với nút ghi", và là chỗ ảnh chụp máy thật cho thấy còn lệch.
+ */
+const CAPSULE_H = 44;
+const CAPSULE_ICON = 20;
 /** Nút + khe + dòng chữ. Hai nút là 144 điểm trên một màn 393. */
 const OPEN_W = 72;
 /** Viên nang hẹp hơn cột, nên hai nút tách rời chứ không dính thành một dải. */
 const CAPSULE_W = OPEN_W - 12;
-/** Khe giữa viên nang và chữ dưới nó. */
-const CAPSULE_GAP = 4;
 /**
  * Chiều cao NHÌN THẤY của cả nút: viên nang + khe + dòng chữ.
  *
@@ -99,8 +124,8 @@ const CAPSULE_GAP = 4;
  * được, nên vùng chạm là 72 × 51. Trên sàn 44 của Apple HIG và WCAG 2.5.5 ở cả
  * hai chiều, và nó là vùng NHÌN THẤY chứ không phải một `hitSlop` vô hình.
  */
-const ACTION_LABEL_H = 13;
-const ACTION_H = CAPSULE_H + CAPSULE_GAP + ACTION_LABEL_H;
+/** Cột nút CHÍNH LÀ viên nang: không còn gì nằm dưới nó. */
+const ACTION_H = CAPSULE_H;
 
 /**
  * Where the action commits.
@@ -169,8 +194,6 @@ export type SwipeAction = {
    * 3:1 của WCAG 1.4.11 cho một vật thể đồ hoạ mang nghĩa.
    */
   ink?: string;
-  /** Chỉ vẽ ô và glyph, không in chữ bên dưới. */
-  glyphOnly?: boolean;
   /**
    * Hỏi lại trước khi làm, bằng hộp thoại của HỆ ĐIỀU HÀNH.
    *
@@ -295,12 +318,6 @@ function Action({
     ],
     opacity: interpolate(progress.value, [lag, lag + 0.25, 1], [0, 0.85, 1], 'clamp'),
   }));
-  /* The word arrives only once the row is committed. Before that it would be a
-     label on a button you have not decided to press. */
-  const word = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0.66, 0.95], [0, 1], 'clamp') * (1 - full.value),
-  }));
-
   /*
     ── nút NỞ RA khi cú kéo đã đủ tầm ──
 
@@ -337,11 +354,6 @@ function Action({
       <Animated.View style={[styles.capsule, { backgroundColor: action.tint ?? c.readinessRed }, swell]}>
         <Icon icon={action.icon} size={CAPSULE_ICON} color={ink} />
       </Animated.View>
-      {action.glyphOnly ? null : (
-        <Animated.Text style={[styles.actionText, word]} numberOfLines={1}>
-          {action.label}
-        </Animated.Text>
-      )}
     </Animated.View>
   );
 }
@@ -370,6 +382,7 @@ export function SwipeRow({
   right,
   left,
   fullSwipe = false,
+  style,
   cancelLabel,
 }: {
   children: React.ReactNode;
@@ -396,6 +409,16 @@ export function SwipeRow({
    * khác ở chỗ ngón tay dừng lại. Xem `FULL_SWIPE_AT`.
    */
   fullSwipe?: boolean;
+  /**
+   * Style cho khung ngoài cùng của hàng.
+   *
+   * Có vì một lý do cụ thể: thẻ To-do có đệm 20 điểm, nên một hàng trượt đi sẽ
+   * kẹt vào đúng cái đệm ấy và chữ dừng lại ở mép thẻ mà không bị cắt — đọc ra
+   * là một lỗi bố cục chứ không phải một hàng đang trượt. Danh sách của iOS thì
+   * chạy HẾT bề ngang; phần thụt vào nằm bên trong hàng. Chỗ dùng bù lại đệm
+   * bằng margin âm qua prop này.
+   */
+  style?: StyleProp<ViewStyle>;
   /**
    * Chữ trên nút huỷ của hộp thoại xác nhận.
    *
@@ -603,6 +626,7 @@ export function SwipeRow({
 
   return (
     <View
+      style={style}
       onLayout={onLayout}
       accessibilityActions={all.map((a) => ({ name: a.label, label: a.label }))}
       onAccessibilityAction={(e) => {
@@ -751,7 +775,6 @@ const stylesFor = makeStyles((c) => ({
     height: ACTION_H,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: CAPSULE_GAP,
   },
   /* CÙNG hình với nút "Ghi" trên hàng — `radius.full`, không phải một ô vuông
      bo góc. Chủ dự án: "nhỏ hơn và cùng hình dạng với nút ghi". */
@@ -767,9 +790,4 @@ const stylesFor = makeStyles((c) => ({
   hit: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, zIndex: 1 },
   /* Chữ nằm NGOÀI ô, bên dưới nó, và mang màu chữ của trang chứ không mang mực
      của ô: nó đứng trên nền hàng, không đứng trên nền màu. */
-  /* `lineHeight` ÁP VÀO đây, không để phông quyết định: `ACTION_H` cộng đúng
-     con số này, nên thiếu nó thì chiều cao cột là một phỏng đoán và dòng chữ
-     sẽ nhô ra khỏi cột trên một hàng thấp. Cùng bài học với `TAG_LINE_H` ở
-     `sleep-insights.tsx`. */
-  actionText: { ...type.caption, lineHeight: ACTION_LABEL_H, color: c.mutedForeground, fontWeight: '600' },
 }));

@@ -409,7 +409,6 @@ function TodoRow({
     label: skipped ? i18n.nTodoUnskip : i18n.nTodoSkip,
     tint: c.destructive,
     ink: c.destructiveForeground,
-    glyphOnly: true,
     confirm: skipped
       ? undefined
       : {
@@ -444,7 +443,12 @@ function TodoRow({
   const word = skipped ? i18n.nTodoSkipped : done ? i18n.nTodoDone : i18n.nTodoLog;
 
   return (
-    <SwipeRow fullSwipe cancelLabel={i18n.cancel} left={[skipAction]} right={rightActions}>
+    <SwipeRow
+      fullSwipe
+      style={styles.bleed}
+      cancelLabel={i18n.cancel}
+      left={[skipAction]}
+      right={rightActions}>
       <View style={[styles.rowOpen, styles.rowSwipe]}>
       <View style={styles.rowTop}>
         <View style={styles.tile}>
@@ -568,7 +572,24 @@ const stylesFor = makeStyles((c, m) => ({
      xuyên qua trong lúc kéo và đọc ra là một vệt màu chứ không phải một hàng
      đang trượt đi. `m.bg` là chính mặt thẻ To-do, nên khi hàng đóng lại không
      ai thấy có lớp nào ở đây cả. */
-  rowSwipe: { backgroundColor: m.bg },
+  rowSwipe: { backgroundColor: m.bg, paddingHorizontal: spacing.card },
+  /*
+    ── hàng chạy HẾT bề ngang thẻ ──
+
+    Thẻ có đệm `spacing.card` (20). Không bù lại thì hàng trượt đi sẽ dừng ở
+    mép trong của đệm: ô icon biến mất nhưng chữ đứng sựng lại cách mép thẻ 20
+    điểm, không bị cắt, và đọc ra là một lỗi bố cục — đúng ảnh chụp máy thật,
+    nơi "Bữa ăn" thành "a ăn" nằm hẫng ở mép.
+
+    Danh sách của iOS chạy hết bề ngang và phần thụt vào nằm BÊN TRONG hàng, nên
+    nội dung trượt ra khỏi mép rồi bị chính góc bo của khung cắt. Margin âm ở
+    đây trả lại đúng hình ấy, và `paddingHorizontal` trên `rowSwipe` dựng lại
+    phần thụt vào để hàng đóng trông không đổi.
+
+    Nó cũng đưa nút vuốt ra sát mép thẻ thay vì thụt vào 20 điểm — chỗ Apple đặt
+    chúng.
+  */
+  bleed: { marginHorizontal: -spacing.card },
   rowTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
 
   /* 44, không 30. Ô icon không bấm được, nhưng nó là thứ mắt tìm dòng bằng —

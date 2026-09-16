@@ -315,13 +315,12 @@ try {
       ghi", nên viên nang CỐ Ý nhỏ hơn 44.
     */
     const capH = /const CAPSULE_H = (\d+);/.exec(swipe);
-    const gap = /const CAPSULE_GAP = (\d+);/.exec(swipe);
     const w = /const OPEN_W = (\d+);/.exec(swipe);
     const wrapH = /height: ACTION_H/.test(swipe);
-    if (!capH || !gap || !w) {
+    if (!capH || !w) {
       problems.push('swipe-row.tsx: không đọc được hình học nút vuốt để đo đích chạm');
     } else {
-      const h = Number(capH[1]) + Number(gap[1]) + 13;
+      const h = Number(capH[1]);
       if (h < 44 || Number(w[1]) < 44) {
         problems.push(
           `swipe-row.tsx: đích chạm nút vuốt ${w[1]}×${h} điểm, dưới sàn 44 của Apple HIG và WCAG ` +
@@ -347,6 +346,34 @@ try {
       `${CARD}: hàng giờ không tự ẩn khi lời nhắc tắt — người ta sẽ đặt được một giờ cho một thông ` +
         'báo không bao giờ bắn',
     );
+  }
+
+  /* ── hàng chạy HẾT bề ngang thẻ, và phần thụt vào nằm BÊN TRONG hàng ──
+
+     Thẻ có đệm `spacing.card`. Không bù lại thì hàng trượt đi sẽ dừng ở mép
+     trong của đệm: ô icon biến mất nhưng chữ đứng sựng lại cách mép thẻ 20 điểm
+     và không bị cắt — đọc ra là một lỗi bố cục chứ không phải một hàng đang
+     trượt. Chủ dự án chụp đúng cảnh ấy: "Bữa ăn" thành "a ăn" nằm hẫng ở mép.
+
+     Hai vế phải đi cùng nhau: margin âm ở khung ngoài để hàng bleed ra, và
+     padding bù lại bên trong để hàng ĐÓNG trông không đổi. Thiếu vế nào cũng
+     hỏng một trong hai trạng thái, nên luật đòi cả hai và đòi chúng BẰNG nhau. */
+  CASES++;
+  {
+    const bleed = /marginHorizontal: -spacing\.(\w+)/.exec(styleBody(src, 'bleed') ?? '');
+    const pad = /paddingHorizontal: spacing\.(\w+)/.exec(styleBody(src, 'rowSwipe') ?? '');
+    if (!bleed || !pad) {
+      problems.push(
+        `${CARD}: hàng không chạy hết bề ngang thẻ (margin âm ${bleed ? 'có' : 'thiếu'}, padding bù ` +
+          `${pad ? 'có' : 'thiếu'}). Thiếu margin âm thì chữ dừng lại ở mép đệm và đọc ra là lỗi bố ` +
+          'cục; thiếu padding bù thì hàng ĐÓNG mất phần thụt vào',
+      );
+    } else if (bleed[1] !== pad[1]) {
+      problems.push(
+        `${CARD}: margin âm dùng \`spacing.${bleed[1]}\` còn padding bù dùng \`spacing.${pad[1]}\` — ` +
+          'hai con số phải là MỘT, không thì hàng đóng lệch khỏi tiêu đề thẻ',
+      );
+    }
   }
 
   /* ── điều kiện của miễn trừ trên: hàng hẹn giờ chỉ chứa control HỆ THỐNG ── */
