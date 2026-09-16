@@ -6,8 +6,9 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-16 · cú vuốt: ngưỡng cam kết theo số nút, và một lượt
-đo lại công việc của phiên kia · nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-16 · cú vuốt: ngưỡng theo số nút, hàng vuốt được phải
+ĐỤC, và một lần `node_modules` bị xoá sạch giữa chừng · nhánh
+`claude/ios-fitness-rebuild-omgulr`
 (vòng rà pháp y đầy đủ gần nhất: 2026-09-14, commit `cf687a2`)
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
@@ -28,11 +29,11 @@ gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trư�
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
-| `node tools/check.mjs` | **XANH** | exit 0, **251** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
+| `node tools/check.mjs` | **XANH** | exit 0, **252** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 251 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 251 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 251 bước ở trên |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 252 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 252 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 252 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
 
 ---
@@ -116,14 +117,63 @@ thì `damping: 1000` và `damping: 74,8` cho **đúng cùng một chuyển độ
 Cả ba đều "chạy" và đều in ra một con số nghe hợp lý. Một phép đo sai neo thì
 nguy hơn không đo, vì nó nói ra một câu có vẻ chắc chắn.
 
-### CHƯA sửa, và nói ra
+### Nút lộ xuyên qua hàng ở `sessions.tsx` — ĐÃ SỬA
 
-Nút lộ **xuyên qua** hàng ở `sessions.tsx`: `SessionRow` không có nền đặc, nhóm
-bọc nó là `alpha(m.ink, 0.06)`. Ảnh giữa chừng thấy rõ hai icon thùng rác chồng
-nhau. Lỗi có sẵn, và việc bỏ `opacity` khỏi nút làm nó rõ hơn. Không sửa mù: màu
-đúng không có sẵn thành token (nhóm render ra `rgb(234,230,225)` — 6% ink chồng
-lên nền trang), và bản sửa đúng phải đụng `useSessionListStyles`, thứ đang dùng ở
-bốn màn.
+`ReanimatedSwipeable` dựng tấm nút là `absoluteFill` nằm SAU hàng, nên nút được
+lộ ra bằng **hình học** — và phép ấy chỉ đúng khi lớp trước ĐỤC. `SessionRow`
+không có nền riêng; nó ngồi trên lớp tint 6% trong suốt của `group`, nên suốt cú
+kéo viên nút đỏ hiện **xuyên qua chính hàng**: ảnh giữa chừng cho ra hai cái icon
+thùng rác chồng lên nhau.
+
+`todo-card.tsx` đã gặp và đã ghi đúng điều này (*"hàng vuốt được phải có NỀN
+ĐẶC"*). `sessions.tsx` mắc lại y hệt, vì bài học nằm trong chú thích của một tệp
+khác chứ không nằm trong một luật.
+
+**Màu phải bằng đúng cái mắt đang thấy, và không token nào mang sẵn nó** — cái
+mắt thấy là `alpha(m.ink, 0.06)` chồng lên nền trang. Nên thêm `blend()` cạnh
+`alpha()` trong `palette.ts`: cùng hình dạng, cùng lý do tồn tại (RN không tính
+màu trong style), cùng hợp đồng chặt — **ném** chứ không đoán. `rowFace` là
+`blend(m.ink, c.background, GROUP_TINT)`, dùng chung hằng số với `group` nên hai
+bên không trôi khỏi nhau.
+
+Đo trên bản dựng:
+
+| | trước | sau |
+|---|---|---|
+| trong hàng, lúc đóng (sáng) | `rgb(234,230,225)` | `rgb(234,231,226)` |
+| mép nhóm, lúc đóng (sáng) | — | `rgb(234,231,226)` — **bằng hàng, không có đường nối** |
+| ba điểm trong lòng hàng, giữa cú kéo | đỏ lọt qua | `rgb(234,231,226)` — **không đỏ** |
+| bản tối, giữa cú kéo | — | `rgb(22,22,23)` — không đỏ |
+
+Lệch **1 mức** trên 256 so với trước, và đó là phần `AmbientLight` mà một màu
+đặc không với tới — đã ghi thành số ngay cạnh `rowFace`.
+
+`tools/swipe-opaque.mjs` canh cả ba chỗ dựng `<SwipeRow>` và **đỏ khi một chỗ
+thứ tư xuất hiện**, vì đó đúng là khoảnh khắc lỗi này sinh ra. Năm phép thử
+ngược. Đây là một DANH SÁCH CHỐT chứ không phải phép suy: con của `<SwipeRow>`
+là JSX bất kỳ, và một luật đoán sai ở đây sẽ kêu oan rồi bị tắt.
+
+**Sửa lại một con số tôi nói sai ở lượt trước:** `useSessionListStyles` dùng ở
+**hai** màn (`sessions.tsx`, `workouts/library.tsx`), không phải bốn — tôi lấy
+con số ấy từ một chú thích đã cũ thay vì đếm. Nó là lý do tôi hoãn bản sửa, và
+lý do ấy sai.
+
+### Một lần `node_modules` biến mất giữa chừng, và nó suýt thành kết luận sai
+
+Sau lượt chạy cổng xanh cuối, `npx tsc --noEmit` bỗng đổ ra một trang lỗi kiểu
+`Cannot use JSX unless the '--jsx' flag is provided` và `Cannot find module
+'react'` — đọc y như app vừa hỏng vì bản sửa vừa rồi. Nó không hỏng: **toàn bộ
+`node_modules` đã biến mất** (cùng lượt ấy mọi script trong scratchpad cũng bị
+xoá), nên `npx` tải tạm TypeScript **6.0.2** từ registry — khác bản repo ghim
+(`~6.0.3`) — và bản tạm ấy không thấy tsconfig lẫn types.
+
+Chính là chế độ hỏng `check.mjs` viết ở đầu tệp để cảnh báo, ở một biến thể
+khác: *một phép kiểm đỏ vì lý do không liên quan gì tới thứ nó kiểm*. `npm ci`
+khôi phục 443 gói và tsc về exit 0 mà không đổi một dòng mã nào.
+
+Ghi lại vì nó suýt thành hai kết luận sai. Kết luận thứ hai tôi đã thật sự rút
+ra rồi mới bắt được: phép kiểm JSON tay của tôi báo `tsconfig.json` **sai cú
+pháp**, và điều đó cũng sai — regex tách chú thích của tôi cắt nhầm `"@/*"`.
 
 `ReanimatedSwipeable` **không** phơi ra `failOffsetY`, nên "chỉ kích hoạt khi ý
 định ngang đủ rõ" hiện dựa vào `activeOffsetX` 10 điểm cộng việc `ScrollView`
@@ -269,7 +319,7 @@ vì một bản tóm tắt không đo lại được thì cũng chỉ là một 
 
 | | |
 |---|---|
-| `node tools/check.mjs` | **251/251 xanh**, exit 0 |
+| `node tools/check.mjs` | **252/252 xanh**, exit 0 |
 | `npx tsc --noEmit` | exit 0, đầu ra rỗng |
 | Máy thật | ❌ **không**. Ba thứ còn treo: vòng đếm ngược của thanh Hoàn tác ở đáy, thẻ bài tập lúc thu lại có giật không, dấu tích xanh ở tiêu đề bài tập có lệch baseline không |
 

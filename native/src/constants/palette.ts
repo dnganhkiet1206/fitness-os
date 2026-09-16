@@ -1398,3 +1398,45 @@ export function alpha(token: string, a: number): string {
   const [r, g, b] = [0, 2, 4].map((i) => parseInt(hx.slice(i, i + 2), 16));
   return `rgba(${r},${g},${b},${a})`;
 }
+
+/**
+ * Một token mờ ĐẶT LÊN một nền đặc, trả về màu ĐẶC tương đương.
+ *
+ * ── vì sao cần nó ──
+ *
+ * `alpha()` cho ra một lớp mờ, và lớp mờ thì KHÔNG che được thứ nằm dưới. Ở
+ * hầu hết chỗ điều đó đúng ý. Nhưng một hàng vuốt được thì tấm nút nằm ngay
+ * DƯỚI nó (`ReanimatedSwipeable` dựng panel là `absoluteFill` phía sau), nên
+ * một hàng mờ để viên nút hiện xuyên qua chính mình trong suốt cú kéo — trên
+ * màn *Buổi tập đã ghi* nó cho ra hai cái icon thùng rác chồng lên nhau.
+ *
+ * Chỗ ấy cần đúng MỘT thứ: cùng màu mắt đang thấy, nhưng đặc. Đó là phép
+ * composite, và RN không tính màu trong style, nên nó phải xảy ra ở JavaScript
+ * — cùng lý do `alpha()` tồn tại, cùng hình dạng, cùng hợp đồng chặt.
+ *
+ * ── và vì sao nó nhận NỀN làm tham số ──
+ *
+ * "Đặc tương đương" chỉ có nghĩa khi biết nằm trên cái gì. Một hàm đoán lấy nền
+ * từ theme sẽ đúng ở chỗ đầu tiên rồi sai lặng lẽ ở chỗ thứ hai. Gọi nó thì
+ * phải nói ra mình đang nằm trên đâu.
+ *
+ * Cái nó KHÔNG làm được, và phải biết: lớp aura của `Screen` nằm giữa nền trang
+ * và thứ đặt lên nó. Màu trả về là composite trên nền TRẦN, nên chỗ nào aura
+ * còn đậm thì nó lệch — xem chỗ gọi, nơi độ lệch ấy được đo thành số.
+ */
+export function blend(token: string, base: string, a: number): string {
+  const rgb = (h: string): [number, number, number] => {
+    const t = h.trim();
+    const short = /^#([0-9a-fA-F]{3})$/.exec(t);
+    const full = /^#([0-9a-fA-F]{6})$/.exec(t);
+    if (!short && !full) throw new Error(`blend() cần #rgb hoặc #rrggbb, nhận "${h}"`);
+    const hx = short ? short[1].split('').map((d) => d + d).join('') : (full as RegExpExecArray)[1];
+    return [0, 2, 4].map((i) => parseInt(hx.slice(i, i + 2), 16)) as [number, number, number];
+  };
+  const [fr, fg, fb] = rgb(token);
+  const [br, bg, bb] = rgb(base);
+  const mix = (f: number, b: number) => Math.round(a * f + (1 - a) * b);
+  return `#${[mix(fr, br), mix(fg, bg), mix(fb, bb)]
+    .map((v) => v.toString(16).padStart(2, '0'))
+    .join('')}`;
+}

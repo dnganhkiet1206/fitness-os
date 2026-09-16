@@ -136,6 +136,13 @@ const STEPS = [
     cam kết phải nhân theo số nút vì quãng mở là `OPEN_W × số nút`.
   */
   ['số học cú vuốt', 'node', ['tools/swipe-commit.mjs']],
+  /*
+    Và hàng vuốt được phải ĐỤC: tấm nút nằm SAU nó, nên lớp trước trong suốt
+    thì nút hiện xuyên qua chính hàng. `todo-card.tsx` đã gặp và ghi vào chú
+    thích của nó; `sessions.tsx` mắc lại y hệt, vì bài học nằm trong một tệp
+    khác chứ không nằm trong một luật. Chỉ lộ ra ở GIỮA một cú kéo.
+  */
+  ['hàng vuốt đục', 'node', ['tools/swipe-opaque.mjs']],
   ['hiệu ứng thu lại', 'node', ['tools/retract.mjs']],
   ['gốc cử chỉ', 'node', ['tools/gesture-root.mjs']],
   ['hero khi cuộn', 'node', ['tools/hero-scroll.mjs']],

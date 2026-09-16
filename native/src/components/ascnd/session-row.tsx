@@ -5,7 +5,7 @@ import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { effortTint, radius, spacing } from '@/constants/ascnd';
-import { alpha, makeStyles } from '@/constants/theme';
+import { alpha, blend, makeStyles } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { getLocale, type AppLang } from '@/lib/i18n';
@@ -183,17 +183,55 @@ const stylesFor = makeStyles((c, m) => ({
 /**
  * The group these rows sit in, and the hairline between two of them.
  *
- * Là một HOOK vì nó được xuất ra và dùng ở ba màn khác — cùng lý do đã ghi ở
- * `useFoodListStyles` trong `food-cards.tsx`.
+ * Là một HOOK vì nó được xuất ra và dùng ở hai màn — `sessions.tsx` và
+ * `workouts/library.tsx` — cùng lý do đã ghi ở `useFoodListStyles` trong
+ * `food-cards.tsx`. (Câu cũ ghi "ba màn khác"; đếm lại chỉ có hai.)
  */
+/** Độ mờ của lớp tint nhóm. MỘT chỗ, vì `group` và `rowFace` phải khớp. */
+const GROUP_TINT = 0.06;
+
 const sessionListStylesFor = makeStyles((c, m) => ({
   group: {
     borderRadius: radius.md,
-    backgroundColor: alpha(m.ink, 0.06),
+    backgroundColor: alpha(m.ink, GROUP_TINT),
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: alpha(m.ink, 0.12),
     overflow: 'hidden',
   },
+  /*
+    Mặt ĐẶC của một hàng, cho hàng nào VUỐT ĐƯỢC.
+
+    ── lỗi nó đóng ──
+
+    `ReanimatedSwipeable` dựng tấm nút là `absoluteFill` nằm SAU hàng; hàng là
+    lớp trước trượt đè lên, và nút được lộ ra bằng hình học. Phép ấy chỉ đúng
+    khi lớp trước ĐỤC. Hàng buổi tập thì không có nền riêng — nó ngồi trên lớp
+    tint 6% của `group`, vốn trong suốt — nên suốt cú kéo viên nút đỏ hiện
+    XUYÊN QUA chính hàng: ảnh chụp giữa chừng cho ra hai cái icon thùng rác
+    chồng lên nhau, một của hàng và một của nút.
+
+    Thẻ "Cần làm hôm nay" đã gặp và đã ghi đúng điều này (`rowSwipe` trong
+    `todo-card.tsx`: "hàng vuốt được phải có NỀN ĐẶC"). Đây là cùng một luật,
+    áp cho danh sách này.
+
+    ── vì sao là `blend` chứ không phải một token ──
+
+    Màu phải bằng ĐÚNG cái mắt đang thấy, nếu không cả dải hàng sẽ đọc ra sáng
+    hoặc tối hơn nhóm bọc nó. Cái mắt thấy là `alpha(m.ink, 0.06)` chồng lên
+    nền trang, và không token nào mang sẵn kết quả ấy — đo trên bản dựng sáng:
+    trang `rgb(247,244,239)`, nhóm `rgb(234,230,225)`. Nên nó được TÍNH từ hai
+    token đang dùng, dùng chung `GROUP_TINT` với `group` để hai bên không trôi
+    khỏi nhau.
+
+    ── cái nó không với tới, đo thành số ──
+
+    `Screen` vẽ `AmbientLight` GIỮA nền trang và thứ đặt lên. `blend` composite
+    trên nền TRẦN, nên chỗ nào aura còn đậm thì hàng lệch khỏi nhóm đúng bằng
+    phần aura ấy. Đo trên bản dựng, ở đúng chỗ nhóm nằm: lệch **1 mức** trên
+    256 ở một kênh, tức dưới ngưỡng nhìn thấy — và nó chỉ lộ ra ở mép trong của
+    nhóm, nơi hàng không phủ tới.
+  */
+  rowFace: { backgroundColor: blend(m.ink, c.background, GROUP_TINT) },
   sep: { height: StyleSheet.hairlineWidth, marginLeft: spacing.md, backgroundColor: c.border },
 }));
 

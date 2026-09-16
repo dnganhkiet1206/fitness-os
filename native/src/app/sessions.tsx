@@ -223,6 +223,10 @@ export default function SessionsScreen() {
                           onPress: () => confirmDelete(s.id, s.date_time, s.template_name ?? ''),
                         },
                       ]}>
+                    {/* Mặt ĐẶC, vì tấm nút nằm ngay dưới hàng này — xem
+                        `rowFace` trong `session-row.tsx`, nơi lỗi và phép tính
+                        màu được ghi lại. */}
+                    <View style={sessionList.rowFace}>
                     <SessionRow
                       session={s}
                       wUnit={wUnit}
@@ -233,6 +237,7 @@ export default function SessionsScreen() {
                       volumeRatio={m.peak > 0 ? (Number(s.volume_load) || 0) / m.peak : undefined}
                       activeKcal={sessionKcalOf(s, energyProfile)}
                     />
+                    </View>
                     </SwipeRow>
                   </View>
                 ))}
