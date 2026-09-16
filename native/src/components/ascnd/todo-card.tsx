@@ -26,7 +26,7 @@ import { alpha, makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useTodayWeight } from '@/hooks/use-fitness-data';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useTodayBiometrics } from '@/hooks/useTodayData';
 import { useReminders } from '@/hooks/use-reminders';
 import { useTodoSkip } from '@/hooks/use-todo-skip';
@@ -333,6 +333,7 @@ function TodoRow({
   onSkip: () => void;
 }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const [editing, setEditing] = useState(false);
@@ -445,6 +446,7 @@ function TodoRow({
   return (
     <SwipeRow
       fullSwipe
+      surface={{ rest: m.bg, lifted: m.inset.bg }}
       style={styles.bleed}
       cancelLabel={i18n.cancel}
       left={[skipAction]}
@@ -568,11 +570,10 @@ const stylesFor = makeStyles((c, m) => ({
      danh sách việc, và nó cũng là thứ giữ cho thẻ không cao 500 điểm ở ngày
      chưa ghi gì: hai dòng xong là hai dòng 56 thay vì hai dòng 96. */
   rowOpen: { gap: spacing.sm, paddingVertical: spacing.xs },
-  /* Hàng vuốt được phải có NỀN ĐẶC, không thì viên thuốc đỏ phía dưới hiện
-     xuyên qua trong lúc kéo và đọc ra là một vệt màu chứ không phải một hàng
-     đang trượt đi. `m.bg` là chính mặt thẻ To-do, nên khi hàng đóng lại không
-     ai thấy có lớp nào ở đây cả. */
-  rowSwipe: { backgroundColor: m.bg, paddingHorizontal: spacing.card },
+  /* Nền của hàng KHÔNG còn ở đây: `SwipeRow` tô nó qua prop `surface`, vì nó
+     phải ĐỔI khi hàng được vuốt ra — mặt thẻ lúc nằm yên, mặt lõm lúc được
+     chọn. Hai chỗ tô nền cho một hàng là hai chỗ sẽ lệch nhau. */
+  rowSwipe: { paddingHorizontal: spacing.card },
   /*
     ── hàng chạy HẾT bề ngang thẻ ──
 

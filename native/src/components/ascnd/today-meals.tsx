@@ -18,7 +18,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 
 import { radius, spacing, type } from '@/constants/ascnd';
-import { BOUNCE, spring } from '@/constants/motion';
+import { BOUNCE, spring, SWIPE_SNAP } from '@/constants/motion';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
@@ -124,7 +124,9 @@ const ACTION_W = 76;
  * `spring()` trả về không trùng nó — nên người bật "Giảm chuyển động" vẫn được
  * tôn trọng.
  */
-const SWIPE_SNAP = { ...spring(0.24, BOUNCE.snappy), overshootClamping: false };
+/* `SWIPE_SNAP` nay ở `constants/motion.ts`: `swipe-row.tsx` cũng cần đúng
+   nhịp này, và hai bản chép tay của một cử chỉ là hai bản sẽ lệch nhau. */
+
 
 /** Nhịp chạm lúc tấm chốt mở. Ngoài component vì thư viện gửi nó qua `runOnJS`. */
 function swipeOpenHaptic() {

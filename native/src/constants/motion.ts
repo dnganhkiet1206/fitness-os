@@ -146,6 +146,26 @@ export function spring(duration: number, bounce: number) {
 export const BOUNCE = { smooth: 0, snappy: 0.15, bouncy: 0.3 } as const;
 
 /**
+ * Nhịp một hàng vuốt chạy nốt quãng còn lại sau khi thả tay.
+ *
+ * ── vì sao nó ở đây chứ không ở component ──
+ *
+ * `today-meals.tsx` khai đúng hằng này cho cú vuốt của nó, và `swipe-row.tsx`
+ * thì QUÊN — nó để nguyên mặc định của thư viện, `{ mass: 2, damping: 1000,
+ * stiffness: 700, overshootClamping: true }`. Damping 1000 trên mass 2 là tắt
+ * dần quá mức tới hạn rất xa: hàng không lướt về chỗ, nó khựng lại. Chủ dự án
+ * báo đúng bằng câu "không có độ trượt mượt như apple".
+ *
+ * Hai chỗ cùng làm một cử chỉ mà một chỗ có nhịp còn chỗ kia không, chỉ vì hằng
+ * số nằm trong tệp của một trong hai. Nên nó lên đây, và cả hai ĐỌC nó.
+ *
+ * `snappy` chứ không `smooth`: chú thích của `BOUNCE` đã chọn sẵn — "cho thứ
+ * NGƯỜI DÙNG VỪA BUÔNG: một vật rơi vào chỗ của nó". Và `overshootClamping:
+ * false` để cái nảy ấy thật sự xảy ra; mặc định của thư viện kẹp nó lại.
+ */
+export const SWIPE_SNAP = { ...spring(0.24, BOUNCE.snappy), overshootClamping: false };
+
+/**
  * How a press answers.
  *
  * ── the depth ──

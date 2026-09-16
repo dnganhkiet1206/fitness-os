@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import Animated, {
   interpolate,
+  interpolateColor,
   runOnJS,
   useAnimatedReaction,
   useAnimatedStyle,
@@ -26,7 +27,7 @@ import Animated, {
 
 import { Icon } from '@/components/ascnd/icon';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { BOUNCE, spring } from '@/constants/motion';
+import { BOUNCE, spring, SWIPE_SNAP } from '@/constants/motion';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 
@@ -147,6 +148,9 @@ const COMMIT = OPEN_W * 0.66;
 
 /** Movement before the gesture takes the row, so a scroll can drift. */
 const HYSTERESIS = 10;
+
+/** Tấm nút đi chậm hơn hàng bao nhiêu phần một cột. Xem `stack`. */
+const PARALLAX = 0.6;
 
 /**
  * Kéo quá đây là LÀM LUÔN, không cần bấm nút.
@@ -294,7 +298,18 @@ function Action({
     Còn lại đúng một phép: `translateX` xếp chồng các nút lúc đóng để chúng lộ
     ra LẦN LƯỢT từ mép vào, chứ không đồng loạt.
   */
-  const stack = index * OPEN_W * (side === 'right' ? 1 : -1);
+  /*
+    `index + PARALLAX`, không phải `index`.
+
+    Với `index` trần thì nút ĐẦU mỗi mép có độ lệch 0 — nó đứng yên tuyệt đối
+    và chỉ được hàng trượt đi để lộ ra. Mép trái chỉ có MỘT nút, nên ở đó không
+    có chuyển động nào cả: chủ dự án báo "hiệu ứng khi nút mở ra chưa rõ rệt".
+
+    `PARALLAX` đẩy cả cụm thêm hơn nửa cột về phía mép lúc đóng, nên nút đầu
+    cũng có quãng đường của nó. Đó cũng là hình dạng thật ở iOS: tấm nút đi CHẬM
+    HƠN hàng, nên nó như đang đuổi theo.
+  */
+  const stack = (index + PARALLAX) * OPEN_W * (side === 'right' ? 1 : -1);
   const grow = useAnimatedStyle(() => ({
     transform: [{ translateX: interpolate(progress.value, [0, 1], [stack, 0], 'clamp') }],
   }));
@@ -381,6 +396,7 @@ export function SwipeRow({
   right,
   left,
   fullSwipe = false,
+  surface,
   style,
   cancelLabel,
 }: {
@@ -408,6 +424,20 @@ export function SwipeRow({
    * khác ở chỗ ngón tay dừng lại. Xem `FULL_SWIPE_AT`.
    */
   fullSwipe?: boolean;
+  /**
+   * Mặt của hàng: lúc nằm yên, và lúc được vuốt ra.
+   *
+   * Hàng phải ĐẶC ở mọi lúc, không thì nút phía dưới hiện xuyên qua trong lúc
+   * kéo. `rest` vì thế là màu mặt thẻ, và `lifted` là mặt hàng mượn khi nó được
+   * chọn — xem `rounded`.
+   *
+   * TUỲ CHỌN, và đó là chủ ý: hai chỗ dùng còn lại (`sessions`, chế độ sắp xếp
+   * dashboard) tự vẽ nền trong chính nội dung hàng của chúng. Bắt chúng khai
+   * thêm một cặp màu là buộc tôi đổi hai màn tôi không kiểm được trong lượt
+   * này; không khai thì khung bọc không tô gì cả và hai màn ấy giữ nguyên
+   * từng điểm ảnh.
+   */
+  surface?: { rest: string; lifted: string };
   /**
    * Style cho khung ngoài cùng của hàng.
    *
@@ -581,6 +611,20 @@ export function SwipeRow({
   */
   const rounded = useAnimatedStyle(() => ({
     borderRadius: interpolate(openness.value, [0, 1], [0, radius.md], 'clamp'),
+    /*
+      ── mặt hàng ĐỔI khi nó được chọn ──
+
+      Chủ dự án: "thẻ khi được chọn chưa có điểm nhấn như apple". Trong ảnh Nhắc
+      nhở, hàng bị vuốt không chỉ bo góc — nó đổi hẳn sang một mặt khác, tách ra
+      khỏi danh sách như một viên nang được nhấc lên. Ở bản trước hàng giữ đúng
+      màu mặt thẻ, nên nó chỉ là một khối trắng trượt trên một khối trắng.
+
+      Màu đi cùng `openness`, tức cùng cú kéo với góc bo — một chuyển động chứ
+      không phải hai thứ chạy song song.
+    */
+    ...(surface
+      ? { backgroundColor: interpolateColor(openness.value, [0, 1], [surface.rest, surface.lifted]) }
+      : null),
   }));
 
   /*
@@ -674,6 +718,7 @@ export function SwipeRow({
               ) => panel('left', leftSet, progress, translation, api),
             }
           : null)}
+        animationOptions={SWIPE_SNAP}
         onSwipeableWillOpen={onWillOpen}
         onSwipeableWillClose={onWillClose}
         renderRightActions={(progress, translation, api) =>

@@ -285,10 +285,36 @@ function declOf(body, name) {
     }
     /* Mở LẦN LƯỢT: nút thứ i phải bị đẩy `i` cột lúc đóng, không thì cả cụm
        hiện cùng lúc — "nó phải chạy theo từng nút gần nhất chứ không đồng loạt". */
-    if (!/const stack = index \* OPEN_W/.test(src)) {
+    if (!/const stack = \(index \+ PARALLAX\) \* OPEN_W/.test(src)) {
       problems.push(
         `${COMPONENT}: các nút không xếp chồng theo chỉ số lúc đóng, nên chúng lộ ra ĐỒNG LOẠT thay ` +
           'vì lần lượt từ mép vào',
+      );
+    }
+    /* `index` TRẦN là chưa đủ: nút ĐẦU mỗi mép sẽ có độ lệch 0, tức đứng yên
+       tuyệt đối. Mép trái chỉ có một nút, nên ở đó không còn chuyển động nào —
+       chủ dự án báo "hiệu ứng khi nút mở ra chưa rõ rệt". `PARALLAX` đẩy cả cụm
+       thêm một quãng, nên nút đầu cũng có đường đi của nó. */
+    const par = num('PARALLAX');
+    if (par === null || par <= 0 || par > 1) {
+      problems.push(
+        `${COMPONENT}: \`PARALLAX\` = ${par} — phải nằm trong (0, 1]. Bằng 0 thì nút đầu mỗi mép đứng ` +
+          'yên tuyệt đối và cú mở không có gì để nhìn; hơn 1 thì tấm nút tụt lại quá xa so với hàng',
+      );
+    }
+    /* Nhịp chạy nốt sau khi thả tay phải là nhịp CHUNG, không phải mặc định của
+       thư viện (`damping: 1000` trên `mass: 2` — hàng khựng lại chứ không lướt). */
+    if (!/animationOptions=\{SWIPE_SNAP\}/.test(src)) {
+      problems.push(
+        `${COMPONENT}: không đặt \`animationOptions\`, nên hàng chạy bằng lò xo mặc định của thư viện ` +
+          '— damping 1000 trên mass 2, tức khựng lại thay vì lướt về chỗ',
+      );
+    }
+    /* Mặt hàng phải ĐỔI khi được chọn, và phải đổi theo cùng cú kéo với góc bo. */
+    if (!/backgroundColor: interpolateColor\(openness\.value/.test(src)) {
+      problems.push(
+        `${COMPONENT}: mặt hàng không đổi khi nó được vuốt ra — nó chỉ là một khối trượt trên một khối ` +
+          'cùng màu, không có điểm nhấn nào nói "hàng này đang được chọn"',
       );
     }
     /* Hàng đang mở phải tự thu về khi một hàng khác mở ra. */
