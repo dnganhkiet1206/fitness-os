@@ -129,6 +129,13 @@ const STEPS = [
   ['backend', 'node', ['tools/backend-config.mjs']],
   ['mép biểu đồ', 'node', ['tools/chart-edges.mjs']],
   ['hàng vuốt', 'node', ['tools/swipe.mjs']],
+  /*
+    `swipe.mjs` canh CẤU TRÚC (có lối khác, nhãn VoiceOver, số nút, thứ tự).
+    Bước này canh SỐ HỌC của cử chỉ, và cố ý không có ý kiến gì về phần trình
+    bày: `friction` là số CHIA nên 2 làm hàng đi nửa quãng ngón tay, và ngưỡng
+    cam kết phải nhân theo số nút vì quãng mở là `OPEN_W × số nút`.
+  */
+  ['số học cú vuốt', 'node', ['tools/swipe-commit.mjs']],
   ['hiệu ứng thu lại', 'node', ['tools/retract.mjs']],
   ['gốc cử chỉ', 'node', ['tools/gesture-root.mjs']],
   ['hero khi cuộn', 'node', ['tools/hero-scroll.mjs']],

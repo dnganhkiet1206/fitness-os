@@ -143,8 +143,26 @@ const ACTION_H = CAPSULE_H;
  * leave a row hanging open; and well under the full width, so there is a moment
  * where you have decided but not finished — that is the moment the haptic and
  * the label are for.
+ *
+ * ── "hai phần ba" của CÁI GÌ ──
+ *
+ * Của quãng mở THẬT, và quãng ấy là `OPEN_W × số nút` — tấm nút rộng đúng thế
+ * (`actionWrap` là `width: OPEN_W`, một cột mỗi nút). Một hằng số đơn thì chỉ
+ * đúng ở hàng MỘT nút:
+ *
+ *     1 nút   47,5 / 72   = 66%   ← đúng câu trên
+ *     2 nút   47,5 / 144  = 33%
+ *     3 nút   47,5 / 216  = 22%
+ *
+ * Tức hàng càng nhiều nút càng dễ bị mở nhầm, mà nó lại là hàng mở ra xa nhất.
+ * Thẻ "Cần làm hôm nay" có cả hai loại trên cùng một màn, nên hai hàng cạnh
+ * nhau cam kết ở hai tỉ lệ khác hẳn nhau.
+ *
+ * `friction` là 1 nên ngưỡng này đọc thẳng ra quãng NGÓN TAY: `handleRelease`
+ * so nó với `userDrag / friction`.
  */
-const COMMIT = OPEN_W * 0.66;
+const COMMIT_FRACTION = 0.66;
+const commitAt = (count: number) => OPEN_W * Math.max(count, 1) * COMMIT_FRACTION;
 
 /** Movement before the gesture takes the row, so a scroll can drift. */
 const HYSTERESIS = 10;
@@ -752,7 +770,7 @@ export function SwipeRow({
           163 điểm là đúng cái chủ dự án mô tả: "kéo đến giữa màn hình".
         */
         friction={1}
-        rightThreshold={COMMIT}
+        rightThreshold={commitAt(rightSet.length)}
         dragOffsetFromRightEdge={HYSTERESIS}
         overshootRight={false}
         /* Kéo quá bề rộng nút chỉ có nghĩa khi cú kéo dài được bật, và khi bật
@@ -761,7 +779,7 @@ export function SwipeRow({
         overshootFriction={1}
         {...(leftSet.length
           ? {
-              leftThreshold: COMMIT,
+              leftThreshold: commitAt(leftSet.length),
               dragOffsetFromLeftEdge: HYSTERESIS,
               renderLeftActions: (
                 progress: SharedValue<number>,

@@ -6,8 +6,8 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-15 · thẻ cân nặng thành thẻ thông tin, và một cổng ĐỎ
-đã đẩy đi mà không ai thấy · nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-16 · cú vuốt: ngưỡng cam kết theo số nút, và một lượt
+đo lại công việc của phiên kia · nhánh `claude/ios-fitness-rebuild-omgulr`
 (vòng rà pháp y đầy đủ gần nhất: 2026-09-14, commit `cf687a2`)
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
@@ -28,12 +28,107 @@ gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trư�
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
-| `node tools/check.mjs` | **XANH** | exit 0, **250** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
+| `node tools/check.mjs` | **XANH** | exit 0, **251** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 250 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 250 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 250 bước ở trên |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 251 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 251 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 251 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## 16/09 — cú vuốt: hai phiên cùng sửa một tệp, và tôi tới sau
+
+Chủ dự án đặt hàng cú vuốt "giống Apple Reminders": bám ngón tay, nút là lớp
+NỀN được lộ ra chứ không phải một hoạt ảnh riêng, lò xo lúc thả nhanh và mềm.
+Yêu cầu: sửa thẻ **Cần làm hôm nay** trước rồi áp cho các thẻ cùng cơ chế.
+
+**Người cộng tác đã làm gần hết trước khi tôi đẩy được gì.** Ba commit
+(`6577fd4`, `3354312`, `689419f`) đi từ phản hồi trực tiếp của chủ dự án và đã
+độc lập tới cùng một kết luận với tôi ở chỗ quan trọng nhất — `friction: 1` —
+cộng một phát hiện tôi bỏ sót: `overshootFriction` 8 nhân thêm vào, nên ngón tay
+từng phải đi **1.592 điểm** để kích hoạt cú kéo dài.
+
+Tôi đã viết một bản sửa song song và **bỏ nó**, vì luật đi kèm nó sẽ cấm đúng
+thứ chủ dự án vừa yêu cầu họ làm (*"animation của mấy cái nút bị mất rồi làm
+lại"*). Ghi lại như một chế độ hỏng của việc hai phiên thay nhau: trên một tệp
+đang được lặp theo phản hồi, luật viết quanh phần TRÌNH BÀY sẽ đỏ ở lượt sau.
+
+### Cái còn thiếu, và đã sửa
+
+Ngưỡng cam kết vẫn là một **hằng số đơn** (`OPEN_W × 0,66`) trong khi quãng mở
+là `OPEN_W × số nút`. Nên câu chú thích ngay trên nó — "two thirds of the open
+width" — chỉ đúng ở hàng một nút:
+
+| số nút | ngưỡng | tỉ lệ |
+|---|---|---|
+| 1 | 47,5 / 72 | **66%** ← đúng câu chú thích |
+| 2 | 47,5 / 144 | 33% |
+| 3 | 47,5 / 216 | 22% |
+
+Hàng càng nhiều nút càng dễ mở nhầm, mà nó lại mở ra xa nhất — và thẻ Cần làm có
+cả hai loại trên cùng một màn. Nay `commitAt(count)`, nên 66% đúng ở mọi số nút.
+`tools/swipe-commit.mjs` canh đúng hai con số ấy và **cố ý không** có ý kiến về
+parallax, cái nảy, nút nở hay màu.
+
+### Đo trên bản dựng thật, không bằng cảm giác
+
+Playwright kéo chuột từng bước trên thẻ Cần làm, đọc `getBoundingClientRect` của
+chính nhãn trong hàng sau mỗi bước:
+
+| | |
+|---|---|
+| hệ số bám | **1,000** trên mọi bước chưa kẹp ở mép mở |
+| thả dưới ngưỡng | về **0** sau 356ms |
+| vuốt nhanh quãng ngắn (36đ) | mở đúng **−72**, không bay quá |
+| mở/đóng ×3 | `−72 → 0 → −72 → 0 → −72 → 0` |
+| cuộn dọc thuần | dịch ngang **0** |
+| vuốt xéo (dọc 14 : ngang 1,5) | **−4,5** (ngưỡng kích hoạt 10) |
+| giữa chừng | nút `opacity: 1`, `transform: none` — lộ ra, không mờ dần |
+| đóng nhanh | vọt qua 0 khoảng **0,3 điểm** |
+
+### Lò xo: hai đường độc lập ra gần như cùng một chỗ
+
+`SWIPE_SNAP = spring(0.24, 0.15)` của họ giải ra **zeta 0,85 · ω₀ 26,2**. Tôi
+suy ra độc lập **zeta 0,88 · ω₀ 26,0** trước khi thấy commit của họ. Đo bằng ba
+hàm lò xo trích nguyên văn khỏi bản Reanimated đang cài, tích phân theo đúng
+vòng lặp `spring.ts` ở 60fps, trên quãng 84 điểm:
+
+    mặc định thư viện   90% ở 217ms · settle 667ms
+    SWIPE_SNAP          90% ở 133ms · settle 433ms
+
+**Và một phát hiện làm một con số của thư viện thành vô nghĩa:** mặc định của
+`ReanimatedSwipeable` là `damping: 1000` trên `mass: 2` — zeta 13,36. Nhưng
+Reanimated **không có nhánh overdamped**: `zeta ≥ 1` đều chạy
+`criticallyDampedSpringCalculations`, và công thức ấy *không đọc zeta*. Chạy thật
+thì `damping: 1000` và `damping: 74,8` cho **đúng cùng một chuyển động**. Con số
+1000 không mua được gì; thứ quyết định là ω₀.
+
+### Ba lần cái NEO của phép đo sai, và cả ba đều do tôi
+
+1. Bản đầu lấy `translateX` lớn nhất trong mọi `div` → trả về `−328` ở *mọi*
+   phép thử kể cả lúc chưa chạm gì: đó là deck hero ở trang thứ hai.
+2. Hàm đóng hàng chỉ kéo sang phải → đóng được hàng mở bên phải, **giữ nguyên**
+   hàng mở bên trái, nên hai phép thử cuối đọc phải trạng thái sót lại.
+3. Hệ số bám tính cả mẫu đã **kẹp ở mép mở** → ra 0,689 và trông như một lỗi
+   của họ. Đúng là 1,000.
+
+Cả ba đều "chạy" và đều in ra một con số nghe hợp lý. Một phép đo sai neo thì
+nguy hơn không đo, vì nó nói ra một câu có vẻ chắc chắn.
+
+### CHƯA sửa, và nói ra
+
+Nút lộ **xuyên qua** hàng ở `sessions.tsx`: `SessionRow` không có nền đặc, nhóm
+bọc nó là `alpha(m.ink, 0.06)`. Ảnh giữa chừng thấy rõ hai icon thùng rác chồng
+nhau. Lỗi có sẵn, và việc bỏ `opacity` khỏi nút làm nó rõ hơn. Không sửa mù: màu
+đúng không có sẵn thành token (nhóm render ra `rgb(234,230,225)` — 6% ink chồng
+lên nền trang), và bản sửa đúng phải đụng `useSessionListStyles`, thứ đang dùng ở
+bốn màn.
+
+`ReanimatedSwipeable` **không** phơi ra `failOffsetY`, nên "chỉ kích hoạt khi ý
+định ngang đủ rõ" hiện dựa vào `activeOffsetX` 10 điểm cộng việc `ScrollView`
+giành responder trước. Phép thử "vuốt xéo" **không** dựng lại được cuộc tranh
+chấp ấy: `ScrollView` của RN Web không tranh cử chỉ với một cú kéo **chuột**.
 
 ---
 
@@ -174,7 +269,7 @@ vì một bản tóm tắt không đo lại được thì cũng chỉ là một 
 
 | | |
 |---|---|
-| `node tools/check.mjs` | **250/250 xanh**, exit 0 |
+| `node tools/check.mjs` | **251/251 xanh**, exit 0 |
 | `npx tsc --noEmit` | exit 0, đầu ra rỗng |
 | Máy thật | ❌ **không**. Ba thứ còn treo: vòng đếm ngược của thanh Hoàn tác ở đáy, thẻ bài tập lúc thu lại có giật không, dấu tích xanh ở tiêu đề bài tập có lệch baseline không |
 
