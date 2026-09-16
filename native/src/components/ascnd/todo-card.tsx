@@ -12,11 +12,12 @@ import {
 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import Animated, { interpolate, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { SwipeRow, type SwipeAction } from '@/components/ascnd/swipe-row';
+import { SwipeRow, useSwipeOpenness, type SwipeAction } from '@/components/ascnd/swipe-row';
 import { DateField } from '@/components/ascnd/date-field';
 import { WeightEntry } from '@/components/ascnd/weight-entry';
 import { BodyScale } from '@/constants/app-icons';
@@ -451,7 +452,79 @@ function TodoRow({
       cancelLabel={i18n.cancel}
       left={[skipAction]}
       right={rightActions}>
-      <View style={[styles.rowOpen, styles.rowSwipe]}>
+      <RowBody
+        itemKey={itemKey}
+        label={label}
+        word={word}
+        quiet={quiet}
+        tint={tint}
+        editing={editing}
+        onPress={press}
+        onLogged={() => setEditing(false)}
+      />
+    </SwipeRow>
+  );
+}
+
+/**
+ * Phần nhìn thấy của một dòng — và nó là component RIÊNG vì một lý do cụ thể.
+ *
+ * `useSwipeOpenness()` chỉ trả lời được khi đứng BÊN TRONG `SwipeRow`. `TodoRow`
+ * là chỗ dựng `SwipeRow`, nên hook gọi ở đó sẽ nằm ngoài provider và luôn nhận
+ * `null`. Tách ra là cách rẻ nhất để nội dung hàng biết hàng đang bị kéo bao xa.
+ */
+function RowBody({
+  itemKey,
+  label,
+  word,
+  quiet,
+  tint,
+  editing,
+  onPress,
+  onLogged,
+}: {
+  itemKey: TodoKey;
+  label: string;
+  word: string;
+  quiet: boolean;
+  tint: string;
+  editing: boolean;
+  onPress: () => void;
+  onLogged: () => void;
+}) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const i18n = useI18n();
+
+  /*
+    ── nút "Ghi" NHƯỜNG CHỖ khi hàng bị kéo ──
+
+    Chủ dự án: "nút ghi sẽ ẩn đi khi trượt sang 2 bên kèm animation đồng bộ".
+    Lý do nó phải ẩn: nút vuốt và nút "Ghi" cùng đòi một đầu hàng. Vuốt sang
+    trái thì nút vuốt trồi lên đúng chỗ "Ghi" đang đứng, và trong lúc hàng chưa
+    đi hết thì hai nút chồng lên nhau; vuốt sang phải thì "Ghi" bị mép thẻ cắt
+    một nửa — cả hai đều đọc ra là một cái nút hỏng.
+
+    "Đồng bộ" nghĩa là chạy theo CHÍNH cú kéo, không phải một animation riêng
+    bắt đầu khi hàng mở: `openness` là giá trị `SwipeRow` dùng cho góc bo và cho
+    mặt hàng, nên ba thứ ấy là một chuyển động.
+
+    Tắt ở 0,55 chứ không phải 1: nút phải biến mất TRƯỚC khi nút vuốt tới nơi,
+    không thì có một quãng hai cái cùng hiện. Và nó thu nhỏ chứ không chỉ mờ —
+    một nút mờ dần tại chỗ đọc ra là hỏng, một nút co lại đọc ra là nhường chỗ.
+
+    `fallback` cho trường hợp đứng ngoài một `SwipeRow`: `useSwipeOpenness()`
+    trả `null` ở đó, và hook thì không gọi có điều kiện được.
+  */
+  const fallback = useSharedValue(0);
+  const openness = useSwipeOpenness() ?? fallback;
+  const yield_ = useAnimatedStyle(() => ({
+    opacity: interpolate(openness.value, [0, 0.55], [1, 0], 'clamp'),
+    transform: [{ scale: interpolate(openness.value, [0, 0.55], [1, 0.82], 'clamp') }],
+  }));
+
+  return (
+    <View style={[styles.rowOpen, styles.rowSwipe]}>
       <View style={styles.rowTop}>
         <View style={styles.tile}>
           <Icon icon={ICON[itemKey]} size={20} color={quiet ? alpha(tint, DONE_ICON_ALPHA) : tint} />
@@ -462,18 +535,19 @@ function TodoRow({
           </Text>
           <ReminderRow itemKey={itemKey} />
         </View>
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={`${word} — ${label}`}
-          accessibilityState={itemKey === 'weight' ? { expanded: editing } : undefined}
-          style={[styles.action, quiet && styles.actionDone]}
-          onPress={press}>
-          <Text style={[styles.actionText, quiet && styles.actionTextDone]}>{word}</Text>
-        </PressScale>
+        <Animated.View style={yield_}>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={`${word} — ${label}`}
+            accessibilityState={itemKey === 'weight' ? { expanded: editing } : undefined}
+            style={[styles.action, quiet && styles.actionDone]}
+            onPress={onPress}>
+            <Text style={[styles.actionText, quiet && styles.actionTextDone]}>{word}</Text>
+          </PressScale>
+        </Animated.View>
       </View>
-      {itemKey === 'weight' && editing ? <WeightEntry onLogged={() => setEditing(false)} /> : null}
-      </View>
-    </SwipeRow>
+      {itemKey === 'weight' && editing ? <WeightEntry onLogged={onLogged} /> : null}
+    </View>
   );
 }
 

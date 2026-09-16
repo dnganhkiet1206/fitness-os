@@ -5,7 +5,7 @@ import type {
   SwipeDirection,
 } from 'react-native-gesture-handler/lib/typescript/components/ReanimatedSwipeable/ReanimatedSwipeableProps';
 import type { LucideIcon } from 'lucide-react-native';
-import { useCallback, useRef } from 'react';
+import { createContext, useCallback, useContext, useRef } from 'react';
 import {
   Alert,
   Text,
@@ -315,6 +315,36 @@ function Action({
   }));
 
   /*
+    ── cái nảy lúc hàng MỞ XONG, và vì sao nó không nằm trong `grow` ──
+
+    Lượt trước tôi gỡ `scale` khỏi `grow` vì nó buộc vào `progress`: nút nhỏ hơn
+    chỗ nó chiếm suốt quãng kéo, và với nút NỞ thì nó phá luôn cái khe 6 điểm.
+    Đúng, nhưng gỡ xong thì nút không còn chuyển động riêng nào nữa — chủ dự án
+    báo "animation của mấy cái nút bị mất rồi làm lại".
+
+    Nên nó quay lại ở ĐÚNG CHỖ: một giá trị riêng, chạy bằng lò xo khi hàng đã
+    tới nơi, không dính vào phép nội suy bám ngón tay. Kéo tới đâu nút vẫn ở
+    đúng đó; cái nhún chỉ xảy ra ở khoảnh khắc thả tay, và lệch nhau theo chỉ số
+    nên ba nút nảy nối tiếp chứ không cùng lúc.
+
+    Nút NỞ (mép trái, index 0) KHÔNG nảy: nó đang ôm sát cạnh thẻ, một cú phình
+    1,06 ở đó là nó chồm lên thẻ. Cái nảy của nó nằm ở glyph — xem `glyphPop`.
+  */
+  const pop = useSharedValue(0);
+  useAnimatedReaction(
+    () => progress.value > 0.92,
+    (open, before) => {
+      if (before !== null && open === before) return;
+      pop.value = open ? withSpring(1, spring(0.26 + index * 0.05, BOUNCE.bouncy)) : 0;
+    },
+  );
+  const bounce = useAnimatedStyle(() =>
+    side === 'left' && index === 0
+      ? {}
+      : { transform: [{ scale: interpolate(pop.value, [0, 1], [0.9, 1]) }] },
+  );
+
+  /*
     ── nút GIÃN THEO THẺ từ điểm ảnh đầu tiên, không chờ ngưỡng ──
 
     Chủ dự án: "nút đỏ này phải được kéo giãn ra theo thẻ mỗi khi kéo ra". Bản
@@ -354,7 +384,7 @@ function Action({
   const ink = action.ink ?? c.primaryForeground;
 
   return (
-    <Animated.View style={[styles.actionWrap, grow]}>
+    <Animated.View style={[styles.actionWrap, grow, bounce]}>
       {/* Cả cột là đích chạm, phủ lên chứ không bọc quanh — một `Pressable` bọc
           ngoài sẽ tranh cử chỉ với chính cú vuốt. */}
       <Text
@@ -370,6 +400,28 @@ function Action({
       </Animated.View>
     </Animated.View>
   );
+}
+
+/**
+ * Độ mở của hàng, đọc được từ BÊN TRONG nội dung hàng.
+ *
+ * ── vì sao là context chứ không phải một prop ──
+ *
+ * Nội dung hàng đôi khi phải biết hàng đang bị kéo: nút "Ghi" của thẻ To-do
+ * phải NHƯỜNG CHỖ khi nút vuốt hiện ra, không thì hai nút cùng đòi chỗ ở một
+ * đầu hàng và cái nào cũng chỉ còn một nửa.
+ *
+ * Đưa `openness` ra ngoài bằng prop thì chỗ dùng phải tự giữ một shared value
+ * rồi truyền ngược vào — tức hai nơi cùng sở hữu một con số. Context thì nó vẫn
+ * thuộc về `SwipeRow`, và ai cần thì hỏi.
+ *
+ * Trả `null` khi đứng ngoài một `SwipeRow`, nên chỗ dùng phải tự lo phần "không
+ * có cú vuốt nào" thay vì nhận một số 0 giả.
+ */
+const OpennessContext = createContext<SharedValue<number> | null>(null);
+
+export function useSwipeOpenness(): SharedValue<number> | null {
+  return useContext(OpennessContext);
 }
 
 /**
@@ -724,7 +776,9 @@ export function SwipeRow({
         renderRightActions={(progress, translation, api) =>
           panel('right', rightSet, progress, translation, api)
         }>
-        <Animated.View style={[styles_clip, rounded]}>{children}</Animated.View>
+        <Animated.View style={[styles_clip, rounded]}>
+          <OpennessContext.Provider value={openness}>{children}</OpennessContext.Provider>
+        </Animated.View>
       </ReanimatedSwipeable>
     </View>
   );

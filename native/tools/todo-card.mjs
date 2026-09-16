@@ -348,6 +348,28 @@ try {
     );
   }
 
+  /* ── nút "Ghi" nhường chỗ khi hàng bị kéo, ĐỒNG BỘ với cú kéo ──
+
+     Nút vuốt và nút "Ghi" cùng đòi một đầu hàng: vuốt sang trái thì nút vuốt
+     trồi lên đúng chỗ "Ghi" đang đứng và hai cái chồng nhau; vuốt sang phải thì
+     "Ghi" bị mép thẻ cắt một nửa. Cả hai đều đọc ra là một cái nút hỏng.
+
+     "Đồng bộ" là phần luật phải canh: nó phải chạy theo CHÍNH `openness` —
+     giá trị `SwipeRow` đã dùng cho góc bo và mặt hàng — chứ không phải một
+     animation riêng bắt đầu khi hàng mở xong. */
+  CASES++;
+  {
+    const yields = /useSwipeOpenness\(\)/.test(src);
+    const synced = /interpolate\(openness\.value, \[0, [\d.]+\], \[1, 0\]/.test(src);
+    const wrapped = /<Animated\.View style=\{yield_\}>[\s\S]{0,200}?<PressScale/.test(src);
+    if (!yields || !synced || !wrapped) {
+      problems.push(
+        `${CARD}: nút "Ghi" không nhường chỗ theo cú vuốt (đọc openness ${yields}, nội suy ${synced}, ` +
+          `bọc nút ${wrapped}). Không nhường thì nó chồng lên nút vuốt hoặc bị mép thẻ cắt một nửa`,
+      );
+    }
+  }
+
   /* ── hàng chạy HẾT bề ngang thẻ, và phần thụt vào nằm BÊN TRONG hàng ──
 
      Thẻ có đệm `spacing.card`. Không bù lại thì hàng trượt đi sẽ dừng ở mép

@@ -516,6 +516,16 @@ function declOf(body, name) {
       `${COMPONENT}: không còn lò xo \`bouncy\` nào — đặt hàng là "hiệu ứng sinh động nảy như apple"`,
     );
   }
+  /* Cái nảy phải THẬT SỰ được đắp lên nút, không chỉ tồn tại trong một biến.
+     Lượt trước tôi gỡ `scale` khỏi `grow` (đúng, vì nó dính vào `progress`) và
+     gỡ luôn cả cái nảy — nút hết chuyển động riêng, và chủ dự án báo "animation
+     của mấy cái nút bị mất rồi làm lại". */
+  if (!/style=\{\[styles\.actionWrap, grow, bounce\]\}/.test(src)) {
+    problems.push(
+      `${COMPONENT}: cột nút không đắp style \`bounce\` — cái nảy có thể đã bị gỡ mà không ai thấy, ` +
+        'đúng chuyện đã xảy ra một lần',
+    );
+  }
   {
     const grow = /const grow = useAnimatedStyle\(\(\) => \(\{([\s\S]*?)\n  \}\)\);/.exec(src)?.[1] ?? '';
     if (/withSpring|withTiming/.test(grow)) {
