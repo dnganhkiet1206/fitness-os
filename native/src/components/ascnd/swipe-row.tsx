@@ -340,8 +340,20 @@ function Action({
 
     Chỉ nút NGOÀI CÙNG nở: nó là nút cú kéo dài sẽ kích hoạt.
   */
+  /*
+    ── nút GIÃN THEO THẺ từ điểm ảnh đầu tiên, không chờ ngưỡng ──
+
+    Chủ dự án: "nút đỏ này phải được kéo giãn ra theo thẻ mỗi khi kéo ra". Bản
+    trước nhân bề rộng với `full` — thứ chỉ lên 1 SAU khi qua ngưỡng kéo-dài —
+    nên suốt quãng trước đó nút đứng nguyên 60 điểm trong khi hàng đi mỗi lúc
+    một xa, và khoảng trắng giữa hai thứ càng kéo càng to. Đúng ảnh chụp.
+
+    Nay bề rộng bám thẳng `translation`: hàng nhường ra bao nhiêu, nút chiếm
+    bấy nhiêu, trừ đúng một khe mỗi bên. `full` thôi làm việc của bề rộng và
+    chuyển sang làm việc của nó — cái nảy ở đúng khoảnh khắc qua ngưỡng.
+  */
   const swell = useAnimatedStyle(() => {
-    if (index !== 0) return {};
+    if (index !== 0 || side !== 'left') return {};
     /*
       Bề rộng để mép phải viên nang dừng cách nội dung hàng đúng `CAPSULE_INSET`
       — cùng khe với mép trái, nên nút lấp KÍN khoảng hàng vừa nhường ra.
@@ -351,9 +363,19 @@ function Action({
       77 điểm chạy ra ngoài mép trái và bị cắt, còn mép phải chỉ tới 149 — để
       hở 101 điểm trắng giữa nút và thẻ. Đúng ảnh chủ dự án chụp.
     */
-    const span = Math.max(CAPSULE_W, Math.abs(translation.value) - CAPSULE_INSET * 2);
-    return { width: CAPSULE_W + (span - CAPSULE_W) * full.value };
+    return { width: Math.max(CAPSULE_W, Math.abs(translation.value) - CAPSULE_INSET * 2) };
   });
+
+  /*
+    Cái nảy nay thuộc về GLYPH, không thuộc bề rộng.
+
+    Bề rộng phải bám ngón tay từng khung hình, nên không được có lò xo trong đó.
+    Còn khoảnh khắc qua ngưỡng vẫn cần một dấu hiệu nhìn thấy được ngoài tiếng
+    haptic — nên dấu trừ nhún một cái, bằng chính lò xo `bouncy` mà `full` chạy.
+  */
+  const glyphPop = useAnimatedStyle(() => ({
+    transform: [{ scale: interpolate(full.value, [0, 1], [1, 1.18]) }],
+  }));
 
   const ink = action.ink ?? c.primaryForeground;
 
@@ -368,7 +390,9 @@ function Action({
         style={styles.hit}
       />
       <Animated.View style={[styles.capsule, { backgroundColor: action.tint ?? c.readinessRed }, swell]}>
-        <Icon icon={action.icon} size={CAPSULE_ICON} color={ink} />
+        <Animated.View style={glyphPop}>
+          <Icon icon={action.icon} size={CAPSULE_ICON} color={ink} />
+        </Animated.View>
       </Animated.View>
     </Animated.View>
   );
@@ -804,12 +828,13 @@ const stylesFor = makeStyles((c) => ({
     Khi CHƯA nở, `left: CAPSULE_INSET` đặt nó đúng giữa cột — 6 điểm mỗi bên —
     nên hai nút không nở vẫn cân.
 
-    ── glyph cũng neo trái, và đó là cách Apple làm ──
+    ── glyph neo mép PHẢI, tức bám theo thẻ ──
 
-    `justifyContent: 'flex-start'` với một khoảng đệm bằng nửa phần thừa: chưa
-    nở thì glyph nằm đúng giữa viên nang; nở ra thì nó ĐỨNG YÊN cách mép trái
-    đúng khoảng ấy trong khi viên nang dài ra. Đối chiếu ảnh Nhạc của iOS: lúc
-    nút đã nở hết, dấu trừ nằm sát mép người ta vuốt từ đó, không trôi ra giữa.
+    Chủ dự án: "nút - ở giữa sẽ kéo về gần thẻ chính ở cuối góc phải của thẻ
+    xoá". `justifyContent: 'flex-end'` với đệm bằng nửa phần thừa làm đúng hai
+    việc bằng một con số: chưa nở thì glyph nằm đúng giữa viên nang; nở ra thì
+    nó đứng yên cách mép PHẢI đúng khoảng ấy — mà mép phải là mép đi theo thẻ,
+    nên dấu trừ trôi cùng thẻ chứ không ở lại phía sau.
   */
   capsule: {
     position: 'absolute',
@@ -820,8 +845,8 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.full,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingLeft: (CAPSULE_W - CAPSULE_ICON) / 2,
+    justifyContent: 'flex-end',
+    paddingRight: (CAPSULE_W - CAPSULE_ICON) / 2,
   },
   /* The whole capsule is the target, laid over it rather than wrapping it — a
      Pressable around an Animated.View would fight the swipe for the gesture. */

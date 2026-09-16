@@ -374,6 +374,18 @@ function declOf(body, name) {
     }
   }
 
+  /* Glyph neo mép ĐI THEO THẺ, không ở lại phía sau: "nút - ở giữa sẽ kéo về
+     gần thẻ chính ở cuối góc phải của thẻ xoá". */
+  {
+    const capsuleBody = /\n  capsule: \{([\s\S]*?)\n  \},/.exec(src)?.[1] ?? '';
+    if (!/justifyContent: 'flex-end'/.test(capsuleBody) || !/paddingRight:/.test(capsuleBody)) {
+      problems.push(
+        `${COMPONENT}: glyph không neo vào mép đi theo thẻ — nở ra thì nó ở lại phía sau thay vì trôi ` +
+          'cùng thẻ',
+      );
+    }
+  }
+
   /* ── cú kéo dài: nút NỞ RA, hàng ĐỨNG YÊN, hệ điều hành hỏi lại ──
 
      Chủ dự án gửi bốn ảnh Nhắc nhở và Nhạc của iOS kèm mô tả: "khi kéo đến giữa
@@ -381,11 +393,24 @@ function declOf(body, name) {
      điểm kéo đó sau đó sẽ có pop up hệ thống hiện lên hỏi có chắc chắn muốn xoá
      không". Ba mệnh đề, ba luật — vì mất bất kỳ cái nào thì hai cái kia vẫn
      chạy và không có gì đỏ. */
-  if (!/const span = Math\.max\(CAPSULE_W, Math\.abs\(translation\.value\)/.test(src)) {
-    problems.push(
-      `${COMPONENT}: nút ngoài cùng không nở theo khoảng ĐÃ KÉO. Chạy tới một bề rộng định sẵn thì nó ` +
-        'rời khỏi ngón tay, còn không nở gì thì không có gì nói "thả ra là làm"',
-    );
+  {
+    const swell = /const swell = useAnimatedStyle\(\(\) => \{([\s\S]*?)\n  \}\);/.exec(src)?.[1] ?? '';
+    if (!/width: Math\.max\(CAPSULE_W, Math\.abs\(translation\.value\)/.test(swell)) {
+      problems.push(
+        `${COMPONENT}: nút ngoài cùng không nở theo khoảng ĐÃ KÉO. Chạy tới một bề rộng định sẵn thì nó ` +
+          'rời khỏi ngón tay, còn không nở gì thì không có gì nói "thả ra là làm"',
+      );
+    }
+    /* Bề rộng KHÔNG được nhân với `full`: `full` chỉ lên 1 SAU khi qua ngưỡng,
+       nên nhân vào đó là để nút đứng nguyên suốt quãng kéo trước đó trong khi
+       hàng đi mỗi lúc một xa — khoảng trắng giữa hai thứ càng kéo càng to, đúng
+       cái chủ dự án chụp lại. */
+    if (/full\.value/.test(swell)) {
+      problems.push(
+        `${COMPONENT}: bề rộng nút phụ thuộc \`full\`, thứ chỉ lên 1 sau khi qua ngưỡng — nên trước đó ` +
+          'nút đứng nguyên và để hở một mảng trắng càng kéo càng to giữa nó và thẻ',
+      );
+    }
   }
 
   /* ── nút nở phải LẤP KÍN khoảng hàng nhường ra, và luật CHẠY phép tính ──
