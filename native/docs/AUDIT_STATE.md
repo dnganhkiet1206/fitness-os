@@ -6,9 +6,9 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-17 · dải ngang ở bản tối — một cái TÊN có hai nghĩa,
-và cùng nó làm tính năng highlight chưa từng chạy ở bản tối · nhánh
-`claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-17 · một lời gọi JS trong thân worklet làm app chết
+trên máy thật — và cái luật viết ra để chặn đúng lỗi đó chỉ đang soi 49/163 thân
+worklet · nhánh `claude/ios-fitness-rebuild-omgulr`
 (vòng rà pháp y đầy đủ gần nhất: 2026-09-14, commit `cf687a2`)
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
@@ -35,6 +35,65 @@ và cùng nó làm tính năng highlight chưa từng chạy ở bản tối · 
 | Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 254 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
 | ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 254 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## 17/09 (d) — app chết trên máy thật, và cái luật viết ra để chặn nó chỉ thấy 30%
+
+Chủ dự án dựng bản vừa đẩy lên máy và nhận ngay:
+
+    [Worklets] Tried to synchronously call a Remote Function.
+    Called "alpha" on the UI Runtime.      swipe-row.tsx (837:19)
+
+Lỗi của tôi, và là lỗi ở đúng dòng tôi vừa viết: `alpha()` là hàm JS thường,
+tôi gọi nó **bên trong** thân `useAnimatedStyle`. Thân ấy chạy trên UI runtime,
+nên đó là một Remote Function và Worklets ném thẳng — app chết ở khung hình
+đầu tiên.
+
+**Bộ chạy web không thể thấy được.** RN Web không có UI runtime riêng: worklet
+chạy cùng luồng JS, nên `alpha()` gọi được và mọi thứ xanh. Cổng 254 bước xanh,
+`tsc` exit 0, ảnh chụp đúng — và app không mở nổi trên iPhone.
+
+Sửa: tính hai đầu nội suy **trên luồng JS** rồi để worklet chỉ *bắt* hai chuỗi.
+
+### Nhưng phần đáng giá là vì sao luật không bắt
+
+`tools/worklet-callable.mjs` tồn tại **chính xác** để chặn lỗi này. Nó được viết
+sau hai `.ips` ngày 14/09 (`spring()` gọi trong một worklet của toast), và
+chú thích của nó đã nói ra cả cái điểm mù: *"Reanimated bản web không có luồng
+UI riêng, nên lời gọi ấy chạy bình thường"*.
+
+Nó vẫn để lỗi này đi qua, vì phạm vi của nó là **thân hàm có chỉ thị
+`'worklet';` viết tay**. Callback truyền cho `useAnimatedStyle` và họ hàng
+**không có chữ `'worklet'` nào** — plugin babel của Reanimated tự worklet-hoá
+chúng lúc dựng. Với luật cũ, chúng vô hình.
+
+Đo ra con số thì mới thấy lỗ to cỡ nào:
+
+| | thân worklet |
+|---|---|
+| viết tay (`'worklet';`) — luật cũ thấy | **49** |
+| tự worklet-hoá — luật cũ **không** thấy | **114** |
+| tổng, sau khi mở rộng | **163** |
+
+Tức cái luật viết ra để chặn crash trên UI thread đang soi **30%** mã UI-thread
+của app. Nay nó cắt cả callback của `useAnimatedStyle`, `useAnimatedProps`,
+`useDerivedValue`, `useAnimatedReaction`, `useAnimatedScrollHandler`,
+`useFrameCallback`, `runOnUI`.
+
+Phép thử phá là chính cú crash: đặt lại `alpha(m.liftedRow, 0)` vào trong thân
+worklet → **đỏ**, gọi đúng tên `alpha`, đúng tệp, đúng lý do. Khôi phục → xanh.
+
+`HOOKS` là một **danh sách chốt**, không phải một phép suy: một hook mới của
+Reanimated sẽ không tự có mặt. Chỗ mù còn lại được ghi ngay cạnh danh sách.
+
+### Bài học, và nó không phải "cẩn thận hơn"
+
+Cổng này có 254 bước và **không bước nào chạy được trên iPhone**. Lỗi vừa rồi
+không phải một lỗi khó thấy — nó là lỗi mà một lần mở app bắt được trong một
+giây. Thứ duy nhất thay cho lần mở app ấy là một luật đọc mã, và luật ấy chỉ
+đáng tin tới đúng cái phạm vi nó tự đặt cho mình. Phạm vi ấy phải được ĐO, chứ
+không được suy: nếu 14/09 có ai đếm "49 trên 163" thì lỗ này đã lộ ngay hôm ấy.
 
 ---
 

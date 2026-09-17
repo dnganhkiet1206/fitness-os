@@ -36,10 +36,28 @@
  *
  * ── luật đọc gì ──
  *
- * Với mỗi thân hàm có `'worklet';`, lấy mọi lời gọi `tên(` mà `tên` được nhập
- * từ một module `@/` của chính app, rồi mở module ấy ra xem hàm được export có
- * mang `'worklet'` không. Hàm của thư viện ngoài (`withTiming`, `withSpring`…)
- * không bị hỏi: Reanimated tự lo phần của nó.
+ * Với mỗi thân worklet, lấy mọi lời gọi `tên(` mà `tên` được nhập từ một module
+ * `@/` của chính app, rồi mở module ấy ra xem hàm được export có mang
+ * `'worklet'` không. Hàm của thư viện ngoài (`withTiming`, `withSpring`…) không
+ * bị hỏi: Reanimated tự lo phần của nó.
+ *
+ * ── và "thân worklet" là HAI thứ, không phải một ──
+ *
+ * Bản đầu chỉ đọc thân hàm có chỉ thị `'worklet';` viết tay. Nó bỏ sót cả một
+ * họ, và lỗ ấy đã cho một crash thứ hai đi qua (2026-09-17, `swipe-row.tsx`):
+ *
+ *     [Worklets] Tried to synchronously call a Remote Function.
+ *     Called "alpha" on the UI Runtime.
+ *
+ * Callback truyền cho `useAnimatedStyle` và họ hàng của nó KHÔNG có chữ
+ * `'worklet'` nào — plugin babel của Reanimated tự biến chúng thành worklet lúc
+ * dựng. Nên với luật cũ chúng vô hình, trong khi chúng đúng là nơi phần lớn mã
+ * UI-thread của app này sống.
+ *
+ * `HOOKS` bên dưới là danh sách các hàm nhận callback được tự-worklet-hoá. Đây
+ * là một DANH SÁCH CHỐT, không phải một phép suy: một hook mới của Reanimated
+ * sẽ không tự có mặt, và đó là chỗ mù còn lại — ghi ra để người sau biết phải
+ * thêm tay.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -89,6 +107,47 @@ export function workletBodies(src) {
   return out;
 }
 
+/**
+ * Những hàm mà ĐỐI SỐ CALLBACK của chúng được plugin babel tự biến thành
+ * worklet. Không cái nào cần chữ `'worklet'` trong mã nguồn.
+ *
+ * Danh sách chốt: một hook mới của Reanimated không tự có mặt ở đây.
+ */
+const HOOKS = [
+  'useAnimatedStyle',
+  'useAnimatedProps',
+  'useDerivedValue',
+  'useAnimatedReaction',
+  'useAnimatedScrollHandler',
+  'useFrameCallback',
+  'runOnUI',
+];
+
+/** Thân các callback tự-worklet-hoá: `useAnimatedStyle(() => { … })` và họ. */
+export function autoWorkletBodies(src) {
+  const out = [];
+  for (const hook of HOOKS) {
+    for (const m of src.matchAll(new RegExp(`\\b${hook}\\s*\\(`, 'g'))) {
+      /* Cắt TRỌN lời gọi bằng đếm ngoặc, rồi giữ cả phần trong — với
+         `useAnimatedReaction` thì cả hai callback đều là worklet, nên lấy cả
+         lời gọi là đúng chứ không phải lười. */
+      let d = 0;
+      let k = m.index + m[0].length - 1;
+      const start = k;
+      while (k < src.length) {
+        if (src[k] === '(') d++;
+        else if (src[k] === ')') {
+          d--;
+          if (d === 0) break;
+        }
+        k++;
+      }
+      out.push(src.slice(start, k + 1));
+    }
+  }
+  return out;
+}
+
 /** Tên export của một module có mang `'worklet'` trong thân nó. */
 export function exportedWorklets(src) {
   const names = new Set();
@@ -102,6 +161,8 @@ export function exportedWorklets(src) {
 
 const problems = [];
 let worklets = 0;
+let handWritten = 0;
+let autoMade = 0;
 let checked = 0;
 const cache = new Map();
 const moduleSource = (rel) => {
@@ -121,7 +182,7 @@ const moduleSource = (rel) => {
 
 for (const file of walk(SRC)) {
   const src = readFileSync(file, 'utf8');
-  if (!src.includes("'worklet'")) continue;
+  if (!src.includes("'worklet'") && !HOOKS.some((h) => src.includes(h + '('))) continue;
   const rel = path.relative(NATIVE, file);
 
   const imported = new Map();
@@ -132,7 +193,11 @@ for (const file of walk(SRC)) {
     }
   }
 
-  for (const body of workletBodies(src)) {
+  const hand = workletBodies(src);
+  const auto = autoWorkletBodies(src);
+  handWritten += hand.length;
+  autoMade += auto.length;
+  for (const body of [...hand, ...auto]) {
     worklets++;
     for (const call of new Set([...body.matchAll(/\b([A-Za-z_$][\w$]*)\s*\(/g)].map((m) => m[1]))) {
       const from = imported.get(call);
@@ -143,8 +208,9 @@ for (const file of walk(SRC)) {
       if (!exportedWorklets(modSrc).has(call)) {
         problems.push(
           `${rel}: một worklet gọi \`${call}()\` nhập từ \`${from}\`, mà hàm ấy không có chỉ thị ` +
-            "`'worklet'`. Trên luồng UI đó là một lỗi ném ra ngoài tầm bắt của React Native: không " +
-            'màn đỏ, không log, tiến trình bị abort — đúng chữ ký của hai `.ips` ngày 2026-09-14',
+            "`'worklet'`. Trên luồng UI đó là một Remote Function: Worklets ném thẳng (\"Tried to " +
+            'synchronously call a Remote Function\"), hoặc tiến trình bị abort không màn đỏ không log — ' +
+            'hai `.ips` ngày 2026-09-14 và cú crash `alpha` ngày 2026-09-17 đều là hình này',
         );
       }
     }
@@ -178,7 +244,11 @@ if (problems.length) {
 }
 
 console.log(
-  `hàm gọi được từ worklet OK — soi ${worklets} thân hàm có \`'worklet'\` trên toàn bộ src, và ` +
+  `hàm gọi được từ worklet OK — soi ${worklets} thân worklet trên toàn bộ src: ${handWritten} viết tay ` +
+    `(có chỉ thị \`'worklet';\`) và ${autoMade} được plugin babel tự worklet-hoá — callback của ` +
+    `\`useAnimatedStyle\` và họ, thứ KHÔNG mang chữ 'worklet' nào. Nhóm thứ hai từng vô hình với luật này, ` +
+    `và lỗ ấy đã cho một crash đi qua: \`alpha()\` gọi trong thân \`useAnimatedStyle\` của swipe-row ` +
+    `(2026-09-17) — "Tried to synchronously call a Remote Function". Trong số đó ` +
     `${checked} lời gọi trong đó trỏ tới một hàm của chính app; mỗi hàm ấy đều mang chỉ thị. Luật này ` +
     'có vì một lời gọi như thế KHÔNG hỏng ở đâu khác: `tsc` thấy đúng kiểu, ESLint không biết ' +
     "`'worklet'` là gì, `motion.mjs` chỉ canh nhịp, và Reanimated bản web không có luồng UI riêng nên " +

@@ -660,6 +660,21 @@ export function SwipeRow({
      kế, và gom về đây thì `tools/row-surface.mjs` đo được nó ở cả hai diện mạo
      thay vì đo một prop có thể là bất cứ chuỗi gì. */
   const m = useMaterial();
+  /*
+    Hai đầu của phép nội suy được tính Ở ĐÂY, trên luồng JS, rồi worklet chỉ
+    BẮT hai chuỗi.
+
+    `alpha()` là một hàm JS thường, không phải worklet. Gọi nó bên trong thân
+    `useAnimatedStyle` là gọi một Remote Function trên UI runtime, và Worklets
+    ném thẳng: *"Tried to synchronously call a Remote Function"* — app chết ngay
+    khung hình đầu. Tôi đã viết đúng lỗi ấy và bộ chạy web KHÔNG thấy được: trên
+    RN Web không có UI runtime riêng, worklet chạy cùng luồng JS nên `alpha()`
+    gọi được. Chỉ máy thật mới nói ra.
+
+    Hằng bắt được vào worklet phải là giá trị THUẦN. Hai chuỗi màu thì được.
+  */
+  const liftFrom = lifts ? alpha(m.liftedRow, 0) : m.liftedRow;
+  const liftTo = m.liftedRow;
   const buzzed = useRef(false);
   /* Cú kéo dài: cờ được bật trên luồng UI, đọc lúc thả. */
   const armed = useRef(false);
@@ -834,7 +849,7 @@ export function SwipeRow({
           backgroundColor: interpolateColor(
             interpolate(openness.value, [0, LIFT_AT], [0, 1], 'clamp'),
             [0, 1],
-            [alpha(m.liftedRow, 0), m.liftedRow],
+            [liftFrom, liftTo],
           ),
         }
       : null),

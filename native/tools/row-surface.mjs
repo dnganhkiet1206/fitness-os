@@ -86,11 +86,14 @@ if (/surface\.rest|surface\.lifted/.test(row)) {
 
 /* ── 2. hai đầu nội suy là CÙNG một màu, khác mỗi alpha ── */
 CASES++;
-if (!/\[alpha\(m\.liftedRow, 0\), m\.liftedRow\]/.test(row)) {
+if (!/\[liftFrom, liftTo\]/.test(row) || !/const liftFrom = lifts \? alpha\(m\.liftedRow, 0\)/.test(row)) {
   problems.push(
-    `${ROW}: hai đầu của \`interpolateColor\` không phải \`[alpha(m.liftedRow, 0), m.liftedRow]\`. Hai RGB khác ` +
-      'nhau thì phép nội suy đi qua một dải tông không ai chọn; và một đầu không phải alpha 0 thì hàng ' +
-      'đang nghỉ vẫn sơn một lớp lên mặt thẻ — đúng cái sinh ra dải',
+    `${ROW}: hai đầu của \`interpolateColor\` phải là \`[liftFrom, liftTo]\`, tính SẴN trên luồng JS bằng ` +
+      '`const liftFrom = lifts ? alpha(m.liftedRow, 0) : …`. Hai lý do, cả hai đều đã hỏng thật: gọi ' +
+      '`alpha()` BÊN TRONG thân worklet là một Remote Function trên UI runtime và app chết ngay khung ' +
+      'hình đầu (2026-09-17); và hai đầu phải cùng một RGB khác mỗi alpha, vì nội suy giữa hai RGB khác ' +
+      'nhau đi qua một dải tông không ai chọn, còn một đầu không phải alpha 0 thì hàng đang nghỉ lại ' +
+      'sơn một lớp lên mặt thẻ — đúng cái sinh ra dải',
   );
 }
 
