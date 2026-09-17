@@ -6,9 +6,8 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-17 · cú thả tay chậm thêm một nấc nữa (`spring(0.40)`,
-chủ dự án chọn), và lượt đo đầu tiên chạy trên bản dựng thật chứ không mô phỏng ·
-nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-17 · viên "Đã ghi" có nền trở lại, và bản dựng được
+đưa bị chính phép đo bác ở bản sáng · nhánh `claude/ios-fitness-rebuild-omgulr`
 (vòng rà pháp y đầy đủ gần nhất: 2026-09-14, commit `cf687a2`)
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
@@ -35,6 +34,95 @@ nhánh `claude/ios-fitness-rebuild-omgulr`
 | Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 253 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
 | ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 253 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## 17/09 (b) — viên "Đã ghi", và một bản dựng đẹp mà rớt sàn
+
+Chủ dự án đưa một ảnh dựng — viên xanh nhạt, dấu tích xanh, **chữ xanh** — và
+nói *"nút đã ghi thì nên làm như này"*.
+
+### Bước đầu: ảnh ấy KHÔNG phải bản đang chạy
+
+Bốn dòng phụ đề trong ảnh (*"Ghi lại các bữa ăn trong ngày"*, *"Theo dõi thời
+gian ngủ"*…) không tồn tại một chữ nào trong `src`. Nên đó là ảnh dựng, là
+ĐÍCH, không phải ảnh chụp lỗi. Bản đang chạy được chụp lại để đối chiếu: nút
+dòng đã ghi là `backgroundColor: 'transparent'`, chữ xám, không viên, không
+tích — một dòng chữ đậm trôi ở mép hàng.
+
+Và chỗ đó đúng là hỏng, do chính lượt trước (`e0e1d82`) tạo ra: nút ấy vẫn
+**bấm được** — nó là lối sửa một lượt ghi sai — nhưng đã thôi trông như nút.
+HIG nói thẳng: control còn thao tác được thì phải còn trông như control.
+
+### Nhưng bản dựng ấy rớt sàn ở bản SÁNG, và đây là số
+
+`readinessGreen` bản sáng là `#078055`, mới **4,97:1** trên giấy trắng. Viên
+xanh nhạt làm nền tối đi, nên chữ xanh trên viên xanh rớt dưới 4,5:1 của WCAG
+1.4.3 ở **mọi** độ đậm:
+
+| α | nền viên | viên/thẻ | chữ xanh/viên |
+|---|---|---|---|
+| 0,08 | `#ebf5f1` | 1,113 | **4,46** rớt |
+| 0,12 | `#e1f0eb` | 1,175 | **4,23** rớt |
+| 0,20 | `#cde6dd` | 1,316 | **3,77** rớt |
+| 0,30 | `#b5d9cc` | 1,526 | **3,26** rớt |
+
+Không phải ý thích — số học: màu ấy không có chỗ để nhạt. Ba đường vòng cũng
+đo rồi: viên bằng bề mặt sẵn có (`secondary`/`muted`/`accent`) + chữ xanh ra
+4,15 · 4,30 · 3,89, vẫn rớt, vì vấn đề nằm ở màu CHỮ; còn làm xanh đậm hơn cho
+bản sáng thì đạt từ `#0a6f4a`, nhưng phải thêm token và `readinessGreen` còn tô
+icon món ăn, vòng sẵn sàng, dải xu hướng — đổi nó là đổi cả một miền nghĩa cho
+một cái viên.
+
+### Nên màu xanh đi vào chỗ nó đủ sức đứng: DẤU TÍCH
+
+Icon chịu sàn **3:1** của WCAG 1.4.11 chứ không phải 4,5:1, và trên viên nó đo
+được 4,23 (sáng) · 9,75 (tối). Dư.
+
+Kết quả: **viên xanh α 0,12 · tích xanh · chữ `secondaryForeground`** —
+6,59:1 sáng · 4,88:1 tối, một token cho cả hai diện mạo. (`mutedForeground`,
+màu chữ hiện nay, đạt 4,92 ở sáng nhưng chỉ **3,62** ở tối, nên nó không đi
+được cả hai — và đó là một trong các phép thử phá.)
+
+Đặt hàng cũ *"đã ghi thì mờ đi so với các thẻ còn lại"* không bị phá: viên đen
+của dòng chưa ghi tách khỏi mặt thẻ **17,57:1**, viên xanh này **1,175** (sáng)
+và **1,301** (tối). Nó vẫn là thứ yên nhất trong cột, chỉ là không còn tàng
+hình. Sàn dưới 1,134 là bậc bề mặt nhỏ nhất iOS tự tạo — cùng con số
+`bar-track.mjs` và `plan-week.mjs` dùng.
+
+### Dấu tích này không phải dấu tích đã bị bỏ
+
+Cái bị bỏ ở `e0e1d82` **thay thế ô icon của dòng**, nên ghi xong là dòng đổi cả
+bố cục và mất lối sửa. Cái này nằm **bên trong viên**; ô icon giữ nguyên. Nó
+cộng thêm một dấu hiệu không-phải-màu chứ không lấy đi cái nào — chữ "Đã ghi"
+vẫn ở đó, WCAG 1.4.1 vẫn được giữ bằng chữ.
+
+### BỎ QUA không được nhận viên này — và đó là một luật, không phải một câu
+
+`quiet` gộp `done` và `skipped` cho ô icon và nhãn. Viên thì tách: xanh + tích
+là lời khen, còn "Bỏ qua" là việc người dùng **chủ động** bỏ. Khen một việc bị
+bỏ là app nói sai về chính họ. Hai vế trong `todo-card.mjs` canh cả hai chiều:
+viên phải gắn vào `done`, và phải **không** gắn vào `quiet`.
+
+### Luật mới, và nó đọc TÊN TOKEN chứ không gõ lại
+
+`tools/todo-card.mjs` 1.076 → **1.083 ca**. Nó lấy `DONE_PILL_ALPHA` và tên
+token của nền/chữ/tích ra khỏi chính hai style ấy, dựng lại mặt thẻ của từng
+diện mạo theo đúng chồng mặt, rồi đo ba sàn. Đổi `actionTextDone` sang một
+token rớt sàn là **đỏ**, chứ không phải xanh vì luật vẫn đang đo token cũ.
+
+Sáu phép thử phá, mỗi cái đỏ đúng câu nó hứa: chữ → `readinessGreen` (4,23
+sáng) · chữ → `mutedForeground` (3,62 tối) · α → 0,02 (viên tàng hình, đỏ cả
+hai diện mạo) · bỏ dấu tích · viên gắn vào `quiet` (đỏ **hai** câu) · xoá tên
+hằng. Cộng một phép chống kêu oan: chữ → `foreground` (14,95 · 11,87) phải
+**vẫn xanh**, và nó vẫn xanh.
+
+### Một thứ nhìn thấy mà không sửa
+
+Bản dựng web chụp ở diện mạo TỐI bị một lớp trắng phủ mờ cả trang. Nó có
+**trước** thay đổi này — ảnh chụp trước khi sửa cũng vậy — nên không phải của
+lượt này. Giá trị màu đọc thẳng từ DOM vẫn đúng (`rgba(43,245,168,0.12)`, chữ
+`#999999`), nên phép đo không dựa vào cái ảnh ấy.
 
 ---
 

@@ -3,6 +3,7 @@ import {
   Bell,
   BellOff,
   BicepsFlexed,
+  Check,
   HeartPulse,
   type LucideIcon,
   CircleMinus,
@@ -216,6 +217,69 @@ const ICON: Record<TodoKey, LucideIcon> = {
  * Trạng thái vẫn không phụ thuộc sắc độ: nút ghi hẳn chữ "Đã ghi" (WCAG 1.4.1).
  */
 const DONE_ICON_ALPHA = 0.8;
+
+/**
+ * Viên "Đã ghi": vì sao nó có nền trở lại, và vì sao CHỮ không xanh.
+ *
+ * ── đặt hàng ──
+ *
+ * Chủ dự án đưa một ảnh dựng và nói *"nút đã ghi thì nên làm như này"*: một
+ * viên xanh nhạt, dấu tích xanh, chữ xanh — đứng cạnh bốn viên đen đặc của mấy
+ * dòng chưa ghi.
+ *
+ * Yêu cầu ấy sửa đúng một chỗ hỏng mà lượt trước tạo ra. Bỏ nền viên đi
+ * (`backgroundColor: 'transparent'`) làm dòng đã ghi trông như một cái NHÃN,
+ * trong khi nó vẫn là một cái NÚT: bấm vào là sửa được lượt ghi sai. HIG nói
+ * thẳng điều này — một control còn thao tác được thì phải còn trông như
+ * control. Nên viên quay lại, và nó quay lại với một sắc thái khẳng định.
+ *
+ * ── nhưng chữ xanh thì KHÔNG đứng được ở bản sáng, và đây là số ──
+ *
+ * `readinessGreen` bản sáng là `#078055`, mới chỉ **4,97:1** trên giấy trắng.
+ * Viên xanh nhạt làm nền TỐI đi, nên chữ xanh trên viên xanh rớt xuống dưới
+ * 4,5:1 của WCAG 1.4.3 ở MỌI độ đậm — 4,46 ngay từ α 0,08, và càng đậm càng
+ * tệ. Không phải ý thích, là số học: màu ấy không có chỗ để nhạt.
+ *
+ * Ba đường còn lại đều đo rồi:
+ *
+ *   viên bằng bề mặt sẵn có (`secondary`/`muted`/`accent`) + chữ xanh
+ *       → 4,15 · 4,30 · 3,89 ở bản sáng. Vẫn rớt, vì vấn đề là màu CHỮ.
+ *   làm xanh đậm hơn cho bản sáng (`#0a6f4a` trở đi thì đạt)
+ *       → phải thêm một token bảng màu, và `readinessGreen` còn tô icon món
+ *         ăn, vòng sẵn sàng, dải xu hướng. Đổi nó là đổi cả một miền nghĩa cho
+ *         một cái viên. Ngoài phạm vi việc này.
+ *   giữ viên xanh, chuyển màu XANH sang chỗ nó đủ sức đứng: DẤU TÍCH.
+ *       → icon chịu sàn 3:1 của WCAG 1.4.11 chứ không phải 4,5:1, và trên viên
+ *         nó đo được 4,23 (sáng) · 9,75 (tối). Dư.
+ *
+ * Đường thứ ba là đường được chọn, nên: **viên xanh, tích xanh, chữ
+ * `secondaryForeground`** — 6,59:1 bản sáng · 4,88:1 bản tối, một token cho cả
+ * hai diện mạo. (`mutedForeground`, màu chữ hiện nay, đạt 4,92 ở bản sáng
+ * nhưng chỉ 3,62 ở bản tối, nên nó không đi được cả hai.)
+ *
+ * ── và "đã ghi" vẫn phải NHẠT hơn "chưa ghi" ──
+ *
+ * Đó là đặt hàng cũ, và nó không bị bản này phá: viên đen của dòng chưa ghi
+ * tách khỏi mặt thẻ **17,57:1**, viên xanh này tách **1,175:1** (sáng) và
+ * **1,301:1** (tối). Nó là thứ yên nhất trong cột, chỉ là không còn tàng hình.
+ * Sàn dưới 1,134 là bậc bề mặt nhỏ nhất iOS tự tạo ra — cùng con số
+ * `bar-track.mjs` và `plan-week.mjs` dùng, và vì cùng lý do.
+ *
+ * ── dấu tích này KHÔNG phải dấu tích đã bị bỏ ──
+ *
+ * Cái bị bỏ ở lượt trước thay THẾ ô icon của dòng, nên ghi xong là dòng đổi cả
+ * bố cục và mất lối sửa. Cái này nằm BÊN TRONG viên, ô icon giữ nguyên. Nó
+ * cộng thêm một dấu hiệu không-phải-màu chứ không lấy đi cái nào — chữ "Đã
+ * ghi" vẫn ở đó, WCAG 1.4.1 vẫn được giữ bằng chữ.
+ *
+ * ── BỎ QUA không dùng viên này, và đó là một quyết định ──
+ *
+ * `quiet` gộp `done` và `skipped` cho ô icon và cho nhãn, vì cả hai đều là
+ * "dòng này xong việc của hôm nay". Nhưng viên thì tách: xanh + tích là lời
+ * khen, còn "Bỏ qua" là một việc người dùng CHỦ ĐỘNG bỏ. Khen một việc bị bỏ
+ * là nói sai về chính họ. Chủ dự án chỉ vào nút "Đã ghi", nên chỉ nút ấy đổi.
+ */
+const DONE_PILL_ALPHA = 0.12;
 
 const TODO_REMINDER: Record<TodoKey, TimedReminderKey> = {
   meal: 'meal',
@@ -457,6 +521,7 @@ function TodoRow({
         label={label}
         word={word}
         quiet={quiet}
+        done={done}
         tint={tint}
         editing={editing}
         onPress={press}
@@ -478,6 +543,7 @@ function RowBody({
   label,
   word,
   quiet,
+  done,
   tint,
   editing,
   onPress,
@@ -487,6 +553,9 @@ function RowBody({
   label: string;
   word: string;
   quiet: boolean;
+  /* Tách khỏi `quiet` CHỈ để quyết cái viên — xem `DONE_PILL_ALPHA`: bỏ qua
+     không được nhận viên khen. Ô icon và nhãn vẫn đi theo `quiet`. */
+  done: boolean;
   tint: string;
   editing: boolean;
   onPress: () => void;
@@ -543,9 +612,12 @@ function RowBody({
             accessibilityRole="button"
             accessibilityLabel={`${word} — ${label}`}
             accessibilityState={itemKey === 'weight' ? { expanded: editing } : undefined}
-            style={[styles.action, quiet && styles.actionDone]}
+            style={[styles.action, quiet && styles.actionQuiet, done && styles.actionDone]}
             onPress={onPress}>
-            <Text style={[styles.actionText, quiet && styles.actionTextDone]}>{word}</Text>
+            {done ? <Icon icon={Check} size={16} color={c.readinessGreen} /> : null}
+            <Text style={[styles.actionText, quiet && styles.actionTextQuiet, done && styles.actionTextDone]}>
+              {word}
+            </Text>
           </PressScale>
         </Animated.View>
       </View>
@@ -752,15 +824,26 @@ const stylesFor = makeStyles((c, m) => ({
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
     backgroundColor: c.primary,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 6,
   },
   actionText: { ...type.body, fontWeight: '600', color: c.primaryForeground },
-  /* Nút của dòng ĐÃ GHI: bỏ nền đen đặc, giữ nguyên khung 44×72 để đích chạm
-     không co lại — nó vẫn là lối nhìn thấy được để sửa một lượt ghi sai, và
-     `tools/swipe.mjs` đòi mọi hành động vuốt phải còn một lối khác. Chữ dùng
-     `mutedForeground`: 5,78:1 bản sáng · 4,71:1 bản tối, trên sàn 4,5. */
-  actionDone: { backgroundColor: 'transparent' },
-  actionTextDone: { color: c.mutedForeground },
+
+  /* Dòng xong việc hôm nay: bỏ nền đen đặc. Khung 44×72 giữ nguyên để đích
+     chạm không co lại — nó vẫn là lối nhìn thấy được để sửa một lượt ghi sai,
+     và `tools/swipe.mjs` đòi mọi hành động vuốt phải còn một lối khác. */
+  actionQuiet: { backgroundColor: 'transparent' },
+  /* Chữ `mutedForeground`: 5,78:1 bản sáng · 4,71:1 bản tối, trên sàn 4,5. */
+  actionTextQuiet: { color: c.mutedForeground },
+
+  /* ĐÃ GHI đè lên `actionQuiet`: viên xanh nhạt quay lại, vì một control còn
+     bấm được thì phải còn trông như control. Chữ KHÔNG xanh — lý do và cả bốn
+     con số nằm ở `DONE_PILL_ALPHA`, và đây là chỗ duy nhất `readinessGreen`
+     được phép chạm vào cái viên: nó tô DẤU TÍCH, thứ chịu sàn 3:1 chứ không
+     phải 4,5:1. `secondaryForeground` là 6,59:1 sáng · 4,88:1 tối. */
+  actionDone: { backgroundColor: alpha(c.readinessGreen, DONE_PILL_ALPHA) },
+  actionTextDone: { color: c.secondaryForeground },
 
 }));

@@ -591,8 +591,120 @@ try {
   CASES++;
   if (!/done \? i18n\.nTodoDone : i18n\.nTodoLog/.test(card)) {
     problems.push(
-      `${CARD}: nút của dòng không đổi chữ theo \`done\`. Sau khi bỏ dấu tích, CHỮ là thứ duy nhất ` +
-        'còn mang trạng thái mà không phải màu — thiếu nó là vi phạm WCAG 1.4.1',
+      `${CARD}: nút của dòng không đổi chữ theo \`done\`. CHỮ là thứ mang trạng thái mà không phải ` +
+        'màu — thiếu nó là vi phạm WCAG 1.4.1',
+    );
+  }
+}
+
+/* ── 5d. viên "Đã ghi": màu của nó được ĐO, không được chọn ──
+
+   Chủ dự án đưa một ảnh dựng — viên xanh nhạt, tích xanh, CHỮ XANH — và nói
+   "nút đã ghi thì nên làm như này". Bản dựng ấy RỚT ở bản sáng: `readinessGreen`
+   sáng (#078055) mới 4,97:1 trên giấy trắng, nên trên một viên xanh nó tụt dưới
+   4,5:1 của WCAG 1.4.3 ở MỌI độ đậm (4,46 ngay từ α 0,08). Nên màu xanh được
+   chuyển sang chỗ nó đủ sức đứng — DẤU TÍCH, sàn 3:1 của 1.4.11 — còn chữ dùng
+   một token qua được cả hai diện mạo.
+
+   Luật này chạy lại chính phép đo ấy trên bảng màu đang ship, và nó đọc TÊN
+   TOKEN ra khỏi thẻ chứ không gõ lại: đổi `actionTextDone` sang một token rớt
+   sàn là đỏ, chứ không phải xanh vì luật vẫn đang đo token cũ.
+
+   Ba vế, và vế thứ ba là vế dễ mất nhất: viên phải đi theo `done`, KHÔNG theo
+   `quiet`. `quiet` gộp cả `skipped`, và một việc người dùng chủ động BỎ QUA thì
+   không được nhận một viên khen có dấu tích. */
+{
+  const { palettes, materials } = loadPalette();
+  const raw = read(CARD);
+  const card = strip(raw);
+
+  const mPill = /const DONE_PILL_ALPHA = ([\d.]+);/.exec(card);
+  CASES++;
+  if (!mPill) {
+    problems.push(`${CARD}: không đọc được \`DONE_PILL_ALPHA\` — luật màu viên đang không kiểm gì cả`);
+  } else {
+    const a = Number(mPill[1]);
+
+    /* Token của nền viên và của chữ, đọc ra khỏi CHÍNH hai style ấy. */
+    const bgTok = /alpha\(c\.(\w+), DONE_PILL_ALPHA\)/.exec(styleBody(raw, 'actionDone') ?? '');
+    const fgTok = /color: c\.(\w+)/.exec(styleBody(raw, 'actionTextDone') ?? '');
+    CASES++;
+    if (!bgTok || !fgTok) {
+      problems.push(
+        `${CARD}: không đọc được token của viên "Đã ghi" (nền qua \`alpha(c.…, DONE_PILL_ALPHA)\`, ` +
+          'chữ qua `color: c.…`) — không có token thì không đo được gì',
+      );
+    } else {
+      /* Màu của DẤU TÍCH, cũng đọc ra khỏi JSX chứ không giả định. */
+      const tickTok = /icon=\{Check\} size=\{(\d+)\} color=\{c\.(\w+)\}/.exec(card);
+      CASES++;
+      if (!tickTok) {
+        problems.push(
+          `${CARD}: dòng ĐÃ GHI không còn dựng \`<Icon icon={Check} …>\` trong viên. Dấu tích là chỗ ` +
+            'màu xanh được phép đứng (sàn 3:1) sau khi phép đo cấm nó làm màu chữ (sàn 4,5:1)',
+        );
+      }
+
+      for (const theme of ['light', 'dark']) {
+        const page = hex(palettes[theme].background);
+        const m = materials[theme];
+        const face = /rgba/.test(m.onPage)
+          ? overC([255, 255, 255], page, Number(/,\s*([\d.]+)\)/.exec(m.onPage)[1]))
+          : hex(m.onPage);
+        const vi = theme === 'light' ? 'sáng' : 'tối';
+        const pill = overC(hex(palettes[theme][bgTok[1]]), face, a);
+
+        /* (1) viên phải THẤY được trên mặt thẻ — bậc bề mặt nhỏ nhất của iOS,
+           cùng con số `bar-track.mjs` và `plan-week.mjs` dùng. Một viên tàng
+           hình là đúng cái lượt trước đã tạo ra và chủ dự án vừa chỉ vào. */
+        CASES++;
+        const vsFace = ratio(pill, face);
+        if (vsFace < 1.134) {
+          problems.push(
+            `${CARD}: viên "Đã ghi" chỉ tách khỏi mặt thẻ ${vsFace.toFixed(3)}:1 ở bản ${vi} — dưới ` +
+              'bậc bề mặt 1,134 của iOS, tức nó lại tàng hình và nút đọc ra là một cái nhãn',
+          );
+        }
+
+        /* (2) chữ trên viên, sàn 4,5:1 của WCAG 1.4.3 (chữ 15px, không phải
+           "văn bản lớn"). */
+        CASES++;
+        const vsText = ratio(hex(palettes[theme][fgTok[1]]), pill);
+        if (vsText < 4.5) {
+          problems.push(
+            `${CARD}: chữ \`${fgTok[1]}\` trên viên "Đã ghi" chỉ ${vsText.toFixed(2)}:1 ở bản ${vi} — ` +
+              'dưới sàn 4,5:1 của WCAG 1.4.3. Đây đúng là chỗ bản dựng ban đầu (chữ xanh) rớt',
+          );
+        }
+
+        /* (3) dấu tích, sàn 3:1 của WCAG 1.4.11 cho hình mang nghĩa. */
+        if (tickTok) {
+          CASES++;
+          const vsTick = ratio(hex(palettes[theme][tickTok[2]]), pill);
+          if (vsTick < 3) {
+            problems.push(
+              `${CARD}: dấu tích \`${tickTok[2]}\` trên viên "Đã ghi" chỉ ${vsTick.toFixed(2)}:1 ở bản ` +
+                `${vi} — dưới sàn 3:1 của WCAG 1.4.11`,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  /* Vế thứ ba: viên khen đi theo `done`, không theo `quiet`. */
+  CASES++;
+  if (!/done && styles\.actionDone/.test(card)) {
+    problems.push(
+      `${CARD}: viên "Đã ghi" không còn gắn vào \`done\`. Gắn nó vào \`quiet\` là trao cả dấu tích ` +
+        'lẫn sắc xanh khen thưởng cho dòng người dùng chủ động BỎ QUA',
+    );
+  }
+  CASES++;
+  if (/quiet && styles\.actionDone/.test(card)) {
+    problems.push(
+      `${CARD}: viên "Đã ghi" đang gắn vào \`quiet\`, thứ gộp cả \`skipped\`. Một việc bị bỏ qua sẽ ` +
+        'được khen bằng dấu tích xanh — app nói sai về chính người dùng',
     );
   }
 }
@@ -696,5 +808,14 @@ console.log(
     'màu đang ship, cả năm miền × hai diện mạo, trên nền ô icon dựng đúng chồng mặt. Màu icon đến từ ' +
     '`constants/icon-tint.ts` chứ không từ một bảng gõ tay ở thẻ, và mọi icon của thẻ đều có miền ' +
     'trong bảng ấy. Ô icon là hình tròn, viết ' +
-    'bằng `radius.full` để bán kính đi theo cạnh thay vì được gõ tay',
+    'bằng `radius.full` để bán kính đi theo cạnh thay vì được gõ tay. Và viên "Đã ghi" được ĐO ' +
+    'trên bảng màu đang ship chứ không được chọn: nền, chữ và dấu tích đọc TÊN TOKEN ra khỏi chính ' +
+    'hai style ấy rồi dựng lại trên mặt thẻ của từng diện mạo — viên phải qua bậc bề mặt 1,134 của ' +
+    'iOS (dưới đó nó tàng hình và cái nút còn bấm được lại đọc ra là một cái nhãn, đúng chỗ chủ dự ' +
+    'án chỉ vào), chữ phải qua 4,5:1 của WCAG 1.4.3 và dấu tích qua 3:1 của 1.4.11. Chính phép đo ' +
+    'ấy BÁC bản dựng được đưa: chữ xanh trên viên xanh chỉ 4,23:1 ở bản sáng, vì `readinessGreen` ' +
+    'sáng mới 4,97:1 trên giấy trắng nên nó không có chỗ để nhạt — màu xanh vì thế đi vào DẤU TÍCH, ' +
+    'thứ chịu sàn 3:1, còn chữ dùng `secondaryForeground` (6,59 sáng · 4,88 tối), token duy nhất đi ' +
+    'được cả hai diện mạo. Và viên khen gắn vào `done` chứ không vào `quiet`: `quiet` gộp cả ' +
+    '`skipped`, nên gắn nhầm là trao dấu tích xanh cho đúng việc người dùng chủ động BỎ QUA',
 );
