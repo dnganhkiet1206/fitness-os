@@ -997,6 +997,48 @@ export interface Material {
    * trên tờ giấy bão hoà 33% khác về SẮC, không chỉ về độ sáng.
    */
   onPage: string;
+  /**
+   * Mặt một HÀNG VUỐT mượn khi nó được nhấc lên — và vì sao nó phải ĐẶC.
+   *
+   * ── lỗi nó sinh ra để chữa ──
+   *
+   * Trước đây `SwipeRow` nhận một cặp `{ rest, lifted }`, và chỗ gọi đưa
+   * `rest: m.bg`. Ở bản SÁNG `m.bg` là `#ffffff` ĐẶC, đúng bằng mặt thẻ, nên
+   * sơn hay không sơn đều như nhau — 1,000:1, vô hình. Ở bản TỐI `m.bg` là
+   * `rgba(255,255,255,0.06)`, mà mặt thẻ CŨNG là `rgba(255,255,255,0.06)`:
+   * hai lớp mờ cộng dồn, hàng ra `#242425` trên mặt thẻ `#161617` — **1,166:1**,
+   * trên ngưỡng thấy được 1,134. Mỗi hàng thành một dải ngang, và cả thẻ bị
+   * chia thành strip. Chủ dự án chụp đúng cái đó.
+   *
+   * Nửa thứ hai của cùng một lỗi: ở bản tối `lifted` (`m.inset.bg`) BẰNG ĐÚNG
+   * `rest`, nên cú "nhấc hàng lên khi vuốt" không đổi một điểm ảnh nào. Tính
+   * năng được đặt hàng chưa từng chạy ở bản tối, trong khi cái giá của nó —
+   * mấy dải kia — thì hiện suốt.
+   *
+   * Gốc rễ: `rest` được viết bằng TÊN TOKEN ("mặt thẻ") chứ không bằng ý định
+   * ("đừng sơn gì cả"), và cái tên ấy nghĩa khác nhau ở hai diện mạo.
+   *
+   * ── nên nay chỉ còn MỘT màu, và nó là màu lúc NHẤC ──
+   *
+   * Lúc nằm yên hàng không sơn gì: mặt thẻ hiện thẳng qua, kể cả quầng sáng
+   * phía sau nó. Không dải, ở cả hai diện mạo, và không phải nhờ trùng khít.
+   *
+   * Lúc nhấc thì phải ĐẶC, vì `ReanimatedSwipeable` dựng tấm nút là
+   * `absoluteFill` NGAY SAU hàng (`ReanimatedSwipeable.tsx:612`) — một mặt mờ
+   * để viên nút hiện xuyên qua chính hàng đang kéo. Đó đúng là lỗi `blend()`
+   * sinh ra để chữa trên màn *Buổi tập*.
+   *
+   *     sáng   #f7f4ef   1,097:1 so với mặt thẻ  ← ĐÚNG giá trị đang chạy
+   *     tối    #242425   1,166:1 so với mặt thẻ
+   *
+   * Bản sáng giữ nguyên từng byte: `lightPalette.background` là thứ `m.inset.bg`
+   * vẫn trả về ở đó. Bản tối không phải một màu MỚI — nó là đúng cái màu hôm
+   * nay đang hiện sai chỗ, dời từ trạng thái NGHỈ sang trạng thái NHẤC.
+   *
+   * Và nó được DẪN chứ không gõ tay: `#242425` là `m.onPage` chồng thêm một
+   * lượt lên chính nó. Mặt thẻ đổi thì con số này đi theo.
+   */
+  liftedRow: string;
   /** bề mặt trên nền động — xem `Aura` */
   aura: Aura;
   /**
@@ -1139,6 +1181,9 @@ export const materials: Record<ThemeName, Material> = {
        một mặt — và bản tối không đổi một điểm ảnh. Cái tên tách hai vai ra là
        để bản SÁNG nói được điều mà bản tối không cần nói. */
     onPage: 'rgba(255,255,255,0.06)',
+    /* `onPage` chồng thêm một lượt lên chính nó, tính ra màu ĐẶC tương đương:
+       #070708 → #161617 (mặt thẻ) → #242425. Dẫn từ token, không gõ tay. */
+    liftedRow: blend('#ffffff', blend('#ffffff', darkPalette.background, 0.06), 0.06),
     /* Ba giá trị đang chạy, chép nguyên văn khỏi `liquid-glass.tsx`. */
     aura: {
       hair: 'rgba(255,255,255,0.035)',
@@ -1219,6 +1264,9 @@ export const materials: Record<ThemeName, Material> = {
     /* Mặt thẻ. Một khối trên trang đi LÊN khỏi giấy, cùng hướng với thẻ — ngược
        hướng với ô con ngay phía trên, và đó đúng là chỗ hai vai tách ra. */
     onPage: lightPalette.card,
+    /* ĐÚNG giá trị `m.inset.bg` của bản sáng đang trả về (`lightPalette.background`),
+       chép nguyên văn: bản sáng không đổi một byte. Xem `liftedRow`. */
+    liftedRow: lightPalette.background,
     /* Sợi MỰC thay cho sợi trắng: trên giấy, một sợi trắng dưới lớp blur không
        vẽ ra mép nào. Cùng độ mờ 0,035, đổi hướng chứ không đổi lượng. */
     aura: {

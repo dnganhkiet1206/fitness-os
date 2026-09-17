@@ -28,8 +28,8 @@ import Animated, {
 import { Icon } from '@/components/ascnd/icon';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { BOUNCE, spring, SWIPE_SNAP } from '@/constants/motion';
-import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { alpha, makeStyles } from '@/constants/theme';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 
 /**
  * A row you can swipe, with the actions growing out from under it.
@@ -185,6 +185,40 @@ const PARALLAX = 0.6;
  */
 export const HANDOVER_AT = 0.55;
 export const HANDOVER_SCALE = 0.82;
+
+/**
+ * Hàng ĐỤC hẳn ở bao nhiêu phần trăm cú kéo — và vì sao nó nhỏ.
+ *
+ * Mặt hàng chạy từ trong suốt (lúc nghỉ, để mặt thẻ hiện thẳng qua và không
+ * sinh dải) tới đặc. Trong lúc nó còn dở dang thì viên nút phía sau — tấm nút
+ * là `absoluteFill` NGAY SAU hàng — hiện xuyên qua.
+ *
+ * Rò tại vị trí `p` là `(1 − p/LIFT_AT) × (p/HANDOVER_AT)`: vế đầu là phần hàng
+ * còn trong suốt, vế sau là độ hiện của viên nút. Cực đại ở `p = LIFT_AT/2`,
+ * bằng `LIFT_AT / (2·HANDOVER_AT)`:
+ *
+ *     LIFT_AT   rò lớn nhất (mô hình)   quãng ngón tay để đục hẳn
+ *     0,08      7,3%                    5,8 điểm
+ *     0,12      10,9%                   8,6 điểm     ← bản này
+ *     0,20      18,2%                   14,4 điểm
+ *     0,30      27,3%                   21,6 điểm
+ *
+ * Xuống dưới nữa thì nó thôi là một cú chuyển và thành một cú nhảy.
+ *
+ * ĐO trên bản dựng thì rò lớn nhất là **5,3%**, ở lúc hàng mới dịch 5 điểm —
+ * bằng nửa mô hình. Mô hình coi mặt hàng và ngón tay đi cùng nhịp, còn thật ra
+ * mặt hàng chạy theo `openness`, vốn LÙI sau ngón tay đúng 10 điểm nhận diện
+ * (`HYSTERESIS`), nên lúc viên nút bắt đầu hiện thì mặt hàng đã đục sẵn một
+ * phần. Bảng trên vì thế là cận TRÊN, và nó được giữ lại đúng vì thế.
+ *
+ *     hàng dịch   đục mặt hàng   nút hiện   rò
+ *      1 điểm      0,12           0,03      2,2%
+ *      3 điểm      0,35           0,08      4,9%
+ *      5 điểm      0,58           0,13      5,3%   ← đỉnh
+ *      7 điểm      0,81           0,18      3,4%
+ *      9 điểm      1              0,23      0%
+ */
+const LIFT_AT = 0.12;
 
 /**
  * Cú hích của cái nhún lúc hàng tới nơi.
@@ -543,7 +577,7 @@ export function SwipeRow({
   right,
   left,
   fullSwipe = false,
-  surface,
+  lifts = false,
   style,
   cancelLabel,
 }: {
@@ -572,19 +606,32 @@ export function SwipeRow({
    */
   fullSwipe?: boolean;
   /**
-   * Mặt của hàng: lúc nằm yên, và lúc được vuốt ra.
+   * Mặt hàng mượn khi nó được NHẤC lên — MỘT màu, và phải là hex ĐẶC.
    *
-   * Hàng phải ĐẶC ở mọi lúc, không thì nút phía dưới hiện xuyên qua trong lúc
-   * kéo. `rest` vì thế là màu mặt thẻ, và `lifted` là mặt hàng mượn khi nó được
-   * chọn — xem `rounded`.
+   * ── vì sao không còn là một cặp `{ rest, lifted }` ──
+   *
+   * Cặp cũ để chỗ gọi tự khai mặt lúc NGHỈ, và chỗ gọi khai `m.bg` — "màu mặt
+   * thẻ". Cái tên ấy nghĩa khác nhau ở hai diện mạo: bản sáng `#ffffff` ĐẶC nên
+   * sơn lại đúng bằng mặt thẻ (1,000:1, vô hình); bản tối
+   * `rgba(255,255,255,0.06)` chồng lên mặt thẻ vốn cũng mờ, ra `#242425` trên
+   * `#161617` — 1,166:1, tức MỖI HÀNG thành một dải ngang. Xem `Material.liftedRow`.
+   *
+   * Nên `rest` không còn là một lựa chọn: hàng đang nghỉ sơn ĐÚNG KHÔNG GÌ CẢ,
+   * mặt thẻ hiện thẳng qua. Không dải, ở cả hai diện mạo, và không nhờ trùng
+   * khít mà nhờ không có lớp thứ hai.
+   *
+   * ── nhưng lúc NHẤC thì phải đặc ──
+   *
+   * `ReanimatedSwipeable` dựng tấm nút là `absoluteFill` ngay SAU hàng, nên một
+   * mặt mờ để viên nút hiện xuyên qua chính hàng đang kéo. Hợp đồng "hex đặc"
+   * được ép bằng chính `alpha()`: nó ném với mọi thứ không phải `#rgb`/`#rrggbb`,
+   * nên truyền một `rgba(…)` vào đây là hỏng ngay lúc dựng chứ không âm thầm.
    *
    * TUỲ CHỌN, và đó là chủ ý: hai chỗ dùng còn lại (`sessions`, chế độ sắp xếp
-   * dashboard) tự vẽ nền trong chính nội dung hàng của chúng. Bắt chúng khai
-   * thêm một cặp màu là buộc tôi đổi hai màn tôi không kiểm được trong lượt
-   * này; không khai thì khung bọc không tô gì cả và hai màn ấy giữ nguyên
-   * từng điểm ảnh.
+   * dashboard) tự vẽ nền trong chính nội dung hàng của chúng. Không khai thì
+   * khung bọc không tô gì cả và hai màn ấy giữ nguyên từng điểm ảnh.
    */
-  surface?: { rest: string; lifted: string };
+  lifts?: boolean;
   /**
    * Style cho khung ngoài cùng của hàng.
    *
@@ -608,6 +655,11 @@ export function SwipeRow({
      the will-open callback rather than from a progress watcher so it cannot
      repeat while the finger wobbles on the line. */
   const i18nCancel = cancelLabel ?? 'Cancel';
+  /* Màu lúc NHẤC đọc thẳng khỏi chất liệu, không nhận từ chỗ gọi. Chỗ gọi chỉ
+     nói CÓ nhấc hay không (`lifts`); chọn màu nào là việc của hệ thống thiết
+     kế, và gom về đây thì `tools/row-surface.mjs` đo được nó ở cả hai diện mạo
+     thay vì đo một prop có thể là bất cứ chuỗi gì. */
+  const m = useMaterial();
   const buzzed = useRef(false);
   /* Cú kéo dài: cờ được bật trên luồng UI, đọc lúc thả. */
   const armed = useRef(false);
@@ -763,14 +815,28 @@ export function SwipeRow({
 
       Chủ dự án: "thẻ khi được chọn chưa có điểm nhấn như apple". Trong ảnh Nhắc
       nhở, hàng bị vuốt không chỉ bo góc — nó đổi hẳn sang một mặt khác, tách ra
-      khỏi danh sách như một viên nang được nhấc lên. Ở bản trước hàng giữ đúng
-      màu mặt thẻ, nên nó chỉ là một khối trắng trượt trên một khối trắng.
+      khỏi danh sách như một viên nang được nhấc lên.
 
-      Màu đi cùng `openness`, tức cùng cú kéo với góc bo — một chuyển động chứ
-      không phải hai thứ chạy song song.
+      Chỉ ĐỘ MỜ chạy, không phải màu: hai đầu là cùng một RGB, khác nhau ở alpha
+      0 và 1. Nội suy màu giữa hai RGB khác nhau sẽ đi qua một dải trung gian
+      không ai chọn; ở đây không có dải ấy vì không có hai màu.
+
+      `LIFT_AT` chứ không phải 1 — và đây là phần phải đúng, không phải phần cho
+      đẹp. Tấm nút là `absoluteFill` NGAY SAU hàng, nên chừng nào hàng còn mờ
+      thì viên nút còn hiện xuyên qua nó. Rò lớn nhất là
+      `(1 − p/LIFT_AT) × (p/HANDOVER_AT)`, cực đại ở `p = LIFT_AT/2` và bằng
+      `LIFT_AT / (2·HANDOVER_AT)` — ở 0,12 là 10,9% và nó được ĐO lại trên bản
+      dựng chứ không chỉ tính. Kéo dài `LIFT_AT` ra là mở lại đúng lỗi "viên nút
+      hiện xuyên qua hàng".
     */
-    ...(surface
-      ? { backgroundColor: interpolateColor(openness.value, [0, 1], [surface.rest, surface.lifted]) }
+    ...(lifts
+      ? {
+          backgroundColor: interpolateColor(
+            interpolate(openness.value, [0, LIFT_AT], [0, 1], 'clamp'),
+            [0, 1],
+            [alpha(m.liftedRow, 0), m.liftedRow],
+          ),
+        }
       : null),
   }));
 

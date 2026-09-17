@@ -382,6 +382,7 @@ const STEPS = [
   ['độ dốc cung sẵn sàng', 'node', ['tools/arc-slope.mjs']],
   ['phạm vi hook', 'node', ['tools/hook-scope.mjs']],
   ['bề mặt đóng băng', 'node', ['tools/frozen-surface.mjs']],
+  ['mặt hàng vuốt', 'node', ['tools/row-surface.mjs']],
   ['khoá bảng màu', 'node', ['tools/palette-key.mjs']],
   ['ngôn ngữ AI', 'node', ['tools/ai-language.mjs']],
   ['worklet đo được', 'node', ['tools/measured-worklet.mjs']],

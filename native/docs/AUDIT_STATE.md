@@ -6,8 +6,9 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-17 · viên "Đã ghi" có nền trở lại, và bản dựng được
-đưa bị chính phép đo bác ở bản sáng · nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-17 · dải ngang ở bản tối — một cái TÊN có hai nghĩa,
+và cùng nó làm tính năng highlight chưa từng chạy ở bản tối · nhánh
+`claude/ios-fitness-rebuild-omgulr`
 (vòng rà pháp y đầy đủ gần nhất: 2026-09-14, commit `cf687a2`)
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
@@ -28,12 +29,122 @@ gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trư�
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
-| `node tools/check.mjs` | **XANH** | exit 0, **253** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
+| `node tools/check.mjs` | **XANH** | exit 0, **254** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 253 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 253 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 253 bước ở trên |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 254 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 254 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 254 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## 17/09 (c) — dải ngang ở bản tối: một cái TÊN có hai nghĩa
+
+Chủ dự án chụp bản tối: thẻ "Cần làm hôm nay" bị chia thành nhiều dải ngang,
+mỗi hàng một vùng nền riêng, *"Dark Mode phải tạo thành một surface liền mạch"*.
+Và họ tự chỉ ra gốc: **không phải lỗi swipe** — là cái highlight-on-swipe đã
+đặt hàng trước đó. Đúng.
+
+### Cơ chế, đo từ DOM chứ không suy từ trí nhớ
+
+`SwipeRow` nhận một cặp `{ rest, lifted }`, và chỗ gọi khai `rest: m.bg` —
+"màu mặt thẻ". Cái tên ấy có **hai nghĩa**:
+
+| | mặt thẻ | hàng tự sơn thêm | kết quả |
+|---|---|---|---|
+| sáng | `rgb(255,255,255)` đặc | `rgb(255,255,255)` đặc | trùng khít, **1,000:1**, vô hình |
+| tối | `rgba(255,255,255,0.06)` | `rgba(255,255,255,0.06)` | cộng dồn → `#242425` trên `#161617`, **1,166:1** |
+
+1,166 nằm **trên** bậc bề mặt nhỏ nhất của iOS (1,134) — nên nó không phải một
+sắc thái mờ nhạt, nó là một dải nhìn thấy rõ, trên mọi hàng, suốt thời gian.
+
+**Nửa thứ hai của cùng một lỗi, im lặng hơn:** ở bản tối `lifted`
+(`m.inset.bg`) **bằng đúng** `rest` — cùng một chuỗi. Nên cú "nhấc hàng lên khi
+vuốt" chưa từng chạy một lần nào ở bản tối. Tính năng được đặt hàng thì không
+hoạt động, còn cái giá của nó thì hiện suốt.
+
+Gốc rễ một câu: `rest` được viết bằng **tên token** ("mặt thẻ") chứ không bằng
+**ý định** ("đừng sơn gì cả").
+
+### Sửa: bỏ hẳn `rest` khỏi API
+
+`surface` nay là **một** màu — màu lúc NHẤC. Mặt lúc nghỉ là chính nó ở alpha 0,
+tức không sơn gì; mặt thẻ hiện thẳng qua, kể cả quầng sáng sau nó. Đo lại trên
+bản dựng, cả hai diện mạo, mọi hàng: `rgba(36,36,37,0)` và `rgba(247,244,239,0)`
+— **alpha 0**. Không còn lớp thứ hai để cộng dồn.
+
+Chỉ **độ mờ** chạy, không phải màu: hai đầu cùng một RGB. Nội suy giữa hai RGB
+khác nhau sẽ đi qua một dải tông không ai chọn.
+
+### Cái giá, và nó được đo chứ không bỏ qua
+
+Hàng phải ĐỤC lúc bị kéo: `ReanimatedSwipeable` dựng tấm nút là
+`StyleSheet.absoluteFill` **ngay sau** hàng (`ReanimatedSwipeable.tsx:612` —
+đọc trong `node_modules`, không đoán), nên hàng mờ là hàng để viên nút hiện
+xuyên qua chính nó. Đó đúng là lỗi `blend()` đã phải chữa trên màn *Buổi tập*.
+
+Nên mặt hàng đục hẳn trong `LIFT_AT` = 0,12 đầu cú kéo. Mô hình nói rò lớn nhất
+`LIFT_AT/(2·HANDOVER_AT)` = 10,9%. **Đo được 5,3%**, bằng nửa — vì mặt hàng chạy
+theo `openness`, vốn lùi sau ngón tay đúng 10 điểm nhận diện, nên lúc viên nút
+bắt đầu hiện thì hàng đã đục sẵn một phần:
+
+| hàng dịch | đục mặt hàng | nút hiện | rò |
+|---|---|---|---|
+| 1đ | 0,12 | 0,03 | 2,2% |
+| 3đ | 0,35 | 0,08 | 4,9% |
+| 5đ | 0,58 | 0,13 | **5,3%** |
+| 7đ | 0,81 | 0,18 | 3,4% |
+| 9đ | 1 | 0,23 | 0% |
+
+### Màu lúc nhấc: `Material.liftedRow`, dẫn chứ không gõ
+
+- sáng `#f7f4ef` — **đúng byte** `m.inset.bg` vẫn trả về, bản sáng không đổi.
+- tối `#242425` — `blend` của `onPage` chồng lên chính nó. **Không phải màu
+  mới**: đúng cái màu hôm nay đang hiện sai chỗ, dời từ trạng thái NGHỈ sang
+  trạng thái NHẤC.
+
+`dark-frozen.mjs` vẫn xanh: mốc cấm **đổi** giá trị token, không cấm **thêm**.
+
+### Một phát hiện phải báo, không được lặng lẽ sửa
+
+Luật mới bắt ngay: **bản sáng chỉ 1,097:1** so với mặt thẻ — **dưới** bậc 1,134.
+Tức highlight ở bản sáng yếu hơn chính cái dải bản tối. Nhưng chủ dự án ra lệnh
+thẳng trong cùng lượt này: *"Light Mode phải giữ nguyên behavior hiện tại"*.
+
+Nên nó **không** bị sửa. Bản sáng thành một **CÁI CHỐT** (đổi là đỏ, dù lên hay
+xuống), bản tối chịu **SÀN** thật. Con số được báo lại kèm hai đề nghị —
+`c.muted` 1,156 hoặc `c.secondary` 1,198 — và câu trả lời là của chủ dự án.
+
+### Luật mới — `tools/row-surface.mjs` (cổng 253 → **254** bước)
+
+Chín phép thử phá, mỗi cái đỏ đúng câu nó hứa: `surface` quay lại thành object ·
+mặt nghỉ có alpha 0,06 · hai đầu là hai màu · độ đục trải ra cả cú kéo ·
+`LIFT_AT` 0,6 · `liftedRow` tối thành `rgba()` · `liftedRow` tối = mặt thẻ (đúng
+lỗi cũ) · `liftedRow` sáng bị đổi · chỗ gọi tự chế màu. Cộng một phần tự kiểm
+chạy lại vế bậc bề mặt trên thế giới giả "lifted = mặt thẻ" và đòi nó đỏ, nên
+xoá vế ấy đi không thể xanh.
+
+Vì sao chưa cổng nào thấy: `tsc` thấy hai `string` hợp lệ · `dark-frozen` canh
+GIÁ TRỊ token, không canh việc một component chồng hai token · `theme-shape`
+canh nhánh `m.lit` · `on-page-fill` canh lớp tô trên TRANG, không trên MẶT THẺ ·
+và ảnh chụp bản sáng thì **đúng**.
+
+### Ba lượt đo hỏng nữa, cùng một họ
+
+Cùng cái NEO sai, lần thứ ba tới thứ năm trong hai ngày: quét điểm ảnh → bắt
+phải **chữ của chính hàng** (`#57524a` ≈ 81) chứ không phải rò; nhắm phần tử
+rộng 50–70 → đó là viên nang, mà độ hiện sống trên **cái bọc rộng 72**; lấy
+`min` opacity cả hàng → bắt phải tấm nút **bên trái** ("Bỏ qua"), thứ không bao
+giờ hiện trong cú vuốt này nên luôn đọc ra 0. Cả ba đều cho số ổn định, lặp
+lại được, và nói về chuyện khác.
+
+### Một thứ nhìn thấy mà không sửa
+
+Bản dựng **web** ở diện mạo tối bị một lớp trắng phủ mờ cả trang, và lượt quét
+xác nhận **không phần tử DOM nào** giải thích được nó (không phần tử nào ≥380×700
+có nền sáng). Nên điểm ảnh bản tối của bộ chạy web **không dùng được**, và mọi
+số bản tối ở trên đến từ style đã tính + bảng màu đang ship, không từ ảnh. Nó có
+trước lượt này.
 
 ---
 
@@ -547,7 +658,7 @@ vì một bản tóm tắt không đo lại được thì cũng chỉ là một 
 
 | | |
 |---|---|
-| `node tools/check.mjs` | **253/253 xanh**, exit 0 |
+| `node tools/check.mjs` | **254/254 xanh**, exit 0 |
 | `npx tsc --noEmit` | exit 0, đầu ra rỗng |
 | Máy thật | ❌ **không**. Ba thứ còn treo: vòng đếm ngược của thanh Hoàn tác ở đáy, thẻ bài tập lúc thu lại có giật không, dấu tích xanh ở tiêu đề bài tập có lệch baseline không |
 

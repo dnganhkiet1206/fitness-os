@@ -310,8 +310,13 @@ function declOf(body, name) {
           '— damping 1000 trên mass 2, tức khựng lại thay vì lướt về chỗ',
       );
     }
-    /* Mặt hàng phải ĐỔI khi được chọn, và phải đổi theo cùng cú kéo với góc bo. */
-    if (!/backgroundColor: interpolateColor\(openness\.value/.test(src)) {
+    /* Mặt hàng phải ĐỔI khi được chọn, và phải đổi theo cùng cú kéo với góc bo.
+       Hình dạng đổi ở lượt sửa dải bản tối: đối số đầu nay là
+       `interpolate(openness.value, [0, LIFT_AT] …)` chứ không phải `openness.value`
+       trần, vì mặt hàng phải đục HẲN sớm — hàng còn mờ là hàng để viên nút phía
+       sau hiện xuyên qua. Vẫn CÙNG một bảo đảm, chỉ khác cách viết; xem
+       `tools/row-surface.mjs`. */
+    if (!/backgroundColor: interpolateColor\(\s*interpolate\(openness\.value/.test(src)) {
       problems.push(
         `${COMPONENT}: mặt hàng không đổi khi nó được vuốt ra — nó chỉ là một khối trượt trên một khối ` +
           'cùng màu, không có điểm nhấn nào nói "hàng này đang được chọn"',

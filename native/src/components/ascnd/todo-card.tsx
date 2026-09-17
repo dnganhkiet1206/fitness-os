@@ -511,7 +511,7 @@ function TodoRow({
   return (
     <SwipeRow
       fullSwipe
-      surface={{ rest: m.bg, lifted: m.inset.bg }}
+      lifts
       style={styles.bleed}
       cancelLabel={i18n.cancel}
       left={[skipAction]}
