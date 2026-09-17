@@ -157,6 +157,11 @@ const en = {
   nTakenToday: 'taken today',
   nWeightTitle: 'Weight check-in',
   nLogWeight: 'Log',
+  /* Màn `/log-weight` — xem `src/app/log-weight.tsx`. */
+  nWeighTitle: 'Update body stats',
+  nWeighSub: 'Small changes make a better you, every day 🌱',
+  nWeighHint: 'Drag to adjust',
+  nWeighSave: 'Save changes',
   nAllSupplementsDone: 'All done for today',
   nReadinessTrend: 'Readiness trend',
   nSmartTips: 'Smart tips',
@@ -1011,6 +1016,11 @@ const vi: typeof en = {
   nTakenToday: 'đã uống hôm nay',
   nWeightTitle: 'Ghi cân nặng',
   nLogWeight: 'Ghi',
+  /* Màn `/log-weight` — xem `src/app/log-weight.tsx`. */
+  nWeighTitle: 'Cập nhật chỉ số cơ thể',
+  nWeighSub: 'Những thay đổi nhỏ tạo nên phiên bản tốt hơn mỗi ngày 🌱',
+  nWeighHint: 'Kéo để điều chỉnh',
+  nWeighSave: 'Lưu thay đổi',
   nAllSupplementsDone: 'Hôm nay uống đủ rồi',
   nReadinessTrend: 'Xu hướng sẵn sàng',
   nSmartTips: 'Gợi ý thông minh',

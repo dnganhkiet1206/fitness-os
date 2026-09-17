@@ -332,6 +332,7 @@ function Gate() {
           'log-biometrics',
           'food-editor',
           'log-measurement',
+          'log-weight',
           'workout-builder',
         ] as const
       ).map((name) => (

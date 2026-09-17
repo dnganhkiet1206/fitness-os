@@ -269,15 +269,18 @@ const REGISTRY = [
     /*
       Ô nhập cân nặng đã RỜI `today-widgets.tsx`.
 
-      Thẻ "Cần làm hôm nay" cũng cần ghi cân nặng, và cân nặng là việc duy nhất
-      không có màn riêng để mở — nên ô nhập phải chạy được ở hai chỗ, và nó
-      được CHUYỂN sang một tệp dùng chung thay vì chép ra bản thứ hai. Chốt
-      chặn đi theo mã: `tools/todo-card.mjs` canh cho `useLogWeight()` chỉ có
-      đúng một chỗ gọi, nên một bản thứ hai không thể lặng lẽ mọc ra ngoài tầm
-      của mục này.
+      Thẻ "Cần làm hôm nay" cũng cần ghi cân nặng, nên ô nhập được CHUYỂN sang
+      một tệp dùng chung thay vì chép ra bản thứ hai.
+
+      Và 17/09 nó chuyển lần nữa: chủ dự án đặt hàng một màn riêng (chiếc cân
+      lớn ở `/log-weight`), nên ô gõ số biến mất và đường GHI về hẳn một hook —
+      `use-weight-write.ts`. Ngưỡng hợp lý đi theo đường ghi chứ không đi theo
+      giao diện, nên mục này trỏ vào hook. Chốt chặn không đổi:
+      `tools/todo-card.mjs` canh cho `useLogWeight()` chỉ có đúng một chỗ gọi,
+      nên một bản thứ hai không thể lặng lẽ mọc ra ngoài tầm của mục này.
     */
-    file: 'src/components/ascnd/weight-entry.tsx',
-    gate: 'weightError',
+    file: 'src/hooks/use-weight-write.ts',
+    gate: 'boundError',
     save: 'const submit = ',
     covers: ['weight_kg'],
   },
@@ -445,9 +448,40 @@ for (const { file, gate, save, covers } of REGISTRY) {
   gated or explicitly recorded as needing no gate.
 */
 const NO_GATE_NEEDED = {
-  /* Empty on purpose. `log-workout.tsx` was the only entry and it has moved
-     into REGISTRY — see the note there for why its exemption was wrong. */
+  /* `log-workout.tsx` was the only other entry and it has moved into REGISTRY —
+     see the note there for why its exemption was wrong.
+
+     `log-weight.tsx` là một ngoại lệ có LÝ DO ĐO ĐƯỢC, không phải một lời hứa:
+     màn ấy không có ô gõ số nào cả. Giá trị đến từ một cái thước bị kẹp sẵn
+     trong `BOUNDS.weight_kg` (nó DỰNG dải từ chính hằng ấy), nên không có
+     đường nào đưa một số ngoài dải vào. Và phép kiểm vẫn chạy: `useWeightWrite`
+     — nằm trong REGISTRY ngay trên — gọi `plausible('weight_kg', kg)` trên giá
+     trị sẽ được lưu, và nút Lưu chết khi nó trả về lỗi. Vế dưới CHẠY lại đúng
+     hai điều ấy, nên ngoại lệ này không thể mục ruỗng trong im lặng. */
+  'log-weight.tsx': true,
 };
+/* Ngoại lệ của `log-weight.tsx` được KIỂM, không được tin. */
+{
+  const sheet = readFileSync(path.join(NATIVE, 'src/app/log-weight.tsx'), 'utf8');
+  if (/<TextInput\b/.test(sheet)) {
+    problems.push(
+      'src/app/log-weight.tsx: có `<TextInput>` trở lại. Ngoại lệ của màn này dựa trên việc nó KHÔNG ' +
+        'gõ số — một ô nhập thì gõ được số ngoài dải, và lúc ấy nó phải vào REGISTRY như mọi màn khác',
+    );
+  }
+  if (!/BOUNDS\.weight_kg\.min/.test(sheet) || !/BOUNDS\.weight_kg\.max/.test(sheet)) {
+    problems.push(
+      'src/app/log-weight.tsx: thước không còn dựng dải từ `BOUNDS.weight_kg`. Ngoại lệ của màn này dựa ' +
+        'trên việc dải chọn được KẸP sẵn trong ngưỡng hợp lý',
+    );
+  }
+  if (!/boundError\(/.test(sheet)) {
+    problems.push(
+      'src/app/log-weight.tsx: không còn đọc `boundError()`. Thước kẹp dải là vế một; vế hai là nút Lưu ' +
+        'phải chết khi giá trị rớt ngưỡng, và thiếu nó thì ngoại lệ chỉ còn một chân',
+    );
+  }
+}
 for (const f of readdirSync(path.join(NATIVE, 'src/app')).filter((f) => /^log-.*\.tsx$/.test(f))) {
   const known = REGISTRY.some((r) => r.file.endsWith(`/${f}`)) || f in NO_GATE_NEEDED;
   if (!known) {

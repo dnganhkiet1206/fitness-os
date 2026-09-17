@@ -20,7 +20,6 @@ import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { HANDOVER_AT, HANDOVER_SCALE, SwipeRow, useSwipeOpenness, type SwipeAction } from '@/components/ascnd/swipe-row';
 import { DateField } from '@/components/ascnd/date-field';
-import { WeightEntry } from '@/components/ascnd/weight-entry';
 import { BodyScale } from '@/constants/app-icons';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { iconTint } from '@/constants/icon-tint';
@@ -79,13 +78,21 @@ import { TODO_ORDER, todoProgress, type TodoDone, type TodoKey } from '@/lib/tod
  * app đã gặp lỗi này đủ nhiều lần để đặt hẳn một cờ.
  */
 
-/** Đích đến của từng dòng. Cân nặng không có route — nó mở ô nhập tại chỗ. */
+/**
+ * Đích đến của từng dòng — nay đủ CẢ NĂM.
+ *
+ * Cân nặng từng là ngoại lệ duy nhất: nó ghi tại chỗ bằng một ô bung ra dưới
+ * hàng, vì nó không có màn riêng nào để mở. Nay nó có — `/log-weight`, chiếc
+ * cân lớn mà chủ dự án đặt hàng — nên ngoại lệ ấy biến mất và năm dòng làm
+ * cùng một việc: mở một màn.
+ */
 const ROUTE = {
   meal: '/log-meal',
   workout: '/log-workout',
   sleep: '/log-sleep',
   biometrics: '/log-biometrics',
-} as const satisfies Record<Exclude<TodoKey, 'weight'>, string>;
+  weight: '/log-weight',
+} as const satisfies Record<TodoKey, string>;
 
 /*
   Năm hình, và chúng phải khác nhau ở KHỐI chứ không chỉ ở chi tiết.
@@ -401,14 +408,18 @@ function TodoRow({
   const m = useMaterial();
   const styles = stylesFor(c);
   const i18n = useI18n();
-  const [editing, setEditing] = useState(false);
   const { prefs, available, toggle } = useReminders();
 
   /*
-    Cân nặng ghi TẠI CHỖ, vì nó không có màn riêng nào để mở. Ô nhập là
-    `WeightEntry` — đúng cái đã nằm trong thẻ Cân nặng, tách ra dùng chung chứ
-    không chép. Nó mang cả phần khó: quy đổi kg/lb, ngưỡng hợp lý, đường ghi
-    offline.
+    Cả năm dòng mở một MÀN, kể cả cân nặng.
+
+    Trước đây cân nặng là ngoại lệ: nó bung một ô gõ số ngay dưới hàng, vì nó
+    không có màn riêng nào. Nay nó có `/log-weight`. Ngoại lệ ấy kéo theo cả một
+    trạng thái `editing` sống trong hàng danh sách, và trạng thái ấy nay đi
+    cùng nó — hàng không còn giữ gì của riêng mình.
+
+    Đường GHI không đổi: nó chuyển nguyên vẹn sang `useWeightWrite()`, và màn
+    mới là chỗ duy nhất gọi. Xem chú thích ở đó.
   */
   const press = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -416,8 +427,7 @@ function TodoRow({
        ở chú thích `todoProgress` ("chính lượt ghi ấy gỡ cờ bỏ qua"). Không gỡ
        thì việc vừa ghi vẫn nằm ngoài mẫu số và con số không nhúc nhích. */
     if (skipped) onSkip();
-    if (itemKey === 'weight') setEditing((v) => !v);
-    else nav.push(ROUTE[itemKey as Exclude<TodoKey, 'weight'>]);
+    nav.push(ROUTE[itemKey]);
   };
 
   /*
@@ -523,9 +533,7 @@ function TodoRow({
         quiet={quiet}
         done={done}
         tint={tint}
-        editing={editing}
         onPress={press}
-        onLogged={() => setEditing(false)}
       />
     </SwipeRow>
   );
@@ -545,9 +553,7 @@ function RowBody({
   quiet,
   done,
   tint,
-  editing,
   onPress,
-  onLogged,
 }: {
   itemKey: TodoKey;
   label: string;
@@ -557,9 +563,7 @@ function RowBody({
      không được nhận viên khen. Ô icon và nhãn vẫn đi theo `quiet`. */
   done: boolean;
   tint: string;
-  editing: boolean;
   onPress: () => void;
-  onLogged: () => void;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -611,7 +615,6 @@ function RowBody({
           <PressScale
             accessibilityRole="button"
             accessibilityLabel={`${word} — ${label}`}
-            accessibilityState={itemKey === 'weight' ? { expanded: editing } : undefined}
             style={[styles.action, quiet && styles.actionQuiet, done && styles.actionDone]}
             onPress={onPress}>
             {done ? <Icon icon={Check} size={16} color={c.readinessGreen} /> : null}
@@ -621,7 +624,6 @@ function RowBody({
           </PressScale>
         </Animated.View>
       </View>
-      {itemKey === 'weight' && editing ? <WeightEntry onLogged={onLogged} /> : null}
     </View>
   );
 }

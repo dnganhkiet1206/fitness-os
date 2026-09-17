@@ -6,9 +6,9 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-17 · một lời gọi JS trong thân worklet làm app chết
-trên máy thật — và cái luật viết ra để chặn đúng lỗi đó chỉ đang soi 49/163 thân
-worklet · nhánh `claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-18 · màn ghi cân nặng mới (`/log-weight`), và một cái
+thước tôi viết lại dù repo đã có một bản tốt hơn — cổng bắt được · nhánh
+`claude/ios-fitness-rebuild-omgulr`
 (vòng rà pháp y đầy đủ gần nhất: 2026-09-14, commit `cf687a2`)
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
@@ -35,6 +35,83 @@ worklet · nhánh `claude/ios-fitness-rebuild-omgulr`
 | Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 254 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
 | ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 254 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## 18/09 — màn ghi cân nặng, và một cái thước tôi viết lại dù nó đã có
+
+Chủ dự án đưa ảnh dựng và đặt hàng: bấm "Ghi" ở dòng Cân nặng phải mở một trải
+nghiệm cân riêng — chiếc cân lớn ở giữa, thước bên dưới, nút Lưu to ở đáy.
+
+### Flow
+
+`Today` → dòng Cân nặng → `/log-weight` (sheet `presentation: 'modal'`, đúng
+kiến trúc sheet sẵn có) → kéo thước → Lưu → về Today. Đo trên bản dựng:
+
+    trước khi bấm  /
+    sau khi bấm    /log-weight   tiêu đề "Cập nhật chỉ số cơ thể"
+    kéo thước      71,5 → 70,0 → 73,0 → 72,3   (nhãn hai đầu đi theo)
+    sau khi lưu    POST /rest/v1/weight_logs {"weight_kg":72.3}  ·  về /
+
+### Cái thước: tôi viết bản thứ hai, và chính cổng bắt được
+
+Tôi dựng một `weight-ruler.tsx` mới trước khi đi tìm. Cổng đỏ ở bước **`thước
+cân nặng`** — một luật viết riêng cho cái thước **đang có**,
+`weight-goal-ruler.tsx`, dùng ở màn mục tiêu cân nặng.
+
+Bản ấy biết những thứ bản của tôi không biết, và mỗi thứ là một lỗi đã trả giá:
+
+- vạch dài rơi đúng số nguyên **của thang đo**, ở cả kg lẫn **pound** — bản cũ
+  đánh theo `index % 10`, đúng ở kg do tình cờ và **sai mọi vạch lb**;
+- số học chạy bằng **phần mười nguyên**, vì `30 / 0.1` đã là 299,999…;
+- một `<Pattern>` thay cho `FlatList` 2.701 phần tử, nên không có ô trắng khi
+  kéo nhanh;
+- `<Svg>` đứng yên, không đọc `.value` nào (react-native-svg raster lại cả hình
+  khi một prop con đổi);
+- hai đầu thước có **nắp che**, kiểm ở mười vị trí cuộn.
+
+Bản của tôi bị xoá. Đây là lần thứ ba trong lịch sử repo này một bản thứ hai bị
+bắt, và lần này nguyên nhân đơn giản: **tôi không tìm trước khi viết.**
+
+### Cái KHÔNG được viết lại: đường ghi
+
+`weight-entry.tsx` bị gỡ, nhưng đường GHI chuyển **nguyên vẹn** sang
+`src/hooks/use-weight-write.ts`, kèm cả biên bản của nó: quy đổi kg/lb, ngưỡng
+hợp lý áp lên giá trị **sẽ được lưu** (không phải số hiển thị — đo số hiển thị
+bằng thang kg sẽ từ chối một lần cân thật của bất kỳ ai dùng lb), và nhánh
+offline có `mutationKey` bền.
+
+### Một chỗ ảnh mẫu tự mâu thuẫn
+
+Ảnh ghi "40 kg" và "100 kg" hai đầu với kim ở **chính giữa**, giá trị 54,7 —
+nhưng giữa của 40–100 là 70. Nó là một bức tranh, không phải một control. Và
+chốt cứng 40–100 còn cắt mất người nặng 110 kg.
+
+Nên: thước chạy hết `BOUNDS.weight_kg` (20–400), hai nhãn đọc hai đầu **cửa sổ
+nhìn thấy**, suy từ chính `TICK_W` của thước. Ở 71,5 chúng hiện 66,5 và 76,5.
+
+Bản đầu tôi cho hai nhãn đọc `BOUNDS` — hiện "20 kg" và "400 kg" — tức nói về
+một thứ mắt không thấy. Sửa sau khi nhìn ảnh render.
+
+### Luật
+
+- `plausible.mjs` trỏ vào `use-weight-write.ts`, và `/log-weight` vào danh sách
+  miễn **kèm ba vế CHẠY được**: màn không có `<TextInput>`, thước dựng dải từ
+  `BOUNDS.weight_kg`, và nút Lưu đọc `boundError()`. Phá từng vế → đỏ từng câu.
+- `weight-card.mjs` + `todo-card.mjs`: vế "TodoCard phải dựng `<WeightEntry>`"
+  thành "dòng cân nặng phải trỏ `/log-weight`, màn ấy phải gọi `useWeightWrite`".
+  Điều được canh không đổi: **đúng một** chỗ gọi `useLogWeight()`.
+- `sheet-header.mjs` 10 → 11 route modal.
+- Tagline thương hiệu ra khỏi bảng dịch: nó không được dịch, nên nó là hằng chứ
+  không phải khoá i18n — luật "tiếng Anh trong bảng tiếng Việt" đúng, và chữ
+  nhường luật.
+
+### Chưa chứng minh được ở đây
+
+`syncProfileWeight` không chạy trong bộ chạy web: fixture **cố ý bỏ qua** bộ lọc
+ngày (`live-world.mjs:128`), nên nó thấy "đã có lần cân mới hơn" và đúng mực
+không đụng vào hồ sơ. Đường ấy không đổi một dòng nào so với bản đã ship, nhưng
+tôi **không** đo được nó ở đây.
 
 ---
 

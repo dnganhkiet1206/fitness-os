@@ -34,7 +34,8 @@ const read = (rel) => readFileSync(path.join(NATIVE, rel), 'utf8');
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
 const CARD = 'src/components/ascnd/todo-card.tsx';
-const ENTRY = 'src/components/ascnd/weight-entry.tsx';
+const WRITE = 'src/hooks/use-weight-write.ts';
+const SHEET = 'src/app/log-weight.tsx';
 const TODAY = 'src/app/(tabs)/index.tsx';
 
 const problems = [];
@@ -133,8 +134,11 @@ try {
   const order = ['meal', 'workout', 'sleep', 'biometrics', 'weight'];
   for (const [name, expect] of [
     ['ICON', order],
-    /* `weight` cố ý KHÔNG có route: nó là việc duy nhất ghi tại chỗ. */
-    ['ROUTE', order.filter((k) => k !== 'weight')],
+    /* Cả NĂM khoá đều có route. `weight` từng là ngoại lệ duy nhất — nó ghi tại
+       chỗ bằng một ô bung ra, vì không có màn nào để mở. Từ 17/09 nó có
+       `/log-weight`, nên ngoại lệ ấy biến mất và bảng phải phủ đủ năm: một
+       khoá thiếu route là một dòng bấm vào không đi đâu cả. */
+    ['ROUTE', order],
   ]) {
     CASES++;
     const got = keysOf(name);
@@ -739,25 +743,43 @@ try {
    nó dựng ô nhập là đòi ngược lại một yêu cầu tường minh.
 
    Thứ mục này thật sự canh vẫn còn nguyên và nằm ở vế `useLogWeight()` bên
-   dưới: **đúng một** tệp được gọi nó, và tệp ấy là `weight-entry.tsx`. Vế
-   "phải dựng" nay chỉ áp cho thẻ Cần làm, nơi ô nhập thật sự phải có mặt.
+   dưới: **đúng một** tệp được gọi nó.
+
+   ── và mục này đã phải sửa lần thứ hai, 17/09 ──
+
+   Tệp ấy từng là `weight-entry.tsx`, một ô gõ số bung ra ngay trong dòng cân
+   nặng. Chủ dự án đặt hàng một màn riêng — chiếc cân lớn — nên ô ấy biến mất
+   và đường GHI dời sang `use-weight-write.ts`, nguyên vẹn, kèm cả biên bản của
+   nó. Cái tên đổi; điều được canh thì không: đúng MỘT chỗ gọi `useLogWeight()`,
+   vì hai chỗ là hai bản của cùng một đường ghi và bản thứ hai sẽ trôi ở chỗ
+   mất dữ liệu.
+
+   Vế "phải dựng ô nhập" chết theo ô nhập. Thay nó là vế "dòng cân nặng phải
+   DẪN tới đâu đó": thẻ Cần làm trỏ `/log-weight`, và màn ấy gọi đường ghi.
    Chiều ngược lại — thẻ Cân nặng KHÔNG được ghi — thuộc về
    `tools/weight-card.mjs`, và hai luật không được nói ngược nhau. */
 {
   CASES++;
   const callers = [];
-  for (const f of [CARD, ENTRY, 'src/components/ascnd/today-widgets.tsx']) {
+  for (const f of [CARD, WRITE, SHEET, 'src/components/ascnd/today-widgets.tsx']) {
     if (/useLogWeight\(\)/.test(strip(read(f)))) callers.push(f);
   }
-  if (callers.join(',') !== ENTRY) {
+  if (callers.join(',') !== WRITE) {
     problems.push(
-      `\`useLogWeight()\` được gọi ở [${callers.join(', ')}] — chỉ \`${ENTRY}\` được gọi nó. Hai chỗ ` +
-        'ghi cân nặng là hai bản của cùng một đường ghi, và bản thứ hai sẽ trôi ở chỗ mất dữ liệu',
+      `\`useLogWeight()\` được gọi ở [${callers.join(', ') || 'KHÔNG ĐÂU CẢ'}] — chỉ \`${WRITE}\` được gọi ` +
+        'nó. Hai chỗ ghi cân nặng là hai bản của cùng một đường ghi, và bản thứ hai sẽ trôi ở chỗ mất dữ liệu',
     );
   }
   CASES++;
-  if (!/<WeightEntry\b/.test(strip(read(CARD)))) {
-    problems.push(`${CARD}: không dựng <WeightEntry /> — chỗ ghi cân nặng phải là bản dùng chung`);
+  if (!/weight:\s*'\/log-weight'/.test(strip(read(CARD)))) {
+    problems.push(
+      `${CARD}: dòng cân nặng không còn trỏ tới \`/log-weight\`. Sau khi ô nhập tại chỗ bị thay bằng một ` +
+        'màn riêng, đây là lối ghi cân nặng DUY NHẤT của màn Hôm nay',
+    );
+  }
+  CASES++;
+  if (!/useWeightWrite\s*\(/.test(strip(read(SHEET)))) {
+    problems.push(`${SHEET}: màn ghi cân nặng không gọi \`useWeightWrite()\` — nó là một cái cân để ngắm`);
   }
   /* Và tệp KHÔNG được ghi cũng không được tự dựng lại ô nhập bằng tay. Vế
      `useLogWeight()` ở trên bắt được một lệnh ghi; vế này bắt được nửa còn lại
@@ -767,8 +789,8 @@ try {
   if (/\bweightToKg\s*\(/.test(strip(read(TW)))) {
     problems.push(
       `${TW}: gọi \`weightToKg()\` — đó là phép quy đổi của một ô NHẬP cân nặng, và thẻ này không được ` +
-        'ghi (xem `tools/weight-card.mjs`). Nếu một ô nhập cần mọc lại ở đây thì nó phải là `<WeightEntry>`, ' +
-        'không phải một bản chép',
+        'ghi (xem `tools/weight-card.mjs`). Nếu một ô nhập cần mọc lại ở đây thì nó phải đi qua ' +
+        '`useWeightWrite()`, không phải một bản chép',
     );
   }
 }
@@ -788,7 +810,8 @@ console.log(
     'đến) và bảng nhãn phủ đúng năm khoá, nên một khoá thứ sáu không dựng ra được một dòng không có ' +
     'hình. Trạng thái ba việc đầu ĐỌC từ `useDailyQuests` chứ không tự đo lại, và thẻ im lặng tới ' +
     'khi ngày được đọc xong. Trên Today, hàng chip cũ không mọc lại. Và `useLogWeight()` chỉ có một ' +
-    'chỗ gọi duy nhất — `weight-entry.tsx` — và thẻ này là nơi DUY NHẤT dựng nó, từ khi chủ dự án tắt ' +
+    'chỗ gọi duy nhất — `use-weight-write.ts` — và dòng cân nặng của thẻ này trỏ tới `/log-weight`, màn ' +
+    'DUY NHẤT còn ghi được, từ khi chủ dự án tắt ' +
     'ô nhập của thẻ Cân nặng ("đã nằm ở todo rồi"); thẻ ấy nay còn bị cấm gọi `weightToKg()`, nửa còn ' +
     'lại của cùng logic ghi, nên nó không dựng lại được một ô nhập bằng tay. Mỗi dòng hẹn được ' +
     'giờ qua đúng bộ lập lịch của app chứ không phải một cái hẹn riêng, dòng giấc ngủ trỏ vào ' +
