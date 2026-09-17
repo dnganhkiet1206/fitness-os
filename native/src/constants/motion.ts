@@ -163,7 +163,7 @@ export const BOUNCE = { smooth: 0, snappy: 0.15, bouncy: 0.3 } as const;
  * NGƯỜI DÙNG VỪA BUÔNG: một vật rơi vào chỗ của nó". Và `overshootClamping:
  * false` để cái nảy ấy thật sự xảy ra; mặc định của thư viện kẹp nó lại.
  *
- * ── 0,34 chứ không 0,24, và con số ấy được đo ──
+ * ── 0,40 chứ không 0,24, và mỗi nấc đều được đo ──
  *
  * Chủ dự án: *"thanh trượt thẻ của todo còn hơi nhanh nên không tạo ra được
  * cảm giác mượt apple, làm nó trượt từ từ nên mượt hơn"*.
@@ -178,19 +178,43 @@ export const BOUNCE = { smooth: 0, snappy: 0.15, bouncy: 0.3 } as const;
  *
  *     duration  ω₀     90%      settle   vọt lố khi bắn mạnh
  *     0,24      26,2   133ms    433ms    0,7 điểm
- *     0,34      18,5   183ms    600ms    1,4 điểm     ← bản này
- *     0,40      15,7   217ms    717ms    2,4 điểm
+ *     0,34      18,5   183ms    600ms    1,4 điểm
+ *     0,40      15,7   217ms    717ms    2,4 điểm     ← bản này
  *     0,50      12,6   267ms    883ms    5,4 điểm
  *
- * Dừng ở 0,34 vì vọt lố là thứ trả giá: hàng vọt qua 0 là hàng trượt sang phía
- * ĐỐI DIỆN, và tấm nút bên ấy nằm ngay dưới — vọt lố lớn là một vệt màu của
- * cái nút người dùng không hề vuốt tới, nháy lên rồi tắt. Từ 0,40 trở đi con số
- * ấy tăng nhanh hơn hẳn phần "chậm rãi" thu được.
+ * ── hai lượt, và lượt hai là chủ dự án chọn ──
+ *
+ * Tôi dừng ở 0,34 và nêu lý do: vọt lố là thứ trả giá, vì hàng vọt qua 0 là
+ * hàng trượt sang phía ĐỐI DIỆN, và tấm nút bên ấy nằm ngay dưới — vọt lố lớn
+ * là một vệt màu của cái nút người dùng không hề vuốt tới, nháy lên rồi tắt.
+ * Chủ dự án thử rồi trả lời: *"chậm nữa đi, 0.40"*.
+ *
+ * Nên 0,40, và cái giá được ghi ra chứ không giấu: **2,4 điểm** vọt lố ở cú
+ * bắn 1.200 px/s trong mô phỏng. Con số ấy là cận TRÊN. Ở 0,50 thì cận trên
+ * nhảy lên 5,4, và đó là chỗ tôi sẽ nói lại nếu có lượt ba.
+ *
+ * ── rồi đo lại trên bản dựng thật, vì mô phỏng không phải bằng chứng ──
+ *
+ * Thả tay ở −60 (đã qua ngưỡng cam kết 47,5), hàng nghỉ đúng −72 — mở hết,
+ * không hụt:
+ *
+ *     90% quãng ở ~176ms · đứng yên sau ~528ms · vọt lố phía đối diện 0,3 điểm
+ *
+ * Ngắn hơn bảng mô phỏng (217/717) vì quãng thật chỉ 12 điểm chứ không phải cả
+ * 72: Reanimated dừng lò xo theo NĂNG LƯỢNG, nên biên độ nhỏ thì chạm ngưỡng
+ * sớm hơn. Hai con số nói hai chuyện khác nhau và không được trộn.
+ *
+ * Ba lượt đo đầu đều hỏng, chép lại để khỏi hỏng lần nữa: kéo 9 nấc là đã quá
+ * mở nên lò xo chỉ đi 2 điểm; kéo 6 nấc là chưa tới ngưỡng nên hàng bật NGƯỢC
+ * về 0 — cú đóng chứ không phải cú mở; và mốc đo lấy theo hộp của cái nhãn ra
+ * chỗ nghỉ −67,1 trong khi hình học nói −72, vì nhãn nằm bên trong phần tử
+ * đang co 0,82 (HANDOVER_SCALE) nên hộp của nó trộn hai chuyển động. Mốc đúng
+ * là translateX của chính tấm thẻ.
  *
  * Hằng này dùng ở HAI chỗ (`swipe-row.tsx`, `today-meals.tsx`), nên cả hai cùng
  * chậm lại — đúng điều đoạn trên vừa lập luận: một cử chỉ, một nhịp.
  */
-export const SWIPE_SNAP = { ...spring(0.34, BOUNCE.snappy), overshootClamping: false };
+export const SWIPE_SNAP = { ...spring(0.40, BOUNCE.snappy), overshootClamping: false };
 
 /**
  * How a press answers.

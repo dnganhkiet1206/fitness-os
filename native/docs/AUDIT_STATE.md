@@ -6,9 +6,9 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-16 · cú vuốt: trượt chậm lại, nút hiện ra như nút
-"Ghi", và một `transform` bị nuốt im lặng · nhánh
-`claude/ios-fitness-rebuild-omgulr`
+**Vòng gần nhất:** 2026-09-17 · cú thả tay chậm thêm một nấc nữa (`spring(0.40)`,
+chủ dự án chọn), và lượt đo đầu tiên chạy trên bản dựng thật chứ không mô phỏng ·
+nhánh `claude/ios-fitness-rebuild-omgulr`
 (vòng rà pháp y đầy đủ gần nhất: 2026-09-14, commit `cf687a2`)
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
@@ -35,6 +35,57 @@ gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trư�
 | Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 253 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
 | ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 253 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## 17/09 — "chậm nữa đi, 0.40", và lần này phép đo chạy trên bản dựng thật
+
+Vòng trước tôi dừng ở `spring(0.34)` và nêu lý do (vọt lố tăng nhanh hơn phần
+chậm rãi thu được). Chủ dự án thử rồi trả lời: *"chậm nữa đi, 0.40"*. Đó là
+quyết định của chủ dự án trên cảm giác thật, và nó thắng lập luận của tôi trên
+bảng số. `SWIPE_SNAP` → `spring(0.40, BOUNCE.snappy)`.
+
+Cái giá được ghi ra chứ không giấu: **2,4 điểm** vọt lố ở cú bắn 1.200 px/s
+trong mô phỏng — cận TRÊN của một ca cố ý khắc nghiệt.
+
+### Rồi đo lại trên bản dựng thật, vì mô phỏng không phải bằng chứng
+
+Thả tay ở −60 (đã qua ngưỡng cam kết 47,5, chưa tới hết mở 72), hàng nghỉ đúng
+**−72** — mở hết, không hụt:
+
+| | đo trên bản dựng | bảng mô phỏng |
+|---|---|---|
+| 90% quãng | **~176ms** | 217ms |
+| đứng yên | **~528ms** | 717ms |
+| vọt lố phía đối diện | **0,3đ** | 2,4đ |
+
+Hai cột **không** được gộp. Mô phỏng tích phân cả quãng 72 điểm ở vận tốc bắn
+1.200 px/s; cú thả tay thật đi 12 điểm ở vận tốc thấp hơn nhiều. Reanimated dừng
+lò xo theo **năng lượng** (ngưỡng `6e-9`), nên biên độ nhỏ chạm ngưỡng sớm hơn —
+chênh lệch ấy là tính chất của bộ giải, không phải sai số.
+
+0,3 điểm vọt lố là dưới một pixel: nó không vẽ ra vệt màu của cái nút phía đối
+diện, tức thứ tôi đã lấy làm lý do để dừng ở 0,34 thực tế không xảy ra ở 0,40.
+
+### Ba lượt đo đầu đều hỏng — lượt thứ năm cái NEO sai trong hai buổi
+
+1. Kéo **9 nấc** (−90): đã quá mở, lò xo chỉ còn 2 điểm để đi. Con số 90% khi ấy
+   nói về 2 điểm chứ không về cú mở.
+2. Kéo **6 nấc** (−60 ở ngón, hàng mới ≈ −35): **chưa** tới ngưỡng cam kết nên
+   hàng bật NGƯỢC về 0. Đó là một cú **đóng**, và nó xanh mượt như một cú mở.
+3. Mốc đo lấy theo **hộp của cái nhãn** → chỗ nghỉ đọc ra −67,1 trong khi hình
+   học nói −72. Chênh 4,9 điểm ấy lặp lại y hệt qua nhiều lượt, nên nó không
+   phải nhiễu: nhãn nằm **bên trong** phần tử đang co 0,82 (`HANDOVER_SCALE`),
+   nên hộp của nó trộn cú trượt với cú nhường chỗ. Mốc đúng là `translateX` của
+   chính tấm thẻ, đọc thẳng từ `transform` đã tính.
+
+Lần leo chuỗi cha ấy cũng trả lời luôn một câu chưa ai hỏi: viên nút lộ ra
+`x=319 w=60`, hàng mở tới mép phải 313, khe 72 điểm từ 313 tới 385 — viên 60
+điểm nằm **giữa đúng 6 điểm mỗi bên**, không bị cắt.
+
+Cùng một bài học ba vòng liền, viết lại cho gọn: **một phép đo sai neo nguy hơn
+không đo.** Cả ba lượt trên đều cho ra con số đẹp, ổn định, lặp lại được — và
+đều nói về một chuyện khác.
 
 ---
 
