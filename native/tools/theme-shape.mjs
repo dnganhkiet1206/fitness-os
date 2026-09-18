@@ -71,6 +71,7 @@ const CO_MAU = new Map([
   ['components/ascnd/readiness-aura.tsx', [1, '`const paper = !m.lit` — chỉ chọn `paint`, `second` và `alpha`; thân hàm dựng y hệt số node ở hai theme']],
   ['components/ascnd/assistant-aura.tsx', [1, '`const paper = !m.lit` — chỉ chọn `colour` và `peak` của vũng sáng']],
   ['components/ascnd/liquid-glass.tsx', [1, '`const washAt = m.lit ? 1 : 0` — nhân vào `stopOpacity` của lớp wash; các node của wash dựng ở cả hai theme']],
+  ['components/ascnd/body-scale-figure.tsx', [1, '`const tone = m.lit ? TONE.dark : TONE.light` — MỘT cờ, chọn cả bảng: độ mờ bốn lớp CỘNG tên token của chữ số và đơn vị. Bản đầu có ba cờ (thêm `digits` và `unitColour` tính riêng); gộp vào `TONE` còn một, và chính luật này bắt được con số 3 đã thành lời nói dối. Chỉ chọn MÀU — cùng một cây node ở hai diện mạo, khác mấy con số. Lý do phải tách theo diện mạo được ĐO và ghi ở `TONE`: một `alpha(c.foreground, …)` dùng chung sai hướng ở mặt đèn (mực bản sáng là màu TỐI, nên "sáng lên" ra tối đi), và ở vùng gần đen một tỉ số 1,08 là chênh lệch tuyệt đối quá nhỏ nên thân cân hoà vào nền — chủ dự án bắt được trên ảnh máy thật']],
 ])
 
 const files = [];

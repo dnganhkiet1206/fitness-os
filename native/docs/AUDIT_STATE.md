@@ -38,6 +38,86 @@ thước tôi viết lại dù repo đã có một bản tốt hơn — cổng b
 
 ---
 
+## 18/09 (d) — chiếc cân "thức dậy", và một cái sàn không có chỗ để nhường
+
+Đặt hàng: kéo thước thì chiếc cân sáng lên như một cân điện tử thật vừa có
+người bước lên. Display là điểm sáng chính, tấm cảm biến phụ, thân và viền chỉ
+nhích. Không glow, không LED, không particle. Và: **xem ảnh ACTIVE trước, rồi
+mới nối animation.**
+
+### Màn hình là một ĐÈN NỀN — nên công thức chỉ có một
+
+Bản đầu tôi định pha mặt màn hình bằng `alpha(c.foreground, …)` như mọi lớp
+khác. Nó **sai hướng** ở bản sáng: mực bản sáng là màu TỐI, nên "sáng lên" lại
+ra tối đi. Một cái đèn nền thì **trắng ở mọi diện mạo** — nó là nguồn sáng,
+không phải một token theme. Nên mặt màn hình là trắng ở một độ mờ, và độ mờ ấy
+chính là công tắc:
+
+| | nghỉ → hoạt động |
+|---|---|
+| sáng | 0,75 → 1,00 |
+| tối | 0,06 → 0,80 |
+
+Ở bản tối 0,06 là tấm **tối** và 0,80 là tấm **sáng**, nên chữ số **đảo màu
+theo tấm** — đúng một LCD có đèn nền vừa bật trong phòng tối. Không phải hiệu
+ứng thêm vào; là hệ quả của việc tấm nền thật sự sáng.
+
+### Bản SÁNG không có chỗ để sáng thêm — và luật bắt được điều đó
+
+Ở bản sáng, mặt màn hình vốn đã `#ffffff` và số vốn đã `foreground`. Nên trạng
+thái *hoạt động* giữ đúng mức hiện tại, và *nghỉ* mới là cái được hạ. Chủ dự án
+nói đúng khi gọi cân hiện tại là standby — hoá ra ở bản sáng nó đang ở ACTIVE,
+và standby là thứ chưa tồn tại.
+
+Luật đầu tôi viết đòi *mặt màn hình* đổi ≥1,05. Bản tối đạt 8,2; **bản sáng chỉ
+1,045 và đỏ.** Không phải lỗi giá trị: hạ tấm đèn bản sáng xuống nữa thì bậc so
+với thân cân tụt dưới 1,134, tức chiếc cân mất màn hình. Cửa sổ hợp lệ đóng.
+
+Nên cú thức dậy ở bản sáng đi qua **chữ số**: 7,41 → 17,57 (**2,37×**). Ở bản
+tối qua **tấm nền** (**8,2×**). Luật đòi *ít nhất một kênh* rõ rệt, chứ không
+đòi kênh nào cụ thể — và vế "tấm nền dẫn trước thân cân" vẫn giữ cho hiệu ứng
+không thành cả chiếc cân phát sáng.
+
+**Và luật còn bắt được một chỗ tôi tự lệch:** bảng thiết kế ghi *"bản sáng lúc
+nghỉ, số dịu về `secondaryForeground`"*, nhưng mã tôi viết đặt `foreground` cho
+cả hai trạng thái sáng — cú thức dậy bản sáng khi ấy chỉ 1,045. Sửa bằng cách
+đưa **tên token của chữ vào chính bảng `TONE`**, nên mã và luật đọc một nguồn.
+
+### Một cửa sổ rộng 0,04
+
+Tấm đèn bản tối lúc nghỉ bị **hai sàn kẹp**: ≥1,134 so với thân cân, và chữ đơn
+vị ≥4,5 trên tấm. Ở 0,09 đơn vị tụt 4,37; ở 0,04 bậc chỉ 1,120. Hợp lệ chỉ
+0,05–0,08 — chốt **0,06** (bậc 1,183 · đơn vị 4,83).
+
+### Luật — `tools/body-scale.mjs`, 10 → **31 ca**
+
+Bốn trạng thái × (bậc bề mặt · số · đơn vị · thứ bậc số>đơn vị), cộng: mọi lớp
+khi sáng **không được nhạt hơn** khi nghỉ, tấm đèn phải **là** `#ffffff`, tấm
+nền phải dẫn trước thân cân, và ít nhất một kênh thức dậy ≥1,5×.
+
+Năm phép thử phá, mỗi cái đỏ đúng câu: đèn nền thôi trắng · tấm cảm biến lúc
+sáng nhạt hơn lúc nghỉ · tấm đèn bản tối thôi sáng lên · số và đơn vị cùng
+token (nghỉ) · đơn vị bằng số (hoạt động).
+
+### Và `theme-shape` bắt chính con số của nó
+
+Bản đầu có **3** cờ `m.lit`; gộp màu chữ vào `TONE` còn **1**, và luật đỏ vì
+CO_MAU vẫn ghi 3 — *"một cờ đã bỏ; sửa con số trong danh sách để nó thôi nói
+dối"*. Đúng loại luật đáng có.
+
+### Nối cử chỉ
+
+`onIndex` của thước là thứ đánh thức cân — không phải một sự kiện riêng. Vào
+240ms (`duration.move`), giữ **3 giây** sau cú cuối, ra 320ms (`duration.swap`);
+mỗi lần chạm lại là hẹn giờ đặt lại. Chuyển tiếp là **hai hình xếp lớp đổi
+`opacity`**, không nội suy từng thuộc tính: `react-native-svg` raster lại cả
+hình khi một prop con đổi — bài học đã ghi ở `weight-goal-ruler.tsx`.
+
+**Chưa đúng ý thì sửa một số:** độ mờ tấm cảm biến lúc sáng (0,12) và độ sáng
+tấm đèn bản tối (0,80).
+
+---
+
 ## 18/09 (c) — hệ màu tối của màn cân, và một tấm ảnh tôi đã có mà không mở
 
 Chủ dự án gửi ảnh MÁY THẬT của cả hai diện mạo và tám điểm: nền quá gần đen,

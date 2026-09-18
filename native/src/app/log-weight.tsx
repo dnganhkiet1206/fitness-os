@@ -1,7 +1,13 @@
 import { ArrowRight } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Text, View, useWindowDimensions } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import Animated, {
+  FadeIn,
+  FadeInDown,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BodyScaleFigure } from '@/components/ascnd/body-scale-figure';
@@ -71,6 +77,15 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
  */
 const BRAND_TAGLINE = 'Better you\nHigher everyday';
 
+/**
+ * Cân giữ trạng thái SÁNG bao lâu sau cú tương tác cuối.
+ *
+ * Đặt hàng: *"3 giây không có tương tác → scale bắt đầu giảm độ sáng"*. Mỗi lần
+ * chạm lại vào thước là hẹn giờ được đặt lại, nên kéo–dừng–kéo không bao giờ
+ * làm cân tắt giữa chừng.
+ */
+const HOLD_MS = 3000;
+
 /** Chỗ đứng khi tài khoản chưa có cân nặng nào. Không phải một phép đoán về người dùng. */
 const DEFAULT_KG = 70;
 /** Bề rộng chiếc cân so với bề ngang màn — chừa lề, và không phình trên màn lớn. */
@@ -109,6 +124,38 @@ export default function LogWeightSheet() {
     [seedKg, wUnit, min10, count],
   );
 
+  /*
+    ── cân "thức dậy", và vì sao nó là HAI HÌNH XẾP LỚP ──
+
+    `react-native-svg` raster lại cả hình khi một prop con đổi — bài học đã ghi
+    ở `weight-goal-ruler.tsx`. Nội suy từng thuộc tính của chiếc cân theo một
+    shared value là bắt nó raster lại mỗi khung hình trong suốt cú kéo.
+
+    Nên hai hình dựng SẴN, một nghỉ một sáng, xếp lên nhau; chỉ `opacity` của
+    hình sáng chạy. Đó là thứ compositor làm được mà không vẽ lại gì cả.
+
+    Vào 240ms (`duration.move`, trong khoảng 200–400 được đặt hàng), ra 320ms
+    (`duration.swap`, trong khoảng 300–500).
+  */
+  const glow = useSharedValue(0);
+  const wake = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const touch = useCallback(() => {
+    glow.value = withTiming(1, { duration: duration.move });
+    if (wake.current) clearTimeout(wake.current);
+    wake.current = setTimeout(() => {
+      glow.value = withTiming(0, { duration: duration.swap });
+    }, HOLD_MS);
+  }, [glow]);
+
+  /* Hẹn giờ phải chết cùng màn hình: thoát ra giữa lúc cân đang sáng thì cú
+     `withTiming` sau đó chạy trên một component đã đi. */
+  useEffect(() => () => {
+    if (wake.current) clearTimeout(wake.current);
+  }, []);
+
+  const litFace = useAnimatedStyle(() => ({ opacity: glow.value }));
+
   const [index, setIndex] = useState(seedIndex);
   /*
     Thước đã được đặt đúng chỗ cho lần mở này chưa.
@@ -132,10 +179,15 @@ export default function LogWeightSheet() {
   }, [seedIndex]);
 
   /* Bố cục đang ổn định KHÔNG phải người dùng đang chọn một con số. */
-  const onIndex = useCallback((next: number) => {
-    if (!placed.current) return;
-    setIndex(next);
-  }, []);
+  const onIndex = useCallback(
+    (next: number) => {
+      if (!placed.current) return;
+      setIndex(next);
+      /* Chính cú kéo là thứ đánh thức cân — không phải một sự kiện riêng. */
+      touch();
+    },
+    [touch],
+  );
 
   const value = (min10 + index) / 10;
 
@@ -176,7 +228,12 @@ export default function LogWeightSheet() {
 
         {/* Chiếc cân vào sau tiêu đề một nhịp: thứ bậc đọc được thành thứ tự. */}
         <Animated.View entering={FadeInDown.duration(duration.move).delay(60)} style={styles.stage}>
-          <BodyScaleFigure value={value.toFixed(1)} unit={unit} width={scaleW} />
+          <View>
+            <BodyScaleFigure value={value.toFixed(1)} unit={unit} width={scaleW} />
+            <Animated.View style={[StyleSheet.absoluteFill, litFace]} pointerEvents="none">
+              <BodyScaleFigure value={value.toFixed(1)} unit={unit} width={scaleW} lit />
+            </Animated.View>
+          </View>
         </Animated.View>
 
         <Animated.View
