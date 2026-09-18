@@ -22,7 +22,7 @@
  * trên đầu màn Today. Và nó không được nhận cú chạm — nó nằm đè lên vòng sẵn
  * sàng, thứ mà cả màn hình dựa vào để mở ra.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -101,6 +101,89 @@ export function boxMath(lockup, ink) {
   return [...bad, `nét cao ${r1(h)} điểm, rộng ${r1(w)} điểm ở BOX=${box}`];
 }
 
+/**
+ * Chỗ DUY NHẤT được phép vẽ tên app ra màn hình.
+ *
+ * Mọi chỗ khác dựng `<BrandLockup>`, thứ đọc chính ảnh icon của app.
+ */
+const WORDMARK_HOME = LOCKUP;
+
+/**
+ * Miễn trừ, có ĐIỀU KIỆN chứ không phải có tên.
+ *
+ * `app-tabs.web.tsx` là vỏ tab của bản WEB — thứ chỉ bộ chạy `live.mjs` mở ra,
+ * không phải mặt hàng app ship. Nó còn sống trong một hệ màu khác hẳn
+ * (`ThemedText`/`Colors` của mẫu Expo, không phải bảng màu ASCND), nên kéo
+ * `BrandLockup` vào đó là kéo hai hệ màu vào một tệp để sửa một thứ không ai
+ * nhìn thấy.
+ *
+ * Điều kiện được KIỂM, không được tin: nếu tệp ấy thôi là bản `.web`, hoặc
+ * thôi dùng hệ màu kia, miễn trừ hết hiệu lực và luật đỏ trở lại.
+ */
+const WEB_SHELL = 'src/components/app-tabs.web.tsx';
+
+/**
+ * Miễn trừ thứ hai, cũng có điều kiện: chữ IN TRÊN MỘT VẬT.
+ *
+ * `body-scale-figure.tsx` vẽ một chiếc cân sức khoẻ, và cân thật nào cũng có
+ * tên hãng in mờ trên thân. Đó không phải app tự xưng danh — nó là chữ thuộc về
+ * cái vật đang được vẽ, y như con số và chữ "kg" ở trên nó. Dựng `BrandLockup`
+ * ở đó là dán con koala lên mặt cân.
+ *
+ * Điều kiện phân biệt hai thứ ấy, và nó KIỂM ĐƯỢC: một chữ in trên vật thì mờ —
+ * nó tô bằng `alpha(c.foreground, …)`, cùng cách mọi chi tiết khác của vật được
+ * tô. Một dấu hiệu thương hiệu thì đặc và tô bằng màu thương hiệu. Đổi nó thành
+ * cái thứ hai là miễn trừ hết hiệu lực.
+ */
+const OBJECT_DECAL = 'src/components/ascnd/body-scale-figure.tsx';
+
+/**
+ * Không có bản vẽ tay thứ hai của tên app, ở bất kỳ tệp nào.
+ *
+ * ── vì sao luật này ra đời muộn, sau khi đã trả giá ba lần ──
+ *
+ * `brand-lockup.tsx` viết sẵn lời cảnh báo ngay khi nó ra đời: "bản thứ hai
+ * luôn trôi khỏi bản đầu". Rồi app có đúng BA bản chữ "ASCND" — cụm thật ở đầu
+ * Today, một bản 30pt giãn 4,5 ở màn đăng nhập, một bản 24pt giãn 3,6 ở màn
+ * onboarding. Hai bản vẽ tay ấy lệch nhau, đúng như đã cảnh báo.
+ *
+ * Cú gỡ trước dọn màn đăng nhập và GHI VÀO CHÚ THÍCH rằng còn một bản nữa ở
+ * onboarding — rồi dừng lại ở đó. Một chú thích không phải một bước kiểm: bản
+ * thứ ba sống thêm nhiều tuần, và chủ dự án gặp nó ở đúng chỗ đau nhất, màn
+ * ngay sau khi đăng nhập ("màn đăng nhập đang hiển thị logo cũ").
+ *
+ * Luật chỉ bắt tên app xuất hiện như NỘI DUNG của một phần tử JSX. Chuỗi trong
+ * `Alert.alert('ASCND', …)` là tiêu đề hộp thoại hệ điều hành, không phải một
+ * dấu hiệu được vẽ, nên nó không dính.
+ */
+export function wordmarkRule(files) {
+  const bad = [];
+  for (const { rel, src: s } of files) {
+    if (rel === WORDMARK_HOME) continue;
+    if (!/>\s*ASCND\s*</.test(strip(s))) continue;
+    const webShell = rel === WEB_SHELL && /\.web\.tsx$/.test(rel) && /ThemedText/.test(s);
+    const decal = rel === OBJECT_DECAL && /color: (?:m\.lit \? )?alpha\(c\.foreground/.test(s);
+    if (webShell || decal) continue;
+    bad.push(
+      `${rel}: vẽ tay chữ "ASCND" thay vì dựng <BrandLockup>. Một cái tên có hai bản thì bản thứ hai ` +
+        'sẽ trôi khỏi bản đầu và không có gì báo — app đã có ba bản, lệch nhau về cả cỡ chữ lẫn màu, ' +
+        'và người dùng gặp bản cũ ngay sau khi đăng nhập',
+    );
+  }
+  return bad;
+}
+
+/** Mọi tệp .tsx dưới src, kèm đường dẫn tương đối để in vào lời báo lỗi. */
+function tsxFiles(rel = 'src') {
+  const out = [];
+  for (const name of readdirSync(path.join(NATIVE, rel))) {
+    const r = `${rel}/${name}`;
+    if (statSync(path.join(NATIVE, r)).isDirectory()) out.push(...tsxFiles(r));
+    else if (name.endsWith('.tsx')) out.push({ rel: r, src: readFileSync(path.join(NATIVE, r), 'utf8') });
+  }
+  return out;
+}
+
 /** Hộp bao của phần có nét trong một ảnh có kênh alpha. */
 async function inkOf(rel) {
   const img = await new Promise((res, rej) =>
@@ -149,6 +232,18 @@ let SELF_TESTS = 0;
     ['BOX bị sửa bị bắt', () => boxMath(goodLockup.replace('BOX = 37', 'BOX = 25'), ink).filter((m) => !m.startsWith('nét cao')), true],
     ['ảnh dựng lại với lề khác bị bắt', () => boxMath(goodLockup, { ...ink, h: 900, top: 18, bottom: 18 }).filter((m) => !m.startsWith('nét cao')), true],
     ['nét lệch tâm bị bắt', () => boxMath(goodLockup, { ...ink, top: 250, bottom: 52 }).filter((m) => !m.startsWith('nét cao')), true],
+
+    /* Bản vẽ tay thứ hai của tên app, ở một tệp bất kỳ. */
+    ['màn nào dựng <BrandLockup> thì im', () => wordmarkRule([{ rel: 'src/components/ascnd/x.tsx', src: '<BrandLockup scale={1.4} />' }]), false],
+    ['vẽ tay chữ ASCND bị bắt', () => wordmarkRule([{ rel: 'src/components/ascnd/x.tsx', src: '<Text style={styles.brand}>ASCND</Text>' }]), true],
+    ['vẽ tay xuống dòng vẫn bị bắt', () => wordmarkRule([{ rel: 'src/components/ascnd/x.tsx', src: '<ThemedText>\n  ASCND\n</ThemedText>' }]), true],
+    ['chính brand-lockup.tsx thì được', () => wordmarkRule([{ rel: LOCKUP, src: '<Text>ASCND</Text>' }]), false],
+    ['tiêu đề Alert không dính', () => wordmarkRule([{ rel: 'src/app/x.tsx', src: "Alert.alert('ASCND', msg);" }]), false],
+    ['chú thích nhắc tên app không dính', () => wordmarkRule([{ rel: 'src/app/x.tsx', src: '/* cụm <Text>ASCND</Text> từng nằm ở đây */' }]), false],
+    ['vỏ web được miễn', () => wordmarkRule([{ rel: 'src/components/app-tabs.web.tsx', src: '<ThemedText>ASCND</ThemedText>' }]), false],
+    ['vỏ web thôi dùng hệ màu kia thì hết miễn', () => wordmarkRule([{ rel: 'src/components/app-tabs.web.tsx', src: '<Text>ASCND</Text>' }]), true],
+    ['chữ in mờ trên thân cân được miễn', () => wordmarkRule([{ rel: 'src/components/ascnd/body-scale-figure.tsx', src: '<Text style={[styles.mark, { color: m.lit ? alpha(c.foreground, 0.2) : alpha(c.foreground, 0.28) }]}>\n  ASCND\n</Text>' }]), false],
+    ['chữ trên thân cân hoá dấu hiệu đặc thì hết miễn', () => wordmarkRule([{ rel: 'src/components/ascnd/body-scale-figure.tsx', src: '<Text style={[styles.mark, { color: c.readinessGreen }]}>ASCND</Text>' }]), true],
   ];
   const wrong = cases.filter(([, fn, shouldFail]) => (fn().length > 0) !== shouldFail);
   if (wrong.length) {
@@ -163,7 +258,8 @@ const asset = /require\('\.\.\/\.\.\/\.\.\/([^']+)'\)/.exec(strip(lockup))?.[1] 
 const ink = await inkOf(asset);
 const math = boxMath(lockup, ink);
 const note = math.pop();
-const problems = [...sourceRules(lockup, read(TODAY)), ...math];
+const files = tsxFiles();
+const problems = [...sourceRules(lockup, read(TODAY)), ...math, ...wordmarkRule(files)];
 
 if (problems.length) {
   console.log('dấu hiệu thương hiệu CÓ LỖI:\n');
@@ -176,5 +272,10 @@ console.log(
     `nét chiếm ${ink.w}×${ink.h} giữa ô ${ink.size}×${ink.size} và nằm đúng tâm, nên ${note}; ` +
     'một lần dựng lại icon với lề khác sẽ làm hỏng bước này thay vì lặng lẽ đổi cỡ logo; ' +
     `logo không nhận cú chạm (nó đè lên vòng sẵn sàng) và ô trái vẫn giữ flex:1 để hàng nút ở lại mép phải; ` +
-    `${SELF_TESTS} ca tự kiểm chạy trên nguồn mẫu`,
+    `và không tệp nào trong ${files.length} tệp .tsx còn VẼ TAY dấu hiệu "ASCND" — app từng có ba bản lệch nhau ` +
+    '(Today, đăng nhập 30pt giãn 4,5, onboarding 24pt giãn 3,6), cú gỡ trước chỉ dọn hai và GHI CHÚ THÍCH ' +
+    'về bản thứ ba, mà chú thích thì không phải bước kiểm: bản ấy sống thêm nhiều tuần và người dùng gặp ' +
+    `nó ngay sau khi đăng nhập. Hai chỗ được miễn — vỏ tab bản web, và chữ in mờ trên thân chiếc cân, ` +
+    'thứ thuộc về một VẬT đang được vẽ chứ không phải app tự xưng danh — nhưng cả hai miễn trừ có ' +
+    `ĐIỀU KIỆN được kiểm chứ không phải có tên. ${SELF_TESTS} ca tự kiểm chạy trên nguồn mẫu`,
 );

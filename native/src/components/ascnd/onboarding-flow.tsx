@@ -36,6 +36,7 @@ import Animated, { FadeIn, SlideInLeft, SlideInRight } from 'react-native-reanim
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { BrandLockup } from '@/components/ascnd/brand-lockup';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { COMMON_ALLERGIES, parseDislikes } from '@/lib/food-preferences';
@@ -304,9 +305,24 @@ export function OnboardingFlow() {
           { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.lg },
         ]}
         keyboardShouldPersistTaps="handled">
-        {/* Brand header (web: gradient wordmark + setup line) */}
         <View style={styles.hero}>
-          <Text style={styles.brand}>ASCND</Text>
+          {/*
+            Bản vẽ tay THỨ BA, và là bản cuối cùng còn sót.
+
+            `brand-lockup.tsx` viết ra lời cảnh báo — "bản thứ hai luôn trôi
+            khỏi bản đầu" — rồi `auth-screen.tsx` gỡ bản của nó và ghi rõ trong
+            chú thích rằng còn MỘT bản nữa nằm ở đây, với số khác hẳn (24pt,
+            giãn 3,6 so với 30pt, giãn 4,5). Cú gỡ ấy dừng lại đúng trước tệp
+            này, nên màn hình ngay SAU khi đăng nhập vẫn là chữ "ASCND" xanh
+            phát sáng của trang web cũ: không koala, không đúng màu, không đúng
+            cỡ. Chủ dự án báo "màn đăng nhập đang hiển thị logo cũ".
+
+            `scale` 1,4 — ĐÚNG bằng `auth-screen.tsx`, không phải 24/22 để giữ
+            cỡ chữ cũ. Hai màn này là hai bước liền nhau của cùng một lối vào,
+            và một dấu hiệu co lại 22% giữa chúng thì đọc ra là lỗi dựng hình
+            chứ không phải một quyết định.
+          */}
+          <BrandLockup scale={1.4} />
           <Text style={styles.heroSub}>{i18n.onboardingSetup}</Text>
         </View>
 
@@ -933,15 +949,6 @@ const stylesFor = makeStyles((c, m) => ({
   content: { flexGrow: 1, paddingHorizontal: spacing.md, gap: spacing.lg },
 
   hero: { alignItems: 'center', gap: 4 },
-  brand: {
-    fontSize: 24,
-    fontWeight: '700',
-    letterSpacing: 3.6,
-    color: c.readinessGreen,
-    textShadowColor: alpha(c.readinessGreen, 0.4),
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
-  },
   heroSub: { ...type.footnote, color: c.mutedForeground },
 
   dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
