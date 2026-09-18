@@ -29,12 +29,78 @@ thước tôi viết lại dù repo đã có một bản tốt hơn — cổng b
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
-| `node tools/check.mjs` | **XANH** | exit 0, **254** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
+| `node tools/check.mjs` | **XANH** | exit 0, **255** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 254 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 254 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 254 bước ở trên |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 255 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 255 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 255 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## 18/09 (b) — bản TỐI của màn cân: một vế rớt sàn, và ảnh không nói ra được
+
+Chủ dự án: *"check darkmode"*.
+
+Không kiểm được bằng ảnh. Bản dựng web ở diện mạo tối bị một lớp trắng phủ mờ cả
+trang, và lượt quét 17/09 (c) xác nhận **không phần tử DOM nào** giải thích nó —
+nên điểm ảnh bản tối vô dụng ở đây. Cách còn lại là cách chính các luật trong
+`tools/` dùng: dựng lại đúng chồng mặt từ bảng màu đang ship rồi tính, và hỏi
+DOM xem bản dựng thật có ra đúng những màu ấy không.
+
+### Một vế RỚT, và nó rớt ở đúng chỗ mã "gọn" nhất
+
+Hình chiếc cân cố ý dùng `alpha(c.foreground, …)` cho gần hết các lớp: mực bản
+sáng là màu tối, bản tối là màu sáng, nên MỘT dòng cho ra "đậm hơn mặt dưới" ở
+sáng và "sáng hơn mặt dưới" ở tối. Đúng — cho các lớp **nền**.
+
+Chữ thì không đi theo được. Mặt màn hình phải là thứ **sáng nhất** của hình; ở
+bản tối điều đó là `alpha(ink, 0.13)` = `#2f2f2f`. Trên nó:
+
+| | tối | sáng |
+|---|---|---|
+| số cân nặng (`foreground`) | 11,44 | 17,57 |
+| **"kg" (`mutedForeground`)** | **3,48** ✗ | 5,78 ✓ |
+
+3,48 dưới sàn 4,5 của WCAG 1.4.3. Một diện mạo đúng, một diện mạo rớt, **cùng
+một dòng mã** — và bản sáng không hé ra gì cả.
+
+Không hạ độ đậm mặt màn xuống để chữa được: ở α 0,07 nó mới lên 4,14 mà bậc so
+với thân cân đã tụt còn 1,168. `secondaryForeground` đo **4,70** (tối) · **7,75**
+(sáng) — qua cả hai, vẫn nhạt hơn hẳn con số nên thứ bậc không đảo.
+
+### Luật mới — `tools/body-scale.mjs` (cổng 254 → **255**)
+
+Đọc độ mờ mặt màn và **tên token** của hai dòng chữ ra khỏi chính tệp, dựng lại
+chồng mặt, đòi cả hai qua 4,5 ở cả hai diện mạo. Cộng hai vế: mặt màn phải còn
+là một **bậc** thật so với thân cân (1,134 — thiếu nó thì cách "sửa" rẻ nhất là
+hạ độ đậm mặt màn và chiếc cân mất màn hình), và chữ đơn vị phải **nhạt hơn** con
+số.
+
+Bốn phép thử phá, mỗi cái đỏ đúng câu: đơn vị quay lại `mutedForeground` · mặt
+màn α 0,02 (mất bậc) · số và đơn vị cùng token (thứ bậc đảo) · thân cân α 0,30
+(mặt màn thôi là bậc). Cộng một phần tự kiểm chạy lại vế chữ với token đã rớt và
+đòi nó đỏ.
+
+Vì sao chưa cổng nào thấy: `tsc` thấy hai string hợp lệ · `palette-key` canh
+**tham số** của `alpha()` chứ không canh kết quả · `glass-legibility` đo chữ trên
+mặt **kính**, không trên mặt do một component tự pha · và ảnh chụp thì không phải
+một cửa ở diện mạo này.
+
+### Hai vế tôi KHÔNG bắt, và lý do
+
+`thân cân / trang` đo 1,084 (tối) · 1,104 (sáng) — dưới 1,134. Nhưng 1,134 là bậc
+cho một **dấu duy nhất** (viên lịch tuần, rãnh thanh tiến độ); thân cân là một
+**minh hoạ** và nó còn có viền riêng. Vay một sàn từ ngữ cảnh khác để tự tạo ra
+một lỗi là làm hỏng chính cái sàn ấy. Hai con số vẫn được in ra trong phép đo.
+
+### Ba lượt neo sai nữa, cả ba đều của tôi
+
+Phép đo của tôi gõ tay `mutedForeground` nên báo rớt một lỗi **đã sửa xong**; rồi
+nó bắt phải `<title>` trong SVG (nhãn trợ năng, không có màu) và đọc ra
+`rgb(0,0,0)`; rồi bắt phải `<head><title>` — cũng là "ASCND", tên app, đứng trước
+trong thứ tự tài liệu. Chữ ASCND thật đo đúng `rgba(237,237,237,0.28)`. **Không
+có lỗi nào ở đó cả**, và cả ba lần con số đều ổn định và sai.
 
 ---
 
@@ -128,7 +194,7 @@ nên đó là một Remote Function và Worklets ném thẳng — app chết ở
 đầu tiên.
 
 **Bộ chạy web không thể thấy được.** RN Web không có UI runtime riêng: worklet
-chạy cùng luồng JS, nên `alpha()` gọi được và mọi thứ xanh. Cổng 254 bước xanh,
+chạy cùng luồng JS, nên `alpha()` gọi được và mọi thứ xanh. Cổng 255 bước xanh,
 `tsc` exit 0, ảnh chụp đúng — và app không mở nổi trên iPhone.
 
 Sửa: tính hai đầu nội suy **trên luồng JS** rồi để worklet chỉ *bắt* hai chuỗi.
@@ -166,7 +232,7 @@ Reanimated sẽ không tự có mặt. Chỗ mù còn lại được ghi ngay c�
 
 ### Bài học, và nó không phải "cẩn thận hơn"
 
-Cổng này có 254 bước và **không bước nào chạy được trên iPhone**. Lỗi vừa rồi
+Cổng này có 255 bước và **không bước nào chạy được trên iPhone**. Lỗi vừa rồi
 không phải một lỗi khó thấy — nó là lỗi mà một lần mở app bắt được trong một
 giây. Thứ duy nhất thay cho lần mở app ấy là một luật đọc mã, và luật ấy chỉ
 đáng tin tới đúng cái phạm vi nó tự đặt cho mình. Phạm vi ấy phải được ĐO, chứ
@@ -251,7 +317,7 @@ Nên nó **không** bị sửa. Bản sáng thành một **CÁI CHỐT** (đổi
 xuống), bản tối chịu **SÀN** thật. Con số được báo lại kèm hai đề nghị —
 `c.muted` 1,156 hoặc `c.secondary` 1,198 — và câu trả lời là của chủ dự án.
 
-### Luật mới — `tools/row-surface.mjs` (cổng 253 → **254** bước)
+### Luật mới — `tools/row-surface.mjs` (cổng 253 → **255** bước)
 
 Chín phép thử phá, mỗi cái đỏ đúng câu nó hứa: `surface` quay lại thành object ·
 mặt nghỉ có alpha 0,06 · hai đầu là hai màu · độ đục trải ra cả cú kéo ·
@@ -794,7 +860,7 @@ vì một bản tóm tắt không đo lại được thì cũng chỉ là một 
 
 | | |
 |---|---|
-| `node tools/check.mjs` | **254/254 xanh**, exit 0 |
+| `node tools/check.mjs` | **255/255 xanh**, exit 0 |
 | `npx tsc --noEmit` | exit 0, đầu ra rỗng |
 | Máy thật | ❌ **không**. Ba thứ còn treo: vòng đếm ngược của thanh Hoàn tác ở đáy, thẻ bài tập lúc thu lại có giật không, dấu tích xanh ở tiêu đề bài tập có lệch baseline không |
 

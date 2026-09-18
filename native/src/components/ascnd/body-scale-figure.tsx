@@ -208,7 +208,22 @@ const stylesFor = makeStyles((c) => ({
     kéo đọc ra là giật.
   */
   value: { ...type.largeTitle, fontVariant: ['tabular-nums'], color: c.foreground },
-  unit: { ...type.caption, color: c.mutedForeground, marginTop: 1 },
+  /*
+    `secondaryForeground`, KHÔNG phải `mutedForeground`.
+
+    Mặt màn hình của chiếc cân ở bản TỐI là `alpha(ink, 0.13)` = #2f2f2f — một
+    mặt khá sáng, vì nó phải là thứ sáng nhất của cả hình. Trên nó
+    `mutedForeground` (#828282) chỉ còn **3,48:1**, dưới sàn 4,5 của WCAG 1.4.3.
+    Và không hạ độ đậm mặt màn xuống được: ở α 0,07 nó mới lên 4,14 mà bậc so
+    với thân cân đã tụt còn 1,168.
+
+    `secondaryForeground` đo 4,70 (tối) · 7,75 (sáng) — qua ở cả hai, và vẫn
+    nhạt hơn hẳn con số (11,44 · 17,57) nên thứ bậc không đảo.
+
+    Bản sáng không đổi về mặt ĐẠT/RỚT: `mutedForeground` ở đó vốn 5,78, đã qua.
+    Đổi token là để MỘT dòng đúng ở cả hai diện mạo thay vì một nhánh theo theme.
+  */
+  unit: { ...type.caption, color: c.secondaryForeground, marginTop: 1 },
   markBox: { alignItems: 'center' },
   /* Nhạt hơn hẳn con số: nó là nhãn trên một vật, không phải một thông tin. */
   mark: { ...type.caption, letterSpacing: 2, color: alpha(c.foreground, 0.28) },

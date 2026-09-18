@@ -155,6 +155,7 @@ const STEPS = [
   ['hero khi cuộn', 'node', ['tools/hero-scroll.mjs']],
   ['đầu trang sheet', 'node', ['tools/sheet-header.mjs']],
   ['thước cân nặng', 'node', ['tools/weight-ruler.mjs']],
+  ['chiếc cân', 'node', ['tools/body-scale.mjs']],
   ['chất liệu kính', 'node', ['tools/glass-material.mjs']],
   ['đồng hồ Koa khi cuộn', 'node', ['tools/koa-scroll-pause.mjs']],
   ['chấm chỉ trang', 'node', ['tools/pip-bleed.mjs']],
