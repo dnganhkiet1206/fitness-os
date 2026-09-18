@@ -38,6 +38,118 @@ thước tôi viết lại dù repo đã có một bản tốt hơn — cổng b
 
 ---
 
+## 18/09 (c) — hệ màu tối của màn cân, và một tấm ảnh tôi đã có mà không mở
+
+Chủ dự án gửi ảnh MÁY THẬT của cả hai diện mạo và tám điểm: nền quá gần đen,
+thân cân hoà vào nền, màn hình thành khối xám nặng, nút Lưu *"nhìn giống
+disabled button"*.
+
+### Điều phải nói trước: tôi đã có bằng chứng và không mở nó
+
+Ảnh bản tối của màn này được render **ba lượt** (`weigh2`, `weigh3`, `weigh4`) và
+tôi chỉ mở ảnh bản SÁNG mỗi lượt. Lớp trắng phủ mờ ghi ở 17/09 (c) là của màn
+**dashboard** — nơi có aura/blur — chứ không phải của mọi màn tối; sheet này
+render bình thường suốt. Câu "điểm ảnh bản tối không dùng được" là một khái quát
+quá rộng, và nó thành cái cớ để không nhìn.
+
+Tệ hơn: phép đo của tôi ĐÃ nói ra vấn đề — thân cân/trang 1,084 (tối) so với
+1,104 (sáng) — và tôi lý giải nó đi, gọi là *"minh hoạ, có viền riêng, chấp nhận
+được"*. Chủ dự án phải gửi ảnh máy để nói lại điều con số đã nói.
+
+Bài học hẹp: **một sàn bị bác phải bác bằng một phép đo khác, không bằng một
+câu.** Nếu 1,134 không áp cho minh hoạ thì phải có con số nào đó áp — và tôi
+không đưa ra con số nào, chỉ đưa ra một lý lẽ.
+
+### Nút Lưu: `primary` KHÔNG sửa được, và cổng là thứ nói ra
+
+Chủ dự án cho phép dỡ `primary`. Tôi sửa #a8afbd → #ededed, và cổng đỏ **ba
+bước**: `tab-tint`, `glyph-theme`, `resting-aura`.
+
+`c.primary` đang làm **ba việc**: mặt nút đặc, tint tab đang chọn, và màu bốn
+glyph. Ở bản sáng (#1a1917) cả ba đều ổn. Ở bản tối chúng kéo nhau **ngược
+chiều**:
+
+| dùng làm | #a8afbd | #ededed |
+|---|---|---|
+| mặt nút đặc / trang | 9,14 | **17,20** |
+| tint tab / viên TRẮNG iOS 26 vẽ | ~1,9 | **1,17** ← dưới sàn 1,5 |
+
+Tức làm nút mạnh lên bằng `primary` thì thanh tab thôi nói được bạn đang ở tab
+nào. Lý do gốc: một **mảng màu lớn** và một **dấu nhỏ** không đọc giống nhau —
+cùng một xám lỡ cỡ, mảng lớn đọc ra "vô hiệu", dấu nhỏ đọc ra "đang chọn".
+
+Nên `primary` được **trả về** #a8afbd, mốc đóng băng trả về nguyên trạng, và mặt
+nút có token RIÊNG: `Material.actionSurface` — sáng `#1a1917` (đúng
+`lightPalette.primary`, không đổi một byte), tối `#ededed` (= `foreground`, trả
+lại phép đối xứng `primary === foreground` mà bản sáng vẫn có).
+
+| nút Lưu | /trang | chữ trên nút | disabled (.4) |
+|---|---|---|---|
+| sáng | 16,01 | 17,57 | 2,49 |
+| tối | **17,20** | 17,20 | 3,36 |
+
+Cái CŨ 9,14 nằm **giữa** enabled và disabled — đúng lý do nó đọc ra là disabled.
+
+**Chỗ mù, ghi ra:** `backgroundColor: c.primary` còn ở **41 tệp** và CHƯA chuyển
+sang token mới, nên hôm nay chỉ nút của `/log-weight` mạnh lên. Chuyển hết là
+một lượt riêng, và phải soi từng chỗ — trong 41 chỗ ấy không phải chỗ nào cũng là
+một nút hành động đặc.
+
+### Một token KHÔNG dỡ
+
+Được hỏi rõ phạm vi, chủ dự án chọn dỡ hai token. Kết quả: **không token nào
+được dỡ.** `primary` bị cổng bác (ở trên), và `background` thì phép đo bác.
+
+**`background` KHÔNG dỡ, dù được cho phép** — vì phép đo nói nó phản tác dụng.
+`card` (#0e0e11) bị đóng băng và phải nổi TRÊN trang:
+
+| nền | card/nền |
+|---|---|
+| #070708 (đang chạy) | 1,045 |
+| #0a0a0c | 1,026 |
+| #0c0c0f | 1,013 ← thẻ chìm |
+
+Mục tiêu chủ dự án nêu là *separation*; nâng nền làm **mọi thẻ trong app** mất
+separation để một màn có thêm chút tách lớp. Cái phải sửa là chiếc cân.
+
+### Độ mờ của chiếc cân TÁCH theo diện mạo
+
+Một `alpha(c.foreground, …)` cho cả hai diện mạo là lập luận gọn mà sai: ở vùng
+gần đen, tỉ số 1,08 là một chênh lệch độ sáng tuyệt đối rất nhỏ và OLED nén nốt
+phần còn lại — tỉ số tương phản **nói quá** về độ nhìn thấy ở đầu tối của thang.
+
+Mỗi số bản tối chọn để khớp **thứ bậc** bản sáng, không khớp con số của nó:
+
+| lớp | sáng α → tỉ số | tối α → tỉ số |
+|---|---|---|
+| thân cân / trang | 0,05 → 1,104 | **0,11 → 1,237** |
+| viền ngoài / trang | 0,13 → 1,298 | **0,17 → 1,484** |
+| viền trong / thân | 0,07 → 1,150 | **0,06 → 1,167** |
+| tấm cảm biến / thân | 0,08 → 1,173 | **0,06 → 1,167** |
+| màn hình / thân | (card) → 1,211 | **0,07 → 1,200** |
+| ASCND / thân | 0,28 → 1,808 | **0,20 → 1,810** |
+
+Ba lớp có α bản tối **thấp hơn** bản sáng: chúng nằm trên một thân cân đã sáng
+hơn, nên ít mực hơn vẫn ra đúng bậc. Phép composite tự lo.
+
+Và màn hình bản tối nay **nhẹ hơn** bản trước (0,07 thay vì 0,13). *"Khối xám quá
+nặng"* không phải lỗi của màn hình: thân cân quá tối nên màn hình đọc ra như một
+tấm bê tông rời. Sửa thân cân thì màn hình về đúng sức nặng tương đối.
+
+### Thước: KHÔNG sửa, và đây là lý do
+
+Chủ dự án xin *"major rõ hơn, minor nhẹ hơn, marker nổi bật nhất"*. Nó đã thế:
+`c.foreground` ở **1,0** (kim) · **0,7** (vạch lớn) · **0,3** (vạch nhỏ). Không có
+khiếm khuyết nào đo được, và nó là component DÙNG CHUNG với màn mục tiêu cân
+nặng — sửa nó là đổi một màn không ai yêu cầu.
+
+### Bản sáng không đổi một byte
+
+DOM xác nhận: thân 0,05/0,13 · viền trong 0,07 · tấm 0,08 · màn `#ffffff` ·
+ASCND 0,28 — y nguyên.
+
+---
+
 ## 18/09 (b) — bản TỐI của màn cân: một vế rớt sàn, và ảnh không nói ra được
 
 Chủ dự án: *"check darkmode"*.

@@ -35,18 +35,43 @@ import { useMaterial, usePalette } from '@/hooks/use-palette';
  * Ảnh mẫu có một viền mềm ở mép ngoài và MỘT đường nữa lùi vào trong. Bỏ lớp
  * trong đi thì chiếc cân phẳng ra và đọc thành một cái thẻ bo góc.
  *
- * ── màu: bốn lớp không cần biết theme, một lớp thì cần ──
+ * ── màu: MỘT độ mờ cho cả hai diện mạo là không đủ, và đây là bằng chứng ──
  *
- * Thân, tấm cảm biến và hai viền đều là `alpha(c.foreground, …)`. Mực của bản
- * sáng là màu tối và của bản tối là màu sáng, nên cùng một dòng cho ra "đậm hơn
- * mặt dưới" ở bản sáng và "sáng hơn mặt dưới" ở bản tối — đúng hướng ở cả hai
- * mà không có nhánh nào.
+ * Bản đầu dùng đúng một `alpha(c.foreground, …)` cho mỗi lớp ở cả hai diện mạo.
+ * Lập luận nghe rất gọn: mực bản sáng là màu tối, bản tối là màu sáng, nên một
+ * dòng cho ra "đậm hơn mặt dưới" ở sáng và "sáng hơn mặt dưới" ở tối.
  *
- * MÀN HÌNH thì không đi theo được: trong ảnh mẫu nó là thứ SÁNG NHẤT của cả
- * hình (trắng trên nền kem), và "sáng nhất" ở bản tối không phải cùng một
- * token. Nên đúng một lựa chọn màu viết thẳng ở prop — dạng
- * `fill={m.lit ? a : b}`, thứ `tools/theme-shape.mjs` gọi là MÀU chứ không phải
- * hình dạng, nên nó không dựng thêm nhánh cây nào.
+ * Trên ảnh MÁY THẬT nó sai. Chủ dự án: *"Trong Dark Mode hiện tại, thân cân và
+ * background gần như hoà vào nhau."* Và phép đo của tôi đã NÓI ra điều đó rồi —
+ * thân cân/trang 1,084 ở tối so với 1,104 ở sáng — mà tôi lý giải nó đi, gọi là
+ * "minh hoạ, chấp nhận được". Hai con số gần bằng nhau, hai kết quả khác nhau:
+ * ở vùng gần đen, một tỉ số 1,08 là một chênh lệch độ sáng TUYỆT ĐỐI rất nhỏ,
+ * và màn OLED nén nốt phần còn lại. Tỉ số tương phản nói quá về độ nhìn thấy ở
+ * đầu tối của thang.
+ *
+ * Nên độ mờ TÁCH theo diện mạo, và mỗi con số của bản tối được chọn để khớp
+ * THỨ BẬC của bản sáng chứ không phải khớp con số của nó:
+ *
+ *     lớp                     sáng α → tỉ số    tối α → tỉ số
+ *     thân cân / trang        0,05    1,104     0,11    1,237
+ *     viền ngoài / trang      0,13    1,298     0,17    1,484
+ *     viền trong / thân       0,07    1,150     0,06    1,167
+ *     tấm cảm biến / thân     0,08    1,173     0,06    1,167
+ *     màn hình / thân         (card)  1,211     0,07    1,200
+ *     chữ ASCND / thân        0,28    1,808     0,20    1,810
+ *
+ * Để ý ba lớp có α bản tối THẤP hơn bản sáng: chúng nằm trên một thân cân đã
+ * sáng hơn (0,11 thay vì 0,05), nên ít mực hơn vẫn ra đúng bậc ấy. Đó là phép
+ * composite tự lo, không phải một sự trùng hợp.
+ *
+ * Và mặt MÀN HÌNH ở bản tối nay nhẹ hơn hẳn bản trước (0,07 thay vì 0,13). Chủ
+ * dự án gọi bản cũ là *"một khối xám quá nặng"*, và nguyên nhân không nằm ở màn
+ * hình: thân cân quá tối nên màn hình đọc ra như một tấm bê tông rời. Sửa thân
+ * cân thì màn hình về đúng sức nặng tương đối của nó.
+ *
+ * Mọi lựa chọn viết thẳng ở prop dạng `fill={m.lit ? a : b}` — thứ
+ * `tools/theme-shape.mjs` gọi là MÀU chứ không phải hình dạng, nên không nhánh
+ * cây nào được dựng thêm. `tools/body-scale.mjs` đọc lại từng cặp số này.
  */
 
 /* Hộp thiết kế. Mọi số bên dưới là điểm trong hộp này, nên đổi cỡ ở ngoài
@@ -122,8 +147,8 @@ export function BodyScaleFigure({
           width={PLATE.w}
           height={PLATE.h}
           rx={PLATE.r}
-          fill={alpha(c.foreground, 0.05)}
-          stroke={alpha(c.foreground, 0.13)}
+          fill={m.lit ? alpha(c.foreground, 0.11) : alpha(c.foreground, 0.05)}
+          stroke={m.lit ? alpha(c.foreground, 0.17) : alpha(c.foreground, 0.13)}
           strokeWidth={1.2}
         />
         <Rect
@@ -133,7 +158,7 @@ export function BodyScaleFigure({
           height={INNER.h}
           rx={INNER.r}
           fill="none"
-          stroke={alpha(c.foreground, 0.07)}
+          stroke={m.lit ? alpha(c.foreground, 0.06) : alpha(c.foreground, 0.07)}
           strokeWidth={1}
         />
         {/* Bốn tấm cảm biến: kèm hai bên màn hình, rồi lặp lại ở đáy. */}
@@ -150,7 +175,7 @@ export function BodyScaleFigure({
             width={PAD.w}
             height={PAD.h}
             rx={PAD.r}
-            fill={alpha(c.foreground, 0.08)}
+            fill={m.lit ? alpha(c.foreground, 0.06) : alpha(c.foreground, 0.08)}
           />
         ))}
         {/* Màn hình — mặt sáng nhất của cả hình, vì con số đứng trên nó. */}
@@ -160,8 +185,8 @@ export function BodyScaleFigure({
           width={SCREEN.w}
           height={SCREEN.h}
           rx={SCREEN.r}
-          fill={m.lit ? alpha(c.foreground, 0.13) : c.card}
-          stroke={alpha(c.foreground, 0.07)}
+          fill={m.lit ? alpha(c.foreground, 0.07) : c.card}
+          stroke={m.lit ? alpha(c.foreground, 0.06) : alpha(c.foreground, 0.07)}
           strokeWidth={1}
         />
       </Svg>
@@ -190,7 +215,9 @@ export function BodyScaleFigure({
       <View
         pointerEvents="none"
         style={[StyleSheet.absoluteFill, MARK_TOP, styles.markBox]}>
-        <Text style={styles.mark}>ASCND</Text>
+        <Text style={[styles.mark, { color: m.lit ? alpha(c.foreground, 0.2) : alpha(c.foreground, 0.28) }]}>
+          ASCND
+        </Text>
       </View>
     </View>
   );
@@ -225,6 +252,8 @@ const stylesFor = makeStyles((c) => ({
   */
   unit: { ...type.caption, color: c.secondaryForeground, marginTop: 1 },
   markBox: { alignItems: 'center' },
-  /* Nhạt hơn hẳn con số: nó là nhãn trên một vật, không phải một thông tin. */
-  mark: { ...type.caption, letterSpacing: 2, color: alpha(c.foreground, 0.28) },
+  /* Nhạt hơn hẳn con số: nó là nhãn trên một vật, không phải một thông tin.
+     MÀU đặt ở prop chứ không ở đây, vì `makeStyles` chỉ nhận bảng màu chứ không
+     nhận chất liệu, mà độ mờ của nhãn này tách theo diện mạo. */
+  mark: { ...type.caption, letterSpacing: 2 },
 }));

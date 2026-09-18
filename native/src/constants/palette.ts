@@ -1039,6 +1039,45 @@ export interface Material {
    * lượt lên chính nó. Mặt thẻ đổi thì con số này đi theo.
    */
   liftedRow: string;
+  /**
+   * Mặt của một nút HÀNH ĐỘNG ĐẶC — và vì sao nó không phải `primary`.
+   *
+   * ── một token, hai việc trái nhau ──
+   *
+   * `c.primary` đang làm ba việc: mặt nút đặc, tint của tab đang chọn, và màu
+   * của bốn glyph. Ở bản SÁNG (#1a1917) cả ba đều ổn. Ở bản TỐI (#a8afbd) thì
+   * chúng kéo nhau NGƯỢC CHIỀU, và đây là phép đo:
+   *
+   *     dùng làm                          #a8afbd      #ededed
+   *     mặt nút đặc / trang                9,14         17,20
+   *     tint tab / viên TRẮNG iOS vẽ       ~1,9          1,17  ← dưới sàn 1,5
+   *
+   * Tức làm nút mạnh lên bằng cách sửa `primary` thì thanh tab thôi nói được
+   * bạn đang ở tab nào — `tools/tab-tint.mjs` đo đúng điều đó trên hành vi máy
+   * thật của iOS 26. Đã thử và đã bác: đổi `primary` làm ĐỎ ba bước cổng
+   * (`tab-tint`, `glyph-theme`, `resting-aura`).
+   *
+   * Lý do gốc: một MẢNG MÀU LỚN và một DẤU NHỎ không đọc giống nhau. Cùng một
+   * xám lỡ cỡ, mảng lớn đọc ra "vô hiệu" còn dấu nhỏ đọc ra "đang chọn".
+   *
+   * ── nên mặt nút có token riêng ──
+   *
+   * Và giá trị bản tối không phải một lựa chọn thẩm mỹ: ở bản SÁNG `primary`
+   * === `foreground` (#1a1917), tức bề mặt mạnh nhất CHÍNH LÀ màu mực. Token
+   * này trả lại đúng đối xứng ấy cho bản tối — #ededed, cũng là `foreground`.
+   * 17,20:1 trên trang, khớp 16,01 của bản sáng. Chữ trên nó vẫn là
+   * `primaryForeground` (trắng ở sáng, gần đen ở tối), nên không cần thêm gì.
+   *
+   * Bản sáng giữ nguyên từng byte: nó BẰNG ĐÚNG `lightPalette.primary`.
+   *
+   * ── chỗ mù, ghi ra để người sau biết ──
+   *
+   * `backgroundColor: c.primary` còn ở 41 tệp. Chúng CHƯA chuyển sang token
+   * này, nên hôm nay chỉ nút "Lưu thay đổi" của `/log-weight` mạnh lên. Chuyển
+   * hết là một lượt riêng và phải soi từng chỗ: trong 41 chỗ ấy không phải chỗ
+   * nào cũng là một nút hành động đặc.
+   */
+  actionSurface: string;
   /** bề mặt trên nền động — xem `Aura` */
   aura: Aura;
   /**
@@ -1184,6 +1223,9 @@ export const materials: Record<ThemeName, Material> = {
     /* `onPage` chồng thêm một lượt lên chính nó, tính ra màu ĐẶC tương đương:
        #070708 → #161617 (mặt thẻ) → #242425. Dẫn từ token, không gõ tay. */
     liftedRow: blend('#ffffff', blend('#ffffff', darkPalette.background, 0.06), 0.06),
+    /* `darkPalette.foreground` — trả lại phép đối xứng primary===foreground mà
+       bản sáng vẫn có. Xem chú thích của `actionSurface`. */
+    actionSurface: darkPalette.foreground,
     /* Ba giá trị đang chạy, chép nguyên văn khỏi `liquid-glass.tsx`. */
     aura: {
       hair: 'rgba(255,255,255,0.035)',
@@ -1267,6 +1309,8 @@ export const materials: Record<ThemeName, Material> = {
     /* ĐÚNG giá trị `m.inset.bg` của bản sáng đang trả về (`lightPalette.background`),
        chép nguyên văn: bản sáng không đổi một byte. Xem `liftedRow`. */
     liftedRow: lightPalette.background,
+    /* ĐÚNG `lightPalette.primary` — bản sáng không đổi một byte. */
+    actionSurface: lightPalette.primary,
     /* Sợi MỰC thay cho sợi trắng: trên giấy, một sợi trắng dưới lớp blur không
        vẽ ra mép nào. Cùng độ mờ 0,035, đổi hướng chứ không đổi lượng. */
     aura: {

@@ -14,7 +14,7 @@ import { duration } from '@/constants/motion';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useTodayWeight } from '@/hooks/use-fitness-data';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useProfile } from '@/hooks/useTodayData';
 import { useUnits } from '@/hooks/use-units';
 import { useWeightWrite } from '@/hooks/use-weight-write';
@@ -86,6 +86,7 @@ export default function LogWeightSheet() {
   const { weight: wUnit } = useUnits();
   const { data: todayWeight } = useTodayWeight();
   const { data: profile } = useProfile();
+  const m = useMaterial();
   const { submit, boundError, pending } = useWeightWrite();
   const list = useRef<Animated.ScrollView>(null);
 
@@ -207,7 +208,14 @@ export default function LogWeightSheet() {
           accessibilityRole="button"
           accessibilityLabel={i18n.nWeighSave}
           accessibilityState={{ disabled: pending || !!error }}
-          style={[styles.save, (pending || !!error) && styles.saveOff]}
+          style={[
+            styles.save,
+            /* Mặt nút đọc từ CHẤT LIỆU, không phải `c.primary`: ở bản tối
+               `primary` là #a8afbd, một xám lỡ cỡ đọc ra là disabled, mà sửa nó
+               thì thanh tab mất dấu tab đang chọn. Xem `Material.actionSurface`. */
+            { backgroundColor: m.actionSurface },
+            (pending || !!error) && styles.saveOff,
+          ]}
           disabled={pending || !!error}
           onPress={save}>
           {pending ? (
@@ -268,7 +276,6 @@ const stylesFor = makeStyles((c) => ({
   save: {
     height: 58,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

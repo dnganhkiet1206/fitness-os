@@ -23,9 +23,11 @@
  *   `palette-key.mjs`      canh tham số của `alpha()`, không canh kết quả
  *   `glass-legibility.mjs` đo chữ trên mặt KÍNH, không trên mặt do một
  *                          component tự pha bằng `alpha()` lên nền của nó
- *   ảnh chụp               bản dựng web ở diện mạo tối bị một lớp trắng phủ mờ
- *                          cả trang (AUDIT_STATE 17/09 c) — điểm ảnh bản tối
- *                          không dùng được, nên MẮT không phải một cửa ở đây
+ *   ảnh chụp               sẽ thấy — và nó ĐÃ thấy, tôi chỉ không mở ra xem.
+ *                          Lớp trắng phủ mờ ở 17/09 (c) là của màn DASHBOARD
+ *                          (nơi có aura/blur), không phải của mọi màn tối; sheet
+ *                          này render bình thường suốt. Nên mắt LÀ một cửa ở
+ *                          đây, và luật này tồn tại để không phải chờ ai mở ảnh
  *
  * ── luật ──
  *
@@ -59,8 +61,9 @@ const STEP = 1.134;
 const problems = [];
 let CASES = 0;
 
-/* Ba con số phải lấy ra khỏi mã, không được gõ lại. */
-const plateA = /fill=\{alpha\(c\.foreground,\s*([\d.]+)\)\}/.exec(raw);
+/* Mọi con số phải lấy ra khỏi mã, không được gõ lại. Độ mờ nay TÁCH theo diện
+   mạo, nên mỗi lớp là một CẶP. */
+const plateA = /fill=\{m\.lit \? alpha\(c\.foreground,\s*([\d.]+)\)\s*:\s*alpha\(c\.foreground,\s*([\d.]+)\)\}/.exec(raw);
 const screenA = /fill=\{m\.lit \? alpha\(c\.foreground,\s*([\d.]+)\)\s*:\s*c\.(\w+)\}/.exec(raw);
 const valueTok = /color:\s*c\.(\w+)\s*\}/.exec(styleBody(raw, 'value') ?? '');
 const unitTok = /color:\s*c\.(\w+)\s*,/.exec(styleBody(raw, 'unit') ?? '');
@@ -80,7 +83,8 @@ if (!plateA || !screenA || !valueTok || !unitTok) {
     const vi = theme === 'light' ? 'sáng' : 'tối';
     const page = hex(p.background);
     const ink = hex(p.foreground);
-    const plate = overC(ink, page, Number(plateA[1]));
+    /* `plateA[1]` là bản TỐI, `[2]` là bản SÁNG — đúng thứ tự `m.lit ? … : …`. */
+    const plate = overC(ink, page, Number(theme === 'dark' ? plateA[1] : plateA[2]));
     /* Bản tối pha bằng `alpha`; bản sáng dùng thẳng một token. */
     const screen = theme === 'dark' ? overC(ink, plate, Number(screenA[1])) : hex(p[screenA[2]]);
 
@@ -144,8 +148,9 @@ if (!plateA || !screenA || !valueTok || !unitTok) {
         'tối nó là #2f2f2f, và `mutedForeground` trên đó chỉ còn 3,48:1 trong khi bản sáng cùng token đo ' +
         '5,78 và không ai thấy gì. Không cổng nào có sẵn bắt được: `tsc` thấy hai string hợp lệ, ' +
         '`palette-key` canh THAM SỐ của `alpha()` chứ không canh kết quả, `glass-legibility` đo chữ trên mặt ' +
-        'KÍNH chứ không trên mặt do một component tự pha, và ảnh chụp thì vô dụng ở đây vì bản dựng web ở ' +
-        'diện mạo tối bị một lớp trắng phủ mờ cả trang. Kèm hai vế nữa: mặt màn hình phải còn là một BẬC ' +
+        'KÍNH chứ không trên mặt do một component tự pha. Ảnh chụp THÌ thấy được — và nó đã thấy, chỉ là ' +
+        'không ai mở ra xem trong ba lượt render; luật này tồn tại để không phải chờ điều đó. Kèm hai vế ' +
+        'nữa: mặt màn hình phải còn là một BẬC ' +
         `thật so với thân cân (${STEP}) — thiếu nó thì cách sửa rẻ nhất là hạ độ đậm mặt màn và chiếc cân ` +
         'mất màn hình — và chữ đơn vị phải NHẠT hơn con số, vì đơn vị là nhãn còn con số là dữ liệu',
     );

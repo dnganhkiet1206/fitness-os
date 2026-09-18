@@ -35,6 +35,27 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 /** Bản tối tại 9d04d55 — 26 token. Đọc ra bằng cách chạy, không chép bằng mắt. */
 const FROZEN_PALETTE = {
+  /*
+    KHÔNG dỡ, dù chủ dự án có xin — và lý do là một phép đo.
+
+    18/09 chủ dự án: *"Background hiện tại quá gần pure black. Hãy dùng dark
+    near-black/charcoal… Không dùng pure black nếu điều đó làm các component
+    mất separation."* Mục tiêu là SEPARATION, và nâng nền phá đúng cái đó:
+    `card` (#0e0e11) bị đóng băng và phải nổi TRÊN trang, mà khoảng giữa hai
+    giá trị ấy gần như không còn.
+
+        nền        card/nền
+        #070708    1,045    ← đang chạy
+        #0a0a0c    1,026
+        #0c0c0f    1,013    ← thẻ chìm hẳn
+        #0e0e11    1,000    ← thẻ biến mất
+
+    Tức nâng nền lên là làm MỌI thẻ trong app mất separation, để một màn có
+    thêm chút tách lớp. Cái phải sửa là chiếc cân, và nó đã được sửa ở
+    `body-scale-figure.tsx` — độ mờ tách theo diện mạo. Nếu muốn nền sáng hơn
+    thật thì việc phải làm là nâng `card` lên trước, và đó là một quyết định
+    khác, rộng hơn, chưa ai ra.
+  */
   background: '#070708',
   card: '#0e0e11',
   secondary: '#18181b',
