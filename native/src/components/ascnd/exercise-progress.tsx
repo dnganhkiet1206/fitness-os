@@ -5,8 +5,8 @@ import { Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { radius, spacing, type } from '@/constants/ascnd';
-import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
+import { type } from '@/constants/ascnd';
+import { makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { NativeStrings } from '@/lib/native-strings';
 import type { ExercisePerformance } from '@/lib/exercise-performance';
@@ -169,19 +169,45 @@ export function ExerciseProgress({
   );
 }
 
-const stylesFor = makeStyles((c, m) => ({
-  /* A surface and a chevron. Without them it is a caption, and a caption is not
-     something anybody tries to press. */
+const stylesFor = makeStyles((c) => ({
+  /*
+    ── cái MẶT NỀN đã bị bỏ, và cái VÙNG CHẠM mới là thứ nó tưởng nó đang làm ──
+
+    Bản trước: `backgroundColor: alpha(m.ink, 0.045)` + `borderRadius` 12, với
+    lý lẽ *"A surface and a chevron. Without them it is a caption, and a caption
+    is not something anybody tries to press."*
+
+    Vế "phải trông như bấm được" đúng. Cái mặt nền thì không phải thứ trả lời
+    được nó, và đo ra thì nó còn tạo ra hai vấn đề khác:
+
+      · **nó là một cái THẺ TRONG THẺ.** Hàng này nằm trong thẻ bài tập, ngay
+        trên các hàng set — và một hộp bo góc có nền đặt giữa một cái thẻ và
+        một danh sách đọc ra là một hạng mục thứ ba, chứ không phải một dòng
+        tham chiếu. Chủ dự án gọi đúng tên: *"reads visually like a separate
+        button/card"*.
+      · **nó cao 25 điểm.** 6 + 13 + 6. Đó là một hàng BẤM ĐƯỢC dưới sàn 44 của
+        Apple, và không luật nào bắt được vì `tap-target.mjs` đọc khoá `height`
+        tường minh, mà hàng này dựng chiều cao bằng đệm.
+
+    Nên đổi đúng thứ cần đổi: bỏ mặt nền và bo góc, và cho nó `minHeight` 44 —
+    tức chính cái nó đang thiếu. Thứ nói "bấm được" nay là hình dạng một HÀNG
+    DANH SÁCH cao 44 với một chevron ở cuối, đúng như mọi hàng bấm được khác
+    trên máy này.
+
+    Đệm NGANG cũng bỏ: không còn mặt nền thì 8 điểm ấy chỉ đẩy chữ lệch khỏi
+    tên bài tập và các hàng set ở trên dưới, cả hai đều lấy đệm 16 của thẻ.
+    Bỏ đi thì cả ba thẳng một mép.
+
+    Chữ lên `footnote` (13) từ `caption` (11): mất mặt nền thì hàng cần đọc được
+    bằng một cái liếc, và 13 là bậc dữ liệu phụ của thang chữ.
+  */
   strip: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.sm,
-    backgroundColor: alpha(m.ink, 0.045),
+    minHeight: 44,
   },
-  stripMain: { ...type.caption, color: c.foreground, fontVariant: ['tabular-nums'] },
-  stripPct: { ...type.caption, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  stripMain: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
+  stripPct: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
   spacer: { flex: 1, minWidth: 0 },
 }));

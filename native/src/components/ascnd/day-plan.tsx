@@ -140,6 +140,16 @@ const tintFor = (c: Palette, rpe: number) => c[EFFORT_TINT[rpe] ?? 'foreground']
 const REST_STEP = 15;
 const REST_MAX = 600;
 
+/**
+ * Cụm điều khiển của một set đang mở thụt vào bằng đúng bề ngang của ô tick.
+ *
+ * Hai con số đã có sẵn, cộng lại ở đây thay vì gõ 36 vào style — nếu có ngày ô
+ * tick rộng ra thì cụm điều khiển đi theo, chứ không lệch một mình. Đó là lý do
+ * nó là một phép cộng chứ không phải một hằng số.
+ */
+const CHECK_SIZE = 28;
+const SET_INDENT = CHECK_SIZE + spacing.sm;
+
 /** One row: a set of one exercise, and what you did with it. */
 interface SetRow {
   key: string;
@@ -1943,8 +1953,30 @@ const stylesFor = makeStyles((c, m) => ({
     Ghi chú cho lượt sau: `dayName` ("Thứ 6") vẫn là `headline` 17, nay bằng tên
     bài tập. Hai thứ ấy không bao giờ đứng cạnh nhau — một cái ở đầu trang, một
     cái trong thẻ — và sửa nó là đụng vào dải ngày, tức việc của Pass 2.
+
+    ── lượt 2: ĐỘ ĐẬM xuống 600, CỠ giữ 22 ──
+
+    Chủ dự án xem bản thật và thấy 22 *"slightly too visually aggressive"*, đề
+    nghị thử ~20/600.
+
+    Thang chữ của app KHÔNG CÓ bậc 20. Nó nhảy `title2` 18 → `title` 22, và 18
+    thì đụng lại đúng cái va chạm 1 điểm với tên bài tập 17 mà lượt 1 vừa gỡ.
+    Tạo một token 20 là tạo một design primitive mới, thứ đặt hàng cấm.
+
+    Nên đo lại xem cái "aggressive" ấy đến từ đâu, và nó không đến từ cỡ: iOS
+    Title2 cũng là 22, nhưng ở độ đậm **400**. `type.title` của app là 22/**700**
+    — nặng hơn ba bậc so với chính vai nó đang đóng. Ở 22 điểm, 700 thôi là nhấn
+    mạnh và thành ồn; cỡ đã nói "đây là tiêu đề" rồi.
+
+    600 là bậc có sẵn trong app (chính `headline` dùng nó), nên tiêu đề buổi tập
+    và tên bài tập nay cùng một độ đậm và chỉ khác CỠ — 22 so với 17. Thứ bậc do
+    cỡ gánh, đúng cách iOS phân bậc.
+
+    Đây là ghi đè MỘT thuộc tính lên một token có sẵn, không phải một token mới.
+    Và nó đi ngược hướng với cái đã gỡ ở `exName`: chỗ kia là bơm đậm một cỡ chữ
+    PHỤ để giả làm tiêu đề; chỗ này là hạ đậm một tiêu đề đang gào.
   */
-  tplName: { ...type.title, color: c.foreground },
+  tplName: { ...type.title, fontWeight: '600', color: c.foreground },
   progress: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   editBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   /* Một dòng, không thụt vào, không có mặt của riêng nó — nó thuộc về khối
@@ -2063,8 +2095,8 @@ const stylesFor = makeStyles((c, m) => ({
   setCardDone: { opacity: 0.6 },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   check: {
-    width: 28,
-    height: 28,
+    width: CHECK_SIZE,
+    height: CHECK_SIZE,
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
@@ -2092,12 +2124,28 @@ const stylesFor = makeStyles((c, m) => ({
   },
   checkOn: { backgroundColor: c.primary, borderColor: c.primary },
   setText: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 3 },
+  /*
+    Số thứ tự set tách khỏi cụm `tạ × lần`, bằng KHOẢNG TRẮNG chứ không bằng nét.
+
+    `setText` có `gap: 3` cho mọi con của nó, nên hàng ra tám vật cách đều: số
+    thứ tự, ô tạ, "kg", "×", ô lần, "reps". Cách đều thì không có cụm nào cả —
+    mắt phải đọc từng vật một thay vì đọc ba khối.
+
+    Thêm 4 điểm sau con số ấy (tổng 7 so với 3 bên trong cụm số) là đủ để hàng
+    đọc ra:
+
+        [tick]  [số]   [tạ × lần]            [nghỉ] [RPE]
+
+    Không nét mới, không nền mới, không hộp mới — chỉ một khoảng trống to gấp
+    hơn hai lần khoảng bên trong cụm, và mắt gom cụm theo tỉ lệ ấy.
+  */
   setNo: {
     ...type.caption,
     color: c.mutedForeground,
     fontVariant: ['tabular-nums'],
     width: 12,
     textAlign: 'center',
+    marginRight: spacing.xs,
   },
   setNoDone: { color: c.mutedForeground },
   /*
@@ -2237,11 +2285,39 @@ const stylesFor = makeStyles((c, m) => ({
   chipOpen: { borderColor: c.primary },
   chipText: { ...type.caption, color: c.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
 
+  /*
+    ── vì sao cụm điều khiển trông như KHÔNG thuộc về set nào ──
+
+    Về cấu trúc nó đã thuộc về set 1 rồi: `<Retract>` này nằm TRONG chính
+    `setBlock` của hàng ấy. Vấn đề thuần thị giác, và nó nằm ở đúng một dòng.
+
+    `borderTopWidth: hairlineWidth, borderTopColor: c.border` vẽ một đường tóc
+    ngay trên cụm — mà `styles.hair` giữa hai hàng set cũng là một đường tóc
+    `c.border`. Cùng một nét, cùng một màu. Nên mắt đọc dọc xuống và thấy:
+
+        [set 1]  ─── [nghỉ · gắng sức]  ─── [set 2]
+
+    ba phần ngang hàng nhau, chứ không phải một set đang mở kèm đồ của nó. Cái
+    viền được thêm vào để "tách" lại chính là thứ cắt cụm ra khỏi chủ của nó.
+
+    Nên BỎ nó đi — không thay bằng một mặt nền hay một hộp khác, vì thêm một
+    ranh giới nữa là đi ngược đúng cái đang cần chữa. Còn lại hai người nói:
+
+      · **khoảng trắng** — không còn nét nào giữa hàng set và cụm của nó, nên
+        chúng dính liền thành một khối, trong khi hai đường tóc ở trên và dưới
+        vẫn cắt đúng chỗ cần cắt: giữa các set.
+      · **thụt vào** — cụm lùi vào bằng đúng bề ngang ô tick cộng khe của hàng
+        (28 + 8), nên nhãn của nó bắt đầu thẳng cột với dữ liệu của set 1 thay
+        vì thẳng với mép thẻ. Một khối thụt vào dưới một dòng là cách cũ nhất
+        để nói "cái này thuộc dòng trên".
+
+    Không token mới: 28 là bề ngang ô tick đã có, `spacing.sm` là khe của
+    `setRow` đã có. Xem `SET_INDENT`.
+  */
   editors: {
     gap: spacing.sm,
     paddingTop: spacing.sm,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: c.border,
+    paddingLeft: SET_INDENT,
   },
   editorRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
   editorLabel: { ...type.footnote, color: c.mutedForeground, flexShrink: 1 },
