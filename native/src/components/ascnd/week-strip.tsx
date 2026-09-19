@@ -302,12 +302,31 @@ const stylesFor = makeStyles((c, m) => ({
     viên, và vẫn nhẹ hơn hẳn viên đặc của hôm nay.
   */
   weekChipOpen: { backgroundColor: alpha(c.primary, 0.12), borderColor: alpha(c.primary, 0.35) },
+  /*
+    ── SỐ NGÀY phải trội hơn TÊN THỨ, và trước đây chúng gần bằng nhau ──
+
+    Bản trước: tên thứ `caption` (11), số ngày `footnote` (13). Chênh HAI điểm.
+    Ở hai dòng xếp chồng trong cùng một viên, 11 và 13 đọc ra là một cỡ — nên ô
+    ngày không có chủ ngữ, và mắt phải đọc cả hai dòng mới biết mình đang ở đâu.
+
+    Lịch của Apple (Calendar, Fitness, Health) cho số ngày gấp khoảng đôi tên
+    thứ, vì tên thứ là thứ bạn SUY RA được còn con số thì không.
+
+    Nay: tên thứ giữ 11, số ngày lên `headline` (17). Chênh 6 điểm, một bậc rõ
+    ràng, và cả hai vẫn là token có sẵn.
+
+    Hai thứ KHÔNG đổi ở lượt này, theo đúng phạm vi đã chốt: viên hôm nay vẫn tô
+    `c.primary` đặc, và cấu trúc/tương tác của dải giữ nguyên từng dòng.
+
+    Viên cao thêm ~4 điểm (11 + 17 + gap 2 + đệm 12 ≈ 47 thay vì ~43). Bề rộng
+    40 vẫn đủ cho hai chữ số 17pt (~19 điểm).
+  */
   weekName: { ...type.caption, color: c.mutedForeground },
   /* `primaryForeground`, không phải `foreground`: chữ ngày nay nằm TRONG viên,
      nên khi viên được tô đặc thì nó đứng trên `primary` chứ không trên trang. */
   weekNameToday: { color: c.primaryForeground, fontWeight: '700' },
   weekNameOpen: { color: c.foreground, fontWeight: '600' },
-  weekNum: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
+  weekNum: { ...type.headline, color: c.foreground, fontVariant: ['tabular-nums'] },
   weekNumToday: { color: c.primaryForeground, fontWeight: '700' },
   weekNumOpen: { color: c.foreground, fontWeight: '700' },
   /* Always drawn, transparent when the day is empty — a dot that appears and

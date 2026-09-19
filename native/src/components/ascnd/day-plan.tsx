@@ -1812,7 +1812,19 @@ export function DayPlan({
         <Icon
           icon={appending ? Plus : Check}
           size={17}
-          color={appending ? c.primary : logged ? c.readinessGreen : c.primaryForeground}
+          /* Dấu đi theo chữ ở cả bốn nhánh. Trước đây nhánh TẮT không có ở đây
+             — dấu vẫn là `primaryForeground` (trắng) và chỉ mờ đi cùng cả nút,
+             nên nó biến mất hẳn. Một dấu tích vô hình trên một nút xám là lý do
+             người ta không biết nút ấy làm gì. */
+          color={
+            appending
+              ? c.primary
+              : logged
+                ? c.readinessGreen
+                : canFinish
+                  ? c.primaryForeground
+                  : c.secondaryForeground
+          }
           strokeWidth={2.5}
         />
         {/* A dimmed button with the same words on it is a button that looks
@@ -1822,6 +1834,7 @@ export function DayPlan({
         <Text
           style={[
             styles.finishText,
+            !canFinish && styles.finishTextOff,
             logged && styles.finishTextDone,
             appending && styles.finishTextAppend,
           ]}>
@@ -1916,7 +1929,22 @@ const stylesFor = makeStyles((c, m) => ({
 
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headText: { flex: 1, minWidth: 0, gap: 2 },
-  tplName: { ...type.title2, color: c.foreground },
+  /*
+    Tên buổi tập lên `title` (22), và đó là HỆ QUẢ BẮT BUỘC của việc tên bài tập
+    lên 17 — không phải một lượt làm đẹp đi kèm.
+
+    Trước: buổi tập 18 (`title2`), bài tập 13. Một bậc 5 điểm, đọc được.
+    Nếu chỉ nâng bài tập lên 17 mà để buổi tập ở 18 thì hai vai cách nhau ĐÚNG
+    MỘT ĐIỂM — mắt không đọc ra thứ bậc, nó đọc ra một lỗi.
+
+    22 / 17 / 13 / 11 là bốn bậc đã có sẵn trong thang, mỗi bậc cách nhau đủ để
+    thấy. Không token mới nào được tạo.
+
+    Ghi chú cho lượt sau: `dayName` ("Thứ 6") vẫn là `headline` 17, nay bằng tên
+    bài tập. Hai thứ ấy không bao giờ đứng cạnh nhau — một cái ở đầu trang, một
+    cái trong thẻ — và sửa nó là đụng vào dải ngày, tức việc của Pass 2.
+  */
+  tplName: { ...type.title, color: c.foreground },
   progress: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   editBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   /* Một dòng, không thụt vào, không có mặt của riêng nó — nó thuộc về khối
@@ -2015,10 +2043,20 @@ const stylesFor = makeStyles((c, m) => ({
     tối. Vẫn lùi một bậc so với `foreground`, nhưng lùi trong vùng đọc được.
   */
   chipTextDefault: { color: c.mutedForeground },
+  /*
+    Tên bài tập là NỘI DUNG CHÍNH của khối, nên nó thôi được vẽ bằng cỡ chú thích.
+
+    Bản trước là `type.footnote` (13) cộng `fontWeight: '600'` viết tại chỗ —
+    tức một tiêu đề dựng bằng cách BƠM ĐẬM một cỡ chữ phụ. Đó đúng là mẫu hình
+    làm cả màn đọc ra "generic mobile": nhỏ hơn iOS một bậc rồi bù lại bằng độ
+    đậm. `type.headline` (17/600) là đúng vai ấy trong thang chữ đã có, và nó
+    khớp Headline 17/600 của iOS từng chữ số.
+
+    Độ đậm không còn viết tại chỗ nữa: 600 nay đến từ chính token.
+  */
   exName: {
-    ...type.footnote,
+    ...type.headline,
     color: c.foreground,
-    fontWeight: '600',
     marginTop: spacing.sm,
     marginBottom: 2,
   },
@@ -2030,11 +2068,26 @@ const stylesFor = makeStyles((c, m) => ({
     borderRadius: 9,
     alignItems: 'center',
     justifyContent: 'center',
-    /* Visible at rest, not only once ticked: a 2pt rim at 30% white against the
-       card, plus a faint fill so it reads as an empty box rather than as a gap
-       between two things. The ghosted tick inside says what it is for. */
+    /*
+      Visible at rest, not only once ticked: a 2pt rim against the card, plus a
+      faint fill, and the ghosted tick inside says what it is for.
+
+      ── cái ý định ấy đúng, con số thì chưa đỡ nổi nó ──
+
+      Đo lại chính hai dòng dưới: viền 0,3 ra **1,94:1** ở bản sáng và 2,63 ở
+      bản tối — dưới sàn 3:1 của WCAG 1.4.11 cho một thành phần giao diện. Và
+      cái "faint fill so it reads as an empty box" đo **1,10:1** · 1,11: nó
+      không làm gì cả, cái viền đang gánh một mình, mà viền cũng chưa đủ.
+
+      Đây là ô người ta bấm nhiều nhất màn này, bằng tay ướt, giữa hai set,
+      trong lúc mệt. Nên viền lên **0,5** — 3,36:1 ở sáng · 5,37 ở tối.
+
+      Bề dày giữ 2 và mặt nền giữ 0,05: nền không qua nổi sàn bằng cách nào mà
+      vẫn còn là "faint", nên nó thôi được tính là người gánh việc — nó ở lại
+      đúng vai một lớp mờ nhẹ, còn cái viền mới là thứ nói đây là một cái hộp.
+    */
     borderWidth: 2,
-    borderColor: alpha(m.ink, 0.3),
+    borderColor: alpha(m.ink, 0.5),
     backgroundColor: alpha(m.ink, 0.05),
   },
   checkOn: { backgroundColor: c.primary, borderColor: c.primary },
@@ -2068,8 +2121,35 @@ const stylesFor = makeStyles((c, m) => ({
     paddingVertical: 0,
     borderRadius: radius.sm,
     backgroundColor: alpha(m.ink, 0.07),
+    /*
+      ── viền 0,14 ở nét tóc là một cái hộp KHÔNG CÓ Ở ĐÓ ──
+
+      Đo trên mặt thẻ: `alpha(m.ink, 0.14)` ra **1,33:1** ở bản sáng và 1,46 ở
+      bản tối. Sàn của WCAG 1.4.11 cho một *thành phần giao diện* là 3:1, và cái
+      viền này là thứ DUY NHẤT nói "đây là ô nhập được": mặt nền 0,07 chỉ đo
+      1,15:1, tức cũng không thấy.
+
+      `tools/ink-alpha.mjs` không bắt được vì nó MIỄN TRỪ tường minh
+      `alpha(m.ink, x)` khi dùng làm nền hoặc viền — *"một mặt nền mờ là đúng
+      việc của nó"*. Với một mặt nền thì đúng. Với viền của một control thì
+      không, và đó là khe hở giữa các luật màu chứ không phải một quyết định.
+
+      Đổi ĐỘ MỜ, giữ nguyên BỀ DÀY: 0,14 → 0,50, ra 3,36:1 ở sáng · 5,37 ở tối.
+
+      ── và tôi đã sửa sai bề dày một lượt, nên ghi lại ──
+
+      Lượt đầu tôi nâng luôn `borderWidth` từ nét tóc lên 1, lập luận rằng
+      "0,33pt là dưới một điểm ảnh logic nên ở độ mờ nào cũng chỉ là gợi ý".
+      Lập luận ấy lẫn BỀ DÀY với ĐỘ NHÌN THẤY. Nét tóc trên màn 3× là đúng MỘT
+      điểm ảnh thiết bị, và một điểm ảnh ở 3,36:1 thì nhìn rõ — đó chính là cách
+      iOS vẽ mọi đường phân cách bảng và mép ô nhập.
+
+      Ảnh dựng nói ra chỗ sai: 1pt × 18 cái ô trên một trang đọc thành một biểu
+      mẫu có viền, tức đúng thứ "outlined Material UI" mà đặt hàng cấm. Khuyết
+      tật gốc nằm ở ĐỘ MỜ 1,33:1, không nằm ở bề dày — nên chỉ độ mờ được đổi.
+    */
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: alpha(m.ink, 0.14),
+    borderColor: alpha(m.ink, 0.5),
   },
   /*
     Căn phải, và không phải vì thẩm mỹ.
@@ -2086,7 +2166,27 @@ const stylesFor = makeStyles((c, m) => ({
   fieldReps: { minWidth: 34 },
   /* Still a box, just not shouting: it holds what the plan said, and the plan
      is already stated in full one line above. */
-  fieldPlan: { color: c.mutedForeground, backgroundColor: 'transparent', borderColor: 'transparent' },
+  /*
+    ── `borderColor: 'transparent'` đã bị BỎ, và đó là nửa còn lại của lỗi trên ──
+
+    Nâng viền của `field` lên 0,5 chỉ sửa được những ô ĐÃ SỬA giá trị. Ở trạng
+    thái thường gặp nhất — mọi set còn nguyên số của kế hoạch — dòng này ghi đè
+    viền về trong suốt, nên ô nhập KHÔNG CÓ mép nào cả. Ảnh dựng xác nhận: ở đó
+    "55" và "10" là hai con số trôi nổi, không phải hai ô.
+
+    Ý định gốc vẫn đúng và vẫn giữ: một giá trị chưa đụng tới thì im tiếng.
+    Nhưng thứ mang ý định ấy phải là MẶT NỀN, không phải cái viền — một ô nhập
+    không có mép thì không đọc ra là ô nhập được ở bất kỳ trạng thái nào, và đó
+    là cùng một lỗi mà `check` và `field` vừa được sửa.
+
+        đã sửa      nền 0,07 + viền 0,5    ← một ô đặc
+        chưa sửa    nền trong suốt + viền 0,5  ← một ô rỗng
+
+    Hai trạng thái vẫn phân biệt được bằng HÌNH (có nền / không nền), đúng lập
+    luận đã ghi ở khối chú thích lớn phía trên — *"một khác biệt về HÌNH, mạnh
+    hơn hẳn một khoảng chênh tương phản"*. Chỉ là nay cả hai đều còn là cái hộp.
+  */
+  fieldPlan: { color: c.mutedForeground, backgroundColor: 'transparent' },
   unit: { ...type.caption, color: c.mutedForeground },
   unitPlan: { color: c.mutedForeground },
   /* Room on both sides. At the row gap alone it sat against the unit and read
@@ -2188,7 +2288,42 @@ const stylesFor = makeStyles((c, m) => ({
     backgroundColor: c.primary,
     marginTop: spacing.sm,
   },
-  finishOff: { opacity: 0.4 },
+  /*
+    KHÔNG dùng `opacity` cho trạng thái tắt, và đây là lý do đo được.
+
+    Bản trước là `{ opacity: 0.4 }`. `opacity` của RN nhân lên CẢ cây con, nên
+    nền và chữ cùng mờ đi — và kết quả là thứ tệ nhất trong hai đường:
+
+        nền   #1a1917 → #9f9c99   2,49:1 so với trang   ← vẫn TO TIẾNG
+        chữ   #ffffff → #c5c4c2   1,57:1 so với nền     ← KHÔNG ĐỌC ĐƯỢC
+
+    Tức một mảng xám lớn, rõ ràng trên trang, mang một dòng chữ không đọc nổi.
+    Hình thì hét, chữ thì câm, nên nút không gắn vào đâu cả. Bản tối cùng bệnh:
+    2,27:1 và 1,51:1.
+
+    Cái bẫy này app ĐÃ biết — `week-plan.tsx` có chú thích đúng về nó ở tấm nền
+    sau sheet: *"Nếu để `backgroundColor` trên chính `Pressable` rồi cho nó
+    `opacity`, cả cây con mờ theo, vì `opacity` áp cho cả nhóm"*. Nút này mắc
+    đúng lỗi ấy.
+
+    Nên trạng thái tắt mượn ĐÚNG công thức của `finishDone` ngay dưới — nền
+    nhạt, viền cùng màu, chữ cùng màu — chỉ đổi màu. Ba vai tách ra, mỗi vai
+    tự chịu trách nhiệm về độ tương phản của mình:
+
+        nền   alpha(mutedForeground, 0.12)   1,17:1 /trang · 1,11 ở tối
+        viền  alpha(mutedForeground, 0.35)   1,62:1 /trang · 1,57 ở tối
+        chữ   secondaryForeground            6,05:1 /nền  · 6,35 ở tối
+
+    Nền TỤT từ 2,49 xuống 1,17 — nó thôi tranh phần với dữ liệu — trong khi chữ
+    LÊN từ 1,57 tới 6,05. "Không dùng được" nay nói bằng việc nút lùi khỏi
+    trang, không bằng việc chữ mờ đi.
+  */
+  finishOff: {
+    backgroundColor: alpha(c.mutedForeground, 0.12),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: alpha(c.mutedForeground, 0.35),
+  },
+  finishTextOff: { color: c.secondaryForeground },
   /* Saved is not the same as unavailable. It keeps its full opacity and turns
      into a statement — green tick, green text, no fill — so the row reads as a
      finished job rather than as a button that stopped working. */
