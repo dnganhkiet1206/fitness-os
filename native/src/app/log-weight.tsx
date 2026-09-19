@@ -154,7 +154,37 @@ export default function LogWeightSheet() {
     if (wake.current) clearTimeout(wake.current);
   }, []);
 
+  /*
+    ── HAI độ mờ, và vì sao một cái là không đủ ──
+
+    Bản đầu chỉ có `litFace`: hình nghỉ nằm dưới ở opacity 1 mãi mãi, hình sáng
+    chồng lên ở `glow`. Nghe như một cú cross-fade. Nó KHÔNG phải.
+
+    Mọi lớp của chiếc cân là `alpha(c.foreground, …)` — tức TRONG SUỐT. Xếp hai
+    hình trong suốt lên nhau thì độ mờ KHÔNG thay thế, nó CỘNG:
+
+        lớp            bảng TONE nói    app thật sự vẽ
+        thân           0,115            1−(1−0,11)(1−0,115) = 0,2124
+        viền ngoài     0,22             0,3526
+        tấm cảm biến   0,06             0,1164
+        viền trong     0,09             0,1446
+
+    Thân cân gần GẤP ĐÔI mực so với con số tôi đã chọn, cân nhắc và đo. Đó đúng
+    là *"brightness filter cho toàn bộ cái cân"* mà chủ dự án bác — và nó không
+    nằm ở bảng `TONE` dòng nào cả, nên cả vòng chỉnh bảng ấy không chạm được
+    tới. `tools/body-scale.mjs` cũng xanh, vì nó dựng lại MỘT hình trên trang
+    trong khi app vẽ HAI. Lần thứ hai trong phiên này một phép đo mô hình hoá
+    thứ app không hề vẽ.
+
+    Nên cú cross-fade phải là cross-fade thật: hình nghỉ mờ ĐI đúng bằng lúc
+    hình sáng hiện RA. Ở hai đầu chỉ còn đúng một hình, tức đúng bảng `TONE`.
+    Giữa đường hai hình cùng hiện một phần, và phép cộng ở đó ra 0,108 khi
+    `glow` = 0,5 — nằm giữa hai đầu, không có cú nhồi sáng nào.
+
+    Thời lượng, mốc giữ, cú đặt lại hẹn giờ: KHÔNG đổi gì. Đây là sửa phép VẼ.
+  */
   const litFace = useAnimatedStyle(() => ({ opacity: glow.value }));
+  const restFace = useAnimatedStyle(() => ({ opacity: 1 - glow.value }));
 
   const [index, setIndex] = useState(seedIndex);
   /*
@@ -229,7 +259,12 @@ export default function LogWeightSheet() {
         {/* Chiếc cân vào sau tiêu đề một nhịp: thứ bậc đọc được thành thứ tự. */}
         <Animated.View entering={FadeInDown.duration(duration.move).delay(60)} style={styles.stage}>
           <View>
-            <BodyScaleFigure value={value.toFixed(1)} unit={unit} width={scaleW} />
+            {/* Hình NGHỈ mờ đi đúng bằng lúc hình sáng hiện ra — hai độ mờ cộng
+                lại luôn bằng 1. Bỏ `restFace` đi thì hai hình trong suốt CỘNG
+                nhau và cả chiếc cân sáng lên; xem chú thích ở `restFace`. */}
+            <Animated.View style={restFace}>
+              <BodyScaleFigure value={value.toFixed(1)} unit={unit} width={scaleW} />
+            </Animated.View>
             <Animated.View style={[StyleSheet.absoluteFill, litFace]} pointerEvents="none">
               <BodyScaleFigure value={value.toFixed(1)} unit={unit} width={scaleW} lit />
             </Animated.View>

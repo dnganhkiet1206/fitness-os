@@ -103,12 +103,9 @@ const WORDMARK_Y = 138;
  * khác. Nó sai hướng ở bản sáng: mực bản sáng là màu TỐI, nên "sáng lên" lại ra
  * tối đi. Một cái đèn nền thì TRẮNG ở mọi diện mạo — nó là nguồn sáng, không
  * phải một token theme. Nên mặt màn hình là **trắng ở một độ mờ**, và độ mờ ấy
- * chính là công tắc:
+ * chính là công tắc.
  *
- *     sáng   nghỉ 0,75 → hoạt động 1,00
- *     tối    nghỉ 0,09 → hoạt động 0,80
- *
- * Ở bản tối, 0,09 là một tấm TỐI và 0,80 là một tấm SÁNG — nên chữ số đảo màu
+ * Ở bản tối, 0,06 là một tấm TỐI và 0,92 là một tấm SÁNG — nên chữ số đảo màu
  * theo tấm, đúng như một màn LCD có đèn nền vừa bật trong phòng tối. Đó không
  * phải một hiệu ứng thêm vào; đó là hệ quả của việc tấm nền thật sự sáng lên.
  *
@@ -120,38 +117,153 @@ const WORDMARK_Y = 138;
  * điều này: *"Hãy hình dung chiếc cân hiện tại đang ở trạng thái STANDBY"* —
  * hoá ra ở bản sáng nó đang ở trạng thái ACTIVE, và standby là thứ chưa tồn tại.
  *
- * ── mọi con số ở đây đều có một sàn nó phải qua ──
+ * ── LẦN ĐẦU LÀM SAI, và cái sai là gì ──
  *
- *     lớp                sáng nghỉ → hoạt động    tối nghỉ → hoạt động
- *     thân / trang        1,104      1,145         1,237      1,349
- *     viền ngoài / trang  1,298      1,419         1,484      1,770
- *     tấm cảm biến / thân 1,173      1,264         1,167      1,419
- *     màn hình / thân     1,159      1,211         1,240      9,019
- *     SỐ / màn hình        6,05      17,57        11,59      13,58
- *     đơn vị / màn hình    4,52       7,75         4,76       5,53
+ * Vòng trước tôi nâng MỌI lớp cùng lúc: thân 0,11→0,14, tấm cảm biến 0,06→0,12,
+ * viền 0,17→0,22. Chủ dự án xem render và bác: *"Đây không được là chuyện đổi
+ * màu cái cân từ tối sang sáng"*, và liệt kê đúng thứ tôi vừa làm vào danh sách
+ * cấm — *"❌ brightness filter cho toàn bộ cái cân"*.
  *
- * Mọi ô chữ ≥4,5 (WCAG 1.4.3), mọi bậc bề mặt ≥1,134. `tools/body-scale.mjs`
- * đọc lại bảng này ra khỏi mã và chạy lại từng ô.
+ * Lý do nó sai không phải con số nào quá cao. Nó sai vì nâng đều thì **không có
+ * gì phản ứng**: nếu cả thân, cả tấm cảm biến, cả viền đều sáng thêm 30% thì mắt
+ * đọc ra "ảnh này vừa được làm sáng lên", chứ không phải "cái đèn trong vật này
+ * vừa bật". Một thiết bị thật thức dậy theo kiểu ngược lại: **thân không đổi gì,
+ * chỉ một chỗ phát sáng**. Chênh lệch giữa các lớp mới là tín hiệu, không phải
+ * mức sáng của từng lớp.
+ *
+ * Nên lần này thân cân ĐÓNG BĂNG, và con số nói ra nó đóng băng thật:
+ *
+ *     thân cân đổi        bộ đã bị bác        bộ này
+ *     sáng                1,0375×             1,0092×
+ *     tối                 1,0908×             1,0119×
+ *
+ * `tools/body-scale.mjs` đặt TRẦN 1,03 cho vế này — ở giữa hai cột, có biên cả
+ * hai phía — và chạy lại chính bộ số đã bị bác để chứng minh trần ấy đỏ được.
+ * Đó là lý do luật này không chỉ là một lời hứa trong chú thích.
+ *
+ * ── và HAI ĐƯỜNG VIỀN THÂN CÂN trốn được cái trần ấy một vòng ──
+ *
+ * Trần trên chỉ canh MẶT thân cân. Vòng sau đó, chủ dự án chốt nguyên tắc
+ * *"Body và outer border gần như giữ nguyên"*, tôi đi đo lại từng lớp và thấy:
+ * mặt thân đúng là đóng băng (1,009× · 1,012×), nhưng hai đường VIỀN của nó là
+ * hai lớp động mạnh nhất cả hình sau display:
+ *
+ *     lớp             sáng      tối
+ *     viền ngoài      1,0930×   1,1926×      ← trước
+ *     viền trong      1,0708×   1,1054×      ← trước
+ *     mặt thân        1,0092×   1,0119×
+ *
+ * Cái 1,1926× ấy nâng sáng cả CHU VI chiếc cân — tức một bản nhẹ của
+ * *"viền sáng xung quanh"* nằm trong danh sách cấm — và nó còn lớn hơn cú nhảy
+ * thân cân của bộ đã bị bác (1,0908×). Không ai nhìn ra, vì trần chỉ soi mặt.
+ *
+ * Nên viền kéo về sát mặt thân, vẫn chừa một chút "chắc lại" mà đặt hàng cho
+ * phép: tối 0,22→0,18 và 0,09→0,065; sáng 0,17→0,14 và 0,10→0,08, ra
+ * 1,027×–1,030× ở cả bốn ô. Trần 1,03 nay áp cho CẢ BA lớp thân cân, và phần
+ * tự kiểm chạy lại bộ viền cũ để chứng minh nó đỏ.
+ *
+ * ── và bản SÁNG được nâng đúng hai kênh, không phải cả hình ──
+ *
+ * Chủ dự án: *"Light Mode có thể tăng cảm giác ACTIVE một chút bằng
+ * hierarchy/contrast của DISPLAY và SENSOR RIM, nhưng tuyệt đối không làm toàn
+ * bộ body sáng lên."* Đo ra thì đúng hai kênh ấy là chỗ bản sáng yếu hơn bản
+ * tối: rim 1,557 so với 1,906, khung display 1,602 so với 4,351.
+ *
+ * Khoảng cách của KHUNG phần lớn là tất yếu — ở bản tối tấm nền đảo từ gần đen
+ * sang gần trắng nên khung tương phản cực mạnh, còn bản sáng tấm nền trắng ở cả
+ * hai trạng thái. Đuổi theo 4,351 ở bản sáng sẽ ra một đường kẻ đậm, không phải
+ * một cái khung. Nên chỉ nhích: `bezel` 0,22→0,28 (1,602→1,840).
+ *
+ * Khoảng cách của RIM thì KHÔNG tất yếu — nó chỉ là một con số tôi chọn. Nên
+ * `padEdge` 0,22→0,30, ra 1,863:1, tức ngang bằng bản tối chứ không vượt.
+ *
+ * Cú thức dậy dồn vào ba chỗ, qua ba KÊNH THỊ GIÁC KHÁC NHAU thay vì ba lần
+ * cùng một phép tăng độ mờ:
+ *
+ * ── kênh 1 · độ sáng · tấm đèn ──
+ *
+ * Chỉ MỘT lớp đi xa: mặt màn hình. Tối 0,06 → 0,92. Đó là thứ duy nhất trong cả
+ * hình được phép "bật".
+ *
+ * ── kênh 2 · ĐẢO CHIỀU · khung kính màn hình ──
+ *
+ * Đây là chi tiết làm một tấm sáng đọc ra *tấm màn hình* chứ không phải *một lỗ
+ * trắng*: trên máy thật, ánh sáng không đi qua được cái khung nhựa quanh kính,
+ * nên khi đèn bật, viền quanh nó là đường TỐI NHẤT của cả mặt cân.
+ *
+ * Suy ra viền ấy không thể là một độ mờ đi lên. Nó phải ĐỔI TOKEN:
+ *
+ *     tối   nghỉ  `foreground` 0,13  (tấm đen → viền phải SÁNG mới tách khỏi thân)
+ *     tối   hoạt  `background` 0,55  (tấm trắng → viền phải TỐI mới thành khung)
+ *
+ * Bản sáng không đảo, vì ở đó cả trang đã sáng nên khung tối là đúng ở cả hai
+ * trạng thái — chỉ đậm thêm (0,10 → 0,22) và dày thêm.
+ *
+ * ── kênh 3 · HÌNH DẠNG · bốn tấm cảm biến ──
+ *
+ * Chủ dự án: *"đây là phần tôi muốn bạn chú ý hơn"*, và phải giống *cảm biến áp
+ * lực đang được kích hoạt*, không phải đèn.
+ *
+ * Nên bốn tấm KHÔNG sáng lên chút nào: `pad` giữ NGUYÊN một con số ở cả hai
+ * trạng thái (sáng 0,08 · tối 0,06). Toàn bộ phản ứng của chúng là một **đường
+ * rim** mọc ra: `padEdge` 0 → 0,22, dày 0 → 1,2 điểm. Ở trạng thái nghỉ chúng là
+ * bốn vệt phẳng không mép; ở trạng thái hoạt động chúng có một đường viền chạy
+ * quanh, đo 1,56:1 (sáng) · 1,91:1 (tối) so với chính mặt tấm.
+ *
+ * Đó là một kênh cảm nhận khác hẳn độ sáng: thêm mép vào một vật làm nó đọc ra
+ * "vào nét / thành vật thể", đúng cảm giác bốn miếng kim loại vừa ăn tiếp xúc.
+ * Và nó là lý do `padEdge` tồn tại như một khoá riêng thay vì cộng thêm vào
+ * `pad`: một con số không nói được "có mép" và "sáng hơn" cùng lúc — mà ở đây
+ * câu trả lời đúng là "có mép" VÀ "không sáng hơn", nên một con số thì không đủ.
+ *
+ * Bộ đã bị bác nâng tấm cảm biến 0,06 → 0,12, đo 1,3263× ở bản tối. Bộ này đo
+ * 1,0140× — và cái 1,0140 ấy không phải do `pad` đổi mà do THÂN dưới nó đổi
+ * 1,0119. Luật đặt trần 1,05 cho vế này.
+ *
+ * ── kênh 4 · BỀ DÀY ──
+ *
+ * `bezelW`/`padW` là độ dày nét, tính bằng điểm, không phải độ mờ. Chúng ở đây
+ * vì chủ dự án nói rõ: *"đừng cố ép mọi thay đổi vào một opacity duy nhất"*.
+ * Một đường nét dày lên đọc ra "chắc lại", không phải "sáng lên".
+ *
+ * ── sàn ──
+ *
+ * `tools/body-scale.mjs` đọc lại bảng này ra khỏi mã: mọi ô chữ ≥4,5 (WCAG
+ * 1.4.3), bậc màn hình/thân ≥1,134, và — luật riêng của vòng này — **cú nhảy của
+ * thân cân phải NHỎ HƠN cú nhảy của mọi lớp phản ứng**. Đó là luật chặn đúng cái
+ * lỗi ở trên quay lại.
  */
 const TONE = {
   light: {
-    idle: { plate: 0.05, edge: 0.13, inner: 0.07, pad: 0.08, lamp: 0.75,
-      digits: 'secondaryForeground', unit: 'mutedForeground', unitAlpha: 1 },
-    active: { plate: 0.07, edge: 0.17, inner: 0.09, pad: 0.12, lamp: 1.0,
-      digits: 'foreground', unit: 'secondaryForeground', unitAlpha: 1 },
+    idle: {
+      plate: 0.05, edge: 0.13, inner: 0.07,
+      pad: 0.08, padEdge: 0, padW: 0,
+      lamp: 0.72, bezelOn: 'foreground', bezel: 0.1, bezelW: 1,
+      digits: 'secondaryForeground', unit: 'mutedForeground', unitAlpha: 1,
+    },
+    active: {
+      plate: 0.055, edge: 0.14, inner: 0.08,
+      pad: 0.08, padEdge: 0.3, padW: 1.2,
+      lamp: 1, bezelOn: 'foreground', bezel: 0.28, bezelW: 1.6,
+      digits: 'foreground', unit: 'secondaryForeground', unitAlpha: 1,
+    },
   },
   dark: {
-    /* `lamp` 0,06 chứ không 0,09: ở 0,09 tấm ra #343435 và chữ đơn vị
-       (`secondaryForeground`) tụt còn 4,37 — dưới sàn 4,5. 0,06 cho tấm
-       #2d2d2e: bậc so với thân cân 1,183 (trên 1,134) và đơn vị 4,83. Đây là
-       chỗ hai sàn kẹp nhau, và cửa sổ hợp lệ chỉ rộng 0,04–0,08. */
-    idle: { plate: 0.11, edge: 0.17, inner: 0.06, pad: 0.06, lamp: 0.06,
-      digits: 'foreground', unit: 'secondaryForeground', unitAlpha: 1 },
+    idle: {
+      plate: 0.11, edge: 0.17, inner: 0.06,
+      pad: 0.06, padEdge: 0, padW: 0,
+      lamp: 0.06, bezelOn: 'foreground', bezel: 0.13, bezelW: 1,
+      digits: 'foreground', unit: 'secondaryForeground', unitAlpha: 1,
+    },
     /* Tấm nền SÁNG → chữ gần đen. `background` của bản tối là #070708. Đơn vị
-       là chính màu ấy ở 65%: không token nào của bảng màu qua được 4,5:1 trên
-       một tấm #d4d4d4. */
-    active: { plate: 0.14, edge: 0.22, inner: 0.09, pad: 0.12, lamp: 0.8,
-      digits: 'background', unit: 'background', unitAlpha: 0.65 },
+       là chính màu ấy ở 65%: không token nào của bảng màu qua được sàn chữ trên
+       một tấm gần trắng. Và `bezelOn` đảo sang chính token ấy — xem kênh 2. */
+    active: {
+      plate: 0.115, edge: 0.18, inner: 0.065,
+      pad: 0.06, padEdge: 0.22, padW: 1.2,
+      lamp: 0.92, bezelOn: 'background', bezel: 0.55, bezelW: 1.6,
+      digits: 'background', unit: 'background', unitAlpha: 0.65,
+    },
   },
 } as const;
 
@@ -234,6 +346,15 @@ export function BodyScaleFigure({
   */
   const digits = c[t.digits];
   const unitColour = t.unitAlpha === 1 ? c[t.unit] : alpha(c[t.unit], t.unitAlpha);
+  /*
+    Khung kính của màn hình. `bezelOn` là TOKEN, không phải độ mờ — ở bản tối nó
+    đảo từ `foreground` sang `background` khi đèn bật, vì một cái khung nhựa thì
+    chắn sáng chứ không dẫn sáng. Xem "kênh 2" ở chú thích của `TONE`.
+  */
+  const bezel = alpha(c[t.bezelOn], t.bezel);
+  /* Rim của tấm cảm biến. Ở trạng thái nghỉ `padEdge` là 0 — không mép, và một
+     nét dày 0 thì `react-native-svg` không vẽ gì cả, nên cây node y nguyên. */
+  const padRim = alpha(c.foreground, t.padEdge);
 
   return (
     <View
@@ -277,9 +398,12 @@ export function BodyScaleFigure({
             height={PAD.h}
             rx={PAD.r}
             fill={alpha(c.foreground, t.pad)}
+            stroke={padRim}
+            strokeWidth={t.padW}
           />
         ))}
-        {/* Màn hình — mặt sáng nhất của cả hình, vì con số đứng trên nó. */}
+        {/* Màn hình — mặt sáng nhất của cả hình, vì con số đứng trên nó. Khung
+            của nó là đường TỐI NHẤT khi đèn bật: xem "kênh 2" ở `TONE`. */}
         <Rect
           x={SCREEN_X}
           y={SCREEN.y}
@@ -287,8 +411,8 @@ export function BodyScaleFigure({
           height={SCREEN.h}
           rx={SCREEN.r}
           fill={lamp}
-          stroke={alpha(c.foreground, t.inner)}
-          strokeWidth={1}
+          stroke={bezel}
+          strokeWidth={t.bezelW}
         />
       </Svg>
 
