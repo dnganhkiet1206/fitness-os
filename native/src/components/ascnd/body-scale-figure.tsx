@@ -141,41 +141,38 @@ const WORDMARK_Y = 138;
  * hai phía — và chạy lại chính bộ số đã bị bác để chứng minh trần ấy đỏ được.
  * Đó là lý do luật này không chỉ là một lời hứa trong chú thích.
  *
- * ── và HAI ĐƯỜNG VIỀN THÂN CÂN trốn được cái trần ấy một vòng ──
+ * ── HAI ĐƯỜNG VIỀN THÂN CÂN: một vòng kéo về, rồi bị hoàn lại ──
  *
- * Trần trên chỉ canh MẶT thân cân. Vòng sau đó, chủ dự án chốt nguyên tắc
- * *"Body và outer border gần như giữ nguyên"*, tôi đi đo lại từng lớp và thấy:
- * mặt thân đúng là đóng băng (1,009× · 1,012×), nhưng hai đường VIỀN của nó là
- * hai lớp động mạnh nhất cả hình sau display:
+ * Trần trên chỉ canh MẶT thân cân. Có một vòng tôi mở nó ra cho cả hai đường
+ * VIỀN, vì chủ dự án vừa chốt *"Body và outer border gần như giữ nguyên"* mà đo
+ * ra thì viền là hai lớp động mạnh nhất cả hình sau display:
  *
  *     lớp             sáng      tối
- *     viền ngoài      1,0930×   1,1926×      ← trước
- *     viền trong      1,0708×   1,1054×      ← trước
+ *     viền ngoài      1,0930×   1,1926×
+ *     viền trong      1,0708×   1,1054×
  *     mặt thân        1,0092×   1,0119×
  *
- * Cái 1,1926× ấy nâng sáng cả CHU VI chiếc cân — tức một bản nhẹ của
- * *"viền sáng xung quanh"* nằm trong danh sách cấm — và nó còn lớn hơn cú nhảy
- * thân cân của bộ đã bị bác (1,0908×). Không ai nhìn ra, vì trần chỉ soi mặt.
+ * Lập luận của tôi: 1,1926× nâng sáng cả CHU VI chiếc cân, tức đúng hình dạng
+ * của *"viền sáng xung quanh"* trong danh sách cấm. Tôi kéo viền về 1,03×.
  *
- * Nên viền kéo về sát mặt thân, vẫn chừa một chút "chắc lại" mà đặt hàng cho
- * phép: tối 0,22→0,18 và 0,09→0,065; sáng 0,17→0,14 và 0,10→0,08, ra
- * 1,027×–1,030× ở cả bốn ô. Trần 1,03 nay áp cho CẢ BA lớp thân cân, và phần
- * tự kiểm chạy lại bộ viền cũ để chứng minh nó đỏ.
+ * Rồi chủ dự án nhìn hai bản cạnh nhau và chọn bản CŨ: *"tôi thích cách cân
+ * sáng như cũ hơn"*. Nên viền ở đây là bộ số trước đó — tối 0,22/0,09, sáng
+ * 0,17/0,10 — và trần cho viền đã gỡ khỏi `tools/body-scale.mjs`.
  *
- * ── và bản SÁNG được nâng đúng hai kênh, không phải cả hình ──
+ * Giữ đoạn này lại vì nó là bài học, không phải vì nó là lịch sử: **phép đo của
+ * tôi không sai, nó chỉ không phải là thứ quyết định.** Tôi suy "chu vi sáng
+ * lên = viền sáng xung quanh" ra từ một câu nguyên tắc; người đặt ra câu ấy
+ * nhìn ảnh thật rồi nói không phải thế. Đừng kéo viền xuống lại chỉ vì thấy con
+ * số 1,19 — nó đã được hỏi và đã được trả lời.
  *
- * Chủ dự án: *"Light Mode có thể tăng cảm giác ACTIVE một chút bằng
- * hierarchy/contrast của DISPLAY và SENSOR RIM, nhưng tuyệt đối không làm toàn
- * bộ body sáng lên."* Đo ra thì đúng hai kênh ấy là chỗ bản sáng yếu hơn bản
- * tối: rim 1,557 so với 1,906, khung display 1,602 so với 4,351.
+ * ── bản SÁNG: hai kênh được nâng, rồi cũng hoàn lại cùng vòng ấy ──
  *
- * Khoảng cách của KHUNG phần lớn là tất yếu — ở bản tối tấm nền đảo từ gần đen
- * sang gần trắng nên khung tương phản cực mạnh, còn bản sáng tấm nền trắng ở cả
- * hai trạng thái. Đuổi theo 4,351 ở bản sáng sẽ ra một đường kẻ đậm, không phải
- * một cái khung. Nên chỉ nhích: `bezel` 0,22→0,28 (1,602→1,840).
- *
- * Khoảng cách của RIM thì KHÔNG tất yếu — nó chỉ là một con số tôi chọn. Nên
- * `padEdge` 0,22→0,30, ra 1,863:1, tức ngang bằng bản tối chứ không vượt.
+ * Cùng vòng đó tôi nâng `padEdge` 0,22→0,30 và `bezel` 0,22→0,28 ở bản sáng,
+ * theo gợi ý *"Light Mode có thể tăng cảm giác ACTIVE một chút bằng
+ * hierarchy/contrast của DISPLAY và SENSOR RIM"*. Cú hoàn lại trả cả hai về
+ * 0,22, nên rim bản sáng đo 1,557:1 và khung 1,602:1 — vẫn trên sàn 1,5 mà
+ * `tools/body-scale.mjs` đòi, nên đây là một lựa chọn thẩm mỹ chứ không phải
+ * một vế rớt sàn.
  *
  * Cú thức dậy dồn vào ba chỗ, qua ba KÊNH THỊ GIÁC KHÁC NHAU thay vì ba lần
  * cùng một phép tăng độ mờ:
@@ -242,9 +239,9 @@ const TONE = {
       digits: 'secondaryForeground', unit: 'mutedForeground', unitAlpha: 1,
     },
     active: {
-      plate: 0.055, edge: 0.14, inner: 0.08,
-      pad: 0.08, padEdge: 0.3, padW: 1.2,
-      lamp: 1, bezelOn: 'foreground', bezel: 0.28, bezelW: 1.6,
+      plate: 0.055, edge: 0.17, inner: 0.1,
+      pad: 0.08, padEdge: 0.22, padW: 1.2,
+      lamp: 1, bezelOn: 'foreground', bezel: 0.22, bezelW: 1.6,
       digits: 'foreground', unit: 'secondaryForeground', unitAlpha: 1,
     },
   },
@@ -259,7 +256,7 @@ const TONE = {
        là chính màu ấy ở 65%: không token nào của bảng màu qua được sàn chữ trên
        một tấm gần trắng. Và `bezelOn` đảo sang chính token ấy — xem kênh 2. */
     active: {
-      plate: 0.115, edge: 0.18, inner: 0.065,
+      plate: 0.115, edge: 0.22, inner: 0.09,
       pad: 0.06, padEdge: 0.22, padW: 1.2,
       lamp: 0.92, bezelOn: 'background', bezel: 0.55, bezelW: 1.6,
       digits: 'background', unit: 'background', unitAlpha: 0.65,

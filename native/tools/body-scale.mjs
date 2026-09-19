@@ -383,33 +383,45 @@ if (complete) {
       chạy lại đúng bộ đã bị bác qua CÙNG hàm `surfaces()` và đòi trần này đỏ —
       nên nó là một luật đã được chứng minh, không phải một lời hứa.
 
-      ── và bản đầu của trần này chỉ soi MẶT, nên hai đường VIỀN trốn được ──
+      ── trần này CHỈ soi MẶT thân cân, và đó là một quyết định, không phải sót ──
 
-      Vòng sau, chủ dự án chốt nguyên tắc *"Body và outer border gần như giữ
-      nguyên"*. Đo lại từng lớp thì mặt thân đúng là đóng băng — nhưng hai đường
-      VIỀN của thân cân là hai lớp động mạnh nhất cả hình sau display:
+      Có một vòng nó áp cho cả hai đường VIỀN nữa. Lý do nghe rất chắc: chủ dự
+      án vừa chốt *"Body và outer border gần như giữ nguyên"*, mà đo ra thì hai
+      đường viền là hai lớp động mạnh nhất cả hình sau display —
 
           lớp             sáng      tối
           viền ngoài      1,0930×   1,1926×
           viền trong      1,0708×   1,1054×
           mặt thân        1,0092×   1,0119×
 
-      Cái 1,1926× nâng sáng cả CHU VI chiếc cân — một bản nhẹ của *"viền sáng
-      xung quanh"* trong danh sách cấm — và còn lớn hơn cú nhảy thân cân của bộ
-      đã bị bác (1,0908×). Không vế nào thấy, vì trần chỉ soi mặt.
+      — tức 1,1926× nâng sáng cả CHU VI chiếc cân, đúng hình dạng của *"viền
+      sáng xung quanh"* trong danh sách cấm. Tôi kéo viền về 1,03× và dựng trần
+      cho cả ba lớp.
 
-      Bài học lặp lại lần thứ ba trong phiên: **một cái trần chỉ chặn được đúng
-      cái nó đo.** Nên trần nay áp cho CẢ BA lớp thân cân.
+      Rồi chủ dự án nhìn hai bản cạnh nhau và chọn bản CŨ: *"tôi thích cách cân
+      sáng như cũ hơn"*. Nên viền trả về 0,22/0,09 (tối) và 0,17/0,10 (sáng), và
+      trần cho viền gỡ đi.
+
+      Đây là chỗ đáng ghi lại nhất của cả tệp: **phép đo của tôi không sai, nó
+      chỉ không phải là thứ quyết định.** Tôi suy ra "chu vi sáng lên = viền
+      sáng xung quanh" từ một câu nguyên tắc; người đặt ra câu ấy nhìn ảnh thật
+      rồi nói không phải thế. Một suy luận từ nguyên tắc không đứng trên mắt của
+      người chủ nguyên tắc. Nên đừng dựng lại trần này vì thấy con số 1,19 mà
+      không hỏi — nó đã được hỏi và đã được trả lời.
+
+      Còn trần cho MẶT thân cân thì giữ: nó không đến từ một suy luận mà từ một
+      bộ số chủ dự án đã bác tận mắt, và phần tự kiểm ở cuối tệp chạy lại chính
+      bộ ấy.
     */
-    for (const [k, vn] of [['plate', 'MẶT THÂN CÂN'], ['edge', 'VIỀN NGOÀI'], ['inner', 'VIỀN TRONG']]) {
+    {
       CASES++;
-      const jump = ratio(sa[k], si[k]);
+      const jump = ratio(sa.plate, si.plate);
       if (jump > BODY_CEIL) {
         problems.push(
-          `${FIG}: bản ${vi}, ${vn} tự sáng lên ${jump.toFixed(4)}× — trên trần ${BODY_CEIL}. Đặt hàng nói ` +
-            'rõ: "Body và outer border gần như giữ nguyên". Nâng cả thân cân lên là `brightness filter cho ' +
-            'toàn bộ cái cân`, thứ đã bị bác một lần; nâng riêng chu vi lên là `viền sáng xung quanh`, thứ ' +
-            'cũng nằm trong danh sách cấm. Chỉ tấm đèn, khung kính và rim của bốn tấm cảm biến được phản ứng',
+          `${FIG}: bản ${vi}, MẶT THÂN CÂN tự sáng lên ${jump.toFixed(4)}× — trên trần ${BODY_CEIL}. ` +
+            'Đây là `brightness filter cho toàn bộ cái cân`, thứ chủ dự án đã bác một lần. Mặt thân đứng ' +
+            'yên; chỉ tấm đèn, khung kính và rim của bốn tấm cảm biến được phản ứng. (Hai đường VIỀN thì ' +
+            'KHÔNG bị trần này — chủ dự án đã xem hai bản và chọn bản viền sáng hơn; xem chú thích trên.)',
         );
       }
     }
@@ -496,10 +508,6 @@ if (complete) {
         ['trần thân cân', ratio(ra.plate, ri.plate) > BODY_CEIL],
         ['trần mặt tấm cảm biến', ratio(ra.pad, ri.pad) > PAD_CEIL],
         ['rim bắt buộc', REJECTED[theme].active.padEdge <= 0],
-        /* Bộ ấy mang luôn hai đường viền đã nâng cả chu vi lên (tối 0,17→0,22 =
-           1,1926×), nên nó cũng là bằng chứng cho trần viền. */
-        ['trần viền ngoài', ratio(ra.edge, ri.edge) > BODY_CEIL],
-        ['trần viền trong', ratio(ra.inner, ri.inner) > BODY_CEIL],
       ];
       for (const [what, fires] of caught) {
         CASES++;
