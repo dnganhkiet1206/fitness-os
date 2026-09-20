@@ -35,6 +35,34 @@ import { displayWeight, type WeightUnit } from '@/lib/units';
  */
 
 export interface TplExercise {
+  /**
+   * Khoá ngoại về `exercises.id` — DANH TÍNH của bài tập, tách khỏi cái tên.
+   *
+   * ── nó vẫn luôn nằm trong dữ liệu; chính kiểu này đã xoá nó đi ──
+   *
+   * `workout-builder.tsx` ghi `exerciseId: ex.id` vào `workout_templates.exercises`
+   * từ đầu. Nhưng phía ĐỌC — kiểu này — không khai báo trường ấy, nên `expand()`
+   * ở `day-plan.tsx` không bao giờ chạm tới, `SetRow` không mang nó, và buổi tập
+   * ghi xuống với `exerciseId: ''`. Khoá ngoại có trong database và bị đánh rơi
+   * ở tầng kiểu.
+   *
+   * Hệ quả đã phải lách một lần ngay trong tệp này: chú thích ở `muscleArtKeys`
+   * dưới đây viết *"`TplExercise` không lưu nhóm cơ — nó chỉ có tên bài — nên
+   * phải tra ngược"*. Mọi thứ thuộc về ĐỊNH NGHĨA bài tập đều phải đi vòng qua
+   * một chuỗi tên.
+   *
+   * ── vì sao TUỲ CHỌN, và sẽ tuỳ chọn mãi ──
+   *
+   * Template tạo trước khi builder ghi trường này sẽ không có nó, và
+   * `workout_templates.exercises` là JSONB không ràng buộc — không có khoá
+   * ngoại nào ở tầng cơ sở dữ liệu bắt nó phải tồn tại hay phải trỏ đúng. Nên
+   * mã đọc PHẢI chịu được `undefined`, và đường tra theo tên
+   * (`exerciseKey(name)`) ở lại vĩnh viễn làm đường lui, không phải làm tạm.
+   *
+   * Bài tập thêm tay giữa buổi cũng hợp lệ khi không có id: người dùng gõ một
+   * cái tên chưa có trong thư viện thì không có định nghĩa nào để trỏ tới.
+   */
+  exerciseId?: string;
   exerciseName?: string;
   sets?: number;
   reps?: number;

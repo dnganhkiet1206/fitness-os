@@ -153,6 +153,20 @@ const SET_INDENT = CHECK_SIZE + spacing.sm;
 /** One row: a set of one exercise, and what you did with it. */
 interface SetRow {
   key: string;
+  /**
+   * Danh tính bài tập, khi kế hoạch có nó.
+   *
+   * `exerciseName` ở ngay dưới là thứ để HIỂN THỊ và vẫn là khoá duy nhất mà
+   * lịch sử luyện tập có — xem `exerciseKey`. Trường này là thứ để TRA CỨU
+   * định nghĩa: một khoá ngoại về `exercises.id`.
+   *
+   * Tuỳ chọn vĩnh viễn, không phải tạm thời. Ba nguồn hợp lệ không có nó:
+   * template cũ tạo trước khi builder ghi trường này, bài thêm tay giữa buổi
+   * (người dùng gõ một cái tên chưa có trong thư viện), và bất kỳ dòng JSONB
+   * nào viết bằng tay — `workout_templates.exercises` không có ràng buộc khoá
+   * ngoại nào ở tầng cơ sở dữ liệu.
+   */
+  exerciseId?: string;
   exerciseName: string;
   ordinal: number;
   of: number;
@@ -242,6 +256,11 @@ function expand(exercises: TplExercise[]): SetRow[] {
     for (let n = 0; n < count; n++) {
       rows.push({
         key: `${i}-${n}`,
+        /* Mang khoá ngoại qua, không đánh rơi nó ở đây. `?? undefined` chứ
+           KHÔNG `?? ''`: chuỗi rỗng là một id trông như có mà tra không ra, còn
+           `undefined` nói đúng điều đang đúng — kế hoạch này không nói bài ấy
+           là dòng nào trong thư viện, nên hãy tra theo tên. */
+        exerciseId: ex.exerciseId || undefined,
         exerciseName: ex.exerciseName ?? '',
         ordinal: n + 1,
         of: count,
@@ -1080,7 +1099,12 @@ export function DayPlan({
       const sessionId = sessions[0]?.id;
       if (!sessionId) return;
       const extra = pendingRows.map((r) => ({
-        exerciseId: '',
+        /* Danh tính đi cùng buổi tập, không chỉ cái tên.
+           `?? ''` vì `LoggedSet.exerciseId` là `string` bắt buộc ở tầng lưu —
+           chuỗi rỗng đã là cách nó nói "không biết" từ trước, và 100% các dòng
+           màn này từng ghi đều mang đúng giá trị ấy. Cái đổi là nay nó chỉ rỗng
+           khi THẬT SỰ không có gì để ghi. */
+        exerciseId: r.exerciseId ?? '',
         exerciseName: r.exerciseName,
         ...performed(r),
         rpe: rpe[r.key] ?? r.plannedRpe,
@@ -1105,7 +1129,8 @@ export function DayPlan({
     }
 
     const sets = doneRows.map((r) => ({
-      exerciseId: '',
+      /* Cùng lý do với nhánh nối thêm ở trên. */
+      exerciseId: r.exerciseId ?? '',
       exerciseName: r.exerciseName,
       ...performed(r),
       rpe: rpe[r.key] ?? r.plannedRpe,
