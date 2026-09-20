@@ -406,17 +406,46 @@ try {
     );
   }
 
-  /* ── 3. the body-stats screen has a NAME ──
-     Con số nằm ở đúng một chỗ, nên dời màn là sửa một dòng. */
-  const ident = /const ([A-Z][A-Z0-9_]*(?:BODY|STATS|WEIGHT)[A-Z0-9_]*|[A-Z][A-Z0-9_]*) = \d+;/m;
-  const idName = [...code.matchAll(/const ([A-Z][A-Z0-9_]*) = \d+;/g)]
-    .map((m) => m[1])
-    .find((n) => /BODY|STATS|WEIGHT/.test(n)) ?? null;
-  void ident;
+  /* ── 3. màn số đo có TÊN, và vị trí của nó được SUY RA ──
+
+     Giai đoạn 0 chỉ đòi có một cái tên, còn con số thì vẫn viết tay. Cái tên
+     ấy mới là một cái nhãn: dời màn mà quên sửa dòng khai báo thì cái khoá
+     lặng lẽ chuyển sang canh một màn khác, và không có gì báo.
+
+     Từ khi thứ tự màn là một bảng, con số ấy TRA ĐƯỢC. Nên luật đòi nó được
+     tra — viết tay một chỉ số là đỏ, vì đó đúng là chỗ hai thứ lệch nhau. */
+  const decl = [...code.matchAll(/const ([A-Z][A-Z0-9_]*) = ([^;\n]+);/g)]
+    .find((m) => /BODY|STATS|WEIGHT/.test(m[1])) ?? null;
+  const idName = decl ? decl[1] : null;
   if (!idName) {
     problems.push(
       'onboarding không đặt TÊN cho màn nhận số đo cơ thể — không có tên thì luật này chỉ còn ' +
         'cách hỏi một vị trí, và một lần sắp xếp lại màn sẽ làm nó đỏ mà chẳng có gì hỏng',
+    );
+  } else if (!/(stepAt|findIndex|indexOf)\s*\(\s*(\(\s*\w+\s*\)\s*=>[^)]*)?['"`]/.test(decl[2])) {
+    /* "Suy ra" phải nghĩa là TRA THEO TÊN, không phải "có phép tính".
+       Bản đầu của luật này chỉ cấm số trần, nên `STEPS.length - 7` đi lọt —
+       một biểu thức trông như suy ra, bằng đúng 0, và lệch khỏi bảng ngay lần
+       chèn màn đầu tiên. Cái phải đòi là một KHOÁ xuất hiện trong biểu thức. */
+    problems.push(
+      `\`${idName}\` = \`${decl[2].trim()}\` không TRA màn theo tên — thứ tự màn đã là một bảng, nên vị ` +
+        'trí phải đến từ một phép tra có KHOÁ (`stepAt(\'body\')`). Một con số gõ tay, hay một biểu thức ' +
+        'tình cờ bằng đúng nó, sẽ lệch khỏi bảng ở lần chèn màn đầu tiên và cái khoá số đo sẽ lặng lẽ ' +
+        'đi canh một màn khác',
+    );
+  }
+
+  /* ── 3b. nội dung màn rẽ theo TÊN, không theo vị trí ──
+
+     `{step === 0 && (…)}` là ba mươi mấy chỗ phải sửa tay mỗi lần chèn một
+     màn. Phép so vị trí trong `disabled` thì vẫn hợp lệ — nút Quay lại hỏi
+     "có màn nào trước không" — nên luật chỉ soi các nhánh DỰNG NỘI DUNG. */
+  const byIndex = [...code.matchAll(/\{\s*step === \d+\s*&&/g)];
+  if (byIndex.length) {
+    problems.push(
+      `${byIndex.length} nhánh JSX của onboarding còn rẽ theo VỊ TRÍ (\`${byIndex[0][0].trim()}\`) — ` +
+        'chèn một màn vào giữa là phải đánh số lại từng nhánh bằng tay, và một nhánh sót lại vẫn dựng ' +
+        'ra màn hình, chỉ là màn sai',
     );
   }
 

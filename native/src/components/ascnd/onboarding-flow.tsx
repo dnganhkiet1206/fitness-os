@@ -58,12 +58,51 @@ import { errorText } from '@/lib/error-copy';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { decText } from '@/lib/number-input';
 
-const TOTAL_STEPS = 7;
+/**
+ * Thứ tự các màn, viết ra thành DỮ LIỆU.
+ *
+ * ── ba mảng song song, và cái giá của chúng ──
+ *
+ * Trước đây thứ tự này sống ở BA chỗ cùng lúc, cả ba đánh số theo vị trí:
+ * `STEP_ICONS` ở phạm vi module, `STEP_TITLES` dựng lại mỗi lần render trong
+ * thân component, và ba mươi mấy nhánh `step === 0…6` rải khắp phần JSX. Ba
+ * danh sách phải tự khớp nhau, và không có gì bắt chúng khớp: chèn một màn vào
+ * giữa là phải sửa đúng ba chỗ theo đúng một thứ tự, còn sót một chỗ thì màn
+ * hình vẫn dựng ra được — chỉ là mang nhầm icon, hoặc nhầm tên.
+ *
+ * Luồng 13 màn sẽ chèn sáu màn vào giữa. Làm việc đó trên ba mảng song song là
+ * chép tay mười tám lần một phép đánh số.
+ *
+ * Nên thứ tự lên đây, đúng một bản. Mỗi màn có một KHOÁ, và phần JSX hỏi khoá
+ * chứ không hỏi vị trí: `at === 'body'` thay cho `step === 0`. Dời màn đi đâu
+ * thì chỉ mảng này đổi, và mọi thứ còn lại vẫn đúng vì không chỗ nào còn biết
+ * số thứ tự là bao nhiêu.
+ *
+ * `title` là TÊN KHOÁ trong bảng chữ, không phải chuỗi đã dịch: bảng này ở
+ * phạm vi module nên nó không có `i18n`, và một bảng phải dựng lại mỗi lần
+ * render chỉ để tra bảy chuỗi là đúng thứ vừa được gỡ đi.
+ */
+const STEPS = [
+  { key: 'body', icon: User, title: 'onboardingStepPersonal' },
+  { key: 'goal', icon: Target, title: 'onboardingStepGoal' },
+  { key: 'training', icon: Dumbbell, title: 'onboardingStepTraining' },
+  { key: 'lifestyle', icon: Moon, title: 'onboardingStepLifestyle' },
+  { key: 'diet', icon: Utensils, title: 'onboardingStepDiet' },
+  { key: 'supps', icon: Pill, title: 'onboardingStepSupplements' },
+  { key: 'connect', icon: HeartPulse, title: 'onboardingStepConnect' },
+] as const satisfies readonly { key: string; icon: LucideIcon; title: string }[];
+
+type StepKey = (typeof STEPS)[number]['key'];
+
+const TOTAL_STEPS = STEPS.length;
+
+/** Vị trí của một màn, hỏi bằng tên. `-1` nếu màn ấy không còn trong luồng. */
+const stepAt = (key: StepKey) => STEPS.findIndex((s) => s.key === key);
 
 /**
  * Màn NHẬN SỐ ĐO CƠ THỂ — cổng `planFromEntry` phải chốt ở đây.
  *
- * ── vì sao nó là một cái TÊN chứ không phải số 0 viết trong JSX ──
+ * ── vì sao nó là một cái TÊN, và vì sao nay nó được SUY RA ──
  *
  * Luật D của `tools/profile-onboarding.mjs` từng hỏi `disabled={step === 0 && …}`,
  * tức nó canh một VỊ TRÍ. Vị trí là thứ sắp đổi: luồng 13 màn đưa số đo xuống
@@ -71,11 +110,12 @@ const TOTAL_STEPS = 7;
  * lần sắp xếp lại, trong khi tính chất nó canh — *không đi qua được một cơ thể
  * chưa kiểm* — không hề đổi.
  *
- * Nên vị trí thành dữ liệu, và luật hỏi cái TÊN. Dời màn đi đâu thì sửa đúng
- * con số ở đây, và mọi thứ khác vẫn đúng.
+ * Giai đoạn 0 đặt tên cho nó nhưng vẫn viết tay con số 0, nên cái tên ấy mới
+ * chỉ là một nhãn: dời màn mà quên sửa dòng này thì cái khoá lặng lẽ chuyển
+ * sang canh một màn khác. Nay nó ĐỌC bảng trên, nên hai thứ không thể lệch:
+ * không còn con số nào để quên.
  */
-const BODY_STATS_STEP = 0;
-const STEP_ICONS: LucideIcon[] = [User, Target, Dumbbell, Moon, Utensils, Pill, HeartPulse];
+const BODY_STATS_STEP = stepAt('body');
 
 const COMMON_SUPPLEMENTS = [
   { name: 'Whey Protein', category: 'protein', dose: '30g', timing: 'post-workout' },
@@ -117,16 +157,6 @@ export function OnboardingFlow() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const { unit: vUnit } = useVolumeUnit();
-
-  const STEP_TITLES = [
-    i18n.onboardingStepPersonal,
-    i18n.onboardingStepGoal,
-    i18n.onboardingStepTraining,
-    i18n.onboardingStepLifestyle,
-    i18n.onboardingStepDiet,
-    i18n.onboardingStepSupplements,
-    i18n.onboardingStepConnect,
-  ];
 
   const [step, setStep] = useState(0);
   const [direction, setDirection] = useState(1);
@@ -308,7 +338,11 @@ export function OnboardingFlow() {
     });
   };
 
-  const StepIcon = STEP_ICONS[step];
+  /* Màn đang đứng, đọc bằng TÊN. Mọi nhánh JSX dưới kia hỏi `at`, không hỏi
+     `step` — nên thứ tự đổi thì không nhánh nào phải sửa. */
+  const here = STEPS[step];
+  const at: StepKey = here.key;
+  const StepIcon = here.icon;
   const legal = getLegal(lang);
   const legalDoc: LegalDoc | null = legalTab ? legal[legalTab] : null;
 
@@ -345,9 +379,9 @@ export function OnboardingFlow() {
 
         {/* Progress dots */}
         <View style={styles.dots}>
-          {STEP_TITLES.map((_, i) => (
+          {STEPS.map((s, i) => (
             <View
-              key={i}
+              key={s.key}
               style={[
                 styles.dot,
                 i === step && styles.dotActive,
@@ -367,7 +401,7 @@ export function OnboardingFlow() {
             <Text style={styles.stepCount}>
               {i18n.onboardingStep} {step + 1}/{TOTAL_STEPS}
             </Text>
-            <Text style={styles.stepTitle}>{STEP_TITLES[step]}</Text>
+            <Text style={styles.stepTitle}>{i18n[here.title]}</Text>
           </View>
         </View>
 
@@ -375,7 +409,7 @@ export function OnboardingFlow() {
           key={step}
           entering={(direction > 0 ? SlideInRight : SlideInLeft).springify().stiffness(300).damping(30)}>
           <GlassCard style={styles.card}>
-            {step === 0 && (
+            {at === 'body' && (
               <>
                 <Field label={i18n.settingsName}>
                   <TextInput
@@ -436,7 +470,7 @@ export function OnboardingFlow() {
               </>
             )}
 
-            {step === 1 && (
+            {at === 'goal' && (
               <>
                 <Text style={styles.fieldLabel}>{i18n.onboardingYourGoal}</Text>
                 {[
@@ -458,7 +492,7 @@ export function OnboardingFlow() {
               </>
             )}
 
-            {step === 2 && (
+            {at === 'training' && (
               <>
                 <Text style={styles.fieldLabel}>{i18n.onboardingTrainingLevel}</Text>
                 {[
@@ -513,7 +547,7 @@ export function OnboardingFlow() {
               </>
             )}
 
-            {step === 3 && (
+            {at === 'lifestyle' && (
               <>
                 <View style={styles.rowFields}>
                   <View style={styles.halfField}>
@@ -575,7 +609,7 @@ export function OnboardingFlow() {
               </>
             )}
 
-            {step === 4 && (
+            {at === 'diet' && (
               <>
                 <Text style={styles.fieldLabel}>{i18n.onboardingDiet}</Text>
                 {[
@@ -618,7 +652,7 @@ export function OnboardingFlow() {
               </>
             )}
 
-            {step === 5 && (
+            {at === 'supps' && (
               <>
                 <Text style={styles.fieldLabel}>{i18n.onboardingSelectSupplements}</Text>
                 {COMMON_SUPPLEMENTS.map((s, i) => {
@@ -683,7 +717,7 @@ export function OnboardingFlow() {
               because the Next/Done control already is one; making "skip" a
               second button would imply the other is required.
             */}
-            {step === 6 && (
+            {at === 'connect' && (
               <>
                 <Text style={styles.connectIntro}>{i18n.onboardingConnectIntro}</Text>
 
@@ -716,7 +750,7 @@ export function OnboardingFlow() {
         </Animated.View>
 
         {/* Terms acceptance (final step, web) */}
-        {step === 6 && (
+        {at === 'connect' && (
           <Animated.View entering={FadeIn.duration(duration.appear)} style={styles.termsRow}>
             <Pressable
               accessibilityRole="checkbox"
