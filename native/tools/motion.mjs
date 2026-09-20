@@ -380,7 +380,7 @@ const LEGACY = new Set([
   'src/components/ascnd/assistant-aura.tsx', 'src/components/ascnd/day-plan.tsx',
   'src/components/ascnd/help-button.tsx', 'src/components/ascnd/koa-companion.tsx',
   'src/components/ascnd/line-chart.tsx', 'src/components/ascnd/liquid-tab-bar.tsx',
-  'src/components/ascnd/onboarding-flow.tsx', 'src/components/ascnd/readiness-gauge.tsx',
+  'src/components/ascnd/readiness-gauge.tsx',
   'src/components/ascnd/rest-timer.tsx', 'src/components/ascnd/studio/sky-live.tsx',
   'src/components/ascnd/template-list.tsx', 'src/components/ascnd/today-meals.tsx',
   'src/components/ascnd/water-chart.tsx', 'src/components/ascnd/weight-log-list.tsx',

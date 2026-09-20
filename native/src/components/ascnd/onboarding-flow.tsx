@@ -41,6 +41,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { COMMON_ALLERGIES, parseDislikes } from '@/lib/food-preferences';
 import { radius, spacing, type } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -58,6 +59,22 @@ import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { decText } from '@/lib/number-input';
 
 const TOTAL_STEPS = 7;
+
+/**
+ * Màn NHẬN SỐ ĐO CƠ THỂ — cổng `planFromEntry` phải chốt ở đây.
+ *
+ * ── vì sao nó là một cái TÊN chứ không phải số 0 viết trong JSX ──
+ *
+ * Luật D của `tools/profile-onboarding.mjs` từng hỏi `disabled={step === 0 && …}`,
+ * tức nó canh một VỊ TRÍ. Vị trí là thứ sắp đổi: luồng 13 màn đưa số đo xuống
+ * các màn 05–08 và để màn 0 làm lời chào. Một luật neo vào vị trí sẽ đỏ vì một
+ * lần sắp xếp lại, trong khi tính chất nó canh — *không đi qua được một cơ thể
+ * chưa kiểm* — không hề đổi.
+ *
+ * Nên vị trí thành dữ liệu, và luật hỏi cái TÊN. Dời màn đi đâu thì sửa đúng
+ * con số ở đây, và mọi thứ khác vẫn đúng.
+ */
+const BODY_STATS_STEP = 0;
 const STEP_ICONS: LucideIcon[] = [User, Target, Dumbbell, Moon, Utensils, Pill, HeartPulse];
 
 const COMMON_SUPPLEMENTS = [
@@ -700,7 +717,7 @@ export function OnboardingFlow() {
 
         {/* Terms acceptance (final step, web) */}
         {step === 6 && (
-          <Animated.View entering={FadeIn.duration(220)} style={styles.termsRow}>
+          <Animated.View entering={FadeIn.duration(duration.appear)} style={styles.termsRow}>
             <Pressable
               accessibilityRole="checkbox"
               accessibilityLabel={i18n.a11yAcceptTerms}
@@ -747,8 +764,8 @@ export function OnboardingFlow() {
               /* Step 0 is where height and weight are typed, and every number
                  the account gets is derived from them. Nothing past this step
                  is worth filling in for a body that has not been described. */
-              style={[styles.nextBtn, step === 0 && statsBad && styles.disabled]}
-              disabled={step === 0 && statsBad}
+              style={[styles.nextBtn, step === BODY_STATS_STEP && statsBad && styles.disabled]}
+              disabled={step === BODY_STATS_STEP && statsBad}
               onPress={goNext}>
               <Text style={styles.nextText}>{i18n.onboardingNext}</Text>
               <Icon icon={ChevronRight} size={16} color={c.primaryForeground} />

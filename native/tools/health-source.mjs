@@ -307,26 +307,102 @@ const problems = [];
 }
 
 /*
-  ── 7: onboarding mời cả hai quyền ──
+  ── 7: onboarding mời quyền Sức khoẻ; quyền THÔNG BÁO thì xin ở nơi nó được bật ──
 
-  The same failure one step earlier. Both permissions existed and neither was
-  ever offered: Health only from a button on Today, notifications only from a
-  screen in Settings. Somebody finished onboarding, landed on a dashboard of
-  empty rings, and had no reason to think the app could fill them in.
+  Bản trước đòi cả hai quyền phải được mời trong onboarding. Vế Sức khoẻ vẫn
+  đúng và giữ nguyên: điểm sẵn sàng cần HRV, nhịp tim nghỉ và giấc ngủ, và
+  bảng hệ thống của iOS không nói được vì sao app NÀY cần — nên lý do phải
+  nằm trên màn trước khi hỏi.
 
-  The `why` line is checked too, because it is the part that does the work. iOS
-  shows a system sheet that cannot say anything specific to this app, so if the
-  reason is not on screen first, the person is deciding with nothing to go on.
+  Vế THÔNG BÁO thì đổi CHỖ, không đổi tính chất. Bắt onboarding phải mời là
+  một câu về vị trí, và nó kéo theo một hệ quả tệ: quyền bị xin vì người ta
+  vừa bước vào app, chứ không vì người ta vừa bật một thứ cần tới nó. Tính
+  chất đáng canh là câu sau, và nó viết ra được:
+
+      quyền thông báo chỉ được xin khi người dùng CHỦ ĐỘNG bật một tính năng
+      phụ thuộc vào thông báo
+
+  Ba vế, và cả ba đều hỏi cấu trúc chứ không hỏi tên màn:
+
+    A. tính năng nhắc nhở SỞ HỮU lời xin — `use-reminders.ts` phải gọi nó,
+       nếu không một ngày nào đó cả phần nhắc im lặng mà không ai bị hỏi.
+    B. không xin LÚC VÀO — không call site nào nằm trong một `useEffect`,
+       vì "mở màn hình" không phải là "bật tính năng".
+    C. lời xin nằm sau một điều kiện nói rằng có thứ gì đó vừa được BẬT —
+       và điều kiện ấy phải dẫn về `.enabled`, chứ không phải chỉ về
+       "chưa có quyền". `if (!granted)` là xin mỗi lần chạy qua.
+
+  Onboarding không còn bị ĐÒI phải mời thông báo. Nó cũng không bị cấm: nếu
+  một màn nào đó ở đấy có một công tắc thật thì nó vẫn phải qua vế B và C như
+  mọi chỗ khác.
 */
 {
   const onb = strip(read(ONBOARDING));
   for (const [what, re, why] of [
     ['Apple Health', /requestHealthPermissions\(/, 'điểm sẵn sàng cần HRV, nhịp tim nghỉ và giấc ngủ — không có quyền thì không có gì để tính'],
-    ['thông báo', /requestNotificationPermission\(/, 'toàn bộ phần nhắc nhở im lặng nếu không ai xin quyền'],
     ['lý do trước khi xin', /onboardingHealthWhy/, 'bảng hệ thống của iOS không nói được vì sao app này cần'],
     ['ẩn khi máy không có HealthKit', /isHealthKitAvailable\(/, 'một lời mời không thể nhận lời còn tệ hơn không mời'],
   ]) {
     if (!re.test(onb)) problems.push(`${ONBOARDING}: không mời "${what}" — ${why}`);
+  }
+
+  const ASK = 'requestNotificationPermission';
+  const REMINDERS = 'src/hooks/use-reminders.ts';
+
+  /* ── A ── */
+  const rem = strip(read(REMINDERS));
+  if (!new RegExp(`${ASK}\\(`).test(rem)) {
+    problems.push(
+      `${REMINDERS}: không xin quyền thông báo — đây là chỗ người dùng BẬT nhắc nhở, và nếu ` +
+        'không ai xin ở đây thì cả phần nhắc im lặng mà không có gì báo',
+    );
+  }
+
+  /* ── B: không call site nào nằm trong một useEffect ──
+     Cắt thân `useEffect(` bằng phép đếm ngoặc, trên mọi tệp src có nhắc ASK. */
+  const bodyAfter = (src, from) => {
+    let d = 0;
+    let i = src.indexOf('(', from);
+    const start = i;
+    for (; i < src.length; i++) {
+      if (src[i] === '(') d++;
+      else if (src[i] === ')') { d--; if (d === 0) return src.slice(start, i + 1); }
+    }
+    return src.slice(start);
+  };
+  const touching = walk(path.join(NATIVE, 'src'))
+    .map((abs) => path.relative(NATIVE, abs))
+    .filter((rel) => read(rel).includes(ASK));
+  for (const f of touching) {
+    const code = strip(read(f));
+    for (let at = code.indexOf('useEffect'); at !== -1; at = code.indexOf('useEffect', at + 1)) {
+      if (bodyAfter(code, at).includes(ASK)) {
+        problems.push(
+          `${f}: xin quyền thông báo bên trong một useEffect — "mở màn hình" không phải là ` +
+            '"bật tính năng", và một lời xin lúc vào là lời xin người ta chưa có lý do để đồng ý',
+        );
+        break;
+      }
+    }
+  }
+
+  /* ── C: lời xin ở use-reminders nằm sau một điều kiện dẫn về `.enabled` ── */
+  const call = rem.indexOf(`${ASK}(`);
+  if (call !== -1) {
+    const before = rem.slice(Math.max(0, call - 500), call);
+    const cond = /if\s*\(([^)]*)\)\s*\{?[^{}]*$/.exec(before)?.[1] ?? '';
+    const names = [...cond.matchAll(/[A-Za-z_$][\w$]*/g)].map((m) => m[0]);
+    const fromEnabled = names.some((n) =>
+      new RegExp(`(const|let)\\s+${n}\\s*=[^;]*\\.enabled`).test(rem) || /enabled/.test(n),
+    );
+    if (!cond.trim()) {
+      problems.push(`${REMINDERS}: lời xin quyền thông báo không nằm sau một điều kiện nào — nó sẽ chạy mỗi lượt`);
+    } else if (!fromEnabled) {
+      problems.push(
+        `${REMINDERS}: điều kiện trước lời xin (\`${cond.trim().slice(0, 44)}\`) không dẫn về \`.enabled\` — ` +
+          'nó đang hỏi "đã có quyền chưa" chứ không hỏi "người dùng vừa bật gì chưa", và hai câu đó khác nhau',
+      );
+    }
   }
 }
 
@@ -810,7 +886,7 @@ console.log(
     'buổi tập nhập về mang volume_load 0 nên ACWR không đổi, và external_id khiến đồng bộ lại không nhân đôi; ' +
     'và đường ống này thật sự có người chạy — đồng bộ tự động khi mở app (15 phút một lần, ghi mốc trước khi chạy), ' +
     'không tự ý bật bảng xin quyền, không nói gì khi thành công lẫn thất bại; ' +
-    'onboarding có mời cả Apple Health lẫn thông báo, kèm lý do trước khi bảng hệ thống hiện ra; ' +
+    'onboarding mời Apple Health kèm lý do trước khi bảng hệ thống hiện ra, còn quyền THÔNG BÁO thì xin ở nơi nó được bật — tính năng nhắc nhở sở hữu lời xin, không call site nào nằm trong một useEffect, và điều kiện đứng trước nó phải dẫn về `.enabled` chứ không chỉ về "chưa có quyền"; ' +
     'và điểm sẵn sàng không chấm điểm thứ nó không đo được — đêm không có log trả về null và trọng số ' +
     'được chia lại, thay vì bị chấm 20 điểm như đêm thức trắng rồi chặn cả điểm số ở 40; ' +
     'ACWR chia cho số ngày THẬT SỰ có trong cửa sổ (sàn 7), nên người tập đều tuần đầu ra 1.00 chứ không phải 4.00, ' +

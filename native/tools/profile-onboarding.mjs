@@ -343,24 +343,124 @@ try {
 /* ─────────────────────────────────────────────────────────────────────────
    Rule D — onboarding writes the reading, and will not move on without it
    ───────────────────────────────────────────────────────────────────────── */
+/**
+ * ── vì sao luật này thôi hỏi `step === 0` ──
+ *
+ * Bản trước hỏi đúng chuỗi `disabled={step === 0 && …}`. Đó là một câu về VỊ
+ * TRÍ, và vị trí sắp đổi: luồng 13 màn để màn 0 làm lời chào và đưa số đo cơ
+ * thể xuống các màn 05–08. Một lần sắp xếp lại là luật đỏ, trong khi tính chất
+ * nó canh — *không đi qua được một cơ thể chưa kiểm* — không hề suy suyển.
+ *
+ * Chính chú thích của bản trước đã nói ra điều này khi luật đổi lần đầu: "The
+ * property never changed; the identifiers did." Lần này thì đến lượt VỊ TRÍ.
+ *
+ * Nên luật đọc ba cái TÊN ra khỏi mã rồi hỏi quan hệ giữa chúng:
+ *
+ *     CỔNG    `const <tên> = planFromEntry(`      — chỗ duy nhất phán quyết
+ *     CHỐT    `const <tên> = !<cổng>.ok;`          — phán quyết ở dạng boolean
+ *     DANH    `const <TÊN_HOA> = <số>;`            — màn nhận số đo, có TÊN
+ *
+ * rồi đòi: nút đi tiếp của MÀN ẤY khoá theo chốt, nút hoàn tất cũng khoá theo
+ * chốt, câu ghi vẫn ném khi cổng từ chối, và **không một `disabled` nào được
+ * so `step` với một con số viết thẳng**. Vế cuối là cái chặn bản cũ quay lại:
+ * gõ lại `step === 0` là đỏ, dù nó vẫn kèm đúng cái chốt.
+ *
+ * Đổi tên biến, dời màn, đổi số bước — luật vẫn đúng. Gỡ cái khoá đi — đỏ.
+ */
 {
   const onb = read('src/components/ascnd/onboarding-flow.tsx');
   const code = strip(onb);
 
-  /* ── the gate, not a spelling ──
+  /** Nội dung `{…}` của một prop, cắt bằng phép đếm ngoặc chứ không bằng regex. */
+  const propExprs = (src, name) => {
+    const out = [];
+    const re = new RegExp(`${name}=\\{`, 'g');
+    for (let m = re.exec(src); m; m = re.exec(src)) {
+      let d = 1;
+      let i = m.index + m[0].length;
+      for (; i < src.length && d > 0; i++) {
+        if (src[i] === '{') d++;
+        else if (src[i] === '}') d--;
+      }
+      out.push(src.slice(m.index + m[0].length, i - 1));
+    }
+    return out;
+  };
 
-     This rule named `readStat('height_cm', heightCm, true)` until the screens
-     moved onto the shared `planFromEntry`. The property never changed; the
-     identifiers did. What it asks now is structural: the row this screen
-     persists is the gate's own answer, and nothing in the payload re-derives a
-     number the gate never saw. */
-  if (!/planFromEntry\(/.test(code)) {
+  /* ── 1. the gate, by name ── */
+  const gate = /const (\w+) = planFromEntry\(/.exec(code)?.[1] ?? null;
+  if (!gate) {
     problems.push(
       'onboarding không còn đi qua cổng chung planFromEntry — đây là màn DUY NHẤT tạo ra ' +
         'con số cho cả tài khoản, và nó ghi kèm onboarding_completed: true',
     );
   }
 
+  /* ── 2. the verdict, as a boolean derived from that gate ──
+     `const x = false` hay một phép tự tính lại đều rơi ở đây. */
+  const blocked = gate ? new RegExp(`const (\\w+) = !${gate}\\.ok;`).exec(code)?.[1] ?? null : null;
+  if (gate && !blocked) {
+    problems.push(
+      `onboarding không còn rút một cái chốt ra khỏi \`!${gate}.ok\` — cái khoá phải là chính ` +
+        'phán quyết của cổng, không phải một biến tự tính lấy',
+    );
+  }
+
+  /* ── 3. the body-stats screen has a NAME ──
+     Con số nằm ở đúng một chỗ, nên dời màn là sửa một dòng. */
+  const ident = /const ([A-Z][A-Z0-9_]*(?:BODY|STATS|WEIGHT)[A-Z0-9_]*|[A-Z][A-Z0-9_]*) = \d+;/m;
+  const idName = [...code.matchAll(/const ([A-Z][A-Z0-9_]*) = \d+;/g)]
+    .map((m) => m[1])
+    .find((n) => /BODY|STATS|WEIGHT/.test(n)) ?? null;
+  void ident;
+  if (!idName) {
+    problems.push(
+      'onboarding không đặt TÊN cho màn nhận số đo cơ thể — không có tên thì luật này chỉ còn ' +
+        'cách hỏi một vị trí, và một lần sắp xếp lại màn sẽ làm nó đỏ mà chẳng có gì hỏng',
+    );
+  }
+
+  /* ── 4. cái CHỐT không được gắn vào một vị trí viết thẳng ──
+
+     Đây là cái chặn bản cũ quay lại, và nó cố ý HẸP: chỉ soi những `disabled`
+     có mang cái chốt. `disabled={step === 0}` của nút Quay lại vẫn hợp lệ —
+     "không có màn nào trước màn đầu" là một câu đúng ở mọi thứ tự, không phải
+     một danh tính màn. Cấm cả hai là cách một luật bị tắt vì kêu oan. */
+  const dis = propExprs(code, 'disabled');
+  const positional = blocked
+    ? dis.filter((e) => new RegExp(`\\b${blocked}\\b`).test(e) && /step\s*===\s*\d/.test(e))
+    : [];
+  if (positional.length) {
+    problems.push(
+      `onboarding gắn cái chốt số đo vào một VỊ TRÍ viết thẳng (\`${positional[0].trim().slice(0, 52)}\`) — ` +
+        'dùng tên của màn, nếu không một lần đổi thứ tự sẽ dời cái khoá sang một màn khác trong im lặng',
+    );
+  }
+
+  /* ── 5. the forward control of THAT screen, and the finish control ── */
+  if (blocked && idName) {
+    const gated = dis.filter((e) => new RegExp(`\\b${blocked}\\b`).test(e));
+    const onThatScreen = gated.filter((e) => new RegExp(`step\\s*===\\s*${idName}\\b`).test(e));
+    if (!onThatScreen.length) {
+      problems.push(
+        `nút đi tiếp của màn ${idName} không khoá theo \`${blocked}\` — mọi bước sau đều là câu hỏi ` +
+          'về một cơ thể chưa biết',
+      );
+    }
+    if (gated.length < 2) {
+      problems.push(
+        `chỉ có ${gated.length} nút khoá theo \`${blocked}\` — cả nút đi tiếp của màn số đo LẪN nút ` +
+          'hoàn tất đều phải khoá, nếu không vẫn còn một đường đi vòng tới câu ghi',
+      );
+    }
+  }
+
+  /* ── 6. the write itself refuses, whatever the screen did ── */
+  if (gate && !new RegExp(`if\\s*\\(\\s*!${gate}\\.ok\\s*\\)\\s*\\{?\\s*\\n?\\s*throw`).test(code)) {
+    problems.push('mutationFn của onboarding không chặn khi cổng từ chối — "không với tới được" là phát biểu về màn hình, không phải về câu ghi');
+  }
+
+  /* ── 7. the row that gets persisted is the gate's own answer ── */
   const at = code.indexOf("from('profiles').upsert(");
   const row = at === -1 ? '' : code.slice(at, at + 1600);
   if (at === -1) {
@@ -382,20 +482,6 @@ try {
       'payload upsert của onboarding còn phân tích lại một con số — màn hình kiểm một bản ' +
         'phân tích rồi ghi một bản khác chỉ đúng do may mắn',
     );
-  }
-  /* the write itself refuses, whatever the screen did */
-  if (!/if\s*\(\s*!\w+\.ok\s*\)\s*\{?\s*\n?\s*throw/.test(code)) {
-    problems.push('mutationFn của onboarding không chặn khi cổng từ chối — "không với tới được" là phát biểu về màn hình, không phải về câu ghi');
-  }
-  /* and step 0 cannot be walked past */
-  if (!/disabled=\{step === 0 && \w+\}/.test(code) || !/!\w*\.ok\b/.test(code)) {
-    problems.push(
-      'nút Tiếp ở bước 0 không còn khoá theo phán quyết của cổng — mọi bước sau đều là câu hỏi ' +
-        'về một cơ thể chưa biết',
-    );
-  }
-  if (!/statsBad/.test(code.split('onboardingDone')[0].slice(-800))) {
-    problems.push('nút Hoàn tất không xét trạng thái số đo');
   }
   if (!/styles\.fieldError/.test(code)) {
     problems.push('onboarding không hiện câu báo lỗi dưới ô — khoá nút mà không nói vì sao là một màn hình chết');
