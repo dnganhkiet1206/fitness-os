@@ -28,6 +28,7 @@ import { radius, spacing, type } from '@/constants/ascnd';
 import { makeMaterialStyles, makeStyles, type PaletteKey, alpha } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
+import { closeOpenSwipeRow } from '@/components/ascnd/swipe-row';
 import { setActiveScroller } from '@/lib/scroll-to-top';
 import { noteKoaBand } from '@/lib/koa-band';
 import { handleTabScroll } from '@/lib/tab-bar-visibility';
@@ -289,7 +290,7 @@ export function Screen(props: ScreenProps) {
   );
 }
 
-function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, refreshable = false, children, style, ...props }: ScreenProps) {
+function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, refreshable = false, onScrollBeginDrag, children, style, ...props }: ScreenProps) {
   const c = usePalette();
   const m = useMaterial();
   const styles = stylesFor(c);
@@ -513,6 +514,24 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
           scrollEnabled={contentScrollEnabled}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
+          /*
+            Hàng vuốt đang mở thì thu về khi ngón tay bắt đầu KÉO trang.
+
+            `onScrollBeginDrag` chứ không phải `onScroll`: UIKit đặt luật này ở
+            `scrollViewWillBeginDragging`, và lý do là một cú cuộn do CHƯƠNG
+            TRÌNH gây ra — kéo-để-làm-mới, hay cú nhảy về đầu trang khi chạm
+            tab — không phải một thao tác của người dùng, nên nó không được
+            đóng một hàng người ta vừa cố ý mở.
+
+            Prop cùng tên do chỗ gọi truyền vào vẫn chạy: nó được TÁCH khỏi
+            `...props` ở chữ ký rồi gọi tay ngay dưới đây. Để nó nằm trong
+            spread thì `{...props}` ở cuối sẽ ghi đè lặng lẽ cả dòng này — một
+            luật đúng bị xoá bởi thứ tự khai prop.
+          */
+          onScrollBeginDrag={(e) => {
+            closeOpenSwipeRow();
+            onScrollBeginDrag?.(e);
+          }}
           onScroll={(e) => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
             handleTabScroll(contentOffset.y);

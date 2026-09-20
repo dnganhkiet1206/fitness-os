@@ -53,7 +53,7 @@ import { PeekHost } from '@/components/ascnd/card-peek';
 import { AccountAvatar } from '@/components/ascnd/account-avatar';
 import { BrandLockup } from '@/components/ascnd/brand-lockup';
 import { DragReorder } from '@/components/ascnd/drag-reorder';
-import { SwipeRow } from '@/components/ascnd/swipe-row';
+import { closeOpenSwipeRow, SwipeRow } from '@/components/ascnd/swipe-row';
 import { StreakChip } from '@/components/ascnd/streak-chip';
 import { Mascot } from '@/components/ascnd/mascot';
 import { ReadinessAura } from '@/components/ascnd/readiness-aura';
@@ -830,6 +830,11 @@ export default function TodayScreen() {
       /* Chạm vào là tỉnh. Một cú kéo không đi qua `onTouchStart` của lớp bọc
          khi ScrollView đã giành quyền, nên nó phải tự đánh thức. */
       runOnJS(wake)();
+      /* Và hàng vuốt nào đang mở thì thu về — `scrollViewWillBeginDragging`
+         của UIKit làm đúng việc này, và SwiftUI gói nó trong
+         `swipeActionsContainer()`. Bắt đầu KÉO chứ không phải `onScroll`:
+         trang tự cuộn về đầu không phải là một thao tác của người dùng. */
+      runOnJS(closeOpenSwipeRow)();
     },
     /* Thả ngay khi nhấc tay. Nếu có đà thì `onMomentumBegin` giữ lại ở khung
        hình kế — xem ghi chú ở `hold`.

@@ -190,6 +190,11 @@ function machine(src, orSrc, world = {}) {
   const make = new Function(
     'dragging', 'offscreen', 'idle', 'focusSV', 'scrollY', 'viewportH', 'maxScroll',
     'measure', 'koaRef', 'runOnJS', 'wake', 'settleOffscreen', 'tabScrollFrame',
+    /* `onBeginDrag` cũng thu hàng vuốt đang mở về — xem `tools/swipe.mjs`. Bộ
+       kiểm này KHÔNG có ý kiến gì về việc ấy; nó chỉ cần cái tên tồn tại trong
+       thế giới giả, nếu không phép dựng lại bộ xử lý ném ngay và mọi ca đều đỏ
+       vì cùng một lý do sai. */
+    'closeOpenSwipeRow',
     'armTabBarRestore', 'Date',
     `return ${src.replace(/^\(/, '').replace(/\)$/, '')};`,
   );
@@ -200,7 +205,7 @@ function machine(src, orSrc, world = {}) {
   const h = make(
     dragging, off, idleSV, focusSV, scrollY, viewportH, maxScroll,
     measure, {}, (f) => f, () => { woke++; }, settleOffscreen, () => false,
-    () => {}, Date,
+    () => {}, () => {}, Date,
   );
 
   /* Phép OR, trích từ chính `useDerivedValue`. */

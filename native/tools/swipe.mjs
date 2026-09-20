@@ -659,6 +659,126 @@ function declOf(body, name) {
   }
 }
 
+/**
+ * Thân của một handler, dù nó viết dạng prop JSX hay dạng thuộc tính đối tượng.
+ *
+ *     onScrollBeginDrag={(e) => { … }}      ← ngoặc đầu là ngoặc JSX
+ *     onBeginDrag: () => { … },             ← ngoặc đầu là thân mũi tên
+ *
+ * Cả hai chỉ cần một luật: từ tên hook, nhảy tới dấu `{` đầu tiên rồi ĐẾM
+ * NGOẶC tới dấu đóng khớp với nó. Trả `null` khi không có hook ấy, để chỗ gọi
+ * phân biệt được "không nằm trong" với "không tìm thấy".
+ */
+function handlerBody(code, hook) {
+  const at = code.search(new RegExp(`\\b${hook}\\s*[=:]`));
+  if (at === -1) return null;
+  const open = code.indexOf('{', at);
+  if (open === -1) return null;
+  let depth = 0;
+  for (let i = open; i < code.length; i++) {
+    if (code[i] === '{') depth++;
+    else if (code[i] === '}') {
+      depth--;
+      if (depth === 0) return code.slice(open, i + 1);
+    }
+  }
+  return null;
+}
+
+/* tiền đề được CHẠY: phép cắt phải phân biệt được "ở trong" với "ở gần" */
+{
+  const jsx = 'onScrollBeginDrag={(e) => { hit(); }}\nonScroll={(e) => { miss(); }}';
+  const obj = 'onBeginDrag: () => { hit(); },\nonScroll: () => { miss(); },';
+  for (const [label, code] of [['prop JSX', jsx], ['thuộc tính đối tượng', obj]]) {
+    const b = handlerBody(code, code.includes('onScrollBeginDrag') ? 'onScrollBeginDrag' : 'onBeginDrag');
+    if (!b || !b.includes('hit(')) problems.push(`tự kiểm hỏng — không cắt được thân handler dạng ${label}`);
+    if (b && b.includes('miss(')) problems.push(`tự kiểm hỏng — thân handler dạng ${label} nuốt cả handler kế bên`);
+  }
+  if (handlerBody('const x = 1;', 'onBeginDrag') !== null) problems.push('tự kiểm hỏng — cắt ra thân cho một hook không tồn tại');
+}
+
+/* ── hàng đang mở phải THU VỀ khi người dùng làm việc khác ──
+
+   `openRow` mới giải nửa bài: mở hàng B thì hàng A thu về. Nửa còn lại là mọi
+   thao tác KHÔNG PHẢI mở một hàng khác, và chủ dự án chụp đúng cảnh thiếu nó:
+   hai nút còn nằm đó sau khi trang đã cuộn đi.
+
+   iOS gom cả ba vế vào một chỗ — `swipeActionsContainer()` của SwiftUI điều
+   phối "mỗi lần một hàng", "cuộn thì thu về", "chạm ra ngoài thì thu về" — còn
+   UIKit đặt vế thứ hai ở `scrollViewWillBeginDragging`. Vế thứ ba đã có sẵn:
+   `ReanimatedSwipeable` bật `Gesture.Tap()` khi hàng mở (`shouldEnableTap`).
+
+   VÙNG MÙ, ghi ra chứ không giấu: luật này đòi hai bộ cuộn ĐÃ BIẾT gọi hàm thu
+   về. Một bộ cuộn THỨ BA chứa hàng vuốt sẽ không bị nó nhìn thấy. Chứng minh
+   được điều đó bằng phép soi tĩnh thì phải lần được cây component từ chỗ cuộn
+   xuống tới `<SwipeRow`, và một luật đoán sai chỗ ấy là một luật kêu oan. */
+{
+  const TODAY = 'src/app/(tabs)/index.tsx';
+  const SCREEN = 'src/components/ascnd/screen.tsx';
+  const FN = 'closeOpenSwipeRow';
+
+  if (!new RegExp(`export function ${FN}\\(`).test(src)) {
+    problems.push(
+      `${COMPONENT}: không xuất \`${FN}\` — không có cách nào cho bộ cuộn thu hàng đang mở về, ` +
+        'và hàng sẽ nằm mở sau khi người dùng đã cuộn đi',
+    );
+  } else if (!new RegExp(`${FN}\\(\\)\\s*\\{\\s*openRow\\?\\.close\\(\\)`).test(src)) {
+    problems.push(`${COMPONENT}: \`${FN}\` không gọi \`openRow?.close()\` — nó đang không thu gì về cả`);
+  }
+
+  /* Hàng tháo khỏi cây lúc còn mở thì sổ ghi phải QUÊN nó, nếu không hàng kế
+     tiếp mở ra sẽ gọi `.close()` lên một cái xác. */
+  if (!/useEffect\(\s*\(\)\s*=>\s*\(\)\s*=>\s*\{[^}]*openRow = null/.test(src)) {
+    problems.push(
+      `${COMPONENT}: không có dọn-dẹp lúc tháo — \`openRow\` sẽ còn trỏ vào một hàng đã đi khỏi cây`,
+    );
+  }
+
+  for (const [f, hook, how] of [
+    [SCREEN, 'onScrollBeginDrag', `${FN}()`],
+    [TODAY, 'onBeginDrag', `runOnJS(${FN})()`],
+  ]) {
+    const code = readFileSync(path.join(NATIVE, f), 'utf8');
+    if (!code.includes(how)) {
+      problems.push(
+        `${f}: bộ cuộn không gọi \`${how}\` — hàng vuốt mở rồi cuộn trang thì nó vẫn nằm đó, ` +
+          'trong khi iOS thu nó về ngay khi ngón tay bắt đầu kéo',
+      );
+      continue;
+    }
+    /* Phải là sự kiện BẮT ĐẦU KÉO. `onScroll` cũng nổ khi trang tự cuộn —
+       kéo-để-làm-mới, hay cú nhảy về đầu khi chạm tab — và không thao tác nào
+       trong số đó là của người dùng.
+
+       ── vì sao CẮT THÂN chứ không nhìn lui ──
+
+       Bản đầu của luật này nhìn lui 900 ký tự từ chỗ gọi để tìm tên hook. Thử
+       phá bằng cách dời lời gọi sang `onScroll` thì nó vẫn XANH: chuỗi
+       `onScrollBeginDrag=` còn nằm đâu đó phía trên, và phép nhìn lui không
+       phân biệt được "ở gần" với "ở trong". Một luật đo khoảng cách thay vì đo
+       quan hệ thì chỉ đúng cho tới lần sắp xếp lại đầu tiên. */
+    const body = handlerBody(code, hook);
+    if (body === null) {
+      problems.push(`${f}: không tìm thấy \`${hook}\` để đọc thân nó — luật này đang không kiểm gì cả`);
+    } else if (!body.includes(how)) {
+      problems.push(
+        `${f}: \`${FN}\` không nằm TRONG \`${hook}\` — nó phải chạy lúc ngón tay BẮT ĐẦU kéo, ` +
+          'không phải mỗi khung hình cuộn, và không phải khi trang tự cuộn',
+      );
+    }
+  }
+
+  /* `Screen` nhận `onScrollBeginDrag` từ chỗ gọi. Nếu prop ấy còn nằm trong
+     `...props` thì spread ở cuối sẽ ghi đè lặng lẽ cả luật này. */
+  const screenSrc = readFileSync(path.join(NATIVE, SCREEN), 'utf8');
+  if (!/refreshable = false, onScrollBeginDrag,/.test(screenSrc)) {
+    problems.push(
+      `${SCREEN}: \`onScrollBeginDrag\` không được tách khỏi \`...props\` ở chữ ký — một chỗ gọi ` +
+        'truyền prop cùng tên sẽ xoá mất luật thu-hàng-về mà không có gì báo',
+    );
+  }
+}
+
 if (problems.length) {
   console.log('hàng vuốt CÓ LỖI:\n');
   for (const p of problems.slice(0, 10)) console.log(`  • ${p}`);

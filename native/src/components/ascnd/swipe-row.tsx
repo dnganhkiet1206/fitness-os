@@ -5,7 +5,7 @@ import type {
   SwipeDirection,
 } from 'react-native-gesture-handler/lib/typescript/components/ReanimatedSwipeable/ReanimatedSwipeableProps';
 import type { LucideIcon } from 'lucide-react-native';
-import { createContext, useCallback, useContext, useRef } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef } from 'react';
 import {
   Alert,
   Text,
@@ -321,6 +321,33 @@ const MAX_ACTIONS = 3;
  * cái cũ.
  */
 let openRow: SwipeableMethods | null = null;
+
+/**
+ * Thu hàng đang mở về, vì người dùng vừa làm một việc KHÁC.
+ *
+ * ── đây là vế còn thiếu của cùng một luật ──
+ *
+ * `openRow` ở trên mới giải nửa bài: mở hàng B thì hàng A thu về. Nửa còn lại
+ * là mọi thao tác KHÔNG PHẢI mở một hàng khác — cuộn trang, rời màn — và chủ
+ * dự án chụp đúng cảnh ấy: hai nút còn nằm đó sau khi đã cuộn đi.
+ *
+ * iOS điều phối cả ba vế trong một chỗ (`swipeActionsContainer()` của SwiftUI):
+ * mỗi lần chỉ một hàng mở, cuộn thì thu về, chạm ra ngoài hàng thì thu về.
+ * UIKit thì đặt vế thứ hai ở `scrollViewWillBeginDragging`. Vế thứ ba app đã
+ * có sẵn — `ReanimatedSwipeable` bật một `Gesture.Tap()` khi hàng mở
+ * (`shouldEnableTap`), nên chạm vào chính hàng ấy là nó đóng.
+ *
+ * ── vì sao là một HÀM Ở PHẠM VI MODULE ──
+ *
+ * Vì chỗ gọi nó là một worklet: bộ xử lý cuộn của Today chạy trên luồng UI,
+ * nên nó phải đi qua `runOnJS`. Một hàm ở phạm vi module có danh tính CỐ ĐỊNH
+ * suốt vòng đời tiến trình — đúng thứ `tools/runonjs-stable.mjs` sinh ra để
+ * đòi, sau khi một danh tính đổi mỗi lần render làm app `SIGABRT` trong
+ * `JSScheduler::scheduleOnJS`.
+ */
+export function closeOpenSwipeRow() {
+  openRow?.close();
+}
 
 function Action({
   progress,
@@ -780,6 +807,23 @@ export function SwipeRow({
     },
     [firstLeft, full, i18nCancel],
   );
+  /*
+    Hàng đi khỏi cây trong lúc còn mở thì sổ ghi phải QUÊN nó.
+
+    Không gọi `close()` ở đây: component đang chết, và chạy một animation trên
+    một thứ sắp biến mất là cách `log-weight.tsx` đã ghi lại — "cú `withTiming`
+    sau đó chạy trên một component đã đi". Chỉ cần buông con trỏ.
+
+    Nếu không, `openRow` còn trỏ vào một hàng đã tháo, và hàng kế tiếp mở ra sẽ
+    gọi `.close()` lên một cái xác.
+  */
+  useEffect(
+    () => () => {
+      if (openRow === methods.current) openRow = null;
+    },
+    [],
+  );
+
   const onWillClose = useCallback(() => {
     buzzed.current = false;
     armed.current = false;
