@@ -33,7 +33,7 @@
  *                          không phải của mọi màn tối. Luật này tồn tại để
  *                          không phải chờ ai mở ảnh.
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -116,46 +116,132 @@ if (!complete) {
 */
 CASES++;
 {
-  const SHEET = 'src/app/log-weight.tsx';
-  const sheet = readFileSync(path.join(NATIVE, SHEET), 'utf8');
-  const figs = [...sheet.matchAll(/<BodyScaleFigure[\s\S]{0,200}?\/>/g)];
   /*
-    Canh cái được DÙNG, không phải cái được KHAI BÁO.
+    Vế này từng ghim cứng vào `src/app/log-weight.tsx`, vào hai cái tên
+    `litFace` / `restFace`, và vào hai thân độ mờ viết sẵn `glow.value` /
+    `1 - glow.value`. Khi hệ thức tỉnh được tách ra `use-scale-wake.ts`, hai
+    lời khai báo rời khỏi tệp ấy và luật đỏ — không phải vì app sai, mà vì
+    luật đo KHOẢNG CÁCH (style nằm tệp nào, tên là gì) thay vì đo QUAN HỆ.
 
-    Bản đầu của vế này tìm `opacity: 1 - glow.value` trong cả tệp. Tôi phá thử
-    bằng cách bỏ `<Animated.View style={restFace}>` đi — và luật vẫn XANH, vì
-    dòng `const restFace = useAnimatedStyle(…)` còn nguyên ở trên. Một luật canh
-    lời khai báo thì không canh gì cả: lỗi thật là style KHÔNG được gắn vào hình.
+    Bản này đo quan hệ, nên nó sống qua cả việc tách hook lẫn việc đổi tên:
 
-    Nên vế này canh THỨ TỰ trong JSX: mỗi hình phải có một lớp bọc mang độ mờ
-    của riêng nó, ngay TRƯỚC nó.
+      · tệp NÀO vẽ ≥2 chiếc cân xếp lớp cũng bị soi, không riêng log-weight;
+      · tên hai lớp mờ được ĐỌC RA từ chính prop `style=`, không viết sẵn ở đây;
+      · gốc mỗi tên được truy: khai ngay trong tệp, hoặc lấy từ một hook qua
+        destructure — và nếu lấy từ hook thì hook phải THẬT SỰ trả nó về;
+      · hai thân độ mờ phải BÙ NHAU (`x` và `1 - x`), chứ không phải khớp một
+        chuỗi nào đó tôi gõ sẵn.
+
+    Và cái bẫy mà chính việc tách hook mới dựng lên: chỗ dùng thứ hai chỉ cần
+    quên lấy `rest` là hình nghỉ ở lại opacity 1 mãi mãi. Vì luật đòi ĐÚNG hai
+    lớp mờ bù nhau trong mọi tệp vẽ hai hình, quên một cái là đỏ.
   */
-  const decl = (name, body) => new RegExp(`const ${name} = useAnimatedStyle\\(\\(\\) => \\(\\{ opacity: ${body} \\}\\)\\)`).test(sheet);
-  /* Vị trí một tên xuất hiện trong MỘT prop `style=`, không phải ở chỗ khai báo. */
-  const usedAt = (name) => {
-    const m = new RegExp(`style=\\{\\[?[^}]*\\b${name}\\b`).exec(sheet);
-    return m ? m.index : -1;
+  const walk = (dir, out = []) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) walk(p, out);
+      else if (/\.tsx?$/.test(e.name)) out.push(p);
+    }
+    return out;
   };
-  const litFig = figs.find((f) => /\blit\b/.test(f[0]));
-  const restFig = figs.find((f) => !/\blit\b/.test(f[0]));
-  const bad = [];
-  if (figs.length >= 2) {
-    if (!decl('restFace', '1 - glow\\.value')) bad.push('không có `restFace` với `opacity: 1 - glow.value`');
-    if (!decl('litFace', 'glow\\.value')) bad.push('không có `litFace` với `opacity: glow.value`');
-    const uR = usedAt('restFace');
-    const uL = usedAt('litFace');
-    if (uR < 0) bad.push('`restFace` không được GẮN vào một prop `style=` nào');
-    if (uL < 0) bad.push('`litFace` không được GẮN vào một prop `style=` nào');
-    if (uR >= 0 && restFig && !(uR < restFig.index)) bad.push('`restFace` không bọc hình NGHỈ');
-    if (uL >= 0 && litFig && !(uL < litFig.index)) bad.push('`litFace` không bọc hình SÁNG');
-    if (uR >= 0 && uL >= 0 && !(uR < uL)) bad.push('hai lớp bọc đảo thứ tự — hình sáng phải nằm TRÊN');
+  const SRC = path.join(NATIVE, 'src');
+  const rel = (p) => path.relative(NATIVE, p).split(path.sep).join('/');
+  const resolveAlias = (spec, from) => {
+    const base = spec.startsWith('@/')
+      ? path.join(SRC, spec.slice(2))
+      : path.resolve(path.dirname(from), spec);
+    for (const ext of ['.ts', '.tsx', '/index.ts', '/index.tsx']) {
+      try {
+        return { file: base + ext, code: readFileSync(base + ext, 'utf8') };
+      } catch {
+        /* thử đuôi kế tiếp */
+      }
+    }
+    return null;
+  };
+  /* Thân độ mờ của một tên, truy ngược về nơi nó thật sự được khai. */
+  const fade = (code, from, name) => {
+    const here = new RegExp(`const ${name} = useAnimatedStyle\\(\\(\\) => \\(\\{ opacity: ([^}]+) \\}\\)\\)`).exec(code);
+    if (here) return { body: here[1].trim(), where: rel(from) };
+    for (const [, inner, hook] of code.matchAll(/const \{([^}]*)\} = (use\w+)\(\)/g)) {
+      const key = inner
+        .split(',')
+        .map((s) => s.split(':').map((x) => x.trim()))
+        .find((pair) => (pair[1] || pair[0]) === name)?.[0];
+      if (!key) continue;
+      const imp = new RegExp(`import \\{[^}]*\\b${hook}\\b[^}]*\\} from '([^']+)'`).exec(code);
+      const src = imp && resolveAlias(imp[1], from);
+      if (!src) continue;
+      const decl = new RegExp(`const ${key} = useAnimatedStyle\\(\\(\\) => \\(\\{ opacity: ([^}]+) \\}\\)\\)`).exec(src.code);
+      /* Khai trong hook mà không trả về thì chỗ dùng không bao giờ nhận được. */
+      if (!decl || !new RegExp(`return \\{[^}]*\\b${key}\\b[^}]*\\}`).test(src.code)) continue;
+      return { body: decl[1].trim(), where: rel(src.file) };
+    }
+    return null;
+  };
+  const stacks = [];
+  for (const file of walk(SRC)) {
+    const sheet = readFileSync(file, 'utf8');
+    const figs = [...sheet.matchAll(/<BodyScaleFigure[\s\S]{0,200}?\/>/g)];
+    if (figs.length < 2) continue;
+    stacks.push(rel(file));
+    /*
+      Canh cái được DÙNG, không phải cái được KHAI BÁO.
+
+      Bản đầu của vế này tìm `opacity: 1 - glow.value` trong cả tệp. Tôi phá thử
+      bằng cách bỏ `<Animated.View style={restFace}>` đi — và luật vẫn XANH, vì
+      dòng `const restFace = useAnimatedStyle(…)` còn nguyên ở trên. Một luật canh
+      lời khai báo thì không canh gì cả: lỗi thật là style KHÔNG được gắn vào hình.
+
+      Nên vế này canh THỨ TỰ trong JSX: mỗi hình phải có một lớp bọc mang độ mờ
+      của riêng nó, ngay TRƯỚC nó.
+    */
+    const names = new Set();
+    for (const m of sheet.matchAll(/style=\{\[?([^}\]]*)\]?\}/g)) {
+      for (const id of m[1].matchAll(/\b([A-Za-z_$][\w$]*)\b/g)) names.add(id[1]);
+    }
+    const layers = [...names].map((n) => ({ name: n, ...fade(sheet, file, n) })).filter((l) => l.body);
+    /* Vị trí một tên xuất hiện trong MỘT prop `style=`, không phải ở chỗ khai báo. */
+    const usedAt = (name) => {
+      const m = new RegExp(`style=\\{\\[?[^}]*\\b${name}\\b`).exec(sheet);
+      return m ? m.index : -1;
+    };
+    const litFig = figs.find((f) => /\blit\b/.test(f[0]));
+    const restFig = figs.find((f) => !/\blit\b/.test(f[0]));
+    const bad = [];
+    if (layers.length !== 2) {
+      bad.push(
+        `có ${layers.length} lớp mờ gắn vào \`style=\` chứ không phải 2` +
+          (layers.length ? ` (${layers.map((l) => `\`${l.name}\` = \`${l.body}\` từ ${l.where}`).join(', ')})` : ''),
+      );
+    } else {
+      const [a, b] = layers;
+      const lit = b.body === `1 - ${a.body}` ? a : a.body === `1 - ${b.body}` ? b : null;
+      const rest = lit === a ? b : lit === b ? a : null;
+      if (!lit) {
+        bad.push(`hai lớp mờ \`${a.body}\` và \`${b.body}\` không BÙ NHAU — chúng phải là \`x\` và \`1 - x\``);
+      } else {
+        const uR = usedAt(rest.name);
+        const uL = usedAt(lit.name);
+        if (restFig && !(uR < restFig.index)) bad.push(`\`${rest.name}\` không bọc hình NGHỈ`);
+        if (litFig && !(uL < litFig.index)) bad.push(`\`${lit.name}\` không bọc hình SÁNG`);
+        if (!(uR < uL)) bad.push('hai lớp bọc đảo thứ tự — hình sáng phải nằm TRÊN');
+      }
+    }
+    if (bad.length) {
+      problems.push(
+        `${rel(file)}: ${figs.length} hình chiếc cân xếp lớp, nhưng ${bad.join('; ')}. Mọi lớp của chiếc cân là ` +
+          '`alpha(…)`, tức TRONG SUỐT, nên hai hình xếp lên nhau CỘNG độ mờ chứ không thay thế: thân cân ra ' +
+          '0,2124 thay vì 0,115, gần GẤP ĐÔI. Cả chiếc cân sáng lên — đúng thứ chủ dự án đã bác — và mọi vế ' +
+          'đo màu trong tệp này vẫn xanh, vì chúng dựng lại MỘT hình trong khi app vẽ HAI',
+      );
+    }
   }
-  if (bad.length) {
+  /* Không tệp nào xếp lớp thì vế này không canh gì — nói ra, đừng im lặng xanh. */
+  if (!stacks.length) {
     problems.push(
-      `${SHEET}: ${figs.length} hình chiếc cân xếp lớp, nhưng ${bad.join('; ')}. Mọi lớp của chiếc cân là ` +
-        '`alpha(…)`, tức TRONG SUỐT, nên hai hình xếp lên nhau CỘNG độ mờ chứ không thay thế: thân cân ra ' +
-        '0,2124 thay vì 0,115, gần GẤP ĐÔI. Cả chiếc cân sáng lên — đúng thứ chủ dự án đã bác — và mọi vế ' +
-        'đo màu trong tệp này vẫn xanh, vì chúng dựng lại MỘT hình trong khi app vẽ HAI',
+      'không tệp nào trong `src/` vẽ ≥2 `<BodyScaleFigure>` xếp lớp — vế crossfade không còn canh gì. ' +
+        'Nếu chuyển tiếp thức/ngủ đã đổi kiến trúc thì phải viết lại vế này, không phải để nó xanh rỗng',
     );
   }
 }
