@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import type { AppLang } from '@/lib/i18n';
 import { pickContent, type GuideContentRow } from '@/lib/guide-content';
+import { equipmentLabel } from '@/lib/equipment';
+import { muscleGroupLabel } from '@/lib/muscle-group';
 
 /**
  * CÁCH LÀM một bài tập — tách hẳn khỏi việc bạn đã làm nó thế nào.
@@ -79,17 +81,67 @@ interface GuideRow {
 
 
 /**
- * Hướng dẫn đã giải xong, ở dạng màn hình dùng được.
+ * ════════════════ HỢP ĐỒNG DỮ LIỆU CỦA HƯỚNG DẪN ════════════════
  *
- * Mảng rỗng chứ không `null` cho ba danh sách: chỗ vẽ chỉ phải hỏi `.length`,
- * và một `?? []` quên ở đâu đó là một màn trắng không ai giải thích được.
+ * Đây là thứ DUY NHẤT màn hình được biết. Nó cố ý không mang theo:
+ *
+ *   · tên cột của cơ sở dữ liệu   (`muscle_group`, `video_url`, `form_cues`)
+ *   · quy tắc lùi ngôn ngữ        (`pickContent` giải xong rồi mới tới đây)
+ *   · quy tắc chuẩn hoá khoá      (`chest` → "Ngực" đã xong ở dưới này)
+ *   · nội dung đến từ hạt giống hay từ người dùng
+ *
+ * Lý do không phải là gọn gàng. Bản trước, màn hình tự gọi `muscleGroupLabel`
+ * và `equipmentLabel` — tức là NÓ biết cột lưu khoá chứ không lưu nhãn. Thế
+ * thì mỗi chỗ in ra một giá trị lại phải nhớ luật ấy một lần, và chỗ nào quên
+ * sẽ in `chest` ra cho người dùng đọc mà không gì bắt được. Một nơi dịch,
+ * nhiều nơi vẽ.
+ *
+ * ── bắt buộc có ──
+ *
+ *     name            luôn có chữ: tên thư viện nếu khớp, không thì tên kế
+ *                     hoạch đang hiển thị. Tiêu đề không bao giờ trống.
+ *     formCues        mảng, có thể rỗng — không bao giờ `null`
+ *     commonMistakes  như trên
+ *     matchedBy       'id' | 'name' | 'none' — danh tính đã được giải thế nào
+ *     hasContent      có gì để DẠY không
+ *     hasMetadata     có gì để NÓI về bài tập không
+ *
+ * ── tuỳ chọn, và `null` là một câu trả lời thật ──
+ *
+ *     id              `null` khi không dòng thư viện nào khớp
+ *     equipment       ĐÃ LÀ NHÃN. `null` khi không biết
+ *     muscleGroup     ĐÃ LÀ NHÃN. `null` khi không biết
+ *     mediaUrl        `null` khi bài này chưa có hình
+ *     contentLocale   `null` khi không có nội dung nào
+ *
+ * ── ngôn ngữ ──
+ *
+ * `contentLocale` là ngôn ngữ mà CẢ HAI danh sách đến từ. Không bao giờ là
+ * "một nửa tiếng này, một nửa tiếng kia": quy tắc là *tiếng đang bật → tiếng
+ * Việt → rỗng*, và ngôn ngữ đã chọn sở hữu trọn gói — xem `lib/guide-content.ts`.
+ *
+ * Nhãn `equipment`/`muscleGroup` thì theo ngôn ngữ ĐANG BẬT, không theo
+ * `contentLocale`: chúng là nhãn giao diện, không phải nội dung được viết.
+ * Một người đọc tiếng Anh xem bài chưa dịch sẽ thấy "Equipment · Barbell" bên
+ * trên các câu tiếng Việt, và đó là đúng — nhãn là của app, câu là của tác giả.
+ *
+ * ── ba trạng thái, và màn hình KHÔNG được gộp chúng ──
+ *
+ *     đang đọc     `isPending`  → vòng quay; chưa khẳng định gì về dữ liệu
+ *     đọc hỏng     `isError`    → thẻ "không đọc được" + nút thử lại
+ *     đọc xong     còn lại      → lúc này `hasContent`/`hasMetadata` mới có nghĩa
+ *
+ * Trạng thái của MEDIA nằm trong `GuideMedia` và độc lập với ba cái trên: một
+ * URL đúng vẫn 404 được sau khi truy vấn đã thành công.
  */
 export interface ExerciseGuide {
   /** Dòng thư viện đã khớp, hoặc `null` khi không khớp được gì. */
   id: string | null;
   /** Luôn có: tên từ thư viện nếu khớp, không thì tên kế hoạch đang hiển thị. */
   name: string;
+  /** ĐÃ LÀ NHÃN theo ngôn ngữ đang bật — màn hình in thẳng. */
   muscleGroup: string | null;
+  /** ĐÃ LÀ NHÃN theo ngôn ngữ đang bật — màn hình in thẳng. */
   equipment: string | null;
   formCues: string[];
   commonMistakes: string[];
@@ -97,12 +149,20 @@ export interface ExerciseGuide {
   mediaUrl: string | null;
   /** Cách dòng này được tìm ra — màn hình không cần, luật kiểm thì cần. */
   matchedBy: 'id' | 'name' | 'none';
-  /**
-   * Ngôn ngữ mà CẢ HAI danh sách trên đến từ, hoặc `null` khi không có nội
-   * dung nào. Không bao giờ là "một nửa tiếng này, một nửa tiếng kia" — xem
-   * `pickContent`.
-   */
+  /** Ngôn ngữ mà CẢ HAI danh sách đến từ, hoặc `null` khi không có gì. */
   contentLocale: AppLang | null;
+  /**
+   * Có gì để DẠY không — điểm kỹ thuật hoặc lỗi thường gặp.
+   *
+   * Tính ở đây chứ không ở màn hình, vì bản trước màn hình tự tính và tính
+   * SAI: nó gộp cả `hasFacts` vào, nên một bài có dụng cụ và nhóm cơ nhưng
+   * KHÔNG có câu hướng dẫn nào lại không được coi là rỗng — và màn hình hiện
+   * hai dòng thông tin rồi im lặng, không nói gì về việc không có hướng dẫn.
+   * Đó đúng là trường hợp của MỌI bài tập người dùng tự thêm.
+   */
+  hasContent: boolean;
+  /** Có dụng cụ hoặc nhóm cơ để nói không. Hai câu hỏi khác nhau. */
+  hasMetadata: boolean;
 }
 
 const trimmed = (s: string | null | undefined): string | null => {
@@ -170,7 +230,7 @@ export function useExerciseGuide(
           .select('locale, form_cues, common_mistakes')
           .eq('exercise_id', row.id);
         if (error) throw error;
-        return shape(row, matchedBy, name, pickContent((data ?? []) as GuideContentRow[], lang));
+        return shape(row, matchedBy, name, pickContent((data ?? []) as GuideContentRow[], lang), lang);
       };
 
       /* ── 1. theo ID, đường chính tắc ── */
@@ -209,6 +269,8 @@ export function useExerciseGuide(
         mediaUrl: null,
         matchedBy: 'none' as const,
         contentLocale: null,
+        hasContent: false,
+        hasMetadata: false,
       };
     },
   });
@@ -219,18 +281,28 @@ function shape(
   matchedBy: 'id' | 'name',
   fallbackName: string,
   content: { locale: AppLang; formCues: string[]; commonMistakes: string[] } | null,
+  lang: AppLang,
 ): ExerciseGuide {
+  /* Khoá → nhãn NGAY TẠI ĐÂY, không để màn hình làm. Hai hàm này cũng là thứ
+     trả lại nguyên văn một giá trị lịch sử mà bảng đồng nghĩa không nhận ra,
+     nên `Kettlebell` của người dùng đi qua mà không bị đụng. */
+  const equipment = trimmed(equipmentLabel(row.equipment, lang));
+  const muscleGroup = trimmed(muscleGroupLabel(row.muscle_group, lang));
+  /* Cả hai danh sách từ CÙNG một dòng, hoặc cả hai rỗng. Không có nhánh nào
+     lấy một danh sách ở đây và một ở kia. */
+  const formCues = content?.formCues ?? [];
+  const commonMistakes = content?.commonMistakes ?? [];
   return {
     id: row.id,
     name: trimmed(row.name) ?? fallbackName,
-    muscleGroup: trimmed(row.muscle_group),
-    equipment: trimmed(row.equipment),
-    /* Cả hai danh sách từ CÙNG một dòng, hoặc cả hai rỗng. Không có nhánh nào
-       lấy một danh sách ở đây và một ở kia. */
-    formCues: content?.formCues ?? [],
-    commonMistakes: content?.commonMistakes ?? [],
+    muscleGroup,
+    equipment,
+    formCues,
+    commonMistakes,
     mediaUrl: trimmed(row.video_url),
     matchedBy,
     contentLocale: content?.locale ?? null,
+    hasContent: formCues.length > 0 || commonMistakes.length > 0,
+    hasMetadata: !!(equipment || muscleGroup),
   };
 }

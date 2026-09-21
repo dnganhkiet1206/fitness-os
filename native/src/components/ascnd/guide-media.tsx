@@ -59,12 +59,23 @@ const IMAGE_EXT = /\.(gif|webp|png|jpe?g|avif|heic|bmp)(\?|#|$)/i;
 export function GuideMedia({
   url,
   name,
+  hasCues,
   i18n,
 }: {
   /** `video_url` của dòng thư viện, đã trim. `null` khi chưa có gì. */
   url: string | null;
   /** tên bài tập, cho nhãn trợ năng */
   name: string;
+  /**
+   * Có điểm kỹ thuật nào ở DƯỚI không.
+   *
+   * Câu an ủi của chỗ trống — *"các điểm kỹ thuật bên dưới vẫn mô tả động
+   * tác"* — là một khẳng định về nội dung của màn, và nó SAI khi không có
+   * điểm kỹ thuật nào. Đo được: một bài người dùng tự thêm chỉ có nhóm cơ và
+   * dụng cụ vẫn in ra câu ấy, rồi bên dưới không có gì cả. Nên ô media phải
+   * được CHO BIẾT, chứ không được đoán.
+   */
+  hasCues: boolean;
   i18n: NativeStrings;
 }) {
   const c = usePalette();
@@ -151,7 +162,9 @@ export function GuideMedia({
         <Text style={styles.compactTitle}>
           {failed ? i18n.nEgMediaFailed : i18n.nEgNoMedia}
         </Text>
-        {!failed ? <Text style={styles.compactHint}>{i18n.nEgNoMediaHint}</Text> : null}
+        {!failed && hasCues ? (
+          <Text style={styles.compactHint}>{i18n.nEgNoMediaHint}</Text>
+        ) : null}
       </View>
     </View>
   );

@@ -9,9 +9,7 @@ import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useExerciseGuide } from '@/hooks/use-exercise-guide';
-import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { equipmentLabel } from '@/lib/equipment';
-import { muscleGroupLabel } from '@/lib/muscle-group';
+import { useI18n } from '@/hooks/use-app-settings';
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 
@@ -54,27 +52,22 @@ export default function ExerciseGuideSheet() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
-  const { lang } = useAppSettings();
   const { ex, name } = useLocalSearchParams<{ ex?: string; name?: string }>();
   const title = (name ?? '').trim();
 
   const { data, isPending, isError, isRefetching, refetch } = useExerciseGuide(ex, title);
 
+  /*
+    Màn này KHÔNG biết gì về cơ sở dữ liệu.
+
+    `g.equipment` và `g.muscleGroup` tới đây ĐÃ LÀ NHÃN của ngôn ngữ đang bật;
+    `g.formCues` đã được chọn xong theo luật lùi ngôn ngữ; `g.hasContent` đã
+    trả lời "có gì để dạy không". Toàn bộ những câu hỏi ấy được trả lời một
+    lần trong `use-exercise-guide.ts` — xem HỢP ĐỒNG DỮ LIỆU ở đầu tệp ấy.
+  */
   const g = data ?? null;
   const cues = g?.formCues ?? [];
   const mistakes = g?.commonMistakes ?? [];
-  /*
-    Cột lưu KHOÁ, màn hình hiện NHÃN.
-
-    `muscle_group` và `equipment` nay là `chest`, `dumbbell` — không phụ thuộc
-    vào việc lúc tạo bài tập người ta để app ở tiếng gì. Hai hàm nhãn ở dưới
-    trả chúng về ngôn ngữ đang bật, và trả lại NGUYÊN VĂN những giá trị cũ mà
-    bảng đồng nghĩa không nhận ra, nên không màn nào in ra một khoá thô và
-    cũng không giá trị nào của người dùng bị nuốt mất.
-  */
-  const equipment = equipmentLabel(g?.equipment, lang);
-  const muscles = muscleGroupLabel(g?.muscleGroup, lang);
-  const hasFacts = !!(equipment || muscles);
   /* "Rỗng" nghĩa là không có gì để DẠY. Một dòng thư viện khớp được mà mọi cột
      hướng dẫn đều trống vẫn là rỗng — người đọc không quan tâm nó khớp hay
      không, họ quan tâm có gì để đọc không. */
@@ -89,7 +82,21 @@ export default function ExerciseGuideSheet() {
     Hai trạng thái, hai câu, và câu thứ hai có nút thử lại. `isError` phải được
     hỏi TRƯỚC: rỗng chỉ có nghĩa khi việc đọc đã thành công.
   */
-  const empty = !isPending && !isError && !cues.length && !mistakes.length && !hasFacts && !g?.mediaUrl;
+  /*
+    ── "KHÔNG CÓ HƯỚNG DẪN" là một trạng thái riêng, và nó từng không bao giờ
+       hiện ra ──
+
+    Bản trước còn đòi thêm `!hasFacts`. Nhưng form tạo bài tập BẮT BUỘC chọn
+    nhóm cơ, nên mọi bài người dùng tự thêm đều có `hasFacts` — và điều kiện
+    ấy không bao giờ đúng cho đúng nhóm người cần nó nhất. Đo được: mở hướng
+    dẫn của một bài tự thêm thì màn hình hiện "Dụng cụ · Kettlebell", "Nhóm cơ
+    chính · Forearms", rồi im lặng. Không câu nào nói rằng bài này chưa có
+    hướng dẫn; chỉ có một khoảng trắng mà người đọc phải tự diễn giải.
+
+    Siêu dữ liệu KHÔNG phải hướng dẫn. Media thì có — một đoạn minh hoạ dạy
+    được động tác kể cả khi không có chữ nào — nên nó vẫn tắt trạng thái này.
+  */
+  const noContent = !isPending && !isError && !g?.hasContent && !g?.mediaUrl;
 
   return (
     <View style={styles.root}>
@@ -125,25 +132,30 @@ export default function ExerciseGuideSheet() {
           lúc đang tải đã có vòng quay, lúc hỏng đã có thẻ "không đọc được".
         */}
         {!isPending && !isError ? (
-          <GuideMedia url={g?.mediaUrl ?? null} name={g?.name || title} i18n={i18n} />
+          <GuideMedia
+            url={g?.mediaUrl ?? null}
+            name={g?.name || title}
+            hasCues={cues.length > 0}
+            i18n={i18n}
+          />
         ) : null}
 
         {/* Hai sự thật một dòng, ngay dưới hình — chúng trả lời "cần gì" và
             "vào cơ nào" trong một cái liếc, nên không xứng một thẻ riêng. */}
-        {hasFacts ? (
+        {g?.hasMetadata ? (
           <View style={styles.facts}>
-            {equipment ? (
+            {g.equipment ? (
               <View style={styles.fact}>
                 <Icon icon={Dumbbell} size={14} color={c.mutedForeground} />
                 <Text style={styles.factLabel}>{i18n.nEgEquipment}</Text>
-                <Text style={styles.factValue}>{equipment}</Text>
+                <Text style={styles.factValue}>{g.equipment}</Text>
               </View>
             ) : null}
-            {muscles ? (
+            {g.muscleGroup ? (
               <View style={styles.fact}>
                 <Icon icon={Target} size={14} color={c.mutedForeground} />
                 <Text style={styles.factLabel}>{i18n.nEgMuscles}</Text>
-                <Text style={styles.factValue}>{muscles}</Text>
+                <Text style={styles.factValue}>{g.muscleGroup}</Text>
               </View>
             ) : null}
           </View>
@@ -191,7 +203,7 @@ export default function ExerciseGuideSheet() {
           <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
         ) : null}
 
-        {empty ? (
+        {noContent ? (
           <View style={styles.empty}>
             <Text style={styles.emptyText}>{i18n.nEgEmpty}</Text>
             <Text style={styles.emptyHint}>{i18n.nEgEmptyHint}</Text>

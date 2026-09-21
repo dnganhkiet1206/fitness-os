@@ -44,6 +44,7 @@ const SHEET = 'src/app/exercise-guide.tsx';
 const LIB_SCREEN = 'src/app/exercises.tsx';
 const PLAN = 'src/components/ascnd/day-plan.tsx';
 const LIBRARY = 'src/hooks/use-library.ts';
+const MEDIA = 'src/components/ascnd/guide-media.tsx';
 const MIGRATION = '../supabase/migrations/20260921120000_exercise_guide_content.sql';
 const SEED = '../supabase/migrations/20260212040248_128920cf-c47c-49a7-b85d-ffc90138a6c4.sql';
 
@@ -275,16 +276,69 @@ if (!inCode(hook, 'mediaUrl: trimmed(row.video_url)') || !/video_url/.test(hook)
   );
 }
 
-/* ── 18 · màn hình hiện NHÃN, không hiện khoá ── */
+/* ── 18 · MỘT nơi dịch khoá thành nhãn, và đó là hợp đồng dữ liệu ──
+   Bản trước để chính màn hướng dẫn gọi `muscleGroupLabel`/`equipmentLabel` —
+   tức là màn hình BIẾT cột lưu khoá. Thế thì mỗi chỗ in một giá trị lại phải
+   nhớ luật ấy một lần, và chỗ nào quên sẽ in `chest` ra cho người đọc mà
+   không gì bắt được. Nay việc dịch nằm trong `use-exercise-guide.ts`, và màn
+   hướng dẫn KHÔNG được import hai hàm ấy nữa. */
 CASES++;
-for (const [file, src] of [[SHEET, sheet], [LIB_SCREEN, libScreen]]) {
-  const usesLabel = /muscleGroupLabel\(|equipmentLabel\(/.test(src);
-  if (!usesLabel) {
-    problems.push(
-      `${file}: không còn gọi hàm nhãn nào. Cột nay lưu KHOÁ (\`chest\`, \`dumbbell\`), nên in thẳng ` +
-        'giá trị ra màn là in một khoá cơ sở dữ liệu cho người dùng đọc',
-    );
-  }
+if (!/equipmentLabel\(row\.equipment, lang\)/.test(hook) ||
+    !/muscleGroupLabel\(row\.muscle_group, lang\)/.test(hook)) {
+  problems.push(
+    `${HOOK}: hợp đồng dữ liệu không còn dịch khoá thành nhãn. Màn hướng dẫn đọc thẳng \`g.equipment\` ` +
+      'và `g.muscleGroup`, nên nếu chỗ này thôi dịch thì thứ hiện ra cho người dùng là `chest`, ' +
+      '`dumbbell` — tên khoá của cơ sở dữ liệu',
+  );
+}
+CASES++;
+if (/from '@\/lib\/equipment'|from '@\/lib\/muscle-group'/.test(sheet)) {
+  problems.push(
+    `${SHEET}: màn hướng dẫn lại import hàm nhãn. Nó không được biết cột lưu khoá — đó là việc của ` +
+      'hợp đồng dữ liệu, và hai nơi cùng dịch là hai nơi sẽ lệch',
+  );
+}
+CASES++;
+if (!/muscleGroupLabel\(|equipmentLabel\(/.test(libScreen)) {
+  problems.push(
+    `${LIB_SCREEN}: thư viện bài tập không còn gọi hàm nhãn nào. Màn này đọc \`exercises\` trực tiếp ` +
+      '(không qua hợp đồng của hướng dẫn), nên nó phải tự dịch — nếu không thì tiêu đề mục và dòng ' +
+      'dụng cụ sẽ in ra khoá thô',
+  );
+}
+
+/* ── 18b · "KHÔNG CÓ HƯỚNG DẪN" không được phụ thuộc vào SIÊU DỮ LIỆU ──
+   Form tạo bài tập BẮT BUỘC chọn nhóm cơ, nên mọi bài người dùng tự thêm đều
+   có siêu dữ liệu. Gộp `hasFacts` vào điều kiện rỗng làm trạng thái ấy không
+   bao giờ hiện ra cho đúng nhóm cần nó nhất: màn hình in hai dòng thông tin
+   rồi im lặng. */
+CASES++;
+const noContentLine = /const noContent = ([^;]+);/.exec(sheet)?.[1] ?? '';
+if (!noContentLine) {
+  problems.push(`${SHEET}: không còn biến \`noContent\` — luật này đang không kiểm gì cả`);
+} else if (/hasMetadata|hasFacts/.test(noContentLine)) {
+  problems.push(
+    `${SHEET}: trạng thái "chưa có hướng dẫn" lại phụ thuộc vào siêu dữ liệu (\`${noContentLine.trim()}\`). ` +
+      'Dụng cụ và nhóm cơ KHÔNG phải hướng dẫn; một bài có đủ hai thứ ấy mà không có câu nào vẫn là ' +
+      'một bài chưa có hướng dẫn, và người đọc phải được nói điều đó thay vì nhìn một khoảng trắng',
+  );
+} else if (!/hasContent/.test(noContentLine)) {
+  problems.push(
+    `${SHEET}: trạng thái "chưa có hướng dẫn" không còn hỏi \`hasContent\` của hợp đồng dữ liệu`,
+  );
+}
+
+/* ── 18c · câu an ủi của ô media là một KHẲNG ĐỊNH, nên nó phải đúng ──
+   "các điểm kỹ thuật bên dưới vẫn mô tả động tác" — khi không có điểm kỹ
+   thuật nào thì đó là một câu sai về chính màn đang hiện. */
+CASES++;
+const mediaSrc = read(MEDIA);
+if (!/hasCues: boolean/.test(mediaSrc) || !/!failed && hasCues \?/.test(mediaSrc)) {
+  problems.push(
+    `${MEDIA}: câu gợi ý của chỗ trống không còn phụ thuộc \`hasCues\`. Nó khẳng định có điểm kỹ ` +
+      'thuật ở bên dưới; với một bài chưa có hướng dẫn thì bên dưới không có gì, và màn hình đang nói ' +
+      'một câu sai về chính nó',
+  );
 }
 
 /* ── 19 · đường GHI biến nhãn thành khoá ── */
