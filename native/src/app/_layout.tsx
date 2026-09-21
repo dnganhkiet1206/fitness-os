@@ -334,6 +334,11 @@ function Gate() {
           'log-measurement',
           'log-weight',
           'workout-builder',
+          /* Hướng dẫn bài tập mở GIỮA một hiệp. `modal` là một `pageSheet` iOS
+             thật, nên màn Plan vẫn mounted ngay dưới và buổi tập đang dở không
+             bị dựng lại — xem `exercise-guide.tsx`. Đó là cách state được giữ:
+             không đụng vào nó. */
+          'exercise-guide',
         ] as const
       ).map((name) => (
         <Stack.Screen

@@ -146,9 +146,12 @@ if (block && /presentation: 'modal'/.test(layout.slice(block.index, block.index 
 
   Bớt một sheet là một quyết định: hạ con số này trong cùng commit, và cú hạ ấy
   nhìn thấy được trong diff. Thêm một sheet cũng vậy — 10 → 11 khi `/log-weight`
-  ra đời (màn ghi cân nặng, thay cái ô gõ số bung ra trong dòng To-do).
+  ra đời (màn ghi cân nặng, thay cái ô gõ số bung ra trong dòng To-do), rồi
+  11 → 12 khi `/exercise-guide` ra đời (hướng dẫn bài tập, mở từ TÊN bài trong
+  thẻ của màn Plan — nó là `modal` chứ không phải push toàn màn chính vì buổi
+  tập đang dở phải ở lại mounted phía dưới).
 */
-const EXPECTED_ROUTES = 11;
+const EXPECTED_ROUTES = 12;
 if (routes.size !== EXPECTED_ROUTES) {
   problems.push(
     `${LAYOUT}: đọc ra ${routes.size} route dạng modal, chờ ${EXPECTED_ROUTES} ` +

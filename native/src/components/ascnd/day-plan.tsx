@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import { Check, ChevronDown, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
+import { Check, ChevronDown, Info, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated, {
@@ -1404,7 +1404,48 @@ export function DayPlan({
                     onChangeText={(v) => renameExtra(added, v)}
                   />
                 ) : (
-                  <Text style={styles.exName} numberOfLines={1}>{block.name}</Text>
+                  /*
+                    ── LỐI VÀO HƯỚNG DẪN: chính cái TÊN ──
+
+                    Không thêm một nút nào. Đặt hàng nói rõ *"Do not add multiple
+                    redundant Guide buttons"*, và thẻ này đã có hai lối chạm rồi:
+                    cụm kết quả + mũi tên (thu/mở thẻ) và hàng "Lần trước" (sang
+                    tiến bộ của bài). Một nút thứ ba là ba thứ để chọn giữa lúc
+                    đang thở dốc.
+
+                    Nên lối vào là thứ vốn đã ở đó và vốn đã đúng nghĩa: cái tên
+                    bài tập. Chạm vào tên một vật để biết về vật ấy là cử chỉ
+                    không phải học.
+
+                    Cái glyph `Info` 13 điểm phía sau là thứ DUY NHẤT thêm vào,
+                    và nó phải có: một dòng chữ trơn không nói được rằng nó bấm
+                    được. Nó nằm TRONG cùng một `PressScale` với cái tên, nên
+                    vẫn là một control chứ không phải hai.
+
+                    Bài THÊM TAY không có lối này: nhánh trên vẽ một `TextInput`
+                    vì tên là thứ người dùng đang gõ, và một cái tên chưa có
+                    trong thư viện thì không có hướng dẫn nào để mở.
+
+                    `block.rows[0].exerciseId` — khoá CHÍNH TẮC, lấy từ hàng đầu
+                    của khối. Mọi hàng trong một khối đến từ cùng một mục của
+                    template nên chúng mang cùng một id. Thiếu id (template cũ)
+                    thì truyền `undefined` và để `useExerciseGuide` lùi về tên.
+                  */
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel={`${block.name} — ${i18n.nEgOpen}`}
+                    hitSlop={{ top: 10, bottom: 10 }}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      nav.push({
+                        pathname: '/exercise-guide',
+                        params: { ex: block.rows[0].exerciseId ?? '', name: block.name },
+                      });
+                    }}
+                    style={styles.exNameBtn}>
+                    <Text style={styles.exName} numberOfLines={1}>{block.name}</Text>
+                    <Icon icon={Info} size={13} color={c.mutedForeground} />
+                  </PressScale>
                 )}
                 {added && expanded ? (
                   <PressScale
@@ -2111,6 +2152,9 @@ const stylesFor = makeStyles((c, m) => ({
 
     Độ đậm không còn viết tại chỗ nữa: 600 nay đến từ chính token.
   */
+  /* Tên + glyph info là MỘT control. `baseline` cho chữ thẳng chân với đơn
+     thuốc bên cạnh; glyph không có chân chữ nên nó tự căn giữa. */
+  exNameBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1, minWidth: 0 },
   exName: {
     ...type.headline,
     color: c.foreground,
