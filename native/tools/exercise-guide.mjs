@@ -30,7 +30,7 @@
  * suông.
  */
 import { readFileSync } from 'node:fs';
-import { codeMask } from './lib/code-mask.mjs';
+import { codeMask, inCode } from './lib/code-mask.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -56,9 +56,20 @@ const media = read(MEDIA);
   tự đỏ vì chính điều đó ở lần chạy đầu: chú thích trong `guide-media.tsx` GIẢI
   THÍCH vì sao cách viết ấy sai, nên nó chứa đúng chuỗi bị cấm.
   Một luật không phân biệt được mã với văn xuôi sẽ phạt đúng người đang ghi lại
-  bài học. `codeMask` xoá chú thích đi mà giữ nguyên độ dài, nên vị trí không lệch.
+  bài học.
+
+  ── và lần đầu viết vế ấy, chính nó là luật CHẾT ──
+
+  Bản trước gọi `const mediaCode = codeMask(media)` rồi thử
+  `/aspectRatio: undefined/.test(mediaCode)`. `codeMask` KHÔNG trả về chuỗi: nó
+  trả về một `Uint8Array` đánh dấu từng ký tự (1 = mã, 0 = chú thích/chuỗi).
+  Một regex thử trên mảng ấy sẽ so với `"1,1,0,1,…"`, nên vế đó không bao giờ
+  đỏ được — tức nó đã đứng đó canh một chỗ trống. Đó đúng là "luật yếu" mà dự
+  án này cấm, và nó lọt qua vì lượt ấy tôi không phá thử ĐÚNG vế này.
+
+  `inCode(src, needle)` mới là thứ trả lời được câu hỏi "chuỗi này có nằm ở một
+  vị trí LÀ MÃ không" — nó tồn tại sẵn trong cùng tệp thư viện ấy.
 */
-const mediaCode = codeMask(media);
 
 /* ── 1 · ID trước, TÊN sau ── */
 CASES++;
@@ -183,11 +194,43 @@ if (!/frame: \{ aspectRatio: 16 \/ 10 \}/.test(media) || !/styles\.compact/.test
   );
 }
 CASES++;
-if (/aspectRatio: undefined/.test(mediaCode)) {
+if (inCode(media, 'aspectRatio: undefined')) {
   problems.push(
     `${MEDIA}: khung hình gỡ tỉ lệ bằng \`aspectRatio: undefined\`. Nó KHÔNG chạy — React Native bỏ qua ` +
       'giá trị `undefined` lúc gộp style, nên ô trống vẫn cao nguyên 16:10. Tỉ lệ phải được CỘNG VÀO ở ' +
       'nhánh có hình, không phải trừ đi ở nhánh không',
+  );
+}
+
+/* ── 7e · ô media chỉ được hỏi KHI ĐÃ BIẾT ──
+   Cùng lớp lỗi với `empty-vs-failed.mjs`, ở chỗ nó chưa với tới. Đo được trên
+   bản dựng thật: giữ phản hồi `exercises` lại 3 giây thì sheet khẳng định "No
+   demonstration yet" suốt lúc đang tải; ép truy vấn 500 thì nó nói câu ấy ngay
+   trên "Could not load your data". Cả hai đều là câu SAI về dữ liệu của người
+   dùng, và cả hai đều đến từ việc `null` mang ba nghĩa. */
+CASES++;
+const guardAt = (() => {
+  const needle = '{!isPending && !isError ? (';
+  const mask = codeMask(sheet);
+  for (let i = sheet.indexOf(needle); i >= 0; i = sheet.indexOf(needle, i + 1)) if (mask[i]) return i;
+  return -1;
+})();
+/*
+  Không chỉ đòi cái vỏ: thẻ NGAY SAU lớp che phải là `<GuideMedia>`.
+
+  Phép thử đầu ở đây dùng cờ `m`, và phá thử thứ ba đã cho nó XANH: che một
+  `<View>` rồi để `<GuideMedia>` đứng trơ ngay dưới `) : null}` vẫn lọt, vì với
+  cờ `m` thì `^` khớp mọi đầu DÒNG trong đoạn cắt chứ không phải đầu đoạn. Neo
+  vào đầu đoạn mới là thứ nói đúng câu "cái được che chính là nó".
+*/
+if (guardAt < 0 || !/^\s*<GuideMedia\b/.test(sheet.slice(guardAt + 27, guardAt + 120))) {
+  problems.push(
+    `${SHEET}: \`<GuideMedia>\` không còn được che sau \`!isPending && !isError\`. Tham số \`url\` của nó ` +
+      'gộp ba trạng thái khác hẳn nhau vào một chữ `null` — CHƯA BIẾT, ĐỌC HỎNG, và BIẾT CHẮC LÀ KHÔNG CÓ — ' +
+      'trong khi nó chỉ có hai câu để nói. Hai trạng thái đầu vì thế ra câu "chưa có hình minh hoạ", một ' +
+      'khẳng định SAI về dữ liệu của người dùng, và ở nhánh hỏng nó còn mâu thuẫn thẳng với thẻ "không đọc ' +
+      'được" ngay bên dưới. Lúc đang tải đã có vòng quay, lúc hỏng đã có thẻ báo hỏng: ô media chỉ nói khi ' +
+      'nó thật sự biết',
   );
 }
 

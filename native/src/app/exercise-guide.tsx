@@ -89,8 +89,30 @@ export default function ExerciseGuideSheet() {
           nhỏ khi chưa có. Cả phép chọn video/ảnh, cả hai trạng thái hỏng, cả
           việc tôn trọng "giảm chuyển động" đều nằm trong `GuideMedia` — màn
           này chỉ đưa cho nó một URL và một cái tên.
+
+          ── và nó chỉ được hỏi KHI ĐÃ BIẾT CÂU TRẢ LỜI ──
+
+          `g?.mediaUrl ?? null` có ba nguồn gốc khác hẳn nhau:
+
+              chưa biết  ·  đọc hỏng  ·  biết chắc là không có
+
+          `GuideMedia` chỉ có hai câu để nói, và câu mặc định của nó là *"chưa
+          có hình minh hoạ"*. Đưa cả ba nguồn ấy vào một tham số thì hai nguồn
+          đầu ra một câu SAI về dữ liệu của người dùng — đo được, không phải
+          suy đoán: giữ phản hồi `exercises` lại 3 giây thì màn hình khẳng
+          định "No demonstration yet" trong suốt lúc còn đang tải, rồi video
+          nhảy vào; và khi truy vấn HỎNG thì nó nói "No demonstration yet"
+          ngay bên trên "Could not load your data" — hai câu ngược nhau trong
+          một màn.
+
+          Đây đúng là lớp lỗi `tools/empty-vs-failed.mjs` đã xử cho hai danh
+          sách bên dưới; ô media chỉ là chỗ nó chưa được xử. Cách sửa không
+          phải thêm một câu thứ ba, mà là ĐỪNG HỎI khi chưa có câu trả lời:
+          lúc đang tải đã có vòng quay, lúc hỏng đã có thẻ "không đọc được".
         */}
-        <GuideMedia url={g?.mediaUrl ?? null} name={g?.name || title} i18n={i18n} />
+        {!isPending && !isError ? (
+          <GuideMedia url={g?.mediaUrl ?? null} name={g?.name || title} i18n={i18n} />
+        ) : null}
 
         {/* Hai sự thật một dòng, ngay dưới hình — chúng trả lời "cần gì" và
             "vào cơ nào" trong một cái liếc, nên không xứng một thẻ riêng. */}
