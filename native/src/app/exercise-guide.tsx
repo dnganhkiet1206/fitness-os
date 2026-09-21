@@ -9,7 +9,9 @@ import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useExerciseGuide } from '@/hooks/use-exercise-guide';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { equipmentLabel } from '@/lib/equipment';
+import { muscleGroupLabel } from '@/lib/muscle-group';
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 
@@ -52,6 +54,7 @@ export default function ExerciseGuideSheet() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const { ex, name } = useLocalSearchParams<{ ex?: string; name?: string }>();
   const title = (name ?? '').trim();
 
@@ -60,7 +63,18 @@ export default function ExerciseGuideSheet() {
   const g = data ?? null;
   const cues = g?.formCues ?? [];
   const mistakes = g?.commonMistakes ?? [];
-  const hasFacts = !!(g?.equipment || g?.muscleGroup);
+  /*
+    Cột lưu KHOÁ, màn hình hiện NHÃN.
+
+    `muscle_group` và `equipment` nay là `chest`, `dumbbell` — không phụ thuộc
+    vào việc lúc tạo bài tập người ta để app ở tiếng gì. Hai hàm nhãn ở dưới
+    trả chúng về ngôn ngữ đang bật, và trả lại NGUYÊN VĂN những giá trị cũ mà
+    bảng đồng nghĩa không nhận ra, nên không màn nào in ra một khoá thô và
+    cũng không giá trị nào của người dùng bị nuốt mất.
+  */
+  const equipment = equipmentLabel(g?.equipment, lang);
+  const muscles = muscleGroupLabel(g?.muscleGroup, lang);
+  const hasFacts = !!(equipment || muscles);
   /* "Rỗng" nghĩa là không có gì để DẠY. Một dòng thư viện khớp được mà mọi cột
      hướng dẫn đều trống vẫn là rỗng — người đọc không quan tâm nó khớp hay
      không, họ quan tâm có gì để đọc không. */
@@ -118,18 +132,18 @@ export default function ExerciseGuideSheet() {
             "vào cơ nào" trong một cái liếc, nên không xứng một thẻ riêng. */}
         {hasFacts ? (
           <View style={styles.facts}>
-            {g?.equipment ? (
+            {equipment ? (
               <View style={styles.fact}>
                 <Icon icon={Dumbbell} size={14} color={c.mutedForeground} />
                 <Text style={styles.factLabel}>{i18n.nEgEquipment}</Text>
-                <Text style={styles.factValue}>{g.equipment}</Text>
+                <Text style={styles.factValue}>{equipment}</Text>
               </View>
             ) : null}
-            {g?.muscleGroup ? (
+            {muscles ? (
               <View style={styles.fact}>
                 <Icon icon={Target} size={14} color={c.mutedForeground} />
                 <Text style={styles.factLabel}>{i18n.nEgMuscles}</Text>
-                <Text style={styles.factValue}>{g.muscleGroup}</Text>
+                <Text style={styles.factValue}>{muscles}</Text>
               </View>
             ) : null}
           </View>

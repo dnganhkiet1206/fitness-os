@@ -436,6 +436,44 @@ export type Database = {
         }
         Relationships: []
       }
+      exercise_guide_content: {
+        Row: {
+          common_mistakes: string[]
+          created_at: string
+          exercise_id: string
+          form_cues: string[]
+          id: string
+          locale: string
+          updated_at: string
+        }
+        Insert: {
+          common_mistakes?: string[]
+          created_at?: string
+          exercise_id: string
+          form_cues?: string[]
+          id?: string
+          locale: string
+          updated_at?: string
+        }
+        Update: {
+          common_mistakes?: string[]
+          created_at?: string
+          exercise_id?: string
+          form_cues?: string[]
+          id?: string
+          locale?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_guide_content_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercises: {
         Row: {
           common_mistakes: string[] | null

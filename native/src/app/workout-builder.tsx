@@ -36,7 +36,8 @@ import {
   type TemplateExercise,
 } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
-import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
+import { muscleArtKeysFor, muscleGroupLabel, type MuscleArtKey } from '@/lib/muscle-group';
+import { equipmentLabel } from '@/lib/equipment';
 import { displayWeight, weightLabel } from '@/lib/units';
 import { errorText } from '@/lib/error-copy';
 import { toast } from '@/lib/toast';
@@ -639,7 +640,11 @@ export default function WorkoutBuilderSheet() {
                   <View style={styles.exText}>
                     <Text style={styles.exName} numberOfLines={1}>{e.name}</Text>
                     <Text style={styles.exMeta} numberOfLines={1}>
-                      {[e.muscle_group, e.equipment].filter(Boolean).join(' · ')}
+                      {/* Nhãn, không phải khoá: cột nay lưu `chest`/`dumbbell`,
+                          và giá trị cũ chưa nhận ra được thì in nguyên văn. */}
+                      {[muscleGroupLabel(e.muscle_group, lang), equipmentLabel(e.equipment, lang)]
+                        .filter(Boolean)
+                        .join(' · ')}
                     </Text>
                   </View>
                   <View style={[styles.tick, on && styles.tickOn]}>

@@ -12,7 +12,13 @@ import { Icon } from '@/components/ascnd/icon';
 import { Field, FormSheet } from '@/components/ascnd/form-sheet';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
+import {
+  canonicalMuscleGroup,
+  muscleArtKeysFor,
+  muscleGroupLabel,
+  type MuscleArtKey,
+} from '@/lib/muscle-group';
+import { canonicalEquipment, equipmentLabel } from '@/lib/equipment';
 import { EXERCISE_KINDS, isExerciseKind, type ExerciseKind } from '@/lib/exercise-kind';
 import { errorText } from '@/lib/error-copy';
 import { radius, spacing, type } from '@/constants/ascnd';
@@ -82,12 +88,15 @@ export default function ExercisesScreen() {
       .filter((e) => !q || e.name.toLowerCase().includes(q));
     const map = new Map<string, typeof filtered>();
     for (const e of filtered) {
-      const g = e.muscle_group ?? '—';
+      /* Tiêu đề mục là NHÃN, vì cột nay lưu KHOÁ. Gộp theo nhãn chứ không theo
+         khoá thô cũng là thứ gộp được `Ngực` cũ và `chest` mới vào một mục
+         trong lúc dữ liệu cũ còn nằm đó — chúng ra cùng một chữ. */
+      const g = muscleGroupLabel(e.muscle_group, lang) || '—';
       if (!map.has(g)) map.set(g, []);
       map.get(g)!.push(e);
     }
     return [...map.entries()];
-  }, [exercises, search, only]);
+  }, [exercises, search, only, lang]);
 
   const submit = () => {
     if (!name.trim()) return;
@@ -95,8 +104,19 @@ export default function ExercisesScreen() {
     addEx.mutate(
       {
         name: name.trim(),
-        muscle_group: muscleGroup,
-        equipment: equipment.trim() || undefined,
+        /*
+          Bộ chọn vẫn HIỆN nhãn theo ngôn ngữ đang bật; thứ đi xuống cơ sở dữ
+          liệu là KHOÁ. Đó là toàn bộ lỗi đang được sửa: trước đây một người
+          dùng tiếng Việt lưu `Ngực`, một người dùng tiếng Anh lưu `Chest`, và
+          hai hàng ấy là cùng một cái kệ mà không truy vấn nào biết.
+
+          `?? muscleGroup` chứ không ép: nếu có ngày bộ chọn mọc thêm một nhãn
+          mà bảng đồng nghĩa chưa biết, thì giữ nguyên chữ ấy còn hơn nhét nó
+          vào một khoá gần đúng. `Chân trước`/`Chân sau` cùng ra `legs` — đúng
+          như `muscleArtKeysFor` vốn đã gộp chúng để chọn hình.
+        */
+        muscle_group: canonicalMuscleGroup(muscleGroup) ?? muscleGroup,
+        equipment: (canonicalEquipment(equipment) ?? equipment.trim()) || undefined,
         ...(kind ? { exercise_kind: kind } : {}),
       },
       {
@@ -287,7 +307,9 @@ export default function ExercisesScreen() {
                       {i18n[`nExKind${e.exercise_kind}` as keyof typeof i18n] as string}
                     </Text>
                   ) : null}
-                  {e.equipment ? <Text style={styles.equipment}>{e.equipment}</Text> : null}
+                  {e.equipment ? (
+                    <Text style={styles.equipment}>{equipmentLabel(e.equipment, lang)}</Text>
+                  ) : null}
                   {/* Only user-created exercises are deletable (seeds are shared) */}
                   {e.user_id === user?.id && (
                     <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={10} onPress={() => confirmDelete(e.id, e.name)}>

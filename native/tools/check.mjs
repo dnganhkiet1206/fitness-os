@@ -551,6 +551,7 @@ const STEPS = [
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],
   ['hướng dẫn bài tập', 'node', ['tools/exercise-guide.mjs']],
+  ['nội dung hướng dẫn', 'node', ['tools/guide-content.mjs']],
   ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],
   ['giờ nhắc nhở', 'node', ['tools/reminder-timing.mjs']],
   ['đã nối chưa', 'node', ['tools/linked.mjs']],

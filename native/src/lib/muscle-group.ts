@@ -187,3 +187,48 @@ export const MUSCLE_LABEL: Record<MuscleArtKey, { vi: string; en: string }> = {
   calves: { vi: 'Bắp chân', en: 'Calves' },
   cardio: { vi: 'Tim mạch', en: 'Cardio' },
 };
+
+/**
+ * Khoá chính tắc của một giá trị `muscle_group` đang lưu — hoặc `null`.
+ *
+ * ── vì sao cột ấy phải là KHOÁ chứ không phải NHÃN ──
+ *
+ * `exercises.tsx` lấy danh sách nhóm cơ từ `i18n.muscle*`, tức là từ NGÔN NGỮ
+ * ĐANG BẬT. Cùng một cái kệ được lưu là `Ngực` hay `Chest` tuỳ vào việc lúc
+ * bấm lưu người ta để app ở tiếng gì — một giá trị dữ liệu phụ thuộc giao
+ * diện, và không phép chuẩn hoá nào sau đó gỡ lại được ý nghĩa đã mất.
+ *
+ * Hàm này là đường ghi: màn hình vẫn HIỆN nhãn, nhưng thứ đi xuống cơ sở dữ
+ * liệu là khoá.
+ *
+ * ── vì sao trả về một CHUỖI chứ không một khoá ──
+ *
+ * `Lưng/Chân` của deadlift là hai nhóm và cả hai đều đúng. Ép về một khoá sẽ
+ * xếp deadlift vào một nửa và giấu nó khỏi nửa kia, nên giá trị chính tắc của
+ * nó là `back/legs` — đúng hình dạng hai giá trị mà hạt giống vốn đã dùng và
+ * `muscleArtKeysFor` vốn đã tách được.
+ *
+ * `null` nghĩa là không nhận ra, và đó là một câu trả lời thật: giá trị của
+ * người dùng được giữ NGUYÊN VĂN chứ không bị ép vào một khoá gần đúng.
+ */
+export function canonicalMuscleGroup(group: string | null | undefined): string | null {
+  const keys = muscleArtKeysFor(group);
+  return keys.length ? keys.join('/') : null;
+}
+
+/**
+ * Thứ để HIỆN cho một giá trị đang lưu, ở ngôn ngữ đang bật.
+ *
+ * Khoá nhận ra được thì thành nhãn; nhiều khoá thì nối bằng ` / ` (deadlift ở
+ * tiếng Việt đọc ra "Lưng / Chân"). Không nhận ra thì trả lại đúng chữ người
+ * ta đã gõ — màn hình không bao giờ in ra một khoá thô, và cũng không bao giờ
+ * bịa một nhóm cơ cho một chuỗi nó không hiểu.
+ */
+export function muscleGroupLabel(
+  group: string | null | undefined,
+  lang: 'vi' | 'en',
+): string {
+  const keys = muscleArtKeysFor(group);
+  if (keys.length) return keys.map((k) => MUSCLE_LABEL[k][lang]).join(' / ');
+  return (group ?? '').trim();
+}

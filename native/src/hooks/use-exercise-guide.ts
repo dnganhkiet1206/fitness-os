@@ -3,6 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { exerciseKey } from '@/lib/exercise-key';
 import { useAuth } from '@/hooks/use-auth';
+import { useAppSettings } from '@/hooks/use-app-settings';
+import type { AppLang } from '@/lib/i18n';
+import { pickContent, type GuideContentRow } from '@/lib/guide-content';
 
 /**
  * CÁCH LÀM một bài tập — tách hẳn khỏi việc bạn đã làm nó thế nào.
@@ -19,12 +22,17 @@ import { useAuth } from '@/hooks/use-auth';
  * câu hỏi khác nhau ở hai thời điểm khác nhau của buổi tập, và gộp lại sẽ làm
  * cả hai dài ra mà không cái nào sắc hơn.
  *
- * ── không có bảng mới, và không có kho ảnh mới ──
+ * ── hai bảng, và lý do có bảng thứ hai ──
  *
- * `exercises` đã mang sẵn `form_cues TEXT[]`, `common_mistakes TEXT[]` và
- * `video_url TEXT` từ migration ĐẦU TIÊN (`20260212040248`), và cả mười dòng
- * seed đã có `form_cues`. Nên không có gì để tạo: thứ cần là một truy vấn đọc
- * đúng mấy cột ấy.
+ * `exercises` mang danh tính và những thứ không đổi theo ngôn ngữ: tên, nhóm
+ * cơ, dụng cụ, `video_url`. Nội dung ĐỌC ĐƯỢC — điểm kỹ thuật, lỗi thường gặp
+ * — nằm ở `exercise_guide_content`, một dòng cho mỗi (bài tập, ngôn ngữ).
+ *
+ * Trước đó chúng là hai cột `TEXT[]` trên chính `exercises`. Một mảng giữ được
+ * một ngôn ngữ, mà app chạy hai (`AppLang`), nên người dùng tiếng Anh đọc tiêu
+ * đề "Form cues" bên trên "Vai ép xuống ghế". Thêm `form_cues_en` sẽ làm schema
+ * mọc ngang thêm một cột mỗi lần thêm một tiếng; một dòng cho mỗi ngôn ngữ mọc
+ * xuống, đúng việc của hàng.
  *
  * ── vì sao nó là truy vấn RIÊNG chứ không nối vào `useExercises()` ──
  *
@@ -49,17 +57,26 @@ import { useAuth } from '@/hooks/use-auth';
  * mà id sinh ra để gỡ.
  */
 
-/** Một dòng của thư viện, đúng những cột mà hướng dẫn cần. */
+/**
+ * Một dòng của thư viện, đúng những cột mà hướng dẫn cần.
+ *
+ * `form_cues` và `common_mistakes` KHÔNG còn ở đây. Chúng vẫn tồn tại trên
+ * bảng `exercises` — migration không xoá cột, vì xoá cột là việc không lùi
+ * được — nhưng chúng là một mảng, tức một ngôn ngữ, và app chạy hai. Nội dung
+ * nay đến từ `exercise_guide_content`, và việc màn này KHÔNG đọc được mảng cũ
+ * là thứ khiến "không trộn hai ngôn ngữ" là một tính chất của cấu trúc chứ
+ * không phải một lời hứa.
+ */
 interface GuideRow {
   id: string;
   user_id: string | null;
   name: string;
   muscle_group: string | null;
   equipment: string | null;
-  form_cues: string[] | null;
-  common_mistakes: string[] | null;
   video_url: string | null;
 }
+
+
 
 /**
  * Hướng dẫn đã giải xong, ở dạng màn hình dùng được.
@@ -80,10 +97,13 @@ export interface ExerciseGuide {
   mediaUrl: string | null;
   /** Cách dòng này được tìm ra — màn hình không cần, luật kiểm thì cần. */
   matchedBy: 'id' | 'name' | 'none';
+  /**
+   * Ngôn ngữ mà CẢ HAI danh sách trên đến từ, hoặc `null` khi không có nội
+   * dung nào. Không bao giờ là "một nửa tiếng này, một nửa tiếng kia" — xem
+   * `pickContent`.
+   */
+  contentLocale: AppLang | null;
 }
-
-const clean = (xs: string[] | null | undefined): string[] =>
-  (xs ?? []).map((s) => (s ?? '').trim()).filter(Boolean);
 
 const trimmed = (s: string | null | undefined): string | null => {
   const v = (s ?? '').trim();
@@ -120,19 +140,38 @@ export function useExerciseGuide(
   enabled = true,
 ) {
   const { user } = useAuth();
+  const { lang } = useAppSettings();
   const key = exerciseKey(name);
 
   return useQuery<ExerciseGuide>({
     /* Khoá cache mang CẢ hai đường tra: hai bài khác nhau cùng tên mà khác id
-       phải là hai mục cache khác nhau. */
-    queryKey: ['exercise-guide', user?.id, exerciseId ?? null, key],
+       phải là hai mục cache khác nhau. Và mang cả NGÔN NGỮ: đổi tiếng giữa
+       chừng phải ra nội dung khác, không ra bản đã nhớ của tiếng cũ. */
+    queryKey: ['exercise-guide', user?.id, exerciseId ?? null, key, lang],
     enabled: enabled && !!user && (!!exerciseId || !!key),
     /* Hướng dẫn gần như không đổi. Một buổi tập mở đi mở lại cùng một bài thì
        không có lý do gì gọi mạng lần thứ hai. */
     staleTime: 30 * 60 * 1000,
     queryFn: async () => {
-      const COLS = 'id, user_id, name, muscle_group, equipment, form_cues, common_mistakes, video_url';
+      const COLS = 'id, user_id, name, muscle_group, equipment, video_url';
       const visible = `user_id.is.null,user_id.eq.${user!.id}`;
+
+      /*
+        Nội dung được lấy ở lượt THỨ HAI, sau khi đã biết dòng nào.
+
+        Không nhúng vào câu trên (`exercises(…, exercise_guide_content(…))`) vì
+        đường tra theo TÊN kéo về MỌI bài đang thấy rồi mới lọc trong JS — nhúng
+        ở đó là tải nội dung của cả thư viện để đọc một bài. Ở đây là một truy
+        vấn nhỏ theo khoá chính, chạy đúng một lần mỗi lần mở sheet.
+      */
+      const withContent = async (row: GuideRow, matchedBy: 'id' | 'name') => {
+        const { data, error } = await supabase
+          .from('exercise_guide_content')
+          .select('locale, form_cues, common_mistakes')
+          .eq('exercise_id', row.id);
+        if (error) throw error;
+        return shape(row, matchedBy, name, pickContent((data ?? []) as GuideContentRow[], lang));
+      };
 
       /* ── 1. theo ID, đường chính tắc ── */
       if (exerciseId) {
@@ -143,7 +182,7 @@ export function useExerciseGuide(
           .or(visible);
         if (error) throw error;
         const row = pick((data ?? []) as GuideRow[]);
-        if (row) return shape(row, 'id', name);
+        if (row) return withContent(row, 'id');
         /* Id trỏ hụt — bài đã bị xoá khỏi thư viện, hoặc thuộc người khác.
            KHÔNG ném: rơi xuống đường tên ngay dưới, đúng như dữ liệu cũ. */
       }
@@ -156,7 +195,7 @@ export function useExerciseGuide(
           .or(visible);
         if (error) throw error;
         const row = pick(((data ?? []) as GuideRow[]).filter((r) => exerciseKey(r.name) === key));
-        if (row) return shape(row, 'name', name);
+        if (row) return withContent(row, 'name');
       }
 
       /* ── 3. không khớp gì ── */
@@ -169,20 +208,29 @@ export function useExerciseGuide(
         commonMistakes: [],
         mediaUrl: null,
         matchedBy: 'none' as const,
+        contentLocale: null,
       };
     },
   });
 }
 
-function shape(row: GuideRow, matchedBy: 'id' | 'name', fallbackName: string): ExerciseGuide {
+function shape(
+  row: GuideRow,
+  matchedBy: 'id' | 'name',
+  fallbackName: string,
+  content: { locale: AppLang; formCues: string[]; commonMistakes: string[] } | null,
+): ExerciseGuide {
   return {
     id: row.id,
     name: trimmed(row.name) ?? fallbackName,
     muscleGroup: trimmed(row.muscle_group),
     equipment: trimmed(row.equipment),
-    formCues: clean(row.form_cues),
-    commonMistakes: clean(row.common_mistakes),
+    /* Cả hai danh sách từ CÙNG một dòng, hoặc cả hai rỗng. Không có nhánh nào
+       lấy một danh sách ở đây và một ở kia. */
+    formCues: content?.formCues ?? [],
+    commonMistakes: content?.commonMistakes ?? [],
     mediaUrl: trimmed(row.video_url),
     matchedBy,
+    contentLocale: content?.locale ?? null,
   };
 }
