@@ -1,6 +1,7 @@
 import { ChevronLeft } from 'lucide-react-native';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -105,6 +106,55 @@ export function OnboardingScreen({
   */
   const progress = total > 0 ? Math.min(1, Math.max(0, step / total)) : 0;
 
+  /*
+    ── nút chính SÁNG LÊN, không tráo hình ──
+
+    Bản Giai đoạn 3 viết `disabled && styles.ctaOff`, với `ctaOff` là một style
+    tĩnh mang `opacity: 0.4`. Đó chính xác cái bẫy mà `press-scale.tsx` đã viết
+    ra sau khi gỡ nó khỏi gần một trăm sáu mươi chỗ: *"Cái đó trông như một
+    animation và nó không phải. Một style tĩnh được tráo vào bằng một lượt
+    render, nên cái thẻ NHẢY tới 0,98 rồi nhảy về. Không có nội suy ở bất kỳ
+    điểm nào."*
+
+    Ở đây nó đáng giá hơn một cái thẻ, vì trạng thái này là CÂU TRẢ LỜI cho cú
+    chạm vừa rồi: người dùng chọn một thẻ, và cái nút phải sáng lên như một hệ
+    quả. Nhảy một bước thì cú chạm và cái nút thôi dính với nhau.
+
+    `duration.toggle` — thang nhịp gọi đúng tên nó: "một thứ đổi giữa hai trạng
+    thái TẠI CHỖ". Không phải `appear`: cái nút không đi đâu cả, nó vẫn ở đó.
+
+    ── và vì sao chỉ MỞ mới có nhịp, còn KHOÁ thì tức thì ──
+
+    Đo trên bản dựng thật, lúc vừa tới một màn có câu chưa trả lời:
+
+        +0ms 1 · +50ms 0,901 · +100ms 0,628 · +150ms 0,405 · +200ms 0,4
+
+    Tức nút sáng đủ rồi mới mờ dần. Lần đầu tôi đọc con số này là lỗi lúc gắn
+    vào cây và đi seed `useSharedValue` — sai: `OnboardingScreen` được gắn MỘT
+    lần cho cả mười ba màn, nên đó là một lần ĐỔI TRẠNG THÁI thật trên một
+    component đang sống. Seed xong đo lại vẫn ra 0,99 → 0,906 → 0,635 → 0,406.
+
+    Nguyên nhân thật nằm ở chỗ khác: hai chiều của trạng thái này KHÔNG cùng
+    loại sự kiện.
+
+      MỞ   là PHẢN HỒI. Người dùng vừa chạm một thẻ, và đường đi tiếp mở ra vì
+           cú chạm ấy. Nó phải có nhịp, nếu không cú chạm và cái nút thôi dính
+           với nhau.
+      KHOÁ thì không do ai làm cả — màn hình vừa đổi sang một câu hỏi mới. Cho
+           nó một nhịp 180ms là quảng cáo một nút bấm được trong suốt quãng ấy,
+           đúng lúc ruột màn cũng đang chuyển. Không hại chức năng (`disabled`
+           là prop riêng, cú chạm bị chặn ngay từ khung đầu) nhưng nó là một
+           lời nói dối nhỏ, lặp lại mỗi lần đổi màn.
+
+    Nên khoá là tức thì, mở thì đi qua `duration.toggle`. Đây cũng đúng câu mà
+    tài liệu chuyển động của kho skill viết: *"Exit faster than entrance."*
+  */
+  const lit = useSharedValue(disabled ? 0.4 : 1);
+  useEffect(() => {
+    lit.value = disabled ? 0.4 : withTiming(1, { duration: duration.toggle });
+  }, [disabled, lit]);
+  const ctaFace = useAnimatedStyle(() => ({ opacity: lit.value }));
+
   return (
     <View style={[styles.page, { paddingTop: insets.top }]}>
       {/*
@@ -145,15 +195,17 @@ export function OnboardingScreen({
       <View style={styles.pad}>{children}</View>
 
       <View style={[styles.foot, { paddingBottom: Math.max(insets.bottom, spacing.lg) + 10 }]}>
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={cta}
-          accessibilityState={{ disabled: !!disabled }}
-          disabled={disabled}
-          style={[styles.cta, { backgroundColor: m.actionSurface }, disabled && styles.ctaOff]}
-          onPress={onCta}>
-          <Text style={styles.ctaText}>{cta}</Text>
-        </PressScale>
+        <Animated.View style={ctaFace}>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={cta}
+            accessibilityState={{ disabled: !!disabled }}
+            disabled={disabled}
+            style={[styles.cta, { backgroundColor: m.actionSurface }]}
+            onPress={onCta}>
+            <Text style={styles.ctaText}>{cta}</Text>
+          </PressScale>
+        </Animated.View>
 
         {secondary ? (
           <PressScale
@@ -209,7 +261,6 @@ const stylesFor = makeStyles((c) => ({
     justifyContent: 'center',
     gap: spacing.sm,
   },
-  ctaOff: { opacity: 0.4 },
   ctaText: { ...type.headline, color: c.primaryForeground },
   /*
     Lối ra thứ hai: nhẹ hơn nút chính một bậc rõ rệt, nhưng vẫn là CHỮ THẬT ở

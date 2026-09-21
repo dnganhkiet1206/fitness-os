@@ -12,7 +12,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import Animated, { FadeInDown, useSharedValue } from 'react-native-reanimated';
 
 import { BodyScaleFigure } from '@/components/ascnd/body-scale-figure';
 import { BRAND_TAGLINE, BrandLockup } from '@/components/ascnd/brand-lockup';
@@ -32,9 +32,11 @@ import { useAuth } from '@/hooks/use-auth';
 import { usePalette } from '@/hooks/use-palette';
 import { useRulerIndex } from '@/hooks/use-ruler-index';
 import { useScaleWake } from '@/hooks/use-scale-wake';
+import { useStageMotion } from '@/hooks/use-stage-motion';
 import { useUnits } from '@/hooks/use-units';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
+import { useRise } from '@/lib/entrance';
 import { errorText } from '@/lib/error-copy';
 import { planFromEntry } from '@/lib/fitness-calc';
 import { isHealthKitAvailable, requestHealthPermissions } from '@/lib/health';
@@ -154,6 +156,9 @@ export function OnboardingFlow() {
   const { unit: vUnit } = useVolumeUnit();
 
   const [step, setStep] = useState(0);
+  const [dir, setDir] = useState<1 | -1>(1);
+  const dirSV = useSharedValue<number>(1);
+  const crossSV = useSharedValue<number>(0);
   const [branch, setBranch] = useState<Branch | null>(null);
   const [goal, setGoal] = useState<GoalKey | ''>('');
   const [sex, setSex] = useState('');
@@ -240,15 +245,25 @@ export function OnboardingFlow() {
     (at === 'activity' && !activityLevel) ||
     (at === 'experience' && !trainingLevel);
 
-  const hop = (dir: 1 | -1) => {
+  const hop = (d: 1 | -1) => {
     Haptics.selectionAsync();
-    setStep((s) => {
-      let n = s + dir;
-      /* Màn vắng mặt thì bước qua nó ở CẢ HAI chiều — nếu không thì nút Quay
-         lại dẫn người ta tới một câu hỏi họ chưa từng thấy. */
-      while (STEPS[n] && skip(STEPS[n].key)) n += dir;
-      return Math.max(0, Math.min(STEPS.length - 1, n));
-    });
+    let n = step + d;
+    /* Màn vắng mặt thì bước qua nó ở CẢ HAI chiều — nếu không thì nút Quay lại
+       dẫn người ta tới một câu hỏi họ chưa từng thấy. */
+    while (STEPS[n] && skip(STEPS[n].key)) n += d;
+    n = Math.max(0, Math.min(STEPS.length - 1, n));
+    /*
+      Hai giá trị này phải được đặt TRƯỚC `setStep`, và phải là shared value.
+
+      Style của hai tấm đọc chúng lúc worklet CHẠY, không phải lúc render, nên
+      chúng phải mô tả cú chuyển sắp xảy ra chứ không phải cú vừa xong. Lý do
+      đầy đủ nằm ở `use-stage-motion.ts`.
+    */
+    dirSV.value = d;
+    crossSV.value = RULER_SCREENS.has(at) && RULER_SCREENS.has(STEPS[n].key) ? 1 : 0;
+    if (painted) run(at, STEPS[n].key === 'plan');
+    setDir(d);
+    setStep(n);
   };
   const goNext = () => hop(1);
   const goPrev = () => hop(-1);
@@ -310,6 +325,70 @@ export function OnboardingFlow() {
 
   const goalLabel = goal ? i18n[GOAL_COPY[goal].label] : '';
 
+  /*
+    ── chuyển màn: cùng một khung, chỉ RUỘT đi qua ──
+
+    Hai tấm dưới kia bọc đúng phần ruột, nên thanh tiến độ, nút quay lại và nút
+    chính đứng yên suốt cú chuyển — đo được `rãnh tx0 ty0 · lùi tx0 ty0` ở mọi
+    mẫu của mọi lượt. Đó là điều cả ba bảng chuyển cảnh của board đều mở đầu
+    bằng: "bộ khung không đổi một điểm nào".
+
+    Cơ chế nằm ở `use-stage-motion.ts`, và ở đó cũng ghi vì sao nó KHÔNG đi qua
+    `entering`/`exiting` của Reanimated. Chỗ này chỉ quyết ba điều: đi hướng
+    nào, hai màn có dùng chung dụng cụ không, và màn tới có tự mang cú đến của
+    nó không. Cả ba được đặt trong `hop()` ngay trước khi màn đổi.
+
+    ── ba chế độ, mỗi cái trả lời một câu khác nhau ──
+
+    ĐẨY (mặc định) hai màn khác nhau. Màn vào ±100% → 0, màn ra 0 → ∓30%, cùng
+       nhịp `duration.swap` và cùng easing. Nó có HƯỚNG, và đó là cái Giai đoạn
+       3 thiếu: một `FadeIn` vô hướng cho mọi lượt khiến bấm Tiếp và bấm Quay
+       lại cho ra hình ảnh y hệt. `ios.md` nói đúng một câu về việc này: *push
+       slides, dismiss reverses the entrance*. Đo: tiến `+193 → 0` với tấm ra
+       `→ −120,6`; lùi `−263 → 0` với tấm ra `→ +120,6`.
+
+    CROSSFADE hai màn CÙNG MANG CÂY THƯỚC. Không một điểm dịch nào — chỉ độ mờ,
+       vì chỉ nội dung đổi. Board nói thẳng về cặp 07→08: thứ phải GIỮ là
+       "chính cái thước — cùng `Ruler`, cùng TICK_W 4, cùng cây kim, cùng dòng
+       'Kéo để chỉnh' ở cùng độ cao", và kết bằng *"Nếu cái thước cũng đổi theo
+       thì hai màn sẽ đứt."* `crossSV` hỏi CẢ HAI đầu chứ không hỏi một: vào
+       màn 07 từ màn 06 vẫn ĐẨY, vì ở đó cây thước là thứ MỚI.
+
+    TỰ MANG màn 11. Cascade năm bậc ở dưới đã là cú đến, nên khung không thêm
+       gì nữa. Bản trước có cả `FadeIn` của tấm bọc LẪN cascade, và audit đo
+       được hai thứ chạy chồng (tấm bọc 0,167→0,584→1 dưới năm bậc 0,9→1). Một
+       trong hai đủ nói, và cascade là cái mang thứ tự đọc.
+
+    ── hai điều KHÔNG có nhánh ở đây, và cả hai là phép ĐO ──
+
+    ① Lần vẽ ĐẦU không chuyển cảnh, vì `hop()` là chỗ duy nhất gọi `run()` và
+       nó không chạy lúc mở app. `useRise` đã viết sẵn nguyên tắc: trên lần vẽ
+       đầu tiên không có trạng thái trước nào để làm dịu. `painted` đọc ra từ
+       chính hook ấy nên hai chỗ không thể lệch nhau.
+
+    ② Reduce Motion không có nhánh riêng. Bản đầu của khối này có
+       `reduced ? FadeIn : slide`, viện đúng câu của `ios.md`: *"Crossfade
+       instead of parallax and large slides."* Bật `prefers-reduced-motion`
+       trên bản dựng thật rồi đọc `getComputedStyle` giữa lúc chuyển:
+
+           01→02  +40ms  tấm ra −120,6 · tấm vào 0   — đã ở ĐÍCH
+           07→08  +40ms  tấm ra op 0  · tấm vào op 1  — đã ở ĐÍCH
+
+       `withTiming` được hệ tự triệt tiêu: giá trị nhảy thẳng tới đích, không
+       một giá trị trung gian nào, không một quãng dịch nào. Thêm một nhánh
+       `reduced` ở đây là thêm code không bao giờ làm gì khác — và đặt hàng cấm
+       đúng điều đó: *"không thêm fallback animation riêng"*.
+
+    `sameTool` dưới đây KHÁC `crossSV`: nó nói về màn ĐANG HIỆN, và chỉ dùng để
+    tắt hiệu ứng vào của chính cây thước. `crossSV` nói về cú chuyển đang xảy
+    ra. Hai câu hỏi khác nhau, hai giá trị khác nhau.
+  */
+  const prev = STEPS[step - dir];
+  const sameTool = RULER_SCREENS.has(at) && !!prev && RULER_SCREENS.has(prev.key);
+  const rise = useRise();
+  const painted = rise(0) !== undefined;
+  const { inFace, outFace, outKey, run } = useStageMotion<StepKey>({ screenW, dirSV, crossSV });
+
   /* ── các mảnh chỉ luồng này dùng ── */
 
   const Ask = ({ q, why }: { q: string; why: string }) => (
@@ -334,7 +413,19 @@ export function OnboardingFlow() {
     onIndex: (i: number) => void;
     onContentSizeChange: () => void;
   }) => (
-    <Animated.View entering={FadeInDown.duration(duration.move).delay(60)} style={styles.bleed}>
+    /*
+      Hiệu ứng vào của cây thước chỉ chạy khi cây thước là NỘI DUNG MỚI.
+
+      Ở 07↔08 nó là vật dùng chung, và audit đo được nó tự phản bội đúng chỗ
+      phải giữ: `op 0 → 0,236 → 0,652` kèm `y 672 → 666 → 656 → 647`, tức mờ từ
+      số không và dâng lên 25 điểm, trong khi tấm bọc phía trên đã crossfade
+      đúng. Ngón tay mất điểm neo ngay ở cặp màn cần nó nhất.
+
+      Vào màn 07 từ màn 06 thì vẫn chạy — ở đó cây thước thật sự vừa xuất hiện.
+    */
+    <Animated.View
+      entering={sameTool ? undefined : FadeInDown.duration(duration.move).delay(60)}
+      style={styles.bleed}>
       <View style={styles.ruler}>
         <Ruler
           count={count}
@@ -362,70 +453,42 @@ export function OnboardingFlow() {
     của `tools/profile-onboarding.mjs` đòi: khoá nút đi tiếp của màn số đo mà
     không khoá nút ghi thì vẫn còn một đường vòng tới câu ghi.
   */
-  if (at === 'ready') {
-    return (
-      <OnboardingScreen
-        step={shownAt}
-        total={shown.length}
-        cta={i18n.obReadyCta}
-        onCta={() => finish.mutate()}
-        disabled={statsBad || finish.isPending}
-        legal={i18n.obReadyLegal}
-        onLegal={() => {
-          Haptics.selectionAsync();
-          setLegalTab('terms');
-        }}>
-        <View style={styles.centre}>
-          <Text style={styles.eyebrow}>{i18n.obReadyEyebrow}</Text>
-          <View style={styles.grow} />
-          <KoaFigure expression="delighted" pose="idle" size={280} />
-          <Text style={styles.readyLine}>{i18n.obReadyLine}</Text>
-          <View style={styles.grow} />
-          <View style={styles.chips}>
-            {[
-              goalLabel,
-              `${group(attempt.ok ? attempt.plan.tdee_target_kcal : 0, lang)} kcal`,
-              `Level ${pad2(levelFromXp(0))}`,
-            ]
-              .filter(Boolean)
-              .map((t) => (
-                <Text key={t} style={styles.chip}>
-                  {t}
-                </Text>
-              ))}
-          </View>
-          {finish.isPending ? (
-            <ActivityIndicator style={styles.pending} color={c.mutedForeground} />
-          ) : null}
-          {statError ? <Text style={styles.fieldError}>{statError}</Text> : null}
-        </View>
-        <LegalSheet
-          tab={legalTab}
-          lang={lang}
-          styles={styles}
-          c={c}
-          onTab={setLegalTab}
-          onClose={() => setLegalTab(null)}
-        />
-      </OnboardingScreen>
-    );
-  }
+  /*
+    ── RUỘT của một màn, hỏi bằng KHOÁ ──
 
-  return (
-    <OnboardingScreen
-      step={at === 'welcome' ? 0 : shownAt}
-      total={shown.length}
-      onBack={step > 0 ? goPrev : undefined}
-      backLabel={i18n.obBack}
-      cta={CTA[at] ? i18n[CTA[at]] : i18n.obNext}
-      onCta={at === 'health' ? connectHealth : goNext}
-      /* Cái chốt của màn số đo. Nó nêu TÊN màn chứ không nêu một vị trí viết
-         thẳng: đổi thứ tự thì cái khoá đi theo. */
-      disabled={(step === BODY_STATS_STEP && statsBad) || unanswered}
-      secondary={at === 'health' ? { label: i18n.obHealthLater, onPress: goNext } : undefined}
-      legal={at === 'health' ? i18n.obHealthLegal : undefined}>
-      <Animated.View key={at} entering={FadeIn.duration(duration.appear)} style={styles.fill}>
-        {at === 'welcome' && (
+    Tách ra khỏi phần dựng khung vì hệ chuyển cảnh cần dựng ĐỒNG THỜI hai màn:
+    màn đang tới và màn đang đi. Trước đây chuỗi nhánh này bám vào `at`, tức
+    chỉ dựng được màn hiện tại, và đó là lý do bản trước không có vế RA nào.
+  */
+  const body = (k: StepKey) =>
+    k === 'ready' ? (
+      <View style={styles.centre}>
+        <Text style={styles.eyebrow}>{i18n.obReadyEyebrow}</Text>
+        <View style={styles.grow} />
+        <KoaFigure expression="delighted" pose="idle" size={280} />
+        <Text style={styles.readyLine}>{i18n.obReadyLine}</Text>
+        <View style={styles.grow} />
+        <View style={styles.chips}>
+          {[
+            goalLabel,
+            `${group(attempt.ok ? attempt.plan.tdee_target_kcal : 0, lang)} kcal`,
+            `Level ${pad2(levelFromXp(0))}`,
+          ]
+            .filter(Boolean)
+            .map((t) => (
+              <Text key={t} style={styles.chip}>
+                {t}
+              </Text>
+            ))}
+        </View>
+        {finish.isPending ? (
+          <ActivityIndicator style={styles.pending} color={c.mutedForeground} />
+        ) : null}
+        {statError ? <Text style={styles.fieldError}>{statError}</Text> : null}
+      </View>
+    ) : (
+      <>
+        {k === 'welcome' && (
           <View style={styles.fill}>
             <BrandLockup />
             <View style={styles.grow} />
@@ -437,7 +500,7 @@ export function OnboardingFlow() {
           </View>
         )}
 
-        {at === 'intention' && (
+        {k === 'intention' && (
           <View style={styles.fill}>
             <Ask q={i18n.obIntentionQ} why={i18n.obIntentionWhy} />
             <View style={styles.grow} />
@@ -457,7 +520,7 @@ export function OnboardingFlow() {
           </View>
         )}
 
-        {at === 'goal' && (
+        {k === 'goal' && (
           <View style={styles.fill}>
             {/* Nhánh vừa chọn quay lại làm EYEBROW ngay TRÊN câu hỏi, nên hai
                 dòng đọc liền thành một đường đi. Đặt nó DƯỚI câu hỏi thì nó đọc
@@ -480,7 +543,7 @@ export function OnboardingFlow() {
           </View>
         )}
 
-        {at === 'koa' && (
+        {k === 'koa' && (
           <View style={styles.centre}>
             <View style={styles.grow} />
             <KoaFigure expression="happy" pose="turn34" size={300} />
@@ -490,7 +553,7 @@ export function OnboardingFlow() {
           </View>
         )}
 
-        {at === 'sex' && (
+        {k === 'sex' && (
           <View style={styles.fill}>
             <Ask q={i18n.obSexQ} why={i18n.obSexWhy} />
             <View style={styles.grow} />
@@ -508,7 +571,7 @@ export function OnboardingFlow() {
           </View>
         )}
 
-        {at === 'dob' && (
+        {k === 'dob' && (
           <View style={styles.fill}>
             <Ask q={i18n.obDobQ} why={i18n.obDobWhy} />
             <View style={styles.grow} />
@@ -539,7 +602,7 @@ export function OnboardingFlow() {
           </View>
         )}
 
-        {at === 'height' && (
+        {k === 'height' && (
           <HeightBody
             cm={heightCm}
             unit={hUnit}
@@ -550,7 +613,7 @@ export function OnboardingFlow() {
           />
         )}
 
-        {at === 'weight' && (
+        {k === 'weight' && (
           <WeightBody
             kg={weightKg}
             unit={wUnit}
@@ -563,7 +626,7 @@ export function OnboardingFlow() {
           />
         )}
 
-        {at === 'activity' && (
+        {k === 'activity' && (
           <View style={styles.fill}>
             <Ask q={i18n.obActivityQ} why={i18n.obActivityWhy} />
             <View style={styles.grow} />
@@ -602,7 +665,7 @@ export function OnboardingFlow() {
           </View>
         )}
 
-        {at === 'experience' && (
+        {k === 'experience' && (
           <View style={styles.fill}>
             <Ask q={i18n.obExpQ} why={i18n.obExpWhy} />
             <View style={styles.grow} />
@@ -621,13 +684,32 @@ export function OnboardingFlow() {
           </View>
         )}
 
-        {at === 'plan' && attempt.ok && (
+        {k === 'plan' && attempt.ok && (
           <View style={styles.fill}>
             {/* Thác đổ bắt đầu ở khoảng một phần ba màn, không phải giữa màn:
                 dựng thật ở 402×874 thì `growWide` để lại 430 điểm trống phía
                 trên một cụm chữ cao chưa tới 400. */}
             <View style={styles.growSmall} />
-            <Text style={styles.eyebrowLeft}>{i18n.obPlanEyebrow}</Text>
+            {/*
+              ── cú đến của màn 11 ──
+
+              Đây là chỗ DUY NHẤT trong luồng đáng một cú dàn dựng. Board gọi
+              đúng tên nó: *"chín màn vừa lấy đi của người dùng thứ gì đó; đây
+              là màn đầu tiên trả lại"*. Nên nó không hiện ra một lượt — nó
+              được DỰNG DẦN, theo đúng thứ tự mắt phải đọc: con số trước, rồi
+              mục tiêu, rồi macro, rồi hai dòng nhỏ, rồi bậc.
+
+              Nhịp là `rise(i)` — cascade dùng chung của app, cùng thứ Hôm nay
+              và Tiến trình chạy, cách nhau 60ms mỗi bậc. Không dựng một nhịp
+              riêng cho một màn: `constants/motion.ts` đã ghi cái giá của việc
+              ấy, và `tools/motion.mjs` đếm từng nhịp mới.
+
+              Năm bậc, tức 240ms cho cả cú đến. `rise` tự kẹp trần ở bậc thứ
+              mười nên thêm dòng cũng không kéo dài ra được.
+            */}
+            <Animated.View entering={rise(0)}>
+              <Text style={styles.eyebrowLeft}>{i18n.obPlanEyebrow}</Text>
+            </Animated.View>
             {/*
               Một THÁC ĐỔ, không phải một lưới. Bản Round 1 xếp macro thành ba
               cột bằng nhau — đó chính là hình dạng một dashboard, và màn này là
@@ -635,40 +717,48 @@ export function OnboardingFlow() {
               xuống đúng một chiều: kcal 44 → mục tiêu 15 → macro 15 → nước và
               ngủ 13 → bậc 15/11 màu phụ.
             */}
-            <View style={styles.readout}>
+            <Animated.View entering={rise(0)} style={styles.readout}>
               <Text style={styles.num}>{group(attempt.plan.tdee_target_kcal, lang)}</Text>
               <Text style={styles.numUnit}>kcal</Text>
-            </View>
-            <Text style={styles.planFor}>{i18n.obPlanFor.replace('{goal}', goalLabel)}</Text>
-            <Text style={styles.planMacro}>
-              {i18n.obPlanMacros
-                .replace('{p}', String(attempt.plan.macro_protein_g))
-                .replace('{c}', String(attempt.plan.macro_carbs_g))
-                .replace('{f}', String(attempt.plan.macro_fat_g))}
-            </Text>
-            <View style={styles.hair} />
-            <Text style={styles.planQuiet}>
-              {i18n.obPlanWater.replace(
-                '{v}',
-                `${displayVolume(attempt.plan.water_target_ml, vUnit).toFixed(1)} ${volumeLabel(vUnit)}`,
-              )}
-            </Text>
-            <Text style={styles.planQuiet}>{i18n.obPlanSleep.replace('{h}', '8,0')}</Text>
+            </Animated.View>
+            <Animated.View entering={rise(1)}>
+              <Text style={styles.planFor}>{i18n.obPlanFor.replace('{goal}', goalLabel)}</Text>
+            </Animated.View>
+            <Animated.View entering={rise(2)}>
+              <Text style={styles.planMacro}>
+                {i18n.obPlanMacros
+                  .replace('{p}', String(attempt.plan.macro_protein_g))
+                  .replace('{c}', String(attempt.plan.macro_carbs_g))
+                  .replace('{f}', String(attempt.plan.macro_fat_g))}
+              </Text>
+            </Animated.View>
+            <Animated.View entering={rise(3)}>
+              <View style={styles.hair} />
+              <Text style={styles.planQuiet}>
+                {i18n.obPlanWater.replace(
+                  '{v}',
+                  `${displayVolume(attempt.plan.water_target_ml, vUnit).toFixed(1)} ${volumeLabel(vUnit)}`,
+                )}
+              </Text>
+              <Text style={styles.planQuiet}>{i18n.obPlanSleep.replace('{h}', '8,0')}</Text>
+            </Animated.View>
             <View style={styles.growSmall} />
-            <View style={styles.ladder}>
-              {RANK_DOTS.map((lvl) => (
-                <View key={lvl} style={[styles.rung, lvl === 1 && styles.rungOn]} />
-              ))}
-            </View>
-            <Text style={styles.rankName}>{rankForLevel(levelFromXp(0)).name[lang] ?? ''}</Text>
-            <Text style={styles.rankLine}>
-              {i18n.obPlanRank.replace('{n}', pad2(levelFromXp(0)))}
-            </Text>
+            <Animated.View entering={rise(4)}>
+              <View style={styles.ladder}>
+                {RANK_DOTS.map((lvl) => (
+                  <View key={lvl} style={[styles.rung, lvl === 1 && styles.rungOn]} />
+                ))}
+              </View>
+              <Text style={styles.rankName}>{rankForLevel(levelFromXp(0)).name[lang] ?? ''}</Text>
+              <Text style={styles.rankLine}>
+                {i18n.obPlanRank.replace('{n}', pad2(levelFromXp(0)))}
+              </Text>
+            </Animated.View>
             <View style={styles.growSmall} />
           </View>
         )}
 
-        {at === 'health' && (
+        {k === 'health' && (
           <View style={styles.fill}>
             <Text style={styles.q}>{i18n.obHealthQ}</Text>
             <Text style={styles.healthBody}>{i18n.onboardingHealthWhy}</Text>
@@ -696,7 +786,77 @@ export function OnboardingFlow() {
             <View style={styles.growWide} />
           </View>
         )}
-      </Animated.View>
+      </>
+    );
+
+  /*
+    ── hai tấm, một tiến trình ──
+
+    Bản trước dùng `entering`/`exiting` của Reanimated với hàm tự viết, và
+    runtime nói thẳng vì sao không được: *"Couldn't load entering/exiting
+    animation. Current version supports only predefined animations with
+    modifiers: duration, delay, easing…"* — trên web chúng bị VỨT kèm cảnh báo,
+    nên phép đo ra `dịch 0` ở mọi mốc và không có gì để duyệt.
+
+    Nên chuyển cảnh không đi qua layout animation nữa. Hai tấm cùng có mặt, một
+    shared value `t` chạy 0→1, và hai `useAnimatedStyle` đọc nó. Chạy giống
+    nhau ở cả hai nền, đo được ở cả hai, và quãng parallax là một phép nhân chứ
+    không phải một thứ phải xin thư viện.
+
+    Tấm ĐI dựng TRƯỚC nên tấm TỚI nằm đè lên — đúng thứ tự của một cú push: màn
+    mới trượt phủ lên màn cũ, và cái khe bên trái là chỗ duy nhất thấy parallax.
+  */
+  const panes = (
+    <>
+      {outKey ? (
+        <Animated.View style={[styles.canvasOut, outFace]} pointerEvents="none">
+          {body(outKey)}
+        </Animated.View>
+      ) : null}
+      <Animated.View style={[styles.canvas, inFace]}>{body(at)}</Animated.View>
+    </>
+  );
+
+  if (at === 'ready') {
+    return (
+      <OnboardingScreen
+        step={shownAt}
+        total={shown.length}
+        cta={i18n.obReadyCta}
+        onCta={() => finish.mutate()}
+        disabled={statsBad || finish.isPending}
+        legal={i18n.obReadyLegal}
+        onLegal={() => {
+          Haptics.selectionAsync();
+          setLegalTab('terms');
+        }}>
+        {panes}
+        <LegalSheet
+          tab={legalTab}
+          lang={lang}
+          styles={styles}
+          c={c}
+          onTab={setLegalTab}
+          onClose={() => setLegalTab(null)}
+        />
+      </OnboardingScreen>
+    );
+  }
+
+  return (
+    <OnboardingScreen
+      step={at === 'welcome' ? 0 : shownAt}
+      total={shown.length}
+      onBack={step > 0 ? goPrev : undefined}
+      backLabel={i18n.obBack}
+      cta={CTA[at] ? i18n[CTA[at]] : i18n.obNext}
+      onCta={at === 'health' ? connectHealth : goNext}
+      /* Cái chốt của màn số đo. Nó nêu TÊN màn chứ không nêu một vị trí viết
+         thẳng: đổi thứ tự thì cái khoá đi theo. */
+      disabled={(step === BODY_STATS_STEP && statsBad) || unanswered}
+      secondary={at === 'health' ? { label: i18n.obHealthLater, onPress: goNext } : undefined}
+      legal={at === 'health' ? i18n.obHealthLegal : undefined}>
+      {panes}
     </OnboardingScreen>
   );
 }
@@ -995,6 +1155,9 @@ const READS = ['obHealthRead1', 'obHealthRead2', 'obHealthRead3', 'obHealthRead4
 /** Bảy cột của biểu đồ tuần. Một hình MINH HOẠ, không phải dữ liệu của ai. */
 const WEEK = [20, 30, 26, 38, 52, 64, 72];
 
+/** Hai màn dùng chung MỘT dụng cụ — xem ngoại lệ ④ của phép chọn chuyển cảnh. */
+const RULER_SCREENS: ReadonlySet<StepKey> = new Set(['height', 'weight']);
+
 /** Sáu bậc của thang hạng — `RANKS` có sáu mục, và cái thang vẽ đúng sáu nấc. */
 const RANK_DOTS = [1, 2, 3, 4, 5, 6];
 
@@ -1010,6 +1173,33 @@ const pad2 = (n: number) => String(n).padStart(2, '0');
 
 const stylesFor = makeStyles((c, m) => ({
   fill: { flex: 1 },
+  /*
+    Tấm chuyển cảnh: chạy hết bề ngang, và có NỀN ĐỤC.
+
+    Nền không phải trang trí. Màn ra chỉ lùi 30% nên nó vẫn nằm phần lớn trên
+    màn hình; nếu màn vào trong suốt thì hai bộ chữ chồng lên nhau đọc được cả
+    hai. Trên iOS mỗi view controller tự đục, và cái đục ấy chính là thứ khiến
+    parallax chỉ lộ ra ở khe bên trái trong lúc màn mới còn đang tới.
+
+    Lề ngang được trả lại rồi lấy lại, nên ruột vẫn thụt 24 như cũ còn tấm thì
+    chạm hai mép — `styles.bleed` của cây thước vẫn triệt tiêu đúng như trước.
+  */
+  canvas: {
+    flex: 1,
+    marginHorizontal: -spacing.lg,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: c.background,
+  },
+  /* Tấm ĐI ra khỏi luồng bố cục — nó không được đẩy gì cả, nó chỉ đang rời đi. */
+  canvasOut: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: -spacing.lg,
+    right: -spacing.lg,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: c.background,
+  },
   centre: { flex: 1, alignItems: 'center' },
   /*
     ── nhịp dọc, và con số đã đo ──
