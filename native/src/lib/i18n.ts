@@ -615,6 +615,85 @@ interface Translations {
   onboardingStepDiet: string;
   onboardingStepSupplements: string;
   onboardingStepConnect: string;
+  /* ── onboarding 13 màn (Giai đoạn 3) ── */
+  obBack: string;
+  obNext: string;
+  obDragHint: string;
+  obStart: string;
+  obIntentionQ: string;
+  obIntentionWhy: string;
+  obBranchBody: string;
+  obBranchBodyDesc: string;
+  obBranchCapacity: string;
+  obBranchCapacityDesc: string;
+  obBranchMaintain: string;
+  obBranchMaintainDesc: string;
+  obGoalQ: string;
+  obGoalBulk: string;
+  obGoalBulkDesc: string;
+  obGoalCut: string;
+  obGoalCutDesc: string;
+  obGoalRecomp: string;
+  obGoalRecompDesc: string;
+  obGoalStrength: string;
+  obGoalStrengthDesc: string;
+  obGoalEndurance: string;
+  obGoalEnduranceDesc: string;
+  obKoaName: string;
+  obKoaLine: string;
+  obKoaCta: string;
+  obSexQ: string;
+  obSexWhy: string;
+  obSexMale: string;
+  obSexFemale: string;
+  obSexOther: string;
+  obDobQ: string;
+  obDobWhy: string;
+  obDobBad: string;
+  obHeightQ: string;
+  obHeightWhy: string;
+  obWeightQ: string;
+  obActivityQ: string;
+  obActivityWhy: string;
+  obActSedentary: string;
+  obActSedentaryDesc: string;
+  obActLight: string;
+  obActLightDesc: string;
+  obActModerate: string;
+  obActModerateDesc: string;
+  obActHigh: string;
+  obActHighDesc: string;
+  obActAthlete: string;
+  obActAthleteDesc: string;
+  obExpQ: string;
+  obExpWhy: string;
+  obExpNew: string;
+  obExpNewDesc: string;
+  obExpSteady: string;
+  obExpSteadyDesc: string;
+  obExpDeep: string;
+  obExpDeepDesc: string;
+  obPlanEyebrow: string;
+  obPlanFor: string;
+  obPlanMacros: string;
+  obPlanWater: string;
+  obPlanSleep: string;
+  obPlanRank: string;
+  obHealthQ: string;
+  obHealthChart: string;
+  obHealthRead1: string;
+  obHealthRead2: string;
+  obHealthRead3: string;
+  obHealthRead4: string;
+  obHealthConnect: string;
+  obHealthLater: string;
+  obHealthLegal: string;
+  obHealthDone: string;
+  obReadyEyebrow: string;
+  obReadyLine: string;
+  obReadyCta: string;
+  obReadyLegal: string;
+
   onboardingConnectIntro: string;
   onboardingHealthTitle: string;
   onboardingHealthWhy: string;
@@ -1396,9 +1475,88 @@ const vi: Translations = {
   onboardingStepDiet: 'Chế độ ăn',
   onboardingStepSupplements: 'Thực phẩm bổ sung',
   onboardingStepConnect: 'Kết nối',
+  /* ── onboarding 13 màn (Giai đoạn 3) ── */
+  obBack: 'Quay lại',
+  obNext: 'Tiếp',
+  obDragHint: 'Kéo để chỉnh',
+  obStart: 'Bắt đầu',
+  obIntentionQ: 'Bạn muốn thay đổi điều gì?',
+  obIntentionWhy: 'Câu trả lời này quyết định calo và macro mỗi ngày của bạn.',
+  obBranchBody: 'Hình thể',
+  obBranchBodyDesc: 'Tăng cơ, giảm mỡ, hoặc cả hai',
+  obBranchCapacity: 'Năng lực',
+  obBranchCapacityDesc: 'Khoẻ hơn hoặc bền hơn',
+  obBranchMaintain: 'Giữ đều',
+  obBranchMaintainDesc: 'Giữ phong độ hiện tại',
+  obGoalQ: 'Cụ thể hơn một chút?',
+  obGoalBulk: 'Tăng cơ',
+  obGoalBulkDesc: 'Ăn dư, ưu tiên đạm',
+  obGoalCut: 'Giảm mỡ',
+  obGoalCutDesc: 'Ăn thiếu, giữ cơ',
+  obGoalRecomp: 'Tăng cơ & giảm mỡ',
+  obGoalRecompDesc: 'Chậm hơn, đổi lại được cả hai',
+  obGoalStrength: 'Khoẻ hơn',
+  obGoalStrengthDesc: 'Nâng được nhiều hơn',
+  obGoalEndurance: 'Bền hơn',
+  obGoalEnduranceDesc: 'Đi xa hơn, lâu mệt hơn',
+  obKoaName: 'Mình là Koa.',
+  obKoaLine: 'Mình sẽ đi cùng bạn trên hành trình này.',
+  obKoaCta: 'Rất vui được gặp',
+  obSexQ: 'Bạn thuộc nhóm nào?',
+  obSexWhy: 'Công thức năng lượng nghỉ rẽ theo thông tin này.',
+  obSexMale: 'Nam',
+  obSexFemale: 'Nữ',
+  obSexOther: 'Khác',
+  obDobQ: 'Bạn sinh ngày nào?',
+  obDobWhy: 'Tuổi đổi mức năng lượng nghỉ của bạn.',
+  obDobBad: 'Ngày sinh phải ở quá khứ, và tuổi phải dưới 130.',
+  obHeightQ: 'Bạn cao bao nhiêu?',
+  obHeightWhy: 'Cùng với cân nặng, nó cho ra mức năng lượng nghỉ.',
+  obWeightQ: 'Hôm nay bạn nặng bao nhiêu?',
+  obActivityQ: 'Một ngày bình thường của bạn ra sao?',
+  obActivityWhy: 'Mức này đã bao gồm cả buổi tập của bạn.',
+  obActSedentary: 'Ít vận động',
+  obActSedentaryDesc: 'Ngồi gần như cả ngày',
+  obActLight: 'Nhẹ',
+  obActLightDesc: 'Đi lại chút ít',
+  obActModerate: 'Trung bình',
+  obActModerateDesc: 'Tập 3–5 buổi mỗi tuần',
+  obActHigh: 'Cao',
+  obActHighDesc: 'Tập nặng hoặc việc chân tay',
+  obActAthlete: 'Vận động viên',
+  obActAthleteDesc: 'Hai buổi mỗi ngày',
+  obExpQ: 'Bạn đang bắt đầu từ đâu?',
+  obExpWhy: 'Huấn luyện viên AI dùng câu này để chọn cách nói với bạn.',
+  obExpNew: 'Mình mới bắt đầu',
+  obExpNewDesc: 'Chưa tập bao giờ, hoặc nghỉ đã lâu',
+  obExpSteady: 'Mình tập đều được một thời gian',
+  obExpSteadyDesc: 'Khoảng một tới ba năm',
+  obExpDeep: 'Mình có nhiều kinh nghiệm',
+  obExpDeepDesc: 'Tập đều trên ba năm',
+  obPlanEyebrow: 'Kế hoạch của bạn',
+  obPlanFor: 'mỗi ngày, cho mục tiêu {goal}',
+  obPlanMacros: 'Đạm {p}g · Tinh bột {c}g · Béo {f}g',
+  obPlanWater: 'Nước {v} mỗi ngày',
+  obPlanSleep: 'Ngủ {h} giờ mỗi đêm',
+  obPlanRank: 'Level {n} — bậc đầu trong sáu',
+  obHealthQ: 'ASCND có thể hiểu ngày của bạn rõ hơn.',
+  obHealthChart: 'Bốn ngày bạn tự ghi · ba ngày đồng hồ tự điền',
+  obHealthRead1: 'Bước chân và năng lượng',
+  obHealthRead2: 'Giấc ngủ',
+  obHealthRead3: 'Nhịp tim nghỉ và HRV',
+  obHealthRead4: 'Buổi tập từ đồng hồ',
+  obHealthConnect: 'Kết nối Sức khoẻ',
+  obHealthLater: 'Để sau',
+  obHealthLegal: 'Số liệu sức khoẻ không rời khỏi máy này.',
+  obHealthDone: 'Đã kết nối',
+  obReadyEyebrow: 'Tất cả đã sẵn sàng',
+  obReadyLine: 'Lần Ascend đầu tiên của bạn bắt đầu ở đây.',
+  obReadyCta: 'Bắt đầu hành trình',
+  obReadyLegal: 'Bắt đầu tức là bạn đồng ý với Điều khoản, Quyền riêng tư và Dữ liệu sức khoẻ.',
+
   onboardingConnectIntro: 'Hai thứ này làm app tự chạy thay vì bắt bạn nhập tay. Bỏ qua cũng được, bật lại trong Cài đặt bất cứ lúc nào.',
   onboardingHealthTitle: 'Apple Health',
-  onboardingHealthWhy: 'Đọc bước chân, giấc ngủ, nhịp tim nghỉ và HRV để tính điểm sẵn sàng mỗi sáng. Không có nó, những số này phải nhập tay.',
+  onboardingHealthWhy: 'Hoạt động, giấc ngủ và số liệu từ iPhone hoặc Apple Watch giúp kế hoạch tự cập nhật theo tuần của bạn, thay vì chờ bạn nhập tay từng ngày.',
   onboardingHealthConnect: 'Kết nối Apple Health',
   onboardingHealthConnected: 'Đã kết nối',
   onboardingRemindTitle: 'Nhắc nhở',
@@ -2149,9 +2307,88 @@ const en: Translations = {
   onboardingStepDiet: 'Diet',
   onboardingStepSupplements: 'Supplements',
   onboardingStepConnect: 'Connect',
+  /* ── onboarding 13 màn (Giai đoạn 3) ── */
+  obBack: 'Back',
+  obNext: 'Continue',
+  obDragHint: 'Drag to adjust',
+  obStart: 'Get started',
+  obIntentionQ: 'What do you want to change?',
+  obIntentionWhy: 'This decides your calories and macros every day.',
+  obBranchBody: 'Body',
+  obBranchBodyDesc: 'Build muscle, lose fat, or both',
+  obBranchCapacity: 'Capacity',
+  obBranchCapacityDesc: 'Get stronger or last longer',
+  obBranchMaintain: 'Hold steady',
+  obBranchMaintainDesc: 'Keep where you are',
+  obGoalQ: 'A little more specific?',
+  obGoalBulk: 'Build muscle',
+  obGoalBulkDesc: 'Eat in surplus, protein first',
+  obGoalCut: 'Lose fat',
+  obGoalCutDesc: 'Eat in deficit, keep the muscle',
+  obGoalRecomp: 'Both at once',
+  obGoalRecompDesc: 'Slower, but you get both',
+  obGoalStrength: 'Stronger',
+  obGoalStrengthDesc: 'Move heavier weight',
+  obGoalEndurance: 'More endurance',
+  obGoalEnduranceDesc: 'Go further before you tire',
+  obKoaName: "I'm Koa.",
+  obKoaLine: "I'll be with you the whole way.",
+  obKoaCta: 'Nice to meet you',
+  obSexQ: 'Which applies to you?',
+  obSexWhy: 'The resting-energy formula branches on this.',
+  obSexMale: 'Male',
+  obSexFemale: 'Female',
+  obSexOther: 'Other',
+  obDobQ: 'When were you born?',
+  obDobWhy: 'Age changes your resting energy.',
+  obDobBad: 'Your date of birth has to be in the past, and the age under 130.',
+  obHeightQ: 'How tall are you?',
+  obHeightWhy: 'With your weight, this gives your resting energy.',
+  obWeightQ: 'What do you weigh today?',
+  obActivityQ: 'What does an ordinary day look like?',
+  obActivityWhy: 'This already includes your training.',
+  obActSedentary: 'Sedentary',
+  obActSedentaryDesc: 'Sitting most of the day',
+  obActLight: 'Light',
+  obActLightDesc: 'On your feet a little',
+  obActModerate: 'Moderate',
+  obActModerateDesc: 'Training 3–5 times a week',
+  obActHigh: 'High',
+  obActHighDesc: 'Hard training or physical work',
+  obActAthlete: 'Athlete',
+  obActAthleteDesc: 'Twice a day',
+  obExpQ: 'Where are you starting from?',
+  obExpWhy: 'Your AI coach uses this to pick how it talks to you.',
+  obExpNew: "I'm just starting",
+  obExpNewDesc: 'Never trained, or back after a long break',
+  obExpSteady: "I've been at it a while",
+  obExpSteadyDesc: 'Somewhere between one and three years',
+  obExpDeep: "I've got years behind me",
+  obExpDeepDesc: 'Training steadily for more than three years',
+  obPlanEyebrow: 'Your plan',
+  obPlanFor: 'a day, for {goal}',
+  obPlanMacros: 'Protein {p}g · Carbs {c}g · Fat {f}g',
+  obPlanWater: '{v} of water a day',
+  obPlanSleep: '{h} hours of sleep a night',
+  obPlanRank: 'Level {n} — first of six',
+  obHealthQ: 'ASCND can see your day more clearly.',
+  obHealthChart: 'Four days you log · three the watch fills in',
+  obHealthRead1: 'Steps and energy',
+  obHealthRead2: 'Sleep',
+  obHealthRead3: 'Resting heart rate and HRV',
+  obHealthRead4: 'Workouts from your watch',
+  obHealthConnect: 'Connect Health',
+  obHealthLater: 'Not now',
+  obHealthLegal: 'Health data never leaves this device.',
+  obHealthDone: 'Connected',
+  obReadyEyebrow: 'Everything is ready',
+  obReadyLine: 'Your first ascend starts here.',
+  obReadyCta: 'Start the journey',
+  obReadyLegal: 'By starting you agree to the Terms, the Privacy Policy and the Health Data notice.',
+
   onboardingConnectIntro: 'These two let the app work on its own instead of asking you to type. Skipping is fine — you can turn them on later in Settings.',
   onboardingHealthTitle: 'Apple Health',
-  onboardingHealthWhy: 'Reads steps, sleep, resting heart rate and HRV to work out your readiness each morning. Without it, those numbers have to be entered by hand.',
+  onboardingHealthWhy: 'Activity, sleep and vitals from your iPhone or Apple Watch keep the plan current with your week, instead of waiting for you to type each day in.',
   onboardingHealthConnect: 'Connect Apple Health',
   onboardingHealthConnected: 'Connected',
   onboardingRemindTitle: 'Reminders',

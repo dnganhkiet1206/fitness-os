@@ -53,6 +53,24 @@ import { usePalette, useThemeName } from '@/hooks/use-palette';
  * Nên vẫn KHÔNG nhuộm: chọn TỆP, không sơn lại nét. Mỗi theme lấy bản đã được
  * vẽ cho nó, và cả hai đều là cùng một dấu hiệu tách khỏi cùng một icon.
  */
+/**
+ * Khẩu hiệu thương hiệu — một hằng, KHÔNG phải một khoá i18n.
+ *
+ * Nó không được dịch, và đó là chủ ý: tên và khẩu hiệu của một thương hiệu giữ
+ * nguyên ở mọi ngôn ngữ. Đặt nó vào bảng dịch thì bản tiếng Việt mang một câu
+ * tiếng Anh, và `tools/i18n-*.mjs` bắt đúng điều đó — luật ấy đúng, nên chữ này
+ * ra khỏi bảng chứ không phải luật bị nới.
+ *
+ * ── vì sao nó nằm ở ĐÂY ──
+ *
+ * Nó từng là một hằng riêng trong `log-weight.tsx`. Màn chào của onboarding
+ * nói đúng câu ấy ở cỡ 44pt, và chép nó sang là dựng bản thứ hai của một chuỗi
+ * thương hiệu — đúng thứ tệp này đã viết ra lời cảnh báo: *"bản thứ hai luôn
+ * trôi khỏi bản đầu"*. Sửa khẩu hiệu ở một chỗ mà quên chỗ kia thì hai màn
+ * liền nhau nói hai câu khác nhau.
+ */
+export const BRAND_TAGLINE = 'Better you\nHigher everyday';
+
 const MARK = {
   dark: require('../../../assets/images/splash-icon.png'),
   light: require('../../../assets/images/splash-icon-light.png'),

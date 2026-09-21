@@ -1,10 +1,11 @@
 import { ArrowRight } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BodyScaleFigure } from '@/components/ascnd/body-scale-figure';
+import { BRAND_TAGLINE } from '@/components/ascnd/brand-lockup';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { SheetHeader } from '@/components/ascnd/sheet-header';
@@ -16,6 +17,7 @@ import { useI18n } from '@/hooks/use-app-settings';
 import { useTodayWeight } from '@/hooks/use-fitness-data';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useProfile } from '@/hooks/useTodayData';
+import { useRulerIndex } from '@/hooks/use-ruler-index';
 import { useScaleWake } from '@/hooks/use-scale-wake';
 import { useUnits } from '@/hooks/use-units';
 import { useWeightWrite } from '@/hooks/use-weight-write';
@@ -62,16 +64,6 @@ import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
  * làm được việc của mình.
  */
 
-/**
- * Khẩu hiệu thương hiệu — một hằng, KHÔNG phải một khoá i18n.
- *
- * Nó không được dịch, và đó là chủ ý: tên và khẩu hiệu của một thương hiệu giữ
- * nguyên ở mọi ngôn ngữ. Đặt nó vào bảng dịch thì bản tiếng Việt mang một câu
- * tiếng Anh, và `tools/i18n-*.mjs` bắt đúng điều đó — luật ấy đúng, nên chữ này
- * ra khỏi bảng chứ không phải luật bị nới.
- */
-const BRAND_TAGLINE = 'Better you\nHigher everyday';
-
 /** Chỗ đứng khi tài khoản chưa có cân nặng nào. Không phải một phép đoán về người dùng. */
 const DEFAULT_KG = 70;
 /** Bề rộng chiếc cân so với bề ngang màn — chừa lề, và không phình trên màn lớn. */
@@ -89,7 +81,6 @@ export default function LogWeightSheet() {
   const { data: profile } = useProfile();
   const m = useMaterial();
   const { submit, boundError, pending } = useWeightWrite();
-  const list = useRef<Animated.ScrollView>(null);
 
   const unit = weightLabel(wUnit);
 
@@ -117,40 +108,26 @@ export default function LogWeightSheet() {
      Hai lớp và hai hình thì VẪN ở đây — hook không biết gì về chiếc cân. */
   const { touch, lit: litFace, rest: restFace } = useScaleWake();
 
-  const [index, setIndex] = useState(seedIndex);
   /*
-    Thước đã được đặt đúng chỗ cho lần mở này chưa.
+    Cái kim, và vì sao nó thôi ở đây.
 
-    Một ref chứ không phải state: nó chặn lượt báo của thước, và lật nó không
-    được tự gây render giữa một cú kéo. Cùng hình dạng với `weight-goal-dialog`,
-    và vì cùng lý do đã ghi ở đó.
+    Bộ ba `index` / `placed` / `onIndex` từng được dựng tay ngay tại đây. Luồng
+    onboarding thêm hai chiếc thước nữa, và bản chép tay thứ hai lập tức phơi ra
+    một lỗi mà bản này VẪN ĐANG MANG: cú `scrollTo` mở màn tự sinh một lượt báo
+    sau khi `placed` đã lật, nên thước "chọn" một con số mà chưa ai chạm vào —
+    và chiếc cân sáng lên ngay lúc màn mở ra. Đo được: chụp màn cân nặng của
+    onboarding ở +500ms và +4500ms, 21,08% điểm ảnh khác nhau ở cả hai diện mạo.
+
+    `useRulerIndex` sửa đúng chỗ ấy (một lượt báo chỉ là tương tác khi vạch THẬT
+    SỰ đổi), nên màn này đi qua nó thay vì giữ một bản riêng sẽ không bao giờ
+    nhận được lần sửa tiếp theo.
   */
-  const placed = useRef(false);
-
-  /* Dữ liệu về muộn hơn lần render đầu, nên kim phải đi theo — nhưng chỉ tới
-     khi người dùng đã chạm vào thước. */
-  useEffect(() => {
-    if (!placed.current) setIndex(seedIndex);
-  }, [seedIndex]);
-
-  const onContentSizeChange = useCallback(() => {
-    if (placed.current) return;
-    list.current?.scrollTo({ x: seedIndex * TICK_W, animated: false });
-    placed.current = true;
-  }, [seedIndex]);
-
-  /* Bố cục đang ổn định KHÔNG phải người dùng đang chọn một con số. */
-  const onIndex = useCallback(
-    (next: number) => {
-      if (!placed.current) return;
-      setIndex(next);
-      /* Chính cú kéo là thứ đánh thức cân — không phải một sự kiện riêng. */
-      touch();
-    },
-    [touch],
-  );
-
-  const value = (min10 + index) / 10;
+  const { value, listRef, onIndex, onContentSizeChange } = useRulerIndex({
+    seedIndex,
+    min10,
+    /* Chính cú kéo là thứ đánh thức cân — không phải một sự kiện riêng. */
+    onPick: touch,
+  });
 
   /*
     Hai nhãn đọc hai đầu của CỬA SỔ NHÌN THẤY, không phải hai đầu của cả dải.
@@ -214,7 +191,7 @@ export default function LogWeightSheet() {
               count={count}
               min10={min10}
               width={screenW}
-              scrollRef={list}
+              scrollRef={listRef}
               onIndex={onIndex}
               onContentSizeChange={onContentSizeChange}
             />

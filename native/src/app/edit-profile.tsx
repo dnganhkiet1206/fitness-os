@@ -63,6 +63,8 @@ type Form = {
   dob: string;
   sex: string;
   activity_level: string;
+  training_level: string;
+  dietary_preference: string;
   height_cm: string;
   weight_kg: string;
   goal: string;
@@ -99,6 +101,7 @@ type Form = {
 */
 const EMPTY: Form = {
   name: '', dob: '', sex: 'male', activity_level: 'moderate',
+  training_level: 'intermediate', dietary_preference: 'omnivore',
   height_cm: '', weight_kg: '', goal: 'maintain', tdee_target_kcal: '',
   macro_protein_g: '', macro_carbs_g: '', macro_fat_g: '', macro_fiber_g: '',
   water_target_ml: '', units_weight: 'kg', units_height: 'cm',
@@ -156,6 +159,8 @@ export default function EditProfileSheet() {
       dob: profile.dob ?? '',
       sex: profile.sex ?? 'male',
       activity_level: profile.activity_level ?? 'moderate',
+      training_level: profile.training_level ?? 'intermediate',
+      dietary_preference: profile.dietary_preference ?? 'omnivore',
       height_cm: numText(profile.height_cm),
       weight_kg: numText(profile.weight_kg),
       goal: profile.goal ?? 'maintain',
@@ -275,6 +280,8 @@ export default function EditProfileSheet() {
             dob: form.dob || null,
             sex: form.sex,
             activity_level: form.activity_level,
+            training_level: form.training_level,
+            dietary_preference: form.dietary_preference,
             /* The validated reading, not a second parse of the same box.
                Blank stays blank (`null`), which is what preserves an absent
                measurement instead of inventing one on the way out. */
@@ -325,6 +332,29 @@ export default function EditProfileSheet() {
     { key: 'moderate', label: `${i18n.activityModerate} · ${i18n.activityFreqModerate}` },
     { key: 'high', label: `${i18n.activityHigh} · ${i18n.activityFreqHigh}` },
     { key: 'athlete', label: `${i18n.activityAthlete} · ${i18n.activityFreqAthlete}` },
+  ];
+  /*
+    Hai cột này KHÔNG có đường sửa nào trong app cho tới lượt này.
+
+    `training_level` chỉ được `settings.tsx` HIỆN ra, không sửa được, và
+    `dietary_preference` thì không màn nào nhắc tới. Cả hai đều được hỏi đúng
+    một lần lúc đăng ký rồi kẹt vĩnh viễn — trong khi `ai-coach` và
+    `ai-weekly-review` vẫn đọc chúng mỗi tuần. Đó đúng cái giá mà cột
+    `allergies` đã trả một lần rồi.
+
+    Luồng onboarding mười ba màn thôi hỏi `dietary_preference` (cột có
+    DEFAULT `'omnivore'`), nên nếu không có ô này thì mọi tài khoản mới sẽ ăn
+    tạp theo lời khai của một hằng số.
+  */
+  const levels = [
+    { key: 'beginner', label: i18n.onboardingBeginner },
+    { key: 'intermediate', label: i18n.onboardingIntermediate },
+    { key: 'advanced', label: i18n.onboardingAdvanced },
+  ];
+  const diets = [
+    { key: 'omnivore', label: i18n.onboardingDietOmnivore },
+    { key: 'vegetarian', label: i18n.onboardingDietVegetarian },
+    { key: 'halal', label: i18n.onboardingDietHalal },
   ];
   const sexes = [
     { key: 'male', label: i18n.settingsSexMale },
@@ -484,6 +514,24 @@ export default function EditProfileSheet() {
         {/* Goal */}
         <Field label={i18n.settingsGoal}>
           <ChipGrid options={goals} value={form.goal} onChange={(v) => set('goal', v)} />
+        </Field>
+
+        {/* Training level — xem chú thích ở bảng `levels` */}
+        <Field label={i18n.onboardingTrainingLevel}>
+          <ChipGrid
+            options={levels}
+            value={form.training_level}
+            onChange={(v) => set('training_level', v)}
+          />
+        </Field>
+
+        {/* Dietary preference — xem chú thích ở bảng `diets` */}
+        <Field label={i18n.onboardingDiet}>
+          <ChipGrid
+            options={diets}
+            value={form.dietary_preference}
+            onChange={(v) => set('dietary_preference', v)}
+          />
         </Field>
 
         <View style={styles.divider} />

@@ -54,15 +54,33 @@ const ruler = stripComments(rulerRaw);
 const dialog = stripComments(read(DIALOG));
 
 /* ── hằng số, đọc từ nguồn ──────────────────────────────────────────────── */
-const num = (src, name) => {
-  const m = new RegExp(`\\b${name} = (\\d+)`).exec(src);
-  return m ? Number(m[1]) : null;
+/*
+  Hai hằng KHÔNG còn chắc nằm cùng một tệp.
+
+  `TICK_W` đã dời sang `src/constants/ruler.ts`: `useRulerIndex` cần nó để đặt
+  thước vào đúng vạch mở màn, và `tools/layering.mjs` cấm một hook nhập giá trị
+  từ một component — đúng luật. `PER_UNIT` thì ở lại component vì chỉ component
+  vẽ hoạ tiết mới dùng tới nó.
+
+  Nên phép đọc này tìm trong CẢ HAI tệp thay vì ghim vào một đường dẫn. Đây là
+  cùng bài học mà `tools/body-scale.mjs` vừa trả giá một lần: một luật ghim vào
+  chỗ một hằng ĐANG NẰM là luật đo khoảng cách, và nó đỏ ở lần dọn dẹp đầu
+  tiên trong khi thứ nó canh không suy suyển gì.
+*/
+const CONSTS = 'src/constants/ruler.ts';
+const constsSrc = read(CONSTS);
+const num = (name) => {
+  for (const src of [ruler, constsSrc]) {
+    const m = new RegExp(`\\b${name} = (\\d+)`).exec(src);
+    if (m) return Number(m[1]);
+  }
+  return null;
 };
-const TICK_W = num(ruler, 'TICK_W');
-const PER_UNIT = num(ruler, 'PER_UNIT');
+const TICK_W = num('TICK_W');
+const PER_UNIT = num('PER_UNIT');
 const PERIOD = TICK_W != null && PER_UNIT != null ? TICK_W * PER_UNIT : null;
 if (!TICK_W || !PER_UNIT) {
-  problems.push(`${RULER}: không đọc được TICK_W / PER_UNIT — mọi luật dưới đây không kiểm được gì`);
+  problems.push(`${RULER} / ${CONSTS}: không đọc được TICK_W / PER_UNIT — mọi luật dưới đây không kiểm được gì`);
 }
 
 /* ── 1. không còn gì dựng theo TỪNG vạch ────────────────────────────────── */
@@ -240,7 +258,7 @@ if (TICK_W && PERIOD) {
         'pad', 'count', 'TICK_W', 'MARK_W', 'PER_UNIT', 'PERIOD', 'scrollX',
         `return ${src.replace(/scrollX\.value/g, 'scrollX')};`,
       );
-    const MARK_W = num(ruler, 'MARK_W');
+    const MARK_W = num('MARK_W');
     if (!MARK_W) problems.push(`${RULER}: không đọc được MARK_W`);
     else {
       let fL, fR;

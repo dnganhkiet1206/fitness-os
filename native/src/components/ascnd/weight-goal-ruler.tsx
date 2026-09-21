@@ -9,6 +9,7 @@ import Animated, {
 import { Defs, Pattern, Rect, Svg } from 'react-native-svg';
 
 import { makeStyles } from '@/constants/theme';
+import { RULER_H, TICK_W } from '@/constants/ruler';
 import { usePalette } from '@/hooks/use-palette';
 
 /**
@@ -79,33 +80,11 @@ import { usePalette } from '@/hooks/use-palette';
  * con số này.
  */
 
-/**
- * Points between ticks — how far the finger travels for one tenth of a unit.
- *
- * 4, which puts a whole kilogram 40pt apart and about ten of them on screen.
- * There is a real trade here and it is worth naming: finer values mean more
- * ticks mean more dragging for the same distance travelled, unless the ticks
- * get narrower. At the old half-kilo steps a kilogram was 24pt; a tenth-kilo
- * ruler at the same 12pt tick would have made it 120, which is five times the
- * work to move the same amount. 4pt gets most of that back while leaving the
- * ticks far enough apart to read as separate marks rather than as a smear.
- */
-export const TICK_W = 4;
-
 /** ticks in a whole unit, at a tenth of a unit per tick */
 const PER_UNIT = 10;
 
 /** Chu kỳ của hoạ tiết: đúng một đơn vị tròn. */
 const PERIOD = TICK_W * PER_UNIT;
-
-/**
- * Height of the whole ruler strip.
- *
- * Exported because the screen has to size its own container and its needle to
- * match — the two were separate constants that happened to agree, which is a
- * pair of numbers waiting to drift apart.
- */
-export const RULER_H = 96;
 
 /*
  * Tall marks, thin marks — đúng những con số của bản `FlatList`, chỉ khác chỗ
@@ -134,6 +113,8 @@ const MAJOR_H = 50;
  * một con số là lúc con số phải có tên.
  */
 const MARK_W = 2;
+
+export { RULER_H, TICK_W };
 
 export const Ruler = memo(function Ruler({
   count,

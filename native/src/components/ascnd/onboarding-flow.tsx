@@ -1,212 +1,189 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
-import {
-  Bell,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Dumbbell,
-  HeartPulse,
-  Moon,
-  Pill,
-  Sparkles,
-  Target,
-  User,
-  Utensils,
-  X,
-  type LucideIcon,
-} from 'lucide-react-native';
-import { useState } from 'react';
+import { Check, X } from 'lucide-react-native';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
+import { BodyScaleFigure } from '@/components/ascnd/body-scale-figure';
+import { BRAND_TAGLINE, BrandLockup } from '@/components/ascnd/brand-lockup';
 import { DateField } from '@/components/ascnd/date-field';
-import Animated, { FadeIn, SlideInLeft, SlideInRight } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { PressScale } from '@/components/ascnd/press-scale';
-import { BrandLockup } from '@/components/ascnd/brand-lockup';
-import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { COMMON_ALLERGIES, parseDislikes } from '@/lib/food-preferences';
+import { KoaFigure } from '@/components/ascnd/koa/koa-figure';
+import { GlassCard } from '@/components/ascnd/glass-card';
+import { ChoiceCard } from '@/components/ascnd/onboarding/choice-card';
+import { OnboardingScreen } from '@/components/ascnd/onboarding/onboarding-screen';
+import { PressScale } from '@/components/ascnd/press-scale';
+import { Ruler, RULER_H } from '@/components/ascnd/weight-goal-ruler';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
 import { alpha, makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { usePalette } from '@/hooks/use-palette';
+import { useRulerIndex } from '@/hooks/use-ruler-index';
+import { useScaleWake } from '@/hooks/use-scale-wake';
+import { useUnits } from '@/hooks/use-units';
+import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { supabase } from '@/integrations/supabase/client';
+import { errorText } from '@/lib/error-copy';
 import { planFromEntry } from '@/lib/fitness-calc';
 import { isHealthKitAvailable, requestHealthPermissions } from '@/lib/health';
 import { getLegal, type LegalDoc } from '@/lib/legal-content';
 import { localDateStr } from '@/lib/local-date';
-import { statMessage } from '@/lib/plausible';
-import { requestNotificationPermission } from '@/lib/notifications';
-import { displayVolume, volumeLabel } from '@/lib/units';
-import { errorText } from '@/lib/error-copy';
-import { useVolumeUnit } from '@/hooks/use-volume-unit';
-import { decText } from '@/lib/number-input';
+import { levelFromXp, rankForLevel } from '@/lib/mascot-room';
+import { BOUNDS, statMessage } from '@/lib/plausible';
+import {
+  displayHeight,
+  displayVolume,
+  displayWeight,
+  heightToCm,
+  lengthLabel,
+  volumeLabel,
+  weightLabel,
+  weightToKg,
+} from '@/lib/units';
 
 /**
  * Thứ tự các màn, viết ra thành DỮ LIỆU.
  *
  * ── ba mảng song song, và cái giá của chúng ──
  *
- * Trước đây thứ tự này sống ở BA chỗ cùng lúc, cả ba đánh số theo vị trí:
- * `STEP_ICONS` ở phạm vi module, `STEP_TITLES` dựng lại mỗi lần render trong
- * thân component, và ba mươi mấy nhánh `step === 0…6` rải khắp phần JSX. Ba
- * danh sách phải tự khớp nhau, và không có gì bắt chúng khớp: chèn một màn vào
- * giữa là phải sửa đúng ba chỗ theo đúng một thứ tự, còn sót một chỗ thì màn
- * hình vẫn dựng ra được — chỉ là mang nhầm icon, hoặc nhầm tên.
+ * Trước đây thứ tự này sống ở BA chỗ cùng lúc, cả ba đánh số theo vị trí, và
+ * ba mươi mấy nhánh `step === 0…6` rải khắp phần JSX. Chèn một màn vào giữa là
+ * phải sửa đúng ba chỗ theo đúng một thứ tự, còn sót một chỗ thì màn hình vẫn
+ * dựng ra được — chỉ là màn sai.
  *
- * Luồng 13 màn sẽ chèn sáu màn vào giữa. Làm việc đó trên ba mảng song song là
- * chép tay mười tám lần một phép đánh số.
+ * Giai đoạn 1 gỡ việc đó đi đúng một bước TRƯỚC KHI luồng này chèn thêm sáu
+ * màn vào giữa. Nhờ vậy lượt chèn ấy là sửa một bảng, không phải chép tay mười
+ * tám lần một phép đánh số.
  *
- * Nên thứ tự lên đây, đúng một bản. Mỗi màn có một KHOÁ, và phần JSX hỏi khoá
- * chứ không hỏi vị trí: `at === 'body'` thay cho `step === 0`. Dời màn đi đâu
- * thì chỉ mảng này đổi, và mọi thứ còn lại vẫn đúng vì không chỗ nào còn biết
- * số thứ tự là bao nhiêu.
+ * ── vì sao không còn `icon` và `title` ──
  *
- * `title` là TÊN KHOÁ trong bảng chữ, không phải chuỗi đã dịch: bảng này ở
- * phạm vi module nên nó không có `i18n`, và một bảng phải dựng lại mỗi lần
- * render chỉ để tra bảy chuỗi là đúng thứ vừa được gỡ đi.
+ * Khung cũ vẽ một ô icon và một dòng "Bước 3/7" trên mỗi màn. Mười ba màn thì
+ * dòng ấy thành một cái đồng hồ đếm ngược, và ô icon nói một điều mà câu hỏi
+ * ngay dưới nó đã nói rõ hơn. Khung mới chỉ còn một thanh tiến độ mỏng, nên
+ * bảng này giữ đúng thứ nó phải giữ: THỨ TỰ, và không gì khác.
  */
 const STEPS = [
-  { key: 'body', icon: User, title: 'onboardingStepPersonal' },
-  { key: 'goal', icon: Target, title: 'onboardingStepGoal' },
-  { key: 'training', icon: Dumbbell, title: 'onboardingStepTraining' },
-  { key: 'lifestyle', icon: Moon, title: 'onboardingStepLifestyle' },
-  { key: 'diet', icon: Utensils, title: 'onboardingStepDiet' },
-  { key: 'supps', icon: Pill, title: 'onboardingStepSupplements' },
-  { key: 'connect', icon: HeartPulse, title: 'onboardingStepConnect' },
-] as const satisfies readonly { key: string; icon: LucideIcon; title: string }[];
+  { key: 'welcome' },
+  { key: 'intention' },
+  { key: 'goal' },
+  { key: 'koa' },
+  { key: 'sex' },
+  { key: 'dob' },
+  { key: 'height' },
+  { key: 'weight' },
+  { key: 'activity' },
+  { key: 'experience' },
+  { key: 'plan' },
+  { key: 'health' },
+  { key: 'ready' },
+] as const satisfies readonly { key: string }[];
 
 type StepKey = (typeof STEPS)[number]['key'];
-
-const TOTAL_STEPS = STEPS.length;
 
 /** Vị trí của một màn, hỏi bằng tên. `-1` nếu màn ấy không còn trong luồng. */
 const stepAt = (key: StepKey) => STEPS.findIndex((s) => s.key === key);
 
 /**
- * Màn NHẬN SỐ ĐO CƠ THỂ — cổng `planFromEntry` phải chốt ở đây.
+ * Màn khép lại phần SỐ ĐO CƠ THỂ — cổng `planFromEntry` chốt ở đây.
  *
- * ── vì sao nó là một cái TÊN, và vì sao nay nó được SUY RA ──
+ * ── vì sao là màn cân nặng, chứ không phải màn chiều cao ──
  *
- * Luật D của `tools/profile-onboarding.mjs` từng hỏi `disabled={step === 0 && …}`,
- * tức nó canh một VỊ TRÍ. Vị trí là thứ sắp đổi: luồng 13 màn đưa số đo xuống
- * các màn 05–08 và để màn 0 làm lời chào. Một luật neo vào vị trí sẽ đỏ vì một
- * lần sắp xếp lại, trong khi tính chất nó canh — *không đi qua được một cơ thể
- * chưa kiểm* — không hề đổi.
+ * Luồng cũ hỏi chiều cao và cân nặng trên CÙNG một màn, nên cái chốt cũng chỉ
+ * có một chỗ để đứng. Luồng này tách chúng ra: 05 giới tính, 06 ngày sinh, 07
+ * chiều cao, 08 cân nặng. Cổng cần đủ sáu đầu vào, và đầu vào cuối cùng tới ở
+ * màn 08 — nên 08 là màn đầu tiên mà câu hỏi *"cơ thể này có hợp lệ không"* có
+ * nghĩa. Chốt sớm hơn là chốt trên một câu hỏi chưa trả lời xong.
  *
- * Giai đoạn 0 đặt tên cho nó nhưng vẫn viết tay con số 0, nên cái tên ấy mới
- * chỉ là một nhãn: dời màn mà quên sửa dòng này thì cái khoá lặng lẽ chuyển
- * sang canh một màn khác. Nay nó ĐỌC bảng trên, nên hai thứ không thể lệch:
- * không còn con số nào để quên.
+ * ── và nó được SUY RA ──
+ *
+ * `stepAt('weight')` chứ không phải `7`. Giai đoạn 0 từng đặt tên cho hằng này
+ * nhưng vẫn viết tay con số, nên cái tên mới chỉ là một nhãn: dời màn mà quên
+ * sửa dòng ấy thì cái khoá lặng lẽ chuyển sang canh một màn khác, và không có
+ * gì báo. Nay không còn con số nào để quên.
  */
-const BODY_STATS_STEP = stepAt('body');
-
-const COMMON_SUPPLEMENTS = [
-  { name: 'Whey Protein', category: 'protein', dose: '30g', timing: 'post-workout' },
-  { name: 'Creatine Monohydrate', category: 'creatine', dose: '5g', timing: 'morning' },
-  { name: 'Vitamin D3', category: 'vitamin', dose: '2000 IU', timing: 'morning' },
-  { name: 'Omega-3 Fish Oil', category: 'other', dose: '1000mg', timing: 'with meals' },
-  { name: 'Magnesium', category: 'mineral', dose: '400mg', timing: 'before bed' },
-  { name: 'ZMA', category: 'mineral', dose: '1 tablet', timing: 'before bed' },
-  { name: 'Caffeine', category: 'other', dose: '200mg', timing: 'pre-workout' },
-  { name: 'BCAA', category: 'protein', dose: '5g', timing: 'pre-workout' },
-  { name: 'Multivitamin', category: 'vitamin', dose: '1 tablet', timing: 'morning' },
-  { name: 'Ashwagandha', category: 'nootropic', dose: '600mg', timing: 'morning' },
-];
-
-function timeToHHMM(d: Date): string {
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
+const BODY_STATS_STEP = stepAt('weight');
 
 /**
- * Onboarding: Personal → Goal → Training → Lifestyle → Diet → Supplements →
- * Connect, with the live BMR/TDEE auto-calc box, goal summary, and the
- * terms-acceptance checkbox (legal docs open in a native sheet since the router
- * isn't mounted while onboarding gates the app).
+ * Sáu mục tiêu, chia hai tầng.
  *
- * The first six steps are a faithful port of the web Onboarding page. The
- * seventh is not in the web app and could not be: it offers Apple Health and
- * notifications, which existed here but were reachable only from a button on
- * Today and a screen in Settings respectively. Somebody finished onboarding,
- * landed on a dashboard of empty rings, and was never told the app could fill
- * them in — so the readiness score, which needs HRV, resting heart rate and
- * sleep, had nothing to work with on the one device where it could have.
+ * Màn 02 hỏi NHÁNH, màn 03 hỏi giá trị `goal` thật bên trong nhánh ấy. Sáu giá
+ * trị không rút bớt được — chúng đã nằm trong `calcTargetCalories` và
+ * `calcMacros` — nhưng chia hai tầng thì mỗi màn nhiều nhất ba thẻ.
+ *
+ * Nhánh `maintain` có đúng MỘT giá trị, nên màn 03 tự bỏ qua: hỏi một câu chỉ
+ * có một đáp án là bắt người ta bấm hai lần cho cùng một ý.
  */
+const BRANCHES = {
+  body: ['bulk', 'cut', 'recomp'],
+  capacity: ['strength', 'endurance'],
+  maintain: ['maintain'],
+} as const;
+
+type Branch = keyof typeof BRANCHES;
+/** Sáu giá trị `goal` thật, suy RA khỏi bảng nhánh — không gõ lại lần thứ hai. */
+type GoalKey = (typeof BRANCHES)[Branch][number];
+
+/** Chỗ đứng khi chưa biết gì về người dùng. Không phải một phép đoán về họ. */
+const DEFAULT_CM = 170;
+const DEFAULT_KG = 70;
+/** Bề rộng chiếc cân so với bề ngang màn — chừa lề, và không phình trên màn lớn. */
+const SCALE_FRACTION = 0.72;
+const SCALE_MAX = 300;
+
 export function OnboardingFlow() {
   const c = usePalette();
   const styles = stylesFor(c);
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const insets = useSafeAreaInsets();
   const i18n = useI18n();
   const { lang } = useAppSettings();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const { width: screenW } = useWindowDimensions();
+  const { weight: wUnit, height: hUnit } = useUnits();
   const { unit: vUnit } = useVolumeUnit();
 
   const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState(1);
-
-  const [name, setName] = useState('');
-  const [sex, setSex] = useState('male');
+  const [branch, setBranch] = useState<Branch | null>(null);
+  const [goal, setGoal] = useState<GoalKey | ''>('');
+  const [sex, setSex] = useState('');
   const [dob, setDob] = useState(new Date(2000, 0, 1));
-  const [heightCm, setHeightCm] = useState('170');
-  const [weightKg, setWeightKg] = useState('70');
-  const [goal, setGoal] = useState('maintain');
-  const [trainingLevel, setTrainingLevel] = useState('intermediate');
-  const [activityLevel, setActivityLevel] = useState('moderate');
-  const [waketime, setWaketime] = useState(new Date(2000, 0, 1, 7, 0));
-  const [bedtime, setBedtime] = useState(new Date(2000, 0, 1, 23, 0));
-  const [dietaryPreference, setDietaryPreference] = useState('omnivore');
-  const [allergies, setAllergies] = useState<string[]>([]);
-  const [dislikedFoods, setDislikedFoods] = useState('');
-  const [selectedSupps, setSelectedSupps] = useState<Set<number>>(new Set());
-  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [heightCm, setHeightCm] = useState(String(DEFAULT_CM));
+  const [weightKg, setWeightKg] = useState(String(DEFAULT_KG));
+  const [activityLevel, setActivityLevel] = useState('');
+  const [trainingLevel, setTrainingLevel] = useState('');
   const [legalTab, setLegalTab] = useState<'terms' | 'privacy' | 'health' | null>(null);
 
+  const here = STEPS[step];
+  const at: StepKey = here.key;
+
   /*
-    ── the two optional connections ──
-
-    `granted` here means "this device said yes", which is the only thing worth
-    reflecting on screen. Neither is stored on the profile: iOS owns both
-    answers, a person can revoke either in Settings without the app hearing
-    about it, and a row in our database claiming otherwise would be a second,
-    less truthful copy of a fact somebody else is responsible for.
-
-    Health is hidden entirely where HealthKit is unavailable — the simulator,
-    Expo Go, an iPad without it. An offer that cannot be accepted is worse than
-    no offer.
+    Màn 03 vắng mặt khi nhánh chỉ có một giá trị, nên "còn bao xa" phải đếm
+    theo số màn THẬT SỰ hiện ra. Đếm theo `STEPS.length` thì người chọn "Giữ
+    đều" thấy thanh tiến độ bỏ qua một nấc mà không có màn nào tương ứng.
   */
-  const healthAvailable = isHealthKitAvailable();
-  const [healthGranted, setHealthGranted] = useState(false);
-  const [notifyGranted, setNotifyGranted] = useState(false);
-
-  const connectHealth = async () => {
-    Haptics.selectionAsync();
-    /* No error path. A refusal is an answer, not a failure, and the app works
-       without it — telling somebody off for declining is how the next prompt
-       gets declined too. */
-    setHealthGranted(await requestHealthPermissions());
-  };
-
-  const enableReminders = async () => {
-    Haptics.selectionAsync();
-    setNotifyGranted(await requestNotificationPermission());
-  };
+  /*
+    Màn 12 cũng vắng mặt khi máy KHÔNG CÓ HealthKit — Android, máy ảo, web.
+    Một lời mời không thể nhận lời còn tệ hơn không mời: người dùng bấm "Kết
+    nối Sức khoẻ" và không có gì xảy ra, kể cả một bảng từ chối.
+  */
+  const health = isHealthKitAvailable();
+  const skip = useCallback(
+    (key: StepKey) => (key === 'goal' && branch === 'maintain') || (key === 'health' && !health),
+    [branch, health],
+  );
+  const shown = useMemo(() => STEPS.filter((s) => !skip(s.key)), [skip]);
+  const shownAt = shown.findIndex((s) => s.key === at) + 1;
 
   /*
     ── the two numbers the whole account is built from ──
@@ -216,66 +193,95 @@ export function OnboardingFlow() {
     became a 70 kg, 170 cm person without saying so, and a typo was accepted at
     face value: measured on this exact chain, a height typed as `17` prescribes
     1,500 kcal a day, and one typed as `70` prescribes 1,570 instead of 2,539 —
-    a thousand calories a day, arrived at silently. A weight typed as `700`
-    prescribes 12,304 kcal and 17.5 litres of water.
+    a thousand calories a day, arrived at silently.
 
-    None of it announces itself, because `proteinReferenceWeight` and
-    `calcWaterTarget` both read a height under 100 cm as *"no height was
-    given"*: the mistyped digit turns their guards off rather than tripping
-    them, and the plan comes out looking like any other plan.
-
-    `edit-profile` has validated these same two fields against these same
-    bounds since it was written. This screen — the one that decides what the
-    numbers are in the first place, and stores them with
-    `onboarding_completed: true` — did not.
+    Luồng này thu hai con số bằng THƯỚC chứ không phải bàn phím, nên một số
+    ngoài dải không gõ vào được nữa. Cái cổng vẫn đứng nguyên đây: *"không gõ
+    được"* là một phát biểu về màn hình, và màn hình là thứ đổi mỗi vòng thiết
+    kế. Câu ghi thì không được đổi theo.
   */
   const attempt = planFromEntry({
     heightText: heightCm,
     weightText: weightKg,
     dob: localDateStr(dob),
-    sex: sex as 'male' | 'female' | 'other',
-    goal,
-    activity_level: activityLevel,
+    sex: (sex || 'other') as 'male' | 'female' | 'other',
+    goal: goal || 'maintain',
+    activity_level: activityLevel || 'moderate',
   });
   const statsBad = !attempt.ok;
   const missing = attempt.ok ? [] : attempt.missing;
-  const heightError = missing.includes('height_cm') ? statMessage('height_cm', 'out-of-range', i18n.outOfRange) : null;
-  const weightError = missing.includes('weight_kg') ? statMessage('weight_kg', 'out-of-range', i18n.outOfRange) : null;
+  const statError = missing.includes('height_cm')
+    ? statMessage('height_cm', 'out-of-range', i18n.outOfRange)
+    : missing.includes('weight_kg')
+      ? statMessage('weight_kg', 'out-of-range', i18n.outOfRange)
+      : null;
+  /*
+    Ngày sinh có câu báo RIÊNG, và nó hiện ở MÀN 06.
 
-  // Live targets (web auto-calc box) — null until there is a body to compute for
-  const plan = attempt.ok ? attempt.plan : null;
-  const sleepHours = (() => {
-    const bedMin = bedtime.getHours() * 60 + bedtime.getMinutes();
-    const wakeMin = waketime.getHours() * 60 + waketime.getMinutes();
-    let diff = wakeMin - bedMin;
-    if (diff <= 0) diff += 24 * 60;
-    return Math.round((diff / 60) * 10) / 10;
-  })();
+    `statMessage` không nhận `dob`: `BOUNDS` là bảng của các đại lượng có min/max
+    đo được, còn "phải ở quá khứ" thì không phải một khoảng. Nên chuỗi này là
+    một khoá riêng.
 
-  const goNext = () => {
+    Vì sao phải có: cổng từ chối một ngày sinh tương lai bằng `missing: ['dob']`,
+    nên dữ liệu an toàn — nhưng trước lượt này người dùng chọn nhầm ở màn 06 rồi
+    đi tiếp bình thường, và mãi tới MÀN 08 mới gặp một nút bị khoá không nói gì.
+    Một cái nút khoá mà không nói vì sao là một màn hình chết, và ở đây nó còn
+    chết cách chỗ gây ra hai màn.
+  */
+  const dobBad = missing.includes('dob');
+
+  /* Mỗi màn hỏi đúng một điều, nên nút Tiếp mở ra khi điều ấy đã được trả lời
+     — không phải khi cả hồ sơ đã đầy. */
+  const unanswered =
+    (at === 'intention' && !branch) ||
+    (at === 'goal' && !goal) ||
+    (at === 'sex' && !sex) ||
+    (at === 'dob' && dobBad) ||
+    (at === 'activity' && !activityLevel) ||
+    (at === 'experience' && !trainingLevel);
+
+  const hop = (dir: 1 | -1) => {
     Haptics.selectionAsync();
-    setDirection(1);
-    setStep((s) => Math.min(s + 1, TOTAL_STEPS - 1));
+    setStep((s) => {
+      let n = s + dir;
+      /* Màn vắng mặt thì bước qua nó ở CẢ HAI chiều — nếu không thì nút Quay
+         lại dẫn người ta tới một câu hỏi họ chưa từng thấy. */
+      while (STEPS[n] && skip(STEPS[n].key)) n += dir;
+      return Math.max(0, Math.min(STEPS.length - 1, n));
+    });
   };
-  const goPrev = () => {
+  const goNext = () => hop(1);
+  const goPrev = () => hop(-1);
+
+  const pickBranch = (b: Branch) => {
+    setBranch(b);
+    /* Nhánh một giá trị thì chọn nhánh CHÍNH LÀ chọn mục tiêu. */
+    setGoal(BRANCHES[b].length === 1 ? BRANCHES[b][0] : '');
+  };
+
+  const connectHealth = async () => {
     Haptics.selectionAsync();
-    setDirection(-1);
-    setStep((s) => Math.max(s - 1, 0));
+    /* No error path. A refusal is an answer, not a failure, and the app works
+       without it — telling somebody off for declining is how the next prompt
+       gets declined too. */
+    await requestHealthPermissions();
+    goNext();
   };
 
   const finish = useMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
-      /* The Next button on step 0 makes this unreachable. It is here anyway
-         because the row this writes is the one every later number is derived
-         from, and "unreachable" is a claim about a screen, not about a write. */
+      /* The button on the weight screen makes this unreachable. It is here
+         anyway because the row this writes is the one every later number is
+         derived from, and "unreachable" is a claim about a screen, not about a
+         write. */
       if (!attempt.ok) {
         throw new Error(i18n.statsRequired);
       }
       const { error } = await supabase.from('profiles').upsert(
         {
           user_id: user.id,
-          name: name.trim() || 'Athlete',
+          name: 'Athlete',
           sex,
           dob: localDateStr(dob),
           height_cm: attempt.height_cm,
@@ -283,922 +289,942 @@ export function OnboardingFlow() {
           goal,
           activity_level: activityLevel,
           training_level: trainingLevel,
-          dietary_preference: dietaryPreference,
-          allergies,
-          disliked_foods: dislikedFoods
-            ? parseDislikes(dislikedFoods)
-            : [],
           tdee_target_kcal: attempt.plan.tdee_target_kcal,
           macro_protein_g: attempt.plan.macro_protein_g,
           macro_carbs_g: attempt.plan.macro_carbs_g,
           macro_fat_g: attempt.plan.macro_fat_g,
           macro_fiber_g: attempt.plan.macro_fiber_g,
           water_target_ml: attempt.plan.water_target_ml,
-          sleep_target_hours: sleepHours,
-          sleep_target_bedtime: timeToHHMM(bedtime),
-          sleep_target_waketime: timeToHHMM(waketime),
           onboarding_completed: true,
         },
         { onConflict: 'user_id' },
       );
       if (error) throw error;
-
-      for (const idx of selectedSupps) {
-        const s = COMMON_SUPPLEMENTS[idx];
-        await supabase.from('supplements').insert({
-          user_id: user.id,
-          name: s.name,
-          category: s.category,
-          dose_text: s.dose,
-          timing: s.timing,
-          notes: '',
-        });
-      }
     },
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
-      queryClient.invalidateQueries({ queryKey: ['supplement_checklist'] });
     },
     onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
   });
 
-  const toggleAllergy = (a: string) => {
-    Haptics.selectionAsync();
-    setAllergies((prev) => (prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]));
-  };
+  const goalLabel = goal ? i18n[GOAL_COPY[goal].label] : '';
 
-  const toggleSupp = (i: number) => {
-    Haptics.selectionAsync();
-    setSelectedSupps((prev) => {
-      const next = new Set(prev);
-      if (next.has(i)) next.delete(i);
-      else next.add(i);
-      return next;
-    });
-  };
+  /* ── các mảnh chỉ luồng này dùng ── */
 
-  /* Màn đang đứng, đọc bằng TÊN. Mọi nhánh JSX dưới kia hỏi `at`, không hỏi
-     `step` — nên thứ tự đổi thì không nhánh nào phải sửa. */
-  const here = STEPS[step];
-  const at: StepKey = here.key;
-  const StepIcon = here.icon;
-  const legal = getLegal(lang);
-  const legalDoc: LegalDoc | null = legalTab ? legal[legalTab] : null;
-
-  return (
-    <KeyboardAvoidingView
-      style={styles.root}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerStyle={[
-          styles.content,
-          { paddingTop: insets.top + spacing.lg, paddingBottom: insets.bottom + spacing.lg },
-        ]}
-        keyboardShouldPersistTaps="handled">
-        <View style={styles.hero}>
-          {/*
-            Bản vẽ tay THỨ BA, và là bản cuối cùng còn sót.
-
-            `brand-lockup.tsx` viết ra lời cảnh báo — "bản thứ hai luôn trôi
-            khỏi bản đầu" — rồi `auth-screen.tsx` gỡ bản của nó và ghi rõ trong
-            chú thích rằng còn MỘT bản nữa nằm ở đây, với số khác hẳn (24pt,
-            giãn 3,6 so với 30pt, giãn 4,5). Cú gỡ ấy dừng lại đúng trước tệp
-            này, nên màn hình ngay SAU khi đăng nhập vẫn là chữ "ASCND" xanh
-            phát sáng của trang web cũ: không koala, không đúng màu, không đúng
-            cỡ. Chủ dự án báo "màn đăng nhập đang hiển thị logo cũ".
-
-            `scale` 1,4 — ĐÚNG bằng `auth-screen.tsx`, không phải 24/22 để giữ
-            cỡ chữ cũ. Hai màn này là hai bước liền nhau của cùng một lối vào,
-            và một dấu hiệu co lại 22% giữa chúng thì đọc ra là lỗi dựng hình
-            chứ không phải một quyết định.
-          */}
-          <BrandLockup scale={1.4} />
-          <Text style={styles.heroSub}>{i18n.onboardingSetup}</Text>
-        </View>
-
-        {/* Progress dots */}
-        <View style={styles.dots}>
-          {STEPS.map((s, i) => (
-            <View
-              key={s.key}
-              style={[
-                styles.dot,
-                i === step && styles.dotActive,
-                i < step && styles.dotDone,
-                i > step && styles.dotFuture,
-              ]}
-            />
-          ))}
-        </View>
-
-        {/* Step header: icon tile + Step x/6 + title */}
-        <View style={styles.stepHeader}>
-          <View style={styles.stepIconTile}>
-            <Icon icon={StepIcon} size={16} color={c.primary} />
-          </View>
-          <View>
-            <Text style={styles.stepCount}>
-              {i18n.onboardingStep} {step + 1}/{TOTAL_STEPS}
-            </Text>
-            <Text style={styles.stepTitle}>{i18n[here.title]}</Text>
-          </View>
-        </View>
-
-        <Animated.View
-          key={step}
-          entering={(direction > 0 ? SlideInRight : SlideInLeft).springify().stiffness(300).damping(30)}>
-          <GlassCard style={styles.card}>
-            {at === 'body' && (
-              <>
-                <Field label={i18n.settingsName}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder={i18n.nYourName}
-                    placeholderTextColor={c.mutedForeground}
-                    autoCapitalize="words"
-                    value={name}
-                    onChangeText={setName}
-                  />
-                </Field>
-                <Field label={i18n.settingsSex}>
-                  <View style={styles.chips}>
-                    {[
-                      { val: 'male', label: i18n.settingsSexMale },
-                      { val: 'female', label: i18n.settingsSexFemale },
-                      { val: 'other', label: i18n.settingsSexOther },
-                    ].map((s) => (
-                      <Chip key={s.val} label={s.label} active={sex === s.val} onPress={() => setSex(s.val)} />
-                    ))}
-                  </View>
-                </Field>
-                <Field label={i18n.settingsDob}>
-                  <View style={styles.pickerWrap}>
-                    <DateField
-                      value={dob}
-                      mode="date"
-                      display="spinner"
-                      maximumDate={new Date()}
-                      onChange={(_, d) => d && setDob(d)}
-                    />
-                  </View>
-                </Field>
-                <View style={styles.rowFields}>
-                  <View style={styles.halfField}>
-                    <Field label={`${i18n.settingsHeight} (cm)`}>
-                      <TextInput
-                        style={[styles.input, heightError && styles.inputBad]}
-                        keyboardType="number-pad"
-                        value={heightCm}
-                        onChangeText={(v) => setHeightCm(decText(v))}
-                      />
-                    </Field>
-                  </View>
-                  <View style={styles.halfField}>
-                    <Field label={`${i18n.settingsWeight} (kg)`}>
-                      <TextInput
-                        style={[styles.input, weightError && styles.inputBad]}
-                        keyboardType="decimal-pad"
-                        value={weightKg}
-                        onChangeText={setWeightKg}
-                      />
-                    </Field>
-                  </View>
-                </View>
-                {heightError ? <Text style={styles.fieldError}>{heightError}</Text> : null}
-                {weightError ? <Text style={styles.fieldError}>{weightError}</Text> : null}
-              </>
-            )}
-
-            {at === 'goal' && (
-              <>
-                <Text style={styles.fieldLabel}>{i18n.onboardingYourGoal}</Text>
-                {[
-                  { val: 'bulk', label: i18n.onboardingGoalBulk, desc: i18n.onboardingGoalBulkDesc },
-                  { val: 'cut', label: i18n.onboardingGoalCut, desc: i18n.onboardingGoalCutDesc },
-                  { val: 'maintain', label: i18n.onboardingGoalMaintain, desc: i18n.onboardingGoalMaintainDesc },
-                  { val: 'recomp', label: i18n.onboardingGoalRecomp, desc: i18n.onboardingGoalRecompDesc },
-                  { val: 'strength', label: i18n.onboardingGoalStrength, desc: i18n.onboardingGoalStrengthDesc },
-                  { val: 'endurance', label: i18n.onboardingGoalEndurance, desc: i18n.onboardingGoalEnduranceDesc },
-                ].map((g) => (
-                  <OptionCard
-                    key={g.val}
-                    label={g.label}
-                    desc={g.desc}
-                    active={goal === g.val}
-                    onPress={() => setGoal(g.val)}
-                  />
-                ))}
-              </>
-            )}
-
-            {at === 'training' && (
-              <>
-                <Text style={styles.fieldLabel}>{i18n.onboardingTrainingLevel}</Text>
-                {[
-                  { val: 'beginner', label: i18n.onboardingBeginner, desc: i18n.onboardingBeginnerDesc },
-                  { val: 'intermediate', label: i18n.onboardingIntermediate, desc: i18n.onboardingIntermediateDesc },
-                  { val: 'advanced', label: i18n.onboardingAdvanced, desc: i18n.onboardingAdvancedDesc },
-                ].map((t) => (
-                  <OptionCard
-                    key={t.val}
-                    label={t.label}
-                    desc={t.desc}
-                    active={trainingLevel === t.val}
-                    onPress={() => setTrainingLevel(t.val)}
-                  />
-                ))}
-                <Field label={i18n.onboardingDailyActivity}>
-                  {/*
-                    ── the five bare adjectives were doing all the work ──
-
-                    "Ít vận động / Nhẹ / Trung bình / Cao / Vận động viên", and
-                    nothing saying whether they meant your job or your training.
-                    Somebody with a desk job who lifts five times a week could
-                    read the first one and be hundreds of kcal under, or read
-                    the fourth and be right, with no way to tell which.
-
-                    The multipliers behind them (1.2 / 1.375 / 1.55 / 1.725 /
-                    1.9) have standard definitions and they are all in
-                    sessions per week — training *is* the axis. Putting that on
-                    the chip is the whole fix, and the line underneath is the
-                    answer to the question this choice creates: why the calorie
-                    target does not move after a workout.
-                  */}
-                  <View style={[styles.chips, styles.chipsWrap]}>
-                    {[
-                      { val: 'sedentary', label: `${i18n.activitySedentary} · ${i18n.activityFreqSedentary}` },
-                      { val: 'light', label: `${i18n.activityLight} · ${i18n.activityFreqLight}` },
-                      { val: 'moderate', label: `${i18n.activityModerate} · ${i18n.activityFreqModerate}` },
-                      { val: 'high', label: `${i18n.activityHigh} · ${i18n.activityFreqHigh}` },
-                      { val: 'athlete', label: `${i18n.activityAthlete} · ${i18n.activityFreqAthlete}` },
-                    ].map((a) => (
-                      <Chip
-                        key={a.val}
-                        label={a.label}
-                        active={activityLevel === a.val}
-                        onPress={() => setActivityLevel(a.val)}
-                        wrap
-                      />
-                    ))}
-                  </View>
-                  <Text style={styles.activityNote}>{i18n.activityIncludesTraining}</Text>
-                </Field>
-              </>
-            )}
-
-            {at === 'lifestyle' && (
-              <>
-                <View style={styles.rowFields}>
-                  <View style={styles.halfField}>
-                    <Field label={i18n.onboardingWakeTime}>
-                      <View style={styles.pickerWrap}>
-                        <DateField
-                          value={waketime}
-                          mode="time"
-                          display="spinner"
-                          onChange={(_, d) => d && setWaketime(d)}
-                        />
-                      </View>
-                    </Field>
-                  </View>
-                  <View style={styles.halfField}>
-                    <Field label={i18n.onboardingSleepTime}>
-                      <View style={styles.pickerWrap}>
-                        <DateField
-                          value={bedtime}
-                          mode="time"
-                          display="spinner"
-                          onChange={(_, d) => d && setBedtime(d)}
-                        />
-                      </View>
-                    </Field>
-                  </View>
-                </View>
-                {/*
-                  ── the work-type question is gone ──
-
-                  It wrote `profiles.work_type` and **nothing in the app has
-                  ever read that column** — not the BMR chain, not the TDEE
-                  multiplier, not the coach. Asking somebody a question and then
-                  never using the answer is taking information without a reason,
-                  and every extra onboarding step costs completions.
-
-                  Not folded into the TDEE maths either: the question directly
-                  above already asks for `activity_level`, which is the same
-                  quantity in different words. Two inputs meaning one thing is
-                  the drift this repository has now been bitten by five separate
-                  times.
-
-                  The column stays — dropping one is irreversible and an empty
-                  column costs nothing.
-                */}
-                {/* Auto-calc box (web) */}
-                <View style={styles.calcBox}>
-                  <View style={styles.calcHeader}>
-                    <Icon icon={Sparkles} size={12} />
-                    <Text style={styles.calcTitle}>{i18n.onboardingAutoCalc}</Text>
-                  </View>
-                  <View style={styles.calcGrid}>
-                    <CalcItem label="BMR" value={plan ? `${plan.bmr} kcal` : '—'} />
-                    <CalcItem label="TDEE" value={plan ? `${plan.tdee} kcal` : '—'} />
-                    <CalcItem label={i18n.target} value={plan ? `${plan.tdee_target_kcal} kcal` : '—'} highlight />
-                    <CalcItem label={i18n.navSleep} value={`${sleepHours}h`} />
-                  </View>
-                </View>
-              </>
-            )}
-
-            {at === 'diet' && (
-              <>
-                <Text style={styles.fieldLabel}>{i18n.onboardingDiet}</Text>
-                {[
-                  { val: 'omnivore', label: i18n.onboardingDietOmnivore },
-                  { val: 'vegetarian', label: i18n.onboardingDietVegetarian },
-                  { val: 'halal', label: i18n.onboardingDietHalal },
-                ].map((d) => (
-                  <OptionCard
-                    key={d.val}
-                    label={d.label}
-                    active={dietaryPreference === d.val}
-                    onPress={() => setDietaryPreference(d.val)}
-                  />
-                ))}
-                <Field label={i18n.onboardingAllergies}>
-                  <View style={[styles.chips, styles.chipsWrap]}>
-                    {COMMON_ALLERGIES.map((a) => (
-                      <Pressable
-                        key={a.value}
-                        onPress={() => toggleAllergy(a.value)}
-                        hitSlop={4}
-                        style={[styles.badge, allergies.includes(a.value) && styles.badgeActive]}>
-                        <Text
-                          style={[styles.badgeText, allergies.includes(a.value) && styles.badgeTextActive]}>
-                          {a.label[lang]}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                </Field>
-                <Field label={i18n.onboardingDislikedFoods}>
-                  <TextInput
-                    style={styles.input}
-                    placeholder={i18n.onboardingDislikedFoodsPlaceholder}
-                    placeholderTextColor={c.mutedForeground}
-                    value={dislikedFoods}
-                    onChangeText={setDislikedFoods}
-                  />
-                </Field>
-              </>
-            )}
-
-            {at === 'supps' && (
-              <>
-                <Text style={styles.fieldLabel}>{i18n.onboardingSelectSupplements}</Text>
-                {COMMON_SUPPLEMENTS.map((s, i) => {
-                  const selected = selectedSupps.has(i);
-                  return (
-                    <Pressable
-                      key={s.name}
-                      onPress={() => toggleSupp(i)}
-                      style={[styles.suppRow, selected && styles.suppRowActive]}>
-                      <View style={[styles.checkbox, selected && styles.checkboxActive]}>
-                        {selected && <Icon icon={Check} size={13} color={c.primaryForeground} />}
-                      </View>
-                      <View style={styles.suppInfo}>
-                        <Text style={styles.suppName}>{s.name}</Text>
-                        <Text style={styles.suppMeta}>
-                          {s.dose} · {s.timing}
-                        </Text>
-                      </View>
-                    </Pressable>
-                  );
-                })}
-
-                {/* Goal summary (web) */}
-                <View style={styles.calcBox}>
-                  <View style={styles.calcHeader}>
-                    <Icon icon={Sparkles} size={12} />
-                    <Text style={styles.calcTitle}>{i18n.onboardingSummary}</Text>
-                  </View>
-                  <View style={styles.calcGrid}>
-                    <CalcItem label="Calories" value={plan ? `${plan.tdee_target_kcal} kcal` : '—'} highlight />
-                    <CalcItem label="Protein" value={plan ? `${plan.macro_protein_g}g` : '—'} />
-                    <CalcItem label="Carbs" value={plan ? `${plan.macro_carbs_g}g` : '—'} />
-                    <CalcItem label="Fat" value={plan ? `${plan.macro_fat_g}g` : '—'} />
-                    <CalcItem
-                      label={i18n.navWater}
-                      value={plan ? `${displayVolume(plan.water_target_ml, vUnit)} ${volumeLabel(vUnit)}` : '—'}
-                    />
-                    <CalcItem label="Supps" value={`${selectedSupps.size}`} />
-                  </View>
-                </View>
-              </>
-            )}
-
-            {/*
-              ── the two permissions, asked where they make sense ──
-
-              Both existed and neither was ever offered. Apple Health was
-              reachable only from a button on Today, and notifications only from
-              the reminders screen — so somebody finished onboarding, landed on
-              a dashboard of empty rings, and had no reason to think the app
-              could fill them in. The most considered thing in the product, the
-              readiness score, needs HRV, resting heart rate and sleep, and all
-              three arrive through a sheet nobody was shown.
-
-              Asked here rather than on launch because by this point the person
-              has spent six screens saying what they want, and each prompt can
-              be preceded by the reason it is being asked — which is the whole
-              difference between a permission somebody grants and one they
-              dismiss. iOS only offers each sheet once.
-
-              Neither blocks finishing. `onboardingConnectLater` is not a button
-              because the Next/Done control already is one; making "skip" a
-              second button would imply the other is required.
-            */}
-            {at === 'connect' && (
-              <>
-                <Text style={styles.connectIntro}>{i18n.onboardingConnectIntro}</Text>
-
-                {healthAvailable && (
-                  <PermissionCard
-                    icon={HeartPulse}
-                    title={i18n.onboardingHealthTitle}
-                    why={i18n.onboardingHealthWhy}
-                    cta={i18n.onboardingHealthConnect}
-                    done={i18n.onboardingHealthConnected}
-                    granted={healthGranted}
-                    onPress={connectHealth}
-                  />
-                )}
-
-                <PermissionCard
-                  icon={Bell}
-                  title={i18n.onboardingRemindTitle}
-                  why={i18n.onboardingRemindWhy}
-                  cta={i18n.onboardingRemindEnable}
-                  done={i18n.onboardingRemindEnabled}
-                  granted={notifyGranted}
-                  onPress={enableReminders}
-                />
-
-                <Text style={styles.connectLater}>{i18n.onboardingConnectLater}</Text>
-              </>
-            )}
-          </GlassCard>
-        </Animated.View>
-
-        {/* Terms acceptance (final step, web) */}
-        {at === 'connect' && (
-          <Animated.View entering={FadeIn.duration(duration.appear)} style={styles.termsRow}>
-            <Pressable
-              accessibilityRole="checkbox"
-              accessibilityLabel={i18n.a11yAcceptTerms}
-              accessibilityState={{ checked: termsAccepted }}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setTermsAccepted((v) => !v);
-              }}
-              // 20pt drawn; 12 of slop reaches 44
-              hitSlop={12}
-              style={[styles.checkbox, termsAccepted && styles.checkboxActive]}>
-              {termsAccepted && <Icon icon={Check} size={13} color={c.primaryForeground} />}
-            </Pressable>
-            <Text style={styles.termsText}>
-              {lang === 'vi' ? 'Tôi đã đọc và đồng ý với ' : 'I have read and agree to the '}
-              <Text style={styles.termsLink} onPress={() => setLegalTab('terms')}>
-                {legal.tabTerms}
-              </Text>
-              {', '}
-              <Text style={styles.termsLink} onPress={() => setLegalTab('privacy')}>
-                {legal.tabPrivacy}
-              </Text>
-              {lang === 'vi' ? ' và ' : ' and '}
-              <Text style={styles.termsLink} onPress={() => setLegalTab('health')}>
-                {legal.tabHealth}
-              </Text>
-              .
-            </Text>
-          </Animated.View>
-        )}
-
-        {/* Prev / Next nav */}
-        <View style={styles.nav}>
-          <PressScale
-            style={[styles.prevBtn, step === 0 && styles.disabled]}
-            disabled={step === 0}
-            onPress={goPrev}>
-            <Icon icon={ChevronLeft} size={16} color={c.mutedForeground} />
-            <Text style={styles.prevText}>{i18n.onboardingPrev}</Text>
-          </PressScale>
-
-          {step < TOTAL_STEPS - 1 ? (
-            <PressScale
-              /* Step 0 is where height and weight are typed, and every number
-                 the account gets is derived from them. Nothing past this step
-                 is worth filling in for a body that has not been described. */
-              style={[styles.nextBtn, step === BODY_STATS_STEP && statsBad && styles.disabled]}
-              disabled={step === BODY_STATS_STEP && statsBad}
-              onPress={goNext}>
-              <Text style={styles.nextText}>{i18n.onboardingNext}</Text>
-              <Icon icon={ChevronRight} size={16} color={c.primaryForeground} />
-            </PressScale>
-          ) : (
-            <PressScale
-              style={[styles.nextBtn, (!termsAccepted || statsBad || finish.isPending) && styles.disabled]}
-              disabled={!termsAccepted || statsBad || finish.isPending}
-              onPress={() => finish.mutate()}>
-              {finish.isPending ? (
-                <ActivityIndicator color={c.primaryForeground} />
-              ) : (
-                <>
-                  <Icon icon={Check} size={16} color={c.primaryForeground} />
-                  <Text style={styles.nextText}>{i18n.onboardingDone}</Text>
-                </>
-              )}
-            </PressScale>
-          )}
-        </View>
-      </ScrollView>
-
-      {/* Legal doc sheet — the stack router isn't mounted during onboarding */}
-      <Modal
-        visible={legalTab !== null}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setLegalTab(null)}>
-        <View style={styles.legalRoot}>
-          <View style={styles.legalHeader}>
-            <Text style={styles.legalTitle} numberOfLines={1}>
-              {legalDoc?.title}
-            </Text>
-            <PressScale
-              accessibilityRole="button"
-              accessibilityLabel={i18n.a11yClose}
-              hitSlop={8}
-              style={styles.legalClose}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setLegalTab(null);
-              }}>
-              <Icon icon={X} size={18} color={c.foreground} />
-            </PressScale>
-          </View>
-          <ScrollView contentContainerStyle={styles.legalContent}>
-            {legalDoc?.blocks.map((b, i) => (
-              <GlassCard elevation="inset" key={i}>
-                <Text style={styles.legalBlockTitle}>{b.title}</Text>
-                {b.body ? <Text style={styles.legalBlockBody}>{b.body}</Text> : null}
-                {b.intro ? <Text style={[styles.legalBlockBody, styles.legalIntro]}>{b.intro}</Text> : null}
-                {b.bullets?.map((line, j) => (
-                  <View key={j} style={styles.bulletRow}>
-                    <Text style={styles.bulletDot}>•</Text>
-                    <Text style={styles.bulletText}>{line}</Text>
-                  </View>
-                ))}
-              </GlassCard>
-            ))}
-          </ScrollView>
-        </View>
-      </Modal>
-    </KeyboardAvoidingView>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  const c = usePalette();
-  const styles = stylesFor(c);
-  return (
-    <View style={styles.field}>
-      <Text style={styles.fieldLabel}>{label}</Text>
-      {children}
+  const Ask = ({ q, why }: { q: string; why: string }) => (
+    <View>
+      <Text style={styles.q}>{q}</Text>
+      <Text style={styles.why}>{why}</Text>
     </View>
   );
-}
 
-function Chip({
-  label,
-  active,
-  onPress,
-  wrap,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-  wrap?: boolean;
-}) {
-  const c = usePalette();
-  const styles = stylesFor(c);
+  /** Thước chạy HẾT bề ngang màn — một dụng cụ bị thụt lề hai bên đọc ra là
+      một cái thẻ. Lề của `OnboardingScreen` được trả lại bằng margin âm. */
+  const RulerStrip = ({
+    count,
+    min10,
+    listRef,
+    onIndex,
+    onContentSizeChange,
+  }: {
+    count: number;
+    min10: number;
+    listRef: React.RefObject<Animated.ScrollView | null>;
+    onIndex: (i: number) => void;
+    onContentSizeChange: () => void;
+  }) => (
+    <Animated.View entering={FadeInDown.duration(duration.move).delay(60)} style={styles.bleed}>
+      <View style={styles.ruler}>
+        <Ruler
+          count={count}
+          min10={min10}
+          width={screenW}
+          scrollRef={listRef}
+          onIndex={onIndex}
+          onContentSizeChange={onContentSizeChange}
+        />
+        <View style={styles.needle} pointerEvents="none" />
+      </View>
+      <Text style={styles.hint}>{i18n.obDragHint}</Text>
+    </Animated.View>
+  );
+
+  /*
+    ── màn 13 dựng khung của RIÊNG nó ──
+
+    Mười hai màn kia đều là "đọc một câu, bấm Tiếp". Màn 13 là câu GHI: nút của
+    nó quay vòng chờ, nó không có đường quay lại, và nó mang dòng pháp lý. Gộp
+    nó vào khung chung nghĩa là nhồi ba prop chỉ một màn dùng vào chỗ mười hai
+    màn kia phải đi qua.
+
+    Và nó khoá theo `statsBad` một lần nữa — đây là cái chốt THỨ HAI mà Luật D
+    của `tools/profile-onboarding.mjs` đòi: khoá nút đi tiếp của màn số đo mà
+    không khoá nút ghi thì vẫn còn một đường vòng tới câu ghi.
+  */
+  if (at === 'ready') {
+    return (
+      <OnboardingScreen
+        step={shownAt}
+        total={shown.length}
+        cta={i18n.obReadyCta}
+        onCta={() => finish.mutate()}
+        disabled={statsBad || finish.isPending}
+        legal={i18n.obReadyLegal}
+        onLegal={() => {
+          Haptics.selectionAsync();
+          setLegalTab('terms');
+        }}>
+        <View style={styles.centre}>
+          <Text style={styles.eyebrow}>{i18n.obReadyEyebrow}</Text>
+          <View style={styles.grow} />
+          <KoaFigure expression="delighted" pose="idle" size={280} />
+          <Text style={styles.readyLine}>{i18n.obReadyLine}</Text>
+          <View style={styles.grow} />
+          <View style={styles.chips}>
+            {[
+              goalLabel,
+              `${group(attempt.ok ? attempt.plan.tdee_target_kcal : 0, lang)} kcal`,
+              `Level ${pad2(levelFromXp(0))}`,
+            ]
+              .filter(Boolean)
+              .map((t) => (
+                <Text key={t} style={styles.chip}>
+                  {t}
+                </Text>
+              ))}
+          </View>
+          {finish.isPending ? (
+            <ActivityIndicator style={styles.pending} color={c.mutedForeground} />
+          ) : null}
+          {statError ? <Text style={styles.fieldError}>{statError}</Text> : null}
+        </View>
+        <LegalSheet
+          tab={legalTab}
+          lang={lang}
+          styles={styles}
+          c={c}
+          onTab={setLegalTab}
+          onClose={() => setLegalTab(null)}
+        />
+      </OnboardingScreen>
+    );
+  }
+
   return (
-    <Pressable
-      onPress={() => {
-        Haptics.selectionAsync();
-        onPress();
-      }}
-      style={[styles.chip, wrap && styles.chipWrap, active && styles.chipActive]}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
-        {label}
-      </Text>
-    </Pressable>
+    <OnboardingScreen
+      step={at === 'welcome' ? 0 : shownAt}
+      total={shown.length}
+      onBack={step > 0 ? goPrev : undefined}
+      backLabel={i18n.obBack}
+      cta={CTA[at] ? i18n[CTA[at]] : i18n.obNext}
+      onCta={at === 'health' ? connectHealth : goNext}
+      /* Cái chốt của màn số đo. Nó nêu TÊN màn chứ không nêu một vị trí viết
+         thẳng: đổi thứ tự thì cái khoá đi theo. */
+      disabled={(step === BODY_STATS_STEP && statsBad) || unanswered}
+      secondary={at === 'health' ? { label: i18n.obHealthLater, onPress: goNext } : undefined}
+      legal={at === 'health' ? i18n.obHealthLegal : undefined}>
+      <Animated.View key={at} entering={FadeIn.duration(duration.appear)} style={styles.fill}>
+        {at === 'welcome' && (
+          <View style={styles.fill}>
+            <BrandLockup />
+            <View style={styles.grow} />
+            <Text style={styles.hero}>{BRAND_TAGLINE}</Text>
+            <View style={styles.grow} />
+            <View style={styles.koaAnchor}>
+              <KoaFigure expression="happy" pose="idle" size={88} />
+            </View>
+          </View>
+        )}
+
+        {at === 'intention' && (
+          <View style={styles.fill}>
+            <Ask q={i18n.obIntentionQ} why={i18n.obIntentionWhy} />
+            <View style={styles.grow} />
+            <View style={styles.stackBig}>
+              {(['body', 'capacity', 'maintain'] as const).map((b) => (
+                <ChoiceCard
+                  key={b}
+                  size="lg"
+                  label={i18n[BRANCH_COPY[b].label]}
+                  desc={i18n[BRANCH_COPY[b].desc]}
+                  selected={branch === b}
+                  onPress={() => pickBranch(b)}
+                />
+              ))}
+            </View>
+            <View style={styles.growWide} />
+          </View>
+        )}
+
+        {at === 'goal' && (
+          <View style={styles.fill}>
+            {/* Nhánh vừa chọn quay lại làm EYEBROW ngay TRÊN câu hỏi, nên hai
+                dòng đọc liền thành một đường đi. Đặt nó DƯỚI câu hỏi thì nó đọc
+                ra như một chú thích, và người duyệt bản Round 2 đọc đúng thế. */}
+            <Text style={styles.eyebrowLeft}>{branch ? i18n[BRANCH_COPY[branch].label] : ''}</Text>
+            <Text style={styles.qTight}>{i18n.obGoalQ}</Text>
+            <View style={styles.grow} />
+            <View style={styles.stackTight}>
+              {(branch ? BRANCHES[branch] : []).map((g) => (
+                <ChoiceCard
+                  key={g}
+                  label={i18n[GOAL_COPY[g].label]}
+                  desc={i18n[GOAL_COPY[g].desc]}
+                  selected={goal === g}
+                  onPress={() => setGoal(g)}
+                />
+              ))}
+            </View>
+            <View style={styles.growWide} />
+          </View>
+        )}
+
+        {at === 'koa' && (
+          <View style={styles.centre}>
+            <View style={styles.grow} />
+            <KoaFigure expression="happy" pose="turn34" size={300} />
+            <Text style={styles.koaName}>{i18n.obKoaName}</Text>
+            <Text style={styles.koaLine}>{i18n.obKoaLine}</Text>
+            <View style={styles.grow} />
+          </View>
+        )}
+
+        {at === 'sex' && (
+          <View style={styles.fill}>
+            <Ask q={i18n.obSexQ} why={i18n.obSexWhy} />
+            <View style={styles.grow} />
+            <View style={styles.stackTight}>
+              {(['male', 'female', 'other'] as const).map((s) => (
+                <ChoiceCard
+                  key={s}
+                  label={i18n[SEX_COPY[s]]}
+                  selected={sex === s}
+                  onPress={() => setSex(s)}
+                />
+              ))}
+            </View>
+            <View style={styles.growWide} />
+          </View>
+        )}
+
+        {at === 'dob' && (
+          <View style={styles.fill}>
+            <Ask q={i18n.obDobQ} why={i18n.obDobWhy} />
+            <View style={styles.grow} />
+            <View style={styles.wheel}>
+              {/*
+                `maximumDate` KHÔNG phải một chi tiết thừa.
+
+                Luồng bảy màn có nó; lượt viết lại này làm rơi mất, và hậu quả
+                đo được: chọn 2030-06-15 thì cổng trả `missing: ['dob']`, tức
+                nút Tiếp của màn 08 khoá lại — hai màn sau chỗ gây ra, không
+                một dòng giải thích. Chặn ngay ở bánh xe là rẻ nhất: cái ngày
+                ấy không chọn được nữa.
+
+                Câu báo dưới đây vẫn giữ, vì `maximumDate` là một phát biểu về
+                MÀN HÌNH: một hồ sơ cũ mang ngày sinh hỏng, hay một lần đổi
+                ngưỡng tuổi, vẫn đi tới được đây.
+              */}
+              <DateField
+                value={dob}
+                mode="date"
+                display="spinner"
+                maximumDate={new Date()}
+                onChange={(_, d) => d && setDob(d)}
+              />
+            </View>
+            {dobBad ? <Text style={styles.fieldError}>{i18n.obDobBad}</Text> : null}
+            <View style={styles.growWide} />
+          </View>
+        )}
+
+        {at === 'height' && (
+          <HeightBody
+            cm={heightCm}
+            unit={hUnit}
+            styles={styles}
+            ask={<Ask q={i18n.obHeightQ} why={i18n.obHeightWhy} />}
+            strip={RulerStrip}
+            onCm={setHeightCm}
+          />
+        )}
+
+        {at === 'weight' && (
+          <WeightBody
+            kg={weightKg}
+            unit={wUnit}
+            width={Math.min(SCALE_MAX, screenW * SCALE_FRACTION)}
+            styles={styles}
+            title={i18n.obWeightQ}
+            error={statError}
+            strip={RulerStrip}
+            onKg={setWeightKg}
+          />
+        )}
+
+        {at === 'activity' && (
+          <View style={styles.fill}>
+            <Ask q={i18n.obActivityQ} why={i18n.obActivityWhy} />
+            <View style={styles.grow} />
+            {/*
+              Năm hàng trong MỘT mặt, ngăn bằng hairline — đặc hơn hẳn năm thẻ
+              rời, và đó là chủ đích: đây là màn duy nhất có năm lựa chọn, và
+              năm thẻ ở cỡ của màn 05 sẽ đẩy cụm này tràn khỏi màn.
+            */}
+            <View style={styles.rows}>
+              {ACTIVITY.map((a, i) => (
+                <PressScale
+                  key={a.val}
+                  accessibilityRole="radio"
+                  accessibilityLabel={`${i18n[a.label]}. ${i18n[a.desc]}`}
+                  accessibilityState={{ selected: activityLevel === a.val }}
+                  style={[
+                    styles.row,
+                    i > 0 && styles.rowLine,
+                    activityLevel === a.val && styles.rowOn,
+                  ]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setActivityLevel(a.val);
+                  }}>
+                  <View style={styles.rowText}>
+                    <Text style={styles.rowLabel}>{i18n[a.label]}</Text>
+                    <Text style={styles.rowDesc}>{i18n[a.desc]}</Text>
+                  </View>
+                  {activityLevel === a.val ? (
+                    <Icon icon={Check} size={18} color={c.foreground} />
+                  ) : null}
+                </PressScale>
+              ))}
+            </View>
+            <View style={styles.growWide} />
+          </View>
+        )}
+
+        {at === 'experience' && (
+          <View style={styles.fill}>
+            <Ask q={i18n.obExpQ} why={i18n.obExpWhy} />
+            <View style={styles.grow} />
+            <View style={styles.stackTight}>
+              {LEVELS.map((l) => (
+                <ChoiceCard
+                  key={l.val}
+                  label={i18n[l.label]}
+                  desc={i18n[l.desc]}
+                  selected={trainingLevel === l.val}
+                  onPress={() => setTrainingLevel(l.val)}
+                />
+              ))}
+            </View>
+            <View style={styles.growWide} />
+          </View>
+        )}
+
+        {at === 'plan' && attempt.ok && (
+          <View style={styles.fill}>
+            {/* Thác đổ bắt đầu ở khoảng một phần ba màn, không phải giữa màn:
+                dựng thật ở 402×874 thì `growWide` để lại 430 điểm trống phía
+                trên một cụm chữ cao chưa tới 400. */}
+            <View style={styles.growSmall} />
+            <Text style={styles.eyebrowLeft}>{i18n.obPlanEyebrow}</Text>
+            {/*
+              Một THÁC ĐỔ, không phải một lưới. Bản Round 1 xếp macro thành ba
+              cột bằng nhau — đó chính là hình dạng một dashboard, và màn này là
+              chỗ TRẢ LẠI công sức chứ không phải chỗ tra cứu. Thang đọc đi
+              xuống đúng một chiều: kcal 44 → mục tiêu 15 → macro 15 → nước và
+              ngủ 13 → bậc 15/11 màu phụ.
+            */}
+            <View style={styles.readout}>
+              <Text style={styles.num}>{group(attempt.plan.tdee_target_kcal, lang)}</Text>
+              <Text style={styles.numUnit}>kcal</Text>
+            </View>
+            <Text style={styles.planFor}>{i18n.obPlanFor.replace('{goal}', goalLabel)}</Text>
+            <Text style={styles.planMacro}>
+              {i18n.obPlanMacros
+                .replace('{p}', String(attempt.plan.macro_protein_g))
+                .replace('{c}', String(attempt.plan.macro_carbs_g))
+                .replace('{f}', String(attempt.plan.macro_fat_g))}
+            </Text>
+            <View style={styles.hair} />
+            <Text style={styles.planQuiet}>
+              {i18n.obPlanWater.replace(
+                '{v}',
+                `${displayVolume(attempt.plan.water_target_ml, vUnit).toFixed(1)} ${volumeLabel(vUnit)}`,
+              )}
+            </Text>
+            <Text style={styles.planQuiet}>{i18n.obPlanSleep.replace('{h}', '8,0')}</Text>
+            <View style={styles.growSmall} />
+            <View style={styles.ladder}>
+              {RANK_DOTS.map((lvl) => (
+                <View key={lvl} style={[styles.rung, lvl === 1 && styles.rungOn]} />
+              ))}
+            </View>
+            <Text style={styles.rankName}>{rankForLevel(levelFromXp(0)).name[lang] ?? ''}</Text>
+            <Text style={styles.rankLine}>
+              {i18n.obPlanRank.replace('{n}', pad2(levelFromXp(0)))}
+            </Text>
+            <View style={styles.growSmall} />
+          </View>
+        )}
+
+        {at === 'health' && (
+          <View style={styles.fill}>
+            <Text style={styles.q}>{i18n.obHealthQ}</Text>
+            <Text style={styles.healthBody}>{i18n.onboardingHealthWhy}</Text>
+            <View style={styles.grow} />
+            {/* Bảy cột một tuần: bốn nhạt là ngày bạn tự ghi, ba đặc là ngày
+                đồng hồ tự điền. Hình nói đúng điều đoạn chữ vừa nói. */}
+            <View style={styles.week}>
+              {WEEK.map((h, i) => (
+                <View
+                  key={h}
+                  style={[styles.bar, { height: h }, i > 3 ? styles.barOn : styles.barOff]}
+                />
+              ))}
+            </View>
+            <Text style={styles.why}>{i18n.obHealthChart}</Text>
+            <View style={styles.growSmall} />
+            <View style={styles.reads}>
+              {READS.map((r) => (
+                <View key={r} style={styles.read}>
+                  <View style={styles.readDot} />
+                  <Text style={styles.readText}>{i18n[r]}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.growWide} />
+          </View>
+        )}
+      </Animated.View>
+    </OnboardingScreen>
   );
 }
 
-function OptionCard({
-  label,
-  desc,
-  active,
-  onPress,
+type Styles = ReturnType<typeof stylesFor>;
+type Strip = (p: {
+  count: number;
+  min10: number;
+  listRef: React.RefObject<Animated.ScrollView | null>;
+  onIndex: (i: number) => void;
+  onContentSizeChange: () => void;
+}) => React.ReactElement;
+
+/**
+ * Màn 07 — chiều cao.
+ *
+ * Dùng ĐÚNG `Ruler` của cân nặng, không dựng một thước dọc riêng: một thước
+ * thứ hai là bản vẽ tay thứ hai của cùng một dụng cụ. Đơn vị đọc từ
+ * `units_height`, nên `ft` ra `ft` chứ không phải `cm` đổi nhãn.
+ */
+function HeightBody({
+  cm,
+  unit,
+  styles,
+  ask,
+  strip: Strip,
+  onCm,
 }: {
-  label: string;
-  desc?: string;
-  active: boolean;
-  onPress: () => void;
+  cm: string;
+  unit: ReturnType<typeof useUnits>['height'];
+  styles: Styles;
+  ask: React.ReactNode;
+  strip: Strip;
+  onCm: (v: string) => void;
 }) {
-  const c = usePalette();
-  const styles = stylesFor(c);
+  const min10 = Math.ceil(displayHeight(BOUNDS.height_cm.min, unit) * 10);
+  const max10 = Math.floor(displayHeight(BOUNDS.height_cm.max, unit) * 10);
+  const count = max10 - min10 + 1;
+  const seed = Math.max(
+    0,
+    Math.min(count - 1, Math.round(displayHeight(Number(cm) || 0, unit) * 10) - min10),
+  );
+  const pick = useCallback(() => {
+    Haptics.selectionAsync();
+  }, []);
+  const { value, listRef, onIndex, onContentSizeChange } = useRulerIndex({
+    seedIndex: seed,
+    min10,
+    onPick: pick,
+  });
+  const commit = useCallback(
+    (i: number) => {
+      onIndex(i);
+      onCm(String(heightToCm((min10 + i) / 10, unit)));
+    },
+    [onIndex, onCm, min10, unit],
+  );
   return (
-    <PressScale
-      onPress={() => {
-        Haptics.selectionAsync();
-        onPress();
-      }}
-      style={[styles.optionCard, active && styles.optionCardActive]}>
-      <Text style={styles.optionLabel}>{label}</Text>
-      {desc ? <Text style={styles.optionDesc}>{desc}</Text> : null}
-    </PressScale>
+    <View style={styles.fill}>
+      {ask}
+      <View style={styles.grow} />
+      <View style={styles.readoutCentre}>
+        <Text style={styles.num}>{value.toFixed(1)}</Text>
+        <Text style={styles.numUnit}>{lengthLabel(unit)}</Text>
+      </View>
+      <View style={styles.growSmall} />
+      <Strip
+        count={count}
+        min10={min10}
+        listRef={listRef}
+        onIndex={commit}
+        onContentSizeChange={onContentSizeChange}
+      />
+    </View>
   );
 }
 
 /**
- * One optional connection: what it is, why it is worth it, and a way to say yes.
+ * Màn 08 — cân nặng. Khoảnh khắc chữ ký của ASCND.
  *
- * The `why` line is the point of the whole card. iOS shows its own permission
- * sheet once and that sheet cannot explain anything specific to this app — so
- * the reason has to be on screen *before* the sheet appears, or the person is
- * deciding with no information. "Reads sleep and HRV to work out your readiness
- * each morning" is a decision somebody can make; a bare system prompt is a
- * decision they can only guess at.
- *
- * Once granted, the button becomes a statement rather than a disabled control:
- * there is nothing more to do, and a greyed-out button invites a second tap
- * that will do nothing.
+ * Chiếc cân THỨC DẬY lúc thước bắt đầu chạy và ngủ lại sau ba giây không ai
+ * chạm — cùng một `useScaleWake` với `/log-weight`, nên hai chiếc cân trong app
+ * không thể lệch nhịp. Hai hình xếp lớp và hai lớp mờ thì dựng ở ĐÂY: hook
+ * không biết gì về chiếc cân, và lý do đầy đủ nằm ở chú thích của nó.
  */
-function PermissionCard({
-  icon,
+function WeightBody({
+  kg,
+  unit,
+  width,
+  styles,
   title,
-  why,
-  cta,
-  done,
-  granted,
-  onPress,
+  error,
+  strip: Strip,
+  onKg,
 }: {
-  icon: LucideIcon;
+  kg: string;
+  unit: ReturnType<typeof useUnits>['weight'];
+  width: number;
+  styles: Styles;
   title: string;
-  why: string;
-  cta: string;
-  done: string;
-  granted: boolean;
-  onPress: () => void;
+  error: string | null;
+  strip: Strip;
+  onKg: (v: string) => void;
 }) {
-  const c = usePalette();
-  const styles = stylesFor(c);
+  const { touch, lit: litFace, rest: restFace } = useScaleWake();
+  const min10 = Math.ceil(displayWeight(BOUNDS.weight_kg.min, unit) * 10);
+  const max10 = Math.floor(displayWeight(BOUNDS.weight_kg.max, unit) * 10);
+  const count = max10 - min10 + 1;
+  const seed = Math.max(
+    0,
+    Math.min(count - 1, Math.round(displayWeight(Number(kg) || 0, unit) * 10) - min10),
+  );
+  const { value, listRef, onIndex, onContentSizeChange } = useRulerIndex({
+    seedIndex: seed,
+    min10,
+    /* Chính cú kéo là thứ đánh thức cân — không phải một sự kiện riêng. */
+    onPick: touch,
+  });
+  const commit = useCallback(
+    (i: number) => {
+      onIndex(i);
+      onKg(String(weightToKg((min10 + i) / 10, unit)));
+    },
+    [onIndex, onKg, min10, unit],
+  );
   return (
-    <View style={styles.permCard}>
-      <View style={styles.permHead}>
-        <Icon icon={icon} size={16} color={granted ? c.primary : c.foreground} />
-        <Text style={styles.permTitle}>{title}</Text>
-      </View>
-      <Text style={styles.permWhy}>{why}</Text>
-      {granted ? (
-        <View style={styles.permDone}>
-          <Icon icon={Check} size={13} color={c.primary} />
-          <Text style={styles.permDoneText}>{done}</Text>
+    <View style={styles.fill}>
+      <Text style={styles.qCentre}>{title}</Text>
+      <View style={styles.grow} />
+      <View style={styles.stage}>
+        <View>
+          <Animated.View style={restFace}>
+            <BodyScaleFigure value={value.toFixed(1)} unit={weightLabel(unit)} width={width} />
+          </Animated.View>
+          <Animated.View style={[StyleSheet.absoluteFill, litFace]} pointerEvents="none">
+            <BodyScaleFigure value={value.toFixed(1)} unit={weightLabel(unit)} width={width} lit />
+          </Animated.View>
         </View>
-      ) : (
-        <PressScale accessibilityRole="button" style={styles.permBtn} onPress={onPress}>
-          <Text style={styles.permBtnText}>{cta}</Text>
-        </PressScale>
-      )}
+      </View>
+      <View style={styles.growSmall} />
+      {error ? <Text style={styles.fieldError}>{error}</Text> : null}
+      <Strip
+        count={count}
+        min10={min10}
+        listRef={listRef}
+        onIndex={commit}
+        onContentSizeChange={onContentSizeChange}
+      />
     </View>
   );
 }
 
-function CalcItem({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
-  const c = usePalette();
-  const styles = stylesFor(c);
+/**
+ * Ba tài liệu, mở ngay trong luồng.
+ *
+ * ── vì sao nó phải có ──
+ *
+ * Màn 13 nói *"Bắt đầu tức là bạn đồng ý với Điều khoản, Quyền riêng tư và Dữ
+ * liệu sức khoẻ"*. Board vẽ câu ấy là chữ CHẾT. Một lời chấp thuận cho ba tài
+ * liệu mà người ta không mở nổi thì không phải một lời chấp thuận — và trong
+ * luồng này chưa có đường nào khác tới chúng: `src/app/legal.tsx` nằm sau cổng
+ * onboarding, tức chỉ với tới được SAU khi đã đồng ý.
+ *
+ * ── vì sao là Modal chứ không phải một route ──
+ *
+ * Stack router chưa được gắn trong lúc onboarding. Luồng cũ đã gặp đúng việc
+ * này và đã trả lời bằng một `Modal`; câu trả lời ấy còn đúng, nên nó được giữ
+ * chứ không nghĩ lại.
+ */
+function LegalSheet({
+  tab,
+  lang,
+  styles,
+  c,
+  onTab,
+  onClose,
+}: {
+  tab: 'terms' | 'privacy' | 'health' | null;
+  lang: 'vi' | 'en';
+  styles: Styles;
+  c: ReturnType<typeof usePalette>;
+  onTab: (t: 'terms' | 'privacy' | 'health') => void;
+  onClose: () => void;
+}) {
+  const legal = getLegal(lang);
+  const tabs = [
+    { key: 'terms', label: legal.tabTerms },
+    { key: 'privacy', label: legal.tabPrivacy },
+    { key: 'health', label: legal.tabHealth },
+  ] as const;
+  const doc: LegalDoc | null = tab ? legal[tab] : null;
   return (
-    <View style={styles.calcItem}>
-      <Text style={styles.calcLabel}>{label}:</Text>
-      <Text style={[styles.calcValue, highlight && styles.calcValueHighlight]}>{value}</Text>
-    </View>
+    <Modal
+      visible={tab !== null}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onRequestClose={onClose}>
+      <View style={styles.legalRoot}>
+        <View style={styles.legalHeader}>
+          <Text style={styles.legalTitle} numberOfLines={1}>
+            {doc?.title}
+          </Text>
+          <PressScale accessibilityRole="button" hitSlop={8} style={styles.legalClose} onPress={onClose}>
+            <Icon icon={X} size={18} color={c.foreground} />
+          </PressScale>
+        </View>
+        {/* Ba tài liệu, một sheet: mở ra đọc được cả ba mà không phải đóng lại
+            rồi mở lại từ một câu chữ chỉ có một chỗ bấm. */}
+        <View style={styles.legalTabs}>
+          {tabs.map((t) => (
+            <PressScale
+              key={t.key}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: tab === t.key }}
+              style={[styles.legalTab, tab === t.key && styles.legalTabOn]}
+              onPress={() => {
+                Haptics.selectionAsync();
+                onTab(t.key);
+              }}>
+              <Text style={[styles.legalTabText, tab === t.key && styles.legalTabTextOn]}>
+                {t.label}
+              </Text>
+            </PressScale>
+          ))}
+        </View>
+        <ScrollView contentContainerStyle={styles.legalContent}>
+          {doc?.blocks.map((b, i) => (
+            <GlassCard elevation="inset" key={i}>
+              <Text style={styles.legalBlockTitle}>{b.title}</Text>
+              {b.body ? <Text style={styles.legalBlockBody}>{b.body}</Text> : null}
+              {b.intro ? (
+                <Text style={[styles.legalBlockBody, styles.legalIntro]}>{b.intro}</Text>
+              ) : null}
+              {b.bullets?.map((line, j) => (
+                <View key={j} style={styles.bulletRow}>
+                  <Text style={styles.bulletDot}>•</Text>
+                  <Text style={styles.bulletText}>{line}</Text>
+                </View>
+              ))}
+            </GlassCard>
+          ))}
+        </ScrollView>
+      </View>
+    </Modal>
   );
 }
+
+/* ── bảng chữ, tách khỏi phần dựng hình ── */
+
+const BRANCH_COPY = {
+  body: { label: 'obBranchBody', desc: 'obBranchBodyDesc' },
+  capacity: { label: 'obBranchCapacity', desc: 'obBranchCapacityDesc' },
+  maintain: { label: 'obBranchMaintain', desc: 'obBranchMaintainDesc' },
+} as const;
+
+const GOAL_COPY = {
+  bulk: { label: 'obGoalBulk', desc: 'obGoalBulkDesc' },
+  cut: { label: 'obGoalCut', desc: 'obGoalCutDesc' },
+  recomp: { label: 'obGoalRecomp', desc: 'obGoalRecompDesc' },
+  strength: { label: 'obGoalStrength', desc: 'obGoalStrengthDesc' },
+  endurance: { label: 'obGoalEndurance', desc: 'obGoalEnduranceDesc' },
+  maintain: { label: 'obBranchMaintain', desc: 'obBranchMaintainDesc' },
+} as const;
+
+const SEX_COPY = { male: 'obSexMale', female: 'obSexFemale', other: 'obSexOther' } as const;
+
+const ACTIVITY = [
+  { val: 'sedentary', label: 'obActSedentary', desc: 'obActSedentaryDesc' },
+  { val: 'light', label: 'obActLight', desc: 'obActLightDesc' },
+  { val: 'moderate', label: 'obActModerate', desc: 'obActModerateDesc' },
+  { val: 'high', label: 'obActHigh', desc: 'obActHighDesc' },
+  { val: 'athlete', label: 'obActAthlete', desc: 'obActAthleteDesc' },
+] as const;
+
+/**
+ * Ba bậc kinh nghiệm, không phải bốn.
+ *
+ * Board vẽ bốn thẻ, trong đó có "Quay lại sau một thời gian". Cột
+ * `training_level` nhận đúng BA giá trị mà app hiểu — `beginner`,
+ * `intermediate`, `advanced` — và `settings.tsx` tra nhãn theo đúng ba giá trị
+ * ấy. Thẻ thứ tư sẽ hoặc ghi một giá trị thứ tư mà không chỗ nào đọc nổi, hoặc
+ * ghi TRÙNG giá trị với một thẻ khác — tức hai thẻ khác nhau cho ra cùng một
+ * kết quả, một lời nói dối với người đang chọn.
+ *
+ * Nên giọng tự-mô-tả của board thì giữ, còn số thẻ thì theo cột. Board là bản
+ * phác; cột dữ liệu là thứ đã có thật.
+ */
+const LEVELS = [
+  { val: 'beginner', label: 'obExpNew', desc: 'obExpNewDesc' },
+  { val: 'intermediate', label: 'obExpSteady', desc: 'obExpSteadyDesc' },
+  { val: 'advanced', label: 'obExpDeep', desc: 'obExpDeepDesc' },
+] as const;
+
+const READS = ['obHealthRead1', 'obHealthRead2', 'obHealthRead3', 'obHealthRead4'] as const;
+
+/** Bảy cột của biểu đồ tuần. Một hình MINH HOẠ, không phải dữ liệu của ai. */
+const WEEK = [20, 30, 26, 38, 52, 64, 72];
+
+/** Sáu bậc của thang hạng — `RANKS` có sáu mục, và cái thang vẽ đúng sáu nấc. */
+const RANK_DOTS = [1, 2, 3, 4, 5, 6];
+
+/** Nút chính của những màn KHÔNG nói "Tiếp". */
+const CTA: Partial<Record<StepKey, 'obStart' | 'obKoaCta' | 'obHealthConnect'>> = {
+  welcome: 'obStart',
+  koa: 'obKoaCta',
+  health: 'obHealthConnect',
+};
+
+const group = (n: number, lang: string) => n.toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US');
+const pad2 = (n: number) => String(n).padStart(2, '0');
 
 const stylesFor = makeStyles((c, m) => ({
-  root: { flex: 1, backgroundColor: c.background },
-  content: { flexGrow: 1, paddingHorizontal: spacing.md, gap: spacing.lg },
+  fill: { flex: 1 },
+  centre: { flex: 1, alignItems: 'center' },
+  /*
+    ── nhịp dọc, và con số đã đo ──
 
-  hero: { alignItems: 'center', gap: 4 },
-  heroSub: { ...type.footnote, color: c.mutedForeground },
+    Mọi màn hỏi đều cùng một hình dạng: câu hỏi neo TRÊN, cụm điều khiển nổi
+    trong khoảng còn lại, khoảng dưới rộng hơn khoảng trên một chút. Tỉ lệ là
+    `grow` : `growWide` = 1 : 1,15.
 
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
-  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.primary },
-  dotActive: { transform: [{ scale: 1.3 }] },
-  dotDone: { opacity: 0.6 },
-  dotFuture: { backgroundColor: c.muted, opacity: 0.5 },
+    Bản đầu đóng bằng `growSmall` (0,35), tức 1 : 0,35. Dựng thật ở 402×874 rồi
+    đo trên ảnh: ba thẻ bị đẩy xuống sát nút, và giữa dòng lý do với thẻ đầu
+    tiên còn lại 255 điểm TRỐNG — không phải "khoảng thở", mà là một lỗ. Ở
+    1 : 1,15 cái lỗ ấy còn 140 và cụm thẻ đứng ngay dưới câu hỏi nó trả lời.
 
-  stepHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  stepIconTile: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.sm,
-    backgroundColor: alpha(c.primary, 0.15),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepCount: { ...type.caption, color: c.mutedForeground },
-  stepTitle: { ...type.headline, fontSize: 18, color: c.foreground },
+    `growSmall` vẫn còn dùng, nhưng chỉ ở chỗ nó đúng: giữa con số và cây thước
+    của hai màn 07/08, nơi hai thứ ấy là MỘT cụm và không được tách ra.
+  */
+  grow: { flex: 1 },
+  growSmall: { flex: 0.35 },
+  growWide: { flex: 1.15 },
 
-  card: { gap: spacing.md },
-  field: { gap: spacing.sm },
-  fieldLabel: { ...type.footnote, fontWeight: '600', color: c.foreground },
-  input: {
-    height: 48,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: alpha(c.primaryForeground, 0.5),
-    paddingHorizontal: spacing.md,
+  /* ── chữ dẫn ── */
+  hero: { ...type.hero, color: c.foreground, lineHeight: 50 },
+  q: { ...type.largeTitle, color: c.foreground, marginTop: 14, lineHeight: 33 },
+  qTight: { ...type.largeTitle, color: c.foreground, marginTop: 6, lineHeight: 33 },
+  qCentre: {
+    ...type.largeTitle,
     color: c.foreground,
-    fontSize: 16,
+    marginTop: 14,
+    textAlign: 'center',
+    lineHeight: 33,
   },
-  /* Same two rules as `edit-profile`, which has always shown these — the point
-     of this round is that one screen refused a bad stat and the other did not. */
-  inputBad: { borderColor: c.readinessRed, borderWidth: 1 },
-  fieldError: { ...type.footnote, color: c.readinessRed },
-  rowFields: { flexDirection: 'row', gap: spacing.md },
-  halfField: { flex: 1 },
-  pickerWrap: {
-    borderRadius: radius.md,
-    backgroundColor: alpha(c.primaryForeground, 0.5),
+  why: { ...type.footnote, color: c.mutedForeground, marginTop: spacing.sm + 2, lineHeight: 19 },
+  eyebrow: {
+    ...type.caption,
+    color: c.mutedForeground,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+  },
+  eyebrowLeft: {
+    ...type.caption,
+    color: c.mutedForeground,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    alignSelf: 'flex-start',
+  },
+
+  /* ── 01 ── */
+  koaAnchor: { alignSelf: 'flex-start', marginLeft: -spacing.xs, opacity: 0.9 },
+
+  /* ── 02 / 03 / 05 / 10 ── */
+  stackBig: { gap: 14 },
+  stackTight: { gap: 10 },
+
+  /* ── 04 ── */
+  koaName: {
+    ...type.largeTitle,
+    color: c.foreground,
+    marginTop: spacing.stack,
+    textAlign: 'center',
+  },
+  koaLine: { ...type.body, color: c.mutedForeground, marginTop: spacing.xs, textAlign: 'center' },
+
+  /* ── 06 ── */
+  wheel: { alignItems: 'center' },
+
+  /* ── 07 / 08 ── */
+  readout: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+  readoutCentre: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+    alignSelf: 'center',
+  },
+  /*
+    KHÔNG `type.mono`.
+
+    Bản đầu viết `...type.hero, ...type.mono`, và chú thích của chính `type.hero`
+    đã nói trước rằng đó là sai: *"Một con số đứng yên trên thẻ thì không cần
+    cột, và Menlo ở cỡ lớn đọc ra là một dòng terminal chứ không phải một chỉ số
+    sức khoẻ."* Dựng ra rồi nhìn thì đúng thế — `2.031` ở 44pt thành một dòng
+    lệnh.
+
+    `fontVariant` thì GIỮ: đó là phần lợi ích thật của mono (cột số không nhảy
+    khi thước chạy) mà không đổi mặt chữ.
+  */
+  num: { ...type.hero, fontVariant: ['tabular-nums'] as ['tabular-nums'], color: c.foreground },
+  numUnit: { ...type.headline, color: c.mutedForeground, paddingBottom: 8 },
+  stage: { alignItems: 'center' },
+  /* Trả lại lề ngang của khung để thước chạm hai mép màn. */
+  bleed: { marginHorizontal: -spacing.lg },
+  ruler: { height: RULER_H, alignSelf: 'stretch', justifyContent: 'center' },
+  needle: {
+    position: 'absolute',
+    alignSelf: 'center',
+    bottom: 0,
+    width: 3,
+    height: 68,
+    borderRadius: 1.5,
+    backgroundColor: c.foreground,
+  },
+  hint: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', marginTop: spacing.sm },
+
+  /* ── 09 ── */
+  rows: {
+    backgroundColor: c.card,
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     overflow: 'hidden',
-    alignItems: 'center',
   },
+  row: {
+    minHeight: 62,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.card,
+    paddingVertical: 12,
+  },
+  rowText: { flex: 1, gap: 2 },
+  rowLine: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.border },
+  /*
+    ── vì sao hàng được chọn cần DẤU TÍCH, không chỉ cần đổi nền ──
 
-  activityNote: { ...type.footnote, color: c.mutedForeground, lineHeight: 18, marginTop: spacing.xs },
-  chips: { flexDirection: 'row', gap: spacing.sm },
-  chipsWrap: { flexWrap: 'wrap' },
+    Đo trên chính bảng màu đang ship: `secondary` trên `card` ra **1,198** ở bản
+    sáng và **1,088** ở bản tối. Bậc bề mặt nhỏ nhất của iOS là 1,134 — tức ở
+    bản TỐI cái nền này còn chưa tới ngưỡng nhìn thấy, và WCAG 1.4.11 đòi 3:1
+    cho một đồ hoạ mang nghĩa. "Hàng nào đang được chọn" đúng là một đồ hoạ
+    mang nghĩa.
+
+    Dấu tích vẽ bằng `c.foreground`: 17,57:1 ở bản sáng, 16,46:1 ở bản tối. Nền
+    `secondary` thì GIỮ — nó là tín hiệu thứ hai, đọc được bằng đuôi mắt, và hai
+    tín hiệu cùng lúc là cách một trạng thái sống được ở cả hai diện mạo.
+
+    `ChoiceCard` không cần dấu tích vì viền của nó đã là `foreground`, tức cùng
+    mức tương phản ấy. Hàng đặc thì không có viền để mượn.
+  */
+  rowOn: { backgroundColor: c.secondary },
+  rowLabel: { ...type.body, fontWeight: '600', color: c.foreground },
+  rowDesc: { ...type.footnote, color: c.mutedForeground },
+
+  /* ── 11 ── */
+  planFor: { ...type.body, color: c.mutedForeground, marginTop: spacing.xs },
+  planMacro: { ...type.body, color: c.foreground, marginTop: spacing.sm + 2 },
+  hair: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginVertical: spacing.md },
+  planQuiet: { ...type.footnote, color: c.mutedForeground, marginTop: spacing.xs },
+  ladder: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  rung: { width: 22, height: 3, borderRadius: 1.5, backgroundColor: alpha(c.foreground, 0.14) },
+  rungOn: { backgroundColor: c.foreground },
+  /*
+    15/600 màu PHỤ, không phải 15/600 màu mực.
+
+    Ở bản Round 2 tên bậc để mực đậm và nó nặng hơn hai dòng nước và ngủ ngay
+    trên nó — bậc ba của thang đứng trên bậc hai, tức thang bị đảo ở đúng nấc
+    cuối. Hạ xuống `secondaryForeground` thì cả cột đọc đúng một chiều.
+  */
+  rankName: {
+    ...type.body,
+    fontWeight: '600',
+    color: c.secondaryForeground,
+    marginTop: spacing.sm,
+  },
+  rankLine: { ...type.caption, color: c.mutedForeground, marginTop: 2 },
+
+  /* ── 12 ── */
+  healthBody: {
+    ...type.body,
+    color: c.secondaryForeground,
+    marginTop: spacing.sm + 2,
+    lineHeight: 22,
+  },
+  week: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, height: 84 },
+  bar: { flex: 1, borderRadius: 4 },
+  barOff: { backgroundColor: alpha(c.foreground, 0.12) },
+  barOn: { backgroundColor: c.foreground },
+  reads: { gap: spacing.sm + 2 },
+  read: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
+  readDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: c.mutedForeground },
+  readText: { ...type.body, color: c.secondaryForeground },
+
+  /* ── 13 ── */
+  readyLine: {
+    ...type.largeTitle,
+    color: c.foreground,
+    marginTop: 18,
+    textAlign: 'center',
+    lineHeight: 33,
+  },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.sm },
   chip: {
-    flex: 1,
-    height: 44,
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: alpha(c.secondary, 0.3),
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
+    ...type.footnote,
+    color: c.mutedForeground,
+    backgroundColor: c.secondary,
+    borderRadius: radius.full,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    overflow: 'hidden',
   },
-  chipWrap: { flexBasis: '30%', flexGrow: 1 },
-  chipActive: { borderColor: c.primary, backgroundColor: alpha(c.primary, 0.1) },
-  chipText: { ...type.footnote, fontWeight: '500', color: c.mutedForeground },
-  chipTextActive: { color: c.foreground },
-
-  optionCard: {
-    padding: spacing.md,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: alpha(c.border, 0.5),
-    backgroundColor: alpha(c.secondary, 0.3),
-    gap: 2,
-  },
-  optionCardActive: { borderColor: c.primary, backgroundColor: alpha(c.primary, 0.1) },
-  optionLabel: { ...type.footnote, fontSize: 14, fontWeight: '600', color: c.foreground },
-  optionDesc: { ...type.caption, color: c.mutedForeground },
-
-  calcBox: {
-    padding: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: alpha(c.secondary, 0.3),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    gap: spacing.sm,
-  },
-  calcHeader: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  calcTitle: { ...type.caption, fontWeight: '600', color: c.mutedForeground },
-  calcGrid: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 6 },
-  calcItem: { width: '50%', flexDirection: 'row', gap: 4 },
-  calcLabel: { ...type.footnote, color: c.mutedForeground },
-  calcValue: { ...type.footnote, fontWeight: '600', color: c.foreground },
-  calcValueHighlight: { color: c.primary },
+  pending: { marginTop: spacing.md },
 
   /*
-    ── the allergy chips, and why the slop is exactly 4 ──
+    Câu báo lỗi dưới cụm điều khiển.
 
-    30pt with no `hitSlop` is a 30pt target, on a control every new user taps
-    during onboarding. It went unmeasured because `tap-targets.mjs` skipped any
-    pressable without a fixed `width`, and a chip sized to its own text has none.
-
-    36 + 4 + 4 lands on Apple's 44 without making a wrapped row of eight chips
-    into a wall. The 4 is not a round number picked for tidiness: the row's gap
-    is `spacing.sm`, so four points of slop on each side meet exactly in the
-    middle of the gap and never overlap. Eight would overlap, and `tap-targets`
-    already records what that costs — a tap in the overlap goes to whichever
-    chip happens to sit later in the tree.
+    Ở luồng này hai con số đến từ THƯỚC, nên một giá trị ngoài dải gần như
+    không tạo ra được. "Gần như" không phải "không": một hồ sơ cũ, một lần đổi
+    đơn vị giữa chừng, một lần đổi `BOUNDS` — và người dùng sẽ thấy một nút bị
+    khoá. Khoá nút mà không nói vì sao là một màn hình chết.
   */
-  badge: {
-    paddingHorizontal: spacing.sm + 4,
-    height: 36,
-    borderRadius: radius.full,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+  fieldError: {
+    ...type.footnote,
+    color: c.readinessRed,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
-  badgeActive: { backgroundColor: c.primary, borderColor: c.primary },
-  badgeText: { ...type.caption, fontWeight: '500', color: c.mutedForeground },
-  badgeTextActive: { color: c.primaryForeground },
 
-  suppRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm + 4,
-    padding: spacing.sm + 4,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: alpha(c.border, 0.5),
-    backgroundColor: alpha(c.secondary, 0.3),
-  },
-  suppRowActive: { borderColor: c.primary, backgroundColor: alpha(c.primary, 0.1) },
-  suppInfo: { flex: 1 },
-  suppName: { ...type.footnote, fontSize: 14, fontWeight: '600', color: c.foreground },
-  suppMeta: { ...type.caption, color: c.mutedForeground },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: c.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxActive: { backgroundColor: c.primary, borderColor: c.primary },
-
-  termsRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm + 2, paddingHorizontal: 4 },
-  termsText: { ...type.caption, color: c.mutedForeground, flex: 1, lineHeight: 18 },
-  termsLink: { color: c.primary, textDecorationLine: 'underline' },
-
-  connectIntro: { ...type.footnote, color: c.mutedForeground, lineHeight: 19, marginBottom: spacing.md },
-  connectLater: { ...type.caption, color: c.mutedForeground, textAlign: 'center', marginTop: spacing.xs },
-  permCard: {
-    borderRadius: radius.md,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.border,
-    backgroundColor: c.muted,
-    padding: spacing.md,
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  permHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  permTitle: { ...type.footnote, fontWeight: '600', color: c.foreground },
-  permWhy: { ...type.caption, color: c.mutedForeground, lineHeight: 18 },
-  permBtn: {
-    alignSelf: 'flex-start',
-    // 32 drawn + 12 vertical padding either side reaches the 44pt target
-    paddingVertical: 12,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
-    backgroundColor: c.primary,
-  },
-  permBtnText: { ...type.caption, fontWeight: '600', color: c.primaryForeground },
-  permDone: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  permDoneText: { ...type.caption, fontWeight: '600', color: c.primary },
-
-  nav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
-  prevBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    height: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
-  },
-  prevText: { ...type.headline, fontSize: 15, color: c.mutedForeground },
-  nextBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    height: 48,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
-    backgroundColor: c.primary,
-  },
-  nextText: { ...type.headline, fontSize: 15, color: c.primaryForeground },
-  disabled: { opacity: 0.4 },
-
+  /* ── sheet tài liệu ── */
   legalRoot: { flex: 1, backgroundColor: c.background },
   legalHeader: {
     height: 52,
@@ -1209,15 +1235,25 @@ const stylesFor = makeStyles((c, m) => ({
     borderBottomWidth: m.inset.borderWidth,
     borderBottomColor: m.inset.border,
   },
-  legalTitle: { flex: 1, fontSize: 17, fontWeight: '600', color: c.foreground },
+  legalTitle: { ...type.headline, flex: 1, color: c.foreground },
   legalClose: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: alpha(m.ink, 0.06),
   },
+  legalTabs: { flexDirection: 'row', gap: spacing.sm, padding: spacing.md, paddingBottom: 0 },
+  legalTab: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radius.full,
+    backgroundColor: c.secondary,
+  },
+  legalTabOn: { backgroundColor: c.foreground },
+  legalTabText: { ...type.footnote, color: c.mutedForeground },
+  legalTabTextOn: { color: c.background },
   legalContent: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
   legalBlockTitle: { ...type.headline, color: c.foreground, marginBottom: 4 },
   legalBlockBody: { ...type.footnote, color: c.mutedForeground, lineHeight: 20 },
