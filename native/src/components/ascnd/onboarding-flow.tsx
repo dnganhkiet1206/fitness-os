@@ -1117,7 +1117,11 @@ function WeightBody({
   const commit = useCallback(
     (i: number) => {
       onIndex(i);
-      onKg(String(weightToKg((min10 + i) / 10, unit)));
+      /* `weightToKg(154.3, 'lbs')` = `69.98930269254848`. Cùng một dư số nhị
+         phân, cùng một phép tròn, cùng một lý do — xem chú thích dài ở đường
+         ghi chiều cao. 0,1 là hạt cây thước diễn tả được và là con số mặt cân
+         đang in ra. */
+      onKg(String(Math.round(weightToKg((min10 + i) / 10, unit) * 10) / 10));
     },
     [onIndex, onKg, min10, unit],
   );
@@ -1125,6 +1129,9 @@ function WeightBody({
     <View style={styles.fill}>
       <Text style={styles.qCentre}>{title}</Text>
       <View style={styles.unitRow}>
+        {/* Chiều cao mặc định (44), cùng lý do và cùng phép đo như màn 07 —
+            và CÙNG con số, vì hai màn này crossfade vào nhau: hai viên nang
+            lệch 8 điểm sẽ cùng hiện suốt ~320ms của cú chuyển. */}
         <Segmented
           options={UNIT_W}
           value={unit}
@@ -1132,7 +1139,6 @@ function WeightBody({
             Haptics.selectionAsync();
             onUnit(u);
           }}
-          height={36}
           compact
         />
       </View>
