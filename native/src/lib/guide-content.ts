@@ -30,12 +30,15 @@
 /** Đúng những cột mà việc chọn cần. `locale` để rộng: nó đến từ mạng. */
 export interface GuideContentRow {
   locale: string;
+  /** các bước "cách thực hiện", theo thứ tự — thứ tự LÀ thông tin */
+  instructions: string[] | null;
   form_cues: string[] | null;
   common_mistakes: string[] | null;
 }
 
 export interface GuideContent {
   locale: 'vi' | 'en';
+  instructions: string[];
   formCues: string[];
   commonMistakes: string[];
 }
@@ -49,12 +52,15 @@ export function pickContent(
   lang: 'vi' | 'en',
 ): GuideContent | null {
   const has = (r: GuideContentRow) =>
-    clean(r.form_cues).length > 0 || clean(r.common_mistakes).length > 0;
+    clean(r.instructions).length > 0 ||
+    clean(r.form_cues).length > 0 ||
+    clean(r.common_mistakes).length > 0;
   const at = (l: 'vi' | 'en') => rows.find((r) => r.locale === l && has(r));
   const row = at(lang) ?? at('vi');
   if (!row) return null;
   return {
     locale: row.locale as 'vi' | 'en',
+    instructions: clean(row.instructions),
     formCues: clean(row.form_cues),
     commonMistakes: clean(row.common_mistakes),
   };

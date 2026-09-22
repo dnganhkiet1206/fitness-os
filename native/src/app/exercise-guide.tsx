@@ -1,15 +1,25 @@
 import { useLocalSearchParams } from 'expo-router';
-import { AlertCircle, Check, Dumbbell, Target } from 'lucide-react-native';
-import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { Check, X } from 'lucide-react-native';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuideMedia } from '@/components/ascnd/guide-media';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
-import { SheetHeader } from '@/components/ascnd/sheet-header';
+import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useExerciseGuide } from '@/hooks/use-exercise-guide';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 
@@ -47,11 +57,88 @@ import { nav } from '@/lib/nav';
  * `name` đi kèm vì hai việc: làm đường lui khi kế hoạch không có id (template
  * cũ, bài thêm tay), và làm tiêu đề hiện ra NGAY trong lúc truy vấn còn chạy —
  * người ta biết mình đã mở đúng bài trước khi mạng trả lời.
+ *
+ * ════════════════════════════════════════════════════════════════════════
+ *
+ * ── BỐ CỤC: hình dẫn, chữ theo sau ──
+ *
+ * Ảnh tham chiếu của chủ dự án dựng màn này theo một trật tự rất rõ:
+ *
+ *     HÌNH (tràn lề, cao, chiếm phần trên)
+ *       ↓
+ *     TÊN BÀI TẬP (to, căn trái, nằm TRONG phần chữ)
+ *       ↓
+ *     một dòng siêu dữ liệu mờ:  Biceps · Dumbbell
+ *       ↓
+ *     nội dung học
+ *
+ * Bản trước đi ngược: một thanh đầu có tiêu đề 18 điểm căn GIỮA cạnh một nút
+ * đóng, rồi hình mới xuất hiện bên dưới như một cái thẻ trong lề 16. Hai thứ
+ * đó cùng nói "đây là một trang", trong khi thứ cần nói là "đây là một tờ giấy
+ * vừa được kéo lên che buổi tập".
+ *
+ * Nên: hình tràn lề, mặt giấy bo góc CHỒNG LÊN 28% chiều cao hình, và nút đóng
+ * nổi trên hình chứ không tranh chỗ với tên bài. Tên bài xuống dưới, to lên
+ * một bậc (28/700), và siêu dữ liệu gộp thành MỘT dòng. Phần chồng ấy là thứ
+ * mặt kính nhìn xuyên qua — xem `overlap` và `glassTint`.
+ *
+ * ── không có hình thì KHÔNG dựng khung ──
+ *
+ * `video_url` rỗng ở cả mười dòng hạt giống, nên "chưa có hình" là trường hợp
+ * thường. Chủ dự án đã chốt ở lượt kiểm media: *"media absent → compact
+ * fallback, do NOT reserve the full 16:10 media area."* Quyết định ấy vẫn còn
+ * hiệu lực — nay chỉ là khung đã cao hơn, nên giữ chỗ cho nó còn tốn hơn.
+ *
+ * Nên có URL thì có hình dẫn; không có URL thì mặt giấy bắt đầu ngay từ đỉnh
+ * và câu "chưa có hình minh hoạ" xuống dưới siêu dữ liệu, gọn như cũ.
+ *
+ * Còn khi CÓ url mà tải hỏng: khung hình dẫn ĐỨNG NGUYÊN và câu báo hỏng nằm
+ * bên trong nó. Thu khung lại lúc ấy là một cú nhảy bố cục giữa lúc đang đọc —
+ * đúng thứ đặt hàng cấm.
+ *
+ * ── KHÔNG có ba thứ mà ảnh tham chiếu có ──
+ *
+ * **Không tab** (`Tổng quan · Cơ tác động · Thiết bị · Liên quan`). Ba trong
+ * bốn tab ấy không có một dòng dữ liệu nào ở sau, và đặt hàng nói thẳng: *"NO
+ * EMPTY TABS. NO PLACEHOLDER CONTENT. NO FAKE PRODUCT FEATURES."*
+ *
+ * **Không nút "Bắt đầu bài tập"** ở đáy. Màn này được mở TỪ TRONG một buổi tập
+ * đang chạy — người ta đang làm chính bài ấy. Một nút mời họ bắt đầu thứ họ
+ * đang làm thì hoặc không làm gì, hoặc làm một việc thứ hai mà buổi tập không
+ * có khái niệm. Lối ra khỏi màn này là đóng nó lại, và đó là điều duy nhất cần.
+ *
+ * **Không nút play, không `···`, không dấu trang.** Đoạn minh hoạ tự chạy, tắt
+ * tiếng, không điều khiển — đã đo ở lượt kiểm media; một nút play vẽ thêm là
+ * một cái nút nói ngược lại hành vi thật. Hai cái kia không có hành động nào ở
+ * sau.
  */
 export default function ExerciseGuideSheet() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
+  const insets = useSafeAreaInsets();
+  /* Bản tối dựng mặt giấy bằng KÍNH MỜ trên hình, nên nó cần biết theme đang
+     bật — xem `surfaceGlass`. */
+  const { themeName } = useAppSettings();
+  const dark = themeName === 'dark';
+  /* Hai cột chỉ đúng khi chúng còn đọc được — xem `styles.pair`. */
+  const { width, fontScale } = useWindowDimensions();
+  /* 3:4 — xem `heroFrame` trong `guide-media.tsx`. Chiều cao phải tính ở đây
+     nữa vì chỗ trống trong dòng cuộn phải cao đúng bằng lớp hình. */
+  const heroH = Math.round((width * 4) / 3);
+  /*
+    ── bao nhiêu HÌNH nằm sau mặt kính ──
+
+    Bản trước chồng đúng `radius.xl` = 24 điểm, tức chỉ có 24 điểm hình nằm sau
+    mặt giấy. Ở mức ấy "kính" không có gì để làm mờ, và bản tối đọc ra gần như
+    đục hẳn — không phải vì độ mờ sai, mà vì KHÔNG CÓ GÌ Ở SAU.
+
+    Bốn ảnh tham chiếu đặt mép trên của mặt giấy ở khoảng 43% chiều cao màn
+    (đo trên ảnh: ~815/1900 và ~800/1900). Trên máy 402×874 đó là ~375 điểm, và
+    0,72 × 536 = 386 — cùng một chỗ. Nên 28% chiều cao hình, tức 150 điểm, nằm
+    sau kính.
+  */
+  const overlap = Math.round(heroH * 0.28);
   const { ex, name } = useLocalSearchParams<{ ex?: string; name?: string }>();
   const title = (name ?? '').trim();
 
@@ -61,186 +148,460 @@ export default function ExerciseGuideSheet() {
     Màn này KHÔNG biết gì về cơ sở dữ liệu.
 
     `g.equipment` và `g.muscleGroup` tới đây ĐÃ LÀ NHÃN của ngôn ngữ đang bật;
-    `g.formCues` đã được chọn xong theo luật lùi ngôn ngữ; `g.hasContent` đã
-    trả lời "có gì để dạy không". Toàn bộ những câu hỏi ấy được trả lời một
-    lần trong `use-exercise-guide.ts` — xem HỢP ĐỒNG DỮ LIỆU ở đầu tệp ấy.
+    `g.instructions`/`g.formCues` đã được chọn xong theo luật lùi ngôn ngữ;
+    `g.hasContent` đã trả lời "có gì để dạy không". Toàn bộ những câu hỏi ấy
+    được trả lời một lần trong `use-exercise-guide.ts` — xem HỢP ĐỒNG DỮ LIỆU
+    ở đầu tệp ấy.
   */
   const g = data ?? null;
+  const steps = g?.instructions ?? [];
   const cues = g?.formCues ?? [];
   const mistakes = g?.commonMistakes ?? [];
-  /* "Rỗng" nghĩa là không có gì để DẠY. Một dòng thư viện khớp được mà mọi cột
-     hướng dẫn đều trống vẫn là rỗng — người đọc không quan tâm nó khớp hay
-     không, họ quan tâm có gì để đọc không. */
+
+  /* Media chỉ được hỏi khi việc đọc đã xong: `null` lúc đang tải hay lúc hỏng
+     là "chưa biết", không phải "không có" — xem `guide-media.tsx`. */
+  const showMedia = !isPending && !isError;
+  const heroUrl = g?.mediaUrl ?? null;
   /*
-    ── "chưa có gì" KHÁC "không đọc được", và bản đầu của màn này lẫn hai thứ ──
+    ── DEMO_HERO — TẠM THỜI, và đây là một trong hai chỗ phải gỡ ──
 
-    `tools/empty-vs-failed.mjs` bắt đúng lỗi ấy: truy vấn hỏng thì `data` là
-    `undefined`, nên nhánh rỗng chạy và màn hình khẳng định *"Bài này chưa có
-    hướng dẫn"* — một câu SAI về dữ liệu của chính người dùng. Hướng dẫn có thể
-    đang nằm đó đầy đủ; thứ hỏng là đường mạng.
+    Chủ dự án đưa một ảnh demo (`assets/images/exercise-demo.webp`) để đánh giá
+    bố cục, vì `video_url` còn rỗng ở cả mười dòng hạt giống. Nên trong lúc ảnh
+    ấy còn nằm đó, MỌI bài đều có hình dẫn: `GuideMedia` lùi về ảnh demo khi
+    không có url thật.
 
-    Hai trạng thái, hai câu, và câu thứ hai có nút thử lại. `isError` phải được
-    hỏi TRƯỚC: rỗng chỉ có nghĩa khi việc đọc đã thành công.
+    Khi có media thật, gỡ hai chỗ mang dấu `DEMO_HERO`:
+      · dòng dưới đây → `const hero = showMedia && !!heroUrl;`
+      · nhánh `DEMO_HERO` trong `guide-media.tsx`
+    Không chỗ nào khác phải đổi: cùng một khung, cùng một component.
   */
+  const hero = showMedia;
+
   /*
-    ── "KHÔNG CÓ HƯỚNG DẪN" là một trạng thái riêng, và nó từng không bao giờ
-       hiện ra ──
+    ── MỘT dòng siêu dữ liệu, không bốn khối ──
 
-    Bản trước còn đòi thêm `!hasFacts`. Nhưng form tạo bài tập BẮT BUỘC chọn
-    nhóm cơ, nên mọi bài người dùng tự thêm đều có `hasFacts` — và điều kiện
-    ấy không bao giờ đúng cho đúng nhóm người cần nó nhất. Đo được: mở hướng
-    dẫn của một bài tự thêm thì màn hình hiện "Dụng cụ · Kettlebell", "Nhóm cơ
-    chính · Forearms", rồi im lặng. Không câu nào nói rằng bài này chưa có
-    hướng dẫn; chỉ có một khoảng trắng mà người đọc phải tự diễn giải.
+    Bản trước vẽ `[icon] Dụng cụ **Tạ đơn**  [icon] Nhóm cơ chính **Ngực**` —
+    hai nhãn, hai giá trị, hai glyph, bốn thứ để mắt đi qua trước khi tới nội
+    dung. Ảnh tham chiếu gộp hết thành `Biceps · Dumbbell`: nhóm cơ trước, dụng
+    cụ sau, chữ mờ, một dòng.
 
-    Siêu dữ liệu KHÔNG phải hướng dẫn. Media thì có — một đoạn minh hoạ dạy
-    được động tác kể cả khi không có chữ nào — nên nó vẫn tắt trạng thái này.
+    Nhãn không mất đi — chúng chuyển sang nhãn TRỢ NĂNG, nơi chúng vẫn cần
+    thiết: "Ngực · Tạ đơn" đọc lên không nói rõ cái nào là cái gì, còn mắt thì
+    không cần được nói.
   */
-  const noContent = !isPending && !isError && !g?.hasContent && !g?.mediaUrl;
+  const meta = [g?.muscleGroup, g?.equipment].filter(Boolean).join('  ·  ');
+  const metaA11y = [
+    g?.muscleGroup ? `${i18n.nEgMuscles}: ${g.muscleGroup}` : null,
+    g?.equipment ? `${i18n.nEgEquipment}: ${g.equipment}` : null,
+  ]
+    .filter(Boolean)
+    .join('. ');
+
+  /*
+    ── "KHÔNG CÓ HƯỚNG DẪN" là một trạng thái riêng ──
+
+    Siêu dữ liệu KHÔNG phải hướng dẫn: form tạo bài tập bắt buộc chọn nhóm cơ,
+    nên mọi bài người dùng tự thêm đều có nhóm cơ, và gộp nó vào điều kiện rỗng
+    làm trạng thái này không bao giờ hiện ra cho đúng nhóm cần nó nhất. Media
+    thì có tính — một đoạn minh hoạ dạy được động tác kể cả khi không có chữ.
+  */
+  const noContent = showMedia && !g?.hasContent && !heroUrl;
+
+  /*
+    Hai cột như ảnh tham chiếu, nhưng KHÔNG ép.
+
+    Mỗi cột rộng chừng (402 − 40 − 20) / 2 ≈ 171 điểm. Ở cỡ chữ hệ thống mặc
+    định thì một câu năm chữ vẫn gọn; ở cỡ chữ trợ năng lớn thì cùng câu ấy
+    thành bốn dòng gãy vụn, và đặt hàng nói thẳng: *"Do not sacrifice
+    readability just to match the screenshot."* Nên hai cột cần CẢ BA: có cả
+    hai danh sách, màn đủ rộng, và chữ chưa bị phóng.
+  */
+  const twoCols = cues.length > 0 && mistakes.length > 0 && width >= 360 && fontScale <= 1.15;
 
   return (
     <View style={styles.root}>
-      <SheetHeader title={g?.name || title || i18n.nEgTitle} onClose={nav.back} />
+      {/*
+        ── HÌNH DẪN nằm SAU mặt giấy, không nằm TRÊN nó ──
 
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}>
-        {/*
-          Khung hình: to khi CÓ media thật, gọn lại thành một khối thông tin
-          nhỏ khi chưa có. Cả phép chọn video/ảnh, cả hai trạng thái hỏng, cả
-          việc tôn trọng "giảm chuyển động" đều nằm trong `GuideMedia` — màn
-          này chỉ đưa cho nó một URL và một cái tên.
+        Ảnh tham chiếu bản tối cho thấy hình còn hiện mờ qua phần trên của mặt
+        giấy: đó là kính mờ, và kính mờ chỉ có gì để làm mờ khi có thứ nằm phía
+        sau. Nếu hình là một khối trong dòng cuộn thì phía sau mặt giấy chỉ có
+        nền, và "kính" sẽ mờ một màu phẳng — tức không phải kính.
 
-          ── và nó chỉ được hỏi KHI ĐÃ BIẾT CÂU TRẢ LỜI ──
-
-          `g?.mediaUrl ?? null` có ba nguồn gốc khác hẳn nhau:
-
-              chưa biết  ·  đọc hỏng  ·  biết chắc là không có
-
-          `GuideMedia` chỉ có hai câu để nói, và câu mặc định của nó là *"chưa
-          có hình minh hoạ"*. Đưa cả ba nguồn ấy vào một tham số thì hai nguồn
-          đầu ra một câu SAI về dữ liệu của người dùng — đo được, không phải
-          suy đoán: giữ phản hồi `exercises` lại 3 giây thì màn hình khẳng
-          định "No demonstration yet" trong suốt lúc còn đang tải, rồi video
-          nhảy vào; và khi truy vấn HỎNG thì nó nói "No demonstration yet"
-          ngay bên trên "Could not load your data" — hai câu ngược nhau trong
-          một màn.
-
-          Đây đúng là lớp lỗi `tools/empty-vs-failed.mjs` đã xử cho hai danh
-          sách bên dưới; ô media chỉ là chỗ nó chưa được xử. Cách sửa không
-          phải thêm một câu thứ ba, mà là ĐỪNG HỎI khi chưa có câu trả lời:
-          lúc đang tải đã có vòng quay, lúc hỏng đã có thẻ "không đọc được".
-        */}
-        {!isPending && !isError ? (
+        Nên hình là một LỚP tuyệt đối ở đỉnh, và dòng cuộn mở đầu bằng một chỗ
+        trống cao đúng bằng nó trừ đi phần chồng. Cuộn lên thì mặt giấy trượt
+        trên hình, và vùng mờ đổi theo — đúng như ảnh.
+      */}
+      {hero ? (
+        <View style={[styles.heroLayer, { height: heroH }]} pointerEvents="none">
           <GuideMedia
-            url={g?.mediaUrl ?? null}
+            url={heroUrl}
             name={g?.name || title}
             hasCues={cues.length > 0}
             i18n={i18n}
+            hero
           />
-        ) : null}
+        </View>
+      ) : null}
 
-        {/* Hai sự thật một dòng, ngay dưới hình — chúng trả lời "cần gì" và
-            "vào cơ nào" trong một cái liếc, nên không xứng một thẻ riêng. */}
-        {g?.hasMetadata ? (
-          <View style={styles.facts}>
-            {g.equipment ? (
-              <View style={styles.fact}>
-                <Icon icon={Dumbbell} size={14} color={c.mutedForeground} />
-                <Text style={styles.factLabel}>{i18n.nEgEquipment}</Text>
-                <Text style={styles.factValue}>{g.equipment}</Text>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}>
+        {hero ? <View style={{ height: heroH - overlap }} /> : null}
+
+        <View style={[styles.surface, hero ? styles.surfaceOverlap : styles.surfaceOpaque]}>
+          {/*
+            ── MẶT KÍNH: blur TRƯỚC, sắc độ SAU ──
+
+            Bản trước đặt màu mờ vào `backgroundColor` của chính mặt giấy rồi
+            thả `BlurView` vào làm con. Thứ tự ấy NGƯỢC: nền của một view được
+            tô trước các con của nó, nên `UIVisualEffectView` lấy mẫu một hình
+            ĐÃ bị phủ sắc độ — tức độ mờ thật cao hơn con số viết trong style,
+            và mọi phép đo dựa trên con số ấy đều là đo trên một thứ khác.
+
+            Nay hai lớp tách hẳn và đúng thứ tự: kính lấy mẫu hình, rồi một lớp
+            sắc độ phủ LÊN kính. Con số α vì thế là α thật.
+
+            `expo-blur` còn tự cộng sắc độ vật liệu của nó theo `intensity`.
+            Cái đó chỉ làm nền ĐẶC thêm, nên nó luôn đẩy tương phản lên phía an
+            toàn — phép đo bên dưới không tính tới nó, và vì vậy vẫn đúng.
+          */}
+          {hero ? (
+            <>
+              <BlurView
+                intensity={GLASS_BLUR}
+                tint={dark ? 'dark' : 'light'}
+                style={StyleSheet.absoluteFill}
+                pointerEvents="none"
+              />
+              <View style={[StyleSheet.absoluteFill, styles.glassTint]} pointerEvents="none" />
+            </>
+          ) : null}
+          {/* Không nhận chạm: nó là một lời KỂ về cử chỉ, không phải một nút.
+              Bắt chạm ở đây sẽ nuốt mất cú vuốt xuống mà nó đang quảng cáo. */}
+          <View style={[styles.grabber, hero ? styles.grabberOnGlass : null]} pointerEvents="none" />
+
+          {g?.name || title ? (
+            <Text
+              style={[styles.title, hero ? null : styles.titleClearsClose]}
+              accessibilityRole="header">
+              {g?.name || title}
+            </Text>
+          ) : null}
+          {meta ? (
+            <Text
+              style={[styles.meta, hero ? styles.metaOnGlass : null]}
+              accessibilityLabel={metaA11y}>
+              {meta}
+            </Text>
+          ) : null}
+
+          {/* Không có hình thì câu ấy xuống đây, gọn — không dựng một khung
+              cao để đựng một câu nói rằng khung ấy trống. */}
+          {isPending ? (
+            <View style={styles.busy}>
+              <ActivityIndicator color={c.mutedForeground} />
+            </View>
+          ) : null}
+
+          {isError ? (
+            <View style={styles.block}>
+              <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+            </View>
+          ) : null}
+
+          {/*
+            ── CÁCH THỰC HIỆN: các bước có SỐ, vì thứ tự là thông tin ──
+
+            Số không phải trang trí: bước hai đứng sau bước một vì phải làm sau.
+
+            Nó nằm trong một ĐĨA trung tính chứ không đứng trần, và đó là thứ
+            bốn ảnh tham chiếu đều làm: một đĩa xám nhạt 22 điểm, số ở giữa,
+            hạng chữ thấp hơn câu bên cạnh. Đĩa làm hai việc mà con số trần
+            không làm được — nó giữ cột số thẳng một mép kể cả khi sang hai chữ
+            số, và nó tách "thứ tự" khỏi "nội dung" bằng hình dạng thay vì bằng
+            một khoảng trắng người ta phải tự suy ra.
+
+            KHÔNG phải ký tự số-trong-vòng-tròn của Unicode (①②③): phông hệ
+            thống chỉ có tới 20, chúng không theo cỡ chữ trợ năng, và bộ đọc màn
+            hình đọc chúng mỗi nơi một kiểu.
+          */}
+          {steps.length ? (
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>{i18n.nEgTitle}</Text>
+              <View style={styles.list}>
+                {steps.map((t, i) => (
+                  <View key={t} style={styles.item}>
+                    <View style={styles.step}>
+                      <Text style={styles.stepNo}>{i + 1}</Text>
+                    </View>
+                    <Text style={styles.itemText}>{t}</Text>
+                  </View>
+                ))}
               </View>
-            ) : null}
-            {g.muscleGroup ? (
-              <View style={styles.fact}>
-                <Icon icon={Target} size={14} color={c.mutedForeground} />
-                <Text style={styles.factLabel}>{i18n.nEgMuscles}</Text>
-                <Text style={styles.factValue}>{g.muscleGroup}</Text>
-              </View>
-            ) : null}
-          </View>
-        ) : null}
+            </View>
+          ) : null}
 
-        {isPending ? (
-          <View style={styles.busy}>
-            <ActivityIndicator color={c.mutedForeground} />
-          </View>
-        ) : null}
+          {/*
+            ── một sợi kẻ NGANG, và nó chỉ tồn tại khi có hai khối để chia ──
 
-        {/*
-          ── ĐIỂM KỸ THUẬT và LỖI THƯỜNG GẶP ──
+            Cách thực hiện là một chuỗi phải đọc theo thứ tự; điểm kỹ thuật và
+            lỗi thường gặp là hai danh sách tra cứu. Hai loại đọc khác nhau,
+            nên ảnh tham chiếu đặt một sợi tơ giữa chúng — và KHÔNG đặt sợi nào
+            quanh hai cột, vì cột không phải ô bảng.
 
-          Hai danh sách, một hình dạng, hai dấu. Dấu mang NGHĨA chứ không mang
-          trang trí: tick xanh là "làm thế này", chấm than đỏ là "đừng thế này".
+            `hairlineWidth` là 1/scale của máy: trên màn 3× nó ra đúng một điểm
+            ảnh vật lý, tức "1px" theo đúng nghĩa đen của đặt hàng.
+          */}
+          {steps.length > 0 && (cues.length > 0 || mistakes.length > 0) ? (
+            <View style={styles.rule} />
+          ) : null}
 
-          Và nghĩa ấy KHÔNG chỉ nằm ở màu — mỗi mục nằm dưới một tiêu đề nói
-          thẳng nó là gì, và hai glyph khác hình nhau. Người không phân biệt
-          được đỏ/xanh vẫn đọc đúng, đó là điều kiện của WCAG 1.4.1.
-        */}
-        {cues.length ? (
-          <Section title={i18n.nEgCues} styles={styles}>
-            {cues.map((t) => (
-              <View key={t} style={styles.item}>
-                <Icon icon={Check} size={15} color={c.readinessGreen} strokeWidth={2.5} />
-                <Text style={styles.itemText}>{t}</Text>
-              </View>
-            ))}
-          </Section>
-        ) : null}
+          {/*
+            ── ĐIỂM KỸ THUẬT và LỖI THƯỜNG GẶP ──
 
-        {mistakes.length ? (
-          <Section title={i18n.nEgMistakes} styles={styles}>
-            {mistakes.map((t) => (
-              <View key={t} style={styles.item}>
-                <Icon icon={AlertCircle} size={15} color={c.readinessRed} strokeWidth={2.5} />
-                <Text style={styles.itemText}>{t}</Text>
-              </View>
-            ))}
-          </Section>
-        ) : null}
+            Hai danh sách, một hình dạng, hai dấu. Dấu mang NGHĨA chứ không
+            mang trang trí: tick xanh là "làm thế này", chữ thập đỏ là "đừng
+            thế này".
 
-        {isError ? (
-          <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
-        ) : null}
+            Và nghĩa ấy KHÔNG chỉ nằm ở màu — mỗi mục nằm dưới một tiêu đề nói
+            thẳng nó là gì, và hai glyph khác hình nhau. Người không phân biệt
+            được đỏ/xanh vẫn đọc đúng, đó là điều kiện của WCAG 1.4.1.
 
-        {noContent ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyText}>{i18n.nEgEmpty}</Text>
-            <Text style={styles.emptyHint}>{i18n.nEgEmptyHint}</Text>
-          </View>
-        ) : null}
+            ── vì sao là một ĐĨA ĐẶC, không phải một glyph trần ──
+
+            Bản trước vẽ `Check` và `AlertCircle` trần, 15 điểm, tô thẳng màu
+            xanh/đỏ. Cả bốn ảnh tham chiếu đều dựng chúng thành đĩa đặc 20 điểm
+            với glyph trắng bên trong, và lý do không phải khẩu vị: một nét 15
+            điểm màu xanh neon trên mặt giấy là một hình MỎNG mang toàn bộ sức
+            nặng của tín hiệu, còn một đĩa đặc thì có diện tích — nó tìm thấy
+            được khi liếc, và nó không phụ thuộc vào việc phân giải một nét
+            2,5 điểm.
+          */}
+          {cues.length || mistakes.length ? (
+            <View style={[styles.block, twoCols ? styles.pair : null]}>
+              {cues.length ? (
+                <View style={twoCols ? styles.col : undefined}>
+                  <Text style={styles.sectionTitle}>{i18n.nEgCues}</Text>
+                  <View style={styles.list}>
+                    {cues.map((t) => (
+                      <View key={t} style={styles.item}>
+                        <View style={[styles.mark, styles.markOk]}>
+                          <Icon icon={Check} size={12} color={c.primaryForeground} strokeWidth={3} />
+                        </View>
+                        <Text style={styles.itemText}>{t}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+              {mistakes.length ? (
+                <View style={twoCols ? styles.col : undefined}>
+                  <Text style={styles.sectionTitle}>{i18n.nEgMistakes}</Text>
+                  <View style={styles.list}>
+                    {mistakes.map((t) => (
+                      <View key={t} style={styles.item}>
+                        <View style={[styles.mark, styles.markBad]}>
+                          <Icon icon={X} size={12} color={c.primaryForeground} strokeWidth={3} />
+                        </View>
+                        <Text style={styles.itemText}>{t}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
+          {noContent ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>{i18n.nEgEmpty}</Text>
+              <Text style={styles.emptyHint}>{i18n.nEgEmptyHint}</Text>
+            </View>
+          ) : null}
+        </View>
       </ScrollView>
+
+      {/*
+        ── LỐI RA: nổi trên hình, không tranh chỗ với tên bài ──
+
+        `SheetHeader` không dùng được ở đây, và đó là một quyết định có ghi lại
+        trong `tools/sheet-header.mjs`: nó dựng một tiêu đề 18 điểm CĂN GIỮA
+        cạnh nút đóng, tức đúng cái thanh điều hướng mà bố cục này bỏ đi. Thứ
+        không được mất là lối ra NHÌN THẤY được — nên nút vẫn là đĩa 44 điểm,
+        vẫn `a11yClose`, chỉ là nó nổi trên hình.
+      */}
+      <PressScale
+        accessibilityRole="button"
+        accessibilityLabel={i18n.a11yClose}
+        hitSlop={8}
+        onPress={() => {
+          Haptics.selectionAsync();
+          nav.back();
+        }}
+        style={[styles.close, { top: insets.top + spacing.sm }]}>
+        <Icon icon={X} size={18} color={c.foreground} />
+      </PressScale>
     </View>
   );
 }
 
-/** Một mục: tiêu đề nhỏ, rồi các dòng. Không hộp, không viền — xem `section`. */
-function Section({
-  title,
-  styles,
-  children,
-}: {
-  title: string;
-  styles: ReturnType<typeof stylesFor>;
-  children: React.ReactNode;
-}) {
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <View style={styles.list}>{children}</View>
-    </View>
-  );
-}
+const CLOSE = 44;
+/*
+  Cường độ kính — con số này điều khiển BÁN KÍNH nhoè, không điều khiển độ mờ.
+
+  Độ mờ là việc của `glassTint` bên dưới, và nó được ĐO. Hai thứ tách nhau là
+  có chủ ý: `expo-blur` gộp chúng làm một (intensity càng cao thì sắc độ riêng
+  của vật liệu càng dày), nên nếu để nó một mình cầm cả hai thì không con số
+  nào của phép đo còn nghĩa.
+*/
+const GLASS_BLUR = 48;
 
 const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: c.card },
-  content: { padding: spacing.md, paddingBottom: spacing.xl, gap: spacing.lg },
+  /*
+    Không có đệm ngang ở đây: hình phải tràn tới hai mép. Lề nằm trên mặt giấy,
+    nơi chữ sống.
 
+    `flexGrow` để mặt giấy luôn CHẠM ĐÁY màn. Không có nó, một màn nội dung
+    ngắn — lúc đang tải, lúc đọc hỏng, một bài chưa có hướng dẫn — để lộ dải
+    hình còn lại ở phía dưới mặt giấy, và lúc ấy tờ giấy đọc ra như một cái thẻ
+    trôi giữa màn chứ không như một tờ giấy được kéo lên.
+  */
+  scroll: { flexGrow: 1 },
 
-  facts: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  fact: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  factLabel: { ...type.caption, color: c.mutedForeground },
-  factValue: { ...type.footnote, color: c.foreground, fontWeight: '600' },
+  heroLayer: { position: 'absolute', left: 0, right: 0, top: 0 },
+  surface: {
+    flexGrow: 1,
+    overflow: 'hidden',
+    paddingHorizontal: spacing.card,
+    paddingBottom: spacing.xl,
+    gap: spacing.xs,
+  },
+  /* Không có hình dẫn thì không có gì để nhìn xuyên qua — mặt giấy đục hẳn. */
+  surfaceOpaque: { backgroundColor: c.card },
+  /*
+    Góc bo của tờ giấy được kéo lên.
+
+    Phần CHỒNG thì không còn bằng bán kính nữa — nó là 28% chiều cao hình, xem
+    `overlap`. Bản trước chồng đúng 24 điểm với lý do "chồng nhiều hơn thì ảnh
+    mất một dải mà không ai được lợi gì", và lý do ấy đúng cho tới khi mặt giấy
+    thành KÍNH: từ lúc đó, dải ảnh bị chồng lên chính là thứ nhìn thấy được
+    xuyên qua, nên nó không mất đi — nó là nội dung của chất liệu.
+  */
+  surfaceOverlap: {
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+  },
+  /*
+    ── ĐỘ MỜ CỦA KÍNH, và nó được ĐO chứ không được vặn cho đẹp ──
+
+    Đặt hàng nói thẳng: *"DO NOT blindly lower opacity… measure the actual
+    contrast… find the LOWEST practical sheet opacity that still maintains
+    acceptable text contrast."* Nên đây là phép đo, và đây là kết quả.
+
+    Cách đo: ép `assets/images/exercise-demo.webp` vào đúng khung 402×536 mà
+    `contentFit: 'cover'` dựng, ở 3×; trộn từng kênh `α·card + (1−α)·ảnh`;
+    tính tương phản WCAG cho từng điểm ảnh; lấy phân vị 99,5 tệ nhất. Hình dẫn
+    là một lớp CỐ ĐỊNH mà mặt giấy trượt qua, nên dải sau kính đi qua mọi phần
+    của hình — phép đo vì thế chạy trên TOÀN khung, không trên một dải.
+
+    Và nó chạy ở σ=0, tức KHÔNG nhoè. Hai lý do, cả hai đều là sự thật về sản
+    phẩm chứ không phải sự thận trọng suông: bán kính nhoè của `UIBlurEffect` ở
+    intensity 48 là thứ không đo được từ máy này, và trên Android `BlurView`
+    không nhoè gì cả — `liquid-glass.tsx` ghi rõ `experimentalBlurMethod` cố ý
+    không bật. Nhoè chỉ làm các cực trị dịu đi, nên nó luôn đẩy số lên phía an
+    toàn: cùng phép đo ở σ=12 điểm cho 7,39:1 thay vì 6,47:1.
+
+        TỐI  α=0,70 → tên bài + chữ thân 6,47:1 · siêu dữ liệu 4,50:1
+        SÁNG α=0,90 → tên bài + chữ thân 14,14:1 · siêu dữ liệu 6,24:1
+
+    ── vì sao bản tối dừng ở 0,70 chứ không xuống nữa ──
+
+    Chữ `foreground` một mình còn đi được sâu hơn nhiều: 4,5:1 vẫn đạt ở α=0,55.
+    Thứ chặn lại là DÒNG SIÊU DỮ LIỆU 13 điểm. `mutedForeground` chỉ có 5,02:1
+    ngay trên thẻ đục, tức gần như không có dư địa, và trên kính nó tụt xuống
+    2,25:1 — nên nó phải đổi màu (xem `metaOnGlass`). Càng trong suốt thì màu
+    ấy càng phải sáng, và ở α=0,60 nó đã là #dadada: không còn phân biệt được
+    với `foreground` #ededed. Lúc ấy cái giá của độ trong là MẤT MỘT HẠNG CHỮ.
+
+    0,70 là chỗ gối: màu mờ trên kính còn là #c8c8c8, cách `foreground` 37/255
+    và tách hạng 1,43:1 — đúng cỡ bước `secondaryForeground → mutedForeground`
+    mà bảng màu này vốn có (6,8:1 → 5,0:1, tức 1,36:1).
+
+    ── và vì sao bản sáng ĐỤC HƠN chứ không trong hơn ──
+
+    Không phải vì tương phản: bản sáng rộng rãi hơn ở mọi α — sàn của nó là
+    0,47, thấp hơn bản tối. Là vì đặt hàng nói hai điều KHÁC NHAU cho hai bản:
+    bản tối *"significantly more transparent"*, bản sáng chỉ *"subtly visible"*.
+    Ảnh tham chiếu nói cùng thế: mặt giấy bản sáng gần như đặc, chỉ ánh lên một
+    chút hình ở mép trên.
+
+    Và con số 0,90 này là thứ ĐÃ SỬA MỘT LẦN. Lượt đầu chốt 0,86 vì nó nằm
+    thoải mái trên sàn — rồi ảnh chụp bản dựng thật cho thấy cái giá tạ phía sau
+    hiện rõ nguyên hình qua mặt giấy. Đạt sàn không có nghĩa là đúng brief:
+    "hơi thấy được" là một câu về SẮC ĐỘ, không phải về tương phản, và 0,86 cho
+    ra một vệt bẩn chứ không phải một lớp ánh. 0,90 cho một sắc xám mờ
+    (#ececec…#fbfbfb trên giấy trắng) — thấy được, không đọc ra hình.
+
+    0,82 cũ so với 0,70 mới: lượng hình lọt qua tăng từ 18% lên 30%. Nhưng thứ
+    thật sự làm bản tối trước đây đọc ra là đục không phải con số ấy — mà là
+    chỉ có 24 điểm hình nằm sau mặt giấy. Nay là 150. Xem `overlap`.
+  */
+  glassTint: { backgroundColor: alpha(c.card, m.lit ? 0.7 : 0.9) },
+  /* 52 × 4 — cùng con số `SheetHeader` đã đo trên ảnh tham chiếu bằng cách
+     quét điểm ảnh (120×8px ở 2,341 px/pt → 51,3 × 3,4 điểm). */
+  grabber: {
+    width: 52,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: c.border,
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  /* Trên kính, `c.border` (#2b2b31 ở bản tối) biến mất: nó được chọn để đứng
+     trên một mặt thẻ đứng yên, không trên một tấm ảnh. Mực của theme ở 35% thì
+     sáng lên hay tối đi CÙNG chiều với chữ, nên nó còn nhìn thấy ở cả hai bản. */
+  grabberOnGlass: { backgroundColor: alpha(m.ink, 0.35) },
+
+  /* 28/700 — bậc `largeTitle` của thang chữ. Ảnh tham chiếu to hơn chút, nhưng
+     thang này không có bậc giữa 28 và 44, và 44/300 là bậc của một CON SỐ trả
+     lời cả màn, không phải của một cái tên. */
+  title: { ...type.largeTitle, color: c.foreground },
+  /*
+    Không có hình dẫn (lúc đang tải, lúc đọc hỏng): mặt giấy bắt đầu từ đỉnh và
+    nút đóng rơi đúng vào chỗ tên bài — ĐO ĐƯỢC, ảnh chụp cảnh không có hình
+    cho thấy "Bench Press" bị cái đĩa đóng che một phần. Đẩy tên xuống dưới
+    cái đĩa, và lúc ấy nó đọc ra như một nút lùi trên một tiêu đề.
+  */
+  titleClearsClose: { marginTop: CLOSE - spacing.sm },
+  meta: { ...type.footnote, color: c.mutedForeground },
+  /*
+    Dòng siêu dữ liệu khi nó nằm TRÊN KÍNH — cùng vai, khác vật liệu.
+
+    `mutedForeground` được chọn để đứng trên một mặt thẻ đặc; trên kính nó đo
+    được 2,25:1 (tối) và 4,31:1 (sáng), tức hỏng ở cả hai. Đây không phải một
+    ngoại lệ vặt: iOS gọi đúng thứ này là vibrancy — mực trên vật liệu không
+    cùng giá trị với mực trên mặt phẳng.
+
+    Hai giá trị, đo ở α của chính theme mình, trường hợp KHÔNG nhoè:
+
+        TỐI  #c8c8c8 trên α=0,70 → 4,50:1   (cách `foreground` 37/255)
+        SÁNG #57524a trên α=0,90 → 6,24:1   (là `secondaryForeground` sẵn có)
+
+    Bản tối BẮT BUỘC phải đổi: ở đó `mutedForeground` rơi xuống 2,25:1, và bảng
+    màu không có bậc nào quanh #c8 — `secondaryForeground` là #999999, quá tối.
+    Nên nó là một màu VẬT LIỆU của riêng màn này, và nó nằm ngay cạnh con số
+    làm ra nó chứ không lên bảng màu chung.
+
+    Bản sáng thì KHÔNG bắt buộc: ở α=0,90 chính `mutedForeground` cũng đã đạt
+    4,66:1. Đổi sang `secondaryForeground` — một bậc liền kề, token sẵn có — là
+    lấy thêm dư địa, vì 4,66:1 tính ở phân vị 99,5 trên một tấm ẢNH, mà mô hình
+    một-con-số của WCAG vốn giả định nền phẳng. Trên nền động thì dư địa ấy
+    không thừa.
+  */
+  metaOnGlass: { color: m.lit ? '#c8c8c8' : c.secondaryForeground },
 
   busy: { paddingVertical: spacing.lg, alignItems: 'center' },
 
@@ -248,18 +609,103 @@ const stylesFor = makeStyles((c, m) => ({
     Mục KHÔNG có hộp.
 
     Cả hai danh sách đã nằm trong một sheet, và một thẻ trong một sheet là hộp
-    lồng hộp — đúng thứ vừa bị gỡ khỏi hàng "Lần trước" ở màn Plan. Thứ chia
+    lồng hộp — đúng thứ đã bị gỡ khỏi hàng "Lần trước" ở màn Plan. Thứ chia
     mục ở đây là một tiêu đề nhỏ và khoảng trắng, không phải một đường viền.
+
+    `marginTop` lớn hơn `gap` giữa tiêu đề và danh sách: khoảng trống TRÊN một
+    tiêu đề phải nhiều hơn khoảng trống dưới nó, không thì tiêu đề trôi về khối
+    phía trên và đọc ra như dòng cuối của khối ấy.
   */
-  section: { gap: spacing.sm },
+  block: { marginTop: spacing.lg, gap: spacing.sm },
   sectionTitle: { ...type.headline, color: c.foreground },
   list: { gap: spacing.sm },
   /* `flex-start` chứ không `center`: một dòng hai dòng chữ thì dấu phải nằm
      cạnh dòng ĐẦU, không trôi xuống giữa khối. */
   item: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   itemText: { ...type.body, color: c.foreground, flex: 1, minWidth: 0, lineHeight: 21 },
+  /*
+    Đĩa số: 22 điểm, nền trung tính, số ở giữa.
 
-  empty: { alignItems: 'center', gap: 4, paddingVertical: spacing.lg },
+    `c.secondary` chứ không phải một màu pha tại chỗ — đó là token "nền một bậc
+    trên mặt thẻ" của bảng màu, và nó tự đúng ở cả hai theme (#efeae1 trên
+    giấy, #18181b trong tối). Số dùng `secondaryForeground`, tức HẠNG THỨ HAI:
+    đo được 6,46:1 trên giấy và 6,22:1 trong tối, nên nó vừa đạt AA vừa ở dưới
+    câu chữ bên cạnh — đúng thứ ảnh tham chiếu cho thấy.
+
+    `marginTop` −1 kéo tâm đĩa 22 điểm về đúng tâm dòng chữ đầu (`lineHeight`
+    21). Không có nó, đĩa cao hơn dòng 1 điểm và cả cột số trôi xuống.
+  */
+  step: {
+    width: 22,
+    height: 22,
+    borderRadius: radius.full,
+    backgroundColor: c.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -1,
+  },
+  stepNo: { ...type.footnote, color: c.secondaryForeground, fontVariant: ['tabular-nums'] },
+
+  /*
+    Đĩa dấu: 20 điểm, đặc, glyph 12 điểm ở giữa.
+
+    Mực là `primaryForeground` — token "thứ nằm TRÊN màu nhấn" của mỗi theme —
+    chứ không phải trắng cứng, và đó là một phép đo chứ không phải một sở
+    thích. Ở bản tối `readinessGreen` là #2bf5a8, một màu bạc hà SÁNG: một dấu
+    tick trắng trên nó đo được 1,4:1, tức không nhìn thấy. `primaryForeground`
+    của bản tối là #070708, và nó cho 14,12:1 trên đĩa xanh, 5,78:1 trên đĩa
+    đỏ. Bản sáng thì ngược lại — #ffffff trên #078055 và #de0b44: 4,97:1 và
+    4,96:1.
+
+    Ảnh tham chiếu vẽ tick TRẮNG, và ở bản sáng đó đúng là thứ được dựng. Ở bản
+    tối thì không, vì ảnh tham chiếu bản tối dùng một màu xanh tối hơn màu của
+    app này. Phép đo thắng ảnh tham chiếu ở đúng chỗ đó.
+  */
+  mark: {
+    width: 20,
+    height: 20,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 0.5,
+  },
+  markOk: { backgroundColor: c.readinessGreen },
+  markBad: { backgroundColor: c.readinessRed },
+
+  /* Sợi kẻ ngang giữa "cách thực hiện" và hai cột — xem chỗ dựng nó. Khoảng
+     trống hai bên rộng hơn `block` thường: nó là chỗ ĐỔI KIỂU ĐỌC, không phải
+     một mục mới. */
+  rule: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: alpha(m.ink, 0.14),
+    marginTop: spacing.xl,
+  },
+
+  /* Hai cột, KHÔNG kẻ dọc giữa chúng: một sợi dọc cộng với sợi ngang ở trên
+     làm hai danh sách đọc ra như một cái bảng, và bảng là thứ ảnh tham chiếu
+     không có. Thứ chia hai cột là khoảng trắng. */
+  pair: { flexDirection: 'row', gap: spacing.lg },
+  col: { flex: 1, minWidth: 0, gap: spacing.sm },
+
+  empty: { alignItems: 'center', gap: 4, marginTop: spacing.lg },
   emptyText: { ...type.body, color: c.foreground },
   emptyHint: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
+
+  /*
+    Nút đóng nổi trên hình.
+
+    `c.secondary` chứ không phải một lớp trong suốt: nó phải đọc được trên một
+    tấm ảnh chưa ai biết trước màu gì. 44 điểm đúng sàn Apple, và đó là phần
+    NHÌN THẤY — `hitSlop` chỉ nới thêm ra ngoài.
+  */
+  close: {
+    position: 'absolute',
+    left: spacing.md,
+    width: CLOSE,
+    height: CLOSE,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: c.secondary,
+  },
 }));

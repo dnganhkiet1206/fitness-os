@@ -443,6 +443,7 @@ export type Database = {
           exercise_id: string
           form_cues: string[]
           id: string
+          instructions: string[]
           locale: string
           updated_at: string
         }
@@ -452,6 +453,7 @@ export type Database = {
           exercise_id: string
           form_cues?: string[]
           id?: string
+          instructions?: string[]
           locale: string
           updated_at?: string
         }
@@ -461,6 +463,7 @@ export type Database = {
           exercise_id?: string
           form_cues?: string[]
           id?: string
+          instructions?: string[]
           locale?: string
           updated_at?: string
         }

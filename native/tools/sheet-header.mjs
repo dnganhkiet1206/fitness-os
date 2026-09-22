@@ -57,6 +57,25 @@ const EXEMPT = {
     'lối ra là nút huỷ nằm trên khung ngắm',
   'scan-food':
     'cùng lý do với scan-barcode',
+  'exercise-guide':
+    'hình dẫn tràn lề: ảnh chiếm phần trên của màn và mặt giấy bo góc chồng lên mép ' +
+    'dưới của nó, nên không có chỗ nào để đặt một hàng đầu. Và tiêu đề ở đây KHÔNG ' +
+    'nằm trong hàng đầu — nó là tên bài tập 28 điểm căn trái, nằm trong phần chữ, ' +
+    'dưới hình. `SheetHeader` dựng một tiêu đề 18 điểm CĂN GIỮA cạnh nút đóng, tức ' +
+    'đúng cái thanh điều hướng mà bố cục này bỏ đi. Nút đóng vẫn còn, vẫn là đĩa 44 ' +
+    'điểm, chỉ là nó nổi trên hình — xem vế dưới, thứ kiểm đúng điều đó',
+};
+
+/**
+ * Điều một màn được miễn trừ VẪN phải có: một lối ra NHÌN THẤY được.
+ *
+ * Miễn trừ không phải một cái lỗ. Lý do tệp này tồn tại là "một sheet không có
+ * lối ra", nên bỏ `SheetHeader` chỉ được phép khi lối ra được dựng bằng tay —
+ * và lúc ấy luật phải chuyển sang kiểm chính cái tay ấy: một nút mang nhãn
+ * `a11yClose`, đủ 44 điểm ở phần NHÌN THẤY.
+ */
+const EXEMPT_CLOSE = {
+  'exercise-guide': { label: 'i18n.a11yClose', size: 'const CLOSE = 44;' },
 };
 
 function walk(dir) {
@@ -161,7 +180,32 @@ if (routes.size !== EXPECTED_ROUTES) {
 }
 
 for (const name of [...routes].sort()) {
-  if (name in EXEMPT) continue;
+  if (name in EXEMPT) {
+    const need = EXEMPT_CLOSE[name];
+    if (need) {
+      let src = '';
+      try {
+        src = read(`src/app/${name}.tsx`);
+      } catch {
+        problems.push(`src/app/${name}.tsx: được miễn trừ nhưng không có tệp`);
+        continue;
+      }
+      if (!src.includes(need.label)) {
+        problems.push(
+          `src/app/${name}.tsx: được miễn trừ \`SheetHeader\` nhưng không còn nút nào mang ` +
+            `\`${need.label}\`. Miễn trừ là được dựng lối ra BẰNG TAY, không phải được bỏ lối ra`,
+        );
+      }
+      if (!src.includes(need.size)) {
+        problems.push(
+          `src/app/${name}.tsx: nút đóng dựng tay không còn khai \`${need.size}\`. 44 là sàn của ` +
+            'Apple và nó phải ở phần NHÌN THẤY — `hitSlop` vô hình, nên người dùng nhắm vào cái họ ' +
+            'THẤY và bấm hụt ở rìa',
+        );
+      }
+    }
+    continue;
+  }
   let src;
   try {
     src = read(`src/app/${name}.tsx`);

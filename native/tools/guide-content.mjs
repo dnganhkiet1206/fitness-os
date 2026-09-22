@@ -252,7 +252,7 @@ CASES++;
    cho cả CHUỖI lẫn chú thích, nên một cái kim mở đầu bằng `'` không bao giờ
    nằm ở vị trí "là mã" và luật sẽ đỏ oan. Lần chạy đầu đã đỏ đúng như thế. */
 if (/form_cues/.test(hook.replace(/\/\*[\s\S]*?\*\//g, '')) &&
-    !inCode(hook, "select('locale, form_cues, common_mistakes')")) {
+    !inCode(hook, "select('locale, instructions, form_cues, common_mistakes')")) {
   problems.push(
     `${HOOK}: hướng dẫn vẫn đọc \`form_cues\` ở đâu đó ngoài truy vấn nội dung. Hai nguồn cho một thứ ` +
       'là hai nguồn sẽ lệch, và mảng cũ trên `exercises` chỉ giữ được MỘT ngôn ngữ',

@@ -1,0 +1,31 @@
+-- "Cách thực hiện" — một cột trên quan hệ đã có, không một bảng mới.
+--
+-- ── vì sao bây giờ và không phải ở lượt trước ──
+--
+-- Lượt kiểm mô hình nội dung đã chốt hình dạng này rồi và cố ý KHÔNG thêm:
+-- lúc ấy không màn nào vẽ được nó, nên một cột không ai ghi và không ai đọc chỉ
+-- là chỗ để lệch. Nay màn hướng dẫn có một mục "Cách thực hiện" với các bước
+-- được đánh số, và mục ấy chỉ hiện khi có nội dung — nên thiếu cột là thiếu
+-- đường để nội dung đi tới, tức mục kia là mã chết.
+--
+-- ── vì sao KHÔNG phải `instructions_vi` / `instructions_en` ──
+--
+-- Vì đã có `exercise_guide_content`, một dòng cho mỗi (bài tập, ngôn ngữ). Các
+-- bước thực hiện là văn bản người đọc, nên chúng thuộc về đúng dòng ấy cùng
+-- `form_cues` và `common_mistakes`, và được cùng một luật chọn ngôn ngữ phục
+-- vụ: tiếng đang bật → tiếng Việt → rỗng, một ngôn ngữ sở hữu cả gói. Thêm cột
+-- theo ngôn ngữ sẽ làm schema mọc ngang lần nữa, đúng thứ bảng này sinh ra để
+-- chấm dứt.
+--
+-- ── và nó RỖNG ──
+--
+-- Migration này không viết một bước nào cho một bài nào. Mười dòng hạt giống
+-- không có nội dung "cách thực hiện", và bịa ra để màn hình trông đầy đủ là đặt
+-- một khẳng định về cơ thể người khác vào sản phẩm mà không có căn cứ. Mảng
+-- rỗng là một sự thật: chưa ai viết.
+--
+-- `NOT NULL DEFAULT '{}'` giữ đúng nguyên tắc của hai cột kia: rỗng và vắng mặt
+-- không được có hai cách viết.
+
+ALTER TABLE public.exercise_guide_content
+  ADD COLUMN IF NOT EXISTS instructions TEXT[] NOT NULL DEFAULT '{}';

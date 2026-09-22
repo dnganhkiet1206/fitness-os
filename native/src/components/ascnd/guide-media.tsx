@@ -55,6 +55,24 @@ import type { NativeStrings } from '@/lib/native-strings';
 const IMAGE_EXT = /\.(gif|webp|png|jpe?g|avif|heic|bmp)(\?|#|$)/i;
 
 /*
+  ── DEMO_HERO — TẠM THỜI ──
+
+  `video_url` rỗng ở cả mười dòng hạt giống, nên nếu chờ media thật thì không ai
+  xem được bố cục hình dẫn. Chủ dự án đưa một ảnh demo để đánh giá bố cục:
+  *"lấy tạm hình này làm demo cho toàn bộ, sau này sẽ sửa"*.
+
+  Nó KHÔNG phải một hệ media thứ hai: cùng `box`, cùng `heroFrame`, cùng
+  component. Chỉ là một nguồn lùi khi chưa có url — hai chỗ mang dấu
+  `DEMO_HERO`, ở đây và ở `exercise-guide.tsx`, và gỡ cả hai là xong.
+
+  Nhãn trợ năng cố ý nói nó là ảnh MINH HOẠ TẠM, không nói nó là bản demo của
+  bài tập đang mở: ảnh là một động tác cuốn tạ, và màn này mở cho bài nào cũng
+  dùng nó. Thứ KHÔNG bị ảnh này che: trạng thái "bài này chưa có hướng dẫn" vẫn
+  hiện như cũ, vì một tấm ảnh tạm không phải nội dung.
+*/
+const DEMO_HERO = require('../../../assets/images/exercise-demo.webp');
+
+/*
   ── CỬA DUY NHẤT vào `expo-video`, và nó có khoá ──
 
   `expo-video` gọi `requireNativeModule('ExpoVideo')` ở phạm vi module, nên chỉ
@@ -84,6 +102,7 @@ export function GuideMedia({
   url,
   name,
   hasCues,
+  hero = false,
   i18n,
 }: {
   /** `video_url` của dòng thư viện, đã trim. `null` khi chưa có gì. */
@@ -100,6 +119,14 @@ export function GuideMedia({
    * được CHO BIẾT, chứ không được đoán.
    */
   hasCues: boolean;
+  /**
+   * Vẽ như HÌNH DẪN tràn lề của màn hướng dẫn, thay vì một khối gọn trong lề.
+   *
+   * Chỗ gọi chỉ bật cờ này khi `url` khác `null` — có gì để dẫn thì mới dẫn.
+   * Và khi đã bật, khung ĐỨNG NGUYÊN kể cả lúc tải hỏng: thu nó lại giữa lúc
+   * người ta đang đọc là một cú nhảy bố cục, đúng thứ đặt hàng cấm.
+   */
+  hero?: boolean;
   i18n: NativeStrings;
 }) {
   const c = usePalette();
@@ -124,7 +151,7 @@ export function GuideMedia({
 
   if (showVideo) {
     return (
-      <View style={[styles.box, styles.frame]}>
+      <View style={[styles.box, styles.heroFrame]}>
         <GuideVideo
           url={videoUrl}
           alt={alt}
@@ -136,9 +163,24 @@ export function GuideMedia({
     );
   }
 
+  /* DEMO_HERO: chưa có url thật nhưng đang ở vai hình dẫn. */
+  if (!url && hero) {
+    return (
+      <View style={[styles.box, styles.heroFrame]}>
+        <Image
+          source={DEMO_HERO}
+          style={styles.fill}
+          contentFit="cover"
+          accessibilityLabel={i18n.nEgMediaDemo}
+          accessible
+        />
+      </View>
+    );
+  }
+
   if (showImage) {
     return (
-      <View style={[styles.box, styles.frame]}>
+      <View style={[styles.box, styles.heroFrame]}>
         <Image
           source={{ uri: url! }}
           style={styles.fill}
@@ -160,12 +202,12 @@ export function GuideMedia({
   const failed = vidBroke || imgBroke || (!!videoUrl && !GuideVideo);
   return (
     <View
-      style={[styles.box, styles.compact]}
+      style={[styles.box, hero ? styles.heroEmpty : styles.compact]}
       accessible
       accessibilityRole="image"
       accessibilityLabel={failed ? i18n.nEgMediaFailed : i18n.nEgNoMedia}>
       <Icon icon={ImageOff} size={16} color={c.mutedForeground} />
-      <View style={styles.compactText}>
+      <View style={hero ? styles.heroText : styles.compactText}>
         <Text style={styles.compactTitle}>
           {failed ? i18n.nEgMediaFailed : i18n.nEgNoMedia}
         </Text>
@@ -179,22 +221,41 @@ export function GuideMedia({
 
 const stylesFor = makeStyles((c, m) => ({
   box: {
-    borderRadius: radius.md,
     overflow: 'hidden',
     backgroundColor: alpha(m.ink, 0.05),
   },
   /*
-    16:10 CHỈ khi có media thật.
+    ── HÌNH DẪN: 3:4, tràn lề, không bo góc ──
 
-    Nó ở style riêng chứ không ở `box` rồi gỡ ra, vì gỡ bằng
+    Tỉ lệ cũ là 16:10, đúng cho thời nó là một cái THẺ nằm trong lề 16. Ảnh
+    tham chiếu của chủ dự án thì dựng hình thành phần trên của cả màn: trên một
+    máy 402×874, 3:4 cho 536 điểm, tức 61% chiều cao — khớp với ảnh. 16:10 ở
+    vai trò ấy chỉ cho 251 điểm và đọc ra vẫn là một cái thẻ.
+
+    Không `borderRadius`: hai mép trên chạy thẳng ra rìa máy, còn hai mép dưới
+    được che bởi góc bo của mặt giấy chồng lên — xem `surfaceOverlap` trong
+    `exercise-guide.tsx`. Bo ở cả hai chỗ là bo hai lần.
+
+    Tỉ lệ ở style RIÊNG chứ không ở `box` rồi gỡ ra, vì gỡ bằng
     `aspectRatio: undefined` KHÔNG chạy: React Native bỏ qua giá trị `undefined`
     lúc gộp style — nó không ghi đè gì cả. Cộng vào thì chạy; trừ đi thì không.
   */
-  frame: { aspectRatio: 16 / 10 },
+  heroFrame: { aspectRatio: 3 / 4 },
   fill: { width: '100%', height: '100%' },
+
+  /* Hỏng mà ĐANG ở vai trò hình dẫn: khung giữ nguyên chiều cao, câu báo nằm
+     giữa. Thu khung lại là cú nhảy bố cục. */
+  heroEmpty: {
+    aspectRatio: 3 / 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  heroText: { alignItems: 'center', gap: 2 },
 
   /* Một khối thông tin nhỏ: một hàng, glyph bên trái, chữ bên phải. */
   compact: {
+    borderRadius: radius.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,

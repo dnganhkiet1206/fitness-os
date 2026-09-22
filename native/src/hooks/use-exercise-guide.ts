@@ -143,6 +143,8 @@ export interface ExerciseGuide {
   muscleGroup: string | null;
   /** ĐÃ LÀ NHÃN theo ngôn ngữ đang bật — màn hình in thẳng. */
   equipment: string | null;
+  /** các bước "cách thực hiện", theo thứ tự. Rỗng khi chưa ai viết. */
+  instructions: string[];
   formCues: string[];
   commonMistakes: string[];
   /** URL ảnh/ảnh động minh hoạ. `null` khi bài này chưa có gì. */
@@ -227,7 +229,7 @@ export function useExerciseGuide(
       const withContent = async (row: GuideRow, matchedBy: 'id' | 'name') => {
         const { data, error } = await supabase
           .from('exercise_guide_content')
-          .select('locale, form_cues, common_mistakes')
+          .select('locale, instructions, form_cues, common_mistakes')
           .eq('exercise_id', row.id);
         if (error) throw error;
         return shape(row, matchedBy, name, pickContent((data ?? []) as GuideContentRow[], lang), lang);
@@ -264,6 +266,7 @@ export function useExerciseGuide(
         name,
         muscleGroup: null,
         equipment: null,
+        instructions: [],
         formCues: [],
         commonMistakes: [],
         mediaUrl: null,
@@ -280,7 +283,7 @@ function shape(
   row: GuideRow,
   matchedBy: 'id' | 'name',
   fallbackName: string,
-  content: { locale: AppLang; formCues: string[]; commonMistakes: string[] } | null,
+  content: { locale: AppLang; instructions: string[]; formCues: string[]; commonMistakes: string[] } | null,
   lang: AppLang,
 ): ExerciseGuide {
   /* Khoá → nhãn NGAY TẠI ĐÂY, không để màn hình làm. Hai hàm này cũng là thứ
@@ -290,6 +293,7 @@ function shape(
   const muscleGroup = trimmed(muscleGroupLabel(row.muscle_group, lang));
   /* Cả hai danh sách từ CÙNG một dòng, hoặc cả hai rỗng. Không có nhánh nào
      lấy một danh sách ở đây và một ở kia. */
+  const instructions = content?.instructions ?? [];
   const formCues = content?.formCues ?? [];
   const commonMistakes = content?.commonMistakes ?? [];
   return {
@@ -297,12 +301,13 @@ function shape(
     name: trimmed(row.name) ?? fallbackName,
     muscleGroup,
     equipment,
+    instructions,
     formCues,
     commonMistakes,
     mediaUrl: trimmed(row.video_url),
     matchedBy,
     contentLocale: content?.locale ?? null,
-    hasContent: formCues.length > 0 || commonMistakes.length > 0,
+    hasContent: instructions.length > 0 || formCues.length > 0 || commonMistakes.length > 0,
     hasMetadata: !!(equipment || muscleGroup),
   };
 }

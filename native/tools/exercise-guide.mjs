@@ -192,7 +192,11 @@ if (player.length) {
 
 /* ── 7c · CÓ media thì to, KHÔNG có thì GỌN ── */
 CASES++;
-if (!/frame: \{ aspectRatio: 16 \/ 10 \}/.test(media) || !/styles\.compact/.test(media)) {
+/* 3:4 chứ không 16:10 nữa: khung đã đổi vai từ một cái THẺ trong lề thành
+   HÌNH DẪN tràn lề của cả màn. Trên máy 402×874 thì 3:4 cho 536 điểm — 61%
+   chiều cao, khớp ảnh tham chiếu; 16:10 chỉ cho 251 và vẫn đọc ra là một thẻ.
+   Con số thì đổi được; thứ KHÔNG đổi là hai kích cỡ phải tách nhau. */
+if (!/heroFrame: \{ aspectRatio: 3 \/ 4 \}/.test(media) || !/styles\.compact/.test(media)) {
   problems.push(
     `${MEDIA}: hai kích cỡ của khung hình không còn tách nhau. \`video_url\` mặc định rỗng và cả mười ` +
       'dòng seed đều trống, nên "không có hình" là trường hợp THƯỜNG — giữ một ô 16:10 cho nó là dành một ' +
@@ -214,22 +218,39 @@ if (inCode(media, 'aspectRatio: undefined')) {
    demonstration yet" suốt lúc đang tải; ép truy vấn 500 thì nó nói câu ấy ngay
    trên "Could not load your data". Cả hai đều là câu SAI về dữ liệu của người
    dùng, và cả hai đều đến từ việc `null` mang ba nghĩa. */
-CASES++;
-const guardAt = (() => {
-  const needle = '{!isPending && !isError ? (';
-  const mask = codeMask(sheet);
-  for (let i = sheet.indexOf(needle); i >= 0; i = sheet.indexOf(needle, i + 1)) if (mask[i]) return i;
-  return -1;
-})();
 /*
-  Không chỉ đòi cái vỏ: thẻ NGAY SAU lớp che phải là `<GuideMedia>`.
+  ── lớp che nay là một BIẾN, và có HAI chỗ dựng media ──
 
-  Phép thử đầu ở đây dùng cờ `m`, và phá thử thứ ba đã cho nó XANH: che một
-  `<View>` rồi để `<GuideMedia>` đứng trơ ngay dưới `) : null}` vẫn lọt, vì với
-  cờ `m` thì `^` khớp mọi đầu DÒNG trong đoạn cắt chứ không phải đầu đoạn. Neo
-  vào đầu đoạn mới là thứ nói đúng câu "cái được che chính là nó".
+  Bố cục mới cho cùng một khối hai vai: HÌNH DẪN tràn lề khi có url, và một
+  dòng gọn trong lề khi không có. Hai chỗ dựng, nên điều kiện được đặt tên một
+  lần rồi dùng lại — và luật đòi đúng thứ ấy, ở hai vế:
+
+    · `showMedia` phải được định nghĩa bằng `!isPending && !isError`
+    · MỌI chỗ dựng `<GuideMedia` phải nằm sau nó
+
+  Vế thứ hai là thứ thay cho phép "thẻ ngay sau lớp che" của bản trước. Phép ấy
+  neo vào đầu đoạn cắt và chỉ đúng khi có MỘT chỗ dựng; nay có hai, và một luật
+  chỉ nhìn chỗ đầu tiên sẽ để chỗ thứ hai đi qua mà không ai hỏi.
 */
-if (guardAt < 0 || !/^\s*<GuideMedia\b/.test(sheet.slice(guardAt + 27, guardAt + 120))) {
+CASES++;
+const showMediaDef = /const showMedia = ([^;]+);/.exec(sheet)?.[1] ?? '';
+/* `hero` là lớp che ngoài cùng ở chỗ vẽ, và nó phải được DẪN RA từ `showMedia`
+   — không phải một điều kiện khác trùng tên. Nên luật đi theo chuỗi: chỗ vẽ
+   nằm sau `hero`, `hero` dẫn từ `showMedia`, `showMedia` là `!isPending &&
+   !isError`. Gãy khâu nào cũng đỏ. */
+const heroDef = /const hero = ([^;]+);/.exec(sheet)?.[1] ?? '';
+const mediaSites = [...sheet.matchAll(/<GuideMedia\b/g)].map((m) => m.index ?? 0);
+const unguarded = mediaSites.filter(
+  (i) => !/\b(showMedia|hero)\b/.test(sheet.slice(Math.max(0, i - 220), i)),
+);
+const guardAt =
+  /!isPending && !isError/.test(showMediaDef) &&
+  /\bshowMedia\b/.test(heroDef) &&
+  mediaSites.length &&
+  !unguarded.length
+    ? 0
+    : -1;
+if (guardAt < 0) {
   problems.push(
     `${SHEET}: \`<GuideMedia>\` không còn được che sau \`!isPending && !isError\`. Tham số \`url\` của nó ` +
       'gộp ba trạng thái khác hẳn nhau vào một chữ `null` — CHƯA BIẾT, ĐỌC HỎNG, và BIẾT CHẮC LÀ KHÔNG CÓ — ' +
@@ -294,12 +315,87 @@ if (/expo-video/.test(plan) || /expo-video/.test(read('src/components/ascnd/exer
 
 /* ── 8 · nghĩa không nằm ở MÀU ── */
 CASES++;
-const cueSection = /nEgCues[\s\S]{0,600}?nEgMistakes/.exec(sheet);
-if (!cueSection || !/icon=\{Check\}/.test(cueSection[0])) {
+const cueSection = /nEgCues[\s\S]{0,1600}?nEgMistakes/.exec(sheet);
+const mistakeSection = /nEgMistakes[\s\S]{0,1600}?\) : null\}/.exec(sheet);
+const glyphs = [
+  ['điểm kỹ thuật', cueSection?.[0], /icon=\{Check\}/],
+  ['lỗi thường gặp', mistakeSection?.[0], /icon=\{X\}/],
+].filter(([, src, re]) => !src || !re.test(src)).map(([n]) => n);
+if (glyphs.length) {
   problems.push(
-    `${SHEET}: hai danh sách không còn hai GLYPH khác hình nhau. Xanh/đỏ một mình là truyền tin bằng màu, ` +
-      'thứ WCAG 1.4.1 cấm — người không phân biệt được hai màu ấy sẽ đọc "đừng làm thế này" thành "hãy làm ' +
-      'thế này"',
+    `${SHEET}: hai danh sách không còn hai GLYPH khác hình nhau — thiếu ở: ${glyphs.join(', ')}. Xanh/đỏ ` +
+      'một mình là truyền tin bằng màu, thứ WCAG 1.4.1 cấm — người không phân biệt được hai màu ấy sẽ đọc ' +
+      '"đừng làm thế này" thành "hãy làm thế này"',
+  );
+}
+
+/* ── 8b · mực trên ĐĨA DẤU là token của theme, không phải trắng cứng ──
+
+   Hai cái dấu nay là đĩa ĐẶC với glyph bên trong, đúng như cả bốn ảnh tham
+   chiếu. Ảnh ấy vẽ glyph TRẮNG, và trên bản sáng đó đúng — `readinessGreen`
+   sáng là #078055, tối, nên trắng cho 4,97:1.
+
+   Bản tối thì KHÔNG: `readinessGreen` ở đó là #2bf5a8, một màu bạc hà rất
+   sáng, và một dấu tick trắng trên nó đo được **1,4:1** — tức một cái đĩa
+   trống trơn. `primaryForeground` là token "thứ nằm trên màu nhấn" và nó lật
+   theo theme: #070708 trong tối (14,12:1 trên đĩa xanh, 5,78:1 trên đĩa đỏ),
+   #ffffff trên giấy.
+
+   Luật này tồn tại vì lối hỏng ở đây là NGƯỜI TA LÀM ĐÚNG THEO ẢNH: chép
+   `color="#fff"` từ ảnh tham chiếu là một thay đổi trông có căn cứ, và nó xoá
+   trắng cả hai cái dấu ở bản tối mà không ai thấy trên máy sáng. */
+CASES++;
+const markInk = [...sheet.matchAll(/<View style=\{\[styles\.mark[\s\S]{0,160}?color=\{([^}]+)\}/g)]
+  .map((m) => m[1].trim());
+if (markInk.length !== 2 || markInk.some((v) => v !== 'c.primaryForeground')) {
+  const seen =
+    markInk.length !== 2
+      ? `chỉ đọc được ${markInk.length}/2 đĩa mang mực là token — phần còn lại viết màu theo cách khác`
+      : `thấy: ${markInk.join(', ')}`;
+  problems.push(
+    `${SHEET}: mực trên đĩa dấu không còn là \`c.primaryForeground\` ở cả hai đĩa (${seen}). ` +
+      'Màu nhấn của hai theme nằm ở hai đầu thang sáng — `readinessGreen` là #078055 trên giấy nhưng #2bf5a8 ' +
+      'trong tối — nên một mực viết cứng đúng ở một bản là sai ở bản kia: trắng trên #2bf5a8 đo được 1,4:1, ' +
+      'tức cái đĩa trống trơn',
+  );
+}
+
+/* ── 8c · MẶT KÍNH: hai lớp, đúng thứ tự, và dòng siêu dữ liệu đổi màu theo ──
+
+   Ba vế, mỗi vế là một cách mặt kính hỏng mà mắt không bắt được trên máy sáng:
+
+   **Một — thứ tự.** Nền của một view được tô TRƯỚC các con của nó, nên nếu sắc
+   độ nằm ở `backgroundColor` của chính mặt giấy thì `UIVisualEffectView` lấy
+   mẫu một tấm hình ĐÃ bị phủ sắc độ. Độ mờ thật khi ấy cao hơn con số trong
+   style, và mọi phép đo dựa trên con số ấy là đo trên một thứ khác. `BlurView`
+   phải đứng TRƯỚC lớp sắc độ, và lớp sắc độ phải là một view riêng.
+
+   **Hai — `surface` không được tự mang nền khi có hình.** Cùng một lỗi, viết
+   theo cách khác.
+
+   **Ba — siêu dữ liệu phải có màu riêng trên kính.** `mutedForeground` chỉ có
+   5,02:1 ngay trên thẻ ĐỤC ở bản tối; trên kính nó là 2,25:1. Gỡ `metaOnGlass`
+   đi thì dòng "Ngực · Tạ đơn" tụt xuống dưới sàn mà không gì kêu. */
+CASES++;
+const blurAt = sheet.indexOf('<BlurView');
+const tintAt = sheet.indexOf('styles.glassTint]');
+const glass = [
+  blurAt >= 0 && tintAt > blurAt ? null : '`BlurView` phải đứng TRƯỚC lớp sắc độ `glassTint`',
+  /glassTint: \{ backgroundColor: alpha\(c\.card, m\.lit \? [\d.]+ : [\d.]+\) \}/.test(sheet)
+    ? null
+    : '`glassTint` phải là một lớp riêng, độ mờ đo theo từng theme',
+  /surface: \{[^}]*backgroundColor/.test(sheet)
+    ? '`surface` tự mang `backgroundColor`, nên kính lấy mẫu một hình đã bị phủ'
+    : null,
+  /style=\{\[styles\.meta, hero \? styles\.metaOnGlass : null\]\}/.test(sheet)
+    ? null
+    : 'dòng siêu dữ liệu không còn đổi sang `metaOnGlass` khi nằm trên kính',
+].filter(Boolean);
+if (glass.length) {
+  problems.push(
+    `${SHEET}: mặt kính không còn đúng — ${glass.join('; ')}. Độ mờ ở đây là một con số ĐO ĐƯỢC (tối 0,70, ` +
+      'sáng 0,90, cùng phép đo trên ảnh dẫn ở σ=0), và cả ba vế trên đều làm con số ấy không còn mô tả thứ ' +
+      'đang hiện trên màn',
   );
 }
 
