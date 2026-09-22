@@ -335,15 +335,23 @@ if (glyphs.length) {
    chiếu. Ảnh ấy vẽ glyph TRẮNG, và trên bản sáng đó đúng — `readinessGreen`
    sáng là #078055, tối, nên trắng cho 4,97:1.
 
-   Bản tối thì KHÔNG: `readinessGreen` ở đó là #2bf5a8, một màu bạc hà rất
-   sáng, và một dấu tick trắng trên nó đo được **1,4:1** — tức một cái đĩa
-   trống trơn. `primaryForeground` là token "thứ nằm trên màu nhấn" và nó lật
-   theo theme: #070708 trong tối (14,12:1 trên đĩa xanh, 5,78:1 trên đĩa đỏ),
-   #ffffff trên giấy.
+   Bản tối thì KHÔNG: trắng trên hai màu nhấn của bản tối đo được **2,21:1**
+   và **2,22:1**, dưới cả sàn 3:1 của WCAG 1.4.11. `primaryForeground` là
+   token "thứ nằm trên màu nhấn" và nó lật theo theme: #070708 trong tối
+   (9,12:1 trên đĩa xanh, 9,09:1 trên đĩa đỏ), #ffffff trên giấy.
 
    Luật này tồn tại vì lối hỏng ở đây là NGƯỜI TA LÀM ĐÚNG THEO ẢNH: chép
    `color="#fff"` từ ảnh tham chiếu là một thay đổi trông có căn cứ, và nó xoá
-   trắng cả hai cái dấu ở bản tối mà không ai thấy trên máy sáng. */
+   trắng cả hai cái dấu ở bản tối mà không ai thấy trên máy sáng.
+
+   ── và nó đã CHỨNG MINH giá của mình ──
+
+   Một lượt khác đổi bảng TỐI: `readinessGreen` #2bf5a8 → #00c785,
+   `readinessRed` #ff3b5c → #ff8d92. Vì mã gọi TOKEN chứ không gọi mã màu, cặp
+   mực/đĩa vẫn đúng sau lần đổi ấy — chỉ là 9,12:1 thay cho 14,12:1. Một
+   `color="#fff"` viết cứng thì đã tụt xuống 2,2:1 mà không ai thấy, và
+   `tools/palette.mjs` không bắt được: nó canh tương phản của token trên NỀN
+   của theme, không canh mực đặt TRÊN token. */
 CASES++;
 const markInk = [...sheet.matchAll(/<View style=\{\[styles\.mark[\s\S]{0,160}?color=\{([^}]+)\}/g)]
   .map((m) => m[1].trim());
@@ -354,9 +362,10 @@ if (markInk.length !== 2 || markInk.some((v) => v !== 'c.primaryForeground')) {
       : `thấy: ${markInk.join(', ')}`;
   problems.push(
     `${SHEET}: mực trên đĩa dấu không còn là \`c.primaryForeground\` ở cả hai đĩa (${seen}). ` +
-      'Màu nhấn của hai theme nằm ở hai đầu thang sáng — `readinessGreen` là #078055 trên giấy nhưng #2bf5a8 ' +
-      'trong tối — nên một mực viết cứng đúng ở một bản là sai ở bản kia: trắng trên #2bf5a8 đo được 1,4:1, ' +
-      'tức cái đĩa trống trơn',
+      'Màu nhấn của hai theme nằm ở hai đầu thang sáng — `readinessGreen` là #078055 trên giấy nhưng #00c785 ' +
+      'trong tối — nên một mực viết cứng đúng ở một bản là sai ở bản kia: trắng trên hai màu nhấn của bản ' +
+      'tối đo được 2,2:1, dưới cả sàn 3:1 của WCAG 1.4.11. Và vì mã gọi TOKEN chứ không gọi mã màu, cặp này ' +
+      'sống sót được lượt đổi bảng màu tối vừa rồi (#2bf5a8 → #00c785, #ff3b5c → #ff8d92) mà không phải sửa',
   );
 }
 
@@ -393,8 +402,8 @@ const glass = [
 ].filter(Boolean);
 if (glass.length) {
   problems.push(
-    `${SHEET}: mặt kính không còn đúng — ${glass.join('; ')}. Độ mờ ở đây là một con số ĐO ĐƯỢC (tối 0,70, ` +
-      'sáng 0,90, cùng phép đo trên ảnh dẫn ở σ=0), và cả ba vế trên đều làm con số ấy không còn mô tả thứ ' +
+    `${SHEET}: mặt kính không còn đúng — ${glass.join('; ')}. Độ mờ ở đây là một con số ĐO ĐƯỢC (tối 0,72, ` +
+      'sáng 0,90, giải với mọi nền ở σ=0), và cả ba vế trên đều làm con số ấy không còn mô tả thứ ' +
       'đang hiện trên màn',
   );
 }

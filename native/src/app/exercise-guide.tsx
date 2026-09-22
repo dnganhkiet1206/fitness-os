@@ -218,6 +218,12 @@ export default function ExerciseGuideSheet() {
   */
   const twoCols = cues.length > 0 && mistakes.length > 0 && width >= 360 && fontScale <= 1.15;
 
+  /*
+    Sợi kẻ ngang chỉ tồn tại khi có HAI khối để chia — và cùng điều kiện ấy
+    quyết định khoảng trống của khối dưới, nên nó được đặt tên một lần.
+  */
+  const ruled = steps.length > 0 && (cues.length > 0 || mistakes.length > 0);
+
   return (
     <View style={styles.root}>
       {/*
@@ -353,9 +359,7 @@ export default function ExerciseGuideSheet() {
             `hairlineWidth` là 1/scale của máy: trên màn 3× nó ra đúng một điểm
             ảnh vật lý, tức "1px" theo đúng nghĩa đen của đặt hàng.
           */}
-          {steps.length > 0 && (cues.length > 0 || mistakes.length > 0) ? (
-            <View style={styles.rule} />
-          ) : null}
+          {ruled ? <View style={styles.rule} /> : null}
 
           {/*
             ── ĐIỂM KỸ THUẬT và LỖI THƯỜNG GẶP ──
@@ -379,7 +383,13 @@ export default function ExerciseGuideSheet() {
             2,5 điểm.
           */}
           {cues.length || mistakes.length ? (
-            <View style={[styles.block, twoCols ? styles.pair : null]}>
+            <View
+              style={[
+                styles.block,
+                /* Sợi kẻ đã mang khoảng chia rồi — xem `blockTight`. */
+                ruled ? styles.blockTight : null,
+                twoCols ? styles.pair : null,
+              ]}>
               {cues.length ? (
                 <View style={twoCols ? styles.col : undefined}>
                   <Text style={styles.sectionTitle}>{i18n.nEgCues}</Text>
@@ -440,7 +450,32 @@ export default function ExerciseGuideSheet() {
           nav.back();
         }}
         style={[styles.close, { top: insets.top + spacing.sm }]}>
-        <Icon icon={X} size={18} color={c.foreground} />
+        {/* Cùng thứ tự hai lớp như mặt giấy: kính lấy mẫu hình, sắc độ phủ lên
+            kính. Đặt sắc độ vào `backgroundColor` của chính nút thì kính sẽ lấy
+            mẫu một hình đã bị phủ — xem khối chú thích ở `glassTint`. */}
+        <BlurView
+          intensity={GLASS_BLUR}
+          tint={dark ? 'dark' : 'light'}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+        <View style={[StyleSheet.absoluteFill, styles.closeTint]} pointerEvents="none" />
+        {/*
+          Cái bọc này KHÔNG thừa.
+
+          `Icon` dựng ra một `<svg>` trần. Trên bản web, phần tử không có
+          `position` được vẽ ở LƯỢT SỚM HƠN mọi phần tử đã định vị, nên hai lớp
+          `absoluteFill` ở trên phủ luôn lên dấu ✕ — đo được trên ảnh chụp bản
+          dựng: cái nút thành một đĩa trơn, không còn dấu nào.
+
+          `View` của React Native Web mang sẵn `position: relative`, nên nó kéo
+          glyph về đúng lượt vẽ theo thứ tự JSX. Trên iOS thứ tự vẽ vốn đã theo
+          thứ tự con, nên cái bọc này không đổi gì — nó chỉ làm hai nền khớp
+          nhau.
+        */}
+        <View>
+          <Icon icon={X} size={18} color={c.foreground} />
+        </View>
       </PressScale>
     </View>
   );
@@ -474,7 +509,15 @@ const stylesFor = makeStyles((c, m) => ({
   surface: {
     flexGrow: 1,
     overflow: 'hidden',
-    paddingHorizontal: spacing.card,
+    /*
+      24, không phải 20.
+
+      Đo trên hai ảnh tham chiếu: mực trái của "Cách thực hiện" ở 28,3đ (bản
+      sáng) và 25,5đ (bản tối), của đĩa dấu ở 27,4đ và 26,0đ. Trừ đi phần lưu
+      không bên trái của glyph — đo được 0,7đ trên chính bản dựng này — lề thật
+      của ảnh tham chiếu là 25–27. `spacing.lg` là bậc token gần nhất.
+    */
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
     gap: spacing.xs,
   },
@@ -500,34 +543,39 @@ const stylesFor = makeStyles((c, m) => ({
     contrast… find the LOWEST practical sheet opacity that still maintains
     acceptable text contrast."* Nên đây là phép đo, và đây là kết quả.
 
-    Cách đo: ép `assets/images/exercise-demo.webp` vào đúng khung 402×536 mà
-    `contentFit: 'cover'` dựng, ở 3×; trộn từng kênh `α·card + (1−α)·ảnh`;
-    tính tương phản WCAG cho từng điểm ảnh; lấy phân vị 99,5 tệ nhất. Hình dẫn
-    là một lớp CỐ ĐỊNH mà mặt giấy trượt qua, nên dải sau kính đi qua mọi phần
-    của hình — phép đo vì thế chạy trên TOÀN khung, không trên một dải.
+    ── phép đo KHÔNG phụ thuộc vào tấm ảnh nào ──
 
-    Và nó chạy ở σ=0, tức KHÔNG nhoè. Hai lý do, cả hai đều là sự thật về sản
-    phẩm chứ không phải sự thận trọng suông: bán kính nhoè của `UIBlurEffect` ở
-    intensity 48 là thứ không đo được từ máy này, và trên Android `BlurView`
-    không nhoè gì cả — `liquid-glass.tsx` ghi rõ `experimentalBlurMethod` cố ý
-    không bật. Nhoè chỉ làm các cực trị dịu đi, nên nó luôn đẩy số lên phía an
-    toàn: cùng phép đo ở σ=12 điểm cho 7,39:1 thay vì 6,47:1.
+    Lượt trước đo trên chính `exercise-demo.webp`: ép vào khung 402×536, trộn
+    từng kênh, lấy phân vị 99,5 tệ nhất. Con số ấy đúng — nhưng nó đúng cho MỘT
+    tấm ảnh tạm, và cái sẽ nằm sau kính về sau là đoạn minh hoạ thật của từng
+    bài. Đổi ảnh là phải đo lại, và lượt này đổi ảnh thật (cắt bỏ bảng chú
+    thích) nên con số cũ tụt từ 4,50 xuống 4,47.
 
-        TỐI  α=0,70 → tên bài + chữ thân 6,47:1 · siêu dữ liệu 4,50:1
-        SÁNG α=0,90 → tên bài + chữ thân 14,14:1 · siêu dữ liệu 6,24:1
+    Nên nay giải cho nền TỆ NHẤT có thể thay vì cho một tấm ảnh: quét cả thang
+    xám 0..255 phía sau lớp mờ. Luminance đơn điệu theo từng kênh nên hai cực
+    trắng/đen bao trọn mọi màu — đạt ở đây là đạt với mọi hình minh hoạ, mãi
+    mãi, không cần ai đo lại.
 
-    ── vì sao bản tối dừng ở 0,70 chứ không xuống nữa ──
+    Và nó vẫn ở σ=0, tức KHÔNG nhoè: bán kính của `UIBlurEffect` ở intensity 48
+    không đo được từ máy này, còn trên Android `BlurView` không nhoè gì cả —
+    `liquid-glass.tsx` ghi rõ `experimentalBlurMethod` cố ý không bật. Nhoè chỉ
+    làm cực trị dịu đi, nên nó luôn đẩy số lên phía an toàn.
 
-    Chữ `foreground` một mình còn đi được sâu hơn nhiều: 4,5:1 vẫn đạt ở α=0,55.
+        TỐI  α=0,72 → tên bài + chữ thân 6,71:1 · siêu dữ liệu 4,5:1
+        SÁNG α=0,90 → tên bài + chữ thân 14,01:1 · siêu dữ liệu 6,2:1
+
+    ── vì sao bản tối dừng ở 0,72 chứ không xuống nữa ──
+
+    Chữ `foreground` một mình còn đi được sâu hơn nhiều: 4,5:1 vẫn đạt ở α=0,62.
     Thứ chặn lại là DÒNG SIÊU DỮ LIỆU 13 điểm. `mutedForeground` chỉ có 5,02:1
     ngay trên thẻ đục, tức gần như không có dư địa, và trên kính nó tụt xuống
     2,25:1 — nên nó phải đổi màu (xem `metaOnGlass`). Càng trong suốt thì màu
-    ấy càng phải sáng, và ở α=0,60 nó đã là #dadada: không còn phân biệt được
-    với `foreground` #ededed. Lúc ấy cái giá của độ trong là MẤT MỘT HẠNG CHỮ.
+    ấy càng phải sáng, và tới một mức nó không còn phân biệt được với
+    `foreground` #ededed. Lúc ấy cái giá của độ trong là MẤT MỘT HẠNG CHỮ.
 
-    0,70 là chỗ gối: màu mờ trên kính còn là #c8c8c8, cách `foreground` 37/255
-    và tách hạng 1,43:1 — đúng cỡ bước `secondaryForeground → mutedForeground`
-    mà bảng màu này vốn có (6,8:1 → 5,0:1, tức 1,36:1).
+    0,72 là chỗ gối: màu mờ tối nhất còn đạt 4,5 với MỌI nền là #c4c4c4, tách
+    hạng 1,49:1 khỏi `foreground` — đúng cỡ bước `secondaryForeground →
+    mutedForeground` mà bảng màu này vốn có (6,8:1 → 5,0:1, tức 1,36:1).
 
     ── và vì sao bản sáng ĐỤC HƠN chứ không trong hơn ──
 
@@ -548,17 +596,29 @@ const stylesFor = makeStyles((c, m) => ({
     thật sự làm bản tối trước đây đọc ra là đục không phải con số ấy — mà là
     chỉ có 24 điểm hình nằm sau mặt giấy. Nay là 150. Xem `overlap`.
   */
-  glassTint: { backgroundColor: alpha(c.card, m.lit ? 0.7 : 0.9) },
-  /* 52 × 4 — cùng con số `SheetHeader` đã đo trên ảnh tham chiếu bằng cách
-     quét điểm ảnh (120×8px ở 2,341 px/pt → 51,3 × 3,4 điểm). */
+  glassTint: { backgroundColor: alpha(c.card, m.lit ? 0.72 : 0.9) },
+  /*
+    36 × 5 — thanh vuốt hệ thống của iOS.
+
+    `SheetHeader` dùng 52 × 4, đo bằng cách quét điểm ảnh trên MỘT ảnh tham
+    chiếu khác (120×8px ở 2,341 px/pt). Con số ấy ở nguyên chỗ nó — màn này
+    không sửa sheet khác. Nhưng bốn ảnh tham chiếu của riêng màn hướng dẫn nói
+    khác: đo được 31,2đ (bản sáng) và 34,0đ (bản tối), và 36 × 5 của Apple nằm
+    đúng giữa hai con số ấy. Giữa "một phép đo cũ trên một ảnh khác" và "hai
+    phép đo mới trên đúng ảnh của màn này, khớp với giá trị hệ thống", cái sau
+    thắng.
+
+    Đỉnh ở 12: ảnh tham chiếu cho 12,3đ và 10,4đ. Lề dưới 12 để mực tên bài rơi
+    vào ~37,7đ — ảnh tham chiếu ở 38,3 và 37,8.
+  */
   grabber: {
-    width: 52,
-    height: 4,
-    borderRadius: 2,
+    width: 36,
+    height: 5,
+    borderRadius: 2.5,
     backgroundColor: c.border,
     alignSelf: 'center',
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
+    marginTop: 12,
+    marginBottom: 12,
   },
   /* Trên kính, `c.border` (#2b2b31 ở bản tối) biến mất: nó được chọn để đứng
      trên một mặt thẻ đứng yên, không trên một tấm ảnh. Mực của theme ở 35% thì
@@ -585,21 +645,20 @@ const stylesFor = makeStyles((c, m) => ({
     ngoại lệ vặt: iOS gọi đúng thứ này là vibrancy — mực trên vật liệu không
     cùng giá trị với mực trên mặt phẳng.
 
-    Hai giá trị, đo ở α của chính theme mình, trường hợp KHÔNG nhoè:
+    Hai giá trị, giải với MỌI nền (xem `glassTint`), σ=0:
 
-        TỐI  #c8c8c8 trên α=0,70 → 4,50:1   (cách `foreground` 37/255)
-        SÁNG #57524a trên α=0,90 → 6,24:1   (là `secondaryForeground` sẵn có)
+        TỐI  #c8c8c8 trên α=0,72 → ≈4,5:1   (cách `foreground` 37/255)
+        SÁNG #57524a trên α=0,90 → ≈6,2:1   (là `secondaryForeground` sẵn có)
 
     Bản tối BẮT BUỘC phải đổi: ở đó `mutedForeground` rơi xuống 2,25:1, và bảng
     màu không có bậc nào quanh #c8 — `secondaryForeground` là #999999, quá tối.
     Nên nó là một màu VẬT LIỆU của riêng màn này, và nó nằm ngay cạnh con số
     làm ra nó chứ không lên bảng màu chung.
 
-    Bản sáng thì KHÔNG bắt buộc: ở α=0,90 chính `mutedForeground` cũng đã đạt
-    4,66:1. Đổi sang `secondaryForeground` — một bậc liền kề, token sẵn có — là
-    lấy thêm dư địa, vì 4,66:1 tính ở phân vị 99,5 trên một tấm ẢNH, mà mô hình
-    một-con-số của WCAG vốn giả định nền phẳng. Trên nền động thì dư địa ấy
-    không thừa.
+    Bản sáng thì KHÔNG bắt buộc: ở α=0,90 màu mờ sáng nhất còn đạt 4,5 là
+    #676767, và `mutedForeground` #6b6559 tối hơn thế nên nó tự đạt. Đổi sang
+    `secondaryForeground` — một bậc liền kề, token sẵn có — là lấy thêm dư địa,
+    vì mô hình một-con-số của WCAG giả định nền PHẲNG, còn đây là một tấm ảnh.
   */
   metaOnGlass: { color: m.lit ? '#c8c8c8' : c.secondaryForeground },
 
@@ -618,7 +677,20 @@ const stylesFor = makeStyles((c, m) => ({
   */
   block: { marginTop: spacing.lg, gap: spacing.sm },
   sectionTitle: { ...type.headline, color: c.foreground },
-  list: { gap: spacing.sm },
+  /*
+    4, không phải 8.
+
+    Bước hàng đo trên ảnh tham chiếu là ~21,5đ (bản sáng 22,2 và 22,7; bản tối
+    20,3). Bản trước cho 29đ — thưa hơn 35%, và đó là chênh lệch mật độ lớn
+    nhất giữa bản dựng và ảnh tham chiếu.
+
+    `lineHeight` GIỮ NGUYÊN 21. Muốn xuống đúng 21,5 thì phải hạ nó còn ~17,
+    mà chữ Việt xếp hai tầng dấu (`ộ`, `ế`, `ữ`) sẽ chạm nhau ở mức đó. Đặt
+    hàng nói thẳng: *"Do not sacrifice accessibility just to make a screenshot
+    match"* — nên bước hàng về 25, không về 21,5, và 4đ còn lại là cái giá của
+    một ngôn ngữ có dấu.
+  */
+  list: { gap: spacing.xs },
   /* `flex-start` chứ không `center`: một dòng hai dòng chữ thì dấu phải nằm
      cạnh dòng ĐẦU, không trôi xuống giữa khối. */
   item: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
@@ -651,15 +723,25 @@ const stylesFor = makeStyles((c, m) => ({
 
     Mực là `primaryForeground` — token "thứ nằm TRÊN màu nhấn" của mỗi theme —
     chứ không phải trắng cứng, và đó là một phép đo chứ không phải một sở
-    thích. Ở bản tối `readinessGreen` là #2bf5a8, một màu bạc hà SÁNG: một dấu
-    tick trắng trên nó đo được 1,4:1, tức không nhìn thấy. `primaryForeground`
-    của bản tối là #070708, và nó cho 14,12:1 trên đĩa xanh, 5,78:1 trên đĩa
-    đỏ. Bản sáng thì ngược lại — #ffffff trên #078055 và #de0b44: 4,97:1 và
-    4,96:1.
+    thích. Bản tối dùng #070708, và nó cho **9,12:1** trên đĩa xanh
+    (`readinessGreen` #00c785), **9,09:1** trên đĩa đỏ (`readinessRed`
+    #ff8d92). Bản sáng dùng #ffffff trên #078055 và #de0b44: 4,97:1 và 4,96:1.
 
-    Ảnh tham chiếu vẽ tick TRẮNG, và ở bản sáng đó đúng là thứ được dựng. Ở bản
-    tối thì không, vì ảnh tham chiếu bản tối dùng một màu xanh tối hơn màu của
-    app này. Phép đo thắng ảnh tham chiếu ở đúng chỗ đó.
+    Ảnh tham chiếu vẽ tick TRẮNG. Ở bản sáng đó đúng là thứ được dựng; ở bản
+    tối thì không — trắng trên hai màu ấy đo được **2,21:1** và **2,22:1**,
+    dưới cả sàn 3:1 của WCAG 1.4.11. Phép đo thắng ảnh tham chiếu ở đúng chỗ
+    đó.
+
+    ── và con số này ĐÃ ĐỔI MỘT LẦN dưới chân nó ──
+
+    Lượt đầu ghi 14,12:1 và 5,78:1, đo trên `readinessGreen` #2bf5a8 và
+    `readinessRed` #ff3b5c. Một lượt khác đổi cả hai màu ở bảng TỐI, và hai
+    con số ấy thành sai mà không luật nào kêu — `tools/palette.mjs` canh tương
+    phản của token trên NỀN của theme, không canh mực đặt TRÊN token.
+
+    Cách viết này sống sót được qua lần đổi ấy vì nó không gọi tên màu: nó gọi
+    `c.primaryForeground` trên `c.readinessGreen`. Màu đổi thì cặp vẫn đúng —
+    9,12 thay cho 14,12 — còn một mã màu viết cứng thì đã hỏng im lặng.
   */
   mark: {
     width: 20,
@@ -678,13 +760,31 @@ const stylesFor = makeStyles((c, m) => ({
   rule: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: alpha(m.ink, 0.14),
-    marginTop: spacing.xl,
+    marginTop: spacing.sm,
   },
+  /*
+    Khối hai cột khi CÓ sợi kẻ ở trên: 8 thay cho 24.
+
+    Sợi kẻ đã là dấu chia, nên `block` không cần mang thêm khoảng trống của
+    riêng nó nữa. 8 trên kẻ và 8 dưới kẻ — ĐỐI XỨNG, vì một đường chia lệch về
+    một phía sẽ đọc ra như gạch chân của khối phía trên chứ không như ranh giới
+    giữa hai khối. Đo trên bản dựng: mực-tới-mực 28,3đ, đúng bằng ảnh tham
+    chiếu bản sáng (28,3) và sát bản tối (31,7). Bản trước cộng 32 + 24 và cho
+    68–71đ, tức hơn gấp đôi.
+  */
+  blockTight: { marginTop: spacing.sm },
 
   /* Hai cột, KHÔNG kẻ dọc giữa chúng: một sợi dọc cộng với sợi ngang ở trên
      làm hai danh sách đọc ra như một cái bảng, và bảng là thứ ảnh tham chiếu
      không có. Thứ chia hai cột là khoảng trắng. */
-  pair: { flexDirection: 'row', gap: spacing.lg },
+  /*
+    Rãnh 32.
+
+    Đo trên ảnh tham chiếu bản tối: cột trái bắt đầu ở 26,0đ, cột phải ở
+    218,7đ. Giải ra với lề 24 thì rãnh là 35,4 và mỗi cột rộng 157. `spacing.xl`
+    cho 32 và cột 161 — bậc token gần nhất.
+  */
+  pair: { flexDirection: 'row', gap: spacing.xl },
   col: { flex: 1, minWidth: 0, gap: spacing.sm },
 
   empty: { alignItems: 'center', gap: 4, marginTop: spacing.lg },
@@ -704,8 +804,24 @@ const stylesFor = makeStyles((c, m) => ({
     width: CLOSE,
     height: CLOSE,
     borderRadius: radius.full,
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: c.secondary,
   },
+  /*
+    ── nút đóng là KÍNH, không phải một đĩa đặc ──
+
+    Đo trên ảnh tham chiếu bản tối: độ sáng bên trong đĩa dao động 0,125 — tức
+    nhìn xuyên được. Trên bản dựng cũ nó dao động 0,015, tức đặc.
+
+    0,65 và đây là một sàn KHÔNG phụ thuộc ảnh: giải cho nền tệ nhất trên cả
+    thang xám 0..255, dấu ✕ đo được **4,69:1** ở bản tối và **6,12:1** ở bản
+    sáng. WCAG 1.4.11 đòi 3:1 cho một thành phần giao diện, và sàn ấy đạt ở
+    α≥0,52. Lấy 0,65 chứ không lấy 0,52 vì đây là LỐI RA NHÌN THẤY ĐƯỢC duy
+    nhất của màn: nó không được phép chỉ vừa đủ.
+
+    Lý do phải giải theo "mọi nền" chứ không đo trên ảnh demo: ảnh demo là tạm,
+    còn cái nút này sẽ nổi trên bất kỳ đoạn minh hoạ nào sau này.
+  */
+  closeTint: { backgroundColor: alpha(c.secondary, 0.65) },
 }));
