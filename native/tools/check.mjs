@@ -449,6 +449,14 @@ const STEPS = [
   ['hàng đợi ngoại tuyến', 'node', ['tools/offline-queue.mjs']],
   ['ngân sách ảnh', 'node', ['tools/photo-budget.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
+  /*
+    Luồng bảy màn bị thay ở Giai đoạn 3 và chữ của nó nằm lại: 49 khoá không
+    màn nào dựng nữa. Bước trên KHÔNG bắt được — nó nói thẳng rằng khoá không
+    dùng thì bỏ qua, vì hồi ấy từ điển dùng chung với app web. Nhánh này xoá
+    `src/` ở gốc, nên lý do ấy đã hết đúng trong khi câu chữ thì còn.
+  */
+  ['khoá mồ côi', 'node', ['tools/i18n-orphans.mjs']],
+  ['chuyển cảnh onboarding', 'node', ['tools/onboarding-transition.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   /*
     Two of the four speck planes behind the assistant screens became a picture

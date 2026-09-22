@@ -59,3 +59,20 @@ export const TIMING = {
   duration: duration.swap,
   easing: Easing.out(Easing.cubic),
 } as const;
+
+/**
+ * Tấm ĐANG RA sống thêm bấy nhiêu mili giây sau khi nhịp kết thúc.
+ *
+ * Cái hẹn giờ tháo tấm ấy chạy trên luồng JS, còn hiệu ứng chạy trên luồng UI.
+ * Hai luồng không cùng một đồng hồ: một lượt dựng lại nặng trên luồng JS đẩy
+ * cú `setTimeout` đến muộn, nhưng nó cũng có thể tới SỚM hơn khung cuối cùng
+ * mà luồng UI vẽ. Tháo đúng ở `duration` là đặt cược rằng điều thứ hai không
+ * bao giờ xảy ra — và khi nó xảy ra thì khung cuối bị cắt, tức đúng một nháy
+ * trắng ở cuối mỗi cú chuyển.
+ *
+ * Con số này không phải một phần của chuyển động: người dùng không nhìn thấy
+ * nó, vì ở `duration` tấm ra đã mờ hẳn hoặc đã khuất. Nó là biên an toàn giữa
+ * hai đồng hồ, nên nó KHÔNG lấy từ thang nhịp của repo — `duration.toggle` ở
+ * đây sẽ là một lời nói dối rằng có thứ gì đó đang chuyển động trong 180ms ấy.
+ */
+export const LINGER = 60;

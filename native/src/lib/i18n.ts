@@ -605,16 +605,6 @@ interface Translations {
   groceryNameRequired: string;
   groceryCategories: Record<string, string>;
 
-  // Onboarding
-  onboardingSetup: string;
-  onboardingStep: string;
-  onboardingStepPersonal: string;
-  onboardingStepGoal: string;
-  onboardingStepTraining: string;
-  onboardingStepLifestyle: string;
-  onboardingStepDiet: string;
-  onboardingStepSupplements: string;
-  onboardingStepConnect: string;
   /* ── onboarding 13 màn (Giai đoạn 3) ── */
   obBack: string;
   obNext: string;
@@ -688,64 +678,34 @@ interface Translations {
   obHealthConnect: string;
   obHealthLater: string;
   obHealthLegal: string;
-  obHealthDone: string;
   obReadyEyebrow: string;
   obReadyLine: string;
   obReadyCta: string;
   obReadyLegal: string;
 
-  onboardingConnectIntro: string;
-  onboardingHealthTitle: string;
+  /*
+    Mười hai khoá mang tiền tố `onboarding` mà onboarding gần như không dựng:
+    `onboardingHealthWhy` là của màn 12, mười một khoá còn lại là nhãn của
+    **Sửa hồ sơ**. Cái tên nói dối, và nó nói dối vì luồng bảy màn cũ đã sinh
+    ra chúng — luồng ấy bị thay, còn chỗ dựng chúng thì không.
+
+    Không đổi tên trong lượt này, có chủ ý: một cú đổi tên chạm hai cột từ
+    điển và hai màn, mà không sửa một lỗi nào người dùng nhìn thấy được. Ghi
+    lại ở đây để người sau đọc `onboarding*` còn biết tiền tố ấy KHÔNG phải
+    một lời hứa về nơi khoá được dựng.
+  */
   onboardingHealthWhy: string;
-  onboardingHealthConnect: string;
-  onboardingHealthConnected: string;
-  onboardingRemindTitle: string;
-  onboardingRemindWhy: string;
-  onboardingRemindEnable: string;
-  onboardingRemindEnabled: string;
-  onboardingConnectLater: string;
-  onboardingYourGoal: string;
   onboardingTrainingLevel: string;
   onboardingBeginner: string;
-  onboardingBeginnerDesc: string;
   onboardingIntermediate: string;
-  onboardingIntermediateDesc: string;
   onboardingAdvanced: string;
-  onboardingAdvancedDesc: string;
-  onboardingDailyActivity: string;
-  onboardingWorkType: string;
-  onboardingWorkSedentary: string;
-  onboardingWorkActive: string;
-  onboardingAutoCalc: string;
   onboardingDiet: string;
   onboardingAllergies: string;
   onboardingDislikedFoods: string;
-  onboardingComplete: string;
-  onboardingCompleting: string;
-  onboardingFinish: string;
-  onboardingGoalBulk: string;
-  onboardingGoalBulkDesc: string;
-  onboardingGoalCut: string;
-  onboardingGoalCutDesc: string;
-  onboardingGoalMaintain: string;
-  onboardingGoalMaintainDesc: string;
-  onboardingGoalRecomp: string;
-  onboardingGoalRecompDesc: string;
-  onboardingGoalStrength: string;
-  onboardingGoalStrengthDesc: string;
-  onboardingGoalEndurance: string;
-  onboardingGoalEnduranceDesc: string;
-  onboardingWakeTime: string;
-  onboardingSleepTime: string;
   onboardingDietOmnivore: string;
   onboardingDietVegetarian: string;
   onboardingDietHalal: string;
   onboardingDislikedFoodsPlaceholder: string;
-  onboardingSelectSupplements: string;
-  onboardingSummary: string;
-  onboardingPrev: string;
-  onboardingNext: string;
-  onboardingDone: string;
 
   // Muscle groups
   muscleChest: string;
@@ -1466,15 +1426,6 @@ const vi: Translations = {
     'Đồ uống': 'Đồ uống', 'Supplements': 'Supplements', 'Khác': 'Khác',
   },
 
-  onboardingSetup: 'Thiết lập hồ sơ của bạn',
-  onboardingStep: 'Bước',
-  onboardingStepPersonal: 'Thông tin cá nhân',
-  onboardingStepGoal: 'Mục tiêu',
-  onboardingStepTraining: 'Trình độ tập',
-  onboardingStepLifestyle: 'Lịch sinh hoạt',
-  onboardingStepDiet: 'Chế độ ăn',
-  onboardingStepSupplements: 'Thực phẩm bổ sung',
-  onboardingStepConnect: 'Kết nối',
   /* ── onboarding 13 màn (Giai đoạn 3) ── */
   obBack: 'Quay lại',
   obNext: 'Tiếp',
@@ -1548,64 +1499,23 @@ const vi: Translations = {
   obHealthConnect: 'Kết nối Sức khoẻ',
   obHealthLater: 'Để sau',
   obHealthLegal: 'Số liệu sức khoẻ không rời khỏi máy này.',
-  obHealthDone: 'Đã kết nối',
   obReadyEyebrow: 'Tất cả đã sẵn sàng',
   obReadyLine: 'Lần Ascend đầu tiên của bạn bắt đầu ở đây.',
   obReadyCta: 'Bắt đầu hành trình',
   obReadyLegal: 'Bắt đầu tức là bạn đồng ý với Điều khoản, Quyền riêng tư và Dữ liệu sức khoẻ.',
 
-  onboardingConnectIntro: 'Hai thứ này làm app tự chạy thay vì bắt bạn nhập tay. Bỏ qua cũng được, bật lại trong Cài đặt bất cứ lúc nào.',
-  onboardingHealthTitle: 'Apple Health',
   onboardingHealthWhy: 'Hoạt động, giấc ngủ và số liệu từ iPhone hoặc Apple Watch giúp kế hoạch tự cập nhật theo tuần của bạn, thay vì chờ bạn nhập tay từng ngày.',
-  onboardingHealthConnect: 'Kết nối Apple Health',
-  onboardingHealthConnected: 'Đã kết nối',
-  onboardingRemindTitle: 'Nhắc nhở',
-  onboardingRemindWhy: 'Nhắc uống nước, ghi bữa ăn và đi ngủ đúng giờ bạn vừa chọn.',
-  onboardingRemindEnable: 'Bật nhắc nhở',
-  onboardingRemindEnabled: 'Đã bật',
-  onboardingConnectLater: 'Bỏ qua, để sau',
-  onboardingYourGoal: 'Mục tiêu của bạn',
   onboardingTrainingLevel: 'Trình độ tập luyện',
   onboardingBeginner: 'Người mới',
-  onboardingBeginnerDesc: '< 1 năm tập',
   onboardingIntermediate: 'Trung cấp',
-  onboardingIntermediateDesc: '1–3 năm tập',
   onboardingAdvanced: 'Nâng cao',
-  onboardingAdvancedDesc: '3+ năm tập',
-  onboardingDailyActivity: 'Mức độ vận động hàng ngày',
-  onboardingWorkType: 'Loại công việc',
-  onboardingWorkSedentary: 'Ngồi nhiều (văn phòng)',
-  onboardingWorkActive: 'Vận động (chân tay)',
-  onboardingAutoCalc: 'Tính toán tự động',
   onboardingDiet: 'Chế độ ăn',
   onboardingAllergies: 'Dị ứng thực phẩm',
   onboardingDislikedFoods: 'Thực phẩm không thích',
-  onboardingComplete: 'Thiết lập hoàn tất!',
-  onboardingCompleting: 'Đang hoàn tất...',
-  onboardingFinish: 'Hoàn tất thiết lập',
-  onboardingGoalBulk: 'Tăng cân (Lean Bulk)',
-  onboardingGoalBulkDesc: 'Tăng cơ, surplus ~10%',
-  onboardingGoalCut: 'Giảm cân (Cut)',
-  onboardingGoalCutDesc: 'Giảm mỡ, deficit ~20%',
-  onboardingGoalMaintain: 'Duy trì (Maintain)',
-  onboardingGoalMaintainDesc: 'Giữ cân nặng hiện tại',
-  onboardingGoalRecomp: 'Tái cấu trúc (Recomp)',
-  onboardingGoalRecompDesc: 'Giảm mỡ + tăng cơ',
-  onboardingGoalStrength: 'Sức mạnh (Strength)',
-  onboardingGoalStrengthDesc: 'Tập trung tăng lực',
-  onboardingGoalEndurance: 'Sức bền (Endurance)',
-  onboardingGoalEnduranceDesc: 'Cardio, chịu đựng',
-  onboardingWakeTime: 'Giờ thức dậy',
-  onboardingSleepTime: 'Giờ đi ngủ',
   onboardingDietOmnivore: 'Ăn tất cả',
   onboardingDietVegetarian: 'Ăn chay',
   onboardingDietHalal: 'Halal',
   onboardingDislikedFoodsPlaceholder: 'VD: hành, mùi, nội tạng',
-  onboardingSelectSupplements: 'Chọn supplement cho stack của bạn',
-  onboardingSummary: 'Tóm tắt mục tiêu',
-  onboardingPrev: 'Quay lại',
-  onboardingNext: 'Tiếp theo',
-  onboardingDone: 'Hoàn tất',
 
   muscleChest: 'Ngực',
   muscleBack: 'Lưng',
@@ -2298,15 +2208,6 @@ const en: Translations = {
     'Đồ uống': 'Beverages', 'Supplements': 'Supplements', 'Khác': 'Other',
   },
 
-  onboardingSetup: 'Set up your profile',
-  onboardingStep: 'Step',
-  onboardingStepPersonal: 'Personal info',
-  onboardingStepGoal: 'Goal',
-  onboardingStepTraining: 'Training level',
-  onboardingStepLifestyle: 'Lifestyle',
-  onboardingStepDiet: 'Diet',
-  onboardingStepSupplements: 'Supplements',
-  onboardingStepConnect: 'Connect',
   /* ── onboarding 13 màn (Giai đoạn 3) ── */
   obBack: 'Back',
   obNext: 'Continue',
@@ -2380,64 +2281,23 @@ const en: Translations = {
   obHealthConnect: 'Connect Health',
   obHealthLater: 'Not now',
   obHealthLegal: 'Health data never leaves this device.',
-  obHealthDone: 'Connected',
   obReadyEyebrow: 'Everything is ready',
   obReadyLine: 'Your first ascend starts here.',
   obReadyCta: 'Start the journey',
   obReadyLegal: 'By starting you agree to the Terms, the Privacy Policy and the Health Data notice.',
 
-  onboardingConnectIntro: 'These two let the app work on its own instead of asking you to type. Skipping is fine — you can turn them on later in Settings.',
-  onboardingHealthTitle: 'Apple Health',
   onboardingHealthWhy: 'Activity, sleep and vitals from your iPhone or Apple Watch keep the plan current with your week, instead of waiting for you to type each day in.',
-  onboardingHealthConnect: 'Connect Apple Health',
-  onboardingHealthConnected: 'Connected',
-  onboardingRemindTitle: 'Reminders',
-  onboardingRemindWhy: 'Nudges for water, meals and bedtime, at the hours you just set.',
-  onboardingRemindEnable: 'Turn on reminders',
-  onboardingRemindEnabled: 'On',
-  onboardingConnectLater: 'Skip for now',
-  onboardingYourGoal: 'Your goal',
   onboardingTrainingLevel: 'Training level',
   onboardingBeginner: 'Beginner',
-  onboardingBeginnerDesc: '< 1 year',
   onboardingIntermediate: 'Intermediate',
-  onboardingIntermediateDesc: '1–3 years',
   onboardingAdvanced: 'Advanced',
-  onboardingAdvancedDesc: '3+ years',
-  onboardingDailyActivity: 'Daily activity level',
-  onboardingWorkType: 'Work type',
-  onboardingWorkSedentary: 'Sedentary (office)',
-  onboardingWorkActive: 'Active (physical)',
-  onboardingAutoCalc: 'Auto-calculated',
   onboardingDiet: 'Dietary preference',
   onboardingAllergies: 'Food allergies',
   onboardingDislikedFoods: 'Disliked foods',
-  onboardingComplete: 'Setup complete!',
-  onboardingCompleting: 'Completing...',
-  onboardingFinish: 'Complete setup',
-  onboardingGoalBulk: 'Lean Bulk',
-  onboardingGoalBulkDesc: 'Build muscle, surplus ~10%',
-  onboardingGoalCut: 'Cut',
-  onboardingGoalCutDesc: 'Lose fat, deficit ~20%',
-  onboardingGoalMaintain: 'Maintain',
-  onboardingGoalMaintainDesc: 'Keep current weight',
-  onboardingGoalRecomp: 'Body Recomp',
-  onboardingGoalRecompDesc: 'Lose fat + gain muscle',
-  onboardingGoalStrength: 'Strength',
-  onboardingGoalStrengthDesc: 'Focus on getting stronger',
-  onboardingGoalEndurance: 'Endurance',
-  onboardingGoalEnduranceDesc: 'Cardio, stamina',
-  onboardingWakeTime: 'Wake time',
-  onboardingSleepTime: 'Bedtime',
   onboardingDietOmnivore: 'Omnivore',
   onboardingDietVegetarian: 'Vegetarian',
   onboardingDietHalal: 'Halal',
   onboardingDislikedFoodsPlaceholder: 'e.g. onion, cilantro, organ meats',
-  onboardingSelectSupplements: 'Select supplements for your stack',
-  onboardingSummary: 'Goal summary',
-  onboardingPrev: 'Back',
-  onboardingNext: 'Next',
-  onboardingDone: 'Done',
 
   muscleChest: 'Chest',
   muscleBack: 'Back',

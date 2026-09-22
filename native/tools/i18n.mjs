@@ -68,14 +68,6 @@ const KEPT = new Set([
   'nRestSetOf',              // "Set {n}/{t}" — cùng lý do với nRdSet ngay trên
   'onboardingDietHalal',     // proper noun
   'nQuickProtein',           // only reachable from an unreferenced component
-  /*
-    Apple's own product name, and the one string on that card that must not be
-    translated: the person is about to be shown an iOS permission sheet that
-    says "Apple Health" in English regardless of the phone's language, and a
-    card calling it something else is a card about a different app. The
-    sentence explaining *why* is translated; the name is not.
-  */
-  'onboardingHealthTitle',
 ]);
 
 function walk(dir) {

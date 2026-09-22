@@ -6,7 +6,7 @@ import {
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { PARALLAX, TIMING } from '@/constants/onboarding-motion';
+import { LINGER, PARALLAX, TIMING } from '@/constants/onboarding-motion';
 
 /**
  * Hai tấm, một tiến trình — cú chuyển màn của onboarding.
@@ -66,7 +66,7 @@ export function useStageMotion<K extends string>({
         `withTiming` kết thúc ở khung hình đầu tiên SAU mốc, và tháo sớm một
         khung là thấy nó biến mất giữa đường.
       */
-      clear.current = setTimeout(() => setOutKey(null), TIMING.duration + 60);
+      clear.current = setTimeout(() => setOutKey(null), TIMING.duration + LINGER);
     },
     [ownSV, t],
   );
