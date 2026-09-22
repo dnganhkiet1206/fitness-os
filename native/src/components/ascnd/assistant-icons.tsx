@@ -174,11 +174,35 @@ export const GLYPH_TINT: Record<GlyphName, PaletteKey> = {
   chevron: 'glassMuted',
   plus: 'glassMuted',
   clock: 'primary',
-  /* Red, alone among the chrome glyphs. Deleting a conversation is the one
-     irreversible thing on that screen and the only one worth colouring. */
-  trash: 'readinessRed',
+  /*
+    Red, alone among the chrome glyphs. Deleting a conversation is the one
+    irreversible thing on that screen and the only one worth colouring.
+
+    `destructive`, không phải `readinessRed`. Hai khoá ấy TRÙNG giá trị ở cả hai
+    diện mạo cho tới 22/09 (#ff3b5c tối · #de0b44 sáng), nên không ai phải chọn
+    — và vì thế cái thùng rác vô tình đọc màu qua khoá của một TRẠNG THÁI SẴN
+    SÀNG. Khi bộ ba ấy được chỉnh cho ngang hàng, `readinessRed` mềm đi một bậc
+    và kéo theo cái thùng rác, dù không ai định làm cho việc xoá bớt dứt khoát.
+
+    Nay nó đọc khoá nói đúng điều nó làm. Màu vẽ ra KHÔNG đổi một điểm ảnh so
+    với trước 22/09, ở cả hai diện mạo — `destructive` giữ nguyên hai giá trị ấy.
+  */
+  trash: 'destructive',
   user: 'primary',
-  alert: 'readinessYellow',
+  /*
+    Cam cảnh báo, không phải vàng sẵn sàng và cũng không phải đỏ phá huỷ.
+
+    Glyph này dựng ở đúng hai chỗ, và cả hai đều là một LƯU Ý chứ không phải
+    một lỗi: dòng miễn trừ y tế của AI Coach (*"AI chỉ hỗ trợ nhắc nhở thói
+    quen, không chẩn đoán"*) và dòng *"Chưa đọc được hôm nay. Chạm để thử lại."*
+    Không chỗ nào có gì hỏng, và không chỗ nào có gì bị xoá.
+
+    Nó từng mượn `readinessYellow` — tức trôi theo trạng thái sẵn sàng của
+    người dùng, một đại lượng chẳng liên quan gì tới nó. `metricOrange` tách nó
+    ra mà vẫn giữ đúng nghĩa cảnh báo, và nó dùng chung tông với `flame` và
+    `camera`, hai glyph đã đọc khoá ấy.
+  */
+  alert: 'metricOrange',
   /* Steel. Nothing else in the set owns a cool grey-blue, and it is what the
      object is made of — the one glyph here where the literal reading is also
      the distinctive one. */
@@ -225,9 +249,12 @@ const DARK_HILITE: Record<GlyphName, string> = {
   chevron: '#ffffff',
   plus: '#ffffff',
   clock: '#f2f3f6',
+  /* Không đổi: `destructive` bản tối bằng đúng `readinessRed` cũ (#ff3b5c). */
   trash: '#ff8fa8',
   user: '#e8e8ee',
-  alert: '#fff0a8',
+  /* Theo tint mới — cùng điểm sáng với `flame` và `camera`, ba glyph cùng đọc
+     `metricOrange` thì cùng một cặp điểm dừng. */
+  alert: '#ffd08a',
   dumbbell: '#cfe0f5',
 };
 

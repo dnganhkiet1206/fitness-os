@@ -76,19 +76,24 @@ const { palettes, materials } = loadPalette();
 
   ── một câu hỏi CHƯA được trả lời, ghi ra để không ai tưởng là đã ──
 
+  ── và câu hỏi ấy ĐÃ được trả lời ngay sau đó ──
+
   `trash` và `alert` mượn bộ ba sẵn sàng làm sắc chung chứ không mang nghĩa
-  "trạng thái hôm nay" — chúng là hành động xoá và một cảnh báo. Trước lượt này
-  `readinessRed` tình cờ trùng đúng `destructive` (#ff3b5c), nên không ai phải
-  chọn. Nay hai giá trị ấy tách ra, và `trash` mềm đi một bậc. Chỉ về
-  `destructive`/`readinessYellow` là một quyết định THIẾT KẾ riêng, không phải
-  hệ quả của lượt này, nên nó không được làm ở đây.
+  "trạng thái hôm nay". Chủ dự án chốt: `trash` → `destructive`, `alert` →
+  `metricOrange`. Nên hai ô ấy KHÔNG mang giá trị readiness mới:
+
+      trash  #ff3b5c   `destructive` — bằng đúng `readinessRed` TRƯỚC 22/09,
+                       tức cái thùng rác quay về chính xác màu nó vốn có
+      alert  #ff9130   `metricOrange` — cảnh báo, không phải phá huỷ. Glyph này
+                       chỉ dựng ở dòng miễn trừ y tế và dòng "chạm để thử lại";
+                       cả hai là LƯU Ý, không chỗ nào có gì hỏng
 */
 const FROZEN_DARK = {
   heart: '#ff8d92', moon: '#8b5cff', flame: '#ff9130', bolt: '#cdac00',
   leaf: '#00c785', pulse: '#3ba6ff', spark: '#b45cff', gauge: '#00c785',
   sliders: '#a8afbd', arrow: '#c8ccd4', camera: '#ff9130', calendar: '#22e3ff',
   home: '#a8afbd', chevron: '#c8ccd4', plus: '#c8ccd4', clock: '#a8afbd',
-  trash: '#ff8d92', user: '#a8afbd', alert: '#cdac00', dumbbell: '#7f9cc4',
+  trash: '#ff3b5c', user: '#a8afbd', alert: '#ff9130', dumbbell: '#7f9cc4',
 };
 
 const src = readFileSync(path.join(NATIVE, ICONS), 'utf8');
