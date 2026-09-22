@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Check, X } from 'lucide-react-native';
+import { Bookmark, Check, Play, X } from 'lucide-react-native';
 import {
   ActivityIndicator,
   ScrollView,
@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuideMedia } from '@/components/ascnd/guide-media';
 import { Icon } from '@/components/ascnd/icon';
@@ -95,21 +96,32 @@ import { nav } from '@/lib/nav';
  * bên trong nó. Thu khung lại lúc ấy là một cú nhảy bố cục giữa lúc đang đọc —
  * đúng thứ đặt hàng cấm.
  *
- * ── KHÔNG có ba thứ mà ảnh tham chiếu có ──
+ * ── BỐN THỨ KHÔNG BẤM ĐƯỢC, và vì sao chúng vẫn ở đây ──
  *
- * **Không tab** (`Tổng quan · Cơ tác động · Thiết bị · Liên quan`). Ba trong
- * bốn tab ấy không có một dòng dữ liệu nào ở sau, và đặt hàng nói thẳng: *"NO
- * EMPTY TABS. NO PLACEHOLDER CONTENT. NO FAKE PRODUCT FEATURES."*
+ * Ba lượt đầu, màn này CỐ Ý không dựng hàng tab, nút play và khu hành động ở
+ * đáy — lý do ghi lại đầy đủ ở từng chỗ, và nó không sai: ba trong bốn tab
+ * không có một dòng dữ liệu nào ở sau, đoạn minh hoạ tự chạy nên không có gì
+ * để "play", và dấu trang không có kho nào để lưu vào.
  *
- * **Không nút "Bắt đầu bài tập"** ở đáy. Màn này được mở TỪ TRONG một buổi tập
- * đang chạy — người ta đang làm chính bài ấy. Một nút mời họ bắt đầu thứ họ
- * đang làm thì hoặc không làm gì, hoặc làm một việc thứ hai mà buổi tập không
- * có khái niệm. Lối ra khỏi màn này là đóng nó lại, và đó là điều duy nhất cần.
+ * Chủ dự án đã đọc những lý do ấy và **chốt ngược lại**: giữ cả bốn, làm chỗ
+ * đứng thị giác cho mô hình nội dung sau này — *"They are visual/product
+ * placeholders for the future content model."* Đó là quyết định của họ, và nó
+ * được thực hiện đầy đủ.
  *
- * **Không nút play, không `···`, không dấu trang.** Đoạn minh hoạ tự chạy, tắt
- * tiếng, không điều khiển — đã đo ở lượt kiểm media; một nút play vẽ thêm là
- * một cái nút nói ngược lại hành vi thật. Hai cái kia không có hành động nào ở
- * sau.
+ * Thứ KHÔNG bị đánh đổi là chuyện nói thật với bộ đọc màn hình. Cả bốn được
+ * dựng `pointerEvents="none"` và `accessibilityElementsHidden`, nên:
+ *
+ *     mắt        thấy đúng cấu trúc của ảnh tham chiếu
+ *     VoiceOver  KHÔNG được kể rằng có bốn nút chuyển mục, một nút phát và
+ *                một nút lưu — vì không có
+ *
+ * Ngoại lệ duy nhất là NÚT LỚN ở đáy: nó bấm được, và nó làm đúng một việc có
+ * thật — `nav.back()`, cùng lệnh với dấu ✕ và cú vuốt xuống. Màn này chỉ mở
+ * được từ trong một buổi đang chạy, nên "bắt đầu bài tập" nghĩa là thôi đọc và
+ * quay lại làm. Không hành vi sản phẩm nào được thêm.
+ *
+ * Còn `···` ở góc trên-phải thì vẫn không dựng: đặt hàng không nhắc tới nó, và
+ * nó không có cả một hình dáng để giữ chỗ cho cái gì.
  */
 export default function ExerciseGuideSheet() {
   const c = usePalette();
@@ -119,6 +131,15 @@ export default function ExerciseGuideSheet() {
      bật — xem `surfaceGlass`. */
   const { themeName } = useAppSettings();
   const dark = themeName === 'dark';
+  /*
+    CHỈ `insets.bottom`, và chỉ cho khu hành động ở đáy.
+
+    `insets.top` thì KHÔNG, và `tools/exercise-guide.mjs` luật 21 cấm nó: một
+    pageSheet đã nằm dưới thanh trạng thái rồi, nên cộng vào là cộng hai lần và
+    cái đĩa đóng rơi xuống chỗ tên bài — đã xảy ra trên máy thật. Mép DƯỚI thì
+    khác: sheet chạm đáy màn, nên thanh home thật sự nằm đè lên nó.
+  */
+  const insets = useSafeAreaInsets();
   /* Hai cột chỉ đúng khi chúng còn đọc được — xem `styles.pair`. */
   const { width, fontScale } = useWindowDimensions();
   /* 3:4 — xem `heroFrame` trong `guide-media.tsx`. Chiều cao phải tính ở đây
@@ -244,6 +265,9 @@ export default function ExerciseGuideSheet() {
             hasCues={cues.length > 0}
             i18n={i18n}
             hero
+            /* Mặt giấy chồng lên đáy khung — nhãn thời lượng phải nhảy lên trên
+               phần bị che, không thì nó nằm sau kính. */
+            coveredBy={overlap}
           />
         </View>
       ) : null}
@@ -285,19 +309,88 @@ export default function ExerciseGuideSheet() {
               Bắt chạm ở đây sẽ nuốt mất cú vuốt xuống mà nó đang quảng cáo. */}
           <View style={[styles.grabber, hero ? styles.grabberOnGlass : null]} pointerEvents="none" />
 
-          {g?.name || title ? (
-            <Text
-              style={[styles.title, hero ? null : styles.titleClearsClose]}
-              accessibilityRole="header">
-              {g?.name || title}
-            </Text>
-          ) : null}
-          {meta ? (
-            <Text
-              style={[styles.meta, hero ? styles.metaOnGlass : null]}
-              accessibilityLabel={metaA11y}>
-              {meta}
-            </Text>
+          {/*
+            ── HÀNG ĐẦU: chữ bên trái, nút play bên phải ──
+
+            Ảnh tham chiếu bản TỐI — thứ đặt hàng gọi là nguồn sự thật thị giác
+            — đặt nút play trong hàng tên bài, không phải nổi trên hình. Ảnh
+            bản sáng đặt nó dưới góc phải hình; hai ảnh không thống nhất, và
+            bản tối thắng vì nó được chỉ định.
+          */}
+          <View style={[styles.headRow, hero ? null : styles.titleClearsClose]}>
+            <View style={styles.headText}>
+              {g?.name || title ? (
+                <Text style={styles.title} accessibilityRole="header">
+                  {g?.name || title}
+                </Text>
+              ) : null}
+              {meta ? (
+                <Text
+                  style={[styles.meta, hero ? styles.metaOnGlass : null]}
+                  accessibilityLabel={metaA11y}>
+                  {meta}
+                </Text>
+              ) : null}
+            </View>
+            {/*
+              ── nút play KHÔNG NHẬN CHẠM, và đó là một lời nói thật ──
+
+              Đoạn minh hoạ tự chạy, lặp, tắt tiếng, không điều khiển — đã đo ở
+              lượt kiểm media và vẫn đúng. Nên không có gì để "play". Đặt hàng
+              đòi hình dáng ấy và cấm thêm hành vi sản phẩm mới ("Do not add new
+              product behavior"), nên nó được dựng như một hình vẽ: không
+              `onPress`, và giấu khỏi cây trợ năng để bộ đọc màn hình không gọi
+              nó là một cái nút.
+
+              Khi có media THẬT và có API tạm dừng, đây là chỗ nó nối vào.
+            */}
+            {hero ? (
+              <View
+                style={styles.play}
+                pointerEvents="none"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants">
+                <Icon icon={Play} size={16} color={c.foreground} fill={c.foreground} />
+              </View>
+            ) : null}
+          </View>
+
+          {/*
+            ── HÀNG TAB: bốn nhãn, một cái được chọn, KHÔNG cái nào bấm được ──
+
+            Ba trong bốn không có dữ liệu ở sau — xem khối chú thích ở
+            `nEgTabOverview` trong `native-strings.ts`. Chủ dự án chốt giữ chúng
+            làm chỗ đứng thị giác: *"They are visual/product placeholders for
+            the future content model."*
+
+            Cả hàng bị giấu khỏi trợ năng. Đó là ranh giới tôi giữ được: mắt
+            thấy cấu trúc của ảnh tham chiếu, còn bộ đọc màn hình KHÔNG bị kể
+            rằng có bốn cái nút chuyển mục — vì không có.
+          */}
+          {showMedia ? (
+            <View
+              style={[styles.tabs, hero ? styles.tabsOnGlass : null]}
+              pointerEvents="none"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants">
+              {[
+                [i18n.nEgTabOverview, true],
+                [i18n.nEgTabMuscles, false],
+                [i18n.nEgTabEquipment, false],
+                [i18n.nEgTabRelated, false],
+              ].map(([label, on]) => (
+                <View key={label as string} style={[styles.tab, on ? styles.tabOn : null]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.tabText,
+                      on ? styles.tabTextOn : hero ? styles.metaOnGlass : null,
+                    ]}>
+                    {label as string}
+                  </Text>
+                </View>
+              ))}
+            </View>
           ) : null}
 
           {/* Không có hình thì câu ấy xuống đây, gọn — không dựng một khung
@@ -431,6 +524,47 @@ export default function ExerciseGuideSheet() {
       </ScrollView>
 
       {/*
+        ── KHU HÀNH ĐỘNG Ở ĐÁY ──
+
+        Neo vào đáy chứ không cuộn theo: ảnh tham chiếu đặt nó cố định, và một
+        CTA trôi mất khi cuộn thì không còn là CTA.
+
+        **Nút lớn ĐÓNG sheet.** Đó là hành động thật duy nhất tồn tại ở đây:
+        màn này chỉ mở được từ trong một buổi tập đang chạy (luật 4 của cổng
+        canh rằng có đúng MỘT lối vào, từ `day-plan`), nên người đọc nó đang
+        làm chính bài ấy. "Bắt đầu bài tập" = thôi đọc, quay lại làm. Cùng một
+        lệnh `nav.back()` với dấu ✕ và cú vuốt xuống — KHÔNG có hành vi sản
+        phẩm mới nào được thêm, đúng như đặt hàng dặn.
+
+        **Dấu trang thì KHÔNG bấm được.** Không có kho nào để lưu vào, và đặt
+        hàng cấm đụng schema, migration lẫn mô hình dữ liệu của màn này. Một
+        cái nút bật/tắt một trạng thái không tồn tại là nói dối; một hình vẽ
+        giữ chỗ thì không. Nên nó được dựng như hàng tab: không `onPress`, và
+        giấu khỏi cây trợ năng.
+      */}
+      {showMedia ? (
+        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.nEgStart}
+            onPress={() => {
+              Haptics.selectionAsync();
+              nav.back();
+            }}
+            style={styles.cta}>
+            <Text style={styles.ctaText}>{i18n.nEgStart}</Text>
+          </PressScale>
+          <View
+            style={styles.mark2}
+            pointerEvents="none"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants">
+            <Icon icon={Bookmark} size={18} color={c.foreground} />
+          </View>
+        </View>
+      ) : null}
+
+      {/*
         ── LỐI RA: nổi trên hình, không tranh chỗ với tên bài ──
 
         `SheetHeader` không dùng được ở đây, và đó là một quyết định có ghi lại
@@ -542,11 +676,91 @@ const stylesFor = makeStyles((c, m) => ({
       của ảnh tham chiếu là 25–27. `spacing.lg` là bậc token gần nhất.
     */
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
+    /* 48 (CTA) + hai lề + chỗ cho `insets.bottom` — nội dung không được
+       chui xuống dưới khu hành động neo đáy. */
+    paddingBottom: 48 + spacing.xl + spacing.xl,
     gap: spacing.xs,
   },
   /* Không có hình dẫn thì không có gì để nhìn xuyên qua — mặt giấy đục hẳn. */
   surfaceOpaque: { backgroundColor: c.card },
+
+  /* Tên bài + siêu dữ liệu bên trái, nút play bên phải, đáy căn theo dòng
+     siêu dữ liệu. `minWidth: 0` để tên dài cắt bớt thay vì đẩy nút ra ngoài. */
+  headRow: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.md },
+  headText: { flex: 1, minWidth: 0, gap: spacing.xs },
+  play: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.full,
+    backgroundColor: c.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+
+  /*
+    Hàng tab: một rãnh mờ, viên đang chọn được tô nhạt.
+
+    `alpha(m.ink, …)` chứ không phải một token màu: nó phải đọc ra là một lớp
+    VẬT LIỆU trên kính, và mực của theme tự lật chiều. Không viền — đặt hàng
+    nói thẳng *"no heavy border"*.
+  */
+  tabs: {
+    flexDirection: 'row',
+    borderRadius: radius.full,
+    backgroundColor: alpha(m.ink, 0.06),
+    padding: 3,
+    marginTop: spacing.md,
+  },
+  tabsOnGlass: { backgroundColor: alpha(m.ink, 0.1) },
+  tab: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tabOn: { backgroundColor: alpha(m.ink, 0.12) },
+  tabText: { ...type.footnote, color: c.mutedForeground },
+  tabTextOn: { color: c.foreground, fontWeight: '600' },
+
+  /*
+    ── khu hành động: neo đáy, nổi trên dòng cuộn ──
+
+    CTA lấy `c.foreground` làm nền và `c.card` làm chữ, nên nó SÁNG trên bản
+    tối và TỐI trên bản sáng — đúng cả hai ảnh tham chiếu, và đúng lời dặn
+    *"Do not make the CTA dark in dark mode."* Đo được: 16,46:1 ở bản tối,
+    17,57:1 ở bản sáng.
+
+    Cao 48: ảnh tham chiếu đo được 46,3đ, và 48 là bậc nút lớn quen thuộc của
+    iOS — chênh 1,7đ, đổi lại một vùng chạm tử tế.
+  */
+  footer: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cta: {
+    flex: 1,
+    height: 48,
+    borderRadius: radius.full,
+    backgroundColor: c.foreground,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaText: { ...type.headline, color: c.card },
+  mark2: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.full,
+    backgroundColor: c.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   /*
     Góc bo của tờ giấy được kéo lên.
 

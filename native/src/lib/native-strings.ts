@@ -411,6 +411,32 @@ const en = {
   nEgEmptyHint: 'Guidance comes from the exercise library, and this one has none yet',
   nEgMediaDemo: 'Temporary illustration, not a demonstration of this exercise',
   nEgMediaAlt: 'Demonstration of {v}',
+  /*
+    ── bốn nhãn tab, và chúng KHÔNG phải bốn tính năng ──
+
+    Ba trong bốn không có dữ liệu ở sau: "Muscles" và "Equipment" mỗi cái đúng
+    MỘT nhãn, và nhãn ấy đã hiện ở dòng siêu dữ liệu ngay trên; "Related" không
+    có mô hình quan hệ nào trong schema. Chủ dự án chốt giữ chúng làm chỗ đứng
+    thị giác cho mô hình nội dung sau này.
+
+    Nên hàng tab được dựng KHÔNG NHẬN CHẠM và bị giấu khỏi cây trợ năng — xem
+    `styles.tabs` trong `exercise-guide.tsx`. Bộ đọc màn hình không đọc ra bốn
+    cái nút không bấm được; mắt thấy cấu trúc của ảnh tham chiếu.
+  */
+  nEgTabOverview: 'Overview',
+  nEgTabMuscles: 'Muscles',
+  nEgTabEquipment: 'Equipment',
+  nEgTabRelated: 'Related',
+  /* Nút này ĐÓNG sheet — cùng hành động với dấu ✕ và cú vuốt xuống. Màn này
+     mở từ trong một buổi đang chạy, nên "bắt đầu bài tập" nghĩa là thôi đọc và
+     quay lại làm. Nó KHÔNG tạo hành vi sản phẩm mới.
+
+     Dấu trang cạnh nó KHÔNG có khoá chữ nào, và đó là chủ ý: nó bị giấu khỏi
+     cây trợ năng nên không có gì để đọc lên. Lượt đầu tôi thêm `a11yBookmark`
+     theo phản xạ, và luật "chữ chết" của cổng bắt ngay — một nhãn không ai
+     dựng là một lời hứa rằng thứ kia bấm được. Khi dấu trang có kho để lưu
+     vào, nhãn quay lại CÙNG với hành động, không trước. */
+  nEgStart: 'Start Exercise',
   nRdAlready: 'Already logged',
   nRdExtra: 'Did something extra? Log it separately',
   nRdAppend: 'Add to today\u2019s workout',
@@ -1272,6 +1298,11 @@ const vi: typeof en = {
   nEgEmptyHint: 'Hướng dẫn đến từ thư viện bài tập, và bài này chưa có',
   nEgMediaDemo: 'Hình minh hoạ tạm, không phải bản demo của bài tập này',
   nEgMediaAlt: 'Hình minh hoạ {v}',
+  nEgTabOverview: 'Tổng quan',
+  nEgTabMuscles: 'Cơ tác động',
+  nEgTabEquipment: 'Thiết bị',
+  nEgTabRelated: 'Liên quan',
+  nEgStart: 'Bắt đầu bài tập',
   nRdAlready: 'Đã ghi buổi tập',
   nRdExtra: 'Tập thêm bài phát sinh? Ghi riêng tại đây',
   nRdAppend: 'Ghi thêm vào buổi hôm nay',

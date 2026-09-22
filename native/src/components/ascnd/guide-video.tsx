@@ -47,6 +47,7 @@ export function GuideVideo({
   reduced,
   style,
   onFail,
+  onDuration,
 }: {
   /** URL video đã xác định — không bao giờ `null` ở đây. */
   url: string;
@@ -57,6 +58,13 @@ export function GuideVideo({
   style: StyleProp<ViewStyle>;
   /** một URL đúng vẫn 404 được; chỗ gọi cần biết để đổi sang trạng thái hỏng */
   onFail: () => void;
+  /**
+   * Thời lượng THẬT, giây, khi trình giải mã đã đọc được nó.
+   *
+   * Chỉ gọi khi `> 0`: `player.duration` là 0 suốt lúc `loading`, và một chip
+   * "0:00" trên hình là một con số SAI chứ không phải một con số chưa có.
+   */
+  onDuration?: (seconds: number) => void;
 }) {
   const player = useVideoPlayer(url, (p) => {
     p.loop = true;
@@ -72,6 +80,15 @@ export function GuideVideo({
   useEffect(() => {
     if (broke) onFail();
   }, [broke, onFail]);
+
+  /* Thời lượng chỉ có nghĩa từ `readyToPlay` trở đi — trước đó `duration` là 0.
+     Đọc trong hiệu ứng theo `status` chứ không đọc mỗi lần render: nó là một
+     giá trị của TRÌNH PHÁT, không phải một giá trị của React. */
+  useEffect(() => {
+    if (status !== 'readyToPlay') return;
+    const d = player.duration;
+    if (d > 0) onDuration?.(d);
+  }, [status, player, onDuration]);
 
   /* Trả `null` NGAY thay vì đợi chỗ gọi dựng lại: giữa hai thứ đó là một khung
      hình có một trình phát vỡ trên màn. */

@@ -421,6 +421,13 @@ if (glass.length) {
    cộng inset (`root: { paddingTop: spacing.sm }`). Màn này là chỗ duy nhất đi
    lệch.
 
+   ── và luật này TỪNG QUÁ RỘNG ──
+
+   Bản đầu cấm luôn cả `useSafeAreaInsets`. Nó đỏ ngay khi khu hành động ở đáy
+   ra đời — mà chỗ ấy CẦN `insets.bottom`, vì sheet chạm đáy màn nên thanh home
+   thật sự nằm đè lên nó. Mép TRÊN và mép DƯỚI của một pageSheet không cùng một
+   câu chuyện, nên luật phải nói đúng mép nó muốn nói.
+
    Vế thứ hai quan trọng ngang vế thứ nhất: lỗi ấy không phải "một số sai" mà là
    HAI SỐ TRÔI KHỎI NHAU — vị trí nút tính theo `insets`, còn khoảng tránh của
    tên bài là một hằng số viết tay. Nên `TITLE_CLEAR` phải được dẫn ra từ chính
@@ -431,8 +438,8 @@ const exitGeom = [
      này và vì thế chứa đúng chuỗi bị cấm. Một luật đọc cả văn xuôi sẽ phạt
      đúng người đang ghi bài học — cùng cái bẫy đã ghi ở đầu tệp cho vế
      `aspectRatio: undefined`. Và vế này tự rơi vào nó ở lần chạy đầu. */
-  inCode(sheet, 'insets.top') || inCode(sheet, 'useSafeAreaInsets')
-    ? '`exercise-guide.tsx` đọc lại inset của cửa sổ — pageSheet đã nằm dưới thanh trạng thái rồi'
+  inCode(sheet, 'insets.top')
+    ? '`exercise-guide.tsx` đọc lại `insets.top` — pageSheet đã nằm dưới thanh trạng thái rồi'
     : null,
   /const TITLE_CLEAR =\s*\n?\s*CLOSE_TOP \+ CLOSE - \(GRAB\.top \+ GRAB\.h \+ GRAB\.bottom\) - spacing\.xs;/.test(sheet)
     ? null
@@ -448,6 +455,50 @@ if (exitGeom.length) {
       'hỏng) mặt giấy bắt đầu ngay từ đỉnh, nên cái đĩa 44 điểm và tên bài tranh đúng một chỗ. Đây là lỗi ' +
       'bản web KHÔNG tự lộ được — `insets.top` ở đó là 0 — nên nó phải được canh bằng luật, chứ không bằng ' +
       'một lượt chụp ảnh nữa',
+  );
+}
+
+/* ── 22 · ba chỗ giữ chỗ phải IM LẶNG với bộ đọc màn hình ──
+
+   Hàng tab, nút play và dấu trang được dựng theo yêu cầu của chủ dự án làm chỗ
+   đứng thị giác cho mô hình nội dung sau này — *"They are visual/product
+   placeholders for the future content model."* Ba trong bốn tab không có dữ
+   liệu, đoạn minh hoạ tự chạy nên không có gì để "play", và dấu trang không có
+   kho nào để lưu vào.
+
+   Ranh giới giữ được là: MẮT thấy cấu trúc của ảnh tham chiếu, còn VoiceOver
+   KHÔNG bị kể rằng có sáu cái nút không tồn tại. Nên cả ba phải mang
+   `pointerEvents="none"` và `accessibilityElementsHidden`.
+
+   Luật này đọc MÃ vì bản web không đo được: `accessibilityElementsHidden` là
+   prop iOS-only và `importantForAccessibility` là Android-only, nên
+   react-native-web không phát ra thuộc tính nào — kiểm trên DOM thật, hàng tab
+   chỉ có `class`. `guide6.mjs` vì thế chỉ đo được hình học.
+
+   Lối hỏng nó canh: ai đó thấy ba thứ này "chưa hoạt động" và nối `onPress`
+   vào cho đủ. Lúc ấy chúng thành sáu lời hứa suông, và cái đắt nhất là lời hứa
+   với người đang dùng VoiceOver — người không thấy được rằng bấm xong không có
+   gì xảy ra. */
+CASES++;
+const placeholders = [
+  ['hàng tab', /style=\{\[styles\.tabs[\s\S]{0,200}?accessibilityElementsHidden/],
+  ['nút play', /style=\{styles\.play\}[\s\S]{0,160}?accessibilityElementsHidden/],
+  ['dấu trang', /style=\{styles\.mark2\}[\s\S]{0,160}?accessibilityElementsHidden/],
+].filter(([, re]) => !re.test(sheet)).map(([n]) => n);
+const pressable = [
+  ['hàng tab', /style=\{\[styles\.tabs[\s\S]{0,200}?pointerEvents="none"/],
+  ['nút play', /style=\{styles\.play\}[\s\S]{0,160}?pointerEvents="none"/],
+  ['dấu trang', /style=\{styles\.mark2\}[\s\S]{0,160}?pointerEvents="none"/],
+].filter(([, re]) => !re.test(sheet)).map(([n]) => n);
+if (placeholders.length || pressable.length) {
+  problems.push(
+    `${SHEET}: chỗ giữ chỗ thôi im lặng — ` +
+      [placeholders.length ? `lộ ra cho bộ đọc màn hình: ${placeholders.join(', ')}` : null,
+       pressable.length ? `nhận chạm: ${pressable.join(', ')}` : null].filter(Boolean).join('; ') +
+      '. Ba thứ này KHÔNG có gì ở sau: ba trong bốn tab không có dữ liệu, đoạn minh hoạ tự chạy nên không ' +
+      'có gì để tạm dừng, và dấu trang không có kho nào để lưu vào. Chúng được giữ làm chỗ đứng THỊ GIÁC ' +
+      'theo quyết định của chủ dự án; biến chúng thành nút là biến một khoảng trống đã biết thành một lời ' +
+      'hứa suông, và người dùng VoiceOver là người trả giá vì họ không thấy được rằng bấm xong không có gì',
   );
 }
 

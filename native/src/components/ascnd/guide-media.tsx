@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { ImageOff } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -71,6 +71,19 @@ const IMAGE_EXT = /\.(gif|webp|png|jpe?g|avif|heic|bmp)(\?|#|$)/i;
   hiện như cũ, vì một tấm ảnh tạm không phải nội dung.
 */
 const DEMO_HERO = require('../../../assets/images/exercise-demo.webp');
+/*
+  DEMO_HERO — thời lượng GIỮ CHỖ của ảnh tạm.
+
+  Ảnh tham chiếu có nhãn `0:05` cạnh media, và đặt hàng cho phép dựng nó ở chế
+  độ ảnh demo: *"it may display the demo duration placeholder required by the
+  reference layout, but make the implementation clearly distinguishable from a
+  real video duration."*
+
+  Nó KHÔNG đi qua `secs` — đường của thời lượng thật — mà là một hằng riêng
+  mang dấu `DEMO_HERO`. Gỡ ảnh tạm là gỡ luôn nó, và lúc ấy chip chỉ còn hiện
+  khi trình giải mã thật sự đọc được một con số.
+*/
+const DEMO_SECS = 5;
 
 /*
   ── CỬA DUY NHẤT vào `expo-video`, và nó có khoá ──
@@ -103,6 +116,7 @@ export function GuideMedia({
   name,
   hasCues,
   hero = false,
+  coveredBy = 0,
   i18n,
 }: {
   /** `video_url` của dòng thư viện, đã trim. `null` khi chưa có gì. */
@@ -127,6 +141,17 @@ export function GuideMedia({
    * người ta đang đọc là một cú nhảy bố cục, đúng thứ đặt hàng cấm.
    */
   hero?: boolean;
+  /**
+   * Bao nhiêu ĐIỂM ở đáy khung bị mặt giấy che.
+   *
+   * Khung hình cao hết 3:4, nhưng mặt giấy chồng lên 28% đáy của nó — nên một
+   * nhãn neo vào `bottom: 0` rơi vào vùng không ai thấy. Đã xảy ra: chip thời
+   * lượng có trong cây nhưng khuất hẳn sau kính.
+   *
+   * Khung KHÔNG tự biết con số ấy (nó là quyết định bố cục của màn), nên chỗ
+   * gọi phải nói ra. 0 nghĩa là không bị che gì.
+   */
+  coveredBy?: number;
   i18n: NativeStrings;
 }) {
   const c = usePalette();
@@ -136,8 +161,12 @@ export function GuideMedia({
   /* Media hỏng là chuyện của MÁY chứ không của dữ liệu: đường dẫn đúng vẫn 404
      được. Nên cả hai đều là state cục bộ. */
   const [imgBroke, setImgBroke] = useState(false);
+  /* Thời lượng THẬT, chỉ có khi trình giải mã đã đọc được — xem `onDuration`
+     trong `guide-video.tsx`. `null` nghĩa là CHƯA BIẾT, không phải 0 giây. */
+  const [secs, setSecs] = useState<number | null>(null);
   const [vidBroke, setVidBroke] = useState(false);
   const onVideoFail = useCallback(() => setVidBroke(true), []);
+  const onDuration = useCallback((d: number) => setSecs(d), []);
 
   const isImage = !!url && IMAGE_EXT.test(url);
   const videoUrl = url && !isImage ? url : null;
@@ -149,6 +178,25 @@ export function GuideMedia({
   const showImage = isImage && !imgBroke;
   const alt = i18n.nEgMediaAlt.replace('{v}', name);
 
+  /*
+    ── CHIP THỜI LƯỢNG ──
+
+    Ảnh tham chiếu có một nhãn `0:05` gắn với media. Ở đây nó có HAI nguồn rất
+    khác nhau, và mã phân biệt chúng rõ ràng vì một trong hai là tạm:
+
+      · media THẬT  → `secs`, đọc từ chính trình giải mã
+      · DEMO_HERO   → `DEMO_SECS`, một con số giữ chỗ
+
+    Hằng `DEMO_SECS` mang đúng dấu `DEMO_HERO` như hai chỗ kia, nên khi ảnh tạm
+    được gỡ thì nó đi cùng, và chip chỉ còn hiện khi có thời lượng thật. Không
+    có thời lượng thì KHÔNG vẽ chip — một ô trống còn thật hơn một con số bịa.
+  */
+  const clock = useMemo(() => {
+    if (secs === null) return null;
+    const t = Math.max(0, Math.round(secs));
+    return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
+  }, [secs]);
+
   if (showVideo) {
     return (
       <View style={[styles.box, styles.heroFrame]}>
@@ -158,7 +206,9 @@ export function GuideMedia({
           reduced={reduced}
           style={styles.fill}
           onFail={onVideoFail}
+          onDuration={onDuration}
         />
+        {hero && clock ? <Clock label={clock} styles={styles} lift={coveredBy} /> : null}
       </View>
     );
   }
@@ -174,6 +224,8 @@ export function GuideMedia({
           accessibilityLabel={i18n.nEgMediaDemo}
           accessible
         />
+        {/* DEMO_HERO */}
+        <Clock label={`0:${String(DEMO_SECS).padStart(2, '0')}`} styles={styles} lift={coveredBy} />
       </View>
     );
   }
@@ -219,6 +271,34 @@ export function GuideMedia({
   );
 }
 
+/**
+ * Nhãn thời lượng, góc dưới-phải của khung hình.
+ *
+ * Không nhận chạm và giấu khỏi cây trợ năng: nó là một CON SỐ về media, và
+ * nhãn trợ năng của chính khung hình đã nói khung ấy là gì. Đọc thêm "0:05"
+ * giữa lúc người ta đang dò tìm nội dung là tiếng ồn.
+ */
+function Clock({
+  label,
+  styles,
+  lift,
+}: {
+  label: string;
+  styles: ReturnType<typeof stylesFor>;
+  /** đẩy lên khỏi phần đáy bị mặt giấy che — xem `coveredBy` */
+  lift: number;
+}) {
+  return (
+    <View
+      style={[styles.clock, { bottom: lift + spacing.md }]}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants">
+      <Text style={styles.clockText}>{label}</Text>
+    </View>
+  );
+}
+
 const stylesFor = makeStyles((c, m) => ({
   box: {
     overflow: 'hidden',
@@ -241,6 +321,18 @@ const stylesFor = makeStyles((c, m) => ({
     lúc gộp style — nó không ghi đè gì cả. Cộng vào thì chạy; trừ đi thì không.
   */
   heroFrame: { aspectRatio: 3 / 4 },
+  /* Mực TRẮNG trên một lớp đen 55%: chip nổi trên một tấm ảnh chưa ai biết
+     trước màu gì, nên nó phải mang nền của chính nó. Trắng trên đen-55%-trên-
+     trắng cho 4,76:1 — đo bằng cách quét cả thang xám 0..255 phía sau, nên nó đạt sàn 4,5 với MỌI hình minh hoạ. */
+  clock: {
+    position: 'absolute',
+    right: spacing.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: radius.sm,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  clockText: { ...type.caption, color: '#ffffff', fontVariant: ['tabular-nums'] },
   fill: { width: '100%', height: '100%' },
 
   /* Hỏng mà ĐANG ở vai trò hình dẫn: khung giữ nguyên chiều cao, câu báo nằm
