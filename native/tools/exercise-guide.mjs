@@ -408,6 +408,49 @@ if (glass.length) {
   );
 }
 
+/* ── 9 · lối ra KHÔNG được đọc `insets.top`, và khoảng tránh phải DẪN RA từ nó ──
+
+   Đã xảy ra trên máy thật. Nút đóng từng đặt ở `insets.top + spacing.sm`. Trên
+   bản web `insets.top` là 0 nên mọi ảnh chụp của mọi lượt kiểm đều sạch; trên
+   iPhone nó là ~62, và `presentation: 'modal'` dựng một pageSheet mà mép trên
+   ĐÃ nằm dưới thanh trạng thái (đo được 56đ trên ảnh chủ dự án gửi). Cộng inset
+   của cửa sổ vào là cộng hai lần, và cái đĩa 44 điểm rơi xuống đúng chỗ tên
+   bài: "Dumbbell Curl" đọc thành "mbbell Curl".
+
+   `SheetHeader` — thanh đầu dùng chung của mọi sheet trong app — chưa bao giờ
+   cộng inset (`root: { paddingTop: spacing.sm }`). Màn này là chỗ duy nhất đi
+   lệch.
+
+   Vế thứ hai quan trọng ngang vế thứ nhất: lỗi ấy không phải "một số sai" mà là
+   HAI SỐ TRÔI KHỎI NHAU — vị trí nút tính theo `insets`, còn khoảng tránh của
+   tên bài là một hằng số viết tay. Nên `TITLE_CLEAR` phải được dẫn ra từ chính
+   những số dựng nên cái nút và thanh vuốt, không được là một con số gõ vào. */
+CASES++;
+const exitGeom = [
+  /* `inCode` chứ không phải regex trần: chú thích ngay trên `CLOSE` KỂ LẠI lỗi
+     này và vì thế chứa đúng chuỗi bị cấm. Một luật đọc cả văn xuôi sẽ phạt
+     đúng người đang ghi bài học — cùng cái bẫy đã ghi ở đầu tệp cho vế
+     `aspectRatio: undefined`. Và vế này tự rơi vào nó ở lần chạy đầu. */
+  inCode(sheet, 'insets.top') || inCode(sheet, 'useSafeAreaInsets')
+    ? '`exercise-guide.tsx` đọc lại inset của cửa sổ — pageSheet đã nằm dưới thanh trạng thái rồi'
+    : null,
+  /const TITLE_CLEAR =\s*\n?\s*CLOSE_TOP \+ CLOSE - \(GRAB\.top \+ GRAB\.h \+ GRAB\.bottom\) - spacing\.xs;/.test(sheet)
+    ? null
+    : '`TITLE_CLEAR` không còn được DẪN RA từ `CLOSE_TOP`/`CLOSE`/`GRAB`',
+  /titleClearsClose: \{ marginTop: TITLE_CLEAR \}/.test(sheet)
+    ? null
+    : 'tên bài thôi dùng `TITLE_CLEAR` để tránh cái đĩa',
+  /top: CLOSE_TOP,/.test(sheet) ? null : 'nút đóng thôi đặt ở `CLOSE_TOP`',
+].filter(Boolean);
+if (exitGeom.length) {
+  problems.push(
+    `${SHEET}: hình học của lối ra đã trôi — ${exitGeom.join('; ')}. Khi KHÔNG có hình dẫn (đang tải, đọc ` +
+      'hỏng) mặt giấy bắt đầu ngay từ đỉnh, nên cái đĩa 44 điểm và tên bài tranh đúng một chỗ. Đây là lỗi ' +
+      'bản web KHÔNG tự lộ được — `insets.top` ở đó là 0 — nên nó phải được canh bằng luật, chứ không bằng ' +
+      'một lượt chụp ảnh nữa',
+  );
+}
+
 if (!problems.length) {
   console.log(
     `hướng dẫn bài tập OK — ${CASES} ca. Tra cứu: \`exerciseId\` (khoá chính tắc) hỏi TRƯỚC, ` +

@@ -10,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuideMedia } from '@/components/ascnd/guide-media';
 import { Icon } from '@/components/ascnd/icon';
@@ -116,7 +115,6 @@ export default function ExerciseGuideSheet() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
-  const insets = useSafeAreaInsets();
   /* Bản tối dựng mặt giấy bằng KÍNH MỜ trên hình, nên nó cần biết theme đang
      bật — xem `surfaceGlass`. */
   const { themeName } = useAppSettings();
@@ -449,7 +447,7 @@ export default function ExerciseGuideSheet() {
           Haptics.selectionAsync();
           nav.back();
         }}
-        style={[styles.close, { top: insets.top + spacing.sm }]}>
+        style={styles.close}>
         {/* Cùng thứ tự hai lớp như mặt giấy: kính lấy mẫu hình, sắc độ phủ lên
             kính. Đặt sắc độ vào `backgroundColor` của chính nút thì kính sẽ lấy
             mẫu một hình đã bị phủ — xem khối chú thích ở `glassTint`. */}
@@ -481,7 +479,33 @@ export default function ExerciseGuideSheet() {
   );
 }
 
+/*
+  ── hình học của nút đóng, và vì sao nó KHÔNG cộng `insets.top` ──
+
+  Bản trước đặt nút ở `insets.top + spacing.sm`. Trên bản web `insets.top` là 0
+  nên mọi ảnh chụp đều đẹp; trên MÁY THẬT nó là ~62, và đo trên ảnh chủ dự án
+  gửi thì cái đĩa rơi xuống đúng 70đ dưới mép sheet — tức đúng chỗ tên bài.
+  Ảnh cho thấy "Dumbbell Curl" bị che thành "mbbell Curl".
+
+  `presentation: 'modal'` dựng một pageSheet: mép trên của nó ĐÃ nằm dưới thanh
+  trạng thái (đo được 56đ trên cùng ảnh ấy). Cộng thêm inset của cửa sổ là cộng
+  hai lần. Và đó cũng là điều `SheetHeader` — thanh đầu dùng chung của mọi sheet
+  trong app — đã làm đúng từ đầu: `root: { paddingTop: spacing.sm }`, không
+  inset nào. Màn này đi lệch khỏi quy ước ấy, nay quay về.
+
+  ── và hai con số nay BUỘC VÀO NHAU ──
+
+  Lỗi trên không phải "một số sai" mà là "hai số trôi khỏi nhau": vị trí nút
+  tính theo `insets`, còn khoảng tránh của tên bài là một hằng số viết tay. Nên
+  `TITLE_CLEAR` dưới đây được DẪN RA từ đúng những số dựng nên cái nút và thanh
+  vuốt. Đổi bất kỳ số nào trong đó thì khoảng tránh tự đi theo.
+*/
 const CLOSE = 44;
+const CLOSE_TOP = spacing.sm;
+const GRAB = { top: 12, h: 5, bottom: 12 };
+/** đáy đĩa đóng − đáy khối thanh vuốt − khoảng cách giữa các con của mặt giấy */
+const TITLE_CLEAR =
+  CLOSE_TOP + CLOSE - (GRAB.top + GRAB.h + GRAB.bottom) - spacing.xs;
 /*
   Cường độ kính — con số này điều khiển BÁN KÍNH nhoè, không điều khiển độ mờ.
 
@@ -613,12 +637,12 @@ const stylesFor = makeStyles((c, m) => ({
   */
   grabber: {
     width: 36,
-    height: 5,
-    borderRadius: 2.5,
+    height: GRAB.h,
+    borderRadius: GRAB.h / 2,
     backgroundColor: c.border,
     alignSelf: 'center',
-    marginTop: 12,
-    marginBottom: 12,
+    marginTop: GRAB.top,
+    marginBottom: GRAB.bottom,
   },
   /* Trên kính, `c.border` (#2b2b31 ở bản tối) biến mất: nó được chọn để đứng
      trên một mặt thẻ đứng yên, không trên một tấm ảnh. Mực của theme ở 35% thì
@@ -635,7 +659,7 @@ const stylesFor = makeStyles((c, m) => ({
     cho thấy "Bench Press" bị cái đĩa đóng che một phần. Đẩy tên xuống dưới
     cái đĩa, và lúc ấy nó đọc ra như một nút lùi trên một tiêu đề.
   */
-  titleClearsClose: { marginTop: CLOSE - spacing.sm },
+  titleClearsClose: { marginTop: TITLE_CLEAR },
   meta: { ...type.footnote, color: c.mutedForeground },
   /*
     Dòng siêu dữ liệu khi nó nằm TRÊN KÍNH — cùng vai, khác vật liệu.
@@ -819,6 +843,7 @@ const stylesFor = makeStyles((c, m) => ({
   */
   close: {
     position: 'absolute',
+    top: CLOSE_TOP,
     left: spacing.md,
     width: CLOSE,
     height: CLOSE,
