@@ -559,8 +559,39 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
 }
 
 const stylesFor = makeStyles((c, m) => ({
-  /* Làm dịu bằng màu của CHÍNH THEME, không phải luôn luôn đen — xem `Aura.scrim`. */
-  auraDim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: alpha(m.aura.scrim, AURA_DIM) },
+  /*
+    Làm dịu bằng màu TRANG của theme đang bật — `c.background`, không phải
+    `m.aura.scrim`.
+
+    ── vì sao không phải `aura.scrim` ──
+
+    Hai giá trị ấy TRÙNG nhau ở bản sáng (`scrim` = `lightPalette.background`)
+    nhưng không trùng ở bản tối: `scrim` là `#000000` còn trang là `#070708`.
+    Chênh lệch ấy chỉ vô hại ở chỗ CÓ hào quang. Tấm này phủ hết màn ở 0,44,
+    còn hai vũng của `ReadinessAura` tắt ở 52% chiều cao — nên nửa dưới là 44%
+    đen chồng lên một thứ không có gì để làm dịu. Đo trên bản dựng, đáy màn:
+
+        màn KHÔNG có aura (Cài đặt)   #070708   L* 1,94   ← đúng `background`
+        màn CÓ aura (Dinh dưỡng)      #030304   L* 0,84
+
+    ΔL* 1,10 — vừa qua ngưỡng vừa-thấy-được, và nó nghĩa là một màn không với
+    tới được màu nền của chính bảng màu mình dùng. Đi từ Cài đặt sang Dinh
+    dưỡng là một bậc nền.
+
+    `c.background` làm cho phép chồng lớp thành VÔ HIỆU ở chỗ không có wash, ở
+    cả hai diện mạo — đúng tính chất mà bản sáng vốn đã có nhờ trùng giá trị.
+    Đo sau sửa: ΔL* 0,25.
+
+    ── vì sao KHÔNG sửa `materials.dark.aura.scrim` ──
+
+    Đó là bản sửa đầu tiên tôi thử, và hai luật bác nó cùng lúc.
+    `tools/dark-freeze.mjs`: bản tối được hứa không đổi một ký tự, và một đổi
+    thay ở đó cần quyết định riêng chứ không phải tác dụng phụ. Và
+    `tools/status-scrim.mjs` vỡ ngay: `aura.scrim` còn một chỗ dùng THỨ HAI —
+    dải đầu trang — nên đổi token dùng chung là sửa một chỗ và động vào hai.
+    Lỗi nằm ở chỗ DÙNG, nên bản vá ở chỗ dùng.
+  */
+  auraDim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: alpha(c.background, AURA_DIM) },
   root: { flex: 1, backgroundColor: c.background },
   /**
    * Transparent, not `colors.background`.

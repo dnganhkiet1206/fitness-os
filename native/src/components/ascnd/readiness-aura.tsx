@@ -116,30 +116,36 @@ const OVERSCALE = 1.08;
 const REACH = 0.52;
 
 /**
- * Và dưới hai vũng ấy, cả trang vẫn có không khí.
+ * Lớp nền — và vì sao nó CHỈ còn trên giấy.
  *
- * ── lỗi nó sinh ra để sửa ──
+ * ── nó từng có ở cả hai diện mạo ──
  *
- * `REACH = 0.52` nói hai vũng tắt ở giữa màn. Dưới mốc ấy, trang là nền TRẦN —
- * `#070708` ở bản tối. Dựng ảnh cả màn Chi tiết giấc ngủ thì thấy rõ: một phần
- * ba trên có bầu trời, hai phần ba dưới là một tấm đen phẳng có mấy cái thẻ
- * nổi trên đó. Ảnh tham chiếu chủ dự án gửi thì ngược lại — nền của nó đi một
- * quãng từ trên xuống dưới, và đó là thứ làm nó ra "một không gian" chứ không
- * phải "một danh sách thẻ".
+ * `REACH = 0.52` nói hai vũng tắt ở giữa màn, và dưới mốc ấy trang là nền
+ * TRẦN. Lớp này được thêm để nửa dưới thôi là "một tấm đen phẳng có mấy cái
+ * thẻ nổi trên đó" — nó bắt đầu ở 0 tại đỉnh và dày dần xuống đáy.
  *
- * ── vì sao nó KHÔNG đụng tới một phép đo nào ──
+ * ── vì sao nó bị gỡ khỏi bản TỐI ──
  *
- * Mọi luật tương phản của kho này đo ĐỈNH: `glass-stack.mjs` dựng wash ở đúng
- * độ mờ đầy của hai vũng, `sleep-ramp.mjs` đo dải ngủ trên mặt kính của cái
- * wash ấy. Lớp nền này bắt đầu ở **0 tại đỉnh** và chỉ dày lên khi đi xuống,
- * nên đỉnh không đổi một count nào. Đo ra:
+ * Chủ dự án nhìn bản đã ship trên máy thật và yêu cầu aura chỉ ở NỬA TRÊN,
+ * nửa dưới không có gì. Đo lại trên chính bản ấy — màn Dinh dưỡng, bản tối,
+ * cột x=4 ngoài mọi thẻ — thì lời phàn nàn có số đỡ:
  *
- *     đỉnh wash  #121324  L 0.0072      ← không đổi
- *     đáy trang  #150c1d  L 0.0051      ← 0,71× đỉnh, tức vẫn dưới ca xấu nhất
- *     trên đáy:  chữ phụ 6,48 · dải ngủ 3,55 · chữ chính 8,91   (sàn 4,5 / 3,0)
+ *       0%  #07130f  L 0,0055     ← đỉnh, ngả lục (hai vũng)
+ *      50%  #0c0806  L 0,0026     ← tối nhất
+ *     100%  #1b1108  L 0,0065     ← đáy SÁNG HƠN đỉnh 18%, và ngả hổ phách
  *
- * Đẩy tới 0,26 thì đáy vượt đỉnh (1,09×) và phép đo ở đỉnh thôi là ca xấu
- * nhất — lúc ấy mọi luật đang canh nhầm chỗ. 0,18 để lại biên.
+ * Mặt cắt dọc là hình chữ U: sáng ở đỉnh, tối ở giữa, rồi sáng LẠI ở đáy — và
+ * đáy còn vượt cả đỉnh. Một lớp "nền" mà chỗ dày nhất của nó nằm ở đáy thì
+ * mắt đọc ra là một nguồn sáng THỨ HAI dưới chân màn hình, không phải không
+ * khí. Nó cũng kéo tông đi: lục ở đỉnh, hổ phách ở đáy, trong khi cả cơ chế
+ * này được dựng để nói MỘT màu.
+ *
+ * Con số 0,18 khi ấy được chọn để đáy đạt 0,71× đỉnh. Phép đo trên là 1,18× —
+ * tức giá trị đã đúng cho một màn nào đó không còn đúng cho các màn có `aura`,
+ * nơi hai vũng dùng `PAGE_TINT` nhạt hơn dải readiness. Không ai đo lại.
+ *
+ * Trên GIẤY thì giữ nguyên: ở đó lớp này giải một bài khác — xem ngay dưới —
+ * và chủ dự án chỉ nói về bản tối.
  *
  * ── trên GIẤY nó KHÔNG được là một sắc lạnh, và đó là một lỗi đã xảy ra ──
  *
@@ -164,7 +170,6 @@ const REACH = 0.52;
  * bảng màu không thấy, và luật tương phản không thấy: cả ba chỉ số đều đạt
  * trong khi màu nhận diện của app biến mất.
  */
-const FLOOR_ALPHA = 0.18;
 const FLOOR_ALPHA_PAPER = 0.34;
 
 /*
@@ -374,8 +379,11 @@ export function ReadinessAura({
      Trên GIẤY: `accent`, không phải một tông của trang. Lý do và phép đo ở
      chú thích của `FLOOR_ALPHA_PAPER` — một sắc lạnh ở đây đã từng xoá mất
      màu be của app. */
+  /* `paper ? c.accent : second` giữ nguyên HÌNH DẠNG vì `tools/paper-warmth.mjs`
+     đọc chính biểu thức này bằng regex để biết giấy đang được tô bằng gì —
+     nhánh tối chỉ còn là chỗ giữ chỗ, và cái `<Rect>` của nó không được vẽ. */
   const floorPaint = paper ? c.accent : second;
-  const floorAlpha = paper ? FLOOR_ALPHA_PAPER : FLOOR_ALPHA;
+  const floorAlpha = FLOOR_ALPHA_PAPER;
 
   return (
     <View style={styles.fill} pointerEvents="none">
@@ -447,8 +455,15 @@ export function ReadinessAura({
             <Stop offset="1" stopColor={floorPaint} stopOpacity={floorAlpha} />
           </LinearGradient>
         </Defs>
-        {/* Nền đi TRƯỚC: hai vũng phải nằm trên nó, không phải dưới. */}
-        <Rect x={0} y={0} width={width} height={height} fill={`url(#${gid3})`} />
+        {/*
+          Nền đi TRƯỚC: hai vũng phải nằm trên nó, không phải dưới.
+
+          Và nó CHỈ có trên giấy. Trên bản tối, dưới hai vũng là nền trần —
+          aura ở nửa trên, mép dưới của nó là đường tắt dần của chính hai
+          gradient toả, tức một đường CONG chứ không phải một vạch ngang.
+          `tools/aura-edge.mjs` là thứ giữ cho nó không bao giờ thành vạch.
+        */}
+        {paper ? <Rect x={0} y={0} width={width} height={height} fill={`url(#${gid3})`} /> : null}
         <Rect x={0} y={0} width={width} height={h} fill={`url(#${gid})`} />
         <Rect x={0} y={0} width={width} height={h} fill={`url(#${gid2})`} />
       </Svg>
