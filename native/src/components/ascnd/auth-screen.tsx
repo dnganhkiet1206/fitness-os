@@ -364,7 +364,7 @@ const stylesFor = makeStyles((c, m) => ({
   primaryButton: {
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.xs,

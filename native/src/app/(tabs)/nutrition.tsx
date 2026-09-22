@@ -1114,7 +1114,7 @@ const stylesFor = makeStyles((c, m) => ({
     paddingHorizontal: spacing.lg,
     borderRadius: radius.md,
     marginTop: spacing.xs,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
   },
   planCreateText: { fontSize: 14, fontWeight: '600', color: c.primaryForeground },
 }));

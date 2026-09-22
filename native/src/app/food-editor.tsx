@@ -314,7 +314,7 @@ function MacroField({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: c.card },
   content: { padding: spacing.lg, gap: spacing.md },
   title: { ...type.title, color: c.foreground, textAlign: 'center', marginBottom: spacing.sm },
@@ -433,7 +433,7 @@ const stylesFor = makeStyles((c) => ({
     flex: 1,
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },

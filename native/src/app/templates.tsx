@@ -150,7 +150,7 @@ export default function TemplatesScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -168,7 +168,7 @@ const stylesFor = makeStyles((c) => ({
     gap: 6,
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
   },
   createText: { ...type.headline, color: c.primaryForeground },
 }));

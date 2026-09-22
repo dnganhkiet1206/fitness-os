@@ -260,7 +260,7 @@ function CaptureView({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center' },
   addBtnText: { fontSize: 22, color: c.primary, lineHeight: 26 },
   uploadingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -268,7 +268,7 @@ const stylesFor = makeStyles((c) => ({
   empty: { alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm },
   emptyIcon: { fontSize: 40 },
   emptyText: { ...type.body, color: c.mutedForeground },
-  emptyBtn: { marginTop: spacing.sm, height: 44, paddingHorizontal: spacing.xl, borderRadius: radius.full, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' },
+  emptyBtn: { marginTop: spacing.sm, height: 44, paddingHorizontal: spacing.xl, borderRadius: radius.full, backgroundColor: m.actionSurface, alignItems: 'center', justifyContent: 'center' },
   emptyBtnText: { ...type.headline, color: c.primaryForeground },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   photoCell: { width: '47.8%', borderRadius: radius.md, overflow: 'hidden', backgroundColor: c.card },
@@ -280,7 +280,7 @@ const stylesFor = makeStyles((c) => ({
   captureRoot: { flex: 1, backgroundColor: '#000' },
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
   permTitle: { ...type.title, color: c.foreground },
-  permBtn: { height: 48, paddingHorizontal: spacing.xl, borderRadius: radius.full, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center' },
+  permBtn: { height: 48, paddingHorizontal: spacing.xl, borderRadius: radius.full, backgroundColor: m.actionSurface, alignItems: 'center', justifyContent: 'center' },
   permBtnText: { ...type.headline, color: c.primaryForeground },
   cancelText: { ...type.body, color: c.mutedForeground },
   closeBtn: { position: 'absolute', right: spacing.md, zIndex: 10, width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(0,0,0,0.5)', alignItems: 'center', justifyContent: 'center' },

@@ -2430,7 +2430,7 @@ const stylesFor = makeStyles((c, m) => ({
     gap: spacing.sm,
     height: 52,
     borderRadius: radius.lg,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     marginTop: spacing.sm,
   },
   /*

@@ -609,7 +609,7 @@ function FoodRow({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   steps: {
     flexDirection: 'row',
     paddingHorizontal: spacing.sm,
@@ -740,7 +740,7 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
   },
   primaryOff: { opacity: 0.4 },
   primaryText: { ...type.body, color: c.primaryForeground, fontWeight: '700' },

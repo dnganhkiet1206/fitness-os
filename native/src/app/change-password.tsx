@@ -122,7 +122,7 @@ export default function ChangePasswordScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   content: { gap: spacing.md },
   field: { gap: 6 },
   label: { ...type.caption, color: c.mutedForeground, textTransform: 'uppercase', letterSpacing: 0.6 },
@@ -140,7 +140,7 @@ const stylesFor = makeStyles((c) => ({
   button: {
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,

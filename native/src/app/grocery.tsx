@@ -229,7 +229,7 @@ export default function GroceryScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   kav: { flex: 1 },
   addRow: { flexDirection: 'row', gap: spacing.sm },
   input: {
@@ -247,7 +247,7 @@ const stylesFor = makeStyles((c) => ({
     width: 48,
     height: 48,
     borderRadius: radius.md,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },

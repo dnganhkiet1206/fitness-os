@@ -298,7 +298,7 @@ const stylesFor = makeStyles((c, m) => ({
     gap: 7,
     height: 48,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     marginTop: 2,
   },
   primaryText: { ...type.headline, fontWeight: '700', color: c.primaryForeground },

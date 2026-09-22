@@ -249,7 +249,7 @@ function Field({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: c.card },
   content: { padding: spacing.lg, gap: spacing.md },
   title: { ...type.title, color: c.foreground, textAlign: 'center', marginBottom: spacing.sm },
@@ -270,7 +270,7 @@ const stylesFor = makeStyles((c) => ({
   fieldError: { ...type.footnote, color: c.readinessRed },
   row: { flexDirection: 'row', gap: spacing.sm },
   half: { flex: 1 },
-  saveButton: { height: 50, borderRadius: radius.full, backgroundColor: c.primary, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
+  saveButton: { height: 50, borderRadius: radius.full, backgroundColor: m.actionSurface, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
   saveDisabled: { opacity: 0.4 },
   saveText: { ...type.headline, color: c.primaryForeground },
 }));

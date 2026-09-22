@@ -331,7 +331,7 @@ export default function ExercisesScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   topRow: { flexDirection: 'row', gap: spacing.sm },
   search: {
     flex: 1,
@@ -351,7 +351,7 @@ const stylesFor = makeStyles((c) => ({
     height: 44,
     paddingHorizontal: spacing.md - 2,
     borderRadius: radius.md,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
   },
   addBtnText: { fontSize: 12, fontWeight: '600', color: c.primaryForeground },
 
@@ -376,7 +376,7 @@ const stylesFor = makeStyles((c) => ({
   submitBtn: {
     height: 46,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,

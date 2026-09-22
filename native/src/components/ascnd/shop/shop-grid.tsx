@@ -176,7 +176,7 @@ export function CollectionRow({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   buyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -186,7 +186,7 @@ const stylesFor = makeStyles((c) => ({
     minWidth: 64,
     paddingHorizontal: spacing.sm + 2,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
   },
   buyBtnPoor: { backgroundColor: c.secondary },
   buyText: { ...type.caption, fontWeight: '700', color: c.primaryForeground, fontVariant: ['tabular-nums'] },
@@ -210,7 +210,7 @@ const stylesFor = makeStyles((c) => ({
     height: 32,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -1178,7 +1178,7 @@ const stylesFor = makeStyles((c, m) => ({
     height: 36,
     paddingHorizontal: spacing.md,
     borderRadius: radius.sm,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
   },
   addBtnText: { fontSize: 12, fontWeight: '600', color: c.primaryForeground },
 

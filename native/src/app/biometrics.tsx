@@ -277,7 +277,7 @@ function summarise(s: BiometricSample, vi: boolean): string {
   return bits.join(' · ') || (vi ? 'Không có giá trị' : 'No values');
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   logSection: { gap: spacing.sm, marginTop: spacing.xs },
   logTitle: {
     ...type.caption,
@@ -307,7 +307,7 @@ const stylesFor = makeStyles((c) => ({
     height: 44,
     paddingHorizontal: spacing.xl,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },

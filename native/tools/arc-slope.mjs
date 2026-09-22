@@ -228,6 +228,64 @@ for (const s of STATES) {
   }
 }
 
+/* ── 5. NHÁNH TỐI: mỗi cặp phải CHỨA token của nó ────────────────────────
+   ── vì sao luật này phải mở sang bản tối, và vì sao chỉ mở một vế ──
+
+   Chú thích đầu tệp nói luật này ra đời để *"một hằng số dẫn xuất không tự đi
+   theo thứ nó được dẫn từ đó"* thôi im lặng. Nhưng nó chỉ canh `LIGHT_ARC_DEEP`.
+   Ngày 22/09 ba khoá readiness của BẢN TỐI đổi, `DARK_GRADIENTS` gõ tay không
+   đi theo, và luật này im đúng lần thứ hai — con số giữa vòng thành `#cdac00`
+   trong khi cung vẫn `#ffd93d`, một vòng nói hai màu cho cùng một trạng thái.
+   Phải chụp bản dựng rồi đọc điểm ảnh của cung mới thấy.
+
+   Bản tối KHÔNG dẫn theo `L − DROP` như bản sáng: mỗi cặp là một ΔL và một ΔH
+   chọn tay, và một trong hai đầu LÀ token. Nên vế mở sang đây là đúng cái đã
+   vỡ — *token phải còn nằm trong cặp* — chứ không phải bê nguyên phép dẫn của
+   bản sáng sang một bảng không được dẫn như thế.
+
+   ── và vì sao tính chất 4 KHÔNG được mở sang ──
+
+   Đo trên bảng đang chạy, ΔL* giữa hai đầu: lục +2,6 · vàng +8,3 · đỏ −0,2.
+   Ba độ dốc ấy lệch nhau xa, và đó là trạng thái CÓ SẴN từ trước mọi lượt sửa.
+   Mở tính chất 4 sang đây là dựng một luật đỏ ngay phút nó ra đời — thứ bị tắt
+   trong một tuần. Nó được ĐO và cố ý để ngoài; nếu một ngày ba cung được cân
+   lại thì đó là lúc thêm vế ấy. */
+{
+  const m = /const DARK_GRADIENTS: Record<string, \[string, string\]> = \{([\s\S]*?)\};/.exec(src);
+  if (!m) {
+    problems.push(
+      `${GAUGE}: không đọc được \`DARK_GRADIENTS\` — neo của vế bản tối hỏng, đừng tin kết quả`,
+    );
+  } else {
+    const DCARD = palettes.dark.card;
+    for (const st of STATES) {
+      const row = new RegExp(`${st}:\\s*\\['(#[0-9a-fA-F]{6})',\\s*'(#[0-9a-fA-F]{6})'\\]`).exec(m[1]);
+      if (!row) {
+        problems.push(`${GAUGE}: \`DARK_GRADIENTS\` thiếu trạng thái \`${st}\``);
+        continue;
+      }
+      const pair = [row[1].toLowerCase(), row[2].toLowerCase()];
+      const tok = palettes.dark[TOKEN[st]].toLowerCase();
+      if (!pair.includes(tok)) {
+        problems.push(
+          `${GAUGE}: cung TỐI \`${st}\` là [${pair.join(', ')}] nhưng token \`${TOKEN[st]}\` nay là ` +
+            `${tok} — không đầu nào của cặp còn là token. Bảng này gõ tay nên nó KHÔNG tự đi theo ` +
+            'bảng màu; neo lại bằng cách giữ nguyên ΔL và ΔH của cặp cũ rồi đặt quanh token mới',
+        );
+      }
+      for (const [what, hexv] of [['đầu', pair[0]], ['cuối', pair[1]]]) {
+        const cr = contrast(hexv, DCARD);
+        if (cr < 3) {
+          problems.push(
+            `${GAUGE}: ${what} cung TỐI \`${st}\` (${hexv}) chỉ đạt ${r2(cr)}:1 trên mặt thẻ ${DCARD} — ` +
+              'dưới sàn đồ hoạ 3:1',
+          );
+        }
+      }
+    }
+  }
+}
+
 if (problems.length) {
   console.log('độ dốc cung sẵn sàng CÓ LỖI:\n');
   for (const p of problems) console.log(`  • ${p}`);
@@ -240,5 +298,9 @@ console.log(
     `khớp từng ký tự, nên một lần đổi token sẽ đỏ ở đây chứ không đợi ảnh chụp máy thật; hình học được đọc ` +
     'ra khỏi nguồn (rotate −90 + trục gradient + thứ tự hai <Stop>), và trên hình học ấy offset 100% là ĐẦU ' +
     `cung — cả ba trạng thái đi từ SÁNG sang SÂU; cả sáu giá trị ≥3:1 trên mặt thẻ; ba độ dốc ` +
-    `${STATES.map((s, i) => `${s} ${r2(slopes[i])}×`).join(', ')} lệch nhau ${r2(Math.max(...slopes) - Math.min(...slopes))}×`,
+    `${STATES.map((s, i) => `${s} ${r2(slopes[i])}×`).join(', ')} lệch nhau ${r2(Math.max(...slopes) - Math.min(...slopes))}×. ` +
+    'Và nhánh TỐI: mỗi cặp của `DARK_GRADIENTS` vẫn CHỨA token của nó, cả sáu đầu ≥3:1 trên mặt thẻ bản ' +
+    'tối — vế này mở 22/09 sau khi bảng gõ tay ấy thôi đi theo bảng màu và không ai bắt được. Độ dốc ba ' +
+    'cung TỐI cố ý KHÔNG bị canh: chúng lệch nhau sẵn (ΔL* +2,6 / +8,3 / −0,2) từ trước mọi lượt sửa, ' +
+    'và một luật đỏ ngay lúc ra đời là một luật bị tắt trong một tuần',
 );

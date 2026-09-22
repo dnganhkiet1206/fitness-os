@@ -950,7 +950,7 @@ const stylesFor = makeStyles((c, m) => ({
     gap: 4,
     height: 52,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
   },
   primaryText: { ...type.headline, color: c.primaryForeground },
   disabled: { opacity: 0.4 },

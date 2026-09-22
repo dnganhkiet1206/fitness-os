@@ -41,7 +41,7 @@ export function AppLockGate() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   scrim: { backgroundColor: c.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, padding: spacing.xl },
   badge: {
@@ -57,7 +57,7 @@ const stylesFor = makeStyles((c) => ({
     height: 50,
     paddingHorizontal: spacing.xl,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },

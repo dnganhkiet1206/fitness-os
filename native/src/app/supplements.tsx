@@ -239,7 +239,7 @@ const stylesFor = makeStyles((c, m) => ({
   submitBtn: {
     height: 46,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,

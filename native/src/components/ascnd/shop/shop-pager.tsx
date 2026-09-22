@@ -207,7 +207,7 @@ function Arrow({
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   wrap: { gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   arrow: {
@@ -242,7 +242,7 @@ const stylesFor = makeStyles((c) => ({
     justifyContent: 'center',
     gap: 6,
   },
-  actionBuy: { backgroundColor: c.primary },
+  actionBuy: { backgroundColor: m.actionSurface },
   actionPoor: { backgroundColor: c.secondary },
   actionWear: { backgroundColor: c.secondary, borderWidth: 1, borderColor: c.border },
   actionOff: { backgroundColor: 'transparent', borderWidth: 1, borderColor: c.border },

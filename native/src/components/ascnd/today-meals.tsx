@@ -1148,7 +1148,18 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
     backgroundColor: alpha(m.ink, 0.07),
   },
-  sheetBtnPrimary: { backgroundColor: c.primary },
+  sheetBtnPrimary: { backgroundColor: m.actionSurface },
   sheetBtnText: { ...type.footnote, fontWeight: '600', color: c.foreground },
-  sheetBtnTextPrimary: { color: '#111' },
+  /*
+    `c.primaryForeground`, không phải `'#111'` gõ cứng — và đây là một lỗi ĐÃ
+    TỒN TẠI, không phải hệ quả của lượt đổi nền.
+
+    `#111` được chọn khi app chỉ có bản tối, nơi nền nút là `c.primary`
+    `#a8afbd` và cặp ấy đo 8,57:1. Bản sáng ra đời với `primary` = `#1a1917`,
+    và chỗ này không đổi theo: chữ gần đen trên nền gần đen, **1,07:1**. Nút
+    "Lưu" của sheet bữa ăn gần như vô hình ở bản sáng suốt thời gian qua.
+
+    Token lật đúng chiều ở cả hai: 17,57:1 trên giấy, 17,20:1 ở bản tối.
+  */
+  sheetBtnTextPrimary: { color: c.primaryForeground },
 }));

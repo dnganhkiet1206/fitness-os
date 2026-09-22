@@ -127,7 +127,7 @@ export default function ScanBarcodeScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: '#000' },
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
   permTitle: { ...type.title, color: c.foreground },
@@ -136,7 +136,7 @@ const stylesFor = makeStyles((c) => ({
     height: 48,
     paddingHorizontal: spacing.xl,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },

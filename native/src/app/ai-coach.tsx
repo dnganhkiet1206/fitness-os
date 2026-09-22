@@ -629,7 +629,7 @@ const stylesFor = makeStyles((c, m) => ({
     width: 34,
     height: 34,
     borderRadius: 17,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },

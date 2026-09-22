@@ -1151,7 +1151,7 @@ const stylesFor = makeStyles((c, m) => ({
   saveButton: {
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,

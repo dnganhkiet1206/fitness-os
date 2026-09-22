@@ -321,7 +321,7 @@ export default function ScanFoodScreen() {
   );
 }
 
-const stylesFor = makeStyles((c) => ({
+const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },
   scrim: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.35)' },
@@ -331,7 +331,7 @@ const stylesFor = makeStyles((c) => ({
     height: 48,
     paddingHorizontal: spacing.xl,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -434,7 +434,7 @@ const stylesFor = makeStyles((c) => ({
   primaryBtn: {
     height: 50,
     borderRadius: radius.full,
-    backgroundColor: c.primary,
+    backgroundColor: m.actionSurface,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
