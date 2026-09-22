@@ -211,23 +211,68 @@ export const darkPalette = {
    */
   destructiveForeground: '#ffffff',
 
+  /*
+    ── Readiness · ba trạng thái NGANG HÀNG, và bản tối phải nói được điều đó ──
+
+    Xanh/vàng/đỏ mã hoá ba trạng thái ngang hàng. Nếu một trong ba nổi hơn hai
+    cái kia thì bảng màu đã CHẤM ĐIỂM trước khi người dùng kịp đọc. Bản sáng
+    đạt tính chất ấy từ GĐ2C — ba giá trị trải 1,01× trên trang. Bản tối thì
+    không, và chú thích của bản sáng đã ghi nhận rồi hoãn: *"bản tối đã ship,
+    và 'sửa cho đẹp hơn' là đúng thứ giai đoạn này hứa không làm."*
+
+    Đo trên bản đang chạy, tương phản với trang #070708:
+
+        lục 14,12   vàng 14,62   đỏ 5,78      trải 2,53×
+        (bản sáng:   4,53 · 4,54 · 4,52       trải 1,01×)
+
+    Đỏ — trạng thái nói *"lùi lại"* — là màu IM NHẤT trên màn hình, yếu hơn hai
+    màu kia 2,5 lần. Đó là thứ bậc ngược với ý nghĩa.
+
+    ── vì sao 9,1 chứ không phải kéo đỏ lên ngang lục/vàng ──
+
+    Ba phương án được tính, giá đo bằng chroma mất đi:
+
+        nâng đỏ lên 14,3   đỏ #ffcecd  C* 18,5   mất 76%  → hồng phấn, mất nghĩa
+        hạ lục/vàng xuống 5,78          lục/vàng thành màu của bản SÁNG, xỉn
+        gặp ở 9,1          đỏ #ff8d92  C* 46,5   mất 41%  → đỏ san hô, còn đỏ
+
+    Gốc rễ là GAMUT, không phải sơ suất của ai. Bản sáng đạt được sự ngang hàng
+    vì nó nhắm CR 4,5 — trên nền sáng, tương phản thấp nghĩa là màu TỐI, và đỏ
+    tối thì thừa chroma. Bản tối cần CR cao nghĩa là màu SÁNG, và sRGB gần như
+    không còn chroma đỏ ở đó: trần chroma tại L* 86,8 là 19 cho đỏ, 72 cho lục,
+    88 cho vàng. Ngang hàng ở mức cao là đặc quyền mà đỏ không có.
+
+    9,1 là chỗ cả ba còn giữ được mình. Sau đổi:
+
+        lục #00c785  vàng #cdac00  đỏ #ff8d92     trải 1,00×
+        CR trên trang 9,12 · 9,11 · 9,09 · trên thẻ 8,73 · 8,72 · 8,70
+        sắc lệch ≤ 0,4° — ba màu giữ nguyên danh tính
+
+    ── và điều này CỐ Ý phá lời hứa đóng băng ──
+
+    `tools/dark-frozen.mjs` giữ bản tối nguyên vẹn từ 9d04d55, và nó ĐÚNG khi
+    bắt lượt này. Chủ dự án được đưa cả ba phương án kèm giá và chọn phương án
+    này. Mốc của luật được dời kèm lý do, không phải bị tắt — xem chú thích tại
+    ba khoá ấy trong `dark-frozen.mjs`.
+  */
   // Readiness
-  readinessGreen: '#2bf5a8',
-  readinessYellow: '#ffd93d',
+  readinessGreen: '#00c785',
+  readinessYellow: '#cdac00',
   /**
    * Cùng một màu với `readinessYellow` ở bản tối, và đó là điều đúng.
    *
-   * Phòng tối không có ràng buộc bắt phải tách: `#ffd93d` trên `#070708` đo
-   * 11,6:1, thừa cho cả chữ lẫn đồ hoạ. Vai chỉ tách ra trên GIẤY, nơi gamut
-   * không cho một sắc ~95° vừa đọc được vừa tươi — xem chú thích ở bản sáng.
+   * Phòng tối không có ràng buộc bắt phải tách: `#cdac00` trên `#070708` đo
+   * 9,11:1, thừa cho cả sàn 4,5 của chữ lẫn sàn 3,0 của đồ hoạ. Vai chỉ tách
+   * ra trên GIẤY, nơi gamut không cho một sắc ~95° vừa đọc được vừa tươi —
+   * xem chú thích ở bản sáng.
    *
    * Nên khoá này tồn tại ở bản tối chỉ để `PaletteKey` có nó, và giá trị bằng
    * đúng `readinessYellow`: mọi chỗ chuyển sang khoá mới vẫn vẽ ra đúng từng
    * điểm ảnh như cũ ở bản tối. `tools/role-split.mjs` canh cho hai giá trị ấy
    * không tách nhau ra ở đây.
    */
-  readinessYellowGraphic: '#ffd93d',
-  readinessRed: '#ff3b5c',
+  readinessYellowGraphic: '#cdac00',
+  readinessRed: '#ff8d92',
 
   // Metrics
   metricBlue: '#3ba6ff',

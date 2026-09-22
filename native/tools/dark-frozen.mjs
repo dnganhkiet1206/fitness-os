@@ -85,9 +85,29 @@ const FROZEN_PALETTE = {
   goldLight: '#c7cad1',
   champagne: '#9fa3ad',
   destructive: '#ff3b5c',
-  readinessGreen: '#2bf5a8',
-  readinessYellow: '#ffd93d',
-  readinessRed: '#ff3b5c',
+  /*
+    ── BA KHOÁ ĐƯỢC DỜI MỐC, 22/09, có quyết định của chủ dự án ──
+
+    Đây là lần đầu mốc này dời, và nó dời đúng cách luật này đòi: *"nếu một
+    thay đổi ở đây là CỐ Ý, nó cần một quyết định riêng."*
+
+    Lỗi: xanh/vàng/đỏ mã hoá ba trạng thái NGANG HÀNG, nhưng ở bản tối chúng
+    trải 2,53× (lục 14,12 · vàng 14,62 · đỏ 5,78 trên trang) trong khi bản sáng
+    trải 1,01×. Đỏ — trạng thái nói "lùi lại" — là màu im nhất màn hình. Chú
+    thích của bản sáng đã ghi nhận lỗi này từ GĐ2C và cố ý hoãn.
+
+    Chủ dự án được đưa BA phương án kèm giá đo bằng chroma, và chọn phương án
+    gặp nhau ở CR 9,1. Giá: đỏ mất 41% chroma (78,7 → 46,5), vì sRGB gần như
+    không còn chroma đỏ ở độ sáng cần cho tương phản ấy. Hai phương án kia đắt
+    hơn — nâng đỏ lên ngang lục/vàng làm nó mất 76% và thành hồng phấn.
+
+    Mốc mới giữ nguyên tính chất mà mốc cũ có: ba giá trị NÀY là bản đọc ra từ
+    bản tối đang chạy, không dẫn từ `palette.ts`, nên chúng vẫn không trôi theo
+    thứ chúng đo. Mọi khoá khác của 9d04d55 không đổi một ký tự.
+  */
+  readinessGreen: '#00c785',
+  readinessYellow: '#cdac00',
+  readinessRed: '#ff8d92',
   metricBlue: '#3ba6ff',
   metricPurple: '#b45cff',
   metricCyan: '#22e3ff',
@@ -179,8 +199,18 @@ if (problems.length) {
 }
 
 const roles = Object.keys(materials.dark.elevation ?? {});
+/*
+  Ba khoá readiness đã được DỜI MỐC ngày 22/09 kèm quyết định của chủ dự án —
+  xem chú thích tại chỗ khai chúng. Câu dưới đây đếm chúng riêng, vì một luật
+  nói "khớp từng ký tự với 9d04d55" trong khi ba giá trị không còn thuộc về
+  mốc ấy là một luật đang nói sai về chính việc nó vừa làm.
+*/
+const MOVED = ['readinessGreen', 'readinessYellow', 'readinessRed'];
+const kept = Object.keys(FROZEN_PALETTE).length - MOVED.length;
 console.log(
-  `bản tối ĐÓNG BĂNG OK — ${Object.keys(FROZEN_PALETTE).length} token và ${Object.keys(FROZEN_MATERIAL).length} ` +
-    'trường chất liệu khớp từng ký tự với mốc 9d04d55, đo bằng cách biên dịch rồi CHẠY bảng màu' +
+  `bản tối ĐÓNG BĂNG OK — ${kept} token giữ nguyên từ mốc 9d04d55 và ${Object.keys(FROZEN_MATERIAL).length} ` +
+    'trường chất liệu khớp từng ký tự, đo bằng cách biên dịch rồi CHẠY bảng màu; ' +
+    `${MOVED.length} khoá (${MOVED.join(', ')}) đã dời mốc 22/09 theo một quyết định có ghi lý do, ` +
+    'và nay được canh với giá trị mới ấy' +
     (roles.length ? `; ${roles.length} vai bóng mới đều là NO_SHADOW ở bản tối` : ''),
 );

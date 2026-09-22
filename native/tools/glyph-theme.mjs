@@ -60,12 +60,35 @@ const { palettes, materials } = loadPalette();
  * màu một glyph thì sửa ô tương ứng ở đây KÈM lý do — chứ không phải để luật
  * xanh suông trong khi hai bên đã trôi khỏi nhau.
  */
+/*
+  ── SÁU GIÁ TRỊ DỜI MỐC, 22/09 ──
+
+  `heart`, `trash` (readinessRed) · `bolt`, `alert` (readinessYellow) ·
+  `leaf`, `gauge` (readinessGreen) đọc màu qua khoá bảng màu, và ba khoá ấy vừa
+  được đổi theo một quyết định của chủ dự án: bộ ba sẵn sàng ở bản tối trải
+  2,53× trong khi bản sáng trải 1,01×, nên cả ba về cùng CR 9,1. Lý do đầy đủ
+  nằm ở chỗ khai chúng trong `palette.ts` và ở `tools/dark-frozen.mjs`.
+
+  Sáu glyph này đi theo, và đó là ĐÚNG hệ quả của việc chúng đọc khoá chứ không
+  gõ mã màu — nếu chúng không đi theo thì phép chuyển sang khoá đã là một lời
+  nói dối. Cả sáu vẫn thừa sàn 3:1 của đồ hoạ: đỏ 9,09 · vàng 9,11 · lục 9,12
+  trên trang, so với 5,78 / 14,62 / 14,12 trước đây.
+
+  ── một câu hỏi CHƯA được trả lời, ghi ra để không ai tưởng là đã ──
+
+  `trash` và `alert` mượn bộ ba sẵn sàng làm sắc chung chứ không mang nghĩa
+  "trạng thái hôm nay" — chúng là hành động xoá và một cảnh báo. Trước lượt này
+  `readinessRed` tình cờ trùng đúng `destructive` (#ff3b5c), nên không ai phải
+  chọn. Nay hai giá trị ấy tách ra, và `trash` mềm đi một bậc. Chỉ về
+  `destructive`/`readinessYellow` là một quyết định THIẾT KẾ riêng, không phải
+  hệ quả của lượt này, nên nó không được làm ở đây.
+*/
 const FROZEN_DARK = {
-  heart: '#ff3b5c', moon: '#8b5cff', flame: '#ff9130', bolt: '#ffd93d',
-  leaf: '#2bf5a8', pulse: '#3ba6ff', spark: '#b45cff', gauge: '#2bf5a8',
+  heart: '#ff8d92', moon: '#8b5cff', flame: '#ff9130', bolt: '#cdac00',
+  leaf: '#00c785', pulse: '#3ba6ff', spark: '#b45cff', gauge: '#00c785',
   sliders: '#a8afbd', arrow: '#c8ccd4', camera: '#ff9130', calendar: '#22e3ff',
   home: '#a8afbd', chevron: '#c8ccd4', plus: '#c8ccd4', clock: '#a8afbd',
-  trash: '#ff3b5c', user: '#a8afbd', alert: '#ffd93d', dumbbell: '#7f9cc4',
+  trash: '#ff8d92', user: '#a8afbd', alert: '#cdac00', dumbbell: '#7f9cc4',
 };
 
 const src = readFileSync(path.join(NATIVE, ICONS), 'utf8');

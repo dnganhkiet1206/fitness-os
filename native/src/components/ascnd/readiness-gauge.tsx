@@ -67,10 +67,34 @@ const TRACK = 'ringTrack' satisfies PaletteKey;
  * cung một màu, chưa có độ dốc, nhưng đúng màu và đọc được — 1,43 → 5,06. Độ
  * dốc của bản sáng là quyết định Giai đoạn 2.
  */
+/*
+  ── NEO LẠI 22/09, và đây là lần THỨ HAI cái bẫy ở trên cắn ──
+
+  Ba khoá readiness của bản tối vừa đổi (bộ ba trải 2,53× về cùng CR 9,1 — lý
+  do đầy đủ ở `palette.ts`). Bảng này gõ tay, không dẫn từ token, nên nó KHÔNG
+  đi theo: con số giữa vòng thành `#cdac00` trong khi cung vẫn `#ffd93d`. Một
+  vòng nói hai màu cho cùng một trạng thái.
+
+  Đó đúng thứ chú thích ở trên đã cảnh báo — *"một hằng số dẫn xuất không tự đi
+  theo thứ nó được dẫn từ đó"* — và `tools/arc-slope.mjs` được dựng để nó không
+  im lặng lần thứ hai. Nhưng luật ấy chỉ canh `LIGHT_ARC_DEEP`; nhánh TỐI không
+  có ai canh, nên lần này nó vẫn im. Khoảng hở ấy còn nguyên và được ghi ra ở
+  báo cáo, không vá lén ở đây.
+
+  Cách neo lại: giữ nguyên TÍNH CÁCH của từng cung — đúng ΔL và ΔH mà cặp cũ
+  có so với token cũ của nó — rồi đặt lại quanh token mới, hạ chroma theo gamut
+  khi cần.
+
+      lục    ΔL +2,6  ΔH −14°    #2bf5a8→#3dff7a   ⇒   #00c785→#0dd15b
+      vàng   ΔL −8,2  ΔH −11°    #ffb800→#ffd93d   ⇒   #c78e00→#cdac00
+      đỏ     ΔL −0,2  ΔH −21°    #ff3b5c→#ff2d8a   ⇒   #ff8d92→#fd8aaf
+
+  Thứ tự tuple KHÔNG đổi: đầu nào từng là token thì vẫn là token.
+*/
 const DARK_GRADIENTS: Record<string, [string, string]> = {
-  green: ['#2bf5a8', '#3dff7a'],
-  yellow: ['#ffb800', '#ffd93d'],
-  red: ['#ff3b5c', '#ff2d8a'],
+  green: ['#00c785', '#0dd15b'],
+  yellow: ['#c78e00', '#cdac00'],
+  red: ['#ff8d92', '#fd8aaf'],
 };
 
 /**
