@@ -1,8 +1,6 @@
-import { useEvent } from 'expo';
 import { Image } from 'expo-image';
-import { useVideoPlayer, VideoView } from 'expo-video';
 import { ImageOff } from 'lucide-react-native';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -56,6 +54,32 @@ import type { NativeStrings } from '@/lib/native-strings';
    và rẻ hơn một trình giải mã video. */
 const IMAGE_EXT = /\.(gif|webp|png|jpe?g|avif|heic|bmp)(\?|#|$)/i;
 
+/*
+  ── CỬA DUY NHẤT vào `expo-video`, và nó có khoá ──
+
+  `expo-video` gọi `requireNativeModule('ExpoVideo')` ở phạm vi module, nên chỉ
+  riêng việc import nó đã NÉM trên một bản app chưa có phần native. Tệp này bị
+  `exercise-guide.tsx` import, mà đó là một ROUTE — `expo-router` nạp mọi route
+  lúc khởi động để kiểm cây route. Nên một import tĩnh ở đây làm CẢ APP không
+  mở được, chứ không chỉ làm hỏng một màn.
+
+  Đã xảy ra thật: `expo-video` vào từ `a13e648`, và mọi binary dựng trước commit
+  ấy mở lên là chết trắng kèm một lỗi thứ hai đọc chẳng liên quan
+  (`Cannot read property 'ErrorBoundary' of undefined`). `npm install` không sửa
+  được, vì thứ thiếu là mã Swift.
+
+  `require` trong `try/catch` thì lỗi ấy dừng lại ở đây. Metro vẫn đóng gói
+  `guide-video.tsx` tĩnh — `require` này không phải import động — nên không có
+  chunk nào phải tải lúc chạy; thứ được hoãn là việc GỌI vào native.
+*/
+const GuideVideo: typeof import('./guide-video').GuideVideo | null = (() => {
+  try {
+    return (require('./guide-video') as typeof import('./guide-video')).GuideVideo;
+  } catch {
+    return null;
+  }
+})();
+
 export function GuideMedia({
   url,
   name,
@@ -82,48 +106,31 @@ export function GuideMedia({
   const styles = stylesFor(c);
   const reduced = useReducedMotion();
 
-  /* Ảnh hỏng là chuyện của MÁY chứ không của dữ liệu: đường dẫn đúng vẫn 404
-     được. Nên nó là state cục bộ. */
+  /* Media hỏng là chuyện của MÁY chứ không của dữ liệu: đường dẫn đúng vẫn 404
+     được. Nên cả hai đều là state cục bộ. */
   const [imgBroke, setImgBroke] = useState(false);
+  const [vidBroke, setVidBroke] = useState(false);
+  const onVideoFail = useCallback(() => setVidBroke(true), []);
 
   const isImage = !!url && IMAGE_EXT.test(url);
   const videoUrl = url && !isImage ? url : null;
 
-  /*
-    Hook gọi VÔ ĐIỀU KIỆN — `VideoSource` nhận `null`, nên không cần nhánh nào
-    và quy tắc hook không bị phá. Không có URL video thì không có gì được tải:
-    đó là nghĩa của `null` ở đây, không phải một trình phát rỗng.
-  */
-  const player = useVideoPlayer(videoUrl, (p) => {
-    p.loop = true;
-    p.muted = true;
-    if (!reduced) p.play();
-  });
-
-  /* `status` đọc qua sự kiện chứ không đọc một lần: một video đang tải sẽ đi
-     qua `loading` → `readyToPlay`, và lỗi mạng tới SAU khi component đã dựng. */
-  const { status } = useEvent(player, 'statusChange', { status: player.status });
-  const videoBroke = status === 'error';
-
-  const showVideo = !!videoUrl && !videoBroke;
+  /* Thiếu phần native thì URL video ấy KHÔNG tải được — và đó đúng nghĩa là
+     "không tải được", không phải "chưa có hình". Có một đoạn minh hoạ; máy này
+     mở không nổi. */
+  const showVideo = !!videoUrl && !!GuideVideo && !vidBroke;
   const showImage = isImage && !imgBroke;
   const alt = i18n.nEgMediaAlt.replace('{v}', name);
 
   if (showVideo) {
     return (
       <View style={[styles.box, styles.frame]}>
-        <VideoView
-          player={player}
+        <GuideVideo
+          url={videoUrl}
+          alt={alt}
+          reduced={reduced}
           style={styles.fill}
-          contentFit="cover"
-          nativeControls={false}
-          /* Một minh hoạ không đi đâu cả: không toàn màn, không cửa sổ nổi.
-             `fullscreenOptions.enable` chứ không phải `allowsFullscreen` — đó
-             là tên prop THẬT của `expo-video@57`, đọc ra khỏi `VideoView.types`
-             của chính gói đã cài chứ không nhớ theo bản cũ. */
-          fullscreenOptions={{ enable: false }}
-          allowsPictureInPicture={false}
-          accessibilityLabel={alt}
+          onFail={onVideoFail}
         />
       </View>
     );
@@ -150,7 +157,7 @@ export function GuideMedia({
      Hỏng thì nói hỏng; chưa có thì nói chưa có, kèm một câu bảo rằng phần chữ
      bên dưới vẫn mô tả được động tác. Hai câu khác nhau vì hai sự thật khác
      nhau — xem `tools/empty-vs-failed.mjs`. */
-  const failed = videoBroke || imgBroke;
+  const failed = vidBroke || imgBroke || (!!videoUrl && !GuideVideo);
   return (
     <View
       style={[styles.box, styles.compact]}

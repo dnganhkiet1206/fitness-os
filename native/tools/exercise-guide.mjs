@@ -41,6 +41,7 @@ const HOOK = 'src/hooks/use-exercise-guide.ts';
 const SHEET = 'src/app/exercise-guide.tsx';
 const PLAN = 'src/components/ascnd/day-plan.tsx';
 const MEDIA = 'src/components/ascnd/guide-media.tsx';
+const VIDEO = 'src/components/ascnd/guide-video.tsx';
 const LIB = 'src/hooks/use-library.ts';
 const LAYOUT = 'src/app/_layout.tsx';
 
@@ -51,6 +52,11 @@ const hook = read(HOOK);
 const sheet = read(SHEET);
 const plan = read(PLAN);
 const media = read(MEDIA);
+const video = read(VIDEO);
+/* Hai tệp, một khối media: nhánh video đã tách ra `guide-video.tsx` để cái
+   import ném được của `expo-video` không nằm trên đường nạp một ROUTE. Mấy vế
+   dưới đây nói về HÀNH VI của khối ấy, nên chúng đọc cả hai. */
+const mediaAll = media + '\n' + video;
 /*
   Vế cấm `aspectRatio: undefined` phải đọc MÃ, không đọc chú thích — và luật này
   tự đỏ vì chính điều đó ở lần chạy đầu: chú thích trong `guide-media.tsx` GIẢI
@@ -151,7 +157,7 @@ if (!/exercise-insight/.test(read('src/components/ascnd/exercise-progress.tsx'))
 
 /* ── 7 · media: hỏng thì có chỗ trống tử tế, và KHÔNG có trình phát ── */
 CASES++;
-if (!/onError=\{\(\) => setImgBroke\(true\)\}/.test(media) || !/status === 'error'/.test(media)) {
+if (!/onError=\{\(\) => setImgBroke\(true\)\}/.test(media) || !/status === 'error'/.test(mediaAll)) {
   problems.push(
     `${MEDIA}: khung hình không còn bắt lỗi tải ở CẢ hai đường (ảnh qua \`onError\`, video qua ` +
       "`status === 'error'`). Một đường dẫn đúng vẫn 404 được, và khi ấy đặt hàng đòi *\"a graceful " +
@@ -159,7 +165,7 @@ if (!/onError=\{\(\) => setImgBroke\(true\)\}/.test(media) || !/status === 'erro
   );
 }
 CASES++;
-if (!/autoplay=\{!reduced\}/.test(media) || !/if \(!reduced\) p\.play\(\)/.test(media)) {
+if (!/autoplay=\{!reduced\}/.test(media) || !/if \(!reduced\) p\.play\(\)/.test(mediaAll)) {
   problems.push(
     `${MEDIA}: media không còn tôn trọng "giảm chuyển động" ở cả hai đường. Một vòng lặp vô tận LÀ ` +
       'chuyển động liên tục — đúng thứ cài đặt trợ năng ấy nói tới, và nó phải dừng được ở CẢ video lẫn ' +
@@ -175,7 +181,7 @@ const player = [
   ['loop', /p\.loop = true/],
   ['không toàn màn', /fullscreenOptions=\{\{ enable: false \}\}/],
   ['không cửa sổ nổi', /allowsPictureInPicture=\{false\}/],
-].filter(([, re]) => !re.test(media)).map(([n]) => n);
+].filter(([, re]) => !re.test(mediaAll)).map(([n]) => n);
 if (player.length) {
   problems.push(
     `${MEDIA}: đoạn minh hoạ đang mọc ra một TRÌNH PHÁT — thiếu: ${player.join(', ')}. Đặt hàng nói rõ ` +
@@ -231,6 +237,49 @@ if (guardAt < 0 || !/^\s*<GuideMedia\b/.test(sheet.slice(guardAt + 27, guardAt +
       'khẳng định SAI về dữ liệu của người dùng, và ở nhánh hỏng nó còn mâu thuẫn thẳng với thẻ "không đọc ' +
       'được" ngay bên dưới. Lúc đang tải đã có vòng quay, lúc hỏng đã có thẻ báo hỏng: ô media chỉ nói khi ' +
       'nó thật sự biết',
+  );
+}
+
+/* ── 7e · `expo-video` chỉ được import ở MỘT tệp, và qua một cái khoá ──
+
+   `expo-video/build/NativeVideoModule.js` gọi `requireNativeModule('ExpoVideo')`
+   ở phạm vi module, nên chỉ riêng việc import nó đã NÉM trên một bản app chưa
+   có phần native. Và `guide-media.tsx` nằm trên đường nạp của `exercise-guide.tsx`
+   — một ROUTE mà `expo-router` nạp lúc khởi động để kiểm cây route. Nên một
+   import tĩnh ở đó không làm hỏng một màn: nó làm CẢ APP không mở được, kèm
+   `Cannot read property 'ErrorBoundary' of undefined` vì route nạp hụt trả về
+   `undefined`.
+
+   Đã xảy ra thật, hai lượt liền trên máy chủ dự án, sau khi `expo-video` vào ở
+   `a13e648`. `npm install` không sửa được vì thứ thiếu là mã Swift.
+
+   Nên: đúng một tệp được import `expo-video`, và tệp bị route chạm phải đi qua
+   `require` trong `try/catch`. */
+CASES++;
+const importers = ['src/components/ascnd/guide-media.tsx', 'src/components/ascnd/guide-video.tsx',
+  'src/app/exercise-guide.tsx', 'src/components/ascnd/day-plan.tsx']
+  .filter((f) => /from 'expo-video'/.test(read(f)));
+if (JSON.stringify(importers) !== JSON.stringify([VIDEO])) {
+  problems.push(
+    `\`expo-video\` đang được import tĩnh ở [${importers.join(', ')}], phải CHỈ ở \`${VIDEO}\`. Gói ấy ` +
+      'gọi `requireNativeModule` ngay lúc nạp module, nên một import tĩnh trên đường nạp một route làm cả ' +
+      'app không mở được trên mọi binary chưa có phần native — không phải làm hỏng một màn',
+  );
+}
+CASES++;
+if (!/try \{[\s\S]{0,40}?return \(require\('\.\/guide-video'\)/.test(media) ||
+    !/\} catch \{[\s\S]{0,30}?return null;/.test(media)) {
+  problems.push(
+    `${MEDIA}: cửa vào \`guide-video\` không còn là \`require\` trong \`try/catch\`. Thiếu cái khoá ấy thì ` +
+      'một máy chưa build lại phần native sẽ không mở được app, thay vì thấy ô media ở trạng thái "không ' +
+      'tải được hình minh hoạ" — một câu đúng: có URL, và máy này mở không nổi',
+  );
+}
+CASES++;
+if (!/!!videoUrl && !GuideVideo/.test(media)) {
+  problems.push(
+    `${MEDIA}: thiếu phần native mà vẫn không được tính là HỎNG. Có một URL video và máy không mở được nó ` +
+      'thì đó là "không tải được", không phải "chưa có hình minh hoạ" — hai câu về hai sự thật khác nhau',
   );
 }
 
