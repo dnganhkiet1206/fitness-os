@@ -23,6 +23,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { ChoiceCard } from '@/components/ascnd/onboarding/choice-card';
 import { OnboardingScreen } from '@/components/ascnd/onboarding/onboarding-screen';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { Segmented } from '@/components/ascnd/segmented';
 import { Ruler, RULER_H } from '@/components/ascnd/weight-goal-ruler';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { duration } from '@/constants/motion';
@@ -44,10 +45,12 @@ import { getLegal, type LegalDoc } from '@/lib/legal-content';
 import { localDateStr } from '@/lib/local-date';
 import { levelFromXp, rankForLevel } from '@/lib/mascot-room';
 import { BOUNDS, statMessage } from '@/lib/plausible';
+import type { HeightUnit, WeightUnit } from '@/lib/units';
 import {
   displayHeight,
   displayVolume,
   displayWeight,
+  formatHeight,
   heightToCm,
   lengthLabel,
   volumeLabel,
@@ -152,7 +155,24 @@ export function OnboardingFlow() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { width: screenW } = useWindowDimensions();
-  const { weight: wUnit, height: hUnit } = useUnits();
+  /*
+    ── đơn vị: hồ sơ nói trước, người dùng nói sau ──
+
+    `null` nghĩa là *chưa ai chọn gì trong luồng này*, và khi ấy đơn vị đi theo
+    hồ sơ. Hồ sơ về muộn hơn lần vẽ đầu — nó là một truy vấn — nên một
+    `useState(units.height)` sẽ đóng băng giá trị mặc định trước khi câu trả
+    lời thật kịp tới. Một `useEffect` đuổi theo thì lại phải nhớ THÔI đuổi khi
+    người dùng đã chạm vào, tức đúng cái ref `placed` của `useRulerIndex`, dựng
+    lại lần thứ hai.
+
+    Một `??` không có cả hai vấn đề ấy: chưa chọn thì đọc hồ sơ mỗi lần vẽ,
+    chọn rồi thì hồ sơ thôi có tiếng nói. Không hiệu ứng, không ref, không đua.
+  */
+  const units = useUnits();
+  const [hPick, setHPick] = useState<HeightUnit | null>(null);
+  const [wPick, setWPick] = useState<WeightUnit | null>(null);
+  const hUnit = hPick ?? units.height;
+  const wUnit = wPick ?? units.weight;
   const { unit: vUnit } = useVolumeUnit();
 
   const [step, setStep] = useState(0);
@@ -310,6 +330,10 @@ export function OnboardingFlow() {
           macro_fat_g: attempt.plan.macro_fat_g,
           macro_fiber_g: attempt.plan.macro_fiber_g,
           water_target_ml: attempt.plan.water_target_ml,
+          /* Đơn vị người ta vừa nhập bằng. Không ghi thì app quay lại hệ mét ở
+             màn tiếp theo và con số họ vừa đọc đổi hình ngay sau khi bấm. */
+          units_height: hUnit,
+          units_weight: wUnit,
           onboarding_completed: true,
         },
         { onConflict: 'user_id' },
@@ -604,17 +628,53 @@ export function OnboardingFlow() {
 
         {k === 'height' && (
           <HeightBody
+            /*
+              ── vì sao `key` ──
+
+              Đổi đơn vị là đổi THANG của cây thước: `min10` nhảy từ 1.000 sang
+              394 và số vạch từ 1.501 xuống 591. `useRulerIndex` thì đã lật
+              `placed` sau lần đặt đầu tiên, và nó lật có lý do — chính cái ref
+              ấy ngăn cú `scrollTo` mở màn bị ghi nhận thành một lượt người dùng
+              chọn số. Nên nó KHÔNG đặt lại thước, và kim ở lại đúng chỗ cũ
+              trong khi thang dưới chân nó đã khác: kim chỉ một đằng, số đọc một
+              nẻo.
+
+              `key` dựng lại đúng một cây thước mới cho một thang mới, tức nói
+              ra bằng React điều vốn đã đúng về mặt vật lý. Rẻ hơn nhiều so với
+              dạy hook phân biệt "thang vừa đổi" với "người dùng vừa kéo" —
+              phép phân biệt ấy là thứ nó đã trả giá một lần để học.
+
+              ── cái giá, đã đo ──
+
+              Đổi sang inch rồi quay lại cm KHÔNG khép kín: 170,0 → 5'7" →
+              169,9. Thước inch chỉ diễn tả được bội của 0,1 in, và 170,0 cm
+              không nằm trên nó — 66,9 in là vạch gần nhất, tức 169,93 cm.
+
+              Nó là LƯỢNG TỬ HOÁ, không phải rò rỉ: đo qua năm vòng đổi đi đổi
+              lại, con số dừng ở 169,9 ngay từ vòng đầu và đứng yên — 169,9 cm
+              đúng là 66,9 in, nên vòng sau không đổi gì nữa. Sai số 0,7mm,
+              không đủ để dời một chữ số nào của TDEE.
+
+              Giữ nguyên thay vì che: một cây thước inch đo ra số inch. Che nó
+              đi sẽ phải nhớ một giá trị "thật" song song với giá trị người
+              dùng NHÌN THẤY, và hai con số cho một phép đo là bài học repo này
+              đã trả nhiều lần.
+            */
+            key={hUnit}
             cm={heightCm}
             unit={hUnit}
             styles={styles}
             ask={<Ask q={i18n.obHeightQ} why={i18n.obHeightWhy} />}
             strip={RulerStrip}
             onCm={setHeightCm}
+            onUnit={setHPick}
           />
         )}
 
         {k === 'weight' && (
           <WeightBody
+            /* Cùng lý do `key` của màn 07. */
+            key={wUnit}
             kg={weightKg}
             unit={wUnit}
             width={Math.min(SCALE_MAX, screenW * SCALE_FRACTION)}
@@ -623,6 +683,7 @@ export function OnboardingFlow() {
             error={statError}
             strip={RulerStrip}
             onKg={setWeightKg}
+            onUnit={setWPick}
           />
         )}
 
@@ -884,13 +945,15 @@ function HeightBody({
   ask,
   strip: Strip,
   onCm,
+  onUnit,
 }: {
   cm: string;
-  unit: ReturnType<typeof useUnits>['height'];
+  unit: HeightUnit;
   styles: Styles;
   ask: React.ReactNode;
   strip: Strip;
   onCm: (v: string) => void;
+  onUnit: (u: HeightUnit) => void;
 }) {
   const min10 = Math.ceil(displayHeight(BOUNDS.height_cm.min, unit) * 10);
   const max10 = Math.floor(displayHeight(BOUNDS.height_cm.max, unit) * 10);
@@ -914,15 +977,50 @@ function HeightBody({
     },
     [onIndex, onCm, min10, unit],
   );
+  const imperial = unit === 'in';
   return (
     <View style={styles.fill}>
       {ask}
+      {/* Bộ chọn đứng ngay dưới câu hỏi vì nó quyết định câu trả lời được ĐỌC
+          bằng gì — nó thuộc về câu hỏi, không thuộc về cây thước. */}
+      <View style={styles.unitRow}>
+        <Segmented
+          options={UNIT_H}
+          value={unit}
+          onChange={(u) => {
+            Haptics.selectionAsync();
+            onUnit(u);
+          }}
+          height={36}
+          compact
+        />
+      </View>
       <View style={styles.grow} />
       <View style={styles.readoutCentre}>
-        <Text style={styles.num}>{value.toFixed(1)}</Text>
-        <Text style={styles.numUnit}>{lengthLabel(unit)}</Text>
+        {/*
+          ── vì sao hệ imperial đọc bằng HAI dòng ──
+
+          `66.9 in` là một con số đúng mà không ai dùng để nói về chiều cao của
+          mình; người ta nói `5'6"`, và tab Tiến trình của chính app đã in ra
+          đúng chuỗi ấy qua `formatHeight`. Hai màn nói hai kiểu về cùng một cơ
+          thể, và bản của luồng này là bản sai.
+
+          Nhưng `5'6"` MỘT MÌNH thì không dùng được ở đây: thước chia theo phần
+          mười inch, nên `Math.round` gộp mười vạch vào một chuỗi và chín trong
+          mười vạch kéo sẽ không đổi gì cả — cây thước động mà màn hình đứng im,
+          tức người dùng đọc ra là nó kẹt. Chia vạch theo inch NGUYÊN cũng không
+          cứu được: 59 vạch × 4đ = 236đ, ngắn hơn cả màn hình 402đ, tức không
+          kéo được nữa.
+
+          Nên dòng lớn nói theo cách người ta nói, dòng nhỏ đổi theo TỪNG vạch.
+          Hệ mét không cần vế thứ hai: `170.0` vốn đã đổi mỗi vạch.
+        */}
+        <Text style={styles.num}>{imperial ? formatHeight(heightToCm(value, unit), unit) : value.toFixed(1)}</Text>
+        <Text style={styles.numUnit}>
+          {imperial ? `${value.toFixed(1)} ${lengthLabel(unit)}` : lengthLabel(unit)}
+        </Text>
       </View>
-      <View style={styles.growSmall} />
+      <View style={styles.grow} />
       <Strip
         count={count}
         min10={min10}
@@ -951,15 +1049,17 @@ function WeightBody({
   error,
   strip: Strip,
   onKg,
+  onUnit,
 }: {
   kg: string;
-  unit: ReturnType<typeof useUnits>['weight'];
+  unit: WeightUnit;
   width: number;
   styles: Styles;
   title: string;
   error: string | null;
   strip: Strip;
   onKg: (v: string) => void;
+  onUnit: (u: WeightUnit) => void;
 }) {
   const { touch, lit: litFace, rest: restFace } = useScaleWake();
   const min10 = Math.ceil(displayWeight(BOUNDS.weight_kg.min, unit) * 10);
@@ -985,6 +1085,18 @@ function WeightBody({
   return (
     <View style={styles.fill}>
       <Text style={styles.qCentre}>{title}</Text>
+      <View style={styles.unitRow}>
+        <Segmented
+          options={UNIT_W}
+          value={unit}
+          onChange={(u) => {
+            Haptics.selectionAsync();
+            onUnit(u);
+          }}
+          height={36}
+          compact
+        />
+      </View>
       <View style={styles.grow} />
       <View style={styles.stage}>
         <View>
@@ -1156,6 +1268,39 @@ const READS = ['obHealthRead1', 'obHealthRead2', 'obHealthRead3', 'obHealthRead4
 const WEEK = [20, 30, 26, 38, 52, 64, 72];
 
 /** Hai màn dùng chung MỘT dụng cụ — xem ngoại lệ ④ của phép chọn chuyển cảnh. */
+/*
+  Đơn vị, viết ra thành DỮ LIỆU.
+
+  Nhãn KHÔNG dịch và không đi qua `i18n`: `cm`, `in`, `kg`, `lbs` là ký hiệu
+  đơn vị, giống hệt `kcal` và `ms` đã nằm trong danh sách giữ nguyên của
+  `tools/i18n.mjs`. Dịch chúng là bịa ra một ký hiệu không tồn tại.
+
+  Và đây đúng bộ giá trị mà `HeightUnit`/`WeightUnit` cho phép, nên thêm một
+  viên thứ ba sẽ đỏ ở `tsc` chứ không lặng lẽ ghi một chuỗi app không hiểu.
+*/
+/**
+ * Bề rộng hàng đơn vị.
+ *
+ * `Segmented` dựng trên `PickRow`, và mọi ô của nó là `flex: 1` — tức control
+ * KHÔNG có bề rộng tự thân và phải nhận từ cha. Bản đầu để `alignSelf:'center'`
+ * một mình: dựng ra thì hai nhãn dính thành một chữ `cmin` trong một viên bị
+ * bóp lại. Đó là loại lỗi chỉ hiện ra khi dựng, không hiện ra khi đọc.
+ *
+ * 160 chứ không phải cả hàng: hai nấc kéo dài 354đ đọc ra là một thanh điều
+ * hướng mục, không phải một lựa chọn nhỏ về cách đọc con số bên dưới. 80đ mỗi
+ * nấc vẫn quá sàn chạm 44 của Apple theo chiều ngang.
+ */
+const UNIT_ROW_W = 160;
+
+const UNIT_H: readonly { key: HeightUnit; label: string }[] = [
+  { key: 'cm', label: 'cm' },
+  { key: 'in', label: 'in' },
+];
+const UNIT_W: readonly { key: WeightUnit; label: string }[] = [
+  { key: 'kg', label: 'kg' },
+  { key: 'lbs', label: 'lbs' },
+];
+
 const RULER_SCREENS: ReadonlySet<StepKey> = new Set(['height', 'weight']);
 
 /** Sáu bậc của thang hạng — `RANKS` có sáu mục, và cái thang vẽ đúng sáu nấc. */
@@ -1216,9 +1361,31 @@ const stylesFor = makeStyles((c, m) => ({
     `growSmall` vẫn còn dùng, nhưng chỉ ở chỗ nó đúng: giữa con số và cây thước
     của hai màn 07/08, nơi hai thứ ấy là MỘT cụm và không được tách ra.
   */
+  /*
+    ── hai đệm giãn phải cộng lại ≥ 1 ──
+
+    Bản đầu của màn 07 đặt `growSmall` ở CẢ HAI phía con số, tổng 0,70. Spec
+    flexbox nói rõ: khi tổng `flex-grow` nhỏ hơn 1, các phần tử chỉ chiếm ĐÚNG
+    tỉ lệ ấy của khoảng trống — 30% còn lại rơi xuống đáy. Đo trên bản dựng:
+    139 điểm trống nằm giữa dòng "Kéo để chỉnh" và nút chính, tức cây thước
+    thôi chạm đáy vùng nội dung.
+
+    `tsc` sạch, không cảnh báo nào, và không luật nào bắt. Nó chỉ hiện ra khi
+    dựng ra và NHÌN. Ghi lại ở đây vì con số 0,35 trông vô hại, và nó chỉ vô
+    hại khi đứng CẠNH một số ≥ 0,65.
+  */
   grow: { flex: 1 },
   growSmall: { flex: 0.35 },
   growWide: { flex: 1.15 },
+  /*
+    Hàng đơn vị, canh giữa và sát ngay dưới câu hỏi.
+
+    `marginTop` bằng `spacing.card` chứ không phải `lg`: nó là một phần của cụm
+    câu hỏi, không phải một khối mới. Bề rộng tự co theo hai viên chứ không
+    giãn hết hàng — một ô chọn hai nấc kéo dài 354đ đọc ra là một thanh điều
+    hướng, không phải một lựa chọn nhỏ.
+  */
+  unitRow: { alignSelf: 'center', width: UNIT_ROW_W, marginTop: spacing.card },
 
   /* ── chữ dẫn ── */
   hero: { ...type.hero, color: c.foreground, lineHeight: 50 },
