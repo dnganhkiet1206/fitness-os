@@ -973,7 +973,28 @@ function HeightBody({
   const commit = useCallback(
     (i: number) => {
       onIndex(i);
-      onCm(String(heightToCm((min10 + i) / 10, unit)));
+      /*
+        ── làm tròn NGAY TRƯỚC khi ghi, về 0,1 cm ──
+
+        `heightToCm(66.9, 'in')` trả về `169.92600000000002`. Cái đuôi ấy không
+        phải một phép đo — nó là dư của phép nhân nhị phân với 2,54 — và nó đi
+        thẳng xuống một cột `numeric` rồi nằm đó mãi.
+
+        0,1 là hạt mà cây thước THẬT SỰ diễn tả được (mỗi vạch là một phần mười
+        đơn vị đang hiện) và cũng đúng con số màn hình đang in ra. Nên làm tròn
+        ở đây không bỏ đi thông tin nào: nó ghi lại đúng thứ người dùng vừa
+        chọn, thay vì đúng thứ ấy cộng một dư số nhị phân.
+
+        KHÔNG làm tròn về cm nguyên như `edit-profile` làm. Cm nguyên sẽ khép
+        được vòng cm → in → cm, nhưng nó phá hạt của chính cây thước cm, vốn
+        chia 0,1 — và màn hình sẽ in `170.0` cho một giá trị không giữ nổi chữ
+        số thập phân ấy.
+
+        Vòng cm → in → cm VẪN không khép: 0,1 cm và 0,1 in = 0,254 cm là hai
+        hạt không thông ước, nên không quy tắc làm tròn nào vừa khép được vòng
+        vừa giữ được 0,1 cm. Đó là sự thật về hai cây thước, không phải lỗi.
+      */
+      onCm(String(Math.round(heightToCm((min10 + i) / 10, unit) * 10) / 10));
     },
     [onIndex, onCm, min10, unit],
   );
@@ -984,6 +1005,25 @@ function HeightBody({
       {/* Bộ chọn đứng ngay dưới câu hỏi vì nó quyết định câu trả lời được ĐỌC
           bằng gì — nó thuộc về câu hỏi, không thuộc về cây thước. */}
       <View style={styles.unitRow}>
+        {/*
+          Chiều cao để MẶC ĐỊNH (44), không truyền `height`.
+
+          Bản đầu truyền 36. 44 là sàn chạm của Apple, và `Segmented` đặt mặc
+          định đúng ở đó — `edit-profile` dùng cùng control này ở cùng bề rộng
+          một nấc (Field nửa hàng ≈ 82đ, ở đây 80đ) và để mặc định. Truyền 36
+          là đưa cùng một control xuống dưới sàn ở một màn mà không ở màn kia.
+
+          Lập luận cho 38 trong chú thích của `Segmented` là lập luận cho biến
+          thể VIÊN NANG, nơi mỗi mục rộng gần nửa màn hình (201đ) nên thứ giới
+          hạn là mắt chứ không phải ngón tay. Ở 80đ lập luận ấy không áp được.
+
+          `tools/tap-target.mjs` không bắt được, và không phải vì nó hỏng: nó
+          quét thẻ `<PressScale>` mang `styles.X` có `height:` là số viết
+          thẳng, còn đây là `PickRow.Item` với chiều cao tính ra.
+
+          `compact` thì GIỮ: nó không sinh ra con số 36, nó chỉ chọn
+          `radius.full`. Bỏ nó đi là đổi viên nang thành chữ nhật bo.
+        */}
         <Segmented
           options={UNIT_H}
           value={unit}
@@ -991,7 +1031,6 @@ function HeightBody({
             Haptics.selectionAsync();
             onUnit(u);
           }}
-          height={36}
           compact
         />
       </View>
