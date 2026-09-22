@@ -397,7 +397,7 @@ export default function ExerciseGuideSheet() {
                     {cues.map((t) => (
                       <View key={t} style={styles.item}>
                         <View style={[styles.mark, styles.markOk]}>
-                          <Icon icon={Check} size={12} color={c.primaryForeground} strokeWidth={3} />
+                          <Icon icon={Check} size={11} color={c.primaryForeground} strokeWidth={3} />
                         </View>
                         <Text style={styles.itemText}>{t}</Text>
                       </View>
@@ -412,7 +412,7 @@ export default function ExerciseGuideSheet() {
                     {mistakes.map((t) => (
                       <View key={t} style={styles.item}>
                         <View style={[styles.mark, styles.markBad]}>
-                          <Icon icon={X} size={12} color={c.primaryForeground} strokeWidth={3} />
+                          <Icon icon={X} size={11} color={c.primaryForeground} strokeWidth={3} />
                         </View>
                         <Text style={styles.itemText}>{t}</Text>
                       </View>
@@ -596,7 +596,7 @@ const stylesFor = makeStyles((c, m) => ({
     thật sự làm bản tối trước đây đọc ra là đục không phải con số ấy — mà là
     chỉ có 24 điểm hình nằm sau mặt giấy. Nay là 150. Xem `overlap`.
   */
-  glassTint: { backgroundColor: alpha(c.card, m.lit ? 0.72 : 0.9) },
+  glassTint: { backgroundColor: alpha(c.card, m.lit ? 0.72 : 0.82) },
   /*
     36 × 5 — thanh vuốt hệ thống của iOS.
 
@@ -704,22 +704,41 @@ const stylesFor = makeStyles((c, m) => ({
     đo được 6,46:1 trên giấy và 6,22:1 trong tối, nên nó vừa đạt AA vừa ở dưới
     câu chữ bên cạnh — đúng thứ ảnh tham chiếu cho thấy.
 
-    `marginTop` −1 kéo tâm đĩa 22 điểm về đúng tâm dòng chữ đầu (`lineHeight`
-    21). Không có nó, đĩa cao hơn dòng 1 điểm và cả cột số trôi xuống.
+    ── 18, và con số này ĐI NGƯỢC một lời dặn ──
+
+    Đặt hàng của lượt Pass 4.2 nói "~22–24pt". Nhưng lượt ấy chưa ai đo ảnh
+    tham chiếu; đo rồi thì chip trong ảnh bản sáng là **∅15,6đ**, và đĩa dấu
+    bên dưới là 16,5–17,5đ — tức trong ảnh tham chiếu HAI LOẠI ĐĨA BẰNG NHAU và
+    đều nhỏ hơn hẳn. 22 làm mỗi bước đọc ra như một cái huy hiệu.
+
+    18 là giá trị gần phép đo nhất mà vẫn còn chỗ cho một chữ số: ∅15,6 với
+    chữ 11 thì viền chỉ còn 2,3đ mỗi bên. Repo này có luật "phép đo thắng một
+    lời dặn chưa đo", nên đây là phép đo thắng — và con số kia được ghi lại
+    ngay đây để người duyệt chốt lại nếu muốn.
+
+    Số xuống `caption` (11/500): trong ảnh tham chiếu chữ số rõ ràng nhỏ và mờ
+    hơn câu bên cạnh, và 13 trong một đĩa 18 thì gần chạm viền.
+
+    `marginTop` 1,5 = (21 − 18)/2, kéo tâm đĩa về đúng tâm dòng chữ đầu.
   */
   step: {
-    width: 22,
-    height: 22,
+    width: 18,
+    height: 18,
     borderRadius: radius.full,
     backgroundColor: c.secondary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -1,
+    marginTop: 1.5,
   },
-  stepNo: { ...type.footnote, color: c.secondaryForeground, fontVariant: ['tabular-nums'] },
+  stepNo: { ...type.caption, color: c.secondaryForeground, fontVariant: ['tabular-nums'] },
 
   /*
     Đĩa dấu: 20 điểm, đặc, glyph 12 điểm ở giữa.
+
+    ∅18 và glyph 11 — đo trên ảnh tham chiếu: đĩa ở đó là **16,5–17,5đ**, còn
+    khoảng đĩa→nét chữ đầu là 9,5đ (bản dựng 8,7đ, tức `spacing.sm` đã đúng).
+    Cùng một lời dặn "~20–24pt" bị phép đo lật như ở `step` phía trên, và cùng
+    một lý do.
 
     Mực là `primaryForeground` — token "thứ nằm TRÊN màu nhấn" của mỗi theme —
     chứ không phải trắng cứng, và đó là một phép đo chứ không phải một sở
@@ -744,12 +763,12 @@ const stylesFor = makeStyles((c, m) => ({
     9,12 thay cho 14,12 — còn một mã màu viết cứng thì đã hỏng im lặng.
   */
   mark: {
-    width: 20,
-    height: 20,
+    width: 18,
+    height: 18,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 0.5,
+    marginTop: 1.5,
   },
   markOk: { backgroundColor: c.readinessGreen },
   markBad: { backgroundColor: c.readinessRed },
