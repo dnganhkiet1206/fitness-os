@@ -1,6 +1,24 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { Bell, ChevronRight, KeyRound, Lock, Trash2, Upload } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
+import {
+  Bell,
+  ChevronRight,
+  Contrast,
+  Download,
+  Dumbbell,
+  FileText,
+  Flame,
+  Globe,
+  Info,
+  KeyRound,
+  Lock,
+  ShieldCheck,
+  Store,
+  Target,
+  Trash2,
+  User,
+} from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -325,16 +343,26 @@ export default function SettingsScreen() {
         }}>
         <GlassCard>
           <View style={styles.cardHeaderRow}>
-            <View style={styles.cardHeaderInfo}>
-              <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
-              <Text style={styles.cardHint}>{user?.email}</Text>
+            <View style={styles.cardHeaderLeft}>
+              {/* Ô tròn thay cho một chỗ trống: thẻ này là DANH TÍNH, và nó là
+                  thẻ duy nhất trên màn mở đầu bằng một tên người. Mọi thẻ khác
+                  mở đầu bằng một glyph, nên thiếu nó thẻ đầu tiên đọc ra như bị
+                  thụt vào so với phần còn lại. */}
+              <View style={styles.avatar}>
+                <Icon icon={User} size={20} color={c.mutedForeground} />
+              </View>
+              <View style={styles.cardHeaderInfo}>
+                <Text style={styles.cardTitle}>{profile?.name ?? 'Athlete'}</Text>
+                <Text style={styles.cardHint}>{user?.email}</Text>
+              </View>
             </View>
             <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
           </View>
           <View style={styles.divider} />
-          <Row label={i18n.nDailyTarget} value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
-          <Row label={i18n.nGoal} value={(profile?.goal && GOAL_LABELS[profile.goal]) || profile?.goal || '—'} />
+          <Row icon={Flame} label={i18n.nDailyTarget} value={profile?.tdee_target_kcal != null ? `${Math.round(Number(profile.tdee_target_kcal)).toLocaleString()} kcal` : '—'} />
+          <Row icon={Target} label={i18n.nGoal} value={(profile?.goal && GOAL_LABELS[profile.goal]) || profile?.goal || '—'} />
           <Row
+            icon={Dumbbell}
             label={i18n.nTrainingLevel}
             value={(profile?.training_level && LEVEL_LABELS[profile.training_level]) || profile?.training_level || '—'}
           />
@@ -368,7 +396,7 @@ export default function SettingsScreen() {
           does not exist should behave is a switch that cannot mean anything.
         */}
         {mascot.enabled ? (
-          <View style={styles.toggleRow}>
+          <View style={[styles.toggleRow, styles.toggleRowNext]}>
             <View style={styles.toggleInfo}>
               <Text style={styles.cardTitle}>{i18n.nKoaCompanionTitle}</Text>
               <Text style={styles.cardHint}>{i18n.nKoaCompanionHint}</Text>
@@ -407,7 +435,10 @@ export default function SettingsScreen() {
             nav.push('/mascot-room');
           }}>
           <View style={styles.roomRow}>
-            <Text style={styles.roomLabel}>{i18n.nMascotRoomTitle}</Text>
+            <View style={styles.rowLeft}>
+              <Icon icon={Store} size={18} color={c.mutedForeground} />
+              <Text style={styles.roomLabel}>{i18n.nMascotRoomTitle}</Text>
+            </View>
             <Icon icon={ChevronRight} size={18} color={c.mutedForeground} />
           </View>
         </PressScale>
@@ -501,7 +532,7 @@ export default function SettingsScreen() {
       */}
       <Animated.View entering={rise(2)}>
       <GlassCard>
-        <Text style={styles.cardTitle}>{i18n.settingsTheme}</Text>
+        <CardTitle icon={Contrast}>{i18n.settingsTheme}</CardTitle>
         <PickRow
           value={theme}
           fill={m.actionSurface}
@@ -532,7 +563,7 @@ export default function SettingsScreen() {
 
       <Animated.View entering={rise(3)}>
       <GlassCard>
-        <Text style={styles.cardTitle}>Language / Ngôn ngữ</Text>
+        <CardTitle icon={Globe}>Language / Ngôn ngữ</CardTitle>
         <PickRow
           value={lang}
           fill={m.actionSurface}
@@ -629,15 +660,27 @@ export default function SettingsScreen() {
       <Animated.View entering={rise(7)}>
       <PressScale onPress={exportData} disabled={exporting}>
         <GlassCard>
+          {/*
+            Glyph bên TRÁI, mũi tên bên PHẢI — cùng hình dạng với mọi hàng dẫn
+            đi nơi khác trên màn này (Nhắc nhở, Đổi mật khẩu, Pháp lý). Bản cũ
+            đặt `Upload` ở bên phải, tức đúng chỗ mà mọi hàng khác đặt mũi tên,
+            nên nó đọc ra như một hàng dẫn đi mà mũi tên bị vẽ sai.
+
+            `Download` chứ không phải `Upload`: việc này TẢI XUỐNG toàn bộ dữ
+            liệu, và câu mô tả ngay dưới nói đúng thế.
+          */}
           <View style={styles.cardHeaderRow}>
-            <View style={styles.cardHeaderInfo}>
-              <Text style={styles.cardTitle}>{i18n.settingsExportData}</Text>
-              <Text style={styles.cardHint}>{i18n.settingsExportDesc}</Text>
+            <View style={styles.cardHeaderLeft}>
+              <Icon icon={Download} size={18} color={c.mutedForeground} />
+              <View style={styles.cardHeaderInfo}>
+                <Text style={styles.cardTitle}>{i18n.settingsExportData}</Text>
+                <Text style={styles.cardHint}>{i18n.settingsExportDesc}</Text>
+              </View>
             </View>
             {exporting ? (
-              <ActivityIndicator color={c.primary} size="small" />
+              <ActivityIndicator color={c.mutedForeground} size="small" />
             ) : (
-              <Icon icon={Upload} size={18} color={c.mutedForeground} />
+              <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
             )}
           </View>
         </GlassCard>
@@ -649,17 +692,20 @@ export default function SettingsScreen() {
           <PressScale onPress={shareCrashes}>
             <GlassCard>
               <View style={styles.cardHeaderRow}>
-                <View style={styles.cardHeaderInfo}>
-                  <Text style={styles.cardTitle}>
-                    {lang === 'vi' ? 'Nhật ký sự cố' : 'Crash log'}
-                  </Text>
-                  <Text style={styles.cardHint}>
-                    {lang === 'vi'
-                      ? `${crashes.length} lần gần nhất — chạm để gửi đi`
-                      : `Last ${crashes.length} — tap to send`}
-                  </Text>
+                <View style={styles.cardHeaderLeft}>
+                  <Icon icon={FileText} size={18} color={c.mutedForeground} />
+                  <View style={styles.cardHeaderInfo}>
+                    {/* Hai chuỗi này từng viết THẲNG ở đây bằng
+                        `lang === 'vi' ? … : …` — chỗ duy nhất của màn không đi
+                        qua bảng dịch, nên `tools/i18n.mjs` không soi được và
+                        một bản dịch sai sẽ nằm im. Nay là `nCrashLog*`. */}
+                    <Text style={styles.cardTitle}>{i18n.nCrashLogTitle}</Text>
+                    <Text style={styles.cardHint}>
+                      {i18n.nCrashLogHint.replace('{n}', String(crashes.length))}
+                    </Text>
+                  </View>
                 </View>
-                <Icon icon={Upload} size={18} color={c.mutedForeground} />
+                <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
               </View>
             </GlassCard>
           </PressScale>
@@ -668,7 +714,7 @@ export default function SettingsScreen() {
 
       <Animated.View entering={rise(8)}>
       <GlassCard>
-        <Text style={styles.cardTitle}>{i18n.nAbout}</Text>
+        <CardTitle icon={Info}>{i18n.nAbout}</CardTitle>
         <Row label={i18n.nVersion} value="1.0.0 (native)" />
         <Row label="Backend" value="Supabase" />
       </GlassCard>
@@ -682,7 +728,10 @@ export default function SettingsScreen() {
         }}>
         <GlassCard>
           <View style={styles.cardHeaderRow}>
-            <Text style={styles.cardTitle}>{i18n.nLegal}</Text>
+            <View style={styles.cardHeaderLeft}>
+              <Icon icon={ShieldCheck} size={18} color={c.mutedForeground} />
+              <Text style={styles.cardTitle}>{i18n.nLegal}</Text>
+            </View>
             <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
           </View>
         </GlassCard>
@@ -715,19 +764,54 @@ export default function SettingsScreen() {
           <Text style={styles.deleteAccountTitle}>{i18n.nDeleteAccount}</Text>
           <Text style={styles.cardHint}>{i18n.nDeleteAccountDesc}</Text>
         </View>
+        {/* Mũi tên, vì hàng này MỞ một hộp xác nhận chứ không xoá ngay. Không
+            có nó, hàng đỏ duy nhất của màn là hàng duy nhất không nói ra rằng
+            còn một bước nữa. */}
+        <Icon icon={ChevronRight} size={18} color={c.readinessRed} />
       </PressScale>
       </Animated.View>
     </Screen>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+/**
+ * Một dòng nhãn–giá trị, kèm một glyph dẫn KHÔNG bắt buộc.
+ *
+ * `icon` là tuỳ chọn vì hai nhóm dòng trên màn này khác nhau về vai: ba dòng
+ * của thẻ hồ sơ mô tả CƠ THỂ và kế hoạch, nên mỗi dòng có một hình riêng giúp
+ * mắt bắt được nó khi lướt; còn hai dòng của thẻ Thông tin (phiên bản,
+ * backend) là siêu dữ liệu — cho chúng glyph là tô đậm thứ không ai đi tìm.
+ */
+function Row({ icon, label, value }: { icon?: LucideIcon; label: string; value: string }) {
   const c = usePalette();
   const styles = stylesFor(c);
   return (
     <View style={styles.row}>
-      <Text style={styles.rowLabel}>{label}</Text>
+      <View style={styles.rowLeft}>
+        {icon ? <Icon icon={icon} size={16} color={c.mutedForeground} /> : null}
+        <Text style={styles.rowLabel}>{label}</Text>
+      </View>
       <Text style={styles.rowValue}>{value}</Text>
+    </View>
+  );
+}
+
+/**
+ * Tiêu đề thẻ, kèm một glyph dẫn KHÔNG bắt buộc.
+ *
+ * Bốn thẻ chỉ-có-tiêu-đề (Giao Diện, Ngôn ngữ, Thông tin, Pháp lý) trước đây là
+ * một dòng chữ trần, trong khi mọi thẻ khác trên màn đều mở đầu bằng một glyph.
+ * Mắt lướt một màn dài bắt HÌNH trước khi đọc CHỮ, nên bốn thẻ ấy đọc ra như
+ * một nhịp bị hụt giữa các thẻ có glyph.
+ */
+function CardTitle({ icon, children }: { icon?: LucideIcon; children: React.ReactNode }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  if (!icon) return <Text style={styles.cardTitle}>{children}</Text>;
+  return (
+    <View style={styles.titleRow}>
+      <Icon icon={icon} size={17} color={c.mutedForeground} />
+      <Text style={styles.cardTitle}>{children}</Text>
     </View>
   );
 }
@@ -738,7 +822,6 @@ const stylesFor = makeStyles((c) => ({
   cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   cardHeaderLeft: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardHeaderInfo: { flex: 1, minWidth: 0 },
-  chevron: { fontSize: 22, color: c.mutedForeground },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: c.border,
@@ -746,8 +829,32 @@ const stylesFor = makeStyles((c) => ({
   },
   row: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  /* Dùng chung cho dòng nhãn–giá trị và cho hàng vào phòng: cả hai là "glyph,
+     rồi chữ, rồi phần còn lại của hàng". Một style thay vì hai, nên khoảng hở
+     giữa glyph và chữ không thể lệch nhau giữa hai chỗ. */
+  rowLeft: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  /*
+    Ô tròn của avatar — `secondary`, không phải `card`.
+
+    Thẻ này LÀ `card`, nên một ô tròn cùng màu thẻ thì không có ô tròn nào cả.
+    `secondary` là bậc bề mặt kế tiếp và đã được đo: 1,198 so với `card` ở bản
+    sáng, 1,088 ở bản tối. Con số thứ hai dưới bậc nhỏ nhất của iOS (1,134),
+    nên ô tròn này KHÔNG được một mình mang nghĩa gì — nó chỉ giữ chỗ cho một
+    glyph vốn đã đọc được ở `mutedForeground` (5,24:1 tối · 5,27:1 sáng).
+  */
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: c.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowLabel: { ...type.body, color: c.mutedForeground },
   rowValue: { ...type.body, color: c.foreground, fontWeight: '600', textTransform: 'capitalize' },
@@ -757,6 +864,11 @@ const stylesFor = makeStyles((c) => ({
     justifyContent: 'space-between',
     gap: spacing.md,
   },
+  /* Hai công tắc là HAI câu hỏi khác nhau — xem chú thích ở chỗ dựng chúng —
+     nên chúng cần một nhịp thở giữa. Không có nó, bốn dòng chữ chạy liền một
+     khối và mắt đọc ra là một đoạn văn có hai cái công tắc rơi vào, chứ không
+     phải hai lựa chọn tách bạch. */
+  toggleRowNext: { marginTop: spacing.md },
   toggleInfo: { flex: 1, minWidth: 0 },
   /* A 44pt row so the whole strip is the target, not just the words — this is
      the only door left to the room for somebody who has switched the figure
@@ -770,6 +882,20 @@ const stylesFor = makeStyles((c) => ({
   },
   roomLabel: { ...type.body, color: c.foreground },
   mascotRow: { marginTop: spacing.md },
+  /*
+    Viền có mặt ở CẢ HAI trạng thái, chỉ đổi MÀU.
+
+    Bản cũ thêm `borderWidth: 1.5` chỉ khi được chọn, trong khi thẻ nền không
+    có viền nào. Bề dày viền nằm trong luồng bố cục, nên chạm vào một thẻ khác
+    làm ruột của nó thụt vào 1,5 điểm mỗi cạnh và con vật NHÍCH đúng lúc ngón
+    tay vừa rời ra — một cú giật chỉ thấy trên máy thật. `choice-card.tsx` đã
+    ghi lại đúng lỗi này một lần và giải theo cùng cách.
+
+    Và màu viền là `foreground`, không phải `primary`: ở bản tối `primary` là
+    bạc lam của Koa (#a8afbd) — cùng họ với chính con vật đang đứng trong thẻ,
+    nên viền chọn đọc ra như một phần của hình. `foreground` là mức tương phản
+    cao nhất bảng màu có ở cả hai diện mạo.
+  */
   mascotChip: {
     width: 116,
     alignItems: 'center',
@@ -778,12 +904,11 @@ const stylesFor = makeStyles((c) => ({
     paddingHorizontal: spacing.sm,
     borderRadius: radius.md,
     backgroundColor: c.secondary,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
     marginRight: spacing.sm,
   },
-  mascotChipSelected: {
-    borderWidth: 1.5,
-    borderColor: c.primary,
-  },
+  mascotChipSelected: { borderColor: c.foreground },
   mascotChipLocked: { opacity: 0.7 },
   mascotFace: { width: 44, height: 52, alignItems: 'center', justifyContent: 'center' },
   mascotArtLocked: { opacity: 0.35 },
@@ -802,7 +927,6 @@ const stylesFor = makeStyles((c) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  mascotLockIcon: { fontSize: 11 },
   mascotProgress: {
     flexDirection: 'row',
     alignItems: 'center',

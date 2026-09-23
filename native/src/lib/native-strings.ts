@@ -178,6 +178,11 @@ const en = {
   nCrashTitle: 'This screen stopped working',
   nCrashHint: 'Your data is safe — nothing was lost. Open the screen again.',
   nCrashStuck: 'It still will not open. Close the app and start it again.',
+  /* Thẻ trong Cài Đặt, không phải màn báo lỗi ở trên. Hai chuỗi này từng được
+     viết THẲNG trong `settings.tsx` bằng `lang === 'vi' ? … : …` — chỗ duy nhất
+     của màn ấy không đi qua bảng dịch, nên không luật nào soi được chúng. */
+  nCrashLogTitle: 'Crash log',
+  nCrashLogHint: 'Last {n} — tap to send',
   // What the target-calibration card promises, and it has to be true: this
   // runs on the device, not on a model.
   nCalibrateHint:
@@ -1100,6 +1105,8 @@ const vi: typeof en = {
   nCrashTitle: 'Màn hình này vừa dừng lại',
   nCrashHint: 'Dữ liệu của bạn vẫn an toàn, không mất gì cả. Thử mở lại màn hình.',
   nCrashStuck: 'Vẫn chưa mở lại được. Hãy đóng app rồi khởi động lại.',
+  nCrashLogTitle: 'Nhật ký sự cố',
+  nCrashLogHint: '{n} lần gần nhất — chạm để gửi đi',
   nCalibrateHint:
     'Đo tiêu hao thật của bạn từ lượng ăn và biến động cân nặng, rồi đề xuất mục tiêu calo khớp với nó.',
   nRetry: 'Thử lại',
