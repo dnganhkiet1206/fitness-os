@@ -25,7 +25,7 @@ import { RecordCelebration } from '@/components/ascnd/record-celebration';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useLogWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
@@ -111,6 +111,7 @@ function rowsFromTemplate(exercises: TplExercise[], unit: WeightUnit): SetRow[] 
 
 export default function LogWorkoutSheet() {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const { weight: wUnit } = useUnits();
@@ -910,7 +911,7 @@ export default function LogWorkoutSheet() {
         <Text style={styles.sectionLabel}>{i18n.nRpe}</Text>
         <PickRow
           value={String(rpe)}
-          fill={c.primary}
+          fill={m.actionSurface}
           slotFill={c.secondary}
           radius={radius.md}
           gap={spacing.sm}>

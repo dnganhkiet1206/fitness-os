@@ -23,7 +23,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import {
@@ -73,6 +73,7 @@ interface AiSuggestion {
 
 export default function LogMealSheet() {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const { user } = useAuth();
   const { lang } = useAppSettings();
@@ -575,7 +576,7 @@ export default function LogMealSheet() {
         <PickRow
           scroll
           value={mealType}
-          fill={c.primary}
+          fill={m.actionSurface}
           slotFill={c.secondary}
           radius={radius.full}
           gap={spacing.sm}

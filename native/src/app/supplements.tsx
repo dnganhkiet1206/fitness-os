@@ -12,7 +12,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { toast } from '@/lib/toast';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { errorText } from '@/lib/error-copy';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -25,6 +25,7 @@ import {
 
 export default function SupplementsScreen() {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là một cái
@@ -125,7 +126,7 @@ export default function SupplementsScreen() {
           <Text style={styles.fieldLabel}>{i18n.supplementsTiming}</Text>
           <PickRow
             value={timing}
-            fill={c.primary}
+            fill={m.actionSurface}
             slotFill={c.secondary}
             radius={radius.full}
               gap={spacing.sm}

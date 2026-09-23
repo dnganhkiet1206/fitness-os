@@ -14,7 +14,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppLock } from '@/hooks/use-app-lock';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -85,6 +85,7 @@ const ITEMS_TABLE = 'meal_entry_items';
 
 export default function SettingsScreen() {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là mười một cái
@@ -503,7 +504,7 @@ export default function SettingsScreen() {
         <Text style={styles.cardTitle}>{i18n.settingsTheme}</Text>
         <PickRow
           value={theme}
-          fill={c.primary}
+          fill={m.actionSurface}
           slotFill={c.secondary}
           radius={radius.md}
           gap={spacing.sm}
@@ -534,7 +535,7 @@ export default function SettingsScreen() {
         <Text style={styles.cardTitle}>Language / Ngôn ngữ</Text>
         <PickRow
           value={lang}
-          fill={c.primary}
+          fill={m.actionSurface}
           slotFill={c.secondary}
           radius={radius.md}
           gap={spacing.sm}

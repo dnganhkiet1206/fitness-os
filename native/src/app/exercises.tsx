@@ -23,13 +23,14 @@ import { EXERCISE_KINDS, isExerciseKind, type ExerciseKind } from '@/lib/exercis
 import { errorText } from '@/lib/error-copy';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useAddExercise, useDeleteExercise, useExercises } from '@/hooks/use-library';
 
 export default function ExercisesScreen() {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const { data: exercises, isError, refetch, isRefetching } = useExercises();
   const { user } = useAuth();
@@ -216,7 +217,7 @@ export default function ExercisesScreen() {
         <Field label={i18n.exercisesMuscleGroup} hint={i18n.nExGroupHint}>
           <PickRow
             value={muscleGroup}
-            fill={c.primary}
+            fill={m.actionSurface}
             slotFill={c.secondary}
             radius={radius.full}
               gap={spacing.sm}
@@ -240,7 +241,7 @@ export default function ExercisesScreen() {
         <Field label={i18n.nExKind} hint={i18n.nExKindHint}>
           <PickRow
             value={kind ?? ''}
-            fill={c.primary}
+            fill={m.actionSurface}
             slotFill={c.secondary}
             radius={radius.full}
             gap={spacing.sm}

@@ -11,7 +11,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { BodyScale } from '@/constants/app-icons';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useReminders } from '@/hooks/use-reminders';
 import { useProfile } from '@/hooks/useTodayData';
@@ -30,6 +30,7 @@ const WATER_INTERVALS = [1, 2, 3, 4];
 
 export default function RemindersScreen() {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const { prefs, permission, available, toggle, setTime, setWaterInterval } = useReminders();
@@ -126,7 +127,7 @@ export default function RemindersScreen() {
         {prefs.water.enabled && (
           <PickRow
             value={String(prefs.water.everyHours)}
-            fill={c.primary}
+            fill={m.actionSurface}
             slotFill={c.secondary}
             radius={radius.md}
               gap={spacing.sm}
