@@ -100,6 +100,27 @@ const scan = (root, args) => {
        arguments that name a table is not a thing — RPCs are covered by
        `economy-sql.mjs`. */
     for (const m of src.matchAll(/\.from\(\s*['"](\w+)['"]/g)) used.add(m[1]);
+    /*
+      ── một EMBED cũng là một lượt đọc ──
+
+      PostgREST đọc bảng con ngay trong câu select của bảng cha:
+
+          .select('kind, uri, exercise_media_content(locale, title, description)')
+
+      Không có `.from('exercise_media_content')` ở đâu cả, và trước dòng này
+      bộ quét kết luận bảng ấy CHẾT — trong khi mọi chú thích của mọi tấm media
+      đi qua đúng nó. Đó là một lời buộc tội sai, và cái giá của nó không phải
+      một bước đỏ: nó là lời mời xoá một bảng đang chạy, hoặc ghi một "lý do
+      giữ lại" cho một bảng không cần giữ lại vì nó đang được dùng.
+
+      Vế này đọc đúng hình dạng embed — `tên_bảng(` ngay trong một chuỗi select
+      — và chỉ ở những tệp có `.select(`, nên nó không quét cả kho tìm dấu
+      ngoặc. Một tên không phải bảng lọt vào đây cũng vô hại: `used` chỉ được
+      đối chiếu với danh sách bảng ĐÃ KHAI trong `types.ts`.
+    */
+    for (const m of src.matchAll(/\.select\(\s*(['"])([\s\S]*?)\1/g)) {
+      for (const e of m[2].matchAll(/(\w+)\s*\(/g)) used.add(e[1]);
+    }
   }
 };
 scan(NATIVE, ['src']);
@@ -221,7 +242,9 @@ if (problems.length) {
 }
 
 console.log(
-  `bảng chết OK — ${declared.length} bảng trong schema, ${used.size} bảng có code đọc/ghi, ` +
+  `bảng chết OK — ${declared.length} bảng trong schema, ${used.size} bảng có code đọc/ghi ` +
+    '(kể cả bảng chỉ được đọc qua EMBED lồng trong câu select của bảng cha — không có `.from()` nào ' +
+    'trỏ tới chúng, và một bộ quét chỉ nhìn `.from()` sẽ gọi chúng là bảng chết), ' +
     `${KEPT.size} bảng được giữ lại CÓ GHI LÝ DO (không xoá: xoá bảng là không hoàn tác được, ` +
     'còn cái giá thật nằm ở các truy vấn, và chúng đã bỏ); một bảng mới thêm mà quên nối sẽ ' +
     'làm hỏng bước này; và hai truy vấn từng chạy mỗi lần mở Today vào hai bảng không ai ghi ' +

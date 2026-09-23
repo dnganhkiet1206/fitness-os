@@ -54,8 +54,8 @@ try {
   rmSync(out, { recursive: true, force: true });
   process.exit(1);
 }
-const { resolveExerciseMedia, hasMedia, showsDots, displayDuration, clockLabel } =
-  mod.default ?? mod;
+const { resolveExerciseMedia, hasMedia, showsDots, displayDuration, clockLabel,
+  mediaLabel, captionedItems } = mod.default ?? mod;
 
 const img = (uri, position = 0, alt = null) =>
   ({ kind: 'image', uri, position, duration_s: null, poster_uri: null, alt });
@@ -149,6 +149,69 @@ eq('bộ trộn: hàng đầu là ảnh → cả bộ là ảnh',
 eq('bộ trộn: hàng đầu là video → cả bộ là video',
   resolveExerciseMedia([vid('a.mp4', null, 0), img('b.png', 1)], null).type, 'video');
 
+/* ══ 8b · CHÚ THÍCH: chữ ở TẦNG NỘI DUNG, không ở trong ảnh ══
+
+   Đặt hàng dựng cả lượt này quanh một luật: *"MEDIA ASSET ≠ INSTRUCTIONAL
+   TEXT."* Lý do là đa ngữ — một tấm ảnh có chữ tiếng Anh nướng vào pixel chỉ
+   dùng được cho một nửa người dùng, và sửa được bằng đúng một cách là vẽ lại.
+
+   Nên bốn vế dưới đây kiểm đúng một tính chất: ĐỔI NGÔN NGỮ ĐỔI CHỮ, KHÔNG ĐỔI
+   `uri`. Và luật lùi ngôn ngữ ở đây phải là CÙNG luật của nội dung hướng dẫn —
+   `pickLocale` trong `guide-content.ts` — chứ không phải một bản sao thứ hai. */
+const cap = (uri, position, captions) =>
+  ({ kind: 'image', uri, position, duration_s: null, poster_uri: null, alt: null,
+    exercise_media_content: captions });
+const BOTH = [
+  { locale: 'vi', title: 'Tư thế bắt đầu', description: 'Đứng thẳng, hai chân rộng bằng vai.' },
+  { locale: 'en', title: 'Starting position', description: 'Stand tall, feet shoulder-width apart.' },
+];
+{
+  const vi = resolveExerciseMedia([cap('01.webp', 0, BOTH)], null, 'vi');
+  const en = resolveExerciseMedia([cap('01.webp', 0, BOTH)], null, 'en');
+  eq('vi → tiêu đề tiếng Việt', vi.items[0].title, 'Tư thế bắt đầu');
+  eq('en → tiêu đề tiếng Anh', en.items[0].title, 'Starting position');
+  eq('ĐỔI NGÔN NGỮ KHÔNG ĐỔI TẤM ẢNH', vi.items[0].uri === en.items[0].uri && vi.items[0].uri, '01.webp');
+  eq('mô tả cũng đổi theo', en.items[0].description, 'Stand tall, feet shoulder-width apart.');
+}
+eq('chưa dịch sang tiếng Anh → lùi về tiếng Việt, KHÔNG ra rỗng',
+  resolveExerciseMedia([cap('01.webp', 0, [BOTH[0]])], null, 'en').items[0].title, 'Tư thế bắt đầu');
+eq('dòng tiếng Anh có locale đúng nhưng TIÊU ĐỀ rỗng → vẫn lùi về tiếng Việt',
+  resolveExerciseMedia([cap('01.webp', 0, [BOTH[0], { locale: 'en', title: '  ', description: 'x' }])],
+    null, 'en').items[0].title, 'Tư thế bắt đầu');
+eq('chưa ai viết chú thích → `title` là null, không phải chuỗi rỗng',
+  resolveExerciseMedia([img('01.webp')], null, 'vi').items[0].title, null);
+eq('không chú thích thì `description` là chuỗi rỗng, không phải null',
+  resolveExerciseMedia([img('01.webp')], null, 'vi').items[0].description, '');
+eq('đường lui `video_url` cũ KHÔNG mượn chú thích của ai',
+  resolveExerciseMedia([], 'https://x/y.gif', 'vi').items[0].title, null);
+
+/* ══ 8c · NHÃN TRỢ NĂNG đến từ chú thích, KHÔNG từ tên tệp ══
+   Đặt hàng: *"Do NOT use filenames as accessibility labels."* Và nó phải đổi
+   theo ngôn ngữ — một `alt` viết bằng tiếng Anh được đọc nguyên văn cho người
+   đang để app ở tiếng Việt, nên chú thích THẮNG `alt`. */
+{
+  const vi = resolveExerciseMedia([cap('01-hero.webp', 0, BOTH)], null, 'vi').items[0];
+  const en = resolveExerciseMedia([cap('01-hero.webp', 0, BOTH)], null, 'en').items[0];
+  eq('nhãn tiếng Việt', mediaLabel('Dumbbell Curl', vi), 'Dumbbell Curl — Tư thế bắt đầu');
+  eq('nhãn tiếng Anh', mediaLabel('Dumbbell Curl', en), 'Dumbbell Curl — Starting position');
+  CASES++;
+  if (/01-hero|\.webp/.test(mediaLabel('Dumbbell Curl', vi))) {
+    problems.push('nhãn trợ năng chứa TÊN TỆP — nó phải đến từ nội dung đã bản địa hoá');
+  }
+}
+eq('chưa có chú thích → `mediaLabel` trả null để chỗ gọi lùi về `alt`',
+  mediaLabel('Dumbbell Curl', resolveExerciseMedia([img('a.png')], null).items[0]), null);
+eq('không có tấm nào → null, không ném',
+  mediaLabel('Dumbbell Curl', resolveExerciseMedia([], null).items[0]), null);
+
+/* ══ 8d · mục "các bước" chỉ gồm những tấm CÓ chữ ══ */
+eq('bốn tấm, hai có chú thích → hai bước',
+  captionedItems(resolveExerciseMedia(
+    [cap('1.webp', 0, BOTH), img('2.webp', 1), cap('3.webp', 2, BOTH), img('4.webp', 3)], null, 'vi',
+  )).length, 2);
+eq('không tấm nào có chú thích → KHÔNG dựng mục bước',
+  captionedItems(resolveExerciseMedia([img('1.webp', 0), img('2.webp', 1)], null, 'vi')).length, 0);
+
 /* ══ 9 · NHÃN ĐỒNG HỒ ══ */
 eq('5 giây → 0:05', clockLabel(5), '0:05');
 eq('65 giây → 1:05', clockLabel(65), '1:05');
@@ -186,7 +249,10 @@ if (!problems.length) {
       'thành "0 giây" (cột là `NUMERIC` nên PostgREST trả CHUỖI, và `Number("")` là 0 — đó là cách lỗi ' +
       'ấy xảy ra). Chấm trang chỉ ở bộ ảnh. Thứ tự theo `position`, không theo thứ tự máy chủ trả về. ' +
       'Hàng bảng thắng cột `video_url` cũ, và cột cũ vẫn là đường lui nên không dòng dữ liệu nào đang ' +
-      'chạy bị làm trắng. Và `DEMO_SECS` không quay lại được làm nguồn thời lượng',
+      'chạy bị làm trắng. Và `DEMO_SECS` không quay lại được làm nguồn thời lượng. CHÚ THÍCH nằm ở tầng ' +
+      'nội dung chứ không trong ảnh: đổi vi↔en đổi tiêu đề, mô tả và nhãn trợ năng mà `uri` không đổi ' +
+      'một ký tự; luật lùi ngôn ngữ là CÙNG `pickLocale` của nội dung hướng dẫn, nên một bản dịch thiếu ' +
+      'ra chữ tiếng Việt chứ không ra màn trống; và nhãn trợ năng không bao giờ là tên tệp',
   );
 }
 

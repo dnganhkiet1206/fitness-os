@@ -7,6 +7,7 @@ import { Icon } from '@/components/ascnd/icon';
 import {
   clockLabel,
   displayDuration,
+  mediaLabel,
   showsDots,
   type MediaState,
 } from '@/lib/exercise-media';
@@ -201,9 +202,18 @@ export function GuideMedia({
      mở không nổi. */
   const showVideo = !!videoUrl && !!GuideVideo && !vidBroke;
   const showImage = !!imageUri && !imgBroke;
-  /* Nhãn do người thêm media viết thắng câu dựng sẵn: họ biết tấm ảnh vẽ gì,
-     còn app chỉ biết tên bài. */
-  const alt = first?.alt ?? i18n.nEgMediaAlt.replace('{v}', name);
+  /*
+    ── ba nguồn cho một nhãn, và thứ tự giữa chúng là một quyết định ──
+
+      1. CHÚ THÍCH đã bản địa hoá   "Dumbbell Curl — Tư thế bắt đầu"
+      2. `alt` của người thêm media  một `TEXT` đơn, KHÔNG đa ngữ
+      3. câu dựng sẵn từ tên bài     "Hình minh hoạ {tên}"
+
+    Chú thích đứng trước `alt` vì đặt hàng đòi nhãn trợ năng ĐỔI THEO ngôn ngữ:
+    một `alt` viết bằng tiếng Anh được đọc nguyên văn cho người để app ở tiếng
+    Việt. Xem `mediaLabel` — luật ấy sống một chỗ, không ba.
+  */
+  const alt = mediaLabel(name, first) ?? first?.alt ?? i18n.nEgMediaAlt.replace('{v}', name);
 
   /*
     ── THỜI LƯỢNG: ba đường tới `null`, và không đường nào được thay bằng số ──

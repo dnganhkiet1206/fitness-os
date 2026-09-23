@@ -697,6 +697,53 @@ if (nameBranch.length) {
   );
 }
 
+/* ── 26 · CHỮ HƯỚNG DẪN không được nằm trong COMPONENT ──
+
+   Đặt hàng liệt kê thẳng những chuỗi bị cấm viết trong React component —
+   "Starting position", "Common mistakes", "Tư thế bắt đầu" — và lý do là một
+   tính chất kiểm được: *"Changing vi → en must change step title, description,
+   mistake titles and accessibility labels WITHOUT changing the media asset."*
+   Một chuỗi gõ thẳng trong `.tsx` không đổi khi ngôn ngữ đổi, nên nó phá đúng
+   tính chất ấy — và nó phá IM LẶNG, vì người viết nó đang nhìn một màn tiếng
+   Việt trông hoàn toàn đúng.
+
+   Vế thứ hai canh chiều ngược lại: chữ phải tới từ CHÍNH tấm media
+   (`item.title` / `item.description`), không từ một bảng tra theo vị trí.
+   `index === 0 ? 'Tư thế bắt đầu' : …` sẽ lách được vế thứ nhất nếu chuỗi nằm
+   ở `native-strings.ts`, nhưng nó dựng lại một cơ chế thứ tự thứ hai cạnh
+   `position` — đúng thứ `UNIQUE (exercise_id, position)` sinh ra để là nguồn
+   duy nhất.
+
+   Đọc MÃ, không đọc văn xuôi: chính khối chú thích này kể lại lối hỏng ấy. */
+CASES++;
+const viewer = read('src/app/media-viewer.tsx');
+const BAKED = [
+  'Starting position', 'Curl the dumbbells', 'Keep your elbows stable', 'Common mistakes',
+  'Tư thế bắt đầu', 'Cuộn tạ lên', 'Giữ khuỷu tay cố định', 'Các lỗi thường gặp',
+  'Swinging the body', 'Đung đưa thân người', 'Elbows drifting forward', 'Dropping the weight',
+];
+const baked = [];
+for (const [file, src] of [[SHEET, sheet], ['src/app/media-viewer.tsx', viewer]]) {
+  const code = stripComments(src);
+  for (const needle of BAKED) if (code.includes(needle)) baked.push(`${file} → "${needle}"`);
+}
+const fromModel = [
+  /\{item\.title\}/.test(sheet) ? null : 'tiêu đề bước không còn đọc `item.title`',
+  /\{item\.description\}/.test(sheet) ? null : 'mô tả bước không còn đọc `item.description`',
+  /captionedItems\(media\)/.test(sheet) ? null : 'mục các bước không còn dẫn từ `captionedItems`',
+  /\{current\.title\}/.test(viewer) ? null : 'màn toàn màn không còn hiện chú thích của tấm đang xem',
+].filter(Boolean);
+if (baked.length || fromModel.length) {
+  problems.push(
+    'chữ hướng dẫn đã rời khỏi tầng nội dung — ' +
+      [baked.length ? `viết thẳng trong component: ${baked.join(', ')}` : null,
+       fromModel.length ? fromModel.join('; ') : null].filter(Boolean).join('; ') +
+      '. Mọi câu người dùng đọc phải đến từ `exercise_media_content` qua `item.title`/`item.description`, ' +
+      'vì đó là thứ DUY NHẤT đổi khi ngôn ngữ đổi. Một chuỗi gõ trong `.tsx` trông đúng trên màn tiếng ' +
+      'Việt của người viết nó, và ở lại nguyên văn trên màn tiếng Anh của người khác',
+  );
+}
+
 if (!problems.length) {
   console.log(
     `hướng dẫn bài tập OK — ${CASES} ca. Tra cứu: \`exerciseId\` (khoá chính tắc) hỏi TRƯỚC, ` +
@@ -710,7 +757,9 @@ if (!problems.length) {
       'Insight nói tiến bộ, hai câu hỏi khác nhau. Media bắt lỗi tải, tôn trọng "giảm chuyển động", và hai ' +
       'danh sách dùng hai glyph khác hình chứ không chỉ khác màu. BỐN TAB bấm được, mỗi tab có một nhánh ' +
       'nội dung mang đúng `id` của nó và một câu "chưa có" của riêng nó; thư viện chỉ được hỏi khi tab cần ' +
-      'tới nó (`needsLibrary`), và không nhánh giao diện nào rẽ theo tên bài',
+      'tới nó (`needsLibrary`), và không nhánh giao diện nào rẽ theo tên bài. Chữ hướng dẫn nằm ở tầng ' +
+      'nội dung: không câu nào của bốn bước được gõ thẳng trong component, và cả ba chỗ vẽ đều đọc ' +
+      '`item.title`/`item.description` chứ không tra theo vị trí',
   );
 }
 

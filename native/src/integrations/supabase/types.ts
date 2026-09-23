@@ -524,6 +524,44 @@ export type Database = {
           },
         ]
       }
+      exercise_media_content: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          locale: string
+          media_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          locale: string
+          media_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          locale?: string
+          media_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_media_content_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "exercise_media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercises: {
         Row: {
           common_mistakes: string[] | null

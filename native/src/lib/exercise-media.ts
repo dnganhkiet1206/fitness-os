@@ -28,6 +28,8 @@
  * `exercise_media.kind` là chỗ kiểu được lưu. Đường mới KHÔNG đoán.
  */
 
+import { pickLocale } from './guide-content';
+
 /** Đúng hai kiểu, và chúng đến từ `CHECK (kind IN ('image','video'))`. */
 export type MediaKind = 'image' | 'video';
 
@@ -45,6 +47,25 @@ export interface MediaItem {
   durationS: number | null;
   posterUri: string | null;
   alt: string | null;
+  /**
+   * ── CHÚ THÍCH: chữ KHÔNG bao giờ nằm trong tấm ảnh ──
+   *
+   * Đặt hàng viết hẳn thành một luật: *"NEVER bake instructional text into the
+   * image… MEDIA ASSET ≠ INSTRUCTIONAL TEXT."* Lý do không phải khẩu vị — app
+   * chạy hai thứ tiếng, và một tấm ảnh có chữ tiếng Anh nướng vào pixel chỉ
+   * dùng được cho một nửa người dùng, sửa được bằng đúng một cách là vẽ lại.
+   *
+   * Nên bốn tấm nói bằng giải phẫu, tư thế, mũi tên và dấu ✓/✗; còn hai trường
+   * này mang chữ, ĐÃ chọn xong ngôn ngữ. Đổi `vi ↔ en` đổi chúng và KHÔNG đụng
+   * một byte nào của `uri`.
+   *
+   * `null` ở `title` nghĩa là tấm này chưa có chú thích ở ngôn ngữ nào cả —
+   * một trạng thái có thật, và màn hình phải im lặng ở đó chứ không dựng một
+   * dòng trống. `description` rỗng thì khác: nó nghĩa là tấm ấy chỉ cần một
+   * tiêu đề, và đó là một quyết định của người viết nội dung.
+   */
+  title: string | null;
+  description: string;
 }
 
 export type MediaState =
@@ -53,7 +74,25 @@ export type MediaState =
   | { type: 'image_gallery'; items: MediaItem[] }
   | { type: 'video'; items: MediaItem[] };
 
-/** Hàng thô từ `exercise_media`, đúng hình dạng PostgREST trả về. */
+/**
+ * Một hàng `exercise_media_content` — chú thích của một tấm, một ngôn ngữ.
+ *
+ * `locale` để rộng là `string`: nó đến từ mạng, và `CHECK (locale IN …)` sống
+ * ở cơ sở dữ liệu chứ không ở kiểu TypeScript của một phản hồi HTTP.
+ */
+export interface MediaCaptionRow {
+  locale: string;
+  title: string | null;
+  description: string | null;
+}
+
+/**
+ * Hàng thô từ `exercise_media`, đúng hình dạng PostgREST trả về.
+ *
+ * `exercise_media_content` là một EMBED lồng — `select('…, exercise_media_content(…)')`
+ * — nên nó về cùng một vòng mạng với chính tấm media. Một truy vấn thứ hai cho
+ * chú thích sẽ là một lượt mạng nữa cho dữ liệu đi kèm đúng những hàng vừa đọc.
+ */
 export interface MediaRow {
   kind: string | null;
   uri: string | null;
@@ -61,6 +100,7 @@ export interface MediaRow {
   duration_s: number | string | null;
   poster_uri: string | null;
   alt: string | null;
+  exercise_media_content?: MediaCaptionRow[] | null;
 }
 
 const NONE: MediaState = { type: 'none', items: [] };
@@ -96,14 +136,44 @@ const seconds = (v: number | string | null | undefined): number | null => {
 const LEGACY_IMAGE_EXT = /\.(gif|webp|png|jpe?g|avif|heic|bmp)(\?|#|$)/i;
 
 /**
+ * Chú thích của MỘT tấm, ở ngôn ngữ đang bật.
+ *
+ * Luật lùi ngôn ngữ KHÔNG được viết lại ở đây — nó là `pickLocale` trong
+ * `guide-content.ts`, cùng hàm mà `pickContent` dùng. Hai bản sao của "tiếng
+ * đang bật → tiếng Việt → không có" là hai bản sẽ tách nhau, và cái tách ra sẽ
+ * là cái không ai chạy thử.
+ *
+ * `has` ở đây là "có TIÊU ĐỀ không", không phải "có tiêu đề hoặc mô tả": một
+ * dòng chỉ có mô tả mà không có tiêu đề bị `CHECK (length(trim(title)) > 0)`
+ * cấm ở cơ sở dữ liệu, nên nếu nó xuất hiện thì dữ liệu đã hỏng và mượn tiếp
+ * là che mất chuyện đó.
+ */
+const caption = (
+  rows: readonly MediaCaptionRow[] | null | undefined,
+  lang: Lang,
+): { title: string | null; description: string } => {
+  const row = pickLocale(rows ?? [], lang, (r) => r.locale, (r) => !!text(r.title));
+  return row
+    ? { title: text(row.title), description: text(row.description) ?? '' }
+    : { title: null, description: '' };
+};
+
+/** Hai thứ tiếng app vẽ được — `AppLang` ở `lib/i18n.ts`, khai lại để tệp này thuần. */
+export type Lang = 'vi' | 'en';
+
+/**
  * Bộ media của một bài, từ hàng bảng + cột cũ.
  *
  * @param rows   hàng `exercise_media`, thứ tự bất kỳ — hàm tự sắp theo `position`
  * @param legacy `exercises.video_url`, đường lui khi chưa có hàng nào
+ * @param lang   ngôn ngữ đang bật, để chọn chú thích. Mặc định `'vi'` vì đó là
+ *               ngôn ngữ mà luật lùi rơi về, nên một chỗ gọi quên truyền vẫn
+ *               ra nội dung ĐỌC ĐƯỢC chứ không ra rỗng.
  */
 export function resolveExerciseMedia(
   rows: readonly MediaRow[] | null | undefined,
   legacy: string | null | undefined,
+  lang: Lang = 'vi',
 ): MediaState {
   const clean: MediaItem[] = (rows ?? [])
     .filter((r): r is MediaRow & { kind: MediaKind; uri: string } => {
@@ -125,6 +195,7 @@ export function resolveExerciseMedia(
       durationS: r.kind === 'video' ? seconds(r.duration_s) : null,
       posterUri: r.kind === 'video' ? text(r.poster_uri) : null,
       alt: text(r.alt),
+      ...caption(r.exercise_media_content, lang),
     }));
 
   if (clean.length) {
@@ -154,9 +225,12 @@ export function resolveExerciseMedia(
 
   const url = text(legacy);
   if (!url) return NONE;
+  /* Cột cũ là một URL trần: không kiểu, không thứ tự, và KHÔNG chú thích. Nên
+     đường lui ra `title: null` — im lặng, chứ không mượn chữ của tấm nào. */
+  const bare = { durationS: null, posterUri: null, alt: null, title: null, description: '' };
   return LEGACY_IMAGE_EXT.test(url)
-    ? { type: 'image_single', items: [{ kind: 'image', uri: url, durationS: null, posterUri: null, alt: null }] }
-    : { type: 'video', items: [{ kind: 'video', uri: url, durationS: null, posterUri: null, alt: null }] };
+    ? { type: 'image_single', items: [{ kind: 'image', uri: url, ...bare }] }
+    : { type: 'video', items: [{ kind: 'video', uri: url, ...bare }] };
 }
 
 /** Có gì để mở toàn màn không. `none` là trạng thái duy nhất không có. */
@@ -178,6 +252,40 @@ export const showsDots = (m: MediaState): boolean => m.type === 'image_gallery';
  */
 export const displayDuration = (m: MediaState): number | null =>
   m.type === 'video' ? m.items[0].durationS : null;
+
+/**
+ * Nhãn TRỢ NĂNG của một tấm — `Dumbbell Curl — Tư thế bắt đầu`.
+ *
+ * ── vì sao nó ở đây và không viết tay ở ba chỗ vẽ ──
+ *
+ * Ba chỗ dựng media: khung hình dẫn, danh sách các bước, và màn xem toàn màn.
+ * Ba chỗ tự ghép chuỗi là ba câu sẽ tách nhau, và cái tách ra sẽ là cái không
+ * ai nghe thử bằng VoiceOver.
+ *
+ * ── và vì sao chú thích THẮNG `alt` ──
+ *
+ * `exercise_media.alt` là một `TEXT` đơn, KHÔNG đa ngữ. Đặt hàng nói rõ nhãn
+ * trợ năng phải đi theo nội dung đã bản địa hoá: *"Accessibility labels change
+ * with locale."* Một `alt` viết bằng tiếng Anh sẽ được đọc lên nguyên văn cho
+ * người đang để app ở tiếng Việt, nên khi có chú thích thì chú thích thắng.
+ *
+ * `alt` KHÔNG bị bỏ: nó vẫn là đường lui cho những tấm chưa ai viết chú thích,
+ * và ở đó nó vẫn tốt hơn một câu dựng sẵn từ tên bài.
+ *
+ * `null` nghĩa là tấm này chưa có chú thích ở ngôn ngữ nào — chỗ gọi lùi về
+ * `alt`, rồi về câu dựng sẵn của app.
+ */
+export const mediaLabel = (exerciseName: string, item: MediaItem | null | undefined): string | null =>
+  item?.title ? `${exerciseName} — ${item.title}` : null;
+
+/**
+ * Những tấm CÓ chú thích, theo thứ tự — nội dung của mục "các bước".
+ *
+ * Rỗng nghĩa là chưa ai viết chú thích cho bài này, và mục ấy KHÔNG được dựng:
+ * một danh sách bước không có chữ là bốn tấm ảnh không ai giải thích.
+ */
+export const captionedItems = (m: MediaState): MediaItem[] =>
+  m.items.filter((i) => !!i.title);
 
 /** `m:ss`, và chỉ gọi được khi đã có một con số thật. */
 export function clockLabel(seconds: number): string {

@@ -284,7 +284,7 @@ if (!inCode(hook, "from('exercise_guide_content')") || !inCode(hook, "eq('exerci
    chỗ khác là dựng lại phép đoán bằng đuôi tệp. Hành vi của chính mô hình ấy
    có luật riêng chạy thật: `tools/exercise-media.mjs`. */
 CASES++;
-if (!inCode(hook, 'media: resolveExerciseMedia(mediaRows, row.video_url)') ||
+if (!inCode(hook, 'media: resolveExerciseMedia(mediaRows, row.video_url, lang)') ||
     inCode(hook, 'mediaUrl')) {
   problems.push(
     `${HOOK}: media không còn là một MÔ HÌNH. \`video_url\` chỉ được vào qua đường lui của ` +

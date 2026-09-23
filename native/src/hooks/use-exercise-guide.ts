@@ -272,7 +272,16 @@ export function useExerciseGuide(
             .eq('exercise_id', row.id),
           supabase
             .from('exercise_media')
-            .select('kind, uri, position, duration_s, poster_uri, alt')
+            /* Chú thích về CÙNG vòng mạng với tấm media, qua một embed lồng.
+               Một truy vấn thứ ba cho `exercise_media_content` sẽ là một lượt
+               nữa cho dữ liệu đi kèm đúng những hàng vừa đọc.
+
+               MỘT chuỗi literal, không nối hai mảnh: `supabase-js` suy ra kiểu
+               của kết quả bằng cách PHÂN TÍCH chính chuỗi ấy lúc biên dịch, nên
+               một phép `+` biến nó thành `string` và cả câu trả về
+               `GenericStringError[]`. Dài quá 100 cột là cái giá của việc kiểu
+               còn đúng. */
+            .select('kind, uri, position, duration_s, poster_uri, alt, exercise_media_content(locale, title, description)')
             .eq('exercise_id', row.id),
         ]);
         if (content.error) throw content.error;
@@ -371,7 +380,7 @@ function shape(
     /* `video_url` vào đây làm ĐƯỜNG LUI, không làm nguồn chính — xem
        `resolveExerciseMedia`. Bài chưa có hàng `exercise_media` nào thì cột cũ
        vẫn được đọc, nên không dòng dữ liệu nào đang chạy bị làm trắng. */
-    media: resolveExerciseMedia(mediaRows, row.video_url),
+    media: resolveExerciseMedia(mediaRows, row.video_url, lang),
     matchedBy,
     contentLocale: content?.locale ?? null,
     hasContent: instructions.length > 0 || formCues.length > 0 || commonMistakes.length > 0,

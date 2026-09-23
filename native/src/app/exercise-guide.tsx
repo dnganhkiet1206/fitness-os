@@ -1,3 +1,4 @@
+import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Bookmark, Check, Maximize2, Play, X } from 'lucide-react-native';
@@ -25,8 +26,15 @@ import { useExerciseGuide } from '@/hooks/use-exercise-guide';
 import { useExercises } from '@/hooks/use-library';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { usePalette } from '@/hooks/use-palette';
+import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { nav } from '@/lib/nav';
-import { hasMedia, type MediaState } from '@/lib/exercise-media';
+import {
+  captionedItems,
+  hasMedia,
+  mediaLabel,
+  type MediaItem,
+  type MediaState,
+} from '@/lib/exercise-media';
 import {
   sameEquipment,
   sameMuscle,
@@ -175,6 +183,7 @@ export default function ExerciseGuideSheet() {
     khác: sheet chạm đáy màn, nên thanh home thật sự nằm đè lên nó.
   */
   const insets = useSafeAreaInsets();
+  const reduced = useReducedMotion();
   /* Hai cột chỉ đúng khi chúng còn đọc được — xem `styles.pair`. */
   const { width, fontScale } = useWindowDimensions();
   /* 3:4 — xem `heroFrame` trong `guide-media.tsx`. Chiều cao phải tính ở đây
@@ -224,6 +233,17 @@ export default function ExerciseGuideSheet() {
   */
   const media: MediaState = g?.media ?? NO_MEDIA;
   const openable = showMedia && hasMedia(media);
+  /*
+    ── CÁC BƯỚC CÓ HÌNH ──
+
+    Mỗi tấm media mang một chú thích đã bản địa hoá, và đặt hàng nói rõ thứ tự
+    đọc: *ảnh → số bước → tiêu đề → mô tả*. Chúng chỉ tồn tại khi CÓ chữ: bốn
+    tấm ảnh không ai giải thích thì không phải một mục hướng dẫn.
+  */
+  const steps4 = captionedItems(media);
+  /* Bốn bước cách nhau `lg`, không `sm`: mỗi bước là ảnh + ba dòng chữ, nên
+     khoảng giữa hai bước phải lớn hơn hẳn khoảng bên trong một bước — không
+     thì mô tả của bước trên đọc ra như đang thuộc về ảnh của bước dưới. */
   /*
     ── DEMO_HERO — TẠM THỜI, và đây là một trong hai chỗ phải gỡ ──
 
@@ -580,6 +600,40 @@ export default function ExerciseGuideSheet() {
             thống chỉ có tới 20, chúng không theo cỡ chữ trợ năng, và bộ đọc màn
             hình đọc chúng mỗi nơi một kiểu.
           */}
+          {/*
+            ── CÁC BƯỚC CÓ HÌNH: ảnh → số → tiêu đề → mô tả ──
+
+            Đặt hàng dựng thứ tự đọc này thành một sơ đồ, và lý do nó theo thứ
+            tự ấy: tấm ảnh trả lời "trông thế nào", con số trả lời "bước mấy",
+            rồi chữ mới giải thích. Đảo lại là bắt người ta đọc một lời giải
+            thích về thứ chưa nhìn thấy.
+
+            CHỮ KHÔNG NẰM TRONG ẢNH. Bốn tấm nói bằng giải phẫu, tư thế, mũi
+            tên và dấu ✓/✗; mọi câu chữ đến từ `exercise_media_content` và đổi
+            theo ngôn ngữ mà không đụng một byte nào của ảnh.
+          */}
+          {overview && steps4.length ? (
+            <View style={styles.steps4}>
+              {steps4.map((m, i) => (
+                <MediaStep
+                  key={m.uri}
+                  item={m}
+                  index={i}
+                  name={g?.name || title}
+                  styles={styles}
+                  reduced={reduced}
+                  onOpen={() => {
+                    Haptics.selectionAsync();
+                    nav.push({
+                      pathname: '/media-viewer',
+                      params: { ex: g?.id ?? '', name: g?.name || title, i: String(i) },
+                    });
+                  }}
+                />
+              ))}
+            </View>
+          ) : null}
+
           {overview && steps.length ? (
             <View style={styles.block}>
               <Text style={styles.sectionTitle}>{i18n.nEgTitle}</Text>
@@ -959,6 +1013,75 @@ function RelatedList({
             </Text>
           </View>
         ))}
+      </View>
+    </View>
+  );
+}
+
+/**
+ * Một BƯỚC có hình — ảnh, số, tiêu đề, mô tả.
+ *
+ * ── vì sao nó bấm được, và bấm ra cái gì ──
+ *
+ * Tấm ảnh ở đây bị thu nhỏ vào lề chữ; chi tiết giải phẫu mà nó vẽ ra thì
+ * không đọc được ở cỡ ấy. Nên chạm vào là mở ĐÚNG tấm ấy ở màn toàn màn đã có
+ * — `media-viewer` nhận thêm `i`, không có màn nào mới, không có cách xem thứ
+ * hai nào được dựng.
+ *
+ * Nhãn trợ năng là chú thích ĐÃ bản địa hoá (`mediaLabel`), không bao giờ là
+ * tên tệp. Mô tả không vào nhãn: nó nằm ngay dưới dưới dạng chữ đọc được, và
+ * đọc nó hai lần là tiếng ồn.
+ */
+function MediaStep({
+  item,
+  index,
+  name,
+  styles,
+  reduced,
+  onOpen,
+}: {
+  item: MediaItem;
+  index: number;
+  name: string;
+  styles: ReturnType<typeof stylesFor>;
+  reduced: boolean;
+  onOpen: () => void;
+}) {
+  const label = mediaLabel(name, item) ?? item.alt ?? name;
+  return (
+    <View style={styles.step4}>
+      {/*
+        `button`, KHÔNG `imagebutton` — và đây là một phép đo.
+
+        `imagebutton` là vai chính xác hơn trên iOS ("ảnh, nút"). Nhưng đo trên
+        bản dựng web thật: react-native-web KHÔNG phát ra thuộc tính `role` nào
+        cho nó, chỉ còn `aria-label` — tức trên web nó là một `<div>` có nhãn mà
+        không ai được kể rằng bấm được. `button` được cả hai nền phát ra đúng,
+        và nó vẫn nói thật: việc của thứ này là MỞ tấm ảnh ra toàn màn.
+
+        Cùng lớp phát hiện với `accessibilityState` ở hàng tab — xem chỗ ấy.
+      */}
+      <PressScale accessibilityRole="button" accessibilityLabel={label} onPress={onOpen}>
+        <Image
+          source={{ uri: item.uri }}
+          style={styles.step4Img}
+          contentFit="contain"
+          transition={reduced ? 0 : 200}
+          /* `accessible={false}`: cái bọc `PressScale` ĐÃ mang nhãn, nên để ảnh
+             tự giới thiệu nữa là bộ đọc màn hình đọc cùng một câu hai lần. */
+          accessible={false}
+        />
+      </PressScale>
+      <View style={styles.step4Row}>
+        <View style={styles.step}>
+          <Text style={styles.stepNo}>{index + 1}</Text>
+        </View>
+        <View style={styles.step4Text}>
+          <Text style={styles.step4Title}>{item.title}</Text>
+          {item.description ? (
+            <Text style={styles.step4Desc}>{item.description}</Text>
+          ) : null}
+        </View>
       </View>
     </View>
   );
@@ -1439,6 +1562,48 @@ const stylesFor = makeStyles((c, m) => ({
   alsoRow: { gap: 1 },
   alsoName: { ...type.body, color: c.foreground },
   alsoMeta: { ...type.caption, color: c.mutedForeground },
+
+  /*
+    ── một bước có hình ──
+
+    ── CHIỀU CAO CỐ ĐỊNH, không phải một TỈ LỆ, và đó là một phép đo ──
+
+    Bản đầu dùng `aspectRatio: 3/4` cho khớp khung hình dẫn. Ảnh chụp bản dựng
+    cho thấy vì sao đó là sai chỗ: ở lề chữ 354 điểm, 3:4 cho **472 điểm**, tức
+    một tấm ảnh cao hơn cả vùng nội dung đang thấy — chú thích của chính nó bị
+    đẩy khỏi màn, nên người ta đọc lời giải thích ở một màn khác với thứ nó
+    giải thích. Đặt hàng dựng thứ tự *ảnh → số → tiêu đề → mô tả* thành một
+    khối ĐỌC CÙNG NHAU; một tấm ảnh chiếm trọn màn phá đúng điều đó.
+
+    340 + chú thích ≈ 430 điểm, nên hai bước vừa một màn sau khi mặt giấy trượt
+    lên. Và nó là một CHIỀU CAO chứ không phải tỉ lệ vì ở đây chưa ai biết
+    trước hình dạng của asset thật: một con số tỉ lệ là một lời đoán về kích
+    thước tấm ảnh chưa có.
+
+    `contain` chứ không `cover`: bốn tấm minh hoạ là ảnh DỌC của một hình nộm
+    đứng cả người. `cover` trong một khung thấp hơn sẽ cắt mất đầu và chân —
+    đúng những phần mà tấm "tư thế bắt đầu" tồn tại để cho xem. Nền đệm quanh
+    ảnh là lớp `alpha(m.ink, 0.05)` của chính ô.
+
+    Bo `radius.md` vì ở đây nó là một KHỐI trong lề chữ, khác hình dẫn tràn lề
+    không bo góc nào.
+
+    Con số và chữ dùng lại `styles.step`/`styles.stepNo` — đúng cái đĩa số mà
+    mục "Cách thực hiện" đã dùng, nên hai loại bước đọc ra cùng một ngôn ngữ
+    thị giác thay vì hai.
+  */
+  steps4: { marginTop: spacing.lg, gap: spacing.xl },
+  step4: { gap: spacing.sm },
+  step4Img: {
+    width: '100%',
+    height: 340,
+    borderRadius: radius.md,
+    backgroundColor: alpha(m.ink, 0.05),
+  },
+  step4Row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  step4Text: { flex: 1, minWidth: 0, gap: 2 },
+  step4Title: { ...type.headline, color: c.foreground },
+  step4Desc: { ...type.body, color: c.mutedForeground, lineHeight: 21 },
 
   empty: { alignItems: 'center', gap: 4, marginTop: spacing.lg },
   emptyText: { ...type.body, color: c.foreground },

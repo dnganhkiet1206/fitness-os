@@ -47,16 +47,49 @@ export interface GuideContent {
 const clean = (xs: string[] | null | undefined): string[] =>
   (xs ?? []).map((s) => (s ?? '').trim()).filter(Boolean);
 
+/**
+ * LUẬT LÙI NGÔN NGỮ, và nó sống ở đúng một chỗ.
+ *
+ * ── vì sao nó được rút ra ──
+ *
+ * Chú thích của từng tấm media (`exercise_media_content`) cần đúng luật này:
+ * tiếng đang bật → tiếng Việt → không có, và ngôn ngữ đã chọn sở hữu CẢ dòng.
+ * Viết lại nó ở `exercise-media.ts` sẽ là bản sao thứ hai của một quy tắc —
+ * đúng cái lỗi mà `exercise-key.ts` tồn tại để kể lại: mỗi bản sao đúng ở chỗ
+ * nó được viết và sai về bản kia, và không gì bắt được lúc chúng tách nhau.
+ *
+ * Nên một hàm, hai người gọi. `tools/guide-content.mjs` chạy thật `pickContent`
+ * nên luật vẫn được canh bằng hành vi chứ không bằng chính tả.
+ *
+ * @param localeOf  đọc `locale` ra khỏi một dòng — hai bảng, hai hình dạng
+ * @param has       dòng ấy có NỘI DUNG không. Một dòng tiếng Anh TRỐNG không
+ *                  phân biệt được với "chưa ai dịch", và hiện một màn trắng
+ *                  trong khi bản tiếng Việt nằm ngay đó là tệ hơn cho người
+ *                  đang đứng giữa phòng tập.
+ */
+export function pickLocale<T>(
+  rows: readonly T[],
+  lang: 'vi' | 'en',
+  localeOf: (row: T) => string,
+  has: (row: T) => boolean,
+): T | null {
+  const at = (l: 'vi' | 'en') => rows.find((r) => localeOf(r) === l && has(r));
+  return at(lang) ?? at('vi') ?? null;
+}
+
 export function pickContent(
   rows: readonly GuideContentRow[],
   lang: 'vi' | 'en',
 ): GuideContent | null {
-  const has = (r: GuideContentRow) =>
-    clean(r.instructions).length > 0 ||
-    clean(r.form_cues).length > 0 ||
-    clean(r.common_mistakes).length > 0;
-  const at = (l: 'vi' | 'en') => rows.find((r) => r.locale === l && has(r));
-  const row = at(lang) ?? at('vi');
+  const row = pickLocale(
+    rows,
+    lang,
+    (r) => r.locale,
+    (r) =>
+      clean(r.instructions).length > 0 ||
+      clean(r.form_cues).length > 0 ||
+      clean(r.common_mistakes).length > 0,
+  );
   if (!row) return null;
   return {
     locale: row.locale as 'vi' | 'en',
