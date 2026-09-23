@@ -16,6 +16,7 @@ import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import type { NativeStrings } from '@/lib/native-strings';
+import { hasVideoModule } from '@/lib/video-module';
 
 /**
  * Hình minh hoạ của một bài tập — và cái chỗ trống khi chưa có hình.
@@ -137,6 +138,10 @@ const DEMO_HERO = require('../../../assets/images/exercise-demo.webp');
   chung một hình dạng, và `tools/exercise-guide.mjs` luật 7e canh cả hai.
 */
 function videoGate(): typeof import('./guide-video').GuideVideo | null {
+  /* Hỏi sổ đăng ký native TRƯỚC khi chạm vào gói — xem `hasVideoModule`. Một
+     `try/catch` quanh `require` không đủ: Metro báo lỗi của lượt require ngoài
+     cùng bằng `reportFatalError` chứ không ném lại. */
+  if (!hasVideoModule()) return null;
   try {
     return (require('./guide-video') as typeof import('./guide-video')).GuideVideo;
   } catch {

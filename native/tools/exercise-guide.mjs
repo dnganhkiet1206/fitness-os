@@ -382,7 +382,9 @@ const gates = [
   [MEDIA, media],
   ['src/app/media-viewer.tsx', read('src/app/media-viewer.tsx')],
 ].filter(([, src]) =>
-  !/function videoGate\(\)[\s\S]{0,120}?try \{[\s\S]{0,60}?require\('[^']*guide-video'\)/.test(src) ||
+  /* Cửa sổ rộng tay: giữa tên hàm và `try` nay còn phép hỏi sổ đăng ký native
+     kèm khối chú thích của nó — xem vế "HỎI TRƯỚC" ngay dưới. */
+  !/function videoGate\(\)[\s\S]{0,500}?try \{[\s\S]{0,60}?require\('[^']*guide-video'\)/.test(src) ||
   !/\} catch \{[\s\S]{0,30}?return null;/.test(src),
 ).map(([f]) => f);
 if (gates.length) {
@@ -395,10 +397,65 @@ if (gates.length) {
   );
 }
 CASES++;
-if (!/const GuideVideo = videoUrl \? videoGate\(\) : null;/.test(media)) {
+/*
+  ── gọi CÓ ĐIỀU KIỆN, và ở CẢ HAI chỗ ──
+
+  Vế này từng chỉ canh `guide-media.tsx`. Chỗ một chiều ấy để lọt đúng một
+  crash trên máy chủ dự án: `media-viewer.tsx` gọi `videoGate()` vô điều kiện,
+  nên bấm nút toàn màn ở một bài CHỈ CÓ ẢNH vẫn nạp `expo-video` và vẫn chết.
+
+      videoGate    (media-viewer.tsx:356)
+      MediaViewer  (media-viewer.tsx:151)
+
+  `guardedLoadModule` dòng **156** trong stack ấy — tức lượt require NGOÀI
+  CÙNG, nhánh có guard — nên lỗi đi thẳng vào `reportFatalError` và `try/catch`
+  của mình không bao giờ được hỏi. Một cái khoá chỉ khoá một trong hai cửa thì
+  không phải một cái khoá.
+
+  Hai tệp hỏi hai câu khác nhau vì chúng có hai mô hình khác nhau trong tay —
+  `videoUrl` ở khung dẫn, `media.type` ở màn toàn màn — nhưng cùng một luật:
+  không phải video thì KHÔNG GỌI.
+*/
+const VIEWER = 'src/app/media-viewer.tsx';
+const viewerSrc = read(VIEWER);
+const calls = [
+  [MEDIA, /const GuideVideo = videoUrl \? videoGate\(\) : null;/.test(media)],
+  [VIEWER, /const GuideVideo = media\.type === 'video' \? videoGate\(\) : null;/.test(viewerSrc)],
+].filter(([, ok]) => !ok).map(([f]) => f);
+if (calls.length) {
   problems.push(
-    `${MEDIA}: \`videoGate()\` không còn được gọi CÓ ĐIỀU KIỆN theo \`videoUrl\`. Bài không có video thì ` +
-      '`expo-video` không được chạm tới lần nào — và đó là trường hợp của mọi bài hôm nay',
+    `\`videoGate()\` không còn được gọi CÓ ĐIỀU KIỆN ở [${calls.join(', ')}]. Bài không có video thì ` +
+      '`expo-video` không được chạm tới lần nào — và đó là trường hợp của MỌI bài hôm nay. Đã xảy ra ' +
+      'thật ở `media-viewer.tsx`: bấm nút toàn màn ở một bài chỉ có ảnh dựng màn đỏ "Cannot find native ' +
+      "module 'ExpoVideo'\", vì lượt require ngoài cùng đi qua guard của Metro và lỗi được báo bằng " +
+      '`reportFatalError` chứ không ném lại cho `catch` nào',
+  );
+}
+CASES++;
+/*
+  ── và HỎI TRƯỚC, đừng thử rồi bắt ──
+
+  Gọi có điều kiện cứu được bài chỉ có ảnh. Nhưng một bài CÓ video thật, trên
+  một binary thiếu phần native, vẫn sẽ dựng màn đỏ bằng đúng cơ chế trên — nên
+  lời hứa *"a graceful fallback rather than a broken player"* của đặt hàng vẫn
+  là một lời hứa suông cho tới khi câu hỏi được hỏi mà KHÔNG chạm vào gói.
+
+  `requireOptionalNativeModule` trả `null` thay vì ném — xem `hasVideoModule`.
+*/
+const probes = [[MEDIA, media], [VIEWER, viewerSrc]]
+  .filter(([, src]) => !/if \(!hasVideoModule\(\)\) return null;/.test(src))
+  .map(([f]) => f);
+const gateLib = read('src/lib/video-module.ts');
+if (probes.length || !/requireOptionalNativeModule\('ExpoVideo'\)/.test(gateLib)) {
+  problems.push(
+    'cửa vào video không còn HỎI TRƯỚC sổ đăng ký native — '
+      + (probes.length ? `thiếu \`hasVideoModule()\` ở [${probes.join(', ')}]` : '')
+      + (probes.length && !/requireOptionalNativeModule\('ExpoVideo'\)/.test(gateLib) ? '; ' : '')
+      + (!/requireOptionalNativeModule\('ExpoVideo'\)/.test(gateLib)
+        ? '`src/lib/video-module.ts` thôi dùng `requireOptionalNativeModule`' : '')
+      + '. `requireNativeModule` NÉM, và một lượt require bị Metro bọc guard thì cú ném ấy thành '
+      + '`reportFatalError` — không `try/catch` nào đỡ được. Hỏi sổ đăng ký thì biết câu trả lời mà '
+      + 'không phải trả giá bằng cả app, và video thiếu phần native mới lùi về đúng một dòng chữ',
   );
 }
 CASES++;

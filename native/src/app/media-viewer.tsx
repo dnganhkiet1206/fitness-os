@@ -25,6 +25,7 @@ import { usePalette } from '@/hooks/use-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { mediaLabel } from '@/lib/exercise-media';
 import { nav } from '@/lib/nav';
+import { hasVideoModule } from '@/lib/video-module';
 
 /**
  * Media của bài tập, TOÀN MÀN — ảnh, bộ ảnh vuốt ngang, hoặc video.
@@ -147,8 +148,25 @@ export default function MediaViewer() {
     đã cứu app khỏi lỗi "Cannot find native module 'ExpoVideo'": gói ấy gọi
     `requireNativeModule` ở phạm vi module, và mọi route đều được nạp lúc khởi
     động. Nên cùng một `require` trong `try/catch`, cùng một lý do.
+
+    ── và nó phải được gọi CÓ ĐIỀU KIỆN ──
+
+    Dòng này từng gọi `videoGate()` vô điều kiện, và đó là lỗi đã xảy ra trên
+    máy chủ dự án: bấm nút toàn màn ở một bài CHỈ CÓ ẢNH vẫn nạp `expo-video`,
+    vẫn chạm `requireNativeModule('ExpoVideo')`, và vẫn chết:
+
+        videoGate    (media-viewer.tsx:356)
+        MediaViewer  (media-viewer.tsx:151)   ← chỗ này
+
+    `try/catch` quanh `require` không cứu được, vì trong stack ấy Metro bọc
+    lượt require NGOÀI CÙNG bằng guard của nó (`guardedLoadModule` dòng 156)
+    rồi gọi `ErrorUtils.reportFatalError` — lỗi không bao giờ được ném lại cho
+    `catch` nào của mình. Cách duy nhất chắc chắn là KHÔNG CHẠM TỚI NÓ.
+
+    `media.type` là nguồn duy nhất của câu hỏi "đây có phải video không" —
+    cùng thứ `body()` rẽ nhánh ở dưới, nên không có hai định nghĩa.
   */
-  const GuideVideo = videoGate();
+  const GuideVideo = media.type === 'video' ? videoGate() : null;
 
   const body = () => {
     if (isPending) {
@@ -352,6 +370,7 @@ export default function MediaViewer() {
 
 /** Cùng cái khoá như `guide-media.tsx` — xem lý do ở đó. */
 function videoGate(): typeof import('@/components/ascnd/guide-video').GuideVideo | null {
+  if (!hasVideoModule()) return null;
   try {
     return (require('@/components/ascnd/guide-video') as typeof import('@/components/ascnd/guide-video'))
       .GuideVideo;
