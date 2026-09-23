@@ -196,6 +196,51 @@ export interface ExerciseGuide {
   hasMetadata: boolean;
 }
 
+/**
+ * Hợp đồng ở trên, ĐỌC PHÒNG THỦ.
+ *
+ * ── vì sao nó cần tồn tại dù kiểu đã nói rõ ──
+ *
+ * `data` của React Query không phải lúc nào cũng đến từ `queryFn`. Nó cũng đến
+ * từ cache đã persist xuống AsyncStorage, và cache ấy được ghi bởi một BẢN APP
+ * KHÁC — có thể là bản trước khi hợp đồng này đổi hình dạng. TypeScript không
+ * bắt được: kiểu chỉ tồn tại lúc biên dịch, còn thứ hydrate lại từ đĩa là JSON.
+ *
+ * Đã ném trên máy thật: một mục `exercise-guide` ghi trước khi `muscles` ra đời
+ * làm `g.muscles.map(…)` ném "Cannot read property 'map' of undefined", và màn
+ * hướng dẫn KHÔNG MỞ ĐƯỢC.
+ *
+ * `CACHE_BUSTER` đã bump lên `v3` để dọn một lần. Hàm này là NỬA CÒN LẠI, đúng
+ * cùng một luật mà `claimedList` trong `use-mascot-room.ts` đã ghi: sau lần dọn
+ * ấy, một giá trị hỏng đến từ bất cứ đâu vẫn không được phép làm màn hình ném.
+ *
+ * Nó chỉ gác đúng trường mà một bản cũ có thể thiếu và một chỗ vẽ có thể `.map`
+ * lên. `instructions`, `formCues`, `commonMistakes` và `media` đã được chỗ vẽ
+ * đọc qua `?? []` / `?? NO_MEDIA`, nên chúng không cần một lớp thứ hai.
+ *
+ * `Array.isArray` chứ không `?? []`: một bản cũ có thể ghi xuống thứ khác
+ * `undefined` — repo này đã gặp đúng chuyện đó khi một `Set` serialize thành
+ * `{}`, và `?? []` đi thẳng qua nó.
+ *
+ * Trả về CHÍNH object cũ khi không có gì phải sửa, để `select` của React Query
+ * không sinh ra một tham chiếu mới mỗi lần đọc.
+ */
+export function safeGuide(g: ExerciseGuide): ExerciseGuide {
+  const ok =
+    Array.isArray(g?.muscles) &&
+    g.muscles.every((m) => !!m && typeof m.key === 'string' && typeof m.label === 'string');
+  if (ok) return g;
+  return {
+    ...g,
+    muscles: Array.isArray(g?.muscles)
+      ? g.muscles.filter(
+          (m): m is { key: MuscleArtKey; label: string } =>
+            !!m && typeof m.key === 'string' && typeof m.label === 'string',
+        )
+      : [],
+  };
+}
+
 const trimmed = (s: string | null | undefined): string | null => {
   const v = (s ?? '').trim();
   return v ? v : null;
@@ -243,6 +288,9 @@ export function useExerciseGuide(
     /* Hướng dẫn gần như không đổi. Một buổi tập mở đi mở lại cùng một bài thì
        không có lý do gì gọi mạng lần thứ hai. */
     staleTime: 30 * 60 * 1000,
+    /* Chạy trên MỌI `data`, kể cả bản hydrate lại từ đĩa — đó là chỗ duy nhất
+       một hình dạng cũ đi vào được. Một chỗ gác, mọi chỗ đọc. */
+    select: safeGuide,
     queryFn: async () => {
       const COLS = 'id, user_id, name, muscle_group, equipment, video_url';
       const visible = `user_id.is.null,user_id.eq.${user!.id}`;

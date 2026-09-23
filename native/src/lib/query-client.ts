@@ -92,8 +92,29 @@ export const asyncStoragePersister = createAsyncStoragePersister({
  * xem `use-daily-quests.ts` — vì một giá trị hỏng có thể tới từ nơi khác, và
  * repo này đã ghi cùng một luật cho `personal-model` và cho ngân sách xuất
  * hiện: "một mô hình lưu HỎNG không còn thành mô hình đang chạy".
+ *
+ * ── v3, và nó đã NÉM TRÊN MÁY THẬT ──
+ *
+ * Hợp đồng `ExerciseGuide` (`use-exercise-guide.ts`) đổi hình dạng hai lần:
+ * `mediaUrl: string | null` thành `media: MediaState`, rồi thêm `muscles` và
+ * `equipmentKey`. Con số này KHÔNG được bump ở cả hai lượt.
+ *
+ * Máy nào đã mở màn hướng dẫn trước đó thì trên đĩa còn một mục
+ * `['exercise-guide', …]` mang hình dạng CŨ. `PersistQueryClientProvider`
+ * hydrate lại nó, TypeScript tin rằng nó là `ExerciseGuide` vì kiểu chỉ tồn
+ * tại lúc biên dịch, và `g.muscles.map(…)` ném:
+ *
+ *     Cannot read property 'map' of undefined
+ *     exercise-guide.tsx (355:31)
+ *
+ * Không phải một màn trống hay một con số sai — màn hướng dẫn KHÔNG MỞ ĐƯỢC.
+ *
+ * Bài học không phải "nhớ bump". Ba lượt trước đều có người định nhớ. Nên
+ * `tools/cache-shape.mjs` ghim danh sách trường của hợp đồng này cạnh con số
+ * ấy: đổi hình dạng mà quên bump là ĐỎ ở cổng, không phải là một cú ném trên
+ * máy người dùng.
  */
-export const CACHE_BUSTER = 'v2';
+export const CACHE_BUSTER = 'v3';
 
 /** Drop the in-memory + persisted cache — call on sign-out to avoid leaking
  *  one user's data into the next session. */

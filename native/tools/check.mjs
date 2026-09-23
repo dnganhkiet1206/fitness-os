@@ -561,6 +561,7 @@ const STEPS = [
   ['hướng dẫn bài tập', 'node', ['tools/exercise-guide.mjs']],
   ['media bài tập', 'node', ['tools/exercise-media.mjs']],
   ['bài liên quan', 'node', ['tools/guide-related.mjs']],
+  ['hình dạng cache', 'node', ['tools/cache-shape.mjs']],
   ['nội dung hướng dẫn', 'node', ['tools/guide-content.mjs']],
   ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],
   ['giờ nhắc nhở', 'node', ['tools/reminder-timing.mjs']],
