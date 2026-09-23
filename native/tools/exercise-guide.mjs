@@ -347,12 +347,46 @@ if (JSON.stringify(importers) !== JSON.stringify([VIDEO])) {
   );
 }
 CASES++;
-if (!/try \{[\s\S]{0,40}?return \(require\('\.\/guide-video'\)/.test(media) ||
-    !/\} catch \{[\s\S]{0,30}?return null;/.test(media)) {
+/*
+  ── và cái khoá phải là một HÀM, không phải một hằng ở phạm vi module ──
+
+  `try/catch` một mình KHÔNG đủ, và bản trước chứng minh điều đó trên máy thật.
+  Nó gói `require` vào một IIFE chạy ngay lúc module được nạp — nhưng thứ nạp
+  module này không phải người mở màn hướng dẫn:
+
+      getRoutes → validateRouteTreeExports → loadRoute → exercise-guide.tsx
+                → guide-media.tsx → (IIFE) → guide-video.tsx → expo-video
+
+  `expo-router` nạp MỌI route lúc khởi động. Nên `expo-video` bị chạm ở đường
+  KHỞI ĐỘNG, và ở đó Metro bọc lượt require ngoài cùng bằng guard của chính nó
+  (`guardedLoadModule` dòng 156) rồi gọi `ErrorUtils.reportFatalError` — cả app
+  đứng với "Cannot find native module 'ExpoVideo'".
+
+  Là một HÀM thì đường khởi động không chạm tới nó. Hai vế dưới đòi CẢ HAI tệp
+  dựng video đi qua cùng một hình dạng ấy, và đòi `guide-media` chỉ gọi khi
+  thật sự có url.
+*/
+const gates = [
+  [MEDIA, media],
+  ['src/app/media-viewer.tsx', read('src/app/media-viewer.tsx')],
+].filter(([, src]) =>
+  !/function videoGate\(\)[\s\S]{0,120}?try \{[\s\S]{0,60}?require\('[^']*guide-video'\)/.test(src) ||
+  !/\} catch \{[\s\S]{0,30}?return null;/.test(src),
+).map(([f]) => f);
+if (gates.length) {
   problems.push(
-    `${MEDIA}: cửa vào \`guide-video\` không còn là \`require\` trong \`try/catch\`. Thiếu cái khoá ấy thì ` +
-      'một máy chưa build lại phần native sẽ không mở được app, thay vì thấy ô media ở trạng thái "không ' +
-      'tải được hình minh hoạ" — một câu đúng: có URL, và máy này mở không nổi',
+    `cửa vào \`guide-video\` không còn là một HÀM \`videoGate()\` bọc \`require\` trong \`try/catch\` ở ` +
+      `[${gates.join(', ')}]. Một hằng ở phạm vi module chạy trên đường KHỞI ĐỘNG, vì \`expo-router\` nạp ` +
+      'mọi route để kiểm cây route — và ở đó Metro báo lỗi qua `reportFatalError` chứ không trả nó về cho ' +
+      '`try/catch` nào, nên cả app đứng với "Cannot find native module \'ExpoVideo\'" thay vì một ô media ' +
+      'nói "không tải được hình minh hoạ". Đã xảy ra trên máy thật',
+  );
+}
+CASES++;
+if (!/const GuideVideo = videoUrl \? videoGate\(\) : null;/.test(media)) {
+  problems.push(
+    `${MEDIA}: \`videoGate()\` không còn được gọi CÓ ĐIỀU KIỆN theo \`videoUrl\`. Bài không có video thì ` +
+      '`expo-video` không được chạm tới lần nào — và đó là trường hợp của mọi bài hôm nay',
   );
 }
 CASES++;

@@ -113,14 +113,36 @@ const DEMO_HERO = require('../../../assets/images/exercise-demo.webp');
   `require` trong `try/catch` thì lỗi ấy dừng lại ở đây. Metro vẫn đóng gói
   `guide-video.tsx` tĩnh — `require` này không phải import động — nên không có
   chunk nào phải tải lúc chạy; thứ được hoãn là việc GỌI vào native.
+
+  ── và nó phải là một HÀM, không phải một hằng ở phạm vi module ──
+
+  Bản trước gói `require` vào một IIFE chạy ngay lúc module được nạp. `try/catch`
+  vẫn đúng, nhưng nó bảo vệ sai thời điểm — vì thứ nạp module này KHÔNG phải
+  người mở màn hướng dẫn:
+
+      getRoutes → validateRouteTreeExports → node.loadRoute → exercise-guide.tsx
+                → guide-media.tsx → (IIFE) → guide-video.tsx → expo-video
+
+  `expo-router` nạp MỌI route lúc khởi động để kiểm cây route. Nên `expo-video`
+  bị chạm trước khi ai kịp mở màn nào, và trên một binary chưa có phần native
+  thì Metro báo lỗi ấy ở lượt require NGOÀI CÙNG — `guardedLoadModule` dòng 156,
+  nơi nó gọi `ErrorUtils.reportFatalError`. Cả app đứng, kèm một stack trỏ vào
+  `expo-video` mà không nhắc gì tới việc nó đang nạp một route.
+
+  Đã xảy ra trên máy chủ dự án: "Cannot find native module 'ExpoVideo'", màn
+  trắng, không mở được app.
+
+  Là một HÀM thì đường khởi động không chạm tới nó. `media-viewer.tsx` vốn đã
+  đúng khuôn này (`videoGate()` gọi trong render); nay hai chỗ dựng video dùng
+  chung một hình dạng, và `tools/exercise-guide.mjs` luật 7e canh cả hai.
 */
-const GuideVideo: typeof import('./guide-video').GuideVideo | null = (() => {
+function videoGate(): typeof import('./guide-video').GuideVideo | null {
   try {
     return (require('./guide-video') as typeof import('./guide-video')).GuideVideo;
   } catch {
     return null;
   }
-})();
+}
 
 export function GuideMedia({
   media,
@@ -200,6 +222,9 @@ export function GuideMedia({
   /* Thiếu phần native thì URL video ấy KHÔNG tải được — và đó đúng nghĩa là
      "không tải được", không phải "chưa có hình". Có một đoạn minh hoạ; máy này
      mở không nổi. */
+  /* Gọi CHỈ KHI có video thật. Không có url thì `expo-video` không bao giờ
+     được chạm tới — và đó là trường hợp của mọi bài hôm nay. */
+  const GuideVideo = videoUrl ? videoGate() : null;
   const showVideo = !!videoUrl && !!GuideVideo && !vidBroke;
   const showImage = !!imageUri && !imgBroke;
   /*
