@@ -2,15 +2,18 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Bookmark, Check, Maximize2, Play, X } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   useWindowDimensions,
   View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +35,7 @@ import {
   captionedItems,
   hasMedia,
   mediaLabel,
+  showsDots,
   type MediaItem,
   type MediaState,
 } from '@/lib/exercise-media';
@@ -240,6 +244,49 @@ export default function ExerciseGuideSheet() {
     đọc: *ảnh → số bước → tiêu đề → mô tả*. Chúng chỉ tồn tại khi CÓ chữ: bốn
     tấm ảnh không ai giải thích thì không phải một mục hướng dẫn.
   */
+  /*
+    ── VUỐT NGANG TRONG KHUNG DẪN ──
+
+    Khung dẫn là một LỚP TUYỆT ĐỐI nằm SAU dòng cuộn dọc (xem `heroLayer`), nên
+    nó không bao giờ nhận được chạm — dòng cuộn phủ lên nó. Hệ quả cũ: bốn tấm
+    mà chỉ tấm đầu hiện ra, chấm trang cứng ở chấm thứ nhất, và vuốt ngang
+    không làm gì cả. Chỉ toàn màn mới vuốt được.
+
+    Sửa bằng cách TÁCH CỬ CHỈ KHỎI HÌNH, không phải bằng cách đổi bố cục:
+
+      · chỗ trống mở đầu dòng cuộn dọc — vốn chỉ là một `<View>` giữ chiều cao —
+        nay là một dải cuộn NGANG, TRONG SUỐT, `pagingEnabled`
+      · độ lệch của nó đẩy thẳng vào `heroX`, và `GuideMedia` dịch dải ảnh theo
+
+    Hai chiều không tranh nhau: cuộn lồng VUÔNG GÓC là thứ React Native xử lý
+    sẵn — dải ngang nhận cú vuốt ngang, dòng dọc nhận cú vuốt dọc. Và vì dải
+    nằm TRONG dòng cuộn dọc chứ không đè lên nó, cuộn dọc bắt đầu từ trên hình
+    vẫn chạy như cũ.
+
+    Cách làm hiển nhiên hơn — chuyển hẳn khung vào dòng cuộn — bị loại: lúc ấy
+    hình cuộn đi cùng nội dung và mất hiệu ứng mặt giấy TRƯỢT TRÊN hình, thứ
+    được đo theo bốn ảnh tham chiếu và ghi ở `overlap`.
+  */
+  const heroX = useRef(new Animated.Value(0)).current;
+  const [heroPage, setHeroPage] = useState(0);
+  const lastHero = useRef(0);
+  const onHeroPage = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      /* Kẹp vào khoảng hợp lệ: kéo quá mép cho `contentOffset` âm hoặc vượt
+         tấm cuối, và một chấm thứ năm sáng lên là một lời nói dối. */
+      const raw = Math.round(e.nativeEvent.contentOffset.x / Math.max(1, width));
+      const i = Math.min(Math.max(raw, 0), Math.max(0, media.items.length - 1));
+      if (i !== lastHero.current) {
+        lastHero.current = i;
+        setHeroPage(i);
+      }
+    },
+    [width, media.items.length],
+  );
+  /* Dải chỉ tồn tại khi có NHIỀU tấm. Một tấm mà có dải cuộn là một cú vuốt
+     không đi tới đâu, và `showsDots` đã là nguồn duy nhất của câu hỏi ấy. */
+  const swipable = showsDots(media);
+
   const steps4 = captionedItems(media);
   /* Bốn bước cách nhau `lg`, không `sm`: mỗi bước là ảnh + ba dòng chữ, nên
      khoảng giữa hai bước phải lớn hơn hẳn khoảng bên trong một bước — không
@@ -393,6 +440,10 @@ export default function ExerciseGuideSheet() {
             /* Mặt giấy chồng lên đáy khung — nhãn thời lượng phải nhảy lên trên
                phần bị che, không thì nó nằm sau kính. */
             coveredBy={overlap}
+            /* Ba thứ lái dải ảnh — xem `heroX`. */
+            offsetX={swipable ? heroX : null}
+            pageWidth={width}
+            page={heroPage}
           />
         </View>
       ) : null}
@@ -400,7 +451,41 @@ export default function ExerciseGuideSheet() {
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}>
-        {hero ? <View style={{ height: heroH - overlap }} /> : null}
+        {/*
+          Chỗ trống mở đầu dòng cuộn — và khi có nhiều tấm, nó cũng là DẢI CỬ
+          CHỈ. Trong suốt: hình thật nằm ở lớp tuyệt đối phía sau, đây chỉ là
+          thứ ngón tay chạm vào.
+        */}
+        {hero && swipable ? (
+          <Animated.ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            style={{ height: heroH - overlap }}
+            /*
+              MỘT sự kiện, hai người nghe.
+
+              `Animated.event` đẩy độ lệch thẳng xuống luồng giao diện, nên dải
+              ảnh bám ngón tay mà không đi qua JavaScript. `listener` là cửa
+              chính thức để cùng sự kiện ấy vẫn tới được JS — và chấm trang
+              phải nghe từ ĐÂY chứ không từ `onMomentumScrollEnd`: harness đo
+              được là ảnh dịch đúng (-402, -804, -1206 điểm) trong khi chấm
+              vẫn đứng ở tấm đầu, vì cú vuốt không sinh quán tính thì sự kiện
+              kết-quán-tính không bao giờ bắn. Nghe từ chính dòng cuộn thì chấm
+              đi theo ngón tay, và đúng cả khi người ta kéo chậm rồi thả.
+            */
+            onScroll={Animated.event([{ nativeEvent: { contentOffset: { x: heroX } } }], {
+              useNativeDriver: true,
+              listener: onHeroPage,
+            })}
+            scrollEventThrottle={16}>
+            {media.items.map((m) => (
+              <View key={m.uri} style={{ width }} />
+            ))}
+          </Animated.ScrollView>
+        ) : hero ? (
+          <View style={{ height: heroH - overlap }} />
+        ) : null}
 
         <View style={[styles.surface, hero ? styles.surfaceOverlap : styles.surfaceOpaque]}>
           {/*
@@ -491,7 +576,9 @@ export default function ExerciseGuideSheet() {
                   Haptics.selectionAsync();
                   nav.push({
                     pathname: '/media-viewer',
-                    params: { ex: g?.id ?? '', name: g?.name || title },
+                    /* Mở ĐÚNG tấm đang xem. Vuốt tới tấm ba rồi bấm mở mà ra
+                       tấm một là hai màn nói hai chuyện về cùng một bộ. */
+                    params: { ex: g?.id ?? '', name: g?.name || title, i: String(heroPage) },
                   });
                 }}
                 style={styles.play}>

@@ -9,6 +9,7 @@ import {
   Text,
   useWindowDimensions,
   View,
+  type LayoutChangeEvent,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
@@ -67,7 +68,8 @@ export default function MediaViewer() {
   const styles = stylesFor(c);
   const i18n = useI18n();
   const insets = useSafeAreaInsets();
-  const { width, height } = useWindowDimensions();
+  /* Chỉ BỀ RỘNG. Chiều cao do flex quyết — xem khối chú thích ở `stage`. */
+  const { width } = useWindowDimensions();
   const reduced = useReducedMotion();
 
   const { ex, name, i } = useLocalSearchParams<{ ex?: string; name?: string; i?: string }>();
@@ -120,6 +122,20 @@ export default function MediaViewer() {
     [width],
   );
 
+  /*
+    Chiều cao THẬT của sân khấu, do chính sân khấu báo.
+
+    Đây là chỗ thay cho `useWindowDimensions().height`: con số của cửa sổ là
+    chiều cao MÀN HÌNH, còn màn này là một pageSheet — thẻ luôn thấp hơn màn
+    hình, và phần dôi ra chính là dải đen thừa phía trên mà đặt hàng mô tả.
+    `onLayout` trả về chiều cao của khung chứa sau khi đã trừ inset dưới, nên
+    nó đúng với mọi máy, kể cả máy chưa ai cầm thử.
+  */
+  const [stageH, setStageH] = useState(0);
+  const onStage = useCallback((e: LayoutChangeEvent) => {
+    setStageH(Math.round(e.nativeEvent.layout.height));
+  }, []);
+
   /* Tấm đang xem — nguồn của chú thích dưới đáy. */
   const current = media.items[page] ?? media.items[0] ?? null;
 
@@ -135,11 +151,23 @@ export default function MediaViewer() {
   const GuideVideo = videoGate();
 
   const body = () => {
-    if (isPending) return <ActivityIndicator color="#ffffff" />;
+    if (isPending) {
+      return (
+        <View style={styles.center}>
+          <ActivityIndicator color="#ffffff" />
+        </View>
+      );
+    }
 
     if (media.type === 'video') {
       const v = media.items[0];
-      if (!GuideVideo) return <Text style={styles.fail}>{i18n.nEgMediaFailed}</Text>;
+      if (!GuideVideo) {
+        return (
+          <View style={styles.center}>
+            <Text style={styles.fail}>{i18n.nEgMediaFailed}</Text>
+          </View>
+        );
+      }
       return (
         <GuideVideo
           url={v.uri}
@@ -149,7 +177,9 @@ export default function MediaViewer() {
             ?? i18n.nEgMediaAlt.replace('{v}', data?.name || title)
           }
           reduced={reduced}
-          style={{ width, height: height - insets.top - insets.bottom }}
+          /* Lấy trọn sân khấu, không một con số nào lấy từ cửa sổ — xem khối
+             chú thích ở `stage`. */
+          style={styles.fill}
           onFail={close}
           /* Toàn màn thì điều khiển GỐC của hệ điều hành: phát/dừng, tiến
              trình, tua. Khung dẫn thì không — xem `controls` ở `guide-video`. */
@@ -158,7 +188,13 @@ export default function MediaViewer() {
       );
     }
 
-    if (media.items.length === 0) return <Text style={styles.fail}>{i18n.nEgNoMedia}</Text>;
+    if (media.items.length === 0) {
+      return (
+        <View style={styles.center}>
+          <Text style={styles.fail}>{i18n.nEgNoMedia}</Text>
+        </View>
+      );
+    }
 
     return (
       <ScrollView
@@ -191,9 +227,23 @@ export default function MediaViewer() {
         }}
         /* Một tấm ngoài rìa mỗi phía được giữ sẵn. Bộ năm ảnh vì thế không
            dựng năm bản giải mã cùng lúc, mà vuốt sang tấm kế vẫn có sẵn. */
-        removeClippedSubviews>
+        removeClippedSubviews
+        /* Dải cuộn lấy trọn sân khấu. Không phép tính nào từ kích thước màn
+           hình — xem khối chú thích ở `stage`. */
+        style={styles.fill}>
         {media.items.map((m, i) => (
-          <View key={m.uri} style={{ width, height: height - insets.top - insets.bottom }}>
+          /*
+            Mỗi trang cao ĐÚNG BẰNG SÂN KHẤU ĐÃ ĐO, không phải chiều cao màn
+            hình và cũng không phải `alignItems: stretch` mặc định — phép kéo
+            ấy chỉ có tác dụng khi khung chứa đã có chiều cao xác định, và
+            trong một dải cuộn ngang thì nó không có. Harness đo được: mỗi
+            trang cao 0 điểm, nên `absoluteFill` của tấm ảnh cũng cao 0.
+
+            `stageH` là chiều cao THẬT của thẻ pageSheet, do chính nó báo qua
+            `onLayout`. Đúng trên mọi tỉ lệ máy, và không lệ thuộc một con số
+            nào lấy từ cửa sổ.
+          */
+          <View key={m.uri} style={{ width, height: stageH }}>
             <Image
               source={{ uri: m.uri }}
               style={StyleSheet.absoluteFill}
@@ -220,7 +270,39 @@ export default function MediaViewer() {
 
   return (
     <View style={styles.root}>
-      <View style={[styles.stage, { marginTop: insets.top, marginBottom: insets.bottom }]}>
+      {/*
+        ── SÂN KHẤU: chỉ chừa mép DƯỚI, và chiều cao do FLEX quyết ──
+
+        Hai lỗi cùng lúc ở bản trước, và cả hai làm ảnh bị đẩy xuống:
+
+        **Một — `marginTop: insets.top` cộng hai lần.** Màn này là
+        `presentation: 'modal'`, tức một pageSheet: mép trên của thẻ ĐÃ nằm
+        dưới thanh trạng thái. Cộng inset của cửa sổ vào nữa là chừa chỗ cho
+        một thanh trạng thái không nằm ở đó, và kết quả là một dải đen ~60
+        điểm ở trên mà không có gì đối xứng ở dưới. Cùng lỗi, cùng lý do, cùng
+        cách sửa như `exercise-guide.tsx` — xem `CLOSE_TOP` ở tệp ấy.
+
+        Mép DƯỚI thì khác và vẫn được chừa: thẻ chạm đáy màn, nên thanh home
+        thật sự nằm đè lên nó.
+
+        **Hai — chiều cao trang tính từ `useWindowDimensions()`.** Con số ấy là
+        chiều cao MÀN HÌNH, không phải chiều cao thẻ pageSheet. Nên mỗi trang
+        cao hơn chỗ chứa nó, và phần dôi ra đẩy ảnh lệch khỏi tâm.
+
+        **Ba — sân khấu căn giữa con của nó.** Xem khối chú thích ở `stage`
+        trong bảng kiểu: `alignItems: 'center'` làm dải cuộn ngang co lại bằng
+        bề rộng NỘI DUNG chứ không bằng bề rộng thẻ.
+
+        Nay không con số nào lấy từ cửa sổ: sân khấu `flex: 1` lấy đúng chiều
+        cao còn lại và TỰ BÁO chiều cao ấy qua `onLayout`; mỗi trang cao đúng
+        bằng con số đã đo; và `contentFit="contain"` đặt tấm ảnh vào giữa ô
+        theo CẢ HAI chiều. Lề đen vì thế chia đều trên dưới trên mọi tỉ lệ máy,
+        kể cả máy chưa ai thử.
+
+        Chú thích và chấm trang nằm `position: 'absolute'` trên nền, nên chúng
+        không tham gia phép căn này — đúng như đặt hàng yêu cầu.
+      */}
+      <View style={[styles.stage, { marginBottom: insets.bottom }]} onLayout={onStage}>
         {body()}
       </View>
 
@@ -287,7 +369,23 @@ const stylesFor = makeStyles(() => ({
   /* Đen, không `c.background`: một màn xem media là một phòng tối, và nó không
      đổi theo theme — ảnh và video mang màu của chính chúng. */
   root: { flex: 1, backgroundColor: '#000000' },
-  stage: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  /*
+    Sân khấu KHÔNG căn giữa con của nó nữa.
+
+    `alignItems: 'center'` ở đây là nguyên nhân thứ ba của lỗi căn dọc, và là
+    cái khó thấy nhất: nó làm dải cuộn ngang co lại đúng bằng BỀ RỘNG NỘI
+    DUNG — harness đo được 1608 điểm cho bốn tấm — thay vì bằng bề rộng thẻ.
+    Một dải cuộn rộng hơn chỗ chứa thì không còn gì để cuộn, và mỗi trang
+    không còn mốc nào để cao bằng.
+
+    Việc căn giữa thuộc về hai cảnh chữ, nên nó chuyển xuống `center`.
+  */
+  stage: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  /* `alignSelf` là đai an toàn, không phải phép tính: sân khấu `flex: 1` đã
+     kéo con theo chiều ngang rồi. Nó ở đây để một ngày nào đó có ai thêm lại
+     `alignItems` vào sân khấu thì dải cuộn vẫn rộng bằng thẻ. */
+  fill: { flex: 1, alignSelf: 'stretch' },
   fail: { ...type.body, color: '#ffffff' },
   dots: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.45)' },

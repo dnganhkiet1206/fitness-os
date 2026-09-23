@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { ImageOff } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Animated, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import {
@@ -150,6 +150,9 @@ export function GuideMedia({
   hasCues,
   hero = false,
   coveredBy = 0,
+  offsetX = null,
+  pageWidth = 0,
+  page = 0,
   i18n,
 }: {
   /**
@@ -191,15 +194,51 @@ export function GuideMedia({
    * gọi phải nói ra. 0 nghĩa là không bị che gì.
    */
   coveredBy?: number;
+  /**
+   * ── VUỐT NGANG NGAY TRONG KHUNG DẪN ──
+   *
+   * Khung này là một LỚP TUYỆT ĐỐI nằm sau dòng cuộn dọc, nên nó không bao giờ
+   * nhận được chạm: dòng cuộn phủ lên nó. Trước đây hệ quả là khung chỉ vẽ
+   * `items[0]` và hàng chấm cứng ở chấm thứ nhất — một bộ bốn ảnh trông như
+   * vuốt được mà không vuốt được.
+   *
+   * Giải bằng cách TÁCH CỬ CHỈ KHỎI HÌNH: màn hướng dẫn dựng một dải cuộn
+   * ngang TRONG SUỐT nằm trong dòng cuộn dọc (nên hai chiều không tranh nhau —
+   * cuộn lồng vuông góc là thứ React Native xử lý sẵn), và đẩy độ lệch của nó
+   * xuống đây. Khung chỉ việc dịch dải ảnh theo.
+   *
+   * Vì sao không chuyển khung vào dòng cuộn cho xong: lúc ấy hình sẽ cuộn đi
+   * cùng nội dung, mất hẳn hiệu ứng mặt giấy TRƯỢT TRÊN hình — thứ được đo
+   * theo bốn ảnh tham chiếu và ghi lại ở `heroLayer`/`overlap`.
+   *
+   * `null` nghĩa là không có dải nào lái: một ảnh đơn, một video, hoặc vai gọn
+   * trong lề.
+   */
+  offsetX?: Animated.AnimatedInterpolation<number> | Animated.Value | null;
+  /** Bề rộng MỘT trang — cũng là bề rộng khung. */
+  pageWidth?: number;
+  /** Tấm đang hiện, để tô đúng chấm. Luôn 0 khi không phải bộ ảnh. */
+  page?: number;
   i18n: NativeStrings;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const reduced = useReducedMotion();
 
-  /* Media hỏng là chuyện của MÁY chứ không của dữ liệu: đường dẫn đúng vẫn 404
-     được. Nên cả hai đều là state cục bộ. */
-  const [imgBroke, setImgBroke] = useState(false);
+  /*
+    Media hỏng là chuyện của MÁY chứ không của dữ liệu: đường dẫn đúng vẫn 404
+    được. Nên cả hai đều là state cục bộ.
+
+    TẤM NÀO hỏng, chứ không phải "có tấm nào hỏng không". Một cờ chung đủ dùng
+    khi khung chỉ vẽ một tấm; từ lúc dải vẽ cả bốn cùng lúc thì một tấm 404 ở
+    cuối dải sẽ xoá luôn ba tấm đang hiện tốt, và xoá cả lối vuốt. Nên chỗ
+    hỏng được báo NGAY TRONG ô của nó, còn dải và hàng chấm ở nguyên.
+  */
+  const [broke, setBroke] = useState<readonly string[]>([]);
+  const onImgFail = useCallback(
+    (uri: string) => setBroke((b) => (b.includes(uri) ? b : [...b, uri])),
+    [],
+  );
   /* Thời lượng THẬT, chỉ có khi trình giải mã đã đọc được — xem `onDuration`
      trong `guide-video.tsx`. `null` nghĩa là CHƯA BIẾT, không phải 0 giây. */
   const [secs, setSecs] = useState<number | null>(null);
@@ -207,9 +246,16 @@ export function GuideMedia({
   const onVideoFail = useCallback(() => setVidBroke(true), []);
   const onDuration = useCallback((d: number) => setSecs(d), []);
 
-  /* `items[0]` là tấm đang hiện. Thư viện ảnh vuốt được khi mở TOÀN MÀN; ở
-     khung dẫn thì nó hiện tấm đầu cộng một hàng chấm — đặt hàng cấm dựng một
-     carousel ngang ngay trong sheet. */
+  /*
+    `items[0]` là tấm MẶC ĐỊNH — tấm hiện ra khi chưa ai vuốt, và tấm duy nhất
+    của mọi trạng thái không phải bộ ảnh.
+
+    Dòng chú thích cũ ở đây ghi *"đặt hàng cấm dựng một carousel ngang ngay
+    trong sheet"*, và nó đã HẾT đúng: lượt sau đặt hàng báo chính chuyện khung
+    dẫn không vuốt được là một lỗi. Nên khung vẫn không dựng carousel của
+    riêng nó — nó nhận độ lệch từ dải cuộn của sheet và dịch dải ảnh theo. Xem
+    `offsetX`.
+  */
   const first = media.items[0] ?? null;
   const videoUrl = media.type === 'video' ? media.items[0].uri : null;
   const imageUri = media.type === 'image_single' || media.type === 'image_gallery'
@@ -226,6 +272,17 @@ export function GuideMedia({
      được chạm tới — và đó là trường hợp của mọi bài hôm nay. */
   const GuideVideo = videoUrl ? videoGate() : null;
   const showVideo = !!videoUrl && !!GuideVideo && !vidBroke;
+  /*
+    ── DẢI hay MỘT TẤM ──
+
+    Đủ ba vế mới là dải: đúng là bộ ảnh, chỗ gọi có đưa dây lái, và có bề rộng
+    trang. Thiếu vế nào cũng lùi về một tấm — ảnh đơn và vai gọn trong lề đi
+    đúng đường ấy, không có nhánh riêng nào cho chúng.
+  */
+  const strip = showsDots(media) && !!offsetX && pageWidth > 0;
+  /* Khung chỉ sập sang câu "không tải được" ở đường MỘT TẤM. Ở dải, chuyện
+     hỏng thuộc về từng ô — xem `broke`. */
+  const imgBroke = !strip && !!imageUri && broke.includes(imageUri);
   const showImage = !!imageUri && !imgBroke;
   /*
     ── ba nguồn cho một nhãn, và thứ tự giữa chúng là một quyết định ──
@@ -288,20 +345,67 @@ export function GuideMedia({
   }
 
   if (showImage) {
+    /*
+      ── BỘ ẢNH: một DẢI, dịch theo độ lệch của dải cuộn trong suốt ──
+
+      `translateX` âm: dải cuộn chạy sang phải thì hình phải chạy sang trái.
+      Không `useState` cho vị trí — nó đi thẳng từ độ lệch cuộn sang transform,
+      nên hình bám ngón tay chứ không nhảy ở cuối cú vuốt. Và KHÔNG tấm nào bị
+      dựng lại khi đổi trang: cả bốn `<Image>` đứng yên trong dải, chỉ cái dải
+      dịch đi.
+    */
     return (
       <View style={[styles.box, styles.heroFrame]}>
-        <Image
-          source={{ uri: imageUri! }}
-          style={styles.fill}
-          contentFit="cover"
-          autoplay={!reduced}
-          transition={reduced ? 0 : 200}
-          onError={() => setImgBroke(true)}
-          accessibilityLabel={alt}
-          accessible
-        />
+        {strip && offsetX ? (
+          <Animated.View
+            style={[
+              styles.strip,
+              { width: pageWidth * media.items.length,
+                transform: [{ translateX: Animated.multiply(offsetX, -1) }] },
+            ]}>
+            {media.items.map((m, i) => (
+              <View key={m.uri} style={{ width: pageWidth, height: '100%' }}>
+                {broke.includes(m.uri) ? (
+                  /* Hỏng thì báo NGAY TRONG ô này. Ba tấm kia không liên quan,
+                     và lối vuốt phải còn để quay lại chúng. */
+                  <View style={styles.tileFail}>
+                    <Icon icon={ImageOff} size={16} color={c.mutedForeground} />
+                    <Text style={styles.compactTitle}>{i18n.nEgMediaFailed}</Text>
+                  </View>
+                ) : (
+                  <Image
+                    source={{ uri: m.uri }}
+                    style={styles.fill}
+                    contentFit="cover"
+                    autoplay={!reduced}
+                    transition={reduced ? 0 : 200}
+                    onError={() => onImgFail(m.uri)}
+                    /* Chỉ tấm ĐANG HIỆN tự giới thiệu. Bốn nhãn cùng lúc trong
+                       cây trợ năng là bốn thứ để vuốt qua trong khi mắt chỉ
+                       thấy một. */
+                    accessibilityLabel={
+                      mediaLabel(name, m) ?? m.alt ?? i18n.nEgMediaAlt.replace('{v}', name)
+                    }
+                    accessible={i === page}
+                  />
+                )}
+              </View>
+            ))}
+          </Animated.View>
+        ) : (
+          <Image
+            source={{ uri: imageUri! }}
+            style={styles.fill}
+            contentFit="cover"
+            autoplay={!reduced}
+            transition={reduced ? 0 : 200}
+            onError={() => onImgFail(imageUri!)}
+            accessibilityLabel={alt}
+            accessible
+          />
+        )}
         {hero && showsDots(media) ? (
-          <Dots count={media.items.length} styles={styles} lift={coveredBy} />
+          <Dots count={media.items.length} active={page} styles={styles} lift={coveredBy} />
         ) : null}
       </View>
     );
@@ -338,7 +442,18 @@ export function GuideMedia({
  * một ảnh đơn có chấm là nói rằng còn ảnh nữa, và một video có chấm cũng vậy.
  * Luật ấy sống ở mô hình, một chỗ.
  */
-function Dots({ count, styles, lift }: { count: number; styles: Styles; lift: number }) {
+function Dots({
+  count,
+  active,
+  styles,
+  lift,
+}: {
+  count: number;
+  /** Tấm đang hiện. Trước đây chỗ này cứng ở 0, nên hàng chấm nói dối. */
+  active: number;
+  styles: Styles;
+  lift: number;
+}) {
   return (
     <View
       style={[styles.dots, { bottom: lift + spacing.md }]}
@@ -346,7 +461,7 @@ function Dots({ count, styles, lift }: { count: number; styles: Styles; lift: nu
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants">
       {Array.from({ length: count }, (_, i) => (
-        <View key={i} style={[styles.dot, i === 0 ? styles.dotOn : null]} />
+        <View key={i} style={[styles.dot, i === active ? styles.dotOn : null]} />
       ))}
     </View>
   );
@@ -422,6 +537,18 @@ const stylesFor = makeStyles((c, m) => ({
   dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.45)' },
   dotOn: { backgroundColor: '#ffffff' },
   fill: { width: '100%', height: '100%' },
+  /* Dải ảnh của bộ nhiều tấm — xem `strip`. Cao hết khung, rộng bằng số tấm. */
+  strip: { flexDirection: 'row', height: '100%' },
+  /* Một Ô hỏng trong dải. Nền xám nhạt như `box`, vì nó thay chỗ một tấm ảnh
+     chứ không thay chỗ cả khung. */
+  tileFail: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    backgroundColor: alpha(m.ink, 0.05),
+  },
 
   /* Hỏng mà ĐANG ở vai trò hình dẫn: khung giữ nguyên chiều cao, câu báo nằm
      giữa. Thu khung lại là cú nhảy bố cục. */

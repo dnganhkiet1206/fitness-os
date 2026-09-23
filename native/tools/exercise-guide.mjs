@@ -199,13 +199,25 @@ if (!/exercise-insight/.test(read('src/components/ascnd/exercise-progress.tsx'))
   );
 }
 
-/* ── 7 · media: hỏng thì có chỗ trống tử tế, và KHÔNG có trình phát ── */
+/* ── 7 · media: hỏng thì có chỗ trống tử tế, và KHÔNG có trình phát ──
+
+   Luật này từng neo vào đúng một câu `setImgBroke(true)`, và câu ấy đã phải
+   đổi: từ lúc dải vẽ cả bốn tấm cùng lúc, một cờ chung cho cả khung nghĩa là
+   một tấm 404 ở cuối dải xoá luôn ba tấm đang hiện tốt — và xoá cả lối vuốt
+   để quay lại chúng. Nên cái được canh bây giờ là HÌNH DẠNG ĐÚNG của cách bắt
+   lỗi: mỗi đường vẽ ảnh đều báo hỏng KÈM THEO URI của chính nó, và chỗ quyết
+   định vẽ câu báo đọc từ danh sách ấy. */
 CASES++;
-if (!/onError=\{\(\) => setImgBroke\(true\)\}/.test(media) || !/status === 'error'/.test(mediaAll)) {
+const imgFail = (media.match(/onError=\{\(\) => onImgFail\(/g) ?? []).length;
+const brokeRead = (media.match(/broke\.includes\(/g) ?? []).length;
+if (imgFail < 2 || brokeRead < 2 || !/status === 'error'/.test(mediaAll)) {
   problems.push(
-    `${MEDIA}: khung hình không còn bắt lỗi tải ở CẢ hai đường (ảnh qua \`onError\`, video qua ` +
-      "`status === 'error'`). Một đường dẫn đúng vẫn 404 được, và khi ấy đặt hàng đòi *\"a graceful " +
-      'fallback rather than a broken player"*',
+    `${MEDIA}: khung hình không còn bắt lỗi tải ở CẢ hai đường (ảnh qua \`onError\` → ` +
+      "`onImgFail(uri)`, video qua `status === 'error'`), hoặc chỗ báo hỏng thôi đọc `broke`. " +
+      `Thấy ${imgFail} chỗ gọi \`onImgFail\` và ${brokeRead} chỗ đọc \`broke\`, cần 2 mỗi bên: ` +
+      'một cho Ô trong dải, một cho đường MỘT TẤM. ' +
+      'Một đường dẫn đúng vẫn 404 được, và khi ấy đặt hàng đòi *"a graceful fallback rather than a ' +
+      'broken player"* — tử tế ở đây nghĩa là báo trong đúng cái ô hỏng, không xoá ba tấm bên cạnh',
   );
 }
 CASES++;
@@ -778,6 +790,106 @@ if (baked.length || fromModel.length) {
   );
 }
 
+/* ── 27 · KHUNG DẪN phải vuốt được NGAY TRONG sheet ──
+
+   Lỗi được báo: bốn tấm, bốn chấm, nút toàn màn — mà vuốt ngang trên hình dẫn
+   không làm gì cả; chỉ mở toàn màn mới vuốt được. Nguyên nhân: khung hình dẫn
+   là một lớp `position: absolute` NẰM SAU dòng cuộn dọc và mang
+   `pointerEvents="none"`, nên chạm không bao giờ tới nó.
+
+   Cách chữa đã chọn tách CỬ CHỈ khỏi ẢNH: một dải cuộn ngang trong suốt nằm
+   TRONG dòng cuộn dọc nhận cú vuốt, và độ lệch của nó lái dải ảnh phía sau.
+   Ba mảnh, và thiếu bất cứ mảnh nào là lại về đúng lỗi cũ:
+
+   **Một — dải cử chỉ có thật**, `horizontal` + `pagingEnabled`, và chỉ dựng
+   khi thật sự nhiều tấm.
+
+   **Hai — `listener` trên `Animated.event`.** Đây là mảnh đã hỏng thật và
+   harness bắt được: khi chấm trang chỉ nghe `onMomentumScrollEnd`, ảnh dịch
+   đúng (-402, -804, -1206 điểm) mà chấm vẫn đứng ở tấm đầu, vì một cú kéo
+   không sinh quán tính thì sự kiện kết-quán-tính không bắn. Chỉ số trang phải
+   đến từ chính dòng cuộn.
+
+   **Ba — `GuideMedia` nhận cả ba dây lái** (`offsetX`, `pageWidth`, `page`),
+   và chấm sáng theo `active` chứ không theo một số gõ cứng. `i === 0` từng là
+   mã thật ở đây: bốn chấm vẽ ra mà chấm đầu sáng vĩnh viễn. */
+CASES++;
+/* Cửa sổ rộng tay: giữa tên thẻ và dấu `>` đóng thẻ có cả khối chú thích kể
+   lại lối hỏng, và chính khối ấy dài hơn mọi danh sách prop. */
+const gesture = /<Animated\.ScrollView[\s\S]{0,3000}?<\/Animated\.ScrollView>/.exec(sheet)?.[0] ?? '';
+const galleryGaps = [
+  gesture ? null : 'không còn dải cuộn ngang `Animated.ScrollView` trong sheet',
+  /horizontal/.test(gesture) && /pagingEnabled/.test(gesture)
+    ? null : 'dải cử chỉ không còn `horizontal` + `pagingEnabled`, nên nó không chia trang',
+  /listener:\s*onHeroPage/.test(gesture)
+    ? null : 'chỉ số trang không còn nghe từ `listener` của `Animated.event` — một cú kéo chậm '
+      + 'không sinh quán tính, nên chấm sẽ đứng yên trong khi ảnh đã dịch',
+  inCode(sheet, 'swipable = showsDots(media)')
+    ? null : 'dải cử chỉ không còn chỉ dựng khi NHIỀU tấm (`showsDots`)',
+  ['offsetX=', 'pageWidth=', 'page='].every((p) => inCode(sheet, p))
+    ? null : 'sheet không còn truyền đủ ba dây lái `offsetX`/`pageWidth`/`page` xuống `GuideMedia`',
+  inCode(media, 'Animated.multiply(offsetX, -1)')
+    ? null : 'dải ảnh trong `guide-media.tsx` không còn dịch theo độ lệch của dải cử chỉ',
+  inCode(media, 'i === active ? styles.dotOn')
+    ? null : 'chấm trang không còn sáng theo `active` — một chỉ số gõ cứng làm bốn chấm mà chỉ một cái sáng mãi',
+].filter(Boolean);
+if (galleryGaps.length) {
+  problems.push(
+    `${SHEET}: khung hình dẫn không còn vuốt được ngay trong sheet — ${galleryGaps.join('; ')}. `
+      + 'Khung hình dẫn là một lớp tuyệt đối nằm SAU dòng cuộn dọc và không nhận chạm, nên cú vuốt phải '
+      + 'do một dải trong suốt nằm TRONG dòng cuộn nhận hộ rồi lái dải ảnh theo',
+  );
+}
+
+/* ── 28 · TOÀN MÀN phải căn giữa theo CHIỀU DỌC ──
+
+   Lỗi được báo: tấm dọc 1024×1536 vừa khít bề rộng nhưng dính đáy, chừa một
+   dải đen rất dày phía trên. Đặt hàng cấm thẳng ba lối chữa dễ: đổi sang
+   `cover`, cắt ảnh, và kéo bằng một khoảng lệch cố định.
+
+   Ba nguyên nhân thật, cả ba đều là phép tính lấy từ MÀN HÌNH chứ không từ
+   khung chứa:
+
+   **Một — `marginTop: insets.top` trong một pageSheet.** Mép trên của thẻ đã
+   nằm dưới thanh trạng thái; cộng inset vào nữa là chừa chỗ cho một thanh
+   không nằm ở đó. Cùng lỗi, cùng luật, như số 9.
+
+   **Hai — chiều cao trang lấy từ `useWindowDimensions()`.** Đó là chiều cao
+   MÀN HÌNH, không phải chiều cao thẻ. Nay chiều cao do chính sân khấu báo qua
+   `onLayout`.
+
+   **Ba — sân khấu căn giữa con của nó.** `alignItems: 'center'` làm dải cuộn
+   ngang co lại bằng bề rộng NỘI DUNG (harness đo được 1608 điểm cho bốn tấm),
+   nên trang không còn mốc nào để cao bằng và tấm ảnh cao 0 điểm. */
+CASES++;
+const stage = /stage:\s*\{[^}]*\}/.exec(viewer)?.[0] ?? '';
+const centerGaps = [
+  inCode(viewer, 'onLayout={onStage}') && /setStageH\(/.test(viewer)
+    ? null : 'sân khấu không còn TỰ ĐO chiều cao của mình — không có `onLayout` nào nuôi `stageH`',
+  inCode(viewer, 'height: stageH')
+    ? null : 'trang ảnh không còn cao bằng sân khấu đã đo',
+  /\{\s*width\s*,\s*height\s*\}\s*=\s*useWindowDimensions/.test(viewer)
+    ? 'chiều cao lại lấy từ `useWindowDimensions()` — đó là chiều cao MÀN HÌNH, không phải chiều cao thẻ pageSheet'
+    : null,
+  inCode(viewer, 'insets.top') && !/top:\s*insets\.top/.test(viewer)
+    ? 'inset TRÊN quay lại bố cục ngoài nút đóng — trong pageSheet nó cộng hai lần'
+    : null,
+  stage && /alignItems/.test(stage)
+    ? 'sân khấu lại căn giữa con của nó — dải cuộn ngang sẽ co lại bằng bề rộng nội dung'
+    : null,
+  inCode(viewer, 'contentFit="contain"')
+    ? null : 'tấm ảnh không còn `contentFit="contain"` — toàn màn là chỗ nhìn kỹ, không được cắt mép nào',
+  inCode(viewer, 'contentFit="cover"')
+    ? 'tấm ảnh chuyển sang `cover` — đặt hàng cấm thẳng lối chữa này vì nó CẮT ảnh'
+    : null,
+].filter(Boolean);
+if (centerGaps.length) {
+  problems.push(
+    'src/app/media-viewer.tsx: ảnh toàn màn không còn chắc chắn nằm giữa theo chiều dọc — '
+      + `${centerGaps.join('; ')}. Phép căn phải dẫn từ chiều cao THẬT của thẻ, không từ kích thước cửa sổ`,
+  );
+}
+
 if (!problems.length) {
   console.log(
     `hướng dẫn bài tập OK — ${CASES} ca. Tra cứu: \`exerciseId\` (khoá chính tắc) hỏi TRƯỚC, ` +
@@ -793,7 +905,11 @@ if (!problems.length) {
       'nội dung mang đúng `id` của nó và một câu "chưa có" của riêng nó; thư viện chỉ được hỏi khi tab cần ' +
       'tới nó (`needsLibrary`), và không nhánh giao diện nào rẽ theo tên bài. Chữ hướng dẫn nằm ở tầng ' +
       'nội dung: không câu nào của bốn bước được gõ thẳng trong component, và cả ba chỗ vẽ đều đọc ' +
-      '`item.title`/`item.description` chứ không tra theo vị trí',
+      '`item.title`/`item.description` chứ không tra theo vị trí. Khung hình dẫn VUỐT ĐƯỢC ngay trong ' +
+      'sheet: một dải trong suốt nằm trong dòng cuộn dọc nhận cú vuốt, lái dải ảnh qua `Animated.multiply`, ' +
+      'và chấm trang nghe từ `listener` của chính dòng cuộn chứ không đợi quán tính. Toàn màn căn giữa ' +
+      'theo chiều cao THẬT của thẻ (`onLayout`), không theo kích thước cửa sổ, và vẫn `contain` — lề đen ' +
+      'chia đều trên dưới, không cắt mép nào',
   );
 }
 
