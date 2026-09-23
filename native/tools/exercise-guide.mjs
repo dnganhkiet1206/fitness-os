@@ -721,8 +721,11 @@ if (mediaBtn.length) {
    ra một tờ giấy trắng, và không có gì trên màn nói rằng đó là lỗi. */
 CASES++;
 const tabIds = [...sheet.matchAll(/\{ id: '([a-z]+)', key: 'nEgTab/g)].map((m) => m[1]);
+/* `shown`, không `tab`: nội dung đổi ở GIỮA cú chuyển tab, còn `tab` là viên
+   đang sáng — xem khối hai trạng thái trong sheet. Vế này hỏi "tab nào cũng có
+   thứ để vẽ", nên nó phải hỏi đúng cái biến quyết định thứ được vẽ. */
 const missingPanel = tabIds.filter(
-  (id) => id !== 'overview' && !new RegExp(`tab === '${id}'`).test(sheet),
+  (id) => id !== 'overview' && !new RegExp(`shown === '${id}'`).test(sheet),
 );
 const missingEmpty = ['nEgNoMuscles', 'nEgNoEquipment', 'nEgNoRelated'].filter(
   (k) => !sheet.includes(`i18n.${k}`),
@@ -746,12 +749,12 @@ const realTabs = [
   /aria-selected=\{on\}/.test(sheet)
     ? null
     : 'viên tab thôi mang `aria-selected` — trên web `accessibilityState` không ra thuộc tính nào, nên bốn viên đọc lên giống hệt nhau',
-  /onPress=\{\(\) => \{[\s\S]{0,120}?setTab\(id\);/.test(sheet)
+  /onPress=\{\(\) => pickTab\(id\)\}/.test(sheet) && /setTab\(id\);/.test(sheet)
     ? null
-    : 'bấm vào một viên tab không còn gọi `setTab(id)`',
-  /const overview = tab === 'overview';/.test(sheet)
+    : 'bấm vào một viên tab không còn đi qua `pickTab(id)` → `setTab(id)`',
+  /const overview = shown === 'overview';/.test(sheet)
     ? null
-    : 'nội dung "Tổng quan" không còn được che sau `tab === \'overview\'`',
+    : 'nội dung "Tổng quan" không còn được che sau `shown === \'overview\'`',
   missingPanel.length ? `tab không có nhánh nội dung nào: ${missingPanel.join(', ')}` : null,
   missingEmpty.length ? `thiếu câu "chưa có" riêng của tab: ${missingEmpty.join(', ')}` : null,
   /const needsLibrary = tab === 'equipment' \|\| tab === 'related';/.test(sheet)
@@ -944,6 +947,94 @@ if (centerGaps.length) {
   problems.push(
     'src/app/media-viewer.tsx: ảnh toàn màn không còn chắc chắn nằm giữa theo chiều dọc — '
       + `${centerGaps.join('; ')}. Phép căn phải dẫn từ chiều cao THẬT của thẻ, không từ kích thước cửa sổ`,
+  );
+}
+
+/* ── 29 · KHUNG NGOÀI của sheet phải ĐỨNG YÊN khi đổi tab ──
+
+   Đặt hàng vẽ hẳn hai cột "Sai / Đúng": *"Khung ngoài của sheet có chiều cao
+   cố định và không thay đổi khi chuyển tab. Chỉ nội dung bên trong thay đổi."*
+
+   Lối hỏng ở đây KHÔNG phải ai đó cố tình đặt chiều cao theo tab. Nó tinh vi
+   hơn nhiều, và nó đã xảy ra thật — do chính lượt sửa "vuốt inline" sinh ra:
+   `Animated.ScrollView` của react-native-web mang sẵn `flexGrow: 1`, nên dải
+   cử chỉ NUỐT hết chỗ trống mỗi khi nội dung tab ngắn. Đo được trên bản dựng:
+
+       Tổng quan  đỉnh mặt giấy 386   hàng tab 490
+       Nhóm cơ                  426            530
+       Thiết bị                 465            569
+
+   Cả mặt giấy lẫn hàng tab trôi 79 điểm — đúng cột "Sai" của đặt hàng. Một
+   dòng `flexGrow: 0` đưa cả bốn tab về 386/490.
+
+   Vế thứ hai cấm lối chữa sai: ghim một chiều cao cố định cho thân tab. Nó sẽ
+   làm khung đứng yên và CẮT MẤT nội dung tab dài — "Tổng quan" cao 1941 điểm,
+   gấp hơn hai lần màn hình. */
+CASES++;
+const strip = /<Animated\.ScrollView[\s\S]{0,3000}?<\/Animated\.ScrollView>/.exec(sheet)?.[0] ?? '';
+const frameGaps = [
+  strip && /flexGrow: 0/.test(strip)
+    ? null : 'dải cử chỉ không còn `flexGrow: 0` — `Animated.ScrollView` trên web mặc định NỞ, nên nó '
+      + 'nuốt chỗ trống ở tab ngắn và đẩy cả mặt giấy lẫn hàng tab xuống (đo được: 386 → 465)',
+  /style=\{\{ opacity: fade, transform: \[\{ translateY: slide \}\] \}\}/.test(sheet)
+    ? null : 'thân tab không còn nằm trong MỘT lớp chuyển — cú đổi tab phải là một phép đổi độ mờ, '
+      + 'không phải bốn nhánh tự hiện tự tắt',
+].filter(Boolean);
+if (frameGaps.length) {
+  problems.push(
+    `${SHEET}: khung ngoài của sheet không còn đứng yên khi đổi tab — ${frameGaps.join('; ')}. `
+      + 'Đặt hàng vẽ hẳn hai cột Sai/Đúng cho đúng chuyện này',
+  );
+}
+
+/* ── 30 · CÚ CHUYỂN TAB: ba bước, và các con số đặt hàng cho ──
+
+   *"Dùng crossfade + dịch chuyển nhẹ theo chiều dọc (≈ 10–16pt, 200–250ms,
+   ease-out) khi đổi tab."*
+
+   Hai giá trị chứ không một, và đó là một quyết định có lý do: một giá trị
+   duy nhất bắt lượt RA và lượt VÀO dùng chung một phép nội suy, nên nội dung
+   cũ sẽ trôi XUỐNG khi mờ đi — ngược hình đặt hàng vẽ.
+
+   Và "giảm chuyển động" phải được tôn trọng: một cú chuyển 240ms vẫn là
+   chuyển động. Đây là luật của cả app, không phải ngoại lệ của màn này. */
+CASES++;
+const move = /const pickTab = useCallback\([\s\S]{0,1400}?\n  \);/.exec(sheet)?.[0] ?? '';
+const durs = [...move.matchAll(/duration: (\d+)/g)].map((m) => Number(m[1]));
+const total = durs.length
+  ? Math.max(...durs.filter((_, i) => i < 2)) + Math.max(...durs.filter((_, i) => i >= 2))
+  : 0;
+/* CẢ HAI biên độ: lượt ra đi bằng `toValue`, lượt vào đặt thẳng bằng
+   `setValue` rồi mới chạy về 0. Bản đầu của luật này chỉ đọc `toValue`, nên
+   nó chấm điểm lượt ra và KHÔNG BAO GIỜ nhìn lượt vào — break-test bắt được:
+   đổi 12 thành 40 mà luật vẫn xanh. */
+const shifts = [
+  ...[...move.matchAll(/toValue: (-?\d+)/g)].map((m) => Math.abs(Number(m[1]))),
+  ...[...move.matchAll(/setValue\((-?\d+)\)/g)].map((m) => Math.abs(Number(m[1]))),
+].filter((n) => n > 1);
+/* MỌI lượt timing phải ease-out, không phải "có ít nhất một". Break-test bắt
+   được chỗ này: đổi một trong bốn sang `Easing.linear` mà luật vẫn xanh. */
+const easings = (move.match(/Easing\.out\(/g) ?? []).length;
+const moveGaps = [
+  move ? null : 'không còn `pickTab` — cú chuyển tab đã biến mất khỏi một chỗ duy nhất',
+  move && /if \(reduced\) \{/.test(move)
+    ? null : '`pickTab` không còn tôn trọng "giảm chuyển động" — 240ms vẫn là chuyển động',
+  /* HAI chỗ gọi `setShown`: một ở đường "giảm chuyển động" (đổi thẳng), một ở
+     GIỮA cú chuyển. Bản đầu chỉ đòi một, nên xoá chỗ giữa vẫn xanh. */
+  move && (move.match(/setShown\(id\)/g) ?? []).length >= 2 && /setTab\(id\);/.test(move)
+    ? null : '`pickTab` không còn tách viên tab (`setTab`) khỏi nội dung (`setShown`) ở CẢ hai đường '
+      + '— đường "giảm chuyển động" đổi thẳng, và đường có hiệu ứng đổi ở giữa cú chuyển',
+  total >= 200 && total <= 250
+    ? null : `tổng thời lượng cú chuyển ${total}ms, đặt hàng cho 200–250ms`,
+  shifts.length && shifts.every((n) => n >= 8 && n <= 16)
+    ? null : `biên độ dịch dọc [${shifts.join(', ')}] điểm, đặt hàng cho ≈10–16`,
+  durs.length && easings === durs.length
+    ? null : `chỉ ${easings}/${durs.length} lượt chạy dùng \`ease-out\` — đặt hàng chỉ định đúng đường cong ấy, `
+      + 'và một lượt tuyến tính lẫn giữa ba lượt ease-out thì đọc ra như một cú giật',
+].filter(Boolean);
+if (moveGaps.length) {
+  problems.push(
+    `${SHEET}: cú chuyển tab không còn khớp con số đặt hàng cho — ${moveGaps.join('; ')}`,
   );
 }
 

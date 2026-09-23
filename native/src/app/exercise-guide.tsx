@@ -6,6 +6,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  Easing,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -287,6 +288,69 @@ export default function ExerciseGuideSheet() {
      không đi tới đâu, và `showsDots` đã là nguồn duy nhất của câu hỏi ấy. */
   const swipable = showsDots(media);
 
+  const [tab, setTab] = useState<GuideTab>('overview');
+  /*
+    ── HAI trạng thái, vì hai thứ đổi ở hai thời điểm khác nhau ──
+
+    `tab` là viên tab đang sáng: nó đổi NGAY lúc ngón tay nhấc lên, không đợi
+    gì cả. `shown` là nội dung đang vẽ: nó đổi ở GIỮA cú chuyển, sau khi nội
+    dung cũ đã mờ đi.
+
+    Một trạng thái duy nhất thì không thể có hiệu ứng "mờ đi rồi mới đổi" mà
+    vẫn giữ được phản hồi tức thì của cái nút — hoặc nút trễ theo nội dung,
+    hoặc nội dung nhảy theo nút.
+  */
+  const [shown, setShown] = useState<GuideTab>('overview');
+
+  /*
+    ── ĐỔI TAB: mờ đi, đổi, hiện lên — khung KHÔNG nhúc nhích ──
+
+    Đặt hàng vẽ hẳn ba bước: *"Nội dung cũ (fade out + dịch lên nhẹ) →
+    Crossfade → Nội dung mới (fade in + dịch lên từ dưới)"*, kèm con số:
+    ≈10–16 điểm, 200–250ms, ease-out.
+
+    Nên hai giá trị chứ không một: một giá trị duy nhất bắt lượt ra và lượt
+    vào dùng CHUNG một phép nội suy, và khi ấy nội dung cũ sẽ trôi XUỐNG khi
+    mờ đi — ngược hẳn với hình đặt hàng vẽ.
+
+        ra:   độ mờ 1→0, dịch  0 → −8    100ms
+        (đổi `shown`, đặt dịch = +12 ngay lập tức, không animate)
+        vào:  độ mờ 0→1, dịch +12 → 0    140ms
+
+    Tổng 240ms, nằm trong khoảng đặt hàng cho. Biên độ 12 điểm cũng vậy.
+    `useNativeDriver` chạy được vì cả hai thứ đổi đều là độ mờ và transform.
+
+    "Giảm chuyển động" thì đổi thẳng, không animate — đó là luật của cả app,
+    và một cú chuyển 240ms vẫn là chuyển động.
+  */
+  const fade = useRef(new Animated.Value(1)).current;
+  const slide = useRef(new Animated.Value(0)).current;
+  const pickTab = useCallback(
+    (id: GuideTab) => {
+      Haptics.selectionAsync();
+      /* Viên tab sáng lên NGAY — xem khối chú thích ở `shown`. */
+      setTab(id);
+      if (id === shown) return;
+      if (reduced) {
+        setShown(id);
+        return;
+      }
+      Animated.parallel([
+        Animated.timing(fade, { toValue: 0, duration: 100, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(slide, { toValue: -8, duration: 100, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      ]).start(({ finished }) => {
+        if (!finished) return;
+        setShown(id);
+        slide.setValue(12);
+        Animated.parallel([
+          Animated.timing(fade, { toValue: 1, duration: 140, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(slide, { toValue: 0, duration: 140, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        ]).start();
+      });
+    },
+    [fade, slide, reduced, shown],
+  );
+
   const steps4 = captionedItems(media);
   /* Bốn bước cách nhau `lg`, không `sm`: mỗi bước là ảnh + ba dòng chữ, nên
      khoảng giữa hai bước phải lớn hơn hẳn khoảng bên trong một bước — không
@@ -355,8 +419,7 @@ export default function ExerciseGuideSheet() {
     của hệ thống sẽ lần lượt lùi qua bốn tab trước khi đóng sheet — và thứ
     người ta muốn lùi về là BUỔI TẬP.
   */
-  const [tab, setTab] = useState<GuideTab>('overview');
-  const overview = tab === 'overview';
+  const overview = shown === 'overview';
   /*
     ── bốn nhãn trong một hàng, và ở 320 điểm chúng KHÔNG vừa ──
 
@@ -461,7 +524,7 @@ export default function ExerciseGuideSheet() {
             horizontal
             pagingEnabled
             showsHorizontalScrollIndicator={false}
-            style={{ height: heroH - overlap }}
+            style={{ height: heroH - overlap, flexGrow: 0, flexShrink: 0 }}
             /*
               MỘT sự kiện, hai người nghe.
 
@@ -637,10 +700,7 @@ export default function ExerciseGuideSheet() {
                     */
                     aria-selected={on}
                     accessibilityLabel={label}
-                    onPress={() => {
-                      Haptics.selectionAsync();
-                      setTab(id);
-                    }}
+                    onPress={() => pickTab(id)}
                     style={[styles.tab, on ? styles.tabOn : null]}>
                     <Text
                       numberOfLines={1}
@@ -656,6 +716,20 @@ export default function ExerciseGuideSheet() {
               })}
             </View>
           ) : null}
+
+          {/*
+            ── THÂN TAB: một lớp duy nhất, và cú chuyển sống ở đây ──
+
+            Mọi thứ dưới hàng tab nằm trong MỘT `Animated.View`, nên cú chuyển
+            là một phép đổi độ mờ và một phép dịch — không phải bốn nhánh tự
+            hiện tự tắt. Xem `pickTab` cho ba bước và các con số.
+
+            Nó KHÔNG mang chiều cao nào: khung ngoài đứng yên là nhờ dải cử chỉ
+            không nuốt chỗ trống nữa (xem `flexGrow: 0` ở dải), không phải nhờ
+            ghim một con số ở đây. Ghim chiều cao sẽ cắt mất nội dung tab dài.
+          */}
+          <Animated.View
+            style={{ opacity: fade, transform: [{ translateY: slide }] }}>
 
           {/* Không có hình thì câu ấy xuống đây, gọn — không dựng một khung
               cao để đựng một câu nói rằng khung ấy trống. */}
@@ -830,7 +904,7 @@ export default function ExerciseGuideSheet() {
             in. `Lưng/Chân` của deadlift là HAI ô, và `muscleArtKeysFor` đã
             tách sẵn — xem `muscle-group.ts`.
           */}
-          {showMedia && tab === 'muscles' ? (
+          {showMedia && shown === 'muscles' ? (
             <View style={styles.block}>
               <Text style={styles.sectionTitle}>{i18n.nEgMuscles}</Text>
               {g?.muscles.length ? (
@@ -863,7 +937,7 @@ export default function ExerciseGuideSheet() {
             sách kia mới là thứ chỉ tab này nói được — "cái tạ đơn đang cầm còn
             làm được gì nữa".
           */}
-          {showMedia && tab === 'equipment' ? (
+          {showMedia && shown === 'equipment' ? (
             <View style={styles.block}>
               <Text style={styles.sectionTitle}>{i18n.nEgEquipment}</Text>
               {g?.equipment ? (
@@ -892,7 +966,7 @@ export default function ExerciseGuideSheet() {
             khác nhau: không biết bài này đánh vào đâu, hay biết mà thư viện
             không có bài nào khác.
           */}
-          {showMedia && tab === 'related' ? (
+          {showMedia && shown === 'related' ? (
             <View style={styles.block}>
               <Text style={styles.sectionTitle}>{i18n.nEgAlsoMuscles}</Text>
               {g?.muscles.length ? (
@@ -909,6 +983,7 @@ export default function ExerciseGuideSheet() {
               )}
             </View>
           ) : null}
+          </Animated.View>
         </View>
       </ScrollView>
 
