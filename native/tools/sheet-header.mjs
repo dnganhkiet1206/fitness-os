@@ -64,6 +64,13 @@ const EXEMPT = {
     'dưới hình. `SheetHeader` dựng một tiêu đề 18 điểm CĂN GIỮA cạnh nút đóng, tức ' +
     'đúng cái thanh điều hướng mà bố cục này bỏ đi. Nút đóng vẫn còn, vẫn là đĩa 44 ' +
     'điểm, chỉ là nó nổi trên hình — xem vế dưới, thứ kiểm đúng điều đó',
+  'media-viewer':
+    'toàn màn media trên nền ĐEN: nó là một tầng trình bày riêng, không phải một tờ giấy. ' +
+    'Đặt hàng nói thẳng *"Do NOT put the Exercise Guide\'s glass sheet over the fullscreen ' +
+    'media"* — mà `SheetHeader` mang theo đúng một mặt giấy: nền `c.card`, thanh kéo, một ' +
+    'tiêu đề 18 điểm căn giữa. Ở đây không có tiêu đề nào để hiện (người ta vừa bấm mở ảnh ' +
+    'của bài đang đọc) và không có mặt nào để đặt nó lên. Lối ra vẫn là đĩa 44 điểm mang ' +
+    '`a11yClose`, nổi trên ảnh — vế dưới kiểm đúng điều đó',
 };
 
 /**
@@ -76,6 +83,7 @@ const EXEMPT = {
  */
 const EXEMPT_CLOSE = {
   'exercise-guide': { label: 'i18n.a11yClose', size: 'const CLOSE = 44;' },
+  'media-viewer': { label: 'i18n.a11yClose', size: 'const CLOSE = 44;' },
 };
 
 function walk(dir) {
@@ -151,7 +159,21 @@ for (const m of layout.matchAll(/name="([\w-]+)"\s*\n\s*options=\{\{\s*\n?\s*pre
   if (/[Mm]odal/.test(m[2])) routes.add(m[1]);
 }
 const block = /\(\s*\[([\s\S]*?)\] as const\s*\)\.map/.exec(layout);
-if (block && /presentation: 'modal'/.test(layout.slice(block.index, block.index + 900))) {
+/*
+  Cửa sổ đo từ CUỐI khối, không từ đầu.
+
+  Bản trước cắt `layout.slice(block.index, block.index + 900)` — tức 900 ký tự
+  tính từ dấu `(` mở khối. Con số ấy đủ khi danh sách là chín dòng tên trần, và
+  nó HẾT đủ ngay khi hai chú thích được viết vào giữa danh sách (vì sao
+  `exercise-guide` và `media-viewer` phải là `modal`). Lúc đó `presentation:
+  'modal'` rơi ra ngoài cửa sổ, bộ đọc bỏ cả chín route, và luật báo "đọc ra 4,
+  chờ 12" — một câu đúng về bộ đọc và sai về app.
+
+  Đo từ cuối khối thì khoảng cách tới `presentation` là cố định: nó nằm ngay
+  trong thân `.map`, dài bao nhiêu cũng không phụ thuộc danh sách.
+*/
+const afterBlock = block ? block.index + block[0].length : -1;
+if (block && /presentation: 'modal'/.test(layout.slice(afterBlock, afterBlock + 300))) {
   for (const m of block[1].matchAll(/'([\w-]+)'/g)) routes.add(m[1]);
 }
 
@@ -168,9 +190,11 @@ if (block && /presentation: 'modal'/.test(layout.slice(block.index, block.index 
   ra đời (màn ghi cân nặng, thay cái ô gõ số bung ra trong dòng To-do), rồi
   11 → 12 khi `/exercise-guide` ra đời (hướng dẫn bài tập, mở từ TÊN bài trong
   thẻ của màn Plan — nó là `modal` chứ không phải push toàn màn chính vì buổi
-  tập đang dở phải ở lại mounted phía dưới).
+  tập đang dở phải ở lại mounted phía dưới), rồi 12 → 13 khi `/media-viewer` ra
+  đời (xem media toàn màn, mở từ chính sheet ấy — cũng `modal`, vì cả chuỗi
+  buổi-tập → hướng-dẫn → media → quay-lại không được dựng lại màn nào).
 */
-const EXPECTED_ROUTES = 12;
+const EXPECTED_ROUTES = 13;
 if (routes.size !== EXPECTED_ROUTES) {
   problems.push(
     `${LAYOUT}: đọc ra ${routes.size} route dạng modal, chờ ${EXPECTED_ROUTES} ` +
@@ -276,7 +300,7 @@ if (problems.length) {
 
 console.log(
   `đầu trang sheet OK — ${routes.size - Object.keys(EXEMPT).length}/${routes.size} route dạng modal dựng ` +
-    '<SheetHeader> (2 màn camera được miễn CÓ GHI LÝ DO: toàn màn ngắm, không có nền để đặt hàng đầu lên), ' +
+    `<SheetHeader> (${Object.keys(EXEMPT).length} màn được miễn CÓ GHI LÝ DO — hai màn ngắm camera, sheet hướng dẫn có hình dẫn tràn lề, và màn xem media toàn màn nền đen; cả bốn đều không có mặt nào để đặt một hàng đầu lên, và hai trong bốn được kiểm riêng rằng lối ra dựng tay vẫn là đĩa 44 điểm mang \`a11yClose\`), ` +
     'nên mọi sheet đều có thanh kéo ở giữa và một nút đóng nhìn thấy được — trước đây phần lớn chúng chỉ có ' +
     'một dòng tiêu đề và lối ra duy nhất là một cú vuốt không ai nói cho bạn biết. `onClose` là prop BẮT ' +
     'BUỘC; nút đóng đạt sàn 44×44 của Apple ở phần NHÌN THẤY chứ không nhờ `hitSlop` (thứ vô hình, nên ' +

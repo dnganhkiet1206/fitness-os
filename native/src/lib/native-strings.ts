@@ -412,21 +412,42 @@ const en = {
   nEgMediaDemo: 'Temporary illustration, not a demonstration of this exercise',
   nEgMediaAlt: 'Demonstration of {v}',
   /*
-    ── bốn nhãn tab, và chúng KHÔNG phải bốn tính năng ──
+    ── bốn nhãn tab, và nay cả bốn BẤM ĐƯỢC ──
 
-    Ba trong bốn không có dữ liệu ở sau: "Muscles" và "Equipment" mỗi cái đúng
-    MỘT nhãn, và nhãn ấy đã hiện ở dòng siêu dữ liệu ngay trên; "Related" không
-    có mô hình quan hệ nào trong schema. Chủ dự án chốt giữ chúng làm chỗ đứng
-    thị giác cho mô hình nội dung sau này.
+    Hai lượt trước chúng là hình vẽ: không nhận chạm, giấu khỏi cây trợ năng,
+    vì ba trong bốn "không có dữ liệu ở sau". Chủ dự án đã đọc lý do ấy và chốt
+    ngược lại — *"bấm được cả và search để thêm thông tin cho các mục đó"*.
 
-    Nên hàng tab được dựng KHÔNG NHẬN CHẠM và bị giấu khỏi cây trợ năng — xem
-    `styles.tabs` trong `exercise-guide.tsx`. Bộ đọc màn hình không đọc ra bốn
-    cái nút không bấm được; mắt thấy cấu trúc của ảnh tham chiếu.
+    Nên lượt này đi TÌM dữ liệu thay vì bịa ra màn hình cho nó. Cả ba tab sau
+    đều đọc thứ repo đã có:
+
+        Cơ tác động   `muscleArtKeysFor` + bộ hình giải phẫu `muscle-art.tsx`
+        Thiết bị      nhãn dụng cụ + bài khác cùng dụng cụ (`guide-related.ts`)
+        Liên quan     bài khác cùng nhóm cơ (cùng tệp ấy)
+
+    Không một dòng nào trong ba tab ấy do màn hình nghĩ ra, và tab nào không có
+    gì thật để nói thì nói THẲNG là chưa có — xem `nEgNoMuscles` và hai câu
+    dưới nó. Đặt hàng: *"Do not create fake screens merely to make the tab
+    clickable."*
   */
   nEgTabOverview: 'Overview',
   nEgTabMuscles: 'Muscles',
   nEgTabEquipment: 'Equipment',
   nEgTabRelated: 'Related',
+  /*
+    Ba câu "chưa có gì", và chúng nói ba sự thật KHÁC NHAU.
+
+    Gộp thành một câu chung ("Chưa có dữ liệu") là xoá mất thông tin duy nhất
+    một tab rỗng còn mang được: nhóm cơ thì thư viện không nhận ra chuỗi đang
+    lưu, dụng cụ thì cột ấy trống, còn "liên quan" thì thư viện thật sự không
+    có bài nào khác đánh vào cùng chỗ.
+  */
+  nEgNoMuscles: 'This exercise has no muscle group recorded',
+  nEgNoEquipment: 'This exercise has no equipment recorded',
+  nEgNoRelated: 'No other exercise in your library works these muscles',
+  /** Tiêu đề danh sách bài khác — `{v}` là nhãn dụng cụ, đã dịch. */
+  nEgAlsoEquipment: 'Other exercises using {v}',
+  nEgAlsoMuscles: 'Other exercises for these muscles',
   /* Nút này ĐÓNG sheet — cùng hành động với dấu ✕ và cú vuốt xuống. Màn này
      mở từ trong một buổi đang chạy, nên "bắt đầu bài tập" nghĩa là thôi đọc và
      quay lại làm. Nó KHÔNG tạo hành vi sản phẩm mới.
@@ -436,6 +457,10 @@ const en = {
      theo phản xạ, và luật "chữ chết" của cổng bắt ngay — một nhãn không ai
      dựng là một lời hứa rằng thứ kia bấm được. Khi dấu trang có kho để lưu
      vào, nhãn quay lại CÙNG với hành động, không trước. */
+  /* Nhãn trợ năng của nút mở media. "Open", không phải "Play": với một tấm
+     ảnh thì "phát" là nói sai loại, và bộ đọc màn hình là chỗ sai ấy nghe rõ
+     nhất. Glyph vẫn theo ảnh tham chiếu — xem `styles.play`. */
+  nEgOpenMedia: 'Open illustration',
   nEgStart: 'Start Exercise',
   nRdAlready: 'Already logged',
   nRdExtra: 'Did something extra? Log it separately',
@@ -1299,9 +1324,15 @@ const vi: typeof en = {
   nEgMediaDemo: 'Hình minh hoạ tạm, không phải bản demo của bài tập này',
   nEgMediaAlt: 'Hình minh hoạ {v}',
   nEgTabOverview: 'Tổng quan',
-  nEgTabMuscles: 'Cơ tác động',
+  nEgTabMuscles: 'Nhóm cơ',
   nEgTabEquipment: 'Thiết bị',
   nEgTabRelated: 'Liên quan',
+  nEgNoMuscles: 'Bài này chưa ghi nhóm cơ',
+  nEgNoEquipment: 'Bài này chưa ghi dụng cụ',
+  nEgNoRelated: 'Thư viện chưa có bài nào khác đánh vào những nhóm cơ này',
+  nEgAlsoEquipment: 'Bài khác dùng {v}',
+  nEgAlsoMuscles: 'Bài khác cho những nhóm cơ này',
+  nEgOpenMedia: 'Mở hình minh hoạ',
   nEgStart: 'Bắt đầu bài tập',
   nRdAlready: 'Đã ghi buổi tập',
   nRdExtra: 'Tập thêm bài phát sinh? Ghi riêng tại đây',

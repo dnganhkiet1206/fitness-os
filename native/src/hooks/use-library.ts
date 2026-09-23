@@ -213,11 +213,25 @@ export function useDeleteSupplement() {
   });
 }
 
-export function useExercises() {
+/**
+ * Cả thư viện bài tập.
+ *
+ * `enabled` mặc định `true`, nên mọi chỗ gọi cũ không đổi một chữ. Nó có mặt
+ * cho đúng một loại người gọi: màn chỉ cần thư viện SAU một cử chỉ — sheet
+ * hướng dẫn mở tab "Thiết bị"/"Liên quan". Mở sheet mà không chạm hai tab ấy
+ * thì không có lượt mạng nào, đúng lời dặn *"Do not load all media/tabs
+ * eagerly"*.
+ *
+ * Cùng `queryKey` với lượt gọi không tham số, nên khi màn Plan đã chạy nó rồi
+ * thì đây là một cú CHẠM CACHE — không phải một truy vấn thứ hai. Và câu
+ * `select` KHÔNG được nới ra vì ba tab ấy: `tools/exercise-guide.mjs` luật 3
+ * canh đúng chuyện đó.
+ */
+export function useExercises(enabled = true) {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['exercises', user?.id],
-    enabled: !!user,
+    enabled: enabled && !!user,
     queryFn: async () => {
       // Seed exercises have user_id NULL and are visible to everyone (web parity)
       const { data, error } = await supabase

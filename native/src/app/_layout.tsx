@@ -339,6 +339,11 @@ function Gate() {
              bị dựng lại — xem `exercise-guide.tsx`. Đó là cách state được giữ:
              không đụng vào nó. */
           'exercise-guide',
+          /* Media toàn màn. Cũng là `modal`, nên sheet hướng dẫn ở lại mounted
+             ngay dưới và cả chuỗi buổi-tập → hướng-dẫn → media → quay-lại không
+             dựng lại màn nào. Nền của nó là ĐEN chứ không phải `c.card`: một
+             màn xem media là một phòng tối — xem `media-viewer.tsx`. */
+          'media-viewer',
         ] as const
       ).map((name) => (
         <Stack.Screen

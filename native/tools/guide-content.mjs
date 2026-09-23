@@ -267,12 +267,30 @@ if (!inCode(hook, "from('exercise_guide_content')") || !inCode(hook, "eq('exerci
   );
 }
 
-/* ── 17 · media không đổi hành vi ── */
+/* ── 17 · media là một MÔ HÌNH, và cột cũ chỉ còn là đường lui ──
+
+   Vế này từng đòi `mediaUrl: trimmed(row.video_url)`, và nó đúng cho lượt kiến
+   trúc NỘI DUNG: lượt ấy không được đụng vào media, nên "media y nguyên" là
+   điều phải canh.
+
+   Lượt kiến trúc MEDIA đã thay đúng thứ ấy, có chủ ý: một URL trần không mang
+   KIỂU, nên màn hình phải đoán ảnh-hay-video bằng đuôi tệp — và phép đoán ấy
+   sai ở đúng trường hợp thường gặp nhất, một URL ký sẵn của Supabase Storage
+   không có đuôi nào. Nay kiểu được LƯU ở `exercise_media.kind`, và hợp đồng
+   mang `media: MediaState` thay cho một chuỗi.
+
+   Nên vế này đổi theo, và nó vẫn canh đúng một thứ có giá: `video_url` chỉ
+   được vào qua CỬA đường lui của `resolveExerciseMedia`. Đọc thẳng cột ấy ở
+   chỗ khác là dựng lại phép đoán bằng đuôi tệp. Hành vi của chính mô hình ấy
+   có luật riêng chạy thật: `tools/exercise-media.mjs`. */
 CASES++;
-if (!inCode(hook, 'mediaUrl: trimmed(row.video_url)') || !/video_url/.test(hook)) {
+if (!inCode(hook, 'media: resolveExerciseMedia(mediaRows, row.video_url)') ||
+    inCode(hook, 'mediaUrl')) {
   problems.push(
-    `${HOOK}: \`mediaUrl\` không còn đến thẳng từ \`video_url\` của dòng thư viện. Lượt này là kiến ` +
-      'trúc nội dung; hành vi media đã được đo ở Giai đoạn 2 và không nằm trong phạm vi sửa',
+    `${HOOK}: media không còn là một MÔ HÌNH. \`video_url\` chỉ được vào qua đường lui của ` +
+      '`resolveExerciseMedia`, và hợp đồng mang `media: MediaState` chứ không mang một chuỗi URL: một URL ' +
+      'trần không nói nó là ảnh hay video, nên nơi nào nhận nó cũng phải đoán bằng đuôi tệp — mà một URL ' +
+      'ký sẵn của Supabase Storage thì không có đuôi',
   );
 }
 

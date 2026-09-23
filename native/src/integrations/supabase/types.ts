@@ -477,6 +477,53 @@ export type Database = {
           },
         ]
       }
+      exercise_media: {
+        Row: {
+          alt: string | null
+          created_at: string
+          duration_s: number | null
+          exercise_id: string
+          id: string
+          kind: string
+          poster_uri: string | null
+          position: number
+          updated_at: string
+          uri: string
+        }
+        Insert: {
+          alt?: string | null
+          created_at?: string
+          duration_s?: number | null
+          exercise_id: string
+          id?: string
+          kind: string
+          poster_uri?: string | null
+          position?: number
+          updated_at?: string
+          uri: string
+        }
+        Update: {
+          alt?: string | null
+          created_at?: string
+          duration_s?: number | null
+          exercise_id?: string
+          id?: string
+          kind?: string
+          poster_uri?: string | null
+          position?: number
+          updated_at?: string
+          uri?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_media_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercises: {
         Row: {
           common_mistakes: string[] | null

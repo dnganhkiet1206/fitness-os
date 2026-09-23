@@ -1,8 +1,10 @@
 import { useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Bookmark, Check, Play, X } from 'lucide-react-native';
+import { Bookmark, Check, Maximize2, Play, X } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -15,13 +17,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GuideMedia } from '@/components/ascnd/guide-media';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useExerciseGuide } from '@/hooks/use-exercise-guide';
+import { useExercises } from '@/hooks/use-library';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
+import { hasMedia, type MediaState } from '@/lib/exercise-media';
+import {
+  sameEquipment,
+  sameMuscle,
+  type LibraryRow,
+  type RelatedItem,
+} from '@/lib/guide-related';
 
 /**
  * CÁCH LÀM bài tập này — mở từ buổi tập, đóng lại là về đúng chỗ cũ.
@@ -96,32 +107,56 @@ import { nav } from '@/lib/nav';
  * bên trong nó. Thu khung lại lúc ấy là một cú nhảy bố cục giữa lúc đang đọc —
  * đúng thứ đặt hàng cấm.
  *
- * ── BỐN THỨ KHÔNG BẤM ĐƯỢC, và vì sao chúng vẫn ở đây ──
+ * ── BỐN TAB, và chúng THẬT ──
  *
- * Ba lượt đầu, màn này CỐ Ý không dựng hàng tab, nút play và khu hành động ở
- * đáy — lý do ghi lại đầy đủ ở từng chỗ, và nó không sai: ba trong bốn tab
- * không có một dòng dữ liệu nào ở sau, đoạn minh hoạ tự chạy nên không có gì
- * để "play", và dấu trang không có kho nào để lưu vào.
+ * Hai lượt đầu, hàng tab là một hình vẽ: `pointerEvents="none"`, giấu khỏi cây
+ * trợ năng, vì ba trong bốn "không có dữ liệu ở sau". Lý do ấy được ghi lại
+ * đầy đủ và nó không sai — nhưng nó là một câu về SCHEMA, không phải về repo.
  *
- * Chủ dự án đã đọc những lý do ấy và **chốt ngược lại**: giữ cả bốn, làm chỗ
- * đứng thị giác cho mô hình nội dung sau này — *"They are visual/product
- * placeholders for the future content model."* Đó là quyết định của họ, và nó
- * được thực hiện đầy đủ.
+ * Chủ dự án chốt: *"bấm được cả và search để thêm thông tin cho các mục đó"*.
+ * Nên lượt này đi TÌM, và tìm ra:
  *
- * Thứ KHÔNG bị đánh đổi là chuyện nói thật với bộ đọc màn hình. Cả bốn được
- * dựng `pointerEvents="none"` và `accessibilityElementsHidden`, nên:
+ *     Tổng quan     hướng dẫn / điểm kỹ thuật / lỗi thường gặp  (đã có)
+ *     Cơ tác động   `muscleKeys` → bộ hình giải phẫu `muscle-art.tsx`,
+ *                   thứ bốn màn khác trong app đã dùng
+ *     Thiết bị      nhãn dụng cụ + bài KHÁC cùng dụng cụ
+ *     Liên quan     bài KHÁC cùng nhóm cơ
  *
- *     mắt        thấy đúng cấu trúc của ảnh tham chiếu
- *     VoiceOver  KHÔNG được kể rằng có bốn nút chuyển mục, một nút phát và
- *                một nút lưu — vì không có
+ * Hai tab cuối đọc `useExercises()` — truy vấn màn Plan ĐÃ chạy sẵn — nên
+ * chúng không thêm một byte nào vào lúc mở sheet: xem `needsLibrary`. Và
+ * `lib/guide-related.ts` giữ phép lọc ở một tệp THUẦN, để luật kiểm chạy được
+ * nó thật chứ không dò chuỗi.
  *
- * Ngoại lệ duy nhất là NÚT LỚN ở đáy: nó bấm được, và nó làm đúng một việc có
- * thật — `nav.back()`, cùng lệnh với dấu ✕ và cú vuốt xuống. Màn này chỉ mở
- * được từ trong một buổi đang chạy, nên "bắt đầu bài tập" nghĩa là thôi đọc và
- * quay lại làm. Không hành vi sản phẩm nào được thêm.
+ * Thứ KHÔNG được làm, và đặt hàng nói thẳng: *"Do not create fake screens
+ * merely to make the tab clickable."* Nên tab nào không có gì thật để nói thì
+ * nói thẳng là chưa có — ba câu khác nhau cho ba sự thật khác nhau, xem
+ * `nEgNoMuscles` trong `native-strings.ts`. Không có màn nào được bịa ra để
+ * cái tab có chỗ dẫn tới.
+ *
+ * ── HAI thứ vẫn không bấm được ──
+ *
+ * **Dấu trang** — không có kho nào để lưu vào; đặt hàng cấm dựng schema mới ở
+ * lượt này. Nó vẫn là hình vẽ, vẫn im lặng với bộ đọc màn hình.
+ *
+ * **Danh sách bài khác** — chúng là THÔNG TIN, không phải lối đi. Mở hướng dẫn
+ * của một bài khác từ đây sẽ làm nút lớn ở đáy nói dối: "bắt đầu bài tập" quay
+ * về buổi tập đang chạy, mà buổi ấy không có bài vừa mở. Nên chúng là chữ đọc
+ * được — không giấu khỏi trợ năng, vì chữ thì có thật — chứ không phải nút.
+ *
+ * Nút lớn ở đáy làm đúng một việc có thật: `nav.back()`, cùng lệnh với dấu ✕
+ * và cú vuốt xuống. Màn này chỉ mở được từ trong một buổi đang chạy, nên "bắt
+ * đầu bài tập" nghĩa là thôi đọc và quay lại làm.
  *
  * Còn `···` ở góc trên-phải thì vẫn không dựng: đặt hàng không nhắc tới nó, và
  * nó không có cả một hình dáng để giữ chỗ cho cái gì.
+ *
+ * ── ĐỔI TAB KHÔNG ĐỤNG VÀO MEDIA ──
+ *
+ * Hình dẫn là một LỚP nằm ngoài dòng cuộn (xem `heroLayer`), và bộ media sống
+ * trong cache của `useExerciseGuide`. `tab` chỉ chọn thứ vẽ BÊN DƯỚI hàng tab.
+ * Nên chuyển qua lại bốn tab không dựng lại khung hình, không tải lại ảnh,
+ * không reset video — đúng lời dặn *"Switching tabs must preserve the Exercise
+ * Guide's media state."*
  */
 export default function ExerciseGuideSheet() {
   const c = usePalette();
@@ -129,7 +164,7 @@ export default function ExerciseGuideSheet() {
   const i18n = useI18n();
   /* Bản tối dựng mặt giấy bằng KÍNH MỜ trên hình, nên nó cần biết theme đang
      bật — xem `surfaceGlass`. */
-  const { themeName } = useAppSettings();
+  const { lang, themeName } = useAppSettings();
   const dark = themeName === 'dark';
   /*
     CHỈ `insets.bottom`, và chỉ cho khu hành động ở đáy.
@@ -180,7 +215,15 @@ export default function ExerciseGuideSheet() {
   /* Media chỉ được hỏi khi việc đọc đã xong: `null` lúc đang tải hay lúc hỏng
      là "chưa biết", không phải "không có" — xem `guide-media.tsx`. */
   const showMedia = !isPending && !isError;
-  const heroUrl = g?.mediaUrl ?? null;
+  /*
+    ── MEDIA LÀ MỘT MÔ HÌNH, và giao diện là HỆ QUẢ ──
+
+    Bốn trạng thái (`lib/exercise-media.ts`) quyết định TẤT CẢ: có nút mở
+    không, có chấm trang không, có thời lượng không. Màn này không bao giờ hỏi
+    tên bài, không đoán đuôi tệp, và không có nhánh nào đúng-cho-ảnh-demo.
+  */
+  const media: MediaState = g?.media ?? NO_MEDIA;
+  const openable = showMedia && hasMedia(media);
   /*
     ── DEMO_HERO — TẠM THỜI, và đây là một trong hai chỗ phải gỡ ──
 
@@ -224,7 +267,7 @@ export default function ExerciseGuideSheet() {
     làm trạng thái này không bao giờ hiện ra cho đúng nhóm cần nó nhất. Media
     thì có tính — một đoạn minh hoạ dạy được động tác kể cả khi không có chữ.
   */
-  const noContent = showMedia && !g?.hasContent && !heroUrl;
+  const noContent = showMedia && !g?.hasContent && !hasMedia(media);
 
   /*
     Hai cột như ảnh tham chiếu, nhưng KHÔNG ép.
@@ -236,6 +279,68 @@ export default function ExerciseGuideSheet() {
     hai danh sách, màn đủ rộng, và chữ chưa bị phóng.
   */
   const twoCols = cues.length > 0 && mistakes.length > 0 && width >= 360 && fontScale <= 1.15;
+
+  /*
+    ── TAB ĐANG CHỌN, và nó là state của màn chứ không của route ──
+
+    Không đẩy vào tham số route: đổi tab là một cử chỉ trong một tờ giấy đang
+    mở, không phải một chỗ mới để quay lui về. Nếu nó nằm ở URL thì nút Back
+    của hệ thống sẽ lần lượt lùi qua bốn tab trước khi đóng sheet — và thứ
+    người ta muốn lùi về là BUỔI TẬP.
+  */
+  const [tab, setTab] = useState<GuideTab>('overview');
+  const overview = tab === 'overview';
+  /*
+    ── bốn nhãn trong một hàng, và ở 320 điểm chúng KHÔNG vừa ──
+
+    Đo trên bản dựng thật: mỗi viên được (W − 48 − 6)/4. Máy 402 cho 87 điểm và
+    cả bốn nhãn vừa ở hạng `footnote` 13. Màn 320 — iPhone SE — chỉ cho 66, và
+    ở đó ngay cả "Tổng quan" cũng bị cắt thành "Tổng qu…".
+
+    Nên hạng chữ xuống một bậc khi màn hẹp. `caption` 11 là bậc app đã dùng cho
+    nhãn phụ (đếm bài ở lưới cơ), và nó đúng cỡ nhãn thanh tab của chính iOS.
+    Thứ KHÔNG được làm là để nguyên 13 rồi chấp nhận dấu ba chấm: một nhãn bị
+    cắt là một cái nút không nói được nó dẫn tới đâu.
+  */
+  const tightTabs = width < 360;
+
+  /*
+    ── thư viện chỉ được hỏi khi tab cần tới nó ──
+
+    `useExercises()` là truy vấn màn Plan đã chạy sẵn, nên ở đây nó gần như
+    luôn là một cú chạm cache. "Gần như" chưa đủ: `staleTime` mặc định là 1
+    phút, và một người đọc hướng dẫn lâu hơn thế sẽ làm nó gọi lại mạng. Mở
+    sheet rồi đọc "Tổng quan" — đường đi thường gặp nhất — vì thế không được
+    trả cái giá ấy, và với `enabled` thì nó không trả.
+  */
+  const needsLibrary = tab === 'equipment' || tab === 'related';
+  const {
+    data: libraryRows,
+    isPending: libraryBusy,
+    isError: libraryFailed,
+  } = useExercises(needsLibrary);
+
+  /*
+    Cả hai danh sách được tính từ CÙNG một bộ dữ liệu và cùng một chủ thể, nên
+    chúng đi chung một `useMemo`: tách ra là chép lại `subject` hai lần và tạo
+    ra một cặp sẽ lệch.
+  */
+  const related = useMemo(() => {
+    if (!g) return { equipment: [] as RelatedItem[], muscle: [] as RelatedItem[] };
+    const subject = {
+      id: g.id,
+      name: g.name,
+      /* CHIẾU ra khoá, không dịch: nhãn đã nằm sẵn cạnh mỗi khoá trong hợp
+         đồng, và phép lọc thì so khoá với khoá. */
+      muscleKeys: g.muscles.map((m) => m.key),
+      equipmentKey: g.equipmentKey,
+    };
+    const rows = (libraryRows ?? []) as LibraryRow[];
+    return {
+      equipment: sameEquipment(rows, subject, lang),
+      muscle: sameMuscle(rows, subject, lang),
+    };
+  }, [g, libraryRows, lang]);
 
   /*
     Sợi kẻ ngang chỉ tồn tại khi có HAI khối để chia — và cùng điều kiện ấy
@@ -260,7 +365,7 @@ export default function ExerciseGuideSheet() {
       {hero ? (
         <View style={[styles.heroLayer, { height: heroH }]} pointerEvents="none">
           <GuideMedia
-            url={heroUrl}
+            media={media}
             name={g?.name || title}
             hasCues={cues.length > 0}
             i18n={i18n}
@@ -344,52 +449,104 @@ export default function ExerciseGuideSheet() {
 
               Khi có media THẬT và có API tạm dừng, đây là chỗ nó nối vào.
             */}
-            {hero ? (
-              <View
-                style={styles.play}
-                pointerEvents="none"
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants">
-                <Icon icon={Play} size={16} color={c.foreground} fill={c.foreground} />
-              </View>
+            {/*
+              ── nút MỞ MEDIA — một hành động, ba hành vi ──
+
+              Nó KHÔNG còn là một nút phát giả. Nó chỉ tồn tại khi thật sự có
+              media, và nó mở màn xem toàn màn; việc ở đó là xem ảnh, vuốt qua
+              bộ ảnh, hay phát video thì do `media.type` quyết định — không do
+              cái nút này.
+
+              Glyph vẫn theo ảnh tham chiếu (tam giác phát cho video), nhưng với
+              ẢNH thì nó là dấu phóng to: gọi một tấm ảnh là "phát" ở trong mã
+              lẫn ngoài màn đều là nói sai loại. Nhãn trợ năng nói đúng việc nó
+              làm — `nEgOpenMedia`, "Mở hình minh hoạ".
+            */}
+            {openable ? (
+              <PressScale
+                accessibilityRole="button"
+                accessibilityLabel={i18n.nEgOpenMedia}
+                hitSlop={8}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  nav.push({
+                    pathname: '/media-viewer',
+                    params: { ex: g?.id ?? '', name: g?.name || title },
+                  });
+                }}
+                style={styles.play}>
+                <Icon
+                  icon={media.type === 'video' ? Play : Maximize2}
+                  size={16}
+                  color={c.foreground}
+                  fill={media.type === 'video' ? c.foreground : undefined}
+                />
+              </PressScale>
             ) : null}
           </View>
 
           {/*
-            ── HÀNG TAB: bốn nhãn, một cái được chọn, KHÔNG cái nào bấm được ──
+            ── HÀNG TAB: bốn nhãn, một cái được chọn, và CẢ BỐN bấm được ──
 
-            Ba trong bốn không có dữ liệu ở sau — xem khối chú thích ở
-            `nEgTabOverview` trong `native-strings.ts`. Chủ dự án chốt giữ chúng
-            làm chỗ đứng thị giác: *"They are visual/product placeholders for
-            the future content model."*
+            `Pressable` trần chứ không `PressScale`: cả ba thanh tab khác của
+            app (`meal-plan`, `week-strip`, `pick-row`) dựng đúng thế, và một
+            viên tab co lại khi bấm sẽ đọc ra như một cái nút hành động chứ
+            không như một chỗ đang chuyển.
 
-            Cả hàng bị giấu khỏi trợ năng. Đó là ranh giới tôi giữ được: mắt
-            thấy cấu trúc của ảnh tham chiếu, còn bộ đọc màn hình KHÔNG bị kể
-            rằng có bốn cái nút chuyển mục — vì không có.
+            `accessibilityRole="tab"` + `accessibilityState={{ selected }}` là
+            thứ khiến VoiceOver đọc ra "tab, đã chọn, 2 trên 4" — và nay nó nói
+            ĐÚNG, vì bấm vào thật sự đổi nội dung. Hai lượt trước cả hàng bị
+            giấu khỏi cây trợ năng, đúng cho lúc ấy: không giấu thì nó là bốn
+            lời hứa suông.
           */}
           {showMedia ? (
-            <View
-              style={[styles.tabs, hero ? styles.tabsOnGlass : null]}
-              pointerEvents="none"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants">
-              {[
-                [i18n.nEgTabOverview, true],
-                [i18n.nEgTabMuscles, false],
-                [i18n.nEgTabEquipment, false],
-                [i18n.nEgTabRelated, false],
-              ].map(([label, on]) => (
-                <View key={label as string} style={[styles.tab, on ? styles.tabOn : null]}>
-                  <Text
-                    numberOfLines={1}
-                    style={[
-                      styles.tabText,
-                      on ? styles.tabTextOn : hero ? styles.metaOnGlass : null,
-                    ]}>
-                    {label as string}
-                  </Text>
-                </View>
-              ))}
+            <View style={[styles.tabs, hero ? styles.tabsOnGlass : null]}>
+              {TABS.map(({ id, key }) => {
+                const on = tab === id;
+                const label = i18n[key];
+                return (
+                  <Pressable
+                    key={id}
+                    accessibilityRole="tab"
+                    accessibilityState={{ selected: on }}
+                    /*
+                      ── `aria-selected` KHÔNG thừa, và đây là một PHÉP ĐO ──
+
+                      Đo trên bản dựng web thật: bốn viên tab ra `role="tab"`,
+                      `aria-label`, `tabindex` — và KHÔNG có `aria-selected`.
+                      Tức react-native-web (bản trong kho này) không dịch
+                      `accessibilityState.selected` ra thuộc tính nào, nên trên
+                      web cả bốn viên đọc lên giống hệt nhau: người dùng bàn
+                      phím và trình đọc màn hình không biết mình đang ở tab nào.
+
+                      `aria-selected` là bí danh CHÍNH THỨC của React Native
+                      cho đúng trạng thái ấy (từ 0.71) và nó được ưu tiên hơn
+                      `accessibilityState` trên native — nên một dòng này đúng
+                      ở CẢ hai nền, và nó là thứ `guide6.mjs` đo được.
+
+                      Giữ cả hai vì chúng nói cùng một điều cho hai bộ đọc khác
+                      nhau; bỏ dòng trên thì mã thôi giống ba thanh tab khác
+                      của app, mà chúng chưa được sửa ở lượt này.
+                    */
+                    aria-selected={on}
+                    accessibilityLabel={label}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setTab(id);
+                    }}
+                    style={[styles.tab, on ? styles.tabOn : null]}>
+                    <Text
+                      numberOfLines={1}
+                      style={[
+                        styles.tabText,
+                        tightTabs ? styles.tabTextTight : null,
+                        on ? styles.tabTextOn : hero ? styles.metaOnGlass : null,
+                      ]}>
+                      {label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           ) : null}
 
@@ -423,7 +580,7 @@ export default function ExerciseGuideSheet() {
             thống chỉ có tới 20, chúng không theo cỡ chữ trợ năng, và bộ đọc màn
             hình đọc chúng mỗi nơi một kiểu.
           */}
-          {steps.length ? (
+          {overview && steps.length ? (
             <View style={styles.block}>
               <Text style={styles.sectionTitle}>{i18n.nEgTitle}</Text>
               <View style={styles.list}>
@@ -450,7 +607,7 @@ export default function ExerciseGuideSheet() {
             `hairlineWidth` là 1/scale của máy: trên màn 3× nó ra đúng một điểm
             ảnh vật lý, tức "1px" theo đúng nghĩa đen của đặt hàng.
           */}
-          {ruled ? <View style={styles.rule} /> : null}
+          {overview && ruled ? <View style={styles.rule} /> : null}
 
           {/*
             ── ĐIỂM KỸ THUẬT và LỖI THƯỜNG GẶP ──
@@ -473,7 +630,7 @@ export default function ExerciseGuideSheet() {
             được khi liếc, và nó không phụ thuộc vào việc phân giải một nét
             2,5 điểm.
           */}
-          {cues.length || mistakes.length ? (
+          {overview && (cues.length || mistakes.length) ? (
             <View
               style={[
                 styles.block,
@@ -514,10 +671,101 @@ export default function ExerciseGuideSheet() {
             </View>
           ) : null}
 
-          {noContent ? (
+          {overview && noContent ? (
             <View style={styles.empty}>
               <Text style={styles.emptyText}>{i18n.nEgEmpty}</Text>
               <Text style={styles.emptyHint}>{i18n.nEgEmptyHint}</Text>
+            </View>
+          ) : null}
+
+          {/*
+            ── CƠ TÁC ĐỘNG ──
+
+            Bộ hình giải phẫu đã có sẵn và bốn màn khác đang dùng nó: lưới cơ ở
+            tab Tập luyện, bộ lọc của trình dựng buổi, thẻ mẫu tập, màn thư
+            viện. Đây là chỗ thứ năm, và nó không thêm một tài nguyên nào.
+
+            `g.muscles` là TỪNG nhóm một — khoá để tra hình, nhãn đã dịch để
+            in. `Lưng/Chân` của deadlift là HAI ô, và `muscleArtKeysFor` đã
+            tách sẵn — xem `muscle-group.ts`.
+          */}
+          {showMedia && tab === 'muscles' ? (
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>{i18n.nEgMuscles}</Text>
+              {g?.muscles.length ? (
+                <View style={styles.tiles}>
+                  {g.muscles.map((m) => (
+                    <View key={m.key} style={styles.tile}>
+                      <MuscleArt group={m.key} size={64} />
+                      <Text style={styles.tileName} numberOfLines={1}>
+                        {m.label}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                /* Không có hình nào thì nói THẲNG là chưa ghi nhóm cơ — không
+                   dựng một khung trống rồi để người ta tự đoán. Và đây là một
+                   câu riêng, không phải câu "chưa có hướng dẫn": một bài có thể
+                   có đủ hướng dẫn mà cột nhóm cơ vẫn là một chuỗi thư viện
+                   không nhận ra. */
+                <Text style={styles.emptyHint}>{i18n.nEgNoMuscles}</Text>
+              )}
+            </View>
+          ) : null}
+
+          {/*
+            ── THIẾT BỊ ──
+
+            Một nhãn, rồi những bài KHÁC dùng đúng dụng cụ ấy. Nhãn thôi thì
+            trùng dòng siêu dữ liệu ngay trên và tab này không đáng có; danh
+            sách kia mới là thứ chỉ tab này nói được — "cái tạ đơn đang cầm còn
+            làm được gì nữa".
+          */}
+          {showMedia && tab === 'equipment' ? (
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>{i18n.nEgEquipment}</Text>
+              {g?.equipment ? (
+                <Text style={styles.itemText}>{g.equipment}</Text>
+              ) : (
+                <Text style={styles.emptyHint}>{i18n.nEgNoEquipment}</Text>
+              )}
+              {g?.equipment ? (
+                <RelatedList
+                  title={i18n.nEgAlsoEquipment.replace('{v}', g.equipment)}
+                  items={related.equipment}
+                  busy={libraryBusy}
+                  failed={libraryFailed ? i18n.nLoadFailed : null}
+                  styles={styles}
+                  tint={c.mutedForeground}
+                />
+              ) : null}
+            </View>
+          ) : null}
+
+          {/*
+            ── LIÊN QUAN ──
+
+            Bài khác đánh vào ít nhất một nhóm cơ chung, nhiều nhóm trùng thì
+            đứng trước. Rỗng có HAI nguyên nhân khác nhau và chúng nói hai câu
+            khác nhau: không biết bài này đánh vào đâu, hay biết mà thư viện
+            không có bài nào khác.
+          */}
+          {showMedia && tab === 'related' ? (
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>{i18n.nEgAlsoMuscles}</Text>
+              {g?.muscles.length ? (
+                <RelatedList
+                  items={related.muscle}
+                  busy={libraryBusy}
+                  failed={libraryFailed ? i18n.nLoadFailed : null}
+                  empty={i18n.nEgNoRelated}
+                  styles={styles}
+                  tint={c.mutedForeground}
+                />
+              ) : (
+                <Text style={styles.emptyHint}>{i18n.nEgNoMuscles}</Text>
+              )}
             </View>
           ) : null}
         </View>
@@ -634,8 +882,92 @@ export default function ExerciseGuideSheet() {
   `TITLE_CLEAR` dưới đây được DẪN RA từ đúng những số dựng nên cái nút và thanh
   vuốt. Đổi bất kỳ số nào trong đó thì khoảng tránh tự đi theo.
 */
+/**
+ * Bốn tab, theo đúng thứ tự ảnh tham chiếu.
+ *
+ * Danh sách nằm ngoài component nên nó không được dựng lại mỗi lượt vẽ, và
+ * `key` là KHOÁ CHỮ chứ không phải chuỗi đã dịch: dùng nhãn làm `key` của React
+ * thì đổi ngôn ngữ giữa chừng sẽ dựng lại cả bốn viên.
+ */
+type GuideTab = 'overview' | 'muscles' | 'equipment' | 'related';
+const TABS: { id: GuideTab; key: 'nEgTabOverview' | 'nEgTabMuscles' | 'nEgTabEquipment' | 'nEgTabRelated' }[] = [
+  { id: 'overview', key: 'nEgTabOverview' },
+  { id: 'muscles', key: 'nEgTabMuscles' },
+  { id: 'equipment', key: 'nEgTabEquipment' },
+  { id: 'related', key: 'nEgTabRelated' },
+];
+
+/**
+ * Danh sách bài khác — CHỮ, không phải nút.
+ *
+ * Mỗi dòng là tên một bài có thật trong thư viện, kèm nhóm cơ của nó. Không
+ * `onPress`: mở hướng dẫn của một bài khác từ đây sẽ làm nút lớn ở đáy nói dối
+ * — nó quay về buổi tập đang chạy, và buổi ấy không có bài vừa mở. Nhưng nó
+ * KHÔNG bị giấu khỏi cây trợ năng như dấu trang: đây là chữ đọc được, và thứ
+ * cần giấu là một lời hứa suông chứ không phải một câu thông tin.
+ *
+ * Ba trạng thái, và chúng không được gộp: đang đọc thư viện (vòng quay), đọc
+ * xong mà không có gì (câu `empty` do người gọi đưa, vì lý do rỗng khác nhau ở
+ * hai tab), và có danh sách.
+ */
+function RelatedList({
+  title,
+  items,
+  busy,
+  failed,
+  empty,
+  styles,
+  tint,
+}: {
+  title?: string;
+  items: RelatedItem[];
+  busy: boolean;
+  /** câu để nói khi thư viện đọc HỎNG — chuỗi, không phải `true`/`false` */
+  failed: string | null;
+  empty?: string;
+  styles: ReturnType<typeof stylesFor>;
+  tint: string;
+}) {
+  if (busy) {
+    return (
+      <View style={styles.busy}>
+        <ActivityIndicator color={tint} />
+      </View>
+    );
+  }
+  /*
+    ── ĐỌC HỎNG không phải "KHÔNG CÓ" ──
+
+    Cùng lớp lỗi mà `guide-media.tsx` đã phải sửa: một danh sách rỗng gộp ba
+    sự thật khác nhau. Thư viện đọc hỏng thì `data` là `undefined`, phép lọc
+    trả mảng rỗng, và nếu ở đây nói "thư viện chưa có bài nào khác" thì đó là
+    một KHẲNG ĐỊNH SAI về dữ liệu của người dùng — họ có thể có ba mươi bài.
+  */
+  if (failed) return <Text style={styles.emptyHint}>{failed}</Text>;
+  if (!items.length) return empty ? <Text style={styles.emptyHint}>{empty}</Text> : null;
+  return (
+    <View style={styles.also}>
+      {title ? <Text style={styles.alsoTitle}>{title}</Text> : null}
+      <View style={styles.alsoList}>
+        {items.map((r) => (
+          <View key={r.id} style={styles.alsoRow}>
+            <Text style={styles.alsoName} numberOfLines={1}>
+              {r.name}
+            </Text>
+            <Text style={styles.alsoMeta} numberOfLines={1}>
+              {r.muscleLabel}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 const CLOSE = 44;
 const CLOSE_TOP = spacing.sm;
+/** Hằng cho nhánh "chưa đọc xong" — `g` là `null` thì chưa biết gì cả. */
+const NO_MEDIA: MediaState = { type: 'none', items: [] };
 const GRAB = { top: 12, h: 5, bottom: 12 };
 /** đáy đĩa đóng − đáy khối thanh vuốt − khoảng cách giữa các con của mặt giấy */
 const TITLE_CLEAR =
@@ -713,15 +1045,29 @@ const stylesFor = makeStyles((c, m) => ({
     marginTop: spacing.md,
   },
   tabsOnGlass: { backgroundColor: alpha(m.ink, 0.1) },
+  /*
+    ── `paddingHorizontal` KHÔNG phải trang trí, và nó là một PHÉP ĐO ──
+
+    Bốn viên chia đều bề rộng. Trên máy 402 mỗi viên được (402−48−6)/4 ≈ 87
+    điểm và mọi nhãn đều vừa. Trên màn 320 — iPhone SE — mỗi viên chỉ còn 66,
+    và ảnh chụp bản dựng cho thấy "Tổng quan" dính liền "Cơ tác đ…": không có
+    lề ngang nào, nên hai nhãn chạm nhau và đọc ra như MỘT chuỗi.
+
+    Nhãn dài nhất cũng được đổi cùng lúc, vì lề ngang một mình không cứu được
+    một chuỗi 11 ký tự trong 66 điểm — xem `nEgTabMuscles` ở `native-strings.ts`.
+  */
   tab: {
     flex: 1,
     paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
   tabOn: { backgroundColor: alpha(m.ink, 0.12) },
   tabText: { ...type.footnote, color: c.mutedForeground },
+  /* Chỉ CỠ đổi, màu và nét giữ nguyên — xem `tightTabs`. */
+  tabTextTight: { fontSize: type.caption.fontSize },
   tabTextOn: { color: c.foreground, fontWeight: '600' },
 
   /*
@@ -1043,6 +1389,56 @@ const stylesFor = makeStyles((c, m) => ({
   */
   pair: { flexDirection: 'row', gap: spacing.xl },
   col: { flex: 1, minWidth: 0, gap: spacing.sm },
+
+  /*
+    ── ô hình giải phẫu ──
+
+    `c.secondary`, cùng token với đĩa số và nút mở media ngay trên cùng tờ
+    giấy. KHÔNG `m.inset.bg`: `tools/on-page-fill.mjs` ghi lại năm lần cùng một
+    lỗi — trên bản sáng `inset.bg` ĐÚNG BẰNG nền trang, nên một khối dùng nó
+    đứng ở chỗ không có mặt thẻ phía sau sẽ tan vào nền. Ở đây thì có mặt giấy
+    thật ở sau, nhưng mặt ấy là KÍNH, và một chỗ "lõm" vào kính không có nghĩa.
+    `c.secondary` là bậc nền đặc mà ba thứ khác trên cùng tờ giấy này đã dùng.
+
+    `wrap` vì `Lưng/Chân` là hai hình và cỡ chữ trợ năng lớn làm nhãn rộng ra;
+    hai hình 64 điểm cộng lề vẫn vừa một hàng trên máy 402, ba thì xuống dòng.
+  */
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  tile: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: c.secondary,
+  },
+  tileName: { ...type.footnote, fontWeight: '600', color: c.foreground },
+
+  /*
+    ── danh sách bài khác ──
+
+    Tên ở hạng `body` như mọi câu nội dung khác của màn; nhóm cơ xuống
+    `caption` và `mutedForeground`, tức hạng phụ — nó trả lời "vì sao bài này ở
+    đây", không phải "bài này tên gì".
+
+    Tiêu đề có khoảng trống lớn hơn ở trên: cùng luật với `block`, khoảng trống
+    TRÊN một tiêu đề phải nhiều hơn khoảng trống dưới nó.
+  */
+  also: { marginTop: spacing.md, gap: spacing.sm },
+  alsoTitle: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
+  /*
+    12 giữa hai dòng, 1 bên trong một dòng.
+
+    `list` dùng chung cho mọi danh sách của màn này có `gap: 4`, và ở đây 4 là
+    SAI: mỗi mục là HAI dòng chữ (tên + nhóm cơ), nên khoảng cách trong một mục
+    phải nhỏ hơn hẳn khoảng cách giữa hai mục — không thì bốn mục đọc ra thành
+    tám dòng rời. Đo trên ảnh chụp bản dựng: với gap 4, "Ngực" của mục trên
+    cách "A Video" của mục dưới đúng bằng khoảng cách của chính nó tới tên nó.
+  */
+  alsoList: { gap: spacing.sm + spacing.xs },
+  alsoRow: { gap: 1 },
+  alsoName: { ...type.body, color: c.foreground },
+  alsoMeta: { ...type.caption, color: c.mutedForeground },
 
   empty: { alignItems: 'center', gap: 4, marginTop: spacing.lg },
   emptyText: { ...type.body, color: c.foreground },

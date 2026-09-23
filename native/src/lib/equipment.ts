@@ -117,3 +117,26 @@ export function equipmentLabel(
   if (key) return EQUIPMENT_LABEL[key][lang];
   return (stored ?? '').trim();
 }
+
+/**
+ * Khoá để hỏi "hai bài này có dùng CÙNG một dụng cụ không".
+ *
+ * `canonicalEquipment` trả `null` cho mọi thứ ngoài năm từ vựng — `Kettlebell`,
+ * `Resistance band`, `TRX`. Dùng nó một mình để so sánh thì mọi dụng cụ lạ
+ * thành "không biết", và hai bài kettlebell của cùng một người không tìm thấy
+ * nhau mặc dù cột ấy ghi y hệt.
+ *
+ * Nên: nhận ra được thì khoá là KHOÁ (`dumbbell` khớp `Dumbbells` và `db`);
+ * không nhận ra thì khoá là chính chữ ấy sau khi gấp hoa/thường và khoảng
+ * trắng, mang tiền tố `raw:` để nó không bao giờ đụng vào một trong năm khoá.
+ *
+ * `null` vẫn là một câu trả lời thật, và nó chỉ có một nghĩa duy nhất: cột ấy
+ * TRỐNG. Bài chưa ghi dụng cụ thì không có bài nào "cùng dụng cụ" với nó —
+ * không phải "cùng không có".
+ */
+export function equipmentMatchKey(raw: string | null | undefined): string | null {
+  const key = canonicalEquipment(raw);
+  if (key) return key;
+  const f = fold(raw ?? '');
+  return f ? `raw:${f}` : null;
+}

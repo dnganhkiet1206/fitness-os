@@ -1,9 +1,15 @@
 import { Image } from 'expo-image';
 import { ImageOff } from 'lucide-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
+import {
+  clockLabel,
+  displayDuration,
+  showsDots,
+  type MediaState,
+} from '@/lib/exercise-media';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
@@ -52,7 +58,9 @@ import type { NativeStrings } from '@/lib/native-strings';
 /* Cột tên là `video_url`, nên mặc định coi nó là VIDEO. Chỉ những đuôi ẢNH rõ
    ràng mới đi đường `expo-image` — ở đó ảnh động (GIF/WebP/APNG) chạy tốt hơn
    và rẻ hơn một trình giải mã video. */
-const IMAGE_EXT = /\.(gif|webp|png|jpe?g|avif|heic|bmp)(\?|#|$)/i;
+/* Phép đoán theo đuôi tệp KHÔNG còn ở đây. Nó sống sót đúng một chỗ —
+   `resolveExerciseMedia`, đường lui cho cột `video_url` cũ — và khung hình này
+   không bao giờ gọi tới nó nữa. */
 
 /*
   ── DEMO_HERO — TẠM THỜI ──
@@ -72,18 +80,20 @@ const IMAGE_EXT = /\.(gif|webp|png|jpe?g|avif|heic|bmp)(\?|#|$)/i;
 */
 const DEMO_HERO = require('../../../assets/images/exercise-demo.webp');
 /*
-  DEMO_HERO — thời lượng GIỮ CHỖ của ảnh tạm.
+  ── hằng thời lượng của ảnh demo ĐÃ BỊ GỠ ──
 
-  Ảnh tham chiếu có nhãn `0:05` cạnh media, và đặt hàng cho phép dựng nó ở chế
-  độ ảnh demo: *"it may display the demo duration placeholder required by the
-  reference layout, but make the implementation clearly distinguishable from a
-  real video duration."*
+  Lượt trước, ảnh demo mang một hằng 5 giây để dựng ra cái nhãn `0:05` của ảnh
+  tham chiếu. Đặt hàng lượt này cấm thẳng: *"Remove production dependency on
+  DEMO_SECS. The reference's 0:05 is a visual reference only."*
 
-  Nó KHÔNG đi qua `secs` — đường của thời lượng thật — mà là một hằng riêng
-  mang dấu `DEMO_HERO`. Gỡ ảnh tạm là gỡ luôn nó, và lúc ấy chip chỉ còn hiện
-  khi trình giải mã thật sự đọc được một con số.
+  Và nó sai ở một tầng sâu hơn một lời cấm: ảnh demo LÀ MỘT TẤM ẢNH. Ảnh không
+  có thời lượng. Cái nhãn ấy không phải "một con số tạm" — nó là một lời khẳng
+  định SAI về loại của thứ đang hiện.
+
+  Nay chưa có media thật thì ảnh demo vẫn cho ra để xem bố cục, nhưng KHÔNG nút
+  mở, KHÔNG thời lượng, KHÔNG chấm trang — vì bốn trạng thái nói rằng ở đây
+  không có media. Ảnh tạm thôi quyết định kiến trúc.
 */
-const DEMO_SECS = 5;
 
 /*
   ── CỬA DUY NHẤT vào `expo-video`, và nó có khoá ──
@@ -112,15 +122,21 @@ const GuideVideo: typeof import('./guide-video').GuideVideo | null = (() => {
 })();
 
 export function GuideMedia({
-  url,
+  media,
   name,
   hasCues,
   hero = false,
   coveredBy = 0,
   i18n,
 }: {
-  /** `video_url` của dòng thư viện, đã trim. `null` khi chưa có gì. */
-  url: string | null;
+  /**
+   * Bộ media ĐÃ PHÂN GIẢI — xem `lib/exercise-media.ts`.
+   *
+   * Khung hình KHÔNG còn nhận một URL trần và tự đoán xem nó là ảnh hay video.
+   * Kiểu tới đây đã được quyết định, từ một cột được LƯU, và khung chỉ việc vẽ
+   * ra hệ quả.
+   */
+  media: MediaState;
   /** tên bài tập, cho nhãn trợ năng */
   name: string;
   /**
@@ -168,34 +184,42 @@ export function GuideMedia({
   const onVideoFail = useCallback(() => setVidBroke(true), []);
   const onDuration = useCallback((d: number) => setSecs(d), []);
 
-  const isImage = !!url && IMAGE_EXT.test(url);
-  const videoUrl = url && !isImage ? url : null;
+  /* `items[0]` là tấm đang hiện. Thư viện ảnh vuốt được khi mở TOÀN MÀN; ở
+     khung dẫn thì nó hiện tấm đầu cộng một hàng chấm — đặt hàng cấm dựng một
+     carousel ngang ngay trong sheet. */
+  const first = media.items[0] ?? null;
+  const videoUrl = media.type === 'video' ? media.items[0].uri : null;
+  const imageUri = media.type === 'image_single' || media.type === 'image_gallery'
+    ? media.items[0].uri
+    : null;
+  /* Poster của video là thứ hiện TRƯỚC khi ai bấm phát. Không có poster thì
+     khung video tự vẽ khung hình đầu. */
+  const poster = media.type === 'video' ? media.items[0].posterUri : null;
 
   /* Thiếu phần native thì URL video ấy KHÔNG tải được — và đó đúng nghĩa là
      "không tải được", không phải "chưa có hình". Có một đoạn minh hoạ; máy này
      mở không nổi. */
   const showVideo = !!videoUrl && !!GuideVideo && !vidBroke;
-  const showImage = isImage && !imgBroke;
-  const alt = i18n.nEgMediaAlt.replace('{v}', name);
+  const showImage = !!imageUri && !imgBroke;
+  /* Nhãn do người thêm media viết thắng câu dựng sẵn: họ biết tấm ảnh vẽ gì,
+     còn app chỉ biết tên bài. */
+  const alt = first?.alt ?? i18n.nEgMediaAlt.replace('{v}', name);
 
   /*
-    ── CHIP THỜI LƯỢNG ──
+    ── THỜI LƯỢNG: ba đường tới `null`, và không đường nào được thay bằng số ──
 
-    Ảnh tham chiếu có một nhãn `0:05` gắn với media. Ở đây nó có HAI nguồn rất
-    khác nhau, và mã phân biệt chúng rõ ràng vì một trong hai là tạm:
+      · không có media          → không có gì để đo
+      · media là ẢNH            → ảnh không có thời lượng
+      · video chưa đọc metadata → chưa biết, và "chưa biết" không phải "0:05"
 
-      · media THẬT  → `secs`, đọc từ chính trình giải mã
-      · DEMO_HERO   → `DEMO_SECS`, một con số giữ chỗ
-
-    Hằng `DEMO_SECS` mang đúng dấu `DEMO_HERO` như hai chỗ kia, nên khi ảnh tạm
-    được gỡ thì nó đi cùng, và chip chỉ còn hiện khi có thời lượng thật. Không
-    có thời lượng thì KHÔNG vẽ chip — một ô trống còn thật hơn một con số bịa.
+    `secs` là thứ trình giải mã báo về lúc chạy; `duration_s` trong bảng là thứ
+    người thêm media đã biết trước. Cái nào có thì dùng, bảng được ưu tiên vì
+    nó có ngay ở khung hình đầu tiên, còn trình giải mã phải tải xong mới biết.
   */
-  const clock = useMemo(() => {
-    if (secs === null) return null;
-    const t = Math.max(0, Math.round(secs));
-    return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
-  }, [secs]);
+  const known = displayDuration(media);
+  const clock = known !== null ? clockLabel(known) : secs !== null ? clockLabel(secs) : null;
+
+
 
   if (showVideo) {
     return (
@@ -213,8 +237,8 @@ export function GuideMedia({
     );
   }
 
-  /* DEMO_HERO: chưa có url thật nhưng đang ở vai hình dẫn. */
-  if (!url && hero) {
+  /* DEMO_HERO: chưa có media thật nhưng đang ở vai hình dẫn. */
+  if (media.type === 'none' && hero) {
     return (
       <View style={[styles.box, styles.heroFrame]}>
         <Image
@@ -224,8 +248,6 @@ export function GuideMedia({
           accessibilityLabel={i18n.nEgMediaDemo}
           accessible
         />
-        {/* DEMO_HERO */}
-        <Clock label={`0:${String(DEMO_SECS).padStart(2, '0')}`} styles={styles} lift={coveredBy} />
       </View>
     );
   }
@@ -234,7 +256,7 @@ export function GuideMedia({
     return (
       <View style={[styles.box, styles.heroFrame]}>
         <Image
-          source={{ uri: url! }}
+          source={{ uri: imageUri! }}
           style={styles.fill}
           contentFit="cover"
           autoplay={!reduced}
@@ -243,6 +265,9 @@ export function GuideMedia({
           accessibilityLabel={alt}
           accessible
         />
+        {hero && showsDots(media) ? (
+          <Dots count={media.items.length} styles={styles} lift={coveredBy} />
+        ) : null}
       </View>
     );
   }
@@ -272,6 +297,27 @@ export function GuideMedia({
 }
 
 /**
+ * Chấm phân trang — CHỈ ở thư viện ảnh.
+ *
+ * `showsDots()` quyết định, không phải `items.length > 1` viết tay ở chỗ gọi:
+ * một ảnh đơn có chấm là nói rằng còn ảnh nữa, và một video có chấm cũng vậy.
+ * Luật ấy sống ở mô hình, một chỗ.
+ */
+function Dots({ count, styles, lift }: { count: number; styles: Styles; lift: number }) {
+  return (
+    <View
+      style={[styles.dots, { bottom: lift + spacing.md }]}
+      pointerEvents="none"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants">
+      {Array.from({ length: count }, (_, i) => (
+        <View key={i} style={[styles.dot, i === 0 ? styles.dotOn : null]} />
+      ))}
+    </View>
+  );
+}
+
+/**
  * Nhãn thời lượng, góc dưới-phải của khung hình.
  *
  * Không nhận chạm và giấu khỏi cây trợ năng: nó là một CON SỐ về media, và
@@ -284,7 +330,7 @@ function Clock({
   lift,
 }: {
   label: string;
-  styles: ReturnType<typeof stylesFor>;
+  styles: Styles;
   /** đẩy lên khỏi phần đáy bị mặt giấy che — xem `coveredBy` */
   lift: number;
 }) {
@@ -298,6 +344,8 @@ function Clock({
     </View>
   );
 }
+
+type Styles = ReturnType<typeof stylesFor>;
 
 const stylesFor = makeStyles((c, m) => ({
   box: {
@@ -333,6 +381,11 @@ const stylesFor = makeStyles((c, m) => ({
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
   clockText: { ...type.caption, color: '#ffffff', fontVariant: ['tabular-nums'] },
+  /* Chấm trang: cùng lớp đen 55% như nhãn thời lượng, cùng lý do — chúng nổi
+     trên một tấm ảnh chưa ai biết trước màu gì. */
+  dots: { position: 'absolute', left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.45)' },
+  dotOn: { backgroundColor: '#ffffff' },
   fill: { width: '100%', height: '100%' },
 
   /* Hỏng mà ĐANG ở vai trò hình dẫn: khung giữ nguyên chiều cao, câu báo nằm

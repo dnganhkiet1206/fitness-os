@@ -48,6 +48,7 @@ export function GuideVideo({
   style,
   onFail,
   onDuration,
+  controls = false,
 }: {
   /** URL video đã xác định — không bao giờ `null` ở đây. */
   url: string;
@@ -65,11 +66,26 @@ export function GuideVideo({
    * "0:00" trên hình là một con số SAI chứ không phải một con số chưa có.
    */
   onDuration?: (seconds: number) => void;
+  /**
+   * Điều khiển gốc của hệ điều hành — phát/dừng, thanh tiến trình, thời gian.
+   *
+   * MẶC ĐỊNH TẮT, và đó là quyết định của khung hình dẫn: ở đó đoạn minh hoạ
+   * tự chạy, lặp, tắt tiếng, và một trình phát đầy nút nói ngược lại hành vi
+   * ấy — đã ghi ở đầu tệp và `tools/exercise-guide.mjs` canh nó.
+   *
+   * BẬT ở màn xem toàn màn, nơi người ta chủ động mở video ra để xem: ở đó
+   * không có điều khiển mới là thiếu. Và dùng điều khiển GỐC chứ không tự vẽ —
+   * `AVPlayerViewController` mang sẵn tua, tốc độ, phụ đề và AirPlay, tất cả
+   * đúng cử chỉ mà người dùng iOS đã biết.
+   */
+  controls?: boolean;
 }) {
   const player = useVideoPlayer(url, (p) => {
-    p.loop = true;
-    p.muted = true;
-    if (!reduced) p.play();
+    /* Toàn màn thì KHÔNG lặp và KHÔNG tắt tiếng: người ta vừa chủ động mở nó
+       ra. Khung dẫn thì ngược lại — xem `controls`. */
+    p.loop = !controls;
+    p.muted = !controls;
+    if (!reduced && !controls) p.play();
   });
 
   /* `status` đọc qua sự kiện chứ không đọc một lần: một video đang tải sẽ đi
@@ -99,7 +115,7 @@ export function GuideVideo({
       player={player}
       style={style}
       contentFit="cover"
-      nativeControls={false}
+      nativeControls={controls}
       /* Một minh hoạ không đi đâu cả: không toàn màn, không cửa sổ nổi.
          `fullscreenOptions.enable` chứ không phải `allowsFullscreen` — đó là
          tên prop THẬT của `expo-video@57`, đọc ra khỏi `VideoView.types` của

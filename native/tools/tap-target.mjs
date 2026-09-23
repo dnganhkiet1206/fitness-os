@@ -62,6 +62,35 @@ const NỢ = new Set([
   khi nhìn — nhưng mỗi chỗ cần liếc xem nó có nằm cạnh một nút khác không, và
   đó là một lượt riêng chứ không phải một phép thay chuỗi hàng loạt.
 */
+/**
+ * Chiều cao khai tường minh của từng style — KỂ CẢ khi nó là một hằng có tên.
+ *
+ * ── vì sao phép này tồn tại ──
+ *
+ * Bản trước chỉ nhận `height: 44`, một chữ số trần. Nên `height: CLOSE` — với
+ * `const CLOSE = 44;` ngay trên bảng style — là một chiều cao HỢP LỆ mà không
+ * luật nào trong tệp này đọc được. Hậu quả không phải bỏ sót: luật 2 kết luận
+ * "nó không có style nào mang `height`" và báo một nút 44 điểm là 34.
+ *
+ * Việc đặt tên một con số là cách repo này buộc hai chỗ vào nhau — cái nút và
+ * khoảng tránh của nó, cái nút và luật canh nó — nên phạt người đặt tên là đi
+ * ngược đúng thói quen đang giữ cho các con số khỏi trôi.
+ *
+ * Chỉ hằng ở PHẠM VI TỆP, chỉ số nguyên: `const CLOSE = 44;`. Không tính biểu
+ * thức, không tính import — thứ không giải được thì vẫn là "không đọc được", và
+ * luật 2 vẫn nói đúng câu ấy.
+ */
+function heightsOf(src) {
+  const konst = new Map();
+  for (const m of src.matchAll(/^const (\w+) = (\d+);$/gm)) konst.set(m[1], Number(m[2]));
+  const h = new Map();
+  for (const m of src.matchAll(/(\w+):\s*\{[^{}]*?\bheight:\s*([\w.]+)[^{}]*?\}/g)) {
+    const v = /^\d+$/.test(m[2]) ? Number(m[2]) : konst.get(m[2]);
+    if (v !== undefined) h.set(m[1], v);
+  }
+  return h;
+}
+
 const ICON_NỢ = [];
 const đãGặp = new Set();
 const problems = [];
@@ -69,11 +98,8 @@ const problems = [];
 for (const f of files) {
   const src = readFileSync(path.join(NATIVE, f), 'utf8');
 
-  /* Chiều cao khai báo tường minh của từng style. */
-  const h = new Map();
-  for (const m of src.matchAll(/(\w+):\s*\{[^{}]*?\bheight:\s*(\d+)[^{}]*?\}/g)) {
-    h.set(m[1], Number(m[2]));
-  }
+  /* Chiều cao khai báo tường minh của từng style — xem `heightsOf`. */
+  const h = heightsOf(src);
   if (!h.size) continue;
 
   /* Mỗi thẻ bấm được: gom thuộc tính tới dấu `>` cuối dòng. */
@@ -117,8 +143,7 @@ for (const f of files) {
 */
 for (const f of files) {
   const src = readFileSync(path.join(NATIVE, f), 'utf8');
-  const h = new Map();
-  for (const m of src.matchAll(/(\w+):\s*\{[^{}]*?\bheight:\s*(\d+)[^{}]*?\}/g)) h.set(m[1], Number(m[2]));
+  const h = heightsOf(src);
   for (const m of src.matchAll(
     /<(PressScale|Pressable|TouchableOpacity|TouchableHighlight)([^>]*?)>\s*<Icon\b([^>]*?)\/>\s*<\/\1>/gs,
   )) {

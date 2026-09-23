@@ -48,6 +48,50 @@ const LAYOUT = 'src/app/_layout.tsx';
 const problems = [];
 let CASES = 0;
 
+/**
+ * Nguồn với CHÚ THÍCH xoá trắng, và CHUỖI GIỮ NGUYÊN.
+ *
+ * `codeMask` xoá cả hai, đúng cho những vế hỏi "cách viết này có nằm ở mã
+ * không". Luật 25 thì hỏi ngược lại: nó đi tìm một phép SO SÁNH VỚI MỘT CHUỖI,
+ * nên chuỗi chính là thứ nó phải nhìn thấy. Thứ duy nhất phải biến mất là văn
+ * xuôi — đoạn chú thích ở `exercise-guide.tsx` kể lại đúng lối hỏng ấy và sẽ
+ * tự làm luật đỏ.
+ *
+ * Xuống dòng được giữ nguyên để số dòng không trôi.
+ */
+function stripComments(src) {
+  let out = '';
+  let i = 0;
+  const N = src.length;
+  while (i < N) {
+    const two = src.slice(i, i + 2);
+    if (two === '//' || two === '/*') {
+      const end =
+        two === '//'
+          ? (src.indexOf('\n', i) < 0 ? N : src.indexOf('\n', i))
+          : (src.indexOf('*/', i + 2) < 0 ? N : src.indexOf('*/', i + 2) + 2);
+      out += src.slice(i, end).replace(/[^\n]/g, ' ');
+      i = end;
+      continue;
+    }
+    const ch = src[i];
+    if (ch === "'" || ch === '"' || ch === '`') {
+      let j = i + 1;
+      while (j < N && src[j] !== ch) {
+        if (src[j] === '\\') j++;
+        j++;
+      }
+      const end = Math.min(j + 1, N);
+      out += src.slice(i, end);
+      i = end;
+      continue;
+    }
+    out += ch;
+    i++;
+  }
+  return out;
+}
+
 const hook = read(HOOK);
 const sheet = read(SHEET);
 const plan = read(PLAN);
@@ -165,7 +209,10 @@ if (!/onError=\{\(\) => setImgBroke\(true\)\}/.test(media) || !/status === 'erro
   );
 }
 CASES++;
-if (!/autoplay=\{!reduced\}/.test(media) || !/if \(!reduced\) p\.play\(\)/.test(mediaAll)) {
+/* `&& !controls`: toàn màn thì người ta CHỦ ĐỘNG mở video ra, nên ở đó tự chạy
+   là đúng việc của một trình phát. Khung dẫn thì `controls` mặc định `false`,
+   nên vế này vẫn canh đúng thứ nó sinh ra để canh. */
+if (!/autoplay=\{!reduced\}/.test(media) || !/if \(!reduced && !controls\) p\.play\(\)/.test(mediaAll)) {
   problems.push(
     `${MEDIA}: media không còn tôn trọng "giảm chuyển động" ở cả hai đường. Một vòng lặp vô tận LÀ ` +
       'chuyển động liên tục — đúng thứ cài đặt trợ năng ấy nói tới, và nó phải dừng được ở CẢ video lẫn ' +
@@ -175,10 +222,22 @@ if (!/autoplay=\{!reduced\}/.test(media) || !/if \(!reduced\) p\.play\(\)/.test(
 
 /* ── 7b · video là MINH HOẠ, không phải một trình phát ── */
 CASES++;
+/*
+  ── ba vế đầu nay nói về MẶC ĐỊNH, không nói về một hằng số ──
+
+  `GuideVideo` có thêm `controls`, và màn xem toàn màn bật nó: ở đó điều khiển
+  gốc của hệ điều hành là đúng, vì người ta vừa chủ động mở video ra.
+
+  Thứ KHÔNG được đổi là khung DẪN. Nên luật đòi `controls` mặc định `false`, và
+  đòi ba tính chất kia được DẪN RA từ nó — `!controls`. Một ngày nào đó ai đó
+  đổi mặc định thành `true` thì vế đầu tiên đỏ, và đó đúng là lúc khung dẫn
+  thôi là một hình vẽ biết động.
+*/
 const player = [
-  ['nativeControls={false}', /nativeControls=\{false\}/],
-  ['muted', /p\.muted = true/],
-  ['loop', /p\.loop = true/],
+  ['controls mặc định false', /controls = false,/],
+  ['nativeControls theo controls', /nativeControls=\{controls\}/],
+  ['muted trừ khi toàn màn', /p\.muted = !controls/],
+  ['loop trừ khi toàn màn', /p\.loop = !controls/],
   ['không toàn màn', /fullscreenOptions=\{\{ enable: false \}\}/],
   ['không cửa sổ nổi', /allowsPictureInPicture=\{false\}/],
 ].filter(([, re]) => !re.test(mediaAll)).map(([n]) => n);
@@ -458,36 +517,32 @@ if (exitGeom.length) {
   );
 }
 
-/* ── 22 · ba chỗ giữ chỗ phải IM LẶNG với bộ đọc màn hình ──
+/* ── 22 · chỗ giữ chỗ CÒN LẠI phải IM LẶNG với bộ đọc màn hình ──
 
-   Hàng tab, nút play và dấu trang được dựng theo yêu cầu của chủ dự án làm chỗ
-   đứng thị giác cho mô hình nội dung sau này — *"They are visual/product
-   placeholders for the future content model."* Ba trong bốn tab không có dữ
-   liệu, đoạn minh hoạ tự chạy nên không có gì để "play", và dấu trang không có
-   kho nào để lưu vào.
+   Ba thứ từng nằm ở đây: hàng tab, nút play và dấu trang. Hai đã rời đi, và cả
+   hai lần rời đều là vì chúng có việc THẬT để làm:
 
-   Ranh giới giữ được là: MẮT thấy cấu trúc của ảnh tham chiếu, còn VoiceOver
-   KHÔNG bị kể rằng có sáu cái nút không tồn tại. Nên cả ba phải mang
-   `pointerEvents="none"` và `accessibilityElementsHidden`.
+     nút media   lượt kiến trúc media → mở màn xem toàn màn (luật 23)
+     hàng tab    lượt này            → đổi nội dung thật (luật 24)
+
+   Dấu trang thì chưa: không có kho nào để lưu vào, và đặt hàng cấm dựng schema
+   mới ở lượt này. Nên nó vẫn phải mang `pointerEvents="none"` và
+   `accessibilityElementsHidden`.
 
    Luật này đọc MÃ vì bản web không đo được: `accessibilityElementsHidden` là
    prop iOS-only và `importantForAccessibility` là Android-only, nên
-   react-native-web không phát ra thuộc tính nào — kiểm trên DOM thật, hàng tab
-   chỉ có `class`. `guide6.mjs` vì thế chỉ đo được hình học.
+   react-native-web không phát ra thuộc tính nào — kiểm trên DOM thật, dấu
+   trang chỉ có `class`. `guide6.mjs` vì thế chỉ đo được hình học.
 
-   Lối hỏng nó canh: ai đó thấy ba thứ này "chưa hoạt động" và nối `onPress`
-   vào cho đủ. Lúc ấy chúng thành sáu lời hứa suông, và cái đắt nhất là lời hứa
-   với người đang dùng VoiceOver — người không thấy được rằng bấm xong không có
-   gì xảy ra. */
+   Lối hỏng nó canh: ai đó thấy thứ này "chưa hoạt động" và nối `onPress` vào
+   cho đủ. Lúc ấy nó thành một lời hứa suông, và người trả giá đắt nhất là
+   người đang dùng VoiceOver — người không thấy được rằng bấm xong không có gì
+   xảy ra. */
 CASES++;
 const placeholders = [
-  ['hàng tab', /style=\{\[styles\.tabs[\s\S]{0,200}?accessibilityElementsHidden/],
-  ['nút play', /style=\{styles\.play\}[\s\S]{0,160}?accessibilityElementsHidden/],
   ['dấu trang', /style=\{styles\.mark2\}[\s\S]{0,160}?accessibilityElementsHidden/],
 ].filter(([, re]) => !re.test(sheet)).map(([n]) => n);
 const pressable = [
-  ['hàng tab', /style=\{\[styles\.tabs[\s\S]{0,200}?pointerEvents="none"/],
-  ['nút play', /style=\{styles\.play\}[\s\S]{0,160}?pointerEvents="none"/],
   ['dấu trang', /style=\{styles\.mark2\}[\s\S]{0,160}?pointerEvents="none"/],
 ].filter(([, re]) => !re.test(sheet)).map(([n]) => n);
 if (placeholders.length || pressable.length) {
@@ -495,10 +550,150 @@ if (placeholders.length || pressable.length) {
     `${SHEET}: chỗ giữ chỗ thôi im lặng — ` +
       [placeholders.length ? `lộ ra cho bộ đọc màn hình: ${placeholders.join(', ')}` : null,
        pressable.length ? `nhận chạm: ${pressable.join(', ')}` : null].filter(Boolean).join('; ') +
-      '. Ba thứ này KHÔNG có gì ở sau: ba trong bốn tab không có dữ liệu, đoạn minh hoạ tự chạy nên không ' +
-      'có gì để tạm dừng, và dấu trang không có kho nào để lưu vào. Chúng được giữ làm chỗ đứng THỊ GIÁC ' +
-      'theo quyết định của chủ dự án; biến chúng thành nút là biến một khoảng trống đã biết thành một lời ' +
-      'hứa suông, và người dùng VoiceOver là người trả giá vì họ không thấy được rằng bấm xong không có gì',
+      '. Dấu trang KHÔNG có gì ở sau: không bảng nào, không cột nào, và đặt hàng cấm dựng schema mới ở lượt ' +
+      'này. Nó được giữ làm chỗ đứng THỊ GIÁC theo quyết định của chủ dự án; biến nó thành nút là biến một ' +
+      'khoảng trống đã biết thành một lời hứa suông, và người dùng VoiceOver là người trả giá vì họ không ' +
+      'thấy được rằng bấm xong không có gì',
+  );
+}
+
+/* ── 23 · nút MEDIA chỉ tồn tại khi CÓ media, và nó không tự gọi mình là "phát" ──
+
+   Lượt kiến trúc media biến cái tam giác giả thành một hành động thật. Hai vế
+   giữ cho nó không trượt về chỗ cũ:
+
+   **Một — nó phải được che sau `hasMedia`.** Một nút mở media trên một bài chưa
+   có media nào là đúng cái lời hứa suông mà cả lượt này đi xoá. Đặt hàng nói
+   thẳng cho trạng thái NONE: *"Do NOT render play button, duration chip,
+   pagination dots, fake media affordance."*
+
+   **Hai — nhãn trợ năng nói "mở", không nói "phát".** Cùng một nút mở ba thứ
+   khác nhau tuỳ `media.type`, và với một tấm ẢNH thì "phát" là nói sai loại.
+   Glyph theo ảnh tham chiếu được; câu đọc lên cho người dùng VoiceOver thì
+   không. */
+CASES++;
+const mediaBtn = [
+  /const openable = showMedia && hasMedia\(media\);/.test(sheet)
+    ? null
+    : '`openable` không còn được dẫn ra từ `hasMedia(media)`',
+  /\{openable \? \(\s*<PressScale/.test(sheet)
+    ? null
+    : 'nút media không còn được che sau `openable`',
+  /accessibilityLabel=\{i18n\.nEgOpenMedia\}/.test(sheet)
+    ? null
+    : 'nhãn trợ năng của nút media không còn là `nEgOpenMedia`',
+].filter(Boolean);
+if (mediaBtn.length) {
+  problems.push(
+    `${SHEET}: nút mở media đã trượt — ${mediaBtn.join('; ')}. Nó chỉ được tồn tại khi mô hình media nói ` +
+      'rằng CÓ media: một nút mở trên một bài chưa có gì là đúng thứ lượt kiến trúc media đi xoá. Và nó ' +
+      'mở BA thứ khác nhau tuỳ `media.type` — với một tấm ảnh thì gọi hành động ấy là "phát" là nói sai ' +
+      'loại, và người dùng VoiceOver là người nghe rõ cái sai ấy nhất',
+  );
+}
+
+/* ── 24 · bốn tab BẤM ĐƯỢC, và không tab nào dẫn tới một màn bịa ──
+
+   Hai lượt trước hàng tab là hình vẽ. Chủ dự án chốt ngược lại — *"bấm được cả
+   và search để thêm thông tin cho các mục đó"* — nên nay nó là bốn cái nút
+   thật, và luật này canh cả HAI chiều của quyết định ấy.
+
+   **Chiều thứ nhất — chúng phải thật sự bấm được**, và bấm được theo đúng
+   nghĩa trợ năng: `accessibilityRole="tab"` cộng `accessibilityState` là thứ
+   khiến VoiceOver đọc ra "tab, đã chọn, 2 trên 4". Thiếu vế sau thì bốn viên
+   đọc lên giống hệt nhau và người dùng VoiceOver không biết mình đang ở đâu.
+
+   **Chiều thứ hai — không tab nào được dẫn tới chỗ trống.** Đặt hàng cấm thẳng:
+   *"Do not create fake screens merely to make the tab clickable."* Nên mỗi
+   `id` trong `TABS` phải có một nhánh nội dung mang đúng `id` ấy, và ba tab mới
+   phải có ba câu "chưa có" KHÁC NHAU — gộp chúng thành một câu chung là xoá
+   mất thông tin duy nhất mà một tab rỗng còn mang được.
+
+   **Và Plan vẫn không được nặng thêm.** `useExercises()` phải đi qua
+   `needsLibrary`, nên mở sheet rồi đọc "Tổng quan" — đường đi thường gặp nhất
+   — không gọi mạng thêm một lượt nào.
+
+   Lối hỏng nó canh không phải "ai đó xoá tab". Là: ai đó thêm một tab thứ năm
+   vào `TABS` cho đủ hình, và quên viết nhánh nội dung cho nó. Lúc ấy bấm vào
+   ra một tờ giấy trắng, và không có gì trên màn nói rằng đó là lỗi. */
+CASES++;
+const tabIds = [...sheet.matchAll(/\{ id: '([a-z]+)', key: 'nEgTab/g)].map((m) => m[1]);
+const missingPanel = tabIds.filter(
+  (id) => id !== 'overview' && !new RegExp(`tab === '${id}'`).test(sheet),
+);
+const missingEmpty = ['nEgNoMuscles', 'nEgNoEquipment', 'nEgNoRelated'].filter(
+  (k) => !sheet.includes(`i18n.${k}`),
+);
+const realTabs = [
+  tabIds.length === 4 ? null : `\`TABS\` đọc ra ${tabIds.length} mục, phải đúng bốn`,
+  /accessibilityRole="tab"\s*\n\s*accessibilityState=\{\{ selected: on \}\}/.test(sheet)
+    ? null
+    : 'viên tab không còn mang `accessibilityRole="tab"` kèm `accessibilityState={{ selected }}`',
+  /*
+    ── và `aria-selected` là vế THỨ HAI, vì vế thứ nhất không tới được web ──
+
+    Đo trên bản dựng thật: `accessibilityState={{ selected }}` ra ĐÚNG không
+    thuộc tính nào trên react-native-web — bốn viên chỉ có `role`, `aria-label`
+    và `tabindex`. Nên trên web cả bốn đọc lên giống hệt nhau.
+
+    `aria-selected` là bí danh chính thức của React Native cho cùng trạng thái
+    ấy và được ưu tiên hơn `accessibilityState` trên native, nên nó đúng ở cả
+    hai nền — và nó là vế DUY NHẤT `guide6.mjs` đo được.
+  */
+  /aria-selected=\{on\}/.test(sheet)
+    ? null
+    : 'viên tab thôi mang `aria-selected` — trên web `accessibilityState` không ra thuộc tính nào, nên bốn viên đọc lên giống hệt nhau',
+  /onPress=\{\(\) => \{[\s\S]{0,120}?setTab\(id\);/.test(sheet)
+    ? null
+    : 'bấm vào một viên tab không còn gọi `setTab(id)`',
+  /const overview = tab === 'overview';/.test(sheet)
+    ? null
+    : 'nội dung "Tổng quan" không còn được che sau `tab === \'overview\'`',
+  missingPanel.length ? `tab không có nhánh nội dung nào: ${missingPanel.join(', ')}` : null,
+  missingEmpty.length ? `thiếu câu "chưa có" riêng của tab: ${missingEmpty.join(', ')}` : null,
+  /const needsLibrary = tab === 'equipment' \|\| tab === 'related';/.test(sheet)
+    ? null
+    : '`needsLibrary` không còn được dẫn ra từ tab đang chọn',
+  /useExercises\(needsLibrary\)/.test(sheet)
+    ? null
+    : '`useExercises()` không còn đi qua `needsLibrary` — mở sheet là gọi mạng, kể cả khi không ai mở hai tab ấy',
+  /sameEquipment\(rows, subject, lang\)/.test(sheet) && /sameMuscle\(rows, subject, lang\)/.test(sheet)
+    ? null
+    : 'hai danh sách "bài khác" không còn đến từ `lib/guide-related.ts`',
+  /style=\{\[styles\.tabs[\s\S]{0,200}?pointerEvents="none"/.test(sheet)
+    ? 'hàng tab lại mang `pointerEvents="none"` — tức lại là một hình vẽ'
+    : null,
+].filter(Boolean);
+if (realTabs.length) {
+  problems.push(
+    `${SHEET}: hàng tab đã trượt — ${realTabs.join('; ')}. Bốn tab này bấm được theo quyết định của chủ ` +
+      'dự án, và cái giá của quyết định ấy là mỗi tab phải có thứ THẬT để hiện: hình giải phẫu từ ' +
+      '`muscleArtKeysFor`, và bài khác cùng dụng cụ / cùng nhóm cơ lọc ra từ thư viện đã nằm sẵn trong ' +
+      'cache. Một tab bấm vào ra tờ giấy trắng còn tệ hơn một tab không bấm được: cái sau nói thật rằng ' +
+      'chưa có gì, cái trước thì không nói gì cả',
+  );
+}
+
+/* ── 25 · giao diện là HỆ QUẢ của mô hình, không của TÊN BÀI ──
+
+   Đặt hàng viết hẳn ra lối hỏng nó cấm: *"Never special-case a single
+   exercise… `if (exerciseName === "Dumbbell Curl")`"*. Nó không phải một giả
+   định xa xôi — màn này từng có một nhánh đúng-cho-ảnh-demo, và cách nhanh
+   nhất để một ảnh chụp khớp với ảnh tham chiếu là dựng riêng cho cái tên trong
+   ảnh ấy.
+
+   Luật đọc MÃ chứ không đọc văn xuôi: đoạn chú thích ngay trên `media` trong
+   `exercise-guide.tsx` NHẮC tới lối hỏng này, nên một regex trần sẽ phạt đúng
+   người đang ghi lại bài học — cùng cái bẫy đã ghi ở đầu tệp. */
+CASES++;
+const nameBranch = stripComments(sheet)
+  .split('\n')
+  .filter((l) => /\b(?:name|title)\s*===\s*['"`]/.test(l));
+if (nameBranch.length) {
+  problems.push(
+    `${SHEET}: có nhánh giao diện rẽ theo TÊN BÀI — ${nameBranch.length} chỗ. Giao diện phải là hệ quả của ` +
+      'mô hình dữ liệu (`media.type`, `muscleKeys`, `equipmentKey`), không của một chuỗi tên: một nhánh ' +
+      'đúng-cho-"Dumbbell Curl" làm ảnh chụp khớp ảnh tham chiếu và làm mọi bài còn lại sai, mà không gì kêu',
   );
 }
 
@@ -513,7 +708,9 @@ if (!problems.length) {
       '`presentation: modal`, tức pageSheet iOS: Plan ở lại mounted phía dưới nên buổi tập đang dở không bị ' +
       'dựng lại, và đó là toàn bộ cơ chế giữ state. `/exercise-insight` không bị đụng — Guide dạy cách làm, ' +
       'Insight nói tiến bộ, hai câu hỏi khác nhau. Media bắt lỗi tải, tôn trọng "giảm chuyển động", và hai ' +
-      'danh sách dùng hai glyph khác hình chứ không chỉ khác màu',
+      'danh sách dùng hai glyph khác hình chứ không chỉ khác màu. BỐN TAB bấm được, mỗi tab có một nhánh ' +
+      'nội dung mang đúng `id` của nó và một câu "chưa có" của riêng nó; thư viện chỉ được hỏi khi tab cần ' +
+      'tới nó (`needsLibrary`), và không nhánh giao diện nào rẽ theo tên bài',
   );
 }
 

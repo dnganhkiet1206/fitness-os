@@ -6,8 +6,9 @@ import { useAuth } from '@/hooks/use-auth';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import type { AppLang } from '@/lib/i18n';
 import { pickContent, type GuideContentRow } from '@/lib/guide-content';
-import { equipmentLabel } from '@/lib/equipment';
-import { muscleGroupLabel } from '@/lib/muscle-group';
+import { resolveExerciseMedia, type MediaRow, type MediaState } from '@/lib/exercise-media';
+import { equipmentLabel, equipmentMatchKey } from '@/lib/equipment';
+import { MUSCLE_LABEL, muscleArtKeysFor, muscleGroupLabel, type MuscleArtKey } from '@/lib/muscle-group';
 
 /**
  * CÁCH LÀM một bài tập — tách hẳn khỏi việc bạn đã làm nó thế nào.
@@ -111,7 +112,7 @@ interface GuideRow {
  *     id              `null` khi không dòng thư viện nào khớp
  *     equipment       ĐÃ LÀ NHÃN. `null` khi không biết
  *     muscleGroup     ĐÃ LÀ NHÃN. `null` khi không biết
- *     mediaUrl        `null` khi bài này chưa có hình
+ *     media           bốn trạng thái; `none` khi bài này chưa có hình
  *     contentLocale   `null` khi không có nội dung nào
  *
  * ── ngôn ngữ ──
@@ -143,12 +144,40 @@ export interface ExerciseGuide {
   muscleGroup: string | null;
   /** ĐÃ LÀ NHÃN theo ngôn ngữ đang bật — màn hình in thẳng. */
   equipment: string | null;
+  /**
+   * Từng nhóm cơ MỘT — khoá để tra hình, nhãn ĐÃ DỊCH để in.
+   *
+   * `muscleGroup` ở trên là một dòng đã nối (`Lưng / Chân`), đúng cho một câu
+   * siêu dữ liệu và vô dụng cho một lưới hình: mỗi ô cần đúng một khoá và đúng
+   * một nhãn của riêng nó. Tách chuỗi đã nối ra lại chính là phép tra ngược mà
+   * hợp đồng này tồn tại để cấm.
+   *
+   * Cả hai vế đến từ đây, không từ màn hình: `tools/guide-content.mjs` luật 18
+   * canh rằng màn hướng dẫn KHÔNG import hàm nhãn nào — một nơi dịch, nhiều
+   * nơi vẽ.
+   *
+   * Rỗng = thư viện không nhận ra chuỗi đang lưu (hoặc cột trống). Đó là một
+   * câu trả lời thật: `Forearms` không có hình nào, và bịa cho nó một hình là
+   * xếp nó vào một nhóm cơ không ai chọn.
+   */
+  muscles: { key: MuscleArtKey; label: string }[];
+  /**
+   * Khoá để hỏi "bài nào cùng dụng cụ". `null` = cột dụng cụ TRỐNG, tức không
+   * bài nào cùng dụng cụ với nó — xem `equipmentMatchKey`.
+   */
+  equipmentKey: string | null;
   /** các bước "cách thực hiện", theo thứ tự. Rỗng khi chưa ai viết. */
   instructions: string[];
   formCues: string[];
   commonMistakes: string[];
-  /** URL ảnh/ảnh động minh hoạ. `null` khi bài này chưa có gì. */
-  mediaUrl: string | null;
+  /**
+   * Bộ media ĐÃ PHÂN GIẢI — bốn trạng thái, xem `lib/exercise-media.ts`.
+   *
+   * Không phải một URL nữa. Màn hình đọc `media.type` để quyết định vẽ chấm
+   * trang, thời lượng hay không gì cả; nó không bao giờ đoán từ đuôi tệp và
+   * không bao giờ hỏi tên bài.
+   */
+  media: MediaState;
   /** Cách dòng này được tìm ra — màn hình không cần, luật kiểm thì cần. */
   matchedBy: 'id' | 'name' | 'none';
   /** Ngôn ngữ mà CẢ HAI danh sách đến từ, hoặc `null` khi không có gì. */
@@ -227,12 +256,35 @@ export function useExerciseGuide(
         vấn nhỏ theo khoá chính, chạy đúng một lần mỗi lần mở sheet.
       */
       const withContent = async (row: GuideRow, matchedBy: 'id' | 'name') => {
-        const { data, error } = await supabase
-          .from('exercise_guide_content')
-          .select('locale, instructions, form_cues, common_mistakes')
-          .eq('exercise_id', row.id);
-        if (error) throw error;
-        return shape(row, matchedBy, name, pickContent((data ?? []) as GuideContentRow[], lang), lang);
+        /*
+          Hai truy vấn phụ chạy SONG SONG.
+
+          Chúng độc lập — chữ ở một bảng, media ở một bảng khác — nên chạy nối
+          tiếp là cộng thẳng một vòng mạng vào thời gian mở sheet mà không đổi
+          lại gì. `Promise.all` giữ nguyên hành vi lỗi: một trong hai hỏng thì
+          cả lượt đọc hỏng, và sheet vào trạng thái "không đọc được dữ liệu" —
+          đúng như khi chỉ có một truy vấn.
+        */
+        const [content, media] = await Promise.all([
+          supabase
+            .from('exercise_guide_content')
+            .select('locale, instructions, form_cues, common_mistakes')
+            .eq('exercise_id', row.id),
+          supabase
+            .from('exercise_media')
+            .select('kind, uri, position, duration_s, poster_uri, alt')
+            .eq('exercise_id', row.id),
+        ]);
+        if (content.error) throw content.error;
+        if (media.error) throw media.error;
+        return shape(
+          row,
+          matchedBy,
+          name,
+          pickContent((content.data ?? []) as GuideContentRow[], lang),
+          lang,
+          (media.data ?? []) as MediaRow[],
+        );
       };
 
       /* ── 1. theo ID, đường chính tắc ── */
@@ -266,10 +318,12 @@ export function useExerciseGuide(
         name,
         muscleGroup: null,
         equipment: null,
+        muscles: [],
+        equipmentKey: null,
         instructions: [],
         formCues: [],
         commonMistakes: [],
-        mediaUrl: null,
+        media: { type: 'none', items: [] },
         matchedBy: 'none' as const,
         contentLocale: null,
         hasContent: false,
@@ -285,6 +339,7 @@ function shape(
   fallbackName: string,
   content: { locale: AppLang; instructions: string[]; formCues: string[]; commonMistakes: string[] } | null,
   lang: AppLang,
+  mediaRows: MediaRow[],
 ): ExerciseGuide {
   /* Khoá → nhãn NGAY TẠI ĐÂY, không để màn hình làm. Hai hàm này cũng là thứ
      trả lại nguyên văn một giá trị lịch sử mà bảng đồng nghĩa không nhận ra,
@@ -301,10 +356,22 @@ function shape(
     name: trimmed(row.name) ?? fallbackName,
     muscleGroup,
     equipment,
+    /* Khoá được dẫn ra từ CỘT THÔ, không từ nhãn vừa tính ở trên. Nhãn đã đi
+       qua một phép dịch; dịch xong rồi tra ngược là hỏi bảng đồng nghĩa một
+       câu hỏi nó không được thiết kế để trả lời.
+
+       Nhãn của từng ô đi kèm ngay tại đây vì cùng một lý do đã dựng nên
+       `muscleGroup`: nếu màn hình tự tra `MUSCLE_LABEL` thì có HAI nơi dịch
+       khoá thành nhãn, và hai nơi sẽ lệch. */
+    muscles: muscleArtKeysFor(row.muscle_group).map((key) => ({ key, label: MUSCLE_LABEL[key][lang] })),
+    equipmentKey: equipmentMatchKey(row.equipment),
     instructions,
     formCues,
     commonMistakes,
-    mediaUrl: trimmed(row.video_url),
+    /* `video_url` vào đây làm ĐƯỜNG LUI, không làm nguồn chính — xem
+       `resolveExerciseMedia`. Bài chưa có hàng `exercise_media` nào thì cột cũ
+       vẫn được đọc, nên không dòng dữ liệu nào đang chạy bị làm trắng. */
+    media: resolveExerciseMedia(mediaRows, row.video_url),
     matchedBy,
     contentLocale: content?.locale ?? null,
     hasContent: instructions.length > 0 || formCues.length > 0 || commonMistakes.length > 0,
