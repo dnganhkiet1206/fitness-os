@@ -25,6 +25,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
+import { duration } from '@/constants/motion';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useExerciseGuide } from '@/hooks/use-exercise-guide';
 import { useExercises } from '@/hooks/use-library';
@@ -303,30 +304,41 @@ export default function ExerciseGuideSheet() {
   const [shown, setShown] = useState<GuideTab>('overview');
   /* Chiều cao đo được của dòng cuộn — sàn của mặt giấy. Xem `sheetFloor`. */
   const [viewH, setViewH] = useState(0);
+  /* Độ lệch cuộn dọc — lái lớp tối dần trên hình. Xem `heroDim`. */
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   /*
-    ── ĐỔI TAB: mờ đi, đổi, hiện lên — khung KHÔNG nhúc nhích ──
+    ── ĐỔI TAB: một cú CROSSFADE, không phải một cú chớp ──
 
-    Đặt hàng vẽ hẳn ba bước: *"Nội dung cũ (fade out + dịch lên nhẹ) →
-    Crossfade → Nội dung mới (fade in + dịch lên từ dưới)"*, kèm con số:
-    ≈10–16 điểm, 200–250ms, ease-out.
+    Đặt hàng vẽ ba bước: nội dung cũ mờ đi và trôi lên, hoà, nội dung mới hiện
+    lên từ dưới. Bản trước làm việc ấy bằng MỘT lớp — mờ về 0, đổi, hiện lại —
+    và bản ấy sai đúng ở chỗ quan trọng nhất: giữa hai nhịp có một khoảnh khắc
+    mặt giấy KHÔNG CÓ GÌ. Một khoảng trống, dù chỉ 100ms, đọc ra là một cú
+    chớp chứ không phải một cú hoà. Chủ dự án bảo sửa lại chính chỗ ấy.
 
-    Nên hai giá trị chứ không một: một giá trị duy nhất bắt lượt ra và lượt
-    vào dùng CHUNG một phép nội suy, và khi ấy nội dung cũ sẽ trôi XUỐNG khi
-    mờ đi — ngược hẳn với hình đặt hàng vẽ.
+    Nay hai lớp chạy CÙNG LÚC, nên không có khung hình nào trống:
 
-        ra:   độ mờ 1→0, dịch  0 → −8    100ms
-        (đổi `shown`, đặt dịch = +12 ngay lập tức, không animate)
-        vào:  độ mờ 0→1, dịch +12 → 0    140ms
+        lớp cũ    mờ 1→0, trôi  0 → −12    180ms  (`duration.toggle`)
+        lớp mới   mờ 0→1, tới  +12 →  0    240ms  (`duration.move`)
 
-    Tổng 240ms, nằm trong khoảng đặt hàng cho. Biên độ 12 điểm cũng vậy.
-    `useNativeDriver` chạy được vì cả hai thứ đổi đều là độ mờ và transform.
+    Hai con số là TOKEN có tên, không phải số lạ — nên lượt này gỡ luôn ngoại
+    lệ `COMPOSED` mà bản trước phải xin trong `tools/motion.mjs`. Cách chọn
+    theo đúng nguyên tắc ghi trong `constants/motion`: "theo màn hình đổi bao
+    nhiêu". Lớp đi có quãng ngắn và một cái bóng nán lại là thứ làm cú hoà bị
+    đục, nên nó ngắn hơn; lớp tới đi 12 điểm và phải đọc được lúc đặt chân.
 
-    "Giảm chuyển động" thì đổi thẳng, không animate — đó là luật của cả app,
-    và một cú chuyển 240ms vẫn là chuyển động.
+    Tổng cảm nhận là 240ms — nhịp dài hơn trong hai — vẫn nằm trong khoảng
+    200–250ms đặt hàng cho.
+
+    `prev` là tab đang tan. `null` nghĩa là không có cú chuyển nào đang chạy,
+    và lớp đè không được dựng — nên ở trạng thái thường màn này vẫn đúng một
+    lớp như trước.
   */
-  const fade = useRef(new Animated.Value(1)).current;
-  const slide = useRef(new Animated.Value(0)).current;
+  const [prev, setPrev] = useState<GuideTab | null>(null);
+  const inOp = useRef(new Animated.Value(1)).current;
+  const inY = useRef(new Animated.Value(0)).current;
+  const outOp = useRef(new Animated.Value(0)).current;
+  const outY = useRef(new Animated.Value(0)).current;
   const pickTab = useCallback(
     (id: GuideTab) => {
       Haptics.selectionAsync();
@@ -335,22 +347,29 @@ export default function ExerciseGuideSheet() {
       if (id === shown) return;
       if (reduced) {
         setShown(id);
+        setPrev(null);
         return;
       }
+      /* Nội dung đổi NGAY, không đợi nhịp nào: lớp cũ vẫn còn đó để nhìn, nên
+         không có gì phải chờ. Đây là khác biệt thật so với bản trước. */
+      setPrev(shown);
+      setShown(id);
+      inOp.setValue(0);
+      inY.setValue(12);
+      outOp.setValue(1);
+      outY.setValue(0);
       Animated.parallel([
-        Animated.timing(fade, { toValue: 0, duration: 100, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.timing(slide, { toValue: -8, duration: 100, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(outOp, { toValue: 0, duration: duration.toggle, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(outY, { toValue: -12, duration: duration.toggle, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(inOp, { toValue: 1, duration: duration.move, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(inY, { toValue: 0, duration: duration.move, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       ]).start(({ finished }) => {
-        if (!finished) return;
-        setShown(id);
-        slide.setValue(12);
-        Animated.parallel([
-          Animated.timing(fade, { toValue: 1, duration: 140, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(slide, { toValue: 0, duration: 140, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        ]).start();
+        /* Tháo lớp đè khi xong. Không tháo thì nó ở lại mãi, vô hình mà vẫn
+           được dựng — và mỗi lần đổi tab lại chồng thêm một cái. */
+        if (finished) setPrev(null);
       });
     },
-    [fade, slide, reduced, shown],
+    [inOp, inY, outOp, outY, reduced, shown],
   );
 
   const steps4 = captionedItems(media);
@@ -480,6 +499,272 @@ export default function ExerciseGuideSheet() {
   */
   const ruled = steps.length > 0 && (cues.length > 0 || mistakes.length > 0);
 
+
+  /*
+    Thân tab, dựng theo MỘT tab bất kỳ — không phải theo state.
+
+    Nó nhận `which` chứ không đọc `shown`, vì cú crossfade phải dựng được ĐỒNG
+    THỜI tab đang đi và tab đang tới. Một hàm, hai lượt gọi; hai bản sao JSX sẽ
+    lệch nhau ở lần sửa thứ ba.
+  */
+  const tabBody = (which: GuideTab) => (
+    <>
+
+          {/* Không có hình thì câu ấy xuống đây, gọn — không dựng một khung
+              cao để đựng một câu nói rằng khung ấy trống. */}
+          {isPending ? (
+            <View style={styles.busy}>
+              <ActivityIndicator color={c.mutedForeground} />
+            </View>
+          ) : null}
+
+          {isError ? (
+            <View style={styles.block}>
+              <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+            </View>
+          ) : null}
+
+          {/*
+            ── CÁCH THỰC HIỆN: các bước có SỐ, vì thứ tự là thông tin ──
+
+            Số không phải trang trí: bước hai đứng sau bước một vì phải làm sau.
+
+            Nó nằm trong một ĐĨA trung tính chứ không đứng trần, và đó là thứ
+            bốn ảnh tham chiếu đều làm: một đĩa xám nhạt 22 điểm, số ở giữa,
+            hạng chữ thấp hơn câu bên cạnh. Đĩa làm hai việc mà con số trần
+            không làm được — nó giữ cột số thẳng một mép kể cả khi sang hai chữ
+            số, và nó tách "thứ tự" khỏi "nội dung" bằng hình dạng thay vì bằng
+            một khoảng trắng người ta phải tự suy ra.
+
+            KHÔNG phải ký tự số-trong-vòng-tròn của Unicode (①②③): phông hệ
+            thống chỉ có tới 20, chúng không theo cỡ chữ trợ năng, và bộ đọc màn
+            hình đọc chúng mỗi nơi một kiểu.
+          */}
+          {/*
+            ── CÁC BƯỚC CÓ HÌNH: ảnh → số → tiêu đề → mô tả ──
+
+            Đặt hàng dựng thứ tự đọc này thành một sơ đồ, và lý do nó theo thứ
+            tự ấy: tấm ảnh trả lời "trông thế nào", con số trả lời "bước mấy",
+            rồi chữ mới giải thích. Đảo lại là bắt người ta đọc một lời giải
+            thích về thứ chưa nhìn thấy.
+
+            CHỮ KHÔNG NẰM TRONG ẢNH. Bốn tấm nói bằng giải phẫu, tư thế, mũi
+            tên và dấu ✓/✗; mọi câu chữ đến từ `exercise_media_content` và đổi
+            theo ngôn ngữ mà không đụng một byte nào của ảnh.
+          */}
+          {which === 'overview' && steps4.length ? (
+            <View style={styles.steps4}>
+              {steps4.map((m, i) => (
+                <MediaStep
+                  key={m.uri}
+                  item={m}
+                  index={i}
+                  name={g?.name || title}
+                  styles={styles}
+                  reduced={reduced}
+                  onOpen={() => {
+                    Haptics.selectionAsync();
+                    nav.push({
+                      pathname: '/media-viewer',
+                      params: { ex: g?.id ?? '', name: g?.name || title, i: String(i) },
+                    });
+                  }}
+                />
+              ))}
+            </View>
+          ) : null}
+
+          {which === 'overview' && steps.length ? (
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>{i18n.nEgTitle}</Text>
+              <View style={styles.list}>
+                {steps.map((t, i) => (
+                  <View key={t} style={styles.item}>
+                    <View style={styles.step}>
+                      <Text style={styles.stepNo}>{i + 1}</Text>
+                    </View>
+                    <Text style={styles.itemText}>{t}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
+
+          {/*
+            ── một sợi kẻ NGANG, và nó chỉ tồn tại khi có hai khối để chia ──
+
+            Cách thực hiện là một chuỗi phải đọc theo thứ tự; điểm kỹ thuật và
+            lỗi thường gặp là hai danh sách tra cứu. Hai loại đọc khác nhau,
+            nên ảnh tham chiếu đặt một sợi tơ giữa chúng — và KHÔNG đặt sợi nào
+            quanh hai cột, vì cột không phải ô bảng.
+
+            `hairlineWidth` là 1/scale của máy: trên màn 3× nó ra đúng một điểm
+            ảnh vật lý, tức "1px" theo đúng nghĩa đen của đặt hàng.
+          */}
+          {which === 'overview' && ruled ? <View style={styles.rule} /> : null}
+
+          {/*
+            ── ĐIỂM KỸ THUẬT và LỖI THƯỜNG GẶP ──
+
+            Hai danh sách, một hình dạng, hai dấu. Dấu mang NGHĨA chứ không
+            mang trang trí: tick xanh là "làm thế này", chữ thập đỏ là "đừng
+            thế này".
+
+            Và nghĩa ấy KHÔNG chỉ nằm ở màu — mỗi mục nằm dưới một tiêu đề nói
+            thẳng nó là gì, và hai glyph khác hình nhau. Người không phân biệt
+            được đỏ/xanh vẫn đọc đúng, đó là điều kiện của WCAG 1.4.1.
+
+            ── vì sao là một ĐĨA ĐẶC, không phải một glyph trần ──
+
+            Bản trước vẽ `Check` và `AlertCircle` trần, 15 điểm, tô thẳng màu
+            xanh/đỏ. Cả bốn ảnh tham chiếu đều dựng chúng thành đĩa đặc 20 điểm
+            với glyph trắng bên trong, và lý do không phải khẩu vị: một nét 15
+            điểm màu xanh neon trên mặt giấy là một hình MỎNG mang toàn bộ sức
+            nặng của tín hiệu, còn một đĩa đặc thì có diện tích — nó tìm thấy
+            được khi liếc, và nó không phụ thuộc vào việc phân giải một nét
+            2,5 điểm.
+          */}
+          {which === 'overview' && (cues.length || mistakes.length) ? (
+            <View
+              style={[
+                styles.block,
+                /* Sợi kẻ đã mang khoảng chia rồi — xem `blockTight`. */
+                ruled ? styles.blockTight : null,
+                twoCols ? styles.pair : null,
+              ]}>
+              {cues.length ? (
+                <View style={twoCols ? styles.col : undefined}>
+                  <Text style={styles.sectionTitle}>{i18n.nEgCues}</Text>
+                  <View style={styles.list}>
+                    {cues.map((t) => (
+                      <View key={t} style={styles.item}>
+                        <View style={[styles.mark, styles.markOk]}>
+                          <Icon icon={Check} size={11} color={c.primaryForeground} strokeWidth={3} />
+                        </View>
+                        <Text style={styles.itemText}>{t}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+              {mistakes.length ? (
+                <View style={twoCols ? styles.col : undefined}>
+                  <Text style={styles.sectionTitle}>{i18n.nEgMistakes}</Text>
+                  <View style={styles.list}>
+                    {mistakes.map((t) => (
+                      <View key={t} style={styles.item}>
+                        <View style={[styles.mark, styles.markBad]}>
+                          <Icon icon={X} size={11} color={c.primaryForeground} strokeWidth={3} />
+                        </View>
+                        <Text style={styles.itemText}>{t}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
+          {which === 'overview' && noContent ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyText}>{i18n.nEgEmpty}</Text>
+              <Text style={styles.emptyHint}>{i18n.nEgEmptyHint}</Text>
+            </View>
+          ) : null}
+
+          {/*
+            ── CƠ TÁC ĐỘNG ──
+
+            Bộ hình giải phẫu đã có sẵn và bốn màn khác đang dùng nó: lưới cơ ở
+            tab Tập luyện, bộ lọc của trình dựng buổi, thẻ mẫu tập, màn thư
+            viện. Đây là chỗ thứ năm, và nó không thêm một tài nguyên nào.
+
+            `g.muscles` là TỪNG nhóm một — khoá để tra hình, nhãn đã dịch để
+            in. `Lưng/Chân` của deadlift là HAI ô, và `muscleArtKeysFor` đã
+            tách sẵn — xem `muscle-group.ts`.
+          */}
+          {showMedia && which === 'muscles' ? (
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>{i18n.nEgMuscles}</Text>
+              {g?.muscles.length ? (
+                <View style={styles.tiles}>
+                  {g.muscles.map((m) => (
+                    <View key={m.key} style={styles.tile}>
+                      <MuscleArt group={m.key} size={64} />
+                      <Text style={styles.tileName} numberOfLines={1}>
+                        {m.label}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                /* Không có hình nào thì nói THẲNG là chưa ghi nhóm cơ — không
+                   dựng một khung trống rồi để người ta tự đoán. Và đây là một
+                   câu riêng, không phải câu "chưa có hướng dẫn": một bài có thể
+                   có đủ hướng dẫn mà cột nhóm cơ vẫn là một chuỗi thư viện
+                   không nhận ra. */
+                <Text style={styles.emptyHint}>{i18n.nEgNoMuscles}</Text>
+              )}
+            </View>
+          ) : null}
+
+          {/*
+            ── THIẾT BỊ ──
+
+            Một nhãn, rồi những bài KHÁC dùng đúng dụng cụ ấy. Nhãn thôi thì
+            trùng dòng siêu dữ liệu ngay trên và tab này không đáng có; danh
+            sách kia mới là thứ chỉ tab này nói được — "cái tạ đơn đang cầm còn
+            làm được gì nữa".
+          */}
+          {showMedia && which === 'equipment' ? (
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>{i18n.nEgEquipment}</Text>
+              {g?.equipment ? (
+                <Text style={styles.itemText}>{g.equipment}</Text>
+              ) : (
+                <Text style={styles.emptyHint}>{i18n.nEgNoEquipment}</Text>
+              )}
+              {g?.equipment ? (
+                <RelatedList
+                  title={i18n.nEgAlsoEquipment.replace('{v}', g.equipment)}
+                  items={related.equipment}
+                  busy={libraryBusy}
+                  failed={libraryFailed ? i18n.nLoadFailed : null}
+                  styles={styles}
+                  tint={c.mutedForeground}
+                />
+              ) : null}
+            </View>
+          ) : null}
+
+          {/*
+            ── LIÊN QUAN ──
+
+            Bài khác đánh vào ít nhất một nhóm cơ chung, nhiều nhóm trùng thì
+            đứng trước. Rỗng có HAI nguyên nhân khác nhau và chúng nói hai câu
+            khác nhau: không biết bài này đánh vào đâu, hay biết mà thư viện
+            không có bài nào khác.
+          */}
+          {showMedia && which === 'related' ? (
+            <View style={styles.block}>
+              <Text style={styles.sectionTitle}>{i18n.nEgAlsoMuscles}</Text>
+              {g?.muscles.length ? (
+                <RelatedList
+                  items={related.muscle}
+                  busy={libraryBusy}
+                  failed={libraryFailed ? i18n.nLoadFailed : null}
+                  empty={i18n.nEgNoRelated}
+                  styles={styles}
+                  tint={c.mutedForeground}
+                />
+              ) : (
+                <Text style={styles.emptyHint}>{i18n.nEgNoMuscles}</Text>
+              )}
+            </View>
+          ) : null}
+    </>
+  );
+
   return (
     <View style={styles.root}>
       {/*
@@ -510,10 +795,51 @@ export default function ExerciseGuideSheet() {
             pageWidth={width}
             page={heroPage}
           />
+          {/*
+            ── TỐI DẦN THEO CÚ KÉO ──
+
+            Đặt hàng: *"khi thẻ này được kéo lên dần thì ảnh phía trên sẽ bị
+            tối dần cho đến khi kéo full là tắt hẳn luôn để tránh lặp và loạn
+            thông tin."*
+
+            Lý do ấy kiểm được, không phải khẩu vị: mặt giấy kéo hết lên thì
+            mục "Cách thực hiện" bên trong nó ĐÃ hiện đúng bốn tấm ảnh kia,
+            kèm chữ. Để hình dẫn sáng nguyên phía sau là hiện cùng một tấm ảnh
+            hai lần trên một màn.
+
+            Quãng tối ĐÚNG BẰNG quãng cuộn: 0 → `heroH - overlap` là đoạn mặt
+            giấy đi từ chỗ đứng yên tới chỗ che kín hình. Nên khi mép trên mặt
+            giấy chạm đỉnh màn, lớp này vừa đúng 100% — không sớm hơn (hình tắt
+            khi còn nhìn thấy), không muộn hơn (còn một vệt sáng lọt ra).
+
+            `extrapolate: 'clamp'`: kéo quá đà không được làm nó âm rồi loé
+            sáng trở lại.
+          */}
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              StyleSheet.absoluteFill,
+              styles.heroDim,
+              {
+                opacity: scrollY.interpolate({
+                  inputRange: [0, Math.max(1, heroH - overlap)],
+                  outputRange: [0, 1],
+                  extrapolate: 'clamp',
+                }),
+              },
+            ]}
+          />
         </View>
       ) : null}
 
-      <ScrollView
+      {/* `Animated.ScrollView` chứ không `ScrollView`: độ lệch của nó lái lớp
+          tối dần trên hình — xem `heroDim`. `useNativeDriver` chạy được vì thứ
+          duy nhất nó lái là `opacity`. */}
+      <Animated.ScrollView
+        onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+          useNativeDriver: true,
+        })}
+        scrollEventThrottle={16}
         contentContainerStyle={styles.scroll}
         /*
           Chiều cao THẬT của dòng cuộn, do chính nó báo. Nó nuôi `minHeight`
@@ -763,264 +1089,40 @@ export default function ExerciseGuideSheet() {
             không nuốt chỗ trống nữa (xem `flexGrow: 0` ở dải), không phải nhờ
             ghim một con số ở đây. Ghim chiều cao sẽ cắt mất nội dung tab dài.
           */}
-          <Animated.View
-            style={{ opacity: fade, transform: [{ translateY: slide }] }}>
-
-          {/* Không có hình thì câu ấy xuống đây, gọn — không dựng một khung
-              cao để đựng một câu nói rằng khung ấy trống. */}
-          {isPending ? (
-            <View style={styles.busy}>
-              <ActivityIndicator color={c.mutedForeground} />
-            </View>
-          ) : null}
-
-          {isError ? (
-            <View style={styles.block}>
-              <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
-            </View>
-          ) : null}
-
           {/*
-            ── CÁCH THỰC HIỆN: các bước có SỐ, vì thứ tự là thông tin ──
+            ── HAI LỚP, và đó là điều làm nó thành CROSSFADE ──
 
-            Số không phải trang trí: bước hai đứng sau bước một vì phải làm sau.
+            Bản trước là một lớp: mờ về 0, đổi nội dung, hiện lại. Nghe thì
+            giống, nhưng ở giữa có đúng một khoảnh khắc KHÔNG CÓ GÌ trên mặt
+            giấy — và một khoảng trống dù chỉ 100ms đọc ra như một cú chớp,
+            không như một cú hoà.
 
-            Nó nằm trong một ĐĨA trung tính chứ không đứng trần, và đó là thứ
-            bốn ảnh tham chiếu đều làm: một đĩa xám nhạt 22 điểm, số ở giữa,
-            hạng chữ thấp hơn câu bên cạnh. Đĩa làm hai việc mà con số trần
-            không làm được — nó giữ cột số thẳng một mép kể cả khi sang hai chữ
-            số, và nó tách "thứ tự" khỏi "nội dung" bằng hình dạng thay vì bằng
-            một khoảng trắng người ta phải tự suy ra.
+            Nay lớp cũ ở lại thêm một nhịp: nó nằm đè lên (`absoluteFill`, nên
+            nó KHÔNG tham gia bố cục và không đụng vào chiều cao cuộn), mờ dần
+            và trôi lên, trong khi lớp mới hiện lên từ dưới. Hai lượt chạy CÙNG
+            LÚC, nên không có khung hình nào trống.
 
-            KHÔNG phải ký tự số-trong-vòng-tròn của Unicode (①②③): phông hệ
-            thống chỉ có tới 20, chúng không theo cỡ chữ trợ năng, và bộ đọc màn
-            hình đọc chúng mỗi nơi một kiểu.
+            `pointerEvents="none"`: lớp cũ là một cái bóng đang tan, chạm vào
+            nó phải rơi xuống nội dung thật bên dưới.
+
+            `tabBody(which)` là MỘT hàm dựng dùng cho cả hai lớp — không phải
+            hai bản sao JSX sẽ lệch nhau ở lần sửa thứ ba.
           */}
-          {/*
-            ── CÁC BƯỚC CÓ HÌNH: ảnh → số → tiêu đề → mô tả ──
-
-            Đặt hàng dựng thứ tự đọc này thành một sơ đồ, và lý do nó theo thứ
-            tự ấy: tấm ảnh trả lời "trông thế nào", con số trả lời "bước mấy",
-            rồi chữ mới giải thích. Đảo lại là bắt người ta đọc một lời giải
-            thích về thứ chưa nhìn thấy.
-
-            CHỮ KHÔNG NẰM TRONG ẢNH. Bốn tấm nói bằng giải phẫu, tư thế, mũi
-            tên và dấu ✓/✗; mọi câu chữ đến từ `exercise_media_content` và đổi
-            theo ngôn ngữ mà không đụng một byte nào của ảnh.
-          */}
-          {overview && steps4.length ? (
-            <View style={styles.steps4}>
-              {steps4.map((m, i) => (
-                <MediaStep
-                  key={m.uri}
-                  item={m}
-                  index={i}
-                  name={g?.name || title}
-                  styles={styles}
-                  reduced={reduced}
-                  onOpen={() => {
-                    Haptics.selectionAsync();
-                    nav.push({
-                      pathname: '/media-viewer',
-                      params: { ex: g?.id ?? '', name: g?.name || title, i: String(i) },
-                    });
-                  }}
-                />
-              ))}
-            </View>
-          ) : null}
-
-          {overview && steps.length ? (
-            <View style={styles.block}>
-              <Text style={styles.sectionTitle}>{i18n.nEgTitle}</Text>
-              <View style={styles.list}>
-                {steps.map((t, i) => (
-                  <View key={t} style={styles.item}>
-                    <View style={styles.step}>
-                      <Text style={styles.stepNo}>{i + 1}</Text>
-                    </View>
-                    <Text style={styles.itemText}>{t}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
-
-          {/*
-            ── một sợi kẻ NGANG, và nó chỉ tồn tại khi có hai khối để chia ──
-
-            Cách thực hiện là một chuỗi phải đọc theo thứ tự; điểm kỹ thuật và
-            lỗi thường gặp là hai danh sách tra cứu. Hai loại đọc khác nhau,
-            nên ảnh tham chiếu đặt một sợi tơ giữa chúng — và KHÔNG đặt sợi nào
-            quanh hai cột, vì cột không phải ô bảng.
-
-            `hairlineWidth` là 1/scale của máy: trên màn 3× nó ra đúng một điểm
-            ảnh vật lý, tức "1px" theo đúng nghĩa đen của đặt hàng.
-          */}
-          {overview && ruled ? <View style={styles.rule} /> : null}
-
-          {/*
-            ── ĐIỂM KỸ THUẬT và LỖI THƯỜNG GẶP ──
-
-            Hai danh sách, một hình dạng, hai dấu. Dấu mang NGHĨA chứ không
-            mang trang trí: tick xanh là "làm thế này", chữ thập đỏ là "đừng
-            thế này".
-
-            Và nghĩa ấy KHÔNG chỉ nằm ở màu — mỗi mục nằm dưới một tiêu đề nói
-            thẳng nó là gì, và hai glyph khác hình nhau. Người không phân biệt
-            được đỏ/xanh vẫn đọc đúng, đó là điều kiện của WCAG 1.4.1.
-
-            ── vì sao là một ĐĨA ĐẶC, không phải một glyph trần ──
-
-            Bản trước vẽ `Check` và `AlertCircle` trần, 15 điểm, tô thẳng màu
-            xanh/đỏ. Cả bốn ảnh tham chiếu đều dựng chúng thành đĩa đặc 20 điểm
-            với glyph trắng bên trong, và lý do không phải khẩu vị: một nét 15
-            điểm màu xanh neon trên mặt giấy là một hình MỎNG mang toàn bộ sức
-            nặng của tín hiệu, còn một đĩa đặc thì có diện tích — nó tìm thấy
-            được khi liếc, và nó không phụ thuộc vào việc phân giải một nét
-            2,5 điểm.
-          */}
-          {overview && (cues.length || mistakes.length) ? (
-            <View
-              style={[
-                styles.block,
-                /* Sợi kẻ đã mang khoảng chia rồi — xem `blockTight`. */
-                ruled ? styles.blockTight : null,
-                twoCols ? styles.pair : null,
-              ]}>
-              {cues.length ? (
-                <View style={twoCols ? styles.col : undefined}>
-                  <Text style={styles.sectionTitle}>{i18n.nEgCues}</Text>
-                  <View style={styles.list}>
-                    {cues.map((t) => (
-                      <View key={t} style={styles.item}>
-                        <View style={[styles.mark, styles.markOk]}>
-                          <Icon icon={Check} size={11} color={c.primaryForeground} strokeWidth={3} />
-                        </View>
-                        <Text style={styles.itemText}>{t}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              ) : null}
-              {mistakes.length ? (
-                <View style={twoCols ? styles.col : undefined}>
-                  <Text style={styles.sectionTitle}>{i18n.nEgMistakes}</Text>
-                  <View style={styles.list}>
-                    {mistakes.map((t) => (
-                      <View key={t} style={styles.item}>
-                        <View style={[styles.mark, styles.markBad]}>
-                          <Icon icon={X} size={11} color={c.primaryForeground} strokeWidth={3} />
-                        </View>
-                        <Text style={styles.itemText}>{t}</Text>
-                      </View>
-                    ))}
-                  </View>
-                </View>
-              ) : null}
-            </View>
-          ) : null}
-
-          {overview && noContent ? (
-            <View style={styles.empty}>
-              <Text style={styles.emptyText}>{i18n.nEgEmpty}</Text>
-              <Text style={styles.emptyHint}>{i18n.nEgEmptyHint}</Text>
-            </View>
-          ) : null}
-
-          {/*
-            ── CƠ TÁC ĐỘNG ──
-
-            Bộ hình giải phẫu đã có sẵn và bốn màn khác đang dùng nó: lưới cơ ở
-            tab Tập luyện, bộ lọc của trình dựng buổi, thẻ mẫu tập, màn thư
-            viện. Đây là chỗ thứ năm, và nó không thêm một tài nguyên nào.
-
-            `g.muscles` là TỪNG nhóm một — khoá để tra hình, nhãn đã dịch để
-            in. `Lưng/Chân` của deadlift là HAI ô, và `muscleArtKeysFor` đã
-            tách sẵn — xem `muscle-group.ts`.
-          */}
-          {showMedia && shown === 'muscles' ? (
-            <View style={styles.block}>
-              <Text style={styles.sectionTitle}>{i18n.nEgMuscles}</Text>
-              {g?.muscles.length ? (
-                <View style={styles.tiles}>
-                  {g.muscles.map((m) => (
-                    <View key={m.key} style={styles.tile}>
-                      <MuscleArt group={m.key} size={64} />
-                      <Text style={styles.tileName} numberOfLines={1}>
-                        {m.label}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                /* Không có hình nào thì nói THẲNG là chưa ghi nhóm cơ — không
-                   dựng một khung trống rồi để người ta tự đoán. Và đây là một
-                   câu riêng, không phải câu "chưa có hướng dẫn": một bài có thể
-                   có đủ hướng dẫn mà cột nhóm cơ vẫn là một chuỗi thư viện
-                   không nhận ra. */
-                <Text style={styles.emptyHint}>{i18n.nEgNoMuscles}</Text>
-              )}
-            </View>
-          ) : null}
-
-          {/*
-            ── THIẾT BỊ ──
-
-            Một nhãn, rồi những bài KHÁC dùng đúng dụng cụ ấy. Nhãn thôi thì
-            trùng dòng siêu dữ liệu ngay trên và tab này không đáng có; danh
-            sách kia mới là thứ chỉ tab này nói được — "cái tạ đơn đang cầm còn
-            làm được gì nữa".
-          */}
-          {showMedia && shown === 'equipment' ? (
-            <View style={styles.block}>
-              <Text style={styles.sectionTitle}>{i18n.nEgEquipment}</Text>
-              {g?.equipment ? (
-                <Text style={styles.itemText}>{g.equipment}</Text>
-              ) : (
-                <Text style={styles.emptyHint}>{i18n.nEgNoEquipment}</Text>
-              )}
-              {g?.equipment ? (
-                <RelatedList
-                  title={i18n.nEgAlsoEquipment.replace('{v}', g.equipment)}
-                  items={related.equipment}
-                  busy={libraryBusy}
-                  failed={libraryFailed ? i18n.nLoadFailed : null}
-                  styles={styles}
-                  tint={c.mutedForeground}
-                />
-              ) : null}
-            </View>
-          ) : null}
-
-          {/*
-            ── LIÊN QUAN ──
-
-            Bài khác đánh vào ít nhất một nhóm cơ chung, nhiều nhóm trùng thì
-            đứng trước. Rỗng có HAI nguyên nhân khác nhau và chúng nói hai câu
-            khác nhau: không biết bài này đánh vào đâu, hay biết mà thư viện
-            không có bài nào khác.
-          */}
-          {showMedia && shown === 'related' ? (
-            <View style={styles.block}>
-              <Text style={styles.sectionTitle}>{i18n.nEgAlsoMuscles}</Text>
-              {g?.muscles.length ? (
-                <RelatedList
-                  items={related.muscle}
-                  busy={libraryBusy}
-                  failed={libraryFailed ? i18n.nLoadFailed : null}
-                  empty={i18n.nEgNoRelated}
-                  styles={styles}
-                  tint={c.mutedForeground}
-                />
-              ) : (
-                <Text style={styles.emptyHint}>{i18n.nEgNoMuscles}</Text>
-              )}
-            </View>
-          ) : null}
+          <Animated.View style={{ opacity: inOp, transform: [{ translateY: inY }] }}>
+            {tabBody(shown)}
           </Animated.View>
+          {prev !== null ? (
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                StyleSheet.absoluteFill,
+                { opacity: outOp, transform: [{ translateY: outY }] },
+              ]}>
+              {tabBody(prev)}
+            </Animated.View>
+          ) : null}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/*
         ── KHU HÀNH ĐỘNG Ở ĐÁY ──
@@ -1316,6 +1418,8 @@ const stylesFor = makeStyles((c, m) => ({
   scroll: { flexGrow: 1 },
 
   heroLayer: { position: 'absolute', left: 0, right: 0, top: 0 },
+  /* Đen đặc; thứ đổi là ĐỘ MỜ, và nó do cú cuộn lái. Xem `heroDim` ở JSX. */
+  heroDim: { backgroundColor: '#000000' },
   surface: {
     flexGrow: 1,
     overflow: 'hidden',

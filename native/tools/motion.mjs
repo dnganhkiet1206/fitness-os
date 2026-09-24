@@ -333,20 +333,6 @@ const COMPOSED = {
   'src/components/ascnd/assistant-aura.tsx': {
     420: 'nhịp cuối của cascade — ánh sáng phải xong sau thẻ 80ms, đó mới là thứ tự của một lần bước vào phòng',
   },
-  /*
-    Đổi tab ở màn hướng dẫn: MỘT cử chỉ hai nhịp, không phải hai lần chọn trên
-    thang. Đặt hàng vẽ hẳn ba bước — nội dung cũ mờ đi và dịch lên, đổi, nội
-    dung mới hiện lên từ dưới — kèm khoảng 200–250ms cho cả cú chuyển.
-
-    100 + 140 = 240, tức cả cử chỉ RƠI ĐÚNG một trong bốn nhịp của ngôn ngữ;
-    thứ không có tên là cách chia bên trong nó. Lượt ra ngắn hơn lượt vào vì
-    biến mất cần ít thời gian hơn xuất hiện — cùng lý do khiến `settle.tsx`
-    xếp 220 trước 340.
-  */
-  'src/app/exercise-guide.tsx': {
-    100: 'nhịp RA của cú đổi tab: 100 + 140 = 240, và 240 là một nhịp có sẵn — cách chia bên trong một cử chỉ',
-    140: 'nhịp VÀO của cú đổi tab: dài hơn lượt ra, vì xuất hiện cần nhiều thời gian hơn biến mất',
-  },
 };
 const TOKENS = new Set([180, 200, 240, 320]);
 for (const f of files) {

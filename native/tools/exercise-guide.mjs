@@ -725,7 +725,7 @@ const tabIds = [...sheet.matchAll(/\{ id: '([a-z]+)', key: 'nEgTab/g)].map((m) =
    đang sáng — xem khối hai trạng thái trong sheet. Vế này hỏi "tab nào cũng có
    thứ để vẽ", nên nó phải hỏi đúng cái biến quyết định thứ được vẽ. */
 const missingPanel = tabIds.filter(
-  (id) => id !== 'overview' && !new RegExp(`shown === '${id}'`).test(sheet),
+  (id) => id !== 'overview' && !new RegExp(`which === '${id}'`).test(sheet),
 );
 const missingEmpty = ['nEgNoMuscles', 'nEgNoEquipment', 'nEgNoRelated'].filter(
   (k) => !sheet.includes(`i18n.${k}`),
@@ -752,9 +752,10 @@ const realTabs = [
   /onPress=\{\(\) => pickTab\(id\)\}/.test(sheet) && /setTab\(id\);/.test(sheet)
     ? null
     : 'bấm vào một viên tab không còn đi qua `pickTab(id)` → `setTab(id)`',
-  /const overview = shown === 'overview';/.test(sheet)
+  /\{which === 'overview' &&/.test(sheet) && /const tabBody = \(which: GuideTab\)/.test(sheet)
     ? null
-    : 'nội dung "Tổng quan" không còn được che sau `shown === \'overview\'`',
+    : 'thân tab không còn là một hàm `tabBody(which)` — cú crossfade cần dựng ĐỒNG THỜI tab đang đi '
+      + 'và tab đang tới, nên nó không đọc được state',
   missingPanel.length ? `tab không có nhánh nội dung nào: ${missingPanel.join(', ')}` : null,
   missingEmpty.length ? `thiếu câu "chưa có" riêng của tab: ${missingEmpty.join(', ')}` : null,
   /const needsLibrary = tab === 'equipment' \|\| tab === 'related';/.test(sheet)
@@ -976,8 +977,8 @@ const frameGaps = [
   strip && /flexGrow: 0/.test(strip)
     ? null : 'dải cử chỉ không còn `flexGrow: 0` — `Animated.ScrollView` trên web mặc định NỞ, nên nó '
       + 'nuốt chỗ trống ở tab ngắn và đẩy cả mặt giấy lẫn hàng tab xuống (đo được: 386 → 465)',
-  /style=\{\{ opacity: fade, transform: \[\{ translateY: slide \}\] \}\}/.test(sheet)
-    ? null : 'thân tab không còn nằm trong MỘT lớp chuyển — cú đổi tab phải là một phép đổi độ mờ, '
+  /style=\{\{ opacity: inOp, transform: \[\{ translateY: inY \}\] \}\}/.test(sheet)
+    ? null : 'thân tab không còn nằm trong một lớp chuyển — cú đổi tab phải là một phép đổi độ mờ, '
       + 'không phải bốn nhánh tự hiện tự tắt',
   /*
     ── và vế thứ hai: ĐÃ KÉO LÊN rồi thì đổi tab không được làm tụt ──
@@ -1008,54 +1009,95 @@ if (frameGaps.length) {
   );
 }
 
-/* ── 30 · CÚ CHUYỂN TAB: ba bước, và các con số đặt hàng cho ──
+/* ── 30 · CÚ CHUYỂN TAB phải là một CROSSFADE, không phải một cú chớp ──
 
-   *"Dùng crossfade + dịch chuyển nhẹ theo chiều dọc (≈ 10–16pt, 200–250ms,
-   ease-out) khi đổi tab."*
+   Bản đầu của vế này canh một cú chuyển NỐI ĐUÔI: mờ về 0 trong 100ms, đổi
+   nội dung, hiện lại trong 140ms. Nó khớp mọi con số đặt hàng cho và vẫn sai ở
+   chỗ quan trọng nhất — giữa hai nhịp có đúng một khoảnh khắc mặt giấy KHÔNG
+   CÓ GÌ, và một khoảng trống dù chỉ 100ms đọc ra là một cú chớp. Chủ dự án bảo
+   sửa lại chính chỗ ấy, và luật cũ thì xanh suốt.
 
-   Hai giá trị chứ không một, và đó là một quyết định có lý do: một giá trị
-   duy nhất bắt lượt RA và lượt VÀO dùng chung một phép nội suy, nên nội dung
-   cũ sẽ trôi XUỐNG khi mờ đi — ngược hình đặt hàng vẽ.
+   Nên vế này nay hỏi thứ khác: hai lớp có THẬT SỰ chồng nhau không.
 
-   Và "giảm chuyển động" phải được tôn trọng: một cú chuyển 240ms vẫn là
-   chuyển động. Đây là luật của cả app, không phải ngoại lệ của màn này. */
+     · `prev` giữ tab đang tan, và lớp đè được dựng khi nó khác `null`
+     · lớp đè là `absoluteFill` + `pointerEvents="none"` — nó không tham gia
+       bố cục (không đụng chiều cao cuộn) và không nuốt chạm
+     · `setShown` chạy NGAY, không nằm trong callback của lượt chạy nào: nội
+       dung mới có mặt từ khung hình đầu, và lớp cũ là thứ tan đi
+     · bốn lượt chạy trong MỘT `Animated.parallel` — nối đuôi là quay lại đúng
+       lỗi cũ
+     · `setPrev(null)` khi xong, không thì lớp đè ở lại mãi và mỗi lần đổi tab
+       lại chồng thêm một cái
+
+   Thời lượng nay là TOKEN có tên (`duration.toggle` / `duration.move`) chứ
+   không phải số lạ, nên `tools/motion.mjs` không còn phải cấp ngoại lệ
+   `COMPOSED` nào cho tệp này. Vế cuối cấm viết thẳng số ở đây. */
 CASES++;
-const move = /const pickTab = useCallback\([\s\S]{0,1400}?\n  \);/.exec(sheet)?.[0] ?? '';
-const durs = [...move.matchAll(/duration: (\d+)/g)].map((m) => Number(m[1]));
-const total = durs.length
-  ? Math.max(...durs.filter((_, i) => i < 2)) + Math.max(...durs.filter((_, i) => i >= 2))
-  : 0;
-/* CẢ HAI biên độ: lượt ra đi bằng `toValue`, lượt vào đặt thẳng bằng
-   `setValue` rồi mới chạy về 0. Bản đầu của luật này chỉ đọc `toValue`, nên
-   nó chấm điểm lượt ra và KHÔNG BAO GIỜ nhìn lượt vào — break-test bắt được:
-   đổi 12 thành 40 mà luật vẫn xanh. */
-const shifts = [
-  ...[...move.matchAll(/toValue: (-?\d+)/g)].map((m) => Math.abs(Number(m[1]))),
-  ...[...move.matchAll(/setValue\((-?\d+)\)/g)].map((m) => Math.abs(Number(m[1]))),
-].filter((n) => n > 1);
-/* MỌI lượt timing phải ease-out, không phải "có ít nhất một". Break-test bắt
-   được chỗ này: đổi một trong bốn sang `Easing.linear` mà luật vẫn xanh. */
-const easings = (move.match(/Easing\.out\(/g) ?? []).length;
+const move = /const pickTab = useCallback\([\s\S]{0,2200}?\n  \);/.exec(sheet)?.[0] ?? '';
+const par = /Animated\.parallel\(\[[\s\S]{0,900}?\]\)/.exec(move)?.[0] ?? '';
 const moveGaps = [
   move ? null : 'không còn `pickTab` — cú chuyển tab đã biến mất khỏi một chỗ duy nhất',
+  /const \[prev, setPrev\] = useState<GuideTab \| null>\(null\);/.test(sheet)
+    ? null : 'không còn `prev` — không có tab đang tan thì không có gì để hoà cùng tab đang tới',
+  /StyleSheet\.absoluteFill,\s*\n\s*\{ opacity: outOp/.test(sheet)
+    && /pointerEvents="none"/.test(sheet)
+    ? null : 'lớp đè không còn `absoluteFill` + `pointerEvents="none"` — nó sẽ đụng vào chiều cao cuộn '
+      + 'hoặc nuốt chạm của nội dung thật bên dưới',
+  move && /setPrev\(shown\);\s*\n\s*setShown\(id\);/.test(move)
+    ? null : '`setShown` không còn chạy NGAY cạnh `setPrev` — hoãn nó vào callback của một lượt chạy là '
+      + 'quay lại đúng cú chớp: một khoảnh khắc không lớp nào có nội dung mới',
+  (par.match(/Animated\.timing\(/g) ?? []).length === 4
+    ? null : `\`Animated.parallel\` không còn đủ bốn lượt chạy (thấy ${(par.match(/Animated\.timing\(/g) ?? []).length}) `
+      + '— hai lớp phải chạy CÙNG LÚC, nối đuôi là quay lại cú chớp',
+  move && /if \(finished\) setPrev\(null\);/.test(move)
+    ? null : 'lớp đè không còn được tháo khi xong — nó ở lại vô hình mà vẫn được dựng, và mỗi lần đổi '
+      + 'tab lại chồng thêm một cái',
   move && /if \(reduced\) \{/.test(move)
-    ? null : '`pickTab` không còn tôn trọng "giảm chuyển động" — 240ms vẫn là chuyển động',
-  /* HAI chỗ gọi `setShown`: một ở đường "giảm chuyển động" (đổi thẳng), một ở
-     GIỮA cú chuyển. Bản đầu chỉ đòi một, nên xoá chỗ giữa vẫn xanh. */
-  move && (move.match(/setShown\(id\)/g) ?? []).length >= 2 && /setTab\(id\);/.test(move)
-    ? null : '`pickTab` không còn tách viên tab (`setTab`) khỏi nội dung (`setShown`) ở CẢ hai đường '
-      + '— đường "giảm chuyển động" đổi thẳng, và đường có hiệu ứng đổi ở giữa cú chuyển',
-  total >= 200 && total <= 250
-    ? null : `tổng thời lượng cú chuyển ${total}ms, đặt hàng cho 200–250ms`,
-  shifts.length && shifts.every((n) => n >= 8 && n <= 16)
-    ? null : `biên độ dịch dọc [${shifts.join(', ')}] điểm, đặt hàng cho ≈10–16`,
-  durs.length && easings === durs.length
-    ? null : `chỉ ${easings}/${durs.length} lượt chạy dùng \`ease-out\` — đặt hàng chỉ định đúng đường cong ấy, `
-      + 'và một lượt tuyến tính lẫn giữa ba lượt ease-out thì đọc ra như một cú giật',
+    ? null : '`pickTab` không còn tôn trọng "giảm chuyển động"',
+  move && (move.match(/Easing\.out\(/g) ?? []).length === 4
+    ? null : `chỉ ${(move.match(/Easing\.out\(/g) ?? []).length}/4 lượt chạy dùng \`ease-out\``,
+  move && /duration: duration\.(toggle|move|appear|swap)/.test(move) && !/duration: \d/.test(move)
+    ? null : 'thời lượng cú chuyển viết thẳng số — `constants/motion` đã đặt tên cho bốn nhịp, và dùng '
+      + 'tên thì `tools/motion.mjs` không phải cấp ngoại lệ cho tệp này',
+  /inY\.setValue\(12\)/.test(move) && /toValue: -12/.test(move)
+    ? null : 'biên độ dịch dọc không còn 12 điểm — đặt hàng cho ≈10–16',
 ].filter(Boolean);
 if (moveGaps.length) {
   problems.push(
-    `${SHEET}: cú chuyển tab không còn khớp con số đặt hàng cho — ${moveGaps.join('; ')}`,
+    `${SHEET}: cú đổi tab không còn là một crossfade — ${moveGaps.join('; ')}`,
+  );
+}
+
+/* ── 31 · HÌNH DẪN phải TỐI DẦN theo cú kéo ──
+
+   Đặt hàng: *"khi thẻ này được kéo lên dần thì ảnh phía trên sẽ bị tối dần cho
+   đến khi kéo full là tắt hẳn luôn để tránh lặp và loạn thông tin."*
+
+   Lý do ấy kiểm được: mặt giấy kéo hết lên thì mục "Cách thực hiện" bên trong
+   nó đã hiện đúng bốn tấm ảnh kia kèm chữ. Để hình dẫn sáng nguyên phía sau là
+   hiện cùng một tấm ảnh hai lần trên một màn.
+
+   Quãng tối phải ĐÚNG BẰNG quãng cuộn — `heroH - overlap`, tức đoạn mặt giấy
+   đi từ chỗ đứng yên tới chỗ che kín hình. Một con số khác thì hoặc hình tắt
+   khi còn nhìn thấy, hoặc còn một vệt sáng lọt ra lúc đã kéo hết. */
+CASES++;
+const dim = /<Animated\.View\s*\n\s*pointerEvents="none"\s*\n\s*style=\{\[\s*\n\s*StyleSheet\.absoluteFill,\s*\n\s*styles\.heroDim,[\s\S]{0,400}?\/>/.exec(sheet)?.[0] ?? '';
+const dimGaps = [
+  dim ? null : 'không còn lớp tối dần trên hình dẫn',
+  dim && /scrollY\.interpolate\(/.test(dim)
+    ? null : 'lớp tối không còn được lái bằng độ lệch cuộn',
+  dim && /inputRange: \[0, Math\.max\(1, heroH - overlap\)\]/.test(dim)
+    ? null : 'quãng tối không còn đúng bằng quãng cuộn `heroH - overlap` — hình sẽ tắt sớm hoặc còn '
+      + 'lọt một vệt sáng lúc mặt giấy đã che kín',
+  dim && /extrapolate: 'clamp'/.test(dim)
+    ? null : "thiếu `extrapolate: 'clamp'` — kéo quá đà sẽ làm lớp tối loé sáng trở lại",
+  /onScroll=\{Animated\.event\(\[\{ nativeEvent: \{ contentOffset: \{ y: scrollY \} \} \}\]/.test(sheet)
+    ? null : 'dòng cuộn dọc không còn báo độ lệch vào `scrollY`',
+].filter(Boolean);
+if (dimGaps.length) {
+  problems.push(
+    `${SHEET}: hình dẫn không còn tối dần theo cú kéo — ${dimGaps.join('; ')}. `
+      + 'Kéo hết lên thì bốn tấm ấy đã nằm trong mục "Cách thực hiện" rồi',
   );
 }
 
