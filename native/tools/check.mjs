@@ -716,6 +716,9 @@ const STEPS = [
     / Rời thử thách hỏng mọi lần trên server thật mà không gì trong kho này thấy.
   */
   ['cột confirmWrite', 'node', ['tools/confirm-write-cols.mjs']],
+  /* …và mọi `.select('…')` viết tay còn lại (#36): cùng một lỗi 42703, ở đọc,
+     `insert(…).select('id')` và `update(…).select(…)`. */
+  ['cột select', 'node', ['tools/select-cols.mjs']],
   /*
     Two shapes that only misbehave in a corner: a challenge measuring a literal
     while its own label promises "your target", and a week-start expression
