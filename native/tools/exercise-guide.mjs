@@ -977,7 +977,7 @@ const frameGaps = [
   strip && /flexGrow: 0/.test(strip)
     ? null : 'dải cử chỉ không còn `flexGrow: 0` — `Animated.ScrollView` trên web mặc định NỞ, nên nó '
       + 'nuốt chỗ trống ở tab ngắn và đẩy cả mặt giấy lẫn hàng tab xuống (đo được: 386 → 465)',
-  /style=\{\{ opacity: inOp, transform: \[\{ translateY: inY \}\] \}\}/.test(sheet)
+  /style=\{\{ opacity: fade, transform: \[\{ scale: grow \}\] \}\}/.test(sheet)
     ? null : 'thân tab không còn nằm trong một lớp chuyển — cú đổi tab phải là một phép đổi độ mờ, '
       + 'không phải bốn nhánh tự hiện tự tắt',
   /*
@@ -1009,62 +1009,87 @@ if (frameGaps.length) {
   );
 }
 
-/* ── 30 · CÚ CHUYỂN TAB phải là một CROSSFADE, không phải một cú chớp ──
+/* ── 30 · CÚ ĐỔI TAB phải là "FADE THROUGH", và KHÔNG được chồng lớp ──
 
-   Bản đầu của vế này canh một cú chuyển NỐI ĐUÔI: mờ về 0 trong 100ms, đổi
-   nội dung, hiện lại trong 140ms. Nó khớp mọi con số đặt hàng cho và vẫn sai ở
-   chỗ quan trọng nhất — giữa hai nhịp có đúng một khoảnh khắc mặt giấy KHÔNG
-   CÓ GÌ, và một khoảng trống dù chỉ 100ms đọc ra là một cú chớp. Chủ dự án bảo
-   sửa lại chính chỗ ấy, và luật cũ thì xanh suốt.
+   Vế này đã viết lại HAI lần, và cả hai lần đều vì nó canh sai thứ.
 
-   Nên vế này nay hỏi thứ khác: hai lớp có THẬT SỰ chồng nhau không.
+   **Bản một** canh một cú chuyển nối đuôi và đi ĐẾM CON SỐ: tổng 200–250ms,
+   biên độ 10–16 điểm, ease-out. Mọi con số khớp, và hiệu ứng vẫn sai — giữa
+   hai nhịp có một khoảnh khắc mặt giấy trống, đọc ra là một cú chớp.
 
-     · `prev` giữ tab đang tan, và lớp đè được dựng khi nó khác `null`
-     · lớp đè là `absoluteFill` + `pointerEvents="none"` — nó không tham gia
-       bố cục (không đụng chiều cao cuộn) và không nuốt chạm
-     · `setShown` chạy NGAY, không nằm trong callback của lượt chạy nào: nội
-       dung mới có mặt từ khung hình đầu, và lớp cũ là thứ tan đi
-     · bốn lượt chạy trong MỘT `Animated.parallel` — nối đuôi là quay lại đúng
-       lỗi cũ
-     · `setPrev(null)` khi xong, không thì lớp đè ở lại mãi và mỗi lần đổi tab
-       lại chồng thêm một cái
+   **Bản hai** sửa bằng cách cho hai lớp CHỒNG lên nhau, và canh đúng chuyện
+   chúng chồng. Nó cũng sai, và chủ dự án gọi đúng tên: "tùm lum". Crossfade
+   chỉ đọc được khi hai thứ CÙNG KHUÔN — đổi một tấm ảnh, đổi một con số. Bốn
+   tab này thì không: bốn tấm ảnh dọc kèm chữ chồng lên hai ô giải phẫu 64
+   điểm cho ra một mớ.
 
-   Thời lượng nay là TOKEN có tên (`duration.toggle` / `duration.move`) chứ
-   không phải số lạ, nên `tools/motion.mjs` không còn phải cấp ngoại lệ
-   `COMPOSED` nào cho tệp này. Vế cuối cấm viết thẳng số ở đây. */
+   **Bản ba — cái này** — dẫn từ tài liệu thay vì từ suy đoán. Material đặt tên
+   cho đúng tình huống ấy là *fade through*, và nói thẳng nó dành cho
+   *"transitions between UI elements that do not have a strong relationship to
+   each other, such as transitions triggered by tapping a bottom navigation
+   bar"*. Luật của nó:
+
+       lớp cũ   mờ 1→0                    100ms
+       (đổi nội dung)
+       lớp mới  mờ 0→1 + phóng 0,92→1     200ms
+
+   Nên vế này canh đúng ba điều spec chỉ định, và mỗi điều là một cách hiệu
+   ứng này hỏng trở lại:
+
+     · KHÔNG chồng lớp — không `prev`, không lớp `absoluteFill` thứ hai. Có
+       lại là quay về "tùm lum".
+     · `setShown` nằm TRONG callback của lượt mờ đi. Gọi nó sớm là hai nội
+       dung cùng hiện, tức lại chồng lớp bằng một đường khác.
+     · phóng bắt đầu đúng 0,92 và CHỈ ở lớp tới; không có phép dịch nào cộng
+       thêm. Spec: *"to avoid drawing excessive attention"* và *"to emphasize
+       new content over the old"* — cộng một phép dịch vào là cộng hai chuyển
+       động cho cùng một việc. */
 CASES++;
 const move = /const pickTab = useCallback\([\s\S]{0,2200}?\n  \);/.exec(sheet)?.[0] ?? '';
-const par = /Animated\.parallel\(\[[\s\S]{0,900}?\]\)/.exec(move)?.[0] ?? '';
+const par = /Animated\.parallel\(\[[\s\S]{0,700}?\]\)/.exec(move)?.[0] ?? '';
 const moveGaps = [
   move ? null : 'không còn `pickTab` — cú chuyển tab đã biến mất khỏi một chỗ duy nhất',
-  /const \[prev, setPrev\] = useState<GuideTab \| null>\(null\);/.test(sheet)
-    ? null : 'không còn `prev` — không có tab đang tan thì không có gì để hoà cùng tab đang tới',
-  /StyleSheet\.absoluteFill,\s*\n\s*\{ opacity: outOp/.test(sheet)
-    && /pointerEvents="none"/.test(sheet)
-    ? null : 'lớp đè không còn `absoluteFill` + `pointerEvents="none"` — nó sẽ đụng vào chiều cao cuộn '
-      + 'hoặc nuốt chạm của nội dung thật bên dưới',
-  move && /setPrev\(shown\);\s*\n\s*setShown\(id\);/.test(move)
-    ? null : '`setShown` không còn chạy NGAY cạnh `setPrev` — hoãn nó vào callback của một lượt chạy là '
-      + 'quay lại đúng cú chớp: một khoảnh khắc không lớp nào có nội dung mới',
-  (par.match(/Animated\.timing\(/g) ?? []).length === 4
-    ? null : `\`Animated.parallel\` không còn đủ bốn lượt chạy (thấy ${(par.match(/Animated\.timing\(/g) ?? []).length}) `
-      + '— hai lớp phải chạy CÙNG LÚC, nối đuôi là quay lại cú chớp',
-  move && /if \(finished\) setPrev\(null\);/.test(move)
-    ? null : 'lớp đè không còn được tháo khi xong — nó ở lại vô hình mà vẫn được dựng, và mỗi lần đổi '
-      + 'tab lại chồng thêm một cái',
+  /const \[prev, setPrev\]/.test(sheet) || /opacity: outOp/.test(sheet)
+    ? 'lớp đè quay lại — fade through KHÔNG chồng lớp, và chồng lớp là đúng thứ đã bị gọi là "tùm lum"'
+    : null,
+  move && /duration: 100,/.test(move)
+    ? null : 'nhịp MỜ ĐI không còn là 100ms — spec chia 100 (đi) + 200 (tới), và vế 100 là thứ giữ cả cú '
+      + 'chuyển trong 300ms',
+  /* CẢ HAI lượt của phần hiện lên, không phải "có ít nhất một": mờ và phóng
+     lệch nhịp thì phóng xong trước lúc đọc được, hoặc ngược lại. Bản đầu hỏi
+     "có xuất hiện không" và break-test bắt được — đổi một trong hai sang 240
+     mà luật vẫn xanh. */
+  (move.match(/duration: duration\.appear/g) ?? []).length === 2
+    ? null : `chỉ ${(move.match(/duration: duration\.appear/g) ?? []).length}/2 lượt HIỆN LÊN dùng `
+      + '`duration.appear` (200ms) — mờ và phóng phải CÙNG nhịp, và token ấy mô tả đúng việc này: một '
+      + 'thứ vừa nãy chưa có trên màn',
+  move && /\}\).start\(\(\{ finished \}\) => \{[\s\S]{0,120}?setShown\(id\);/.test(move)
+    ? null : '`setShown` không còn nằm TRONG callback của lượt mờ đi — gọi sớm là hai nội dung cùng hiện, '
+      + 'tức chồng lớp bằng một đường khác',
+  move && /grow\.setValue\(0\.92\);/.test(move)
+    ? null : 'phép phóng không còn bắt đầu ở 0,92 — spec chọn 8% chứ không 0 "to avoid drawing excessive '
+      + 'attention to the transition"',
+  (par.match(/Animated\.timing\(/g) ?? []).length === 2
+    ? null : `lượt HIỆN LÊN không còn đúng hai lượt chạy song song (thấy ${(par.match(/Animated\.timing\(/g) ?? []).length}) `
+      + '— mờ và phóng phải cùng lúc, và chỉ hai thứ ấy',
+  /* Quét CẢ TỆP, không riêng `pickTab`: phép dịch sẽ được cộng vào `style` của
+     lớp chuyển chứ không vào hàm bấm, nên hỏi trong `move` là hỏi sai chỗ —
+     break-test bắt được, mệnh đề ấy không bao giờ nổ. Chỉ còn đúng một chỗ
+     nhắc `translateY` trong tệp, và nó nằm trong khối chú thích giải thích vì
+     sao KHÔNG dùng nó. */
+  inCode(sheet, 'translateY')
+    ? 'cú chuyển tab lại có phép dịch dọc — spec áp PHÓNG cho lớp tới, và cộng thêm một phép dịch là '
+      + 'cộng hai chuyển động cho cùng một việc, đúng cảm giác "mọi thứ cùng động" đã bị phàn nàn'
+    : null,
+  move && /Easing\.in\(/.test(move) && /Easing\.out\(/.test(move)
+    ? null : 'đường cong không còn đi theo hướng chuyển động — lớp đi tăng tốc rời đi (`Easing.in`), lớp '
+      + 'tới giảm tốc rồi đặt xuống (`Easing.out`)',
   move && /if \(reduced\) \{/.test(move)
     ? null : '`pickTab` không còn tôn trọng "giảm chuyển động"',
-  move && (move.match(/Easing\.out\(/g) ?? []).length === 4
-    ? null : `chỉ ${(move.match(/Easing\.out\(/g) ?? []).length}/4 lượt chạy dùng \`ease-out\``,
-  move && /duration: duration\.(toggle|move|appear|swap)/.test(move) && !/duration: \d/.test(move)
-    ? null : 'thời lượng cú chuyển viết thẳng số — `constants/motion` đã đặt tên cho bốn nhịp, và dùng '
-      + 'tên thì `tools/motion.mjs` không phải cấp ngoại lệ cho tệp này',
-  /inY\.setValue\(12\)/.test(move) && /toValue: -12/.test(move)
-    ? null : 'biên độ dịch dọc không còn 12 điểm — đặt hàng cho ≈10–16',
 ].filter(Boolean);
 if (moveGaps.length) {
   problems.push(
-    `${SHEET}: cú đổi tab không còn là một crossfade — ${moveGaps.join('; ')}`,
+    `${SHEET}: cú đổi tab không còn là một "fade through" — ${moveGaps.join('; ')}`,
   );
 }
 

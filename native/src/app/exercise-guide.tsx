@@ -308,37 +308,51 @@ export default function ExerciseGuideSheet() {
   const scrollY = useRef(new Animated.Value(0)).current;
 
   /*
-    ── ĐỔI TAB: một cú CROSSFADE, không phải một cú chớp ──
+    ── ĐỔI TAB: "fade through", không phải crossfade ──
 
-    Đặt hàng vẽ ba bước: nội dung cũ mờ đi và trôi lên, hoà, nội dung mới hiện
-    lên từ dưới. Bản trước làm việc ấy bằng MỘT lớp — mờ về 0, đổi, hiện lại —
-    và bản ấy sai đúng ở chỗ quan trọng nhất: giữa hai nhịp có một khoảnh khắc
-    mặt giấy KHÔNG CÓ GÌ. Một khoảng trống, dù chỉ 100ms, đọc ra là một cú
-    chớp chứ không phải một cú hoà. Chủ dự án bảo sửa lại chính chỗ ấy.
+    Lượt trước tôi dựng một crossfade chồng lớp: lớp cũ mờ đi ĐÈ LÊN lớp mới
+    đang hiện. Chủ dự án xem xong gọi đúng tên nó — "tùm lum". Và đó không
+    phải khẩu vị, đó là sai LOẠI hiệu ứng:
 
-    Nay hai lớp chạy CÙNG LÚC, nên không có khung hình nào trống:
+      · crossfade chỉ đọc được khi hai thứ CÙNG KHUÔN — đổi một tấm ảnh, đổi
+        một con số. Mắt thấy một vật biến thành vật khác.
+      · bốn tab này không cùng khuôn gì cả: một bên là bốn tấm ảnh dọc kèm
+        chữ, bên kia là hai ô giải phẫu 64 điểm. Chồng chúng lên nhau trong
+        180ms cho ra một mớ không đọc được — hai bố cục khác hẳn nhau cùng
+        hiện một lúc.
 
-        lớp cũ    mờ 1→0, trôi  0 → −12    180ms  (`duration.toggle`)
-        lớp mới   mờ 0→1, tới  +12 →  0    240ms  (`duration.move`)
+    Material đặt tên cho đúng tình huống này: **fade through**, và nói thẳng
+    nó dành cho *"transitions between UI elements that do not have a strong
+    relationship to each other, such as transitions triggered by tapping a
+    bottom navigation bar"*. Luật của nó là KHÔNG CHỒNG:
 
-    Hai con số là TOKEN có tên, không phải số lạ — nên lượt này gỡ luôn ngoại
-    lệ `COMPOSED` mà bản trước phải xin trong `tools/motion.mjs`. Cách chọn
-    theo đúng nguyên tắc ghi trong `constants/motion`: "theo màn hình đổi bao
-    nhiêu". Lớp đi có quãng ngắn và một cái bóng nán lại là thứ làm cú hoà bị
-    đục, nên nó ngắn hơn; lớp tới đi 12 điểm và phải đọc được lúc đặt chân.
+        lớp cũ   mờ 1→0                    100ms
+        (đổi nội dung)
+        lớp mới  mờ 0→1 + phóng 0,92→1     200ms   (`duration.appear`)
 
-    Tổng cảm nhận là 240ms — nhịp dài hơn trong hai — vẫn nằm trong khoảng
-    200–250ms đặt hàng cho.
+    Ba chi tiết của spec, và mỗi cái có lý do riêng:
 
-    `prev` là tab đang tan. `null` nghĩa là không có cú chuyển nào đang chạy,
-    và lớp đè không được dựng — nên ở trạng thái thường màn này vẫn đúng một
-    lớp như trước.
+    **Phóng bắt đầu ở 0,92 chứ không 0** — *"to avoid drawing excessive
+    attention to the transition"*. Một cú phóng từ 0 là một màn trình diễn;
+    8% là một cú đặt chân.
+
+    **Phóng CHỈ áp cho lớp tới** — *"to emphasize new content over the old"*.
+    Lớp đi chỉ mờ, không co, không trôi: nó đang rời đi, và mọi chuyển động
+    thêm vào nó đều tranh phần chú ý với thứ đang tới.
+
+    **Không có dịch dọc.** Bản trước dịch 12 điểm theo yêu cầu sớm hơn của
+    đặt hàng. Cộng nó vào một cú phóng là cộng hai chuyển động cho cùng một
+    việc — đúng cái cảm giác "mọi thứ cùng động" vừa bị phàn nàn. Phóng thay
+    nó, vì đó là thứ spec chỉ định.
+
+    Đường cong đi theo hướng chuyển động: lớp đi `Easing.in` (tăng tốc rời
+    đi), lớp tới `Easing.out` (giảm tốc rồi đặt xuống).
+
+    Tổng 300ms. Viên tab thì sáng NGAY lúc chạm — dưới 150ms là ngưỡng người
+    ta bắt đầu nghi nút hỏng và bấm lại, và `setTab` không đợi nhịp nào.
   */
-  const [prev, setPrev] = useState<GuideTab | null>(null);
-  const inOp = useRef(new Animated.Value(1)).current;
-  const inY = useRef(new Animated.Value(0)).current;
-  const outOp = useRef(new Animated.Value(0)).current;
-  const outY = useRef(new Animated.Value(0)).current;
+  const fade = useRef(new Animated.Value(1)).current;
+  const grow = useRef(new Animated.Value(1)).current;
   const pickTab = useCallback(
     (id: GuideTab) => {
       Haptics.selectionAsync();
@@ -347,29 +361,30 @@ export default function ExerciseGuideSheet() {
       if (id === shown) return;
       if (reduced) {
         setShown(id);
-        setPrev(null);
+        fade.setValue(1);
+        grow.setValue(1);
         return;
       }
-      /* Nội dung đổi NGAY, không đợi nhịp nào: lớp cũ vẫn còn đó để nhìn, nên
-         không có gì phải chờ. Đây là khác biệt thật so với bản trước. */
-      setPrev(shown);
-      setShown(id);
-      inOp.setValue(0);
-      inY.setValue(12);
-      outOp.setValue(1);
-      outY.setValue(0);
-      Animated.parallel([
-        Animated.timing(outOp, { toValue: 0, duration: duration.toggle, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.timing(outY, { toValue: -12, duration: duration.toggle, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.timing(inOp, { toValue: 1, duration: duration.move, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        Animated.timing(inY, { toValue: 0, duration: duration.move, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-      ]).start(({ finished }) => {
-        /* Tháo lớp đè khi xong. Không tháo thì nó ở lại mãi, vô hình mà vẫn
-           được dựng — và mỗi lần đổi tab lại chồng thêm một cái. */
-        if (finished) setPrev(null);
+      Animated.timing(fade, {
+        toValue: 0,
+        /* 100, thẳng từ spec, và KHÔNG được làm tròn về nhịp 180 có tên: cả
+           hiệu ứng dựa vào chuyện lớp cũ biến mất NHANH để lớp mới có trọn
+           200ms mà tổng vẫn 300. Ghi trong `COMPOSED` của `tools/motion.mjs`
+           kèm đúng lý do này. */
+        duration: 100,
+        easing: Easing.in(Easing.quad),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (!finished) return;
+        setShown(id);
+        grow.setValue(0.92);
+        Animated.parallel([
+          Animated.timing(fade, { toValue: 1, duration: duration.appear, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(grow, { toValue: 1, duration: duration.appear, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        ]).start();
       });
     },
-    [inOp, inY, outOp, outY, reduced, shown],
+    [fade, grow, reduced, shown],
   );
 
   const steps4 = captionedItems(media);
@@ -1090,37 +1105,16 @@ export default function ExerciseGuideSheet() {
             ghim một con số ở đây. Ghim chiều cao sẽ cắt mất nội dung tab dài.
           */}
           {/*
-            ── HAI LỚP, và đó là điều làm nó thành CROSSFADE ──
+            MỘT lớp, và đó là điều làm nó thành "fade through" chứ không phải
+            crossfade: hai nội dung không bao giờ cùng hiện. Xem `pickTab`.
 
-            Bản trước là một lớp: mờ về 0, đổi nội dung, hiện lại. Nghe thì
-            giống, nhưng ở giữa có đúng một khoảnh khắc KHÔNG CÓ GÌ trên mặt
-            giấy — và một khoảng trống dù chỉ 100ms đọc ra như một cú chớp,
-            không như một cú hoà.
-
-            Nay lớp cũ ở lại thêm một nhịp: nó nằm đè lên (`absoluteFill`, nên
-            nó KHÔNG tham gia bố cục và không đụng vào chiều cao cuộn), mờ dần
-            và trôi lên, trong khi lớp mới hiện lên từ dưới. Hai lượt chạy CÙNG
-            LÚC, nên không có khung hình nào trống.
-
-            `pointerEvents="none"`: lớp cũ là một cái bóng đang tan, chạm vào
-            nó phải rơi xuống nội dung thật bên dưới.
-
-            `tabBody(which)` là MỘT hàm dựng dùng cho cả hai lớp — không phải
-            hai bản sao JSX sẽ lệch nhau ở lần sửa thứ ba.
+            `scale` chứ không `translateY` — spec áp phép phóng cho lớp TỚI để
+            nhấn nội dung mới, và cộng thêm một phép dịch là cộng hai chuyển
+            động cho cùng một việc.
           */}
-          <Animated.View style={{ opacity: inOp, transform: [{ translateY: inY }] }}>
+          <Animated.View style={{ opacity: fade, transform: [{ scale: grow }] }}>
             {tabBody(shown)}
           </Animated.View>
-          {prev !== null ? (
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                StyleSheet.absoluteFill,
-                { opacity: outOp, transform: [{ translateY: outY }] },
-              ]}>
-              {tabBody(prev)}
-            </Animated.View>
-          ) : null}
         </View>
       </Animated.ScrollView>
 
