@@ -298,6 +298,7 @@ function useToggle(table: 'community_likes' | 'community_saves', flag: 'liked' |
           await confirmWrite(
             supabase.from(table).delete().eq('post_id', postId).eq('user_id', user!.id),
             'Không bỏ được — có thể đã bỏ ở thiết bị khác',
+            'post_id',
           );
         } catch (e) {
           /* Không còn dòng nào để xoá = đã bỏ ở thiết bị khác: trạng thái
@@ -482,6 +483,7 @@ export function useFollow() {
         await confirmWrite(
           supabase.from('community_follows').delete().eq('follower_id', user!.id).eq('followee_id', userId),
           'Không bỏ theo dõi được — có thể đã bỏ ở thiết bị khác',
+          'followee_id',
         );
       }
     },
@@ -788,6 +790,7 @@ export function useJoinChallenge() {
         await confirmWrite(
           supabase.from('community_challenge_members').delete().eq('challenge_id', id).eq('user_id', user!.id),
           'Không rời được thử thách — có thể bạn đã nhận thưởng',
+          'challenge_id',
         );
       }
     },

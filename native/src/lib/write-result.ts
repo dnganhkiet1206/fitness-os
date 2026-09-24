@@ -81,13 +81,21 @@ export class NothingWrittenError extends Error {
  * Run an update or delete and insist it touched something.
  *
  * @param builder the query, **without** `.select()` — this adds it
+ * @param key a column the table REALLY has — `id` by default. Four community
+ *   tables are keyed by a PAIR and have no `id` at all (`community_likes`,
+ *   `community_saves`, `community_follows`, `community_challenge_members`), and
+ *   `select=id` becomes `RETURNING id`, which PostgreSQL refuses with 42703:
+ *   unlike, unsave, unfollow and leaving a challenge never once worked against
+ *   a real server. The web harness did not notice because its fake REST returns
+ *   rows without checking columns. `tools/confirm-write-cols.mjs` now reads
+ *   every call against `types.ts`.
  * @param what what did not happen, in the person's language, ready to show:
  *   *"Không xoá được buổi tập — có thể nó đã bị xoá ở thiết bị khác"*. Not a
  *   table name: the message is read by somebody who has never heard of
  *   `workout_sessions`.
  */
-export async function confirmWrite(builder: Confirmable, what: string): Promise<void> {
-  const { data, error } = await builder.select('id');
+export async function confirmWrite(builder: Confirmable, what: string, key = 'id'): Promise<void> {
+  const { data, error } = await builder.select(key);
   if (error) throw new Error(error.message);
   if (!data || data.length === 0) throw new NothingWrittenError(what);
 }

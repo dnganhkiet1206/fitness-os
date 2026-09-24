@@ -709,6 +709,13 @@ const STEPS = [
   */
   ['tầng import', 'node', ['tools/layering.mjs']],
   /*
+    `confirmWrite` hỏi lại một cột để biết lệnh ghi có chạm dòng nào; PostgREST
+    biến nó thành RETURNING, và một cột không có thật là 42703. Bốn bảng cộng
+    đồng khoá bằng một cặp cột và không có `id` — Bỏ thích / Bỏ lưu / Bỏ theo dõi
+    / Rời thử thách hỏng mọi lần trên server thật mà không gì trong kho này thấy.
+  */
+  ['cột confirmWrite', 'node', ['tools/confirm-write-cols.mjs']],
+  /*
     Two shapes that only misbehave in a corner: a challenge measuring a literal
     while its own label promises "your target", and a week-start expression
     that is right six days out of seven and wrong on Sunday — the day people sit
