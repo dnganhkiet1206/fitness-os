@@ -11,16 +11,9 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { type CommunityChallenge, useClaimChallenge, useJoinChallenge } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
 import { getLocale } from '@/lib/i18n';
-import { localDateStr, parseLocalDate } from '@/lib/local-date';
+import { dayGap, localDateStr } from '@/lib/local-date';
 import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
-
-/** Số ngày từ hôm nay tới một ngày `YYYY-MM-DD`, theo lịch địa phương. */
-export function daysUntil(dateStr: string): number {
-  const a = parseLocalDate(localDateStr()).getTime();
-  const b = parseLocalDate(dateStr).getTime();
-  return Math.round((b - a) / 864e5);
-}
 
 /**
  * Thử thách nổi bật ở đầu Khám phá — mockup màn 1.
@@ -57,15 +50,15 @@ export function ChallengeHero({ items }: { items: CommunityChallenge[] }) {
   const join = useJoinChallenge();
   const claim = useClaimChallenge();
 
-  const open = items.filter((x) => daysUntil(x.ends_on) >= 0);
+  const open = items.filter((x) => dayGap(localDateStr(), x.ends_on) >= 0);
   const ch =
     open.find((x) => x.joined && !x.claimed) ??
     [...open].sort((a, b) => b.participants - a.participants)[0];
   if (!ch) return null;
 
   const done = ch.joined && ch.progress >= ch.target;
-  const left = daysUntil(ch.ends_on);
-  const startsIn = daysUntil(ch.starts_on);
+  const left = dayGap(localDateStr(), ch.ends_on);
+  const startsIn = dayGap(localDateStr(), ch.starts_on);
   const pct = Math.min(100, (ch.progress / ch.target) * 100);
   const people = ch.participants.toLocaleString(getLocale(lang));
 

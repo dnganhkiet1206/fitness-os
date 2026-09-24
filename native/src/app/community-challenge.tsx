@@ -2,7 +2,6 @@ import { useLocalSearchParams } from 'expo-router';
 import { Check, Trophy } from 'lucide-react-native';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
 
-import { daysUntil } from '@/components/ascnd/challenge-hero';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -18,7 +17,7 @@ import { useChallenges, useClaimChallenge, useJoinChallenge } from '@/hooks/use-
 import { useMascot } from '@/hooks/use-mascot';
 import { usePalette } from '@/hooks/use-palette';
 import { getLocale } from '@/lib/i18n';
-import { parseLocalDate } from '@/lib/local-date';
+import { dayGap, localDateStr, parseLocalDate } from '@/lib/local-date';
 import { toast } from '@/lib/toast';
 
 /**
@@ -48,7 +47,7 @@ export default function CommunityChallengeScreen() {
   const fmt = (d: string) => parseLocalDate(d).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 
   const done = !!ch && ch.joined && ch.progress >= ch.target;
-  const open = !!ch && daysUntil(ch.ends_on) >= 0;
+  const open = !!ch && dayGap(localDateStr(), ch.ends_on) >= 0;
 
   const leave = () =>
     ch &&
@@ -85,7 +84,7 @@ export default function CommunityChallengeScreen() {
               </>
             ) : null}
             <Text style={styles.how}>{i18n.nChHow}</Text>
-            <Row label={`${fmt(ch.starts_on)} → ${fmt(ch.ends_on)}`} value={open ? i18n.nChEndsIn.replace('{n}', String(daysUntil(ch.ends_on))) : i18n.nChEnded} />
+            <Row label={`${fmt(ch.starts_on)} → ${fmt(ch.ends_on)}`} value={open ? i18n.nChEndsIn.replace('{n}', String(dayGap(localDateStr(), ch.ends_on))) : i18n.nChEnded} />
             {ch.reward_coins > 0 ? <Row label={i18n.nChReward} value={i18n.nChCoins.replace('{n}', String(ch.reward_coins))} /> : null}
             <Row label={i18n.nChPeople.replace('{n}', ch.participants.toLocaleString(locale))} value="" />
           </GlassCard>

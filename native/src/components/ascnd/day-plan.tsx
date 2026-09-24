@@ -33,6 +33,7 @@ import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useAppendToSession, useLogWorkoutSession, useRemoveSetFromSession, useRestoreSession } from '@/hooks/use-fitness-data';
+import { useWorkoutShareInvite } from '@/hooks/use-workout-share-invite';
 import { useUnits } from '@/hooks/use-units';
 import { exerciseKey } from '@/lib/personal-record';
 import { mergeProgress, sessionTicks, type SessionSet } from '@/lib/day-progress';
@@ -385,6 +386,7 @@ export function DayPlan({
   const styles = stylesFor(c);
   const { weight: wUnit } = useUnits();
   const log = useLogWorkoutSession();
+  const invite = useWorkoutShareInvite();
   const append = useAppendToSession();
   const cutSet = useRemoveSetFromSession();
   const restore = useRestoreSession();
@@ -1222,10 +1224,12 @@ export function DayPlan({
         date: dateStr,
       },
       {
-        onSuccess: () => {
+        onSuccess: async (res) => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           if (storeKey) AsyncStorage.removeItem(storeKey).catch(() => {});
-          toast.success(i18n.nRdSaved);
+          /* Cùng lời mời chia sẻ như sheet ghi buổi tập (#29): buổi xong từ lịch
+             tuần cũng là một buổi xong. */
+          invite.announce(i18n.nRdSaved, res.id, await invite.challengeLine());
         },
         onError: (e: Error) => toast.fail(e),
       },

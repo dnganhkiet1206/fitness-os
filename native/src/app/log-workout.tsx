@@ -21,7 +21,6 @@ import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { MusicLaunch } from '@/components/ascnd/music-launch';
 import { Icon } from '@/components/ascnd/icon';
-import { daysUntil } from '@/components/ascnd/challenge-hero';
 import { RecordCelebration } from '@/components/ascnd/record-celebration';
 import type { TplExercise } from '@/components/ascnd/template-list';
 import { radius, spacing, type } from '@/constants/ascnd';
@@ -29,13 +28,13 @@ import { makeStyles } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useChallenges, useMyCommunityProfile } from '@/hooks/use-community';
 import { useLogWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useDailyStreak } from '@/hooks/use-mascot-room';
 import { refreshKoaContext, useKoaContext } from '@/hooks/use-koa-context';
 import { useExercises, useRoutineDays, useWorkoutTemplates } from '@/hooks/use-library';
 import { useUnits } from '@/hooks/use-units';
 import { useUserState } from '@/hooks/use-user-state';
+import { useWorkoutShareInvite } from '@/hooks/use-workout-share-invite';
 import { useDailyLog, useProfile, useRecentWorkouts } from '@/hooks/useTodayData';
 import { emitKoa } from '@/lib/koa-stage';
 import {
@@ -549,23 +548,9 @@ export default function LogWorkoutSheet() {
     told the user something that had not happened. `log-meal` and the sleep
     sheet both say the queued version; only this one lied.
   */
-  /*
-    ── lời mời chia sẻ (#12): trên thanh toast, không phải một hộp thoại ──
-
-    Lúc vừa tập xong là lúc người ta muốn khoe nhất, nhưng cũng là lúc họ
-    đang cần đóng màn. Nên lời mời là MỘT nút trên chính thanh "Đã lưu buổi
-    tập" — bỏ qua thì nó tự tắt — và nó mở `/community-share` với đúng buổi vừa
-    lưu đã chọn sẵn. Chỉ khi đã có hồ sơ cộng đồng: người chưa có sẽ bị hỏi tạo
-    hồ sơ ngay sau khi bấm, và một lời mời dẫn tới một biểu mẫu là lời mời sai.
-
-    Và nếu người ấy đang theo một thử thách, câu toast nói luôn con số MỚI
-    ("30 ngày kỷ luật: 25/30 ngày"). Số do server đếm — đọc lại sau khi lưu,
-    không cộng +1 ở đây: hai buổi cùng một ngày địa phương chỉ là một ngày.
-
-    Đường offline không có id và không có số thử thách, nên không mời gì.
-  */
-  const me = useMyCommunityProfile();
-  const challenges = useChallenges();
+  /* Lời mời chia sẻ sau khi lưu (#12) — logic ở `useWorkoutShareInvite`, dùng
+     chung với lối lưu từ lịch tuần (`day-plan`, #29). */
+  const invite = useWorkoutShareInvite();
   const afterSave = useRef<{ id: string | null; line: string | null }>({ id: null, line: null });
 
   const finish = (message: string = i18n.logWorkoutSaved) => {
@@ -574,13 +559,7 @@ export default function LogWorkoutSheet() {
     if (leaving.current) return;
     leaving.current = true;
     nav.back();
-    const { id, line } = afterSave.current;
-    const text = line ? `${message} · ${line}` : message;
-    if (id && me.data) {
-      toast.next(text, i18n.nShShare, () => nav.push({ pathname: '/community-share', params: { session: id } }));
-    } else {
-      toast.success(text);
-    }
+    invite.announce(message, afterSave.current.id, afterSave.current.line);
   };
 
   /*
@@ -614,25 +593,6 @@ export default function LogWorkoutSheet() {
     },
   });
 
-  /* Đọc lại thử thách SAU khi lưu, có trần thời gian: màn không được treo vì
-     một câu phụ trong toast. Lỗi hay chậm thì câu ấy chỉ đơn giản vắng mặt. */
-  const challengeLine = async (): Promise<string | null> => {
-    try {
-      const r = await Promise.race([
-        challenges.refetch(),
-        new Promise<null>((ok) => setTimeout(() => ok(null), 1500)),
-      ]);
-      const ch = r?.data?.find((x) => x.joined && !x.claimed && daysUntil(x.ends_on) >= 0);
-      if (!ch) return null;
-      return i18n.nShChallenge
-        .replace('{title}', ch.title)
-        .replace('{a}', String(Math.min(ch.progress, ch.target)))
-        .replace('{b}', String(ch.target));
-    } catch {
-      return null;
-    }
-  };
-
   const save = useMutation({
     mutationFn: async () => {
       const res = await log.mutateAsync({
@@ -650,7 +610,7 @@ export default function LogWorkoutSheet() {
           };
         }),
       });
-      afterSave.current = { id: res.id, line: await challengeLine() };
+      afterSave.current = { id: res.id, line: await invite.challengeLine() };
       return res;
     },
     onSuccess: (res) => {

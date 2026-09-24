@@ -1028,6 +1028,34 @@ const SCENARIOS = [
   },
   {
     /*
+      #27, nửa còn lại: Lưu đi qua cùng `useToggle` với Thích, nhưng issue đòi
+      chứng minh cả hai. Nút Lưu có nhãn trơn ("Lưu"), không kèm số, nên vế này
+      chỉ đòi thanh toast — đó cũng là thứ duy nhất phân biệt được bản sửa với
+      bản cũ (ở vế Thích, nhãn về đúng ở CẢ HAI bản vì lượt tải lại quá nhanh).
+    */
+    name: 'Cộng đồng: Lưu hỏng thì báo lỗi',
+    route: '/community', mode: 'full',
+    async run(page) {
+      await page.route(/\/rest\/v1\/community_saves/, (r) =>
+        r.request().method() === 'GET'
+          ? r.fallback()
+          : r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' }),
+      );
+      await page.waitForTimeout(2000);
+      const btn = page.getByRole('button', { name: /^(Lưu|Save)$/ }).first();
+      if ((await btn.count()) === 0) return 'không thấy nút Lưu nào trên feed';
+      await btn.click();
+      let toastText = '';
+      for (let i = 0; i < 10 && !toastText; i++) {
+        await page.waitForTimeout(250);
+        toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+      }
+      if (!toastText) return 'Lưu hỏng mà không có thanh toast nào — lỗi bị nuốt (#27)';
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng
