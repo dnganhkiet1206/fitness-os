@@ -1006,6 +1006,34 @@ const SCENARIOS = [
   },
   {
     /*
+      #44: lọc bài theo loại trên hồ sơ, Ở SERVER. Linh Phạm có cả ba loại; bấm
+      "Công thức" thì chỉ còn thẻ công thức ("Thêm vào bữa ăn"), không còn thẻ
+      buổi tập ("Thử workout").
+    */
+    name: 'Hồ sơ: lọc bài theo loại',
+    route: '/community-user?id=c0000000-0000-4000-8000-0000000011a1', mode: 'full',
+    async run(page) {
+      const chip = page.getByRole('button', { name: /^(Công thức|Recipes)$/ }).or(page.getByRole('tab', { name: /^(Công thức|Recipes)$/ })).first();
+      if ((await chip.count()) === 0) return 'không thấy hàng lọc theo loại trên hồ sơ có ba loại bài';
+      await chip.click({ force: true });
+      await page.waitForTimeout(2500);
+      const body = await readable(page);
+      if (!/Thêm vào bữa ăn|Add to a meal/.test(body)) return 'lọc "Công thức" mà không thấy thẻ công thức';
+      if (/Thử workout|Try workout/.test(body)) return 'lọc "Công thức" mà vẫn còn thẻ buổi tập';
+      return null;
+    },
+  },
+  {
+    /* …và hồ sơ chỉ có MỘT loại bài thì không có hàng lọc nào để bấm. */
+    name: 'Hồ sơ: một loại bài thì không có hàng lọc',
+    route: '/community-user?id=c0000000-0000-4000-8000-00000000a5cd', mode: 'full',
+    async run(page) {
+      const n = await page.getByRole('button', { name: /^(Tất cả|All)$/ }).or(page.getByRole('tab', { name: /^(Tất cả|All)$/ })).count();
+      return n === 0 ? null : 'hồ sơ chỉ có bài buổi tập mà vẫn hiện hàng lọc';
+    },
+  },
+  {
+    /*
       #19: ô tìm người hỏi server theo chuỗi đã chuẩn hoá (bỏ `@`, chữ thường),
       KHÔNG hỏi khi mới một ký tự (một ký tự khớp gần hết bảng), và trễ 250ms
       nên gõ liền nhiều phím chỉ ra một lượt hỏi. Đếm chính các request RPC.

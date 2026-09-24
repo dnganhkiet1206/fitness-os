@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { BadgeCheck, Bookmark, MoreHorizontal, UserRound } from 'lucide-react-native';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 
@@ -8,14 +9,23 @@ import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { PostCard } from '@/components/ascnd/post-card';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
+import { alpha, makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
-import { useBlock, useCommunityUser, useCommunityUserPosts, useFollow, useReport } from '@/hooks/use-community';
-import { usePalette } from '@/hooks/use-palette';
+import {
+  type PostKindFilter,
+  useBlock,
+  useCommunityUser,
+  useCommunityUserKinds,
+  useCommunityUserPosts,
+  useFollow,
+  useReport,
+} from '@/hooks/use-community';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
 
@@ -31,13 +41,26 @@ import { toast } from '@/lib/toast';
  * dõi" là trạng thái đã bật nên nó chuyển sang viên trầm: một nút đặc mời làm
  * lại việc đã làm là một lời nói sai.
  */
+const KIND_LABEL: Record<PostKindFilter, (i: ReturnType<typeof useI18n>) => string> = {
+  all: (i) => i.nUpAll,
+  workout: (i) => i.nSegTraining,
+  progress: (i) => i.nUpProgress,
+  recipe: (i) => i.nUpRecipe,
+};
+
 export default function CommunityUserScreen() {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const user = useCommunityUser(id);
-  const posts = useCommunityUserPosts(id);
+  /* Lọc theo loại (#44). Về 'all' khi loại đang chọn không còn bài — xoá bài
+     cuối cùng của một loại không được để người ta đứng trước một bộ lọc rỗng. */
+  const kinds = useCommunityUserKinds(id);
+  const [kindPick, setKind] = useState<PostKindFilter>('all');
+  const kind = kindPick !== 'all' && !(kinds.data ?? []).includes(kindPick) ? 'all' : kindPick;
+  const posts = useCommunityUserPosts(id, kind);
   const follow = useFollow();
   const report = useReport();
   const block = useBlock();
@@ -158,6 +181,23 @@ export default function CommunityUserScreen() {
             </PressScale>
           )}
 
+          {(kinds.data ?? []).length >= 2 ? (
+            /* Ô rộng theo CHỮ, không chia đều: chia đều ở bề ngang 320 cắt
+               "Tiến trình" thành "Tiến tr…". Đo ở 320: chữ bốn ô = 215, hàng =
+               288; đệm 14 cho ra 327 và cắt ô CUỐI ngay cả khi nó đang được chọn,
+               đệm 8 + khe 2 cho ra 285 — vừa. `scroll` giữ lại cho chữ cỡ lớn
+               (Dynamic Type), nơi không đệm nào đủ. */
+            <PickRow value={kind} fill={alpha(m.ink, 0.12)} radius={radius.full} gap={2} scroll style={styles.kinds}>
+              {(['all', ...(kinds.data ?? [])] as PostKindFilter[]).map((k) => (
+                <PickRow.Item key={k} itemKey={k} accessibilityLabel={KIND_LABEL[k](i18n)} onPress={() => setKind(k)} style={styles.kind}>
+                  <Text numberOfLines={1} style={[styles.kindText, kind === k && styles.kindTextOn]}>
+                    {KIND_LABEL[k](i18n)}
+                  </Text>
+                </PickRow.Item>
+              ))}
+            </PickRow>
+          ) : null}
+
           {posts.isError ? (
             <LoadFailed i18n={i18n} onRetry={() => posts.refetch()} />
           ) : posts.isPending ? (
@@ -203,4 +243,8 @@ const stylesFor = makeStyles((c, m) => ({
   savedBtn: { flexDirection: 'row', gap: spacing.sm },
   flex: { flex: 1 },
   none: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
+  kinds: { alignSelf: 'stretch' },
+  kind: { height: 36, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  kindText: { ...type.footnote, color: c.mutedForeground, fontWeight: '600' },
+  kindTextOn: { color: c.foreground },
 }));

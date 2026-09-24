@@ -453,20 +453,47 @@ export function useCommunityUser(userId: string | undefined) {
   });
 }
 
-export function useCommunityUserPosts(userId: string | undefined) {
+export type PostKindFilter = PostKind | 'all';
+
+/**
+ * Bài của một người, lọc theo loại Ở SERVER (#44) — lọc một mảng đã tải thì bộ
+ * lọc "Công thức" của một người đăng 30 buổi tập và 2 công thức sẽ trống, vì 30
+ * dòng đầu toàn là buổi tập.
+ */
+export function useCommunityUserPosts(userId: string | undefined, kind: PostKindFilter = 'all') {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ['community_user_posts', user?.id, userId],
+    queryKey: ['community_user_posts', user?.id, userId, kind],
     enabled: !!user && !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('community_posts')
-        .select(POST_COLS)
-        .eq('author_id', userId!)
-        .order('created_at', { ascending: false })
-        .limit(PAGE);
+      let q = supabase.from('community_posts').select(POST_COLS).eq('author_id', userId!);
+      if (kind !== 'all') q = q.eq('kind', kind);
+      const { data, error } = await q.order('created_at', { ascending: false }).limit(PAGE);
       if (error) throw error;
       return hydrate((data ?? []) as PostRow[], user!.id);
+    },
+  });
+}
+
+const KIND_ORDER: PostKind[] = ['workout', 'progress', 'recipe'];
+
+/**
+ * Những loại bài một người THẬT SỰ có — để hàng lọc không mời bấm vào một loại
+ * rỗng. Khoá nằm dưới tiền tố `community_user_posts` nên thừa hưởng mọi lượt
+ * làm mới sẵn có (xoá bài, xoá mọi bài, đăng bài, chặn) mà không thêm dòng nào;
+ * `patchPost` duyệt qua nó vô hại — không phần tử nào có `id` khớp.
+ */
+export function useCommunityUserKinds(userId: string | undefined) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_user_posts', user?.id, userId, 'kinds'],
+    enabled: !!user && !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('community_posts').select('kind').eq('author_id', userId!).limit(500);
+      if (error) throw error;
+      const have = new Set((data ?? []).map((r) => r.kind));
+      /* Mảng, không Set: cache được persist qua JSON. */
+      return KIND_ORDER.filter((k) => have.has(k));
     },
   });
 }

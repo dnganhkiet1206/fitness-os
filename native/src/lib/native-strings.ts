@@ -354,6 +354,9 @@ const en = {
   nSrNoneHint: 'Try the start of a name or @handle.',
   nSrNoSuggestions: 'No suggestions right now',
   nSrFind: 'Find people to follow',
+  nUpAll: 'All',
+  nUpProgress: 'Progress',
+  nUpRecipe: 'Recipes',
   // What the target-calibration card promises, and it has to be true: this
   // runs on the device, not on a model.
   nCalibrateHint:
@@ -1477,6 +1480,9 @@ const vi: typeof en = {
   nSrNoneHint: 'Thử gõ phần đầu của tên hoặc @handle.',
   nSrNoSuggestions: 'Chưa có gợi ý nào',
   nSrFind: 'Tìm người để theo dõi',
+  nUpAll: 'Tất cả',
+  nUpProgress: 'Tiến trình',
+  nUpRecipe: 'Công thức',
   nCalibrateHint:
     'Đo tiêu hao thật của bạn từ lượng ăn và biến động cân nặng, rồi đề xuất mục tiêu calo khớp với nó.',
   nRetry: 'Thử lại',
