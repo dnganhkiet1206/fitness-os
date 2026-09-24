@@ -73,6 +73,15 @@ INSERT INTO meal_entries (id, user_id, meal_type) VALUES ('3ea10003-0000-0000-00
 INSERT INTO meal_entries (id, user_id, meal_type, total_kcal) VALUES ('3ea10004-0000-0000-0000-000000000004', :F, 'breakfast', 400);
 INSERT INTO meal_entry_items (meal_entry_id, food_name, kcal) VALUES ('3ea10004-0000-0000-0000-000000000004', 'Yến mạch', 400);
 
+-- Bữa 6 (E) — bữa KIỂM SOÁT cho các chốt đầu vào (R16–R18): có món, chưa chia
+-- sẻ, của chính E. Bản đầu cho R16 dùng bữa 2 (đã chia sẻ ở R12) và R17/R18
+-- dùng bữa 3 (rỗng), nên ba kịch bản ấy nhận 22023/23505 từ một chốt KHÁC: phép
+-- thử ngược gỡ chốt tên/visibility mà cả ba vẫn xanh. Ở bữa này, 22023 chỉ còn
+-- một nguồn là chính chốt đang được đo — và R18b chứng minh điều đó bằng cách
+-- đăng được nó với tham số hợp lệ.
+INSERT INTO meal_entries (id, user_id, meal_type) VALUES ('3ea10006-0000-0000-0000-000000000006', :E, 'dinner');
+INSERT INTO meal_entry_items (meal_entry_id, food_name, kcal) VALUES ('3ea10006-0000-0000-0000-000000000006', 'Canh chua', 150);
+
 -- Bữa 5 (G) — của người CHƯA có hồ sơ cộng đồng.
 INSERT INTO meal_entries (id, user_id, meal_type) VALUES ('3ea10005-0000-0000-0000-000000000005', :G, 'lunch');
 INSERT INTO meal_entry_items (meal_entry_id, food_name, kcal) VALUES ('3ea10005-0000-0000-0000-000000000005', 'Cơm', 200);
@@ -129,9 +138,15 @@ DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT share_recipe('3ea10001-0000-0000-00
 -- R14 · KHÔNG chia sẻ được bữa của NGƯỜI KHÁC — và nói "không thấy", không nói "không phải của bạn"
 DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT share_recipe('3ea10004-0000-0000-0000-000000000004', 'Của F')$q$) = 'P0002', 'R14 chia sẻ được bữa của NGƯỜI KHÁC'; END $$;
 DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT share_recipe('3ea10003-0000-0000-0000-000000000003', 'Rỗng')$q$) = '22023', 'R15 bữa rỗng vẫn đăng được'; END $$;
-DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT share_recipe('3ea10002-0000-0000-0000-000000000002', '   ')$q$) IN ('22023', '23505'), 'R16 tên món trống lọt qua'; END $$;
-DO $$ BEGIN ASSERT pg_temp.errcode(format($q$SELECT share_recipe('3ea10003-0000-0000-0000-000000000003', %L)$q$, repeat('a', 81))) = '22023', 'R17 tên món quá 80 ký tự lọt qua'; END $$;
-DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT share_recipe('3ea10003-0000-0000-0000-000000000003', 'X', '', 'everyone')$q$) = '22023', 'R18 visibility lạ lọt qua'; END $$;
+-- R16–R18 · chốt đầu vào, trên bữa KIỂM SOÁT 6 — đúng MỘT mã, không "hoặc".
+DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT share_recipe('3ea10006-0000-0000-0000-000000000006', '   ')$q$) = '22023', 'R16 tên món trống lọt qua'; END $$;
+DO $$ BEGIN ASSERT pg_temp.errcode(format($q$SELECT share_recipe('3ea10006-0000-0000-0000-000000000006', %L)$q$, repeat('a', 81))) = '22023', 'R17 tên món quá 80 ký tự lọt qua'; END $$;
+DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT share_recipe('3ea10006-0000-0000-0000-000000000006', 'X', '', 'everyone')$q$) = '22023', 'R18 visibility lạ lọt qua'; END $$;
+-- R18b · ĐỐI CHỨNG: cùng bữa ấy, tham số hợp lệ (80 ký tự đúng mép, visibility
+-- 'followers') thì đăng được. Không có dòng này, ba kịch bản trên xanh cả khi
+-- bữa 6 hỏng vì một lý do chẳng liên quan gì tới tên hay visibility.
+DO $$ BEGIN ASSERT pg_temp.errcode(format($q$SELECT share_recipe('3ea10006-0000-0000-0000-000000000006', %L, '', 'followers')$q$, repeat('a', 80))) = 'ok',
+  'R18b bữa kiểm soát không đăng được với tham số hợp lệ — R16–R18 không đo được gì'; END $$;
 RESET ROLE;
 
 -- R19 · người CHƯA có hồ sơ cộng đồng không đăng được
@@ -144,4 +159,4 @@ SELECT pg_temp.who(:F); SET ROLE authenticated;
 DO $$ BEGIN ASSERT (SELECT (payload->>'kcal')::numeric FROM community_posts WHERE id = (SELECT post_e FROM rids)) = 642, 'R20 người khác không đọc được bài công khai'; END $$;
 RESET ROLE;
 
-\echo 'RECIPE: 21 KỊCH BẢN XANH'
+\echo 'RECIPE: 22 KỊCH BẢN XANH'

@@ -12,6 +12,13 @@
 # hàm tự ném "not signed in" với ĐÚNG mã ấy. Cấp quyền cho anon mà R1 vẫn xanh.
 # Nay R1 hỏi thẳng `has_function_privilege`.
 #
+# Và một cái thứ hai, SAU khi đã vào repo (c6c16d4): R16–R18 (tên trống, tên
+# quá 80 ký tự, visibility lạ) gọi trên bữa 2 (đã chia sẻ) và bữa 3 (rỗng), nên
+# 22023/23505 đến từ một chốt KHÁC. Gỡ cả ba chốt ấy mà ba kịch bản vẫn xanh.
+# Nay chúng chạy trên bữa kiểm soát 6, và R18b chứng minh bữa ấy đăng được.
+# Bốn dòng `try` sau `bữa rỗng` là bốn chốt trước đó chưa có phép thử ngược
+# nào; dòng cuối cùng chứng minh chính đối chứng R18b cũng có răng.
+#
 # Cần Postgres 16 cục bộ và quyền root (cụm tạm chạy dưới user `postgres`),
 # như `run.sh`. Không đụng project Supabase nào.
 # ════════════════════════════════════════════════════════════════════════════
@@ -32,7 +39,7 @@ try() {  # $1 nhãn · $2 biểu thức sed · $3 chuỗi phải xuất hiện t
   out="$(cd /var/tmp && "${P[@]}" -f "$HERE/community_recipe.test.sql" 2>&1)"
   su postgres -c "$BIN/pg_ctl -D $DIR/data stop -m fast >/dev/null"; rm -rf "$DIR"
   if grep -q "$3" <<<"$out"; then echo "✓ $1 — đỏ đúng: $3"
-  elif grep -q "21 KỊCH BẢN XANH" <<<"$out"; then echo "✗ $1 — VẪN XANH (test rỗng nghĩa)"
+  elif grep -q "22 KỊCH BẢN XANH" <<<"$out"; then echo "✗ $1 — VẪN XANH (test rỗng nghĩa)"
   else echo "✗ $1 — đỏ SAI chỗ: $(grep -m1 -oE 'R[0-9]+[^"]*' <<<"$out")"; fi
 }
 try 'bỏ chốt "bữa của chính mình"'   's/ AND e.user_id = v_uid//'                                    'R14 chia sẻ được bữa của NGƯỜI KHÁC'
@@ -42,3 +49,8 @@ try 'bỏ quyền của người đã đăng nhập' 's/^GRANT EXECUTE ON FUNCTI
 try 'bịa khối lượng cho dòng gõ tay'   's/CASE WHEN f.id IS NOT NULL AND f.serving_g > 0 AND it.servings > 0/CASE WHEN true/;s/THEN round(it.servings \* f.serving_g) END/THEN round(it.servings * coalesce(f.serving_g, 100)) END/' 'R10 dòng gõ tay bị bịa khối lượng'
 try 'nhân kcal thêm một lần với servings' "s/'kcal',      round(coalesce(it.kcal, 0)),/'kcal',      round(coalesce(it.kcal, 0) * it.servings),/" 'R5 macro trên thẻ không khớp bữa'
 try 'bỏ chốt bữa rỗng'                 's/IF v_n = 0 THEN/IF false THEN/'                               'R15 bữa rỗng vẫn đăng được'
+try 'bỏ chốt tên trống'                's/char_length(v_title) < 1 OR //'                                'R16 tên món trống lọt qua'
+try 'bỏ chốt tên quá 80 ký tự'         's/ OR char_length(v_title) > 80//'                               'R17 tên món quá 80 ký tự lọt qua'
+try 'bỏ chốt visibility'               "s/IF p_visibility NOT IN ('public', 'followers') THEN/IF false THEN/" 'R18 visibility lạ lọt qua'
+try 'bỏ chốt hồ sơ cộng đồng'          's/IF NOT EXISTS (SELECT 1 FROM public.community_profiles WHERE user_id = v_uid) THEN/IF false THEN/' 'R19 không có hồ sơ vẫn đăng được'
+try 'chốt tên lệch mép (79 thay 80)'  's/char_length(v_title) > 80/char_length(v_title) > 79/'          'R18b bữa kiểm soát không đăng được'
