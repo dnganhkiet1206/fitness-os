@@ -1,42 +1,18 @@
-import * as Haptics from 'expo-haptics';
-import {
-  BadgeCheck,
-  Bookmark,
-  ChevronRight,
-  Clock,
-  Copy,
-  Dumbbell,
-  Heart,
-  MessageCircle,
-  MoreHorizontal,
-  Share2,
-  Trophy,
-} from 'lucide-react-native';
-import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { ChevronRight, Clock, Copy, Dumbbell, Trophy } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { CommunityAvatar } from '@/components/ascnd/community-avatar';
-import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { PostShell } from '@/components/ascnd/post-parts';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import {
-  type FeedPost,
-  type ReportReason,
-  useBlock,
-  useDeletePost,
-  useReport,
-  useToggleLike,
-  useToggleSave,
-  workoutFromPost,
-} from '@/hooks/use-community';
+import { type FeedPost, workoutFromPost } from '@/hooks/use-community';
 import { useAddWorkoutTemplate } from '@/hooks/use-library';
 import { usePalette } from '@/hooks/use-palette';
 import { useUnits } from '@/hooks/use-units';
 import { getLocale } from '@/lib/i18n';
 import { nav } from '@/lib/nav';
-import { timeAgo } from '@/lib/time-ago';
 import { toast } from '@/lib/toast';
 import { displayWeight, weightLabel } from '@/lib/units';
 
@@ -49,7 +25,8 @@ const PREVIEW = 3;
  *
  * ── thứ tự từ trên xuống, và vì sao ──
  *
- *   ai · khi nào      người ta đọc bài của AI trước khi đọc bài gì.
+ *   ai · khi nào      người ta đọc bài của AI trước khi đọc bài gì
+ *                     (`PostShell`, chung cho mọi loại bài).
  *   tên buổi + số     "Push Day", ~45 phút, 12.840 kg, PR — ba con số một
  *                     người tập hỏi đầu tiên về một buổi của người khác.
  *   các bài tập       mỗi bài một dòng với set nặng nhất, trong một mặt lõm
@@ -82,10 +59,7 @@ export function WorkoutPostCard({
   const { lang } = useAppSettings();
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
-  const like = useToggleLike();
-  const save = useToggleSave();
   const addTemplate = useAddWorkoutTemplate();
-  const menu = usePostMenu(post);
 
   const p = post.payload;
   const title = p.title ?? i18n.nCmWorkout;
@@ -95,7 +69,6 @@ export function WorkoutPostCard({
   const volume = p.volumeKg > 0 ? Math.round(displayWeight(p.volumeKg, wUnit)).toLocaleString(locale) : null;
 
   const openPost = () => nav.push({ pathname: '/community-post', params: { id: post.id } });
-  const openAuthor = () => post.author && nav.push({ pathname: '/community-user', params: { id: post.author.user_id } });
 
   const tryIt = async () => {
     const w = workoutFromPost(p, title);
@@ -115,52 +88,16 @@ export function WorkoutPostCard({
     }
   };
 
-  const shareOut = () => {
-    Haptics.selectionAsync();
+  const shareText = () => {
     const head = i18n.nCmShareText.replace('{title}', title).replace('{n}', String(p.exerciseCount));
     const body = p.exercises
       .map((e) => `• ${e.exerciseName}${e.weight > 0 ? ` — ${displayWeight(e.weight, wUnit)} ${wl} × ${e.reps}` : ` — ${e.sets} × ${e.reps}`}`)
       .join('\n');
-    Share.share({ message: `${head}\n\n${body}` });
+    return `${head}\n\n${body}`;
   };
 
-  const Body = (
-    <GlassCard style={styles.card}>
-      {/* ── ai · khi nào ── */}
-      <View style={styles.head}>
-        <Pressable accessibilityRole="button" onPress={openAuthor} style={styles.who} hitSlop={4}>
-          <CommunityAvatar mascotId={post.author?.mascot_id} size={40} />
-          <View style={styles.whoText}>
-            <View style={styles.nameRow}>
-              <Text style={styles.name} numberOfLines={1}>
-                {post.author?.display_name ?? '—'}
-              </Text>
-              {post.author?.is_official ? (
-                <View accessible accessibilityLabel={i18n.nCmVerified}>
-                  <Icon icon={BadgeCheck} size={15} color={c.metricBlue} />
-                </View>
-              ) : null}
-            </View>
-            <Text style={styles.meta} numberOfLines={1}>
-              {timeAgo(post.created_at, i18n, lang)}
-              {post.visibility === 'followers' ? ` · ${i18n.nCmFollowersOnly}` : ''}
-            </Text>
-          </View>
-        </Pressable>
-        {!preview ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={i18n.nCmMore}
-            onPress={menu}
-            hitSlop={10}
-            style={styles.moreBtn}>
-            <Icon icon={MoreHorizontal} size={20} color={c.mutedForeground} />
-          </Pressable>
-        ) : null}
-      </View>
-
-      {post.hidden && post.mine ? <Text style={styles.hiddenNote}>{i18n.nCmHiddenNotice}</Text> : null}
-
+  return (
+    <PostShell post={post} full={full} preview={preview} shareText={shareText}>
       {/* ── tên buổi + số ── */}
       <Text style={styles.title}>{title}</Text>
       <View style={styles.stats}>
@@ -190,53 +127,12 @@ export function WorkoutPostCard({
       </View>
 
       {!post.mine && !preview ? (
-        <PressScale
-          accessibilityRole="button"
-          onPress={tryIt}
-          disabled={addTemplate.isPending}
-          style={styles.tryBtn}>
+        <PressScale accessibilityRole="button" onPress={tryIt} disabled={addTemplate.isPending} style={styles.tryBtn}>
           <Icon icon={Copy} size={16} color={c.foreground} />
           <Text style={styles.tryText}>{i18n.nCmTry}</Text>
         </PressScale>
       ) : null}
-
-      {post.caption ? <Text style={styles.caption}>{post.caption}</Text> : null}
-
-      {/* ── thích · bình luận · lưu · chia sẻ ── */}
-      {!preview ? (
-      <View style={styles.actions}>
-        <Action
-          icon={Heart}
-          label={i18n.nCmLike}
-          count={post.like_count}
-          on={post.liked}
-          onColor={c.readinessRed}
-          onPress={() => like.mutate({ postId: post.id, on: !post.liked })}
-        />
-        <Action icon={MessageCircle} label={i18n.nCmComment} count={post.comment_count} onPress={openPost} />
-        <View style={styles.flex} />
-        <Action
-          icon={Bookmark}
-          label={i18n.nCmSave}
-          on={post.saved}
-          onColor={c.foreground}
-          onPress={() => save.mutate({ postId: post.id, on: !post.saved })}
-        />
-        <Action icon={Share2} label={i18n.nCmShare} onPress={shareOut} />
-      </View>
-      ) : null}
-    </GlassCard>
-  );
-
-  if (full || preview) return Body;
-  /* Chạm vào khoảng trống của thẻ mở bài — nhưng với VoiceOver đó là vùng
-     NUỐT CHẠM chứ không phải một nút thứ hai bọc quanh các nút thích/lưu
-     (`accessible={false}`). Lối mở bài cho trình đọc màn hình là nút Bình
-     luận và dòng "+ N bài tập khác", cả hai đều là nút thật. */
-  return (
-    <PressScale accessible={false} onPress={openPost}>
-      {Body}
-    </PressScale>
+    </PostShell>
   );
 }
 
@@ -251,121 +147,7 @@ function Stat({ icon, text, tone }: { icon: typeof Clock; text: string; tone?: s
   );
 }
 
-/* Mỗi nút một ô 44 điểm: hàng này là thứ người ta chạm nhiều nhất trên feed. */
-function Action({
-  icon,
-  label,
-  count,
-  on = false,
-  onColor,
-  onPress,
-}: {
-  icon: typeof Heart;
-  label: string;
-  count?: number;
-  on?: boolean;
-  onColor?: string;
-  onPress: () => void;
-}) {
-  const c = usePalette();
-  const styles = stylesFor(c);
-  const color = on && onColor ? onColor : c.mutedForeground;
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={count != null ? `${label} · ${count}` : label}
-      accessibilityState={{ selected: on }}
-      onPress={onPress}
-      style={styles.action}>
-      <Icon icon={icon} size={20} color={color} fill={on ? color : undefined} />
-      {count != null ? <Text style={styles.actionCount}>{count}</Text> : null}
-    </Pressable>
-  );
-}
-
-/**
- * Menu "…": của mình thì Xoá; của người khác thì Báo cáo và Chặn.
- *
- * Dùng `Alert` của hệ thống chứ không dựng một tấm riêng: đây là việc hiếm,
- * nghiêm túc và cần xác nhận — đúng thứ hộp thoại hệ thống sinh ra để làm, và
- * nó tự đọc được bằng VoiceOver. Báo cáo và Chặn là hai thứ App Store 1.2
- * đòi có mặt NGAY trên nội dung, không phải chôn trong Cài đặt.
- */
-function usePostMenu(post: FeedPost) {
-  const i18n = useI18n();
-  const report = useReport();
-  const block = useBlock();
-  const del = useDeletePost();
-  const handle = post.author?.handle ?? '';
-
-  const askReason = () => {
-    const send = (reason: ReportReason) =>
-      report.mutate(
-        { postId: post.id, reason },
-        { onSuccess: () => toast.success(i18n.nCmReported), onError: (e: Error) => toast.fail(e) },
-      );
-    Alert.alert(i18n.nCmReportWhy, undefined, [
-      { text: i18n.nCmReasonSpam, onPress: () => send('spam') },
-      { text: i18n.nCmReasonHarass, onPress: () => send('harassment') },
-      { text: i18n.nCmReasonInappropriate, onPress: () => send('inappropriate') },
-      { text: i18n.nCmReasonMisleading, onPress: () => send('misleading') },
-      { text: i18n.cancel, style: 'cancel' },
-    ]);
-  };
-
-  const askBlock = () =>
-    Alert.alert(i18n.nCmBlockConfirm.replace('{h}', handle), i18n.nCmBlockBody, [
-      { text: i18n.cancel, style: 'cancel' },
-      {
-        text: i18n.nCmBlock.replace('{h}', handle),
-        style: 'destructive',
-        onPress: () =>
-          post.author &&
-          block.mutate(post.author.user_id, {
-            onSuccess: () => toast.success(i18n.nCmBlocked),
-            onError: (e: Error) => toast.fail(e),
-          }),
-      },
-    ]);
-
-  const askDelete = () =>
-    Alert.alert(i18n.nCmDeletePost, i18n.nCmDeletePostBody, [
-      { text: i18n.cancel, style: 'cancel' },
-      {
-        text: i18n.delete,
-        style: 'destructive',
-        onPress: () =>
-          del.mutate(post.id, {
-            onSuccess: () => toast.success(i18n.deleted),
-            onError: (e: Error) => toast.fail(e),
-          }),
-      },
-    ]);
-
-  return () => {
-    Haptics.selectionAsync();
-    if (post.mine) {
-      askDelete();
-      return;
-    }
-    Alert.alert(post.author?.display_name ?? '', undefined, [
-      { text: i18n.nCmReport, onPress: askReason },
-      { text: i18n.nCmBlock.replace('{h}', handle), style: 'destructive', onPress: askBlock },
-      { text: i18n.cancel, style: 'cancel' },
-    ]);
-  };
-}
-
 const stylesFor = makeStyles((c, m) => ({
-  card: { gap: spacing.md },
-  head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, minHeight: 44 },
-  whoText: { flex: 1, minWidth: 0, gap: 1 },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  name: { ...type.headline, color: c.foreground, flexShrink: 1 },
-  meta: { ...type.footnote, color: c.mutedForeground },
-  moreBtn: { width: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' },
-  hiddenNote: { ...type.footnote, color: c.readinessRed },
   title: { ...type.title, color: c.foreground },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: -spacing.xs },
   stat: { flexDirection: 'row', alignItems: 'center', gap: 6 },
@@ -397,10 +179,4 @@ const stylesFor = makeStyles((c, m) => ({
     gap: 8,
   },
   tryText: { ...type.headline, color: c.foreground },
-  caption: { ...type.body, color: c.foreground, lineHeight: 21 },
-  actions: { flexDirection: 'row', alignItems: 'center', marginHorizontal: -spacing.sm, marginBottom: -spacing.sm },
-  action: { minWidth: 44, height: 44, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 6 },
-  actionCount: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
-  flex: { flex: 1 },
 }));
-

@@ -91,8 +91,12 @@ function pressableComponents(allFiles) {
       const from = m.index;
       const nextExport = src.indexOf('\nexport ', from + 1);
       const body = src.slice(from, nextExport < 0 ? src.length : nextExport);
-      const ret = /return\s*\(\s*<([A-Z]\w*)/.exec(body);
-      if (ret && PRESS.has(ret[1])) names.add(m[1]);
+      const ret = /return\s*\(\s*<([A-Z]\w*)([^>]*)/.exec(body);
+      /* Cùng lối thoát với hai nhánh dưới: phần tử trả về khai
+         `accessible={false}` là một vùng NUỐT CHẠM, không phải một nút — nên
+         component bọc nó (`PostShell`, khung chung của thẻ cộng đồng) không
+         biến mọi chỗ gọi nó thành "nút trong nút". */
+      if (ret && PRESS.has(ret[1]) && !/accessible=\{false\}/.test(ret[2])) names.add(m[1]);
     }
   }
   return names;
