@@ -2,7 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
-import { ChevronRight, Dumbbell, Plus } from 'lucide-react-native';
+import { ChevronRight, Dumbbell, PersonStanding, Plus } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -16,7 +16,6 @@ import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { BodyPanel } from '@/components/ascnd/body-panel';
-import { BodyScale } from '@/constants/app-icons';
 import { Measured, SK, WorkoutsSkeleton } from '@/components/ascnd/skeleton';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
@@ -116,7 +115,22 @@ export default function WorkoutsScreen() {
   const [scrubbing, setScrubbing] = useState(false);
   const segments = [
     { key: 'training' as const, label: i18n.nSegTraining, icon: Dumbbell },
-    { key: 'body' as const, label: i18n.nSegBody, icon: BodyScale },
+    /*
+      `PersonStanding`, không phải `BodyScale`.
+
+      Bản đầu dùng `BodyScale` — cái cân — và chủ dự án chỉ ra ngay: segment
+      tên "Cơ thể" mà mang icon cân nặng. Trong app này `BodyScale` là hình
+      DUY NHẤT của cân nặng (`glyph-meaning.mjs` cấm mọi hình khác vẽ cân
+      nặng), nên dùng nó cho cả trang cơ thể là nói "trang này là cân nặng" —
+      sai với nửa dưới của chính trang, nơi số đo vòng không liên quan gì tới
+      cái cân.
+
+      Hình người đứng có sẵn trong lucide và chưa mang nghĩa nào khác trong
+      app (đã kiểm: `User` là tài khoản, `Ruler` là số đo, `Shirt` là trang
+      phục), nên theo luật đầu `constants/app-icons.ts` — lucide có thì không
+      tự vẽ — nó được dùng thẳng.
+    */
+    { key: 'body' as const, label: i18n.nSegBody, icon: PersonStanding },
   ];
   const retry = useCallback(async () => {
     setRetrying(true);
