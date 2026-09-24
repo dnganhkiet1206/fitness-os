@@ -41,7 +41,7 @@ import { outOfRangeMessage } from '@/lib/plausible';
 import { toast } from '@/lib/toast';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
-import { diaryStampAt, localDateStr } from '@/lib/local-date';
+import { dayGap, diaryStampAt, localDateStr } from '@/lib/local-date';
 import { consumePendingScan } from '@/lib/scan-bridge';
 import { intText } from '@/lib/number-input';
 
@@ -184,10 +184,7 @@ export default function LogMealSheet() {
 
   /** "today" / "yesterday" / "3 days ago", from local dates rather than hours */
   const whenLabel = (iso: string) => {
-    const days = Math.round(
-      (new Date(localDateStr()).getTime() - new Date(localDateStr(new Date(iso))).getTime()) /
-        86400000,
-    );
+    const days = dayGap(localDateStr(new Date(iso)), localDateStr());
     if (days <= 0) return i18n.nRmToday;
     if (days === 1) return i18n.nRmYesterday;
     return i18n.nRmDaysAgo.replace('{n}', String(days));

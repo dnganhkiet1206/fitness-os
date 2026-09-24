@@ -52,7 +52,7 @@
  *      standard nobody was consulted about.
  */
 
-import { localDateStr } from '@/lib/local-date';
+import { dayGap, localDateStr } from '@/lib/local-date';
 import { TREND_WEEKS } from '@/lib/training-card';
 
 /**
@@ -275,14 +275,9 @@ export interface UserStateInput {
   sessions?: SessionLike[];
 }
 
-const DAY_MS = 86_400_000;
-
-/** `YYYY-MM-DD` → days before `today`. Negative for the future. */
+/** `YYYY-MM-DD` → days before `today`. Negative for the future; NaN if either is unparseable. */
 function daysBefore(date: string, today: string): number {
-  const a = Date.parse(`${date}T00:00:00Z`);
-  const b = Date.parse(`${today}T00:00:00Z`);
-  if (Number.isNaN(a) || Number.isNaN(b)) return Number.NaN;
-  return Math.round((b - a) / DAY_MS);
+  return dayGap(date, today);
 }
 
 /**

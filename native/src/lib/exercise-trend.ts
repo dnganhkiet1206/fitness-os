@@ -1,5 +1,5 @@
 import type { ExerciseKind } from '@/lib/exercise-kind';
-import { localDateStr } from '@/lib/local-date';
+import { dayGap, localDateStr } from '@/lib/local-date';
 import type { ExercisePerformance } from '@/lib/exercise-performance';
 import { MIN_SESSIONS } from '@/lib/load-progression';
 import type { Confidence } from '@/lib/user-state';
@@ -274,9 +274,10 @@ function medianGapDays(dates: readonly string[]): number | null {
   if (dates.length < 2) return null;
   const gaps: number[] = [];
   for (let i = 1; i < dates.length; i++) {
-    const a = new Date(`${dates[i - 1]}T00:00:00`).getTime();
-    const b = new Date(`${dates[i]}T00:00:00`).getTime();
-    if (Number.isFinite(a) && Number.isFinite(b) && b > a) gaps.push((b - a) / 86_400_000);
+    /* Ngày LỊCH, qua `dayGap`: chia hiệu hai nửa đêm địa phương cho 86 400 000
+       ra 0,958 / 1,042 vào hai ngày đổi giờ (#34). */
+    const g = dayGap(dates[i - 1], dates[i]);
+    if (Number.isFinite(g) && g > 0) gaps.push(g);
   }
   if (gaps.length === 0) return null;
   gaps.sort((x, y) => x - y);
@@ -325,11 +326,9 @@ export function readTrend(
       ? null
       : Math.max(
           0,
-          Math.floor(
-            (new Date(`${localDateStr(now)}T00:00:00`).getTime() -
-              new Date(`${last}T00:00:00`).getTime()) /
-              86_400_000,
-          ),
+          /* `dayGap`, không `Math.floor` của phép chia: ngày sang giờ mùa hè dài
+             23 giờ, 0,958 bị `floor` thành 0 — lệch một ngày (#34). */
+          dayGap(last, localDateStr(now)),
         );
   const gap = medianGapDays(dates);
   const stale =
@@ -697,11 +696,7 @@ export function insightFor(
     const days =
       t.lastTrainedDays === null
         ? null
-        : Math.round(
-            (new Date(`${window[window.length - 1]!.date}T00:00:00`).getTime() -
-              new Date(`${window[i]!.date}T00:00:00`).getTime()) /
-              86_400_000,
-          ) + t.lastTrainedDays;
+        : dayGap(window[i]!.date, window[window.length - 1]!.date) + t.lastTrainedDays;
     evidence.push({
       kind: 'window-best',
       of: r.kind,

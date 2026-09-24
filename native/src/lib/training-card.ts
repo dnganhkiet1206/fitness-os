@@ -1,4 +1,4 @@
-import { localDateStr, parseLocalDate } from './local-date';
+import { dayGap, localDateStr } from './local-date';
 
 /**
  * The training card's numbers, in one place.
@@ -225,9 +225,7 @@ export function acwrPercent(acwr: number): number {
  * trap `weekDates` was rebuilt to avoid.
  */
 export function daysSince(dateTime: string, now: Date = new Date()): number {
-  const then = parseLocalDate(localDateStr(new Date(dateTime)));
-  const today = parseLocalDate(localDateStr(now));
-  return Math.max(0, Math.round((today.getTime() - then.getTime()) / 86400000));
+  return Math.max(0, dayGap(localDateStr(new Date(dateTime)), localDateStr(now)));
 }
 
 export interface WeekBucket {

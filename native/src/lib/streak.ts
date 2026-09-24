@@ -1,4 +1,4 @@
-import { parseLocalDate } from '@/lib/local-date';
+import { dayGap, parseLocalDate } from '@/lib/local-date';
 
 /**
  * How long a run of logged days is, and whether today is in it.
@@ -22,7 +22,7 @@ import { parseLocalDate } from '@/lib/local-date';
  * and telling them they have is how an app teaches people that its streak is a
  * liar. `loggedToday` is what separates the two — safe, or still to do.
  *
- * Dates are compared through `parseLocalDate` so a run does not break at a
+ * Dates are compared through `dayGap` (local midnights, rounded) so a run does not break at a
  * daylight-saving boundary, where two midnights are 23 or 25 hours apart.
  */
 export interface Streak {
@@ -151,10 +151,7 @@ export function streakFrom(
 
   let count = 1;
   for (let i = 1; i < datesDesc.length; i++) {
-    const diff =
-      (parseLocalDate(datesDesc[i - 1]).getTime() - parseLocalDate(datesDesc[i]).getTime()) /
-      86_400_000;
-    if (Math.round(diff) === 1) count++;
+    if (dayGap(datesDesc[i], datesDesc[i - 1]) === 1) count++;
     else break;
   }
   return { count, loggedToday };
