@@ -332,6 +332,15 @@ const en = {
   nPvDeleteForGood: 'Delete for good',
   nPvDeleted: 'Deleted {n} posts',
   nPvNothing: 'You have no posts to delete',
+  nNtTitle: 'Notifications',
+  nNtOpenNew: 'Notifications, new activity',
+  nNtLike: '{name} liked your post',
+  nNtLikeMany: '{name} and {n} others liked your post',
+  nNtComment: '{name} commented on your post',
+  nNtFollow: '{name} started following you',
+  nNtEmpty: 'No notifications yet',
+  nNtEmptyHint: "When someone likes, comments on or follows you, you'll see it here.",
+  nNtUnread: 'unread',
   // What the target-calibration card promises, and it has to be true: this
   // runs on the device, not on a model.
   nCalibrateHint:
@@ -1421,6 +1430,15 @@ const vi: typeof en = {
   nPvDeleteForGood: 'Xoá hẳn',
   nPvDeleted: 'Đã xoá {n} bài',
   nPvNothing: 'Bạn chưa có bài nào để xoá',
+  nNtTitle: 'Thông báo',
+  nNtOpenNew: 'Thông báo, có mục mới',
+  nNtLike: '{name} đã thích bài của bạn',
+  nNtLikeMany: '{name} và {n} người khác đã thích bài của bạn',
+  nNtComment: '{name} đã bình luận bài của bạn',
+  nNtFollow: '{name} đã theo dõi bạn',
+  nNtEmpty: 'Chưa có thông báo nào',
+  nNtEmptyHint: 'Khi có người thích, bình luận hay theo dõi bạn, bạn sẽ thấy ở đây.',
+  nNtUnread: 'chưa đọc',
   nCalibrateHint:
     'Đo tiêu hao thật của bạn từ lượng ăn và biến động cân nặng, rồi đề xuất mục tiêu calo khớp với nó.',
   nRetry: 'Thử lại',

@@ -1,10 +1,11 @@
-import { Compass, UserRound, Users } from 'lucide-react-native';
+import { Bell, Compass, UserRound, Users } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 
 import { CommunityAvatar } from '@/components/ascnd/community-avatar';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
@@ -15,7 +16,7 @@ import { PostCard } from '@/components/ascnd/post-card';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
-import { type CommunityTab, useChallenges, useCommunityFeed, useMyCommunityProfile } from '@/hooks/use-community';
+import { type CommunityTab, useChallenges, useCommunityFeed, useInbox, useMyCommunityProfile } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 
@@ -52,6 +53,8 @@ export default function CommunityScreen() {
   const me = useMyCommunityProfile();
   const feed = useCommunityFeed(tab);
   const challenges = useChallenges();
+  const inbox = useInbox();
+  const hasNew = !!inbox.data?.some((x) => x.unread);
 
   const tabs = [
     { key: 'following' as const, label: i18n.nCmFollowing, icon: Users },
@@ -65,13 +68,26 @@ export default function CommunityScreen() {
       aura={PAGE_TINT.community}
       headerRight={
         me.data ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={me.data.display_name}
-            hitSlop={6}
-            onPress={() => nav.push({ pathname: '/community-user', params: { id: me.data!.user_id } })}>
-            <CommunityAvatar mascotId={me.data.mascot_id} size={34} />
-          </Pressable>
+          /* Chuông trước avatar: thông báo chỉ đến với người đã có hồ sơ (bài
+             và lượt theo dõi đều trỏ vào hồ sơ), nên hai nút đi cùng nhau. */
+          <View style={styles.headerRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={hasNew ? i18n.nNtOpenNew : i18n.nNtTitle}
+              hitSlop={6}
+              onPress={() => nav.push('/community-inbox')}
+              style={styles.bell}>
+              <Icon icon={Bell} size={22} color={c.foreground} />
+              {hasNew ? <View style={styles.bellDot} /> : null}
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={me.data.display_name}
+              hitSlop={6}
+              onPress={() => nav.push({ pathname: '/community-user', params: { id: me.data!.user_id } })}>
+              <CommunityAvatar mascotId={me.data.mascot_id} size={34} />
+            </Pressable>
+          </View>
         ) : undefined
       }>
       <Segmented variant="capsule" value={tab} onChange={setTab} options={tabs} />
@@ -149,6 +165,18 @@ export default function CommunityScreen() {
 }
 
 const stylesFor = makeStyles((c, m) => ({
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /* 34 + hitSlop 6 = 46, cùng cỡ vùng chạm với avatar bên cạnh. */
+  bell: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  bellDot: {
+    position: 'absolute',
+    top: 5,
+    right: 6,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: c.metricBlue,
+  },
   setup: { gap: spacing.sm },
   setupTitle: { ...type.title2, color: c.foreground },
   setupHint: { ...type.body, color: c.mutedForeground, lineHeight: 21 },

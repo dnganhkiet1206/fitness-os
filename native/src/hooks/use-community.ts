@@ -916,3 +916,87 @@ export function useDeleteAllMyPosts() {
     },
   });
 }
+
+/* ── hộp thông báo (#13) ────────────────────────────────────────────────── */
+
+export type NotificationKind = 'like' | 'comment' | 'follow';
+
+/**
+ * Một dòng trong hộp thư. Lượt THÍCH cùng một bài gộp làm một dòng ("Linh và
+ * 3 người khác đã thích bài của bạn"); bình luận và theo dõi mỗi cái một dòng,
+ * vì mỗi cái là một người, một việc.
+ */
+export interface InboxItem {
+  key: string;
+  kind: NotificationKind;
+  /** Người mới nhất đứng đầu. Chỉ những người còn hồ sơ. */
+  actors: CommunityAuthor[];
+  /** Tổng số người, kể cả người không còn hồ sơ — "và N người khác" đếm đủ. */
+  count: number;
+  postId: string | null;
+  at: string;
+  unread: boolean;
+}
+
+const INBOX_LIMIT = 100;
+
+export function useInbox() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_inbox', user?.id],
+    enabled: !!user,
+    queryFn: async (): Promise<InboxItem[]> => {
+      const { data: rows, error } = await supabase
+        .from('community_notifications')
+        .select('id, actor_id, kind, post_id, created_at, read_at')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
+        .limit(INBOX_LIMIT);
+      if (error) throw error;
+      const list = rows ?? [];
+      if (list.length === 0) return [];
+      const ids = [...new Set(list.map((r) => r.actor_id))];
+      const { data: profs, error: pe } = await supabase.from('community_profiles').select(PROFILE_COLS).in('user_id', ids);
+      if (pe) throw pe;
+      const byId = new Map(((profs as CommunityAuthor[] | null) ?? []).map((p) => [p.user_id, p]));
+
+      /* Hàng đã theo thứ tự mới → cũ, nên dòng gộp đầu tiên của một bài mang
+         thời điểm của lượt thích MỚI NHẤT, và người đứng đầu là người ấy. */
+      const out: InboxItem[] = [];
+      const likeGroups = new Map<string, InboxItem>();
+      for (const r of list) {
+        const kind = (['like', 'comment', 'follow'] as const).find((k) => k === r.kind);
+        if (!kind) continue;
+        const actor = byId.get(r.actor_id);
+        if (kind === 'like' && r.post_id) {
+          const g = likeGroups.get(r.post_id);
+          if (g) {
+            g.count += 1;
+            if (actor) g.actors.push(actor);
+            g.unread ||= r.read_at === null;
+            continue;
+          }
+          const item: InboxItem = { key: `like:${r.post_id}`, kind, actors: actor ? [actor] : [], count: 1, postId: r.post_id, at: r.created_at, unread: r.read_at === null };
+          likeGroups.set(r.post_id, item);
+          out.push(item);
+          continue;
+        }
+        out.push({ key: r.id, kind, actors: actor ? [actor] : [], count: 1, postId: r.post_id, at: r.created_at, unread: r.read_at === null });
+      }
+      /* Một dòng mà không còn ai có hồ sơ thì không có tên nào để nói — bỏ. */
+      return out.filter((x) => x.actors.length > 0);
+    },
+  });
+}
+
+export function useMarkInboxRead() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.rpc('community_mark_notifications_read');
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['community_inbox', user?.id] }),
+  });
+}

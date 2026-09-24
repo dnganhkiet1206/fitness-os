@@ -334,6 +334,18 @@ export const FIXTURES = {
     { blocker_id: UID, blocked_id: 'c0000000-0000-4000-8000-0000000033c3', created_at: day(12) },
   ],
   community_settings: [{ user_id: UID, default_visibility: 'followers', updated_at: day(2) }],
+  /*
+    Hộp thông báo (#13): hai lượt thích CÙNG một bài (phải gộp thành "Linh và
+    1 người khác"), một bình luận, một lượt theo dõi đã đọc. `post_id` trỏ vào
+    một bài có sẵn chỉ để chạm mở được — hộp thư không vẽ nội dung bài, và
+    thêm một bài của UID sẽ làm lệch mọi phép đo feed.
+  */
+  community_notifications: [
+    { id: 'cn000000-0000-4000-8000-000000000001', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'like', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: null, created_at: day(0.02), read_at: null },
+    { id: 'cn000000-0000-4000-8000-000000000002', user_id: UID, actor_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'like', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: null, created_at: day(0.05), read_at: null },
+    { id: 'cn000000-0000-4000-8000-000000000003', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'comment', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: 'cc000000-0000-4000-8000-000000000002', created_at: day(0.3), read_at: null },
+    { id: 'cn000000-0000-4000-8000-000000000004', user_id: UID, actor_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'follow', post_id: null, comment_id: null, created_at: day(2), read_at: day(1) },
+  ],
   community_posts: [
     {
       id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'workout', source_id: 'c5000000-0000-4000-8000-000000000001',

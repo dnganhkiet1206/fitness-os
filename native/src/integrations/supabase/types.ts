@@ -374,6 +374,39 @@ export type Database = {
         }
         Relationships: []
       }
+      community_notifications: {
+        Row: {
+          actor_id: string
+          comment_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          post_id: string | null
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_id: string
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          post_id?: string | null
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_id?: string
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          post_id?: string | null
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_posts: {
         Row: {
           author_id: string
@@ -1897,6 +1930,10 @@ export type Database = {
           progress: number
           claimed: boolean
         }[]
+      }
+      community_mark_notifications_read: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       claim_community_challenge: {
         Args: { p_challenge: string; p_offset_min?: number }
