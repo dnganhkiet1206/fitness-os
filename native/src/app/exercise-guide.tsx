@@ -301,6 +301,8 @@ export default function ExerciseGuideSheet() {
     hoặc nội dung nhảy theo nút.
   */
   const [shown, setShown] = useState<GuideTab>('overview');
+  /* Chiều cao đo được của dòng cuộn — sàn của mặt giấy. Xem `sheetFloor`. */
+  const [viewH, setViewH] = useState(0);
 
   /*
     ── ĐỔI TAB: mờ đi, đổi, hiện lên — khung KHÔNG nhúc nhích ──
@@ -513,6 +515,13 @@ export default function ExerciseGuideSheet() {
 
       <ScrollView
         contentContainerStyle={styles.scroll}
+        /*
+          Chiều cao THẬT của dòng cuộn, do chính nó báo. Nó nuôi `minHeight`
+          của mặt giấy — xem khối chú thích ở `sheetFloor`. Không lấy từ
+          `useWindowDimensions()`: sheet này là pageSheet, thẻ luôn thấp hơn
+          màn hình, và bài học ấy đã phải học hai lần ở màn toàn màn.
+        */
+        onLayout={(e) => setViewH(Math.round(e.nativeEvent.layout.height))}
         showsVerticalScrollIndicator={false}>
         {/*
           Chỗ trống mở đầu dòng cuộn — và khi có nhiều tấm, nó cũng là DẢI CỬ
@@ -550,7 +559,33 @@ export default function ExerciseGuideSheet() {
           <View style={{ height: heroH - overlap }} />
         ) : null}
 
-        <View style={[styles.surface, hero ? styles.surfaceOverlap : styles.surfaceOpaque]}>
+        {/*
+          ── SÀN CHIỀU CAO: mọi tab phải KÉO LÊN ĐƯỢC tới cùng một chỗ ──
+
+          Lượt trước đã làm khung đứng yên khi CHƯA cuộn. Nhưng chủ dự án chỉ
+          ra vế còn lại, và nó đo được: kéo mặt giấy lên che hình (y = 0) rồi
+          đổi sang một tab ít chữ hơn thì nó TỤT về 386.
+
+          Không phải vì tab ngắn trả lại vị trí cuộn. Là vì nó KHÔNG CÓ vị trí
+          cuộn nào để mà giữ: nội dung của nó là 386 (chỗ hình) + 488 (mặt
+          giấy) = 874, đúng bằng một màn, nên dải cuộn dài 0 điểm và mọi
+          `scrollTop` đều bị kẹp về 0.
+
+          Nên sàn không phải một con số trang trí: mặt giấy phải cao ÍT NHẤT
+          bằng dòng cuộn, và khi ấy nội dung = 386 + dòng cuộn, tức dải cuộn
+          của MỌI tab đều dài đúng 386 — vừa đủ để kéo mặt giấy lên đỉnh. Tab
+          dài hơn thì cuộn được xa hơn, nhưng đoạn 0..386 mà cả bốn cùng có là
+          đoạn quyết định, và trong đoạn ấy đổi tab không làm mặt giấy nhúc
+          nhích.
+
+          `viewH` là chiều cao ĐO ĐƯỢC của dòng cuộn, không phải của cửa sổ.
+        */}
+        <View
+          style={[
+            styles.surface,
+            hero ? styles.surfaceOverlap : styles.surfaceOpaque,
+            hero && viewH ? { minHeight: viewH } : null,
+          ]}>
           {/*
             ── MẶT KÍNH: blur TRƯỚC, sắc độ SAU ──
 

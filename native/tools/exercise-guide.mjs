@@ -979,6 +979,27 @@ const frameGaps = [
   /style=\{\{ opacity: fade, transform: \[\{ translateY: slide \}\] \}\}/.test(sheet)
     ? null : 'thân tab không còn nằm trong MỘT lớp chuyển — cú đổi tab phải là một phép đổi độ mờ, '
       + 'không phải bốn nhánh tự hiện tự tắt',
+  /*
+    ── và vế thứ hai: ĐÃ KÉO LÊN rồi thì đổi tab không được làm tụt ──
+
+    Chủ dự án chỉ ra vế này sau khi vế trên đã xanh, và nó cũng đo được: mặt
+    giấy ở y = 0 (đã che hình), bấm sang tab ít chữ hơn thì tụt về 386.
+
+    Không phải vì tab ngắn trả lại vị trí cuộn. Là vì nó KHÔNG CÓ vị trí cuộn
+    nào để giữ — nội dung của nó vừa đúng một màn, nên dải cuộn dài 0 điểm.
+
+    Sàn `minHeight` bằng chiều cao ĐO ĐƯỢC của dòng cuộn làm dải cuộn của mọi
+    tab dài bằng nhau. Vế thứ hai cấm lối lấy con số ấy từ cửa sổ: sheet này là
+    pageSheet, thẻ luôn thấp hơn màn hình — cùng bài học đã phải học hai lần ở
+    `media-viewer.tsx`.
+  */
+  /minHeight: viewH/.test(sheet) && /setViewH\(Math\.round\(e\.nativeEvent\.layout\.height\)\)/.test(sheet)
+    ? null : 'mặt giấy không còn SÀN bằng chiều cao đo được của dòng cuộn — tab ngắn sẽ không có dải '
+      + 'cuộn nào để giữ vị trí, nên kéo lên che hình rồi đổi tab là nó tụt về chỗ cũ (đo được: 0 → 386)',
+  /viewH[\s\S]{0,80}useWindowDimensions/.test(sheet)
+    ? 'sàn mặt giấy lấy chiều cao từ `useWindowDimensions()` — đó là chiều cao MÀN HÌNH, không phải '
+      + 'chiều cao thẻ pageSheet'
+    : null,
 ].filter(Boolean);
 if (frameGaps.length) {
   problems.push(
