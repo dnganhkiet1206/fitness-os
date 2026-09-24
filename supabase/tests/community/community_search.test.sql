@@ -26,6 +26,11 @@ INSERT INTO community_profiles (user_id, handle, display_name, is_official) VALU
   ('e0e0e0e0-0000-0000-0000-000000000110', 'quiet',    'Im Lặng', false),       -- không bài nào
   ('e0e0e0e0-0000-0000-0000-000000000111', 'hiddenonly','Chỉ bài ẩn', false),   -- bài bị ẩn + bài chỉ-người-theo-dõi
   ('e0e0e0e0-0000-0000-0000-000000000112', 'followed', 'Đã theo dõi', false);
+-- #37: tên có dấu, handle không gợi ý gì — chỉ tìm KHÔNG DẤU theo tên mới ra.
+INSERT INTO auth.users VALUES ('e0e0e0e0-0000-0000-0000-000000000113'), ('e0e0e0e0-0000-0000-0000-000000000114');
+INSERT INTO community_profiles (user_id, handle, display_name) VALUES
+  ('e0e0e0e0-0000-0000-0000-000000000113', 'dkhoa', 'ĐẶNG Khoa'),
+  ('e0e0e0e0-0000-0000-0000-000000000114', 'tm_a', 'Trần Minh Ánh');
 INSERT INTO community_profiles (user_id, handle, display_name)
 SELECT ('e1e1e1e1-0000-0000-0000-0000000001' || lpad(g::text, 2, '0'))::uuid, 'zz' || lpad(g::text, 2, '0'), 'Zed ' || g FROM generate_series(1, 25) g;
 
@@ -68,7 +73,14 @@ DO $$ BEGIN ASSERT (SELECT handle FROM community_search_profiles('linhda') LIMIT
 DO $$ BEGIN ASSERT (SELECT i_follow FROM community_search_profiles('followed')) AND NOT (SELECT i_follow FROM community_search_profiles('linhda')), 'S7 cờ đang-theo-dõi sai'; END $$;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_search_profiles('zz')) = 20, 'S8 phải có trần 20 dòng'; END $$;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_search_profiles('ascnd_sr')) = 1, 'S9 ĐỐI CHỨNG: tài khoản thường tìm được bằng handle'; END $$;
+-- ── không dấu (#37) ──
+DO $$ BEGIN ASSERT pg_temp.hits('pham') = 'linh.pham', format('U1 "pham" phải ra linh.pham (tên "Linh Phạm") — ra %s', pg_temp.hits('pham')); END $$;
+DO $$ BEGIN ASSERT pg_temp.hits('dang') = 'dkhoa', format('U2 "dang" phải ra "ĐẶNG Khoa" — chữ HOA có dấu, không trông vào lower() — ra %s', pg_temp.hits('dang')); END $$;
+DO $$ BEGIN ASSERT pg_temp.hits('Phạm') = pg_temp.hits('pham'), 'U3 gõ có dấu phải ra như không dấu'; END $$;
+DO $$ BEGIN ASSERT pg_temp.hits('anh') = 'tm_a' AND pg_temp.hits('tran') = 'tm_a', format('U4 "anh"/"tran" phải ra "Trần Minh Ánh" — ra %s / %s', pg_temp.hits('anh'), pg_temp.hits('tran')); END $$;
 RESET ROLE;
+DO $$ BEGIN ASSERT community_fold('ĐẶNG Ánh ỨNG') = 'dang anh ung', format('U5 hàm gập sai: %s', community_fold('ĐẶNG Ánh ỨNG')); END $$;
+DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_fold(text)', 'EXECUTE'), 'U6 anon gọi được hàm gập'; END $$;
 -- S2b ĐỐI CHỨNG cho vế chặn: người bị chặn KHỚP chuỗi tìm, và hiện ra khi chặn gỡ đi.
 SELECT pg_temp.who('e0e0e0e0-0000-0000-0000-000000000102'); SET ROLE authenticated;
 DO $$ BEGIN ASSERT pg_temp.hits('linh') LIKE '%linh_bl%' AND pg_temp.hits('linh') LIKE '%linhbr%', 'S2b ĐỐI CHỨNG: người không bị chặn phải thấy linh_bl và linhbr'; END $$;
@@ -91,4 +103,4 @@ RESET ROLE;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_search_profiles(text)', 'EXECUTE'), 'S10 anon gọi được tìm người'; END $$;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_follow_suggestions()', 'EXECUTE'), 'G4 anon gọi được gợi ý'; END $$;
 DO $$ BEGIN ASSERT has_function_privilege('authenticated', 'public.community_search_profiles(text)', 'EXECUTE') AND has_function_privilege('authenticated', 'public.community_follow_suggestions()', 'EXECUTE'), 'G5 người đã đăng nhập không gọi được'; END $$;
-\echo TẤT CẢ 17 KỊCH BẢN TÌM NGƯỜI ĐÚNG
+\echo TẤT CẢ 23 KỊCH BẢN TÌM NGƯỜI ĐÚNG
