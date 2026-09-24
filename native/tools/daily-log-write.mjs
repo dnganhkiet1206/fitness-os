@@ -145,7 +145,8 @@ const ALLOWED_SWALLOW = 'src/lib/offline-write.ts';
   const MUST_REPORT = [
     ['src/app/biometrics.tsx', 'remove.mutate('],
     ['src/app/sleep-insights.tsx', 'remove.mutate('],
-    ['src/app/(tabs)/progress.tsx', 'removeMeasurement.mutate('],
+    /* Trước 24/09 là tab `(tabs)/progress.tsx`; nay là segment Cơ thể. */
+    ['src/components/ascnd/body-panel.tsx', 'removeMeasurement.mutate('],
     ['src/app/sessions.tsx', 'del.mutate('],
     /* Ghim ĐÃ CHĨA LẠI, không nới ra.
 

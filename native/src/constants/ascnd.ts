@@ -274,5 +274,5 @@ export const PAGE_TINT = {
   activity: ['metricOrange', 'metricPurple'],
   nutrition: ['readinessGreen', 'metricOrange'],
   water: ['metricBlue', 'metricCyan'],
-  progress: ['metricPurple', 'metricCyan'],
+  community: ['metricPurple', 'metricCyan'],
 } as const satisfies Record<string, readonly [PaletteKey, PaletteKey]>;

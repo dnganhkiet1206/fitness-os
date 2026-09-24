@@ -14,6 +14,9 @@ import { SectionTitle } from '@/components/ascnd/section-title';
 import { Icon } from '@/components/ascnd/icon';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
+import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
+import { BodyPanel } from '@/components/ascnd/body-panel';
+import { BodyScale } from '@/constants/app-icons';
 import { Measured, SK, WorkoutsSkeleton } from '@/components/ascnd/skeleton';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
@@ -95,6 +98,26 @@ export default function WorkoutsScreen() {
    */
   const queryClient = useQueryClient();
   const [retrying, setRetrying] = useState(false);
+
+  /*
+    Hai segment: Buổi tập | Cơ thể.
+
+    Chủ dự án (24/09): tab Tiến trình gộp vào đây và ô tab của nó nhường cho
+    Cộng đồng; cân nặng và số đo thành MỘT trang, và trang ấy vào ngay đầu tab
+    này bằng một dải segment chứ không phải một trang con phải chạm mới tới.
+
+    `scrubbing` sống ở đây chứ không ở `BodyPanel`, vì thứ nó khoá là cuộn của
+    `Screen`, và `Screen` là của tab này. Đổi segment thì đặt nó về `false`:
+    rời Cơ thể giữa một cú kéo biểu đồ sẽ gỡ `BodyPanel` khi cờ còn `true`, và
+    cả trang Buổi tập kẹt không cuộn được — không có cử chỉ nào gỡ được nó, vì
+    thứ duy nhất đặt lại cờ vừa bị gỡ khỏi cây.
+  */
+  const [seg, setSeg] = useState<'training' | 'body'>('training');
+  const [scrubbing, setScrubbing] = useState(false);
+  const segments = [
+    { key: 'training' as const, label: i18n.nSegTraining, icon: Dumbbell },
+    { key: 'body' as const, label: i18n.nSegBody, icon: BodyScale },
+  ];
   const retry = useCallback(async () => {
     setRetrying(true);
     await queryClient.invalidateQueries();
@@ -147,7 +170,25 @@ export default function WorkoutsScreen() {
     navigation because a list did not arrive would be a second problem.
   */
   return (
-    <Screen refreshable title={i18n.workoutsTitle} aura={PAGE_TINT.activity}>
+    <Screen
+      refreshable
+      title={i18n.workoutsTitle}
+      aura={PAGE_TINT.activity}
+      contentScrollEnabled={!scrubbing}>
+      <Segmented
+        variant="capsule"
+        value={seg}
+        onChange={(v) => {
+          setScrubbing(false);
+          setSeg(v);
+        }}
+        options={segments}
+      />
+      <SegmentPanel segment={seg}>
+      {seg === 'body' ? (
+        <BodyPanel onScrubbing={setScrubbing} />
+      ) : (
+      <>
       {/*
         Hôm nay, và cái nút.
 
@@ -330,6 +371,9 @@ export default function WorkoutsScreen() {
       </PressScale>
       </View>
 
+      </>
+      )}
+      </SegmentPanel>
     </Screen>
   );
 }

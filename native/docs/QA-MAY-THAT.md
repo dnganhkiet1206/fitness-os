@@ -265,10 +265,14 @@ Cả hai đặt làm **EAS secret**, không vào git. Config plugin của Sentry
 | C6 | Ghi một buổi tập có set | Buổi hiện ở lịch sử; điểm sẵn sàng bắt đầu có | ☐ |
 | C7 | Ghi giấc ngủ | Không nhận "giấc" dài 26 tiếng | ☐ |
 | C8 | Nhập chỉ số sinh trắc | Số vô lý bị chặn, nút Lưu tắt | ☐ |
-| C9 | Tiến trình → đặt cân nặng mục tiêu | Lưu và hiện lại sau khi mở lại app | ☐ |
+| C9 | Tập luyện → Cơ thể → đặt cân nặng mục tiêu | Lưu và hiện lại sau khi mở lại app | ☐ |
 | C10 | Linh vật / cửa hàng / thử thách | Mở được, xu hiện đúng | ☐ |
 | C11 | Cài đặt → đổi theme Sáng/Tối/Hệ thống | Đổi ngay, **không** màn nào mất chữ | ☐ |
 | C12 | Cài đặt → đổi ngôn ngữ | Không màn nào còn nửa Anh nửa Việt | ☐ |
+| C13 | Tập luyện → bấm **Cơ thể**, rồi **Buổi tập**, lặp 3–4 lần | Không thẻ nào chồng lên nhau; tiêu đề **Số đo** nằm ngay trên lưới 9 thẻ, **Ảnh tiến trình** ở cuối trang. *Bộ chạy web vẽ sai đúng chỗ này (Reanimated web đặt `position: absolute` cho thẻ đang chạy hiệu ứng vào) — chỉ máy thật trả lời được* | ☐ |
+| C14 | Cơ thể → giữ ngón trên biểu đồ cân nặng, rồi (ngón kia) bấm **Buổi tập** | Trang Buổi tập vẫn cuộn được — không kẹt | ☐ |
+| C15 | Cài đặt → đơn vị **inch** → Tập luyện → Cơ thể | Thẻ số đo ghi `in`; chú thích biểu đồ xu hướng ghi `(in)`, không còn `(cm)` | ☐ |
+| C16 | Tab **Cộng đồng** (ô thứ tư, trước là Tiến trình) | Một thẻ "Sắp ra mắt", không có người dùng hay số liệu mẫu nào | ☐ |
 
 ## D. Dữ liệu
 

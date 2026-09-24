@@ -377,7 +377,8 @@ export function EmptyHero({
             ở huy chương — nên ở đây nó đọc thành "điểm sẵn sàng của bạn là 0",
             tức chỗ tệ nhất của thang. Sự thật là chưa đo được gì.
 
-            `/progress` đã có sẵn quy ước đúng cho chuyện này: `CURRENT —`,
+            Segment Cơ thể (`body-panel.tsx`, trước 24/09 là tab `/progress`)
+            đã có sẵn quy ước đúng cho chuyện này: `CURRENT —`,
             `CHANGE —`, một nhãn và một gạch. Nên vòng lấy gạch, và dòng caption
             bên dưới bỏ trống — hai gạch chồng nhau không nói gì thêm.
 

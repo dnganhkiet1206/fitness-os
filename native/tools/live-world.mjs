@@ -282,6 +282,44 @@ export const FIXTURES = {
     { id: 'g3', user_id: UID, weight_kg: 72.8, date: dayStr(21) },
   ],
   /*
+    Ba lần đo vòng, vì trước ngày 24/09 bảng này KHÔNG có một hàng nào.
+
+    Hệ quả: mọi ảnh dựng từng chụp mục Số đo chỉ chụp được trạng thái RỖNG —
+    lưới số đo, biểu đồ xu hướng và bảng lịch sử chưa bao giờ được vẽ ra trên
+    bộ chạy này, nên không ai nhìn thấy chúng trước khi lên máy thật. Đúng lúc
+    ấy mục này được dời sang tab Tập luyện và dựng lại thành thẻ nhỏ, nên thiếu
+    dữ liệu là thiết kế mù.
+
+    Ba lần chứ không một: `MultiLineChart` cần ít nhất hai điểm mới vẽ được một
+    đường, và bảng lịch sử cần nhiều hơn một dòng thì mới lộ ra chuyện cột lệch.
+    Lần cũ nhất CỐ Ý bỏ trống bắp chân và vai — người thật không đo đủ mười hai
+    chỗ mỗi lần, và một ô `null` phải được vẽ ra như ô trống chứ không như số 0.
+
+    Đùi của lần mới nhất là 55,5 · 56,5 CÓ CHỦ Ý: đó là giá trị ghép dài nhất
+    thẻ số đo phải chứa (11 ký tự, cả ở cm lẫn inch), nên bản dựng vẽ ra đúng
+    ca xấu nhất thay vì một ca 9 ký tự luôn vừa.
+  */
+  body_measurements: [
+    {
+      id: 'bm1', user_id: UID, date: dayStr(0), neck_cm: 37.5, shoulders_cm: 118, chest_cm: 99,
+      waist_cm: 80.5, hips_cm: 95, bicep_left_cm: 34.5, bicep_right_cm: 35, thigh_left_cm: 55.5,
+      thigh_right_cm: 56.5, calf_left_cm: 37, calf_right_cm: 37.5, body_fat_pct: 16.2, notes: null,
+      created_at: day(0), updated_at: day(0),
+    },
+    {
+      id: 'bm2', user_id: UID, date: dayStr(14), neck_cm: 37.5, shoulders_cm: 117, chest_cm: 98,
+      waist_cm: 82, hips_cm: 95.5, bicep_left_cm: 34, bicep_right_cm: 34.5, thigh_left_cm: 55.5,
+      thigh_right_cm: 56, calf_left_cm: 37, calf_right_cm: 37, body_fat_pct: 17.1, notes: null,
+      created_at: day(14), updated_at: day(14),
+    },
+    {
+      id: 'bm3', user_id: UID, date: dayStr(35), neck_cm: 38, shoulders_cm: null, chest_cm: 97,
+      waist_cm: 84, hips_cm: 96, bicep_left_cm: 33.5, bicep_right_cm: 34, thigh_left_cm: 55,
+      thigh_right_cm: 55.5, calf_left_cm: null, calf_right_cm: null, body_fat_pct: 18.4, notes: null,
+      created_at: day(35), updated_at: day(35),
+    },
+  ],
+  /*
     Two sessions, not one, and the second one is deliberately lighter.
 
     `sessions.tsx` draws each row's volume bar as `volume / peak`, so a fixture

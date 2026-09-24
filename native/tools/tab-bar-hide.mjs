@@ -123,7 +123,8 @@ function navigatorProblems(raw) {
   }
   /* Every tab has to be in the list, or visiting it leaves `lastTab` pointing
      at wherever you were before — and the bar's state would be a page behind. */
-  for (const route of ['/', '/nutrition', '/workouts', '/progress', '/assistant']) {
+  /* Ô thứ tư là Cộng đồng từ 24/09 (trước là Tiến trình). */
+  for (const route of ['/', '/nutrition', '/workouts', '/community', '/assistant']) {
     if (!new RegExp(`'${route.replace('/', '\\/')}'`).test(src.match(/const TAB_ROUTES = \[[^\]]*\]/)?.[0] ?? '')) {
       bad.push(`app-tabs: TAB_ROUTES thiếu '${route}' — vào tab đó thì trạng thái thanh tab trễ một trang`);
     }
@@ -269,7 +270,7 @@ problems.push(
 const selfTest = [
   ['prop bị gỡ', () => navigatorProblems('<NativeTabs minimizeBehavior="onScrollDown">')],
   ['so thẳng pathname', () => navigatorProblems(GOOD_TABS.replace('hidden={hidden}', "hidden={pathname === '/assistant'}"))],
-  ['thiếu một tab', () => navigatorProblems(GOOD_TABS.replace("'/progress', ", ''))],
+  ['thiếu một tab', () => navigatorProblems(GOOD_TABS.replace("'/community', ", ''))],
   ['không có bản vá', () => patchProblems(['expo-modules-jsi+57.1.0.patch'], '4.25.2', '')],
   ['bản vá sai phiên bản', () => patchProblems(['react-native-screens+4.20.0.patch'], '4.25.2', GOOD_PATCH)],
   ['bản vá chỉ sửa một chỗ', () => patchProblems(['react-native-screens+4.25.2.patch'], '4.25.2', HALF_PATCH)],
@@ -280,7 +281,7 @@ const selfTest = [
 ];
 
 const GOOD_TABS =
-  "const TAB_ROUTES = ['/', '/nutrition', '/workouts', '/progress', '/assistant'];\n" +
+  "const TAB_ROUTES = ['/', '/nutrition', '/workouts', '/community', '/assistant'];\n" +
   '  const lastTab = useRef("/");\n' +
   '  <NativeTabs hidden={hidden}>';
 const GOOD_PATCH =

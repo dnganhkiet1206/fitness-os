@@ -305,7 +305,8 @@ export function SegmentPanel({
    * several children of `Screen`, which stacks its children with
    * `gap: spacing.stack`. Wrapping them turns N children into ONE, so all N−1
    * gaps inside collapse and the cards close up against each other. Measured
-   * off `/progress` at x=200, before and after: above the wrapper the page
+   * off `/progress` at x=200 (since 24/09 that page is the Body segment of
+   * the training tab), before and after: above the wrapper the page
    * shows for exactly 20px (y=114–133) — `spacing.stack`, intact. Inside it,
    * zero: the BMI card's last row is y=194 and the next card's top edge is
    * y=195. Not "tighter" — touching. What looked like a small gap in the

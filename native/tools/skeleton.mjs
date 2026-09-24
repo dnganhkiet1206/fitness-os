@@ -72,14 +72,14 @@ const TABS = [
     shows: 'WorkoutsSkeleton',
   },
   {
-    file: 'src/app/(tabs)/progress.tsx',
-    label: 'Tiến trình',
+    file: 'src/components/ascnd/body-panel.tsx',
+    label: 'Cơ thể (số đo)',
     pending: 'measurementsPending',
     shows: 'ProgressSkeleton',
   },
   {
-    file: 'src/app/(tabs)/progress.tsx',
-    label: 'Tiến trình (cân nặng)',
+    file: 'src/components/ascnd/body-panel.tsx',
+    label: 'Cơ thể (cân nặng)',
     pending: 'weightPending',
     shows: 'ProgressSkeleton',
     /* Tab này gác bằng `&&` chứ không phải `?:` — nó là một khối riêng cạnh
@@ -136,15 +136,15 @@ function audit(W) {
   //    Lỗi về THỨ TỰ, không phải về sự tồn tại: ternary lấy nhánh khớp đầu tiên,
   //    nên một `isPending` đặt sau nhánh rỗng không cứu được gì.
   {
-    const src = W.src('src/app/(tabs)/progress.tsx');
+    const src = W.src('src/components/ascnd/body-panel.tsx');
     for (const c of ORDER) {
       const iPending = src.indexOf(c.pending.endsWith('&&') ? c.pending : `${c.pending} ?`);
       const iEmpty = src.indexOf(`i18n.${c.empty}`);
       if (iPending === -1 || iEmpty === -1) {
-        out.push(`Tiến trình (${c.name}): không tìm thấy cả hai nhánh để so thứ tự`);
+        out.push(`Cơ thể (${c.name}): không tìm thấy cả hai nhánh để so thứ tự`);
       } else if (iPending > iEmpty) {
         out.push(
-          `Tiến trình (${c.name}): nhánh "đang tải" nằm SAU nhánh "chưa có" — ternary lấy nhánh ` +
+          `Cơ thể (${c.name}): nhánh "đang tải" nằm SAU nhánh "chưa có" — ternary lấy nhánh ` +
             'khớp đầu tiên, nên trạng thái rỗng vẫn chạy trước và vẫn nói sai',
         );
       }
@@ -231,7 +231,7 @@ problems.push(...audit(WORLD));
   };
 
   const WK = 'src/app/(tabs)/workouts/index.tsx';
-  const PG = 'src/app/(tabs)/progress.tsx';
+  const PG = 'src/components/ascnd/body-panel.tsx';
 
   broken('cổng isPending bị gỡ', WK, 'isPending: templatesPending', 'isStale: templatesStale', /không còn lấy/);
   broken('bóng bị thay bằng khối rỗng', WK, '<WorkoutsSkeleton />', '<View />', /không dẫn tới/);

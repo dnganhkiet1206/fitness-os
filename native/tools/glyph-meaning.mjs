@@ -251,9 +251,10 @@ if (titles.length !== 2 || unset.length !== 2) {
     }
   }
 }
-const progress = readFileSync(path.join(NATIVE, 'src/app/(tabs)/progress.tsx'), 'utf8');
+/* Trước 24/09 là tab `(tabs)/progress.tsx`; nay là segment Cơ thể của Tập luyện. */
+const progress = readFileSync(path.join(NATIVE, 'src/components/ascnd/body-panel.tsx'), 'utf8');
 if (!/i18n\.nWeightGoalUnset/.test(progress)) {
-  problems.push('progress: hàng cân nặng mục tiêu không còn dùng nWeightGoalUnset cho chỗ trống');
+  problems.push('body-panel: hàng cân nặng mục tiêu không còn dùng nWeightGoalUnset cho chỗ trống');
 }
 
 /* ── một khái niệm = MỘT hình, trên toàn app ──

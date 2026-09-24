@@ -225,8 +225,8 @@ export function HeroRing({
    *
    * ── và vì sao "không có số" cần một đường riêng ──
    *
-   * Vẽ `0` khi chưa đo được gì là nói một câu app KHÔNG định nói. `/progress`
-   * đã làm đúng: `CURRENT —`, `CHANGE —`, còn `RECORDS 0` — vì 0 bản ghi là
+   * Vẽ `0` khi chưa đo được gì là nói một câu app KHÔNG định nói. Segment Cơ
+   * thể (`body-panel.tsx`, trước 24/09 là tab `/progress`) đã làm đúng: `CURRENT —`, `CHANGE —`, còn `RECORDS 0` — vì 0 bản ghi là
    * một phép đếm THẬT. Engine cũng vậy: `computeReadiness` trả "không có điểm"
    * chứ không trả điểm kém khi thiếu số đo.
    *

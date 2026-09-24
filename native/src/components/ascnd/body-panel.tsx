@@ -4,15 +4,13 @@ import * as Haptics from 'expo-haptics';
 import {
   Camera,
   ChevronRight,
-  Plus,
-  type LucideIcon,
   Ruler,
   SlidersHorizontal,
   Target,
   Trash2,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useId, useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -22,18 +20,16 @@ import Animated, {
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
-import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Measured, ProgressSkeleton, SK } from '@/components/ascnd/skeleton';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart, MultiLineChart } from '@/components/ascnd/line-chart';
-import { Screen } from '@/components/ascnd/screen';
 import { ShortcutRow } from '@/components/ascnd/shortcut-row';
+import { SectionTitle } from '@/components/ascnd/section-title';
 import { WeightChanges } from '@/components/ascnd/weight-changes';
 import { WeightGoalDialog } from '@/components/ascnd/weight-goal-dialog';
-import { BodyScale } from '@/constants/app-icons';
-import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
+import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, graphicOf, makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
@@ -46,7 +42,7 @@ import { useProfile } from '@/hooks/useTodayData';
 import { useWeightGoal } from '@/hooks/use-weight-goal';
 import { getLocale } from '@/lib/i18n';
 import { localDaysAgoStr, parseLocalDate } from '@/lib/local-date';
-import { convertLength, displayLength, displayWeight, formatHeight, weightLabel } from '@/lib/units';
+import { convertLength, displayLength, displayWeight, formatHeight, lengthLabel, weightLabel } from '@/lib/units';
 import { toast } from '@/lib/toast';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { WeightLogList } from '@/components/ascnd/weight-log-list';
@@ -63,7 +59,6 @@ import { WeightLogList } from '@/components/ascnd/weight-log-list';
  * dưỡng đưa "Danh sách đi chợ" đi: thứ có trang riêng thì được trỏ tới, không
  * được vẽ lại một nửa.
  */
-type Tab = 'weight' | 'measurements';
 
 /**
  * How far back the weight chart reaches.
@@ -244,7 +239,21 @@ function bmiCategory(v: number, vi: boolean) {
   return { label: vi ? z.vi : z.en, color: z.color };
 }
 
-export default function ProgressScreen() {
+/**
+ * Cân nặng và số đo cơ thể, dựng như MỘT trang bên trong tab Tập luyện.
+ *
+ * Tệp này từng là `app/(tabs)/progress.tsx`, một tab riêng có hai segment
+ * Cân nặng | Số đo. Chủ dự án (24/09): tab Tiến trình gộp vào Tập luyện, ô tab
+ * của nó nhường cho Cộng đồng, và Số đo gộp vào Cân nặng thành một trang.
+ * Lịch sử git đi theo tệp (`git mv`), nên mọi lý do ghi bên dưới vẫn truy
+ * ngược được về lúc nó được viết.
+ *
+ * Không tự dựng `Screen`: tab Tập luyện dựng nó. Hệ quả duy nhất là việc giữ
+ * trang đứng yên khi đang kéo trên biểu đồ — thứ ấy sống ở `Screen` qua
+ * `contentScrollEnabled`, nên nó được BÁO NGƯỢC lên qua `onScrubbing` thay vì
+ * đặt ở đây.
+ */
+export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) => void }) {
   const c = usePalette();
   const styles = stylesFor(c);
   /* Không chạy ở lần vẽ ĐẦU — xem `useRise`. Màn này xếp tầng mười hai khối,
@@ -254,7 +263,6 @@ export default function ProgressScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
-  const [tab, setTab] = useState<Tab>('weight');
   const [goalOpen, setGoalOpen] = useState(false);
 
   const { data: profile } = useProfile();
@@ -308,15 +316,6 @@ export default function ProgressScreen() {
   */
   const [range, setRange] = useState<RangeKey>('all');
 
-  /*
-    The page holds still while the chart is being scrubbed.
-
-    It cannot be done inside the chart. On iOS a ScrollView pans with a native
-    gesture recogniser that never asks the JS responder system for permission,
-    so a child refusing to yield the responder stops other JS responders and
-    nothing else — the page kept scrolling out from under the reading.
-  */
-  const [scrubbing, setScrubbing] = useState(false);
 
   /*
     The sliding highlight behind the range buttons.
@@ -369,30 +368,71 @@ export default function ProgressScreen() {
   const [bmiW, setBmiW] = useState(0);
   const bmiGrad = `bmiScale-${useId()}`;
 
-  const tabs: { key: Tab; label: string; icon: LucideIcon }[] = [
-    { key: 'weight', label: i18n.progressWeight, icon: BodyScale },
-    { key: 'measurements', label: i18n.progressMeasurements, icon: Ruler },
-  ];
-
   // Circumference labels carry "(cm)"; swap to the user's length unit.
   // A measurement value in the display unit (cm columns convert; % stays).
   const lbl = (s: string) => (lHUnit === 'in' ? s.replace('(cm)', '(in)') : s);
   const mval = (k: string, cm: number) => (k === 'body_fat_pct' ? cm : displayLength(cm, lHUnit));
 
-  // Real body_measurements column names (the old short keys never matched a column)
-  const MEASURES: { k: string; l: string }[] = [
-    { k: 'neck_cm', l: lbl(i18n.measureNeck) }, { k: 'shoulders_cm', l: lbl(i18n.measureShoulders) },
-    { k: 'chest_cm', l: lbl(i18n.measureChest) }, { k: 'waist_cm', l: lbl(i18n.measureWaist) },
-    { k: 'hips_cm', l: lbl(i18n.measureHips) }, { k: 'bicep_left_cm', l: lbl(i18n.measureBicepL) },
-    { k: 'bicep_right_cm', l: lbl(i18n.measureBicepR) }, { k: 'thigh_left_cm', l: lbl(i18n.measureThighL) },
-    { k: 'thigh_right_cm', l: lbl(i18n.measureThighR) }, { k: 'calf_left_cm', l: lbl(i18n.measureCalfL) },
-    { k: 'calf_right_cm', l: lbl(i18n.measureCalfR) }, { k: 'body_fat_pct', l: i18n.measureBodyFat },
-  ];
 
   const measurement = measurements && measurements.length > 0 ? measurements[measurements.length - 1] : null;
   // Web history table: last 10 entries, newest first
   const historyRows = (measurements ?? []).slice(-10).reverse();
   const shortLabel = (l: string) => l.replace(/\s*\(.*\)$/, '');
+
+  /*
+    Chín thẻ nhỏ thay cho một lưới mười hai ô.
+
+    Lưới cũ đặt "(cm)" vào NHÃN của mười một ô, rồi in hoa và giãn chữ, nên
+    sáu trên mười hai nhãn bị cắt ("BẮP TAY T…", "MỠ CƠ TH…") — đo trên bản
+    dựng 24/09, lần đầu mục này được vẽ ra với dữ liệu thật. Hai thay đổi, mỗi
+    cái trả lại chỗ cho nhãn:
+
+      đơn vị   xuống dòng chú thích dưới con số, MỘT lần mỗi thẻ, thay vì
+               nằm trong nhãn.
+      trái/phải  gộp vào một thẻ. Bắp tay, đùi, bắp chân mỗi thứ một thẻ mang
+               hai số, nên mười hai ô thành chín, và chín là lưới 3×3 vừa khít.
+
+    Dòng chú thích của thẻ ghép là "trái · phải" chứ không phải đơn vị: "34.5
+    · 35" không nói số nào là tay nào, và với người đang so hai tay thì đó là
+    đúng câu hỏi. Mọi thẻ có đủ ba dòng, nên lưới cao đều.
+
+    Thứ tự từ đầu xuống chân, mỡ cơ thể cuối — đúng thứ tự của màn nhập
+    `/log-measurement`, để thứ người ta vừa gõ nằm đúng chỗ họ tìm nó.
+  */
+  const len = lengthLabel(lHUnit);
+  const [sideL, sideR] = i18n.nMeasureSides.split(' · ');
+  const mnum = (k: string): number | null => {
+    const raw = measurement ? (measurement as Record<string, unknown>)[k] : null;
+    return raw != null && Number(raw) > 0 ? mval(k, Number(raw)) : null;
+  };
+  const dash = (v: number | null) => (v == null ? '—' : String(v));
+  type Tile = { key: string; label: string; value: string; caption: string; a11y: string };
+  const single = (k: string, label: string, unit: string): Tile => ({
+    key: k,
+    label,
+    value: dash(mnum(k)),
+    caption: unit,
+    a11y: `${label} ${dash(mnum(k))} ${unit}`,
+  });
+  const pair = (kl: string, kr: string, label: string): Tile => ({
+    key: kl,
+    label,
+    value: `${dash(mnum(kl))} · ${dash(mnum(kr))}`,
+    caption: i18n.nMeasureSides,
+    a11y: `${label}: ${sideL} ${dash(mnum(kl))}, ${sideR} ${dash(mnum(kr))} ${len}`,
+  });
+  const TILES: Tile[] = [
+    single('neck_cm', shortLabel(i18n.measureNeck), len),
+    single('shoulders_cm', shortLabel(i18n.measureShoulders), len),
+    single('chest_cm', shortLabel(i18n.measureChest), len),
+    single('waist_cm', shortLabel(i18n.measureWaist), len),
+    single('hips_cm', shortLabel(i18n.measureHips), len),
+    pair('bicep_left_cm', 'bicep_right_cm', i18n.nMeasureBiceps),
+    pair('thigh_left_cm', 'thigh_right_cm', i18n.nMeasureThighs),
+    pair('calf_left_cm', 'calf_right_cm', i18n.nMeasureCalves),
+    single('body_fat_pct', shortLabel(i18n.measureBodyFat), '%'),
+  ];
+  const TILE_ROWS = [TILES.slice(0, 3), TILES.slice(3, 6), TILES.slice(6, 9)];
   const HISTORY_COLS: { k: string; l: string }[] = [
     { k: 'waist_cm', l: shortLabel(i18n.measureWaist) },
     { k: 'chest_cm', l: shortLabel(i18n.measureChest) },
@@ -413,18 +453,18 @@ export default function ProgressScreen() {
        bảng đồ hoạ. Đây cũng là chỗ trả lời câu hỏi "thế còn `metricBeige`":
        be là đường CÂN NẶNG của một thẻ khác, và bốn đường dưới đây là
        vàng/lơ/tím/lục lam — hai màu vàng không bao giờ gặp nhau trong một hình. */
-    { label: i18n.measureWaist, color: c.readinessYellowGraphic, values: seriesOf('waist_cm') },
-    { label: i18n.measureChest, color: c.metricBlue, values: seriesOf('chest_cm') },
-    { label: i18n.measureBicepL, color: c.metricPurple, values: seriesOf('bicep_left_cm') },
-    { label: i18n.measureThighL, color: c.metricCyan, values: seriesOf('thigh_left_cm') },
+    /* `lbl()`: `seriesOf` đổi giá trị sang đơn vị của người dùng, nên nhãn
+       phải đổi theo. Trước 24/09 nhãn đi thẳng từ `i18n`, và người đặt inch
+       đọc "Eo (cm)" cạnh một đường vẽ bằng inch. */
+    { label: lbl(i18n.measureWaist), color: c.readinessYellowGraphic, values: seriesOf('waist_cm') },
+    { label: lbl(i18n.measureChest), color: c.metricBlue, values: seriesOf('chest_cm') },
+    { label: lbl(i18n.measureBicepL), color: c.metricPurple, values: seriesOf('bicep_left_cm') },
+    { label: lbl(i18n.measureThighL), color: c.metricCyan, values: seriesOf('thigh_left_cm') },
   ];
 
   return (
-    <Screen refreshable
-      aura={PAGE_TINT.progress}
-      contentScrollEnabled={!scrubbing}
-      title={i18n.progressTitle}
-      /*
+    <>
+      {/*
         ── four unlabelled doors used to live up here ──
 
         Sparkles, Target, Swords, Medal — weekly review, smart goals,
@@ -455,26 +495,9 @@ export default function ProgressScreen() {
         answers the question the weight chart raises — *I am eating to plan and
         the scale is not moving* — so it belongs directly under the changes
         card, not under a heading called More.
-      */>
-      {/* Segmented tabs (web TabsList) */}
-      {/*
-        Cùng lý do với tab Dinh dưỡng: đây là MỤC LỤC của trang, không phải một ô
-        điều khiển đặt lên trang. Đường ray có nền đọc ra như "thẻ trong thẻ" khi
-        bên dưới toàn thẻ kính.
-
-        Hàng Tuần/Tháng/Năm ở giữa trang thì KHÔNG đổi — nó nằm bên trong một
-        thẻ và đúng là một bộ lọc, tức đúng thứ mà hình dạng viên trượt dành cho.
       */}
-      <Segmented variant="capsule" value={tab} onChange={setTab} options={tabs} />
 
-      {/*
-        `—` and `0 records` and "not enough data" are all true of an account
-        with no weights in it, and all false of one the app could not read.
-        The reading is the same either way, and the thing a person does about
-        it — go and log a weight they already logged — is wrong in one case.
-      */}
-      <SegmentPanel segment={tab}>
-      {tab === 'weight' && weightFailed && (
+      {weightFailed && (
         <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
       )}
       {/*
@@ -485,10 +508,10 @@ export default function ProgressScreen() {
         cân bao giờ, và đều SAI khi truy vấn còn đang chạy — mà nhánh sau mới là
         nhánh chạy ở mọi lần mở app nguội.
       */}
-      {tab === 'weight' && !weightFailed && weightPending && (
+      {!weightFailed && weightPending && (
         <ProgressSkeleton tab="weight" />
       )}
-      {tab === 'weight' && !weightFailed && !weightPending && (
+      {!weightFailed && !weightPending && (
         /* `gap` lặp lại ở đây có chủ đích. `Screen` giãn các con TRỰC TIẾP của
            nó bằng `spacing.stack`; gói chúng vào một View để đo thì cả nhóm
            thành MỘT con, và nhịp giãn bên trong biến mất. Cùng một `gap` trên
@@ -662,7 +685,7 @@ export default function ProgressScreen() {
               grid
               ambient
               locale={getLocale(lang)}
-              onScrubbing={setScrubbing}
+              onScrubbing={onScrubbing}
             />
 
             {/*
@@ -832,47 +855,90 @@ export default function ProgressScreen() {
         </Measured>
       )}
 
-      {tab === 'measurements' && measurementsFailed && (
+      {/*
+        MỘT thẻ lỗi cho cả trang, không phải hai.
+
+        Hai nửa từng là hai segment nên chưa bao giờ cùng hiện. Gộp lại thì
+        mất mạng làm hỏng CẢ HAI truy vấn, và trang vẽ hai thẻ "Không tải
+        được" chồng nhau, mỗi thẻ một nút thử lại — trong khi `retry` ở trên
+        vốn đã làm mới MỌI truy vấn ("một hành vi để học, không phải hai").
+        Nên thẻ của nửa số đo chỉ hiện khi nửa cân nặng đã tải được.
+      */}
+      {measurementsFailed && !weightFailed && (
         <LoadFailed i18n={i18n} onRetry={retry} busy={retrying} />
       )}
-      {tab === 'measurements' && !measurementsFailed && (
+      {!measurementsFailed && (
         <>
-          {/* Web: right-aligned "Add measurement" button opening the input dialog */}
-          <PressScale
-            style={styles.addBtn}
-            onPress={() => { Haptics.selectionAsync(); nav.push('/log-measurement'); }}>
-            <Icon icon={Plus} size={13} color={c.primaryForeground} strokeWidth={2.5} />
-            <Text style={styles.addBtnText}>{i18n.progressAddMeasurement}</Text>
-          </PressScale>
+          {/*
+            Chỗ nửa số đo bắt đầu, và lối nhập của nó.
 
-          {/* Web: multi-line measurement trend (waist / chest / bicep / thigh) */}
-          {(measurements ?? []).length > 0 && (
-            <Animated.View entering={rise(0)}>
-            <GlassCard style={styles.chartCard}>
-              <Text style={styles.microTitle}>{i18n.progressMeasurementTrend}</Text>
-              <MultiLineChart series={trendSeries} height={200} emptyLabel={i18n.nNotEnoughData} />
-            </GlassCard>
-            </Animated.View>
-          )}
+            Khi Số đo còn là một segment riêng, nút "Nhập số đo" là nút đặc đứng
+            một mình trên đầu trang — nó là thứ đầu tiên của trang ấy. Trên
+            trang gộp nó nằm giữa trang, dưới cả nửa cân nặng, và một nút đặc
+            căn phải giữa trang đọc ra như rơi từ đâu xuống.
+
+            Nên nó thành chữ-liên-kết cạnh tiêu đề mục, đúng hình dạng của "Xem
+            tất cả" cạnh "Buổi tập của bạn" ở segment bên kia. Tab Tập luyện giữ
+            đúng MỘT nút đặc — bắt đầu buổi tập hôm nay — và `workouts/index.tsx`
+            ghi lại vì sao.
+
+            Khi chưa có số đo nào, liên kết ẩn đi: thẻ trống bên dưới có nút
+            riêng của nó, và hai lối vào cùng một màn đứng sát nhau là thừa một.
+          */}
+          <View style={styles.mSection}>
+          <View style={styles.mHead}>
+            <View style={styles.mHeadRow}>
+              <SectionTitle>{i18n.progressMeasurements}</SectionTitle>
+              {measurement ? (
+                <Pressable
+                  accessibilityRole="button"
+                  /* Chữ cỡ 13 không đặt lineHeight cao ~16 điểm; 16 + 2×14 = 44,
+                     đúng sàn của Apple HIG. 12 cho ra 40 — thiếu. */
+                  hitSlop={14}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    nav.push('/log-measurement');
+                  }}>
+                  <Text style={styles.mAdd}>{i18n.progressAddMeasurement}</Text>
+                </Pressable>
+              ) : null}
+            </View>
+            {measurement ? (
+              <Text style={styles.mLatest}>
+                {i18n.nMeasureLatest.replace(
+                  '{date}',
+                  parseLocalDate(measurement.date).toLocaleDateString(getLocale(lang), {
+                    day: 'numeric',
+                    month: 'short',
+                  }),
+                )}
+              </Text>
+            ) : null}
+          </View>
+
 
           {measurement ? (
             <Measured id={SK.progressMeasurements}>
-            <Animated.View entering={rise(1)}>
-            <GlassCard style={styles.chartCard}>
-              <Text style={styles.microTitle}>{i18n.progressMeasurements}</Text>
-              <View style={styles.measureGrid}>
-                {MEASURES.map((m) => {
-                  const raw = (measurement as Record<string, unknown>)[m.k];
-                  const val = raw != null ? mval(m.k, Number(raw)) : null;
-                  return (
-                    <View key={m.k} style={styles.measureCell}>
-                      <Text style={styles.measureLabel} numberOfLines={1}>{m.l}</Text>
-                      <Text style={styles.measureValue}>{val != null && val > 0 ? val : '—'}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-            </GlassCard>
+            {/* Cùng `tileRow` + `tile` với hàng Hiện tại / Thay đổi / Số bản ghi
+                ở đầu trang, nên hai nửa đọc ra là MỘT trang chứ không phải hai
+                trang dán vào nhau. */}
+            <Animated.View style={styles.mGrid} entering={rise(6)}>
+              {TILE_ROWS.map((row, i) => (
+                <View key={i} style={styles.tileRow}>
+                  {row.map((t) => (
+                    <GlassCard
+                      elevation="inset"
+                      key={t.key}
+                      style={[styles.tile, styles.mTile]}
+                      accessible
+                      accessibilityLabel={t.a11y}>
+                      <Text style={styles.tileLabel} numberOfLines={1}>{t.label}</Text>
+                      <Text style={[styles.tileValue, styles.mValue]} numberOfLines={2}>{t.value}</Text>
+                      <Text style={styles.mCaption} numberOfLines={1}>{t.caption}</Text>
+                    </GlassCard>
+                  ))}
+                </View>
+              ))}
             </Animated.View>
             </Measured>
           ) : measurementsPending ? (
@@ -887,7 +953,7 @@ export default function ProgressScreen() {
             */
             <ProgressSkeleton tab="measurements" />
           ) : (
-            <Animated.View entering={rise(1)}>
+            <Animated.View entering={rise(6)}>
             <GlassCard style={styles.chartCard}>
               <EmptyState
                 icon={Ruler}
@@ -900,17 +966,30 @@ export default function ProgressScreen() {
             </GlassCard>
             </Animated.View>
           )}
+          </View>
+
+          {/* Xu hướng ngay dưới các thẻ: thẻ nói HÔM NAY bao nhiêu, đường nói
+              nó đã đi thế nào để tới đó — cùng thứ tự với nửa cân nặng, nơi
+              ô số đứng trước biểu đồ. */}
+          {(measurements ?? []).length > 0 && (
+            <Animated.View entering={rise(7)}>
+            <GlassCard style={styles.chartCard}>
+              <Text style={styles.microTitle}>{i18n.progressMeasurementTrend}</Text>
+              <MultiLineChart series={trendSeries} height={200} emptyLabel={i18n.nNotEnoughData} />
+            </GlassCard>
+            </Animated.View>
+          )}
 
           {/* Web: measurement history table (last 10, newest first) */}
           {historyRows.length > 0 && (
-            <Animated.View entering={rise(2)}>
+            <Animated.View entering={rise(8)}>
             <GlassCard style={styles.chartCard}>
               <Text style={styles.microTitle}>{i18n.progressMeasurementHistory}</Text>
               <View>
                 <View style={[styles.historyRow, styles.historyHead]}>
                   <Text style={[styles.historyHeadText, styles.historyDateCol]}>{i18n.progressDate}</Text>
                   {HISTORY_COLS.map((c) => (
-                    <Text key={c.k} style={[styles.historyHeadText, styles.historyCol]} numberOfLines={1}>{c.l}</Text>
+                    <Text key={c.k} style={[styles.historyHeadText, styles.historyCol]} numberOfLines={2}>{c.l}</Text>
                   ))}
                   {/* Matches the delete column below. Without it the header's
                       flex columns are each 22pt wider than the body's, and the
@@ -1006,9 +1085,7 @@ export default function ProgressScreen() {
         </>
       )}
 
-
-      </SegmentPanel>
-    </Screen>
+    </>
   );
 }
 
@@ -1151,36 +1228,46 @@ const stylesFor = makeStyles((c, m) => ({
   bmiInfoStrong: { fontFamily: 'Menlo', color: c.foreground },
 
   chartCard: { gap: spacing.md },
+
+  /* ── nửa số đo ── */
+  /*
+    Tiêu đề và lưới là MỘT khối, cách nhau 8 — còn khối ấy cách thẻ phía trên
+    bằng nhịp của trang (`spacing.stack`, 20).
+
+    Để tiêu đề là con trực tiếp của trang thì nó cách CẢ HAI phía 20 điểm, và
+    một tiêu đề cách đều hai bên thì không thuộc về bên nào — đo trên bản dựng
+    24/09, "Số đo" lơ lửng giữa "Cân nặng đã ghi" và lưới. Đúng cách mục "Buổi
+    tập của bạn" bên segment kia làm (`tplSection` trong `workouts/index.tsx`).
+  */
+  mSection: { gap: spacing.sm },
+  mHead: { gap: 2 },
+  /* Cùng hình với `libHead` bên segment Buổi tập: tiêu đề trái, liên kết phải. */
+  mHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  mLatest: { ...type.footnote, color: c.mutedForeground },
+  mAdd: { ...type.footnote, fontWeight: '600', color: c.primary },
+  mGrid: { gap: spacing.sm },
+  /*
+    Đệm ngang 8 thay cho 12 của ô cân nặng, và đó là một phép tính.
+
+    Giá trị ghép dài nhất là 11 ký tự ("55.5 · 56.5" — cả ở cm lẫn inch).
+    Menlo ở cỡ 15 rộng 9,03 điểm mỗi ký tự, tức 99,3 điểm. Ô rộng (370 − 2×8)
+    / 3 = 118 trên màn 402; đệm 12 để lại 94 và con số tràn, đệm 8 để lại 102
+    và nó vừa. Ô cân nặng không cần thế vì con số của nó dài nhất là "-1.3kg".
+
+    Không dùng `adjustsFontSizeToFit` — `hero-metric.tsx` ghi lý do: nó co chữ
+    ở cỡ Dynamic Type lớn, tức lấy lại đúng thứ người dùng vừa xin. Dài hơn
+    thì xuống dòng (`numberOfLines={2}`); xuống dòng đọc được, co nhỏ thì không.
+  */
+  mTile: { paddingHorizontal: spacing.sm },
+  mValue: { fontSize: 15, color: c.foreground, textAlign: 'center' },
+  mCaption: { fontSize: 11, color: c.mutedForeground },
   emptyText: { fontSize: 12, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.md, lineHeight: 18 },
 
   // Measurements
-  measureGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   /* Cùng cặp token và cùng lý do như ô macro bên Dinh dưỡng: trên nền gần
      đen, nền không vẽ được ô, chỉ viền vẽ được. */
-  measureCell: {
-    width: '31%',
-    backgroundColor: m.inset.bg,
-    borderRadius: radius.sm,
-    padding: spacing.sm + 2,
-    gap: 2,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: m.inset.border,
-  },
-  measureLabel: { fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, color: c.mutedForeground },
-  measureValue: { fontSize: 15, fontFamily: 'Menlo', fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },
 
   // Measurements: add button (web: size-sm rounded-xl, right-aligned)
-  addBtn: {
-    alignSelf: 'flex-end',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    height: 36,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
-    backgroundColor: m.actionSurface,
-  },
-  addBtnText: { fontSize: 12, fontWeight: '600', color: c.primaryForeground },
 
   // Measurement history table
   historyRow: {

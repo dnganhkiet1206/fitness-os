@@ -30,8 +30,8 @@ export default function AppTabs() {
           <TabTrigger name="workouts" href="/workouts" asChild>
             <TabButton>Workouts</TabButton>
           </TabTrigger>
-          <TabTrigger name="progress" href="/progress" asChild>
-            <TabButton>Progress</TabButton>
+          <TabTrigger name="community" href="/community" asChild>
+            <TabButton>Community</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>

@@ -78,7 +78,8 @@ const SCREENS = [
   'src/app/(tabs)/index.tsx',
   'src/app/(tabs)/nutrition.tsx',
   'src/app/(tabs)/workouts/index.tsx',
-  'src/app/(tabs)/progress.tsx',
+  'src/components/ascnd/body-panel.tsx',
+  'src/app/(tabs)/community.tsx',
   'src/components/ascnd/screen.tsx',
 ];
 for (const f of SCREENS) {
@@ -93,7 +94,9 @@ for (const f of SCREENS) {
 const WIRED = [
   ['src/app/(tabs)/nutrition.tsx', 'nutrition'],
   ['src/app/(tabs)/workouts/index.tsx', 'activity'],
-  ['src/app/(tabs)/progress.tsx', 'progress'],
+  /* Ô tab thứ tư đổi chủ ngày 24/09: Tiến trình → Cộng đồng. Cặp màu đi theo
+     Ô TAB chứ không theo nội dung cũ, nên khoá đổi tên còn màu giữ nguyên. */
+  ['src/app/(tabs)/community.tsx', 'community'],
 ];
 for (const [f, key] of WIRED) {
   if (!new RegExp(`aura=\\{PAGE_TINT\\.${key}\\}`).test(read(f))) {

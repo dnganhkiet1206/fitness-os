@@ -43,8 +43,7 @@ const FLOOR = 44;
 */
 const NỢ = new Set([
   'src/app/(tabs)/index.tsx::resetBtn',
-  'src/app/(tabs)/progress.tsx::addBtn',
-  'src/app/(tabs)/progress.tsx::rangeBtn',
+  'src/components/ascnd/body-panel.tsx::rangeBtn',
   'src/app/log-meal.tsx::customAddBtn',
   'src/app/mascot-room.tsx::claimBtn',
   'src/app/mascot-room.tsx::freezeBuy',

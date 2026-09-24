@@ -91,10 +91,11 @@ const scrollToTopOnRetap = ({ navigation }: { navigation: { isFocused: () => boo
  * SF Symbols, outline throughout, and the same weight on every tab.
  *
  * The filled-when-selected convention is the nicer one and it could not be had
- * evenly here: `house`, `dumbbell` and `gearshape` have `.fill` variants,
- * `fork.knife` and `chart.line.uptrend.xyaxis` do not. Three tabs solidifying
- * on selection while two stay hollow is the kind of thing nobody can name and
- * everybody notices. The alternative was swapping those two for symbols that
+ * evenly here: `house`, `dumbbell` and `person.2` have `.fill` variants,
+ * `fork.knife` does not. (Until 24/09 the fourth tab was Progress, whose
+ * `chart.line.uptrend.xyaxis` had none either.) Tabs solidifying on selection
+ * while one stays hollow is the kind of thing nobody can name and everybody
+ * notices. The alternative was swapping those two for symbols that
  * do fill — a carrot for the food diary, a bar chart for a page of line charts
  * — and a worse glyph is a worse glyph every time you look at it, while an
  * uneven flourish is only wrong on the tap.
@@ -133,7 +134,7 @@ const scrollToTopOnRetap = ({ navigation }: { navigation: { isFocused: () => boo
  * hidden is invisible either way. What is *not* invisible is **changing** it:
  * see `hidden` below.
  */
-const TAB_ROUTES = ['/', '/nutrition', '/workouts', '/progress', '/assistant'];
+const TAB_ROUTES = ['/', '/nutrition', '/workouts', '/community', '/assistant'];
 
 export default function AppTabs() {
   const pathname = usePathname();
@@ -341,9 +342,13 @@ export default function AppTabs() {
         <NativeTabs.Trigger.Label>{i18n.navWorkouts}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="progress" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
-        <NativeTabs.Trigger.Icon sf="chart.line.uptrend.xyaxis" />
-        <NativeTabs.Trigger.Label>{i18n.navProgress}</NativeTabs.Trigger.Label>
+      {/*
+        Cộng đồng giữ ô của Tiến trình (24/09). Tiến trình không mất đi đâu:
+        cân nặng và số đo nay là segment Cơ thể trong Tập luyện.
+      */}
+      <NativeTabs.Trigger name="community" listeners={scrollToTopOnRetap} contentStyle={CONTENT}>
+        <NativeTabs.Trigger.Icon sf="person.2" />
+        <NativeTabs.Trigger.Label>{i18n.nCommunityTitle}</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
 
       {/*

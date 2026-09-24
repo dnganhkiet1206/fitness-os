@@ -183,6 +183,20 @@ const en = {
      của màn ấy không đi qua bảng dịch, nên không luật nào soi được chúng. */
   nCrashLogTitle: 'Crash log',
   nCrashLogHint: 'Last {n} — tap to send',
+  /* Thẻ số đo ghép trái/phải. KHÔNG cắt " trái" ra khỏi `measureBicepL`:
+     tiếng Anh đặt bên ở ĐẦU ("Left bicep"), nên phép cắt chỉ đúng một thứ tiếng. */
+  nMeasureBiceps: 'Biceps',
+  nMeasureThighs: 'Thighs',
+  nMeasureCalves: 'Calves',
+  nMeasureSides: 'left · right',
+  nMeasureLatest: 'Last measured {date}',
+  /* Hai segment của tab Tập luyện kể từ khi Tiến trình gộp vào (24/09). */
+  nSegTraining: 'Training',
+  nSegBody: 'Body',
+  /* Tab Cộng đồng — một VỎ, xem `app/(tabs)/community.tsx`. */
+  nCommunityTitle: 'Community',
+  nCommunitySoon: 'Coming soon',
+  nCommunitySoonHint: 'This is where you will find the people training alongside you.',
   // What the target-calibration card promises, and it has to be true: this
   // runs on the device, not on a model.
   nCalibrateHint:
@@ -1107,6 +1121,16 @@ const vi: typeof en = {
   nCrashStuck: 'Vẫn chưa mở lại được. Hãy đóng app rồi khởi động lại.',
   nCrashLogTitle: 'Nhật ký sự cố',
   nCrashLogHint: '{n} lần gần nhất — chạm để gửi đi',
+  nMeasureBiceps: 'Bắp tay',
+  nMeasureThighs: 'Đùi',
+  nMeasureCalves: 'Bắp chân',
+  nMeasureSides: 'trái · phải',
+  nMeasureLatest: 'Lần đo gần nhất {date}',
+  nSegTraining: 'Buổi tập',
+  nSegBody: 'Cơ thể',
+  nCommunityTitle: 'Cộng đồng',
+  nCommunitySoon: 'Sắp ra mắt',
+  nCommunitySoonHint: 'Đây sẽ là nơi bạn gặp những người đang tập cùng mình.',
   nCalibrateHint:
     'Đo tiêu hao thật của bạn từ lượng ăn và biến động cân nặng, rồi đề xuất mục tiêu calo khớp với nó.',
   nRetry: 'Thử lại',

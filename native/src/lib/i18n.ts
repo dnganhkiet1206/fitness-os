@@ -407,7 +407,6 @@ interface Translations {
   daySun: string;
 
   // Progress
-  progressTitle: string;
   progressWeight: string;
   progressMeasurements: string;
   progressPhotos: string;
@@ -1242,7 +1241,6 @@ const vi: Translations = {
   daySat: 'Thứ 7',
   daySun: 'Chủ nhật',
 
-  progressTitle: 'Tiến Trình',
   progressWeight: 'Cân nặng',
   progressMeasurements: 'Số đo',
   progressPhotos: 'Ảnh tiến trình',
@@ -2024,7 +2022,6 @@ const en: Translations = {
   daySat: 'Sat',
   daySun: 'Sun',
 
-  progressTitle: 'Progress',
   progressWeight: 'Weight',
   progressMeasurements: 'Measurements',
   progressPhotos: 'Progress photos',

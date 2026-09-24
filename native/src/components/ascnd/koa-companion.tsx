@@ -126,7 +126,7 @@ const SURFACE_MS = 520;
  * suits each one. `tools/koa-companion.mjs` checks that: a new tab added to
  * `app/(tabs)/` has to appear here or be given a reason.
  */
-const COMPANION_ROUTES = ['/nutrition', '/workouts', '/progress'];
+const COMPANION_ROUTES = ['/nutrition', '/workouts', '/community'];
 
 export function KoaCompanion() {
   const pathname = usePathname();
