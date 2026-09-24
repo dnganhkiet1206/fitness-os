@@ -285,6 +285,14 @@ if (!/const rejected = selectRejection\(u\)/.test(liveSrc) || !/if \(rejected\)[
   problems.push('tools/live.mjs không dùng `selectRejection` để trả 400 trong route giả — vế 4 chỉ đang kiểm một hàm không ai dùng');
 }
 
+/* ── vế 5 (#38): `/rest/v1/rpc/<tên>` là hàm, không phải bảng `rpc` ──────── */
+if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{0,1200}RPC_FIXTURES\[fn\][\s\S]{0,800}fx\.run\(args, world\)/.test(liveSrc)) {
+  problems.push(
+    'tools/live.mjs không rẽ `/rest/v1/rpc/<tên>` sang nhánh hàm (soát đối số bằng `rpcArgsRejection`, rồi `RPC_FIXTURES[fn].run`) — ' +
+      'mọi RPC lại rơi vào nhánh bảng và nhận `[]`, đúng lỗi #38 sửa',
+  );
+}
+
 if (problems.length) {
   console.error('máy chủ giả trả lời sai câu hỏi:');
   for (const p of problems) console.error(`  ✗ ${p}`);
@@ -297,5 +305,6 @@ console.log(
     'và `live.mjs` thật sự gọi `applyQuery` để dựng hàng trả về, chứ không chỉ import nó. ' +
     'Không kiểm `gte`/`lt` — máy chủ giả không lọc theo ngày, giới hạn ấy ghi trong live.mjs. ' +
     `Và ${SELECT_CASES.length} ca \`select=\` (#35): cột không có thật — kể cả sau bí danh, ép kiểu, đường JSON, trong phần nhúng — ` +
-    'được trả 400 / 42703 như PostgREST, câu hợp lệ thì không, và `live.mjs` dùng đúng bộ ấy trong route giả',
+    'được trả 400 / 42703 như PostgREST, câu hợp lệ thì không, và `live.mjs` dùng đúng bộ ấy trong route giả. ' +
+    'Và `/rest/v1/rpc/<tên>` được rẽ sang nhánh hàm (#38): đối số soát theo `types.ts`, kết quả từ `live-rpc.mjs`',
 );

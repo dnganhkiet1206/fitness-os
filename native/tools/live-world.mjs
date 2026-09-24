@@ -506,6 +506,27 @@ export const FIXTURES = {
     { id: 'cc000000-0000-4000-8000-000000000001', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: UID, body: 'Incline 24kg × 10 là ngon rồi!', hidden: false, created_at: day(0.08) },
     { id: 'cc000000-0000-4000-8000-000000000002', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', body: 'Cảm ơn! Tuần sau thử 26.', hidden: false, created_at: day(0.05) },
   ],
+  /* Thử thách (#9) chỉ được đọc qua RPC `community_challenges_overview`. Trước
+     #38 RPC giả luôn trả `[]`, nên thẻ thử thách chưa từng được quét có dữ
+     liệu. `tools/live-rpc.mjs` tính tổng quan TỪ hai bảng này: một thử thách
+     đang chạy mà UID đã tham gia (tiến độ đếm từ `workout_sessions`), và một
+     thử thách sắp mở mà UID chưa tham gia. */
+  community_challenges: [
+    {
+      id: 'ch000000-0000-4000-8000-000000000001', title: '30 ngày kỷ luật',
+      description: 'Tập ít nhất một buổi mỗi ngày. Ngày nào có buổi tập đã ghi thì được tính.',
+      kind: 'workout_days', target: 30, starts_on: dayStr(20), ends_on: dayStr(-9), reward_coins: 300, created_at: day(25),
+    },
+    {
+      id: 'ch000000-0000-4000-8000-000000000002', title: 'Tháng mới: 20 buổi',
+      description: 'Hai mươi ngày có tập trong tháng tới.',
+      kind: 'workout_days', target: 20, starts_on: dayStr(-7), ends_on: dayStr(-37), reward_coins: 200, created_at: day(3),
+    },
+  ],
+  community_challenge_members: [
+    { challenge_id: 'ch000000-0000-4000-8000-000000000001', user_id: UID, joined_at: day(20), claimed_at: null },
+    { challenge_id: 'ch000000-0000-4000-8000-000000000001', user_id: 'c0000000-0000-4000-8000-0000000011a1', joined_at: day(19), claimed_at: null },
+  ],
   body_measurements: [
     {
       id: 'bm1', user_id: UID, date: dayStr(0), neck_cm: 37.5, shoulders_cm: 118, chest_cm: 99,

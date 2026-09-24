@@ -130,3 +130,104 @@ export function selectRejection(url, columns = TYPE_COLUMNS) {
     body: { code: '42703', details: null, hint: null, message: `column ${col} does not exist` },
   };
 }
+
+/* ── RPC (#38): chữ ký trong khối `Functions` của `types.ts` ─────────────── */
+
+/* `a: string; b?: number` hay mỗi dòng một trường → Map(tên → { optional, type }) */
+function readFields(body) {
+  const out = new Map();
+  for (const m of body.matchAll(/(\w+)(\??):\s*([^;\n]+)/g)) {
+    out.set(m[1], { optional: m[2] === '?', type: m[3].trim().replace(/[;,]$/, '') });
+  }
+  return out;
+}
+
+/**
+ * Map(tên hàm → { args: Map | null, returns: { kind: 'rows', cols } | { kind: 'scalar', type } }).
+ * `args: null` nghĩa là `Record<PropertyKey, never>` — hàm không nhận đối số nào.
+ */
+export function readTypeFunctions(types) {
+  const start = types.indexOf('    Functions: {');
+  const end = types.indexOf('    Enums: {', start);
+  if (start < 0 || end < 0) return new Map();
+  const block = types.slice(start, end);
+  const fns = new Map();
+  const heads = [...block.matchAll(/^ {6}([a-z_][a-z0-9_]*): \{\n/gm)];
+  heads.forEach((h, i) => {
+    const body = block.slice(h.index + h[0].length, i + 1 < heads.length ? heads[i + 1].index : block.length);
+    const a = /^ {8}Args: (Record<PropertyKey, never>|\{([\s\S]*?)\})\n {8}Returns:/m.exec(body);
+    const r = /^ {8}Returns: (\{\n([\s\S]*?)\n {8}\}\[\]|[^\n]+)/m.exec(body);
+    if (!a || !r) return;
+    fns.set(h[1], {
+      args: a[1].startsWith('Record') ? null : readFields(a[2]),
+      returns: r[2] != null ? { kind: 'rows', cols: readFields(r[2]) } : { kind: 'scalar', type: r[1].trim() },
+    });
+  });
+  return fns;
+}
+
+export const TYPE_FUNCTIONS = readTypeFunctions(
+  readFileSync(path.join(NATIVE, 'src/integrations/supabase/types.ts'), 'utf8'),
+);
+
+/**
+ * Đối số một lời gọi RPC gửi lên không khớp chữ ký thì PostgREST không tìm ra
+ * hàm: 404 / `PGRST202`. Thừa một tên, hay thiếu một đối số không có mặc định
+ * (không có `?` trong `types.ts`), đều là "không có hàm nào như thế".
+ * Trả null khi khớp, hoặc khi hàm không có trong `types.ts` (không có gì để so).
+ */
+export function rpcArgsRejection(fn, args, fns = TYPE_FUNCTIONS) {
+  const sig = fns.get(fn);
+  if (!sig) return null;
+  const given = Object.keys(args ?? {});
+  const known = sig.args ?? new Map();
+  const extra = given.filter((k) => !known.has(k));
+  const missing = [...known].filter(([k, f]) => !f.optional && !given.includes(k)).map(([k]) => k);
+  if (!extra.length && !missing.length) return null;
+  return {
+    extra,
+    missing,
+    status: 404,
+    body: {
+      code: 'PGRST202',
+      details: null,
+      hint: null,
+      message: `Could not find the function public.${fn}(${given.join(', ')}) in the schema cache`,
+    },
+  };
+}
+
+/* Một giá trị JS có hợp với một kiểu TS đơn giản trong `types.ts` không. */
+function fitsType(v, type) {
+  return type.split('|').map((t) => t.trim()).some((t) => {
+    if (t === 'null') return v === null;
+    if (t === 'string') return typeof v === 'string';
+    if (t === 'number') return typeof v === 'number' && Number.isFinite(v);
+    if (t === 'boolean') return typeof v === 'boolean';
+    if (t === 'Json') return v !== undefined;
+    return true; /* kiểu lạ: không đoán */
+  });
+}
+
+/** Mọi chỗ kết quả của một fixture RPC lệch `Returns` trong `types.ts`. [] khi khớp. */
+export function rpcReturnProblems(fn, value, fns = TYPE_FUNCTIONS) {
+  const sig = fns.get(fn);
+  if (!sig) return [`\`${fn}\` không có trong khối Functions của \`types.ts\``];
+  const { returns } = sig;
+  if (returns.kind === 'scalar') {
+    return fitsType(value, returns.type) ? [] : [`\`${fn}\` trả ${JSON.stringify(value)?.slice(0, 60)}, mà \`types.ts\` hứa \`${returns.type}\``];
+  }
+  if (!Array.isArray(value)) return [`\`${fn}\` phải trả một MẢNG hàng (\`types.ts\`: \`{…}[]\`), ra ${typeof value}`];
+  const out = [];
+  value.forEach((row, i) => {
+    for (const k of Object.keys(row)) if (!returns.cols.has(k)) out.push(`\`${fn}\` hàng ${i}: cột thừa \`${k}\``);
+    for (const [k, f] of returns.cols) {
+      if (!(k in row)) {
+        if (!f.optional) out.push(`\`${fn}\` hàng ${i}: thiếu cột \`${k}\``);
+      } else if (!fitsType(row[k], f.type)) {
+        out.push(`\`${fn}\` hàng ${i}: \`${k}\` = ${JSON.stringify(row[k])}, mà \`types.ts\` hứa \`${f.type}\``);
+      }
+    }
+  });
+  return out;
+}

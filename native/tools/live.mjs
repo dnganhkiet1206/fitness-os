@@ -85,7 +85,8 @@ const OUT = path.join(NATIVE, 'tools', '.live-build');
 const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
-import { selectRejection } from './postgrest-select.mjs';
+import { rpcArgsRejection, selectRejection } from './postgrest-select.mjs';
+import { RPC_FIXTURES } from './live-rpc.mjs';
 
 const args = new Set(process.argv.slice(2));
 const wantShots = args.has('--shots');
@@ -265,6 +266,10 @@ function serve() {
  */
 /** Mọi câu `select=` máy chủ giả đã từ chối trong lượt chạy này (#35). */
 const SELECT_MISSES = new Set();
+/** Lời gọi RPC có đối số lệch chữ ký trong `types.ts` (#38). */
+const RPC_ARG_MISSES = new Set();
+/** Hàm RPC app đã gọi mà `live-rpc.mjs` chưa có fixture — nhận `[]` như trước #38. */
+const RPC_UNFIXTURED = new Set();
 
 async function openPage(chromium, route, mode, settleMs = 9000) {
   const browser = await chromium.launch();
@@ -302,6 +307,46 @@ async function openPage(chromium, route, mode, settleMs = 9000) {
         return r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' });
       }
       const table = u.pathname.split('/')[3];
+      /* #38: `/rest/v1/rpc/<tên>` là một lời gọi hàm, không phải bảng `rpc`.
+         Trước đây nó rơi vào nhánh bảng dưới đây và luôn nhận `[]`, nên thẻ
+         thử thách, gợi ý theo dõi, tìm người và bản xem trước Tiến trình chỉ
+         từng được quét ở trạng thái rỗng. Nay: đối số phải khớp chữ ký trong
+         `types.ts` (không thì 404 / PGRST202 như PostgREST), rồi kết quả tính
+         từ CÙNG thế giới với các bảng (`tools/live-rpc.mjs`). Hàm không có
+         fixture vẫn nhận `[]` như cũ, và được liệt kê cuối lượt. */
+      if (table === 'rpc') {
+        const fn = u.pathname.split('/')[4];
+        const req = r.request();
+        let args = {};
+        if (req.method() === 'GET') args = Object.fromEntries(u.searchParams);
+        else if (req.postData()) { try { args = JSON.parse(req.postData()); } catch { args = {}; } }
+        const badArgs = rpcArgsRejection(fn, args);
+        if (badArgs) {
+          RPC_ARG_MISSES.add(
+            `rpc/${fn}(${Object.keys(args).join(', ')}) — ` +
+              [badArgs.extra.length && `thừa ${badArgs.extra.join(', ')}`, badArgs.missing.length && `thiếu ${badArgs.missing.join(', ')}`]
+                .filter(Boolean).join('; '),
+          );
+          return r.fulfill({ status: badArgs.status, contentType: 'application/json', body: JSON.stringify(badArgs.body) });
+        }
+        const fx = RPC_FIXTURES[fn];
+        if (!fx) {
+          RPC_UNFIXTURED.add(fn);
+          return r.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+        }
+        const world = mode === 'empty' ? { profiles: FIXTURES.profiles } : FIXTURES;
+        try {
+          const out = fx.run(args, world);
+          const one = (req.headers()['accept'] ?? '').includes('vnd.pgrst.object');
+          return r.fulfill({
+            status: 200, contentType: 'application/json',
+            body: JSON.stringify(one && Array.isArray(out) ? (out[0] ?? null) : out),
+          });
+        } catch (e) {
+          if (!e.rpc) throw e;
+          return r.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify(e.rpc) });
+        }
+      }
       /* #35: `select=` hỏi một cột không có thật thì trả 400 như PostgREST, và
          ghi lại — một lượt quét màn hay một kịch bản có thể chỉ thấy một toast
          lỗi (hay không thấy gì), còn danh sách này nói đúng bảng và cột.
@@ -1227,6 +1272,49 @@ const SCENARIOS = [
   },
   {
     /*
+      #38: ba màn đọc RPC phải vẽ NHÁNH CÓ DỮ LIỆU. Trước #38 mọi RPC nhận
+      `[]`, nên thẻ thử thách không hiện, "Gợi ý cho bạn" ra "Chưa có gợi ý
+      nào", và bản xem trước Tiến trình không có con số nào. Số đòi ở đây
+      không gõ tay: chúng lấy từ chính fixture RPC chạy trên cùng thế giới
+      (và, với Tiến trình, trên ĐÚNG đối số màn đã gửi đi).
+    */
+    name: 'RPC có dữ liệu: thẻ thử thách, gợi ý theo dõi, xem trước Tiến trình',
+    route: '/community', mode: 'full',
+    async run(page) {
+      const origin = new URL(page.url()).origin;
+      const ov = RPC_FIXTURES.community_challenges_overview.run({ p_offset_min: 0 }, FIXTURES);
+      const joined = ov.find((c) => c.joined);
+      await page.waitForTimeout(1500);
+      let t = await readable(page);
+      if (!joined) return 'fixture không có thử thách nào UID đã tham gia — vế này không đo gì';
+      if (!t.includes(joined.title)) return `tab Cộng đồng không có thẻ thử thách "${joined.title}" — RPC tổng quan không tới màn`;
+      if (!new RegExp(`\\b\\d+ / ${joined.target} (ngày|days)`).test(t)) return `thẻ thử thách không hiện tiến độ "… / ${joined.target}"`;
+
+      await page.goto(`${origin}/community-search`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.waitForTimeout(6000);
+      t = await readable(page);
+      const sug = RPC_FIXTURES.community_follow_suggestions.run({}, FIXTURES);
+      if (/Chưa có gợi ý nào|No suggestions right now/.test(t)) return 'màn tìm người vẫn nói "chưa có gợi ý" — RPC gợi ý không tới màn';
+      for (const x of sug) if (!t.includes(x.display_name)) return `màn tìm người thiếu gợi ý "${x.display_name}"`;
+
+      const sent = [];
+      page.on('request', (q) => { if (q.url().includes('/rpc/build_progress_payload')) sent.push(q.postData() ?? '{}'); });
+      await page.goto(`${origin}/community-share-progress`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.waitForTimeout(6000);
+      if (!sent.length) return 'màn chia sẻ Tiến trình không gọi build_progress_payload';
+      const want = RPC_FIXTURES.build_progress_payload.run(JSON.parse(sent[sent.length - 1]), FIXTURES);
+      t = await readable(page);
+      const lead = want.weight ?? want.waist;
+      if (!lead) return `fixture Tiến trình không có chỉ số cân/eo cho đối số ${sent[sent.length - 1]}`;
+      const num = (v) => String(v).replace('.', '[.,]');
+      if (!new RegExp(`${num(lead.start)}[^\\n]{0,12}→[^\\n]{0,12}${num(lead.end)}`).test(t)) {
+        return `bản xem trước Tiến trình không hiện "${lead.start} → ${lead.end}" (đối số ${sent[sent.length - 1]})`;
+      }
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng
@@ -1680,11 +1768,23 @@ try {
   server.close();
 }
 
+for (const m of RPC_ARG_MISSES) {
+  problems.push(`máy chủ giả trả 404 PGRST202 (như PostgREST): ${m} so với chữ ký trong \`types.ts\` — trên server thật không tìm ra hàm`);
+}
 for (const m of SELECT_MISSES) {
   problems.push(`máy chủ giả trả 400 (như PostgREST): ${m} trong \`types.ts\` — trên server thật câu này hỏng MỌI lần`);
 }
 
+/* #38: không phải lỗi — nói rõ RPC nào lượt này vẫn chỉ thấy `[]`, để không ai
+   đọc "xanh" thành "đã quét nhánh có dữ liệu" của một hàm chưa có fixture. */
+const RPC_NOTE = () =>
+  `RPC có fixture (tính từ thế giới giả, tools/live-rpc.mjs): ${Object.keys(RPC_FIXTURES).join(', ')}. ` +
+  (RPC_UNFIXTURED.size
+    ? `RPC app đã gọi mà CHƯA có fixture, nên vẫn nhận [] như trước #38: ${[...RPC_UNFIXTURED].sort().join(', ')}`
+    : 'Không RPC nào app gọi trong lượt này thiếu fixture');
+
 if (problems.length) {
+  console.log(RPC_NOTE());
   console.log(`\nchạy thật: ${problems.length} vấn đề\n`);
   for (const p of problems) console.log(`  ${p}`);
   process.exit(1);
@@ -1711,3 +1811,4 @@ console.log(
     `${SCENARIOS.length} kịch bản có kết quả cụ thể đều đúng; ` +
     'canary xác nhận bộ chạy nhìn đúng app thật chứ không phải trang lỗi của server',
 );
+console.log(RPC_NOTE());
