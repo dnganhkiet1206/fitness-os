@@ -56,10 +56,17 @@ export interface WorkoutPayload {
   exercises: WorkoutExerciseLine[];
 }
 
+/** Ba loại bài của MVP — khớp CHECK ở `20260927130000_community_post_kinds.sql`. */
+export type PostKind = 'workout' | 'progress' | 'recipe';
+
 export interface FeedPost {
   id: string;
-  kind: 'workout';
+  kind: PostKind;
+  /** Payload đã đọc theo hình Workout. CHỈ có nghĩa khi `kind === 'workout'`. */
   payload: WorkoutPayload;
+  /** Payload gốc từ server — thẻ Progress và Recipe tự đọc từ đây bằng hàm
+      đọc phòng thủ của riêng chúng, như `readWorkoutPayload` làm cho Workout. */
+  raw: unknown;
   caption: string;
   visibility: 'public' | 'followers';
   like_count: number;
@@ -148,8 +155,9 @@ async function hydrate(rows: PostRow[], me: string): Promise<FeedPost[]> {
   const saved = new Set((saves.data ?? []).map((s) => s.post_id));
   return rows.map((r) => ({
     id: r.id,
-    kind: 'workout',
+    kind: (r.kind === 'progress' || r.kind === 'recipe' ? r.kind : 'workout') as PostKind,
     payload: readWorkoutPayload(r.payload),
+    raw: r.payload,
     caption: r.caption ?? '',
     visibility: r.visibility === 'followers' ? 'followers' : 'public',
     like_count: r.like_count ?? 0,

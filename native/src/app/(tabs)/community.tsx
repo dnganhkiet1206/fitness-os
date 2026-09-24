@@ -10,7 +10,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { SkeletonBlock } from '@/components/ascnd/skeleton';
-import { WorkoutPostCard } from '@/components/ascnd/workout-post-card';
+import { PostCard } from '@/components/ascnd/post-card';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -119,7 +119,7 @@ export default function CommunityScreen() {
         ) : (
           <View style={styles.list}>
             {(feed.data ?? []).map((p) => (
-              <WorkoutPostCard key={p.id} post={p} />
+              <PostCard key={p.id} post={p} />
             ))}
           </View>
         )}

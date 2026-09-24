@@ -10,7 +10,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
-import { WorkoutPostCard } from '@/components/ascnd/workout-post-card';
+import { PostCard } from '@/components/ascnd/post-card';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -144,7 +144,7 @@ export default function CommunityUserScreen() {
           ) : (posts.data ?? []).length === 0 ? (
             <Text style={styles.none}>{i18n.nCmEmptyDiscover}</Text>
           ) : (
-            (posts.data ?? []).map((post) => <WorkoutPostCard key={post.id} post={post} />)
+            (posts.data ?? []).map((post) => <PostCard key={post.id} post={post} />)
           )}
         </>
       )}

@@ -80,6 +80,7 @@ export default function CommunityShareScreen() {
           id: 'preview',
           kind: 'workout',
           payload: payloadFromSession(session, minutes),
+          raw: null,
           caption: caption.trim(),
           visibility: vis,
           like_count: 0,

@@ -11,7 +11,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { Screen } from '@/components/ascnd/screen';
-import { WorkoutPostCard } from '@/components/ascnd/workout-post-card';
+import { PostCard } from '@/components/ascnd/post-card';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -76,7 +76,7 @@ export default function CommunityPostScreen() {
           </GlassCard>
         ) : (
           <>
-            <WorkoutPostCard post={post.data} full />
+            <PostCard post={post.data} full />
             <View style={styles.comments}>
               {comments.isError ? (
                 <LoadFailed i18n={i18n} onRetry={() => comments.refetch()} />
