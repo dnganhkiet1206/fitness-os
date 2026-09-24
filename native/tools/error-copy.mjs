@@ -81,6 +81,11 @@ try {
       ['mạng RN', Object.assign(new TypeError('Network request failed'), {}), 'offline'],
       ['fetch thất bại', Object.assign(new TypeError('Failed to fetch'), {}), 'offline'],
       ['DNS', { code: 'ENOTFOUND', message: 'getaddrinfo ENOTFOUND db.supabase.co' }, 'offline'],
+      /* #31: thân phản hồi 5xx không mang mã. supabase-js (không throwOnError)
+         trả `error` là OBJECT THƯỜNG parse từ JSON, và app ném lại nguyên nó —
+         nên nó không có code, không có status, và từng bị coi là câu của app. */
+      ['5xx không mã (object thường)', { message: 'server error' }, 'unknown'],
+      ['PostgrestError mất mã', Object.assign(new Error('server error'), { name: 'PostgrestError' }), 'unknown'],
     ];
     const DICT = Object.fromEntries(Object.values(FAILURE_KEY).map((k) => [k, `[${k}]`]));
     for (const [label, err, wantKind] of SYSTEM) {
@@ -148,6 +153,16 @@ try {
       for (const file of walkSrc(path.join(NATIVE, 'src'), [])) {
         const rel = path.relative(NATIVE, file);
         if (rel === 'src/lib/error-copy.ts') continue;
+        /* #31: gói lỗi của server lại — `new Error(error.message)` — làm mất
+           `code` VÀ biến câu của server thành một Error, thứ classifyError đọc là
+           câu của app và hiện nguyên văn. confirmWrite từng làm đúng việc này
+           cho cả 35 lệnh sửa/xoá. Ném lại chính object lỗi. */
+        for (const m of strip(readFileSync(file, 'utf8')).matchAll(/new Error\(\s*\(?\s*(\w+)(?:\s+as\s+\w+\s*\))?\s*\.message\s*\)/g)) {
+          problems.push(
+            `${rel}: \`new Error(${m[1]}.message)\` gói lại một lỗi — mất \`code\`, và câu của server thành "câu của app" ` +
+              'nên hiện nguyên văn. Ném lại chính object lỗi (`throw error`)',
+          );
+        }
         for (const m of strip(readFileSync(file, 'utf8')).matchAll(/new Error\(\s*(`[^`]*`|'[^']*'|"[^"]*")/g)) {
           if (DB_WORDS.test(m[1])) {
             problems.push(

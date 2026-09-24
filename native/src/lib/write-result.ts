@@ -96,6 +96,12 @@ export class NothingWrittenError extends Error {
  */
 export async function confirmWrite(builder: Confirmable, what: string, key = 'id'): Promise<void> {
   const { data, error } = await builder.select(key);
-  if (error) throw new Error(error.message);
+  /* The server's error AS IS — never `new Error(error.message)`. Wrapping it
+     dropped `code` and turned the server's sentence into an `Error`, which
+     `classifyError` reads as app-authored: every UPDATE/DELETE in the app that
+     failed on RLS (42501), a duplicate (23505) or a 5xx showed the database's
+     raw English instead of the translated copy (#31, found live: unliking a
+     post against a 500 still printed "server error"). */
+  if (error) throw error;
   if (!data || data.length === 0) throw new NothingWrittenError(what);
 }

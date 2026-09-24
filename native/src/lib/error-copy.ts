@@ -117,9 +117,22 @@ export function classifyError(err: unknown): FailureKind | null {
   }
   if (code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'ETIMEDOUT') return 'offline';
 
-  /* Not a system error: no code, no status, no auth-error name. */
+  /*
+    Not a system error: no code, no status, no auth-error name — AND an `Error`
+    the app threw itself.
+
+    That last clause is #31. Called without `throwOnError`, supabase-js hands
+    back `error` as a PLAIN OBJECT parsed from the response body, and the app
+    rethrows it (`if (error) throw error`). A 5xx from a gateway or PostgREST
+    whose body is `{"message":"server error"}` therefore arrives with no code
+    and no status — and used to read as app-authored, putting the server's
+    English on screen for a Vietnamese reader (seen live measuring #27). The app
+    only ever throws `Error` instances, so a non-Error object with a message is
+    the server's by construction; so is a `PostgrestError` that lost its code.
+  */
   const isAuthError = /^Auth\w*Error$/.test(name);
-  if (code == null && status == null && !isAuthError) return null;
+  const fromServer = !(err instanceof Error) || name === 'PostgrestError';
+  if (code == null && status == null && !isAuthError && !fromServer) return null;
 
   if (code != null && SQLSTATE[code]) return SQLSTATE[code];
 

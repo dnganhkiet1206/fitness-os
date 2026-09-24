@@ -1061,6 +1061,8 @@ const SCENARIOS = [
         toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
       }
       if (!toastText) return 'Thích hỏng mà không có thanh toast nào — lỗi bị nuốt (#27)';
+      /* #31: thân 500 là `{"message":"server error"}` — chữ ấy KHÔNG được lên màn. */
+      if (/server error/i.test(toastText)) return `toast hiện nguyên chữ của server: "${toastText}" (#31)`;
       const after = await page.getByRole('button', { name: /^(Thích|Like) · \d+$/ }).first().getAttribute('aria-label');
       if (after !== before) return `Thích hỏng mà nút không trở về: trước "${before}", sau "${after}"`;
       return null;
@@ -1091,6 +1093,8 @@ const SCENARIOS = [
         toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
       }
       if (!toastText) return 'Lưu hỏng mà không có thanh toast nào — lỗi bị nuốt (#27)';
+      /* #31: thân 500 là `{"message":"server error"}` — chữ ấy KHÔNG được lên màn. */
+      if (/server error/i.test(toastText)) return `toast hiện nguyên chữ của server: "${toastText}" (#31)`;
       return null;
     },
   },
