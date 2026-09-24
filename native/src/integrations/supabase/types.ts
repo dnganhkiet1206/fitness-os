@@ -1913,6 +1913,13 @@ export type Database = {
         }
         Returns: string
       }
+      /* Bài Recipe (#7): cũng là lối duy nhất sinh ra một bài loại ấy. Chỉ ID của
+         bữa và phần CHỮ đi lên; mọi con số dinh dưỡng do server đọc lại từ
+         `meal_entries` + `meal_entry_items` của chính người gọi. */
+      share_recipe: {
+        Args: { p_entry_id: string; p_title: string; p_caption?: string; p_visibility?: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

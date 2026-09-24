@@ -378,6 +378,31 @@ export const FIXTURES = {
       caption: '12 tuần tập đều đặn. Vẫn còn nhiều việc phải làm nhưng rất tự hào về sự thay đổi này.', visibility: 'public',
       like_count: 342, comment_count: 0, save_count: 18, hidden: false, created_at: day(0.5),
     },
+    /*
+      Bài RECIPE (#7, người làm: B) — đúng hình mà `share_recipe` dựng phía
+      server. Con số là của mockup (642 kcal · 52 · 68 · 17), và chúng ĐÚNG BẰNG
+      tổng các dòng: 280+260+35+67 = 642, 45+5+2+0 = 52, 0+56+7+5 = 68,
+      6+1+0+10 = 17. Một fixture có tổng lệch khỏi các dòng chính là thứ luật
+      "số trên thẻ = tổng các dòng" sinh ra để bắt — nên nó không được lệch ở
+      đây. Bốn nguyên liệu, để thẻ trên feed có cả dòng "+1 nguyên liệu khác".
+      "Bơ" không có `grams`: một dòng gõ tay, và thẻ không được bịa ra khối
+      lượng cho nó.
+    */
+    {
+      id: 'cp000000-0000-4000-8000-000000000004', author_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'recipe', source_id: 'c3ea0000-0000-4000-8000-000000000001',
+      payload: {
+        title: 'High Protein Chicken Bowl', mealType: 'lunch', eatenAt: day(0.6),
+        kcal: 642, protein: 52, carbs: 68, fat: 17, ingredientCount: 4,
+        ingredients: [
+          { name: 'Ức gà', grams: 180, kcal: 280, protein: 45, carbs: 0, fat: 6 },
+          { name: 'Cơm trắng', grams: 200, kcal: 260, protein: 5, carbs: 56, fat: 1 },
+          { name: 'Bông cải xanh', grams: 100, kcal: 35, protein: 2, carbs: 7, fat: 0 },
+          { name: 'Bơ', grams: null, kcal: 67, protein: 0, carbs: 5, fat: 10 },
+        ],
+      },
+      caption: 'Một bữa ăn đơn giản, dễ làm, giàu protein và rất phù hợp cho những ngày tập luyện.', visibility: 'public',
+      like_count: 212, comment_count: 0, save_count: 24, hidden: false, created_at: day(0.6),
+    },
   ],
   community_likes: [
     { post_id: 'cp000000-0000-4000-8000-000000000001', user_id: UID, created_at: day(0.1) },

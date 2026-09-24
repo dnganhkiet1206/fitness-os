@@ -1094,6 +1094,18 @@ const en = {
   nLockPrompt: 'Unlock ASCND',
   nLockLocked: 'ASCND is locked',
   nLockUnlock: 'Unlock',
+
+  /* ── Cộng đồng · bài RECIPE (#7, người làm: B) ──
+     Tiền tố `nRc`, theo luật chơi ở issue #6. Những câu dùng chung với các loại
+     bài khác (chú thích, ai thấy được, Đăng, Đã chia sẻ) đọc lại khoá `nCm…`
+     của A chứ không chép thành bản thứ hai. */
+  nRcRecipe: 'Recipe',
+  nRcGrams: '{n} g',
+  nRcMoreIngredients: '+ {n} more ingredients',
+  nRcAddToMeal: 'Add to a meal',
+  nRcAddWhich: 'Add to which meal today?',
+  nRcAdded: 'Added to today · {meal}',
+  nRcShareText: '{title} on ASCND — {kcal} kcal',
 };
 
 const vi: typeof en = {
@@ -2077,6 +2089,15 @@ const vi: typeof en = {
   nLockPrompt: 'Mở khoá ASCND',
   nLockLocked: 'ASCND đang khoá',
   nLockUnlock: 'Mở khoá',
+
+  /* ── Cộng đồng · bài RECIPE (#7, người làm: B) — xem khối tiếng Anh. ── */
+  nRcRecipe: 'Công thức',
+  nRcGrams: '{n} g',
+  nRcMoreIngredients: '+ {n} nguyên liệu khác',
+  nRcAddToMeal: 'Thêm vào bữa ăn',
+  nRcAddWhich: 'Thêm vào bữa nào hôm nay?',
+  nRcAdded: 'Đã thêm vào hôm nay · {meal}',
+  nRcShareText: '{title} trên ASCND — {kcal} kcal',
 };
 
 export const nativeStrings: Record<AppLang, typeof en> = { vi, en };
