@@ -73,8 +73,9 @@ DO $$ BEGIN
   ASSERT community_challenge_progress('cc000000-0000-0000-0000-00000000000c', 'c3c3c3c3-0000-0000-0000-000000000009', 420) = 1, 'C18 theo UTC+7 phải là 1 ngày';
 END $$;
 
-SET ROLE anon;
-DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT * FROM community_challenges_overview(0)$q$) <> 'ok', 'C19 anon đọc được tổng quan'; END $$;
-DO $$ BEGIN ASSERT pg_temp.errcode($q$SELECT claim_community_challenge('cc000000-0000-0000-0000-00000000000a', 0)$q$) <> 'ok', 'C20 anon nhận được thưởng'; END $$;
-RESET ROLE;
+-- Hỏi QUYỀN, không hỏi mã lỗi: với anon `auth.uid()` là null nên cả hai hàm
+-- tự ném 42501 — bản đầu so mã lỗi và vẫn xanh khi cấp quyền cho anon (phép
+-- thử ngược #13; B bắt được đúng dạng này ở R1 của Recipe).
+DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_challenges_overview(integer)', 'EXECUTE'), 'C19 anon đọc được tổng quan'; END $$;
+DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.claim_community_challenge(uuid, integer)', 'EXECUTE'), 'C20 anon nhận được thưởng'; END $$;
 \echo TẤT CẢ 20 KỊCH BẢN THỬ THÁCH ĐÚNG

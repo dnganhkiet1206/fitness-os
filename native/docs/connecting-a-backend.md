@@ -327,7 +327,7 @@ tồn tại ở project mới. Với một tài khoản test thì cách gọn nh
 
 ## 2. Tạo schema
 
-`supabase/migrations/` đã có **46 file SQL** dựng sẵn toàn bộ schema (16 file
+`supabase/migrations/` đã có **47 file SQL** dựng sẵn toàn bộ schema (16 file
 `<timestamp>_<uuid>.sql` do Lovable sinh ra, phần còn lại viết tay). Sau khi
 link đúng project ở bước 1b:
 
@@ -394,6 +394,8 @@ nào):
 
 ```bash
 bash supabase/tests/community/run.sh   # mọi bộ kịch bản cộng đồng + seed
+bash supabase/tests/community/a-suites.reverse.sh   # phá từng lớp bảo vệ, đòi test đỏ đúng chỗ
+bash supabase/tests/community/recipe.reverse.sh
 ```
 
 Sau khi áp, tạo tài khoản ASCND chính thức để feed Khám phá không trống: tạo
@@ -502,8 +504,8 @@ không bao giờ được nằm trong app. Function cần:
    ```
 
 3. `supabase.auth.admin.deleteUser(userId)` bằng service role key. **Không cần
-   xoá tay từng bảng.** Cả 41 bảng trong `supabase/migrations/` đều có đường
-   cascade về `auth.users`: 34 bảng trỏ thẳng (24 khai báo inline trong
+   xoá tay từng bảng.** Cả 42 bảng trong `supabase/migrations/` đều có đường
+   cascade về `auth.users`: 35 bảng trỏ thẳng (25 khai báo inline trong
    `CREATE TABLE`, 10 khai báo bằng `ALTER TABLE … ADD CONSTRAINT`), và 7 bảng
    con đi qua bảng cha — `ai_messages`→`ai_conversations`,
    `meal_entry_items`→`meal_entries`, `meal_plan_items`→`meal_plans`,

@@ -1,0 +1,98 @@
+#!/usr/bin/env bash
+# ════════════════════════════════════════════════════════════════════════════
+# PHÉP THỬ NGƯỢC cho các bộ của A (#15): nền móng, Progress, Thử thách, Quyền
+# riêng tư, Thông báo. Cùng khuôn với `recipe.reverse.sh` của B.
+#
+#   bash supabase/tests/community/a-suites.reverse.sh
+#
+# Mỗi dòng `try` phá MỘT lớp bảo vệ trong một migration, dựng lại cụm, chạy
+# đúng một bộ test, và đòi nó đỏ ĐÚNG kịch bản canh lớp ấy. Xanh khi đã phá là
+# test rỗng nghĩa; đỏ ở kịch bản khác là test đo nhầm chỗ.
+#
+# Những gì nó đã bắt được, trước khi vào repo:
+#   · foundation #21, challenges C4/C14 — ghi và kiểm trong CÙNG một câu nối
+#     bằng AND: Postgres không hứa thứ tự tính, phép đếm chạy trước lệnh ghi.
+#   · privacy V4 — UPDATE có WHERE đọc cột nên Postgres áp cả policy SELECT;
+#     mở toang policy UPDATE mà vẫn xanh.
+#   · challenges C19/C20, notifications N20 — so MÃ LỖI khi anon gọi, trong khi
+#     với anon `auth.uid()` là null và thân hàm tự ném 42501. Cấp quyền cho
+#     anon mà vẫn xanh. Nay hỏi thẳng `has_function_privilege`.
+#   · notifications N10 — chỉ đếm sau lượt theo dõi LẠI; UNIQUE giữ con số là 1
+#     kể cả khi trigger dọn đã mất. Nay có N10a ngay sau lượt bỏ.
+#   · challenges C9 — không phải lỗi của test mà của STUB: Supabase cấp sẵn
+#     EXECUTE trên mọi hàm mới cho anon và authenticated, stub thì không, nên
+#     mọi `REVOKE … FROM anon, authenticated` chưa từng được đo. Stub nay có
+#     đúng dòng default privileges ấy.
+#
+# Cụm khởi động bằng `pg_ctl -w` (đợi tới khi nhận kết nối), không `sleep 1`:
+# một máy chậm hay một cụm khác đang chạy làm `sleep` hụt, và dòng ấy đọc ra
+# "đỏ SAI chỗ" cho một lỗi không liên quan gì tới test.
+#
+# Cần Postgres 16 cục bộ và quyền root, như `run.sh`. Không đụng project nào.
+# ════════════════════════════════════════════════════════════════════════════
+set -uo pipefail
+HERE="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$HERE/../../.." && pwd)"
+MIG="$ROOT/supabase/migrations"
+BIN="${PG_BIN:-/usr/lib/postgresql/16/bin}"
+PORT="${PG_PORT:-55473}"
+fails=0
+
+try() {  # $1 nhãn · $2 tệp migration bị phá · $3 biểu thức sed · $4 bộ test · $5 chuỗi phải có trong lỗi
+  local DIR out m; DIR="$(mktemp -d /var/tmp/ascnd-ra-XXXX)"
+  if [ "$(id -u)" = 0 ]; then id postgres >/dev/null 2>&1 || useradd -m postgres; chown postgres "$DIR"; fi
+  su postgres -c "$BIN/initdb -D $DIR/data -A trust -U postgres >/dev/null"
+  su postgres -c "$BIN/pg_ctl -w -D $DIR/data -o '-p $PORT -k $DIR' -l $DIR/log start >/dev/null"
+  local P=(psql -h "$DIR" -p "$PORT" -U postgres -q -v ON_ERROR_STOP=1)
+  "${P[@]}" -f "$HERE/supabase-stub.sql" >/dev/null
+  # Đúng thứ tự tên tệp, bản bị phá thế chỗ bản thật — migration sau có thể
+  # dựa vào migration trước.
+  for m in "$MIG"/*_community_*.sql; do
+    if [ "$(basename "$m")" = "$2" ]; then sed "$3" "$m" | "${P[@]}" -f - >/dev/null 2>&1
+    else "${P[@]}" -f "$m" >/dev/null; fi
+  done
+  out="$(cd /var/tmp && "${P[@]}" -f "$HERE/$4" 2>&1)"
+  su postgres -c "$BIN/pg_ctl -D $DIR/data stop -m fast >/dev/null"; rm -rf "$DIR"
+  if grep -qF "$5" <<<"$out"; then echo "✓ $1 — đỏ đúng: $5"
+  elif grep -q "ĐÚNG" <<<"$out"; then echo "✗ $1 — VẪN XANH (test rỗng nghĩa)"; fails=$((fails + 1))
+  else echo "✗ $1 — đỏ SAI chỗ: $(grep -m1 -E 'ERROR' <<<"$out")"; fails=$((fails + 1)); fi
+}
+
+F=20260927120000_community_foundation.sql
+try 'bài: thêm policy UPDATE'            $F 's/^CREATE POLICY "Authors delete their own posts"/CREATE POLICY "open" ON public.community_posts FOR UPDATE TO authenticated USING (true);\n&/' community_foundation.test.sql '21 '
+
+G=20260928120000_community_progress.sql
+try 'progress: chỉ số tắt vẫn vào payload' $G 's/^  IF p_waist THEN/  IF true THEN/'                                            community_progress.test.sql 'P1 '
+try 'progress: tính cả set khởi động'   $G "s/AND coalesce((e->>'warmup')::boolean, false) = false/AND true/"                  community_progress.test.sql 'P8 '
+
+C=20260930120000_community_challenges.sql
+try 'thử thách: đếm buổi thay vì ngày'   $C 's/count(DISTINCT ((s.date_time/count(((s.date_time/'                         community_challenges.test.sql 'C6 '
+try 'thử thách: bỏ chốt nhận hai lần'    $C 's/IF v_claimed IS NOT NULL THEN/IF false THEN/'                            community_challenges.test.sql 'C13 '
+try 'thử thách: hàm đo cho client gọi'   $C 's/FROM PUBLIC, anon, authenticated;/FROM PUBLIC, anon;/'                   community_challenges.test.sql 'C9 '
+try 'thử thách: anon đọc tổng quan'      $C 's/^REVOKE EXECUTE ON FUNCTION public.community_challenges_overview(integer) FROM PUBLIC, anon;/GRANT EXECUTE ON FUNCTION public.community_challenges_overview(integer) TO anon;/' community_challenges.test.sql 'C19 '
+try 'thử thách: anon nhận thưởng'        $C 's/^REVOKE EXECUTE ON FUNCTION public.claim_community_challenge(uuid, integer) FROM PUBLIC, anon;/GRANT EXECUTE ON FUNCTION public.claim_community_challenge(uuid, integer) TO anon;/' community_challenges.test.sql 'C20 '
+
+V=20260930130000_community_privacy.sql
+try 'riêng tư: SELECT mở'                $V 's/FOR SELECT TO authenticated USING (auth.uid() = user_id)/FOR SELECT TO authenticated USING (true)/' community_privacy.test.sql 'V2 '
+try 'riêng tư: UPDATE mở'                $V 's/USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id)/USING (true) WITH CHECK (true)/' community_privacy.test.sql 'V4 '
+try 'riêng tư: bỏ CHECK hiển thị'        $V "s/ CHECK (default_visibility IN ('public', 'followers'))//"            community_privacy.test.sql 'V5 '
+
+N=20260930140000_community_notifications.sql
+try 'thông báo: client tự ghi'           $N 's/^ALTER TABLE public.community_notifications ENABLE ROW LEVEL SECURITY;/&\nCREATE POLICY "open" ON public.community_notifications FOR INSERT TO authenticated WITH CHECK (true);/' community_notifications.test.sql 'N1 '
+try 'thông báo: bỏ dọn khi bỏ thích'     $N "s/WHERE kind = 'like' AND post_id = OLD.post_id/WHERE false AND post_id = OLD.post_id/" community_notifications.test.sql 'N3 '
+# Hai lớp: bỏ chốt trong trigger thì CHECK (user_id <> actor_id) chặn — và vì
+# chặn bằng lỗi, chính lượt TỰ THÍCH hỏng theo. Chốt trong trigger là thứ giữ
+# cho việc tự thích bài mình vẫn chạy.
+try 'thông báo: tự báo cho mình'         $N 's/IF v_to IS NULL OR v_to = v_actor/IF v_to IS NULL/'                     community_notifications.test.sql 'community_notifications_check'
+try 'thông báo: bỏ dọn khi xoá bình luận' $N 's/comment_id uuid REFERENCES public.community_comments(id) ON DELETE CASCADE/comment_id uuid/' community_notifications.test.sql 'N8 '
+try 'thông báo: bỏ dọn khi bị ẩn'        $N 's/WHEN (NEW.hidden AND NOT OLD.hidden)/WHEN (false)/'                      community_notifications.test.sql 'N9 '
+try 'thông báo: bỏ dọn khi bỏ theo dõi'  $N "s/WHERE kind = 'follow' AND user_id = OLD.followee_id/WHERE false AND user_id = OLD.followee_id/" community_notifications.test.sql 'N10a '
+try 'thông báo: SELECT mở'               $N 's/USING (auth.uid() = user_id AND NOT public.community_blocked_between(user_id, actor_id))/USING (true)/' community_notifications.test.sql 'N11 '
+try 'thông báo: thêm policy UPDATE'      $N 's/^ALTER TABLE public.community_notifications ENABLE ROW LEVEL SECURITY;/&\nCREATE POLICY "open" ON public.community_notifications FOR UPDATE TO authenticated USING (true);/' community_notifications.test.sql 'N13 '
+try 'thông báo: RPC đánh dấu hộp người khác' $N 's/WHERE user_id = v_uid AND read_at IS NULL;/WHERE read_at IS NULL;/'         community_notifications.test.sql 'N14 '
+try 'thông báo: RLS bỏ lọc chặn'         $N 's/ AND NOT public.community_blocked_between(user_id, actor_id))/)/'       community_notifications.test.sql 'N16 '
+try 'thông báo: trigger bỏ lọc chặn'     $N 's/     OR public.community_blocked_between(v_to, v_actor) THEN/     THEN/' community_notifications.test.sql 'N18 '
+try 'thông báo: anon gọi RPC'            $N 's/^REVOKE EXECUTE ON FUNCTION public.community_mark_notifications_read() FROM PUBLIC, anon;/GRANT EXECUTE ON FUNCTION public.community_mark_notifications_read() TO anon;/' community_notifications.test.sql 'N20 '
+
+echo
+if [ "$fails" -eq 0 ]; then echo "MỌI PHÉP THỬ NGƯỢC ĐỀU ĐỎ ĐÚNG CHỖ"; else echo "$fails PHÉP THỬ NGƯỢC HỎNG"; exit 1; fi

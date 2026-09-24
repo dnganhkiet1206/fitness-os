@@ -17,3 +17,8 @@ CREATE TABLE public.mascot_transactions (id uuid PRIMARY KEY DEFAULT gen_random_
 -- (B thêm ở đây những bảng bài Recipe cần đọc, chỉ các cột nó dùng.)
 -- Supabase mặc định cấp quyền bảng cho các vai trò API; RLS mới là thứ chặn.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+-- …và cấp quyền EXECUTE trên MỌI HÀM MỚI cho anon và authenticated — không chỉ
+-- qua PUBLIC. Thiếu dòng này thì mọi `REVOKE … FROM anon, authenticated` trong
+-- migration không được đo: một hàm chỉ `REVOKE … FROM PUBLIC` trông kín trên
+-- stub mà anon gọi được trên Supabase thật (phép thử ngược C9, #13).
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon, authenticated, service_role;
