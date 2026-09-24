@@ -34,9 +34,10 @@
  *      `PageAura` không caller, hai bộ đo sáng trùng nhau, và một `AmbientBackground`
  *      tôi tự dựng lên cạnh một cái đã có sẵn.
  *
- * KHÔNG kiểm `gte`/`lt`: máy chủ giả không lọc theo ngày, đó là giới hạn đã
- * được ghi trong `live.mjs` ở kịch bản "nhật ký ngày khác", và nó vẫn còn
- * nguyên. Luật này chỉ nói về thứ tự và số lượng.
+ * Từ #17 vế 1 kiểm cả bộ lọc `eq`/`neq`/`in`/`is`. KHÔNG lọc `gte`/`lt`: máy
+ * chủ giả không lọc theo ngày, đó là giới hạn đã được ghi trong `live.mjs` ở
+ * kịch bản "nhật ký ngày khác", và nó vẫn còn nguyên — một ca dưới đây đòi
+ * chúng được GIỮ NGUYÊN.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -117,6 +118,60 @@ const CASES = [
     rows: [{ id: 'c', k: 3 }, { id: 'a', k: 1 }],
     q: 'select=*',
     want: 'c,a',
+  },
+  /* ── bộ lọc (#17) ──
+     Thiếu `eq` thì `.maybeSingle()` nhận nhiều dòng và ném PGRST116: hồ sơ
+     cộng đồng của UID chưa từng đọc được trong phép đo web nào. */
+  {
+    name: 'eq lọc đúng một dòng (maybeSingle)',
+    rows: [{ id: 'x', u: 'me' }, { id: 'y', u: 'other' }, { id: 'z', u: 'third' }],
+    q: 'select=*&u=eq.me',
+    want: 'x',
+  },
+  {
+    name: 'eq so theo chữ với số và boolean',
+    rows: [{ id: 'a', n: 2, b: true }, { id: 'b', n: 3, b: true }, { id: 'c', n: 2, b: false }],
+    q: 'n=eq.2&b=eq.true',
+    want: 'a',
+  },
+  {
+    name: 'in với ngoặc kép giữ dấu phẩy',
+    rows: [{ id: 'a', k: 'x' }, { id: 'b', k: 'y,z' }, { id: 'c', k: 'w' }],
+    q: 'k=in.(x,"y,z")',
+    want: 'a,b',
+  },
+  {
+    name: 'is.null và not.is.null',
+    rows: [{ id: 'a', r: null }, { id: 'b', r: '2026-01-01' }, { id: 'c' }],
+    q: 'r=is.null',
+    want: 'a,c',
+  },
+  {
+    name: 'not.is.null',
+    rows: [{ id: 'a', r: null }, { id: 'b', r: '2026-01-01' }],
+    q: 'r=not.is.null',
+    want: 'b',
+  },
+  {
+    name: 'neq bỏ cả NULL (như Postgres)',
+    rows: [{ id: 'a', k: 'x' }, { id: 'b', k: 'y' }, { id: 'n', k: null }],
+    q: 'k=neq.x',
+    want: 'b',
+  },
+  {
+    /* Toán tử lạ, khoảng ngày, cột lồng và `or=` được GIỮ NGUYÊN: lọc sai là
+       giấu hàng khỏi ảnh chụp. `gte` còn có kịch bản "nhật ký ngày khác" dựa
+       vào việc nó không được lọc. */
+    name: 'gte, like, or và cột lồng giữ nguyên',
+    rows: [{ id: 'a', d: '2020-01-01', t: 'x' }, { id: 'b', d: '2030-01-01', t: 'y' }],
+    q: 'd=gte.2025-01-01&t=like.*z*&or=(t.eq.q)&p.k=eq.1',
+    want: 'a,b',
+  },
+  {
+    name: 'lọc rồi mới sắp và cắt',
+    rows: [{ id: 'a', u: 1, k: 1 }, { id: 'b', u: 2, k: 2 }, { id: 'c', u: 1, k: 3 }, { id: 'd', u: 1, k: 2 }],
+    q: 'u=eq.1&order=k.desc&limit=2',
+    want: 'c,d',
   },
 ];
 
@@ -204,7 +259,7 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `máy chủ giả OK — ${CASES.length} ca sắp xếp (một cột, nhiều cột, NULL hai chiều, nullslast, boolean, limit, ` +
+  `máy chủ giả OK — ${CASES.length} ca sắp xếp và lọc (một cột, nhiều cột, NULL hai chiều, nullslast, boolean, limit, eq/in/is/neq, toán tử lạ giữ nguyên, ` +
     `không-order) đều đúng và không ca nào sắp tại chỗ; ${orderCalls} lượt \`.order()\` trong src/, ` +
     `${checkedTables} cặp bảng·cột có fixture để đối chiếu và mọi cột đều tồn tại trong MỌI hàng; ` +
     'và `live.mjs` thật sự gọi `applyQuery` để dựng hàng trả về, chứ không chỉ import nó. ' +

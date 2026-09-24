@@ -128,8 +128,75 @@ function night(daysAgo, bedH, bedM, inBedMin, asleepMin, { id, quality, deep, re
  * Lọc theo ngày (`gte`/`lt`) thì VẪN bị bỏ qua, và đó vẫn là giới hạn đã ghi
  * trong `live.mjs`. Đây chỉ là thứ tự và số lượng.
  */
+/*
+  ── bộ lọc: eq · neq · in · is, và dạng `not.` của chúng (#17) ──
+
+  Trước #17 hàm này không lọc gì, và cái giá không nằm ở dữ liệu thừa mà ở
+  `.maybeSingle()`: supabase-js nhận về MẢNG rồi ném PGRST116 khi có hơn một
+  dòng. `useMyCommunityProfile` (`.eq('user_id', me).maybeSingle()`) vì thế
+  LUÔN lỗi trong thế giới giả, và tab Cộng đồng — đúng như thiết kế — im lặng
+  khi hồ sơ lỗi: ô soạn bài, lối vào của cả ba màn chia sẻ, chưa từng hiện
+  trong một phép đo web nào mà không có gì báo ra (B tìm ra, #17).
+
+  Chỉ lọc những gì app thật gửi và hiểu chắc chắn. Toán tử khác — `gte`, `lt`,
+  `like`, `or=(…)`, cột lồng `bảng.cột` — được GIỮ NGUYÊN chứ không đoán: lọc
+  sai là giấu hàng khỏi ảnh chụp, tệ hơn không lọc. Riêng `gte`/`lt` còn một
+  lý do nữa: kịch bản "nhật ký ngày khác" trong `live.mjs` ghi rõ nó dựa vào
+  việc chúng KHÔNG được lọc.
+
+  So sánh theo chuỗi: URL chỉ chở chuỗi, fixture chở số và boolean, và
+  PostgREST cũng so theo dạng chữ của giá trị ở phía này.
+*/
+const RESERVED = new Set(['select', 'order', 'limit', 'offset', 'on_conflict', 'columns', 'or', 'and']);
+
+function splitList(s) {
+  /* `in.(a,"b c",d)` — dấu phẩy trong ngoặc kép không tách. */
+  const out = [];
+  let cur = '';
+  let q = false;
+  for (const ch of s) {
+    if (ch === '"') q = !q;
+    else if (ch === ',' && !q) {
+      out.push(cur);
+      cur = '';
+    } else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
+function filterFor(col, raw) {
+  let expr = raw;
+  let neg = false;
+  if (expr.startsWith('not.')) {
+    neg = true;
+    expr = expr.slice(4);
+  }
+  const dot = expr.indexOf('.');
+  if (dot < 0) return null;
+  const op = expr.slice(0, dot);
+  const val = expr.slice(dot + 1);
+  const str = (v) => (v === null || v === undefined ? null : String(v));
+  let test;
+  if (op === 'eq') test = (r) => str(r[col]) === val;
+  else if (op === 'neq') test = (r) => str(r[col]) !== null && str(r[col]) !== val;
+  else if (op === 'in' && val.startsWith('(') && val.endsWith(')')) {
+    const set = new Set(splitList(val.slice(1, -1)));
+    test = (r) => str(r[col]) !== null && set.has(str(r[col]));
+  } else if (op === 'is' && val === 'null') test = (r) => r[col] === null || r[col] === undefined;
+  else if (op === 'is' && (val === 'true' || val === 'false')) test = (r) => r[col] === (val === 'true');
+  else return null;
+  return neg ? (r) => !test(r) : test;
+}
+
 export function applyQuery(rows, url) {
   let out = rows;
+
+  for (const [col, raw] of url.searchParams) {
+    if (RESERVED.has(col) || col.includes('.')) continue;
+    const f = filterFor(col, raw);
+    if (f) out = out.filter(f);
+  }
 
   /* PostgREST: `order=col.asc,col2.desc.nullsfirst`. supabase-js nối nhiều lần
      gọi `.order()` vào cùng tham số ấy, nên tách theo dấu phẩy là đủ. */
@@ -300,14 +367,14 @@ export const FIXTURES = {
     ca xấu nhất thay vì một ca 9 ký tự luôn vừa.
   */
   /*
-    Cộng đồng (giai đoạn 1). `applyQuery` chỉ mô phỏng `order` và `limit`,
-    KHÔNG mô phỏng bộ lọc — mọi `.eq()`/`.in()` trả về cả bảng. Hai hệ quả
-    được giữ có chủ ý:
+    Cộng đồng (giai đoạn 1). Từ #17 `applyQuery` lọc `eq`/`in`/`is`, nên
+    fixture không còn phải xếp để lừa bộ chạy. Bản chú thích trước ghi "hồ sơ
+    của UID đứng ĐẦU vì bộ chạy trả dòng đầu tiên" — và điều đó SAI: với hơn
+    một dòng, `.maybeSingle()` ném PGRST116 chứ không lấy dòng đầu, nên hồ sơ
+    của UID chưa từng đọc được trong một phép đo web nào (B tìm ra, #17).
 
-      · hồ sơ của UID đứng ĐẦU `community_profiles`, vì `useMyCommunityProfile`
-        đọc một dòng (`maybeSingle`) và bộ chạy trả dòng đầu tiên;
-      · `community_likes` và `community_saves` chỉ chứa dòng CỦA UID, vì hook
-        hỏi "người xem đã thích bài nào" bằng một `.eq('user_id', me)`.
+    RLS thì bộ chạy KHÔNG mô phỏng: `community_likes`/`community_saves` vẫn
+    chỉ chứa dòng của UID, và không có dòng nào mà người xem không được thấy.
 
     Ba người: chính mình, tài khoản ASCND chính thức (mẫu buổi tập, không có
     tạ), và một người dùng khác có buổi tập thật — tạ, tổng khối lượng, PR,

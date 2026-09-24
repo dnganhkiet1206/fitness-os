@@ -37,8 +37,9 @@ export interface ShareableMeal {
  *
  * ── ba truy vấn phẳng, không phép nhúng PostgREST ──
  *
- * #7 ghi rõ: `applyQuery` của thế giới giả không mô phỏng bộ lọc `eq`/`in`, nên
- * không dùng phép nhúng. Bữa, món và kho món được đọc riêng, phép ghép chạy ở
+ * Thế giới giả không mô phỏng phép nhúng (và tới #17 cũng không lọc `eq`/`in`;
+ * nay có, nhưng vẫn không lọc `gte`), nên không dùng phép nhúng. Bữa, món và
+ * kho món được đọc riêng, phép ghép chạy ở
  * đây, kèm một lượt lọc lại phía client theo đúng khoá — thế giới giả (hay một
  * bộ lọc sai về sau) trả thừa dòng cũng không lọt vào thẻ của bữa khác.
  *

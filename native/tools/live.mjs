@@ -140,7 +140,9 @@ function globalRoot() {
 const MODES = ['full', 'empty', 'fail'];
 
 const ROUTES = [
-  '/', '/nutrition', '/workouts', '/progress', '/assistant',
+  /* `/progress` đã rời khỏi danh sách: nó gộp vào `/workouts` (ba33494), và
+     suốt từ đó lượt quét vẫn "mở" nó xanh — một trang không-tìm-thấy. */
+  '/', '/nutrition', '/workouts', '/assistant',
   '/steps', '/water', '/biometrics', '/sleep-insights', '/sessions',
   '/templates', '/exercises', '/supplements', '/grocery', '/food-list',
   '/meal-plans', '/progress-photos', '/awards', '/challenges', '/smart-goals',
@@ -198,6 +200,12 @@ const ROUTES = [
   /* Exercise Intelligence's only surface. It reads inside `workout_sessions.sets`,
      which no other screen does, so nothing else here would notice it breaking. */
   '/exercise-insight',
+  /*
+    Cộng đồng — cả tab lẫn các màn của nó chưa từng có trong danh sách này, nên
+    lỗi #17 (hồ sơ không bao giờ đọc được trong thế giới giả, ô soạn bài không
+    bao giờ hiện) không có chỗ nào để lộ ra ở đây.
+  */
+  '/community', '/community-inbox', '/community-privacy',
 ];
 
 // ── build & serve ─────────────────────────────────────────────────────────
@@ -290,9 +298,10 @@ async function openPage(chromium, route, mode, settleMs = 9000) {
         return r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' });
       }
       const table = u.pathname.split('/')[3];
-      /* `applyQuery` đọc `order=` và `limit=` — xem chú thích của nó trong
-         `live-world.mjs`. Không đọc `gte`/`lt`; giới hạn ấy ghi ở kịch bản
-         "nhật ký ngày khác" bên dưới và vẫn còn nguyên. */
+      /* `applyQuery` lọc `eq`/`neq`/`in`/`is` (từ #17), rồi đọc `order=` và
+         `limit=` — xem chú thích của nó trong `live-world.mjs`. Không đọc
+         `gte`/`lt`; giới hạn ấy ghi ở kịch bản "nhật ký ngày khác" bên dưới
+         và vẫn còn nguyên. */
       const rows = applyQuery(
         mode === 'empty' && table !== 'profiles' ? [] : (FIXTURES[table] ?? []),
         u,
@@ -982,11 +991,41 @@ const SCENARIOS = [
     },
   },
   {
-    name: 'Today: nút ghi bữa ăn mở đúng màn',
-    route: '/', mode: 'full',
+    /*
+      #17: trước khi `applyQuery` lọc `eq`, `useMyCommunityProfile` nhận CẢ BẢNG
+      hồ sơ và `.maybeSingle()` ném PGRST116. Tab Cộng đồng — đúng thiết kế —
+      im lặng khi hồ sơ lỗi, nên ô soạn bài (lối vào của cả ba màn chia sẻ)
+      biến mất mà không có gì báo ra. Vế này đòi nó HIỆN, và đòi chuông của hộp
+      thông báo (chỉ vẽ khi đã có hồ sơ) cũng có mặt: hai dấu hiệu độc lập rằng
+      hồ sơ của UID đã được đọc. Bỏ lọc `eq` khỏi `applyQuery` thì vế này đỏ.
+    */
+    name: 'Cộng đồng: hồ sơ đọc được, ô soạn bài hiện',
+    route: '/community', mode: 'full',
     async run(page) {
-      const btn = page.getByText(/Log meal|Ghi bữa ăn/).first();
-      if ((await btn.count()) === 0) return 'không tìm thấy nút ghi bữa ăn trên Today';
+      await page.waitForTimeout(2500);
+      const composer = page.getByText(/^(Chia sẻ một buổi tập…|Share a workout…)$/);
+      if ((await composer.count()) === 0) return 'không thấy ô soạn bài — hồ sơ cộng đồng của UID không đọc được (xem #17)';
+      const bell = page.getByLabel(/^(Thông báo|Notifications)/);
+      if ((await bell.count()) === 0) return 'ô soạn bài có nhưng không thấy chuông thông báo';
+      return null;
+    },
+  },
+  {
+    /*
+      Nút ghi bữa không còn ở Today: thẻ dinh dưỡng của Today nay mở tab Dinh
+      dưỡng (xem chú thích ở `(tabs)/index.tsx`, "the card used to be … a
+      shortcut to `/log-meal` only when it was empty, which is backwards"), và
+      nút ghi bữa là `MealLogActions` trên tab ấy. Kịch bản đi theo nút tới chỗ
+      mới — cùng câu hỏi "bấm có mở đúng màn không" — thay vì đỏ mãi ở chỗ cũ.
+    */
+    name: 'Dinh dưỡng: nút ghi bữa ăn mở đúng màn',
+    route: '/nutrition', mode: 'full',
+    async run(page) {
+      /* "Ghi bữa ăn" trên thẻ là TIÊU ĐỀ; bốn cách ghi là bốn nút bên dưới,
+         mỗi nút một nhãn trợ năng. Ô "nhập tay" là ô luôn tới `/log-meal`
+         (hai ô đầu mở camera, thứ web không có). */
+      const btn = page.getByRole('button', { name: /^(Enter manually|Nhập tay số liệu)$/ }).first();
+      if ((await btn.count()) === 0) return 'không tìm thấy nút nhập tay trong thẻ ghi bữa ăn trên tab Dinh dưỡng';
       await btn.click();
       await page.waitForTimeout(2500);
       if (!/log-meal/.test(page.url())) return `bấm xong vẫn ở ${page.url().replace(/^.*8731/, '')}`;
@@ -994,15 +1033,26 @@ const SCENARIOS = [
     },
   },
   {
-    name: 'Tiến trình: đổi tab đổi nội dung',
-    route: '/progress', mode: 'full',
+    /*
+      `/progress` không còn (ba33494): Tiến trình gộp vào Tập luyện thành segment
+      "Cơ thể", và Số đo thành lưới thẻ NGAY trên trang ấy chứ không còn là một
+      tab. Câu hỏi giữ nguyên — đổi segment có thật sự đổi nội dung không — và
+      đòi thêm lưới số đo có mặt, vì đó là thứ trang Cơ thể vẽ mà trang Buổi
+      tập không vẽ.
+    */
+    name: 'Tập luyện: segment Cơ thể đổi nội dung và có số đo',
+    route: '/workouts', mode: 'full',
     async run(page) {
       const before = await readable(page);
-      const tab = page.getByText(/Measurements|Số đo/).first();
-      if ((await tab.count()) === 0) return 'không tìm thấy tab số đo';
-      await tab.click();
+      const seg = page.getByText(/^(Body|Cơ thể)$/).first();
+      if ((await seg.count()) === 0) return 'không tìm thấy segment Cơ thể';
+      await seg.click();
       await page.waitForTimeout(1500);
-      if ((await readable(page)) === before) return 'bấm tab mà nội dung không đổi';
+      const after = await readable(page);
+      if (after === before) return 'bấm segment mà nội dung không đổi';
+      /* Không phân biệt hoa thường: nhãn ô là `textTransform: uppercase`, và
+         `innerText` trả chữ ĐÃ biến đổi ("BẮP TAY"). */
+      if (!/bắp tay|biceps/i.test(after)) return 'segment Cơ thể mở ra mà không có lưới số đo';
       return null;
     },
   },
@@ -1332,7 +1382,9 @@ try {
   process.stdout.write('bấm thử từng nút');
   let pressed = 0;
   let skipped = 0;
-  for (const [route, mode] of [['/', 'signedout'], ['/', 'full'], ['/progress', 'full'], ['/settings', 'full']]) {
+  /* `/workouts` thay `/progress`: trang cũ không còn, nên suốt từ ba33494 lượt
+     bấm ở đây bấm trên một trang không-tìm-thấy và không đo gì. */
+  for (const [route, mode] of [['/', 'signedout'], ['/', 'full'], ['/workouts', 'full'], ['/settings', 'full']]) {
     const { browser, page } = await openPage(chromium, route, mode);
     try {
       const r = await pressEverything(page, `[${mode}] ${route}`, problems);
