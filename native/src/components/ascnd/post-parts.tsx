@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { usePathname } from 'expo-router';
 import { BadgeCheck, Bookmark, Heart, MessageCircle, MoreHorizontal, Share2 } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Alert, Pressable, Share, Text, View } from 'react-native';
@@ -22,7 +23,7 @@ import {
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 import { timeAgo } from '@/lib/time-ago';
-import { toast } from '@/lib/toast';
+import { showToast, toast } from '@/lib/toast';
 
 /**
  * Khung CHUNG của mọi loại bài: Workout, Progress, Recipe.
@@ -127,6 +128,27 @@ function PostActions({ post, onComment, shareText }: { post: FeedPost; onComment
   const i18n = useI18n();
   const like = useToggleLike();
   const save = useToggleSave();
+  const path = usePathname();
+  /*
+    Lưu xong thì NÓI nó đi đâu (#10, B — chủ dự án cho B sửa đúng điểm này ở
+    #23): "Đã lưu" kèm nút "Xem thư viện". Không có đường dẫn ấy thì thư viện
+    là một màn người ta không bao giờ biết là có. Chỉ khi LƯU, không khi bỏ
+    lưu; và không kèm nút khi đang ở chính thư viện — nút dẫn về chỗ đang
+    đứng là một nút thừa.
+  */
+  const toggleSave = () => {
+    const on = !post.saved;
+    save.mutate(
+      { postId: post.id, on },
+      {
+        onSuccess: () => {
+          if (!on) return;
+          if (path === '/community-saved') toast.success(i18n.nSvSaved);
+          else showToast('success', i18n.nSvSaved, undefined, { label: i18n.nSvOpen, run: () => nav.push('/community-saved') });
+        },
+      },
+    );
+  };
   return (
     <View style={styles.actions}>
       <Action
@@ -144,7 +166,7 @@ function PostActions({ post, onComment, shareText }: { post: FeedPost; onComment
         label={i18n.nCmSave}
         on={post.saved}
         onColor={c.foreground}
-        onPress={() => save.mutate({ postId: post.id, on: !post.saved })}
+        onPress={toggleSave}
       />
       <Action
         icon={Share2}

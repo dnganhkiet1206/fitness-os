@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams } from 'expo-router';
-import { BadgeCheck, MoreHorizontal, UserRound } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, MoreHorizontal, UserRound } from 'lucide-react-native';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 
 import { CommunityAvatar } from '@/components/ascnd/community-avatar';
@@ -132,6 +132,19 @@ export default function CommunityUserScreen() {
                 <Text style={styles.quietText}>{i18n.nPvTitle}</Text>
               </PressScale>
             </View>
+          ) : null}
+          {u!.isMe ? (
+            /* Thư viện Đã lưu (#10, B — chủ dự án cho B sửa đúng điểm này ở
+               #23): một viên trầm RIÊNG, rộng hết hàng. Nhét làm nút thứ ba
+               vào hàng trên thì ở 320pt ba chữ không còn chỗ. Chỉ trên hồ sơ
+               của chính mình — thư viện của người khác không phải thứ để xem. */
+            <PressScale
+              accessibilityRole="button"
+              onPress={() => nav.push('/community-saved')}
+              style={[styles.quietBtn, styles.savedBtn]}>
+              <Icon icon={Bookmark} size={16} color={c.foreground} />
+              <Text style={styles.quietText}>{i18n.nSvTitle}</Text>
+            </PressScale>
           ) : (
             <PressScale
               accessibilityRole="button"
@@ -187,6 +200,7 @@ const stylesFor = makeStyles((c, m) => ({
   quietBtn: { height: 44, borderRadius: radius.full, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center' },
   quietText: { ...type.headline, color: c.foreground },
   meRow: { flexDirection: 'row', gap: spacing.sm },
+  savedBtn: { flexDirection: 'row', gap: spacing.sm },
   flex: { flex: 1 },
   none: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
 }));

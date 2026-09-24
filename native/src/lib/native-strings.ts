@@ -1127,6 +1127,18 @@ const en = {
   nRcAlreadyShared: 'This meal is already shared',
   nRcEmptyMeal: 'This meal has no foods to share',
   nRcAsk: 'A recipe',
+
+  /* ── Cộng đồng · Thư viện Đã lưu (#10, người làm: B) ── */
+  nSvTitle: 'Saved',
+  nSvSaved: 'Saved to your library',
+  nSvOpen: 'View library',
+  nSvWorkouts: 'Workouts',
+  nSvRecipes: 'Recipes',
+  nSvAll: 'All',
+  nSvEmpty: 'Nothing saved yet',
+  nSvEmptyHint: 'Tap the bookmark on a post to keep it here.',
+  nSvEmptyWorkouts: 'No saved workouts',
+  nSvEmptyRecipes: 'No saved recipes',
 };
 
 const vi: typeof en = {
@@ -2140,6 +2152,18 @@ const vi: typeof en = {
   nRcAlreadyShared: 'Bữa này đã được chia sẻ',
   nRcEmptyMeal: 'Bữa này không có món nào để chia sẻ',
   nRcAsk: 'Một công thức',
+
+  /* ── Cộng đồng · Thư viện Đã lưu (#10, người làm: B) ── */
+  nSvTitle: 'Đã lưu',
+  nSvSaved: 'Đã lưu vào thư viện',
+  nSvOpen: 'Xem thư viện',
+  nSvWorkouts: 'Buổi tập',
+  nSvRecipes: 'Công thức',
+  nSvAll: 'Tất cả',
+  nSvEmpty: 'Chưa lưu bài nào',
+  nSvEmptyHint: 'Chạm biểu tượng Lưu trên một bài để giữ nó ở đây.',
+  nSvEmptyWorkouts: 'Chưa lưu buổi tập nào',
+  nSvEmptyRecipes: 'Chưa lưu công thức nào',
 };
 
 export const nativeStrings: Record<AppLang, typeof en> = { vi, en };

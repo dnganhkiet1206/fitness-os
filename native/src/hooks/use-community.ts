@@ -90,7 +90,9 @@ export interface CommunityComment {
 }
 
 const PROFILE_COLS = 'user_id, handle, display_name, mascot_id, is_official, bio';
-const POST_COLS =
+/* Export cho Thư viện Đã lưu (#10, B — chủ dự án cho B sửa đúng bốn điểm ở
+   #23): thư viện dựng FeedPost y như feed, nên đọc lại chính ba thứ này. */
+export const POST_COLS =
   'id, author_id, kind, payload, caption, visibility, like_count, comment_count, save_count, hidden, created_at';
 const PAGE = 30;
 
@@ -123,7 +125,7 @@ export function readWorkoutPayload(raw: unknown): WorkoutPayload {
   };
 }
 
-type PostRow = {
+export type PostRow = {
   id: string;
   author_id: string;
   kind: string;
@@ -138,7 +140,7 @@ type PostRow = {
 };
 
 /** Gắn tác giả + trạng thái thích/lưu của NGƯỜI XEM vào một loạt bài. */
-async function hydrate(rows: PostRow[], me: string): Promise<FeedPost[]> {
+export async function hydrate(rows: PostRow[], me: string): Promise<FeedPost[]> {
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
   const authorIds = [...new Set(rows.map((r) => r.author_id))];

@@ -488,6 +488,11 @@ export const FIXTURES = {
   ],
   community_saves: [
     { post_id: 'cp000000-0000-4000-8000-000000000002', user_id: UID, created_at: day(0.9) },
+    /* Thư viện Đã lưu (#10, B): bài Recipe (đăng day(0.6)) được lưu TRƯỚC bài
+       Workout (đăng day(1)). Xếp theo lúc ĐĂNG thì Recipe đứng đầu; xếp theo
+       lúc LƯU — thứ thư viện hứa — thì Workout đứng đầu. Hai thứ tự khác nhau
+       là để phép đo phân biệt được chúng. */
+    { post_id: 'cp000000-0000-4000-8000-000000000004', user_id: UID, created_at: day(0.95) },
   ],
   community_comments: [
     { id: 'cc000000-0000-4000-8000-000000000001', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: UID, body: 'Incline 24kg × 10 là ngon rồi!', hidden: false, created_at: day(0.08) },
