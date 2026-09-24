@@ -299,6 +299,70 @@ export const FIXTURES = {
     thẻ số đo phải chứa (11 ký tự, cả ở cm lẫn inch), nên bản dựng vẽ ra đúng
     ca xấu nhất thay vì một ca 9 ký tự luôn vừa.
   */
+  /*
+    Cộng đồng (giai đoạn 1). `applyQuery` chỉ mô phỏng `order` và `limit`,
+    KHÔNG mô phỏng bộ lọc — mọi `.eq()`/`.in()` trả về cả bảng. Hai hệ quả
+    được giữ có chủ ý:
+
+      · hồ sơ của UID đứng ĐẦU `community_profiles`, vì `useMyCommunityProfile`
+        đọc một dòng (`maybeSingle`) và bộ chạy trả dòng đầu tiên;
+      · `community_likes` và `community_saves` chỉ chứa dòng CỦA UID, vì hook
+        hỏi "người xem đã thích bài nào" bằng một `.eq('user_id', me)`.
+
+    Ba người: chính mình, tài khoản ASCND chính thức (mẫu buổi tập, không có
+    tạ), và một người dùng khác có buổi tập thật — tạ, tổng khối lượng, PR,
+    chú thích, bình luận — để thẻ được vẽ ở cả hai hình dạng của nó.
+  */
+  community_profiles: [
+    { user_id: UID, handle: 'kiet', display_name: 'Kiệt', bio: 'Push/Pull/Legs, 4 buổi mỗi tuần.', mascot_id: 'koa', is_official: false, created_at: day(20), updated_at: day(20) },
+    { user_id: 'c0000000-0000-4000-8000-00000000a5cd', handle: 'ascnd', display_name: 'ASCND', bio: 'Buổi tập mẫu, thử thách và mẹo từ đội ngũ ASCND.', mascot_id: 'koa', is_official: true, created_at: day(60), updated_at: day(60) },
+    { user_id: 'c0000000-0000-4000-8000-0000000011a1', handle: 'linh.pham', display_name: 'Linh Phạm', bio: '', mascot_id: 'blaze', is_official: false, created_at: day(40), updated_at: day(40) },
+  ],
+  community_follows: [
+    { follower_id: UID, followee_id: 'c0000000-0000-4000-8000-0000000011a1', created_at: day(5) },
+  ],
+  community_posts: [
+    {
+      id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'workout', source_id: 'c5000000-0000-4000-8000-000000000001',
+      payload: {
+        title: 'Push Day', performedAt: day(0.12), volumeKg: 12840, pr: true, minutes: 45, exerciseCount: 6,
+        exercises: [
+          { exerciseId: 'e1', exerciseName: 'Incline DB Press', library: true, sets: 4, weight: 24, reps: 10 },
+          { exerciseId: 'e2', exerciseName: 'Flat DB Press', library: true, sets: 3, weight: 22, reps: 12 },
+          { exerciseId: 'e3', exerciseName: 'Chest Machine Press', library: true, sets: 3, weight: 50, reps: 10 },
+          { exerciseId: 'e4', exerciseName: 'Cable Fly', library: true, sets: 3, weight: 15, reps: 15 },
+          { exerciseId: null, exerciseName: 'Lateral Raise', library: false, sets: 3, weight: 8, reps: 15 },
+          { exerciseId: 'e6', exerciseName: 'Triceps Pushdown', library: true, sets: 3, weight: 25, reps: 12 },
+        ],
+      },
+      caption: 'Cuối cùng cũng lên được incline hôm nay. Thấy khoẻ hơn hẳn 🔥', visibility: 'public',
+      like_count: 128, comment_count: 2, save_count: 9, hidden: false, created_at: day(0.12),
+    },
+    {
+      id: 'cp000000-0000-4000-8000-000000000002', author_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'workout', source_id: null,
+      payload: {
+        title: 'Pull — Lưng dày', performedAt: day(1), volumeKg: 0, pr: false, minutes: 55, exerciseCount: 4,
+        exercises: [
+          { exerciseId: 'e7', exerciseName: 'Pull-up', library: true, sets: 4, weight: 0, reps: 6 },
+          { exerciseId: 'e8', exerciseName: 'Barbell Row', library: true, sets: 4, weight: 0, reps: 8 },
+          { exerciseId: 'e9', exerciseName: 'Lat Pulldown', library: true, sets: 3, weight: 0, reps: 10 },
+          { exerciseId: 'e10', exerciseName: 'Dumbbell Curl', library: true, sets: 3, weight: 0, reps: 12 },
+        ],
+      },
+      caption: 'Kéo xà trước khi mỏi, chèo tạ đòn giữ lưng thẳng. Chất lượng mỗi rep hơn số rep.', visibility: 'public',
+      like_count: 86, comment_count: 0, save_count: 31, hidden: false, created_at: day(1),
+    },
+  ],
+  community_likes: [
+    { post_id: 'cp000000-0000-4000-8000-000000000001', user_id: UID, created_at: day(0.1) },
+  ],
+  community_saves: [
+    { post_id: 'cp000000-0000-4000-8000-000000000002', user_id: UID, created_at: day(0.9) },
+  ],
+  community_comments: [
+    { id: 'cc000000-0000-4000-8000-000000000001', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: UID, body: 'Incline 24kg × 10 là ngon rồi!', hidden: false, created_at: day(0.08) },
+    { id: 'cc000000-0000-4000-8000-000000000002', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', body: 'Cảm ơn! Tuần sau thử 26.', hidden: false, created_at: day(0.05) },
+  ],
   body_measurements: [
     {
       id: 'bm1', user_id: UID, date: dayStr(0), neck_cm: 37.5, shoulders_cm: 118, chest_cm: 99,

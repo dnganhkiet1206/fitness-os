@@ -235,6 +235,220 @@ export type Database = {
         }
         Relationships: []
       }
+      /* Cộng đồng — viết tay khớp `20260927120000_community_foundation.sql`. */
+      community_blocks: {
+        Row: {
+          blocked_id: string
+          blocker_id: string
+          created_at: string
+        }
+        Insert: {
+          blocked_id: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Update: {
+          blocked_id?: string
+          blocker_id?: string
+          created_at?: string
+        }
+        Relationships: []
+      }
+      community_comments: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          hidden: boolean
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_id?: string
+          body: string
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          post_id?: string
+        }
+        Relationships: []
+      }
+      community_follows: {
+        Row: {
+          created_at: string
+          followee_id: string
+          follower_id: string
+        }
+        Insert: {
+          created_at?: string
+          followee_id: string
+          follower_id?: string
+        }
+        Update: {
+          created_at?: string
+          followee_id?: string
+          follower_id?: string
+        }
+        Relationships: []
+      }
+      community_likes: {
+        Row: {
+          created_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      community_posts: {
+        Row: {
+          author_id: string
+          caption: string
+          comment_count: number
+          created_at: string
+          hidden: boolean
+          id: string
+          kind: string
+          like_count: number
+          payload: Json
+          save_count: number
+          source_id: string | null
+          visibility: string
+        }
+        Insert: {
+          author_id: string
+          caption?: string
+          comment_count?: number
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          kind: string
+          like_count?: number
+          payload: Json
+          save_count?: number
+          source_id?: string | null
+          visibility?: string
+        }
+        Update: {
+          author_id?: string
+          caption?: string
+          comment_count?: number
+          created_at?: string
+          hidden?: boolean
+          id?: string
+          kind?: string
+          like_count?: number
+          payload?: Json
+          save_count?: number
+          source_id?: string | null
+          visibility?: string
+        }
+        Relationships: []
+      }
+      community_profiles: {
+        Row: {
+          bio: string
+          created_at: string
+          display_name: string
+          handle: string
+          is_official: boolean
+          mascot_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string
+          created_at?: string
+          display_name: string
+          handle: string
+          is_official?: boolean
+          mascot_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string
+          created_at?: string
+          display_name?: string
+          handle?: string
+          is_official?: boolean
+          mascot_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      community_reports: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          id: string
+          note: string
+          post_id: string | null
+          reason: string
+          reported_user_id: string | null
+          reporter_id: string
+          status: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string
+          post_id?: string | null
+          reason: string
+          reported_user_id?: string | null
+          reporter_id?: string
+          status?: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          note?: string
+          post_id?: string | null
+          reason?: string
+          reported_user_id?: string | null
+          reporter_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      community_saves: {
+        Row: {
+          created_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coach_memory: {
         Row: {
           id: string
@@ -1576,6 +1790,12 @@ export type Database = {
       }
       current_tier: {
         Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      /* Nơi DUY NHẤT sinh ra một bài cộng đồng: `community_posts` không có
+         policy INSERT. Trả về id bài. */
+      share_workout: {
+        Args: { p_session_id: string; p_caption?: string; p_visibility?: string; p_minutes?: number }
         Returns: string
       }
     }

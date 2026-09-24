@@ -199,7 +199,11 @@ for (const f of files) {
     if (!t.selfClose) {
       /* `<PressScale>{card}</PressScale>`: nếu thân của thẻ vừa mở có `{NAME}`
          và NAME mang sẵn một nút, thì đây là một nút trong một nút. */
-      if (PRESS.has(t.name) && carried.size) {
+      /* Cùng lối thoát với nhánh lồng trực tiếp ở trên: một nút ngoài khai
+         `accessible={false}` là vùng nuốt chạm, không phải nút thứ hai. Bản
+         đầu của nhánh này bỏ quên điều đó, nên làm đúng lời câu báo lỗi dặn
+         vẫn đỏ (thẻ bài cộng đồng, 24/09). */
+      if (PRESS.has(t.name) && carried.size && !/accessible=\{false\}/.test(t.attrs)) {
         let d = 0, j = t.end, close = src.length;
         for (; j < src.length; j++) {
           if (src[j] === '<' && src[j + 1] === '/') { if (d === 0) { close = j; break; } d--; }

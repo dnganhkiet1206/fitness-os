@@ -62,6 +62,8 @@ const EXEMPT = new Map([
   ['src/app/log-sleep.tsx', 'biểu mẫu ghi'],
   ['src/app/log-biometrics.tsx', 'biểu mẫu ghi'],
   ['src/app/log-measurement.tsx', 'biểu mẫu ghi'],
+  ['src/app/community-profile.tsx', 'biểu mẫu sửa hồ sơ cộng đồng'],
+  ['src/app/community-share.tsx', 'biểu mẫu chia sẻ — tải lại giữa lúc gõ chú thích không làm mới được gì'],
   ['src/app/edit-profile.tsx', 'biểu mẫu sửa'],
   ['src/app/workout-builder.tsx', 'biểu mẫu dựng buổi tập'],
   ['src/app/food-editor.tsx', 'biểu mẫu sửa'],
@@ -73,22 +75,14 @@ const EXEMPT = new Map([
   /* Today không dùng `Screen`: nó có scaffold riêng và `RefreshControl` riêng,
      với `progressViewOffset` mà scaffold sau này chép lại. */
   ['src/app/(tabs)/index.tsx', 'scaffold riêng, đã tự mang RefreshControl'],
-  /* Miễn trừ CÓ HẠN — xem `SHELL` ngay dưới. */
-  ['src/app/(tabs)/community.tsx', 'vỏ chưa có backend — chưa đọc gì từ server'],
 ]);
 
 /*
-  Cộng đồng là một VỎ (24/09): chủ dự án chọn dựng ô tab trước, backend sau.
-  Nó gọi `useI18n` — một hook trong `@/hooks/` — nên phép thử "đọc server" ở
-  dưới bắt nhầm nó, đúng như bắt nhầm `legal.tsx`.
-
-  Nhưng miễn trừ theo tên tệp có một lỗ: ngày màn này có dữ liệu thật mà ai đó
-  quên `refreshable`, miễn trừ sẽ che đúng lỗi luật này sinh ra để bắt. Nên nó
-  tự hết hạn: import BẤT KỲ hook nào ngoài `use-app-settings` là miễn trừ mất
-  hiệu lực, và luật đỏ như với mọi màn khác.
+  Cộng đồng từng được miễn ở đây như một VỎ chưa có backend, với một miễn trừ
+  TỰ HẾT HẠN ngay khi màn gọi một hook dữ liệu thật. Ngày 24/09 nó hết hạn đúng
+  như thiết kế — giai đoạn 1 của Cộng đồng đọc feed thật — và luật đỏ đúng câu
+  đã hẹn. Màn đã bật `refreshable`, nên miễn trừ và cơ chế hết hạn được gỡ.
 */
-const SHELL = 'src/app/(tabs)/community.tsx';
-const SHELL_HOOKS_OK = new Set(['@/hooks/use-app-settings']);
 
 const files = execFileSync(
   'git',
@@ -112,17 +106,6 @@ for (const f of files) {
   const readsServer = /from '@\/hooks\//.test(code) && /\buse[A-Z]\w*\(/.test(code);
   const has = /<Screen\b[^>]*\brefreshable\b/.test(code) || /refreshControl=/.test(code);
   if (has) on++;
-  if (f === SHELL) {
-    const hooks = [...code.matchAll(/from '(@\/hooks\/[^']+)'/g)].map((m) => m[1]);
-    const real = hooks.filter((h) => !SHELL_HOOKS_OK.has(h));
-    if (real.length && !/<Screen\b[^>]*\brefreshable\b/.test(code)) {
-      problems.push(
-        `${f}: được miễn vì là VỎ chưa có backend, nhưng nay đã gọi ${real.join(', ')} — ` +
-          'miễn trừ hết hạn. Bật `refreshable` và gỡ nó khỏi EXEMPT',
-      );
-      continue;
-    }
-  }
   if (EXEMPT.has(f)) {
     exempt++;
     if (has) {

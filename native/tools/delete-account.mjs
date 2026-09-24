@@ -356,10 +356,12 @@ try {
 
   const owned = new Set();
   const inline = new Set();
+  const bodies = new Map();
   for (const m of sql.matchAll(/CREATE TABLE(?: IF NOT EXISTS)?\s+(?:public\.)?"?(\w+)"?\s*\(([\s\S]*?)\n\);/gi)) {
     const [, name, body] = m;
     if (!/\buser_id\b/.test(body)) continue;
     owned.add(name);
+    bodies.set(name, body);
     if (/user_id[^,]*REFERENCES\s+auth\.users\s*\(\s*id\s*\)[\s\S]{0,80}?ON DELETE CASCADE/i.test(body)) {
       inline.add(name);
     }
@@ -375,7 +377,35 @@ try {
       altered.add(name);
     }
   }
-  const uncovered = [...owned].filter((t) => !inline.has(t) && !altered.has(t)).sort();
+  /*
+    Cascade QUA BẢNG CHA, khi bảng cha tự nó đã được chứng minh ở trên.
+
+    Các bảng `community_*` (24/09) không mang cột `user_id` của riêng chúng —
+    `community_posts.author_id`, `community_follows.follower_id`,
+    `community_comments.author_id` trỏ tới `community_profiles(user_id)`, và
+    chính bảng ấy cascade thẳng về `auth.users`. Luật đọc bằng chữ nên thấy
+    chữ `user_id` trong `REFERENCES community_profiles(user_id)` và báo ba bảng
+    là hở, trong khi xoá tài khoản dọn sạch chúng — kịch bản 36 của
+    `supabase/tests/community/` xoá một người dùng trên Postgres thật và kiểm.
+
+    Luật KHÔNG được nới thành "có REFERENCES là được": chỉ tính khi bảng cha
+    đã được chứng minh cascade (thẳng, hoặc qua một bảng cha đã chứng minh),
+    và chính khoá ngoại đi tới nó phải có ON DELETE CASCADE. Gỡ CASCADE ở một
+    trong hai chặng là luật đỏ lại — xem phép thử ngược trong lịch sử commit.
+  */
+  const covered = new Set([...inline, ...altered]);
+  for (let changed = true; changed; ) {
+    changed = false;
+    for (const t of owned) {
+      if (covered.has(t)) continue;
+      const via = [...bodies.get(t).matchAll(/REFERENCES\s+(?:public\.)?"?(\w+)"?\s*\(\s*user_id\s*\)\s*ON DELETE CASCADE/gi)];
+      if (via.length && via.every((v) => covered.has(v[1]))) {
+        covered.add(t);
+        changed = true;
+      }
+    }
+  }
+  const uncovered = [...owned].filter((t) => !covered.has(t)).sort();
   if (owned.size < 31) {
     problems.push(`chỉ thấy ${owned.size} bảng mang user_id — luật này không còn đọc đúng chỗ (đo trên DB thật: 31)`);
   }
@@ -418,6 +448,7 @@ console.log(
     'ảnh đã mất vĩnh viễn), và không phản hồi nào trả câu lỗi nội bộ ra ngoài. Thử lại sau một lần hỏng dở ' +
     'dang hội tụ về 200; gọi xoá hai lần ra 200/200 và hai lời gọi đồng thời cũng vậy (bản đã ship trả 500 ' +
     'partial:false cho lần thứ hai — phản hồi này là thứ dễ mất nhất trong app, và token vẫn hợp lệ sau khi ' +
-    'tài khoản đã mất). Và 31 bảng mang user_id đều có khoá ngoại ON DELETE CASCADE tới auth.users, 20 khai ' +
-    'ngay trong CREATE TABLE và 23 thêm bằng ALTER TABLE về sau',
+    'tài khoản đã mất). Và mọi bảng mang user_id đều có khoá ngoại ON DELETE CASCADE tới auth.users — khai ' +
+    'ngay trong CREATE TABLE, thêm bằng ALTER TABLE về sau, hoặc đi qua một bảng cha mà chính nó đã được ' +
+    'chứng minh cascade (các bảng community_* qua community_profiles)',
 );

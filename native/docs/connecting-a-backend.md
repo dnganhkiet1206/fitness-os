@@ -327,7 +327,7 @@ tồn tại ở project mới. Với một tài khoản test thì cách gọn nh
 
 ## 2. Tạo schema
 
-`supabase/migrations/` đã có **40 file SQL** dựng sẵn toàn bộ schema (16 file
+`supabase/migrations/` đã có **41 file SQL** dựng sẵn toàn bộ schema (16 file
 `<timestamp>_<uuid>.sql` do Lovable sinh ra, phần còn lại viết tay). Sau khi
 link đúng project ở bước 1b:
 
@@ -376,6 +376,32 @@ Ngoài ra edge function cần thêm hai thứ app không đụng tới:
 **Row-level security phải bật trên tất cả.** App luôn lọc theo
 `user_id = auth.uid()`, nên policy tối thiểu là cho phép chủ sở hữu đọc/ghi
 dòng của chính mình. Không có RLS thì mọi tài khoản đọc được dữ liệu của nhau.
+
+**Ngoại lệ duy nhất: tám bảng `community_*`.** Chúng là nơi DUY NHẤT người dùng
+đọc được dòng của người khác, và chỉ vì người kia CHỦ ĐỘNG chia sẻ. Không bảng
+sức khoẻ nào (cân nặng, số đo, ảnh, buổi tập) bị mở: bài cộng đồng là một bản
+chụp nằm ở bảng riêng, do RPC `share_workout` dựng từ buổi tập của chính người
+gọi — client không INSERT thẳng vào `community_posts` được. Đọc kỹ đầu tệp
+`20260927120000_community_foundation.sql` trước khi đổi bất kỳ policy nào ở đó.
+
+Kiểm chạy thật trước khi `db push` (cần Postgres 16 cục bộ, không đụng project
+nào):
+
+```bash
+bash supabase/tests/community/run.sh   # 37 kịch bản phân quyền + seed
+```
+
+Sau khi áp, tạo tài khoản ASCND chính thức để feed Khám phá không trống: tạo
+người dùng ở Dashboard → Authentication, rồi
+
+```bash
+psql "$DB_URL" -v official=<uuid> -f supabase/seed/community-official.sql
+```
+
+(Không dán vào SQL Editor — tệp dùng biến của psql.) Báo cáo vi phạm nằm ở
+`community_reports`; đổi `status` thành `actioned`/`dismissed` trên dashboard.
+Ba người khác nhau báo cáo cùng một bài hay bình luận là nó tự ẩn khỏi mọi
+người trừ tác giả, trong lúc chờ xử lý (App Store Guideline 1.2).
 
 Hai điểm dễ sai:
 
@@ -471,12 +497,15 @@ không bao giờ được nằm trong app. Function cần:
    ```
 
 3. `supabase.auth.admin.deleteUser(userId)` bằng service role key. **Không cần
-   xoá tay từng bảng.** Cả 31 bảng trong `supabase/migrations/` đều có đường
-   cascade về `auth.users`: 27 bảng trỏ thẳng (17 khai báo inline trong
-   `CREATE TABLE`, 10 khai báo bằng `ALTER TABLE … ADD CONSTRAINT`), và 4 bảng
+   xoá tay từng bảng.** Cả 39 bảng trong `supabase/migrations/` đều có đường
+   cascade về `auth.users`: 32 bảng trỏ thẳng (22 khai báo inline trong
+   `CREATE TABLE`, 10 khai báo bằng `ALTER TABLE … ADD CONSTRAINT`), và 7 bảng
    con đi qua bảng cha — `ai_messages`→`ai_conversations`,
    `meal_entry_items`→`meal_entries`, `meal_plan_items`→`meal_plans`,
-   `routine_days`→`workout_templates`. Danh sách xoá tay chính là thứ sẽ mục
+   `routine_days`→`workout_templates`, `community_follows` và
+   `community_posts`→`community_profiles`, `community_comments`→`community_posts`.
+   Kịch bản 36 của `supabase/tests/community/` xoá một người dùng và kiểm
+   rằng hồ sơ và bài cộng đồng của họ đi theo. Danh sách xoá tay chính là thứ sẽ mục
    ruỗng: thêm bảng mới mà quên thêm vào danh sách thì dữ liệu ở lại, im lặng.
 
    **Cần `20260803120000_meal_plan_item_food_fk.sql` đã được `db push`.** Trước

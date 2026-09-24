@@ -1,0 +1,625 @@
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
+
+import { supabase } from '@/integrations/supabase/client';
+import { confirmWrite } from '@/lib/write-result';
+import { useAuth } from './use-auth';
+import type { TemplateExercise } from './use-library';
+
+/**
+ * Dữ liệu tab Cộng đồng — giai đoạn 1: danh tính, feed, bài Workout, tương
+ * tác, an toàn. Schema và mọi quyền nằm ở
+ * `supabase/migrations/20260927120000_community_foundation.sql`; bộ test chạy
+ * thật của nó ở `supabase/tests/community/`.
+ *
+ * ── vì sao đọc bằng nhiều truy vấn nhỏ thay vì một truy vấn nhúng ──
+ *
+ * PostgREST nhúng được tác giả vào bài (`select=*,author:community_profiles(*)`)
+ * trong một lượt. Nhưng thế giới giả của bộ chạy web (`tools/live-world.mjs`)
+ * mô phỏng BỘ LỌC chứ không mô phỏng phép nhúng — một feed đọc bằng phép nhúng
+ * sẽ luôn trống ở mọi ảnh dựng, tức không ai nhìn thấy nó trước máy thật. Bốn
+ * truy vấn nhỏ, mỗi cái đi qua RLS của bảng mình, là cái giá rẻ hơn.
+ *
+ * ── bài KHÔNG được tạo ở đây bằng insert ──
+ *
+ * `community_posts` không có policy INSERT. Bài sinh ra qua RPC
+ * `share_workout`, nơi server dựng thẻ từ buổi tập thật của người gọi.
+ */
+
+export type CommunityTab = 'following' | 'discover';
+
+export interface CommunityAuthor {
+  user_id: string;
+  handle: string;
+  display_name: string;
+  mascot_id: string | null;
+  is_official: boolean;
+  bio?: string;
+}
+
+export interface WorkoutExerciseLine {
+  exerciseId: string | null;
+  exerciseName: string;
+  library: boolean;
+  sets: number;
+  weight: number;
+  reps: number;
+}
+
+export interface WorkoutPayload {
+  title: string | null;
+  performedAt: string | null;
+  volumeKg: number;
+  pr: boolean;
+  minutes: number | null;
+  exerciseCount: number;
+  exercises: WorkoutExerciseLine[];
+}
+
+export interface FeedPost {
+  id: string;
+  kind: 'workout';
+  payload: WorkoutPayload;
+  caption: string;
+  visibility: 'public' | 'followers';
+  like_count: number;
+  comment_count: number;
+  save_count: number;
+  hidden: boolean;
+  created_at: string;
+  author: CommunityAuthor | null;
+  liked: boolean;
+  saved: boolean;
+  mine: boolean;
+}
+
+export interface CommunityComment {
+  id: string;
+  post_id: string;
+  body: string;
+  created_at: string;
+  author: CommunityAuthor | null;
+  mine: boolean;
+}
+
+const PROFILE_COLS = 'user_id, handle, display_name, mascot_id, is_official, bio';
+const POST_COLS =
+  'id, author_id, kind, payload, caption, visibility, like_count, comment_count, save_count, hidden, created_at';
+const PAGE = 30;
+
+/* Payload là JSON do server dựng, nhưng một bài cũ hay một seed viết tay vẫn có
+   thể thiếu trường — thẻ không được phép nổ vì thế. Đọc phòng thủ từng trường. */
+const num = (v: unknown, d = 0) => (typeof v === 'number' && Number.isFinite(v) ? v : Number(v) || d);
+export function readWorkoutPayload(raw: unknown): WorkoutPayload {
+  const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const list = Array.isArray(p.exercises) ? p.exercises : [];
+  const exercises: WorkoutExerciseLine[] = list.map((e) => {
+    const x = (e && typeof e === 'object' ? e : {}) as Record<string, unknown>;
+    return {
+      exerciseId: typeof x.exerciseId === 'string' && x.exerciseId ? x.exerciseId : null,
+      exerciseName: typeof x.exerciseName === 'string' ? x.exerciseName : '?',
+      library: x.library === true,
+      sets: num(x.sets),
+      weight: num(x.weight),
+      reps: num(x.reps),
+    };
+  });
+  const minutes = num(p.minutes, NaN);
+  return {
+    title: typeof p.title === 'string' && p.title.trim() ? p.title : null,
+    performedAt: typeof p.performedAt === 'string' ? p.performedAt : null,
+    volumeKg: num(p.volumeKg),
+    pr: p.pr === true,
+    minutes: Number.isFinite(minutes) && minutes > 0 ? minutes : null,
+    exerciseCount: num(p.exerciseCount, exercises.length),
+    exercises,
+  };
+}
+
+type PostRow = {
+  id: string;
+  author_id: string;
+  kind: string;
+  payload: unknown;
+  caption: string;
+  visibility: string;
+  like_count: number;
+  comment_count: number;
+  save_count: number;
+  hidden: boolean;
+  created_at: string;
+};
+
+/** Gắn tác giả + trạng thái thích/lưu của NGƯỜI XEM vào một loạt bài. */
+async function hydrate(rows: PostRow[], me: string): Promise<FeedPost[]> {
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+  const authorIds = [...new Set(rows.map((r) => r.author_id))];
+  const [authors, likes, saves] = await Promise.all([
+    supabase.from('community_profiles').select(PROFILE_COLS).in('user_id', authorIds),
+    supabase.from('community_likes').select('post_id').eq('user_id', me).in('post_id', ids),
+    supabase.from('community_saves').select('post_id').eq('user_id', me).in('post_id', ids),
+  ]);
+  if (authors.error) throw authors.error;
+  if (likes.error) throw likes.error;
+  if (saves.error) throw saves.error;
+  const byId = new Map((authors.data ?? []).map((a) => [a.user_id, a as CommunityAuthor]));
+  const liked = new Set((likes.data ?? []).map((l) => l.post_id));
+  const saved = new Set((saves.data ?? []).map((s) => s.post_id));
+  return rows.map((r) => ({
+    id: r.id,
+    kind: 'workout',
+    payload: readWorkoutPayload(r.payload),
+    caption: r.caption ?? '',
+    visibility: r.visibility === 'followers' ? 'followers' : 'public',
+    like_count: r.like_count ?? 0,
+    comment_count: r.comment_count ?? 0,
+    save_count: r.save_count ?? 0,
+    hidden: !!r.hidden,
+    created_at: r.created_at,
+    author: byId.get(r.author_id) ?? null,
+    liked: liked.has(r.id),
+    saved: saved.has(r.id),
+    mine: r.author_id === me,
+  }));
+}
+
+/* ── danh tính ──────────────────────────────────────────────────────────── */
+
+export function useMyCommunityProfile() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_me', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_profiles')
+        .select(PROFILE_COLS)
+        .eq('user_id', user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return (data as CommunityAuthor | null) ?? null;
+    },
+  });
+}
+
+export class HandleTakenError extends Error {}
+
+export function useSaveCommunityProfile() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (p: { handle: string; display_name: string; bio: string; mascot_id: string | null }) => {
+      const { error } = await supabase
+        .from('community_profiles')
+        .upsert(
+          {
+            user_id: user!.id,
+            handle: p.handle.trim().toLowerCase(),
+            display_name: p.display_name.trim(),
+            bio: p.bio.trim(),
+            mascot_id: p.mascot_id,
+          },
+          { onConflict: 'user_id' },
+        )
+        .select('user_id')
+        .single();
+      /* 23505 trên `handle` là tên đã có người dùng — câu trả lời người ta sửa
+         được, nên nó có kiểu riêng thay vì rơi vào lỗi chung. */
+      if (error?.code === '23505') throw new HandleTakenError(error.message);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      qc.invalidateQueries({ queryKey: ['community_me', user?.id] });
+      qc.invalidateQueries({ queryKey: ['community_feed'] });
+    },
+  });
+}
+
+/* ── feed ───────────────────────────────────────────────────────────────── */
+
+export function useCommunityFeed(tab: CommunityTab) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_feed', user?.id, tab],
+    enabled: !!user,
+    queryFn: async () => {
+      const me = user!.id;
+      let q = supabase.from('community_posts').select(POST_COLS).order('created_at', { ascending: false }).limit(PAGE);
+      if (tab === 'following') {
+        const { data: f, error: fErr } = await supabase
+          .from('community_follows')
+          .select('followee_id')
+          .eq('follower_id', me);
+        if (fErr) throw fErr;
+        /* Bài của chính mình có mặt ở "Đang theo dõi", như mọi feed theo dõi:
+           vừa chia sẻ xong mà quay lại không thấy bài mình là một cú hẫng. */
+        q = q.in('author_id', [me, ...(f ?? []).map((x) => x.followee_id)]);
+      }
+      const { data, error } = await q;
+      if (error) throw error;
+      return hydrate((data ?? []) as PostRow[], me);
+    },
+  });
+}
+
+export function useCommunityPost(id: string | undefined) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_post', user?.id, id],
+    enabled: !!user && !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase.from('community_posts').select(POST_COLS).eq('id', id!).maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const [post] = await hydrate([data as PostRow], user!.id);
+      return post;
+    },
+  });
+}
+
+/** Sửa một bài ở MỌI bộ nhớ đệm đang giữ nó — feed hai tab, trang chi tiết,
+    trang hồ sơ — để trái tim đổi ngay dưới ngón tay ở bất cứ đâu. */
+function patchPost(qc: QueryClient, id: string, fn: (p: FeedPost) => FeedPost) {
+  qc.setQueriesData<FeedPost[]>({ queryKey: ['community_feed'] }, (old) =>
+    old?.map((p) => (p.id === id ? fn(p) : p)),
+  );
+  qc.setQueriesData<FeedPost[]>({ queryKey: ['community_user_posts'] }, (old) =>
+    old?.map((p) => (p.id === id ? fn(p) : p)),
+  );
+  qc.setQueriesData<FeedPost | null>({ queryKey: ['community_post'] }, (old) =>
+    old && old.id === id ? fn(old) : old,
+  );
+}
+
+function useToggle(table: 'community_likes' | 'community_saves', flag: 'liked' | 'saved', count: 'like_count' | 'save_count') {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ postId, on }: { postId: string; on: boolean }) => {
+      if (on) {
+        const { error } = await supabase.from(table).insert({ post_id: postId, user_id: user!.id });
+        // Đã thích từ trước (hai chạm nhanh, hay thiết bị khác) là trạng thái đúng rồi.
+        if (error && error.code !== '23505') throw error;
+      } else {
+        await confirmWrite(
+          supabase.from(table).delete().eq('post_id', postId).eq('user_id', user!.id),
+          'Không bỏ được — có thể đã bỏ ở thiết bị khác',
+        );
+      }
+    },
+    onMutate: ({ postId, on }) => {
+      Haptics.selectionAsync();
+      patchPost(qc, postId, (p) =>
+        p[flag] === on ? p : { ...p, [flag]: on, [count]: Math.max(0, p[count] + (on ? 1 : -1)) },
+      );
+    },
+    /* Sai thì đọc lại từ server thay vì đoán ngược lại: bộ đếm là của trigger
+       phía server, và một phép trừ ở client có thể lệch khỏi nó. */
+    onError: () => {
+      qc.invalidateQueries({ queryKey: ['community_feed'] });
+      qc.invalidateQueries({ queryKey: ['community_post'] });
+      qc.invalidateQueries({ queryKey: ['community_user_posts'] });
+    },
+  });
+}
+
+export const useToggleLike = () => useToggle('community_likes', 'liked', 'like_count');
+export const useToggleSave = () => useToggle('community_saves', 'saved', 'save_count');
+
+export function useDeletePost() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (postId: string) => {
+      await confirmWrite(
+        supabase.from('community_posts').delete().eq('id', postId).eq('author_id', user!.id),
+        'Không xoá được bài — có thể nó đã được xoá',
+      );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['community_feed'] });
+      qc.invalidateQueries({ queryKey: ['community_user_posts'] });
+      qc.invalidateQueries({ queryKey: ['community_shared_sessions', user?.id] });
+    },
+  });
+}
+
+/* ── bình luận ──────────────────────────────────────────────────────────── */
+
+export function useComments(postId: string | undefined) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_comments', user?.id, postId],
+    enabled: !!user && !!postId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_comments')
+        .select('id, post_id, author_id, body, created_at')
+        .eq('post_id', postId!)
+        .order('created_at', { ascending: true })
+        .limit(200);
+      if (error) throw error;
+      const rows = data ?? [];
+      const ids = [...new Set(rows.map((r) => r.author_id))];
+      const byId = new Map<string, CommunityAuthor>();
+      if (ids.length) {
+        const { data: a, error: aErr } = await supabase.from('community_profiles').select(PROFILE_COLS).in('user_id', ids);
+        if (aErr) throw aErr;
+        for (const x of a ?? []) byId.set(x.user_id, x as CommunityAuthor);
+      }
+      return rows.map<CommunityComment>((r) => ({
+        id: r.id,
+        post_id: r.post_id,
+        body: r.body,
+        created_at: r.created_at,
+        author: byId.get(r.author_id) ?? null,
+        mine: r.author_id === user!.id,
+      }));
+    },
+  });
+}
+
+export function useAddComment(postId: string) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    /* Rung lúc NGÓN TAY chạm Gửi, không phải lúc máy chủ trả lời — `selection`
+       là phản hồi cho một cú chạm, và sau mạng nó trễ hàng trăm mili-giây. */
+    onMutate: () => Haptics.selectionAsync(),
+    mutationFn: async (body: string) => {
+      const { error } = await supabase.from('community_comments').insert({ post_id: postId, author_id: user!.id, body: body.trim() });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['community_comments', user?.id, postId] });
+      patchPost(qc, postId, (p) => ({ ...p, comment_count: p.comment_count + 1 }));
+    },
+  });
+}
+
+export function useDeleteComment(postId: string) {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (commentId: string) => {
+      await confirmWrite(
+        supabase.from('community_comments').delete().eq('id', commentId),
+        'Không xoá được bình luận — có thể nó đã được xoá',
+      );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['community_comments', user?.id, postId] });
+      patchPost(qc, postId, (p) => ({ ...p, comment_count: Math.max(0, p.comment_count - 1) }));
+    },
+  });
+}
+
+/* ── người khác: hồ sơ, theo dõi ────────────────────────────────────────── */
+
+export function useCommunityUser(userId: string | undefined) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_user', user?.id, userId],
+    enabled: !!user && !!userId,
+    queryFn: async () => {
+      const [prof, followers, following, iFollow] = await Promise.all([
+        supabase.from('community_profiles').select(PROFILE_COLS).eq('user_id', userId!).maybeSingle(),
+        supabase.from('community_follows').select('follower_id', { count: 'exact', head: true }).eq('followee_id', userId!),
+        supabase.from('community_follows').select('followee_id', { count: 'exact', head: true }).eq('follower_id', userId!),
+        supabase.from('community_follows').select('followee_id').eq('follower_id', user!.id).eq('followee_id', userId!),
+      ]);
+      if (prof.error) throw prof.error;
+      if (followers.error) throw followers.error;
+      if (following.error) throw following.error;
+      if (iFollow.error) throw iFollow.error;
+      return {
+        profile: (prof.data as CommunityAuthor | null) ?? null,
+        followers: followers.count ?? 0,
+        following: following.count ?? 0,
+        iFollow: (iFollow.data ?? []).length > 0,
+        isMe: userId === user!.id,
+      };
+    },
+  });
+}
+
+export function useCommunityUserPosts(userId: string | undefined) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_user_posts', user?.id, userId],
+    enabled: !!user && !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select(POST_COLS)
+        .eq('author_id', userId!)
+        .order('created_at', { ascending: false })
+        .limit(PAGE);
+      if (error) throw error;
+      return hydrate((data ?? []) as PostRow[], user!.id);
+    },
+  });
+}
+
+export function useFollow() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ userId, on }: { userId: string; on: boolean }) => {
+      if (on) {
+        const { error } = await supabase.from('community_follows').insert({ follower_id: user!.id, followee_id: userId });
+        if (error && error.code !== '23505') throw error;
+      } else {
+        await confirmWrite(
+          supabase.from('community_follows').delete().eq('follower_id', user!.id).eq('followee_id', userId),
+          'Không bỏ theo dõi được — có thể đã bỏ ở thiết bị khác',
+        );
+      }
+    },
+    onMutate: () => Haptics.selectionAsync(),
+    onSettled: (_d, _e, { userId }) => {
+      qc.invalidateQueries({ queryKey: ['community_user', user?.id, userId] });
+      qc.invalidateQueries({ queryKey: ['community_feed', user?.id, 'following'] });
+    },
+  });
+}
+
+/* ── an toàn ────────────────────────────────────────────────────────────── */
+
+export type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'misleading' | 'other';
+
+export function useReport() {
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (r: { postId?: string; commentId?: string; userId?: string; reason: ReportReason }) => {
+      const { error } = await supabase.from('community_reports').insert({
+        reporter_id: user!.id,
+        post_id: r.postId ?? null,
+        comment_id: r.commentId ?? null,
+        reported_user_id: r.userId ?? null,
+        reason: r.reason,
+      });
+      // Báo cáo lại cùng một bài: lần đầu đã được ghi, đó là kết quả người ta muốn.
+      if (error && error.code !== '23505') throw error;
+    },
+  });
+}
+
+export function useBlock() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase.from('community_blocks').insert({ blocker_id: user!.id, blocked_id: userId });
+      if (error && error.code !== '23505') throw error;
+    },
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      qc.invalidateQueries({ queryKey: ['community_feed'] });
+      qc.invalidateQueries({ queryKey: ['community_user'] });
+      qc.invalidateQueries({ queryKey: ['community_user_posts'] });
+    },
+  });
+}
+
+/* ── chia sẻ và thử ─────────────────────────────────────────────────────── */
+
+/** Id các buổi tập mình đã chia sẻ — để hàng buổi tập nói "Đã chia sẻ" thay
+    vì mời chia sẻ lần hai (server sẽ từ chối, 23505).
+
+    MẢNG chứ không phải `Set`: cache của app được persist xuống AsyncStorage
+    qua `JSON.stringify`, thứ biến một `Set` thành `{}` — lần mở app sau,
+    `.has()` trên nó là một cú ném (`tools/query-data.mjs`). */
+export function useMySharedSessions() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_shared_sessions', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select('source_id')
+        .eq('author_id', user!.id)
+        .not('source_id', 'is', null);
+      if (error) throw error;
+      return (data ?? []).map((r) => r.source_id as string);
+    },
+  });
+}
+
+export class AlreadySharedError extends Error {}
+export class ProfileRequiredError extends Error {}
+
+export function useShareWorkout() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (a: { sessionId: string; caption: string; visibility: 'public' | 'followers'; minutes: number | null }) => {
+      const { data, error } = await supabase.rpc('share_workout', {
+        p_session_id: a.sessionId,
+        p_caption: a.caption,
+        p_visibility: a.visibility,
+        p_minutes: a.minutes ?? undefined,
+      });
+      if (error?.code === '23505') throw new AlreadySharedError(error.message);
+      if (error?.code === 'P0001') throw new ProfileRequiredError(error.message);
+      if (error) throw error;
+      return data as string;
+    },
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      qc.invalidateQueries({ queryKey: ['community_feed'] });
+      qc.invalidateQueries({ queryKey: ['community_user_posts'] });
+      qc.invalidateQueries({ queryKey: ['community_shared_sessions', user?.id] });
+    },
+  });
+}
+
+/**
+ * "Thử workout": CẤU TRÚC của bài, không phải mức tạ của người đăng.
+ *
+ * Tạ về 0 — con số của người khác không phải điểm xuất phát an toàn cho người
+ * xem, và app đã có chỗ tự gợi ý tạ từ lịch sử của chính họ. Chỉ bài tập thuộc
+ * THƯ VIỆN CHUNG được chép: bài tự tạo của người đăng thuộc về họ (RLS của
+ * `exercises`), và một mẫu trỏ vào bài không đọc được là một mẫu hỏng. Số bài
+ * bị bỏ được trả về để màn hình NÓI RA, thay vì lặng lẽ chép thiếu.
+ */
+export function workoutFromPost(p: WorkoutPayload, fallbackName: string) {
+  const kept = p.exercises.filter((e) => e.library && e.exerciseId);
+  const exercises: TemplateExercise[] = kept.map((e) => ({
+    exerciseId: e.exerciseId!,
+    exerciseName: e.exerciseName,
+    sets: Math.max(1, e.sets),
+    reps: Math.max(1, e.reps),
+    weight: 0,
+  }));
+  return { name: p.title ?? fallbackName, exercises, skipped: p.exercises.length - kept.length };
+}
+
+/**
+ * Bản xem trước của thẻ, dựng ở client từ CÙNG buổi tập mà server sẽ đọc.
+ *
+ * Nó bám đúng luật của `share_workout` (bỏ set khởi động, mỗi bài một dòng với
+ * set nặng nhất rồi nhiều rep nhất, theo thứ tự xuất hiện) để thứ người ta
+ * duyệt trước khi bấm Đăng là thứ người khác sẽ thấy. Bài được ĐĂNG vẫn là bản
+ * server dựng — đây chỉ là tấm gương, không phải nguồn.
+ */
+export function payloadFromSession(
+  s: { template_name: string | null; date_time: string; volume_load: number | null; pr_detected: boolean | null; sets: unknown },
+  minutes: number | null,
+): WorkoutPayload {
+  type Raw = { exerciseId?: string; exerciseName?: string; weight?: number; reps?: number; warmup?: boolean };
+  const sets = (Array.isArray(s.sets) ? s.sets : []) as Raw[];
+  const order: string[] = [];
+  const per = new Map<string, WorkoutExerciseLine>();
+  for (const x of sets) {
+    if (x.warmup) continue;
+    const name = (x.exerciseName ?? '').trim() || '?';
+    const k = x.exerciseId || `name:${name}`;
+    const w = Number(x.weight) || 0;
+    const r = Math.round(Number(x.reps) || 0);
+    const cur = per.get(k);
+    if (!cur) {
+      order.push(k);
+      per.set(k, { exerciseId: x.exerciseId ?? null, exerciseName: name, library: false, sets: 1, weight: w, reps: r });
+    } else {
+      cur.sets += 1;
+      if (w > cur.weight || (w === cur.weight && r > cur.reps)) {
+        cur.weight = w;
+        cur.reps = r;
+      }
+    }
+  }
+  const exercises = order.map((k) => per.get(k)!);
+  return {
+    title: s.template_name?.trim() || null,
+    performedAt: s.date_time,
+    volumeKg: Math.round((Number(s.volume_load) || 0) * 10) / 10,
+    pr: !!s.pr_detected,
+    minutes: minutes && minutes >= 1 && minutes <= 600 ? minutes : null,
+    exerciseCount: exercises.length,
+    exercises,
+  };
+}
