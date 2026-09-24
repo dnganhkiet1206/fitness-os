@@ -45,7 +45,10 @@ try() {  # $1 nhãn · $2 biểu thức sed · $3 chuỗi phải xuất hiện t
 try 'bỏ chốt "bữa của chính mình"'   's/ AND e.user_id = v_uid//'                                    'R14 chia sẻ được bữa của NGƯỜI KHÁC'
 try 'lấy tổng của BỮA thay vì các dòng' "s/(SELECT coalesce(sum((x->>'kcal')::numeric), 0) FROM jsonb_array_elements(v_ingredients) x)/(SELECT total_kcal FROM meal_entries WHERE id = p_entry_id)/" 'R12 thẻ lấy tổng của bữa'
 try 'cho anon gọi'                     's/FROM PUBLIC, anon;/FROM PUBLIC;\nGRANT EXECUTE ON FUNCTION public.share_recipe(uuid, text, text, text) TO anon;/' 'R1 anon gọi được'
-try 'bỏ quyền của người đã đăng nhập' 's/^GRANT EXECUTE ON FUNCTION public.share_recipe(uuid, text, text, text) TO authenticated;//' 'R1b người đã đăng nhập KHÔNG gọi được'
+# Không chỉ gỡ dòng GRANT: stub (như Supabase thật) cấp sẵn EXECUTE cho
+# authenticated trên mọi hàm mới, nên gỡ GRANT không rút được quyền nào — phải
+# REVOKE thẳng (#15 của A sửa stub; phép phá cũ thành xanh đúng từ đó).
+try 'rút quyền của người đã đăng nhập' 's/FROM PUBLIC, anon;/FROM PUBLIC, anon, authenticated;/;s/^GRANT EXECUTE ON FUNCTION public.share_recipe(uuid, text, text, text) TO authenticated;//' 'R1b người đã đăng nhập KHÔNG gọi được'
 try 'bịa khối lượng cho dòng gõ tay'   's/CASE WHEN f.id IS NOT NULL AND f.serving_g > 0 AND it.servings > 0/CASE WHEN true/;s/THEN round(it.servings \* f.serving_g) END/THEN round(it.servings * coalesce(f.serving_g, 100)) END/' 'R10 dòng gõ tay bị bịa khối lượng'
 try 'nhân kcal thêm một lần với servings' "s/'kcal',      round(coalesce(it.kcal, 0)),/'kcal',      round(coalesce(it.kcal, 0) * it.servings),/" 'R5 macro trên thẻ không khớp bữa'
 try 'bỏ chốt bữa rỗng'                 's/IF v_n = 0 THEN/IF false THEN/'                               'R15 bữa rỗng vẫn đăng được'

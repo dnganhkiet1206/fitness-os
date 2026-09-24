@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Chạy THẬT migration cộng đồng trên một cụm Postgres tạm, rồi 37 kịch bản
+# Chạy THẬT migration cộng đồng trên một cụm Postgres tạm, rồi mọi bộ kịch bản
 # phân quyền (chặn hai chiều, tự ẩn khi bị báo cáo, không tự gắn dấu xác
 # minh, không bịa được số trên thẻ…). Cần Postgres 16 cục bộ; không đụng
 # project Supabase nào.

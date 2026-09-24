@@ -53,8 +53,12 @@ DO $$ BEGIN
 END $$;
 
 -- ── xoá mọi bài của mình ──
+-- KHÔNG có WHERE, cùng lý do với V4: bản đầu viết `WHERE author_id =
+-- auth.uid()`, và chính mệnh đề ấy đã loại bài của Y — mở toang policy DELETE
+-- của community_posts mà V12 vẫn xanh (#14). V12 là kịch bản DUY NHẤT canh
+-- "xoá được bài của người khác", nên chỉ policy được đứng giữa X và bài của Y.
 SELECT pg_temp.who(:X); SET ROLE authenticated;
-SELECT pg_temp.errcode($q$DELETE FROM community_posts WHERE author_id = auth.uid()$q$);
+SELECT pg_temp.errcode($q$DELETE FROM community_posts$q$);
 RESET ROLE;
 DO $$ BEGIN
   ASSERT (SELECT count(*) FROM community_posts WHERE author_id = 'a1a1a1a1-0000-0000-0000-00000000000b') = 0, 'V11 không xoá được bài của mình';

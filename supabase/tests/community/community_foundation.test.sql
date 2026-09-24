@@ -89,8 +89,15 @@ RESET ROLE;
 
 -- ── báo cáo → tự ẩn ──
 SELECT pg_temp.who(:C); SET ROLE authenticated; INSERT INTO community_reports (post_id, reason) VALUES (:'post_a', 'spam');
-DO $$ BEGIN ASSERT pg_temp.fails($q$INSERT INTO community_reports (post_id, reason, status) VALUES ('00000000-0000-0000-0000-000000000000', 'spam', 'actioned')$q$), '27 tự đóng báo cáo được'; END $$;
+-- 27 báo cáo một NGƯỜI có thật (A), không phải một bài không tồn tại: bản đầu
+-- dùng post_id '00000000-…' nên lệnh chèn hỏng vì khoá ngoại dù chốt
+-- `status = 'open'` có hay không — gỡ chốt ấy mà 27 vẫn xanh (#14).
+DO $$ BEGIN ASSERT pg_temp.fails($q$INSERT INTO community_reports (reported_user_id, reason, status) VALUES ('aaaaaaaa-0000-0000-0000-000000000001', 'spam', 'actioned')$q$), '27 tự đóng báo cáo được'; END $$;
+-- 27b ĐỐI CHỨNG: cùng dòng ấy với status mặc định thì chèn được — nên 27 đỏ
+-- chỉ có thể vì `status`. Xoá lại ngay để 31 vẫn đếm đúng một báo cáo của C.
+DO $$ BEGIN ASSERT pg_temp.errcode($q$INSERT INTO community_reports (reported_user_id, reason) VALUES ('aaaaaaaa-0000-0000-0000-000000000001', 'spam')$q$) = 'ok', '27b báo cáo một người hợp lệ không chèn được — 27 không đo được gì'; END $$;
 RESET ROLE;
+DELETE FROM community_reports WHERE reported_user_id = 'aaaaaaaa-0000-0000-0000-000000000001';
 SELECT pg_temp.who(:D); SET ROLE authenticated; INSERT INTO community_reports (post_id, reason) VALUES (:'post_a', 'spam'); RESET ROLE;
 DO $$ BEGIN ASSERT (SELECT hidden FROM community_posts WHERE id = (SELECT post_a FROM ids)) = false, '28 hai báo cáo đã ẩn — ngưỡng là ba'; END $$;
 -- B bị A chặn nhưng vẫn báo cáo được bài (id đã biết); đây là người thứ ba
@@ -107,12 +114,22 @@ RESET ROLE;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_comments) = 0 AND (SELECT count(*) FROM community_likes) = 0, '33 xoá bài không dọn thích/bình luận'; END $$;
 
 -- ── anon ──
+-- 34 hỏi thẳng QUYỀN. Bản đầu gọi hàm dưới vai anon và đòi nó hỏng — nhưng
+-- `request.jwt.claim.sub` còn là A từ trước, nên kết quả tuỳ vào việc bài của
+-- A đã bị xoá hay chưa, không tuỳ vào REVOKE (#14; cùng dạng R1 của Recipe).
+DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.share_workout(uuid, text, text, integer)', 'EXECUTE'), '34 anon gọi được share_workout'; END $$;
+-- 35 cần một bài CÔNG KHAI còn sống: bản đầu đếm lúc bài công khai duy nhất đã
+-- bị xoá (dòng xoá post_a ở trên), nên mở policy đọc cho anon mà 35 vẫn xanh.
+SELECT pg_temp.who(:A); SET ROLE authenticated;
+SELECT share_workout('5e55a000-0000-0000-0000-000000000001', 'again', 'public') AS post_pub \gset
+RESET ROLE; CREATE TEMP TABLE pub AS SELECT :'post_pub'::uuid AS id;
+DO $$ BEGIN ASSERT (SELECT count(*) FROM community_posts WHERE id = (SELECT id FROM pub) AND visibility = 'public' AND NOT hidden) = 1, '35b không có bài công khai nào để anon thử đọc — 35 không đo được gì'; END $$;
+SELECT set_config('request.jwt.claim.sub', '', false), set_config('request.jwt.claim.role', 'anon', false);
 SET ROLE anon;
-DO $$ BEGIN ASSERT pg_temp.fails($q$SELECT share_workout('5e55a000-0000-0000-0000-000000000001')$q$), '34 anon gọi được share_workout'; END $$;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_posts) = 0, '35 anon đọc được bài'; END $$;
 RESET ROLE;
 
 -- ── xoá tài khoản ──
 DELETE FROM auth.users WHERE id = :A;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_profiles WHERE user_id = 'aaaaaaaa-0000-0000-0000-000000000001') = 0 AND (SELECT count(*) FROM community_posts) = 0, '36 xoá tài khoản để lại dữ liệu cộng đồng'; END $$;
-\echo TẤT CẢ 37 KỊCH BẢN ĐÚNG
+\echo TẤT CẢ 39 KỊCH BẢN ĐÚNG
