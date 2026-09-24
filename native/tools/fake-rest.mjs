@@ -44,6 +44,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { FIXTURES, applyQuery } from './live-world.mjs';
+import { selectRejection, unknownSelectColumns } from './postgrest-select.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'src');
@@ -253,6 +254,37 @@ if (!/applyQuery/.test(liveSrc)) {
   problems.push('tools/live.mjs có nhắc `applyQuery` nhưng không dùng nó để dựng `rows` của route giả — kiểm lại chỗ nối');
 }
 
+/* ── vế 4 (#35): `select=` hỏi cột không có thật thì 400 ─────────────────── */
+
+/* [bảng, select, cột phải bị báo]. `[]` = hợp lệ, không được báo gì. */
+const SELECT_CASES = [
+  ['community_likes', 'id', ['id']],                                   // đúng lỗi c227cfe sửa
+  ['community_follows', 'x:id', ['id']],                               // bí danh không che được cột
+  ['community_saves', 'id::text', ['id']],                             // ép kiểu cũng vậy
+  ['community_likes', 'post_id,idd', ['idd']],
+  ['community_posts', 'id,nope->>x', ['nope']],                        // đường JSON trên cột không có
+  ['community_posts', 'id,author:community_profiles!fk(handle,nope)', ['community_profiles.nope']],
+  ['community_likes', 'post_id', []],
+  ['community_likes', '*', []],
+  ['community_posts', 'id,kind,payload->>title,x:author_id::text', []],
+  ['community_posts', 'id,author:posts_user_fk(anything)', []],        // tên quan hệ không phải bảng: không đoán
+  ['community_likes', null, []],                                        // không có select= thì không có gì để hỏi
+  ['rpc', 'id', []],                                                    // rpc/… không phải bảng
+];
+for (const [table, sel, want] of SELECT_CASES) {
+  const got = unknownSelectColumns(table, sel);
+  if (got.join(',') !== want.join(',')) {
+    problems.push(`bộ đọc select= sai ở \`${table}?select=${sel}\`: báo [${got}], phải báo [${want}]`);
+  }
+}
+const rej = selectRejection(new URL('https://x.supabase.co/rest/v1/community_likes?select=id&post_id=eq.p'));
+if (!rej || rej.status !== 400 || rej.body.code !== '42703' || !/community_likes\.id/.test(rej.body.message)) {
+  problems.push(`selectRejection không trả 400 / 42703 kèm tên cột như PostgREST: ${JSON.stringify(rej)}`);
+}
+if (!/const rejected = selectRejection\(u\)/.test(liveSrc) || !/if \(rejected\)[\s\S]{0,400}status: rejected\.status/.test(liveSrc)) {
+  problems.push('tools/live.mjs không dùng `selectRejection` để trả 400 trong route giả — vế 4 chỉ đang kiểm một hàm không ai dùng');
+}
+
 if (problems.length) {
   console.error('máy chủ giả trả lời sai câu hỏi:');
   for (const p of problems) console.error(`  ✗ ${p}`);
@@ -263,5 +295,7 @@ console.log(
     `không-order) đều đúng và không ca nào sắp tại chỗ; ${orderCalls} lượt \`.order()\` trong src/, ` +
     `${checkedTables} cặp bảng·cột có fixture để đối chiếu và mọi cột đều tồn tại trong MỌI hàng; ` +
     'và `live.mjs` thật sự gọi `applyQuery` để dựng hàng trả về, chứ không chỉ import nó. ' +
-    'Không kiểm `gte`/`lt` — máy chủ giả không lọc theo ngày, giới hạn ấy ghi trong live.mjs',
+    'Không kiểm `gte`/`lt` — máy chủ giả không lọc theo ngày, giới hạn ấy ghi trong live.mjs. ' +
+    `Và ${SELECT_CASES.length} ca \`select=\` (#35): cột không có thật — kể cả sau bí danh, ép kiểu, đường JSON, trong phần nhúng — ` +
+    'được trả 400 / 42703 như PostgREST, câu hợp lệ thì không, và `live.mjs` dùng đúng bộ ấy trong route giả',
 );

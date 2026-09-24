@@ -85,6 +85,7 @@ const OUT = path.join(NATIVE, 'tools', '.live-build');
 const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
+import { selectRejection } from './postgrest-select.mjs';
 
 const args = new Set(process.argv.slice(2));
 const wantShots = args.has('--shots');
@@ -262,6 +263,9 @@ function serve() {
  * things. `mode === 'signedout'` seeds no session, which is the only way to
  * reach the screen every user meets first.
  */
+/** Mọi câu `select=` máy chủ giả đã từ chối trong lượt chạy này (#35). */
+const SELECT_MISSES = new Set();
+
 async function openPage(chromium, route, mode, settleMs = 9000) {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width: 402, height: 874 } });
@@ -298,6 +302,16 @@ async function openPage(chromium, route, mode, settleMs = 9000) {
         return r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' });
       }
       const table = u.pathname.split('/')[3];
+      /* #35: `select=` hỏi một cột không có thật thì trả 400 như PostgREST, và
+         ghi lại — một lượt quét màn hay một kịch bản có thể chỉ thấy một toast
+         lỗi (hay không thấy gì), còn danh sách này nói đúng bảng và cột.
+         Trước đây máy chủ giả trả hàng bất kể câu hỏi, nên bốn lệnh xoá hỏi
+         `RETURNING id` trên bảng không có `id` (c227cfe) xanh ở đây suốt. */
+      const rejected = selectRejection(u);
+      if (rejected) {
+        SELECT_MISSES.add(`${r.request().method()} ${table}?select=${u.searchParams.get('select')} — không có cột ${rejected.bad.join(', ')}`);
+        return r.fulfill({ status: rejected.status, contentType: 'application/json', body: JSON.stringify(rejected.body) });
+      }
       /* `applyQuery` lọc `eq`/`neq`/`in`/`is` (từ #17), rồi đọc `order=` và
          `limit=` — xem chú thích của nó trong `live-world.mjs`. Không đọc
          `gte`/`lt`; giới hạn ấy ghi ở kịch bản "nhật ký ngày khác" bên dưới
@@ -1082,6 +1096,60 @@ const SCENARIOS = [
   },
   {
     /*
+      #35: Bỏ thích / Bỏ lưu / Bỏ theo dõi phải CHẠY trên máy chủ giả, không chỉ
+      qua được bước cổng tĩnh. Từ #35 máy chủ giả trả 400 khi `select=` hỏi
+      một cột không có thật; `confirmWrite` hỏi lại cột ấy bằng `select=`, nên
+      trả `'post_id'` về mặc định `'id'` thì lệnh DELETE ở đây nhận 400 —
+      độc lập với `confirm-write-cols.mjs`.
+
+      Fixture: UID đã thích bài …0001, đã lưu …0002 và …0004, đã theo dõi
+      c0…11a1. Nhãn nút không nói trạng thái trên web (`accessibilityState`
+      không thành thuộc tính), nên vế này bấm MỌI nút Thích/Lưu trên feed
+      và đòi: có ít nhất một DELETE cho mỗi bảng (tức đã chạm đúng dòng đã
+      thích/lưu), và mọi lệnh ghi vào hai bảng ấy đều 2xx. Rời thử thách
+      không đo được: fixture không có thành viên thử thách nào.
+    */
+    name: 'Cộng đồng: Bỏ thích / Bỏ lưu / Bỏ theo dõi chạy được',
+    route: '/community', mode: 'full',
+    async run(page) {
+      const writes = [];
+      page.on('response', (res) => {
+        const m = res.request().method();
+        const hit = /\/rest\/v1\/(community_likes|community_saves|community_follows)\b/.exec(res.url());
+        if (hit && m !== 'GET') writes.push({ table: hit[1], m, status: res.status() });
+      });
+      await page.waitForTimeout(2000);
+      for (const name of [/^(Thích|Like) · \d+$/, /^(Lưu|Save)$/]) {
+        const btns = page.getByRole('button', { name });
+        const n = await btns.count();
+        for (let i = 0; i < n; i++) {
+          await btns.nth(i).click().catch(() => {});
+          await page.waitForTimeout(700);
+        }
+      }
+      await page.goto(`${new URL(page.url()).origin}/community-user?id=c0000000-0000-4000-8000-0000000011a1`, {
+        waitUntil: 'domcontentloaded', timeout: 60000,
+      });
+      await page.waitForTimeout(6000);
+      const unfollow = page.getByRole('button', { name: /^(Đang theo dõi|Following)$/ }).first();
+      if ((await unfollow.count()) === 0) return 'không thấy nút "Đang theo dõi" trên hồ sơ c0…11a1';
+      await unfollow.click();
+      await page.waitForTimeout(2000);
+
+      for (const t of ['community_likes', 'community_saves', 'community_follows']) {
+        if (!writes.some((w) => w.table === t && w.m === 'DELETE')) {
+          return `không có lệnh DELETE nào vào ${t} — vế này không chạm được dòng đã có, nên không đo gì`;
+        }
+      }
+      const bad = writes.filter((w) => w.status >= 400);
+      if (bad.length) {
+        return `lệnh ghi hỏng trên máy chủ giả: ${bad.map((w) => `${w.m} ${w.table} → ${w.status}`).join(', ')}`;
+      }
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng
@@ -1533,6 +1601,10 @@ try {
   globalThis.__pressed = pressed;
 } finally {
   server.close();
+}
+
+for (const m of SELECT_MISSES) {
+  problems.push(`máy chủ giả trả 400 (như PostgREST): ${m} trong \`types.ts\` — trên server thật câu này hỏng MỌI lần`);
 }
 
 if (problems.length) {

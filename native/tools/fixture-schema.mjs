@@ -20,33 +20,23 @@
  * hoặc là gõ sai, hoặc là `types.ts` đã cũ — và cả hai đều là thứ phải biết
  * trước khi một ảnh dựng được dùng làm bằng chứng.
  */
-import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+
+import { TYPES_STALE, TYPE_COLUMNS as columns } from './postgrest-select.mjs';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const problems = [];
 
 /* ── cột thật, đọc ra khỏi types.ts ────────────────────────────────────── */
-const types = readFileSync(path.join(NATIVE, 'src/integrations/supabase/types.ts'), 'utf8');
-const columns = new Map();
-/* Mỗi bảng là `ten: {` rồi `Row: {` … `}`. Lấy khối `Row` đầu tiên sau tên. */
-for (const m of types.matchAll(/^ {6}([a-z_][a-z0-9_]*): \{\n {8}Row: \{\n([\s\S]*?)\n {8}\}/gm)) {
-  const keys = [...m[2].matchAll(/^ {10}([a-z_][a-z0-9_]*)\??:/gm)].map((k) => k[1]);
-  if (keys.length > 0) columns.set(m[1], new Set(keys));
-}
+/* Bộ đọc và `TYPES_STALE` nằm ở `postgrest-select.mjs`, nơi máy chủ giả của
+   `live.mjs` cũng dùng để từ chối `select=` hỏi cột không có thật (#35): một
+   nguồn cột cho cả fixture lẫn câu hỏi, để hai bên không thể lệch nhau. */
 if (columns.size === 0) {
   problems.push(
     'không rút được bảng nào ra khỏi `types.ts` — bộ dò hỏng, và một bước gác không tìm thấy thứ nó gác phải ĐỎ',
   );
 }
-
-/* Cột CÓ THẬT trong một migration nhưng `types.ts` chưa sinh lại. Mỗi cái phải
-   chỉ đúng tệp migration đã thêm nó — một ngoại lệ không tra được nguồn là một
-   ngoại lệ cho tiện. */
-const TYPES_STALE = {
-  'profiles.coins': '20260810120000_economy_server_authority.sql',
-};
 
 /* ── khoá trong fixture ────────────────────────────────────────────────── */
 const { FIXTURES } = await import(path.join(NATIVE, 'tools', 'live-world.mjs'));
