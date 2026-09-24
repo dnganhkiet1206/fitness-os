@@ -112,3 +112,73 @@ export function toPlannedFoods(p: RecipePayload): {
     fat_g: i.fat,
   }));
 }
+
+/** Một dòng `meal_entry_items` — chỉ các cột `share_recipe` đọc. */
+export interface MealItemRow {
+  id: string;
+  meal_entry_id: string;
+  food_item_id: string | null;
+  food_name: string | null;
+  servings: number | null;
+  kcal: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  created_at: string;
+}
+
+/** `btrim` của Postgres: CHỈ dấu cách, không phải mọi khoảng trắng như `trim()`. */
+const btrim = (s: string) => s.replace(/^ +| +$/g, '');
+
+/**
+ * Bản XEM TRƯỚC của thẻ, dựng theo ĐÚNG luật của `share_recipe` phía server.
+ *
+ * Con số thật trên bài do server đọc lại từ bảng — client không gửi số nào.
+ * Hàm này chỉ để người đăng THẤY TRƯỚC thẻ sẽ ra sao, nên nó phải khớp từng
+ * vế với câu SQL: một bản xem trước khác bài thật là một lời nói dối đặt ngay
+ * trước nút Đăng. `tools/recipe-post.mjs` chạy nó trên ĐÚNG dữ liệu của
+ * `community_recipe.test.sql` và đòi ra đúng số mà các kịch bản SQL đòi.
+ *
+ *   thứ tự     `ORDER BY created_at, id`, tối đa 50 dòng
+ *   tên        `coalesce(nullif(btrim(food_name), ''), '?')`
+ *   khối lượng `round(servings × serving_g)` CHỈ khi dòng trỏ tới một món còn
+ *              đó, `serving_g > 0` và `servings > 0`; còn lại null
+ *   số         `round(coalesce(x, 0))` trên TỪNG dòng
+ *   tổng       tổng các số ĐÃ làm tròn ấy — không phải `total_*` của bữa
+ */
+export function payloadFromMeal(
+  title: string,
+  mealType: string,
+  rows: MealItemRow[],
+  servingG: Record<string, number>,
+): RecipePayload {
+  const r0 = (v: number | null | undefined) => Math.round(Number(v) || 0);
+  const ingredients: RecipeIngredient[] = [...rows]
+    .sort((a, b) =>
+      a.created_at !== b.created_at ? (a.created_at < b.created_at ? -1 : 1) : a.id < b.id ? -1 : a.id > b.id ? 1 : 0,
+    )
+    .slice(0, 50)
+    .map((r) => {
+      const g = r.food_item_id ? servingG[r.food_item_id] : undefined;
+      const s = Number(r.servings) || 0;
+      return {
+        name: btrim(r.food_name ?? '') || '?',
+        grams: g !== undefined && g > 0 && s > 0 ? Math.round(s * g) : null,
+        kcal: r0(r.kcal),
+        protein: r0(r.protein_g),
+        carbs: r0(r.carbs_g),
+        fat: r0(r.fat_g),
+      };
+    });
+  const sum = (k: 'kcal' | 'protein' | 'carbs' | 'fat') => ingredients.reduce((n, i) => n + i[k], 0);
+  return {
+    title: btrim(title),
+    mealType,
+    kcal: sum('kcal'),
+    protein: sum('protein'),
+    carbs: sum('carbs'),
+    fat: sum('fat'),
+    ingredientCount: ingredients.length,
+    ingredients,
+  };
+}

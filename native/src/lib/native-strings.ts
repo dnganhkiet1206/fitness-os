@@ -1106,6 +1106,18 @@ const en = {
   nRcAddWhich: 'Add to which meal today?',
   nRcAdded: 'Added to today · {meal}',
   nRcShareText: '{title} on ASCND — {kcal} kcal',
+  nRcShareTitle: 'Share a recipe',
+  nRcPickMeal: 'Choose a meal you logged',
+  nRcNoMeals: 'No meals logged in the last 30 days',
+  nRcItems: '{n} foods',
+  nRcName: 'Dish name',
+  nRcNamePh: 'e.g. High-protein chicken bowl',
+  nRcNameNeeded: 'Give the dish a name first',
+  nRcCaptionPh: 'What makes it good?',
+  nRcPrivacyNote: 'Only this meal is shared — its foods, amounts and totals. The rest of your diary stays private.',
+  nRcAlreadyShared: 'This meal is already shared',
+  nRcEmptyMeal: 'This meal has no foods to share',
+  nRcAsk: 'A recipe',
 };
 
 const vi: typeof en = {
@@ -2098,6 +2110,18 @@ const vi: typeof en = {
   nRcAddWhich: 'Thêm vào bữa nào hôm nay?',
   nRcAdded: 'Đã thêm vào hôm nay · {meal}',
   nRcShareText: '{title} trên ASCND — {kcal} kcal',
+  nRcShareTitle: 'Chia sẻ công thức',
+  nRcPickMeal: 'Chọn một bữa bạn đã ghi',
+  nRcNoMeals: 'Chưa có bữa nào trong 30 ngày qua',
+  nRcItems: '{n} món',
+  nRcName: 'Tên món',
+  nRcNamePh: 'Ví dụ: Cơm gà nhiều đạm',
+  nRcNameNeeded: 'Đặt tên cho món trước đã',
+  nRcCaptionPh: 'Món này ngon ở chỗ nào?',
+  nRcPrivacyNote: 'Chỉ bữa này được chia sẻ — các món, khối lượng và tổng. Phần còn lại của nhật ký vẫn riêng tư.',
+  nRcAlreadyShared: 'Bữa này đã được chia sẻ',
+  nRcEmptyMeal: 'Bữa này không có món nào để chia sẻ',
+  nRcAsk: 'Một công thức',
 };
 
 export const nativeStrings: Record<AppLang, typeof en> = { vi, en };

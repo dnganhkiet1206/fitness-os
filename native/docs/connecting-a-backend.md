@@ -382,9 +382,11 @@ dòng của chính mình. Không có RLS thì mọi tài khoản đọc được
 bảng nào mang tên ấy cũng mở: `community_settings` (quyền riêng tư) và
 `community_challenge_members` chỉ chủ nhân đọc được, còn `community_challenges`
 là nội dung nền tảng do dashboard tạo. Không bảng
-sức khoẻ nào (cân nặng, số đo, ảnh, buổi tập) bị mở: bài cộng đồng là một bản
-chụp nằm ở bảng riêng, do RPC `share_workout` dựng từ buổi tập của chính người
-gọi — client không INSERT thẳng vào `community_posts` được. Đọc kỹ đầu tệp
+sức khoẻ nào (cân nặng, số đo, ảnh, buổi tập, nhật ký ăn) bị mở: bài cộng đồng
+là một bản chụp nằm ở bảng riêng, do một RPC dựng từ dữ liệu của chính người
+gọi (`share_workout` từ một buổi tập, `share_progress` từ cân nặng/số đo/sức
+mạnh, `share_recipe` từ một bữa đã ghi) — client không INSERT thẳng vào
+`community_posts` được, và không gửi con số nào lên. Đọc kỹ đầu tệp
 `20260927120000_community_foundation.sql` trước khi đổi bất kỳ policy nào ở đó.
 
 Kiểm chạy thật trước khi `db push` (cần Postgres 16 cục bộ, không đụng project

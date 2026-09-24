@@ -96,13 +96,15 @@ export default function CommunityScreen() {
         </GlassCard>
       ) : (
         /* Chia sẻ GÌ: mỗi loại bài một màn riêng. Hộp thoại hệ thống vì đây là
-           một lựa chọn ngắn giữa vài thứ — B thêm "Công thức" vào đây (#7). */
+           một lựa chọn ngắn giữa vài thứ: Buổi tập (A) · Tiến trình (#8) ·
+           Công thức (#7). */
         <PressScale
           accessibilityRole="button"
           onPress={() =>
             Alert.alert(i18n.nPgAsk, undefined, [
               { text: i18n.nPgAskWorkout, onPress: () => nav.push('/community-share') },
               { text: i18n.nPgAskProgress, onPress: () => nav.push('/community-share-progress') },
+              { text: i18n.nRcAsk, onPress: () => nav.push('/community-share-recipe') },
               { text: i18n.cancel, style: 'cancel' },
             ])
           }>

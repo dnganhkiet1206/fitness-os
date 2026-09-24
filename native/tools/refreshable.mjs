@@ -65,6 +65,7 @@ const EXEMPT = new Map([
   ['src/app/community-profile.tsx', 'biểu mẫu sửa hồ sơ cộng đồng'],
   ['src/app/community-share.tsx', 'biểu mẫu chia sẻ — tải lại giữa lúc gõ chú thích không làm mới được gì'],
   ['src/app/community-share-progress.tsx', 'biểu mẫu chia sẻ — bản xem trước tự dựng lại theo mỗi lựa chọn'],
+  ['src/app/community-share-recipe.tsx', 'biểu mẫu chia sẻ — tải lại giữa lúc gõ tên món không làm mới được gì'],
   ['src/app/edit-profile.tsx', 'biểu mẫu sửa'],
   ['src/app/workout-builder.tsx', 'biểu mẫu dựng buổi tập'],
   ['src/app/food-editor.tsx', 'biểu mẫu sửa'],
