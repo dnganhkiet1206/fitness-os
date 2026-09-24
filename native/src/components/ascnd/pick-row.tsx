@@ -528,6 +528,23 @@ function Item({
       disabled={disabled}
       accessibilityRole="tab"
       accessibilityState={{ selected: on, disabled }}
+      /*
+        ── `aria-selected` KHÔNG thừa, và đây là một PHÉP ĐO ──
+
+        Đo trên bản dựng web thật (ở thanh tab màn hướng dẫn, trước khi nó
+        chuyển sang đây): `accessibilityState={{ selected }}` ra ĐÚNG không
+        thuộc tính nào trên react-native-web — mỗi ô chỉ có `role`,
+        `aria-label` và `tabindex`. Nên trên web mọi ô trong mọi hàng dùng
+        `PickRow` đọc lên giống hệt nhau: người dùng bàn phím và trình đọc màn
+        hình không biết mình đang ở ô nào.
+
+        `aria-selected` là bí danh CHÍNH THỨC của React Native cho đúng trạng
+        thái ấy (từ 0.71), và nó được ưu tiên hơn `accessibilityState` trên
+        native — nên một dòng này đúng ở CẢ hai nền. Vá ở đây chứ không ở từng
+        chỗ gọi: mười hàng dùng cơ chế này, và một bản vá mười chỗ là mười chỗ
+        để quên.
+      */
+      aria-selected={on}
       accessibilityLabel={accessibilityLabel}
       onLayout={measure}
       onPress={onPress}

@@ -525,8 +525,7 @@ const en = {
     clickable."*
   */
   nEgTabOverview: 'Overview',
-  nEgTabMuscles: 'Muscles',
-  nEgTabEquipment: 'Equipment',
+  nEgTabMuscles: 'Muscles & gear',
   nEgTabRelated: 'Related',
   /*
     Ba câu "chưa có gì", và chúng nói ba sự thật KHÁC NHAU.
@@ -1504,8 +1503,7 @@ const vi: typeof en = {
   nEgMediaDemo: 'Hình minh hoạ tạm, không phải bản demo của bài tập này',
   nEgMediaAlt: 'Hình minh hoạ {v}',
   nEgTabOverview: 'Tổng quan',
-  nEgTabMuscles: 'Nhóm cơ',
-  nEgTabEquipment: 'Thiết bị',
+  nEgTabMuscles: 'Cơ & dụng cụ',
   nEgTabRelated: 'Liên quan',
   nEgNoMuscles: 'Bài này chưa ghi nhóm cơ',
   nEgNoEquipment: 'Bài này chưa ghi dụng cụ',

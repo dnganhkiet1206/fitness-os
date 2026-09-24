@@ -6,8 +6,6 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
-  Easing,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,15 +20,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GuideMedia } from '@/components/ascnd/guide-media';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { DumbbellIcon } from '@/components/ascnd/dumbbell-icon';
+import { PickRow } from '@/components/ascnd/pick-row';
 import { MuscleArt } from '@/components/ascnd/muscle-art';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { duration } from '@/constants/motion';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useExerciseGuide } from '@/hooks/use-exercise-guide';
 import { useExercises } from '@/hooks/use-library';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
 import { nav } from '@/lib/nav';
 import {
@@ -174,6 +173,7 @@ import {
  */
 export default function ExerciseGuideSheet() {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const i18n = useI18n();
   /* Bản tối dựng mặt giấy bằng KÍNH MỜ trên hình, nên nó cần biết theme đang
@@ -290,102 +290,33 @@ export default function ExerciseGuideSheet() {
   const swipable = showsDots(media);
 
   const [tab, setTab] = useState<GuideTab>('overview');
-  /*
-    ── HAI trạng thái, vì hai thứ đổi ở hai thời điểm khác nhau ──
-
-    `tab` là viên tab đang sáng: nó đổi NGAY lúc ngón tay nhấc lên, không đợi
-    gì cả. `shown` là nội dung đang vẽ: nó đổi ở GIỮA cú chuyển, sau khi nội
-    dung cũ đã mờ đi.
-
-    Một trạng thái duy nhất thì không thể có hiệu ứng "mờ đi rồi mới đổi" mà
-    vẫn giữ được phản hồi tức thì của cái nút — hoặc nút trễ theo nội dung,
-    hoặc nội dung nhảy theo nút.
-  */
-  const [shown, setShown] = useState<GuideTab>('overview');
   /* Chiều cao đo được của dòng cuộn — sàn của mặt giấy. Xem `sheetFloor`. */
   const [viewH, setViewH] = useState(0);
   /* Độ lệch cuộn dọc — lái lớp tối dần trên hình. Xem `heroDim`. */
   const scrollY = useRef(new Animated.Value(0)).current;
 
   /*
-    ── ĐỔI TAB: "fade through", không phải crossfade ──
+    ── ĐỔI TAB: chỉ viên pill chuyển động, NỘI DUNG thì không ──
 
-    Lượt trước tôi dựng một crossfade chồng lớp: lớp cũ mờ đi ĐÈ LÊN lớp mới
-    đang hiện. Chủ dự án xem xong gọi đúng tên nó — "tùm lum". Và đó không
-    phải khẩu vị, đó là sai LOẠI hiệu ứng:
+    Chủ dự án (24/09): *"gỡ hiệu ứng thông tin phía dưới, chỉ làm hiệu ứng ở
+    thanh pill dài phía trên, áp dụng hiệu ứng có sẵn của hệ thống."*
 
-      · crossfade chỉ đọc được khi hai thứ CÙNG KHUÔN — đổi một tấm ảnh, đổi
-        một con số. Mắt thấy một vật biến thành vật khác.
-      · bốn tab này không cùng khuôn gì cả: một bên là bốn tấm ảnh dọc kèm
-        chữ, bên kia là hai ô giải phẫu 64 điểm. Chồng chúng lên nhau trong
-        180ms cho ra một mớ không đọc được — hai bố cục khác hẳn nhau cùng
-        hiện một lúc.
+    Ba lượt trước đã thử ba cách cho NỘI DUNG — tan về trống, crossfade chồng
+    lớp, rồi "fade through" của Material — và cả ba đều là một câu trả lời cho
+    một câu hỏi không ai hỏi. Một thanh phân đoạn là một phát biểu về VỊ TRÍ:
+    *"cái này, trong số này"*. Thứ trả lời câu ấy là viên pill TRƯỢT từ ô cũ
+    sang ô mới, và `PickRow` đã làm đúng việc đó cho mười hàng khác trong app.
+    Nội dung bên dưới thì chỉ việc là nội dung mới, ngay lập tức — một hiệu
+    ứng thứ hai ở đó tranh phần chú ý với chính cú trượt đang nói điều cần nói.
 
-    Material đặt tên cho đúng tình huống này: **fade through**, và nói thẳng
-    nó dành cho *"transitions between UI elements that do not have a strong
-    relationship to each other, such as transitions triggered by tapping a
-    bottom navigation bar"*. Luật của nó là KHÔNG CHỒNG:
-
-        lớp cũ   mờ 1→0                    100ms
-        (đổi nội dung)
-        lớp mới  mờ 0→1 + phóng 0,92→1     200ms   (`duration.appear`)
-
-    Ba chi tiết của spec, và mỗi cái có lý do riêng:
-
-    **Phóng bắt đầu ở 0,92 chứ không 0** — *"to avoid drawing excessive
-    attention to the transition"*. Một cú phóng từ 0 là một màn trình diễn;
-    8% là một cú đặt chân.
-
-    **Phóng CHỈ áp cho lớp tới** — *"to emphasize new content over the old"*.
-    Lớp đi chỉ mờ, không co, không trôi: nó đang rời đi, và mọi chuyển động
-    thêm vào nó đều tranh phần chú ý với thứ đang tới.
-
-    **Không có dịch dọc.** Bản trước dịch 12 điểm theo yêu cầu sớm hơn của
-    đặt hàng. Cộng nó vào một cú phóng là cộng hai chuyển động cho cùng một
-    việc — đúng cái cảm giác "mọi thứ cùng động" vừa bị phàn nàn. Phóng thay
-    nó, vì đó là thứ spec chỉ định.
-
-    Đường cong đi theo hướng chuyển động: lớp đi `Easing.in` (tăng tốc rời
-    đi), lớp tới `Easing.out` (giảm tốc rồi đặt xuống).
-
-    Tổng 300ms. Viên tab thì sáng NGAY lúc chạm — dưới 150ms là ngưỡng người
-    ta bắt đầu nghi nút hỏng và bấm lại, và `setTab` không đợi nhịp nào.
+    Nên không `Animated.Value` nào ở đây, không `duration` nào, và cũng không
+    còn trạng thái thứ hai `shown`: nó chỉ tồn tại để nội dung đổi TRỄ hơn
+    viên pill, mà nay hai thứ đổi cùng lúc.
   */
-  const fade = useRef(new Animated.Value(1)).current;
-  const grow = useRef(new Animated.Value(1)).current;
-  const pickTab = useCallback(
-    (id: GuideTab) => {
-      Haptics.selectionAsync();
-      /* Viên tab sáng lên NGAY — xem khối chú thích ở `shown`. */
-      setTab(id);
-      if (id === shown) return;
-      if (reduced) {
-        setShown(id);
-        fade.setValue(1);
-        grow.setValue(1);
-        return;
-      }
-      Animated.timing(fade, {
-        toValue: 0,
-        /* 100, thẳng từ spec, và KHÔNG được làm tròn về nhịp 180 có tên: cả
-           hiệu ứng dựa vào chuyện lớp cũ biến mất NHANH để lớp mới có trọn
-           200ms mà tổng vẫn 300. Ghi trong `COMPOSED` của `tools/motion.mjs`
-           kèm đúng lý do này. */
-        duration: 100,
-        easing: Easing.in(Easing.quad),
-        useNativeDriver: true,
-      }).start(({ finished }) => {
-        if (!finished) return;
-        setShown(id);
-        grow.setValue(0.92);
-        Animated.parallel([
-          Animated.timing(fade, { toValue: 1, duration: duration.appear, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(grow, { toValue: 1, duration: duration.appear, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-        ]).start();
-      });
-    },
-    [fade, grow, reduced, shown],
-  );
+  const pickTab = useCallback((id: GuideTab) => {
+    Haptics.selectionAsync();
+    setTab(id);
+  }, []);
 
   const steps4 = captionedItems(media);
   /* Bốn bước cách nhau `lg`, không `sm`: mỗi bước là ảnh + ba dòng chữ, nên
@@ -455,7 +386,6 @@ export default function ExerciseGuideSheet() {
     của hệ thống sẽ lần lượt lùi qua bốn tab trước khi đóng sheet — và thứ
     người ta muốn lùi về là BUỔI TẬP.
   */
-  const overview = shown === 'overview';
   /*
     ── bốn nhãn trong một hàng, và ở 320 điểm chúng KHÔNG vừa ──
 
@@ -479,7 +409,7 @@ export default function ExerciseGuideSheet() {
     sheet rồi đọc "Tổng quan" — đường đi thường gặp nhất — vì thế không được
     trả cái giá ấy, và với `enabled` thì nó không trả.
   */
-  const needsLibrary = tab === 'equipment' || tab === 'related';
+  const needsLibrary = tab === 'related';
   const {
     data: libraryRows,
     isPending: libraryBusy,
@@ -516,11 +446,12 @@ export default function ExerciseGuideSheet() {
 
 
   /*
-    Thân tab, dựng theo MỘT tab bất kỳ — không phải theo state.
+    Thân tab, dựng theo MỘT tab được truyền vào — không đọc state.
 
-    Nó nhận `which` chứ không đọc `shown`, vì cú crossfade phải dựng được ĐỒNG
-    THỜI tab đang đi và tab đang tới. Một hàm, hai lượt gọi; hai bản sao JSX sẽ
-    lệch nhau ở lần sửa thứ ba.
+    Nó được viết ra cho cú crossfade (cần dựng đồng thời tab đi và tab tới), và
+    cú ấy đã bị gỡ — xem `pickTab`. Tham số được GIỮ vì một hàm thuần "tab → nội
+    dung" dễ đọc hơn một hàm lén đọc state, và vì nó là thứ luật ở
+    `tools/exercise-guide.mjs` neo vào để biết mỗi tab có nhánh nội dung.
   */
   const tabBody = (which: GuideTab) => (
     <>
@@ -720,35 +651,35 @@ export default function ExerciseGuideSheet() {
                    không nhận ra. */
                 <Text style={styles.emptyHint}>{i18n.nEgNoMuscles}</Text>
               )}
-            </View>
-          ) : null}
 
-          {/*
-            ── THIẾT BỊ ──
+              {/*
+                ── DỤNG CỤ, gộp vào đây từ tab Thiết bị cũ ──
 
-            Một nhãn, rồi những bài KHÁC dùng đúng dụng cụ ấy. Nhãn thôi thì
-            trùng dòng siêu dữ liệu ngay trên và tab này không đáng có; danh
-            sách kia mới là thứ chỉ tab này nói được — "cái tạ đơn đang cầm còn
-            làm được gì nữa".
-          */}
-          {showMedia && which === 'equipment' ? (
-            <View style={styles.block}>
-              <Text style={styles.sectionTitle}>{i18n.nEgEquipment}</Text>
+                Một ô vuông cùng cỡ với ô giải phẫu (64 điểm), nhãn đứng BÊN
+                PHẢI chứ không bên dưới — đúng bố cục bản tham chiếu. Ô nhóm cơ
+                đặt nhãn dưới vì nhiều ô xếp thành lưới; dụng cụ luôn chỉ có
+                MỘT, nên nó là một hàng.
+
+                Hình chỉ có khi đã VẼ cho đúng dụng cụ ấy — hôm nay là tạ đơn.
+                Các dụng cụ khác (tạ đòn, cáp, máy, không dụng cụ) đứng bằng
+                nhãn trần: vẽ một cái tạ đơn cho một bài kéo cáp là nói sai,
+                và nói sai tệ hơn không nói.
+              */}
+              <Text style={[styles.sectionTitle, styles.sectionGap]}>{i18n.nEgEquipment}</Text>
               {g?.equipment ? (
-                <Text style={styles.itemText}>{g.equipment}</Text>
+                <View style={styles.gearRow}>
+                  {g.equipmentKey === 'dumbbell' ? (
+                    <View style={styles.gearTile}>
+                      <DumbbellIcon size={40} color={c.foreground} />
+                    </View>
+                  ) : null}
+                  <Text style={styles.gearName} numberOfLines={2}>
+                    {g.equipment}
+                  </Text>
+                </View>
               ) : (
                 <Text style={styles.emptyHint}>{i18n.nEgNoEquipment}</Text>
               )}
-              {g?.equipment ? (
-                <RelatedList
-                  title={i18n.nEgAlsoEquipment.replace('{v}', g.equipment)}
-                  items={related.equipment}
-                  busy={libraryBusy}
-                  failed={libraryFailed ? i18n.nLoadFailed : null}
-                  styles={styles}
-                  tint={c.mutedForeground}
-                />
-              ) : null}
             </View>
           ) : null}
 
@@ -775,6 +706,23 @@ export default function ExerciseGuideSheet() {
               ) : (
                 <Text style={styles.emptyHint}>{i18n.nEgNoMuscles}</Text>
               )}
+
+              {/*
+                Chuyển sang đây từ tab Thiết bị cũ: "bài khác dùng cùng dụng
+                cụ" là một mục LIÊN QUAN. Gộp tab không được lặng lẽ xoá một
+                tính năng đang chạy. Không có dụng cụ thì mục này không dựng —
+                câu "chưa có dụng cụ" đã nói ở tab Cơ & dụng cụ rồi.
+              */}
+              {g?.equipment ? (
+                <RelatedList
+                  title={i18n.nEgAlsoEquipment.replace('{v}', g.equipment)}
+                  items={related.equipment}
+                  busy={libraryBusy}
+                  failed={libraryFailed ? i18n.nLoadFailed : null}
+                  styles={styles}
+                  tint={c.mutedForeground}
+                />
+              ) : null}
             </View>
           ) : null}
     </>
@@ -1032,52 +980,53 @@ export default function ExerciseGuideSheet() {
           </View>
 
           {/*
-            ── HÀNG TAB: bốn nhãn, một cái được chọn, và CẢ BỐN bấm được ──
+            ── HÀNG TAB: viên pill TRƯỢT, bằng đúng cơ chế của cả app ──
 
-            `Pressable` trần chứ không `PressScale`: cả ba thanh tab khác của
-            app (`meal-plan`, `week-strip`, `pick-row`) dựng đúng thế, và một
-            viên tab co lại khi bấm sẽ đọc ra như một cái nút hành động chứ
-            không như một chỗ đang chuyển.
+            Chủ dự án: *"chỉ làm hiệu ứng ở thanh pill dài phía trên, áp dụng
+            hiệu ứng có sẵn của hệ thống."* Hiệu ứng có sẵn ấy là `PickRow` —
+            chú thích của nó gọi nó là *"the app's only travelling highlight"*,
+            và nó đã thay năm bản chép tay không chuyển động ở những màn khác.
+            Hàng tab này là bản chép tay thứ sáu: `Pressable` trần, mỗi viên tự
+            đổi nền của chính nó, nên chạm vào là viên sáng NHẢY từ ô này sang
+            ô kia giữa hai khung hình.
 
-            `accessibilityRole="tab"` + `accessibilityState={{ selected }}` là
-            thứ khiến VoiceOver đọc ra "tab, đã chọn, 2 trên 4" — và nay nó nói
-            ĐÚNG, vì bấm vào thật sự đổi nội dung. Hai lượt trước cả hàng bị
-            giấu khỏi cây trợ năng, đúng cho lúc ấy: không giấu thì nó là bốn
-            lời hứa suông.
+            Nay nó dùng thẳng `PickRow`, không qua `Segmented`. `Segmented`
+            mang cỡ chữ và màu ray của riêng nó; hàng này nằm trên KÍNH, và cả
+            màu ray (`tabsOnGlass`) lẫn màu nhãn chưa chọn (`metaOnGlass`) đã
+            được đo riêng cho chỗ ấy. `PickRow` là CƠ CHẾ; kiểu dáng vẫn là của
+            màn này.
+
+            Viên sáng dùng đúng màu cũ của `tabOn` — `alpha(m.ink, 0.12)` —
+            nên nhìn đứng yên nó y hệt trước; khác duy nhất là nó TRƯỢT.
+
+            Và nó được `PressScale` (0,97) khi chạm, vì `PickRow.Item` dùng thứ
+            ấy cho mọi hàng. Chú thích cũ ở đây ghi hàng này dùng `Pressable`
+            trần "như ba thanh tab khác, kể cả `pick-row`" — và vế ấy sai:
+            `pick-row` dùng `PressScale` từ trước. Ngoại lệ cục bộ ấy là đúng
+            loại lệch mà repo này đi gỡ.
+
+            A11y giữ nguyên: `PickRow.Item` mang `accessibilityRole="tab"`,
+            `accessibilityState`, và nay cả `aria-selected` — xem chỗ ấy.
           */}
           {showMedia ? (
-            <View style={[styles.tabs, hero ? styles.tabsOnGlass : null]}>
+            <PickRow
+              value={tab}
+              fill={alpha(m.ink, 0.12)}
+              radius={radius.full}
+              gap={0}
+              style={[styles.tabs, hero ? styles.tabsOnGlass : null]}>
               {TABS.map(({ id, key }) => {
                 const on = tab === id;
                 const label = i18n[key];
                 return (
-                  <Pressable
+                  <PickRow.Item
                     key={id}
-                    accessibilityRole="tab"
-                    accessibilityState={{ selected: on }}
-                    /*
-                      ── `aria-selected` KHÔNG thừa, và đây là một PHÉP ĐO ──
-
-                      Đo trên bản dựng web thật: bốn viên tab ra `role="tab"`,
-                      `aria-label`, `tabindex` — và KHÔNG có `aria-selected`.
-                      Tức react-native-web (bản trong kho này) không dịch
-                      `accessibilityState.selected` ra thuộc tính nào, nên trên
-                      web cả bốn viên đọc lên giống hệt nhau: người dùng bàn
-                      phím và trình đọc màn hình không biết mình đang ở tab nào.
-
-                      `aria-selected` là bí danh CHÍNH THỨC của React Native
-                      cho đúng trạng thái ấy (từ 0.71) và nó được ưu tiên hơn
-                      `accessibilityState` trên native — nên một dòng này đúng
-                      ở CẢ hai nền, và nó là thứ `guide6.mjs` đo được.
-
-                      Giữ cả hai vì chúng nói cùng một điều cho hai bộ đọc khác
-                      nhau; bỏ dòng trên thì mã thôi giống ba thanh tab khác
-                      của app, mà chúng chưa được sửa ở lượt này.
-                    */
-                    aria-selected={on}
+                    itemKey={id}
                     accessibilityLabel={label}
-                    onPress={() => pickTab(id)}
-                    style={[styles.tab, on ? styles.tabOn : null]}>
+                    onPress={() => {
+                      if (!on) pickTab(id);
+                    }}
+                    style={styles.tab}>
                     <Text
                       numberOfLines={1}
                       style={[
@@ -1087,34 +1036,14 @@ export default function ExerciseGuideSheet() {
                       ]}>
                       {label}
                     </Text>
-                  </Pressable>
+                  </PickRow.Item>
                 );
               })}
-            </View>
+            </PickRow>
           ) : null}
 
-          {/*
-            ── THÂN TAB: một lớp duy nhất, và cú chuyển sống ở đây ──
-
-            Mọi thứ dưới hàng tab nằm trong MỘT `Animated.View`, nên cú chuyển
-            là một phép đổi độ mờ và một phép dịch — không phải bốn nhánh tự
-            hiện tự tắt. Xem `pickTab` cho ba bước và các con số.
-
-            Nó KHÔNG mang chiều cao nào: khung ngoài đứng yên là nhờ dải cử chỉ
-            không nuốt chỗ trống nữa (xem `flexGrow: 0` ở dải), không phải nhờ
-            ghim một con số ở đây. Ghim chiều cao sẽ cắt mất nội dung tab dài.
-          */}
-          {/*
-            MỘT lớp, và đó là điều làm nó thành "fade through" chứ không phải
-            crossfade: hai nội dung không bao giờ cùng hiện. Xem `pickTab`.
-
-            `scale` chứ không `translateY` — spec áp phép phóng cho lớp TỚI để
-            nhấn nội dung mới, và cộng thêm một phép dịch là cộng hai chuyển
-            động cho cùng một việc.
-          */}
-          <Animated.View style={{ opacity: fade, transform: [{ scale: grow }] }}>
-            {tabBody(shown)}
-          </Animated.View>
+          {/* Nội dung đổi NGAY, không hiệu ứng — xem khối chú thích ở `pickTab`. */}
+          {tabBody(tab)}
         </View>
       </Animated.ScrollView>
 
@@ -1230,17 +1159,40 @@ export default function ExerciseGuideSheet() {
   vuốt. Đổi bất kỳ số nào trong đó thì khoảng tránh tự đi theo.
 */
 /**
- * Bốn tab, theo đúng thứ tự ảnh tham chiếu.
+ * BA tab. Từng là bốn.
+ *
+ * ── vì sao "Thiết bị" gộp vào "Nhóm cơ" ──
+ *
+ * Chủ dự án (24/09): *"phần thiết bị nên gộp vào nhóm cơ … lý do gộp là vì mục
+ * nhóm cơ còn thừa quá nhiều khoảng trống."* Và đúng thế: tab Nhóm cơ của một
+ * bài đơn khớp là MỘT ô giải phẫu 64 điểm rồi hết, còn tab Thiết bị là MỘT dòng
+ * chữ. Hai tab, mỗi tab gần như trống, cho hai sự thật luôn đi cùng nhau — cái
+ * bài này đánh vào đâu, và cầm gì để đánh.
+ *
+ * ── tên mới ──
+ *
+ * "Cơ & dụng cụ", không phải một từ chung chung như "Chi tiết": một nhãn tab
+ * phải nói được bên trong có gì TRƯỚC khi bấm. Nó cũng khớp đúng hai tiêu đề
+ * mục nằm bên trong ("Nhóm cơ chính", "Dụng cụ").
+ *
+ * `id` vẫn là `muscles`: nó là KHOÁ, không phải chữ. Đổi khoá là đổi mọi chỗ
+ * neo vào nó mà không đổi được điều gì người dùng thấy.
+ *
+ * ── danh sách "bài khác dùng cùng dụng cụ" đi đâu ──
+ *
+ * Tab Thiết bị có HAI thứ: nhãn dụng cụ, và danh sách bài khác dùng cùng dụng
+ * cụ ấy. Nhãn sang đây. Danh sách thì là một mục LIÊN QUAN, nên nó sang tab
+ * Liên quan, đứng dưới danh sách cùng nhóm cơ — gộp tab không được lặng lẽ xoá
+ * một tính năng đang chạy.
  *
  * Danh sách nằm ngoài component nên nó không được dựng lại mỗi lượt vẽ, và
  * `key` là KHOÁ CHỮ chứ không phải chuỗi đã dịch: dùng nhãn làm `key` của React
- * thì đổi ngôn ngữ giữa chừng sẽ dựng lại cả bốn viên.
+ * thì đổi ngôn ngữ giữa chừng sẽ dựng lại cả ba viên.
  */
-type GuideTab = 'overview' | 'muscles' | 'equipment' | 'related';
-const TABS: { id: GuideTab; key: 'nEgTabOverview' | 'nEgTabMuscles' | 'nEgTabEquipment' | 'nEgTabRelated' }[] = [
+type GuideTab = 'overview' | 'muscles' | 'related';
+const TABS: { id: GuideTab; key: 'nEgTabOverview' | 'nEgTabMuscles' | 'nEgTabRelated' }[] = [
   { id: 'overview', key: 'nEgTabOverview' },
   { id: 'muscles', key: 'nEgTabMuscles' },
-  { id: 'equipment', key: 'nEgTabEquipment' },
   { id: 'related', key: 'nEgTabRelated' },
 ];
 
@@ -1482,7 +1434,6 @@ const stylesFor = makeStyles((c, m) => ({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  tabOn: { backgroundColor: alpha(m.ink, 0.12) },
   tabText: { ...type.footnote, color: c.mutedForeground },
   /* Chỉ CỠ đổi, màu và nét giữ nguyên — xem `tightTabs`. */
   tabTextTight: { fontSize: type.caption.fontSize },
@@ -1831,6 +1782,32 @@ const stylesFor = makeStyles((c, m) => ({
     backgroundColor: c.secondary,
   },
   tileName: { ...type.footnote, fontWeight: '600', color: c.foreground },
+  /*
+    ── ô DỤNG CỤ, trong tab Cơ & dụng cụ ──
+
+    Cùng họ với ô giải phẫu ngay trên — `c.secondary`, `radius.md` — để hai mục
+    trong một tab đọc ra là một bộ. Vuông 64 điểm chứ không co theo hình: ô
+    giải phẫu cao ~88 vì có nhãn bên dưới, còn ô này đứng một mình nên nó lấy
+    đúng cỡ của hình giải phẫu (64), và hình tạ nằm giữa ở 40 — cùng tỉ lệ
+    hình/ô 5:8 mà bản tham chiếu dùng.
+
+    Nhãn là `title2` (18), không phải `footnote` như nhãn ô giải phẫu: ô này là
+    MỘT thứ, nó đọc như một dòng khẳng định "bài này dùng tạ đơn", và bản tham
+    chiếu cho nó cỡ chữ gần bằng tiêu đề mục.
+  */
+  gearRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  gearTile: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.md,
+    backgroundColor: c.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gearName: { ...type.title2, color: c.foreground, flexShrink: 1 },
+  /* Khoảng TRƯỚC tiêu đề mục thứ hai trong cùng một tab — lớn hơn khoảng giữa
+     tiêu đề và nội dung của nó, để hai mục đọc ra là hai mục. */
+  sectionGap: { marginTop: spacing.lg },
 
   /*
     ── danh sách bài khác ──

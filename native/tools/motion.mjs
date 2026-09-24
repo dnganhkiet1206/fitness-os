@@ -333,20 +333,6 @@ const COMPOSED = {
   'src/components/ascnd/assistant-aura.tsx': {
     420: 'nhịp cuối của cascade — ánh sáng phải xong sau thẻ 80ms, đó mới là thứ tự của một lần bước vào phòng',
   },
-  /*
-    Nhịp MỜ ĐI của "fade through" ở màn hướng dẫn — thẳng từ spec Material cho
-    cú chuyển giữa những khối nội dung KHÔNG liên quan nhau (bốn tab).
-
-    Spec chia 100 + 200: lớp cũ phải biến mất NHANH để lớp mới có trọn 200ms
-    (`duration.appear`) mà cả cú chuyển vẫn không quá 300ms. Làm tròn 100 lên
-    180 là kéo tổng thành 380 và giết đúng thứ làm hiệu ứng này đọc được.
-
-    Một nhịp, không phải một lần chọn trên thang — nên nó ở đây, cạnh lý do,
-    đúng khuôn của hai mục trên.
-  */
-  'src/app/exercise-guide.tsx': {
-    100: 'nhịp MỜ ĐI của fade-through: spec Material chia 100 (đi) + 200 (tới), và vế 100 là thứ giữ cả cú chuyển trong 300ms',
-  },
 };
 const TOKENS = new Set([180, 200, 240, 320]);
 for (const f of files) {

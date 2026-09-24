@@ -716,54 +716,95 @@ if (mediaBtn.length) {
    `needsLibrary`, nên mở sheet rồi đọc "Tổng quan" — đường đi thường gặp nhất
    — không gọi mạng thêm một lượt nào.
 
-   Lối hỏng nó canh không phải "ai đó xoá tab". Là: ai đó thêm một tab thứ năm
+   Lối hỏng nó canh không phải "ai đó xoá tab". Là: ai đó thêm một tab thứ tư
    vào `TABS` cho đủ hình, và quên viết nhánh nội dung cho nó. Lúc ấy bấm vào
-   ra một tờ giấy trắng, và không có gì trên màn nói rằng đó là lỗi. */
+   ra một tờ giấy trắng, và không có gì trên màn nói rằng đó là lỗi.
+
+   ── BA tab, từng là bốn (24/09) ──
+
+   Chủ dự án gộp "Thiết bị" vào "Nhóm cơ": *"mục nhóm cơ còn thừa quá nhiều
+   khoảng trống"*. Hai tab, mỗi tab gần như trống, cho hai sự thật luôn đi cùng
+   nhau. Luật đổi theo, và có thêm hai vế canh chính cú gộp ấy:
+
+     · tab gộp phải vẽ được mục DỤNG CỤ — không thì "gộp" chỉ là "xoá tab"
+     · danh sách "bài khác dùng cùng dụng cụ" phải còn, ở tab Liên quan — gộp
+       tab không được lặng lẽ xoá một tính năng đang chạy
+
+   ── và hàng tab nay là `PickRow` ──
+
+   Chủ dự án: *"chỉ làm hiệu ứng ở thanh pill dài phía trên, áp dụng hiệu ứng có
+   sẵn của hệ thống."* Nên hàng tab dùng cơ chế trượt duy nhất của app thay vì
+   một bản chép tay. Hai vế trợ năng vì thế dời sang `pick-row.tsx` — nơi chúng
+   thật sự được viết — và luật đòi màn này DÙNG nó chứ không tự dựng lại. */
 CASES++;
 const tabIds = [...sheet.matchAll(/\{ id: '([a-z]+)', key: 'nEgTab/g)].map((m) => m[1]);
-/* `shown`, không `tab`: nội dung đổi ở GIỮA cú chuyển tab, còn `tab` là viên
-   đang sáng — xem khối hai trạng thái trong sheet. Vế này hỏi "tab nào cũng có
-   thứ để vẽ", nên nó phải hỏi đúng cái biến quyết định thứ được vẽ. */
+/* `which`, không `tab`: thân tab là một hàm `tabBody(which)`. Vế này hỏi "tab
+   nào cũng có thứ để vẽ", nên nó phải hỏi đúng tham số quyết định thứ được vẽ. */
 const missingPanel = tabIds.filter(
   (id) => id !== 'overview' && !new RegExp(`which === '${id}'`).test(sheet),
 );
 const missingEmpty = ['nEgNoMuscles', 'nEgNoEquipment', 'nEgNoRelated'].filter(
   (k) => !sheet.includes(`i18n.${k}`),
 );
+const pickRow = read('src/components/ascnd/pick-row.tsx');
+/* Mục DỤNG CỤ phải nằm TRONG nhánh tab gộp, không chỉ ở đâu đó trong tệp. */
+const musclesBranch = /\{showMedia && which === 'muscles' \? \([\s\S]*?\n          \) : null\}/.exec(sheet)?.[0] ?? '';
+const relatedBranch = /\{showMedia && which === 'related' \? \([\s\S]*?\n          \) : null\}/.exec(sheet)?.[0] ?? '';
 const realTabs = [
-  tabIds.length === 4 ? null : `\`TABS\` đọc ra ${tabIds.length} mục, phải đúng bốn`,
-  /accessibilityRole="tab"\s*\n\s*accessibilityState=\{\{ selected: on \}\}/.test(sheet)
+  tabIds.length === 3 ? null : `\`TABS\` đọc ra ${tabIds.length} mục, phải đúng ba — "Thiết bị" đã gộp vào "Nhóm cơ"`,
+  !tabIds.includes('equipment')
     ? null
-    : 'viên tab không còn mang `accessibilityRole="tab"` kèm `accessibilityState={{ selected }}`',
+    : 'tab "Thiết bị" quay lại — nó đã gộp vào tab Cơ & dụng cụ vì mỗi tab gần như trống',
+  /<PickRow\s*\n\s*value=\{tab\}/.test(sheet) && /<PickRow\.Item/.test(sheet)
+    ? null
+    : 'hàng tab không còn dùng `PickRow` — nó là cơ chế trượt DUY NHẤT của app, và một bản chép tay ở '
+      + 'đây là bản thứ sáu mà repo này đã gỡ năm bản trước',
+  /<Pressable/.test(stripComments(sheet))
+    ? 'hàng tab lại có `Pressable` tự dựng — viên sáng sẽ NHẢY giữa hai khung hình thay vì trượt'
+    : null,
+  /accessibilityRole="tab"\s*\n\s*accessibilityState=\{\{ selected: on, disabled \}\}/.test(pickRow)
+    ? null
+    : '`PickRow.Item` không còn mang `accessibilityRole="tab"` kèm `accessibilityState={{ selected }}`',
   /*
     ── và `aria-selected` là vế THỨ HAI, vì vế thứ nhất không tới được web ──
 
     Đo trên bản dựng thật: `accessibilityState={{ selected }}` ra ĐÚNG không
-    thuộc tính nào trên react-native-web — bốn viên chỉ có `role`, `aria-label`
-    và `tabindex`. Nên trên web cả bốn đọc lên giống hệt nhau.
+    thuộc tính nào trên react-native-web — các ô chỉ có `role`, `aria-label`
+    và `tabindex`. Nên trên web mọi ô đọc lên giống hệt nhau.
 
-    `aria-selected` là bí danh chính thức của React Native cho cùng trạng thái
-    ấy và được ưu tiên hơn `accessibilityState` trên native, nên nó đúng ở cả
-    hai nền — và nó là vế DUY NHẤT `guide6.mjs` đo được.
+    Vế này từng canh chính màn hướng dẫn; nay nó canh `pick-row.tsx`, vì hàng
+    tab dùng `PickRow` và bản vá sống ở đó — cho cả mười hàng dùng cơ chế ấy.
   */
-  /aria-selected=\{on\}/.test(sheet)
+  /aria-selected=\{on\}/.test(pickRow)
     ? null
-    : 'viên tab thôi mang `aria-selected` — trên web `accessibilityState` không ra thuộc tính nào, nên bốn viên đọc lên giống hệt nhau',
-  /onPress=\{\(\) => pickTab\(id\)\}/.test(sheet) && /setTab\(id\);/.test(sheet)
+    : '`PickRow.Item` thôi mang `aria-selected` — trên web `accessibilityState` không ra thuộc tính nào, '
+      + 'nên mọi ô trong mọi hàng `PickRow` đọc lên giống hệt nhau',
+  /onPress=\{\(\) => \{\s*\n\s*if \(!on\) pickTab\(id\);/.test(sheet) && /setTab\(id\);/.test(sheet)
     ? null
     : 'bấm vào một viên tab không còn đi qua `pickTab(id)` → `setTab(id)`',
   /\{which === 'overview' &&/.test(sheet) && /const tabBody = \(which: GuideTab\)/.test(sheet)
     ? null
-    : 'thân tab không còn là một hàm `tabBody(which)` — cú crossfade cần dựng ĐỒNG THỜI tab đang đi '
-      + 'và tab đang tới, nên nó không đọc được state',
+    : 'thân tab không còn là một hàm `tabBody(which)` — luật này neo vào tham số ấy để biết mỗi tab có '
+      + 'nhánh nội dung',
   missingPanel.length ? `tab không có nhánh nội dung nào: ${missingPanel.join(', ')}` : null,
   missingEmpty.length ? `thiếu câu "chưa có" riêng của tab: ${missingEmpty.join(', ')}` : null,
-  /const needsLibrary = tab === 'equipment' \|\| tab === 'related';/.test(sheet)
+  /i18n\.nEgEquipment\b/.test(musclesBranch)
     ? null
-    : '`needsLibrary` không còn được dẫn ra từ tab đang chọn',
+    : 'tab gộp không còn vẽ mục DỤNG CỤ — "gộp" mà không mang dụng cụ theo thì chỉ là "xoá tab"',
+  /related\.equipment/.test(relatedBranch)
+    ? null
+    : 'danh sách "bài khác dùng cùng dụng cụ" đã biến mất khỏi tab Liên quan — gộp tab không được lặng '
+      + 'lẽ xoá một tính năng đang chạy',
+  /g\.equipmentKey === 'dumbbell' \? \(\s*\n\s*<View style=\{styles\.gearTile\}>\s*\n\s*<DumbbellIcon/.test(musclesBranch)
+    ? null
+    : 'hình tạ đơn không còn chỉ hiện khi dụng cụ ĐÚNG là tạ đơn — vẽ một cái tạ đơn cho một bài kéo cáp '
+      + 'là nói sai',
+  /const needsLibrary = tab === 'related';/.test(sheet)
+    ? null
+    : '`needsLibrary` không còn được dẫn ra từ tab đang chọn — nay chỉ tab Liên quan cần thư viện',
   /useExercises\(needsLibrary\)/.test(sheet)
     ? null
-    : '`useExercises()` không còn đi qua `needsLibrary` — mở sheet là gọi mạng, kể cả khi không ai mở hai tab ấy',
+    : '`useExercises()` không còn đi qua `needsLibrary` — mở sheet là gọi mạng, kể cả khi không ai mở tab Liên quan',
   /sameEquipment\(rows, subject, lang\)/.test(sheet) && /sameMuscle\(rows, subject, lang\)/.test(sheet)
     ? null
     : 'hai danh sách "bài khác" không còn đến từ `lib/guide-related.ts`',
@@ -773,7 +814,7 @@ const realTabs = [
 ].filter(Boolean);
 if (realTabs.length) {
   problems.push(
-    `${SHEET}: hàng tab đã trượt — ${realTabs.join('; ')}. Bốn tab này bấm được theo quyết định của chủ ` +
+    `${SHEET}: hàng tab đã trượt — ${realTabs.join('; ')}. Ba tab này bấm được theo quyết định của chủ ` +
       'dự án, và cái giá của quyết định ấy là mỗi tab phải có thứ THẬT để hiện: hình giải phẫu từ ' +
       '`muscleArtKeysFor`, và bài khác cùng dụng cụ / cùng nhóm cơ lọc ra từ thư viện đã nằm sẵn trong ' +
       'cache. Một tab bấm vào ra tờ giấy trắng còn tệ hơn một tab không bấm được: cái sau nói thật rằng ' +
@@ -977,9 +1018,14 @@ const frameGaps = [
   strip && /flexGrow: 0/.test(strip)
     ? null : 'dải cử chỉ không còn `flexGrow: 0` — `Animated.ScrollView` trên web mặc định NỞ, nên nó '
       + 'nuốt chỗ trống ở tab ngắn và đẩy cả mặt giấy lẫn hàng tab xuống (đo được: 386 → 465)',
-  /style=\{\{ opacity: fade, transform: \[\{ scale: grow \}\] \}\}/.test(sheet)
-    ? null : 'thân tab không còn nằm trong một lớp chuyển — cú đổi tab phải là một phép đổi độ mờ, '
-      + 'không phải bốn nhánh tự hiện tự tắt',
+  /*
+    Vế này từng đòi thân tab nằm TRONG một lớp chuyển. Chủ dự án bảo gỡ hiệu
+    ứng ở nội dung (xem ca 30), nên nay nó đòi điều ngược lại: thân tab được
+    dựng THẲNG, không một lớp `Animated` nào bọc nó.
+  */
+  /\{\/\* Nội dung đổi NGAY, không hiệu ứng[^\n]*\*\/\}\s*\n\s*\{tabBody\(tab\)\}/.test(sheet)
+    ? null : 'thân tab không còn được dựng thẳng bằng `{tabBody(tab)}` — chủ dự án đã bảo gỡ hiệu ứng ở '
+      + 'phần nội dung, chỉ giữ ở thanh pill',
   /*
     ── và vế thứ hai: ĐÃ KÉO LÊN rồi thì đổi tab không được làm tụt ──
 
@@ -1009,87 +1055,48 @@ if (frameGaps.length) {
   );
 }
 
-/* ── 30 · CÚ ĐỔI TAB phải là "FADE THROUGH", và KHÔNG được chồng lớp ──
+/* ── 30 · ĐỔI TAB: chỉ viên PILL chuyển động, nội dung thì KHÔNG ──
 
-   Vế này đã viết lại HAI lần, và cả hai lần đều vì nó canh sai thứ.
+   Vế này đã viết lại BỐN lần, và ba bản đầu đều canh một hiệu ứng cho NỘI
+   DUNG: tan về trống (chớp), crossfade chồng lớp ("tùm lum"), rồi "fade
+   through" theo spec Material. Chủ dự án chốt câu trả lời thứ tư, và nó
+   không phải một hiệu ứng thứ tư:
 
-   **Bản một** canh một cú chuyển nối đuôi và đi ĐẾM CON SỐ: tổng 200–250ms,
-   biên độ 10–16 điểm, ease-out. Mọi con số khớp, và hiệu ứng vẫn sai — giữa
-   hai nhịp có một khoảnh khắc mặt giấy trống, đọc ra là một cú chớp.
+     *"gỡ hiệu ứng thông tin phía dưới, chỉ làm hiệu ứng ở thanh pill dài phía
+     trên, áp dụng hiệu ứng có sẵn của hệ thống."*
 
-   **Bản hai** sửa bằng cách cho hai lớp CHỒNG lên nhau, và canh đúng chuyện
-   chúng chồng. Nó cũng sai, và chủ dự án gọi đúng tên: "tùm lum". Crossfade
-   chỉ đọc được khi hai thứ CÙNG KHUÔN — đổi một tấm ảnh, đổi một con số. Bốn
-   tab này thì không: bốn tấm ảnh dọc kèm chữ chồng lên hai ô giải phẫu 64
-   điểm cho ra một mớ.
+   Một thanh phân đoạn là một phát biểu về VỊ TRÍ — "cái này, trong số này" —
+   và thứ trả lời câu ấy là viên pill trượt, do `PickRow` làm (ca 20 canh việc
+   dùng nó). Một hiệu ứng thứ hai ở nội dung tranh phần chú ý với chính cú
+   trượt đang nói điều cần nói.
 
-   **Bản ba — cái này** — dẫn từ tài liệu thay vì từ suy đoán. Material đặt tên
-   cho đúng tình huống ấy là *fade through*, và nói thẳng nó dành cho
-   *"transitions between UI elements that do not have a strong relationship to
-   each other, such as transitions triggered by tapping a bottom navigation
-   bar"*. Luật của nó:
+   Nên vế này canh chuyện KHÔNG có gì ở nội dung, và mỗi vế là một cách hiệu
+   ứng ấy lẻn quay lại:
 
-       lớp cũ   mờ 1→0                    100ms
-       (đổi nội dung)
-       lớp mới  mờ 0→1 + phóng 0,92→1     200ms
-
-   Nên vế này canh đúng ba điều spec chỉ định, và mỗi điều là một cách hiệu
-   ứng này hỏng trở lại:
-
-     · KHÔNG chồng lớp — không `prev`, không lớp `absoluteFill` thứ hai. Có
-       lại là quay về "tùm lum".
-     · `setShown` nằm TRONG callback của lượt mờ đi. Gọi nó sớm là hai nội
-       dung cùng hiện, tức lại chồng lớp bằng một đường khác.
-     · phóng bắt đầu đúng 0,92 và CHỈ ở lớp tới; không có phép dịch nào cộng
-       thêm. Spec: *"to avoid drawing excessive attention"* và *"to emphasize
-       new content over the old"* — cộng một phép dịch vào là cộng hai chuyển
-       động cho cùng một việc. */
+     · `pickTab` không mang `Animated` nào, không `duration` nào
+     · không còn trạng thái thứ hai `shown` — nó chỉ tồn tại để nội dung đổi
+       TRỄ hơn viên pill, mà nay hai thứ đổi cùng lúc
+     · không `Animated.Value` nào tên `fade`/`grow`/`slide` sống trong tệp */
 CASES++;
-const move = /const pickTab = useCallback\([\s\S]{0,2200}?\n  \);/.exec(sheet)?.[0] ?? '';
-const par = /Animated\.parallel\(\[[\s\S]{0,700}?\]\)/.exec(move)?.[0] ?? '';
+const move = /const pickTab = useCallback\([\s\S]{0,600}?\n  \}, \[\]\);/.exec(sheet)?.[0] ?? '';
+const code30 = stripComments(sheet);
 const moveGaps = [
-  move ? null : 'không còn `pickTab` — cú chuyển tab đã biến mất khỏi một chỗ duy nhất',
-  /const \[prev, setPrev\]/.test(sheet) || /opacity: outOp/.test(sheet)
-    ? 'lớp đè quay lại — fade through KHÔNG chồng lớp, và chồng lớp là đúng thứ đã bị gọi là "tùm lum"'
+  move ? null : 'không còn `pickTab` gọn một chỗ — cú đổi tab đã tản ra',
+  move && /Animated|duration|Easing/.test(move)
+    ? '`pickTab` lại mang một hiệu ứng — chủ dự án đã bảo gỡ hiệu ứng ở phần nội dung, chỉ để viên pill '
+      + 'chuyển động'
     : null,
-  move && /duration: 100,/.test(move)
-    ? null : 'nhịp MỜ ĐI không còn là 100ms — spec chia 100 (đi) + 200 (tới), và vế 100 là thứ giữ cả cú '
-      + 'chuyển trong 300ms',
-  /* CẢ HAI lượt của phần hiện lên, không phải "có ít nhất một": mờ và phóng
-     lệch nhịp thì phóng xong trước lúc đọc được, hoặc ngược lại. Bản đầu hỏi
-     "có xuất hiện không" và break-test bắt được — đổi một trong hai sang 240
-     mà luật vẫn xanh. */
-  (move.match(/duration: duration\.appear/g) ?? []).length === 2
-    ? null : `chỉ ${(move.match(/duration: duration\.appear/g) ?? []).length}/2 lượt HIỆN LÊN dùng `
-      + '`duration.appear` (200ms) — mờ và phóng phải CÙNG nhịp, và token ấy mô tả đúng việc này: một '
-      + 'thứ vừa nãy chưa có trên màn',
-  move && /\}\).start\(\(\{ finished \}\) => \{[\s\S]{0,120}?setShown\(id\);/.test(move)
-    ? null : '`setShown` không còn nằm TRONG callback của lượt mờ đi — gọi sớm là hai nội dung cùng hiện, '
-      + 'tức chồng lớp bằng một đường khác',
-  move && /grow\.setValue\(0\.92\);/.test(move)
-    ? null : 'phép phóng không còn bắt đầu ở 0,92 — spec chọn 8% chứ không 0 "to avoid drawing excessive '
-      + 'attention to the transition"',
-  (par.match(/Animated\.timing\(/g) ?? []).length === 2
-    ? null : `lượt HIỆN LÊN không còn đúng hai lượt chạy song song (thấy ${(par.match(/Animated\.timing\(/g) ?? []).length}) `
-      + '— mờ và phóng phải cùng lúc, và chỉ hai thứ ấy',
-  /* Quét CẢ TỆP, không riêng `pickTab`: phép dịch sẽ được cộng vào `style` của
-     lớp chuyển chứ không vào hàm bấm, nên hỏi trong `move` là hỏi sai chỗ —
-     break-test bắt được, mệnh đề ấy không bao giờ nổ. Chỉ còn đúng một chỗ
-     nhắc `translateY` trong tệp, và nó nằm trong khối chú thích giải thích vì
-     sao KHÔNG dùng nó. */
-  inCode(sheet, 'translateY')
-    ? 'cú chuyển tab lại có phép dịch dọc — spec áp PHÓNG cho lớp tới, và cộng thêm một phép dịch là '
-      + 'cộng hai chuyển động cho cùng một việc, đúng cảm giác "mọi thứ cùng động" đã bị phàn nàn'
+  /const \[shown, setShown\]/.test(code30)
+    ? 'trạng thái thứ hai `shown` quay lại — nó chỉ có nghĩa khi nội dung đổi TRỄ hơn viên pill, tức khi '
+      + 'có một hiệu ứng ở nội dung'
     : null,
-  move && /Easing\.in\(/.test(move) && /Easing\.out\(/.test(move)
-    ? null : 'đường cong không còn đi theo hướng chuyển động — lớp đi tăng tốc rời đi (`Easing.in`), lớp '
-      + 'tới giảm tốc rồi đặt xuống (`Easing.out`)',
-  move && /if \(reduced\) \{/.test(move)
-    ? null : '`pickTab` không còn tôn trọng "giảm chuyển động"',
+  /const (fade|grow|slide|inOp|outOp) = useRef\(new Animated\.Value/.test(code30)
+    ? 'một `Animated.Value` cho thân tab quay lại'
+    : null,
 ].filter(Boolean);
 if (moveGaps.length) {
   problems.push(
-    `${SHEET}: cú đổi tab không còn là một "fade through" — ${moveGaps.join('; ')}`,
+    `${SHEET}: đổi tab lại có hiệu ứng ở phần nội dung — ${moveGaps.join('; ')}`,
   );
 }
 
