@@ -14,7 +14,6 @@ import {
   KeyRound,
   Lock,
   ShieldCheck,
-  Store,
   Target,
   Trash2,
   User,
@@ -435,8 +434,22 @@ export default function SettingsScreen() {
             nav.push('/mascot-room');
           }}>
           <View style={styles.roomRow}>
+            {/*
+              KHÔNG có glyph dẫn đầu ở hàng này, dù mọi hàng dẫn đi khác trên
+              màn đều có một cái.
+
+              Glyph ở x=44 trên màn này đánh dấu CHỦ ĐỀ CỦA MỘT THẺ (Nhắc nhở,
+              Khoá ứng dụng, Xuất dữ liệu…). Hàng phòng không phải đầu thẻ —
+              nó là hàng con thứ ba bên trong thẻ nhân vật, dưới hai hàng công
+              tắc mà tiêu đề bắt đầu ở x=44. Cho riêng nó một glyph đẩy chữ
+              sang x=70 và làm mép trái trong cùng một thẻ so le.
+
+              Thẻ hồ sơ có glyph ở hàng con, nhưng ở đó CẢ BA hàng đều có nên
+              cột glyph đọc ra là một cột. Ở đây chỉ một trong ba có.
+
+              Bỏ nó ra cũng trả 28 điểm bề ngang lại cho nhãn 40 ký tự.
+            */}
             <View style={styles.rowLeft}>
-              <Icon icon={Store} size={18} color={c.mutedForeground} />
               <Text style={styles.roomLabel}>{i18n.nMascotRoomTitle}</Text>
             </View>
             <Icon icon={ChevronRight} size={18} color={c.mutedForeground} />
@@ -491,7 +504,7 @@ export default function SettingsScreen() {
                     )}
                   </View>
                   <Text style={styles.mascotName}>{m.name}</Text>
-                  <Text style={styles.mascotMeta} numberOfLines={2}>
+                  <Text style={styles.mascotMeta} numberOfLines={3}>
                     {m.pro
                       ? i18n.nMascotPro
                       : m.unlocked
@@ -943,11 +956,30 @@ const stylesFor = makeStyles((c) => ({
     color: c.mutedForeground,
   },
   mascotName: { ...type.footnote, fontWeight: '600', color: c.foreground },
+  /*
+    Ba dòng, và `lineHeight` ghi thẳng ra để `minHeight` = 3 x 13 là một phép
+    tính chứ không phải một con số đoán.
+
+    Chuỗi dài nhất trong `mascots.ts` là 40 ký tự ("Your diligent, slightly
+    sleepy companion"). Ruột chip đo được 98 điểm, ở cỡ 11 vào khoảng 16 ký
+    tự mỗi dòng, nên 40 ký tự CẦN 3 dòng. Bản cũ để
+    `numberOfLines={2}` nên Koa hiện ra "Bạn đồng hành chăm chỉ, hơi bu…" và
+    Swift thành "Tinh ranh về dưỡng" — cụt giữa cụm từ, mất nghĩa.
+
+    Sửa bằng số dòng chứ không bằng bề ngang: gói 40 ký tự vào 2 dòng cần chip
+    rộng ~140, tức chỉ còn thấy 2,5 con thay vì 3,4 trên màn 402. Một hàng để
+    CHỌN nhân vật mà thấy ít nhân vật hơn là đổi hỏng lấy sai.
+
+    `minHeight` giữ mọi chip cao bằng nhau: chúng nằm trong ScrollView ngang
+    nên mỗi cái tự tính chiều cao, và tagline 20 ký tự bên cạnh tagline 40 ký
+    tự sẽ cho hai đáy lệch nhau nếu không chốt sàn này.
+  */
   mascotMeta: {
     ...type.caption,
+    lineHeight: 13,
     color: c.mutedForeground,
     textAlign: 'center',
-    minHeight: 26,
+    minHeight: 39,
   },
   langRow: { marginTop: spacing.md },
   /* No background and no radius here: the row paints the resting box, so the
