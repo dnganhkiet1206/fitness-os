@@ -327,7 +327,7 @@ tồn tại ở project mới. Với một tài khoản test thì cách gọn nh
 
 ## 2. Tạo schema
 
-`supabase/migrations/` đã có **44 file SQL** dựng sẵn toàn bộ schema (16 file
+`supabase/migrations/` đã có **45 file SQL** dựng sẵn toàn bộ schema (16 file
 `<timestamp>_<uuid>.sql` do Lovable sinh ra, phần còn lại viết tay). Sau khi
 link đúng project ở bước 1b:
 
@@ -377,8 +377,11 @@ Ngoài ra edge function cần thêm hai thứ app không đụng tới:
 `user_id = auth.uid()`, nên policy tối thiểu là cho phép chủ sở hữu đọc/ghi
 dòng của chính mình. Không có RLS thì mọi tài khoản đọc được dữ liệu của nhau.
 
-**Ngoại lệ duy nhất: tám bảng `community_*`.** Chúng là nơi DUY NHẤT người dùng
-đọc được dòng của người khác, và chỉ vì người kia CHỦ ĐỘNG chia sẻ. Không bảng
+**Ngoại lệ duy nhất: các bảng `community_*`.** Chúng là nơi DUY NHẤT người dùng
+đọc được dòng của người khác, và chỉ vì người kia CHỦ ĐỘNG chia sẻ. Không phải
+bảng nào mang tên ấy cũng mở: `community_settings` (quyền riêng tư) và
+`community_challenge_members` chỉ chủ nhân đọc được, còn `community_challenges`
+là nội dung nền tảng do dashboard tạo. Không bảng
 sức khoẻ nào (cân nặng, số đo, ảnh, buổi tập) bị mở: bài cộng đồng là một bản
 chụp nằm ở bảng riêng, do RPC `share_workout` dựng từ buổi tập của chính người
 gọi — client không INSERT thẳng vào `community_posts` được. Đọc kỹ đầu tệp
@@ -497,8 +500,8 @@ không bao giờ được nằm trong app. Function cần:
    ```
 
 3. `supabase.auth.admin.deleteUser(userId)` bằng service role key. **Không cần
-   xoá tay từng bảng.** Cả 39 bảng trong `supabase/migrations/` đều có đường
-   cascade về `auth.users`: 32 bảng trỏ thẳng (22 khai báo inline trong
+   xoá tay từng bảng.** Cả 41 bảng trong `supabase/migrations/` đều có đường
+   cascade về `auth.users`: 34 bảng trỏ thẳng (24 khai báo inline trong
    `CREATE TABLE`, 10 khai báo bằng `ALTER TABLE … ADD CONSTRAINT`), và 7 bảng
    con đi qua bảng cha — `ai_messages`→`ai_conversations`,
    `meal_entry_items`→`meal_entries`, `meal_plan_items`→`meal_plans`,

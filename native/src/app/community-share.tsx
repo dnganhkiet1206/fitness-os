@@ -19,6 +19,7 @@ import {
   type FeedPost,
   payloadFromSession,
   ProfileRequiredError,
+  useCommunitySettings,
   useMyCommunityProfile,
   useMySharedSessions,
   useShareWorkout,
@@ -65,7 +66,11 @@ export default function CommunityShareScreen() {
 
   const [picked, setPicked] = useState<string | null>(params.session ?? null);
   const [caption, setCaption] = useState('');
-  const [vis, setVis] = useState<'public' | 'followers'>('public');
+  /* Chưa chạm thì theo "Mặc định khi đăng" trong Quyền riêng tư; đã chọn thì
+     giữ lựa chọn — cài đặt về muộn không được lật ngược thứ người ta vừa bấm. */
+  const settings = useCommunitySettings();
+  const [visPick, setVis] = useState<'public' | 'followers' | null>(null);
+  const vis = visPick ?? settings.data?.defaultVisibility ?? 'public';
 
   const list = useMemo(
     () => [...(sessions.data ?? [])].sort((a, b) => b.date_time.localeCompare(a.date_time)),

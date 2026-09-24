@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
-import { confirmWrite } from '@/lib/write-result';
+import { confirmWrite, NothingWrittenError } from '@/lib/write-result';
 import { useAuth } from './use-auth';
 import type { TemplateExercise } from './use-library';
 
@@ -792,6 +792,127 @@ export function useClaimChallenge() {
       qc.invalidateQueries({ queryKey: ['community_challenges', user?.id] });
       /* Xu vừa vào sổ: số dư trong phòng linh vật phải đọc lại. */
       qc.invalidateQueries({ queryKey: ['mascot_wallet'] });
+    },
+  });
+}
+
+/* ── quyền riêng tư (#11) ───────────────────────────────────────────────── */
+
+export type Visibility = 'public' | 'followers';
+
+/**
+ * Cài đặt riêng của người dùng — hiện chỉ có "mặc định khi đăng". Bảng riêng
+ * chỉ chủ nhân đọc được (`20260930130000_community_privacy.sql`), không nằm
+ * trên hồ sơ công khai.
+ *
+ * Chưa có dòng thì là `public`, đúng như DEFAULT của cột: người chưa từng mở
+ * màn này không cần một lần ghi để có giá trị.
+ */
+export function useCommunitySettings() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_settings', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('community_settings')
+        .select('default_visibility')
+        .eq('user_id', user!.id)
+        .maybeSingle();
+      if (error) throw error;
+      return { defaultVisibility: (data?.default_visibility === 'followers' ? 'followers' : 'public') as Visibility };
+    },
+  });
+}
+
+export function useSetDefaultVisibility() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (v: Visibility) => {
+      const { error } = await supabase
+        .from('community_settings')
+        .upsert({ user_id: user!.id, default_visibility: v, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+      if (error) throw error;
+    },
+    onMutate: () => Haptics.selectionAsync(),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['community_settings', user?.id] }),
+  });
+}
+
+export interface BlockedUser {
+  user_id: string;
+  since: string;
+  /** Null khi người ấy đã xoá hồ sơ cộng đồng — dòng chặn vẫn còn (nó trỏ
+      thẳng vào tài khoản), và vẫn phải bỏ chặn được. */
+  profile: CommunityAuthor | null;
+}
+
+/** Người MÌNH đã chặn. RLS không cho thấy ai đã chặn mình. */
+export function useBlockedUsers() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_blocks', user?.id],
+    enabled: !!user,
+    queryFn: async (): Promise<BlockedUser[]> => {
+      const { data: rows, error } = await supabase
+        .from('community_blocks')
+        .select('blocked_id, created_at')
+        .eq('blocker_id', user!.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const ids = (rows ?? []).map((r) => r.blocked_id);
+      if (ids.length === 0) return [];
+      const { data: profs, error: pe } = await supabase.from('community_profiles').select(PROFILE_COLS).in('user_id', ids);
+      if (pe) throw pe;
+      const byId = new Map((profs as CommunityAuthor[] | null ?? []).map((p) => [p.user_id, p]));
+      return (rows ?? []).map((r) => ({ user_id: r.blocked_id, since: r.created_at, profile: byId.get(r.blocked_id) ?? null }));
+    },
+  });
+}
+
+export function useUnblock() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      /* `confirmWrite` hỏi lại cột `id`, thứ bảng chặn không có (khoá là cặp
+         hai người) — nên hỏi lại chính `blocked_id`. */
+      const { data, error } = await supabase
+        .from('community_blocks')
+        .delete()
+        .eq('blocker_id', user!.id)
+        .eq('blocked_id', userId)
+        .select('blocked_id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw new NothingWrittenError('Không bỏ chặn được — có thể bạn đã bỏ chặn ở thiết bị khác');
+    },
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      qc.invalidateQueries({ queryKey: ['community_blocks', user?.id] });
+      qc.invalidateQueries({ queryKey: ['community_feed'] });
+      qc.invalidateQueries({ queryKey: ['community_user'] });
+      qc.invalidateQueries({ queryKey: ['community_user_posts'] });
+    },
+  });
+}
+
+/** Xoá MỌI bài của mình; hồ sơ, người theo dõi và bình luận ở bài người khác
+    giữ nguyên. Trả về số bài đã xoá (0 là một câu trả lời đúng, không phải lỗi). */
+export function useDeleteAllMyPosts() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.from('community_posts').delete().eq('author_id', user!.id).select('id');
+      if (error) throw error;
+      return data?.length ?? 0;
+    },
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      qc.invalidateQueries({ queryKey: ['community_feed'] });
+      qc.invalidateQueries({ queryKey: ['community_user_posts'] });
+      qc.invalidateQueries({ queryKey: ['community_shared_sessions', user?.id] });
     },
   });
 }

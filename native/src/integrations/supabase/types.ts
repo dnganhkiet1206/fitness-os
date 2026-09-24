@@ -506,6 +506,24 @@ export type Database = {
         }
         Relationships: []
       }
+      community_settings: {
+        Row: {
+          default_visibility: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          default_visibility?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          default_visibility?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       coach_memory: {
         Row: {
           id: string

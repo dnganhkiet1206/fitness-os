@@ -317,10 +317,23 @@ export const FIXTURES = {
     { user_id: UID, handle: 'kiet', display_name: 'Kiệt', bio: 'Push/Pull/Legs, 4 buổi mỗi tuần.', mascot_id: 'koa', is_official: false, created_at: day(20), updated_at: day(20) },
     { user_id: 'c0000000-0000-4000-8000-00000000a5cd', handle: 'ascnd', display_name: 'ASCND', bio: 'Buổi tập mẫu, thử thách và mẹo từ đội ngũ ASCND.', mascot_id: 'koa', is_official: true, created_at: day(60), updated_at: day(60) },
     { user_id: 'c0000000-0000-4000-8000-0000000011a1', handle: 'linh.pham', display_name: 'Linh Phạm', bio: '', mascot_id: 'blaze', is_official: false, created_at: day(40), updated_at: day(40) },
+    { user_id: 'c0000000-0000-4000-8000-0000000022b2', handle: 'tuan.ng', display_name: 'Tuấn Nguyễn', bio: '', mascot_id: 'koa', is_official: false, created_at: day(30), updated_at: day(30) },
   ],
   community_follows: [
     { follower_id: UID, followee_id: 'c0000000-0000-4000-8000-0000000011a1', created_at: day(5) },
   ],
+  /*
+    Quyền riêng tư (#11): hai người đã chặn — một còn hồ sơ, một đã xoá hồ sơ
+    (dòng chặn trỏ thẳng vào tài khoản nên vẫn còn), để hàng được vẽ ở cả hai
+    hình dạng. Hồ sơ của người thứ nhất nằm CUỐI `community_profiles` để dòng
+    đầu vẫn là của UID. Người ấy không có bài nào ở đây: bài của người bị chặn
+    không bao giờ về tới client, và feed giả không lọc.
+  */
+  community_blocks: [
+    { blocker_id: UID, blocked_id: 'c0000000-0000-4000-8000-0000000022b2', created_at: day(3) },
+    { blocker_id: UID, blocked_id: 'c0000000-0000-4000-8000-0000000033c3', created_at: day(12) },
+  ],
+  community_settings: [{ user_id: UID, default_visibility: 'followers', updated_at: day(2) }],
   community_posts: [
     {
       id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'workout', source_id: 'c5000000-0000-4000-8000-000000000001',

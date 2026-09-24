@@ -16,6 +16,7 @@ import { useI18n } from '@/hooks/use-app-settings';
 import {
   type FeedPost,
   ProfileRequiredError,
+  useCommunitySettings,
   useMyCommunityProfile,
   useProgressPreview,
   useShareProgress,
@@ -62,7 +63,11 @@ export default function CommunityShareProgressScreen() {
   const [waist, setWaist] = useState(false);
   const [lift, setLift] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
-  const [vis, setVis] = useState<'public' | 'followers'>('public');
+  /* Chưa chạm thì theo "Mặc định khi đăng" trong Quyền riêng tư; đã chọn thì
+     giữ lựa chọn — cài đặt về muộn không được lật ngược thứ người ta vừa bấm. */
+  const settings = useCommunitySettings();
+  const [visPick, setVis] = useState<'public' | 'followers' | null>(null);
+  const vis = visPick ?? settings.data?.defaultVisibility ?? 'public';
 
   const preview = useProgressPreview({ weeks, weight, waist, liftId: lift });
 

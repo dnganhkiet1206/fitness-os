@@ -121,9 +121,17 @@ export default function CommunityUserScreen() {
           </View>
 
           {u!.isMe ? (
-            <PressScale accessibilityRole="button" onPress={() => nav.push('/community-profile')} style={styles.quietBtn}>
-              <Text style={styles.quietText}>{i18n.nCmEditProfile}</Text>
-            </PressScale>
+            /* Hai việc ngang hàng của chính mình: sửa thứ người khác thấy, và
+               quyết định ai thấy (#11). Cùng viên trầm — không cái nào là
+               hành động chính của trang. */
+            <View style={styles.meRow}>
+              <PressScale accessibilityRole="button" onPress={() => nav.push('/community-profile')} style={[styles.quietBtn, styles.flex]}>
+                <Text style={styles.quietText}>{i18n.nCmEditProfile}</Text>
+              </PressScale>
+              <PressScale accessibilityRole="button" onPress={() => nav.push('/community-privacy')} style={[styles.quietBtn, styles.flex]}>
+                <Text style={styles.quietText}>{i18n.nPvTitle}</Text>
+              </PressScale>
+            </View>
           ) : (
             <PressScale
               accessibilityRole="button"
@@ -178,5 +186,7 @@ const stylesFor = makeStyles((c, m) => ({
   solidText: { ...type.headline, color: c.primaryForeground },
   quietBtn: { height: 44, borderRadius: radius.full, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center' },
   quietText: { ...type.headline, color: c.foreground },
+  meRow: { flexDirection: 'row', gap: spacing.sm },
+  flex: { flex: 1 },
   none: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
 }));
