@@ -629,14 +629,24 @@ try {
   } else {
     const a = Number(mPill[1]);
 
-    /* Token của nền viên và của chữ, đọc ra khỏi CHÍNH hai style ấy. */
-    const bgTok = /alpha\(c\.(\w+), DONE_PILL_ALPHA\)/.exec(styleBody(raw, 'actionDone') ?? '');
-    const fgTok = /color: c\.(\w+)/.exec(styleBody(raw, 'actionTextDone') ?? '');
+    /* Token của nền viên và của chữ, đọc ra khỏi CHÍNH hai style ấy.
+
+       Chữ được phép TÁCH theo diện mạo kể từ 24/09: bản tối đi neon (chữ
+       `readinessGreen`, 7,37:1 trên viên), bản sáng giữ token trung tính.
+       Lý do tách nằm ở `DONE_PILL_ALPHA` trong thẻ. Luật vẫn đo TỪNG diện
+       mạo bằng token của chính diện mạo ấy, nên một cú tách sang màu rớt sàn
+       vẫn đỏ — tách không phải là một lối thoát khỏi phép đo. */
+    const doneBody = styleBody(raw, 'actionDone') ?? '';
+    const fgBody = styleBody(raw, 'actionTextDone') ?? '';
+    const bgTok = /alpha\(c\.(\w+), DONE_PILL_ALPHA\)/.exec(doneBody);
+    const fgSplit = /color: m\.lit \? c\.(\w+) : c\.(\w+)/.exec(fgBody);
+    const fgPlain = /color: c\.(\w+)/.exec(fgBody);
+    const fgFor = (t) => (fgSplit ? (t === 'dark' ? fgSplit[1] : fgSplit[2]) : fgPlain ? fgPlain[1] : null);
     CASES++;
-    if (!bgTok || !fgTok) {
+    if (!bgTok || !fgFor('dark') || !fgFor('light')) {
       problems.push(
         `${CARD}: không đọc được token của viên "Đã ghi" (nền qua \`alpha(c.…, DONE_PILL_ALPHA)\`, ` +
-          'chữ qua `color: c.…`) — không có token thì không đo được gì',
+          'chữ qua `color: c.…` hoặc `color: m.lit ? c.… : c.…`) — không có token thì không đo được gì',
       );
     } else {
       /* Màu của DẤU TÍCH, cũng đọc ra khỏi JSX chứ không giả định. */
@@ -673,12 +683,32 @@ try {
         /* (2) chữ trên viên, sàn 4,5:1 của WCAG 1.4.3 (chữ 15px, không phải
            "văn bản lớn"). */
         CASES++;
-        const vsText = ratio(hex(palettes[theme][fgTok[1]]), pill);
+        const fgName = fgFor(theme);
+        const vsText = ratio(hex(palettes[theme][fgName]), pill);
         if (vsText < 4.5) {
           problems.push(
-            `${CARD}: chữ \`${fgTok[1]}\` trên viên "Đã ghi" chỉ ${vsText.toFixed(2)}:1 ở bản ${vi} — ` +
+            `${CARD}: chữ \`${fgName}\` trên viên "Đã ghi" chỉ ${vsText.toFixed(2)}:1 ở bản ${vi} — ` +
               'dưới sàn 4,5:1 của WCAG 1.4.3. Đây đúng là chỗ bản dựng ban đầu (chữ xanh) rớt',
           );
+        }
+
+        /* (2b) VIỀN neon, nếu diện mạo này tô nó. Viền là hình mang nghĩa —
+           nó là thứ vẽ ra RANH GIỚI của control — nên sàn là 3:1 của WCAG
+           1.4.11, đo với mặt thẻ chứ không với ruột viên: mắt đọc mép ở chỗ
+           nó gặp thẻ. Vế này tồn tại vì nền viên chỉ tách 1,184:1; cái trả
+           lại hình cho control là viền, nên nếu viền nhạt đi thì lập luận
+           "nó vẫn trông như một cái nút" sụp mà không ai hay. */
+        const bdSplit = /borderColor: m\.lit \? c\.(\w+) : 'transparent'/.exec(doneBody);
+        const bdName = bdSplit ? (theme === 'dark' ? bdSplit[1] : null) : null;
+        if (bdName) {
+          CASES++;
+          const vsBorder = ratio(hex(palettes[theme][bdName]), face);
+          if (vsBorder < 3) {
+            problems.push(
+              `${CARD}: viền \`${bdName}\` của viên "Đã ghi" chỉ ${vsBorder.toFixed(2)}:1 so với mặt ` +
+                `thẻ ở bản ${vi} — dưới sàn 3:1 của WCAG 1.4.11`,
+            );
+          }
         }
 
         /* (3) dấu tích, sàn 3:1 của WCAG 1.4.11 cho hình mang nghĩa. */
@@ -693,6 +723,27 @@ try {
           }
         }
       }
+    }
+  }
+
+  /* Vế: hộp viền có ở MỌI trạng thái, chỉ đổi MÀU.
+
+     Bề dày viền nằm trong luồng bố cục. Thêm `borderWidth` chỉ cho trạng thái
+     "đã ghi" làm viên NHÍCH 1 điểm mỗi cạnh đúng khoảnh khắc người ta vừa ghi
+     xong — một cú giật chỉ thấy trên máy thật, không bộ chạy nào bắt được.
+     `choice-card.tsx` và `mascotChip` bên Cài đặt đã trả giá cho đúng lỗi này.
+
+     Nên luật đòi style NỀN (`action`, thứ mọi trạng thái đều mang) tự khai cả
+     `borderWidth` lẫn một `borderColor` trong suốt; `actionDone` chỉ được tô
+     màu lên cái hộp đã có sẵn ấy. */
+  {
+    const base = styleBody(raw, 'action') ?? '';
+    CASES++;
+    if (!/borderWidth: [\d.]+/.test(base) || !/borderColor: 'transparent'/.test(base)) {
+      problems.push(
+        `${CARD}: style \`action\` phải tự khai \`borderWidth\` và \`borderColor: 'transparent'\` — ` +
+          'nếu chỉ `actionDone` thêm viền thì viên nhích 1 điểm đúng lúc vừa ghi xong',
+      );
     }
   }
 
@@ -836,9 +887,15 @@ console.log(
     'hai style ấy rồi dựng lại trên mặt thẻ của từng diện mạo — viên phải qua bậc bề mặt 1,134 của ' +
     'iOS (dưới đó nó tàng hình và cái nút còn bấm được lại đọc ra là một cái nhãn, đúng chỗ chủ dự ' +
     'án chỉ vào), chữ phải qua 4,5:1 của WCAG 1.4.3 và dấu tích qua 3:1 của 1.4.11. Chính phép đo ' +
-    'ấy BÁC bản dựng được đưa: chữ xanh trên viên xanh chỉ 4,23:1 ở bản sáng, vì `readinessGreen` ' +
-    'sáng mới 4,97:1 trên giấy trắng nên nó không có chỗ để nhạt — màu xanh vì thế đi vào DẤU TÍCH, ' +
-    'thứ chịu sàn 3:1, còn chữ dùng `secondaryForeground` (6,59 sáng · 4,88 tối), token duy nhất đi ' +
-    'được cả hai diện mạo. Và viên khen gắn vào `done` chứ không vào `quiet`: `quiet` gộp cả ' +
+    'ấy BÁC bản dựng được đưa: chữ xanh trên viên xanh chỉ 4,23:1 ở bản SÁNG, vì `readinessGreen` ' +
+    'sáng mới 4,97:1 trên giấy trắng nên nó không có chỗ để nhạt. Từ 24/09 chữ TÁCH theo diện mạo, ' +
+    'vì ràng buộc ấy chưa bao giờ là ràng buộc của bản tối: ở bản tối `readinessGreen` trên viên đo ' +
+    'được 7,37:1, dư sàn 4,5 — nên bản tối đi neon (viền + chữ + tích cùng một màu xanh) còn bản ' +
+    'sáng giữ `secondaryForeground`. Luật đo TỪNG diện mạo bằng token của chính diện mạo ấy, nên ' +
+    'tách không phải lối thoát khỏi phép đo. Viền chịu thêm sàn 3:1 của 1.4.11 đo với MẶT THẺ, vì ' +
+    'nền viên chỉ tách 1,184:1 — thứ trả lại hình cho control là viền, không phải nền. Và hộp viền ' +
+    'phải nằm ở style NỀN với màu trong suốt: thêm bề dày viền chỉ cho trạng thái "đã ghi" làm viên ' +
+    'nhích 1 điểm đúng lúc vừa ghi xong, lỗi mà `choice-card.tsx` đã trả giá. ' +
+    'Và viên khen gắn vào `done` chứ không vào `quiet`: `quiet` gộp cả ' +
     '`skipped`, nên gắn nhầm là trao dấu tích xanh cho đúng việc người dùng chủ động BỎ QUA',
 );

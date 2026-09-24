@@ -264,11 +264,49 @@ const DONE_ICON_ALPHA = 0.8;
  * hai diện mạo. (`mutedForeground`, màu chữ hiện nay, đạt 4,92 ở bản sáng
  * nhưng chỉ 3,62 ở bản tối, nên nó không đi được cả hai.)
  *
+ * ── 24/09: bản tối đi NEON, bản sáng giữ nguyên ──
+ *
+ * Chủ dự án khoanh đúng cái viên này: *"làm cho nó thành màu neon ở bản tối,
+ * bản sáng giữ nguyên"*.
+ *
+ * Câu ấy gỡ được đúng nút thắt đã chặn phần trên. Lý do loại chữ xanh nằm
+ * TOÀN BỘ ở bản sáng — `#078055` chỉ 4,97:1 trên giấy trắng nên trên viên
+ * xanh thì rớt ở mọi độ đậm. Bản tối chưa bao giờ có vấn đề ấy: `#00c785`
+ * trên viên đo được **7,37:1**, dư sàn 4,5 của WCAG 1.4.3. Tách hai diện mạo
+ * là cách duy nhất ăn được cả hai, và `m.lit` là chỗ tách.
+ *
+ * Neon ở đây là viền + chữ + tích cùng `readinessGreen` trên nền xanh tối.
+ * KHÔNG có quầng sáng, vì bảng màu bản tối đặt `elevation` toàn `NO_SHADOW`
+ * — một cái bóng đổ dựng riêng cho một cái viên sẽ là ngoại lệ duy nhất của
+ * cả app. Viền sắc nét là thứ "neon" đạt được mà không phá luật ấy.
+ *
+ *   viền  `readinessGreen` đặc — 8,73:1 so với mặt thẻ, trên sàn 3:1 của
+ *         WCAG 1.4.11. Đây mới là thứ trả lại HÌNH cho control (xem dưới).
+ *   chữ   `readinessGreen` — 7,37:1 trên viên, sàn 4,5.
+ *   tích  không đổi, vẫn `readinessGreen` — 7,37:1, sàn 3.
+ *
+ * Bản sáng không đụng vào: viền trong suốt, chữ vẫn `secondaryForeground`.
+ *
+ * ── và ba con số cũ ở đoạn dưới đã SAI, nay sửa ──
+ *
+ * Đoạn "đã ghi vẫn phải nhạt hơn chưa ghi" từng ghi 1,301 (tối) cho viên và
+ * 4,88 cho chữ; `readinessGreen` bản tối đã đổi sang `#00c785` ở đợt chốt bộ
+ * ba sẵn sàng ngày 22/09, SAU khi đoạn ấy được viết. Đo lại ngày 24/09 trên
+ * bảng màu hiện hành: viên/thẻ **1,184**, chữ `secondaryForeground` **5,71**,
+ * tích **7,37**. Số cũ giữ lại chỉ tổ dẫn người đọc sau đi sai.
+ *
+ * Con số 1,184 ấy cũng nói một điều mà bản cũ tưởng đã giải xong: ở mức đó
+ * cái viên gần như KHÔNG tồn tại như một bề mặt, nên lập luận "viên quay lại
+ * để nó còn trông như control" chưa thành. Nền không làm nổi việc ấy; viền
+ * neon thì làm được, và đó là lý do thứ hai để chọn nó.
+ *
  * ── và "đã ghi" vẫn phải NHẠT hơn "chưa ghi" ──
  *
- * Đó là đặt hàng cũ, và nó không bị bản này phá: viên đen của dòng chưa ghi
- * tách khỏi mặt thẻ **17,57:1**, viên xanh này tách **1,175:1** (sáng) và
- * **1,301:1** (tối). Nó là thứ yên nhất trong cột, chỉ là không còn tàng hình.
+ * Đó là đặt hàng cũ, và nó không bị bản này phá: viên đối lập của dòng chưa
+ * ghi tách khỏi mặt thẻ **17,57:1** (sáng) · **16,46:1** (tối), viên xanh này
+ * tách **1,177:1** (sáng) và **1,184:1** (tối). Kể cả cộng viền neon 8,73:1
+ * thì đó vẫn chỉ là một đường 1 điểm quanh mép, không phải cả mảng — khối
+ * này vẫn là thứ yên nhất trong cột, chỉ là không còn tàng hình.
  * Sàn dưới 1,134 là bậc bề mặt nhỏ nhất iOS tự tạo ra — cùng con số
  * `bar-track.mjs` và `plan-week.mjs` dùng, và vì cùng lý do.
  *
@@ -826,6 +864,14 @@ const stylesFor = makeStyles((c, m) => ({
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
     backgroundColor: m.actionSurface,
+    /* Viền có mặt ở MỌI trạng thái, chỉ đổi MÀU — chỉ riêng viên "đã ghi" ở
+       bản tối mới tô nó lên. Bề dày viền nằm trong luồng bố cục, nên thêm nó
+       chỉ cho một trạng thái sẽ làm viên NHÍCH đúng lúc vừa ghi xong. Nền
+       được vẽ xuống dưới cả vùng viền, nên viền trong suốt không đổi gì về
+       hình. `choice-card.tsx` và `mascotChip` bên Cài đặt đã ghi lại cùng lỗi
+       này và giải theo cùng cách. */
+    borderWidth: 1,
+    borderColor: 'transparent',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -841,11 +887,19 @@ const stylesFor = makeStyles((c, m) => ({
   actionTextQuiet: { color: c.mutedForeground },
 
   /* ĐÃ GHI đè lên `actionQuiet`: viên xanh nhạt quay lại, vì một control còn
-     bấm được thì phải còn trông như control. Chữ KHÔNG xanh — lý do và cả bốn
-     con số nằm ở `DONE_PILL_ALPHA`, và đây là chỗ duy nhất `readinessGreen`
-     được phép chạm vào cái viên: nó tô DẤU TÍCH, thứ chịu sàn 3:1 chứ không
-     phải 4,5:1. `secondaryForeground` là 6,59:1 sáng · 4,88:1 tối. */
-  actionDone: { backgroundColor: alpha(c.readinessGreen, DONE_PILL_ALPHA) },
-  actionTextDone: { color: c.secondaryForeground },
+     bấm được thì phải còn trông như control.
+
+     BẢN TỐI đi neon, BẢN SÁNG giữ nguyên — xem `DONE_PILL_ALPHA` để biết vì
+     sao chỗ tách nằm đúng ở đây. Viền `readinessGreen` tách mặt thẻ 8,73:1,
+     và chính cái viền mới là thứ trả lại HÌNH của một control: nền 1,184:1
+     thì gần như không tồn tại như một bề mặt, nên nó không làm nổi việc ấy.
+
+     `theme-shape.mjs` cấm hai diện mạo dựng hai CÂY khác nhau, không cấm khác
+     MÀU — số node ở đây y hệt nhau ở cả hai. */
+  actionDone: {
+    backgroundColor: alpha(c.readinessGreen, DONE_PILL_ALPHA),
+    borderColor: m.lit ? c.readinessGreen : 'transparent',
+  },
+  actionTextDone: { color: m.lit ? c.readinessGreen : c.secondaryForeground },
 
 }));
