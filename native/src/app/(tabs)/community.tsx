@@ -9,12 +9,13 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
+import { ChallengeHero } from '@/components/ascnd/challenge-hero';
 import { SkeletonBlock } from '@/components/ascnd/skeleton';
 import { PostCard } from '@/components/ascnd/post-card';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
-import { type CommunityTab, useCommunityFeed, useMyCommunityProfile } from '@/hooks/use-community';
+import { type CommunityTab, useChallenges, useCommunityFeed, useMyCommunityProfile } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 
@@ -50,6 +51,7 @@ export default function CommunityScreen() {
   const [tab, setTab] = useState<CommunityTab>('discover');
   const me = useMyCommunityProfile();
   const feed = useCommunityFeed(tab);
+  const challenges = useChallenges();
 
   const tabs = [
     { key: 'following' as const, label: i18n.nCmFollowing, icon: Users },
@@ -73,6 +75,12 @@ export default function CommunityScreen() {
         ) : undefined
       }>
       <Segmented variant="capsule" value={tab} onChange={setTab} options={tabs} />
+
+      {/* Thử thách nổi bật (#9) ngay dưới dải segment, như mockup màn 1 — chỉ
+          ở Khám phá: "Đang theo dõi" là bài của những người mình chọn, không
+          phải chỗ cho một lời mời chung. Đọc hỏng thì im lặng; feed có thẻ
+          thử lại của nó. */}
+      {tab === 'discover' && challenges.data ? <ChallengeHero items={challenges.data} /> : null}
 
       {/* Đang tải hay đọc HỎNG thì không nói gì — mời "Tạo hồ sơ" khi truy vấn
           hồ sơ chỉ đơn giản là chưa về là nói sai về một người đã có hồ sơ,

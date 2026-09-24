@@ -1,0 +1,164 @@
+import { Check, Trophy, Users } from 'lucide-react-native';
+import { Text, View } from 'react-native';
+
+import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
+import { PressScale } from '@/components/ascnd/press-scale';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { type CommunityChallenge, useClaimChallenge, useJoinChallenge } from '@/hooks/use-community';
+import { usePalette } from '@/hooks/use-palette';
+import { getLocale } from '@/lib/i18n';
+import { localDateStr, parseLocalDate } from '@/lib/local-date';
+import { nav } from '@/lib/nav';
+import { toast } from '@/lib/toast';
+
+/** Số ngày từ hôm nay tới một ngày `YYYY-MM-DD`, theo lịch địa phương. */
+export function daysUntil(dateStr: string): number {
+  const a = parseLocalDate(localDateStr()).getTime();
+  const b = parseLocalDate(dateStr).getTime();
+  return Math.round((b - a) / 864e5);
+}
+
+/**
+ * Thử thách nổi bật ở đầu Khám phá — mockup màn 1.
+ *
+ * ── một thẻ, và thẻ nào ──
+ *
+ * Thử thách đang theo và CHƯA nhận thưởng đứng trước (thứ người ta quay lại
+ * để xem), rồi tới thử thách đông người nhất. Một thẻ chứ không một dải
+ * cuộn: concept mục 2 dặn "không biến màn hình thành một danh sách quá nhiều
+ * category", và thử thách thứ hai nằm ở màn chi tiết.
+ *
+ * ── không eyebrow ──
+ *
+ * Mockup đặt chữ "Thử thách" nhỏ TRÊN tiêu đề. Skill impeccable cấm đúng hình
+ * dạng đó, không ngoại lệ ("the heading carries its own weight"). Nên nó là
+ * một chip có cúp nằm CẠNH con số người tham gia — vẫn nói "đây là thử thách"
+ * mà tiêu đề đứng một mình.
+ *
+ * ── một hành động, đổi theo trạng thái ──
+ *
+ *   chưa tham gia     Tham gia
+ *   đang theo         thanh tiến độ "24 / 30 ngày", không nút (việc cần làm
+ *                     là TẬP, không phải bấm)
+ *   đã đạt            Nhận 200 xu
+ *   đã nhận           dấu tích, "Đã nhận thưởng"
+ *
+ * Số người tham gia là một phép đếm thật ở server; danh sách thì không lộ ra.
+ */
+export function ChallengeHero({ items }: { items: CommunityChallenge[] }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const join = useJoinChallenge();
+  const claim = useClaimChallenge();
+
+  const open = items.filter((x) => daysUntil(x.ends_on) >= 0);
+  const ch =
+    open.find((x) => x.joined && !x.claimed) ??
+    [...open].sort((a, b) => b.participants - a.participants)[0];
+  if (!ch) return null;
+
+  const done = ch.joined && ch.progress >= ch.target;
+  const left = daysUntil(ch.ends_on);
+  const startsIn = daysUntil(ch.starts_on);
+  const pct = Math.min(100, (ch.progress / ch.target) * 100);
+  const people = ch.participants.toLocaleString(getLocale(lang));
+
+  const openDetail = () => nav.push({ pathname: '/community-challenge', params: { id: ch.id } });
+
+  return (
+    <PressScale accessible={false} onPress={openDetail}>
+      <GlassCard elevation="primary" style={styles.card}>
+        <Text style={styles.title}>{ch.title}</Text>
+        <View style={styles.metaRow}>
+          <View style={styles.badge}>
+            <Icon icon={Trophy} size={13} color={c.readinessYellow} />
+            <Text style={styles.badgeText}>{i18n.nChBadge}</Text>
+          </View>
+          <Icon icon={Users} size={14} color={c.mutedForeground} />
+          <Text style={styles.meta}>{i18n.nChPeople.replace('{n}', people)}</Text>
+        </View>
+
+        {/* "24 / 30 ngày" và "Còn 23 ngày" đứng CÙNG một hàng dưới thanh: cả hai
+            trả lời "còn bao xa". Bản đầu để thời hạn ở hàng trên, và ở bề ngang
+            402 nó gãy dòng thành "· Còn 23 ngày" mở đầu bằng một dấu chấm. */}
+        <View style={styles.progress}>
+          {ch.joined ? <ProgressBar pct={pct} color={done ? c.readinessGreen : c.foreground} height={6} /> : null}
+          <View style={styles.progressRow}>
+            {ch.joined ? (
+              <Text style={styles.days}>
+                {i18n.nChDays.replace('{a}', String(Math.min(ch.progress, ch.target))).replace('{b}', String(ch.target))}
+              </Text>
+            ) : null}
+            <Text style={styles.meta}>
+              {startsIn > 0
+                ? i18n.nChStartsIn.replace('{n}', String(startsIn))
+                : i18n.nChEndsIn.replace('{n}', String(left))}
+            </Text>
+          </View>
+        </View>
+
+        {!ch.joined ? (
+          <PressScale
+            accessibilityRole="button"
+            disabled={join.isPending}
+            onPress={() => join.mutate({ id: ch.id, on: true }, { onError: (e: Error) => toast.fail(e) })}
+            style={styles.solidBtn}>
+            <Text style={styles.solidText}>{i18n.nChJoin}</Text>
+          </PressScale>
+        ) : ch.claimed ? (
+          <View style={styles.doneRow}>
+            <Icon icon={Check} size={16} color={c.readinessGreen} />
+            <Text style={styles.doneText}>{i18n.nChClaimed}</Text>
+          </View>
+        ) : done ? (
+          <PressScale
+            accessibilityRole="button"
+            disabled={claim.isPending}
+            onPress={() =>
+              claim.mutate(ch.id, {
+                onSuccess: (n) => {
+                  toast.success(n > 0 ? `${i18n.nChDone} ${i18n.nChGot.replace('{n}', String(n))}` : i18n.nChDone);
+                  openDetail();
+                },
+                onError: (e: Error) => toast.fail(e),
+              })
+            }
+            style={styles.solidBtn}>
+            <Text style={styles.solidText}>{i18n.nChClaim.replace('{n}', String(ch.reward_coins))}</Text>
+          </PressScale>
+        ) : null}
+      </GlassCard>
+    </PressScale>
+  );
+}
+
+const stylesFor = makeStyles((c, m) => ({
+  card: { gap: spacing.md },
+  title: { ...type.title, color: c.foreground },
+  metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: -spacing.xs },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    height: 24,
+    borderRadius: radius.full,
+    backgroundColor: c.secondary,
+    marginRight: 4,
+  },
+  badgeText: { ...type.caption, color: c.foreground, fontWeight: '600' },
+  meta: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  progress: { gap: 6 },
+  progressRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+  days: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
+  solidBtn: { height: 44, borderRadius: radius.full, backgroundColor: m.actionSurface, alignItems: 'center', justifyContent: 'center' },
+  solidText: { ...type.headline, color: c.primaryForeground },
+  doneRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  doneText: { ...type.footnote, color: c.foreground, fontWeight: '600' },
+}));

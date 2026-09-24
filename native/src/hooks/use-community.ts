@@ -718,3 +718,80 @@ export function useShareProgress() {
     },
   });
 }
+
+/* ── Thử thách cộng đồng (#9) ──────────────────────────────────────────── */
+
+export interface CommunityChallenge {
+  id: string;
+  title: string;
+  description: string;
+  target: number;
+  starts_on: string;
+  ends_on: string;
+  reward_coins: number;
+  participants: number;
+  joined: boolean;
+  progress: number;
+  claimed: boolean;
+}
+
+/**
+ * Độ lệch UTC HIỆN TẠI của máy, theo phút — server đếm "ngày có tập" theo giờ
+ * địa phương của người dùng, vì hồ sơ không lưu múi giờ. Đọc lại mỗi lần gọi
+ * chứ không hằng số: người ta bay qua múi giờ, và giờ mùa hè đổi nó hai lần
+ * mỗi năm. Xem đầu `20260930120000_community_challenges.sql`.
+ */
+const utcOffsetMin = () => -new Date().getTimezoneOffset();
+
+export function useChallenges() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_challenges', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('community_challenges_overview', { p_offset_min: utcOffsetMin() });
+      if (error) throw error;
+      /* Mảng thường, không Set/Map — cache được persist qua JSON. */
+      return (Array.isArray(data) ? data : []) as CommunityChallenge[];
+    },
+  });
+}
+
+export function useJoinChallenge() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, on }: { id: string; on: boolean }) => {
+      if (on) {
+        const { error } = await supabase.from('community_challenge_members').insert({ challenge_id: id, user_id: user!.id });
+        if (error && error.code !== '23505') throw error;
+      } else {
+        await confirmWrite(
+          supabase.from('community_challenge_members').delete().eq('challenge_id', id).eq('user_id', user!.id),
+          'Không rời được thử thách — có thể bạn đã nhận thưởng',
+        );
+      }
+    },
+    onMutate: () => Haptics.selectionAsync(),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['community_challenges', user?.id] }),
+  });
+}
+
+export function useClaimChallenge() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.rpc('claim_community_challenge', { p_challenge: id, p_offset_min: utcOffsetMin() });
+      if (error) throw error;
+      return (data as number) ?? 0;
+    },
+    onMutate: () => Haptics.selectionAsync(),
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      qc.invalidateQueries({ queryKey: ['community_challenges', user?.id] });
+      /* Xu vừa vào sổ: số dư trong phòng linh vật phải đọc lại. */
+      qc.invalidateQueries({ queryKey: ['mascot_wallet'] });
+    },
+  });
+}

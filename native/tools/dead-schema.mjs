@@ -34,7 +34,7 @@
  * worth catching, because it is the one nobody would otherwise notice.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -77,6 +77,7 @@ if (declared.length < 15) {
 
 /* ── who touches them ── */
 const used = new Set();
+const rpcs = new Set();
 const scan = (root, args) => {
   let files;
   try {
@@ -100,6 +101,7 @@ const scan = (root, args) => {
        arguments that name a table is not a thing — RPCs are covered by
        `economy-sql.mjs`. */
     for (const m of src.matchAll(/\.from\(\s*['"](\w+)['"]/g)) used.add(m[1]);
+    for (const m of src.matchAll(/\.rpc\(\s*['"](\w+)['"]/g)) rpcs.add(m[1]);
     /*
       ── một EMBED cũng là một lượt đọc ──
 
@@ -125,6 +127,43 @@ const scan = (root, args) => {
 };
 scan(NATIVE, ['src']);
 scan(REPO, ['supabase/functions']);
+
+/*
+  ── một RPC app GỌI cũng là một lượt đọc ──
+
+  `community_challenges` (24/09) không có `.from()` nào, và KHÔNG được có:
+  số người tham gia là phép đếm trên bảng thành viên mà RLS chỉ cho mỗi người
+  thấy dòng của mình, nên màn hình đọc thử thách qua hàm SECURITY DEFINER
+  `community_challenges_overview`. Bộ quét chỉ biết `.from()` nên gọi bảng
+  ấy là chết — cùng loại buộc tội sai như vụ embed ở trên.
+
+  Vế này KHÔNG tính mọi hàm trong migration: chỉ hàm có tên nằm trong một
+  lời gọi `.rpc('…')` thật của app hoặc edge function, lấy bản định nghĩa
+  SAU CÙNG của nó, và đi tiếp vào các hàm `public.x(` mà nó gọi. Một hàm
+  không ai gọi thì bảng của nó vẫn bị báo là chết — thử ngược: gỡ HAI lời
+  gọi `rpc('community_challenges_overview')` và `rpc('claim_community_challenge')`
+  khỏi use-community.ts là đỏ đúng bảng (gỡ một thôi thì vẫn xanh, và đúng
+  thế: hàm còn lại cũng đọc bảng ấy).
+*/
+{
+  const dir = path.join(REPO, 'supabase', 'migrations');
+  const fns = new Map();
+  for (const f of readdirSync(dir).filter((x) => x.endsWith('.sql')).sort()) {
+    const sql = readFileSync(path.join(dir, f), 'utf8');
+    for (const m of sql.matchAll(/CREATE\s+(?:OR\s+REPLACE\s+)?FUNCTION\s+(?:public\.)?"?(\w+)"?\s*\([\s\S]*?\$(\w*)\$([\s\S]*?)\$\2\$/gi)) {
+      fns.set(m[1], m[3]);
+    }
+  }
+  const seen = new Set();
+  const walk = (name) => {
+    if (seen.has(name) || !fns.has(name)) return;
+    seen.add(name);
+    const body = fns.get(name);
+    for (const m of body.matchAll(/\b(?:FROM|JOIN|INTO|UPDATE)\s+(?:public\.)?"?(\w+)"?/gi)) used.add(m[1]);
+    for (const m of body.matchAll(/\bpublic\.(\w+)\s*\(/g)) walk(m[1]);
+  };
+  for (const r of rpcs) walk(r);
+}
 
 if (used.size < 10) {
   problems.push(`chỉ tìm thấy ${used.size} bảng đang dùng — bộ quét hỏng, đừng tin kết quả`);

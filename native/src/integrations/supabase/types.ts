@@ -254,6 +254,63 @@ export type Database = {
         }
         Relationships: []
       }
+      community_challenges: {
+        Row: {
+          created_at: string
+          description: string
+          ends_on: string
+          id: string
+          kind: string
+          reward_coins: number
+          starts_on: string
+          target: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          ends_on: string
+          id?: string
+          kind?: string
+          reward_coins?: number
+          starts_on: string
+          target: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          ends_on?: string
+          id?: string
+          kind?: string
+          reward_coins?: number
+          starts_on?: string
+          target?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      community_challenge_members: {
+        Row: {
+          challenge_id: string
+          claimed_at: string | null
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          challenge_id: string
+          claimed_at?: string | null
+          joined_at?: string
+          user_id?: string
+        }
+        Update: {
+          challenge_id?: string
+          claimed_at?: string | null
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_comments: {
         Row: {
           author_id: string
@@ -1804,6 +1861,28 @@ export type Database = {
       build_progress_payload: {
         Args: { p_weeks: number; p_weight?: boolean; p_waist?: boolean; p_lift_exercise_id?: string }
         Returns: Json
+      }
+      /* Thử thách (#9): tổng quan đếm người tham gia thật và tính tiến độ ở
+         server; nhận thưởng xác minh hoàn thành rồi mới ghi sổ xu. */
+      community_challenges_overview: {
+        Args: { p_offset_min?: number }
+        Returns: {
+          id: string
+          title: string
+          description: string
+          target: number
+          starts_on: string
+          ends_on: string
+          reward_coins: number
+          participants: number
+          joined: boolean
+          progress: number
+          claimed: boolean
+        }[]
+      }
+      claim_community_challenge: {
+        Args: { p_challenge: string; p_offset_min?: number }
+        Returns: number
       }
       share_progress: {
         Args: {

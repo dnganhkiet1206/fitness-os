@@ -70,7 +70,11 @@ INSERT INTO community_likes (post_id) VALUES (:'post_a');
 INSERT INTO community_comments (post_id, body) VALUES (:'post_a', 'Nice!');
 INSERT INTO community_follows (followee_id) VALUES (:A);
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_posts) = 2, '20 theo dõi rồi mà chưa thấy bài chỉ-người-theo-dõi'; END $$;
-DO $$ BEGIN ASSERT pg_temp.fails($q$UPDATE community_posts SET like_count = 9999$q$) = false AND (SELECT max(like_count) FROM community_posts) < 9999, '21 người xem sửa được bộ đếm'; END $$;
+-- Lệnh ghi và phép kiểm là HAI câu lệnh — xem ghi chú cùng tên ở
+-- community_challenges.test.sql: gộp trong một AND thì phép đếm có thể chạy
+-- trước lệnh ghi và kịch bản xanh mà không đo gì.
+SELECT pg_temp.fails($q$UPDATE community_posts SET like_count = 9999$q$);
+DO $$ BEGIN ASSERT (SELECT max(like_count) FROM community_posts) < 9999, '21 người xem sửa được bộ đếm'; END $$;
 RESET ROLE;
 DO $$ BEGIN ASSERT (SELECT like_count FROM community_posts WHERE caption LIKE 'Finally%') = 1 AND (SELECT comment_count FROM community_posts WHERE caption LIKE 'Finally%') = 1, '22 bộ đếm trigger'; END $$;
 

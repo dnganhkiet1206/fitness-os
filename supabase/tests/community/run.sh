@@ -36,5 +36,6 @@ OFF=0ff1c1a1-0000-0000-0000-00000000a5cd
   ASSERT (SELECT count(*) FROM community_posts WHERE author_id = '$OFF') = 3, 'seed: phải đúng 3 bài sau hai lần chạy';
   ASSERT (SELECT is_official FROM community_profiles WHERE user_id = '$OFF'), 'seed: chưa có dấu xác minh';
   ASSERT NOT EXISTS (SELECT 1 FROM community_posts p, jsonb_array_elements(p.payload->'exercises') e WHERE p.author_id = '$OFF' AND (e->>'library')::boolean IS NOT TRUE), 'seed: có bài tập không thuộc thư viện';
+  ASSERT (SELECT count(*) FROM community_challenges WHERE title = '30 ngày kỷ luật') = 1, 'seed: phải đúng 1 thử thách sau hai lần chạy';
 END \$\$;"
 echo "SEED TÀI KHOẢN CHÍNH THỨC ĐÚNG"

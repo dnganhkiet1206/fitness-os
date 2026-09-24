@@ -12,6 +12,8 @@ CREATE TABLE public.workout_sessions (id uuid PRIMARY KEY DEFAULT gen_random_uui
 -- Bài Progress (#8) đọc cân nặng và vòng eo.
 CREATE TABLE public.weight_logs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, date date NOT NULL, weight_kg numeric NOT NULL);
 CREATE TABLE public.body_measurements (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, date date NOT NULL, waist_cm numeric);
+-- Thử thách (#9) ghi thưởng vào sổ xu; UNIQUE(user_id, ref_key) là thứ chặn nhận hai lần.
+CREATE TABLE public.mascot_transactions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, amount integer NOT NULL, reason text, ref_key text, created_at timestamptz NOT NULL DEFAULT now(), UNIQUE (user_id, ref_key));
 -- (B thêm ở đây những bảng bài Recipe cần đọc, chỉ các cột nó dùng.)
 -- Supabase mặc định cấp quyền bảng cho các vai trò API; RLS mới là thứ chặn.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
