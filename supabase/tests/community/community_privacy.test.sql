@@ -10,6 +10,10 @@ INSERT INTO community_posts (author_id, kind, payload) VALUES (:X, 'workout', '{
 INSERT INTO community_follows (follower_id, followee_id) VALUES (:X, :Y);
 
 CREATE OR REPLACE FUNCTION pg_temp.who(u text) RETURNS void LANGUAGE sql AS $$ SELECT set_config('request.jwt.claim.sub', u, false), set_config('request.jwt.claim.role', 'authenticated', false) $$;
+-- Vai anon, ĐÚNG như Supabase: không sub, role anon. `who()` đặt sub ở cấp
+-- phiên nên nó SỐNG SÓT qua RESET ROLE — thiếu dòng này, mọi `SET ROLE anon`
+-- chạy với danh tính của người dùng cuối cùng (#14, #21).
+CREATE OR REPLACE FUNCTION pg_temp.anon() RETURNS void LANGUAGE sql AS $$ SELECT set_config('request.jwt.claim.sub', '', false), set_config('request.jwt.claim.role', 'anon', false) $$;
 CREATE OR REPLACE FUNCTION pg_temp.errcode(stmt text) RETURNS text LANGUAGE plpgsql AS $$ BEGIN EXECUTE stmt; RETURN 'ok'; EXCEPTION WHEN others THEN RETURN SQLSTATE; END $$;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pg_temp TO authenticated, anon;
 
@@ -66,7 +70,7 @@ DO $$ BEGIN
   ASSERT EXISTS (SELECT 1 FROM community_profiles WHERE user_id = 'a1a1a1a1-0000-0000-0000-00000000000b'), 'V13 xoá bài xoá luôn hồ sơ';
 END $$;
 
-SET ROLE anon;
+SELECT pg_temp.anon(); SET ROLE anon;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_settings) = 0, 'V14 anon đọc được cài đặt'; END $$;
 RESET ROLE;
 

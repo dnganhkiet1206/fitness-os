@@ -19,6 +19,12 @@ run "$BIN/pg_ctl -D $DIR/data -o '-p $PORT -k $DIR' -l $DIR/log start >/dev/null
 trap 'run "$BIN/pg_ctl -D $DIR/data stop -m fast >/dev/null"; rm -rf "$DIR"' EXIT
 sleep 1
 P=(psql -h "$DIR" -p "$PORT" -U postgres -q -v ON_ERROR_STOP=1)
+# Mọi `SET ROLE anon` phải đi ngay sau `pg_temp.anon()` trên cùng dòng (#21):
+# sub do `pg_temp.who()` đặt sống sót qua RESET ROLE, và một kịch bản "anon
+# không làm được X" viết thiếu helper chạy với danh tính của người dùng cuối
+# cùng — sáu kịch bản rỗng nghĩa hoặc đỏ nhờ may ở #14 đều từ chỗ này.
+bad="$(grep -nH 'SET ROLE anon' "$HERE"/*.test.sql | grep -vE '^[^:]+:[0-9]+:[[:space:]]*--' | grep -v 'pg_temp.anon(); SET ROLE anon' || true)"
+if [ -n "$bad" ]; then echo "SET ROLE anon thiếu pg_temp.anon() đứng trước:"; echo "$bad"; exit 1; fi
 "${P[@]}" -f "$HERE/supabase-stub.sql"
 # MỌI migration cộng đồng, theo thứ tự tên tệp — migration Progress/Recipe của
 # giai đoạn 2 tự được áp ở đây mà không ai phải sửa script này.

@@ -14,6 +14,10 @@ INSERT INTO community_posts (id, author_id, kind, payload) VALUES
   ('d0000000-0000-0000-0000-0000000000a2', :L, 'workout', '{}');
 
 CREATE OR REPLACE FUNCTION pg_temp.who(u text) RETURNS void LANGUAGE sql AS $$ SELECT set_config('request.jwt.claim.sub', u, false), set_config('request.jwt.claim.role', 'authenticated', false) $$;
+-- Vai anon, ĐÚNG như Supabase: không sub, role anon. `who()` đặt sub ở cấp
+-- phiên nên nó SỐNG SÓT qua RESET ROLE — thiếu dòng này, mọi `SET ROLE anon`
+-- chạy với danh tính của người dùng cuối cùng (#14, #21).
+CREATE OR REPLACE FUNCTION pg_temp.anon() RETURNS void LANGUAGE sql AS $$ SELECT set_config('request.jwt.claim.sub', '', false), set_config('request.jwt.claim.role', 'anon', false) $$;
 CREATE OR REPLACE FUNCTION pg_temp.errcode(stmt text) RETURNS text LANGUAGE plpgsql AS $$ BEGIN EXECUTE stmt; RETURN 'ok'; EXCEPTION WHEN others THEN RETURN SQLSTATE; END $$;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pg_temp TO authenticated, anon;
 CREATE OR REPLACE FUNCTION pg_temp.n(k text) RETURNS bigint LANGUAGE sql AS $$
@@ -106,7 +110,7 @@ INSERT INTO community_blocks (blocker_id, blocked_id) VALUES ('d1d1d1d1-0000-000
 INSERT INTO community_likes (post_id, user_id) VALUES ('d0000000-0000-0000-0000-0000000000a1', 'd4d4d4d4-0000-0000-0000-000000000014');
 DO $$ BEGIN ASSERT NOT EXISTS (SELECT 1 FROM community_notifications WHERE actor_id = 'd4d4d4d4-0000-0000-0000-000000000014'), 'N18 cặp đã chặn vẫn sinh thông báo'; END $$;
 
-SET ROLE anon;
+SELECT pg_temp.anon(); SET ROLE anon;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_notifications) = 0, 'N19 anon đọc được thông báo'; END $$;
 RESET ROLE;
 -- Hỏi QUYỀN, không hỏi mã lỗi: với anon `auth.uid()` là null nên thân hàm tự

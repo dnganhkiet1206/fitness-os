@@ -16,6 +16,10 @@ INSERT INTO workout_sessions (id, user_id, template_name, volume_load, pr_detect
  ('5e55b000-0000-0000-0000-000000000003', :B, 'Leg Day', 9000, false, '[{"exerciseName":"Squat","weight":80,"reps":5}]');
 
 CREATE FUNCTION pg_temp.who(u text) RETURNS void LANGUAGE sql AS $$ SELECT set_config('request.jwt.claim.sub', u, false), set_config('request.jwt.claim.role', 'authenticated', false) $$;
+-- Vai anon, ĐÚNG như Supabase: không sub, role anon. `who()` đặt sub ở cấp
+-- phiên nên nó SỐNG SÓT qua RESET ROLE — thiếu dòng này, mọi `SET ROLE anon`
+-- chạy với danh tính của người dùng cuối cùng (#14, #21).
+CREATE OR REPLACE FUNCTION pg_temp.anon() RETURNS void LANGUAGE sql AS $$ SELECT set_config('request.jwt.claim.sub', '', false), set_config('request.jwt.claim.role', 'anon', false) $$;
 CREATE FUNCTION pg_temp.fails(stmt text) RETURNS boolean LANGUAGE plpgsql AS $$ BEGIN EXECUTE stmt; RETURN false; EXCEPTION WHEN others THEN RETURN true; END $$;
 CREATE FUNCTION pg_temp.errcode(stmt text) RETURNS text LANGUAGE plpgsql AS $$ BEGIN EXECUTE stmt; RETURN 'ok'; EXCEPTION WHEN others THEN RETURN SQLSTATE; END $$;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pg_temp TO authenticated, anon;
@@ -124,8 +128,7 @@ SELECT pg_temp.who(:A); SET ROLE authenticated;
 SELECT share_workout('5e55a000-0000-0000-0000-000000000001', 'again', 'public') AS post_pub \gset
 RESET ROLE; CREATE TEMP TABLE pub AS SELECT :'post_pub'::uuid AS id;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_posts WHERE id = (SELECT id FROM pub) AND visibility = 'public' AND NOT hidden) = 1, '35b không có bài công khai nào để anon thử đọc — 35 không đo được gì'; END $$;
-SELECT set_config('request.jwt.claim.sub', '', false), set_config('request.jwt.claim.role', 'anon', false);
-SET ROLE anon;
+SELECT pg_temp.anon(); SET ROLE anon;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_posts) = 0, '35 anon đọc được bài'; END $$;
 RESET ROLE;
 
