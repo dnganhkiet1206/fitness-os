@@ -1931,6 +1931,30 @@ export type Database = {
           claimed: boolean
         }[]
       }
+      community_search_profiles: {
+        Args: { p_q: string }
+        Returns: {
+          user_id: string
+          handle: string
+          display_name: string
+          mascot_id: string | null
+          is_official: boolean
+          bio: string
+          i_follow: boolean
+        }[]
+      }
+      community_follow_suggestions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          user_id: string
+          handle: string
+          display_name: string
+          mascot_id: string | null
+          is_official: boolean
+          bio: string
+          recent_posts: number
+        }[]
+      }
       community_mark_notifications_read: {
         Args: Record<PropertyKey, never>
         Returns: number

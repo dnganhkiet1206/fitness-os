@@ -1,4 +1,4 @@
-import { Bell, Compass, UserRound, Users } from 'lucide-react-native';
+import { Bell, Compass, Search, UserRound, Users } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 
@@ -71,6 +71,14 @@ export default function CommunityScreen() {
           /* Chuông trước avatar: thông báo chỉ đến với người đã có hồ sơ (bài
              và lượt theo dõi đều trỏ vào hồ sơ), nên hai nút đi cùng nhau. */
           <View style={styles.headerRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={i18n.nSrTitle}
+              hitSlop={6}
+              onPress={() => nav.push('/community-search')}
+              style={styles.bell}>
+              <Icon icon={Search} size={22} color={c.foreground} />
+            </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={hasNew ? i18n.nNtOpenNew : i18n.nNtTitle}
@@ -146,7 +154,13 @@ export default function CommunityScreen() {
                 icon={Users}
                 title={i18n.nCmEmptyFollowing}
                 hint={i18n.nCmEmptyFollowingHint}
-                action={{ label: i18n.nCmOpenDiscover, onPress: () => setTab('discover') }}
+                /* Có hồ sơ thì việc cần làm là TÌM người (#19); chưa có thì
+                   theo dõi chưa được, nên mở Khám phá như trước. */
+                action={
+                  me.data
+                    ? { label: i18n.nSrFind, onPress: () => nav.push('/community-search') }
+                    : { label: i18n.nCmOpenDiscover, onPress: () => setTab('discover') }
+                }
               />
             ) : (
               <EmptyState icon={UserRound} title={i18n.nCmEmptyDiscover} hint={i18n.nCmEmptyDiscoverHint} />

@@ -94,5 +94,15 @@ try 'thông báo: RLS bỏ lọc chặn'         $N 's/ AND NOT public.community
 try 'thông báo: trigger bỏ lọc chặn'     $N 's/     OR public.community_blocked_between(v_to, v_actor) THEN/     THEN/' community_notifications.test.sql 'N18 '
 try 'thông báo: anon gọi RPC'            $N 's/^REVOKE EXECUTE ON FUNCTION public.community_mark_notifications_read() FROM PUBLIC, anon;/GRANT EXECUTE ON FUNCTION public.community_mark_notifications_read() TO anon;/' community_notifications.test.sql 'N20 '
 
+S=20260930160000_community_search.sql
+try 'tìm: bỏ lọc chặn'                  $S '0,/^    AND NOT public.community_blocked_between(v_uid, p.user_id)$/s//    AND true/' community_search.test.sql 'S2 '
+try 'tìm: không thoát ký tự đại diện'   $S 's/^  v_pat := replace.*$/  v_pat := v_q;/' community_search.test.sql 'S4 '
+try 'tìm: không loại chính mình'        $S '0,/  WHERE p.user_id <> v_uid/s//  WHERE true/' community_search.test.sql 'S2 '
+try 'tìm: nới trần 20 → 21'             $S 's/  LIMIT 20;/  LIMIT 21;/' community_search.test.sql 'S8 '
+try 'gợi ý: đếm cả bài chỉ-theo-dõi'    $S "s/x.author_id = p.user_id AND x.visibility = 'public' AND NOT x.hidden/x.author_id = p.user_id AND NOT x.hidden/" community_search.test.sql 'G1 '
+try 'gợi ý: đếm cả bài bị ẩn'           $S "s/x.author_id = p.user_id AND x.visibility = 'public' AND NOT x.hidden/x.author_id = p.user_id AND x.visibility = 'public'/" community_search.test.sql 'G1 '
+try 'gợi ý: không loại người đã theo dõi' $S 's/      AND NOT EXISTS (SELECT 1 FROM public.community_follows f WHERE f.follower_id = v_uid AND f.followee_id = p.user_id)//' community_search.test.sql 'G1 '
+try 'tìm: anon gọi được'                $S 's/^REVOKE EXECUTE ON FUNCTION public.community_search_profiles(text) FROM PUBLIC, anon;/GRANT EXECUTE ON FUNCTION public.community_search_profiles(text) TO anon;/' community_search.test.sql 'S10 '
+
 echo
 if [ "$fails" -eq 0 ]; then echo "MỌI PHÉP THỬ NGƯỢC ĐỀU ĐỎ ĐÚNG CHỖ"; else echo "$fails PHÉP THỬ NGƯỢC HỎNG"; exit 1; fi

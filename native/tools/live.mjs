@@ -205,7 +205,7 @@ const ROUTES = [
     lỗi #17 (hồ sơ không bao giờ đọc được trong thế giới giả, ô soạn bài không
     bao giờ hiện) không có chỗ nào để lộ ra ở đây.
   */
-  '/community', '/community-inbox', '/community-privacy',
+  '/community', '/community-inbox', '/community-privacy', '/community-search',
 ];
 
 // ── build & serve ─────────────────────────────────────────────────────────
@@ -987,6 +987,32 @@ const SCENARIOS = [
       const after = await readable(page);
       if (before === after) return 'bấm VI mà không chữ nào đổi';
       if (!/Đăng nhập/.test(after)) return `đã đổi sang VI nhưng không thấy tiếng Việt: ${after.slice(0, 80)}`;
+      return null;
+    },
+  },
+  {
+    /*
+      #19: ô tìm người hỏi server theo chuỗi đã chuẩn hoá (bỏ `@`, chữ thường),
+      KHÔNG hỏi khi mới một ký tự (một ký tự khớp gần hết bảng), và trễ 250ms
+      nên gõ liền nhiều phím chỉ ra một lượt hỏi. Đếm chính các request RPC.
+    */
+    name: 'Tìm người: một ký tự không hỏi, hai ký tự hỏi đúng một lần',
+    route: '/community-search', mode: 'full',
+    async run(page) {
+      const asked = [];
+      page.on('request', (q) => {
+        if (q.url().includes('/rpc/community_search_profiles')) asked.push(q.postData() ?? '');
+      });
+      const box = page.getByPlaceholder(/^(Tên hoặc @handle|Name or @handle)$/);
+      if ((await box.count()) === 0) return 'không thấy ô tìm người';
+      await box.fill('@');
+      await box.pressSequentially('L', { delay: 30 });
+      await page.waitForTimeout(700);
+      if (asked.length) return `mới một ký tự mà đã hỏi server: ${asked.join(' | ')}`;
+      await box.pressSequentially('i', { delay: 30 });
+      await page.waitForTimeout(900);
+      if (asked.length !== 1) return `gõ "@Li" phải hỏi đúng MỘT lần, ra ${asked.length}`;
+      if (!/"p_q"\s*:\s*"li"/.test(asked[0])) return `chuỗi gửi đi phải là "li" (bỏ @, chữ thường), ra ${asked[0]}`;
       return null;
     },
   },

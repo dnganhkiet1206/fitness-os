@@ -130,6 +130,7 @@ const SCREEN_PAGES = {
   'src/app/workout-builder.tsx': 'tự bọc KeyboardAvoidingView',
   'src/app/food-editor.tsx': 'tự bọc KeyboardAvoidingView',
   'src/app/coach-memory.tsx': 'không có form nhập, chỉ có ô tìm kiếm ở đầu',
+  'src/app/community-search.tsx': 'một ô tìm người, là thứ ĐẦU TIÊN của trang; danh sách bên dưới cuộn được',
 };
 
 const PAGES = walk(path.join(NATIVE, 'src/app')).filter((f) => {

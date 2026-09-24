@@ -491,6 +491,9 @@ export function useFollow() {
     onSettled: (_d, _e, { userId }) => {
       qc.invalidateQueries({ queryKey: ['community_user', user?.id, userId] });
       qc.invalidateQueries({ queryKey: ['community_feed', user?.id, 'following'] });
+      /* Tìm người & gợi ý (#19) mang cờ "đang theo dõi" của từng dòng. */
+      qc.invalidateQueries({ queryKey: ['community_search'] });
+      qc.invalidateQueries({ queryKey: ['community_suggestions'] });
     },
   });
 }
@@ -1020,5 +1023,51 @@ export function useMarkInboxRead() {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['community_inbox', user?.id] }),
+  });
+}
+
+/* ── tìm người & gợi ý theo dõi (#19) ───────────────────────────────────── */
+
+export interface PersonHit extends CommunityAuthor {
+  i_follow: boolean;
+}
+
+export interface PersonSuggestion extends CommunityAuthor {
+  recent_posts: number;
+}
+
+/** Chuỗi tìm đã chuẩn hoá: bỏ khoảng trắng hai đầu và `@` ở đầu, như server. */
+export const searchTerm = (q: string) => q.trim().replace(/^@+/, '');
+
+/**
+ * Tìm theo tiền tố `@handle` hoặc tiền tố một từ trong tên. Server lọc cặp đã
+ * chặn nhau (hai chiều) và trả tối đa 20 dòng; dưới 2 ký tự thì không hỏi.
+ * Xem `20260930160000_community_search.sql`.
+ */
+export function useSearchPeople(q: string) {
+  const { user } = useAuth();
+  const term = searchTerm(q).toLowerCase();
+  return useQuery({
+    queryKey: ['community_search', user?.id, term],
+    enabled: !!user && term.length >= 2,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('community_search_profiles', { p_q: term });
+      if (error) throw error;
+      return (Array.isArray(data) ? data : []) as PersonHit[];
+    },
+  });
+}
+
+/** Chính thức trước, rồi người có bài công khai trong 14 ngày mà mình chưa theo dõi. */
+export function useFollowSuggestions() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_suggestions', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('community_follow_suggestions');
+      if (error) throw error;
+      return (Array.isArray(data) ? data : []) as PersonSuggestion[];
+    },
   });
 }

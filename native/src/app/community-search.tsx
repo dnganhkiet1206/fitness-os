@@ -1,0 +1,198 @@
+import { BadgeCheck, Search, UserPlus, X } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+
+import { CommunityAvatar } from '@/components/ascnd/community-avatar';
+import { EmptyState } from '@/components/ascnd/empty-state';
+import { GlassCard } from '@/components/ascnd/glass-card';
+import { Icon } from '@/components/ascnd/icon';
+import { LoadFailed } from '@/components/ascnd/load-failed';
+import { PressScale } from '@/components/ascnd/press-scale';
+import { Screen } from '@/components/ascnd/screen';
+import { radius, spacing, type } from '@/constants/ascnd';
+import { makeStyles } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-app-settings';
+import {
+  type CommunityAuthor,
+  searchTerm,
+  useFollow,
+  useFollowSuggestions,
+  useSearchPeople,
+} from '@/hooks/use-community';
+import { usePalette } from '@/hooks/use-palette';
+import { nav } from '@/lib/nav';
+import { toast } from '@/lib/toast';
+
+/**
+ * Tìm người & gợi ý theo dõi — issue #19.
+ *
+ * Trước màn này, cách DUY NHẤT để theo dõi ai là bấm vào tên trên một bài tình
+ * cờ gặp ở Khám phá — và tab "Đang theo dõi" của người mới thì trống.
+ *
+ * ── hai trạng thái của cùng một ô ──
+ *
+ *   ô trống          gợi ý: tài khoản ASCND chính thức, rồi người có bài công
+ *                    khai gần đây mà mình chưa theo dõi — kèm LÝ DO vì sao họ
+ *                    ở đây, để một gợi ý không đọc ra như quảng cáo.
+ *   ≥ 2 ký tự        kết quả tìm (tối đa 20, server lọc cặp đã chặn nhau).
+ *
+ * Gõ tới đâu tìm tới đó, trễ 250ms: đủ để không hỏi server ở mỗi phím, đủ ngắn
+ * để không ai kịp nghĩ là nó không chạy.
+ *
+ * Nút Theo dõi nằm ngay trên dòng — việc người ta tới đây để làm — còn chạm vào
+ * phần còn lại của dòng thì mở hồ sơ để xem trước khi quyết.
+ */
+export default function CommunitySearchScreen() {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const i18n = useI18n();
+  const [q, setQ] = useState('');
+  const [term, setTerm] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setTerm(q), 250);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  const searching = searchTerm(term).length >= 2;
+  const results = useSearchPeople(term);
+  const suggestions = useFollowSuggestions();
+  const follow = useFollow();
+
+  const toggle = (userId: string, on: boolean) =>
+    follow.mutate({ userId, on }, { onError: (e: Error) => toast.fail(e) });
+
+  const list = searching ? results : suggestions;
+  const rows = (list.data ?? []) as (CommunityAuthor & { i_follow?: boolean; recent_posts?: number })[];
+
+  return (
+    <Screen back refreshable title={i18n.nSrTitle}>
+      <View style={styles.field}>
+        <Icon icon={Search} size={18} color={c.mutedForeground} />
+        <TextInput
+          value={q}
+          onChangeText={setQ}
+          placeholder={i18n.nSrPlaceholder}
+          placeholderTextColor={c.mutedForeground}
+          autoFocus
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          maxLength={40}
+          accessibilityLabel={i18n.nSrPlaceholder}
+          style={styles.input}
+        />
+        {q ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={i18n.nSrClear} hitSlop={12} onPress={() => setQ('')}>
+            <Icon icon={X} size={18} color={c.mutedForeground} />
+          </Pressable>
+        ) : null}
+      </View>
+
+      {!searching && searchTerm(q).length === 1 ? <Text style={styles.hint}>{i18n.nSrMin}</Text> : null}
+
+      {!searching ? <Text style={styles.heading}>{i18n.nSrSuggested}</Text> : null}
+
+      {list.isError ? (
+        <LoadFailed i18n={i18n} onRetry={() => list.refetch()} />
+      ) : list.isPending && (searching || !suggestions.data) ? (
+        <ActivityIndicator color={c.mutedForeground} style={styles.loading} />
+      ) : rows.length === 0 ? (
+        <GlassCard>
+          {searching ? (
+            <EmptyState icon={Search} title={i18n.nSrNone.replace('{q}', searchTerm(term))} hint={i18n.nSrNoneHint} />
+          ) : (
+            <EmptyState icon={UserPlus} title={i18n.nSrNoSuggestions} />
+          )}
+        </GlassCard>
+      ) : (
+        <GlassCard style={styles.list}>
+          {rows.map((p, i) => {
+            const following = p.i_follow === true;
+            const why = p.is_official
+              ? i18n.nSrWhyOfficial
+              : p.recent_posts
+                ? i18n.nSrWhyActive.replace('{n}', String(p.recent_posts))
+                : `@${p.handle}`;
+            return (
+              <View key={p.user_id} style={[styles.row, i > 0 && styles.rowRule]}>
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={`${p.display_name}, @${p.handle}`}
+                  onPress={() => nav.push({ pathname: '/community-user', params: { id: p.user_id } })}
+                  style={styles.who}>
+                  <CommunityAvatar mascotId={p.mascot_id} size={44} />
+                  <View style={styles.text}>
+                    <View style={styles.nameRow}>
+                      <Text style={styles.name} numberOfLines={1}>
+                        {p.display_name}
+                      </Text>
+                      {p.is_official ? <Icon icon={BadgeCheck} size={16} color={c.metricBlue} /> : null}
+                    </View>
+                    <Text style={styles.meta} numberOfLines={1}>
+                      {searching ? `@${p.handle}` : why}
+                    </Text>
+                  </View>
+                </PressScale>
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={`${following ? i18n.nCmFollowing : i18n.nCmFollow} ${p.display_name}`}
+                  accessibilityState={{ selected: following }}
+                  disabled={follow.isPending}
+                  hitSlop={4}
+                  onPress={() => toggle(p.user_id, !following)}
+                  style={following ? styles.quietPill : styles.solidPill}>
+                  <Text style={following ? styles.quietText : styles.solidText}>
+                    {following ? i18n.nCmFollowing : i18n.nCmFollow}
+                  </Text>
+                </PressScale>
+              </View>
+            );
+          })}
+        </GlassCard>
+      )}
+    </Screen>
+  );
+}
+
+const stylesFor = makeStyles((c, m) => ({
+  field: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 48,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: c.secondary,
+  },
+  input: { ...type.body, flex: 1, color: c.foreground, paddingVertical: spacing.sm },
+  hint: { ...type.footnote, color: c.mutedForeground, paddingHorizontal: spacing.xs },
+  heading: { ...type.headline, color: c.foreground, marginTop: spacing.xs },
+  loading: { marginVertical: spacing.lg },
+  list: { paddingVertical: spacing.xs },
+  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  rowRule: { borderTopWidth: 1, borderTopColor: c.border },
+  who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  text: { flex: 1, minWidth: 0, gap: 2 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  name: { ...type.body, color: c.foreground, fontWeight: '600', flexShrink: 1 },
+  meta: { ...type.footnote, color: c.mutedForeground },
+  /* 36 + hitSlop 4 = 44: viên nhỏ để tên đứng trước, vùng chạm vẫn đủ. */
+  solidPill: {
+    height: 36,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: m.actionSurface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  solidText: { ...type.footnote, color: c.primaryForeground, fontWeight: '600' },
+  quietPill: {
+    height: 36,
+    paddingHorizontal: spacing.md,
+    borderRadius: radius.full,
+    backgroundColor: c.secondary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quietText: { ...type.footnote, color: c.foreground, fontWeight: '600' },
+}));
