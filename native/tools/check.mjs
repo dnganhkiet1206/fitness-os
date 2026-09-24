@@ -563,6 +563,7 @@ const STEPS = [
   ['bài liên quan', 'node', ['tools/guide-related.mjs']],
   /* Cộng đồng · bài Recipe (#7, người làm: B): CHẠY THẬT hàm đọc payload trên payload hỏng. */
   ['bài Recipe', 'node', ['tools/recipe-post.mjs']],
+  ['dữ liệu thế giới giả', 'node', ['tools/fixture-integrity.mjs']],
   ['hình dạng cache', 'node', ['tools/cache-shape.mjs']],
   ['nội dung hướng dẫn', 'node', ['tools/guide-content.mjs']],
   ['nhịp thở Koa', 'node', ['tools/koa-idle.mjs']],
