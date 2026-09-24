@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/lib/toast';
 import { confirmWrite, NothingWrittenError } from '@/lib/write-result';
 import { useAuth } from './use-auth';
 import type { TemplateExercise } from './use-library';
@@ -293,10 +294,16 @@ function useToggle(table: 'community_likes' | 'community_saves', flag: 'liked' |
         // Đã thích từ trước (hai chạm nhanh, hay thiết bị khác) là trạng thái đúng rồi.
         if (error && error.code !== '23505') throw error;
       } else {
-        await confirmWrite(
-          supabase.from(table).delete().eq('post_id', postId).eq('user_id', user!.id),
-          'Không bỏ được — có thể đã bỏ ở thiết bị khác',
-        );
+        try {
+          await confirmWrite(
+            supabase.from(table).delete().eq('post_id', postId).eq('user_id', user!.id),
+            'Không bỏ được — có thể đã bỏ ở thiết bị khác',
+          );
+        } catch (e) {
+          /* Không còn dòng nào để xoá = đã bỏ ở thiết bị khác: trạng thái
+             người ta muốn ĐÃ đúng, như 23505 ở nhánh trên. Không phải lỗi. */
+          if (!(e instanceof NothingWrittenError)) throw e;
+        }
       }
     },
     onMutate: ({ postId, on }) => {
@@ -305,9 +312,19 @@ function useToggle(table: 'community_likes' | 'community_saves', flag: 'liked' |
         p[flag] === on ? p : { ...p, [flag]: on, [count]: Math.max(0, p[count] + (on ? 1 : -1)) },
       );
     },
-    /* Sai thì đọc lại từ server thay vì đoán ngược lại: bộ đếm là của trigger
-       phía server, và một phép trừ ở client có thể lệch khỏi nó. */
-    onError: () => {
+    /*
+      Hỏng thì NÓI RA (#27, B tìm ra): trước đây dấu đổi ngay rồi vài trăm mili-
+      giây sau đổi ngược khi dữ liệu tải lại, không một chữ nào — người ta
+      tưởng mình bấm hụt và bấm lại. Mọi thao tác ghi khác của cộng đồng đều
+      `toast.fail`; riêng Thích và Lưu thì không.
+
+      Trả DẤU về ngay (người ta vừa nhìn nó đổi), còn con SỐ thì đọc lại từ
+      server thay vì đoán ngược: bộ đếm là của trigger phía server, và một phép
+      trừ ở client có thể lệch khỏi nó.
+    */
+    onError: (e: Error, { postId, on }) => {
+      patchPost(qc, postId, (p) => (p[flag] === on ? { ...p, [flag]: !on } : p));
+      toast.fail(e);
       qc.invalidateQueries({ queryKey: ['community_feed'] });
       qc.invalidateQueries({ queryKey: ['community_post'] });
       qc.invalidateQueries({ queryKey: ['community_user_posts'] });

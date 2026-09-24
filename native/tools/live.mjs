@@ -992,6 +992,42 @@ const SCENARIOS = [
   },
   {
     /*
+      #27 (B tìm ra): Thích/Lưu hỏng từng đổi dấu rồi âm thầm đổi ngược — người
+      ta tưởng bấm hụt. Cho MỌI lệnh ghi vào community_likes trả 500 (đọc vẫn
+      chạy), bấm Thích trên bài đầu tiên, rồi đòi hai điều: một thanh toast có
+      chữ, và nhãn của nút ("Thích · 128") trở về đúng như trước. Nhãn chứ
+      không phải trạng thái chọn: trên web `accessibilityState.selected` không
+      thành thuộc tính nào (xem pick-row), còn con số trong nhãn thì có.
+    */
+    name: 'Cộng đồng: Thích hỏng thì báo lỗi và trả dấu về',
+    route: '/community', mode: 'full',
+    async run(page) {
+      await page.route(/\/rest\/v1\/community_likes/, (r) =>
+        r.request().method() === 'GET'
+          ? r.fallback()
+          : r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' }),
+      );
+      await page.waitForTimeout(2000);
+      const btn = page.getByRole('button', { name: /^(Thích|Like) · \d+$/ }).first();
+      if ((await btn.count()) === 0) return 'không thấy nút Thích nào trên feed';
+      const before = await btn.getAttribute('aria-label');
+      await btn.click();
+      /* Dò liên tục chứ không chờ một mốc: thanh không nút tự tắt sau đúng
+         `AUTO_HIDE_MS` = 3000 — bản đầu chờ 3000 rồi mới nhìn, và đỏ trên
+         chính bản sửa (đầu dò: toast có ở 300ms, mất ở 3000ms). */
+      let toastText = '';
+      for (let i = 0; i < 10 && !toastText; i++) {
+        await page.waitForTimeout(250);
+        toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+      }
+      if (!toastText) return 'Thích hỏng mà không có thanh toast nào — lỗi bị nuốt (#27)';
+      const after = await page.getByRole('button', { name: /^(Thích|Like) · \d+$/ }).first().getAttribute('aria-label');
+      if (after !== before) return `Thích hỏng mà nút không trở về: trước "${before}", sau "${after}"`;
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng
