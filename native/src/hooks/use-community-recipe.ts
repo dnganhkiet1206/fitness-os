@@ -1,8 +1,9 @@
 import * as Haptics from 'expo-haptics';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
 import { AlreadySharedError, ProfileRequiredError } from '@/hooks/use-community';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { supabase } from '@/integrations/supabase/client';
 import { type MealItemRow, payloadFromMeal, type RecipePayload } from '@/lib/recipe-post';
 
@@ -117,7 +118,7 @@ export class EmptyMealError extends Error {}
 export function useShareRecipe() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (a: { entryId: string; title: string; caption: string; visibility: 'public' | 'followers' }) => {
       const { data, error } = await supabase.rpc('share_recipe', {
         p_entry_id: a.entryId,

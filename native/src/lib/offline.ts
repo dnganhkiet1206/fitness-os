@@ -45,3 +45,21 @@ import { onlineManager } from '@tanstack/react-query';
  * large to bolt onto a bug fix. This stops the app lying in the meantime.
  */
 export const offlineNow = () => !onlineManager.isOnline();
+
+/**
+ * Thrown by `useOnlineMutation` for a write that must reach the server NOW and
+ * could not — no connection when tapped, or the request never landed.
+ *
+ * A class rather than a `TypeError: Network request failed` passed through,
+ * because the two need different sentences. `errOffline` promises *"it will go
+ * through when you are back online"* — true for the queued writes in
+ * `offline-write.ts`, and a lie for everything this is thrown for: nothing is
+ * kept to send later. `classifyError` reads the `name`, so `error-copy.ts`
+ * still imports nothing.
+ */
+export class OnlineOnlyError extends Error {
+  constructor() {
+    super('online-only');
+    this.name = 'OnlineOnlyError';
+  }
+}

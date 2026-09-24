@@ -723,6 +723,7 @@ const en = {
      Keys, not sentences, at the throw site: see `lib/error-copy.ts`. Each one
      names what happened and what to do; none names a table or a constraint. */
   errOffline: 'No connection — your change is not saved yet. It will go through when you are back online.',
+  errOnlineOnly: 'No connection — not sent, and not kept to send later.',
   errSignedOut: 'Your session has expired. Sign in again and try once more.',
   errDuplicate: 'This is already saved — no need to add it twice.',
   errInvalid: 'That value could not be saved. Check it and try again.',
@@ -1795,6 +1796,7 @@ const vi: typeof en = {
   nKoaCompanionHint: 'Koa đứng cạnh bạn ở mọi màn và đổi chỗ theo diễn biến trong ngày. Tắt đi thì Koa chỉ ở lại màn Hôm nay.',
   nMascotRoomTitle: 'Phòng bạn đồng hành, cửa hàng & thử thách',
   errOffline: 'Không có kết nối — thay đổi chưa được lưu. App sẽ gửi lại khi bạn online.',
+  errOnlineOnly: 'Không có kết nối — chưa gửi, và không giữ lại để gửi sau.',
   errSignedOut: 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại rồi thử lần nữa.',
   errDuplicate: 'Mục này đã được lưu rồi — không cần thêm lần nữa.',
   errInvalid: 'Giá trị này chưa lưu được. Kiểm tra lại rồi thử lần nữa.',

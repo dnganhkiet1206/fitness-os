@@ -49,6 +49,8 @@
 export type FailureKind =
   /** never reached the server */
   | 'offline'
+  /** never reached the server, and nothing was kept to send later (#45) */
+  | 'online-only'
   /** the session is gone, or the row belongs to somebody else */
   | 'signed-out'
   /** this row already exists — usually a double tap */
@@ -65,6 +67,7 @@ export type FailureKind =
 /** Message keys, so the host shows the right something. */
 export const FAILURE_KEY: Record<FailureKind, string> = {
   offline: 'errOffline',
+  'online-only': 'errOnlineOnly',
   'signed-out': 'errSignedOut',
   duplicate: 'errDuplicate',
   invalid: 'errInvalid',
@@ -116,6 +119,13 @@ export function classifyError(err: unknown): FailureKind | null {
     return 'offline';
   }
   if (code === 'ECONNREFUSED' || code === 'ENOTFOUND' || code === 'ETIMEDOUT') return 'offline';
+
+  /*
+    An app-authored Error, but not one whose own text is for a person: the
+    wording depends on the language at render time. By `name`, like the auth
+    errors below, so this file still imports nothing. See `OnlineOnlyError`.
+  */
+  if (name === 'OnlineOnlyError') return 'online-only';
 
   /*
     Not a system error: no code, no status, no auth-error name — AND an `Error`

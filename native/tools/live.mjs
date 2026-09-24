@@ -1098,6 +1098,51 @@ const SCENARIOS = [
   },
   {
     /*
+      #45: mất mạng, React Query mặc định TẠM DỪNG mutation — không chạy, không
+      onError. Đo trên bản chưa sửa (dựng lại với useOnlineMutation trả thẳng
+      useMutation): bài đã thích, bấm → nhãn "Thích · 128" thành 127 và nằm
+      đó, không toast, và có mạng lại 5 giây vẫn không lệnh ghi nào — dấu nói
+      dối mãi. Đòi: một câu báo, nhãn y như trước, KHÔNG lệnh ghi nào lúc mất
+      mạng, và có mạng lại cũng không tự gửi (thao tác cộng đồng không xếp
+      hàng — phát lại sau vài giờ là sai ngữ cảnh).
+    */
+    name: 'Cộng đồng: mất mạng thì Thích báo ngay, không treo, không gửi sau',
+    route: '/community', mode: 'full',
+    async run(page) {
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/community_likes/.test(q.url()) && q.method() !== 'GET') writes.push(q.method());
+      });
+      await page.waitForTimeout(2000);
+      const btn = () => page.getByRole('button', { name: /^(Thích|Like) · \d+$/ }).first();
+      if ((await btn().count()) === 0) return 'không thấy nút Thích nào trên feed';
+      const before = await btn().getAttribute('aria-label');
+      await page.context().setOffline(true);
+      await page.waitForTimeout(1500);
+      try {
+        await btn().click();
+        let toastText = '';
+        for (let i = 0; i < 10 && !toastText; i++) {
+          await page.waitForTimeout(250);
+          toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+        }
+        if (!toastText) return 'mất mạng, bấm Thích: không một câu nào — mutation bị tạm dừng im lặng (#45)';
+        if (!/giữ lại|kept/i.test(toastText)) return `câu báo phải nói rõ là không giữ lại để gửi sau, ra "${toastText}"`;
+        const after = await btn().getAttribute('aria-label');
+        if (after !== before) return `mất mạng mà dấu vẫn đổi: trước "${before}", sau "${after}"`;
+        if (writes.length) return `mất mạng mà vẫn có ${writes.length} lệnh ghi đi ra`;
+      } finally {
+        await page.context().setOffline(false);
+      }
+      await page.waitForTimeout(5000);
+      if (writes.length) return `có mạng lại thì tự gửi ${writes.length} lệnh ghi — thao tác cộng đồng không được xếp hàng`;
+      const back = await btn().getAttribute('aria-label');
+      if (back !== before) return `có mạng lại, nhãn thành "${back}" (trước "${before}")`;
+      return null;
+    },
+  },
+  {
+    /*
       #27, nửa còn lại: Lưu đi qua cùng `useToggle` với Thích, nhưng issue đòi
       chứng minh cả hai. Nút Lưu có nhãn trơn ("Lưu"), không kèm số, nên vế này
       chỉ đòi thanh toast — đó cũng là thứ duy nhất phân biệt được bản sửa với

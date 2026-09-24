@@ -8,6 +8,7 @@ import { DailyLogRebuildError, recomputeDailyLog } from '@/lib/daily-log-service
 import { todayKeys } from '@/lib/today-keys';
 import { diaryStamp, localDateStr, localDayRangeISO } from '@/lib/local-date';
 import { offlineNow } from '@/lib/offline';
+import { toast } from '@/lib/toast';
 import { foldRecentMeals } from '@/lib/recent-meals';
 export type { RecentMeal, RepeatFood } from '@/lib/recent-meals';
 
@@ -264,6 +265,13 @@ export function useToggleFavoriteFood() {
       // Un-favoriting a seed row is a no-op: it was never favoritable
     },
     onSuccess: () => invalidateFoodQueries(queryClient),
+    /* In the hook, not at the two stars that fire it (Nutrition's list and
+       `food-cards.tsx`): neither had one, so a star tap that failed — the row
+       deleted on another device, a refused insert — did nothing and said
+       nothing, and the next tap looked like the first. Found when
+       `write-heard.mjs` stopped accepting ANY `onError` in the file as proof
+       that this hook had one. */
+    onError: (e: Error) => toast.fail(e),
   });
 }
 

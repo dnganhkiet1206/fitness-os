@@ -81,6 +81,10 @@ try {
       ['mạng RN', Object.assign(new TypeError('Network request failed'), {}), 'offline'],
       ['fetch thất bại', Object.assign(new TypeError('Failed to fetch'), {}), 'offline'],
       ['DNS', { code: 'ENOTFOUND', message: 'getaddrinfo ENOTFOUND db.supabase.co' }, 'offline'],
+      /* #45: một thao tác không được xếp hàng. `errOffline` hứa "sẽ gửi khi
+         online" — sai với nó, nên nó phải có câu riêng. Theo `name`, như
+         lớp mà `lib/offline.ts` ném ra. */
+      ['chỉ-trực-tuyến', Object.assign(new Error('online-only'), { name: 'OnlineOnlyError' }), 'online-only'],
       /* #31: thân phản hồi 5xx không mang mã. supabase-js (không throwOnError)
          trả `error` là OBJECT THƯỜNG parse từ JSON, và app ném lại nguyên nó —
          nên nó không có code, không có status, và từng bị coi là câu của app. */
@@ -357,7 +361,7 @@ try {
       'thật sự tạo ra: không ca nào để lọt nguyên văn câu của cơ sở dữ liệu, và không câu hiện ra nào còn chứa ' +
       'tên bảng, tên ràng buộc, tên cột hay "PGRST". Lỗi do CHÍNH APP viết vẫn giữ nguyên câu của nó (mức đo ' +
       'ngoài khoảng hợp lý, ngày đồng bộ hỏng, "No items") — sửa quá tay cũng là một lỗi, và health-sync-write ' +
-      'không được nhét error.message vào câu tổng hợp để đi vòng qua cổng. Bảy mức lỗi đều có copy ở CẢ hai ngôn ' +
+      'không được nhét error.message vào câu tổng hợp để đi vòng qua cổng. ' + Object.keys(FAILURE_KEY).length + ' mức lỗi đều có copy ở CẢ hai ngôn ' +
       'ngữ và không copy nào nhắc tới bảng hay ràng buộc. Cấu trúc: KHÔNG tệp nào trong src hiện thẳng .message ' +
       'của một lỗi ném ra qua toast hay Alert (chú thích bị bóc trước khi so, nên một ghi chú về toast.fail không ' +
       'thay được một lời gọi). Và trên PostgreSQL 16.13 dựng từ toàn bộ migration: bốn thao tác một người dùng ' +
