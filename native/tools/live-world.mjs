@@ -269,6 +269,14 @@ export const FIXTURES = {
     active_minutes: 41, readiness_score: 74,
     sleep_duration_min: 431, workout_count: 1, volume_load: 8450,
     acwr: 1.08,
+    /* `updated_at` là TOKEN CAS của `recomputeDailyLog` (`.eq('updated_at',
+       seen.updated_at)`). Thiếu nó, app gửi `updated_at=eq.undefined`; trước
+       #17 bộ chạy không lọc nên PATCH vẫn "trúng" dòng, và lỗi fixture bị che.
+       Từ #17 PATCH ấy trúng 0 dòng như PostgREST thật, và MỌI lần lưu buổi tập
+       trong thế giới giả hỏng sau ba lượt thử — tìm ra khi đo lời mời chia sẻ
+       sau buổi tập (#12). Trên database thật cột này NOT NULL và trigger đẩy
+       nó mỗi lần UPDATE. */
+    updated_at: day(0.2),
     /* `water_ml`, `hrv_today`, `rhr_today` đã bỏ: ba khoá ấy không phải cột
        của `daily_logs`. Nước đọc từ `water_logs`, còn HRV với nhịp nghỉ đọc
        từ `biometric_samples` — fixture vẫn có đủ cả hai bảng, nên không màn

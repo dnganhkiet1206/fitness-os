@@ -350,7 +350,10 @@ export function useLogWorkoutSession() {
         records = [];
       }
 
-      const { error } = await supabase.from('workout_sessions').insert({
+      /* `.select('id')` — id của buổi vừa lưu đi ngược lên màn gọi, để lời mời
+         "Chia sẻ buổi này" (#12) mở đúng buổi ấy thay vì bắt người ta chọn lại
+         trong danh sách. */
+      const { data: inserted, error } = await supabase.from('workout_sessions').insert({
         user_id: user.id,
         ...(when ? { date_time: when.toISOString() } : {}),
         template_name: templateName.trim() || 'Workout',
@@ -415,7 +418,7 @@ export function useLogWorkoutSession() {
           lần migration mất dữ liệu thì có.
         */
         pr_detected: records.length > 0,
-      });
+      }).select('id').single();
       if (error) throw error;
 
       /*
@@ -435,7 +438,7 @@ export function useLogWorkoutSession() {
          is worth nothing unless somebody is looking at Koa, and this hook has
          no idea what is on screen — the sheet that called it does, and it is
          the one that puts a figure up. See `app/log-workout.tsx`. */
-      return { records };
+      return { records, id: (inserted?.id as string | undefined) ?? null };
     },
     onSuccess: () => invalidate(),
   });

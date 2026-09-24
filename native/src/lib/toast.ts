@@ -25,7 +25,8 @@ export interface ToastData {
    */
   failureKey?: string;
   /**
-   * Một việc người dùng có thể làm từ chính thanh toast — hiện chỉ có Hoàn tác.
+   * Một việc người dùng có thể làm từ chính thanh toast — Hoàn tác, và từ #12
+   * là "Chia sẻ" sau khi lưu một buổi tập.
    *
    * Tách khỏi `message` chứ không nhét vào chữ, vì nó phải là một NÚT: người
    * dùng VoiceOver cần một phần tử để vuốt tới và kích hoạt, và một câu chữ
@@ -85,6 +86,13 @@ export const toast = {
    * dòng ấy không bao giờ bị xoá, trong khi màn hình đã nói là xong.
    */
   undo: (message: string, label: string, run: () => void) =>
+    showToast('success', message, undefined, { label, run }),
+  /**
+   * Việc đã xong, kèm MỘT bước tiếp theo người ta có thể muốn — "Đã lưu buổi
+   * tập · Chia sẻ". Không phải hộp thoại: người vừa tập xong đang cần đóng
+   * màn, không cần bị hỏi. Bỏ qua thì thanh tự tắt như mọi thanh có nút.
+   */
+  next: (message: string, label: string, run: () => void) =>
     showToast('success', message, undefined, { label, run }),
 };
 

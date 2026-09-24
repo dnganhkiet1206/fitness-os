@@ -992,6 +992,34 @@ const SCENARIOS = [
   },
   {
     /*
+      #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
+      `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
+      trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng
+      `daily_logs` từng thiếu `updated_at` — token CAS của `recomputeDailyLog`
+      — nên sau #17 mọi lần lưu buổi tập trong thế giới giả hỏng sau ba lượt
+      thử mà không màn nào báo ra.
+    */
+    name: 'Ghi buổi tập: lưu xong có lời mời chia sẻ, mở đúng buổi',
+    route: '/log-workout', mode: 'full',
+    async run(page) {
+      await page.getByPlaceholder(/^(Bài tập|Exercise)$/).first().fill('Squat');
+      await page.getByPlaceholder('—', { exact: true }).nth(0).fill('60');
+      await page.getByPlaceholder('—', { exact: true }).nth(1).fill('8');
+      await page.waitForTimeout(600);
+      const save = page.getByText(/^(Lưu buổi tập|Save Workout)$/).first();
+      if ((await save.count()) === 0) return 'không thấy nút lưu buổi tập';
+      await save.click();
+      await page.waitForTimeout(4000);
+      const share = page.getByRole('button', { name: /^(Chia sẻ|Share)$/ });
+      if ((await share.count()) === 0) return 'lưu xong mà thanh toast không có nút Chia sẻ (hoặc lưu hỏng — xem updated_at của daily_logs)';
+      await share.first().click();
+      await page.waitForTimeout(2500);
+      if (!/community-share\?session=\w/.test(page.url())) return `bấm Chia sẻ mà tới ${page.url().replace(/^.*8731/, '')}`;
+      return null;
+    },
+  },
+  {
+    /*
       #17: trước khi `applyQuery` lọc `eq`, `useMyCommunityProfile` nhận CẢ BẢNG
       hồ sơ và `.maybeSingle()` ném PGRST116. Tab Cộng đồng — đúng thiết kế —
       im lặng khi hồ sơ lỗi, nên ô soạn bài (lối vào của cả ba màn chia sẻ)

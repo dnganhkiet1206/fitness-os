@@ -341,6 +341,8 @@ const en = {
   nNtEmpty: 'No notifications yet',
   nNtEmptyHint: "When someone likes, comments on or follows you, you'll see it here.",
   nNtUnread: 'unread',
+  nShShare: 'Share',
+  nShChallenge: '{title}: {a}/{b} days',
   // What the target-calibration card promises, and it has to be true: this
   // runs on the device, not on a model.
   nCalibrateHint:
@@ -1451,6 +1453,8 @@ const vi: typeof en = {
   nNtEmpty: 'Chưa có thông báo nào',
   nNtEmptyHint: 'Khi có người thích, bình luận hay theo dõi bạn, bạn sẽ thấy ở đây.',
   nNtUnread: 'chưa đọc',
+  nShShare: 'Chia sẻ',
+  nShChallenge: '{title}: {a}/{b} ngày',
   nCalibrateHint:
     'Đo tiêu hao thật của bạn từ lượng ăn và biến động cân nặng, rồi đề xuất mục tiêu calo khớp với nó.',
   nRetry: 'Thử lại',
