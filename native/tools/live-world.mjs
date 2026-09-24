@@ -478,7 +478,7 @@ export const FIXTURES = {
     {
       id: 'cp000000-0000-4000-8000-000000000004', author_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'recipe', source_id: 'c3ea0000-0000-4000-8000-000000000001',
       payload: {
-        title: 'High Protein Chicken Bowl', mealType: 'lunch', eatenAt: day(0.6),
+        title: 'High Protein Chicken Bowl', mealType: 'lunch',
         kcal: 642, protein: 52, carbs: 68, fat: 17, ingredientCount: 4,
         ingredients: [
           { name: 'Ức gà', grams: 180, kcal: 280, protein: 45, carbs: 0, fat: 6 },

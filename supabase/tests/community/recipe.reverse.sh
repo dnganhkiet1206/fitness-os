@@ -26,11 +26,13 @@ set -uo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
 BIN="${PG_BIN:-/usr/lib/postgresql/16/bin}"
-M="$ROOT/supabase/migrations/20260929120000_community_recipe.sql"
+# Bản ĐANG CÓ HIỆU LỰC của share_recipe: migration sau cùng định nghĩa lại nó.
+# Phá bản cũ trong khi bản mới ghi đè thì mọi phép phá đều xanh vì đo nhầm tệp.
+M="$ROOT/supabase/migrations/20260930150000_community_recipe_no_eaten_at.sql"
 try() {  # $1 nhãn · $2 biểu thức sed · $3 chuỗi phải xuất hiện trong lỗi
   local DIR PORT="${PG_PORT:-55471}" out; DIR="$(mktemp -d /var/tmp/ascnd-rv-XXXX)"; chown postgres "$DIR"
   su postgres -c "$BIN/initdb -D $DIR/data -A trust -U postgres >/dev/null"
-  su postgres -c "$BIN/pg_ctl -D $DIR/data -o '-p $PORT -k $DIR' -l $DIR/log start >/dev/null"; sleep 1
+  su postgres -c "$BIN/pg_ctl -w -D $DIR/data -o '-p $PORT -k $DIR' -l $DIR/log start >/dev/null"
   local P=(psql -h "$DIR" -p "$PORT" -U postgres -q -v ON_ERROR_STOP=1)
   "${P[@]}" -f "$ROOT/supabase/tests/community/supabase-stub.sql" >/dev/null
   # mọi migration cộng đồng TRỪ bản Recipe thật — bản ấy được áp ở dòng dưới, đã bị phá
@@ -39,7 +41,7 @@ try() {  # $1 nhãn · $2 biểu thức sed · $3 chuỗi phải xuất hiện t
   out="$(cd /var/tmp && "${P[@]}" -f "$HERE/community_recipe.test.sql" 2>&1)"
   su postgres -c "$BIN/pg_ctl -D $DIR/data stop -m fast >/dev/null"; rm -rf "$DIR"
   if grep -q "$3" <<<"$out"; then echo "✓ $1 — đỏ đúng: $3"
-  elif grep -q "22 KỊCH BẢN XANH" <<<"$out"; then echo "✗ $1 — VẪN XANH (test rỗng nghĩa)"
+  elif grep -q "23 KỊCH BẢN XANH" <<<"$out"; then echo "✗ $1 — VẪN XANH (test rỗng nghĩa)"
   else echo "✗ $1 — đỏ SAI chỗ: $(grep -m1 -oE 'R[0-9]+[^"]*' <<<"$out")"; fi
 }
 try 'bỏ chốt "bữa của chính mình"'   's/ AND e.user_id = v_uid//'                                    'R14 chia sẻ được bữa của NGƯỜI KHÁC'
@@ -56,4 +58,5 @@ try 'bỏ chốt tên trống'                's/char_length(v_title) < 1 OR //'
 try 'bỏ chốt tên quá 80 ký tự'         's/ OR char_length(v_title) > 80//'                               'R17 tên món quá 80 ký tự lọt qua'
 try 'bỏ chốt visibility'               "s/IF p_visibility NOT IN ('public', 'followers') THEN/IF false THEN/" 'R18 visibility lạ lọt qua'
 try 'bỏ chốt hồ sơ cộng đồng'          's/IF NOT EXISTS (SELECT 1 FROM public.community_profiles WHERE user_id = v_uid) THEN/IF false THEN/' 'R19 không có hồ sơ vẫn đăng được'
+try 'ghi lại giờ ăn vào payload'     "s/'ingredientCount', v_n,/'eatenAt', now(), 'ingredientCount', v_n,/" 'R11b payload công khai mang giờ ăn'
 try 'chốt tên lệch mép (79 thay 80)'  's/char_length(v_title) > 80/char_length(v_title) > 79/'          'R18b bữa kiểm soát không đăng được'

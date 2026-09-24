@@ -131,6 +131,9 @@ DO $$ DECLARE p jsonb := (SELECT payload FROM community_posts WHERE id = (SELECT
   -- R10 · dòng gõ tay: KHÔNG bịa khối lượng
   ASSERT p->'ingredients'->2->'grams' = 'null'::jsonb, 'R10 dòng gõ tay bị bịa khối lượng';
   ASSERT p->>'mealType' = 'lunch', 'R11 loại bữa';
+  -- R11b · payload công khai KHÔNG mang giờ ăn: ai xem được bài cũng đọc được
+  -- payload, và "ăn lúc 12:47 thứ Ba" là dữ liệu thói quen (A bắt ở #7).
+  ASSERT NOT p ? 'eatenAt', 'R11b payload công khai mang giờ ăn (eatenAt)';
 END $$;
 
 -- R12 · bữa LỆCH: thẻ theo TỔNG CÁC DÒNG (300), không theo tổng của bữa (999)
@@ -163,4 +166,4 @@ SELECT pg_temp.who(:F); SET ROLE authenticated;
 DO $$ BEGIN ASSERT (SELECT (payload->>'kcal')::numeric FROM community_posts WHERE id = (SELECT post_e FROM rids)) = 642, 'R20 người khác không đọc được bài công khai'; END $$;
 RESET ROLE;
 
-\echo 'RECIPE: 22 KỊCH BẢN XANH'
+\echo 'RECIPE: 23 KỊCH BẢN XANH'
