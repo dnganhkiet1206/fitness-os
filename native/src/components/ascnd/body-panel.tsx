@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import {
   Camera,
   ChevronRight,
+  Share2,
   Ruler,
   SlidersHorizontal,
   Target,
@@ -1073,6 +1074,19 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
             `ShortcutRow` chở luôn số ảnh, nên trạng thái được trả lời mà không
             cần chạm — đúng lý do nó là một hàng chứ không phải một icon.
           */}
+          {/*
+            Lối chia sẻ tiến trình lên Cộng đồng (#8): ngay dưới chính những
+            con số nó sẽ chia sẻ. Màn chia sẻ bắt bật/tắt từng số, nên đứng ở
+            đây không có nghĩa là chia sẻ mọi thứ trên trang này.
+          */}
+          <ShortcutRow
+            icon={Share2}
+            label={i18n.nPgEntry}
+            onPress={() => {
+              Haptics.selectionAsync();
+              nav.push('/community-share-progress');
+            }}
+          />
           <ShortcutRow
             icon={Camera}
             label={i18n.progressPhotos}

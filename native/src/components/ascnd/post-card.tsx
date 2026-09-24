@@ -1,5 +1,6 @@
 import type { FeedPost } from '@/hooks/use-community';
 
+import { ProgressPostCard } from '@/components/ascnd/progress-post-card';
 import { WorkoutPostCard } from '@/components/ascnd/workout-post-card';
 
 /**
@@ -18,6 +19,8 @@ export function PostCard({ post, full, preview }: { post: FeedPost; full?: boole
   switch (post.kind) {
     case 'workout':
       return <WorkoutPostCard post={post} full={full} preview={preview} />;
+    case 'progress':
+      return <ProgressPostCard post={post} full={full} preview={preview} />;
     default:
       return null;
   }

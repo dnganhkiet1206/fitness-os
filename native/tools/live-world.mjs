@@ -352,6 +352,19 @@ export const FIXTURES = {
       caption: 'Kéo xà trước khi mỏi, chèo tạ đòn giữ lưng thẳng. Chất lượng mỗi rep hơn số rep.', visibility: 'public',
       like_count: 86, comment_count: 0, save_count: 31, hidden: false, created_at: day(1),
     },
+    /* Bài Progress (#8) — đúng mockup màn 4: 12 tuần, 52.1 → 55.4 kg, vòng eo
+       và một bài sức mạnh, mỗi chuỗi một điểm mỗi tuần. */
+    {
+      id: 'cp000000-0000-4000-8000-000000000003', author_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'progress', source_id: null,
+      payload: {
+        weeks: 12, from: dayStr(84), to: dayStr(0),
+        weight: { start: 52.1, end: 55.4, series: [52.1, 52.4, 52.6, 53.0, 53.1, 53.5, 53.9, 54.2, 54.6, 54.9, 55.1, 55.4] },
+        waist: { start: 82.1, end: 80.0, series: [82.1, 81.9, 81.8, 81.5, 81.3, 81.1, 80.9, 80.7, 80.5, 80.4, 80.2, 80.0] },
+        lift: { exerciseId: 'e11', name: 'Bench Press', start: 40, end: 55, series: [40, 42.5, 42.5, 45, 45, 47.5, 47.5, 50, 50, 52.5, 55, 55] },
+      },
+      caption: '12 tuần tập đều đặn. Vẫn còn nhiều việc phải làm nhưng rất tự hào về sự thay đổi này.', visibility: 'public',
+      like_count: 342, comment_count: 0, save_count: 18, hidden: false, created_at: day(0.5),
+    },
   ],
   community_likes: [
     { post_id: 'cp000000-0000-4000-8000-000000000001', user_id: UID, created_at: day(0.1) },

@@ -9,5 +9,9 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth TO anon, authenticated, service_ro
 -- Hai bảng có sẵn mà share_workout đọc, chỉ các cột nó dùng.
 CREATE TABLE public.exercises (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid, name text);
 CREATE TABLE public.workout_sessions (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, date_time timestamptz DEFAULT now(), sets jsonb DEFAULT '[]', volume_load numeric DEFAULT 0, pr_detected boolean, template_name text);
+-- Bài Progress (#8) đọc cân nặng và vòng eo.
+CREATE TABLE public.weight_logs (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, date date NOT NULL, weight_kg numeric NOT NULL);
+CREATE TABLE public.body_measurements (id uuid PRIMARY KEY DEFAULT gen_random_uuid(), user_id uuid NOT NULL, date date NOT NULL, waist_cm numeric);
+-- (B thêm ở đây những bảng bài Recipe cần đọc, chỉ các cột nó dùng.)
 -- Supabase mặc định cấp quyền bảng cho các vai trò API; RLS mới là thứ chặn.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;

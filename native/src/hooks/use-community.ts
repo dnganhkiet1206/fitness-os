@@ -631,3 +631,90 @@ export function payloadFromSession(
     exercises,
   };
 }
+
+/* ── bài Progress (#8) ─────────────────────────────────────────────────── */
+
+export interface ProgressMetric {
+  start: number;
+  end: number;
+  /** Một điểm mỗi tuần (điểm cuối tuần), cũ trước — cho đường xu hướng. */
+  series: number[];
+}
+
+export interface ProgressPayload {
+  weeks: number;
+  weight: ProgressMetric | null;
+  waist: ProgressMetric | null;
+  lift: (ProgressMetric & { name: string }) | null;
+}
+
+function readMetric(v: unknown): ProgressMetric | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  const series = Array.isArray(o.series) ? o.series.map((x) => num(x)) : [];
+  if (!Number.isFinite(Number(o.start)) || !Number.isFinite(Number(o.end))) return null;
+  return { start: num(o.start), end: num(o.end), series };
+}
+
+/** Đọc phòng thủ, như `readWorkoutPayload`: khoá nào thiếu thì ô ấy không vẽ. */
+export function readProgressPayload(raw: unknown): ProgressPayload {
+  const p = (raw && typeof raw === 'object' ? raw : {}) as Record<string, unknown>;
+  const lift = readMetric(p.lift);
+  const liftName = p.lift && typeof (p.lift as Record<string, unknown>).name === 'string' ? ((p.lift as Record<string, unknown>).name as string) : '';
+  return {
+    weeks: num(p.weeks, 12),
+    weight: readMetric(p.weight),
+    waist: readMetric(p.waist),
+    lift: lift && liftName ? { ...lift, name: liftName } : null,
+  };
+}
+
+type ProgressOpts = { weeks: number; weight: boolean; waist: boolean; liftId: string | null };
+
+/**
+ * Bản xem trước — gọi ĐÚNG hàm server mà `share_progress` sẽ gọi, nên thẻ xem
+ * trước và bài đăng không thể nói hai điều khác nhau. Trả về payload thô (JSON,
+ * persist được), để thẻ đọc bằng `readProgressPayload` như mọi bài trên feed.
+ */
+export function useProgressPreview(o: ProgressOpts) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_progress_preview', user?.id, o.weeks, o.weight, o.waist, o.liftId],
+    enabled: !!user,
+    retry: false,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('build_progress_payload', {
+        p_weeks: o.weeks,
+        p_weight: o.weight,
+        p_waist: o.waist,
+        p_lift_exercise_id: o.liftId ?? undefined,
+      });
+      if (error) throw error;
+      return data as unknown;
+    },
+  });
+}
+
+export function useShareProgress() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (o: ProgressOpts & { caption: string; visibility: 'public' | 'followers' }) => {
+      const { data, error } = await supabase.rpc('share_progress', {
+        p_weeks: o.weeks,
+        p_weight: o.weight,
+        p_waist: o.waist,
+        p_lift_exercise_id: o.liftId ?? undefined,
+        p_caption: o.caption,
+        p_visibility: o.visibility,
+      });
+      if (error?.code === 'P0001') throw new ProfileRequiredError(error.message);
+      if (error) throw error;
+      return data as string;
+    },
+    onMutate: () => Haptics.selectionAsync(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['community_feed'] });
+      qc.invalidateQueries({ queryKey: ['community_user_posts'] });
+    },
+  });
+}

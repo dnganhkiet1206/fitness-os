@@ -1,6 +1,6 @@
 import { Compass, UserRound, Users } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Alert, Pressable, Text, View } from 'react-native';
 
 import { CommunityAvatar } from '@/components/ascnd/community-avatar';
 import { EmptyState } from '@/components/ascnd/empty-state';
@@ -87,7 +87,17 @@ export default function CommunityScreen() {
           </PressScale>
         </GlassCard>
       ) : (
-        <PressScale accessibilityRole="button" onPress={() => nav.push('/community-share')}>
+        /* Chia sẻ GÌ: mỗi loại bài một màn riêng. Hộp thoại hệ thống vì đây là
+           một lựa chọn ngắn giữa vài thứ — B thêm "Công thức" vào đây (#7). */
+        <PressScale
+          accessibilityRole="button"
+          onPress={() =>
+            Alert.alert(i18n.nPgAsk, undefined, [
+              { text: i18n.nPgAskWorkout, onPress: () => nav.push('/community-share') },
+              { text: i18n.nPgAskProgress, onPress: () => nav.push('/community-share-progress') },
+              { text: i18n.cancel, style: 'cancel' },
+            ])
+          }>
           <GlassCard style={styles.composer}>
             <CommunityAvatar mascotId={me.data.mascot_id} size={36} />
             <Text style={styles.composerText}>{i18n.nCmComposer}</Text>

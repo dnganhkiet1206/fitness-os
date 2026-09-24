@@ -1798,6 +1798,24 @@ export type Database = {
         Args: { p_session_id: string; p_caption?: string; p_visibility?: string; p_minutes?: number }
         Returns: string
       }
+      /* Bài Progress (#8). `build_progress_payload` là hàm DUY NHẤT dựng
+         payload — màn chia sẻ gọi nó để xem trước, `share_progress` gọi nó để
+         đăng. */
+      build_progress_payload: {
+        Args: { p_weeks: number; p_weight?: boolean; p_waist?: boolean; p_lift_exercise_id?: string }
+        Returns: Json
+      }
+      share_progress: {
+        Args: {
+          p_weeks: number
+          p_weight?: boolean
+          p_waist?: boolean
+          p_lift_exercise_id?: string
+          p_caption?: string
+          p_visibility?: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

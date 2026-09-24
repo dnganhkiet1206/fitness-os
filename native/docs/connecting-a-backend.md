@@ -327,7 +327,7 @@ tồn tại ở project mới. Với một tài khoản test thì cách gọn nh
 
 ## 2. Tạo schema
 
-`supabase/migrations/` đã có **42 file SQL** dựng sẵn toàn bộ schema (16 file
+`supabase/migrations/` đã có **43 file SQL** dựng sẵn toàn bộ schema (16 file
 `<timestamp>_<uuid>.sql` do Lovable sinh ra, phần còn lại viết tay). Sau khi
 link đúng project ở bước 1b:
 
@@ -388,7 +388,7 @@ Kiểm chạy thật trước khi `db push` (cần Postgres 16 cục bộ, khôn
 nào):
 
 ```bash
-bash supabase/tests/community/run.sh   # 37 kịch bản phân quyền + seed
+bash supabase/tests/community/run.sh   # mọi bộ kịch bản cộng đồng + seed
 ```
 
 Sau khi áp, tạo tài khoản ASCND chính thức để feed Khám phá không trống: tạo

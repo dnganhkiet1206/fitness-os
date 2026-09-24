@@ -23,7 +23,9 @@ P=(psql -h "$DIR" -p "$PORT" -U postgres -q -v ON_ERROR_STOP=1)
 # MỌI migration cộng đồng, theo thứ tự tên tệp — migration Progress/Recipe của
 # giai đoạn 2 tự được áp ở đây mà không ai phải sửa script này.
 for m in "$ROOT"/supabase/migrations/*_community_*.sql; do "${P[@]}" -f "$m"; done
-(cd /var/tmp && "${P[@]}" -f "$HERE/community_foundation.test.sql")
+# MỌI bộ kịch bản, theo thứ tự tên tệp (foundation trước) — bộ của Progress và
+# Recipe tự chạy ở đây mà không ai phải sửa script này.
+for t in "$HERE"/*.test.sql; do (cd /var/tmp && "${P[@]}" -f "$t"); done
 
 # Seed tài khoản chính thức: chạy HAI lần, phải ra đúng 3 bài, dấu xác minh
 # bật, và mọi bài tập trỏ vào thư viện chung.
