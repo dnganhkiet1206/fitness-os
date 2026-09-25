@@ -542,16 +542,19 @@ export type Database = {
       community_settings: {
         Row: {
           default_visibility: string
+          show_badges: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
           default_visibility?: string
+          show_badges?: boolean
           updated_at?: string
           user_id?: string
         }
         Update: {
           default_visibility?: string
+          show_badges?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -1954,6 +1957,17 @@ export type Database = {
           is_official: boolean
           bio: string
           i_follow: boolean
+        }[]
+      }
+      /* Huy hiệu thử thách của một người (#42): chỉ khi người ấy đã bật
+         `show_badges` và hai người không chặn nhau; chỉ thử thách đã NHẬN
+         THƯỞNG. Xem `20261001120000_community_badges.sql`. */
+      community_user_badges: {
+        Args: { p_user: string }
+        Returns: {
+          challenge_id: string
+          title: string
+          claimed_on: string
         }[]
       }
       community_follow_suggestions: {

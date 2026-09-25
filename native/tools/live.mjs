@@ -1945,6 +1945,57 @@ const SCENARIOS = [
   },
   {
     /*
+      #42: huy hiệu thử thách trên hồ sơ, TẮT sẵn. Fixture: Linh đã bật và đã
+      nhận thưởng "Tháng Tám bền bỉ"; UID đã nhận "Tháng 7: 12 buổi" (thử thách
+      của #41) nhưng CHƯA bật. Đòi:
+        1. hồ sơ Linh có huy hiệu với đúng tên ấy;
+        2. hồ sơ của chính UID KHÔNG có (chưa bật — tắt là tắt cả trên hồ sơ
+           của chính mình);
+        3. bật "Hiện" trong Quyền riêng tư → đúng một lệnh ghi thành công, và
+           hồ sơ của UID đọc lại thì CÓ huy hiệu (thế giới giả nhớ lệnh ghi, #52).
+    */
+    name: 'Huy hiệu: tắt sẵn, bật trong Quyền riêng tư thì hồ sơ đọc lại có huy hiệu',
+    route: '/community-user?id=c0000000-0000-4000-8000-0000000011a1', mode: 'full',
+    async run(page) {
+      const origin = new URL(page.url()).origin;
+      const hasBadge = async (title) =>
+        (await page.locator('[aria-label]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label'))))
+          .some((l) => l === `Huy hiệu: ${title}` || l === `Badge: ${title}`);
+      await page.waitForTimeout(1500);
+      if (!(await hasBadge('Tháng Tám bền bỉ'))) return 'hồ sơ Linh (đã bật, đã nhận thưởng) không có huy hiệu "Tháng Tám bền bỉ"';
+
+      await page.goto(`${origin}/community-user?id=${UID}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.waitForTimeout(6000);
+      if (await hasBadge('Tháng 7: 12 buổi')) return 'hồ sơ của UID có huy hiệu trong khi UID CHƯA bật — mặc định phải là tắt';
+
+      const writes = [];
+      page.on('response', (res) => {
+        if (/\/rest\/v1\/community_settings/.test(res.url()) && isWrite(res.request().method())) writes.push(res.status());
+      });
+      /* Đi đúng đường người dùng đi — bấm, không `goto`: `goto` là tải lại cả
+         trang, cache React Query được khôi phục từ bộ nhớ, và danh sách huy
+         hiệu rỗng vừa đọc 6 giây trước vẫn "tươi" — vế đỏ trong khi app đúng. */
+      const toPrivacy = page.getByRole('button', { name: /^(Quyền riêng tư|Privacy)$/ }).first();
+      if ((await toPrivacy.count()) === 0) return 'hồ sơ của UID không có nút "Quyền riêng tư"';
+      await toPrivacy.click();
+      await page.waitForTimeout(3000);
+      /* Lựa chọn của Segmented là `tab` (PickRow.Item), không phải `button`. */
+      const show = page.getByRole('tab', { name: /^(Hiện|Shown)$/ }).first();
+      if ((await show.count()) === 0) return 'không thấy lựa chọn "Hiện" của huy hiệu trong Quyền riêng tư';
+      await show.click();
+      for (let i = 0; i < 20 && writes.length === 0; i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(500);
+      if (writes.length !== 1 || writes[0] >= 300) return `bật huy hiệu: lệnh ghi community_settings ${JSON.stringify(writes)}, phải là đúng một 2xx`;
+      const back = page.getByRole('button', { name: /^(Quay lại|Go back)$/ }).first();
+      if ((await back.count()) === 0) return 'Quyền riêng tư không có nút "Quay lại"';
+      await back.click();
+      for (let i = 0; i < 24 && !(await hasBadge('Tháng 7: 12 buổi')); i++) await page.waitForTimeout(250);
+      if (!(await hasBadge('Tháng 7: 12 buổi'))) return 'đã bật "Hiện" mà quay lại hồ sơ của UID vẫn không có huy hiệu';
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng

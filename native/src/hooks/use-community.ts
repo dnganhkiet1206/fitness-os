@@ -901,11 +901,15 @@ export function useCommunitySettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('community_settings')
-        .select('default_visibility')
+        .select('default_visibility, show_badges')
         .eq('user_id', user!.id)
         .maybeSingle();
       if (error) throw error;
-      return { defaultVisibility: (data?.default_visibility === 'followers' ? 'followers' : 'public') as Visibility };
+      return {
+        defaultVisibility: (data?.default_visibility === 'followers' ? 'followers' : 'public') as Visibility,
+        /* Chưa có dòng cài đặt = TẮT, đúng như DEFAULT của cột (#42). */
+        showBadges: data?.show_badges === true,
+      };
     },
   });
 }
@@ -922,6 +926,53 @@ export function useSetDefaultVisibility() {
     },
     onMutate: () => Haptics.selectionAsync(),
     onSettled: () => qc.invalidateQueries({ queryKey: ['community_settings', user?.id] }),
+  });
+}
+
+/**
+ * Bật/tắt hàng huy hiệu thử thách trên hồ sơ của MÌNH (#42). Tắt sẵn: huy
+ * hiệu nói người ta đã tập trong những khoảng nào, và bảng thành viên thử
+ * thách cố ý không cho ai khác đọc — bật là quyết định của người ấy.
+ */
+export function useSetShowBadges() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useOnlineMutation({
+    mutationFn: async (on: boolean) => {
+      const { error } = await supabase
+        .from('community_settings')
+        .upsert({ user_id: user!.id, show_badges: on, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+      if (error) throw error;
+    },
+    onMutate: () => Haptics.selectionAsync(),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['community_settings', user?.id] });
+      qc.invalidateQueries({ queryKey: ['community_badges', user?.id] });
+    },
+  });
+}
+
+export interface CommunityBadge {
+  challenge_id: string;
+  title: string;
+  claimed_on: string;
+}
+
+/**
+ * Huy hiệu thử thách của một người (#42) — thử thách đã NHẬN THƯỞNG, tức hoàn
+ * thành đã được server xác minh. Server trả rỗng khi người ấy chưa bật hay hai
+ * người chặn nhau, nên màn không cần biết vì sao: rỗng thì không vẽ hàng nào.
+ */
+export function useUserBadges(userId: string | undefined) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_badges', user?.id, userId],
+    enabled: !!user && !!userId,
+    queryFn: async (): Promise<CommunityBadge[]> => {
+      const { data, error } = await supabase.rpc('community_user_badges', { p_user: userId! });
+      if (error) throw error;
+      return (Array.isArray(data) ? data : []) as CommunityBadge[];
+    },
   });
 }
 

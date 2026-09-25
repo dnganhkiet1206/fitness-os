@@ -7,7 +7,7 @@ theo tên tệp (đúng MỘT chỗ bị đột biến) → mọi *.test.sql the
 
   python3 supabase/tests/community/b_reverse.py [bộ...]
       bộ: foundation progress challenges challenge_history privacy recipe
-          notifications search
+          notifications search badges
   python3 supabase/tests/community/b_reverse.py --coverage
       không chạy Postgres: liệt kê nhãn ASSERT chưa có ca nào nhắm tới (#79),
       và dòng \echo nào nói sai số kịch bản của tệp nó.

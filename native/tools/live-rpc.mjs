@@ -188,6 +188,22 @@ export const RPC_FIXTURES = {
     },
   },
 
+  /* 20261001120000_community_badges.sql (#42) */
+  community_user_badges: {
+    sample: { p_user: 'c0000000-0000-4000-8000-0000000011a1' },
+    run({ p_user } = {}, world) {
+      if (!p_user) return [];
+      const on = rows(world, 'community_settings').find((s) => s.user_id === p_user)?.show_badges === true;
+      if (!on || blockedBetween(world, UID, p_user)) return [];
+      const byId = new Map(rows(world, 'community_challenges').map((c) => [c.id, c]));
+      return rows(world, 'community_challenge_members')
+        .filter((m) => m.user_id === p_user && m.claimed_at && byId.has(m.challenge_id))
+        .sort((a, b) => (a.claimed_at < b.claimed_at ? 1 : -1))
+        .slice(0, 50)
+        .map((m) => ({ challenge_id: m.challenge_id, title: byId.get(m.challenge_id).title, claimed_on: m.claimed_at.slice(0, 10) }));
+    },
+  },
+
   /* 20260928120000_community_progress.sql */
   build_progress_payload: {
     sample: { p_weeks: 12, p_weight: true, p_waist: true },

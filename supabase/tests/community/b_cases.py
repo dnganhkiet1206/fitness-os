@@ -380,3 +380,58 @@ CASES += [
   dict(suite='foundation', id='13', mig='20260927120000_community_foundation', how='(A) chia sẻ: chỉ ghép bài tập của chính mình (bài thư viện mất cờ)', old='  LEFT JOIN public.exercises x ON x.id::text = per.eid;', new='  LEFT JOIN public.exercises x ON x.id::text = per.eid AND x.user_id = v_uid;', expect='13 '),
   dict(suite='foundation', id='17', mig='20260927120000_community_foundation', how='(A) chia sẻ: đòi buổi tập có tên', old='  IF EXISTS (SELECT 1 FROM public.community_posts WHERE author_id = v_uid AND source_id = p_session_id) THEN', new="  IF nullif(btrim(s.template_name), '') IS NULL THEN\n    RAISE EXCEPTION 'untitled session' USING ERRCODE = '22023';\n  END IF;\n  IF EXISTS (SELECT 1 FROM public.community_posts WHERE author_id = v_uid AND source_id = p_session_id) THEN", expect='17 '),
 ]
+
+# ── huy hiệu thử thách (#42) ──
+# Chuyển từ `badges.reverse.sh` (bản nháp, chưa từng vào repo) sang đây ngay khi
+# #25 có bộ chạy chung — không thêm một bộ chạy bash thứ tư trong lúc #74/#75
+# đang gộp ba bộ về một. Bộ đích `community_badges.test.sql` đứng ĐẦU theo tên,
+# nên "vạ lây" ở đây nghĩa là dữ liệu của nó làm hỏng một bộ chạy sau.
+B = 'badges'
+BM = 'community_badges'
+CASES += [
+  dict(suite=B, id='B-on', mig=BM, how='bỏ chốt "đã bật"',
+       old='  IF NOT coalesce((SELECT s.show_badges FROM public.community_settings s WHERE s.user_id = p_user), false) THEN',
+       new='  IF false THEN', expect='B3 chưa có cài đặt mà huy hiệu đã lộ'),
+  dict(suite=B, id='B-nul', mig=BM, how='chưa có dòng cài đặt thì coi như BẬT',
+       old='WHERE s.user_id = p_user), false) THEN', new='WHERE s.user_id = p_user), true) THEN',
+       expect='B3 chưa có cài đặt mà huy hiệu đã lộ'),
+  dict(suite=B, id='B-def', mig=BM, how='cột mặc định BẬT',
+       old='show_badges boolean NOT NULL DEFAULT false', new='show_badges boolean NOT NULL DEFAULT true',
+       expect='B4 dòng cài đặt mới phải có show_badges = false'),
+  dict(suite=B, id='B-blk', mig=BM, how='bỏ chốt chặn',
+       old='  IF public.community_blocked_between(v_uid, p_user) THEN', new='  IF false THEN',
+       expect='B9 người bị X chặn vẫn thấy huy hiệu của X'),
+  dict(suite=B, id='B-1way', mig=BM, how='chặn chỉ MỘT chiều (X chặn người xem)',
+       old='  IF public.community_blocked_between(v_uid, p_user) THEN',
+       new='  IF EXISTS (SELECT 1 FROM public.community_blocks b WHERE b.blocker_id = p_user AND b.blocked_id = v_uid) THEN',
+       expect='B10 người đã chặn X vẫn thấy huy hiệu của X'),
+  dict(suite=B, id='B-clm', mig=BM, how='tính cả thử thách chưa nhận thưởng',
+       old=' AND m.claimed_at IS NOT NULL', new='',
+       expect='B8 thử thách tham gia mà CHƯA nhận thưởng lại thành huy hiệu'),
+  dict(suite=B, id='B-who', mig=BM, how='trả huy hiệu của NGƯỜI GỌI thay vì của X',
+       old='WHERE m.user_id = p_user AND', new='WHERE m.user_id = v_uid AND',
+       expect='B11 đối chứng: không còn chặn mà Z không thấy đủ hai huy hiệu của X'),
+  dict(suite=B, id='B-anon', mig=BM, how='cho anon gọi',
+       old='FROM PUBLIC, anon;', new='FROM PUBLIC;', expect='B1 anon gọi được huy hiệu'),
+  dict(suite=B, id='B-auth', mig=BM, how='rút quyền của người đã đăng nhập',
+       old='FROM PUBLIC, anon;', new='FROM PUBLIC, anon, authenticated;',
+       extra=[('GRANT EXECUTE ON FUNCTION public.community_user_badges(uuid) TO authenticated;', '')],
+       expect='B2 người đã đăng nhập không gọi được'),
+  dict(suite=B, id='B-ord', mig=BM, how='đảo thứ tự (cũ trước)',
+       old='ORDER BY m.claimed_at DESC', new='ORDER BY m.claimed_at ASC',
+       expect='B12 V phải thấy đúng hai huy hiệu của X'),
+  # Phủ đủ nhãn (--coverage, #79): B5 phân biệt "có dòng" với "đã bật"; B6, B7 đo
+  # policy của `community_settings` (bảng của A) từ phía cột show_badges — cùng
+  # lớp V2/V4 canh, nhắm tệp ĐỊNH NGHĨA bằng tên đầy đủ như #75.
+  dict(suite=B, id='B-row', mig=BM, how='có dòng cài đặt thì coi như đã bật',
+       old='IF NOT coalesce((SELECT s.show_badges FROM public.community_settings s WHERE s.user_id = p_user), false) THEN',
+       new='IF NOT coalesce((SELECT true FROM public.community_settings s WHERE s.user_id = p_user), false) THEN',
+       expect='B5 X đã có cài đặt, show_badges = false, mà huy hiệu vẫn lộ'),
+  dict(suite=B, id='B-read', mig='20260930130000_community_privacy', how='ai cũng đọc được dòng cài đặt',
+       old='ON public.community_settings FOR SELECT TO authenticated USING (auth.uid() = user_id);',
+       new='ON public.community_settings FOR SELECT TO authenticated USING (true);',
+       expect='B6 người khác đọc được dòng cài đặt của X'),
+  dict(suite=B, id='B-upd', mig='20260930130000_community_privacy', how='ai cũng sửa được dòng cài đặt',
+       old='  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);', new='  USING (true) WITH CHECK (true);',
+       expect='B7 người khác bật được huy hiệu của X'),
+]

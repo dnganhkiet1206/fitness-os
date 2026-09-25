@@ -1164,6 +1164,11 @@ const en = {
 
   /* ── Cộng đồng · Thư viện Đã lưu (#10, người làm: B) ── */
   nSvTitle: 'Saved',
+  nBdTitle: 'Challenge badges',
+  nBdHint: 'Show the challenges you have completed on your community profile. Off means nobody sees them — not even on your own profile.',
+  nBdHide: 'Hidden',
+  nBdShow: 'Shown',
+  nBdA11y: 'Badge: {title}',
   nSvSaved: 'Saved to your library',
   nSvOpen: 'View library',
   nSvWorkouts: 'Workouts',
@@ -2223,6 +2228,11 @@ const vi: typeof en = {
 
   /* ── Cộng đồng · Thư viện Đã lưu (#10, người làm: B) ── */
   nSvTitle: 'Đã lưu',
+  nBdTitle: 'Huy hiệu thử thách',
+  nBdHint: 'Hiện các thử thách bạn đã hoàn thành trên hồ sơ cộng đồng. Tắt thì không ai thấy — kể cả trên hồ sơ của chính bạn.',
+  nBdHide: 'Ẩn',
+  nBdShow: 'Hiện',
+  nBdA11y: 'Huy hiệu: {title}',
   nSvSaved: 'Đã lưu vào thư viện',
   nSvOpen: 'Xem thư viện',
   nSvWorkouts: 'Buổi tập',

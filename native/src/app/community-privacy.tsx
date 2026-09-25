@@ -15,6 +15,7 @@ import {
   useCommunitySettings,
   useDeleteAllMyPosts,
   useSetDefaultVisibility,
+  useSetShowBadges,
   useUnblock,
 } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
@@ -46,6 +47,7 @@ export default function CommunityPrivacyScreen() {
   const { lang } = useAppSettings();
   const settings = useCommunitySettings();
   const setVis = useSetDefaultVisibility();
+  const setBadges = useSetShowBadges();
   const blocked = useBlockedUsers();
   const unblock = useUnblock();
   const wipe = useDeleteAllMyPosts();
@@ -54,6 +56,9 @@ export default function CommunityPrivacyScreen() {
   /* Hiện ngay giá trị vừa bấm trong lúc ghi, thay vì để viên trượt nhảy về
      rồi mới sang khi server trả lời. */
   const vis = setVis.isPending && setVis.variables ? setVis.variables : (settings.data?.defaultVisibility ?? 'public');
+
+  /* Như `vis` ở trên: đang gửi thì hiện lựa chọn vừa bấm, xong mới là server. */
+  const badgesOn = setBadges.isPending && setBadges.variables !== undefined ? setBadges.variables : (settings.data?.showBadges ?? false);
 
   const askUnblock = (b: BlockedUser) => {
     const name = b.profile ? b.profile.display_name : i18n.nPvNoProfile;
@@ -106,6 +111,27 @@ export default function CommunityPrivacyScreen() {
           </>
         )}
       </View>
+
+      {/* Huy hiệu thử thách (#42). Tắt sẵn — cột `show_badges` DEFAULT false: huy
+          hiệu nói người ta đã tập trong những khoảng nào, và bật là quyết định
+          của người ấy. Cùng khuôn với lựa chọn ở trên: một Segmented, một câu. */}
+      {settings.isError ? null : (
+        <View style={styles.section}>
+          <Text style={styles.heading}>{i18n.nBdTitle}</Text>
+          <Segmented
+            value={badgesOn ? 'on' : 'off'}
+            onChange={(v) => {
+              const on = v === 'on';
+              if (on !== badgesOn) setBadges.mutate(on, { onError: (e: Error) => toast.fail(e) });
+            }}
+            options={[
+              { key: 'off', label: i18n.nBdHide },
+              { key: 'on', label: i18n.nBdShow },
+            ]}
+          />
+          <Text style={styles.sub}>{i18n.nBdHint}</Text>
+        </View>
+      )}
 
       <View style={styles.section}>
         <Text style={styles.heading}>{i18n.nPvBlocked}</Text>

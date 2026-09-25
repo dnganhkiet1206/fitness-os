@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { BadgeCheck, Bookmark, MoreHorizontal, UserRound } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, MoreHorizontal, Trophy, UserRound } from 'lucide-react-native';
 import { ActivityIndicator, Alert, Pressable, Text, View } from 'react-native';
 
 import { CommunityAvatar } from '@/components/ascnd/community-avatar';
@@ -24,6 +24,7 @@ import {
   useCommunityUserPosts,
   useFollow,
   useReport,
+  useUserBadges,
 } from '@/hooks/use-community';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
@@ -58,6 +59,7 @@ export default function CommunityUserScreen() {
   /* Lọc theo loại (#44). Về 'all' khi loại đang chọn không còn bài — xoá bài
      cuối cùng của một loại không được để người ta đứng trước một bộ lọc rỗng. */
   const kinds = useCommunityUserKinds(id);
+  const badges = useUserBadges(id);
   const [kindPick, setKind] = useState<PostKindFilter>('all');
   const kind = kindPick !== 'all' && !(kinds.data ?? []).includes(kindPick) ? 'all' : kindPick;
   const posts = useCommunityUserPosts(id, kind);
@@ -141,6 +143,22 @@ export default function CommunityUserScreen() {
               <Count n={u!.followers} label={i18n.nCmFollowers} />
               <Count n={u!.following} label={i18n.nCmFollowing} />
             </View>
+            {/* Huy hiệu thử thách (#42): chỉ có khi người ấy đã BẬT trong Quyền
+                riêng tư — server trả rỗng khi chưa bật hay khi hai người chặn
+                nhau, nên rỗng thì không vẽ gì, không một dòng "chưa có". Viên
+                xuống dòng tự do: ở 320 không viên nào bị mép cắt. */}
+            {(badges.data ?? []).length > 0 ? (
+              <View style={styles.badges}>
+                {badges.data!.map((b) => (
+                  <View key={b.challenge_id} accessible accessibilityLabel={i18n.nBdA11y.replace('{title}', b.title)} style={styles.badge}>
+                    <Icon icon={Trophy} size={13} color={c.readinessYellow} />
+                    <Text style={styles.badgeText} numberOfLines={1}>
+                      {b.title}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </View>
 
           {u!.isMe ? (
@@ -247,4 +265,10 @@ const stylesFor = makeStyles((c, m) => ({
   kind: { height: 36, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   kindText: { ...type.footnote, color: c.mutedForeground, fontWeight: '600' },
   kindTextOn: { color: c.foreground },
+  badges: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.xs, paddingHorizontal: spacing.md },
+  badge: {
+    flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '100%',
+    height: 28, paddingHorizontal: 10, borderRadius: radius.full, backgroundColor: c.secondary,
+  },
+  badgeText: { ...type.footnote, color: c.foreground, fontWeight: '600', flexShrink: 1 },
 }));

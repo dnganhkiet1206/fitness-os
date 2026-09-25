@@ -408,7 +408,12 @@ export const FIXTURES = {
     { blocker_id: UID, blocked_id: 'c0000000-0000-4000-8000-0000000022b2', created_at: day(3) },
     { blocker_id: UID, blocked_id: 'c0000000-0000-4000-8000-0000000033c3', created_at: day(12) },
   ],
-  community_settings: [{ user_id: UID, default_visibility: 'followers', updated_at: day(2) }],
+  /* #42: UID CHƯA bật huy hiệu (mặc định), Linh đã bật — hồ sơ Linh có hàng
+     huy hiệu, hồ sơ UID thì không cho tới khi UID bật trong Quyền riêng tư. */
+  community_settings: [
+    { user_id: UID, default_visibility: 'followers', show_badges: false, updated_at: day(2) },
+    { user_id: 'c0000000-0000-4000-8000-0000000011a1', default_visibility: 'public', show_badges: true, updated_at: day(10) },
+  ],
   /*
     Hộp thông báo (#13): hai lượt thích CÙNG một bài (phải gộp thành "Linh và
     1 người khác"), một bình luận, một lượt theo dõi đã đọc. `post_id` trỏ vào
@@ -534,10 +539,20 @@ export const FIXTURES = {
       description: 'Hai mươi ngày có tập trong tháng tới.',
       kind: 'workout_days', target: 20, starts_on: dayStr(-7), ends_on: dayStr(-37), reward_coins: 200, created_at: day(3),
     },
+    /* #42: đã kết thúc 30 ngày trước (ngoài cửa sổ 7 ngày của tổng quan) —
+       Linh đã NHẬN thưởng, nên nó là một huy hiệu của Linh. UID KHÔNG tham
+       gia: huy hiệu của UID là thử thách #41 bên dưới, thứ đã có dòng sổ xu —
+       một dòng "đã nhận" mới của UID sẽ hiện trong lịch sử với 0 xu. */
+    {
+      id: 'ch000000-0000-4000-8000-000000000003', title: 'Tháng Tám bền bỉ',
+      description: 'Mười lăm ngày có tập trong tháng Tám.',
+      kind: 'workout_days', target: 15, starts_on: dayStr(61), ends_on: dayStr(30), reward_coins: 150, created_at: day(65),
+    },
   ],
   community_challenge_members: [
     { challenge_id: 'ch000000-0000-4000-8000-000000000001', user_id: UID, joined_at: day(20), claimed_at: null },
     { challenge_id: 'ch000000-0000-4000-8000-000000000001', user_id: 'c0000000-0000-4000-8000-0000000011a1', joined_at: day(19), claimed_at: null },
+    { challenge_id: 'ch000000-0000-4000-8000-000000000003', user_id: 'c0000000-0000-4000-8000-0000000011a1', joined_at: day(60), claimed_at: day(29) },
     /* #41: một thử thách UID đã HOÀN THÀNH và nhận thưởng, hết hạn 46 ngày
        trước — ngoài cửa sổ 7 ngày của tổng quan, nên nó chỉ sống trong
        `community_challenge_history`. */
