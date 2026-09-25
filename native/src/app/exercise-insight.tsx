@@ -197,6 +197,7 @@ function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weig
     <PressScale
       accessibilityRole="button"
       accessibilityState={{ expanded: open }}
+      aria-expanded={open} // web không dịch accessibilityState ra aria-expanded (#103)
       accessibilityLabel={`${i.exerciseName} — ${i18n[`nXiTrend${i.trend}` as keyof NativeStrings] as string}`}
       onPress={() => {
         Haptics.selectionAsync();

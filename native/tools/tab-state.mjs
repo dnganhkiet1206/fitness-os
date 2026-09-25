@@ -66,6 +66,17 @@ export function problemsOf(files) {
       if (!iosState.test(props)) out.push(`${rel}:${line}: role="${role}" mà không có accessibilityState.${role === 'radio' ? 'selected/checked' : 'checked'} — iOS không biết ô đã tick chưa`);
       if (!/\baria-checked=\{/.test(props)) out.push(`${rel}:${line}: role="${role}" mà không có aria-checked — trên web ô đã tick và chưa tick đọc y hệt nhau`);
     }
+    /* #103: `expanded` cũng không ra ARIA (đo: nút gập bài ở Kế hoạch ngày có
+       aria-expanded rỗng). `disabled` thì RA — react-native-web dịch nó qua
+       prop `disabled` — nên không xét ở đây. */
+    for (const m of src.matchAll(/accessibilityState=\{\{[^}]*\bexpanded\b/g)) {
+      n++;
+      const before = src.slice(0, m.index);
+      const open = Math.max(...[...before.matchAll(/<[A-Z][\w.]*\s/g)].map((x) => x.index), -1);
+      const next = src.slice(m.index).search(/<[A-Za-z/{]/);
+      const props = src.slice(open, next < 0 ? src.length : m.index + next);
+      if (!/\baria-expanded=\{/.test(props)) out.push(`${rel}:${before.split('\n').length}: accessibilityState.expanded mà không có aria-expanded — trên web khối gập và khối mở đọc y hệt nhau (#103)`);
+    }
   }
   return { out, n };
 }
@@ -77,7 +88,7 @@ export function problemsOf(files) {
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:])\/\/.*$/gm, '$1');
 const files = walk(path.join(NATIVE, 'src')).map((p) => [path.relative(NATIVE, p), strip(readFileSync(p, 'utf8'))]);
 const { out: problems, n } = problemsOf(files);
-if (n < 12) problems.push(`chỉ tìm thấy ${n} ô chọn — bộ quét hỏng, đừng tin kết quả`);
+if (n < 20) problems.push(`chỉ tìm thấy ${n} ô chọn — bộ quét hỏng, đừng tin kết quả`);
 
 /* ── thử ngược ── */
 {
@@ -93,6 +104,7 @@ if (n < 12) problems.push(`chỉ tìm thấy ${n} ô chọn — bộ quét hỏn
   probe('bỏ accessibilityState ở PickRow', 'src/components/ascnd/pick-row.tsx', 'accessibilityState={{ selected: on, disabled }}', '');
   probe('bỏ aria-checked ở ô tick set (#101)', 'src/components/ascnd/day-plan.tsx', 'aria-checked={isDone}', '');
   probe('bỏ accessibilityState ở công tắc khởi động (#101)', 'src/app/log-workout.tsx', 'accessibilityState={{ checked: s.warmup }}', '');
+  probe('bỏ aria-expanded ở nút gập bài (#103)', 'src/components/ascnd/day-plan.tsx', 'aria-expanded={expanded}', '');
 }
 
 if (problems.length) {
@@ -101,7 +113,7 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `trạng thái ô chọn OK — ${n} phần tử role tab/checkbox/switch/radio trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101) ` +
+  `trạng thái ô chọn OK — ${n} phần tử role tab/checkbox/switch/radio trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101), khối gập mang aria-expanded (#103) ` +
     '(web, nơi react-native-web không dịch accessibilityState — bảy ô ngày của Kế hoạch ngày từng rỗng cả bảy, kể cả ô đang ' +
-    'mở; sáu ô tick set cũng rỗng aria-checked). Thử ngược: bỏ aria-selected ở hàng ngày, bỏ accessibilityState ở PickRow, bỏ aria-checked ở ô tick set, bỏ accessibilityState ở công tắc khởi động — mỗi cái đỏ',
+    'mở; sáu ô tick set cũng rỗng aria-checked). Thử ngược: bỏ aria-selected ở hàng ngày, bỏ accessibilityState ở PickRow, bỏ aria-checked ở ô tick set, bỏ accessibilityState ở công tắc khởi động, bỏ aria-expanded ở nút gập bài — mỗi cái đỏ',
 );

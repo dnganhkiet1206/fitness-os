@@ -1497,6 +1497,7 @@ export function DayPlan({
                   <PressScale
                     accessibilityRole="button"
                     accessibilityState={{ expanded }}
+                    aria-expanded={expanded} // web không dịch accessibilityState ra aria-expanded (#103)
                     accessibilityLabel={`${block.name || i18n.nRdExtraName}  ${blockSummary(block)}`}
                     hitSlop={{ top: 10, bottom: 10, right: 8 }}
                     onPress={() => toggleBlock(block)}

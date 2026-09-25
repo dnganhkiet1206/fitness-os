@@ -2177,6 +2177,26 @@ const SCENARIOS = [
   },
   {
     /*
+      #103: nút gập một bài ĐÃ XONG ở Kế hoạch ngày nói nó đang gập hay mở.
+      react-native-web không dịch `accessibilityState.expanded`, nên trước #103
+      `aria-expanded` rỗng ở mọi lần. Fixture: hôm nay đã có buổi ghi, nên các
+      bài hiện dạng "đã xong" và có nút gập.
+    */
+    name: 'Kế hoạch ngày: nút gập bài nói đang gập hay mở (aria-expanded)',
+    route: '/workouts/plan', mode: 'full',
+    async run(page) {
+      const fold = page.locator('#root [role="button"][aria-label^="Bench Press "][aria-expanded]').first();
+      if ((await fold.count()) === 0) return 'không thấy nút gập "Bench Press" nào mang aria-expanded (#103)';
+      const before = await fold.getAttribute('aria-expanded');
+      await fold.click();
+      await page.waitForTimeout(800);
+      const after = await fold.getAttribute('aria-expanded');
+      if (!['true', 'false'].includes(before) || after === before) return `nút gập "Bench Press": aria-expanded phải đổi khi bấm, ra ${before} → ${after}`;
+      return null;
+    },
+  },
+  {
+    /*
       #83: react-native-web cài `Alert.alert` là hàm RỖNG, nên trước #83 sửa
       nhịp tim ở đây (một số Apple Health đã đo) thì nút Lưu im lặng: 0 hộp,
       0 toast, 0 lệnh ghi (đo ở #71). Nay trên web nó là `confirm()`. Đòi: một

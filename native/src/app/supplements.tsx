@@ -94,6 +94,7 @@ export default function SupplementsScreen() {
           accessibilityRole="button"
           accessibilityLabel={adding ? i18n.a11yClose : i18n.a11yAdd}
           accessibilityState={{ expanded: adding }}
+          aria-expanded={adding} // web không dịch accessibilityState ra aria-expanded (#103)
           hitSlop={8}
           style={[styles.headerAdd, adding && styles.headerAddOn]}
           onPress={() => {

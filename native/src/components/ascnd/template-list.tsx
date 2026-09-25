@@ -301,6 +301,7 @@ export function TemplateRow({
         <PressScale
           accessibilityRole="button"
           accessibilityState={{ expanded: open, disabled: exs.length === 0 }}
+          aria-expanded={open} // web không dịch accessibilityState ra aria-expanded (#103)
           onPress={toggle}
           style={styles.tplPress}>
           <View style={styles.tplInfo}>

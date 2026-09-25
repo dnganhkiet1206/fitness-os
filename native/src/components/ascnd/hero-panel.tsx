@@ -125,6 +125,7 @@ export function HeroPanel({
           inGesture
         accessibilityRole="button"
         accessibilityState={{ expanded: detailOpen }}
+        aria-expanded={detailOpen} // web không dịch accessibilityState ra aria-expanded (#103)
         /*
            Nhãn nói VIỆC, không nói lại tên.
 

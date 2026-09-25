@@ -155,6 +155,7 @@ export function WeightLogList({
       <PressScale
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
+        aria-expanded={open} // web không dịch accessibilityState ra aria-expanded (#103)
         onPress={() => {
           Haptics.selectionAsync();
           // Outside the updater on purpose: a state setter called from inside

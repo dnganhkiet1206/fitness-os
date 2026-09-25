@@ -735,6 +735,7 @@ export function ReadinessGauge({
           inGesture
         accessibilityRole="button"
         accessibilityState={{ expanded: detailOpen }}
+        aria-expanded={detailOpen} // web không dịch accessibilityState ra aria-expanded (#103)
         accessibilityLabel={vi ? 'Chi tiết điểm sẵn sàng' : 'Readiness details'}
         hitSlop={14}
         onPress={() => {

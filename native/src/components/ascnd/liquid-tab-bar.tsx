@@ -209,6 +209,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
       accessibilityRole="button"
       accessibilityLabel={aiOpen ? i18n.a11yCloseCoach : i18n.a11yAskCoach}
       accessibilityState={{ expanded: aiOpen }}
+      aria-expanded={aiOpen} // web không dịch accessibilityState ra aria-expanded (#103)
       onPress={onPress}
       style={[styles.aiBtn, aiOpen && styles.aiBtnOpen]}>
       <Animated.View style={[styles.aiIcon, sparklesStyle]}>

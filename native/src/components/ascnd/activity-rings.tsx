@@ -284,6 +284,7 @@ export function ActivityRingsCard({
           inGesture
         accessibilityRole="button"
         accessibilityState={{ expanded: detailOpen }}
+        aria-expanded={detailOpen} // web không dịch accessibilityState ra aria-expanded (#103)
         accessibilityLabel={i18n.dcActivity}
         hitSlop={14}
         onPress={() => {

@@ -170,6 +170,7 @@ export function MuscleGrid({
       <PressScale
         accessibilityRole="button"
         accessibilityState={{ expanded: open }}
+        aria-expanded={open} // web không dịch accessibilityState ra aria-expanded (#103)
         style={styles.libToggle}
         onPress={() => {
           Haptics.selectionAsync();
