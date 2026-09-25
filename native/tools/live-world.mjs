@@ -517,6 +517,13 @@ export const FIXTURES = {
       description: 'Tập ít nhất một buổi mỗi ngày. Ngày nào có buổi tập đã ghi thì được tính.',
       kind: 'workout_days', target: 30, starts_on: dayStr(20), ends_on: dayStr(-9), reward_coins: 300, created_at: day(25),
     },
+    /* #60: hết hạn 3 ngày trước, UID ĐÃ ĐẠT mà CHƯA nhận — thứ lời nhắc trong
+       hộp thư tồn tại để cứu. Tiến độ đếm từ `workout_sessions` có sẵn. */
+    {
+      id: 'c4a11e00-0000-4000-8000-000000000004', title: 'Tuần bứt tốc: 3 buổi',
+      description: 'Ba ngày có tập trong mười ngày.',
+      kind: 'workout_days', target: 3, starts_on: dayStr(12), ends_on: dayStr(3), reward_coins: 100, created_at: day(14),
+    },
     {
       id: 'c4a11e00-0000-4000-8000-000000000003', title: 'Tháng 7: 12 buổi',
       description: 'Mười hai ngày có tập trong một tháng.',
@@ -535,6 +542,8 @@ export const FIXTURES = {
        trước — ngoài cửa sổ 7 ngày của tổng quan, nên nó chỉ sống trong
        `community_challenge_history`. */
     { challenge_id: 'c4a11e00-0000-4000-8000-000000000003', user_id: UID, joined_at: day(74), claimed_at: day(47) },
+    /* #60: đã đạt, chưa nhận, thử thách đã kết thúc 3 ngày trước. */
+    { challenge_id: 'c4a11e00-0000-4000-8000-000000000004', user_id: UID, joined_at: day(12), claimed_at: null },
   ],
   /* Sổ xu: đúng MỘT dòng, là phần thưởng của thử thách đã nhận ở trên (#41) —
      lịch sử hiện số ĐÃ VÀO SỔ, nên thế giới giả phải có sổ để nó đọc. Ví xu

@@ -15,6 +15,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { type ChallengeHistoryItem, type CommunityChallenge, useChallengeHistory, useChallenges } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
 import { getLocale } from '@/lib/i18n';
+import { claimLine, pendingClaims } from '@/lib/challenge-reminders';
 import { dayGap, localDateStr } from '@/lib/local-date';
 import { nav } from '@/lib/nav';
 
@@ -63,6 +64,9 @@ export default function CommunityChallengesScreen() {
     .filter((x) => !x.joined && dayGap(today, x.starts_on) > 0)
     .sort((a, b) => (a.starts_on < b.starts_on ? -1 : 1));
   const done = history.data ?? [];
+  /* Đã đạt, đã hết hạn, chưa nhận: dòng nói luôn hạn chót, cùng câu với lời
+     nhắc trong hộp thư (#60). */
+  const due = new Map(pendingClaims(all, today).map((x) => [x.id, x]));
 
   const failed = list.isError || history.isError;
   const loading = list.isPending || history.isPending;
@@ -103,9 +107,11 @@ export default function CommunityChallengesScreen() {
                     first={i === 0}
                     title={x.title}
                     meta={
-                      ok
-                        ? i18n.nClReady
-                        : `${days} · ${ended ? i18n.nChEnded : i18n.nChEndsIn.replace('{n}', String(dayGap(today, x.ends_on)))}`
+                      due.has(x.id)
+                        ? claimLine(due.get(x.id)!, i18n)
+                        : ok
+                          ? i18n.nClReady
+                          : `${days} · ${ended ? i18n.nChEnded : i18n.nChEndsIn.replace('{n}', String(dayGap(today, x.ends_on)))}`
                     }
                     lead={ok ? 'reached' : undefined}
                     pct={ok ? undefined : Math.min(100, (x.progress / x.target) * 100)}

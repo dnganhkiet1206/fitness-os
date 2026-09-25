@@ -71,6 +71,10 @@ try 'thử thách: bỏ chốt nhận hai lần'    $C 's/IF v_claimed IS NOT NU
 try 'thử thách: hàm đo cho client gọi'   $C 's/FROM PUBLIC, anon, authenticated;/FROM PUBLIC, anon;/'                   community_challenges.test.sql 'C9 '
 try 'thử thách: anon đọc tổng quan'      $C 's/^REVOKE EXECUTE ON FUNCTION public.community_challenges_overview(integer) FROM PUBLIC, anon;/GRANT EXECUTE ON FUNCTION public.community_challenges_overview(integer) TO anon;/' community_challenges.test.sql 'C19 '
 try 'thử thách: anon nhận thưởng'        $C 's/^REVOKE EXECUTE ON FUNCTION public.claim_community_challenge(uuid, integer) FROM PUBLIC, anon;/GRANT EXECUTE ON FUNCTION public.claim_community_challenge(uuid, integer) TO anon;/' community_challenges.test.sql 'C20 '
+# Lời nhắc nhận thưởng (#60) dựa vào cửa sổ 7 ngày của tổng quan và việc nhận SAU hạn.
+try 'nhắc: cửa sổ tổng quan 7 → 2'       $C 's/c.ends_on >= current_date - 7/c.ends_on >= current_date - 2/' community_challenges.test.sql 'R1 '
+try 'nhắc: cửa sổ tổng quan 7 → 9'       $C 's/c.ends_on >= current_date - 7/c.ends_on >= current_date - 9/' community_challenges.test.sql 'R2 '
+try 'nhắc: nhận thưởng cấm sau hạn'      $C "s/^  IF c.reward_coins > 0 THEN$/  IF c.ends_on < current_date THEN RAISE EXCEPTION 'ended' USING ERRCODE = '22023'; END IF;\n&/" community_challenges.test.sql 'R3 '
 
 V=20260930130000_community_privacy.sql
 try 'riêng tư: SELECT mở'                $V 's/FOR SELECT TO authenticated USING (auth.uid() = user_id)/FOR SELECT TO authenticated USING (true)/' community_privacy.test.sql 'V2 '

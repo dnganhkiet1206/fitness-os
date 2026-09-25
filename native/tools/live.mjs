@@ -1256,6 +1256,31 @@ const SCENARIOS = [
   },
   {
     /*
+      #60: thử thách đã đạt mà chưa nhận, đã kết thúc — thẻ ở Khám phá không
+      hiện nó (chỉ hiện thử thách còn mở), và 7 ngày sau hạn nó biến khỏi mọi
+      màn cùng phần thưởng. Fixture: "Tuần bứt tốc: 3 buổi" hết hạn 3 ngày
+      trước, UID 5/3, chưa nhận, thưởng 100. Đòi: hộp thư có dòng nhắc với tên
+      thử thách và số ngày còn lại (7 − 3 = 4), và bấm vào thì màn chi tiết
+      có nút nhận đúng 100 xu — lời nhắc dẫn tới đúng việc nó nhắc.
+    */
+    name: 'Hộp thư: nhắc nhận thưởng thử thách đã đạt, dẫn tới nút Nhận',
+    route: '/community-inbox', mode: 'full',
+    async run(page) {
+      await page.waitForTimeout(1500);
+      const row = page.getByRole('button', { name: /Tuần bứt tốc: 3 buổi/ });
+      if ((await row.count()) !== 1) return 'hộp thư không có đúng một dòng nhắc "Tuần bứt tốc: 3 buổi"';
+      const label = await row.getAttribute('aria-label');
+      if (!/100/.test(label)) return `dòng nhắc phải nói phần thưởng (100), ra "${label}"`;
+      if (!/còn 4 ngày|4 days left/.test(label)) return `dòng nhắc phải nói còn 4 ngày (hết hạn 3 ngày, cửa sổ 7), ra "${label}"`;
+      await row.click();
+      await page.waitForTimeout(2500);
+      const claim = page.getByRole('button', { name: /^(Nhận 100 xu|Claim 100 coins)$/ });
+      if ((await claim.count()) !== 1) return 'bấm lời nhắc mà màn chi tiết không có nút nhận 100 xu';
+      return null;
+    },
+  },
+  {
+    /*
       #45: mất mạng, React Query mặc định TẠM DỪNG mutation — không chạy, không
       onError. Đo trên bản chưa sửa (dựng lại với useOnlineMutation trả thẳng
       useMutation): bài đã thích, bấm → nhãn "Thích · 128" thành 127 và nằm

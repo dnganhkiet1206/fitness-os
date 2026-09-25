@@ -562,6 +562,9 @@ const STEPS = [
     (kind có trình phát lại, và mọi chỗ gọi có đường xếp hàng cùng kind).
   */
   ['mất mạng có đường', 'node', ['tools/offline-path.mjs']],
+  /* Lời nhắc nhận thưởng (#60) tính "còn mấy ngày" bằng một con số mà SQL của
+     tổng quan quyết định. Hai con số, hai ngôn ngữ: luật đòi chúng là một. */
+  ['cửa sổ nhận thưởng', 'node', ['tools/claim-window.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],

@@ -77,6 +77,44 @@ DO $$ BEGIN
   ASSERT community_challenge_progress('cc000000-0000-0000-0000-00000000000c', 'c3c3c3c3-0000-0000-0000-000000000009', 420) = 1, 'C18 theo UTC+7 phải là 1 ngày';
 END $$;
 
+-- ── lời nhắc nhận thưởng (#60) dựa vào HAI điều ở đây ──
+-- Hộp thư nhắc "đã đạt, còn N ngày để nhận" cho thử thách ĐÃ HẾT HẠN mà chưa
+-- nhận, tính từ tổng quan. Lời nhắc chỉ đúng khi (1) tổng quan còn giữ thử
+-- thách ấy đúng 7 ngày sau hạn và bỏ nó ở ngày thứ 8, và (2) hết hạn rồi vẫn
+-- NHẬN được — nếu một ngày hàm nhận thưởng thêm điều kiện ngày, lời nhắc hứa
+-- một việc không làm được. F và thử thách riêng (0d, 0e).
+INSERT INTO auth.users VALUES ('f6f6f6f6-0000-0000-0000-00000000000f');
+INSERT INTO community_challenges (id, title, target, starts_on, ends_on, reward_coins) VALUES
+  ('cc000000-0000-0000-0000-00000000000d', 'Hết hạn 3 ngày', 1, current_date - 10, current_date - 3, 40),
+  ('cc000000-0000-0000-0000-00000000000e', 'Hết hạn 8 ngày', 1, current_date - 15, current_date - 8, 40);
+INSERT INTO community_challenge_members (challenge_id, user_id) VALUES
+  ('cc000000-0000-0000-0000-00000000000d', 'f6f6f6f6-0000-0000-0000-00000000000f'),
+  ('cc000000-0000-0000-0000-00000000000e', 'f6f6f6f6-0000-0000-0000-00000000000f');
+INSERT INTO workout_sessions (user_id, date_time, sets) VALUES
+  ('f6f6f6f6-0000-0000-0000-00000000000f', date_trunc('day', now()) - interval '5 days' + interval '10 hours', '[]'),
+  ('f6f6f6f6-0000-0000-0000-00000000000f', date_trunc('day', now()) - interval '10 days' + interval '10 hours', '[]');
+SELECT pg_temp.who('f6f6f6f6-0000-0000-0000-00000000000f'); SET ROLE authenticated;
+DO $$ DECLARE r record; BEGIN
+  SELECT * INTO r FROM community_challenges_overview(0) WHERE id = 'cc000000-0000-0000-0000-00000000000d';
+  ASSERT r.id IS NOT NULL AND r.joined AND NOT r.claimed AND r.progress >= r.target,
+    'R1 tổng quan phải còn giữ thử thách hết hạn 3 ngày, đã đạt, chưa nhận — lời nhắc đọc từ đây';
+END $$;
+DO $$ BEGIN
+  ASSERT NOT EXISTS (SELECT 1 FROM community_challenges_overview(0) WHERE id = 'cc000000-0000-0000-0000-00000000000e'),
+    'R2 hết hạn 8 ngày vẫn trong tổng quan — cửa sổ 7 ngày của lời nhắc (CLAIM_WINDOW_DAYS) sai';
+END $$;
+-- Qua errcode(): một hàm nhận thưởng NÉM lỗi thì khối DO dừng trước khi ASSERT
+-- kịp nói nhãn — kịch bản vẫn đỏ, nhưng không nói được mình là kịch bản nào
+-- (phép thử ngược bắt được, 25/09).
+DO $$ BEGIN
+  ASSERT pg_temp.errcode($q$SELECT claim_community_challenge('cc000000-0000-0000-0000-00000000000d', 0)$q$) = 'ok',
+    'R3 hết hạn rồi thì không nhận được — lời nhắc hứa một việc không làm được';
+END $$;
+RESET ROLE;
+DO $$ BEGIN
+  ASSERT (SELECT amount FROM mascot_transactions WHERE ref_key = 'cc:cc000000-0000-0000-0000-00000000000d') = 40, 'R3 nhận sau hạn phải vào sổ đúng 40 xu';
+END $$;
+
 -- Hỏi QUYỀN, không hỏi mã lỗi (phép thử ngược #13 của A và #14 của B bắt được
 -- cùng một chỗ). Trong bộ này lý do cụ thể là: `request.jwt.claim.sub` còn là Y
 -- từ trên (RESET ROLE không xoá nó), và Y ĐÃ nhận thưởng — cấp quyền claim cho
@@ -84,4 +122,4 @@ END $$;
 -- đỏ đúng nhờ chính cái sub còn sót ấy.
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_challenges_overview(integer)', 'EXECUTE'), 'C19 anon đọc được tổng quan'; END $$;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.claim_community_challenge(uuid, integer)', 'EXECUTE'), 'C20 anon nhận được thưởng'; END $$;
-\echo TẤT CẢ 20 KỊCH BẢN THỬ THÁCH ĐÚNG
+\echo TẤT CẢ 23 KỊCH BẢN THỬ THÁCH ĐÚNG

@@ -18,6 +18,8 @@ import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { type CommunityTab, useChallengeHistory, useChallenges, useCommunityFeed, useInbox, useMyCommunityProfile } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
+import { pendingClaims } from '@/lib/challenge-reminders';
+import { localDateStr } from '@/lib/local-date';
 import { nav } from '@/lib/nav';
 
 /**
@@ -56,7 +58,11 @@ export default function CommunityScreen() {
   const noHero = tab === 'discover' && !!challenges.data && !featuredChallenge(challenges.data);
   const history = useChallengeHistory(noHero);
   const inbox = useInbox();
-  const hasNew = !!inbox.data?.some((x) => x.unread);
+  /* Chấm trên chuông cũng sáng khi có thử thách đã đạt mà chưa nhận (#60):
+     lời nhắc ấy nằm trong hộp thư, và không có chấm thì không ai mở hộp thư
+     để thấy nó — đúng cái lỗ nó sinh ra để lấp. Nó ở lại tới khi nhận xong
+     hoặc hết hạn, vì nó là việc còn phải làm chứ không phải tin chưa đọc. */
+  const hasNew = !!inbox.data?.some((x) => x.unread) || pendingClaims(challenges.data ?? [], localDateStr()).length > 0;
 
   const tabs = [
     { key: 'following' as const, label: i18n.nCmFollowing, icon: Users },
