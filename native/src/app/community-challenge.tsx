@@ -20,6 +20,7 @@ import { usePalette } from '@/hooks/use-palette';
 import { getLocale } from '@/lib/i18n';
 import { dayGap, localDateStr, parseLocalDate } from '@/lib/local-date';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Một thử thách: luật, khoảng thời gian, phần thưởng, tiến độ của mình.
@@ -102,14 +103,14 @@ export default function CommunityChallengeScreen() {
             {ch.joined ? (
               <>
                 <Text style={styles.big}>
-                  {i18n.nChDays.replace('{a}', String(Math.min(ch.progress, ch.target))).replace('{b}', String(ch.target))}
+                  {fillCopy(i18n.nChDays, { a: String(Math.min(ch.progress, ch.target)), b: String(ch.target) })}
                 </Text>
                 <ProgressBar pct={Math.min(100, (ch.progress / ch.target) * 100)} color={done ? c.readinessGreen : c.foreground} height={8} />
               </>
             ) : null}
             <Text style={styles.how}>{i18n.nChHow}</Text>
-            <Row label={`${fmt(ch.starts_on)} → ${fmt(ch.ends_on)}`} value={open ? i18n.nChEndsIn.replace('{n}', String(dayGap(localDateStr(), ch.ends_on))) : i18n.nChEnded} />
-            {ch.reward_coins > 0 ? <Row label={i18n.nChReward} value={i18n.nChCoins.replace('{n}', String(ch.reward_coins))} /> : null}
+            <Row label={`${fmt(ch.starts_on)} → ${fmt(ch.ends_on)}`} value={open ? fillCopy(i18n.nChEndsIn, { n: String(dayGap(localDateStr(), ch.ends_on)) }) : i18n.nChEnded} />
+            {ch.reward_coins > 0 ? <Row label={i18n.nChReward} value={fillCopy(i18n.nChCoins, { n: String(ch.reward_coins) })} /> : null}
             {ch.fromHistory ? null : <Row label={i18n.nChPeople.replace('{n}', ch.participants.toLocaleString(locale))} value="" />}
           </GlassCard>
 
@@ -134,12 +135,12 @@ export default function CommunityChallengeScreen() {
               disabled={claim.isPending}
               onPress={() =>
                 claim.mutate(ch.id, {
-                  onSuccess: (n) => toast.success(n > 0 ? `${i18n.nChDone} ${i18n.nChGot.replace('{n}', String(n))}` : i18n.nChDone),
+                  onSuccess: (n) => toast.success(n > 0 ? `${i18n.nChDone} ${fillCopy(i18n.nChGot, { n: String(n) })}` : i18n.nChDone),
                   onError: (e: Error) => toast.fail(e),
                 })
               }
               style={styles.solidBtn}>
-              <Text style={styles.solidText}>{i18n.nChClaim.replace('{n}', String(ch.reward_coins))}</Text>
+              <Text style={styles.solidText}>{fillCopy(i18n.nChClaim, { n: String(ch.reward_coins) })}</Text>
             </PressScale>
           ) : (
             <PressScale accessibilityRole="button" onPress={leave} style={styles.quietBtn}>

@@ -1,4 +1,5 @@
 import { dayGap, shiftLocalDate } from '@/lib/local-date';
+import { fillCopy } from './copy-fill';
 
 /**
  * Thử thách ĐÃ ĐẠT mà CHƯA NHẬN thưởng, sắp rơi khỏi mọi màn — #60.
@@ -56,5 +57,5 @@ export function claimLine(
 ): string {
   const last = x.daysLeft === 0;
   const tpl = x.reward_coins > 0 ? (last ? t.nRmLast : t.nRmLeft) : last ? t.nRmLastPlain : t.nRmLeftPlain;
-  return tpl.replace('{c}', String(x.reward_coins)).replace('{n}', String(x.daysLeft));
+  return fillCopy(tpl, { c: String(x.reward_coins), n: String(x.daysLeft) });
 }

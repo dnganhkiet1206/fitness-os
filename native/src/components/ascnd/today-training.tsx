@@ -23,6 +23,7 @@ import { estimatedMinutes } from '@/lib/prescription';
 import { todayCta } from '@/lib/today-cta';
 import { localDateStr, routineIndex, weekDates } from '@/lib/local-date';
 import { nav } from '@/lib/nav';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Hôm nay: câu trả lời, và cái nút.
@@ -121,7 +122,7 @@ export function TodayTraining() {
 
   const items = exercisesOf(tpl);
   const line = planned
-    ? `${i18n.nExerciseCount.replace('{n}', String(items.length))} · ${i18n.nAboutMinutes.replace(
+    ? `${fillCopy(i18n.nExerciseCount, { n: String(items.length) })} · ${i18n.nAboutMinutes.replace(
         '{n}',
         String(estimatedMinutes(items)),
       )}`

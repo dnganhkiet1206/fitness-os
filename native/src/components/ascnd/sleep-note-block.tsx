@@ -5,6 +5,7 @@ import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { sleepNote, sleepNoteText } from '@/lib/sleep-note';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Nhận xét về đêm qua, so cảm giác tự chấm với thời lượng đo được.
@@ -51,7 +52,7 @@ export function SleepNoteBlock({
   return (
     <View style={[styles.wrap, style]}>
       <Text style={styles.text}>
-        {sleepNoteText(i18n, note.key).replace('{short}', String(note.shortBy))}
+        {fillCopy(sleepNoteText(i18n, note.key), { short: String(note.shortBy) })}
       </Text>
       <Text style={styles.caveat}>{i18n.sleepNoteScoreIsDuration}</Text>
     </View>

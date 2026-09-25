@@ -1733,11 +1733,11 @@ const en: Translations = {
      entries. None of them diagnoses anything. */
   sleepNoteAlignedGood: 'Enough hours, and you felt good — the two agree.',
   sleepNoteAlignedPoor:
-    '{short} minutes short of your target, and you felt it — the two agree. Get to bed earlier tonight.',
+    '{short} {short:minute|minutes} short of your target, and you felt it — the two agree. Get to bed earlier tonight.',
   sleepNoteFeltWorse:
     'Enough hours, but you still felt tired. Duration is not the only thing that makes a night; worth noticing if it repeats.',
   sleepNoteFeltBetter:
-    'You felt good, even though last night was {short} minutes short. The sleep score is scored on DURATION, so it reads lower than you feel.',
+    'You felt good, even though last night was {short} {short:minute|minutes} short. The sleep score is scored on DURATION, so it reads lower than you feel.',
   sleepNoteScoreIsDuration: 'Your own quality rating is not part of the score — it only drives this remark.',
   logSleepReplaceGone:
     'Could not update this night — it may have been deleted on another device. Close and log it again.',
@@ -2159,7 +2159,7 @@ const en: Translations = {
   smartGoalsKeepGoing: 'On track!',
   smartGoalsSeeBelow: 'See suggestions below.',
   smartGoalsCalorieSuggestion: 'Calorie Suggestion',
-  smartGoalsMeasured: 'Measured from your own intake and weight over the last {d} days, not from a formula.',
+  smartGoalsMeasured: 'Measured from your own intake and weight over the last {d} {d:day|days}, not from a formula.',
   smartGoalsNeedData: 'Need at least 3 weight entries in the last 4 weeks',
   smartGoalsNeedDataMsg: 'Log weight daily on Dashboard for analysis.',
   smartGoalsProteinCoach: 'Protein Distribution Coach',
@@ -2267,7 +2267,7 @@ const en: Translations = {
   obPlanFor: 'a day, for {goal}',
   obPlanMacros: 'Protein {p}g · Carbs {c}g · Fat {f}g',
   obPlanWater: '{v} of water a day',
-  obPlanSleep: '{h} hours of sleep a night',
+  obPlanSleep: '{h} {h:hour|hours} of sleep a night',
   obPlanRank: 'Level {n} — first of six',
   obHealthQ: 'ASCND can see your day more clearly.',
   obHealthChart: 'Four days you log · three the watch fills in',

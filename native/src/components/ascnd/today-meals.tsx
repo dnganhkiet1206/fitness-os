@@ -32,6 +32,7 @@ import {
   type LoggedItem,
   type LoggedMeal,
 } from '@/hooks/use-nutrition';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * What was eaten today, meal by meal.
@@ -371,9 +372,7 @@ export function DayMeals({
          trên một ngày đã qua đó là một lời hứa sai nằm trong một hộp thoại
          phá huỷ. Người đọc "xoá cả 3 món đã ghi trong Bữa trưa hôm nay" mà
          đang đứng ở thứ Ba sẽ bấm Xoá vì tưởng mình đang xoá thứ khác. */
-      (isToday ? i18n.nMealDeleteMsg : i18n.nMealDeleteMsgDay)
-        .replace('{n}', String(g.items.length))
-        .replace('{meal}', label),
+      fillCopy(isToday ? i18n.nMealDeleteMsg : i18n.nMealDeleteMsgDay, { n: String(g.items.length), meal: label }),
       [
         { text: i18n.cancel, style: 'cancel' },
         {
@@ -600,8 +599,8 @@ function MealCard({
   const body = useAnimatedStyle(() => ({ height: grow.value * bodyH }));
 
   const count = g.items.length;
-  const countText =
-    count === 1 ? i18n.nDiaryItemsOne : i18n.nDiaryItems.replace('{n}', String(count));
+  /* "1 item" / "3 items" — bộ chọn trong chuỗi (#67), không còn khoá `One` riêng. */
+  const countText = fillCopy(i18n.nDiaryItems, { n: String(count) });
   // only worth saying when breakfast was logged more than once
   const entriesText =
     g.entries > 1 ? `${i18n.nDiaryEntries.replace('{n}', String(g.entries))} · ` : '';

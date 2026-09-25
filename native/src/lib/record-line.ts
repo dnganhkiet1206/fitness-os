@@ -1,6 +1,7 @@
 import type { NativeStrings } from '@/lib/native-strings';
 import type { PersonalRecord } from '@/lib/personal-record';
 import { displayWeight, weightLabel, type WeightUnit } from '@/lib/units';
+import { fillCopy } from './copy-fill';
 
 /**
  * The sentence a personal record is announced with.
@@ -61,10 +62,5 @@ export function recordLine(
      reads as a bug in the app rather than as bodyweight work. */
   const bodyweight = (r.atWeight ?? 0) <= 0;
   const key = bodyweight ? i18n.nPrRepsBodyLine : i18n.nPrRepsLine;
-  return key
-    .replace('{ex}', r.exercise)
-    .replace('{value}', String(r.value))
-    .replace('{w}', kg(r.atWeight ?? 0))
-    .replace('{unit}', wl)
-    .replace('{prev}', String(r.previous));
+  return fillCopy(key, { ex: r.exercise, value: String(r.value), w: kg(r.atWeight ?? 0), unit: wl, prev: String(r.previous) });
 }

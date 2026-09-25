@@ -58,6 +58,7 @@ import {
   weightLabel,
   weightToKg,
 } from '@/lib/units';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Thứ tự các màn, viết ra thành DỮ LIỆU.
@@ -802,7 +803,7 @@ export function OnboardingFlow() {
                   `${displayVolume(attempt.plan.water_target_ml, vUnit).toFixed(1)} ${volumeLabel(vUnit)}`,
                 )}
               </Text>
-              <Text style={styles.planQuiet}>{i18n.obPlanSleep.replace('{h}', '8,0')}</Text>
+              <Text style={styles.planQuiet}>{fillCopy(i18n.obPlanSleep, { h: '8,0' })}</Text>
             </Animated.View>
             <View style={styles.growSmall} />
             <Animated.View entering={rise(4)}>

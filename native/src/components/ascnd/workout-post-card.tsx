@@ -15,6 +15,7 @@ import { getLocale } from '@/lib/i18n';
 import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
 import { displayWeight, weightLabel } from '@/lib/units';
+import { fillCopy } from '@/lib/copy-fill';
 
 /** Thẻ gọn trên feed hiện ba bài tập; trang chi tiết hiện hết. */
 const PREVIEW = 3;
@@ -89,7 +90,7 @@ export function WorkoutPostCard({
   };
 
   const shareText = () => {
-    const head = i18n.nCmShareText.replace('{title}', title).replace('{n}', String(p.exerciseCount));
+    const head = fillCopy(i18n.nCmShareText, { title, n: String(p.exerciseCount) });
     const body = p.exercises
       .map((e) => `• ${e.exerciseName}${e.weight > 0 ? ` — ${displayWeight(e.weight, wUnit)} ${wl} × ${e.reps}` : ` — ${e.sets} × ${e.reps}`}`)
       .join('\n');
@@ -120,7 +121,7 @@ export function WorkoutPostCard({
         ))}
         {more > 0 ? (
           <Pressable accessibilityRole="button" onPress={openPost} style={[styles.line, styles.lineRule]}>
-            <Text style={styles.moreText}>{i18n.nCmMoreExercises.replace('{n}', String(more))}</Text>
+            <Text style={styles.moreText}>{fillCopy(i18n.nCmMoreExercises, { n: String(more) })}</Text>
             <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
           </Pressable>
         ) : null}

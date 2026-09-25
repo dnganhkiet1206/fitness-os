@@ -45,6 +45,7 @@ import { toast } from '@/lib/toast';
 import { parseRepEntry } from '@/lib/rep-entry';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 import { decText, intText } from '@/lib/number-input';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * One day of the week, as the thing you do rather than the thing you planned.
@@ -1068,7 +1069,7 @@ export function DayPlan({
       /* Cùng lối với đơn thuốc ở tiêu đề: nhãn ở con số đuôi. */
       return `${s.sets} × ${s.reps} ${i18n.nReps}  ·  ${load}`;
     }
-    const sets = i18n.nRdSetsN.replace('{n}', String(s.sets));
+    const sets = fillCopy(i18n.nRdSetsN, { n: String(s.sets) });
     return s.volumeKg > 0
       ? `${sets}  ·  ${Math.round(displayWeight(s.volumeKg, wUnit)).toLocaleString()} ${wl}`
       : sets;
@@ -1261,9 +1262,7 @@ export function DayPlan({
         <View style={styles.headText}>
           <Text style={styles.tplName} numberOfLines={1}>{template.name}</Text>
           <Text style={styles.progress}>
-            {i18n.nRdProgress
-              .replace('{done}', String(doneRows.length))
-              .replace('{total}', String(rows.length))}
+            {fillCopy(i18n.nRdProgress, { done: String(doneRows.length), total: String(rows.length) })}
             {volume > 0 ? `  ·  ${Math.round(displayWeight(volume, wUnit)).toLocaleString()} ${wl}` : ''}
           </Text>
         </View>

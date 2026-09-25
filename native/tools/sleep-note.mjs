@@ -154,7 +154,10 @@ for (const k of ['sleepNoteAlignedPoor', 'sleepNoteFeltBetter']) {
     if (!m[1].includes('{short}')) problems.push(`${k}: câu này phải nói ra số phút thiếu ({short})`);
   }
 }
-if (!/replace\('\{short\}'/.test(block)) {
+/* Từ #67 câu có bộ chọn số ít/số nhiều ("{short} {short:minute|minutes}") nên
+   được điền bằng `fillCopy(…, { short: … })`; `.replace('{short}'` sẽ để bộ chọn
+   lọt ra màn. Cả hai đều là "thay bằng số" — luật đòi CÓ một trong hai. */
+if (!/replace\('\{short\}'|fillCopy\([^;]*\{\s*short:/.test(block)) {
   problems.push('sleep-note-block.tsx: không thay {short} bằng số — người dùng sẽ đọc nguyên chữ "{short}"');
 }
 /* Câu "không tính vào điểm" phải đứng cạnh nhận xét, nếu không nhận xét đọc ra

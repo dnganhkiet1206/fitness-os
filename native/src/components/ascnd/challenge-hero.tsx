@@ -14,6 +14,7 @@ import { getLocale } from '@/lib/i18n';
 import { dayGap, localDateStr } from '@/lib/local-date';
 import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Thử thách nổi bật ở đầu Khám phá — mockup màn 1.
@@ -90,13 +91,13 @@ export function ChallengeHero({ items }: { items: CommunityChallenge[] }) {
             <View style={styles.progressRow}>
               {ch.joined ? (
                 <Text style={styles.days}>
-                  {i18n.nChDays.replace('{a}', String(Math.min(ch.progress, ch.target))).replace('{b}', String(ch.target))}
+                  {fillCopy(i18n.nChDays, { a: String(Math.min(ch.progress, ch.target)), b: String(ch.target) })}
                 </Text>
               ) : null}
               <Text style={styles.meta}>
                 {startsIn > 0
-                  ? i18n.nChStartsIn.replace('{n}', String(startsIn))
-                  : i18n.nChEndsIn.replace('{n}', String(left))}
+                  ? fillCopy(i18n.nChStartsIn, { n: String(startsIn) })
+                  : fillCopy(i18n.nChEndsIn, { n: String(left) })}
               </Text>
             </View>
           </View>
@@ -121,14 +122,14 @@ export function ChallengeHero({ items }: { items: CommunityChallenge[] }) {
               onPress={() =>
                 claim.mutate(ch.id, {
                   onSuccess: (n) => {
-                    toast.success(n > 0 ? `${i18n.nChDone} ${i18n.nChGot.replace('{n}', String(n))}` : i18n.nChDone);
+                    toast.success(n > 0 ? `${i18n.nChDone} ${fillCopy(i18n.nChGot, { n: String(n) })}` : i18n.nChDone);
                     openDetail();
                   },
                   onError: (e: Error) => toast.fail(e),
                 })
               }
               style={styles.solidBtn}>
-              <Text style={styles.solidText}>{i18n.nChClaim.replace('{n}', String(ch.reward_coins))}</Text>
+              <Text style={styles.solidText}>{fillCopy(i18n.nChClaim, { n: String(ch.reward_coins) })}</Text>
             </PressScale>
           ) : null}
         </GlassCard>

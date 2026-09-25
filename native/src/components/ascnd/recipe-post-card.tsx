@@ -16,6 +16,7 @@ import { getLocale } from '@/lib/i18n';
 import { nav } from '@/lib/nav';
 import { readRecipePayload, toPlannedFoods } from '@/lib/recipe-post';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 /** Ba dòng trên feed, đủ để thấy món gồm gì; phần còn lại ở trang bài. */
 const PREVIEW = 3;
@@ -164,7 +165,7 @@ export function RecipePostCard({
         ))}
         {more > 0 ? (
           <Pressable accessibilityRole="button" onPress={openPost} style={[styles.line, styles.lineRule]}>
-            <Text style={styles.moreText}>{i18n.nRcMoreIngredients.replace('{n}', String(more))}</Text>
+            <Text style={styles.moreText}>{fillCopy(i18n.nRcMoreIngredients, { n: String(more) })}</Text>
             <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
           </Pressable>
         ) : null}

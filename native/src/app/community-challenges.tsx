@@ -18,6 +18,7 @@ import { getLocale } from '@/lib/i18n';
 import { claimLine, pendingClaims } from '@/lib/challenge-reminders';
 import { dayGap, localDateStr } from '@/lib/local-date';
 import { nav } from '@/lib/nav';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Mọi thử thách, và những cái mình đã hoàn thành — issue #41.
@@ -100,7 +101,7 @@ export default function CommunityChallengesScreen() {
               {joined.map((x, i) => {
                 const ended = dayGap(today, x.ends_on) < 0;
                 const ok = reached(x);
-                const days = i18n.nChDays.replace('{a}', String(Math.min(x.progress, x.target))).replace('{b}', String(x.target));
+                const days = fillCopy(i18n.nChDays, { a: String(Math.min(x.progress, x.target)), b: String(x.target) });
                 return (
                   <Row
                     key={x.id}
@@ -111,7 +112,7 @@ export default function CommunityChallengesScreen() {
                         ? claimLine(due.get(x.id)!, i18n)
                         : ok
                           ? i18n.nClReady
-                          : `${days} · ${ended ? i18n.nChEnded : i18n.nChEndsIn.replace('{n}', String(dayGap(today, x.ends_on)))}`
+                          : `${days} · ${ended ? i18n.nChEnded : fillCopy(i18n.nChEndsIn, { n: String(dayGap(today, x.ends_on)) })}`
                     }
                     lead={ok ? 'reached' : undefined}
                     pct={ok ? undefined : Math.min(100, (x.progress / x.target) * 100)}
@@ -129,7 +130,7 @@ export default function CommunityChallengesScreen() {
                   key={x.id}
                   first={i === 0}
                   title={x.title}
-                  meta={`${people(x.participants)} · ${i18n.nChEndsIn.replace('{n}', String(dayGap(today, x.ends_on)))}`}
+                  meta={`${people(x.participants)} · ${fillCopy(i18n.nChEndsIn, { n: String(dayGap(today, x.ends_on)) })}`}
                   onPress={() => openDetail(x.id)}
                 />
               ))}
@@ -143,7 +144,7 @@ export default function CommunityChallengesScreen() {
                   key={x.id}
                   first={i === 0}
                   title={x.title}
-                  meta={i18n.nChStartsIn.replace('{n}', String(dayGap(today, x.starts_on)))}
+                  meta={fillCopy(i18n.nChStartsIn, { n: String(dayGap(today, x.starts_on)) })}
                   onPress={() => openDetail(x.id)}
                 />
               ))}
@@ -177,7 +178,7 @@ function doneMeta(x: ChallengeHistoryItem, i18n: ReturnType<typeof useI18n>, loc
   const sameYear = at.getFullYear() === new Date().getFullYear();
   const day = at.toLocaleDateString(locale, sameYear ? { day: 'numeric', month: 'short' } : { day: 'numeric', month: 'short', year: 'numeric' });
   const when = i18n.nClClaimedOn.replace('{d}', day);
-  return x.coins > 0 ? `${when} · ${i18n.nChGot.replace('{n}', String(x.coins))}` : when;
+  return x.coins > 0 ? `${when} · ${fillCopy(i18n.nChGot, { n: String(x.coins) })}` : when;
 }
 
 function Section({ title, count, children }: { title: string; count?: number; children: ReactNode }) {

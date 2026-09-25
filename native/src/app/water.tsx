@@ -38,6 +38,7 @@ import { useAddWater, useRemoveLastWater, useTodayWater, useTodayWaterLogs, useW
 import { displayVolume, volumeLabel, volumeToMl } from '@/lib/units';
 import { waterQuickAmounts } from '@/lib/water-presets';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * The most anyone drinks in one sitting, in the display unit.
@@ -233,7 +234,7 @@ export default function WaterScreen() {
             <Text style={styles.logCount}>
               {logs.length === 1
                 ? i18n.nWaterEntriesOne
-                : i18n.nWaterEntries.replace('{n}', String(logs.length))}
+                : fillCopy(i18n.nWaterEntries, { n: String(logs.length) })}
             </Text>
             <Animated.View style={chevron}>
               <Icon icon={ChevronDown} size={18} color={c.mutedForeground} />

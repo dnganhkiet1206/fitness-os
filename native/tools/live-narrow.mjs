@@ -177,15 +177,36 @@ export function appCopy(src = readFileSync(path.join(NATIVE, 'src/lib/native-str
   return [...out];
 }
 
+/* `{x}` là một chỗ trống; `{x:một|nhiều}` là bộ chọn số ít/số nhiều của
+   `fillCopy` (#67) — trên màn nó là ĐÚNG MỘT trong hai dạng, không phải một
+   đoạn bất kỳ. Tách chuỗi theo `{x}` thôi thì bộ chọn thành chữ cố định
+   `{n:coin|coins}` trong mẫu, và "Claim 100 coins" bị cắt không còn là chữ
+   của app (đo lúc viết: 42 chuỗi tiếng Anh). */
+const TOKEN = /\{\w+\}|\{\w+:([^|{}]*)\|([^{}]*)\}/g;
+const esc = (p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Thân regex (chưa neo) của một chuỗi: `{x}` → `.+`, `{x:một|nhiều}` → `(?:một|nhiều)`. */
+export function patternBody(s) {
+  let out = '';
+  let last = 0;
+  for (const m of s.matchAll(TOKEN)) {
+    out += esc(s.slice(last, m.index)) + (m[1] === undefined ? '.+' : `(?:${esc(m[1])}|${esc(m[2])})`);
+    last = m.index + m[0].length;
+  }
+  return out + esc(s.slice(last));
+}
+
+/** Số chữ cái CỐ ĐỊNH của một chuỗi: chỗ trống không tính, bộ chọn tính theo dạng nhiều. */
+export function fixedLetters(s) {
+  return (s.replace(TOKEN, (_m, one, other) => (one === undefined ? '' : other)).match(/\p{L}/gu) ?? []).length;
+}
+
 /** Nguồn regex (neo hai đầu) cho mỗi chuỗi: `{n}`, `{name}` khớp một đoạn bất kỳ. */
 export function copyPatterns(copy = appCopy()) {
   /* Một chuỗi mà phần CỐ ĐỊNH gần như không có chữ (`{n}`, `{a} · {b}`,
      `{n} kg`) khớp cả nội dung người dùng, nên bị bỏ: nó sẽ biến một chú
      thích bài bị cắt đúng luật thành "chữ của app bị cắt". */
-  return copy.filter((s) => (s.replace(/\{\w+\}/g, '').match(/\p{L}/gu) ?? []).length >= 4).map((s) => {
-    const parts = s.split(/\{\w+\}/).map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
-    return `^${parts.join('.+')}$`;
-  });
+  return copy.filter((s) => fixedLetters(s) >= 4).map((s) => `^${patternBody(s)}$`);
 }
 
 /** Chạy TRONG trang. Trả `{ wide, cut: [{ text, app }], clipped: [mô tả] }`. */

@@ -42,6 +42,7 @@ import { displayWeight, weightLabel } from '@/lib/units';
 import { errorText } from '@/lib/error-copy';
 import { toast } from '@/lib/toast';
 import { weekDayParam } from '@/lib/week-day';
+import { fillCopy } from '@/lib/copy-fill';
 
 /** Monday first, the order `routine_days.day_of_week` is stored in. */
 const DAY_LONG = {
@@ -695,10 +696,7 @@ export default function WorkoutBuilderSheet() {
             <Text style={styles.nameHint}>{i18n.nWbNameHint}</Text>
 
             <Text style={styles.summary}>
-              {i18n.nWbSummary
-                .replace('{n}', String(items.length))
-                .replace('{s}', String(totals.sets))
-                .replace('{m}', String(totals.minutes))}
+              {fillCopy(i18n.nWbSummary, { n: String(items.length), s: String(totals.sets), m: String(totals.minutes) })}
             </Text>
 
             <Text style={styles.sectionLabel}>{i18n.nWbType}</Text>

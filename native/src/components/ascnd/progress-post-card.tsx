@@ -9,6 +9,7 @@ import { type FeedPost, type ProgressMetric, readProgressPayload } from '@/hooks
 import { usePalette } from '@/hooks/use-palette';
 import { useUnits } from '@/hooks/use-units';
 import { displayLength, displayWeight, lengthLabel, weightLabel } from '@/lib/units';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Một bài Progress — "đây là hành trình của tôi" (concept mục 5, mockup màn 4).
@@ -56,7 +57,7 @@ export function ProgressPostCard({ post, full, preview }: { post: FeedPost; full
   if (p.lift) tiles.push({ key: 'lift', label: p.lift.name, m: p.lift, fmt: kg, unit: wl, color: c.metricOrange });
 
   const lead = tiles[0];
-  const title = i18n.nPgTitle.replace('{n}', String(p.weeks));
+  const title = fillCopy(i18n.nPgTitle, { n: String(p.weeks) });
 
   const shareText = () =>
     [

@@ -24,6 +24,7 @@ import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { setPendingScan, stackHasMealSheet, type ScannedFood } from '@/lib/scan-bridge';
+import { fillCopy } from '@/lib/copy-fill';
 
 type ScanMode = 'food' | 'label';
 type Phase = 'camera' | 'analyzing' | 'review';
@@ -255,7 +256,7 @@ export default function ScanFoodScreen() {
                     <Text style={styles.primaryBtnText}>
                       {items.length === 1
                         ? i18n.nScanAddOne
-                        : i18n.nScanAdd.replace('{n}', String(items.length))}
+                        : fillCopy(i18n.nScanAdd, { n: String(items.length) })}
                     </Text>
                   </PressScale>
                 </View>

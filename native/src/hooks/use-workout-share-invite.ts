@@ -3,6 +3,7 @@ import { useChallenges, useMyCommunityProfile } from '@/hooks/use-community';
 import { dayGap, localDateStr } from '@/lib/local-date';
 import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Lời mời "Chia sẻ buổi này" ngay sau khi lưu một buổi tập — #12, và #29 cho lối
@@ -38,10 +39,7 @@ export function useWorkoutShareInvite() {
       ]);
       const ch = r?.data?.find((x) => x.joined && !x.claimed && dayGap(localDateStr(), x.ends_on) >= 0);
       if (!ch) return null;
-      return i18n.nShChallenge
-        .replace('{title}', ch.title)
-        .replace('{a}', String(Math.min(ch.progress, ch.target)))
-        .replace('{b}', String(ch.target));
+      return fillCopy(i18n.nShChallenge, { title: ch.title, a: String(Math.min(ch.progress, ch.target)), b: String(ch.target) });
     } catch {
       return null;
     }

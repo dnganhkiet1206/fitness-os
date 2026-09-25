@@ -22,6 +22,7 @@ import { localDateStr, weekStartOf } from '@/lib/local-date';
 import { nutritionDays } from '@/lib/nutrition-mean';
 import { convertWeight, displayWeight, weightLabel } from '@/lib/units';
 import { calorieTargetFor } from '@/lib/macro-targets';
+import { fillCopy } from '@/lib/copy-fill';
 
 /*
   `weekStartOf` rather than a fourth copy of the arithmetic. The line here was
@@ -299,7 +300,7 @@ export default function SmartGoalsScreen() {
                 */}
                 {analysis.fromMeasurement ? (
                   <Text style={styles.suggestionDetail}>
-                    {i18n.smartGoalsMeasured.replace('{d}', String(analysis.measuredDays))}
+                    {fillCopy(i18n.smartGoalsMeasured, { d: String(analysis.measuredDays) })}
                   </Text>
                 ) : null}
               </View>

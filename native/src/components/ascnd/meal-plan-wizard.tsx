@@ -23,6 +23,7 @@ import { dedupeSeedShadows, useMyFoods } from '@/hooks/use-nutrition';
 import { supabase } from '@/integrations/supabase/client';
 import { MEAL_ORDER, PLAN_DAYS } from '@/lib/planned-meal';
 import { errorText } from '@/lib/error-copy';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Making a meal plan, from nothing to food on a day, as one flow.
@@ -411,10 +412,7 @@ export function MealPlanWizard({
               <Field label={i18n.nMpPreview}>
                 <View style={styles.preview}>
                   <Text style={styles.previewSum}>
-                    {i18n.nMpPreviewSum
-                      .replace('{d}', String(PLAN_DAYS.length))
-                      .replace('{m}', String(mealsPerDay))
-                      .replace('{t}', String(PLAN_DAYS.length * mealsPerDay))}
+                    {fillCopy(i18n.nMpPreviewSum, { d: String(PLAN_DAYS.length), m: String(mealsPerDay), t: String(PLAN_DAYS.length * mealsPerDay) })}
                   </Text>
                   <View style={styles.previewSlots}>
                     {MEAL_ORDER.slice(0, mealsPerDay).map((m) => (

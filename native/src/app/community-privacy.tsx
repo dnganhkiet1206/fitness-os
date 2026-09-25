@@ -21,6 +21,7 @@ import {
 import { usePalette } from '@/hooks/use-palette';
 import { getLocale } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Quyền riêng tư cộng đồng — issue #11.
@@ -70,7 +71,7 @@ export default function CommunityPrivacyScreen() {
 
   const run = () =>
     wipe.mutate(undefined, {
-      onSuccess: (n) => (n > 0 ? toast.success(i18n.nPvDeleted.replace('{n}', String(n))) : toast.success(i18n.nPvNothing)),
+      onSuccess: (n) => (n > 0 ? toast.success(fillCopy(i18n.nPvDeleted, { n: String(n) })) : toast.success(i18n.nPvNothing)),
       onError: (e: Error) => toast.fail(e),
     });
   const askWipe = () =>

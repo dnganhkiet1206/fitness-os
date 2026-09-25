@@ -27,6 +27,7 @@ import { getLocale } from '@/lib/i18n';
 import { nav } from '@/lib/nav';
 import { payloadFromMeal } from '@/lib/recipe-post';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 /** Giới hạn của `share_recipe` — ô nhập dừng đúng ở đó để server không phải từ chối. */
 const TITLE_MAX = 80;
@@ -178,7 +179,7 @@ export default function CommunityShareRecipeScreen() {
                           cắt mất số kcal — xuống dòng thì không giấu con số nào. */}
                       <Text style={styles.pickMeta}>
                         {new Date(m.dateTime).toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' })}
-                        {` · ${i18n.nRcItems.replace('{n}', String(m.preview.ingredientCount))}`}
+                        {` · ${fillCopy(i18n.nRcItems, { n: String(m.preview.ingredientCount) })}`}
                         {` · ${fmt(m.preview.kcal)} ${i18n.dcActivityKcal}`}
                       </Text>
                     </View>

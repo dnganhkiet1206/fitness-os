@@ -569,6 +569,10 @@ const STEPS = [
   ['lỗi ghi được ném', 'node', ['tools/error-thrown.mjs']],
   ['chữ ký RPC', 'node', ['tools/rpc-signatures.mjs']],
   ['cột bảng', 'node', ['tools/type-columns.mjs']],
+  /* Câu đếm tiếng Anh (#67, người làm: B): "{n} days" ở n = 1 đọc thành "1 days".
+     Chuỗi mang bộ chọn `{n:day|days}` và được điền bằng `fillCopy`; một khoá có
+     bộ chọn mà tới được `.replace(` — thẳng, qua biến, hay qua hàm — thì đỏ. */
+  ['câu đếm số ít', 'node', ['tools/plural-copy.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],

@@ -81,9 +81,11 @@ problems.push(...compare(migrations, libSrc));
 const out = mkdtempSync(path.join(tmpdir(), 'claim-window-'));
 try {
   writeFileSync(path.join(out, 'local-date.ts'), readFileSync(path.join(NATIVE, 'src/lib/local-date.ts'), 'utf8'));
+  /* `claimLine` điền câu bằng `fillCopy` (#67), import tương đối — chép cùng. */
+  writeFileSync(path.join(out, 'copy-fill.ts'), readFileSync(path.join(NATIVE, 'src/lib/copy-fill.ts'), 'utf8'));
   writeFileSync(path.join(out, 'challenge-reminders.ts'), libSrc.replace("'@/lib/local-date'", "'./local-date'"));
   try {
-    execFileSync('npx', ['tsc', 'challenge-reminders.ts', 'local-date.ts', '--ignoreConfig', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'], { cwd: out, stdio: ['ignore', 'pipe', 'pipe'] });
+    execFileSync('npx', ['tsc', 'challenge-reminders.ts', 'local-date.ts', 'copy-fill.ts', '--ignoreConfig', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'], { cwd: out, stdio: ['ignore', 'pipe', 'pipe'] });
   } catch { /* emit is what matters */ }
   const { pendingClaims, CLAIM_WINDOW_DAYS: N } = createRequire(import.meta.url)(path.join(out, 'challenge-reminders.js'));
   if (typeof pendingClaims !== 'function') {

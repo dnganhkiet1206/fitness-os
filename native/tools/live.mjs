@@ -2020,6 +2020,28 @@ const SCENARIOS = [
   },
   {
     /*
+      #67: câu đếm tiếng Anh ở n = 1. Fixture #13 có hai lượt thích CÙNG một bài,
+      nên hộp thư gộp thành "Linh and 1 other liked your post" — trước #67 là
+      "and 1 others". Vế này là chỗ có răng của luật: lưới `ONE_PLURAL` trên
+      lượt quét màn chỉ đỏ khi một câu sai TÌNH CỜ có n = 1 trong fixture.
+    */
+    name: 'Tiếng Anh ở n = 1: hộp thư nói "and 1 other", không "and 1 others"',
+    route: '/community-inbox', mode: 'full',
+    async run(page) {
+      let text = '';
+      for (let i = 0; i < 24; i++) {
+        text = await page.locator('body').innerText();
+        if (/liked your post/.test(text)) break;
+        await page.waitForTimeout(250);
+      }
+      if (!/liked your post/.test(text)) return 'hộp thư không có dòng "liked your post" — lượt này không chạy tiếng Anh, hoặc fixture #13 đã đổi';
+      if (/\b1 others\b/.test(text)) return 'hộp thư vẫn nói "and 1 others" (#67)';
+      if (!/\band 1 other liked your post\b/.test(text)) return `hộp thư không có "and 1 other liked your post": "${text.match(/.{0,40}liked your post/)?.[0] ?? ''}"`;
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng
@@ -2471,7 +2493,15 @@ async function canary(chromium) {
 
 // ── run ───────────────────────────────────────────────────────────────────
 
-const BAD_TEXT = /\bNaN\b|\bundefined\b|\[object Object\]|Invalid Date|\bInfinity\b/;
+/* `{n}` hay `{n:day|days}` còn trên màn là một chuỗi của app chưa được điền —
+   thiếu biến, hoặc một bộ chọn số ít/số nhiều (#67) đọc bằng `.replace(`
+   thay vì `fillCopy`. Nó là chữ lọt ra ngoài như NaN, nên cùng một luật. */
+/* #67: tiếng Anh ở n = 1 — "1 days left", "and 1 others". Lookbehind để "21 days",
+   "1.5 days" hay một khoảng "0–1 sessions/wk" không bị bắt (khoảng là số nhiều
+   đúng, và lượt đầu đỏ oan ở /edit-profile); "more"/"new" chen giữa như
+   "+ 1 more exercises". */
+const ONE_PLURAL = /(?<![\d.,–-])1 (?:more |new )?(?:days|weeks|hours|minutes|coins|posts|sessions|exercises|entries|items|foods|meals|sets|reps|others|levels|records|ingredients)\b/;
+const BAD_TEXT = /\bNaN\b|\bundefined\b|\[object Object\]|Invalid Date|\bInfinity\b|\{\w+(?::[^{}]*)?\}/;
 
 const chromium = loadChromium();
 build();
@@ -2495,11 +2525,15 @@ try {
 
       const bad = text.split('\n').filter((l) => BAD_TEXT.test(l)).slice(0, 2);
       if (bad.length) problems.push(`${at}: chữ không dành cho người dùng — ${bad.join(' / ')}`);
+      const one = text.split('\n').filter((l) => ONE_PLURAL.test(l)).slice(0, 2);
+      if (one.length) problems.push(`${at}: câu đếm tiếng Anh sai ở n = 1 (#67) — ${one.join(' / ')}`);
       segmentsSeen += segments.length;
       for (const sg of segments) {
         const b = sg.text.split('\n').filter((l) => BAD_TEXT.test(l)).slice(0, 2);
         if (b.length) problems.push(`${at} › ${sg.label}: chữ không dành cho người dùng — ${b.join(' / ')}`);
         if (sg.pinned.length) problems.push(`${at} › ${sg.label}: ${sg.pinned.length} phần tử kẹt position:absolute sau khi đổi phân đoạn (#97) — ${sg.pinned.slice(0, 2).map((t) => `"${t}"`).join(', ')}`);
+        const o = sg.text.split('\n').filter((l) => ONE_PLURAL.test(l)).slice(0, 2);
+        if (o.length) problems.push(`${at} › ${sg.label}: câu đếm tiếng Anh sai ở n = 1 (#67) — ${o.join(' / ')}`);
       }
       /* Chốt của #58: khối từng bị đoán là "dựng muộn" phải được lượt quét THẤY.
          Không phân biệt hoa thường: `MicroLabel` in hoa bằng CSS, và `innerText`
@@ -2692,7 +2726,7 @@ const sweptClaim = args.has('--press-only')
   ? 'bỏ qua vòng quét màn (--press-only)'
   : `${ROUTES.length} màn × ${MODES.length} trạng thái (đủ dữ liệu / tài khoản trống / mọi truy vấn hỏng), cộng ` +
     `${segmentsSeen} lượt mở một phân đoạn không mặc định (#58): ` +
-    'không màn nào trắng, không lỗi runtime, không chữ lọt ra ngoài như NaN hay undefined';
+    'không màn nào trắng, không lỗi runtime, không chữ lọt ra ngoài như NaN, undefined hay một {n} chưa điền';
 
 console.log(
   `\nchạy thật OK — ${sweptClaim}; ` +

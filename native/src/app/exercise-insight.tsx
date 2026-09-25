@@ -25,6 +25,7 @@ import type { ExerciseInsight, Trend } from '@/lib/exercise-trend';
 import { MIN_SESSIONS } from '@/lib/exercise-trend';
 import type { NativeStrings } from '@/lib/native-strings';
 import { displayWeight, weightLabel, type WeightUnit } from '@/lib/units';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Exercise Intelligence, as something you can read at a glance.
@@ -213,7 +214,7 @@ function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weig
             <Text style={styles.meta} numberOfLines={1}>
               {i18n[`nXiKind${i.kind}` as keyof NativeStrings] as string}
               {'  ·  '}
-              {i.sessions === 1 ? i18n.nXiOneSession : i18n.nXiSessions.replace('{n}', String(i.sessions))}
+              {fillCopy(i18n.nXiSessions, { n: String(i.sessions) })}
               {/* The short form. "Last trained 75 days ago" is the third thing
                   on a one-line meta row and was the part that got truncated —
                   losing the number, which is the only part of it that varies. */}
@@ -281,22 +282,16 @@ function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weig
                       .replace('{unit}', weightLabel(u))
                       .replace('{prev}', String(kg1(win.previous)))
                   : (win.atWeightKg ?? 0) > 0
-                    ? i18n.nXiWindowReps
-                        .replace('{v}', String(win.value))
-                        .replace('{w}', String(kg1(win.atWeightKg!)))
-                        .replace('{unit}', weightLabel(u))
-                        .replace('{prev}', String(win.previous))
-                    : i18n.nXiWindowRepsBody
-                        .replace('{v}', String(win.value))
-                        .replace('{prev}', String(win.previous))}
-                {win.daysAgo !== null ? `  ·  ${i18n.nXiWindowAgo.replace('{n}', String(win.daysAgo))}` : ''}
+                    ? fillCopy(i18n.nXiWindowReps, { v: String(win.value), w: String(kg1(win.atWeightKg!)), unit: weightLabel(u), prev: String(win.previous) })
+                    : fillCopy(i18n.nXiWindowRepsBody, { v: String(win.value), prev: String(win.previous) })}
+                {win.daysAgo !== null ? `  ·  ${fillCopy(i18n.nXiWindowAgo, { n: String(win.daysAgo) })}` : ''}
               </Text>
             ) : null}
 
             {flat && flat.kind === 'no-upward-trend' ? (
               <Text style={styles.note}>{i18n.nXiNoUpward.replace('{n}', String(flat.sessions))}</Text>
             ) : null}
-            {thin ? <Text style={styles.note}>{i18n.nXiNeedMore.replace('{n}', String(MIN_SESSIONS))}</Text> : null}
+            {thin ? <Text style={styles.note}>{fillCopy(i18n.nXiNeedMore, { n: String(MIN_SESSIONS) })}</Text> : null}
             {bwUnknown ? <Text style={styles.note}>{i18n.nXiBodyweightUnknown}</Text> : null}
 
             <View style={styles.foot}>
@@ -509,7 +504,7 @@ export default function ExerciseInsightScreen() {
               `Nd` shorthand at all (`nLast30d` is "30 ngày qua"). A window is a
               sentence here, next to the note that already explains the page. */}
           <Text style={styles.footnote}>
-            {i18n.nXiWindowNote.replace('{n}', String(INSIGHT_DAYS))}
+            {fillCopy(i18n.nXiWindowNote, { n: String(INSIGHT_DAYS) })}
           </Text>
         </>
       )}

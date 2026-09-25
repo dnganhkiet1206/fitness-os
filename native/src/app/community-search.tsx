@@ -22,6 +22,7 @@ import {
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Tìm người & gợi ý theo dõi — issue #19.
@@ -111,7 +112,7 @@ export default function CommunitySearchScreen() {
             const why = p.is_official
               ? i18n.nSrWhyOfficial
               : p.recent_posts
-                ? i18n.nSrWhyActive.replace('{n}', String(p.recent_posts))
+                ? fillCopy(i18n.nSrWhyActive, { n: String(p.recent_posts) })
                 : `@${p.handle}`;
             return (
               <View key={p.user_id} style={[styles.row, i > 0 && styles.rowRule]}>

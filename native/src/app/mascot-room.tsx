@@ -76,6 +76,7 @@ import {
   type QuestKey,
 } from '@/lib/mascot-room';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 
 
@@ -351,7 +352,7 @@ export default function MascotRoomScreen() {
     claim.mutate(
       { refKey: 'welcome', amount: 300, reason: 'welcome bonus' },
       {
-        onSuccess: () => toast.success(i18n.nRoomWelcome.replace('{n}', '300')),
+        onSuccess: () => toast.success(fillCopy(i18n.nRoomWelcome, { n: '300' })),
         /*
           ── a failed welcome has to be retried, and it could not be ──
 
@@ -454,7 +455,7 @@ export default function MascotRoomScreen() {
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   claim.mutate(
                     { refKey: `dev:${Date.now()}`, amount: 300, reason: 'dev grant' },
-                    { onSuccess: () => toast.success(i18n.nRoomEarned.replace('{n}', '300')), onError: (e: Error) => toast.fail(e) },
+                    { onSuccess: () => toast.success(fillCopy(i18n.nRoomEarned, { n: '300' })), onError: (e: Error) => toast.fail(e) },
                   );
                 }
               : undefined
@@ -731,9 +732,7 @@ export default function MascotRoomScreen() {
           <Text style={styles.journeySub}>
             {upcomingRank ? (
               <>
-                {i18n.nRoomLevelsToRank
-                  .replace('{n}', String(upcomingRank.minLevel - level))
-                  .replace('{r}', '')}
+                {fillCopy(i18n.nRoomLevelsToRank, { n: String(upcomingRank.minLevel - level), r: '' })}
                 <Text style={{ color: upcomingRank.color, fontWeight: '700' }}>
                   {upcomingRank.name[lang]}
                 </Text>

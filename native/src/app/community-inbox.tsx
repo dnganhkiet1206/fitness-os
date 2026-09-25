@@ -18,6 +18,7 @@ import { claimLine, pendingClaims } from '@/lib/challenge-reminders';
 import { localDateStr } from '@/lib/local-date';
 import { nav } from '@/lib/nav';
 import { timeAgo } from '@/lib/time-ago';
+import { fillCopy } from '@/lib/copy-fill';
 
 const KIND_ICON = { like: Heart, comment: MessageCircle, follow: UserPlus } as const;
 
@@ -75,7 +76,7 @@ export default function CommunityInboxScreen() {
       : x.kind === 'comment'
         ? i18n.nNtComment
         : x.count > 1
-          ? i18n.nNtLikeMany.replace('{n}', String(x.count - 1))
+          ? fillCopy(i18n.nNtLikeMany, { n: String(x.count - 1) })
           : i18n.nNtLike;
 
   return (

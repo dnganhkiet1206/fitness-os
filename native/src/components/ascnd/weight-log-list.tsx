@@ -19,6 +19,7 @@ import type { useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWeight } from '@/hooks/use-fitness-data';
 import { getLocale } from '@/lib/i18n';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 /** Same duration and curve as the diary's meal cards — see `today-meals.tsx`. */
 const OPEN_MS = 260;
@@ -169,7 +170,7 @@ export function WeightLogList({
         <Text style={styles.count}>
           {rows.length === 1
             ? i18n.nWeightEntriesOne
-            : i18n.nWeightEntries.replace('{n}', String(rows.length))}
+            : fillCopy(i18n.nWeightEntries, { n: String(rows.length) })}
         </Text>
         <Animated.View style={chevron}>
           <Icon icon={ChevronDown} size={18} color={c.mutedForeground} />
@@ -226,7 +227,7 @@ export function WeightLogList({
             setAll(true);
           }}>
           <Text style={styles.seeAllText}>
-            {i18n.nWeightSeeAll.replace('{n}', String(rows.length))}
+            {fillCopy(i18n.nWeightSeeAll, { n: String(rows.length) })}
           </Text>
         </PressScale>
       ) : null}

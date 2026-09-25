@@ -45,6 +45,7 @@ import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { dayGap, diaryStampAt, localDateStr } from '@/lib/local-date';
 import { consumePendingScan } from '@/lib/scan-bridge';
 import { intText } from '@/lib/number-input';
+import { fillCopy } from '@/lib/copy-fill';
 
 const MEAL_KEYS = ['breakfast', 'lunch', 'dinner', 'snack', 'preworkout', 'postworkout'] as const;
 type MealType = (typeof MEAL_KEYS)[number];
@@ -188,7 +189,7 @@ export default function LogMealSheet() {
     const days = dayGap(localDateStr(new Date(iso)), localDateStr());
     if (days <= 0) return i18n.nRmToday;
     if (days === 1) return i18n.nRmYesterday;
-    return i18n.nRmDaysAgo.replace('{n}', String(days));
+    return fillCopy(i18n.nRmDaysAgo, { n: String(days) });
   };
 
   useEffect(() => {
@@ -629,7 +630,7 @@ export default function LogMealSheet() {
                     {m.foods.map((f) => f.food_name).join(', ')}
                   </Text>
                   <Text style={styles.repeatKcal}>
-                    {m.kcal.toLocaleString()} kcal · {i18n.nRmFoods.replace('{n}', String(m.foods.length))}
+                    {m.kcal.toLocaleString()} kcal · {fillCopy(i18n.nRmFoods, { n: String(m.foods.length) })}
                   </Text>
                 </PressScale>
               ))}

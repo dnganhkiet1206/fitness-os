@@ -29,6 +29,7 @@ import { weightLabel } from '@/lib/units';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { newestFirst, TemplateList } from '@/components/ascnd/template-list';
 import { TodayTraining } from '@/components/ascnd/today-training';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * The tiles, in the order a body is worked rather than alphabetically.
@@ -360,7 +361,7 @@ export default function WorkoutsScreen() {
           <Text style={styles.toolRowText}>{i18n.nLibraryHistory}</Text>
           {sessions && sessions.length > 0 ? (
             <Text style={styles.toolRowSub}>
-              {i18n.nSessionCount.replace('{n}', String(sessions.length))}
+              {fillCopy(i18n.nSessionCount, { n: String(sessions.length) })}
             </Text>
           ) : null}
         </View>
