@@ -273,12 +273,13 @@ export function BiometricsCard() {
                     <Text style={styles.bioValue}>{Math.round(Number(m.value) * 10) / 10}</Text>
                     <Text style={styles.bioUnit}>{m.unit}</Text>
                   </View>
-                  {/* The tile is a fixed share of a wrapping grid and the labels
-                      are identifiers, not sentences — "Nhịp tim nghỉ" is longer
-                      than what used to be here. Truncating one keeps the row of
-                      tiles level; letting it wrap makes one tile taller than
-                      the three beside it. */}
-                  <Text style={styles.bioLabel} numberOfLines={1}>{m.label}</Text>
+                  {/* Hai dòng, không cắt (#94). Bản trước cắt nhãn ở một dòng
+                      "để hàng ô bằng nhau" — nhưng đo ở 320 thì "Nhịp tim nghỉ",
+                      "Blood oxygen", "Respiratory rate" thành "…", và một tên chỉ
+                      số bị cắt thì không còn là tên. Hàng ô vẫn bằng nhau: lưới
+                      để `alignItems` mặc định (`stretch`), nên ô bên cạnh cao
+                      theo; hai HÀNG thì có thể lệch nhau một dòng chữ 11. */}
+                  <Text style={styles.bioLabel} numberOfLines={2}>{m.label}</Text>
                 </View>
               </View>
             ))}

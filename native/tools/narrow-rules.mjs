@@ -4,7 +4,8 @@
  *
  * `live-narrow.mjs` tách chữ bị cắt thành hai loại: chữ app viết (lỗi) và nội
  * dung người dùng bị `numberOfLines` cắt (đúng thiết kế). Nó tách bằng cách so
- * chữ với MỌI chuỗi trong `native-strings.ts`. Sai về phía nào cũng im lặng
+ * chữ với MỌI chuỗi app viết ra: `native-strings.ts`, `i18n.ts`, và chữ viết
+ * thẳng trong component (#94). Sai về phía nào cũng im lặng
  * trong lượt quét: khớp quá rộng thì chú thích người dùng thành báo oan, khớp
  * quá hẹp thì một câu của app bị cắt mà không ai nghe. Lượt quét không tự nói
  * ra cả hai điều ấy, vì nó chỉ thấy những gì thế giới giả tình cờ có.
@@ -12,9 +13,9 @@
  * Nên ở đây: `cutKind` chạy trên mẫu sinh từ CHÍNH từ điển thật, với những câu
  * đã từng sai.
  */
-import { appCopy, copyPatterns, cutKind, HEAD_WORDS, tailPatterns } from './live-narrow.mjs';
+import { allAppCopy, appCopy, copyPatterns, cutKind, HEAD_WORDS, tailPatterns } from './live-narrow.mjs';
 
-const copy = appCopy();
+const copy = allAppCopy();
 const full = copyPatterns(copy).map((s) => new RegExp(s));
 const tails = tailPatterns(copy).map((s) => new RegExp(s));
 const problems = [];
@@ -42,6 +43,10 @@ const CASES = [
   ['Hôm nay tôi hoàn thành 3 buổi tập', null, 'chú thích tận cùng bằng một chuỗi app một từ không phải dòng ghép (#63)'],
   /* Nội dung thuần. */
   ['Buổi sáng hôm nay trời đẹp quá, chạy được 5km', null, 'chú thích thuần không phải chữ của app'],
+  /* #94: chữ app KHÔNG nằm trong native-strings.ts. */
+  ['chưa ghi buổi tập', 'full', 'chữ viết thẳng `vi ? … : …` của đồng hồ sẵn sàng là chữ của app (#94)'],
+  ['no workout logged', 'full', 'nhánh tiếng Anh của cùng điều kiện ấy là chữ của app (#94)'],
+  ['Chưa có dữ liệu xu hướng sẵn sàng.', 'full', 'chuỗi của i18n.ts là chữ của app (#94)'],
 ];
 
 for (const [text, want, why] of CASES) {
@@ -51,8 +56,19 @@ for (const [text, want, why] of CASES) {
 
 /* Các ca trên dựa vào những chuỗi này có trong từ điển; mất một chuỗi thì ca
    "full" của nó đỏ vì lý do khác, và ca null xanh mà không đo gì. */
-for (const s of ['buổi tập', 'Chỉ người theo dõi', 'vừa xong', '{n} ngày trước', '{n} {n:day|days} ago', 'Claim {n} {n:coin|coins}', '{name} đã thích bài của bạn', '{title}: {a}/{b} ngày', 'Chặn từ {date}']) {
-  if (!copy.includes(s)) problems.push(`chuỗi "${s}" không còn trong native-strings.ts — sửa ca tự kiểm đi theo nó`);
+for (const s of ['buổi tập', 'Chỉ người theo dõi', 'vừa xong', '{n} ngày trước', '{n} {n:day|days} ago', 'Claim {n} {n:coin|coins}', '{name} đã thích bài của bạn', '{title}: {a}/{b} ngày', 'Chặn từ {date}', 'chưa ghi buổi tập', 'Chưa có dữ liệu xu hướng sẵn sàng.']) {
+  if (!copy.includes(s)) problems.push(`chuỗi "${s}" không còn trong từ điển của app — sửa ca tự kiểm đi theo nó`);
+}
+
+/* Thử ngược #94: với từ điển CŨ (chỉ native-strings.ts), ba ca #94 phải ra
+   nội dung — không thì chúng xanh mà không đo gì. */
+{
+  const old = appCopy();
+  const oldFull = copyPatterns(old).map((s) => new RegExp(s));
+  const oldTails = tailPatterns(old).map((s) => new RegExp(s));
+  for (const t of ['chưa ghi buổi tập', 'Chưa có dữ liệu xu hướng sẵn sàng.']) {
+    if (cutKind(t, oldFull, oldTails) !== null) problems.push(`thử ngược hỏng: "${t}" đã khớp từ điển cũ (chỉ native-strings.ts) — ca #94 không đo gì`);
+  }
 }
 
 /* Thử ngược: với phần đầu `.+` như trước #87, ca chú thích phải bị coi là chữ
@@ -74,8 +90,8 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `luật quét hẹp OK — ${CASES.length} ca trên mẫu sinh từ ${copy.length} chuỗi thật của native-strings.ts: chú thích người dùng tận cùng bằng ` +
+  `luật quét hẹp OK — ${CASES.length} ca trên mẫu sinh từ ${copy.length} chuỗi thật của app (native-strings.ts, i18n.ts và chữ viết thẳng trong component, #94): chú thích người dùng tận cùng bằng ` +
     `"ngày trước"/"days ago" không bị coi là chữ của app (#87: chỗ trống duy nhất ở đầu chuỗi chỉ được ${HEAD_WORDS} từ), tên bốn từ, tên thử ` +
-    'thách dài và câu có bộ chọn số ít/số nhiều (#67) vẫn khớp, dòng chặn ghép khớp luật đuôi (#63). Thử ngược: với phần đầu ".+" như trước #87 thì ca chú thích ĐỎ, và ranh giới ' +
+    'thách dài và câu có bộ chọn số ít/số nhiều (#67) vẫn khớp, dòng chặn ghép khớp luật đuôi (#63), chữ viết thẳng và chữ của i18n.ts khớp (#94). Thử ngược: với phần đầu ".+" như trước #87 thì ca chú thích ĐỎ, với từ điển cũ thì ca #94 ra nội dung, và ranh giới ' +
     `${HEAD_WORDS}/${HEAD_WORDS + 1} từ đúng chỗ.`,
 );

@@ -377,7 +377,12 @@ export function HeroTiles({
           <Text style={[styles.tileValue, t.color ? { color: t.color } : null]} numberOfLines={1}>
             {t.value}
           </Text>
-          <Text style={styles.tileUnit} numberOfLines={1}>{t.unit}</Text>
+          {/* Đơn vị được HAI dòng (#94): khi chưa có số, dòng này là việc phải
+              làm ("chưa ghi buổi tập", "cần 5 lần đo"), và ở chữ ×1.3 nó bị
+              cắt thành "chưa ghi buổi…". Nhãn và số ở trên vẫn một dòng, nên số
+              của hai ô cùng hàng vẫn thẳng nhau; chỉ đáy ô dài ra, và ô bên
+              cạnh cao theo (`stretch`). */}
+          <Text style={styles.tileUnit} numberOfLines={2}>{t.unit}</Text>
         </View>
       ))}
     </View>
@@ -419,7 +424,7 @@ const stylesFor = makeStyles((c, m) => ({
     color: c.foreground,
     fontVariant: ['tabular-nums'],
   },
-  tileUnit: { fontSize: 12, color: c.mutedForeground },
+  tileUnit: { fontSize: 12, color: c.mutedForeground, textAlign: 'center' },
   /* One set of paddings for all four pages. Written per card, four numbers
      would agree today and drift the first time one page gained a line. */
   panel: {

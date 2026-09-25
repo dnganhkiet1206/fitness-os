@@ -32,14 +32,15 @@
  * nó, app biết nó dài bao nhiêu, và cắt nó là mất nghĩa ("Tiến tr…").
  *
  * Phân biệt bằng chính từ điển: chữ đầy đủ của phần tử bị cắt được so với mọi
- * chuỗi trong `src/lib/native-strings.ts` (cả hai ngôn ngữ, `{n}` khớp bất kỳ
- * đoạn nào). Khớp thì là chữ của app bị cắt → vấn đề. Không khớp thì là nội
+ * chuỗi app viết ra (cả hai ngôn ngữ, `{n}` khớp bất kỳ đoạn nào) — xem
+ * `allAppCopy`. Khớp thì là chữ của app bị cắt → vấn đề. Không khớp thì là nội
  * dung, và được liệt kê chứ không làm đỏ, để "không phải lỗi" không lặng lẽ
  * thành "không nhìn thấy".
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -177,6 +178,96 @@ export function appCopy(src = readFileSync(path.join(NATIVE, 'src/lib/native-str
   return [...out];
 }
 
+/*
+  #94: từ điển KHÔNG chỉ là `native-strings.ts`. Đo lúc viết, ngoài 1799 chuỗi
+  của nó, app còn viết ra:
+    · 1020 chuỗi của `i18n.ts` (`t.cancel`, `t.grocerySubtitle`, …) — cùng dạng
+      `key: '…'`, nên đọc bằng chính `appCopy`;
+    · 886 chuỗi viết THẲNG trong component: `vi ? '…' : '…'`,
+      `lang === 'vi' ? …`, và `{ vi: '…', en: '…' }`.
+  Cả hai đều vô hình với luật 2: bị cắt thì bị coi là nội dung người dùng. Ô
+  "chưa ghi buổi tập" của đồng hồ sẵn sàng (`readiness-gauge.tsx`) bị cắt ở
+  320 ×1.3 mà không ai nghe, và lượt đầu của #63 chỉ bắt được nó nhờ một chỗ
+  nối sai đã bị gỡ.
+
+  Chữ viết thẳng đọc bằng trình phân tích cú pháp, không bằng regex: một chuỗi
+  có `'` bên trong, một template `${n} ngày`, một điều kiện xuống dòng — regex
+  sai ở cả ba, và sai ở đây là im lặng. Template thành chỗ trống `{x}`.
+*/
+const { parse } = createRequire(pathToFileURL(path.join(NATIVE, 'package.json')))('@babel/parser');
+
+function sourceFiles(dir = path.join(NATIVE, 'src'), out = []) {
+  for (const f of readdirSync(dir)) {
+    const p = path.join(dir, f);
+    if (statSync(p).isDirectory()) sourceFiles(p, out);
+    else if (/\.tsx?$/.test(f) && !f.endsWith('.d.ts')) out.push(p);
+  }
+  return out;
+}
+
+const literalText = (n) => {
+  if (n?.type === 'StringLiteral') return n.value;
+  if (n?.type === 'TemplateLiteral') return n.quasis.map((q, i) => q.value.cooked + (i < n.expressions.length ? '{x}' : '')).join('');
+  return null;
+};
+/* Điều kiện chọn ngôn ngữ: `vi`, `!vi`, `lang === 'vi'`, `x !== 'en'`… */
+const isLangTest = (t) => {
+  if (t?.type === 'Identifier') return t.name === 'vi' || t.name === 'isVi';
+  if (t?.type === 'UnaryExpression' && t.operator === '!') return isLangTest(t.argument);
+  if (t?.type === 'BinaryExpression' && /^[!=]==?$/.test(t.operator)) {
+    return [t.left, t.right].some((s) => s.type === 'StringLiteral' && (s.value === 'vi' || s.value === 'en'));
+  }
+  return false;
+};
+const propKey = (p) => (p.key.type === 'Identifier' ? p.key.name : p.key.type === 'StringLiteral' ? p.key.value : null);
+
+/** Chữ viết thẳng trong các tệp `[[tên, mã]]`: `Map<chuỗi, "tệp:dòng">`. */
+export function inlineCopy(files) {
+  const out = new Map();
+  const add = (n, where) => {
+    const s = literalText(n)?.trim();
+    if (s && s.length >= 2 && !out.has(s)) out.set(s, where);
+  };
+  for (const [rel, src] of files) {
+    const ast = parse(src, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
+    const visit = (node) => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) return node.forEach(visit);
+      if (typeof node.type !== 'string') return;
+      if (node.type === 'ConditionalExpression' && isLangTest(node.test)) {
+        const where = `${rel}:${node.loc.start.line}`;
+        if (literalText(node.consequent) != null && literalText(node.alternate) != null) {
+          add(node.consequent, where);
+          add(node.alternate, where);
+        }
+      } else if (node.type === 'ObjectExpression') {
+        const props = node.properties.filter((p) => p.type === 'ObjectProperty');
+        const vi = props.find((p) => propKey(p) === 'vi');
+        const en = props.find((p) => propKey(p) === 'en');
+        if (vi && en && literalText(vi.value) != null && literalText(en.value) != null) {
+          add(vi.value, `${rel}:${node.loc.start.line}`);
+          add(en.value, `${rel}:${node.loc.start.line}`);
+        }
+      }
+      for (const k in node) if (k !== 'loc' && k !== 'leadingComments' && k !== 'trailingComments') visit(node[k]);
+    };
+    visit(ast.program);
+  }
+  return out;
+}
+
+/** Mọi chữ app viết ra: `native-strings.ts` + `i18n.ts` + chữ viết thẳng trong `src/` (#94). */
+export function allAppCopy() {
+  const lib = (f) => readFileSync(path.join(NATIVE, 'src/lib', f), 'utf8');
+  const dict = new Set([...appCopy(lib('native-strings.ts')), ...appCopy(lib('i18n.ts'))]);
+  const files = sourceFiles()
+    .map((p) => [path.relative(NATIVE, p), p])
+    .filter(([rel]) => !/^src\/lib\/(native-strings|i18n)\.ts$/.test(rel))
+    .map(([rel, p]) => [rel, readFileSync(p, 'utf8')]);
+  for (const s of inlineCopy(files).keys()) dict.add(s);
+  return [...dict];
+}
+
 /* `{x}` là một chỗ trống; `{x:một|nhiều}` là bộ chọn số ít/số nhiều của
    `fillCopy` (#67) — trên màn nó là ĐÚNG MỘT trong hai dạng, không phải một
    đoạn bất kỳ. Tách chuỗi theo `{x}` thôi thì bộ chọn thành chữ cố định
@@ -224,7 +315,7 @@ export const HEAD_WORDS = 4;
 const HEAD = `\\S+(?:\\s+\\S+){0,${HEAD_WORDS - 1}}`;
 
 /** Nguồn regex (neo hai đầu) cho mỗi chuỗi: `{n}`, `{name}` khớp một đoạn bất kỳ — trừ chỗ trống DUY NHẤT ở đầu chuỗi, xem `HEAD_WORDS`. */
-export function copyPatterns(copy = appCopy()) {
+export function copyPatterns(copy = allAppCopy()) {
   /* Một chuỗi mà phần CỐ ĐỊNH gần như không có chữ (`{n}`, `{a} · {b}`,
      `{n} kg`) khớp cả nội dung người dùng, nên bị bỏ: nó sẽ biến một chú
      thích bài bị cắt đúng luật thành "chữ của app bị cắt". */
@@ -252,7 +343,7 @@ export function copyPatterns(copy = appCopy()) {
  * phần đầu ấy ở `HEAD_WORDS` từ, #87).
  * Cùng ngưỡng ≥ 4 chữ cái cố định như `copyPatterns`.
  */
-export function tailPatterns(copy = appCopy()) {
+export function tailPatterns(copy = allAppCopy()) {
   return copy
     .filter((s) => fixedLetters(s) >= 4)
     .filter((s) => /^\p{L}/u.test(s))
