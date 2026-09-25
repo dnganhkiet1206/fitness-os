@@ -125,10 +125,22 @@ const stylesFor = makeStyles((c, m) => ({
   head: { gap: 2 },
   title: { ...type.title, color: c.foreground },
   lead: { ...type.body, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
-  tiles: { flexDirection: 'row', gap: spacing.sm },
+  /*
+    Xuống hàng thay vì bóp (#48). `flex: 1` chia ba ô đều nhau ở MỌI bề
+    ngang, và ở 320 mỗi ô còn 51px cho chữ: "+3.3 kg" cần 57, nên bài đăng
+    để khoe tiến bộ hiện "+3.3…", "-2.1 …", "+15 …" — cắt đúng con số. Đo
+    bằng lượt quét hẹp của `live.mjs`.
+
+    `flexBasis` 92: vùng ô rộng (bề ngang − 74). Ở 375 là 301 → ba ô 95px,
+    vẫn một hàng; ở 402 là 104px. Ở 320 là 246 → không đủ ba ô 92, nên hai
+    ô một hàng và ô thứ ba trải hết hàng dưới. Ô hẹp nhất còn 92 − 24 = 68px
+    cho chữ — đủ "+12.5 kg".
+  */
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   /* Mặt lõm cho dữ liệu của thẻ, như bảng bài tập của thẻ Workout. */
   tile: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: 92,
     minWidth: 0,
     gap: 4,
     padding: spacing.sm + 4,

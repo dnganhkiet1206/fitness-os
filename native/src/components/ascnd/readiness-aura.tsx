@@ -476,5 +476,15 @@ const stylesFor = makeStyles((c) => ({
   /* Behind everything, and out of the way of every touch. `zIndex` is not set:
      being first in the tree is what puts it at the back, and a z-index here
      would be a second answer to a question already answered. */
-  fill: { position: 'absolute', top: 0, left: 0, right: 0 },
+  /*
+    `overflow: hidden` (#48): lớp bên trong CỐ Ý lớn hơn màn (`OVERSCALE`, xem
+    `drift`), và phần thừa ấy — 22px mỗi bên ở 320 — không có gì cắt. Trên web
+    nó nới trang thành 323px, tức cả tab Cộng đồng cuộn ngang 3px; lượt quét
+    hẹp của `live.mjs` bắt được. Cắt ở đúng hộp này không đổi một pixel nào
+    trên màn: hộp là kích thước CHƯA biến đổi của lớp, tức đúng khung màn, và
+    lớp phóng to luôn phủ kín nó — đó là điều kiện `s ≥ 1 + DRIFT` ở trên.
+    Hộp vuông không bo góc, nên trên iOS đây là một `masksToBounds` thường,
+    không kéo theo lượt vẽ ngoài màn nào.
+  */
+  fill: { position: 'absolute', top: 0, left: 0, right: 0, overflow: 'hidden' },
 }));

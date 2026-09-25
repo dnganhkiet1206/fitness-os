@@ -128,7 +128,11 @@ export default function CommunitySearchScreen() {
                       </Text>
                       {p.is_official ? <Icon icon={BadgeCheck} size={16} color={c.metricBlue} /> : null}
                     </View>
-                    <Text style={styles.meta} numberOfLines={1}>
+                    {/* Lý do gợi ý là CÂU của app, được xuống hai dòng; handle
+                        thì một dòng, cắt được. Ở 320, cạnh nút Theo dõi, "Tài
+                        khoản chính thức ASCND" một dòng thành "Tài khoản chính
+                        th…" (#48, lượt quét hẹp của live.mjs). */}
+                    <Text style={styles.meta} numberOfLines={searching ? 1 : 2}>
                       {searching ? `@${p.handle}` : why}
                     </Text>
                   </View>

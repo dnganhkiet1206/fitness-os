@@ -4,7 +4,8 @@
  *   node tools/live.mjs            build, boot every screen, then press things
  *   node tools/live.mjs --no-build reuse the last build
  *   node tools/live.mjs --shots    also write PNGs to tools/.live-shots/
- *   node tools/live.mjs --press-only  skip the screen sweep, only drive controls
+ *   node tools/live.mjs --press-only  skip the screen sweeps, only drive controls
+ *   node tools/live.mjs --narrow-only only the 320-wide Community sweep (#48)
  *
  * Not part of `check.mjs`. It builds a bundle and drives a browser, which takes
  * minutes rather than seconds, and a suite people stop running is worth less
@@ -87,9 +88,11 @@ const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
 import { requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
 import { RPC_FIXTURES } from './live-rpc.mjs';
+import { NARROW, NARROW_LANGS, NARROW_ROUTES, copyPatterns, narrowFindings } from './live-narrow.mjs';
 
 const args = new Set(process.argv.slice(2));
 const wantShots = args.has('--shots');
+const narrowOnly = args.has('--narrow-only');
 /*
   ── theme, vì một bộ chạy chỉ vẽ được một thế giới ──
 
@@ -324,9 +327,13 @@ const RPC_ARG_MISSES = new Set();
 /** Hàm RPC app đã gọi mà `live-rpc.mjs` chưa có fixture — nhận `[]` như trước #38. */
 const RPC_UNFIXTURED = new Set();
 
-async function openPage(chromium, route, mode, settleMs = 9000) {
+async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, height = 874, lang = null } = {}) {
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 402, height: 874 } });
+  const ctx = await browser.newContext({ viewport: { width, height } });
+  /* Như theme ngay dưới: đặt TRƯỚC khi app chạy. Lượt quét hẹp (#48) đo cả
+     hai ngôn ngữ, vì chữ tiếng Việt dài hơn và mọi nhãn bị cắt đã tìm thấy
+     đều là tiếng Việt. */
+  if (lang) await ctx.addInitScript((l) => { window.localStorage.setItem('ascnd_lang', l); }, lang);
   if (mode !== 'signedout') await ctx.addInitScript(([ref, session]) => {
     window.localStorage.setItem(`sb-${ref}-auth-token`, session);
   }, [REF, JSON.stringify({
@@ -1728,7 +1735,7 @@ try {
   await canary(chromium);
   process.stdout.write('canary OK — đang mở từng màn');
 
-  for (const mode of args.has('--press-only') ? [] : MODES) {
+  for (const mode of args.has('--press-only') || narrowOnly ? [] : MODES) {
     for (const route of ROUTES) {
       const { text, rootLen, errors } = await boot(chromium, route, mode);
       const at = `[${mode}] ${route}`;
@@ -1754,40 +1761,82 @@ try {
     on it works, and the app's very first button did nothing at all for weeks
     while every static rule stayed green.
   */
-  process.stdout.write('bấm thử từng nút');
-  let pressed = 0;
-  let skipped = 0;
-  /* `/workouts` thay `/progress`: trang cũ không còn, nên suốt từ ba33494 lượt
-     bấm ở đây bấm trên một trang không-tìm-thấy và không đo gì. */
-  for (const [route, mode] of [['/', 'signedout'], ['/', 'full'], ['/workouts', 'full'], ['/settings', 'full']]) {
-    const { browser, page } = await openPage(chromium, route, mode);
-    try {
-      const r = await pressEverything(page, `[${mode}] ${route}`, problems);
-      pressed += r.tried;
-      skipped += r.skipped;
-    } finally {
-      await browser.close();
-    }
-    process.stdout.write('.');
-  }
-  console.log('');
-  globalThis.__skipped = skipped;
+  /*
+    ── the narrow half (#48) ──
 
-  process.stdout.write('kịch bản');
-  for (const sc of SCENARIOS) {
-    const { browser, page } = await openPage(chromium, sc.route, sc.mode);
-    try {
-      const why = await sc.run(page);
-      if (why) problems.push(`${sc.name} — ${why}`);
-    } catch (e) {
-      problems.push(`${sc.name} — không chạy được: ${e.message.split('\n')[0].slice(0, 140)}`);
-    } finally {
-      await browser.close();
+    Every Community screen at 320×720, in both languages: the page must not be
+    wider than the frame, and no string the APP wrote may be cut to "…". User
+    content cut by `numberOfLines` is what that prop is for — listed, not
+    failed. See `live-narrow.mjs` for how the two are told apart.
+  */
+  globalThis.__narrow = null;
+  if (!args.has('--press-only')) {
+    process.stdout.write('quét hẹp 320');
+    const patterns = copyPatterns();
+    const contentCut = new Set();
+    let opened = 0;
+    for (const lang of NARROW_LANGS) {
+      for (const route of NARROW_ROUTES) {
+        const { browser, page, errors } = await openPage(chromium, route, 'full', 9000, { ...NARROW, lang });
+        try {
+          const at = `[320 ${lang}] ${route}`;
+          if (errors.length) problems.push(`${at}: lỗi runtime — ${errors.slice(0, 2).join(' | ').slice(0, 200)}`);
+          const rootLen = await page.evaluate(() => document.getElementById('root')?.innerHTML?.length ?? 0);
+          if (rootLen < 400) problems.push(`${at}: màn hình trắng (root ${rootLen} ký tự)`);
+          const { wide, cut, clipped } = await narrowFindings(page, patterns);
+          if (wide) problems.push(`${at}: trang rộng ${wide}px trong khung ${NARROW.width}px — cả màn cuộn ngang`);
+          for (const c of clipped) problems.push(`${at}: ô chọn bị mép vùng cuộn cắt ngang khi chưa cuộn — ${c}`);
+          for (const c of cut) {
+            if (c.app) problems.push(`${at}: chữ của app bị cắt thành "…" — "${c.text.slice(0, 80)}"`);
+            else contentCut.add(c.text.slice(0, 40));
+          }
+          opened++;
+        } finally {
+          await browser.close();
+        }
+        process.stdout.write('.');
+      }
     }
-    process.stdout.write('.');
+    console.log('');
+    globalThis.__narrow = { opened, contentCut: contentCut.size };
   }
-  console.log('');
-  globalThis.__pressed = pressed;
+
+  if (!narrowOnly) {
+    process.stdout.write('bấm thử từng nút');
+    let pressed = 0;
+    let skipped = 0;
+    /* `/workouts` thay `/progress`: trang cũ không còn, nên suốt từ ba33494 lượt
+       bấm ở đây bấm trên một trang không-tìm-thấy và không đo gì. */
+    for (const [route, mode] of [['/', 'signedout'], ['/', 'full'], ['/workouts', 'full'], ['/settings', 'full']]) {
+      const { browser, page } = await openPage(chromium, route, mode);
+      try {
+        const r = await pressEverything(page, `[${mode}] ${route}`, problems);
+        pressed += r.tried;
+        skipped += r.skipped;
+      } finally {
+        await browser.close();
+      }
+      process.stdout.write('.');
+    }
+    console.log('');
+    globalThis.__skipped = skipped;
+
+    process.stdout.write('kịch bản');
+    for (const sc of SCENARIOS) {
+      const { browser, page } = await openPage(chromium, sc.route, sc.mode);
+      try {
+        const why = await sc.run(page);
+        if (why) problems.push(`${sc.name} — ${why}`);
+      } catch (e) {
+        problems.push(`${sc.name} — không chạy được: ${e.message.split('\n')[0].slice(0, 140)}`);
+      } finally {
+        await browser.close();
+      }
+      process.stdout.write('.');
+    }
+    console.log('');
+    globalThis.__pressed = pressed;
+  }
 } finally {
   server.close();
 }
@@ -1822,6 +1871,19 @@ if (problems.length) {
   this tool exists to catch, printed by the tool itself, and a green line
   nobody can trust is worse than a red one.
 */
+const narrowClaim = globalThis.__narrow
+  ? `${globalThis.__narrow.opened} lượt mở màn Cộng đồng ở ${NARROW.width}×${NARROW.height} (${NARROW_LANGS.join(' + ')}): ` +
+    'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt thành "…", không ô chọn nào ' +
+    'bị mép vùng cuộn cắt ngang ' +
+    `(${globalThis.__narrow.contentCut} đoạn nội dung người dùng được cắt đúng luật numberOfLines)`
+  : 'bỏ qua lượt quét hẹp';
+
+if (narrowOnly) {
+  console.log(`\nchạy thật OK (--narrow-only) — ${narrowClaim}`);
+  console.log(RPC_NOTE());
+  process.exit(0);
+}
+
 const sweptClaim = args.has('--press-only')
   ? 'bỏ qua vòng quét màn (--press-only)'
   : `${ROUTES.length} màn × ${MODES.length} trạng thái (đủ dữ liệu / tài khoản trống / mọi truy vấn hỏng): ` +
@@ -1832,7 +1894,7 @@ console.log(
     `đã BẤM THỬ ${globalThis.__pressed} nút trên 4 màn và nút nào cũng làm màn hình đổi ` +
     `(${globalThis.__skipped} nút được bỏ qua có lý do: disabled, đang được chọn sẵn, bị che, ` +
     'hoặc việc duy nhất của nó là mở hộp thoại xác nhận — thứ mà Alert của react-native-web là hàm rỗng); ' +
-    `${SCENARIOS.length} kịch bản có kết quả cụ thể đều đúng; ` +
+    `${SCENARIOS.length} kịch bản có kết quả cụ thể đều đúng; ${narrowClaim}; ` +
     'canary xác nhận bộ chạy nhìn đúng app thật chứ không phải trang lỗi của server',
 );
 console.log(RPC_NOTE());
