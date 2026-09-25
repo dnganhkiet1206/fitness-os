@@ -36,7 +36,9 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
    chỉ đúng tệp migration đã thêm nó — một ngoại lệ không tra được nguồn là một
    ngoại lệ cho tiện. */
 export const TYPES_STALE = {
-  'profiles.coins': '20260810120000_economy_server_authority.sql',
+  /* Từng có `'profiles.coins'`, trích `20260810120000_economy_server_authority.sql`
+     — nhưng không migration nào tạo cột ấy; nó chỉ có trong fixture. Từ #90
+     `type-columns.mjs` kiểm mỗi mục: có thật, được tệp trích nhắc, chưa hết hạn. */
 };
 
 /** Cột đọc thẳng từ khối `Row` của `types.ts` (không gồm TYPES_STALE). */

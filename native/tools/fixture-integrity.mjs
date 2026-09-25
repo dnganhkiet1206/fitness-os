@@ -215,7 +215,7 @@ export function readSchema(dir = MIG) {
         else if (s[i] === ')') depth--;
         i++;
       }
-      const t = { file: f, pk: null, pkDefault: false, uniques: [], fks: [], checks: {}, defaults: {} };
+      const t = { file: f, pk: null, pkDefault: false, uniques: [], fks: [], checks: {}, defaults: {}, columns: [] };
       const table = m[1];
       let anon = 0;
       for (const p of splitTop(s.slice(start, i - 1))) {
@@ -238,6 +238,7 @@ export function readSchema(dir = MIG) {
           t.fks.push({ col: mm[1].trim(), ref: refOf(mm[2], mm[3]), refCol: mm[4].trim() });
         else if ((mm = p.match(/^"?(\w+)"?\s+/)) && !/^(CONSTRAINT|CHECK|EXCLUDE)\b/i.test(p)) {
           const col = mm[1];
+          t.columns.push(col); // #90: cột của bảng như migration dựng, để so với `types.ts`
           /* DEFAULT của cột (#52): máy chủ giả điền nó cho một INSERT không gửi cột
              ấy, như Postgres. Chỉ những dạng tính được ở phía client. */
           const dm = p.match(/\bDEFAULT\s+(now\(\)|gen_random_uuid\(\)|auth\.uid\(\)|'([^']*)'|true|false|-?\d+(?:\.\d+)?)/i);
@@ -256,6 +257,31 @@ export function readSchema(dir = MIG) {
         }
       }
       schema[m[1]] = t;
+    }
+    /* #90: `ALTER TABLE … ADD COLUMN [IF NOT EXISTS] c …` (nhiều cột cách nhau
+       bằng dấu phẩy), `DROP COLUMN`, `RENAME COLUMN a TO b`. Cột thêm sau cũng
+       mang DEFAULT như cột trong CREATE TABLE — `show_badges` của #42 là một
+       câu ADD COLUMN, và thiếu nó thì máy chủ giả chèn hàng không có cột ấy. */
+    for (const m of s.matchAll(/ALTER TABLE (?:IF EXISTS )?(?:ONLY )?(?:public\.)?"?(\w+)"?\s+([^;]*);/gi)) {
+      const t = schema[m[1]];
+      if (!t) continue;
+      for (const action of splitTop(m[2])) {
+        let a;
+        if ((a = action.match(/^ADD COLUMN (?:IF NOT EXISTS )?"?(\w+)"?\s+/i))) {
+          if (!t.columns.includes(a[1])) t.columns.push(a[1]);
+          const dm = action.match(/\bDEFAULT\s+(now\(\)|gen_random_uuid\(\)|auth\.uid\(\)|'([^']*)'|true|false|-?\d+(?:\.\d+)?)/i);
+          if (dm && !(a[1] in t.defaults)) {
+            const d = dm[1].toLowerCase();
+            t.defaults[a[1]] = d === 'now()' ? { now: true } : d === 'gen_random_uuid()' ? { uuid: true } : d === 'auth.uid()' ? { uid: true }
+              : dm[2] !== undefined ? { value: dm[2] } : d === 'true' ? { value: true } : d === 'false' ? { value: false } : { value: Number(dm[1]) };
+          }
+        } else if ((a = action.match(/^DROP COLUMN (?:IF EXISTS )?"?(\w+)"?/i))) {
+          t.columns = t.columns.filter((c) => c !== a[1]);
+          delete t.defaults[a[1]];
+        } else if ((a = action.match(/^RENAME COLUMN "?(\w+)"? TO "?(\w+)"?/i))) {
+          t.columns = t.columns.map((c) => (c === a[1] ? a[2] : c));
+        }
+      }
     }
     for (const m of s.matchAll(/CREATE UNIQUE INDEX[^;]*?\bON (?:public\.)?"?(\w+)"?\s*(?:USING \w+\s*)?\(([^)]+)\)([^;]*);/gi)) {
       if (/\bWHERE\b/i.test(m[3]) || !schema[m[1]]) continue; // chỉ mục một phần: chỉ duy nhất khi thoả điều kiện

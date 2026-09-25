@@ -261,7 +261,10 @@ export const FIXTURES = {
        không tồn tại trong schema, nên `edit-profile` và onboarding luôn thấy
        mục tiêu giấc ngủ trống ở mọi lần dựng. */
     sleep_target_waketime: '06:30', sleep_target_bedtime: '23:00',
-    dietary_preference: 'omnivore', coins: 1240,
+    /* Không có `coins`: cột ấy không tồn tại (#90). Số dư xu là tổng
+       `mascot_transactions.amount`; `coins: 1240` ở đây từng được một ngoại lệ
+       `TYPES_STALE` che bằng một nguồn trích sai. */
+    dietary_preference: 'omnivore',
   }],
   daily_logs: [{
     id: 'dl1', user_id: UID, date: dayStr(0), kcal: 1680, protein_g: 118,
