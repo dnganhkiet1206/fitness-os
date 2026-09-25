@@ -57,7 +57,9 @@
  *     over the top strip. iOS renders `NativeTabs` at the bottom; there is
  *     nothing over that strip on a phone.
  *   - Confirm dialogs read as dead because `react-native-web`'s Alert is
- *     `static alert() {}`. On iOS they are real.
+ *     `static alert() {}`. On iOS they are real. (Since #83 the app replaces
+ *     it with the browser's own dialogs, so on web they are real too, and #91
+ *     presses them.)
  *
  * If a finding here would disappear on a phone, it was never a finding. Judge
  * every one against that question before touching a line of app code.
@@ -671,10 +673,12 @@ const changed = (a, b) => a.url !== b.url || a.len !== b.len || a.text !== b.tex
  *      reach this" into "this does nothing", which are opposite findings. It is
  *      also a web-only layout: iOS puts the tabs at the bottom.
  *
- *   4. **Its whole job is a confirm dialog.** `react-native-web`'s Alert is
- *      literally `static alert() {}` — an empty function. Every `Alert.alert`
- *      confirmation in the app is therefore silent *on web* and correct on iOS.
- *      Nothing about the app can be learned by pressing those here.
+ *   4. **Its whole job is a confirm dialog.** This was an exclusion until #83:
+ *      `react-native-web`'s Alert is literally `static alert() {}`, so every
+ *      confirmation was silent on web and nothing could be learned by pressing
+ *      it. Since #83 `Alert.alert` is the browser's own dialog, and since #91
+ *      those controls are pressed like any other — a dialog that opens is the
+ *      screen answering, and dismissing it is Cancel.
  *
  * The lesson worth keeping is the one about `force`: a harness that makes a
  * control reachable when a user's finger could not is not testing the app the
@@ -683,14 +687,6 @@ const changed = (a, b) => a.url !== b.url || a.len !== b.len || a.text !== b.tex
  * Navigation counts as a reaction, so after each press the page is returned to
  * where it started; otherwise the second control would be pressed on a screen
  * it does not belong to.
- */
-/**
- * Controls whose only action is a confirm dialog.
- *
- * `react-native-web` ships `class Alert { static alert() {} }` — an empty
- * function — so these are silent here and correct on a phone. Listed by name
- * with the reason, rather than tolerated silently, because the day one of them
- * grows a real behaviour it should come back off this list.
  */
 /*
   #91: nút PHÁ HUỶ — xoá, rời, chặn, bỏ theo dõi, đăng xuất. Trước #83 các nút
@@ -1523,9 +1519,10 @@ const SCENARIOS = [
     /* Buổi tập: một set tự gõ — tên bài, mức tạ, số lần. */
     /* #71: chỉ số sinh học — HRV 55. KHÔNG phải nhịp tim: fixture có số Apple
        Health của hôm nay, và đổi một số Health sở hữu (nhịp tim, SpO₂, nhịp
-       thở) thì màn hỏi lại bằng `Alert.alert` — thứ react-native-web không vẽ,
-       nên trên web nút Lưu im lặng (đo được: 0 toast, 0 mutation). HRV không
-       qua hộp hỏi. Lúc phát lại, hàm ghi ĐỌC trước (`biometricRowToReplace`)
+       thở) thì màn hỏi lại bằng `Alert.alert`. Từ #83 hộp ấy là `confirm()`
+       thật, và Playwright tự đóng nó — tức Huỷ, nên không có gì để xếp hàng.
+       Vế riêng của #83 bên dưới đo đúng hộp ấy; vế này đo hàng đợi, nên dùng
+       HRV, thứ không qua hộp hỏi. Lúc phát lại, hàm ghi ĐỌC trước (`biometricRowToReplace`)
        rồi mới upsert; lượt đọc ấy là GET, không tính là lệnh ghi. */
     ['chỉ số sinh học', '/log-biometrics', /^(Lưu|Save)$/, ['biometric_samples'], async (page) => page.getByPlaceholder('62').fill('55')],
     /* #71: buổi tập từ Kế hoạch ngày — đường `offlineNow()` riêng của
@@ -1911,8 +1908,9 @@ const SCENARIOS = [
     /*
       #57: "Thêm vào bữa ăn" là ghi nhật ký TẠO MỚI, nên mất mạng thì XẾP HÀNG
       như ghi bữa tay — không từ chối (#49 để nó ở `useOnlineMutation`, sai
-      đường), không treo. Đo trên thực đơn `mp1` (trên web `Alert` của thẻ Recipe
-      là hàm rỗng, nên chọn bữa ở đó không được). Đòi:
+      đường), không treo. Đo trên thực đơn `mp1`: nút "Ghi vào hôm nay" ghi
+      thẳng. Thẻ Recipe thì hỏi chọn bữa bằng `Alert.alert` nhiều nút, tức một
+      `prompt()` đánh số trên web từ #83, và Playwright tự đóng nó (Huỷ). Đòi:
         1. mất mạng, bấm "Ghi vào hôm nay" → câu báo nói đã LƯU và sẽ đồng bộ;
            không lệnh ghi nào đi ra;
         2. có mạng lại → đúng MỘT lệnh ghi `meal_entries` và lệnh ghi món, và
