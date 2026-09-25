@@ -1349,11 +1349,23 @@ const SCENARIOS = [
           return (c.clientState?.mutations ?? []).filter((m) => m.state?.isPaused).length;
         });
 
-      /* (A) */
+      /* (A) — và #66: cú chạm lúc mất mạng phải THẤY được. Trước #66 con số
+         đứng yên và không một câu nào, nên người ta bấm lại — thành hai cốc. */
+      const total = async () => Number((await page.locator('body').innerText()).match(/(\d+(?:\.\d+)?) ?oz\b/)?.[1] ?? NaN);
+      const before = await total();
       await goOffline(page);
       await page.waitForTimeout(1500);
       await add().click();
-      await page.waitForTimeout(2000);
+      let toastText = '';
+      for (let i = 0; i < 10 && !toastText; i++) {
+        await page.waitForTimeout(250);
+        toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+      }
+      if (!/đồng bộ khi có mạng|sync when you are back online/.test(toastText)) {
+        return `(A) mất mạng, bấm thêm nước: phải nói "đã lưu, sẽ đồng bộ" (#66), ra "${toastText}"`;
+      }
+      await page.waitForTimeout(1000);
+      if (!(await total() > before)) return `(A) mất mạng, bấm thêm nước: tổng phải tăng (#66), trước ${before}, sau ${await total()}`;
       if (writes.length) return `(A) mất mạng mà vẫn có ${writes.length} lệnh ghi đi ra`;
       if ((await paused()) !== 1) return `(A) mất mạng, bấm thêm nước: cache persist phải có đúng 1 mutation tạm dừng, ra ${await paused()}`;
       await goOnline(page);

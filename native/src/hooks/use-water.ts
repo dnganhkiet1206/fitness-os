@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { offlineNow } from '@/lib/offline';
+import { toast } from '@/lib/toast';
+import { useI18n } from '@/hooks/use-app-settings';
 import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
 import * as Crypto from 'expo-crypto';
@@ -54,10 +56,19 @@ async function patchWater(
   const totalKey = ['today_water', userId, dateStr];
   const logsKey = ['today_water_logs', userId, dateStr];
 
-  // Offline the write is paused, never fails, and so is never rolled back —
-  // the patch would sit in the persisted cache as water nobody drank. See
-  // `@/lib/offline`.
-  if (offlineNow()) return { totalKey, logsKey, prevTotal: undefined, prevLogs: undefined };
+  /*
+    Offline the patch STAYS (#66). It used to be skipped here: "the write is
+    paused, never fails, never rolled back — water nobody drank", resting on a
+    measurement that reconnecting never sent it. That measurement was the web
+    harness never telling NetInfo the network was back (#62): with the event a
+    real browser fires, the queued glass is sent exactly once, also after the
+    app is closed offline and reopened. Skipping the patch left the most-tapped
+    button in the app doing visibly nothing offline — and a tap that shows
+    nothing gets tapped again, which queues a SECOND glass.
+
+    Removing the last glass no longer reaches this offline at all: it is
+    `useOnlineMutation`, which skips `onMutate` and says so.
+  */
   // or a refetch already in flight lands after this and undoes it
   await Promise.all([
     qc.cancelQueries({ queryKey: totalKey }),
@@ -126,6 +137,7 @@ export function useAddWater(date?: string) {
   const dayOf = () => date ?? today();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const i18n = useI18n();
 
   /* Narrowed to the one branch this hook ever sends. Typed as the whole union
      it compiled, and every callback then had to pretend it did not know the
@@ -209,6 +221,11 @@ export function useAddWater(date?: string) {
       options?: Parameters<typeof m.mutate>[1],
     ) => {
       if (!user) return;
+      /* Mất mạng: nói việc đã được giữ lại, như mọi việc xếp hàng khác (giấc
+         ngủ, buổi tập, số đo, cân nặng). Nước là chỗ duy nhất từng im lặng
+         (#66). Dải "Ngoại tuyến" nói mạng đang mất; câu này nói cú chạm VẪN
+         được tính — hai câu khác nhau. */
+      if (offlineNow()) toast.success(i18n.logMealQueued);
       m.mutate(
         {
           kind: 'water',
