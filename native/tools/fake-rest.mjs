@@ -367,6 +367,42 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
         JSON.stringify({ user_id: 'f0f0f0f0-0000-4000-8000-000000000003', handle: other.handle, display_name: 'X' }), { prefer: 'resolution=merge-duplicates' });
       return r.status === 409 && w.community_profiles.find((p) => p.user_id === other.user_id).display_name === other.display_name;
     }],
+    /* #93: NOT NULL như Postgres — 400 / 23502, và không gì được áp. */
+    ...(() => {
+      const code = (r) => { try { return JSON.parse(r.body).code; } catch { return null; } };
+      const WL = FIXTURES.weight_logs[0];
+      const CM = FIXTURES.community_comments[0];
+      return [
+        ['POST thiếu cột NOT NULL không DEFAULT (weight_kg) → 400 23502, không hàng nào vào (#93)', (w) => {
+          const r = applyWrite(w, 'weight_logs', 'POST', U('weight_logs'), JSON.stringify({ user_id: WL.user_id, date: '2026-09-20' }));
+          return r.status === 400 && code(r) === '23502' && w.weight_logs.length === FIXTURES.weight_logs.length;
+        }],
+        ['POST lô [đủ, thiếu] → 23502, CẢ lô không vào (#93, nguyên tử như #80)', (w) => {
+          const r = applyWrite(w, 'weight_logs', 'POST', U('weight_logs'), JSON.stringify([
+            { user_id: WL.user_id, date: '2026-09-20', weight_kg: 70 },
+            { user_id: WL.user_id, date: '2026-09-21' },
+          ]));
+          return r.status === 400 && code(r) === '23502' && w.weight_logs.length === FIXTURES.weight_logs.length;
+        }],
+        ['upsert TRÚNG hàng có sẵn mà thiếu cột NOT NULL → vẫn 23502 (ExecConstraints đứng trước ON CONFLICT, #93)', (w) => {
+          const r = applyWrite(w, 'weight_logs', 'POST', U('weight_logs'), JSON.stringify({ id: WL.id, user_id: WL.user_id, date: WL.date }), { prefer: 'resolution=merge-duplicates' });
+          return r.status === 400 && code(r) === '23502' && w.weight_logs[0].weight_kg === WL.weight_kg;
+        }],
+        ['cột NOT NULL CÓ DEFAULT mà vắng → được điền, 201 (đối chứng của #93)', (w) => {
+          const r = applyWrite(w, 'community_comments', 'POST', U('community_comments'), JSON.stringify({ post_id: CM.post_id, body: 'x' }));
+          const row = w.community_comments.at(-1);
+          return r.status === 201 && row.body === 'x' && row.hidden === false && row.author_id != null;
+        }],
+        ['cột NOT NULL CÓ DEFAULT mà gửi null TƯỜNG MINH → 23502 (DEFAULT chỉ cho cột vắng, #93)', (w) => {
+          const r = applyWrite(w, 'community_comments', 'POST', U('community_comments'), JSON.stringify({ post_id: CM.post_id, body: 'x', hidden: null }));
+          return r.status === 400 && code(r) === '23502' && w.community_comments.length === FIXTURES.community_comments.length;
+        }],
+        ['PATCH đặt cột NOT NULL thành null → 23502, không hàng nào đổi (#93)', (w) => {
+          const r = applyWrite(w, 'community_comments', 'PATCH', U(`community_comments?id=eq.${CM.id}`), JSON.stringify({ body: null }));
+          return r.status === 400 && code(r) === '23502' && w.community_comments[0].body === CM.body;
+        }],
+      ];
+    })(),
     ['PATCH gộp thân vào hàng khớp', (w) => {
       const p = FIXTURES.community_settings[0];
       applyWrite(w, 'community_settings', 'PATCH', U(`community_settings?user_id=eq.${p.user_id}`), JSON.stringify({ default_visibility: 'public' }));

@@ -19,7 +19,10 @@
  *           `gen_random_uuid()`, `auth.uid()`, hằng số). Trùng khoá chính hay
  *           UNIQUE → 409 / `23505` như Postgres; `Prefer: resolution=merge-
  *           duplicates` (upsert) thì gộp, `ignore-duplicates` thì bỏ qua.
- *   PATCH   gộp thân vào mọi hàng khớp bộ lọc.
+ *           Cột NOT NULL còn vắng hay `null` sau khi điền DEFAULT → 400 /
+ *           `23502` (#93), cả lô không vào.
+ *   PATCH   gộp thân vào mọi hàng khớp bộ lọc; đặt một cột NOT NULL thành
+ *           `null` → 400 / `23502`, không hàng nào đổi.
  *   DELETE  bỏ mọi hàng khớp bộ lọc.
  *
  * Trả về như PostgREST: có `select=` thì trả các hàng bị chạm (một object nếu
@@ -69,6 +72,16 @@ function withDefaults(table, row) {
     else out[col] = def.value;
   }
   return out;
+}
+
+/* 23502 như PostgREST trả (HTTP 400). Chỉ cột NOT NULL của CHÍNH migration:
+   `readSchema` gom cả khoá chính và `ALTER TABLE … ADD COLUMN … NOT NULL`. */
+function notNullError(table, col) {
+  return {
+    status: 400,
+    body: JSON.stringify({ code: '23502', details: null, hint: null, message: `null value in column "${col}" of relation "${table}" violates not-null constraint` }),
+    applied: true,
+  };
 }
 
 const sameKey = (a, b, cols) => cols.every((c) => a[c] != null && b[c] != null && String(a[c]) === String(b[c]));
@@ -126,6 +139,14 @@ export function applyWrite(world, table, method, url, bodyText, headers = {}) {
     const touched = [];
     for (const raw of list) {
       const row = withDefaults(table, raw);
+      /*
+        NOT NULL (#93) đứng TRƯỚC xét xung đột, như Postgres: `ExecInsert` chạy
+        `ExecConstraints` trên hàng định chèn rồi mới tới chỉ mục của ON
+        CONFLICT. Nên một upsert thiếu cột bắt buộc hỏng CẢ KHI nó trúng một
+        hàng có sẵn — đúng cái bẫy mà "đằng nào cũng chỉ update" che đi.
+      */
+      const missing = (s?.notNull ?? []).find((c) => row[c] == null);
+      if (missing) return notNullError(table, missing);
       const pool = [...rows, ...added];
       const hit = pool.find((r) => sameKey(r, row, target));
       const clash = others.map((cols) => pool.find((r) => r !== hit && sameKey(r, row, cols))).find(Boolean);
@@ -164,6 +185,10 @@ export function applyWrite(world, table, method, url, bodyText, headers = {}) {
     try {
       patch = JSON.parse(bodyText || '{}');
     } catch { /* thân rỗng */ }
+    /* Chỉ cột mà CHÍNH lệnh này đặt thành null: hàng có sẵn trong Postgres thật
+       đã thoả NOT NULL, còn một fixture thiếu cột là việc của fixture-integrity. */
+    const nulled = Object.keys(patch).find((c) => patch[c] === null && (SCHEMA[table]?.notNull ?? []).includes(c));
+    if (nulled && matched.length) return notNullError(table, nulled);
     for (const r of matched) Object.assign(r, patch);
     return reply(matched, 204);
   }
