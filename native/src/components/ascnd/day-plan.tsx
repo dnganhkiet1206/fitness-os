@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Check, ChevronDown, Info, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -384,6 +384,8 @@ export function DayPlan({
   const c = usePalette();
   const m = useMaterial();
   const styles = stylesFor(c);
+  /* Hàng set xếp hai dòng dưới 360 điểm — xem `setRowNarrow` (#72). */
+  const narrow = useWindowDimensions().width < 360;
   const { weight: wUnit } = useUnits();
   const log = useLogWorkoutSession();
   const invite = useWorkoutShareInvite();
@@ -1555,7 +1557,7 @@ export function DayPlan({
                 <View key={row.key}>
                   {ri > 0 ? <View style={styles.hair} /> : null}
                   <View style={[styles.setBlock, isDone && styles.setCardDone]}>
-              <View style={styles.setRow}>
+              <View style={[styles.setRow, narrow && styles.setRowNarrow]}>
                 {/*
                   The tick.
 
@@ -1684,74 +1686,78 @@ export function DayPlan({
                   ) : null}
                 </View>
 
-                {/*
-                  Two chips, collapsed to their values and opened by tapping.
+                {/* Hai viên đi CHUNG một khối: hàng hẹp quá (320) thì cả khối xuống
+                    dòng và nằm sát phải, thay vì để ô số lần bị đè (#72). */}
+                <View style={[styles.setChips, narrow && styles.setChipsNarrow]}>
+                  {/*
+                    Two chips, collapsed to their values and opened by tapping.
 
-                  Five effort chips and a rest stepper on every row is nine
-                  controls per set — on a six-set workout that is fifty-four,
-                  all the same shape and none of them the one you want. The
-                  value you already have is the answer nine times out of ten.
-                */}
-                <PressScale
-                  accessibilityRole="button"
-                  accessibilityLabel={`${i18n.nWbRest} ${restLabel(secs)}`}
-                  hitSlop={12}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setEditing(open ? null : row.key);
-                  }}
-                  style={[
-                    styles.chip,
-                    /*
-                      Quiet while it still says what the plan said.
-
-                      Three sets of the same movement showed the same "2:00" and
-                      the same "RPE 8", three times, at full contrast — the row
-                      spending its emphasis on the part that never changes. Now
-                      the default is a plain value and a CHANGED one is a chip,
-                      so the eye catches the set you adjusted rather than the two
-                      you did not. The tap target is identical either way; this
-                      is contrast, not affordance.
-                    */
-                    secs === row.plannedRest ? styles.chipDefault : null,
-                    open && styles.chipOpen,
-                  ]}>
-                  {/* Một màu cho cả hai nhánh: nhánh "chưa đổi" từng là
-                      `alpha(m.ink, 0.30)` — 1,94:1, dưới cả sàn 3,0 của một
-                      vật thể đồ hoạ. Cái phân biệt đã-đổi với chưa-đổi là CHIP
-                      (nền + viền), không phải icon; xem chú thích ở
-                      `chipTextDefault`. */}
-                  <Icon icon={Timer} size={11} color={c.mutedForeground} />
-                  <Text style={[styles.chipText, secs === row.plannedRest && styles.chipTextDefault]}>
-                    {restLabel(secs)}
-                  </Text>
-                </PressScale>
-                <PressScale
-                  accessibilityRole="button"
-                  accessibilityLabel={`${i18n.nWbEffort} ${effort}`}
-                  hitSlop={12}
-                  onPress={() => {
-                    Haptics.selectionAsync();
-                    setEditing(open ? null : row.key);
-                  }}
-                  style={[
-                    styles.chip,
-                    effort === row.plannedRpe ? styles.chipDefault : null,
-                    open && styles.chipOpen,
-                    effort !== row.plannedRpe && EFFORT_TINT[effort]
-                      ? { borderColor: alpha(c[EFFORT_TINT[effort]], 0.4) }
-                      : null,
-                  ]}>
-                  <Text
+                    Five effort chips and a rest stepper on every row is nine
+                    controls per set — on a six-set workout that is fifty-four,
+                    all the same shape and none of them the one you want. The
+                    value you already have is the answer nine times out of ten.
+                  */}
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel={`${i18n.nWbRest} ${restLabel(secs)}`}
+                    hitSlop={12}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setEditing(open ? null : row.key);
+                    }}
                     style={[
-                      styles.chipText,
-                      effort === row.plannedRpe
-                        ? styles.chipTextDefault
-                        : { color: tintFor(c, effort) },
+                      styles.chip,
+                      /*
+                        Quiet while it still says what the plan said.
+
+                        Three sets of the same movement showed the same "2:00" and
+                        the same "RPE 8", three times, at full contrast — the row
+                        spending its emphasis on the part that never changes. Now
+                        the default is a plain value and a CHANGED one is a chip,
+                        so the eye catches the set you adjusted rather than the two
+                        you did not. The tap target is identical either way; this
+                        is contrast, not affordance.
+                      */
+                      secs === row.plannedRest ? styles.chipDefault : null,
+                      open && styles.chipOpen,
                     ]}>
-                    RPE {effort}
-                  </Text>
-                </PressScale>
+                    {/* Một màu cho cả hai nhánh: nhánh "chưa đổi" từng là
+                        `alpha(m.ink, 0.30)` — 1,94:1, dưới cả sàn 3,0 của một
+                        vật thể đồ hoạ. Cái phân biệt đã-đổi với chưa-đổi là CHIP
+                        (nền + viền), không phải icon; xem chú thích ở
+                        `chipTextDefault`. */}
+                    <Icon icon={Timer} size={11} color={c.mutedForeground} />
+                    <Text style={[styles.chipText, secs === row.plannedRest && styles.chipTextDefault]}>
+                      {restLabel(secs)}
+                    </Text>
+                  </PressScale>
+                  <PressScale
+                    accessibilityRole="button"
+                    accessibilityLabel={`${i18n.nWbEffort} ${effort}`}
+                    hitSlop={12}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setEditing(open ? null : row.key);
+                    }}
+                    style={[
+                      styles.chip,
+                      effort === row.plannedRpe ? styles.chipDefault : null,
+                      open && styles.chipOpen,
+                      effort !== row.plannedRpe && EFFORT_TINT[effort]
+                        ? { borderColor: alpha(c[EFFORT_TINT[effort]], 0.4) }
+                        : null,
+                    ]}>
+                    <Text
+                      style={[
+                        styles.chipText,
+                        effort === row.plannedRpe
+                          ? styles.chipTextDefault
+                          : { color: tintFor(c, effort) },
+                      ]}>
+                      RPE {effort}
+                    </Text>
+                  </PressScale>
+                </View>
               </View>
 
               {open ? (
@@ -1779,9 +1785,9 @@ export function DayPlan({
                     </View>
                   </View>
 
-                  <View style={styles.editorRow}>
-                    <Text style={styles.editorLabel}>{i18n.nWbEffort}</Text>
-                    <View style={styles.rpeRow}>
+                  <View style={[styles.editorRow, narrow && styles.editorRowNarrow]}>
+                    <Text style={[styles.editorLabel, narrow && styles.editorLabelNarrow]}>{i18n.nWbEffort}</Text>
+                    <View style={[styles.rpeRow, narrow && styles.rpeRowNarrow]}>
                       {RPE_CHOICES.map((v) => (
                         <PressScale
                           key={v}
@@ -2167,6 +2173,19 @@ const stylesFor = makeStyles((c, m) => ({
   },
   setCardDone: { opacity: 0.6 },
   setRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  setChips: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /*
+    Màn hẹp (#72): hai viên xuống DÒNG RIÊNG, sát phải. `setText` là `flex: 1;
+    minWidth: 0` trong khi các ô nhập bên trong có bề rộng tối thiểu, nên ở 320
+    nội dung tràn 50px ra khỏi khối và nằm dưới viên "⏱ 2:00": ô số lần bị đè,
+    chữ "reps" mất. Yoga xử lý như CSS — không chỉ web. Ở 375 hàng vừa KHÍT
+    (tràn 0) và 402 dư, nên ngưỡng là bề ngang màn (< 360), đọc từ
+    `useWindowDimensions` — không phải bề rộng "tự nhiên" của ô nhập: bản đầu
+    dựa vào nó (`flexShrink: 0` + `flexWrap`) và trên web một `TextInput` có bề
+    rộng tự nhiên khác hẳn iOS, nên ô cân kéo dài ra ngoài khung.
+  */
+  setRowNarrow: { flexWrap: 'wrap', rowGap: spacing.xs },
+  setChipsNarrow: { width: '100%', justifyContent: 'flex-end' },
   check: {
     width: CHECK_SIZE,
     height: CHECK_SIZE,
@@ -2413,6 +2432,11 @@ const stylesFor = makeStyles((c, m) => ({
     textAlign: 'center',
   },
   rpeRow: { flexDirection: 'row', gap: 4 },
+  /* Màn hẹp (#72): năm viên 6–10 cạnh nhãn "Độ gắng sức" không vừa 320 — viên
+     "10" bị mép thẻ cắt. Nhãn một dòng riêng, năm viên xuống dưới, sát phải. */
+  editorRowNarrow: { flexWrap: 'wrap', rowGap: spacing.xs },
+  editorLabelNarrow: { width: '100%' },
+  rpeRowNarrow: { marginLeft: 'auto' },
   rpeOption: {
     minWidth: 36,
     height: 32,

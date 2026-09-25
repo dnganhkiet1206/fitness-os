@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -259,7 +259,21 @@ const stylesFor = makeStyles((c, m) => ({
  * the panel here genuinely is not on screen yet. Nothing is being un-drawn,
  * because what it replaces is already gone.
  */
-export const SEGMENT_SWAP = FadeIn.duration(duration.appear)
+/*
+  ── trên web: KHÔNG có hiệu ứng (#72) ──
+
+  Reanimated 4.5.1 bản web chạy `entering` bằng một hoạt ảnh CSS, và trong lúc
+  chạy nó đặt `position: absolute; top/left/width/height` lên chính phần tử.
+  Đo trên bản dựng web (`/workouts/plan`): hoạt ảnh xong (`getAnimations()`
+  rỗng) mà style ấy KHÔNG được gỡ — cả ba thẻ bài tập kẹt ở vị trí tuyệt đối
+  (`REA-ENTERING-0/1/2`), khối chứa chỉ cao 175 cho một thẻ 314, và nút "Thêm
+  bài tập / Hoàn thành buổi tập" nằm đè giữa thẻ đầu, ở mọi bề ngang.
+
+  Một hiệu ứng vào là trang trí (xem đoạn dưới), còn bố cục thì không. Nên web
+  bỏ hiệu ứng thay vì mang bố cục hỏng — và bộ chạy web đo được đúng bố cục mà
+  iPhone vẽ. iOS giữ nguyên: hiệu ứng bố cục ở đó không đi qua CSS.
+*/
+export const SEGMENT_SWAP = Platform.OS === 'web' ? undefined : FadeIn.duration(duration.appear)
   /*
     ── và lập luận trên đúng cho một cú ĐỔI, không đúng cho lần đầu ──
 
