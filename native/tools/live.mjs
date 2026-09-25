@@ -83,7 +83,9 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const OUT = path.join(NATIVE, 'tools', '.live-build');
+/* `LIVE_BUILD=<thư mục>`: chạy trên một bản dựng KHÁC — bản đã bị phá có chủ
+   ý cho phép thử ngược — mà không đè lên bản sạch ở `.live-build` (#71). */
+const OUT = process.env.LIVE_BUILD ? path.resolve(process.env.LIVE_BUILD) : path.join(NATIVE, 'tools', '.live-build');
 const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
@@ -513,6 +515,60 @@ async function goOffline(page) {
 /** App còn tin là mất mạng? (dải báo `nOffline` còn trên màn) */
 async function stillOffline(page) {
   return /Ngoại tuyến — đang hiển thị|Offline — showing saved data/.test(await page.locator('body').innerText());
+}
+
+/**
+ * Hôm nay CÓ LỊCH mà CHƯA GHI, trong thế giới của riêng trang này (#33, #71).
+ *
+ * Mọi thứ trong tuần đều trỏ vào `t1`, nên ngày nào cũng có lịch; còn ngày nào
+ * đã có buổi ghi thì tuỳ hôm chạy là thứ mấy và mấy giờ (`k1` ở 0,4 ngày trước
+ * là hôm nay lúc 11 giờ, là hôm qua lúc 8 giờ). Một dòng fixture mới không
+ * sửa được điều đó — chạy vào thứ Hai thì tuần không có ngày quá khứ nào. Nên
+ * không đổi fixture: xoá buổi của HÔM NAY qua chính máy chủ giả (#52 nhớ lệnh
+ * ghi trong một trang), tải lại, và "Hoàn thành buổi tập" là nhánh buổi MỚI ở
+ * mọi giờ của mọi ngày. Ngày tính theo giờ của TRÌNH DUYỆT, như app tính.
+ */
+async function planTodayUnlogged(page) {
+  const rows = FIXTURES.workout_sessions.filter((x) => x.user_id === UID).map((x) => [x.id, x.date_time]);
+  const gone = await page.evaluate(async ([rows, base]) => {
+    const local = (d) => new Date(d).toDateString();
+    const today = local(Date.now());
+    const out = [];
+    for (const [id] of rows.filter(([, t]) => local(t) === today)) {
+      const res = await fetch(`${base}/rest/v1/workout_sessions?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' }).catch((e) => ({ status: String(e) }));
+      out.push(`${id}:${res.status}`);
+    }
+    /* Cache persist của React Query vẫn giữ buổi vừa xoá, và tải lại thì app
+       khôi phục nó mà không đọc lại (đo được: DELETE 204, nút vẫn "Đã ghi").
+       Bỏ nó = mở app lần đầu với dữ liệu của máy chủ. */
+    localStorage.removeItem('ascnd_rq_cache');
+    return out;
+  }, [rows, `https://${REF}.supabase.co`]);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(7000);
+  const finish = page.getByRole('button', { name: /^(Hoàn thành buổi tập|Finish workout)$/ });
+  if ((await finish.count()) !== 1) {
+    const label = (await page.locator('body').innerText()).match(/Đã ghi buổi tập[^\n]*|Already logged[^\n]*/)?.[0];
+    throw new Error(`hôm nay vẫn chưa thành "có lịch mà chưa ghi" sau khi xoá [${gone.join(', ') || 'không buổi nào là hôm nay'}]${label ? ` — nút đọc "${label}"` : ''}`);
+  }
+  return gone;
+}
+
+/** Tick set đầu của bài đầu trong kế hoạch hôm nay; trả lỗi (chuỗi) hoặc null. */
+async function tickFirstPlannedSet(page) {
+  const tick = page.getByRole('checkbox', { name: /^Bench Press Set 1$/ });
+  if ((await tick.count()) !== 1) return `không thấy đúng một ô tick "Bench Press Set 1" trên kế hoạch hôm nay (ra ${await tick.count()})`;
+  await tick.click();
+  await page.waitForTimeout(600);
+  /* Tick một set thì giờ NGHỈ bắt đầu, và bảng đếm phủ cả màn — đúng như trên
+     máy (đo được: nó chặn cú bấm "Hoàn thành buổi tập" 30 giây). Người dùng
+     bấm Bỏ qua; vế này cũng vậy. */
+  const skip = page.getByRole('button', { name: /^(Bỏ qua|Skip)$/ });
+  if ((await skip.count()) === 1) {
+    await skip.click();
+    await page.waitForTimeout(600);
+  }
+  return null;
 }
 
 /**
@@ -1415,6 +1471,10 @@ const SCENARIOS = [
     và đúng 1 mutation tạm dừng trong cache persist; có mạng lại → ĐÚNG 1 lệnh
     ghi tới đúng bảng, 3 giây sau vẫn 1, và cache sạch. Không ai phải nhập gì:
     cân nặng mở với số của hôm nay, giấc ngủ mở với một đêm hợp lệ.
+
+    Ô cân nặng ở Hôm nay (#71) KHÔNG có dòng riêng: nó từng là một ô gõ số
+    ngay trong hàng, nay chỉ mở `/log-weight` (`todo-card.tsx`), và
+    `useWeightWrite` chỉ có đúng một chỗ gọi — dòng cân nặng dưới đây.
   */
   ...[
     ['cân nặng', '/log-weight', /^(Lưu thay đổi|Save changes)$/, ['weight_logs'], null],
@@ -1427,6 +1487,22 @@ const SCENARIOS = [
     ['bữa ăn', '/log-meal', /^(Lưu bữa ăn|Save Meal)$/, ['meal_entries', 'meal_entry_items'],
       async (page) => page.getByText('Cơm gà nhà làm', { exact: true }).first().click()],
     /* Buổi tập: một set tự gõ — tên bài, mức tạ, số lần. */
+    /* #71: chỉ số sinh học — HRV 55. KHÔNG phải nhịp tim: fixture có số Apple
+       Health của hôm nay, và đổi một số Health sở hữu (nhịp tim, SpO₂, nhịp
+       thở) thì màn hỏi lại bằng `Alert.alert` — thứ react-native-web không vẽ,
+       nên trên web nút Lưu im lặng (đo được: 0 toast, 0 mutation). HRV không
+       qua hộp hỏi. Lúc phát lại, hàm ghi ĐỌC trước (`biometricRowToReplace`)
+       rồi mới upsert; lượt đọc ấy là GET, không tính là lệnh ghi. */
+    ['chỉ số sinh học', '/log-biometrics', /^(Lưu|Save)$/, ['biometric_samples'], async (page) => page.getByPlaceholder('62').fill('55')],
+    /* #71: buổi tập từ Kế hoạch ngày — đường `offlineNow()` riêng của
+       `day-plan.tsx`, nơi người ta tick set TRONG LÚC tập, tức nơi dễ mất
+       mạng nhất. Hôm nay có lịch mà chưa ghi (`planTodayUnlogged`), tick một
+       set, "Hoàn thành buổi tập". */
+    ['buổi tập từ Kế hoạch ngày', '/workouts/plan', /^(Hoàn thành buổi tập|Finish workout)$/, ['workout_sessions'], async (page) => {
+      await planTodayUnlogged(page);
+      const miss = await tickFirstPlannedSet(page);
+      if (miss) throw new Error(miss);
+    }],
     ['buổi tập', '/log-workout', /^(Lưu buổi tập|Save Workout)$/, ['workout_sessions'], async (page) => {
       await page.getByPlaceholder(/^(Bài tập|Exercise)$/).first().fill('Bench Press');
       await page.getByPlaceholder('—').nth(0).fill('60');
@@ -1437,18 +1513,41 @@ const SCENARIOS = [
     route, mode: 'full',
     async run(page) {
       const writes = Object.fromEntries(tables.map((t) => [t, 0]));
-      page.on('request', (q) => {
-        const t = tables.find((x) => new RegExp(`/rest/v1/${x}(\\?|$)`).test(q.url()));
-        if (t && isWrite(q.method())) writes[t]++;
-      });
       const sent = () => Object.values(writes).reduce((a, b) => a + b, 0);
       const paused = () =>
         page.evaluate(() => {
           const c = JSON.parse(localStorage.getItem('ascnd_rq_cache') ?? '{}');
           return (c.clientState?.mutations ?? []).filter((m) => m.state?.isPaused).length;
         });
+      /*
+        Tạm dừng thôi CHƯA đủ (#71). Tắt nhánh `offlineNow()` của Kế hoạch ngày
+        thì `log.mutate` thường cũng bị React Query tạm dừng, cũng nằm trong
+        cache persist, và có mạng lại trong CÙNG trang thì cũng gửi đúng một lần
+        — vế này từng xanh như thế. Nhưng mutation ấy mang `mutationFn` là một
+        closure: khởi động lại app thì không còn gì để chạy nó. Chỉ khoá
+        `OFFLINE_WRITE_KEY` có hàm mặc định đăng ký lúc khởi động
+        (`registerOfflineWrites`), nên chỉ nó sống qua lần mở sau.
+      */
+      const pausedKeys = () =>
+        page.evaluate(() => {
+          const c = JSON.parse(localStorage.getItem('ascnd_rq_cache') ?? '{}');
+          return (c.clientState?.mutations ?? []).filter((m) => m.state?.isPaused).map((m) => JSON.stringify(m.mutationKey ?? null));
+        });
       await page.waitForTimeout(1500);
-      if (prepare) await prepare(page);
+      if (prepare) {
+        try {
+          await prepare(page);
+        } catch (e) {
+          return String(e.message ?? e);
+        }
+      }
+      /* Đếm từ SAU bước chuẩn bị: bước ấy có thể tự dựng trạng thái bằng một
+         lệnh ghi vào máy chủ giả (#71 xoá buổi của hôm nay) — đó không phải
+         lệnh ghi của người dùng. */
+      page.on('request', (q) => {
+        const t = tables.find((x) => new RegExp(`/rest/v1/${x}(\\?|$)`).test(q.url()));
+        if (t && isWrite(q.method())) writes[t]++;
+      });
       const save = page.getByRole('button', { name: saveName });
       if ((await save.count()) !== 1) return `không thấy đúng một nút lưu ${saveName} trên ${route}`;
       await goOffline(page);
@@ -1457,6 +1556,9 @@ const SCENARIOS = [
       await page.waitForTimeout(2500);
       if (sent()) return `mất mạng mà vẫn có lệnh ghi đi ra: ${JSON.stringify(writes)}`;
       if ((await paused()) !== 1) return `mất mạng, bấm lưu: cache persist phải có đúng 1 mutation tạm dừng, ra ${await paused()}`;
+      const keys = await pausedKeys();
+      if (keys[0] !== JSON.stringify(['offline-write']))
+        return `mutation tạm dừng mang khoá ${keys[0]}, không phải ["offline-write"] — nó không có hàm chạy sau khi mở lại app, tức việc xếp hàng mất ở lần khởi động sau`;
       await goOnline(page);
       for (let i = 0; i < 16 && sent() < tables.length; i++) await page.waitForTimeout(500);
       await page.waitForTimeout(3000);
@@ -1866,6 +1968,46 @@ const SCENARIOS = [
       await share.first().click();
       await page.waitForTimeout(2500);
       if (!/community-share\?session=\w/.test(page.url())) return `bấm Chia sẻ mà tới ${page.url().replace(/^.*8731/, '')}`;
+      return null;
+    },
+  },
+  {
+    /*
+      #33: lối lưu từ LỊCH TUẦN (#29) — nhánh "hoàn thành một buổi MỚI" chưa
+      từng chạy trên web, vì ngày nào trong thế giới giả cũng đã có buổi ghi
+      hoặc chưa tới. `planTodayUnlogged` cho hôm nay có lịch mà chưa ghi, trong
+      trang này thôi. Đòi: tick một set → "Hoàn thành buổi tập" → thanh toast
+      có nút Chia sẻ → nút mở `/community-share` với ĐÚNG id mà lệnh POST vừa
+      trả về, không phải một id đoán.
+    */
+    name: 'Kế hoạch ngày: hoàn thành một buổi mới thì có lời mời chia sẻ, mở đúng buổi',
+    route: '/workouts/plan', mode: 'full',
+    async run(page) {
+      try {
+        await planTodayUnlogged(page);
+      } catch (e) {
+        return String(e.message ?? e);
+      }
+      const miss = await tickFirstPlannedSet(page);
+      if (miss) return miss;
+      const created = [];
+      page.on('response', async (res) => {
+        if (!/\/rest\/v1\/workout_sessions/.test(res.url()) || res.request().method() !== 'POST') return;
+        try {
+          const body = await res.json();
+          for (const row of [].concat(body)) if (row?.id) created.push(row.id);
+        } catch { /* không có thân */ }
+      });
+      await page.getByRole('button', { name: /^(Hoàn thành buổi tập|Finish workout)$/ }).click();
+      await page.waitForTimeout(4000);
+      if (created.length !== 1) return `hoàn thành buổi: phải có đúng một buổi được tạo, ra ${created.length}`;
+      const share = page.getByRole('button', { name: /^(Chia sẻ|Share)$/ });
+      if ((await share.count()) === 0) return 'hoàn thành buổi mà thanh toast không có nút Chia sẻ';
+      await share.first().click();
+      await page.waitForTimeout(2500);
+      const opened = /community-share\?session=([\w-]+)/.exec(page.url())?.[1];
+      if (!opened) return `bấm Chia sẻ mà tới ${page.url().replace(/^.*8731/, '')}`;
+      if (opened !== created[0]) return `Chia sẻ mở buổi ${opened}, mà buổi vừa tạo là ${created[0]}`;
       return null;
     },
   },
