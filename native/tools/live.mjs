@@ -476,6 +476,14 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
  * Nên có mạng lại = tắt giả lập VÀ bắn 'change' như trình duyệt thật khi mạng
  * đổi. Sau đó `stillOffline` phải là false — nếu không, vế đang đo không đo gì.
  */
+/**
+ * Một request có GHI không. "Không phải GET" thì chưa chắc: `select(…, { head:
+ * true })` là HEAD — một phép ĐỌC. Vế bữa ăn của #69 đếm "không phải GET" và
+ * đỏ "meal_entries: 3 lệnh ghi" cho một bữa ghi đúng một lần: 1 POST và 2 HEAD
+ * đếm dòng của lượt dựng lại nhật ký ngày.
+ */
+const isWrite = (method) => ['POST', 'PATCH', 'PUT', 'DELETE'].includes(method);
+
 async function goOnline(page) {
   await page.context().setOffline(false);
   await page.evaluate(() => navigator.connection?.dispatchEvent(new Event('change')));
@@ -1339,7 +1347,7 @@ const SCENARIOS = [
     async run(page) {
       const writes = [];
       page.on('request', (q) => {
-        if (/\/rest\/v1\/water_logs/.test(q.url()) && q.method() !== 'GET') writes.push(q.postData() ?? '');
+        if (/\/rest\/v1\/water_logs/.test(q.url()) && isWrite(q.method())) writes.push(q.postData() ?? '');
       });
       const add = () => page.getByRole('button', { name: /^(Thêm|Add) \d+ (ml|oz)$/ }).first();
       if ((await add().count()) === 0) return 'không thấy nút thêm nước';
@@ -1393,6 +1401,63 @@ const SCENARIOS = [
       return null;
     },
   },
+  /*
+    #69: như vế Nước của #62, cho các loại việc xếp hàng CÒN LẠI có màn riêng.
+    Mỗi dòng: màn, cách lưu, bảng đích. Mỗi vế đòi: mất mạng → lưu → 0 lệnh ghi
+    và đúng 1 mutation tạm dừng trong cache persist; có mạng lại → ĐÚNG 1 lệnh
+    ghi tới đúng bảng, 3 giây sau vẫn 1, và cache sạch. Không ai phải nhập gì:
+    cân nặng mở với số của hôm nay, giấc ngủ mở với một đêm hợp lệ.
+  */
+  ...[
+    ['cân nặng', '/log-weight', /^(Lưu thay đổi|Save changes)$/, ['weight_logs'], null],
+    ['giấc ngủ', '/log-sleep', /^(Lưu giấc ngủ|Save Sleep)$/, ['sleep_logs'], null],
+    /* Số đo mở TRỐNG (không có gì để lưu): điền ô đầu — vòng cổ, 38 cm. */
+    ['số đo', '/log-measurement', /^(Lưu|Save)$/, ['body_measurements'], async (page) => page.getByPlaceholder('—').first().fill('38')],
+    /* Bữa ăn: món yêu thích ở hàng thêm nhanh. HAI bảng, mỗi bảng đúng một
+       lệnh ghi — `offline-queue.mjs` từng đo được "một bữa 520 kcal mà không
+       có món nào" khi lệnh ghi lặp lại (bữa có, món không). */
+    ['bữa ăn', '/log-meal', /^(Lưu bữa ăn|Save Meal)$/, ['meal_entries', 'meal_entry_items'],
+      async (page) => page.getByText('Cơm gà nhà làm', { exact: true }).first().click()],
+    /* Buổi tập: một set tự gõ — tên bài, mức tạ, số lần. */
+    ['buổi tập', '/log-workout', /^(Lưu buổi tập|Save Workout)$/, ['workout_sessions'], async (page) => {
+      await page.getByPlaceholder(/^(Bài tập|Exercise)$/).first().fill('Bench Press');
+      await page.getByPlaceholder('—').nth(0).fill('60');
+      await page.getByPlaceholder('—').nth(1).fill('8');
+    }],
+  ].map(([what, route, saveName, tables, prepare]) => ({
+    name: `Mất mạng: ${what} xếp hàng được gửi đúng một lần khi có mạng lại`,
+    route, mode: 'full',
+    async run(page) {
+      const writes = Object.fromEntries(tables.map((t) => [t, 0]));
+      page.on('request', (q) => {
+        const t = tables.find((x) => new RegExp(`/rest/v1/${x}(\\?|$)`).test(q.url()));
+        if (t && isWrite(q.method())) writes[t]++;
+      });
+      const sent = () => Object.values(writes).reduce((a, b) => a + b, 0);
+      const paused = () =>
+        page.evaluate(() => {
+          const c = JSON.parse(localStorage.getItem('ascnd_rq_cache') ?? '{}');
+          return (c.clientState?.mutations ?? []).filter((m) => m.state?.isPaused).length;
+        });
+      await page.waitForTimeout(1500);
+      if (prepare) await prepare(page);
+      const save = page.getByRole('button', { name: saveName });
+      if ((await save.count()) !== 1) return `không thấy đúng một nút lưu ${saveName} trên ${route}`;
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      await save.click();
+      await page.waitForTimeout(2500);
+      if (sent()) return `mất mạng mà vẫn có lệnh ghi đi ra: ${JSON.stringify(writes)}`;
+      if ((await paused()) !== 1) return `mất mạng, bấm lưu: cache persist phải có đúng 1 mutation tạm dừng, ra ${await paused()}`;
+      await goOnline(page);
+      for (let i = 0; i < 16 && sent() < tables.length; i++) await page.waitForTimeout(500);
+      await page.waitForTimeout(3000);
+      const off = tables.filter((t) => writes[t] !== 1);
+      if (off.length) return `có mạng lại: mỗi bảng phải đúng 1 lệnh ghi, ra ${JSON.stringify(writes)} — ${off.join(', ')} lệch`;
+      if ((await paused()) !== 0) return `đã gửi mà cache vẫn còn ${await paused()} mutation tạm dừng — lần mở sau sẽ gửi lại`;
+      return null;
+    },
+  })),
   {
     /*
       #45: mất mạng, React Query mặc định TẠM DỪNG mutation — không chạy, không
@@ -1408,7 +1473,7 @@ const SCENARIOS = [
     async run(page) {
       const writes = [];
       page.on('request', (q) => {
-        if (/\/rest\/v1\/community_likes/.test(q.url()) && q.method() !== 'GET') writes.push(q.method());
+        if (/\/rest\/v1\/community_likes/.test(q.url()) && isWrite(q.method())) writes.push(q.method());
       });
       await page.waitForTimeout(2000);
       const btn = () => page.getByRole('button', { name: /^(Thích|Like) · \d+$/ }).first();
@@ -1566,7 +1631,7 @@ const SCENARIOS = [
     async run(page) {
       const writes = [];
       page.on('request', (q) => {
-        if (/\/rest\/v1\/food_items/.test(q.url()) && q.method() !== 'GET') writes.push(q.method());
+        if (/\/rest\/v1\/food_items/.test(q.url()) && isWrite(q.method())) writes.push(q.method());
       });
       await page.waitForTimeout(1500);
       const star = page.getByRole('button', { name: /^(Bật\/tắt yêu thích|Toggle favourite)$/ }).first();
