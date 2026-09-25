@@ -65,6 +65,52 @@ export const NARROW_ROUTES = [
 export const NARROW = { width: 320, height: 720 };
 export const NARROW_LANGS = ['vi', 'en'];
 
+/*
+  ── chữ lớn (#56) ──
+
+  Mọi `<Text>` của app đi theo Dynamic Type (`allowFontScaling` mặc định bật,
+  `tools/dynamic-type.mjs` cấm tắt nó). react-native-web không có cỡ chữ hệ
+  thống, nên chữ lớn được GIẢ LẬP: nhân cỡ chữ và chiều cao dòng của mọi phần
+  tử chữ lên `LARGE_TEXT` rồi đo lại. 1.3 ≈ bậc "xxxLarge" của iOS (body 17 →
+  23 điểm), bậc lớn nhất trước các cỡ trợ năng; và nó không vượt trần nào
+  trong app (thấp nhất là 1.3 ở chữ trong avatar), nên giả lập không bỏ qua
+  một `maxFontSizeMultiplier` nào mà máy thật sẽ tôn trọng.
+
+  Chỉ tiếng Việt: chữ dài hơn, và mọi nhãn bị cắt đã tìm thấy đều là tiếng
+  Việt. Chỉ luật 1 và 2: ở chữ lớn một hàng cuộn NHẤT ĐỊNH có ô ló ra ngoài
+  mép — đó là việc hàng cuộn làm, và #47 đã lo ô đang chọn luôn hiện trọn.
+*/
+export const LARGE_TEXT = 1.3;
+export const LARGE_LANGS = ['vi'];
+
+/**
+ * Chạy TRONG trang: phóng mọi phần tử chữ. Trả số phần tử mà cỡ chữ ĐÃ THẬT SỰ
+ * đổi đúng hệ số — không phải số phần tử tìm thấy: một giả lập "chạm" tới
+ * phần tử mà không đổi được cỡ (một quy tắc CSS mạnh hơn, một thuộc tính bị
+ * ghi đè) thì đo ra một màn chưa hề phóng.
+ */
+export async function enlargeText(page, factor = LARGE_TEXT) {
+  return page.evaluate((k) => {
+    /* `<Text>` của react-native-web là `div[dir="auto"]`; `<Text>` LỒNG bên
+       trong là `span` không mang `dir` — nên chọn theo "có chữ trực tiếp",
+       cộng `dir="auto"` cho phần tử chữ rỗng lúc đo. */
+    const els = [...document.querySelectorAll('#root *')].filter(
+      (e) => e.getAttribute('dir') === 'auto' || [...e.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim()),
+    );
+    /* ĐỌC hết rồi mới GHI: ghi ngay thì con thừa hưởng cỡ đã phóng của cha
+       rồi bị phóng thêm lần nữa (1.3 × 1.3). */
+    const plan = els.map((el) => {
+      const st = getComputedStyle(el);
+      return [el, parseFloat(st.fontSize), st.lineHeight.endsWith('px') ? parseFloat(st.lineHeight) : null];
+    });
+    for (const [el, fs, lh] of plan) {
+      el.style.setProperty('font-size', `${fs * k}px`, 'important');
+      if (lh != null) el.style.setProperty('line-height', `${lh * k}px`, 'important');
+    }
+    return plan.filter(([el, fs]) => Math.abs(parseFloat(getComputedStyle(el).fontSize) - fs * k) < 0.5).length;
+  }, factor);
+}
+
 /* Một chuỗi trong native-strings.ts, dạng `  key: '…',` hoặc `"…"`. Chuỗi
    template hay xuống dòng thì hiếm (6 chỗ) và không nằm trong các màn này. */
 export function appCopy(src = readFileSync(path.join(NATIVE, 'src/lib/native-strings.ts'), 'utf8')) {

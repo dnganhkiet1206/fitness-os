@@ -89,7 +89,9 @@ const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
 import { requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
 import { RPC_FIXTURES } from './live-rpc.mjs';
-import { NARROW, NARROW_LANGS, NARROW_ROUTES, copyPatterns, narrowFindings } from './live-narrow.mjs';
+import {
+  LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, copyPatterns, enlargeText, narrowFindings,
+} from './live-narrow.mjs';
 
 const args = new Set(process.argv.slice(2));
 const wantShots = args.has('--shots');
@@ -1879,22 +1881,33 @@ try {
     const patterns = copyPatterns();
     const contentCut = new Set();
     let opened = 0;
-    for (const lang of NARROW_LANGS) {
+    let largeOpened = 0;
+    /* Cỡ chữ mặc định ở cả hai ngôn ngữ, rồi chữ lớn (#56) ở LARGE_LANGS. */
+    const passes = [
+      ...NARROW_LANGS.map((lang) => ({ lang, large: false })),
+      ...LARGE_LANGS.map((lang) => ({ lang, large: true })),
+    ];
+    for (const { lang, large } of passes) {
       for (const route of NARROW_ROUTES) {
         const { browser, page, errors } = await openPage(chromium, route, 'full', 9000, { ...NARROW, lang });
         try {
-          const at = `[320 ${lang}] ${route}`;
+          const at = `[320 ${lang}${large ? ` chữ ×${LARGE_TEXT}` : ''}] ${route}`;
           if (errors.length) problems.push(`${at}: lỗi runtime — ${errors.slice(0, 2).join(' | ').slice(0, 200)}`);
           const rootLen = await page.evaluate(() => document.getElementById('root')?.innerHTML?.length ?? 0);
           if (rootLen < 400) problems.push(`${at}: màn hình trắng (root ${rootLen} ký tự)`);
+          if (large) {
+            if ((await enlargeText(page)) === 0) problems.push(`${at}: phóng chữ không đổi được cỡ của phần tử chữ nào — giả lập hỏng, đừng tin lượt này`);
+            await page.waitForTimeout(300);
+          }
           const { wide, cut, clipped } = await narrowFindings(page, patterns);
           if (wide) problems.push(`${at}: trang rộng ${wide}px trong khung ${NARROW.width}px — cả màn cuộn ngang`);
-          for (const c of clipped) problems.push(`${at}: ô chọn bị mép vùng cuộn cắt ngang khi chưa cuộn — ${c}`);
+          if (!large) for (const c of clipped) problems.push(`${at}: ô chọn bị mép vùng cuộn cắt ngang khi chưa cuộn — ${c}`);
           for (const c of cut) {
             if (c.app) problems.push(`${at}: chữ của app bị cắt thành "…" — "${c.text.slice(0, 80)}"`);
             else contentCut.add(c.text.slice(0, 40));
           }
-          opened++;
+          if (large) largeOpened++;
+          else opened++;
         } finally {
           await browser.close();
         }
@@ -1902,7 +1915,7 @@ try {
       }
     }
     console.log('');
-    globalThis.__narrow = { opened, contentCut: contentCut.size };
+    globalThis.__narrow = { opened, largeOpened, contentCut: contentCut.size };
   }
 
   if (!narrowOnly) {
@@ -1981,7 +1994,9 @@ if (problems.length) {
 const narrowClaim = globalThis.__narrow
   ? `${globalThis.__narrow.opened} lượt mở màn Cộng đồng ở ${NARROW.width}×${NARROW.height} (${NARROW_LANGS.join(' + ')}): ` +
     'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt thành "…", không ô chọn nào ' +
-    'bị mép vùng cuộn cắt ngang ' +
+    'bị mép vùng cuộn cắt ngang; ' +
+    `thêm ${globalThis.__narrow.largeOpened} lượt với chữ ×${LARGE_TEXT} (${LARGE_LANGS.join(' + ')}, giả lập Dynamic Type): ` +
+    'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt ' +
     `(${globalThis.__narrow.contentCut} đoạn nội dung người dùng được cắt đúng luật numberOfLines)`
   : 'bỏ qua lượt quét hẹp';
 

@@ -123,12 +123,22 @@ export default function CommunityPrivacyScreen() {
             {blocked.data.map((b, i) => (
               <View key={b.user_id} style={[styles.row, i > 0 && styles.rowRule]}>
                 <CommunityAvatar mascotId={b.profile?.mascot_id ?? null} size={40} />
+                {/* Chữ lớn ở 320 (#56, lượt quét hẹp của live.mjs): nút Bỏ chặn
+                    lấy gần nửa dòng, và "@handle · Chặn từ 13 thg 9" MỘT dòng
+                    thành "Chặn từ …" — ngày chặn, thứ người ta cần để nhận ra
+                    lần chặn nào, luôn là phần bị cắt vì nó đứng cuối. Handle là
+                    nội dung, cắt được, nên nó một dòng riêng; ngày chặn là câu
+                    của app và xuống dòng tự do; tên được hai dòng. */}
                 <View style={styles.who}>
-                  <Text style={styles.name} numberOfLines={1}>
+                  <Text style={styles.name} numberOfLines={2}>
                     {b.profile ? b.profile.display_name : i18n.nPvNoProfile}
                   </Text>
-                  <Text style={styles.meta} numberOfLines={1}>
-                    {b.profile ? `@${b.profile.handle} · ` : ''}
+                  {b.profile ? (
+                    <Text style={styles.meta} numberOfLines={1}>
+                      @{b.profile.handle}
+                    </Text>
+                  ) : null}
+                  <Text style={styles.meta}>
                     {i18n.nPvSince.replace('{date}', new Date(b.since).toLocaleDateString(locale, { day: 'numeric', month: 'short' }))}
                   </Text>
                 </View>
