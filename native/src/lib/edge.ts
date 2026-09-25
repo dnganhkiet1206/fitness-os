@@ -83,6 +83,7 @@ export async function callEdge<T>(
       return { ok: false, failure: 'unauthorised', fn, raw: 'no access token' };
     }
 
+    // không ném (#53): lỗi được phân loại rồi TRẢ về chỗ gọi dạng `{ ok: false, failure }`
     const { data, error } = await supabase.functions.invoke(fn, {
       body,
       headers: { Authorization: `Bearer ${token}` },

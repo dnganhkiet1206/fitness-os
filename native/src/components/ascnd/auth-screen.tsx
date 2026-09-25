@@ -97,6 +97,7 @@ export function AuthScreen() {
     if (!email) return;
     setBusy(true);
     if (mode === 'forgot') {
+      // không ném (#53): lỗi được báo ngay cho người dùng bằng Alert bên dưới
       const { error } = await supabase.auth.resetPasswordForEmail(email);
       setBusy(false);
       Haptics.notificationAsync(
@@ -117,6 +118,7 @@ export function AuthScreen() {
   };
 
   const apple = async () => {
+    // không ném (#53): huỷ đăng nhập Apple không phải lỗi; lỗi khác được báo bằng Alert
     const { error } = await signInWithApple();
     if (error && error.message !== 'Sign in cancelled') Alert.alert('ASCND', errorText(error, i18n));
   };

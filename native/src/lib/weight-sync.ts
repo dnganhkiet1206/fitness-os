@@ -73,6 +73,7 @@ export async function syncProfileWeight(
   /* A failed read is not licence to guess. Leaving the profile alone keeps the
      previous value, which is wrong by at most one weigh-in; overwriting on a
      failed check could move it backwards by weeks. */
+  // không ném (#53): đọc hỏng thì để yên hồ sơ — lệch nhiều nhất một lần cân (lý do ngay trên)
   if (readError) return;
   if (newer && newer.length > 0) return;
 

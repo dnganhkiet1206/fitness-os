@@ -66,6 +66,7 @@ export async function sleepRowToReplace(
     .lt('waketime', day.end);
   /* Không đọc được thì ghi như một hàng mới. Thà thừa một hàng người dùng xoá
      được còn hơn nuốt một lần ghi vì một truy vấn phụ hỏng. */
+  // không ném (#53): truy vấn phụ hỏng thì ghi như hàng mới (lý do ngay trên)
   if (error || !data) return null;
 
   const bed = new Date(bedtime).getTime();
@@ -105,6 +106,7 @@ export async function biometricRowToReplace(
     .lt('date_time', day.end)
     .order('date_time', { ascending: false })
     .limit(1);
+  // không ném (#53): cùng lý do với sleepRowToReplace — đọc hỏng thì ghi như hàng mới
   if (error || !data || data.length === 0) return null;
   return String(data[0].id);
 }

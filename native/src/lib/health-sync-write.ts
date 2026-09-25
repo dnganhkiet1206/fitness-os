@@ -108,6 +108,7 @@ export async function writeHealthSync(input: HealthSyncWrite): Promise<void> {
      list and neither can wipe the other's.
   */
   if (Object.keys(measured).length > 0) {
+    // không ném (#53): đồng bộ Health là best-effort — lỗi gom vào `failures`, báo một lần ở cuối
     const { error } = await supabase
       .from('daily_logs')
       .upsert({ user_id: userId, date: today, ...measured }, { onConflict: 'user_id,date' });
@@ -118,6 +119,7 @@ export async function writeHealthSync(input: HealthSyncWrite): Promise<void> {
   }
 
   if (stepDays.length > 0) {
+    // không ném (#53): như trên — lỗi gom vào `failures`, báo một lần ở cuối
     const { error } = await supabase.from('daily_logs').upsert(
       stepDays.map((d) => ({ user_id: userId, date: d.date, steps: d.steps })),
       { onConflict: 'user_id,date' },
