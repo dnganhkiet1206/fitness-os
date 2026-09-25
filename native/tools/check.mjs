@@ -606,6 +606,10 @@ const STEPS = [
   /* Bộ chạy soi app; bước này soi BỘ CHẠY. Máy chủ giả bỏ qua `.order()` nên
      nó không đỏ — nó BỊA, và một ảnh chụp bịa còn tệ hơn không có ảnh nào. */
   ['máy chủ giả', 'node', ['tools/fake-rest.mjs']],
+  /* Luật 2 của lượt quét hẹp tách "chữ của app bị cắt" khỏi nội dung người
+     dùng bằng mẫu sinh từ từ điển (#63, #87, người làm: B). Sai về phía nào cũng
+     im lặng trong lượt quét, nên các câu đã từng sai được chạy ở đây. */
+  ['luật quét hẹp', 'node', ['tools/narrow-rules.mjs']],
   /* SẮC là một đại lượng riêng. Năm phép đo tương phản quanh nó đều xanh trong
      khi nền giấy lật từ hổ phách sang lục-lam — lỗi ấy do chủ dự án nhìn ảnh
      mà tìm ra, không phải công cụ. */

@@ -201,12 +201,38 @@ export function fixedLetters(s) {
   return (s.replace(TOKEN, (_m, one, other) => (one === undefined ? '' : other)).match(/\p{L}/gu) ?? []).length;
 }
 
-/** Nguồn regex (neo hai đầu) cho mỗi chuỗi: `{n}`, `{name}` khớp một đoạn bất kỳ. */
+/**
+ * Phần ĐẦU của một chuỗi chỉ có MỘT chỗ trống, đứng ở đầu (#87): tối đa
+ * `HEAD_WORDS` từ. Bộ chọn `{n:day|days}` không tính là chỗ trống: nó là chữ
+ * cố định, một trong hai dạng. `{x}` ở giữa hay ở cuối thì chữ cố định của app
+ * đứng trước neo lại; `{x}` ở đầu thì không — `^.+ ngày trước$` khớp cả chú
+ * thích "Hôm qua tôi tập 3 ngày trước", và một chú thích bị cắt đúng luật
+ * `numberOfLines` thành báo oan. Ở dạng ấy chỗ trống là một con số, một tên người, một tên
+ * bữa: vài từ, không phải một câu.
+ *
+ * Chỉ dạng MỘT chỗ trống: chuỗi có hai chỗ trống trở lên (`{title} trên ASCND
+ * — {n} bài tập`, `{ex} — {value} reps…`) có chữ cố định kẹp GIỮA hai chỗ
+ * trống neo lại, và chỗ trống đầu của chúng thường là tên thử thách hay tên bài
+ * tập — dài hơn bốn từ là chuyện thường, và cắt một dòng như thế là cắt đúng
+ * phần của app.
+ *
+ * Không xếp theo TÊN chỗ trống (`{n}` là số, `{name}` là chữ): tên bị dùng lẫn
+ * nghĩa — `{m}` vừa là số bữa vừa là tên bữa, `{d}` vừa là số ngày vừa là ngày
+ * tháng (đo ở #87).
+ */
+export const HEAD_WORDS = 4;
+const HEAD = `\\S+(?:\\s+\\S+){0,${HEAD_WORDS - 1}}`;
+
+/** Nguồn regex (neo hai đầu) cho mỗi chuỗi: `{n}`, `{name}` khớp một đoạn bất kỳ — trừ chỗ trống DUY NHẤT ở đầu chuỗi, xem `HEAD_WORDS`. */
 export function copyPatterns(copy = appCopy()) {
   /* Một chuỗi mà phần CỐ ĐỊNH gần như không có chữ (`{n}`, `{a} · {b}`,
      `{n} kg`) khớp cả nội dung người dùng, nên bị bỏ: nó sẽ biến một chú
      thích bài bị cắt đúng luật thành "chữ của app bị cắt". */
-  return copy.filter((s) => fixedLetters(s) >= 4).map((s) => `^${patternBody(s)}$`);
+  return copy.filter((s) => fixedLetters(s) >= 4).map((s) => {
+    const slots = s.match(/\{\w+\}/g) ?? [];
+    if (slots.length === 1 && s.startsWith(slots[0])) return `^${HEAD}${patternBody(s.slice(slots[0].length))}$`;
+    return `^${patternBody(s)}$`;
+  });
 }
 
 /**
@@ -222,7 +248,8 @@ export function copyPatterns(copy = appCopy()) {
  * đầu đo được "chưa ghi buổi tập" bị báo là dòng ghép chỉ vì chữ cuối. Chỉ
  * những chuỗi MỞ ĐẦU bằng chữ cố định: một mẫu
  * mở đầu bằng `{n}` ("{n} ngày trước") làm đuôi thì khớp mọi chú thích người
- * dùng tận cùng bằng "… ngày trước", và đó là báo oan (#87 cho luật khớp trọn).
+ * dùng tận cùng bằng "… ngày trước", và đó là báo oan (luật khớp trọn giới hạn
+ * phần đầu ấy ở `HEAD_WORDS` từ, #87).
  * Cùng ngưỡng ≥ 4 chữ cái cố định như `copyPatterns`.
  */
 export function tailPatterns(copy = appCopy()) {
