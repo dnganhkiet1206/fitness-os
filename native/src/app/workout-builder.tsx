@@ -630,6 +630,7 @@ export default function WorkoutBuilderSheet() {
                 <PressScale
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: on }}
+                  aria-checked={on} // web không dịch accessibilityState ra aria-checked (#101)
                   onPress={() => toggle(e)}
                   style={[styles.exRow, on && styles.exRowOn]}>
                   {/* A fixed slot, because `MuscleArt` draws nothing for a

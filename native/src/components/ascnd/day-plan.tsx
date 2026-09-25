@@ -1569,6 +1569,7 @@ export function DayPlan({
                 <PressScale
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: isDone }}
+                  aria-checked={isDone} // web không dịch accessibilityState ra aria-checked (#101)
                   accessibilityLabel={`${row.exerciseName} ${i18n.nRdSet.replace('{n}', String(row.ordinal))}`}
                   hitSlop={12}
                   onPress={() => toggle(row)}

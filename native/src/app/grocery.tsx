@@ -199,6 +199,7 @@ export default function GroceryScreen() {
                 <Pressable
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: !!it.checked }}
+                  aria-checked={!!it.checked} // web không dịch accessibilityState ra aria-checked (#101)
                   accessibilityLabel={it.quantity ? `${it.name}, ${it.quantity}` : it.name}
                   style={styles.itemToggle}
                   hitSlop={{ top: spacing.md, bottom: spacing.md, left: spacing.md }}

@@ -705,6 +705,7 @@ export function OnboardingFlow() {
                   accessibilityRole="radio"
                   accessibilityLabel={`${i18n[a.label]}. ${i18n[a.desc]}`}
                   accessibilityState={{ selected: activityLevel === a.val }}
+                  aria-checked={activityLevel === a.val} // web không dịch accessibilityState ra aria-checked (#101)
                   style={[
                     styles.row,
                     i > 0 && styles.rowLine,

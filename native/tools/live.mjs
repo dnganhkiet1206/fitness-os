@@ -495,8 +495,13 @@ async function planTodayUnlogged(page) {
 async function tickFirstPlannedSet(page) {
   const tick = page.getByRole('checkbox', { name: /^Bench Press Set 1$/ });
   if ((await tick.count()) !== 1) return `không thấy đúng một ô tick "Bench Press Set 1" trên kế hoạch hôm nay (ra ${await tick.count()})`;
+  /* #101: trạng thái đọc từ `aria-checked`, không từ màu — trước #101 nó rỗng
+     ở mọi ô, tick hay chưa. */
+  const before = await tick.getAttribute('aria-checked');
   await tick.click();
   await page.waitForTimeout(600);
+  const after = await tick.getAttribute('aria-checked');
+  if (before !== 'false' || after !== 'true') return `ô tick "Bench Press Set 1": aria-checked phải đổi false → true khi tick, ra ${before} → ${after} (#101)`;
   /* Tick một set thì giờ NGHỈ bắt đầu, và bảng đếm phủ cả màn — đúng như trên
      máy (đo được: nó chặn cú bấm "Hoàn thành buổi tập" 30 giây). Người dùng
      bấm Bỏ qua; vế này cũng vậy. */

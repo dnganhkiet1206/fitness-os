@@ -688,6 +688,7 @@ export default function EditProfileSheet() {
                   hitSlop={4}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: on }}
+                  aria-checked={on} // web không dịch accessibilityState ra aria-checked (#101)
                   onPress={() => {
                     Haptics.selectionAsync();
                     setAllergies(on ? allergies.filter((x) => x !== a.value) : [...allergies, a.value]);
@@ -708,6 +709,7 @@ export default function EditProfileSheet() {
                   hitSlop={4}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: true }}
+                  aria-checked={true} // web không dịch accessibilityState ra aria-checked (#101)
                   onPress={() => {
                     Haptics.selectionAsync();
                     setAllergies(allergies.filter((x) => x !== v));

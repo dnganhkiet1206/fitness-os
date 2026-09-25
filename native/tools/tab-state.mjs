@@ -36,15 +36,15 @@ function walk(dir, out = []) {
 }
 
 /** Mọi phần tử có role tab trong một tệp: `[{ line, props }]` — `props` là phần mở thẻ, từ `<Tên` tới thẻ JSX kế tiếp. */
-export function tabElements(src) {
+export function tabElements(src, role = 'tab') {
   const out = [];
-  for (const m of src.matchAll(/accessibilityRole="tab"/g)) {
+  for (const m of src.matchAll(new RegExp(`accessibilityRole="${role}"`, 'g'))) {
     const before = src.slice(0, m.index);
     const open = Math.max(...[...before.matchAll(/<[A-Z][\w.]*\s/g)].map((x) => x.index), -1);
     if (open < 0) continue;
     const next = src.slice(m.index).search(/<[A-Za-z/{]/);
     const props = src.slice(open, next < 0 ? src.length : m.index + next);
-    out.push({ line: before.split('\n').length, props });
+    out.push({ line: before.split('\n').length, props, role: m[0].slice(19, -1) });
   }
   return out;
 }
@@ -58,6 +58,14 @@ export function problemsOf(files) {
       if (!/accessibilityState=\{\{[^}]*\bselected\b/.test(props)) out.push(`${rel}:${line}: role="tab" mà không có accessibilityState.selected — iOS không biết ô nào đang chọn`);
       if (!/\baria-selected=\{/.test(props)) out.push(`${rel}:${line}: role="tab" mà không có aria-selected — react-native-web không dịch accessibilityState, nên trên web ô này đọc như mọi ô khác và live.mjs không bấm qua nó`);
     }
+    /* #101: cùng lỗ, cho trạng thái "đã tick". Radio được đọc trạng thái bằng
+       `selected` hay `checked` trên iOS; trên web chỉ `aria-checked` có nghĩa. */
+    for (const { line, props, role } of tabElements(src, '(?:checkbox|switch|radio)')) {
+      n++;
+      const iosState = role === 'radio' ? /accessibilityState=\{\{[^}]*\b(selected|checked)\b/ : /accessibilityState=\{\{[^}]*\bchecked\b/;
+      if (!iosState.test(props)) out.push(`${rel}:${line}: role="${role}" mà không có accessibilityState.${role === 'radio' ? 'selected/checked' : 'checked'} — iOS không biết ô đã tick chưa`);
+      if (!/\baria-checked=\{/.test(props)) out.push(`${rel}:${line}: role="${role}" mà không có aria-checked — trên web ô đã tick và chưa tick đọc y hệt nhau`);
+    }
   }
   return { out, n };
 }
@@ -69,7 +77,7 @@ export function problemsOf(files) {
 const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:])\/\/.*$/gm, '$1');
 const files = walk(path.join(NATIVE, 'src')).map((p) => [path.relative(NATIVE, p), strip(readFileSync(p, 'utf8'))]);
 const { out: problems, n } = problemsOf(files);
-if (n < 5) problems.push(`chỉ tìm thấy ${n} ô role="tab" — bộ quét hỏng, đừng tin kết quả`);
+if (n < 12) problems.push(`chỉ tìm thấy ${n} ô chọn — bộ quét hỏng, đừng tin kết quả`);
 
 /* ── thử ngược ── */
 {
@@ -83,6 +91,8 @@ if (n < 5) problems.push(`chỉ tìm thấy ${n} ô role="tab" — bộ quét h�
   };
   probe('bỏ aria-selected ở hàng ngày trong tuần', 'src/components/ascnd/week-strip.tsx', 'aria-selected={isOpen}', '');
   probe('bỏ accessibilityState ở PickRow', 'src/components/ascnd/pick-row.tsx', 'accessibilityState={{ selected: on, disabled }}', '');
+  probe('bỏ aria-checked ở ô tick set (#101)', 'src/components/ascnd/day-plan.tsx', 'aria-checked={isDone}', '');
+  probe('bỏ accessibilityState ở công tắc khởi động (#101)', 'src/app/log-workout.tsx', 'accessibilityState={{ checked: s.warmup }}', '');
 }
 
 if (problems.length) {
@@ -91,7 +101,7 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `trạng thái ô chọn OK — ${n} phần tử role="tab" trong src/ đều mang accessibilityState.selected (iOS) lẫn aria-selected ` +
+  `trạng thái ô chọn OK — ${n} phần tử role tab/checkbox/switch/radio trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101) ` +
     '(web, nơi react-native-web không dịch accessibilityState — bảy ô ngày của Kế hoạch ngày từng rỗng cả bảy, kể cả ô đang ' +
-    'mở). Thử ngược: bỏ aria-selected ở hàng ngày, bỏ accessibilityState ở PickRow — mỗi cái đỏ',
+    'mở; sáu ô tick set cũng rỗng aria-checked). Thử ngược: bỏ aria-selected ở hàng ngày, bỏ accessibilityState ở PickRow, bỏ aria-checked ở ô tick set, bỏ accessibilityState ở công tắc khởi động — mỗi cái đỏ',
 );

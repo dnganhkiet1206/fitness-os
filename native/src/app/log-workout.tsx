@@ -799,6 +799,7 @@ export default function LogWorkoutSheet() {
                 <Pressable
                   accessibilityRole="switch"
                   accessibilityState={{ checked: s.warmup }}
+                  aria-checked={!!s.warmup} // web không dịch accessibilityState ra aria-checked (#101)
                   accessibilityLabel={i18n.nLgWarmup}
                   /* 26 + 9 + 9 = 44. Eight was the number every other row in
                      this file uses and it lands at 42 — under Apple's floor,

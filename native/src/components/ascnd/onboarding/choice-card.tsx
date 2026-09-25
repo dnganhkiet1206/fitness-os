@@ -64,6 +64,7 @@ export function ChoiceCard({ label, desc, selected, onPress, size = 'md' }: Prop
       accessibilityRole="radio"
       accessibilityLabel={desc ? `${label}. ${desc}` : label}
       accessibilityState={{ selected }}
+      aria-checked={selected} // web không dịch accessibilityState ra aria-checked (#101)
       style={[styles.card, size === 'lg' ? styles.lg : styles.md, selected && styles.on]}
       onPress={() => {
         Haptics.selectionAsync();
