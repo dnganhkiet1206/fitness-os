@@ -555,6 +555,13 @@ const STEPS = [
   */
   ['dây nối điều chỉnh tải', 'node', ['tools/progression.mjs']],
   ['lệnh ghi có người nghe', 'node', ['tools/write-heard.mjs']],
+  /*
+    Mặc định của React Query là TẠM DỪNG mutation khi mất mạng — không chạy,
+    không onError. #45 và #49 chuyển từng chỗ; đây là cửa cho chỗ MỚI: mỗi
+    useMutation phải xếp hàng bền, hoặc là nhánh online có lời khai kiểm được
+    (kind có trình phát lại, và mọi chỗ gọi có đường xếp hàng cùng kind).
+  */
+  ['mất mạng có đường', 'node', ['tools/offline-path.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],
