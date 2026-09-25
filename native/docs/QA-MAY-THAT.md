@@ -1,6 +1,6 @@
 # Kiểm trên máy thật — danh sách đi từng bước
 
-**Viết:** 2026-09-08 · cập nhật 2026-09-09 sau bản nâng Hermes · **chưa ai chạy danh sách này.**
+**Viết:** 2026-09-08 · cập nhật 2026-09-09 sau bản nâng Hermes · 2026-09-25 thêm mục H (mất mạng, #61) · **chưa ai chạy danh sách này.**
 
 Trang này tồn tại vì một lý do hẹp: **271 bước kiểm tự động và một bộ chạy web
 không chứng minh được app dùng được trên một chiếc iPhone.** Chúng chứng minh
@@ -345,6 +345,48 @@ Thứ tự bắt buộc. Đừng đảo.
 > Bước 6 là bước duy nhất chứng minh `beforeBreadcrumb` thật sự chạy trên đường
 > native. `beforeSend` **không** chạy cho một sự cố native, nên bộ kiểm tĩnh và
 > bộ chạy web không thay được bước này.
+
+---
+
+## H. Mất mạng — xếp hàng tự gửi, và việc chỉ-trực-tuyến báo ngay
+
+Hai đường, và mỗi thao tác đi đúng một đường (`tools/offline-path.mjs` canh ở
+mức **TĨNH**, `live.mjs` đo ở mức **RUNTIME** trên web — #45, #49, #50, #62, #69):
+
+- **Xếp hàng**: ghi nhật ký tạo mới — nước, bữa ăn (cả "Ghi vào hôm nay" ở
+  Thực đơn và "Thêm vào bữa ăn" ở thẻ Recipe), buổi tập, cân nặng, giấc ngủ, số
+  đo, chỉ số sinh học (7 loại `kind` trong `src/lib/offline-write.ts`). Mất mạng
+  thì việc được giữ trong máy và gửi **đúng một lần** khi có mạng lại.
+- **Chỉ trực tuyến**: Thích, Lưu, Theo dõi, Bình luận, ngôi sao Yêu thích, bỏ
+  cốc nước cuối, và các thao tác xoá. Mất mạng thì từ chối **ngay**, không giữ
+  lại. (Cân nặng và số đo sửa lại trong cùng ngày thì KHÔNG thuộc nhóm này: chúng
+  ghi đè theo ngày, nên vẫn đi đường xếp hàng.)
+
+Trên web, NetInfo chỉ nghe `navigator.connection` 'change' — bộ chạy phải tự
+bắn sự kiện ấy mới "có mạng lại" được (#62). **iOS báo mạng bằng đường khác
+hẳn**, nên mọi kết luận ở mức RUNTIME dưới đây chưa nói gì về iPhone.
+
+"Đúng một dòng trên server": xem trên dashboard Supabase (Table Editor → bảng
+tương ứng, lọc theo `user_id` của tài khoản thử). Không có dashboard thì: vuốt
+tắt app, mở lại **khi có mạng**, và đếm mục trong lịch sử của màn ấy — app mở
+có mạng đọc lại từ server, nên đó là số của server.
+
+| # | Việc | Mong đợi | Kết quả |
+|---|---|---|---|
+| H1 | Bật **chế độ máy bay** → Hôm nay → bấm cộng nước **một lần** | Dải "Ngoại tuyến — đang hiển thị dữ liệu đã lưu"; số nước **tăng ngay**; câu "Đã lưu — sẽ đồng bộ khi có mạng" | ☐ |
+| H2 | Tắt chế độ máy bay, chờ ~10 giây | Dải Ngoại tuyến tắt; trên server có **đúng một** dòng nước mới — không phải hai | ☐ |
+| H3 | Lặp H1–H2 với: ghi bữa ăn · ghi buổi tập · cân nặng · giấc ngủ · số đo · chỉ số sinh học · "Ghi vào hôm nay" ở Thực đơn | Mỗi màn: câu "đã lưu — sẽ đồng bộ"; có mạng lại thì **đúng một** bản ghi mỗi lần bấm. Bữa ăn: các món nằm đúng dưới bữa ấy, không mồ côi | ☐ |
+| H4 | Máy bay → ghi **hai** bữa khác nhau → có mạng lại | Hai bữa, theo **đúng thứ tự** đã ghi; tổng calo của ngày cộng đủ cả hai | ☐ |
+| H5 | Máy bay → ghi một bữa → **vuốt tắt app** → tắt máy bay → mở app | Bữa đã ghi được gửi sau khi mở, **đúng một lần**; màn Dinh dưỡng hiện bữa ấy mà không cần kéo làm mới | ☐ |
+| H6 | Máy bay → bấm **Thích** một bài · **Theo dõi** một người · **ngôi sao** Yêu thích một món | Mỗi lần: câu "Không có kết nối — chưa gửi, và không giữ lại để gửi sau."; trái tim / nút Theo dõi / ngôi sao **không đổi** | ☐ |
+| H7 | Tắt máy bay sau H6, chờ 30 giây, kéo làm mới | **Không** lượt thích, theo dõi hay yêu thích nào tự xuất hiện | ☐ |
+| H8 | Wi-Fi có **cổng đăng nhập** (captive portal: quán cà phê, khách sạn), chưa đăng nhập cổng → bấm Thích | Câu báo giống H6 (request không tới nơi cũng thành "chưa gửi") | ☐ |
+| H9 | Như H8 nhưng bấm cộng nước | **Ghi lại điều thấy được** — chưa ai đo đường này ở bất kỳ mức nào: NetInfo báo có mạng, nên việc không vào hàng mà được gửi và hỏng. Ghi: có câu báo nào, số nước có về lại không, và sau khi đăng nhập cổng thì trên server có dòng nào không | ☐ |
+
+> H2, H5 và H7 là ba chỗ web và iOS dễ khác nhau nhất. Trên web, một mutation bị
+> tạm dừng từng **tưởng như** không bao giờ gửi lại — hoá ra là bộ chạy không
+> báo mạng về (#62). Trên iPhone chưa ai đo. Kết quả nào ở đây cũng là dữ kiện
+> mới; ghi đủ số lần bấm và số dòng trên server.
 
 ---
 
