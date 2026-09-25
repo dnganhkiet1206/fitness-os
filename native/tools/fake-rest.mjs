@@ -496,6 +496,41 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
   globalThis.__netFiles = files;
 }
 
+/* ── vế 8 (#70): số đếm đi trong `Content-Range`, và `offset` có thật ────────
+   supabase-js đọc `count` từ header, không từ thân; trước #70 máy chủ giả không
+   đặt nó, nên mọi số đếm của app trong bộ chạy là `null` — thường hiện thành 0,
+   và mọi nhánh "có số" (người theo dõi, thành tích, thống kê) chưa từng được
+   quét. */
+{
+  const { contentRange } = await import('./live-world.mjs');
+  const T = [1, 2, 3, 4, 5].map((i) => ({ id: `r${i}`, user_id: i <= 3 ? 'a' : 'b' }));
+  const Q = (q) => new URL(`https://x.supabase.co/rest/v1/t?${q}`);
+  const RANGE_CASES = [
+    ['HEAD + count=exact theo eq', () => contentRange(T, Q('select=id&user_id=eq.a'), applyQuery(T, Q('select=id&user_id=eq.a')).length, 'count=exact'), '0-2/3'],
+    ['GET + count + range (offset=1, limit=2): tổng đếm TRƯỚC limit/offset', () => contentRange(T, Q('select=id&offset=1&limit=2'), 2, 'return=representation,count=exact'), '1-2/5'],
+    ['count mà không có hàng nào → */0', () => contentRange(T, Q('select=id&user_id=eq.zzz'), 0, 'count=exact'), '*/0'],
+    ['không xin count → tổng là *', () => contentRange(T, Q('select=id'), 5, ''), '0-4/*'],
+    ['count=planned đếm như exact', () => contentRange(T, Q('select=id&user_id=eq.b'), 2, 'count=planned'), '0-1/2'],
+    ['offset được áp trong applyQuery', () => ids(applyQuery(T, Q('select=id&offset=3'))), 'r4,r5'],
+    ['offset trước limit', () => ids(applyQuery(T, Q('select=id&offset=1&limit=2'))), 'r2,r3'],
+  ];
+  for (const [label, run, want] of RANGE_CASES) {
+    let got;
+    try { got = run(); } catch (e) { got = `ném lỗi: ${e.message}`; }
+    if (got !== want) problems.push(`Content-Range / offset sai (#70): ${label} — ra "${got}", phải là "${want}"`);
+  }
+  if (!/'content-range': contentRange\(world\[table\] \?\? \[\], u, rows\.length, req\.headers\(\)\['prefer'\] \?\? ''\)/.test(liveSrc)) {
+    problems.push('tools/live.mjs không đặt `Content-Range` từ `contentRange(…)` cho lượt đọc bảng — mọi số đếm của app lại thành null (#70)');
+  }
+  if (!/'access-control-expose-headers': 'Content-Range'/.test(liveSrc)) {
+    problems.push('tools/live.mjs không khai `Access-Control-Expose-Headers: Content-Range` — trang khác nguồn không đọc được header ấy, và `count` vẫn là null (#70)');
+  }
+  if (!/body: req\.method\(\) === 'HEAD' \? '' :/.test(liveSrc)) {
+    problems.push('tools/live.mjs trả thân cho HEAD — `head: true` là một phép đếm, không có thân (#70)');
+  }
+  globalThis.__rangeCases = RANGE_CASES.length;
+}
+
 if (problems.length) {
   console.error('máy chủ giả trả lời sai câu hỏi:');
   for (const p of problems) console.error(`  ✗ ${p}`);
@@ -513,5 +548,6 @@ console.log(
     `Và ${globalThis.__writeCases} ca lệnh ghi (#52): trùng khoá → 409, upsert gộp, DEFAULT được điền, DELETE/PATCH theo eq áp đúng hàng, bộ lọc không hiểu thì KHÔNG áp; mỗi trang một bản sao thế giới. ` +
     'Và `/rest/v1/rpc/<tên>` được rẽ sang nhánh hàm (#38): đối số soát theo `types.ts`, kết quả từ `live-rpc.mjs`. ' +
     `Và trạng thái mạng (#68): ${globalThis.__netFiles} tệp tools/live*.mjs, đọc bằng trình phân tích cú pháp, không đổi mạng ở đâu ngoài goOnline/goOffline, ` +
-    `và cả hai hàm ấy đều bắn \`navigator.connection\` 'change' (${globalThis.__netCases} ca tự kiểm: trần, chỉ số chuỗi, newContext offline, CDP; chú thích và chuỗi thì im)`,
+    `và cả hai hàm ấy đều bắn \`navigator.connection\` 'change' (${globalThis.__netCases} ca tự kiểm: trần, chỉ số chuỗi, newContext offline, CDP; chú thích và chuỗi thì im). ` +
+    `Và ${globalThis.__rangeCases} ca #70: \`Content-Range\` mang tổng đếm TRƯỚC limit/offset khi \`Prefer\` xin count, \`*/0\` khi rỗng, \`*\` khi không xin; HEAD thân rỗng; \`offset\` được áp trước \`limit\``,
 );

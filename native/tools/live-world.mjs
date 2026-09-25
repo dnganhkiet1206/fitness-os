@@ -230,9 +230,34 @@ export function applyQuery(rows, url) {
     });
   }
 
+  /* `offset` trước `limit`, như PostgREST — `.range(a, b)` của supabase-js gửi
+     `offset=a&limit=b-a+1`. Trước #70 `offset` bị bỏ qua, nên trang thứ hai của
+     một lượt đọc theo trang lại là trang đầu. */
+  const offset = Number(url.searchParams.get('offset'));
+  if (Number.isFinite(offset) && offset > 0) out = out.slice(offset);
   const limit = Number(url.searchParams.get('limit'));
   if (Number.isFinite(limit) && limit > 0) out = out.slice(0, limit);
   return out;
+}
+
+/**
+ * Header `Content-Range` như PostgREST (#70): `<đầu>-<cuối>/<tổng>`, không có
+ * hàng nào thì phần đầu là `*`. Tổng chỉ có khi `Prefer` xin `count=` (exact,
+ * planned, estimated — ở đây cả ba đếm thật), không thì `*`. Tổng đếm TRƯỚC
+ * `limit`/`offset`: đó là số supabase-js trả về trong `count`.
+ *
+ * supabase-js đọc `count` từ đúng header này và KHÔNG từ thân. Trước #70 máy
+ * chủ giả không đặt nó, nên mọi `select(…, { count: 'exact', head: true })`
+ * của app nhận `count: null` — hồ sơ Linh hiện "0 Người theo dõi" dù thế giới
+ * có UID theo dõi Linh.
+ */
+export function contentRange(rows, url, returned, prefer = '') {
+  const all = new URL(url);
+  all.searchParams.delete('limit');
+  all.searchParams.delete('offset');
+  const total = /\bcount=(exact|planned|estimated)\b/.test(prefer) ? String(applyQuery(rows, all).length) : '*';
+  const off = Math.max(0, Number(url.searchParams.get('offset')) || 0);
+  return `${returned > 0 ? `${off}-${off + returned - 1}` : '*'}/${total}`;
 }
 
 /**
@@ -566,6 +591,23 @@ export const FIXTURES = {
   /* Sổ xu: đúng MỘT dòng, là phần thưởng của thử thách đã nhận ở trên (#41) —
      lịch sử hiện số ĐÃ VÀO SỔ, nên thế giới giả phải có sổ để nó đọc. Ví xu
      của app cộng bảng này, nên ở chế độ đủ dữ liệu số dư là 150 thay vì 0. */
+  /*
+    Huy chương ĐÃ CÓ (#70). Trước #70 mọi số đếm của app là null (máy chủ giả
+    không trả `Content-Range`), và `awardsToGrant` đọc null là "không đọc được"
+    nên không cấp gì. Có số đếm rồi thì UID đủ điều kiện cho đúng bốn huy chương
+    này — tính bằng chính `awardsToGrant` (src/lib/award-grant.ts) trên thế giới
+    này: 14 buổi tập → first_workout, workouts_10; 2 bữa → first_meal; 7 đêm
+    ngủ → sleep_7 (0 PR, 8 432 bước, 1 ngày uống nước, 3 lần cân: chưa tới ngưỡng
+    nào). Không có chúng, mỗi trang mới là "lần đầu đạt": màn chúc mừng bật lên
+    ở mọi màn, rung khi chưa ai chạm, và 32 mảnh confetti chạy trên mọi lượt đo
+    "đứng yên". Một người đã có 14 buổi tập thì đã nhận huy chương từ trước.
+  */
+  awards: [
+    { id: 'a0a00000-0000-4000-8000-000000000001', user_id: UID, award_type: 'first_workout', award_key: 'first_workout', title: 'First Step', description: 'Complete your first workout', icon: 'dumbbell', tier: 'bronze', metadata: {}, earned_at: day(60), created_at: day(60) },
+    { id: 'a0a00000-0000-4000-8000-000000000002', user_id: UID, award_type: 'nutrition', award_key: 'first_meal', title: 'First Plate', description: 'Log your first meal', icon: 'utensils', tier: 'bronze', metadata: {}, earned_at: day(30), created_at: day(30) },
+    { id: 'a0a00000-0000-4000-8000-000000000003', user_id: UID, award_type: 'volume_milestone', award_key: 'workouts_10', title: '10 Workouts', description: 'Complete 10 workouts', icon: 'activity', tier: 'silver', metadata: {}, earned_at: day(12), created_at: day(12) },
+    { id: 'a0a00000-0000-4000-8000-000000000004', user_id: UID, award_type: 'sleep', award_key: 'sleep_7', title: 'Seven Nights', description: 'Log 7 nights of sleep', icon: 'moon', tier: 'bronze', metadata: {}, earned_at: day(4), created_at: day(4) },
+  ],
   mascot_transactions: [
     {
       id: 'c4a11e00-0000-4000-8000-0000000000f1', user_id: UID, amount: 150, reason: 'Thử thách: Tháng 7: 12 buổi',

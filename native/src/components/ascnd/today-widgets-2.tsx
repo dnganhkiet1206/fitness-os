@@ -999,7 +999,11 @@ export function RecentAwardsCard() {
               />
               <View style={styles.awardInfo}>
                 <Text style={styles.awardTitle} numberOfLines={1}>{title}</Text>
-                {desc ? <Text style={styles.awardDesc} numberOfLines={1}>{desc}</Text> : null}
+                {/* Hai dòng (#70): mô tả nói VÌ SAO có huy chương ("Hoàn thành 10
+                    buổi tập"), và ở 320 với chữ lớn một dòng cắt đúng phần số. Thẻ
+                    này chưa từng được quét có huy chương: trước #70 mọi số đếm là
+                    null nên không huy chương nào được cấp. */}
+                {desc ? <Text style={styles.awardDesc} numberOfLines={2}>{desc}</Text> : null}
               </View>
               {/*
                 Tên hạng lấy từ chính bảng kim loại, không phải chuỗi thô trong

@@ -88,7 +88,7 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = process.env.LIVE_BUILD ? path.resolve(process.env.LIVE_BUILD) : path.join(NATIVE, 'tools', '.live-build');
 const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
-import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
+import { FIXTURES, REF, UID, applyQuery, contentRange, day, jwt } from './live-world.mjs';
 import { requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
 import { RPC_FIXTURES } from './live-rpc.mjs';
 import { applyWrite, unsupportedFilters } from './live-writes.mjs';
@@ -372,6 +372,18 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
     const t = m.text();
     /* A 500 we asked for is not a finding; it is the experiment. */
     if (/Failed to load resource|favicon/.test(t)) return;
+    /*
+      #70: chính sách "user activation" của Chrome, không phải lỗi của app.
+      `expo-haptics` trên web gọi `navigator.vibrate`, và Chrome chặn — kèm dòng
+      này ở mức error — mọi lần rung khi trang chưa từng được chạm. iOS không có
+      luật ấy: một cú rung lúc mở màn là hợp lệ ở đó. Có số đếm thật (#70) thì
+      một thử thách TUẦN đạt ngay lần đầu mở /challenges trong tuần, và màn chúc
+      mừng rung — đúng hành vi cho người mới trong tuần. Bỏ dòng này đi thì mất
+      MỘT tín hiệu của vòng lặp chúc mừng (màn bật lên ở mọi trang mới), không
+      mất hết: trên Hôm nay, lượt "đứng yên" vẫn đỏ khi confetti chạy — nó đã
+      đỏ ở lần thiếu `awards` trong fixture, cùng lúc với dòng này.
+    */
+    if (/^Blocked call to navigator\.vibrate because user hasn't tapped on the frame/.test(t)) return;
     errors.push(t);
   });
 
@@ -452,9 +464,17 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
       }
       const rows = applyQuery(world[table] ?? [], u);
       const single = (r.request().headers()['accept'] ?? '').includes('vnd.pgrst.object');
+      /* #70: số đếm đi trong `Content-Range`, không trong thân — và `HEAD`
+         (`head: true`) có thân rỗng. Header ấy không nằm trong danh sách mà một
+         trang khác nguồn được đọc, nên Supabase thật khai nó ở
+         `Access-Control-Expose-Headers`; máy chủ giả làm y vậy. */
       return r.fulfill({
         status: 200, contentType: 'application/json',
-        body: JSON.stringify(single ? (rows[0] ?? null) : rows),
+        headers: {
+          'content-range': contentRange(world[table] ?? [], u, rows.length, req.headers()['prefer'] ?? ''),
+          'access-control-expose-headers': 'Content-Range',
+        },
+        body: req.method() === 'HEAD' ? '' : JSON.stringify(single ? (rows[0] ?? null) : rows),
       });
     }
     return r.fulfill({
@@ -1991,6 +2011,39 @@ const SCENARIOS = [
       await back.click();
       for (let i = 0; i < 24 && !(await hasBadge('Tháng 7: 12 buổi')); i++) await page.waitForTimeout(250);
       if (!(await hasBadge('Tháng 7: 12 buổi'))) return 'đã bật "Hiện" mà quay lại hồ sơ của UID vẫn không có huy hiệu';
+      return null;
+    },
+  },
+  {
+    /*
+      #70: số đếm đi trong `Content-Range`. Trước #70 máy chủ giả không đặt
+      header ấy, supabase-js trả `count: null`, và hồ sơ Linh hiện "0 Người theo
+      dõi" dù thế giới có UID theo dõi Linh — nhánh "có số" chưa từng được quét.
+      Đòi: hai con số trên hồ sơ Linh BẰNG đúng số đếm từ `community_follows`
+      của thế giới giả (không chỉ "khác 0": một số sai mà khác 0 cũng là bịa).
+    */
+    name: 'Hồ sơ: số người theo dõi / đang theo dõi bằng đúng số trong thế giới giả (Content-Range)',
+    route: '/community-user?id=c0000000-0000-4000-8000-0000000011a1', mode: 'full',
+    async run(page) {
+      const LINH = 'c0000000-0000-4000-8000-0000000011a1';
+      const followers = FIXTURES.community_follows.filter((f) => f.followee_id === LINH).length;
+      const following = FIXTURES.community_follows.filter((f) => f.follower_id === LINH).length;
+      if (followers < 1) return `fixture: không ai theo dõi Linh (${followers}) — vế này không đo được nhánh "có số"`;
+      const shows = (n, label) => new RegExp(`(^|\\n)${n}\\n(${label})(\\n|$)`);
+      let text = '';
+      for (let i = 0; i < 24; i++) {
+        text = await page.locator('body').innerText();
+        if (shows(followers, 'Người theo dõi|Followers').test(text)) break;
+        await page.waitForTimeout(250);
+      }
+      if (!shows(followers, 'Người theo dõi|Followers').test(text)) {
+        const seen = /(\d+)\n(Người theo dõi|Followers)/.exec(text)?.[1];
+        return `hồ sơ Linh hiện ${seen ?? '?'} người theo dõi, thế giới giả có ${followers} — số đếm không đi qua Content-Range (#70)`;
+      }
+      if (!shows(following, 'Đang theo dõi|Following').test(text)) {
+        const seen = /(\d+)\n(Đang theo dõi|Following)/.exec(text)?.[1];
+        return `hồ sơ Linh hiện đang theo dõi ${seen ?? '?'}, thế giới giả có ${following} (#70)`;
+      }
       return null;
     },
   },
