@@ -565,6 +565,7 @@ const STEPS = [
   /* Lời nhắc nhận thưởng (#60) tính "còn mấy ngày" bằng một con số mà SQL của
      tổng quan quyết định. Hai con số, hai ngôn ngữ: luật đòi chúng là một. */
   ['cửa sổ nhận thưởng', 'node', ['tools/claim-window.mjs']],
+  ['hộp hỏi lại trên web', 'node', ['tools/web-alert.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],

@@ -2024,6 +2024,39 @@ const SCENARIOS = [
   },
   {
     /*
+      #83: react-native-web cài `Alert.alert` là hàm RỖNG, nên trước #83 sửa
+      nhịp tim ở đây (một số Apple Health đã đo) thì nút Lưu im lặng: 0 hộp,
+      0 toast, 0 lệnh ghi (đo ở #71). Nay trên web nó là `confirm()`. Đòi: một
+      hộp confirm hiện ra; Huỷ → 0 lệnh ghi; Đồng ý → đúng 1 lệnh ghi.
+    */
+    name: 'Hộp hỏi lại trên web: sửa số Apple Health — Huỷ thì không ghi, Đồng ý thì ghi đúng một lần',
+    route: '/log-biometrics', mode: 'full',
+    async run(page) {
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/biometric_samples/.test(q.url()) && isWrite(q.method())) writes.push(q.method());
+      });
+      await page.waitForTimeout(1500);
+      await page.getByPlaceholder('60').fill('58');
+      const save = page.getByRole('button', { name: /^(Lưu|Save)$/ });
+      const dialogs = [];
+      page.once('dialog', (d) => { dialogs.push(d.type()); d.dismiss(); });
+      await save.click();
+      await page.waitForTimeout(1500);
+      if (!dialogs.length) return 'sửa nhịp tim (số Apple Health) mà không hộp hỏi lại nào hiện — Alert.alert vẫn im lặng trên web';
+      if (dialogs[0] !== 'confirm') return `hộp hỏi lại một việc + Huỷ phải là confirm, ra ${dialogs[0]}`;
+      if (writes.length) return `bấm Huỷ mà vẫn có ${writes.length} lệnh ghi`;
+      page.once('dialog', (d) => { dialogs.push(d.type()); d.accept(); });
+      await save.click();
+      for (let i = 0; i < 10 && writes.length < 1; i++) await page.waitForTimeout(400);
+      await page.waitForTimeout(1500);
+      if (dialogs.length !== 2) return `bấm Lưu lần hai: phải thêm đúng một hộp hỏi lại, ra ${dialogs.length - 1}`;
+      if (writes.length !== 1) return `bấm Đồng ý: phải đúng 1 lệnh ghi vào biometric_samples, ra ${writes.length}`;
+      return null;
+    },
+  },
+  {
+    /*
       #33: lối lưu từ LỊCH TUẦN (#29) — nhánh "hoàn thành một buổi MỚI" chưa
       từng chạy trên web, vì ngày nào trong thế giới giả cũng đã có buổi ghi
       hoặc chưa tới. `planTodayUnlogged` cho hôm nay có lịch mà chưa ghi, trong

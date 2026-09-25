@@ -23,6 +23,7 @@ import { AppLockProvider } from '@/hooks/use-app-lock';
 import { AppErrorBoundary } from '@/components/ascnd/error-boundary';
 import { warnWorkletsVersionSkew } from '@/lib/worklets-version';
 import { installCrashHandler } from '@/lib/crash-log';
+import { installWebAlert } from '@/lib/web-alert';
 import { initObservability } from '@/lib/observability';
 import { AppSettingsProvider, useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
@@ -461,6 +462,9 @@ export default function RootLayout() {
     tới ngày có DSN thì app chạy y hệt hôm nay: không một request nào.
   */
   initObservability();
+  /* Bản web: `Alert.alert` của react-native-web là hàm rỗng, nên 57 hộp hỏi
+     lại của app im lặng trên trình duyệt (#83). Tự chốt một lần; iOS không đổi. */
+  installWebAlert();
   return (
     /*
       Every gesture in the app hangs off this, and its absence was a crash.
