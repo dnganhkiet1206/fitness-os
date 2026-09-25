@@ -21,6 +21,8 @@
  *      cắt cả CON SỐ ("+3.3…"), nên một số đo bị cắt cũng tính.
  *   3. Một ô chọn (`role="tab"`) nằm VẮT qua mép một vùng cuộn ngang khi
  *      chưa cuộn — kiểu cắt của `PickRow scroll`, không có "…" nào.
+ *   4. Hai đích chạm (nút, link, ô chọn, ô nhập) chồng lên nhau (#77) — một
+ *      ngón tay rơi vào chỗ ấy thì không biết bấm trúng cái nào.
  *
  * ── nhưng chỉ chữ CỦA APP ──
  *
@@ -245,6 +247,67 @@ export async function narrowFindings(page, patterns) {
         clipped.push(`${text} (${Math.round(t.left)}..${Math.round(t.right)} trong ${Math.round(b.left)}..${Math.round(b.right)})`);
       }
     }
-    return { wide, cut, clipped };
+    /*
+      4. Hai ĐÍCH CHẠM chồng lên nhau (#77). Cả hai lỗi của #72 — nút "Hoàn
+      thành buổi tập" kẹt `position: absolute` đè lên hàng set, viên "⏱ 2:00"
+      đè lên ô số lần ở 320 — đều qua ba luật trên, vì không chữ nào bị cắt
+      và không gì tràn: chúng chỉ nằm SAI CHỖ. Một ngón tay rơi vào chỗ chồng
+      nhau thì không biết bấm trúng cái nào.
+
+      Đo hình chữ nhật NHÌN THẤY được của mỗi đích: cắt theo mọi tổ tiên có
+      `overflow` khác `visible` (nội dung cuộn dưới một thanh cố định thì bị
+      vùng cuộn cắt, không "chồng" lên thanh ấy). Không tính:
+        · cặp mà cái này CHỨA cái kia trong cây (nút trong một thẻ bấm được);
+        · lớp phủ CÓ CHỦ Ý — cái nhỏ nằm trọn trong cái lớn và ở TRÊN nó
+          (`elementFromPoint` ở tâm cái nhỏ trúng cái nhỏ): nút ✕ ở góc thẻ.
+          Nằm trọn mà ở DƯỚI thì là một đích không bấm tới được — vẫn tính.
+    */
+    const TAP = ['button', 'link', 'tab', 'switch', 'checkbox', 'radio', 'menuitem']
+      .map((r) => `#root [role="${r}"]`)
+      .concat(['#root a[href]', '#root input', '#root textarea'])
+      .join(',');
+    const seen4 = new Set();
+    const taps = [];
+    for (const el of document.querySelectorAll(TAP)) {
+      if (seen4.has(el)) continue;
+      seen4.add(el);
+      const st = getComputedStyle(el);
+      if (st.pointerEvents === 'none' || st.visibility === 'hidden') continue;
+      let { left, top, right, bottom } = el.getBoundingClientRect();
+      let gone = false;
+      for (let a = el.parentElement; a && a.id !== 'root'; a = a.parentElement) {
+        const sa = getComputedStyle(a);
+        if (sa.display === 'none' || sa.opacity === '0' || a.getAttribute('aria-hidden') === 'true') { gone = true; break; }
+        if (sa.overflowX !== 'visible' || sa.overflowY !== 'visible') {
+          const b = a.getBoundingClientRect();
+          left = Math.max(left, b.left); top = Math.max(top, b.top);
+          right = Math.min(right, b.right); bottom = Math.min(bottom, b.bottom);
+        }
+      }
+      if (gone || st.opacity === '0' || right - left < 2 || bottom - top < 2) continue;
+      taps.push({ el, left, top, right, bottom });
+    }
+    const name = (el) =>
+      (el.getAttribute('aria-label') || el.innerText || el.getAttribute('placeholder') || el.tagName.toLowerCase())
+        .replace(/\s+/g, ' ').trim().slice(0, 40);
+    const inside = (a, b) => a.left >= b.left - 1 && a.right <= b.right + 1 && a.top >= b.top - 1 && a.bottom <= b.bottom + 1;
+    const onTop = (s) => {
+      const hit = document.elementFromPoint((s.left + s.right) / 2, (s.top + s.bottom) / 2);
+      return !!hit && s.el.contains(hit);
+    };
+    const overlap = [];
+    for (let i = 0; i < taps.length; i++) {
+      for (let j = i + 1; j < taps.length; j++) {
+        const a = taps[i], b = taps[j];
+        if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
+        const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+        const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+        if (w <= 4 || h <= 4) continue;
+        if (inside(a, b) && onTop(a)) continue;
+        if (inside(b, a) && onTop(b)) continue;
+        overlap.push(`"${name(a.el)}" × "${name(b.el)}" (${Math.round(w)}×${Math.round(h)}px)`);
+      }
+    }
+    return { wide, cut, clipped, overlap };
   }, patterns);
 }

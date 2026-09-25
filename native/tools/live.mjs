@@ -2293,8 +2293,9 @@ try {
             if ((await enlargeText(page)) === 0) problems.push(`${at}: phóng chữ không đổi được cỡ của phần tử chữ nào — giả lập hỏng, đừng tin lượt này`);
             await page.waitForTimeout(300);
           }
-          const { wide, cut, clipped } = await narrowFindings(page, patterns);
+          const { wide, cut, clipped, overlap } = await narrowFindings(page, patterns);
           if (wide) problems.push(`${at}: trang rộng ${wide}px trong khung ${NARROW.width}px — cả màn cuộn ngang`);
+          for (const o of overlap) problems.push(`${at}: hai đích chạm chồng lên nhau — ${o}`);
           if (!large) {
             for (const c of clipped) {
               if (clipExempt(route, c)) clipExempted++;
@@ -2396,9 +2397,9 @@ if (problems.length) {
 const narrowClaim = globalThis.__narrow
   ? `${globalThis.__narrow.opened} lượt mở màn Cộng đồng, Dinh dưỡng và các tab chính ở ${NARROW.width}×${NARROW.height} (${NARROW_LANGS.join(' + ')}): ` +
     'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt thành "…", không ô chọn nào ' +
-    'bị mép vùng cuộn cắt ngang; ' +
+    'bị mép vùng cuộn cắt ngang, không hai đích chạm nào chồng lên nhau; ' +
     `thêm ${globalThis.__narrow.largeOpened} lượt màn Cộng đồng và các tab chính với chữ ×${LARGE_TEXT} (${LARGE_LANGS.join(' + ')}, giả lập Dynamic Type): ` +
-    'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt ' +
+    'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt, không hai đích chạm nào chồng lên nhau ' +
     `(${globalThis.__narrow.contentCut} đoạn nội dung người dùng được cắt đúng luật numberOfLines; ` +
     `${globalThis.__narrow.clipExempted} ô vắt mép được miễn theo NARROW_CLIP_OK, mỗi mục một lý do)`
   : 'bỏ qua lượt quét hẹp';
