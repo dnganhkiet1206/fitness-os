@@ -394,9 +394,8 @@ nào):
 
 ```bash
 bash supabase/tests/community/run.sh   # mọi bộ kịch bản cộng đồng + seed
-bash supabase/tests/community/a-suites.reverse.sh   # phá từng lớp bảo vệ, đòi test đỏ đúng chỗ
+python3 supabase/tests/community/b_reverse.py       # phá từng lớp bảo vệ (120 ca), đòi test đỏ đúng chỗ; báo cả "vạ lây"
 bash supabase/tests/community/recipe.reverse.sh
-python3 supabase/tests/community/b_reverse.py       # 88 ca của B, mỗi ca một database, báo cả "vạ lây"
 ```
 
 Sau khi áp, tạo tài khoản ASCND chính thức để feed Khám phá không trống: tạo

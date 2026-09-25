@@ -8,7 +8,22 @@ theo tên tệp (đúng MỘT chỗ bị đột biến) → mọi *.test.sql the
   python3 supabase/tests/community/b_reverse.py [bộ...]
       bộ: foundation progress challenges privacy recipe notifications
 
-Khác `a-suites.reverse.sh` (một cụm MỖI ca, một bộ test, sed), cái này:
+Từ #75 đây là bộ chạy thử ngược DUY NHẤT cho các bộ của A: 32 ca của
+`a-suites.reverse.sh` (bash, sed, một cụm mỗi ca, một bộ test) đã chuyển vào
+`b_cases.py` và tệp bash bị bỏ. Những gì các ca ấy từng bắt được, để lịch sử
+không mất cùng tệp:
+  · foundation 21, challenges C4/C14 — ghi và kiểm trong CÙNG một câu nối bằng
+    AND: Postgres không hứa thứ tự tính, phép đếm chạy trước lệnh ghi.
+  · privacy V4 — UPDATE có WHERE đọc cột nên Postgres áp cả policy SELECT.
+  · challenges C19/C20, notifications N20 — so MÃ LỖI khi anon gọi, trong khi
+    thân hàm tự ném 42501; nay hỏi thẳng `has_function_privilege`.
+  · notifications N10 — chỉ đếm sau lượt theo dõi LẠI; nay có N10a.
+  · challenges C9 — lỗi của STUB: thiếu default privileges trên hàm mới.
+  · challenges R3 (#60) — lỗi của hàm dừng khối DO trước khi ASSERT nói nhãn.
+  · challenges C10 (#25) — đỏ SAI chỗ vì C4 không lọc, trên database dùng chung
+    với bộ lịch sử; chỉ bộ chạy này thấy, vì nó chạy MỌI bộ ở mỗi ca.
+
+So với bộ bash cũ, cái này:
   · báo "CA SAI" khi chuỗi cần thay không khớp ĐÚNG một chỗ — một đột biến
     không áp được thì không bao giờ được coi là "xanh";
   · diễn đạt được ca phải-XANH (`green_ok`: còn một lớp bảo vệ dự phòng) và
