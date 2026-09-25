@@ -104,6 +104,11 @@ const narrowOnly = args.has('--narrow-only');
    kịch bản trên một bản dựng bị phá mà không trả 35 phút của lượt đầy đủ. Bỏ
    qua mọi lượt quét và lượt bấm, và dòng tổng kết nói đúng như thế. */
 const onlyArg = [...args].find((a) => a.startsWith('--only='))?.slice(7) ?? null;
+/* Quét màn (và quét hẹp) chỉ những đường dẫn chứa chuỗi này — cho phép đo lại
+   một màn sau khi sửa (#76: `/workouts`) mà không trả cả lượt 37 × 3. Bỏ qua
+   lượt bấm và kịch bản, và dòng tổng kết nói đúng như thế. */
+const routeArg = [...args].find((a) => a.startsWith('--route='))?.slice(8) ?? null;
+const pickRoutes = (list) => (routeArg ? list.filter((r) => r.includes(routeArg)) : list);
 /*
   ── theme, vì một bộ chạy chỉ vẽ được một thế giới ──
 
@@ -624,13 +629,23 @@ async function boot(chromium, route, mode, settleMs = 9000) {
   const { browser, page, errors } = await openPage(chromium, route, mode, settleMs);
   const text = await readable(page);
   const rootLen = await page.evaluate(() => document.getElementById('root')?.innerHTML?.length ?? 0);
+  /* #76: phần tử bị hiệu ứng vào (`entering`) của Reanimated web ghim lại —
+     `animation-name: REA-ENTERING-n` + `position: absolute` còn trên phần tử
+     THẬT khi màn đã đứng yên. Khối chứa mất chiều cao và mọi thứ sau nó vẽ
+     chồng lên; iPhone không bao giờ vẽ như thế, nên mọi phép đo bố cục ở đây
+     đang đo một màn không có thật. */
+  const pinned = await page.evaluate(() =>
+    [...document.querySelectorAll('#root *')]
+      .filter((el) => /^REA-ENTERING/.test(el.style.animationName || '') && el.style.position === 'absolute')
+      .map((el) => (el.innerText || el.getAttribute('aria-label') || el.tagName).replace(/\s+/g, ' ').trim().slice(0, 50)),
+  );
   if (wantShots) {
     const dir = path.join(SHOTS, themeArg ? `${themeArg}-${mode}` : mode);
     mkdirSync(dir, { recursive: true });
     await page.screenshot({ path: path.join(dir, `${route === '/' ? 'today' : route.slice(1).replace(/\//g, '-')}.png`) });
   }
   await browser.close();
-  return { text, rootLen, errors };
+  return { text, rootLen, errors, pinned };
 }
 
 // ── pressing things ───────────────────────────────────────────────────────
@@ -2512,9 +2527,10 @@ try {
   process.stdout.write('canary OK — đang mở từng màn');
 
   for (const mode of args.has('--press-only') || narrowOnly || onlyArg ? [] : MODES) {
-    for (const route of ROUTES) {
-      const { text, rootLen, errors } = await boot(chromium, route, mode);
+    for (const route of pickRoutes(ROUTES)) {
+      const { text, rootLen, errors, pinned } = await boot(chromium, route, mode);
       const at = `[${mode}] ${route}`;
+      if (pinned.length) problems.push(`${at}: ${pinned.length} phần tử kẹt position:absolute sau hiệu ứng vào của Reanimated web (#76) — ${pinned.slice(0, 2).map((t) => `"${t}"`).join(', ')}`);
 
       /* Blank is the failure nobody reports, because there is nothing to
          report: no error, no message, no way to tell it from a slow network. */
@@ -2561,7 +2577,7 @@ try {
       ...LARGE_LANGS.map((lang) => ({ lang, large: true })),
     ];
     for (const { lang, large } of passes) {
-      for (const route of large ? [...NARROW_ROUTES, ...NARROW_ROUTES_MAIN] : [...NARROW_ROUTES, ...NARROW_ROUTES_NUTRITION, ...NARROW_ROUTES_MAIN]) {
+      for (const route of pickRoutes(large ? [...NARROW_ROUTES, ...NARROW_ROUTES_MAIN] : [...NARROW_ROUTES, ...NARROW_ROUTES_NUTRITION, ...NARROW_ROUTES_MAIN])) {
         const { browser, page, errors } = await openPage(chromium, route, 'full', 9000, { ...NARROW, lang });
         try {
           const at = `[320 ${lang}${large ? ` chữ ×${LARGE_TEXT}` : ''}] ${route}`;
@@ -2597,7 +2613,10 @@ try {
     globalThis.__narrow = { opened, largeOpened, contentCut: contentCut.size, clipExempted };
   }
 
-  if (!narrowOnly) {
+  if (routeArg && pickRoutes([...ROUTES, ...NARROW_ROUTES, ...NARROW_ROUTES_NUTRITION, ...NARROW_ROUTES_MAIN]).length === 0) {
+    problems.push(`--route=${routeArg}: không màn nào có đường dẫn chứa chuỗi này`);
+  }
+  if (!narrowOnly && !routeArg) {
     process.stdout.write('bấm thử từng nút');
     let pressed = 0;
     let skipped = 0;
@@ -2685,6 +2704,12 @@ const narrowClaim = globalThis.__narrow
 
 if (onlyArg) {
   console.log(`\nchạy thật OK (--only=${onlyArg}) — ${globalThis.__picked} kịch bản đúng; KHÔNG quét màn, không bấm thử`);
+  process.exit(0);
+}
+
+if (routeArg) {
+  console.log(`\nchạy thật OK (--route=${routeArg}) — ${pickRoutes(ROUTES).length} màn khớp × ${MODES.length} trạng thái, ${narrowClaim}; KHÔNG bấm thử, không kịch bản`);
+  console.log(RPC_NOTE());
   process.exit(0);
 }
 

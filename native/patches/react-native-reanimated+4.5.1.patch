@@ -1,0 +1,31 @@
+diff --git a/node_modules/react-native-reanimated/lib/module/layoutReanimation/web/componentUtils.js b/node_modules/react-native-reanimated/lib/module/layoutReanimation/web/componentUtils.js
+--- a/node_modules/react-native-reanimated/lib/module/layoutReanimation/web/componentUtils.js
++++ b/node_modules/react-native-reanimated/lib/module/layoutReanimation/web/componentUtils.js
+@@ -190,8 +190,9 @@
+   };
+   if (!(animationName in Animations)) {
+     scheduleAnimationCleanup(animationName, duration + delay, () => {
++      // ASCND #76: see src/layoutReanimation/web/componentUtils.ts.
+       if (shouldSavePosition) {
+-        setElementPosition(element, getSnapshotForElement(element));
++        saveSnapshot(element);
+       }
+       maybeRunCleanup();
+       maybeCallCallback(false);
+diff --git a/node_modules/react-native-reanimated/src/layoutReanimation/web/componentUtils.ts b/node_modules/react-native-reanimated/src/layoutReanimation/web/componentUtils.ts
+--- a/node_modules/react-native-reanimated/src/layoutReanimation/web/componentUtils.ts
++++ b/node_modules/react-native-reanimated/src/layoutReanimation/web/componentUtils.ts
+@@ -279,8 +279,12 @@
+ 
+   if (!(animationName in Animations)) {
+     scheduleAnimationCleanup(animationName, duration + delay, () => {
++      // ASCND #76: `shouldSavePosition` is only ever true for ENTERING, and pinning the
++      // real element at its snapshot left it `position: absolute` for good once the
++      // custom keyframe was removed — everything after it in the flow drew underneath.
++      // Record the position like `onanimationend` does; never move the element.
+       if (shouldSavePosition) {
+-        setElementPosition(element, getSnapshotForElement(element));
++        saveSnapshot(element);
+       }
+ 
+       maybeRunCleanup();
