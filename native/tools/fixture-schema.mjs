@@ -92,7 +92,9 @@ for (const [fn, fx] of Object.entries(RPC_FIXTURES)) {
   }
   let out;
   try {
-    out = fx.run(fx.sample, FIXTURES);
+    /* Bản SAO: một fixture RPC GHI (#80) đổi thế giới nó nhận, và `FIXTURES` là
+       thế giới mọi bước sau đọc. */
+    out = fx.run(fx.sample, structuredClone(FIXTURES));
   } catch (e) {
     problems.push(`fixture RPC \`${fn}\` ném lỗi trên \`sample\` của nó (${e.message}) — một mẫu phải cho ra DỮ LIỆU, không thì bước này không so được gì`);
     continue;

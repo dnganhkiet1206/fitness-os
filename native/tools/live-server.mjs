@@ -72,7 +72,10 @@ export function fakeSupabase({ world, mode = 'full', report = {} }) {
           });
         } catch (e) {
           if (!e.rpc) throw e;
-          return r.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify(e.rpc) });
+          /* Mã HTTP theo bảng của PostgREST cho đúng những mã hàm SQL ném (#80):
+             23505 → 409 (bấm Nhận lần hai), 42501 → 403, P0002 → 404, còn lại 400. */
+          const status = { 23505: 409, 42501: 403, P0002: 404 }[e.rpc.code] ?? 400;
+          return r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(e.rpc) });
         }
       }
       /* #35: `select=` hỏi một cột không có thật thì trả 400 như PostgREST, và

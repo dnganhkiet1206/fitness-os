@@ -349,6 +349,24 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
       const r = applyWrite(w, 'weight_logs', 'DELETE', U('weight_logs?date=gte.2000-01-01'), '');
       return r.applied === false && w.weight_logs.length === FIXTURES.weight_logs.length;
     }],
+    ['POST lô [mới, trùng] → 409 và KHÔNG hàng nào vào (nguyên tử, #80)', (w) => {
+      const r = applyWrite(w, 'community_likes', 'POST', U('community_likes'), JSON.stringify([
+        { post_id: like0.post_id, user_id: 'f0f0f0f0-0000-4000-8000-000000000001' },
+        { post_id: like0.post_id, user_id: like0.user_id },
+      ]));
+      return r.status === 409 && w.community_likes.length === FIXTURES.community_likes.length;
+    }],
+    ['POST lô trùng CHÍNH NÓ → 409, không vào (#80)', (w) => {
+      const x = { post_id: like0.post_id, user_id: 'f0f0f0f0-0000-4000-8000-000000000002' };
+      const r = applyWrite(w, 'community_likes', 'POST', U('community_likes'), JSON.stringify([x, x]));
+      return r.status === 409 && w.community_likes.length === FIXTURES.community_likes.length;
+    }],
+    ['upsert theo on_conflict: trùng một UNIQUE KHÁC → 409, không gộp nhầm (#80)', (w) => {
+      const other = FIXTURES.community_profiles[0];
+      const r = applyWrite(w, 'community_profiles', 'POST', U('community_profiles?on_conflict=user_id'),
+        JSON.stringify({ user_id: 'f0f0f0f0-0000-4000-8000-000000000003', handle: other.handle, display_name: 'X' }), { prefer: 'resolution=merge-duplicates' });
+      return r.status === 409 && w.community_profiles.find((p) => p.user_id === other.user_id).display_name === other.display_name;
+    }],
     ['PATCH gộp thân vào hàng khớp', (w) => {
       const p = FIXTURES.community_settings[0];
       applyWrite(w, 'community_settings', 'PATCH', U(`community_settings?user_id=eq.${p.user_id}`), JSON.stringify({ default_visibility: 'public' }));
@@ -367,6 +385,56 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
     problems.push('tools/live.mjs không dựng một BẢN SAO thế giới cho mỗi trang — lệnh ghi của trang này sẽ rò sang trang sau');
   }
   globalThis.__writeCases = WRITE_CASES.length;
+}
+
+/* ── vế 6b (#80): RPC GHI đổi thế giới của trang, và ném đúng lỗi của SQL ── */
+{
+  const { RPC_FIXTURES } = await import('./live-rpc.mjs');
+  const claim = RPC_FIXTURES.claim_community_challenge;
+  const markRead = RPC_FIXTURES.community_mark_notifications_read;
+  const W = () => structuredClone(FIXTURES);
+  const DONE = 'c4a11e00-0000-4000-8000-000000000004'; // #60: đã đạt, chưa nhận
+  const code = (f) => { try { f(); return 'ok'; } catch (e) { return e.rpc?.code ?? `js:${e.message}`; } };
+  const RPC_WRITE_CASES = [
+    ['nhận thưởng: đặt claimed_at, vào sổ ĐÚNG một dòng cc:<id>, trả số xu', () => {
+      const w = W();
+      const n = claim.run({ p_challenge: DONE, p_offset_min: 0 }, w);
+      const c = w.community_challenges.find((x) => x.id === DONE);
+      const m = w.community_challenge_members.find((x) => x.challenge_id === DONE && x.user_id === UID_);
+      const tx = w.mascot_transactions.filter((t) => t.ref_key === `cc:${DONE}`);
+      return n === c.reward_coins && m.claimed_at != null && tx.length === 1 && tx[0].amount === c.reward_coins;
+    }],
+    ['nhận lần hai → 23505 "already claimed" (đứng TRƯỚC "chưa đạt", như SQL)', () => {
+      const w = W();
+      claim.run({ p_challenge: DONE, p_offset_min: 0 }, w);
+      return code(() => claim.run({ p_challenge: DONE, p_offset_min: 0 }, w)) === '23505';
+    }],
+    ['thử thách chưa đạt → 22023, thế giới không đổi', () => {
+      const w = W();
+      const before = JSON.stringify(w.community_challenge_members);
+      return code(() => claim.run({ p_challenge: 'ch000000-0000-4000-8000-000000000001', p_offset_min: 0 }, w)) === '22023'
+        && JSON.stringify(w.community_challenge_members) === before;
+    }],
+    ['không tham gia → P0001; không có thử thách → P0002', () => {
+      const w = W();
+      return code(() => claim.run({ p_challenge: 'ch000000-0000-4000-8000-000000000002', p_offset_min: 0 }, w)) === 'P0001'
+        && code(() => claim.run({ p_challenge: 'ffffffff-0000-4000-8000-000000000000', p_offset_min: 0 }, w)) === 'P0002';
+    }],
+    ['đánh dấu đã đọc: trả số dòng CHƯA đọc của mình, lần hai trả 0', () => {
+      const w = W();
+      const unread = w.community_notifications.filter((r) => r.user_id === UID_ && r.read_at == null).length;
+      return unread > 0 && markRead.run({}, w) === unread && markRead.run({}, w) === 0;
+    }],
+  ];
+  for (const [label, run] of RPC_WRITE_CASES) {
+    let ok = false;
+    try { ok = run(); } catch { ok = false; }
+    if (!ok) problems.push(`RPC ghi sai (#80): ${label}`);
+  }
+  if (!/const status = \{ 23505: 409, 42501: 403, P0002: 404 \}\[e\.rpc\.code\] \?\? 400;/.test(serverSrc)) {
+    problems.push('tools/live-server.mjs không trả mã HTTP theo SQLSTATE cho lỗi của hàm (#80) — "đã nhận rồi" (23505) phải là 409 như PostgREST');
+  }
+  globalThis.__rpcWriteCases = RPC_WRITE_CASES.length;
 }
 
 /* ── vế 7 (#68): trạng thái mạng chỉ đổi qua goOnline/goOffline ─────────────
@@ -576,6 +644,7 @@ console.log(
     `Và ${REQUEST_CASES.length} ca #40: bộ lọc, not., or=/and= lồng nhau, order=, on_conflict= (42703) và thân POST/PATCH (PGRST204) nhắc cột lạ đều bị từ chối, câu hợp lệ thì không. ` +
     `Và ${globalThis.__writeCases} ca lệnh ghi (#52): trùng khoá → 409, upsert gộp, DEFAULT được điền, DELETE/PATCH theo eq áp đúng hàng, bộ lọc không hiểu thì KHÔNG áp; mỗi trang một bản sao thế giới. ` +
     'Và `/rest/v1/rpc/<tên>` được rẽ sang nhánh hàm (#38): đối số soát theo `types.ts`, kết quả từ `live-rpc.mjs`. ' +
+    `Và ${globalThis.__rpcWriteCases} ca RPC ghi (#80): nhận thưởng đặt claimed_at và vào sổ đúng một dòng, lần hai 23505, chưa đạt 22023 mà thế giới không đổi, P0001/P0002; đánh dấu đã đọc trả đúng số dòng rồi 0; lỗi của hàm ra mã HTTP theo SQLSTATE. ` +
     `Và trạng thái mạng (#68): ${globalThis.__netFiles} tệp tools/live*.mjs, đọc bằng trình phân tích cú pháp, không đổi mạng ở đâu ngoài goOnline/goOffline, ` +
     `và cả hai hàm ấy đều bắn \`navigator.connection\` 'change' (${globalThis.__netCases} ca tự kiểm: trần, chỉ số chuỗi, newContext offline, CDP; chú thích và chuỗi thì im). ` +
     `Và ${globalThis.__rangeCases} ca #70: \`Content-Range\` mang tổng đếm TRƯỚC limit/offset khi \`Prefer\` xin count, \`*/0\` khi rỗng, \`*\` khi không xin; HEAD thân rỗng; \`offset\` được áp trước \`limit\`` +

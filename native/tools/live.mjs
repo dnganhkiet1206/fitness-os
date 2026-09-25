@@ -2042,6 +2042,41 @@ const SCENARIOS = [
   },
   {
     /*
+      #80: RPC GHI đổi thế giới của trang. Trước #80 `claim_community_challenge`
+      không có fixture, nhận `[]`, và luồng "đạt → NHẬN → đọc lại thấy đã nhận"
+      nằm ngoài tầm đo: nút Nhận còn nguyên sau khi bấm, vì lượt đọc lại tổng
+      quan vẫn ra `claimed: false`. Fixture: thử thách #60 "Tuần bứt tốc: 3 buổi"
+      — UID đã đạt, chưa nhận, kết thúc 3 ngày trước (còn trong cửa sổ 7 ngày).
+      Đòi: đúng MỘT lời gọi nhận thưởng 200, câu "Hoàn thành thử thách! +100 …",
+      và màn đọc lại ra "Đã nhận thưởng" — nút Nhận biến mất.
+    */
+    name: 'Thử thách: bấm Nhận thì đọc lại thấy đã nhận thưởng (RPC ghi)',
+    route: '/community-challenge?id=c4a11e00-0000-4000-8000-000000000004', mode: 'full',
+    async run(page) {
+      const calls = [];
+      page.on('response', (res) => {
+        if (/\/rpc\/claim_community_challenge\b/.test(res.url())) calls.push(res.status());
+      });
+      const claimBtn = page.getByRole('button', { name: /^(Nhận 100 xu|Claim 100 coins)$/ });
+      for (let i = 0; i < 20 && (await claimBtn.count()) === 0; i++) await page.waitForTimeout(250);
+      if ((await claimBtn.count()) === 0) return 'không thấy nút "Nhận 100 xu" trên thử thách #60 đã đạt (fixture?)';
+      await claimBtn.first().click();
+      let toastText = '';
+      for (let i = 0; i < 20 && !toastText; i++) {
+        await page.waitForTimeout(250);
+        toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+      }
+      const claimed = /Đã nhận thưởng|Reward claimed/;
+      for (let i = 0; i < 24 && !claimed.test(await page.locator('body').innerText()); i++) await page.waitForTimeout(250);
+      if (calls.length !== 1 || calls[0] !== 200) return `bấm Nhận: lời gọi claim_community_challenge ${JSON.stringify(calls)}, phải là đúng một 200`;
+      if (!/(Hoàn thành thử thách!|Challenge complete!).*100/.test(toastText)) return `câu báo sau khi nhận không nói số xu: "${toastText}"`;
+      if (!claimed.test(await page.locator('body').innerText())) return 'đã nhận mà màn đọc lại không ra "Đã nhận thưởng" — thế giới giả không nhớ RPC ghi (#80)';
+      if ((await claimBtn.count()) !== 0) return 'đã nhận mà nút "Nhận 100 xu" vẫn còn';
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng

@@ -24,6 +24,7 @@
  * gọi hàm và so KẾT QUẢ với `Returns` trong `types.ts`. Một fixture RPC trả thừa
  * hay thiếu cột thì cổng đỏ, như một hàng fixture của bảng.
  */
+import { randomUUID } from 'node:crypto';
 import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -202,6 +203,51 @@ export const RPC_FIXTURES = {
         .sort((a, b) => (a.claimed_at < b.claimed_at ? 1 : -1))
         .slice(0, 50)
         .map((m) => ({ challenge_id: m.challenge_id, title: byId.get(m.challenge_id).title }));
+    },
+  },
+
+  /*
+    RPC GHI (#80): đổi thế giới CỦA TRANG, như bảng (#52). Dịch từ thân SQL, cả
+    thứ tự các lần ném lỗi — "đã nhận" đứng trước "chưa đạt", nên bấm Nhận lần
+    hai ra 23505 chứ không phải 22023.
+  */
+  /* 20260930120000_community_challenges.sql */
+  claim_community_challenge: {
+    sample: { p_challenge: 'c4a11e00-0000-4000-8000-000000000004', p_offset_min: 0 },
+    run({ p_challenge, p_offset_min } = {}, world) {
+      const c = rows(world, 'community_challenges').find((x) => x.id === p_challenge);
+      if (!c) throw rpcError('P0002', 'challenge not found');
+      const m = rows(world, 'community_challenge_members').find((x) => x.challenge_id === p_challenge && x.user_id === UID);
+      if (!m) throw rpcError('P0001', 'not a member');
+      if (m.claimed_at != null) throw rpcError('23505', 'already claimed');
+      if (challengeProgress(world, c, UID, p_offset_min) < c.target) throw rpcError('22023', 'not completed');
+      if (c.reward_coins > 0) {
+        const dayStart = `${today()}T00:00:00.000Z`;
+        const tx = (world.mascot_transactions ??= []);
+        const got = tx.filter((t) => t.user_id === UID && t.amount > 0 && t.created_at >= dayStart).reduce((n, t) => n + t.amount, 0);
+        if (got + c.reward_coins > 800) throw rpcError('22023', 'daily reward ceiling reached');
+        if (!tx.some((t) => t.user_id === UID && t.ref_key === `cc:${c.id}`)) {
+          tx.push({ id: randomUUID(), user_id: UID, amount: c.reward_coins, reason: `Thử thách: ${c.title}`, ref_key: `cc:${c.id}`, created_at: new Date().toISOString() });
+        }
+      }
+      m.claimed_at = new Date().toISOString();
+      return c.reward_coins;
+    },
+  },
+
+  /* 20260930140000_community_notifications.sql */
+  community_mark_notifications_read: {
+    sample: {},
+    run(_args, world) {
+      const now = new Date().toISOString();
+      let n = 0;
+      for (const r of rows(world, 'community_notifications')) {
+        if (r.user_id === UID && r.read_at == null) {
+          r.read_at = now;
+          n++;
+        }
+      }
+      return n;
     },
   },
 

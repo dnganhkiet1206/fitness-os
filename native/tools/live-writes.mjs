@@ -100,25 +100,55 @@ export function applyWrite(world, table, method, url, bodyText, headers = {}) {
     const merge = /resolution=merge-duplicates/.test(prefer) || method === 'PUT';
     const ignore = /resolution=ignore-duplicates/.test(prefer);
     const s = SCHEMA[table];
-    const conflictCols = url.searchParams.get('on_conflict')?.split(',').map((c) => c.trim()) ?? s?.pk ?? ['id'];
-    const keys = [conflictCols, ...(s?.uniques ?? [])];
+    /*
+      Mục tiêu xung đột: `on_conflict=` nếu có, không thì khoá chính — đúng như
+      PostgREST dựng `ON CONFLICT (…)`. Upsert/bỏ qua chỉ xử lý ĐÚNG ràng buộc
+      ấy; trùng một ràng buộc KHÁC vẫn là 23505, như Postgres (#80). Chèn thường
+      thì trùng bất kỳ khoá nào cũng là 23505.
+    */
+    const target = url.searchParams.get('on_conflict')?.split(',').map((c) => c.trim()) ?? s?.pk ?? ['id'];
+    const allKeys = [s?.pk ?? ['id'], ...(s?.uniques ?? [])];
+    const sameCols = (a, b) => a.length === b.length && a.every((c) => b.includes(c));
+    const others = allKeys.filter((k) => !sameCols(k, target));
+    const conflict = () => ({
+      status: 409,
+      body: JSON.stringify({ code: '23505', details: null, hint: null, message: `duplicate key value violates unique constraint on ${table}` }),
+      applied: true,
+    });
+    /*
+      NGUYÊN TỬ (#80): cả lô được xét trên một bản nháp, và thế giới chỉ đổi khi
+      không hàng nào lỗi — Postgres huỷ cả câu lệnh, không giữ lại nửa lô. Bản
+      đầu đẩy từng hàng vào `rows` rồi mới gặp trùng: `[a, b]` với `b` trùng trả
+      409 mà `a` vẫn vào (A tái hiện ở #80).
+    */
+    const added = [];
+    const merges = [];
     const touched = [];
     for (const raw of list) {
       const row = withDefaults(table, raw);
-      const hit = keys.map((cols) => rows.find((r) => sameKey(r, row, cols))).find(Boolean);
-      if (hit) {
-        if (merge) {
-          Object.assign(hit, raw);
-          touched.push(hit);
-          continue;
+      const pool = [...rows, ...added];
+      const hit = pool.find((r) => sameKey(r, row, target));
+      const clash = others.map((cols) => pool.find((r) => r !== hit && sameKey(r, row, cols))).find(Boolean);
+      if ((merge || ignore) && hit) {
+        if (clash) return conflict();
+        /* Hai hàng CÙNG lô trùng nhau: Postgres "ON CONFLICT DO UPDATE command cannot
+           affect row a second time" (21000); DO NOTHING thì bỏ qua hàng sau. */
+        if (added.includes(hit) || merges.some(([h]) => h === hit)) {
+          if (ignore) continue;
+          return { status: 500, body: JSON.stringify({ code: '21000', details: null, hint: null, message: 'ON CONFLICT DO UPDATE command cannot affect row a second time' }), applied: true };
         }
         if (ignore) continue;
-        return {
-          status: 409,
-          body: JSON.stringify({ code: '23505', details: null, hint: null, message: `duplicate key value violates unique constraint on ${table}` }),
-          applied: true,
-        };
+        merges.push([hit, raw]);
+        continue;
       }
+      if (hit || clash) return conflict();
+      added.push(row);
+    }
+    for (const [hit, raw] of merges) {
+      Object.assign(hit, raw);
+      touched.push(hit);
+    }
+    for (const row of added) {
       rows.push(row);
       touched.push(row);
     }
