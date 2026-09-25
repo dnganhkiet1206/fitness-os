@@ -83,6 +83,11 @@ COVERAGE_OK = {
         'H10': _GRANT,
     },
     'search': {'G5': _GRANT},
+    'foundation': {
+        '35b': 'đối chứng của DỮ LIỆU THỬ, không của một luật: nó đỏ khi chính bộ test xoá bài '
+               'công khai cuối cùng trước lượt anon (lỗi #14 của 35), không khi migration sai. '
+               'Mọi phép phá migration làm bài mới không công khai đều bị 19/20 bắt trước.',
+    },
     'notifications': {
         'N4': 'thích lại đi đúng đường của N2 (trigger) sau N3 (dọn): mọi phép phá làm N4 lệch '
               '— trigger mất, dọn mất — bị N2/N3 bắt trước. Khác N10: thông báo theo dõi đầu '

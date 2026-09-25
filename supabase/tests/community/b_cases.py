@@ -369,3 +369,14 @@ CASES += [
 CASES += [
   dict(suite='notifications', id='N10', mig='20260930140000_community_notifications', how='(A) thông báo: trigger theo dõi chạy khi SỬA thay khi THÊM (N10a vẫn xanh: 0 là 0)', old='  AFTER INSERT ON public.community_follows\n', new='  AFTER UPDATE ON public.community_follows\n', expect='N10 '),
 ]
+
+# ── #82: phủ các nhãn của bộ nền móng ──
+CASES += [
+  dict(suite='foundation', id='6', mig='20260927120000_community_foundation', how='(A) chia sẻ: tiêu đề lấy từ chú thích', old="      'title',         nullif(btrim(s.template_name), ''),", new="      'title',         nullif(btrim(p_caption), ''),", expect='6 '),
+  dict(suite='foundation', id='7', mig='20260927120000_community_foundation', how='(A) chia sẻ: volume đổi ra tấn', old="      'volumeKg',      round(coalesce(s.volume_load, 0)::numeric, 1),", new="      'volumeKg',      round(coalesce(s.volume_load, 0)::numeric / 1000, 1),", expect='7 '),
+  dict(suite='foundation', id='8', mig='20260927120000_community_foundation', how='(A) chia sẻ: mất cờ PR', old="      'pr',            coalesce(s.pr_detected, false),", new="      'pr',            false,", expect='8 '),
+  dict(suite='foundation', id='9', mig='20260927120000_community_foundation', how='(A) chia sẻ: phút ghi thành giây', old="      'minutes',       CASE WHEN p_minutes BETWEEN 1 AND 600 THEN p_minutes END,", new="      'minutes',       CASE WHEN p_minutes BETWEEN 1 AND 600 THEN p_minutes * 60 END,", expect='9 '),
+  dict(suite='foundation', id='10', mig='20260927120000_community_foundation', how='(A) chia sẻ: gộp theo SET thay vì theo bài', old='    FROM raw\n    GROUP BY 1\n', new='    FROM raw\n    GROUP BY 1, ord\n', expect='10 '),
+  dict(suite='foundation', id='13', mig='20260927120000_community_foundation', how='(A) chia sẻ: chỉ ghép bài tập của chính mình (bài thư viện mất cờ)', old='  LEFT JOIN public.exercises x ON x.id::text = per.eid;', new='  LEFT JOIN public.exercises x ON x.id::text = per.eid AND x.user_id = v_uid;', expect='13 '),
+  dict(suite='foundation', id='17', mig='20260927120000_community_foundation', how='(A) chia sẻ: đòi buổi tập có tên', old='  IF EXISTS (SELECT 1 FROM public.community_posts WHERE author_id = v_uid AND source_id = p_session_id) THEN', new="  IF nullif(btrim(s.template_name), '') IS NULL THEN\n    RAISE EXCEPTION 'untitled session' USING ERRCODE = '22023';\n  END IF;\n  IF EXISTS (SELECT 1 FROM public.community_posts WHERE author_id = v_uid AND source_id = p_session_id) THEN", expect='17 '),
+]
