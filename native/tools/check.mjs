@@ -566,6 +566,7 @@ const STEPS = [
      tổng quan quyết định. Hai con số, hai ngôn ngữ: luật đòi chúng là một. */
   ['cửa sổ nhận thưởng', 'node', ['tools/claim-window.mjs']],
   ['hộp hỏi lại trên web', 'node', ['tools/web-alert.mjs']],
+  ['lỗi ghi được ném', 'node', ['tools/error-thrown.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],
