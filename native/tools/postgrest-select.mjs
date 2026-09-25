@@ -231,3 +231,80 @@ export function rpcReturnProblems(fn, value, fns = TYPE_FUNCTIONS) {
   });
   return out;
 }
+
+/* ── #40: mọi chỗ khác của một câu hỏi nhắc tên cột ─────────────────────── */
+
+const RESERVED_PARAMS = new Set(['select', 'order', 'limit', 'offset', 'on_conflict', 'columns', 'or', 'and', 'not.or', 'not.and']);
+
+/* `(a.eq.1,and(b.gt.2,c.is.null))` → ['a', 'b', 'c'] */
+function logicCols(expr) {
+  const inner = expr.replace(/^\(/, '').replace(/\)$/, '');
+  const out = [];
+  for (const item of splitTop(inner)) {
+    const m = /^(?:not\.)?(and|or)(\(.*\))$/.exec(item);
+    if (m) out.push(...logicCols(m[2]));
+    else out.push(item.split('.')[0]);
+  }
+  return out;
+}
+
+/**
+ * Tên cột mà một URL PostgREST nhắc tới NGOÀI `select=`: bộ lọc (kể cả `not.`),
+ * `or=`/`and=`, `order=`, `on_conflict=`, `columns=`. Bộ lọc trên bảng nhúng
+ * (`rel.col=…`) và `order=rel(col)` bỏ qua: tên quan hệ, không đoán.
+ * Trả [{ col, where }].
+ */
+export function urlColumns(url) {
+  const out = [];
+  for (const [k, v] of url.searchParams) {
+    if (k === 'or' || k === 'and' || k === 'not.or' || k === 'not.and') {
+      for (const c of logicCols(v)) out.push({ col: c, where: `${k}=` });
+    } else if (k === 'order') {
+      for (const part of v.split(',')) if (!part.includes('(')) out.push({ col: part.split('.')[0], where: 'order=' });
+    } else if (k === 'on_conflict' || k === 'columns') {
+      for (const c of v.split(',')) out.push({ col: c.trim().replace(/^"|"$/g, ''), where: `${k}=` });
+    } else if (!RESERVED_PARAMS.has(k) && !k.includes('.')) {
+      out.push({ col: k, where: 'bộ lọc' });
+    }
+  }
+  return out.filter((x) => x.col);
+}
+
+/**
+ * Câu trả lời lỗi PostgREST gửi cho một yêu cầu nhắc cột không có thật, hoặc
+ * null. Theo thứ tự: `select=` (42703), mọi tham số khác của URL (42703), khoá
+ * của thân POST/PATCH (400 / PGRST204 "Could not find the 'x' column").
+ */
+export function requestRejection(url, method, bodyText, columns = TYPE_COLUMNS) {
+  const sel = selectRejection(url, columns);
+  if (sel) return { ...sel, where: 'select=' };
+  const table = url.pathname.split('/')[3];
+  const real = realColumns(table, columns);
+  if (!real) return null;
+  const badUrl = urlColumns(url).filter((x) => !real.has(x.col));
+  if (badUrl.length) {
+    return {
+      table,
+      bad: badUrl.map((x) => x.col),
+      where: [...new Set(badUrl.map((x) => x.where))].join(', '),
+      status: 400,
+      body: { code: '42703', details: null, hint: null, message: `column ${table}.${badUrl[0].col} does not exist` },
+    };
+  }
+  if ((method === 'POST' || method === 'PATCH' || method === 'PUT') && bodyText) {
+    let body;
+    try { body = JSON.parse(bodyText); } catch { return null; }
+    const keys = new Set((Array.isArray(body) ? body : [body]).flatMap((r) => (r && typeof r === 'object' ? Object.keys(r) : [])));
+    const badBody = [...keys].filter((k) => !real.has(k));
+    if (badBody.length) {
+      return {
+        table,
+        bad: badBody,
+        where: `thân ${method}`,
+        status: 400,
+        body: { code: 'PGRST204', details: null, hint: null, message: `Could not find the '${badBody[0]}' column of '${table}' in the schema cache` },
+      };
+    }
+  }
+  return null;
+}

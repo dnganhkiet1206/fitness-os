@@ -85,7 +85,7 @@ const OUT = path.join(NATIVE, 'tools', '.live-build');
 const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
-import { rpcArgsRejection, selectRejection } from './postgrest-select.mjs';
+import { requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
 import { RPC_FIXTURES } from './live-rpc.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -264,6 +264,59 @@ function serve() {
  * things. `mode === 'signedout'` seeds no session, which is the only way to
  * reach the screen every user meets first.
  */
+/**
+ * #46: đo đường GHI (INSERT) và đường XOÁ (DELETE) của một nút bật/tắt trên
+ * feed khi mọi lệnh ghi vào `table` trả 500. Bấm lần lượt từng nút cho tới khi
+ * đã thấy cả `POST` lẫn `DELETE`; mỗi cú bấm phải có toast riêng (đợi toast
+ * trước tắt hẳn rồi mới bấm tiếp, để không đọc nhầm toast cũ), không mang chữ
+ * của server, và — nếu nhãn có số — nhãn trở về như trước.
+ */
+async function bothWritePaths(page, table, nameRe, labelHasCount, successRe = null) {
+  const writes = [];
+  await page.route(new RegExp(`/rest/v1/${table}`), (r) => {
+    if (r.request().method() === 'GET') return r.fallback();
+    writes.push(r.request().method());
+    return r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' });
+  });
+  await page.waitForTimeout(2000);
+  const btns = page.getByRole('button', { name: nameRe });
+  const n = await btns.count();
+  if (n === 0) return `không thấy nút nào khớp ${nameRe} trên feed`;
+  const toast = async () => (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+  const seen = {};
+  for (let i = 0; i < n && !(seen.POST && seen.DELETE); i++) {
+    for (let k = 0; k < 20 && (await toast()); k++) await page.waitForTimeout(250);
+    const before = await btns.nth(i).getAttribute('aria-label');
+    const w0 = writes.length;
+    await btns.nth(i).click();
+    for (let k = 0; k < 8 && writes.length === w0; k++) await page.waitForTimeout(200);
+    if (writes.length === w0) return `bấm nút thứ ${i + 1} (${before}) mà không có lệnh ghi nào vào ${table}`;
+    const m = writes[writes.length - 1];
+    if (seen[m]) continue;
+    /* Dò liên tục: toast không nút tự tắt sau đúng AUTO_HIDE_MS = 3000 (#27). */
+    let text = '';
+    for (let k = 0; k < 12 && !text; k++) {
+      await page.waitForTimeout(250);
+      text = await toast();
+    }
+    const path = m === 'POST' ? 'đường GHI (INSERT)' : `đường XOÁ (${m})`;
+    if (!text) return `${table}: ${path} hỏng mà không có thanh toast nào — lỗi bị nuốt`;
+    if (/server error/i.test(text)) return `${table}: ${path} — toast hiện nguyên chữ của server: "${text}" (#31)`;
+    /* Có toast chưa đủ: lỗi bị nuốt thì `onSuccess` chạy và câu THÀNH CÔNG hiện
+       ra ("Đã lưu vào thư viện") — một lời nói dối có chữ. Phép phá đường GHI
+       của #46 lộ ra đúng chỗ này ở vế Lưu. */
+    if (successRe && successRe.test(text)) return `${table}: ${path} hỏng mà toast báo THÀNH CÔNG: "${text}"`;
+    if (labelHasCount) {
+      const after = await btns.nth(i).getAttribute('aria-label');
+      if (after !== before) return `${table}: ${path} hỏng mà nút không trở về: trước "${before}", sau "${after}"`;
+    }
+    seen[m] = true;
+  }
+  if (!seen.POST) return `${table}: bấm hết ${n} nút mà không có lệnh INSERT nào — đường GHI chưa được đo (mọi bài đều đã bật sẵn?)`;
+  if (!seen.DELETE) return `${table}: bấm hết ${n} nút mà không có lệnh DELETE nào — đường XOÁ chưa được đo (không bài nào bật sẵn?)`;
+  return null;
+}
+
 /** Mọi câu `select=` máy chủ giả đã từ chối trong lượt chạy này (#35). */
 const SELECT_MISSES = new Set();
 /** Lời gọi RPC có đối số lệch chữ ký trong `types.ts` (#38). */
@@ -352,9 +405,15 @@ async function openPage(chromium, route, mode, settleMs = 9000) {
          lỗi (hay không thấy gì), còn danh sách này nói đúng bảng và cột.
          Trước đây máy chủ giả trả hàng bất kể câu hỏi, nên bốn lệnh xoá hỏi
          `RETURNING id` trên bảng không có `id` (c227cfe) xanh ở đây suốt. */
-      const rejected = selectRejection(u);
+      /* #40: không chỉ `select=` — bộ lọc, `or=`/`and=`, `order=`, `on_conflict=`,
+         `columns=` (42703) và khoá của thân POST/PATCH (PGRST204) cũng phải là
+         cột có thật. Trước #40, `.eq('user_idd', …)` gõ nhầm cho một màn
+         "trống" ở đây, còn trên server thật nó hỏng. */
+      const rejected = requestRejection(u, r.request().method(), r.request().postData());
       if (rejected) {
-        SELECT_MISSES.add(`${r.request().method()} ${table}?select=${u.searchParams.get('select')} — không có cột ${rejected.bad.join(', ')}`);
+        SELECT_MISSES.add(
+          `${r.request().method()} ${table} (${rejected.where}${rejected.where === 'select=' ? u.searchParams.get('select') : ''}) — không có cột ${rejected.bad.join(', ')}`,
+        );
         return r.fulfill({ status: rejected.status, contentType: 'application/json', body: JSON.stringify(rejected.body) });
       }
       /* `applyQuery` lọc `eq`/`neq`/`in`/`is` (từ #17), rồi đọc `order=` và
@@ -1107,39 +1166,21 @@ const SCENARIOS = [
     /*
       #27 (B tìm ra): Thích/Lưu hỏng từng đổi dấu rồi âm thầm đổi ngược — người
       ta tưởng bấm hụt. Cho MỌI lệnh ghi vào community_likes trả 500 (đọc vẫn
-      chạy), bấm Thích trên bài đầu tiên, rồi đòi hai điều: một thanh toast có
-      chữ, và nhãn của nút ("Thích · 128") trở về đúng như trước. Nhãn chứ
-      không phải trạng thái chọn: trên web `accessibilityState.selected` không
-      thành thuộc tính nào (xem pick-row), còn con số trong nhãn thì có.
+      chạy), rồi đòi: một thanh toast có chữ, không phải chữ của server (#31),
+      và nhãn của nút ("Thích · 128") trở về đúng như trước. Nhãn chứ không
+      phải trạng thái chọn: trên web `accessibilityState.selected` không thành
+      thuộc tính nào (xem pick-row), còn con số trong nhãn thì có.
+
+      #46: đo CẢ HAI đường. Bản cũ bấm nút Thích đầu tiên — bài ấy UID đã
+      thích sẵn, nên nó chỉ từng đo BỎ thích (DELETE + confirmWrite); đường
+      THÍCH (INSERT, nhánh 23505) chưa từng chạy, và ở #31 chính điều đó làm
+      lỗi thứ hai lộ ra muộn. Đường nào là đường nào thì đọc từ LỆNH GHI đi
+      ra, không đoán theo thứ tự feed: sửa fixture hay đổi cách xếp feed
+      không làm vế này âm thầm đo lại một đường.
     */
-    name: 'Cộng đồng: Thích hỏng thì báo lỗi và trả dấu về',
+    name: 'Cộng đồng: Thích hỏng thì báo lỗi và trả dấu về (cả Thích lẫn Bỏ thích)',
     route: '/community', mode: 'full',
-    async run(page) {
-      await page.route(/\/rest\/v1\/community_likes/, (r) =>
-        r.request().method() === 'GET'
-          ? r.fallback()
-          : r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' }),
-      );
-      await page.waitForTimeout(2000);
-      const btn = page.getByRole('button', { name: /^(Thích|Like) · \d+$/ }).first();
-      if ((await btn.count()) === 0) return 'không thấy nút Thích nào trên feed';
-      const before = await btn.getAttribute('aria-label');
-      await btn.click();
-      /* Dò liên tục chứ không chờ một mốc: thanh không nút tự tắt sau đúng
-         `AUTO_HIDE_MS` = 3000 — bản đầu chờ 3000 rồi mới nhìn, và đỏ trên
-         chính bản sửa (đầu dò: toast có ở 300ms, mất ở 3000ms). */
-      let toastText = '';
-      for (let i = 0; i < 10 && !toastText; i++) {
-        await page.waitForTimeout(250);
-        toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
-      }
-      if (!toastText) return 'Thích hỏng mà không có thanh toast nào — lỗi bị nuốt (#27)';
-      /* #31: thân 500 là `{"message":"server error"}` — chữ ấy KHÔNG được lên màn. */
-      if (/server error/i.test(toastText)) return `toast hiện nguyên chữ của server: "${toastText}" (#31)`;
-      const after = await page.getByRole('button', { name: /^(Thích|Like) · \d+$/ }).first().getAttribute('aria-label');
-      if (after !== before) return `Thích hỏng mà nút không trở về: trước "${before}", sau "${after}"`;
-      return null;
-    },
+    run: (page) => bothWritePaths(page, 'community_likes', /^(Thích|Like) · \d+$/, true),
   },
   {
     /*
@@ -1188,33 +1229,16 @@ const SCENARIOS = [
   },
   {
     /*
-      #27, nửa còn lại: Lưu đi qua cùng `useToggle` với Thích, nhưng issue đòi
-      chứng minh cả hai. Nút Lưu có nhãn trơn ("Lưu"), không kèm số, nên vế này
-      chỉ đòi thanh toast — đó cũng là thứ duy nhất phân biệt được bản sửa với
-      bản cũ (ở vế Thích, nhãn về đúng ở CẢ HAI bản vì lượt tải lại quá nhanh).
+      #27, nửa còn lại, và #46: Lưu đi qua cùng `useToggle` với Thích, nhưng
+      issue đòi chứng minh cả hai. Nhãn Lưu không mang số ("Lưu"), nên nhãn
+      trở về không phân biệt được gì; vế này đòi toast ở CẢ HAI đường (Lưu
+      bài chưa lưu, Bỏ lưu bài đã lưu), và toast ấy KHÔNG phải câu "Đã lưu vào
+      thư viện": bẻ đường GHI của `useToggle` (nuốt lỗi INSERT) thì câu thành
+      công hiện ra, và bản đầu của vế này — chỉ đòi "có toast" — vẫn xanh.
     */
-    name: 'Cộng đồng: Lưu hỏng thì báo lỗi',
+    name: 'Cộng đồng: Lưu hỏng thì báo lỗi (cả Lưu lẫn Bỏ lưu)',
     route: '/community', mode: 'full',
-    async run(page) {
-      await page.route(/\/rest\/v1\/community_saves/, (r) =>
-        r.request().method() === 'GET'
-          ? r.fallback()
-          : r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' }),
-      );
-      await page.waitForTimeout(2000);
-      const btn = page.getByRole('button', { name: /^(Lưu|Save)$/ }).first();
-      if ((await btn.count()) === 0) return 'không thấy nút Lưu nào trên feed';
-      await btn.click();
-      let toastText = '';
-      for (let i = 0; i < 10 && !toastText; i++) {
-        await page.waitForTimeout(250);
-        toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
-      }
-      if (!toastText) return 'Lưu hỏng mà không có thanh toast nào — lỗi bị nuốt (#27)';
-      /* #31: thân 500 là `{"message":"server error"}` — chữ ấy KHÔNG được lên màn. */
-      if (/server error/i.test(toastText)) return `toast hiện nguyên chữ của server: "${toastText}" (#31)`;
-      return null;
-    },
+    run: (page) => bothWritePaths(page, 'community_saves', /^(Lưu|Save)$/, false, /Đã lưu vào thư viện|Saved to your library/),
   },
   {
     /*

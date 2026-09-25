@@ -44,7 +44,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { FIXTURES, applyQuery } from './live-world.mjs';
-import { selectRejection, unknownSelectColumns } from './postgrest-select.mjs';
+import { requestRejection, selectRejection, unknownSelectColumns } from './postgrest-select.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'src');
@@ -277,12 +277,33 @@ for (const [table, sel, want] of SELECT_CASES) {
     problems.push(`bộ đọc select= sai ở \`${table}?select=${sel}\`: báo [${got}], phải báo [${want}]`);
   }
 }
+/* #40: [đường dẫn + truy vấn, phương thức, thân, mã phải trả hoặc null] */
+const REQUEST_CASES = [
+  ['community_likes?post_id=eq.p&user_idd=eq.u', 'GET', null, '42703'],            // bộ lọc gõ nhầm
+  ['community_likes?post_id=not.eq.p&nope=not.is.null', 'GET', null, '42703'],      // bộ lọc phủ định
+  ['community_posts?order=created_att.desc', 'GET', null, '42703'],                 // order= gõ nhầm
+  ['community_posts?or=(kind.eq.a,and(nope.eq.1,id.eq.2))', 'GET', null, '42703'],  // lồng trong or/and
+  ['community_likes?on_conflict=post_id,usr', 'POST', '{"post_id":"p"}', '42703'],
+  ['community_likes', 'POST', '[{"post_id":"p","usr":"u"}]', 'PGRST204'],          // thân có cột lạ
+  ['community_settings?user_id=eq.u', 'PATCH', '{"default_vis":"public"}', 'PGRST204'],
+  ['community_likes?post_id=eq.p&user_id=eq.u&select=post_id', 'DELETE', null, null],
+  ['community_posts?order=created_at.desc,id.asc&kind=in.(workout,recipe)&limit=30', 'GET', null, null],
+  ['community_posts?or=(kind.eq.a,and(hidden.is.false,id.eq.2))', 'GET', null, null],
+  ['community_likes?on_conflict=post_id,user_id', 'POST', '{"post_id":"p","user_id":"u"}', null],
+  ['community_posts?author.handle=eq.x&order=author(handle)', 'GET', null, null],   // quan hệ nhúng: không đoán
+];
+for (const [q, method, body, want] of REQUEST_CASES) {
+  const got = requestRejection(new URL(`https://x.supabase.co/rest/v1/${q}`), method, body);
+  if ((got?.body.code ?? null) !== want) {
+    problems.push(`bộ soát yêu cầu (#40) sai ở ${method} \`${q}\`${body ? ` thân ${body}` : ''}: ra ${got?.body.code ?? 'hợp lệ'}, phải ra ${want ?? 'hợp lệ'}`);
+  }
+}
 const rej = selectRejection(new URL('https://x.supabase.co/rest/v1/community_likes?select=id&post_id=eq.p'));
 if (!rej || rej.status !== 400 || rej.body.code !== '42703' || !/community_likes\.id/.test(rej.body.message)) {
   problems.push(`selectRejection không trả 400 / 42703 kèm tên cột như PostgREST: ${JSON.stringify(rej)}`);
 }
-if (!/const rejected = selectRejection\(u\)/.test(liveSrc) || !/if \(rejected\)[\s\S]{0,400}status: rejected\.status/.test(liveSrc)) {
-  problems.push('tools/live.mjs không dùng `selectRejection` để trả 400 trong route giả — vế 4 chỉ đang kiểm một hàm không ai dùng');
+if (!/const rejected = requestRejection\(u, r\.request\(\)\.method\(\), r\.request\(\)\.postData\(\)\)/.test(liveSrc) || !/if \(rejected\)[\s\S]{0,400}status: rejected\.status/.test(liveSrc)) {
+  problems.push('tools/live.mjs không dùng `requestRejection` (select=, bộ lọc, order=, thân POST/PATCH) để trả 400 trong route giả — vế 4 chỉ đang kiểm một hàm không ai dùng');
 }
 
 /* ── vế 5 (#38): `/rest/v1/rpc/<tên>` là hàm, không phải bảng `rpc` ──────── */
@@ -306,5 +327,6 @@ console.log(
     'Không kiểm `gte`/`lt` — máy chủ giả không lọc theo ngày, giới hạn ấy ghi trong live.mjs. ' +
     `Và ${SELECT_CASES.length} ca \`select=\` (#35): cột không có thật — kể cả sau bí danh, ép kiểu, đường JSON, trong phần nhúng — ` +
     'được trả 400 / 42703 như PostgREST, câu hợp lệ thì không, và `live.mjs` dùng đúng bộ ấy trong route giả. ' +
+    `Và ${REQUEST_CASES.length} ca #40: bộ lọc, not., or=/and= lồng nhau, order=, on_conflict= (42703) và thân POST/PATCH (PGRST204) nhắc cột lạ đều bị từ chối, câu hợp lệ thì không. ` +
     'Và `/rest/v1/rpc/<tên>` được rẽ sang nhánh hàm (#38): đối số soát theo `types.ts`, kết quả từ `live-rpc.mjs`',
 );
