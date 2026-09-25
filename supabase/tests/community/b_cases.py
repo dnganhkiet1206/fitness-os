@@ -260,6 +260,11 @@ CASES += [
   dict(suite=R, id='R18b', mig=RM, how='ĐỐI CHỨNG: tên lệch mép (> 79)', old='char_length(v_title) > 80', new='char_length(v_title) > 79', expect='R18b'),
   dict(suite=R, id='R19', mig=RM, how='bỏ chốt hồ sơ',
        old='  IF NOT EXISTS (SELECT 1 FROM public.community_profiles WHERE user_id = v_uid) THEN', new='  IF false THEN', expect='R19'),
+  # #74: ca duy nhất của `recipe.reverse.sh` chưa có ở đây — 12 ca kia trùng ý
+  # với R1, R1b, R5, R10, R12, R14–R19, R18b. Nhắm đúng tệp định nghĩa SAU CÙNG
+  # của share_recipe (bản của #7 bị nó ghi đè), như khoá tên tệp đầy đủ của #75.
+  dict(suite=R, id='R11b', mig='20260930150000_community_recipe_no_eaten_at', how='ghi lại giờ ăn vào payload công khai',
+       old="'ingredientCount', v_n,", new="'eatenAt', now(), 'ingredientCount', v_n,", expect='R11b payload công khai mang giờ ăn'),
 ]
 
 N = 'notifications'

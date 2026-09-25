@@ -26,6 +26,12 @@ không mất cùng tệp:
   · challenges R3 (#60) — lỗi của hàm dừng khối DO trước khi ASSERT nói nhãn.
   · challenges C10 (#25) — đỏ SAI chỗ vì C4 không lọc, trên database dùng chung
     với bộ lịch sử; chỉ bộ chạy này thấy, vì nó chạy MỌI bộ ở mỗi ca.
+Từ #74 cũng là bộ DUY NHẤT cho Recipe: `recipe.reverse.sh` bị bỏ, 12 trong 13
+ca của nó trùng ý với ca R đã có, ca còn lại là R11b. Nó từng bắt được:
+  · recipe R1 — so MÃ LỖI 42501 khi anon gọi, trong khi thân hàm tự ném đúng mã
+    ấy vì `auth.uid()` là null: cấp quyền cho anon mà R1 vẫn xanh.
+  · recipe R16–R18 — gọi trên bữa đã chia sẻ và bữa rỗng, nên lỗi đến từ một
+    chốt KHÁC; nay chạy trên bữa kiểm soát 6, và R18b chứng minh bữa ấy đăng được.
 
 So với bộ bash cũ, cái này:
   · báo "CA SAI" khi chuỗi cần thay không khớp ĐÚNG một chỗ — một đột biến
