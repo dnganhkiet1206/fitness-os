@@ -1230,6 +1230,7 @@ function LegalSheet({
               key={t.key}
               accessibilityRole="tab"
               accessibilityState={{ selected: tab === t.key }}
+              aria-selected={tab === t.key} // web không dịch accessibilityState ra aria-selected (#99)
               style={[styles.legalTab, tab === t.key && styles.legalTabOn]}
               onPress={() => {
                 Haptics.selectionAsync();

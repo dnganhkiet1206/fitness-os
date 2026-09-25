@@ -157,6 +157,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
         accessibilityRole="tab"
         accessibilityLabel={labels[routeName]}
         accessibilityState={{ selected: active, disabled }}
+        aria-selected={active} // web không dịch accessibilityState ra aria-selected (#99)
         disabled={disabled}
         onPress={() => go(routeName, index)}
         style={styles.tab}>

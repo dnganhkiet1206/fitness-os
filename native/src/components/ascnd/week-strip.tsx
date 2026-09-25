@@ -5,7 +5,9 @@ import { Text, View } from 'react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { type } from '@/constants/ascnd';
 import { alpha, makeStyles, type Material, type Palette, type PaletteKey } from '@/constants/theme';
+import { useI18n } from '@/hooks/use-app-settings';
 import { usePalette } from '@/hooks/use-palette';
+import type { NativeStrings } from '@/lib/native-strings';
 import { localDateStr } from '@/lib/local-date';
 
 /**
@@ -116,6 +118,14 @@ export const STATE_STYLE: Record<
  * work planned is `rest` whether or not it is in the past — there was nothing
  * to miss.
  */
+/** Tên của mỗi trạng thái cho trình đọc màn hình (#99) — cùng bốn trạng thái mà chấm màu vẽ. */
+const DAY_STATE_LABEL: Record<DayState, (i18n: NativeStrings) => string> = {
+  rest: (i) => i.nDayRest,
+  done: (i) => i.nDayDone,
+  todo: (i) => i.nDayTodo,
+  missed: (i) => i.nDayMissed,
+};
+
 export function dayStateOf(
   hasWork: boolean,
   dStr: string,
@@ -149,6 +159,7 @@ export function WeekStrip({
   onPick: (idx: number) => void;
 }) {
   const c = usePalette();
+  const i18n = useI18n();
   const styles = stylesFor(c);
   return (
     /*
@@ -189,7 +200,13 @@ export function WeekStrip({
             key={idx}
             accessibilityRole="tab"
             accessibilityState={{ selected: isOpen }}
-            accessibilityLabel={`${longNames[idx]} ${d.getDate()}`}
+            /* `accessibilityState` KHÔNG ra `aria-selected` trên react-native-web
+               (đo ở `pick-row.tsx`) — thiếu dòng này thì trên web bảy ô đọc lên
+               y hệt nhau, và lượt quét của `live.mjs` không bấm qua chúng (#99). */
+            aria-selected={isOpen}
+            /* Trạng thái của ngày nằm trong NHÃN, không chỉ trong chấm màu bên
+               dưới: VoiceOver không đọc được một chấm (#99). */
+            accessibilityLabel={`${longNames[idx]} ${d.getDate()}, ${DAY_STATE_LABEL[state](i18n)}`}
             onPress={() => {
               Haptics.selectionAsync();
               onPick(idx);

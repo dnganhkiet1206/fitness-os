@@ -206,6 +206,7 @@ export default function MealPlanScreen() {
               key={d}
               accessibilityRole="tab"
               accessibilityState={{ selected: on }}
+              aria-selected={on} // web không dịch accessibilityState ra aria-selected (#99)
               accessibilityLabel={`${i18n.nDay} ${d + 1}`}
               onPress={() => {
                 Haptics.selectionAsync();

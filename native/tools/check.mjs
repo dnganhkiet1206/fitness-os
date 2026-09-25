@@ -573,6 +573,7 @@ const STEPS = [
      Chuỗi mang bộ chọn `{n:day|days}` và được điền bằng `fillCopy`; một khoá có
      bộ chọn mà tới được `.replace(` — thẳng, qua biến, hay qua hàm — thì đỏ. */
   ['câu đếm số ít', 'node', ['tools/plural-copy.mjs']],
+  ['trạng thái ô chọn', 'node', ['tools/tab-state.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],
