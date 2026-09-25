@@ -215,7 +215,7 @@ export function readSchema(dir = MIG) {
         else if (s[i] === ')') depth--;
         i++;
       }
-      const t = { file: f, pk: null, pkDefault: false, uniques: [], fks: [], checks: {}, defaults: {}, columns: [] };
+      const t = { file: f, pk: null, pkDefault: false, uniques: [], fks: [], checks: {}, defaults: {}, columns: [], notNull: [], withDefault: [] };
       const table = m[1];
       let anon = 0;
       for (const p of splitTop(s.slice(start, i - 1))) {
@@ -232,13 +232,20 @@ export function readSchema(dir = MIG) {
           if (expr) t.checks[name] = expr;
           if (!colDef) continue;
         }
-        if ((mm = p.match(/^(?:CONSTRAINT \w+ )?PRIMARY KEY\s*\(([^)]+)\)/i))) t.pk = cols(mm[1]);
+        if ((mm = p.match(/^(?:CONSTRAINT \w+ )?PRIMARY KEY\s*\(([^)]+)\)/i))) {
+          t.pk = cols(mm[1]);
+          t.notNull.push(...t.pk); // #92: cột khoá chính là NOT NULL dù không viết ra
+        }
         else if ((mm = p.match(/^(?:CONSTRAINT \w+ )?UNIQUE\s*\(([^)]+)\)/i))) t.uniques.push(cols(mm[1]));
         else if ((mm = p.match(/^(?:CONSTRAINT \w+ )?FOREIGN KEY\s*\(([^)]+)\)\s*REFERENCES\s+(?:(\w+)\.)?"?(\w+)"?\s*\(([^)]+)\)/i)))
           t.fks.push({ col: mm[1].trim(), ref: refOf(mm[2], mm[3]), refCol: mm[4].trim() });
         else if ((mm = p.match(/^"?(\w+)"?\s+/)) && !/^(CONSTRAINT|CHECK|EXCLUDE)\b/i.test(p)) {
           const col = mm[1];
           t.columns.push(col); // #90: cột của bảng như migration dựng, để so với `types.ts`
+          /* #92: bắt buộc khi chèn = NOT NULL (hay khoá chính) mà không có DEFAULT
+             nào — kể cả DEFAULT động mà `defaults` ở dưới không tính được. */
+          if (/\bNOT NULL\b|\bPRIMARY KEY\b/i.test(p)) t.notNull.push(col);
+          if (/\bDEFAULT\b|\bGENERATED\b|^\S+\s+(?:big|small)?serial\b/i.test(p)) t.withDefault.push(col);
           /* DEFAULT của cột (#52): máy chủ giả điền nó cho một INSERT không gửi cột
              ấy, như Postgres. Chỉ những dạng tính được ở phía client. */
           const dm = p.match(/\bDEFAULT\s+(now\(\)|gen_random_uuid\(\)|auth\.uid\(\)|'([^']*)'|true|false|-?\d+(?:\.\d+)?)/i);
@@ -269,6 +276,8 @@ export function readSchema(dir = MIG) {
         let a;
         if ((a = action.match(/^ADD COLUMN (?:IF NOT EXISTS )?"?(\w+)"?\s+/i))) {
           if (!t.columns.includes(a[1])) t.columns.push(a[1]);
+          if (/\bNOT NULL\b|\bPRIMARY KEY\b/i.test(action)) t.notNull.push(a[1]);
+          if (/\bDEFAULT\b|\bGENERATED\b/i.test(action)) t.withDefault.push(a[1]);
           const dm = action.match(/\bDEFAULT\s+(now\(\)|gen_random_uuid\(\)|auth\.uid\(\)|'([^']*)'|true|false|-?\d+(?:\.\d+)?)/i);
           if (dm && !(a[1] in t.defaults)) {
             const d = dm[1].toLowerCase();
@@ -277,6 +286,8 @@ export function readSchema(dir = MIG) {
           }
         } else if ((a = action.match(/^DROP COLUMN (?:IF EXISTS )?"?(\w+)"?/i))) {
           t.columns = t.columns.filter((c) => c !== a[1]);
+          t.notNull = t.notNull.filter((c) => c !== a[1]);
+          t.withDefault = t.withDefault.filter((c) => c !== a[1]);
           delete t.defaults[a[1]];
         } else if ((a = action.match(/^RENAME COLUMN "?(\w+)"? TO "?(\w+)"?/i))) {
           t.columns = t.columns.map((c) => (c === a[1] ? a[2] : c));
