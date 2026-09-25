@@ -299,7 +299,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   o('top', 'xmas', 'body', 'rare', 180, 'Áo len Noel', 'Xmas Sweater', { collection: 'xmas', special: true }),
   o('head', 'khanxep', 'head', 'rare', 150, 'Khăn xếp', 'Tet Turban', { collection: 'tet', special: true }),
   o('top', 'aodai', 'body', 'epic', 350, 'Áo dài', 'Ao Dai', { collection: 'tet', special: true }),
-  o('head', 'witch', 'head', 'rare', 160, 'Nón phù thủy', 'Witch Hat', { collection: 'halloween', special: true }),
+  o('head', 'witch', 'head', 'rare', 160, 'Nón phù thuỷ', 'Witch Hat', { collection: 'halloween', special: true }),
   o('top', 'ghost', 'body', 'rare', 180, 'Áo choàng ma', 'Ghost Cloak', { collection: 'halloween', special: true }),
   o('back', 'dragonwing', 'gear', 'legendary', 800, 'Cánh Rồng', 'Dragon Wings', { unlockLevel: 20, special: true }),
   // ── Stage skins — reskin the whole showcase behind the buddy. One is active

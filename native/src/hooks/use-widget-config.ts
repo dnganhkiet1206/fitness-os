@@ -75,7 +75,7 @@ export const DEFAULT_CONFIG: WidgetConfig = {
   groups: [
     {
       id: 'health',
-      title: { en: 'Health', vi: 'Sức khỏe' },
+      title: { en: 'Health', vi: 'Sức khoẻ' },
       icon: '❤️',
       widgets: ['biometrics', 'steps'],
     },

@@ -579,6 +579,9 @@ const STEPS = [
      bộ chọn mà tới được `.replace(` — thẳng, qua biến, hay qua hàm — thì đỏ. */
   ['câu đếm số ít', 'node', ['tools/plural-copy.mjs']],
   ['trạng thái ô chọn', 'node', ['tools/tab-state.mjs']],
+  /* #105: chữ hiện ra đặt dấu MỘT kiểu (cũ: "hoá", "Huỷ"). `i18n.ts` từng có
+     `cancel: 'Hủy'` trong khi mọi hộp hỏi lại viết `'Huỷ'`. */
+  ['kiểu bỏ dấu', 'node', ['tools/vi-tone.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],
