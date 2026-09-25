@@ -1931,6 +1931,19 @@ export type Database = {
           claimed: boolean
         }[]
       }
+      community_challenge_history: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          id: string
+          title: string
+          description: string
+          target: number
+          starts_on: string
+          ends_on: string
+          coins: number
+          claimed_at: string
+        }[]
+      }
       community_search_profiles: {
         Args: { p_q: string }
         Returns: {

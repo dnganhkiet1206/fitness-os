@@ -131,6 +131,28 @@ export const RPC_FIXTURES = {
     },
   },
 
+  /* 20260930180000_community_challenge_history.sql (#41) */
+  community_challenge_history: {
+    sample: {},
+    run(_args, world) {
+      const ledger = rows(world, 'mascot_transactions');
+      return rows(world, 'community_challenge_members')
+        .filter((m) => m.user_id === UID && m.claimed_at != null)
+        .map((m) => {
+          const c = rows(world, 'community_challenges').find((x) => x.id === m.challenge_id);
+          if (!c) return null;
+          const t = ledger.find((x) => x.user_id === UID && x.ref_key === `cc:${c.id}`);
+          return {
+            id: c.id, title: c.title, description: c.description, target: c.target,
+            starts_on: c.starts_on, ends_on: c.ends_on, coins: t ? t.amount : 0, claimed_at: m.claimed_at,
+          };
+        })
+        .filter(Boolean)
+        .sort((a, b) => (a.claimed_at < b.claimed_at ? 1 : -1))
+        .slice(0, 200);
+    },
+  },
+
   /* 20260930170000_community_search_unaccent.sql (định nghĩa lại bản của 20260930160000) */
   community_search_profiles: {
     sample: { p_q: 'pham' },

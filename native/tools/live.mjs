@@ -6,6 +6,7 @@
  *   node tools/live.mjs --shots    also write PNGs to tools/.live-shots/
  *   node tools/live.mjs --press-only  skip the screen sweeps, only drive controls
  *   node tools/live.mjs --narrow-only only the 320-wide Community sweep (#48)
+ *   node tools/live.mjs --only=<text> only the scenarios whose name contains <text>
  *
  * Not part of `check.mjs`. It builds a bundle and drives a browser, which takes
  * minutes rather than seconds, and a suite people stop running is worth less
@@ -93,6 +94,10 @@ import { NARROW, NARROW_LANGS, NARROW_ROUTES, copyPatterns, narrowFindings } fro
 const args = new Set(process.argv.slice(2));
 const wantShots = args.has('--shots');
 const narrowOnly = args.has('--narrow-only');
+/* Chạy riêng những kịch bản có tên chứa chuỗi này — cho phép thử ngược một
+   kịch bản trên một bản dựng bị phá mà không trả 35 phút của lượt đầy đủ. Bỏ
+   qua mọi lượt quét và lượt bấm, và dòng tổng kết nói đúng như thế. */
+const onlyArg = [...args].find((a) => a.startsWith('--only='))?.slice(7) ?? null;
 /*
   ── theme, vì một bộ chạy chỉ vẽ được một thế giới ──
 
@@ -211,6 +216,8 @@ const ROUTES = [
     bao giờ hiện) không có chỗ nào để lộ ra ở đây.
   */
   '/community', '/community-inbox', '/community-privacy', '/community-search',
+  /* #41: trang mọi thử thách — bốn nhóm, mỗi nhóm có thể rỗng vì một lý do khác. */
+  '/community-challenges',
 ];
 
 // ── build & serve ─────────────────────────────────────────────────────────
@@ -1191,6 +1198,61 @@ const SCENARIOS = [
   },
   {
     /*
+      #41: thử thách đã hoàn thành phải còn chỗ để thấy. Fixture: UID theo
+      "30 ngày kỷ luật" (đang tham gia), "Tháng mới: 20 buổi" chưa mở (sắp bắt
+      đầu), và "Tháng 7: 12 buổi" đã nhận 150 xu, hết hạn 46 ngày trước —
+      tổng quan KHÔNG còn nó, chỉ `community_challenge_history` có.
+
+      Bắt đầu bằng MỞ THẲNG màn chi tiết của nó, lúc cache còn trống — như từ
+      một thông báo, hay khi app mở lại. Bản đầu của kịch bản đi danh sách →
+      chi tiết, và phép thử ngược (tắt lượt đọc lịch sử của màn chi tiết) vẫn
+      XANH: danh sách đã nạp lịch sử vào cache, nên màn chi tiết thấy nó mà
+      không cần hỏi. Rồi mới đi qua link sang danh sách, và quay lại dòng ấy.
+    */
+    name: 'Thử thách: mở thẳng thử thách đã hoàn thành, trang tất cả có lịch sử',
+    route: '/community-challenge?id=c4a11e00-0000-4000-8000-000000000003', mode: 'full',
+    async run(page) {
+      const detail = async (where) => {
+        const t = await page.locator('body').innerText();
+        if (/không còn nữa|no longer available/i.test(t)) return `${where}: thử thách đã hoàn thành ra "không còn nữa" — màn chi tiết chỉ đọc tổng quan`;
+        if (!/Đã nhận thưởng|Reward claimed/.test(t)) return `${where}: không nói "Đã nhận thưởng"`;
+        if (!/150/.test(t)) return `${where}: không hiện phần thưởng đã nhận (150)`;
+        return null;
+      };
+      const direct = await detail('mở thẳng');
+      if (direct) return direct;
+
+      const link = page.getByRole('link', { name: /Tất cả thử thách|All challenges/ });
+      if ((await link.count()) !== 1) return 'màn chi tiết không có lối sang trang tất cả thử thách';
+      await link.click();
+      await page.waitForTimeout(2500);
+      const text = await page.locator('body').innerText();
+      for (const [group, title] of [
+        [/Đang tham gia|Joined/, '30 ngày kỷ luật'],
+        [/Sắp bắt đầu|Starting soon/, 'Tháng mới: 20 buổi'],
+        [/Đã hoàn thành|Completed/, 'Tháng 7: 12 buổi'],
+      ]) {
+        if (!group.test(text)) return `trang tất cả: thiếu nhóm ${group}`;
+        if (!text.includes(title)) return `trang tất cả: thiếu thử thách "${title}"`;
+      }
+      const done = page.getByRole('button', { name: /^Tháng 7: 12 buổi, / });
+      if ((await done.count()) !== 1) return 'trang tất cả: không có đúng một dòng "Tháng 7: 12 buổi"';
+      const label = await done.getAttribute('aria-label');
+      if (!/\+150/.test(label)) return `dòng đã hoàn thành phải mang số xu đã vào sổ (+150), ra "${label}"`;
+      await done.click();
+      await page.waitForTimeout(2500);
+      const back = await detail('mở từ danh sách');
+      if (back) return back;
+      /* Mở từ danh sách thì nút Quay lại đã là đường về; link sẽ đẩy thêm một
+         trang danh sách nữa lên ngăn xếp. */
+      if ((await page.getByRole('link', { name: /Tất cả thử thách|All challenges/ }).count()) !== 0) {
+        return 'mở từ danh sách mà màn chi tiết vẫn mời sang danh sách — một trang nữa chồng lên ngăn xếp';
+      }
+      return null;
+    },
+  },
+  {
+    /*
       #45: mất mạng, React Query mặc định TẠM DỪNG mutation — không chạy, không
       onError. Đo trên bản chưa sửa (dựng lại với useOnlineMutation trả thẳng
       useMutation): bài đã thích, bấm → nhãn "Thích · 128" thành 127 và nằm
@@ -1777,7 +1839,7 @@ try {
   await canary(chromium);
   process.stdout.write('canary OK — đang mở từng màn');
 
-  for (const mode of args.has('--press-only') || narrowOnly ? [] : MODES) {
+  for (const mode of args.has('--press-only') || narrowOnly || onlyArg ? [] : MODES) {
     for (const route of ROUTES) {
       const { text, rootLen, errors } = await boot(chromium, route, mode);
       const at = `[${mode}] ${route}`;
@@ -1812,7 +1874,7 @@ try {
     failed. See `live-narrow.mjs` for how the two are told apart.
   */
   globalThis.__narrow = null;
-  if (!args.has('--press-only')) {
+  if (!args.has('--press-only') && !onlyArg) {
     process.stdout.write('quét hẹp 320');
     const patterns = copyPatterns();
     const contentCut = new Set();
@@ -1849,7 +1911,7 @@ try {
     let skipped = 0;
     /* `/workouts` thay `/progress`: trang cũ không còn, nên suốt từ ba33494 lượt
        bấm ở đây bấm trên một trang không-tìm-thấy và không đo gì. */
-    for (const [route, mode] of [['/', 'signedout'], ['/', 'full'], ['/workouts', 'full'], ['/settings', 'full']]) {
+    for (const [route, mode] of onlyArg ? [] : [['/', 'signedout'], ['/', 'full'], ['/workouts', 'full'], ['/settings', 'full']]) {
       const { browser, page } = await openPage(chromium, route, mode);
       try {
         const r = await pressEverything(page, `[${mode}] ${route}`, problems);
@@ -1864,7 +1926,10 @@ try {
     globalThis.__skipped = skipped;
 
     process.stdout.write('kịch bản');
-    for (const sc of SCENARIOS) {
+    const picked = onlyArg ? SCENARIOS.filter((sc) => sc.name.includes(onlyArg)) : SCENARIOS;
+    if (onlyArg && picked.length === 0) problems.push(`--only=${onlyArg}: không kịch bản nào có tên chứa chuỗi này`);
+    globalThis.__picked = picked.length;
+    for (const sc of picked) {
       const { browser, page } = await openPage(chromium, sc.route, sc.mode);
       try {
         const why = await sc.run(page);
@@ -1919,6 +1984,11 @@ const narrowClaim = globalThis.__narrow
     'bị mép vùng cuộn cắt ngang ' +
     `(${globalThis.__narrow.contentCut} đoạn nội dung người dùng được cắt đúng luật numberOfLines)`
   : 'bỏ qua lượt quét hẹp';
+
+if (onlyArg) {
+  console.log(`\nchạy thật OK (--only=${onlyArg}) — ${globalThis.__picked} kịch bản đúng; KHÔNG quét màn, không bấm thử`);
+  process.exit(0);
+}
 
 if (narrowOnly) {
   console.log(`\nchạy thật OK (--narrow-only) — ${narrowClaim}`);

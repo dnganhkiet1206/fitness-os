@@ -2,6 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { Check, Trophy } from 'lucide-react-native';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
 
+import { SeeAllChallenges } from '@/components/ascnd/challenge-hero';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -13,7 +14,7 @@ import { Screen } from '@/components/ascnd/screen';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useChallenges, useClaimChallenge, useJoinChallenge } from '@/hooks/use-community';
+import { type CommunityChallenge, useChallengeHistory, useChallenges, useClaimChallenge, useJoinChallenge } from '@/hooks/use-community';
 import { useMascot } from '@/hooks/use-mascot';
 import { usePalette } from '@/hooks/use-palette';
 import { getLocale } from '@/lib/i18n';
@@ -36,13 +37,28 @@ export default function CommunityChallengeScreen() {
   const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, from } = useLocalSearchParams<{ id?: string; from?: string }>();
   const list = useChallenges();
   const join = useJoinChallenge();
   const claim = useClaimChallenge();
   const mascot = useMascot();
 
-  const ch = (list.data ?? []).find((x) => x.id === id);
+  const live = (list.data ?? []).find((x) => x.id === id);
+  /*
+    Hết hạn quá 7 ngày thì tổng quan không còn nó — nhưng mở từ "Đã hoàn thành"
+    (#41) là mở đúng những thử thách ấy. Dựng lại từ lịch sử: đã tham gia, đã
+    đạt, đã nhận, và phần thưởng là số ĐÃ VÀO SỔ. Số người tham gia thì lịch sử
+    không có, nên dòng ấy không hiện thay vì hiện một con số bịa.
+  */
+  const history = useChallengeHistory(list.isSuccess && !live);
+  const past = history.data?.find((x) => x.id === id);
+  const ch: (CommunityChallenge & { fromHistory?: boolean }) | undefined =
+    live ??
+    (past && {
+      id: past.id, title: past.title, description: past.description, target: past.target,
+      starts_on: past.starts_on, ends_on: past.ends_on, reward_coins: past.coins,
+      participants: 0, joined: true, progress: past.target, claimed: true, fromHistory: true,
+    });
   const locale = getLocale(lang);
   const fmt = (d: string) => parseLocalDate(d).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 
@@ -58,9 +74,17 @@ export default function CommunityChallengeScreen() {
 
   return (
     <Screen back refreshable title={i18n.nChTitle}>
-      {list.isError ? (
-        <LoadFailed i18n={i18n} onRetry={() => list.refetch()} />
-      ) : list.isPending ? (
+      {list.isError || (!live && history.isError) ? (
+        /* Lịch sử đọc hỏng mà nói "không còn nữa" là nói sai về một thử thách
+           mình đã hoàn thành. */
+        <LoadFailed
+          i18n={i18n}
+          onRetry={() => {
+            list.refetch();
+            history.refetch();
+          }}
+        />
+      ) : list.isPending || (!live && history.isPending) ? (
         <ActivityIndicator color={c.mutedForeground} style={styles.loading} />
       ) : !ch ? (
         <GlassCard>
@@ -86,7 +110,7 @@ export default function CommunityChallengeScreen() {
             <Text style={styles.how}>{i18n.nChHow}</Text>
             <Row label={`${fmt(ch.starts_on)} → ${fmt(ch.ends_on)}`} value={open ? i18n.nChEndsIn.replace('{n}', String(dayGap(localDateStr(), ch.ends_on))) : i18n.nChEnded} />
             {ch.reward_coins > 0 ? <Row label={i18n.nChReward} value={i18n.nChCoins.replace('{n}', String(ch.reward_coins))} /> : null}
-            <Row label={i18n.nChPeople.replace('{n}', ch.participants.toLocaleString(locale))} value="" />
+            {ch.fromHistory ? null : <Row label={i18n.nChPeople.replace('{n}', ch.participants.toLocaleString(locale))} value="" />}
           </GlassCard>
 
           {!ch.joined ? (
@@ -124,6 +148,9 @@ export default function CommunityChallengeScreen() {
           )}
         </>
       )}
+      {/* Lối vào thứ hai của trang thử thách (#41), cả khi thử thách này không
+          còn: "không còn nữa" mà không có đường đi tiếp là một ngõ cụt. */}
+      {list.isPending || from === 'all' ? null : <SeeAllChallenges />}
     </Screen>
   );
 }

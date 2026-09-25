@@ -10,13 +10,13 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
-import { ChallengeHero } from '@/components/ascnd/challenge-hero';
+import { ChallengeHero, SeeAllChallenges, featuredChallenge } from '@/components/ascnd/challenge-hero';
 import { SkeletonBlock } from '@/components/ascnd/skeleton';
 import { PostCard } from '@/components/ascnd/post-card';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
-import { type CommunityTab, useChallenges, useCommunityFeed, useInbox, useMyCommunityProfile } from '@/hooks/use-community';
+import { type CommunityTab, useChallengeHistory, useChallenges, useCommunityFeed, useInbox, useMyCommunityProfile } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 
@@ -53,6 +53,8 @@ export default function CommunityScreen() {
   const me = useMyCommunityProfile();
   const feed = useCommunityFeed(tab);
   const challenges = useChallenges();
+  const noHero = tab === 'discover' && !!challenges.data && !featuredChallenge(challenges.data);
+  const history = useChallengeHistory(noHero);
   const inbox = useInbox();
   const hasNew = !!inbox.data?.some((x) => x.unread);
 
@@ -105,6 +107,11 @@ export default function CommunityScreen() {
           phải chỗ cho một lời mời chung. Đọc hỏng thì im lặng; feed có thẻ
           thử lại của nó. */}
       {tab === 'discover' && challenges.data ? <ChallengeHero items={challenges.data} /> : null}
+      {/* Không còn thử thách nào mở thì không có thẻ — và cùng với nó mất lối
+          vào trang thử thách (#41). Người đã hoàn thành vài cái vẫn phải xem
+          lại được, nên lối vào ở lại khi có lịch sử. Lịch sử chỉ được hỏi
+          ĐÚNG lúc ấy: có thẻ thì lối vào đã nằm dưới thẻ. */}
+      {noHero && history.data?.length ? <SeeAllChallenges /> : null}
 
       {/* Đang tải hay đọc HỎNG thì không nói gì — mời "Tạo hồ sơ" khi truy vấn
           hồ sơ chỉ đơn giản là chưa về là nói sai về một người đã có hồ sơ,

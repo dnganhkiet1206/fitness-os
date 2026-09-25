@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ════════════════════════════════════════════════════════════════════════════
 # PHÉP THỬ NGƯỢC cho các bộ của A (#15): nền móng, Progress, Thử thách, Quyền
-# riêng tư, Thông báo. Cùng khuôn với `recipe.reverse.sh` của B.
+# riêng tư, Thông báo, Tìm người, Lịch sử thử thách. Cùng khuôn với `recipe.reverse.sh` của B.
 #
 #   bash supabase/tests/community/a-suites.reverse.sh
 #
@@ -114,6 +114,18 @@ try 'tìm: anon gọi được'                $U 's/^REVOKE EXECUTE ON FUNCTION
 try 'không dấu: gập không bỏ dấu'      $U "s/^    'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaeeeeeeeeeeeeeeeeeeeeeeeiiiiiiiiiiiooooooooooooooooooooooooooooooooooouuuuuuuuuuuuuuuuuuuuuuuyyyyyyyyyyyddd'));$/    'àÀáÁạẠảẢãÃâÂầẦấẤậẬẩẨẫẪăĂằẰắẮặẶẳẲẵẴAèÈéÉẹẸẻẺẽẼêÊềỀếẾệỆểỂễỄEìÌíÍịỊỉỈĩĨIòÒóÓọỌỏỎõÕôÔồỒốỐộỘổỔỗỖơƠờỜớỚợỢởỞỡỠOùÙúÚụỤủỦũŨưƯừỪứỨựỰửỬữỮUỳỲýÝỵỴỷỶỹỸYđĐD'));/" community_search.test.sql 'U1 '
 try 'không dấu: không gập chuỗi tìm'   $U "s/  v_q   text := public.community_fold(btrim(coalesce(p_q, '')));/  v_q   text := lower(btrim(coalesce(p_q, '')));/" community_search.test.sql 'U3 '
 try 'không dấu: hàm gập mở cho anon'   $U 's/^REVOKE EXECUTE ON FUNCTION public.community_fold(text) FROM PUBLIC, anon, authenticated;/GRANT EXECUTE ON FUNCTION public.community_fold(text) TO anon;/' community_search.test.sql 'U6 '
+
+H=20260930180000_community_challenge_history.sql
+# `m.user_id = auth.uid()` một mình KHÔNG có phép phá: RLS của bảng thành viên
+# đã lọc về dòng của mình, nên bỏ nó thì vẫn xanh — đúng, vì nó là lớp thứ hai.
+# Phép phá dưới gỡ CẢ HAI lớp (DEFINER bỏ qua RLS, và bỏ điều kiện) để đo rằng
+# H2 canh đúng chỗ khi cả hai cùng mất.
+try 'lịch sử: gồm cả chưa nhận'         $H 's/ AND m.claimed_at IS NOT NULL//'                                     community_challenge_history.test.sql 'H1 '
+try 'lịch sử: DEFINER và bỏ lọc mình'   $H 's/^SECURITY INVOKER$/SECURITY DEFINER/; s/WHERE m.user_id = auth.uid() AND /WHERE /' community_challenge_history.test.sql 'H2 '
+try 'lịch sử: thưởng hiện tại thay sổ'  $H 's/coalesce(t.amount, 0)::integer/c.reward_coins/'                        community_challenge_history.test.sql 'H3 '
+try 'lịch sử: bỏ ghép sổ = rơi dòng 0 xu' $H 's/LEFT JOIN public.mascot_transactions/JOIN public.mascot_transactions/' community_challenge_history.test.sql 'H4 '
+try 'lịch sử: cũ nhất đứng đầu'         $H 's/ORDER BY m.claimed_at DESC/ORDER BY m.claimed_at ASC/'               community_challenge_history.test.sql 'H5 '
+try 'lịch sử: anon gọi được'            $H 's/^REVOKE EXECUTE ON FUNCTION public.community_challenge_history() FROM PUBLIC, anon;/GRANT EXECUTE ON FUNCTION public.community_challenge_history() TO anon;/' community_challenge_history.test.sql 'H9 '
 
 echo
 if [ "$fails" -eq 0 ]; then echo "MỌI PHÉP THỬ NGƯỢC ĐỀU ĐỎ ĐÚNG CHỖ"; else echo "$fails PHÉP THỬ NGƯỢC HỎNG"; exit 1; fi

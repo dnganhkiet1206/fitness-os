@@ -22,3 +22,11 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authentic
 -- migration không được đo: một hàm chỉ `REVOKE … FROM PUBLIC` trông kín trên
 -- stub mà anon gọi được trên Supabase thật (phép thử ngược C9, #13).
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon, authenticated, service_role;
+-- Sổ xu được ĐỌC bằng quyền người gọi từ #41 (`community_challenge_history`).
+-- Nó được tạo TRƯỚC dòng cấp quyền mặc định ở trên nên không được cấp gì — lệch
+-- khỏi Supabase, nơi mọi bảng được cấp cho vai API và RLS là thứ chặn. Dựng lại
+-- đúng như `20260718120000_mascot_economy.sql` (policy INSERT đã bị
+-- `20260810120000_economy_server_authority.sql` bỏ): chỉ đọc dòng của mình.
+GRANT ALL ON public.mascot_transactions TO anon, authenticated, service_role;
+ALTER TABLE public.mascot_transactions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own mascot transactions" ON public.mascot_transactions FOR SELECT USING (auth.uid() = user_id);

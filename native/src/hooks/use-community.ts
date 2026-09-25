@@ -809,6 +809,38 @@ export function useChallenges() {
   });
 }
 
+export interface ChallengeHistoryItem {
+  id: string;
+  title: string;
+  description: string;
+  target: number;
+  starts_on: string;
+  ends_on: string;
+  /** Số xu ĐÃ VÀO SỔ khi nhận — không phải `reward_coins` hiện tại. */
+  coins: number;
+  claimed_at: string;
+}
+
+/**
+ * Thử thách mình ĐÃ hoàn thành (đã nhận thưởng), mới nhất trước — #41. Tổng
+ * quan bỏ thử thách hết hạn quá 7 ngày; đây là chỗ chúng ở lại.
+ *
+ * Khoá nằm dưới `['community_challenges', me]`, nên lượt làm mới sau khi nhận
+ * thưởng (`useClaimChallenge`) làm mới cả nó mà không thêm dòng nào.
+ */
+export function useChallengeHistory(enabled = true) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_challenges', user?.id, 'history'],
+    enabled: !!user && enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('community_challenge_history');
+      if (error) throw error;
+      return (Array.isArray(data) ? data : []) as ChallengeHistoryItem[];
+    },
+  });
+}
+
 export function useJoinChallenge() {
   const { user } = useAuth();
   const qc = useQueryClient();

@@ -1,4 +1,4 @@
-import { Check, Trophy, Users } from 'lucide-react-native';
+import { Check, ChevronRight, Trophy, Users } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -42,6 +42,13 @@ import { toast } from '@/lib/toast';
  *
  * Số người tham gia là một phép đếm thật ở server; danh sách thì không lộ ra.
  */
+/** Thử thách của thẻ: cái đang theo mà chưa nhận, rồi cái đông người nhất.
+    Dùng chung với Khám phá, nơi cần biết thẻ có hiện hay không (#41). */
+export function featuredChallenge(items: CommunityChallenge[]): CommunityChallenge | undefined {
+  const open = items.filter((x) => dayGap(localDateStr(), x.ends_on) >= 0);
+  return open.find((x) => x.joined && !x.claimed) ?? [...open].sort((a, b) => b.participants - a.participants)[0];
+}
+
 export function ChallengeHero({ items }: { items: CommunityChallenge[] }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -50,10 +57,7 @@ export function ChallengeHero({ items }: { items: CommunityChallenge[] }) {
   const join = useJoinChallenge();
   const claim = useClaimChallenge();
 
-  const open = items.filter((x) => dayGap(localDateStr(), x.ends_on) >= 0);
-  const ch =
-    open.find((x) => x.joined && !x.claimed) ??
-    [...open].sort((a, b) => b.participants - a.participants)[0];
+  const ch = featuredChallenge(items);
   if (!ch) return null;
 
   const done = ch.joined && ch.progress >= ch.target;
@@ -65,74 +69,102 @@ export function ChallengeHero({ items }: { items: CommunityChallenge[] }) {
   const openDetail = () => nav.push({ pathname: '/community-challenge', params: { id: ch.id } });
 
   return (
-    <PressScale accessible={false} onPress={openDetail}>
-      <GlassCard elevation="primary" style={styles.card}>
-        <Text style={styles.title}>{ch.title}</Text>
-        <View style={styles.metaRow}>
-          <View style={styles.badge}>
-            <Icon icon={Trophy} size={13} color={c.readinessYellow} />
-            <Text style={styles.badgeText}>{i18n.nChBadge}</Text>
+    <View style={styles.wrap}>
+      <PressScale accessible={false} onPress={openDetail}>
+        <GlassCard elevation="primary" style={styles.card}>
+          <Text style={styles.title}>{ch.title}</Text>
+          <View style={styles.metaRow}>
+            <View style={styles.badge}>
+              <Icon icon={Trophy} size={13} color={c.readinessYellow} />
+              <Text style={styles.badgeText}>{i18n.nChBadge}</Text>
+            </View>
+            <Icon icon={Users} size={14} color={c.mutedForeground} />
+            <Text style={styles.meta}>{i18n.nChPeople.replace('{n}', people)}</Text>
           </View>
-          <Icon icon={Users} size={14} color={c.mutedForeground} />
-          <Text style={styles.meta}>{i18n.nChPeople.replace('{n}', people)}</Text>
-        </View>
 
-        {/* "24 / 30 ngày" và "Còn 23 ngày" đứng CÙNG một hàng dưới thanh: cả hai
-            trả lời "còn bao xa". Bản đầu để thời hạn ở hàng trên, và ở bề ngang
-            402 nó gãy dòng thành "· Còn 23 ngày" mở đầu bằng một dấu chấm. */}
-        <View style={styles.progress}>
-          {ch.joined ? <ProgressBar pct={pct} color={done ? c.readinessGreen : c.foreground} height={6} /> : null}
-          <View style={styles.progressRow}>
-            {ch.joined ? (
-              <Text style={styles.days}>
-                {i18n.nChDays.replace('{a}', String(Math.min(ch.progress, ch.target))).replace('{b}', String(ch.target))}
+          {/* "24 / 30 ngày" và "Còn 23 ngày" đứng CÙNG một hàng dưới thanh: cả hai
+              trả lời "còn bao xa". Bản đầu để thời hạn ở hàng trên, và ở bề ngang
+              402 nó gãy dòng thành "· Còn 23 ngày" mở đầu bằng một dấu chấm. */}
+          <View style={styles.progress}>
+            {ch.joined ? <ProgressBar pct={pct} color={done ? c.readinessGreen : c.foreground} height={6} /> : null}
+            <View style={styles.progressRow}>
+              {ch.joined ? (
+                <Text style={styles.days}>
+                  {i18n.nChDays.replace('{a}', String(Math.min(ch.progress, ch.target))).replace('{b}', String(ch.target))}
+                </Text>
+              ) : null}
+              <Text style={styles.meta}>
+                {startsIn > 0
+                  ? i18n.nChStartsIn.replace('{n}', String(startsIn))
+                  : i18n.nChEndsIn.replace('{n}', String(left))}
               </Text>
-            ) : null}
-            <Text style={styles.meta}>
-              {startsIn > 0
-                ? i18n.nChStartsIn.replace('{n}', String(startsIn))
-                : i18n.nChEndsIn.replace('{n}', String(left))}
-            </Text>
+            </View>
           </View>
-        </View>
 
-        {!ch.joined ? (
-          <PressScale
-            accessibilityRole="button"
-            disabled={join.isPending}
-            onPress={() => join.mutate({ id: ch.id, on: true }, { onError: (e: Error) => toast.fail(e) })}
-            style={styles.solidBtn}>
-            <Text style={styles.solidText}>{i18n.nChJoin}</Text>
-          </PressScale>
-        ) : ch.claimed ? (
-          <View style={styles.doneRow}>
-            <Icon icon={Check} size={16} color={c.readinessGreen} />
-            <Text style={styles.doneText}>{i18n.nChClaimed}</Text>
-          </View>
-        ) : done ? (
-          <PressScale
-            accessibilityRole="button"
-            disabled={claim.isPending}
-            onPress={() =>
-              claim.mutate(ch.id, {
-                onSuccess: (n) => {
-                  toast.success(n > 0 ? `${i18n.nChDone} ${i18n.nChGot.replace('{n}', String(n))}` : i18n.nChDone);
-                  openDetail();
-                },
-                onError: (e: Error) => toast.fail(e),
-              })
-            }
-            style={styles.solidBtn}>
-            <Text style={styles.solidText}>{i18n.nChClaim.replace('{n}', String(ch.reward_coins))}</Text>
-          </PressScale>
-        ) : null}
-      </GlassCard>
+          {!ch.joined ? (
+            <PressScale
+              accessibilityRole="button"
+              disabled={join.isPending}
+              onPress={() => join.mutate({ id: ch.id, on: true }, { onError: (e: Error) => toast.fail(e) })}
+              style={styles.solidBtn}>
+              <Text style={styles.solidText}>{i18n.nChJoin}</Text>
+            </PressScale>
+          ) : ch.claimed ? (
+            <View style={styles.doneRow}>
+              <Icon icon={Check} size={16} color={c.readinessGreen} />
+              <Text style={styles.doneText}>{i18n.nChClaimed}</Text>
+            </View>
+          ) : done ? (
+            <PressScale
+              accessibilityRole="button"
+              disabled={claim.isPending}
+              onPress={() =>
+                claim.mutate(ch.id, {
+                  onSuccess: (n) => {
+                    toast.success(n > 0 ? `${i18n.nChDone} ${i18n.nChGot.replace('{n}', String(n))}` : i18n.nChDone);
+                    openDetail();
+                  },
+                  onError: (e: Error) => toast.fail(e),
+                })
+              }
+              style={styles.solidBtn}>
+              <Text style={styles.solidText}>{i18n.nChClaim.replace('{n}', String(ch.reward_coins))}</Text>
+            </PressScale>
+          ) : null}
+        </GlassCard>
+      </PressScale>
+      <SeeAllChallenges />
+    </View>
+  );
+}
+
+/**
+ * Lối vào `/community-challenges` (#41) — NGOÀI thẻ, không trong nó: cả thẻ đã
+ * là một vùng bấm mở chi tiết, và một nút lồng trong vùng bấm là hai đích cho
+ * một ngón tay. Căn phải, chữ nhỏ: nó là đường đi tiếp, không phải việc chính.
+ */
+export function SeeAllChallenges() {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const i18n = useI18n();
+  return (
+    <PressScale
+      accessibilityRole="link"
+      hitSlop={8}
+      onPress={() => nav.push('/community-challenges')}
+      style={styles.seeAll}>
+      <Text style={styles.seeAllText}>{i18n.nClSeeAll}</Text>
+      <Icon icon={ChevronRight} size={16} color={c.mutedForeground} />
     </PressScale>
   );
 }
 
 const stylesFor = makeStyles((c, m) => ({
+  wrap: { gap: spacing.xs },
   card: { gap: spacing.md },
+  /* 36 + hitSlop 8 = 52 ≥ 44. */
+  seeAll: { alignSelf: 'flex-end', flexDirection: 'row', alignItems: 'center', gap: 2, height: 36, paddingLeft: spacing.sm },
+  seeAllText: { ...type.footnote, color: c.foreground, fontWeight: '600' },
   title: { ...type.title, color: c.foreground },
   metaRow: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginTop: -spacing.xs },
   badge: {

@@ -518,6 +518,11 @@ export const FIXTURES = {
       kind: 'workout_days', target: 30, starts_on: dayStr(20), ends_on: dayStr(-9), reward_coins: 300, created_at: day(25),
     },
     {
+      id: 'c4a11e00-0000-4000-8000-000000000003', title: 'Tháng 7: 12 buổi',
+      description: 'Mười hai ngày có tập trong một tháng.',
+      kind: 'workout_days', target: 12, starts_on: dayStr(75), ends_on: dayStr(46), reward_coins: 150, created_at: day(80),
+    },
+    {
       id: 'ch000000-0000-4000-8000-000000000002', title: 'Tháng mới: 20 buổi',
       description: 'Hai mươi ngày có tập trong tháng tới.',
       kind: 'workout_days', target: 20, starts_on: dayStr(-7), ends_on: dayStr(-37), reward_coins: 200, created_at: day(3),
@@ -526,6 +531,19 @@ export const FIXTURES = {
   community_challenge_members: [
     { challenge_id: 'ch000000-0000-4000-8000-000000000001', user_id: UID, joined_at: day(20), claimed_at: null },
     { challenge_id: 'ch000000-0000-4000-8000-000000000001', user_id: 'c0000000-0000-4000-8000-0000000011a1', joined_at: day(19), claimed_at: null },
+    /* #41: một thử thách UID đã HOÀN THÀNH và nhận thưởng, hết hạn 46 ngày
+       trước — ngoài cửa sổ 7 ngày của tổng quan, nên nó chỉ sống trong
+       `community_challenge_history`. */
+    { challenge_id: 'c4a11e00-0000-4000-8000-000000000003', user_id: UID, joined_at: day(74), claimed_at: day(47) },
+  ],
+  /* Sổ xu: đúng MỘT dòng, là phần thưởng của thử thách đã nhận ở trên (#41) —
+     lịch sử hiện số ĐÃ VÀO SỔ, nên thế giới giả phải có sổ để nó đọc. Ví xu
+     của app cộng bảng này, nên ở chế độ đủ dữ liệu số dư là 150 thay vì 0. */
+  mascot_transactions: [
+    {
+      id: 'c4a11e00-0000-4000-8000-0000000000f1', user_id: UID, amount: 150, reason: 'Thử thách: Tháng 7: 12 buổi',
+      ref_key: 'cc:c4a11e00-0000-4000-8000-000000000003', created_at: day(47),
+    },
   ],
   body_measurements: [
     {

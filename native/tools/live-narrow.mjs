@@ -53,6 +53,7 @@ export const NARROW_ROUTES = [
   '/community-saved',
   '/community-profile',
   '/community-challenge',
+  '/community-challenges',
   /* Linh có đủ ba loại bài → hàng lọc #44 hiện đủ bốn ô. */
   `/community-user?id=${LINH}`,
   `/community-user?id=${ASCND}`,
