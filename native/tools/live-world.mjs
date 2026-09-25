@@ -734,6 +734,28 @@ export const FIXTURES = {
     làm lệch vài kcal — nhưng một fixture tự mâu thuẫn sẽ che đúng loại lỗi mà
     nhật ký sinh ra để bắt, nên ở đây nó khớp tuyệt đối.
   */
+  /* Món của tôi (#49). Trước đây bảng này trống hoàn toàn trong thế giới giả,
+     nên ngôi sao Yêu thích — một nút ghi có mặt trên tab Dinh dưỡng — chưa
+     từng có mặt trong lượt quét nào, và không đo được nó làm gì khi mất mạng.
+     Một món đã được yêu thích, một món chưa, một món của thư viện chung
+     (`user_id` null) để `dedupeSeedShadows` có việc làm. */
+  food_items: [
+    {
+      id: 'fi000000-0000-4000-8000-000000000001', user_id: UID, name: 'Cơm gà nhà làm', brand: null,
+      serving_g: 350, kcal: 560, protein_g: 42, carbs_g: 68, fat_g: 12, fiber_g: 3, is_favorite: true,
+      price_per_serving: null, tags: null, created_at: day(40), updated_at: day(5),
+    },
+    {
+      id: 'fi000000-0000-4000-8000-000000000002', user_id: UID, name: 'Sinh tố chuối bơ đậu phộng', brand: null,
+      serving_g: 400, kcal: 430, protein_g: 18, carbs_g: 55, fat_g: 16, fiber_g: 6, is_favorite: false,
+      price_per_serving: null, tags: null, created_at: day(20), updated_at: day(20),
+    },
+    {
+      id: 'fi000000-0000-4000-8000-000000000003', user_id: null, name: 'Yến mạch cán dẹt', brand: null,
+      serving_g: 50, kcal: 190, protein_g: 7, carbs_g: 33, fat_g: 3.5, fiber_g: 5, is_favorite: false,
+      price_per_serving: null, tags: null, created_at: day(300), updated_at: day(300),
+    },
+  ],
   meal_entries: [
     {
       id: 'm1', user_id: UID, date_time: day(0.25), meal_type: 'breakfast',

@@ -8,6 +8,7 @@ import { confirmWrite } from '@/lib/write-result';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { localDateStr } from '@/lib/local-date';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 
 export interface BiometricSample {
   id: string;
@@ -167,7 +168,7 @@ export function useDeleteBiometricSample() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const invalidateToday = useInvalidateToday();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ id, date_time }: { id: string; date_time: string }) => {
       await confirmWrite(
         supabase.from('biometric_samples')

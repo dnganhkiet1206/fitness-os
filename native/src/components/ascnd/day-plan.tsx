@@ -898,7 +898,7 @@ export function DayPlan({
                      KHÔNG tự tắt khi trình đọc màn hình đang bật. Không chọn
                      một con số thứ hai cho cùng một câu hỏi. */
                   toast.undo(i18n.nRdSetRemoved, i18n.nUndo, () => {
-                    restore.mutate({ row: snapshot as Record<string, unknown>, date: dateStr });
+                    restore.mutate({ row: snapshot as Record<string, unknown>, date: dateStr }, { onError: (e: Error) => toast.fail(e) });
                   });
                 },
                 onError: (e: Error) => toast.fail(e),

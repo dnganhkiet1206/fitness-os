@@ -57,7 +57,7 @@ export default function ChallengesScreen() {
     if (initializedRef.current || challenges === undefined) return;
     initializedRef.current = true;
     if (challenges.length === 0) {
-      initChallenges.mutate(undefined, { onSuccess: refreshProgress });
+      initChallenges.mutate(undefined, { onSuccess: refreshProgress, onError: (e: Error) => toast.fail(e) });
     } else {
       refreshProgress();
     }

@@ -31,6 +31,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { supabase } from '@/integrations/supabase/client';
 import { macroDriftFor } from '@/lib/macro-targets';
 import { confirmWrite } from '@/lib/write-result';
@@ -270,7 +271,7 @@ export default function EditProfileSheet() {
     toast.success(i18n.settingsRecalcDone);
   };
 
-  const save = useMutation({
+  const save = useOnlineMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
       await confirmWrite(

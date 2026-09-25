@@ -1346,6 +1346,48 @@ const SCENARIOS = [
   },
   {
     /*
+      #49: ngoài Cộng đồng, mutation trần (`useMutation`, `networkMode` mặc
+      định) bị React Query TẠM DỪNG khi mất mạng: không chạy, không onError.
+      Đo trên bản chưa sửa, ở ngôi sao Yêu thích của `/food-list`: mất mạng,
+      bấm → không toast, không lệnh ghi; có mạng lại 10 giây vẫn KHÔNG lệnh
+      ghi nào. Tức nó vừa không báo, vừa không tự gửi — "từ chối thành tiếng"
+      (`useOnlineMutation`) không làm mất gì. Ngôi sao là thao tác HAI CHIỀU,
+      như tick thực phẩm bổ sung mà `offline-write.ts` đã quyết không xếp hàng.
+      Đòi: một câu báo nói rõ là không giữ lại, không lệnh ghi lúc mất mạng,
+      và có mạng lại cũng không tự gửi.
+    */
+    name: 'Món của tôi: mất mạng thì ngôi sao Yêu thích báo ngay, không treo, không gửi sau',
+    route: '/food-list', mode: 'full',
+    async run(page) {
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/food_items/.test(q.url()) && q.method() !== 'GET') writes.push(q.method());
+      });
+      await page.waitForTimeout(1500);
+      const star = page.getByRole('button', { name: /^(Bật\/tắt yêu thích|Toggle favourite)$/ }).first();
+      if ((await star.count()) === 0) return 'không thấy ngôi sao Yêu thích nào trên /food-list (fixture food_items?)';
+      await page.context().setOffline(true);
+      await page.waitForTimeout(1500);
+      try {
+        await star.click();
+        let toastText = '';
+        for (let i = 0; i < 12 && !toastText; i++) {
+          await page.waitForTimeout(250);
+          toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+        }
+        if (!toastText) return 'mất mạng, bấm ngôi sao: không một câu nào — mutation bị tạm dừng im lặng (#49)';
+        if (!/giữ lại|kept/i.test(toastText)) return `câu báo phải nói rõ là không giữ lại để gửi sau, ra "${toastText}"`;
+        if (writes.length) return `mất mạng mà vẫn có ${writes.length} lệnh ghi đi ra`;
+      } finally {
+        await page.context().setOffline(false);
+      }
+      await page.waitForTimeout(5000);
+      if (writes.length) return `có mạng lại thì tự gửi ${writes.length} lệnh ghi — ngôi sao không được xếp hàng`;
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng

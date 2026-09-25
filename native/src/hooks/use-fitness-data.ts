@@ -17,6 +17,7 @@ import {
 } from '@/lib/personal-record';
 import { useAuth } from './use-auth';
 import { useInvalidateToday } from './useTodayData';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 
 /**
  * An absolute instant `days` ago — for `timestamptz` columns only.
@@ -78,6 +79,11 @@ export function useTodayWeight() {
 export function useLogWeight() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  /* Mất mạng (#49): KHÔNG phải `useOnlineMutation`, có chủ đích. Đây là nhánh
+     ONLINE của một đường xếp hàng: `use-weight-write.ts` kiểm `offlineNow()` trước và, lúc mất
+     mạng, xếp lần cân (kind `weight`) vào `offline-write.ts` thay vì gọi hook này. Đổi sang
+     `useOnlineMutation` thì một request không tới nơi (NetInfo báo có mạng)
+     thành "không giữ lại để gửi sau" — trong khi chính chỗ gọi có hàng đợi. */
   return useMutation({
     mutationFn: async (weight_kg: number) => {
       const { error } = await supabase
@@ -120,7 +126,7 @@ export function useLogWeight() {
 export function useDeleteWeight() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (date: string) => {
       await confirmWrite(
         supabase.from('weight_logs')
@@ -185,7 +191,7 @@ export function useDeleteWorkoutSession() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const invalidateToday = useInvalidateToday();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ id, date_time }: { id: string; date_time: string }) => {
       await confirmWrite(
         supabase.from('workout_sessions')
@@ -281,6 +287,11 @@ export interface LoggedSet {
 export function useLogWorkoutSession() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
+  /* Mất mạng (#49): KHÔNG phải `useOnlineMutation`, có chủ đích. Đây là nhánh
+     ONLINE của một đường xếp hàng: `log-workout.tsx` và `day-plan.tsx` kiểm `offlineNow()` trước và, lúc mất
+     mạng, xếp buổi tập (kind `workout`) vào `offline-write.ts` thay vì gọi hook này. Đổi sang
+     `useOnlineMutation` thì một request không tới nơi (NetInfo báo có mạng)
+     thành "không giữ lại để gửi sau" — trong khi chính chỗ gọi có hàng đợi. */
   return useMutation({
     mutationFn: async ({
       templateName,
@@ -525,7 +536,7 @@ export function useTodayTrainingMinutes() {
 export function useAppendToSession() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({
       sessionId,
       sets,
@@ -641,7 +652,7 @@ export function useAppendToSession() {
 export function useRemoveSetFromSession() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({
       sessionId,
       exerciseName,
@@ -710,7 +721,7 @@ export function useRemoveSetFromSession() {
 export function useRestoreSession() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ row, date }: { row: Record<string, unknown>; date: string }) => {
       if (!user) throw new Error('Not signed in');
       const { error } = await supabase
@@ -928,6 +939,11 @@ export interface BodyMeasurementInput {
 export function useUpsertBodyMeasurement() {
   const { user } = useAuth();
   const qc = useQueryClient();
+  /* Mất mạng (#49): KHÔNG phải `useOnlineMutation`, có chủ đích. Đây là nhánh
+     ONLINE của một đường xếp hàng: `log-measurement.tsx` kiểm `offlineNow()` trước và, lúc mất
+     mạng, xếp số đo (kind `measurement`) vào `offline-write.ts` thay vì gọi hook này. Đổi sang
+     `useOnlineMutation` thì một request không tới nơi (NetInfo báo có mạng)
+     thành "không giữ lại để gửi sau" — trong khi chính chỗ gọi có hàng đợi. */
   return useMutation({
     mutationFn: async (m: BodyMeasurementInput) => {
       const { error } = await supabase
@@ -1054,7 +1070,7 @@ export function useDeleteSleepLog() {
   const { user } = useAuth();
   const qc = useQueryClient();
   const invalidateToday = useInvalidateToday();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ id, waketime }: { id: string; waketime: string }) => {
       await confirmWrite(
         supabase.from('sleep_logs')
@@ -1088,7 +1104,7 @@ export function useDeleteSleepLog() {
 export function useDeleteBodyMeasurement() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('body_measurements')

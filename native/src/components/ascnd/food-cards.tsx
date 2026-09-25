@@ -1,5 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { nav } from '@/lib/nav';
+import { toast } from '@/lib/toast';
 import { Plus, Star } from 'lucide-react-native';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -184,7 +185,7 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
       carbs_g: r.carbs_g,
       fat_g: r.fat_g,
       fiber_g: r.fiber_g,
-    });
+    }, { onError: (e: Error) => toast.fail(e) });
   };
 
   return (

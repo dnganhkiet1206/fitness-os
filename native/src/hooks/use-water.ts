@@ -7,6 +7,7 @@ import { offlineNow } from '@/lib/offline';
 import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
 import * as Crypto from 'expo-crypto';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 
 /**
  * The day a write belongs to, read when the write happens.
@@ -240,7 +241,7 @@ export function useRemoveLastWater(date?: string) {
     across midnight — and the one that matters, the `.eq('date', …)` on the
     find, would then delete a glass from the wrong day.
   */
-  const m = useMutation({
+  const m = useOnlineMutation({
     mutationFn: async (dateStr: string) => {
       if (!user) throw new Error('Not signed in');
       const { data: last, error: findError } = await supabase

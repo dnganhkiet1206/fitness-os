@@ -208,7 +208,10 @@ try {
       `const s=new Map(); const A={async getItem(k){return s.has(k)?s.get(k):null},async setItem(k,v){s.set(k,String(v))},async removeItem(k){s.delete(k)}};
        module.exports=A; module.exports.default=A;`);
     shimPkg('expo-crypto', `let n=0; exports.randomUUID=()=>'req-'+(++n);`);
+    /* `onlineManager`: `lib/offline.ts` hỏi nó (#49 — `useBuyFreeze` nay đi qua
+       `useOnlineMutation`, nên bộ lái chạy ĐÚNG mutationFn đã bọc mà app chạy). */
     shimPkg('@tanstack/react-query', `
+      exports.onlineManager={isOnline:()=>true};
       exports.useMutation=(o)=>({ mutate:(v,cb)=>o.mutationFn(v).then((r)=>{o.onSuccess&&o.onSuccess(r);cb&&cb.onSuccess&&cb.onSuccess(r)})
         .catch((e)=>{cb&&cb.onError&&cb.onError(e)}), mutationFn:o.mutationFn });
       exports.useQuery=()=>({data:undefined});
@@ -217,11 +220,11 @@ try {
 
     const LIB = readdirSync(path.join(NATIVE, 'src/lib')).filter((f) => f.endsWith('.ts')).map((f) => `src/lib/${f}`);
     try {
-      execFileSync('npx', ['tsc', ...LIB, 'src/hooks/use-mascot-room.ts', '--ignoreConfig', '--outDir', out,
+      execFileSync('npx', ['tsc', ...LIB, 'src/hooks/use-mascot-room.ts', 'src/hooks/use-online-mutation.ts', '--ignoreConfig', '--outDir', out,
         '--rootDir', 'src', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck', '--lib', 'es2020,dom'],
         { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
     } catch { /* `@/` unmapped → TS2307 */ }
-    for (const rel of [...LIB, 'src/hooks/use-mascot-room.ts']) {
+    for (const rel of [...LIB, 'src/hooks/use-mascot-room.ts', 'src/hooks/use-online-mutation.ts']) {
       const js = path.join(out, rel.replace(/^src\//, '').replace(/\.tsx?$/, '.js'));
       writeFileSync(js, readFileSync(js, 'utf8').replace(/require\("@\/(.*?)"\)/g, (_, p) => {
         let r = path.relative(path.dirname(js), path.join(out, p));

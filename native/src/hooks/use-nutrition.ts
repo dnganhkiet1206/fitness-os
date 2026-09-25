@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useMemo } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -10,6 +10,7 @@ import { diaryStamp, localDateStr, localDayRangeISO } from '@/lib/local-date';
 import { offlineNow } from '@/lib/offline';
 import { toast } from '@/lib/toast';
 import { foldRecentMeals } from '@/lib/recent-meals';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 export type { RecentMeal, RepeatFood } from '@/lib/recent-meals';
 
 export interface FoodItemRow {
@@ -192,7 +193,7 @@ export function useFoodItem(id: string | null) {
 export function useCreateFoodItem() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (item: FoodFormData) => {
       const { error } = await supabase.from('food_items').insert({ ...item, user_id: user!.id });
       if (error) throw error;
@@ -203,7 +204,7 @@ export function useCreateFoodItem() {
 
 export function useUpdateFoodItem() {
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ id, ...item }: FoodFormData & { id: string }) => {
       await confirmWrite(
         supabase.from('food_items').update(item).eq('id', id),
@@ -216,7 +217,7 @@ export function useUpdateFoodItem() {
 
 export function useDeleteFoodItem() {
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('food_items').delete().eq('id', id),
@@ -230,7 +231,7 @@ export function useDeleteFoodItem() {
 export function useToggleFavoriteFood() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ id, is_favorite }: { id: string; is_favorite: boolean }) => {
       // Shared seed foods (user_id NULL) can't be updated under RLS — the
       // update silently matches 0 rows and the star never lights up.
@@ -619,7 +620,7 @@ export function useDeleteMealItem(date?: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const dateStr = date ?? localDateStr();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ itemId, entryId }: { itemId: string; entryId: string }): Promise<DeletedMealItem | null> => {
       const [itemRead, entryRead] = await Promise.all([
         supabase.from('meal_entry_items').select(ITEM_COLS).eq('id', itemId).maybeSingle(),
@@ -675,7 +676,7 @@ export function useRestoreMealItem(date?: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const dateStr = date ?? localDateStr();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ item, entry }: DeletedMealItem) => {
       const { error: entryErr } = await supabase
         .from('meal_entries')
@@ -711,7 +712,7 @@ export function useUpdateMealItemServings(date?: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const dateStr = date ?? localDateStr();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({
       itemId,
       entryId,
@@ -866,7 +867,7 @@ export function useLogPlannedMeal(date?: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const dateStr = date ?? localDateStr();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ mealType, foods }: { mealType: string; foods: PlannedFood[] }) => {
       if (!user) throw new Error('Not signed in');
       if (foods.length === 0) throw new Error('Nothing planned');

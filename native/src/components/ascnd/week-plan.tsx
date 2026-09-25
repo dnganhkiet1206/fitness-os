@@ -33,6 +33,7 @@ import { useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useRoutineDays, useUpsertRoutineDay, useWorkoutTemplates } from '@/hooks/use-library';
 import { getLocale } from '@/lib/i18n';
 import { localDateStr, routineIndex, weekDates } from '@/lib/local-date';
+import { toast } from '@/lib/toast';
 
 /**
  * Plan — the training week, in full.
@@ -321,7 +322,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
       // Marking a day as rest should not silently drop a deload that was set on
       // it; the day is still part of the week's plan either way.
       is_deload: d?.is_deload ?? false,
-    });
+    }, { onError: (e: Error) => toast.fail(e) });
     /* `close()`, không phải `setPicking(null)`: chọn xong cũng là một lối ra,
        và một lối ra không chạy hiệu ứng sẽ để `mounted` kẹt lại — sheet đứng
        nguyên trên màn. Mọi đường thoát khỏi sheet này đều đi qua một cửa. */
@@ -335,7 +336,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
       is_deload: isDeload,
       template_id: d?.template_id ?? null,
       is_rest: d?.is_rest ?? true,
-    });
+    }, { onError: (e: Error) => toast.fail(e) });
   };
 
   const step = (by: number) => {

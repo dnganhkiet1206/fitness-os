@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Trash2 } from 'lucide-react-native';
 import { Alert, Text, View } from 'react-native';
@@ -14,6 +14,7 @@ import { usePalette } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
 import { confirmWrite } from '@/lib/write-result';
@@ -85,7 +86,7 @@ export default function CoachMemoryScreen() {
     },
   });
 
-  const forget = useMutation({
+  const forget = useOnlineMutation({
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('coach_memory').delete().eq('id', id),
@@ -95,7 +96,7 @@ export default function CoachMemoryScreen() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['coach_memory', user?.id] }),
   });
 
-  const forgetAll = useMutation({
+  const forgetAll = useOnlineMutation({
     mutationFn: async () => {
       await confirmWrite(
         supabase.from('coach_memory').delete().eq('user_id', user!.id),

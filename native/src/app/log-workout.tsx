@@ -593,6 +593,11 @@ export default function LogWorkoutSheet() {
     },
   });
 
+  /* Mất mạng (#49): KHÔNG phải `useOnlineMutation`, có chủ đích. Đây là nhánh
+     ONLINE của một đường xếp hàng: Nút Lưu ở dưới kiểm `offlineNow()` trước và, lúc mất
+     mạng, xếp buổi tập (kind `workout`) vào `offline-write.ts` thay vì gọi hook này. Đổi sang
+     `useOnlineMutation` thì một request không tới nơi (NetInfo báo có mạng)
+     thành "không giữ lại để gửi sau" — trong khi chính chỗ gọi có hàng đợi. */
   const save = useMutation({
     mutationFn: async () => {
       const res = await log.mutateAsync({

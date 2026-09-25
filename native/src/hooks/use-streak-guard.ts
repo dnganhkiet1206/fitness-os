@@ -7,6 +7,7 @@ import { useDailyStreak, useSpendFreeze } from '@/hooks/use-mascot-room';
 import { comebackMagnitude, streakMagnitude } from '@/lib/koa-event';
 import { emitKoa } from '@/lib/koa-stage';
 import { toast } from '@/lib/toast';
+import { OnlineOnlyError } from '@/lib/offline';
 
 /**
  * Spend a streak freeze on a day that would otherwise have broken the run.
@@ -124,7 +125,13 @@ export function useStreakGuard() {
         },
         onError: (e: Error) => {
           tried.current.delete(date);
-          toast.fail(e);
+          /* Mất mạng (#49): `useSpendFreeze` nay là `useOnlineMutation`, nên nó
+             báo ngay thay vì bị React Query tạm dừng im lặng. Nhưng câu của
+             `OnlineOnlyError` — "không giữ lại để gửi sau" — SAI ở đây: ngày
+             vừa được trả về, và truy vấn streak có `refetchOnReconnect`, nên
+             có mạng lại là effect này chạy và thử tiếp. Dải báo mất mạng đã
+             nói điều cần nói; một toast hứa ngược lại thì không. */
+          if (!(e instanceof OnlineOnlyError)) toast.fail(e);
         },
       });
     }

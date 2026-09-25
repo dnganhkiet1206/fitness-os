@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Check, X } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
@@ -36,6 +36,7 @@ import { useScaleWake } from '@/hooks/use-scale-wake';
 import { useStageMotion } from '@/hooks/use-stage-motion';
 import { useUnits } from '@/hooks/use-units';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { supabase } from '@/integrations/supabase/client';
 import { useRise } from '@/lib/entrance';
 import { errorText } from '@/lib/error-copy';
@@ -303,7 +304,7 @@ export function OnboardingFlow() {
     goNext();
   };
 
-  const finish = useMutation({
+  const finish = useOnlineMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
       /* The button on the weight screen makes this unreachable. It is here

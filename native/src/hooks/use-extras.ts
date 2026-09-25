@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import * as Haptics from 'expo-haptics';
 
@@ -29,6 +29,7 @@ import { challengeStep } from '@/lib/challenge-progress';
 import { CHALLENGE_REWARD, challengeRefKey } from '@/lib/mascot-room';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 
 export function useAwards() {
   const { user } = useAuth();
@@ -402,7 +403,7 @@ export function useInitWeeklyChallenges() {
   const queryClient = useQueryClient();
   const weekStart = getWeekStart();
 
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async () => {
       if (!user) return;
       const { count } = await supabase
@@ -441,7 +442,7 @@ export function useUpdateChallengeProgress() {
   const { lang } = useAppSettings();
   const queryClient = useQueryClient();
 
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async () => {
       if (!user) return;
       const weekStart = getWeekStart();
@@ -793,7 +794,7 @@ export function useGroceryMutations() {
    * column, so "400g" goes in as written rather than as a number needing a unit
    * stored beside it.
    */
-  const add = useMutation({
+  const add = useOnlineMutation({
     mutationFn: async (input: string | { name: string; quantity?: string }) => {
       if (!user) throw new Error('Not signed in');
       const { name, quantity } = typeof input === 'string' ? { name: input, quantity: undefined } : input;
@@ -813,7 +814,7 @@ export function useGroceryMutations() {
     onSettled: () => invalidate(),
   });
 
-  const toggle = useMutation({
+  const toggle = useOnlineMutation({
     mutationFn: async ({ id, checked }: { id: string; checked: boolean }) => {
       await confirmWrite(
         supabase.from('grocery_items').update({ checked }).eq('id', id),
@@ -860,7 +861,7 @@ export function useGroceryMutations() {
     onSettled: () => invalidate(),
   });
 
-  const remove = useMutation({
+  const remove = useOnlineMutation({
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('grocery_items').delete().eq('id', id),

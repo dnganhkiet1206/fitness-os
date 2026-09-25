@@ -34,6 +34,7 @@ import {
   type RecentMeal,
 } from '@/hooks/use-nutrition';
 import { useInvalidateToday } from '@/hooks/useTodayData';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { supabase } from '@/integrations/supabase/client';
 import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
@@ -392,7 +393,7 @@ export default function LogMealSheet() {
   const carbsPct = macroG > 0 ? (totals.carbs_g / macroG) * 100 : 0;
   const fatPct = macroG > 0 ? (totals.fat_g / macroG) * 100 : 0;
 
-  const aiSuggest = useMutation({
+  const aiSuggest = useOnlineMutation({
     mutationFn: async () => {
       const res = await callEdge<{ suggestions?: AiSuggestion[] }>(EDGE_FUNCTIONS.mealSuggest, {
         meal_type: mealType,

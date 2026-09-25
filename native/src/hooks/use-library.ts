@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -6,6 +6,7 @@ import { confirmWrite } from '@/lib/write-result';
 import { diaryStamp, localDateStr, localDayRangeISO } from '@/lib/local-date';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 
 const today = () => localDateStr();
 
@@ -55,7 +56,7 @@ interface SuppRow {
 export function useToggleSupplement(date?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ supplementId, taken }: { supplementId: string; taken: boolean }) => {
       /*
         ── read here, in the tap, not in the render ──
@@ -181,7 +182,7 @@ export function useToggleSupplement(date?: string) {
 export function useAddSupplement() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (sup: { name: string; category: string; dose_text: string; timing: string }) => {
       const { error } = await supabase.from('supplements').insert({
         user_id: user!.id,
@@ -202,7 +203,7 @@ export function useAddSupplement() {
 
 export function useDeleteSupplement() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('supplements').delete().eq('id', id),
@@ -252,7 +253,7 @@ export function useExercises(enabled = true) {
 export function useDeleteExercise() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('exercises').delete().eq('id', id).eq('user_id', user!.id),
@@ -268,7 +269,7 @@ export function useDeleteExercise() {
 export function useAddExercise() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (ex: {
       name: string;
       muscle_group: string;
@@ -315,7 +316,7 @@ export interface TemplateExercise {
 export function useAddWorkoutTemplate() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     /*
       Returns the new row's id.
 
@@ -353,7 +354,7 @@ export function useAddWorkoutTemplate() {
 export function useDeleteWorkoutTemplate() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('workout_templates')
@@ -434,7 +435,7 @@ export function useWorkoutTemplates() {
 export function useUpsertRoutineDay() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (day: {
       day_of_week: number;
       template_id?: string | null;
@@ -530,7 +531,7 @@ export function useMealPlanFill(planIds: string[]) {
 export function useCreateMealPlan() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (plan: { name: string; goal: string; meals_per_day: number }) => {
       const { data, error } = await supabase
         .from('meal_plans')
@@ -550,7 +551,7 @@ export function useCreateMealPlan() {
 export function useDeleteMealPlan() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('meal_plans')
@@ -615,7 +616,7 @@ export interface MealPlanItemInput {
 /** Add a food to a meal plan (port of the web useAddMealPlanItem) */
 export function useAddMealPlanItem() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (item: MealPlanItemInput) => {
       const { error } = await supabase.from('meal_plan_items').insert(item);
       if (error) throw error;
@@ -638,7 +639,7 @@ export function useAddMealPlanItem() {
 
 export function useDeleteMealPlanItem() {
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ id }: { id: string; planId: string }) => {
       await confirmWrite(
         supabase.from('meal_plan_items').delete().eq('id', id),

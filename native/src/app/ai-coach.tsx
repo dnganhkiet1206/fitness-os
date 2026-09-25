@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
@@ -29,6 +29,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useAuth } from '@/hooks/use-auth';
 import { useCoachChat } from '@/hooks/use-coach-chat';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { suggestionsFor } from '@/lib/assistant-suggestions';
@@ -115,7 +116,7 @@ export default function AiCoachScreen() {
     },
   });
 
-  const deleteConvo = useMutation({
+  const deleteConvo = useOnlineMutation({
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('ai_conversations').delete().eq('id', id),

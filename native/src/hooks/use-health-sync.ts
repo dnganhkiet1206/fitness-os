@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
@@ -26,6 +26,7 @@ import {
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { writeHealthSync } from '@/lib/health-sync-write';
 import { localDateStr } from '@/lib/local-date';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 
 /**
  * Pulls today's steps + latest biometrics from Apple Health and writes
@@ -61,7 +62,7 @@ function useSyncMutation(silent: boolean) {
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
 
-  const sync = useMutation({
+  const sync = useOnlineMutation({
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
 

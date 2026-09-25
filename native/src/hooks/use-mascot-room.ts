@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
 import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
@@ -15,6 +15,7 @@ import {
   type ShopItemKey,
 } from '@/lib/mascot-room';
 import { useAuth } from './use-auth';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 
 /**
  * While TEST_UNLOCK_ALL is on, the whole mascot economy lives in
@@ -250,7 +251,7 @@ onUserScopedReset(() => {
 export function useBuyFreeze() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async () => {
       /*
         ── one intention, one id, however many attempts ──
@@ -285,7 +286,7 @@ export function useBuyFreeze() {
 export function useSpendFreeze() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (date: string) => {
       const { data, error } = await supabase.rpc('use_streak_freeze', { p_date: date });
       if (error) throw error;
@@ -316,7 +317,7 @@ export function useMascotInventory() {
 export function useClaimReward() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ refKey, amount, reason }: { refKey: string; amount: number; reason: string }) => {
       if (TEST_UNLOCK_ALL) {
         const rows = await readLocal<LocalTx>(LOCAL_TX_KEY);
@@ -358,7 +359,7 @@ export function useClaimReward() {
 export function useBuyItem() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async (item: ShopItem) => {
       if (TEST_UNLOCK_ALL) {
         // Local test economy: free, instant, no Supabase needed
@@ -414,7 +415,7 @@ async function unequipConflicts(userId: string, keepKey: string) {
 export function useToggleEquip() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ itemKey, equipped }: { itemKey: string; equipped: boolean }) => {
       if (TEST_UNLOCK_ALL) {
         let rows = await readLocal<LocalInv>(LOCAL_INV_KEY);

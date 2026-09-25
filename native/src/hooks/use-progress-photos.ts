@@ -1,9 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { localDateStr } from '@/lib/local-date';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 
 const BUCKET = 'progress-photos';
 
@@ -66,7 +67,7 @@ export function useProgressPhotos() {
 export function useUploadProgressPhoto() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ base64, pose, notes }: { base64: string; pose: string; notes?: string }) => {
       const dateStr = localDateStr();
       const path = `${user!.id}/${dateStr}-${pose}-${Date.now()}.jpg`;
@@ -91,7 +92,7 @@ export function useUploadProgressPhoto() {
 export function useDeleteProgressPhoto() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useMutation({
+  return useOnlineMutation({
     mutationFn: async ({ id, photo_url }: { id: string; photo_url: string }) => {
       let storagePath = photo_url;
       if (photo_url.startsWith('http')) {

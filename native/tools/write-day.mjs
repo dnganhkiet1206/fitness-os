@@ -86,7 +86,7 @@ for (const f of files) {
   } catch {
     continue;
   }
-  if (!/useMutation\(|return \(\) =>/.test(raw)) continue;
+  if (!/use(?:Online)?Mutation\(|return \(\) =>/.test(raw)) continue;
   const src = strip(raw);
 
   /*
@@ -110,8 +110,12 @@ for (const f of files) {
     const hook = chunk.slice(0, chunk.indexOf('(')).trim();
 
     const blocks = [];
-    for (let i = chunk.indexOf('useMutation('); i >= 0; i = chunk.indexOf('useMutation(', i + 1)) {
-      blocks.push(['useMutation', callBlock(chunk, i, 'useMutation')]);
+    /* `useOnlineMutation(` cũng là một lệnh ghi (#49 chuyển 48 mutation sang nó):
+       quét chỉ `useMutation(` thì bộ đếm dưới rơi xuống 3 và luật này thôi nhìn
+       gần hết app — đúng cái mà chính bộ đếm được đặt ra để kêu. */
+    for (const m of chunk.matchAll(/\b(useOnlineMutation|useMutation)\(/g)) {
+      const i = m.index;
+      blocks.push([m[1], callBlock(chunk, i, m[1])]);
       /* Counted here, before the binding test bails out, because this number is
          the "is the scanner still looking at the app" sentinel. Counting it
          after the bail-out made it fall to zero the moment the code was fixed —
