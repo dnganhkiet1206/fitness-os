@@ -461,6 +461,39 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
       const unread = w.community_notifications.filter((r) => r.user_id === UID_ && r.read_at == null).length;
       return unread > 0 && markRead.run({}, w) === unread && markRead.run({}, w) === 0;
     }],
+    /* #95: claim_quest_reward — giá của server, trùng khoá KHÔNG phải lỗi. */
+    ...(() => {
+      const quest = RPC_FIXTURES.claim_quest_reward;
+      const utc = (d) => new Date(Date.now() + d * 86400000).toISOString().slice(0, 10);
+      const ledger = (w, k) => (w.mascot_transactions ?? []).filter((t) => t.user_id === UID_ && t.ref_key === k);
+      return [
+        ['nhận nhiệm vụ: trả giá của reward_prices (quest:workout = 25), đúng một dòng sổ (#95)', () => {
+          const w = W();
+          const k = `d:${utc(0)}:workout`;
+          return quest.run({ p_ref_key: k }, w) === 25 && ledger(w, k).length === 1 && ledger(w, k)[0].amount === 25;
+        }],
+        ['nhận lần hai cùng khoá: VẪN trả 25, sổ vẫn một dòng (ON CONFLICT DO NOTHING, không phải 23505) (#95)', () => {
+          const w = W();
+          const k = `d:${utc(0)}:workout`;
+          quest.run({ p_ref_key: k }, w);
+          return quest.run({ p_ref_key: k }, w) === 25 && ledger(w, k).length === 1;
+        }],
+        ['khoá lạ, ngày ngoài cửa sổ −2, ngày không có thật → P0001, sổ không đổi (#95)', () => {
+          const w = W();
+          const n = (w.mascot_transactions ?? []).length;
+          return code(() => quest.run({ p_ref_key: 'quest:workout' }, w)) === 'P0001'
+            && code(() => quest.run({ p_ref_key: `d:${utc(-3)}:workout` }, w)) === 'P0001'
+            && code(() => quest.run({ p_ref_key: 'd:2026-02-31:meal' }, w)) === 'P0001'
+            && (w.mascot_transactions ?? []).length === n;
+        }],
+        ['trần 800 xu/ngày: đã có 790 hôm nay → nhận 25 là P0001, sổ không đổi (#95)', () => {
+          const w = W();
+          (w.mascot_transactions ??= []).push({ id: 'f0f0f0f0-0000-4000-8000-0000000000aa', user_id: UID_, amount: 790, reason: 'x', ref_key: 'set:gym', created_at: new Date().toISOString() });
+          const n = w.mascot_transactions.length;
+          return code(() => quest.run({ p_ref_key: `d:${utc(0)}:workout` }, w)) === 'P0001' && w.mascot_transactions.length === n;
+        }],
+      ];
+    })(),
   ];
   for (const [label, run] of RPC_WRITE_CASES) {
     let ok = false;

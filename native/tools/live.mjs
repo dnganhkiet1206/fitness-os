@@ -91,7 +91,7 @@ const OUT = process.env.LIVE_BUILD ? path.resolve(process.env.LIVE_BUILD) : path
 const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
-import { RPC_FIXTURES } from './live-rpc.mjs';
+import { RPC_FIXTURES, rewardAmountFor } from './live-rpc.mjs';
 import { fakeSupabase } from './live-server.mjs';
 import {
   LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, NARROW_ROUTES_MAIN, NARROW_ROUTES_NUTRITION, clipExempt, copyPatterns,
@@ -2107,6 +2107,68 @@ const SCENARIOS = [
       if (!/liked your post/.test(text)) return 'hộp thư không có dòng "liked your post" — lượt này không chạy tiếng Anh, hoặc fixture #13 đã đổi';
       if (/\b1 others\b/.test(text)) return 'hộp thư vẫn nói "and 1 others" (#67)';
       if (!/\band 1 other liked your post\b/.test(text)) return `hộp thư không có "and 1 other liked your post": "${text.match(/.{0,40}liked your post/)?.[0] ?? ''}"`;
+      return null;
+    },
+  },
+  {
+    /*
+      #95: `claim_quest_reward` có fixture. Trước #95 nó nhận `[]`, nên nhánh
+      "đạt nhiệm vụ → server trả giá → sổ có thêm dòng" chưa từng được quét:
+      mọi lần tự nhận ở Hôm nay "thành công" mà không có một xu nào.
+
+      Đo ở /challenges, KHÔNG ở Hôm nay: `TEST_UNLOCK_ALL` (lib/dev-flags.ts,
+      "flip to false before release") đưa ví, lượt tự nhận nhiệm vụ ngày và cửa
+      hàng sang AsyncStorage, nên trên bản dựng này nhiệm vụ ngày không bao giờ
+      gọi server (đo lúc viết: sổ không đổi sau 30 giây ở /, dù ba nhiệm vụ đã
+      đạt). Phần thưởng thử thách TUẦN (`use-extras.ts`) gọi `claim_quest_reward`
+      bất kể cờ ấy, và thử thách tuần đạt ngay lần mở đầu (#70).
+
+      Lượt nhận chạy lúc MỞ màn, trước khi vế này kịp nghe — nên nó đo KẾT QUẢ
+      rồi đo lần mở sau:
+      1. đọc sổ qua chính máy chủ giả của trang: mỗi khoá `ch:…` có ĐÚNG một
+         dòng, đúng giá `reward_prices`; không có khoá nào thì vế này không đo gì;
+      2. tải lại: app KHÔNG được gọi nhận lại một khoá đã có trong sổ.
+    */
+    name: 'Thử thách tuần: đạt thì được trả đúng giá, đúng một lần, và sổ đọc lại thấy (#95)',
+    route: '/challenges', mode: 'full',
+    async run(page) {
+      const base = `https://${REF}.supabase.co`;
+      const read = () => page.evaluate(async ([b, uid]) => {
+        const r = await fetch(`${b}/rest/v1/mascot_transactions?select=ref_key,amount&user_id=eq.${uid}`);
+        return r.json();
+      }, [base, UID]);
+      const questRows = (l) => (Array.isArray(l) ? l : []).filter((t) => typeof t.ref_key === 'string' && t.ref_key.startsWith('ch:'));
+      /* Lượt nhận thử thách tuần chạy khi danh sách thử thách đã về
+         (`challenges.tsx`), và mỗi thử thách đọc bảng tiến độ của nó trước khi
+         xét đạt (`useUpdateChallengeProgress`), nên nó tới sau vài lượt đọc;
+         đợi tới khi sổ ngừng đổi, không đợi một con số. */
+      let ledger = await read();
+      for (let i = 0, last = -1; i < 30; i++) {
+        const n = questRows(ledger).length;
+        if (n > 0 && n === last) break;
+        last = n;
+        await page.waitForTimeout(1000);
+        ledger = await read();
+      }
+      if (!Array.isArray(ledger)) return `đọc sổ không ra mảng: ${JSON.stringify(ledger).slice(0, 120)}`;
+      const quest = questRows(ledger);
+      if (quest.length === 0) return 'sổ không có khoá ch:… nào — thử thách tuần không được trả, hoặc thế giới giả không có thử thách nào đạt';
+      const count = new Map();
+      for (const t of quest) count.set(t.ref_key, (count.get(t.ref_key) ?? 0) + 1);
+      for (const [k, n] of count) if (n !== 1) return `sổ có ${n} dòng cho ${k} — nhận hai lần`;
+      for (const t of quest) {
+        const want = rewardAmountFor(t.ref_key);
+        if (t.amount !== want) return `sổ ghi ${t.amount} xu cho ${t.ref_key}, reward_prices nói ${want}`;
+      }
+      const again = [];
+      page.on('request', (q) => {
+        if (!/\/rest\/v1\/rpc\/claim_quest_reward/.test(q.url())) return;
+        try { again.push(JSON.parse(q.postData() ?? '{}').p_ref_key); } catch { again.push('?'); }
+      });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(6000);
+      const repeat = again.filter((k) => count.has(k));
+      if (repeat.length) return `tải lại mà app gọi nhận LẠI ${repeat.join(', ')} — ví không thấy khoá đã có trong sổ`;
       return null;
     },
   },

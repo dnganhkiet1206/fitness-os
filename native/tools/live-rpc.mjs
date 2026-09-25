@@ -39,6 +39,48 @@ export function rpcError(code, message) {
 
 /* `current_date` của server: ngày UTC. */
 const today = () => new Date().toISOString().slice(0, 10);
+
+/*
+  #95: bảng giá phần thưởng ĐỌC từ chính câu `INSERT INTO public.reward_prices`
+  của migration, không gõ lại — đổi giá ở SQL thì fixture đi theo, và một giá
+  gõ tay lệch là đúng loại bịa mà thế giới giả không được làm.
+*/
+const REWARD_MIGRATION = '20260819120000_reward_amount_authority.sql';
+export const REWARD_PRICES = (() => {
+  const src = readFileSync(path.join(MIGRATIONS, REWARD_MIGRATION), 'utf8');
+  const at = src.indexOf('INSERT INTO public.reward_prices');
+  if (at < 0) throw new Error(`không thấy INSERT INTO public.reward_prices trong ${REWARD_MIGRATION}`);
+  const block = src.slice(at, src.indexOf(';', at));
+  const out = new Map([...block.matchAll(/\('([^']+)',\s*(\d+)\)/g)].map((m) => [m[1], Number(m[2])]));
+  if (out.size === 0) throw new Error(`reward_prices trong ${REWARD_MIGRATION} không có dòng nào`);
+  return out;
+})();
+
+/** `public.reward_amount_for` (20260819120000), từng nhánh: null = khoá lạ. */
+export function rewardAmountFor(ref) {
+  if (ref == null || ref === '') return null;
+  const price = (k) => REWARD_PRICES.get(k) ?? null;
+  if (ref === 'welcome') return price('welcome');
+  if (ref.startsWith('d:')) {
+    const parts = ref.split(':');
+    if (parts.length !== 3 || !/^\d{4}-\d{2}-\d{2}$/.test(parts[1])) return null;
+    /* '2026-02-31' qua được regex mà không phải một ngày — SQL bắt bằng phép ép. */
+    const d = new Date(`${parts[1]}T00:00:00Z`);
+    if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== parts[1]) return null;
+    /* Cửa sổ +1 / −2 ngày theo ngày UTC của server, như SQL. */
+    const t = new Date(`${today()}T00:00:00Z`).getTime();
+    const gap = (d.getTime() - t) / 86400000;
+    if (gap > 1 || gap < -2) return null;
+    return parts[2] === 'streak' ? price('streak:max') : price(`quest:${parts[2]}`);
+  }
+  if (ref.startsWith('ch:')) {
+    const parts = ref.split(':');
+    return parts.length === 4 ? price(`challenge:${parts[1]}`) : null;
+  }
+  if (ref.startsWith('w:')) return ref.slice(2) === '' ? null : price('weekly');
+  if (ref.startsWith('set:')) return price(ref);
+  return null;
+}
 const addDays = (iso, n) => new Date(Date.parse(`${iso}T00:00:00Z`) + n * 864e5).toISOString().slice(0, 10);
 /* `(a - b)` của hai `date` trong SQL — số nguyên ngày. Cả hai là nửa đêm UTC, nên không có đổi giờ. */
 const dateDiff = (a, b) => Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 864e5);
@@ -232,6 +274,31 @@ export const RPC_FIXTURES = {
       }
       m.claimed_at = new Date().toISOString();
       return c.reward_coins;
+    },
+  },
+
+  /*
+    20260819120000_reward_amount_authority.sql (#95). Dịch thân SQL, cả những
+    chỗ dễ đoán sai:
+    - mọi `RAISE EXCEPTION` không có ERRCODE, nên mã là P0001 cho cả ba lỗi;
+    - trùng `ref_key` KHÔNG phải lỗi: câu chèn là `ON CONFLICT DO NOTHING` và
+      hàm vẫn trả số xu — sổ không có dòng thứ hai, người gọi không thấy gì khác;
+    - trần 800 xu/ngày tính trên mọi dòng DƯƠNG của hôm nay (UTC), và xét TRƯỚC
+      câu chèn, nên một lần gọi trùng khi đã gần trần vẫn có thể bị từ chối.
+  */
+  claim_quest_reward: {
+    sample: { p_ref_key: `d:${today()}:meal`, p_reason: 'sample' },
+    run({ p_ref_key, p_reason = '' } = {}, world) {
+      const amount = rewardAmountFor(p_ref_key);
+      if (amount == null) throw rpcError('P0001', `unknown reward ${p_ref_key}`);
+      const tx = (world.mascot_transactions ??= []);
+      const dayStart = `${today()}T00:00:00.000Z`;
+      const got = tx.filter((t) => t.user_id === UID && t.amount > 0 && t.created_at >= dayStart).reduce((n, t) => n + t.amount, 0);
+      if (got + amount > 800) throw rpcError('P0001', 'daily reward ceiling reached');
+      if (!tx.some((t) => t.user_id === UID && t.ref_key === p_ref_key)) {
+        tx.push({ id: randomUUID(), user_id: UID, amount, reason: p_reason, ref_key: p_ref_key, created_at: new Date().toISOString() });
+      }
+      return amount;
     },
   },
 
