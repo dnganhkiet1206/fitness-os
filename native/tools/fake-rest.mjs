@@ -43,7 +43,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { FIXTURES, applyQuery } from './live-world.mjs';
+import { FIXTURES, UID as UID_, applyQuery } from './live-world.mjs';
 import { requestRejection, selectRejection, unknownSelectColumns } from './postgrest-select.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -314,6 +314,54 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
   );
 }
 
+/* ── vế 6 (#52): thế giới giả nhớ lệnh ghi — và biết khi nào KHÔNG được nhớ ── */
+{
+  const { applyWrite } = await import('./live-writes.mjs');
+  const U = (q) => new URL(`https://x.supabase.co/rest/v1/${q}`);
+  const W = () => structuredClone(FIXTURES);
+  const like0 = FIXTURES.community_likes[0];
+  const WRITE_CASES = [
+    ['INSERT trùng khoá ghép → 409 / 23505', (w) => {
+      const r = applyWrite(w, 'community_likes', 'POST', U('community_likes'), JSON.stringify({ post_id: like0.post_id, user_id: like0.user_id }));
+      return r.status === 409 && JSON.parse(r.body).code === '23505' && w.community_likes.length === FIXTURES.community_likes.length;
+    }],
+    ['upsert (merge-duplicates) gộp, không nhân đôi', (w) => {
+      applyWrite(w, 'community_likes', 'POST', U('community_likes'), JSON.stringify({ post_id: like0.post_id, user_id: like0.user_id }), { prefer: 'resolution=merge-duplicates' });
+      return w.community_likes.length === FIXTURES.community_likes.length;
+    }],
+    ['INSERT mới điền DEFAULT (joined_at now(), user_id auth.uid())', (w) => {
+      const r = applyWrite(w, 'community_challenge_members', 'POST', U('community_challenge_members?select=challenge_id'), JSON.stringify({ challenge_id: 'ch000000-0000-4000-8000-000000000002' }));
+      const row = w.community_challenge_members.at(-1);
+      return r.status === 201 && row.user_id === UID_ && typeof row.joined_at === 'string' && JSON.parse(r.body).length === 1;
+    }],
+    ['DELETE theo eq bỏ đúng hàng', (w) => {
+      applyWrite(w, 'community_likes', 'DELETE', U(`community_likes?post_id=eq.${like0.post_id}&user_id=eq.${like0.user_id}`), '');
+      return w.community_likes.length === FIXTURES.community_likes.length - 1;
+    }],
+    ['DELETE theo gte (bộ lọc không hiểu) KHÔNG được áp', (w) => {
+      const r = applyWrite(w, 'weight_logs', 'DELETE', U('weight_logs?date=gte.2000-01-01'), '');
+      return r.applied === false && w.weight_logs.length === FIXTURES.weight_logs.length;
+    }],
+    ['PATCH gộp thân vào hàng khớp', (w) => {
+      const p = FIXTURES.community_settings[0];
+      applyWrite(w, 'community_settings', 'PATCH', U(`community_settings?user_id=eq.${p.user_id}`), JSON.stringify({ default_visibility: 'public' }));
+      return w.community_settings[0].default_visibility === 'public' && FIXTURES.community_settings[0].default_visibility === p.default_visibility;
+    }],
+  ];
+  for (const [label, run] of WRITE_CASES) {
+    let ok = false;
+    try { ok = run(W()); } catch (e) { ok = false; }
+    if (!ok) problems.push(`thế giới giả ghi sai (#52): ${label}`);
+  }
+  if (!/applyWrite\(world, table, req\.method\(\), u, req\.postData\(\), req\.headers\(\)\)/.test(liveSrc)) {
+    problems.push('tools/live.mjs không áp lệnh ghi vào thế giới của trang (`applyWrite`) — vế 6 chỉ đang kiểm một hàm không ai dùng');
+  }
+  if (!/const world = mode === 'empty' \? \{ profiles: structuredClone\(FIXTURES\.profiles\) \} : structuredClone\(FIXTURES\);/.test(liveSrc)) {
+    problems.push('tools/live.mjs không dựng một BẢN SAO thế giới cho mỗi trang — lệnh ghi của trang này sẽ rò sang trang sau');
+  }
+  globalThis.__writeCases = WRITE_CASES.length;
+}
+
 if (problems.length) {
   console.error('máy chủ giả trả lời sai câu hỏi:');
   for (const p of problems) console.error(`  ✗ ${p}`);
@@ -328,5 +376,6 @@ console.log(
     `Và ${SELECT_CASES.length} ca \`select=\` (#35): cột không có thật — kể cả sau bí danh, ép kiểu, đường JSON, trong phần nhúng — ` +
     'được trả 400 / 42703 như PostgREST, câu hợp lệ thì không, và `live.mjs` dùng đúng bộ ấy trong route giả. ' +
     `Và ${REQUEST_CASES.length} ca #40: bộ lọc, not., or=/and= lồng nhau, order=, on_conflict= (42703) và thân POST/PATCH (PGRST204) nhắc cột lạ đều bị từ chối, câu hợp lệ thì không. ` +
+    `Và ${globalThis.__writeCases} ca lệnh ghi (#52): trùng khoá → 409, upsert gộp, DEFAULT được điền, DELETE/PATCH theo eq áp đúng hàng, bộ lọc không hiểu thì KHÔNG áp; mỗi trang một bản sao thế giới. ` +
     'Và `/rest/v1/rpc/<tên>` được rẽ sang nhánh hàm (#38): đối số soát theo `types.ts`, kết quả từ `live-rpc.mjs`',
 );

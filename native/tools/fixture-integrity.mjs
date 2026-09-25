@@ -43,7 +43,7 @@
  */
 import { readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIG = path.resolve(NATIVE, '..', 'supabase', 'migrations');
@@ -215,7 +215,7 @@ export function readSchema(dir = MIG) {
         else if (s[i] === ')') depth--;
         i++;
       }
-      const t = { file: f, pk: null, pkDefault: false, uniques: [], fks: [], checks: {} };
+      const t = { file: f, pk: null, pkDefault: false, uniques: [], fks: [], checks: {}, defaults: {} };
       const table = m[1];
       let anon = 0;
       for (const p of splitTop(s.slice(start, i - 1))) {
@@ -238,6 +238,14 @@ export function readSchema(dir = MIG) {
           t.fks.push({ col: mm[1].trim(), ref: refOf(mm[2], mm[3]), refCol: mm[4].trim() });
         else if ((mm = p.match(/^"?(\w+)"?\s+/)) && !/^(CONSTRAINT|CHECK|EXCLUDE)\b/i.test(p)) {
           const col = mm[1];
+          /* DEFAULT của cột (#52): máy chủ giả điền nó cho một INSERT không gửi cột
+             ấy, như Postgres. Chỉ những dạng tính được ở phía client. */
+          const dm = p.match(/\bDEFAULT\s+(now\(\)|gen_random_uuid\(\)|auth\.uid\(\)|'([^']*)'|true|false|-?\d+(?:\.\d+)?)/i);
+          if (dm) {
+            const d = dm[1].toLowerCase();
+            t.defaults[col] = d === 'now()' ? { now: true } : d === 'gen_random_uuid()' ? { uuid: true } : d === 'auth.uid()' ? { uid: true }
+              : dm[2] !== undefined ? { value: dm[2] } : d === 'true' ? { value: true } : d === 'false' ? { value: false } : { value: Number(dm[1]) };
+          }
           if (/PRIMARY KEY/i.test(p)) {
             t.pk = [col];
             t.pkDefault = /\bDEFAULT\b/i.test(p);
@@ -347,58 +355,63 @@ export function check(fixtures, schema) {
   return { problems, keys, refs, authRefs, checksRun, skipped: [...skipped].sort() };
 }
 
-const schema = readSchema();
-const real = check(FIXTURES, schema);
-const problems = [...real.problems];
+/* Phần dưới là BƯỚC CỔNG: chỉ chạy khi tệp được gọi thẳng (`node tools/fixture-integrity.mjs`).
+   `live.mjs` import `readSchema` để máy chủ giả biết khoá và DEFAULT (#52), và một
+   lần import không được chạy bước cổng hay `process.exit` giữa chừng. */
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  const schema = readSchema();
+  const real = check(FIXTURES, schema);
+  const problems = [...real.problems];
 
-/* ── bộ kiểm tự phá thử chính nó, trên BẢN SAO ── */
-const clone = () => JSON.parse(JSON.stringify(FIXTURES));
-const selfTest = [
-  ['nhân đôi id một bài', (f) => f.community_posts.push({ ...f.community_posts[0] }), /khoá trùng: `community_posts` \(id\)/],
-  ['nhân đôi khoá GHÉP của một lượt thích', (f) => f.community_likes.push({ ...f.community_likes[0] }), /khoá trùng: `community_likes` \(post_id, user_id\)/],
-  ['trỏ một lượt thích vào bài không tồn tại', (f) => (f.community_likes[0].post_id = 'cp-khong-ton-tai'), /tham chiếu treo: `community_likes` dòng 0, post_id/],
-  ['một món trong bữa trỏ vào bữa không tồn tại', (f) => (f.meal_entry_items[0].meal_entry_id = 'm-khong-co'), /tham chiếu treo: `meal_entry_items`/],
-  /* #24: một dòng Postgres sẽ từ chối vì CHECK */
-  ['loại bài gõ nhầm', (f) => (f.community_posts[0].kind = 'recipie'), /vi phạm CHECK: `community_posts` dòng 0 — `community_posts_kind_check`/],
-  ['handle có chữ hoa và dấu cách', (f) => (f.community_profiles[0].handle = 'Linh Pham'), /vi phạm CHECK: `community_profiles` dòng 0 — `community_profiles_handle_check`/],
-  ['bình luận chỉ có dấu cách', (f) => (f.community_comments[0].body = '   '), /vi phạm CHECK: `community_comments` dòng 0 — `community_comments_body_check`/],
-];
-for (const [label, mutate, want] of selfTest) {
-  const f = clone();
-  mutate(f);
-  const got = check(f, schema).problems;
-  if (!got.some((p) => want.test(p)))
-    problems.push(`bộ kiểm đã mất răng: phá thử "${label}" mà không bắt được — luật tương ứng đã hỏng hoặc bị xoá`);
-}
-/* Và đủ luật để có nghĩa: một bộ đọc schema hỏng (đọc ra 0 khoá ngoại) sẽ xanh vì không kiểm gì. */
-for (const [t, c, ref] of [
-  ['community_posts', 'author_id', 'community_profiles'],
-  ['community_likes', 'post_id', 'community_posts'],
-  ['community_comments', 'post_id', 'community_posts'],
-  ['meal_entry_items', 'meal_entry_id', 'meal_entries'],
-]) {
-  if (!schema[t]?.fks.some((k) => k.col === c && k.ref === ref))
-    problems.push(`bộ đọc migration không thấy khoá ngoại \`${t}.${c}\` → \`${ref}\` — nó đang đọc sai schema, nên mọi kết luận khác vô nghĩa`);
-}
+  /* ── bộ kiểm tự phá thử chính nó, trên BẢN SAO ── */
+  const clone = () => JSON.parse(JSON.stringify(FIXTURES));
+  const selfTest = [
+    ['nhân đôi id một bài', (f) => f.community_posts.push({ ...f.community_posts[0] }), /khoá trùng: `community_posts` \(id\)/],
+    ['nhân đôi khoá GHÉP của một lượt thích', (f) => f.community_likes.push({ ...f.community_likes[0] }), /khoá trùng: `community_likes` \(post_id, user_id\)/],
+    ['trỏ một lượt thích vào bài không tồn tại', (f) => (f.community_likes[0].post_id = 'cp-khong-ton-tai'), /tham chiếu treo: `community_likes` dòng 0, post_id/],
+    ['một món trong bữa trỏ vào bữa không tồn tại', (f) => (f.meal_entry_items[0].meal_entry_id = 'm-khong-co'), /tham chiếu treo: `meal_entry_items`/],
+    /* #24: một dòng Postgres sẽ từ chối vì CHECK */
+    ['loại bài gõ nhầm', (f) => (f.community_posts[0].kind = 'recipie'), /vi phạm CHECK: `community_posts` dòng 0 — `community_posts_kind_check`/],
+    ['handle có chữ hoa và dấu cách', (f) => (f.community_profiles[0].handle = 'Linh Pham'), /vi phạm CHECK: `community_profiles` dòng 0 — `community_profiles_handle_check`/],
+    ['bình luận chỉ có dấu cách', (f) => (f.community_comments[0].body = '   '), /vi phạm CHECK: `community_comments` dòng 0 — `community_comments_body_check`/],
+  ];
+  for (const [label, mutate, want] of selfTest) {
+    const f = clone();
+    mutate(f);
+    const got = check(f, schema).problems;
+    if (!got.some((p) => want.test(p)))
+      problems.push(`bộ kiểm đã mất răng: phá thử "${label}" mà không bắt được — luật tương ứng đã hỏng hoặc bị xoá`);
+  }
+  /* Và đủ luật để có nghĩa: một bộ đọc schema hỏng (đọc ra 0 khoá ngoại) sẽ xanh vì không kiểm gì. */
+  for (const [t, c, ref] of [
+    ['community_posts', 'author_id', 'community_profiles'],
+    ['community_likes', 'post_id', 'community_posts'],
+    ['community_comments', 'post_id', 'community_posts'],
+    ['meal_entry_items', 'meal_entry_id', 'meal_entries'],
+  ]) {
+    if (!schema[t]?.fks.some((k) => k.col === c && k.ref === ref))
+      problems.push(`bộ đọc migration không thấy khoá ngoại \`${t}.${c}\` → \`${ref}\` — nó đang đọc sai schema, nên mọi kết luận khác vô nghĩa`);
+  }
 
-/* CHECK bị THAY về sau phải ra bản mới nhất: `post_kinds` gỡ
-   `community_posts_kind_check` ('workout') rồi thêm lại với ba loại. Đọc sai
-   chỗ này thì mọi bài Progress/Recipe trong fixture đều "vi phạm". */
-if (!/'recipe'/.test(schema.community_posts?.checks?.community_posts_kind_check ?? ''))
-  problems.push('bộ đọc migration không ra bản MỚI NHẤT của `community_posts_kind_check` — `DROP CONSTRAINT` / `ADD CONSTRAINT` về sau đã bị bỏ qua');
-for (const name of real.skipped) problems.push(`CHECK không kiểm được: \`${name}\` — bộ tính biểu thức chưa hiểu nó; thêm vào bộ tính, đừng bỏ qua im lặng`);
+  /* CHECK bị THAY về sau phải ra bản mới nhất: `post_kinds` gỡ
+     `community_posts_kind_check` ('workout') rồi thêm lại với ba loại. Đọc sai
+     chỗ này thì mọi bài Progress/Recipe trong fixture đều "vi phạm". */
+  if (!/'recipe'/.test(schema.community_posts?.checks?.community_posts_kind_check ?? ''))
+    problems.push('bộ đọc migration không ra bản MỚI NHẤT của `community_posts_kind_check` — `DROP CONSTRAINT` / `ADD CONSTRAINT` về sau đã bị bỏ qua');
+  for (const name of real.skipped) problems.push(`CHECK không kiểm được: \`${name}\` — bộ tính biểu thức chưa hiểu nó; thêm vào bộ tính, đừng bỏ qua im lặng`);
 
-if (problems.length) {
-  console.error('dữ liệu thế giới giả CÓ LỖI:\n');
-  for (const p of problems) console.error(`  • ${p}`);
-  process.exit(1);
+  if (problems.length) {
+    console.error('dữ liệu thế giới giả CÓ LỖI:\n');
+    for (const p of problems) console.error(`  • ${p}`);
+    process.exit(1);
+  }
+  const tables = Object.values(FIXTURES).filter(Array.isArray).length;
+  console.log(
+    `dữ liệu thế giới giả OK — ${tables} bảng, ${real.keys} giá trị khoá không trùng, ${real.refs} tham chiếu đều trỏ vào ` +
+      `dòng có thật (${real.authRefs} khoá ngoại tới auth.users bỏ qua: thế giới giả không có bảng người dùng), và ${real.checksRun} ` +
+      'lần tính CHECK đều không ra false (logic ba giá trị như Postgres; không CHECK nào bị bỏ qua). Khoá, khoá ngoại và CHECK ' +
+      'đọc từ chính migration, không khai tay — kể cả CHECK bị gỡ rồi thêm lại về sau; và bộ kiểm tự phá thử ' +
+      `${selfTest.length} cách trên bản sao fixture (id trùng, khoá ghép trùng, hai kiểu tham chiếu treo, ba kiểu vi phạm CHECK) — ` +
+      'cách nào cũng bị bắt',
+  );
 }
-const tables = Object.values(FIXTURES).filter(Array.isArray).length;
-console.log(
-  `dữ liệu thế giới giả OK — ${tables} bảng, ${real.keys} giá trị khoá không trùng, ${real.refs} tham chiếu đều trỏ vào ` +
-    `dòng có thật (${real.authRefs} khoá ngoại tới auth.users bỏ qua: thế giới giả không có bảng người dùng), và ${real.checksRun} ` +
-    'lần tính CHECK đều không ra false (logic ba giá trị như Postgres; không CHECK nào bị bỏ qua). Khoá, khoá ngoại và CHECK ' +
-    'đọc từ chính migration, không khai tay — kể cả CHECK bị gỡ rồi thêm lại về sau; và bộ kiểm tự phá thử ' +
-    `${selfTest.length} cách trên bản sao fixture (id trùng, khoá ghép trùng, hai kiểu tham chiếu treo, ba kiểu vi phạm CHECK) — ` +
-    'cách nào cũng bị bắt',
-);

@@ -89,6 +89,7 @@ const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
 import { requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
 import { RPC_FIXTURES } from './live-rpc.mjs';
+import { applyWrite, unsupportedFilters } from './live-writes.mjs';
 import {
   LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, NARROW_ROUTES_MAIN, NARROW_ROUTES_NUTRITION, clipExempt, copyPatterns,
   enlargeText, narrowFindings,
@@ -336,6 +337,8 @@ const SELECT_MISSES = new Set();
 const RPC_ARG_MISSES = new Set();
 /** Hàm RPC app đã gọi mà `live-rpc.mjs` chưa có fixture — nhận `[]` như trước #38. */
 const RPC_UNFIXTURED = new Set();
+/** Lệnh ghi KHÔNG được áp vào thế giới vì bộ lọc máy chủ giả không hiểu (#52). */
+const WRITES_NOT_APPLIED = new Set();
 
 async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, height = 874, lang = null } = {}) {
   const browser = await chromium.launch();
@@ -370,6 +373,9 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
     errors.push(t);
   });
 
+  /* #52: một BẢN SAO thế giới cho mỗi trang, và lệnh ghi áp vào nó
+     (`live-writes.mjs`). Chế độ `empty` là thế giới chỉ có hồ sơ, như trước. */
+  const world = mode === 'empty' ? { profiles: structuredClone(FIXTURES.profiles) } : structuredClone(FIXTURES);
   await page.route('**/*.supabase.co/**', async (r) => {
     const u = new URL(r.request().url());
     if (u.pathname.startsWith('/rest/v1/')) {
@@ -404,7 +410,6 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
           RPC_UNFIXTURED.add(fn);
           return r.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
         }
-        const world = mode === 'empty' ? { profiles: FIXTURES.profiles } : FIXTURES;
         try {
           const out = fx.run(args, world);
           const one = (req.headers()['accept'] ?? '').includes('vnd.pgrst.object');
@@ -437,10 +442,13 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
          `limit=` — xem chú thích của nó trong `live-world.mjs`. Không đọc
          `gte`/`lt`; giới hạn ấy ghi ở kịch bản "nhật ký ngày khác" bên dưới
          và vẫn còn nguyên. */
-      const rows = applyQuery(
-        mode === 'empty' && table !== 'profiles' ? [] : (FIXTURES[table] ?? []),
-        u,
-      );
+      const req = r.request();
+      const wrote = applyWrite(world, table, req.method(), u, req.postData(), req.headers());
+      if (wrote) {
+        if (!wrote.applied) WRITES_NOT_APPLIED.add(`${req.method()} ${table} (${unsupportedFilters(u).join(', ')})`);
+        return r.fulfill({ status: wrote.status, contentType: 'application/json', body: wrote.body });
+      }
+      const rows = applyQuery(world[table] ?? [], u);
       const single = (r.request().headers()['accept'] ?? '').includes('vnd.pgrst.object');
       return r.fulfill({
         status: 200, contentType: 'application/json',
@@ -1796,6 +1804,45 @@ const SCENARIOS = [
   },
   {
     /*
+      #52: thế giới giả NHỚ lệnh ghi trong một trang. Trước #52 tham gia thử
+      thách rồi đọc lại tổng quan vẫn ra `joined: false` — mọi luồng "ghi →
+      thấy thay đổi" nằm ngoài tầm đo. Đòi: bấm "Tham gia" ở thử thách sắp mở
+      (fixture: UID chưa tham gia `ch…0002`; trang chi tiết của nó) → lệnh ghi thành công, lượt đọc
+      lại `community_challenges_overview` ra `joined: true` cho đúng thử thách
+      ấy, và nút Tham gia của nó biến khỏi màn.
+    */
+    name: 'Thử thách: bấm Tham gia thì đọc lại thấy đã tham gia (thế giới giả nhớ lệnh ghi)',
+    route: '/community-challenge?id=ch000000-0000-4000-8000-000000000002', mode: 'full',
+    async run(page) {
+      const TARGET = 'ch000000-0000-4000-8000-000000000002';
+      const overviews = [];
+      const writes = [];
+      page.on('response', async (res) => {
+        const u = res.url();
+        if (u.includes('/rpc/community_challenges_overview')) overviews.push(await res.json().catch(() => null));
+        if (/\/rest\/v1\/community_challenge_members/.test(u) && res.request().method() === 'POST') writes.push(res.status());
+      });
+      await page.waitForTimeout(2000);
+      const joins = page.getByRole('button', { name: /^(Tham gia|Join)$/ });
+      const before = await joins.count();
+      if (before === 0) return 'không thấy nút "Tham gia" trên trang chi tiết ch…0002 (fixture?)';
+      /* Nút chỉ hiện khi `!ch.joined`, nên có nút là lượt đọc đầu đã ra "chưa
+         tham gia" (lượt ấy xảy ra lúc mở trang, trước khi bộ nghe kịp gắn). */
+      const seenBefore = overviews.length;
+      await joins.first().click();
+      for (let i = 0; i < 20 && !(overviews.length > seenBefore && overviews.at(-1)?.find((c) => c.id === TARGET)?.joined); i++) await page.waitForTimeout(250);
+      if (writes.length !== 1 || writes[0] >= 300) return `bấm Tham gia: lệnh ghi community_challenge_members ${JSON.stringify(writes)}, phải là đúng một 2xx`;
+      const last = overviews.at(-1) ?? [];
+      if (overviews.length <= seenBefore) return 'bấm Tham gia mà tổng quan không được đọc lại';
+      if (last.find((c) => c.id === TARGET)?.joined !== true) return `đọc lại tổng quan vẫn ra ch…0002 chưa tham gia — thế giới giả không nhớ lệnh ghi (#52)`;
+      await page.waitForTimeout(800);
+      const after = await joins.count();
+      if (after !== before - 1) return `nút Tham gia: ${before} → ${after}, phải bớt đúng một`;
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng
@@ -2326,7 +2373,10 @@ const RPC_NOTE = () =>
   `RPC có fixture (tính từ thế giới giả, tools/live-rpc.mjs): ${Object.keys(RPC_FIXTURES).join(', ')}. ` +
   (RPC_UNFIXTURED.size
     ? `RPC app đã gọi mà CHƯA có fixture, nên vẫn nhận [] như trước #38: ${[...RPC_UNFIXTURED].sort().join(', ')}`
-    : 'Không RPC nào app gọi trong lượt này thiếu fixture');
+    : 'Không RPC nào app gọi trong lượt này thiếu fixture') +
+  (WRITES_NOT_APPLIED.size
+    ? `. Lệnh ghi KHÔNG áp vào thế giới giả (bộ lọc không hiểu, trả lời kiểu cũ): ${[...WRITES_NOT_APPLIED].sort().join('; ')}`
+    : '. Mọi lệnh ghi của lượt này đều được áp vào thế giới giả của trang');
 
 if (problems.length) {
   console.log(RPC_NOTE());
