@@ -11,7 +11,7 @@ App hiện đang chạy trên project phát triển được ghi mặc định t
 Mục 1 đến 4 nói về việc nối app vào một project **trên cloud**. Nhưng để *test*
 thì chạy toàn bộ Supabase ngay trên máy là đường tốt hơn, và nó không đụng gì tới
 cloud: `supabase start` dựng Postgres, Auth, Storage, Studio bằng Docker, còn
-`supabase db reset` áp lại toàn bộ 32 migration từ đầu trong vài giây. Phá thoải
+`supabase db reset` áp lại toàn bộ migration từ đầu trong vài giây. Phá thoải
 mái, không mất dữ liệu thật, không tốn tiền.
 
 ## 0a. Cài Docker và CLI
@@ -66,7 +66,7 @@ sạch từ đầu bất cứ lúc nào:
 supabase db reset
 ```
 
-Đây là lệnh đáng giá nhất khi test: nó xoá database local, chạy lại cả 32
+Đây là lệnh đáng giá nhất khi test: nó xoá database local, chạy lại mọi
 migration theo thứ tự, nên nó cũng là cách duy nhất kiểm được rằng bộ migration
 của bạn **thật sự dựng được từ số không** — thứ `db push` lên cloud không bao
 giờ kiểm, vì cloud chỉ chạy các file mới.
@@ -292,7 +292,7 @@ npx supabase db push
 ```
 
 Rồi đổi `project_id` ở dòng đầu `supabase/config.toml` và hai dòng trong
-`.env` (§1a). Đăng ký lại tài khoản trong app là xong — 32 migration dựng lại
+`.env` (§1a). Đăng ký lại tài khoản trong app là xong — các migration dựng lại
 toàn bộ schema, kể cả bộ bài tập seed.
 
 #### Nếu cần mang dữ liệu cũ sang

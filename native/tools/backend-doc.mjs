@@ -110,6 +110,34 @@ const functions = readdirSync(path.join(ROOT, 'supabase/functions'))
   }
 }
 
+/* ── 1b. mọi câu "N migration" — không chỉ câu đã ghim ở trên (#86) ──
+
+   Mục 2 nói "N file SQL" và được ghim từ đầu. BA câu khác — "`db reset` áp lại
+   toàn bộ 32 migration", "chạy lại cả 32⏎migration", "32 migration dựng lại
+   toàn bộ schema" — nói cùng con số ấy, và nằm yên ở 32 trong khi thư mục lên
+   51: luật chỉ bám một câu, nên các câu kia không ai đếm. Issue #86 kể hai; câu
+   thứ ba bị NGẮT DÒNG giữa số và chữ, nên grep theo dòng không thấy — luật này
+   thấy ngay lần chạy đầu, vì `\s+` khớp cả xuống dòng. Nay mọi "N migration" /
+   "N file migration" trong trang phải bằng số đếm được. Ba câu cũ được viết lại
+   cho KHÔNG mang số — một con số chỉ nên có ở một chỗ, và chỗ ấy đã được đếm. */
+export function migrationClaims(text, actual) {
+  const out = [];
+  for (const m of text.matchAll(/(?<![\d.,])(\d+)\s+(?:file\s+)?migration\b/g)) {
+    const n = Number(m[1]);
+    if (n !== actual) {
+      const line = text.slice(0, m.index).split('\n').length;
+      out.push(`${DOC}:${line}: "${m[0]}" — thư mục có ${actual} migration. Viết câu ấy không mang số, hoặc sửa số`);
+    }
+  }
+  return out;
+}
+problems.push(...migrationClaims(doc, migrations.length));
+{
+  const bent = doc.replace('áp lại toàn bộ migration từ đầu', 'áp lại toàn bộ 32 migration từ đầu');
+  if (bent === doc) problems.push('thử ngược hỏng: không còn câu "áp lại toàn bộ migration từ đầu" để đặt số cũ vào');
+  else if (migrationClaims(bent, migrations.length).length === 0) problems.push('thử ngược hỏng: đặt lại "32 migration" ở câu db reset mà luật vẫn xanh');
+}
+
 /* ── 2. the deploy command names every function that exists ──
 
    Not "some functions": the list in `backend.ts` is a deployment checklist, and
@@ -233,7 +261,8 @@ if (problems.length) {
 
 console.log(
   `tài liệu nối backend OK — ${migrations.length} file migration và ${functions.length} edge function ` +
-    'được ĐẾM từ thư mục thật rồi so với con số tài liệu ghi (tài liệu từng ghi 18 và 5); câu lệnh ' +
+    'được ĐẾM từ thư mục thật rồi so với con số tài liệu ghi (tài liệu từng ghi 18 và 5), và MỌI câu "N migration" ' +
+    'trong trang cũng vậy, kể cả câu ngắt dòng giữa số và chữ (ba câu từng nằm yên ở 32; thử ngược: đặt lại 32 thì đỏ); câu lệnh ' +
     'deploy phải nhắc TÊN của cả chín function, vì đó là checklist chứ không phải ví dụ, và ' +
     'store-webhook hỏng mà không ai bấm gì cả; không function nào bị tài liệu bảo là "chưa tồn tại" ' +
     'trong khi mã nguồn đã có (delete-account từng như thế); bốn địa chỉ local của CLI được ghim; ' +
