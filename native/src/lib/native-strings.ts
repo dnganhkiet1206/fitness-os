@@ -713,6 +713,7 @@ const en = {
   nMpAgainBody: 'Today already has a {m} with exactly these foods. Log it a second time?',
   nMpAgainYes: 'Log again',
   nMpEatDone: '{m} added to today’s diary',
+  nMpEatQueued: '{m} saved — will sync when you are back online',
   nMpNoFibre: 'Logged from a plan carries no fibre — the plan does not record it.',
   // Repeating a meal you have already eaten
   nRmTitle: 'Eat this again',
@@ -1146,6 +1147,7 @@ const en = {
   nRcAddToMeal: 'Add to a meal',
   nRcAddWhich: 'Add to which meal today?',
   nRcAdded: 'Added to today · {meal}',
+  nRcAddedQueued: 'Saved to today · {meal} — will sync when you are back online',
   nRcShareText: '{title} on ASCND — {kcal} kcal',
   nRcShareTitle: 'Share a recipe',
   nRcPickMeal: 'Choose a meal you logged',
@@ -1805,6 +1807,7 @@ const vi: typeof en = {
   nMpAgainBody: 'Nhật ký hôm nay đã có một bữa {m} đúng các món này. Ghi thêm lần nữa?',
   nMpAgainYes: 'Ghi thêm',
   nMpEatDone: 'Đã thêm {m} vào nhật ký hôm nay',
+  nMpEatQueued: 'Đã lưu {m} — sẽ đồng bộ khi có mạng',
   nMpNoFibre: 'Ghi từ kế hoạch ăn thì không có chất xơ — kế hoạch ăn không lưu số đó.',
   // Ăn lại bữa đã ăn
   nRmTitle: 'Ăn lại bữa này',
@@ -2203,6 +2206,7 @@ const vi: typeof en = {
   nRcAddToMeal: 'Thêm vào bữa ăn',
   nRcAddWhich: 'Thêm vào bữa nào hôm nay?',
   nRcAdded: 'Đã thêm vào hôm nay · {meal}',
+  nRcAddedQueued: 'Đã lưu vào hôm nay · {meal} — sẽ đồng bộ khi có mạng',
   nRcShareText: '{title} trên ASCND — {kcal} kcal',
   nRcShareTitle: 'Chia sẻ công thức',
   nRcPickMeal: 'Chọn một bữa bạn đã ghi',

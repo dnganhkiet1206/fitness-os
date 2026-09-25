@@ -1736,6 +1736,66 @@ const SCENARIOS = [
   },
   {
     /*
+      #57: "Thêm vào bữa ăn" là ghi nhật ký TẠO MỚI, nên mất mạng thì XẾP HÀNG
+      như ghi bữa tay — không từ chối (#49 để nó ở `useOnlineMutation`, sai
+      đường), không treo. Đo trên thực đơn `mp1` (trên web `Alert` của thẻ Recipe
+      là hàm rỗng, nên chọn bữa ở đó không được). Đòi:
+        1. mất mạng, bấm "Ghi vào hôm nay" → câu báo nói đã LƯU và sẽ đồng bộ;
+           không lệnh ghi nào đi ra;
+        2. có mạng lại → đúng MỘT lệnh ghi `meal_entries` và lệnh ghi món, và
+           các món trỏ đúng id bữa đã tạo lúc bấm (không phải id server sinh).
+    */
+    name: 'Thực đơn: mất mạng thì "Ghi vào hôm nay" xếp hàng, có mạng lại thì gửi đúng một bữa',
+    route: '/meal-plan?plan=mp1', mode: 'full',
+    async run(page) {
+      const writes = [];
+      page.on('request', (q) => {
+        const t = /\/rest\/v1\/(meal_entries|meal_entry_items)\b/.exec(q.url());
+        /* HEAD là ĐỌC (truy vấn đếm `select=id` với `head: true`), không phải ghi —
+           bản đầu đếm mọi thứ khác GET và báo "3 lệnh ghi" cho 1 POST + 2 HEAD. */
+        if (t && isWrite(q.method())) writes.push({ table: t[1], method: q.method(), body: q.postData() ?? '', at: Date.now(), url: q.url() });
+      });
+      const statuses = [];
+      page.on('response', (r) => {
+        if (/\/rest\/v1\/(meal_entries|meal_entry_items|daily_logs)\b/.test(r.url()) && r.request().method() !== 'GET') statuses.push(`${r.request().method()} ${r.url().split('/rest/v1/')[1].slice(0, 60)} → ${r.status()} @${Date.now() % 100000}`);
+      });
+      await page.waitForTimeout(1500);
+      const eat = page.getByRole('button', { name: /^(Ghi vào hôm nay|Log to today)$/ }).first();
+      if ((await eat.count()) === 0) return 'không thấy nút "Ghi vào hôm nay" trên thực đơn mp1';
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      let toastText = '';
+      try {
+        await eat.click();
+        for (let i = 0; i < 12 && !toastText; i++) {
+          await page.waitForTimeout(250);
+          toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+        }
+        if (!toastText) return 'mất mạng, bấm "Ghi vào hôm nay": không một câu nào';
+        if (!/đồng bộ khi có mạng|sync when you are back online/i.test(toastText)) {
+          return `mất mạng mà câu báo không nói đã lưu để đồng bộ sau: "${toastText}" (#57)`;
+        }
+        if (writes.length) return `mất mạng mà vẫn có ${writes.length} lệnh ghi đi ra`;
+      } finally {
+        await goOnline(page);
+      }
+      for (let i = 0; i < 40 && writes.filter((w) => w.table === 'meal_entry_items').length === 0; i++) await page.waitForTimeout(250);
+      const entries = writes.filter((w) => w.table === 'meal_entries');
+      const items = writes.filter((w) => w.table === 'meal_entry_items');
+      if (entries.length !== 1) return `có mạng lại: ${entries.length} lệnh ghi meal_entries, phải là đúng 1 — bữa xếp hàng không được gửi (hoặc gửi trùng) · ${statuses.join(' ; ')}`;
+      if (items.length < 1) return 'có mạng lại: bữa đã gửi nhưng không có lệnh ghi món nào';
+      let entryId = '';
+      try { entryId = JSON.parse(entries[0].body).id ?? ''; } catch { /* thân không phải JSON */ }
+      const itemRows = items.flatMap((w) => { try { const b = JSON.parse(w.body); return Array.isArray(b) ? b : [b]; } catch { return []; } });
+      if (!entryId) return 'lệnh ghi meal_entries không mang id tạo lúc bấm — phát lại sẽ không nhận ra chính nó';
+      if (!itemRows.length || itemRows.some((r) => r.meal_entry_id !== entryId)) {
+        return `món không trỏ đúng id bữa đã tạo lúc bấm (${entryId}): ${JSON.stringify(itemRows.map((r) => r.meal_entry_id))}`;
+      }
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng

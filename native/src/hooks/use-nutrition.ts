@@ -1,4 +1,5 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import * as Crypto from 'expo-crypto';
 import { useMemo } from 'react';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -6,8 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { DailyLogRebuildError, recomputeDailyLog } from '@/lib/daily-log-service';
 import { todayKeys } from '@/lib/today-keys';
-import { diaryStamp, localDateStr, localDayRangeISO } from '@/lib/local-date';
+import { diaryStampAt, localDateStr, localDayRangeISO } from '@/lib/local-date';
 import { offlineNow } from '@/lib/offline';
+import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { toast } from '@/lib/toast';
 import { foldRecentMeals } from '@/lib/recent-meals';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
@@ -866,53 +868,86 @@ export interface PlannedFood {
 export function useLogPlannedMeal(date?: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
-  const dateStr = date ?? localDateStr();
-  return useOnlineMutation({
-    mutationFn: async ({ mealType, foods }: { mealType: string; foods: PlannedFood[] }) => {
-      if (!user) throw new Error('Not signed in');
-      if (foods.length === 0) throw new Error('Nothing planned');
+  /* Một HÀM, không phải hằng số: ngày của một lệnh ghi đọc lúc BẤM, không lúc
+     vẽ màn (`tools/write-day.mjs`) — và lúc mất mạng, ngày ấy đi cùng bản ghi
+     vào hàng đợi, nên màn mở qua nửa đêm không đổi được nó. */
+  const dayOf = () => date ?? localDateStr();
+  /*
+    ── mất mạng thì XẾP HÀNG, như ghi bữa bằng tay (#57) ──
 
-      const n = (v: number | null | undefined) => Math.round(Number(v) || 0);
-      const total = (k: keyof PlannedFood) =>
-        foods.reduce((s, f) => s + (Number(f[k]) || 0), 0);
+    "Thêm vào bữa ăn" (thực đơn, bài Recipe) là ghi nhật ký TẠO MỚI — đúng
+    loại việc `offline-write.ts` giữ lại: người ta đã ăn, app chỉ là tờ giấy.
+    Trước #49 nó bị React Query tạm dừng im lặng; #49 cho nó từ chối thành
+    tiếng (`useOnlineMutation`), tốt hơn nhưng sai đường: cùng một bữa, ghi tay
+    thì được giữ lại, bấm từ thực đơn thì không.
 
-      const { data: entry, error } = await supabase
-        .from('meal_entries')
-        .insert({
-          user_id: user.id,
-          meal_type: mealType,
-          total_kcal: Math.round(total('kcal')),
-          total_protein_g: Math.round(total('protein_g')),
-          total_carbs_g: Math.round(total('carbs_g')),
-          total_fat_g: Math.round(total('fat_g')),
-          // See the note above: the plan has no fibre to carry over.
-          total_fiber_g: 0,
-          ...diaryStamp(dateStr),
-        })
-        .select('id')
-        .single();
-      if (error) throw error;
-
-      const { error: itemsError } = await supabase.from('meal_entry_items').insert(
-        foods.map((f) => ({
-          meal_entry_id: entry.id,
-          food_item_id: f.food_item_id ?? null,
-          food_name: f.food_name,
-          // The planned row is the portion, so it is one of itself
-          servings: 1,
-          kcal: n(f.kcal),
-          protein_g: n(f.protein_g),
-          carbs_g: n(f.carbs_g),
-          fat_g: n(f.fat_g),
-          fiber_g: 0,
-        })),
-      );
-      if (itemsError) throw itemsError;
-
-      await recomputeDailyLog(user.id, dateStr);
+    Nên nó là đúng mutation của `log-meal`: khoá `OFFLINE_WRITE_KEY`, KHÔNG
+    `mutationFn` riêng (hàm mặc định trong `offline-write.ts` mới là hàm chạy
+    sau một lần khởi động lại — `offline-durable.mjs`), biến là một
+    `OfflineWrite` loại `meal` thuần dữ liệu, id của bữa và của từng món tạo
+    NGAY lúc bấm. Có mạng thì hàm mặc định chạy ngay: `upsert` theo id rồi dựng
+    lại ngày — việc đường cũ làm, cộng thêm việc không nhân đôi khi phát lại.
+  */
+  const m = useMutation<void, Error, OfflineWrite>({
+    mutationKey: [...OFFLINE_WRITE_KEY],
+    onSuccess: (_d, w) => {
+      if (w.kind === 'meal') invalidateLogQueries(qc, user?.id, localDateStr(new Date(w.dateTime)));
     },
-    onSuccess: () => invalidateLogQueries(qc, user?.id, dateStr),
   });
+
+  /**
+   * `'saved'` khi server đã nhận; `'queued'` khi mất mạng và bữa đã vào hàng
+   * đợi bền. Không chờ một mutation bị tạm dừng: nó chỉ xong khi có mạng lại,
+   * và một nút chờ nó là nút quay mãi.
+   */
+  const log = async ({ mealType, foods }: { mealType: string; foods: PlannedFood[] }): Promise<'saved' | 'queued'> => {
+    if (!user) throw new Error('Not signed in');
+    if (foods.length === 0) throw new Error('Nothing planned');
+
+    const n = (v: number | null | undefined) => Math.round(Number(v) || 0);
+    const total = (k: keyof PlannedFood) =>
+      foods.reduce((s, f) => s + (Number(f[k]) || 0), 0);
+
+    const write: OfflineWrite = {
+      kind: 'meal',
+      userId: user.id,
+      entryId: Crypto.randomUUID(),
+      dateTime: diaryStampAt(dayOf()),
+      mealType,
+      totals: {
+        kcal: Math.round(total('kcal')),
+        protein_g: Math.round(total('protein_g')),
+        carbs_g: Math.round(total('carbs_g')),
+        fat_g: Math.round(total('fat_g')),
+        // See the note above: the plan has no fibre to carry over.
+        fiber_g: 0,
+      },
+      items: foods.map((f) => ({
+        id: Crypto.randomUUID(),
+        food_item_id: f.food_item_id ?? null,
+        food_name: f.food_name,
+        // The planned row is the portion, so it is one of itself
+        servings: 1,
+        kcal: n(f.kcal),
+        protein_g: n(f.protein_g),
+        carbs_g: n(f.carbs_g),
+        fat_g: n(f.fat_g),
+        fiber_g: 0,
+      })),
+    };
+    if (offlineNow()) {
+      m.mutate(write);
+      return 'queued';
+    }
+    await m.mutateAsync(write);
+    return 'saved';
+  };
+
+  /* Đang GỬI, không phải đang NẰM TRONG HÀNG: một bữa đã xếp hàng lúc mất mạng
+     ở trạng thái pending (tạm dừng) cho tới khi có mạng lại, và `meal-plan`
+     chặn bấm khi `isPending` — tức lần ghi thứ hai lúc mất mạng sẽ bị nuốt im
+     lặng. Bữa nằm trong hàng thì không chặn gì. */
+  return { log, isPending: m.isPending && !m.isPaused };
 }
 
 /**

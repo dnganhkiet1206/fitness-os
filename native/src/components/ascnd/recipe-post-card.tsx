@@ -112,8 +112,10 @@ export function RecipePostCard({
     if (foods.length === 0) return;
     const pick = (mealType: string, label: string) => async () => {
       try {
-        await addMeal.mutateAsync({ mealType, foods });
-        toast.success(i18n.nRcAdded.replace('{meal}', label));
+        /* Mất mạng thì bữa vào hàng đợi bền và câu báo nói đúng thế (#57) —
+           không chờ một mutation bị tạm dừng, thứ chỉ xong khi có mạng lại. */
+        const r = await addMeal.log({ mealType, foods });
+        toast.success((r === 'queued' ? i18n.nRcAddedQueued : i18n.nRcAdded).replace('{meal}', label));
       } catch (e) {
         toast.fail(e as Error);
       }

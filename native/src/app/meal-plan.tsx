@@ -120,15 +120,13 @@ export default function MealPlanScreen() {
     if (foods.length === 0 || logMeal.isPending) return;
     const write = () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      logMeal.mutate(
-        { mealType: meal, foods },
-        {
-          onSuccess: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            toast.success(i18n.nMpEatDone.replace('{m}', mealLabel(meal)));
-          },
-          onError: (e: Error) => toast.fail(e),
+      /* Mất mạng thì bữa vào hàng đợi bền (#57) và câu báo nói đúng thế. */
+      logMeal.log({ mealType: meal, foods }).then(
+        (r) => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          toast.success((r === 'queued' ? i18n.nMpEatQueued : i18n.nMpEatDone).replace('{m}', mealLabel(meal)));
         },
+        (e: Error) => toast.fail(e),
       );
     };
     /*
