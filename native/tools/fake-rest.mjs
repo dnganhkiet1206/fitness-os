@@ -362,6 +362,140 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
   globalThis.__writeCases = WRITE_CASES.length;
 }
 
+/* ── vế 7 (#68): trạng thái mạng chỉ đổi qua goOnline/goOffline ─────────────
+   `setOffline(false)` của Playwright không bắn `navigator.connection` 'change',
+   mà NetInfo bản web chỉ nghe nó; từ lần mất mạng thứ hai `setOffline(true)`
+   cũng thôi bắn (#62). Một kịch bản gọi thẳng nó thì app không bao giờ thấy
+   mạng đổi, và vế "có mạng lại thì…" xanh mà không đo gì — vế Thích (#45) và
+   ngôi sao (#49) từng như thế. Đọc bằng trình phân tích cú pháp, không bằng
+   regex: `live.mjs` có `'**' + '/*.supabase.co/**'` trong một chuỗi, và mọi
+   cách bỏ chú thích bằng regex sẽ nuốt code sau nó. */
+{
+  const { createRequire } = await import('node:module');
+  const { pathToFileURL } = await import('node:url');
+  const { parse } = createRequire(pathToFileURL(path.join(ROOT, 'package.json')))('@babel/parser');
+  const HELPERS = new Set(['goOnline', 'goOffline']);
+  const propName = (m) =>
+    m && (m.type === 'MemberExpression' || m.type === 'OptionalMemberExpression')
+      ? !m.computed && m.property.type === 'Identifier'
+        ? m.property.name
+        : m.property.type === 'StringLiteral'
+          ? m.property.value
+          : null
+      : null;
+  const fnName = (node, parent) =>
+    node.id?.name ?? (parent?.type === 'VariableDeclarator' && parent.id.type === 'Identifier' ? parent.id.name : null);
+  /** Mọi chỗ đổi trạng thái mạng NGOÀI hai hàm hỗ trợ, và thân của hai hàm ấy. */
+  const networkToggles = (src) => {
+    const ast = parse(src, { sourceType: 'module', allowAwaitOutsideFunction: true });
+    const bare = [];
+    const helpers = new Map();
+    const walk = (node, parent, owner) => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) {
+        for (const c of node) walk(c, parent, owner);
+        return;
+      }
+      if (typeof node.type !== 'string') return;
+      let own = owner;
+      if (/Function/.test(node.type)) {
+        const n = fnName(node, parent);
+        if (n) own = n;
+        if (n && HELPERS.has(n) && node.type === 'FunctionDeclaration') helpers.set(n, { toggles: 0, change: 0 });
+      }
+      const h = helpers.get(own);
+      /* `a?.b()` là OptionalCallExpression: `navigator.connection?.dispatchEvent(…)` của
+         chính goOnline viết như thế, và `ctx?.setOffline(…)` không được lọt. */
+      if (node.type === 'CallExpression' || node.type === 'OptionalCallExpression') {
+        const p = propName(node.callee);
+        if (p === 'setOffline' || p === 'emulateNetworkConditions') {
+          if (HELPERS.has(own) && h) h.toggles++;
+          else bare.push(`dòng ${node.loc.start.line}: \`${p}(…)\`${own ? ` trong \`${own}\`` : ''}`);
+        }
+        if (p === 'dispatchEvent' && HELPERS.has(own) && h) {
+          const a = node.arguments[0];
+          if (a?.type === 'NewExpression' && a.callee.name === 'Event' && a.arguments[0]?.value === 'change') h.change++;
+        }
+        if (p === 'newContext' || p === 'launchPersistentContext') {
+          for (const arg of node.arguments) {
+            for (const pr of arg?.type === 'ObjectExpression' ? arg.properties : []) {
+              const k = pr.key?.name ?? pr.key?.value;
+              if (k === 'offline') bare.push(`dòng ${pr.loc.start.line}: \`${p}({ offline })\` — mở trang đã mất mạng mà NetInfo không được báo`);
+            }
+          }
+        }
+      }
+      for (const k of Object.keys(node)) {
+        if (k === 'loc' || k === 'leadingComments' || k === 'trailingComments' || k === 'innerComments') continue;
+        walk(node[k], node, own);
+      }
+    };
+    walk(ast.program, null, null);
+    return { bare, helpers };
+  };
+
+  /* Ca tự kiểm: luật phải đỏ đúng những chỗ này và im ở những chỗ kia. */
+  const HELPER_SRC =
+    "async function goOnline(page) { await page.context().setOffline(false); await page.evaluate(() => navigator.connection?.dispatchEvent(new Event('change'))); }\n" +
+    "async function goOffline(page) { await page.context().setOffline(true); await page.evaluate(() => navigator.connection?.dispatchEvent(new Event('change'))); }\n";
+  const NET_CASES = [
+    ['setOffline(false) trần trong một kịch bản', HELPER_SRC + 'const S = [{ async run(page) { await page.context().setOffline(false); } }];', 1],
+    ['setOffline qua chỉ số chuỗi', HELPER_SRC + "async function f(ctx) { await ctx['setOffline'](true); }", 1],
+    ['newContext({ offline: true })', HELPER_SRC + 'async function f(b) { await b.newContext({ offline: true }); }', 1],
+    ['CDP emulateNetworkConditions', HELPER_SRC + 'async function f(c) { await c.net.emulateNetworkConditions({}); }', 1],
+    ['ctx?.setOffline (optional chaining)', HELPER_SRC + 'async function f(ctx) { await ctx?.setOffline(false); }', 1],
+    ['chỉ trong goOnline/goOffline', HELPER_SRC, 0],
+    ['trong chú thích và trong chuỗi', HELPER_SRC + "// page.context().setOffline(false)\n/* ctx.setOffline(true) */\nconst s = 'page.context().setOffline(false)';\nconst r = '**/*.supabase.co/**';", 0],
+  ];
+  for (const [label, src, want] of NET_CASES) {
+    let got = -1;
+    try { got = networkToggles(src).bare.length; } catch { got = -1; }
+    if (got !== want) problems.push(`luật mạng (#68) tự kiểm sai: "${label}" ra ${got} chỗ, phải là ${want}`);
+  }
+  {
+    const broken = networkToggles(
+      'async function goOnline(page) { await page.context().setOffline(false); }\n' +
+        "async function goOffline(page) { await page.context().setOffline(true); await page.evaluate(() => navigator.connection?.dispatchEvent(new Event('change'))); }",
+    );
+    if (broken.helpers.get('goOnline')?.change !== 0 || broken.helpers.get('goOffline')?.change !== 1) {
+      problems.push('luật mạng (#68) tự kiểm sai: không phân biệt được goOnline thiếu lệnh bắn "change" với goOffline đủ');
+    }
+  }
+
+  let files = 0;
+  for (const f of readdirSync(path.join(ROOT, 'tools')).filter((n) => /^live.*\.mjs$/.test(n)).sort()) {
+    files++;
+    const src = readFileSync(path.join(ROOT, 'tools', f), 'utf8');
+    let r;
+    try {
+      r = networkToggles(src);
+    } catch (e) {
+      problems.push(`tools/${f}: không phân tích được để soát trạng thái mạng (#68): ${e.message}`);
+      continue;
+    }
+    for (const b of r.bare) {
+      problems.push(
+        `tools/${f} ${b} — đổi trạng thái mạng ngoài goOnline/goOffline: NetInfo bản web không được báo, app không bao giờ thấy mạng đổi, ` +
+          'và vế "có mạng lại thì…" xanh mà không đo gì (#62, #68). Dùng goOnline(page) / goOffline(page)',
+      );
+    }
+    if (f === 'live.mjs') {
+      for (const name of HELPERS) {
+        const s = r.helpers.get(name);
+        if (!s) problems.push(`tools/live.mjs không còn \`async function ${name}(page)\` — luật #68 không có gì để dẫn kịch bản tới`);
+        else if (!s.toggles || !s.change) {
+          problems.push(
+            `tools/live.mjs: \`${name}\` phải vừa gọi setOffline vừa bắn \`navigator.connection\` 'change' — thiếu ` +
+              `${!s.toggles ? 'setOffline' : "dispatchEvent(new Event('change'))"}, nên NetInfo bản web không thấy mạng đổi (#62)`,
+          );
+        }
+      }
+    }
+  }
+  globalThis.__netCases = NET_CASES.length;
+  globalThis.__netFiles = files;
+}
+
 if (problems.length) {
   console.error('máy chủ giả trả lời sai câu hỏi:');
   for (const p of problems) console.error(`  ✗ ${p}`);
@@ -377,5 +511,7 @@ console.log(
     'được trả 400 / 42703 như PostgREST, câu hợp lệ thì không, và `live.mjs` dùng đúng bộ ấy trong route giả. ' +
     `Và ${REQUEST_CASES.length} ca #40: bộ lọc, not., or=/and= lồng nhau, order=, on_conflict= (42703) và thân POST/PATCH (PGRST204) nhắc cột lạ đều bị từ chối, câu hợp lệ thì không. ` +
     `Và ${globalThis.__writeCases} ca lệnh ghi (#52): trùng khoá → 409, upsert gộp, DEFAULT được điền, DELETE/PATCH theo eq áp đúng hàng, bộ lọc không hiểu thì KHÔNG áp; mỗi trang một bản sao thế giới. ` +
-    'Và `/rest/v1/rpc/<tên>` được rẽ sang nhánh hàm (#38): đối số soát theo `types.ts`, kết quả từ `live-rpc.mjs`',
+    'Và `/rest/v1/rpc/<tên>` được rẽ sang nhánh hàm (#38): đối số soát theo `types.ts`, kết quả từ `live-rpc.mjs`. ' +
+    `Và trạng thái mạng (#68): ${globalThis.__netFiles} tệp tools/live*.mjs, đọc bằng trình phân tích cú pháp, không đổi mạng ở đâu ngoài goOnline/goOffline, ` +
+    `và cả hai hàm ấy đều bắn \`navigator.connection\` 'change' (${globalThis.__netCases} ca tự kiểm: trần, chỉ số chuỗi, newContext offline, CDP; chú thích và chuỗi thì im)`,
 );
