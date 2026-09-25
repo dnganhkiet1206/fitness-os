@@ -568,6 +568,11 @@ const STEPS = [
   ['hộp hỏi lại trên web', 'node', ['tools/web-alert.mjs']],
   ['lỗi ghi được ném', 'node', ['tools/error-thrown.mjs']],
   ['chữ ký RPC', 'node', ['tools/rpc-signatures.mjs']],
+  /* Mỗi kịch bản SQL có ít nhất một ca đột biến nhắm vào nó (#79, #81, #82).
+     Không cần Postgres: đọc nhãn ASSERT của các bộ và `b_cases.py`. Thêm một
+     kịch bản mà không kèm ca phá thử nó thì đỏ, và nêu đúng nhãn. Phép phá
+     thật (Postgres) chạy ở CI `sql-community.yml` (#78). */
+  ['phủ đột biến SQL', 'python3', ['../supabase/tests/community/b_reverse.py', '--coverage']],
   ['cột bảng', 'node', ['tools/type-columns.mjs']],
   /* Câu đếm tiếng Anh (#67, người làm: B): "{n} days" ở n = 1 đọc thành "1 days".
      Chuỗi mang bộ chọn `{n:day|days}` và được điền bằng `fillCopy`; một khoá có
