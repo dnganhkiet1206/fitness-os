@@ -151,6 +151,24 @@ CASES += [
   dict(suite=P, id='P18', mig=PM, how='GRANT share_progress cho anon',
        old='REVOKE EXECUTE ON FUNCTION public.share_progress(integer, boolean, boolean, uuid, text, text) FROM PUBLIC, anon;',
        new='GRANT EXECUTE ON FUNCTION public.share_progress(integer, boolean, boolean, uuid, text, text) TO anon;', expect='P18 anon'),
+  # Phủ đủ nhãn (#81, --coverage). Mỗi ca phá ĐÚNG thứ nhãn ấy canh mà để yên
+  # mọi thứ các kịch bản đứng trước nó trong cùng khối DO đọc.
+  dict(suite=P, id='P3', mig=PM, how='chuỗi tuần cân nặng chỉ còn điểm cuối (đầu/cuối vẫn đúng)',
+       old="      'series', (SELECT jsonb_agg(round(v::numeric, 1) ORDER BY b) FROM wk)", nth=1,
+       new="      'series', jsonb_build_array((SELECT round(v::numeric, 1) FROM wk ORDER BY b DESC LIMIT 1))",
+       expect='P3 chuỗi tuần'),
+  dict(suite=P, id='P4', mig=PM, how='số tuần ghi thành số NGÀY', old="    'weeks',  p_weeks,", new="    'weeks',  p_weeks * 7,",
+       expect='P4 số tuần'),
+  dict(suite=P, id='P6', mig=PM, how='vòng eo: điểm đầu lấy lần đo MỚI nhất',
+       old="      'start',  round((SELECT waist_cm FROM pts ORDER BY date ASC LIMIT 1)::numeric, 1),",
+       new="      'start',  round((SELECT waist_cm FROM pts ORDER BY date DESC LIMIT 1)::numeric, 1),", expect='P6 vòng eo'),
+  dict(suite=P, id='P7', mig=PM, how='khối sức mạnh không mang tên bài', old="        'name',       v_name,", new="        'name',       NULL::text,",
+       expect='P7 tên bài'),
+  dict(suite=P, id='P13', mig=PM, how="bài đăng mang loại 'workout'", old="    'progress',\n    NULL,", new="    'workout',\n    NULL,",
+       expect='P13 loại bài'),
+  dict(suite=P, id='P14', mig=PM, how='đăng bằng một payload KHÁC bản xem trước (bỏ cân nặng)',
+       old='    public.build_progress_payload(p_weeks, p_weight, p_waist, p_lift_exercise_id),',
+       new='    public.build_progress_payload(p_weeks, false, p_waist, p_lift_exercise_id),', expect='P14 bài đăng khác'),
 ]
 
 C = 'challenges'
@@ -258,6 +276,23 @@ CASES += [
   dict(suite=R, id='R18', mig=RM, how='bỏ chốt visibility',
        old="  IF p_visibility NOT IN ('public', 'followers') THEN", new='  IF false THEN', expect='R18 visibility'),
   dict(suite=R, id='R18b', mig=RM, how='ĐỐI CHỨNG: tên lệch mép (> 79)', old='char_length(v_title) > 80', new='char_length(v_title) > 79', expect='R18b'),
+  # Phủ đủ nhãn (#81). RM khớp CẢ hai tệp định nghĩa `share_recipe` (#7), nên
+  # mỗi chuỗi có đúng một lần ở mỗi tệp (đã đếm lúc viết).
+  dict(suite=R, id='R3', mig=RM, how="bài đăng mang loại 'workout'", old="    'recipe',\n    p_entry_id,", new="    'workout',\n    p_entry_id,",
+       expect='R3 loại bài'),
+  dict(suite=R, id='R4', mig=RM, how='không cắt khoảng trắng ở tên món',
+       old="  v_title       text := btrim(coalesce(p_title, ''));", new="  v_title       text := coalesce(p_title, '');", expect='R4 tên món'),
+  dict(suite=R, id='R6', mig=RM, how='đếm nguyên liệu chỉ tính dòng có món trong thư viện',
+       old='    count(*)\n    INTO v_ingredients, v_n', new='    count(f.id)\n    INTO v_ingredients, v_n', expect='R6 số nguyên liệu'),
+  dict(suite=R, id='R7', mig=RM, how='nguyên liệu xếp theo tên thay vì thứ tự ghi',
+       old=") ORDER BY it.created_at, it.id), '[]'::jsonb),", new=") ORDER BY it.food_name), '[]'::jsonb),", expect='R7 thứ tự'),
+  dict(suite=R, id='R8', mig=RM, how='khối lượng quên nhân servings (một khẩu phần)',
+       old='THEN round(it.servings * f.serving_g) END', new='THEN round(f.serving_g) END', expect='R8 ức gà'),
+  dict(suite=R, id='R11', mig=RM, how='bỏ loại bữa khỏi payload',
+       old="      'mealType',        v_meal_type,", new="      'mealType',        NULL::text,", expect='R11 loại bữa'),
+  dict(suite=R, id='R20', mig=FM, how='policy đọc bài chỉ còn chính tác giả',
+       old='  USING (\n    author_id = auth.uid()\n    OR (\n      NOT hidden', new='  USING (\n    author_id = auth.uid()\n    OR (\n      false AND NOT hidden',
+       expect='R20 người khác'),
   dict(suite=R, id='R19', mig=RM, how='bỏ chốt hồ sơ',
        old='  IF NOT EXISTS (SELECT 1 FROM public.community_profiles WHERE user_id = v_uid) THEN', new='  IF false THEN', expect='R19'),
   # #74: ca duy nhất của `recipe.reverse.sh` chưa có ở đây — 12 ca kia trùng ý

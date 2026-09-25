@@ -83,6 +83,12 @@ COVERAGE_OK = {
         'H10': _GRANT,
     },
     'search': {'G5': _GRANT},
+    'recipe': {
+        'R9': 'CÙNG công thức với R8 (servings × serving_g), trên hàng thứ hai — servings '
+              'nguyên (2 × 100). Mọi phép phá công thức làm R8 đỏ trước trong cùng khối DO; '
+              'một phép chỉ lệch hàng cơm mà không lệch hàng ức gà là phá theo DỮ LIỆU, không '
+              'theo luật (#81). R9 là điểm dữ liệu thứ hai của R8, không phải một chốt riêng.',
+    },
     'foundation': {
         '35b': 'đối chứng của DỮ LIỆU THỬ, không của một luật: nó đỏ khi chính bộ test xoá bài '
                'công khai cuối cùng trước lượt anon (lỗi #14 của 35), không khi migration sai. '
