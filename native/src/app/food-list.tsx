@@ -253,7 +253,11 @@ const stylesFor = makeStyles((c, m) => ({
     backgroundColor: m.onPage,
     paddingHorizontal: spacing.md - 4,
   },
-  searchInput: { flex: 1, color: c.foreground, fontSize: 15, height: '100%' },
+  /* `minWidth: 0` (#73): trên web một `<input>` có bề rộng tự nhiên lớn theo cỡ
+     chữ, và `min-width: auto` của flex không cho nó co dưới mức ấy — ở chữ ×1.3
+     ô lọc tràn 28px sang nút "+" bên cạnh (lượt quét hẹp: hai đích chạm chồng
+     nhau). Yoga trên iOS vốn co về 0; dòng này chỉ làm web giống thế. */
+  searchInput: { flex: 1, minWidth: 0, color: c.foreground, fontSize: 15, height: '100%' },
   addBtn: {
     width: 44,
     height: 44,

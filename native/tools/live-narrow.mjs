@@ -68,7 +68,7 @@ export const NARROW_ROUTES = [
 /**
  * Các màn Dinh dưỡng của B (#55): nhiều chữ nhất app và chưa màn nào từng được
  * quét ở 320. Tách khỏi danh sách Cộng đồng để mỗi người biết màn nào là của
- * mình khi lượt quét đỏ.
+ * mình khi lượt quét đỏ. Từ #73 chạy cả lượt chữ lớn.
  */
 export const NARROW_ROUTES_NUTRITION = [
   '/nutrition',

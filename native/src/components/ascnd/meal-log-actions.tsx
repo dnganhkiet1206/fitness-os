@@ -141,7 +141,10 @@ export function MealLogActions({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
             <View style={[styles.chip, w.lead ? styles.chipLead : styles.chipPlain]}>
               <Icon icon={w.icon} size={20} color={w.lead ? c.readinessGreen : c.mutedForeground} />
             </View>
-            <Text style={styles.label} numberOfLines={1}>
+            {/* Hai dòng (#73): ô là một phần tư bề ngang, và ở chữ ×1.3 "Chụp
+                ảnh" thành "Chụp…". Ô không có nền, nên một nhãn hai dòng không
+                làm lệch hình của hàng. */}
+            <Text style={styles.label} numberOfLines={2}>
               {i18n[w.label] as string}
             </Text>
           </PressScale>
@@ -172,5 +175,5 @@ const stylesFor = makeStyles((c, m) => ({
   /* Ba ô còn lại lùi về bề mặt lõm chung của app — cùng thứ mà mọi ô con khác
      đang dùng, nên chúng thôi là bốn vật thể riêng và thành một hàng. */
   chipPlain: { backgroundColor: m.inset.bg },
-  label: { ...type.caption, color: c.foreground },
+  label: { ...type.caption, color: c.foreground, textAlign: 'center' },
 }));

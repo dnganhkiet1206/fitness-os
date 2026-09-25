@@ -2761,15 +2761,15 @@ try {
     let opened = 0;
     let largeOpened = 0;
     let clipExempted = 0;
-    /* Cỡ chữ mặc định ở cả hai ngôn ngữ, rồi chữ lớn (#56) ở LARGE_LANGS.
-       Màn Dinh dưỡng (#55) chạy ở lượt cỡ chữ mặc định; lượt chữ lớn vẫn là
-       phạm vi #56 (Cộng đồng). */
+    /* Cỡ chữ mặc định ở cả hai ngôn ngữ, rồi chữ lớn (#56) ở LARGE_LANGS —
+       CÙNG một bộ màn. Màn Dinh dưỡng (#55) từng chỉ chạy ở cỡ mặc định, trong
+       khi đó là nơi nhiều số và nhãn ngắn nhất app (#73). */
     const passes = [
       ...NARROW_LANGS.map((lang) => ({ lang, large: false })),
       ...LARGE_LANGS.map((lang) => ({ lang, large: true })),
     ];
     for (const { lang, large } of passes) {
-      for (const route of pickRoutes(large ? [...NARROW_ROUTES, ...NARROW_ROUTES_MAIN] : [...NARROW_ROUTES, ...NARROW_ROUTES_NUTRITION, ...NARROW_ROUTES_MAIN])) {
+      for (const route of pickRoutes([...NARROW_ROUTES, ...NARROW_ROUTES_NUTRITION, ...NARROW_ROUTES_MAIN])) {
         const { browser, page, errors } = await openPage(chromium, route, 'full', 9000, { ...NARROW, lang });
         try {
           const at = `[320 ${lang}${large ? ` chữ ×${LARGE_TEXT}` : ''}] ${route}`;
@@ -2900,7 +2900,7 @@ const narrowClaim = globalThis.__narrow
   ? `${globalThis.__narrow.opened} lượt mở màn Cộng đồng, Dinh dưỡng và các tab chính ở ${NARROW.width}×${NARROW.height} (${NARROW_LANGS.join(' + ')}): ` +
     'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt thành "…", không ô chọn nào ' +
     'bị mép vùng cuộn cắt ngang, không hai đích chạm nào chồng lên nhau; ' +
-    `thêm ${globalThis.__narrow.largeOpened} lượt màn Cộng đồng và các tab chính với chữ ×${LARGE_TEXT} (${LARGE_LANGS.join(' + ')}, giả lập Dynamic Type): ` +
+    `thêm ${globalThis.__narrow.largeOpened} lượt màn Cộng đồng, Dinh dưỡng (#73) và các tab chính với chữ ×${LARGE_TEXT} (${LARGE_LANGS.join(' + ')}, giả lập Dynamic Type): ` +
     'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt, không hai đích chạm nào chồng lên nhau ' +
     `(${globalThis.__narrow.contentCut} đoạn nội dung người dùng được cắt đúng luật numberOfLines; ` +
     `${globalThis.__narrow.clipExempted} ô vắt mép được miễn theo NARROW_CLIP_OK, mỗi mục một lý do)`
