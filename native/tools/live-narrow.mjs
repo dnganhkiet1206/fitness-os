@@ -75,6 +75,13 @@ export const NARROW_ROUTES_NUTRITION = [
   '/meal-plans',
   '/grocery',
 ];
+/**
+ * Các tab chính (#64): những màn người ta mở nhiều nhất, chưa từng được quét ở
+ * 320 hay ở chữ lớn. Khác hai danh sách trên, danh sách này chạy CẢ lượt chữ
+ * lớn — Hôm nay và Tập luyện là nơi Dynamic Type được bật nhiều nhất, và cũng
+ * là nơi có số trong hình (vòng sẵn sàng) mang trần `RING_TEXT_MAX_SCALE`.
+ */
+export const NARROW_ROUTES_MAIN = ['/', '/workouts', '/workouts/plan', '/workouts/library', '/assistant', '/log-workout'];
 /*
   Ngoại lệ của luật 3 (ô chọn vắt qua mép vùng cuộn), MỖI cái một lý do (#55).
 

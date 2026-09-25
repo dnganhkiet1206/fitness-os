@@ -644,7 +644,10 @@ function RowBody({
           <Icon icon={ICON[itemKey]} size={20} color={quiet ? alpha(tint, DONE_ICON_ALPHA) : tint} />
         </View>
         <View style={styles.text}>
-          <Text style={[styles.label, quiet && styles.labelDone]} numberOfLines={1}>
+          {/* Hai dòng (#64): ở 320 với chữ lớn, nút hành động và đồng hồ nhắc bóp
+              nhãn còn "Giấc n…", "Sinh t…". Ở cỡ mặc định nó vẫn một dòng, nên
+              hàng vẫn đúng một chiều cao như chủ dự án yêu cầu (xem `text`). */}
+          <Text style={[styles.label, quiet && styles.labelDone]} numberOfLines={2}>
             {label}
           </Text>
           <ReminderRow itemKey={itemKey} />

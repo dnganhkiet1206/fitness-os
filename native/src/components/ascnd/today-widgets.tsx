@@ -565,7 +565,9 @@ export function SmartTipsCard() {
             Câu mô tả vẫn còn, nhưng chỉ ở NGÀY CHƯA CÓ SỐ — lúc ấy nó là thứ
             duy nhất còn nói được điều gì.
           */}
-          <Text style={styles.tipsSub} numberOfLines={1}>{live ?? i18n.nTipsHint}</Text>
+          {/* Hai dòng, không một (#64): ở 320 câu mô tả bị cắt thành "AI phân tích từ
+              dữ liệu gần…" ở CẢ cỡ chữ mặc định, cả hai ngôn ngữ. */}
+          <Text style={styles.tipsSub} numberOfLines={2}>{live ?? i18n.nTipsHint}</Text>
         </View>
         <Icon icon={ChevronRight} size={17} color={c.mutedForeground} />
       </GlassCard>

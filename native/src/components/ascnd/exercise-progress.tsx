@@ -153,7 +153,9 @@ export function ExerciseProgress({
       }}>
       <View style={styles.strip}>
         <Icon icon={ICON[trend]} size={13} color={tint} />
-        <Text style={styles.stripMain} numberOfLines={1}>
+        {/* Hai dòng (#64): đây là SỐ LIỆU của lần trước, và ở 320 với chữ lớn một
+            dòng cắt đúng phần số lần — "Lần trước 55 kg × 1…". */}
+        <Text style={styles.stripMain} numberOfLines={2}>
           {i18n.nLgLastTime.replace('{v}', text)}
         </Text>
         {pct !== null && pct !== 0 ? (
@@ -207,7 +209,9 @@ const stylesFor = makeStyles((c) => ({
     gap: 6,
     minHeight: 44,
   },
-  stripMain: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
+  /* `flexShrink` để chữ XUỐNG DÒNG trong phần còn lại của hàng thay vì đẩy % và mũi
+     tên ra ngoài (#64). */
+  stripMain: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'], flexShrink: 1 },
   stripPct: { ...type.footnote, fontWeight: '700', fontVariant: ['tabular-nums'] },
   spacer: { flex: 1, minWidth: 0 },
 }));

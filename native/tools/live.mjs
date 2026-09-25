@@ -90,7 +90,7 @@ import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
 import { requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
 import { RPC_FIXTURES } from './live-rpc.mjs';
 import {
-  LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, NARROW_ROUTES_NUTRITION, clipExempt, copyPatterns,
+  LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, NARROW_ROUTES_MAIN, NARROW_ROUTES_NUTRITION, clipExempt, copyPatterns,
   enlargeText, narrowFindings,
 } from './live-narrow.mjs';
 
@@ -2175,7 +2175,7 @@ try {
       ...LARGE_LANGS.map((lang) => ({ lang, large: true })),
     ];
     for (const { lang, large } of passes) {
-      for (const route of large ? NARROW_ROUTES : [...NARROW_ROUTES, ...NARROW_ROUTES_NUTRITION]) {
+      for (const route of large ? [...NARROW_ROUTES, ...NARROW_ROUTES_MAIN] : [...NARROW_ROUTES, ...NARROW_ROUTES_NUTRITION, ...NARROW_ROUTES_MAIN]) {
         const { browser, page, errors } = await openPage(chromium, route, 'full', 9000, { ...NARROW, lang });
         try {
           const at = `[320 ${lang}${large ? ` chữ ×${LARGE_TEXT}` : ''}] ${route}`;
@@ -2284,10 +2284,10 @@ if (problems.length) {
   nobody can trust is worse than a red one.
 */
 const narrowClaim = globalThis.__narrow
-  ? `${globalThis.__narrow.opened} lượt mở màn Cộng đồng và Dinh dưỡng ở ${NARROW.width}×${NARROW.height} (${NARROW_LANGS.join(' + ')}): ` +
+  ? `${globalThis.__narrow.opened} lượt mở màn Cộng đồng, Dinh dưỡng và các tab chính ở ${NARROW.width}×${NARROW.height} (${NARROW_LANGS.join(' + ')}): ` +
     'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt thành "…", không ô chọn nào ' +
     'bị mép vùng cuộn cắt ngang; ' +
-    `thêm ${globalThis.__narrow.largeOpened} lượt màn Cộng đồng với chữ ×${LARGE_TEXT} (${LARGE_LANGS.join(' + ')}, giả lập Dynamic Type): ` +
+    `thêm ${globalThis.__narrow.largeOpened} lượt màn Cộng đồng và các tab chính với chữ ×${LARGE_TEXT} (${LARGE_LANGS.join(' + ')}, giả lập Dynamic Type): ` +
     'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt ' +
     `(${globalThis.__narrow.contentCut} đoạn nội dung người dùng được cắt đúng luật numberOfLines; ` +
     `${globalThis.__narrow.clipExempted} ô vắt mép được miễn theo NARROW_CLIP_OK, mỗi mục một lý do)`
