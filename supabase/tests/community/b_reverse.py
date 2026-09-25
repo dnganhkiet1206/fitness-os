@@ -46,6 +46,7 @@ vào repo chỉ đổi phần môi trường: đường dẫn tương đối, c�
 """
 import os
 import re
+import shlex
 import shutil
 import subprocess
 import sys
@@ -134,11 +135,21 @@ if '--coverage' in sys.argv:
     print(f"\n{missing_total} nhãn chưa từng bị phá thử")
     sys.exit(1 if missing_total else 0)
 
+# Rẽ theo QUYỀN, như `run.sh` (#78): `initdb` từ chối chạy dưới root, nên root
+# thì hạ quyền sang `postgres`; một người dùng thường (runner của CI) chạy thẳng.
+AS_ROOT = os.geteuid() == 0
+
+
+def as_pg(cmd):
+    return f'su postgres -c {shlex.quote(cmd)}' if AS_ROOT else cmd
+
+
 d = tempfile.mkdtemp(prefix='ascnd-rb-', dir='/var/tmp')
 os.chmod(d, 0o777)
-sh(f'id postgres >/dev/null 2>&1 || useradd -m postgres; chown postgres {d}')
-sh(f"su postgres -c '{BIN}/initdb -D {d}/data -A trust -U postgres >/dev/null'")
-started = sh(f"su postgres -c \"{BIN}/pg_ctl -w -D {d}/data -o '-p {PORT} -k {d} -c fsync=off' -l {d}/log start >/dev/null\"")
+if AS_ROOT:
+    sh(f'id postgres >/dev/null 2>&1 || useradd -m postgres; chown postgres {d}')
+sh(as_pg(f'{BIN}/initdb -D {d}/data -A trust -U postgres >/dev/null'))
+started = sh(as_pg(f"{BIN}/pg_ctl -w -D {d}/data -o '-p {PORT} -k {d} -c fsync=off' -l {d}/log start >/dev/null"))
 if started.returncode:
     sys.exit(f'không khởi động được Postgres ở cổng {PORT}: {started.stderr.strip()[:200]}')
 PSQL = f'psql -h {d} -p {PORT} -U postgres -q -v ON_ERROR_STOP=1'
@@ -236,7 +247,7 @@ try:
         print(f"{mark} {c['suite']:<13} {c['id']:<6} {verdict:<10} · {c['how']} — {detail}", flush=True)
         rows.append((c, verdict, detail))
 finally:
-    sh(f"su postgres -c '{BIN}/pg_ctl -D {d}/data stop -m fast >/dev/null'")
+    sh(as_pg(f'{BIN}/pg_ctl -D {d}/data stop -m fast >/dev/null'))
     shutil.rmtree(d, ignore_errors=True)
 
 bad = [r for r in rows if r[1] != 'ĐỎ ĐÚNG']

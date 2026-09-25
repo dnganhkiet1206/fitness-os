@@ -1,0 +1,57 @@
+# Test SQL của Cộng đồng — chạy khi `supabase/` đổi (#78).
+#
+# ── vì sao một workflow riêng ──
+#
+# `quality-gate.yml` chạy cổng của `native/`, và cổng ấy KHÔNG chạy các bộ SQL
+# của Cộng đồng: không `run.sh`, không `b_reverse.py`. Toàn bộ phân quyền của
+# Cộng đồng — RLS, RPC SECURITY DEFINER, quyền của anon, chặn hai chiều — được
+# kiểm bằng các bộ ấy và các ca đột biến của chúng, nhưng chỉ khi ai đó nhớ chạy
+# tay. Một migration mới làm hỏng một policy qua CI xanh.
+#
+# Riêng một tệp để `paths` lọc được: phần lớn các lần đẩy chỉ chạm `native/`,
+# và hai bước dưới đây không có gì để nói về chúng.
+#
+# ── hai bước, theo thứ tự ──
+#
+#   1. `run.sh`: mọi migration cộng đồng trên một cụm PostgreSQL 16 tạm, rồi mọi
+#      bộ kịch bản. Đỏ ở đây là một luật đã hỏng.
+#   2. `b_reverse.py`: phá từng luật một (mỗi ca một database mới, chạy MỌI bộ)
+#      và đòi đúng kịch bản của nó đỏ. Xanh ở bước 1 mà đỏ ở đây là một kịch bản
+#      không còn đo điều nó nói.
+#
+# Không `sudo` cho hai bước: cả hai rẽ theo quyền (root thì hạ sang `postgres`,
+# người dùng thường chạy thẳng), vì `initdb` từ chối chạy dưới root.
+
+name: Test SQL Cộng đồng
+
+on:
+  push:
+    branches: ['claude/**', main]
+    paths: ['supabase/**', '.github/workflows/sql-community.yml']
+  pull_request:
+    paths: ['supabase/**', '.github/workflows/sql-community.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sql:
+    # Ghim 24.04 như `quality-gate.yml`: `postgresql-16` là gói của noble.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PostgreSQL 16
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-16
+
+      - name: Bộ kịch bản (run.sh)
+        run: bash supabase/tests/community/run.sh
+
+      - name: Thử ngược (b_reverse.py)
+        run: python3 supabase/tests/community/b_reverse.py
