@@ -375,7 +375,7 @@ có mạng đọc lại từ server, nên đó là số của server.
 |---|---|---|---|
 | H1 | Bật **chế độ máy bay** → Hôm nay → bấm cộng nước **một lần** | Dải "Ngoại tuyến — đang hiển thị dữ liệu đã lưu"; số nước **tăng ngay**; câu "Đã lưu — sẽ đồng bộ khi có mạng" | ☐ |
 | H2 | Tắt chế độ máy bay, chờ ~10 giây | Dải Ngoại tuyến tắt; trên server có **đúng một** dòng nước mới — không phải hai | ☐ |
-| H3 | Lặp H1–H2 với: ghi bữa ăn · ghi buổi tập · cân nặng · giấc ngủ · số đo · chỉ số sinh học · "Ghi vào hôm nay" ở Thực đơn | Mỗi màn: câu "đã lưu — sẽ đồng bộ"; có mạng lại thì **đúng một** bản ghi mỗi lần bấm. Bữa ăn: các món nằm đúng dưới bữa ấy, không mồ côi | ☐ |
+| H3 | Lặp H1–H2 với: ghi bữa ăn · ghi buổi tập · cân nặng · giấc ngủ · số đo · chỉ số sinh học · "Ghi vào hôm nay" ở Thực đơn. *Chỉ số sinh học: sửa một số Apple Health đã đo (nhịp tim, SpO₂, nhịp thở) thì app HỎI LẠI trước khi lưu — trả lời hộp ấy, đừng tưởng là treo; HRV không qua hộp hỏi* | Mỗi màn: câu "đã lưu — sẽ đồng bộ"; có mạng lại thì **đúng một** bản ghi mỗi lần bấm. Bữa ăn: các món nằm đúng dưới bữa ấy, không mồ côi | ☐ |
 | H4 | Máy bay → ghi **hai** bữa khác nhau → có mạng lại | Hai bữa, theo **đúng thứ tự** đã ghi; tổng calo của ngày cộng đủ cả hai | ☐ |
 | H5 | Máy bay → ghi một bữa → **vuốt tắt app** → tắt máy bay → mở app | Bữa đã ghi được gửi sau khi mở, **đúng một lần**; màn Dinh dưỡng hiện bữa ấy mà không cần kéo làm mới | ☐ |
 | H6 | Máy bay → bấm **Thích** một bài · **Theo dõi** một người · **ngôi sao** Yêu thích một món | Mỗi lần: câu "Không có kết nối — chưa gửi, và không giữ lại để gửi sau."; trái tim / nút Theo dõi / ngôi sao **không đổi** | ☐ |
