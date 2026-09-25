@@ -188,7 +188,8 @@ export const RPC_FIXTURES = {
     },
   },
 
-  /* 20261001120000_community_badges.sql (#42) */
+  /* 20261001120000_community_badges.sql (#42), định nghĩa lại ở
+     20261001140000_community_badges_no_date.sql (#88): không trả ngày nhận. */
   community_user_badges: {
     sample: { p_user: 'c0000000-0000-4000-8000-0000000011a1' },
     run({ p_user } = {}, world) {
@@ -200,7 +201,7 @@ export const RPC_FIXTURES = {
         .filter((m) => m.user_id === p_user && m.claimed_at && byId.has(m.challenge_id))
         .sort((a, b) => (a.claimed_at < b.claimed_at ? 1 : -1))
         .slice(0, 50)
-        .map((m) => ({ challenge_id: m.challenge_id, title: byId.get(m.challenge_id).title, claimed_on: m.claimed_at.slice(0, 10) }));
+        .map((m) => ({ challenge_id: m.challenge_id, title: byId.get(m.challenge_id).title }));
     },
   },
 

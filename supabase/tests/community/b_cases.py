@@ -387,7 +387,14 @@ CASES += [
 # đang gộp ba bộ về một. Bộ đích `community_badges.test.sql` đứng ĐẦU theo tên,
 # nên "vạ lây" ở đây nghĩa là dữ liệu của nó làm hỏng một bộ chạy sau.
 B = 'badges'
+# `in`, không khớp đúng tên (#88): BM khớp CẢ tệp #42 LẪN
+# `…_community_badges_no_date.sql`, nơi hàm được định nghĩa lại — như
+# `community_recipe` (#7). Phá riêng bản cũ thì bản mới ghi đè, và ca xanh không
+# vì luật. Chuỗi thân hàm vì thế phải có đúng một lần ở MỖI tệp. Cột
+# `show_badges` chỉ sinh ở tệp #42, nên B-def nhắm tệp ấy bằng tên đầy đủ.
 BM = 'community_badges'
+BM42 = '20261001120000_community_badges'
+BM88 = '20261001140000_community_badges_no_date'
 CASES += [
   dict(suite=B, id='B-on', mig=BM, how='bỏ chốt "đã bật"',
        old='  IF NOT coalesce((SELECT s.show_badges FROM public.community_settings s WHERE s.user_id = p_user), false) THEN',
@@ -395,7 +402,7 @@ CASES += [
   dict(suite=B, id='B-nul', mig=BM, how='chưa có dòng cài đặt thì coi như BẬT',
        old='WHERE s.user_id = p_user), false) THEN', new='WHERE s.user_id = p_user), true) THEN',
        expect='B3 chưa có cài đặt mà huy hiệu đã lộ'),
-  dict(suite=B, id='B-def', mig=BM, how='cột mặc định BẬT',
+  dict(suite=B, id='B-def', mig=BM42, how='cột mặc định BẬT',
        old='show_badges boolean NOT NULL DEFAULT false', new='show_badges boolean NOT NULL DEFAULT true',
        expect='B4 dòng cài đặt mới phải có show_badges = false'),
   dict(suite=B, id='B-blk', mig=BM, how='bỏ chốt chặn',
@@ -434,4 +441,8 @@ CASES += [
   dict(suite=B, id='B-upd', mig='20260930130000_community_privacy', how='ai cũng sửa được dòng cài đặt',
        old='  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);', new='  USING (true) WITH CHECK (true);',
        expect='B7 người khác bật được huy hiệu của X'),
+  dict(suite=B, id='B-date', mig=BM88, how='trả lại thời điểm nhận (như trước #88, nhưng đúng múi giờ)',
+       old='RETURNS TABLE (challenge_id uuid, title text)', new='RETURNS TABLE (challenge_id uuid, title text, claimed_at timestamptz)',
+       extra=[('  SELECT c.id, c.title\n', '  SELECT c.id, c.title, m.claimed_at\n')],
+       expect='B13 huy hiệu chỉ được trả challenge_id, title'),
 ]

@@ -952,10 +952,11 @@ export function useSetShowBadges() {
   });
 }
 
+/** Không mang ngày nhận (#88): hàng huy hiệu không in ngày, và mốc giờ nhận
+    thưởng của người khác là thói quen sinh hoạt — server giữ nó để xếp thứ tự. */
 export interface CommunityBadge {
   challenge_id: string;
   title: string;
-  claimed_on: string;
 }
 
 /**

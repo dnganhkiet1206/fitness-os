@@ -1961,13 +1961,13 @@ export type Database = {
       }
       /* Huy hiệu thử thách của một người (#42): chỉ khi người ấy đã bật
          `show_badges` và hai người không chặn nhau; chỉ thử thách đã NHẬN
-         THƯỞNG. Xem `20261001120000_community_badges.sql`. */
+         THƯỞNG. Không trả ngày nhận (#88). Xem
+         `20261001140000_community_badges_no_date.sql`. */
       community_user_badges: {
         Args: { p_user: string }
         Returns: {
           challenge_id: string
           title: string
-          claimed_on: string
         }[]
       }
       community_follow_suggestions: {

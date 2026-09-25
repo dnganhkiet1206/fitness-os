@@ -208,9 +208,11 @@ const calls = srcFiles.reduce((n, [, s]) => n + (s.match(/\.rpc\(\s*['"]\w+['"]/
     'thêm một đối số DEFAULT vào share_workout',
     bentMig('_community_foundation', '  p_minutes    integer DEFAULT NULL\n)', '  p_minutes    integer DEFAULT NULL,\n  p_extra      text DEFAULT NULL\n)'),
   );
+  /* Bẻ định nghĩa ĐANG CÓ HIỆU LỰC: #88 định nghĩa lại hàm ở một migration sau,
+     và bẻ tệp #42 thì bản sau ghi đè — phép thử xanh mà không đo gì. */
   probe(
     'bỏ một cột khỏi RETURNS TABLE của community_user_badges',
-    bentMig('_community_badges', 'RETURNS TABLE (challenge_id uuid, title text, claimed_on date)', 'RETURNS TABLE (challenge_id uuid, title text)'),
+    bentMig('20261001140000_community_badges_no_date', 'RETURNS TABLE (challenge_id uuid, title text)', 'RETURNS TABLE (challenge_id uuid)'),
   );
   probe(
     'đổi kiểu trả của claim_community_challenge sang text',

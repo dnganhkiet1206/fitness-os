@@ -108,6 +108,15 @@ DO $$ BEGIN
 END $$;
 RESET ROLE;
 
+-- Hàm KHÔNG trả thời điểm nhận (#88): huy hiệu là dữ liệu của người khác, và
+-- một mốc giờ nhận thưởng là giờ người ta cầm máy. Bản #42 trả `claimed_on`
+-- cắt theo UTC — lệch một ngày ở UTC+7 — trong khi không màn nào đọc nó. Hỏi
+-- chữ ký, không hỏi một dòng: cột thừa nằm trong mọi dòng như nhau.
+DO $$ DECLARE r text := pg_get_function_result('public.community_user_badges(uuid)'::regprocedure); BEGIN
+  ASSERT r = 'TABLE(challenge_id uuid, title text)',
+    format('B13 huy hiệu chỉ được trả challenge_id, title — không ngày, không giờ nhận của người khác (#88), ra %s', r);
+END $$;
+
 
 -- Tập đầy đủ ĐỨNG CUỐI: đứng đầu thì nó bắt mọi phép phá trước các kịch bản
 -- cụ thể ở trên, và phép thử ngược không còn nói được kịch bản nào đo gì.
@@ -118,4 +127,4 @@ DO $$ DECLARE ids uuid[]; BEGIN
     format('B12 V phải thấy đúng hai huy hiệu của X, mới nhận nhất trước, ra %s', ids);
 END $$;
 RESET ROLE;
-\echo TẤT CẢ 12 KỊCH BẢN HUY HIỆU ĐÚNG
+\echo TẤT CẢ 13 KỊCH BẢN HUY HIỆU ĐÚNG
