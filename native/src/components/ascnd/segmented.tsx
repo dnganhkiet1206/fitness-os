@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef } from 'react';
-import { Platform, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -260,20 +260,18 @@ const stylesFor = makeStyles((c, m) => ({
  * because what it replaces is already gone.
  */
 /*
-  ── trên web: KHÔNG có hiệu ứng (#72) ──
+  ── trên web: có hiệu ứng lại (#97) ──
 
-  Reanimated 4.5.1 bản web chạy `entering` bằng một hoạt ảnh CSS, và trong lúc
-  chạy nó đặt `position: absolute; top/left/width/height` lên chính phần tử.
-  Đo trên bản dựng web (`/workouts/plan`): hoạt ảnh xong (`getAnimations()`
-  rỗng) mà style ấy KHÔNG được gỡ — cả ba thẻ bài tập kẹt ở vị trí tuyệt đối
-  (`REA-ENTERING-0/1/2`), khối chứa chỉ cao 175 cho một thẻ 314, và nút "Thêm
-  bài tập / Hoàn thành buổi tập" nằm đè giữa thẻ đầu, ở mọi bề ngang.
-
-  Một hiệu ứng vào là trang trí (xem đoạn dưới), còn bố cục thì không. Nên web
-  bỏ hiệu ứng thay vì mang bố cục hỏng — và bộ chạy web đo được đúng bố cục mà
-  iPhone vẽ. iOS giữ nguyên: hiệu ứng bố cục ở đó không đi qua CSS.
+  #72 từng TẮT hiệu ứng này trên web: Reanimated 4.5.1 bản web ghim phần tử
+  `position: absolute` sau `entering`, cả ba thẻ bài tập của Kế hoạch ngày kẹt
+  (`REA-ENTERING-0/1/2`) và nút "Hoàn thành buổi tập" nằm đè giữa thẻ đầu. #76
+  (B) tìm ra gốc — bước dọn của hiệu ứng TUỲ BIẾN (`withInitialValues`, đúng thứ
+  ở dưới) gọi `setElementPosition` lên phần tử thật — và vá nó
+  (`patches/react-native-reanimated+4.5.1.patch`). Còn tắt thì bản web đo một
+  control không giống iPhone. `live.mjs` nay đo phần tử kẹt SAU MỖI LẦN ĐỔI
+  phân đoạn (#58/#97), tức đúng lúc hiệu ứng này chạy.
 */
-export const SEGMENT_SWAP = Platform.OS === 'web' ? undefined : FadeIn.duration(duration.appear)
+export const SEGMENT_SWAP = FadeIn.duration(duration.appear)
   /*
     ── và lập luận trên đúng cho một cú ĐỔI, không đúng cho lần đầu ──
 

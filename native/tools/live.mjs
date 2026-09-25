@@ -573,7 +573,7 @@ async function boot(chromium, route, mode, settleMs = 9000) {
  * Nên: bấm từng ô `role="tab"` đang mang `aria-selected="false"` — ô có trạng
  * thái chọn, tức `Segmented` và các hàng chọn (`PickRow`). Hàng ngày trong tuần
  * không mang `aria-selected` nên không bị bấm: đó là điều hướng trong một bảng,
- * không phải một phân đoạn. Trả `[{ label, text }]`, mỗi phân đoạn một mục.
+ * không phải một phân đoạn. Trả `[{ label, text, pinned }]`, mỗi phân đoạn một mục.
  */
 async function visitSegments(page) {
   const out = [];
@@ -588,7 +588,15 @@ async function visitSegments(page) {
       if ((await tab.count()) === 0 || (await tab.getAttribute('aria-selected')) !== 'false') continue;
       await tab.click({ timeout: 3000 });
       await page.waitForTimeout(1500);
-      out.push({ label, text: await readable(page) });
+      /* #97: `SEGMENT_SWAP` chỉ chạy khi ĐỔI phân đoạn, nên luật "kẹt
+         position:absolute" của #76 — đo lúc màn vừa mở — không bao giờ thấy nó.
+         Đo lại ở đây, sau mỗi lần đổi. */
+      const pinned = await page.evaluate(() =>
+        [...document.querySelectorAll('#root *')]
+          .filter((el) => /^REA-ENTERING/.test(el.style.animationName || '') && el.style.position === 'absolute')
+          .map((el) => (el.innerText || el.getAttribute('aria-label') || el.tagName).replace(/\s+/g, ' ').trim().slice(0, 50)),
+      );
+      out.push({ label, text: await readable(page), pinned });
     } catch {
       /* bị che hay đã biến mất: không phải việc của vòng quét chữ */
     }
@@ -2491,6 +2499,7 @@ try {
       for (const sg of segments) {
         const b = sg.text.split('\n').filter((l) => BAD_TEXT.test(l)).slice(0, 2);
         if (b.length) problems.push(`${at} › ${sg.label}: chữ không dành cho người dùng — ${b.join(' / ')}`);
+        if (sg.pinned.length) problems.push(`${at} › ${sg.label}: ${sg.pinned.length} phần tử kẹt position:absolute sau khi đổi phân đoạn (#97) — ${sg.pinned.slice(0, 2).map((t) => `"${t}"`).join(', ')}`);
       }
       /* Chốt của #58: khối từng bị đoán là "dựng muộn" phải được lượt quét THẤY.
          Không phân biệt hoa thường: `MicroLabel` in hoa bằng CSS, và `innerText`
