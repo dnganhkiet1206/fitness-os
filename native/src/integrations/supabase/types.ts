@@ -1947,6 +1947,13 @@ export type Database = {
           claimed_at: string
         }[]
       }
+      /* Tìm công thức theo tên món (#43): CHỈ trả ID — app đọc bài qua RLS. */
+      community_find_recipes: {
+        Args: { p_q: string }
+        Returns: {
+          post_id: string
+        }[]
+      }
       community_search_profiles: {
         Args: { p_q: string }
         Returns: {

@@ -2174,6 +2174,43 @@ const SCENARIOS = [
   },
   {
     /*
+      #43: tìm công thức theo tên món, phân đoạn Công thức của màn Tìm. Đòi:
+        1. ô tìm đổi gợi ý thành "Tên món" — một ô, hai kết quả;
+        2. gõ "CHICKEN" (chữ hoa) thì app hỏi server "chicken" và ra đúng thẻ
+           Recipe của thế giới giả, là thẻ feed DÙNG được ("Thêm vào bữa ăn");
+        3. gõ "hick" (giữa chữ "chicken") thì không ra thẻ, và màn nói ra
+           rằng không có công thức nào khớp.
+      Thứ tự và phạm vi thấy bài là việc của SQL (`community_find_recipes.test.sql`,
+      19 ca đột biến); vế này đo đường từ ô tìm tới thẻ.
+    */
+    name: 'Tìm công thức: gõ tên món ra thẻ Recipe dùng được; giữa chữ thì không (#43)',
+    route: '/community-search', mode: 'full',
+    async run(page) {
+      const asked = [];
+      page.on('request', (q) => {
+        if (!/\/rest\/v1\/rpc\/community_find_recipes/.test(q.url())) return;
+        try { asked.push(JSON.parse(q.postData() ?? '{}').p_q); } catch { asked.push('?'); }
+      });
+      const seg = page.locator('#root [role="tab"]').filter({ hasText: /^(Recipes|Công thức)$/ }).first();
+      if (!(await seg.count())) return 'không thấy phân đoạn Công thức ở màn Tìm';
+      await seg.click();
+      const box = page.getByPlaceholder(/^(Dish name|Tên món)$/);
+      if (!(await box.count())) return 'đổi sang Công thức mà ô tìm không đổi gợi ý thành "Tên món"';
+      await box.fill('CHICKEN');
+      await page.waitForTimeout(2500);
+      if (!asked.includes('chicken')) return `gõ "CHICKEN" mà không hỏi community_find_recipes với "chicken" — đã hỏi: ${JSON.stringify(asked)}`;
+      const card = page.getByText('High Protein Chicken Bowl', { exact: true });
+      if (!(await card.count())) return 'gõ "CHICKEN" mà không ra thẻ "High Protein Chicken Bowl"';
+      if (!(await page.getByText(/^(Add to a meal|Thêm vào bữa ăn)$/).count())) return 'kết quả tìm không phải thẻ feed dùng được — thiếu "Thêm vào bữa ăn"';
+      await box.fill('hick');
+      await page.waitForTimeout(2500);
+      if (await card.count()) return '"hick" (giữa chữ "chicken") vẫn ra thẻ — tìm theo chuỗi con, không theo đầu từ';
+      if (!(await page.getByText(/^(No recipe matches "hick"|Không có công thức nào khớp "hick")$/).count())) return 'không có kết quả mà màn không nói ra';
+      return null;
+    },
+  },
+  {
+    /*
       #80: RPC GHI đổi thế giới của trang. Trước #80 `claim_community_challenge`
       không có fixture, nhận `[]`, và luồng "đạt → NHẬN → đọc lại thấy đã nhận"
       nằm ngoài tầm đo: nút Nhận còn nguyên sau khi bấm, vì lượt đọc lại tổng

@@ -81,7 +81,7 @@ export default function CommunityScreen() {
           <View style={styles.headerRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={i18n.nSrTitle}
+              accessibilityLabel={i18n.nSrOpen}
               hitSlop={6}
               onPress={() => nav.push('/community-search')}
               style={styles.bell}>

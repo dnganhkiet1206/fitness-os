@@ -214,6 +214,23 @@ export const RPC_FIXTURES = {
     },
   },
 
+  /* 20261001150000_community_find_recipes.sql (#43): vị từ của policy
+     "Readers see visible posts", từng vế, và tiền tố của một từ trong tên món. */
+  community_find_recipes: {
+    sample: { p_q: 'chicken' },
+    run({ p_q } = {}, world) {
+      const q = fold(String(p_q ?? '').trim()).slice(0, 40);
+      if ([...q].length < 2) return [];
+      return rows(world, 'community_posts')
+        .filter((p) => p.kind === 'recipe')
+        .filter((p) => p.author_id === UID || (!p.hidden && !blockedBetween(world, UID, p.author_id) && (p.visibility === 'public' || follows(world, UID, p.author_id))))
+        .filter((p) => startsWord(fold(String(p.payload?.title ?? '')), q))
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : a.id < b.id ? -1 : 1))
+        .slice(0, 30)
+        .map((p) => ({ post_id: p.id }));
+    },
+  },
+
   /* 20260930160000_community_search.sql */
   community_follow_suggestions: {
     sample: {},

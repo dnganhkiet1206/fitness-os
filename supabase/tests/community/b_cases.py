@@ -9,6 +9,8 @@ trên bản sao migration, và đòi câu ASSERT đỏ đầu tiên của bộ �
 """
 F = 'foundation'
 FM = 'community_foundation'
+FR = 'find_recipes'
+FRM = '20261001150000_community_find_recipes'
 CASES = [
   # ── hồ sơ ──
   dict(suite=F, id='1', mig=FM, how='trigger không gạt is_official khi TẠO',
@@ -480,4 +482,60 @@ CASES += [
        old='RETURNS TABLE (challenge_id uuid, title text)', new='RETURNS TABLE (challenge_id uuid, title text, claimed_at timestamptz)',
        extra=[('  SELECT c.id, c.title\n', '  SELECT c.id, c.title, m.claimed_at\n')],
        expect='B13 huy hiệu chỉ được trả challenge_id, title'),
+  # ── Tìm công thức (#43, A viết lại từ thiết kế của B) ──
+  # Mỗi nhãn một ca. Đối chứng F10–F12 đứng trước F4 trong tệp test, nên phép
+  # phá chỉ đối chứng thấy (chặn "bất kỳ ai", bỏ vế theo dõi, bỏ vế bài của mình)
+  # đỏ ở đối chứng, còn phép phá mà F4 thấy thì đối chứng vẫn xanh.
+  # F13/F13b phá POLICY ở nền móng mà để nguyên hàm: đúng loại trôi mà hai bản
+  # sao của một luật sinh ra (nền móng vạ lây là đúng).
+  dict(suite=FR, id='F1', mig=FRM, how='một ký tự cũng hỏi',
+       old='  IF char_length(v_q) < 2 THEN', new='  IF char_length(v_q) < 1 THEN', expect='F1 '),
+  dict(suite=FR, id='F2', mig=FRM, how='chỉ khớp đầu tên, không khớp một từ giữa tên',
+       old="      public.community_fold(p.payload->>'title') LIKE v_pat || '%'\n      OR public.community_fold(p.payload->>'title') LIKE '% ' || v_pat || '%'",
+       new="      public.community_fold(p.payload->>'title') LIKE v_pat || '%'", expect='F2 '),
+  dict(suite=FR, id='F3', mig=FRM, how='khớp chuỗi con ở bất kỳ đâu, kể cả giữa chữ',
+       old="      public.community_fold(p.payload->>'title') LIKE v_pat || '%'\n      OR public.community_fold(p.payload->>'title') LIKE '% ' || v_pat || '%'",
+       new="      public.community_fold(p.payload->>'title') LIKE '%' || v_pat || '%'", expect='F3 '),
+  dict(suite=FR, id='F10', mig=FRM, how='loại MỌI ai dính một dòng chặn (không chỉ với người xem)',
+       old='        AND NOT public.community_blocked_between(v_uid, p.author_id)',
+       new='        AND NOT EXISTS (SELECT 1 FROM public.community_blocks b WHERE b.blocked_id = p.author_id OR b.blocker_id = p.author_id)',
+       expect='F10 '),
+  dict(suite=FR, id='F11', mig=FRM, how='bỏ vế "đang theo dõi": bài chỉ-người-theo-dõi không bao giờ ra',
+       old="          p.visibility = 'public'\n          OR EXISTS (\n            SELECT 1 FROM public.community_follows f\n            WHERE f.follower_id = v_uid AND f.followee_id = p.author_id\n          )",
+       new="          p.visibility = 'public'", expect='F11 '),
+  dict(suite=FR, id='F12', mig=FRM, how='bỏ vế "bài của mình": tác giả không thấy bài bị ẩn của chính mình',
+       old='      p.author_id = v_uid\n      OR (', new='      false\n      OR (', expect='F12 '),
+  dict(suite=FR, id='F4k', mig=FRM, how='trả cả bài tập (bỏ lọc kind)',
+       old="  WHERE p.kind = 'recipe'\n", new='  WHERE true\n', expect='F4 '),
+  dict(suite=FR, id='F4h', mig=FRM, how='trả bài bị ẩn của người khác',
+       old='        NOT p.hidden\n', new='        true\n', expect='F4 '),
+  dict(suite=FR, id='F4b', mig=FRM, how='bỏ lọc chặn',
+       old='        AND NOT public.community_blocked_between(v_uid, p.author_id)\n', new='', expect='F4 '),
+  dict(suite=FR, id='F4f', mig=FRM, how='bài chỉ-người-theo-dõi ra cho mọi người',
+       old="          p.visibility = 'public'\n          OR EXISTS (", new='          true\n          OR EXISTS (', expect='F4 '),
+  dict(suite=FR, id='F5', mig=FRM, how='không gập chuỗi tìm',
+       old="  v_q   text := public.community_fold(btrim(coalesce(p_q, '')));",
+       new="  v_q   text := lower(btrim(coalesce(p_q, '')));", expect='F5 '),
+  dict(suite=FR, id='F6', mig=FRM, how="không thoát '%'",
+       old="  v_pat := replace(replace(replace(v_q, '\\', '\\\\'), '%', '\\%'), '_', '\\_');",
+       new="  v_pat := replace(replace(v_q, '\\', '\\\\'), '_', '\\_');", expect='F6 '),
+  dict(suite=FR, id='F7', mig=FRM, how="không thoát '_'",
+       old="  v_pat := replace(replace(replace(v_q, '\\', '\\\\'), '%', '\\%'), '_', '\\_');",
+       new="  v_pat := replace(replace(v_q, '\\', '\\\\'), '%', '\\%');", expect='F7 '),
+  dict(suite=FR, id='F8', mig=FRM, how='nới trần 30 → 31', old='  LIMIT 30;', new='  LIMIT 31;', expect='F8 '),
+  dict(suite=FR, id='F9', mig=FRM, how='cũ nhất đứng đầu',
+       old='  ORDER BY p.created_at DESC, p.id', new='  ORDER BY p.created_at ASC, p.id', expect='F9 '),
+  dict(suite=FR, id='F13', mig=FM, how='policy đọc bài thôi giấu bài bị ẩn; hàm để nguyên (trôi)',
+       old='    OR (\n      NOT hidden\n      AND NOT public.community_blocked_between(auth.uid(), author_id)',
+       new='    OR (\n      true\n      AND NOT public.community_blocked_between(auth.uid(), author_id)', expect='F13 '),
+  dict(suite=FR, id='F13b', mig=FM, how='policy đọc bài giấu MỌI ai dính một dòng chặn; hàm để nguyên (chỉ người bị chặn thấy lệch: RLS của community_blocks chỉ cho mỗi người đọc dòng chặn của mình)',
+       old='      NOT hidden\n      AND NOT public.community_blocked_between(auth.uid(), author_id)',
+       new='      NOT hidden\n      AND NOT EXISTS (SELECT 1 FROM public.community_blocks b WHERE b.blocked_id = author_id OR b.blocker_id = author_id)',
+       expect='F13b '),
+  dict(suite=FR, id='F14', mig=FRM, how='bỏ chốt "chưa đăng nhập"',
+       old="  IF v_uid IS NULL THEN\n    RAISE EXCEPTION 'not signed in' USING ERRCODE = '42501';\n  END IF;\n  v_q := left(v_q, 40);",
+       new='  v_q := left(v_q, 40);', expect='F14 '),
+  dict(suite=FR, id='F15', mig=FRM, how='anon gọi được',
+       old='REVOKE EXECUTE ON FUNCTION public.community_find_recipes(text) FROM PUBLIC, anon;',
+       new='GRANT EXECUTE ON FUNCTION public.community_find_recipes(text) TO anon;', expect='F15 '),
 ]

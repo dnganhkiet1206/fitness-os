@@ -1175,6 +1175,34 @@ export function useSearchPeople(q: string) {
   });
 }
 
+/**
+ * Tìm bài Recipe theo tên món, không phân biệt dấu (#43). Hàm server chỉ trả
+ * ID (tối đa 30, mới nhất trước) — xem `20261001150000_community_find_recipes.sql`
+ * — và bài được đọc bằng `.in('id', …)` như Thư viện Đã lưu, tức đi qua RLS thêm
+ * một lần. Khoá nằm dưới `community_user_posts` để `patchPost` đổi tim và dấu
+ * lưu ngay trên kết quả tìm.
+ */
+export function useFindRecipes(q: string) {
+  const { user } = useAuth();
+  const term = q.trim().toLowerCase();
+  return useQuery({
+    queryKey: ['community_user_posts', user?.id, 'recipe_search', term],
+    enabled: !!user && term.length >= 2,
+    queryFn: async (): Promise<FeedPost[]> => {
+      const me = user!.id;
+      const { data: hits, error } = await supabase.rpc('community_find_recipes', { p_q: term });
+      if (error) throw error;
+      const ids = (Array.isArray(hits) ? hits : []).map((h) => h.post_id).filter((x): x is string => typeof x === 'string');
+      if (ids.length === 0) return [];
+      const { data: rows, error: postsErr } = await supabase.from('community_posts').select(POST_COLS).in('id', ids);
+      if (postsErr) throw postsErr;
+      /* `.in()` không giữ thứ tự: xếp lại theo thứ tự server trả (mới nhất trước). */
+      const byId = new Map(((rows ?? []) as PostRow[]).map((r) => [r.id, r]));
+      return hydrate(ids.map((id) => byId.get(id)).filter((r): r is PostRow => !!r), me);
+    },
+  });
+}
+
 /** Chính thức trước, rồi người có bài công khai trong 14 ngày mà mình chưa theo dõi. */
 export function useFollowSuggestions() {
   const { user } = useAuth();

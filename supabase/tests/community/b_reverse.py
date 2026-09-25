@@ -84,6 +84,7 @@ COVERAGE_OK = {
         'H10': _GRANT,
     },
     'search': {'G5': _GRANT},
+    'find_recipes': {'F16': _GRANT},
     'recipe': {
         'R9': 'CÙNG công thức với R8 (servings × serving_g), trên hàng thứ hai — servings '
               'nguyên (2 × 100). Mọi phép phá công thức làm R8 đỏ trước trong cùng khối DO; '

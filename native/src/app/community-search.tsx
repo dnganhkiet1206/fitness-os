@@ -1,4 +1,5 @@
-import { BadgeCheck, Search, UserPlus, X } from 'lucide-react-native';
+import { useLocalSearchParams } from 'expo-router';
+import { BadgeCheck, ChefHat, Search, UserPlus, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 
@@ -7,14 +8,17 @@ import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { PostCard } from '@/components/ascnd/post-card';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
+import { Segmented } from '@/components/ascnd/segmented';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
   type CommunityAuthor,
   searchTerm,
+  useFindRecipes,
   useFollow,
   useFollowSuggestions,
   useSearchPeople,
@@ -42,11 +46,22 @@ import { fillCopy } from '@/lib/copy-fill';
  *
  * Nút Theo dõi nằm ngay trên dòng — việc người ta tới đây để làm — còn chạm vào
  * phần còn lại của dòng thì mở hồ sơ để xem trước khi quyết.
+ *
+ * ── Công thức (#43) ──
+ *
+ * Cùng một ô tìm, hai kết quả: đổi phân đoạn thì chữ đã gõ ở lại. Công thức
+ * tìm theo tên món, không phân biệt dấu (server gập cả hai phía). Mỗi kết quả
+ * là ĐÚNG cái thẻ trên feed (`PostCard`), như Thư viện Đã lưu: công thức là thứ
+ * DÙNG được, nên kết quả tìm mang luôn "Thêm vào bữa ăn". Không có gợi ý khi ô
+ * trống — chỉ một câu nói tìm được gì và gõ thế nào. `?mode=recipe` mở thẳng
+ * phân đoạn Công thức.
  */
 export default function CommunitySearchScreen() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
+  const params = useLocalSearchParams<{ mode?: string }>();
+  const [mode, setMode] = useState<'people' | 'recipe'>(params.mode === 'recipe' ? 'recipe' : 'people');
   const [q, setQ] = useState('');
   const [term, setTerm] = useState('');
   useEffect(() => {
@@ -54,8 +69,11 @@ export default function CommunitySearchScreen() {
     return () => clearTimeout(t);
   }, [q]);
 
+  const recipes = mode === 'recipe';
   const searching = searchTerm(term).length >= 2;
-  const results = useSearchPeople(term);
+  /* Chỉ hỏi server cho phân đoạn đang mở. */
+  const results = useSearchPeople(recipes ? '' : term);
+  const recipeHits = useFindRecipes(recipes ? term.trim() : '');
   const suggestions = useFollowSuggestions();
   const follow = useFollow();
 
@@ -66,20 +84,29 @@ export default function CommunitySearchScreen() {
   const rows = (list.data ?? []) as (CommunityAuthor & { i_follow?: boolean; recent_posts?: number })[];
 
   return (
-    <Screen back refreshable title={i18n.nSrTitle}>
+    <Screen back refreshable title={recipes ? i18n.nSrRecipeTitle : i18n.nSrTitle}>
+      <Segmented
+        variant="capsule"
+        value={mode}
+        onChange={setMode}
+        options={[
+          { key: 'people', label: i18n.nSrPeople },
+          { key: 'recipe', label: i18n.nSrRecipes },
+        ]}
+      />
       <View style={styles.field}>
         <Icon icon={Search} size={18} color={c.mutedForeground} />
         <TextInput
           value={q}
           onChangeText={setQ}
-          placeholder={i18n.nSrPlaceholder}
+          placeholder={recipes ? i18n.nSrRecipePlaceholder : i18n.nSrPlaceholder}
           placeholderTextColor={c.mutedForeground}
           autoFocus
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
           maxLength={40}
-          accessibilityLabel={i18n.nSrPlaceholder}
+          accessibilityLabel={recipes ? i18n.nSrRecipePlaceholder : i18n.nSrPlaceholder}
           style={styles.input}
         />
         {q ? (
@@ -91,9 +118,27 @@ export default function CommunitySearchScreen() {
 
       {!searching && searchTerm(q).length === 1 ? <Text style={styles.hint}>{i18n.nSrMin}</Text> : null}
 
-      {!searching ? <Text style={styles.heading}>{i18n.nSrSuggested}</Text> : null}
+      {recipes ? (
+        !searching ? (
+          <GlassCard>
+            <EmptyState icon={ChefHat} title={i18n.nSrRecipeIntro} hint={i18n.nSrRecipeIntroHint} />
+          </GlassCard>
+        ) : recipeHits.isError ? (
+          <LoadFailed i18n={i18n} onRetry={() => recipeHits.refetch()} />
+        ) : recipeHits.isPending ? (
+          <ActivityIndicator color={c.mutedForeground} style={styles.loading} />
+        ) : (recipeHits.data ?? []).length === 0 ? (
+          <GlassCard>
+            <EmptyState icon={Search} title={fillCopy(i18n.nSrRecipeNone, { q: term.trim() })} hint={i18n.nSrRecipeNoneHint} />
+          </GlassCard>
+        ) : (
+          (recipeHits.data ?? []).map((post) => <PostCard key={post.id} post={post} />)
+        )
+      ) : null}
 
-      {list.isError ? (
+      {!recipes && !searching ? <Text style={styles.heading}>{i18n.nSrSuggested}</Text> : null}
+
+      {recipes ? null : list.isError ? (
         <LoadFailed i18n={i18n} onRetry={() => list.refetch()} />
       ) : list.isPending && (searching || !suggestions.data) ? (
         <ActivityIndicator color={c.mutedForeground} style={styles.loading} />
