@@ -692,7 +692,16 @@ const changed = (a, b) => a.url !== b.url || a.len !== b.len || a.text !== b.tex
  * with the reason, rather than tolerated silently, because the day one of them
  * grows a real behaviour it should come back off this list.
  */
-const CONFIRM_ONLY = new Set(['Delete account', 'Xoá tài khoản', 'Sign out', 'Đăng xuất']);
+/*
+  #91: nút PHÁ HUỶ — xoá, rời, chặn, bỏ theo dõi, đăng xuất. Trước #83 các nút
+  này bị bỏ qua ở đây (`CONFIRM_ONLY`), vì việc duy nhất của chúng là mở một
+  `Alert.alert` mà react-native-web vẽ thành hàm rỗng: bấm vào thì không có gì,
+  và lượt bấm không phân biệt được "hỏi lại rồi Huỷ" với "chết". Từ #83 hộp
+  hỏi lại hiện thật, nên nay chúng được BẤM, và một hộp hiện ra là màn đã trả
+  lời. Nhãn khớp mẫu này mà bấm xong KHÔNG có hộp nào và có lệnh ghi đi ra thì
+  đỏ: bấm là làm luôn, không hỏi.
+*/
+const DESTRUCTIVE = /^(Xoá|Xóa|Rời|Chặn|Bỏ chặn|Bỏ theo dõi|Đăng xuất|Delete|Remove|Leave|Block|Unblock|Unfollow|Sign out)\b/i;
 
 /**
  * Does anything else in this control's own group react?
@@ -729,6 +738,18 @@ async function pressEverything(page, label, problems) {
   const home = page.url();
   let tried = 0;
   let skipped = 0;
+  /* #91: Playwright tự đóng hộp không ai trả lời; có người nghe thì phải tự
+     đóng — `dismiss()` là Huỷ, nên không lượt bấm nào tự nhiên xoá thứ gì. */
+  const dialogs = [];
+  const onDialog = (d) => {
+    dialogs.push({ type: d.type(), message: d.message() });
+    d.dismiss().catch(() => {});
+  };
+  page.on('dialog', onDialog);
+  let writes = 0;
+  page.on('request', (q) => {
+    if (isWrite(q.method()) && /\/rest\/v1\//.test(q.url())) writes++;
+  });
 
   for (let i = 0; i < total; i++) {
     const c = controls.nth(i);
@@ -740,7 +761,7 @@ async function pressEverything(page, label, problems) {
 
       const off = (await c.getAttribute('aria-disabled')) === 'true' || (await c.isDisabled().catch(() => false));
       const on = (await c.getAttribute('aria-selected')) === 'true' || (await c.getAttribute('aria-checked')) === 'true';
-      if (off || on || CONFIRM_ONLY.has(name)) {
+      if (off || on) {
         skipped++;
         continue;
       }
@@ -756,6 +777,8 @@ async function pressEverything(page, label, problems) {
     }
 
     const before = await snapshot(page);
+    const dialogsBefore = dialogs.length;
+    const writesBefore = writes;
     try {
       /* No `force`. A forced click dispatches at the coordinates whatever is on
          top, so an element under an overlay looks pressed and then looks dead —
@@ -769,8 +792,22 @@ async function pressEverything(page, label, problems) {
     tried++;
     await page.waitForTimeout(1400);
     const after = await snapshot(page);
+    const asked = dialogs.slice(dialogsBefore);
+    if (DESTRUCTIVE.test(name) && asked.length === 0 && writes > writesBefore) {
+      problems.push(`${label}: bấm "${name}" là LÀM LUÔN — ${writes - writesBefore} lệnh ghi đi ra mà không một hộp hỏi lại nào (#91)`);
+    }
+    for (const d of asked) {
+      /* `browserAlert` (#83) viết việc của nút OK vào câu hỏi ("→ Xoá"): hộp
+         confirm của trình duyệt chỉ có OK và Huỷ. Một confirm không mang dấu
+         ấy là ai đó gọi `window.confirm` thẳng, không qua `Alert.alert`. */
+      if (d.type === 'confirm' && !/\n\n→ \S/.test(d.message)) {
+        problems.push(`${label}: bấm "${name}" mở một confirm không nói OK là làm gì — "${d.message.slice(0, 60)}" (#91: gọi window.confirm thẳng?)`);
+      }
+      if (!d.message.trim()) problems.push(`${label}: bấm "${name}" mở một hộp ${d.type} RỖNG (#91)`);
+    }
 
-    if (!changed(before, after)) {
+    /* Một hộp hỏi lại là màn đã trả lời; Huỷ thì màn đứng yên là đúng. */
+    if (!asked.length && !changed(before, after)) {
       /*
         ── dead, or simply the option you are already on ──
 
@@ -810,7 +847,8 @@ async function pressEverything(page, label, problems) {
       await page.waitForTimeout(2500);
     }
   }
-  return { tried, skipped };
+  page.off('dialog', onDialog);
+  return { tried, skipped, dialogs: dialogs.length };
 }
 
 /**
@@ -2697,12 +2735,21 @@ try {
     let skipped = 0;
     /* `/workouts` thay `/progress`: trang cũ không còn, nên suốt từ ba33494 lượt
        bấm ở đây bấm trên một trang không-tìm-thấy và không đo gì. */
-    for (const [route, mode] of onlyArg ? [] : [['/', 'signedout'], ['/', 'full'], ['/workouts', 'full'], ['/settings', 'full']]) {
+    let asked = 0;
+    const PRESS_ROUTES = [
+      ['/', 'signedout'], ['/', 'full'], ['/workouts', 'full'], ['/settings', 'full'],
+      /* #91: hai màn có nút phá huỷ THẬT trong thế giới giả — UID đang ở một
+         thử thách còn mở (Rời thử thách), và có một người đã chặn (Bỏ chặn,
+         Xoá mọi bài của tôi). */
+      ['/community-challenge?id=ch000000-0000-4000-8000-000000000001', 'full'], ['/community-privacy', 'full'],
+    ];
+    for (const [route, mode] of onlyArg || routeArg ? [] : PRESS_ROUTES) {
       const { browser, page } = await openPage(chromium, route, mode);
       try {
         const r = await pressEverything(page, `[${mode}] ${route}`, problems);
         pressed += r.tried;
         skipped += r.skipped;
+        asked += r.dialogs;
       } finally {
         await browser.close();
       }
@@ -2710,6 +2757,8 @@ try {
     }
     console.log('');
     globalThis.__skipped = skipped;
+    globalThis.__asked = asked;
+    globalThis.__pressRoutes = PRESS_ROUTES.length;
 
     process.stdout.write('kịch bản');
     const picked = onlyArg ? SCENARIOS.filter((sc) => sc.name.includes(onlyArg)) : SCENARIOS;
@@ -2802,9 +2851,9 @@ const sweptClaim = args.has('--press-only')
 
 console.log(
   `\nchạy thật OK — ${sweptClaim}; ` +
-    `đã BẤM THỬ ${globalThis.__pressed} nút trên 4 màn và nút nào cũng làm màn hình đổi ` +
-    `(${globalThis.__skipped} nút được bỏ qua có lý do: disabled, đang được chọn sẵn, bị che, ` +
-    'hoặc việc duy nhất của nó là mở hộp thoại xác nhận — thứ mà Alert của react-native-web là hàm rỗng); ' +
+    `đã BẤM THỬ ${globalThis.__pressed} nút trên ${globalThis.__pressRoutes} màn và nút nào cũng làm màn hình đổi hoặc hỏi lại ` +
+    `(${globalThis.__asked} hộp hỏi lại, mọi hộp đều được Huỷ; không nút phá huỷ nào làm luôn mà không hỏi; ` +
+    `${globalThis.__skipped} nút được bỏ qua có lý do: disabled, đang được chọn sẵn, hoặc bị che); ` +
     `${SCENARIOS.length} kịch bản có kết quả cụ thể đều đúng; ${narrowClaim}; ` +
     'canary xác nhận bộ chạy nhìn đúng app thật chứ không phải trang lỗi của server',
 );
