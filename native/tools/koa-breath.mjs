@@ -49,6 +49,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { FIXTURES, REF, UID, day, jwt } from './live-world.mjs';
+import { fakeSupabase } from './live-server.mjs';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(NATIVE, 'tools', '.live-build');
@@ -121,18 +122,9 @@ async function watch(chromium, hour, seconds) {
   );
 
   const page = await ctx.newPage();
-  await page.route('**/*.supabase.co/**', async (r) => {
-    const u = new URL(r.request().url());
-    if (u.pathname.startsWith('/rest/v1/')) {
-      const table = u.pathname.split('/')[3];
-      const rows = FIXTURES[table] ?? [];
-      const single = (r.request().headers()['accept'] ?? '').includes('vnd.pgrst.object');
-      return r.fulfill({ status: 200, contentType: 'application/json',
-        body: JSON.stringify(single ? (rows[0] ?? null) : rows) });
-    }
-    return r.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify({ id: UID, aud: 'authenticated', role: 'authenticated' }) });
-  });
+  /* Máy chủ giả DÙNG CHUNG với live.mjs (#39): lọc eq/in/is, order=, RPC, 400 cho
+     cột không có thật, nhớ lệnh ghi — không còn trả nguyên bảng. */
+  await page.route('**/*.supabase.co/**', fakeSupabase({ world: structuredClone(FIXTURES) }));
 
   await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(9000);

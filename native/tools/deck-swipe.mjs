@@ -50,6 +50,7 @@ const args = new Set(argv);
 const runs = Number(argv[argv.indexOf('--runs') + 1]) || 5;
 
 const { FIXTURES, REF, UID, day, jwt } = await import(path.join(NATIVE, 'tools', 'live-world.mjs'));
+const { fakeSupabase } = await import(path.join(NATIVE, 'tools', 'live-server.mjs'));
 
 function loadChromium() {
   for (const root of [path.join(NATIVE, 'node_modules'), execFileSync('npm', ['root', '-g']).toString().trim()]) {
@@ -116,16 +117,9 @@ async function openPage(chromium) {
     },
   })]);
   const page = await ctx.newPage();
-  await page.route('**/*.supabase.co/**', async (r) => {
-    const u = new URL(r.request().url());
-    if (u.pathname.startsWith('/rest/v1/')) {
-      const t = u.pathname.split('/')[3];
-      const rows = FIXTURES[t] ?? [];
-      const one = (r.request().headers()['accept'] ?? '').includes('vnd.pgrst.object');
-      return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(one ? (rows[0] ?? null) : rows) });
-    }
-    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ id: UID, aud: 'authenticated', role: 'authenticated' }) });
-  });
+  /* Máy chủ giả DÙNG CHUNG với live.mjs (#39): lọc eq/in/is, order=, RPC, 400 cho
+     cột không có thật, nhớ lệnh ghi — không còn trả nguyên bảng. */
+  await page.route('**/*.supabase.co/**', fakeSupabase({ world: structuredClone(FIXTURES) }));
   return { browser, page };
 }
 

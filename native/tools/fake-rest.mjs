@@ -248,10 +248,17 @@ if (orderCalls === 0) {
 /* ── vế 3: live.mjs có thật sự gọi không ─────────────────────────────────── */
 
 const liveSrc = readFileSync(path.join(ROOT, 'tools', 'live.mjs'), 'utf8');
-if (!/applyQuery/.test(liveSrc)) {
-  problems.push('tools/live.mjs không gọi `applyQuery` — máy chủ giả vẫn trả nguyên bảng, và hai vế trên chỉ đang kiểm một hàm không ai dùng');
-} else if (!/const rows = applyQuery\(/.test(liveSrc)) {
-  problems.push('tools/live.mjs có nhắc `applyQuery` nhưng không dùng nó để dựng `rows` của route giả — kiểm lại chỗ nối');
+/* Từ #39 ruột của route giả nằm ở `live-server.mjs` (`fakeSupabase`), dùng chung
+   cho `live.mjs` và bốn đầu dò hiệu năng. Các phép kiểm "có thật sự gọi không"
+   dưới đây đọc tệp ấy; vế 7b đòi mọi route giả trong `tools/` đi qua nó. */
+const serverSrc = readFileSync(path.join(ROOT, 'tools', 'live-server.mjs'), 'utf8');
+if (!/applyQuery/.test(serverSrc)) {
+  problems.push('tools/live-server.mjs không gọi `applyQuery` — máy chủ giả vẫn trả nguyên bảng, và hai vế trên chỉ đang kiểm một hàm không ai dùng');
+} else if (!/const rows = applyQuery\(/.test(serverSrc)) {
+  problems.push('tools/live-server.mjs có nhắc `applyQuery` nhưng không dùng nó để dựng `rows` của route giả — kiểm lại chỗ nối');
+}
+if (!/page\.route\('\*\*\/\*\.supabase\.co\/\*\*', fakeSupabase\(\{\s*world,\s*mode,/.test(liveSrc)) {
+  problems.push('tools/live.mjs không dựng route giả bằng `fakeSupabase({ world, mode, … })` — mọi phép kiểm ruột route dưới đây đang kiểm một tệp live.mjs không dùng');
 }
 
 /* ── vế 4 (#35): `select=` hỏi cột không có thật thì 400 ─────────────────── */
@@ -302,14 +309,14 @@ const rej = selectRejection(new URL('https://x.supabase.co/rest/v1/community_lik
 if (!rej || rej.status !== 400 || rej.body.code !== '42703' || !/community_likes\.id/.test(rej.body.message)) {
   problems.push(`selectRejection không trả 400 / 42703 kèm tên cột như PostgREST: ${JSON.stringify(rej)}`);
 }
-if (!/const rejected = requestRejection\(u, r\.request\(\)\.method\(\), r\.request\(\)\.postData\(\)\)/.test(liveSrc) || !/if \(rejected\)[\s\S]{0,400}status: rejected\.status/.test(liveSrc)) {
-  problems.push('tools/live.mjs không dùng `requestRejection` (select=, bộ lọc, order=, thân POST/PATCH) để trả 400 trong route giả — vế 4 chỉ đang kiểm một hàm không ai dùng');
+if (!/const rejected = requestRejection\(u, r\.request\(\)\.method\(\), r\.request\(\)\.postData\(\)\)/.test(serverSrc) || !/if \(rejected\)[\s\S]{0,400}status: rejected\.status/.test(serverSrc)) {
+  problems.push('tools/live-server.mjs không dùng `requestRejection` (select=, bộ lọc, order=, thân POST/PATCH) để trả 400 trong route giả — vế 4 chỉ đang kiểm một hàm không ai dùng');
 }
 
 /* ── vế 5 (#38): `/rest/v1/rpc/<tên>` là hàm, không phải bảng `rpc` ──────── */
-if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{0,1200}RPC_FIXTURES\[fn\][\s\S]{0,800}fx\.run\(args, world\)/.test(liveSrc)) {
+if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{0,1200}RPC_FIXTURES\[fn\][\s\S]{0,800}fx\.run\(args, world\)/.test(serverSrc)) {
   problems.push(
-    'tools/live.mjs không rẽ `/rest/v1/rpc/<tên>` sang nhánh hàm (soát đối số bằng `rpcArgsRejection`, rồi `RPC_FIXTURES[fn].run`) — ' +
+    'tools/live-server.mjs không rẽ `/rest/v1/rpc/<tên>` sang nhánh hàm (soát đối số bằng `rpcArgsRejection`, rồi `RPC_FIXTURES[fn].run`) — ' +
       'mọi RPC lại rơi vào nhánh bảng và nhận `[]`, đúng lỗi #38 sửa',
   );
 }
@@ -353,8 +360,8 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
     try { ok = run(W()); } catch (e) { ok = false; }
     if (!ok) problems.push(`thế giới giả ghi sai (#52): ${label}`);
   }
-  if (!/applyWrite\(world, table, req\.method\(\), u, req\.postData\(\), req\.headers\(\)\)/.test(liveSrc)) {
-    problems.push('tools/live.mjs không áp lệnh ghi vào thế giới của trang (`applyWrite`) — vế 6 chỉ đang kiểm một hàm không ai dùng');
+  if (!/applyWrite\(world, table, req\.method\(\), u, req\.postData\(\), req\.headers\(\)\)/.test(serverSrc)) {
+    problems.push('tools/live-server.mjs không áp lệnh ghi vào thế giới của trang (`applyWrite`) — vế 6 chỉ đang kiểm một hàm không ai dùng');
   }
   if (!/const world = mode === 'empty' \? \{ profiles: structuredClone\(FIXTURES\.profiles\) \} : structuredClone\(FIXTURES\);/.test(liveSrc)) {
     problems.push('tools/live.mjs không dựng một BẢN SAO thế giới cho mỗi trang — lệnh ghi của trang này sẽ rò sang trang sau');
@@ -519,16 +526,38 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
     try { got = run(); } catch (e) { got = `ném lỗi: ${e.message}`; }
     if (got !== want) problems.push(`Content-Range / offset sai (#70): ${label} — ra "${got}", phải là "${want}"`);
   }
-  if (!/'content-range': contentRange\(world\[table\] \?\? \[\], u, rows\.length, req\.headers\(\)\['prefer'\] \?\? ''\)/.test(liveSrc)) {
-    problems.push('tools/live.mjs không đặt `Content-Range` từ `contentRange(…)` cho lượt đọc bảng — mọi số đếm của app lại thành null (#70)');
+  if (!/'content-range': contentRange\(world\[table\] \?\? \[\], u, rows\.length, req\.headers\(\)\['prefer'\] \?\? ''\)/.test(serverSrc)) {
+    problems.push('tools/live-server.mjs không đặt `Content-Range` từ `contentRange(…)` cho lượt đọc bảng — mọi số đếm của app lại thành null (#70)');
   }
-  if (!/'access-control-expose-headers': 'Content-Range'/.test(liveSrc)) {
-    problems.push('tools/live.mjs không khai `Access-Control-Expose-Headers: Content-Range` — trang khác nguồn không đọc được header ấy, và `count` vẫn là null (#70)');
+  if (!/'access-control-expose-headers': 'Content-Range'/.test(serverSrc)) {
+    problems.push('tools/live-server.mjs không khai `Access-Control-Expose-Headers: Content-Range` — trang khác nguồn không đọc được header ấy, và `count` vẫn là null (#70)');
   }
-  if (!/body: req\.method\(\) === 'HEAD' \? '' :/.test(liveSrc)) {
-    problems.push('tools/live.mjs trả thân cho HEAD — `head: true` là một phép đếm, không có thân (#70)');
+  if (!/body: req\.method\(\) === 'HEAD' \? '' :/.test(serverSrc)) {
+    problems.push('tools/live-server.mjs trả thân cho HEAD — `head: true` là một phép đếm, không có thân (#70)');
   }
   globalThis.__rangeCases = RANGE_CASES.length;
+}
+
+/* ── vế 7b (#39): mọi route giả trong tools/ đi qua `fakeSupabase` ──────────
+   Bốn đầu dò hiệu năng từng tự dựng route trả `FIXTURES[bảng]` nguyên bảng —
+   không lọc, không sắp, không RPC, không 400 — nên đo khung hình trên những màn
+   đang ở trạng thái lỗi. Một route giả viết tay nữa là một thế giới thứ hai. */
+{
+  const { readdirSync: ls } = await import('node:fs');
+  const ROUTE = /page\.route\('\*\*\/\*\.supabase\.co\/\*\*',\s*([^\n]{0,30})/g;
+  const handRolled = (src) => [...src.matchAll(ROUTE)].filter((m) => !m[1].startsWith('fakeSupabase(')).length;
+  let routed = 0;
+  for (const f of ls(path.join(ROOT, 'tools')).filter((x) => x.endsWith('.mjs'))) {
+    const src = readFileSync(path.join(ROOT, 'tools', f), 'utf8');
+    const all = [...src.matchAll(ROUTE)].length;
+    if (!all) continue;
+    routed++;
+    if (handRolled(src)) problems.push(`tools/${f}: route giả của Supabase tự viết handler — phải là fakeSupabase({ world, … }) của live-server.mjs (#39)`);
+  }
+  if (routed < 5) problems.push(`chỉ ${routed} tệp trong tools/ dựng route giả — live.mjs và bốn đầu dò hiệu năng phải có mặt; regex của vế 7b đã mục?`);
+  /* Ghép hai mảnh: nguyên văn thì chính dòng này khớp ROUTE, và tệp luật tự báo mình. */
+  if (handRolled("await page.route('**" + "/*.supabase.co/**', async (r) => {") !== 1) problems.push('vế 7b tự kiểm hỏng: một handler viết tay mà không bị nhận ra');
+  globalThis.__routed = routed;
 }
 
 if (problems.length) {
@@ -540,7 +569,7 @@ console.log(
   `máy chủ giả OK — ${CASES.length} ca sắp xếp và lọc (một cột, nhiều cột, NULL hai chiều, nullslast, boolean, limit, eq/in/is/neq, toán tử lạ giữ nguyên, ` +
     `không-order) đều đúng và không ca nào sắp tại chỗ; ${orderCalls} lượt \`.order()\` trong src/, ` +
     `${checkedTables} cặp bảng·cột có fixture để đối chiếu và mọi cột đều tồn tại trong MỌI hàng; ` +
-    'và `live.mjs` thật sự gọi `applyQuery` để dựng hàng trả về, chứ không chỉ import nó. ' +
+    'và route giả (`live-server.mjs`, #39) thật sự gọi `applyQuery` để dựng hàng trả về, chứ không chỉ import nó. ' +
     'Không kiểm `gte`/`lt` — máy chủ giả không lọc theo ngày, giới hạn ấy ghi trong live.mjs. ' +
     `Và ${SELECT_CASES.length} ca \`select=\` (#35): cột không có thật — kể cả sau bí danh, ép kiểu, đường JSON, trong phần nhúng — ` +
     'được trả 400 / 42703 như PostgREST, câu hợp lệ thì không, và `live.mjs` dùng đúng bộ ấy trong route giả. ' +
@@ -549,5 +578,6 @@ console.log(
     'Và `/rest/v1/rpc/<tên>` được rẽ sang nhánh hàm (#38): đối số soát theo `types.ts`, kết quả từ `live-rpc.mjs`. ' +
     `Và trạng thái mạng (#68): ${globalThis.__netFiles} tệp tools/live*.mjs, đọc bằng trình phân tích cú pháp, không đổi mạng ở đâu ngoài goOnline/goOffline, ` +
     `và cả hai hàm ấy đều bắn \`navigator.connection\` 'change' (${globalThis.__netCases} ca tự kiểm: trần, chỉ số chuỗi, newContext offline, CDP; chú thích và chuỗi thì im). ` +
-    `Và ${globalThis.__rangeCases} ca #70: \`Content-Range\` mang tổng đếm TRƯỚC limit/offset khi \`Prefer\` xin count, \`*/0\` khi rỗng, \`*\` khi không xin; HEAD thân rỗng; \`offset\` được áp trước \`limit\``,
+    `Và ${globalThis.__rangeCases} ca #70: \`Content-Range\` mang tổng đếm TRƯỚC limit/offset khi \`Prefer\` xin count, \`*/0\` khi rỗng, \`*\` khi không xin; HEAD thân rỗng; \`offset\` được áp trước \`limit\`` +
+    `Và ${globalThis.__routed} tệp trong tools/ dựng route giả, tất cả qua fakeSupabase của live-server.mjs (#39) — không thế giới thứ hai nào`,
 );

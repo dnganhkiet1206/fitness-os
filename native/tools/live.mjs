@@ -88,10 +88,9 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = process.env.LIVE_BUILD ? path.resolve(process.env.LIVE_BUILD) : path.join(NATIVE, 'tools', '.live-build');
 const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
-import { FIXTURES, REF, UID, applyQuery, contentRange, day, jwt } from './live-world.mjs';
-import { requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
+import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
 import { RPC_FIXTURES } from './live-rpc.mjs';
-import { applyWrite, unsupportedFilters } from './live-writes.mjs';
+import { fakeSupabase } from './live-server.mjs';
 import {
   LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, NARROW_ROUTES_MAIN, NARROW_ROUTES_NUTRITION, clipExempt, copyPatterns,
   enlargeText, narrowFindings,
@@ -395,98 +394,11 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
   /* #52: một BẢN SAO thế giới cho mỗi trang, và lệnh ghi áp vào nó
      (`live-writes.mjs`). Chế độ `empty` là thế giới chỉ có hồ sơ, như trước. */
   const world = mode === 'empty' ? { profiles: structuredClone(FIXTURES.profiles) } : structuredClone(FIXTURES);
-  await page.route('**/*.supabase.co/**', async (r) => {
-    const u = new URL(r.request().url());
-    if (u.pathname.startsWith('/rest/v1/')) {
-      if (mode === 'fail') {
-        return r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' });
-      }
-      const table = u.pathname.split('/')[3];
-      /* #38: `/rest/v1/rpc/<tên>` là một lời gọi hàm, không phải bảng `rpc`.
-         Trước đây nó rơi vào nhánh bảng dưới đây và luôn nhận `[]`, nên thẻ
-         thử thách, gợi ý theo dõi, tìm người và bản xem trước Tiến trình chỉ
-         từng được quét ở trạng thái rỗng. Nay: đối số phải khớp chữ ký trong
-         `types.ts` (không thì 404 / PGRST202 như PostgREST), rồi kết quả tính
-         từ CÙNG thế giới với các bảng (`tools/live-rpc.mjs`). Hàm không có
-         fixture vẫn nhận `[]` như cũ, và được liệt kê cuối lượt. */
-      if (table === 'rpc') {
-        const fn = u.pathname.split('/')[4];
-        const req = r.request();
-        let args = {};
-        if (req.method() === 'GET') args = Object.fromEntries(u.searchParams);
-        else if (req.postData()) { try { args = JSON.parse(req.postData()); } catch { args = {}; } }
-        const badArgs = rpcArgsRejection(fn, args);
-        if (badArgs) {
-          RPC_ARG_MISSES.add(
-            `rpc/${fn}(${Object.keys(args).join(', ')}) — ` +
-              [badArgs.extra.length && `thừa ${badArgs.extra.join(', ')}`, badArgs.missing.length && `thiếu ${badArgs.missing.join(', ')}`]
-                .filter(Boolean).join('; '),
-          );
-          return r.fulfill({ status: badArgs.status, contentType: 'application/json', body: JSON.stringify(badArgs.body) });
-        }
-        const fx = RPC_FIXTURES[fn];
-        if (!fx) {
-          RPC_UNFIXTURED.add(fn);
-          return r.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
-        }
-        try {
-          const out = fx.run(args, world);
-          const one = (req.headers()['accept'] ?? '').includes('vnd.pgrst.object');
-          return r.fulfill({
-            status: 200, contentType: 'application/json',
-            body: JSON.stringify(one && Array.isArray(out) ? (out[0] ?? null) : out),
-          });
-        } catch (e) {
-          if (!e.rpc) throw e;
-          return r.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify(e.rpc) });
-        }
-      }
-      /* #35: `select=` hỏi một cột không có thật thì trả 400 như PostgREST, và
-         ghi lại — một lượt quét màn hay một kịch bản có thể chỉ thấy một toast
-         lỗi (hay không thấy gì), còn danh sách này nói đúng bảng và cột.
-         Trước đây máy chủ giả trả hàng bất kể câu hỏi, nên bốn lệnh xoá hỏi
-         `RETURNING id` trên bảng không có `id` (c227cfe) xanh ở đây suốt. */
-      /* #40: không chỉ `select=` — bộ lọc, `or=`/`and=`, `order=`, `on_conflict=`,
-         `columns=` (42703) và khoá của thân POST/PATCH (PGRST204) cũng phải là
-         cột có thật. Trước #40, `.eq('user_idd', …)` gõ nhầm cho một màn
-         "trống" ở đây, còn trên server thật nó hỏng. */
-      const rejected = requestRejection(u, r.request().method(), r.request().postData());
-      if (rejected) {
-        SELECT_MISSES.add(
-          `${r.request().method()} ${table} (${rejected.where}${rejected.where === 'select=' ? u.searchParams.get('select') : ''}) — không có cột ${rejected.bad.join(', ')}`,
-        );
-        return r.fulfill({ status: rejected.status, contentType: 'application/json', body: JSON.stringify(rejected.body) });
-      }
-      /* `applyQuery` lọc `eq`/`neq`/`in`/`is` (từ #17), rồi đọc `order=` và
-         `limit=` — xem chú thích của nó trong `live-world.mjs`. Không đọc
-         `gte`/`lt`; giới hạn ấy ghi ở kịch bản "nhật ký ngày khác" bên dưới
-         và vẫn còn nguyên. */
-      const req = r.request();
-      const wrote = applyWrite(world, table, req.method(), u, req.postData(), req.headers());
-      if (wrote) {
-        if (!wrote.applied) WRITES_NOT_APPLIED.add(`${req.method()} ${table} (${unsupportedFilters(u).join(', ')})`);
-        return r.fulfill({ status: wrote.status, contentType: 'application/json', body: wrote.body });
-      }
-      const rows = applyQuery(world[table] ?? [], u);
-      const single = (r.request().headers()['accept'] ?? '').includes('vnd.pgrst.object');
-      /* #70: số đếm đi trong `Content-Range`, không trong thân — và `HEAD`
-         (`head: true`) có thân rỗng. Header ấy không nằm trong danh sách mà một
-         trang khác nguồn được đọc, nên Supabase thật khai nó ở
-         `Access-Control-Expose-Headers`; máy chủ giả làm y vậy. */
-      return r.fulfill({
-        status: 200, contentType: 'application/json',
-        headers: {
-          'content-range': contentRange(world[table] ?? [], u, rows.length, req.headers()['prefer'] ?? ''),
-          'access-control-expose-headers': 'Content-Range',
-        },
-        body: req.method() === 'HEAD' ? '' : JSON.stringify(single ? (rows[0] ?? null) : rows),
-      });
-    }
-    return r.fulfill({
-      status: 200, contentType: 'application/json',
-      body: JSON.stringify({ id: UID, aud: 'authenticated', role: 'authenticated' }),
-    });
-  });
+  await page.route('**/*.supabase.co/**', fakeSupabase({
+    world,
+    mode,
+    report: { rpcArgMisses: RPC_ARG_MISSES, rpcUnfixtured: RPC_UNFIXTURED, selectMisses: SELECT_MISSES, writesNotApplied: WRITES_NOT_APPLIED },
+  }));
 
   await page.goto(`http://localhost:${PORT}${route}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(settleMs);
