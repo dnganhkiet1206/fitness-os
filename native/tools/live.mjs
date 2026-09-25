@@ -459,6 +459,47 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
 }
 
 /**
+ * Có mạng lại — theo cách một trình duyệt THẬT báo cho app (#62).
+ *
+ * ── vì sao `setOffline(false)` một mình không đủ ──
+ *
+ * Đo trên Chromium của bộ chạy này: `setOffline(true)` bắn CẢ
+ * `navigator.connection` 'change' LẪN `window` 'offline'; `setOffline(false)`
+ * chỉ bắn `window` 'online'. NetInfo bản web, khi `navigator.connection` tồn
+ * tại, CHỈ nghe 'change' — nên app thấy mất mạng mà không bao giờ thấy mạng
+ * về: dải "Ngoại tuyến" nằm mãi, `onlineManager` ở offline mãi, và hàng đợi
+ * bền không bao giờ được gửi. Mọi vế "có mạng lại thì…" viết trước hàm này
+ * (#45, #49) vì thế chưa từng có mạng lại trong mắt app — rỗng nghĩa, dạng
+ * thứ ba: dữ liệu đích đã hỏng vì một lý do khác. Và `lib/offline.ts` kết luận
+ * "có mạng lại 30 giây vẫn không gửi" từ ĐÚNG phép đo này.
+ *
+ * Nên có mạng lại = tắt giả lập VÀ bắn 'change' như trình duyệt thật khi mạng
+ * đổi. Sau đó `stillOffline` phải là false — nếu không, vế đang đo không đo gì.
+ */
+async function goOnline(page) {
+  await page.context().setOffline(false);
+  await page.evaluate(() => navigator.connection?.dispatchEvent(new Event('change')));
+}
+
+/**
+ * Mất mạng — cùng lý do, chiều ngược lại. Lần mất mạng ĐẦU Chromium tự bắn
+ * 'change'; từ lần THỨ HAI thì không, vì `navigator.connection` của nó chưa
+ * từng biết mạng đã về (nó không đổi trạng thái lúc `setOffline(false)`), nên
+ * với nó "mất mạng lần nữa" là không có gì đổi. Đo được ở vế (B) của #62: lần
+ * mất mạng thứ hai app vẫn tin là có mạng, mutation chạy và hỏng thay vì tạm
+ * dừng, và cache không có gì để gửi lại.
+ */
+async function goOffline(page) {
+  await page.context().setOffline(true);
+  await page.evaluate(() => navigator.connection?.dispatchEvent(new Event('change')));
+}
+
+/** App còn tin là mất mạng? (dải báo `nOffline` còn trên màn) */
+async function stillOffline(page) {
+  return /Ngoại tuyến — đang hiển thị|Offline — showing saved data/.test(await page.locator('body').innerText());
+}
+
+/**
  * Everything on the page a person can read — including what `innerText` cannot.
  *
  * ── the blind spot this closes ──
@@ -1281,6 +1322,67 @@ const SCENARIOS = [
   },
   {
     /*
+      #62: đường XẾP HÀNG BỀN phải gửi đúng MỘT lần khi có mạng lại. Nước đi
+      qua hàng đợi ở mọi lúc (`mutationKey: [...OFFLINE_WRITE_KEY]`), nên mất
+      mạng thì React Query tạm dừng nó và lưu nó vào cache persist.
+
+      (A) có mạng lại trong trang: đúng một upsert `water_logs`, và 3 giây sau
+          vẫn một — không gửi đôi.
+      (B) rời app LÚC MẤT MẠNG, có mạng lại, mở app: việc đã xếp hàng sống qua
+          lần tải lại (cache persist) và được gửi đúng một lần.
+
+      Trước `goOnline`, vế (A) đỏ "0 lệnh ghi sau 8 giây" — không phải vì app,
+      mà vì bộ chạy chưa bao giờ báo cho NetInfo là mạng đã về (xem goOnline).
+    */
+    name: 'Mất mạng: nước xếp hàng được gửi đúng một lần khi có mạng lại, kể cả qua lần mở lại app',
+    route: '/water', mode: 'full',
+    async run(page) {
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/water_logs/.test(q.url()) && q.method() !== 'GET') writes.push(q.postData() ?? '');
+      });
+      const add = () => page.getByRole('button', { name: /^(Thêm|Add) \d+ (ml|oz)$/ }).first();
+      if ((await add().count()) === 0) return 'không thấy nút thêm nước';
+      const paused = () =>
+        page.evaluate(() => {
+          const c = JSON.parse(localStorage.getItem('ascnd_rq_cache') ?? '{}');
+          return (c.clientState?.mutations ?? []).filter((m) => m.state?.isPaused).length;
+        });
+
+      /* (A) */
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      await add().click();
+      await page.waitForTimeout(2000);
+      if (writes.length) return `(A) mất mạng mà vẫn có ${writes.length} lệnh ghi đi ra`;
+      if ((await paused()) !== 1) return `(A) mất mạng, bấm thêm nước: cache persist phải có đúng 1 mutation tạm dừng, ra ${await paused()}`;
+      await goOnline(page);
+      for (let i = 0; i < 16 && writes.length === 0; i++) await page.waitForTimeout(500);
+      if (writes.length === 0) return '(A) có mạng lại 8 giây mà việc đã xếp hàng không được gửi';
+      await page.waitForTimeout(3000);
+      if (writes.length !== 1) return `(A) có mạng lại: phải đúng 1 lệnh ghi water_logs, ra ${writes.length} — gửi đôi`;
+      if (!/"amount_ml"\s*:\s*\d+/.test(writes[0])) return `(A) lệnh ghi không mang amount_ml: ${writes[0].slice(0, 120)}`;
+
+      /* (B) */
+      const url = page.url();
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      await add().click();
+      /* persist có throttle 1 giây: đợi nó ghi xong rồi mới "tắt app". */
+      await page.waitForTimeout(2000);
+      if ((await paused()) !== 1) return `(B) trước khi rời app, cache phải có đúng 1 mutation tạm dừng, ra ${await paused()}`;
+      await page.goto('about:blank');
+      await goOnline(page);
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      for (let i = 0; i < 24 && writes.length < 2; i++) await page.waitForTimeout(500);
+      await page.waitForTimeout(3000);
+      if (writes.length !== 2) return `(B) mở lại app khi có mạng: việc xếp hàng lúc mất mạng phải được gửi đúng 1 lần, ra ${writes.length - 1}`;
+      if ((await paused()) !== 0) return `(B) đã gửi mà cache vẫn còn ${await paused()} mutation tạm dừng — lần mở sau sẽ gửi lại`;
+      return null;
+    },
+  },
+  {
+    /*
       #45: mất mạng, React Query mặc định TẠM DỪNG mutation — không chạy, không
       onError. Đo trên bản chưa sửa (dựng lại với useOnlineMutation trả thẳng
       useMutation): bài đã thích, bấm → nhãn "Thích · 128" thành 127 và nằm
@@ -1300,7 +1402,7 @@ const SCENARIOS = [
       const btn = () => page.getByRole('button', { name: /^(Thích|Like) · \d+$/ }).first();
       if ((await btn().count()) === 0) return 'không thấy nút Thích nào trên feed';
       const before = await btn().getAttribute('aria-label');
-      await page.context().setOffline(true);
+      await goOffline(page);
       await page.waitForTimeout(1500);
       try {
         await btn().click();
@@ -1315,9 +1417,10 @@ const SCENARIOS = [
         if (after !== before) return `mất mạng mà dấu vẫn đổi: trước "${before}", sau "${after}"`;
         if (writes.length) return `mất mạng mà vẫn có ${writes.length} lệnh ghi đi ra`;
       } finally {
-        await page.context().setOffline(false);
+        await goOnline(page);
       }
       await page.waitForTimeout(5000);
+      if (await stillOffline(page)) return 'có mạng lại mà app vẫn tin là mất mạng — vế "không tự gửi" dưới đây sẽ không đo gì';
       if (writes.length) return `có mạng lại thì tự gửi ${writes.length} lệnh ghi — thao tác cộng đồng không được xếp hàng`;
       const back = await btn().getAttribute('aria-label');
       if (back !== before) return `có mạng lại, nhãn thành "${back}" (trước "${before}")`;
@@ -1456,7 +1559,7 @@ const SCENARIOS = [
       await page.waitForTimeout(1500);
       const star = page.getByRole('button', { name: /^(Bật\/tắt yêu thích|Toggle favourite)$/ }).first();
       if ((await star.count()) === 0) return 'không thấy ngôi sao Yêu thích nào trên /food-list (fixture food_items?)';
-      await page.context().setOffline(true);
+      await goOffline(page);
       await page.waitForTimeout(1500);
       try {
         await star.click();
@@ -1469,9 +1572,10 @@ const SCENARIOS = [
         if (!/giữ lại|kept/i.test(toastText)) return `câu báo phải nói rõ là không giữ lại để gửi sau, ra "${toastText}"`;
         if (writes.length) return `mất mạng mà vẫn có ${writes.length} lệnh ghi đi ra`;
       } finally {
-        await page.context().setOffline(false);
+        await goOnline(page);
       }
       await page.waitForTimeout(5000);
+      if (await stillOffline(page)) return 'có mạng lại mà app vẫn tin là mất mạng — vế "không tự gửi" dưới đây sẽ không đo gì';
       if (writes.length) return `có mạng lại thì tự gửi ${writes.length} lệnh ghi — ngôi sao không được xếp hàng`;
       return null;
     },

@@ -32,6 +32,20 @@ import { onlineManager } from '@tanstack/react-query';
  * device — the write still lands later and the refetch shows it. An arriving
  * entry is a pleasant surprise; a vanishing one is a bug report.
  *
+ * ── what that reconnect test actually measured (#62, 2026-09-25) ──
+ *
+ * Not the app. Chromium's offline emulation fires `navigator.connection`
+ * 'change' when it goes OFFLINE but only `window` 'online' when it comes back,
+ * and NetInfo on web listens to 'change' alone whenever `navigator.connection`
+ * exists. So the app saw the connection drop and never saw it return: the
+ * offline banner stayed, `onlineManager` stayed offline, and nothing could
+ * resume. With the 'change' a real browser fires, the paused water write is
+ * sent exactly once — also after the app is closed offline and reopened
+ * online (`live.mjs`, the #62 scenario). The premise "paused writes do not
+ * resume" behind this function is therefore unproven either way on iOS, and
+ * disproved on web; whether the patch should come back for QUEUED writes is
+ * a separate decision (#66), not made here.
+ *
  * No message is shown from here. `OfflineBanner` is already on screen whenever
  * this returns true, and it says the one thing there is to say. A toast on top
  * of a banner is the same sentence twice.
