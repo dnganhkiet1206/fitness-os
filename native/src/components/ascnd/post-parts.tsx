@@ -106,7 +106,10 @@ function PostHeader({ post, preview }: { post: FeedPost; preview: boolean }) {
               </View>
             ) : null}
           </View>
-          <Text style={styles.meta} numberOfLines={1}>
+          {/* Hai dòng: giờ đăng · "Chỉ người theo dõi" là HAI câu của app, và ở 320
+              chữ ×1.3 một dòng cắt mất đúng câu nói ai xem được bài (#63, lượt
+              quét hẹp). */}
+          <Text style={styles.meta} numberOfLines={2}>
             {timeAgo(post.created_at, i18n, lang)}
             {post.visibility === 'followers' ? ` · ${i18n.nCmFollowersOnly}` : ''}
           </Text>

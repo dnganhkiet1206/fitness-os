@@ -93,7 +93,7 @@ import { RPC_FIXTURES } from './live-rpc.mjs';
 import { fakeSupabase } from './live-server.mjs';
 import {
   LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, NARROW_ROUTES_MAIN, NARROW_ROUTES_NUTRITION, clipExempt, copyPatterns,
-  enlargeText, narrowFindings,
+  enlargeText, narrowFindings, tailPatterns,
 } from './live-narrow.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -2568,6 +2568,8 @@ try {
   if (!args.has('--press-only') && !onlyArg) {
     process.stdout.write('quét hẹp 320');
     const patterns = copyPatterns();
+    /* #63: câu của app ở CUỐI một dòng ghép với nội dung ("@handle · Chặn từ …"). */
+    const tails = tailPatterns();
     const contentCut = new Set();
     let opened = 0;
     let largeOpened = 0;
@@ -2591,7 +2593,7 @@ try {
             if ((await enlargeText(page)) === 0) problems.push(`${at}: phóng chữ không đổi được cỡ của phần tử chữ nào — giả lập hỏng, đừng tin lượt này`);
             await page.waitForTimeout(300);
           }
-          const { wide, cut, clipped, overlap } = await narrowFindings(page, patterns);
+          const { wide, cut, clipped, overlap } = await narrowFindings(page, patterns, tails);
           if (wide) problems.push(`${at}: trang rộng ${wide}px trong khung ${NARROW.width}px — cả màn cuộn ngang`);
           for (const o of overlap) problems.push(`${at}: hai đích chạm chồng lên nhau — ${o}`);
           if (!large) {
@@ -2601,7 +2603,8 @@ try {
             }
           }
           for (const c of cut) {
-            if (c.app) problems.push(`${at}: chữ của app bị cắt thành "…" — "${c.text.slice(0, 80)}"`);
+            if (c.via === 'tail') problems.push(`${at}: câu của app ở cuối một dòng ghép bị cắt thành "…" (#63) — "${c.text.slice(0, 80)}"`);
+            else if (c.app) problems.push(`${at}: chữ của app bị cắt thành "…" — "${c.text.slice(0, 80)}"`);
             else contentCut.add(c.text.slice(0, 40));
           }
           if (large) largeOpened++;

@@ -209,10 +209,41 @@ export function copyPatterns(copy = appCopy()) {
   return copy.filter((s) => fixedLetters(s) >= 4).map((s) => `^${patternBody(s)}$`);
 }
 
+/**
+ * Mẫu cho chữ GHÉP (#63): nội dung + câu của app trong CÙNG một dòng, câu của
+ * app đứng CUỐI — "@tuan.ng · Chặn từ 22 thg 9". Luật 2 so TOÀN BỘ chữ với
+ * `copyPatterns`, nên dòng ấy bị cắt thành "@tuan.ng · Chặn t…" mà không bị
+ * báo (#56): chuỗi đầy đủ không khớp mẫu nào. Cắt luôn ăn từ cuối, nên khi đuôi
+ * là câu của app thì phần mất CHÍNH LÀ câu của app.
+ *
+ * Mẫu đuôi: sau `·`, `—` hoặc `,`, phần còn lại khớp TRỌN một chuỗi của app
+ * tới hết dòng. Không nhận một khoảng trắng trần làm chỗ nối: chuỗi app một từ
+ * ("buổi tập", "phút") thì mọi chú thích tận cùng bằng từ ấy đều khớp — lượt
+ * đầu đo được "chưa ghi buổi tập" bị báo là dòng ghép chỉ vì chữ cuối. Chỉ
+ * những chuỗi MỞ ĐẦU bằng chữ cố định: một mẫu
+ * mở đầu bằng `{n}` ("{n} ngày trước") làm đuôi thì khớp mọi chú thích người
+ * dùng tận cùng bằng "… ngày trước", và đó là báo oan (#87 cho luật khớp trọn).
+ * Cùng ngưỡng ≥ 4 chữ cái cố định như `copyPatterns`.
+ */
+export function tailPatterns(copy = appCopy()) {
+  return copy
+    .filter((s) => fixedLetters(s) >= 4)
+    .filter((s) => /^\p{L}/u.test(s))
+    .map((s) => `[·—,]\\s*${patternBody(s)}$`);
+}
+
+/** Một dòng bị cắt, theo cả hai luật: khớp trọn (`full`) hay có đuôi là câu của app (`tail`). */
+export function cutKind(text, full, tails) {
+  if (full.some((re) => re.test(text))) return 'full';
+  if (tails.some((re) => re.test(text))) return 'tail';
+  return null;
+}
+
 /** Chạy TRONG trang. Trả `{ wide, cut: [{ text, app }], clipped: [mô tả] }`. */
-export async function narrowFindings(page, patterns) {
-  return page.evaluate((sources) => {
+export async function narrowFindings(page, patterns, tails = []) {
+  return page.evaluate(([sources, tailSources]) => {
     const res = sources.map((s) => new RegExp(s));
+    const tres = tailSources.map((s) => new RegExp(s));
     /* Thanh tab trên web (`components/app-tabs.web.tsx`) là khung mẫu của
        Expo cho trình duyệt, không phải thanh tab app ship trên iOS — ở 320 nó
        tự rộng 406px và làm mọi màn trong tab "cuộn ngang". Ẩn nó trước khi
@@ -240,7 +271,10 @@ export async function narrowFindings(page, patterns) {
       /* Một số đo bị cắt ("+3.3…") cũng là vấn đề, dù nó không có trong từ
          điển: con số là dữ liệu, và "…" ở đó là mất đúng thứ người ta đọc. */
       const measure = /^[+\-−]?\d[\d.,]*\s*[^\s\d]{0,4}$/.test(text);
-      cut.push({ text, app: measure || res.some((re) => re.test(text)) });
+      /* Chép thân `cutKind` (hàm chạy trong trang không import được): khớp trọn
+         trước, rồi đuôi (#63). */
+      const via = measure ? 'measure' : res.some((re) => re.test(text)) ? 'full' : tres.some((re) => re.test(text)) ? 'tail' : null;
+      cut.push({ text, app: via !== null, via });
     }
     /*
       Ô chọn bị MÉP VÙNG CUỘN cắt. Một `PickRow scroll` không bao giờ hiện "…":
@@ -330,5 +364,5 @@ export async function narrowFindings(page, patterns) {
       }
     }
     return { wide, cut, clipped, overlap };
-  }, patterns);
+  }, [patterns, tails]);
 }
