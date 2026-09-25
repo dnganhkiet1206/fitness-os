@@ -1499,8 +1499,18 @@ const SCENARIOS = [
       await page.getByPlaceholder('—').nth(0).fill('60');
       await page.getByPlaceholder('—').nth(1).fill('8');
     }],
-  ].map(([what, route, saveName, tables, prepare]) => ({
-    name: `Mất mạng: ${what} xếp hàng được gửi đúng một lần khi có mạng lại`,
+  ].flatMap(([what, route, saveName, tables, prepare]) => [false, true].map((restart) => ({
+    /*
+      #84: mỗi dòng chạy HAI lần. Lần hai "tắt app" khi việc còn trong hàng rồi
+      mở lại khi có mạng — như vế (B) của #62, nhưng cho mọi loại. Có mạng lại
+      TRONG trang thì một mutation thường cũng tự gửi (#71 đo được), nên chỉ lần
+      mở lại chứng minh được việc xếp hàng BỀN. Cùng một `page`, chỉ điều hướng:
+      `localStorage` còn, và thế giới giả của trang (#52) cũng còn — dòng Kế
+      hoạch ngày giữ được buổi hôm nay đã xoá bằng `planTodayUnlogged`.
+    */
+    name: restart
+      ? `Mất mạng: ${what} xếp hàng sống qua một lần mở lại app`
+      : `Mất mạng: ${what} xếp hàng được gửi đúng một lần khi có mạng lại`,
     route, mode: 'full',
     async run(page) {
       const writes = Object.fromEntries(tables.map((t) => [t, 0]));
@@ -1547,6 +1557,25 @@ const SCENARIOS = [
       await page.waitForTimeout(2500);
       if (sent()) return `mất mạng mà vẫn có lệnh ghi đi ra: ${JSON.stringify(writes)}`;
       if ((await paused()) !== 1) return `mất mạng, bấm lưu: cache persist phải có đúng 1 mutation tạm dừng, ra ${await paused()}`;
+      if (restart) {
+        /*
+          KHÔNG hỏi khoá ở đây: khoá `["offline-write"]` là ĐẠI DIỆN cho "sống qua
+          lần mở lại", còn lần này đo chính điều ấy. Bỏ khoá ở một hook thì lần
+          này phải đỏ vì 0 lệnh ghi, không phải vì một phép so chuỗi.
+          Persist có throttle 1 giây: đợi nó ghi xong rồi mới "tắt app".
+        */
+        await page.waitForTimeout(2000);
+        const url = page.url();
+        await page.goto('about:blank');
+        await goOnline(page);
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        for (let i = 0; i < 24 && sent() < tables.length; i++) await page.waitForTimeout(500);
+        await page.waitForTimeout(3000);
+        const off = tables.filter((t) => writes[t] !== 1);
+        if (off.length) return `mở lại app khi có mạng: mỗi bảng phải đúng 1 lệnh ghi, ra ${JSON.stringify(writes)} — việc xếp hàng không sống qua lần khởi động (${off.join(', ')})`;
+        if ((await paused()) !== 0) return `mở lại app: đã gửi mà cache vẫn còn ${await paused()} mutation tạm dừng — lần mở sau sẽ gửi lại`;
+        return null;
+      }
       const keys = await pausedKeys();
       if (keys[0] !== JSON.stringify(['offline-write']))
         return `mutation tạm dừng mang khoá ${keys[0]}, không phải ["offline-write"] — nó không có hàm chạy sau khi mở lại app, tức việc xếp hàng mất ở lần khởi động sau`;
@@ -1558,7 +1587,7 @@ const SCENARIOS = [
       if ((await paused()) !== 0) return `đã gửi mà cache vẫn còn ${await paused()} mutation tạm dừng — lần mở sau sẽ gửi lại`;
       return null;
     },
-  })),
+  }))),
   {
     /*
       #45: mất mạng, React Query mặc định TẠM DỪNG mutation — không chạy, không
