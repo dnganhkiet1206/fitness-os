@@ -62,6 +62,52 @@ export const NARROW_ROUTES = [
   '/community-share-progress',
   '/community-share-recipe',
 ];
+/**
+ * Các màn Dinh dưỡng của B (#55): nhiều chữ nhất app và chưa màn nào từng được
+ * quét ở 320. Tách khỏi danh sách Cộng đồng để mỗi người biết màn nào là của
+ * mình khi lượt quét đỏ.
+ */
+export const NARROW_ROUTES_NUTRITION = [
+  '/nutrition',
+  '/log-meal',
+  '/diary',
+  '/food-list',
+  '/meal-plans',
+  '/grocery',
+];
+/*
+  Ngoại lệ của luật 3 (ô chọn vắt qua mép vùng cuộn), MỖI cái một lý do (#55).
+
+  Hàng loại bữa của `/log-meal` là `PickRow scroll` sáu ô, và ở 320 nó KHÔNG
+  BAO GIỜ vừa khung (đo: 533px trong 272px). Ô ló ra ở mép là chỗ duy nhất nói
+  "còn nữa, cuộn đi" — che nó đi cho thẳng mép thì hàng trông như chỉ có bốn
+  loại bữa. Điều luật 3 bảo vệ là ô ĐANG CHỌN không bị cắt; từ #47 hàng tự cuộn
+  cho ô ấy hiện trọn, và vế "PickRow cuộn ở 320 + chữ lớn" của `live.mjs` (#54)
+  canh đúng chuyện đó. Hàng lọc theo loại ở hồ sơ (#44) thì KHÔNG được miễn: ở
+  chữ thường nó vừa khung, nên ô vắt qua mép ở đó là lỗi.
+
+  Nhãn đọc từ `native-strings.ts` (cả hai ngôn ngữ), không gõ tay: đổi tên một
+  loại bữa không được lặng lẽ biến ngoại lệ thành luật bị nới.
+*/
+const MEAL_KEYS = ['nBreakfast', 'nLunch', 'nDinner', 'nSnack', 'nPreWorkout', 'nPostWorkout'];
+export function mealLabels(src = readFileSync(path.join(NATIVE, 'src/lib/native-strings.ts'), 'utf8')) {
+  const out = new Set();
+  for (const k of MEAL_KEYS) for (const m of src.matchAll(new RegExp(`^\\s+${k}:\\s*'([^']+)'`, 'gm'))) out.add(m[1]);
+  return out;
+}
+export const NARROW_CLIP_OK = [
+  {
+    route: '/log-meal',
+    labels: mealLabels(),
+    why: 'hàng loại bữa sáu ô không bao giờ vừa 320 — ô ló ra ở mép là dấu "cuộn để xem thêm"; ô đang chọn thì #47 lo và #54 canh',
+  },
+];
+/** Một ô bị cắt (chuỗi `nhãn (l..r trong l..r)` của `narrowFindings`) có được miễn ở màn này không. */
+export function clipExempt(route, clippedDesc) {
+  const label = clippedDesc.replace(/ \(\d+\.\.\d+ trong \d+\.\.\d+\)$/, '');
+  return NARROW_CLIP_OK.some((x) => route.split('?')[0] === x.route && x.labels.has(label));
+}
+
 export const NARROW = { width: 320, height: 720 };
 export const NARROW_LANGS = ['vi', 'en'];
 

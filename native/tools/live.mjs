@@ -90,7 +90,8 @@ import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
 import { requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
 import { RPC_FIXTURES } from './live-rpc.mjs';
 import {
-  LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, copyPatterns, enlargeText, narrowFindings,
+  LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, NARROW_ROUTES_NUTRITION, clipExempt, copyPatterns,
+  enlargeText, narrowFindings,
 } from './live-narrow.mjs';
 
 const args = new Set(process.argv.slice(2));
@@ -1452,6 +1453,83 @@ const SCENARIOS = [
   },
   {
     /*
+      #54 (đưa phép đo #47 vào bộ hồi quy): `PickRow scroll` phải cho thấy TRỌN
+      ô đang chọn. Đo ở 320 với chữ trong ô phóng to (giả lập Dynamic Type) —
+      trước #47: mở `/log-meal?meal=postworkout` thì ô "Sau tập" nằm HẲN ngoài
+      khung ([619, 727] trong [24, 296]), và chạm một ô bị mép cắt thì nó vẫn
+      bị cắt. Chạm bằng TOẠ ĐỘ vào phần còn thấy, không bằng `click()`:
+      Playwright tự cuộn phần tử vào khung trước khi bấm, tức đo gian.
+    */
+    name: 'PickRow cuộn ở 320 + chữ lớn: ô đang chọn luôn hiện trọn, ô đã trọn thì khung đứng yên',
+    route: '/log-meal?meal=postworkout', mode: 'full',
+    async run(page) {
+      await page.setViewportSize({ width: 320, height: 800 });
+      await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+      await page.waitForTimeout(6000);
+      const state = () => page.evaluate(() => {
+        for (const t of document.querySelectorAll('[role="tab"]')) {
+          let el = t.parentElement;
+          while (el && !(el.scrollWidth > el.clientWidth + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowX))) el = el.parentElement;
+          if (!el) continue;
+          const box = el.getBoundingClientRect();
+          const tabs = [...el.querySelectorAll('[role="tab"]')].map((x) => {
+            const b = x.getBoundingClientRect();
+            return { label: x.getAttribute('aria-label') ?? x.innerText, l: b.left, r: b.right, y: b.top + b.height / 2, sel: x.getAttribute('aria-selected') === 'true' };
+          });
+          return { scrollLeft: el.scrollLeft, max: el.scrollWidth - el.clientWidth, row: { l: box.left, r: box.right }, tabs };
+        }
+        return null;
+      });
+      const inside = (t, s) => t.l >= s.row.l - 0.5 && t.r <= s.row.r + 0.5;
+      /* 1 — cỡ chữ thường, lúc MỞ TRANG với ô cuối đã chọn. */
+      const s0 = await state();
+      if (!s0) return 'không có hàng PickRow nào tràn khung ở 320 — vế này không đo gì (hàng loại bữa của log-meal đổi?)';
+      const sel = s0.tabs.find((t) => t.sel);
+      if (!sel) return 'không có ô nào mang aria-selected="true" trong hàng';
+      if (!inside(sel, s0)) return `mở trang với "${sel.label}" đã chọn mà ô ấy không hiện trọn: [${sel.l.toFixed(0)}, ${sel.r.toFixed(0)}] trong khung [${s0.row.l.toFixed(0)}, ${s0.row.r.toFixed(0)}] (#47)`;
+      /* 3 — vẫn cỡ chữ thường (nhiều ô nằm trọn): chạm một ô đã trọn thì khung
+         đứng yên. Kéo hàng về ĐẦU trước (như một cú vuốt ngược), rồi chạm ô nằm
+         trọn NGOÀI CÙNG BÊN PHẢI. Bản đầu của vế này đo ngay ở vị trí mở trang
+         — hàng đã cuộn tới CUỐI — và một PickRow bẻ để luôn cuộn ô được chọn về
+         sát mép trái vẫn XANH: đích bị kẹp ở mức cuộn tối đa nên khung đứng yên
+         dù code sai. Ở đầu hàng thì không có gì kẹp hộ. */
+      await page.evaluate(() => {
+        for (const t of document.querySelectorAll('[role="tab"]')) {
+          let el = t.parentElement;
+          while (el && !(el.scrollWidth > el.clientWidth + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowX))) el = el.parentElement;
+          if (el) { el.scrollLeft = 0; return; }
+        }
+      });
+      await page.waitForTimeout(600);
+      const s0b = await state();
+      const fulls = s0b.tabs.filter((t) => !t.sel && t.l >= s0b.row.l + 1 && t.r <= s0b.row.r - 1);
+      const full = fulls[fulls.length - 1];
+      if (!full || fulls.length < 2) return 'ở đầu hàng không có đủ hai ô nằm trọn (ngoài ô đang chọn) để thử "khung đứng yên"';
+      await page.mouse.click((full.l + full.r) / 2, full.y);
+      await page.waitForTimeout(900);
+      const s1 = await state();
+      /* So với `min(trước, mức tối đa MỚI)`, không với `trước`: đổi ô chọn làm
+         nội dung hẹp đi 1px (đo: mức tối đa 286 → 285), và trình duyệt tự kẹp
+         scrollLeft về mức mới — không phải PickRow cuộn. */
+      if (Math.abs(s1.scrollLeft - Math.min(s0b.scrollLeft, s1.max)) >= 1) return `chạm "${full.label}" (đã nằm trọn) mà khung vẫn cuộn: scrollLeft ${s0b.scrollLeft} → ${s1.scrollLeft} (mức tối đa ${s0b.max} → ${s1.max})`;
+      /* 2 — chữ lớn (giả lập Dynamic Type): chạm phần còn thấy của một ô bị mép cắt thì nó hiện trọn. */
+      await page.addStyleTag({ content: '[role="tab"] div { font-size: 21px !important; line-height: 26px !important; }' });
+      await page.waitForTimeout(1200);
+      const s2 = await state();
+      const cut = s2.tabs.find((t) => !t.sel && ((t.l < s2.row.l - 0.5 && t.r > s2.row.l + 8) || (t.r > s2.row.r + 0.5 && t.l < s2.row.r - 8)));
+      if (!cut) return 'chữ lớn mà không ô nào vừa thấy vừa bị mép cắt để chạm — vế chạm không đo được';
+      const x = cut.l < s2.row.l ? Math.max(cut.l, s2.row.l) + 4 : Math.min(cut.r, s2.row.r) - 4;
+      await page.mouse.click(x, cut.y);
+      await page.waitForTimeout(900);
+      const s3 = await state();
+      const t3 = s3.tabs.find((t) => t.label === cut.label);
+      if (!t3.sel) return `chạm "${cut.label}" mà ô ấy không thành ô đang chọn`;
+      if (!inside(t3, s3)) return `chạm "${cut.label}" (đang bị cắt) mà nó vẫn bị cắt: [${t3.l.toFixed(0)}, ${t3.r.toFixed(0)}] trong [${s3.row.l.toFixed(0)}, ${s3.row.r.toFixed(0)}] (#47)`;
+      return null;
+    },
+  },
+  {
+    /*
       #12: lưu một buổi tập → thanh "Đã lưu buổi tập" có nút Chia sẻ → nút mở
       `/community-share` với ĐÚNG buổi vừa lưu (`?session=` là id do insert
       trả về, không phải một id đoán). Vế này cũng canh một lỗi fixture: dòng
@@ -1882,13 +1960,16 @@ try {
     const contentCut = new Set();
     let opened = 0;
     let largeOpened = 0;
-    /* Cỡ chữ mặc định ở cả hai ngôn ngữ, rồi chữ lớn (#56) ở LARGE_LANGS. */
+    let clipExempted = 0;
+    /* Cỡ chữ mặc định ở cả hai ngôn ngữ, rồi chữ lớn (#56) ở LARGE_LANGS.
+       Màn Dinh dưỡng (#55) chạy ở lượt cỡ chữ mặc định; lượt chữ lớn vẫn là
+       phạm vi #56 (Cộng đồng). */
     const passes = [
       ...NARROW_LANGS.map((lang) => ({ lang, large: false })),
       ...LARGE_LANGS.map((lang) => ({ lang, large: true })),
     ];
     for (const { lang, large } of passes) {
-      for (const route of NARROW_ROUTES) {
+      for (const route of large ? NARROW_ROUTES : [...NARROW_ROUTES, ...NARROW_ROUTES_NUTRITION]) {
         const { browser, page, errors } = await openPage(chromium, route, 'full', 9000, { ...NARROW, lang });
         try {
           const at = `[320 ${lang}${large ? ` chữ ×${LARGE_TEXT}` : ''}] ${route}`;
@@ -1901,7 +1982,12 @@ try {
           }
           const { wide, cut, clipped } = await narrowFindings(page, patterns);
           if (wide) problems.push(`${at}: trang rộng ${wide}px trong khung ${NARROW.width}px — cả màn cuộn ngang`);
-          if (!large) for (const c of clipped) problems.push(`${at}: ô chọn bị mép vùng cuộn cắt ngang khi chưa cuộn — ${c}`);
+          if (!large) {
+            for (const c of clipped) {
+              if (clipExempt(route, c)) clipExempted++;
+              else problems.push(`${at}: ô chọn bị mép vùng cuộn cắt ngang khi chưa cuộn — ${c}`);
+            }
+          }
           for (const c of cut) {
             if (c.app) problems.push(`${at}: chữ của app bị cắt thành "…" — "${c.text.slice(0, 80)}"`);
             else contentCut.add(c.text.slice(0, 40));
@@ -1915,7 +2001,7 @@ try {
       }
     }
     console.log('');
-    globalThis.__narrow = { opened, largeOpened, contentCut: contentCut.size };
+    globalThis.__narrow = { opened, largeOpened, contentCut: contentCut.size, clipExempted };
   }
 
   if (!narrowOnly) {
@@ -1992,12 +2078,13 @@ if (problems.length) {
   nobody can trust is worse than a red one.
 */
 const narrowClaim = globalThis.__narrow
-  ? `${globalThis.__narrow.opened} lượt mở màn Cộng đồng ở ${NARROW.width}×${NARROW.height} (${NARROW_LANGS.join(' + ')}): ` +
+  ? `${globalThis.__narrow.opened} lượt mở màn Cộng đồng và Dinh dưỡng ở ${NARROW.width}×${NARROW.height} (${NARROW_LANGS.join(' + ')}): ` +
     'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt thành "…", không ô chọn nào ' +
     'bị mép vùng cuộn cắt ngang; ' +
-    `thêm ${globalThis.__narrow.largeOpened} lượt với chữ ×${LARGE_TEXT} (${LARGE_LANGS.join(' + ')}, giả lập Dynamic Type): ` +
+    `thêm ${globalThis.__narrow.largeOpened} lượt màn Cộng đồng với chữ ×${LARGE_TEXT} (${LARGE_LANGS.join(' + ')}, giả lập Dynamic Type): ` +
     'không trang nào rộng hơn khung, không chữ nào của app hay số đo nào bị cắt ' +
-    `(${globalThis.__narrow.contentCut} đoạn nội dung người dùng được cắt đúng luật numberOfLines)`
+    `(${globalThis.__narrow.contentCut} đoạn nội dung người dùng được cắt đúng luật numberOfLines; ` +
+    `${globalThis.__narrow.clipExempted} ô vắt mép được miễn theo NARROW_CLIP_OK, mỗi mục một lý do)`
   : 'bỏ qua lượt quét hẹp';
 
 if (onlyArg) {
