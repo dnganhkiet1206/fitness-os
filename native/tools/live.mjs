@@ -556,8 +556,44 @@ async function boot(chromium, route, mode, settleMs = 9000) {
     mkdirSync(dir, { recursive: true });
     await page.screenshot({ path: path.join(dir, `${route === '/' ? 'today' : route.slice(1).replace(/\//g, '-')}.png`) });
   }
+  const segments = await visitSegments(page);
   await browser.close();
-  return { text, rootLen, errors, pinned };
+  return { text, rootLen, errors, pinned, segments };
+}
+
+/**
+ * Mọi phân đoạn KHÔNG mặc định của màn (#58).
+ *
+ * #49 mở `/nutrition` và không thấy "Thực phẩm của tôi" sau 6 giây, rồi đoán là
+ * "dựng muộn". Đo lại ở #58: cuộn tới đáy (scrollTop 454/454) mà chữ vẫn 777 ký
+ * tự — khối ấy không dựng muộn, nó nằm dưới phân đoạn "Kế hoạch ăn", còn màn mở
+ * ở "Hôm nay". Lượt quét chưa từng mở một phân đoạn nào ngoài mặc định: "Kế
+ * hoạch ăn" và ô tìm món, "Cơ thể" của Tập luyện, "Đang theo dõi" của Cộng đồng.
+ *
+ * Nên: bấm từng ô `role="tab"` đang mang `aria-selected="false"` — ô có trạng
+ * thái chọn, tức `Segmented` và các hàng chọn (`PickRow`). Hàng ngày trong tuần
+ * không mang `aria-selected` nên không bị bấm: đó là điều hướng trong một bảng,
+ * không phải một phân đoạn. Trả `[{ label, text }]`, mỗi phân đoạn một mục.
+ */
+async function visitSegments(page) {
+  const out = [];
+  const labels = await page.evaluate(() =>
+    [...document.querySelectorAll('#root [role="tab"][aria-selected="false"]')]
+      .map((e) => e.getAttribute('aria-label') || (e.innerText || '').trim())
+      .filter(Boolean),
+  );
+  for (const label of [...new Set(labels)].slice(0, 8)) {
+    const tab = page.locator(`#root [role="tab"][aria-label="${label.replace(/"/g, '\\"')}"]`).first();
+    try {
+      if ((await tab.count()) === 0 || (await tab.getAttribute('aria-selected')) !== 'false') continue;
+      await tab.click({ timeout: 3000 });
+      await page.waitForTimeout(1500);
+      out.push({ label, text: await readable(page) });
+    } catch {
+      /* bị che hay đã biến mất: không phải việc của vòng quét chữ */
+    }
+  }
+  return out;
 }
 
 // ── pressing things ───────────────────────────────────────────────────────
@@ -2434,13 +2470,14 @@ build();
 const server = await serve();
 const problems = [];
 
+let segmentsSeen = 0;
 try {
   await canary(chromium);
   process.stdout.write('canary OK — đang mở từng màn');
 
   for (const mode of args.has('--press-only') || narrowOnly || onlyArg ? [] : MODES) {
     for (const route of pickRoutes(ROUTES)) {
-      const { text, rootLen, errors, pinned } = await boot(chromium, route, mode);
+      const { text, rootLen, errors, pinned, segments } = await boot(chromium, route, mode);
       const at = `[${mode}] ${route}`;
       if (pinned.length) problems.push(`${at}: ${pinned.length} phần tử kẹt position:absolute sau hiệu ứng vào của Reanimated web (#76) — ${pinned.slice(0, 2).map((t) => `"${t}"`).join(', ')}`);
 
@@ -2450,6 +2487,17 @@ try {
 
       const bad = text.split('\n').filter((l) => BAD_TEXT.test(l)).slice(0, 2);
       if (bad.length) problems.push(`${at}: chữ không dành cho người dùng — ${bad.join(' / ')}`);
+      segmentsSeen += segments.length;
+      for (const sg of segments) {
+        const b = sg.text.split('\n').filter((l) => BAD_TEXT.test(l)).slice(0, 2);
+        if (b.length) problems.push(`${at} › ${sg.label}: chữ không dành cho người dùng — ${b.join(' / ')}`);
+      }
+      /* Chốt của #58: khối từng bị đoán là "dựng muộn" phải được lượt quét THẤY.
+         Không phân biệt hoa thường: `MicroLabel` in hoa bằng CSS, và `innerText`
+         trả chữ ĐÃ in hoa — bản đầu của chốt đỏ vì đúng điều đó. */
+      if (mode === 'full' && route === '/nutrition' && !segments.some((sg) => /thực phẩm của tôi|my foods/iu.test(sg.text))) {
+        problems.push(`${at}: không phân đoạn nào có "Thực phẩm của tôi" — lượt quét không tới được phần dưới của tab Dinh dưỡng (#58)`);
+      }
 
       if (errors.length) problems.push(`${at}: lỗi runtime — ${errors.slice(0, 2).join(' | ').slice(0, 200)}`);
 
@@ -2633,7 +2681,8 @@ if (narrowOnly) {
 
 const sweptClaim = args.has('--press-only')
   ? 'bỏ qua vòng quét màn (--press-only)'
-  : `${ROUTES.length} màn × ${MODES.length} trạng thái (đủ dữ liệu / tài khoản trống / mọi truy vấn hỏng): ` +
+  : `${ROUTES.length} màn × ${MODES.length} trạng thái (đủ dữ liệu / tài khoản trống / mọi truy vấn hỏng), cộng ` +
+    `${segmentsSeen} lượt mở một phân đoạn không mặc định (#58): ` +
     'không màn nào trắng, không lỗi runtime, không chữ lọt ra ngoài như NaN hay undefined';
 
 console.log(
