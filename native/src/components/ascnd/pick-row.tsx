@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import {
-  ScrollView,
   StyleSheet,
   View,
   type LayoutChangeEvent,
@@ -8,13 +7,18 @@ import {
   type ViewStyle,
 } from 'react-native';
 import Animated, {
+  scrollTo,
+  useAnimatedReaction,
+  useAnimatedRef,
   useAnimatedStyle,
   useReducedMotion,
+  useScrollViewOffset,
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { spacing } from '@/constants/ascnd';
 import { press, spring } from '@/constants/motion';
 
 /**
@@ -168,6 +172,10 @@ import { press, spring } from '@/constants/motion';
  */
 const TRAVEL = spring(0.25, 0);
 
+/* Khoảng chừa ở mép khi hàng cuộn tới ô đang chọn (#47): đủ để thấy ô ấy
+   KHÔNG phải ô cuối cùng bị cắt, không nhiều tới mức kéo ô kế bên vào giữa. */
+const EDGE = spacing.md;
+
 /*
   `y` as well as `x`, because two of these rows wrap.
 
@@ -293,6 +301,61 @@ export function PickRow({
     y.value = jump ? here.y : go(here.y);
     w.value = jump ? here.w : go(here.w);
   }, [here, reduceMotion, x, y, w]);
+
+  /*
+    ── hàng cuộn: ô đang chọn phải hiện TRỌN (#47) ──
+
+    Ở #44, hàng lọc theo loại trên hồ sơ rộng 327 trong khung 288 ở bề ngang
+    320, và ô CUỐI bị mép cuộn cắt ngang ngay cả khi nó đang được chọn — viên
+    sáng nằm một nửa ngoài màn. Thu đệm cho vừa chỉ né được ở cỡ chữ mặc định;
+    với Dynamic Type thì không đệm nào đủ.
+
+    Nên hàng tự cuộn: khi ô đang chọn không nằm trọn trong khung, cuộn vừa đủ
+    để nó hiện trọn, chừa `EDGE` ở mép. Ô đã nằm trọn thì KHÔNG cuộn — kéo
+    hàng ra xa rồi bấm một ô đang thấy mà cả hàng giật về là cướp tay người
+    dùng.
+
+    Cuộn bằng ĐÚNG lò xo của viên sáng (`TRAVEL`), chạy trên luồng UI qua
+    `scrollTo` của Reanimated — như `drag-reorder.tsx` — chứ không phải
+    `animated: true` của ScrollView: nhịp cuộn của hệ thống là một đường cong
+    khác, và viên sáng đi một nhịp còn khung đi một nhịp khác trông như hai
+    thứ không dính nhau. Lần đặt đầu tiên (mở trang với một ô đã chọn ở cuối
+    hàng) là nhảy, như chính viên sáng: lúc ấy chưa có gì trên màn để trượt từ
+    đó. Reduce Motion cũng nhảy.
+  */
+  const scroller = useAnimatedRef<Animated.ScrollView>();
+  const offset = useScrollViewOffset(scroller);
+  const [viewport, setViewport] = useState(0);
+  const [content, setContent] = useState(0);
+  const scrollX = useSharedValue(-1);
+  const scrolled = useRef(false);
+
+  useAnimatedReaction(
+    () => scrollX.value,
+    (v, prev) => {
+      if (v >= 0 && prev !== null && v !== prev) scrollTo(scroller, v, 0, false);
+    },
+  );
+
+  useEffect(() => {
+    if (!scroll || !here || viewport <= 0) return;
+    const lo = offset.value;
+    const hi = lo + viewport;
+    let target: number | null = null;
+    if (here.x < lo) target = here.x - EDGE;
+    else if (here.x + here.w > hi) target = here.x + here.w - viewport + EDGE;
+    const first = !scrolled.current;
+    scrolled.current = true;
+    if (target == null) return;
+    target = Math.max(0, content > viewport ? Math.min(target, content - viewport) : 0);
+    if (first || reduceMotion) {
+      scrollX.value = -1;
+      scroller.current?.scrollTo({ x: target, animated: false });
+      return;
+    }
+    scrollX.value = lo;
+    scrollX.value = withSpring(target, TRAVEL);
+  }, [scroll, here, viewport, content, reduceMotion, offset, scrollX, scroller]);
 
   const report = (key: string, box: Box) => {
     setBoxes((prev) => {
@@ -460,13 +523,17 @@ export function PickRow({
 
   if (scroll) {
     return (
-      <ScrollView
+      <Animated.ScrollView
+        ref={scroller}
         horizontal
         showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onLayout={(e: LayoutChangeEvent) => setViewport(e.nativeEvent.layout.width)}
+        onContentSizeChange={(wd: number) => setContent(wd)}
         style={style}
         contentContainerStyle={[styles.row, { gap }, contentStyle]}>
         <RowCtx.Provider value={{ value, report }}>{inner}</RowCtx.Provider>
-      </ScrollView>
+      </Animated.ScrollView>
     );
   }
 
