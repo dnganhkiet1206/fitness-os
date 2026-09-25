@@ -36,7 +36,12 @@ INSERT INTO community_challenge_members (challenge_id) VALUES ('cc000000-0000-00
 -- thứ tự tính hai vế của AND, và phép đếm có thể chạy TRƯỚC lệnh ghi — kịch
 -- bản sẽ xanh mà không đo gì (bắt được bằng phép thử ngược, 24/09).
 SELECT pg_temp.errcode($q$UPDATE community_challenge_members SET claimed_at = now()$q$);
-DO $$ BEGIN ASSERT (SELECT claimed_at FROM community_challenge_members) IS NULL, 'C4 tự đánh dấu đã nhận được'; END $$;
+-- Lọc về ĐÚNG dòng của X, không dựa vào RLS để chỉ còn một dòng: bộ lịch sử
+-- (#41) chạy trước trên cùng database và có dòng thành viên của người khác, nên
+-- khi C10 mở RLS thì câu không lọc này hỏng vì LỖI SQL ("more than one row")
+-- trước khi C10 kịp nói — đỏ sai chỗ (b_reverse.py, #25).
+DO $$ BEGIN ASSERT (SELECT claimed_at FROM community_challenge_members
+  WHERE challenge_id = 'cc000000-0000-0000-0000-00000000000a' AND user_id = 'a1a1a1a1-0000-0000-0000-000000000007') IS NULL, 'C4 tự đánh dấu đã nhận được'; END $$;
 DO $$ DECLARE r record; BEGIN
   SELECT * INTO r FROM community_challenges_overview(0) WHERE id = 'cc000000-0000-0000-0000-00000000000a';
   ASSERT r.joined, 'C5 chưa thấy mình đã tham gia';
