@@ -394,7 +394,8 @@ nào):
 
 ```bash
 bash supabase/tests/community/run.sh   # mọi bộ kịch bản cộng đồng + seed
-python3 supabase/tests/community/b_reverse.py       # phá từng lớp bảo vệ (120 ca), đòi test đỏ đúng chỗ; báo cả "vạ lây"
+python3 supabase/tests/community/b_reverse.py       # phá từng lớp bảo vệ (158 ca), đòi test đỏ đúng chỗ; báo cả "vạ lây"
+python3 supabase/tests/community/b_reverse.py --coverage  # kịch bản nào chưa từng bị phá thử (không cần Postgres)
 bash supabase/tests/community/recipe.reverse.sh
 ```
 

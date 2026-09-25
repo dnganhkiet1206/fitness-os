@@ -6,7 +6,11 @@ theo tên tệp (đúng MỘT chỗ bị đột biến) → mọi *.test.sql the
 `run.sh`. Kết luận của một ca là câu ASSERT đỏ ĐẦU TIÊN của bộ đích.
 
   python3 supabase/tests/community/b_reverse.py [bộ...]
-      bộ: foundation progress challenges privacy recipe notifications
+      bộ: foundation progress challenges challenge_history privacy recipe
+          notifications search
+  python3 supabase/tests/community/b_reverse.py --coverage
+      không chạy Postgres: liệt kê nhãn ASSERT chưa có ca nào nhắm tới (#79),
+      và dòng \echo nào nói sai số kịch bản của tệp nó.
 
 Từ #75 đây là bộ chạy thử ngược DUY NHẤT cho các bộ của A: 32 ca của
 `a-suites.reverse.sh` (bash, sed, một cụm mỗi ca, một bộ test) đã chuyển vào
@@ -55,6 +59,63 @@ PORT = os.environ.get('PG_PORT', '55491')
 def sh(cmd, **kw):
     return subprocess.run(cmd, shell=True, capture_output=True, text=True, **kw)
 
+
+# ── --coverage (#79): kịch bản nào chưa từng bị phá thử? Không cần Postgres. ──
+# Nhãn là từ đầu câu ASSERT ('C6 …', 'H3 …', '21 …', '27b …'); một ca "phủ" nhãn
+# khi `expect` của nó bắt đầu bằng đúng nhãn ấy, trong đúng bộ ấy.
+# Một ca `green_ok` KHÔNG phủ nhãn: nó chứng minh lớp thứ hai, không chứng minh
+# kịch bản biết đỏ. Nhãn không thể phá mà vẫn có nghĩa thì ghi ở COVERAGE_OK
+# kèm lý do — lý do là thứ người đọc sau cần, không phải lối thoát cho `--coverage`.
+_GRANT = ('quyền của người ĐÃ ĐĂNG NHẬP: thu lại thì lời gọi đầu tiên của bộ hỏng vì '
+          '"permission denied" trước khi nhãn này kịp nói (đỏ sai chỗ); bỏ riêng dòng GRANT '
+          'thì default privileges của stub vẫn cấp. Mọi kịch bản trước nó đã là bằng chứng.')
+COVERAGE_OK = {
+    'challenge_history': {
+        'H7': 'tập đầy đủ ĐỨNG CUỐI có chủ đích: mọi phép phá có tên bị một kịch bản cụ thể '
+              'bắt trước. Nó là lưới cho thứ chưa ai nghĩ ra — một ca với tới được nó nghĩa là '
+              'thiếu một kịch bản cụ thể (như H1b đã thiếu, #79).',
+        'H10': _GRANT,
+    },
+    'search': {'G5': _GRANT},
+    'notifications': {
+        'N4': 'thích lại đi đúng đường của N2 (trigger) sau N3 (dọn): mọi phép phá làm N4 lệch '
+              '— trigger mất, dọn mất — bị N2/N3 bắt trước. Khác N10: thông báo theo dõi đầu '
+              'tiên được kiểm là 0 (N10a) nên trigger theo dõi mất chỉ N10 thấy — có ca.',
+        'N20b': _GRANT,
+        'N21': 'mỗi dòng trong hộp có HAI đường dọn khi xoá tài khoản: khoá ngoại của chính nó, '
+               'và cascade của bài/lượt thích/lượt theo dõi kéo trigger rút thông báo. Phá một '
+               'đường thì đường kia vẫn dọn — ca `N21·u` (green_ok) ghi lại điều đó.',
+    },
+}
+
+
+def labels_of(text):
+    # CHỈ trong câu ASSERT: `'3 ngày'` trong một INSERT không phải một nhãn.
+    out = set()
+    for stmt in re.findall(r'ASSERT[\s\S]*?;', text):
+        out |= set(re.findall(r"(?:,|format\()\s*'([A-Z]{0,2}\d+[a-z]?) ", stmt))
+    return out
+
+
+if '--coverage' in sys.argv:
+    tests_ = sorted(f for f in os.listdir(TESTS) if f.endswith('.test.sql'))
+    missing_total = 0
+    for t in tests_:
+        suite = t.replace('community_', '').replace('.test.sql', '')
+        text = open(os.path.join(TESTS, t)).read()
+        have = labels_of(text)
+        # Con số ở dòng \echo cuối là thứ run.sh in ra và người đọc tin: bộ Tìm
+        # người in "23" suốt từ #37 trong khi chỉ có 22 câu ASSERT (#79).
+        said = re.search(r'\\echo .*?(\d+) KỊCH BẢN', text)
+        if said and int(said.group(1)) != len(have):
+            print(f"{suite:<18} \\echo nói {said.group(1)} kịch bản, tệp có {len(have)} nhãn")
+            missing_total += 1
+        hit = {c['expect'].split()[0] for c in CASES if c['suite'] == suite and not c.get('green_ok')}
+        missing = sorted(have - hit - set(COVERAGE_OK.get(suite, {})), key=lambda x: (len(x), x))
+        missing_total += len(missing)
+        print(f"{suite:<18} {len(have):>3} nhãn · {len(have & hit):>3} có ca · thiếu: {', '.join(missing) or '—'}")
+    print(f"\n{missing_total} nhãn chưa từng bị phá thử")
+    sys.exit(1 if missing_total else 0)
 
 d = tempfile.mkdtemp(prefix='ascnd-rb-', dir='/var/tmp')
 os.chmod(d, 0o777)

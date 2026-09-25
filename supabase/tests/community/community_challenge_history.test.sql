@@ -10,23 +10,27 @@ CREATE OR REPLACE FUNCTION pg_temp.who(u text) RETURNS void LANGUAGE sql AS $$ S
 CREATE OR REPLACE FUNCTION pg_temp.anon() RETURNS void LANGUAGE sql AS $$ SELECT set_config('request.jwt.claim.sub', '', false), set_config('request.jwt.claim.role', 'anon', false) $$;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA pg_temp TO authenticated, anon;
 
--- Dashboard: bốn thử thách.
+-- Dashboard: năm thử thách.
 --   h1  hết hạn 40 ngày trước, thưởng 150 — D ĐÃ nhận (ngoài cửa sổ 7 ngày của tổng quan)
 --   h2  hết hạn 20 ngày trước, KHÔNG thưởng — D đã nhận (không có dòng sổ)
 --   h3  đang mở — D tham gia, CHƯA nhận
 --   h4  đang mở, thưởng 300 — E đã nhận (D không được thấy)
+--   h5  hết hạn 10 ngày trước — D tham gia, KHÔNG đạt, không nhận (#79: thiếu
+--       nó thì "lịch sử = đã hết hạn" thay "= đã nhận" xanh mọi kịch bản)
 INSERT INTO community_challenges (id, title, target, starts_on, ends_on, reward_coins) VALUES
   ('dd000000-0000-0000-0000-0000000000a1', 'Tháng trước', 3, current_date - 60, current_date - 40, 150),
   ('dd000000-0000-0000-0000-0000000000a2', 'Không thưởng', 1, current_date - 30, current_date - 20, 0),
   ('dd000000-0000-0000-0000-0000000000a3', 'Đang mở', 2, current_date - 5, current_date + 20, 100),
-  ('dd000000-0000-0000-0000-0000000000a4', 'Của E', 1, current_date - 5, current_date + 20, 300);
+  ('dd000000-0000-0000-0000-0000000000a4', 'Của E', 1, current_date - 5, current_date + 20, 300),
+  ('dd000000-0000-0000-0000-0000000000a5', 'Hụt', 5, current_date - 30, current_date - 10, 100);
 -- Dòng "đã nhận" chỉ hàm nhận thưởng đặt được (không có policy UPDATE), nên
 -- ghi thẳng bằng vai chủ — bộ #9 đã đo chính hàm nhận thưởng.
 INSERT INTO community_challenge_members (challenge_id, user_id, joined_at, claimed_at) VALUES
   ('dd000000-0000-0000-0000-0000000000a1', :D, now() - interval '58 days', now() - interval '41 days'),
   ('dd000000-0000-0000-0000-0000000000a2', :D, now() - interval '29 days', now() - interval '21 days'),
   ('dd000000-0000-0000-0000-0000000000a3', :D, now() - interval '4 days', NULL),
-  ('dd000000-0000-0000-0000-0000000000a4', :E, now() - interval '4 days', now() - interval '1 day');
+  ('dd000000-0000-0000-0000-0000000000a4', :E, now() - interval '4 days', now() - interval '1 day'),
+  ('dd000000-0000-0000-0000-0000000000a5', :D, now() - interval '29 days', NULL);
 INSERT INTO mascot_transactions (user_id, amount, reason, ref_key) VALUES
   (:D, 150, 'Thử thách: Tháng trước', 'cc:dd000000-0000-0000-0000-0000000000a1'),
   (:E, 300, 'Thử thách: Của E', 'cc:dd000000-0000-0000-0000-0000000000a4');
@@ -37,6 +41,8 @@ SELECT pg_temp.who(:D); SET ROLE authenticated;
 DO $$ BEGIN
   ASSERT NOT EXISTS (SELECT 1 FROM community_challenge_history() WHERE id = 'dd000000-0000-0000-0000-0000000000a3'),
     'H1 thử thách tham gia mà CHƯA nhận nằm trong lịch sử';
+  ASSERT NOT EXISTS (SELECT 1 FROM community_challenge_history() WHERE id = 'dd000000-0000-0000-0000-0000000000a5'),
+    'H1b thử thách ĐÃ HẾT HẠN mà chưa nhận nằm trong lịch sử';
 END $$;
 DO $$ BEGIN
   ASSERT NOT EXISTS (SELECT 1 FROM community_challenge_history() WHERE id = 'dd000000-0000-0000-0000-0000000000a4'),
@@ -83,4 +89,4 @@ DO $$ BEGIN
   ASSERT NOT has_function_privilege('anon', 'public.community_challenge_history()', 'EXECUTE'), 'H9 anon gọi được lịch sử';
   ASSERT has_function_privilege('authenticated', 'public.community_challenge_history()', 'EXECUTE'), 'H10 người đã đăng nhập không gọi được';
 END $$;
-\echo TẤT CẢ 10 KỊCH BẢN LỊCH SỬ THỬ THÁCH ĐÚNG
+\echo TẤT CẢ 11 KỊCH BẢN LỊCH SỬ THỬ THÁCH ĐÚNG

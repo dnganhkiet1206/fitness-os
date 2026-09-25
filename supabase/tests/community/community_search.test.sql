@@ -33,6 +33,13 @@ INSERT INTO community_profiles (user_id, handle, display_name) VALUES
   ('e0e0e0e0-0000-0000-0000-000000000114', 'tm_a', 'Trần Minh Ánh');
 INSERT INTO community_profiles (user_id, handle, display_name)
 SELECT ('e1e1e1e1-0000-0000-0000-0000000001' || lpad(g::text, 2, '0'))::uuid, 'zz' || lpad(g::text, 2, '0'), 'Zed ' || g FROM generate_series(1, 25) g;
+-- S6 cần một người KHÁC khớp 'linhda' mà sẽ đứng trước nếu luật "đúng handle
+-- đứng đầu" mất: một tài khoản CHÍNH THỨC 'linhdaa'. Không có nó, 'linhda' là
+-- kết quả DUY NHẤT và S6 xanh với mọi thứ tự — rỗng nghĩa (b_reverse --coverage,
+-- #79). Ngoài vùng e0e0… nên hits()/sugg() không thấy nó.
+INSERT INTO auth.users VALUES ('e2e2e2e2-0000-0000-0000-000000000001');
+INSERT INTO community_profiles (user_id, handle, display_name, is_official) VALUES
+  ('e2e2e2e2-0000-0000-0000-000000000001', 'linhdaa', 'Tài khoản thử', true);
 
 INSERT INTO community_blocks (blocker_id, blocked_id) VALUES
   ('e0e0e0e0-0000-0000-0000-000000000101', 'e0e0e0e0-0000-0000-0000-000000000105'),
@@ -70,7 +77,7 @@ DO $$ BEGIN ASSERT pg_temp.hits('@LINH') = pg_temp.hits('linh'), 'S3 @ và chữ
 DO $$ BEGIN ASSERT pg_temp.hits('x_') = 'x_y', format('S4 "_" phải là chữ, không phải ký tự đại diện — ra %s', pg_temp.hits('x_')); END $$;
 DO $$ BEGIN ASSERT pg_temp.hits('x%') = '', 'S5 "%" phải là chữ, không phải ký tự đại diện'; END $$;
 DO $$ BEGIN ASSERT (SELECT handle FROM community_search_profiles('linhda') LIMIT 1) = 'linhda', 'S6 gõ đúng handle thì người ấy phải đứng đầu'; END $$;
-DO $$ BEGIN ASSERT (SELECT i_follow FROM community_search_profiles('followed')) AND NOT (SELECT i_follow FROM community_search_profiles('linhda')), 'S7 cờ đang-theo-dõi sai'; END $$;
+DO $$ BEGIN ASSERT (SELECT i_follow FROM community_search_profiles('followed')) AND NOT (SELECT i_follow FROM community_search_profiles('linhda') WHERE handle = 'linhda'), 'S7 cờ đang-theo-dõi sai'; END $$;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_search_profiles('zz')) = 20, 'S8 phải có trần 20 dòng'; END $$;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_search_profiles('ascnd_sr')) = 1, 'S9 ĐỐI CHỨNG: tài khoản thường tìm được bằng handle'; END $$;
 -- ── không dấu (#37) ──
@@ -103,4 +110,4 @@ RESET ROLE;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_search_profiles(text)', 'EXECUTE'), 'S10 anon gọi được tìm người'; END $$;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_follow_suggestions()', 'EXECUTE'), 'G4 anon gọi được gợi ý'; END $$;
 DO $$ BEGIN ASSERT has_function_privilege('authenticated', 'public.community_search_profiles(text)', 'EXECUTE') AND has_function_privilege('authenticated', 'public.community_follow_suggestions()', 'EXECUTE'), 'G5 người đã đăng nhập không gọi được'; END $$;
-\echo TẤT CẢ 23 KỊCH BẢN TÌM NGƯỜI ĐÚNG
+\echo TẤT CẢ 22 KỊCH BẢN TÌM NGƯỜI ĐÚNG
