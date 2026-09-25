@@ -11,7 +11,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PostCard } from '@/components/ascnd/post-card';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
-import { Segmented } from '@/components/ascnd/segmented';
+import { SegmentPanel, Segmented } from '@/components/ascnd/segmented';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -116,6 +116,11 @@ export default function CommunitySearchScreen() {
         ) : null}
       </View>
 
+      {/* Mọi thứ dưới ô tìm là panel của phân đoạn đang mở, nên nó được bọc như
+          mọi panel của một segmented control (`tools/segmented.mjs`). Ô tìm thì
+          ở NGOÀI: nó là control dùng chung của hai phân đoạn, và chữ đã gõ phải
+          ở lại khi đổi. */}
+      <SegmentPanel segment={mode}>
       {!searching && searchTerm(q).length === 1 ? <Text style={styles.hint}>{i18n.nSrMin}</Text> : null}
 
       {recipes ? (
@@ -200,6 +205,7 @@ export default function CommunitySearchScreen() {
           })}
         </GlassCard>
       )}
+      </SegmentPanel>
     </Screen>
   );
 }

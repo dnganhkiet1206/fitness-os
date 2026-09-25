@@ -1191,6 +1191,8 @@ const en = {
   nSvEmptyHint: 'Tap the bookmark on a post to keep it here.',
   nSvEmptyWorkouts: 'No saved workouts',
   nSvEmptyRecipes: 'No saved recipes',
+  /* #108: lối vào thứ hai của tìm công thức (#43). */
+  nSvFindRecipes: 'Find recipes',
 };
 
 const vi: typeof en = {
@@ -2266,6 +2268,7 @@ const vi: typeof en = {
   nSvEmptyHint: 'Chạm biểu tượng Lưu trên một bài để giữ nó ở đây.',
   nSvEmptyWorkouts: 'Chưa lưu buổi tập nào',
   nSvEmptyRecipes: 'Chưa lưu công thức nào',
+  nSvFindRecipes: 'Tìm công thức',
 };
 
 export const nativeStrings: Record<AppLang, typeof en> = { vi, en };

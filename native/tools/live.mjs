@@ -2211,6 +2211,38 @@ const SCENARIOS = [
   },
   {
     /*
+      #108: lối vào thứ hai của tìm công thức. Tài khoản trống (chưa lưu gì),
+      Thư viện Đã lưu lọc Công thức → nút "Tìm công thức" → màn Tìm với
+      phân đoạn Công thức ĐANG CHỌN (`aria-selected`, #99) và ô tìm gợi ý
+      "Tên món". Lọc Buổi tập thì không có nút ấy: lối ra chỉ ở chỗ người ta
+      đang muốn một công thức.
+    */
+    name: 'Thư viện Đã lưu: lọc Công thức mà rỗng thì mở thẳng tìm công thức (#108)',
+    route: '/community-saved', mode: 'empty',
+    async run(page) {
+      /* `:visible`: trên web màn trước vẫn nằm trong DOM sau khi điều hướng, và
+         ô "Công thức" ĐANG CHỌN của Thư viện đứng trước ô của màn Tìm — bản đầu
+         của vế này đo nhầm nó, và xanh cả khi màn Tìm mở ở phân đoạn Người
+         (phá thử bắt được). */
+      const tab = (re) => page.locator('#root [role="tab"]:visible').filter({ hasText: re }).first();
+      const find = page.getByRole('button', { name: /^(Find recipes|Tìm công thức)$/ });
+      await tab(/^(Workouts|Buổi tập)$/).click();
+      await page.waitForTimeout(600);
+      if (await find.count()) return 'lọc Buổi tập mà vẫn có nút "Tìm công thức"';
+      await tab(/^(Recipes|Công thức)$/).click();
+      await page.waitForTimeout(600);
+      if (!(await find.count())) return 'lọc Công thức, chưa lưu gì, mà không có nút "Tìm công thức"';
+      await find.first().click();
+      await page.waitForTimeout(2500);
+      if (!/\/community-search/.test(page.url())) return `bấm "Tìm công thức" mà không tới màn Tìm — ở ${page.url()}`;
+      const on = await tab(/^(Recipes|Công thức)$/).getAttribute('aria-selected');
+      if (on !== 'true') return `tới màn Tìm mà phân đoạn Công thức không được chọn (aria-selected=${on})`;
+      if (!(await page.getByPlaceholder(/^(Dish name|Tên món)$/).count())) return 'tới màn Tìm mà ô tìm không gợi ý "Tên món"';
+      return null;
+    },
+  },
+  {
+    /*
       #80: RPC GHI đổi thế giới của trang. Trước #80 `claim_community_challenge`
       không có fixture, nhận `[]`, và luồng "đạt → NHẬN → đọc lại thấy đã nhận"
       nằm ngoài tầm đo: nút Nhận còn nguyên sau khi bấm, vì lượt đọc lại tổng

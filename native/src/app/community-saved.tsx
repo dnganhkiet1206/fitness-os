@@ -7,12 +7,13 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PostCard } from '@/components/ascnd/post-card';
 import { Screen } from '@/components/ascnd/screen';
-import { Segmented } from '@/components/ascnd/segmented';
+import { SegmentPanel, Segmented } from '@/components/ascnd/segmented';
 import { spacing } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useSavedPosts } from '@/hooks/use-community-saved';
 import { usePalette } from '@/hooks/use-palette';
+import { nav } from '@/lib/nav';
 import { filterSaved, type SavedFilter } from '@/lib/saved-library';
 
 /**
@@ -30,6 +31,11 @@ import { filterSaved, type SavedFilter } from '@/lib/saved-library';
  *
  * Hai lối vào: hàng "Đã lưu" trên hồ sơ của chính mình (`community-user`), và
  * nút "Xem thư viện" trên toast sau mỗi lần Lưu (`post-parts`).
+ *
+ * Và một lối RA (#108): lọc Công thức mà chưa lưu công thức nào thì nút "Tìm
+ * công thức" mở thẳng phân đoạn Công thức của màn Tìm (#43). Người đang ở đây
+ * đang muốn một công thức và chưa có cái nào — bước kế tiếp là đi tìm, không
+ * phải đọc lại cách bấm Lưu.
  */
 export default function CommunitySavedScreen() {
   const c = usePalette();
@@ -54,6 +60,10 @@ export default function CommunitySavedScreen() {
         ]}
       />
 
+      {/* Bộ lọc ĐỔI danh sách bên dưới, nên danh sách được bọc như mọi panel
+          của một segmented control (`tools/segmented.mjs`). Luật chỉ thấy điều
+          ấy từ #108, khi nút "Tìm công thức" rẽ nhánh thẳng trên `filter`. */}
+      <SegmentPanel segment={filter}>
       {saved.isPending ? (
         <ActivityIndicator color={c.mutedForeground} style={styles.loading} />
       ) : saved.isError ? (
@@ -66,11 +76,17 @@ export default function CommunitySavedScreen() {
             icon={Bookmark}
             title={all.length === 0 ? i18n.nSvEmpty : filter === 'workout' ? i18n.nSvEmptyWorkouts : i18n.nSvEmptyRecipes}
             hint={all.length === 0 ? i18n.nSvEmptyHint : undefined}
+            action={
+              filter === 'recipe'
+                ? { label: i18n.nSvFindRecipes, onPress: () => nav.push({ pathname: '/community-search', params: { mode: 'recipe' } }) }
+                : undefined
+            }
           />
         </GlassCard>
       ) : (
         list.map((post) => <PostCard key={post.id} post={post} />)
       )}
+      </SegmentPanel>
     </Screen>
   );
 }
