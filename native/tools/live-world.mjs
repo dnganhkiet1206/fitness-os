@@ -352,6 +352,14 @@ export const FIXTURES = {
     { id: 'w3', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: day(0.05) },
     { id: 'w2', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: day(0.2) },
   ],
+  /* #135: hai ảnh tiến trình — trước đây rỗng, nên lưới ảnh và nút xoá của nó
+     chưa từng dựng trên bộ chạy. `photo_url` là http nên hook không xin signed
+     URL; cổng 9 từ chối ngay, ảnh không tải (lỗi tải tài nguyên được bộ chạy bỏ
+     qua) và ô chỉ còn nền. */
+  progress_photos: [
+    { id: 'pp000001-0000-4000-8000-000000000001', user_id: UID, date: dayStr(2), pose: 'front', photo_url: 'http://127.0.0.1:9/front.jpg', notes: null, created_at: day(2) },
+    { id: 'pp000001-0000-4000-8000-000000000002', user_id: UID, date: dayStr(9), pose: 'side', photo_url: 'http://127.0.0.1:9/side.jpg', notes: null, created_at: day(9) },
+  ],
   /* #131: danh sách đi chợ có món — trước đây rỗng, nên nút xoá món (#125) và
      hộp hỏi lại của nó chưa từng dựng trên bộ chạy. */
   grocery_items: [

@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { Camera, Plus, X } from 'lucide-react-native';
+import { Camera, Plus, Trash2, X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -107,23 +107,50 @@ export default function ProgressPhotosScreen() {
         </GlassCard>
       ) : (
         <View style={styles.grid}>
-          {photos.map((p) => (
-            <Pressable
-              key={p.id}
-              style={styles.photoCell}
-              onLongPress={() => confirmDelete(p.id, p.photo_url)}>
-              <Image source={{ uri: p.signedUrl }} style={styles.photo} />
-              <View style={styles.photoMeta}>
-                <Text style={styles.photoPose}>{poseLabel(p.pose)}</Text>
-                <Text style={styles.photoDate}>
-                  {parseLocalDate(p.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                </Text>
+          {photos.map((p) => {
+            const when = parseLocalDate(p.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
+              day: 'numeric',
+              month: 'short',
+            });
+            return (
+              <View key={p.id} style={styles.photoCell}>
+                {/*
+                  Nhấn giữ ảnh vẫn xoá — nhưng nó thôi là lối DUY NHẤT (#135).
+
+                  Trước đây cả ô là một `Pressable` chỉ có `onLongPress`: không
+                  gợi ý, không vai, không nút nào nhìn thấy được. Người không
+                  đoán ra thì không xoá được ảnh, và VoiceOver thì không có cách
+                  nào — `swipe.mjs` đã ghi đúng điều ấy cho cú vuốt: "vô hình cho
+                  tới khi đoán ra". Nay nút thùng rác ở hàng dưới là lối chính;
+                  nhấn giữ còn lại là lối tắt, và vì nó là BẢN SAO của nút ấy
+                  nên ẩn khỏi cây trợ năng.
+                */}
+                <Pressable
+                  accessible={false}
+                  tabIndex={-1}
+                  onLongPress={() => confirmDelete(p.id, p.photo_url)}>
+                  <Image source={{ uri: p.signedUrl }} style={styles.photo} />
+                </Pressable>
+                <View style={styles.photoMeta}>
+                  <Text style={styles.photoPose}>{poseLabel(p.pose)}</Text>
+                  <View style={styles.photoMetaEnd}>
+                    <Text style={styles.photoDate}>{when}</Text>
+                    <PressScale
+                      accessibilityRole="button"
+                      accessibilityLabel={`${i18n.a11yDelete} ${poseLabel(p.pose)} ${when}`}
+                      // 14pt glyph on a caption row; slop carries it to 44
+                      hitSlop={15}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        confirmDelete(p.id, p.photo_url);
+                      }}>
+                      <Icon icon={Trash2} size={14} color={c.mutedForeground} />
+                    </PressScale>
+                  </View>
+                </View>
               </View>
-            </Pressable>
-          ))}
+            );
+          })}
         </View>
       )}
 
@@ -274,9 +301,10 @@ const stylesFor = makeStyles((c, m) => ({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   photoCell: { width: '47.8%', borderRadius: radius.md, overflow: 'hidden', backgroundColor: c.card },
   photo: { width: '100%', aspectRatio: 0.8, backgroundColor: c.secondary },
-  photoMeta: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: spacing.sm, paddingVertical: 6 },
+  photoMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.sm, paddingVertical: 6 },
   photoPose: { ...type.caption, color: c.foreground, fontWeight: '600', textTransform: 'capitalize' },
   photoDate: { ...type.caption, color: c.mutedForeground },
+  photoMetaEnd: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   // Capture
   captureRoot: { flex: 1, backgroundColor: '#000' },
   center: { alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg },

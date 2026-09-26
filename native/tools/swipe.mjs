@@ -240,6 +240,64 @@ let direct = 0;
   else if (directSwipeGaps(tm, cut).out.length === 0) problems.push(`thử ngược hỏng: bỏ accessibilityActions của đầu mục bữa mà luật vẫn xanh`);
 }
 
+/* ── 2c. nhấn giữ là lối DUY NHẤT (#135) ──
+
+   Cùng câu của `today-meals.tsx` — "not a swipe and not a long-press" — mà
+   luật chỉ canh cú vuốt. Xoá ảnh tiến trình từng chỉ tới được bằng nhấn giữ
+   cả ô: không gợi ý, không vai, không nút nào, VoiceOver không làm được.
+
+   Luật: một phần tử có `onLongPress` mà KHÔNG có `onPress` phải là một trong
+   hai:
+     · bản sao đã ẩn (`accessible={false}` / `aria-hidden`) của một lối nhìn
+       thấy được — hàm nó gọi phải còn xuất hiện ở chỗ khác trong tệp;
+     · hoặc một hành động trợ năng: mang `accessibilityActions` (menu ngữ
+       cảnh nhấn giữ của iOS là quy ước của hệ thống; rotor mở được nó).
+   Vòi thử 500 xu của `mascot-room.tsx` chỉ có trong bản dev (`__DEV__`). */
+const LONG_PRESS_DEV_ONLY = new Set(['src/app/mascot-room.tsx']);
+export function longPressGaps(rel, body) {
+  const out = [];
+  let n = 0;
+  for (const m of body.matchAll(/<(Pressable|PressScale)\b([^>]*?onLongPress=\{([^}]*)\}[^>]*?)>/gs)) {
+    const attrs = m[2];
+    if (/\bonPress=/.test(attrs)) continue;
+    n++;
+    if (LONG_PRESS_DEV_ONLY.has(rel)) continue;
+    if (/accessibilityActions=/.test(attrs)) continue;
+    const hidden = /accessible=\{false\}|aria-hidden/.test(attrs);
+    const fn = (m[3].match(/(\w+)\(/) ?? m[3].match(/^\s*(\w+)\s*$/))?.[1];
+    /* Như luật 2: bỏ chính thẻ này và dòng khai báo hàm, rồi tìm một lần gọi khác. */
+    const rest = fn ? body.replace(m[0], '').replace(new RegExp(`(const|function) ${fn}\\b`), '__decl__') : '';
+    const elsewhere = !!fn && new RegExp(`\\b${fn}\\b`).test(rest);
+    if (!hidden || !elsewhere) {
+      const line = body.slice(0, m.index).split('\n').length;
+      out.push(`${rel}:${line}: \`${fn ?? m[3].trim()}\` chỉ tới được bằng nhấn giữ — không accessibilityActions, và không phải bản sao ẩn của một lối nhìn thấy được (#135)`);
+    }
+  }
+  return { out, n };
+}
+let longPress = 0;
+{
+  const walk3 = (dir) =>
+    readdirSync(dir).flatMap((e) => {
+      const p = path.join(dir, e);
+      return statSync(p).isDirectory() ? walk3(p) : /\.tsx$/.test(e) ? [p] : [];
+    });
+  for (const file of walk3(path.join(NATIVE, 'src'))) {
+    const rel = path.relative(NATIVE, file);
+    const { out, n } = longPressGaps(rel, readFileSync(file, 'utf8'));
+    problems.push(...out);
+    longPress += n;
+  }
+  if (longPress < 3) problems.push(`chỉ thấy ${longPress} chỗ chỉ-nhấn-giữ — bộ đọc hỏng, đừng tin kết quả`);
+  /* Thử ngược: ô ảnh tiến trình như trước #135 — cả ô là Pressable chỉ-nhấn-giữ. */
+  const old = `<Pressable key={p.id} style={styles.photoCell} onLongPress={() => confirmDelete(p.id, p.photo_url)}>`;
+  if (longPressGaps('thử.tsx', `const a = ${old}<Image /></Pressable>;`).out.length !== 1) problems.push('thử ngược hỏng: ô ảnh chỉ-nhấn-giữ như trước #135 mà luật vẫn xanh');
+  const hiddenDup = `<Pressable accessible={false} tabIndex={-1} onLongPress={() => confirmDelete(id)}><Image /></Pressable><PressScale onPress={() => confirmDelete(id)} />`;
+  if (longPressGaps('thử.tsx', hiddenDup).out.length !== 0) problems.push('thử ngược hỏng: bản sao ẩn CÓ lối nhìn thấy được mà luật vẫn đỏ');
+  const hiddenAlone = `<Pressable accessible={false} tabIndex={-1} onLongPress={() => wipe(id)}><Image /></Pressable>`;
+  if (longPressGaps('thử.tsx', hiddenAlone).out.length !== 1) problems.push('thử ngược hỏng: ẩn mà KHÔNG có lối nào khác mà luật vẫn xanh');
+}
+
 /* ── 3. lối cho VoiceOver nằm ở CHÍNH component, và nó phải lấy từ danh sách thật ──
 
    Bản trước để mỗi chỗ dùng tự khai `accessibilityActions`, nên một chỗ dùng
@@ -852,6 +910,7 @@ console.log(
     'khi đoán ra" — và luật đi theo được một bước khi hành động được ĐẶT TÊN rồi truyền vào, vì dashboard ' +
     'dùng cùng một nút ở cả hai mép và chép đôi ở đó mới là cái sai. ' +
     `${direct} hành động vuốt ở chỗ dùng THẲNG ReanimatedSwipeable (ngoài SwipeRow) đều có trong accessibilityActions của tệp (#133; bỏ đi ở đầu mục bữa thì đỏ). ` +
+    `${longPress} chỗ chỉ-nhấn-giữ đều là bản sao ẩn của một lối nhìn thấy được hoặc mang accessibilityActions (#135; ô ảnh tiến trình như trước thì đỏ). ` +
     'Lối cho VoiceOver thì không còn là ' +
     'việc của từng chỗ dùng nữa: `SwipeRow` tự khai `accessibilityActions` TỪ CHÍNH danh sách nó đang vẽ ' +
     'và có xử lý — một danh sách gõ tay sẽ trôi khỏi danh sách thật mà không có gì báo. Cộng hai luật của ' +

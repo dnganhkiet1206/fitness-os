@@ -3111,6 +3111,8 @@ try {
          dưỡng chạy cả tiếng Việt: nó có nút phá huỷ (xoá bữa) như #107. */
       ['/nutrition', 'full'], ['/nutrition', 'full', 'vi'], ['/water', 'full'], ['/supplements', 'full'], ['/grocery', 'full'],
       ['/community', 'full'], ['/community-saved', 'full'], ['/shop', 'full'], ['/workouts/plan', 'full'],
+      /* #135: nút xoá ảnh tiến trình — trước đó xoá chỉ tới được bằng nhấn giữ. */
+      ['/progress-photos', 'full'],
     ];
     const pressList = pressRouteArg ? PRESS_ROUTES.filter(([r]) => r.includes(pressRouteArg)) : PRESS_ROUTES;
     if (pressRouteArg && pressList.length === 0) problems.push(`--press-route=${pressRouteArg}: không mục PRESS_ROUTES nào có đường dẫn chứa chuỗi này`);

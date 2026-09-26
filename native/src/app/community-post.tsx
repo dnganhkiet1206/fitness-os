@@ -177,7 +177,16 @@ function CommentRow({ comment, postMine, postId }: { comment: CommunityComment; 
         onPress={() => comment.author && nav.push({ pathname: '/community-user', params: { id: comment.author.user_id } })}>
         <CommunityAvatar mascotId={comment.author?.mascot_id} size={32} />
       </Pressable>
-      <Pressable onLongPress={menu} accessibilityHint={i18n.nCmMore} style={styles.commentBody}>
+      {/* Menu nhấn giữ cũng là một hành động TRỢ NĂNG (#135): gợi ý chỉ NÓI
+          có menu, còn rotor "Hành động" mới là chỗ VoiceOver mở được nó. */}
+      <Pressable
+        onLongPress={menu}
+        accessibilityHint={i18n.nCmMore}
+        accessibilityActions={[{ name: 'menu', label: i18n.nCmMore }]}
+        onAccessibilityAction={(e) => {
+          if (e.nativeEvent.actionName === 'menu') menu();
+        }}
+        style={styles.commentBody}>
         <Text style={styles.commentHead}>
           <Text style={styles.commentName}>{comment.author?.display_name ?? '—'}</Text>
           {'  '}
