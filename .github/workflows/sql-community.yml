@@ -56,8 +56,9 @@ jobs:
       - name: Thử ngược (b_reverse.py)
         run: python3 supabase/tests/community/b_reverse.py
 
-      # Bảng LÕI (#148, bước đầu của #132): trí nhớ HLV và hội thoại AI. Bộ
-      # riêng, stub riêng — xem `supabase/tests/core/run.sh`.
+      # Bảng LÕI (#148, #132): mọi migration không phải Cộng đồng, rồi RLS của
+      # MỌI bảng public — bảng mới chưa xếp loại thì đỏ (T0). Bộ riêng, stub
+      # riêng — xem `supabase/tests/core/run.sh`.
       - name: Bảng lõi — kịch bản (core/run.sh)
         run: bash supabase/tests/core/run.sh
 
