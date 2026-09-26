@@ -183,6 +183,63 @@ function declOf(body, name) {
   }
 }
 
+/* ── 2b. `ReanimatedSwipeable` dùng THẲNG, ngoài `SwipeRow` (#133) ──
+
+   Luật 2 và 3 chỉ nhìn `<SwipeRow>`. Đầu mục bữa ở nhật ký (`today-meals.tsx`)
+   dùng thẳng `ReanimatedSwipeable` — và "Xoá bữa", "Thêm vào bữa" của nó
+   không có trong `accessibilityActions` nào: tấm nút nằm SAU hàng cho tới khi
+   vuốt, VoiceOver không vuốt, nên hai việc ấy không tới được bằng trình đọc
+   màn hình. Không luật nào đỏ, vì không luật nào nhìn thấy tệp ấy.
+
+   Luật: mỗi `label={…}` trong `renderLeftActions`/`renderRightActions` của một
+   `<ReanimatedSwipeable>` phải có mặt dưới dạng `label: …` (cùng biểu thức)
+   trong một `accessibilityActions` của chính tệp đó. */
+export function directSwipeGaps(rel, body) {
+  const out = [];
+  let n = 0;
+  for (const tag of [...body.matchAll(/<ReanimatedSwipeable\b/g)]) {
+    /* Thẻ mở: từ `<ReanimatedSwipeable` tới `)}>` đóng prop render cuối cùng,
+       không vượt sang một `<ReanimatedSwipeable` kế tiếp trong cùng tệp. */
+    const next = body.indexOf('<ReanimatedSwipeable', tag.index + 1);
+    const win = body.slice(tag.index, next < 0 ? undefined : next);
+    const lastRender = Math.max(win.lastIndexOf('renderLeftActions'), win.lastIndexOf('renderRightActions'));
+    const end = lastRender < 0 ? -1 : win.indexOf(')}>', lastRender);
+    const open = end < 0 ? '' : win.slice(0, end + 3);
+    const labels = [...open.matchAll(/label=\{([^}]+)\}/g)].map((x) => x[1].trim());
+    if (!labels.length) continue;
+    const acts = [...body.matchAll(/accessibilityActions=\{\[([\s\S]*?)\]\}/g)].map((x) => x[1]).join('\n');
+    for (const l of labels) {
+      n++;
+      if (!acts.includes(`label: ${l}`)) {
+        out.push(`${rel}: hành động vuốt \`${l}\` không có trong accessibilityActions nào của tệp — VoiceOver không vuốt, nên việc này không tới được bằng trình đọc màn hình (#133)`);
+      }
+    }
+  }
+  return { out, n };
+}
+let direct = 0;
+{
+  const walk2 = (dir) =>
+    readdirSync(dir).flatMap((e) => {
+      const p = path.join(dir, e);
+      return statSync(p).isDirectory() ? walk2(p) : /\.tsx$/.test(e) ? [p] : [];
+    });
+  for (const file of walk2(path.join(NATIVE, 'src'))) {
+    const rel = path.relative(NATIVE, file);
+    if (rel === COMPONENT) continue;
+    const { out, n } = directSwipeGaps(rel, readFileSync(file, 'utf8'));
+    problems.push(...out);
+    direct += n;
+  }
+  if (direct < 2) problems.push(`chỉ thấy ${direct} hành động vuốt dùng thẳng ReanimatedSwipeable — bộ đọc hỏng, đừng tin kết quả`);
+  /* Thử ngược trên chính tệp thật: bỏ accessibilityActions của đầu mục bữa thì đỏ. */
+  const tm = 'src/components/ascnd/today-meals.tsx';
+  const body = readFileSync(path.join(NATIVE, tm), 'utf8');
+  const cut = body.replace(/accessibilityActions=\{\[[\s\S]*?\]\}/, '');
+  if (cut === body) problems.push(`thử ngược hỏng: không thấy accessibilityActions trong ${tm}`);
+  else if (directSwipeGaps(tm, cut).out.length === 0) problems.push(`thử ngược hỏng: bỏ accessibilityActions của đầu mục bữa mà luật vẫn xanh`);
+}
+
 /* ── 3. lối cho VoiceOver nằm ở CHÍNH component, và nó phải lấy từ danh sách thật ──
 
    Bản trước để mỗi chỗ dùng tự khai `accessibilityActions`, nên một chỗ dùng
@@ -793,7 +850,9 @@ console.log(
     `haptic nổ đúng lúc cam kết với chốt một-lần. ${checked} hành động vuốt trên mọi chỗ dùng đều còn ` +
     'một LỐI KHÁC trong chính tệp của nó — today-meals.tsx đã ghi vì sao: "cả hai đều vô hình cho tới ' +
     'khi đoán ra" — và luật đi theo được một bước khi hành động được ĐẶT TÊN rồi truyền vào, vì dashboard ' +
-    'dùng cùng một nút ở cả hai mép và chép đôi ở đó mới là cái sai. Lối cho VoiceOver thì không còn là ' +
+    'dùng cùng một nút ở cả hai mép và chép đôi ở đó mới là cái sai. ' +
+    `${direct} hành động vuốt ở chỗ dùng THẲNG ReanimatedSwipeable (ngoài SwipeRow) đều có trong accessibilityActions của tệp (#133; bỏ đi ở đầu mục bữa thì đỏ). ` +
+    'Lối cho VoiceOver thì không còn là ' +
     'việc của từng chỗ dùng nữa: `SwipeRow` tự khai `accessibilityActions` TỪ CHÍNH danh sách nó đang vẽ ' +
     'và có xử lý — một danh sách gõ tay sẽ trôi khỏi danh sách thật mà không có gì báo. Cộng hai luật của ' +
     'bản nhiều-nút: tối đa 3 nút mỗi mép (Apple để 3–4, mà mỗi nút ở đây rộng OPEN_W nên ba nút đã chiếm ' +

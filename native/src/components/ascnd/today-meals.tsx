@@ -694,9 +694,25 @@ function MealCard({
             onPress={onDeleteGroup}
           />
         )}>
+      {/*
+        Hai hành động vuốt ở trên cũng là hai hành động TRỢ NĂNG của đầu mục (#133).
+        Tấm nút nằm SAU hàng cho tới khi vuốt, và VoiceOver không vuốt: không có
+        dòng này thì "Xoá bữa" và "Thêm vào bữa" không tới được bằng trình đọc
+        màn hình — `swipe-row.tsx` đã làm đúng điều này từ đầu, đầu mục bữa thì
+        dùng thẳng `ReanimatedSwipeable` nên lỡ mất. Nhãn lấy từ CÙNG chuỗi
+        với tấm nút; `tools/swipe.mjs` so hai bên.
+      */}
       <PressScale
         accessibilityState={{ expanded: open }}
         aria-expanded={open} // web không dịch accessibilityState ra aria-expanded (#103, #123)
+        accessibilityActions={[
+          { name: 'addTo', label: i18n.nMealSwipeAdd },
+          { name: 'deleteGroup', label: i18n.nMealSwipeDelete },
+        ]}
+        onAccessibilityAction={(e) => {
+          if (e.nativeEvent.actionName === 'addTo') onAddTo();
+          else if (e.nativeEvent.actionName === 'deleteGroup') onDeleteGroup();
+        }}
         onPress={() => {
           Haptics.selectionAsync();
           setOpen((v) => !v);
