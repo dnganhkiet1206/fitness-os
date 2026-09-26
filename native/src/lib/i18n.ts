@@ -48,62 +48,26 @@ interface Translations {
   success: string;
   noData: string;
   today: string;
-  thisWeek: string;
   target: string;
   all: string;
   other: string;
   settings: string;
   
-  // Greeting
-  goodMorning: string;
-  goodAfternoon: string;
-  goodEvening: string;
 
   // Auth
-  authLogin: string;
-  authSignup: string;
-  authEmail: string;
-  authPassword: string;
-  authName: string;
-  authLoginSubtitle: string;
-  authSignupSubtitle: string;
-  authNoAccount: string;
-  authHasAccount: string;
-  authCheckEmail: string;
-  authProcessing: string;
-  authYourName: string;
   authForgotPassword: string;
   authResetPassword: string;
   authResetSent: string;
   authBackToLogin: string;
-  authNewPassword: string;
-  authUpdatePassword: string;
-  authPasswordUpdated: string;
 
   // Sidebar / Nav
   navToday: string;
   navNutrition: string;
   navWorkouts: string;
-  navSupplements: string;
-  navSleep: string;
-  navWater: string;
-  navBiometrics: string;
   navProgress: string;
-  navWeeklyReview: string;
   navSmartGoals: string;
-  navAwards: string;
-  navChallenges: string;
-  navGrocery: string;
-  navAiCoach: string;
-  navSettings: string;
-  navMain: string;
-  navAnalytics: string;
 
   // Dashboard
-  dashLogMeal: string;
-  dashLogWorkout: string;
-  dashLogSleep: string;
-  dashLogBiometrics: string;
   dashReadiness: string;
   dashReadinessMsg: string;
   logBioBaselineNote: string;
@@ -113,48 +77,22 @@ interface Translations {
   sleepNoteFeltWorse: string;
   sleepNoteFeltBetter: string;
   sleepNoteScoreIsDuration: string;
-  dashTrend: string;
-  dashTrendMsg: string;
-  dashActivity: string;
-  dashActivityMsg: string;
-  dashBiometrics: string;
-  dashBiometricsMsg: string;
-  dashTraining: string;
-  dashTrainingMsg: string;
   dashNutrition: string;
   dashNutritionMsg: string;
   dashSleep: string;
   dashSleepMsg: string;
-  dashSupplements: string;
-  dashSupplementsMsg: string;
-
-  // Weight Checkin
-  weightTitle: string;
-  weightSave: string;
-  weightNotLogged: string;
 
   // Workout Status
   workoutStatusTitle: string;
   workoutStatusDone: string;
   workoutStatusNotYet: string;
 
-  // Supplement Checklist
-  supplementTodayTitle: string;
-
   // Settings
   settingsTitle: string;
-  settingsGeneral: string;
-  settingsProfile: string;
-  settingsNutrition: string;
-  settingsSleep: string;
-  settingsSupplements: string;
-  settingsData: string;
   settingsTheme: string;
   settingsThemeLight: string;
   settingsThemeDark: string;
   settingsThemeSystem: string;
-  settingsLanguage: string;
-  settingsCurrency: string;
   settingsPersonalInfo: string;
   settingsName: string;
   settingsDob: string;
@@ -166,60 +104,20 @@ interface Translations {
   settingsWeight: string;
   settingsActivityLevel: string;
   settingsGoal: string;
-  settingsUnits: string;
-  settingsCaloriesMacros: string;
   settingsWaterTarget: string;
-  settingsWaterRecommend: string;
   settingsSleepTarget: string;
   settingsSleepHours: string;
   settingsBedtime: string;
   settingsWakeTime: string;
-  settingsSleepGoalSummary: string;
-  settingsSupplementStack: string;
   settingsExportData: string;
   settingsExportDesc: string;
-  settingsPrivacyLock: string;
-  settingsPinSet: string;
-  settingsPinSetDesc: string;
-  settingsPinRemove: string;
-  settingsPinSetup: string;
-  settingsPinSetupDesc: string;
-  settingsPinPlaceholder: string;
-  settingsPinInstall: string;
-  settingsMacroDistribution: string;
-  settingsTotal: string;
-  settingsSavedSuccess: string;
-  settingsLogout: string;
   settingsChangePassword: string;
-  settingsCurrentPassword: string;
   settingsNewPassword: string;
   settingsConfirmPassword: string;
   settingsPasswordChanged: string;
   settingsPasswordMismatch: string;
   settingsRecalcTargets: string;
   settingsRecalcDone: string;
-  settings2FA: string;
-  settings2FADesc: string;
-  settings2FAEnabled: string;
-  settings2FADisabled: string;
-  settings2FASetup: string;
-  settings2FAEnterCode: string;
-  settings2FAVerify: string;
-  settings2FARemove: string;
-  settings2FARemoved: string;
-  settings2FAVerified: string;
-  settings2FAScanQR: string;
-  settings2FABackupHint: string;
-  settingsErrorSaving: string;
-  settingsPinMinLength: string;
-  settingsPinDone: string;
-  settingsPinRemoved: string;
-  settingsExported: string;
-  settingsSupNameEmpty: string;
-  settingsSupAdded: string;
-  settingsSupDeleted: string;
-  settingsNoSup: string;
-  settingsNoSupHint: string;
 
   // Activity levels
   activitySedentary: string;
@@ -251,160 +149,59 @@ interface Translations {
   nutritionTitle: string;
   nutritionFoods: string;
   nutritionMealPlan: string;
-  nutritionShopping: string;
   nutritionSearchFood: string;
-  nutritionFavorites: string;
   nutritionRecent: string;
-  nutritionResults: string;
-  nutritionYourPlans: string;
-  nutritionCreateNew: string;
   nutritionCreatePlan: string;
   nutritionPlanName: string;
   nutritionMealsPerDay: string;
   nutritionMeals: string;
-  nutritionCreating: string;
-  nutritionCreateBtn: string;
-  nutritionNoPlans: string;
-  nutritionShoppingEmpty: string;
-  nutritionShoppingDesc: string;
-  nutritionCreated: string;
 
   // Meal plan
   mealPlanTitle: string;
-  mealPlanPlan: string;
-  mealPlanShoppingList: string;
   mealBreakfast: string;
   mealLunch: string;
   mealDinner: string;
   mealSnack: string;
-  mealPreWorkout: string;
-  mealPostWorkout: string;
-  mealAddFood: string;
   mealType: string;
-  mealSearchFood: string;
-  mealShoppingEmpty: string;
-  mealShoppingEmptyDesc: string;
-  mealTimes: string;
-  mealAdded: string;
 
   // Supplements
-  supplementsTitle: string;
-  supplementsThisWeek: string;
-  supplements30Days: string;
-  supplementsYourStack: string;
   supplementsAddTitle: string;
-  supplementsEditTitle: string;
   supplementsName: string;
-  supplementsCategory: string;
   supplementsDose: string;
   supplementsTiming: string;
-  supplementsNotes: string;
-  supplementsCycle: string;
-  supplementsNoCycle: string;
-  supplementsOnOff: string;
-  supplementsWeeksOn: string;
-  supplementsWeeksOff: string;
-  supplementsNoItems: string;
-  supplementsUpdated: string;
-  supplementsAdded: string;
-  supplementsCatVitamin: string;
-  supplementsCatMineral: string;
-  supplementsCatPerformance: string;
-  supplementsCatRecovery: string;
-  supplementsCatHealth: string;
-  supplementsCatOther: string;
-  supplementsCatProtein: string;
-  supplementsCatCreatine: string;
-  supplementsCatNootropic: string;
   supplementsTimMorning: string;
   supplementsTimPreWorkout: string;
   supplementsTimPostWorkout: string;
-  supplementsTimEvening: string;
   supplementsTimWithMeal: string;
   supplementsTimBeforeBed: string;
 
   // Sleep
   sleepTitle: string;
-  sleepAvg: string;
   sleepAvgQuality: string;
   sleepAvgDeep: string;
   sleepDebt: string;
-  sleepStages: string;
-  sleepQualityTrend: string;
-  sleepHabits: string;
   sleepInsights: string;
   sleepNoData: string;
   sleepNoDataMsg: string;
-  sleepGood: string;
-  sleepNeedsImprovement: string;
-  sleepLow: string;
   sleepOk: string;
-  sleepNeedCatchUp: string;
   sleepDeep: string;
-
-  // Water
-  waterTitle: string;
-  waterGlasses: string;
-  waterOfTarget: string;
-  waterReminderOn: string;
-  waterReminderOff: string;
-  waterWeekChart: string;
-  waterTodayLog: string;
-  waterTimes: string;
-  waterTargetLabel: string;
-  waterCantLog: string;
-  waterReminderEnabled: string;
-  waterReminderDisabled: string;
 
   // Workouts
   workoutsTitle: string;
-  workoutsTemplates: string;
   workoutsExercises: string;
   workoutsCreateNew: string;
-  workoutsCreateTemplate: string;
-  workoutsCreating: string;
-  workoutsCreateBtn: string;
   workoutsNoTemplates: string;
-  workoutsWeeklyPlan: string;
-  workoutsAddExercise: string;
   workoutsExercisesAdded: string;
   workoutsVolume: string;
-  workoutsCreated: string;
-  workoutsType: string;
 
   // Exercise Library
-  exercisesTitle: string;
   exercisesAdd: string;
   exercisesAddTitle: string;
   exercisesSearch: string;
   exercisesName: string;
   exercisesMuscleGroup: string;
   exercisesEquipment: string;
-  exercisesFormCues: string;
-  exercisesCommonMistakes: string;
-  exercisesVideoUrl: string;
-  exercisesAdding: string;
   exercisesAddBtn: string;
-  exercisesNotFound: string;
-  exercisesAdded: string;
-
-  // Routine Planner
-  routineTitle: string;
-  routineDesc: string;
-  routineRest: string;
-  routineDeload: string;
-  routineManageTemplates: string;
-  routineUpdated: string;
-  routineChooseWorkout: string;
-
-  // Day labels
-  dayMon: string;
-  dayTue: string;
-  dayWed: string;
-  dayThu: string;
-  dayFri: string;
-  daySat: string;
-  daySun: string;
 
   // Progress
   progressWeight: string;
@@ -419,46 +216,22 @@ interface Translations {
   progressDeleteMeasurement: string;
   progressDeleteMeasurementBody: string;
   progressAddMeasurement: string;
-  progressUploadPhoto: string;
   progressDate: string;
-  progressPose: string;
-  progressPoseFront: string;
-  progressPoseSide: string;
-  progressPoseBack: string;
-  progressPoseFlex: string;
   progressNoMeasurements: string;
   progressNoPhotos: string;
   progressSaved: string;
-  progressUploaded: string;
-  progressSelectUpload: string;
-  progressNotes: string;
 
   // Biometrics
   biometricsTitle: string;
-  biometricsSubtitle: string;
-  biometricsCameraHR: string;
   biometricsManual: string;
-  biometricsSyncWearable: string;
-  biometricsSyncing: string;
   biometricsNoData: string;
   biometricsNoDataMsg: string;
-  biometricsRecentHistory: string;
-  biometricsTime: string;
-  biometricsSource: string;
-  biometricsSourceCamera: string;
-  biometricsSourceWearable: string;
-  biometricsSourceManual: string;
-  biometricsConfidence: string;
-  biometricsEstimate: string;
   biometricsHeartRate: string;
   biometricsBreathRate: string;
   biometricsBloodOxygen: string;
   /** đơn vị nhịp thở — "rpm" là vòng/phút của động cơ, không phải hơi thở */
   biometricsBreathUnit: string;
-  biometricsDisclaimerTitle: string;
   biometricsDisclaimer1: string;
-  biometricsDisclaimer2: string;
-  biometricsDisclaimer3: string;
 
   // Log Biometrics Dialog
   logBioTitle: string;
@@ -484,41 +257,17 @@ interface Translations {
   sleepStagesOverrun: string;
 
   // Log Meal Dialog
-  logMealTitle: string;
-  logMealType: string;
-  logMealSearchFood: string;
-  logMealSearchPlaceholder: string;
-  logMealAdded: string;
-  logMealServings: string;
   logMealSaved: string;
   logMealQueued: string;
 
   // Log Workout Dialog
-  logWorkoutTitle: string;
-  logWorkoutName: string;
-  logWorkoutNamePlaceholder: string;
-  logWorkoutSessionRPE: string;
-  logWorkoutSets: string;
-  logWorkoutAddSet: string;
-  logWorkoutKg: string;
-  logWorkoutReps: string;
-  logWorkoutRPE: string;
-  logWorkoutVolumeLoad: string;
   logWorkoutSaved: string;
-  logWorkoutSaveBtn: string;
 
   // Log Sleep Dialog
-  logSleepTitle: string;
-  logSleepBedtime: string;
-  logSleepWaketime: string;
-  logSleepQuality: string;
   logSleepDeep: string;
   logSleepREM: string;
   logSleepLight: string;
-  logSleepCaffeine: string;
-  logSleepScreen: string;
   logSleepSaved: string;
-  logSleepSaveBtn: string;
   logSleepMinutes: string;
 
   // Awards
@@ -526,20 +275,8 @@ interface Translations {
   awardsEarned: string;
   awardsOf: string;
 
-  // Challenges
-  challengesTitle: string;
-  challengesCompleted: string;
-  challengesDaysLeft: string;
-  challengesProgress: string;
-  challengesReward: string;
-  challengesUpdateProgress: string;
-  challengesUpdating: string;
-
   // Weekly Review
   weeklyReviewTitle: string;
-  weeklyReviewExport: string;
-  weeklyReviewExporting: string;
-  weeklyReviewExported: string;
   weeklyReviewAvgCalories: string;
   weeklyReviewAvgProtein: string;
   weeklyReviewAvgSleep: string;
@@ -553,12 +290,9 @@ interface Translations {
 
   // Smart Goals
   smartGoalsTitle: string;
-  smartGoalsSubtitle: string;
   smartGoalsWeightTrend: string;
   smartGoalsOnTrack: string;
   smartGoalsOffTrack: string;
-  smartGoalsKeepGoing: string;
-  smartGoalsSeeBelow: string;
   smartGoalsCalorieSuggestion: string;
   smartGoalsMeasured: string;
   smartGoalsNeedData: string;
@@ -572,37 +306,14 @@ interface Translations {
 
   // AI Coach
   aiCoachTitle: string;
-  aiCoachSubtitle: string;
   aiCoachHello: string;
   aiCoachIntro: string;
   aiCoachPlaceholder: string;
   aiCoachHistory: string;
   aiCoachNoHistory: string;
-  aiCoachConnectionError: string;
-  aiCoachPrompt1: string;
-  aiCoachPrompt2: string;
-  aiCoachPrompt3: string;
-  aiCoachPrompt4: string;
 
   // Grocery
-  groceryTitle: string;
   grocerySubtitle: string;
-  groceryShoppingList: string;
-  groceryBought: string;
-  groceryAddProduct: string;
-  groceryClearBought: string;
-  groceryProductName: string;
-  groceryQuantity: string;
-  groceryPrice: string;
-  groceryNoItems: string;
-  groceryFromMealPlan: string;
-  groceryTimesUsed: string;
-  groceryCheapProtein: string;
-  groceryDeleted: string;
-  groceryAddedToList: string;
-  groceryClearedBought: string;
-  groceryNameRequired: string;
-  groceryCategories: Record<string, string>;
 
   /* ── onboarding 13 màn (Giai đoạn 3) ── */
   obBack: string;
@@ -733,18 +444,6 @@ interface Translations {
   measureCalfR: string;
   measureBodyFat: string;
 
-  // Timing labels (for supplement checklist)
-  timingMorning: string;
-  timingPreWorkout: string;
-  timingPostWorkout: string;
-  timingBeforeBed: string;
-  timingWithMeals: string;
-
-  // Progress overload labels
-  progressionDouble: string;
-  progressionLinear: string;
-  progressionNone: string;
-
   // Dashboard components
   dcActivity: string;
   dcActivityMove: string;
@@ -754,11 +453,9 @@ interface Translations {
   dcActivityMin: string;
   dcActivityStepsUnit: string;
   dcActivityEmpty: string;
-  dcActivityConnect: string;
   dcActivityEstimated: string;
   dcNutritionTitle: string;
   dcNutritionTarget: string;
-  dcNutritionPctOfGoal: string;
   dcNutritionRemaining: string;
   /** macro tiles, tapped: still to eat / exactly met / eaten past */
   dcMacroLeft: string;
@@ -777,39 +474,13 @@ interface Translations {
   dcBioNotConnected: string;
   /** nhóm thứ hai của thẻ: VO₂max là năng lực thể lực, không phải dấu hiệu sinh tồn */
   dcBioFitness: string;
-  dcBioSource: string;
-  dcBioConfidence: string;
-  dcBioFallback: string;
-  dcBioEstimate: string;
   dcReadinessTitle: string;
   dcReadinessTrain: string;
   dcReadinessModerate: string;
   dcReadinessRecover: string;
-  dcReadinessTrend: string;
-  dcReadinessTrendDesc: string;
-  dcReadinessAvg: string;
-  dcReadinessBest: string;
-  dcReadinessWorst: string;
-  dcNudgesTitle: string;
-  dcNudgesActive: string;
   dcTrainingTitle: string;
-  dcTraining7dVolume: string;
   dcRecentAwards: string;
   dcViewAll: string;
-  dcSupplementToday: string;
-  dcWeightTitle: string;
-
-  // Food Scan
-  scanFoodTitle: string;
-  scanFoodCapture: string;
-  scanFoodAnalyzing: string;
-  scanFoodRetake: string;
-  scanFoodAddToMeal: string;
-  scanFoodNoFood: string;
-  scanFoodError: string;
-  scanFoodEstimated: string;
-  scanFoodServing: string;
-  scanFoodItems: string;
 
   // Food Item CRUD
   foodAddTitle: string;
@@ -831,22 +502,7 @@ interface Translations {
   foodAddCustom: string;
 
   // Steps
-  stepsTitle: string;
-  stepsSubtitle: string;
-  stepsToday: string;
   stepsGoal: string;
-  stepsAvg7d: string;
-  stepsWeekly: string;
-  stepsDaily: string;
-  stepsTrend: string;
-  stepsNoData: string;
-  stepsNoDataMsg: string;
-  stepsSyncApple: string;
-  stepsSyncing: string;
-  navSteps: string;
-  notFoundTitle: string;
-  notFoundBody: string;
-  notFoundHome: string;
 }
 
 const vi: Translations = {
@@ -868,58 +524,22 @@ const vi: Translations = {
   success: 'Thành công',
   noData: 'Chưa có dữ liệu',
   today: 'Hôm nay',
-  thisWeek: 'Tuần này',
   target: 'Mục tiêu',
   all: 'Tất cả',
   other: 'Khác',
   settings: 'Cài đặt',
 
-  goodMorning: 'Chào buổi sáng',
-  goodAfternoon: 'Chào buổi chiều',
-  goodEvening: 'Chào buổi tối',
-
-  authLogin: 'Đăng nhập',
-  authSignup: 'Đăng ký',
-  authEmail: 'Email',
-  authPassword: 'Mật khẩu',
-  authName: 'Tên',
-  authLoginSubtitle: 'Đăng nhập để tiếp tục',
-  authSignupSubtitle: 'Tạo tài khoản mới',
-  authNoAccount: 'Chưa có tài khoản?',
-  authHasAccount: 'Đã có tài khoản?',
-  authCheckEmail: 'Kiểm tra email để xác nhận tài khoản!',
-  authProcessing: 'Đang xử lý...',
-  authYourName: 'Tên của bạn',
   authForgotPassword: 'Quên mật khẩu?',
   authResetPassword: 'Đặt lại mật khẩu',
   authResetSent: 'Kiểm tra email để đặt lại mật khẩu!',
   authBackToLogin: 'Quay lại đăng nhập',
-  authNewPassword: 'Mật khẩu mới',
-  authUpdatePassword: 'Cập nhật mật khẩu',
-  authPasswordUpdated: 'Mật khẩu đã được cập nhật!',
 
   navToday: 'Hôm nay',
   navNutrition: 'Dinh dưỡng',
   navWorkouts: 'Tập luyện',
-  navSupplements: 'Supplements',
-  navSleep: 'Giấc ngủ',
-  navWater: 'Nước uống',
-  navBiometrics: 'Sinh trắc học',
   navProgress: 'Tiến trình',
-  navWeeklyReview: 'Weekly Review',
   navSmartGoals: 'Hiệu chỉnh mục tiêu',
-  navAwards: 'Huy Chương',
-  navChallenges: 'Thử Thách',
-  navGrocery: 'Grocery List',
-  navAiCoach: 'AI Coach',
-  navSettings: 'Cài đặt',
-  navMain: 'Chính',
-  navAnalytics: 'Phân tích',
 
-  dashLogMeal: 'Ghi bữa ăn',
-  dashLogWorkout: 'Ghi buổi tập',
-  dashLogSleep: 'Ghi giấc ngủ',
-  dashLogBiometrics: 'Nhập sinh trắc',
   dashReadiness: 'Sẵn Sàng',
   /*
     Bốn nhận xét về đêm qua, và cả bốn đều đứng trên HAI con số cùng lúc: chất
@@ -967,44 +587,20 @@ const vi: Translations = {
   */
   dashReadinessMsg:
     'Chưa đủ dữ liệu để tính điểm sẵn sàng. Chỉ cần MỘT trong ba: một buổi tập có ghi set, một đêm ngủ được ghi, hoặc 5 lần đo nhịp tim nghỉ/HRV trong 28 ngày. Bữa ăn và calo không được tính vào điểm này.',
-  dashTrend: 'Xu Hướng',
-  dashTrendMsg: 'Chưa có dữ liệu xu hướng sẵn sàng.',
-  dashActivity: 'Hoạt Động',
-  dashActivityMsg: 'Chưa có dữ liệu hoạt động hôm nay.',
-  dashBiometrics: 'Sinh Trắc Học',
-  dashBiometricsMsg: 'Chưa có dữ liệu. Nhấn để nhập.',
-  dashTraining: 'Tập Luyện',
-  dashTrainingMsg: 'Chưa có buổi tập nào. Nhấn để ghi.',
   dashNutrition: 'Dinh Dưỡng',
   dashNutritionMsg: 'Chưa ghi bữa ăn hôm nay. Nhấn để mở nhật ký.',
   dashSleep: 'Giấc Ngủ',
   dashSleepMsg: 'Chưa ghi giấc ngủ. Nhấn để ghi.',
-  dashSupplements: 'Supplements',
-  dashSupplementsMsg: 'Thêm supplements trong Settings.',
-
-  weightTitle: 'Cân Nặng',
-  weightSave: 'Lưu',
-  weightNotLogged: 'Chưa ghi',
 
   workoutStatusTitle: 'Buổi Tập Hôm Nay',
   workoutStatusDone: 'Hoàn thành!',
   workoutStatusNotYet: 'Chưa tập',
 
-  supplementTodayTitle: 'Supplement Hôm Nay',
-
   settingsTitle: 'Cài Đặt',
-  settingsGeneral: 'Chung',
-  settingsProfile: 'Hồ Sơ',
-  settingsNutrition: 'Dinh Dưỡng',
-  settingsSleep: 'Giấc Ngủ',
-  settingsSupplements: 'Supplements',
-  settingsData: 'Dữ Liệu',
   settingsTheme: 'Giao Diện',
   settingsThemeLight: 'Sáng',
   settingsThemeDark: 'Tối',
   settingsThemeSystem: 'Hệ thống',
-  settingsLanguage: 'Ngôn Ngữ',
-  settingsCurrency: 'Tiền Tệ',
   settingsPersonalInfo: 'Thông Tin Cá Nhân',
   settingsName: 'Tên',
   settingsDob: 'Ngày sinh',
@@ -1016,60 +612,20 @@ const vi: Translations = {
   settingsWeight: 'Cân nặng',
   settingsActivityLevel: 'Mức hoạt động',
   settingsGoal: 'Mục tiêu',
-  settingsUnits: 'Đơn Vị',
-  settingsCaloriesMacros: 'Mục Tiêu Calories & Macros',
   settingsWaterTarget: 'Mục Tiêu Nước Uống',
-  settingsWaterRecommend: 'Khuyến nghị: 30-35ml × cân nặng',
   settingsSleepTarget: 'Mục Tiêu Giấc Ngủ',
   settingsSleepHours: 'Số giờ mục tiêu',
   settingsBedtime: 'Giờ đi ngủ',
   settingsWakeTime: 'Giờ thức dậy',
-  settingsSleepGoalSummary: 'Mục tiêu',
-  settingsSupplementStack: 'Supplement Stack',
   settingsExportData: 'Xuất Dữ Liệu',
   settingsExportDesc: 'Tải xuống toàn bộ dữ liệu cân nặng, dinh dưỡng, tập luyện, giấc ngủ.',
-  settingsPrivacyLock: 'Privacy Lock',
-  settingsPinSet: 'PIN đã được cài đặt',
-  settingsPinSetDesc: 'Ứng dụng sẽ yêu cầu PIN khi mở lại',
-  settingsPinRemove: 'Xoá PIN',
-  settingsPinSetup: 'Cài đặt PIN để bảo vệ dữ liệu cá nhân.',
-  settingsPinSetupDesc: 'Cài đặt PIN để bảo vệ dữ liệu cá nhân.',
-  settingsPinPlaceholder: 'Nhập PIN (≥4 ký tự)',
-  settingsPinInstall: 'Cài đặt',
-  settingsMacroDistribution: 'Phân bổ Macros',
-  settingsTotal: 'Tổng',
-  settingsSavedSuccess: 'Đã lưu thành công!',
-  settingsLogout: 'Đăng xuất',
   settingsChangePassword: 'Đổi mật khẩu',
-  settingsCurrentPassword: 'Mật khẩu hiện tại',
   settingsNewPassword: 'Mật khẩu mới',
   settingsConfirmPassword: 'Xác nhận mật khẩu mới',
   settingsPasswordChanged: 'Đổi mật khẩu thành công!',
   settingsPasswordMismatch: 'Mật khẩu xác nhận không khớp',
   settingsRecalcTargets: 'Tính lại theo chỉ số',
   settingsRecalcDone: 'Đã tính lại mục tiêu từ chỉ số của bạn',
-  settings2FA: 'Xác thực 2 yếu tố',
-  settings2FADesc: 'Bảo vệ tài khoản bằng ứng dụng xác thực (Google Authenticator, Authy...)',
-  settings2FAEnabled: 'Đã bật',
-  settings2FADisabled: 'Chưa bật',
-  settings2FASetup: 'Thiết lập 2FA',
-  settings2FAEnterCode: 'Nhập mã 6 số từ ứng dụng xác thực',
-  settings2FAVerify: 'Xác nhận',
-  settings2FARemove: 'Tắt 2FA',
-  settings2FARemoved: 'Đã tắt xác thực 2 yếu tố',
-  settings2FAVerified: 'Xác thực 2 yếu tố đã được bật!',
-  settings2FAScanQR: 'Quét mã QR bằng ứng dụng xác thực',
-  settings2FABackupHint: 'Lưu mã dự phòng ở nơi an toàn',
-  settingsErrorSaving: 'Lỗi khi lưu',
-  settingsPinMinLength: 'PIN phải có ít nhất 4 ký tự',
-  settingsPinDone: 'Đã cài đặt PIN!',
-  settingsPinRemoved: 'Đã xoá PIN',
-  settingsExported: 'Đã xuất',
-  settingsSupNameEmpty: 'Tên supplement không được trống',
-  settingsSupAdded: 'Đã thêm supplement!',
-  settingsSupDeleted: 'Đã xoá supplement',
-  settingsNoSup: 'Chưa có supplement nào.',
-  settingsNoSupHint: 'Nhấn "Thêm" để bắt đầu.',
 
   activitySedentary: 'Ít vận động',
   activityLight: 'Nhẹ',
@@ -1094,152 +650,54 @@ const vi: Translations = {
   nutritionTitle: 'Dinh Dưỡng',
   nutritionFoods: 'Thực phẩm',
   nutritionMealPlan: 'Kế hoạch ăn',
-  nutritionShopping: 'Đi chợ',
   nutritionSearchFood: 'Tìm thực phẩm...',
-  nutritionFavorites: 'Yêu thích',
   nutritionRecent: 'Gần đây',
-  nutritionResults: 'kết quả',
-  nutritionYourPlans: 'Kế hoạch ăn của bạn',
-  nutritionCreateNew: 'Tạo mới',
   nutritionCreatePlan: 'Tạo kế hoạch ăn',
   nutritionPlanName: 'Tên kế hoạch ăn',
   nutritionMealsPerDay: 'Số bữa/ngày',
   nutritionMeals: 'bữa',
-  nutritionCreating: 'Đang tạo...',
-  nutritionCreateBtn: 'Tạo kế hoạch ăn',
-  nutritionNoPlans: 'Chưa có kế hoạch ăn nào',
-  nutritionShoppingEmpty: 'Tạo kế hoạch ăn trước để có danh sách đi chợ',
-  nutritionShoppingDesc: 'Danh sách đi chợ được tạo tự động từ kế hoạch ăn của bạn',
-  nutritionCreated: 'Đã tạo kế hoạch ăn!',
 
   mealPlanTitle: 'Kế hoạch ăn',
-  mealPlanPlan: 'Kế hoạch',
-  mealPlanShoppingList: 'Đi chợ',
   mealBreakfast: 'Bữa sáng',
   mealLunch: 'Bữa trưa',
   mealDinner: 'Bữa tối',
   mealSnack: 'Bữa phụ',
-  mealPreWorkout: 'Trước tập',
-  mealPostWorkout: 'Sau tập',
-  mealAddFood: 'Thêm món',
   mealType: 'Loại bữa',
-  mealSearchFood: 'Tìm thực phẩm...',
-  mealShoppingEmpty: 'Thêm món vào kế hoạch để có danh sách đi chợ',
-  mealShoppingEmptyDesc: 'Thêm món vào kế hoạch để có danh sách đi chợ',
-  mealTimes: 'lần',
-  mealAdded: 'Đã thêm!',
 
-  supplementsTitle: 'Supplements',
-  supplementsThisWeek: 'Tuần này',
-  supplements30Days: '30 ngày',
-  supplementsYourStack: 'Stack của bạn',
   supplementsAddTitle: 'Thêm Supplement',
-  supplementsEditTitle: 'Sửa Supplement',
   supplementsName: 'Tên',
-  supplementsCategory: 'Loại',
   supplementsDose: 'Liều lượng',
   supplementsTiming: 'Thời điểm',
-  supplementsNotes: 'Ghi chú / Chống chỉ định',
-  supplementsCycle: 'Chu kỳ (Cycle)',
-  supplementsNoCycle: 'Không cycle',
-  supplementsOnOff: 'On/Off tuần',
-  supplementsWeeksOn: 'Tuần ON',
-  supplementsWeeksOff: 'Tuần OFF',
-  supplementsNoItems: 'Chưa có supplement nào',
-  supplementsUpdated: 'Đã cập nhật!',
-  supplementsAdded: 'Đã thêm!',
-  supplementsCatVitamin: 'Vitamin',
-  supplementsCatMineral: 'Khoáng chất',
-  supplementsCatPerformance: 'Hiệu suất',
-  supplementsCatRecovery: 'Phục hồi',
-  supplementsCatHealth: 'Sức khoẻ',
-  supplementsCatOther: 'Khác',
-  supplementsCatProtein: 'Protein',
-  supplementsCatCreatine: 'Creatine',
-  supplementsCatNootropic: 'Nootropic',
   supplementsTimMorning: 'Sáng',
   supplementsTimPreWorkout: 'Trước tập',
   supplementsTimPostWorkout: 'Sau tập',
-  supplementsTimEvening: 'Tối',
   supplementsTimWithMeal: 'Cùng bữa ăn',
   supplementsTimBeforeBed: 'Trước ngủ',
 
   sleepTitle: 'Giấc Ngủ — 7 Ngày',
-  sleepAvg: 'TB Giấc ngủ',
   sleepAvgQuality: 'TB Chất lượng',
   sleepAvgDeep: 'TB Deep',
   sleepDebt: 'Nợ ngủ',
-  sleepStages: 'Giai Đoạn Giấc Ngủ',
-  sleepQualityTrend: 'Xu Hướng Chất Lượng',
-  sleepHabits: 'Thói Quen',
   sleepInsights: 'Nhận Xét',
   sleepNoData: 'Chưa có dữ liệu giấc ngủ',
   sleepNoDataMsg: 'Chưa có dữ liệu giấc ngủ. Hãy ghi log giấc ngủ từ dashboard.',
-  sleepGood: 'Tốt',
-  sleepNeedsImprovement: 'Cần cải thiện',
-  sleepLow: 'Thấp',
   sleepOk: 'Ổn',
-  sleepNeedCatchUp: 'Cần bù',
   sleepDeep: 'Deep',
 
-  waterTitle: 'Theo Dõi Nước Uống',
-  waterGlasses: 'ly',
-  waterOfTarget: 'mục tiêu',
-  waterReminderOn: 'Nhắc nhở đang bật',
-  waterReminderOff: 'Bật nhắc nhở mỗi giờ',
-  waterWeekChart: 'Tuần Này',
-  waterTodayLog: 'Hôm Nay',
-  waterTimes: 'lần',
-  waterTargetLabel: 'Mục tiêu',
-  waterCantLog: 'Không thể ghi nhận',
-  waterReminderEnabled: 'Nhắc uống nước mỗi giờ đã bật',
-  waterReminderDisabled: 'Đã tắt nhắc nhở',
-
   workoutsTitle: 'Tập luyện',
-  workoutsTemplates: 'Templates',
   workoutsExercises: 'Bài tập',
   workoutsCreateNew: 'Tạo mới',
-  workoutsCreateTemplate: 'Tạo Workout Template',
-  workoutsCreating: 'Đang tạo...',
-  workoutsCreateBtn: 'Tạo Template',
   workoutsNoTemplates: 'Chưa có template nào',
-  workoutsWeeklyPlan: 'Lịch tập tuần',
-  workoutsAddExercise: 'Thêm bài tập',
   workoutsExercisesAdded: 'Bài tập đã thêm',
   workoutsVolume: 'Khối lượng',
-  workoutsCreated: 'Đã tạo template!',
-  workoutsType: 'Loại',
 
-  exercisesTitle: 'Bài Tập',
   exercisesAdd: 'Thêm bài tập',
   exercisesAddTitle: 'Thêm Bài Tập',
   exercisesSearch: 'Tìm bài tập...',
   exercisesName: 'Tên',
   exercisesMuscleGroup: 'Nhóm cơ',
   exercisesEquipment: 'Dụng cụ',
-  exercisesFormCues: 'Form cues (mỗi dòng 1 cue)',
-  exercisesCommonMistakes: 'Lỗi thường gặp (mỗi dòng 1 lỗi)',
-  exercisesVideoUrl: 'Video URL (tuỳ chọn)',
-  exercisesAdding: 'Đang thêm...',
   exercisesAddBtn: 'Thêm bài tập',
-  exercisesNotFound: 'Không tìm thấy bài tập',
-  exercisesAdded: 'Đã thêm bài tập!',
-
-  routineTitle: 'Lịch Tập Tuần',
-  routineDesc: 'Gán workout template cho từng ngày trong tuần. Bật deload để giảm tải.',
-  routineRest: 'Nghỉ ngơi',
-  routineDeload: 'Deload',
-  routineManageTemplates: 'Quản lý Templates',
-  routineUpdated: 'Đã cập nhật!',
-  routineChooseWorkout: 'Chọn workout...',
-
-  dayMon: 'Thứ 2',
-  dayTue: 'Thứ 3',
-  dayWed: 'Thứ 4',
-  dayThu: 'Thứ 5',
-  dayFri: 'Thứ 6',
-  daySat: 'Thứ 7',
-  daySun: 'Chủ nhật',
 
   progressWeight: 'Cân nặng',
   progressMeasurements: 'Số đo',
@@ -1253,44 +711,20 @@ const vi: Translations = {
   progressDeleteMeasurement: 'Xoá số đo này?',
   progressDeleteMeasurementBody: 'Cả dòng số đo của ngày này sẽ bị xoá khỏi bảng và biểu đồ.',
   progressAddMeasurement: 'Nhập số đo',
-  progressUploadPhoto: 'Tải ảnh',
   progressDate: 'Ngày',
-  progressPose: 'Tư thế',
-  progressPoseFront: 'Mặt trước',
-  progressPoseSide: 'Mặt bên',
-  progressPoseBack: 'Mặt sau',
-  progressPoseFlex: 'Flex',
   progressNoMeasurements: 'Chưa có số đo. Nhấn nút phía trên để bắt đầu theo dõi.',
   progressNoPhotos: 'Chưa có ảnh tiến trình',
   progressSaved: 'Đã lưu số đo!',
-  progressUploaded: 'Đã tải ảnh!',
-  progressSelectUpload: 'Chọn ảnh & Tải lên',
-  progressNotes: 'Ghi chú',
 
   biometricsTitle: 'Sinh Trắc Học',
-  biometricsSubtitle: 'Theo dõi HR, HRV, SpO₂, VO₂max và nhịp thở',
-  biometricsCameraHR: 'Đo qua Camera',
   biometricsManual: 'Nhập thủ công',
-  biometricsSyncWearable: 'Đồng bộ Wearable',
-  biometricsSyncing: 'Đang đồng bộ...',
   biometricsNoData: 'Chưa có dữ liệu sinh trắc học',
   biometricsNoDataMsg: 'Dùng Camera hoặc nhập thủ công để bắt đầu theo dõi',
-  biometricsRecentHistory: 'Lịch Sử Gần Đây',
-  biometricsTime: 'Thời gian',
-  biometricsSource: 'Nguồn',
-  biometricsSourceCamera: 'Camera rPPG · ước tính',
-  biometricsSourceWearable: 'Thiết bị đeo',
-  biometricsSourceManual: 'Nhập thủ công',
-  biometricsConfidence: 'tin cậy',
-  biometricsEstimate: 'ước tính',
   biometricsHeartRate: 'Nhịp tim nghỉ',
   biometricsBreathRate: 'Nhịp thở',
   biometricsBloodOxygen: 'Oxy máu',
   biometricsBreathUnit: 'nhịp/phút',
-  biometricsDisclaimerTitle: 'Cảnh báo An toàn Sức khoẻ',
   biometricsDisclaimer1: 'Dữ liệu sinh trắc học chỉ mang tính ước tính, KHÔNG có độ chính xác y khoa. Không sử dụng để chẩn đoán hoặc điều trị bệnh.',
-  biometricsDisclaimer2: 'Gợi ý từ AI được tạo bởi thuật toán máy học, KHÔNG phải bởi bác sĩ. Luôn tham khảo chuyên gia y tế trước khi đưa ra quyết định sức khoẻ.',
-  biometricsDisclaimer3: 'Nếu gặp triệu chứng bất thường (đau ngực, khó thở, chóng mặt), hãy gọi cấp cứu ngay — KHÔNG dựa vào ứng dụng.',
 
   logBioTitle: 'Nhập Chỉ Số Sinh Trắc',
   logBioHR: 'Nhịp tim nghỉ (bpm)',
@@ -1308,57 +742,22 @@ const vi: Translations = {
   statsRequired: 'Cần chiều cao, cân nặng và ngày sinh hợp lệ trước khi tính',
   sleepStagesOverrun: 'Các giai đoạn cộng lại {sum} phút, dài hơn cả đêm ({total} phút)',
 
-  logMealTitle: 'Ghi Bữa Ăn',
-  logMealType: 'Loại bữa',
-  logMealSearchFood: 'Tìm thực phẩm',
-  logMealSearchPlaceholder: 'Tìm kiếm...',
-  logMealAdded: 'Đã thêm',
-  logMealServings: 'phần',
   logMealSaved: 'Đã lưu bữa ăn!',
   logMealQueued: 'Đã lưu — sẽ đồng bộ khi có mạng',
 
-  logWorkoutTitle: 'Ghi Buổi Tập',
-  logWorkoutName: 'Tên buổi tập',
-  logWorkoutNamePlaceholder: 'VD: Push Day A',
-  logWorkoutSessionRPE: 'Session RPE (1-10)',
-  logWorkoutSets: 'Sets',
-  logWorkoutAddSet: 'Thêm set',
-  logWorkoutKg: 'Kg',
-  logWorkoutReps: 'Reps',
-  logWorkoutRPE: 'RPE',
-  logWorkoutVolumeLoad: 'Volume Load',
   logWorkoutSaved: 'Đã lưu buổi tập!',
-  logWorkoutSaveBtn: 'Lưu buổi tập',
 
-  logSleepTitle: 'Ghi Giấc Ngủ',
-  logSleepBedtime: 'Giờ ngủ',
-  logSleepWaketime: 'Giờ dậy',
-  logSleepQuality: 'Chất lượng (1-10)',
   logSleepDeep: 'Deep',
   logSleepREM: 'REM',
   logSleepLight: 'Light',
-  logSleepCaffeine: 'Caffeine cutoff',
-  logSleepScreen: 'Screen off',
   logSleepSaved: 'Đã lưu giấc ngủ!',
-  logSleepSaveBtn: 'Lưu giấc ngủ',
   logSleepMinutes: 'phút',
 
   awardsTitle: 'Huy Chương',
   awardsEarned: 'Đã đạt',
   awardsOf: 'huy chương',
 
-  challengesTitle: 'Thử Thách Tuần',
-  challengesCompleted: 'Hoàn thành',
-  challengesDaysLeft: 'Ngày còn lại',
-  challengesProgress: 'Tiến độ',
-  challengesReward: 'Phần thưởng',
-  challengesUpdateProgress: 'Cập nhật tiến độ',
-  challengesUpdating: 'Đang cập nhật...',
-
   weeklyReviewTitle: 'Tổng kết tuần',
-  weeklyReviewExport: 'Xuất báo cáo',
-  weeklyReviewExporting: 'Đang xuất...',
-  weeklyReviewExported: 'Đã xuất báo cáo!',
   weeklyReviewAvgCalories: 'TB Calories',
   weeklyReviewAvgProtein: 'TB Protein',
   weeklyReviewAvgSleep: 'TB Giấc ngủ',
@@ -1371,12 +770,9 @@ const vi: Translations = {
   weeklyReviewSessions: 'buổi',
 
   smartGoalsTitle: 'Hiệu chỉnh mục tiêu',
-  smartGoalsSubtitle: 'Đọc xu hướng cân nặng và lượng ăn của bạn, rồi đề xuất mục tiêu calo khớp với thực tế',
   smartGoalsWeightTrend: 'Xu Hướng Cân Nặng (4 Tuần)',
   smartGoalsOnTrack: 'Đang đi đúng hướng! Giữ nguyên chế độ hiện tại.',
   smartGoalsOffTrack: 'Lệch mục tiêu. Xem gợi ý bên dưới.',
-  smartGoalsKeepGoing: 'Đang đi đúng hướng!',
-  smartGoalsSeeBelow: 'Xem gợi ý bên dưới.',
   smartGoalsCalorieSuggestion: 'Gợi ý chỉnh Calories',
   smartGoalsMeasured: 'Đo từ lượng ăn và cân nặng {d} ngày qua của bạn, không phải từ công thức chung.',
   smartGoalsNeedData: 'Cần ít nhất 3 ngày ghi cân nặng trong 4 tuần gần nhất',
@@ -1389,40 +785,13 @@ const vi: Translations = {
   smartGoalsNoNutritionData: 'Chưa có dữ liệu dinh dưỡng. Ghi bữa ăn để nhận gợi ý.',
 
   aiCoachTitle: 'AI Coach',
-  aiCoachSubtitle: 'Dựa trên dữ liệu cá nhân của bạn',
   aiCoachHello: 'Xin chào!',
   aiCoachIntro: 'Tôi là AI Coach — tôi phân tích dữ liệu tập luyện, dinh dưỡng, giấc ngủ và phục hồi của bạn để đưa ra lời khuyên cá nhân hoá.',
   aiCoachPlaceholder: 'Hỏi về dinh dưỡng, tập luyện, phục hồi...',
   aiCoachHistory: 'Lịch sử trò chuyện',
   aiCoachNoHistory: 'Chưa có cuộc trò chuyện nào',
-  aiCoachConnectionError: 'Lỗi kết nối AI Coach',
-  aiCoachPrompt1: 'Hôm nay tôi nên tập gì?',
-  aiCoachPrompt2: 'Đánh giá dinh dưỡng tuần này',
-  aiCoachPrompt3: 'Giấc ngủ ảnh hưởng thế nào?',
-  aiCoachPrompt4: 'Tôi cần cải thiện gì?',
 
-  groceryTitle: 'Grocery & Budget',
   grocerySubtitle: 'Danh sách mua sắm từ kế hoạch ăn & danh sách tuỳ chỉnh',
-  groceryShoppingList: 'Danh Sách Mua Sắm',
-  groceryBought: 'đã mua',
-  groceryAddProduct: 'Thêm sản phẩm',
-  groceryClearBought: 'Xoá đã mua',
-  groceryProductName: 'Tên sản phẩm',
-  groceryQuantity: 'SL (vd: 2kg)',
-  groceryPrice: 'Giá',
-  groceryNoItems: 'Chưa có sản phẩm. Nhấn "Thêm sản phẩm" để bắt đầu.',
-  groceryFromMealPlan: 'Từ kế hoạch ăn',
-  groceryTimesUsed: 'lần dùng',
-  groceryCheapProtein: 'Cheap Protein List',
-  groceryDeleted: 'Đã xoá',
-  groceryAddedToList: 'Đã thêm vào danh sách',
-  groceryClearedBought: 'Đã xoá các mục đã mua',
-  groceryNameRequired: 'Tên không được trống',
-  groceryCategories: {
-    'Thịt & Cá': 'Thịt & Cá', 'Rau củ': 'Rau củ', 'Trái cây': 'Trái cây',
-    'Sữa & Trứng': 'Sữa & Trứng', 'Gia vị': 'Gia vị', 'Đồ khô': 'Đồ khô',
-    'Đồ uống': 'Đồ uống', 'Supplements': 'Supplements', 'Khác': 'Khác',
-  },
 
   /* ── onboarding 13 màn (Giai đoạn 3) ── */
   obBack: 'Quay lại',
@@ -1540,16 +909,6 @@ const vi: Translations = {
   measureCalfR: 'Bắp chân phải (cm)',
   measureBodyFat: 'Mỡ cơ thể (%)',
 
-  timingMorning: 'Sáng',
-  timingPreWorkout: 'Trước tập',
-  timingPostWorkout: 'Sau tập',
-  timingBeforeBed: 'Trước ngủ',
-  timingWithMeals: 'Cùng bữa ăn',
-
-  progressionDouble: 'Double progression (reps → weight)',
-  progressionLinear: 'Linear (tăng weight mỗi tuần)',
-  progressionNone: 'Không tự tăng',
-
   dcActivity: 'Hoạt Động',
   dcActivityMove: 'Vận Động',
   dcActivityExercise: 'Tập Luyện',
@@ -1558,11 +917,9 @@ const vi: Translations = {
   dcActivityMin: 'phút',
   dcActivityStepsUnit: 'bước',
   dcActivityEmpty: 'Chưa có hoạt động nào hôm nay. Kết nối Apple Health để tự động lấy calo và bước chân, hoặc ghi một buổi tập.',
-  dcActivityConnect: 'Kết nối Health',
   dcActivityEstimated: '~ Số có dấu ngã là ước tính từ buổi tập bạn đã ghi, không phải số đo từ thiết bị.',
   dcNutritionTitle: 'Dinh Dưỡng',
   dcNutritionTarget: 'Mục tiêu',
-  dcNutritionPctOfGoal: '{x}% mục tiêu',
   dcNutritionRemaining: 'Còn lại',
   dcMacroLeft: 'còn lại',
   dcMacroDone: 'đủ',
@@ -1576,10 +933,6 @@ const vi: Translations = {
   dcBioTitle: 'Sinh Trắc Học',
   dcBioNotConnected: 'Chưa kết nối',
   dcBioFitness: 'Thể lực',
-  dcBioSource: 'Nguồn',
-  dcBioConfidence: 'Độ tin cậy',
-  dcBioFallback: 'Dự phòng',
-  dcBioEstimate: 'ước tính',
   dcReadinessTitle: 'Điểm Sẵn Sàng',
   /*
     Ba nhãn này là PHÁN QUYẾT của thẻ, không phải tên ba hạng mục.
@@ -1596,30 +949,9 @@ const vi: Translations = {
   dcReadinessTrain: 'SẴN SÀNG TẬP',
   dcReadinessModerate: 'TẬP VỪA PHẢI',
   dcReadinessRecover: 'NÊN PHỤC HỒI',
-  dcReadinessTrend: 'Sẵn Sàng 7 Ngày',
-  dcReadinessTrendDesc: 'Mức độ sẵn sàng tập luyện của bạn trong tuần qua',
-  dcReadinessAvg: 'TB',
-  dcReadinessBest: 'Cao nhất',
-  dcReadinessWorst: 'Thấp nhất',
-  dcNudgesTitle: 'Nhắc Nhở Thói Quen',
-  dcNudgesActive: 'đang bật',
   dcTrainingTitle: 'Tập Luyện',
-  dcTraining7dVolume: 'Khối lượng 7 ngày',
   dcRecentAwards: 'Huy Chương Gần Đây',
   dcViewAll: 'Tất cả',
-  dcSupplementToday: 'Supplement Hôm Nay',
-  dcWeightTitle: 'Cân Nặng',
-
-  scanFoodTitle: 'Quét Thực Phẩm',
-  scanFoodCapture: 'Chụp ảnh',
-  scanFoodAnalyzing: 'Đang phân tích...',
-  scanFoodRetake: 'Chụp lại',
-  scanFoodAddToMeal: 'Thêm vào bữa ăn',
-  scanFoodNoFood: 'Không nhận diện được thực phẩm',
-  scanFoodError: 'Lỗi phân tích ảnh',
-  scanFoodEstimated: 'Ước tính',
-  scanFoodServing: 'khẩu phần',
-  scanFoodItems: 'món',
 
   foodAddTitle: 'Thêm Thực Phẩm',
   foodEditTitle: 'Chỉnh Sửa Thực Phẩm',
@@ -1639,22 +971,7 @@ const vi: Translations = {
   foodDeleted: 'Đã xoá thực phẩm!',
   foodAddCustom: 'Thêm thực phẩm',
 
-  stepsTitle: 'Bước chân',
-  stepsSubtitle: 'Theo dõi số bước hàng ngày từ Apple Watch',
-  stepsToday: 'Hôm nay',
   stepsGoal: 'Mục tiêu',
-  stepsAvg7d: 'TB 7 ngày',
-  stepsWeekly: 'Tuần này',
-  stepsDaily: 'Theo ngày',
-  stepsTrend: 'Xu hướng',
-  stepsNoData: 'Chưa có dữ liệu bước chân',
-  stepsNoDataMsg: 'Đồng bộ từ Apple Watch hoặc nhập thủ công',
-  stepsSyncApple: 'Đồng bộ Apple Health',
-  stepsSyncing: 'Đang đồng bộ...',
-  navSteps: 'Bước chân',
-  notFoundTitle: 'Không tìm thấy trang',
-  notFoundBody: 'Trang bạn tìm không tồn tại hoặc đã được di chuyển.',
-  notFoundHome: 'Về trang chính',
 };
 
 const en: Translations = {
@@ -1676,58 +993,22 @@ const en: Translations = {
   success: 'Success',
   noData: 'No data yet',
   today: 'Today',
-  thisWeek: 'This week',
   target: 'Target',
   all: 'All',
   other: 'Other',
   settings: 'Settings',
 
-  goodMorning: 'Good morning',
-  goodAfternoon: 'Good afternoon',
-  goodEvening: 'Good evening',
-
-  authLogin: 'Log in',
-  authSignup: 'Sign up',
-  authEmail: 'Email',
-  authPassword: 'Password',
-  authName: 'Name',
-  authLoginSubtitle: 'Log in to continue',
-  authSignupSubtitle: 'Create a new account',
-  authNoAccount: "Don't have an account?",
-  authHasAccount: 'Already have an account?',
-  authCheckEmail: 'Check your email to confirm your account!',
-  authProcessing: 'Processing...',
-  authYourName: 'Your name',
   authForgotPassword: 'Forgot password?',
   authResetPassword: 'Reset password',
   authResetSent: 'Check your email to reset your password!',
   authBackToLogin: 'Back to login',
-  authNewPassword: 'New password',
-  authUpdatePassword: 'Update password',
-  authPasswordUpdated: 'Password updated successfully!',
 
   navToday: 'Today',
   navNutrition: 'Nutrition',
   navWorkouts: 'Workouts',
-  navSupplements: 'Supplements',
-  navSleep: 'Sleep',
-  navWater: 'Water',
-  navBiometrics: 'Biometrics',
   navProgress: 'Progress',
-  navWeeklyReview: 'Weekly Review',
   navSmartGoals: 'Target calibration',
-  navAwards: 'Awards',
-  navChallenges: 'Challenges',
-  navGrocery: 'Grocery List',
-  navAiCoach: 'AI Coach',
-  navSettings: 'Settings',
-  navMain: 'Main',
-  navAnalytics: 'Analytics',
 
-  dashLogMeal: 'Log meal',
-  dashLogWorkout: 'Log workout',
-  dashLogSleep: 'Log sleep',
-  dashLogBiometrics: 'Log biometrics',
   dashReadiness: 'Readiness',
   /* Four remarks, each standing on TWO numbers at once — see the Vietnamese
      entries. None of them diagnoses anything. */
@@ -1748,44 +1029,20 @@ const en: Translations = {
      against the engine and the gate themselves. */
   dashReadinessMsg:
     'Not enough data yet. Any ONE of these gives you a score: one workout with sets logged, one night of sleep logged, or 5 resting-HR/HRV readings within 28 days. Meals and calories are not part of this score.',
-  dashTrend: 'Trend',
-  dashTrendMsg: 'No readiness trend data yet.',
-  dashActivity: 'Activity',
-  dashActivityMsg: 'No activity data for today.',
-  dashBiometrics: 'Biometrics',
-  dashBiometricsMsg: 'No data yet. Tap to enter.',
-  dashTraining: 'Training',
-  dashTrainingMsg: 'No workouts yet. Tap to log.',
   dashNutrition: 'Nutrition',
   dashNutritionMsg: 'No meals logged today. Tap to open your diary.',
   dashSleep: 'Sleep',
   dashSleepMsg: 'No sleep logged. Tap to log.',
-  dashSupplements: 'Supplements',
-  dashSupplementsMsg: 'Add supplements in Settings.',
-
-  weightTitle: 'Weight',
-  weightSave: 'Save',
-  weightNotLogged: 'Not logged',
 
   workoutStatusTitle: "Today's Workouts",
   workoutStatusDone: 'Complete!',
   workoutStatusNotYet: 'Not started',
 
-  supplementTodayTitle: "Today's Supplements",
-
   settingsTitle: 'Settings',
-  settingsGeneral: 'General',
-  settingsProfile: 'Profile',
-  settingsNutrition: 'Nutrition',
-  settingsSleep: 'Sleep',
-  settingsSupplements: 'Supplements',
-  settingsData: 'Data',
   settingsTheme: 'Appearance',
   settingsThemeLight: 'Light',
   settingsThemeDark: 'Dark',
   settingsThemeSystem: 'System',
-  settingsLanguage: 'Language',
-  settingsCurrency: 'Currency',
   settingsPersonalInfo: 'Personal Info',
   settingsName: 'Name',
   settingsDob: 'Date of birth',
@@ -1797,60 +1054,20 @@ const en: Translations = {
   settingsWeight: 'Weight',
   settingsActivityLevel: 'Activity level',
   settingsGoal: 'Goal',
-  settingsUnits: 'Units',
-  settingsCaloriesMacros: 'Calories & Macros Target',
   settingsWaterTarget: 'Water Target',
-  settingsWaterRecommend: 'Recommended: 30-35ml × body weight',
   settingsSleepTarget: 'Sleep Target',
   settingsSleepHours: 'Target hours',
   settingsBedtime: 'Bedtime',
   settingsWakeTime: 'Wake time',
-  settingsSleepGoalSummary: 'Target',
-  settingsSupplementStack: 'Supplement Stack',
   settingsExportData: 'Export Data',
   settingsExportDesc: 'Download all weight, nutrition, workout, and sleep data.',
-  settingsPrivacyLock: 'Privacy Lock',
-  settingsPinSet: 'PIN is set',
-  settingsPinSetDesc: 'App will require PIN when reopened',
-  settingsPinRemove: 'Remove PIN',
-  settingsPinSetup: 'Set a PIN to protect personal data.',
-  settingsPinSetupDesc: 'Set a PIN to protect personal data.',
-  settingsPinPlaceholder: 'Enter PIN (≥4 chars)',
-  settingsPinInstall: 'Set PIN',
-  settingsMacroDistribution: 'Macro Distribution',
-  settingsTotal: 'Total',
-  settingsSavedSuccess: 'Saved successfully!',
-  settingsLogout: 'Log out',
   settingsChangePassword: 'Change password',
-  settingsCurrentPassword: 'Current password',
   settingsNewPassword: 'New password',
   settingsConfirmPassword: 'Confirm new password',
   settingsPasswordChanged: 'Password changed successfully!',
   settingsPasswordMismatch: 'Passwords do not match',
   settingsRecalcTargets: 'Recalculate from my stats',
   settingsRecalcDone: 'Targets recalculated from your stats',
-  settings2FA: 'Two-Factor Authentication',
-  settings2FADesc: 'Protect your account with an authenticator app (Google Authenticator, Authy...)',
-  settings2FAEnabled: 'Enabled',
-  settings2FADisabled: 'Not enabled',
-  settings2FASetup: 'Set up 2FA',
-  settings2FAEnterCode: 'Enter the 6-digit code from your authenticator app',
-  settings2FAVerify: 'Verify',
-  settings2FARemove: 'Disable 2FA',
-  settings2FARemoved: 'Two-factor authentication disabled',
-  settings2FAVerified: 'Two-factor authentication enabled!',
-  settings2FAScanQR: 'Scan QR code with your authenticator app',
-  settings2FABackupHint: 'Save the backup code somewhere safe',
-  settingsErrorSaving: 'Error saving',
-  settingsPinMinLength: 'PIN must be at least 4 characters',
-  settingsPinDone: 'PIN set!',
-  settingsPinRemoved: 'PIN removed',
-  settingsExported: 'Exported',
-  settingsSupNameEmpty: 'Supplement name cannot be empty',
-  settingsSupAdded: 'Supplement added!',
-  settingsSupDeleted: 'Supplement deleted',
-  settingsNoSup: 'No supplements yet.',
-  settingsNoSupHint: 'Tap "Add" to start.',
 
   activitySedentary: 'Sedentary',
   activityLight: 'Light',
@@ -1875,152 +1092,54 @@ const en: Translations = {
   nutritionTitle: 'Nutrition',
   nutritionFoods: 'Foods',
   nutritionMealPlan: 'Meal Plan',
-  nutritionShopping: 'Shopping',
   nutritionSearchFood: 'Search food...',
-  nutritionFavorites: 'Favorites',
   nutritionRecent: 'Recent',
-  nutritionResults: 'results',
-  nutritionYourPlans: 'Your Meal Plans',
-  nutritionCreateNew: 'Create new',
   nutritionCreatePlan: 'Create Meal Plan',
   nutritionPlanName: 'Plan name',
   nutritionMealsPerDay: 'Meals per day',
   nutritionMeals: 'meals',
-  nutritionCreating: 'Creating...',
-  nutritionCreateBtn: 'Create Plan',
-  nutritionNoPlans: 'No meal plans yet',
-  nutritionShoppingEmpty: 'Create a meal plan first to get a shopping list',
-  nutritionShoppingDesc: 'Shopping list is auto-generated from your meal plan',
-  nutritionCreated: 'Meal plan created!',
 
   mealPlanTitle: 'Meal Plan',
-  mealPlanPlan: 'Plan',
-  mealPlanShoppingList: 'Shopping',
   mealBreakfast: 'Breakfast',
   mealLunch: 'Lunch',
   mealDinner: 'Dinner',
   mealSnack: 'Snack',
-  mealPreWorkout: 'Pre-workout',
-  mealPostWorkout: 'Post-workout',
-  mealAddFood: 'Add food',
   mealType: 'Meal type',
-  mealSearchFood: 'Search food...',
-  mealShoppingEmpty: 'Add food to plan to get a shopping list',
-  mealShoppingEmptyDesc: 'Add food to plan to get a shopping list',
-  mealTimes: 'times',
-  mealAdded: 'Added!',
 
-  supplementsTitle: 'Supplements',
-  supplementsThisWeek: 'This week',
-  supplements30Days: '30 days',
-  supplementsYourStack: 'Your stack',
   supplementsAddTitle: 'Add Supplement',
-  supplementsEditTitle: 'Edit Supplement',
   supplementsName: 'Name',
-  supplementsCategory: 'Category',
   supplementsDose: 'Dose',
   supplementsTiming: 'Timing',
-  supplementsNotes: 'Notes / Contraindications',
-  supplementsCycle: 'Cycle',
-  supplementsNoCycle: 'No cycle',
-  supplementsOnOff: 'On/Off weeks',
-  supplementsWeeksOn: 'Weeks ON',
-  supplementsWeeksOff: 'Weeks OFF',
-  supplementsNoItems: 'No supplements yet',
-  supplementsUpdated: 'Updated!',
-  supplementsAdded: 'Added!',
-  supplementsCatVitamin: 'Vitamin',
-  supplementsCatMineral: 'Mineral',
-  supplementsCatPerformance: 'Performance',
-  supplementsCatRecovery: 'Recovery',
-  supplementsCatHealth: 'Health',
-  supplementsCatOther: 'Other',
-  supplementsCatProtein: 'Protein',
-  supplementsCatCreatine: 'Creatine',
-  supplementsCatNootropic: 'Nootropic',
   supplementsTimMorning: 'Morning',
   supplementsTimPreWorkout: 'Pre-workout',
   supplementsTimPostWorkout: 'Post-workout',
-  supplementsTimEvening: 'Evening',
   supplementsTimWithMeal: 'With meal',
   supplementsTimBeforeBed: 'Before bed',
 
   sleepTitle: 'Sleep — 7 Days',
-  sleepAvg: 'Avg Sleep',
   sleepAvgQuality: 'Avg Quality',
   sleepAvgDeep: 'Avg Deep',
   sleepDebt: 'Sleep Debt',
-  sleepStages: 'Sleep Stages',
-  sleepQualityTrend: 'Quality Trend',
-  sleepHabits: 'Habits',
   sleepInsights: 'Insights',
   sleepNoData: 'No sleep data',
   sleepNoDataMsg: 'No sleep data yet. Log sleep from the dashboard.',
-  sleepGood: 'Good',
-  sleepNeedsImprovement: 'Needs improvement',
-  sleepLow: 'Low',
   sleepOk: 'OK',
-  sleepNeedCatchUp: 'Need catch-up',
   sleepDeep: 'Deep',
 
-  waterTitle: 'Water Tracking',
-  waterGlasses: 'glasses',
-  waterOfTarget: 'of target',
-  waterReminderOn: 'Reminder is on',
-  waterReminderOff: 'Enable hourly reminder',
-  waterWeekChart: 'This Week',
-  waterTodayLog: 'Today',
-  waterTimes: 'times',
-  waterTargetLabel: 'Target',
-  waterCantLog: 'Cannot log',
-  waterReminderEnabled: 'Hourly water reminder enabled',
-  waterReminderDisabled: 'Reminder disabled',
-
   workoutsTitle: 'Workout Builder',
-  workoutsTemplates: 'Templates',
   workoutsExercises: 'Exercises',
   workoutsCreateNew: 'Create new',
-  workoutsCreateTemplate: 'Create Workout Template',
-  workoutsCreating: 'Creating...',
-  workoutsCreateBtn: 'Create Template',
   workoutsNoTemplates: 'No templates yet',
-  workoutsWeeklyPlan: 'Weekly plan',
-  workoutsAddExercise: 'Add exercise',
   workoutsExercisesAdded: 'Exercises added',
   workoutsVolume: 'Volume',
-  workoutsCreated: 'Template created!',
-  workoutsType: 'Type',
 
-  exercisesTitle: 'Exercises',
   exercisesAdd: 'Add exercise',
   exercisesAddTitle: 'Add Exercise',
   exercisesSearch: 'Search exercises...',
   exercisesName: 'Name',
   exercisesMuscleGroup: 'Muscle group',
   exercisesEquipment: 'Equipment',
-  exercisesFormCues: 'Form cues (one per line)',
-  exercisesCommonMistakes: 'Common mistakes (one per line)',
-  exercisesVideoUrl: 'Video URL (optional)',
-  exercisesAdding: 'Adding...',
   exercisesAddBtn: 'Add exercise',
-  exercisesNotFound: 'No exercises found',
-  exercisesAdded: 'Exercise added!',
-
-  routineTitle: 'Weekly Schedule',
-  routineDesc: 'Assign workout templates to each day. Toggle deload for lighter weeks.',
-  routineRest: 'Rest',
-  routineDeload: 'Deload',
-  routineManageTemplates: 'Manage Templates',
-  routineUpdated: 'Updated!',
-  routineChooseWorkout: 'Choose workout...',
-
-  dayMon: 'Mon',
-  dayTue: 'Tue',
-  dayWed: 'Wed',
-  dayThu: 'Thu',
-  dayFri: 'Fri',
-  daySat: 'Sat',
-  daySun: 'Sun',
 
   progressWeight: 'Weight',
   progressMeasurements: 'Measurements',
@@ -2034,44 +1153,20 @@ const en: Translations = {
   progressDeleteMeasurement: 'Delete this measurement?',
   progressDeleteMeasurementBody: 'The whole row for this date is removed from the table and the chart.',
   progressAddMeasurement: 'Add measurement',
-  progressUploadPhoto: 'Upload photo',
   progressDate: 'Date',
-  progressPose: 'Pose',
-  progressPoseFront: 'Front',
-  progressPoseSide: 'Side',
-  progressPoseBack: 'Back',
-  progressPoseFlex: 'Flex',
   progressNoMeasurements: 'No measurements yet. Tap above to start tracking.',
   progressNoPhotos: 'No progress photos yet',
   progressSaved: 'Measurements saved!',
-  progressUploaded: 'Photo uploaded!',
-  progressSelectUpload: 'Select photo & Upload',
-  progressNotes: 'Notes',
 
   biometricsTitle: 'Biometrics',
-  biometricsSubtitle: 'Track HR, HRV, SpO₂, VO₂max and respiratory rate',
-  biometricsCameraHR: 'Camera HR',
   biometricsManual: 'Manual entry',
-  biometricsSyncWearable: 'Sync Wearable',
-  biometricsSyncing: 'Syncing...',
   biometricsNoData: 'No biometric data',
   biometricsNoDataMsg: 'Use Camera or manual entry to start tracking',
-  biometricsRecentHistory: 'Recent History',
-  biometricsTime: 'Time',
-  biometricsSource: 'Source',
-  biometricsSourceCamera: 'Camera rPPG · estimate',
-  biometricsSourceWearable: 'Wearable',
-  biometricsSourceManual: 'Manual',
-  biometricsConfidence: 'confidence',
-  biometricsEstimate: 'estimate',
   biometricsHeartRate: 'Resting heart rate',
   biometricsBreathRate: 'Respiratory rate',
   biometricsBloodOxygen: 'Blood oxygen',
   biometricsBreathUnit: 'breaths/min',
-  biometricsDisclaimerTitle: 'Health Safety Disclaimer',
   biometricsDisclaimer1: 'Biometric data is estimated only and does NOT have clinical or medical-grade accuracy. Do not use for diagnosis or treatment.',
-  biometricsDisclaimer2: 'AI suggestions are generated by machine learning algorithms, NOT by physicians. Always consult a healthcare professional before making health decisions.',
-  biometricsDisclaimer3: 'If you experience abnormal symptoms (chest pain, shortness of breath, dizziness), call emergency services immediately — do NOT rely on this app.',
 
   logBioTitle: 'Enter Biometrics',
   logBioHR: 'Resting heart rate (bpm)',
@@ -2089,57 +1184,22 @@ const en: Translations = {
   statsRequired: 'A valid height, weight and date of birth are needed first',
   sleepStagesOverrun: 'Stages add up to {sum} min, longer than the night itself ({total} min)',
 
-  logMealTitle: 'Log Meal',
-  logMealType: 'Meal type',
-  logMealSearchFood: 'Search food',
-  logMealSearchPlaceholder: 'Search...',
-  logMealAdded: 'Added',
-  logMealServings: 'servings',
   logMealSaved: 'Meal saved!',
   logMealQueued: 'Saved — will sync when you are back online',
 
-  logWorkoutTitle: 'Log Workout',
-  logWorkoutName: 'Workout name',
-  logWorkoutNamePlaceholder: 'E.g. Push Day A',
-  logWorkoutSessionRPE: 'Session RPE (1-10)',
-  logWorkoutSets: 'Sets',
-  logWorkoutAddSet: 'Add set',
-  logWorkoutKg: 'Kg',
-  logWorkoutReps: 'Reps',
-  logWorkoutRPE: 'RPE',
-  logWorkoutVolumeLoad: 'Volume Load',
   logWorkoutSaved: 'Workout saved!',
-  logWorkoutSaveBtn: 'Save workout',
 
-  logSleepTitle: 'Log Sleep',
-  logSleepBedtime: 'Bedtime',
-  logSleepWaketime: 'Wake time',
-  logSleepQuality: 'Quality (1-10)',
   logSleepDeep: 'Deep',
   logSleepREM: 'REM',
   logSleepLight: 'Light',
-  logSleepCaffeine: 'Caffeine cutoff',
-  logSleepScreen: 'Screen off',
   logSleepSaved: 'Sleep logged!',
-  logSleepSaveBtn: 'Save sleep',
   logSleepMinutes: 'min',
 
   awardsTitle: 'Awards',
   awardsEarned: 'Earned',
   awardsOf: 'awards',
 
-  challengesTitle: 'Weekly Challenges',
-  challengesCompleted: 'Completed',
-  challengesDaysLeft: 'Days left',
-  challengesProgress: 'Progress',
-  challengesReward: 'Reward',
-  challengesUpdateProgress: 'Update progress',
-  challengesUpdating: 'Updating...',
-
   weeklyReviewTitle: 'Weekly Review',
-  weeklyReviewExport: 'Export report',
-  weeklyReviewExporting: 'Exporting...',
-  weeklyReviewExported: 'Report exported!',
   weeklyReviewAvgCalories: 'Avg Calories',
   weeklyReviewAvgProtein: 'Avg Protein',
   weeklyReviewAvgSleep: 'Avg Sleep',
@@ -2152,12 +1212,9 @@ const en: Translations = {
   weeklyReviewSessions: 'sessions',
 
   smartGoalsTitle: 'Target calibration',
-  smartGoalsSubtitle: 'Reads your weight trend and your intake, then suggests a calorie target that matches them',
   smartGoalsWeightTrend: 'Weight Trend (4 Weeks)',
   smartGoalsOnTrack: "On track! Keep your current routine.",
   smartGoalsOffTrack: 'Off track. See suggestions below.',
-  smartGoalsKeepGoing: 'On track!',
-  smartGoalsSeeBelow: 'See suggestions below.',
   smartGoalsCalorieSuggestion: 'Calorie Suggestion',
   smartGoalsMeasured: 'Measured from your own intake and weight over the last {d} {d:day|days}, not from a formula.',
   smartGoalsNeedData: 'Need at least 3 weight entries in the last 4 weeks',
@@ -2170,40 +1227,13 @@ const en: Translations = {
   smartGoalsNoNutritionData: 'No nutrition data yet. Log meals for suggestions.',
 
   aiCoachTitle: 'AI Coach',
-  aiCoachSubtitle: 'Based on your personal data',
   aiCoachHello: 'Hello!',
   aiCoachIntro: "I'm your AI Coach — I analyze your training, nutrition, sleep and recovery data to give personalized advice.",
   aiCoachPlaceholder: 'Ask about nutrition, training, recovery...',
   aiCoachHistory: 'Chat history',
   aiCoachNoHistory: 'No conversations yet',
-  aiCoachConnectionError: 'AI Coach connection error',
-  aiCoachPrompt1: 'What should I train today?',
-  aiCoachPrompt2: 'Review my nutrition this week',
-  aiCoachPrompt3: 'How does sleep affect me?',
-  aiCoachPrompt4: 'What should I improve?',
 
-  groceryTitle: 'Grocery & Budget',
   grocerySubtitle: 'Shopping list from meal plan & custom list',
-  groceryShoppingList: 'Shopping List',
-  groceryBought: 'bought',
-  groceryAddProduct: 'Add product',
-  groceryClearBought: 'Clear bought',
-  groceryProductName: 'Product name',
-  groceryQuantity: 'Qty (e.g. 2kg)',
-  groceryPrice: 'Price',
-  groceryNoItems: 'No items yet. Tap "Add product" to start.',
-  groceryFromMealPlan: 'From Meal Plan',
-  groceryTimesUsed: 'times used',
-  groceryCheapProtein: 'Cheap Protein List',
-  groceryDeleted: 'Deleted',
-  groceryAddedToList: 'Added to list',
-  groceryClearedBought: 'Cleared bought items',
-  groceryNameRequired: 'Name is required',
-  groceryCategories: {
-    'Thịt & Cá': 'Meat & Fish', 'Rau củ': 'Vegetables', 'Trái cây': 'Fruits',
-    'Sữa & Trứng': 'Dairy & Eggs', 'Gia vị': 'Spices', 'Đồ khô': 'Dry Goods',
-    'Đồ uống': 'Beverages', 'Supplements': 'Supplements', 'Khác': 'Other',
-  },
 
   /* ── onboarding 13 màn (Giai đoạn 3) ── */
   obBack: 'Back',
@@ -2321,16 +1351,6 @@ const en: Translations = {
   measureCalfR: 'Right calf (cm)',
   measureBodyFat: 'Body fat (%)',
 
-  timingMorning: 'Morning',
-  timingPreWorkout: 'Pre-workout',
-  timingPostWorkout: 'Post-workout',
-  timingBeforeBed: 'Before bed',
-  timingWithMeals: 'With meals',
-
-  progressionDouble: 'Double progression (reps → weight)',
-  progressionLinear: 'Linear (increase weight weekly)',
-  progressionNone: 'No auto-increase',
-
   dcActivity: 'Activity',
   dcActivityMove: 'Move',
   dcActivityExercise: 'Exercise',
@@ -2339,11 +1359,9 @@ const en: Translations = {
   dcActivityMin: 'min',
   dcActivityStepsUnit: 'steps',
   dcActivityEmpty: 'No activity today yet. Connect Apple Health for calories and steps, or log a workout.',
-  dcActivityConnect: 'Connect Health',
   dcActivityEstimated: '~ Tilde numbers are estimated from the workouts you logged, not measured by a device.',
   dcNutritionTitle: 'Nutrition',
   dcNutritionTarget: 'Target',
-  dcNutritionPctOfGoal: '{x}% goal',
   dcNutritionRemaining: 'Remaining',
   dcMacroLeft: 'left',
   dcMacroDone: 'done',
@@ -2357,39 +1375,14 @@ const en: Translations = {
   dcBioTitle: 'Biometrics',
   dcBioNotConnected: 'Not connected',
   dcBioFitness: 'Fitness',
-  dcBioSource: 'Source',
-  dcBioConfidence: 'Confidence',
-  dcBioFallback: 'Fallback',
-  dcBioEstimate: 'est.',
   dcReadinessTitle: 'Readiness Score',
   /* A verdict, not a category name — see the Vietnamese entries. */
   dcReadinessTrain: 'READY TO TRAIN',
   dcReadinessModerate: 'TRAIN MODERATELY',
   dcReadinessRecover: 'RECOVER TODAY',
-  dcReadinessTrend: '7-Day Readiness',
-  dcReadinessTrendDesc: 'Your training readiness over the past week',
-  dcReadinessAvg: 'AVG',
-  dcReadinessBest: 'Best',
-  dcReadinessWorst: 'Worst',
-  dcNudgesTitle: 'Habit Nudges',
-  dcNudgesActive: 'active',
   dcTrainingTitle: 'Training',
-  dcTraining7dVolume: '7-day volume',
   dcRecentAwards: 'Recent Awards',
   dcViewAll: 'View all',
-  dcSupplementToday: 'Supplements Today',
-  dcWeightTitle: 'Weight',
-
-  scanFoodTitle: 'Scan Food',
-  scanFoodCapture: 'Capture',
-  scanFoodAnalyzing: 'Analyzing...',
-  scanFoodRetake: 'Retake',
-  scanFoodAddToMeal: 'Add to meal',
-  scanFoodNoFood: 'No food detected',
-  scanFoodError: 'Error analyzing image',
-  scanFoodEstimated: 'Estimated',
-  scanFoodServing: 'serving',
-  scanFoodItems: 'items',
 
   foodAddTitle: 'Add Food Item',
   foodEditTitle: 'Edit Food Item',
@@ -2409,22 +1402,7 @@ const en: Translations = {
   foodDeleted: 'Food item deleted!',
   foodAddCustom: 'Add food',
 
-  stepsTitle: 'Steps',
-  stepsSubtitle: 'Track daily steps from Apple Watch',
-  stepsToday: 'Today',
   stepsGoal: 'Goal',
-  stepsAvg7d: '7d avg',
-  stepsWeekly: 'This week',
-  stepsDaily: 'Daily',
-  stepsTrend: 'Trend',
-  stepsNoData: 'No step data yet',
-  stepsNoDataMsg: 'Sync from Apple Watch or enter manually',
-  stepsSyncApple: 'Sync Apple Health',
-  stepsSyncing: 'Syncing...',
-  navSteps: 'Steps',
-  notFoundTitle: 'Page not found',
-  notFoundBody: "The page you're looking for doesn't exist or has moved.",
-  notFoundHome: 'Back to Home',
 };
 
 const translations: Record<AppLang, Translations> = { vi, en };

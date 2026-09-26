@@ -46,7 +46,7 @@ const CASES = [
   /* #94: chữ app KHÔNG nằm trong native-strings.ts. */
   ['chưa ghi buổi tập', 'full', 'chữ viết thẳng `vi ? … : …` của đồng hồ sẵn sàng là chữ của app (#94)'],
   ['no workout logged', 'full', 'nhánh tiếng Anh của cùng điều kiện ấy là chữ của app (#94)'],
-  ['Chưa có dữ liệu xu hướng sẵn sàng.', 'full', 'chuỗi của i18n.ts là chữ của app (#94)'],
+  ['Chưa ghi giấc ngủ. Nhấn để ghi.', 'full', 'chuỗi của i18n.ts là chữ của app (#94)'],
   /* #109: chữ JSX viết thẳng, một ngôn ngữ. */
   ['Language / Ngôn ngữ', 'full', 'chữ JSX viết thẳng (<Text>…</Text>) là chữ của app (#109)'],
 ];
@@ -58,7 +58,7 @@ for (const [text, want, why] of CASES) {
 
 /* Các ca trên dựa vào những chuỗi này có trong từ điển; mất một chuỗi thì ca
    "full" của nó đỏ vì lý do khác, và ca null xanh mà không đo gì. */
-for (const s of ['buổi tập', 'Chỉ người theo dõi', 'vừa xong', '{n} ngày trước', '{n} {n:day|days} ago', 'Claim {n} {n:coin|coins}', '{name} đã thích bài của bạn', '{title}: {a}/{b} ngày', 'Chặn từ {date}', 'chưa ghi buổi tập', 'Chưa có dữ liệu xu hướng sẵn sàng.']) {
+for (const s of ['buổi tập', 'Chỉ người theo dõi', 'vừa xong', '{n} ngày trước', '{n} {n:day|days} ago', 'Claim {n} {n:coin|coins}', '{name} đã thích bài của bạn', '{title}: {a}/{b} ngày', 'Chặn từ {date}', 'chưa ghi buổi tập', 'Chưa ghi giấc ngủ. Nhấn để ghi.']) {
   if (!copy.includes(s)) problems.push(`chuỗi "${s}" không còn trong từ điển của app — sửa ca tự kiểm đi theo nó`);
 }
 
@@ -91,7 +91,7 @@ for (const s of ['buổi tập', 'Chỉ người theo dõi', 'vừa xong', '{n} 
   const old = appCopy();
   const oldFull = copyPatterns(old).map((s) => new RegExp(s));
   const oldTails = tailPatterns(old).map((s) => new RegExp(s));
-  for (const t of ['chưa ghi buổi tập', 'Chưa có dữ liệu xu hướng sẵn sàng.']) {
+  for (const t of ['chưa ghi buổi tập', 'Chưa ghi giấc ngủ. Nhấn để ghi.']) {
     if (cutKind(t, oldFull, oldTails) !== null) problems.push(`thử ngược hỏng: "${t}" đã khớp từ điển cũ (chỉ native-strings.ts) — ca #94 không đo gì`);
   }
 }
