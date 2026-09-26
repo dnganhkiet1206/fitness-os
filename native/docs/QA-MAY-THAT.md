@@ -420,6 +420,44 @@ chữ → Chữ lớn hơn → AX3**, rồi mở lại app.
 
 ---
 
+## J. VoiceOver đọc trạng thái ô chọn, ô tick, và các nút từng không tên — #99 · #101 · #120 (#104)
+
+#99 và #101 sửa trạng thái "đã chọn"/"đã tick" cho **web**: `aria-selected` và
+`aria-checked`, vì react-native-web không dịch `accessibilityState`. Trên iOS,
+chính `accessibilityState` là thứ VoiceOver đọc, qua một đường khác hẳn, và
+chưa ai nghe nó. #120 gắn tên cho những nút mà VoiceOver từng gặp như một ô
+trống.
+
+Cột "Mong đợi" chỉ ghi điều **đọc được từ mã**: nhãn là chuỗi app đặt, trạng
+thái là cờ app bật. **iOS nói trạng thái bằng chữ gì** ("đã chọn", "đã đánh
+dấu", "bật") và đọc theo thứ tự nào là việc của iOS, mã không quyết. Nếu nghe
+khác, ghi đúng câu nghe được như một **quan sát**, không sửa ô Mong đợi.
+
+Bật **VoiceOver**, app tiếng Việt.
+
+| # | Việc | Mong đợi (từ mã) | Kết quả |
+|---|---|---|---|
+| J1 | Tập luyện → Buổi tập → vuốt qua dải bảy ô ngày; rồi mở kế hoạch tuần (`/workouts/plan`) và vuốt dải ngày ở đó | Mỗi ô đọc "Thứ … \<ngày\>, \<đã tập \| bỏ lỡ \| có lịch \| ngày nghỉ\>" (`week-strip.tsx`, nhãn = tên thứ + số ngày + trạng thái). Vai là **tab**. Ô đang mở có cờ `selected`, các ô khác không. Chạm hai lần một ô khác thì cờ chuyển sang ô ấy (#99) | ☐ |
+| J2 | Kế hoạch tuần (`/workouts/plan`), ngày đã có bài → ô tick bên cạnh một set | Đọc "\<tên bài\> Set \<n\>". Vai **checkbox**, cờ `checked` là false. Chạm hai lần: cờ thành true và VoiceOver báo trạng thái mới; chạm lại thì về false (#101) | ☐ |
+| J3 | Ghi buổi tập → ô "K" ở một set | Đọc "Set khởi động" (nhãn, không phải chữ "K"). Vai **switch**, cờ `checked` theo trạng thái. Chạm hai lần thì đổi (#101) | ☐ |
+| J4 | Dinh dưỡng → Danh sách đi chợ → một món | Đọc "\<tên món\>, \<số lượng\>" (hoặc chỉ tên nếu không có số lượng). Vai **checkbox**. Tick rồi bỏ tick, cờ đổi theo (#101) | ☐ |
+| J5 | Màn hướng dẫn đầu: "Bạn muốn thay đổi điều gì?", "Bạn thuộc nhóm nào?", "Một ngày bình thường của bạn ra sao?" | Mỗi lựa chọn đọc "\<tên\>. \<mô tả\>" (vd "Ít vận động. Ngồi gần như cả ngày"), vai **radio**. Lựa chọn đang chọn mang cờ **`selected`**, không phải `checked`: `choice-card.tsx` và ô mức vận động giữ `selected` cho iOS (#101). Ghi lại iOS nói gì cho cờ này | ☐ |
+| J6 | Dinh dưỡng → Chụp ảnh (máy quét món) → vuốt tới nút tròn dưới cùng | Đọc "Chụp ảnh", vai **nút**. Chạm hai lần thì chụp. Trước #120 nút này không tên, không vai | ☐ |
+| J7 | Tập luyện → Cơ thể → Ảnh tiến trình → chụp ảnh mới → nút tròn | Đọc "Chụp ảnh", vai **nút** (#120) | ☐ |
+| J8 | Màn hướng dẫn đầu → mở Điều khoản → nút X góc trên | Đọc "Đóng", vai **nút**. Chạm hai lần thì sheet đóng (#120) | ☐ |
+| J9 | Nhận một huy hiệu (màn chúc mừng) | Chỉ **một** nút đóng được đọc, ở góc trên. Lớp nền "chạm đâu cũng đóng" cố ý bị ẩn khỏi VoiceOver, nên không có ô trống nào phủ cả màn (#120) | ☐ |
+| J10 | Hôm nay, đã ghi giấc ngủ → thẻ Giấc ngủ | Đọc thành **một nút**, tên là chữ của thẻ, dẫn tới màn Giấc ngủ. Trước #120 thẻ không có vai (#120) | ☐ |
+
+> `liquid-tab-bar.tsx` cũng có một lớp nền không tên (bảng Trợ lý nhanh), và #120
+> đã đặt tên cho nó. Nhưng component ấy không được gắn vào đâu (xem
+> `tools/linked.mjs`), nên không có mục máy thật nào cho nó.
+>
+> J5: web dùng `aria-checked` cho radio, vì đó là thứ `role="radio"` của web
+> đọc. iOS nhận `selected`. Hai nền tảng đi hai đường có chủ ý (#101). Mục này
+> để nghe xem đường của iOS có thật sự nói ra trạng thái không.
+
+---
+
 ## Cách ghi một phát hiện
 
 Mỗi mục hỏng ghi đủ: **ID · mức (P0/P1/P2/P3) · màn · quan sát chính xác · mong
