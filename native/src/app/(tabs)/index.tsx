@@ -1360,7 +1360,8 @@ export default function TodayScreen() {
           );
         }
         return sleepTotalMin > 0 ? (
-          <PressScale onPress={() => { Haptics.selectionAsync(); nav.push('/sleep-insights'); }}>
+          /* Vai nút cho VoiceOver; tên là chữ của thẻ, iOS gộp con của Pressable (#120). */
+          <PressScale accessibilityRole="button" onPress={() => { Haptics.selectionAsync(); nav.push('/sleep-insights'); }}>
             <SleepCard
               totalMin={sleepTotalMin}
               targetHours={sleepTargetHours}

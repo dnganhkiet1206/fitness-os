@@ -256,7 +256,9 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
       {/* AI quick-actions overlay (web: dim blur backdrop + 2×2 panel) */}
       <Modal visible={aiOpen} transparent animationType="none" onRequestClose={() => setAiOpen(false)}>
         <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(150)} style={styles.overlayBackdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => { Haptics.selectionAsync(); setAiOpen(false); }} />
+          {/* Bảng không có nút đóng riêng, nên lớp nền LÀ nút đóng — và phải có
+              tên, không thì VoiceOver gặp một ô không tên phủ cả màn (#120). */}
+          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yClose} style={StyleSheet.absoluteFill} onPress={() => { Haptics.selectionAsync(); setAiOpen(false); }} />
           <Animated.View
             entering={FadeInDown.springify().stiffness(400).damping(30)}
             exiting={SlideOutDown.duration(180)}

@@ -97,7 +97,6 @@ const LEDGER = new Set([
   'a11yOpenRoom',
   'a11ySearch',
   'a11ySwitchCamera',
-  'a11yTakePhoto',
   'aiCoachConnectionError',
   'aiCoachPrompt1',
   'aiCoachPrompt2',

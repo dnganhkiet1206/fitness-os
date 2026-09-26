@@ -437,7 +437,9 @@ export function Mascot({
 
   return (
     <View style={styles.row} pointerEvents="box-none">
-      <Pressable onPress={poke} hitSlop={8}>
+      {/* Chọc linh vật chỉ để nó nảy: trang trí, ẩn khỏi cây trợ năng có chủ ý
+          (#120) — cách ẩn, xem `award-celebration.tsx`. */}
+      <Pressable aria-hidden tabIndex={-1} onPress={poke} hitSlop={8}>
         <View style={styles.stage}>
           {/* Ground shadow */}
           <Animated.View style={[styles.groundShadow, shadowStyle]} />

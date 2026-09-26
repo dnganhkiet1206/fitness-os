@@ -314,7 +314,9 @@ export default function ScanFoodScreen() {
 
       {/* Shutter */}
       <View style={[styles.shutterRow, { bottom: insets.bottom + spacing.xl }]}>
-        <PressScale onPress={capture} style={styles.shutter}>
+        {/* Không có chữ, nên phải có tên: thiếu nó thì VoiceOver gặp một ô không
+            tên, không vai — người dùng trình đọc màn hình không chụp được (#120). */}
+        <PressScale accessibilityRole="button" accessibilityLabel={i18n.a11yTakePhoto} onPress={capture} style={styles.shutter}>
           <View style={styles.shutterInner} />
         </PressScale>
       </View>

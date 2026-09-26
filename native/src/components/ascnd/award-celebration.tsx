@@ -226,8 +226,12 @@ export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAw
           </View>
         </Animated.View>
 
-        {/* Tap anywhere to dismiss */}
-        <Pressable style={StyleSheet.absoluteFill} onPress={dismiss} />
+        {/* Tap anywhere to dismiss. Ẩn khỏi cây trợ năng có chủ ý: nút đóng có
+            nhãn ở góc trên đã làm đúng việc này, và một nút vô hình phủ cả màn
+            chỉ là một ô không tên để VoiceOver vấp vào (#120). `aria-hidden` ẩn
+            ở cả ba nền tảng; `tabIndex={-1}` vì Pressable của react-native-web
+            bỏ qua `accessible` và luôn là một điểm dừng Tab. */}
+        <Pressable aria-hidden tabIndex={-1} style={StyleSheet.absoluteFill} onPress={dismiss} />
       </Animated.View>
     </Modal>
   );

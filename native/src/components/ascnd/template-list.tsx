@@ -373,7 +373,8 @@ export function TemplateRow({
                 vì với VoiceOver nó là một BẢN SAO của nút đã có tên ngay bên
                 trái, không phải một hành động thứ hai.
               */
-              <Pressable accessible={false} onPress={toggle}>
+              // tabIndex: react-native-web bỏ qua `accessible`, và bản sao này không được là một điểm dừng Tab (#120).
+              <Pressable accessible={false} tabIndex={-1} onPress={toggle}>
                 <Animated.View style={chevron}>
                   <Icon icon={ChevronDown} size={16} color={c.mutedForeground} />
                 </Animated.View>

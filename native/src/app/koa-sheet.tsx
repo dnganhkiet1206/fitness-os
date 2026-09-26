@@ -86,7 +86,8 @@ export default function KoaSheetScreen() {
   return (
     <Screen title="Koa · spec sheet" back>
       <View style={styles.hero}>
-        <Pressable onPress={cycle} hitSlop={8}>
+        {/* Chạm để đổi biểu cảm là việc chính của màn này, nên nó là một nút có tên (#120). */}
+        <Pressable accessibilityRole="button" accessibilityLabel="Đổi biểu cảm của Koa" onPress={cycle} hitSlop={8}>
           <KoaFigure expression={expression} pose={pose} worn={worn} size={200} />
         </Pressable>
         <Text style={styles.heroLabel}>

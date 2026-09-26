@@ -449,6 +449,8 @@ export default function ShopScreen() {
               `tools/a11y-swallow.mjs`. */}
           <Pressable
             accessible={false}
+            // Pressable của react-native-web bỏ qua `accessible` và vẫn là một điểm dừng Tab (#120).
+            tabIndex={-1}
             style={styles.sheetBackdrop}
             onPress={() => setCollectionsOpen(false)}
           />

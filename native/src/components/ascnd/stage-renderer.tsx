@@ -303,7 +303,9 @@ export function StageRenderer({
             <Text style={styles.zzzSmall}>z</Text>
           </Animated.View>
         ) : null}
-        <Pressable onPress={poke} hitSlop={12}>
+        {/* Chọc linh vật chỉ để nó phản ứng: trang trí, ẩn khỏi cây trợ năng có
+            chủ ý (#120) — cách ẩn, xem `award-celebration.tsx`. */}
+        <Pressable aria-hidden tabIndex={-1} onPress={poke} hitSlop={12}>
           <Animated.View style={charStyle}>
             <MascotBuddy
               mascot={mascot}

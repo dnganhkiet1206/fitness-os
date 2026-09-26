@@ -252,7 +252,8 @@ function CaptureView({
       </PickRow>
 
       <View style={[styles.shutterRow, { bottom: insets.bottom + spacing.xl }]}>
-        <PressScale onPress={shoot} style={styles.shutter}>
+        {/* Tên cho VoiceOver — nút chỉ là một vòng tròn (#120). */}
+        <PressScale accessibilityRole="button" accessibilityLabel={i18n.a11yTakePhoto} onPress={shoot} style={styles.shutter}>
           <View style={styles.shutterInner} />
         </PressScale>
       </View>

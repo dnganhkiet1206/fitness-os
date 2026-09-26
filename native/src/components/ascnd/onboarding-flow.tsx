@@ -1202,6 +1202,7 @@ function LegalSheet({
   onClose: () => void;
 }) {
   const legal = getLegal(lang);
+  const i18n = useI18n();
   const tabs = [
     { key: 'terms', label: legal.tabTerms },
     { key: 'privacy', label: legal.tabPrivacy },
@@ -1219,7 +1220,8 @@ function LegalSheet({
           <Text style={styles.legalTitle} numberOfLines={1}>
             {doc?.title}
           </Text>
-          <PressScale accessibilityRole="button" hitSlop={8} style={styles.legalClose} onPress={onClose}>
+          {/* Chỉ có icon: không nhãn thì VoiceOver đọc "nút" trơn (#120). */}
+          <PressScale accessibilityRole="button" accessibilityLabel={i18n.a11yClose} hitSlop={8} style={styles.legalClose} onPress={onClose}>
             <Icon icon={X} size={18} color={c.foreground} />
           </PressScale>
         </View>
