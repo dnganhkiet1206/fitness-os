@@ -195,7 +195,7 @@ export default function CommunitySearchScreen() {
                   disabled={follow.isPending}
                   hitSlop={4}
                   onPress={() => toggle(p.user_id, !following)}
-                  style={following ? styles.quietPill : styles.solidPill}>
+                  style={[following ? styles.quietPill : styles.solidPill, styles.pillEnd]}>
                   <Text style={following ? styles.quietText : styles.solidText}>
                     {following ? i18n.nCmFollowing : i18n.nCmFollow}
                   </Text>
@@ -225,9 +225,16 @@ const stylesFor = makeStyles((c, m) => ({
   heading: { ...type.headline, color: c.foreground, marginTop: spacing.xs },
   loading: { marginVertical: spacing.lg },
   list: { paddingVertical: spacing.xs },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
+  /*
+    Nút Theo dõi XUỐNG DÒNG khi cột tên hẹp hơn 150 (#109). Đo ở 320 với chữ
+    ×1.3: cột tên còn 65px, tên năm chữ cái "ASCND" thành "ASC…" và "Tài khoản
+    chính thức ASCND" thành "Tài khoản chính th…". `flexBasis` quyết khi nào
+    xuống dòng (ở 402, và ở 320 cỡ thường, vẫn một hàng như cũ); `marginLeft:
+    'auto'` giữ nút ở mép phải khi nó đứng một mình.
+  */
+  row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
   rowRule: { borderTopWidth: 1, borderTopColor: c.border },
-  who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  who: { flexGrow: 1, flexShrink: 1, flexBasis: 150, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   text: { flex: 1, minWidth: 0, gap: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   name: { ...type.body, color: c.foreground, fontWeight: '600', flexShrink: 1 },
@@ -251,4 +258,5 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
   },
   quietText: { ...type.footnote, color: c.foreground, fontWeight: '600' },
+  pillEnd: { marginLeft: 'auto' },
 }));

@@ -22,7 +22,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
-import { useAppSettings } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useCoachChat } from '@/hooks/use-coach-chat';
 import { useSmartNudges } from '@/hooks/use-smart-nudges';
@@ -177,6 +177,7 @@ export default function AssistantScreen() {
   const styles = stylesFor(c);
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
+  const i18n = useI18n();
   const insets = useSafeAreaInsets();
   const { data: dailyLog } = useDailyLog();
   const { data: bio } = useTodayBiometrics();
@@ -430,7 +431,10 @@ export default function AssistantScreen() {
         <View style={styles.head}>
           <View style={styles.headText}>
             <View style={styles.titleRow}>
-              <Text style={styles.title}>Health Assistant</Text>
+              {/* Cùng chuỗi với nhãn của tab (app-tabs.tsx). Từng viết cứng
+                  "Health Assistant", nên người dùng tiếng Việt đọc tiêu đề
+                  tiếng Anh dưới một tab tên "Trợ lý sức khoẻ" (#109). */}
+              <Text style={styles.title}>{i18n.nHealthAssistant}</Text>
               {/* The AI mark. A pill rather than a word in the title, so the
                   title stays a name and the badge stays a label. */}
               <View style={styles.aiBadge}>

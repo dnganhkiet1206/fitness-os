@@ -96,6 +96,8 @@ export function NeonSign() {
         fill={C.highlight}
       />
 
+      {/* Chữ của TẤM BIỂN trong tranh, một ngôn ngữ ở cả hai bản app — như chữ
+          in trên một tấm poster treo tường, không phải chữ giao diện (#109). */}
       <Text x={SPLIT} y={Y + 42} fill={C.highlight} fontSize={SIZE} fontWeight={WEIGHT} textAnchor="end">
         WIN
       </Text>

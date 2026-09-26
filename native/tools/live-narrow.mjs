@@ -184,7 +184,8 @@ export function appCopy(src = readFileSync(path.join(NATIVE, 'src/lib/native-str
     · 1020 chuỗi của `i18n.ts` (`t.cancel`, `t.grocerySubtitle`, …) — cùng dạng
       `key: '…'`, nên đọc bằng chính `appCopy`;
     · 886 chuỗi viết THẲNG trong component: `vi ? '…' : '…'`,
-      `lang === 'vi' ? …`, và `{ vi: '…', en: '…' }`.
+      `lang === 'vi' ? …`, và `{ vi: '…', en: '…' }`;
+    · chữ JSX viết thẳng, `<Text>…</Text>` (#109, thêm sau).
   Cả hai đều vô hình với luật 2: bị cắt thì bị coi là nội dung người dùng. Ô
   "chưa ghi buổi tập" của đồng hồ sẵn sàng (`readiness-gauge.tsx`) bị cắt ở
   320 ×1.3 mà không ai nghe, và lượt đầu của #63 chỉ bắt được nó nhờ một chỗ
@@ -222,7 +223,7 @@ const isLangTest = (t) => {
 const propKey = (p) => (p.key.type === 'Identifier' ? p.key.name : p.key.type === 'StringLiteral' ? p.key.value : null);
 
 /** Chữ viết thẳng trong các tệp `[[tên, mã]]`: `Map<chuỗi, "tệp:dòng">`. */
-export function inlineCopy(files) {
+export function inlineCopy(files, { jsxText = true } = {}) {
   const out = new Map();
   const add = (n, where) => {
     const s = literalText(n)?.trim();
@@ -234,6 +235,12 @@ export function inlineCopy(files) {
       if (!node || typeof node !== 'object') return;
       if (Array.isArray(node)) return node.forEach(visit);
       if (typeof node.type !== 'string') return;
+      /* #109: chữ JSX viết thẳng (`<Text>Health Assistant</Text>`) cũng là chữ
+         app viết ra. Nó là MỘT ngôn ngữ, nên không có cặp để tách. */
+      if (jsxText && node.type === 'JSXText') {
+        const t = node.value.replace(/\s+/g, ' ').trim();
+        if (/\p{L}{2,}/u.test(t) && !out.has(t)) out.set(t, `${rel}:${node.loc.start.line}`);
+      }
       if (node.type === 'ConditionalExpression' && isLangTest(node.test)) {
         const where = `${rel}:${node.loc.start.line}`;
         if (literalText(node.consequent) != null && literalText(node.alternate) != null) {
@@ -257,14 +264,14 @@ export function inlineCopy(files) {
 }
 
 /** Mọi chữ app viết ra: `native-strings.ts` + `i18n.ts` + chữ viết thẳng trong `src/` (#94). */
-export function allAppCopy() {
+export function allAppCopy({ jsxText = true } = {}) {
   const lib = (f) => readFileSync(path.join(NATIVE, 'src/lib', f), 'utf8');
   const dict = new Set([...appCopy(lib('native-strings.ts')), ...appCopy(lib('i18n.ts'))]);
   const files = sourceFiles()
     .map((p) => [path.relative(NATIVE, p), p])
     .filter(([rel]) => !/^src\/lib\/(native-strings|i18n)\.ts$/.test(rel))
     .map(([rel, p]) => [rel, readFileSync(p, 'utf8')]);
-  for (const s of inlineCopy(files).keys()) dict.add(s);
+  for (const s of inlineCopy(files, { jsxText }).keys()) dict.add(s);
   return [...dict];
 }
 

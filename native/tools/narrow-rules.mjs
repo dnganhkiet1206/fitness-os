@@ -47,6 +47,8 @@ const CASES = [
   ['chưa ghi buổi tập', 'full', 'chữ viết thẳng `vi ? … : …` của đồng hồ sẵn sàng là chữ của app (#94)'],
   ['no workout logged', 'full', 'nhánh tiếng Anh của cùng điều kiện ấy là chữ của app (#94)'],
   ['Chưa có dữ liệu xu hướng sẵn sàng.', 'full', 'chuỗi của i18n.ts là chữ của app (#94)'],
+  /* #109: chữ JSX viết thẳng, một ngôn ngữ. */
+  ['Language / Ngôn ngữ', 'full', 'chữ JSX viết thẳng (<Text>…</Text>) là chữ của app (#109)'],
 ];
 
 for (const [text, want, why] of CASES) {
@@ -58,6 +60,14 @@ for (const [text, want, why] of CASES) {
    "full" của nó đỏ vì lý do khác, và ca null xanh mà không đo gì. */
 for (const s of ['buổi tập', 'Chỉ người theo dõi', 'vừa xong', '{n} ngày trước', '{n} {n:day|days} ago', 'Claim {n} {n:coin|coins}', '{name} đã thích bài của bạn', '{title}: {a}/{b} ngày', 'Chặn từ {date}', 'chưa ghi buổi tập', 'Chưa có dữ liệu xu hướng sẵn sàng.']) {
   if (!copy.includes(s)) problems.push(`chuỗi "${s}" không còn trong từ điển của app — sửa ca tự kiểm đi theo nó`);
+}
+
+/* Thử ngược #109: bỏ chữ JSX khỏi từ điển thì ca #109 phải ra nội dung. */
+{
+  const noJsx = allAppCopy({ jsxText: false });
+  const f = copyPatterns(noJsx).map((s) => new RegExp(s));
+  const t = tailPatterns(noJsx).map((s) => new RegExp(s));
+  if (cutKind('Language / Ngôn ngữ', f, t) !== null) problems.push('thử ngược hỏng: "Language / Ngôn ngữ" khớp cả khi bỏ chữ JSX — ca #109 không đo gì');
 }
 
 /* Thử ngược #94: với từ điển CŨ (chỉ native-strings.ts), ba ca #94 phải ra
@@ -92,6 +102,6 @@ if (problems.length) {
 console.log(
   `luật quét hẹp OK — ${CASES.length} ca trên mẫu sinh từ ${copy.length} chuỗi thật của app (native-strings.ts, i18n.ts và chữ viết thẳng trong component, #94): chú thích người dùng tận cùng bằng ` +
     `"ngày trước"/"days ago" không bị coi là chữ của app (#87: chỗ trống duy nhất ở đầu chuỗi chỉ được ${HEAD_WORDS} từ), tên bốn từ, tên thử ` +
-    'thách dài và câu có bộ chọn số ít/số nhiều (#67) vẫn khớp, dòng chặn ghép khớp luật đuôi (#63), chữ viết thẳng và chữ của i18n.ts khớp (#94). Thử ngược: với phần đầu ".+" như trước #87 thì ca chú thích ĐỎ, với từ điển cũ thì ca #94 ra nội dung, và ranh giới ' +
+    'thách dài và câu có bộ chọn số ít/số nhiều (#67) vẫn khớp, dòng chặn ghép khớp luật đuôi (#63), chữ viết thẳng và chữ của i18n.ts khớp (#94), chữ JSX viết thẳng khớp (#109). Thử ngược: với phần đầu ".+" như trước #87 thì ca chú thích ĐỎ, với từ điển cũ thì ca #94 ra nội dung, và ranh giới ' +
     `${HEAD_WORDS}/${HEAD_WORDS + 1} từ đúng chỗ.`,
 );

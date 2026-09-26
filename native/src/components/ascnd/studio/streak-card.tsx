@@ -36,6 +36,8 @@ export function StreakCard({ days = DONE }: { days?: number }) {
       <Rect x={X - 1} y={Y + 3} width={W + 2} height={H} rx={12} fill={C.shadow} opacity={0.3} />
       <Rect x={X} y={Y} width={W} height={H} rx={11} fill={C.primary} />
 
+      {/* Chữ vẽ trên tấm thẻ trong tranh, như biển neon cạnh nó: một phần của
+          minh hoạ, không phải chữ giao diện, nên không đi qua i18n (#109). */}
       <Text x={X + W / 2} y={Y + 17} fill={C.soft} fontSize={9} fontWeight="800" textAnchor="middle">
         STREAK
       </Text>
