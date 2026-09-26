@@ -1178,6 +1178,7 @@ export function useSearchPeople(q: string) {
 /**
  * Tìm bài Recipe theo tên món, không phân biệt dấu (#43). Hàm server chỉ trả
  * ID (tối đa 30, mới nhất trước) — xem `20261001150000_community_find_recipes.sql`
+ * (bản #43) và `…160000_community_find_recipes_one_fold.sql` (gập tên một lần, #116)
  * — và bài được đọc bằng `.in('id', …)` như Thư viện Đã lưu, tức đi qua RLS thêm
  * một lần. Khoá nằm dưới `community_user_posts` để `patchPost` đổi tim và dấu
  * lưu ngay trên kết quả tìm.

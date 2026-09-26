@@ -10,7 +10,12 @@ trên bản sao migration, và đòi câu ASSERT đỏ đầu tiên của bộ �
 F = 'foundation'
 FM = 'community_foundation'
 FR = 'find_recipes'
-FRM = '20261001150000_community_find_recipes'
+# `in` (như BM): FRM khớp CẢ tệp #43 LẪN `…_find_recipes_one_fold.sql` (#116),
+# nơi hàm được định nghĩa lại; mọi chuỗi khác của thân hàm có đúng một lần ở
+# mỗi tệp. Riêng phép so tên món khác nhau giữa hai tệp, nên F2/F3/F17 nhắm
+# tệp #116 — bản #43 bị ghi đè hoàn toàn, phá nó không đổi gì.
+FRM = 'community_find_recipes'
+FRM116 = '20261001160000_community_find_recipes_one_fold'
 CASES = [
   # ── hồ sơ ──
   dict(suite=F, id='1', mig=FM, how='trigger không gạt is_official khi TẠO',
@@ -490,12 +495,16 @@ CASES += [
   # sao của một luật sinh ra (nền móng vạ lây là đúng).
   dict(suite=FR, id='F1', mig=FRM, how='một ký tự cũng hỏi',
        old='  IF char_length(v_q) < 2 THEN', new='  IF char_length(v_q) < 1 THEN', expect='F1 '),
-  dict(suite=FR, id='F2', mig=FRM, how='chỉ khớp đầu tên, không khớp một từ giữa tên',
-       old="      public.community_fold(p.payload->>'title') LIKE v_pat || '%'\n      OR public.community_fold(p.payload->>'title') LIKE '% ' || v_pat || '%'",
-       new="      public.community_fold(p.payload->>'title') LIKE v_pat || '%'", expect='F2 '),
-  dict(suite=FR, id='F3', mig=FRM, how='khớp chuỗi con ở bất kỳ đâu, kể cả giữa chữ',
-       old="      public.community_fold(p.payload->>'title') LIKE v_pat || '%'\n      OR public.community_fold(p.payload->>'title') LIKE '% ' || v_pat || '%'",
-       new="      public.community_fold(p.payload->>'title') LIKE '%' || v_pat || '%'", expect='F3 '),
+  dict(suite=FR, id='F2', mig=FRM116, how='chỉ khớp đầu tên, không khớp một từ giữa tên',
+       old="LIKE ANY (ARRAY[v_pat || '%', '% ' || v_pat || '%'])",
+       new="LIKE ANY (ARRAY[v_pat || '%'])", expect='F2 '),
+  dict(suite=FR, id='F3', mig=FRM116, how='khớp chuỗi con ở bất kỳ đâu, kể cả giữa chữ',
+       old="LIKE ANY (ARRAY[v_pat || '%', '% ' || v_pat || '%'])",
+       new="LIKE '%' || v_pat || '%'", expect='F3 '),
+  dict(suite=FR, id='F17', mig=FRM116, how='trở lại hai vế OR, mỗi vế gập tên một lần (cùng kết quả, gấp đôi chi phí)',
+       old="    AND public.community_fold(p.payload->>'title') LIKE ANY (ARRAY[v_pat || '%', '% ' || v_pat || '%'])",
+       new="    AND (public.community_fold(p.payload->>'title') LIKE v_pat || '%'\n      OR public.community_fold(p.payload->>'title') LIKE '% ' || v_pat || '%')",
+       expect='F17 '),
   dict(suite=FR, id='F10', mig=FRM, how='loại MỌI ai dính một dòng chặn (không chỉ với người xem)',
        old='        AND NOT public.community_blocked_between(v_uid, p.author_id)',
        new='        AND NOT EXISTS (SELECT 1 FROM public.community_blocks b WHERE b.blocked_id = p.author_id OR b.blocker_id = p.author_id)',

@@ -133,5 +133,13 @@ END $$;
 RESET ROLE;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_find_recipes(text)', 'EXECUTE'), 'F15 anon gọi được tìm công thức'; END $$;
 DO $$ BEGIN ASSERT has_function_privilege('authenticated', 'public.community_find_recipes(text)', 'EXECUTE'), 'F16 người đã đăng nhập không gọi được'; END $$;
-\echo TẤT CẢ 17 KỊCH BẢN TÌM CÔNG THỨC ĐÚNG
+-- ── F17: gập tên món một lần mỗi dòng (#116) ──
+-- Hai vế OR mỗi vế gọi `community_fold` là cùng kết quả nhưng gấp đôi chi phí
+-- (đo trong 20261001160000_community_find_recipes_one_fold.sql). Không kịch
+-- bản kết quả nào thấy khác biệt ấy, nên đếm thẳng trong thân hàm đang chạy.
+DO $$ DECLARE body text := pg_get_functiondef('public.community_find_recipes(text)'::regprocedure); BEGIN
+  ASSERT (length(body) - length(replace(body, 'community_fold(p.payload', ''))) / length('community_fold(p.payload') = 1,
+    'F17 hàm tìm công thức gập tên món nhiều hơn một lần mỗi dòng';
+END $$;
+\echo TẤT CẢ 18 KỊCH BẢN TÌM CÔNG THỨC ĐÚNG
 ROLLBACK;
