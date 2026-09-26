@@ -223,6 +223,8 @@ export default function WaterScreen() {
           */}
           <PressScale
             accessibilityRole="button"
+            accessibilityState={{ expanded: logsOpen }}
+            aria-expanded={logsOpen} // web không dịch accessibilityState ra aria-expanded (#103, #123)
             onPress={() => {
               Haptics.selectionAsync();
               setLogsOpen((v) => !v);

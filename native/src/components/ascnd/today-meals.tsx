@@ -695,6 +695,8 @@ function MealCard({
           />
         )}>
       <PressScale
+        accessibilityState={{ expanded: open }}
+        aria-expanded={open} // web không dịch accessibilityState ra aria-expanded (#103, #123)
         onPress={() => {
           Haptics.selectionAsync();
           setOpen((v) => !v);
