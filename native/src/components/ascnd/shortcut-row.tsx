@@ -65,7 +65,7 @@ export function ShortcutRow({
       <GlassCard style={styles.card}>
         <View style={styles.row}>
           <Icon icon={icon} size={17} color={c.mutedForeground} />
-          <Text style={styles.label} numberOfLines={1}>{label}</Text>
+          <Text style={styles.label}>{label}</Text>
           {value ? <Text style={styles.value} numberOfLines={1}>{value}</Text> : null}
           <Icon icon={ChevronRight} size={17} color={c.mutedForeground} />
         </View>
@@ -81,8 +81,17 @@ const stylesFor = makeStyles((c) => ({
   card: { paddingVertical: spacing.sm + 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 28 },
   /* `flex: 1` on the label rather than on the value: the label is the thing
-     that can be long enough to need truncating, and a value like "12/14" must
-     never be the part that gets cut. */
+     that can be long enough to need room, and a value like "12/14" must never
+     be the part that gets cut.
+
+     No line limit (#137). At 320 in Vietnamese "Thực phẩm bổ sung" beside
+     "1/2 hôm nay" came out "Thực phẩm bổ…" — a door whose name is cut is a door
+     you have to open to find out where it goes. Nobody saw it because the fake
+     world had no supplements, so the value never rendered. Two lines were
+     measured and were not enough: at text ×1.3 the value takes half the row and
+     the label got 95 points, "Thực / phẩm b…". So the label wraps as far as it
+     needs, which is what a row does under Dynamic Type — it grows, it does not
+     cut. The cost is height on the narrowest phones at the largest sizes only. */
   label: { ...type.body, color: c.foreground, flex: 1 },
   value: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
 }));

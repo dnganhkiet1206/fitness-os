@@ -352,6 +352,45 @@ export const FIXTURES = {
     { id: 'w3', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: day(0.05) },
     { id: 'w2', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: day(0.2) },
   ],
+  /*
+    #137: những bảng app ĐỌC mà thế giới giả để rỗng — nhánh "có dữ liệu" của
+    màn đọc chúng chưa từng dựng trên bộ chạy. Đúng loại điểm mù đã giấu lỗi
+    của #131 (đi chợ) và #135 (ảnh tiến trình). Bảng cố ý rỗng nằm trong
+    `FIXTURE_EMPTY_OK` bên dưới, kèm lý do; `fixture-integrity.mjs` đòi mọi
+    bảng `src/` gọi `.from()` hoặc có hàng hoặc có tên ở đó.
+  */
+  supplements: [
+    { id: 'sp000001-0000-4000-8000-000000000001', user_id: UID, name: 'Creatine', dose_text: '5 g', timing: 'morning', category: 'performance', notes: null, cycle_mode: null, cycle_on_weeks: null, cycle_off_weeks: null, cycle_start_date: null, created_at: day(30), updated_at: day(30) },
+    { id: 'sp000001-0000-4000-8000-000000000002', user_id: UID, name: 'Vitamin D3', dose_text: '2000 IU', timing: 'post-workout', category: 'vitamin', notes: null, cycle_mode: null, cycle_on_weeks: null, cycle_off_weeks: null, cycle_start_date: null, created_at: day(20), updated_at: day(20) },
+  ],
+  /* Creatine đã uống hôm nay, Vitamin D3 chưa: màn có một ô đã tick và một ô chưa. */
+  supplement_intake_logs: [
+    { id: 'si000001-0000-4000-8000-000000000001', user_id: UID, supplement_id: 'sp000001-0000-4000-8000-000000000001', taken: true, dose_override: null, date_time: day(0.1), created_at: day(0.1) },
+  ],
+  coach_memory: [
+    { id: 'cm000001-0000-4000-8000-000000000001', user_id: UID, kind: 'constraint', fact: 'Đau gối trái khi squat sâu', first_seen: day(12), last_confirmed: day(3), source_excerpt: 'gối trái hơi đau khi xuống sâu' },
+    { id: 'cm000001-0000-4000-8000-000000000002', user_id: UID, kind: 'goal', fact: 'Muốn chạy 10 km trước tháng 12', first_seen: day(20), last_confirmed: day(5), source_excerpt: null },
+  ],
+  ai_conversations: [
+    { id: 'ac000001-0000-4000-8000-000000000001', user_id: UID, title: 'Bữa tối sau buổi tập', created_at: day(1), updated_at: day(1) },
+  ],
+  ai_messages: [
+    { id: 'am000001-0000-4000-8000-000000000001', conversation_id: 'ac000001-0000-4000-8000-000000000001', role: 'user', content: 'Tối nay nên ăn gì sau buổi đẩy?', created_at: day(1) },
+    { id: 'am000001-0000-4000-8000-000000000002', conversation_id: 'ac000001-0000-4000-8000-000000000001', role: 'assistant', content: 'Một phần cơm gà áp chảo với rau xanh: khoảng 40 g đạm, đủ bù buổi tập.', created_at: day(0.99) },
+  ],
+  /* Tuần bắt đầu thứ Hai như `weekStartOf` của app; LIVE_TZ giữ ngày địa phương
+     trùng ngày UTC (#112), nên tính từ ngày UTC là đúng. */
+  weekly_challenges: [
+    { id: 'wc000001-0000-4000-8000-000000000001', user_id: UID, week_start: dayStr((new Date().getUTCDay() + 6) % 7), challenge_key: 'workouts_3', title: 'Tập 3 buổi', description: 'Hoàn thành 3 buổi tập trong tuần', icon: 'dumbbell', current_value: 2, target_value: 3, completed: false, completed_at: null, reward_tier: 'bronze', reward_title: null, created_at: day(3), updated_at: day(1) },
+  ],
+  streak_freezes: [{ id: 'sf000001-0000-4000-8000-000000000001', user_id: UID, acquired_at: day(6), used_on: null }],
+  mascot_inventory: [{ id: 'mi000001-0000-4000-8000-000000000001', user_id: UID, item_key: 'head_cap', equipped: false, purchased_at: day(8) }],
+  exercise_guide_content: [
+    { id: 'eg000001-0000-4000-8000-000000000001', exercise_id: 'e1', locale: 'en', instructions: ['Lie on the bench, eyes under the bar.', 'Lower to mid-chest.', 'Press up and slightly back.'], form_cues: ['Shoulder blades pinned', 'Feet planted'], common_mistakes: ['Bouncing off the chest'], created_at: day(60), updated_at: day(60) },
+  ],
+  exercise_media: [
+    { id: 'em000001-0000-4000-8000-000000000001', exercise_id: 'e1', kind: 'image', uri: 'http://127.0.0.1:9/bench.jpg', poster_uri: null, duration_s: null, position: 0, alt: 'Bench press, bottom position', created_at: day(60), updated_at: day(60) },
+  ],
   /* #135: hai ảnh tiến trình — trước đây rỗng, nên lưới ảnh và nút xoá của nó
      chưa từng dựng trên bộ chạy. `photo_url` là http nên hook không xin signed
      URL; cổng 9 từ chối ngay, ảnh không tải (lỗi tải tài nguyên được bộ chạy bỏ
@@ -891,4 +930,14 @@ export const FIXTURES = {
     { id: 'mi6', created_at: day(0.1503), meal_entry_id: 'm2', food_name: 'Ức gà áp chảo 150g', servings: 1, kcal: 269, protein_g: 38, carbs_g: 0, fat_g: 13, fiber_g: 0 },
     { id: 'mi7', created_at: day(0.1496), meal_entry_id: 'm2', food_name: 'Rau xào 200g', servings: 1, kcal: 126, protein_g: 3, carbs_g: 15, fat_g: 6, fiber_g: 8 },
   ],
+};
+
+/*
+  #137: bảng `src/` gọi `.from()` mà thế giới giả CỐ Ý để rỗng — mỗi cái một lý
+  do. `fixture-integrity.mjs` đòi danh sách này chỉ ngắn đi: bảng nào có hàng
+  thì phải rời khỏi đây.
+*/
+export const FIXTURE_EMPTY_OK = {
+  community_reports: 'chỉ GHI (useReport chèn một báo cáo); không màn nào đọc báo cáo, kể cả của chính mình',
+  entitlements: 'hạng MIỄN PHÍ là trạng thái đang được đo; một dòng pro lật mọi cổng tính năng của cả app, và việc mở khoá khi thử (TEST_UNLOCK_ALL) còn chờ chủ dự án quyết',
 };

@@ -364,7 +364,14 @@ export function SupplementChecklistCard() {
           {supplements.map((s, i) => (
             <Fragment key={s.id}>
               {i > 0 ? <View style={styles.suppSep} /> : null}
+              {/* Ô tick, không phải nút (#137): trạng thái "đã uống" là thứ VoiceOver
+                  phải đọc được. Nhánh này chưa từng dựng trên bộ chạy vì thế giới
+                  giả không có thực phẩm bổ sung, nên #121 đã bỏ sót nó. */}
               <PressScale
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: !!s.taken }}
+              aria-checked={!!s.taken} // web không dịch accessibilityState ra aria-checked (#101)
+              accessibilityLabel={s.dose_text ? `${s.name}, ${s.dose_text}` : s.name}
               style={styles.suppRow}
               onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
               <View style={[styles.checkbox, s.taken && styles.checkboxOn]}>

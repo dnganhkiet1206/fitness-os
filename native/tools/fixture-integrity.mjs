@@ -47,7 +47,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const MIG = path.resolve(NATIVE, '..', 'supabase', 'migrations');
-const { FIXTURES } = await import(path.join(NATIVE, 'tools', 'live-world.mjs'));
+const { FIXTURES, FIXTURE_EMPTY_OK } = await import(path.join(NATIVE, 'tools', 'live-world.mjs'));
 
 /* ── schema: đọc từ migration ── */
 function splitTop(body) {
@@ -437,6 +437,40 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     problems.push('bộ đọc migration không ra bản MỚI NHẤT của `community_posts_kind_check` — `DROP CONSTRAINT` / `ADD CONSTRAINT` về sau đã bị bỏ qua');
   for (const name of real.skipped) problems.push(`CHECK không kiểm được: \`${name}\` — bộ tính biểu thức chưa hiểu nó; thêm vào bộ tính, đừng bỏ qua im lặng`);
 
+  /*
+    ── bảng app đọc mà thế giới giả để rỗng (#137) ──
+
+    Một bảng rỗng không làm gì đỏ: màn đọc nó dựng nhánh "chưa có gì", mọi vế
+    xanh, và nhánh có dữ liệu — nơi có nút xoá, hộp hỏi lại, ô tick — chưa
+    từng dựng. #131 (đi chợ) và #135 (ảnh tiến trình) là hai lỗi thật nằm đúng
+    trong nhánh ấy. Lúc viết: 12/42 bảng rỗng.
+  */
+  const fromTables = new Set();
+  const walkSrc = (dir) =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+      e.isDirectory() ? walkSrc(path.join(dir, e.name)) : /\.tsx?$/.test(e.name) ? [path.join(dir, e.name)] : [],
+    );
+  for (const f of walkSrc(path.join(NATIVE, 'src'))) {
+    for (const m of readFileSync(f, 'utf8').matchAll(/\.from\('([a-z_]+)'\)/g)) fromTables.add(m[1]);
+  }
+  const emptyGaps = (fx) => {
+    const out = [];
+    for (const t of [...fromTables].sort()) {
+      const has = Array.isArray(fx[t]) && fx[t].length > 0;
+      if (!has && !FIXTURE_EMPTY_OK[t]) out.push(`bảng rỗng: \`${t}\` được src/ gọi .from() mà thế giới giả không có hàng nào — nhánh có dữ liệu của màn đọc nó chưa từng dựng (#137). Thêm hàng, hoặc ghi lý do vào FIXTURE_EMPTY_OK`);
+      if (has && FIXTURE_EMPTY_OK[t]) out.push(`danh sách miễn cũ: \`${t}\` đã có hàng mà vẫn nằm trong FIXTURE_EMPTY_OK — danh sách chỉ được ngắn đi`);
+    }
+    for (const t of Object.keys(FIXTURE_EMPTY_OK)) if (!fromTables.has(t)) out.push(`danh sách miễn cũ: \`${t}\` không còn được src/ gọi — bỏ khỏi FIXTURE_EMPTY_OK`);
+    return out;
+  };
+  problems.push(...emptyGaps(FIXTURES));
+  if (fromTables.size < 30) problems.push(`chỉ thấy ${fromTables.size} bảng được src/ gọi .from() — bộ đọc hỏng, đừng tin kết quả`);
+  {
+    /* Thử ngược: rút hàng của `supplements` thì đỏ. */
+    const broken = { ...FIXTURES, supplements: [] };
+    if (!emptyGaps(broken).some((x) => x.includes('`supplements`'))) problems.push('bộ kiểm đã mất răng: rút hàng của supplements mà luật bảng rỗng không bắt được');
+  }
+
   if (problems.length) {
     console.error('dữ liệu thế giới giả CÓ LỖI:\n');
     for (const p of problems) console.error(`  • ${p}`);
@@ -449,6 +483,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
       'lần tính CHECK đều không ra false (logic ba giá trị như Postgres; không CHECK nào bị bỏ qua). Khoá, khoá ngoại và CHECK ' +
       'đọc từ chính migration, không khai tay — kể cả CHECK bị gỡ rồi thêm lại về sau; và bộ kiểm tự phá thử ' +
       `${selfTest.length} cách trên bản sao fixture (id trùng, khoá ghép trùng, hai kiểu tham chiếu treo, ba kiểu vi phạm CHECK) — ` +
-      'cách nào cũng bị bắt',
+      'cách nào cũng bị bắt. ' +
+      `Và ${fromTables.size} bảng src/ gọi .from() đều có hàng trong thế giới giả, trừ ${Object.keys(FIXTURE_EMPTY_OK).length} bảng cố ý rỗng có lý do ` +
+      '(#137: nhánh "có dữ liệu" của mọi màn đều dựng được; rút hàng của supplements thì đỏ)',
   );
 }

@@ -3113,6 +3113,9 @@ try {
       ['/community', 'full'], ['/community-saved', 'full'], ['/shop', 'full'], ['/workouts/plan', 'full'],
       /* #135: nút xoá ảnh tiến trình — trước đó xoá chỉ tới được bằng nhấn giữ. */
       ['/progress-photos', 'full'],
+      /* #137: hai màn trước đây chỉ dựng nhánh rỗng — thế giới giả không có trí nhớ
+         của huấn luyện viên, không có cuộc trò chuyện nào. */
+      ['/coach-memory', 'full'], ['/ai-coach', 'full'],
     ];
     const pressList = pressRouteArg ? PRESS_ROUTES.filter(([r]) => r.includes(pressRouteArg)) : PRESS_ROUTES;
     if (pressRouteArg && pressList.length === 0) problems.push(`--press-route=${pressRouteArg}: không mục PRESS_ROUTES nào có đường dẫn chứa chuỗi này`);

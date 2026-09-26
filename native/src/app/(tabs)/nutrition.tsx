@@ -601,8 +601,12 @@ export default function NutritionScreen() {
             <ShortcutRow
               icon={Pill}
               label={i18n.nSupplements}
+              /* "2/4 hôm nay", như chú thích ở trên và hợp đồng của `ShortcutRow`
+                 (giá trị NGẮN, nhãn mới là thứ co). Bản cũ viết "1/2 đã uống hôm
+                 nay", và ở 320 tiếng Việt nhãn thành "Thực p…" — chưa ai thấy vì
+                 thế giới giả không có thực phẩm bổ sung nào (#137). */
               value={supplements && supplements.length > 0
-                ? `${supplements.filter((x) => x.taken).length}/${supplements.length} ${i18n.nTakenToday}`
+                ? `${supplements.filter((x) => x.taken).length}/${supplements.length} ${i18n.nToday.toLowerCase()}`
                 : null}
               onPress={() => nav.push('/supplements')}
             />

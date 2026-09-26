@@ -420,7 +420,7 @@ chữ → Chữ lớn hơn → AX3**, rồi mở lại app.
 
 ---
 
-## J. VoiceOver đọc trạng thái ô chọn, ô tick, và các nút từng không tên, không vai — #99 · #101 · #120 · #121 · #123 · #125 · #127 · #129 · #133 · #135 (#104)
+## J. VoiceOver đọc trạng thái ô chọn, ô tick, và các nút từng không tên, không vai — #99 · #101 · #120 · #121 · #123 · #125 · #127 · #129 · #133 · #135 · #137 (#104)
 
 #99 và #101 sửa trạng thái "đã chọn"/"đã tick" cho **web**: `aria-selected` và
 `aria-checked`, vì react-native-web không dịch `accessibilityState`. Trên iOS,
@@ -455,6 +455,7 @@ Bật **VoiceOver**, app tiếng Việt.
 | J16 | Dinh dưỡng → nhật ký, một bữa đang **thu** → vuốt qua; rồi chạm hai lần đầu mục để mở và vuốt lại | Thu: VoiceOver đi từ đầu mục bữa sang bữa kế, **không** đọc tên món hay nút xoá món nào bên trong (#129). Mở: đọc được từng món và nút của nó | ☐ |
 | J17 | Dinh dưỡng → nhật ký → đưa con trỏ VoiceOver lên đầu mục một bữa → vuốt lên/xuống một ngón | VoiceOver đọc hai **hành động**: "Thêm vào bữa" và "Xoá bữa" — đúng hai nút mà người nhìn thấy chỉ lộ ra khi vuốt ngang hàng. Chọn "Xoá bữa" → chạm hai lần: hộp hỏi lại của iOS hiện (Huỷ / Xoá); Huỷ thì bữa còn nguyên (#133). *Web không có hành động trợ năng, nên chỉ máy thật đo được mục này* | ☐ |
 | J18 | Tập luyện → Cơ thể → Ảnh tiến trình, có ít nhất một ảnh; rồi một bình luận ở Cộng đồng | Ảnh: mỗi ô có nút thùng rác ở hàng dưới; VoiceOver đọc "Xoá \<tư thế\> \<ngày\>", chạm hai lần mở hộp hỏi lại (Huỷ / Xoá). Nhấn giữ ảnh vẫn mở cùng hộp ấy, nhưng VoiceOver không dừng ở ảnh như một nút thứ hai (#135). Bình luận: vuốt lên/xuống ở thân bình luận cho hành động "Thêm", mở menu như nhấn giữ (#135) | ☐ |
+| J19 | Có ít nhất một thực phẩm bổ sung: Dinh dưỡng → hàng "Thực phẩm bổ sung" (tiếng Việt, iPhone SE hoặc AX3); rồi Hôm nay → thẻ Thực phẩm bổ sung | Hàng đọc trọn "Thực phẩm bổ sung" — xuống dòng được, **không** "Thực phẩm bổ…" — và bên phải là "1/2 hôm nay". Trên thẻ ở Hôm nay, mỗi dòng là **ô tick**: VoiceOver đọc "\<tên\>, \<liều\>" kèm trạng thái đã đánh dấu hay chưa (#137) | ☐ |
 
 > `liquid-tab-bar.tsx` cũng có một lớp nền không tên (bảng Trợ lý nhanh), và #120
 > đã đặt tên cho nó. Nhưng component ấy không được gắn vào đâu (xem
