@@ -93,6 +93,7 @@ const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
 import { RPC_FIXTURES, rewardAmountFor } from './live-rpc.mjs';
 import { fakeSupabase } from './live-server.mjs';
+import { DESTRUCTIVE } from './live-press.mjs';
 import {
   LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, NARROW_ROUTES_MAIN, NARROW_ROUTES_NUTRITION, clipExempt, copyPatterns,
   enlargeText, narrowFindings, tailPatterns,
@@ -723,9 +724,9 @@ const changed = (a, b) => a.url !== b.url || a.len !== b.len || a.text !== b.tex
   và lượt bấm không phân biệt được "hỏi lại rồi Huỷ" với "chết". Từ #83 hộp
   hỏi lại hiện thật, nên nay chúng được BẤM, và một hộp hiện ra là màn đã trả
   lời. Nhãn khớp mẫu này mà bấm xong KHÔNG có hộp nào và có lệnh ghi đi ra thì
-  đỏ: bấm là làm luôn, không hỏi.
+  đỏ: bấm là làm luôn, không hỏi. Mẫu ở `live-press.mjs` (#107: `\b` cũ không
+  khớp "Xoá…"), và bước cổng "nút phá huỷ" tự kiểm nó trên từ điển chữ app.
 */
-const DESTRUCTIVE = /^(Xoá|Xóa|Rời|Chặn|Bỏ chặn|Bỏ theo dõi|Đăng xuất|Delete|Remove|Leave|Block|Unblock|Unfollow|Sign out)\b/i;
 
 /**
  * Does anything else in this control's own group react?
@@ -2919,11 +2920,14 @@ try {
          thử thách còn mở (Rời thử thách), và có một người đã chặn (Bỏ chặn,
          Xoá mọi bài của tôi). */
       ['/community-challenge?id=ch000000-0000-4000-8000-000000000001', 'full'], ['/community-privacy', 'full'],
+      /* #107: CÙNG hai màn ấy bằng tiếng Việt. Trước đó nhánh tiếng Việt của
+         `DESTRUCTIVE` chưa từng chạy — và nó không khớp "Xoá…". */
+      ['/community-challenge?id=ch000000-0000-4000-8000-000000000001', 'full', 'vi'], ['/community-privacy', 'full', 'vi'],
     ];
-    for (const [route, mode] of onlyArg || routeArg ? [] : PRESS_ROUTES) {
-      const { browser, page } = await openPage(chromium, route, mode);
+    for (const [route, mode, lang = null] of onlyArg || routeArg ? [] : PRESS_ROUTES) {
+      const { browser, page } = await openPage(chromium, route, mode, 9000, { lang });
       try {
-        const r = await pressEverything(page, `[${mode}] ${route}`, problems);
+        const r = await pressEverything(page, `[${mode}${lang ? ` ${lang}` : ''}] ${route}`, problems);
         pressed += r.tried;
         skipped += r.skipped;
         asked += r.dialogs;

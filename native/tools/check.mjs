@@ -585,6 +585,9 @@ const STEPS = [
   /* #110: vế live.mjs chỉ đọc màn ĐANG HIỆN — màn trước còn trong DOM với
      display:none sau một cú bấm điều hướng, và vế #108 từng xanh nhờ nó. */
   ['đọc màn đang hiện', 'node', ['tools/live-visible.mjs']],
+  /* #107: mẫu "nút phá huỷ" của lượt bấm thử khớp mọi nhãn phá huỷ thật của
+     app — mẫu `\b` cũ bỏ sót 33 nhãn "Xoá…", kể cả "Xoá tài khoản". */
+  ['nút phá huỷ', 'node', ['tools/press-rules.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],

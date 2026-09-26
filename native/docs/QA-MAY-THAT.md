@@ -2,7 +2,7 @@
 
 **Viết:** 2026-09-08 · cập nhật 2026-09-09 sau bản nâng Hermes · 2026-09-25 thêm mục H (mất mạng, #61) · **chưa ai chạy danh sách này.**
 
-Trang này tồn tại vì một lý do hẹp: **281 bước kiểm tự động và một bộ chạy web
+Trang này tồn tại vì một lý do hẹp: **282 bước kiểm tự động và một bộ chạy web
 không chứng minh được app dùng được trên một chiếc iPhone.** Chúng chứng minh
 logic và trạng thái. Chúng không chạy VoiceOver, không dựng `UIVisualEffectView`,
 không có ngón tay, không có bộ nhớ bị siết, và không có lớp interop của kiến
