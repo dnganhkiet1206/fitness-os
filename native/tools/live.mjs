@@ -348,9 +348,30 @@ const RPC_UNFIXTURED = new Set();
 /** Lệnh ghi KHÔNG được áp vào thế giới vì bộ lọc máy chủ giả không hiểu (#52). */
 const WRITES_NOT_APPLIED = new Set();
 
+/*
+  #112: MÚI GIỜ của trình duyệt, chọn một lần lúc nạp.
+
+  Thế giới giả đặt mọi mốc bằng `day(n)` = lúc nạp − n ngày, với 26 mốc là
+  phần của ngày (`day(0.4)`: buổi tập "hôm nay" 9,6 giờ trước). App đọc ngày
+  theo giờ ĐỊA PHƯƠNG. Chạy với trình duyệt ở UTC thì kết quả tuỳ giờ bấm
+  chạy: trước 09:36 UTC buổi "hôm nay" là hôm qua và vế nút gập (#103) đỏ; một
+  lượt bắt đầu 23:30 vắt qua nửa đêm và Hộp thư đếm "3 ngày" thay vì 4. Mọi
+  lượt xanh trước #112 đều chạy vào chiều/tối UTC.
+
+  Nên: độ lệch `Etc/GMT±N` đặt giờ địa phương lúc nạp ở khoảng 14:00, trên
+  CÙNG ngày UTC với thế giới giả (`dayStr(0)`). Lượt ~1 giờ không vắt qua nửa
+  đêm, và mỗi `day(0.x)` luôn rơi vào cùng một nửa ngày. Độ lệch nằm trong
+  −9…+14, luôn có trong IANA.
+*/
+const LIVE_OFFSET = (() => {
+  const now = new Date();
+  return Math.round(14 - (now.getUTCHours() + now.getUTCMinutes() / 60));
+})();
+const LIVE_TZ = LIVE_OFFSET === 0 ? 'UTC' : `Etc/GMT${LIVE_OFFSET > 0 ? '-' : '+'}${Math.abs(LIVE_OFFSET)}`;
+
 async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, height = 874, lang = null } = {}) {
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width, height } });
+  const ctx = await browser.newContext({ viewport: { width, height }, timezoneId: LIVE_TZ });
   /* Như theme ngay dưới: đặt TRƯỚC khi app chạy. Lượt quét hẹp (#48) đo cả
      hai ngôn ngữ, vì chữ tiếng Việt dài hơn và mọi nhãn bị cắt đã tìm thấy
      đều là tiếng Việt. */
@@ -3004,6 +3025,7 @@ console.log(
     `(${globalThis.__asked} hộp hỏi lại, mọi hộp đều được Huỷ; không nút phá huỷ nào làm luôn mà không hỏi; ` +
     `${globalThis.__skipped} nút được bỏ qua có lý do: disabled, đang được chọn sẵn, hoặc bị che); ` +
     `${SCENARIOS.length} kịch bản có kết quả cụ thể đều đúng; ${narrowClaim}; ` +
-    'canary xác nhận bộ chạy nhìn đúng app thật chứ không phải trang lỗi của server',
+    'canary xác nhận bộ chạy nhìn đúng app thật chứ không phải trang lỗi của server; ' +
+    `trình duyệt ở múi giờ ${LIVE_TZ}, tức khoảng 14:00 địa phương lúc bắt đầu, trên cùng ngày với thế giới giả (#112)`,
 );
 console.log(RPC_NOTE());
