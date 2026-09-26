@@ -16,6 +16,7 @@ import {
 } from '@/lib/mascot-room';
 import { useAuth } from './use-auth';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { toast } from '@/lib/toast';
 
 /**
  * While TEST_UNLOCK_ALL is on, the whole mascot economy lives in
@@ -478,8 +479,11 @@ export function useToggleEquip() {
       }
       return { key, previous };
     },
-    onError: (_e, _vars, ctx) => {
+    /* Gỡ bản vá VÀ nói ra (#143): món vừa mặc lặng lẽ tuột khỏi Koa mà không
+       một lời là cùng lỗi #141 bắt ở thực phẩm bổ sung. */
+    onError: (e: Error, _vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(ctx.key, ctx.previous);
+      toast.fail(e);
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ['mascot_inventory', user?.id] }),
   });

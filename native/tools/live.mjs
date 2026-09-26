@@ -941,6 +941,36 @@ async function pressEverything(page, label, problems) {
  */
 const SCENARIOS = [
   {
+    /* #143: tick một món đi chợ mà máy chủ từ chối → ô quay lại và có lời báo.
+       Trước #143 mutation này gỡ bản vá trong im lặng, như thực phẩm bổ sung ở #141. */
+    name: 'Đi chợ: server từ chối lần tick thì ô quay lại và có lời báo (#143)',
+    route: '/grocery', mode: 'full',
+    async run(page) {
+      let refused = 0;
+      await page.route(/\/rest\/v1\/grocery_items/, (r) => {
+        if (r.request().method() === 'GET') return r.fallback();
+        refused++;
+        return r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' });
+      });
+      const box = page.getByRole('checkbox', { name: /^Trứng gà(,|$)/ }).filter({ visible: true });
+      if ((await box.count()) !== 1) return 'không thấy ô "Trứng gà" ở danh sách đi chợ';
+      if ((await box.getAttribute('aria-checked')) !== 'false') return '"Trứng gà" phải CHƯA tick lúc đầu (fixture #131)';
+      await box.click();
+      const toast = async () => (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
+      let text = '';
+      for (let k = 0; k < 16 && !text; k++) {
+        await page.waitForTimeout(250);
+        text = await toast();
+      }
+      await page.waitForTimeout(1500);
+      if (!refused) return 'bấm tick mà không có lệnh ghi nào đi ra — vế này không đo gì';
+      if ((await box.getAttribute('aria-checked')) !== 'false') return 'server từ chối mà ô vẫn đánh dấu đã tick — bản vá lạc quan không được gỡ';
+      if (!text) return 'server từ chối mà không có lời báo nào — lỗi bị nuốt';
+      if (/server error/i.test(text)) return `lời báo là chữ thô của server: "${text}" (#31)`;
+      return null;
+    },
+  },
+  {
     /*
       #141: tick một thực phẩm bổ sung ở Hôm nay (thẻ #137, nay là checkbox).
       Đòi: đúng MỘT lệnh ghi, là INSERT, đúng supplement_id và taken=true; cờ

@@ -589,6 +589,8 @@ const STEPS = [
      app — mẫu `\b` cũ bỏ sót 33 nhãn "Xoá…", kể cả "Xoá tài khoản". */
   ['nút phá huỷ', 'node', ['tools/press-rules.mjs']],
   ['nút không tên, không vai', 'node', ['tools/unnamed-press.mjs']],
+  /* #143: bản vá lạc quan bị gỡ thì phải có lời báo — hoặc ở hook, hoặc ở MỌI chỗ gọi. */
+  ['gỡ vá có lời', 'node', ['tools/silent-rollback.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],

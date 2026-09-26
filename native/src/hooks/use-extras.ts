@@ -30,6 +30,7 @@ import { CHALLENGE_REWARD, challengeRefKey } from '@/lib/mascot-room';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { toast } from '@/lib/toast';
 
 export function useAwards() {
   const { user } = useAuth();
@@ -811,6 +812,11 @@ export function useGroceryMutations() {
     onMutate: () => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
+    /* Ba lệnh ghi của danh sách đi chợ đều BÁO khi hỏng (#143). Trước đây cả
+       ba im lặng và không chỗ gọi nào truyền `onError`: thêm hỏng thì chữ vừa
+       gõ đã bị xoá khỏi ô mà món không hiện, tick hỏng thì ô tự tắt lại, xoá
+       hỏng thì món cứ nằm đó — cùng loại lỗi #141 bắt ở thực phẩm bổ sung. */
+    onError: (e: Error) => toast.fail(e),
     onSettled: () => invalidate(),
   });
 
@@ -853,8 +859,9 @@ export function useGroceryMutations() {
       }
       return { key, prev };
     },
-    onError: (_e, _vars, ctx) => {
+    onError: (e: Error, _vars, ctx) => {
       if (ctx?.prev !== undefined) queryClient.setQueryData(ctx.key, ctx.prev);
+      toast.fail(e);
     },
     /* `onSettled`: hỏng thì cũng phải hỏi lại máy chủ, nếu không cái ô sống
        bằng một bản vá đã hoàn tác mà không ai kiểm lại. */
@@ -868,6 +875,7 @@ export function useGroceryMutations() {
         'Không cập nhật được danh sách đi chợ',
       );
     },
+    onError: (e: Error) => toast.fail(e),
     onSuccess: invalidate,
   });
 
