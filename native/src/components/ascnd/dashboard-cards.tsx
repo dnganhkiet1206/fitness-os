@@ -1818,9 +1818,12 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
           chú ở nút ấy. Nhãn mang luôn đơn vị cho cả ba chip. */}
       <Text style={styles.quickLabel}>{`${i18n.nQuickAdd}  ·  ${vl}`}</Text>
       <View style={styles.quickRow}>
+        {/* Nhãn như nút "−" của màn Nước (#125): bớt lần uống gần nhất, đối của
+            các chip "+", không phải "Xoá" — trần 14 nút của lượt bấm thử từng
+            giấu nó ở đây (#127). */}
         <PressScale
           accessibilityRole="button"
-          accessibilityLabel={i18n.a11yRemove}
+          accessibilityLabel={i18n.a11yUndoLastDrink}
           disabled={!undoable}
           style={[styles.quickUndo, !undoable && styles.quickOff]}
           onPress={() => {

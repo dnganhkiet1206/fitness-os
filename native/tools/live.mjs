@@ -111,6 +111,10 @@ const onlyArg = [...args].find((a) => a.startsWith('--only='))?.slice(7) ?? null
    lượt bấm và kịch bản, và dòng tổng kết nói đúng như thế. */
 const routeArg = [...args].find((a) => a.startsWith('--route='))?.slice(8) ?? null;
 const pickRoutes = (list) => (routeArg ? list.filter((r) => r.includes(routeArg)) : list);
+/* Chỉ lượt bấm thử, và chỉ những mục PRESS_ROUTES có đường dẫn chứa chuỗi này
+   (#127) — đo lại một màn sau khi sửa mà không trả 17 màn và 51 kịch bản. Đi
+   cùng `--press-only`; dòng tổng kết nói đúng như thế. */
+const pressRouteArg = [...args].find((a) => a.startsWith('--press-route='))?.slice(14) ?? null;
 /*
   ── theme, vì một bộ chạy chỉ vẽ được một thế giới ──
 
@@ -795,8 +799,13 @@ async function siblingReacts(page, control) {
 }
 
 async function pressEverything(page, label, problems) {
-  const controls = page.locator('[role="button"]:visible, button:visible');
-  const total = Math.min(await controls.count(), 14);
+  /* `getByRole`, không phải CSS: nó bỏ phần tử nằm trong `aria-hidden` — thân
+     của một khối đã thu (#127), thứ người dùng không thấy lẫn không với tới. */
+  const controls = page.getByRole('button').filter({ visible: true });
+  /* Không trần (#127). Trần 14 cũ bỏ quá nửa nút ở các màn chính (Kế hoạch
+     tuần 42, Dinh dưỡng 36, Cộng đồng 35) — và chính phần dưới màn, nơi có
+     nút xoá bữa và thao tác trên bài viết. */
+  const total = await controls.count();
   const home = page.url();
   let tried = 0;
   let skipped = 0;
@@ -904,7 +913,17 @@ async function pressEverything(page, label, problems) {
       }
     }
 
-    if (page.url() !== home) {
+    /*
+      ── về đúng màn ban đầu, kể cả khi URL không đổi (#127) ──
+
+      Bản cũ chỉ về lại khi URL đổi. Một nút mở sheet hay modal thì URL đứng
+      yên, sheet nằm đó, và MỌI nút sau bị nó che: `click()` hết giờ với
+      "subtree intercepts pointer events", và nút bị đếm là "bỏ qua có lý do".
+      Đo trên /workouts/plan khi bỏ trần 14 nút: 30/36 nút "bỏ qua", gần hết
+      là bị cái sheet chọn buổi tập mở từ một nút phía trên che. Trần 14 nút
+      che luôn điều ấy, vì sheet thường mở ở gần cuối 14 nút đầu.
+    */
+    if (page.url() !== home || (!asked.length && changed(before, after))) {
       await page.goto(home, { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(2500);
     }
@@ -3014,7 +3033,9 @@ try {
       ['/nutrition', 'full'], ['/nutrition', 'full', 'vi'], ['/water', 'full'], ['/supplements', 'full'], ['/grocery', 'full'],
       ['/community', 'full'], ['/community-saved', 'full'], ['/shop', 'full'], ['/workouts/plan', 'full'],
     ];
-    for (const [route, mode, lang = null] of onlyArg || routeArg ? [] : PRESS_ROUTES) {
+    const pressList = pressRouteArg ? PRESS_ROUTES.filter(([r]) => r.includes(pressRouteArg)) : PRESS_ROUTES;
+    if (pressRouteArg && pressList.length === 0) problems.push(`--press-route=${pressRouteArg}: không mục PRESS_ROUTES nào có đường dẫn chứa chuỗi này`);
+    for (const [route, mode, lang = null] of onlyArg || routeArg ? [] : pressList) {
       const { browser, page } = await openPage(chromium, route, mode, 9000, { lang });
       try {
         const r = await pressEverything(page, `[${mode}${lang ? ` ${lang}` : ''}] ${route}`, problems);
@@ -3029,10 +3050,10 @@ try {
     console.log('');
     globalThis.__skipped = skipped;
     globalThis.__asked = asked;
-    globalThis.__pressRoutes = PRESS_ROUTES.length;
+    globalThis.__pressRoutes = pressList.length;
 
     process.stdout.write('kịch bản');
-    const picked = onlyArg ? SCENARIOS.filter((sc) => sc.name.includes(onlyArg)) : SCENARIOS;
+    const picked = pressRouteArg ? [] : onlyArg ? SCENARIOS.filter((sc) => sc.name.includes(onlyArg)) : SCENARIOS;
     if (onlyArg && picked.length === 0) problems.push(`--only=${onlyArg}: không kịch bản nào có tên chứa chuỗi này`);
     globalThis.__picked = picked.length;
     for (const sc of picked) {
@@ -3108,6 +3129,15 @@ if (onlyArg) {
 if (routeArg) {
   console.log(`\nchạy thật OK (--route=${routeArg}) — ${pickRoutes(ROUTES).length} màn khớp × ${MODES.length} trạng thái, ${narrowClaim}; KHÔNG bấm thử, không kịch bản`);
   console.log(RPC_NOTE());
+  process.exit(0);
+}
+
+if (pressRouteArg) {
+  console.log(
+    `\nchạy thật OK (--press-route=${pressRouteArg}) — đã BẤM THỬ ${globalThis.__pressed} nút trên ${globalThis.__pressRoutes} màn khớp, ` +
+      `${globalThis.__asked} hộp hỏi lại, ${globalThis.__skipped} nút bỏ qua có lý do; KHÔNG kịch bản` +
+      `${args.has('--press-only') ? '' : ', nhưng CÓ quét màn và quét hẹp (thiếu --press-only)'}`,
+  );
   process.exit(0);
 }
 

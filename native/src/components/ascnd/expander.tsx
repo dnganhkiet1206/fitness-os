@@ -199,8 +199,18 @@ export function Expander({
   /* Absolutely positioned so its own height is never the box's height — the
      box's height is the animated one, and a child that pushed it open would
      make the measurement chase itself. */
+  /*
+    Đóng thì ẩn khỏi cây trợ năng (#127). Thân được giữ mounted khi đóng — cắt
+    trong một hộp cao 0, để luôn đo được — nên mọi nút bên trong vẫn là phần tử
+    trợ năng: VoiceOver vuốt qua một thẻ đã thu vẫn gặp "Effort 8", "Rest
+    between sets" của từng hiệp, những nút không ai nhìn thấy. Lượt bấm thử
+    của live.mjs gặp đúng chúng khi bỏ trần 14 nút: bấm không được, vì hàng
+    bên dưới đè lên chỗ chúng bị cắt. `aria-hidden` là bí danh của React
+    Native cho cả iOS (accessibilityElementsHidden) lẫn Android
+    (no-hide-descendants), và ra đúng `aria-hidden` trên web.
+  */
   const body = (
-    <View style={styles.body} onLayout={measure}>
+    <View style={styles.body} onLayout={measure} aria-hidden={!open}>
       {children}
     </View>
   );
