@@ -7,6 +7,7 @@ import { diaryStamp, localDateStr, localDayRangeISO } from '@/lib/local-date';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { toast } from '@/lib/toast';
 
 const today = () => localDateStr();
 
@@ -160,8 +161,15 @@ export function useToggleSupplement(date?: string) {
       }
       return { key, prev };
     },
-    onError: (_e, _vars, ctx) => {
+    /*
+      Gỡ bản vá VÀ nói ra (#141). Bản cũ chỉ gỡ: ô tick bật lên rồi lặng lẽ tắt
+      lại, không một lời — đúng điều `use-water.ts` đã ghi là lỗi ("the number
+      ticked up, then dropped again on its own, with no explanation"). Kịch bản
+      live cho máy chủ trả 500 và đòi một lời báo; bản cũ đỏ "lỗi bị nuốt".
+    */
+    onError: (e: Error, _vars, ctx) => {
       if (ctx?.prev !== undefined) queryClient.setQueryData(ctx.key, ctx.prev);
+      toast.fail(e);
     },
     /*
       `onSettled`, không phải `onSuccess`: hỏng thì cũng phải hỏi lại máy chủ,

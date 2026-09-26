@@ -942,6 +942,90 @@ async function pressEverything(page, label, problems) {
 const SCENARIOS = [
   {
     /*
+      #141: tick một thực phẩm bổ sung ở Hôm nay (thẻ #137, nay là checkbox).
+      Đòi: đúng MỘT lệnh ghi, là INSERT, đúng supplement_id và taken=true; cờ
+      aria-checked đổi; rồi đi TRONG app (cùng cache, không nạp lại) sang Dinh
+      dưỡng — hàng ghi "2/2" — và vào màn Thực phẩm bổ sung, nơi ô ấy đã tick.
+      Đi bằng goto thì chỉ đo được thế giới giả đã ghi (#52), không đo được hai
+      màn dùng chung một bộ nhớ đệm.
+    */
+    name: 'Thực phẩm bổ sung: tick ở Hôm nay — một lệnh ghi đúng dòng; Dinh dưỡng và màn riêng khớp ngay (#137, #141)',
+    route: '/', mode: 'full',
+    async run(page) {
+      const target = FIXTURES.supplements.find((x) => x.name === 'Vitamin D3');
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/supplement_intake_logs/.test(q.url()) && isWrite(q.method())) writes.push({ m: q.method(), body: q.postData() ?? '' });
+      });
+      const box = page.getByRole('checkbox', { name: /^Vitamin D3\b/ }).filter({ visible: true });
+      if ((await box.count()) !== 1) return `không thấy đúng một ô tick "Vitamin D3" trên Hôm nay — ra ${await box.count()}`;
+      if ((await box.getAttribute('aria-checked')) !== 'false') return 'Vitamin D3 phải CHƯA tick lúc đầu (fixture #137)';
+      await box.scrollIntoViewIfNeeded();
+      await box.click();
+      await page.waitForTimeout(1500);
+      /* Vitamin D3 là món CÒN LẠI (Creatine đã uống): tick xong thì thẻ thay cả
+         danh sách bằng "All done for today" — ô tick biến mất là đúng thiết kế,
+         nên đòi một trong hai: ô còn và đã tick, hoặc câu "xong cả". */
+      if ((await box.count()) === 1) {
+        if ((await box.getAttribute('aria-checked')) !== 'true') return `tick mà aria-checked vẫn là ${await box.getAttribute('aria-checked')}`;
+      } else if ((await page.getByText(/^All done for today$/).filter({ visible: true }).count()) === 0) {
+        return 'tick món cuối mà ô biến mất và không có câu "All done for today"';
+      }
+      if (writes.length !== 1 || writes[0].m !== 'POST') return `phải đúng 1 lệnh ghi và nó là POST, ra ${writes.map((w) => w.m).join(', ') || 'không lệnh nào'}`;
+      let row;
+      try {
+        const b = JSON.parse(writes[0].body);
+        row = Array.isArray(b) ? b[0] : b;
+      } catch {
+        return `thân lệnh ghi không phải JSON: ${writes[0].body.slice(0, 80)}`;
+      }
+      if (row.supplement_id !== target.id || row.taken !== true) return `ghi sai dòng: supplement_id=${row.supplement_id}, taken=${row.taken}`;
+
+      await page.getByText('Nutrition', { exact: true }).last().click();
+      await page.waitForTimeout(2500);
+      const shortcut = page.getByRole('button', { name: /^Supplements, / }).filter({ visible: true });
+      if ((await shortcut.count()) !== 1) return 'không thấy hàng "Supplements" ở Dinh dưỡng';
+      const lbl = await shortcut.getAttribute('aria-label');
+      if (!/\b2\/2\b/.test(lbl ?? '')) return `hàng ở Dinh dưỡng chưa khớp lần tick vừa rồi: "${lbl}" — phải 2/2`;
+      await shortcut.click();
+      await page.waitForTimeout(2500);
+      const box2 = page.getByRole('checkbox', { name: /Vitamin D3$/ }).filter({ visible: true });
+      if ((await box2.count()) !== 1) return 'không thấy ô "Vitamin D3" ở màn Thực phẩm bổ sung';
+      if ((await box2.getAttribute('aria-checked')) !== 'true') return 'màn Thực phẩm bổ sung chưa thấy Vitamin D3 đã tick — hai màn lệch nhau';
+      return null;
+    },
+  },
+  {
+    /* #141: server từ chối lần tick thì ô QUAY LẠI (bản vá lạc quan được gỡ)
+       và có một câu báo — không phải chữ thô của server (#31). */
+    name: 'Thực phẩm bổ sung: server từ chối lần tick thì ô quay lại và có lời báo (#141)',
+    route: '/supplements', mode: 'full',
+    async run(page) {
+      let refused = 0;
+      await page.route(/\/rest\/v1\/supplement_intake_logs/, (r) => {
+        if (r.request().method() === 'GET') return r.fallback();
+        refused++;
+        return r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' });
+      });
+      const box = page.getByRole('checkbox', { name: /Vitamin D3$/ }).filter({ visible: true });
+      if ((await box.count()) !== 1) return 'không thấy ô "Vitamin D3" ở màn Thực phẩm bổ sung';
+      await box.click();
+      const toast = async () => (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
+      let text = '';
+      for (let k = 0; k < 16 && !text; k++) {
+        await page.waitForTimeout(250);
+        text = await toast();
+      }
+      await page.waitForTimeout(1500);
+      if (!refused) return 'bấm tick mà không có lệnh ghi nào đi ra — vế này không đo gì';
+      if ((await box.getAttribute('aria-checked')) !== 'false') return 'server từ chối mà ô vẫn đánh dấu đã tick — bản vá lạc quan không được gỡ';
+      if (!text) return 'server từ chối mà không có lời báo nào — lỗi bị nuốt';
+      if (/server error/i.test(text)) return `lời báo là chữ thô của server: "${text}" (#31)`;
+      return null;
+    },
+  },
+  {
+    /*
       #131: hộp hỏi lại của nút xoá món đi chợ (#125). Lượt bấm thử chỉ biết CÓ
       một hộp rồi bấm Huỷ; ở đây đòi đủ ba điều: hộp nói TÊN món sắp mất, Huỷ
       thì không lệnh ghi nào và món còn, OK thì đúng MỘT lệnh DELETE vào đúng
