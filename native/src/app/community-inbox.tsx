@@ -107,7 +107,7 @@ export default function CommunityInboxScreen() {
                       <Icon icon={Trophy} size={20} color={c.readinessYellow} />
                     </View>
                     <View style={styles.body}>
-                      <Text style={styles.text} numberOfLines={2}>
+                      <Text style={styles.text} numberOfLines={3}>
                         {before}
                         <Text style={styles.name}>{x.title}</Text>
                         {after}
@@ -140,7 +140,11 @@ export default function CommunityInboxScreen() {
                       </View>
                     </View>
                     <View style={styles.body}>
-                      <Text style={styles.text} numberOfLines={2}>
+                      {/* Ba dòng (#118): tên người + câu của app. Ở 320 ×1.3 hai
+                          dòng cắt mất chính câu của app — "Linh Phạm và 1 người
+                          khác đã thích bài của…". Lượt quét hẹp chỉ thấy điều ấy
+                          từ #118, khi nó thôi mù với chữ cắt ở dòng thứ hai. */}
+                      <Text style={styles.text} numberOfLines={3}>
                         {before}
                         <Text style={styles.name}>{name}</Text>
                         {after}

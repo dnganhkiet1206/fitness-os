@@ -364,9 +364,26 @@ export function cutKind(text, full, tails) {
   return null;
 }
 
+/**
+ * Một phần tử chữ có đang bị cắt không, từ số đo của chính nó (#118).
+ *
+ * react-native-web đặt `text-overflow: ellipsis` cho MỌI `numberOfLines`, kể cả
+ * khi số dòng ≥ 2 — lúc ấy nó còn đặt `-webkit-line-clamp`. Bản trước coi
+ * `ellipsis` là "một dòng" và chỉ so chiều ngang, nên chữ bị cắt ở dòng thứ hai
+ * trở đi vô hình: đo ở màn Trợ lý (320 ×1.3), gợi ý "Những điều bạn đã kể, xem
+ * và…" có clamp 2, scrollHeight 59 > clientHeight 39, mà không bị báo.
+ * Có clamp thì tràn theo chiều DỌC là bị cắt; `ellipsis` thì còn chiều ngang.
+ * Chạy trong trang qua `toString()`, và `narrow-rules.mjs` tự kiểm nó.
+ */
+export function isCut({ textOverflow, lineClamp, sw, cw, sh, ch }) {
+  const clamp = !!lineClamp && lineClamp !== 'none';
+  return (clamp && sh > ch + 1) || (textOverflow === 'ellipsis' && sw > cw + 1);
+}
+
 /** Chạy TRONG trang. Trả `{ wide, cut: [{ text, app }], clipped: [mô tả] }`. */
 export async function narrowFindings(page, patterns, tails = []) {
-  return page.evaluate(([sources, tailSources]) => {
+  return page.evaluate(([sources, tailSources, cutSrc]) => {
+    const cutTest = new Function(`return (${cutSrc})`)();
     const res = sources.map((s) => new RegExp(s));
     const tres = tailSources.map((s) => new RegExp(s));
     /* Thanh tab trên web (`components/app-tabs.web.tsx`) là khung mẫu của
@@ -388,7 +405,7 @@ export async function narrowFindings(page, patterns, tails = []) {
       if (!oneLine && !clamp) continue;
       const r = el.getBoundingClientRect();
       if (r.width === 0 || r.height === 0 || st.visibility === 'hidden') continue;
-      const over = oneLine ? el.scrollWidth > el.clientWidth + 1 : el.scrollHeight > el.clientHeight + 1;
+      const over = cutTest({ textOverflow: st.textOverflow, lineClamp: st.webkitLineClamp, sw: el.scrollWidth, cw: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight });
       if (!over) continue;
       const text = (el.innerText || '').replace(/\s+/g, ' ').trim();
       if (!text || seen.has(text)) continue;
@@ -489,5 +506,5 @@ export async function narrowFindings(page, patterns, tails = []) {
       }
     }
     return { wide, cut, clipped, overlap };
-  }, [patterns, tails]);
+  }, [patterns, tails, isCut.toString()]);
 }

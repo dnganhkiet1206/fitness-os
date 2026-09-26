@@ -920,7 +920,11 @@ export default function AssistantScreen() {
                   <Text style={styles.toolLabel} numberOfLines={2}>
                     {vi ? t.label.vi : t.label.en}
                   </Text>
-                  <Text style={styles.toolHint} numberOfLines={2}>
+                  {/* Không giới hạn dòng (#118): gợi ý là chữ cố định, ngắn,
+                      của app; hai dòng cắt nó ở 320 ("The coach reads your
+                      week, and the…") và ở chữ ×1.3. Ô cùng hàng vẫn cao bằng
+                      nhau nhờ `flexGrow` của ô kính. */}
+                  <Text style={styles.toolHint}>
                     {vi ? t.hint.vi : t.hint.en}
                   </Text>
                 </LiquidGlass>

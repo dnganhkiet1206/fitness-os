@@ -13,7 +13,7 @@
  * Nên ở đây: `cutKind` chạy trên mẫu sinh từ CHÍNH từ điển thật, với những câu
  * đã từng sai.
  */
-import { allAppCopy, appCopy, copyPatterns, cutKind, HEAD_WORDS, tailPatterns } from './live-narrow.mjs';
+import { allAppCopy, appCopy, copyPatterns, cutKind, HEAD_WORDS, isCut, tailPatterns } from './live-narrow.mjs';
 
 const copy = allAppCopy();
 const full = copyPatterns(copy).map((s) => new RegExp(s));
@@ -60,6 +60,21 @@ for (const [text, want, why] of CASES) {
    "full" của nó đỏ vì lý do khác, và ca null xanh mà không đo gì. */
 for (const s of ['buổi tập', 'Chỉ người theo dõi', 'vừa xong', '{n} ngày trước', '{n} {n:day|days} ago', 'Claim {n} {n:coin|coins}', '{name} đã thích bài của bạn', '{title}: {a}/{b} ngày', 'Chặn từ {date}', 'chưa ghi buổi tập', 'Chưa có dữ liệu xu hướng sẵn sàng.']) {
   if (!copy.includes(s)) problems.push(`chuỗi "${s}" không còn trong từ điển của app — sửa ca tự kiểm đi theo nó`);
+}
+
+/* #118: phép kiểm "bị cắt" trên số đo THẬT đã ghi. */
+{
+  const m = (o) => ({ textOverflow: 'ellipsis', lineClamp: 'none', sw: 100, cw: 100, sh: 20, ch: 20, ...o });
+  const cases = [
+    [m({ lineClamp: '2', sh: 59, ch: 39 }), true, 'clamp 2 tràn dọc (gợi ý "Coach nhớ gì", 320 ×1.3) là bị cắt'],
+    [m({ sw: 69, cw: 65 }), true, 'một dòng tràn ngang ("ASC…", #109) là bị cắt'],
+    [m({ lineClamp: '2', sh: 39, ch: 39 }), false, 'clamp 2 vừa khung không bị cắt'],
+    [m({ textOverflow: 'clip', sw: 200, cw: 100 }), false, 'không ellipsis, không clamp thì không phải chữ bị cắt'],
+  ];
+  for (const [x, want, why] of cases) if (isCut(x) !== want) problems.push(`isCut sai: ${why}`);
+  /* Thử ngược: phép kiểm trước #118 (ellipsis → chỉ so ngang) bỏ sót ca đầu. */
+  const old = (x) => (x.textOverflow === 'ellipsis' ? x.sw > x.cw + 1 : x.sh > x.ch + 1);
+  if (old(cases[0][0])) problems.push('thử ngược hỏng: phép kiểm cũ cũng thấy chữ cắt ở dòng 2 — ca #118 không đo gì');
 }
 
 /* Thử ngược #109: bỏ chữ JSX khỏi từ điển thì ca #109 phải ra nội dung. */
