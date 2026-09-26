@@ -225,6 +225,61 @@ export function pointerHiddenProblemsOf(files) {
   return { out, n };
 }
 
+/*
+  ── trông như ô tick thì phải CÓ vai ô tick (#139) ──
+
+  Thẻ Thực phẩm bổ sung ở Hôm nay vẽ một ô tick (`styles.checkbox`, và `Check`
+  khi đã uống) mà mang vai `button` mặc định của `PressScale` (#121): VoiceOver
+  nói "nút" và không nói đã tick hay chưa. Không luật nào thấy — chỉ live, sau
+  khi #137 cho thế giới giả có thực phẩm bổ sung. Nên hình ô tick được NHẬN
+  DIỆN: bên trong một chỗ bấm không ẩn (không kể chỗ bấm lồng) có
+    · một style tên `checkbox` / `check` / `tick` (kể cả `…On`).
+  Chỗ bấm ấy phải mang vai `checkbox`, `switch` hoặc `radio`; cờ `checked` /
+  `selected` và `aria-checked` của nó thì luật #101 ở trên đã đòi.
+
+  Bản đầu nhận cả "`<Icon icon={Check}>` theo điều kiện" và ra 12 dương tính
+  giả: nút Lưu đổi thành dấu tick SAU khi lưu xong (`save.isSuccess ? Check`),
+  dấu tick của lựa chọn đang chọn trong một nhóm radio, hàng "đã chia sẻ" của
+  bộ chọn. Một icon Check là một TRẠNG THÁI được vẽ, không phải một ô để tick;
+  cái hộp mới là ô tick. Nên luật chỉ đọc hộp.
+*/
+const TICK_STYLE = /\bstyles\.(checkbox|check|tick)(On|Done)?\b/;
+export function tickProblemsOf(files) {
+  const out = [];
+  let n = 0;
+  for (const [rel, src] of files) {
+    const ast = parse(src, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
+    const text = (x) => src.slice(x.start, x.end);
+    const looksTick = (node, top = true) => {
+      if (!node || typeof node !== 'object') return false;
+      if (Array.isArray(node)) return node.some((x) => looksTick(x, false));
+      if (!top && node.type === 'JSXElement' && PRESS.test(tagOf(node.openingElement.name))) return false;
+      if (node.type === 'JSXAttribute' && node.name.name === 'style' && node.value && TICK_STYLE.test(text(node.value))) return true;
+      return kids(node).some((x) => looksTick(x, false));
+    };
+    const visit = (node) => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) return node.forEach(visit);
+      if (node.type === 'JSXElement' && PRESS.test(tagOf(node.openingElement.name))) {
+        const attrs = new Map(node.openingElement.attributes.filter((x) => x.type === 'JSXAttribute').map((x) => [x.name.name, x.value]));
+        const hidden = attrs.has('aria-hidden') || /\bfalse\b/.test(attrs.get('accessible') ? text(attrs.get('accessible')) : '');
+        /* Ô tick có thể là CHÍNH style của chỗ bấm (day-plan: `style={[styles.check, …]}`). */
+        const own = attrs.get('style') && TICK_STYLE.test(text(attrs.get('style')));
+        if (!hidden && (own || looksTick(node.children))) {
+          n++;
+          const role = attrs.get('accessibilityRole') ?? attrs.get('role');
+          if (!role || !/^"(checkbox|switch|radio)"$/.test(text(role))) {
+            out.push(`${rel}:${node.loc.start.line}: chỗ bấm vẽ một ô tick mà vai là ${role ? text(role) : 'button (mặc định)'} — VoiceOver nói "nút" và không nói đã tick hay chưa (#139)`);
+          }
+        }
+      }
+      kids(node).forEach(visit);
+    };
+    visit(ast.program);
+  }
+  return { out, n };
+}
+
 /* Bỏ chú thích, giữ số dòng: một câu chú thích NHẮC `accessibilityRole="tab"`
    không phải một ô, và chú thích trong props của PickRow chứa đúng chữ
    `accessibilityState={{ selected }}` — bản đầu vì thế cho PickRow qua dù đã bỏ
@@ -238,6 +293,9 @@ const raw = walk(path.join(NATIVE, 'src')).map((p) => [path.relative(NATIVE, p),
 const { out: dOut, n: dN } = disclosureProblemsOf(raw);
 problems.push(...dOut);
 if (dN < 5) problems.push(`chỉ nhận ra ${dN} nút gập — bộ nhận diện hỏng, đừng tin kết quả`);
+const { out: tOut, n: tN } = tickProblemsOf(raw);
+problems.push(...tOut);
+if (tN < 4) problems.push(`chỉ nhận ra ${tN} chỗ vẽ ô tick — bộ nhận diện hỏng, đừng tin kết quả`);
 const { out: pOut, n: pN } = pointerHiddenProblemsOf(raw);
 problems.push(...pOut);
 if (pN < 3) problems.push(`chỉ nhận ra ${pN} khối ẩn bằng pointerEvents — bộ nhận diện hỏng, đừng tin kết quả`);
@@ -284,6 +342,20 @@ if (pN < 3) problems.push(`chỉ nhận ra ${pN} khối ẩn bằng pointerEvent
       if (pointerHiddenProblemsOf(copy).out.length <= pBase) problems.push('thử ngược hỏng: bỏ aria-hidden ở thân bữa đã thu (#129) mà luật vẫn xanh');
     }
   }
+  {
+    const tBase = tickProblemsOf(raw).out.length;
+    const i = raw.findIndex(([f]) => f === 'src/components/ascnd/today-widgets.tsx');
+    const from = '              accessibilityRole="checkbox"\n';
+    if (i < 0 || !raw[i][1].includes(from)) problems.push('thử ngược hỏng: không thấy vai checkbox của thẻ Thực phẩm bổ sung');
+    else {
+      const copy = raw.slice();
+      copy[i] = [raw[i][0], raw[i][1].replace(from, '')];
+      if (tickProblemsOf(copy).out.length <= tBase) problems.push('thử ngược hỏng: bỏ vai checkbox ở thẻ Thực phẩm bổ sung (#139) mà luật vẫn xanh');
+    }
+    if (tickProblemsOf([['thử.tsx', 'const a = <PressScale onPress={save}><Icon icon={Check} /><Text>Lưu</Text></PressScale>;']]).out.length) {
+      problems.push('thử ngược hỏng: nút "Lưu" có icon Check CỐ ĐỊNH bị coi là ô tick');
+    }
+  }
   one('mũi tên cố định (dẫn sang màn khác)', 'const a = <PressScale onPress={go}><Text>Cài đặt</Text><Icon icon={ChevronRight} /></PressScale>;', false);
   one('mũi tên đổi theo điều kiện, không khai gì', 'const b = <PressScale onPress={t}><Icon icon={open ? ChevronUp : ChevronDown} /></PressScale>;', true);
   one('mũi tên đổi nằm trong một chỗ bấm LỒNG', 'const c = <PressScale onPress={t} accessible={false}><Pressable onPress={u} accessibilityState={{ expanded: open }} aria-expanded={open}><Icon icon={open ? ChevronUp : ChevronDown} /></Pressable></PressScale>;', false);
@@ -295,7 +367,7 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `trạng thái ô chọn OK — ${dN} nút gập nhận ra từ mũi tên đổi/xoay đều khai expanded lẫn aria-expanded (#123; thử ngược: bỏ expanded ở một nút mũi tên đổi và một nút mũi tên xoay thì đỏ, mũi tên cố định thì xanh); thân Expander đóng thì ẩn khỏi cây trợ năng (#127; gỡ đi thì đỏ); ${pN} khối ẩn bằng pointerEvents đều mang aria-hidden hoặc có lý do ghi ra (#129; bỏ aria-hidden ở thân bữa thì đỏ); ${n} phần tử role tab/checkbox/switch/radio trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101), khối gập mang aria-expanded (#103) ` +
+  `trạng thái ô chọn OK — ${dN} nút gập nhận ra từ mũi tên đổi/xoay đều khai expanded lẫn aria-expanded (#123; thử ngược: bỏ expanded ở một nút mũi tên đổi và một nút mũi tên xoay thì đỏ, mũi tên cố định thì xanh); thân Expander đóng thì ẩn khỏi cây trợ năng (#127; gỡ đi thì đỏ); ${tN} chỗ vẽ ô tick đều mang vai checkbox/switch/radio (#139; bỏ vai ở thẻ Thực phẩm bổ sung thì đỏ, nút "Lưu" có Check cố định thì xanh); ${pN} khối ẩn bằng pointerEvents đều mang aria-hidden hoặc có lý do ghi ra (#129; bỏ aria-hidden ở thân bữa thì đỏ); ${n} phần tử role tab/checkbox/switch/radio trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101), khối gập mang aria-expanded (#103) ` +
     '(web, nơi react-native-web không dịch accessibilityState — bảy ô ngày của Kế hoạch ngày từng rỗng cả bảy, kể cả ô đang ' +
     'mở; sáu ô tick set cũng rỗng aria-checked). Thử ngược: bỏ aria-selected ở hàng ngày, bỏ accessibilityState ở PickRow, bỏ aria-checked ở ô tick set, bỏ accessibilityState ở công tắc khởi động, bỏ aria-expanded ở nút gập bài — mỗi cái đỏ',
 );
