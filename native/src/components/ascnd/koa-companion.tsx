@@ -3,7 +3,7 @@ import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { Easing, useAnimatedProps, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, runOnJS, useAnimatedProps, useAnimatedReaction, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomTabInset } from '@/constants/expo-template-theme';
@@ -321,6 +321,20 @@ export function KoaCompanion() {
     pointerEvents: (fade.value * surfaced.value > 0.5 ? 'auto' : 'none') as 'auto' | 'none',
   }));
 
+  /*
+    Và THÔI là một phần tử trợ năng (#147). `pointerEvents` chỉ chặn chạm;
+    VoiceOver vẫn gặp một "Koa" vô hình — lượt bấm thử thấy nó bị nội dung đè
+    lên ở Dinh dưỡng, Tập luyện, Cộng đồng. Cùng ngưỡng 0.5 với vùng chạm, đưa
+    sang JS chỉ khi nó ĐỔI để không vẽ lại mỗi khung hình.
+  */
+  const [a11yHidden, setA11yHidden] = useState(false);
+  useAnimatedReaction(
+    () => fade.value * surfaced.value <= 0.5,
+    (now, prev) => {
+      if (now !== prev) runOnJS(setA11yHidden)(now);
+    },
+  );
+
   const style = useAnimatedStyle(() => ({
     opacity: fade.value * surfaced.value,
     transform: [
@@ -348,7 +362,7 @@ export function KoaCompanion() {
       pointerEvents="box-none"
       onLayout={onLayout}>
       {box ? (
-        <Animated.View style={[styles.perch, style]} animatedProps={touchable}>
+        <Animated.View style={[styles.perch, style]} animatedProps={touchable} aria-hidden={a11yHidden}>
           <Pressable
             hitSlop={10}
             accessibilityRole="button"

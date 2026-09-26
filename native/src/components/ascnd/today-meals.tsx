@@ -197,8 +197,11 @@ function SwipeAction({
   const styles = stylesFor(c);
   const grow = useAnimatedStyle(() => ({ width: Math.abs(drag.value) }));
   const fg = tone === 'destructive' ? c.destructiveForeground : c.primaryForeground;
+  /* Ẩn khỏi cây trợ năng (#147): tấm nút nằm SAU đầu mục, bị che khi đóng —
+     lượt bấm thử gặp "Add"/"Delete" vô hình ở mỗi bữa. Lối của VoiceOver là
+     `accessibilityActions` của đầu mục (#133), cùng hai chuỗi này. */
   return (
-    <View style={styles.swipeAction}>
+    <View style={styles.swipeAction} aria-hidden>
       <Animated.View
         style={[
           styles.swipeFill,

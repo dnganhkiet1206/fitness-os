@@ -18,7 +18,11 @@ import { Colors, MaxContentWidth, Spacing } from '@/constants/expo-template-them
 export default function AppTabs() {
   return (
     <Tabs>
-      <TabSlot style={{ height: '100%' }} />
+      {/* #147: thanh tab của bộ đo nằm TRONG dòng chảy, dưới nội dung — không
+          phủ lên đầu mọi màn. Bản cũ `position: absolute` ở trên cùng đè lên
+          nút Cài đặt, Tìm, Thông báo…: lượt bấm thử thấy chúng "bị che", và ảnh
+          chụp của bộ đo mất một dải đầu trang. iOS không dùng tệp này. */}
+      <TabSlot style={{ flex: 1 }} />
       <TabList asChild>
         <CustomTabList>
           <TabTrigger name="index" href="/" asChild>
@@ -66,7 +70,10 @@ export function CustomTabList(props: TabListProps) {
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
 
   return (
-    <View {...props} style={styles.tabListContainer}>
+    /* `harness-tabs`: live.mjs (#147) nhận ra thanh này — một nút bị NÓ che là
+       hình học của bộ đo (thanh tab web khác chiều cao thanh tab iOS mà Koa
+       chừa chỗ cho), không phải một nút vô hình của app. */
+    <View {...props} nativeID="harness-tabs" style={styles.tabListContainer}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
         <ThemedText type="smallBold" style={styles.brandText}>
           ASCND
@@ -81,7 +88,6 @@ export function CustomTabList(props: TabListProps) {
 
 const styles = StyleSheet.create({
   tabListContainer: {
-    position: 'absolute',
     width: '100%',
     padding: Spacing.three,
     justifyContent: 'center',

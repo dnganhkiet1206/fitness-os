@@ -190,12 +190,28 @@ function stripComments(src) {
     xảy ra nhất khi ai đó dọn JSX.
   */
   const declared = /pointerEvents:\s*\(fade\.value \* surfaced\.value > [\d.]+ \?/.test(src);
-  const applied = /<Animated\.View style=\{\[styles\.perch, style\]\} animatedProps=\{touchable\}>/.test(src);
+  const applied = /<Animated\.View style=\{\[styles\.perch, style\]\} animatedProps=\{touchable\}[\s>]/.test(src);
   if (!declared || !applied) {
     problems.push(
       `${COMPANION}: vùng chạm của Koa không đi theo độ hiện (` +
         `${declared ? 'có khai báo' : 'THIẾU khai báo'}, ${applied ? 'có nối vào view' : 'KHÔNG nối vào view'}` +
         ') — `opacity: 0` ở RN KHÔNG tắt vùng chạm, nên một Koa vô hình vẫn nuốt cú bấm nhắm vào nút bên dưới nó',
+    );
+  }
+  /*
+    Và cây trợ năng cũng đi theo độ hiện (#147). `pointerEvents` chỉ chặn CHẠM:
+    VoiceOver vẫn gặp một "Koa" vô hình, và lượt bấm thử của live.mjs thấy nó
+    bị nội dung đè lên ở Dinh dưỡng, Tập luyện, Cộng đồng. Cùng ngưỡng với vùng
+    chạm — một Koa chạm được mà không đọc được, hay ngược lại, là hai lỗi.
+  */
+  const thr = src.match(/pointerEvents:\s*\(fade\.value \* surfaced\.value > ([\d.]+) \?/)?.[1];
+  const a11yReacts = thr != null && new RegExp(`fade\\.value \\* surfaced\\.value <= ${thr.replace('.', '\\.')}[^\\d]`).test(src);
+  const a11yApplied = /<Animated\.View style=\{\[styles\.perch, style\]\} animatedProps=\{touchable\} aria-hidden=\{a11yHidden\}>/.test(src);
+  if (!a11yReacts || !a11yApplied) {
+    problems.push(
+      `${COMPANION}: Koa vô hình vẫn trong cây trợ năng (` +
+        `${a11yReacts ? 'ngưỡng khớp vùng chạm' : 'KHÔNG có phản ứng cùng ngưỡng với vùng chạm'}, ${a11yApplied ? 'có aria-hidden trên view' : 'KHÔNG có aria-hidden={a11yHidden} trên view'}` +
+        ') — VoiceOver đọc một nút không ai thấy (#147)',
     );
   }
 }

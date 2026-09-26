@@ -64,6 +64,7 @@ example
 tools/.live-build/
 tools/.live-shots/
 tools/.live-problems.txt
+tools/.live-skips.txt
 
 # scratch dirs for the koa-studio renderers (tools/koa-studio/koa-dom.mjs).
 # They clean themselves up on exit — but a run killed by a timeout never gets

@@ -798,6 +798,12 @@ async function siblingReacts(page, control) {
   return false;
 }
 
+/*
+  #147: nút bị che mà CỐ Ý vẫn trong cây trợ năng — "route|tên nút": lý do.
+  Danh sách chỉ được ngắn đi.
+*/
+const COVER_OK = {};
+
 async function pressEverything(page, label, problems) {
   /* `getByRole`, không phải CSS: nó bỏ phần tử nằm trong `aria-hidden` — thân
      của một khối đã thu (#127), thứ người dùng không thấy lẫn không với tới. */
@@ -809,6 +815,12 @@ async function pressEverything(page, label, problems) {
   const home = page.url();
   let tried = 0;
   let skipped = 0;
+  /* #124/#147: từng nút bị bỏ qua, kèm lý do — không chỉ một con số. */
+  const skips = [];
+  const skip = (name, reason) => {
+    skipped++;
+    skips.push({ name, reason });
+  };
   /* #91: Playwright tự đóng hộp không ai trả lời; có người nghe thì phải tự
      đóng — `dismiss()` là Huỷ, nên không lượt bấm nào tự nhiên xoá thứ gì. */
   const dialogs = [];
@@ -833,14 +845,14 @@ async function pressEverything(page, label, problems) {
       const off = (await c.getAttribute('aria-disabled')) === 'true' || (await c.isDisabled().catch(() => false));
       const on = (await c.getAttribute('aria-selected')) === 'true' || (await c.getAttribute('aria-checked')) === 'true';
       if (off || on) {
-        skipped++;
+        skip(name, off ? 'disabled' : 'đang được chọn');
         continue;
       }
       /* Back only means something with somewhere to go. These screens are
          opened directly by URL, so a stack that was never pushed onto has no
          previous entry and the button is right to do nothing. */
       if (/^(Go back|Quay lại|Back)$/i.test(name) && (await page.evaluate(() => history.length)) <= 2) {
-        skipped++;
+        skip(name, 'Quay lại khi không có màn trước');
         continue;
       }
     } catch {
@@ -857,7 +869,35 @@ async function pressEverything(page, label, problems) {
          Letting the click time out keeps those two findings apart. */
       await c.click({ timeout: 2500 });
     } catch {
-      skipped++;
+      /*
+        ── bị che: một nút người nhìn không thấy mà VoiceOver vẫn gặp (#147) ──
+
+        `getByRole` đã bỏ mọi thứ trong `aria-hidden`, nên nút tới được đây là
+        một phần tử trợ năng. Bấm hết giờ vì có thứ đè lên tâm nó thì người
+        dùng không thấy nó — mà trình đọc màn hình thì có. Đó là hình của ba
+        lỗi thật: thân Expander đã thu (#127), thân bữa đã thu (#129), tấm nút
+        vuốt sau hàng (#145) — cả ba từng được đếm là "bỏ qua có lý do".
+      */
+      const cover = await c
+        .evaluate((el) => {
+          const b = el.getBoundingClientRect();
+          const t = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
+          if (!t || t === el || el.contains(t)) return null;
+          /* Thanh tab của bộ đo (app-tabs.web.tsx) không có trên iOS. */
+          if (t.closest('#harness-tabs')) return 'HARNESS';
+          const who = t.closest('[role], button, a') ?? t;
+          return `${who.getAttribute('role') ?? who.tagName.toLowerCase()} "${(who.getAttribute('aria-label') || who.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40)}"`;
+        })
+        .catch(() => null);
+      const route = new URL(home).pathname;
+      if (cover === 'HARNESS') {
+        skip(name, 'bị thanh tab của bộ đo che (chỉ có trên web)');
+        continue;
+      }
+      if (cover && !COVER_OK[`${route}|${name}`]) {
+        problems.push(`${label}: nút "${name}" bị ${cover} che mà vẫn trong cây trợ năng — VoiceOver gặp một nút người nhìn không thấy (#147)`);
+      }
+      skip(name, cover ? `bị che bởi ${cover}` : 'bấm không được (không bị che)');
       continue;
     }
     tried++;
@@ -909,7 +949,7 @@ async function pressEverything(page, label, problems) {
             'Nếu nó cố ý chưa dùng được thì phải để disabled.',
         );
       } else {
-        skipped++;
+        skip(name, 'đang được chọn (nút cùng nhóm làm màn đổi)');
       }
     }
 
@@ -929,7 +969,7 @@ async function pressEverything(page, label, problems) {
     }
   }
   page.off('dialog', onDialog);
-  return { tried, skipped, dialogs: dialogs.length };
+  return { tried, skipped, skips, dialogs: dialogs.length };
 }
 
 /**
@@ -3268,6 +3308,9 @@ try {
       ['/coach-memory', 'full'], ['/ai-coach', 'full'],
     ];
     const pressList = pressRouteArg ? PRESS_ROUTES.filter(([r]) => r.includes(pressRouteArg)) : PRESS_ROUTES;
+    /* #124: mỗi nút bị bỏ qua một dòng, xuống `tools/.live-skips.txt`. */
+    const skipLog = [];
+    const skipReasons = {};
     if (pressRouteArg && pressList.length === 0) problems.push(`--press-route=${pressRouteArg}: không mục PRESS_ROUTES nào có đường dẫn chứa chuỗi này`);
     for (const [route, mode, lang = null] of onlyArg || routeArg ? [] : pressList) {
       const { browser, page } = await openPage(chromium, route, mode, 9000, { lang });
@@ -3275,6 +3318,11 @@ try {
         const r = await pressEverything(page, `[${mode}${lang ? ` ${lang}` : ''}] ${route}`, problems);
         pressed += r.tried;
         skipped += r.skipped;
+        for (const k of r.skips) {
+          skipLog.push(`[${mode}${lang ? ` ${lang}` : ''}] ${route} — "${k.name}": ${k.reason}`);
+          const key = k.reason.startsWith('bị che') ? 'bị che' : k.reason;
+          skipReasons[key] = (skipReasons[key] ?? 0) + 1;
+        }
         asked += r.dialogs;
       } finally {
         await browser.close();
@@ -3283,6 +3331,8 @@ try {
     }
     console.log('');
     globalThis.__skipped = skipped;
+    globalThis.__skipReasons = skipReasons;
+    writeFileSync(path.join(NATIVE, 'tools', '.live-skips.txt'), `${skipLog.join('\n')}\n`);
     globalThis.__asked = asked;
     globalThis.__pressRoutes = pressList.length;
 
@@ -3369,7 +3419,7 @@ if (routeArg) {
 if (pressRouteArg) {
   console.log(
     `\nchạy thật OK (--press-route=${pressRouteArg}) — đã BẤM THỬ ${globalThis.__pressed} nút trên ${globalThis.__pressRoutes} màn khớp, ` +
-      `${globalThis.__asked} hộp hỏi lại, ${globalThis.__skipped} nút bỏ qua có lý do; KHÔNG kịch bản` +
+      `${globalThis.__asked} hộp hỏi lại, ${globalThis.__skipped} nút bỏ qua có lý do (${Object.entries(globalThis.__skipReasons ?? {}).map(([k, v]) => `${v} ${k}`).join(', ')}); KHÔNG kịch bản` +
       `${args.has('--press-only') ? '' : ', nhưng CÓ quét màn và quét hẹp (thiếu --press-only)'}`,
   );
   process.exit(0);
@@ -3391,7 +3441,8 @@ console.log(
   `\nchạy thật OK — ${sweptClaim}; ` +
     `đã BẤM THỬ ${globalThis.__pressed} nút trên ${globalThis.__pressRoutes} màn và nút nào cũng làm màn hình đổi hoặc hỏi lại ` +
     `(${globalThis.__asked} hộp hỏi lại, mọi hộp đều được Huỷ; không nút phá huỷ nào làm luôn mà không hỏi; ` +
-    `${globalThis.__skipped} nút được bỏ qua có lý do: disabled, đang được chọn sẵn, hoặc bị che); ` +
+    `${globalThis.__skipped} nút được bỏ qua có lý do — ${Object.entries(globalThis.__skipReasons ?? {}).map(([k, v]) => `${v} ${k}`).join(', ')}; từng nút ở tools/.live-skips.txt; ` +
+    'không nút nào bị che mà vẫn trong cây trợ năng (#147)); ' +
     `${SCENARIOS.length} kịch bản có kết quả cụ thể đều đúng; ${narrowClaim}; ` +
     'canary xác nhận bộ chạy nhìn đúng app thật chứ không phải trang lỗi của server; ' +
     `trình duyệt ở múi giờ ${LIVE_TZ}, tức khoảng 14:00 địa phương lúc bắt đầu, trên cùng ngày với thế giới giả (#112)`,
