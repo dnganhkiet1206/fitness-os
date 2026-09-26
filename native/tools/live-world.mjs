@@ -342,7 +342,23 @@ export const FIXTURES = {
     hrv_rmssd_ms: null, spo2_pct: 97, resp_rate_rpm: 14, vo2max_mlkgmin: 48,
     source: 'apple_health', confidence: 0.9,
   }],
-  water_logs: [{ id: 'w1', user_id: UID, amount_ml: 1750, date: dayStr(0), logged_at: day(0.3) }],
+  /*
+    #131: ba lần uống HÔM NAY, và lần MỚI NHẤT (w3) cố ý nằm GIỮA mảng — nút "−"
+    phải xoá lần có `logged_at` lớn nhất, không phải phần tử đầu hay cuối của
+    một danh sách. Tổng vẫn 1750 ml như trước, để không số nào khác trên màn đổi.
+  */
+  water_logs: [
+    { id: 'w1', user_id: UID, amount_ml: 1250, date: dayStr(0), logged_at: day(0.3) },
+    { id: 'w3', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: day(0.05) },
+    { id: 'w2', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: day(0.2) },
+  ],
+  /* #131: danh sách đi chợ có món — trước đây rỗng, nên nút xoá món (#125) và
+     hộp hỏi lại của nó chưa từng dựng trên bộ chạy. */
+  grocery_items: [
+    { id: 'gr000001-0000-4000-8000-000000000001', user_id: UID, name: 'Trứng gà', quantity: '10', checked: false, category: null, price: null, created_at: day(2), updated_at: day(2) },
+    { id: 'gr000001-0000-4000-8000-000000000002', user_id: UID, name: 'Yến mạch', quantity: '1 kg', checked: false, category: null, price: null, created_at: day(1), updated_at: day(1) },
+    { id: 'gr000001-0000-4000-8000-000000000003', user_id: UID, name: 'Sữa chua', quantity: null, checked: true, category: null, price: null, created_at: day(3), updated_at: day(3) },
+  ],
 
   /*
     Ba thực đơn với ĐỘ LẤP KHÁC NHAU, và sự khác nhau đó là cả lý do chúng ở đây.

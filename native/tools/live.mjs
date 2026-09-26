@@ -112,7 +112,7 @@ const onlyArg = [...args].find((a) => a.startsWith('--only='))?.slice(7) ?? null
 const routeArg = [...args].find((a) => a.startsWith('--route='))?.slice(8) ?? null;
 const pickRoutes = (list) => (routeArg ? list.filter((r) => r.includes(routeArg)) : list);
 /* Chỉ lượt bấm thử, và chỉ những mục PRESS_ROUTES có đường dẫn chứa chuỗi này
-   (#127) — đo lại một màn sau khi sửa mà không trả 17 màn và 51 kịch bản. Đi
+   (#127) — đo lại một màn sau khi sửa mà không trả mọi màn và mọi kịch bản. Đi
    cùng `--press-only`; dòng tổng kết nói đúng như thế. */
 const pressRouteArg = [...args].find((a) => a.startsWith('--press-route='))?.slice(14) ?? null;
 /*
@@ -940,6 +940,85 @@ async function pressEverything(page, label, problems) {
  * infer intent from a DOM.
  */
 const SCENARIOS = [
+  {
+    /*
+      #131: hộp hỏi lại của nút xoá món đi chợ (#125). Lượt bấm thử chỉ biết CÓ
+      một hộp rồi bấm Huỷ; ở đây đòi đủ ba điều: hộp nói TÊN món sắp mất, Huỷ
+      thì không lệnh ghi nào và món còn, OK thì đúng MỘT lệnh DELETE vào đúng
+      id của món được bấm và hai món kia còn nguyên.
+
+      Món bị xoá phải đứng GIỮA danh sách ĐANG HIỆN, để một bản xoá `items[0]`
+      hay món cuối không lọt. Màn xếp chưa tick trước, mới trước: Yến mạch
+      (hôm qua), Trứng gà (hôm kia), Sữa chua (đã tick). Bản đầu nhắm Yến mạch
+      — chính là `items[0]` — và phép thử ngược "xoá items[0]" vẫn xanh.
+    */
+    name: 'Đi chợ: xoá món hỏi lại có tên món; Huỷ giữ nguyên, OK xoá đúng một dòng (#125, #131)',
+    route: '/grocery', mode: 'full',
+    async run(page) {
+      const target = FIXTURES.grocery_items.find((i) => i.name === 'Trứng gà');
+      const others = FIXTURES.grocery_items.filter((i) => i.id !== target.id);
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/grocery_items/.test(q.url()) && isWrite(q.method())) writes.push({ m: q.method(), url: decodeURIComponent(q.url()) });
+      });
+      const dialogs = [];
+      let answer = 'dismiss';
+      page.on('dialog', (d) => {
+        dialogs.push(d.message());
+        (answer === 'accept' ? d.accept() : d.dismiss()).catch(() => {});
+      });
+      const row = (name) => page.getByRole('checkbox', { name: new RegExp(`^${name}(,|$)`) }).filter({ visible: true });
+      const x = page.getByRole('button', { name: new RegExp(`^(Remove|Bỏ khỏi danh sách) ${target.name}$`) }).filter({ visible: true });
+      if ((await x.count()) !== 1) return `không thấy đúng một nút xoá cho "${target.name}" — ra ${await x.count()}`;
+
+      await x.click();
+      await page.waitForTimeout(1200);
+      if (dialogs.length !== 1) return `bấm xoá "${target.name}" mở ${dialogs.length} hộp, phải đúng 1`;
+      if (!dialogs[0].includes(target.name)) return `hộp hỏi lại không nói tên món sắp mất: "${dialogs[0].slice(0, 80)}"`;
+      if (writes.length) return `Huỷ mà vẫn có ${writes.length} lệnh ghi grocery_items: ${writes.map((w) => w.m).join(', ')}`;
+      if ((await row(target.name).count()) !== 1) return `Huỷ mà "${target.name}" không còn trên màn`;
+
+      answer = 'accept';
+      await x.click();
+      await page.waitForTimeout(2000);
+      const del = writes.filter((w) => w.m === 'DELETE');
+      if (del.length !== 1 || writes.length !== 1) return `OK: phải đúng 1 lệnh ghi và nó là DELETE, ra ${writes.map((w) => w.m).join(', ') || 'không lệnh nào'}`;
+      if (!del[0].url.includes(`id=eq.${target.id}`)) return `OK xoá sai dòng: ${del[0].url.split('?')[1]}`;
+      if ((await row(target.name).count()) !== 0) return `OK mà "${target.name}" vẫn còn trên màn`;
+      for (const o of others) if ((await row(o.name).count()) !== 1) return `OK xoá "${target.name}" mà "${o.name}" cũng mất khỏi màn`;
+      return null;
+    },
+  },
+  {
+    /*
+      #131: nút "−" của màn Nước bớt lần uống GẦN NHẤT (#125: nó không hỏi lại,
+      vì "+" lấy lại được — nên phải bớt đúng cái). Fixture để lần mới nhất ở
+      GIỮA mảng: một bản xoá phần tử đầu hay cuối đều đỏ.
+    */
+    name: 'Nước: nút "−" không hỏi và xoá đúng lần uống gần nhất (#125, #131)',
+    route: '/water', mode: 'full',
+    async run(page) {
+      const newest = FIXTURES.water_logs.filter((w) => w.user_id === UID).reduce((a, b) => (a.logged_at > b.logged_at ? a : b));
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/water_logs/.test(q.url()) && isWrite(q.method())) writes.push({ m: q.method(), url: decodeURIComponent(q.url()) });
+      });
+      let asked = 0;
+      page.on('dialog', (d) => {
+        asked++;
+        d.dismiss().catch(() => {});
+      });
+      const minus = page.getByRole('button', { name: /^(Undo last drink|Bớt lần uống gần nhất)$/ }).filter({ visible: true });
+      if ((await minus.count()) < 1) return 'không thấy nút "−" (Undo last drink) trên màn Nước';
+      await minus.first().click();
+      await page.waitForTimeout(2000);
+      if (asked) return `nút "−" mở ${asked} hộp hỏi lại — nó là một bước lùi mà "+" lấy lại được (#125)`;
+      const del = writes.filter((w) => w.m === 'DELETE');
+      if (del.length !== 1 || writes.length !== 1) return `phải đúng 1 lệnh ghi và nó là DELETE, ra ${writes.map((w) => w.m).join(', ') || 'không lệnh nào'}`;
+      if (!del[0].url.includes(`id=eq.${newest.id}`)) return `xoá sai lần uống: ${del[0].url.split('?')[1]} — lần gần nhất là ${newest.id}`;
+      return null;
+    },
+  },
   {
     /*
       Màn hình ĐỨNG YÊN thì cái gì vẫn đang chạy?
