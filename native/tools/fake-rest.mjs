@@ -397,6 +397,22 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
           const r = applyWrite(w, 'community_comments', 'POST', U('community_comments'), JSON.stringify({ post_id: CM.post_id, body: 'x', hidden: null }));
           return r.status === 400 && code(r) === '23502' && w.community_comments.length === FIXTURES.community_comments.length;
         }],
+        /* #106: `columns=` của supabase-js — khoá thiếu là NULL, không phải DEFAULT. */
+        ['lô qua columns= mà một hàng thiếu cột NOT NULL CÓ DEFAULT (hidden) → 23502, cả lô không vào (#106)', (w) => {
+          const r = applyWrite(w, 'community_comments', 'POST', U('community_comments?columns=%22post_id%22,%22body%22,%22hidden%22'),
+            JSON.stringify([{ post_id: CM.post_id, body: 'a', hidden: false }, { post_id: CM.post_id, body: 'b' }]));
+          return r.status === 400 && code(r) === '23502' && w.community_comments.length === FIXTURES.community_comments.length;
+        }],
+        ['cùng lô, có Prefer: missing=default → DEFAULT được điền, 201 (đối chứng của #106)', (w) => {
+          const r = applyWrite(w, 'community_comments', 'POST', U('community_comments?columns=%22post_id%22,%22body%22,%22hidden%22'),
+            JSON.stringify([{ post_id: CM.post_id, body: 'a', hidden: false }, { post_id: CM.post_id, body: 'b' }]), { prefer: 'missing=default' });
+          return r.status === 201 && w.community_comments.at(-1).hidden === false;
+        }],
+        ['columns= không nhắc cột nào thiếu → DEFAULT vẫn cho cột ngoài danh sách (#106)', (w) => {
+          const r = applyWrite(w, 'community_comments', 'POST', U('community_comments?columns=%22post_id%22,%22body%22'),
+            JSON.stringify([{ post_id: CM.post_id, body: 'a' }, { post_id: CM.post_id, body: 'b' }]));
+          return r.status === 201 && w.community_comments.at(-1).hidden === false;
+        }],
         ['PATCH đặt cột NOT NULL thành null → 23502, không hàng nào đổi (#93)', (w) => {
           const r = applyWrite(w, 'community_comments', 'PATCH', U(`community_comments?id=eq.${CM.id}`), JSON.stringify({ body: null }));
           return r.status === 400 && code(r) === '23502' && w.community_comments[0].body === CM.body;

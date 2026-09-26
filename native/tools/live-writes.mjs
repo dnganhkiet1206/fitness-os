@@ -20,7 +20,9 @@
  *           UNIQUE → 409 / `23505` như Postgres; `Prefer: resolution=merge-
  *           duplicates` (upsert) thì gộp, `ignore-duplicates` thì bỏ qua.
  *           Cột NOT NULL còn vắng hay `null` sau khi điền DEFAULT → 400 /
- *           `23502` (#93), cả lô không vào.
+ *           `23502` (#93), cả lô không vào. Có `columns=` (mảng từ supabase-js)
+ *           mà không `Prefer: missing=default` thì khoá thiếu là NULL, không
+ *           phải DEFAULT (#106).
  *   PATCH   gộp thân vào mọi hàng khớp bộ lọc; đặt một cột NOT NULL thành
  *           `null` → 400 / `23502`, không hàng nào đổi.
  *   DELETE  bỏ mọi hàng khớp bộ lọc.
@@ -134,10 +136,23 @@ export function applyWrite(world, table, method, url, bodyText, headers = {}) {
       đầu đẩy từng hàng vào `rows` rồi mới gặp trùng: `[a, b]` với `b` trùng trả
       409 mà `a` vẫn vào (A tái hiện ở #80).
     */
+    /*
+      `columns=` (#106): supabase-js, khi chèn/upsert một MẢNG, gắn
+      `?columns="a","b"` bằng HỢP các khoá của mọi phần tử, và chỉ gửi
+      `Prefer: missing=default` khi gọi với `defaultToNull: false` (đọc tại
+      postgrest-js/dist/index.cjs, `insert` và `upsert`). PostgREST dựng câu
+      INSERT với đúng danh sách ấy, nên khoá nào một hàng THIẾU thì là NULL chứ
+      không phải DEFAULT. Cột NOT NULL có DEFAULT vì thế ra 23502; cột nullable
+      có DEFAULT thì lặng lẽ thành NULL. Cột ngoài danh sách vẫn lấy DEFAULT.
+      Bản trước điền DEFAULT cho từng hàng, tức dễ dãi hơn Postgres.
+    */
+    const listed = url.searchParams.get('columns')?.split(',').map((c) => c.trim().replace(/^"|"$/g, '')).filter(Boolean) ?? null;
+    const nullMissing = listed && !/missing=default/.test(prefer);
     const added = [];
     const merges = [];
     const touched = [];
-    for (const raw of list) {
+    for (const given of list) {
+      const raw = nullMissing ? { ...Object.fromEntries(listed.map((c) => [c, null])), ...given } : given;
       const row = withDefaults(table, raw);
       /*
         NOT NULL (#93) đứng TRƯỚC xét xung đột, như Postgres: `ExecInsert` chạy
