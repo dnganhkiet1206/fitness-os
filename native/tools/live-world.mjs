@@ -260,6 +260,9 @@ export function contentRange(rows, url, returned, prefer = '') {
   return `${returned > 0 ? `${off}-${off + returned - 1}` : '*'}/${total}`;
 }
 
+/* #134: MỘT mốc cho hai lần uống trùng giờ — hai lần gọi `day()` có thể lệch 1 ms. */
+const WATER_TIE = day(0.05);
+
 /**
  * What the server answers in `full` mode.
  *
@@ -343,14 +346,21 @@ export const FIXTURES = {
     source: 'apple_health', confidence: 0.9,
   }],
   /*
-    #131: ba lần uống HÔM NAY, và lần MỚI NHẤT (w3) cố ý nằm GIỮA mảng — nút "−"
-    phải xoá lần có `logged_at` lớn nhất, không phải phần tử đầu hay cuối của
-    một danh sách. Tổng vẫn 1750 ml như trước, để không số nào khác trên màn đổi.
+    #131: lần uống HÔM NAY, và lần MỚI NHẤT cố ý nằm GIỮA mảng — nút "−" phải
+    xoá lần mới nhất, không phải phần tử đầu hay cuối của một danh sách. Tổng
+    vẫn 1750 ml như trước, để không số nào khác trên màn đổi.
+
+    #134: w3 và w4 CÙNG `logged_at` (bấm hai lần một mili-giây, hay hai lệnh
+    của hàng đợi ngoại tuyến giữ mốc gốc), khác lượng (250 / 500). Thứ tự của
+    app là `logged_at`, rồi `created_at`, rồi `id` — mới nhất là w4. w3 đứng
+    TRƯỚC w4 trong mảng, nên một bản chỉ sắp theo `logged_at` (sắp ổn định)
+    xoá w3, và con số nhảy 1500 → 1250 khi server trả lời.
   */
   water_logs: [
-    { id: 'w1', user_id: UID, amount_ml: 1250, date: dayStr(0), logged_at: day(0.3) },
-    { id: 'w3', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: day(0.05) },
-    { id: 'w2', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: day(0.2) },
+    { id: 'w1', user_id: UID, amount_ml: 750, date: dayStr(0), logged_at: day(0.3), created_at: day(0.3) },
+    { id: 'w3', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: WATER_TIE, created_at: day(0.05) },
+    { id: 'w4', user_id: UID, amount_ml: 500, date: dayStr(0), logged_at: WATER_TIE, created_at: day(0.04) },
+    { id: 'w2', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: day(0.2), created_at: day(0.2) },
   ],
   /*
     #137: những bảng app ĐỌC mà thế giới giả để rỗng — nhánh "có dữ liệu" của

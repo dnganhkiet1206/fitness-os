@@ -979,6 +979,18 @@ async function pressEverything(page, label, problems) {
  * thing did, and they are written out one at a time because there is no way to
  * infer intent from a DOM.
  */
+/* #134: thứ tự "mới nhất" của nước, ĐÚNG như `newestFirst` của use-water.ts. */
+function waterNewestFirst() {
+  const k = (w) => [w.logged_at, w.created_at ?? '', w.id];
+  return FIXTURES.water_logs
+    .filter((w) => w.user_id === UID)
+    .sort((x, y) => {
+      const [p, q] = [k(x), k(y)];
+      for (let i = 0; i < 3; i++) if (p[i] !== q[i]) return p[i] < q[i] ? 1 : -1;
+      return 0;
+    });
+}
+
 const SCENARIOS = [
   {
     /*
@@ -1181,6 +1193,44 @@ const SCENARIOS = [
   },
   {
     /*
+      #134: hai lần uống CÙNG `logged_at` (w3 250 ml, w4 500 ml; fixture). Thứ tự
+      "mới nhất" của app là `logged_at`, rồi `created_at`, rồi `id` — CHUNG cho
+      danh sách (thứ tự của cache mà bản vá lạc quan `slice(1)` cắt) và cho lệnh
+      tìm lần cần bỏ. Chỉ sắp theo `logged_at` thì server bỏ một trong hai tuỳ
+      kế hoạch truy vấn, còn cache bỏ lần kia: con số nhảy khi server trả lời.
+      Ở đây: xoá đúng w4, và con số ngay sau cú bấm (lạc quan) bằng con số sau
+      khi đọc lại (server).
+    */
+    name: 'Nước: hai lần uống cùng mốc — "−" bỏ đúng lần mới nhất theo thứ tự xác định, con số không nhảy (#134)',
+    route: '/water', mode: 'full',
+    async run(page) {
+      const order = waterNewestFirst();
+      const [a, b] = order;
+      if (a.logged_at !== b.logged_at) return 'fixture không còn hai lần uống cùng `logged_at` ở đầu thứ tự — kịch bản #134 không đo gì';
+      const total = order.reduce((s, w) => s + w.amount_ml, 0);
+      /* Hồ sơ của thế giới giả dùng oz — `displayVolume` (units.ts), một chữ số lẻ. */
+      const fmt = (ml) => `${Math.round((ml / 29.5735296) * 10) / 10} oz`;
+      const big = page.getByText(fmt(total), { exact: true }).filter({ visible: true }).first();
+      if ((await big.count()) !== 1) return `trước khi bấm, tổng phải là ${fmt(total)} — không thấy con số ấy trên màn`;
+      /* Phần tử của con số, giữ lại qua các lần đổi chữ. */
+      const handle = await big.elementHandle();
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/water_logs/.test(q.url()) && q.method() === 'DELETE') writes.push(decodeURIComponent(q.url()));
+      });
+      await page.getByRole('button', { name: /^(Undo last drink|Bớt lần uống gần nhất)$/ }).filter({ visible: true }).first().click();
+      await page.waitForTimeout(150);
+      const optimistic = await handle.textContent();
+      await page.waitForTimeout(2500);
+      const settled = await handle.textContent();
+      if (writes.length !== 1 || !writes[0].includes(`id=eq.${a.id}`)) return `phải xoá đúng ${a.id} (${a.amount_ml} ml, created_at muộn hơn), ra ${writes.map((u) => u.split('?')[1]).join(' | ') || 'không lệnh xoá nào'}`;
+      const want = fmt(total - a.amount_ml);
+      if (optimistic !== want || settled !== want) return `con số phải là ${want} ngay khi bấm và sau khi đọc lại — ra ${optimistic} rồi ${settled}`;
+      return null;
+    },
+  },
+  {
+    /*
       #131: nút "−" của màn Nước bớt lần uống GẦN NHẤT (#125: nó không hỏi lại,
       vì "+" lấy lại được — nên phải bớt đúng cái). Fixture để lần mới nhất ở
       GIỮA mảng: một bản xoá phần tử đầu hay cuối đều đỏ.
@@ -1188,7 +1238,7 @@ const SCENARIOS = [
     name: 'Nước: nút "−" không hỏi và xoá đúng lần uống gần nhất (#125, #131)',
     route: '/water', mode: 'full',
     async run(page) {
-      const newest = FIXTURES.water_logs.filter((w) => w.user_id === UID).reduce((a, b) => (a.logged_at > b.logged_at ? a : b));
+      const newest = waterNewestFirst()[0];
       const writes = [];
       page.on('request', (q) => {
         if (/\/rest\/v1\/water_logs/.test(q.url()) && isWrite(q.method())) writes.push({ m: q.method(), url: decodeURIComponent(q.url()) });
@@ -3300,6 +3350,10 @@ try {
          không có vai, nên `getByRole('button')` cũng không thấy chúng. Dinh
          dưỡng chạy cả tiếng Việt: nó có nút phá huỷ (xoá bữa) như #107. */
       ['/nutrition', 'full'], ['/nutrition', 'full', 'vi'], ['/water', 'full'], ['/supplements', 'full'], ['/grocery', 'full'],
+      /* #128: nút xoá món đi chợ bằng tiếng Việt là "Bỏ khỏi danh sách" — trước
+         #128 `DESTRUCTIVE` không khớp nó, và lỗi "xoá ngay không hỏi" của #125
+         chỉ bị bắt vì lượt ấy chạy tiếng Anh. */
+      ['/grocery', 'full', 'vi'],
       ['/community', 'full'], ['/community-saved', 'full'], ['/shop', 'full'], ['/workouts/plan', 'full'],
       /* #135: nút xoá ảnh tiến trình — trước đó xoá chỉ tới được bằng nhấn giữ. */
       ['/progress-photos', 'full'],

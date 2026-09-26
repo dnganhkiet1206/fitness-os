@@ -16,5 +16,15 @@
  * `(?=\s|$)`: sau động từ là khoảng trắng hay hết chuỗi. "Deleted items",
  * "Removed" không khớp. Chỉ còn "Xoá": từ #105 app đặt dấu kiểu cũ (bước cổng
  * "kiểu bỏ dấu"), nên "Xóa" không còn là chữ app hiện ra.
+ *
+ * ── cặp đôi hai ngôn ngữ (#128) ──
+ *
+ * `a11yRemove` là "Remove" / "Bỏ khỏi danh sách": tiếng Anh khớp, tiếng Việt
+ * không, nên lượt bấm tiếng Việt ở /grocery không coi nút xoá món là nút phá
+ * huỷ. `press-rules.mjs` nay đòi mỗi cặp chữ của app — khoá từ điển và cặp
+ * `vi ? '…' : '…'` viết thẳng — khớp CẢ HAI hoặc KHÔNG bên nào. Thêm vì thế:
+ * "Bỏ khỏi" ↔ Remove, "Bỏ tích" ↔ Untick (bỏ một hiệp đã ghi), "Erase" ↔ Xoá
+ * (trí nhớ HLV), "Clear" ↔ Xoá (mục tiêu cân nặng, ô tìm). KHÔNG thêm "Bỏ
+ * qua": đó là bỏ qua, không mất gì.
  */
-export const DESTRUCTIVE = /^(Xoá|Rời|Chặn|Bỏ chặn|Bỏ theo dõi|Đăng xuất|Delete|Remove|Leave|Block|Unblock|Unfollow|Sign out)(?=\s|$)/i;
+export const DESTRUCTIVE = /^(Xoá|Rời|Chặn|Bỏ chặn|Bỏ theo dõi|Bỏ khỏi|Bỏ tích|Đăng xuất|Delete|Remove|Erase|Clear|Untick|Leave|Block|Unblock|Unfollow|Sign out)(?=\s|$)/i;

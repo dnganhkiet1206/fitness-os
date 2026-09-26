@@ -44,6 +44,21 @@ const today = () => localDateStr();
  */
 type WaterLog = { id: string; amount_ml: number; logged_at: string };
 
+/*
+  "Mới nhất trước" — MỘT thứ tự, dùng cho cả danh sách (thứ tự của cache) lẫn
+  lệnh tìm lần cần bỏ của "−" (#134).
+
+  `logged_at` là mốc của cú chạm (`w.at`), và hàng đợi ngoại tuyến giữ nguyên
+  nó, nên hai lần uống CÓ THỂ trùng mốc. Postgres không hứa thứ tự giữa hai
+  hàng bằng nhau: "−" xoá một trong hai tuỳ kế hoạch truy vấn, còn bản vá lạc
+  quan `logs.slice(1)` bỏ phần tử đầu của cache — hai phía bỏ hai lần khác
+  nhau, và con số nhảy khi server trả lời (250 → 500). `created_at` rồi `id`
+  làm thứ tự xác định; một hàm cho cả hai truy vấn để chúng không thể lệch.
+*/
+function newestFirst<Q extends { order: (col: string, o: { ascending: boolean }) => Q }>(q: Q): Q {
+  return q.order('logged_at', { ascending: false }).order('created_at', { ascending: false }).order('id', { ascending: false });
+}
+
 /** The one branch of `OfflineWrite` this file sends. */
 type WaterWrite = Extract<OfflineWrite, { kind: 'water' }>;
 
@@ -261,14 +276,12 @@ export function useRemoveLastWater(date?: string) {
   const m = useOnlineMutation({
     mutationFn: async (dateStr: string) => {
       if (!user) throw new Error('Not signed in');
-      const { data: last, error: findError } = await supabase
+      const find = supabase
         .from('water_logs')
         .select('id')
         .eq('user_id', user.id)
-        .eq('date', dateStr)
-        .order('logged_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .eq('date', dateStr);
+      const { data: last, error: findError } = await newestFirst(find).limit(1).maybeSingle();
       if (findError) throw findError;
       if (!last) return;
       await confirmWrite(
@@ -321,12 +334,9 @@ export function useTodayWaterLogs(date?: string) {
     queryKey: ['today_water_logs', user?.id, dateStr],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('water_logs')
-        .select('id, amount_ml, logged_at')
-        .eq('user_id', user!.id)
-        .eq('date', dateStr)
-        .order('logged_at', { ascending: false });
+      const { data, error } = await newestFirst(
+        supabase.from('water_logs').select('id, amount_ml, logged_at').eq('user_id', user!.id).eq('date', dateStr),
+      );
       if (error) throw error;
       return data ?? [];
     },
