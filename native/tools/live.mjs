@@ -1309,7 +1309,7 @@ const SCENARIOS = [
       page.on('request', (q) => {
         if (q.url().includes('/rpc/community_search_profiles')) asked.push(q.postData() ?? '');
       });
-      const box = page.getByPlaceholder(/^(Tên hoặc @handle|Name or @handle)$/);
+      const box = page.getByPlaceholder(/^(Tên hoặc @handle|Name or @handle)$/).filter({ visible: true });
       if ((await box.count()) === 0) return 'không thấy ô tìm người';
       await box.fill('@');
       await box.pressSequentially('L', { delay: 30 });
@@ -1461,7 +1461,7 @@ const SCENARIOS = [
       let toastText = '';
       for (let i = 0; i < 10 && !toastText; i++) {
         await page.waitForTimeout(250);
-        toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+        toastText = (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
       }
       if (!/đồng bộ khi có mạng|sync when you are back online/.test(toastText)) {
         return `(A) mất mạng, bấm thêm nước: phải nói "đã lưu, sẽ đồng bộ" (#66), ra "${toastText}"`;
@@ -1656,7 +1656,7 @@ const SCENARIOS = [
         let toastText = '';
         for (let i = 0; i < 10 && !toastText; i++) {
           await page.waitForTimeout(250);
-          toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+          toastText = (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
         }
         if (!toastText) return 'mất mạng, bấm Thích: không một câu nào — mutation bị tạm dừng im lặng (#45)';
         if (!/giữ lại|kept/i.test(toastText)) return `câu báo phải nói rõ là không giữ lại để gửi sau, ra "${toastText}"`;
@@ -1813,7 +1813,7 @@ const SCENARIOS = [
         let toastText = '';
         for (let i = 0; i < 12 && !toastText; i++) {
           await page.waitForTimeout(250);
-          toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+          toastText = (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
         }
         if (!toastText) return 'mất mạng, bấm ngôi sao: không một câu nào — mutation bị tạm dừng im lặng (#49)';
         if (!/giữ lại|kept/i.test(toastText)) return `câu báo phải nói rõ là không giữ lại để gửi sau, ra "${toastText}"`;
@@ -1940,7 +1940,7 @@ const SCENARIOS = [
         await eat.click();
         for (let i = 0; i < 12 && !toastText; i++) {
           await page.waitForTimeout(250);
-          toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+          toastText = (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
         }
         if (!toastText) return 'mất mạng, bấm "Ghi vào hôm nay": không một câu nào';
         if (!/đồng bộ khi có mạng|sync when you are back online/i.test(toastText)) {
@@ -2020,7 +2020,7 @@ const SCENARIOS = [
     async run(page) {
       const origin = new URL(page.url()).origin;
       const hasBadge = async (title) =>
-        (await page.locator('[aria-label]').evaluateAll((els) => els.map((e) => e.getAttribute('aria-label'))))
+        (await page.locator('[aria-label]').filter({ visible: true }).evaluateAll((els) => els.map((e) => e.getAttribute('aria-label'))))
           .some((l) => l === `Huy hiệu: ${title}` || l === `Badge: ${title}`);
       await page.waitForTimeout(1500);
       if (!(await hasBadge('Tháng Tám bền bỉ'))) return 'hồ sơ Linh (đã bật, đã nhận thưởng) không có huy hiệu "Tháng Tám bền bỉ"';
@@ -2191,21 +2191,21 @@ const SCENARIOS = [
         if (!/\/rest\/v1\/rpc\/community_find_recipes/.test(q.url())) return;
         try { asked.push(JSON.parse(q.postData() ?? '{}').p_q); } catch { asked.push('?'); }
       });
-      const seg = page.locator('#root [role="tab"]').filter({ hasText: /^(Recipes|Công thức)$/ }).first();
+      const seg = page.locator('#root [role="tab"]').filter({ visible: true }).filter({ hasText: /^(Recipes|Công thức)$/ }).first();
       if (!(await seg.count())) return 'không thấy phân đoạn Công thức ở màn Tìm';
       await seg.click();
-      const box = page.getByPlaceholder(/^(Dish name|Tên món)$/);
+      const box = page.getByPlaceholder(/^(Dish name|Tên món)$/).filter({ visible: true });
       if (!(await box.count())) return 'đổi sang Công thức mà ô tìm không đổi gợi ý thành "Tên món"';
       await box.fill('CHICKEN');
       await page.waitForTimeout(2500);
       if (!asked.includes('chicken')) return `gõ "CHICKEN" mà không hỏi community_find_recipes với "chicken" — đã hỏi: ${JSON.stringify(asked)}`;
-      const card = page.getByText('High Protein Chicken Bowl', { exact: true });
+      const card = page.getByText('High Protein Chicken Bowl', { exact: true }).filter({ visible: true });
       if (!(await card.count())) return 'gõ "CHICKEN" mà không ra thẻ "High Protein Chicken Bowl"';
-      if (!(await page.getByText(/^(Add to a meal|Thêm vào bữa ăn)$/).count())) return 'kết quả tìm không phải thẻ feed dùng được — thiếu "Thêm vào bữa ăn"';
+      if (!(await page.getByText(/^(Add to a meal|Thêm vào bữa ăn)$/).filter({ visible: true }).count())) return 'kết quả tìm không phải thẻ feed dùng được — thiếu "Thêm vào bữa ăn"';
       await box.fill('hick');
       await page.waitForTimeout(2500);
       if (await card.count()) return '"hick" (giữa chữ "chicken") vẫn ra thẻ — tìm theo chuỗi con, không theo đầu từ';
-      if (!(await page.getByText(/^(No recipe matches "hick"|Không có công thức nào khớp "hick")$/).count())) return 'không có kết quả mà màn không nói ra';
+      if (!(await page.getByText(/^(No recipe matches "hick"|Không có công thức nào khớp "hick")$/).filter({ visible: true }).count())) return 'không có kết quả mà màn không nói ra';
       return null;
     },
   },
@@ -2237,7 +2237,7 @@ const SCENARIOS = [
       if (!/\/community-search/.test(page.url())) return `bấm "Tìm công thức" mà không tới màn Tìm — ở ${page.url()}`;
       const on = await tab(/^(Recipes|Công thức)$/).getAttribute('aria-selected');
       if (on !== 'true') return `tới màn Tìm mà phân đoạn Công thức không được chọn (aria-selected=${on})`;
-      if (!(await page.getByPlaceholder(/^(Dish name|Tên món)$/).count())) return 'tới màn Tìm mà ô tìm không gợi ý "Tên món"';
+      if (!(await page.getByPlaceholder(/^(Dish name|Tên món)$/).filter({ visible: true }).count())) return 'tới màn Tìm mà ô tìm không gợi ý "Tên món"';
       return null;
     },
   },
@@ -2265,7 +2265,7 @@ const SCENARIOS = [
       let toastText = '';
       for (let i = 0; i < 20 && !toastText; i++) {
         await page.waitForTimeout(250);
-        toastText = (await page.locator('[aria-live="polite"]').allInnerTexts()).join(' ').trim();
+        toastText = (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
       }
       const claimed = /Đã nhận thưởng|Reward claimed/;
       for (let i = 0; i < 24 && !claimed.test(await page.locator('body').innerText()); i++) await page.waitForTimeout(250);
@@ -2292,7 +2292,7 @@ const SCENARIOS = [
       await page.getByPlaceholder('—', { exact: true }).nth(0).fill('60');
       await page.getByPlaceholder('—', { exact: true }).nth(1).fill('8');
       await page.waitForTimeout(600);
-      const save = page.getByText(/^(Lưu buổi tập|Save Workout)$/).first();
+      const save = page.getByText(/^(Lưu buổi tập|Save Workout)$/).filter({ visible: true }).first();
       if ((await save.count()) === 0) return 'không thấy nút lưu buổi tập';
       await save.click();
       await page.waitForTimeout(4000);
@@ -2314,7 +2314,7 @@ const SCENARIOS = [
     name: 'Kế hoạch ngày: nút gập bài nói đang gập hay mở (aria-expanded)',
     route: '/workouts/plan', mode: 'full',
     async run(page) {
-      const fold = page.locator('#root [role="button"][aria-label^="Bench Press "][aria-expanded]').first();
+      const fold = page.locator('#root [role="button"][aria-label^="Bench Press "][aria-expanded]').filter({ visible: true }).first();
       if ((await fold.count()) === 0) return 'không thấy nút gập "Bench Press" nào mang aria-expanded (#103)';
       const before = await fold.getAttribute('aria-expanded');
       await fold.click();
@@ -2410,9 +2410,9 @@ const SCENARIOS = [
     route: '/community', mode: 'full',
     async run(page) {
       await page.waitForTimeout(2500);
-      const composer = page.getByText(/^(Chia sẻ một buổi tập…|Share a workout…)$/);
+      const composer = page.getByText(/^(Chia sẻ một buổi tập…|Share a workout…)$/).filter({ visible: true });
       if ((await composer.count()) === 0) return 'không thấy ô soạn bài — hồ sơ cộng đồng của UID không đọc được (xem #17)';
-      const bell = page.getByLabel(/^(Thông báo|Notifications)/);
+      const bell = page.getByLabel(/^(Thông báo|Notifications)/).filter({ visible: true });
       if ((await bell.count()) === 0) return 'ô soạn bài có nhưng không thấy chuông thông báo';
       return null;
     },
@@ -2451,7 +2451,7 @@ const SCENARIOS = [
     route: '/workouts', mode: 'full',
     async run(page) {
       const before = await readable(page);
-      const seg = page.getByText(/^(Body|Cơ thể)$/).first();
+      const seg = page.getByText(/^(Body|Cơ thể)$/).filter({ visible: true }).first();
       if ((await seg.count()) === 0) return 'không tìm thấy segment Cơ thể';
       await seg.click();
       await page.waitForTimeout(1500);
@@ -2673,7 +2673,7 @@ const SCENARIOS = [
       const asked = [];
       page.on('request', (r) => asked.push(decodeURIComponent(r.url())));
 
-      const prev = page.locator('[aria-label="Previous day"], [aria-label="Ngày trước"]').first();
+      const prev = page.locator('[aria-label="Previous day"], [aria-label="Ngày trước"]').filter({ visible: true }).first();
       if ((await prev.count()) === 0) return 'không tìm thấy nút "ngày trước"';
       await prev.click();
       await page.waitForTimeout(3500);
@@ -2696,7 +2696,7 @@ const SCENARIOS = [
       }
 
       /* Ghi thêm vào CHÍNH ngày đang xem. */
-      const add = page.getByText(/Log a meal for this day|Ghi một bữa cho ngày này/).first();
+      const add = page.getByText(/Log a meal for this day|Ghi một bữa cho ngày này/).filter({ visible: true }).first();
       if ((await add.count()) === 0) return 'ngày đã qua không có lối ghi thêm bữa nào';
       await add.click();
       await page.waitForTimeout(2500);

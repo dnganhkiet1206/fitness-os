@@ -582,6 +582,9 @@ const STEPS = [
   /* #105: chữ hiện ra đặt dấu MỘT kiểu (cũ: "hoá", "Huỷ"). `i18n.ts` từng có
      `cancel: 'Hủy'` trong khi mọi hộp hỏi lại viết `'Huỷ'`. */
   ['kiểu bỏ dấu', 'node', ['tools/vi-tone.mjs']],
+  /* #110: vế live.mjs chỉ đọc màn ĐANG HIỆN — màn trước còn trong DOM với
+     display:none sau một cú bấm điều hướng, và vế #108 từng xanh nhờ nó. */
+  ['đọc màn đang hiện', 'node', ['tools/live-visible.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],
