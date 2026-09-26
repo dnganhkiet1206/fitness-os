@@ -110,4 +110,13 @@ RESET ROLE;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_search_profiles(text)', 'EXECUTE'), 'S10 anon gọi được tìm người'; END $$;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_follow_suggestions()', 'EXECUTE'), 'G4 anon gọi được gợi ý'; END $$;
 DO $$ BEGIN ASSERT has_function_privilege('authenticated', 'public.community_search_profiles(text)', 'EXECUTE') AND has_function_privilege('authenticated', 'public.community_follow_suggestions()', 'EXECUTE'), 'G5 người đã đăng nhập không gọi được'; END $$;
-\echo TẤT CẢ 22 KỊCH BẢN TÌM NGƯỜI ĐÚNG
+-- ── S11: gập tên hiển thị một lần mỗi dòng (#119) ──
+-- Hai vế OR mỗi vế gọi `community_fold` là cùng kết quả nhưng gấp đôi chi phí,
+-- và câu này không dừng sớm ở LIMIT (sắp theo handle) — đo trong
+-- 20261001170000_community_search_unaccent_one_fold.sql. Không kịch bản kết quả
+-- nào thấy khác biệt ấy, nên đếm thẳng trong thân hàm đang chạy.
+DO $$ DECLARE body text := pg_get_functiondef('public.community_search_profiles(text)'::regprocedure); BEGIN
+  ASSERT (length(body) - length(replace(body, 'community_fold(p.display_name', ''))) / length('community_fold(p.display_name') = 1,
+    'S11 hàm tìm người gập tên hiển thị nhiều hơn một lần mỗi dòng';
+END $$;
+\echo TẤT CẢ 23 KỊCH BẢN TÌM NGƯỜI ĐÚNG
