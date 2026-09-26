@@ -744,7 +744,7 @@ const missingPanel = tabIds.filter(
   (id) => id !== 'overview' && !new RegExp(`which === '${id}'`).test(sheet),
 );
 const missingEmpty = ['nEgNoMuscles', 'nEgNoEquipment', 'nEgNoRelated'].filter(
-  (k) => !sheet.includes(`i18n.${k}`),
+  (k) => !new RegExp(`\\bi18n\\.${k}(?![A-Za-z0-9_])`).test(sheet), // ranh giới từ (#151)
 );
 const pickRow = read('src/components/ascnd/pick-row.tsx');
 /* Mục DỤNG CỤ phải nằm TRONG nhánh tab gộp, không chỉ ở đâu đó trong tệp. */

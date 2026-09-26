@@ -119,6 +119,19 @@ const problems = [];
  * tiếng Việt của khoá này là bản tiếng Anh thì sao", và đó là câu hỏi duy nhất
  * chứng minh được luật 1 còn răng.
  */
+/*
+  "Được dùng" = `i18n.<khoá>` với RANH GIỚI TỪ ở cuối (#151). Bản cũ là
+  `source.includes(\`i18n.${k}\`)`: `i18n.sleepAvg` khớp `i18n.sleepAvgDeep`,
+  nên một khoá chết là tiền tố của một khoá sống được đếm là dùng — con số của
+  bước này lệch với `i18n-orphans.mjs` (đếm bằng `\b`) trên cùng từ điển.
+*/
+const used = (key) => new RegExp(`\\bi18n\\.${key}(?![A-Za-z0-9_])`).test(source);
+{
+  const probe = 'x = i18n.sleepAvgDeep;';
+  if (new RegExp(`\\bi18n\\.sleepAvg(?![A-Za-z0-9_])`).test(probe)) problems.push('thử ngược hỏng: `used` coi i18n.sleepAvg là dùng trong "i18n.sleepAvgDeep"');
+  if (!new RegExp(`\\bi18n\\.sleepAvgDeep(?![A-Za-z0-9_])`).test(probe)) problems.push('thử ngược hỏng: `used` không thấy chính i18n.sleepAvgDeep');
+}
+
 function flagged(key, viValue) {
   if (key.startsWith('a11y')) return false;      // screen-reader text, English base
   if (KEPT.has(key)) return false;
@@ -130,7 +143,7 @@ function flagged(key, viValue) {
      identical in both languages. Without this the rule reports the one string
      in the file that is *correct* to leave alone. */
   if (!/[A-Za-z]{3,}/.test(en[key].replace(/\{[^}]*\}/g, ''))) return false;
-  return source.includes(`i18n.${key}`);         // web-only keys are not this app's problem
+  return used(key);                              // web-only keys are not this app's problem
 }
 
 const untranslated = Object.keys(en).filter((k) => flagged(k, vi[k]));
@@ -189,7 +202,7 @@ if (problems.length) {
 }
 
 console.log(
-  `dịch thuật OK — ${Object.keys(en).length} khoá, ${Object.keys(en).filter((k) => source.includes(`i18n.${k}`)).length} khoá được dùng trong app; ` +
+  `dịch thuật OK — ${Object.keys(en).length} khoá, ${Object.keys(en).filter(used).length} khoá được dùng trong app (ranh giới từ, #151); ` +
     `không khoá nào còn tiếng Anh ngoài ${KEPT.size} từ giữ nguyên có chủ đích; ` +
     `và luật 1 còn răng trên ${witnesses.length} khoá — mỗi khoá ấy bị BẮT nếu cột tiếng Việt của nó ` +
     `bị thay bằng bản tiếng Anh, trong đó có nhãn tab bar (\`navToday\`), chỗ lỗi này từng lọt qua`,
