@@ -421,6 +421,7 @@ const en = {
   a11yScanFood: 'Scan food with camera',
   a11yScanBarcode: 'Scan barcode',
   a11yRemove: 'Remove',
+  a11yUndoLastDrink: 'Undo last drink',
   /* Nhãn HIỆN của nút Sửa trên hàng tiêu đề mục. Ngắn vì nó ngồi cạnh một
      tiêu đề 14 điểm, không phải trong một ô riêng — `a11yEditLayout` ngay dưới
      là câu đầy đủ cho trình đọc màn hình. */
@@ -1580,6 +1581,7 @@ const vi: typeof en = {
   a11yScanFood: 'Quét món ăn bằng camera',
   a11yScanBarcode: 'Quét mã vạch',
   a11yRemove: 'Bỏ khỏi danh sách',
+  a11yUndoLastDrink: 'Bớt lần uống gần nhất',
   editLayout: 'Sửa',
   a11yEditLayout: 'Sắp xếp lại bảng điều khiển',
   a11yDoneEditing: 'Xong sắp xếp',

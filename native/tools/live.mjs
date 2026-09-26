@@ -403,6 +403,15 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
      phần tử bị gập hay nằm ngoài vùng cuộn thì vẫn được tính, như trước. */
   await ctx.addInitScript(() => {
     window.__shown = (sel, root = document) => [...root.querySelectorAll(sel)].filter((e) => e.checkVisibility());
+    /* #125: `Linking.openURL` của react-native-web là `window.open` — giao cho
+       một app khác (Spotify, Apple Music) hay một trang ngoài. Trang này không
+       theo được sang đó, nên lượt bấm thử từng đọc nút ấy là "không làm gì".
+       Ghi lại thay vì mở: một lần giao đi LÀ màn đã trả lời. */
+    window.__opened = [];
+    window.open = (url) => {
+      window.__opened.push(String(url));
+      return null;
+    };
   });
   /* Như theme ngay dưới: đặt TRƯỚC khi app chạy. Lượt quét hẹp (#48) đo cả
      hai ngôn ngữ, vì chữ tiếng Việt dài hơn và mọi nhãn bị cắt đã tìm thấy
@@ -691,9 +700,10 @@ async function snapshot(page) {
       .replace(/\s+/g, ' ')
       .slice(0, 4000),
     focus: document.activeElement?.tagName ?? '',
+    opened: window.__opened?.length ?? 0,
   }));
 }
-const changed = (a, b) => a.url !== b.url || a.len !== b.len || a.text !== b.text;
+const changed = (a, b) => a.url !== b.url || a.len !== b.len || a.text !== b.text || a.opened !== b.opened;
 
 /**
  * Press every control on a screen and require the app to react.
@@ -2998,6 +3008,11 @@ try {
       /* #107: CÙNG hai màn ấy bằng tiếng Việt. Trước đó nhánh tiếng Việt của
          `DESTRUCTIVE` chưa từng chạy — và nó không khớp "Xoá…". */
       ['/community-challenge?id=ch000000-0000-4000-8000-000000000001', 'full', 'vi'], ['/community-privacy', 'full', 'vi'],
+      /* #125: các màn chưa từng được bấm thử. Trước #121 phần lớn chỗ bấm ở đây
+         không có vai, nên `getByRole('button')` cũng không thấy chúng. Dinh
+         dưỡng chạy cả tiếng Việt: nó có nút phá huỷ (xoá bữa) như #107. */
+      ['/nutrition', 'full'], ['/nutrition', 'full', 'vi'], ['/water', 'full'], ['/supplements', 'full'], ['/grocery', 'full'],
+      ['/community', 'full'], ['/community-saved', 'full'], ['/shop', 'full'], ['/workouts/plan', 'full'],
     ];
     for (const [route, mode, lang = null] of onlyArg || routeArg ? [] : PRESS_ROUTES) {
       const { browser, page } = await openPage(chromium, route, mode, 9000, { lang });

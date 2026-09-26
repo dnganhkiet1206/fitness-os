@@ -420,7 +420,7 @@ chữ → Chữ lớn hơn → AX3**, rồi mở lại app.
 
 ---
 
-## J. VoiceOver đọc trạng thái ô chọn, ô tick, và các nút từng không tên, không vai — #99 · #101 · #120 · #121 · #123 (#104)
+## J. VoiceOver đọc trạng thái ô chọn, ô tick, và các nút từng không tên, không vai — #99 · #101 · #120 · #121 · #123 · #125 (#104)
 
 #99 và #101 sửa trạng thái "đã chọn"/"đã tick" cho **web**: `aria-selected` và
 `aria-checked`, vì react-native-web không dịch `accessibilityState`. Trên iOS,
@@ -450,6 +450,7 @@ Bật **VoiceOver**, app tiếng Việt.
 | J11 | Cài đặt → vuốt qua các hàng ("Đổi mật khẩu", "Nhắc nhở", "Chính sách & Pháp lý", "Đăng xuất") rồi hàng chọn bạn đồng hành | Mỗi hàng được đọc là **nút**: `PressScale` có vai `button` mặc định (#121); trước đó VoiceOver chỉ đọc chữ. Mỗi bạn đồng hành là **radio** mang cờ `selected` ở con đang chọn; con chưa mở khoá mang cờ `disabled` (#121) | ☐ |
 | J12 | Thực phẩm bổ sung → một dòng | Chỉ **một** ô được đọc là ô tick: "Đánh dấu đã dùng: \<tên\>", vai **checkbox**. Chữ tên và liều bên phải vẫn được đọc, nhưng không thành nút thứ hai cho cùng một việc (#121) | ☐ |
 | J13 | Dinh dưỡng → nhật ký → chạm tên một bữa (vd "Bữa sáng"); rồi Nước → "Hôm nay" (danh sách lần uống) | Mỗi đầu mục đọc kèm trạng thái **mở rộng / thu gọn**, và trạng thái đổi sau khi chạm hai lần. Trước #123 chỉ mũi tên xoay nói điều đó (#123) | ☐ |
+| J14 | Danh sách đi chợ → nút X cạnh một món; rồi Nước → nút "−" ở hàng thêm nhanh | X: VoiceOver đọc "Bỏ khỏi danh sách \<món\>", và chạm hai lần mở hộp iOS "Xoá "\<món\>"?" với Huỷ / Xoá. Huỷ thì món còn nguyên (#125: trước đó xoá ngay). "−": VoiceOver đọc "Bớt lần uống gần nhất", **không** hỏi lại, vì "+" lấy lại được (#125) | ☐ |
 
 > `liquid-tab-bar.tsx` cũng có một lớp nền không tên (bảng Trợ lý nhanh), và #120
 > đã đặt tên cho nó. Nhưng component ấy không được gắn vào đâu (xem

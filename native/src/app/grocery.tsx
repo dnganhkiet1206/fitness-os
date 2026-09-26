@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Check, Plus, UtensilsCrossed, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -212,7 +213,18 @@ export default function GroceryScreen() {
                     {it.quantity ? <Text style={styles.qty}>  ×{it.quantity}</Text> : null}
                   </Text>
                 </Pressable>
-                <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={10} onPress={() => remove.mutate(it.id)}>
+                {/* Xoá là mất món khỏi danh sách, nên hỏi lại như mọi lần xoá
+                    khác của app — lượt bấm thử của live.mjs bắt nó xoá luôn (#125). */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`${i18n.a11yRemove} ${it.name}`}
+                  hitSlop={10}
+                  onPress={() =>
+                    Alert.alert('ASCND', `${i18n.delete} "${it.name}"?`, [
+                      { text: i18n.cancel, style: 'cancel' },
+                      { text: i18n.delete, style: 'destructive', onPress: () => remove.mutate(it.id) },
+                    ])
+                  }>
                   <Icon icon={X} size={15} color={c.mutedForeground} />
                 </Pressable>
               </View>

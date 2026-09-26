@@ -126,10 +126,13 @@ export default function WaterScreen() {
         <ProgressBar pct={pct} color={c.metricBlue} height={10} radius={5} style={styles.barTrack} />
         <Text style={styles.quickLabel}>{i18n.nQuickAdd}</Text>
         <View style={styles.quickRow}>
-          {/* Undo last entry (web: minus button) */}
+          {/* Undo last entry (web: minus button). Nhãn nói đúng việc nó làm —
+              nút trừ của hàng thêm nhanh, đối của "+250 ml" — chứ không phải
+              "Xoá": lượt bấm thử (#125) đọc "Remove" là nút phá huỷ phải hỏi
+              lại, trong khi nút này là một bước lùi mà "+" lấy lại được. */}
           <PressScale
             accessibilityRole="button"
-            accessibilityLabel={i18n.a11yRemove}
+            accessibilityLabel={i18n.a11yUndoLastDrink}
             style={[styles.undoBtn, (!logs || logs.length === 0) && styles.undoDisabled]}
             disabled={!logs || logs.length === 0 || removeLast.isPending}
             onPress={() =>
