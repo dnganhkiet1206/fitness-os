@@ -390,6 +390,35 @@ có mạng đọc lại từ server, nên đó là số của server.
 
 ---
 
+## I. Tìm công thức, chữ dài và chữ lớn — đợt #43 · #94 · #73 · #105 · #108 (#115)
+
+Mọi thứ dưới đây đã được đo trên bản **web**: `live.mjs`, lượt quét hẹp ở 320
+với chữ ×1.3, và ảnh chụp. Web không trả lời được ba điều:
+- VoiceOver đọc gì. Web chỉ có `aria-*`; iOS đọc `accessibilityState`.
+- Dynamic Type THẬT. Web chỉ giả lập ×1.3, còn AX3 lớn hơn nhiều.
+- Hộp thoại của iOS. Trên web `Alert.alert` là `confirm()`/`prompt()` (#83).
+
+Mục I1–I3 bật **VoiceOver**. Mục I6–I8 đặt **Cài đặt → Trợ năng → Màn hình & cỡ
+chữ → Chữ lớn hơn → AX3**, rồi mở lại app.
+
+| # | Việc | Mong đợi | Kết quả |
+|---|---|---|---|
+| I1 | VoiceOver: tab Cộng đồng → nút kính lúp ở góc trên | Đọc "Tìm người và công thức", không phải "Tìm người" (#43) | ☐ |
+| I2 | VoiceOver: màn Tìm → vuốt tới hai ô "Người", "Công thức" → chạm hai lần "Công thức" | Ô đang chọn được đọc là **đã chọn**; sau khi đổi, tiêu đề là "Tìm công thức" và ô tìm đọc "Tên món" (#43, #99) | ☐ |
+| I3 | Gõ "ga" (không dấu) ở phân đoạn Công thức, rồi gõ lại bằng bàn phím Telex "gà"; đổi sang "Người" rồi về "Công thức" | Cả hai cách gõ ra cùng các công thức có từ "gà" trong tên; chữ đã gõ **còn nguyên** sau khi đổi phân đoạn qua lại, bàn phím không làm mất chữ (#43) | ☐ |
+| I4 | Trên một kết quả: bấm "Thêm vào bữa ăn" | Hộp của iOS hỏi "Thêm vào bữa nào hôm nay?" với các bữa; chọn một bữa → bữa ấy có món mới ở Dinh dưỡng (#43) | ☐ |
+| I5 | Tài khoản chưa lưu công thức nào: hồ sơ của mình → Đã lưu → lọc "Công thức" | Có nút "Tìm công thức"; bấm → màn Tìm ở phân đoạn Công thức (ô "Công thức" đang chọn), không phải "Người". Lọc "Buổi tập" thì **không** có nút ấy (#108) | ☐ |
+| I6 | AX3: Hôm nay → thẻ Sinh trắc học (tiếng Việt, rồi tiếng Anh) | "Nhịp tim nghỉ", "Oxy máu", "Nhịp thở" / "Resting heart rate", "Blood oxygen", "Respiratory rate" đọc **trọn**, không có "…" (hai dòng được); hai ô cùng hàng **cao bằng nhau** (#94) | ☐ |
+| I7 | AX3, tài khoản chưa đủ số liệu: Hôm nay → đồng hồ sẵn sàng → "Chạm để xem chi tiết" | Dòng dưới số của các ô HRV / RHR / SLEEP / LOAD ("cần 5 lần đo", "chưa ghi đêm qua", "chưa ghi buổi tập") đọc **trọn**; số của hai ô cùng hàng vẫn thẳng nhau (#94) | ☐ |
+| I8 | AX3: Dinh dưỡng → thẻ bốn cách ghi bữa; rồi thư viện thực phẩm (phân đoạn "Của tôi") | "Chụp ảnh", "Mã vạch", "Tìm món", "Nhập tay" đọc trọn; ô "Lọc trong danh sách" **không đè** lên nút "+" bên cạnh, bấm "+" mở được màn thêm thực phẩm (#73) | ☐ |
+| I9 | Tiếng Việt: xoá một món khỏi nhật ký, và xoá một thực phẩm của mình | Hộp hỏi lại của iOS viết "Huỷ" và "Xoá" — cùng một kiểu với mọi hộp khác trong app, không có "Hủy"/"Xóa" (#105) | ☐ |
+
+> I8: `minWidth: 0` của ô lọc (#73) chỉ làm **web** giống iOS — trên web một ô
+> nhập có bề rộng tự nhiên lớn theo cỡ chữ. Yoga trên iOS vốn co về 0, nên mục
+> này là để **xác nhận** iOS chưa từng lỗi, không phải để kiểm một bản sửa.
+
+---
+
 ## Cách ghi một phát hiện
 
 Mỗi mục hỏng ghi đủ: **ID · mức (P0/P1/P2/P3) · màn · quan sát chính xác · mong
