@@ -33,6 +33,14 @@ export default function AppTabs() {
           <TabTrigger name="community" href="/community" asChild>
             <TabButton>Community</TabButton>
           </TabTrigger>
+          {/* #117: tab thứ năm, như trên iOS (`app-tabs.tsx`: Trợ lý là ô
+              `role="search"` đứng cạnh viên nang). Thiếu nó, `/assistant` trên
+              web bị chuyển về `/`, và bộ chạy `live.mjs` đo màn Hôm nay dưới
+              nhãn "/assistant" — màn Trợ lý chưa từng được quét. Thanh tab này
+              chỉ có trên bản web, tức bộ đo; app ship trên iOS không đổi. */}
+          <TabTrigger name="assistant" href="/assistant" asChild>
+            <TabButton>Assistant</TabButton>
+          </TabTrigger>
         </CustomTabList>
       </TabList>
     </Tabs>

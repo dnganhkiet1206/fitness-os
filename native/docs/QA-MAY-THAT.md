@@ -412,7 +412,7 @@ chữ → Chữ lớn hơn → AX3**, rồi mở lại app.
 | I7 | AX3, tài khoản chưa đủ số liệu: Hôm nay → đồng hồ sẵn sàng → "Chạm để xem chi tiết" | Dòng dưới số của các ô HRV / RHR / SLEEP / LOAD ("cần 5 lần đo", "chưa ghi đêm qua", "chưa ghi buổi tập") đọc **trọn**; số của hai ô cùng hàng vẫn thẳng nhau (#94) | ☐ |
 | I8 | AX3: Dinh dưỡng → thẻ bốn cách ghi bữa; rồi thư viện thực phẩm (phân đoạn "Của tôi") | "Chụp ảnh", "Mã vạch", "Tìm món", "Nhập tay" đọc trọn; ô "Lọc trong danh sách" **không đè** lên nút "+" bên cạnh, bấm "+" mở được màn thêm thực phẩm (#73) | ☐ |
 | I9 | Tiếng Việt: xoá một món khỏi nhật ký, và xoá một thực phẩm của mình | Hộp hỏi lại của iOS viết "Huỷ" và "Xoá" — cùng một kiểu với mọi hộp khác trong app, không có "Hủy"/"Xóa" (#105) | ☐ |
-| I10 | Tiếng Việt: mở tab Trợ lý | Tiêu đề trên cùng là "Trợ lý sức khoẻ", khớp nhãn của tab; không còn "Health Assistant" (#109). *Bản web không có tab Trợ lý, nên chỉ máy thật đo được mục này* | ☐ |
+| I10 | Tiếng Việt: mở tab Trợ lý | Tiêu đề trên cùng là "Trợ lý sức khoẻ", khớp nhãn của tab; không còn "Health Assistant" (#109). *Trên iOS, Trợ lý là ô `role="search"` đứng cạnh thanh tab (iOS 26) — web không vẽ được hình ấy, nên xem cả vị trí ô* | ☐ |
 
 > I8: `minWidth: 0` của ô lọc (#73) chỉ làm **web** giống iOS — trên web một ô
 > nhập có bề rộng tự nhiên lớn theo cỡ chữ. Yoga trên iOS vốn co về 0, nên mục

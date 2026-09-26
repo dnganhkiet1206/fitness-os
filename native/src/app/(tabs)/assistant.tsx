@@ -913,7 +913,11 @@ export default function AssistantScreen() {
                   <View style={styles.toolIcon}>
                     <Glyph name={t.glyph} size={19} />
                   </View>
-                  <Text style={styles.toolLabel} numberOfLines={1}>
+                  {/* Hai dòng (#117): lần đầu màn này được quét trên web, ở 320
+                      với chữ ×1.3 cả bốn nhãn tiếng Việt thành "…" ("Quét thực
+                      phẩm", "Sinh trắc học"…). Tên một công cụ bị cắt thì không
+                      còn là tên. */}
+                  <Text style={styles.toolLabel} numberOfLines={2}>
                     {vi ? t.label.vi : t.label.en}
                   </Text>
                   <Text style={styles.toolHint} numberOfLines={2}>
@@ -1052,7 +1056,9 @@ const stylesFor = makeStyles((c, m) => ({
   /* Two per row: `(100% − one gap) / 2`, as a fraction so it holds at any width
      rather than assuming a 390pt screen. */
   toolWrap: { width: '48.4%' },
-  tool: { padding: spacing.md, gap: 5, minHeight: 118 },
+  /* `flexGrow`: ô kính lấp hết ô bọc, vốn cao theo ô cao nhất trong hàng —
+     một nhãn hai dòng không làm hai ô cạnh nhau lệch chiều cao. */
+  tool: { flexGrow: 1, padding: spacing.md, gap: 5, minHeight: 118 },
   toolIcon: {
     width: 34,
     height: 34,

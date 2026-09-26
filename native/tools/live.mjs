@@ -348,6 +348,14 @@ const RPC_ARG_MISSES = new Set();
 const RPC_UNFIXTURED = new Set();
 /** Lệnh ghi KHÔNG được áp vào thế giới vì bộ lọc máy chủ giả không hiểu (#52). */
 const WRITES_NOT_APPLIED = new Set();
+/*
+  #117: mở một route mà trang DỪNG ở đường dẫn khác. Trên bản web `/assistant`
+  bị chuyển về `/` (thanh tab web không có Trợ lý), nên mọi lượt quét mang nhãn
+  "/assistant" đã đo màn Hôm nay lần thứ hai, và màn Trợ lý chưa từng được quét.
+  Một chuyển hướng có chủ ý phải có tên ở `REDIRECT_OK`, kèm lý do.
+*/
+const LANDING_MISSES = new Set();
+const REDIRECT_OK = {};
 
 /*
   #112: MÚI GIỜ của trình duyệt, chọn một lần lúc nạp.
@@ -433,6 +441,9 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
 
   await page.goto(`http://localhost:${PORT}${route}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.waitForTimeout(settleMs);
+  const asked = route.split('?')[0];
+  const landed = new URL(page.url()).pathname;
+  if (landed !== asked && REDIRECT_OK[`${asked}→${landed}`] === undefined) LANDING_MISSES.add(`[${mode}] mở ${asked} mà trang dừng ở ${landed}`);
   return { browser, page, errors };
 }
 
@@ -2966,6 +2977,9 @@ try {
 
 for (const m of RPC_ARG_MISSES) {
   problems.push(`máy chủ giả trả 404 PGRST202 (như PostgREST): ${m} so với chữ ký trong \`types.ts\` — trên server thật không tìm ra hàm`);
+}
+for (const m of LANDING_MISSES) {
+  problems.push(`${m} — mọi phép đo mang nhãn route ấy đang đo một màn KHÁC (#117)`);
 }
 for (const m of SELECT_MISSES) {
   problems.push(`máy chủ giả trả 400 (như PostgREST): ${m} trong \`types.ts\` — trên server thật câu này hỏng MỌI lần`);

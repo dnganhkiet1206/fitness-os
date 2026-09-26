@@ -188,7 +188,8 @@ function needMore(n: number): Bilingual {
       : `Mới có ${n} ngày được ghi — thêm ${left} ngày nữa là tôi đọc được xu hướng.`,
     en: n === 0
       ? 'Nothing logged this week.'
-      : `Only ${n} days logged — ${left} more and I can read a trend.`,
+      /* n = 1 là "1 day", không phải "1 days" (#67; lần đầu quét được màn Trợ lý trên web, #117). */
+      : `Only ${n} ${n === 1 ? 'day' : 'days'} logged — ${left} more and I can read a trend.`,
   };
 }
 
