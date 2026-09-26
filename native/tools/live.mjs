@@ -941,6 +941,42 @@ async function pressEverything(page, label, problems) {
  */
 const SCENARIOS = [
   {
+    /*
+      #145: xoá một buổi tập mà máy chủ từ chối. Hỏi lại (#91) → OK → phải có
+      lời báo, không phải chữ thô (#31), và buổi tập CÒN trong danh sách. Hỏng
+      mà im lặng thì nút xoá "không làm gì"; hỏng mà vẫn biến mất thì người dùng
+      tưởng đã xoá.
+    */
+    name: 'Buổi tập: xoá mà server từ chối — có lời báo và buổi tập vẫn còn (#145)',
+    route: '/sessions', mode: 'full',
+    async run(page) {
+      let refused = 0;
+      await page.route(/\/rest\/v1\/workout_sessions/, (r) => {
+        if (r.request().method() !== 'DELETE') return r.fallback();
+        refused++;
+        return r.fulfill({ status: 500, contentType: 'application/json', body: '{"message":"server error"}' });
+      });
+      page.on('dialog', (d) => d.accept().catch(() => {}));
+      const dels = page.getByRole('button', { name: /^Delete$/ }).filter({ visible: true });
+      const before = await dels.count();
+      if (before === 0) return 'không thấy nút "Delete" nào ở danh sách buổi tập';
+      await dels.first().click();
+      const toast = async () => (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
+      let text = '';
+      for (let k = 0; k < 16 && !text; k++) {
+        await page.waitForTimeout(250);
+        text = await toast();
+      }
+      await page.waitForTimeout(1500);
+      if (!refused) return 'bấm Delete rồi OK mà không có lệnh DELETE nào đi ra — vế này không đo gì';
+      if (!text) return 'server từ chối xoá mà không có lời báo nào — nút xoá "không làm gì"';
+      if (/server error/i.test(text)) return `lời báo là chữ thô của server: "${text}" (#31)`;
+      const after = await dels.count();
+      if (after !== before) return `server từ chối mà danh sách mất một buổi (${before} → ${after}) — người dùng tưởng đã xoá`;
+      return null;
+    },
+  },
+  {
     /* #143: tick một món đi chợ mà máy chủ từ chối → ô quay lại và có lời báo.
        Trước #143 mutation này gỡ bản vá trong im lặng, như thực phẩm bổ sung ở #141. */
     name: 'Đi chợ: server từ chối lần tick thì ô quay lại và có lời báo (#143)',

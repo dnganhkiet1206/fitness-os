@@ -918,7 +918,15 @@ export function SwipeRow({
   ) => {
     methods.current = api;
     return (
-      <View style={side === 'left' ? styles_panelLeft : styles_panelRight}>
+      /*
+        Tấm nút ẩn khỏi cây trợ năng (#145). Nó nằm SAU hàng, và khi hàng đóng
+        thì bị hàng che — nhưng vẫn là phần tử trợ năng: đo trên /sessions, mỗi
+        hàng có HAI nút "Xoá", một cái thùng rác nhìn thấy được và một cái
+        trong tấm này, bị che. VoiceOver gặp cả hai. Lối của VoiceOver là
+        `accessibilityActions` của hàng (ngay dưới), lấy từ CÙNG danh sách này;
+        tấm nút là lối tắt cho ngón tay, và `aria-hidden` không chặn chạm.
+      */
+      <View style={side === 'left' ? styles_panelLeft : styles_panelRight} aria-hidden>
         <Track from={progress} to={openness} />
         {side === 'left' && fullSwipe ? (
           <FullSwipeWatch translation={translation} width={width} onArm={armFull} />

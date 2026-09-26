@@ -98,6 +98,13 @@ export function problemsOf(files) {
      phải tự ẩn khỏi cây trợ năng — không thì VoiceOver vuốt qua một thẻ đã thu
      vẫn gặp mọi nút bên trong. Gỡ nó ra thì lượt bấm thử của live.mjs chỉ đếm
      thêm vài nút "bị che", không đỏ — nên chốt ở đây. */
+  /* #145: tấm nút của SwipeRow nằm SAU hàng, bị che khi đóng; lối của VoiceOver
+     là accessibilityActions của hàng — nên tấm phải ẩn, không thì mỗi hàng có
+     hai nút "Xoá", một cái vô hình. */
+  const sw = files.find(([f]) => f === 'src/components/ascnd/swipe-row.tsx');
+  if (sw && !/styles_panelLeft : styles_panelRight\} aria-hidden>/.test(sw[1])) {
+    out.push('src/components/ascnd/swipe-row.tsx: tấm nút vuốt không còn aria-hidden — VoiceOver gặp một bản sao vô hình của mọi nút vuốt (#145)');
+  }
   const exp = files.find(([f]) => f === 'src/components/ascnd/expander.tsx');
   if (exp && !/<View style=\{styles\.body\} onLayout=\{measure\} aria-hidden=\{!open\}>/.test(exp[1])) {
     out.push('src/components/ascnd/expander.tsx: thân Expander không còn aria-hidden={!open} — khối đã thu vẫn để lộ mọi nút bên trong cho trình đọc màn hình (#127)');
@@ -316,6 +323,7 @@ if (pN < 3) problems.push(`chỉ nhận ra ${pN} khối ẩn bằng pointerEvent
   probe('bỏ accessibilityState ở công tắc khởi động (#101)', 'src/app/log-workout.tsx', 'accessibilityState={{ checked: s.warmup }}', '');
   probe('bỏ aria-expanded ở nút gập bài (#103)', 'src/components/ascnd/day-plan.tsx', 'aria-expanded={expanded}', '');
   probe('bỏ aria-hidden ở thân Expander khi đóng (#127)', 'src/components/ascnd/expander.tsx', ' aria-hidden={!open}>', '>');
+  probe('bỏ aria-hidden ở tấm nút vuốt (#145)', 'src/components/ascnd/swipe-row.tsx', 'styles_panelRight} aria-hidden>', 'styles_panelRight}>');
   /* #123: nhận diện nút gập từ hình của nó. */
   const dBase = disclosureProblemsOf(raw).out.length;
   const dProbe = (label, file, from, to) => {
@@ -367,7 +375,7 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `trạng thái ô chọn OK — ${dN} nút gập nhận ra từ mũi tên đổi/xoay đều khai expanded lẫn aria-expanded (#123; thử ngược: bỏ expanded ở một nút mũi tên đổi và một nút mũi tên xoay thì đỏ, mũi tên cố định thì xanh); thân Expander đóng thì ẩn khỏi cây trợ năng (#127; gỡ đi thì đỏ); ${tN} chỗ vẽ ô tick đều mang vai checkbox/switch/radio (#139; bỏ vai ở thẻ Thực phẩm bổ sung thì đỏ, nút "Lưu" có Check cố định thì xanh); ${pN} khối ẩn bằng pointerEvents đều mang aria-hidden hoặc có lý do ghi ra (#129; bỏ aria-hidden ở thân bữa thì đỏ); ${n} phần tử role tab/checkbox/switch/radio trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101), khối gập mang aria-expanded (#103) ` +
+  `trạng thái ô chọn OK — ${dN} nút gập nhận ra từ mũi tên đổi/xoay đều khai expanded lẫn aria-expanded (#123; thử ngược: bỏ expanded ở một nút mũi tên đổi và một nút mũi tên xoay thì đỏ, mũi tên cố định thì xanh); thân Expander đóng và tấm nút vuốt đều ẩn khỏi cây trợ năng (#127, #145; gỡ đi thì đỏ); ${tN} chỗ vẽ ô tick đều mang vai checkbox/switch/radio (#139; bỏ vai ở thẻ Thực phẩm bổ sung thì đỏ, nút "Lưu" có Check cố định thì xanh); ${pN} khối ẩn bằng pointerEvents đều mang aria-hidden hoặc có lý do ghi ra (#129; bỏ aria-hidden ở thân bữa thì đỏ); ${n} phần tử role tab/checkbox/switch/radio trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101), khối gập mang aria-expanded (#103) ` +
     '(web, nơi react-native-web không dịch accessibilityState — bảy ô ngày của Kế hoạch ngày từng rỗng cả bảy, kể cả ô đang ' +
     'mở; sáu ô tick set cũng rỗng aria-checked). Thử ngược: bỏ aria-selected ở hàng ngày, bỏ accessibilityState ở PickRow, bỏ aria-checked ở ô tick set, bỏ accessibilityState ở công tắc khởi động, bỏ aria-expanded ở nút gập bài — mỗi cái đỏ',
 );

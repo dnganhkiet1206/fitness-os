@@ -12,7 +12,9 @@
  *
  * ── luật ──
  *
- * Mỗi hook xuất khẩu có một mutation mang `onMutate`, thì:
+ * Từ #145, MỌI mutation — không chỉ cái lạc quan: mutation không lạc quan hỏng
+ * thì nút "không làm gì", không đổi màn, không một lời. Mỗi mutation trong một
+ * hook xuất khẩu:
  *   · hoặc thân hook gọi `toast.fail` (lời báo ở MỘT chỗ, mọi chỗ gọi đều có),
  *   · hoặc MỌI lời gọi `.mutate(…)` / `.mutateAsync(…)` trên nó ở `src/` truyền
  *     `onError` (lời báo riêng từng chỗ — như nước, xem `use-water.ts`).
@@ -56,7 +58,7 @@ function callsOn(src, v) {
       else if (src[i] === ')') d--;
       i++;
     }
-    out.push({ line: src.slice(0, m.index).split('\n').length, text: src.slice(m.index, i) });
+    out.push({ at: m.index, async: m[1] === 'mutateAsync', line: src.slice(0, m.index).split('\n').length, text: src.slice(m.index, i) });
   }
   return out;
 }
@@ -85,6 +87,66 @@ function mutationsOf(body) {
   return out;
 }
 
+/** Lời gọi ở `at` có nằm trong một khối `try { … }` có `catch` không. */
+function insideTry(src, at) {
+  for (const m of src.slice(0, at).matchAll(/\btry\s*\{/g)) {
+    let d = 0;
+    let i = m.index + m[0].length - 1;
+    for (; i < src.length; i++) {
+      if (src[i] === '{') d++;
+      else if (src[i] === '}' && --d === 0) break;
+    }
+    if (i > at && /^\s*catch\b/.test(src.slice(i + 1, i + 40))) return true;
+  }
+  return false;
+}
+
+/**
+ * Lời gọi có bắt lỗi không — ba dạng có thật trong app:
+ *   · `onError` ngay trong lời gọi, hoặc trong một biến truyền vào
+ *     (`const opts = { onSuccess, onError }; create.mutate(data, opts)` — food-editor);
+ *   · `await x.mutateAsync(…)` trong một `try` có `catch`;
+ *   · `mutateAsync` bên trong `mutationFn` của một mutation NGOÀI có `onError`
+ *     (log-workout: lỗi đi lên `save`, và `save` báo).
+ */
+function handled(src, c) {
+  if (/\bonError\b/.test(c.text)) return true;
+  const arg = c.text.match(/,\s*(\w+)\s*\)$/)?.[1];
+  if (arg) {
+    const decl = src.match(new RegExp(`const\\s+${arg}\\s*=\\s*\\{`));
+    if (decl) {
+      let d = 0;
+      let i = decl.index + decl[0].length - 1;
+      for (; i < src.length; i++) {
+        if (src[i] === '{') d++;
+        else if (src[i] === '}' && --d === 0) break;
+      }
+      if (/\bonError\b/.test(src.slice(decl.index, i))) return true;
+    }
+  }
+  if (!c.async) return false;
+  if (insideTry(src, c.at)) return true;
+  for (const m of src.slice(0, c.at).matchAll(/use(?:Online)?Mutation\(/g)) {
+    let d = 1;
+    let i = m.index + m[0].length;
+    for (; i < src.length && d; i++) {
+      if (src[i] === '(') d++;
+      else if (src[i] === ')') d--;
+    }
+    const block = src.slice(m.index, i);
+    if (i > c.at && /mutationFn/.test(block) && /\bonError\b/.test(block.slice(c.at - m.index))) return true;
+  }
+  return false;
+}
+
+/*
+  Lời gọi cố ý không báo: KHÔNG ai bấm gì. Mỗi mục một lý do.
+*/
+const QUIET_OK = {
+  'src/app/community-inbox.tsx:markRead':
+    'đánh dấu đã đọc chạy NỀN khi mở Hộp thư; hỏng thì lần mở sau đánh dấu lại, và một toast về việc người dùng không làm là nhiễu',
+};
+
 /** `{ out, n, sites }` cho các tệp `[[tên, mã]]`. */
 export function problemsOf(files) {
   const out = [];
@@ -95,13 +157,12 @@ export function problemsOf(files) {
     if (!rel.startsWith('src/hooks/')) continue;
     for (const [name, body] of Object.entries(hooksOf(src))) {
       for (const mu of mutationsOf(body)) {
-        if (!/\bonMutate\b/.test(mu.text)) continue;
         n++;
-        if (!/toast\.fail\(/.test(mu.text)) silent.push({ name, key: mu.key, rel });
+        if (!/toast\.fail\(/.test(mu.text)) silent.push({ name, key: mu.key, rel, optimistic: /\bonMutate\b/.test(mu.text) });
       }
     }
   }
-  for (const { name, key, rel: hookFile } of silent) {
+  for (const { name, key, rel: hookFile, optimistic } of silent) {
     let calls = 0;
     for (const [rel, src] of files) {
       for (const m of src.matchAll(new RegExp(`const\\s+(\\{[^}]*\\}|\\w+)\\s*=\\s*${name}\\(`, 'g'))) {
@@ -119,8 +180,11 @@ export function problemsOf(files) {
           for (const c of callsOn(src, acc.replace('.', '\\.'))) {
             calls++;
             sites++;
-            if (!/\bonError\b/.test(c.text)) {
-              out.push(`${rel}:${c.line}: \`${acc}.mutate(…)\` của ${name}${key ? `.${key}` : ''} (${hookFile}) không có onError, và mutation không tự báo — bản vá lạc quan bị gỡ trong im lặng (#143)`);
+            if (!handled(src, c) && !QUIET_OK[`${rel}:${acc}`]) {
+              out.push(
+                `${rel}:${c.line}: \`${acc}.${c.async ? 'mutateAsync' : 'mutate'}(…)\` của ${name}${key ? `.${key}` : ''} (${hookFile}) không bắt lỗi, và mutation không tự báo — ` +
+                  (optimistic ? 'bản vá lạc quan bị gỡ trong im lặng (#143)' : 'hỏng thì nút "không làm gì", không một lời (#145)'),
+              );
             }
           }
         }
@@ -133,7 +197,7 @@ export function problemsOf(files) {
 
 const files = walk(path.join(NATIVE, 'src')).map((p) => [path.relative(NATIVE, p), readFileSync(p, 'utf8')]);
 const { out: problems, n, sites } = problemsOf(files);
-if (n < 15) problems.push(`chỉ thấy ${n} mutation lạc quan — bộ đọc hỏng, đừng tin kết quả`);
+if (n < 50) problems.push(`chỉ thấy ${n} mutation — bộ đọc hỏng, đừng tin kết quả`);
 
 /* ── thử ngược ── */
 {
@@ -148,6 +212,15 @@ if (n < 15) problems.push(`chỉ thấy ${n} mutation lạc quan — bộ đọc
   flip('src/hooks/use-library.ts', '      toast.fail(e);\n    },', '    },', 'bỏ toast.fail khỏi useToggleSupplement (#141)');
   flip('src/hooks/use-extras.ts', '      toast.fail(e);\n    },', '    },', 'bỏ toast.fail khỏi tick món đi chợ (#143)');
   flip('src/app/water.tsx', 'onError: (e: Error) => toast.fail(e)', 'onSettled: () => {}', 'bỏ onError ở một chỗ gọi nước (lời báo từng chỗ)');
+  /* #145: mutation KHÔNG lạc quan — xoá thực phẩm của mình mà không bắt lỗi. */
+  flip('src/app/food-editor.tsx', `            onError: (e: Error) => toast.fail(e),
+          }),`, `          }),`, 'bỏ onError ở nút xoá thực phẩm (mutation không lạc quan, #145)');
+  /* Danh sách miễn chỉ ngắn đi: mục không còn là một lời gọi thật thì đỏ. */
+  for (const k of Object.keys(QUIET_OK)) {
+    const [file, v] = k.split(':');
+    const src = files.find(([f]) => f === file)?.[1] ?? '';
+    if (!new RegExp(`\\b${v}\\.(mutate|mutateAsync)\\(`).test(src)) problems.push(`QUIET_OK cũ: \`${k}\` không còn là một lời gọi — bỏ khỏi danh sách`);
+  }
 }
 
 if (problems.length) {
@@ -156,7 +229,8 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `gỡ vá có lời OK — ${n} mutation lạc quan (có onMutate) trong src/hooks/: mutation tự gọi toast.fail, hoặc mọi chỗ gọi ` +
-    `truyền onError (${sites} lời gọi đã soát). Thử ngược: bỏ toast.fail ở thực phẩm bổ sung, ở tick món đi chợ, và bỏ ` +
-    'onError ở một chỗ gọi nước — mỗi cái đỏ',
+  `gỡ vá có lời OK — ${n} mutation trong src/hooks/ (lạc quan hay không): mutation tự gọi toast.fail, hoặc mọi chỗ gọi ` +
+    `bắt lỗi — onError trong lời gọi hay trong biến truyền vào, try/catch quanh mutateAsync, hay một mutation ngoài có onError ` +
+    `(${sites} lời gọi đã soát; ${Object.keys(QUIET_OK).length} lời gọi nền cố ý im lặng, có lý do). Thử ngược: bỏ toast.fail ở thực phẩm bổ sung, ` +
+    'ở tick món đi chợ, bỏ onError ở một chỗ gọi nước, và ở nút xoá thực phẩm (không lạc quan) — mỗi cái đỏ',
 );
