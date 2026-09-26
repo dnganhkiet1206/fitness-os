@@ -61,6 +61,8 @@ MIG = os.path.join(ROOT, 'supabase', 'migrations')
 TESTS = HERE
 BIN = os.environ.get('PG_BIN', '/usr/lib/postgresql/16/bin')
 PORT = os.environ.get('PG_PORT', '55491')
+# Tệp ca chung của tìm kiếm (#130), như run.sh.
+os.environ.setdefault('SEARCH_CASES', os.path.join(HERE, 'search_cases.json'))
 
 
 def sh(cmd, **kw):
@@ -84,6 +86,11 @@ COVERAGE_OK = {
         'H10': _GRANT,
     },
     'search': {'G5': _GRANT},
+    'search_shared': {
+        'SC0': 'canh BIẾN MÔI TRƯỜNG của bộ chạy (SEARCH_CASES), không canh migration nào — không '
+               'đột biến migration nào với tới nó. Thử ngược bằng tay (#130): '
+               '`SEARCH_CASES=/khong-co python3 b_reverse.py search_shared` thì mọi ca đỏ ở SC0.',
+    },
     'find_recipes': {'F16': _GRANT},
     'recipe': {
         'R9': 'CÙNG công thức với R8 (servings × serving_g), trên hàng thứ hai — servings '

@@ -600,6 +600,9 @@ const STEPS = [
   /* Cộng đồng · bài Recipe (#7, người làm: B): CHẠY THẬT hàm đọc payload trên payload hỏng. */
   ['bài Recipe', 'node', ['tools/recipe-post.mjs']],
   ['dữ liệu thế giới giả', 'node', ['tools/fixture-integrity.mjs']],
+  /* #130: fixture tìm kiếm của thế giới giả và SQL thật chạy CÙNG một tệp ca
+     (search_cases.json); phía SQL ở community_search_shared.test.sql. */
+  ['tìm kiếm SQL ↔ fixture', 'node', ['tools/search-parity.mjs']],
   ['thư viện Đã lưu', 'node', ['tools/saved-library.mjs']],
   ['phép tính ngày tự chế', 'node', ['tools/day-math.mjs']],
   ['hình dạng cache', 'node', ['tools/cache-shape.mjs']],

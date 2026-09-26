@@ -117,6 +117,9 @@ export const fold = (s) => [...(s ?? '')].map((c) => FOLD.map.get(c) ?? c).join(
 
 /* LIKE với `%` ở cuối (và `% ` ở đầu cho vế "một từ trong tên"): đã thoát `\ % _`. */
 const startsWord = (hay, q) => hay.startsWith(q) || hay.includes(` ${q}`);
+/* `btrim(x)` của Postgres: CHỈ dấu cách, không phải mọi khoảng trắng như
+   `String.trim()` — "\tga" không khớp gì trên máy thật (#130, search-parity.mjs). */
+const btrim = (s) => String(s ?? '').replace(/^ +| +$/g, '');
 
 /* Bài công khai, chưa ẩn, trong 14 ngày của một người — `community_follow_suggestions`. */
 const recentPublic = (world, uid) => {
@@ -196,11 +199,12 @@ export const RPC_FIXTURES = {
     },
   },
 
-  /* 20260930170000_community_search_unaccent.sql (định nghĩa lại bản của 20260930160000) */
+  /* 20261001170000_community_search_unaccent_one_fold.sql (#119; nghĩa của bản #37,
+     20260930170000, định nghĩa lại 20260930160000). Nghĩa được so với SQL: #130. */
   community_search_profiles: {
     sample: { p_q: 'pham' },
     run({ p_q } = {}, world) {
-      const q = fold(String(p_q ?? '').trim()).replace(/^@+/, '').slice(0, 40);
+      const q = fold(btrim(p_q)).replace(/^@+/, '').slice(0, 40);
       if ([...q].length < 2) return [];
       return rows(world, 'community_profiles')
         .filter((p) => p.user_id !== UID && !blockedBetween(world, UID, p.user_id))
@@ -214,12 +218,12 @@ export const RPC_FIXTURES = {
     },
   },
 
-  /* 20261001150000_community_find_recipes.sql (#43): vị từ của policy
+  /* 20261001160000_community_find_recipes_one_fold.sql (#116; nghĩa của #43): vị từ của policy
      "Readers see visible posts", từng vế, và tiền tố của một từ trong tên món. */
   community_find_recipes: {
     sample: { p_q: 'chicken' },
     run({ p_q } = {}, world) {
-      const q = fold(String(p_q ?? '').trim()).slice(0, 40);
+      const q = fold(btrim(p_q)).slice(0, 40);
       if ([...q].length < 2) return [];
       return rows(world, 'community_posts')
         .filter((p) => p.kind === 'recipe')

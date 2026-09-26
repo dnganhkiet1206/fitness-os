@@ -1,0 +1,52 @@
+{
+  "_": "Ca CHUNG cho tìm công thức và tìm người (#130). Cùng tệp chạy qua SQL thật (community_search_shared.test.sql, trong run.sh) và qua fixture của thế giới giả (native/tools/search-parity.mjs, trong cổng). recipes.titles theo thứ tự MỚI NHẤT TRƯỚC; expect là tên món / handle theo đúng thứ tự hàm trả. Chỉ nghĩa của CHUỖI TÌM ở đây — ai thấy bài nào (RLS, chặn, theo dõi) chỉ SQL canh, fixture không có RLS.",
+  "recipes": {
+    "titles": ["Cơm gà áp chảo", "Phở bò tái", "Gà nướng mật ong", "Salad 100% rau", "Trà_sữa trân châu", "Ức gà luộc", "Đậu hũ sốt cà", "Bánh mì trứng"],
+    "cases": [
+      { "q": "ga", "expect": ["Cơm gà áp chảo", "Gà nướng mật ong", "Ức gà luộc"], "why": "đầu tên hoặc đầu một từ, mới nhất trước" },
+      { "q": "GÀ", "expect": ["Cơm gà áp chảo", "Gà nướng mật ong", "Ức gà luộc"], "why": "gập dấu và chữ hoa" },
+      { "q": "  ga  ", "expect": ["Cơm gà áp chảo", "Gà nướng mật ong", "Ức gà luộc"], "why": "btrim bỏ dấu cách hai đầu" },
+      { "q": "\tga", "expect": [], "why": "btrim CHỈ bỏ dấu cách — tab ở lại và không khớp" },
+      { "q": "g", "expect": [], "why": "dưới 2 ký tự thì không hỏi" },
+      { "q": "ap chao", "expect": ["Cơm gà áp chảo"], "why": "cụm nhiều từ, không dấu" },
+      { "q": "ho", "expect": [], "why": "giữa chữ ('pho') không khớp — phép phá F3" },
+      { "q": "pho bo", "expect": ["Phở bò tái"], "why": "đầu tên" },
+      { "q": "100%", "expect": ["Salad 100% rau"], "why": "'%' là chữ thường, đã thoát" },
+      { "q": "0%", "expect": [], "why": "giữa chữ" },
+      { "q": "%%", "expect": [], "why": "'%' không phải ký tự đại diện" },
+      { "q": "tra_", "expect": ["Trà_sữa trân châu"], "why": "'_' là chữ thường" },
+      { "q": "tr_", "expect": [], "why": "'_' không phải ký tự đại diện — chưa thoát thì 'tr_' khớp 'tra'" },
+      { "q": "dau hu", "expect": ["Đậu hũ sốt cà"], "why": "Đ hoa gập về d" },
+      { "q": "Đậu", "expect": ["Đậu hũ sốt cà"], "why": "gõ có dấu vẫn khớp" },
+      { "q": "mi", "expect": ["Bánh mì trứng"], "why": "đầu từ thứ hai" },
+      { "q": "zzzz", "expect": [], "why": "trượt" }
+    ]
+  },
+  "profiles": {
+    "people": [
+      { "handle": "sp_linh", "display_name": "Linh Phạm" },
+      { "handle": "sp_pham", "display_name": "Phạm Văn Nam", "official": true },
+      { "handle": "sp_dang", "display_name": "Đặng Khoa" },
+      { "handle": "sp_nam", "display_name": "Nam Trần" },
+      { "handle": "pham_x", "display_name": "Xuân Hà" }
+    ],
+    "cases": [
+      { "q": "pham", "expect": ["sp_pham", "pham_x", "sp_linh"], "why": "tên (đầu từ) hoặc handle (tiền tố); chính thức trước, rồi theo handle" },
+      { "q": "PHẠM", "expect": ["sp_pham", "pham_x", "sp_linh"], "why": "gập dấu và chữ hoa" },
+      { "q": "sp_pham", "expect": ["sp_pham"], "why": "tiền tố handle" },
+      { "q": "@sp_pham", "expect": ["sp_pham"], "why": "bỏ '@' đầu" },
+      { "q": "@@sp_linh", "expect": ["sp_linh"], "why": "bỏ MỌI '@' đầu" },
+      { "q": "sp_", "expect": ["sp_pham", "sp_dang", "sp_linh", "sp_nam"], "why": "chính thức trước, rồi handle tăng dần" },
+      { "q": "sp_nam", "expect": ["sp_nam"], "why": "đúng handle" },
+      { "q": "sp%", "expect": [], "why": "'%' không phải ký tự đại diện" },
+      { "q": "s_", "expect": [], "why": "'_' không phải ký tự đại diện — chưa thoát thì khớp mọi 'sp…'" },
+      { "q": "nam", "expect": ["sp_pham", "sp_nam"], "why": "đầu từ cuối; chính thức trước" },
+      { "q": " nam", "expect": ["sp_pham", "sp_nam"], "why": "btrim" },
+      { "q": "\tnam", "expect": [], "why": "btrim CHỈ bỏ dấu cách" },
+      { "q": "an", "expect": [], "why": "giữa chữ" },
+      { "q": "dang", "expect": ["sp_dang"], "why": "Đ hoa gập về d" },
+      { "q": "kh", "expect": ["sp_dang"], "why": "đầu từ thứ hai" },
+      { "q": "x", "expect": [], "why": "dưới 2 ký tự" }
+    ]
+  }
+}

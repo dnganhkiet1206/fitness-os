@@ -378,6 +378,14 @@ CASES += [
   dict(suite='search', id='U2', mig='20260930170000_community_search_unaccent', how="(A) bỏ dấu: 'Đ' hoa không được gập (đổi thành 'Ð' trông giống)", old="    'àÀáÁạẠảẢãÃâÂầẦấẤậẬẩẨẫẪăĂằẰắẮặẶẳẲẵẴAèÈéÉẹẸẻẺẽẼêÊềỀếẾệỆểỂễỄEìÌíÍịỊỉỈĩĨIòÒóÓọỌỏỎõÕôÔồỒốỐộỘổỔỗỖơƠờỜớỚợỢởỞỡỠOùÙúÚụỤủỦũŨưƯừỪứỨựỰửỬữỮUỳỲýÝỵỴỷỶỹỸYđĐD',", new="    'àÀáÁạẠảẢãÃâÂầẦấẤậẬẩẨẫẪăĂằẰắẮặẶẳẲẵẴAèÈéÉẹẸẻẺẽẼêÊềỀếẾệỆểỂễỄEìÌíÍịỊỉỈĩĨIòÒóÓọỌỏỎõÕôÔồỒốỐộỘổỔỗỖơƠờỜớỚợỢởỞỡỠOùÙúÚụỤủỦũŨưƯừỪứỨựỰửỬữỮUỳỲýÝỵỴỷỶỹỸYđÐD',", expect='U2 '),
   dict(suite='search', id='U4', mig='20260930170000_community_search_unaccent', how="(A) bỏ dấu: 'Á' hoa không được gập", old="    'àÀáÁạẠảẢãÃâÂầẦấẤậẬẩẨẫẪăĂằẰắẮặẶẳẲẵẴAèÈéÉẹẸẻẺẽẼêÊềỀếẾệỆểỂễỄEìÌíÍịỊỉỈĩĨIòÒóÓọỌỏỎõÕôÔồỒốỐộỘổỔỗỖơƠờỜớỚợỢởỞỡỠOùÙúÚụỤủỦũŨưƯừỪứỨựỰửỬữỮUỳỲýÝỵỴỷỶỹỸYđĐD',", new="    'àÀáǺạẠảẢãÃâÂầẦấẤậẬẩẨẫẪăĂằẰắẮặẶẳẲẵẴAèÈéÉẹẸẻẺẽẼêÊềỀếẾệỆểỂễỄEìÌíÍịỊỉỈĩĨIòÒóÓọỌỏỎõÕôÔồỒốỐộỘổỔỗỖơƠờỜớỚợỢởỞỡỠOùÙúÚụỤủỦũŨưƯừỪứỨựỰửỬữỮUỳỲýÝỵỴỷỶỹỸYđĐD',", expect='U4 '),
   dict(suite='search', id='U5', mig='20260930170000_community_search_unaccent', how="(A) bỏ dấu: 'Ứ' hoa không được gập", old="    'àÀáÁạẠảẢãÃâÂầẦấẤậẬẩẨẫẪăĂằẰắẮặẶẳẲẵẴAèÈéÉẹẸẻẺẽẼêÊềỀếẾệỆểỂễỄEìÌíÍịỊỉỈĩĨIòÒóÓọỌỏỎõÕôÔồỒốỐộỘổỔỗỖơƠờỜớỚợỢởỞỡỠOùÙúÚụỤủỦũŨưƯừỪứỨựỰửỬữỮUỳỲýÝỵỴỷỶỹỸYđĐD',", new="    'àÀáÁạẠảẢãÃâÂầẦấẤậẬẩẨẫẪăĂằẰắẮặẶẳẲẵẴAèÈéÉẹẸẻẺẽẼêÊềỀếẾệỆểỂễỄEìÌíÍịỊỉỈĩĨIòÒóÓọỌỏỎõÕôÔồỒốỐộỘổỔỗỖơƠờỜớỚợỢởỞỡỠOùÙúÚụỤủỦũŨưƯừỪứǗựỰửỬữỮUỳỲýÝỵỴỷỶỹỸYđĐD',", expect='U5 '),
+  # #130: tệp ca chung (search_cases.json) đỏ khi nghĩa của CHUỖI TÌM trôi — ở
+  # đây trên SQL; phía fixture tự thử ngược trong native/tools/search-parity.mjs.
+  dict(suite='search_shared', id='SC1', mig=FRM116, how='tìm công thức khớp chuỗi con giữa chữ (F3), đo bằng tệp ca chung',
+       old="LIKE ANY (ARRAY[v_pat || '%', '% ' || v_pat || '%'])", new="LIKE ANY (ARRAY[v_pat || '%', '%' || v_pat || '%'])",
+       expect='SC1 '),
+  dict(suite='search_shared', id='SC2', mig=SPM, how="tìm người không thoát '_', đo bằng tệp ca chung",
+       old="  v_pat := replace(replace(replace(v_q, '\\', '\\\\'), '%', '\\%'), '_', '\\_');", new="  v_pat := replace(replace(v_q, '\\', '\\\\'), '%', '\\%');",
+       expect='SC2 '),
   dict(suite='search', id='S11', mig=SPM119, how='trở lại hai vế OR, mỗi vế gập tên một lần (cùng kết quả, gấp đôi chi phí)',
        old="      OR public.community_fold(p.display_name) LIKE ANY (ARRAY[v_pat || '%', '% ' || v_pat || '%'])",
        new="      OR public.community_fold(p.display_name) LIKE v_pat || '%'\n      OR public.community_fold(p.display_name) LIKE '% ' || v_pat || '%'",

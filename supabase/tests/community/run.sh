@@ -19,6 +19,8 @@ run "$BIN/pg_ctl -D $DIR/data -o '-p $PORT -k $DIR' -l $DIR/log start >/dev/null
 trap 'run "$BIN/pg_ctl -D $DIR/data stop -m fast >/dev/null"; rm -rf "$DIR"' EXIT
 sleep 1
 P=(psql -h "$DIR" -p "$PORT" -U postgres -q -v ON_ERROR_STOP=1)
+# Tệp ca chung của tìm kiếm (#130): community_search_shared.test.sql đọc nó.
+export SEARCH_CASES="$HERE/search_cases.json"
 # Mọi `SET ROLE anon` phải đi ngay sau `pg_temp.anon()` trên cùng dòng (#21):
 # sub do `pg_temp.who()` đặt sống sót qua RESET ROLE, và một kịch bản "anon
 # không làm được X" viết thiếu helper chạy với danh tính của người dùng cuối
