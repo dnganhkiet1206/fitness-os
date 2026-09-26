@@ -79,7 +79,7 @@
  */
 import { execFileSync, spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { existsSync, mkdirSync, readFileSync, statSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -122,6 +122,22 @@ const pickRoutes = (list) => (routeArg ? list.filter((r) => r.includes(routeArg)
   định cũ vẫn chạy trên đúng thế giới cũ. `--theme=light` là để CHỤP bản sáng.
 */
 const themeArg = [...args].find((a) => a.startsWith('--theme='))?.slice(8);
+/*
+  ── song song (#102) ──
+
+  Lượt quét màn (37 × 3) và quét hẹp mở mỗi màn trong một trình duyệt RIÊNG,
+  với một bản sao thế giới riêng (#52), rồi phần lớn thời gian là CHỜ: 9 s cho
+  màn lắng, thêm chờ sau mỗi phân đoạn. Chạy N trang cùng lúc không đổi phép đo
+  nào — mỗi trang vẫn chờ đủ chừng ấy — chỉ thôi chờ tuần tự. Kịch bản và lượt
+  bấm vẫn tuần tự: chúng đổi mạng (#68) và đo thời gian lắng của một lần bấm.
+
+  `--jobs=1` là lượt tuần tự cũ, để so khi một vế đỏ chỉ lúc chạy song song.
+*/
+const JOBS = Number([...args].find((a) => a.startsWith('--jobs='))?.slice(7) ?? 3);
+if (!Number.isInteger(JOBS) || JOBS < 1 || JOBS > 8) {
+  console.error(`--jobs phải là số nguyên 1–8, nhận "${JOBS}"`);
+  process.exit(2);
+}
 if (themeArg && themeArg !== 'light' && themeArg !== 'dark') {
   console.error(`--theme phải là light hoặc dark, nhận "${themeArg}"`);
   process.exit(2);
@@ -2802,15 +2818,60 @@ const BAD_TEXT = /\bNaN\b|\bundefined\b|\[object Object\]|Invalid Date|\bInfinit
 const chromium = loadChromium();
 build();
 const server = await serve();
+/*
+  Mỗi vấn đề được ghi xuống `tools/.live-problems.txt` NGAY khi thấy (#102):
+  container từng khởi động lại giữa một lượt 50 phút, và danh sách chỉ in ở
+  cuối thì mất trọn. Tệp bị ghi đè ở đầu mỗi lượt, nên nó luôn là của lượt
+  gần nhất — kể cả một lượt chết giữa chừng.
+*/
+const PROBLEMS_FILE = path.join(NATIVE, 'tools', '.live-problems.txt');
+writeFileSync(PROBLEMS_FILE, `# live.mjs ${process.argv.slice(2).join(' ')} — bắt đầu ${new Date().toISOString()}\n`);
+const note = (lines) => {
+  if (lines.length) appendFileSync(PROBLEMS_FILE, lines.map((l) => `${l}\n`).join(''));
+};
 const problems = [];
+const pushRaw = problems.push.bind(problems);
+problems.push = (...xs) => {
+  note(xs);
+  return pushRaw(...xs);
+};
+/**
+ * Chạy `fn` trên từng phần tử, tối đa `JOBS` cái cùng lúc. Mỗi phần tử ghi vấn
+ * đề vào mảng RIÊNG của nó — xuống tệp ngay khi xong, vào `problems` theo ĐÚNG
+ * thứ tự danh sách sau khi cả lượt xong — nên bản in cuối không đổi thứ tự
+ * theo việc trang nào lắng trước.
+ */
+async function pool(items, fn) {
+  const found = items.map(() => []);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      await fn(items[i], found[i]);
+      note(found[i]);
+      process.stdout.write('.');
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(JOBS, items.length) }, worker));
+  for (const f of found) pushRaw(...f);
+}
+const t0 = Date.now();
+const lap = {};
+/* Đo trước/sau của #102 in ở MỌI lối ra, kể cả lối đỏ. */
+process.on('exit', () => {
+  const sec = (ms) => `${Math.round(ms / 1000)} s`;
+  const parts = [lap.sweep != null && `quét màn ${sec(lap.sweep)}`, lap.narrow != null && `quét hẹp ${sec(lap.narrow)}`].filter(Boolean);
+  console.log(`thời gian (--jobs=${JOBS}): ${[...parts, `tổng ${sec(Date.now() - t0)}`].join(' · ')} — vấn đề ghi ở tools/.live-problems.txt`);
+});
 
 let segmentsSeen = 0;
 try {
   await canary(chromium);
   process.stdout.write('canary OK — đang mở từng màn');
 
-  for (const mode of args.has('--press-only') || narrowOnly || onlyArg ? [] : MODES) {
-    for (const route of pickRoutes(ROUTES)) {
+  const sweep = (args.has('--press-only') || narrowOnly || onlyArg ? [] : MODES).flatMap((mode) => pickRoutes(ROUTES).map((route) => ({ mode, route })));
+  await pool(sweep, async ({ mode, route }, problems) => {
+    {
       const { text, rootLen, errors, pinned, segments } = await boot(chromium, route, mode);
       const at = `[${mode}] ${route}`;
       if (pinned.length) problems.push(`${at}: ${pinned.length} phần tử kẹt position:absolute sau hiệu ứng vào của Reanimated web (#76) — ${pinned.slice(0, 2).map((t) => `"${t}"`).join(', ')}`);
@@ -2839,10 +2900,9 @@ try {
       }
 
       if (errors.length) problems.push(`${at}: lỗi runtime — ${errors.slice(0, 2).join(' | ').slice(0, 200)}`);
-
-      process.stdout.write('.');
     }
-  }
+  });
+  lap.sweep = Date.now() - t0;
   console.log('');
 
   /*
@@ -2877,8 +2937,12 @@ try {
       ...NARROW_LANGS.map((lang) => ({ lang, large: false })),
       ...LARGE_LANGS.map((lang) => ({ lang, large: true })),
     ];
-    for (const { lang, large } of passes) {
-      for (const route of pickRoutes([...NARROW_ROUTES, ...NARROW_ROUTES_NUTRITION, ...NARROW_ROUTES_MAIN])) {
+    const narrowItems = passes.flatMap(({ lang, large }) =>
+      pickRoutes([...NARROW_ROUTES, ...NARROW_ROUTES_NUTRITION, ...NARROW_ROUTES_MAIN]).map((route) => ({ lang, large, route })),
+    );
+    const tn = Date.now();
+    await pool(narrowItems, async ({ lang, large, route }, problems) => {
+      {
         const { browser, page, errors } = await openPage(chromium, route, 'full', 9000, { ...NARROW, lang });
         try {
           const at = `[320 ${lang}${large ? ` chữ ×${LARGE_TEXT}` : ''}] ${route}`;
@@ -2908,9 +2972,9 @@ try {
         } finally {
           await browser.close();
         }
-        process.stdout.write('.');
       }
-    }
+    });
+    lap.narrow = Date.now() - tn;
     console.log('');
     globalThis.__narrow = { opened, largeOpened, contentCut: contentCut.size, clipExempted };
   }
