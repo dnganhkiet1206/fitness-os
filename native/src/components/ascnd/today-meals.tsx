@@ -723,7 +723,9 @@ function MealCard({
         gets measured, and it lays out at its natural size however short the box
         around it currently is.
       */}
-      <Animated.View style={[styles.body, body]} pointerEvents={open ? 'auto' : 'none'}>
+      {/* `pointerEvents` chỉ chặn CHẠM; VoiceOver đi theo cây trợ năng, nên bữa
+          đã thu phải tự ẩn — không thì nó vẫn đọc mọi hàng món và nút xoá (#129). */}
+      <Animated.View style={[styles.body, body]} pointerEvents={open ? 'auto' : 'none'} aria-hidden={!open}>
         <View style={styles.bodyInner} onLayout={(e) => setBodyH(e.nativeEvent.layout.height)}>
           {g.items.map((it, i) => (
             <MealRow

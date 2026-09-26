@@ -185,6 +185,46 @@ export function disclosureProblemsOf(files) {
   return { out, n };
 }
 
+/*
+  ── ẩn bằng pointerEvents mà vẫn trong cây trợ năng (#129) ──
+
+  `pointerEvents={x ? 'auto' : 'none'}` chỉ chặn CHẠM. VoiceOver không chạm —
+  nó đi theo cây trợ năng — nên một khối "đã ẩn" theo cách ấy vẫn đọc được mọi
+  nút bên trong: thân bữa đã thu ở nhật ký, bong bóng Koa đã tắt. Mỗi chỗ như
+  thế phải mang `aria-hidden`, hoặc có tên ở đây kèm lý do nó KHÔNG phải một
+  khối ẩn.
+*/
+const POINTER_PASS_OK = {
+  'src/components/ascnd/connection-banner.tsx':
+    'dải "Đang kết nối lại…" vẫn HIỆN và phải đọc được; `none` chỉ để chạm đi xuyên qua xuống trang bên dưới',
+};
+export function pointerHiddenProblemsOf(files) {
+  const out = [];
+  let n = 0;
+  for (const [rel, src] of files) {
+    const ast = parse(src, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
+    const visit = (node) => {
+      if (!node || typeof node !== 'object') return;
+      if (Array.isArray(node)) return node.forEach(visit);
+      if (node.type === 'JSXOpeningElement') {
+        const attrs = node.attributes.filter((x) => x.type === 'JSXAttribute');
+        const pe = attrs.find((x) => x.name.name === 'pointerEvents')?.value;
+        const e = pe?.type === 'JSXExpressionContainer' ? pe.expression : null;
+        const lit = (x) => x?.type === 'StringLiteral' && x.value === 'none';
+        if (e?.type === 'ConditionalExpression' && (lit(e.consequent) || lit(e.alternate))) {
+          n++;
+          if (!attrs.some((x) => x.name.name === 'aria-hidden') && !POINTER_PASS_OK[rel]) {
+            out.push(`${rel}:${node.loc.start.line}: khối ẩn bằng pointerEvents 'none' mà không có aria-hidden — VoiceOver vẫn đọc mọi thứ bên trong (#129)`);
+          }
+        }
+      }
+      for (const k in node) if (k !== 'loc' && !k.endsWith('Comments')) visit(node[k]);
+    };
+    visit(ast.program);
+  }
+  return { out, n };
+}
+
 /* Bỏ chú thích, giữ số dòng: một câu chú thích NHẮC `accessibilityRole="tab"`
    không phải một ô, và chú thích trong props của PickRow chứa đúng chữ
    `accessibilityState={{ selected }}` — bản đầu vì thế cho PickRow qua dù đã bỏ
@@ -198,6 +238,9 @@ const raw = walk(path.join(NATIVE, 'src')).map((p) => [path.relative(NATIVE, p),
 const { out: dOut, n: dN } = disclosureProblemsOf(raw);
 problems.push(...dOut);
 if (dN < 5) problems.push(`chỉ nhận ra ${dN} nút gập — bộ nhận diện hỏng, đừng tin kết quả`);
+const { out: pOut, n: pN } = pointerHiddenProblemsOf(raw);
+problems.push(...pOut);
+if (pN < 3) problems.push(`chỉ nhận ra ${pN} khối ẩn bằng pointerEvents — bộ nhận diện hỏng, đừng tin kết quả`);
 
 /* ── thử ngược ── */
 {
@@ -230,6 +273,17 @@ if (dN < 5) problems.push(`chỉ nhận ra ${dN} nút gập — bộ nhận di�
     const red = disclosureProblemsOf([['thử.tsx', src]]).out.length > 0;
     if (red !== wantRed) problems.push(`thử ngược hỏng: ${label} — luật ${red ? 'đỏ' : 'xanh'}, phải ${wantRed ? 'đỏ' : 'xanh'}`);
   };
+  {
+    const pBase = pointerHiddenProblemsOf(raw).out.length;
+    const i = raw.findIndex(([f]) => f === 'src/components/ascnd/today-meals.tsx');
+    const from = " pointerEvents={open ? 'auto' : 'none'} aria-hidden={!open}>";
+    if (i < 0 || !raw[i][1].includes(from)) problems.push('thử ngược hỏng: không thấy thân bữa có aria-hidden trong today-meals.tsx');
+    else {
+      const copy = raw.slice();
+      copy[i] = [raw[i][0], raw[i][1].replace(from, " pointerEvents={open ? 'auto' : 'none'}>")];
+      if (pointerHiddenProblemsOf(copy).out.length <= pBase) problems.push('thử ngược hỏng: bỏ aria-hidden ở thân bữa đã thu (#129) mà luật vẫn xanh');
+    }
+  }
   one('mũi tên cố định (dẫn sang màn khác)', 'const a = <PressScale onPress={go}><Text>Cài đặt</Text><Icon icon={ChevronRight} /></PressScale>;', false);
   one('mũi tên đổi theo điều kiện, không khai gì', 'const b = <PressScale onPress={t}><Icon icon={open ? ChevronUp : ChevronDown} /></PressScale>;', true);
   one('mũi tên đổi nằm trong một chỗ bấm LỒNG', 'const c = <PressScale onPress={t} accessible={false}><Pressable onPress={u} accessibilityState={{ expanded: open }} aria-expanded={open}><Icon icon={open ? ChevronUp : ChevronDown} /></Pressable></PressScale>;', false);
@@ -241,7 +295,7 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `trạng thái ô chọn OK — ${dN} nút gập nhận ra từ mũi tên đổi/xoay đều khai expanded lẫn aria-expanded (#123; thử ngược: bỏ expanded ở một nút mũi tên đổi và một nút mũi tên xoay thì đỏ, mũi tên cố định thì xanh); thân Expander đóng thì ẩn khỏi cây trợ năng (#127; gỡ đi thì đỏ); ${n} phần tử role tab/checkbox/switch/radio trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101), khối gập mang aria-expanded (#103) ` +
+  `trạng thái ô chọn OK — ${dN} nút gập nhận ra từ mũi tên đổi/xoay đều khai expanded lẫn aria-expanded (#123; thử ngược: bỏ expanded ở một nút mũi tên đổi và một nút mũi tên xoay thì đỏ, mũi tên cố định thì xanh); thân Expander đóng thì ẩn khỏi cây trợ năng (#127; gỡ đi thì đỏ); ${pN} khối ẩn bằng pointerEvents đều mang aria-hidden hoặc có lý do ghi ra (#129; bỏ aria-hidden ở thân bữa thì đỏ); ${n} phần tử role tab/checkbox/switch/radio trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101), khối gập mang aria-expanded (#103) ` +
     '(web, nơi react-native-web không dịch accessibilityState — bảy ô ngày của Kế hoạch ngày từng rỗng cả bảy, kể cả ô đang ' +
     'mở; sáu ô tick set cũng rỗng aria-checked). Thử ngược: bỏ aria-selected ở hàng ngày, bỏ accessibilityState ở PickRow, bỏ aria-checked ở ô tick set, bỏ accessibilityState ở công tắc khởi động, bỏ aria-expanded ở nút gập bài — mỗi cái đỏ',
 );

@@ -461,7 +461,9 @@ export function Mascot({
         {message && (
           <Animated.View
             style={[styles.bubble, bubbleStyle]}
-            pointerEvents={bubbleVisible ? 'auto' : 'none'}>
+            pointerEvents={bubbleVisible ? 'auto' : 'none'}
+            /* Bong bóng đã ẩn thì cả nút đóng trong nó cũng ẩn với VoiceOver (#129). */
+            aria-hidden={!bubbleVisible}>
             <Text style={styles.bubbleText}>{message}</Text>
             <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDismiss} hitSlop={10} onPress={() => setBubbleVisible(false)} style={styles.bubbleClose}>
               <Icon icon={X} size={11} color={c.mutedForeground} />
