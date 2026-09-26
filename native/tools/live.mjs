@@ -372,6 +372,13 @@ const LIVE_TZ = LIVE_OFFSET === 0 ? 'UTC' : `Etc/GMT${LIVE_OFFSET > 0 ? '-' : '+
 async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, height = 874, lang = null } = {}) {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width, height }, timezoneId: LIVE_TZ });
+  /* #113: các vế tự truy vấn DOM đi qua `__shown(sel, root)`, không qua
+     `querySelectorAll` trần. Màn trước còn trong DOM với `display: none` sau
+     một cú bấm điều hướng (#110), và `checkVisibility()` loại đúng thứ ấy —
+     phần tử bị gập hay nằm ngoài vùng cuộn thì vẫn được tính, như trước. */
+  await ctx.addInitScript(() => {
+    window.__shown = (sel, root = document) => [...root.querySelectorAll(sel)].filter((e) => e.checkVisibility());
+  });
   /* Như theme ngay dưới: đặt TRƯỚC khi app chạy. Lượt quét hẹp (#48) đo cả
      hai ngôn ngữ, vì chữ tiếng Việt dài hơn và mọi nhãn bị cắt đã tìm thấy
      đều là tiếng Việt. */
@@ -1050,7 +1057,7 @@ const SCENARIOS = [
          nhầm là trang. */
       const deck = () =>
         page.evaluate(() => {
-          const stages = [...document.querySelectorAll('*')].filter((d) => {
+          const stages = window.__shown('*').filter((d) => {
             const s = getComputedStyle(d);
             return s.overflow === 'hidden' || s.overflowX === 'hidden';
           });
@@ -1185,7 +1192,7 @@ const SCENARIOS = [
       const probe = () =>
         page.evaluate(() => {
           const rows = new Map();
-          for (const t of document.querySelectorAll('[role="tab"]')) {
+          for (const t of window.__shown('[role="tab"]')) {
             const p = t.parentElement;
             if (!p) continue;
             if (!rows.has(p)) rows.set(p, []);
@@ -1864,12 +1871,12 @@ const SCENARIOS = [
       await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
       await page.waitForTimeout(6000);
       const state = () => page.evaluate(() => {
-        for (const t of document.querySelectorAll('[role="tab"]')) {
+        for (const t of window.__shown('[role="tab"]')) {
           let el = t.parentElement;
           while (el && !(el.scrollWidth > el.clientWidth + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowX))) el = el.parentElement;
           if (!el) continue;
           const box = el.getBoundingClientRect();
-          const tabs = [...el.querySelectorAll('[role="tab"]')].map((x) => {
+          const tabs = window.__shown('[role="tab"]', el).map((x) => {
             const b = x.getBoundingClientRect();
             return { label: x.getAttribute('aria-label') ?? x.innerText, l: b.left, r: b.right, y: b.top + b.height / 2, sel: x.getAttribute('aria-selected') === 'true' };
           });
@@ -1891,7 +1898,7 @@ const SCENARIOS = [
          sát mép trái vẫn XANH: đích bị kẹp ở mức cuộn tối đa nên khung đứng yên
          dù code sai. Ở đầu hàng thì không có gì kẹp hộ. */
       await page.evaluate(() => {
-        for (const t of document.querySelectorAll('[role="tab"]')) {
+        for (const t of window.__shown('[role="tab"]')) {
           let el = t.parentElement;
           while (el && !(el.scrollWidth > el.clientWidth + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowX))) el = el.parentElement;
           if (el) { el.scrollLeft = 0; return; }
@@ -2508,7 +2515,7 @@ const SCENARIOS = [
          bước này đỏ vì một lý do chẳng liên quan gì. */
       const heads = await page.evaluate(() => {
         const seen = new Set();
-        for (const el of document.querySelectorAll('div')) {
+        for (const el of window.__shown('div')) {
           const t = (el.innerText ?? '').trim();
           if (!/^(Breakfast|Lunch|Dinner|Bữa sáng|Bữa trưa|Bữa tối)/.test(t)) continue;
           if (!/kcal/.test(t) || t.length > 90) continue;
@@ -2527,7 +2534,7 @@ const SCENARIOS = [
 
       /* 2. Mở thẻ bữa sáng. */
       const head = await page.evaluate(() => {
-        for (const el of document.querySelectorAll('div')) {
+        for (const el of window.__shown('div')) {
           const t = (el.innerText ?? '').trim();
           if (!/^(Breakfast|Bữa sáng)/.test(t) || !/kcal/.test(t) || t.length > 90) continue;
           const r = el.getBoundingClientRect();
@@ -2561,9 +2568,9 @@ const SCENARIOS = [
       await page.waitForTimeout(1500);
 
       const after = await page.evaluate(() => {
-        const card = document.querySelector('[data-probe-card]');
+        const card = window.__shown('[data-probe-card]')[0];
         const labels = ['Sửa khẩu phần', 'Xoá khỏi nhật ký', 'Edit servings', 'Remove from log'];
-        const btns = [...(card?.querySelectorAll('[aria-label]') ?? [])]
+        const btns = (card ? window.__shown('[aria-label]', card) : [])
           .filter((e) => labels.includes(e.getAttribute('aria-label')))
           .filter((e) => {
             const r = e.getBoundingClientRect();
@@ -2617,7 +2624,7 @@ const SCENARIOS = [
 
       const out = await page.evaluate(() => {
         const heads = new Set();
-        for (const el of document.querySelectorAll('div')) {
+        for (const el of window.__shown('div')) {
           const t = (el.innerText ?? '').trim();
           if (!/^(Breakfast|Lunch|Dinner|Bữa sáng|Bữa trưa|Bữa tối)/.test(t)) continue;
           if (!/kcal/.test(t) || t.length > 90) continue;
@@ -2678,7 +2685,7 @@ const SCENARIOS = [
       /* Mũi tên "ngày sau" phải TẮT ở hôm nay: một nhật ký đi được vào tương lai
          là một nhật ký hứa dữ liệu không thể tồn tại. */
       const nextDisabled = await page.evaluate(() => {
-        const el = [...document.querySelectorAll('[aria-label]')]
+        const el = window.__shown('[aria-label]')
           .find((e) => /Next day|Ngày sau/.test(e.getAttribute('aria-label')));
         if (!el) return 'missing';
         return el.getAttribute('aria-disabled') === 'true' || el.disabled === true;

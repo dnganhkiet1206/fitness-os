@@ -30,10 +30,14 @@
  * sau cú bấm — bản thử theo vị trí vừa báo oan vừa bỏ sót đúng hai kiểu ấy.
  * Lúc viết luật có 23 phép đọc như thế; chèn bộ lọc vào 20 gốc.
  *
- * ── vùng mù ──
+ * ── và DOM tự truy vấn (#113) ──
  *
- * `page.evaluate(() => document.querySelectorAll(…))` tự viết DOM query không
- * qua locator, nên luật không thấy.
+ * `page.evaluate(() => document.querySelectorAll(…))` không qua locator, nên
+ * bản đầu của luật không thấy (đã ghi là vùng mù). Có 11 lệnh gọi như thế trong
+ * 6 vế. Nay trong thân một vế, mọi `querySelector`/`querySelectorAll` phải là
+ * `window.__shown(sel, root)`, hàm `openPage` cài vào mọi trang, lọc bằng
+ * `checkVisibility()`. Hàm của lượt quét màn (chụp nhanh, `visitSegments`) chạy
+ * trên trang vừa mở và nằm ngoài các vế, nên không bị xét.
  */
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -103,6 +107,12 @@ export function problemsOf(src) {
       if (m.type === 'VariableDeclarator' && m.id.type === 'Identifier' && m.init) scope.set(m.id.name, m.init);
     });
     walk(fn.body, (m) => {
+      if (m.type === 'CallExpression' && m.callee.type === 'MemberExpression' && ['querySelector', 'querySelectorAll'].includes(m.callee.property.name)) {
+        reads++;
+        const line = src.slice(0, m.start).split('\n').length;
+        out.push(`tools/live.mjs:${line}: [${String(name.value ?? '?').slice(0, 60)}] ${m.callee.property.name}(…) trần đọc cả màn CŨ còn trong DOM — dùng window.__shown(sel, root) (#113)`);
+        return;
+      }
       if (m.type !== 'CallExpression' || m.callee.type !== 'MemberExpression' || !READS.has(m.callee.property.name)) return;
       const r = root(m.callee.object, scope);
       if (!RISKY.has(r.kind)) return;
@@ -135,6 +145,9 @@ if (reads < 20) problems.push(`chỉ thấy ${reads} phép đọc trên locator 
   one(':visible trong bộ chọn', "await page.locator('#root [role=\"tab\"]:visible').count();", false);
   one('getByRole (tự loại phần tử ẩn)', "await page.getByRole('button', { name: 'x' }).count();", false);
   one("locator('body').innerText()", "await page.locator('body').innerText();", false);
+  one('document.querySelectorAll trong page.evaluate (#113)', "await page.evaluate(() => [...document.querySelectorAll('div')].length);", true);
+  one('el.querySelector trong page.evaluate (#113)', "await page.evaluate(() => document.body.querySelector('[data-x]'));", true);
+  one('window.__shown (#113)', "await page.evaluate(() => window.__shown('div').length);", false);
   /* Trên chính live.mjs: gỡ bộ lọc ở vế #108 thì đỏ. */
   const cut = LIVE.replace("page.getByPlaceholder(/^(Dish name|Tên món)$/).filter({ visible: true }).count()", 'page.getByPlaceholder(/^(Dish name|Tên món)$/).count()');
   if (cut === LIVE) problems.push('thử ngược hỏng: không thấy phép đếm "Tên món" có bộ lọc trong vế #108');
@@ -151,5 +164,5 @@ console.log(
     'live.mjs đều lọc phần tử hiển thị, nên không vế nào đọc nhầm màn trước — màn ấy vẫn nằm trong DOM với display:none sau một cú bấm ' +
     'điều hướng, và bản đầu của vế #108 đã xanh nhờ nó. Miễn: getByRole (tự loại phần tử ẩn) và innerText của body/#root. Thử ngược: ' +
     'getByText.count, getAttribute qua biến, hàm phụ khai trước gọi sau, và gỡ bộ lọc ở vế #108 thì đỏ; có bộ lọc, :visible, getByRole, ' +
-    'body.innerText thì xanh',
+    'body.innerText thì xanh; querySelector(All) trần trong một vế thì đỏ, window.__shown thì xanh (#113)',
 );
