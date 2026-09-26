@@ -26,6 +26,7 @@
  * has stopped saying anything.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -196,6 +197,44 @@ const code = strip(read(MOVER));
   }
 }
 
+/* #111: vị trí mọi `{X ? … : …}` / `{X && …}` / `{!X && …}` mà X thuộc `names` và
+   ít nhất một nhánh chứa JSX — tức một panel rẽ nhánh qua biến dẫn xuất. */
+const { parse: babelParse } = createRequire(path.join(NATIVE, 'package.json'))('@babel/parser');
+function jsxBranchesOn(src, names) {
+  const out = [];
+  let ast;
+  try {
+    ast = babelParse(src, { sourceType: 'module', plugins: ['typescript', 'jsx'] });
+  } catch {
+    return out;
+  }
+  const hasJsx = (n) => {
+    let found = false;
+    const w = (x) => {
+      if (found || !x || typeof x !== 'object') return;
+      if (Array.isArray(x)) return x.forEach(w);
+      if (x.type === 'JSXElement' || x.type === 'JSXFragment') { found = true; return; }
+      for (const k in x) if (k !== 'loc') w(x[k]);
+    };
+    w(n);
+    return found;
+  };
+  const isName = (t) => (t?.type === 'Identifier' && names.has(t.name)) || (t?.type === 'UnaryExpression' && t.operator === '!' && isName(t.argument));
+  const visit = (n) => {
+    if (!n || typeof n !== 'object') return;
+    if (Array.isArray(n)) return n.forEach(visit);
+    if (typeof n.type !== 'string') return;
+    if (n.type === 'JSXExpressionContainer') {
+      const e = n.expression;
+      if (e?.type === 'ConditionalExpression' && isName(e.test) && (hasJsx(e.consequent) || hasJsx(e.alternate))) out.push(n.start);
+      if (e?.type === 'LogicalExpression' && e.operator === '&&' && isName(e.left) && hasJsx(e.right)) out.push(n.start);
+    }
+    for (const k in n) if (k !== 'loc') visit(n[k]);
+  };
+  visit(ast.program);
+  return out;
+}
+
 /* ── 4. a segmented control that swaps panels must not swap them by hard cut ──
 
    `day-plan.tsx` worked this out on its own screen and wrote it down: the
@@ -229,11 +268,8 @@ const code = strip(read(MOVER));
     });
   const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  for (const file of walk(path.join(NATIVE, 'src'))) {
-    const rel = path.relative(NATIVE, file);
-    if (rel === COMPONENT) continue;
-    const src = readFileSync(file, 'utf8');
-
+  /* Một hàm, để thử ngược chạy trên mã trong bộ nhớ (#111). */
+  const panelProblems = (rel, src, out) => {
     for (const m of src.matchAll(/<Segmented\b/g)) {
       /* the value bound to this control — search only the tag itself */
       const tag = src.slice(m.index, src.indexOf('/>', m.index) + 2);
@@ -246,6 +282,17 @@ const code = strip(read(MOVER));
          which is the same swap seen from the other side). */
       const cond = new RegExp(`\\{\\s*${esc(key)}\\s*(===|!==)\\s*'`, 'g');
       const conds = [...src.matchAll(cond)].map((c) => c.index).filter((i) => i > m.index);
+      /*
+        #111: rẽ nhánh qua một biến DẪN XUẤT — `const recipes = mode === 'recipe'`
+        rồi `{recipes ? … : …}`. `community-search.tsx` (#43) đổi cả panel Người /
+        Công thức theo cách ấy và luật đã coi `mode` là một bộ chọn giá trị.
+      */
+      /* Chỉ khi một nhánh là JSX: `const imperial = unit === 'in'` trong
+         onboarding chỉ đổi cách ĐỊNH DẠNG con số (`{imperial ? formatHeight(…) :
+         …}`), không đổi panel — bản đầu của vế này báo oan nó. Biên của biểu
+         thức đọc bằng Babel; regex không biết nó dừng ở đâu. */
+      const derived = [...src.matchAll(new RegExp(`const\\s+(\\w+)\\s*=\\s*${esc(key)}\\s*(===|!==)\\s*'`, 'g'))].map((d) => d[1]);
+      if (derived.length) for (const at of jsxBranchesOn(src, new Set(derived))) if (at > m.index) conds.push(at);
       if (!conds.length) continue; /* a value picker, not a panel switcher */
 
       /*
@@ -265,7 +312,7 @@ const code = strip(read(MOVER));
       const found = panel.exec(src);
       const wrap = found ? found.index : -1;
       if (wrap < 0) {
-        problems.push(
+        out.push(
           `${rel}: <Segmented value={${key}}> đổi panel bên dưới nhưng panel đó bị CẮT CỤP — không có ` +
             `<SegmentPanel segment={${key}}>. day-plan.tsx đã tìm ra và ghi lại điều này cho màn của ` +
             'nó rồi để năm control còn lại nguyên như cũ: một luật, N bản chép, chỉ một bản biết luật',
@@ -304,13 +351,31 @@ const code = strip(read(MOVER));
       const inside =
         close > 0 && (conds.some((i) => i > wrap && i < close) || /<[A-Za-z]/.test(bare));
       if (!inside) {
-        problems.push(
+        out.push(
           `${rel}: có <SegmentPanel segment={${key}}> nhưng KHÔNG có nội dung rẽ nhánh nào nằm BÊN ` +
             'TRONG nó — bọc nhầm chỗ thì cú cắt vẫn còn nguyên trong khi phép kiểm theo tên vẫn xanh, ' +
             'đúng kiểu đã lọt hai lần ở repo này',
         );
       }
     }
+  };
+  for (const file of walk(path.join(NATIVE, 'src'))) {
+    const rel = path.relative(NATIVE, file);
+    if (rel === COMPONENT) continue;
+    panelProblems(rel, readFileSync(file, 'utf8'), problems);
+  }
+  /* Thử ngược (#111): gỡ SegmentPanel khỏi màn Tìm — nơi panel rẽ nhánh qua
+     biến dẫn xuất — thì phải đỏ; bản thật thì xanh. */
+  {
+    const rel = 'src/app/community-search.tsx';
+    const real = readFileSync(path.join(NATIVE, rel), 'utf8');
+    const cut = real.replace('<SegmentPanel segment={mode}>', '').replace('</SegmentPanel>', '');
+    const redCut = [];
+    panelProblems(rel, cut, redCut);
+    const redReal = [];
+    panelProblems(rel, real, redReal);
+    if (cut === real || redCut.length === 0) problems.push(`thử ngược hỏng: gỡ SegmentPanel khỏi ${rel} (panel rẽ nhánh qua \`recipes\`) mà luật vẫn xanh (#111)`);
+    if (redReal.length) problems.push(`thử ngược hỏng: ${rel} thật mà luật đỏ: ${redReal[0]}`);
   }
 }
 
