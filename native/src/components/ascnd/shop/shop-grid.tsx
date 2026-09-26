@@ -103,7 +103,13 @@ export function CategoryRow({
       {cats.map((cat) => {
         const on = current === cat.id;
         return (
-          <Pressable key={cat.id} onPress={() => onPick(cat.id)} style={styles.catItem}>
+          <Pressable
+            key={cat.id}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            aria-selected={on} // web không dịch accessibilityState ra aria-selected (#99)
+            onPress={() => onPick(cat.id)}
+            style={styles.catItem}>
             <View style={[styles.catIcon, on && styles.catIconOn]}>
               <Icon
                 icon={CAT_ICON[cat.id]}

@@ -89,7 +89,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
             {lang === 'vi' ? 'Gợi ý từ AI' : 'AI Suggestions'}
           </Text>
         </View>
-        <Pressable hitSlop={8} onPress={() => setSuggestions([])}>
+        <Pressable accessibilityRole="button" hitSlop={8} onPress={() => setSuggestions([])}>
           <Text style={styles.closeText}>{lang === 'vi' ? 'Đóng' : 'Close'}</Text>
         </Pressable>
       </View>
@@ -97,6 +97,9 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
       {suggestions.map((meal, i) => (
         <Pressable
           key={i}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: expanded === i }}
+          aria-expanded={expanded === i} // web không dịch accessibilityState ra aria-expanded (#103)
           style={styles.card}
           onPress={() => {
             Haptics.selectionAsync();

@@ -270,6 +270,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
                 style={styles.aiItemWrap}
                 entering={FadeInDown.springify().stiffness(400).damping(30).delay(idx * 50)}>
                 <Pressable
+                  accessibilityRole="button"
                   style={({ pressed }) => [styles.aiItem, pressed && styles.aiItemPressed]}
                   onPress={() => openAiItem(item.route)}>
                   <View style={styles.aiItemIcon}>

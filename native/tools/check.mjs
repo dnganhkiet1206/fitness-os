@@ -588,7 +588,7 @@ const STEPS = [
   /* #107: mẫu "nút phá huỷ" của lượt bấm thử khớp mọi nhãn phá huỷ thật của
      app — mẫu `\b` cũ bỏ sót 33 nhãn "Xoá…", kể cả "Xoá tài khoản". */
   ['nút phá huỷ', 'node', ['tools/press-rules.mjs']],
-  ['nút không tên', 'node', ['tools/unnamed-press.mjs']],
+  ['nút không tên, không vai', 'node', ['tools/unnamed-press.mjs']],
   ['kỷ lục cá nhân', 'node', ['tools/personal-record.mjs']],
   ['trí tuệ bài tập', 'node', ['tools/exercise-intelligence.mjs']],
   ['danh tính bài tập', 'node', ['tools/exercise-identity.mjs']],

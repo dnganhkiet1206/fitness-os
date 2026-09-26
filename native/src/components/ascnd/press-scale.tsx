@@ -144,9 +144,26 @@ export function PressScale({
   */
   const Base = (inGesture ? AnimatedGH : AnimatedRN) as typeof AnimatedRN;
 
+  /*
+    Vai mặc định là `button` (#121).
+
+    Đo lúc viết: 53 chỗ gọi `PressScale` có `onPress` mà không đặt vai. Trên
+    iOS, VoiceOver đọc chữ của chúng nhưng KHÔNG nói "nút" — người dùng không
+    biết chạm được. Trên web chúng là `div tabindex=0` không vai, nên
+    `getByRole('button')` của lượt bấm thử (#91) không bao giờ tới. Một thứ co
+    lại khi bấm và làm một việc khi thả tay LÀ một nút; component này biết điều
+    đó, nên nó nói ra thay cho người gọi.
+
+    Người gọi đặt vai khác (`radio`, `tab`, `checkbox`, …) thì vai ấy thắng. Một
+    chỗ bấm ẩn có chủ ý (`accessible={false}`, `aria-hidden`) thì không có vai.
+  */
+  const hidden = rest.accessible === false || rest['aria-hidden'] === true;
+  const defaultRole = onPress && rest.accessibilityRole === undefined && rest.role === undefined && !hidden ? 'button' : undefined;
+
   return (
     <Base
       {...rest}
+      {...(defaultRole ? { accessibilityRole: defaultRole } : null)}
       disabled={disabled}
       style={[style, animated]}
       onPressIn={(e) => {

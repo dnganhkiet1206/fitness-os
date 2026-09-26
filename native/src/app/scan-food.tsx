@@ -158,7 +158,7 @@ export default function ScanFoodScreen() {
           onPress={requestPermission}>
           <Text style={styles.permBtnText}>{i18n.nAllowCamera}</Text>
         </PressScale>
-        <Pressable onPress={() => nav.back()}>
+        <Pressable accessibilityRole="button" onPress={() => nav.back()}>
           <Text style={styles.cancelText}>{i18n.nCancel}</Text>
         </Pressable>
       </View>

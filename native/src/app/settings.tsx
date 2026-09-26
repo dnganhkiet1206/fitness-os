@@ -461,8 +461,13 @@ export default function SettingsScreen() {
             {mascot.catalog.map((m) => {
               const selected = mascot.mascot.id === m.id;
               return (
+                /* Chọn MỘT bạn đồng hành trong nhóm: radio, và cờ chọn là thứ
+                   VoiceOver đọc — viền sáng thì không (#121). */
                 <Pressable
                   key={m.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected, disabled: !m.unlocked }}
+                  aria-checked={selected} // web không dịch accessibilityState ra aria-checked (#101)
                   disabled={!m.unlocked}
                   onPress={() => {
                     Haptics.selectionAsync();

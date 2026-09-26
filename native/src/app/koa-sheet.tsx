@@ -104,6 +104,7 @@ export default function KoaSheetScreen() {
         <View style={styles.grid}>
           {KOA_EXPRESSIONS.map((e: { key: KoaExpression; label: string }) => (
             <Pressable
+              accessibilityRole="button"
               key={e.key}
               onPress={() => {
                 Haptics.selectionAsync();
@@ -131,6 +132,7 @@ export default function KoaSheetScreen() {
         <View style={styles.grid}>
           {KOA_POSES.map((po) => (
             <Pressable
+              accessibilityRole="button"
               key={po.key}
               onPress={() => {
                 Haptics.selectionAsync();
@@ -152,6 +154,7 @@ export default function KoaSheetScreen() {
         return (
           <GlassCard elevation="inset" key={slot} style={styles.card}>
             <Pressable
+              accessibilityRole="button"
               onPress={() => {
                 Haptics.selectionAsync();
                 setOpenSlot(open ? null : slot);
@@ -169,6 +172,7 @@ export default function KoaSheetScreen() {
               <View style={styles.grid}>
                 {KOA_ITEMS[slot].map((id) => (
                   <Pressable
+                    accessibilityRole="button"
                     key={id}
                     onPress={() => toggle(slot, id)}
                     style={[styles.tile, worn[slot] === id && styles.tileOn]}>

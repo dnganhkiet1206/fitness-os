@@ -378,6 +378,7 @@ export default function EditProfileSheet() {
         onClose={nav.back}
         right={
           <Pressable
+            accessibilityRole="button"
             hitSlop={8}
             onPress={() => save.mutate()}
             disabled={save.isPending || save.isSuccess || statsBad}>
@@ -413,7 +414,7 @@ export default function EditProfileSheet() {
 
         {/* DOB */}
         <Field label={i18n.settingsDob}>
-          <Pressable style={styles.input} onPress={() => setShowDob((s) => !s)}>
+          <Pressable accessibilityRole="button" style={styles.input} onPress={() => setShowDob((s) => !s)}>
             <Text style={styles.inputText}>{form.dob || '—'}</Text>
           </Pressable>
           {showDob && (

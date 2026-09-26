@@ -420,7 +420,7 @@ chữ → Chữ lớn hơn → AX3**, rồi mở lại app.
 
 ---
 
-## J. VoiceOver đọc trạng thái ô chọn, ô tick, và các nút từng không tên — #99 · #101 · #120 (#104)
+## J. VoiceOver đọc trạng thái ô chọn, ô tick, và các nút từng không tên, không vai — #99 · #101 · #120 · #121 (#104)
 
 #99 và #101 sửa trạng thái "đã chọn"/"đã tick" cho **web**: `aria-selected` và
 `aria-checked`, vì react-native-web không dịch `accessibilityState`. Trên iOS,
@@ -447,6 +447,8 @@ Bật **VoiceOver**, app tiếng Việt.
 | J8 | Màn hướng dẫn đầu → mở Điều khoản → nút X góc trên | Đọc "Đóng", vai **nút**. Chạm hai lần thì sheet đóng (#120) | ☐ |
 | J9 | Nhận một huy hiệu (màn chúc mừng) | Chỉ **một** nút đóng được đọc, ở góc trên. Lớp nền "chạm đâu cũng đóng" cố ý bị ẩn khỏi VoiceOver, nên không có ô trống nào phủ cả màn (#120) | ☐ |
 | J10 | Hôm nay, đã ghi giấc ngủ → thẻ Giấc ngủ | Đọc thành **một nút**, tên là chữ của thẻ, dẫn tới màn Giấc ngủ. Trước #120 thẻ không có vai (#120) | ☐ |
+| J11 | Cài đặt → vuốt qua các hàng ("Đổi mật khẩu", "Nhắc nhở", "Chính sách & Pháp lý", "Đăng xuất") rồi hàng chọn bạn đồng hành | Mỗi hàng được đọc là **nút**: `PressScale` có vai `button` mặc định (#121); trước đó VoiceOver chỉ đọc chữ. Mỗi bạn đồng hành là **radio** mang cờ `selected` ở con đang chọn; con chưa mở khoá mang cờ `disabled` (#121) | ☐ |
+| J12 | Thực phẩm bổ sung → một dòng | Chỉ **một** ô được đọc là ô tick: "Đánh dấu đã dùng: \<tên\>", vai **checkbox**. Chữ tên và liều bên phải vẫn được đọc, nhưng không thành nút thứ hai cho cùng một việc (#121) | ☐ |
 
 > `liquid-tab-bar.tsx` cũng có một lớp nền không tên (bảng Trợ lý nhanh), và #120
 > đã đặt tên cho nó. Nhưng component ấy không được gắn vào đâu (xem

@@ -210,7 +210,7 @@ function CaptureView({
         <PressScale style={styles.permBtn} onPress={requestPermission}>
           <Text style={styles.permBtnText}>{i18n.nAllowCamera}</Text>
         </PressScale>
-        <Pressable onPress={onClose}>
+        <Pressable accessibilityRole="button" onPress={onClose}>
           <Text style={styles.cancelText}>{i18n.nCancel}</Text>
         </Pressable>
       </View>

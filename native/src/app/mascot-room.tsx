@@ -505,6 +505,7 @@ export default function MascotRoomScreen() {
             return (
               <Pressable
                 key={label}
+                accessibilityRole="button"
                 hitSlop={9}
                 onPress={() => {
                   Haptics.selectionAsync();
@@ -519,6 +520,7 @@ export default function MascotRoomScreen() {
           })}
           {/* the full spec sheet — all 8 expressions and 5 poses, on device */}
           <Pressable
+            accessibilityRole="button"
             hitSlop={9}
             onPress={() => {
               Haptics.selectionAsync();
@@ -530,6 +532,7 @@ export default function MascotRoomScreen() {
           {/* the brain, next to the body: fire real events and read the
               decision, including the ones where Koa decides to stay quiet */}
           <Pressable
+            accessibilityRole="button"
             hitSlop={9}
             onPress={() => {
               Haptics.selectionAsync();

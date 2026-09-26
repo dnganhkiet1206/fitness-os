@@ -674,7 +674,7 @@ export default function LogMealSheet() {
         {foods && foods.length > 0 && (
           <View style={styles.results}>
             {foods.map((f) => (
-              <Pressable key={f.id} style={styles.resultRow} onPress={() => pickFood(f)}>
+              <Pressable key={f.id} accessibilityRole="button" style={styles.resultRow} onPress={() => pickFood(f)}>
                 <View style={styles.resultInfo}>
                   <Text style={styles.resultName} numberOfLines={1}>{f.name}</Text>
                   {f.brand ? <Text style={styles.resultBrand} numberOfLines={1}>{f.brand}</Text> : null}
@@ -812,7 +812,7 @@ export default function LogMealSheet() {
               <View key={`${it.food_name}-${idx}`}>
                 <View style={styles.itemRow}>
                   {/* Tap the info area to edit this item's macros */}
-                  <Pressable style={styles.itemInfo} onPress={() => openEdit(idx)}>
+                  <Pressable accessibilityRole="button" style={styles.itemInfo} onPress={() => openEdit(idx)}>
                     <Text style={styles.itemName} numberOfLines={1}>{it.food_name}</Text>
                     <Text style={styles.itemMacros}>
                       {Math.round(it.kcal * it.servings)} kcal · P{Math.round(it.protein_g * it.servings)} · C{Math.round(it.carbs_g * it.servings)} · F{Math.round(it.fat_g * it.servings)}

@@ -170,9 +170,10 @@ export default function SupplementsScreen() {
             <GlassCard elevation="inset" style={styles.itemCard}>
               <View style={styles.row}>
                 <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={i18n.a11yCheckOff}
+                  accessibilityRole="checkbox"
+                  accessibilityLabel={`${i18n.a11yCheckOff}: ${s.name}`}
                   accessibilityState={{ checked: s.taken }}
+                  aria-checked={s.taken} // web không dịch accessibilityState ra aria-checked (#101)
                   // 24pt drawn and no slop at all — the smallest target in the
                   // app, and a daily one
                   hitSlop={10}
@@ -180,7 +181,12 @@ export default function SupplementsScreen() {
                   onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
                   {s.taken && <Icon icon={Check} size={15} color="#fff" strokeWidth={3} />}
                 </Pressable>
+                {/* Cùng việc với ô tick bên trái, nên với trình đọc màn hình nó là
+                    một BẢN SAO: ẩn khỏi vai nút, chữ bên trong vẫn được đọc — như
+                    mũi tên của `template-list.tsx` (#121). */}
                 <Pressable
+                  accessible={false}
+                  tabIndex={-1}
                   style={styles.info}
                   onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
                   <Text style={[styles.title, s.taken && styles.muted]}>{s.name}</Text>

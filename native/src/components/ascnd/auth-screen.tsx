@@ -180,7 +180,7 @@ export function AuthScreen() {
         </View>
 
         {mode === 'forgot' && (
-          <Pressable style={styles.backRow} onPress={() => setMode('signin')}>
+          <Pressable accessibilityRole="button" style={styles.backRow} onPress={() => setMode('signin')}>
             <Icon icon={ArrowLeft} size={15} color={c.mutedForeground} />
             <Text style={styles.backText}>{i18n.authBackToLogin}</Text>
           </Pressable>
@@ -220,7 +220,7 @@ export function AuthScreen() {
           )}
 
           {mode === 'signin' && (
-            <Pressable onPress={() => setMode('forgot')} hitSlop={6}>
+            <Pressable accessibilityRole="button" onPress={() => setMode('forgot')} hitSlop={6}>
               <Text style={styles.forgotText}>{i18n.authForgotPassword}</Text>
             </Pressable>
           )}
@@ -280,7 +280,7 @@ export function AuthScreen() {
           )}
 
           {mode !== 'forgot' && (
-            <Pressable onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
+            <Pressable accessibilityRole="button" onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}>
               <Text style={styles.switchText}>
                 {mode === 'signin' ? i18n.nNoAccount : i18n.nHaveAccount}
                 <Text style={styles.switchAction}>

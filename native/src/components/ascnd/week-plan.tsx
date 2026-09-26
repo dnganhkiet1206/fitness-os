@@ -540,6 +540,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                 back here to pick it a second time.
               */}
               <Pressable
+                accessibilityRole="button"
                 style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
                 onPress={() => {
                   const day = picking;
@@ -556,7 +557,11 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
 
               <View style={styles.pickerSep} />
 
+              {/* Một lựa chọn trong nhóm, và dấu tick là trạng thái của nó: radio (#121). */}
               <Pressable
+                accessibilityRole="radio"
+                accessibilityState={{ selected: picking !== null && !byDay.get(picking)?.template_id }}
+                aria-checked={picking !== null && !byDay.get(picking)?.template_id} // web không dịch accessibilityState ra aria-checked (#101)
                 style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
                 onPress={() => picking !== null && assign(picking, null)}>
                 <View style={styles.pickerRowInner}>
@@ -586,6 +591,9 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
               {(templates ?? []).map((t) => (
                 <Pressable
                   key={t.id}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: picking !== null && byDay.get(picking)?.template_id === t.id }}
+                  aria-checked={picking !== null && byDay.get(picking)?.template_id === t.id} // web không dịch accessibilityState ra aria-checked (#101)
                   style={({ pressed }) => [styles.pickerRow, pressed && styles.pickerRowPressed]}
                   onPress={() => picking !== null && assign(picking, t.id)}>
                   <View style={styles.pickerRowInner}>

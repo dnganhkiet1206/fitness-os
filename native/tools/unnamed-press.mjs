@@ -1,5 +1,5 @@
 /**
- * Mọi chỗ bấm được đều có TÊN cho trình đọc màn hình (#120).
+ * Mọi chỗ bấm được đều có TÊN và VAI cho trình đọc màn hình (#120, #121).
  *
  * ── lỗi này trông như thế nào ──
  *
@@ -31,6 +31,19 @@
  *     nay vẫn là một điểm dừng Tab không tên (đo bằng DOM thật).
  * Chỉ `View`/`Image`/`Icon`/SVG… thì KHÔNG phải chữ. Một phần tử có spread
  * (`{...rest}`) không xét được, nên được đếm riêng và bỏ qua.
+ *
+ * ── vai (#121) ──
+ *
+ * Có tên mà không vai thì VoiceOver đọc chữ nhưng KHÔNG nói "nút" — người dùng
+ * không biết chạm được — và trên web nó là `div tabindex=0` mà
+ * `getByRole('button')` của lượt bấm thử không bao giờ tới. Đo lúc viết: 83
+ * chỗ, Cài đặt riêng 13, gồm cả các lựa chọn linh vật đáng lẽ là radio.
+ *
+ * Nên mỗi chỗ có `onPress` phải có `accessibilityRole`/`role`, hoặc ẩn có chủ
+ * ý. `PressScale` được tính là có vai `button` — nhưng CHỈ khi
+ * `press-scale.tsx` còn đặt vai mặc định ấy: luật đọc tệp đó, không tin lời.
+ * Chỉ có `onLongPress` (thân bình luận, ô ảnh) thì không phải nút: nó đọc như
+ * chữ, kèm `accessibilityHint` nói cách giữ lâu.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -96,9 +109,15 @@ function texty(children) {
   return false;
 }
 
+/* Dấu hiệu `press-scale.tsx` đặt vai mặc định — xem khối "vai" ở đầu tệp. */
+const DEFAULT_ROLE_MARK = "{...(defaultRole ? { accessibilityRole: defaultRole } : null)}";
+
 /** `{ out: ["tệp:dòng: …"], n: số chỗ bấm đã xét, spread: số chỗ bỏ qua vì spread }`. */
 export function problemsOf(files) {
   const out = [];
+  const scale = files.find(([f]) => f === 'src/components/ascnd/press-scale.tsx');
+  const scaleHasRole = !scale || scale[1].includes(DEFAULT_ROLE_MARK);
+  if (!scaleHasRole) out.push('src/components/ascnd/press-scale.tsx: PressScale thôi đặt vai `button` mặc định — mọi chỗ gọi không tự đặt vai mất vai (#121)');
   let n = 0;
   let spread = 0;
   for (const [rel, src] of files) {
@@ -120,10 +139,16 @@ export function problemsOf(files) {
             if (v.type === 'JSXExpressionContainer' && v.expression.type === 'BooleanLiteral') return v.expression.value;
             return null;
           };
+          const hidden =
+            lit('aria-hidden') === true || (attrs.has('aria-hidden') && attrs.get('aria-hidden') === null) || lit('accessible') === false || /^no/.test(String(lit('importantForAccessibility') ?? ''));
+          const hasRole = attrs.has('accessibilityRole') || attrs.has('role') || (tag === 'PressScale' && scaleHasRole);
+          if (!o.attributes.some((a) => a.type === 'JSXSpreadAttribute') && attrs.has('onPress') && !hidden && !hasRole) {
+            out.push(`${rel}:${o.loc.start.line}: <${tag}> có onPress mà không có vai — VoiceOver không nói "nút", web là div không vai (#121)`);
+          }
           if (o.attributes.some((a) => a.type === 'JSXSpreadAttribute')) spread++;
           else if ([...attrs.keys()].some((k) => NAME_ATTR.test(k))) {
             /* có tên */
-          } else if (lit('aria-hidden') === true || (attrs.has('aria-hidden') && attrs.get('aria-hidden') === null) || lit('accessible') === false || /^no/.test(String(lit('importantForAccessibility') ?? ''))) {
+          } else if (hidden) {
             /* Cố ý ẩn — nhưng Pressable của react-native-web bỏ qua `accessible`
                và luôn đặt tabindex=0: không có `tabIndex={-1}` thì trên web nó
                vẫn là một điểm dừng Tab không tên (đo trên Hôm nay, #120). */
@@ -158,12 +183,29 @@ if (n < 300) problems.push(`chỉ xét được ${n} chỗ bấm — bộ đọc
   one('lớp nền tự đóng, không con', 'const c = <Pressable style={s} onPress={f} />;', true);
   one('biểu thức chỉ chứa Icon', 'const d = <Pressable onPress={f}>{on ? <Icon icon={A} /> : <Icon icon={B} />}</Pressable>;', true);
   one('có accessibilityLabel', 'const e = <PressScale accessibilityLabel={t} onPress={f}><View /></PressScale>;', false);
-  one('có <Text> con', 'const g = <Pressable onPress={f}><View><Text>Lưu</Text></View></Pressable>;', false);
-  one('biểu thức giá trị {label}', 'const h = <Pressable onPress={f}>{label}</Pressable>;', false);
+  one('có <Text> con', 'const g = <Pressable accessibilityRole="button" onPress={f}><View><Text>Lưu</Text></View></Pressable>;', false);
+  one('biểu thức giá trị {label}', 'const h = <Pressable accessibilityRole="button" onPress={f}>{label}</Pressable>;', false);
   one('component lạ <SleepCard>', 'const i = <PressScale onPress={f}><SleepCard m={1} /></PressScale>;', false);
   one('aria-hidden + tabIndex={-1}', 'const j = <Pressable aria-hidden tabIndex={-1} onPress={f} />;', false);
   one('importantForAccessibility="no" + tabIndex={-1}', 'const k = <Pressable importantForAccessibility="no" tabIndex={-1} onPress={f} />;', false);
   one('accessible={false} mà thiếu tabIndex={-1} (web vẫn Tab tới)', 'const l = <Pressable accessible={false} onPress={f} />;', true);
+  one('Pressable có onPress, có chữ, không vai (#121)', 'const m = <Pressable onPress={f}><Text>Đổi mật khẩu</Text></Pressable>;', true);
+  one('Pressable có vai radio', 'const n = <Pressable accessibilityRole="radio" onPress={f}><Text>Koa</Text></Pressable>;', false);
+  one('Pressable chỉ có onLongPress', 'const o = <Pressable onLongPress={f}><Text>bình luận</Text></Pressable>;', false);
+  one('PressScale có chữ, không tự đặt vai (vai mặc định)', 'const p = <PressScale onPress={f}><Text>Lưu</Text></PressScale>;', false);
+  /* Trên chính cây thật: PressScale thôi đặt vai mặc định thì đỏ — ở tệp ấy VÀ ở
+     mọi chỗ gọi dựa vào nó. */
+  {
+    const at2 = files.findIndex(([f]) => f === 'src/components/ascnd/press-scale.tsx');
+    if (at2 < 0 || !files[at2][1].includes(DEFAULT_ROLE_MARK)) problems.push('thử ngược hỏng: không thấy vai mặc định trong press-scale.tsx');
+    else {
+      const copy = files.slice();
+      copy[at2] = [files[at2][0], files[at2][1].replace(DEFAULT_ROLE_MARK, '')];
+      const red = problemsOf(copy).out.length - base;
+      if (red < 20) problems.push(`thử ngược hỏng: bỏ vai mặc định của PressScale mà chỉ ${red} chỗ đỏ`);
+      else globalThis.__noDefaultRed = red;
+    }
+  }
   /* Trên chính cây thật: gỡ nhãn khỏi nút chụp của máy quét món thì đỏ. */
   const at = files.findIndex(([f]) => f === 'src/app/scan-food.tsx');
   const needle = 'accessibilityLabel={i18n.a11yTakePhoto} onPress={capture}';
@@ -181,7 +223,9 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `nút không tên OK — ${n} chỗ bấm trong ${files.length} tệp src/ đều có nhãn, có chữ con, hoặc cố ý ẩn khỏi cây trợ năng ` +
+  `nút không tên, không vai OK — ${n} chỗ bấm trong ${files.length} tệp src/ đều có nhãn, có chữ con, hoặc cố ý ẩn khỏi cây trợ năng; ` +
+    `mỗi chỗ có onPress đều có vai (PressScale mặc định là button; bỏ mặc định ấy thì ${globalThis.__noDefaultRed} chỗ đỏ) ` +
     `(${spread} chỗ có spread không xét được). Thử ngược: chỉ View, chỉ Icon có role, lớp nền tự đóng, biểu thức chỉ chứa Icon, ` +
-    'ẩn mà thiếu tabIndex={-1}, và gỡ nhãn nút chụp của máy quét món thì đỏ; nhãn, <Text>, {label}, component lạ, aria-hidden + tabIndex={-1} thì xanh',
+    'ẩn mà thiếu tabIndex={-1}, Pressable có chữ mà không vai, và gỡ nhãn nút chụp của máy quét món thì đỏ; nhãn, <Text>, {label}, component lạ, ' +
+    'aria-hidden + tabIndex={-1}, vai radio, chỉ onLongPress thì xanh',
 );

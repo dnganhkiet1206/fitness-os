@@ -967,6 +967,7 @@ export function RecentAwardsCard() {
       <View style={styles.headRow}>
         <MicroTitle icon={Trophy}>{i18n.dcRecentAwards}</MicroTitle>
         <Pressable
+          accessibilityRole="button"
           hitSlop={8}
           style={styles.viewAll}
           onPress={() => { Haptics.selectionAsync(); nav.push('/awards'); }}>
