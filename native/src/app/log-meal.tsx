@@ -706,6 +706,8 @@ export default function LogMealSheet() {
 
         {/* AI suggest */}
         <PressScale
+          accessibilityState={{ expanded: aiOpen }}
+          aria-expanded={aiOpen} // web không dịch accessibilityState ra aria-expanded (#103)
           style={[styles.aiToggle, aiOpen && styles.aiToggleActive]}
           onPress={openAi}>
           <Icon icon={Sparkles} size={18} />
@@ -752,6 +754,8 @@ export default function LogMealSheet() {
 
         {/* Custom food entry — type your own dish + macros */}
         <PressScale
+          accessibilityState={{ expanded: customOpen }}
+          aria-expanded={customOpen} // web không dịch accessibilityState ra aria-expanded (#103)
           style={[styles.aiToggle, customOpen && styles.aiToggleActive]}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
