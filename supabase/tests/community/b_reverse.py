@@ -8,6 +8,9 @@ theo tên tệp (đúng MỘT chỗ bị đột biến) → mọi *.test.sql the
   python3 supabase/tests/community/b_reverse.py [bộ...]
       bộ: foundation progress challenges challenge_history privacy recipe
           notifications search badges
+  python3 supabase/tests/community/b_reverse.py [bộ...] --jobs=N
+      N ca cùng lúc (mặc định 4), mỗi ca database riêng; kết quả in theo đúng
+      thứ tự ca (#136).
   python3 supabase/tests/community/b_reverse.py --coverage
       không chạy Postgres: liệt kê nhãn ASSERT chưa có ca nào nhắm tới (#79),
       và dòng \echo nào nói sai số kịch bản của tệp nó.
@@ -44,6 +47,7 @@ Thiết kế và 88 ca là của B (bình luận ở #25, 88/88 trên `53c9b89`)
 vào repo chỉ đổi phần môi trường: đường dẫn tương đối, cổng qua `PG_PORT`,
 `pg_ctl -w` thay `sleep` (một máy chậm làm `sleep` hụt và ca đọc ra "HỎNG").
 """
+import concurrent.futures
 import os
 import re
 import shlex
@@ -51,6 +55,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 
 sys.dont_write_bytecode = True  # không để lại __pycache__ trong repo
 from b_cases import CASES  # noqa: E402
@@ -169,13 +175,48 @@ migs = sorted(f for f in os.listdir(MIG) if '_community_' in f and f.endswith('.
 tests = sorted(f for f in os.listdir(TESTS) if f.endswith('.test.sql'))
 
 
+# ── song song (#136) ──
+# Mỗi ca đã có database riêng (`r{n}`), nên các ca độc lập theo thiết kế:
+# `--jobs=N` chạy N ca cùng lúc trên CÙNG một cụm. Kết quả vẫn in theo ĐÚNG thứ
+# tự ca (`Executor.map` trả theo thứ tự nộp, như `pool()` của live.mjs #102).
+#
+# Đo (216 ca, máy của phiên này): tuần tự 321 s, --jobs=4 78 s. Cộng dồn qua
+# các ca: dựng DB + stub 30 s, migration 139 s, kịch bản 142 s — hai phần sau là
+# chi phí thật. Đã thử database mẫu đã nạp stub (`CREATE DATABASE … TEMPLATE`):
+# dựng DB 31 s thay vì 30 s, không lợi gì vì stub chỉ vài chục câu — bỏ, để
+# không phải giữ một đường thứ hai. Mỗi ca xoá database của nó khi xong.
+JOBS = next((int(a.split('=', 1)[1]) for a in sys.argv[1:] if a.startswith('--jobs=')), 4)
+TIMES = {'db': 0.0, 'mig': 0.0, 'tests': 0.0}
+_times_lock = threading.Lock()
+
+
+def _took(k, t0):
+    with _times_lock:
+        TIMES[k] += time.monotonic() - t0
+
+
+def make_db(db):
+    sh(f"{PSQL} -d postgres -c 'DROP DATABASE IF EXISTS {db}' -c 'CREATE DATABASE {db}'")
+    r = subprocess.run(f'{PSQL} -d {db} -f -', shell=True, input=stub_db, capture_output=True, text=True)
+    return 'stub: ' + r.stderr[:200] if r.returncode else ''
+
+
 def run_case(n, mig_key, old, new, nth, extra=(), also=()):
     db = f'r{n}'
-    sh(f"{PSQL} -d postgres -c 'DROP DATABASE IF EXISTS {db}' -c 'CREATE DATABASE {db}'")
+    try:
+        return _run_case(db, mig_key, old, new, nth, extra, also)
+    finally:
+        sh(f"{PSQL} -d postgres -c 'DROP DATABASE IF EXISTS {db}'")
+
+
+def _run_case(db, mig_key, old, new, nth, extra=(), also=()):
+    t0 = time.monotonic()
+    err = make_db(db)
+    _took('db', t0)
+    if err:
+        return ('HỎNG', err, {})
     P = f'{PSQL} -d {db}'
-    r = subprocess.run(f'{P} -f -', shell=True, input=stub_db, capture_output=True, text=True)
-    if r.returncode:
-        return ('HỎNG', 'stub: ' + r.stderr[:200], {})
+    t0 = time.monotonic()
     hit = None
     for m in migs:
         src = open(os.path.join(MIG, m)).read()
@@ -211,12 +252,15 @@ def run_case(n, mig_key, old, new, nth, extra=(), also=()):
         r = subprocess.run(f'{P} -f -', shell=True, input=src, capture_output=True, text=True)
         if r.returncode:
             return ('HỎNG', f'migration {m} không áp được sau đột biến: ' + r.stderr.strip()[:200], {})
+    _took('mig', t0)
     if mig_key and not hit:
         return ('CA SAI', f'không có migration nào khớp "{mig_key}"', {})
     outs = {}
+    t0 = time.monotonic()
     for t in tests:
         r = subprocess.run(f'cd /var/tmp && {P} -f {os.path.join(TESTS, t)}', shell=True, capture_output=True, text=True)
         outs[t] = (r.returncode, r.stdout + r.stderr)
+    _took('tests', t0)
     return ('', '', outs)
 
 
@@ -225,39 +269,45 @@ def first_fail(out):
     return m.group(1).strip() if m else ''
 
 
-want = sys.argv[1:]
+want = [a for a in sys.argv[1:] if not a.startswith('--')]
 rows = []
-n = 0
+picked = [c for c in CASES if not want or c['suite'] in want]
+
+
+def judge(n, c):
+    status, why, outs = run_case(n, c['mig'], c.get('old', ''), c.get('new', ''), c.get('nth'), c.get('extra', ()), c.get('also', ()))
+    if status:
+        return status, why
+    tf = next(t for t in tests if t == f"community_{c['suite']}.test.sql")
+    code, out = outs[tf]
+    err = first_fail(out)
+    collateral = [t.replace('community_', '').replace('.test.sql', '') for t in tests if t != tf and outs[t][0]]
+    if code == 0 and c.get('green_ok'):
+        verdict, detail = 'ĐỎ ĐÚNG', 'xanh ĐÚNG như dự kiến — lớp bảo vệ thứ hai còn đó'
+    elif code == 0:
+        verdict, detail = 'XANH', 'vẫn xanh khi đã phá — RỖNG NGHĨA'
+    elif c['expect'] in err:
+        verdict, detail = 'ĐỎ ĐÚNG', err[:140]
+    else:
+        verdict, detail = 'ĐỎ SAI CHỖ', err[:160]
+    if collateral:
+        detail += f"  [vạ lây: {', '.join(collateral)}]"
+    return verdict, detail
+
+
+t_all = time.monotonic()
 try:
-    for c in CASES:
-        if want and c['suite'] not in want:
-            continue
-        n += 1
-        status, why, outs = run_case(n, c['mig'], c.get('old', ''), c.get('new', ''), c.get('nth'), c.get('extra', ()), c.get('also', ()))
-        if status:
-            verdict, detail = status, why
-        else:
-            tf = next(t for t in tests if t == f"community_{c['suite']}.test.sql")
-            code, out = outs[tf]
-            err = first_fail(out)
-            collateral = [t.replace('community_', '').replace('.test.sql', '') for t in tests if t != tf and outs[t][0]]
-            if code == 0 and c.get('green_ok'):
-                verdict, detail = 'ĐỎ ĐÚNG', 'xanh ĐÚNG như dự kiến — lớp bảo vệ thứ hai còn đó'
-            elif code == 0:
-                verdict, detail = 'XANH', 'vẫn xanh khi đã phá — RỖNG NGHĨA'
-            elif c['expect'] in err:
-                verdict, detail = 'ĐỎ ĐÚNG', err[:140]
-            else:
-                verdict, detail = 'ĐỎ SAI CHỖ', err[:160]
-            if collateral:
-                detail += f"  [vạ lây: {', '.join(collateral)}]"
-        mark = {'ĐỎ ĐÚNG': '✓', 'XANH': '✗', 'ĐỎ SAI CHỖ': '~'}.get(verdict, '!')
-        print(f"{mark} {c['suite']:<13} {c['id']:<6} {verdict:<10} · {c['how']} — {detail}", flush=True)
-        rows.append((c, verdict, detail))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, JOBS)) as ex:
+        for c, (verdict, detail) in zip(picked, ex.map(lambda nc: judge(*nc), enumerate(picked, 1))):
+            mark = {'ĐỎ ĐÚNG': '✓', 'XANH': '✗', 'ĐỎ SAI CHỖ': '~'}.get(verdict, '!')
+            print(f"{mark} {c['suite']:<13} {c['id']:<6} {verdict:<10} · {c['how']} — {detail}", flush=True)
+            rows.append((c, verdict, detail))
 finally:
     sh(as_pg(f'{BIN}/pg_ctl -D {d}/data stop -m fast >/dev/null'))
     shutil.rmtree(d, ignore_errors=True)
 
 bad = [r for r in rows if r[1] != 'ĐỎ ĐÚNG']
 print(f'\n{len(rows) - len(bad)}/{len(rows)} đỏ đúng')
+print(f"thời gian: {time.monotonic() - t_all:.0f} s tổng, --jobs={JOBS} · "
+      f"cộng dồn qua các ca: dựng DB {TIMES['db']:.0f} s, migration {TIMES['mig']:.0f} s, kịch bản {TIMES['tests']:.0f} s")
 sys.exit(1 if bad else 0)
