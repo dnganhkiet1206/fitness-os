@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>ASCND 30s · app thật</title>
+<link rel="stylesheet" href="../ad-15s/fonts/fonts.css">
+<style>
+  :root { --muted: #8A8178; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: #F3EEE8; }
+  body { font-family: 'BVP', 'DejaVu Sans', sans-serif; color: #1D1A17; -webkit-font-smoothing: antialiased; }
+  .cap { position: absolute; left: 60px; right: 60px; top: 110px; text-align: center; }
+  .cap b { display: block; font-size: 104px; font-weight: 800; letter-spacing: -3.5px; line-height: 1.02; }
+  .cap span { display: block; margin-top: 22px; font-size: 40px; font-weight: 500; color: var(--muted); letter-spacing: -.3px; }
+  #wrap { position: absolute; left: 50%; top: 400px; width: 660px; height: 1436px; margin-left: -330px; perspective: 2600px; }
+  #phone { position: relative; width: 100%; height: 100%; border-radius: 104px; background: #121212; padding: 16px;
+           box-shadow: 0 60px 120px -40px rgba(0,0,0,.4), 0 20px 40px -20px rgba(0,0,0,.25); transform-style: preserve-3d; }
+  #screen { position: relative; width: 100%; height: 100%; border-radius: 88px; overflow: hidden; background: #fff; }
+  #screen img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 50% 0; }
+  .word { position: absolute; left: 0; right: 0; text-align: center; font-weight: 800; letter-spacing: 14px; }
+  .word span { display: inline-block; }
+  .tag { position: absolute; left: 0; right: 0; text-align: center; font-weight: 500; color: var(--muted); }
+  .tag span { display: inline-block; }
+  .icon { position: absolute; left: 50%; width: 280px; height: 280px; margin-left: -140px; border-radius: 64px; overflow: hidden;
+          box-shadow: 0 40px 90px -30px rgba(0,0,0,.45); }
+  .icon img { width: 100%; height: 100%; }
+  #end .word, #end .tag.main { color: #F5F2EE; }
+  #end .tag.sub { color: #9A938B; }
+  #end .icon { box-shadow: 0 0 0 2px rgba(255,255,255,.08), 0 40px 90px -30px rgba(0,0,0,.6); }
+</style>
+</head>
+<body>
+  <section id="intro" style="position:absolute;inset:0">
+    <div class="icon" id="ic1" style="top:560px"><img src="../ad-15s/icon.png" alt=""></div>
+    <div class="word" id="w1" style="top:900px;font-size:170px"><span>A</span><span>S</span><span>C</span><span>N</span><span>D</span></div>
+    <div class="tag" id="t1" style="top:1120px;font-size:46px">Hành trình fitness, cùng nhau.</div>
+  </section>
+
+  <div id="caps"></div>
+  <div id="wrap"><div id="phone"><div id="screen"><img id="imA" src="seq/today/0000.png" alt=""><img id="imB" src="seq/today/0000.png" alt="" style="display:none"></div></div></div>
+
+  <section id="end" style="position:absolute;inset:0">
+    <div class="icon" id="ic" style="top:580px"><img src="../ad-15s/icon.png" alt=""></div>
+    <div class="word" id="w6" style="top:940px;font-size:150px"><span>A</span><span>S</span><span>C</span><span>N</span><span>D</span></div>
+    <div class="tag main" id="t6" style="top:1150px;font-size:48px;font-weight:700"><span>Train.</span> <span>Share.</span> <span>Discover.</span> <span>Progress.</span></div>
+    <div class="tag sub" id="t6b" style="top:1230px;font-size:36px">Tập · Chia sẻ · Khám phá · Tiến bộ</div>
+  </section>
+
+<script>
+/* Giảm tốc êm, không nảy. */
+const OUT = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const IN = 'cubic-bezier(0.64, 0, 0.78, 0)';
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+const anims = [];
+function A(el, kf, at, dur, easing = OUT, fill = 'both') {
+  const a = el.animate(kf, { delay: at, duration: dur, easing, fill }); a.pause(); anims.push(a); return a;
+}
+const rise = (el, at, dist = 50, dur = 650) => A(el, [{ opacity: 0, transform: `translateY(${dist}px)` }, { opacity: 1, transform: 'translateY(0)' }], at, dur);
+
+/* Cảnh: màn THẬT của app. seq = đoạn cuộn quay từ app, still = ảnh tĩnh. tr = kiểu vào cảnh. */
+const SCENES = [
+  { from: 2400, to: 5400, seq: 'today', n: 96, tr: 'enter', t: 'Hôm nay.', s: 'Điểm sẵn sàng mỗi sáng, và việc cần làm.' },
+  { from: 5400, to: 8200, seq: 'assistant', n: 97, tr: 'slide', t: 'Trợ lý sức khoẻ.', s: 'Nhịp tim, giấc ngủ, calo — tóm gọn cho bạn.' },
+  { from: 8200, to: 11000, seq: 'nutrition', n: 84, tr: 'flip', t: 'Dinh dưỡng.', s: 'Calo, macro, nước và thực phẩm bổ sung.' },
+  { from: 11000, to: 13200, still: 'shots/log-meal.png', tr: 'sheet', t: 'Ghi bữa nhanh.', s: 'Chụp ảnh, quét mã vạch, hoặc để AI gợi ý.' },
+  { from: 13200, to: 15600, still: 'shots/workouts.png', tr: 'flip', t: 'Tập luyện.', s: 'Lịch tuần, mẫu buổi tập, tiến bộ từng bài.' },
+  { from: 15600, to: 17800, still: 'shots/sleep-insights.png', tr: 'blur', t: 'Giấc ngủ.', s: '7 đêm gần nhất, kèm nhận xét dễ hiểu.' },
+  { from: 17800, to: 20000, still: 'shots/smart-goals.png', tr: 'slide', t: 'Mục tiêu.', s: 'Xu hướng cân nặng, gợi ý chia đạm theo bữa.' },
+  { from: 20000, to: 22000, still: 'shots/ai-coach.png', tr: 'sheet', t: 'AI Coach.', s: 'Hỏi về tập luyện, dinh dưỡng, phục hồi.' },
+  { from: 22000, to: 25000, seq: 'community', n: 90, tr: 'flip', t: 'Cộng đồng.', s: 'Chia sẻ buổi tập, thử workout của nhau.' },
+  { from: 25000, to: 27000, seq: 'awards', n: 66, tr: 'slide', t: 'Huy chương.', s: 'Giữ chuỗi ngày, mở khoá từng cột mốc.' },
+  { from: 27000, to: 28600, still: 'shots/mascot-room-dark.png', tr: 'dark', t: 'Koa.', s: 'Người bạn đồng hành mỗi ngày.' },
+];
+const TR = 480;
+const DARK_AT = 27000;
+
+/* chữ từng cảnh */
+const caps = $('#caps');
+SCENES.forEach((sc, i) => {
+  const c = document.createElement('div');
+  c.className = 'cap';
+  c.innerHTML = `<b></b><span></span>`;
+  c.querySelector('b').textContent = sc.t;
+  c.querySelector('span').textContent = sc.s;
+  caps.appendChild(c);
+  const at = sc.from + (i === 0 ? 250 : 120);
+  A(c.querySelector('b'), [{ opacity: 0, transform: 'translateY(44px)', filter: 'blur(14px)' }, { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' }], at, 620);
+  A(c.querySelector('span'), [{ opacity: 0, transform: 'translateY(26px)', filter: 'blur(10px)' }, { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' }], at + 120, 620);
+  A(c, [{ opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' }, { opacity: 0, transform: 'translateY(-40px)', filter: 'blur(10px)' }], sc.to - 240, 240, IN, 'forwards');
+});
+
+/* intro 0–2400 */
+A($('#ic1'), [{ opacity: 0, transform: 'scale(.7)', filter: 'blur(12px)' }, { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }], 100, 900);
+$$('#w1 span').forEach((s, i) => A(s, [{ opacity: 0, transform: 'translateY(70px)', filter: 'blur(10px)' }, { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' }], 350 + i * 60, 800));
+rise($('#t1'), 900, 30, 650);
+A($('#intro'), [{ opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }, { opacity: 0, transform: 'scale(.92)', filter: 'blur(8px)' }], 2050, 360, IN, 'forwards');
+
+/* điện thoại */
+A($('#wrap'), [{ opacity: 0, transform: 'translateY(760px) scale(.9)' }, { opacity: 1, transform: 'translateY(0) scale(1)' }], 2300, 1000);
+A($('#wrap'), [{ opacity: 1, transform: 'translateY(0) scale(1)', filter: 'blur(0)' }, { opacity: 0, transform: 'translateY(260px) scale(.9)', filter: 'blur(8px)' }], 28450, 420, IN, 'forwards');
+
+/* kết (nền tối) 28600–30000 */
+A($('#ic'), [{ opacity: 0, transform: 'scale(.7)', filter: 'blur(12px)' }, { opacity: 1, transform: 'scale(1)', filter: 'blur(0)' }], 28650, 800);
+$$('#w6 span').forEach((s, i) => A(s, [{ opacity: 0, transform: 'translateY(60px)', filter: 'blur(10px)' }, { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' }], 28800 + i * 55, 700));
+$$('#t6 span').forEach((s, i) => rise(s, 29120 + i * 90, 24, 480));
+rise($('#t6b'), 29450, 20, 450);
+
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const easeOut = (x) => 1 - Math.pow(1 - clamp(x), 4);
+const easeInOut = (x) => { x = clamp(x); return x < .5 ? 8 * x ** 4 : 1 - Math.pow(-2 * x + 2, 4) / 2; };
+const mix = (a, b, p) => a.map((v, i) => Math.round(v + (b[i] - v) * p));
+const frameOf = (sc, t) => {
+  if (sc.still) return sc.still;
+  const k = Math.max(0, Math.min(sc.n - 1, Math.floor((t - sc.from) / (1000 / 30))));
+  return `seq/${sc.seq}/${String(k).padStart(4, '0')}.png`;
+};
+/* ảnh tĩnh nhích chậm (1 → 1.04) để màn không đứng im */
+const drift = (sc, t) => (sc.still ? 1 + 0.04 * clamp((t - sc.from) / (sc.to - sc.from)) : 1);
+async function put(el, src, style) {
+  if (el.getAttribute('src') !== src) { el.src = src; await el.decode().catch(() => {}); }
+  el.style.display = 'block';
+  Object.assign(el.style, { transform: 'none', filter: 'none', opacity: 1, zIndex: 1, borderRadius: '0', boxShadow: 'none' }, style);
+}
+
+window.render = async (t) => {
+  for (const a of anims) a.currentTime = t;
+  /* nền kem → tối cho cảnh Koa (màn này chỉ có bản tối) và cảnh kết */
+  const d = easeInOut((t - DARK_AT) / 700);
+  const bg = mix([243, 238, 232], [11, 11, 13], d);
+  document.body.style.background = `rgb(${bg})`;
+  const ink = mix([29, 26, 23], [245, 242, 238], d);
+  $('#caps').style.color = `rgb(${ink})`;
+
+  let i = SCENES.findIndex((s) => t >= s.from && t < s.to);
+  if (i === -1) i = t < SCENES[0].from ? 0 : SCENES.length - 1;
+  const cur = SCENES[i], prev = SCENES[i - 1];
+  const p = (t - cur.from) / TR;
+  const A_ = $('#imA'), B_ = $('#imB');
+  $('#phone').style.transform = 'none';
+  if (!prev || p >= 1 || cur.tr === 'enter') {
+    await put(A_, frameOf(cur, t), { transform: `scale(${drift(cur, t)})` });
+    B_.style.display = 'none';
+    return;
+  }
+  const e = easeOut(p);
+  const prevSrc = frameOf(prev, prev.to - 1), curSrc = frameOf(cur, t);
+  const pd = drift(prev, prev.to), cd = drift(cur, t);
+  if (cur.tr === 'slide') {
+    /* như đổi tab: màn mới đẩy màn cũ sang trái */
+    await put(A_, prevSrc, { transform: `translateX(${-30 * e}%) scale(${pd})`, filter: `brightness(${1 - 0.3 * e})` });
+    await put(B_, curSrc, { transform: `translateX(${100 * (1 - e)}%) scale(${cd})`, zIndex: 2, boxShadow: '-24px 0 48px rgba(0,0,0,.14)' });
+  } else if (cur.tr === 'sheet') {
+    /* như mở một bảng: màn cũ lùi vào, màn mới trồi lên từ đáy */
+    await put(A_, prevSrc, { transform: `scale(${pd * (1 - 0.07 * e)})`, filter: `brightness(${1 - 0.35 * e})`, borderRadius: `${40 * e}px` });
+    await put(B_, curSrc, { transform: `translateY(${100 * (1 - e)}%) scale(${cd})`, zIndex: 2, borderRadius: `${40 * (1 - e)}px`, boxShadow: '0 -24px 48px rgba(0,0,0,.18)' });
+  } else if (cur.tr === 'flip') {
+    /* lật điện thoại: nửa đầu quay đi với màn cũ, nửa sau quay về với màn mới */
+    const q = easeInOut(p);
+    const ang = q < 0.5 ? 180 * q : -180 * (1 - q);
+    $('#phone').style.transform = `rotateY(${ang}deg) scale(${1 - 0.08 * Math.sin(Math.PI * q)})`;
+    await put(A_, q < 0.5 ? prevSrc : curSrc, { transform: `scale(${q < 0.5 ? pd : cd})` });
+    B_.style.display = 'none';
+  } else {
+    /* blur và dark: nhoè chéo */
+    await put(A_, prevSrc, { transform: `scale(${pd * (1 + 0.03 * e)})`, filter: `blur(${14 * e}px)`, opacity: 1 - e });
+    await put(B_, curSrc, { transform: `scale(${cd * (1.06 - 0.06 * e)})`, filter: `blur(${14 * (1 - e)}px)`, opacity: e, zIndex: 2 });
+  }
+};
+window.ready = Promise.all([document.fonts.ready, ...[...document.images].map((i) => i.decode().catch(() => {}))]);
+</script>
+</body>
+</html>

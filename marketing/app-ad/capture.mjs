@@ -39,14 +39,14 @@ const W = 402, H = 874, DPR = 2.5;
 const browser = await chromium.launch();
 async function open(route) {
   const ctx = await browser.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: DPR, timezoneId: 'Asia/Ho_Chi_Minh', locale: 'vi-VN' });
-  await ctx.addInitScript(([ref, session]) => {
+  await ctx.addInitScript(([ref, session, theme]) => {
     localStorage.setItem('ascnd_lang', 'vi');
-    localStorage.setItem('ascnd_theme', 'light');
+    localStorage.setItem('ascnd_theme', theme);
     localStorage.setItem(`sb-${ref}-auth-token`, session);
   }, [REF, JSON.stringify({
     access_token: jwt(), refresh_token: 'r', token_type: 'bearer', expires_in: 86400 * 30, expires_at: Math.floor(Date.now() / 1000) + 86400 * 30,
     user: { id: UID, aud: 'authenticated', role: 'authenticated', email: 'demo@ascnd.app', app_metadata: {}, user_metadata: { name: 'Kiệt' }, created_at: day(400) },
-  })]);
+  }), process.env.THEME || 'light']);
   const page = await ctx.newPage();
   await page.route('**/*.supabase.co/**', fakeSupabase({ world: structuredClone(FIXTURES), mode: 'full', report: {} }));
   await page.goto(`http://localhost:${PORT}${route}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -69,11 +69,11 @@ const scroller = (page) => page.evaluateHandle(() => {
 
 const [mode, ...rest] = process.argv.slice(2);
 if (mode === 'still') {
-  mkdirSync(path.join(HERE, 'shots'), { recursive: true });
+  mkdirSync(path.join(HERE, process.env.SHOTS || 'shots'), { recursive: true });
   for (const route of rest) {
     const { ctx, page } = await open(route);
-    const name = route === '/' ? 'today' : route.replace(/^\//, '').replace(/[/?=&]/g, '_');
-    await page.screenshot({ path: path.join(HERE, 'shots', name + '.png') });
+    const name = (route === '/' ? 'today' : route.replace(/^\//, '').replace(/[/?=&]/g, '_')) + (process.env.THEME === 'dark' ? '-dark' : '');
+    await page.screenshot({ path: path.join(HERE, process.env.SHOTS || 'shots', name + '.png') });
     const sc = await scroller(page);
     const room = sc.asElement() ? await sc.evaluate((el) => el.scrollHeight - el.clientHeight) : 0;
     console.log(name, 'cuộn được', Math.round(room), 'px');

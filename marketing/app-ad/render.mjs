@@ -2,7 +2,7 @@ import { createRequire } from 'node:module'; const require = createRequire(impor
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 const dir = path.dirname(new URL(import.meta.url).pathname);
-const times = process.argv[2] === 'all' ? Array.from({ length: 450 }, (_, i) => i * 1000 / 30) : process.argv.slice(2).map(Number);
+const times = process.argv[2] === 'all' ? Array.from({ length: Number(process.env.FRAMES || 450) }, (_, i) => i * 1000 / 30) : process.argv.slice(2).map(Number);
 const out = path.join(dir, process.argv[2] === 'all' ? 'frames' : 'probe');
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ executablePath: process.env.CHROME || undefined });
