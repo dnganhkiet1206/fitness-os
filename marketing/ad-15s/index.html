@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>ASCND 15s</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root {
+    --bg: #F3EEE8; --ink: #1D1A17; --muted: #8A8178; --card: #FFFFFF; --chip: #F4F0EB;
+    --line: #ECE6DF; --dark: #26231F; --heart: #F0364A; --ok: #1E9E6A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); }
+  body { font-family: 'BVP', 'DejaVu Sans', sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  .scene { position: absolute; inset: 0; }
+  .kicker { position: absolute; left: 80px; top: 300px; font-weight: 800; font-size: 132px; letter-spacing: -4px; line-height: 1; }
+  .sub { position: absolute; left: 84px; top: 460px; font-weight: 500; font-size: 42px; color: var(--muted); letter-spacing: -0.5px; }
+  .card { position: absolute; left: 80px; top: 640px; width: 920px; background: var(--card); border-radius: 48px; padding: 36px;
+          box-shadow: 0 2px 4px rgba(40,30,20,.04), 0 30px 80px -20px rgba(60,40,20,.18); }
+  .head { display: flex; align-items: center; gap: 20px; height: 84px; }
+  .ava { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; flex: none; }
+  .ava img { width: 100%; height: 100%; object-fit: cover; }
+  .who b { display: block; font-size: 32px; font-weight: 700; letter-spacing: -.3px; }
+  .who span { font-size: 26px; color: var(--muted); font-weight: 500; }
+  .dots { margin-left: auto; color: var(--muted); }
+  .title { font-size: 60px; font-weight: 800; letter-spacing: -1.5px; margin-top: 22px; }
+  .chips { display: flex; gap: 14px; margin-top: 22px; flex-wrap: wrap; }
+  .chip { display: inline-flex; align-items: center; gap: 10px; height: 64px; padding: 0 24px; border-radius: 32px; background: var(--chip);
+          font-size: 29px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .chip svg { width: 30px; height: 30px; }
+  .photo { position: relative; margin-top: 26px; height: 320px; border-radius: 30px; overflow: hidden; background: #1c1d22; }
+  .photo img { position: absolute; right: 0; top: 0; height: 100%; }
+  .photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #1c1d22 30%, rgba(28,29,34,.2) 70%, rgba(28,29,34,0)); }
+  .photo .big { position: absolute; left: 34px; bottom: 30px; z-index: 1; color: #fff; }
+  .photo .big b { display: block; font-size: 64px; font-weight: 800; letter-spacing: -1.5px; font-variant-numeric: tabular-nums; }
+  .photo .big span { font-size: 26px; color: rgba(255,255,255,.7); font-weight: 500; }
+  .rows { margin-top: 10px; }
+  .row { display: flex; align-items: center; gap: 20px; height: 82px; border-bottom: 1px solid var(--line); font-size: 30px; font-weight: 500; }
+  .row .th { width: 52px; height: 52px; border-radius: 14px; background: var(--dark); display: grid; place-items: center; }
+  .row .th svg { width: 30px; height: 30px; }
+  .row .v { margin-left: auto; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .more { height: 70px; display: flex; align-items: center; gap: 14px; font-size: 28px; color: var(--muted); font-weight: 500; }
+  .more svg:last-child { margin-left: auto; }
+  .caption { font-size: 30px; line-height: 1.4; margin-top: 18px; font-weight: 500; }
+  .actions { display: flex; align-items: center; gap: 34px; margin-top: 26px; font-size: 29px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .act { display: flex; align-items: center; gap: 12px; position: relative; }
+  .act svg { width: 44px; height: 44px; }
+  .push { margin-left: auto; }
+  .roll { display: inline-block; height: 36px; overflow: hidden; vertical-align: middle; }
+  .roll i { display: block; font-style: normal; height: 36px; line-height: 36px; }
+  .burst { position: absolute; left: 22px; top: 22px; }
+  .burst i { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--heart); left: -5px; top: -5px; opacity: 0; }
+  /* progress */
+  .from { font-size: 34px; color: var(--muted); font-weight: 500; margin-top: 10px; font-variant-numeric: tabular-nums; }
+  .from b { color: var(--ink); font-weight: 700; }
+  .pair { position: relative; display: flex; gap: 12px; margin-top: 26px; }
+  .pair .ph { flex: 1; height: 560px; border-radius: 30px; overflow: hidden; background: #2b2d33; }
+  .pair .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .pair .arrow { position: absolute; left: 50%; top: 50%; width: 76px; height: 76px; margin: -38px 0 0 -38px; border-radius: 50%;
+                 background: rgba(255,255,255,.92); display: grid; place-items: center; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+  .tiles { display: flex; gap: 14px; margin-top: 22px; }
+  .tile { flex: 1; background: var(--chip); border-radius: 26px; padding: 22px 22px 16px; height: 200px; }
+  .tile span { font-size: 24px; color: var(--muted); font-weight: 500; }
+  .tile b { display: block; font-size: 42px; font-weight: 800; letter-spacing: -1px; margin-top: 4px; }
+  .tile svg { width: 100%; height: 70px; margin-top: 8px; overflow: visible; }
+  /* recipe */
+  .bowl { position: relative; height: 500px; border-radius: 30px; overflow: hidden; }
+  .bowl img { width: 100%; height: 100%; object-fit: cover; }
+  .kcal { position: absolute; right: 22px; top: 22px; background: rgba(40,36,32,.72); color: #fff; font-weight: 700; font-size: 30px;
+          padding: 12px 22px; border-radius: 30px; }
+  .ingr { display: flex; gap: 14px; margin-top: 24px; }
+  .ing { flex: 1; text-align: center; }
+  .ing .box { height: 150px; border-radius: 24px; background: var(--chip); display: grid; place-items: center; }
+  .ing .box img { width: 112px; }
+  .ing b { display: block; font-size: 26px; font-weight: 600; margin-top: 10px; }
+  .ing span { font-size: 23px; color: var(--muted); font-weight: 500; }
+  .btn { position: relative; margin-top: 28px; height: 104px; border-radius: 52px; background: var(--dark); color: #fff; display: grid;
+         place-items: center; font-size: 34px; font-weight: 700; overflow: hidden; }
+  .btn > div { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 14px; }
+  /* challenge */
+  .hero { position: absolute; left: 80px; top: 660px; width: 920px; height: 620px; border-radius: 48px; overflow: hidden; background: #202227;
+          box-shadow: 0 30px 80px -20px rgba(20,20,30,.35); color: #fff; }
+  .hero img { position: absolute; right: -10px; top: 0; height: 100%; opacity: .95; }
+  .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, #202227 38%, rgba(32,34,39,.25) 75%, rgba(32,34,39,0)); }
+  .hero .in { position: absolute; inset: 0; padding: 50px 48px; z-index: 1; }
+  .hero .k { font-size: 30px; color: rgba(255,255,255,.7); font-weight: 500; }
+  .hero h2 { font-size: 72px; line-height: 1.05; font-weight: 800; letter-spacing: -2px; margin-top: 12px; }
+  .bar { margin-top: 44px; width: 520px; height: 14px; border-radius: 7px; background: rgba(255,255,255,.18); overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 100%; background: #fff; border-radius: 7px; transform-origin: 0 50%; transform: scaleX(0); }
+  .days { font-size: 30px; margin-top: 18px; color: rgba(255,255,255,.85); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .foot { position: absolute; left: 48px; right: 48px; bottom: 44px; display: flex; align-items: center; }
+  .stack { display: flex; }
+  .stack img { width: 60px; height: 60px; border-radius: 50%; border: 3px solid #202227; margin-left: -16px; }
+  .stack img:first-child { margin-left: 0; }
+  .ppl { font-size: 28px; margin-left: 16px; color: rgba(255,255,255,.85); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .join { margin-left: auto; position: relative; height: 84px; width: 250px; border-radius: 42px; background: #fff; color: var(--ink);
+          font-size: 30px; font-weight: 700; overflow: hidden; }
+  .join > div { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px; }
+  .rewards { position: absolute; left: 80px; top: 1330px; display: flex; gap: 16px; }
+  .rw { height: 84px; padding: 0 30px; border-radius: 42px; background: var(--card); display: flex; align-items: center; gap: 12px;
+        font-size: 32px; font-weight: 700; box-shadow: 0 16px 40px -18px rgba(60,40,20,.3); }
+  .rw svg { width: 36px; height: 36px; }
+  /* intro + end */
+  .word { position: absolute; left: 0; right: 0; text-align: center; font-weight: 800; letter-spacing: 14px; }
+  .word span { display: inline-block; }
+  .tag { position: absolute; left: 0; right: 0; text-align: center; font-weight: 500; color: var(--muted); }
+  .tag span { display: inline-block; }
+  .icon { position: absolute; left: 50%; width: 280px; height: 280px; margin-left: -140px; border-radius: 64px; overflow: hidden;
+          box-shadow: 0 40px 90px -30px rgba(0,0,0,.45); }
+  .icon img { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+
+<!-- ─────────── S1 · mở đầu ─────────── -->
+<section class="scene" id="s1">
+  <div class="word" id="w1" style="top:790px;font-size:190px"><span>A</span><span>S</span><span>C</span><span>N</span><span>D</span></div>
+  <div class="tag" id="t1" style="top:1040px;font-size:46px">Hành trình fitness, cùng nhau.</div>
+</section>
+
+<!-- ─────────── S2 · tập luyện ─────────── -->
+<section class="scene" id="s2">
+  <div class="kicker" id="k2">Tập luyện.</div>
+  <div class="sub" id="u2">Mỗi buổi tập thành một thẻ đẹp — tự động.</div>
+  <div class="card" id="c2">
+    <div class="head">
+      <div class="ava"><img src="avaM.png"></div>
+      <div class="who"><b>Minh Tran</b><span>3 giờ trước</span></div>
+      <svg class="dots" width="44" height="12" viewBox="0 0 44 12"><circle cx="6" cy="6" r="5" fill="currentColor"/><circle cx="22" cy="6" r="5" fill="currentColor"/><circle cx="38" cy="6" r="5" fill="currentColor"/></svg>
+    </div>
+    <div class="title">Push Day</div>
+    <div class="chips">
+      <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9.5 2.5h5"/></svg>45 phút</div>
+      <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 9h10l2.2 11H4.8z"/><circle cx="12" cy="6" r="2.5"/></svg><span id="vol">12,840</span> kg</div>
+      <div class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8.5 20h7"/></svg>3 PRs</div>
+    </div>
+    <div class="photo"><img src="fig.png"><div class="big"><b>12,840 kg</b><span>Tổng khối lượng</span></div></div>
+    <div class="rows">
+      <div class="row r2"><div class="th"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></div>Incline DB Press<span class="v">24 kg × 10</span></div>
+      <div class="row r2"><div class="th"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></div>Flat DB Press<span class="v">22 kg × 12</span></div>
+      <div class="row r2"><div class="th"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg></div>Chest Machine Press<span class="v">50 kg × 10</span></div>
+    </div>
+    <div class="more"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>3 bài tập khác<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></div>
+    <div class="actions">
+      <div class="act">
+        <div class="burst" id="burst"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <svg viewBox="0 0 24 24" id="heart"><path id="heartPath" d="M12 20.5s-7.5-4.6-9.2-9.3C1.6 7.8 3.9 4.5 7.3 4.5c2 0 3.6 1.1 4.7 2.7 1.1-1.6 2.7-2.7 4.7-2.7 3.4 0 5.7 3.3 4.5 6.7-1.7 4.7-9.2 9.3-9.2 9.3z" fill="none" stroke="#1D1A17" stroke-width="2" stroke-linejoin="round"/></svg>
+        <span class="roll"><span id="likeRoll" style="display:block"><i>127</i><i>128</i></span></span>
+      </div>
+      <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M4 12a8 8 0 1 1 3.2 6.4L3.5 20l1.3-3.6A8 8 0 0 1 4 12z"/></svg>16</div>
+      <div class="act push"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"/></svg></div>
+      <div class="act"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5M5 12v7.5h14V12"/></svg></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────── S3 · tiến trình ─────────── -->
+<section class="scene" id="s3">
+  <div class="kicker" id="k3">Tiến bộ.</div>
+  <div class="sub" id="u3">Thấy rõ mình thay đổi qua từng tuần.</div>
+  <div class="card" id="c3">
+    <div class="head">
+      <div class="ava"><img src="avaK.png"></div>
+      <div class="who"><b>Khoa Nguyen</b><span>1 tuần trước</span></div>
+      <svg class="dots" width="44" height="12" viewBox="0 0 44 12"><circle cx="6" cy="6" r="5" fill="currentColor"/><circle cx="22" cy="6" r="5" fill="currentColor"/><circle cx="38" cy="6" r="5" fill="currentColor"/></svg>
+    </div>
+    <div class="title" style="font-size:52px">Tiến trình · 12 tuần</div>
+    <div class="from">Từ <b>52.1 kg</b> → <b><span id="wt">55.4</span> kg</b></div>
+    <div class="pair">
+      <div class="ph" id="ph1"><img src="before.png"></div>
+      <div class="ph" id="ph2"><img src="after.png"></div>
+      <div class="arrow" id="arr"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#1D1A17" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    </div>
+    <div class="tiles">
+      <div class="tile t3"><span>Cân nặng</span><b>+3.3 kg</b><svg viewBox="0 0 200 70"><path class="spark" d="M4 58 C40 56 60 48 90 44 S150 22 196 10" fill="none" stroke="#5FB3C9" stroke-width="5" stroke-linecap="round" pathLength="1"/></svg></div>
+      <div class="tile t3"><span>Vòng eo</span><b>−2.1 cm</b><svg viewBox="0 0 200 70"><path class="spark" d="M4 14 C40 16 70 26 100 34 S160 52 196 58" fill="none" stroke="#5FB3C9" stroke-width="5" stroke-linecap="round" pathLength="1"/></svg></div>
+      <div class="tile t3"><span>Bench Press</span><b>+15 kg</b><svg viewBox="0 0 200 70"><path class="spark" d="M4 60 C30 58 60 50 90 40 S160 18 196 8" fill="none" stroke="#5FB3C9" stroke-width="5" stroke-linecap="round" pathLength="1"/></svg></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────── S4 · công thức ─────────── -->
+<section class="scene" id="s4">
+  <div class="kicker" id="k4">Dinh dưỡng.</div>
+  <div class="sub" id="u4">Thấy món ngon — lưu, rồi thêm vào bữa của bạn.</div>
+  <div class="card" id="c4">
+    <div class="bowl"><img src="bowl.png"><div class="kcal">642 kcal</div></div>
+    <div class="title" style="font-size:54px">High Protein Chicken Bowl</div>
+    <div class="chips">
+      <div class="chip m4">642 kcal</div><div class="chip m4">52g protein</div><div class="chip m4">68g carbs</div><div class="chip m4">17g fat</div>
+    </div>
+    <div class="ingr">
+      <div class="ing i4"><div class="box"><img src="chick.png"></div><b>Ức gà</b><span>180g</span></div>
+      <div class="ing i4"><div class="box"><img src="rice.png"></div><b>Cơm trắng</b><span>200g</span></div>
+      <div class="ing i4"><div class="box"><img src="broc.png"></div><b>Bông cải xanh</b><span>100g</span></div>
+      <div class="ing i4"><div class="box"><img src="avo.png"></div><b>Bơ</b><span>50g</span></div>
+    </div>
+    <div class="btn" id="btn4">
+      <div id="b4a"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linejoin="round"><path d="M6 3.5h12v17l-6-4.2-6 4.2z"/></svg>Lưu công thức</div>
+      <div id="b4b" style="opacity:0"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#7BE0B0" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg>Đã lưu vào công thức của bạn</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────── S5 · cộng đồng ─────────── -->
+<section class="scene" id="s5">
+  <div class="kicker" id="k5">Cộng đồng.</div>
+  <div class="sub" id="u5">Cùng nhau giữ lửa mỗi ngày.</div>
+  <div class="hero" id="c5">
+    <img src="fig.png">
+    <div class="in">
+      <div class="k">Thử thách</div>
+      <h2>30 Days of<br>Consistency</h2>
+      <div class="bar"><i id="bar"></i></div>
+      <div class="days"><span id="days">0</span> / 30 ngày</div>
+    </div>
+    <div class="foot" style="z-index:1">
+      <div class="stack"><img src="avaM.png"><img src="avaA.png"><img src="avaK.png"></div>
+      <div class="ppl"><span id="ppl">2,300</span> người tham gia</div>
+      <div class="join" id="join"><div id="j1">Tham gia</div><div id="j2" style="opacity:0"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#1E9E6A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg>Đã tham gia</div></div>
+    </div>
+  </div>
+  <div class="rewards">
+    <div class="rw r5"><svg viewBox="0 0 24 24" fill="#F5B82E"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z"/></svg>+500 XP</div>
+    <div class="rw r5"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="#F5B82E"/><circle cx="12" cy="12" r="5.5" fill="none" stroke="#fff" stroke-width="2"/></svg>+250 xu</div>
+    <div class="rw r5"><svg viewBox="0 0 24 24" fill="none" stroke="#1D1A17" stroke-width="2" stroke-linejoin="round"><path d="M12 2.5l7.5 3v6c0 5-3.3 8.3-7.5 10-4.2-1.7-7.5-5-7.5-10v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke-linecap="round"/></svg>Huy hiệu mới</div>
+  </div>
+</section>
+
+<!-- ─────────── S6 · kết ─────────── -->
+<section class="scene" id="s6">
+  <div class="icon" id="ic" style="top:600px"><img src="icon.png"></div>
+  <div class="word" id="w6" style="top:960px;font-size:150px"><span>A</span><span>S</span><span>C</span><span>N</span><span>D</span></div>
+  <div class="tag" id="t6" style="top:1170px;font-size:48px;color:var(--ink);font-weight:700"><span>Train.</span> <span>Share.</span> <span>Discover.</span> <span>Progress.</span></div>
+  <div class="tag" id="t6b" style="top:1250px;font-size:36px">Tập · Chia sẻ · Khám phá · Tiến bộ</div>
+</section>
+
+<script>
+const SPRING = 'cubic-bezier(0.2, 1.3, 0.35, 1)';
+const OUT = 'cubic-bezier(0.16, 1, 0.3, 1)';
+const IN = 'cubic-bezier(0.65, 0, 0.85, 0.2)';
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => [...document.querySelectorAll(s)];
+const anims = [];
+/* fill 'both' cho vào cảnh, 'forwards' cho ra cảnh — để phần ra không đè phần vào trước giờ của nó. */
+function A(el, kf, at, dur, easing = OUT, fill = 'both') {
+  const a = el.animate(kf, { delay: at, duration: dur, easing, fill });
+  a.pause(); anims.push(a); return a;
+}
+const rise = (el, at, dist = 60, dur = 700, easing = OUT) =>
+  A(el, [{ opacity: 0, transform: `translateY(${dist}px)` }, { opacity: 1, transform: 'translateY(0)' }], at, dur, easing);
+const leave = (el, at, dur = 320) =>
+  A(el, [{ opacity: 1, transform: 'translateY(0) scale(1)' }, { opacity: 0, transform: 'translateY(-90px) scale(.97)' }], at, dur, IN, 'forwards');
+const show = (el, from, to) => { A(el, [{ visibility: 'hidden' }, { visibility: 'visible' }], from, 1, 'linear'); A(el, [{ visibility: 'visible' }, { visibility: 'hidden' }], to, 1, 'linear', 'forwards'); };
+
+/* S1 */
+show($('#s1'), 0, 2300);
+$$('#w1 span').forEach((s, i) => A(s, [{ opacity: 0, transform: 'translateY(90px)', filter: 'blur(12px)' }, { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' }], 150 + i * 70, 900, OUT));
+rise($('#t1'), 800, 30, 700);
+leave($('#s1'), 1820, 320);
+
+/* S2 */
+show($('#s2'), 2150, 5300);
+rise($('#k2'), 2150, 50, 650); rise($('#u2'), 2280, 30, 650);
+A($('#c2'), [{ opacity: 0, transform: 'translateY(520px) scale(.94)' }, { opacity: 1, transform: 'translateY(0) scale(1)' }], 2300, 900, SPRING);
+$$('#c2 .chip').forEach((c, i) => A(c, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1)' }], 2750 + i * 90, 500, SPRING));
+$$('#c2 .r2').forEach((r, i) => rise(r, 3000 + i * 110, 30, 550));
+/* thích kiểu X: tim nảy, tia bắn ra, số lăn lên */
+A($('#heart'), [{ transform: 'scale(1)' }, { transform: 'scale(.7)', offset: .25 }, { transform: 'scale(1.35)', offset: .6 }, { transform: 'scale(1)' }], 4250, 520, 'ease-out');
+$$('#burst i').forEach((d, i) => { const a = (i / 8) * Math.PI * 2; A(d, [{ opacity: 1, transform: 'translate(0,0) scale(1)' }, { opacity: 0, transform: `translate(${Math.cos(a) * 44}px,${Math.sin(a) * 44}px) scale(.3)` }], 4380, 420, OUT); });
+A($('#likeRoll'), [{ transform: 'translateY(0)' }, { transform: 'translateY(-36px)' }], 4400, 380, SPRING);
+leave($('#s2'), 4830, 320);
+
+/* S3 */
+show($('#s3'), 5150, 8300);
+rise($('#k3'), 5150, 50, 650); rise($('#u3'), 5280, 30, 650);
+A($('#c3'), [{ opacity: 0, transform: 'translateY(520px) scale(.94)' }, { opacity: 1, transform: 'translateY(0) scale(1)' }], 5300, 900, SPRING);
+A($('#ph1'), [{ opacity: 0, transform: 'translateX(-40px)' }, { opacity: 1, transform: 'translateX(0)' }], 5700, 600, OUT);
+A($('#ph2'), [{ opacity: 0, transform: 'translateX(40px)' }, { opacity: 1, transform: 'translateX(0)' }], 6050, 600, OUT);
+A($('#arr'), [{ opacity: 0, transform: 'scale(.3)' }, { opacity: 1, transform: 'scale(1)' }], 6300, 500, SPRING);
+$$('#c3 .t3').forEach((t, i) => rise(t, 6400 + i * 120, 30, 550));
+$$('#c3 .spark').forEach((p, i) => { p.style.strokeDasharray = '1'; A(p, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], 6700 + i * 120, 900, OUT); });
+leave($('#s3'), 7830, 320);
+
+/* S4 */
+show($('#s4'), 8150, 11300);
+rise($('#k4'), 8150, 50, 650); rise($('#u4'), 8280, 30, 650);
+A($('#c4'), [{ opacity: 0, transform: 'translateY(520px) scale(.94)' }, { opacity: 1, transform: 'translateY(0) scale(1)' }], 8300, 900, SPRING);
+$$('#c4 .m4').forEach((c, i) => A(c, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1)' }], 8800 + i * 90, 500, SPRING));
+$$('#c4 .i4').forEach((c, i) => rise(c, 9100 + i * 100, 40, 600));
+A($('#btn4'), [{ transform: 'scale(1)' }, { transform: 'scale(.95)', offset: .35 }, { transform: 'scale(1)' }], 9950, 420, 'ease-out');
+A($('#b4a'), [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-40px)' }], 10100, 260, IN, 'forwards');
+A($('#b4b'), [{ opacity: 0, transform: 'translateY(40px)' }, { opacity: 1, transform: 'translateY(0)' }], 10180, 420, SPRING);
+leave($('#s4'), 10830, 320);
+
+/* S5 */
+show($('#s5'), 11150, 13400);
+rise($('#k5'), 11150, 50, 650); rise($('#u5'), 11280, 30, 650);
+A($('#c5'), [{ opacity: 0, transform: 'translateY(520px) scale(.94)' }, { opacity: 1, transform: 'translateY(0) scale(1)' }], 11300, 900, SPRING);
+A($('#bar'), [{ transform: 'scaleX(0)' }, { transform: 'scaleX(.8)' }], 11700, 800, OUT);
+A($('#join'), [{ transform: 'scale(1)' }, { transform: 'scale(.93)', offset: .35 }, { transform: 'scale(1)' }], 12250, 420, 'ease-out');
+A($('#j1'), [{ opacity: 1 }, { opacity: 0 }], 12380, 200, IN, 'forwards');
+A($('#j2'), [{ opacity: 0, transform: 'scale(.7)' }, { opacity: 1, transform: 'scale(1)' }], 12420, 420, SPRING);
+$$('#s5 .r5').forEach((r, i) => A(r, [{ opacity: 0, transform: 'translateY(40px) scale(.8)' }, { opacity: 1, transform: 'translateY(0) scale(1)' }], 12450 + i * 100, 480, SPRING));
+leave($('#s5'), 12930, 320);
+
+/* S6 */
+show($('#s6'), 13250, 15100);
+A($('#ic'), [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'scale(1)' }], 13250, 800, SPRING);
+$$('#w6 span').forEach((s, i) => A(s, [{ opacity: 0, transform: 'translateY(60px)', filter: 'blur(10px)' }, { opacity: 1, transform: 'translateY(0)', filter: 'blur(0)' }], 13450 + i * 60, 750, OUT));
+$$('#t6 span').forEach((s, i) => rise(s, 13850 + i * 110, 24, 520));
+rise($('#t6b'), 14350, 20, 500);
+
+/* số đếm — cùng một hàm của t, nên khung nào cũng ra đúng một giá trị */
+const ease = (x) => 1 - Math.pow(1 - Math.min(1, Math.max(0, x)), 3);
+const span = (t, a, b) => ease((t - a) / (b - a));
+const fmt = (n) => Math.round(n).toLocaleString('en-US');
+window.render = (t) => {
+  for (const a of anims) a.currentTime = t;
+  $('#vol').textContent = fmt(12840 * span(t, 2800, 3700));
+  $('#wt').textContent = (52.1 + 3.3 * span(t, 5700, 6800)).toFixed(1);
+  $('#days').textContent = Math.round(24 * span(t, 11700, 12500));
+  $('#ppl').textContent = fmt(2300 + 181 * span(t, 11600, 12700));
+  const liked = t >= 4300;
+  $('#heartPath').setAttribute('fill', liked ? '#F0364A' : 'none');
+  $('#heartPath').setAttribute('stroke', liked ? '#F0364A' : '#1D1A17');
+};
+window.ready = Promise.all([document.fonts.ready, ...[...document.images].map((i) => i.decode().catch(() => {}))]);
+render(0);
+</script>
+</body>
+</html>
