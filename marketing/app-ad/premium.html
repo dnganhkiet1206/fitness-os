@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>ASCND · premium 30s</title>
+<link rel="stylesheet" href="../ad-15s/fonts/fonts.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: #08080A; }
+  body { font-family: 'BVP', 'DejaVu Sans', sans-serif; -webkit-font-smoothing: antialiased; }
+  .abs { position: absolute; }
+  .full { position: absolute; inset: 0; }
+  #bgLight { background: #F3EEE8; }
+  #bgGlow { background: radial-gradient(1200px 900px at 50% 18%, rgba(255,255,255,.09), rgba(255,255,255,0) 60%); }
+  .phone { position: absolute; width: 660px; height: 1436px; border-radius: 104px; background: #0f0f10; padding: 16px;
+           box-shadow: 0 70px 140px -40px rgba(0,0,0,.55), 0 24px 50px -24px rgba(0,0,0,.4); }
+  .phone::after { content: ''; position: absolute; inset: 0; border-radius: 104px; border: 2px solid rgba(255,255,255,.06); pointer-events: none; }
+  .scr { position: relative; width: 100%; height: 100%; border-radius: 88px; overflow: hidden; background: #fff; }
+  .scr img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  .word { position: absolute; left: 0; right: 0; text-align: center; color: #fff; font-weight: 800; letter-spacing: -6px; }
+  .cap { position: absolute; font-weight: 800; letter-spacing: -3.5px; line-height: 1.02; }
+  .sub { position: absolute; font-weight: 500; letter-spacing: -.3px; }
+  .card { position: absolute; border-radius: 40px; overflow: hidden; box-shadow: 0 50px 100px -30px rgba(40,25,10,.35), 0 16px 30px -12px rgba(40,25,10,.2); }
+  .card img { display: block; width: 100%; }
+  .icon { position: absolute; width: 260px; height: 260px; border-radius: 60px; overflow: hidden; border: 2px solid rgba(255,255,255,.07); box-shadow: 0 40px 90px -30px rgba(0,0,0,.6); }
+  .icon img { width: 100%; height: 100%; }
+  #mark { position: absolute; left: 0; right: 0; text-align: center; font-weight: 800; letter-spacing: 16px; font-size: 150px; color: transparent;
+          background: linear-gradient(100deg, #cfc8bf 0%, #cfc8bf 40%, #ffffff 50%, #cfc8bf 60%, #cfc8bf 100%); background-size: 300% 100%;
+          -webkit-background-clip: text; background-clip: text; }
+  #wipeEdge { position: absolute; top: 0; bottom: 0; width: 3px; background: rgba(255,255,255,.9); }
+  #koa { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; overflow: hidden; background: #07070a; }
+  #koa img { position: absolute; left: 0; top: 150px; width: 1080px; transform-origin: 50% 55%; }
+  #koaFade { position: absolute; left: 0; right: 0; top: 1050px; height: 420px; background: linear-gradient(rgba(7,7,10,0), #07070a 85%); }
+  #vig { background: radial-gradient(900px 1300px at 50% 42%, rgba(0,0,0,0) 45%, rgba(0,0,0,.78) 100%); }
+</style>
+</head>
+<body>
+<div id="bgLight" class="full"></div>
+<div id="bgGlow" class="full"></div>
+
+<!-- S1 chữ mở đầu -->
+<div id="w1" class="word" style="top:790px;font-size:230px">Tập.</div>
+<div id="w2" class="word" style="top:790px;font-size:230px">Ăn.</div>
+<div id="w3" class="word" style="top:790px;font-size:230px">Ngủ.</div>
+<div id="w4" class="word" style="top:790px;font-size:200px">Tiến bộ.</div>
+
+<!-- S2 logo -->
+<div id="ic" class="icon" style="left:410px;top:640px"><img src="../ad-15s/icon.png" alt=""></div>
+<div id="mark" style="top:960px">ASCND</div>
+
+<!-- S5 bộ ba -->
+<div id="trio" class="full" style="perspective:2600px">
+  <div id="tL" class="phone" style="left:210px;top:420px"><div class="scr"><img src="p/nutrition-dark.png" alt=""></div></div>
+  <div id="tR" class="phone" style="left:210px;top:420px"><div class="scr"><img src="p/workouts-dark.png" alt=""></div></div>
+  <div id="tC" class="phone" style="left:210px;top:420px"><div class="scr"><img src="p/sleep-insights-dark.png" alt=""></div></div>
+</div>
+
+<!-- S8 thẻ trôi phía sau -->
+<div id="fl1" class="card" style="left:40px;top:560px;width:560px"><img src="lift/challenge.png" alt=""></div>
+<div id="fl2" class="card" style="left:560px;top:1260px;width:500px"><img src="lift/post.png" alt=""></div>
+
+<!-- điện thoại chính -->
+<div id="stage" class="full" style="perspective:2800px">
+  <div id="ph" class="phone" style="left:210px;top:430px"><div class="scr" id="scr"><img id="imA" src="p/today.png" alt=""><img id="imB" src="p/today-dark.png" alt=""></div></div>
+</div>
+<div id="wipeEdge"></div>
+
+<!-- S3 cận vòng điểm -->
+<div id="ring" class="card" style="left:155px;top:520px;width:770px;border-radius:60px"><img src="lift/ring.png" alt=""></div>
+
+<!-- S6 thẻ nổi -->
+<div id="li1" class="card" style="left:70px;top:1130px;width:700px;border-radius:34px"><img src="lift/aimeal.png" alt=""></div>
+<div id="li2" class="card" style="left:360px;top:640px;width:660px;border-radius:34px"><img src="lift/macros.png" alt=""></div>
+
+<!-- S9 Koa -->
+<div id="koa"><img id="koaImg" src="lift/koa-room.png" alt=""><div id="koaFade"></div><div id="vig" class="full"></div></div>
+
+<!-- chữ -->
+<div id="c3" class="cap" style="left:80px;top:1520px;font-size:104px;color:#1D1A17">Điểm sẵn sàng.</div>
+<div id="s3" class="sub" style="left:84px;top:1650px;font-size:40px;color:#8A8178">Biết cơ thể sẵn sàng tới đâu, mỗi sáng.</div>
+<div id="c4a" class="cap" style="left:80px;top:160px;font-size:120px;color:#1D1A17">Sáng.</div>
+<div id="c4b" class="cap" style="right:80px;top:160px;font-size:120px;color:#fff;text-align:right">Tối.</div>
+<div id="s4" class="sub" style="left:0;right:0;top:310px;text-align:center;font-size:42px;color:#bdb6ad">Đẹp ở cả hai chế độ.</div>
+<div id="c5" class="cap" style="left:0;right:0;top:150px;text-align:center;font-size:84px;color:#fff;letter-spacing:-2.5px"><span id="k5a">Dinh dưỡng.</span> <span id="k5b">Giấc ngủ.</span><br><span id="k5c">Tập luyện.</span></div>
+<div id="c6" class="cap" style="left:80px;top:160px;font-size:104px;color:#1D1A17">Ghi bữa nhanh.</div>
+<div id="s6" class="sub" style="left:84px;top:290px;font-size:40px;color:#8A8178">Chụp ảnh, quét mã vạch, hoặc để AI gợi ý.</div>
+<div id="c7" class="cap" style="left:70px;top:620px;font-size:118px;color:#fff">Trợ lý<br>sức khoẻ.</div>
+<div id="s7" class="sub" style="left:74px;top:900px;width:420px;font-size:38px;color:#9a938b;line-height:1.35">Nhịp tim, giấc ngủ, calo — tóm gọn mỗi ngày.</div>
+<div id="c8" class="cap" style="left:0;right:0;top:150px;text-align:center;font-size:110px;color:#1D1A17">Cộng đồng.</div>
+<div id="s8" class="sub" style="left:0;right:0;top:280px;text-align:center;font-size:40px;color:#8A8178">Chia sẻ buổi tập. Thử workout của nhau.</div>
+<div id="c9" class="cap" style="left:0;right:0;top:1500px;text-align:center;font-size:150px;color:#fff">Koa.</div>
+<div id="s9" class="sub" style="left:0;right:0;top:1680px;text-align:center;font-size:42px;color:#b9b2a9">Người bạn đồng hành mỗi ngày.</div>
+<div id="c10" class="sub" style="left:0;right:0;top:1180px;text-align:center;font-size:48px;color:#F5F2EE;font-weight:700">Train. Share. Discover. Progress.</div>
+<div id="s10" class="sub" style="left:0;right:0;top:1262px;text-align:center;font-size:36px;color:#8f8880">Tập · Chia sẻ · Khám phá · Tiến bộ</div>
+<div id="flash" class="full" style="background:#fff;opacity:0"></div>
+
+<script>
+const $ = (s) => document.getElementById(s);
+const clamp = (x) => Math.max(0, Math.min(1, x));
+const out5 = (x) => 1 - Math.pow(1 - clamp(x), 5);         // giảm tốc êm
+const out3 = (x) => 1 - Math.pow(1 - clamp(x), 3);
+const io = (x) => { x = clamp(x); return x < .5 ? 16 * x ** 5 : 1 - Math.pow(-2 * x + 2, 5) / 2; };
+const inq = (x) => clamp(x) ** 3;
+const P = (t, a, b, e = out5) => e((t - a) / (b - a));
+const lerp = (a, b, p) => a + (b - a) * p;
+const mix = (a, b, p) => a.map((v, i) => Math.round(v + (b[i] - v) * p));
+const S = (id, o) => Object.assign($(id).style, o);
+/* hiện trong [a,b], vào/ra bằng mờ + trượt */
+function show(id, t, a, b, { dy = 40, blur = 14, inDur = .45, outDur = .3 } = {}) {
+  const pi = P(t, a, a + inDur), po = P(t, b - outDur, b, inq);
+  const v = t < a || t > b ? 0 : pi * (1 - po);
+  S(id, { opacity: v, transform: `translateY(${(1 - pi) * dy - po * dy * .6}px)`, filter: `blur(${(1 - v) * blur}px)` });
+}
+const SEQ = {
+  community: { dir: 'seq/p-community', n: 420, from: 20.0, dur: 3.5 },
+  assistant: { dir: 'seq/p-assistant-dark', n: 360, from: 17.0, dur: 3.0 },
+};
+const seqSrc = (k, t) => {
+  const s = SEQ[k]; const i = Math.max(0, Math.min(s.n - 1, Math.round(((t - s.from) / s.dur) * (s.n - 1))));
+  return `${s.dir}/${String(i).padStart(4, '0')}.jpg`;
+};
+async function src(id, url) { const el = $(id); if (el.getAttribute('src') !== url) { el.src = url; await el.decode().catch(() => {}); } }
+const hideAll = ['w1','w2','w3','w4','ic','mark','trio','fl1','fl2','stage','wipeEdge','ring','li1','li2','koa','c3','s3','c4a','c4b','s4','c5','s6','c6','c7','s7','c8','s8','c9','s9','c10','s10'];
+
+window.render = async (ms) => {
+  const t = ms / 1000;
+  for (const id of hideAll) $(id).style.opacity = 0;
+  S('flash', { opacity: 0 });
+
+  /* ── nền: tối → kem (5–8) → quét sang tối (8–11) → kem (14–17) → tối (17–20) → kem (20–23.5) → tối ── */
+  let light = 0;
+  if (t >= 4.6 && t < 8) light = P(t, 4.6, 5.6, io);
+  else if (t >= 8 && t < 11) light = 1;            /* S4 tự quét bằng clip-path */
+  else if (t >= 14 && t < 17) light = 1;
+  else if (t >= 20 && t < 23.5) light = 1;
+  S('bgLight', { opacity: light, clipPath: 'none' });
+  S('bgGlow', { opacity: 1 - light });
+
+  /* ── S1 0–2.5: bốn chữ theo phách (0,5 s) ── */
+  const words = [['w1', .15], ['w2', .65], ['w3', 1.15], ['w4', 1.65]];
+  words.forEach(([id, at], i) => {
+    const end = i < 3 ? at + .5 : 2.45;
+    if (t < at || t > end) return;
+    const p = P(t, at, at + .22);
+    const o = i < 3 ? 1 - P(t, end - .06, end, inq) : 1 - P(t, 2.25, 2.45, inq);
+    S(id, { opacity: p * o, transform: `scale(${lerp(1.18, 1, p) * (i === 3 ? lerp(1, 1.06, P(t, 1.65, 2.45, io)) : 1)})`, filter: `blur(${(1 - p) * 22}px)` });
+  });
+  if (t > 2.42 && t < 2.62) S('flash', { opacity: .55 * (1 - P(t, 2.42, 2.62, out3)) });
+
+  /* ── S2 2.5–5: icon, chữ ASCND có vệt sáng, rồi điện thoại xoay lên ── */
+  if (t >= 2.45 && t < 5.2) {
+    const pi = P(t, 2.5, 3.2), up = P(t, 3.7, 4.5, io), fade = 1 - P(t, 4.2, 4.7, inq);
+    S('ic', { opacity: pi * fade, transform: `translateY(${-up * 220}px) scale(${lerp(.72, 1, pi) * lerp(1, .8, up)})`, filter: `blur(${(1 - pi) * 16}px)` });
+    const pm = P(t, 2.75, 3.4);
+    S('mark', { opacity: pm * fade, transform: `translateY(${(1 - pm) * 40 - up * 220}px) scale(${lerp(1, .8, up)})`, backgroundPosition: `${lerp(120, -20, P(t, 3.0, 4.2, io))}% 0` });
+  }
+  /* điện thoại chính */
+  let phOn = false, phT = '', phTop = 430, scrLight = true;
+  if (t >= 3.8 && t < 8.0) {
+    phOn = true;
+    const r = P(t, 3.8, 5.0);
+    const zoom = P(t, 5.3, 6.6, io);                          // S3: tiến sát vòng điểm
+    const back = P(t, 7.55, 8.0, io);
+    const s = lerp(1, 1.9, zoom) * lerp(1, 1 / 1.9, back);
+    S('ph', { transformOrigin: '50% 31%' });
+    phT = `translateY(${(1 - r) * 900 + zoom * 180 * (1 - back)}px) rotateX(${(1 - r) * 34}deg) scale(${s})`;
+    await src('imA', 'p/today.png'); S('imB', { opacity: 0 });
+  }
+  /* S3 thẻ vòng điểm sắc nét thay cho điện thoại lúc cận cảnh */
+  if (t >= 6.2 && t < 7.9) {
+    const p = P(t, 6.2, 6.7), o = 1 - P(t, 7.5, 7.9, inq);
+    S('ring', { opacity: p * o, transform: `scale(${lerp(.96, 1, p) * lerp(1, 1.04, P(t, 6.2, 7.9, io))})` });
+    show('c3', t, 6.35, 7.85); show('s3', t, 6.5, 7.85);
+    S('stage', { opacity: 1 - p });
+  }
+
+  /* ── S4 8–11: cùng một màn, quét từ sáng sang tối ── */
+  if (t >= 8.0 && t < 11.3) {
+    phOn = true;
+    const inP = P(t, 8.0, 8.5);
+    const w = P(t, 8.9, 10.1, io);                            // tiến trình quét
+    phTop = 430;
+    phT = `translateY(${lerp(80, 260, inP)}px) scale(1.45)`;
+    S('ph', { transformOrigin: '50% 0%' });
+    await src('imA', 'p/today.png'); await src('imB', 'p/today-dark.png');
+    /* đường quét đi từ phải sang trái; bên phải nó là tối */
+    const x = lerp(1080, 0, w);
+    S('imB', { opacity: 1, clipPath: `inset(0 0 0 ${Math.max(0, (x - 210 - 16 * 1.45) / (628 * 1.45) * 100)}%)` });
+    S('bgLight', { opacity: 1, clipPath: `inset(0 ${1080 - x}px 0 0)` });
+    S('bgGlow', { opacity: 1 });
+    S('wipeEdge', { opacity: w > 0 && w < 1 ? 1 : 0, left: `${x - 1}px` });
+    show('c4a', t, 8.3, 10.3); show('c4b', t, 9.3, 11.0);
+    show('s4', t, 10.2, 11.0, { dy: 20 });
+    if (t > 10.6) { const o = 1 - P(t, 10.6, 11.1, inq); phT += ''; S('stage', { opacity: o }); }
+  }
+
+  /* ── S5 11–14: bộ ba điện thoại xếp quạt, máy quay xoay chậm ── */
+  if (t >= 10.8 && t < 14.3) {
+    const sp = P(t, 10.9, 11.9, io), orb = lerp(-7, 7, P(t, 11.0, 14.0, io)), o = 1 - P(t, 13.8, 14.1, inq);
+    S('trio', { opacity: o, transform: `rotateY(${orb}deg)` });
+    const base = 'scale(.7)';
+    S('tC', { transform: `${base} translateZ(${sp * 160}px) translateY(${(1 - sp) * 60}px)`, filter: `brightness(${t > 12.0 && t < 12.9 ? 1.06 : 1})` });
+    S('tL', { transform: `${base} translateX(${-sp * 470}px) rotateY(${sp * 24}deg) translateZ(${-sp * 120}px)`, opacity: sp });
+    S('tR', { transform: `${base} translateX(${sp * 470}px) rotateY(${-sp * 24}deg) translateZ(${-sp * 120}px)`, opacity: sp });
+    show('c5', t, 11.3, 14.0);
+    const lit = (a) => (t >= a ? 1 : .32);
+    S('k5a', { opacity: lit(11.5) }); S('k5b', { opacity: lit(12.0) }); S('k5c', { opacity: lit(12.5) });
+  }
+
+  /* ── S6 14–17: ghi bữa (sáng), hai thẻ nổi ra khỏi màn ── */
+  if (t >= 14.0 && t < 17.2) {
+    phOn = true;
+    const wp = P(t, 14.0, 14.45), ex = P(t, 16.75, 17.1, inq);
+    phT = `translateX(${(1 - wp) * 900 - ex * 1100}px) scale(${lerp(.92, .86, P(t, 14.2, 16.8, io))})`;
+    S('ph', { transformOrigin: '50% 50%', filter: `blur(${(1 - wp) * 18 + ex * 18}px)` });
+    await src('imA', 'p/log-meal.png'); S('imB', { opacity: 0 });
+    const l1 = P(t, 14.75, 15.3), l2 = P(t, 15.35, 15.9);
+    S('li1', { opacity: l1 * (1 - ex), transform: `translate(${(1 - l1) * 60 - ex * 1100}px, ${(1 - l1) * 40}px) scale(${lerp(.9, 1.06, l1)})` });
+    S('li2', { opacity: l2 * (1 - ex), transform: `translate(${(1 - l2) * -60 - ex * 1100}px, ${(1 - l2) * 40}px) scale(${lerp(.9, 1.04, l2)})` });
+    show('c6', t, 14.3, 16.9); show('s6', t, 14.45, 16.9);
+  }
+
+  /* ── S7 17–20: trợ lý (tối), điện thoại lệch phải, chữ lớn bên trái ── */
+  if (t >= 16.95 && t < 20.2) {
+    phOn = true;
+    const wp = P(t, 17.0, 17.45), ex = P(t, 19.7, 20.1, io);
+    phT = `translateX(${lerp(1100, 190, wp)}px) translateY(${60}px) rotateY(${-14 * wp}deg) scale(${lerp(.86, 3.2, ex)})`;
+    S('ph', { transformOrigin: '50% 40%', filter: `blur(${(1 - wp) * 18}px)`, opacity: 1 - P(t, 19.85, 20.1) });
+    await src('imA', seqSrc('assistant', Math.max(17.0, t))); S('imB', { opacity: 0 });
+    show('c7', t, 17.3, 19.75); show('s7', t, 17.5, 19.75);
+  }
+
+  /* ── S8 20–23.5: cộng đồng (sáng), thẻ trôi lệch lớp phía sau ── */
+  if (t >= 19.9 && t < 23.6) {
+    phOn = true;
+    const zi = P(t, 19.95, 20.6), ex = P(t, 23.1, 23.5, inq);
+    phT = `scale(${lerp(1.25, .9, zi)})`;
+    S('ph', { transformOrigin: '50% 50%', filter: `blur(${(1 - zi) * 20}px)`, opacity: zi * (1 - ex) });
+    await src('imA', seqSrc('community', Math.max(20.0, t))); S('imB', { opacity: 0 });
+    const par = P(t, 20.0, 23.5, io);
+    const f1 = P(t, 20.4, 21.0), f2 = P(t, 20.7, 21.3);
+    S('fl1', { opacity: f1 * (1 - ex), transform: `translateY(${lerp(120, -120, par)}px) scale(.94)`, filter: 'blur(1.5px)' });
+    S('fl2', { opacity: f2 * (1 - ex), transform: `translateY(${lerp(160, -200, par)}px) scale(.96)`, filter: 'blur(1.5px)' });
+    show('c8', t, 20.3, 23.3); show('s8', t, 20.45, 23.3);
+    S('stage', { zIndex: 3 });
+  }
+
+  /* ── S9 23.5–26.6: Koa (chỉ chế độ tối), máy quay tiến chậm ── */
+  if (t >= 23.5 && t < 26.8) {
+    const fi = P(t, 23.55, 24.2), fo = 1 - P(t, 26.3, 26.75, inq);
+    S('koa', { opacity: fi * fo });
+    S('koaImg', { transform: `scale(${lerp(1.02, 1.16, P(t, 23.5, 26.7, io))}) translateY(${lerp(0, -20, P(t, 23.5, 26.7, io))}px)` });
+    show('c9', t, 24.3, 26.5); show('s9', t, 24.5, 26.5);
+  }
+
+  /* ── S10 26.6–30: logo, vệt sáng quét qua chữ ── */
+  if (t >= 26.6) {
+    const pi = P(t, 26.7, 27.5);
+    S('ic', { opacity: pi, transform: `scale(${lerp(.8, 1, pi)})`, filter: `blur(${(1 - pi) * 14}px)`, top: '600px' });
+    const pm = P(t, 26.95, 27.7);
+    S('mark', { opacity: pm, top: '940px', transform: `translateY(${(1 - pm) * 40}px)`, backgroundPosition: `${lerp(120, -20, P(t, 27.6, 29.0, io))}% 0` });
+    show('c10', t, 27.5, 31); show('s10', t, 27.8, 31, { dy: 20 });
+  }
+
+  const ringCover = t >= 6.2 && t < 7.9 ? P(t, 6.2, 6.7) * (1 - P(t, 7.5, 7.9, inq)) : 0;
+  S('stage', { opacity: phOn ? 1 - ringCover : 0 });
+  if (phOn) {
+    if (!(t >= 8.0 && t < 11.3)) { S('imB', { clipPath: 'none' }); S('bgLight', { clipPath: 'none' }); }
+    S('ph', { transform: phT, top: phTop + 'px' });
+    if (!(t >= 14.0 && t < 17.2) && !(t >= 16.95 && t < 20.2) && !(t >= 19.9 && t < 23.6)) S('ph', { filter: 'none', opacity: 1 });
+    if (t >= 10.6 && t < 11.3) S('stage', { opacity: 1 - P(t, 10.6, 11.1, inq) });
+  }
+};
+window.ready = Promise.all([document.fonts.ready, ...[...document.images].map((i) => i.decode().catch(() => {}))]);
+</script>
+</body>
+</html>

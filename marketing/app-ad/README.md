@@ -50,3 +50,35 @@ Font, icon: dùng chung với `../ad-15s/`.
   Mốc hiệu ứng trong `synth.py` phải khớp `SCENES`. Đo được: −16,3 LUFS.
 - Xuất: `FRAMES=900 PAGE=compose30.html node render.mjs all`, rồi
   `ffmpeg -framerate 30 -i frames/%04d.png -i audio30.wav -c:v libx264 -crf 17 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest -movflags +faststart ../ascnd-ad-30s.mp4`
+
+## Bản premium (30 giây, 120 khung/giây) — `../ascnd-ad-premium-120fps.mp4`
+
+Mười cảnh, cắt theo nhịp 120 bpm, mỗi cảnh một bố cục riêng:
+1. chữ động trên nền đen ("Tập. Ăn. Ngủ. Tiến bộ.");
+2. logo có vệt sáng, điện thoại xoay lên;
+3. máy quay tiến sát vòng Điểm sẵn sàng;
+4. quét cùng một màn từ sáng sang tối;
+5. ba điện thoại xếp quạt (tối);
+6. thẻ giao diện nổi ra khỏi màn (sáng);
+7. Trợ lý sức khoẻ, điện thoại lệch phải (tối);
+8. Cộng đồng, thẻ trôi lệch lớp phía sau (sáng);
+9. Koa, chỉ chế độ tối;
+10. logo kết.
+
+- Dựng: `premium.html`. Mọi khung tính trực tiếp từ thời gian trong `window.render(ms)`, không dùng
+  animation của trình duyệt. Chuyển động giảm tốc êm, không nảy.
+- Ảnh: `p/` (tĩnh, sáng và tối), `lift/` (thẻ cắt từ ảnh thật để nổi ra), `seq/p-*` (cuộn thật ở
+  120 khung/giây, JPEG; không đưa lên repo). Lệnh chụp:
+  - `SHOTS=p node capture.mjs still / /nutrition /log-meal /community`
+  - `SHOTS=p THEME=dark node capture.mjs still / /nutrition /sleep-insights /workouts /awards /smart-goals`
+  - `SHOTS=p MORNING=1 HOUR=10 THEME=dark node capture.mjs still /mascot-room`
+  - `node capture.mjs scroll /community 420 1150 p-community`
+  - `THEME=dark node capture.mjs scroll /assistant 360 520 p-assistant-dark`
+- **Koa mở mắt**, có hai lý do:
+  - Biểu cảm theo giờ và ngày: sau 22:00 Koa buồn ngủ; ngày đã ăn và đã tập thì Koa cười híp mắt,
+    đúng thiết kế. Nên chụp lúc 10:00 trong trạng thái "đã ăn, chưa tập" (`MORNING=1 HOUR=10`).
+  - Trên bản web, mí mắt chớp bị kẹt ở trạng thái khép (issue #162). `capture.mjs` ẩn đúng các mí ấy
+    khi chụp.
+- Âm thanh: `python3 synth_premium.py audio-premium.wav`. Tổng hợp bằng code, 120 bpm, −15,7 LUFS.
+- Xuất: `node render120.mjs premium.html audio-premium.wav ../ascnd-ad-premium-120fps.mp4`, khoảng
+  6 phút. Khung đẩy thẳng vào ffmpeg, không ghi ra đĩa.
