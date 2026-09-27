@@ -575,3 +575,18 @@ CASES += [
        old='REVOKE EXECUTE ON FUNCTION public.community_find_recipes(text) FROM PUBLIC, anon;',
        new='GRANT EXECUTE ON FUNCTION public.community_find_recipes(text) TO anon;', expect='F15 '),
 ]
+
+# ── #156: hàm trong policy / cột sinh / DEFAULT / CHECK — bộ chung ../shared/fn_privilege.sql ──
+FNP = 'fn_privilege'
+CASES += [
+  # Đúng lỗi #150: cột sinh gọi community_fold mà người ghi không có EXECUTE.
+  dict(suite=FNP, id='FP2', mig=SPM150, how='bỏ dòng GRANT community_fold cho authenticated (lỗi gốc của #150)',
+       old='GRANT EXECUTE ON FUNCTION public.community_fold(text) TO authenticated;', new='', expect='FP2 '),
+  dict(suite=FNP, id='FP1', mig=FM, how='thu EXECUTE community_blocked_between của authenticated — ba policy đọc gọi nó',
+       # Bỏ riêng dòng GRANT thì default privileges của stub vẫn cấp (xem _GRANT) — thu hẳn.
+       old='GRANT EXECUTE ON FUNCTION public.community_blocked_between(uuid, uuid) TO authenticated;',
+       new='REVOKE EXECUTE ON FUNCTION public.community_blocked_between(uuid, uuid) FROM authenticated;', expect='FP1 '),
+  dict(suite=FNP, id='FP1·anon', mig=FM, how='policy đọc bài mở cho public (cả anon) mà hàm chặn đóng với anon',
+       old='  ON public.community_posts FOR SELECT TO authenticated\n  USING (\n    author_id = auth.uid()',
+       new='  ON public.community_posts FOR SELECT\n  USING (\n    author_id = auth.uid()', expect='FP1 '),
+]

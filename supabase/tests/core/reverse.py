@@ -226,6 +226,19 @@ def is_label(msg, want):
     return msg is not None and re.match(re.escape(want) + r'(?![\w])', msg) is not None
 
 
+# ── #156: hàm trong policy / cột sinh / DEFAULT / CHECK (../shared/fn_privilege.sql) ──
+# current_tier đóng với anon từ #154; mọi policy water_logs áp cho public.
+RPC_NO_ANON = '20261001190000_core_rpc_no_anon'
+TIER_GRANT = 'GRANT EXECUTE ON FUNCTION public.current_tier() TO authenticated;'
+CASES += [
+    ('FP1 policy water_logs lọc theo hạng (anon không gọi được current_tier)', RPC_NO_ANON, TIER_GRANT,
+     TIER_GRANT + '\nCREATE POLICY mut ON public.water_logs AS RESTRICTIVE FOR SELECT USING (public.current_tier() IS NOT NULL);', None, 'FP1'),
+    ('FP2 cột water_logs mặc định theo hạng', RPC_NO_ANON, TIER_GRANT,
+     TIER_GRANT + '\nALTER TABLE public.water_logs ADD COLUMN zz_tier text DEFAULT public.current_tier();', None, 'FP2'),
+    ('FP2 CHECK water_logs gọi hàm đóng với anon', RPC_NO_ANON, TIER_GRANT,
+     TIER_GRANT + '\nALTER TABLE public.water_logs ADD CONSTRAINT zz_tier CHECK (public.current_tier() IS NOT NULL);', None, 'FP2'),
+]
+
 def main():
     # Kiểm soát: không đột biến thì phải xanh, nếu không mọi ca dưới đây vô nghĩa.
     base = subprocess.run(['bash', os.path.join(HERE, 'run.sh')], capture_output=True, text=True)

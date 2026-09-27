@@ -98,6 +98,12 @@ COVERAGE_OK = {
                '`SEARCH_CASES=/khong-co python3 b_reverse.py search_shared` thì mọi ca đỏ ở SC0.',
     },
     'find_recipes': {'F16': _GRANT},
+    'fn_privilege': {
+        'FP0': 'đối chứng của chính PHÉP NỐI catalog (pg_depend ↔ pg_policy), không của migration nào: '
+               'mọi migration đều có policy gọi auth.uid().',
+        'FP3': 'tự kiểm trên một bảng dựng sẵn trong SAVEPOINT: bộ kiểm phải thấy đủ bốn đường sai, '
+               'và vai ấy chạy thật phải hỏng 42501 — không migration nào với tới nó.',
+    },
     'recipe': {
         'R9': 'CÙNG công thức với R8 (servings × serving_g), trên hàng thứ hai — servings '
               'nguyên (2 × 100). Mọi phép phá công thức làm R8 đỏ trước trong cùng khối DO; '
@@ -135,6 +141,9 @@ if '--coverage' in sys.argv:
     for t in tests_:
         suite = t.replace('community_', '').replace('.test.sql', '')
         text = open(os.path.join(TESTS, t)).read()
+        # `\ir ../shared/x.sql` (#156): nhãn nằm ở tệp được nhúng.
+        for inc in re.findall(r'^\\ir\s+(\S+)', text, re.M):
+            text += open(os.path.normpath(os.path.join(TESTS, inc))).read()
         have = labels_of(text)
         # Con số ở dòng \echo cuối là thứ run.sh in ra và người đọc tin: bộ Tìm
         # người in "23" suốt từ #37 trong khi chỉ có 22 câu ASSERT (#79).
