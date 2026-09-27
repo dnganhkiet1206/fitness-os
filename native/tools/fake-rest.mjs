@@ -371,16 +371,22 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
     ...(() => {
       const code = (r) => { try { return JSON.parse(r.body).code; } catch { return null; } };
       const WL = FIXTURES.weight_logs[0];
+      /* Ngày KHÔNG thể trùng hàng fixture. Fixture đặt ngày tương đối với hôm nay
+         (\`dayStr(n)\`), nên một ngày viết cứng như '2026-09-20' trùng một hàng
+         cân đúng vào tuần sau — lô ấy vấp UNIQUE (user_id, date) 409 trước khi
+         tới NOT NULL, và ca đỏ vì lịch chứ không vì máy chủ (27/09/2026). */
+      const D1 = '1999-01-01';
+      const D2 = '1999-01-02';
       const CM = FIXTURES.community_comments[0];
       return [
         ['POST thiếu cột NOT NULL không DEFAULT (weight_kg) → 400 23502, không hàng nào vào (#93)', (w) => {
-          const r = applyWrite(w, 'weight_logs', 'POST', U('weight_logs'), JSON.stringify({ user_id: WL.user_id, date: '2026-09-20' }));
+          const r = applyWrite(w, 'weight_logs', 'POST', U('weight_logs'), JSON.stringify({ user_id: WL.user_id, date: D1 }));
           return r.status === 400 && code(r) === '23502' && w.weight_logs.length === FIXTURES.weight_logs.length;
         }],
         ['POST lô [đủ, thiếu] → 23502, CẢ lô không vào (#93, nguyên tử như #80)', (w) => {
           const r = applyWrite(w, 'weight_logs', 'POST', U('weight_logs'), JSON.stringify([
-            { user_id: WL.user_id, date: '2026-09-20', weight_kg: 70 },
-            { user_id: WL.user_id, date: '2026-09-21' },
+            { user_id: WL.user_id, date: D1, weight_kg: 70 },
+            { user_id: WL.user_id, date: D2 },
           ]));
           return r.status === 400 && code(r) === '23502' && w.weight_logs.length === FIXTURES.weight_logs.length;
         }],
