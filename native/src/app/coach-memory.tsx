@@ -143,7 +143,9 @@ export default function CoachMemoryScreen() {
             <View key={g.kind} style={styles.group}>
               <View style={styles.groupHead}>
                 <View style={[styles.dot, { backgroundColor: c[g.tint] }]} />
-                <Text style={styles.groupTitle}>{vi ? g.vi : g.en}</Text>
+                <Text style={styles.groupTitle} accessibilityRole="header">
+                  {vi ? g.vi : g.en}
+                </Text>
               </View>
               {items.map((m) => (
                 <GlassCard elevation="inset" key={m.id} style={styles.row}>
@@ -185,9 +187,36 @@ export default function CoachMemoryScreen() {
                         Adding the check without adding the ear is half the job,
                         and the half that shows is the one that reads as a bug.
                       */
-                      forget.mutate(m.id, {
-                        onError: (e: Error) => toast.fail(e),
-                      });
+                      /*
+                        ── and it asks first (#144) ──
+
+                        This row is a health fact somebody said out loud — an
+                        injury, a diagnosis in passing. "Erase everything" below
+                        asked before it deleted; this button, one tap from the
+                        same screen, deleted at once. The press pass never saw
+                        it because "Forget" / "Quên" was not a destructive verb
+                        to it (`DESTRUCTIVE`, live-press.mjs). The question
+                        quotes the fact, so the tap that confirms is a tap on
+                        the right row.
+                      */
+                      Alert.alert(
+                        vi ? 'Quên điều này?' : 'Forget this?',
+                        `“${m.fact}”\n\n` +
+                          (vi
+                            ? 'Coach sẽ không còn nhớ điều này. Nếu nó vẫn đúng, bạn có thể kể lại trong một cuộc trò chuyện.'
+                            : 'The coach will no longer remember this. If it is still true, you can mention it again in a conversation.'),
+                        [
+                          { text: vi ? 'Huỷ' : 'Cancel', style: 'cancel' },
+                          {
+                            text: vi ? 'Quên' : 'Forget',
+                            style: 'destructive',
+                            onPress: () =>
+                              forget.mutate(m.id, {
+                                onError: (e: Error) => toast.fail(e),
+                              }),
+                          },
+                        ],
+                      );
                     }}>
                     <Icon icon={Trash2} size={16} color={c.mutedForeground} />
                   </PressScale>

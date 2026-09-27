@@ -26,5 +26,11 @@
  * "Bỏ khỏi" ↔ Remove, "Bỏ tích" ↔ Untick (bỏ một hiệp đã ghi), "Erase" ↔ Xoá
  * (trí nhớ HLV), "Clear" ↔ Xoá (mục tiêu cân nặng, ô tìm). KHÔNG thêm "Bỏ
  * qua": đó là bỏ qua, không mất gì.
+ *
+ * #144: "Quên: …" / "Forget: …" — nút xoá một điều huấn luyện viên nhớ (một
+ * chấn thương, một chẩn đoán). Không có động từ này, nút ấy xoá ngay mà không
+ * hỏi và lượt bấm thử không hề biết. Nhãn là "Quên: <câu>", nút xác nhận là
+ * "Quên" trơn — nên hai động từ này chỉ khớp khi theo sau là ":" hay hết chuỗi:
+ * "Quên mật khẩu?" / "Forgot password?" không phá huỷ gì.
  */
-export const DESTRUCTIVE = /^(Xoá|Rời|Chặn|Bỏ chặn|Bỏ theo dõi|Bỏ khỏi|Bỏ tích|Đăng xuất|Delete|Remove|Erase|Clear|Untick|Leave|Block|Unblock|Unfollow|Sign out)(?=\s|$)/i;
+export const DESTRUCTIVE = /^(?:(?:Xoá|Rời|Chặn|Bỏ chặn|Bỏ theo dõi|Bỏ khỏi|Bỏ tích|Đăng xuất|Delete|Remove|Erase|Clear|Untick|Leave|Block|Unblock|Unfollow|Sign out)(?=\s|$)|(?:Quên|Forget)(?=:|$))/i;

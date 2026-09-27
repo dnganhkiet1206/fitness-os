@@ -23,14 +23,14 @@ const SRC = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'sr
 
 const problems = [];
 const VERBS = ['Xoá', 'Xóa', 'Rời', 'Chặn', 'Bỏ chặn', 'Bỏ theo dõi', 'Bỏ khỏi', 'Bỏ tích', 'Đăng xuất', 'Delete', 'Remove', 'Erase', 'Clear', 'Untick', 'Leave', 'Block', 'Unblock', 'Unfollow', 'Sign out'];
-const opens = new RegExp(`^(${VERBS.join('|')})(?![\\p{L}\\p{N}])`, 'iu');
+const opens = new RegExp(`^(?:(?:${VERBS.join('|')})(?![\\p{L}\\p{N}])|(?:Quên|Forget)(?=:|$))`, 'iu'); // #144: "Quên: …", không "Quên mật khẩu"
 
 const copy = allAppCopy().filter((s) => opens.test(s));
 if (copy.length < 40) problems.push(`chỉ thấy ${copy.length} chuỗi app mở đầu bằng động từ phá huỷ — từ điển hỏng, đừng tin kết quả`);
 for (const s of copy) if (!DESTRUCTIVE.test(s)) problems.push(`"${s}" là nhãn phá huỷ của app mà DESTRUCTIVE không khớp — lượt bấm sẽ không đòi nó hỏi lại`);
 if (!copy.includes('Xoá tài khoản')) problems.push('"Xoá tài khoản" không còn trong từ điển — sửa phép kiểm đi theo nó');
 
-for (const s of ['Deleted items', 'Removed from list', 'Leaves', 'Blocked', 'Xoáy', 'Rờii']) {
+for (const s of ['Deleted items', 'Removed from list', 'Leaves', 'Blocked', 'Xoáy', 'Rờii', 'Quên mật khẩu?', 'Forgot password?', 'Forget this?']) {
   if (DESTRUCTIVE.test(s)) problems.push(`"${s}" không phải nhãn phá huỷ mà DESTRUCTIVE khớp`);
 }
 

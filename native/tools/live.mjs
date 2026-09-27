@@ -1193,6 +1193,58 @@ const SCENARIOS = [
   },
   {
     /*
+      #144: trí nhớ huấn luyện viên — dữ liệu sức khoẻ người dùng tự kể. Mỗi mục
+      nằm dưới đúng tiêu đề nhóm của `kind` (tiêu đề là heading), nhóm không có
+      mục thì không có tiêu đề rỗng; "Quên" một mục HỎI LẠI và câu hỏi nói ra
+      đúng điều sắp quên; Huỷ thì không ghi; Đồng ý thì đúng một DELETE vào
+      đúng `id`, và mục kia còn. Trước #144 nút ấy xoá ngay, không hỏi.
+    */
+    name: 'Trí nhớ HLV: mục dưới đúng nhóm; Quên hỏi lại có câu sắp quên, xoá đúng một dòng (#144)',
+    route: '/coach-memory', mode: 'full',
+    async run(page) {
+      const mine = FIXTURES.coach_memory.filter((m) => m.user_id === UID);
+      const GROUP = { constraint: 'Limits', goal: 'Goals', preference: 'Habits', context: 'Context' };
+      /* Thứ tự trong DOM: mỗi mục phải đứng sau tiêu đề nhóm của nó và trước tiêu đề kế tiếp. */
+      const seq = await page.evaluate(() =>
+        window.__shown('[role="heading"], div[dir="auto"]').map((e) => ({ h: e.getAttribute('role') === 'heading', t: e.textContent.trim() })),
+      );
+      const heads = seq.filter((x) => x.h).map((x) => x.t);
+      for (const [kind, title] of Object.entries(GROUP)) {
+        const has = mine.some((m) => m.kind === kind);
+        if (has !== heads.includes(title)) return `nhóm "${title}": ${has ? 'có mục mà không có tiêu đề (heading)' : 'không có mục mà vẫn có tiêu đề'} — tiêu đề thấy: ${heads.join(', ')}`;
+      }
+      for (const m of mine) {
+        const i = seq.findIndex((x) => !x.h && x.t === m.fact);
+        if (i < 0) return `không thấy mục "${m.fact}"`;
+        const lastHead = seq.slice(0, i).filter((x) => x.h).pop()?.t;
+        if (lastHead !== GROUP[m.kind]) return `"${m.fact}" (${m.kind}) nằm dưới "${lastHead}", phải dưới "${GROUP[m.kind]}"`;
+      }
+      const target = mine.find((m) => m.kind === 'constraint');
+      const other = mine.find((m) => m.id !== target.id);
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/coach_memory/.test(q.url()) && isWrite(q.method())) writes.push(`${q.method()} ${decodeURIComponent(q.url()).split('?')[1] ?? ''}`);
+      });
+      const btn = page.getByRole('button', { name: `Forget: ${target.fact}`, exact: true }).filter({ visible: true });
+      if ((await btn.count()) !== 1) return `không thấy đúng một nút "Forget: ${target.fact}"`;
+      const msgs = [];
+      page.once('dialog', (d) => { msgs.push(d.message()); d.dismiss(); });
+      await btn.click();
+      await page.waitForTimeout(1200);
+      if (!msgs.length) return 'bấm Quên mà không hộp hỏi lại nào hiện — một điều sức khoẻ bị xoá ngay (#144)';
+      if (!msgs[0].includes(target.fact)) return `hộp hỏi lại không nói ra câu sắp quên: "${msgs[0].slice(0, 120)}"`;
+      if (writes.length) return `bấm Huỷ mà vẫn có lệnh ghi: ${writes.join(' | ')}`;
+      page.once('dialog', (d) => { msgs.push(d.message()); d.accept(); });
+      await btn.click();
+      for (let i = 0; i < 10 && writes.length < 1; i++) await page.waitForTimeout(300);
+      await page.waitForTimeout(1500);
+      if (writes.length !== 1 || !writes[0].startsWith('DELETE') || !writes[0].includes(`id=eq.${target.id}`)) return `Đồng ý phải là đúng một DELETE id=eq.${target.id}, ra ${writes.join(' | ') || 'không lệnh nào'}`;
+      if ((await page.getByText(other.fact, { exact: true }).filter({ visible: true }).count()) !== 1) return `mục kia ("${other.fact}") không còn trên màn sau khi quên một mục`;
+      return null;
+    },
+  },
+  {
+    /*
       #140: tài nguyên NHÚNG. Hướng dẫn bài tập đọc chú thích của từng tấm ảnh
       qua `exercise_media?select=…,exercise_media_content(…)`. Trước #140 máy chủ
       giả không dựng nhúng, nên tấm ảnh không có tiêu đề nào và phần "các bước
