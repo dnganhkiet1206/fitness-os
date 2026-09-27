@@ -32,10 +32,22 @@ Nghĩa là:
    phép đo vẫn thắng một lời khuyên chung.
 2. **A và B luôn được phép tìm kiếm** để đối chiếu, ví dụ Apple HIG, tài liệu
    Expo, Reanimated, hay cách các app lớn làm một tương tác.
-3. **Cho phép người dùng tải ảnh lên.** Quyết định này thay luật cũ "không ảnh
-   tải lên, avatar là linh vật" của giai đoạn 1. Concept đi kèm các ràng buộc:
-   - quyền riêng tư theo từng ảnh: Công khai / Người theo dõi / Riêng tư (§12);
-   - kiểm duyệt (§17 Admin), trong đó báo cáo → tự ẩn đã có cho bài.
+3. ~~Cho phép người dùng tải ảnh lên.~~ **Đổi ngày 27/09 (#163, thay #158):** người dùng
+   **không** tải ảnh lên. Nguyên văn:
+
+   > tôi muốn người dùng không phải được phép đăng ảnh nhưng mọi bài đăng sẽ có hình ảnh khi
+   > người dùng bấm tuỳ chọn được chia sẻ buổi tập, công thức nấu ăn, hay tiến trình v.v thì sẽ
+   > có ảnh được app cấp sẵn, người dùng có thể tuỳ chọn style, mục đích là để app có được thiết
+   > kế chuẩn, sạch đẹp như concept, sau này mở rộng rồi cho phép đăng hình sau, vì budget chưa
+   > đủ, chỉ có admin với có quyền đăng ảnh
+
+   Nghĩa là:
+   - Mọi bài có ảnh lấy từ **thư viện ảnh do app cấp sẵn**.
+   - Người dùng chỉ **chọn phong cách**.
+   - **Chỉ admin** thêm ảnh vào thư viện.
+   - Avatar vẫn là linh vật.
+   - Ô ảnh cơ thể "trước/sau" trong mockup đổi thành ảnh app cấp cộng số liệu thật.
+   - Cho người dùng đăng ảnh là việc của sau này, khi có ngân sách kiểm duyệt.
 4. **Mọi chỗ cần icon thì phải có icon, vẽ theo các app lớn.** Không để một
    hành động chỉ có chữ khi app lớn dùng icon, không dùng emoji thay icon.
    Icon vẽ bằng vector, cùng một nét, cùng một bộ.
@@ -44,7 +56,7 @@ Nghĩa là:
 6. **Tên và số liệu trong mockup chỉ để minh hoạ.** Mọi thẻ dựng từ dữ liệu
    thật của người đăng; không người dùng giả.
 
-## Ràng buộc đứng khi đụng Storage (ảnh tải lên)
+## Ràng buộc đứng khi đụng Storage (thư viện ảnh của app, và ảnh người dùng về sau)
 
 Chủ dự án đã đặt các ràng buộc này và chúng vẫn còn hiệu lực:
 
