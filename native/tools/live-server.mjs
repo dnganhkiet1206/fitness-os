@@ -22,9 +22,9 @@
  * Set nào thì điều ấy không được ghi.
  */
 import { RPC_FIXTURES } from './live-rpc.mjs';
-import { UID, applyQuery, contentRange } from './live-world.mjs';
+import { UID, applyQuery, contentRange, embedRows } from './live-world.mjs';
 import { applyWrite, unsupportedFilters } from './live-writes.mjs';
-import { requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
+import { TYPE_RELATIONSHIPS, requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
 
 export function fakeSupabase({ world, mode = 'full', report = {} }) {
   const note = (kind, what) => report[kind]?.add(what);
@@ -106,6 +106,9 @@ export function fakeSupabase({ world, mode = 'full', report = {} }) {
         return r.fulfill({ status: wrote.status, contentType: 'application/json', body: wrote.body });
       }
       const rows = applyQuery(world[table] ?? [], u);
+      /* #140: tài nguyên nhúng một tầng; nhúng không dựng được thì ghi ra. */
+      const embedded = embedRows(world, table, rows, u, TYPE_RELATIONSHIPS);
+      for (const x of embedded.unsupported) note('selectMisses', `nhúng không dựng được: ${x}`);
       const single = (r.request().headers()['accept'] ?? '').includes('vnd.pgrst.object');
       /* #70: số đếm đi trong `Content-Range`, không trong thân — và `HEAD`
          (`head: true`) có thân rỗng. Header ấy không nằm trong danh sách mà một
@@ -117,7 +120,7 @@ export function fakeSupabase({ world, mode = 'full', report = {} }) {
           'content-range': contentRange(world[table] ?? [], u, rows.length, req.headers()['prefer'] ?? ''),
           'access-control-expose-headers': 'Content-Range',
         },
-        body: req.method() === 'HEAD' ? '' : JSON.stringify(single ? (rows[0] ?? null) : rows),
+        body: req.method() === 'HEAD' ? '' : JSON.stringify(single ? (embedded.rows[0] ?? null) : embedded.rows),
       });
     }
     return r.fulfill({

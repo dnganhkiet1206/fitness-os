@@ -240,6 +240,76 @@ export function applyQuery(rows, url) {
   return out;
 }
 
+/* Tách theo dấu phẩy ở độ sâu 0 — `a, b(c, d), e` → ['a', 'b(c, d)', 'e']. */
+function splitTop(s) {
+  const out = [];
+  let depth = 0;
+  let cur = '';
+  for (const ch of s) {
+    if (ch === '(') depth++;
+    if (ch === ')') depth--;
+    if (ch === ',' && depth === 0) {
+      out.push(cur.trim());
+      cur = '';
+    } else cur += ch;
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+}
+
+/**
+ * Tài nguyên NHÚNG của PostgREST, một tầng (#140): `select=…,bang(cot, cot)`.
+ *
+ * Trước #140 máy chủ giả trả nguyên hàng của bảng chính và không có khoá nhúng
+ * nào — `exercise_media_content` của hướng dẫn bài tập là `undefined`, nên mọi
+ * tấm media không có chú thích và phần "các bước có hình" chưa từng dựng trên
+ * bộ chạy. Quan hệ đọc từ `types.ts` (`readTypeRelationships`), như PostgREST
+ * đọc từ khoá ngoại:
+ *   · bảng nhúng có khoá ngoại trỏ VÀO bảng chính → mảng (một-nhiều);
+ *   · bảng chính có khoá ngoại trỏ TỚI bảng nhúng → một object hay null.
+ * Cột của phần nhúng lọc theo danh sách trong ngoặc (`*` là tất cả). Nhúng lồng
+ * hai tầng, hay không tìm ra quan hệ, thì trả về trong `unsupported` — máy chủ
+ * ghi nó thành một vấn đề, không im lặng trả thiếu.
+ */
+export function embedRows(world, table, rows, url, rels) {
+  const select = url.searchParams.get('select');
+  const unsupported = [];
+  if (!select || !select.includes('(')) return { rows, unsupported };
+  const embeds = [];
+  for (const tok of splitTop(select)) {
+    const m = /^(?:([a-z_][a-z0-9_]*):)?([a-z_][a-z0-9_]*)(?:!([a-z_][a-z0-9_]*))?\((.*)\)$/s.exec(tok);
+    if (!m) continue;
+    const [, alias, name, , inner] = m;
+    const cols = splitTop(inner);
+    if (cols.some((c) => c.includes('('))) {
+      unsupported.push(`${table} → ${name}: nhúng lồng hai tầng`);
+      continue;
+    }
+    const down = (rels.get(name) ?? []).find((r) => r.referencedRelation === table && r.columns.length === 1);
+    const up = (rels.get(table) ?? []).find((r) => r.referencedRelation === name && r.columns.length === 1);
+    if (!down && !up) {
+      unsupported.push(`${table} → ${name}: types.ts không có khoá ngoại nào nối hai bảng`);
+      continue;
+    }
+    embeds.push({ key: alias ?? name, name, cols, down, up });
+  }
+  const pick = (r, cols) => (cols.includes('*') ? { ...r } : Object.fromEntries(cols.map((c) => [c, r[c] ?? null])));
+  const out = rows.map((row) => {
+    const next = { ...row };
+    for (const e of embeds) {
+      const other = world[e.name] ?? [];
+      next[e.key] = e.down
+        ? other.filter((c) => c[e.down.columns[0]] === row[e.down.referencedColumns[0]]).map((c) => pick(c, e.cols))
+        : (() => {
+            const hit = other.find((p) => p[e.up.referencedColumns[0]] === row[e.up.columns[0]]);
+            return hit ? pick(hit, e.cols) : null;
+          })();
+    }
+    return next;
+  });
+  return { rows: out, unsupported };
+}
+
 /**
  * Header `Content-Range` như PostgREST (#70): `<đầu>-<cuối>/<tổng>`, không có
  * hàng nào thì phần đầu là `*`. Tổng chỉ có khi `Prefer` xin `count=` (exact,
@@ -400,6 +470,12 @@ export const FIXTURES = {
   ],
   exercise_media: [
     { id: 'em000001-0000-4000-8000-000000000001', exercise_id: 'e1', kind: 'image', uri: 'http://127.0.0.1:9/bench.jpg', poster_uri: null, duration_s: null, position: 0, alt: 'Bench press, bottom position', created_at: day(60), updated_at: day(60) },
+  ],
+  /* #140: chú thích của tấm ảnh — chỉ tới được qua NHÚNG trong
+     `exercise_media?select=…,exercise_media_content(…)`, không qua `.from()`. */
+  exercise_media_content: [
+    { id: 'emc00001-0000-4000-8000-000000000001', media_id: 'em000001-0000-4000-8000-000000000001', locale: 'en', title: 'Bar at mid-chest', description: 'Elbows about 45° from the body, shoulder blades pinned.', created_at: day(60), updated_at: day(60) },
+    { id: 'emc00001-0000-4000-8000-000000000002', media_id: 'em000001-0000-4000-8000-000000000001', locale: 'vi', title: 'Thanh đòn chạm giữa ngực', description: 'Khuỷu tay khoảng 45° so với thân, bả vai khoá chặt.', created_at: day(60), updated_at: day(60) },
   ],
   /* #135: hai ảnh tiến trình — trước đây rỗng, nên lưới ảnh và nút xoá của nó
      chưa từng dựng trên bộ chạy. `photo_url` là http nên hook không xin signed

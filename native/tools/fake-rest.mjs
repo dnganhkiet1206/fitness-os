@@ -43,8 +43,8 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { FIXTURES, UID as UID_, applyQuery } from './live-world.mjs';
-import { requestRejection, selectRejection, unknownSelectColumns } from './postgrest-select.mjs';
+import { FIXTURES, UID as UID_, applyQuery, embedRows } from './live-world.mjs';
+import { TYPE_RELATIONSHIPS, requestRejection, selectRejection, unknownSelectColumns } from './postgrest-select.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = path.join(ROOT, 'src');
@@ -713,6 +713,44 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
   globalThis.__routed = routed;
 }
 
+/* ── vế nhúng (#140): máy chủ giả DỰNG tài nguyên nhúng, và mọi nhúng của app dựng được ── */
+let embedsInSrc = 0;
+{
+  /* 1. Đúng ca của app: tấm ảnh của Bench Press mang hai chú thích, chỉ các cột được hỏi. */
+  const q = new URL('http://x/rest/v1/exercise_media?exercise_id=eq.e1&select=kind,uri,exercise_media_content(locale,title)');
+  const { rows, unsupported } = embedRows(FIXTURES, 'exercise_media', applyQuery(FIXTURES.exercise_media, q), q, TYPE_RELATIONSHIPS);
+  const caps = rows[0]?.exercise_media_content;
+  if (unsupported.length) problems.push(`nhúng exercise_media → exercise_media_content không dựng được: ${unsupported.join('; ')}`);
+  else if (!Array.isArray(caps) || caps.length !== 2 || caps.some((c) => Object.keys(c).join(',') !== 'locale,title')) {
+    problems.push(`nhúng exercise_media_content dựng sai: ${JSON.stringify(caps)} — phải là hai chú thích, mỗi cái đúng {locale, title}`);
+  }
+  /* 2. Chiều ngược (nhiều-một): một món trong bữa nhúng thực phẩm của nó là object. */
+  const q2 = new URL('http://x/rest/v1/meal_entry_items?select=id,food_items(name)');
+  const r2 = embedRows({ meal_entry_items: [{ id: 'i1', food_item_id: 'f1' }], food_items: [{ id: 'f1', name: 'Cơm' }] }, 'meal_entry_items', [{ id: 'i1', food_item_id: 'f1' }], q2, TYPE_RELATIONSHIPS);
+  if (JSON.stringify(r2.rows[0]?.food_items) !== '{"name":"Cơm"}') problems.push(`nhúng nhiều-một dựng sai: ${JSON.stringify(r2.rows[0])}`);
+  /* 3. Luật: mọi \`.from('t')…select('…, u(…)')\` của src/ dựng được — một nhúng mới
+     mà máy chủ giả không dựng được thì bộ chạy trả thiếu trong im lặng. */
+  const walk = (d) => readdirSync(d).flatMap((n) => {
+    const p = path.join(d, n);
+    return statSync(p).isDirectory() ? walk(p) : /\.tsx?$/.test(n) ? [p] : [];
+  });
+  for (const f of walk(path.join(ROOT, 'src'))) {
+    const src = readFileSync(f, 'utf8');
+    for (const m of src.matchAll(/\.from\('([a-z_]+)'\)[\s\S]{0,1500}?\.select\(\s*(['`])([^'`]*)\2/g)) {
+      if (!/[a-z_]\(/.test(m[3])) continue;
+      embedsInSrc++;
+      const u = new URL(`http://x/rest/v1/${m[1]}?select=${encodeURIComponent(m[3].replace(/\s+/g, ''))}`);
+      const r = embedRows({}, m[1], [], u, TYPE_RELATIONSHIPS);
+      for (const x of r.unsupported) problems.push(`${path.relative(ROOT, f)}: ${x} — máy chủ giả của live.mjs không dựng được nhúng này`);
+    }
+  }
+  if (embedsInSrc === 0) problems.push('không tìm thấy nhúng nào trong src/ — bộ đọc `.from(…).select(…)` hỏng, hoặc nhúng của hướng dẫn bài tập đã đi');
+  /* Thử ngược: bỏ quan hệ của exercise_media_content thì ca 1 không dựng được. */
+  const cut = new Map([...TYPE_RELATIONSHIPS].filter(([t]) => t !== 'exercise_media_content'));
+  const q3 = new URL('http://x/rest/v1/exercise_media?select=kind,exercise_media_content(title)');
+  if (embedRows(FIXTURES, 'exercise_media', FIXTURES.exercise_media, q3, cut).unsupported.length === 0) problems.push('thử ngược hỏng: thiếu khoá ngoại mà nhúng vẫn "dựng được"');
+}
+
 if (problems.length) {
   console.error('máy chủ giả trả lời sai câu hỏi:');
   for (const p of problems) console.error(`  ✗ ${p}`);
@@ -733,5 +771,6 @@ console.log(
     `Và trạng thái mạng (#68): ${globalThis.__netFiles} tệp tools/live*.mjs, đọc bằng trình phân tích cú pháp, không đổi mạng ở đâu ngoài goOnline/goOffline, ` +
     `và cả hai hàm ấy đều bắn \`navigator.connection\` 'change' (${globalThis.__netCases} ca tự kiểm: trần, chỉ số chuỗi, newContext offline, CDP; chú thích và chuỗi thì im). ` +
     `Và ${globalThis.__rangeCases} ca #70: \`Content-Range\` mang tổng đếm TRƯỚC limit/offset khi \`Prefer\` xin count, \`*/0\` khi rỗng, \`*\` khi không xin; HEAD thân rỗng; \`offset\` được áp trước \`limit\`` +
-    `Và ${globalThis.__routed} tệp trong tools/ dựng route giả, tất cả qua fakeSupabase của live-server.mjs (#39) — không thế giới thứ hai nào`,
+    `Và ${globalThis.__routed} tệp trong tools/ dựng route giả, tất cả qua fakeSupabase của live-server.mjs (#39) — không thế giới thứ hai nào. ` +
+    `Và tài nguyên nhúng (#140): máy chủ giả dựng nhúng một tầng cả hai chiều theo khoá ngoại của types.ts, đúng cột được hỏi; ${embedsInSrc} nhúng của src/ đều dựng được (thử ngược: thiếu khoá ngoại thì báo)`,
 );

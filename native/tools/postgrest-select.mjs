@@ -56,6 +56,30 @@ export const TYPE_COLUMNS = readTypeColumns(
   readFileSync(path.join(NATIVE, 'src/integrations/supabase/types.ts'), 'utf8'),
 );
 
+/**
+ * Khoá ngoại của mỗi bảng, đọc từ khối `Relationships` của `types.ts` (#140):
+ * `Map<bảng, [{ columns, referencedRelation, referencedColumns }]>`. Đây là thứ
+ * PostgREST dùng để dựng một tài nguyên nhúng (`select=…,bang_khac(…)`).
+ */
+export function readTypeRelationships(types) {
+  const rels = new Map();
+  const heads = [...types.matchAll(/^ {6}([a-z_][a-z0-9_]*): \{\n {8}Row: \{/gm)];
+  heads.forEach((h, i) => {
+    const body = types.slice(h.index, heads[i + 1]?.index ?? types.length);
+    const list = [...body.matchAll(/columns: \[([^\]]*)\]\s*isOneToOne: (?:true|false)\s*referencedRelation: "([a-z_][a-z0-9_]*)"\s*referencedColumns: \[([^\]]*)\]/g)].map((m) => ({
+      columns: [...m[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]),
+      referencedRelation: m[2],
+      referencedColumns: [...m[3].matchAll(/"([^"]+)"/g)].map((x) => x[1]),
+    }));
+    rels.set(h[1], list);
+  });
+  return rels;
+}
+
+export const TYPE_RELATIONSHIPS = readTypeRelationships(
+  readFileSync(path.join(NATIVE, 'src/integrations/supabase/types.ts'), 'utf8'),
+);
+
 /** Cột của một bảng như máy chủ thật thấy: `types.ts` + TYPES_STALE. null nếu không biết bảng. */
 export function realColumns(table, columns = TYPE_COLUMNS) {
   const base = columns.get(table);

@@ -1193,6 +1193,24 @@ const SCENARIOS = [
   },
   {
     /*
+      #140: tài nguyên NHÚNG. Hướng dẫn bài tập đọc chú thích của từng tấm ảnh
+      qua `exercise_media?select=…,exercise_media_content(…)`. Trước #140 máy chủ
+      giả không dựng nhúng, nên tấm ảnh không có tiêu đề nào và phần "các bước
+      có hình" (`captionedItems`) chưa từng dựng trên bộ chạy.
+    */
+    name: 'Hướng dẫn bài tập: chú thích ảnh đến qua nhúng exercise_media_content (#140)',
+    route: '/exercise-guide?ex=e1&name=Bench%20Press', mode: 'full',
+    async run(page) {
+      const want = FIXTURES.exercise_media_content.find((c) => c.locale === 'en');
+      const title = page.getByText(want.title, { exact: true }).filter({ visible: true });
+      if ((await title.count()) < 1) return `không thấy tiêu đề chú thích "${want.title}" của tấm ảnh — nhúng không dựng, hoặc phần các bước có hình không vẽ`;
+      const desc = page.getByText(want.description, { exact: true }).filter({ visible: true });
+      if ((await desc.count()) < 1) return `có tiêu đề mà không thấy mô tả "${want.description}"`;
+      return null;
+    },
+  },
+  {
+    /*
       #134: hai lần uống CÙNG `logged_at` (w3 250 ml, w4 500 ml; fixture). Thứ tự
       "mới nhất" của app là `logged_at`, rồi `created_at`, rồi `id` — CHUNG cho
       danh sách (thứ tự của cache mà bản vá lạc quan `slice(1)` cắt) và cho lệnh
