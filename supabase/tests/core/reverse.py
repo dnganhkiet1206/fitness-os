@@ -116,7 +116,9 @@ CASES += [
     ('C2 water_logs chặn luôn chủ đọc', WATER, W_ALL, W_ALL.replace('USING (auth.uid() = user_id)', 'USING (false)'), None, 'C2 water_logs'),
     ('N2 water_logs anon chèn được', WATER, W_ALL, W_ALL.replace('WITH CHECK (auth.uid() = user_id)', "WITH CHECK (auth.uid() = user_id OR auth.role() = 'anon')"), None, 'N2 water_logs'),
     ('O4 supplement_intake_logs WITH CHECK mở', LORE, 'ON public.supplement_intake_logs FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);',
-     'ON public.supplement_intake_logs FOR ALL USING (auth.uid() = user_id) WITH CHECK (true);', None, 'O4 supplement_intake_logs'),
+     # Từ #149 lớp thứ hai: policy RESTRICTIVE đòi supplement cha là của NGƯỜI GHI,
+     # nên chèn mang user_id của A mà trỏ vào supplement của A vẫn 42501. Phải xanh.
+     'ON public.supplement_intake_logs FOR ALL USING (auth.uid() = user_id) WITH CHECK (true);', None, None),
     ('O2 profiles UPDATE mở', LORE, 'ON public.profiles FOR UPDATE USING (auth.uid() = user_id);', 'ON public.profiles FOR UPDATE USING (true);', None, 'O2 profiles'),
     ('O3 grocery_items thêm DELETE mở', '20260212060013_', '-- Create table for custom grocery items',
      "-- Create table for custom grocery items", None, None),  # thay bằng ca dưới — xem ghi chú
@@ -162,6 +164,26 @@ CASES += [
      "  ON storage.objects FOR SELECT\n  USING (bucket_id = 'progress-photos' AND (auth.role() = 'anon' OR auth.uid()::text = (storage.foldername(name))[1]));", None, 'N4'),
 ]
 CASES = [c for c in CASES if not c[0].startswith('O3 grocery_items thêm DELETE mở')]
+
+# ── dòng cha phải là của mình (#149): parent_fk.test.sql ──
+PFK = '20261001180000_parent_owner_checks'
+def _open(policy_head, check_head):
+    return (policy_head + check_head, policy_head + check_head.replace('WITH CHECK (', 'WITH CHECK (true OR ', 1))
+CASES += [
+    ('F2 intake INSERT mở', PFK, *_open('AS RESTRICTIVE FOR INSERT\n', '  WITH CHECK (EXISTS (SELECT 1 FROM public.supplements'), None, 'F2'),
+    ('F3 intake UPDATE mở', PFK, *_open('  USING (true)\n', '  WITH CHECK (EXISTS (SELECT 1 FROM public.supplements'), None, 'F3'),
+    ('F5 buổi tập INSERT mở', PFK, "WITH CHECK (template_id IS NULL OR EXISTS (SELECT 1 FROM public.workout_templates t WHERE t.id = template_id AND t.user_id = auth.uid()));\nCREATE POLICY \"Session update", "WITH CHECK (true);\nCREATE POLICY \"Session update", None, 'F5'),
+    ('F7 lịch tuần INSERT mở', PFK, "WITH CHECK (template_id IS NULL OR EXISTS (SELECT 1 FROM public.workout_templates t WHERE t.id = template_id AND t.user_id = auth.uid()));\nCREATE POLICY \"Routine day update", "WITH CHECK (true);\nCREATE POLICY \"Routine day update", None, 'F7'),
+    ('F9 món trong bữa INSERT mở', PFK, "WITH CHECK (food_item_id IS NULL OR EXISTS (SELECT 1 FROM public.food_items f WHERE f.id = food_item_id AND (f.user_id IS NULL OR f.user_id = auth.uid())));\nCREATE POLICY \"Meal item update", "WITH CHECK (true);\nCREATE POLICY \"Meal item update", None, 'F9'),
+    ('F11 món trong kế hoạch INSERT mở', PFK, "WITH CHECK (food_item_id IS NULL OR EXISTS (SELECT 1 FROM public.food_items f WHERE f.id = food_item_id AND (f.user_id IS NULL OR f.user_id = auth.uid())));\nCREATE POLICY \"Plan item update", "WITH CHECK (true);\nCREATE POLICY \"Plan item update", None, 'F11'),
+    # Đối chứng: chặt quá thì thư viện chung / không mẫu cũng bị chặn.
+    ('F8 món trong bữa chặn cả thực phẩm chung', PFK, "(f.user_id IS NULL OR f.user_id = auth.uid())));\nCREATE POLICY \"Meal item update", "(f.user_id = auth.uid())));\nCREATE POLICY \"Meal item update", None, 'F8'),
+    # Chặt quá thì bộ RLS tổng quát (owner_rls, chạy trước) đỏ ở C1 — chủ không tự
+    # chèn được dòng của mình. Đúng lỗi, ở bộ khác; F1/F4 là đối chứng tại chỗ.
+    ('F4 buổi tập chặn cả khi không mẫu', PFK, "WITH CHECK (template_id IS NULL OR EXISTS (SELECT 1 FROM public.workout_templates t WHERE t.id = template_id AND t.user_id = auth.uid()));\nCREATE POLICY \"Session update", "WITH CHECK (EXISTS (SELECT 1 FROM public.workout_templates t WHERE t.id = template_id AND t.user_id = auth.uid()));\nCREATE POLICY \"Session update", None, 'C1 workout_sessions'),
+    ('F1 intake chặn cả của mình', PFK, *_open('AS RESTRICTIVE FOR INSERT\n', '  WITH CHECK (EXISTS (SELECT 1 FROM public.supplements'), None, 'F1'),
+]
+CASES[-1] = ('F1 intake chặn cả của mình', PFK, 'AS RESTRICTIVE FOR INSERT\n  WITH CHECK (EXISTS (SELECT 1 FROM public.supplements', 'AS RESTRICTIVE FOR INSERT\n  WITH CHECK (false AND EXISTS (SELECT 1 FROM public.supplements', None, 'C1 supplement_intake_logs')
 CASES += [
     ('O3 grocery_items thêm DELETE mở', '20260212060013_', '-- Triggers for updated_at', 'CREATE POLICY mut ON public.grocery_items FOR DELETE USING (true);\n-- Triggers for updated_at', None, 'O3 grocery_items'),
 ]
