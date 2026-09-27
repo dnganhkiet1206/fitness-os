@@ -258,6 +258,9 @@ try {
     'src/hooks/use-mascot-emotion.tsx':
       '`greeted` là cờ một-lần-mỗi-lần-mở-app, và chính file đó nói vậy: "một sự thật về cây React này, ' +
       'không phải về tài khoản". Đổi tài khoản giữa chừng thì BRAVO không được chào — chỉ là thiếu một câu chào',
+    'src/lib/harness-bar.ts':
+      'chiều cao (px) thanh tab của BỘ ĐO trên web (#152), do onLayout của app-tabs.web.tsx đặt lại mỗi ' +
+      'lần dựng. Một số đo bố cục của khung, không phải của tài khoản — trên iOS nó luôn là 0',
   };
 
   const dirs = ['src/lib', 'src/hooks'];
