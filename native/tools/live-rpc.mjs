@@ -199,7 +199,8 @@ export const RPC_FIXTURES = {
     },
   },
 
-  /* 20261001170000_community_search_unaccent_one_fold.sql (#119; nghĩa của bản #37,
+  /* 20261001200000_community_search_unaccent_folded_column.sql (#150: đọc cột gập sẵn —
+     cùng nghĩa với fold(display_name) ở đây); trước đó #119 và bản #37 (20260930170000,
      20260930170000, định nghĩa lại 20260930160000). Nghĩa được so với SQL: #130. */
   community_search_profiles: {
     sample: { p_q: 'pham' },

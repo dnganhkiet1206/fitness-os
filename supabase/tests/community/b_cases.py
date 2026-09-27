@@ -22,6 +22,7 @@ FRM116 = '20261001160000_community_find_recipes_one_fold'
 # luật. Ca U1–U6 phá `community_fold`, chỉ có ở tệp #37, nên giữ tên đầy đủ.
 SPM = 'community_search_unaccent'
 SPM119 = '20261001170000_community_search_unaccent_one_fold'
+SPM150 = '20261001200000_community_search_unaccent_folded_column'
 CASES = [
   # ── hồ sơ ──
   dict(suite=F, id='1', mig=FM, how='trigger không gạt is_official khi TẠO',
@@ -386,10 +387,18 @@ CASES += [
   dict(suite='search_shared', id='SC2', mig=SPM, how="tìm người không thoát '_', đo bằng tệp ca chung",
        old="  v_pat := replace(replace(replace(v_q, '\\', '\\\\'), '%', '\\%'), '_', '\\_');", new="  v_pat := replace(replace(v_q, '\\', '\\\\'), '%', '\\%');",
        expect='SC2 '),
-  dict(suite='search', id='S11', mig=SPM119, how='trở lại hai vế OR, mỗi vế gập tên một lần (cùng kết quả, gấp đôi chi phí)',
-       old="      OR public.community_fold(p.display_name) LIKE ANY (ARRAY[v_pat || '%', '% ' || v_pat || '%'])",
-       new="      OR public.community_fold(p.display_name) LIKE v_pat || '%'\n      OR public.community_fold(p.display_name) LIKE '% ' || v_pat || '%'",
+  dict(suite='search', id='S11', mig=SPM150, how='trở lại gập tên từng dòng thay vì đọc cột gập sẵn (#150)',
+       old="      OR p.display_name_folded LIKE ANY (ARRAY[v_pat || '%', '% ' || v_pat || '%'])",
+       new="      OR public.community_fold(p.display_name) LIKE ANY (ARRAY[v_pat || '%', '% ' || v_pat || '%'])",
        expect='S11 '),
+  # Cột không bỏ dấu thì phép tìm đã đỏ (U1) trước S12 — đúng lỗi, nhãn sớm hơn.
+  dict(suite='search', id='S12·U1', mig=SPM150, how='cột gập sẵn là lower(display_name), không bỏ dấu',
+       old='GENERATED ALWAYS AS (public.community_fold(display_name)) STORED', new='GENERATED ALWAYS AS (lower(display_name)) STORED',
+       expect='U1 '),
+  # Lệch mà KHÔNG phép tìm nào thấy (mẫu đều kết thúc bằng %): chỉ S12 đo được.
+  dict(suite='search', id='S12', mig=SPM150, how='cột gập sẵn thừa một dấu cách cuối',
+       old='GENERATED ALWAYS AS (public.community_fold(display_name)) STORED', new="GENERATED ALWAYS AS (public.community_fold(display_name) || ' ') STORED",
+       expect='S12 '),
   dict(suite='search', id='G2', mig='20260930160000_community_search', how='(A) gợi ý: đếm bài gấp đôi', old='(SELECT count(*)::integer FROM public.community_posts x', new='(SELECT (count(*) * 2)::integer FROM public.community_posts x', expect='G2 '),
   dict(suite='search', id='G3', mig='20260930160000_community_search', how='(A) gợi ý: loại người được BẤT KỲ AI theo dõi', old='      AND NOT EXISTS (SELECT 1 FROM public.community_follows f WHERE f.follower_id = v_uid AND f.followee_id = p.user_id)', new='      AND NOT EXISTS (SELECT 1 FROM public.community_follows f WHERE f.followee_id = p.user_id)', expect='G3 '),
   dict(suite='search', id='G4', mig='20260930160000_community_search', how='(A) gợi ý: anon gọi được', old='REVOKE EXECUTE ON FUNCTION public.community_follow_suggestions() FROM PUBLIC, anon;', new='GRANT EXECUTE ON FUNCTION public.community_follow_suggestions() TO anon;', expect='G4 '),

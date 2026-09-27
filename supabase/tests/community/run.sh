@@ -27,6 +27,16 @@ export SEARCH_CASES="$HERE/search_cases.json"
 # cùng — sáu kịch bản rỗng nghĩa hoặc đỏ nhờ may ở #14 đều từ chỗ này.
 bad="$(grep -nH 'SET ROLE anon' "$HERE"/*.test.sql | grep -vE '^[^:]+:[0-9]+:[[:space:]]*--' | grep -v 'pg_temp.anon(); SET ROLE anon' || true)"
 if [ -n "$bad" ]; then echo "SET ROLE anon thiếu pg_temp.anon() đứng trước:"; echo "$bad"; exit 1; fi
+# #150: `display_name_folded` là cột SINH từ community_fold. `CREATE OR REPLACE`
+# hàm ấy về sau KHÔNG tính lại các giá trị đã lưu — một migration như thế phải
+# tự tính lại cột (và nhắc tên nó). Đỏ ở đây, trước khi có dữ liệu nào để lệch.
+seen=0
+for m in "$ROOT"/supabase/migrations/*.sql; do
+  case "$m" in *_community_search_unaccent_folded_column.sql) seen=1; continue;; esac
+  if [ $seen = 1 ] && grep -q "FUNCTION public.community_fold" "$m" && ! grep -q "display_name_folded" "$m"; then
+    echo "$(basename "$m") định nghĩa lại community_fold mà không tính lại community_profiles.display_name_folded (#150)"; exit 1
+  fi
+done
 "${P[@]}" -f "$HERE/supabase-stub.sql"
 # MỌI migration cộng đồng, theo thứ tự tên tệp — migration Progress/Recipe của
 # giai đoạn 2 tự được áp ở đây mà không ai phải sửa script này.

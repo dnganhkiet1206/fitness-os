@@ -110,13 +110,23 @@ RESET ROLE;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_search_profiles(text)', 'EXECUTE'), 'S10 anon gọi được tìm người'; END $$;
 DO $$ BEGIN ASSERT NOT has_function_privilege('anon', 'public.community_follow_suggestions()', 'EXECUTE'), 'G4 anon gọi được gợi ý'; END $$;
 DO $$ BEGIN ASSERT has_function_privilege('authenticated', 'public.community_search_profiles(text)', 'EXECUTE') AND has_function_privilege('authenticated', 'public.community_follow_suggestions()', 'EXECUTE'), 'G5 người đã đăng nhập không gọi được'; END $$;
--- ── S11: gập tên hiển thị một lần mỗi dòng (#119) ──
--- Hai vế OR mỗi vế gọi `community_fold` là cùng kết quả nhưng gấp đôi chi phí,
--- và câu này không dừng sớm ở LIMIT (sắp theo handle) — đo trong
--- 20261001170000_community_search_unaccent_one_fold.sql. Không kịch bản kết quả
--- nào thấy khác biệt ấy, nên đếm thẳng trong thân hàm đang chạy.
+-- ── S11: KHÔNG gập tên hiển thị lần nào mỗi dòng (#119 → #150) ──
+-- #119 bớt từ hai lần xuống một; #150 đọc cột đã gập sẵn, nên thân hàm không
+-- còn gọi community_fold trên một cột nào của dòng. Câu này không dừng sớm ở
+-- LIMIT (sắp theo handle), nên một lần gập mỗi dòng là gập đủ mọi hồ sơ mỗi lần
+-- tìm — đo trong 20261001200000_community_search_unaccent_folded_column.sql.
+-- Không kịch bản kết quả nào thấy khác biệt ấy, nên đọc thẳng thân hàm.
 DO $$ DECLARE body text := pg_get_functiondef('public.community_search_profiles(text)'::regprocedure); BEGIN
-  ASSERT (length(body) - length(replace(body, 'community_fold(p.display_name', ''))) / length('community_fold(p.display_name') = 1,
-    'S11 hàm tìm người gập tên hiển thị nhiều hơn một lần mỗi dòng';
+  ASSERT position('community_fold(p.' in body) = 0 AND position('p.display_name_folded' in body) > 0,
+    'S11 hàm tìm người gập tên từng dòng thay vì đọc cột display_name_folded';
 END $$;
-\echo TẤT CẢ 23 KỊCH BẢN TÌM NGƯỜI ĐÚNG
+-- ── S12: cột gập sẵn luôn bằng community_fold(display_name) — kể cả sau khi sửa tên ──
+BEGIN;
+UPDATE community_profiles SET display_name = 'Ổ Bánh Mì Đặc Biệt' WHERE user_id = (SELECT user_id FROM community_profiles ORDER BY handle LIMIT 1);
+DO $$ BEGIN
+  ASSERT NOT EXISTS (SELECT 1 FROM community_profiles WHERE display_name_folded IS DISTINCT FROM community_fold(display_name)),
+    'S12 cột display_name_folded lệch community_fold(display_name) ở ít nhất một hồ sơ';
+  ASSERT EXISTS (SELECT 1 FROM community_profiles WHERE display_name_folded = 'o banh mi dac biet'), 'S12 sửa tên mà cột gập không tính lại';
+END $$;
+ROLLBACK;
+\echo TẤT CẢ 24 KỊCH BẢN TÌM NGƯỜI ĐÚNG

@@ -457,6 +457,7 @@ export type Database = {
           bio: string
           created_at: string
           display_name: string
+          display_name_folded: string | null
           handle: string
           is_official: boolean
           mascot_id: string | null
@@ -467,6 +468,7 @@ export type Database = {
           bio?: string
           created_at?: string
           display_name: string
+          display_name_folded?: never
           handle: string
           is_official?: boolean
           mascot_id?: string | null
@@ -477,6 +479,7 @@ export type Database = {
           bio?: string
           created_at?: string
           display_name?: string
+          display_name_folded?: never
           handle?: string
           is_official?: boolean
           mascot_id?: string | null
