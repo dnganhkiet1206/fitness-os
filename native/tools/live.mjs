@@ -3278,7 +3278,12 @@ const lap = {};
 /* Đo trước/sau của #102 in ở MỌI lối ra, kể cả lối đỏ. */
 process.on('exit', () => {
   const sec = (ms) => `${Math.round(ms / 1000)} s`;
-  const parts = [lap.sweep != null && `quét màn ${sec(lap.sweep)}`, lap.narrow != null && `quét hẹp ${sec(lap.narrow)}`].filter(Boolean);
+  const parts = [
+    lap.sweep != null && `quét màn ${sec(lap.sweep)}`,
+    lap.narrow != null && `quét hẹp ${sec(lap.narrow)}`,
+    lap.press != null && `bấm thử ${sec(lap.press)}`,
+    lap.scenarios != null && `kịch bản ${sec(lap.scenarios)} (${globalThis.__serial ?? 0} tuần tự)`,
+  ].filter(Boolean);
   console.log(`thời gian (--jobs=${JOBS}): ${[...parts, `tổng ${sec(Date.now() - t0)}`].join(' · ')} — vấn đề ghi ở tools/.live-problems.txt`);
 });
 
@@ -3436,23 +3441,31 @@ try {
     const skipLog = [];
     const skipReasons = {};
     if (pressRouteArg && pressList.length === 0) problems.push(`--press-route=${pressRouteArg}: không mục PRESS_ROUTES nào có đường dẫn chứa chuỗi này`);
-    for (const [route, mode, lang = null] of onlyArg || routeArg ? [] : pressList) {
+    /* #122: mỗi màn một trình duyệt, một thế giới riêng (#52) — các màn độc lập,
+       nên chạy qua `pool()` như quét màn (#102). Số đếm và sổ bỏ qua gom theo
+       ĐÚNG thứ tự PRESS_ROUTES sau khi xong, không theo màn nào xong trước. */
+    const pressRuns = onlyArg || routeArg ? [] : pressList;
+    const pressOut = pressRuns.map(() => null);
+    const tPress = Date.now();
+    await pool(pressRuns.map((x, i) => [x, i]), async ([[route, mode, lang = null], i], found) => {
       const { browser, page } = await openPage(chromium, route, mode, 9000, { lang });
       try {
-        const r = await pressEverything(page, `[${mode}${lang ? ` ${lang}` : ''}] ${route}`, problems);
-        pressed += r.tried;
-        skipped += r.skipped;
-        for (const k of r.skips) {
-          skipLog.push(`[${mode}${lang ? ` ${lang}` : ''}] ${route} — "${k.name}": ${k.reason}`);
-          const key = k.reason.startsWith('bị che') ? 'bị che' : k.reason;
-          skipReasons[key] = (skipReasons[key] ?? 0) + 1;
-        }
-        asked += r.dialogs;
+        pressOut[i] = { tag: `[${mode}${lang ? ` ${lang}` : ''}] ${route}`, r: await pressEverything(page, `[${mode}${lang ? ` ${lang}` : ''}] ${route}`, found) };
       } finally {
         await browser.close();
       }
-      process.stdout.write('.');
+    });
+    for (const o of pressOut.filter(Boolean)) {
+      pressed += o.r.tried;
+      skipped += o.r.skipped;
+      for (const k of o.r.skips) {
+        skipLog.push(`${o.tag} — "${k.name}": ${k.reason}`);
+        const key = k.reason.startsWith('bị che') ? 'bị che' : k.reason;
+        skipReasons[key] = (skipReasons[key] ?? 0) + 1;
+      }
+      asked += o.r.dialogs;
     }
+    if (pressRuns.length) lap.press = Date.now() - tPress;
     console.log('');
     globalThis.__skipped = skipped;
     globalThis.__skipReasons = skipReasons;
@@ -3464,18 +3477,38 @@ try {
     const picked = pressRouteArg ? [] : onlyArg ? SCENARIOS.filter((sc) => sc.name.includes(onlyArg)) : SCENARIOS;
     if (onlyArg && picked.length === 0) problems.push(`--only=${onlyArg}: không kịch bản nào có tên chứa chuỗi này`);
     globalThis.__picked = picked.length;
-    for (const sc of picked) {
+    /*
+      #122: kịch bản cũng chạy qua `pool()` — mỗi kịch bản một trình duyệt, một
+      context (mạng tắt/bật là của CONTEXT, không của máy), một thế giới riêng.
+      Trừ SERIAL, chạy TUẦN TỰ sau cùng khi không còn trang nào tranh CPU: kịch
+      bản đo THỜI GIAN hay HOẠT ẢNH ("đứng yên" đếm phần tử chạy mãi, deck hero
+      và segmented đọc khung hình giữa, PickRow đọc vị trí cuộn sau hoạt ảnh) và
+      kịch bản mất mạng (đòi lời báo "ngay", "không treo" — một ngưỡng thời
+      gian). CPU bị chia thì các phép đo ấy đổi nghĩa.
+    */
+    const SERIAL = /^(đứng yên|deck hero|segmented|PickRow)|[Mm]ất mạng/;
+    const runScenario = async (sc, found) => {
       const { browser, page } = await openPage(chromium, sc.route, sc.mode);
       try {
         const why = await sc.run(page);
-        if (why) problems.push(`${sc.name} — ${why}`);
+        if (why) found.push(`${sc.name} — ${why}`);
       } catch (e) {
-        problems.push(`${sc.name} — không chạy được: ${e.message.split('\n')[0].slice(0, 140)}`);
+        found.push(`${sc.name} — không chạy được: ${e.message.split('\n')[0].slice(0, 140)}`);
       } finally {
         await browser.close();
       }
+    };
+    const tScen = Date.now();
+    const serial = picked.filter((sc) => SERIAL.test(sc.name));
+    await pool(picked.filter((sc) => !SERIAL.test(sc.name)), runScenario);
+    for (const sc of serial) {
+      const found = [];
+      await runScenario(sc, found);
+      problems.push(...found);
       process.stdout.write('.');
     }
+    globalThis.__serial = serial.length;
+    if (picked.length) lap.scenarios = Date.now() - tScen;
     console.log('');
     globalThis.__pressed = pressed;
   }
