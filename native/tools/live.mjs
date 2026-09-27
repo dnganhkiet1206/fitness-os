@@ -880,20 +880,32 @@ async function pressEverything(page, label, problems) {
       */
       const cover = await c
         .evaluate((el) => {
-          const b = el.getBoundingClientRect();
+          /* #152: tâm của phần NHÌN THẤY, không của cả khung. Một nút một phần
+             nằm khuất dưới mép một tổ tiên có cắt (`overflow` khác visible) —
+             Koa "ló lên" từ dải đáy là như thế, cố ý — thì ngón tay chỉ chạm
+             được phần lộ ra; lấy tâm cả khung là hỏi về một điểm không ai
+             chạm tới được, và thứ nằm dưới phần bị cắt bị báo là "che". */
+          let b = el.getBoundingClientRect();
+          let [l, t0, r, bt] = [b.left, b.top, b.right, b.bottom];
+          for (let a = el.parentElement; a; a = a.parentElement) {
+            const cs = getComputedStyle(a);
+            if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+            const ab = a.getBoundingClientRect();
+            [l, t0, r, bt] = [Math.max(l, ab.left), Math.max(t0, ab.top), Math.min(r, ab.right), Math.min(bt, ab.bottom)];
+          }
+          [l, t0, r, bt] = [Math.max(l, 0), Math.max(t0, 0), Math.min(r, innerWidth), Math.min(bt, innerHeight)];
+          if (r <= l || bt <= t0) return 'phần cắt của chính tổ tiên nó (không lộ ra chút nào)';
+          b = { x: l, y: t0, width: r - l, height: bt - t0 };
           const t = document.elementFromPoint(b.x + b.width / 2, b.y + b.height / 2);
           if (!t || t === el || el.contains(t)) return null;
-          /* Thanh tab của bộ đo (app-tabs.web.tsx) không có trên iOS. */
-          if (t.closest('#harness-tabs')) return 'HARNESS';
           const who = t.closest('[role], button, a') ?? t;
           return `${who.getAttribute('role') ?? who.tagName.toLowerCase()} "${(who.getAttribute('aria-label') || who.innerText || '').replace(/\s+/g, ' ').trim().slice(0, 40)}"`;
         })
         .catch(() => null);
       const route = new URL(home).pathname;
-      if (cover === 'HARNESS') {
-        skip(name, 'bị thanh tab của bộ đo che (chỉ có trên web)');
-        continue;
-      }
+      /* #152: không còn miễn cho thanh tab của bộ đo — Koa chừa đúng chiều cao
+         của nó (`lib/harness-bar.ts`), và phép đo lấy tâm phần nút LỘ RA, nên
+         một nút bị thanh ấy che cũng là lỗi. */
       if (cover && !COVER_OK[`${route}|${name}`]) {
         problems.push(`${label}: nút "${name}" bị ${cover} che mà vẫn trong cây trợ năng — VoiceOver gặp một nút người nhìn không thấy (#147)`);
       }

@@ -14,6 +14,7 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/expo-template-theme';
+import { setHarnessBarHeight } from '@/lib/harness-bar';
 
 export default function AppTabs() {
   return (
@@ -70,10 +71,14 @@ export function CustomTabList(props: TabListProps) {
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
 
   return (
-    /* `harness-tabs`: live.mjs (#147) nhận ra thanh này — một nút bị NÓ che là
-       hình học của bộ đo (thanh tab web khác chiều cao thanh tab iOS mà Koa
-       chừa chỗ cho), không phải một nút vô hình của app. */
-    <View {...props} nativeID="harness-tabs" style={styles.tabListContainer}>
+    /* `harness-tabs`: thanh tab chỉ có trên bản web (bộ đo). Từ #152 nó báo
+       chiều cao thật của mình cho lớp Koa (`lib/harness-bar.ts`), nên Koa đậu
+       TRÊN nó như trên thanh tab iOS. */
+    <View
+      {...props}
+      nativeID="harness-tabs"
+      style={styles.tabListContainer}
+      onLayout={(e) => setHarnessBarHeight(e.nativeEvent.layout.height)}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
         <ThemedText type="smallBold" style={styles.brandText}>
           ASCND

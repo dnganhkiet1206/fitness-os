@@ -181,7 +181,7 @@ function stripComments(src) {
 {
   const src = stripComments(read(COMPANION));
   /*
-    HAI vế, và vế thứ hai là vế phép thử ngược đã dạy.
+    (Lịch sử) HAI vế, và vế thứ hai là vế phép thử ngược đã dạy.
 
     Bản đầu chỉ tìm biểu thức `pointerEvents: …` ở đâu đó trong tệp. Phép thử
     ngược — gỡ `animatedProps={touchable}` khỏi chính cái view, để nguyên khai
@@ -189,29 +189,32 @@ function stripComments(src) {
     không thấy được một khai báo không nối vào đâu cả, và đó là dạng hỏng dễ
     xảy ra nhất khi ai đó dọn JSX.
   */
-  const declared = /pointerEvents:\s*\(fade\.value \* surfaced\.value > [\d.]+ \?/.test(src);
-  const applied = /<Animated\.View style=\{\[styles\.perch, style\]\} animatedProps=\{touchable\}[\s>]/.test(src);
-  if (!declared || !applied) {
-    problems.push(
-      `${COMPANION}: vùng chạm của Koa không đi theo độ hiện (` +
-        `${declared ? 'có khai báo' : 'THIẾU khai báo'}, ${applied ? 'có nối vào view' : 'KHÔNG nối vào view'}` +
-        ') — `opacity: 0` ở RN KHÔNG tắt vùng chạm, nên một Koa vô hình vẫn nuốt cú bấm nhắm vào nút bên dưới nó',
-    );
-  }
   /*
-    Và cây trợ năng cũng đi theo độ hiện (#147). `pointerEvents` chỉ chặn CHẠM:
-    VoiceOver vẫn gặp một "Koa" vô hình, và lượt bấm thử của live.mjs thấy nó
-    bị nội dung đè lên ở Dinh dưỡng, Tập luyện, Cộng đồng. Cùng ngưỡng với vùng
-    chạm — một Koa chạm được mà không đọc được, hay ngược lại, là hai lỗi.
+    ── #152: MỘT nguồn cho chạm và trợ năng ──
+
+    Hai nguồn cùng ngưỡng (một `useAnimatedProps` cho `pointerEvents`, một
+    phản ứng cho `aria-hidden`) đã lệch nhau trên web: prop động kẹt ở 'none'
+    trong khi Koa đã hiện — đọc được mà không chạm được. Nay luật đòi:
+      1. một phản ứng trên `fade.value * surfaced.value <= X` đặt state;
+      2. view của chỗ đậu đọc CHÍNH state ấy cho cả `pointerEvents` lẫn
+         `aria-hidden`;
+      3. không còn nguồn thứ hai nào cho `pointerEvents` của Koa.
   */
-  const thr = src.match(/pointerEvents:\s*\(fade\.value \* surfaced\.value > ([\d.]+) \?/)?.[1];
-  const a11yReacts = thr != null && new RegExp(`fade\\.value \\* surfaced\\.value <= ${thr.replace('.', '\\.')}[^\\d]`).test(src);
-  const a11yApplied = /<Animated\.View style=\{\[styles\.perch, style\]\} animatedProps=\{touchable\} aria-hidden=\{a11yHidden\}>/.test(src);
-  if (!a11yReacts || !a11yApplied) {
+  const reacts = /useAnimatedReaction\(\s*\(\) => fade\.value \* surfaced\.value <= [\d.]+,[\s\S]{0,120}?runOnJS\(setA11yHidden\)\((\w+)\)/.test(src) && /\(\s*(\w+)\s*,\s*\w+\s*\)\s*=>\s*\{\s*if \(\1 !== \w+\) runOnJS\(setA11yHidden\)\(\1\)/.test(src);
+  const view = src.match(/<Animated\.View\s+style=\{\[styles\.perch, style\]\}([\s\S]*?)>/)?.[1] ?? '';
+  const touchFromState = /pointerEvents=\{a11yHidden \? 'none' : 'auto'\}/.test(view);
+  const a11yFromState = /aria-hidden=\{a11yHidden\}/.test(view);
+  const secondSource = /pointerEvents:\s*\(fade\.value/.test(src) || /animatedProps=\{/.test(view);
+  if (!reacts || !touchFromState || !a11yFromState || secondSource) {
     problems.push(
-      `${COMPANION}: Koa vô hình vẫn trong cây trợ năng (` +
-        `${a11yReacts ? 'ngưỡng khớp vùng chạm' : 'KHÔNG có phản ứng cùng ngưỡng với vùng chạm'}, ${a11yApplied ? 'có aria-hidden trên view' : 'KHÔNG có aria-hidden={a11yHidden} trên view'}` +
-        ') — VoiceOver đọc một nút không ai thấy (#147)',
+      `${COMPANION}: chạm và trợ năng của Koa không đi theo MỘT nguồn (` +
+        [
+          reacts ? 'có phản ứng theo ngưỡng' : 'KHÔNG có phản ứng fade·surfaced ≤ X đặt setA11yHidden',
+          touchFromState ? 'pointerEvents theo state' : 'pointerEvents KHÔNG theo state',
+          a11yFromState ? 'aria-hidden theo state' : 'aria-hidden KHÔNG theo state',
+          secondSource ? 'CÒN một nguồn thứ hai cho pointerEvents' : 'không nguồn thứ hai',
+        ].join(', ') +
+        ') — `opacity: 0` ở RN KHÔNG tắt vùng chạm (một Koa vô hình nuốt cú bấm), còn hai nguồn thì lệch nhau: đọc được mà không chạm được, hay ngược lại (#147, #152)',
     );
   }
 }
@@ -225,6 +228,6 @@ if (problems.length) {
 console.log(
   'ranh giới của Koa OK — mọi chỗ đậu nằm trong dải đáy (rise ≤ 1); lớp chừa đúng `BottomTabInset` nên ' +
     'nó không đứng vào vùng thanh tab; độ hiện hỏi CẢ "đã ngừng cuộn" lẫn "dải dưới chân có trống", và tín ' +
-    'hiệu thứ hai được nuôi từ `screen.tsx`; và khi mờ hết thì nó thôi nhận chạm, nên nó không cướp được ' +
-    'cú bấm nào của nút bên dưới',
+    'hiệu thứ hai được nuôi từ `screen.tsx`; và khi mờ hết thì nó thôi nhận chạm VÀ rời cây trợ năng, theo MỘT state ' +
+    '(#152), nên nó không cướp được cú bấm nào của nút bên dưới và không có Koa đọc được mà không chạm được',
 );

@@ -3,7 +3,7 @@ import { nav } from '@/lib/nav';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { Easing, runOnJS, useAnimatedProps, useAnimatedReaction, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, runOnJS, useAnimatedReaction, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomTabInset } from '@/constants/expo-template-theme';
@@ -18,6 +18,7 @@ import { baseEmotion } from '@/lib/mascot-emotion';
 import { nextPerch, perchPoint, type PerchId } from '@/lib/koa-perch';
 import { koaBandClear } from '@/lib/koa-band';
 import { tabBarVisible } from '@/lib/tab-bar-visibility';
+import { useHarnessBarHeight } from '@/lib/harness-bar';
 
 /**
  * Koa, everywhere you are.
@@ -131,6 +132,8 @@ const COMPANION_ROUTES = ['/nutrition', '/workouts', '/community'];
 export function KoaCompanion() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  /* 0 trên iOS; trên web là thanh tab của bộ đo (#152, lib/harness-bar.ts). */
+  const harnessBar = useHarnessBarHeight();
   /*
     ── every read here is free, and that is a hard requirement ──
 
@@ -317,17 +320,22 @@ export function KoaCompanion() {
     lúc nó vô hình — nó vẫn có thể cướp một cú bấm nhắm vào cái nút bên dưới,
     và người dùng thấy một màn hình không phản ứng chứ không thấy nguyên nhân.
   */
-  const touchable = useAnimatedProps(() => ({
-    pointerEvents: (fade.value * surfaced.value > 0.5 ? 'auto' : 'none') as 'auto' | 'none',
-  }));
-
   /*
     Và THÔI là một phần tử trợ năng (#147). `pointerEvents` chỉ chặn chạm;
     VoiceOver vẫn gặp một "Koa" vô hình — lượt bấm thử thấy nó bị nội dung đè
-    lên ở Dinh dưỡng, Tập luyện, Cộng đồng. Cùng ngưỡng 0.5 với vùng chạm, đưa
-    sang JS chỉ khi nó ĐỔI để không vẽ lại mỗi khung hình.
+    lên ở Dinh dưỡng, Tập luyện, Cộng đồng. Đưa sang JS chỉ khi nó ĐỔI để không
+    vẽ lại mỗi khung hình.
+
+    ── MỘT nguồn cho cả chạm lẫn trợ năng (#152) ──
+
+    Vùng chạm từng là một `useAnimatedProps` riêng, cùng ngưỡng. Hai nguồn thì
+    lệch được, và đã lệch: trên web prop động `pointerEvents` của Reanimated kẹt
+    ở giá trị ban đầu ('none', vì lúc dựng Koa chưa ló) trong khi độ mờ đã về 1
+    — một Koa HIỆN, đọc được, mà không chạm được; lượt bấm thử thấy nội dung
+    "đè" lên nó ở bốn màn. Nay `hidden` quyết cả hai, nên không thể có một Koa
+    chạm được mà không đọc được, hay ngược lại.
   */
-  const [a11yHidden, setA11yHidden] = useState(false);
+  const [a11yHidden, setA11yHidden] = useState(true);
   useAnimatedReaction(
     () => fade.value * surfaced.value <= 0.5,
     (now, prev) => {
@@ -358,11 +366,14 @@ export function KoaCompanion() {
       takes touches, everything else falls through to the page underneath.
     */
     <View
-      style={[styles.layer, { top: insets.top, bottom: insets.bottom + BOTTOM_RESERVE }]}
+      style={[styles.layer, { top: insets.top, bottom: insets.bottom + BOTTOM_RESERVE + harnessBar }]}
       pointerEvents="box-none"
       onLayout={onLayout}>
       {box ? (
-        <Animated.View style={[styles.perch, style]} animatedProps={touchable} aria-hidden={a11yHidden}>
+        <Animated.View
+          style={[styles.perch, style]}
+          pointerEvents={a11yHidden ? 'none' : 'auto'}
+          aria-hidden={a11yHidden}>
           <Pressable
             hitSlop={10}
             accessibilityRole="button"
