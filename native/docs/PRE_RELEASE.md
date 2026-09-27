@@ -263,6 +263,13 @@ Not urgent, but it must not be discovered after money is involved.
 
 `native/src/lib/dev-flags.ts` — `export const TEST_UNLOCK_ALL = true;`
 
+**Chủ dự án quyết ngày 27/09/2026: giữ `true` trong lúc app còn phát triển**
+("cờ TEST_UNLOCK_ALL cứ giữ nguyên vì app vẫn đang phát triển chứ chưa đưa lên
+appstore"). Không ai tự tắt cờ trước đó. Nó chỉ được tắt ngay trước khi nộp
+App Store, theo đúng thứ tự bên dưới. Phía server của kinh tế xu đã được kiểm
+trên Postgres thật (#154, `supabase/tests/core/rpc_authority.test.sql`); kịch
+bản trên bản web cho đường server (#146) chạy khi cờ tắt.
+
 While true:
 
 - every mascot character is unlocked, including the paid ones
