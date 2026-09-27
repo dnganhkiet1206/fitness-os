@@ -1257,6 +1257,92 @@ const SCENARIOS = [
   },
   {
     /*
+      #155: Koa đồng hành — MỘT state quyết cả chạm lẫn trợ năng (#152). Hai vế:
+        · HIỆN (đầu trang, dải đáy trống): Koa đọc được, điểm giữa của nó là
+          của nó, và chạm vào thì mở phòng Koa;
+        · KHUẤT (cuộn tới giữa trang: `koaBandClear` = 0 và GIỮ NGUYÊN cho tới
+          khi về cuối — không hẹn giờ nào, nên vế này không canh đồng hồ): Koa
+          ra khỏi cây trợ năng, chỗ nó đang đậu thuộc về trang bên dưới, và một
+          cú chạm thật vào đó không mở phòng Koa.
+      Trước #152 vùng chạm là một `useAnimatedProps` riêng, kẹt trên web; một
+      Koa vô hình mà vẫn nhận chạm chỉ lộ ra ở vế thứ hai.
+    */
+    name: 'Koa: hiện thì chạm mở phòng Koa; khuất khi cuộn giữa trang thì cú chạm rơi xuống trang (#152, #155)',
+    route: '/nutrition', mode: 'full',
+    async run(page) {
+      const koa = () => page.getByRole('button', { name: 'Koa', exact: true }).filter({ visible: true });
+      const owner = ([x, y]) => {
+        const el = document.elementFromPoint(x, y);
+        return el?.closest('[aria-label="Koa"]') ? 'koa' : `${el?.tagName ?? '∅'} "${(el?.textContent ?? '').trim().slice(0, 40)}"`;
+      };
+      const path = () => new URL(page.url()).pathname;
+      let n = 0;
+      for (let i = 0; i < 20 && !(n = await koa().count()); i++) await page.waitForTimeout(250);
+      if (n !== 1) return `Koa không hiện (đọc được) ở đầu /nutrition — thấy ${n} nút "Koa"`;
+      await page.waitForTimeout(800);
+      /* Tâm của phần LỘ RA, cùng luật với lượt bấm thử (#152): Koa cố ý ló lên
+         từ mép dưới, phần dưới bị tổ tiên có `overflow` cắt đi — tâm cả khung
+         rơi xuống thanh tab, một điểm không ngón tay nào chạm được. */
+      const center = () => page.locator('[aria-label="Koa"]').first().evaluate((el) => {
+        const b = el.getBoundingClientRect();
+        let [l, t, r, bt] = [b.left, b.top, b.right, b.bottom];
+        for (let a = el.parentElement; a; a = a.parentElement) {
+          const cs = getComputedStyle(a);
+          if (cs.overflowX === 'visible' && cs.overflowY === 'visible') continue;
+          const ab = a.getBoundingClientRect();
+          [l, t, r, bt] = [Math.max(l, ab.left), Math.max(t, ab.top), Math.min(r, ab.right), Math.min(bt, ab.bottom)];
+        }
+        [l, t, r, bt] = [Math.max(l, 0), Math.max(t, 0), Math.min(r, innerWidth), Math.min(bt, innerHeight)];
+        return r > l && bt > t ? [(l + r) / 2, (t + bt) / 2] : null;
+      });
+      const pt = await center();
+      if (!pt) return 'Koa đọc được mà không lộ ra chút nào trên màn';
+      const hit = await page.evaluate(owner, pt);
+      if (hit !== 'koa') return `Koa HIỆN mà điểm giữa của nó thuộc về ${hit} — chạm không tới Koa`;
+      await page.mouse.click(...pt);
+      for (let i = 0; i < 12 && path() !== '/mascot-room'; i++) await page.waitForTimeout(250);
+      if (path() !== '/mascot-room') return `chạm Koa đang hiện mà không mở /mascot-room (đang ở ${path()})`;
+      await page.goBack();
+      for (let i = 0; i < 12 && path() !== '/nutrition'; i++) await page.waitForTimeout(250);
+      if (path() !== '/nutrition') return `quay lại từ phòng Koa mà không về /nutrition (đang ở ${path()})`;
+      for (let i = 0; i < 20 && !(await koa().count()); i++) await page.waitForTimeout(250);
+      /* Cuộn tới GIỮA trang bằng bánh xe ở giữa khung nhìn — đúng đường
+         onScroll → noteKoaBand của `Screen`. NỬA quãng cuộn được chứ không
+         một con số: /nutrition chỉ cuộn được ~456 px, và cuộn tới đáy thì dải
+         đáy lại trống — Koa hiện lại đúng thiết kế, vế này không đo gì. */
+      const room = await page.evaluate(() => Math.max(0, ...window.__shown('div')
+        .filter((el) => /auto|scroll/.test(getComputedStyle(el).overflowY))
+        .map((el) => el.scrollHeight - el.clientHeight - el.scrollTop)));
+      if (room < 300) return `/nutrition chỉ cuộn được ${Math.round(room)} px — không đủ để dừng ở GIỮA trang; vế khuất không đo gì`;
+      const vp = page.viewportSize();
+      await page.mouse.move(vp.width / 2, vp.height / 2);
+      await page.mouse.wheel(0, Math.round(room / 2));
+      await page.waitForTimeout(400);
+      const below = await page.evaluate(() => Math.max(0, ...window.__shown('div')
+        .filter((el) => el.scrollTop > 0 && /auto|scroll/.test(getComputedStyle(el).overflowY))
+        .map((el) => el.scrollHeight - el.clientHeight - el.scrollTop)));
+      if (below < 150) return `cuộn nửa quãng (${Math.round(room / 2)} px) mà chỉ còn ${Math.round(below)} px bên dưới — không dừng được ở giữa trang; vế khuất không đo gì`;
+      let gone = false;
+      for (let i = 0; i < 16 && !(gone = (await koa().count()) === 0); i++) await page.waitForTimeout(250);
+      if (!gone) return 'cuộn tới giữa trang mà Koa vẫn đọc được — nó đè lên nội dung và VoiceOver vẫn gặp nó (#147)';
+      /* Đo LẠI chỗ của Koa lúc nó khuất: quay về từ phòng Koa thì nó có thể đã
+         đậu sang chỗ khác (đo được: x 36 → 335), và chạm vào chỗ CŨ là hỏi về
+         một điểm Koa không còn ở đó — vế này xanh cả với bản hỏng. Chờ nó đi
+         xong quãng chuyển chỗ trước khi đo. */
+      await page.waitForTimeout(1000);
+      const pt2 = await center();
+      if (!pt2) return 'Koa đã khuất và không còn phần nào nằm trong khung nhìn — không có điểm nào để thử chạm';
+      const under = await page.evaluate(owner, pt2);
+      if (under === 'koa') return 'Koa đã khuất mà chỗ nó đang đậu vẫn thuộc về Koa — một Koa vô hình nuốt cú chạm của nút bên dưới (#152)';
+      page.on('dialog', (d) => d.dismiss().catch(() => {}));
+      await page.mouse.click(...pt2);
+      await page.waitForTimeout(1200);
+      if (path() === '/mascot-room') return 'Koa đã khuất mà một cú chạm vào chỗ nó đang đậu vẫn mở phòng Koa (#152)';
+      return null;
+    },
+  },
+  {
+    /*
       #140: tài nguyên NHÚNG. Hướng dẫn bài tập đọc chú thích của từng tấm ảnh
       qua `exercise_media?select=…,exercise_media_content(…)`. Trước #140 máy chủ
       giả không dựng nhúng, nên tấm ảnh không có tiêu đề nào và phần "các bước
