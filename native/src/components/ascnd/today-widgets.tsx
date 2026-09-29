@@ -371,9 +371,9 @@ export function SupplementChecklistCard() {
               accessibilityRole="checkbox"
               accessibilityState={{ checked: !!s.taken }}
               aria-checked={!!s.taken} // web không dịch accessibilityState ra aria-checked (#101)
-              accessibilityLabel={s.dose_text ? `${s.name}, ${s.dose_text}` : s.name}
+              accessibilityLabel={`${s.dose_text ? `${s.name}, ${s.dose_text}` : s.name}${s.pending ? `, ${i18n.statePending}` : ''}`}
               style={styles.suppRow}
-              onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
+              onPress={() => toggle.set(s.id, !s.taken)}>
               <View style={[styles.checkbox, s.taken && styles.checkboxOn]}>
                 {s.taken && <Icon icon={Check} size={15} color="#fff" strokeWidth={3} />}
               </View>
@@ -383,6 +383,8 @@ export function SupplementChecklistCard() {
                 </Text>
                 {s.dose_text ? <Text style={styles.suppDose}>{s.dose_text}</Text> : null}
               </View>
+              {/* Dấu chờ gửi trên chính mục (#161). */}
+              {s.pending ? <View style={styles.pendingDot} importantForAccessibility="no" /> : null}
             </PressScale>
             </Fragment>
           ))}
@@ -790,6 +792,7 @@ const stylesFor = makeStyles((c, m) => ({
   suppName: { ...type.body, color: c.foreground },
   suppNameDone: { color: c.mutedForeground, textDecorationLine: 'line-through' },
   suppDose: { ...type.caption, color: c.mutedForeground },
+  pendingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.mutedForeground, opacity: 0.8 },
 
   // Smart tips
   /*

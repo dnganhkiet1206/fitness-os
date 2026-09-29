@@ -687,6 +687,10 @@ const en = {
      names what happened and what to do; none names a table or a constraint. */
   errOffline: 'No connection — your change is not saved yet. It will go through when you are back online.',
   errOnlineOnly: 'No connection — not sent, and not kept to send later.',
+  /* Lớp Trạng thái (#161, docs/OFFLINE-POLICY.md): ý chờ chỉ sống trong phiên. */
+  stateQueued: 'Will update when you are back online. Closing the app before then drops this change.',
+  stateGone: 'That item was removed elsewhere, so your change was dropped.',
+  statePending: 'waiting to send',
   errSignedOut: 'Your session has expired. Sign in again and try once more.',
   errDuplicate: 'This is already saved — no need to add it twice.',
   errInvalid: 'That value could not be saved. Check it and try again.',
@@ -1688,6 +1692,9 @@ const vi: typeof en = {
   nMascotRoomTitle: 'Phòng bạn đồng hành, cửa hàng & thử thách',
   errOffline: 'Không có kết nối — thay đổi chưa được lưu. App sẽ gửi lại khi bạn online.',
   errOnlineOnly: 'Không có kết nối — chưa gửi, và không giữ lại để gửi sau.',
+  stateQueued: 'Sẽ cập nhật khi có mạng lại. Tắt app trước lúc đó thì thay đổi này mất.',
+  stateGone: 'Mục này đã bị xoá ở nơi khác, nên thay đổi của bạn đã bỏ.',
+  statePending: 'đang chờ gửi',
   errSignedOut: 'Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại rồi thử lần nữa.',
   errDuplicate: 'Mục này đã được lưu rồi — không cần thêm lần nữa.',
   errInvalid: 'Giá trị này chưa lưu được. Kiểm tra lại rồi thử lần nữa.',

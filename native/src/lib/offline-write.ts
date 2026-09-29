@@ -66,7 +66,12 @@ import { syncProfileWeight } from '@/lib/weight-sync';
  * Queuing it properly means queuing the un-tick too, against a row whose id
  * does not exist yet. That is a real design, not a line of code, and half of it
  * is worse than none: the current behaviour fails visibly offline, which is
- * recoverable, where the half-built one would silently record something untrue.
+ * recoverable, where the half-built one would silently record something untrue. *
+ * **Nay (#161) nó có chỗ của nó, và chỗ ấy không phải ở đây:** lớp Trạng thái
+ * của `docs/OFFLINE-POLICY.md` (`lib/state-write.ts`). Ý được gộp theo (thực
+ * phẩm, ngày) và chỉ giá trị CUỐI được gửi, nên tick → bỏ tick không gửi gì —
+ * đúng cái bẫy đoạn trên tả. Nó sống trong phiên chứ không qua tắt app, nên
+ * vẫn không thuộc hàng đợi bền này.
  */
 
 /**

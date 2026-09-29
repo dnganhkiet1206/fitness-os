@@ -37,6 +37,7 @@ import { useStageMotion } from '@/hooks/use-stage-motion';
 import { useUnits } from '@/hooks/use-units';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
 import { supabase } from '@/integrations/supabase/client';
 import { useRise } from '@/lib/entrance';
 import { errorText } from '@/lib/error-copy';
@@ -319,6 +320,7 @@ export function OnboardingFlow() {
   };
 
   const finish = useOnlineMutation({
+    meta: { offline: now(1) },
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
       /* The button on the weight screen makes this unreachable. It is here

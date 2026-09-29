@@ -16,6 +16,7 @@ import {
 } from '@/lib/mascot-room';
 import { useAuth } from './use-auth';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
 import { toast } from '@/lib/toast';
 
 /**
@@ -253,6 +254,7 @@ export function useBuyFreeze() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(1) },
     mutationFn: async () => {
       /*
         ── one intention, one id, however many attempts ──
@@ -288,6 +290,7 @@ export function useSpendFreeze() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(1) },
     mutationFn: async (date: string) => {
       const { data, error } = await supabase.rpc('use_streak_freeze', { p_date: date });
       if (error) throw error;
@@ -319,6 +322,7 @@ export function useClaimReward() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(1) },
     mutationFn: async ({ refKey, amount, reason }: { refKey: string; amount: number; reason: string }) => {
       if (TEST_UNLOCK_ALL) {
         const rows = await readLocal<LocalTx>(LOCAL_TX_KEY);
@@ -361,6 +365,7 @@ export function useBuyItem() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(1) },
     mutationFn: async (item: ShopItem) => {
       if (TEST_UNLOCK_ALL) {
         // Local test economy: free, instant, no Supabase needed
@@ -417,6 +422,7 @@ export function useToggleEquip() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async ({ itemKey, equipped }: { itemKey: string; equipped: boolean }) => {
       if (TEST_UNLOCK_ALL) {
         let rows = await readLocal<LocalInv>(LOCAL_INV_KEY);

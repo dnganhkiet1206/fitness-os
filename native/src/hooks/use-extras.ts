@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
-import { confirmWrite } from '@/lib/write-result';
+import { confirmWrite, NothingWrittenError } from '@/lib/write-result';
 import { AWARD_TEXT, CHALLENGE_TEXT } from '@/lib/gamification-i18n';
 /* Straight to the queue rather than through `award-celebration.tsx`, whose
    `fireCelebration` is a one-line pass-through to exactly this. A hook reaching
@@ -30,7 +30,9 @@ import { CHALLENGE_REWARD, challengeRefKey } from '@/lib/mascot-room';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
 import { toast } from '@/lib/toast';
+import { setState, useStateOverlay } from '@/lib/state-write';
 
 export function useAwards() {
   const { user } = useAuth();
@@ -405,6 +407,7 @@ export function useInitWeeklyChallenges() {
   const weekStart = getWeekStart();
 
   return useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async () => {
       if (!user) return;
       const { count } = await supabase
@@ -444,6 +447,7 @@ export function useUpdateChallengeProgress() {
   const queryClient = useQueryClient();
 
   return useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async () => {
       if (!user) return;
       const weekStart = getWeekStart();
@@ -762,9 +766,15 @@ interface GroceryRow {
   checked: boolean;
 }
 
+export const groceryCheckedKey = (id: string) => `grocery:checked:${id}`;
+
 export function useGroceryItems() {
   const { user } = useAuth();
-  return useQuery({
+  /* Ô tick là lớp Trạng thái (#161): mục có ý chờ gửi hiện ý ấy, kèm `pending`
+     để màn vẽ dấu chờ. Cache giữ nguyên giá trị server — không vá lạc quan —
+     nên một lượt đọc lại lúc có mạng không làm ô bật ngược. */
+  const overlay = useStateOverlay();
+  const q = useQuery({
     queryKey: ['grocery_items', user?.id],
     enabled: !!user,
     queryFn: async () => {
@@ -778,6 +788,11 @@ export function useGroceryItems() {
       return data ?? [];
     },
   });
+  const data = q.data?.map((g) => {
+    const p = overlay<boolean>(groceryCheckedKey(g.id));
+    return p ? { ...g, checked: p.value, pending: true } : { ...g, pending: false };
+  });
+  return { ...q, data };
 }
 
 export function useGroceryMutations() {
@@ -796,6 +811,7 @@ export function useGroceryMutations() {
    * stored beside it.
    */
   const add = useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async (input: string | { name: string; quantity?: string }) => {
       if (!user) throw new Error('Not signed in');
       const { name, quantity } = typeof input === 'string' ? { name: input, quantity: undefined } : input;
@@ -820,55 +836,44 @@ export function useGroceryMutations() {
     onSettled: () => invalidate(),
   });
 
-  const toggle = useOnlineMutation({
-    mutationFn: async ({ id, checked }: { id: string; checked: boolean }) => {
-      await confirmWrite(
-        supabase.from('grocery_items').update({ checked }).eq('id', id),
-        'Không cập nhật được danh sách đi chợ',
-      );
-    },
-    /**
-     * Ô tích đổi NGAY — cùng một lỗi với ô thực phẩm bổ sung, ở một màn khác.
-     *
-     * Chủ dự án báo cái ở màn Bổ sung; cái này chưa ai báo, nhưng nó giống đến
-     * từng chi tiết: một ô tích vẽ trạng thái của mình TỪ một truy vấn, lật
-     * bằng một mutation không có `onMutate`, và một `selectionAsync` đặt trong
-     * `onSuccess`. Nên chạm xong phải đợi lượt ghi rồi đợi lượt đọc lại thì ô
-     * mới đổi, và máy rung sau khi ngón tay đã rời.
-     *
-     * Ranh giới giữa "rung ở đây là đúng" và "rung ở đây là muộn" không phải
-     * do tôi đặt: `selectionAsync` của Apple là phản hồi cho một lựa chọn ĐANG
-     * đổi, còn `notificationAsync` báo KẾT QUẢ một việc. 27 chỗ trong app dùng
-     * cái thứ hai trong `onSuccess` và chúng đúng; chỗ này dùng cái thứ nhất.
-     *
-     * KHÔNG đụng tới thứ tự. Truy vấn sắp theo `checked` rồi mới tới ngày tạo,
-     * nên món vừa tích sẽ tụt xuống cuối — nhưng chỉ ở lượt đọc lại, tức vài
-     * trăm mili-giây sau. Đó là hành vi vốn có và nó tình cờ đúng: món nhảy đi
-     * ngay dưới ngón tay thì bỏ tích nhầm sẽ phải đi tìm.
-     */
-    onMutate: async ({ id, checked }) => {
+  /**
+   * Tick món đi chợ — lớp **Trạng thái** (#161, `docs/OFFLINE-POLICY.md` câu 5):
+   * một cờ, chỉ giá trị cuối là quan trọng.
+   *
+   * Gửi `checked = <giá trị>`, không bao giờ "đảo". Mất mạng thì ý được giữ
+   * trong phiên và gộp theo món: tick → bỏ → tick chỉ gửi một lần "đã tick",
+   * tick → bỏ không gửi gì. Món bị xoá ở máy khác (cập nhật 0 hàng) thì bỏ ý
+   * và báo. Ô đổi NGAY vì màn đọc ý chờ, không vì một bản vá cache — nên
+   * không còn gì để hoàn tác khi lỗi: xoá ý chờ là ô về đúng giá trị server.
+   */
+  const toggle = {
+    set(id: string, checked: boolean) {
       Haptics.selectionAsync();
-      const key = ['grocery_items', user?.id];
-      await queryClient.cancelQueries({ queryKey: key });
-      const prev = queryClient.getQueryData<GroceryRow[]>(key);
-      if (prev) {
-        queryClient.setQueryData<GroceryRow[]>(
-          key,
-          prev.map((g) => (g.id === id ? { ...g, checked } : g)),
-        );
-      }
-      return { key, prev };
+      const rows = queryClient.getQueryData<GroceryRow[]>(['grocery_items', user?.id]);
+      const server = !!rows?.find((g) => g.id === id)?.checked;
+      setState({
+        key: groceryCheckedKey(id),
+        value: checked,
+        server,
+        refresh: [['grocery_items', user?.id]],
+        send: async (value) => {
+          try {
+            await confirmWrite(
+              supabase.from('grocery_items').update({ checked: value }).eq('id', id),
+              'Không cập nhật được danh sách đi chợ',
+            );
+            return 'ok';
+          } catch (e) {
+            if (e instanceof NothingWrittenError) return 'gone';
+            throw e;
+          }
+        },
+      });
     },
-    onError: (e: Error, _vars, ctx) => {
-      if (ctx?.prev !== undefined) queryClient.setQueryData(ctx.key, ctx.prev);
-      toast.fail(e);
-    },
-    /* `onSettled`: hỏng thì cũng phải hỏi lại máy chủ, nếu không cái ô sống
-       bằng một bản vá đã hoàn tác mà không ai kiểm lại. */
-    onSettled: () => invalidate(),
-  });
+  };
 
   const remove = useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('grocery_items').delete().eq('id', id),

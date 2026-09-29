@@ -18,6 +18,8 @@ import {
 import { useAuth } from './use-auth';
 import { useInvalidateToday } from './useTodayData';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
+import { RECORD } from '@/lib/offline-class';
 
 /**
  * An absolute instant `days` ago — for `timestamptz` columns only.
@@ -85,6 +87,7 @@ export function useLogWeight() {
      `useOnlineMutation` thì một request không tới nơi (NetInfo báo có mạng)
      thành "không giữ lại để gửi sau" — trong khi chính chỗ gọi có hàng đợi. */
   return useMutation({
+    meta: { offline: RECORD },
     mutationFn: async (weight_kg: number) => {
       const { error } = await supabase
         .from('weight_logs')
@@ -127,6 +130,7 @@ export function useDeleteWeight() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (date: string) => {
       await confirmWrite(
         supabase.from('weight_logs')
@@ -192,6 +196,7 @@ export function useDeleteWorkoutSession() {
   const qc = useQueryClient();
   const invalidateToday = useInvalidateToday();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({ id, date_time }: { id: string; date_time: string }) => {
       await confirmWrite(
         supabase.from('workout_sessions')
@@ -293,6 +298,7 @@ export function useLogWorkoutSession() {
      `useOnlineMutation` thì một request không tới nơi (NetInfo báo có mạng)
      thành "không giữ lại để gửi sau" — trong khi chính chỗ gọi có hàng đợi. */
   return useMutation({
+    meta: { offline: RECORD },
     mutationFn: async ({
       templateName,
       sessionRpe,
@@ -537,6 +543,7 @@ export function useAppendToSession() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({
       sessionId,
       sets,
@@ -653,6 +660,7 @@ export function useRemoveSetFromSession() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({
       sessionId,
       exerciseName,
@@ -722,6 +730,7 @@ export function useRestoreSession() {
   const { user } = useAuth();
   const invalidate = useInvalidateToday();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({ row, date }: { row: Record<string, unknown>; date: string }) => {
       if (!user) throw new Error('Not signed in');
       const { error } = await supabase
@@ -945,6 +954,7 @@ export function useUpsertBodyMeasurement() {
      `useOnlineMutation` thì một request không tới nơi (NetInfo báo có mạng)
      thành "không giữ lại để gửi sau" — trong khi chính chỗ gọi có hàng đợi. */
   return useMutation({
+    meta: { offline: RECORD },
     mutationFn: async (m: BodyMeasurementInput) => {
       const { error } = await supabase
         .from('body_measurements')
@@ -1071,6 +1081,7 @@ export function useDeleteSleepLog() {
   const qc = useQueryClient();
   const invalidateToday = useInvalidateToday();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({ id, waketime }: { id: string; waketime: string }) => {
       await confirmWrite(
         supabase.from('sleep_logs')
@@ -1105,6 +1116,7 @@ export function useDeleteBodyMeasurement() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('body_measurements')

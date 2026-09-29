@@ -11,6 +11,7 @@ import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { BOUNDS, plausible } from '@/lib/plausible';
 import { toast } from '@/lib/toast';
 import { displayWeight, weightLabel } from '@/lib/units';
+import { RECORD } from '@/lib/offline-class';
 
 /**
  * Đường GHI cân nặng — một bản duy nhất cho cả app.
@@ -34,7 +35,7 @@ export function useWeightWrite() {
   const { user } = useAuth();
   /* The durable twin — no local `mutationFn`, because what comes back from
      storage after a restart is the default registered in `offline-write`. */
-  const queue = useMutation<void, Error, OfflineWrite>({ mutationKey: [...OFFLINE_WRITE_KEY] });
+  const queue = useMutation<void, Error, OfflineWrite>({ meta: { offline: RECORD }, mutationKey: [...OFFLINE_WRITE_KEY] });
 
   /*
     ── checked in kg, chosen in whatever they use ──

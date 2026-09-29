@@ -71,3 +71,16 @@ thay đổi mới hơn từ máy khác.
   làm nó đỏ.
 - `tools/write-heard.mjs` vẫn giữ luật cũ: thao tác nào báo được lỗi thì phải
   có người nghe.
+
+## Đã thực thi (#161)
+
+- Khai lớp: `meta: { offline: now(N) }` trên mọi `useOnlineMutation` (kiểu
+  bắt buộc), `meta: { offline: RECORD }` trên mọi `useMutation` gọi thẳng —
+  `src/lib/offline-class.ts`.
+- Lớp Trạng thái: `src/lib/state-write-core.ts` (luật, không import gì) và
+  `src/lib/state-write.ts` (mạng, đọc lại, câu báo). Đang dùng cho tick món đi
+  chợ và tick thực phẩm bổ sung. Lời nhắc bật/tắt chỉ lưu trên máy, không có
+  lệnh ghi server nào để xếp lớp.
+- Bước cổng: `tools/offline-class.mjs`. Kịch bản live: hai kịch bản
+  "Mất mạng, lớp Trạng thái" trong `tools/live.mjs`.
+

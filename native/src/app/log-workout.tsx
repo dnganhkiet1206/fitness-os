@@ -55,6 +55,7 @@ import { ExerciseProgress } from '@/components/ascnd/exercise-progress';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/units';
 import { decText } from '@/lib/number-input';
+import { RECORD } from '@/lib/offline-class';
 
 const RPE_VALUES = [6, 7, 8, 9, 10] as const;
 
@@ -586,6 +587,7 @@ export default function LogWorkoutSheet() {
     know.
   */
   const queue = useMutation<void, Error, OfflineWrite>({
+    meta: { offline: RECORD },
     mutationKey: [...OFFLINE_WRITE_KEY],
     onMutate: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -599,6 +601,7 @@ export default function LogWorkoutSheet() {
      `useOnlineMutation` thì một request không tới nơi (NetInfo báo có mạng)
      thành "không giữ lại để gửi sau" — trong khi chính chỗ gọi có hàng đợi. */
   const save = useMutation({
+    meta: { offline: RECORD },
     mutationFn: async () => {
       const res = await log.mutateAsync({
         templateName: name,

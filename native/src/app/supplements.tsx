@@ -171,14 +171,14 @@ export default function SupplementsScreen() {
               <View style={styles.row}>
                 <Pressable
                   accessibilityRole="checkbox"
-                  accessibilityLabel={`${i18n.a11yCheckOff}: ${s.name}`}
+                  accessibilityLabel={`${i18n.a11yCheckOff}: ${s.name}${s.pending ? `, ${i18n.statePending}` : ''}`}
                   accessibilityState={{ checked: s.taken }}
                   aria-checked={s.taken} // web không dịch accessibilityState ra aria-checked (#101)
                   // 24pt drawn and no slop at all — the smallest target in the
                   // app, and a daily one
                   hitSlop={10}
                   style={[styles.checkbox, s.taken && styles.checkboxOn]}
-                  onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
+                  onPress={() => toggle.set(s.id, !s.taken)}>
                   {s.taken && <Icon icon={Check} size={15} color="#fff" strokeWidth={3} />}
                 </Pressable>
                 {/* Cùng việc với ô tick bên trái, nên với trình đọc màn hình nó là
@@ -188,12 +188,14 @@ export default function SupplementsScreen() {
                   accessible={false}
                   tabIndex={-1}
                   style={styles.info}
-                  onPress={() => toggle.mutate({ supplementId: s.id, taken: !s.taken })}>
+                  onPress={() => toggle.set(s.id, !s.taken)}>
                   <Text style={[styles.title, s.taken && styles.muted]}>{s.name}</Text>
                   <Text style={styles.hint}>
                     {[s.dose_text, timingLabel(s.timing)].filter(Boolean).join(' · ')}
                   </Text>
                 </Pressable>
+                {/* Dấu chờ gửi trên chính mục (#161). */}
+                {s.pending ? <View style={styles.pendingDot} importantForAccessibility="no" /> : null}
                 <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDelete} hitSlop={8} onPress={() => confirmDelete(s.id, s.name)}>
                   <Icon icon={Trash2} size={15} color={c.mutedForeground} />
                 </Pressable>
@@ -257,6 +259,7 @@ const stylesFor = makeStyles((c, m) => ({
 
   title: { ...type.headline, color: c.foreground },
   hint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },
+  pendingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.mutedForeground, opacity: 0.8 },
   big: { ...type.largeTitle, color: c.foreground, marginTop: spacing.sm },
   muted: { color: c.mutedForeground },
   itemCard: { paddingVertical: spacing.md },

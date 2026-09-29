@@ -15,6 +15,7 @@ import { press } from '@/constants/motion';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
 import { confirmWrite } from '@/lib/write-result';
@@ -87,6 +88,7 @@ export default function CoachMemoryScreen() {
   });
 
   const forget = useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('coach_memory').delete().eq('id', id),
@@ -97,6 +99,7 @@ export default function CoachMemoryScreen() {
   });
 
   const forgetAll = useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async () => {
       await confirmWrite(
         supabase.from('coach_memory').delete().eq('user_id', user!.id),

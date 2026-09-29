@@ -32,6 +32,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
 import { supabase } from '@/integrations/supabase/client';
 import { macroDriftFor } from '@/lib/macro-targets';
 import { confirmWrite } from '@/lib/write-result';
@@ -272,6 +273,7 @@ export default function EditProfileSheet() {
   };
 
   const save = useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
       await confirmWrite(

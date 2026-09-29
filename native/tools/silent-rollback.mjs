@@ -209,8 +209,17 @@ if (n < 50) problems.push(`chỉ thấy ${n} mutation — bộ đọc hỏng, đ
     copy[i] = [file, copy[i][1].replace(from, to)];
     if (problemsOf(copy).out.length <= base) problems.push(`thử ngược hỏng: ${label} mà luật vẫn xanh`);
   };
-  flip('src/hooks/use-library.ts', '      toast.fail(e);\n    },', '    },', 'bỏ toast.fail khỏi useToggleSupplement (#141)');
-  flip('src/hooks/use-extras.ts', '      toast.fail(e);\n    },', '    },', 'bỏ toast.fail khỏi tick món đi chợ (#143)');
+  /* #141, #143: tick thực phẩm bổ sung và tick món đi chợ nay là lớp Trạng
+     thái (#161) — không còn là mutation, và lỗi của chúng được báo ở ĐÚNG MỘT
+     chỗ: `onError` của bộ ghi trong lib/state-write.ts. Phép thử ngược nhắm
+     vào chỗ ấy. */
+  {
+    const f = 'src/lib/state-write.ts';
+    const src = files.find(([x]) => x === f)?.[1] ?? '';
+    const said = (s) => /onError:\s*\([^)]*\)\s*=>\s*toast\.fail\(/.test(s);
+    if (!said(src)) problems.push(`${f}: bộ ghi lớp Trạng thái không báo lỗi (\`onError\` phải gọi \`toast.fail\`) — tick hỏng thì ô tự quay lại trong im lặng (#141, #143)`);
+    else if (said(src.replace(/onError:\s*\([^)]*\)\s*=>\s*toast\.fail\([^)]*\)/, 'onError: () => {}'))) problems.push('thử ngược hỏng: bỏ toast.fail khỏi bộ ghi lớp Trạng thái mà luật vẫn xanh');
+  }
   flip('src/app/water.tsx', 'onError: (e: Error) => toast.fail(e)', 'onSettled: () => {}', 'bỏ onError ở một chỗ gọi nước (lời báo từng chỗ)');
   /* #145: mutation KHÔNG lạc quan — xoá thực phẩm của mình mà không bắt lỗi. */
   flip('src/app/food-editor.tsx', `            onError: (e: Error) => toast.fail(e),

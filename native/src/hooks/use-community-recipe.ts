@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/use-auth';
 import { AlreadySharedError, ProfileRequiredError } from '@/hooks/use-community';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
 import { supabase } from '@/integrations/supabase/client';
 import { type MealItemRow, payloadFromMeal, type RecipePayload } from '@/lib/recipe-post';
 
@@ -119,6 +120,7 @@ export function useShareRecipe() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (a: { entryId: string; title: string; caption: string; visibility: 'public' | 'followers' }) => {
       const { data, error } = await supabase.rpc('share_recipe', {
         p_entry_id: a.entryId,

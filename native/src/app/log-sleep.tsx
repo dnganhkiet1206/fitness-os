@@ -41,6 +41,7 @@ import { sleepSpan } from '@/lib/sleep-window';
 import { fromHealth, healthValues, overriddenFields } from '@/lib/health-owned';
 import { decText } from '@/lib/number-input';
 import { SLEEP_QUALITY_MAX } from '@/lib/sleep-note';
+import { RECORD } from '@/lib/offline-class';
 
 // Face picks map onto the web's 1–10 quality scale (SleepCard shows
 // "x/10") — code-drawn lucide faces on a red→teal neon ramp
@@ -188,6 +189,7 @@ export default function LogSleepSheet() {
       : null;
 
   const queue = useMutation<void, Error, OfflineWrite>({
+    meta: { offline: RECORD },
     mutationKey: [...OFFLINE_WRITE_KEY],
   });
 
@@ -197,6 +199,7 @@ export default function LogSleepSheet() {
      `useOnlineMutation` thì một request không tới nơi (NetInfo báo có mạng)
      thành "không giữ lại để gửi sau" — trong khi chính chỗ gọi có hàng đợi. */
   const save = useMutation({
+    meta: { offline: RECORD },
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
       /*

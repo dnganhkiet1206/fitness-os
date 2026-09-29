@@ -7,6 +7,7 @@ import { confirmWrite, NothingWrittenError } from '@/lib/write-result';
 import { useAuth } from './use-auth';
 import { useOnlineMutation } from './use-online-mutation';
 import type { TemplateExercise } from './use-library';
+import { now } from '@/lib/offline-class';
 
 /**
  * Dữ liệu tab Cộng đồng — giai đoạn 1: danh tính, feed, bài Workout, tương
@@ -201,6 +202,7 @@ export function useSaveCommunityProfile() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (p: { handle: string; display_name: string; bio: string; mascot_id: string | null }) => {
       const { error } = await supabase
         .from('community_profiles')
@@ -289,6 +291,7 @@ function useToggle(table: 'community_likes' | 'community_saves', flag: 'liked' |
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async ({ postId, on }: { postId: string; on: boolean }) => {
       if (on) {
         const { error } = await supabase.from(table).insert({ post_id: postId, user_id: user!.id });
@@ -341,6 +344,7 @@ export function useDeletePost() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (postId: string) => {
       await confirmWrite(
         supabase.from('community_posts').delete().eq('id', postId).eq('author_id', user!.id),
@@ -394,6 +398,7 @@ export function useAddComment(postId: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     /* Rung lúc NGÓN TAY chạm Gửi, không phải lúc máy chủ trả lời — `selection`
        là phản hồi cho một cú chạm, và sau mạng nó trễ hàng trăm mili-giây. */
     onMutate: () => Haptics.selectionAsync(),
@@ -412,6 +417,7 @@ export function useDeleteComment(postId: string) {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (commentId: string) => {
       await confirmWrite(
         supabase.from('community_comments').delete().eq('id', commentId),
@@ -503,6 +509,7 @@ export function useFollow() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async ({ userId, on }: { userId: string; on: boolean }) => {
       if (on) {
         const { error } = await supabase.from('community_follows').insert({ follower_id: user!.id, followee_id: userId });
@@ -533,6 +540,7 @@ export type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'misleading
 export function useReport() {
   const { user } = useAuth();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (r: { postId?: string; commentId?: string; userId?: string; reason: ReportReason }) => {
       const { error } = await supabase.from('community_reports').insert({
         reporter_id: user!.id,
@@ -551,6 +559,7 @@ export function useBlock() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (userId: string) => {
       const { error } = await supabase.from('community_blocks').insert({ blocker_id: user!.id, blocked_id: userId });
       if (error && error.code !== '23505') throw error;
@@ -596,6 +605,7 @@ export function useShareWorkout() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (a: { sessionId: string; caption: string; visibility: 'public' | 'followers'; minutes: number | null }) => {
       const { data, error } = await supabase.rpc('share_workout', {
         p_session_id: a.sessionId,
@@ -750,6 +760,7 @@ export function useProgressPreview(o: ProgressOpts) {
 export function useShareProgress() {
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (o: ProgressOpts & { caption: string; visibility: 'public' | 'followers' }) => {
       const { data, error } = await supabase.rpc('share_progress', {
         p_weeks: o.weeks,
@@ -845,6 +856,7 @@ export function useJoinChallenge() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async ({ id, on }: { id: string; on: boolean }) => {
       if (on) {
         const { error } = await supabase.from('community_challenge_members').insert({ challenge_id: id, user_id: user!.id });
@@ -866,6 +878,7 @@ export function useClaimChallenge() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(1) },
     mutationFn: async (id: string) => {
       const { data, error } = await supabase.rpc('claim_community_challenge', { p_challenge: id, p_offset_min: utcOffsetMin() });
       if (error) throw error;
@@ -918,6 +931,7 @@ export function useSetDefaultVisibility() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (v: Visibility) => {
       const { error } = await supabase
         .from('community_settings')
@@ -938,6 +952,7 @@ export function useSetShowBadges() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (on: boolean) => {
       const { error } = await supabase
         .from('community_settings')
@@ -1012,6 +1027,7 @@ export function useUnblock() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async (userId: string) => {
       /* `confirmWrite` hỏi lại cột `id`, thứ bảng chặn không có (khoá là cặp
          hai người) — nên hỏi lại chính `blocked_id`. */
@@ -1040,6 +1056,7 @@ export function useDeleteAllMyPosts() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(2) },
     mutationFn: async () => {
       const { data, error } = await supabase.from('community_posts').delete().eq('author_id', user!.id).select('id');
       if (error) throw error;
@@ -1130,6 +1147,7 @@ export function useMarkInboxRead() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async () => {
       const { error } = await supabase.rpc('community_mark_notifications_read');
       if (error) throw error;

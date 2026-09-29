@@ -46,6 +46,7 @@ import { parseRepEntry } from '@/lib/rep-entry';
 import { displayWeight, weightLabel, weightToKg } from '@/lib/units';
 import { decText, intText } from '@/lib/number-input';
 import { fillCopy } from '@/lib/copy-fill';
+import { RECORD } from '@/lib/offline-class';
 
 /**
  * One day of the week, as the thing you do rather than the thing you planned.
@@ -417,7 +418,7 @@ export function DayPlan({
     No `mutationFn` here on purpose: what comes back from storage is the default
     registered in `offline-write`, not this closure.
   */
-  const queue = useMutation<void, Error, OfflineWrite>({ mutationKey: [...OFFLINE_WRITE_KEY] });
+  const queue = useMutation<void, Error, OfflineWrite>({ meta: { offline: RECORD }, mutationKey: [...OFFLINE_WRITE_KEY] });
   const wl = weightLabel(wUnit);
 
   const exercises: TplExercise[] = Array.isArray(template?.exercises)

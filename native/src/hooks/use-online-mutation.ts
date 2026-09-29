@@ -2,6 +2,7 @@ import { useMutation, type DefaultError, type UseMutationOptions } from '@tansta
 
 import { classifyError } from '@/lib/error-copy';
 import { OnlineOnlyError, offlineNow } from '@/lib/offline';
+import type { OfflineClass } from '@/lib/offline-class';
 
 /**
  * A write that is only worth making NOW: refuse out loud without a connection
@@ -42,7 +43,12 @@ import { OnlineOnlyError, offlineNow } from '@/lib/offline';
  * error path, since an error nobody hears is the pause again with extra steps.
  */
 export function useOnlineMutation<TData = unknown, TError = DefaultError, TVariables = void, TContext = unknown>(
-  options: UseMutationOptions<TData, TError, TVariables, TContext>,
+  /* `meta.offline` BẮT BUỘC và phải là lớp `now` (#161): thao tác này từ chối
+     khi mất mạng, nên câu hỏi nào của `docs/OFFLINE-POLICY.md` quyết điều ấy
+     phải được ghi ra ngay ở chỗ định nghĩa. */
+  options: UseMutationOptions<TData, TError, TVariables, TContext> & {
+    meta: { offline: Extract<OfflineClass, { class: 'now' }> };
+  },
 ) {
   const { mutationFn, onMutate } = options;
   return useMutation<TData, TError, TVariables, TContext>({

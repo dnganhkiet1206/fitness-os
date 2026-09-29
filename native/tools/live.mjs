@@ -1129,6 +1129,138 @@ const SCENARIOS = [
     },
   },
   {
+    /*
+      #161: lớp Trạng thái của docs/OFFLINE-POLICY.md, trên bản dựng thật với
+      mất mạng thật của trình duyệt. Ba vế trên /grocery:
+        (A) tick → bỏ → tick "Trứng gà" khi mất mạng: không lệnh ghi nào lúc
+            mất mạng, ô đổi NGAY, có dấu chờ (nhãn ", waiting to send") và câu
+            báo nói ý chờ mất nếu tắt app; có mạng lại thì ĐÚNG MỘT lệnh ghi,
+            `checked: true`;
+        (B) tick → bỏ "Yến mạch" khi mất mạng rồi có mạng: KHÔNG lệnh ghi nào;
+        (C) bỏ tick "Sữa chua" khi mất mạng, và món ấy đã bị xoá ở máy khác
+            (máy chủ cập nhật 0 hàng): bỏ ý chờ, ô về giá trị server, có lời
+            báo "removed elsewhere".
+    */
+    name: 'Mất mạng, lớp Trạng thái: tick đi chợ gộp theo món — tick→bỏ→tick một lệnh, tick→bỏ không lệnh nào, món đã xoá thì bỏ và báo (#161)',
+    route: '/grocery', mode: 'full',
+    async run(page) {
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/grocery_items/.test(q.url()) && isWrite(q.method())) writes.push({ url: q.url(), body: q.postData() ?? '' });
+      });
+      const box = (n) => page.getByRole('checkbox', { name: new RegExp(`^${n}(,|$)`) }).filter({ visible: true });
+      const checked = async (n) => box(n).getAttribute('aria-checked');
+      const label = async (n) => (await box(n).getAttribute('aria-label')) ?? '';
+      const toast = async () => (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
+      const waitWrites = async (n) => {
+        for (let i = 0; i < 16 && writes.length < n; i++) await page.waitForTimeout(500);
+        await page.waitForTimeout(2000);
+      };
+      for (const n of ['Trứng gà', 'Yến mạch', 'Sữa chua']) {
+        if ((await box(n).count()) !== 1) return `không thấy ô "${n}" (fixture #131)`;
+      }
+
+      // (A)
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      const seen = [];
+      for (let i = 0; i < 3; i++) {
+        await box('Trứng gà').click();
+        await page.waitForTimeout(300);
+        seen.push(await checked('Trứng gà'));
+      }
+      if (seen.join() !== 'true,false,true') return `(A) tick→bỏ→tick khi mất mạng: ô phải đổi NGAY mỗi lần (true,false,true), ra ${seen.join()}`;
+      if (!/waiting to send|đang chờ gửi/.test(await label('Trứng gà'))) return `(A) ý đang chờ mà mục không có dấu chờ: nhãn "${await label('Trứng gà')}"`;
+      const said = await toast();
+      if (!/back online|có mạng lại/.test(said) || !/Closing the app|Tắt app/.test(said)) return `(A) câu báo phải nói "sẽ cập nhật khi có mạng" VÀ "tắt app thì mất", ra "${said}"`;
+      if (writes.length) return `(A) mất mạng mà đã có ${writes.length} lệnh ghi đi ra`;
+      await goOnline(page);
+      await waitWrites(1);
+      if (writes.length !== 1) return `(A) có mạng lại: phải ĐÚNG MỘT lệnh ghi, ra ${writes.length}`;
+      if (!/"checked"\s*:\s*true/.test(writes[0].body)) return `(A) lệnh ghi phải đặt checked=true, ra ${writes[0].body.slice(0, 80)}`;
+      if (/waiting to send|đang chờ gửi/.test(await label('Trứng gà'))) return '(A) đã gửi xong mà dấu chờ còn';
+
+      // (B)
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      await box('Yến mạch').click();
+      await page.waitForTimeout(300);
+      await box('Yến mạch').click();
+      await goOnline(page);
+      await page.waitForTimeout(4000);
+      if (writes.length !== 1) return `(B) tick→bỏ khi mất mạng rồi có mạng: không được có lệnh ghi nào, ra ${writes.length - 1}`;
+      if ((await checked('Yến mạch')) !== 'false') return '(B) Yến mạch phải về "chưa tick"';
+
+      // (C)
+      const target = FIXTURES.grocery_items.find((i) => i.name === 'Sữa chua');
+      await page.route(/\/rest\/v1\/grocery_items/, (r) => {
+        if (r.request().method() === 'PATCH' && r.request().url().includes(target.id)) {
+          return r.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+        }
+        return r.fallback();
+      });
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      await box('Sữa chua').click();
+      if ((await checked('Sữa chua')) !== 'false') return '(C) bỏ tick khi mất mạng mà ô không đổi ngay';
+      await goOnline(page);
+      let text = '';
+      for (let i = 0; i < 20 && !/removed elsewhere|bị xoá ở nơi khác/.test(text); i++) {
+        await page.waitForTimeout(250);
+        text = await toast();
+      }
+      if (!/removed elsewhere|bị xoá ở nơi khác/.test(text)) return `(C) món đã bị xoá ở nơi khác mà không có lời báo — ra "${text}"`;
+      if (writes.length !== 2) return `(C) phải đúng một lệnh ghi cho Sữa chua, ra ${writes.length - 1}`;
+      await page.waitForTimeout(1500);
+      if (/waiting to send|đang chờ gửi/.test(await label('Sữa chua'))) return '(C) ý của một món đã xoá vẫn treo';
+      return null;
+    },
+  },
+  {
+    /*
+      #161: cái bẫy `lib/offline-write.ts` ghi lại vì sao tick thực phẩm bổ
+      sung không được xếp hàng — tick là insert, bỏ tick là delete, và hàng đợi
+      chỉ giữ nửa insert. Lớp Trạng thái gộp theo (thực phẩm, ngày):
+        (A) tick → bỏ khi mất mạng rồi có mạng: KHÔNG lệnh ghi nào;
+        (B) tick khi mất mạng rồi có mạng: ĐÚNG MỘT POST, đúng supplement_id,
+            taken=true.
+    */
+    name: 'Mất mạng, lớp Trạng thái: tick thực phẩm bổ sung — tick→bỏ không lệnh nào, tick một POST (#161)',
+    route: '/supplements', mode: 'full',
+    async run(page) {
+      const target = FIXTURES.supplements.find((x) => x.name === 'Vitamin D3');
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/supplement_intake_logs/.test(q.url()) && isWrite(q.method())) writes.push({ m: q.method(), body: q.postData() ?? '' });
+      });
+      const box = page.getByRole('checkbox', { name: /Vitamin D3(, (waiting to send|đang chờ gửi))?$/ }).filter({ visible: true });
+      if ((await box.count()) !== 1) return 'không thấy ô "Vitamin D3" ở màn Thực phẩm bổ sung';
+      if ((await box.getAttribute('aria-checked')) !== 'false') return 'Vitamin D3 phải CHƯA tick lúc đầu (fixture #137)';
+
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      await box.click();
+      await page.waitForTimeout(300);
+      if ((await box.getAttribute('aria-checked')) !== 'true') return '(A) tick khi mất mạng mà ô không đổi ngay';
+      await box.click();
+      await goOnline(page);
+      await page.waitForTimeout(4000);
+      if (writes.length) return `(A) tick→bỏ khi mất mạng rồi có mạng: không được có lệnh ghi nào, ra ${writes.map((w) => w.m).join(', ')}`;
+
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      await box.click();
+      await goOnline(page);
+      for (let i = 0; i < 16 && !writes.length; i++) await page.waitForTimeout(500);
+      await page.waitForTimeout(2000);
+      if (writes.length !== 1 || writes[0].m !== 'POST') return `(B) tick khi mất mạng rồi có mạng: phải đúng 1 POST, ra ${writes.map((w) => w.m).join(', ') || 'không lệnh nào'}`;
+      const row = [JSON.parse(writes[0].body)].flat()[0];
+      if (row.supplement_id !== target.id || row.taken !== true) return `(B) ghi sai dòng: supplement_id=${row.supplement_id}, taken=${row.taken}`;
+      if ((await box.getAttribute('aria-checked')) !== 'true') return '(B) đã gửi mà ô không còn "đã tick"';
+      return null;
+    },
+  },
+  {
     /* #143: tick một món đi chợ mà máy chủ từ chối → ô quay lại và có lời báo.
        Trước #143 mutation này gỡ bản vá trong im lặng, như thực phẩm bổ sung ở #141. */
     name: 'Đi chợ: server từ chối lần tick thì ô quay lại và có lời báo (#143)',

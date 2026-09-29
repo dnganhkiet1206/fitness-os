@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { localDateStr } from '@/lib/local-date';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
 
 const BUCKET = 'progress-photos';
 
@@ -68,6 +69,7 @@ export function useUploadProgressPhoto() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async ({ base64, pose, notes }: { base64: string; pose: string; notes?: string }) => {
       const dateStr = localDateStr();
       const path = `${user!.id}/${dateStr}-${pose}-${Date.now()}.jpg`;
@@ -93,6 +95,7 @@ export function useDeleteProgressPhoto() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({ id, photo_url }: { id: string; photo_url: string }) => {
       let storagePath = photo_url;
       if (photo_url.startsWith('http')) {

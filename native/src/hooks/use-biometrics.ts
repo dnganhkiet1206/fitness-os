@@ -9,6 +9,8 @@ import { recomputeDailyLog } from '@/lib/daily-log-service';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { localDateStr } from '@/lib/local-date';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
+import { RECORD } from '@/lib/offline-class';
 
 export interface BiometricSample {
   id: string;
@@ -70,6 +72,7 @@ export function useLogBiometrics() {
   const queryClient = useQueryClient();
   const invalidateToday = useInvalidateToday();
   const m = useMutation<void, Error, OfflineWrite>({
+    meta: { offline: RECORD },
     mutationKey: [...OFFLINE_WRITE_KEY],
     /*
       Both refreshes live here rather than at the call site.
@@ -169,6 +172,7 @@ export function useDeleteBiometricSample() {
   const qc = useQueryClient();
   const invalidateToday = useInvalidateToday();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({ id, date_time }: { id: string; date_time: string }) => {
       await confirmWrite(
         supabase.from('biometric_samples')

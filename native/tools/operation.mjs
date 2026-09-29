@@ -25,7 +25,8 @@ import { fileURLToPath } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
-const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+/* Chú thích thành khoảng trắng, GIỮ xuống dòng — để số dòng trong lời báo đúng. */
+const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' ')).replace(/(^|[^:])\/\/.*$/gm, '$1');
 const problems = [];
 const fatal = (m) => {
   console.error(`phép tự kiểm hỏng — ${m}, đừng tin kết quả`);

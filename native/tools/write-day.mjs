@@ -222,9 +222,13 @@ for (const [k, why] of EXEMPT) {
   }
   const lib = strip(readFileSync(path.join(NATIVE, 'src/hooks/use-library.ts'), 'utf8'));
   const toggle = lib.slice(lib.indexOf('useToggleSupplement'));
-  if (!/mutationFn:[\s\S]{0,400}const dateStr = date \?\? today\(\);/.test(toggle)) {
+  /* Từ #161 tick là lớp Trạng thái: ngày phải được đọc trong `set(…)` — tức lúc
+     CHẠM — và nằm trong KHOÁ gộp, để tick và bỏ tick của cùng một nút nói cùng
+     một ngày, kể cả khi ý chờ được gửi sau nửa đêm. */
+  if (!/set\([^)]*\)\s*\{[\s\S]{0,200}const dateStr = date \?\? today\(\);/.test(toggle)
+    || !/key:\s*supplementTakenKey\(supplementId,\s*dateStr\)/.test(toggle)) {
     problems.push(
-      'useToggleSupplement không đọc ngày BÊN TRONG mutationFn — bỏ tick sau nửa đêm sẽ xoá nhầm ngày',
+      'useToggleSupplement không đọc ngày lúc CHẠM (trong `set`) hoặc ngày không nằm trong khoá gộp — bỏ tick sau nửa đêm sẽ xoá nhầm ngày',
     );
   }
   const td = strip(readFileSync(path.join(NATIVE, 'src/hooks/useTodayData.ts'), 'utf8'));

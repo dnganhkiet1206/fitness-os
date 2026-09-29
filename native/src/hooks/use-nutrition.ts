@@ -13,6 +13,8 @@ import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { toast } from '@/lib/toast';
 import { foldRecentMeals } from '@/lib/recent-meals';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
+import { RECORD } from '@/lib/offline-class';
 export type { RecentMeal, RepeatFood } from '@/lib/recent-meals';
 
 export interface FoodItemRow {
@@ -196,6 +198,7 @@ export function useCreateFoodItem() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async (item: FoodFormData) => {
       const { error } = await supabase.from('food_items').insert({ ...item, user_id: user!.id });
       if (error) throw error;
@@ -207,6 +210,7 @@ export function useCreateFoodItem() {
 export function useUpdateFoodItem() {
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({ id, ...item }: FoodFormData & { id: string }) => {
       await confirmWrite(
         supabase.from('food_items').update(item).eq('id', id),
@@ -220,6 +224,7 @@ export function useUpdateFoodItem() {
 export function useDeleteFoodItem() {
   const qc = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('food_items').delete().eq('id', id),
@@ -234,6 +239,7 @@ export function useToggleFavoriteFood() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   return useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async ({ id, is_favorite }: { id: string; is_favorite: boolean }) => {
       // Shared seed foods (user_id NULL) can't be updated under RLS — the
       // update silently matches 0 rows and the star never lights up.
@@ -623,6 +629,7 @@ export function useDeleteMealItem(date?: string) {
   const qc = useQueryClient();
   const dateStr = date ?? localDateStr();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({ itemId, entryId }: { itemId: string; entryId: string }): Promise<DeletedMealItem | null> => {
       const [itemRead, entryRead] = await Promise.all([
         supabase.from('meal_entry_items').select(ITEM_COLS).eq('id', itemId).maybeSingle(),
@@ -679,6 +686,7 @@ export function useRestoreMealItem(date?: string) {
   const qc = useQueryClient();
   const dateStr = date ?? localDateStr();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({ item, entry }: DeletedMealItem) => {
       const { error: entryErr } = await supabase
         .from('meal_entries')
@@ -715,6 +723,7 @@ export function useUpdateMealItemServings(date?: string) {
   const qc = useQueryClient();
   const dateStr = date ?? localDateStr();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({
       itemId,
       entryId,
@@ -889,6 +898,7 @@ export function useLogPlannedMeal(date?: string) {
     lại ngày — việc đường cũ làm, cộng thêm việc không nhân đôi khi phát lại.
   */
   const m = useMutation<void, Error, OfflineWrite>({
+    meta: { offline: RECORD },
     mutationKey: [...OFFLINE_WRITE_KEY],
     onSuccess: (_d, w) => {
       if (w.kind === 'meal') invalidateLogQueries(qc, user?.id, localDateStr(new Date(w.dateTime)));

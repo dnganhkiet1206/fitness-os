@@ -27,6 +27,7 @@ import { useAppSettings } from '@/hooks/use-app-settings';
 import { writeHealthSync } from '@/lib/health-sync-write';
 import { localDateStr } from '@/lib/local-date';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
 
 /**
  * Pulls today's steps + latest biometrics from Apple Health and writes
@@ -63,6 +64,7 @@ function useSyncMutation(silent: boolean) {
   const vi = lang === 'vi';
 
   const sync = useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async () => {
       if (!user) throw new Error('Not signed in');
 

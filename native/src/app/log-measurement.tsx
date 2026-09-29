@@ -34,6 +34,7 @@ import { BOUNDS, plausible } from '@/lib/plausible';
 import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { decText } from '@/lib/number-input';
+import { RECORD } from '@/lib/offline-class';
 
 type FieldKey = Exclude<keyof BodyMeasurementInput, 'date' | 'notes'>;
 
@@ -44,6 +45,7 @@ export default function LogMeasurementSheet() {
   const { height: lUnit } = useUnits();
   const { user } = useAuth();
   const queue = useMutation<void, Error, OfflineWrite>({
+    meta: { offline: RECORD },
     mutationKey: [...OFFLINE_WRITE_KEY],
   });
   const upsert = useUpsertBodyMeasurement();

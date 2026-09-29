@@ -201,10 +201,10 @@ export default function GroceryScreen() {
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: !!it.checked }}
                   aria-checked={!!it.checked} // web không dịch accessibilityState ra aria-checked (#101)
-                  accessibilityLabel={it.quantity ? `${it.name}, ${it.quantity}` : it.name}
+                  accessibilityLabel={`${it.quantity ? `${it.name}, ${it.quantity}` : it.name}${it.pending ? `, ${i18n.statePending}` : ''}`}
                   style={styles.itemToggle}
                   hitSlop={{ top: spacing.md, bottom: spacing.md, left: spacing.md }}
-                  onPress={() => toggle.mutate({ id: it.id, checked: !it.checked })}>
+                  onPress={() => toggle.set(it.id, !it.checked)}>
                   <View style={[styles.checkbox, it.checked && styles.checkboxOn]}>
                     {it.checked && <Icon icon={Check} size={13} color="#fff" strokeWidth={3} />}
                   </View>
@@ -212,6 +212,9 @@ export default function GroceryScreen() {
                     {it.name}
                     {it.quantity ? <Text style={styles.qty}>  ×{it.quantity}</Text> : null}
                   </Text>
+                  {/* Dấu chờ trên CHÍNH mục ấy (#161): ô đã đổi trên màn, lệnh
+                      ghi thì chưa tới server. Trợ năng đọc nó qua nhãn. */}
+                  {it.pending ? <View style={styles.pendingDot} importantForAccessibility="no" /> : null}
                 </Pressable>
                 {/* Xoá là mất món khỏi danh sách, nên hỏi lại như mọi lần xoá
                     khác của app — lượt bấm thử của live.mjs bắt nó xoá luôn (#125). */}
@@ -288,6 +291,9 @@ const stylesFor = makeStyles((c, m) => ({
   itemName: { ...type.body, color: c.foreground, flex: 1 },
   itemChecked: { color: c.mutedForeground, textDecorationLine: 'line-through' },
   qty: { ...type.footnote, color: c.mutedForeground },
+  /* Chấm chờ gửi: nhỏ, màu phụ, không nhấp nháy — một trạng thái, không phải
+     một báo động (#161). */
+  pendingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.mutedForeground, opacity: 0.8 },
   remove: { color: c.mutedForeground, fontSize: 15 },
   emptyTitle: { ...type.headline, color: c.foreground },
   emptyHint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },

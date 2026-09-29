@@ -10,6 +10,8 @@ import { localDateStr } from '@/lib/local-date';
 import { useAuth } from './use-auth';
 import * as Crypto from 'expo-crypto';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
+import { RECORD } from '@/lib/offline-class';
 
 /**
  * The day a write belongs to, read when the write happens.
@@ -159,6 +161,7 @@ export function useAddWater(date?: string) {
      write carries a date — which is how three of them ended up reading a
      captured one instead. */
   const m = useMutation<void, Error, WaterWrite, WaterCtx>({
+    meta: { offline: RECORD },
     /*
       Through the durable queue, so a glass logged without signal is still a
       glass tomorrow.
@@ -274,6 +277,7 @@ export function useRemoveLastWater(date?: string) {
     find, would then delete a glass from the wrong day.
   */
   const m = useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (dateStr: string) => {
       if (!user) throw new Error('Not signed in');
       const find = supabase

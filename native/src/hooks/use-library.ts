@@ -7,15 +7,22 @@ import { diaryStamp, localDateStr, localDayRangeISO } from '@/lib/local-date';
 import type { Json } from '@/integrations/supabase/types';
 import { useAuth } from './use-auth';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
 import { toast } from '@/lib/toast';
+import { setState, useStateOverlay } from '@/lib/state-write';
 
 const today = () => localDateStr();
 
 /** Supplements with today's taken state (same shape as the web checklist) */
+export const supplementTakenKey = (supplementId: string, dateStr: string) =>
+  `supplement:taken:${supplementId}:${dateStr}`;
+
 export function useSupplementChecklist(date?: string) {
   const { user } = useAuth();
   const dateStr = date ?? today();
-  return useQuery({
+  /* Lớp Trạng thái (#161): mục có ý chờ gửi hiện ý ấy, kèm `pending`. */
+  const overlay = useStateOverlay();
+  const q = useQuery({
     queryKey: ['supplement_checklist', user?.id, dateStr],
     enabled: !!user,
     queryFn: async () => {
@@ -41,6 +48,11 @@ export function useSupplementChecklist(date?: string) {
       return (supplements ?? []).map((s) => ({ ...s, taken: takenIds.has(s.id) }));
     },
   });
+  const data = q.data?.map((s) => {
+    const p = overlay<boolean>(supplementTakenKey(s.id, dateStr));
+    return p ? { ...s, taken: p.value, pending: true } : { ...s, pending: false };
+  });
+  return { ...q, data };
 }
 
 /**
@@ -54,136 +66,84 @@ interface SuppRow {
   taken: boolean;
 }
 
+/**
+ * "Đã uống hôm nay" — lớp **Trạng thái** (#161, `docs/OFFLINE-POLICY.md` câu 5).
+ *
+ * Đây là cái bẫy `lib/offline-write.ts` ghi lại vì sao nó KHÔNG xếp hàng thao
+ * tác này: tick là insert, bỏ tick là delete, và một hàng đợi chỉ giữ nửa
+ * insert thì tick → bỏ tick khi mất mạng vẫn ghi là đã uống. Lớp Trạng thái
+ * giải đúng cái bẫy ấy: ý được gộp theo (thực phẩm bổ sung, ngày), chỉ ý CUỐI
+ * được gửi, trùng giá trị server thì không gửi gì.
+ *
+ * Và cái được gửi là một giá trị TUYỆT ĐỐI:
+ *   · `true`  = "có một dòng uống trong ngày ấy" — chèn chỉ khi chưa có, nên
+ *     gửi lại bao nhiêu lần cũng là một dòng (bảng không có UNIQUE nào cho
+ *     cặp này, và không đổi schema vì việc này);
+ *   · `false` = "không có dòng nào trong ngày ấy" — xoá theo khoảng ngày.
+ * Thực phẩm bổ sung đã bị xoá ở máy khác thì lượt chèn gặp khoá ngoại (23503)
+ * → bỏ ý và báo.
+ *
+ * `date ?? today()` đọc lúc CHẠM, không lúc render: một app mở qua nửa đêm mà
+ * đọc ngày lúc render sẽ tick vào hôm qua, và bỏ tick sẽ xoá nhầm dòng của
+ * ngày đã xong. Tick và bỏ tick của cùng một nút phải nói cùng một ngày, nên
+ * ngày ấy nằm trong khoá.
+ */
 export function useToggleSupplement(date?: string) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  return useOnlineMutation({
-    mutationFn: async ({ supplementId, taken }: { supplementId: string; taken: boolean }) => {
-      /*
-        ── read here, in the tap, not in the render ──
-
-        This was `const dateStr = today()` in the hook body, which runs when the
-        component renders. The app gets left open; a phone showing the
-        supplements list at eleven at night is still showing it at ten past
-        midnight, and the range below is what decides **which day's row gets
-        deleted**.
-
-        So un-ticking a supplement after midnight looked for today's entry
-        inside yesterday's window: today's tick survived, and if yesterday had
-        one it was removed instead. The checkbox bounced back and a day that was
-        already finished quietly lost an entry.
-      */
-      /* `date ?? today()` đọc ở đây, trong thân mutation — tức lúc CHẠM, không
-         phải lúc render. Cùng lý do đã ghi dài ở `use-water.ts`: một ứng dụng
-         mở qua nửa đêm mà đọc ngày lúc render sẽ ghi vào hôm qua. Có ngày chọn
-         thì nó là hằng số và tính chất ấy không mất đi. */
-      const dateStr = date ?? today();
-      if (taken) {
-        const { error } = await supabase.from('supplement_intake_logs').insert({
-          user_id: user!.id,
-          supplement_id: supplementId,
-          taken: true,
-          /* Stamped here rather than left to the column default. It changes
-             nothing while this write is online — which it always is, see below
-             — but it is the honest value and costs nothing.
-
-             `diaryStamp` thay cho `new Date()`: đường XOÁ ngay dưới đã lọc theo
-             `localDayRangeISO(dateStr)`, nên nếu dòng insert vẫn đóng dấu "bây
-             giờ" thì tick cho thứ Ba ghi vào hôm nay rồi bỏ tick lại không tìm
-             thấy nó. Hai nửa của cùng một nút phải nói cùng một ngày. */
-          ...diaryStamp(dateStr),
-        });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('supplement_intake_logs')
-          .delete()
-          .eq('user_id', user!.id)
-          .eq('supplement_id', supplementId)
-          .gte('date_time', localDayRangeISO(dateStr).start)
-          .lt('date_time', localDayRangeISO(dateStr).end);
-        if (error) throw error;
-      }
-    },
-    /**
-     * Ô tích đổi NGAY, không đợi mạng.
-     *
-     * ── lỗi nó sinh ra để sửa ──
-     *
-     * Chủ dự án: "khi tích vào ô thực phẩm bổ sung còn bị delay".
-     *
-     * Bản cũ chỉ có `onSuccess`, nên một cú chạm phải đi hết BA lượt mạng
-     * trước khi cái ô đổi hình: lượt ghi ở trên, rồi `invalidateQueries` bắt
-     * `useSupplementChecklist` nạp lại, và truy vấn ấy là HAI lượt đọc
-     * (`supplements` cộng `supplement_intake_logs`). Cả cú rung xác nhận cũng
-     * nằm trong `onSuccess`, nên ngón tay rời ô rồi mà máy mới rung.
-     *
-     * Đây là đúng bài mà nút Nước đã giải và ghi lại: "Adding water is the
-     * most-tapped button in the app and the round trip was the only reason it
-     * ever felt like it had not registered." Ô tích này bấm mỗi ngày vài lần,
-     * cùng hạng.
-     *
-     * ── và một chỗ nó KHÔNG giống nút Nước ──
-     *
-     * `patchWater` BỎ QUA phép vá khi offline, vì lượt ghi nước được hàng đợi
-     * giữ lại: nó không bao giờ hỏng, nên cũng không bao giờ được hoàn tác, và
-     * một phép vá còn lại trong cache bền là nước không ai uống.
-     *
-     * Tích bổ sung thì KHÔNG nằm trong hàng đợi ấy, và đó là một quyết định có
-     * ghi lý do (xem `lib/offline-write.ts`): nó hai chiều — tích thì insert,
-     * bỏ tích thì delete — nên một hàng đợi chỉ giữ nửa insert sẽ ghi âm thầm
-     * điều không đúng. Chú thích ấy kết luận rằng hành vi hiện tại "fails
-     * visibly offline, which is recoverable", và câu đó chính là ràng buộc ở
-     * đây: offline thì lượt ghi HỎNG NGAY, `onError` trả ô về trạng thái thật,
-     * và người dùng thấy nó bật lại. Nên ở đây vá cả khi offline — bỏ vá mới
-     * là thứ phá mất tính chất ấy.
-     */
-    onMutate: async ({ supplementId, taken }) => {
-      /* Rung ở LÚC CHẠM. Trước đây nó nằm trong `onSuccess`, tức lúc máy chủ
-         trả lời — muộn hơn ngón tay hàng trăm mili-giây. Cùng câu mà
-         `use-water.ts` đã ghi: một cú rung nói "đã ghi" thì phải rơi vào lúc
-         bấm. Khác một điều: bên ấy phải BỎ vì chỗ gọi đã tự rung, còn hai chỗ
-         gọi ở đây không rung, nên cú rung được DỜI chứ không bỏ. */
+  return {
+    set(supplementId: string, taken: boolean) {
       Haptics.selectionAsync();
-      /* Đọc đồng hồ ở đây, trong cú chạm — cùng lý do đã ghi dài trong
-         `mutationFn` ngay trên. `onMutate` chạy ngay trước nó nên hai bên nói
-         cùng một ngày. */
-      const key = ['supplement_checklist', user?.id, date ?? today()];
-      /* Nếu không huỷ, một lượt nạp lại đang bay về sẽ đáp xuống SAU phép vá
-         này và xoá nó đi — ô tích bật lại một nhịp rồi mới đúng. */
-      await queryClient.cancelQueries({ queryKey: key });
-      const prev = queryClient.getQueryData<SuppRow[]>(key);
-      if (prev) {
-        queryClient.setQueryData<SuppRow[]>(
-          key,
-          prev.map((s) => (s.id === supplementId ? { ...s, taken } : s)),
-        );
-      }
-      return { key, prev };
+      const dateStr = date ?? today();
+      const listKey = ['supplement_checklist', user?.id, dateStr];
+      const rows = queryClient.getQueryData<SuppRow[]>(listKey);
+      const server = !!rows?.find((s) => s.id === supplementId)?.taken;
+      const range = localDayRangeISO(dateStr);
+      setState({
+        key: supplementTakenKey(supplementId, dateStr),
+        value: taken,
+        server,
+        refresh: [listKey, ['daily_log']],
+        send: async (value) => {
+          if (!value) {
+            const { error } = await supabase
+              .from('supplement_intake_logs')
+              .delete()
+              .eq('user_id', user!.id)
+              .eq('supplement_id', supplementId)
+              .gte('date_time', range.start)
+              .lt('date_time', range.end);
+            if (error) throw error;
+            return 'ok';
+          }
+          const { count, error: readErr } = await supabase
+            .from('supplement_intake_logs')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user!.id)
+            .eq('supplement_id', supplementId)
+            .eq('taken', true)
+            .gte('date_time', range.start)
+            .lt('date_time', range.end);
+          if (readErr) throw readErr;
+          if ((count ?? 0) > 0) return 'ok';
+          const { error } = await supabase.from('supplement_intake_logs').insert({
+            user_id: user!.id,
+            supplement_id: supplementId,
+            taken: true,
+            /* `diaryStamp`: dòng chèn nằm TRONG đúng khoảng ngày mà đường xoá
+               ở trên lọc, nên bỏ tick tìm thấy nó. */
+            ...diaryStamp(dateStr),
+          });
+          if (error) {
+            /* Khoá ngoại: thực phẩm bổ sung đã bị xoá ở máy khác. */
+            if (error.code === '23503') return 'gone';
+            throw error;
+          }
+          return 'ok';
+        },
+      });
     },
-    /*
-      Gỡ bản vá VÀ nói ra (#141). Bản cũ chỉ gỡ: ô tick bật lên rồi lặng lẽ tắt
-      lại, không một lời — đúng điều `use-water.ts` đã ghi là lỗi ("the number
-      ticked up, then dropped again on its own, with no explanation"). Kịch bản
-      live cho máy chủ trả 500 và đòi một lời báo; bản cũ đỏ "lỗi bị nuốt".
-    */
-    onError: (e: Error, _vars, ctx) => {
-      if (ctx?.prev !== undefined) queryClient.setQueryData(ctx.key, ctx.prev);
-      toast.fail(e);
-    },
-    /*
-      `onSettled`, không phải `onSuccess`: hỏng thì cũng phải hỏi lại máy chủ,
-      nếu không cái ô sống bằng bản vá đã hoàn tác mà không ai kiểm lại.
-
-      Khoá lấy từ `ctx` chứ không dựng lại: đó ĐÚNG khoá vừa được vá, nên không
-      có đường nào để hai bên lệch ngày. `ctx` chỉ vắng khi `onMutate` ném, và
-      khi ấy lùi về khoá rộng.
-    */
-    onSettled: (_d, _e, _v, ctx) => {
-      queryClient.invalidateQueries({ queryKey: ctx?.key ?? ['supplement_checklist'] });
-      queryClient.invalidateQueries({ queryKey: ['daily_log'] });
-    },
-  });
+  };
 }
 
 /** Add a supplement to the user's stack (port of the web useAddSupplement) */
@@ -191,6 +151,7 @@ export function useAddSupplement() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async (sup: { name: string; category: string; dose_text: string; timing: string }) => {
       const { error } = await supabase.from('supplements').insert({
         user_id: user!.id,
@@ -212,6 +173,7 @@ export function useAddSupplement() {
 export function useDeleteSupplement() {
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('supplements').delete().eq('id', id),
@@ -262,6 +224,7 @@ export function useDeleteExercise() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('exercises').delete().eq('id', id).eq('user_id', user!.id),
@@ -278,6 +241,7 @@ export function useAddExercise() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async (ex: {
       name: string;
       muscle_group: string;
@@ -325,6 +289,7 @@ export function useAddWorkoutTemplate() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(6) },
     /*
       Returns the new row's id.
 
@@ -363,6 +328,7 @@ export function useDeleteWorkoutTemplate() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('workout_templates')
@@ -444,6 +410,7 @@ export function useUpsertRoutineDay() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (day: {
       day_of_week: number;
       template_id?: string | null;
@@ -540,6 +507,7 @@ export function useCreateMealPlan() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async (plan: { name: string; goal: string; meals_per_day: number }) => {
       const { data, error } = await supabase
         .from('meal_plans')
@@ -560,6 +528,7 @@ export function useDeleteMealPlan() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('meal_plans')
@@ -625,6 +594,7 @@ export interface MealPlanItemInput {
 export function useAddMealPlanItem() {
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(6) },
     mutationFn: async (item: MealPlanItemInput) => {
       const { error } = await supabase.from('meal_plan_items').insert(item);
       if (error) throw error;
@@ -648,6 +618,7 @@ export function useAddMealPlanItem() {
 export function useDeleteMealPlanItem() {
   const queryClient = useQueryClient();
   return useOnlineMutation({
+    meta: { offline: now(3) },
     mutationFn: async ({ id }: { id: string; planId: string }) => {
       await confirmWrite(
         supabase.from('meal_plan_items').delete().eq('id', id),

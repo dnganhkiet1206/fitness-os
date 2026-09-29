@@ -35,6 +35,7 @@ import {
 } from '@/hooks/use-nutrition';
 import { useInvalidateToday } from '@/hooks/useTodayData';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
+import { now } from '@/lib/offline-class';
 import { supabase } from '@/integrations/supabase/client';
 import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
@@ -46,6 +47,7 @@ import { dayGap, diaryStampAt, localDateStr } from '@/lib/local-date';
 import { consumePendingScan } from '@/lib/scan-bridge';
 import { intText } from '@/lib/number-input';
 import { fillCopy } from '@/lib/copy-fill';
+import { RECORD } from '@/lib/offline-class';
 
 const MEAL_KEYS = ['breakfast', 'lunch', 'dinner', 'snack', 'preworkout', 'postworkout'] as const;
 type MealType = (typeof MEAL_KEYS)[number];
@@ -395,6 +397,7 @@ export default function LogMealSheet() {
   const fatPct = macroG > 0 ? (totals.fat_g / macroG) * 100 : 0;
 
   const aiSuggest = useOnlineMutation({
+    meta: { offline: now(1) },
     mutationFn: async () => {
       const res = await callEdge<{ suggestions?: AiSuggestion[] }>(EDGE_FUNCTIONS.mealSuggest, {
         meal_type: mealType,
@@ -461,6 +464,7 @@ export default function LogMealSheet() {
     `offline-write`, not this closure. See `registerOfflineWrites`.
   */
   const save = useMutation<void, Error, OfflineWrite>({
+    meta: { offline: RECORD },
     mutationKey: [...OFFLINE_WRITE_KEY],
     /*
       ── closing the sheet cannot wait for the network ──

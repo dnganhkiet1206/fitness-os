@@ -63,6 +63,11 @@ export const toast = {
   warning: (message: string) => showToast('warning', message),
   info: (message: string) => showToast('info', message),
   /**
+   * Một câu của app theo KHOÁ i18n, cho mã chạy ngoài React (không có ngôn ngữ
+   * trong tay) — `NeonToastHost` dịch nó, như khoá của `fail`.
+   */
+  keyed: (kind: ToastKind, key: string) => showToast(kind, '', key),
+  /**
    * A thrown error, shown as a sentence rather than as SQL.
    *
    * Every `onError` uses this instead of `toast.fail(e)`, which put
