@@ -6,6 +6,7 @@ import { Alert, Pressable, Share, Text, View } from 'react-native';
 
 import { CommunityAvatar } from '@/components/ascnd/community-avatar';
 import { PostArt } from '@/components/ascnd/post-art';
+import { PopIcon, RollingCount } from '@/components/ascnd/post-action-motion';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -163,6 +164,8 @@ function PostActions({ post, onComment, shareText }: { post: FeedPost; onComment
         count={post.like_count}
         on={post.liked}
         onColor={c.readinessRed}
+        toggle
+        burst
         onPress={() => like.mutate({ postId: post.id, on: !post.liked })}
       />
       <Action icon={MessageCircle} label={i18n.nCmComment} count={post.comment_count} onPress={onComment} />
@@ -172,6 +175,7 @@ function PostActions({ post, onComment, shareText }: { post: FeedPost; onComment
         label={i18n.nCmSave}
         on={post.saved}
         onColor={c.foreground}
+        toggle
         onPress={toggleSave}
       />
       <Action
@@ -194,6 +198,8 @@ function Action({
   on = false,
   onColor,
   onPress,
+  toggle = false,
+  burst = false,
 }: {
   icon: typeof Heart;
   label: string;
@@ -201,6 +207,10 @@ function Action({
   on?: boolean;
   onColor?: string;
   onPress: () => void;
+  /** Nút bật/tắt (thích, lưu): biểu tượng nảy khi đổi trạng thái (#160). */
+  toggle?: boolean;
+  /** Vòng sáng khi bật — chỉ trái tim. */
+  burst?: boolean;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -212,8 +222,12 @@ function Action({
       accessibilityState={{ selected: on }}
       onPress={onPress}
       style={styles.action}>
-      <Icon icon={icon} size={20} color={color} fill={on ? color : undefined} />
-      {count != null ? <Text style={styles.actionCount}>{count}</Text> : null}
+      {toggle ? (
+        <PopIcon icon={icon} size={20} color={color} on={on} burst={burst} />
+      ) : (
+        <Icon icon={icon} size={20} color={color} />
+      )}
+      {count != null ? <RollingCount value={count} style={styles.actionCount} /> : null}
     </Pressable>
   );
 }

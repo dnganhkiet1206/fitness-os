@@ -1006,6 +1006,109 @@ function waterNewestFirst() {
 const SCENARIOS = [
   {
     /*
+      #160: thả tim học từ X. Bài đầu của feed ĐÃ được thích sẵn (fixture
+      `community_likes`), nên kịch bản đi hai pha trên cùng một nút:
+        (A) lúc mở màn, không gì đang chuyển động — thẻ cuộn vào với tim sẵn
+            đỏ không được nảy;
+        (B) bấm = BỎ thích: tim co rồi về, KHÔNG có vòng sáng, số lăn XUỐNG;
+        (C) bấm lần nữa = THÍCH: tim nảy, vòng sáng loé, số lăn LÊN;
+        (D) khi yên: tim cỡ 1, vòng sáng tắt, chỉ còn đúng số ban đầu;
+        (E) Reduce Motion: bấm → không nảy, không loé, không lăn, số vẫn đổi.
+      Lấy mẫu MỖI KHUNG HÌNH ngay trong trang (requestAnimationFrame): một lượt
+      gọi của Playwright tốn vài chục mili giây, đủ lỡ trọn cú loé 320ms.
+    */
+    name: 'Cộng đồng: thả tim nảy, loé và lăn số như X; bỏ thích không loé; Reduce Motion thì đổi ngay (#160)',
+    route: '/community', mode: 'full',
+    async run(page) {
+      const heart = () => page.getByRole('button', { name: /^Like · \d+$/ }).filter({ visible: true }).first();
+      for (let i = 0; i < 24 && !(await heart().count()); i++) await page.waitForTimeout(250);
+      if (!(await heart().count())) return 'không thấy nút thích nào trên feed';
+      /* Bấm (hoặc không) rồi lấy mẫu `ms` mili giây, mỗi khung hình một mẫu. */
+      const watch = (click, ms) => heart().evaluate(async (b, [click, ms]) => {
+        const scaleOf = (el) => {
+          const m = getComputedStyle(el).transform;
+          const v = m && m !== 'none' ? m.match(/matrix\(([^)]+)\)/)?.[1].split(',').map(Number) : null;
+          return v ? Math.hypot(v[0], v[1]) : 1;
+        };
+        const seen = (el) => Number(getComputedStyle(el).opacity) > 0.02;
+        const out = [];
+        if (click) b.click();
+        const t0 = performance.now();
+        while (performance.now() - t0 < ms) {
+          await new Promise((r) => requestAnimationFrame(r));
+          const all = window.__shown('*', b);
+          out.push({
+            moving: all.some((el) => seen(el) && getComputedStyle(el).borderTopWidth !== '2px' && Math.abs(scaleOf(el) - 1) > 0.02),
+            ring: all.some((el) => seen(el) && getComputedStyle(el).borderTopWidth === '2px'),
+            nums: [...new Set(all.filter((el) => el.children.length === 0 && /^\d+$/.test(el.textContent ?? '') && Number(getComputedStyle(el).opacity) > 0.05).map((el) => el.textContent))],
+          });
+        }
+        return { frames: out, label: b.getAttribute('aria-label') };
+      }, [click, ms]);
+      const sum = (w) => ({ moving: w.frames.some((f) => f.moving), ring: w.frames.some((f) => f.ring), roll: w.frames.some((f) => f.nums.length >= 2), last: w.frames.at(-1) });
+      const n = (label) => Number(label.match(/\d+$/)[0]);
+
+      /* (A) lấy mẫu từ KHUNG HÌNH ĐẦU nút xuất hiện sau một lần tải lại — chờ
+         bằng rAF ngay trong trang. Bản đầu chờ 1,5 giây rồi mới nhìn, lúc một cú
+         nảy lúc mount (nếu có) đã xong: phép phá "nảy khi mount" vẫn xanh. */
+      await page.reload({ waitUntil: 'commit' });
+      const mount = await page.evaluate(async () => {
+        const scaleOf = (el) => {
+          const m = getComputedStyle(el).transform;
+          const v = m && m !== 'none' ? m.match(/matrix\(([^)]+)\)/)?.[1].split(',').map(Number) : null;
+          return v ? Math.hypot(v[0], v[1]) : 1;
+        };
+        const find = () => window.__shown('[role="button"]').find((b) => /^Like · \d+$/.test(b.getAttribute('aria-label') ?? '') && b.getBoundingClientRect().width > 0);
+        const t0 = performance.now();
+        let b = null;
+        while (!(b = find()) && performance.now() - t0 < 20000) await new Promise((r) => requestAnimationFrame(r));
+        if (!b) return null;
+        let moved = false;
+        const t1 = performance.now();
+        while (performance.now() - t1 < 600) {
+          const all = window.__shown('*', b);
+          moved ||= all.some((el) => Number(getComputedStyle(el).opacity) > 0.02 && Math.abs(scaleOf(el) - 1) > 0.02);
+          await new Promise((r) => requestAnimationFrame(r));
+        }
+        return { moved };
+      });
+      if (!mount) return '(A) tải lại mà không thấy nút thích nào';
+      if (mount.moved) return '(A) thẻ vừa hiện ra mà tim đã nảy — chuyển động chỉ được chạy khi trạng thái ĐỔI';
+      await page.waitForTimeout(1500);
+      const a = await watch(false, 200);
+      const start = n(a.label);
+
+      const b = sum(await watch(true, 700));
+      if (!b.moving) return '(B) bỏ thích mà tim không co lại';
+      if (b.ring) return '(B) bỏ thích mà vẫn có vòng sáng — gỡ một việc không phải một khoảnh khắc';
+      if (!b.roll) return '(B) bỏ thích mà con số không lăn';
+      await page.waitForTimeout(600);
+
+      const c = await watch(true, 700);
+      const sc = sum(c);
+      if (!sc.moving) return '(C) thích mà tim không nảy';
+      if (!sc.ring) return '(C) thích mà không có vòng sáng';
+      if (!sc.roll) return '(C) thích mà con số không lăn';
+      await page.waitForTimeout(600);
+      const d = sum(await watch(false, 200));
+      if (d.moving || d.ring) return '(D) đã yên mà tim vẫn chuyển động';
+      if (d.last.nums.join() !== String(start)) return `(D) khi yên phải chỉ còn "${start}", thấy ${JSON.stringify(d.last.nums)}`;
+
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 24 && !(await heart().count()); i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(1500);
+      const before = n((await watch(false, 50)).label);
+      const e = await watch(true, 700);
+      const se = sum(e);
+      if (se.moving || se.ring) return '(E) Reduce Motion mà tim vẫn co/nảy/loé';
+      if (se.roll) return '(E) Reduce Motion mà con số vẫn lăn';
+      if (n(e.label) === before) return `(E) Reduce Motion: bấm mà con số không đổi (${e.label})`;
+      return null;
+    },
+  },
+  {
+    /*
       #163: mọi bài có ảnh của thư viện app, người dùng chỉ chọn phong cách.
         (A) màn chia sẻ buổi tập k1 (Bench Press → nhãn `push`): xem trước có
             SẴN một ảnh hợp nội dung — `workout/mono-push.png`, không phải ảnh
@@ -3956,7 +4059,7 @@ try {
       kịch bản mất mạng (đòi lời báo "ngay", "không treo" — một ngưỡng thời
       gian). CPU bị chia thì các phép đo ấy đổi nghĩa.
     */
-    const SERIAL = /^(đứng yên|deck hero|segmented|PickRow)|[Mm]ất mạng/;
+    const SERIAL = /^(đứng yên|deck hero|segmented|PickRow)|[Mm]ất mạng|thả tim nảy/;
     const runScenario = async (sc, found) => {
       const { browser, page } = await openPage(chromium, sc.route, sc.mode);
       try {

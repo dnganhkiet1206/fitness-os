@@ -1,8 +1,11 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { Dumbbell, Ruler } from 'lucide-react-native';
 import Svg, { Polyline } from 'react-native-svg';
 
+import { Icon } from '@/components/ascnd/icon';
 import { PostShell } from '@/components/ascnd/post-parts';
 import { radius, spacing, type } from '@/constants/ascnd';
+import { BodyScale } from '@/constants/app-icons';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { type FeedPost, type ProgressMetric, readProgressPayload } from '@/hooks/use-community';
@@ -51,10 +54,10 @@ export function ProgressPostCard({ post, full, preview }: { post: FeedPost; full
 
   const kg = (v: number) => displayWeight(v, wUnit);
   const cm = (v: number) => displayLength(v, lUnit);
-  const tiles: { key: string; label: string; m: ProgressMetric; fmt: (v: number) => number; unit: string; color: string }[] = [];
-  if (p.weight) tiles.push({ key: 'w', label: i18n.nPgWeight, m: p.weight, fmt: kg, unit: wl, color: c.metricBeige });
-  if (p.waist) tiles.push({ key: 'waist', label: i18n.nPgWaist, m: p.waist, fmt: cm, unit: ll, color: c.readinessYellowGraphic });
-  if (p.lift) tiles.push({ key: 'lift', label: p.lift.name, m: p.lift, fmt: kg, unit: wl, color: c.metricOrange });
+  const tiles: { key: string; label: string; m: ProgressMetric; fmt: (v: number) => number; unit: string; color: string; icon: typeof Ruler }[] = [];
+  if (p.weight) tiles.push({ key: 'w', label: i18n.nPgWeight, m: p.weight, fmt: kg, unit: wl, color: c.metricBeige, icon: BodyScale });
+  if (p.waist) tiles.push({ key: 'waist', label: i18n.nPgWaist, m: p.waist, fmt: cm, unit: ll, color: c.readinessYellowGraphic, icon: Ruler });
+  if (p.lift) tiles.push({ key: 'lift', label: p.lift.name, m: p.lift, fmt: kg, unit: wl, color: c.metricOrange, icon: Dumbbell });
 
   const lead = tiles[0];
   const title = fillCopy(i18n.nPgTitle, { n: String(p.weeks) });
@@ -87,9 +90,17 @@ export function ProgressPostCard({ post, full, preview }: { post: FeedPost; full
               style={styles.tile}
               accessible
               accessibilityLabel={`${t.label}: ${t.fmt(t.m.start)} → ${t.fmt(t.m.end)} ${t.unit}`}>
-              <Text style={styles.tileLabel} numberOfLines={1}>
-                {t.label}
-              </Text>
+              {/* #159: mỗi ô số liệu có icon của chính số liệu ấy — như ô chỉ số của
+                  Apple Fitness. Từng có thêm một mũi tên chỉ chiều cạnh con số, và
+                  live.mjs bắt nó (29/09): ở 320 điểm, chữ tiếng Việt ×1.3, ba ô một
+                  hàng, mũi tên 16 điểm lấy đúng chỗ của con số và "-2.1 cm" bị cắt
+                  thành "…". Dấu +/− đã nói chiều; con số là thứ phải đọc trọn. */}
+              <View style={styles.tileHead}>
+                <Icon icon={t.icon} size={13} color={t.color} />
+                <Text style={styles.tileLabel} numberOfLines={1}>
+                  {t.label}
+                </Text>
+              </View>
               <Text style={styles.tileValue} numberOfLines={1}>
                 {d > 0 ? '+' : ''}
                 {d} {t.unit}
@@ -150,6 +161,7 @@ const stylesFor = makeStyles((c, m) => ({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.inset.border,
   },
-  tileLabel: { ...type.footnote, color: c.mutedForeground },
+  tileHead: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  tileLabel: { ...type.footnote, color: c.mutedForeground, flexShrink: 1 },
   tileValue: { ...type.headline, color: c.foreground, fontVariant: ['tabular-nums'] },
 }));
