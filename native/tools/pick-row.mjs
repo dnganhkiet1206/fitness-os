@@ -130,19 +130,49 @@ const problems = [];
   }
 }
 
-/* ── 3. nothing is mounted before it has been measured ──
+/* ── 3. the HOOKS, not only the views, are created after placement ──
 
    `progress-bar.tsx` paid for this one: `useAnimatedStyle` freezes the style it
-   computes on its first render, so a worklet mounted while the measurement is
-   still 0 freezes at 0 and only corrects itself if the value later moves. There
-   it was a bar drawn full on an empty day. Here it would be a highlight parked
-   at the left edge with no width. */
+   computes on the HOOK's first render, and only corrects itself if a value it
+   reads later moves.
+
+   The first version of this rule asked the wrong question — "is the pill's
+   VIEW mounted late?" — and passed while the three hooks sat in `PickRow`'s own
+   body, created on the row's first render with `w` still 0. With the
+   `opacity: w > 0 ? 1 : 0` guard, that frozen value is INVISIBLE, and it only
+   came back after the first tap moved the values. The owner reported exactly
+   that on 29/09: open Nutrition, "Today | Meal plan" shows no selected item
+   until you switch.
+
+   So the rule is about where the hooks live: in `Thumb`, never in `PickRow`,
+   and `Thumb` is only rendered once the placement effect has written the real
+   box (`thumbReady`). */
 {
-  if (!/!here \? null/.test(src) && !/here \?/.test(src)) {
+  const body = (name) => {
+    const i = src.indexOf(`function ${name}(`);
+    if (i < 0) return null;
+    const j = src.indexOf('\nfunction ', i + 1);
+    return src.slice(i, j < 0 ? undefined : j);
+  };
+  const row = body('PickRow');
+  const thumb = body('Thumb');
+  if (!row) problems.push('không tìm thấy `function PickRow(` — bộ đọc hỏng');
+  else if (/useAnimatedStyle\(/.test(row)) {
     problems.push(
-      'pick-row.tsx không còn hoãn việc gắn dấu chọn cho tới khi ĐO XONG — useAnimatedStyle đóng băng ' +
-        'style của lần render đầu, nên gắn lúc số đo còn 0 là đóng băng ở 0',
+      'pick-row.tsx: `useAnimatedStyle` nằm trong thân PickRow — hook tạo ở lần render ĐẦU của hàng, lúc `w` ' +
+        'còn 0, và đóng băng ở VÔ HÌNH tới cú bấm đầu tiên (lỗi 29/09). Để nó trong `Thumb`',
     );
+  }
+  if (!thumb || (thumb.match(/useAnimatedStyle\(/g) ?? []).length !== 3) {
+    problems.push('pick-row.tsx: `Thumb` phải giữ đúng ba `useAnimatedStyle` của viên chọn');
+  }
+  if (row && !/!here \|\| !thumbReady \? null/.test(row)) {
+    problems.push(
+      'pick-row.tsx: viên chọn không còn chờ `thumbReady` (hiệu ứng đặt chỗ đã gán ô thật) trước khi dựng `Thumb`',
+    );
+  }
+  if (row && !/w\.value = [^;]+;\s*(\/\*[\s\S]*?\*\/\s*)?setThumbReady\(true\)/.test(row)) {
+    problems.push('pick-row.tsx: `setThumbReady(true)` phải đứng NGAY SAU lúc gán `x/y/w` — dựng trước là đóng băng ở 0');
   }
 }
 

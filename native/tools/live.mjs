@@ -1924,6 +1924,83 @@ const SCENARIOS = [
   },
   {
     /*
+      Chủ dự án (29/09): mở Dinh dưỡng, thanh "Hôm nay | Kế hoạch ăn" không có
+      mục nào sáng dù "Hôm nay" đang chọn; chỉ sau khi bấm sang mục khác thì
+      viên chọn mới hiện. Các màn khác cũng vậy.
+
+      Vế này đo ĐÚNG lúc ấy: mở màn, KHÔNG bấm gì, và đòi viên chọn của mọi
+      hàng segmented đang hiện phải NHÌN THẤY được (opacity > 0, bề rộng > 0)
+      và nằm trên đúng mục `aria-selected`. Rồi đi sang tab khác và quay lại
+      bằng thanh tab, đòi y như vậy.
+    */
+    name: 'segmented: viên chọn hiện ngay khi mở màn, chưa bấm gì (29/09)',
+    route: '/nutrition', mode: 'full',
+    async run(page) {
+      const state = () =>
+        page.evaluate(() => {
+          const rows = new Map();
+          for (const t of window.__shown('[role="tab"]')) {
+            const p = t.parentElement;
+            if (!p) continue;
+            if (!rows.has(p)) rows.set(p, []);
+            rows.get(p).push(t);
+          }
+          const out = [];
+          for (const [row, tabs] of rows) {
+            if (tabs.length < 2) continue;
+            const pieces = [...row.children].filter(
+              (c) => c.getAttribute('role') !== 'tab' && getComputedStyle(c).position === 'absolute',
+            );
+            if (!pieces.length) continue;
+            const sel = tabs.find((t) => t.getAttribute('aria-selected') === 'true');
+            const r = sel?.getBoundingClientRect();
+            /* Ba mảnh của viên: nắp trái, thân, nắp phải. Hộp bao của cả ba
+               phải phủ lên mục đang chọn và phải thấy được. */
+            const boxes = pieces.map((p) => p.getBoundingClientRect());
+            const visible = pieces.every((p) => Number(getComputedStyle(p).opacity) > 0.5);
+            const left = Math.min(...boxes.map((b) => b.left));
+            const right = Math.max(...boxes.map((b) => b.right));
+            out.push({
+              label: sel?.getAttribute('aria-label') ?? '(không mục nào aria-selected)',
+              visible,
+              covers: !!r && Math.abs(left - r.left) < 6 && Math.abs(right - r.right) < 6,
+              span: `${Math.round(left)}..${Math.round(right)} / mục ${r ? `${Math.round(r.left)}..${Math.round(r.right)}` : '—'}`,
+            });
+          }
+          return out;
+        });
+      const check = async (where) => {
+        let rows = [];
+        for (let i = 0; i < 12; i++) {
+          rows = await state();
+          if (rows.length && rows.every((r) => r.visible && r.covers)) return null;
+          await page.waitForTimeout(250);
+        }
+        if (!rows.length) return `${where}: không thấy hàng segmented nào có viên chọn`;
+        const bad = rows.find((r) => !r.visible || !r.covers);
+        return `${where}: mục "${bad.label}" đang chọn mà viên chọn ${bad.visible ? 'lệch khỏi mục' : 'KHÔNG HIỆN'} (${bad.span}) — chưa bấm gì`;
+      };
+      let why = await check('mở /nutrition');
+      if (why) return why;
+      const tab = (n) => page.getByRole('tab', { name: n, exact: true })
+        .or(page.getByRole('link', { name: n, exact: true }))
+        .or(page.getByRole('button', { name: n, exact: true }))
+        .filter({ visible: true }).first();
+      await tab('Workouts').click();
+      await page.waitForTimeout(800);
+      why = await check('sang /workouts');
+      if (why) return why;
+      await tab('Community').click();
+      await page.waitForTimeout(800);
+      why = await check('sang /community');
+      if (why) return why;
+      await tab('Nutrition').click();
+      await page.waitForTimeout(800);
+      return check('quay lại /nutrition');
+    },
+  },
+  {
+    /*
       An animation is the one thing a screenshot cannot answer.
 
       Every rule about the segmented control reads the source: it says

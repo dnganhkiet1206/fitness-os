@@ -15,6 +15,7 @@ import Animated, {
   useScrollViewOffset,
   useSharedValue,
   withSpring,
+  type SharedValue,
 } from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -284,6 +285,7 @@ export function PickRow({
   const y = useSharedValue(0);
   const w = useSharedValue(0);
   const placed = useRef(false);
+  const [thumbReady, setThumbReady] = useState(false);
 
   useEffect(() => {
     if (!here) return;
@@ -300,6 +302,9 @@ export function PickRow({
     x.value = jump ? here.x : go(here.x);
     y.value = jump ? here.y : go(here.y);
     w.value = jump ? here.w : go(here.w);
+    /* Chỉ SAU khi ba giá trị đã mang ô thật thì viên mới được dựng — xem
+       `Thumb` bên dưới cho lý do (29/09). */
+    setThumbReady(true);
   }, [here, reduceMotion, x, y, w]);
 
   /*
@@ -377,53 +382,6 @@ export function PickRow({
   const r = Math.min(radius, h / 2);
 
   /*
-    `w` bằng 0 nghĩa là CHƯA ĐẶT, và chưa đặt thì không được vẽ.
-
-    ── vì sao cửa ở phía render là chưa đủ ──
-
-    Bản sửa đầu chặn ở chỗ dựng: ô đo được bề rộng 0 thì coi như chưa đo. Đúng,
-    và Playwright vẫn dựng lại được lỗi ngay sau đó. Lý do nằm ở THỨ TỰ:
-
-      1. `boxes` cập nhật → render → `pill` được gắn
-      2. worklet chạy NGAY với `x/y/w` còn ở giá trị khởi tạo 0 → vẽ khung đầu
-      3. `useEffect` chạy SAU khi vẽ → mới gán ô thật
-
-    Bước 2 là cái người dùng chụp được. Ở bước ấy `w` là 0, nên nắp phải nằm ở
-    `x + 0 - r`, tức BÊN TRÁI nắp trái và thò ra ngoài ray.
-
-    Bình thường bước 2 chỉ sống một khung hình. Nhưng luồng JS lúc mở app đang
-    dựng cả năm tab (`UITabBarController` mount hết một lượt), nên bước 3 có thể
-    tới muộn hàng trăm mili giây — trong khi luồng UI vẫn vẽ đều. Đó chính là
-    "thi thoảng", và nó cùng họ với lỗi màn trắng mà `lib/entrance.ts` ghi lại:
-    khung hình bị bỏ lỡ thì thứ còn lại là GIÁ TRỊ ĐẦU.
-
-    Nên chốt chặn phải nằm trong chính worklet, chỗ duy nhất luôn chạy đúng lúc
-    vẽ. `opacity` chứ không phải bỏ mảnh đi: nó là thuộc tính worklet được phép
-    chạm (`tools/motion.mjs`), và không kéo theo một lượt bố cục nào.
-  */
-  const hidden = () => {
-    'worklet';
-    return w.value > 0 ? 1 : 0;
-  };
-
-  const left = useAnimatedStyle(() => ({
-    opacity: hidden(),
-    transform: [{ translateX: x.value }, { translateY: y.value }],
-  }));
-  const right = useAnimatedStyle(() => ({
-    opacity: hidden(),
-    transform: [{ translateX: x.value + w.value - r }, { translateY: y.value }],
-  }));
-  const mid = useAnimatedStyle(() => ({
-    opacity: hidden(),
-    transform: [
-      { translateX: x.value + r },
-      { translateY: y.value },
-      { scaleX: Math.max(0, w.value - r * 2) },
-    ],
-  }));
-
-  /*
     The resting backgrounds. Plain views, no animation: they are where the chips
     already are, and they move only when the row itself is laid out again.
   */
@@ -448,17 +406,114 @@ export function PickRow({
 
   const pill =
     /*
-      Not mounted until the selected chip has been measured.
-
-      `progress-bar.tsx` documents what happens otherwise: `useAnimatedStyle`
-      computes its style once, on the hook's first render, and re-applies that
-      frozen value on every later one. A worklet mounted while the measurement
-      is still 0 freezes at 0 — there, a full bar; here, a highlight parked at
-      the left edge at zero width, which then only corrects itself if the value
-      happens to move again. Mounting after the measurement makes the frozen value
-      the right one.
+      Chưa đo xong, hoặc ba giá trị chưa mang ô thật, thì CHƯA dựng — và khi
+      dựng thì dựng `Thumb`, một component RIÊNG. Xem ghi chú ở `Thumb`.
     */
-    !here ? null : (
+    !here || !thumbReady ? null : (
+      <Thumb x={x} y={y} w={w} r={r} h={h} fill={fill} border={border} />
+    );
+
+  const inner = (
+    <>
+      {slots}
+      {pill}
+      {children}
+    </>
+  );
+
+  if (scroll) {
+    return (
+      <Animated.ScrollView
+        ref={scroller}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onLayout={(e: LayoutChangeEvent) => setViewport(e.nativeEvent.layout.width)}
+        onContentSizeChange={(wd: number) => setContent(wd)}
+        style={style}
+        contentContainerStyle={[styles.row, { gap }, contentStyle]}>
+        <RowCtx.Provider value={{ value, report }}>{inner}</RowCtx.Provider>
+      </Animated.ScrollView>
+    );
+  }
+
+  return (
+    <View style={[styles.row, { gap }, style]}>
+      <RowCtx.Provider value={{ value, report }}>{inner}</RowCtx.Provider>
+    </View>
+  );
+}
+
+/**
+ * One choice. It reports where it is; it does not paint its own selected
+ * background — that is the whole point, and painting one would put a second
+ * highlight on screen during the travel.
+ */
+/**
+ * Viên chọn — ba mảnh (nắp trái, thân, nắp phải) — trong một component RIÊNG.
+ *
+ * ── lỗi chủ dự án báo (29/09) ──
+ *
+ * Mở Dinh dưỡng: thanh "Hôm nay | Kế hoạch ăn" không có mục nào sáng dù "Hôm
+ * nay" đang chọn; bấm sang mục khác thì viên chọn mới hiện. Mọi màn có hàng
+ * này đều vậy.
+ *
+ * `progress-bar.tsx` đã ghi cơ chế: `useAnimatedStyle` tính style MỘT lần, ở
+ * lần render đầu của CHÍNH HOOK, rồi áp lại giá trị đóng băng ấy. Ghi chú cũ ở
+ * chỗ dựng `pill` hiểu đúng điều đó nhưng áp sai chỗ: nó hoãn gắn VIEW tới khi
+ * đo xong, trong khi ba hook nằm ở thân `PickRow` — tạo từ lần render ĐẦU của
+ * hàng, lúc `w` còn 0. Từ khi có chốt `opacity: w > 0 ? 1 : 0`, giá trị đóng
+ * băng ấy là VÔ HÌNH, và nó chỉ tự sửa khi `x/y/w` đổi lần nữa — tức sau cú
+ * bấm đầu tiên. Đúng từng chữ của lời báo.
+ *
+ * Nên các hook nằm Ở ĐÂY, và component này chỉ được dựng khi hiệu ứng đặt
+ * chỗ đã gán ô thật vào `x/y/w`: lần render đầu của hook đọc ra đúng vị trí,
+ * đúng bề rộng, thấy được — không còn phụ thuộc vào thứ tự Reanimated đăng
+ * ký view hay vào một lần đổi giá trị về sau.
+ */
+function Thumb({
+  x,
+  y,
+  w,
+  r,
+  h,
+  fill,
+  border,
+}: {
+  x: SharedValue<number>;
+  y: SharedValue<number>;
+  w: SharedValue<number>;
+  r: number;
+  h: number;
+  fill: string;
+  border?: { width: number; color: string };
+}) {
+  /*
+    `w` bằng 0 vẫn nghĩa là CHƯA ĐẶT (ô đo được bề rộng 0 trong một lượt bố cục
+    — ảnh chụp người dùng gửi ở đầu Dinh dưỡng và Tiến trình), và chưa đặt thì
+    không vẽ. Chốt nằm trong worklet, chỗ duy nhất luôn chạy đúng lúc vẽ.
+  */
+  const hidden = () => {
+    'worklet';
+    return w.value > 0 ? 1 : 0;
+  };
+  const left = useAnimatedStyle(() => ({
+    opacity: hidden(),
+    transform: [{ translateX: x.value }, { translateY: y.value }],
+  }));
+  const right = useAnimatedStyle(() => ({
+    opacity: hidden(),
+    transform: [{ translateX: x.value + w.value - r }, { translateY: y.value }],
+  }));
+  const mid = useAnimatedStyle(() => ({
+    opacity: hidden(),
+    transform: [
+      { translateX: x.value + r },
+      { translateY: y.value },
+      { scaleX: Math.max(0, w.value - r * 2) },
+    ],
+  }));
+  return (
       <>
         <Animated.View
           pointerEvents="none"
@@ -510,45 +565,9 @@ export function PickRow({
           ]}
         />
       </>
-    );
-
-  /* Bottom to top: resting backgrounds, then the highlight, then the labels. */
-  const inner = (
-    <>
-      {slots}
-      {pill}
-      {children}
-    </>
-  );
-
-  if (scroll) {
-    return (
-      <Animated.ScrollView
-        ref={scroller}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onLayout={(e: LayoutChangeEvent) => setViewport(e.nativeEvent.layout.width)}
-        onContentSizeChange={(wd: number) => setContent(wd)}
-        style={style}
-        contentContainerStyle={[styles.row, { gap }, contentStyle]}>
-        <RowCtx.Provider value={{ value, report }}>{inner}</RowCtx.Provider>
-      </Animated.ScrollView>
-    );
-  }
-
-  return (
-    <View style={[styles.row, { gap }, style]}>
-      <RowCtx.Provider value={{ value, report }}>{inner}</RowCtx.Provider>
-    </View>
   );
 }
 
-/**
- * One choice. It reports where it is; it does not paint its own selected
- * background — that is the whole point, and painting one would put a second
- * highlight on screen during the travel.
- */
 function Item({
   itemKey,
   onPress,
