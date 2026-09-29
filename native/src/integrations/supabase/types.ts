@@ -311,6 +311,21 @@ export type Database = {
         }
         Relationships: []
       }
+      community_comment_mentions: {
+        Row: {
+          comment_id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_comments: {
         Row: {
           author_id: string
@@ -318,6 +333,7 @@ export type Database = {
           created_at: string
           hidden: boolean
           id: string
+          parent_id: string | null
           post_id: string
         }
         Insert: {
@@ -326,6 +342,7 @@ export type Database = {
           created_at?: string
           hidden?: boolean
           id?: string
+          parent_id?: string | null
           post_id: string
         }
         Update: {
@@ -334,6 +351,7 @@ export type Database = {
           created_at?: string
           hidden?: boolean
           id?: string
+          parent_id?: string | null
           post_id?: string
         }
         Relationships: []
