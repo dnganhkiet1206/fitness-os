@@ -51,6 +51,16 @@ onlineManager.setEventListener((setOnline) =>
 
   Bản web không cần: trình duyệt có `visibilitychange`, và mặc định vẫn chạy.
   Đây là đúng công thức React Native trong tài liệu TanStack.
+
+  ── nó tốn bao nhiêu (#167, đo 29/09) ──
+
+  Bản web, thế giới `full`, đã ghé cả năm tab (Hôm nay, Dinh dưỡng, Tập luyện,
+  Cộng đồng, Trợ lý — gần với iOS, nơi mọi tab mount một lần rồi giữ), rồi
+  đồng hồ +5 phút và `visibilitychange`: **43 request trong 3 giây, cái cuối ở
+  182 ms**, 42 URL khác nhau. Giữ mặc định: feed, hộp thư, thử thách và số
+  liệu hôm nay CẦN tải lại, và số này nhỏ. Chỗ gộp được (5 cửa sổ
+  `workout_sessions` cùng một `select`, hai truy vấn "hôm nay" gần trùng, một
+  lượt đọc `community_profiles` trùng hẳn) ghi ở issue riêng, không tắt ở đây.
 */
 if (Platform.OS !== 'web') {
   focusManager.setEventListener((handleFocus) => {
