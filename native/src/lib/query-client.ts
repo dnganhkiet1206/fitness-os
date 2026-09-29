@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { QueryClient, onlineManager } from '@tanstack/react-query';
+import { QueryClient, focusManager, onlineManager } from '@tanstack/react-query';
+import { AppState, Platform } from 'react-native';
 
 import { isUsable, registerBusyProbe, startNetWatch } from '@/lib/net-status';
 import { registerOfflineWrites } from '@/lib/offline-write';
@@ -32,6 +33,31 @@ onlineManager.setEventListener((setOnline) =>
     setOnline(isUsable(state));
   }),
 );
+
+/*
+  App trở lại từ nền = "cửa sổ có focus" của TanStack.
+
+  ── lỗ nó lấp (đo 29/09) ──
+
+  `staleTime` một phút ở dưới hứa "phục vụ cache trước, làm mới ngầm". Trên
+  iOS lời hứa ấy chưa từng được giữ khi app quay lại từ nền: `focusManager`
+  mặc định (query-core 5.101, `focusManager.js`) chỉ nghe
+  `window.addEventListener('visibilitychange')`, và trên React Native
+  `window.addEventListener` không tồn tại — nên nó không nghe gì. Tab mount một
+  lần rồi giữ (`UITabBarController`), nên cũng không có `refetchOnMount` nào
+  cứu: mở app sau một buổi tối, feed Cộng đồng và hộp thư vẫn là của lúc cất
+  máy, tới khi người ta tự kéo để làm mới. Và "N bài mới" (#160) không bao giờ
+  có bài nào để báo — lượt tải lại ngầm nó chờ là chính lượt này.
+
+  Bản web không cần: trình duyệt có `visibilitychange`, và mặc định vẫn chạy.
+  Đây là đúng công thức React Native trong tài liệu TanStack.
+*/
+if (Platform.OS !== 'web') {
+  focusManager.setEventListener((handleFocus) => {
+    const sub = AppState.addEventListener('change', (state) => handleFocus(state === 'active'));
+    return () => sub.remove();
+  });
+}
 
 export const queryClient = new QueryClient({
   defaultOptions: {

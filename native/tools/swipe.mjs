@@ -853,7 +853,9 @@ function handlerBody(code, hook) {
     [SCREEN, 'onScrollBeginDrag', `${FN}()`],
     [TODAY, 'onBeginDrag', `runOnJS(${FN})()`],
   ]) {
-    const code = readFileSync(path.join(NATIVE, f), 'utf8');
+    /* Bỏ chú thích trước khi cắt: một chú thích nhắc tới `onScrollBeginDrag={…}`
+       (screen.tsx có một, kể lại lỗi 29/09) không được thành "handler". */
+    const code = readFileSync(path.join(NATIVE, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     if (!code.includes(how)) {
       problems.push(
         `${f}: bộ cuộn không gọi \`${how}\` — hàng vuốt mở rồi cuộn trang thì nó vẫn nằm đó, ` +
@@ -872,7 +874,12 @@ function handlerBody(code, hook) {
        `onScrollBeginDrag=` còn nằm đâu đó phía trên, và phép nhìn lui không
        phân biệt được "ở gần" với "ở trong". Một luật đo khoảng cách thay vì đo
        quan hệ thì chỉ đúng cho tới lần sắp xếp lại đầu tiên. */
-    const body = handlerBody(code, hook);
+    let body = handlerBody(code, hook);
+    /* Một tầng tên: `onScrollBeginDrag={beginDrag}` (từ 29/09 `Screen` dùng
+       CHUNG một handler cho cả ba bố cục — `screen-scroll-props.mjs` giữ rằng
+       cả ba nhận nó) thì đọc thân của `beginDrag`. */
+    const ref = body?.match(/^\{\s*([A-Za-z_$][\w$]*)\s*\}$/)?.[1];
+    if (ref) body = handlerBody(code, ref);
     if (body === null) {
       problems.push(`${f}: không tìm thấy \`${hook}\` để đọc thân nó — luật này đang không kiểm gì cả`);
     } else if (!body.includes(how)) {
@@ -886,7 +893,7 @@ function handlerBody(code, hook) {
   /* `Screen` nhận `onScrollBeginDrag` từ chỗ gọi. Nếu prop ấy còn nằm trong
      `...props` thì spread ở cuối sẽ ghi đè lặng lẽ cả luật này. */
   const screenSrc = readFileSync(path.join(NATIVE, SCREEN), 'utf8');
-  if (!/refreshable = false, onScrollBeginDrag,/.test(screenSrc)) {
+  if (!/function ScreenBody\(\{[^}]*\bonScrollBeginDrag\b[^}]*\.\.\.props \}/.test(screenSrc)) {
     problems.push(
       `${SCREEN}: \`onScrollBeginDrag\` không được tách khỏi \`...props\` ở chữ ký — một chỗ gọi ` +
         'truyền prop cùng tên sẽ xoá mất luật thu-hàng-về mà không có gì báo',

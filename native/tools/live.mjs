@@ -473,7 +473,7 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
   const asked = route.split('?')[0];
   const landed = new URL(page.url()).pathname;
   if (landed !== asked && REDIRECT_OK[`${asked}→${landed}`] === undefined) LANDING_MISSES.add(`[${mode}] mở ${asked} mà trang dừng ở ${landed}`);
-  return { browser, page, errors };
+  return { browser, page, errors, world };
 }
 
 /**
@@ -1104,6 +1104,91 @@ const SCENARIOS = [
       if (se.moving || se.ring) return '(E) Reduce Motion mà tim vẫn co/nảy/loé';
       if (se.roll) return '(E) Reduce Motion mà con số vẫn lăn';
       if (n(e.label) === before) return `(E) Reduce Motion: bấm mà con số không đổi (${e.label})`;
+      return null;
+    },
+  },
+  {
+    /*
+      #160: bài mới tới khi đang đọc giữa feed thì được GIỮ sau một viên, như X.
+        (A) mở feed, cuộn xuống giữa; ghi chỗ đứng của mọi nút thích đang hiện;
+        (B) một người khác đăng bài, app trở lại (đồng hồ +5 phút rồi
+            `visibilitychange` — đúng đường TanStack làm mới ngầm) → một lượt
+            GET community_posts MANG bài mới về; vậy mà bài ấy KHÔNG có trên màn,
+            các nút thích đứng yên (±1px), và viên "1 new post" hiện ra;
+        (C) chạm viên → lên đỉnh, bài mới hiện, viên mất;
+        (D) đang ở đỉnh: bài thứ hai tới → hiện ngay, không viên nào.
+      (C) và (D) là thứ làm (B) có nghĩa: cùng một bài, cùng một lượt tải, hiện
+      được — nên "không có trên màn" ở (B) là bị giữ, không phải không về.
+    */
+    name: 'Cộng đồng: bài mới tới khi đang đọc giữa feed thì được giữ sau viên "N bài mới", chạm để lên (#160)',
+    route: '/community', mode: 'full',
+    async run(page, { world }) {
+      const likes = () => page.getByRole('button', { name: /^Like · \d+$/ }).filter({ visible: true });
+      for (let i = 0; i < 40 && (await likes().count()) < 2; i++) await page.waitForTimeout(250);
+      if ((await likes().count()) < 2) return 'feed không có đủ bài để cuộn';
+      await page.waitForTimeout(1200);
+      /* Khung cuộn của trang: phần tử cuộn được lớn nhất đang hiện. */
+      const scrollTo = (y) => page.evaluate((y) => {
+        const el = window.__shown('*').filter((e) => e.scrollHeight > e.clientHeight + 200 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+          .sort((a, b) => b.clientHeight - a.clientHeight)[0];
+        if (!el) return null;
+        if (y != null) el.scrollTop = y;
+        return el.scrollTop;
+      }, y);
+      const likeTops = () => page.evaluate(() => window.__shown('[role="button"]')
+        .filter((b) => /^Like · \d+$/.test(b.getAttribute('aria-label') ?? ''))
+        .map((b) => Math.round(b.getBoundingClientRect().top)));
+      const onScreen = (text) => page.evaluate((t) => window.__shown('*').some((e) => e.children.length === 0 && (e.textContent ?? '').includes(t)), text);
+      const pill = () => page.getByRole('button', { name: /^Show \d+ new posts?$/ }).filter({ visible: true });
+      const other = world.community_posts.find((p) => p.author_id !== UID && p.visibility === 'public');
+      const post = (n, cap) => ({ ...structuredClone(other), id: `cp000000-0000-4000-8000-0000000160a${n}`, source_id: null, caption: cap, like_count: 0, comment_count: 0, save_count: 0, created_at: new Date(Date.now() + n * 60_000).toISOString() });
+      let clock = Date.now();
+      /* App trở lại sau vài phút: dữ liệu đã cũ theo `staleTime`, và TanStack
+         làm mới mọi truy vấn cũ đang được dùng. */
+      const comeBack = async (id) => {
+        clock += 5 * 60_000;
+        await page.clock.setFixedTime(clock);
+        const got = page.waitForResponse((r) => /\/rest\/v1\/community_posts\?/.test(r.url()) && r.request().method() === 'GET', { timeout: 15000 });
+        await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange', { bubbles: true })));
+        const body = await (await got).text();
+        await page.waitForTimeout(1200);
+        return body.includes(id);
+      };
+
+      if ((await scrollTo(900)) == null) return '(A) không tìm thấy khung cuộn của trang';
+      await page.waitForTimeout(800);
+      const y0 = await scrollTo(null);
+      if (y0 < 300) return `(A) cuộn xuống mà khung chỉ ở y=${y0} — không phải "giữa feed"`;
+      const before = await likeTops();
+      if (!before.length) return '(A) cuộn xuống rồi không còn nút thích nào trên màn';
+
+      const A = 'Bài mới toanh (#160) — một';
+      world.community_posts.push(post(1, A));
+      if (!(await comeBack(post(1, A).id))) return '(B) lượt tải lại ngầm không mang bài mới về — vế này không đo gì';
+      if (await onScreen(A)) return '(B) bài mới chèn thẳng vào feed khi đang đọc giữa chừng — phải được giữ lại';
+      const after = await likeTops();
+      if (after.length !== before.length || after.some((y, i) => Math.abs(y - before[i]) > 1)) {
+        return `(B) bài đang đọc bị xê dịch: nút thích ở ${JSON.stringify(before)} → ${JSON.stringify(after)}`;
+      }
+      if (!(await pill().count())) return '(B) có bài mới bị giữ mà không có viên "1 new post"';
+      if (!/^Show 1 new post$/.test((await pill().first().getAttribute('aria-label')) ?? '')) return `(B) nhãn viên sai: ${await pill().first().getAttribute('aria-label')}`;
+
+      await pill().first().click();
+      let top = null;
+      for (let i = 0; i < 12; i++) {
+        await page.waitForTimeout(250);
+        top = await scrollTo(null);
+        if (top < 5 && (await onScreen(A)) && !(await pill().count())) break;
+      }
+      if (top >= 5) return `(C) chạm viên mà trang không lên đỉnh (y=${top})`;
+      if (!(await onScreen(A))) return '(C) chạm viên mà bài mới không hiện';
+      if (await pill().count()) return '(C) chạm viên rồi mà viên vẫn còn';
+
+      const B = 'Bài mới toanh (#160) — hai';
+      world.community_posts.push(post(2, B));
+      if (!(await comeBack(post(2, B).id))) return '(D) lượt tải lại ngầm không mang bài thứ hai về';
+      if (await pill().count()) return '(D) đang ở đỉnh mà vẫn giữ bài mới sau viên';
+      if (!(await onScreen(B))) return '(D) đang ở đỉnh mà bài mới không hiện ngay';
       return null;
     },
   },
@@ -4061,9 +4146,12 @@ try {
     */
     const SERIAL = /^(đứng yên|deck hero|segmented|PickRow)|[Mm]ất mạng|thả tim nảy/;
     const runScenario = async (sc, found) => {
-      const { browser, page } = await openPage(chromium, sc.route, sc.mode);
+      const { browser, page, world } = await openPage(chromium, sc.route, sc.mode);
       try {
-        const why = await sc.run(page);
+        /* `world`: bản sao thế giới của CHÍNH trang này (#52). Kịch bản cần
+           "server có thêm một bài" giữa chừng (#160) thì sửa nó, như một người
+           khác vừa đăng. */
+        const why = await sc.run(page, { world });
         if (why) found.push(`${sc.name} — ${why}`);
       } catch (e) {
         found.push(`${sc.name} — không chạy được: ${e.message.split('\n')[0].slice(0, 140)}`);

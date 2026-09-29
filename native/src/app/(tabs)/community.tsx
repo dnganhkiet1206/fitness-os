@@ -7,6 +7,7 @@ import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { NewPostsPill } from '@/components/ascnd/new-posts-pill';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
@@ -17,6 +18,7 @@ import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { type CommunityTab, useChallengeHistory, useChallenges, useCommunityFeed, useInbox, useMyCommunityProfile } from '@/hooks/use-community';
+import { useFeedHold } from '@/hooks/use-feed-hold';
 import { usePalette } from '@/hooks/use-palette';
 import { pendingClaims } from '@/lib/challenge-reminders';
 import { localDateStr } from '@/lib/local-date';
@@ -54,6 +56,10 @@ export default function CommunityScreen() {
   const [tab, setTab] = useState<CommunityTab>('discover');
   const me = useMyCommunityProfile();
   const feed = useCommunityFeed(tab);
+  /* Bài mới về khi người ta đang đọc giữa feed thì được GIỮ lại sau một viên
+     "N bài mới", như X, thay vì chèn lên và đẩy bài đang đọc khỏi ngón tay
+     (#160) — xem `lib/feed-hold.ts`. */
+  const hold = useFeedHold(tab, feed.data);
   const challenges = useChallenges();
   const noHero = tab === 'discover' && !!challenges.data && !featuredChallenge(challenges.data);
   const history = useChallengeHistory(noHero);
@@ -72,6 +78,8 @@ export default function CommunityScreen() {
   return (
     <Screen
       refreshable
+      onScroll={hold.onScroll}
+      overlay={hold.held.length ? <NewPostsPill posts={hold.held} onPress={hold.release} /> : null}
       title={i18n.nCommunityTitle}
       aura={PAGE_TINT.community}
       headerRight={
@@ -181,7 +189,7 @@ export default function CommunityScreen() {
           </GlassCard>
         ) : (
           <View style={styles.list}>
-            {(feed.data ?? []).map((p) => (
+            {hold.posts.map((p) => (
               <PostCard key={p.id} post={p} />
             ))}
           </View>

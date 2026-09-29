@@ -282,6 +282,8 @@ const STEPS = [
   ['thao tác async: chỉ lượt hợp lệ được ghi (#157)', 'node', ['tools/operation.mjs']],
   ['ghi khi mất mạng: mọi thao tác khai lớp (#161)', 'node', ['tools/offline-class.mjs']],
   ['ảnh thư viện app cho bài Cộng đồng (#163)', 'node', ['tools/community-art.mjs']],
+  ['"N bài mới" giữ bài mới khi đang đọc giữa feed (#160)', 'node', ['tools/feed-hold.mjs']],
+  ['prop cuộn của Screen tới cả ba bố cục', 'node', ['tools/screen-scroll-props.mjs']],
   ['kéo để tải lại', 'node', ['tools/refreshable.mjs']],
   ['đồng hồ nghỉ', 'node', ['tools/rest-timer.mjs']],
   ['trạng thái mạng', 'node', ['tools/net-status.mjs']],

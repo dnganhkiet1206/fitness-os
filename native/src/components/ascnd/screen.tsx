@@ -186,14 +186,33 @@ interface ScreenProps extends ViewProps {
   /**
    * Forwarded to the page's ScrollView, along with `scrollEventThrottle`.
    *
-   * `ViewProps` does not carry these, and they already reach the ScrollView
-   * through `...props` — this only makes them typed. `mascot-room` uses them
-   * to stop the studio's clocks once the stage has scrolled out of sight; a
-   * page that does not pass them is unaffected.
+   * `mascot-room` uses them to stop the studio's clocks once the stage has
+   * scrolled out of sight; Cộng đồng uses `onScroll` to know whether the reader
+   * is at the top of the feed (#160). A page that does not pass them is
+   * unaffected.
+   *
+   * ── both are taken out of `...props` and called by hand, in EVERY branch ──
+   *
+   * The tab layout has its own `onScroll` (tab bar, Koa band) and its own
+   * `onScrollBeginDrag` (close an open swipe row). Left inside the spread, the
+   * caller's prop would silently replace them — `{...props}` comes last. And
+   * taking one out of the spread without handing it on in every branch drops
+   * it silently instead: measured 29/09, `mascot-room` (a `back
+   * transparentHeader` page) passed `onScrollBeginDrag={markScrolling}` "to
+   * freeze the buddy the instant a drag begins" and that handler had never
+   * run — the prop was destructured for the tab branch and the two sub-page
+   * branches never received it. `tools/screen-scroll-props.mjs` holds all
+   * three branches to this.
    */
   onScroll?: ScrollViewProps['onScroll'];
   onScrollBeginDrag?: ScrollViewProps['onScrollBeginDrag'];
   scrollEventThrottle?: number;
+  /**
+   * Thứ nổi TRÊN trang, không cuộn theo nó — viên "N bài mới" của Cộng đồng
+   * (#160). Vẽ sau cùng, trên cả dải status scrim: một thứ để chạm không được
+   * nằm dưới một lớp mờ.
+   */
+  overlay?: React.ReactNode;
 }
 
 /**
@@ -290,7 +309,7 @@ export function Screen(props: ScreenProps) {
   );
 }
 
-function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, refreshable = false, onScrollBeginDrag, children, style, ...props }: ScreenProps) {
+function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, refreshable = false, onScroll, onScrollBeginDrag, overlay, children, style, ...props }: ScreenProps) {
   const c = usePalette();
   const m = useMaterial();
   const styles = stylesFor(c);
@@ -395,6 +414,24 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
     }, []),
   );
 
+  /*
+    Hàng vuốt đang mở thì thu về khi ngón tay bắt đầu KÉO trang.
+
+    `onScrollBeginDrag` chứ không phải `onScroll`: UIKit đặt luật này ở
+    `scrollViewWillBeginDragging`, và lý do là một cú cuộn do CHƯƠNG TRÌNH gây
+    ra — kéo-để-làm-mới, hay cú nhảy về đầu trang khi chạm tab — không phải một
+    thao tác của người dùng, nên nó không được đóng một hàng người ta vừa cố ý
+    mở. Cả ba bố cục: hàng vuốt có ở một trang con — `/sessions` (buổi tập đã
+    ghi, `back`) — và trước 29/09 ở đó kéo trang chưa từng thu hàng đang mở,
+    vì dòng này chỉ nằm trong nhánh tab.
+
+    Prop cùng tên do chỗ gọi truyền vào vẫn chạy — xem `ScreenProps.onScroll`.
+  */
+  const beginDrag: ScrollViewProps['onScrollBeginDrag'] = (e) => {
+    closeOpenSwipeRow();
+    onScrollBeginDrag?.(e);
+  };
+
   if (back) {
     const headerBar = (
       <View style={styles.pageHeaderRow}>
@@ -432,6 +469,8 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
               scrollEnabled={contentScrollEnabled}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="interactive"
+              onScroll={onScroll}
+              onScrollBeginDrag={beginDrag}
               {...props}>
               {children}
             </ScrollView>
@@ -449,6 +488,7 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
             onLayout={(ev) => onHeaderHeight?.(ev.nativeEvent.layout.height)}>
             {headerBar}
           </View>
+          {overlay}
         </View>
       );
     }
@@ -477,10 +517,13 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
             scrollEnabled={contentScrollEnabled}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
+            onScroll={onScroll}
+            onScrollBeginDrag={beginDrag}
             {...props}>
             {children}
           </ScrollView>
         </ScrollFrame>
+        {overlay}
       </View>
     );
   }
@@ -514,24 +557,7 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
           scrollEnabled={contentScrollEnabled}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
-          /*
-            Hàng vuốt đang mở thì thu về khi ngón tay bắt đầu KÉO trang.
-
-            `onScrollBeginDrag` chứ không phải `onScroll`: UIKit đặt luật này ở
-            `scrollViewWillBeginDragging`, và lý do là một cú cuộn do CHƯƠNG
-            TRÌNH gây ra — kéo-để-làm-mới, hay cú nhảy về đầu trang khi chạm
-            tab — không phải một thao tác của người dùng, nên nó không được
-            đóng một hàng người ta vừa cố ý mở.
-
-            Prop cùng tên do chỗ gọi truyền vào vẫn chạy: nó được TÁCH khỏi
-            `...props` ở chữ ký rồi gọi tay ngay dưới đây. Để nó nằm trong
-            spread thì `{...props}` ở cuối sẽ ghi đè lặng lẽ cả dòng này — một
-            luật đúng bị xoá bởi thứ tự khai prop.
-          */
-          onScrollBeginDrag={(e) => {
-            closeOpenSwipeRow();
-            onScrollBeginDrag?.(e);
-          }}
+          onScrollBeginDrag={beginDrag}
           onScroll={(e) => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
             handleTabScroll(contentOffset.y);
@@ -540,6 +566,7 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
                hết. Đây là chỗ duy nhất biết được cả ba con số, nên nó là chỗ
                trả lời. Xem `lib/koa-band.ts`. */
             noteKoaBand(contentOffset.y, contentSize.height, layoutMeasurement.height, BottomTabInset);
+            onScroll?.(e);
           }}
           scrollEventThrottle={16}
           {...props}>
@@ -554,6 +581,7 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
         </ScrollView>
       </ScrollFrame>
       <StatusScrim />
+      {overlay}
     </View>
   );
 }
