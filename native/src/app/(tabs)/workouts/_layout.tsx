@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
 
 import { colors } from '@/constants/ascnd';
+import { navGuardScreenListeners } from '@/lib/nav';
 
 /**
  * The training tab is a stack, and it is the only tab that is one.
@@ -34,6 +35,7 @@ import { colors } from '@/constants/ascnd';
 export default function WorkoutsLayout() {
   return (
     <Stack
+      screenListeners={navGuardScreenListeners}
       screenOptions={{
         headerShown: false,
         /* The page colour, so the gap between one screen leaving and the next

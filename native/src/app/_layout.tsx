@@ -30,6 +30,7 @@ import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { CoachChatProvider } from '@/hooks/use-coach-chat';
 import { useAutoHealthSync } from '@/hooks/use-health-sync';
 import { useProfile } from '@/hooks/useTodayData';
+import { navGuardScreenListeners, useNavGuard } from '@/lib/nav';
 import { asyncStoragePersister, CACHE_BUSTER, queryClient } from '@/lib/query-client';
 
 SplashScreen.preventAutoHideAsync();
@@ -295,7 +296,7 @@ function Gate() {
       screen. It renders nothing — it is a hook that needs a place to live.
     */}
     <HealthAutoSync />
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false }} screenListeners={navGuardScreenListeners}>
       <Stack.Screen name="(tabs)" />
       {/* Input sheets use the standard iOS pageSheet modal (swipe down to
           dismiss) — native formSheet detents render blank content on this
@@ -465,6 +466,9 @@ export default function RootLayout() {
   /* Bản web: `Alert.alert` của react-native-web là hàm rỗng, nên 57 hộp hỏi
      lại của app im lặng trên trình duyệt (#83). Tự chốt một lần; iOS không đổi. */
   installWebAlert();
+  /* Nối chốt điều hướng vào navigation container: khoá nhả khi navigator thật
+     sự đổi state, không theo đồng hồ (#157, `lib/nav-guard.ts`). */
+  useNavGuard();
   return (
     /*
       Every gesture in the app hangs off this, and its absence was a crash.

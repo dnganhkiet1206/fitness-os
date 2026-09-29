@@ -131,6 +131,23 @@ export function Mascot({
     hỏi là hai thứ sẽ lệch nhau".
   */
   const screenFocused = useIsFocused();
+  /*
+    Lời hẹn mở phòng sau cú nhảy (#157, Test 7). 320ms là nhịp của hoạt ảnh,
+    để cú nhảy kịp đọc trước khi màn mới che nó — KHÔNG phải cách chống đua:
+    chuyện bấm dồn là việc của `nav`. Nhưng lời hẹn phải chết cùng lý do của
+    nó: rời Hôm nay (đổi tab — màn tab không tháo) hay tháo component thì
+    không được đẩy phòng lên đè một màn khác. Chọc liền mấy cái thì chỉ còn
+    một lời hẹn.
+  */
+  const roomTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cancelRoom = () => {
+    if (roomTimer.current) clearTimeout(roomTimer.current);
+    roomTimer.current = null;
+  };
+  useEffect(() => {
+    if (!screenFocused) cancelRoom();
+  }, [screenFocused]);
+  useEffect(() => cancelRoom, []);
   const interacting = useInteracting();
   const focused = screenFocused && !interacting;
   const { enabled, mascot, message, messageGap, messageIsReaction, mood } = useMascot();
@@ -432,7 +449,11 @@ export function Mascot({
     );
     setBubbleVisible(true);
     // A tap now leads into the buddy's gym room (quests, coins, shop)
-    setTimeout(() => nav.push('/mascot-room'), 320);
+    cancelRoom();
+    roomTimer.current = setTimeout(() => {
+      roomTimer.current = null;
+      nav.push('/mascot-room');
+    }, 320);
   };
 
   return (

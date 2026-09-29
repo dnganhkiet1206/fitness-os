@@ -278,11 +278,12 @@ export default function WeeklyReviewScreen() {
     staleTime: Infinity,
     gcTime: 1000 * 60 * 60 * 24 * 7,
     retry: 1,
-    queryFn: async () => {
+    /* `signal` từ React Query: đổi tuần hay rời màn thì request cũ bị huỷ (#157). */
+    queryFn: async ({ signal }) => {
       const res = await callEdge<AIAnalysis>(EDGE_FUNCTIONS.weeklyReview, {
         week_start: startStr,
         lang,
-      });
+      }, signal);
       // The alert this feeds used to print the raw client message, which for a
       // missing function reads `Edge Function returned a non-2xx status code`.
       if (!res.ok) throw new Error(i18n[AI_FAILURE_KEY[res.failure]]);

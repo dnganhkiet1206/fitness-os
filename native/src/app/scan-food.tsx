@@ -22,6 +22,7 @@ import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { useOperation } from '@/hooks/use-operation';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { setPendingScan, stackHasMealSheet, type ScannedFood } from '@/lib/scan-bridge';
 import { fillCopy } from '@/lib/copy-fill';
@@ -67,58 +68,66 @@ export default function ScanFoodScreen() {
   const [preview, setPreview] = useState<string | null>(null);
   const [items, setItems] = useState<ScannedFood[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const busyRef = useRef(false);
+  /*
+    Chụp rồi phân tích là MỘT thao tác (#157). Chụp lại hay rời màn trong lúc
+    phân tích thì kết quả của lần cũ là `stale` và không ghi vào màn — trước
+    đây nó về muộn và đè lên khung chụp mới.
+  */
+  const scanOp = useOperation();
 
   const capture = async () => {
-    if (busyRef.current || !cameraRef.current) return;
-    busyRef.current = true;
+    const camera = cameraRef.current;
+    if (scanOp.running() || !camera) return;
     setError(null);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    try {
-      const photo = await cameraRef.current.takePictureAsync({
+    const r = await scanOp.run(async (signal) => {
+      const photo = await camera.takePictureAsync({
         base64: true,
         quality: 0.5,
         skipProcessing: true,
       });
+      if (signal.aborted) return null;
       setPreview(photo?.uri ?? null);
       setPhase('analyzing');
-
-      const res = await callEdge<{ items?: RawItem[] }>(EDGE_FUNCTIONS.scanFood, {
-        image_base64: photo?.base64,
-        lang,
-        mode,
-      });
-      if (!res.ok) {
-        // Named, not generic: a scan that fails because the function was never
-        // deployed and one that fails because the photo was dark used to read
-        // the same, and only one of them is worth retrying with a better photo.
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        setError(i18n[AI_FAILURE_KEY[res.failure]]);
-        setPhase('review');
-        return;
-      }
-
-      const found = normalize((res.data?.items ?? []) as RawItem[]).filter((i) => i.kcal > 0);
-      if (found.length === 0) {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        setError(i18n.nScanNoFood);
-        setPhase('review');
-      } else {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setItems(found);
-        setPhase('review');
-      }
-    } catch {
+      return callEdge<{ items?: RawItem[] }>(
+        EDGE_FUNCTIONS.scanFood,
+        { image_base64: photo?.base64, lang, mode },
+        signal,
+      );
+    });
+    if (r.status === 'stale' || (r.status === 'ok' && r.value === null)) return;
+    if (r.status === 'error') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       setError(i18n.nScanError);
       setPhase('review');
-    } finally {
-      busyRef.current = false;
+      return;
+    }
+    const res = r.value!;
+    if (!res.ok) {
+      // Named, not generic: a scan that fails because the function was never
+      // deployed and one that fails because the photo was dark used to read
+      // the same, and only one of them is worth retrying with a better photo.
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setError(i18n[AI_FAILURE_KEY[res.failure]]);
+      setPhase('review');
+      return;
+    }
+
+    const found = normalize((res.data?.items ?? []) as RawItem[]).filter((i) => i.kcal > 0);
+    if (found.length === 0) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      setError(i18n.nScanNoFood);
+      setPhase('review');
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setItems(found);
+      setPhase('review');
     }
   };
 
   const retake = () => {
     Haptics.selectionAsync();
+    scanOp.cancel();
     setItems([]);
     setPreview(null);
     setError(null);

@@ -23,6 +23,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { useOperation } from '@/hooks/use-operation';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette, useThemeName } from '@/hooks/use-palette';
@@ -47,7 +48,11 @@ export function AuthScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
+  /* Một lần gửi tại một thời điểm (#157): hai cú chạm cùng một khung hình đều
+     đọc `busy === false` của cùng một lần render, nên cờ cục bộ để lọt hai
+     lần đăng nhập. `useOperation` gộp lần thứ hai vào lần đang chạy. */
+  const submitOp = useOperation();
+  const busy = submitOp.pending;
   // Only offer Apple sign-in when the device/build actually supports it —
   // hides the button on a free-account build stripped of the entitlement.
   const [appleAvailable, setAppleAvailable] = useState(false);
@@ -95,11 +100,11 @@ export function AuthScreen() {
 
   const submit = async () => {
     if (!email) return;
-    setBusy(true);
     if (mode === 'forgot') {
       // không ném (#53): lỗi được báo ngay cho người dùng bằng Alert bên dưới
-      const { error } = await supabase.auth.resetPasswordForEmail(email);
-      setBusy(false);
+      const r = await submitOp.run(() => supabase.auth.resetPasswordForEmail(email));
+      if (r.status === 'stale') return;
+      const error = r.status === 'ok' ? r.value.error : r.error;
       Haptics.notificationAsync(
         error ? Haptics.NotificationFeedbackType.Error : Haptics.NotificationFeedbackType.Success,
       );
@@ -107,13 +112,14 @@ export function AuthScreen() {
       if (!error) setMode('signin');
       return;
     }
-    if (!password) {
-      setBusy(false);
-      return;
-    }
-    const { error } =
-      mode === 'signin' ? await signIn(email, password) : await signUp(email, password, name);
-    setBusy(false);
+    if (!password) return;
+    const r = await submitOp.run(() =>
+      mode === 'signin' ? signIn(email, password) : signUp(email, password, name),
+    );
+    /* Đăng nhập thành công thì cổng auth THAY màn này: kết quả về sau khi nó
+       đã tháo là `stale`, và không còn gì để báo. */
+    if (r.status === 'stale') return;
+    const error = r.status === 'ok' ? r.value.error : r.error;
     if (error) Alert.alert('ASCND', errorText(error, i18n));
   };
 

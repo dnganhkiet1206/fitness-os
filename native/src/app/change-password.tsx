@@ -14,6 +14,7 @@ import { Check } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { Screen } from '@/components/ascnd/screen';
+import { useOperation } from '@/hooks/use-operation';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
@@ -31,7 +32,11 @@ export default function ChangePasswordScreen() {
   const vi = lang === 'vi';
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
-  const [saving, setSaving] = useState(false);
+  /* Một lần đổi mật khẩu tại một thời điểm, và không `nav.back()` khi màn đã
+     rời đi trong lúc chờ (#157): kết quả về sau khi tháo là `stale`, còn
+     `back` lúc ấy sẽ pop màn của người khác. */
+  const saveOp = useOperation();
+  const saving = saveOp.pending;
   // Stays disabled after success so the closing screen can't double-submit
   const [saved, setSaved] = useState(false);
 
@@ -42,20 +47,20 @@ export default function ChangePasswordScreen() {
   const submit = async () => {
     if (!canSave) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setSaving(true);
-    try {
+    const r = await saveOp.run(async () => {
       const { error } = await supabase.auth.updateUser({ password: newPw });
       if (error) throw error;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setSaved(true);
-      nav.back();
-      toast.success(i18n.settingsPasswordChanged);
-    } catch (e) {
+    });
+    if (r.status === 'stale') return;
+    if (r.status === 'error') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      toast.fail(e);
-    } finally {
-      setSaving(false);
+      toast.fail(r.error);
+      return;
     }
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setSaved(true);
+    nav.back();
+    toast.success(i18n.settingsPasswordChanged);
   };
 
   return (

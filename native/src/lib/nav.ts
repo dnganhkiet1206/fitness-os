@@ -34,20 +34,30 @@
  *
  * -- what it drops, and what it must never drop --
  *
- * A push is dropped only when it names the SAME destination as the one just
- * accepted, within `GUARD_MS`. Two different destinations in quick succession
- * are somebody changing their mind, and both still happen.
+ * The rule itself lives in `nav-guard.ts` (#157): a lock held from the moment a
+ * navigation is accepted until the navigator has really moved — its state
+ * committed and, on native, the stack animation finished — and released by
+ * those events, never by a clock. While it is held, another navigation is
+ * ignored: the same destination is a duplicate, a different one conflicts
+ * with the transition in progress. After it, a push to the destination that
+ * is already on screen is ignored too. Everything else goes through.
  *
- * `back` is guarded on the same clock for the same reason - four queued back
+ * `back` is guarded the same way for the same reason - four queued back
  * presses pop four screens, which is this bug pointing the other way.
  *
- * The window is deliberately short enough that a real second visit is never
- * blocked: opening a screen, reading it, coming back and opening it again
- * cannot happen inside 700ms.
+ * The lock is fed by `useNavGuard()` in the root layout, which connects it to
+ * the navigation container. Before that has run there is no navigator to race,
+ * and the guard lets everything through.
  */
-import { router, type Href } from 'expo-router';
+import { useEffect } from 'react';
+import { Platform } from 'react-native';
+import { router, useNavigationContainerRef, type Href } from 'expo-router';
+/* No "exports" map in expo-router's package.json, so this deep path is the
+   module `router.push` itself adds to — not a copy. It is read, never written. */
+import { routingQueue } from 'expo-router/build/global-state/routingQueue';
+import { getRouteInfoFromState } from 'expo-router/build/global-state/getRouteInfoFromState';
 
-import { allow } from '@/lib/nav-guard';
+import { attach, failed, onState, onTransitionEnd, request, type NavState } from '@/lib/nav-guard';
 
 /**
  * What makes two navigations "the same one".
@@ -58,13 +68,28 @@ import { allow } from '@/lib/nav-guard';
  * key order so one target can never produce two different keys.
  */
 export function navKey(href: Href): string {
-  if (typeof href === 'string') return href;
+  if (typeof href === 'string') {
+    const q = href.indexOf('?');
+    if (q < 0) return placeKey(href, {});
+    return placeKey(href.slice(0, q), Object.fromEntries(new URLSearchParams(href.slice(q + 1))));
+  }
   const { pathname, params } = href as { pathname: string; params?: Record<string, unknown> };
-  if (!params) return String(pathname);
+  return placeKey(String(pathname), params ?? {});
+}
+
+/*
+  One spelling per place, so the key of a press and the key of the screen now
+  focused can be compared: route groups and a trailing `index` are not part of
+  where you are (`/(tabs)/workouts/index` is `/workouts`, which is what the
+  navigator reports), and params are in sorted order.
+*/
+function placeKey(pathname: string, params: Record<string, unknown>): string {
+  const path = pathname.replace(/\/\([^/]+\)/g, '').replace(/\/index$/, '') || '/';
   const parts = Object.keys(params)
+    .filter((k) => params[k] !== undefined)
     .sort()
     .map((k) => `${k}=${String(params[k])}`);
-  return `${pathname}?${parts.join('&')}`;
+  return parts.length ? `${path}?${parts.join('&')}` : path;
 }
 
 /**
@@ -76,22 +101,45 @@ export function navKey(href: Href): string {
  * exactly what it replaced, and `tools/nav-guard.mjs` can then forbid the
  * unguarded spelling outright.
  */
+/*
+  Ask, dispatch, and release on the error path. The success path is released
+  by the navigator (see `useNavGuard`), not here: returning from `router.push`
+  only means the action was queued.
+*/
+function go(key: string, dest: string | null, dispatch: () => void): void {
+  if (request(key, dest) !== 'accept') return;
+  try {
+    dispatch();
+  } catch (e) {
+    failed();
+    throw e;
+  }
+}
+
 export const nav = {
   push(href: Href): void {
-    if (allow(navKey(href))) router.push(href);
+    const dest = navKey(href);
+    go(`push:${dest}`, dest, () => router.push(href));
   },
   replace(href: Href): void {
-    if (allow(`replace:${navKey(href)}`)) router.replace(href);
+    const dest = navKey(href);
+    go(`replace:${dest}`, dest, () => router.replace(href));
   },
   navigate(href: Href): void {
-    if (allow(`navigate:${navKey(href)}`)) router.navigate(href);
+    const dest = navKey(href);
+    go(`navigate:${dest}`, dest, () => router.navigate(href));
   },
   /*
     One key for every back, because they are all the same act: leave this
     screen. Four queued backs must pop one screen, not four.
+
+    With nowhere to go back to, nothing is dispatched and nothing is locked:
+    `GO_BACK` would reach no navigator, and a lock taken for an action that
+    cannot happen is a lock waiting on an event that will not come.
   */
   back(): void {
-    if (allow(' back')) router.back();
+    if (!router.canGoBack()) return;
+    go('back', null, () => router.back());
   },
   /*
     KHÔNG có `dismissAll` ở đây, và chỗ trống này là cố ý.
@@ -110,3 +158,36 @@ export const nav = {
     return router.canGoBack();
   },
 };
+
+/**
+ * Connects the guard to the navigation container. Called once, in the root
+ * layout, which renders inside the container for the app's whole life.
+ */
+export function useNavGuard(): void {
+  const ref = useNavigationContainerRef();
+  useEffect(() => {
+    const detach = attach({
+      rootState: () => (ref.isReady() ? (ref.getRootState() as unknown as NavState) : undefined),
+      /* The same reading `usePathname` + `useGlobalSearchParams` make. */
+      activeDest: () => {
+        if (!ref.isReady()) return null;
+        const info = getRouteInfoFromState(ref.getRootState() as Parameters<typeof getRouteInfoFromState>[0]);
+        return placeKey(info.pathname, info.params);
+      },
+      routerIdle: () => routingQueue.snapshot().length === 0,
+      animates: Platform.OS !== 'web',
+    });
+    const offState = ref.addListener('state', onState);
+    return () => {
+      offState();
+      detach();
+    };
+  }, [ref]);
+}
+
+/**
+ * `screenListeners` for every `<Stack>`: the end of a push or pop animation
+ * is what releases the lock on native. `tools/nav-guard.mjs` checks each stack
+ * layout passes it.
+ */
+export const navGuardScreenListeners = { transitionEnd: onTransitionEnd };

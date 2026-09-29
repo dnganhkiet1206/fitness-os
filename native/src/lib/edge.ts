@@ -75,6 +75,9 @@ export type EdgeResult<T> =
 export async function callEdge<T>(
   fn: EdgeFunction,
   body: Record<string, unknown>,
+  /* Từ `useOperation` (#157): thao tác bị thay hay màn đã tháo thì huỷ luôn
+     request, thay vì để nó chạy xong rồi bị bỏ. */
+  signal?: AbortSignal,
 ): Promise<EdgeResult<T>> {
   try {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -87,6 +90,7 @@ export async function callEdge<T>(
     const { data, error } = await supabase.functions.invoke(fn, {
       body,
       headers: { Authorization: `Bearer ${token}` },
+      signal,
     });
     if (error) {
       /* The body the function chose to send with its status. `context` is a

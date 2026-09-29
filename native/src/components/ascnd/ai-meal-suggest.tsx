@@ -10,6 +10,7 @@ import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
+import { useOperation } from '@/hooks/use-operation';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { localDateStr } from '@/lib/local-date';
 
@@ -36,30 +37,39 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
-  const [loading, setLoading] = useState(false);
+  /* Một lượt hỏi AI tại một thời điểm, và không ghi khi đã tháo (#157).
+     `loading` cục bộ cũ để lọt hai lượt nếu hai cú chạm rơi vào cùng một
+     khung hình, và lượt về sau cùng thắng dù nó bắt đầu trước. */
+  const suggestOp = useOperation();
+  const loading = suggestOp.pending;
   const [expanded, setExpanded] = useState<number | null>(null);
 
   const fetchSuggestions = async () => {
-    if (!session || loading) return;
+    if (!session || suggestOp.running()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setLoading(true);
     // `callEdge` names the reason; the alert used to say "failed" for a function
     // that was never deployed, a missing model key and an expired session alike.
-    const res = await callEdge<{ suggestions?: MealSuggestion[] }>(EDGE_FUNCTIONS.mealSuggest, {
-      meal_type: mealType || 'any',
-      lang,
-      date: localDateStr(),
-      /* The function asks the model to fit the time of day. Without this it
-         read the hour off a Deno host's clock, which is UTC. */
-      tzOffset: new Date().getTimezoneOffset(),
-    });
-    if (res.ok) {
-      setSuggestions(res.data?.suggestions ?? []);
+    const r = await suggestOp.run((signal) =>
+      callEdge<{ suggestions?: MealSuggestion[] }>(
+        EDGE_FUNCTIONS.mealSuggest,
+        {
+          meal_type: mealType || 'any',
+          lang,
+          date: localDateStr(),
+          /* The function asks the model to fit the time of day. Without this it
+             read the hour off a Deno host's clock, which is UTC. */
+          tzOffset: new Date().getTimezoneOffset(),
+        },
+        signal,
+      ),
+    );
+    if (r.status === 'stale') return;
+    if (r.status === 'ok' && r.value.ok) {
+      setSuggestions(r.value.data?.suggestions ?? []);
       setExpanded(null);
     } else {
-      Alert.alert('ASCND', i18n[AI_FAILURE_KEY[res.failure]]);
+      Alert.alert('ASCND', i18n[AI_FAILURE_KEY[r.status === 'ok' && !r.value.ok ? r.value.failure : 'unknown']]);
     }
-    setLoading(false);
   };
 
   if (suggestions.length === 0) {

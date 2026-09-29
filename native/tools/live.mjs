@@ -1006,6 +1006,94 @@ function waterNewestFirst() {
 const SCENARIOS = [
   {
     /*
+      #157: điều hướng là MỘT thao tác, dù người ta bấm bao nhiêu lần. Trên bản
+      dựng thật, qua `nav.push` và chốt vòng đời của `lib/nav-guard.ts`:
+        · Test 1 — bấm một lần: đúng một màn (một lần Back là về);
+        · Test 2/3 — năm cú bấm, mỗi cú sau một lần render (hàng đã chạy, state
+          đã đổi, màn mới đang hiện): cú thứ hai trở đi nhắm vào đích đang hiển
+          thị, bị bỏ;
+        · Test 8 — Library → Back → Library ba vòng: vòng nào cũng đi được;
+        · Test 9 — đổi tab nhanh rồi bấm: vẫn đi được, một màn.
+      "Một màn" đo bằng hành vi chứ không bằng biến trong app: ĐÚNG MỘT lần Back
+      của trình duyệt phải về /workouts. Có bản sao thì Back chỉ về bản dưới.
+      Web không có hoạt ảnh stack; pha chuyển cảnh của native nằm ở
+      `tools/nav-guard.mjs`. Cũng ở đó, và CHỈ ở đó: năm cú bấm trong cùng một
+      tác vụ JS (app khựng). Trên web, `el.click()` năm lần liền đo được là mở
+      một màn cả khi chốt bị thay bằng `return 'accept'` — nên vế ấy không
+      chứng minh gì ở đây và đã bị bỏ.
+    */
+    name: 'Điều hướng: bấm dồn mở MỘT màn; Back rồi mở lại đi được; đổi tab nhanh không khoá (#157)',
+    route: '/workouts', mode: 'full',
+    async run(page) {
+      const path = () => new URL(page.url()).pathname;
+      const waitPath = async (p) => {
+        for (let i = 0; i < 24 && path() !== p; i++) await page.waitForTimeout(250);
+        return path() === p;
+      };
+      const btn = page.getByRole('button', { name: /^Library & history/ }).filter({ visible: true }).first();
+      const ready = async () => {
+        for (let i = 0; i < 24 && !(await btn.count()); i++) await page.waitForTimeout(250);
+        return (await btn.count()) > 0;
+      };
+      /* Một lần Back phải về /workouts; còn ở /workouts/library là có bản sao. */
+      const oneBackHome = async (what) => {
+        await page.goBack();
+        if (!(await waitPath('/workouts'))) {
+          return `${what}: một lần Back mà vẫn ở ${path()} — màn bị mở hơn một lần`;
+        }
+        return null;
+      };
+      if (!(await ready())) return 'không thấy nút "Library & history" trên /workouts';
+
+      // Test 1
+      await btn.click();
+      if (!(await waitPath('/workouts/library'))) return `bấm một lần mà không tới /workouts/library (đang ở ${path()})`;
+      let why = await oneBackHome('Test 1, bấm một lần');
+      if (why) return why;
+
+      // Test 2/3 — mỗi cú sau một lần render
+      if (!(await ready())) return 'quay về /workouts mà nút không hiện lại';
+      await btn.evaluate(async (el) => {
+        for (let i = 0; i < 5; i++) {
+          el.click();
+          await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+        }
+      });
+      if (!(await waitPath('/workouts/library'))) return `năm cú bấm xen render mà không tới /workouts/library (đang ở ${path()})`;
+      await page.waitForTimeout(600);
+      why = await oneBackHome('Test 3, bấm lại lúc màn mới đã hiện');
+      if (why) return why;
+
+      // Test 8
+      for (let round = 1; round <= 3; round++) {
+        if (!(await ready())) return `vòng ${round}: về /workouts mà nút không hiện lại`;
+        await btn.click();
+        if (!(await waitPath('/workouts/library'))) return `Test 8 vòng ${round}: Back rồi bấm lại mà không mở được (đang ở ${path()}) — khoá kẹt`;
+        why = await oneBackHome(`Test 8 vòng ${round}`);
+        if (why) return why;
+      }
+
+      // Test 9
+      /* Thanh tab của bản web là `TabTrigger` của expo-router, không đi qua
+         `nav` — đúng thứ Test 9 cần: đổi focus mà chốt không được báo trước. */
+      const tab = (n) => page.getByRole('tab', { name: n, exact: true })
+        .or(page.getByRole('link', { name: n, exact: true }))
+        .or(page.getByRole('button', { name: n, exact: true }))
+        .filter({ visible: true }).first();
+      if (!(await tab('Nutrition').count())) return 'không thấy tab Nutrition — vế đổi tab không đo gì';
+      for (let i = 0; i < 3; i++) {
+        await tab('Nutrition').click();
+        await tab('Workouts').click();
+      }
+      if (!(await waitPath('/workouts'))) return `đổi tab xong mà không về /workouts (đang ở ${path()})`;
+      if (!(await ready())) return 'đổi tab về /workouts mà nút không hiện';
+      await btn.click();
+      if (!(await waitPath('/workouts/library'))) return `đổi tab nhanh xong bấm mà không mở được (đang ở ${path()}) — khoá kẹt sau khi đổi tab`;
+      return oneBackHome('Test 9, sau khi đổi tab nhanh');
+    },
+  },
+  {
+    /*
       #145: xoá một buổi tập mà máy chủ từ chối. Hỏi lại (#91) → OK → phải có
       lời báo, không phải chữ thô (#31), và buổi tập CÒN trong danh sách. Hỏng
       mà im lặng thì nút xoá "không làm gì"; hỏng mà vẫn biến mất thì người dùng

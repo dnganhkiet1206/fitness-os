@@ -16,7 +16,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react-native';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   FadeIn,
@@ -221,10 +221,24 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
     </PressScale>
   );
 
+  /*
+    Đẩy màn SAU khi Modal đã thật sự đóng (`onDismiss`), không sau 120ms (#157).
+
+    Hẹn giờ là đoán Modal đóng mất bao lâu, và nó bắn cả khi thanh tab đã tháo
+    (đăng xuất trong lúc chờ: lệnh điều hướng rơi vào cây đã bị thay). `onDismiss`
+    chỉ đến khi Modal đã rời màn hình, và không đến nếu component đã tháo. Chọn
+    hai mục liền nhau thì mục SAU thắng, và chỉ một lần đẩy.
+  */
+  const pendingAiRoute = useRef<(typeof AI_ITEMS)[number]['route'] | null>(null);
   const openAiItem = (route: (typeof AI_ITEMS)[number]['route']) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    pendingAiRoute.current = route;
     setAiOpen(false);
-    setTimeout(() => nav.push(route), 120);
+  };
+  const onAiMenuDismissed = () => {
+    const route = pendingAiRoute.current;
+    pendingAiRoute.current = null;
+    if (route) nav.push(route);
   };
 
   return (
@@ -254,7 +268,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
       </Animated.View>
 
       {/* AI quick-actions overlay (web: dim blur backdrop + 2×2 panel) */}
-      <Modal visible={aiOpen} transparent animationType="none" onRequestClose={() => setAiOpen(false)}>
+      <Modal visible={aiOpen} transparent animationType="none" onRequestClose={() => setAiOpen(false)} onDismiss={onAiMenuDismissed}>
         <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(150)} style={styles.overlayBackdrop}>
           {/* Bảng không có nút đóng riêng, nên lớp nền LÀ nút đóng — và phải có
               tên, không thì VoiceOver gặp một ô không tên phủ cả màn (#120). */}

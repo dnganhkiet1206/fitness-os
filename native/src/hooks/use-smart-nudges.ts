@@ -94,7 +94,7 @@ export function useSmartNudges(enabled = true) {
     staleTime: Infinity,
     gcTime: 1000 * 60 * 60 * 24,
     retry: RETRY,
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       /* `tzOffset` because the prompt branches on time of day — "if evening:
          remind to sleep early; if morning: remind water + protein" — and the
          hour it branched on came from a Deno host's UTC clock. */
@@ -102,7 +102,7 @@ export function useSmartNudges(enabled = true) {
         lang,
         date,
         tzOffset: new Date().getTimezoneOffset(),
-      });
+      }, signal);
       if (!res.ok) throw new Error(res.failure);
       return res.data?.nudges ?? [];
     },

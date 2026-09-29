@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Check, X } from 'lucide-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -178,6 +178,15 @@ export function OnboardingFlow() {
   const { unit: vUnit } = useVolumeUnit();
 
   const [step, setStep] = useState(0);
+  /* Bước đang hiển thị, cho code chạy SAU một `await`: closure của nó chỉ biết
+     bước lúc bấm. -1 khi đã tháo. */
+  const liveStep = useRef(0);
+  useEffect(() => {
+    liveStep.current = step;
+  }, [step]);
+  useEffect(() => () => {
+    liveStep.current = -1;
+  }, []);
   const [dir, setDir] = useState<1 | -1>(1);
   const dirSV = useSharedValue<number>(1);
   const crossSV = useSharedValue<number>(0);
@@ -298,11 +307,15 @@ export function OnboardingFlow() {
 
   const connectHealth = async () => {
     Haptics.selectionAsync();
+    const from = step;
     /* No error path. A refusal is an answer, not a failure, and the app works
        without it — telling somebody off for declining is how the next prompt
        gets declined too. */
     await requestHealthPermissions();
-    goNext();
+    /* Kết quả của một thao tác CŨ không được ghi đè thứ người ta đã làm trong
+       lúc chờ (#157): hộp hỏi quyền đang mở mà họ bấm Quay lại, hay luồng đã
+       tháo, thì lời xin quyền xong muộn không được kéo họ sang bước sau. */
+    if (liveStep.current === from) goNext();
   };
 
   const finish = useOnlineMutation({

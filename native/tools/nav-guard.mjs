@@ -28,16 +28,32 @@
  * Thứ không được xảy ra hai lần là ĐIỀU HƯỚNG. Nên chốt nằm ở đó, đúng một
  * chỗ, và mọi nút trong app giữ nguyên hành vi cũ.
  *
+ * ── vì sao không còn đồng hồ (#157) ──
+ *
+ * Chốt cũ giữ mỗi đích 700ms. Đó là một phép đoán app chậm bao lâu: máy yếu
+ * thì cú khựng dài hơn cửa sổ và cụm bấm lọt qua; máy nhanh thì cửa sổ chặn
+ * những thứ không cần chặn. Nay khoá nhả theo điều ĐÃ XẢY RA: navigator đổi
+ * state, hoạt ảnh stack kết thúc (`transitionEnd`), hàng của expo-router chạy
+ * xong mà không đổi gì, dispatch ném lỗi, hoặc focus bị kéo đi nơi khác.
+ *
  * ── cách kiểm ──
  *
- * CHẠY THẬT `allow` đọc thẳng ra khỏi `src/lib/nav-guard.ts`, bằng những cụm
- * bấm có hình dạng thật: bốn lần cách nhau vài mili giây, hai đích khác nhau,
- * và một lần quay lại sau khi cửa sổ đã đóng. Cộng với phần cấu trúc: không tệp
- * nào ngoài `lib/nav.ts` được gọi thẳng `router.push` — một lời gọi lọt lưới là
- * một nút không có chốt, và nó trông y hệt mọi nút khác trong diff.
+ * CHẠY THẬT máy trạng thái đọc từ `src/lib/nav-guard.ts` trên một navigator
+ * giả có đúng hình dạng thật: `push` chỉ xếp hàng, hàng chạy ở lần render sau,
+ * state đổi đồng bộ, native có hoạt ảnh còn web thì không. Các ca là Test 1–3,
+ * 8, 9, 10 của #157, cộng back dồn, hành động bị bỏ, đường lỗi, vuốt back giữa
+ * chuyển cảnh. Mỗi ca chạy trên cả native lẫn web. Sáu bản hỏng (không chốt;
+ * bỏ pha chuyển cảnh; không nhả khi hàng chạy xong; không nhả ở đường lỗi;
+ * không đọc đích đang hiển thị; chờ hoạt ảnh cả khi chỉ đổi tab) đều phải bị
+ * bắt, không thì bước này tự báo hỏng.
+ *
+ * Cộng phần cấu trúc: không tệp nào ngoài `lib/nav.ts` gọi thẳng
+ * `router.push` — một lời gọi lọt lưới là một nút không có chốt, và nó trông y
+ * hệt mọi nút khác trong diff; layout gốc gọi `useNavGuard()`; mọi `<Stack>`
+ * gắn `navGuardScreenListeners`; không hàm thời gian nào trong chốt.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -59,100 +75,263 @@ try {
   execFileSync('npx', ['tsc', 'src/lib/nav-guard.ts', '--ignoreConfig', '--outDir', out,
     '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
-  const { allow, GUARD_MS } = createRequire(import.meta.url)(path.join(out, 'nav-guard.js'));
+  const compiled = readFileSync(path.join(out, 'nav-guard.js'), 'utf8');
+  const load = (src, name) => {
+    const f = path.join(out, `${name}.js`);
+    writeFileSync(f, src);
+    return createRequire(import.meta.url)(f);
+  };
 
-  /** Chạy một cụm bấm, trả về số lần điều hướng THẬT SỰ xảy ra. */
-  const burst = (key, times, base = 0) => times.filter((t) => allow(key, base + t)).length;
-
-  // ── 1. một cụm bấm dồn là MỘT lần mở ──────────────────────────────────────
   /*
-    Các mốc thời gian là hình dạng thật của lỗi: cú nhấn xếp hàng trong lúc
-    khựng đều chạy trong vài mili giây sau khi luồng rảnh, dù cú khựng dài bao
-    lâu. 0/8/15/23/40 là một cụm năm lần bấm như vậy.
+    ── một navigator giả có đúng hình dạng thật (#157) ──
+
+    - `router.push` chỉ XẾP HÀNG (expo-router `routingQueue.add`); hàng được
+      chạy ở lần render sau (`flush`), lúc ấy state của navigator đổi ĐỒNG BỘ
+      và container phát sự kiện `state`.
+    - Trên native, đổi một STACK có hoạt ảnh và kết thúc bằng `transitionEnd`;
+      trên web thì không có hoạt ảnh nào.
+    - Một hành động không làm gì (expo-router bỏ im lặng, hoặc navigator trả
+      nguyên state) thì hàng chạy xong mà state KHÔNG đổi.
+
+    Không có đồng hồ ở đâu cả: nếu luật cần thời gian để đúng thì ở đây nó sai.
   */
-  {
-    const n = burst('/settings', [0, 8, 15, 23, 40], 10_000);
-    if (n !== 1) {
-      problems.push(
-        `năm lần bấm dồn vào cùng một đích mở ${n} màn, phải là 1 — đây chính là lỗi: ` +
-          'người dùng bấm lại vì app không phản hồi, rồi cả cụm cùng chạy khi luồng rảnh',
-      );
-    }
-  }
-
-  // ── 2. hai đích khác nhau vẫn đi được cả hai ──────────────────────────────
-  /*
-    Ranh giới quan trọng nhất của luật này. Chốt quá tay sẽ nuốt lần bấm thứ
-    hai của một người ĐỔI Ý, và đó là một lỗi tệ hơn lỗi nó sửa: nó im lặng và
-    nó xảy ra với thao tác đúng.
-  */
-  {
-    const t = 20_000;
-    const a = allow('/nutrition', t);
-    const b = allow('/workouts', t + 30);
-    if (!a || !b) {
-      problems.push(
-        'hai đích KHÁC NHAU bấm liền nhau mà một cái bị nuốt — đó là người dùng đổi ý, ' +
-          'không phải bấm nhầm, và cả hai đều phải đi được',
-      );
-    }
-    /* …và đích đầu vẫn còn bị chốt sau khi đích thứ hai đi qua: bộ nhớ theo
-       TỪNG đích chứ không phải "cái cuối cùng", nếu không thì A, B, A trong
-       cùng một cụm lại mở A hai lần. */
-    if (allow('/nutrition', t + 60)) {
-      problems.push(
-        'A, B, A trong cùng một cụm mở A hai lần — chốt chỉ nhớ đích CUỐI CÙNG, ' +
-          'nên bấm xen kẽ hai nút là đi vòng qua được nó',
-      );
-    }
-  }
-
-  // ── 3. lần thứ hai THẬT thì không bị chặn ─────────────────────────────────
-  /*
-    Mở một màn, đọc, quay ra, mở lại. Không cách nào làm xong việc đó trong
-    700ms, nên cửa sổ phải đã đóng.
-  */
-  {
-    const t = 30_000;
-    allow('/steps', t);
-    if (!allow('/steps', t + GUARD_MS)) {
-      problems.push(`mở lại cùng một màn sau ${GUARD_MS}ms vẫn bị chặn — cửa sổ không bao giờ đóng`);
-    }
-    /* Và lần mở lại ấy tự nó CHIẾM cửa sổ mới — nếu không, một cụm bấm dồn
-       bắt đầu đúng lúc cửa sổ cũ vừa đóng sẽ lọt cả cụm. */
-    if (allow('/steps', t + GUARD_MS + 1)) {
-      problems.push('lần mở lại không chiếm cửa sổ mới — cụm bấm ngay sau đó sẽ lọt hết');
-    }
-  }
-
-  // ── 4. cửa sổ đủ dài để nuốt một cụm, đủ ngắn để không cản người thật ─────
-  if (!(GUARD_MS >= 300 && GUARD_MS <= 1200)) {
-    problems.push(
-      `GUARD_MS = ${GUARD_MS}. Dưới 300ms không nuốt hết một cụm bấm; trên 1200ms bắt đầu ` +
-        'chặn lần mở thứ hai có thật',
-    );
-  }
-
-  /* Tự kiểm: bản KHÔNG chốt phải để cả năm lần đi qua. Nếu không thì mọi ca ở
-     trên đang xanh vì một lý do khác chứ không phải vì chốt hoạt động. */
-  {
-    const naive = () => true;
-    const n = [0, 8, 15, 23, 40].filter((t) => naive()).length;
-    if (n !== 5) fatal('bản không chốt đáng lẽ phải mở cả năm lần');
-  }
-  /* Và bản chốt theo "đích cuối cùng" — thứ dễ viết ra nhất — phải bị ca 2 bắt. */
-  {
-    let lastKey = '';
-    let lastAt = -Infinity;
-    const single = (key, now) => {
-      if (key === lastKey && now - lastAt < GUARD_MS) return false;
-      lastKey = key;
-      lastAt = now;
-      return true;
+  const makeWorld = (G, { animates }) => {
+    let n = 0;
+    const route = (name) => ({ key: `${name}-${++n}`, name });
+    let state = {
+      type: 'stack', index: 0,
+      routes: [{ ...route('(tabs)'), state: { type: 'tab', index: 0, routes: [route('/'), route('/workouts')] } }],
     };
-    single('/a', 0);
-    single('/b', 30);
-    if (!single('/a', 60)) fatal('bản chốt-một-ô đáng lẽ phải để lọt A, B, A');
+    const queue = [];
+    let dispatches = 0;
+    const top = () => state.routes[state.index];
+    const place = () => {
+      const r = top();
+      return r.name === '(tabs)' ? r.state.routes[r.state.index].name : r.name;
+    };
+    const set = (next) => {
+      state = next;
+      G.onState();
+    };
+    const detach = G.attach({
+      rootState: () => state,
+      activeDest: place,
+      routerIdle: () => queue.length === 0,
+      animates,
+    });
+    const w = {
+      depth: () => state.routes.length,
+      place,
+      dispatches: () => dispatches,
+      verdicts: [],
+      push(dest, { drop = false, throws = false } = {}) {
+        const v = G.request(`push:${dest}`, dest);
+        w.verdicts.push(v);
+        if (v !== 'accept') return v;
+        if (throws) {
+          G.failed();
+          return 'threw';
+        }
+        queue.push(drop ? { t: 'noop' } : { t: 'push', dest });
+        return v;
+      },
+      /* `nav.navigate('/')` từ một tab sang tab khác: đi qua chốt, nhưng thứ
+         đổi là TAB chứ không phải stack. */
+      navigateTab(i) {
+        const dest = state.routes[0].state.routes[i].name;
+        const v = G.request(`navigate:${dest}`, dest);
+        w.verdicts.push(v);
+        if (v === 'accept') queue.push({ t: 'tab', i });
+        return v;
+      },
+      back() {
+        if (state.routes.length < 2) return 'nowhere';
+        const v = G.request('back', null);
+        w.verdicts.push(v);
+        if (v === 'accept') queue.push({ t: 'back' });
+        return v;
+      },
+      /* expo-router `routingQueue.run`: lấy hết hàng RA TRƯỚC rồi mới dispatch. */
+      flush() {
+        const events = queue.splice(0);
+        let next = state;
+        for (const a of events) {
+          dispatches++;
+          if (a.t === 'push') next = { ...next, index: next.routes.length, routes: [...next.routes, route(a.dest)] };
+          if (a.t === 'tab') {
+            const t = next.routes[0];
+            next = { ...next, routes: [{ ...t, state: { ...t.state, index: a.i } }, ...next.routes.slice(1)] };
+          }
+          if (a.t === 'back' && next.routes.length > 1) {
+            next = { ...next, index: next.routes.length - 2, routes: next.routes.slice(0, -1) };
+          }
+        }
+        if (next !== state) set(next);
+      },
+      transitionEnd: () => G.onTransitionEnd(),
+      queueOther: () => queue.push({ t: 'noop' }),
+      /* Những thay đổi KHÔNG đi qua `nav` */
+      tab(i) {
+        const t = state.routes[0];
+        set({ ...state, index: 0, routes: [{ ...t, state: { ...t.state, index: i } }, ...state.routes.slice(1)] });
+      },
+      swipeBack() {
+        set({ ...state, index: state.routes.length - 2, routes: state.routes.slice(0, -1) });
+      },
+      deepLink(dest) {
+        set({ ...state, index: state.routes.length, routes: [...state.routes, route(dest)] });
+      },
+      phase: () => G.snapshot().phase,
+      detach,
+    };
+    return w;
+  };
+
+  /* Mỗi ca trả về chuỗi lỗi hoặc null. Chạy trên cả native (có hoạt ảnh) lẫn web. */
+  const CASES = [
+    ['Test 1 — bấm một lần: đúng một lần điều hướng, một màn', (w) => {
+      w.push('/settings'); w.flush(); w.transitionEnd();
+      return w.depth() === 2 && w.place() === '/settings' ? null : `độ sâu ${w.depth()}, đang ở ${w.place()}`;
+    }],
+    ['Test 2 — app khựng, năm lần bấm xếp hàng TRƯỚC khi hàng chạy: một màn', (w) => {
+      for (let i = 0; i < 5; i++) w.push('/settings');
+      w.flush(); w.transitionEnd();
+      return w.depth() === 2 ? null : `mở ${w.depth() - 1} màn`;
+    }],
+    ['Test 2 — năm lần bấm, React render xen giữa mỗi lần (hàng chạy, state đã đổi): một màn', (w) => {
+      for (let i = 0; i < 5; i++) { w.push('/settings'); w.flush(); }
+      w.transitionEnd();
+      return w.depth() === 2 ? null : `mở ${w.depth() - 1} màn`;
+    }],
+    ['Test 3 — bấm cùng đích trong lúc chuyển cảnh và SAU khi chuyển cảnh xong: đều bị bỏ', (w) => {
+      w.push('/settings'); w.flush();
+      w.push('/settings'); w.flush();
+      w.transitionEnd();
+      w.push('/settings'); w.flush();
+      return w.depth() === 2 ? null : `mở ${w.depth() - 1} màn — đích đang hiển thị vẫn bị đẩy thêm`;
+    }],
+    ['đích KHÁC trong lúc còn đang điều hướng: chuyển cảnh xung đột, bị bỏ', (w) => {
+      w.push('/settings'); w.push('/nutrition'); w.flush(); w.transitionEnd();
+      return w.depth() === 2 && w.place() === '/settings' ? null : `độ sâu ${w.depth()}, đang ở ${w.place()}`;
+    }],
+    ['xong một điều hướng thì đích khác đi được ngay (không khoá thừa)', (w) => {
+      w.push('/settings'); w.flush(); w.transitionEnd();
+      w.push('/nutrition'); w.flush(); w.transitionEnd();
+      return w.depth() === 3 && w.place() === '/nutrition' ? null : `độ sâu ${w.depth()}, đang ở ${w.place()}`;
+    }],
+    ['bốn lần back xếp hàng: pop MỘT màn', (w) => {
+      w.push('/a'); w.flush(); w.transitionEnd();
+      w.push('/b'); w.flush(); w.transitionEnd();
+      for (let i = 0; i < 4; i++) w.back();
+      w.flush(); w.transitionEnd();
+      return w.depth() === 2 ? null : `còn ${w.depth()} tầng, phải là 2`;
+    }],
+    ['Test 8 — Workout → Back → Workout, ba vòng: vòng nào cũng đi được, không khoá kẹt', (w) => {
+      for (let i = 0; i < 3; i++) {
+        if (w.push('/workout-detail') !== 'accept') return `vòng ${i + 1}: lần mở bị bỏ (${w.verdicts.at(-1)})`;
+        w.flush(); w.transitionEnd();
+        if (w.back() !== 'accept') return `vòng ${i + 1}: back bị bỏ`;
+        w.flush(); w.transitionEnd();
+      }
+      return w.depth() === 1 ? null : `còn ${w.depth()} tầng`;
+    }],
+    ['hành động không làm gì (expo-router bỏ im lặng): khoá nhả khi hàng đã chạy', (w) => {
+      w.push('/nowhere', { drop: true }); w.flush();
+      return w.push('/settings') === 'accept' ? null : `lần bấm sau bị bỏ (${w.verdicts.at(-1)}) — khoá kẹt vì chờ một state không bao giờ đổi`;
+    }],
+    /* Hàng đang có việc khác (một `setParams` của màn nào đó chưa chạy): chỉ
+       `failed()` nhả được khoá, vì "hàng đã chạy" chưa đúng. */
+    ['dispatch ném lỗi trong lúc hàng còn việc khác: khoá nhả ở đường lỗi', (w) => {
+      w.queueOther();
+      w.push('/settings', { throws: true });
+      return w.push('/settings') === 'accept' ? null : 'lần bấm sau bị bỏ — đường lỗi không nhả khoá';
+    }],
+    ['Test 9 — đổi tab nhanh giữa hai lần mở: không đợi hoạt ảnh nào, không khoá', (w) => {
+      for (let i = 0; i < 6; i++) w.tab(i % 2);
+      if (w.phase() !== 'idle') return `pha ${w.phase()} sau khi chỉ đổi tab`;
+      w.push('/settings'); w.flush(); w.transitionEnd();
+      return w.depth() === 2 ? null : `độ sâu ${w.depth()}`;
+    }],
+    ['nav.navigate sang tab khác: không có hoạt ảnh stack nào để đợi, lần mở sau đi ngay', (w) => {
+      w.navigateTab(1); w.flush();
+      if (w.place() !== '/workouts') return `đang ở ${w.place()}`;
+      return w.push('/settings') === 'accept' ? null : `lần mở sau bị bỏ (${w.verdicts.at(-1)}) — chờ một transitionEnd không bao giờ đến`;
+    }],
+    ['vuốt back giữa chuyển cảnh: khoá nhả theo state, không đợi transitionEnd đã bị huỷ', (w) => {
+      w.push('/settings'); w.flush();
+      w.swipeBack();
+      return w.push('/nutrition') === 'accept' ? null : `lần mở sau bị bỏ (${w.verdicts.at(-1)})`;
+    }],
+    ['Test 10 — deep link đã mở Workout, rồi bấm Workout: không mở bản thứ hai', (w) => {
+      w.deepLink('/workout-detail'); w.transitionEnd();
+      w.push('/workout-detail'); w.flush();
+      return w.depth() === 2 ? null : `mở ${w.depth() - 1} màn Workout`;
+    }],
+    ['không nơi nào để back: không khoá gì', (w) => {
+      w.back();
+      return w.push('/settings') === 'accept' ? null : 'back khi không có gì để back đã giữ khoá';
+    }],
+  ];
+  /* Chỉ native có pha chuyển cảnh; ca này đòi đúng nó. */
+  const NATIVE_ONLY = [
+    ['native: bốn lần back, React render xen giữa mỗi lần: vẫn MỘT màn (đang chuyển cảnh)', (w) => {
+      w.push('/a'); w.flush(); w.transitionEnd();
+      w.push('/b'); w.flush(); w.transitionEnd();
+      for (let i = 0; i < 4; i++) { w.back(); w.flush(); }
+      w.transitionEnd();
+      return w.depth() === 2 ? null : `còn ${w.depth()} tầng, phải là 2`;
+    }],
+    ['native: bấm đích khác lúc hoạt ảnh đẩy màn chưa xong: bị bỏ', (w) => {
+      w.push('/settings'); w.flush();
+      w.push('/nutrition'); w.flush(); w.transitionEnd();
+      return w.depth() === 2 ? null : `độ sâu ${w.depth()}`;
+    }],
+  ];
+
+  const runAll = (G) => {
+    const fails = [];
+    for (const animates of [true, false]) {
+      for (const [name, fn] of [...CASES, ...(animates ? NATIVE_ONLY : [])]) {
+        const w = makeWorld(G, { animates });
+        const err = fn(w);
+        w.detach();
+        if (err) fails.push(`${animates ? 'native' : 'web'} · ${name}: ${err}`);
+      }
+    }
+    return fails;
+  };
+
+  const G = load(compiled, 'real');
+  problems.push(...runAll(G));
+
+  /* Không đồng hồ: luật nhả theo sự kiện, nên một hàm thời gian ở đây là dấu hiệu nó quay lại. */
+  const guardSrc = strip(read('src/lib/nav-guard.ts'));
+  const navSrcAll = strip(read('src/lib/nav.ts'));
+  for (const [f, src] of [['src/lib/nav-guard.ts', guardSrc], ['src/lib/nav.ts', navSrcAll]]) {
+    const m = /\b(setTimeout|setInterval|Date\.now|performance\.now|requestAnimationFrame)\b/.exec(src);
+    if (m) problems.push(`${f}: dùng \`${m[1]}\` — #157 cấm nhả khoá theo đồng hồ`);
+  }
+
+  /*
+    Phép tự kiểm: mỗi bản hỏng dưới đây là một cách viết SAI dễ gặp, và bộ ca
+    ở trên phải bắt được nó. Không bắt được thì các ca đang xanh vì lý do khác.
+  */
+  const MUTANTS = [
+    ['không chốt gì', [/if \(phase === 'navigating'\)\s*return[^;]*;/, ''], [/if \(phase === 'transitioning'\)\s*return 'busy';/, ''], [/if \(dest !== null && dest === env\.activeDest\(\)\)\s*return 'active';/, '']],
+    ['nhả khoá ngay khi state đổi, bỏ pha chuyển cảnh', [/env\.animates && stackMoved\(p\.baseline, state\) \? 'transitioning' : 'idle'/, "'idle'"]],
+    ['không nhả khi hàng chạy xong mà state không đổi', [/else if \(env\.routerIdle\(\)\) \{/, 'else if (false) {']],
+    ['không nhả ở đường lỗi', [/function failed\(\) \{/, 'function failed() { return;']],
+    ['không đọc đích đang hiển thị', [/dest === env\.activeDest\(\)/, 'false']],
+    ['vào pha chuyển cảnh cả khi chỉ đổi tab', [/return y\.type === 'stack';/, 'return true;']],
+  ];
+  for (const [name, ...edits] of MUTANTS) {
+    let src = compiled;
+    for (const [re, to] of edits) {
+      if (!re.test(src)) fatal(`bản hỏng "${name}": không tìm thấy chỗ để sửa (${re})`);
+      src = src.replace(re, to);
+    }
+    const caught = runAll(load(src, `mutant-${MUTANTS.findIndex((m) => m[0] === name)}`));
+    if (!caught.length) fatal(`bản hỏng "${name}" vẫn qua hết các ca`);
   }
 } finally {
   rmSync(out, { recursive: true, force: true });
@@ -204,9 +383,30 @@ try {
     Xem luật ngay dưới đây.
   */
   for (const fn of ['push', 'replace', 'navigate', 'back']) {
-    const re = new RegExp(`${fn}\\([^)]*\\)\\s*:\\s*void\\s*\\{[^}]*allow\\(`);
+    const re = new RegExp(`\\b${fn}\\([^)]*\\)\\s*:\\s*void\\s*\\{[^}]*\\bgo\\(`);
     if (!re.test(navSrc)) {
-      problems.push(`src/lib/nav.ts: \`nav.${fn}\` không đi qua \`allow\` — vỏ bọc mà không có chốt`);
+      problems.push(`src/lib/nav.ts: \`nav.${fn}\` không đi qua \`go(\` (tức \`request\` của chốt) — vỏ bọc mà không có chốt`);
+    }
+  }
+  if (!/function go\([^)]*\)[^{]*\{[^}]*request\(/.test(navSrc) || !/catch[\s\S]{0,40}failed\(\)/.test(navSrc)) {
+    problems.push('src/lib/nav.ts: `go` phải hỏi `request` và gọi `failed()` khi dispatch ném lỗi');
+  }
+
+  /*
+    Khoá chỉ nhả được nếu có ai báo cho nó: sự kiện `state` của container
+    (`useNavGuard` ở layout gốc) và `transitionEnd` của MỌI stack. Một `<Stack>`
+    quên gắn listener là một stack mà mỗi lần đẩy màn trên native để khoá chờ
+    tới lần đổi focus kế tiếp.
+  */
+  const root = strip(read('src/app/_layout.tsx'));
+  if (!/\buseNavGuard\(\)/.test(root)) problems.push('src/app/_layout.tsx: không gọi `useNavGuard()` — chốt không nghe được navigator, nên không bao giờ nhả');
+  for (const f of files.filter((x) => x.startsWith('src/app/') && /_layout\.tsx$/.test(x))) {
+    const code = strip(read(f));
+    for (const m of code.matchAll(/<Stack\b(?!\.)[^>]*?>/gs)) {
+      if (!/screenListeners=\{navGuardScreenListeners\}/.test(m[0])) {
+        const line = code.slice(0, m.index).split('\n').length;
+        problems.push(`${f}:${line}: \`<Stack>\` không có \`screenListeners={navGuardScreenListeners}\` — trên native, khoá sau mỗi lần đẩy màn ở stack này không nhả theo \`transitionEnd\``);
+      }
     }
   }
 }
@@ -267,11 +467,14 @@ if (problems.length) {
 }
 
 console.log(
-  'chốt bấm dồn OK — CHẠY THẬT `allow` đọc từ src/lib/nav-guard.ts: năm lần bấm dồn vào cùng ' +
-    'một đích (0/8/15/23/40ms — hình dạng thật của một cụm xếp hàng trong lúc app khựng) mở ĐÚNG ' +
-    'một màn; hai đích khác nhau bấm liền nhau vẫn đi được cả hai, vì chặn người đổi ý là lỗi tệ ' +
-    'hơn lỗi này; A, B, A không mở A hai lần (bộ nhớ theo TỪNG đích — bản chốt-một-ô dễ viết nhất ' +
-    'để lọt ca đó và bị phép tự kiểm bắt); và mở lại sau khi cửa sổ đóng thì không bị cản. Cộng ' +
-    'phần cấu trúc: không tệp nào trong src ngoài lib/nav.ts còn gọi thẳng router.push/replace/' +
-    'back/navigate/dismissAll, và cả bốn hàm trong nav.ts đều thật sự hỏi `allow`. Cộng: KHÔNG lệnh điều hướng nào đặt sau `signOut()` — cổng auth thay cả cây, nên lệnh ấy rơi vào chỗ không có navigator, và ngăn xếp gọi của lỗi ấy không chỉ tới một dòng mã nào của app',
+  'chốt bấm dồn OK — CHẠY THẬT máy trạng thái đọc từ src/lib/nav-guard.ts trên navigator giả ' +
+    '(push chỉ xếp hàng, hàng chạy ở lần render sau, native có hoạt ảnh, web không), native lẫn web: ' +
+    'bấm một lần mở một màn; năm lần bấm dồn (trước hoặc xen giữa các lần render) mở MỘT màn; cùng đích ' +
+    'lúc và sau chuyển cảnh bị bỏ; đích khác lúc đang điều hướng bị bỏ, sau đó đi ngay; bốn lần back pop ' +
+    'một màn; Workout → Back → Workout ba vòng không kẹt; hành động bị bỏ, dispatch ném lỗi, đổi tab, vuốt ' +
+    'back giữa chuyển cảnh đều nhả khoá; deep link đã mở Workout thì bấm Workout không mở bản hai. Sáu ' +
+    'bản hỏng đều bị bắt. Không một hàm thời gian nào trong chốt (#157). Cộng phần cấu trúc: không tệp ' +
+    'nào ngoài lib/nav.ts gọi thẳng router.*, cả bốn hàm nav.* đi qua `go` → `request`, layout gốc gọi ' +
+    'useNavGuard(), mọi <Stack> gắn navGuardScreenListeners. Cộng: KHÔNG lệnh điều hướng nào đặt sau ' +
+    '`signOut()` — cổng auth thay cả cây, nên lệnh ấy rơi vào chỗ không có navigator',
 );
