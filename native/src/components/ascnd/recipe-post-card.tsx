@@ -1,12 +1,13 @@
 import * as Haptics from 'expo-haptics';
-import { ChevronRight, Flame, UtensilsCrossed } from 'lucide-react-native';
+import { Beef, ChevronRight, Flame, Milk, UtensilsCrossed, Wheat } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
 import { PostShell } from '@/components/ascnd/post-parts';
 import { PressScale } from '@/components/ascnd/press-scale';
-import { radius, spacing, type } from '@/constants/ascnd';
+import { MACRO_TINT, radius, spacing, type } from '@/constants/ascnd';
+import { graphicOf } from '@/constants/palette';
 import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import type { FeedPost } from '@/hooks/use-community';
@@ -81,10 +82,14 @@ export function RecipePostCard({
 
   const openPost = () => nav.push({ pathname: '/community-post', params: { id: post.id } });
 
+  /* #159: icon và màu của mỗi macro là CÙNG bộ thẻ macro ở Hôm nay dùng
+     (`dashboard-cards.tsx`: Beef/Wheat/Milk, `graphicOf(MACRO_TINT)`) — một
+     macro trông giống nhau ở mọi nơi nó xuất hiện trong app, như Apple Fitness
+     giữ màu của từng vòng ở mọi màn. */
   const macros = [
-    { key: 'p', label: i18n.nProtein, g: p.protein },
-    { key: 'c', label: i18n.nCarbs, g: p.carbs },
-    { key: 'f', label: i18n.nFat, g: p.fat },
+    { key: 'p', label: i18n.nProtein, g: p.protein, icon: Beef, tint: graphicOf(c, MACRO_TINT.protein) },
+    { key: 'c', label: i18n.nCarbs, g: p.carbs, icon: Wheat, tint: graphicOf(c, MACRO_TINT.carbs) },
+    { key: 'f', label: i18n.nFat, g: p.fat, icon: Milk, tint: graphicOf(c, MACRO_TINT.fat) },
   ];
 
   const shareText = () => {
@@ -144,9 +149,14 @@ export function RecipePostCard({
       {/* ── ba chip macro ── */}
       <View style={styles.chips}>
         {macros.map((m) => (
-          <View key={m.key} style={styles.chip}>
-            <Text style={styles.chipLabel}>{m.label}</Text>
-            <Text style={styles.chipValue}>{`${fmt(m.g)} g`}</Text>
+          <View key={m.key} style={styles.chip} accessible accessibilityLabel={`${m.label} ${fmt(m.g)} g`}>
+            <View style={styles.chipHead}>
+              <Icon icon={m.icon} size={13} color={m.tint} />
+              <Text style={styles.chipLabel} numberOfLines={1}>
+                {m.label}
+              </Text>
+            </View>
+            <Text style={styles.chipValue} numberOfLines={1}>{`${fmt(m.g)} g`}</Text>
           </View>
         ))}
       </View>
@@ -196,24 +206,31 @@ const stylesFor = makeStyles((c, m) => ({
   stat: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   statText: { ...type.footnote, color: c.foreground, fontVariant: ['tabular-nums'] },
   /*
-    Chip macro: cùng mặt lõm với bảng nguyên liệu ngay dưới (`m.inset`), để ba
-    con số đọc ra là DỮ LIỆU của thẻ chứ không phải ba cái nút. Nhãn trước số,
-    nhãn mờ số đậm — con số là thứ người ta tìm.
+    Ô macro: cùng mặt lõm với bảng nguyên liệu ngay dưới (`m.inset`), để ba
+    con số đọc ra là DỮ LIỆU của thẻ chứ không phải ba cái nút. Nhãn mờ, số đậm
+    — con số là thứ người ta tìm.
+
+    Từng là ba viên chip nằm ngang "Protein 52 g". Thêm icon macro (#159) thì
+    ở 402 điểm chip thứ ba rớt xuống hàng hai, đứng lẻ (đo trên ảnh chụp
+    29/09). Nay là ba Ô, cùng số đo từng giá trị với ô số liệu của thẻ Tiến
+    trình (`progress-post-card.tsx`): chia đều một hàng, icon + nhãn trên, số
+    dưới — hai thẻ nằm cạnh nhau trên một feed nói cùng một ngôn ngữ.
   */
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   chip: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 6,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.full,
+    flexGrow: 1,
+    flexBasis: 92,
+    minWidth: 0,
+    gap: 4,
+    padding: spacing.sm + 4,
+    borderRadius: radius.md,
     backgroundColor: m.inset.bg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: m.inset.border,
   },
-  chipLabel: { ...type.footnote, color: c.mutedForeground },
-  chipValue: { ...type.footnote, fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },
+  chipHead: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  chipLabel: { ...type.footnote, color: c.mutedForeground, flexShrink: 1 },
+  chipValue: { ...type.headline, color: c.foreground, fontVariant: ['tabular-nums'] },
   panel: {
     backgroundColor: m.inset.bg,
     borderRadius: radius.md,
