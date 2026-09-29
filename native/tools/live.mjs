@@ -1006,6 +1006,57 @@ function waterNewestFirst() {
 const SCENARIOS = [
   {
     /*
+      #160: nút "Tham gia" của hero thử thách NÓI là đang làm trong lúc chờ
+      server, thay vì đứng nguyên chữ như chưa ai bấm.
+        · world bỏ mọi lượt tham gia của người dùng rồi tải lại → hero hiện
+          "Join" (thử thách đông người nhất);
+        · POST community_challenge_members bị hoãn 1,2 s — quãng chờ có thật để
+          đo, không phải một mạng nhanh tới mức không thấy gì;
+        (A) ngay sau cú bấm: nút `aria-busy`, có vòng quay, chữ "Join" không
+            còn, và chiều cao nút không đổi;
+        (B) server trả lời xong: không còn nút Join.
+    */
+    name: 'Cộng đồng: nút Tham gia của hero thử thách hiện vòng quay trong lúc chờ server (#160)',
+    route: '/community', mode: 'full',
+    async run(page, { world }) {
+      world.community_challenge_members = world.community_challenge_members.filter((m) => m.user_id !== UID);
+      await page.route('**/rest/v1/community_challenge_members*', async (route) => {
+        if (route.request().method() === 'POST') await new Promise((r) => setTimeout(r, 1200));
+        await route.fallback();
+      });
+      /* Cache truy vấn được persist (`ascnd_rq_cache`) và còn "mới" theo
+         staleTime: không xoá thì lần tải lại vẽ lại hero ĐÃ tham gia từ đĩa và
+         không hỏi server. Chỉ xoá khoá ấy — phiên đăng nhập ở khoá khác. */
+      await page.evaluate(() => {
+        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
+      });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      const join = () => page.getByRole('button', { name: /^Join$/ }).filter({ visible: true });
+      for (let i = 0; i < 40 && !(await join().count()); i++) await page.waitForTimeout(250);
+      if (!(await join().count())) return 'không có nút Join trên hero dù người dùng chưa tham gia thử thách nào';
+      await page.waitForTimeout(800);
+      const btn = join().first();
+      const h0 = (await btn.boundingBox())?.height ?? 0;
+      await btn.click();
+      await page.waitForTimeout(250);
+      const a = await btn.evaluate((b) => ({
+        busy: b.getAttribute('aria-busy'),
+        spin: window.__shown('[role="progressbar"]', b).length,
+        text: window.__shown('*', b).some((e) => e.children.length === 0 && (e.textContent ?? '').trim() === 'Join'),
+        h: b.getBoundingClientRect().height,
+      }), undefined, { timeout: 2000 }).catch(() => null);
+      if (!a) return '(A) nút Join biến mất ngay khi bấm — không đo được quãng chờ (server chưa được hoãn?)';
+      if (a.busy !== 'true') return '(A) đang chờ server mà nút không khai aria-busy';
+      if (!a.spin) return '(A) đang chờ server mà nút không có vòng quay';
+      if (a.text) return '(A) đang chờ server mà nút vẫn đứng nguyên chữ "Join"';
+      if (Math.abs(a.h - h0) > 0.5) return `(A) nút đổi chiều cao khi hiện vòng quay: ${h0} → ${a.h}`;
+      for (let i = 0; i < 24 && (await join().count()); i++) await page.waitForTimeout(250);
+      if (await join().count()) return '(B) server đã trả lời mà nút Join vẫn còn';
+      return null;
+    },
+  },
+  {
+    /*
       #160: thả tim học từ X. Bài đầu của feed ĐÃ được thích sẵn (fixture
       `community_likes`), nên kịch bản đi hai pha trên cùng một nút:
         (A) lúc mở màn, không gì đang chuyển động — thẻ cuộn vào với tim sẵn
@@ -2182,6 +2233,98 @@ const SCENARIOS = [
         return `vuốt sang trái mà deck không dừng ở trang kế: x của trang đầu là ` +
           `${head[head.length - 1]}, chờ ${before[0] - gap}`;
       }
+      return null;
+    },
+  },
+  {
+    /*
+      #160: hai feed của Cộng đồng đổi CÓ HƯỚNG, như X — và CHỈ ở đó.
+        (A) Khám phá → Đang theo dõi (sang trái): panel trượt vào từ bên TRÁI
+            (translateX âm trong lúc vào);
+        (B) → Khám phá (sang phải): từ bên PHẢI (dương);
+        (C) Reduce Motion: đổi mà không trượt;
+        (D) /nutrition (không khai `order`): đổi mà không trượt — hướng là tuỳ
+            chọn của từng màn, không phải của mọi segmented.
+      Hàng và các mục đọc ra từ DOM (hai `role="tab"` trở lên cùng cha), như
+      kịch bản "viên chọn ĐI" ngay dưới. Lấy mẫu mỗi khung hình trong trang:
+      phần tử rộng (> 250) NGOÀI hàng tab có translateX khác 0 — bỏ những phần
+      tử đã có translateX trước cú bấm, và mọi dịch chuyển lớn hơn 40 điểm.
+    */
+    name: 'segmented: Cộng đồng đổi feed có HƯỚNG (trái/phải), Reduce Motion và màn khác thì không (#160)',
+    route: '/community', mode: 'full',
+    async run(page) {
+      const swap = (index) => page.evaluate(async (index) => {
+        const rows = new Map();
+        for (const t of window.__shown('[role="tab"]')) {
+          const p = t.parentElement;
+          if (!p) continue;
+          if (!rows.has(p)) rows.set(p, []);
+          rows.get(p).push(t);
+        }
+        /* Hàng segmented = từ hai tab cùng cha VÀ một con tuyệt đối không phải
+           tab (viên trượt) — thanh tab dưới cùng không lọt, xem kịch bản kế. */
+        const hit = [...rows].filter(([row, tabs]) => tabs.length >= 2 &&
+          [...row.children].some((c) => c.getAttribute('role') !== 'tab' && getComputedStyle(c).position === 'absolute'));
+        if (hit.length !== 1) return { err: `thấy ${hit.length} hàng segmented` };
+        const [row, tabs] = hit[0];
+        if (!tabs[index]) return { err: `hàng không có mục ${index}` };
+        const tx = (el) => {
+          const m = getComputedStyle(el).transform;
+          const v = m && m !== 'none' ? m.match(/matrix\(([^)]+)\)/)?.[1].split(',').map(Number) : null;
+          return v ? v[4] : 0;
+        };
+        const wide = () => window.__shown('*').filter((el) => !row.contains(el) && el.getBoundingClientRect().width > 250);
+        const before = new Set(wide().filter((el) => Math.abs(tx(el)) > 0.5));
+        tabs[index].click();
+        let min = 0, max = 0;
+        const t0 = performance.now();
+        while (performance.now() - t0 < 700) {
+          await new Promise((r) => requestAnimationFrame(r));
+          for (const el of wide()) {
+            if (before.has(el)) continue;
+            const x = tx(el);
+            /* Cú vào là 25 điểm. Bỏ những dịch chuyển cỡ một thẻ: hero thử
+               thách chỉ mount ở Khám phá và đặt trang của nó bằng translateX
+               (đo: −328) — không phải panel đang vào. */
+            if (Math.abs(x) > 40) continue;
+            if (x < min) min = x;
+            if (x > max) max = x;
+          }
+        }
+        return { min, max, on: tabs[index].getAttribute('aria-selected') };
+      }, index);
+      const settle = () => page.waitForTimeout(900);
+      for (let i = 0; i < 40 && !(await page.getByRole('tab').filter({ visible: true }).count()); i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(1500);
+
+      const a = await swap(0);
+      if (a.err) return `(A) ${a.err}`;
+      if (a.on !== 'true') return '(A) bấm mục đầu mà nó không thành mục đang chọn';
+      if (!(a.min < -3)) return `(A) sang TRÁI mà panel không vào từ bên trái (translateX min ${a.min.toFixed(1)}, max ${a.max.toFixed(1)})`;
+      if (a.max > 3) return `(A) sang trái mà có lúc trượt từ bên phải (max ${a.max.toFixed(1)})`;
+      await settle();
+      const b = await swap(1);
+      if (b.err) return `(B) ${b.err}`;
+      if (!(b.max > 3)) return `(B) sang PHẢI mà panel không vào từ bên phải (min ${b.min.toFixed(1)}, max ${b.max.toFixed(1)})`;
+      if (b.min < -3) return `(B) sang phải mà có lúc trượt từ bên trái (min ${b.min.toFixed(1)})`;
+
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 40 && !(await page.getByRole('tab').filter({ visible: true }).count()); i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(1500);
+      const c = await swap(0);
+      if (c.err) return `(C) ${c.err}`;
+      if (c.on !== 'true') return '(C) Reduce Motion: bấm mà không đổi mục';
+      if (c.min < -3 || c.max > 3) return `(C) Reduce Motion mà panel vẫn trượt (${c.min.toFixed(1)}…${c.max.toFixed(1)})`;
+
+      await page.emulateMedia({ reducedMotion: 'no-preference' });
+      await page.goto(page.url().replace(/\/community.*$/, '/nutrition'), { waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 40 && !(await page.getByRole('tab').filter({ visible: true }).count()); i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(1500);
+      const d = await swap(1);
+      if (d.err) return `(D) /nutrition: ${d.err}`;
+      if (d.on !== 'true') return '(D) /nutrition: bấm mà không đổi mục';
+      if (d.min < -3 || d.max > 3) return `(D) /nutrition không khai hướng mà panel vẫn trượt (${d.min.toFixed(1)}…${d.max.toFixed(1)})`;
       return null;
     },
   },

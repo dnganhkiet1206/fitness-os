@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInLeft, FadeInRight } from 'react-native-reanimated';
 
 import { Icon } from '@/components/ascnd/icon';
 import { duration } from '@/constants/motion';
@@ -294,6 +294,21 @@ export const SEGMENT_SWAP = FadeIn.duration(duration.appear)
   */
   .withInitialValues({ opacity: 0.9 });
 
+/*
+  Cùng cú đổi, có HƯỚNG (#160): sang phân đoạn bên phải thì nội dung trượt vào
+  từ bên phải 25 điểm, sang trái thì từ bên trái — chủ dự án: "nội dung đổi theo
+  hướng vuốt", như hai feed của X. Cùng sàn opacity 0.9 như trên (`FadeInRight`
+  giữ translateX 25 của nó, `withInitialValues` chỉ thay opacity — đọc ở
+  `layoutReanimation/defaultAnimations/Fade.js`), nên một khung hình lỡ là một
+  panel lệch 25 điểm và nhạt một phần mười, không bao giờ một panel vô hình.
+  Hai builder dựng sẵn của Reanimated, nên Reduce Motion của hệ thống tắt chúng
+  như mọi builder khác.
+*/
+export const SEGMENT_SWAP_FROM = {
+  right: FadeInRight.duration(duration.appear).withInitialValues({ opacity: 0.9 }),
+  left: FadeInLeft.duration(duration.appear).withInitialValues({ opacity: 0.9 }),
+};
+
 /**
  * Wraps a segmented control's panel so it fades when the segment changes.
  *
@@ -305,6 +320,7 @@ export function SegmentPanel({
   segment,
   children,
   gap = spacing.stack,
+  order,
 }: {
   segment: string;
   children: React.ReactNode;
@@ -332,6 +348,14 @@ export function SegmentPanel({
    * the failure there would be just as silent.
    */
   gap?: number;
+  /**
+   * Thứ tự các phân đoạn, trái sang phải. Có thì cú đổi có HƯỚNG
+   * (`SEGMENT_SWAP_FROM`); không có thì chỉ mờ dần như trước. Tuỳ chọn, vì
+   * một phân đoạn không phải một trang cạnh trang: Dinh dưỡng "Hôm nay / Kế
+   * hoạch ăn" là hai công cụ, còn hai feed của Cộng đồng là hai dòng chảy
+   * nằm cạnh nhau như X.
+   */
+  order?: readonly string[];
 }) {
   /*
     Lần đầu thì hiện ngay, mọi lần ĐỔI mới có hiệu ứng.
@@ -342,14 +366,20 @@ export function SegmentPanel({
     của cả panel" với "một cú đổi segment thật".
   */
   const swapped = useRef(false);
+  /* Phân đoạn của lần dựng TRƯỚC — hiệu ứng chạy sau khi vẽ, nên lúc đang vẽ
+     cú đổi, ref này vẫn là phân đoạn cũ. */
+  const prev = useRef(segment);
   useEffect(() => {
     swapped.current = true;
+    prev.current = segment;
   }, [segment]);
+  const step = order ? order.indexOf(segment) - order.indexOf(prev.current) : 0;
+  const swap = step > 0 ? SEGMENT_SWAP_FROM.right : step < 0 ? SEGMENT_SWAP_FROM.left : SEGMENT_SWAP;
 
   return (
     <Animated.View
       key={segment}
-      entering={swapped.current ? SEGMENT_SWAP : undefined}
+      entering={swapped.current ? swap : undefined}
       style={{ gap }}>
       {children}
     </Animated.View>

@@ -160,7 +160,7 @@ export default function CommunityScreen() {
         </PressScale>
       )}
 
-      <SegmentPanel segment={tab}>
+      <SegmentPanel segment={tab} order={tabs.map((t) => t.key)}>
         {feed.isError ? (
           <LoadFailed i18n={i18n} onRetry={() => feed.refetch()} />
         ) : feed.isPending ? (

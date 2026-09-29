@@ -1,5 +1,5 @@
 import { Check, ChevronRight, Trophy, Users } from 'lucide-react-native';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -103,12 +103,24 @@ export function ChallengeHero({ items }: { items: CommunityChallenge[] }) {
           </View>
 
           {!ch.joined ? (
+            /* #160: rung lúc chạm (onMutate) là phản hồi cho cú chạm; còn quãng
+               chờ server — cộng lượt đọc lại thử thách, vì `onSettled` trả lời
+               hứa nên `isPending` kéo dài tới khi thẻ có dữ liệu mới — thì nút
+               NÓI là đang làm, không đứng nguyên chữ "Tham gia" như chưa ai
+               bấm. Cao cố định 44 nên đổi chữ ↔ vòng quay không xê dịch gì;
+               xong thì thanh tiến độ tự chạy vào (`ProgressBar`). */
             <PressScale
               accessibilityRole="button"
+              accessibilityLabel={i18n.nChJoin}
+              aria-busy={join.isPending}
               disabled={join.isPending}
               onPress={() => join.mutate({ id: ch.id, on: true }, { onError: (e: Error) => toast.fail(e) })}
               style={styles.solidBtn}>
-              <Text style={styles.solidText}>{i18n.nChJoin}</Text>
+              {join.isPending ? (
+                <ActivityIndicator size="small" color={c.primaryForeground} />
+              ) : (
+                <Text style={styles.solidText}>{i18n.nChJoin}</Text>
+              )}
             </PressScale>
           ) : ch.claimed ? (
             <View style={styles.doneRow}>
@@ -128,8 +140,14 @@ export function ChallengeHero({ items }: { items: CommunityChallenge[] }) {
                   onError: (e: Error) => toast.fail(e),
                 })
               }
+              accessibilityLabel={fillCopy(i18n.nChClaim, { n: String(ch.reward_coins) })}
+              aria-busy={claim.isPending}
               style={styles.solidBtn}>
-              <Text style={styles.solidText}>{fillCopy(i18n.nChClaim, { n: String(ch.reward_coins) })}</Text>
+              {claim.isPending ? (
+                <ActivityIndicator size="small" color={c.primaryForeground} />
+              ) : (
+                <Text style={styles.solidText}>{fillCopy(i18n.nChClaim, { n: String(ch.reward_coins) })}</Text>
+              )}
             </PressScale>
           ) : null}
         </GlassCard>
