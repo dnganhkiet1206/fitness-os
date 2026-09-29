@@ -277,16 +277,30 @@ export function Mascot({
     breathing.value = focused && presence.floatPt !== 0;
   }, [focused, presence.floatPt, breathing]);
 
+  /*
+    ── NHỊP là một phần của thứ được theo dõi, không chỉ "có thở hay không" ──
+
+    Bản trước theo dõi `breathing && !hold` (một boolean) và để `half` ở danh
+    sách phụ thuộc. `koa-breath.mjs` đo (#98): ban đêm biên độ đổi đúng (5,4 →
+    2,0 điểm — `travel` đi qua một effect riêng) mà chu kỳ đứng yên, 2719 ms so
+    với 2721 ms ban ngày — vòng lặp giữ nhịp của trạng thái đầu tiên nó được
+    dựng với. Đổi trạng thái làm reaction dựng lại nhưng giá trị trước vẫn là
+    `true`, nên `run === was` và vòng lặp cũ chạy tiếp; `sleep` 5200 ms chưa từng
+    tới được màn hình.
+
+    Nay giá trị được theo dõi LÀ nửa nhịp (0 = không thở): đổi nhịp là đổi giá
+    trị, và vòng lặp dựng lại từ chỗ `hover` đang đứng — không giật.
+  */
   const half = presence.breathMs / 2;
   useAnimatedReaction(
-    () => breathing.value && !(hold?.value ?? false),
-    (run, was) => {
-      if (run === was) return;
-      if (run) {
+    () => (breathing.value && !(hold?.value ?? false) ? half : 0),
+    (h, was) => {
+      if (h === was) return;
+      if (h > 0) {
         hover.value = withRepeat(
           withSequence(
-            withTiming(1, { duration: half, easing: Easing.inOut(Easing.sin) }),
-            withTiming(0, { duration: half, easing: Easing.inOut(Easing.sin) }),
+            withTiming(1, { duration: h, easing: Easing.inOut(Easing.sin) }),
+            withTiming(0, { duration: h, easing: Easing.inOut(Easing.sin) }),
           ),
           -1,
         );

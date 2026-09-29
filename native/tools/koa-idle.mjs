@@ -223,8 +223,30 @@ const EMOTIONS = Object.keys(
      So both are checked, and the depth is checked at the transform rather than
      at the call: the question is not whether `floatPt` is mentioned, it is
      whether it reaches the thing that moves. */
-  if (!/duration:\s*half\b/.test(src)) {
-    problems.push('nhịp thở lại gõ số cứng trong component thay vì lấy từ trạng thái');
+  /* ── và nhịp phải TỚI được vòng lặp khi trạng thái đổi (#98, 29/09) ──
+
+     Bản trước đòi `duration: half` và xanh — nhịp có lấy từ trạng thái. Nhưng
+     vòng lặp được dựng trong một `useAnimatedReaction` theo dõi một BOOLEAN
+     ("có thở không"), với `half` chỉ nằm trong danh sách phụ thuộc: đổi trạng
+     thái thì boolean vẫn `true`, `run === was`, vòng lặp cũ chạy tiếp.
+     `koa-breath.mjs` đo: đêm 2719 ms, ngày 2721 ms. Lần thứ hai trong tệp này
+     một luật đọc được con số mà con số không tới được thứ đang chuyển động.
+
+     Nên hỏi đúng quan hệ ấy: giá trị reaction THEO DÕI phải là nửa nhịp
+     (`… ? half : 0`), và hai nhịp của vòng lặp phải đọc lại chính giá trị ấy
+     (tham số đầu của hàm phản ứng), không phải một biến bên ngoài. */
+  const react = src.match(/useAnimatedReaction\(\s*\(\)\s*=>\s*\(([^;]*?)\),\s*\((\w+),\s*\w+\)\s*=>\s*\{([\s\S]*?)\n\s*\},\s*\[half\]/);
+  if (!react) {
+    problems.push('không tìm thấy reaction dựng vòng thở theo dạng `() => (… ? half : 0), (h, was) => { … }, [half]` — luật nhịp thở không đọc được gì');
+  } else {
+    const [, tracked, arg, body] = react;
+    if (!/\?\s*half\s*:\s*0$/.test(tracked.trim())) {
+      problems.push(`reaction của vòng thở theo dõi \`${tracked.trim()}\` chứ không phải nửa nhịp — đổi trạng thái sẽ không dựng lại vòng lặp, và Koa thở mãi theo nhịp đầu tiên`);
+    }
+    const durs = [...body.matchAll(/duration:\s*(\w+)/g)].map((m) => m[1]);
+    if (durs.length < 2 || durs.slice(0, 2).some((d) => d !== arg)) {
+      problems.push(`hai nhịp của vòng thở đọc \`${durs.slice(0, 2).join(', ')}\` chứ không phải \`${arg}\` — số gõ cứng, hoặc một biến không theo trạng thái`);
+    }
   }
   /* The whole line, not `[^,\n]+`. The first version of this stopped at the
      first comma, so `interpolate(hover.value, [0, 1], [0, -7])` was read as

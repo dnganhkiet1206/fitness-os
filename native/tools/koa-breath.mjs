@@ -199,14 +199,18 @@ function describe(samples) {
   return { range, period: Math.round(period), spin, n: samples.length };
 }
 
-const require_ = createRequire(import.meta.url);
-let chromium;
-try {
-  ({ chromium } = require_('playwright'));
-} catch {
-  console.error('không nạp được playwright — thử: NODE_PATH=$(npm root -g) node tools/koa-breath.mjs');
+/* Tìm playwright như ba đầu dò kia (`tab-latency.mjs`, `frame-churn.mjs`,
+   `deck-swipe.mjs`): node_modules của app, rồi thư mục toàn cục. Bản trước chỉ
+   `require` từ chỗ đứng của tệp, nên thiếu `NODE_PATH` là thoát 2 (#98). */
+function loadChromium() {
+  for (const root of [path.join(NATIVE, 'node_modules'), execFileSync('npm', ['root', '-g']).toString().trim()]) {
+    if (!root || !existsSync(path.join(root, 'playwright'))) continue;
+    return createRequire(path.join(root, 'x.js'))('playwright').chromium;
+  }
+  console.error('không tìm thấy playwright. cài: npm i -g playwright');
   process.exit(2);
 }
+const chromium = loadChromium();
 
 build();
 const server = await serve();

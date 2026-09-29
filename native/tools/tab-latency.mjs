@@ -316,11 +316,16 @@ if (janky.length) {
   console.log('một lò xo thứ hai được phát ra đè lên lò xo đang bay.');
 }
 
+/* Tên màn đọc từ `SCREENS`, không gõ lại. Bản trước gõ 'tiến trình' ở đây
+   trong khi `SCREENS` đã đổi thành 'tập luyện' (Tiến trình gộp vào Tập luyện,
+   ba33494): hai mốc luôn rỗng, và câu "không đủ số liệu" in ra ở MỌI lượt —
+   kể cả khi bảng ngay trên có đủ bốn ô (#98). */
+const [D, P] = SCREENS.map((x) => x.name);
 const pick = (w, s) => rows.find((r) => r.world === w && r.screen === s)?.first;
-const dLight = pick('nhẹ', 'dinh dưỡng');
-const dHeavy = pick('nặng', 'dinh dưỡng');
-const pLight = pick('nhẹ', 'tiến trình');
-const pHeavy = pick('nặng', 'tiến trình');
+const dLight = pick('nhẹ', D);
+const dHeavy = pick('nặng', D);
+const pLight = pick('nhẹ', P);
+const pHeavy = pick('nặng', P);
 console.log('');
 if ([dLight, dHeavy, pLight, pHeavy].some((v) => v === null || v === undefined)) {
   console.log('không đủ số liệu — có mốc không đo được');
@@ -334,12 +339,12 @@ if ([dLight, dHeavy, pLight, pHeavy].some((v) => v === null || v === undefined))
     khoảng min–max của hai ô thì mới đáng gọi là tín hiệu.
   */
   const noise = Math.max(
-    (rows.find((r) => r.world === 'nhẹ' && r.screen === 'dinh dưỡng')?.firstHi ?? 0) -
-      (rows.find((r) => r.world === 'nhẹ' && r.screen === 'dinh dưỡng')?.firstLo ?? 0),
-    (rows.find((r) => r.world === 'nặng' && r.screen === 'dinh dưỡng')?.firstHi ?? 0) -
-      (rows.find((r) => r.world === 'nặng' && r.screen === 'dinh dưỡng')?.firstLo ?? 0),
+    (rows.find((r) => r.world === 'nhẹ' && r.screen === D)?.firstHi ?? 0) -
+      (rows.find((r) => r.world === 'nhẹ' && r.screen === D)?.firstLo ?? 0),
+    (rows.find((r) => r.world === 'nặng' && r.screen === D)?.firstHi ?? 0) -
+      (rows.find((r) => r.world === 'nặng' && r.screen === D)?.firstLo ?? 0),
   );
-  console.log(`dinh dưỡng nặng thêm ${dGrow}ms, tiến trình nặng thêm ${pGrow}ms (nhiễu quan sát được: ${noise}ms)`);
+  console.log(`${D} nặng thêm ${dGrow}ms, ${P} nặng thêm ${pGrow}ms (nhiễu quan sát được: ${noise}ms)`);
   console.log(
     dGrow - pGrow > noise
       ? 'TÁI HIỆN ĐƯỢC — chênh lệch vượt biên độ nhiễu.'
