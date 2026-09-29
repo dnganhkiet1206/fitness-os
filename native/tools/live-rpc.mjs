@@ -29,7 +29,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { UID } from './live-world.mjs';
+import { UID, dayStr } from './live-world.mjs';
 
 const MIGRATIONS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'supabase', 'migrations');
 
@@ -38,7 +38,10 @@ export function rpcError(code, message) {
 }
 
 /* `current_date` của server: ngày UTC. */
-const today = () => new Date().toISOString().slice(0, 10);
+/* Ngày UTC của server — như SQL — nhưng của MỐC NEO `LOAD` (#114), không đọc lại
+   đồng hồ: một lượt vắt qua nửa đêm UTC từng cho phía này một ngày khác với
+   thế giới và với trình duyệt. */
+const today = () => dayStr(0);
 
 /*
   #95: bảng giá phần thưởng ĐỌC từ chính câu `INSERT INTO public.reward_prices`

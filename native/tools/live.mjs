@@ -90,7 +90,7 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = process.env.LIVE_BUILD ? path.resolve(process.env.LIVE_BUILD) : path.join(NATIVE, 'tools', '.live-build');
 const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
-import { FIXTURES, REF, UID, applyQuery, day, jwt } from './live-world.mjs';
+import { FIXTURES, REF, UID, applyQuery, day, jwt, LIVE_TZ } from './live-world.mjs';
 import { RPC_FIXTURES, rewardAmountFor } from './live-rpc.mjs';
 import { fakeSupabase } from './live-server.mjs';
 import { DESTRUCTIVE } from './live-press.mjs';
@@ -392,11 +392,8 @@ const REDIRECT_OK = {};
   đêm, và mỗi `day(0.x)` luôn rơi vào cùng một nửa ngày. Độ lệch nằm trong
   −9…+14, luôn có trong IANA.
 */
-const LIVE_OFFSET = (() => {
-  const now = new Date();
-  return Math.round(14 - (now.getUTCHours() + now.getUTCMinutes() / 60));
-})();
-const LIVE_TZ = LIVE_OFFSET === 0 ? 'UTC' : `Etc/GMT${LIVE_OFFSET > 0 ? '-' : '+'}${Math.abs(LIVE_OFFSET)}`;
+/* Từ #114 độ lệch được tính MỘT lần ở `live-world.mjs`, cùng mốc neo `LOAD`
+   với mọi mốc của thế giới — và mọi đầu dò dùng chung. */
 
 async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, height = 874, lang = null } = {}) {
   const browser = await chromium.launch();

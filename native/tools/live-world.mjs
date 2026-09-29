@@ -49,8 +49,49 @@ export const jwt = () =>
     email: 'demo@ascnd.app',
   })}.signature-not-checked-here`;
 
-export const day = (n) => new Date(Date.now() - n * 864e5).toISOString();
-export const dayStr = (n) => new Date(Date.now() - n * 864e5).toISOString().slice(0, 10);
+/*
+  ── MỘT mốc neo cho cả thế giới (#114) ──
+
+  `LOAD` là lúc nạp tệp này, đọc ĐÚNG MỘT LẦN. Mọi mốc của thế giới, và `today()`
+  của máy chủ giả (`live-rpc.mjs`), tính từ nó — không đọc lại đồng hồ thật. Một
+  lượt ~30 phút bắt đầu 23:40 UTC từng cho hai phía hai ngày khác nhau sau nửa
+  đêm UTC.
+
+  `LIVE_OFFSET` / `LIVE_TZ` (#112, chuyển từ `live.mjs` về đây để mọi đầu dò
+  dùng chung): múi `Etc/GMT±N` đặt giờ địa phương lúc nạp ở khoảng 14:00 (thật
+  ra 13:30–14:30, vì N làm tròn tới giờ), và ngày địa phương lúc nạp TRÙNG ngày
+  UTC — nên `dayStr(0)` là "hôm nay" ở cả hai phía.
+*/
+export const LOAD = Date.now();
+export const LIVE_OFFSET = (() => {
+  const now = new Date(LOAD);
+  return Math.round(14 - (now.getUTCHours() + now.getUTCMinutes() / 60));
+})();
+export const LIVE_TZ = LIVE_OFFSET === 0 ? 'UTC' : `Etc/GMT${LIVE_OFFSET > 0 ? '-' : '+'}${Math.abs(LIVE_OFFSET)}`;
+
+export const day = (n) => new Date(LOAD - n * 864e5).toISOString();
+export const dayStr = (n) => new Date(LOAD - n * 864e5).toISOString().slice(0, 10);
+
+/**
+ * "N ngày trước, lúc HH:MM[:SS]" theo giờ ĐỊA PHƯƠNG của `LIVE_TZ` (#114).
+ *
+ * Thay cho `day(0.4)` — "lúc nạp trừ 0,4 ngày" — thứ không nói được nó là hôm
+ * nay hay hôm qua: câu trả lời tuỳ giờ bấm chạy, và ý định của mốc không đọc
+ * được từ mã. `at(0, '08:00')` là bữa sáng hôm nay; `at(1, '23:36')` là tối qua.
+ *
+ * Một mốc rơi vào tương lai là một fixture sai (giờ địa phương lúc nạp thấp
+ * nhất là 13:30), nên nó ném chứ không lặng lẽ tạo dữ liệu chưa xảy ra.
+ */
+export const at = (daysAgo, hhmm) => {
+  const [h, m, s = 0] = hhmm.split(':').map(Number);
+  const local = new Date(LOAD + LIVE_OFFSET * 36e5);
+  const ms = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() - daysAgo, h, m, s) - LIVE_OFFSET * 36e5;
+  if (ms > LOAD) throw new Error(`live-world: at(${daysAgo}, '${hhmm}') nằm SAU lúc nạp — một fixture ở tương lai`);
+  return new Date(ms).toISOString();
+};
+
+/** "Cách đây N phút" — cho thứ mà ý nghĩa CHÍNH LÀ khoảng cách tới bây giờ ("5 phút trước"). */
+export const minsAgo = (n) => new Date(LOAD - n * 6e4).toISOString();
 
 /**
  * Một đêm ngủ có hình dạng của một đêm ngủ thật.
@@ -77,8 +118,10 @@ export const dayStr = (n) => new Date(Date.now() - n * 864e5).toISOString().slic
  * Tầng ngủ vẫn cộng đúng bằng `asleepMin` — đó là điều HealthKit bảo đảm, và
  * một fixture tự mâu thuẫn sẽ che đúng loại lỗi biểu đồ sinh ra để bắt.
  *
- * Neo theo giờ UTC vì bộ chạy chạy ở UTC; đổi múi giờ của trình duyệt thì giờ
- * hiện ra đổi theo, y như trên máy thật.
+ * Neo theo giờ ĐỊA PHƯƠNG của `LIVE_TZ` (`at()`, #114). Trước đó là giờ UTC,
+ * viết khi bộ chạy còn chạy ở UTC; từ #112 trình duyệt ở `LIVE_TZ`, nên "23:00
+ * UTC" hiện ra thành một giờ tuỳ lúc bấm chạy — có lượt, một đêm bắt đầu lúc
+ * một giờ chiều.
  */
 function night(daysAgo, bedH, bedM, inBedMin, asleepMin, { id, quality, deep, rem, light, source = 'apple_health' }) {
   if (deep + rem + light > 0 && deep + rem + light !== asleepMin) {
@@ -87,8 +130,7 @@ function night(daysAgo, bedH, bedM, inBedMin, asleepMin, { id, quality, deep, re
   if (inBedMin < asleepMin) {
     throw new Error(`live-world: đêm ${id} ngủ ${asleepMin} phút trong ${inBedMin} phút trên giường`);
   }
-  const bed = new Date(Date.now() - daysAgo * 864e5);
-  bed.setUTCHours(bedH, bedM, 0, 0);
+  const bed = new Date(at(daysAgo, `${bedH}:${bedM}`));
   const wake = new Date(bed.getTime() + inBedMin * 60000);
   return {
     id, user_id: UID,
@@ -355,7 +397,7 @@ export function contentRange(rows, url, returned, prefer = '') {
 }
 
 /* #134: MỘT mốc cho hai lần uống trùng giờ — hai lần gọi `day()` có thể lệch 1 ms. */
-const WATER_TIE = day(0.05);
+const WATER_TIE = minsAgo(72);
 
 /**
  * What the server answers in `full` mode.
@@ -406,7 +448,7 @@ export const FIXTURES = {
        trong thế giới giả hỏng sau ba lượt thử — tìm ra khi đo lời mời chia sẻ
        sau buổi tập (#12). Trên database thật cột này NOT NULL và trigger đẩy
        nó mỗi lần UPDATE. */
-    updated_at: day(0.2),
+    updated_at: at(0, '09:12'),
     /* `water_ml`, `hrv_today`, `rhr_today` đã bỏ: ba khoá ấy không phải cột
        của `daily_logs`. Nước đọc từ `water_logs`, còn HRV với nhịp nghỉ đọc
        từ `biometric_samples` — fixture vẫn có đủ cả hai bảng, nên không màn
@@ -440,7 +482,7 @@ export const FIXTURES = {
     night(1, 23, 0, 460, 431, { id: 's1', quality: 8, deep: 92, rem: 104, light: 235 }),
   ],
   biometric_samples: [{
-    id: 'b1', user_id: UID, date_time: day(0.2), hr_bpm: 54, hrv_sdnn_ms: 62,
+    id: 'b1', user_id: UID, date_time: at(0, '09:12'), hr_bpm: 54, hrv_sdnn_ms: 62,
     hrv_rmssd_ms: null, spo2_pct: 97, resp_rate_rpm: 14, vo2max_mlkgmin: 48,
     source: 'apple_health', confidence: 0.9,
   }],
@@ -456,10 +498,10 @@ export const FIXTURES = {
     xoá w3, và con số nhảy 1500 → 1250 khi server trả lời.
   */
   water_logs: [
-    { id: 'w1', user_id: UID, amount_ml: 750, date: dayStr(0), logged_at: day(0.3), created_at: day(0.3) },
-    { id: 'w3', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: WATER_TIE, created_at: day(0.05) },
-    { id: 'w4', user_id: UID, amount_ml: 500, date: dayStr(0), logged_at: WATER_TIE, created_at: day(0.04) },
-    { id: 'w2', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: day(0.2), created_at: day(0.2) },
+    { id: 'w1', user_id: UID, amount_ml: 750, date: dayStr(0), logged_at: at(0, '06:48'), created_at: at(0, '06:48') },
+    { id: 'w3', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: WATER_TIE, created_at: minsAgo(72) },
+    { id: 'w4', user_id: UID, amount_ml: 500, date: dayStr(0), logged_at: WATER_TIE, created_at: minsAgo(58) },
+    { id: 'w2', user_id: UID, amount_ml: 250, date: dayStr(0), logged_at: at(0, '09:12'), created_at: at(0, '09:12') },
   ],
   /*
     #137: những bảng app ĐỌC mà thế giới giả để rỗng — nhánh "có dữ liệu" của
@@ -474,7 +516,7 @@ export const FIXTURES = {
   ],
   /* Creatine đã uống hôm nay, Vitamin D3 chưa: màn có một ô đã tick và một ô chưa. */
   supplement_intake_logs: [
-    { id: 'si000001-0000-4000-8000-000000000001', user_id: UID, supplement_id: 'sp000001-0000-4000-8000-000000000001', taken: true, dose_override: null, date_time: day(0.1), created_at: day(0.1) },
+    { id: 'si000001-0000-4000-8000-000000000001', user_id: UID, supplement_id: 'sp000001-0000-4000-8000-000000000001', taken: true, dose_override: null, date_time: at(0, '11:36'), created_at: at(0, '11:36') },
   ],
   coach_memory: [
     { id: 'cm000001-0000-4000-8000-000000000001', user_id: UID, kind: 'constraint', fact: 'Đau gối trái khi squat sâu', first_seen: day(12), last_confirmed: day(3), source_excerpt: 'gối trái hơi đau khi xuống sâu' },
@@ -485,7 +527,7 @@ export const FIXTURES = {
   ],
   ai_messages: [
     { id: 'am000001-0000-4000-8000-000000000001', conversation_id: 'ac000001-0000-4000-8000-000000000001', role: 'user', content: 'Tối nay nên ăn gì sau buổi đẩy?', created_at: day(1) },
-    { id: 'am000001-0000-4000-8000-000000000002', conversation_id: 'ac000001-0000-4000-8000-000000000001', role: 'assistant', content: 'Một phần cơm gà áp chảo với rau xanh: khoảng 40 g đạm, đủ bù buổi tập.', created_at: day(0.99) },
+    { id: 'am000001-0000-4000-8000-000000000002', conversation_id: 'ac000001-0000-4000-8000-000000000001', role: 'assistant', content: 'Một phần cơm gà áp chảo với rau xanh: khoảng 40 g đạm, đủ bù buổi tập.', created_at: at(1, '14:14:24') },
   ],
   /* Tuần bắt đầu thứ Hai như `weekStartOf` của app; LIVE_TZ giữ ngày địa phương
      trùng ngày UTC (#112), nên tính từ ngày UTC là đúng. */
@@ -627,9 +669,9 @@ export const FIXTURES = {
     thêm một bài của UID sẽ làm lệch mọi phép đo feed.
   */
   community_notifications: [
-    { id: 'cn000000-0000-4000-8000-000000000001', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'like', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: null, created_at: day(0.02), read_at: null },
-    { id: 'cn000000-0000-4000-8000-000000000002', user_id: UID, actor_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'like', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: null, created_at: day(0.05), read_at: null },
-    { id: 'cn000000-0000-4000-8000-000000000003', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'comment', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: 'cc000000-0000-4000-8000-000000000002', created_at: day(0.3), read_at: null },
+    { id: 'cn000000-0000-4000-8000-000000000001', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'like', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: null, created_at: minsAgo(29), read_at: null },
+    { id: 'cn000000-0000-4000-8000-000000000002', user_id: UID, actor_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'like', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: null, created_at: minsAgo(72), read_at: null },
+    { id: 'cn000000-0000-4000-8000-000000000003', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'comment', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: 'cc000000-0000-4000-8000-000000000002', created_at: at(0, '06:48'), read_at: null },
     { id: 'cn000000-0000-4000-8000-000000000004', user_id: UID, actor_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'follow', post_id: null, comment_id: null, created_at: day(2), read_at: day(1) },
   ],
   /* #163: thư viện ảnh của app. `workout/broken.webp` CỐ Ý không có tệp (máy chủ
@@ -649,7 +691,7 @@ export const FIXTURES = {
     {
       id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'workout', source_id: 'c5000000-0000-4000-8000-000000000001',
       payload: {
-        title: 'Push Day', performedAt: day(0.12), volumeKg: 12840, pr: true, minutes: 45, exerciseCount: 6,
+        title: 'Push Day', performedAt: at(0, '11:07:12'), volumeKg: 12840, pr: true, minutes: 45, exerciseCount: 6,
         exercises: [
           { exerciseId: 'e1', exerciseName: 'Incline DB Press', library: true, sets: 4, weight: 24, reps: 10 },
           { exerciseId: 'e2', exerciseName: 'Flat DB Press', library: true, sets: 3, weight: 22, reps: 12 },
@@ -660,7 +702,7 @@ export const FIXTURES = {
         ],
       },
       caption: 'Cuối cùng cũng lên được incline hôm nay. Thấy khoẻ hơn hẳn 🔥', visibility: 'public',
-      like_count: 128, comment_count: 2, save_count: 9, hidden: false, created_at: day(0.12),
+      like_count: 128, comment_count: 2, save_count: 9, hidden: false, created_at: at(0, '11:07:12'),
       image_source: 'library', art_id: 'ca000000-0000-4000-8000-000000000001',
     },
     {
@@ -689,7 +731,7 @@ export const FIXTURES = {
         lift: { exerciseId: 'e11', name: 'Bench Press', start: 40, end: 55, series: [40, 42.5, 42.5, 45, 45, 47.5, 47.5, 50, 50, 52.5, 55, 55] },
       },
       caption: '12 tuần tập đều đặn. Vẫn còn nhiều việc phải làm nhưng rất tự hào về sự thay đổi này.', visibility: 'public',
-      like_count: 342, comment_count: 0, save_count: 18, hidden: false, created_at: day(0.5),
+      like_count: 342, comment_count: 0, save_count: 18, hidden: false, created_at: at(0, '02:00'),
     },
     /*
       Bài RECIPE (#7, người làm: B) — đúng hình mà `share_recipe` dựng phía
@@ -714,23 +756,23 @@ export const FIXTURES = {
         ],
       },
       caption: 'Một bữa ăn đơn giản, dễ làm, giàu protein và rất phù hợp cho những ngày tập luyện.', visibility: 'public',
-      like_count: 212, comment_count: 0, save_count: 24, hidden: false, created_at: day(0.6),
+      like_count: 212, comment_count: 0, save_count: 24, hidden: false, created_at: at(1, '23:36'),
     },
   ],
   community_likes: [
-    { post_id: 'cp000000-0000-4000-8000-000000000001', user_id: UID, created_at: day(0.1) },
+    { post_id: 'cp000000-0000-4000-8000-000000000001', user_id: UID, created_at: at(0, '11:36') },
   ],
   community_saves: [
-    { post_id: 'cp000000-0000-4000-8000-000000000002', user_id: UID, created_at: day(0.9) },
-    /* Thư viện Đã lưu (#10, B): bài Recipe (đăng day(0.6)) được lưu TRƯỚC bài
+    { post_id: 'cp000000-0000-4000-8000-000000000002', user_id: UID, created_at: at(1, '16:24') },
+    /* Thư viện Đã lưu (#10, B): bài Recipe (đăng at(1, '23:36')) được lưu TRƯỚC bài
        Workout (đăng day(1)). Xếp theo lúc ĐĂNG thì Recipe đứng đầu; xếp theo
        lúc LƯU — thứ thư viện hứa — thì Workout đứng đầu. Hai thứ tự khác nhau
        là để phép đo phân biệt được chúng. */
-    { post_id: 'cp000000-0000-4000-8000-000000000004', user_id: UID, created_at: day(0.95) },
+    { post_id: 'cp000000-0000-4000-8000-000000000004', user_id: UID, created_at: at(1, '15:12') },
   ],
   community_comments: [
-    { id: 'cc000000-0000-4000-8000-000000000001', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: UID, body: 'Incline 24kg × 10 là ngon rồi!', hidden: false, created_at: day(0.08) },
-    { id: 'cc000000-0000-4000-8000-000000000002', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', body: 'Cảm ơn! Tuần sau thử 26.', hidden: false, created_at: day(0.05) },
+    { id: 'cc000000-0000-4000-8000-000000000001', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: UID, body: 'Incline 24kg × 10 là ngon rồi!', hidden: false, created_at: at(0, '12:04:48') },
+    { id: 'cc000000-0000-4000-8000-000000000002', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', body: 'Cảm ơn! Tuần sau thử 26.', hidden: false, created_at: minsAgo(72) },
   ],
   /* Thử thách (#9) chỉ được đọc qua RPC `community_challenges_overview`. Trước
      #38 RPC giả luôn trả `[]`, nên thẻ thử thách chưa từng được quét có dữ
@@ -859,17 +901,18 @@ export const FIXTURES = {
   */
   workout_sessions: [
     ...[
-      /* days ago, bench reps, pull-up reps */
-      [0.4, 10, 8],
-      [2.4, 9, 8],
-      [5.4, 9, 9],
-      [8.4, 8, 8],
-      [12.4, 8, 8],
-      [15.4, 7, 9],
+      /* ngày trước (lúc 04:24 địa phương — đúng giờ mà `day(n + 0.4)` cũ ra ở
+         14:00, #114), bench reps, pull-up reps */
+      [0, 10, 8],
+      [2, 9, 8],
+      [5, 9, 9],
+      [8, 8, 8],
+      [12, 8, 8],
+      [15, 7, 9],
     ].map(([d, bench, pull], i) => ({
       id: `k${i + 1}`,
       user_id: UID,
-      date_time: day(d),
+      date_time: at(d, '04:24'),
       template_name: i % 2 === 0 ? 'Push A' : 'Pull A',
       volume_load: Math.round(55 * bench * 3),
       session_rpe: 7,
@@ -1038,27 +1081,27 @@ export const FIXTURES = {
   ],
   meal_entries: [
     {
-      id: 'm1', user_id: UID, date_time: day(0.25), meal_type: 'breakfast',
+      id: 'm1', user_id: UID, date_time: at(0, '08:00'), meal_type: 'breakfast',
       total_kcal: 540, total_protein_g: 36, total_carbs_g: 63, total_fat_g: 16, total_fiber_g: 8,
     },
     {
-      id: 'm2', user_id: UID, date_time: day(0.15), meal_type: 'lunch',
+      id: 'm2', user_id: UID, date_time: at(0, '10:24'), meal_type: 'lunch',
       total_kcal: 660, total_protein_g: 49, total_carbs_g: 71, total_fat_g: 20, total_fiber_g: 9,
     },
   ],
   meal_entry_items: [
     /* bữa sáng — 184+89+155+112 = 540 kcal · 36 P · 63 C · 16 F */
-    { id: 'mi1', created_at: day(0.251), meal_entry_id: 'm1', food_name: 'Yến mạch 50g', servings: 1, kcal: 184, protein_g: 7, carbs_g: 30, fat_g: 4, fiber_g: 5 },
-    { id: 'mi2', created_at: day(0.2503), meal_entry_id: 'm1', food_name: 'Sữa chua Hy Lạp 0% 150g', servings: 1, kcal: 89, protein_g: 15, carbs_g: 5, fat_g: 1, fiber_g: 0 },
+    { id: 'mi1', created_at: at(0, '07:58:34'), meal_entry_id: 'm1', food_name: 'Yến mạch 50g', servings: 1, kcal: 184, protein_g: 7, carbs_g: 30, fat_g: 4, fiber_g: 5 },
+    { id: 'mi2', created_at: at(0, '07:59:34'), meal_entry_id: 'm1', food_name: 'Sữa chua Hy Lạp 0% 150g', servings: 1, kcal: 89, protein_g: 15, carbs_g: 5, fat_g: 1, fiber_g: 0 },
     /* khẩu phần khác 1 — hàng DUY NHẤT hiện chữ `×2`, và là hàng để thử sheet
        sửa khẩu phần. Không có nó thì nhánh `it.servings !== 1` không bao giờ
        chạy trong bộ chạy. */
-    { id: 'mi3', created_at: day(0.2496), meal_entry_id: 'm1', food_name: 'Trứng luộc', servings: 2, kcal: 155, protein_g: 13, carbs_g: 1, fat_g: 11, fiber_g: 0 },
-    { id: 'mi4', created_at: day(0.2489), meal_entry_id: 'm1', food_name: 'Chuối', servings: 1, kcal: 112, protein_g: 1, carbs_g: 27, fat_g: 0, fiber_g: 3 },
+    { id: 'mi3', created_at: at(0, '08:00:35'), meal_entry_id: 'm1', food_name: 'Trứng luộc', servings: 2, kcal: 155, protein_g: 13, carbs_g: 1, fat_g: 11, fiber_g: 0 },
+    { id: 'mi4', created_at: at(0, '08:01:35'), meal_entry_id: 'm1', food_name: 'Chuối', servings: 1, kcal: 112, protein_g: 1, carbs_g: 27, fat_g: 0, fiber_g: 3 },
     /* bữa trưa — 265+269+126 = 660 kcal · 49 P · 71 C · 20 F */
-    { id: 'mi5', created_at: day(0.151), meal_entry_id: 'm2', food_name: 'Cơm trắng 200g', servings: 1, kcal: 265, protein_g: 8, carbs_g: 56, fat_g: 1, fiber_g: 1 },
-    { id: 'mi6', created_at: day(0.1503), meal_entry_id: 'm2', food_name: 'Ức gà áp chảo 150g', servings: 1, kcal: 269, protein_g: 38, carbs_g: 0, fat_g: 13, fiber_g: 0 },
-    { id: 'mi7', created_at: day(0.1496), meal_entry_id: 'm2', food_name: 'Rau xào 200g', servings: 1, kcal: 126, protein_g: 3, carbs_g: 15, fat_g: 6, fiber_g: 8 },
+    { id: 'mi5', created_at: at(0, '10:22:34'), meal_entry_id: 'm2', food_name: 'Cơm trắng 200g', servings: 1, kcal: 265, protein_g: 8, carbs_g: 56, fat_g: 1, fiber_g: 1 },
+    { id: 'mi6', created_at: at(0, '10:23:34'), meal_entry_id: 'm2', food_name: 'Ức gà áp chảo 150g', servings: 1, kcal: 269, protein_g: 38, carbs_g: 0, fat_g: 13, fiber_g: 0 },
+    { id: 'mi7', created_at: at(0, '10:24:35'), meal_entry_id: 'm2', food_name: 'Rau xào 200g', servings: 1, kcal: 126, protein_g: 3, carbs_g: 15, fat_g: 6, fiber_g: 8 },
   ],
 };
 

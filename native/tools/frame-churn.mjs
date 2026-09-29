@@ -59,7 +59,7 @@ const args = new Set(argv);
 const route = argv[argv.indexOf('--route') + 1]?.startsWith('/') ? argv[argv.indexOf('--route') + 1] : '/';
 const seconds = Number(argv[argv.indexOf('--seconds') + 1]) || 3;
 
-const { FIXTURES, REF, UID, day, jwt } = await import(path.join(NATIVE, 'tools', 'live-world.mjs'));
+const { FIXTURES, REF, UID, day, jwt, LIVE_TZ } = await import(path.join(NATIVE, 'tools', 'live-world.mjs'));
 const { fakeSupabase } = await import(path.join(NATIVE, 'tools', 'live-server.mjs'));
 
 function loadChromium() {
@@ -118,7 +118,7 @@ const { server, port } = await serve();
 const chromium = loadChromium();
 
 const browser = await chromium.launch();
-const ctx = await browser.newContext({ viewport: { width: 402, height: 874 } });
+const ctx = await browser.newContext({ timezoneId: LIVE_TZ /* #114: cùng múi với live.mjs */, viewport: { width: 402, height: 874 } });
 await ctx.addInitScript(([ref, session]) => {
   window.localStorage.setItem(`sb-${ref}-auth-token`, session);
 }, [REF, JSON.stringify({

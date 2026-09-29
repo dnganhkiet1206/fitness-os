@@ -65,7 +65,7 @@ const heavyN = Number(argv[argv.indexOf('--heavy') + 1]) || 400;
 */
 const runs = Number(argv[argv.indexOf('--runs') + 1]) || 5;
 
-const { FIXTURES, REF, UID, day, jwt } = await import(path.join(NATIVE, 'tools', 'live-world.mjs'));
+const { FIXTURES, REF, UID, day, jwt, LIVE_TZ } = await import(path.join(NATIVE, 'tools', 'live-world.mjs'));
 const { fakeSupabase } = await import(path.join(NATIVE, 'tools', 'live-server.mjs'));
 
 function loadChromium() {
@@ -155,7 +155,7 @@ function heavyWorld() {
 
 async function openPage(chromium, world) {
   const browser = await chromium.launch();
-  const ctx = await browser.newContext({ viewport: { width: 402, height: 874 } });
+  const ctx = await browser.newContext({ timezoneId: LIVE_TZ /* #114: cùng múi với live.mjs */, viewport: { width: 402, height: 874 } });
   await ctx.addInitScript(([ref, session]) => {
     window.localStorage.setItem(`sb-${ref}-auth-token`, session);
   }, [REF, JSON.stringify({
