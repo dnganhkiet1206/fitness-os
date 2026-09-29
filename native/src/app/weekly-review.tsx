@@ -37,6 +37,7 @@ import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
 import { supabase } from '@/integrations/supabase/client';
+import { fillCopy } from '@/lib/copy-fill';
 import { localDateStr, localDayRangeISO, weekStartOf } from '@/lib/local-date';
 import { metricMean } from '@/lib/nutrition-mean';
 import { deloadWarranted, recoveryBacked } from '@/lib/readiness-week';
@@ -470,7 +471,7 @@ export default function WeeklyReviewScreen() {
     { icon: Flame, label: i18n.weeklyReviewAvgCalories, value: `${Math.round(avgKcal)}`, sub: `/${targets.kcal}`, d: delta(avgKcal, prevAvgKcal) },
     { icon: Beef, label: i18n.weeklyReviewAvgProtein, value: `${Math.round(avgProtein)}g`, sub: `/${targets.protein}g`, d: delta(avgProtein, prevAvgProtein) },
     { icon: Moon, label: i18n.weeklyReviewAvgSleep, value: `${avgSleepH.toFixed(1)}h`, sub: `/${targets.sleepH}h`, d: null },
-    { icon: Dumbbell, label: i18n.weeklyReviewVolume, value: `${Math.round(totalVolume / 1000)}k`, sub: `${workoutCount} ${i18n.weeklyReviewSessions}`, d: delta(totalVolume, prevTotalVolume) },
+    { icon: Dumbbell, label: i18n.weeklyReviewVolume, value: `${Math.round(totalVolume / 1000)}k`, sub: fillCopy(i18n.weeklyReviewSessions, { n: String(workoutCount) }), d: delta(totalVolume, prevTotalVolume) },
     { icon: Activity, label: i18n.weeklyReviewReadiness, value: `${Math.round(avgReadiness)}`, sub: acwr != null ? `ACWR ${acwr}` : '—', d: null },
   ];
 

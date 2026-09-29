@@ -122,7 +122,7 @@ async function watch(chromium, hour, seconds) {
   );
 
   const page = await ctx.newPage();
-  /* Máy chủ giả DÙNG CHUNG với live.mjs (#39): lọc eq/in/is, order=, RPC, 400 cho
+  /* Máy chủ giả DÙNG CHUNG với live.mjs (#39): lọc eq/in/is và khoảng gt/gte/lt/lte (#142), order=, RPC, 400 cho
      cột không có thật, nhớ lệnh ghi — không còn trả nguyên bảng. */
   await page.route('**/*.supabase.co/**', fakeSupabase({ world: structuredClone(FIXTURES) }));
 

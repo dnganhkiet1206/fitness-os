@@ -26,6 +26,7 @@ import { DayMeals } from '@/components/ascnd/today-meals';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
+import { fillCopy } from '@/lib/copy-fill';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -239,10 +240,12 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
               name={p.name}
               goalText={[
                 goalLabel(p.goal),
-                /* `nutritionMeals` = "bữa", không phải `nutritionMealsPerDay` =
-                   "Số bữa/ngày". Khoá kia là NHÃN của một ô nhập, và ghép nó sau
-                   một con số cho ra "3 Số bữa/ngày". */
-                p.meals_per_day ? `${p.meals_per_day} ${i18n.nutritionMeals}` : null,
+                /* `nMealsN` = "{n} bữa" / "{n} {n:meal|meals}", không phải
+                   `nutritionMealsPerDay` = "Số bữa/ngày". Khoá kia là NHÃN của
+                   một ô nhập, và ghép nó sau một con số cho ra "3 Số bữa/ngày".
+                   Và một mẫu có bộ chọn chứ không ghép số với "meals": ở n = 1
+                   cách ghép ra "1 meals" (plural-copy.mjs luật 5). */
+                p.meals_per_day ? fillCopy(i18n.nMealsN, { n: String(p.meals_per_day) }) : null,
               ]
                 .filter(Boolean)
                 .join('  ·  ')}

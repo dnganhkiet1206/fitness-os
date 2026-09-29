@@ -1006,6 +1006,89 @@ function waterNewestFirst() {
 const SCENARIOS = [
   {
     /*
+      #142: thử thách tuần "Tập 3 buổi" (hạng đồng) — tiến độ, trả thưởng, và
+      không trả đôi. Mọi con số đọc ra từ thế giới và từ mã của app, không gõ tay:
+        · tuần = thứ Hai 00:00 theo giờ của TRÌNH DUYỆT (như `weekStartOf`);
+        · world được dựng về đúng 2 buổi trong tuần, hàng thử thách về chưa
+          xong, sổ xu về không có khoản `ch:` nào — rồi tải lại (xoá riêng cache
+          truy vấn persist);
+        (A) màn vẽ "2 / 3", và KHÔNG một lệnh trả thưởng nào;
+        (B) thêm một buổi, tải lại: màn vẽ "Completed", ĐÚNG MỘT lời gọi
+            `claim_quest_reward` mang `ch:bronze:<tuần>:workouts_3`, sổ xu có
+            đúng một khoản `ch:` với số xu của hạng đồng đọc từ
+            `CHALLENGE_REWARD` trong `src/lib/mascot-room.ts`;
+        (C) tải lại lần nữa: KHÔNG lời gọi trả thưởng nào, sổ xu vẫn một khoản.
+    */
+    name: 'Thử thách tuần: 2/3 hiện đúng, đủ 3 thì trả đúng một lần đúng hạng đồng, không trả đôi (#142)',
+    route: '/challenges', mode: 'full',
+    async run(page, { world }) {
+      const bronze = Number(readFileSync(path.join(NATIVE, 'src/lib/mascot-room.ts'), 'utf8').match(/bronze:\s*\{\s*coins:\s*(\d+)/)?.[1]);
+      if (!bronze) return 'không đọc được số xu hạng đồng từ CHALLENGE_REWARD';
+      const row = world.weekly_challenges.find((r) => r.challenge_key === 'workouts_3' && r.user_id === UID);
+      if (!row) return 'thế giới không có thử thách workouts_3';
+      const week = await page.evaluate(() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+        const p = (n) => String(n).padStart(2, '0');
+        return { iso: d.toISOString(), day: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` };
+      });
+      row.week_start = week.day;
+      const mine = (x) => x.user_id === UID;
+      /* Cả tuần, không cắt ở "bây giờ": app đếm `[thứ Hai, thứ Hai sau)`, và
+         thế giới có buổi đặt giờ muộn hơn lúc chạy — lượt đầu cắt ở bây giờ
+         thì giữ lại chúng, app đếm thấy, màn ra "Completed" với "2" buổi. */
+      const weekEnd = new Date(new Date(week.iso).getTime() + 7 * 86400000).toISOString();
+      const inWeek = (x) => mine(x) && x.date_time >= week.iso && x.date_time < weekEnd;
+      const template = world.workout_sessions.find(mine);
+      let k = 0;
+      const session = () => ({ ...structuredClone(template), id: `ws142000-0000-4000-8000-${String(++k).padStart(12, '0')}`, date_time: new Date(Date.now() - k * 60_000).toISOString() });
+      const kept = world.workout_sessions.filter(inWeek).slice(0, 2);
+      world.workout_sessions = [...world.workout_sessions.filter((x) => !inWeek(x)), ...kept];
+      while (world.workout_sessions.filter(inWeek).length < 2) world.workout_sessions.push(session());
+      Object.assign(row, { current_value: 2, completed: false, completed_at: null });
+      world.mascot_transactions = (world.mascot_transactions ?? []).filter((t) => !String(t.ref_key ?? '').startsWith('ch:'));
+
+      const claims = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/rpc\/claim_quest_reward/.test(q.url())) claims.push(JSON.parse(q.postData() ?? '{}').p_ref_key ?? '');
+      });
+      const chClaims = () => claims.filter((c) => c.startsWith('ch:'));
+      const chTx = () => world.mascot_transactions.filter((t) => String(t.ref_key ?? '').startsWith('ch:'));
+      const fresh = async () => {
+        await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.includes('rq_cache')) localStorage.removeItem(x); });
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(6000);
+      };
+      const label = () => page.evaluate(() => {
+        const leaves = window.__shown('*').filter((e) => e.children.length === 0).map((e) => (e.textContent ?? '').trim());
+        return leaves.find((t) => /^\d+ \/ 3$/.test(t) || t === 'Completed') ?? null;
+      });
+
+      await fresh();
+      const a = await label();
+      if (a !== '2 / 3') return `(A) 2 buổi trong tuần mà màn vẽ ${JSON.stringify(a)}, không phải "2 / 3"`;
+      if (chClaims().length) return `(A) mới 2/3 mà đã gọi trả thưởng: ${chClaims().join(', ')}`;
+
+      world.workout_sessions.push(session());
+      await fresh();
+      const want = `ch:bronze:${week.day}:workouts_3`;
+      const b = await label();
+      if (b !== 'Completed') return `(B) đủ 3 buổi mà màn vẽ ${JSON.stringify(b)}`;
+      if (chClaims().length !== 1) return `(B) đủ 3 buổi: ${chClaims().length} lời gọi trả thưởng (${chClaims().join(', ')}) — phải đúng một`;
+      if (chClaims()[0] !== want) return `(B) trả thưởng với khoá ${chClaims()[0]}, phải là ${want}`;
+      if (chTx().length !== 1 || chTx()[0].amount !== bronze) return `(B) sổ xu: ${JSON.stringify(chTx().map((t) => [t.ref_key, t.amount]))} — phải đúng một khoản ${bronze} xu (hạng đồng)`;
+      if (!row.completed) return '(B) trả thưởng rồi mà hàng thử thách chưa ghi là xong';
+
+      claims.length = 0;
+      await fresh();
+      if (chClaims().length) return `(C) tải lại sau khi đã nhận: ${chClaims().length} lời gọi trả thưởng nữa — trả đôi`;
+      if (chTx().length !== 1) return `(C) sổ xu có ${chTx().length} khoản ch: sau lần tải lại`;
+      return null;
+    },
+  },
+  {
+    /*
       #160: nút "Tham gia" của hero thử thách NÓI là đang làm trong lúc chờ
       server, thay vì đứng nguyên chữ như chưa ai bấm.
         · world bỏ mọi lượt tham gia của người dùng rồi tải lại → hero hiện
@@ -3396,7 +3479,11 @@ const SCENARIOS = [
       hàng sang AsyncStorage, nên trên bản dựng này nhiệm vụ ngày không bao giờ
       gọi server (đo lúc viết: sổ không đổi sau 30 giây ở /, dù ba nhiệm vụ đã
       đạt). Phần thưởng thử thách TUẦN (`use-extras.ts`) gọi `claim_quest_reward`
-      bất kể cờ ấy, và thử thách tuần đạt ngay lần mở đầu (#70).
+      bất kể cờ ấy.
+
+      "Thử thách tuần đạt ngay lần mở đầu (#70)" — câu cũ ở đây — chỉ đúng vì
+      thế giới giả BỎ QUA lọc khoảng: đếm buổi tập tuần này ra 15/15. Từ #142 nó
+      lọc thật, nên vế này tự dựng một tuần có đủ 3 buổi rồi mới mở lại màn.
 
       Lượt nhận chạy lúc MỞ màn, trước khi vế này kịp nghe — nên nó đo KẾT QUẢ
       rồi đo lần mở sau:
@@ -3406,7 +3493,25 @@ const SCENARIOS = [
     */
     name: 'Thử thách tuần: đạt thì được trả đúng giá, đúng một lần, và sổ đọc lại thấy (#95)',
     route: '/challenges', mode: 'full',
-    async run(page) {
+    async run(page, { world }) {
+      /* Một tuần có đủ 3 buổi — tuần theo giờ của TRÌNH DUYỆT, như `weekStartOf`. */
+      const week = await page.evaluate(() => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+        const p = (n) => String(n).padStart(2, '0');
+        return { iso: d.toISOString(), day: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` };
+      });
+      const row = world.weekly_challenges.find((r) => r.challenge_key === 'workouts_3' && r.user_id === UID);
+      if (!row) return 'thế giới không có thử thách workouts_3';
+      Object.assign(row, { week_start: week.day, current_value: 0, completed: false, completed_at: null });
+      const template = world.workout_sessions.find((x) => x.user_id === UID);
+      for (let k = 1; k <= 3; k++) {
+        world.workout_sessions.push({ ...structuredClone(template), id: `ws095000-0000-4000-8000-${String(k).padStart(12, '0')}`, date_time: new Date(Date.now() - k * 60_000).toISOString() });
+      }
+      world.mascot_transactions = (world.mascot_transactions ?? []).filter((t) => !String(t.ref_key ?? '').startsWith('ch:'));
+      await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.includes('rq_cache')) localStorage.removeItem(x); });
+      await page.reload({ waitUntil: 'domcontentloaded' });
       const base = `https://${REF}.supabase.co`;
       const read = () => page.evaluate(async ([b, uid]) => {
         const r = await fetch(`${b}/rest/v1/mascot_transactions?select=ref_key,amount&user_id=eq.${uid}`);
@@ -3907,9 +4012,10 @@ const SCENARIOS = [
       tham số lọc nào. `?date_time=gte.…&date_time=lt.…` bị bỏ qua hoàn toàn,
       nên mọi ngày đều nhận đúng hai bữa ấy.
 
-      Đó là một giới hạn có thật của bộ chạy — nó KHÔNG kiểm được bất kỳ lỗi lọc
-      theo ngày nào của bất kỳ màn nào — và ghi ở đây để người sau không lại
-      dựng một phép khẳng định lên trên nó lần nữa.
+      Đó từng là một giới hạn có thật của bộ chạy. Từ #142 (29/09) thế giới giả
+      lọc được `gt/gte/lt/lte` (`filterFor` trong `live-world.mjs`), nên các hàng
+      hiện ra nay theo đúng ngày — nhưng bước này vẫn đo YÊU CẦU, vì đó mới là
+      câu hỏi của nó: `date` có tới được truy vấn không.
 
       Thứ đo được, và đúng ra là thứ nên đo ngay từ đầu, là YÊU CẦU mà app gửi
       đi: nếu `date` thật sự chảy tới `useTodayLog` thì sau cú bấm phải có một
@@ -3970,8 +4076,20 @@ const SCENARIOS = [
           '`date` không tới được useTodayLog, nên màn chỉ đổi nhãn chứ không đổi dữ liệu';
       }
 
-      /* Ghi thêm vào CHÍNH ngày đang xem. */
-      const add = page.getByText(/Log a meal for this day|Ghi một bữa cho ngày này/).filter({ visible: true }).first();
+      /* Từ #142 thế giới giả lọc được theo ngày, nên câu mà tên bước này vẫn hứa
+         nay đo được: tổng kcal của hôm qua KHÁC hôm nay (hôm qua không có bữa
+         nào trong thế giới, nên nó là thẻ trống — `DayMeals`). */
+      const kcalOf = (t) => t.match(/([\d.,]+)\s*kcal/)?.[1] ?? null;
+      const emptyDay = /Nothing logged this day|Ngày này chưa ghi bữa nào/.test(atYesterday);
+      if (!emptyDay && kcalOf(atYesterday) !== null && kcalOf(atYesterday) === kcalOf(atToday)) {
+        return `lùi một ngày mà tổng kcal vẫn là ${kcalOf(atToday)} — nhãn đổi, dữ liệu thì không`;
+      }
+
+      /* Ghi thêm vào CHÍNH ngày đang xem — qua lối nào đang hiện: ngày có bữa có
+         nút "Log a meal for this day"; ngày trống có thẻ "Nothing logged this
+         day — tap to log a meal" (diary.tsx cố ý không xếp hai lối chồng nhau).
+         Cả hai phải mang ngày theo. */
+      const add = page.getByText(/Log a meal for this day|Ghi một bữa cho ngày này|Nothing logged this day — tap to log a meal|Ngày này chưa ghi bữa nào — nhấn để ghi/).filter({ visible: true }).first();
       if ((await add.count()) === 0) return 'ngày đã qua không có lối ghi thêm bữa nào';
       await add.click();
       await page.waitForTimeout(2500);

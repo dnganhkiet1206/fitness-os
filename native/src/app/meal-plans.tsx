@@ -17,6 +17,7 @@ import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useMealPlanFill, useMealPlans } from '@/hooks/use-library';
+import { fillCopy } from '@/lib/copy-fill';
 import { useRise } from '@/lib/entrance';
 
 /**
@@ -87,7 +88,7 @@ export default function MealPlansScreen() {
                 name={p.name}
                 goalText={[
                   goalLabel(p.goal),
-                  p.meals_per_day ? `${p.meals_per_day} ${i18n.nMealsPerDay}` : null,
+                  p.meals_per_day ? fillCopy(i18n.nMealsPerDayN, { n: String(p.meals_per_day) }) : null,
                 ]
                   .filter(Boolean)
                   .join('  ·  ')}

@@ -8,6 +8,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { type } from '@/constants/ascnd';
 import { makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
+import { fillCopy } from '@/lib/copy-fill';
 import type { NativeStrings } from '@/lib/native-strings';
 import type { ExercisePerformance } from '@/lib/exercise-performance';
 import type { ExerciseInsight, Trend } from '@/lib/exercise-trend';
@@ -85,8 +86,8 @@ function lastSetText(
      `day-plan.tsx` và câu hỏi giống hệt ở đây: "25 kg × 10" thì 10 là gì.
      `i18n.nReps` là đúng cái tên mà ô nhập bên kia dùng, nên hai màn không
      đẻ ra hai chữ cho một thứ. */
-  if (load <= 0) return `${p.bestReps} ${i18n.nReps} × ${i18n.nRdBodyweight.toLowerCase()}`;
-  return `${kg(load)} ${weightLabel(u)} × ${p.bestReps} ${i18n.nReps}`;
+  if (load <= 0) return `${fillCopy(i18n.nRepsN, { n: String(p.bestReps) })} × ${i18n.nRdBodyweight.toLowerCase()}`;
+  return `${kg(load)} ${weightLabel(u)} × ${fillCopy(i18n.nRepsN, { n: String(p.bestReps) })}`;
 }
 
 /**

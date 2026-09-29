@@ -46,7 +46,7 @@ import { UID, applyQuery } from './live-world.mjs';
 export const SCHEMA = readSchema();
 
 const RESERVED = new Set(['select', 'order', 'limit', 'offset', 'on_conflict', 'columns']);
-const KNOWN_OPS = new Set(['eq', 'neq', 'in', 'is']);
+const KNOWN_OPS = new Set(['eq', 'neq', 'in', 'is', 'gt', 'gte', 'lt', 'lte']);
 
 /** Tham số lọc của URL mà `applyQuery` KHÔNG hiểu (tức áp lệnh ghi theo nó là đoán). */
 export function unsupportedFilters(url) {

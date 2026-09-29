@@ -206,6 +206,63 @@ for (const { rel, src } of srcs) {
   }
 }
 
+/* ── luật 5: số GHÉP TRONG MÃ với một danh từ số nhiều (#142, 29/09) ─────────
+   Luật 1 chỉ thấy chuỗi trong hai tệp chuỗi. `\`${workoutCount} ${i18n.weeklyReviewSessions}\``
+   ghép ở CHỖ DÙNG, và chuỗi 'sessions' một mình không có `{x}` nào để luật 1
+   hỏi — nên "1 sessions" ở /weekly-review sống tới khi thế giới giả biết lọc
+   theo ngày và cho màn ấy đúng một buổi. Cùng dạng ấy còn ở bốn chỗ ("× 1
+   reps", "1 meals", "1 meals/day"). Luật: `${…} ${i18n.KHOÁ}` (hay `t.`) mà chữ
+   tiếng Anh của KHOÁ bắt đầu bằng một danh từ số nhiều thì đỏ — viết khoá
+   `{n} {n:…|…}` và đọc bằng fillCopy. Ngoại lệ ghi tên tệp + khoá, mỗi cái một
+   lý do. */
+const CONCAT_OK = new Map([
+  ['src/app/log-workout.tsx:nReps', 'nhãn trợ năng "<bài> <SỐ THỨ TỰ hiệp> reps" — số ở đó là hiệp thứ mấy, không phải số lần đếm, nên "set 1 reps" không có dạng số ít nào đúng hơn'],
+]);
+const enText = new Map();
+for (const s2 of SOURCES) {
+  for (const { key, text } of englishCopy(readFileSync(path.join(NATIVE, s2.file), 'utf8'), s2.start, s2.end)) enText.set(key, text);
+}
+const firstWordPlural = (text) => {
+  const w = (text ?? '').trim().split(/[\s/·,]+/)[0]?.toLowerCase() ?? '';
+  return /^[a-z]+$/.test(w) && isPluralNoun(w);
+};
+export function concatPlurals(src, texts) {
+  const out = [];
+  for (const m of src.matchAll(/\$\{[^{}]+\}\s+\$\{(?:i18n|t)\.(\w+)\}/g)) {
+    if (firstWordPlural(texts.get(m[1]))) out.push({ key: m[1], at: m.index });
+  }
+  return out;
+}
+{
+  const T = new Map([['nReps', 'reps'], ['nKcalLeft', 'left'], ['nMealsPerDay', 'meals/day'], ['kcal', 'kcal'], ['nLbs', 'lbs']]);
+  const CASES = [
+    ['`${n} ${i18n.nReps}`', ['nReps']],
+    ['`${n} ${t.nMealsPerDay}`', ['nMealsPerDay']],
+    ['`${left} ${i18n.nKcalLeft}`', []],
+    ['`${v} ${i18n.kcal}`', []],
+    ['`${v} ${i18n.nLbs}`', []],
+    ['fillCopy(i18n.nRepsN, { n })', []],
+  ];
+  for (const [src, want] of CASES) {
+    const got = concatPlurals(src, T).map((h) => h.key);
+    if (JSON.stringify(got) !== JSON.stringify(want)) problems.push(`luật 5 tự kiểm sai: ${src} ra ${JSON.stringify(got)}, phải là ${JSON.stringify(want)}`);
+  }
+  globalThis.__concatCases = CASES.length;
+}
+let concatScanned = 0;
+for (const { rel, src } of srcs) {
+  for (const { key, at } of concatPlurals(src, enText)) {
+    concatScanned++;
+    if (CONCAT_OK.has(`${rel}:${key}`)) continue;
+    problems.push(`${rel}:${lineOf(src, at)}: một con số ghép thẳng với \`${key}\` ("${enText.get(key)}") — ở n = 1 tiếng Anh đọc "1 ${enText.get(key)}". Viết một khoá "{n} {n:…|…}" và đọc bằng fillCopy`);
+  }
+}
+for (const k of CONCAT_OK.keys()) {
+  const [file, key] = [k.slice(0, k.lastIndexOf(':')), k.slice(k.lastIndexOf(':') + 1)];
+  const hit = srcs.find((x) => x.rel === file);
+  if (!hit || !concatPlurals(hit.src, enText).some((h) => h.key === key)) problems.push(`luật 5: ngoại lệ ${k} không còn khớp chỗ nào — gỡ nó khỏi CONCAT_OK`);
+}
+
 /* ── luật 4: lượt quét hẹp nhận ra chuỗi đã điền ─────────────────────────── */
 let narrowChecked = 0;
 {
@@ -232,5 +289,6 @@ console.log(
   `câu đếm OK — ${scanned} chuỗi tiếng Anh (native-strings + i18n): mọi "{x} <danh từ số nhiều>" đều có bộ chọn {x:một|nhiều} ` +
     `(${selectorKeys.size} khoá, ${EXEMPT.size} ngoại lệ có lý do), không khoá nào có bộ chọn tới được .replace( — thẳng, qua biến, hay qua hàm (${taintedFns.size} hàm trả khoá) — ở ${files.length} tệp; ` +
     `fillCopy thật đúng ${globalThis.__fill} ca biên (1, 0, 1.5, "+1", "1,240", hai số một câu, thiếu biến giữ nguyên); luật tự kiểm ${RULE_CASES.length} ca; ` +
-    `lượt quét hẹp nhận ra ${narrowChecked} bản đã điền (n = 1 và 3) của mọi chuỗi có bộ chọn là chữ của app`,
+    `lượt quét hẹp nhận ra ${narrowChecked} bản đã điền (n = 1 và 3) của mọi chuỗi có bộ chọn là chữ của app; ` +
+    `luật 5: không con số nào ghép thẳng trong mã với một danh từ số nhiều (${concatScanned} chỗ ghép, ${CONCAT_OK.size} ngoại lệ có lý do; tự kiểm ${globalThis.__concatCases} ca)`,
 );

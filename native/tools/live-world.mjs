@@ -183,6 +183,30 @@ function filterFor(col, raw) {
   else if (op === 'in' && val.startsWith('(') && val.endsWith(')')) {
     const set = new Set(splitList(val.slice(1, -1)));
     test = (r) => str(r[col]) !== null && set.has(str(r[col]));
+  } else if (op === 'gt' || op === 'gte' || op === 'lt' || op === 'lte') {
+    /*
+      Lọc khoảng — trước 29/09 KHÔNG có, và `filterFor` trả `null` nên bộ lọc
+      bị BỎ QUA lặng lẽ: mọi truy vấn theo khoảng ngày của app (buổi tập tuần
+      này, bữa ăn hôm nay, số đo 7 ngày…) nhận nguyên bảng. Tìm ra ở #142: đếm
+      buổi tập tuần này `date_time=gte.<thứ Hai>&date_time=lt.<thứ Hai sau>`
+      ra 15/15 trên một thế giới có 2 buổi trong tuần, nên thử thách tuần xong
+      ngay khi mở màn.
+
+      So SỐ khi cả hai vế là số (Postgres so `numeric` theo giá trị: "9" < "10"),
+      còn lại so CHUỖI — ngày `YYYY-MM-DD` và mốc ISO `…T…Z` của thế giới này so
+      đúng theo thứ tự chữ, vì cả app lẫn fixture đều viết bằng `toISOString()`.
+      Hàng không có giá trị thì không lọt, như NULL trong một phép so của SQL.
+    */
+    const num = (v) => (v !== null && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
+    const cmp = (x) => {
+      const a = num(x);
+      const b = num(val);
+      if (a !== null && b !== null) return a < b ? -1 : a > b ? 1 : 0;
+      const sx = String(x);
+      return sx < val ? -1 : sx > val ? 1 : 0;
+    };
+    const ok = { gt: (c) => c > 0, gte: (c) => c >= 0, lt: (c) => c < 0, lte: (c) => c <= 0 }[op];
+    test = (r) => str(r[col]) !== null && ok(cmp(r[col]));
   } else if (op === 'is' && val === 'null') test = (r) => r[col] === null || r[col] === undefined;
   else if (op === 'is' && (val === 'true' || val === 'false')) test = (r) => r[col] === (val === 'true');
   else return null;

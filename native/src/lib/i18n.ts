@@ -154,7 +154,6 @@ interface Translations {
   nutritionCreatePlan: string;
   nutritionPlanName: string;
   nutritionMealsPerDay: string;
-  nutritionMeals: string;
 
   // Meal plan
   mealPlanTitle: string;
@@ -655,7 +654,6 @@ const vi: Translations = {
   nutritionCreatePlan: 'Tạo kế hoạch ăn',
   nutritionPlanName: 'Tên kế hoạch ăn',
   nutritionMealsPerDay: 'Số bữa/ngày',
-  nutritionMeals: 'bữa',
 
   mealPlanTitle: 'Kế hoạch ăn',
   mealBreakfast: 'Bữa sáng',
@@ -767,7 +765,7 @@ const vi: Translations = {
   weeklyReviewSleepChart: 'Giấc Ngủ',
   weeklyReviewReadinessChart: 'Mức sẵn sàng',
   weeklyReviewRecommendations: 'Khuyến Nghị Tuần Tới',
-  weeklyReviewSessions: 'buổi',
+  weeklyReviewSessions: '{n} buổi',
 
   smartGoalsTitle: 'Hiệu chỉnh mục tiêu',
   smartGoalsWeightTrend: 'Xu Hướng Cân Nặng (4 Tuần)',
@@ -1097,7 +1095,6 @@ const en: Translations = {
   nutritionCreatePlan: 'Create Meal Plan',
   nutritionPlanName: 'Plan name',
   nutritionMealsPerDay: 'Meals per day',
-  nutritionMeals: 'meals',
 
   mealPlanTitle: 'Meal Plan',
   mealBreakfast: 'Breakfast',
@@ -1209,7 +1206,7 @@ const en: Translations = {
   weeklyReviewSleepChart: 'Sleep',
   weeklyReviewReadinessChart: 'Readiness',
   weeklyReviewRecommendations: 'Next Week Recommendations',
-  weeklyReviewSessions: 'sessions',
+  weeklyReviewSessions: '{n} {n:session|sessions}',
 
   smartGoalsTitle: 'Target calibration',
   smartGoalsWeightTrend: 'Weight Trend (4 Weeks)',

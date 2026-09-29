@@ -34,10 +34,10 @@
  *      `PageAura` không caller, hai bộ đo sáng trùng nhau, và một `AmbientBackground`
  *      tôi tự dựng lên cạnh một cái đã có sẵn.
  *
- * Từ #17 vế 1 kiểm cả bộ lọc `eq`/`neq`/`in`/`is`. KHÔNG lọc `gte`/`lt`: máy
- * chủ giả không lọc theo ngày, đó là giới hạn đã được ghi trong `live.mjs` ở
- * kịch bản "nhật ký ngày khác", và nó vẫn còn nguyên — một ca dưới đây đòi
- * chúng được GIỮ NGUYÊN.
+ * Từ #17 vế 1 kiểm cả bộ lọc `eq`/`neq`/`in`/`is`; từ #142 (29/09) cả lọc
+ * khoảng `gt`/`gte`/`lt`/`lte` — trước đó chúng bị bỏ qua lặng lẽ, và mọi truy
+ * vấn theo ngày nhận nguyên bảng. Toán tử còn LẠ (`like`, `cs`, `or=`, cột
+ * lồng) vẫn được GIỮ NGUYÊN — một ca dưới đây đòi thế.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
@@ -160,12 +160,12 @@ const CASES = [
     want: 'b',
   },
   {
-    /* Toán tử lạ, khoảng ngày, cột lồng và `or=` được GIỮ NGUYÊN: lọc sai là
-       giấu hàng khỏi ảnh chụp. `gte` còn có kịch bản "nhật ký ngày khác" dựa
-       vào việc nó không được lọc. */
-    name: 'gte, like, or và cột lồng giữ nguyên',
+    /* Toán tử lạ, cột lồng và `or=` được GIỮ NGUYÊN: lọc sai là giấu hàng khỏi
+       ảnh chụp. Ca này từng dùng `gte` làm "toán tử lạ"; từ #142 `gte` được
+       lọc thật (xem ca lọc khoảng ở cuối tệp), nên chỗ ấy là `cs`. */
+    name: 'cs, like, or và cột lồng giữ nguyên',
     rows: [{ id: 'a', d: '2020-01-01', t: 'x' }, { id: 'b', d: '2030-01-01', t: 'y' }],
-    q: 'd=gte.2025-01-01&t=like.*z*&or=(t.eq.q)&p.k=eq.1',
+    q: 'd=cs.{2025}&t=like.*z*&or=(t.eq.q)&p.k=eq.1',
     want: 'a,b',
   },
   {
@@ -345,8 +345,9 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
       applyWrite(w, 'community_likes', 'DELETE', U(`community_likes?post_id=eq.${like0.post_id}&user_id=eq.${like0.user_id}`), '');
       return w.community_likes.length === FIXTURES.community_likes.length - 1;
     }],
-    ['DELETE theo gte (bộ lọc không hiểu) KHÔNG được áp', (w) => {
-      const r = applyWrite(w, 'weight_logs', 'DELETE', U('weight_logs?date=gte.2000-01-01'), '');
+    /* Từng là `gte`; từ #142 `gte` được hiểu, nên "bộ lọc không hiểu" là `cs`. */
+    ['DELETE theo cs (bộ lọc không hiểu) KHÔNG được áp', (w) => {
+      const r = applyWrite(w, 'weight_logs', 'DELETE', U('weight_logs?date=cs.{2000}'), '');
       return r.applied === false && w.weight_logs.length === FIXTURES.weight_logs.length;
     }],
     ['POST lô [mới, trùng] → 409 và KHÔNG hàng nào vào (nguyên tử, #80)', (w) => {
@@ -697,6 +698,36 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
   globalThis.__rangeCases = RANGE_CASES.length;
 }
 
+/* ── lọc khoảng (#142, 29/09): gt/gte/lt/lte, kể cả HAI bộ lọc trên CÙNG một
+   cột — đúng dạng `.gte('date_time', a).lt('date_time', b)` của app. Trước đó
+   `filterFor` không hiểu chúng và bộ lọc bị bỏ qua lặng lẽ: đếm buổi tập tuần
+   này ra 15/15. Mỗi ca có đáp án cụ thể; hai ca cuối chứng minh so SỐ ("9" <
+   "10") khác so CHUỖI, và hàng không có giá trị không lọt. ── */
+{
+  const T = [
+    { id: 'a', d: '1999-09-27T10:00:00.000Z', n: 9 },
+    { id: 'b', d: '1999-09-28T07:00:00.000Z', n: 10 },
+    { id: 'c', d: '1999-09-30T12:00:00.000Z', n: 100 },
+    { id: 'e', d: '1999-10-05T07:00:00.000Z', n: null },
+  ];
+  const Q = (q) => new URL(`https://x.supabase.co/rest/v1/t?${q}`);
+  const RANGE_OPS = [
+    ['gte + lt trên CÙNG một cột: cả hai được áp', 'd=gte.1999-09-28T07:00:00.000Z&d=lt.1999-10-05T07:00:00.000Z', 'b,c'],
+    ['gt loại đúng mốc biên', 'd=gt.1999-09-28T07:00:00.000Z', 'c,e'],
+    ['lte giữ đúng mốc biên', 'd=lte.1999-09-28T07:00:00.000Z', 'a,b'],
+    ['ngày YYYY-MM-DD so với mốc ISO theo thứ tự chữ', 'd=gte.1999-09-30', 'c,e'],
+    ['số so theo GIÁ TRỊ, không theo chữ ("9" < "10")', 'n=lt.10', 'a'],
+    ['hàng không có giá trị không lọt phép so', 'n=gte.0', 'a,b,c'],
+    ['not.gte là phủ định', 'n=not.gte.10', 'a,e'],
+  ];
+  for (const [label, q, want] of RANGE_OPS) {
+    let got;
+    try { got = ids(applyQuery(T, Q(q))); } catch (e) { got = `ném lỗi: ${e.message}`; }
+    if (got !== want) problems.push(`lọc khoảng sai (#142): ${label} — ?${q} ra "${got}", phải là "${want}"`);
+  }
+  globalThis.__rangeOps = RANGE_OPS.length;
+}
+
 /* ── vế 7b (#39): mọi route giả trong tools/ đi qua `fakeSupabase` ──────────
    Bốn đầu dò hiệu năng từng tự dựng route trả `FIXTURES[bảng]` nguyên bảng —
    không lọc, không sắp, không RPC, không 400 — nên đo khung hình trên những màn
@@ -767,7 +798,7 @@ console.log(
     `không-order) đều đúng và không ca nào sắp tại chỗ; ${orderCalls} lượt \`.order()\` trong src/, ` +
     `${checkedTables} cặp bảng·cột có fixture để đối chiếu và mọi cột đều tồn tại trong MỌI hàng; ` +
     'và route giả (`live-server.mjs`, #39) thật sự gọi `applyQuery` để dựng hàng trả về, chứ không chỉ import nó. ' +
-    'Không kiểm `gte`/`lt` — máy chủ giả không lọc theo ngày, giới hạn ấy ghi trong live.mjs. ' +
+    `Và ${globalThis.__rangeOps} ca lọc khoảng (#142): gt/gte/lt/lte, hai bộ lọc trên cùng một cột, số so theo giá trị, hàng không có giá trị không lọt. ` +
     `Và ${SELECT_CASES.length} ca \`select=\` (#35): cột không có thật — kể cả sau bí danh, ép kiểu, đường JSON, trong phần nhúng — ` +
     'được trả 400 / 42703 như PostgREST, câu hợp lệ thì không, và `live.mjs` dùng đúng bộ ấy trong route giả. ' +
     `Và ${REQUEST_CASES.length} ca #40: bộ lọc, not., or=/and= lồng nhau, order=, on_conflict= (42703) và thân POST/PATCH (PGRST204) nhắc cột lạ đều bị từ chối, câu hợp lệ thì không. ` +

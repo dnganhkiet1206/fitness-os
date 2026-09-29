@@ -1068,7 +1068,7 @@ export function DayPlan({
         ? `${Math.round(displayWeight(s.weightKg, wUnit) * 10) / 10} ${wl}`
         : i18n.nRdBodyweight;
       /* Cùng lối với đơn thuốc ở tiêu đề: nhãn ở con số đuôi. */
-      return `${s.sets} × ${s.reps} ${i18n.nReps}  ·  ${load}`;
+      return `${s.sets} × ${fillCopy(i18n.nRepsN, { n: String(s.reps) })}  ·  ${load}`;
     }
     const sets = fillCopy(i18n.nRdSetsN, { n: String(s.sets) });
     return s.volumeKg > 0
