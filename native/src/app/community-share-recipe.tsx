@@ -7,6 +7,8 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { ArtStylePicker } from '@/components/ascnd/art-style-picker';
+import { useArtChoice } from '@/hooks/use-art-choice';
 import { RecipePostCard } from '@/components/ascnd/recipe-post-card';
 import { Screen } from '@/components/ascnd/screen';
 import { Segmented } from '@/components/ascnd/segmented';
@@ -90,6 +92,8 @@ export default function CommunityShareRecipeScreen() {
   };
   const fmt = (n: number) => Math.round(n).toLocaleString(locale);
 
+  /* Ảnh do app cấp (#163). */
+  const artChoice = useArtChoice('recipe', []);
   const preview: FeedPost | null =
     meal && me.data
       ? {
@@ -110,6 +114,7 @@ export default function CommunityShareRecipeScreen() {
           liked: false,
           saved: false,
           mine: true,
+          art: artChoice.art,
         }
       : null;
 
@@ -120,7 +125,7 @@ export default function CommunityShareRecipeScreen() {
       return;
     }
     share.mutate(
-      { entryId: meal.id, title, caption, visibility: vis },
+      { entryId: meal.id, title, caption, visibility: vis, artId: artChoice.art?.id ?? null },
       {
         onSuccess: () => {
           toast.success(i18n.nCmPosted);
@@ -202,6 +207,7 @@ export default function CommunityShareRecipeScreen() {
                 dòng đầu — và không có dòng "+N nguyên liệu khác" dẫn tới một
                 bài `preview` chưa tồn tại. */}
             {preview ? <RecipePostCard post={preview} preview full /> : null}
+            {preview ? <ArtStylePicker styles={artChoice.styles} value={artChoice.style} onChange={artChoice.setStyle} /> : null}
 
             <GlassCard style={styles.form}>
               <Text style={styles.label}>{i18n.nRcName}</Text>

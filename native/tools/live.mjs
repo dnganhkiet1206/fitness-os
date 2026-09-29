@@ -1006,6 +1006,81 @@ function waterNewestFirst() {
 const SCENARIOS = [
   {
     /*
+      #163: mọi bài có ảnh của thư viện app, người dùng chỉ chọn phong cách.
+        (A) màn chia sẻ buổi tập k1 (Bench Press → nhãn `push`): xem trước có
+            SẴN một ảnh hợp nội dung — `workout/mono-push.png`, không phải ảnh
+            chân hay ảnh chung — và ảnh ấy giải mã được (naturalWidth > 0);
+        (B) đổi phong cách sang "Neon" thì ảnh đổi thành `workout/neon.png`;
+        (C) bấm Đăng: đúng một lời gọi `share_workout_with_art`, mang
+            `p_art_id` của ảnh đang hiện;
+        (D) feed: bài có ảnh hiện đúng ảnh ở CẢ sáng lẫn tối; bài trỏ vào một
+            ảnh đã tắt mà tệp không còn (404) thì thẻ không vỡ — khung ảnh vẫn
+            đúng tỉ lệ, còn nền theo loại bài, không còn thẻ <img> hỏng nào.
+    */
+    name: 'Cộng đồng: ảnh của thư viện app — chọn sẵn đúng nội dung, đổi phong cách thì đổi ảnh, feed không vỡ (#163)',
+    route: '/community-share?session=k1', mode: 'full',
+    async run(page) {
+      const calls = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/rpc\/share_workout/.test(q.url())) calls.push({ fn: q.url().split('/rpc/')[1], body: q.postData() ?? '' });
+      });
+      const img = () => page.locator('[data-testid="post-art-image"] img, img[data-testid="post-art-image"]').filter({ visible: true });
+      const srcOf = async () => {
+        for (let i = 0; i < 24; i++) {
+          const n = await img().count();
+          if (n) {
+            const [src, w] = await img().first().evaluate((e) => [e.currentSrc || e.src, e.naturalWidth]);
+            if (w > 0) return src;
+          }
+          await page.waitForTimeout(250);
+        }
+        return null;
+      };
+      const a = await srcOf();
+      if (!a) return '(A) màn chia sẻ không có ảnh xem trước nào giải mã được';
+      if (!/community-art\/workout\/mono-push\.png/.test(a)) return `(A) ảnh chọn sẵn không hợp nội dung buổi đẩy: ${a.split('community-art/')[1] ?? a}`;
+
+      const neon = page.getByRole('tab', { name: 'Neon', exact: true });
+      if ((await neon.count()) !== 1) return '(B) không thấy lựa chọn phong cách "Neon"';
+      await neon.click();
+      let b = null;
+      for (let i = 0; i < 16 && !(b && /neon\.png/.test(b)); i++) {
+        await page.waitForTimeout(250);
+        b = await srcOf();
+      }
+      if (!b || !/community-art\/workout\/neon\.png/.test(b)) return `(B) đổi sang Neon mà ảnh không đổi: ${b}`;
+
+      const postBtn = page.getByRole('button', { name: /^(Post|Đăng)$/ }).filter({ visible: true }).first();
+      if (!(await postBtn.count())) return '(C) không thấy nút Đăng';
+      await postBtn.click();
+      for (let i = 0; i < 16 && !calls.length; i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(800);
+      if (calls.length !== 1 || calls[0].fn !== 'share_workout_with_art') return `(C) phải đúng 1 lời gọi share_workout_with_art, ra ${calls.map((c) => c.fn).join(', ') || 'không lời gọi nào'}`;
+      if (!/"p_art_id"\s*:\s*"ca000000-0000-4000-8000-000000000003"/.test(calls[0].body)) return `(C) p_art_id không phải ảnh Neon đang hiện: ${calls[0].body.slice(0, 160)}`;
+
+      for (const theme of ['dark', 'light']) {
+        await page.evaluate((t) => localStorage.setItem('ascnd_theme', t), theme);
+        await page.goto(page.url().replace(/\/community-share.*$/, '/community'), { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(5000);
+        const feed = await page.evaluate(() => {
+          const frames = window.__shown('[data-testid="post-art"]');
+          return frames.map((f) => {
+            const r = f.getBoundingClientRect();
+            const im = window.__shown('img', f)[0];
+            return { ratio: r.width / r.height, src: im?.currentSrc || im?.src || null, ok: im ? im.naturalWidth > 0 : null };
+          });
+        });
+        if (feed.length < 2) return `(D ${theme}) feed có ${feed.length} khung ảnh — mọi bài phải có`;
+        if (feed.some((f) => Math.abs(f.ratio - 16 / 9) > 0.05)) return `(D ${theme}) khung ảnh sai tỉ lệ: ${feed.map((f) => f.ratio.toFixed(2)).join(', ')}`;
+        if (!feed.some((f) => f.src && /mono-push\.png/.test(f.src) && f.ok)) return `(D ${theme}) bài có ảnh thư viện không hiện ảnh của nó`;
+        if (feed.some((f) => f.src && f.ok === false)) return `(D ${theme}) ảnh tải hỏng vẫn để lại một thẻ <img> vỡ thay vì nền theo loại bài`;
+        if (feed.length && !(await page.locator('[data-testid="post-art"] svg').filter({ visible: true }).count())) return `(D ${theme}) không thấy nền theo loại bài dưới khung ảnh`;
+      }
+      return null;
+    },
+  },
+  {
+    /*
       #157: điều hướng là MỘT thao tác, dù người ta bấm bao nhiêu lần. Trên bản
       dựng thật, qua `nav.push` và chốt vòng đời của `lib/nav-guard.ts`:
         · Test 1 — bấm một lần: đúng một màn (một lần Back là về);

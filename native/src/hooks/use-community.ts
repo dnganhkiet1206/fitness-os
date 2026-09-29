@@ -8,6 +8,7 @@ import { useAuth } from './use-auth';
 import { useOnlineMutation } from './use-online-mutation';
 import type { TemplateExercise } from './use-library';
 import { now } from '@/lib/offline-class';
+import type { CommunityArt } from '@/lib/community-art';
 
 /**
  * Dữ liệu tab Cộng đồng — giai đoạn 1: danh tính, feed, bài Workout, tương
@@ -81,6 +82,9 @@ export interface FeedPost {
   liked: boolean;
   saved: boolean;
   mine: boolean;
+  /** Ảnh của thư viện app (#163). `null` cho bài đăng trước #163 — thẻ tự vẽ
+      một nền theo loại bài, không bao giờ là một ô vỡ. */
+  art: CommunityArt | null;
 }
 
 export interface CommunityComment {
@@ -96,7 +100,31 @@ const PROFILE_COLS = 'user_id, handle, display_name, mascot_id, is_official, bio
 /* Export cho Thư viện Đã lưu (#10, B — chủ dự án cho B sửa đúng bốn điểm ở
    #23): thư viện dựng FeedPost y như feed, nên đọc lại chính ba thứ này. */
 export const POST_COLS =
-  'id, author_id, kind, payload, caption, visibility, like_count, comment_count, save_count, hidden, created_at';
+  'id, author_id, kind, payload, caption, visibility, like_count, comment_count, save_count, hidden, created_at, art_id';
+export const ART_COLS = 'id, kind, style, tags, path, alt_en, alt_vi, active, sort';
+
+/**
+ * Thư viện ảnh của app (#163) — nhỏ, đổi hiếm (chỉ admin thêm), đọc một lần.
+ * Chỉ ảnh CÒN DÙNG: đây là thứ để CHỌN, còn ảnh của bài cũ đi qua `hydrate`.
+ */
+export function useCommunityArt() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_art'],
+    enabled: !!user,
+    staleTime: 1000 * 60 * 60,
+    queryFn: async (): Promise<CommunityArt[]> => {
+      const { data, error } = await supabase
+        .from('community_art')
+        .select(ART_COLS)
+        .eq('active', true)
+        .order('sort')
+        .order('id');
+      if (error) throw error;
+      return (data ?? []) as CommunityArt[];
+    },
+  });
+}
 const PAGE = 30;
 
 /* Payload là JSON do server dựng, nhưng một bài cũ hay một seed viết tay vẫn có
@@ -140,6 +168,7 @@ export type PostRow = {
   save_count: number;
   hidden: boolean;
   created_at: string;
+  art_id?: string | null;
 };
 
 /** Gắn tác giả + trạng thái thích/lưu của NGƯỜI XEM vào một loạt bài. */
@@ -147,14 +176,21 @@ export async function hydrate(rows: PostRow[], me: string): Promise<FeedPost[]> 
   if (rows.length === 0) return [];
   const ids = rows.map((r) => r.id);
   const authorIds = [...new Set(rows.map((r) => r.author_id))];
-  const [authors, likes, saves] = await Promise.all([
+  const artIds = [...new Set(rows.map((r) => r.art_id).filter((x): x is string => !!x))];
+  const [authors, likes, saves, arts] = await Promise.all([
     supabase.from('community_profiles').select(PROFILE_COLS).in('user_id', authorIds),
     supabase.from('community_likes').select('post_id').eq('user_id', me).in('post_id', ids),
     supabase.from('community_saves').select('post_id').eq('user_id', me).in('post_id', ids),
+    /* Kể cả ảnh đã tắt: bài đăng trước khi ảnh bị tắt vẫn phải vẽ được. */
+    artIds.length
+      ? supabase.from('community_art').select(ART_COLS).in('id', artIds)
+      : Promise.resolve({ data: [] as CommunityArt[], error: null }),
   ]);
   if (authors.error) throw authors.error;
   if (likes.error) throw likes.error;
   if (saves.error) throw saves.error;
+  if (arts.error) throw arts.error;
+  const artById = new Map((arts.data ?? []).map((a) => [a.id, a as CommunityArt]));
   const byId = new Map((authors.data ?? []).map((a) => [a.user_id, a as CommunityAuthor]));
   const liked = new Set((likes.data ?? []).map((l) => l.post_id));
   const saved = new Set((saves.data ?? []).map((s) => s.post_id));
@@ -174,6 +210,7 @@ export async function hydrate(rows: PostRow[], me: string): Promise<FeedPost[]> 
     liked: liked.has(r.id),
     saved: saved.has(r.id),
     mine: r.author_id === me,
+    art: (r.art_id && artById.get(r.art_id)) || null,
   }));
 }
 
@@ -606,13 +643,29 @@ export function useShareWorkout() {
   const qc = useQueryClient();
   return useOnlineMutation({
     meta: { offline: now(2) },
-    mutationFn: async (a: { sessionId: string; caption: string; visibility: 'public' | 'followers'; minutes: number | null }) => {
-      const { data, error } = await supabase.rpc('share_workout', {
-        p_session_id: a.sessionId,
-        p_caption: a.caption,
-        p_visibility: a.visibility,
-        p_minutes: a.minutes ?? undefined,
-      });
+    mutationFn: async (a: {
+      sessionId: string;
+      caption: string;
+      visibility: 'public' | 'followers';
+      minutes: number | null;
+      /** Ảnh của thư viện (#163). Thư viện chưa có ảnh nào thì `null`, và bài đi
+          đường cũ — thẻ tự vẽ nền theo loại bài. */
+      artId: string | null;
+    }) => {
+      const { data, error } = a.artId
+        ? await supabase.rpc('share_workout_with_art', {
+            p_session_id: a.sessionId,
+            p_caption: a.caption,
+            p_visibility: a.visibility,
+            p_minutes: a.minutes,
+            p_art_id: a.artId,
+          })
+        : await supabase.rpc('share_workout', {
+            p_session_id: a.sessionId,
+            p_caption: a.caption,
+            p_visibility: a.visibility,
+            p_minutes: a.minutes ?? undefined,
+          });
       if (error?.code === '23505') throw new AlreadySharedError(error.message);
       if (error?.code === 'P0001') throw new ProfileRequiredError(error.message);
       if (error) throw error;
@@ -761,15 +814,25 @@ export function useShareProgress() {
   const qc = useQueryClient();
   return useOnlineMutation({
     meta: { offline: now(2) },
-    mutationFn: async (o: ProgressOpts & { caption: string; visibility: 'public' | 'followers' }) => {
-      const { data, error } = await supabase.rpc('share_progress', {
-        p_weeks: o.weeks,
-        p_weight: o.weight,
-        p_waist: o.waist,
-        p_lift_exercise_id: o.liftId ?? undefined,
-        p_caption: o.caption,
-        p_visibility: o.visibility,
-      });
+    mutationFn: async (o: ProgressOpts & { caption: string; visibility: 'public' | 'followers'; artId: string | null }) => {
+      const { data, error } = o.artId
+        ? await supabase.rpc('share_progress_with_art', {
+            p_weeks: o.weeks,
+            p_weight: o.weight,
+            p_waist: o.waist,
+            p_lift_exercise_id: o.liftId ?? null,
+            p_caption: o.caption,
+            p_visibility: o.visibility,
+            p_art_id: o.artId,
+          })
+        : await supabase.rpc('share_progress', {
+            p_weeks: o.weeks,
+            p_weight: o.weight,
+            p_waist: o.waist,
+            p_lift_exercise_id: o.liftId ?? undefined,
+            p_caption: o.caption,
+            p_visibility: o.visibility,
+          });
       if (error?.code === 'P0001') throw new ProfileRequiredError(error.message);
       if (error) throw error;
       return data as string;

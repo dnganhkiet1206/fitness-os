@@ -6,6 +6,8 @@ import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { ArtStylePicker } from '@/components/ascnd/art-style-picker';
+import { useArtChoice } from '@/hooks/use-art-choice';
 import { PostCard } from '@/components/ascnd/post-card';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
@@ -70,6 +72,9 @@ export default function CommunityShareProgressScreen() {
   const vis = visPick ?? settings.data?.defaultVisibility ?? 'public';
 
   const preview = useProgressPreview({ weeks, weight, waist, liftId: lift });
+  /* Không ảnh cơ thể (#163): ô "trước / sau" của mockup là ảnh app cấp theo
+     phong cách, cộng số liệu thật của payload. */
+  const artChoice = useArtChoice('progress', []);
 
   /* Bài để chọn: những bài có tạ trong 90 ngày, hay tập nhất trước. */
   const lifts = useMemo(() => {
@@ -103,13 +108,14 @@ export default function CommunityShareProgressScreen() {
           liked: false,
           saved: false,
           mine: true,
+          art: artChoice.art,
         }
       : null;
 
   const post = () => {
     if (!card || share.isPending) return;
     share.mutate(
-      { weeks, weight, waist, liftId: lift, caption, visibility: vis },
+      { weeks, weight, waist, liftId: lift, caption, visibility: vis, artId: artChoice.art?.id ?? null },
       {
         onSuccess: () => {
           toast.success(i18n.nCmPosted);
@@ -172,7 +178,10 @@ export default function CommunityShareProgressScreen() {
             ) : preview.error ? (
               <Text style={styles.nothing}>{i18n.nPgNothing}</Text>
             ) : card ? (
-              <PostCard post={card} preview />
+              <>
+                <PostCard post={card} preview />
+                <ArtStylePicker styles={artChoice.styles} value={artChoice.style} onChange={artChoice.setStyle} />
+              </>
             ) : null}
 
             <GlassCard style={styles.form}>

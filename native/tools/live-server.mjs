@@ -22,8 +22,9 @@
  * Set nào thì điều ấy không được ghi.
  */
 import { RPC_FIXTURES } from './live-rpc.mjs';
-import { UID, applyQuery, contentRange, embedRows } from './live-world.mjs';
+import { MISSING_ART_FILES, UID, applyQuery, contentRange, embedRows } from './live-world.mjs';
 import { applyWrite, unsupportedFilters } from './live-writes.mjs';
+import { deflateSync } from 'node:zlib';
 import { TYPE_RELATIONSHIPS, requestRejection, rpcArgsRejection } from './postgrest-select.mjs';
 
 export function fakeSupabase({ world, mode = 'full', report = {} }) {
@@ -123,9 +124,60 @@ export function fakeSupabase({ world, mode = 'full', report = {} }) {
         body: req.method() === 'HEAD' ? '' : JSON.stringify(single ? (embedded.rows[0] ?? null) : embedded.rows),
       });
     }
+    /*
+      #163: tệp của thư viện ảnh app (bucket công khai `community-art`). Đường dẫn
+      có trong `community_art` của thế giới → một PNG THẬT, mỗi đường dẫn một
+      màu (để "đổi phong cách thì ảnh đổi" đo được bằng mắt lẫn bằng `src`);
+      không có → 404, đúng như Storage, để nhánh "ảnh tải hỏng" của thẻ bài có
+      chỗ để chạy.
+    */
+    const artPrefix = '/storage/v1/object/public/community-art/';
+    if (u.pathname.startsWith(artPrefix)) {
+      const path = decodeURIComponent(u.pathname.slice(artPrefix.length));
+      const known = (world.community_art ?? []).some((a) => a.path === path) && !MISSING_ART_FILES.has(path);
+      if (mode === 'fail' || !known) {
+        return r.fulfill({ status: mode === 'fail' ? 500 : 404, contentType: 'application/json', body: '{"message":"Object not found"}' });
+      }
+      return r.fulfill({ status: 200, contentType: 'image/png', body: solidPng(path) });
+    }
     return r.fulfill({
       status: 200, contentType: 'application/json',
       body: JSON.stringify({ id: UID, aud: 'authenticated', role: 'authenticated' }),
     });
   };
+}
+
+/* Một PNG 32×18 một màu, màu suy ra từ chuỗi — đủ để trình duyệt giải mã thật. */
+function solidPng(seed) {
+  let h = 2166136261;
+  for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619) >>> 0;
+  const rgb = [h & 255, (h >>> 8) & 255, (h >>> 16) & 255];
+  const W = 32;
+  const H = 18;
+  const raw = Buffer.alloc((W * 3 + 1) * H);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) rgb.forEach((v, i) => (raw[y * (W * 3 + 1) + 1 + x * 3 + i] = v));
+  const crc = (buf) => {
+    let c = ~0;
+    for (const b of buf) {
+      c ^= b;
+      for (let k = 0; k < 8; k++) c = (c >>> 1) ^ (0xedb88320 & -(c & 1));
+    }
+    return ~c >>> 0;
+  };
+  const chunk = (type, data) => {
+    const len = Buffer.alloc(4);
+    len.writeUInt32BE(data.length);
+    const td = Buffer.concat([Buffer.from(type), data]);
+    const c = Buffer.alloc(4);
+    c.writeUInt32BE(crc(td));
+    return Buffer.concat([len, td, c]);
+  };
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(W, 0);
+  ihdr.writeUInt32BE(H, 4);
+  ihdr[8] = 8; ihdr[9] = 2;
+  return Buffer.concat([
+    Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]),
+    chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0)),
+  ]);
 }

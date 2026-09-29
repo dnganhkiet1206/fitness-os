@@ -340,6 +340,11 @@ const WATER_TIE = day(0.05);
  * is 69% with 770 remaining, and nothing but this app's own arithmetic over
  * this exact row produces that pair.
  */
+/** #163: đường dẫn của thư viện ảnh mà Storage giả KHÔNG có tệp (404) — ảnh đã
+    tắt, tệp đã bị gỡ khỏi bucket, bài cũ vẫn trỏ vào. Nhánh "ảnh tải hỏng" của
+    thẻ bài chạy trên nó. */
+export const MISSING_ART_FILES = new Set(['workout/broken.webp']);
+
 export const FIXTURES = {
   profiles: [{
     /* `dob`, KHÔNG phải `date_of_birth`.
@@ -603,6 +608,19 @@ export const FIXTURES = {
     { id: 'cn000000-0000-4000-8000-000000000003', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'comment', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: 'cc000000-0000-4000-8000-000000000002', created_at: day(0.3), read_at: null },
     { id: 'cn000000-0000-4000-8000-000000000004', user_id: UID, actor_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'follow', post_id: null, comment_id: null, created_at: day(2), read_at: day(1) },
   ],
+  /* #163: thư viện ảnh của app. `workout/broken.webp` CỐ Ý không có tệp (máy chủ
+     giả trả 404) để nhánh "ảnh tải hỏng" của thẻ bài có dữ liệu. Ảnh CHÂN đứng
+     `sort` 0, trước ảnh ĐẨY: một buổi đẩy mà nhận ảnh đẩy thì chỉ có thể là nhờ
+     nhãn — bản đầu để ảnh đẩy đứng đầu và phép phá "bỏ điểm theo nhãn" vẫn xanh. */
+  community_art: [
+    { id: 'ca000000-0000-4000-8000-000000000001', kind: 'workout', style: 'mono', tags: ['push'], path: 'workout/mono-push.png', alt_en: 'A barbell on a dark bench', alt_vi: 'Thanh đòn trên ghế tối', active: true, sort: 1, created_at: day(30) },
+    { id: 'ca000000-0000-4000-8000-000000000002', kind: 'workout', style: 'mono', tags: ['legs'], path: 'workout/mono-legs.png', alt_en: 'A squat rack at dawn', alt_vi: 'Giá squat lúc sáng sớm', active: true, sort: 0, created_at: day(30) },
+    { id: 'ca000000-0000-4000-8000-000000000003', kind: 'workout', style: 'neon', tags: [], path: 'workout/neon.png', alt_en: 'Neon lines of a rack', alt_vi: 'Giá tạ nét neon', active: true, sort: 2, created_at: day(30) },
+    { id: 'ca000000-0000-4000-8000-000000000004', kind: 'workout', style: 'old', tags: [], path: 'workout/broken.webp', alt_en: 'Retired art', alt_vi: 'Ảnh đã tắt', active: false, sort: 9, created_at: day(60) },
+    { id: 'ca000000-0000-4000-8000-000000000005', kind: 'recipe', style: 'mono', tags: [], path: 'recipe/mono.png', alt_en: 'A bowl, top down', alt_vi: 'Một bát, nhìn từ trên', active: true, sort: 0, created_at: day(30) },
+    { id: 'ca000000-0000-4000-8000-000000000006', kind: 'recipe', style: 'neon', tags: [], path: 'recipe/neon.png', alt_en: 'A neon plate', alt_vi: 'Đĩa nét neon', active: true, sort: 1, created_at: day(30) },
+    { id: 'ca000000-0000-4000-8000-000000000007', kind: 'progress', style: 'mono', tags: [], path: 'progress/mono.png', alt_en: 'A rising line', alt_vi: 'Một đường đi lên', active: true, sort: 0, created_at: day(30) },
+  ],
   community_posts: [
     {
       id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'workout', source_id: 'c5000000-0000-4000-8000-000000000001',
@@ -619,6 +637,7 @@ export const FIXTURES = {
       },
       caption: 'Cuối cùng cũng lên được incline hôm nay. Thấy khoẻ hơn hẳn 🔥', visibility: 'public',
       like_count: 128, comment_count: 2, save_count: 9, hidden: false, created_at: day(0.12),
+      image_source: 'library', art_id: 'ca000000-0000-4000-8000-000000000001',
     },
     {
       id: 'cp000000-0000-4000-8000-000000000002', author_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'workout', source_id: null,
@@ -633,6 +652,7 @@ export const FIXTURES = {
       },
       caption: 'Kéo xà trước khi mỏi, chèo tạ đòn giữ lưng thẳng. Chất lượng mỗi rep hơn số rep.', visibility: 'public',
       like_count: 86, comment_count: 0, save_count: 31, hidden: false, created_at: day(1),
+      image_source: 'library', art_id: 'ca000000-0000-4000-8000-000000000004',
     },
     /* Bài Progress (#8) — đúng mockup màn 4: 12 tuần, 52.1 → 55.4 kg, vòng eo
        và một bài sức mạnh, mỗi chuỗi một điểm mỗi tuần. */

@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { Alert, Pressable, Share, Text, View } from 'react-native';
 
 import { CommunityAvatar } from '@/components/ascnd/community-avatar';
+import { PostArt } from '@/components/ascnd/post-art';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -67,6 +68,8 @@ export function PostShell({
   const Body = (
     <GlassCard style={styles.card}>
       <PostHeader post={post} preview={preview} />
+      {/* Mọi bài có ảnh của thư viện app (#163) — người dùng không tải ảnh lên. */}
+      <PostArt art={post.art} kind={post.kind} />
       {post.hidden && post.mine ? <Text style={styles.hiddenNote}>{i18n.nCmHiddenNotice}</Text> : null}
       {children}
       {post.caption ? <Text style={styles.caption}>{post.caption}</Text> : null}

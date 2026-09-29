@@ -407,14 +407,56 @@ export type Database = {
         }
         Relationships: []
       }
+      /* Thư viện ảnh của app (#163): người dùng chỉ ĐỌC; chỉ service_role ghi. */
+      community_art: {
+        Row: {
+          active: boolean
+          alt_en: string
+          alt_vi: string
+          created_at: string
+          id: string
+          kind: string
+          path: string
+          sort: number
+          style: string
+          tags: string[]
+        }
+        Insert: {
+          active?: boolean
+          alt_en: string
+          alt_vi: string
+          created_at?: string
+          id?: string
+          kind: string
+          path: string
+          sort?: number
+          style: string
+          tags?: string[]
+        }
+        Update: {
+          active?: boolean
+          alt_en?: string
+          alt_vi?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          path?: string
+          sort?: number
+          style?: string
+          tags?: string[]
+        }
+        Relationships: []
+      }
       community_posts: {
         Row: {
+          art_id: string | null
           author_id: string
           caption: string
           comment_count: number
           created_at: string
           hidden: boolean
           id: string
+          image_source: string
           kind: string
           like_count: number
           payload: Json
@@ -423,12 +465,14 @@ export type Database = {
           visibility: string
         }
         Insert: {
+          art_id?: string | null
           author_id: string
           caption?: string
           comment_count?: number
           created_at?: string
           hidden?: boolean
           id?: string
+          image_source?: string
           kind: string
           like_count?: number
           payload: Json
@@ -437,12 +481,14 @@ export type Database = {
           visibility?: string
         }
         Update: {
+          art_id?: string | null
           author_id?: string
           caption?: string
           comment_count?: number
           created_at?: string
           hidden?: boolean
           id?: string
+          image_source?: string
           kind?: string
           like_count?: number
           payload?: Json
@@ -2016,6 +2062,28 @@ export type Database = {
          `meal_entries` + `meal_entry_items` của chính người gọi. */
       share_recipe: {
         Args: { p_entry_id: string; p_title: string; p_caption?: string; p_visibility?: string }
+        Returns: string
+      }
+      /* #163: ba đường chia sẻ nhận ảnh của thư viện. Tên riêng, không quá tải
+         `share_*`: server kiểm ảnh đúng loại và còn dùng trước khi tạo bài. */
+      share_workout_with_art: {
+        Args: { p_session_id: string; p_caption: string; p_visibility: string; p_minutes: number | null; p_art_id: string }
+        Returns: string
+      }
+      share_recipe_with_art: {
+        Args: { p_entry_id: string; p_title: string; p_caption: string; p_visibility: string; p_art_id: string }
+        Returns: string
+      }
+      share_progress_with_art: {
+        Args: {
+          p_weeks: number
+          p_weight: boolean
+          p_waist: boolean
+          p_lift_exercise_id: string | null
+          p_caption: string
+          p_visibility: string
+          p_art_id: string
+        }
         Returns: string
       }
     }

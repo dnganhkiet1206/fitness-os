@@ -70,7 +70,7 @@ const refOf = (schemaName, table) => (schemaName && schemaName !== 'public' ? `$
 
 /* ── CHECK: một bộ tính biểu thức SQL NHỎ, ba giá trị như Postgres ──
    Chỉ những gì CHECK của repo này dùng: hằng, cột, so sánh, `~`, IN, IS
-   [NOT] NULL, BETWEEN, AND/OR/NOT, + và −, và vài hàm chuỗi. Gặp thứ khác thì
+   [NOT] NULL, BETWEEN, [NOT] LIKE, AND/OR/NOT, + và −, và vài hàm chuỗi. Gặp thứ khác thì
    NÉM `Unsupported` — CHECK ấy được liệt kê là "không kiểm", không bị lờ đi.
    NULL là `null`: CHECK chỉ hỏng khi biểu thức ra đúng `false`. */
 class Unsupported extends Error {}
@@ -166,7 +166,16 @@ export function evalCheck(expr, row) {
       return neg ? a !== null : a === null;
     }
     let neg = false;
-    if (peek('NOT') && tk[i + 1] && ['IN', 'BETWEEN'].includes(String(tk[i + 1].v).toUpperCase())) { neg = true; i++; }
+    if (peek('NOT') && tk[i + 1] && ['IN', 'BETWEEN', 'LIKE'].includes(String(tk[i + 1].v).toUpperCase())) { neg = true; i++; }
+    /* `LIKE` (#163: `path NOT LIKE '%..%'`): `%` là chuỗi bất kỳ, `_` là một ký tự,
+       mọi ký tự khác khớp nguyên văn — không có ESCAPE vì CHECK của repo không dùng. */
+    if (peek('LIKE')) {
+      i++; const pat = addE();
+      if (a === null || pat === null) return null;
+      const re = new RegExp(`^${String(pat).replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '[\\s\\S]*').replace(/_/g, '[\\s\\S]')}$`);
+      const r = re.test(String(a));
+      return neg ? !r : r;
+    }
     if (peek('IN')) {
       i++; eat('('); const list = [addE()]; while (peek(',')) { i++; list.push(addE()); } eat(')');
       if (a === null) return null;
@@ -411,6 +420,8 @@ if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.ar
     ['loại bài gõ nhầm', (f) => (f.community_posts[0].kind = 'recipie'), /vi phạm CHECK: `community_posts` dòng 0 — `community_posts_kind_check`/],
     ['handle có chữ hoa và dấu cách', (f) => (f.community_profiles[0].handle = 'Linh Pham'), /vi phạm CHECK: `community_profiles` dòng 0 — `community_profiles_handle_check`/],
     ['bình luận chỉ có dấu cách', (f) => (f.community_comments[0].body = '   '), /vi phạm CHECK: `community_comments` dòng 0 — `community_comments_body_check`/],
+    /* #163: `NOT LIKE` — đường dẫn ảnh thư viện không được leo ra khỏi bucket. */
+    ['đường dẫn ảnh có ".."', (f) => (f.community_art[0].path = 'workout/../secret.png'), /vi phạm CHECK: `community_art` dòng 0 — `community_art_path_check`/],
   ];
   for (const [label, mutate, want] of selfTest) {
     const f = clone();

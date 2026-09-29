@@ -281,6 +281,7 @@ const STEPS = [
   ['chốt bấm dồn', 'node', ['tools/nav-guard.mjs']],
   ['thao tác async: chỉ lượt hợp lệ được ghi (#157)', 'node', ['tools/operation.mjs']],
   ['ghi khi mất mạng: mọi thao tác khai lớp (#161)', 'node', ['tools/offline-class.mjs']],
+  ['ảnh thư viện app cho bài Cộng đồng (#163)', 'node', ['tools/community-art.mjs']],
   ['kéo để tải lại', 'node', ['tools/refreshable.mjs']],
   ['đồng hồ nghỉ', 'node', ['tools/rest-timer.mjs']],
   ['trạng thái mạng', 'node', ['tools/net-status.mjs']],

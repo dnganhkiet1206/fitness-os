@@ -11,6 +11,9 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { Segmented } from '@/components/ascnd/segmented';
 import { WorkoutPostCard } from '@/components/ascnd/workout-post-card';
+import { ArtStylePicker } from '@/components/ascnd/art-style-picker';
+import { useArtChoice } from '@/hooks/use-art-choice';
+import { workoutTags } from '@/lib/community-art';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -78,13 +81,16 @@ export default function CommunityShareScreen() {
   );
   const session = list.find((s) => s.id === picked) ?? null;
   const minutes = session ? trainingMinutes((session.sets ?? []) as never) || null : null;
+  const payload = session ? payloadFromSession(session, minutes) : null;
+  /* Ảnh do app cấp (#163): chọn sẵn theo nhóm cơ của chính buổi này. */
+  const artChoice = useArtChoice('workout', payload ? workoutTags(payload.exercises.map((e) => e.exerciseName)) : []);
 
   const preview: FeedPost | null =
     session && me.data
       ? {
           id: 'preview',
           kind: 'workout',
-          payload: payloadFromSession(session, minutes),
+          payload: payload!,
           raw: null,
           caption: caption.trim(),
           visibility: vis,
@@ -97,13 +103,14 @@ export default function CommunityShareScreen() {
           liked: false,
           saved: false,
           mine: true,
+          art: artChoice.art,
         }
       : null;
 
   const post = () => {
     if (!session || share.isPending) return;
     share.mutate(
-      { sessionId: session.id, caption, visibility: vis, minutes },
+      { sessionId: session.id, caption, visibility: vis, minutes, artId: artChoice.art?.id ?? null },
       {
         onSuccess: () => {
           toast.success(i18n.nCmPosted);
@@ -182,6 +189,7 @@ export default function CommunityShareScreen() {
         ) : (
           <>
             {preview ? <WorkoutPostCard post={preview} preview /> : null}
+            <ArtStylePicker styles={artChoice.styles} value={artChoice.style} onChange={artChoice.setStyle} />
 
             <GlassCard style={styles.form}>
               <Text style={styles.label}>{i18n.nCmCaption}</Text>

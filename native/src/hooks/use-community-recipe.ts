@@ -121,13 +121,11 @@ export function useShareRecipe() {
   const qc = useQueryClient();
   return useOnlineMutation({
     meta: { offline: now(2) },
-    mutationFn: async (a: { entryId: string; title: string; caption: string; visibility: 'public' | 'followers' }) => {
-      const { data, error } = await supabase.rpc('share_recipe', {
-        p_entry_id: a.entryId,
-        p_title: a.title,
-        p_caption: a.caption,
-        p_visibility: a.visibility,
-      });
+    mutationFn: async (a: { entryId: string; title: string; caption: string; visibility: 'public' | 'followers'; artId: string | null }) => {
+      const args = { p_entry_id: a.entryId, p_title: a.title, p_caption: a.caption, p_visibility: a.visibility };
+      const { data, error } = a.artId
+        ? await supabase.rpc('share_recipe_with_art', { ...args, p_art_id: a.artId })
+        : await supabase.rpc('share_recipe', args);
       if (error?.code === '23505') throw new AlreadySharedError(error.message);
       if (error?.code === 'P0001') throw new ProfileRequiredError(error.message);
       if (error?.code === '22023' && /empty meal/.test(error.message)) throw new EmptyMealError(error.message);
