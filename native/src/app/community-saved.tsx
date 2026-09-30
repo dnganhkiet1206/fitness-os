@@ -1,8 +1,9 @@
 import { Bookmark } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 
 import { EmptyState } from '@/components/ascnd/empty-state';
+import { FeedMore, useLoadMore } from '@/components/ascnd/feed-more';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PostCard } from '@/components/ascnd/post-card';
@@ -46,9 +47,17 @@ export default function CommunitySavedScreen() {
 
   const all = saved.data ?? [];
   const list = filterSaved(all, filter);
+  /* Theo trang (#178): tải thêm khi gần đáy, như feed. */
+  const more = useLoadMore(saved);
+  /* Bộ lọc rỗng ở những trang ĐÃ tải chưa phải "chưa có" khi còn trang cũ hơn:
+     đọc tiếp tới khi thấy một mục đúng loại hay hết thư viện. */
+  const hunting = list.length === 0 && saved.hasNextPage && !saved.isFetchNextPageError;
+  useEffect(() => {
+    if (hunting && !saved.isFetchingNextPage) saved.fetchNextPage();
+  }, [hunting, saved]);
 
   return (
-    <Screen refreshable back title={i18n.nSvTitle}>
+    <Screen refreshable back title={i18n.nSvTitle} onScroll={more}>
       <Segmented
         variant="capsule"
         value={filter}
@@ -66,8 +75,10 @@ export default function CommunitySavedScreen() {
       <SegmentPanel segment={filter}>
       {saved.isPending ? (
         <ActivityIndicator color={c.mutedForeground} style={styles.loading} />
-      ) : saved.isError ? (
+      ) : saved.isError && !saved.isFetchNextPageError ? (
         <LoadFailed i18n={i18n} onRetry={() => saved.refetch()} />
+      ) : list.length === 0 && saved.hasNextPage ? (
+        <FeedMore q={saved} />
       ) : list.length === 0 ? (
         /* Chưa lưu gì cả thì dạy cách lưu; đã lưu mà bộ lọc rỗng thì chỉ nói
            loại ấy chưa có — lời dạy lúc ấy là thừa. */
@@ -84,7 +95,12 @@ export default function CommunitySavedScreen() {
           />
         </GlassCard>
       ) : (
-        list.map((post) => <PostCard key={post.id} post={post} />)
+        <>
+          {list.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+          <FeedMore q={saved} />
+        </>
       )}
       </SegmentPanel>
     </Screen>

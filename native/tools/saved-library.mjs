@@ -50,7 +50,7 @@ try {
   process.exit(1);
 }
 rmSync(out, { recursive: true, force: true });
-const { selectSaved, filterSaved } = mod.default ?? mod;
+const { selectSaved, filterSaved, savedCursor } = mod.default ?? mod;
 
 const ME = 'me';
 const post = (id, o = {}) => ({ id, author_id: 'other', hidden: false, kind: 'workout', ...o });
@@ -78,6 +78,21 @@ note('lọc Buổi tập: chỉ workout', names(filterSaved(mixed, 'workout')) =
 note('lọc Công thức: chỉ recipe', names(filterSaved(mixed, 'recipe')) === 'r', names(filterSaved(mixed, 'recipe')));
 note('Tất cả: gồm cả bài Progress, đúng thứ tự', names(filterSaved(mixed, 'all')) === 'w,r,p', names(filterSaved(mixed, 'all')));
 
+/* #178: con trỏ trang kế là của DÒNG LƯU. Một trang đầy dòng lưu mà mọi bài
+   đã bị ẩn / xoá vẫn phải có trang sau — con trỏ lấy từ bài lúc ấy là "hết" giả. */
+const save = (post_id, created_at) => ({ post_id, created_at });
+let cur = savedCursor([save('a', '3'), save('b', '2'), save('c', '1')], 3);
+note('trang đầy: con trỏ là dòng lưu CUỐI trang (mốc lưu + post_id)', JSON.stringify(cur) === '{"at":"1","id":"c"}', JSON.stringify(cur));
+cur = savedCursor([save('a', '3'), save('b', '2')], 3);
+note('trang thiếu: hết thư viện', cur === null, JSON.stringify(cur));
+cur = savedCursor([], 3);
+note('trang rỗng: hết thư viện', cur === null, JSON.stringify(cur));
+const allHidden = [save('h1', '3'), save('h2', '2'), save('h3', '1')];
+const shown = selectSaved(allHidden.map((x) => x.post_id), [post('h1', { hidden: true }), post('h2', { hidden: true })], ME);
+cur = savedCursor(allHidden, 3);
+note('trang đầy dòng lưu mà KHÔNG còn bài nào để vẽ vẫn có trang sau (con trỏ không lấy từ bài)',
+  shown.length === 0 && JSON.stringify(cur) === '{"at":"1","id":"h3"}', `vẽ ${shown.length} bài, con trỏ ${JSON.stringify(cur)}`);
+
 /* ── 2 · giả định thiết kế ── */
 const hook = read('src/hooks/use-community-saved.ts');
 const community = read('src/hooks/use-community.ts');
@@ -89,6 +104,31 @@ note('key của thư viện nằm dưới tiền tố `community_user_posts`',
   'không còn dưới tiền tố ấy thì xoá bài / chặn người không làm mới thư viện nữa');
 note('thư viện luôn đọc lại khi mở (`refetchOnMount: \'always\'`)', /refetchOnMount: 'always'/.test(hook),
   'lưu ở feed rồi bấm "Xem thư viện" ngay thì bản cache còn tươi mà thiếu đúng bài vừa lưu');
+/* #178: theo trang. Trước đây `.limit(200)` rồi hết — từ lần lưu thứ 201 mục
+   cũ nhất biến mất không đường nào tới (thư viện không có ô tìm). */
+note('thư viện đọc theo trang (`useInfiniteQuery`), không cắt ở một con số', /useInfiniteQuery\(/.test(hook) && !/\.limit\(LIMIT\)|const LIMIT\b/.test(hook),
+  'không theo trang thì mục cũ quá giới hạn không đường nào tới');
+note("khoá mang 'pages' (cache persist cũ là một mảng)", /queryKey: \['community_user_posts', user\?\.id, SAVED, 'pages'\]/.test(hook),
+  'cache trên đĩa mang dạng mảng, hydrate vào truy vấn theo trang là ném');
+note('sắp theo thứ tự toàn phần (created_at, post_id) của dòng lưu',
+  /\.order\('created_at', \{ ascending: false \}\)\s*\.order\('post_id', \{ ascending: false \}\)/.test(hook),
+  'hai lần lưu cùng mốc vắt qua ranh giới trang thì hở hoặc trùng');
+note('con trỏ áp lên cột post_id', /if \(pageParam\) q = q\.or\(olderThan\(pageParam, 'post_id'\)\)/.test(hook),
+  '`community_saves` không có cột id — trang hai là trang đầu hay rỗng');
+note('con trỏ lấy từ DÒNG LƯU (`savedCursor`), trang mang con trỏ của nó',
+  /const next = savedCursor\(rowsSaved, PAGE\)/.test(hook) && /getNextPageParam: \(last: SavedPage\) => last\.next/.test(hook),
+  'con trỏ lấy từ bài thì một trang toàn bài bị ẩn là "hết" giả');
+note('màn nhận một mảng bài', /select: \(d\) => d\.pages\.flatMap\(\(p\) => p\.posts\)/.test(hook), 'màn và filterSaved đọc mảng');
+const screen = read('src/app/community-saved.tsx');
+note('màn tải trang kế khi gần đáy', /const more = useLoadMore\(saved\)/.test(screen) && /onScroll=\{more\}/.test(screen), 'không cuộn tới được mục cũ');
+note('màn có đuôi danh sách (đang tải · hỏng · đã hết · còn nữa) NGAY SAU các thẻ',
+  /<PostCard key=\{post\.id\} post=\{post\} \/>\s*\)\)\}\s*<FeedMore q=\{saved\} \/>/.test(screen),
+  'không có lối tới trang kế khi nội dung ngắn hơn màn (FeedMore ở nhánh "đang đọc tiếp" không tính)');
+note('trang kế hỏng không thay cả thư viện bằng thẻ lỗi', /saved\.isError && !saved\.isFetchNextPageError/.test(screen), 'một trang cũ hỏng xoá mất những gì đã hiện');
+note('bộ lọc rỗng ở các trang ĐÃ tải mà còn trang: đọc tiếp, không nói "chưa có"',
+  /list\.length === 0 && saved\.hasNextPage \? \(/.test(screen) && /if \(hunting && !saved\.isFetchingNextPage\) saved\.fetchNextPage\(\)/.test(screen),
+  'lưu 40 buổi tập rồi một công thức: lọc Công thức nói "chưa lưu công thức nào"');
+
 const body = (name) => {
   const i = community.indexOf(`export function ${name}(`);
   if (i < 0) return null;
@@ -126,8 +166,9 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `thư viện Đã lưu OK — ${CASES} ca. CHẠY THẬT \`selectSaved\` / \`filterSaved\`: thứ tự là thứ tự LƯU, bài ẩn của ` +
-    'người khác bị bỏ còn của chính mình thì ở lại, dòng lạ và dòng trùng không lọt, bộ lọc đúng loại. Và giả định mà ' +
+  `thư viện Đã lưu OK — ${CASES} ca. CHẠY THẬT \`selectSaved\` / \`filterSaved\` / \`savedCursor\`: thứ tự là thứ tự LƯU, bài ẩn của ` +
+    'người khác bị bỏ còn của chính mình thì ở lại, dòng lạ và dòng trùng không lọt, bộ lọc đúng loại; con trỏ trang kế là của ' +
+    'dòng lưu (trang toàn bài bị ẩn vẫn có trang sau), đọc theo trang (created_at, post_id) và màn có đuôi + đọc tiếp khi bộ lọc rỗng (#178). Và giả định mà ' +
     'thư viện dựa vào còn nguyên: nó dùng chính `hydrate` của feed, nằm dưới tiền tố `community_user_posts`, và xoá bài / ' +
     'chặn người / xoá mọi bài / `patchPost` đều vẫn làm mới tiền tố ấy — nên không bài đã xoá hay người đã chặn nào để ' +
     'lại thẻ hỏng. Fixture có Workout lẫn Recipe đã lưu, theo thứ tự lưu khác thứ tự đăng',

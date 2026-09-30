@@ -54,6 +54,25 @@ function walk(m, size) {
   return null;
 }
 
+/* Thư viện Đã lưu (#178): `community_saves` không có cột `id` — khoá thứ hai
+   của con trỏ là `post_id`. Cùng bảng, đổi tên cột: con trỏ nói `id.lt` ở đây
+   thì máy chủ giả so một cột không có, và trang hai ra rỗng / sai. */
+const SAVES = TABLE.map((r) => ({ post_id: r.id, created_at: r.created_at }));
+function walkSaves(m, size) {
+  const seen = [];
+  let cur = null;
+  for (let n = 0; n < 50; n++) {
+    const q = new URLSearchParams({ order: 'created_at.desc,post_id.desc', limit: String(size) });
+    if (cur) q.set('or', `(${m.olderThan(cur, 'post_id')})`);
+    const page = applyQuery(SAVES, new URL(`http://x/rest/v1/t?${q}`));
+    seen.push(...page.map((r) => r.post_id));
+    const last = page[page.length - 1];
+    cur = page.length < size || !last ? null : { at: last.created_at, id: last.post_id };
+    if (!cur) return seen;
+  }
+  return null;
+}
+
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const CASES = [
   ['bảng tự kiểm có bài cùng mốc vắt qua ranh giới trang 10', () => {
@@ -64,6 +83,9 @@ const CASES = [
   ['cỡ trang 7 và 30 cũng thế', (m) => same(walk(m, 7), ORDERED.map((r) => r.id)) && same(walk(m, 30), ORDERED.map((r) => r.id))],
   ['trang đầy thì có con trỏ, là bài CUỐI trang', (m) => same(m.nextCursor([{ id: 'a', created_at: '1' }, { id: 'b', created_at: '0' }], 2), { at: '0', id: 'b' })],
   ['trang thiếu là hết feed', (m) => m.nextCursor([{ id: 'a', created_at: '1' }], 2) === undefined && m.nextCursor([], 2) === undefined],
+  ['con trỏ theo cột khác (post_id, #178): đi hết bảng lưu cỡ 10 và 30, đúng thứ tự, không trùng, không hở', (m) =>
+    same(walkSaves(m, 10), ORDERED.map((r) => r.id)) && same(walkSaves(m, 30), ORDERED.map((r) => r.id)) &&
+    m.olderThan({ at: 't', id: 'x' }, 'post_id') === 'created_at.lt."t",and(created_at.eq."t",post_id.lt."x")'],
   ['giá trị con trỏ nằm trong ngoặc kép', (m) => m.olderThan({ at: '2026-09-01T00:00:00.5+00:00', id: 'x' }) === 'created_at.lt."2026-09-01T00:00:00.5+00:00",and(created_at.eq."2026-09-01T00:00:00.5+00:00",id.lt."x")'],
   ['gần đáy: 800 điểm trước đáy là tải; xa hơn thì chưa; nội dung 0 thì không', (m) =>
     m.nearEnd(1200, 800, 2800) && !m.nearEnd(1100, 800, 2800) && !m.nearEnd(0, 800, 0)],
@@ -77,14 +99,23 @@ const CASES = [
       same(m.mapPosts(['workout', 'recipe'], f), ['workout', 'recipe']) &&
       m.mapPosts(undefined, f) === undefined && m.mapPosts(null, f) === null;
   }],
+  ['mapPosts: trang mang con trỏ riêng `{ posts, next }` (#178) cũng được vá, con trỏ giữ nguyên', (m) => {
+    const f = (p) => (p && p.id === 'x' ? { ...p, v: 1 } : p);
+    const cur = { at: 't', id: 'x' };
+    const inf = m.mapPosts({ pages: [{ posts: [{ id: 'y' }], next: cur }, { posts: [{ id: 'x' }], next: null }], pageParams: [null, cur] }, f);
+    return same(inf, { pages: [{ posts: [{ id: 'y' }], next: cur }, { posts: [{ id: 'x', v: 1 }], next: null }], pageParams: [null, cur] }) &&
+      same(m.mapPosts({ pages: [{ other: 1 }, null] }, f), { pages: [{ other: 1 }, null] });
+  }],
 ];
 
 const out = mkdtempSync(path.join(tmpdir(), 'feed-page-'));
 const MUTANTS = [
-  ['con trỏ chỉ theo mốc (lt) — bỏ bài cùng mốc, hở', /created_at\.lt\.\\?"\$\{c\.at\}\\?",and\(created_at\.eq\.\\?"\$\{c\.at\}\\?",id\.lt\.\\?"\$\{c\.id\}\\?"\)/, 'created_at.lt."${c.at}"'],
-  ['con trỏ lte — lặp bài cùng mốc, trùng', /created_at\.lt\.\\?"\$\{c\.at\}\\?",and\(created_at\.eq\.\\?"\$\{c\.at\}\\?",id\.lt\.\\?"\$\{c\.id\}\\?"\)/, 'created_at.lte."${c.at}"'],
+  ['con trỏ chỉ theo mốc (lt) — bỏ bài cùng mốc, hở', /created_at\.lt\.\\?"\$\{c\.at\}\\?",and\(created_at\.eq\.\\?"\$\{c\.at\}\\?",\$\{idCol\}\.lt\.\\?"\$\{c\.id\}\\?"\)/, 'created_at.lt."${c.at}"'],
+  ['con trỏ lte — lặp bài cùng mốc, trùng', /created_at\.lt\.\\?"\$\{c\.at\}\\?",and\(created_at\.eq\.\\?"\$\{c\.at\}\\?",\$\{idCol\}\.lt\.\\?"\$\{c\.id\}\\?"\)/, 'created_at.lte."${c.at}"'],
+  ['con trỏ bỏ qua cột được truyền (luôn `id`) — thư viện lưu hỏng trang hai', /\$\{idCol\}\.lt\./, 'id.lt.'],
   ['con trỏ lấy bài ĐẦU trang', /const last = page\[page\.length - 1\];/, 'const last = page[0];'],
   ['trang đầy cũng coi là hết', /if \(page\.length < size\)\s*return undefined;/, 'if (page.length <= size) return undefined;'],
+  ['mapPosts để yên trang `{ posts, next }`', /return q && Array\.isArray\(q\.posts\) \? \{ \.\.\.pg, posts: q\.posts\.map\(fn\) \} : pg;/, 'return pg;'],
   ['mapPosts không hiểu dạng trang', /if \(old && typeof old === 'object' && Array\.isArray\(old\.pages\)\) \{/, 'if (false) {'],
   ['gần đáy không có khoảng đệm', /y \+ viewport >= content - exports\.NEAR_END/, 'y + viewport >= content'],
 ];
@@ -174,6 +205,6 @@ if (problems.length) {
 console.log(
   `phân trang feed OK — ${CASES.length} ca CHẠY THẬT lib/feed-page.ts, gồm đi hết một bảng ${TABLE.length} bài có bài cùng mốc vắt ` +
     `qua ranh giới trang trên máy chủ giả (cỡ 7/10/30): đúng thứ tự, không trùng, không hở. ${MUTANTS.length} bản hỏng (con trỏ lt, ` +
-    `lte, bài đầu trang, trang đầy coi là hết, mapPosts mù trang, gần đáy không đệm) đều bị bắt. ${WIRING.length} điểm nối đúng, ` +
+    `lte, con trỏ bỏ qua cột post_id, bài đầu trang, trang đầy coi là hết, mapPosts mù trang hay mù trang {posts}, gần đáy không đệm) đều bị bắt. ${WIRING.length} điểm nối đúng, ` +
     'gồm bình luận theo trang mới nhất trước (#170)',
 );

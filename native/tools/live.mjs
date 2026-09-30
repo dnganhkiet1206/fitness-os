@@ -4370,6 +4370,109 @@ const SCENARIOS = [
   },
   {
     /*
+      #178: thư viện theo trang. Trước đây 200 dòng lưu mới nhất rồi hết — thư
+      viện không có ô tìm, nên từ lần lưu thứ 201 mục cũ nhất không đường nào
+      tới. Thế giới thêm 40 bài Workout người xem đã lưu MỚI HƠN hai lần lưu có
+      sẵn (tổng 42, trang 30), trong đó bốn lần lưu CÙNG MỐC vắt qua ranh giới
+      trang 30/31. Bài Recipe đã lưu nay nằm ở trang HAI.
+        (A) lần tải đầu: đúng một trang (30 thẻ), chưa hỏi trang kế;
+        (B) cuộn tới đáy: trang kế được hỏi, đuôi nói "You've reached the
+            end"; mỗi bài trong 40 bài hiện ĐÚNG MỘT lần theo thứ tự lưu
+            `(created_at desc, post_id desc)`, tổng số thẻ bằng số lần lưu;
+            con trỏ là keyset trên `post_id` (bảng lưu không có cột `id`);
+        (C) mở lại (cache rỗng, chỉ trang một) rồi lọc Công thức: ở trang đã
+            tải không có công thức nào, mà thư viện CÓ một — màn đọc tiếp tới
+            khi thấy nó, và không lúc nào nói "No saved recipes".
+    */
+    name: 'Thư viện Đã lưu theo trang: tải khi gần đáy, bộ lọc rỗng thì đọc tiếp, không trùng không hở (#178)',
+    route: '/community-saved', mode: 'full',
+    async run(page, { world }) {
+      const tpl = world.community_posts.find((p) => p.id === 'cp000000-0000-4000-8000-000000000002');
+      if (!tpl || tpl.kind !== 'workout') return 'tự kiểm: fixture không còn bài Workout cp…0002 để làm mẫu';
+      const cap = (i) => `Lưu #178 · bài ${String(i).padStart(2, '0')}`;
+      const RECIPE = 'Một bữa ăn đơn giản';
+      const newest = Math.max(...world.community_saves.filter((x) => x.user_id === UID).map((x) => Date.parse(x.created_at)));
+      for (let i = 0; i < 40; i++) {
+        const id = `cp000000-0000-4000-8000-0000001780${String(i).padStart(2, '0')}`;
+        world.community_posts.push({ ...structuredClone(tpl), id, caption: cap(i), like_count: 0, comment_count: 0, save_count: 1 });
+        /* Lần lưu 28–31 cùng một mốc: lần lưu thứ 30 của thư viện nằm giữa nhóm. */
+        const k = i >= 28 && i <= 31 ? 28 : i;
+        world.community_saves.push({ post_id: id, user_id: UID, created_at: new Date(newest + (100 - k) * 60_000).toISOString() });
+      }
+      const mine = world.community_saves.filter((x) => x.user_id === UID)
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : a.post_id < b.post_id ? 1 : -1));
+      const want = mine.map((x) => world.community_posts.find((p) => p.id === x.post_id)?.caption).filter((c) => /^Lưu #178 · bài \d\d$/.test(c ?? ''));
+      if (want.indexOf(cap(28)) < want.indexOf(cap(31))) return 'tự kiểm: thứ tự mong đợi sai — post_id desc phải đặt bài 31 trước 28';
+      if (mine.findIndex((x) => x.post_id === 'cp000000-0000-4000-8000-000000000004') < 30) return 'tự kiểm: bài Recipe đã lưu phải nằm ở trang hai';
+
+      const reqs = [];
+      await page.route('**/rest/v1/community_saves?*', async (route) => {
+        const u = new URL(route.request().url());
+        if (route.request().method() === 'GET' && u.searchParams.has('or')) reqs.push(u.searchParams.get('or'));
+        return route.fallback();
+      });
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+
+      const cards = () => page.getByRole('button', { name: /^Save( · \d+)?$/ }).filter({ visible: true }).count();
+      const shownCaps = () => page.evaluate(() => window.__shown('*')
+        .filter((e) => e.children.length === 0 && /^Lưu #178 · bài \d\d$/.test((e.textContent ?? '').trim()))
+        .map((e) => e.textContent.trim()));
+      const has = (t) => page.evaluate((t) => window.__shown('*').some((e) => e.children.length === 0 && (e.textContent ?? '').trim().startsWith(t)), t);
+      const toBottom = () => page.evaluate(() => {
+        const el = window.__shown('*').filter((e) => e.scrollHeight > e.clientHeight + 200 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+          .sort((a, b) => b.clientHeight - a.clientHeight)[0];
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+      const tab = (re) => page.locator('#root [role="tab"]:visible').filter({ hasText: re }).first();
+
+      for (let i = 0; i < 40 && (await cards()) < 30; i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(600);
+      const n0 = await cards();
+      if (n0 !== 30) return `(A) lần tải đầu có ${n0} thẻ, phải đúng một trang (30)`;
+      if (reqs.length) return `(A) chưa cuộn đã hỏi trang kế: ${reqs[0]}`;
+
+      const before = reqs.length;
+      const end = "You've reached the end";
+      for (let i = 0; i < 60 && !(await has(end)); i++) {
+        await toBottom();
+        await page.waitForTimeout(300);
+      }
+      if (!(await has(end))) return `(B) cuộn tới đáy mà đuôi thư viện không bao giờ nói "${end}" (${await cards()} thẻ)`;
+      const got = await shownCaps();
+      const dup = got.filter((c, i) => got.indexOf(c) !== i);
+      if (dup.length) return `(B) bài hiện hai lần: ${[...new Set(dup)].join(', ')}`;
+      const miss = want.filter((c) => !got.includes(c));
+      if (miss.length) return `(B) bài bị hở giữa hai trang: ${miss.join(', ')}`;
+      if (JSON.stringify(got) !== JSON.stringify(want)) return `(B) sai thứ tự lưu: ${got.join(' | ')}`;
+      if ((await cards()) !== mine.length) return `(B) ${await cards()} thẻ cho ${mine.length} lần lưu`;
+      if (!reqs.length || !reqs.every((r) => /^\(created_at\.lt\."[^"]+",and\(created_at\.eq\."[^"]+",post_id\.lt\."[^"]+"\)\)$/.test(r))) {
+        return `(B) con trỏ không phải keyset (created_at, post_id): or=${reqs.join(' ; ')}`;
+      }
+      if (reqs.length <= before) return '(B) cuộn tới đáy mà không lời gọi trang kế nào';
+      /* (C) trên một lượt mở mới: chỉ trang một đã tải — ở (B) màn đã đọc hết, nên
+         không phá thử nào về "tải khi gần đáy" đỏ được ở đây nếu làm (C) sau (B). */
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 40 && (await cards()) < 30; i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(600);
+      if ((await cards()) !== 30) return `(C) tải lại mà lần đầu có ${await cards()} thẻ, phải 30`;
+      await tab(/^(Recipes|Công thức)$/).click();
+      let saidEmpty = false;
+      for (let i = 0; i < 80 && !(await has(RECIPE)); i++) {
+        if (await has('No saved recipes')) saidEmpty = true;
+        await page.waitForTimeout(100);
+      }
+      if (!(await has(RECIPE))) {
+        return `(C) lọc Công thức mà công thức đã lưu ở trang hai không bao giờ hiện${saidEmpty ? ' — màn nói "No saved recipes"' : ''} (${reqs.length} lời gọi trang kế)`;
+      }
+      if (saidEmpty) return '(C) công thức cuối cùng hiện, nhưng trước đó màn đã nói "No saved recipes"';
+
+      return null;
+    },
+  },
+  {
+    /*
       #7: vòng Discover → Add to Meal → Track của concept mục 6. Thẻ Recipe
       "High Protein Chicken Bowl" (642 kcal = 280 + 260 + 35 + 67) → "Add to a
       meal" → chọn Bữa sáng (web: `window.prompt` có menu đánh số, #83) →

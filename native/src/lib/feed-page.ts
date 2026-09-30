@@ -42,8 +42,8 @@ export function nextCursor(page: readonly { created_at: string; id: string }[], 
  * mà tài liệu PostgREST liệt kê `,.:()` là ký tự dành riêng trong một cây
  * `or` — giá trị chứa chúng phải nằm trong ngoặc kép.
  */
-export function olderThan(c: FeedCursor): string {
-  return `created_at.lt."${c.at}",and(created_at.eq."${c.at}",id.lt."${c.id}")`;
+export function olderThan(c: FeedCursor, idCol = 'id'): string {
+  return `created_at.lt."${c.at}",and(created_at.eq."${c.at}",${idCol}.lt."${c.id}")`;
 }
 
 /**
@@ -61,7 +61,8 @@ export function flatPages<T>(pages: readonly (readonly T[])[]): T[] {
 
 /**
  * Đổi từng phần tử của một mục cache, dù nó là một mảng (truy vấn thường) hay
- * một `{ pages, pageParams }` (truy vấn theo trang). Tiền tố `community_feed` /
+ * một `{ pages, pageParams }` (truy vấn theo trang; trang là mảng, hay
+ * `{ posts, next }` khi con trỏ không suy được từ chính các bài). Tiền tố `community_feed` /
  * `community_user_posts` chứa CẢ HAI dạng — và cả những mục không phải danh
  * sách bài (`'kinds'`) — nên thứ duyệt qua chúng phải hiểu cả hai, và để yên
  * mọi thứ khác thay vì ném.
@@ -70,7 +71,16 @@ export function mapPosts<T>(old: unknown, fn: (p: T) => T): unknown {
   if (Array.isArray(old)) return old.map(fn);
   if (old && typeof old === 'object' && Array.isArray((old as { pages?: unknown }).pages)) {
     const o = old as { pages: unknown[] };
-    return { ...o, pages: o.pages.map((pg) => (Array.isArray(pg) ? pg.map(fn) : pg)) };
+    return {
+      ...o,
+      pages: o.pages.map((pg) => {
+        if (Array.isArray(pg)) return pg.map(fn);
+        /* Trang mang con trỏ riêng (`{ posts, next }` — Thư viện Đã lưu, #178:
+           con trỏ là của DÒNG LƯU, không của bài, vì bài bị ẩn/xoá rơi khỏi trang). */
+        const q = pg as { posts?: unknown };
+        return q && Array.isArray(q.posts) ? { ...(pg as object), posts: q.posts.map(fn) } : pg;
+      }),
+    };
   }
   return old;
 }

@@ -1,9 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
 import { type FeedPost, hydrate, POST_COLS, type PostRow } from '@/hooks/use-community';
 import { supabase } from '@/integrations/supabase/client';
-import { selectSaved } from '@/lib/saved-library';
+import { type FeedCursor, olderThan } from '@/lib/feed-page';
+import { savedCursor, selectSaved } from '@/lib/saved-library';
 
 /**
  * Thư viện Đã lưu (#10, người làm: B) — những bài người xem đã bấm Lưu.
@@ -36,17 +37,29 @@ import { selectSaved } from '@/lib/saved-library';
  * cũng không làm lọt một bài lạ hay một bài đã bị ẩn vào thư viện.
  *
  * Trả mảng thường: cache được persist qua `JSON.stringify`.
+ *
+ * ── theo trang (#178) ──
+ *
+ * Trước #178: 200 dòng lưu mới nhất rồi hết, "vì một người lưu nhiều hơn thế
+ * cần tìm kiếm" — nhưng thư viện không có ô tìm, nên từ lần lưu thứ 201 mục cũ
+ * nhất biến mất không đường nào tới. Nay theo trang như feed (#20): con trỏ
+ * keyset `(created_at, post_id)` của `community_saves` (bảng không có cột
+ * `id`; khoá chính là `(post_id, user_id)` và mọi dòng ở đây cùng `user_id`).
+ * Con trỏ là của DÒNG LƯU, không của bài: bài bị ẩn/xoá rơi khỏi trang
+ * (`selectSaved`), nên một trang có thể ít bài hơn số dòng — mỗi trang mang
+ * con trỏ của nó, `{ posts, next }`.
  */
 
-/** Đủ cho một thư viện cá nhân; một người lưu nhiều hơn thế cần tìm kiếm, không cần cuộn. */
-const LIMIT = 200;
+const PAGE = 30;
+export type SavedPage = { posts: FeedPost[]; next: FeedCursor | null };
 
 const SAVED = 'saved';
 
 export function useSavedPosts() {
   const { user } = useAuth();
-  return useQuery({
-    queryKey: ['community_user_posts', user?.id, SAVED],
+  return useInfiniteQuery({
+    /* 'pages': cache persist cũ mang dạng mảng (xem `useCommunityFeed`). */
+    queryKey: ['community_user_posts', user?.id, SAVED, 'pages'],
     enabled: !!user,
     /*
       Luôn đọc lại khi mở: lưu một bài ở feed rồi bấm "Xem thư viện" ngay thì
@@ -56,22 +69,30 @@ export function useSavedPosts() {
       không biến mất dưới ngón tay đang định bấm lại.
     */
     refetchOnMount: 'always',
-    queryFn: async (): Promise<FeedPost[]> => {
+    initialPageParam: null as FeedCursor | null,
+    getNextPageParam: (last: SavedPage) => last.next,
+    select: (d) => d.pages.flatMap((p) => p.posts),
+    queryFn: async ({ pageParam }): Promise<SavedPage> => {
       const me = user!.id;
-      const { data: saves, error } = await supabase
+      let q = supabase
         .from('community_saves')
         .select('post_id, created_at')
         .eq('user_id', me)
         .order('created_at', { ascending: false })
-        .limit(LIMIT);
+        .order('post_id', { ascending: false })
+        .limit(PAGE);
+      if (pageParam) q = q.or(olderThan(pageParam, 'post_id'));
+      const { data: saves, error } = await q;
       if (error) throw error;
-      const ids = (saves ?? []).map((s) => s.post_id).filter((x): x is string => typeof x === 'string');
-      if (ids.length === 0) return [];
+      const rowsSaved = saves ?? [];
+      const next = savedCursor(rowsSaved, PAGE);
+      const ids = rowsSaved.map((s) => s.post_id).filter((x): x is string => typeof x === 'string');
+      if (ids.length === 0) return { posts: [], next };
 
       const { data: rows, error: postsErr } = await supabase.from('community_posts').select(POST_COLS).in('id', ids);
       if (postsErr) throw postsErr;
       /* Thứ tự của THƯ VIỆN là thứ tự lưu, mới nhất trước — không phải lúc đăng. */
-      return hydrate(selectSaved(ids, (rows ?? []) as PostRow[], me), me);
+      return { posts: await hydrate(selectSaved(ids, (rows ?? []) as PostRow[], me), me), next };
     },
   });
 }

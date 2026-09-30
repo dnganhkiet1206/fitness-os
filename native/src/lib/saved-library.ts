@@ -42,3 +42,20 @@ export type SavedFilter = 'workout' | 'recipe' | 'all';
 export function filterSaved<T extends { kind: string }>(list: readonly T[], filter: SavedFilter): T[] {
   return filter === 'all' ? [...list] : list.filter((p) => p.kind === filter);
 }
+
+/**
+ * Con trỏ trang kế của thư viện (#178): lấy từ DÒNG LƯU cuối trang, không từ
+ * bài. Bài bị ẩn / bị xoá / của người đã chặn rơi khỏi trang ở `selectSaved`,
+ * nên một trang đầy dòng lưu có thể không còn bài nào — con trỏ lấy từ bài lúc
+ * ấy là "hết" giả, và mọi mục cũ hơn mất đường tới.
+ *
+ * Trang thiếu (ít hơn `page` dòng) là hết thư viện.
+ */
+export function savedCursor(
+  saves: readonly { post_id: string; created_at: string }[],
+  page: number,
+): { at: string; id: string } | null {
+  if (saves.length < page) return null;
+  const last = saves[saves.length - 1];
+  return last ? { at: last.created_at, id: last.post_id } : null;
+}
