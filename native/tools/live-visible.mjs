@@ -95,6 +95,7 @@ export function problemsOf(src) {
   const ast = parse(src, { sourceType: 'module', allowAwaitOutsideFunction: true });
   const out = [];
   let reads = 0;
+  let leaf = 0;
   walk(ast.program, (n) => {
     if (n.type !== 'ObjectExpression') return;
     const name = n.properties.find((p) => p.key?.name === 'name')?.value;
@@ -106,6 +107,27 @@ export function problemsOf(src) {
     walk(fn.body, (m) => {
       if (m.type === 'VariableDeclarator' && m.id.type === 'Identifier' && m.init) scope.set(m.id.name, m.init);
     });
+    /* #176: vế có GÕ chữ thì mọi lượt quét chữ lá phải bỏ qua ô nhập — trên web
+       `<textarea>` mang chữ vừa gõ trong `textContent`, nên "gõ X rồi tìm X trên
+       màn" khớp CHÍNH Ô ẤY (vế (B) của #170 xanh sau 66 ms, trước cả lượt đọc
+       lại). Vế không gõ gì thì không dính được, nên không bị xét. */
+    let types = false;
+    walk(fn.body, (m) => {
+      if (m.type === 'CallExpression' && m.callee.type === 'MemberExpression' && ['fill', 'type', 'pressSequentially'].includes(m.callee.property.name)) types = true;
+    });
+    if (types) {
+      walk(fn.body, (m) => {
+        if (m.type !== 'CallExpression' || m.callee.type !== 'MemberExpression' || m.callee.property.name !== 'evaluate') return;
+        if (!(m.callee.object.type === 'Identifier' && m.callee.object.name === 'page')) return;
+        const text = src.slice(m.start, m.end);
+        if (!/children\.length === 0/.test(text) || !/textContent/.test(text)) return;
+        leaf++;
+        if (!/TEXTAREA|INPUT/.test(text)) {
+          const line = src.slice(0, m.start).split('\n').length;
+          out.push(`tools/live.mjs:${line}: [${String(name.value ?? '?').slice(0, 60)}] vế có gõ chữ mà lượt quét chữ lá không bỏ qua TEXTAREA/INPUT — "gõ X rồi tìm X" sẽ khớp chính ô nhập (#176)`);
+        }
+      });
+    }
     walk(fn.body, (m) => {
       if (m.type === 'CallExpression' && m.callee.type === 'MemberExpression' && ['querySelector', 'querySelectorAll'].includes(m.callee.property.name)) {
         reads++;
@@ -124,11 +146,11 @@ export function problemsOf(src) {
       }
     });
   });
-  return { out, reads };
+  return { out, reads, leaf };
 }
 
 const LIVE = readFileSync(path.join(NATIVE, 'tools/live.mjs'), 'utf8');
-const { out: problems, reads } = problemsOf(LIVE);
+const { out: problems, reads, leaf } = problemsOf(LIVE);
 if (reads < 20) problems.push(`chỉ thấy ${reads} phép đọc trên locator rủi ro — bộ đọc hỏng, đừng tin kết quả`);
 
 /* ── thử ngược ── */
@@ -148,9 +170,16 @@ if (reads < 20) problems.push(`chỉ thấy ${reads} phép đọc trên locator 
   one('document.querySelectorAll trong page.evaluate (#113)', "await page.evaluate(() => [...document.querySelectorAll('div')].length);", true);
   one('el.querySelector trong page.evaluate (#113)', "await page.evaluate(() => document.body.querySelector('[data-x]'));", true);
   one('window.__shown (#113)', "await page.evaluate(() => window.__shown('div').length);", false);
+  one('gõ chữ rồi quét chữ lá không bỏ ô nhập (#176)', "await page.getByRole('textbox').fill('x'); await page.evaluate(() => window.__shown('*').filter((e) => e.children.length === 0 && e.textContent === 'x').length);", true);
+  one('gõ chữ rồi quét chữ lá có bỏ ô nhập (#176)', "await page.getByRole('textbox').fill('x'); await page.evaluate(() => window.__shown('*').filter((e) => !/^(TEXTAREA|INPUT)$/.test(e.tagName)).filter((e) => e.children.length === 0 && e.textContent === 'x').length);", false);
+  one('không gõ gì thì quét chữ lá không bị xét (#176)', "await page.evaluate(() => window.__shown('*').filter((e) => e.children.length === 0 && e.textContent === 'x').length);", false);
   /* Trên chính live.mjs: gỡ bộ lọc ở vế #108 thì đỏ. */
   const cut = LIVE.replace("page.getByPlaceholder(/^(Dish name|Tên món)$/).filter({ visible: true }).count()", 'page.getByPlaceholder(/^(Dish name|Tên món)$/).count()');
   if (cut === LIVE) problems.push('thử ngược hỏng: không thấy phép đếm "Tên món" có bộ lọc trong vế #108');
+  /* #176 trên chính live.mjs: gỡ bộ lọc ô nhập ở vế #170 thì đỏ. */
+  const cut176 = LIVE.replace("        .filter((e) => !/^(TEXTAREA|INPUT)$/.test(e.tagName))\n", '');
+  if (cut176 === LIVE) problems.push('thử ngược hỏng: không thấy bộ lọc ô nhập của vế #170');
+  else if (!problemsOf(cut176).out.some((x) => x.includes('#176'))) problems.push('thử ngược hỏng: gỡ bộ lọc ô nhập ở vế #170 mà luật vẫn xanh');
   else if (problemsOf(cut).out.length === 0) problems.push('thử ngược hỏng: gỡ bộ lọc ở vế #108 mà luật vẫn xanh');
 }
 
@@ -164,5 +193,6 @@ console.log(
     'live.mjs đều lọc phần tử hiển thị, nên không vế nào đọc nhầm màn trước — màn ấy vẫn nằm trong DOM với display:none sau một cú bấm ' +
     'điều hướng, và bản đầu của vế #108 đã xanh nhờ nó. Miễn: getByRole (tự loại phần tử ẩn) và innerText của body/#root. Thử ngược: ' +
     'getByText.count, getAttribute qua biến, hàm phụ khai trước gọi sau, và gỡ bộ lọc ở vế #108 thì đỏ; có bộ lọc, :visible, getByRole, ' +
-    'body.innerText thì xanh; querySelector(All) trần trong một vế thì đỏ, window.__shown thì xanh (#113)',
+    'body.innerText thì xanh; querySelector(All) trần trong một vế thì đỏ, window.__shown thì xanh (#113); ' +
+    `${leaf} lượt quét chữ lá trong vế có gõ chữ đều bỏ qua ô nhập (#176; gỡ bộ lọc ở vế #170 thì đỏ)`,
 );
