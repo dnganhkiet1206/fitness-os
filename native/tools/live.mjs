@@ -399,6 +399,29 @@ const REDIRECT_OK = {};
     `page.reload()` / `page.goto()`; chỉ có tác dụng cho một lượt tải. */
 const freshCache = (page) => page.evaluate(() => window.sessionStorage.setItem('__live_rq_fresh', '1'));
 
+/**
+ * "Tắt app rồi mở lại" TẤT ĐỊNH, cho các vế hàng đợi bền (#62, #84).
+ *
+ * `about:blank` giết tài liệu cũ — không còn persister nào ghi được nữa — rồi
+ * `between` (bật mạng) chạy khi KHÔNG có app nào sống, rồi mở lại. Nhưng lượt
+ * mở lại không được đọc "thứ gì đang nằm trong storage lúc ấy": nó phải đọc
+ * ĐÚNG bản vế vừa kiểm (`paused() === 1`). Nên bản ấy được chụp lại ở đây và
+ * khôi phục ở đầu tài liệu mới, trước mã của app (init script ở `openPage`),
+ * và lượt mở lại mà init script không chạy là ném, không lặng lẽ đọc storage.
+ * Trả `drift`: storage lúc mở lại có khác bản đã kiểm không (chỉ để báo).
+ */
+async function restartApp(page, between) {
+  const url = page.url();
+  const snap = await page.evaluate(() => window.localStorage.getItem('ascnd_rq_cache'));
+  await page.evaluate((v) => window.sessionStorage.setItem('__live_rq_restart', v ?? ''), snap);
+  await page.goto('about:blank');
+  if (between) await between();
+  await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  const r = await page.evaluate(() => window.__rqRestart ?? null);
+  if (!r) throw new Error('restartApp: lượt mở lại không khôi phục bản cache đã kiểm — khởi động không tất định');
+  return r;
+}
+
 async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, height = 874, lang = null } = {}) {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width, height }, timezoneId: LIVE_TZ });
@@ -431,6 +454,21 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
       if (!window.sessionStorage.getItem('__live_rq_fresh')) return;
       window.sessionStorage.removeItem('__live_rq_fresh');
       for (const k of Object.keys(window.localStorage)) if (k.includes('rq_cache')) window.localStorage.removeItem(k);
+    } catch {}
+  });
+  /* "Tắt app rồi mở lại" tất định (xem `restartApp`): khôi phục ĐÚNG bản cache
+     persist mà vế đã kiểm, trước mọi mã của app, cho đúng một lượt tải kế.
+     `window.__rqRestart` ghi lại việc ấy đã chạy và storage lúc ấy có khác bản
+     đã kiểm không — một lượt khởi động không qua đây là một lượt không tất định. */
+  await ctx.addInitScript(() => {
+    try {
+      const snap = window.sessionStorage.getItem('__live_rq_restart');
+      if (snap == null) return;
+      window.sessionStorage.removeItem('__live_rq_restart');
+      const found = window.localStorage.getItem('ascnd_rq_cache');
+      if (snap === '') window.localStorage.removeItem('ascnd_rq_cache');
+      else window.localStorage.setItem('ascnd_rq_cache', snap);
+      window.__rqRestart = { drift: found !== (snap === '' ? null : snap) };
     } catch {}
   });
   if (lang) await ctx.addInitScript((l) => { window.localStorage.setItem('ascnd_lang', l); }, lang);
@@ -3286,16 +3324,13 @@ const SCENARIOS = [
       if (!/"amount_ml"\s*:\s*\d+/.test(writes[0])) return `(A) lệnh ghi không mang amount_ml: ${writes[0].slice(0, 120)}`;
 
       /* (B) */
-      const url = page.url();
       await goOffline(page);
       await page.waitForTimeout(1500);
       await add().click();
       /* persist có throttle 1 giây: đợi nó ghi xong rồi mới "tắt app". */
       await page.waitForTimeout(2000);
       if ((await paused()) !== 1) return `(B) trước khi rời app, cache phải có đúng 1 mutation tạm dừng, ra ${await paused()}`;
-      await page.goto('about:blank');
-      await goOnline(page);
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      await restartApp(page, () => goOnline(page));
       for (let i = 0; i < 24 && writes.length < 2; i++) await page.waitForTimeout(500);
       await page.waitForTimeout(3000);
       if (writes.length !== 2) return `(B) mở lại app khi có mạng: việc xếp hàng lúc mất mạng phải được gửi đúng 1 lần, ra ${writes.length - 1}`;
@@ -3323,7 +3358,16 @@ const SCENARIOS = [
        lệnh ghi — `offline-queue.mjs` từng đo được "một bữa 520 kcal mà không
        có món nào" khi lệnh ghi lặp lại (bữa có, món không). */
     ['bữa ăn', '/log-meal', /^(Lưu bữa ăn|Save Meal)$/, ['meal_entries', 'meal_entry_items'],
-      async (page) => page.getByText('Cơm gà nhà làm', { exact: true }).first().click()],
+      async (page) => page.getByText('Cơm gà nhà làm', { exact: true }).first().click(),
+      /* Đối chiếu DỮ LIỆU, không chỉ số lệnh ghi: đúng một bữa mới của người xem,
+         và các món của nó trỏ về đúng bữa ấy — bữa không món là thứ #52 đo được. */
+      (world, before) => {
+        const fresh = world.meal_entries.filter((m) => m.user_id === UID && !before.meal_entries.has(m.id));
+        if (fresh.length !== 1) return `thế giới có ${fresh.length} bữa mới của người xem, phải đúng 1`;
+        const items = world.meal_entry_items.filter((it) => it.meal_entry_id === fresh[0].id);
+        if (!items.some((it) => it.food_name === 'Cơm gà nhà làm')) return `bữa mới có ${items.length} món, không có "Cơm gà nhà làm" — món không đi cùng bữa`;
+        return null;
+      }],
     /* Buổi tập: một set tự gõ — tên bài, mức tạ, số lần. */
     /* #71: chỉ số sinh học — HRV 55. KHÔNG phải nhịp tim: fixture có số Apple
        Health của hôm nay, và đổi một số Health sở hữu (nhịp tim, SpO₂, nhịp
@@ -3346,8 +3390,17 @@ const SCENARIOS = [
       await page.getByPlaceholder(/^(Bài tập|Exercise)$/).first().fill('Bench Press');
       await page.getByPlaceholder('—').nth(0).fill('60');
       await page.getByPlaceholder('—').nth(1).fill('8');
+    },
+    /* Đúng một buổi mới của người xem, mang đúng set vừa gõ (các set nằm trong
+       cột `sets` của chính dòng buổi tập). */
+    (world, before) => {
+      const fresh = world.workout_sessions.filter((w) => w.user_id === UID && !before.workout_sessions.has(w.id));
+      if (fresh.length !== 1) return `thế giới có ${fresh.length} buổi tập mới của người xem, phải đúng 1`;
+      const sets = JSON.stringify(fresh[0].sets ?? null);
+      if (!/Bench Press/.test(sets) || !/\b60\b/.test(sets) || !/\b8\b/.test(sets)) return `buổi mới không mang set Bench Press 60 × 8: ${sets.slice(0, 160)}`;
+      return null;
     }],
-  ].flatMap(([what, route, saveName, tables, prepare]) => [false, true].map((restart) => ({
+  ].flatMap(([what, route, saveName, tables, prepare, verify]) => [false, true].map((restart) => ({
     /*
       #84: mỗi dòng chạy HAI lần. Lần hai "tắt app" khi việc còn trong hàng rồi
       mở lại khi có mạng — như vế (B) của #62, nhưng cho mọi loại. Có mạng lại
@@ -3360,7 +3413,7 @@ const SCENARIOS = [
       ? `Mất mạng: ${what} xếp hàng sống qua một lần mở lại app`
       : `Mất mạng: ${what} xếp hàng được gửi đúng một lần khi có mạng lại`,
     route, mode: 'full',
-    async run(page) {
+    async run(page, { world }) {
       const writes = Object.fromEntries(tables.map((t) => [t, 0]));
       const sent = () => Object.values(writes).reduce((a, b) => a + b, 0);
       const paused = () =>
@@ -3397,6 +3450,7 @@ const SCENARIOS = [
         const t = tables.find((x) => new RegExp(`/rest/v1/${x}(\\?|$)`).test(q.url()));
         if (t && isWrite(q.method())) writes[t]++;
       });
+      const before = { meal_entries: new Set(world.meal_entries.map((m) => m.id)), workout_sessions: new Set(world.workout_sessions.map((w) => w.id)) };
       const save = page.getByRole('button', { name: saveName });
       if ((await save.count()) !== 1) return `không thấy đúng một nút lưu ${saveName} trên ${route}`;
       await goOffline(page);
@@ -3413,16 +3467,13 @@ const SCENARIOS = [
           Persist có throttle 1 giây: đợi nó ghi xong rồi mới "tắt app".
         */
         await page.waitForTimeout(2000);
-        const url = page.url();
-        await page.goto('about:blank');
-        await goOnline(page);
-        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        await restartApp(page, () => goOnline(page));
         for (let i = 0; i < 24 && sent() < tables.length; i++) await page.waitForTimeout(500);
         await page.waitForTimeout(3000);
         const off = tables.filter((t) => writes[t] !== 1);
         if (off.length) return `mở lại app khi có mạng: mỗi bảng phải đúng 1 lệnh ghi, ra ${JSON.stringify(writes)} — việc xếp hàng không sống qua lần khởi động (${off.join(', ')})`;
         if ((await paused()) !== 0) return `mở lại app: đã gửi mà cache vẫn còn ${await paused()} mutation tạm dừng — lần mở sau sẽ gửi lại`;
-        return null;
+        return verify ? verify(world, before) : null;
       }
       const keys = await pausedKeys();
       if (keys[0] !== JSON.stringify(['offline-write']))
@@ -3433,7 +3484,7 @@ const SCENARIOS = [
       const off = tables.filter((t) => writes[t] !== 1);
       if (off.length) return `có mạng lại: mỗi bảng phải đúng 1 lệnh ghi, ra ${JSON.stringify(writes)} — ${off.join(', ')} lệch`;
       if ((await paused()) !== 0) return `đã gửi mà cache vẫn còn ${await paused()} mutation tạm dừng — lần mở sau sẽ gửi lại`;
-      return null;
+      return verify ? verify(world, before) : null;
     },
   }))),
   {
