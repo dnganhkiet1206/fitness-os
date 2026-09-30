@@ -11,10 +11,11 @@ import { graphicOf } from '@/constants/palette';
 import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import type { FeedPost } from '@/hooks/use-community';
-import { useLogPlannedMeal } from '@/hooks/use-nutrition';
+import { useLogPlannedMeal, useTodayLog } from '@/hooks/use-nutrition';
 import { usePalette } from '@/hooks/use-palette';
 import { getLocale } from '@/lib/i18n';
 import { nav } from '@/lib/nav';
+import { plannedMealIsLoggedToday } from '@/lib/planned-meal';
 import { readRecipePayload, toPlannedFoods } from '@/lib/recipe-post';
 import { toast } from '@/lib/toast';
 import { fillCopy } from '@/lib/copy-fill';
@@ -68,6 +69,9 @@ export function RecipePostCard({
   const { lang } = useAppSettings();
   const locale = getLocale(lang);
   const addMeal = useLogPlannedMeal();
+  /* Nhật ký hôm nay, để hỏi lại khi bữa ấy đã ghi rồi (#177) — cùng truy vấn
+     màn Dinh dưỡng và Kế hoạch ăn đọc, nên không thêm lượt đọc riêng nào. */
+  const { data: todayMeals } = useTodayLog();
 
   const p = useMemo(() => readRecipePayload(post.raw), [post.raw]);
   const title = p.title || i18n.nRcRecipe;
@@ -116,7 +120,7 @@ export function RecipePostCard({
     Haptics.selectionAsync();
     const foods = toPlannedFoods(p);
     if (foods.length === 0) return;
-    const pick = (mealType: string, label: string) => async () => {
+    const write = async (mealType: string, label: string) => {
       try {
         /* Mất mạng thì bữa vào hàng đợi bền và câu báo nói đúng thế (#57) —
            không chờ một mutation bị tạm dừng, thứ chỉ xong khi có mạng lại. */
@@ -125,6 +129,22 @@ export function RecipePostCard({
       } catch (e) {
         toast.fail(e as Error);
       }
+    };
+    /*
+      Hỏi lại, không từ chối — cùng luật và cùng câu với Kế hoạch ăn
+      (`lib/planned-meal`, #177): cú chạm thứ hai lỡ tay và phần thứ hai ăn thật
+      trông y hệt nhau từ đây, và chỉ một trong hai là nhầm. Trước #177 thẻ này
+      ghi luôn, nên chạm hai lần là hai bữa y hệt, không một câu nào.
+    */
+    const pick = (mealType: string, label: string) => () => {
+      if (plannedMealIsLoggedToday(foods, mealType, todayMeals ?? [])) {
+        Alert.alert(i18n.nMpAgainTitle, i18n.nMpAgainBody.replace('{m}', label.toLowerCase()), [
+          { text: i18n.nCancel, style: 'cancel' },
+          { text: i18n.nMpAgainYes, onPress: () => void write(mealType, label) },
+        ]);
+        return;
+      }
+      void write(mealType, label);
     };
     Alert.alert(i18n.nRcAddWhich, undefined, [
       { text: i18n.nBreakfast, onPress: pick('breakfast', i18n.nBreakfast) },

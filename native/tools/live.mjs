@@ -4376,7 +4376,9 @@ const SCENARIOS = [
         (A) đúng MỘT bữa mới của người xem, loại `breakfast`;
         (B) các dòng của bữa ấy là đúng bốn nguyên liệu của thẻ, tổng kcal đúng
             bằng số trên thẻ — số rơi vào nhật ký người xem là số họ đã thấy;
-        (C) câu báo "Added to today · Breakfast".
+        (C) câu báo "Added to today · Breakfast";
+        (D) thêm lần hai cùng bữa thì HỎI LẠI (#177): Huỷ → vẫn một bữa, Đồng
+            ý → hai.
       Huỷ ở hộp chọn thì không ghi gì.
     */
     name: 'Thẻ Recipe: Thêm vào bữa ăn ghi đúng các dòng của thẻ vào nhật ký người xem (#7)',
@@ -4415,6 +4417,31 @@ const SCENARIOS = [
       if (Math.round(kcal) !== 642) return `(B) tổng kcal ghi vào nhật ký ${kcal}, thẻ nói 642`;
       const toastText = (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ');
       if (!/Added to today · Breakfast|Đã thêm vào hôm nay · Bữa sáng/.test(toastText)) return `(C) câu báo "${toastText}"`;
+
+      /* #177: thêm LẦN HAI cùng bữa → hỏi lại (như Kế hoạch ăn); Huỷ thì vẫn
+         một bữa, Đồng ý thì hai. Web: hộp chọn là prompt, hộp hỏi lại là
+         confirm (#83). */
+      await page.waitForTimeout(1500);
+      const again = async (answer) => {
+        const seen = [];
+        const on = (d) => {
+          seen.push(`${d.type()}: ${d.message().split('\n')[0]}`);
+          if (d.type() === 'prompt') d.accept('1');
+          else if (answer) d.accept();
+          else d.dismiss();
+        };
+        page.on('dialog', on);
+        await add.click();
+        await page.waitForTimeout(2000);
+        page.off('dialog', on);
+        return seen;
+      };
+      const s1 = await again(false);
+      if (!s1.some((x) => /^confirm: (Already in today|Hôm nay đã có rồi)/.test(x))) return `(D) thêm lần hai cùng bữa mà không hỏi lại: ${JSON.stringify(s1)}`;
+      if (fresh().length !== 1) return `(D) Huỷ ở hộp hỏi lại mà có ${fresh().length} bữa`;
+      await again(true);
+      for (let i = 0; i < 24 && fresh().length < 2; i++) await page.waitForTimeout(250);
+      if (fresh().length !== 2) return `(D) Đồng ý ghi thêm mà có ${fresh().length} bữa, phải là hai`;
       return null;
     },
   },
