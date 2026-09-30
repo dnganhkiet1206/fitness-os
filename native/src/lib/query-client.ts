@@ -6,6 +6,7 @@ import { AppState, Platform } from 'react-native';
 
 import { isUsable, registerBusyProbe, startNetWatch } from '@/lib/net-status';
 import { registerOfflineWrites } from '@/lib/offline-write';
+import { persistPausedNow } from '@/lib/persist-paused';
 import { resetPersonalModel } from '@/lib/personal-model';
 import { runUserScopedResets } from '@/lib/user-scoped-reset';
 
@@ -102,11 +103,20 @@ registerOfflineWrites(queryClient);
 registerBusyProbe(() => queryClient.isFetching() > 0);
 startNetWatch();
 
-export const asyncStoragePersister = createAsyncStoragePersister({
-  storage: AsyncStorage,
-  key: 'ascnd_rq_cache',
-  throttleTime: 1000,
-});
+/*
+  Nhịp ghi vẫn là một giây — nhưng việc xếp hàng lúc mất mạng lên đĩa NGAY khi
+  nó tạm dừng, không sau giây ấy (`persistPausedNow`, đo và lý do ở đó). Persister
+  bên trong không tự throttle (0): lớp bọc giữ nhịp, còn nó chỉ ghi tuần tự, luôn
+  bản mới nhất.
+*/
+export const asyncStoragePersister = persistPausedNow(
+  createAsyncStoragePersister({
+    storage: AsyncStorage,
+    key: 'ascnd_rq_cache',
+    throttleTime: 0,
+  }),
+  1000,
+);
 
 /**
  * Bump when the cache shape changes to invalidate old persisted data.

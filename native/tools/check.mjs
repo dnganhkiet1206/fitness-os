@@ -613,6 +613,7 @@ const STEPS = [
   ['tìm kiếm SQL ↔ fixture', 'node', ['tools/search-parity.mjs']],
   ['thư viện Đã lưu', 'node', ['tools/saved-library.mjs']],
   ['đọc hết theo trang', 'node', ['tools/read-all.mjs']],
+  ['việc xếp hàng lên đĩa ngay', 'node', ['tools/persist-paused.mjs']],
   ['phép tính ngày tự chế', 'node', ['tools/day-math.mjs']],
   ['hình dạng cache', 'node', ['tools/cache-shape.mjs']],
   ['nội dung hướng dẫn', 'node', ['tools/guide-content.mjs']],

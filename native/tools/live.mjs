@@ -3459,7 +3459,7 @@ const SCENARIOS = [
       if (!/Bench Press/.test(sets) || !/\b60\b/.test(sets) || !/\b8\b/.test(sets)) return `buổi mới không mang set Bench Press 60 × 8: ${sets.slice(0, 160)}`;
       return null;
     }],
-  ].flatMap(([what, route, saveName, tables, prepare, verify]) => [false, true].map((restart) => ({
+  ].flatMap(([what, route, saveName, tables, prepare, verify]) => [false, true, ...(verify ? ['boundary'] : [])].map((restart) => ({
     /*
       #84: mỗi dòng chạy HAI lần. Lần hai "tắt app" khi việc còn trong hàng rồi
       mở lại khi có mạng — như vế (B) của #62, nhưng cho mọi loại. Có mạng lại
@@ -3468,9 +3468,11 @@ const SCENARIOS = [
       `localStorage` còn, và thế giới giả của trang (#52) cũng còn — dòng Kế
       hoạch ngày giữ được buổi hôm nay đã xoá bằng `planTodayUnlogged`.
     */
-    name: restart
-      ? `Mất mạng: ${what} xếp hàng sống qua một lần mở lại app`
-      : `Mất mạng: ${what} xếp hàng được gửi đúng một lần khi có mạng lại`,
+    name: restart === 'boundary'
+      ? `Mất mạng: ${what} không mất khi app bị tắt NGAY sau lượt ghi đĩa đầu tiên`
+      : restart
+        ? `Mất mạng: ${what} xếp hàng sống qua một lần mở lại app`
+        : `Mất mạng: ${what} xếp hàng được gửi đúng một lần khi có mạng lại`,
     route, mode: 'full',
     async run(page, { world }) {
       const writes = Object.fromEntries(tables.map((t) => [t, 0]));
@@ -3514,6 +3516,34 @@ const SCENARIOS = [
       if ((await save.count()) !== 1) return `không thấy đúng một nút lưu ${saveName} trên ${route}`;
       await goOffline(page);
       await page.waitForTimeout(1500);
+      if (restart === 'boundary') {
+        /*
+          Race của persister (đo 30/09): lượt ghi đĩa đầu sau cú bấm từng mang bản
+          chụp lúc mutation còn `idle` — KHÔNG có nó — và bản có nó lên đĩa sau
+          ~1 s. Vế này "tắt app" đúng ở ranh giới ấy: ngay khi lượt ghi
+          `ascnd_rq_cache` đầu tiên sau cú bấm xảy ra, không theo một đồng hồ.
+        */
+        await page.evaluate(() => {
+          window.__rqW = [];
+          const orig = Storage.prototype.setItem;
+          Storage.prototype.setItem = function (k, v) {
+            if (this === window.localStorage && k === 'ascnd_rq_cache') window.__rqW.push(performance.now());
+            return orig.call(this, k, v);
+          };
+        });
+        const t0 = await page.evaluate(() => performance.now());
+        await save.click();
+        await page.waitForFunction(() => window.__rqW.length >= 1, null, { polling: 5, timeout: 5000 });
+        const at = await page.evaluate((t) => ({ n: window.__rqW.length, ms: Math.round(performance.now() - t) }), t0);
+        const r = await restartApp(page, () => goOnline(page));
+        if (at.n !== 1 || at.ms > 900) return `tự kiểm: "tắt app" rơi ngoài ranh giới (${at.n} lượt ghi, ${at.ms} ms sau cú bấm) — vế này không đo gì`;
+        for (let i = 0; i < 24 && sent() < tables.length; i++) await page.waitForTimeout(500);
+        await page.waitForTimeout(3000);
+        const off = tables.filter((t) => writes[t] !== 1);
+        if (off.length) return `tắt app ngay sau lượt ghi đĩa đầu tiên (${at.ms} ms sau cú bấm${r.drift ? ', storage lệch bản chụp' : ''}): mở lại khi có mạng mà mỗi bảng phải đúng 1 lệnh ghi, ra ${JSON.stringify(writes)} — việc vừa bấm Lưu MẤT`;
+        if ((await paused()) !== 0) return `mở lại app: đã gửi mà cache vẫn còn ${await paused()} mutation tạm dừng`;
+        return verify(world, before);
+      }
       await save.click();
       await page.waitForTimeout(2500);
       if (sent()) return `mất mạng mà vẫn có lệnh ghi đi ra: ${JSON.stringify(writes)}`;
