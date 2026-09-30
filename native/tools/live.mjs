@@ -395,6 +395,10 @@ const REDIRECT_OK = {};
 /* Từ #114 độ lệch được tính MỘT lần ở `live-world.mjs`, cùng mốc neo `LOAD`
    với mọi mốc của thế giới — và mọi đầu dò dùng chung. */
 
+/** Lượt tải KẾ của trang mở với cache react-query rỗng (#181). Gọi ngay trước
+    `page.reload()` / `page.goto()`; chỉ có tác dụng cho một lượt tải. */
+const freshCache = (page) => page.evaluate(() => window.sessionStorage.setItem('__live_rq_fresh', '1'));
+
 async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, height = 874, lang = null } = {}) {
   const browser = await chromium.launch();
   const ctx = await browser.newContext({ viewport: { width, height }, timezoneId: LIVE_TZ });
@@ -417,6 +421,18 @@ async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, h
   /* Như theme ngay dưới: đặt TRƯỚC khi app chạy. Lượt quét hẹp (#48) đo cả
      hai ngôn ngữ, vì chữ tiếng Việt dài hơn và mọi nhãn bị cắt đã tìm thấy
      đều là tiếng Việt. */
+  /* #181: xoá cache react-query cho ĐÚNG MỘT lượt tải kế, ở đầu tài liệu MỚI —
+     trước mọi mã của app. Xoá trên tài liệu CŨ (như 12 vế từng làm) không xoá
+     được gì: persister (`throttleTime: 1000`) vẫn sống ở đó và ghi lại cả cache
+     trong vòng 100 ms (đo 3/3 ở vế #12 (B): 36 165 byte, còn `community_me`).
+     Vế bật cờ bằng `freshCache(page)` rồi tải lại / điều hướng. */
+  await ctx.addInitScript(() => {
+    try {
+      if (!window.sessionStorage.getItem('__live_rq_fresh')) return;
+      window.sessionStorage.removeItem('__live_rq_fresh');
+      for (const k of Object.keys(window.localStorage)) if (k.includes('rq_cache')) window.localStorage.removeItem(k);
+    } catch {}
+  });
   if (lang) await ctx.addInitScript((l) => { window.localStorage.setItem('ascnd_lang', l); }, lang);
   if (mode !== 'signedout') await ctx.addInitScript(([ref, session]) => {
     window.localStorage.setItem(`sb-${ref}-auth-token`, session);
@@ -1120,7 +1136,7 @@ const SCENARIOS = [
       const chClaims = () => claims.filter((c) => c.startsWith('ch:'));
       const chTx = () => world.mascot_transactions.filter((t) => String(t.ref_key ?? '').startsWith('ch:'));
       const fresh = async () => {
-        await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.includes('rq_cache')) localStorage.removeItem(x); });
+        await freshCache(page);
         await page.reload({ waitUntil: 'domcontentloaded' });
         await page.waitForTimeout(6000);
       };
@@ -1174,9 +1190,7 @@ const SCENARIOS = [
       /* Cache truy vấn được persist (`ascnd_rq_cache`) và còn "mới" theo
          staleTime: không xoá thì lần tải lại vẽ lại hero ĐÃ tham gia từ đĩa và
          không hỏi server. Chỉ xoá khoá ấy — phiên đăng nhập ở khoá khác. */
-      await page.evaluate(() => {
-        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
-      });
+      await freshCache(page);
       await page.reload({ waitUntil: 'domcontentloaded' });
       const join = () => page.getByRole('button', { name: /^Join$/ }).filter({ visible: true });
       for (let i = 0; i < 40 && !(await join().count()); i++) await page.waitForTimeout(250);
@@ -1438,9 +1452,7 @@ const SCENARIOS = [
         }
         return route.fallback();
       });
-      await page.evaluate(() => {
-        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
-      });
+      await freshCache(page);
       await page.reload({ waitUntil: 'domcontentloaded' });
 
       const cards = () => page.getByRole('button', { name: /^Like · \d+$/ }).count();
@@ -1553,9 +1565,7 @@ const SCENARIOS = [
       if (JSON.parse(calls[0] || '{}').p_post_id !== 'cp000000-0000-4000-8000-000000000026') return `(C) lời gọi mang sai đích: ${calls[0]}`;
       if ((world.community_review_requests ?? []).length !== 1) return '(C) thế giới không ghi yêu cầu nào';
 
-      await page.evaluate(() => {
-        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
-      });
+      await freshCache(page);
       await page.reload({ waitUntil: 'domcontentloaded' });
       for (let i = 0; i < 40 && !(await has(sent)); i++) await page.waitForTimeout(250);
       if (!(await has(sent))) return '(D) tải lại thì mất "Review requested" — trạng thái không đọc từ server';
@@ -1572,9 +1582,7 @@ const SCENARIOS = [
       for (const [n, who, reason] of [[1, LINH, 'misleading'], [2, TUAN, 'misleading'], [3, ASCND, 'spam']]) {
         world.community_reports.push({ id: `c7000000-0000-4000-8000-00000000026${n}`, reporter_id: who, post_id: null, comment_id: 'cc000000-0000-4000-8000-000000000261', reported_user_id: null, reason, note: '', status: 'open', created_at: new Date().toISOString() });
       }
-      await page.evaluate(() => {
-        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
-      });
+      await freshCache(page);
       await page.goto(page.url().replace(/community-post\?id=[^&]+/, `community-post?id=${P2}`), { waitUntil: 'domcontentloaded' });
       const cwhy = '3 people reported this · mostly: misleading or unsafe';
       for (let i = 0; i < 40 && !(await has(cwhy)); i++) await page.waitForTimeout(250);
@@ -1610,9 +1618,7 @@ const SCENARIOS = [
         });
       }
       world.community_posts.find((p) => p.id === POST).comment_count = 230;
-      await page.evaluate(() => {
-        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
-      });
+      await freshCache(page);
       await page.reload({ waitUntil: 'domcontentloaded' });
       /* Không đọc ô soạn: textarea của web mang chữ vừa gõ trong textContent, và
          bản đầu của vế (B) khớp CHÍNH Ô SOẠN — xanh sau 66 ms, trước cả lượt đọc
@@ -1740,9 +1746,7 @@ const SCENARIOS = [
         });
       }
       world.community_posts.find((p) => p.id === POST).comment_count = 60;
-      await page.evaluate(() => {
-        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
-      });
+      await freshCache(page);
       await page.reload({ waitUntil: 'domcontentloaded' });
       const leaves = () => page.evaluate(() => window.__shown('*')
         .filter((e) => e.children.length === 0 && /(#173)/.test(e.textContent ?? ''))
@@ -3956,7 +3960,7 @@ const SCENARIOS = [
         world.workout_sessions.push({ ...structuredClone(template), id: `ws095000-0000-4000-8000-${String(k).padStart(12, '0')}`, date_time: new Date(Date.now() - k * 60_000).toISOString() });
       }
       world.mascot_transactions = (world.mascot_transactions ?? []).filter((t) => !String(t.ref_key ?? '').startsWith('ch:'));
-      await page.evaluate(() => { for (const x of Object.keys(localStorage)) if (x.includes('rq_cache')) localStorage.removeItem(x); });
+      await freshCache(page);
       await page.reload({ waitUntil: 'domcontentloaded' });
       const base = `https://${REF}.supabase.co`;
       const read = () => page.evaluate(async ([b, uid]) => {
@@ -4165,9 +4169,7 @@ const SCENARIOS = [
       const pick = (list) => (list ?? []).find((x) => x.joined && !x.claimed && x.ends_on >= today);
       /* Trang đã mở trước khi bộ nghe gắn vào: tải lại (bỏ cache) để thấy lượt
          đọc TRƯỚC khi lưu. */
-      await page.evaluate(() => {
-        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
-      });
+      await freshCache(page);
       await page.reload({ waitUntil: 'domcontentloaded' });
       for (let i = 0; i < 40 && !overviews.length; i++) await page.waitForTimeout(250);
       await page.waitForTimeout(800);
@@ -4188,9 +4190,7 @@ const SCENARIOS = [
       if (!(await page.getByRole('button', { name: /^(Chia sẻ|Share)$/ }).count())) return '(A) có hồ sơ mà không có nút Chia sẻ';
 
       world.community_profiles = world.community_profiles.filter((p) => p.user_id !== UID);
-      await page.evaluate(() => {
-        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
-      });
+      await freshCache(page);
       await page.goto(page.url().replace(/\/[^/?#]*(\?[^#]*)?$/, '/log-workout'), { waitUntil: 'domcontentloaded' });
       await page.waitForTimeout(1500);
       if (!(await saveOne())) return '(B) không thấy nút lưu buổi tập';
@@ -4242,9 +4242,7 @@ const SCENARIOS = [
 
       const tpl = world.community_posts.find((p) => p.kind === 'recipe');
       world.community_posts.push({ ...structuredClone(tpl), id: 'cp000000-0000-4000-8000-000000000181', author_id: UID, source_id: 'm2', hidden: false });
-      await page.evaluate(() => {
-        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
-      });
+      await freshCache(page);
       await go('m2');
       if (!(await settle('list'))) return '(D) bữa đã đăng mà không rơi về danh sách chọn';
       if (await post().count()) return '(D) bữa đã đăng mà vẫn có nút Đăng — đăng lần hai';
@@ -4706,7 +4704,7 @@ const SCENARIOS = [
       /* Cache bền được nạp lại lúc khởi động và `staleTime` là 60s, nên không
          xoá nó thì lần tải sau phục vụ lại KẾT QUẢ CŨ ĐÃ THÀNH CÔNG và bước này
          xanh vì một lý do không liên quan gì tới điều nó hỏi. */
-      await page.evaluate(() => window.localStorage.removeItem('ascnd_rq_cache'));
+      await freshCache(page);
       await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
       await page.waitForTimeout(12000);
 

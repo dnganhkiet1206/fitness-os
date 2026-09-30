@@ -128,6 +128,18 @@ export function problemsOf(src) {
         }
       });
     }
+    /* #181: xoá cache trên tài liệu CŨ không xoá được gì — persister còn sống ở
+       đó ghi lại cả cache trong 100 ms. Vế dùng `freshCache(page)` (xoá ở đầu
+       tài liệu mới, trước mã của app). */
+    walk(fn.body, (m) => {
+      if (m.type !== 'CallExpression' || m.callee.type !== 'MemberExpression' || !['removeItem', 'clear'].includes(m.callee.property.name)) return;
+      const o = m.callee.object;
+      const isLS = (o.type === 'Identifier' && o.name === 'localStorage') ||
+        (o.type === 'MemberExpression' && o.property.name === 'localStorage');
+      if (!isLS) return;
+      const line = src.slice(0, m.start).split('\n').length;
+      out.push(`tools/live.mjs:${line}: [${String(name.value ?? '?').slice(0, 60)}] localStorage.${m.callee.property.name}(…) trên tài liệu cũ — persister ghi lại cache trong 100 ms; dùng freshCache(page) rồi tải lại (#181)`);
+    });
     walk(fn.body, (m) => {
       if (m.type === 'CallExpression' && m.callee.type === 'MemberExpression' && ['querySelector', 'querySelectorAll'].includes(m.callee.property.name)) {
         reads++;
@@ -173,6 +185,14 @@ if (reads < 20) problems.push(`chỉ thấy ${reads} phép đọc trên locator 
   one('gõ chữ rồi quét chữ lá không bỏ ô nhập (#176)', "await page.getByRole('textbox').fill('x'); await page.evaluate(() => window.__shown('*').filter((e) => e.children.length === 0 && e.textContent === 'x').length);", true);
   one('gõ chữ rồi quét chữ lá có bỏ ô nhập (#176)', "await page.getByRole('textbox').fill('x'); await page.evaluate(() => window.__shown('*').filter((e) => !/^(TEXTAREA|INPUT)$/.test(e.tagName)).filter((e) => e.children.length === 0 && e.textContent === 'x').length);", false);
   one('không gõ gì thì quét chữ lá không bị xét (#176)', "await page.evaluate(() => window.__shown('*').filter((e) => e.children.length === 0 && e.textContent === 'x').length);", false);
+  one('xoá cache trên tài liệu cũ (#181)', "await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k); }); await page.reload();", true);
+  one('window.localStorage.clear() trên tài liệu cũ (#181)', 'await page.evaluate(() => window.localStorage.clear()); await page.reload();', true);
+  one('freshCache rồi tải lại (#181)', 'await freshCache(page); await page.reload();', false);
+  one('localStorage.setItem không bị xét (#181)', "await page.evaluate(() => localStorage.setItem('x', '1'));", false);
+  /* #181 trên chính live.mjs: đưa một vế về lệnh xoá trần thì đỏ. */
+  const cut181 = LIVE.replace('await freshCache(page);', "await page.evaluate(() => { for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k); });");
+  if (cut181 === LIVE) problems.push('thử ngược hỏng: không vế nào gọi freshCache(page) (#181)');
+  else if (!problemsOf(cut181).out.some((x) => x.includes('#181'))) problems.push('thử ngược hỏng: đưa một vế về lệnh xoá cache trần mà luật vẫn xanh (#181)');
   /* Trên chính live.mjs: gỡ bộ lọc ở vế #108 thì đỏ. */
   const cut = LIVE.replace("page.getByPlaceholder(/^(Dish name|Tên món)$/).filter({ visible: true }).count()", 'page.getByPlaceholder(/^(Dish name|Tên món)$/).count()');
   if (cut === LIVE) problems.push('thử ngược hỏng: không thấy phép đếm "Tên món" có bộ lọc trong vế #108');
@@ -194,5 +214,6 @@ console.log(
     'điều hướng, và bản đầu của vế #108 đã xanh nhờ nó. Miễn: getByRole (tự loại phần tử ẩn) và innerText của body/#root. Thử ngược: ' +
     'getByText.count, getAttribute qua biến, hàm phụ khai trước gọi sau, và gỡ bộ lọc ở vế #108 thì đỏ; có bộ lọc, :visible, getByRole, ' +
     'body.innerText thì xanh; querySelector(All) trần trong một vế thì đỏ, window.__shown thì xanh (#113); ' +
-    `${leaf} lượt quét chữ lá trong vế có gõ chữ đều bỏ qua ô nhập (#176; gỡ bộ lọc ở vế #170 thì đỏ)`,
+    `${leaf} lượt quét chữ lá trong vế có gõ chữ đều bỏ qua ô nhập (#176; gỡ bộ lọc ở vế #170 thì đỏ); không vế nào xoá cache trên ` +
+    'tài liệu cũ — persister ghi lại nó trong 100 ms — mà qua freshCache (#181; đưa một vế về lệnh xoá trần thì đỏ)',
 );
