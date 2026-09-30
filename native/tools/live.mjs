@@ -1614,7 +1614,11 @@ const SCENARIOS = [
         for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
       });
       await page.reload({ waitUntil: 'domcontentloaded' });
+      /* Không đọc ô soạn: textarea của web mang chữ vừa gõ trong textContent, và
+         bản đầu của vế (B) khớp CHÍNH Ô SOẠN — xanh sau 66 ms, trước cả lượt đọc
+         lại, tức không đo gì (lượt live đủ đỏ khi ô đã được xoá kịp). */
       const shown = () => page.evaluate(() => window.__shown('*')
+        .filter((e) => !/^(TEXTAREA|INPUT)$/.test(e.tagName))
         .filter((e) => e.children.length === 0 && /^Bình luận #170 · \d{3}$|^Câu vừa gửi \(#170\)$/.test((e.textContent ?? '').trim()))
         .map((e) => e.textContent.trim()));
       const older = () => page.getByRole('button', { name: 'View older comments', exact: true }).filter({ visible: true });
@@ -1629,9 +1633,24 @@ const SCENARIOS = [
 
       const input = page.getByPlaceholder(/^(Add a comment…|Viết bình luận…)$/).filter({ visible: true }).first();
       await input.fill('Câu vừa gửi (#170)');
+      /* Chờ chính lượt ĐỌC LẠI sau lệnh gửi, không một khoảng cố định: đo riêng
+         thì câu hiện sau ~400 ms, nhưng một lượt live đủ (jobs=3) đã đỏ ở mức
+         chờ 6 s — nên hỏng thì in dòng thời gian của các request để biết lượt
+         đọc lại có tới không, hay tới mà màn không vẽ. */
+      const trail = [];
+      const t0 = Date.now();
+      const onReq = (q) => { if (/\/rest\/v1\/community_comment/.test(q.url())) trail.push(`${Date.now() - t0}ms ${q.method()} ${q.url().split('?')[0].split('/').pop()}`); };
+      page.on('request', onReq);
+      const posted = page.waitForResponse((r) => /\/rest\/v1\/community_comments/.test(r.url()) && r.request().method() === 'POST', { timeout: 15000 }).catch(() => null);
       await page.getByRole('button', { name: /^(Send|Gửi)$/ }).filter({ visible: true }).first().click();
+      const post = await posted;
+      if (!post) return `(B) bấm Gửi mà 15 s không có lệnh ghi nào — ${trail.join(', ')}`;
+      const reread = await page.waitForResponse((r) => /\/rest\/v1\/community_comments\?/.test(r.url()) && r.request().method() === 'GET', { timeout: 15000 }).catch(() => null);
       for (let i = 0; i < 24 && !(await shown()).includes('Câu vừa gửi (#170)'); i++) await page.waitForTimeout(250);
-      if (!(await shown()).includes('Câu vừa gửi (#170)')) return '(B) gửi xong mà câu vừa gửi không hiện ra';
+      page.off('request', onReq);
+      if (!(await shown()).includes('Câu vừa gửi (#170)')) {
+        return `(B) gửi xong mà câu vừa gửi không hiện ra (POST ${post.status()}, đọc lại ${reread ? reread.status() : 'KHÔNG CÓ'}) — ${trail.join(', ')}`;
+      }
 
       for (let n = 0; n < 12 && (await older().count()); n++) {
         await older().first().click();
@@ -4348,6 +4367,56 @@ const SCENARIOS = [
       await open.first().click();
       for (let i = 0; i < 20 && !/\/community-saved/.test(page.url()); i++) await page.waitForTimeout(250);
       if (!/\/community-saved/.test(page.url())) return `bấm "View library" mà tới ${page.url().replace(/^.*8731/, '')}`;
+      return null;
+    },
+  },
+  {
+    /*
+      #7: vòng Discover → Add to Meal → Track của concept mục 6. Thẻ Recipe
+      "High Protein Chicken Bowl" (642 kcal = 280 + 260 + 35 + 67) → "Add to a
+      meal" → chọn Bữa sáng (web: `window.prompt` có menu đánh số, #83) →
+        (A) đúng MỘT bữa mới của người xem, loại `breakfast`;
+        (B) các dòng của bữa ấy là đúng bốn nguyên liệu của thẻ, tổng kcal đúng
+            bằng số trên thẻ — số rơi vào nhật ký người xem là số họ đã thấy;
+        (C) câu báo "Added to today · Breakfast".
+      Huỷ ở hộp chọn thì không ghi gì.
+    */
+    name: 'Thẻ Recipe: Thêm vào bữa ăn ghi đúng các dòng của thẻ vào nhật ký người xem (#7)',
+    route: '/community-post?id=cp000000-0000-4000-8000-000000000004', mode: 'full',
+    async run(page, { world }) {
+      const add = page.getByRole('button', { name: /^(Add to a meal|Thêm vào bữa ăn)$/ }).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await add.count()); i++) await page.waitForTimeout(250);
+      if (!(await add.count())) return 'thẻ Recipe không có nút "Add to a meal"';
+      const before = new Set(world.meal_entries.map((e) => e.id));
+      const fresh = () => world.meal_entries.filter((e) => !before.has(e.id) && e.user_id === UID);
+
+      page.once('dialog', (d) => d.dismiss());
+      await add.click();
+      await page.waitForTimeout(1500);
+      if (fresh().length) return 'Huỷ ở hộp chọn bữa mà vẫn ghi một bữa';
+
+      let menu = '';
+      page.once('dialog', (d) => {
+        menu = d.message();
+        d.accept('1');
+      });
+      await add.click();
+      for (let i = 0; i < 24 && !fresh().length; i++) await page.waitForTimeout(250);
+      if (!/1\. (Breakfast|Bữa sáng)/.test(menu)) return `hộp chọn bữa không có "1. Breakfast": ${JSON.stringify(menu)}`;
+      const got = fresh();
+      if (got.length !== 1) return `(A) ${got.length} bữa mới, phải đúng một`;
+      if (got[0].meal_type !== 'breakfast') return `(A) bữa mới là ${got[0].meal_type}, phải là breakfast`;
+      /* Các dòng đi bằng một lệnh ghi THỨ HAI, sau bữa. */
+      const itemsOf = () => (world.meal_entry_items ?? []).filter((x) => x.meal_entry_id === got[0].id);
+      for (let i = 0; i < 24 && itemsOf().length < 4; i++) await page.waitForTimeout(250);
+      const items = itemsOf();
+      const names = items.map((x) => x.food_name).sort().join(' | ');
+      const want = ['Bông cải xanh', 'Bơ', 'Cơm trắng', 'Ức gà'].sort().join(' | ');
+      if (names !== want) return `(B) các dòng của bữa mới [${names}], phải đúng bốn nguyên liệu của thẻ [${want}]`;
+      const kcal = items.reduce((n, x) => n + Number(x.kcal) * (Number(x.servings) || 1), 0);
+      if (Math.round(kcal) !== 642) return `(B) tổng kcal ghi vào nhật ký ${kcal}, thẻ nói 642`;
+      const toastText = (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ');
+      if (!/Added to today · Breakfast|Đã thêm vào hôm nay · Bữa sáng/.test(toastText)) return `(C) câu báo "${toastText}"`;
       return null;
     },
   },
