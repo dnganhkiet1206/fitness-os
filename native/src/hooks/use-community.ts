@@ -97,6 +97,9 @@ export interface CommunityComment {
   created_at: string;
   author: CommunityAuthor | null;
   mine: boolean;
+  /** Ẩn vì bị báo cáo (#26). Chỉ tác giả còn thấy bình luận ẩn (RLS), nên với
+      người khác cột này luôn là false. */
+  hidden: boolean;
   /** `handle` (chữ thường) → user_id, chỉ những lượt nhắc server đã xác nhận. */
   mentions: [string, string][];
 }
@@ -436,7 +439,7 @@ export function useComments(postId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('community_comments')
-        .select('id, post_id, parent_id, author_id, body, created_at')
+        .select('id, post_id, parent_id, author_id, body, hidden, created_at')
         .eq('post_id', postId!)
         .order('created_at', { ascending: true })
         .limit(200);
@@ -468,6 +471,7 @@ export function useComments(postId: string | undefined) {
         created_at: r.created_at,
         author: byId.get(r.author_id) ?? null,
         mine: r.author_id === user!.id,
+        hidden: !!r.hidden,
         mentions: mentionRows
           .filter((x) => x.comment_id === r.id)
           .flatMap((x) => {
@@ -656,6 +660,67 @@ export function useReport() {
       });
       // Báo cáo lại cùng một bài: lần đầu đã được ghi, đó là kết quả người ta muốn.
       if (error && error.code !== '23505') throw error;
+    },
+  });
+}
+
+/* ── vì sao bị ẩn, và yêu cầu xem lại (#26) ─────────────────────────────── */
+
+export interface HiddenReason {
+  post_id: string | null;
+  comment_id: string | null;
+  /** Số người KHÁC NHAU đã báo cáo. */
+  reporters: number;
+  /** Lý do phổ biến nhất; hoà thì server chọn theo thứ tự cố định. */
+  top_reason: ReportReason | null;
+  review_requested: boolean;
+}
+
+const HIDDEN_KEY = 'community_hidden_reasons';
+
+/**
+ * Lý do gộp cho MỌI bài và bình luận đang ẩn của chính mình — một lời gọi,
+ * dùng chung giữa các thẻ. Chỉ bật khi màn đang vẽ một thứ đang ẩn của mình
+ * (`enabled`), nên người không bị ẩn gì không trả một request nào cho nó.
+ * Không id người báo, không ghi chú: server không trả, không phải app giấu.
+ */
+export function useHiddenReasons(enabled: boolean) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: [HIDDEN_KEY, user?.id],
+    enabled: !!user && enabled,
+    queryFn: async (): Promise<HiddenReason[]> => {
+      const { data, error } = await supabase.rpc('community_my_hidden_reasons');
+      if (error) throw error;
+      return (data ?? []).map((r) => ({
+        post_id: r.post_id ?? null,
+        comment_id: r.comment_id ?? null,
+        reporters: Number(r.reporters) || 0,
+        top_reason: (r.top_reason as ReportReason | null) ?? null,
+        review_requested: !!r.review_requested,
+      }));
+    },
+  });
+}
+
+/** Một lần mỗi bài/bình luận. Lần hai (23505 — đã gửi ở thiết bị khác) là
+    trạng thái người ta muốn rồi, không phải lỗi, như Báo cáo và Chặn. Không
+    tự bỏ ẩn: dashboard xử lý. */
+export function useRequestReview() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useOnlineMutation({
+    meta: { offline: now(2) },
+    mutationFn: async (t: { postId?: string; commentId?: string }) => {
+      const { error } = await supabase.rpc('community_request_review', {
+        p_post_id: t.postId,
+        p_comment_id: t.commentId,
+      });
+      if (error && error.code !== '23505') throw error;
+    },
+    onSuccess: () => {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      qc.invalidateQueries({ queryKey: [HIDDEN_KEY, user?.id] });
     },
   });
 }

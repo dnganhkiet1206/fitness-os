@@ -86,7 +86,7 @@ const WIRING = [
   [screen, /threadComments\(comments\.data \?\? \[\]\)/, 'community-post.tsx không vẽ bình luận qua `threadComments` — câu trả lời không nằm dưới gốc'],
   [screen, /mentionParts\(comment\.body, new Map\(comment\.mentions\)\)/, 'community-post.tsx không vẽ thân qua `mentionParts` với lượt nhắc server đã xác nhận'],
   [screen, /parentId: replyTo\?\.id \?\? null/, 'community-post.tsx không gửi `parentId` của bình luận đang được trả lời'],
-  [hook, /\.select\('id, post_id, parent_id, author_id, body, created_at'\)/, 'useComments không đọc `parent_id`'],
+  [hook, /\.select\('id, post_id, parent_id, author_id, body, hidden, created_at'\)/, 'useComments không đọc `parent_id`'],
   [hook, /\.from\('community_comment_mentions'\)/, 'useComments không đọc bảng lượt nhắc — mọi @ sẽ là chữ'],
   [hook, /parent_id: parentId/, 'useAddComment không gửi `parent_id`'],
 ];

@@ -647,6 +647,8 @@ CASES += [
 ]
 
 # ── #30: trả lời một tầng và nhắc @handle (B) ──
+HR = 'hide_reasons'
+HRM = '20261004120000_community_hide_reasons'
 RPL = 'comment_replies'
 RPLM = '20261003120000_community_comment_replies'
 CASES += [
@@ -691,4 +693,45 @@ CASES += [
   dict(suite=RPL, id='D1', mig=RPLM, how='xoá gốc thì câu trả lời mồ côi (SET NULL) thay vì đi theo',
        old="ADD COLUMN parent_id uuid REFERENCES public.community_comments(id) ON DELETE CASCADE,",
        new="ADD COLUMN parent_id uuid REFERENCES public.community_comments(id) ON DELETE SET NULL,", expect='D1 '),
+  # ── lý do ẩn gộp + yêu cầu xem lại (#26) ──
+  dict(suite=HR, id='H1', mig=HRM, how='lý do phổ biến nhất lấy ÍT nhất',
+       old="ORDER BY k.n DESC, array_position", new="ORDER BY k.n ASC, array_position", expect='H1 lý do'),
+  dict(suite=HR, id='H2a', mig=HRM, how='liệt kê cả bài KHÔNG ẩn',
+       old="     WHERE p.author_id = auth.uid() AND p.hidden\n", new="     WHERE p.author_id = auth.uid()\n", expect='H2 bài không ẩn'),
+  dict(suite=HR, id='H2b', mig=HRM, how='bỏ lọc tác giả — thấy bài ẩn của người khác',
+       old="     WHERE p.author_id = auth.uid() AND p.hidden\n", new="     WHERE p.hidden\n", expect='H2 bài ẩn của NGƯỜI KHÁC'),
+  dict(suite=HR, id='H3', mig=HRM, how='hoà lý do: đổi thứ tự cố định (spam trước harassment)',
+       old="ARRAY['harassment', 'inappropriate', 'misleading', 'spam', 'other']", new="ARRAY['spam', 'inappropriate', 'misleading', 'harassment', 'other']", expect='H3 '),
+  dict(suite=HR, id='H4', mig=HRM, how='trả thêm cột id người báo cáo',
+       old="review_requested boolean)\nLANGUAGE sql", new="review_requested boolean, reporter_ids uuid[])\nLANGUAGE sql", expect='H4 ', extra=[
+         ("\n    FROM mine m\n$$;", ",\n         ARRAY[]::uuid[]\n    FROM mine m\n$$;")]),
+  dict(suite=HR, id='V1', mig=HRM, how='yêu cầu xem lại TỰ BỎ ẩn',
+       old="  VALUES (auth.uid(), p_post_id, p_comment_id);\n", new="  VALUES (auth.uid(), p_post_id, p_comment_id);\n  UPDATE community_posts SET hidden = false WHERE id = p_post_id;\n", expect='V1 yêu cầu xem lại TỰ BỎ'),
+  dict(suite=HR, id='V1b', mig=HRM, how='lý do gộp luôn báo "chưa yêu cầu"',
+       old="         EXISTS (SELECT 1 FROM community_review_requests q", new="         false AND EXISTS (SELECT 1 FROM community_review_requests q", expect='V1 đã yêu cầu'),
+  dict(suite=HR, id='V2', mig=HRM, how='bỏ UNIQUE một-yêu-cầu-mỗi-bài',
+       old="  CONSTRAINT community_review_requests_one_per_post UNIQUE (post_id),", new="  CONSTRAINT community_review_requests_one_per_post CHECK (true),", expect='V2 '),
+  dict(suite=HR, id='V3a', mig=HRM, how='bỏ kiểm "bài của mình"',
+       old="SELECT 1 FROM community_posts WHERE id = p_post_id AND author_id = auth.uid() AND hidden", new="SELECT 1 FROM community_posts WHERE id = p_post_id AND hidden", expect='V3 yêu cầu xem lại bài của người khác'),
+  dict(suite=HR, id='V3b', mig=HRM, how='bỏ kiểm "đang ẩn" ở bài',
+       old="SELECT 1 FROM community_posts WHERE id = p_post_id AND author_id = auth.uid() AND hidden", new="SELECT 1 FROM community_posts WHERE id = p_post_id AND author_id = auth.uid()", expect='V3 yêu cầu xem lại bài KHÔNG ẩn'),
+  dict(suite=HR, id='V4', mig=HRM, how='bỏ kiểm "đúng một đích" (CHECK của bảng còn: ra 23514, không phải 22023)',
+       old="  IF num_nonnulls(p_post_id, p_comment_id) <> 1 THEN", new="  IF false THEN", expect='V4 '),
+  dict(suite=HR, id='V5', mig=HRM, how='mở INSERT/UPDATE cho client',
+       old="GRANT SELECT ON public.community_review_requests TO authenticated;",
+       new="GRANT SELECT, INSERT, UPDATE ON public.community_review_requests TO authenticated;\nCREATE POLICY \"x_ins\" ON public.community_review_requests FOR INSERT TO authenticated WITH CHECK (true);\nCREATE POLICY \"x_upd\" ON public.community_review_requests FOR UPDATE TO authenticated USING (true);", expect='V5 '),
+  dict(suite=HR, id='V6', mig=HRM, how='policy đọc yêu cầu mở cho mọi người',
+       old="  USING (auth.uid() = requester_id);", new="  USING (true);", expect='V6 '),
+  dict(suite=HR, id='V7', mig=HRM, how='cấp lý do gộp cho anon',
+       old="GRANT EXECUTE ON FUNCTION public.community_my_hidden_reasons() TO authenticated;",
+       new="GRANT EXECUTE ON FUNCTION public.community_my_hidden_reasons() TO authenticated, anon;", expect='V7 anon gọi được lý do'),
+  dict(suite=HR, id='V7b', mig=HRM, how='cấp yêu cầu xem lại cho anon — hàm tự ném 42501 khi không đăng nhập, nên PHẢI vẫn xanh (lớp dự phòng)', green_ok=True,
+       old="GRANT EXECUTE ON FUNCTION public.community_request_review(uuid, uuid) TO authenticated;",
+       new="GRANT EXECUTE ON FUNCTION public.community_request_review(uuid, uuid) TO authenticated, anon;", expect='V7 anon gọi được yêu cầu'),
+  dict(suite=HR, id='C1', mig=HRM, how='lý do gộp bỏ quên bình luận',
+       old="    UNION ALL\n    SELECT NULL::uuid, c.id FROM community_comments c\n     WHERE c.author_id = auth.uid() AND c.hidden\n", new="", expect='C1 '),
+  dict(suite=HR, id='C2', mig=HRM, how='bỏ kiểm "bình luận của mình"',
+       old="SELECT 1 FROM community_comments WHERE id = p_comment_id AND author_id = auth.uid() AND hidden", new="SELECT 1 FROM community_comments WHERE id = p_comment_id AND hidden", expect='C2 '),
+  dict(suite=HR, id='C3', mig=HRM, how='bỏ kiểm "đang ẩn" ở bình luận',
+       old="SELECT 1 FROM community_comments WHERE id = p_comment_id AND author_id = auth.uid() AND hidden", new="SELECT 1 FROM community_comments WHERE id = p_comment_id AND author_id = auth.uid()", expect='C3 '),
 ]

@@ -8,6 +8,7 @@ import { CommunityAvatar } from '@/components/ascnd/community-avatar';
 import { PostArt } from '@/components/ascnd/post-art';
 import { PopIcon, RollingCount } from '@/components/ascnd/post-action-motion';
 import { GlassCard } from '@/components/ascnd/glass-card';
+import { HiddenNotice } from '@/components/ascnd/hidden-notice';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { spacing, type } from '@/constants/ascnd';
@@ -63,7 +64,6 @@ export function PostShell({
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
-  const i18n = useI18n();
   const openPost = () => nav.push({ pathname: '/community-post', params: { id: post.id } });
 
   const Body = (
@@ -71,7 +71,8 @@ export function PostShell({
       <PostHeader post={post} preview={preview} />
       {/* Mọi bài có ảnh của thư viện app (#163) — người dùng không tải ảnh lên. */}
       <PostArt art={post.art} kind={post.kind} />
-      {post.hidden && post.mine ? <Text style={styles.hiddenNote}>{i18n.nCmHiddenNotice}</Text> : null}
+      {/* Vì sao bị ẩn và yêu cầu xem lại (#26, B) — chỉ trên bài của chính mình. */}
+      {post.hidden && post.mine && !preview ? <HiddenNotice postId={post.id} /> : null}
       {children}
       {post.caption ? <Text style={styles.caption}>{post.caption}</Text> : null}
       {!preview ? <PostActions post={post} onComment={openPost} shareText={shareText} /> : null}
@@ -313,7 +314,6 @@ const stylesFor = makeStyles((c) => ({
   name: { ...type.headline, color: c.foreground, flexShrink: 1 },
   meta: { ...type.footnote, color: c.mutedForeground },
   moreBtn: { width: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' },
-  hiddenNote: { ...type.footnote, color: c.readinessRed },
   caption: { ...type.body, color: c.foreground, lineHeight: 21 },
   actions: { flexDirection: 'row', alignItems: 'center', marginHorizontal: -spacing.sm, marginBottom: -spacing.sm },
   action: { minWidth: 44, height: 44, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 6 },

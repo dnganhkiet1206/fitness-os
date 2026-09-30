@@ -817,6 +817,30 @@ export const FIXTURES = {
       caption: 'Một bữa ăn đơn giản, dễ làm, giàu protein và rất phù hợp cho những ngày tập luyện.', visibility: 'public',
       like_count: 212, comment_count: 0, save_count: 24, hidden: false, created_at: at(1, '23:36'),
     },
+    /*
+      Bài CỦA CHÍNH MÌNH đang bị ẩn (#26): ba người khác nhau báo cáo (hai
+      "spam", một "inappropriate" — xem `community_reports`), nên trigger tự ẩn
+      đã chạy. Người khác không thấy nó; tác giả thấy, kèm dòng lý do gộp
+      "3 người báo cáo · phần lớn: spam" và nút yêu cầu xem lại.
+    */
+    {
+      id: 'cp000000-0000-4000-8000-000000000026', author_id: UID, kind: 'workout', source_id: null,
+      payload: {
+        title: 'Leg Day', performedAt: at(3, '18:20'), volumeKg: 9600, pr: true, minutes: 50, exerciseCount: 2,
+        exercises: [
+          { exerciseId: 'e12', exerciseName: 'Barbell Squat', library: true, sets: 5, weight: 100, reps: 5 },
+          { exerciseId: 'e13', exerciseName: 'Romanian Deadlift', library: true, sets: 3, weight: 80, reps: 8 },
+        ],
+      },
+      caption: 'Squat 100 kg lần đầu tiên!', visibility: 'public',
+      like_count: 2, comment_count: 0, save_count: 0, hidden: true, created_at: at(3, '18:20'),
+      image_source: 'library', art_id: 'ca000000-0000-4000-8000-000000000001',
+    },
+  ],
+  community_reports: [
+    { id: 'c7000000-0000-4000-8000-000000000001', reporter_id: 'c0000000-0000-4000-8000-0000000011a1', post_id: 'cp000000-0000-4000-8000-000000000026', comment_id: null, reported_user_id: null, reason: 'spam', note: '', status: 'open', created_at: at(2, '09:10') },
+    { id: 'c7000000-0000-4000-8000-000000000002', reporter_id: 'c0000000-0000-4000-8000-0000000022b2', post_id: 'cp000000-0000-4000-8000-000000000026', comment_id: null, reported_user_id: null, reason: 'spam', note: '', status: 'open', created_at: at(2, '09:40') },
+    { id: 'c7000000-0000-4000-8000-000000000003', reporter_id: 'c0000000-0000-4000-8000-00000000a5cd', post_id: 'cp000000-0000-4000-8000-000000000026', comment_id: null, reported_user_id: null, reason: 'inappropriate', note: '', status: 'open', created_at: at(2, '10:05') },
   ],
   community_likes: [
     { post_id: 'cp000000-0000-4000-8000-000000000001', user_id: UID, created_at: at(0, '11:36') },
@@ -1181,6 +1205,5 @@ export const FIXTURES = {
   thì phải rời khỏi đây.
 */
 export const FIXTURE_EMPTY_OK = {
-  community_reports: 'chỉ GHI (useReport chèn một báo cáo); không màn nào đọc báo cáo, kể cả của chính mình',
   entitlements: 'hạng MIỄN PHÍ là trạng thái đang được đo; một dòng pro lật mọi cổng tính năng của cả app, và việc mở khoá khi thử (TEST_UNLOCK_ALL) còn chờ chủ dự án quyết',
 };

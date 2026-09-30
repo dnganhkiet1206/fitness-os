@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { HiddenNotice } from '@/components/ascnd/hidden-notice';
 import { CommunityAvatar } from '@/components/ascnd/community-avatar';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -281,6 +282,9 @@ function CommentRow({
           )}
         </Text>
       </Pressable>
+      {/* Bình luận của chính mình đang bị ẩn (#26): vì sao, và xem lại. Anh em
+          với vùng nhấn giữ, không nằm trong nó — một nút trong một nút (#120). */}
+      {comment.hidden && comment.mine ? <HiddenNotice commentId={comment.id} compact /> : null}
       {onReply ? (
         <Pressable
           accessibilityRole="button"

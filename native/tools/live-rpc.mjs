@@ -327,6 +327,53 @@ export const RPC_FIXTURES = {
     },
   },
 
+  /*
+    20261004120000_community_hide_reasons.sql (#26). Dịch thân SQL: chỉ mục
+    ĐANG ẨN của chính người gọi; số người báo là số người KHÁC NHAU; lý do
+    phổ biến nhất, hoà thì theo thứ tự cố định harassment → inappropriate →
+    misleading → spam → other. Không trả id người báo hay ghi chú.
+  */
+  community_my_hidden_reasons: {
+    sample: {},
+    run(_args, world) {
+      const ORDER = ['harassment', 'inappropriate', 'misleading', 'spam', 'other'];
+      const reports = rows(world, 'community_reports');
+      const asks = rows(world, 'community_review_requests');
+      const one = (key, id) => {
+        const mine = reports.filter((r) => r[key] === id);
+        const by = new Map();
+        for (const r of mine) (by.get(r.reason) ?? by.set(r.reason, new Set()).get(r.reason)).add(r.reporter_id);
+        const top = [...by].sort((a, b) => b[1].size - a[1].size || ORDER.indexOf(a[0]) - ORDER.indexOf(b[0]))[0];
+        return {
+          post_id: key === 'post_id' ? id : null,
+          comment_id: key === 'comment_id' ? id : null,
+          reporters: new Set(mine.map((r) => r.reporter_id)).size,
+          top_reason: top ? top[0] : null,
+          review_requested: asks.some((q) => q[key] === id),
+        };
+      };
+      return [
+        ...rows(world, 'community_posts').filter((p) => p.author_id === UID && p.hidden).map((p) => one('post_id', p.id)),
+        ...rows(world, 'community_comments').filter((c) => c.author_id === UID && c.hidden).map((c) => one('comment_id', c.id)),
+      ];
+    },
+  },
+
+  /* Cùng tệp. "Không phải của mình" và "không ẩn" ra cùng một mã P0002; lần
+     hai là 23505 (UNIQUE); không tự bỏ ẩn. */
+  community_request_review: {
+    sample: { p_post_id: 'cp000000-0000-4000-8000-000000000026' },
+    run({ p_post_id = null, p_comment_id = null } = {}, world) {
+      if ((p_post_id == null) === (p_comment_id == null)) throw rpcError('22023', 'exactly one of post or comment');
+      const [table, key, id] = p_post_id ? ['community_posts', 'post_id', p_post_id] : ['community_comments', 'comment_id', p_comment_id];
+      if (!rows(world, table).some((x) => x.id === id && x.author_id === UID && x.hidden)) throw rpcError('P0002', 'nothing hidden of yours');
+      const asks = (world.community_review_requests ??= []);
+      if (asks.some((q) => q[key] === id)) throw rpcError('23505', 'duplicate key value violates unique constraint');
+      asks.push({ id: randomUUID(), requester_id: UID, post_id: p_post_id, comment_id: p_comment_id, status: 'open', created_at: new Date().toISOString() });
+      return null;
+    },
+  },
+
   /* 20260930140000_community_notifications.sql */
   community_mark_notifications_read: {
     sample: {},

@@ -1513,6 +1513,81 @@ const SCENARIOS = [
   },
   {
     /*
+      #26: bài của CHÍNH MÌNH đang ẩn (fixture cp…026: ba người báo cáo, hai
+      "spam", một "inappropriate").
+        (A) thẻ nói vì sao: "3 people reported this · mostly: spam", và có nút
+            "Request a review";
+        (B) không lộ ai báo cáo: tên của ba người báo không có trên màn;
+        (C) chạm → đúng MỘT lời gọi `community_request_review` mang đúng
+            `p_post_id`; nút thành dòng "Review requested…", không còn nút;
+        (D) tải lại (xoá cache) → vẫn "Review requested" — trạng thái của
+            SERVER, không phải của lần bấm;
+        (E) bình luận: một bình luận ẩn của mình và một của Linh trên bài 2 —
+            đúng MỘT khối "đang ẩn", của mình, với lý do "misleading or unsafe".
+    */
+    name: 'Cộng đồng: bài/bình luận của mình bị ẩn nói vì sao và yêu cầu xem lại được, một lần (#26)',
+    route: '/community-post?id=cp000000-0000-4000-8000-000000000026', mode: 'full',
+    async run(page, { world }) {
+      const calls = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/rpc\/community_request_review/.test(q.url())) calls.push(q.postData() ?? '');
+      });
+      const has = (t) => page.evaluate((t) => window.__shown('*').some((e) => e.children.length === 0 && (e.textContent ?? '').trim() === t), t);
+      const text = () => page.evaluate(() => window.__shown('*').filter((e) => e.children.length === 0).map((e) => e.textContent ?? '').join(' | '));
+      const ask = () => page.getByRole('button', { name: 'Request a review', exact: true }).filter({ visible: true });
+      const why = '3 people reported this · mostly: spam';
+      for (let i = 0; i < 40 && !(await has(why)); i++) await page.waitForTimeout(250);
+      if (!(await has('Hidden from others after reports'))) return '(A) bài ẩn của mình không có dòng "đang ẩn"';
+      if (!(await has(why))) return `(A) không nói vì sao: thiếu "${why}"`;
+      if ((await ask().count()) !== 1) return `(A) phải có đúng một nút "Request a review", có ${await ask().count()}`;
+
+      const all = await text();
+      for (const who of ['Linh Phạm', 'linh.pham', 'Tuấn Nguyễn', 'tuan.ng']) if (all.includes(who)) return `(B) lộ người báo cáo: "${who}" có trên màn`;
+
+      await ask().first().click();
+      const sent = 'Review requested — it stays hidden until then';
+      for (let i = 0; i < 24 && !(await has(sent)); i++) await page.waitForTimeout(250);
+      if (!(await has(sent))) return '(C) gửi xong mà không thành dòng "Review requested"';
+      if (await ask().count()) return '(C) gửi xong mà nút vẫn còn';
+      if (calls.length !== 1) return `(C) ${calls.length} lời gọi community_request_review, phải đúng một`;
+      if (JSON.parse(calls[0] || '{}').p_post_id !== 'cp000000-0000-4000-8000-000000000026') return `(C) lời gọi mang sai đích: ${calls[0]}`;
+      if ((world.community_review_requests ?? []).length !== 1) return '(C) thế giới không ghi yêu cầu nào';
+
+      await page.evaluate(() => {
+        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
+      });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 40 && !(await has(sent)); i++) await page.waitForTimeout(250);
+      if (!(await has(sent))) return '(D) tải lại thì mất "Review requested" — trạng thái không đọc từ server';
+      if (await ask().count()) return '(D) tải lại thì nút gửi lại hiện ra — gửi được lần hai';
+
+      const P2 = 'cp000000-0000-4000-8000-000000000002';
+      const LINH = 'c0000000-0000-4000-8000-0000000011a1';
+      const TUAN = 'c0000000-0000-4000-8000-0000000022b2';
+      const ASCND = 'c0000000-0000-4000-8000-00000000a5cd';
+      world.community_comments.push(
+        { id: 'cc000000-0000-4000-8000-000000000261', post_id: P2, parent_id: null, author_id: UID, body: 'Bình luận ẩn của tôi (#26)', hidden: true, created_at: new Date(Date.now() - 3600_000).toISOString() },
+        { id: 'cc000000-0000-4000-8000-000000000262', post_id: P2, parent_id: null, author_id: LINH, body: 'Bình luận ẩn của Linh (#26)', hidden: true, created_at: new Date(Date.now() - 3000_000).toISOString() },
+      );
+      for (const [n, who, reason] of [[1, LINH, 'misleading'], [2, TUAN, 'misleading'], [3, ASCND, 'spam']]) {
+        world.community_reports.push({ id: `c7000000-0000-4000-8000-00000000026${n}`, reporter_id: who, post_id: null, comment_id: 'cc000000-0000-4000-8000-000000000261', reported_user_id: null, reason, note: '', status: 'open', created_at: new Date().toISOString() });
+      }
+      await page.evaluate(() => {
+        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
+      });
+      await page.goto(page.url().replace(/community-post\?id=[^&]+/, `community-post?id=${P2}`), { waitUntil: 'domcontentloaded' });
+      const cwhy = '3 people reported this · mostly: misleading or unsafe';
+      for (let i = 0; i < 40 && !(await has(cwhy)); i++) await page.waitForTimeout(250);
+      if (!(await has('Bình luận ẩn của tôi (#26)'))) return '(E) bình luận ẩn của mình không hiện với chính mình';
+      if (!(await has(cwhy))) return `(E) bình luận ẩn của mình không nói vì sao: thiếu "${cwhy}"`;
+      const notices = await page.evaluate(() => window.__shown('*').filter((e) => e.children.length === 0 && (e.textContent ?? '').trim() === 'Hidden from others after reports').length);
+      if (notices !== 1) return `(E) ${notices} khối "đang ẩn" — phải đúng một, của mình (bình luận ẩn của Linh không phải việc của mình)`;
+      if ((await ask().count()) !== 1) return `(E) bình luận ẩn của mình phải có đúng một nút "Request a review", có ${await ask().count()}`;
+      return null;
+    },
+  },
+  {
+    /*
       #163: mọi bài có ảnh của thư viện app, người dùng chỉ chọn phong cách.
         (A) màn chia sẻ buổi tập k1 (Bench Press → nhãn `push`): xem trước có
             SẴN một ảnh hợp nội dung — `workout/mono-push.png`, không phải ảnh

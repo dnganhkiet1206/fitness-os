@@ -588,6 +588,33 @@ export type Database = {
         }
         Relationships: []
       }
+      community_review_requests: {
+        Row: {
+          comment_id: string | null
+          created_at: string
+          id: string
+          post_id: string | null
+          requester_id: string
+          status: string
+        }
+        Insert: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          requester_id: string
+          status?: string
+        }
+        Update: {
+          comment_id?: string | null
+          created_at?: string
+          id?: string
+          post_id?: string | null
+          requester_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       community_saves: {
         Row: {
           created_at: string
@@ -2055,6 +2082,20 @@ export type Database = {
           bio: string
           recent_posts: number
         }[]
+      }
+      community_my_hidden_reasons: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          post_id: string | null
+          comment_id: string | null
+          reporters: number
+          top_reason: string | null
+          review_requested: boolean
+        }[]
+      }
+      community_request_review: {
+        Args: { p_post_id?: string; p_comment_id?: string }
+        Returns: undefined
       }
       community_mark_notifications_read: {
         Args: Record<PropertyKey, never>
