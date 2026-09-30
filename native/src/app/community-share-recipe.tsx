@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from 'expo-router';
 import { Check, ChevronRight, Lock, UserRound, UtensilsCrossed } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -69,7 +70,10 @@ export default function CommunityShareRecipeScreen() {
   const shared = useMySharedSessions();
   const share = useShareRecipe();
 
-  const [picked, setPicked] = useState<string | null>(null);
+  /* `?meal=` (#18): mở từ một bữa đã ghi thì vào thẳng bước xem trước của đúng
+     bữa ấy, như `?session=` của màn chia sẻ buổi tập. */
+  const params = useLocalSearchParams<{ meal?: string }>();
+  const [picked, setPicked] = useState<string | null>(params.meal ?? null);
   const [title, setTitle] = useState('');
   const [caption, setCaption] = useState('');
   /* Chưa chạm thì theo "Mặc định khi đăng" trong Quyền riêng tư; đã chọn thì
@@ -80,7 +84,10 @@ export default function CommunityShareRecipeScreen() {
   const vis = visPick ?? settings.data?.defaultVisibility ?? 'public';
 
   const list = meals.data ?? [];
-  const meal = list.find((m) => m.id === picked) ?? null;
+  /* Chỉ bữa có trong danh sách của CHÍNH MÌNH và chưa chia sẻ: một `?meal=` trỏ
+     vào bữa của người khác, bữa không tồn tại hay bữa đã đăng thì rơi về danh
+     sách chọn — nơi bữa đã đăng hiện "Đã chia sẻ" và không bấm được. */
+  const meal = list.find((m) => m.id === picked && !shared.data?.includes(m.id)) ?? null;
 
   const mealLabel: Record<string, string> = {
     breakfast: i18n.nBreakfast,
@@ -144,7 +151,7 @@ export default function CommunityShareRecipeScreen() {
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Screen back title={i18n.nRcShareTitle}>
-        {me.isPending || meals.isPending ? (
+        {me.isPending || meals.isPending || (!!params.meal && shared.isPending) ? (
           <ActivityIndicator color={c.mutedForeground} style={styles.loading} />
         ) : me.isError || meals.isError ? (
           <LoadFailed i18n={i18n} onRetry={() => (me.refetch(), meals.refetch())} />

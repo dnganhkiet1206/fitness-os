@@ -150,6 +150,20 @@ for (const [src, file] of [[tab, 'community.tsx'], [user, 'community-user.tsx']]
   );
 }
 WIRING.push([tab, /hold\.onScroll\(e\);\s*more\(e\);/, 'community.tsx: onScroll phải gọi cả viên bài mới lẫn tải thêm']);
+
+/* #170: bình luận theo trang, MỚI NHẤT trước. Trước đây `created_at asc` rồi cắt
+   200 — ở bài hơn 200 bình luận, câu mới nhất (kể cả câu vừa gửi) không hiện. */
+const cm = body('useComments');
+const post = readFileSync(path.join(NATIVE, 'src/app/community-post.tsx'), 'utf8');
+WIRING.push(
+  [cm, /useInfiniteQuery\(/, 'useComments không đọc theo trang (#170)'],
+  [cm, /queryKey: \['community_comments', user\?\.id, postId, 'pages'\]/, "useComments: khoá phải mang 'pages' — cache cũ dạng mảng"],
+  [cm, /\.order\('created_at', \{ ascending: false \}\)\s*\.order\('id', \{ ascending: false \}\)\s*\.limit\(COMMENT_PAGE\)/, 'useComments không đọc MỚI NHẤT trước theo (created_at, id) — câu mới nhất bị cắt'],
+  [cm, /if \(pageParam\) q = q\.or\(olderThan\(pageParam\)\)/, 'useComments không áp con trỏ — trang cũ hơn là trang đầu'],
+  [hook, /getQueryData<InfiniteData<CommunityComment\[\]>>\(\['community_comments', user\?\.id, postId, 'pages'\]\)/, 'useDeleteComment đọc cache bình luận theo khoá/hình dạng cũ — số trên thẻ trừ sai'],
+  [post, /<OlderComments q=\{comments\} \/>/, 'community-post.tsx không có "Xem bình luận cũ hơn"'],
+  [post, /comments\.isError && !comments\.isFetchNextPageError/, 'community-post.tsx: trang cũ hỏng thì thẻ lỗi thay cả luồng'],
+);
 for (const [src, re, msg] of WIRING) if (!re.test(src)) problems.push(msg);
 
 if (problems.length) {
@@ -160,5 +174,6 @@ if (problems.length) {
 console.log(
   `phân trang feed OK — ${CASES.length} ca CHẠY THẬT lib/feed-page.ts, gồm đi hết một bảng ${TABLE.length} bài có bài cùng mốc vắt ` +
     `qua ranh giới trang trên máy chủ giả (cỡ 7/10/30): đúng thứ tự, không trùng, không hở. ${MUTANTS.length} bản hỏng (con trỏ lt, ` +
-    `lte, bài đầu trang, trang đầy coi là hết, mapPosts mù trang, gần đáy không đệm) đều bị bắt. ${WIRING.length} điểm nối đúng`,
+    `lte, bài đầu trang, trang đầy coi là hết, mapPosts mù trang, gần đáy không đệm) đều bị bắt. ${WIRING.length} điểm nối đúng, ` +
+    'gồm bình luận theo trang mới nhất trước (#170)',
 );

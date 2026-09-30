@@ -1588,6 +1588,68 @@ const SCENARIOS = [
   },
   {
     /*
+      #170: bài có 230 bình luận. Trước #170 app đọc `created_at asc` rồi cắt
+      200, nên 30 câu MỚI NHẤT không bao giờ hiện — kể cả câu vừa gửi.
+        (A) mở bài: câu MỚI NHẤT có trên màn, đúng một trang (50 câu), đầu luồng
+            có "View older comments";
+        (B) gửi một câu → nó hiện ra ngay (lượt đọc lại mang trang mới nhất);
+        (C) bấm "View older comments" tới khi hết: 231 câu, mỗi câu đúng một
+            lần, theo thứ tự đến (cũ → mới), nút biến mất.
+    */
+    name: 'Cộng đồng: bài có 230 bình luận vẫn hiện câu mới nhất và câu vừa gửi, xem cũ hơn tải đủ không trùng (#170)',
+    route: '/community-post?id=cp000000-0000-4000-8000-000000000003', mode: 'full',
+    async run(page, { world }) {
+      const POST = 'cp000000-0000-4000-8000-000000000003';
+      const LINH = 'c0000000-0000-4000-8000-0000000011a1';
+      const body = (i) => `Bình luận #170 · ${String(i).padStart(3, '0')}`;
+      const base = Date.now() - 3 * 86_400_000;
+      for (let i = 0; i < 230; i++) {
+        world.community_comments.push({
+          id: `cc000000-0000-4000-8000-000000170${String(i).padStart(3, '0')}`, post_id: POST, parent_id: null,
+          author_id: LINH, body: body(i), hidden: false, created_at: new Date(base + i * 60_000).toISOString(),
+        });
+      }
+      world.community_posts.find((p) => p.id === POST).comment_count = 230;
+      await page.evaluate(() => {
+        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
+      });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      const shown = () => page.evaluate(() => window.__shown('*')
+        .filter((e) => e.children.length === 0 && /^Bình luận #170 · \d{3}$|^Câu vừa gửi \(#170\)$/.test((e.textContent ?? '').trim()))
+        .map((e) => e.textContent.trim()));
+      const older = () => page.getByRole('button', { name: 'View older comments', exact: true }).filter({ visible: true });
+      let got = [];
+      for (let i = 0; i < 40 && !got.includes(body(229)); i++) {
+        await page.waitForTimeout(250);
+        got = await shown();
+      }
+      if (!got.includes(body(229))) return `(A) câu MỚI NHẤT không có trên màn — ${got.length} câu, câu đầu "${got[0]}"`;
+      if (got.length !== 50) return `(A) lần đầu có ${got.length} câu, phải đúng một trang (50)`;
+      if (!(await older().count())) return '(A) còn câu cũ hơn mà không có "View older comments"';
+
+      const input = page.getByPlaceholder(/^(Add a comment…|Viết bình luận…)$/).filter({ visible: true }).first();
+      await input.fill('Câu vừa gửi (#170)');
+      await page.getByRole('button', { name: /^(Send|Gửi)$/ }).filter({ visible: true }).first().click();
+      for (let i = 0; i < 24 && !(await shown()).includes('Câu vừa gửi (#170)'); i++) await page.waitForTimeout(250);
+      if (!(await shown()).includes('Câu vừa gửi (#170)')) return '(B) gửi xong mà câu vừa gửi không hiện ra';
+
+      for (let n = 0; n < 12 && (await older().count()); n++) {
+        await older().first().click();
+        await page.waitForTimeout(900);
+      }
+      if (await older().count()) return '(C) bấm 12 lần mà vẫn còn "View older comments"';
+      got = await shown();
+      const want = [...Array.from({ length: 230 }, (_, i) => body(i)), 'Câu vừa gửi (#170)'];
+      const dup = got.filter((c, i) => got.indexOf(c) !== i);
+      if (dup.length) return `(C) câu hiện hai lần: ${[...new Set(dup)].slice(0, 5).join(', ')}`;
+      const miss = want.filter((c) => !got.includes(c));
+      if (miss.length) return `(C) thiếu ${miss.length} câu: ${miss.slice(0, 5).join(', ')}`;
+      if (JSON.stringify(got) !== JSON.stringify(want)) return '(C) đủ câu nhưng sai thứ tự đến';
+      return null;
+    },
+  },
+  {
+    /*
       #163: mọi bài có ảnh của thư viện app, người dùng chỉ chọn phong cách.
         (A) màn chia sẻ buổi tập k1 (Bench Press → nhãn `push`): xem trước có
             SẴN một ảnh hợp nội dung — `workout/mono-push.png`, không phải ảnh
@@ -3941,6 +4003,128 @@ const SCENARIOS = [
       await share.first().click();
       await page.waitForTimeout(2500);
       if (!/community-share\?session=\w/.test(page.url())) return `bấm Chia sẻ mà tới ${page.url().replace(/^.*8731/, '')}`;
+      return null;
+    },
+  },
+  {
+    /*
+      Kiểm chéo #12 (B, cho phần A làm): hai lời hứa của issue mà kịch bản
+      trên không đo.
+        (A) đang theo một thử thách thì câu toast nói con số của SERVER, đọc
+            lại SAU khi lưu — không phải số trước khi lưu cộng một. Hôm nay
+            thế giới đã có buổi tập, nên buổi thứ hai cùng ngày KHÔNG đổi số
+            ngày: nếu client tự cộng +1, câu toast sẽ lệch khỏi server đúng ở
+            đây;
+        (B) chưa có hồ sơ cộng đồng thì KHÔNG mời chia sẻ (lời mời dẫn tới
+            biểu mẫu tạo hồ sơ là lời mời sai — lựa chọn A ghi ở hook), nhưng
+            vẫn báo đã lưu.
+    */
+    name: 'Ghi buổi tập: câu toast nói tiến độ thử thách của server, chưa có hồ sơ thì không mời chia sẻ (#12)',
+    route: '/log-workout', mode: 'full',
+    async run(page, { world }) {
+      const overviews = [];
+      page.on('response', async (r) => {
+        if (/\/rest\/v1\/rpc\/community_challenges_overview/.test(r.url())) overviews.push(await r.json().catch(() => null));
+      });
+      const toastText = async () => (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
+      const saveOne = async () => {
+        await page.getByPlaceholder(/^(Bài tập|Exercise)$/).first().fill('Squat');
+        await page.getByPlaceholder('—', { exact: true }).nth(0).fill('60');
+        await page.getByPlaceholder('—', { exact: true }).nth(1).fill('8');
+        await page.waitForTimeout(600);
+        const save = page.getByText(/^(Lưu buổi tập|Save Workout)$/).filter({ visible: true }).first();
+        if ((await save.count()) === 0) return false;
+        await save.click();
+        return true;
+      };
+      const today = new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+      const pick = (list) => (list ?? []).find((x) => x.joined && !x.claimed && x.ends_on >= today);
+      /* Trang đã mở trước khi bộ nghe gắn vào: tải lại (bỏ cache) để thấy lượt
+         đọc TRƯỚC khi lưu. */
+      await page.evaluate(() => {
+        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
+      });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 40 && !overviews.length; i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(800);
+      const before = pick(overviews.at(-1));
+      if (!before) return '(A) thế giới không có thử thách đang theo — vế này không đo gì';
+      if (!(await saveOne())) return '(A) không thấy nút lưu buổi tập';
+      let t = '';
+      for (let i = 0; i < 24 && !/Workout saved!|Đã lưu buổi tập!/.test(t); i++) {
+        await page.waitForTimeout(250);
+        t = await toastText();
+      }
+      const after = pick(overviews.at(-1));
+      if (overviews.length < 2 || !after) return `(A) lưu xong mà không đọc lại thử thách (${overviews.length} lượt đọc)`;
+      const n = Math.min(after.progress, after.target);
+      const want = new RegExp(`${after.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: ${n}/${after.target}`);
+      if (!want.test(t)) return `(A) câu toast "${t}" không nói số của server sau khi lưu (${after.title}: ${n}/${after.target})`;
+      if (after.progress !== before.progress) return `(A) tự kiểm: buổi thứ hai CÙNG ngày đổi số ngày của server ${before.progress} → ${after.progress} — thế giới không còn đo được "+1 ở client"`;
+      if (!(await page.getByRole('button', { name: /^(Chia sẻ|Share)$/ }).count())) return '(A) có hồ sơ mà không có nút Chia sẻ';
+
+      world.community_profiles = world.community_profiles.filter((p) => p.user_id !== UID);
+      await page.evaluate(() => {
+        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
+      });
+      await page.goto(page.url().replace(/\/[^/?#]*(\?[^#]*)?$/, '/log-workout'), { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(1500);
+      if (!(await saveOne())) return '(B) không thấy nút lưu buổi tập';
+      t = '';
+      for (let i = 0; i < 24 && !/Workout saved!|Đã lưu buổi tập!/.test(t); i++) {
+        await page.waitForTimeout(250);
+        t = await toastText();
+      }
+      if (!/Workout saved!|Đã lưu buổi tập!/.test(t)) return `(B) chưa có hồ sơ thì lưu xong không báo đã lưu: "${t}"`;
+      if (await page.getByRole('button', { name: /^(Chia sẻ|Share)$/ }).count()) return '(B) chưa có hồ sơ cộng đồng mà vẫn mời chia sẻ';
+      return null;
+    },
+  },
+  {
+    /*
+      #18 (phần không phụ thuộc quyết định sản phẩm): `?meal=` trên màn chia
+      sẻ công thức.
+        (A) bữa của mình, chưa đăng → vào thẳng bước xem trước (không có danh
+            sách chọn, có nút Đăng);
+        (B) id không tồn tại, (C) bữa của NGƯỜI KHÁC, (D) bữa đã đăng → rơi về
+            danh sách chọn, không màn đỏ; ở (D) bữa ấy hiện "Shared".
+      Lối vào trên thẻ bữa ở màn Dinh dưỡng chờ chủ dự án chọn chỗ đặt (#18).
+    */
+    name: 'Chia sẻ công thức: ?meal= vào thẳng xem trước; id lạ, bữa người khác, bữa đã đăng thì về danh sách (#18)',
+    route: '/community-share-recipe?meal=m2', mode: 'full',
+    async run(page, { world }) {
+      const list = () => page.getByText('Choose a meal you logged', { exact: true }).filter({ visible: true });
+      const post = () => page.getByRole('button', { name: /^(Post|Đăng)$/ }).filter({ visible: true });
+      const settle = async (want) => {
+        for (let i = 0; i < 40; i++) {
+          if (want === 'preview' ? (await post().count()) && !(await list().count()) : await list().count()) return true;
+          await page.waitForTimeout(250);
+        }
+        return false;
+      };
+      const go = async (id) => {
+        await page.goto(page.url().replace(/community-share-recipe\?meal=[^&#]*/, `community-share-recipe?meal=${id}`), { waitUntil: 'domcontentloaded' });
+      };
+      if (!(await settle('preview'))) return '(A) ?meal= của bữa mình mà không vào thẳng xem trước';
+
+      await go('m-khong-co');
+      if (!(await settle('list'))) return '(B) id không tồn tại mà không rơi về danh sách chọn';
+      if (await post().count()) return '(B) id không tồn tại mà vẫn có nút Đăng';
+
+      world.meal_entries.push({ ...structuredClone(world.meal_entries.find((e) => e.id === 'm2')), id: 'm-linh', user_id: 'c0000000-0000-4000-8000-0000000011a1' });
+      await go('m-linh');
+      if (!(await settle('list'))) return '(C) bữa của người khác mà không rơi về danh sách chọn';
+      if (await post().count()) return '(C) bữa của người khác mà vẫn có nút Đăng';
+
+      const tpl = world.community_posts.find((p) => p.kind === 'recipe');
+      world.community_posts.push({ ...structuredClone(tpl), id: 'cp000000-0000-4000-8000-000000000181', author_id: UID, source_id: 'm2', hidden: false });
+      await page.evaluate(() => {
+        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
+      });
+      await go('m2');
+      if (!(await settle('list'))) return '(D) bữa đã đăng mà không rơi về danh sách chọn';
+      if (await post().count()) return '(D) bữa đã đăng mà vẫn có nút Đăng — đăng lần hai';
+      if (!(await page.getByText('Shared', { exact: true }).filter({ visible: true }).count())) return '(D) danh sách không đánh dấu bữa đã đăng';
       return null;
     },
   },

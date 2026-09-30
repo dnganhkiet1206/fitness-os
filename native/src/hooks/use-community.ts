@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { type InfiniteData, useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -431,18 +431,41 @@ export function useDeletePost() {
 
 /* ── bình luận ──────────────────────────────────────────────────────────── */
 
+/*
+  Bình luận theo TRANG, mới nhất trước (#170). Trước đây là
+  `.order(created_at asc).limit(200)`: sắp TĂNG rồi mới cắt, nên ở một bài có
+  hơn 200 bình luận thứ bị bỏ là những câu MỚI NHẤT — kể cả câu mình vừa gửi,
+  vì lượt đọc lại sau khi gửi lại trả đúng 200 câu cũ nhất.
+
+  Nay mỗi trang là 50 câu mới nhất CŨ HƠN con trỏ keyset `(created_at, id)`,
+  như feed (#20, `lib/feed-page.ts`). `select` nối các trang (mới → cũ) rồi đảo
+  lại, nên `data` vẫn là một mảng cũ → mới như trước và màn không phải biết có
+  trang. (Thứ tự trên MÀN do `threadComments` quyết — nó tự sắp theo thời
+  gian; phá thử: bỏ phép đảo thì kịch bản #170 vẫn xanh. Phép đảo giữ hợp đồng
+  của `data` cho chỗ đọc khác, không phải thứ màn dựa vào.) Trang cũ hơn tải khi người ta bấm "Xem bình luận cũ hơn" ở đầu luồng;
+  câu trả lời mà gốc còn ở trang cũ đứng một mình tới lúc ấy (`threadComments`).
+  Khoá có thêm `'pages'`, cùng lý do như feed: cache persist cũ mang dạng mảng.
+*/
+const COMMENT_PAGE = 50;
+
 export function useComments(postId: string | undefined) {
   const { user } = useAuth();
-  return useQuery({
-    queryKey: ['community_comments', user?.id, postId],
+  return useInfiniteQuery({
+    queryKey: ['community_comments', user?.id, postId, 'pages'],
     enabled: !!user && !!postId,
-    queryFn: async () => {
-      const { data, error } = await supabase
+    initialPageParam: null as FeedCursor | null,
+    getNextPageParam: (last: CommunityComment[]) => nextCursor(last, COMMENT_PAGE) ?? null,
+    select: (d) => flatPages(d.pages).reverse(),
+    queryFn: async ({ pageParam }) => {
+      let q = supabase
         .from('community_comments')
         .select('id, post_id, parent_id, author_id, body, hidden, created_at')
         .eq('post_id', postId!)
-        .order('created_at', { ascending: true })
-        .limit(200);
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(COMMENT_PAGE);
+      if (pageParam) q = q.or(olderThan(pageParam));
+      const { data, error } = await q;
       if (error) throw error;
       const rows = data ?? [];
       /* Lượt nhắc server đã xác nhận (#30). Mảng, không Map: cache đi qua
@@ -521,7 +544,8 @@ export function useDeleteComment(postId: string) {
       /* Xoá một GỐC thì server xoá luôn các câu trả lời của nó (ON DELETE
          CASCADE, #30) và bộ đếm của bài trừ từng dòng — nên số trên thẻ trừ
          1 + số câu trả lời đang thấy, không phải 1. Đọc TRƯỚC khi làm mới. */
-      const seen = qc.getQueryData<CommunityComment[]>(['community_comments', user?.id, postId]) ?? [];
+      const cached = qc.getQueryData<InfiniteData<CommunityComment[]>>(['community_comments', user?.id, postId, 'pages']);
+      const seen = cached ? flatPages(cached.pages) : [];
       const gone = 1 + seen.filter((c) => c.parent_id === commentId).length;
       qc.invalidateQueries({ queryKey: ['community_comments', user?.id, postId] });
       patchPost(qc, postId, (p) => ({ ...p, comment_count: Math.max(0, p.comment_count - gone) }));

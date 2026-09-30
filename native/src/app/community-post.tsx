@@ -101,15 +101,18 @@ export default function CommunityPostScreen() {
           <>
             <PostCard post={post.data} full />
             <View style={styles.comments}>
-              {comments.isError ? (
+              {comments.isError && !comments.isFetchNextPageError ? (
                 <LoadFailed i18n={i18n} onRetry={() => comments.refetch()} />
               ) : comments.isPending ? (
                 <ActivityIndicator color={c.mutedForeground} />
               ) : (comments.data ?? []).length === 0 ? (
                 <Text style={styles.none}>{i18n.nCmCommentsEmpty}</Text>
               ) : (
-                /* Một tầng (#30): gốc theo thứ tự đến, câu trả lời lùi vào dưới gốc. */
-                threadComments(comments.data ?? []).map(({ root, replies }) => (
+                /* Một tầng (#30): gốc theo thứ tự đến, câu trả lời lùi vào dưới gốc.
+                   Trang cũ hơn (#170) tải khi bấm, ở ĐẦU luồng — nơi chúng sẽ hiện ra. */
+                <>
+                <OlderComments q={comments} />
+                {threadComments(comments.data ?? []).map(({ root, replies }) => (
                   <View key={root.id} style={styles.thread}>
                     <CommentRow comment={root} postMine={post.data!.mine} postId={post.data!.id} onReply={me.data ? startReply : undefined} />
                     {replies.length ? (
@@ -120,7 +123,8 @@ export default function CommunityPostScreen() {
                       </View>
                     ) : null}
                   </View>
-                ))
+                ))}
+                </>
               )}
             </View>
           </>
@@ -300,6 +304,32 @@ function CommentRow({
   );
 }
 
+/**
+ * "Xem bình luận cũ hơn" ở đầu luồng (#170). Một nút bấm, không tự tải khi
+ * cuộn: bình luận đọc từ trên xuống, và trang cũ hơn chèn lên TRÊN chỗ người ta
+ * đang đọc — tự tải là đẩy thứ đang đọc xuống dưới ngón tay. Hỏng thì nói ra và
+ * cho thử lại; thứ đã có vẫn ở nguyên.
+ */
+function OlderComments({ q }: { q: { hasNextPage: boolean; isFetchingNextPage: boolean; isFetchNextPageError: boolean; fetchNextPage: () => unknown } }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const i18n = useI18n();
+  if (!q.hasNextPage) return null;
+  if (q.isFetchingNextPage) return <ActivityIndicator color={c.mutedForeground} style={styles.older} />;
+  return (
+    <Pressable
+      accessibilityRole="button"
+      hitSlop={8}
+      onPress={() => {
+        Haptics.selectionAsync();
+        q.fetchNextPage();
+      }}
+      style={styles.older}>
+      <Text style={styles.olderText}>{q.isFetchNextPageError ? i18n.nCmOlderCommentsFailed : i18n.nCmOlderComments}</Text>
+    </Pressable>
+  );
+}
+
 const stylesFor = makeStyles((c) => ({
   root: { flex: 1, backgroundColor: c.background },
   loading: { marginTop: spacing.xl },
@@ -314,6 +344,9 @@ const stylesFor = makeStyles((c) => ({
   commentMain: { gap: 2 },
   replyBtn: { alignSelf: 'flex-start', paddingVertical: 2 },
   replyBtnText: { ...type.footnote, fontWeight: '600', color: c.mutedForeground },
+  /* 44 điểm cao: đủ sàn chạm theo chiều dọc mà không nhờ hitSlop. */
+  older: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  olderText: { ...type.footnote, fontWeight: '600', color: c.metricBlue },
   mention: { color: c.metricBlue, fontWeight: '600' },
   commentHead: { ...type.footnote },
   commentName: { ...type.footnote, fontWeight: '600', color: c.foreground },
