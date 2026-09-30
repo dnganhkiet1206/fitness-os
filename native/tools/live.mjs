@@ -1891,6 +1891,65 @@ const SCENARIOS = [
   },
   {
     /*
+      Ảnh bài tải hỏng: khung tự gỡ `<Image>` và thôi tự xưng là một ảnh
+      (post-art.tsx). Đo trên màn chia sẻ, nơi đổi phong cách là đổi `uri`: ảnh
+      Neon trả 404. Ở CẢ tối lẫn sáng:
+        (A) Mono (hợp lệ): ảnh giải mã được, khung là `role="img"` mang alt;
+        (B) → Neon (hỏng): không còn `<img>` nào trong khung, khung KHÔNG còn là
+            `role="img"`, nền theo loại bài vẫn hiện;
+        (C) → Mono (hỏng → hợp lệ): ảnh vẽ lại, khung lại là ảnh;
+        (D) → Neon lần nữa (hợp lệ → hỏng): về nền như (B).
+      Trước bản sửa, (B) đỏ: đổi Mono → Neon 404 thì khung VẪN hiện ảnh Mono
+      (giải mã được) dưới alt của Neon — expo-image giữ ảnh cũ khi nguồn mới
+      hỏng. Lần tải đầu hỏng thì thư viện có tự gỡ (đo 30/09), nên vế ấy đo ở
+      màn chia sẻ, nơi `uri` ĐỔI.
+    */
+    name: 'Ảnh bài tải hỏng: khung gỡ ảnh, thôi xưng là ảnh, nền vẫn hiện; đổi lại ảnh hợp lệ thì vẽ lại (sáng + tối)',
+    route: '/community-share?session=k1', mode: 'full',
+    async run(page) {
+      await page.route('**/community-art/workout/neon.png*', (r) => r.fulfill({ status: 404, contentType: 'text/plain', body: 'not found' }));
+      const state = () => page.evaluate(() => {
+        const f = window.__shown('[data-testid="post-art"]')[0];
+        if (!f) return null;
+        const im = window.__shown('img', f)[0];
+        return {
+          role: f.getAttribute('role'), label: f.getAttribute('aria-label'),
+          img: im ? { src: (im.currentSrc || im.src).split('community-art/')[1] ?? im.src, ok: im.naturalWidth > 0 } : null,
+          backdrop: window.__shown('svg', f).length > 0,
+        };
+      });
+      const until = async (ok, ms = 6000) => {
+        let s = null;
+        for (let i = 0; i < ms / 200; i++) {
+          s = await state();
+          if (s && ok(s)) return s;
+          await page.waitForTimeout(200);
+        }
+        return s;
+      };
+      const tab = (name) => page.getByRole('tab', { name, exact: true });
+      const good = (s) => s.img?.ok && /mono-push\.png/.test(s.img.src) && s.role === 'img' && !!s.label;
+      const fallback = (s) => !s.img && s.role !== 'img' && s.backdrop;
+      for (const theme of ['dark', 'light']) {
+        await page.evaluate((t) => localStorage.setItem('ascnd_theme', t), theme);
+        await page.reload({ waitUntil: 'domcontentloaded' });
+        let s = await until(good);
+        if (!s || !good(s)) return `(A ${theme}) ảnh hợp lệ không hiện như một ảnh: ${JSON.stringify(s)}`;
+        await tab('Neon').click();
+        s = await until(fallback);
+        if (!s || !fallback(s)) return `(B ${theme}) ảnh Neon 404 mà khung chưa về nền: ${JSON.stringify(s)}`;
+        await tab('Mono').click();
+        s = await until(good);
+        if (!s || !good(s)) return `(C ${theme}) đổi lại ảnh hợp lệ mà không vẽ lại: ${JSON.stringify(s)}`;
+        await tab('Neon').click();
+        s = await until(fallback);
+        if (!s || !fallback(s)) return `(D ${theme}) hợp lệ → hỏng lần hai mà khung chưa về nền: ${JSON.stringify(s)}`;
+      }
+      return null;
+    },
+  },
+  {
+    /*
       #157: điều hướng là MỘT thao tác, dù người ta bấm bao nhiêu lần. Trên bản
       dựng thật, qua `nav.push` và chốt vòng đời của `lib/nav-guard.ts`:
         · Test 1 — bấm một lần: đúng một màn (một lần Back là về);
