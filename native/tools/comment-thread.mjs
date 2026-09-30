@@ -42,6 +42,21 @@ const CASES = [
   ['câu trả lời mà gốc không có trong danh sách đứng một mình, không biến mất', (m) =>
     shape(m, [c('x', 'gone', '01'), c('a', null, '02')]) === JSON.stringify([['x', []], ['a', []]])],
   ['chữ điền sẵn khi trả lời là "@handle "; không handle thì rỗng', (m) => m.replyPrefix('linh.pham') === '@linh.pham ' && m.replyPrefix(null) === ''],
+  /* #173: gốc của câu trả lời nằm ở trang cũ hơn được tải kèm. */
+  ['gốc còn thiếu: chỉ cha KHÔNG có trong trang, mỗi id một lần', (m) =>
+    JSON.stringify(m.missingRoots([c('r1', 'a', '9'), c('r2', 'a', '8'), c('b', null, '7'), c('rb', 'b', '6'), c('rx', 'x', '5')])) === JSON.stringify(['a', 'x'])],
+  ['không câu trả lời nào mồ côi thì không hỏi gì', (m) => m.missingRoots([c('a', null, '2'), c('r', 'a', '3')]).length === 0],
+  ['gộp trang: gốc tải kèm rồi về lại ở trang cũ chỉ còn MỘT, sắp cũ → mới', (m) => {
+    const pages = [
+      { rows: [c('r2', 'a', '09'), c('r1', 'a', '08')], roots: [c('a', null, '01')] },
+      { rows: [c('b', null, '05'), c('a', null, '01')], roots: [] },
+    ];
+    return JSON.stringify(m.mergeCommentPages(pages).map((x) => x.id)) === JSON.stringify(['a', 'b', 'r1', 'r2']);
+  }],
+  ['gộp trang: trang cũ CHƯA tải thì gốc có mặt nhờ được tải kèm', (m) =>
+    JSON.stringify(m.mergeCommentPages([{ rows: [c('r1', 'a', '08')], roots: [c('a', null, '01')] }]).map((x) => x.id)) === JSON.stringify(['a', 'r1'])],
+  ['gộp trang: cùng mốc thì theo id', (m) =>
+    JSON.stringify(m.mergeCommentPages([{ rows: [c('z', null, '1'), c('y', null, '1')], roots: [] }]).map((x) => x.id)) === JSON.stringify(['y', 'z'])],
 ];
 
 const out = mkdtempSync(path.join(tmpdir(), 'comment-thread-'));
@@ -65,13 +80,18 @@ try {
   }).map(([name]) => name);
   problems.push(...runAll(load(compiled)));
 
-  const MUTANTS = [
+  const MUTANTS = (globalThis.__m = [
     ['mọi @handle đều thành liên kết, kể cả thứ server không xác nhận', /if \(!userId \|\| m\.index === undefined\)\s*continue;/, "if (m.index === undefined) continue;"],
     ['không hạ chữ thường khi tra', /known\.get\(m\[1\]\.toLowerCase\(\)\)/, 'known.get(m[1])'],
     ['dấu chấm cuối câu tính vào handle', /\[a-zA-Z0-9_\.\]\*\[a-zA-Z0-9_\]/, '[a-zA-Z0-9_.]+'],
     ['câu trả lời mồ côi bị giấu', /if \(c\.parent_id && ids\.has\(c\.parent_id\)\)\s*continue;/, 'if (c.parent_id) continue;'],
     ['không sắp theo thứ tự đến', /const byTime = \[\.\.\.list\]\.sort\([^;]*\);/, 'const byTime = [...list];'],
-  ];
+    ['gốc còn thiếu gồm cả cha đã có trong trang', /r\.parent_id && !here\.has\(r\.parent_id\) && /, 'r.parent_id && '],
+    ['gốc còn thiếu lặp id', / && !out\.includes\(r\.parent_id\)\)/, ')'],
+    ['gộp trang không bỏ trùng', /if \(!byId\.has\(c\.id\)\)\s*byId\.set\(c\.id, c\);/, 'byId.set(c.id + Math.random(), c);'],
+    ['gộp trang quên gốc tải kèm', /\[\.\.\.p\.rows, \.\.\.p\.roots\]/, '[...p.rows]'],
+    ['gộp trang không sắp', /return \[\.\.\.byId\.values\(\)\]\.sort\([^;]*\);/, 'return [...byId.values()];'],
+  ]);
   for (const [name, re, to] of MUTANTS) {
     if (!re.test(compiled)) fatal(`bản hỏng "${name}": không tìm thấy chỗ để sửa (${re})`);
     if (!runAll(load(compiled.replace(re, to))).length) fatal(`bản hỏng "${name}" vẫn qua hết các ca`);
@@ -86,12 +106,16 @@ const WIRING = [
   [screen, /threadComments\(comments\.data \?\? \[\]\)/, 'community-post.tsx không vẽ bình luận qua `threadComments` — câu trả lời không nằm dưới gốc'],
   [screen, /mentionParts\(comment\.body, new Map\(comment\.mentions\)\)/, 'community-post.tsx không vẽ thân qua `mentionParts` với lượt nhắc server đã xác nhận'],
   [screen, /parentId: replyTo\?\.id \?\? null/, 'community-post.tsx không gửi `parentId` của bình luận đang được trả lời'],
-  [hook, /\.select\('id, post_id, parent_id, author_id, body, hidden, created_at'\)/, 'useComments không đọc `parent_id`'],
+  [hook, /const cols = 'id, post_id, parent_id, author_id, body, hidden, created_at';/, 'useComments không đọc `parent_id`'],
+  [hook, /const missing = missingRoots\(rows\);[\s\S]{0,200}\.in\('id', missing\)/, 'useComments không tải kèm gốc của câu trả lời mồ côi (#173)'],
+  [hook, /select: \(d\) => mergeCommentPages\(d\.pages\)/, 'useComments không gộp trang qua mergeCommentPages — gốc tải kèm sẽ vẽ hai lần'],
+  [hook, /getNextPageParam: \(last: CommentPage\) => nextCursor\(last\.rows, COMMENT_PAGE\)/, 'con trỏ bình luận phải đọc từ `rows` — gốc tải kèm cũ hơn sẽ làm con trỏ nhảy cóc'],
   [hook, /\.from\('community_comment_mentions'\)/, 'useComments không đọc bảng lượt nhắc — mọi @ sẽ là chữ'],
   [hook, /parent_id: parentId/, 'useAddComment không gửi `parent_id`'],
 ];
 for (const [src, re, msg] of WIRING) if (!re.test(src)) problems.push(msg);
 
+const MUTANTS_N = globalThis.__m.length;
 if (problems.length) {
   console.error('bình luận một tầng / @handle CÓ LỖI:\n');
   for (const p of problems) console.error(`  • ${p}`);
@@ -100,5 +124,5 @@ if (problems.length) {
 console.log(
   `bình luận một tầng / @handle OK — ${CASES.length} ca CHẠY THẬT mentionParts/threadComments/replyPrefix: @ chỉ thành liên kết ` +
     'khi server đã xác nhận, không phân biệt hoa thường, không nuốt dấu chấm cuối câu (cùng mẫu với trigger), luồng một tầng ' +
-    `theo thứ tự đến và câu trả lời mồ côi không biến mất. ${5} bản hỏng đều bị bắt. Màn bài và hook nối đúng`,
+    `theo thứ tự đến và câu trả lời mồ côi không biến mất; gốc ở trang cũ được tải kèm và không vẽ hai lần (#173). ${MUTANTS_N} bản hỏng đều bị bắt. Màn bài và hook nối đúng`,
 );

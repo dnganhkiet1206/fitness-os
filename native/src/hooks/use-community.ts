@@ -9,6 +9,7 @@ import { useOnlineMutation } from './use-online-mutation';
 import type { TemplateExercise } from './use-library';
 import { now } from '@/lib/offline-class';
 import { type FeedCursor, flatPages, mapPosts, nextCursor, olderThan } from '@/lib/feed-page';
+import { mergeCommentPages, missingRoots } from '@/lib/comment-thread';
 import type { CommunityArt } from '@/lib/community-art';
 
 /**
@@ -438,28 +439,35 @@ export function useDeletePost() {
   vì lượt đọc lại sau khi gửi lại trả đúng 200 câu cũ nhất.
 
   Nay mỗi trang là 50 câu mới nhất CŨ HƠN con trỏ keyset `(created_at, id)`,
-  như feed (#20, `lib/feed-page.ts`). `select` nối các trang (mới → cũ) rồi đảo
-  lại, nên `data` vẫn là một mảng cũ → mới như trước và màn không phải biết có
-  trang. (Thứ tự trên MÀN do `threadComments` quyết — nó tự sắp theo thời
-  gian; phá thử: bỏ phép đảo thì kịch bản #170 vẫn xanh. Phép đảo giữ hợp đồng
-  của `data` cho chỗ đọc khác, không phải thứ màn dựa vào.) Trang cũ hơn tải khi người ta bấm "Xem bình luận cũ hơn" ở đầu luồng;
-  câu trả lời mà gốc còn ở trang cũ đứng một mình tới lúc ấy (`threadComments`).
+  như feed (#20, `lib/feed-page.ts`). `select` nối các trang thành một mảng
+  cũ → mới như trước, nên màn không phải biết có
+  trang. Từ #173 việc nối là `mergeCommentPages` (bỏ trùng, sắp cũ → mới). Trang cũ hơn tải khi người ta bấm "Xem bình luận cũ hơn" ở đầu luồng;
+  gốc của câu trả lời nằm ở trang cũ được tải kèm (#173, `CommentPage`).
   Khoá có thêm `'pages'`, cùng lý do như feed: cache persist cũ mang dạng mảng.
 */
 const COMMENT_PAGE = 50;
 
+/** Một trang bình luận (#173): `rows` là trang thật (con trỏ đọc từ đây),
+    `roots` là GỐC của những câu trả lời trong trang mà gốc nằm ở trang cũ hơn —
+    tải kèm trong cùng lượt đọc, để câu trả lời không bao giờ vẽ như một gốc
+    trần. Gốc ấy về lại ở trang cũ thì `mergeCommentPages` bỏ bản trùng. */
+export type CommentPage = { rows: CommunityComment[]; roots: CommunityComment[] };
+
 export function useComments(postId: string | undefined) {
   const { user } = useAuth();
   return useInfiniteQuery({
-    queryKey: ['community_comments', user?.id, postId, 'pages'],
+    /* 'threads', không phải 'pages' của #170: trang đổi hình dạng (mảng →
+       `{ rows, roots }`), và cache persist của bản #170 mang dạng mảng. */
+    queryKey: ['community_comments', user?.id, postId, 'threads'],
     enabled: !!user && !!postId,
     initialPageParam: null as FeedCursor | null,
-    getNextPageParam: (last: CommunityComment[]) => nextCursor(last, COMMENT_PAGE) ?? null,
-    select: (d) => flatPages(d.pages).reverse(),
-    queryFn: async ({ pageParam }) => {
+    getNextPageParam: (last: CommentPage) => nextCursor(last.rows, COMMENT_PAGE) ?? null,
+    select: (d) => mergeCommentPages(d.pages),
+    queryFn: async ({ pageParam }): Promise<CommentPage> => {
+      const cols = 'id, post_id, parent_id, author_id, body, hidden, created_at';
       let q = supabase
         .from('community_comments')
-        .select('id, post_id, parent_id, author_id, body, hidden, created_at')
+        .select(cols)
         .eq('post_id', postId!)
         .order('created_at', { ascending: false })
         .order('id', { ascending: false })
@@ -468,25 +476,36 @@ export function useComments(postId: string | undefined) {
       const { data, error } = await q;
       if (error) throw error;
       const rows = data ?? [];
+      /* Gốc của câu trả lời mồ côi (#173): một lời gọi, chỉ khi có. RLS vẫn áp —
+         gốc bị ẩn hay của người đã chặn thì không về, và câu trả lời đứng một
+         mình như trước. */
+      const missing = missingRoots(rows);
+      let rootRows: typeof rows = [];
+      if (missing.length) {
+        const { data: r, error: rErr } = await supabase.from('community_comments').select(cols).in('id', missing);
+        if (rErr) throw rErr;
+        rootRows = r ?? [];
+      }
+      const all = [...rows, ...rootRows];
       /* Lượt nhắc server đã xác nhận (#30). Mảng, không Map: cache đi qua
          JSON.stringify (`query-data.mjs`). */
       const mentionRows: { comment_id: string; user_id: string }[] = [];
-      if (rows.length) {
+      if (all.length) {
         const { data: m, error: mErr } = await supabase
           .from('community_comment_mentions')
           .select('comment_id, user_id')
-          .in('comment_id', rows.map((r) => r.id));
+          .in('comment_id', all.map((r) => r.id));
         if (mErr) throw mErr;
         mentionRows.push(...(m ?? []));
       }
-      const ids = [...new Set([...rows.map((r) => r.author_id), ...mentionRows.map((r) => r.user_id)])];
+      const ids = [...new Set([...all.map((r) => r.author_id), ...mentionRows.map((r) => r.user_id)])];
       const byId = new Map<string, CommunityAuthor>();
       if (ids.length) {
         const { data: a, error: aErr } = await supabase.from('community_profiles').select(PROFILE_COLS).in('user_id', ids);
         if (aErr) throw aErr;
         for (const x of a ?? []) byId.set(x.user_id, x as CommunityAuthor);
       }
-      return rows.map<CommunityComment>((r) => ({
+      const toComment = (r: (typeof rows)[number]): CommunityComment => ({
         id: r.id,
         post_id: r.post_id,
         parent_id: r.parent_id ?? null,
@@ -501,7 +520,8 @@ export function useComments(postId: string | undefined) {
             const who = byId.get(x.user_id);
             return who ? [[who.handle.toLowerCase(), who.user_id] as [string, string]] : [];
           }),
-      }));
+      });
+      return { rows: rows.map(toComment), roots: rootRows.map(toComment) };
     },
   });
 }
@@ -544,8 +564,8 @@ export function useDeleteComment(postId: string) {
       /* Xoá một GỐC thì server xoá luôn các câu trả lời của nó (ON DELETE
          CASCADE, #30) và bộ đếm của bài trừ từng dòng — nên số trên thẻ trừ
          1 + số câu trả lời đang thấy, không phải 1. Đọc TRƯỚC khi làm mới. */
-      const cached = qc.getQueryData<InfiniteData<CommunityComment[]>>(['community_comments', user?.id, postId, 'pages']);
-      const seen = cached ? flatPages(cached.pages) : [];
+      const cached = qc.getQueryData<InfiniteData<CommentPage>>(['community_comments', user?.id, postId, 'threads']);
+      const seen = cached ? mergeCommentPages(cached.pages) : [];
       const gone = 1 + seen.filter((c) => c.parent_id === commentId).length;
       qc.invalidateQueries({ queryKey: ['community_comments', user?.id, postId] });
       patchPost(qc, postId, (p) => ({ ...p, comment_count: Math.max(0, p.comment_count - gone) }));

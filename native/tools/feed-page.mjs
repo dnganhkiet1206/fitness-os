@@ -157,10 +157,10 @@ const cm = body('useComments');
 const post = readFileSync(path.join(NATIVE, 'src/app/community-post.tsx'), 'utf8');
 WIRING.push(
   [cm, /useInfiniteQuery\(/, 'useComments không đọc theo trang (#170)'],
-  [cm, /queryKey: \['community_comments', user\?\.id, postId, 'pages'\]/, "useComments: khoá phải mang 'pages' — cache cũ dạng mảng"],
+  [cm, /queryKey: \['community_comments', user\?\.id, postId, 'threads'\]/, "useComments: khoá phải mang 'threads' — cache của #170 mang trang dạng mảng, của trước nữa là một mảng"],
   [cm, /\.order\('created_at', \{ ascending: false \}\)\s*\.order\('id', \{ ascending: false \}\)\s*\.limit\(COMMENT_PAGE\)/, 'useComments không đọc MỚI NHẤT trước theo (created_at, id) — câu mới nhất bị cắt'],
   [cm, /if \(pageParam\) q = q\.or\(olderThan\(pageParam\)\)/, 'useComments không áp con trỏ — trang cũ hơn là trang đầu'],
-  [hook, /getQueryData<InfiniteData<CommunityComment\[\]>>\(\['community_comments', user\?\.id, postId, 'pages'\]\)/, 'useDeleteComment đọc cache bình luận theo khoá/hình dạng cũ — số trên thẻ trừ sai'],
+  [hook, /getQueryData<InfiniteData<CommentPage>>\(\['community_comments', user\?\.id, postId, 'threads'\]\)/, 'useDeleteComment đọc cache bình luận theo khoá/hình dạng cũ — số trên thẻ trừ sai'],
   [post, /<OlderComments q=\{comments\} \/>/, 'community-post.tsx không có "Xem bình luận cũ hơn"'],
   [post, /comments\.isError && !comments\.isFetchNextPageError/, 'community-post.tsx: trang cũ hỏng thì thẻ lỗi thay cả luồng'],
 );

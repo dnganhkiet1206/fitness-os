@@ -1648,6 +1648,111 @@ const SCENARIOS = [
       return null;
     },
   },
+  /*
+    #59: ảnh chụp lúc đo #41 (`94f075b`) chỉ có ba hạt lấp lánh và một chấm đỏ
+    ở chỗ linh vật của màn chi tiết thử thách. Ở #59 không tái hiện được — cả
+    ở HEAD lẫn ở src của `94f075b`, có và không có patch Reanimated của #76, cả
+    sáu linh vật, chụp ở 0,3 s / 2,5 s / 5 s. Kịch bản này canh để nó không
+    quay lại lặng lẽ: trong SVG của linh vật phải có một hình NHÌN THẤY ĐƯỢC
+    (không trong suốt ở bất kỳ tổ tiên nào) chiếm ít nhất 20% khung — thân, chứ
+    không phải hạt lấp lánh — ở cả `celebrate` (đã nhận) lẫn `idle` (đang theo).
+  */
+  ...[['c4a11e00-0000-4000-8000-000000000003', 'celebrate'], ['ch000000-0000-4000-8000-000000000001', 'idle']].map(([id, state]) => ({
+    name: `Thử thách: linh vật ở màn chi tiết có thân nhìn thấy được, trạng thái ${state} (#59)`,
+    route: `/community-challenge?id=${id}`, mode: 'full',
+    async run(page) {
+      const measure = () => page.evaluate(() => {
+        const svg = window.__shown('svg').find((e) => {
+          const r = e.getBoundingClientRect();
+          return r.width >= 100 && r.width <= 200 && r.top < 320 && r.bottom > 0;
+        });
+        if (!svg) return null;
+        const box = svg.getBoundingClientRect();
+        const seen = (el) => {
+          for (let e = el; e && e !== svg.parentElement; e = e.parentElement) {
+            const cs = getComputedStyle(e);
+            if (cs.display === 'none' || cs.visibility === 'hidden' || Number(cs.opacity) === 0) return false;
+            if (e.getAttribute && e.getAttribute('opacity') === '0') return false;
+          }
+          return true;
+        };
+        let best = 0;
+        for (const el of window.__shown('path, ellipse, circle, rect, polygon', svg)) {
+          const r = el.getBoundingClientRect();
+          if (!r.width || !r.height || !seen(el)) continue;
+          const fill = getComputedStyle(el).fill;
+          if (fill === 'none' && getComputedStyle(el).stroke === 'none') continue;
+          best = Math.max(best, (r.width * r.height) / (box.width * box.height));
+        }
+        return { best: Math.round(best * 100), w: Math.round(box.width), h: Math.round(box.height) };
+      });
+      let m = null;
+      for (let i = 0; i < 20 && !(m && m.best >= 20); i++) {
+        await page.waitForTimeout(250);
+        m = await measure();
+      }
+      if (!m) return 'không tìm thấy SVG của linh vật ở đầu màn';
+      if (m.best < 20) return `linh vật không có thân nhìn thấy được: hình lớn nhất chỉ chiếm ${m.best}% khung ${m.w}×${m.h}`;
+      return null;
+    },
+  })),
+  {
+    /*
+      #173 (chủ dự án chọn hướng 2): bài có 60 bình luận, câu MỚI NHẤT là câu
+      trả lời cho câu CŨ NHẤT. Trang đầu (50 câu mới nhất) có câu trả lời mà
+      không có gốc — trước #173 nó vẽ như một bình luận gốc trần.
+        (A) lần đầu: gốc có trên màn (được tải kèm), câu trả lời đứng SAU gốc và
+            lùi vào so với gốc;
+        (B) "View older comments" tới hết: gốc chỉ có MỘT lần, đủ 60 câu.
+    */
+    name: 'Cộng đồng: câu trả lời mà gốc ở trang cũ vẫn nằm dưới gốc, gốc không vẽ hai lần (#173)',
+    route: '/community-post?id=cp000000-0000-4000-8000-000000000003', mode: 'full',
+    async run(page, { world }) {
+      const POST = 'cp000000-0000-4000-8000-000000000003';
+      const LINH = 'c0000000-0000-4000-8000-0000000011a1';
+      const TUAN = 'c0000000-0000-4000-8000-0000000022b2';
+      const base = Date.now() - 2 * 86_400_000;
+      const id = (i) => `cc000000-0000-4000-8000-000000173${String(i).padStart(3, '0')}`;
+      const body = (i) => (i === 0 ? 'Gốc cũ nhất (#173)' : i === 59 ? 'Trả lời gốc cũ nhất (#173)' : `Bình luận #173 · ${String(i).padStart(2, '0')}`);
+      for (let i = 0; i < 60; i++) {
+        world.community_comments.push({
+          id: id(i), post_id: POST, parent_id: i === 59 ? id(0) : null, author_id: i === 0 ? TUAN : LINH,
+          body: body(i), hidden: false, created_at: new Date(base + i * 60_000).toISOString(),
+        });
+      }
+      world.community_posts.find((p) => p.id === POST).comment_count = 60;
+      await page.evaluate(() => {
+        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
+      });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      const leaves = () => page.evaluate(() => window.__shown('*')
+        .filter((e) => e.children.length === 0 && /(#173)/.test(e.textContent ?? ''))
+        .map((e) => ({ t: e.textContent.trim(), x: Math.round(e.getBoundingClientRect().left), y: Math.round(e.getBoundingClientRect().top) })));
+      let got = [];
+      for (let i = 0; i < 40 && !got.some((g) => g.t === body(59)); i++) {
+        await page.waitForTimeout(250);
+        got = await leaves();
+      }
+      const root = got.filter((g) => g.t === body(0));
+      const reply = got.find((g) => g.t === body(59));
+      if (!reply) return '(A) câu mới nhất (câu trả lời) không có trên màn';
+      if (root.length !== 1) return `(A) gốc của câu trả lời có ${root.length} lần trên trang đầu — phải được tải kèm, đúng một lần`;
+      if (!(reply.y > root[0].y)) return `(A) câu trả lời không đứng sau gốc (gốc y=${root[0].y}, trả lời y=${reply.y})`;
+      if (!(reply.x > root[0].x + 8)) return `(A) câu trả lời không lùi vào dưới gốc (gốc x=${root[0].x}, trả lời x=${reply.x}) — vẽ như một gốc trần`;
+
+      const older = () => page.getByRole('button', { name: 'View older comments', exact: true }).filter({ visible: true });
+      for (let n = 0; n < 6 && (await older().count()); n++) {
+        await older().first().click();
+        await page.waitForTimeout(900);
+      }
+      if (await older().count()) return '(B) bấm 6 lần mà vẫn còn "View older comments"';
+      got = await leaves();
+      const roots = got.filter((g) => g.t === body(0)).length;
+      if (roots !== 1) return `(B) tải hết thì gốc hiện ${roots} lần — bản tải kèm và bản của trang cũ không được gộp`;
+      if (new Set(got.map((g) => g.t)).size !== 60 || got.length !== 60) return `(B) ${got.length} câu (${new Set(got.map((g) => g.t)).size} khác nhau), phải đúng 60`;
+      return null;
+    },
+  },
   {
     /*
       #163: mọi bài có ảnh của thư viện app, người dùng chỉ chọn phong cách.
@@ -4125,6 +4230,53 @@ const SCENARIOS = [
       if (!(await settle('list'))) return '(D) bữa đã đăng mà không rơi về danh sách chọn';
       if (await post().count()) return '(D) bữa đã đăng mà vẫn có nút Đăng — đăng lần hai';
       if (!(await page.getByText('Shared', { exact: true }).filter({ visible: true }).count())) return '(D) danh sách không đánh dấu bữa đã đăng';
+      return null;
+    },
+  },
+  {
+    /*
+      #22: tính chất quan trọng nhất của #7 — client KHÔNG gửi con số dinh
+      dưỡng nào, chỉ ID của bữa và phần chữ. Mọi con số do `share_recipe` dựng.
+        (A) bấm Đăng khi chưa có tên → không lời gọi nào, và có câu nhắc;
+        (B) có tên, chọn "Chỉ người theo dõi" → đúng MỘT lời gọi
+            `share_recipe(_with_art)`, thân chỉ gồm `p_entry_id`, `p_title`,
+            `p_caption`, `p_visibility` (+ `p_art_id` ở biến thể có ảnh, #163),
+            mọi giá trị là CHUỖI, và đúng là thứ vừa gõ/chọn.
+    */
+    name: 'Chia sẻ công thức: thân RPC chỉ có ID và chữ; thiếu tên thì không gọi (#22)',
+    route: '/community-share-recipe?meal=m2', mode: 'full',
+    async run(page) {
+      const calls = [];
+      page.on('request', (q) => {
+        const m = /\/rest\/v1\/rpc\/(share_recipe(?:_with_art)?)\b/.exec(q.url());
+        if (m && q.method() === 'POST') calls.push({ fn: m[1], body: q.postData() ?? '' });
+      });
+      const post = page.getByRole('button', { name: /^(Post|Đăng)$/ }).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await post.count()); i++) await page.waitForTimeout(250);
+      if (!(await post.count())) return '(A) không vào được bước xem trước của bữa m2';
+      await page.waitForTimeout(800);
+      await post.click();
+      await page.waitForTimeout(1200);
+      if (calls.length) return `(A) bấm Đăng khi chưa có tên mà vẫn gọi ${calls[0].fn}`;
+      const nag = (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ');
+      if (!/Give the dish a name first|Đặt tên/.test(nag)) return `(A) chưa có tên mà không nhắc gì: "${nag}"`;
+
+      await page.getByPlaceholder('e.g. High-protein chicken bowl').fill('Bowl #22');
+      await page.getByRole('tab', { name: 'Followers only', exact: true }).click();
+      await page.waitForTimeout(300);
+      await post.click();
+      for (let i = 0; i < 24 && !calls.length; i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(800);
+      if (calls.length !== 1) return `(B) ${calls.length} lời gọi share_recipe, phải đúng một`;
+      const body = JSON.parse(calls[0].body || '{}');
+      const want = ['p_caption', 'p_entry_id', 'p_title', 'p_visibility', ...(calls[0].fn === 'share_recipe_with_art' ? ['p_art_id'] : [])].sort();
+      const keys = Object.keys(body).sort();
+      if (JSON.stringify(keys) !== JSON.stringify(want)) return `(B) thân ${calls[0].fn} có khoá [${keys}], phải đúng [${want}] — client không được gửi con số nào`;
+      const notStr = keys.filter((k) => typeof body[k] !== 'string');
+      if (notStr.length) return `(B) giá trị không phải chuỗi: ${notStr.map((k) => `${k}=${JSON.stringify(body[k])}`).join(', ')}`;
+      if (body.p_entry_id !== 'm2' || body.p_title !== 'Bowl #22' || body.p_visibility !== 'followers') {
+        return `(B) thân không đúng thứ vừa chọn: ${calls[0].body}`;
+      }
       return null;
     },
   },

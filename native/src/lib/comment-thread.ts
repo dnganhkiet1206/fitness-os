@@ -60,3 +60,25 @@ export function threadComments<T extends { id: string; parent_id: string | null;
 
 /** Chữ điền sẵn khi bấm "Trả lời": `@handle ` — như X, người được trả lời đọc thấy tên mình. */
 export const replyPrefix = (handle: string | null | undefined) => (handle ? `@${handle} ` : '');
+
+/**
+ * Gốc còn thiếu của một trang (#173): `parent_id` của những câu trả lời mà gốc
+ * không nằm trong chính trang ấy, mỗi id một lần, theo thứ tự gặp.
+ */
+export function missingRoots(rows: readonly { id: string; parent_id: string | null }[]): string[] {
+  const here = new Set(rows.map((r) => r.id));
+  const out: string[] = [];
+  for (const r of rows) if (r.parent_id && !here.has(r.parent_id) && !out.includes(r.parent_id)) out.push(r.parent_id);
+  return out;
+}
+
+/**
+ * Các trang (mới → cũ, mỗi trang `rows` + `roots` kèm theo) thành MỘT danh sách
+ * cũ → mới, mỗi bình luận một lần: một gốc được tải kèm ở trang này rồi về lại
+ * ở trang cũ hơn không được vẽ hai lần.
+ */
+export function mergeCommentPages<T extends { id: string; created_at: string }>(pages: readonly { rows: readonly T[]; roots: readonly T[] }[]): T[] {
+  const byId = new Map<string, T>();
+  for (const p of pages) for (const c of [...p.rows, ...p.roots]) if (!byId.has(c.id)) byId.set(c.id, c);
+  return [...byId.values()].sort((a, b) => (a.created_at < b.created_at ? -1 : a.created_at > b.created_at ? 1 : a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+}
