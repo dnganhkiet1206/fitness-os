@@ -221,6 +221,11 @@ function Action({
       accessibilityRole="button"
       accessibilityLabel={count != null ? `${label} · ${count}` : label}
       accessibilityState={{ selected: on }}
+      /* react-native-web không dịch `accessibilityState` ra `aria-selected`
+         (cùng lỗi #99 ở week-strip/tab bar): trên web, Thích và Lưu không nói
+         mình đang bật hay tắt. Kịch bản #28 bắt ra: bài trong thư viện Đã lưu
+         mà nút Lưu đọc ra "chưa chọn". */
+      aria-selected={on}
       onPress={onPress}
       style={styles.action}>
       {toggle ? (

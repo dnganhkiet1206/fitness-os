@@ -4282,6 +4282,77 @@ const SCENARIOS = [
   },
   {
     /*
+      #28: phép đo web của Thư viện Đã lưu — trước đây chỉ nằm trong scratchpad
+      của B và mất khi phiên kết thúc.
+        (A) xếp theo lúc LƯU, không theo lúc đăng: fixture lưu bài Workout
+            (đăng day(1)) SAU bài Recipe (đăng at(1, '23:36')) — theo lúc đăng
+            thì Recipe đứng đầu, theo lúc lưu thì Workout đứng đầu;
+        (B) bỏ lưu ngay trong thư viện: dấu đổi dưới ngón tay, mục VẪN còn
+            (xoá khỏi danh sách giữa lúc đang xem là mất chỗ đang đọc);
+        (C) nút "Saved" có trên hồ sơ CỦA MÌNH, không có trên hồ sơ người khác.
+    */
+    name: 'Thư viện Đã lưu: xếp theo lúc lưu, bỏ lưu tại chỗ, nút chỉ trên hồ sơ mình (#28)',
+    route: '/community-saved', mode: 'full',
+    async run(page) {
+      const WORKOUT = 'Kéo xà trước khi mỏi';
+      const RECIPE = 'Một bữa ăn đơn giản';
+      const order = () => page.evaluate(([w, r]) => {
+        const ys = (t) => window.__shown('*').filter((e) => e.children.length === 0 && (e.textContent ?? '').startsWith(t)).map((e) => e.getBoundingClientRect().top);
+        return { w: ys(w)[0] ?? null, r: ys(r)[0] ?? null };
+      }, [WORKOUT, RECIPE]);
+      let o = { w: null, r: null };
+      for (let i = 0; i < 40 && (o.w == null || o.r == null); i++) {
+        await page.waitForTimeout(250);
+        o = await order();
+      }
+      if (o.w == null || o.r == null) return `(A) thư viện thiếu bài đã lưu: ${JSON.stringify(o)}`;
+      if (!(o.w < o.r)) return '(A) thư viện xếp theo lúc ĐĂNG (Recipe trước) — phải theo lúc LƯU (Workout, lưu sau, đứng đầu)';
+
+      const saves = () => page.getByRole('button', { name: /^Save( · \d+)?$/ }).filter({ visible: true });
+      const n0 = await saves().count();
+      if (n0 < 2) return `(B) thư viện có ${n0} nút Lưu, phải có ít nhất hai`;
+      const first = saves().first();
+      if ((await first.getAttribute('aria-selected')) !== 'true') return `(B) bài trong thư viện mà nút Lưu không ở trạng thái đã lưu (aria-selected=${await first.getAttribute('aria-selected')})`;
+      await first.click();
+      await page.waitForTimeout(1500);
+      if ((await saves().count()) !== n0) return `(B) bỏ lưu tại chỗ mà mục biến mất: ${n0} → ${await saves().count()}`;
+      if ((await saves().first().getAttribute('aria-selected')) === 'true') return '(B) bỏ lưu mà dấu không đổi dưới ngón tay';
+
+      const savedBtn = () => page.getByRole('button', { name: 'Saved', exact: true }).filter({ visible: true });
+      await page.goto(page.url().replace(/\/community-saved.*$/, `/community-user?id=${UID}`), { waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 40 && !(await savedBtn().count()); i++) await page.waitForTimeout(250);
+      if ((await savedBtn().count()) !== 1) return '(C) hồ sơ của mình không có nút "Saved"';
+      await page.goto(page.url().replace(/\/community-user\?id=[^&#]*/, '/community-user?id=c0000000-0000-4000-8000-0000000011a1'), { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2500);
+      if (await savedBtn().count()) return '(C) hồ sơ người khác mà có nút "Saved" — thư viện của người khác không phải thứ để xem';
+      return null;
+    },
+  },
+  {
+    /*
+      #28 (vế 2): lưu một bài trên feed → toast có nút "View library", bấm thì
+      tới `/community-saved`. Không có đường dẫn ấy thì thư viện là một màn
+      người ta không bao giờ biết là có.
+    */
+    name: 'Lưu trên feed: toast có "View library", bấm thì tới thư viện (#28)',
+    route: '/community-post?id=cp000000-0000-4000-8000-000000000001', mode: 'full',
+    async run(page) {
+      const save = page.getByRole('button', { name: /^Save( · \d+)?$/ }).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await save.count()); i++) await page.waitForTimeout(250);
+      if (!(await save.count())) return 'không thấy nút Lưu trên bài';
+      if ((await save.getAttribute('aria-selected')) === 'true') return 'tự kiểm: bài 1 phải CHƯA được lưu trong fixture';
+      await save.click();
+      const open = page.getByRole('button', { name: 'View library', exact: true }).filter({ visible: true });
+      for (let i = 0; i < 20 && !(await open.count()); i++) await page.waitForTimeout(250);
+      if (!(await open.count())) return 'lưu xong mà toast không có nút "View library"';
+      await open.first().click();
+      for (let i = 0; i < 20 && !/\/community-saved/.test(page.url()); i++) await page.waitForTimeout(250);
+      if (!/\/community-saved/.test(page.url())) return `bấm "View library" mà tới ${page.url().replace(/^.*8731/, '')}`;
+      return null;
+    },
+  },
+  {
+    /*
       #103: nút gập một bài ĐÃ XONG ở Kế hoạch ngày nói nó đang gập hay mở.
       react-native-web không dịch `accessibilityState.expanded`, nên trước #103
       `aria-expanded` rỗng ở mọi lần. Fixture: hôm nay đã có buổi ghi, nên các
@@ -4987,6 +5058,9 @@ try {
     writeFileSync(path.join(NATIVE, 'tools', '.live-skips.txt'), `${skipLog.join('\n')}\n`);
     globalThis.__asked = asked;
     globalThis.__pressRoutes = pressList.length;
+    /* #100: một màn chạy cả hai thứ tiếng (hay hai trạng thái) là hai LƯỢT, không
+       phải hai màn — dòng tổng kết nói cả hai con số, trên tổng số màn. */
+    globalThis.__pressUnique = new Set(pressList.map(([r]) => r.split('?')[0])).size;
 
     process.stdout.write('kịch bản');
     const picked = pressRouteArg ? [] : onlyArg ? SCENARIOS.filter((sc) => sc.name.includes(onlyArg)) : SCENARIOS;
@@ -5114,7 +5188,7 @@ const sweptClaim = args.has('--press-only')
 
 console.log(
   `\nchạy thật OK — ${sweptClaim}; ` +
-    `đã BẤM THỬ ${globalThis.__pressed} nút trên ${globalThis.__pressRoutes} màn và nút nào cũng làm màn hình đổi hoặc hỏi lại ` +
+    `đã BẤM THỬ ${globalThis.__pressed} nút qua ${globalThis.__pressRoutes} lượt mở màn (${globalThis.__pressUnique}/${ROUTES.length} màn khác nhau) và nút nào cũng làm màn hình đổi hoặc hỏi lại ` +
     `(${globalThis.__asked} hộp hỏi lại, mọi hộp đều được Huỷ; không nút phá huỷ nào làm luôn mà không hỏi; ` +
     `${globalThis.__skipped} nút được bỏ qua có lý do — ${Object.entries(globalThis.__skipReasons ?? {}).map(([k, v]) => `${v} ${k}`).join(', ')}; từng nút ở tools/.live-skips.txt; ` +
     'không nút nào bị che mà vẫn trong cây trợ năng (#147)); ' +
