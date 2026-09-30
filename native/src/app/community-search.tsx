@@ -175,8 +175,10 @@ export default function CommunitySearchScreen() {
         <LoadFailed i18n={i18n} onRetry={() => list.refetch()} />
       ) : list.isPending && (searching || !suggestions.data) ? (
         <>
-          <SkeletonBlock height={64} />
-          <SkeletonBlock height={64} />
+          {/* Dòng thật cao 60 (avatar 44 + padding dọc 16): skeleton đúng hình,
+              không nhảy 4px khi nội dung về. */}
+          <SkeletonBlock height={60} />
+          <SkeletonBlock height={60} />
         </>
       ) : rows.length === 0 ? (
         <GlassCard>
@@ -338,7 +340,8 @@ const stylesFor = makeStyles((c, m) => ({
   */
   row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.sm },
   rowRule: { borderTopWidth: 1, borderTopColor: c.border },
-  who: { flexGrow: 1, flexShrink: 1, flexBasis: 150, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  /* Avatar–chữ 12px như PostHeader (`spacing.sm + 4`): cùng một nhịp với thẻ bài. */
+  who: { flexGrow: 1, flexShrink: 1, flexBasis: 150, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
   text: { flex: 1, minWidth: 0, gap: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   name: { ...type.body, color: c.foreground, fontWeight: '600', flexShrink: 1 },
