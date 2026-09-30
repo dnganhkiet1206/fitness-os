@@ -1,4 +1,4 @@
-import { Bell, Heart, MessageCircle, Trophy, UserPlus } from 'lucide-react-native';
+import { AtSign, Bell, Heart, MessageCircle, Reply, Trophy, UserPlus } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
@@ -20,7 +20,7 @@ import { nav } from '@/lib/nav';
 import { timeAgo } from '@/lib/time-ago';
 import { fillCopy } from '@/lib/copy-fill';
 
-const KIND_ICON = { like: Heart, comment: MessageCircle, follow: UserPlus } as const;
+const KIND_ICON = { like: Heart, comment: MessageCircle, follow: UserPlus, reply: Reply, mention: AtSign } as const;
 
 /**
  * Hộp thông báo cộng đồng — issue #13.
@@ -75,7 +75,11 @@ export default function CommunityInboxScreen() {
       ? i18n.nNtFollow
       : x.kind === 'comment'
         ? i18n.nNtComment
-        : x.count > 1
+        : x.kind === 'reply'
+          ? i18n.nNtReply
+          : x.kind === 'mention'
+            ? i18n.nNtMention
+            : x.count > 1
           ? fillCopy(i18n.nNtLikeMany, { n: String(x.count - 1) })
           : i18n.nNtLike;
 

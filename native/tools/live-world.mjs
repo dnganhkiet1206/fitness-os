@@ -672,6 +672,9 @@ export const FIXTURES = {
     { id: 'cn000000-0000-4000-8000-000000000001', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'like', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: null, created_at: minsAgo(29), read_at: null },
     { id: 'cn000000-0000-4000-8000-000000000002', user_id: UID, actor_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'like', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: null, created_at: minsAgo(72), read_at: null },
     { id: 'cn000000-0000-4000-8000-000000000003', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'comment', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: 'cc000000-0000-4000-8000-000000000002', created_at: at(0, '06:48'), read_at: null },
+    /* #30: Tuấn trả lời Kiệt, và nhắc Kiệt ở một bài khác. */
+    { id: 'cn000000-0000-4000-8000-000000000005', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000022b2', kind: 'reply', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: 'cc000000-0000-4000-8000-000000000003', created_at: minsAgo(40), read_at: null },
+    { id: 'cn000000-0000-4000-8000-000000000006', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000022b2', kind: 'mention', post_id: 'cp000000-0000-4000-8000-000000000002', comment_id: 'cc000000-0000-4000-8000-000000000004', created_at: minsAgo(35), read_at: null },
     { id: 'cn000000-0000-4000-8000-000000000004', user_id: UID, actor_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'follow', post_id: null, comment_id: null, created_at: day(2), read_at: day(1) },
   ],
   /* #163: thư viện ảnh của app. `workout/broken.webp` CỐ Ý không có tệp (máy chủ
@@ -702,7 +705,7 @@ export const FIXTURES = {
         ],
       },
       caption: 'Cuối cùng cũng lên được incline hôm nay. Thấy khoẻ hơn hẳn 🔥', visibility: 'public',
-      like_count: 128, comment_count: 2, save_count: 9, hidden: false, created_at: at(0, '11:07:12'),
+      like_count: 128, comment_count: 3, save_count: 9, hidden: false, created_at: at(0, '11:07:12'),
       image_source: 'library', art_id: 'ca000000-0000-4000-8000-000000000001',
     },
     {
@@ -717,7 +720,7 @@ export const FIXTURES = {
         ],
       },
       caption: 'Kéo xà trước khi mỏi, chèo tạ đòn giữ lưng thẳng. Chất lượng mỗi rep hơn số rep.', visibility: 'public',
-      like_count: 86, comment_count: 0, save_count: 31, hidden: false, created_at: day(1),
+      like_count: 86, comment_count: 1, save_count: 31, hidden: false, created_at: day(1),
       image_source: 'library', art_id: 'ca000000-0000-4000-8000-000000000004',
     },
     /* Bài Progress (#8) — đúng mockup màn 4: 12 tuần, 52.1 → 55.4 kg, vòng eo
@@ -771,8 +774,19 @@ export const FIXTURES = {
     { post_id: 'cp000000-0000-4000-8000-000000000004', user_id: UID, created_at: at(1, '15:12') },
   ],
   community_comments: [
-    { id: 'cc000000-0000-4000-8000-000000000001', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: UID, body: 'Incline 24kg × 10 là ngon rồi!', hidden: false, created_at: at(0, '12:04:48') },
-    { id: 'cc000000-0000-4000-8000-000000000002', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', body: 'Cảm ơn! Tuần sau thử 26.', hidden: false, created_at: minsAgo(72) },
+    { id: 'cc000000-0000-4000-8000-000000000001', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: UID, parent_id: null, body: 'Incline 24kg × 10 là ngon rồi!', hidden: false, created_at: at(0, '12:04:48') },
+    /* #30: một luồng một tầng — Linh và Tuấn trả lời Kiệt. Câu của Tuấn nhắc một
+       handle CÓ THẬT (có dòng ở community_comment_mentions → liên kết) và một
+       handle không có thật (không dòng → chữ thường). */
+    { id: 'cc000000-0000-4000-8000-000000000002', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000011a1', parent_id: 'cc000000-0000-4000-8000-000000000001', body: 'Cảm ơn! Tuần sau thử 26.', hidden: false, created_at: minsAgo(72) },
+    { id: 'cc000000-0000-4000-8000-000000000003', post_id: 'cp000000-0000-4000-8000-000000000001', author_id: 'c0000000-0000-4000-8000-0000000022b2', parent_id: 'cc000000-0000-4000-8000-000000000001', body: 'Đúng rồi @linh.pham, 26kg là vừa đẹp. Rủ cả @ai.khong nhé', hidden: false, created_at: minsAgo(40) },
+    /* Nhắc Kiệt trên bài của ASCND → hộp thư có một dòng `mention`. */
+    { id: 'cc000000-0000-4000-8000-000000000004', post_id: 'cp000000-0000-4000-8000-000000000002', author_id: 'c0000000-0000-4000-8000-0000000022b2', parent_id: null, body: 'Rủ @kiet tập cùng buổi này!', hidden: false, created_at: minsAgo(35) },
+  ],
+  /* #30: lượt nhắc server đã xác nhận — chỉ handle có thật. */
+  community_comment_mentions: [
+    { comment_id: 'cc000000-0000-4000-8000-000000000003', user_id: 'c0000000-0000-4000-8000-0000000011a1' },
+    { comment_id: 'cc000000-0000-4000-8000-000000000004', user_id: UID },
   ],
   /* Thử thách (#9) chỉ được đọc qua RPC `community_challenges_overview`. Trước
      #38 RPC giả luôn trả `[]`, nên thẻ thử thách chưa từng được quét có dữ

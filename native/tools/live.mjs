@@ -1003,6 +1003,73 @@ function waterNewestFirst() {
 const SCENARIOS = [
   {
     /*
+      #30: bình luận một tầng và @handle, trên bài 1 của thế giới giả (gốc của
+      Kiệt, Linh và Tuấn trả lời).
+        (A) hai câu trả lời nằm DƯỚI gốc, lùi vào (avatar bắt đầu xa mép hơn),
+            theo thứ tự đến: Linh rồi Tuấn;
+        (B) "@linh.pham" là LIÊN KẾT (server đã xác nhận), "@ai.khong" là chữ;
+        (C) chạm liên kết → hồ sơ Linh;
+        (D) quay lại, bấm "Reply" dưới câu của Linh → thanh viết hiện
+            "Replying to Linh Phạm", ô nhập điền sẵn "@linh.pham "; gõ thêm và
+            Gửi → đúng một POST community_comments mang parent_id của CHÍNH câu
+            được bấm (server gắn về gốc); thanh "Replying to" mất;
+        (E) hộp thư có "replied to your comment" và "mentioned you in a comment".
+    */
+    name: 'Cộng đồng: bình luận một tầng, @handle là liên kết khi server xác nhận, trả lời gửi parent_id (#30)',
+    route: '/community-post?id=cp000000-0000-4000-8000-000000000001', mode: 'full',
+    async run(page) {
+      const posts = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/community_comments/.test(q.url()) && q.method() === 'POST') posts.push(q.postData() ?? '');
+      });
+      const find = (t) => page.getByText(t, { exact: false }).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await find('26kg là vừa đẹp').count()); i++) await page.waitForTimeout(250);
+      if (!(await find('26kg là vừa đẹp').count())) return 'bài 1 không hiện câu trả lời của Tuấn';
+      const leftOf = async (t) => (await find(t).boundingBox())?.x ?? null;
+      const root = await leftOf('Incline 24kg');
+      const linh = await leftOf('Tuần sau thử 26');
+      const tuan = await leftOf('26kg là vừa đẹp');
+      if (root == null || linh == null || tuan == null) return `(A) không đo được vị trí: gốc ${root}, Linh ${linh}, Tuấn ${tuan}`;
+      if (!(linh > root + 10 && tuan > root + 10)) return `(A) câu trả lời không lùi vào dưới gốc: gốc x=${root}, Linh x=${linh}, Tuấn x=${tuan}`;
+      const yOf = async (t) => (await find(t).boundingBox())?.y ?? 0;
+      if (!((await yOf('Incline 24kg')) < (await yOf('Tuần sau thử 26')) && (await yOf('Tuần sau thử 26')) < (await yOf('26kg là vừa đẹp')))) return '(A) thứ tự sai: phải là gốc, Linh, Tuấn';
+
+      const link = page.getByRole('link', { name: '@linh.pham' }).filter({ visible: true });
+      if (!(await link.count())) return '(B) "@linh.pham" không phải liên kết dù server đã xác nhận';
+      if (await page.getByRole('link', { name: '@ai.khong' }).filter({ visible: true }).count()) return '(B) "@ai.khong" thành liên kết dù server không xác nhận';
+
+      await link.first().click();
+      for (let i = 0; i < 20 && !/community-user/.test(page.url()); i++) await page.waitForTimeout(250);
+      if (!/community-user\?id=c0000000-0000-4000-8000-0000000011a1/.test(decodeURIComponent(page.url()))) return `(C) chạm @linh.pham mà không mở hồ sơ Linh: ${page.url()}`;
+      await page.goBack();
+      for (let i = 0; i < 40 && !(await find('Tuần sau thử 26').count()); i++) await page.waitForTimeout(250);
+
+      const replyLinh = page.getByRole('button', { name: 'Reply to Linh Phạm' }).filter({ visible: true }).first();
+      if (!(await replyLinh.count())) return '(D) không có nút "Reply" dưới câu của Linh';
+      await replyLinh.click();
+      await page.waitForTimeout(400);
+      if (!(await find('Replying to Linh Phạm').count())) return '(D) bấm Reply mà thanh viết không nói "Replying to Linh Phạm"';
+      const box = page.locator('textarea, input').filter({ visible: true }).last();
+      const v = await box.inputValue();
+      if (v !== '@linh.pham ') return `(D) ô nhập không điền sẵn "@linh.pham " (thấy ${JSON.stringify(v)})`;
+      await box.fill('@linh.pham cố lên!');
+      await page.getByRole('button', { name: 'Send' }).filter({ visible: true }).first().click();
+      for (let i = 0; i < 20 && !posts.length; i++) await page.waitForTimeout(250);
+      if (posts.length !== 1) return `(D) Gửi ra ${posts.length} POST community_comments, phải đúng một`;
+      const body = JSON.parse(posts[0]);
+      if (body.parent_id !== 'cc000000-0000-4000-8000-000000000002') return `(D) POST mang parent_id ${body.parent_id}, phải là câu được bấm (cc…002)`;
+      await page.waitForTimeout(800);
+      if (await find('Replying to Linh Phạm').count()) return '(D) gửi xong mà thanh "Replying to" vẫn còn';
+
+      await page.goto(page.url().replace(/\/community-post.*$/, '/community-inbox'), { waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 40 && !(await find('replied to your comment').count()); i++) await page.waitForTimeout(250);
+      if (!(await find('replied to your comment').count())) return '(E) hộp thư không có dòng "replied to your comment"';
+      if (!(await find('mentioned you in a comment').count())) return '(E) hộp thư không có dòng "mentioned you in a comment"';
+      return null;
+    },
+  },
+  {
+    /*
       #142: thử thách tuần "Tập 3 buổi" (hạng đồng) — tiến độ, trả thưởng, và
       không trả đôi. Mọi con số đọc ra từ thế giới và từ mã của app, không gõ tay:
         · tuần = thứ Hai 00:00 theo giờ của TRÌNH DUYỆT (như `weekStartOf`);

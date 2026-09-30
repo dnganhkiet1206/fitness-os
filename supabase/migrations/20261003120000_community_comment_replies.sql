@@ -106,9 +106,11 @@ GRANT SELECT ON public.community_comment_mentions TO authenticated;
 
 
 /* ── 3. thông báo: hai loại mới ── */
--- Hai ràng buộc cũ của #13 được tìm theo ĐỊNH NGHĨA, không theo tên đoán: tên
--- tự sinh của một CHECK cấp bảng là `…_check`, `…_check1`… theo thứ tự khai,
--- và đoán sai thì `DROP CONSTRAINT IF EXISTS` lặng lẽ không làm gì.
+-- Hai ràng buộc cũ của #13 — "kind thuộc ba loại" và "comment ⇔ comment_id" —
+-- được tìm theo ĐỊNH NGHĨA trong pg_constraint, không theo tên. Tên tự sinh
+-- của CHECK cấp bảng đánh số theo thứ tự khai (`…_check`, `…_check1`, …), và
+-- đo được ở b_cases: một ca đột biến của A (N5) bỏ CHECK `user_id <> actor_id`
+-- là mọi số dịch đi một, và một lệnh drop theo tên `…_check2` trượt.
 DO $$
 DECLARE r record;
 BEGIN
@@ -117,13 +119,27 @@ BEGIN
     FROM pg_constraint
     WHERE conrelid = 'public.community_notifications'::regclass AND contype = 'c'
   LOOP
-    IF r.def LIKE '%kind = ANY%' AND r.def NOT LIKE '%post_id%' AND r.def NOT LIKE '%comment_id%' THEN
-      EXECUTE format('ALTER TABLE public.community_notifications DROP CONSTRAINT %I', r.conname);
-    ELSIF r.def LIKE '%''comment''%' AND r.def LIKE '%comment_id IS NOT NULL%' THEN
+    IF (r.def LIKE '%kind = ANY%' AND r.def NOT LIKE '%post_id%' AND r.def NOT LIKE '%comment_id%')
+       OR (r.def LIKE '%''comment''%' AND r.def LIKE '%comment_id IS NOT NULL%') THEN
       EXECUTE format('ALTER TABLE public.community_notifications DROP CONSTRAINT %I', r.conname);
     END IF;
   END LOOP;
+  -- Không lặng lẽ: còn sót một ràng buộc cũ thì hai loại mới bị chặn mãi.
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'public.community_notifications'::regclass AND contype = 'c'
+      AND (pg_get_constraintdef(oid) LIKE '%comment_id IS NOT NULL%'
+           OR (pg_get_constraintdef(oid) LIKE '%kind = ANY%' AND pg_get_constraintdef(oid) NOT LIKE '%post_id%'))
+  ) THEN
+    RAISE EXCEPTION 'community_notifications: ràng buộc cũ của #13 chưa được gỡ';
+  END IF;
 END $$;
+-- Hai câu theo tên, sau khi khối trên đã gỡ đúng ràng buộc: trên Postgres chúng
+-- không làm gì (IF EXISTS), nhưng `tools/fixture-integrity.mjs` đọc migration
+-- bằng mẫu chữ và không chạy được khối DO — thiếu hai câu này nó áp CHECK cũ
+-- lên fixture reply/mention và đỏ.
+ALTER TABLE public.community_notifications DROP CONSTRAINT IF EXISTS community_notifications_kind_check;
+ALTER TABLE public.community_notifications DROP CONSTRAINT IF EXISTS community_notifications_check2;
 
 ALTER TABLE public.community_notifications
   ADD CONSTRAINT community_notifications_kind_check

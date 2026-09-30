@@ -284,6 +284,7 @@ const STEPS = [
   ['ảnh thư viện app cho bài Cộng đồng (#163)', 'node', ['tools/community-art.mjs']],
   ['"N bài mới" giữ bài mới khi đang đọc giữa feed (#160)', 'node', ['tools/feed-hold.mjs']],
   ['prop cuộn của Screen tới cả ba bố cục', 'node', ['tools/screen-scroll-props.mjs']],
+  ['bình luận một tầng và @handle (#30)', 'node', ['tools/comment-thread.mjs']],
   ['kéo để tải lại', 'node', ['tools/refreshable.mjs']],
   ['đồng hồ nghỉ', 'node', ['tools/rest-timer.mjs']],
   ['trạng thái mạng', 'node', ['tools/net-status.mjs']],

@@ -90,10 +90,14 @@ export interface FeedPost {
 export interface CommunityComment {
   id: string;
   post_id: string;
+  /** Gốc của luồng (#30) — server bảo đảm luôn là một bình luận GỐC. */
+  parent_id: string | null;
   body: string;
   created_at: string;
   author: CommunityAuthor | null;
   mine: boolean;
+  /** `handle` (chữ thường) → user_id, chỉ những lượt nhắc server đã xác nhận. */
+  mentions: [string, string][];
 }
 
 const PROFILE_COLS = 'user_id, handle, display_name, mascot_id, is_official, bio';
@@ -406,13 +410,24 @@ export function useComments(postId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('community_comments')
-        .select('id, post_id, author_id, body, created_at')
+        .select('id, post_id, parent_id, author_id, body, created_at')
         .eq('post_id', postId!)
         .order('created_at', { ascending: true })
         .limit(200);
       if (error) throw error;
       const rows = data ?? [];
-      const ids = [...new Set(rows.map((r) => r.author_id))];
+      /* Lượt nhắc server đã xác nhận (#30). Mảng, không Map: cache đi qua
+         JSON.stringify (`query-data.mjs`). */
+      const mentionRows: { comment_id: string; user_id: string }[] = [];
+      if (rows.length) {
+        const { data: m, error: mErr } = await supabase
+          .from('community_comment_mentions')
+          .select('comment_id, user_id')
+          .in('comment_id', rows.map((r) => r.id));
+        if (mErr) throw mErr;
+        mentionRows.push(...(m ?? []));
+      }
+      const ids = [...new Set([...rows.map((r) => r.author_id), ...mentionRows.map((r) => r.user_id)])];
       const byId = new Map<string, CommunityAuthor>();
       if (ids.length) {
         const { data: a, error: aErr } = await supabase.from('community_profiles').select(PROFILE_COLS).in('user_id', ids);
@@ -422,10 +437,17 @@ export function useComments(postId: string | undefined) {
       return rows.map<CommunityComment>((r) => ({
         id: r.id,
         post_id: r.post_id,
+        parent_id: r.parent_id ?? null,
         body: r.body,
         created_at: r.created_at,
         author: byId.get(r.author_id) ?? null,
         mine: r.author_id === user!.id,
+        mentions: mentionRows
+          .filter((x) => x.comment_id === r.id)
+          .flatMap((x) => {
+            const who = byId.get(x.user_id);
+            return who ? [[who.handle.toLowerCase(), who.user_id] as [string, string]] : [];
+          }),
       }));
     },
   });
@@ -439,8 +461,12 @@ export function useAddComment(postId: string) {
     /* Rung lúc NGÓN TAY chạm Gửi, không phải lúc máy chủ trả lời — `selection`
        là phản hồi cho một cú chạm, và sau mạng nó trễ hàng trăm mili-giây. */
     onMutate: () => Haptics.selectionAsync(),
-    mutationFn: async (body: string) => {
-      const { error } = await supabase.from('community_comments').insert({ post_id: postId, author_id: user!.id, body: body.trim() });
+    /* `parentId` (#30): server gắn câu trả lời vào GỐC nếu đây là trả lời một
+       câu trả lời, nên client gửi đúng thứ người ta đã bấm. */
+    mutationFn: async ({ body, parentId = null }: { body: string; parentId?: string | null }) => {
+      const { error } = await supabase
+        .from('community_comments')
+        .insert({ post_id: postId, author_id: user!.id, body: body.trim(), parent_id: parentId });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -461,9 +487,14 @@ export function useDeleteComment(postId: string) {
         'Không xoá được bình luận — có thể nó đã được xoá',
       );
     },
-    onSuccess: () => {
+    onSuccess: (_d, commentId) => {
+      /* Xoá một GỐC thì server xoá luôn các câu trả lời của nó (ON DELETE
+         CASCADE, #30) và bộ đếm của bài trừ từng dòng — nên số trên thẻ trừ
+         1 + số câu trả lời đang thấy, không phải 1. Đọc TRƯỚC khi làm mới. */
+      const seen = qc.getQueryData<CommunityComment[]>(['community_comments', user?.id, postId]) ?? [];
+      const gone = 1 + seen.filter((c) => c.parent_id === commentId).length;
       qc.invalidateQueries({ queryKey: ['community_comments', user?.id, postId] });
-      patchPost(qc, postId, (p) => ({ ...p, comment_count: Math.max(0, p.comment_count - 1) }));
+      patchPost(qc, postId, (p) => ({ ...p, comment_count: Math.max(0, p.comment_count - gone) }));
     },
   });
 }
@@ -1136,7 +1167,7 @@ export function useDeleteAllMyPosts() {
 
 /* ── hộp thông báo (#13) ────────────────────────────────────────────────── */
 
-export type NotificationKind = 'like' | 'comment' | 'follow';
+export type NotificationKind = 'like' | 'comment' | 'follow' | 'reply' | 'mention';
 
 /**
  * Một dòng trong hộp thư. Lượt THÍCH cùng một bài gộp làm một dòng ("Linh và
@@ -1182,7 +1213,7 @@ export function useInbox() {
       const out: InboxItem[] = [];
       const likeGroups = new Map<string, InboxItem>();
       for (const r of list) {
-        const kind = (['like', 'comment', 'follow'] as const).find((k) => k === r.kind);
+        const kind = (['like', 'comment', 'follow', 'reply', 'mention'] as const).find((k) => k === r.kind);
         if (!kind) continue;
         const actor = byId.get(r.actor_id);
         if (kind === 'like' && r.post_id) {
