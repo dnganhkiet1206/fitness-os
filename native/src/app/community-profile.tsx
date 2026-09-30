@@ -129,6 +129,7 @@ export default function CommunityProfileScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={m.name}
                 accessibilityState={{ selected: pick === m.id }}
+                aria-selected={pick === m.id}
                 onPress={() => setPick(m.id)}
                 style={[styles.mascotChip, pick === m.id && styles.mascotChipOn]}>
                 <CommunityAvatar mascotId={m.id} size={52} />

@@ -150,6 +150,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
         accessibilityRole="button"
         accessibilityLabel={i18n.a11yFavourite}
         accessibilityState={{ selected: !!f.is_favorite }}
+        aria-selected={!!f.is_favorite}
         hitSlop={12}
         style={styles.fav}
         onPress={() => {

@@ -161,6 +161,7 @@ export default function CommunityShareProgressScreen() {
                     key={id ?? 'none'}
                     accessibilityRole="button"
                     accessibilityState={{ selected: lift === id }}
+                    aria-selected={lift === id}
                     onPress={() => setLift(id)}
                     /* Chip cao 36 cho hàng gọn; 36 + 2×4 = 44, sàn của HIG. */
                     hitSlop={4}

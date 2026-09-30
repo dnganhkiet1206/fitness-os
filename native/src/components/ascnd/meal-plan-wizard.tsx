@@ -557,6 +557,7 @@ function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () 
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
+      aria-selected={on}
       hitSlop={{ top: 6, bottom: 6 }}
       style={[styles.chip, on && styles.chipOn]}
       onPress={onPress}>

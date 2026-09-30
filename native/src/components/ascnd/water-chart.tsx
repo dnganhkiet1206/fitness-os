@@ -430,6 +430,7 @@ export function WaterChart({
                 key={d.date}
                 accessibilityRole="button"
                 accessibilityState={{ selected: picked === d.date }}
+                aria-selected={picked === d.date}
                 // The chart had no accessible values at all — a screen reader
                 // met seven unlabelled shapes. This is the reading of it.
                 accessibilityLabel={`${dayLabel(d.date, lang, 'long')}, ${volumeText(d.total, unit)}`}

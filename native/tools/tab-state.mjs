@@ -93,6 +93,22 @@ export function problemsOf(files) {
       const props = src.slice(open, next < 0 ? src.length : m.index + next);
       if (!/\baria-expanded=\{/.test(props)) out.push(`${rel}:${before.split('\n').length}: accessibilityState.expanded mà không có aria-expanded — trên web khối gập và khối mở đọc y hệt nhau (#103)`);
     }
+    /* #174: `selected` / `checked` trên MỌI vai khác (nút bật/tắt như Thích,
+       Lưu, Theo dõi…) cũng không ra ARIA. Đo ở #28: nút Lưu của một bài đã lưu
+       có `aria-selected=null`. Vai tab và checkbox/switch/radio đã xét ở trên
+       với thông báo riêng, nên bỏ qua ở đây. */
+    for (const m of src.matchAll(/accessibilityState=\{\{[^}]*\b(selected|checked)\b/g)) {
+      const before = src.slice(0, m.index);
+      const open = Math.max(...[...before.matchAll(/<[A-Z][\w.]*\s/g)].map((x) => x.index), -1);
+      const next = src.slice(m.index).search(/<[A-Za-z/{]/);
+      const props = src.slice(open, next < 0 ? src.length : m.index + next);
+      if (/accessibilityRole="(tab|checkbox|switch|radio)"/.test(props)) continue;
+      n++;
+      const want = m[1] === 'checked' ? 'aria-checked' : 'aria-selected';
+      if (!new RegExp(`\\b${want}=\\{`).test(props)) {
+        out.push(`${rel}:${before.split('\n').length}: accessibilityState.${m[1]} mà không có ${want} — trên web nút bật và nút tắt đọc y hệt nhau (#174)`);
+      }
+    }
   }
   /* #127: thân của một `Expander` được giữ mounted khi đóng (để đo), nên nó
      phải tự ẩn khỏi cây trợ năng — không thì VoiceOver vuốt qua một thẻ đã thu
@@ -324,6 +340,15 @@ if (pN < 3) problems.push(`chỉ nhận ra ${pN} khối ẩn bằng pointerEvent
   probe('bỏ aria-expanded ở nút gập bài (#103)', 'src/components/ascnd/day-plan.tsx', 'aria-expanded={expanded}', '');
   probe('bỏ aria-hidden ở thân Expander khi đóng (#127)', 'src/components/ascnd/expander.tsx', ' aria-hidden={!open}>', '>');
   probe('bỏ aria-hidden ở tấm nút vuốt (#145)', 'src/components/ascnd/swipe-row.tsx', 'styles_panelRight} aria-hidden>', 'styles_panelRight}>');
+  /* #174: nút bật/tắt vai `button`. */
+  probe('bỏ aria-selected ở nút Thích/Lưu (#174)', 'src/components/ascnd/post-parts.tsx', 'aria-selected={on}', '');
+  probe('bỏ aria-selected ở nút Theo dõi trên hồ sơ (#174)', 'src/app/community-user.tsx', 'aria-selected={u!.iFollow}', '');
+  {
+    const tab = problemsOf([['thử.tsx', 'const a = <Pressable accessibilityRole="tab" accessibilityState={{ selected: on }} onPress={f} />;']]).out;
+    if (tab.some((x) => x.includes('#174'))) problems.push('thử ngược hỏng: ô role="tab" bị luật #174 báo lần hai — vai tab đã có thông báo riêng');
+    const ck = problemsOf([['thử.tsx', 'const b = <Pressable accessibilityState={{ checked: on }} onPress={f} />;']]).out;
+    if (!ck.some((x) => x.includes('aria-checked') && x.includes('#174'))) problems.push('thử ngược hỏng: `checked` trên vai button không đòi aria-checked');
+  }
   /* #123: nhận diện nút gập từ hình của nó. */
   const dBase = disclosureProblemsOf(raw).out.length;
   const dProbe = (label, file, from, to) => {
@@ -375,7 +400,7 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `trạng thái ô chọn OK — ${dN} nút gập nhận ra từ mũi tên đổi/xoay đều khai expanded lẫn aria-expanded (#123; thử ngược: bỏ expanded ở một nút mũi tên đổi và một nút mũi tên xoay thì đỏ, mũi tên cố định thì xanh); thân Expander đóng và tấm nút vuốt đều ẩn khỏi cây trợ năng (#127, #145; gỡ đi thì đỏ); ${tN} chỗ vẽ ô tick đều mang vai checkbox/switch/radio (#139; bỏ vai ở thẻ Thực phẩm bổ sung thì đỏ, nút "Lưu" có Check cố định thì xanh); ${pN} khối ẩn bằng pointerEvents đều mang aria-hidden hoặc có lý do ghi ra (#129; bỏ aria-hidden ở thân bữa thì đỏ); ${n} phần tử role tab/checkbox/switch/radio trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101), khối gập mang aria-expanded (#103) ` +
+  `trạng thái ô chọn OK — ${dN} nút gập nhận ra từ mũi tên đổi/xoay đều khai expanded lẫn aria-expanded (#123; thử ngược: bỏ expanded ở một nút mũi tên đổi và một nút mũi tên xoay thì đỏ, mũi tên cố định thì xanh); thân Expander đóng và tấm nút vuốt đều ẩn khỏi cây trợ năng (#127, #145; gỡ đi thì đỏ); ${tN} chỗ vẽ ô tick đều mang vai checkbox/switch/radio (#139; bỏ vai ở thẻ Thực phẩm bổ sung thì đỏ, nút "Lưu" có Check cố định thì xanh); ${pN} khối ẩn bằng pointerEvents đều mang aria-hidden hoặc có lý do ghi ra (#129; bỏ aria-hidden ở thân bữa thì đỏ); ${n} phần tử role tab/checkbox/switch/radio hay nút bật/tắt (#174: mọi selected/checked khác cũng phải có aria tương ứng; bỏ ở Thích/Lưu hay Theo dõi thì đỏ) trong src/: tab mang accessibilityState.selected (iOS) lẫn aria-selected, ô tick mang checked lẫn aria-checked (#101), khối gập mang aria-expanded (#103) ` +
     '(web, nơi react-native-web không dịch accessibilityState — bảy ô ngày của Kế hoạch ngày từng rỗng cả bảy, kể cả ô đang ' +
     'mở; sáu ô tick set cũng rỗng aria-checked). Thử ngược: bỏ aria-selected ở hàng ngày, bỏ accessibilityState ở PickRow, bỏ aria-checked ở ô tick set, bỏ accessibilityState ở công tắc khởi động, bỏ aria-expanded ở nút gập bài — mỗi cái đỏ',
 );

@@ -538,6 +538,7 @@ export default function WorkoutBuilderSheet() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ selected: group === null }}
+                aria-selected={group === null}
                 onPress={() => {
                   Haptics.selectionAsync();
                   setGroup(null);
@@ -556,6 +557,7 @@ export default function WorkoutBuilderSheet() {
                   key={g.key}
                   accessibilityRole="button"
                   accessibilityState={{ selected: group === g.key }}
+                  aria-selected={group === g.key}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setGroup((cur) => (cur === g.key ? null : g.key));
@@ -707,6 +709,7 @@ export default function WorkoutBuilderSheet() {
                   key={t}
                   accessibilityRole="button"
                   accessibilityState={{ selected: tType === t }}
+                  aria-selected={tType === t}
                   onPress={() => {
                     Haptics.selectionAsync();
                     setPickedType(t);

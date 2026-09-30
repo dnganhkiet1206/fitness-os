@@ -452,6 +452,7 @@ export default function AiCoachScreen() {
                       accessibilityRole="button"
                       accessibilityLabel={convo.title ?? '—'}
                       accessibilityState={{ selected: conversationId === convo.id }}
+                      aria-selected={conversationId === convo.id}
                       style={styles.historyPick}
                       hitSlop={{ top: spacing.sm + 2, bottom: spacing.sm + 2, left: spacing.md }}
                       onPress={() => {

@@ -689,6 +689,7 @@ export default function AssistantScreen() {
               accessibilityRole="button"
               accessibilityLabel={`${vi ? m.label.vi : m.label.en} ${m.value}`}
               accessibilityState={{ selected: selected === m.kind }}
+              aria-selected={selected === m.kind}
               onPress={() => {
                 Haptics.selectionAsync();
                 setSelected(m.kind);

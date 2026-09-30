@@ -347,6 +347,7 @@ export default function LogSleepSheet() {
               accessibilityRole="button"
               accessibilityLabel={i18n.a11ySleepQuality.replace('{x}', String(q.value)).replace('{max}', String(SLEEP_QUALITY_MAX))}
               accessibilityState={{ selected: active }}
+              aria-selected={active}
               onPress={() => {
                 Haptics.selectionAsync();
                 setQuality(q.value);

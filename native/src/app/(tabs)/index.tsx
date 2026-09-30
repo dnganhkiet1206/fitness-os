@@ -2397,6 +2397,7 @@ export default function TodayScreen() {
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yDoneEditing}
             accessibilityState={{ selected: true }}
+            aria-selected={true}
             style={[styles.squareBtn, styles.squareBtnActive]}
             onPress={() => toggleEdit(false)}>
             <Icon icon={Check} size={20} color={c.primary} />

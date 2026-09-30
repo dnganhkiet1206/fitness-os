@@ -718,6 +718,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
                     key={r.key}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
+                    aria-selected={on}
                     style={styles.rangeBtn}
                     onPress={() => {
                       Haptics.selectionAsync();

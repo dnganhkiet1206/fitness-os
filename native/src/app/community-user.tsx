@@ -193,6 +193,7 @@ export default function CommunityUserScreen() {
             <PressScale
               accessibilityRole="button"
               accessibilityState={{ selected: u!.iFollow }}
+              aria-selected={u!.iFollow}
               disabled={follow.isPending}
               onPress={() => follow.mutate({ userId: p.user_id, on: !u!.iFollow }, { onError: (e: Error) => toast.fail(e) })}
               style={u!.iFollow ? styles.quietBtn : styles.solidBtn}>

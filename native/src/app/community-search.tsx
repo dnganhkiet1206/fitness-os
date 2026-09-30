@@ -192,6 +192,7 @@ export default function CommunitySearchScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={`${following ? i18n.nCmFollowing : i18n.nCmFollow} ${p.display_name}`}
                   accessibilityState={{ selected: following }}
+                  aria-selected={following}
                   disabled={follow.isPending}
                   hitSlop={4}
                   onPress={() => toggle(p.user_id, !following)}

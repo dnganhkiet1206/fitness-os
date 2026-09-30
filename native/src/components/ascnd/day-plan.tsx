@@ -1795,6 +1795,7 @@ export function DayPlan({
                           key={v}
                           accessibilityRole="button"
                           accessibilityState={{ selected: v === effort }}
+                          aria-selected={v === effort}
                           hitSlop={{ top: 8, bottom: 8 }}
                           onPress={() => {
                             Haptics.selectionAsync();
