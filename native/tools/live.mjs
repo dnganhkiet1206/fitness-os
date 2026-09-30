@@ -1392,6 +1392,127 @@ const SCENARIOS = [
   },
   {
     /*
+      #20: feed theo trang, con trỏ keyset. Thế giới thêm 45 bài CŨ HƠN mọi bài
+      sẵn có (tổng 49, trang 30), trong đó bốn bài CÙNG MỐC nằm vắt qua ranh
+      giới trang 30/31 — đúng chỗ một con trỏ chỉ theo mốc làm hở, `lte` làm
+      trùng.
+        (A) lần tải đầu: đúng một trang, 30 bài;
+        (B) trang kế HỎNG (ba lần — app thử lại hai lần): bài đã có vẫn ở đó,
+            đuôi feed nói "Couldn't load older posts" và có nút thử lại, không
+            phải thẻ lỗi thay cả feed;
+        (C) Thử lại → trang kế về, mang con trỏ `or=(created_at.lt…,and(…))`;
+            cuộn tới đáy tới khi đuôi feed nói "You've reached the end";
+        (D) mỗi bài trong 45 bài hiện ĐÚNG MỘT lần, đúng thứ tự
+            `(created_at desc, id desc)`, và tổng số thẻ bằng số bài của thế
+            giới — không trùng, không hở;
+        (E) làm mới (app trở lại sau vài phút, như kéo làm mới: mọi truy vấn
+            đang dùng tải lại) KHÔNG vứt trang đã tải: bài cuối vẫn trên màn,
+            đuôi feed vẫn là "đã hết", khung cuộn không bị ném về đỉnh.
+    */
+    name: 'Cộng đồng: feed theo trang — tải khi gần đáy, không trùng không hở ở bài cùng mốc, làm mới giữ trang (#20)',
+    route: '/community', mode: 'full',
+    async run(page, { world }) {
+      const tpl = world.community_posts.find((p) => p.author_id !== UID && p.visibility === 'public');
+      const cap = (i) => `Trang #20 · bài ${String(i).padStart(2, '0')}`;
+      const base = Date.parse('1999-08-01T10:00:00.000Z');
+      for (let i = 0; i < 45; i++) {
+        /* Bài 24–27 cùng một mốc: bài thứ 26 của nhóm này là bài thứ 30 của feed. */
+        const t = i >= 24 && i <= 27 ? base - 24 * 60_000 : base - i * 60_000;
+        world.community_posts.push({
+          ...structuredClone(tpl), id: `cp000000-0000-4000-8000-0000002000${String(i).padStart(2, '0')}`, source_id: null,
+          caption: cap(i), like_count: 0, comment_count: 0, save_count: 0, created_at: new Date(t).toISOString(),
+        });
+      }
+      const want = [...world.community_posts]
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : a.id < b.id ? 1 : -1))
+        .map((p) => p.caption).filter((c) => /^Trang #20 · bài \d\d$/.test(c));
+      if (want.indexOf(cap(24)) < want.indexOf(cap(27))) return 'tự kiểm: thứ tự mong đợi sai — id desc phải đặt bài 27 trước 24';
+
+      const reqs = [];
+      let fail = 3;
+      await page.route('**/rest/v1/community_posts?*', async (route) => {
+        const u = new URL(route.request().url());
+        if (route.request().method() === 'GET' && u.searchParams.has('or')) {
+          reqs.push(u.searchParams.get('or'));
+          if (fail-- > 0) return route.fulfill({ status: 500, contentType: 'application/json', body: '{"code":"XX000","message":"boom (#20)"}' });
+        }
+        return route.fallback();
+      });
+      await page.evaluate(() => {
+        for (const k of Object.keys(localStorage)) if (k.includes('rq_cache')) localStorage.removeItem(k);
+      });
+      await page.reload({ waitUntil: 'domcontentloaded' });
+
+      const cards = () => page.getByRole('button', { name: /^Like · \d+$/ }).count();
+      const shownCaps = () => page.evaluate(() => window.__shown('*')
+        .filter((e) => e.children.length === 0 && /^Trang #20 · bài \d\d$/.test((e.textContent ?? '').trim()))
+        .map((e) => e.textContent.trim()));
+      const has = (t) => page.evaluate((t) => window.__shown('*').some((e) => e.children.length === 0 && (e.textContent ?? '').trim() === t), t);
+      const frame = () => page.evaluate(() => {
+        const el = window.__shown('*').filter((e) => e.scrollHeight > e.clientHeight + 200 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+          .sort((a, b) => b.clientHeight - a.clientHeight)[0];
+        return el ? { top: el.scrollTop, max: el.scrollHeight - el.clientHeight } : null;
+      });
+      const toBottom = () => page.evaluate(() => {
+        const el = window.__shown('*').filter((e) => e.scrollHeight > e.clientHeight + 200 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+          .sort((a, b) => b.clientHeight - a.clientHeight)[0];
+        if (el) el.scrollTop = el.scrollHeight;
+      });
+
+      for (let i = 0; i < 40 && (await cards()) < 30; i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(600);
+      const n0 = await cards();
+      if (n0 !== 30) return `(A) lần tải đầu có ${n0} thẻ, phải đúng một trang (30)`;
+      if (reqs.length) return `(A) chưa cuộn đã hỏi trang kế: ${reqs[0]}`;
+
+      const failed = "Couldn't load older posts";
+      for (let i = 0; i < 40 && !(await has(failed)); i++) {
+        await toBottom();
+        await page.waitForTimeout(300);
+      }
+      if (!(await has(failed))) return `(B) trang kế hỏng ${reqs.length} lần mà đuôi feed không nói "${failed}"`;
+      if ((await cards()) !== 30) return `(B) trang kế hỏng mà số thẻ đổi: ${await cards()} (bài đã có phải ở lại)`;
+      if (await has('Could not load your data') || await page.getByRole('button', { name: 'Try again' }).count() !== 1) {
+        return '(B) trang kế hỏng phải cho ĐÚNG MỘT nút "Try again" ở đuôi feed, không thẻ lỗi thay cả feed';
+      }
+      const tries = reqs.length;
+      await page.getByRole('button', { name: 'Try again' }).click();
+
+      const end = "You've reached the end";
+      for (let i = 0; i < 60 && !(await has(end)); i++) {
+        await toBottom();
+        await page.waitForTimeout(300);
+      }
+      if (!(await has(end))) return `(C) cuộn tới đáy mà đuôi feed không bao giờ nói "${end}" (${await cards()} thẻ)`;
+      if (reqs.length <= tries) return '(C) Thử lại mà không có lời gọi trang kế nào';
+
+      const got = await shownCaps();
+      const dup = got.filter((c, i) => got.indexOf(c) !== i);
+      if (dup.length) return `(D) bài hiện hai lần: ${[...new Set(dup)].join(', ')}`;
+      const miss = want.filter((c) => !got.includes(c));
+      if (miss.length) return `(D) bài bị hở giữa hai trang: ${miss.join(', ')}`;
+      if (JSON.stringify(got) !== JSON.stringify(want)) return `(D) sai thứ tự: ${got.join(' | ')}`;
+      if ((await cards()) !== world.community_posts.length) return `(D) ${await cards()} thẻ cho ${world.community_posts.length} bài`;
+      if (!/^\(created_at\.lt\."[^"]+",and\(created_at\.eq\."[^"]+",id\.lt\."[^"]+"\)\)$/.test(reqs[tries])) {
+        return `(D) không trùng không hở nhưng con trỏ không phải keyset (created_at, id): or=${reqs[tries]}`;
+      }
+
+      const f0 = await frame();
+      const refetch = page.waitForResponse((r) => /\/rest\/v1\/community_posts\?/.test(r.url()) && !new URL(r.url()).searchParams.has('or') && r.request().method() === 'GET', { timeout: 15000 });
+      await page.clock.setFixedTime(Date.now() + 10 * 60_000);
+      await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange', { bubbles: true })));
+      await refetch;
+      await page.waitForTimeout(1500);
+      if (!(await has(cap(44)))) return '(E) làm mới vứt trang đã tải — bài cuối không còn trên màn';
+      if (!(await has(end))) return '(E) làm mới xong đuôi feed không còn là "đã hết"';
+      if ((await cards()) !== world.community_posts.length) return `(E) làm mới xong còn ${await cards()} thẻ`;
+      const f1 = await frame();
+      if (f0 && f1 && f1.top < f0.top - 200) return `(E) làm mới ném khung cuộn lên: y ${f0.top} → ${f1.top}`;
+      return null;
+    },
+  },
+  {
+    /*
       #163: mọi bài có ảnh của thư viện app, người dùng chỉ chọn phong cách.
         (A) màn chia sẻ buổi tập k1 (Bench Press → nhãn `push`): xem trước có
             SẴN một ảnh hợp nội dung — `workout/mono-push.png`, không phải ảnh

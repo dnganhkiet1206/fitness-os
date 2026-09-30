@@ -103,7 +103,7 @@ for (const hookName of ['useDeletePost', 'useBlock', 'useDeleteAllMyPosts']) {
 }
 const patch = community.slice(community.indexOf('function patchPost('), community.indexOf('function useToggle('));
 note('`patchPost` vẫn vá `community_user_posts` (dấu Lưu đổi tại chỗ trong thư viện)',
-  /setQueriesData<FeedPost\[\]>\(\{ queryKey: \['community_user_posts'\] \}/.test(patch),
+  /setQueriesData(<FeedPost\[\]>)?\(\{ queryKey: \['community_user_posts'\] \}/.test(patch),
   'bỏ lưu ngay trong thư viện sẽ không đổi dấu dưới ngón tay');
 
 /* ── fixture ── */

@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,7 @@ import { useAuth } from './use-auth';
 import { useOnlineMutation } from './use-online-mutation';
 import type { TemplateExercise } from './use-library';
 import { now } from '@/lib/offline-class';
+import { type FeedCursor, flatPages, mapPosts, nextCursor, olderThan } from '@/lib/feed-page';
 import type { CommunityArt } from '@/lib/community-art';
 
 /**
@@ -274,14 +275,41 @@ export function useSaveCommunityProfile() {
 
 /* ── feed ───────────────────────────────────────────────────────────────── */
 
+/*
+  Theo TRANG (#20): con trỏ keyset `(created_at, id)` — xem `lib/feed-page.ts`
+  vì sao không `offset`. Trước #20 feed là 30 bài mới nhất và hết; bài thứ 31
+  không có cách nào hiện ra.
+
+  `data` vẫn là MỘT mảng bài (qua `select`), nên màn feed và `useFeedHold` không
+  biết có trang. Trang là mảng thuần — cache đi qua JSON.stringify.
+
+  Khoá có thêm `'pages'`: cache persist trên máy còn một mục cùng khoá cũ mang
+  hình dạng MẢNG; hydrate nó vào một truy vấn theo trang là `data.pages`
+  undefined và feed ném. Khoá mới thì mục cũ không bao giờ được đọc — nó nằm
+  yên dưới cùng tiền tố tới khi hết hạn, không cần bump `CACHE_BUSTER` (thứ vứt
+  cache của cả app).
+
+  Kéo làm mới (`invalidateQueries`) tải lại MỌI trang đang có, từ trang đầu, mỗi
+  trang theo con trỏ của trang vừa về — người đã cuộn ba trang không bị ném về
+  trang một.
+*/
 export function useCommunityFeed(tab: CommunityTab) {
   const { user } = useAuth();
-  return useQuery({
-    queryKey: ['community_feed', user?.id, tab],
+  return useInfiniteQuery({
+    queryKey: ['community_feed', user?.id, tab, 'pages'],
     enabled: !!user,
-    queryFn: async () => {
+    initialPageParam: null as FeedCursor | null,
+    getNextPageParam: (last: FeedPost[]) => nextCursor(last, PAGE) ?? null,
+    select: (d) => flatPages(d.pages),
+    queryFn: async ({ pageParam }) => {
       const me = user!.id;
-      let q = supabase.from('community_posts').select(POST_COLS).order('created_at', { ascending: false }).limit(PAGE);
+      let q = supabase
+        .from('community_posts')
+        .select(POST_COLS)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(PAGE);
+      if (pageParam) q = q.or(olderThan(pageParam));
       if (tab === 'following') {
         const { data: f, error: fErr } = await supabase
           .from('community_follows')
@@ -317,12 +345,10 @@ export function useCommunityPost(id: string | undefined) {
 /** Sửa một bài ở MỌI bộ nhớ đệm đang giữ nó — feed hai tab, trang chi tiết,
     trang hồ sơ — để trái tim đổi ngay dưới ngón tay ở bất cứ đâu. */
 function patchPost(qc: QueryClient, id: string, fn: (p: FeedPost) => FeedPost) {
-  qc.setQueriesData<FeedPost[]>({ queryKey: ['community_feed'] }, (old) =>
-    old?.map((p) => (p.id === id ? fn(p) : p)),
-  );
-  qc.setQueriesData<FeedPost[]>({ queryKey: ['community_user_posts'] }, (old) =>
-    old?.map((p) => (p.id === id ? fn(p) : p)),
-  );
+  /* Hai tiền tố chứa cả mảng lẫn trang (#20) — `mapPosts` hiểu cả hai. */
+  const each = (p: FeedPost) => (p.id === id ? fn(p) : p);
+  qc.setQueriesData({ queryKey: ['community_feed'] }, (old: unknown) => mapPosts(old, each));
+  qc.setQueriesData({ queryKey: ['community_user_posts'] }, (old: unknown) => mapPosts(old, each));
   qc.setQueriesData<FeedPost | null>({ queryKey: ['community_post'] }, (old) =>
     old && old.id === id ? fn(old) : old,
   );
@@ -537,13 +563,24 @@ export type PostKindFilter = PostKind | 'all';
  */
 export function useCommunityUserPosts(userId: string | undefined, kind: PostKindFilter = 'all') {
   const { user } = useAuth();
-  return useQuery({
-    queryKey: ['community_user_posts', user?.id, userId, kind],
+  /* Theo trang như feed (#20), cùng lý do cho `'pages'` trong khoá. */
+  return useInfiniteQuery({
+    queryKey: ['community_user_posts', user?.id, userId, kind, 'pages'],
     enabled: !!user && !!userId,
-    queryFn: async () => {
-      let q = supabase.from('community_posts').select(POST_COLS).eq('author_id', userId!);
+    initialPageParam: null as FeedCursor | null,
+    getNextPageParam: (last: FeedPost[]) => nextCursor(last, PAGE) ?? null,
+    select: (d) => flatPages(d.pages),
+    queryFn: async ({ pageParam }) => {
+      let q = supabase
+        .from('community_posts')
+        .select(POST_COLS)
+        .eq('author_id', userId!)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(PAGE);
       if (kind !== 'all') q = q.eq('kind', kind);
-      const { data, error } = await q.order('created_at', { ascending: false }).limit(PAGE);
+      if (pageParam) q = q.or(olderThan(pageParam));
+      const { data, error } = await q;
       if (error) throw error;
       return hydrate((data ?? []) as PostRow[], user!.id);
     },

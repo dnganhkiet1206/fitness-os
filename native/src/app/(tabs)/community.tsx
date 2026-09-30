@@ -6,6 +6,7 @@ import { CommunityAvatar } from '@/components/ascnd/community-avatar';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { FeedMore, useLoadMore } from '@/components/ascnd/feed-more';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { NewPostsPill } from '@/components/ascnd/new-posts-pill';
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -60,6 +61,8 @@ export default function CommunityScreen() {
      "N bài mới", như X, thay vì chèn lên và đẩy bài đang đọc khỏi ngón tay
      (#160) — xem `lib/feed-hold.ts`. */
   const hold = useFeedHold(tab, feed.data);
+  /* Trang kế tải khi tới gần đáy (#20). Cùng một `onScroll` với viên bài mới. */
+  const more = useLoadMore(feed);
   const challenges = useChallenges();
   const noHero = tab === 'discover' && !!challenges.data && !featuredChallenge(challenges.data);
   const history = useChallengeHistory(noHero);
@@ -78,7 +81,10 @@ export default function CommunityScreen() {
   return (
     <Screen
       refreshable
-      onScroll={hold.onScroll}
+      onScroll={(e) => {
+        hold.onScroll(e);
+        more(e);
+      }}
       overlay={hold.held.length ? <NewPostsPill posts={hold.held} onPress={hold.release} /> : null}
       title={i18n.nCommunityTitle}
       aura={PAGE_TINT.community}
@@ -161,7 +167,9 @@ export default function CommunityScreen() {
       )}
 
       <SegmentPanel segment={tab} order={tabs.map((t) => t.key)}>
-        {feed.isError ? (
+        {/* Trang KẾ hỏng thì bài đã có vẫn ở đó — đuôi feed nói ra và có nút
+            thử lại, không thay cả feed bằng thẻ lỗi (#20). */}
+        {feed.isError && !feed.isFetchNextPageError ? (
           <LoadFailed i18n={i18n} onRetry={() => feed.refetch()} />
         ) : feed.isPending ? (
           <>
@@ -192,6 +200,7 @@ export default function CommunityScreen() {
             {hold.posts.map((p) => (
               <PostCard key={p.id} post={p} />
             ))}
+            <FeedMore q={feed} />
           </View>
         )}
       </SegmentPanel>

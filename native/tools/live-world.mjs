@@ -180,11 +180,10 @@ function night(daysAgo, bedH, bedM, inBedMin, asleepMin, { id, quality, deep, re
   khi hồ sơ lỗi: ô soạn bài, lối vào của cả ba màn chia sẻ, chưa từng hiện
   trong một phép đo web nào mà không có gì báo ra (B tìm ra, #17).
 
-  Chỉ lọc những gì app thật gửi và hiểu chắc chắn. Toán tử khác — `gte`, `lt`,
-  `like`, `or=(…)`, cột lồng `bảng.cột` — được GIỮ NGUYÊN chứ không đoán: lọc
-  sai là giấu hàng khỏi ảnh chụp, tệ hơn không lọc. Riêng `gte`/`lt` còn một
-  lý do nữa: kịch bản "nhật ký ngày khác" trong `live.mjs` ghi rõ nó dựa vào
-  việc chúng KHÔNG được lọc.
+  Chỉ lọc những gì app thật gửi và hiểu chắc chắn. Toán tử khác — `like`, `cs`,
+  cột lồng `bảng.cột` — được GIỮ NGUYÊN chứ không đoán (`gte`/`lt` lọc thật từ
+  #142, `or=(…)` từ #20): lọc
+  sai là giấu hàng khỏi ảnh chụp, tệ hơn không lọc.
 
   So sánh theo chuỗi: URL chỉ chở chuỗi, fixture chở số và boolean, và
   PostgREST cũng so theo dạng chữ của giá trị ở phía này.
@@ -255,10 +254,67 @@ function filterFor(col, raw) {
   return neg ? (r) => !test(r) : test;
 }
 
+/*
+  ── `or=(…)` / `and=(…)` và cây lồng `and(…)` bên trong (#20) ──
+
+  Trước #20 cả hai là RESERVED: bỏ qua. Con trỏ keyset của feed Cộng đồng là
+  `or=(created_at.lt."X",and(created_at.eq."X",id.lt.Y))` — bỏ qua nó thì trang
+  hai lại là trang đầu, và phép đo "không trùng, không hở" qua được trên một
+  app lặp bài vô tận.
+
+  Cùng luật với bộ lọc phẳng: lá nào không hiểu (toán tử lạ, cột lồng `a.b`) thì
+  bỏ qua CẢ biểu thức chứ không bỏ riêng lá ấy — bỏ một lá của `or` là nới, của
+  `and` là siết, đều là đoán. Giá trị trong ngoặc kép bỏ ngoặc, như PostgREST.
+*/
+function splitLogic(s) {
+  const out = [];
+  let depth = 0;
+  let q = false;
+  let cur = '';
+  for (const ch of s) {
+    if (ch === '"') q = !q;
+    if (!q && ch === '(') depth++;
+    if (!q && ch === ')') depth--;
+    if (ch === ',' && depth === 0 && !q) {
+      out.push(cur);
+      cur = '';
+    } else cur += ch;
+  }
+  out.push(cur);
+  return out;
+}
+
+function logicFor(kind, raw) {
+  if (!raw.startsWith('(') || !raw.endsWith(')')) return null;
+  const tests = [];
+  for (const item of splitLogic(raw.slice(1, -1))) {
+    const m = /^(not\.)?(and|or)(\(.*\))$/.exec(item);
+    let t;
+    if (m) {
+      const inner = logicFor(m[2], m[3]);
+      t = inner && (m[1] ? (r) => !inner(r) : inner);
+    } else {
+      const dot = item.indexOf('.');
+      const col = item.slice(0, dot);
+      if (dot < 1 || !/^[a-z_][a-z0-9_]*$/.test(col)) return null;
+      t = filterFor(col, item.slice(dot + 1).replace(/^((?:not\.)?[a-z]+\.)"(.*)"$/, '$1$2'));
+    }
+    if (!t) return null;
+    tests.push(t);
+  }
+  return kind === 'or' ? (r) => tests.some((t) => t(r)) : (r) => tests.every((t) => t(r));
+}
+
 export function applyQuery(rows, url) {
   let out = rows;
 
   for (const [col, raw] of url.searchParams) {
+    const logic = /^(not\.)?(or|and)$/.exec(col);
+    if (logic) {
+      const f = logicFor(logic[2], raw);
+      if (f) out = out.filter(logic[1] ? (r) => !f(r) : f);
+      continue;
+    }
     if (RESERVED.has(col) || col.includes('.')) continue;
     const f = filterFor(col, raw);
     if (f) out = out.filter(f);

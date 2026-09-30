@@ -8,6 +8,7 @@ import { CommunityAvatar } from '@/components/ascnd/community-avatar';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { FeedMore, useLoadMore } from '@/components/ascnd/feed-more';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -63,6 +64,7 @@ export default function CommunityUserScreen() {
   const [kindPick, setKind] = useState<PostKindFilter>('all');
   const kind = kindPick !== 'all' && !(kinds.data ?? []).includes(kindPick) ? 'all' : kindPick;
   const posts = useCommunityUserPosts(id, kind);
+  const more = useLoadMore(posts);
   const follow = useFollow();
   const report = useReport();
   const block = useBlock();
@@ -110,6 +112,7 @@ export default function CommunityUserScreen() {
     <Screen
       back
       refreshable
+      onScroll={more}
       title={p ? `@${p.handle}` : i18n.nCmProfileTitle}
       headerRight={
         p && !u?.isMe ? (
@@ -216,14 +219,19 @@ export default function CommunityUserScreen() {
             </PickRow>
           ) : null}
 
-          {posts.isError ? (
+          {posts.isError && !posts.isFetchNextPageError ? (
             <LoadFailed i18n={i18n} onRetry={() => posts.refetch()} />
           ) : posts.isPending ? (
             <ActivityIndicator color={c.mutedForeground} />
           ) : (posts.data ?? []).length === 0 ? (
             <Text style={styles.none}>{i18n.nCmEmptyDiscover}</Text>
           ) : (
-            (posts.data ?? []).map((post) => <PostCard key={post.id} post={post} />)
+            <>
+              {(posts.data ?? []).map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+              <FeedMore q={posts} />
+            </>
           )}
         </>
       )}

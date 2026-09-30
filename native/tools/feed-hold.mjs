@@ -80,7 +80,9 @@ try {
 const screen = readFileSync(path.join(NATIVE, 'src/app/(tabs)/community.tsx'), 'utf8');
 const WIRING = [
   [/useFeedHold\(tab, feed\.data\)/, 'không còn gọi `useFeedHold(tab, feed.data)`'],
-  [/onScroll=\{hold\.onScroll\}/, '`Screen` không nhận `onScroll={hold.onScroll}` — hook không bao giờ biết người đọc đang ở đâu, nên không bao giờ giữ'],
+  /* Từ #20 `onScroll` của Screen là một hàm gọi CẢ `hold.onScroll(e)` lẫn tải
+     thêm — chấp nhận cả hai dạng, miễn `hold.onScroll` nhận được sự kiện. */
+  [/onScroll=\{hold\.onScroll\}|onScroll=\{\(e\) => \{\s*hold\.onScroll\(e\);/, '`Screen` không đưa sự kiện cuộn tới `hold.onScroll` — hook không bao giờ biết người đọc đang ở đâu, nên không bao giờ giữ'],
   [/\{hold\.posts\.map\(/, 'feed vẽ thứ khác `hold.posts` — bài bị giữ vẫn chèn lên và đẩy bài đang đọc'],
   [/overlay=\{hold\.held\.length \? <NewPostsPill posts=\{hold\.held\} onPress=\{hold\.release\} \/> : null\}/, 'viên "N bài mới" không còn nối vào `hold.held`/`hold.release`'],
 ];

@@ -36,7 +36,7 @@
  *
  * Từ #17 vế 1 kiểm cả bộ lọc `eq`/`neq`/`in`/`is`; từ #142 (29/09) cả lọc
  * khoảng `gt`/`gte`/`lt`/`lte` — trước đó chúng bị bỏ qua lặng lẽ, và mọi truy
- * vấn theo ngày nhận nguyên bảng. Toán tử còn LẠ (`like`, `cs`, `or=`, cột
+ * vấn theo ngày nhận nguyên bảng. Toán tử còn LẠ (`like`, `cs`, cột
  * lồng) vẫn được GIỮ NGUYÊN — một ca dưới đây đòi thế.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
@@ -163,9 +163,44 @@ const CASES = [
     /* Toán tử lạ, cột lồng và `or=` được GIỮ NGUYÊN: lọc sai là giấu hàng khỏi
        ảnh chụp. Ca này từng dùng `gte` làm "toán tử lạ"; từ #142 `gte` được
        lọc thật (xem ca lọc khoảng ở cuối tệp), nên chỗ ấy là `cs`. */
-    name: 'cs, like, or và cột lồng giữ nguyên',
+    name: 'cs, like và cột lồng giữ nguyên',
     rows: [{ id: 'a', d: '2020-01-01', t: 'x' }, { id: 'b', d: '2030-01-01', t: 'y' }],
-    q: 'd=cs.{2025}&t=like.*z*&or=(t.eq.q)&p.k=eq.1',
+    q: 'd=cs.{2025}&t=like.*z*&p.k=eq.1',
+    want: 'a,b',
+  },
+  /* ── or=/and= (#20): con trỏ keyset của feed là một cây `or(…, and(…))`.
+     Trước #20 `or=` bị bỏ qua, nên trang hai của feed là trang đầu. */
+  {
+    name: 'or: lá nào đúng cũng lọt',
+    rows: [{ id: 'a', t: 'x' }, { id: 'b', t: 'y' }, { id: 'c', t: 'z' }],
+    q: 'or=(t.eq.x,t.eq.z)',
+    want: 'a,c',
+  },
+  {
+    name: 'con trỏ keyset: or(lt, and(eq, id.lt)) — hàng cùng mốc chỉ lọt khi id nhỏ hơn',
+    rows: [
+      { id: '5', c: '1999-09-02' }, { id: '4', c: '1999-09-01' }, { id: '3', c: '1999-09-01' },
+      { id: '2', c: '1999-09-01' }, { id: '1', c: '1999-08-30' },
+    ],
+    q: 'or=(c.lt."1999-09-01",and(c.eq."1999-09-01",id.lt."3"))&order=c.desc,id.desc',
+    want: '2,1',
+  },
+  {
+    name: 'giá trị trong ngoặc kép có dấu phẩy và ngoặc không tách lá',
+    rows: [{ id: 'a', t: 'x,(y)' }, { id: 'b', t: 'x' }],
+    q: 'or=(t.eq."x,(y)",t.eq.q)',
+    want: 'a',
+  },
+  {
+    name: 'and= và not.or=',
+    rows: [{ id: 'a', u: 1, k: 1 }, { id: 'b', u: 1, k: 2 }, { id: 'c', u: 2, k: 1 }],
+    q: 'and=(u.eq.1,k.gt.0)&not.or=(k.eq.2)',
+    want: 'a',
+  },
+  {
+    name: 'or: một lá không hiểu thì bỏ qua CẢ biểu thức, không đoán',
+    rows: [{ id: 'a', t: 'x' }, { id: 'b', t: 'y' }],
+    q: 'or=(t.eq.x,t.like.*y*)',
     want: 'a,b',
   },
   {
@@ -794,7 +829,7 @@ if (problems.length) {
   process.exit(1);
 }
 console.log(
-  `máy chủ giả OK — ${CASES.length} ca sắp xếp và lọc (một cột, nhiều cột, NULL hai chiều, nullslast, boolean, limit, eq/in/is/neq, toán tử lạ giữ nguyên, ` +
+  `máy chủ giả OK — ${CASES.length} ca sắp xếp và lọc (một cột, nhiều cột, NULL hai chiều, nullslast, boolean, limit, eq/in/is/neq, toán tử lạ giữ nguyên, or=/and= lồng nhau với ngoặc kép (#20), ` +
     `không-order) đều đúng và không ca nào sắp tại chỗ; ${orderCalls} lượt \`.order()\` trong src/, ` +
     `${checkedTables} cặp bảng·cột có fixture để đối chiếu và mọi cột đều tồn tại trong MỌI hàng; ` +
     'và route giả (`live-server.mjs`, #39) thật sự gọi `applyQuery` để dựng hàng trả về, chứ không chỉ import nó. ' +
