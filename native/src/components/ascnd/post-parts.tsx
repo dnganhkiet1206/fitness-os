@@ -234,10 +234,12 @@ function Action({
       aria-selected={on}
       onPress={onPress}
       style={styles.action}>
+      {/* Icon 22 trên ô chạm 44: đủ hiện diện như mockup/X, vẫn chừa viền chạm.
+          PopIcon của #160 chỉ scale, không phụ thuộc cỡ gốc. */}
       {toggle ? (
-        <PopIcon icon={icon} size={20} color={color} on={on} burst={burst} />
+        <PopIcon icon={icon} size={22} color={color} on={on} burst={burst} />
       ) : (
-        <Icon icon={icon} size={20} color={color} />
+        <Icon icon={icon} size={22} color={color} />
       )}
       {count != null ? <RollingCount value={count} style={styles.actionCount} /> : null}
     </Pressable>
@@ -320,14 +322,16 @@ const stylesFor = makeStyles((c) => ({
   card: { gap: spacing.md },
   head: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   who: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4, minHeight: 44 },
-  whoText: { flex: 1, minWidth: 0, gap: 1 },
+  /* Tên 17 + meta 13: 2px đủ thở, 1px dính vào nhau ở cỡ này. */
+  whoText: { flex: 1, minWidth: 0, gap: 2 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   name: { ...type.headline, color: c.foreground, flexShrink: 1 },
   meta: { ...type.footnote, color: c.mutedForeground },
   moreBtn: { width: 44, height: 44, alignItems: 'flex-end', justifyContent: 'center' },
   caption: { ...type.body, color: c.foreground, lineHeight: 21 },
   actions: { flexDirection: 'row', alignItems: 'center', marginHorizontal: -spacing.sm, marginBottom: -spacing.sm },
-  action: { minWidth: 44, height: 44, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 6 },
+  /* Số đếm thuộc về icon: 4px như X, không phải 6px tách rời. */
+  action: { minWidth: 44, height: 44, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 4 },
   actionCount: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   flex: { flex: 1 },
 }));
