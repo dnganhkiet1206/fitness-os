@@ -3637,6 +3637,66 @@ const SCENARIOS = [
   },
   {
     /*
+      #180: Món của tôi từng là `.order('name').limit(200)` — món thứ 201 theo
+      tên không bao giờ về client, kể cả một món YÊU THÍCH, dù danh sách xếp
+      món yêu thích lên đầu. Thế giới thêm 520 món và một món yêu thích tên
+      "Zz…" (cuối bảng chữ cái), tức phải qua hai trang 500 mới tới:
+        (A) đọc theo trang: offset 0 rồi 500, trên thứ tự (name, id);
+        (B) con số trên phân đoạn "Mine" bằng số món của người xem;
+        (C) món yêu thích "Zz…" đứng TRÊN mọi món thường;
+        (D) lọc "Zz Yến" thì thấy nó, không "No matches".
+    */
+    name: 'Món của tôi: đọc hết mọi món, món yêu thích cuối bảng chữ cái vẫn đứng đầu và lọc được (#180)',
+    route: '/food-list', mode: 'full',
+    async run(page, { world }) {
+      const tpl = world.food_items.find((f) => f.user_id === UID);
+      if (!tpl) return 'tự kiểm: fixture không có món nào của người xem';
+      const FAV = 'Zz Yến mạch sữa chua (#180)';
+      for (let i = 0; i < 520; i++) {
+        world.food_items.push({ ...structuredClone(tpl), id: `fi000000-0000-4000-8000-000000180${String(i).padStart(3, '0')}`,
+          name: `Bột #180 · ${String(i).padStart(3, '0')}`, is_favorite: false });
+      }
+      world.food_items.push({ ...structuredClone(tpl), id: 'fi000000-0000-4000-8000-000000180999', name: FAV, is_favorite: true });
+      const mine = world.food_items.filter((f) => f.user_id === UID).length;
+
+      const reqs = [];
+      await page.route('**/rest/v1/food_items?*', async (route) => {
+        const u = new URL(route.request().url());
+        if (route.request().method() === 'GET' && u.searchParams.get('user_id') === `eq.${UID}`) {
+          reqs.push({ order: u.searchParams.get('order'), offset: u.searchParams.get('offset') ?? '0', limit: u.searchParams.get('limit') });
+        }
+        return route.fallback();
+      });
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+
+      const tops = () => page.evaluate((fav) => {
+        const at = (re) => window.__shown('[aria-label]').filter((e) => re.test(e.getAttribute('aria-label'))).map((e) => e.getBoundingClientRect().top);
+        return { fav: at(new RegExp(`^${fav.replace(/[()#]/g, '\\$&')}, `))[0] ?? null, plain: Math.min(...at(/^Bột #180 · \d{3}, /)) };
+      }, FAV);
+      let t = { fav: null };
+      for (let i = 0; i < 60 && t.fav == null; i++) {
+        await page.waitForTimeout(250);
+        t = await tops();
+      }
+      if (reqs.length < 2 || reqs[0].offset !== '0' || reqs[1].offset !== '500' || !/^name\.asc,id\.asc$/.test(reqs[0].order ?? '')) {
+        return `(A) không đọc theo trang (name, id) offset 0 rồi 500: ${JSON.stringify(reqs)}`;
+      }
+      const seg = await page.getByRole('tab', { name: /^(Mine|Của tôi)$/ }).first().innerText();
+      if (!new RegExp(`\\b${mine}\\b`).test(seg)) return `(B) phân đoạn nói "${seg.replace(/\n/g, ' ')}", phải có ${mine} món`;
+      if (t.fav == null) return `(C) món yêu thích "${FAV}" không có trong danh sách (${mine} món của người xem)`;
+      if (!(t.fav < t.plain)) return `(C) món yêu thích đứng DƯỚI món thường (${Math.round(t.fav)} ≥ ${Math.round(t.plain)})`;
+
+      await page.getByPlaceholder(/^(Filter this list|Lọc trong danh sách)$/).filter({ visible: true }).first().fill('Zz Yến');
+      await page.waitForTimeout(800);
+      const found = await page.evaluate((fav) => window.__shown('[aria-label]').some((e) => (e.getAttribute('aria-label') ?? '').startsWith(`${fav}, `)), FAV);
+      if (!found) return '(D) lọc "Zz Yến" mà không thấy món yêu thích';
+      if (await page.getByText(/^(No matches|Không tìm thấy món nào)$/).filter({ visible: true }).count()) return '(D) lọc "Zz Yến" mà màn nói "No matches"';
+      return null;
+    },
+  },
+  {
+    /*
       #54 (đưa phép đo #47 vào bộ hồi quy): `PickRow scroll` phải cho thấy TRỌN
       ô đang chọn. Đo ở 320 với chữ trong ô phóng to (giả lập Dynamic Type) —
       trước #47: mở `/log-meal?meal=postworkout` thì ô "Sau tập" nằm HẲN ngoài

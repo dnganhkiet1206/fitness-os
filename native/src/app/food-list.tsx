@@ -42,7 +42,7 @@ type Segment = 'mine' | 'recent';
  * ── two segments, not three sections ──
  *
  * What is left is two genuinely different lists: foods you *saved*, and foods
- * you *logged*. Stacked, the second one lives below a list of up to two hundred
+ * you *logged*. Stacked, the second one lives below a list of hundreds of
  * rows, which is not somewhere anybody scrolls to — and "Xem thêm" under Recent
  * on the tab landed at the top of My Foods, a link that answers a different
  * question than the one it was under. Segments make both one tap from the top,
@@ -50,8 +50,9 @@ type Segment = 'mine' | 'recent';
  *
  * ── and a search box ──
  *
- * My Foods holds up to 200. A list that long with no way to narrow it is a
- * scroll, not a list. The filter is local — these rows are already here, and
+ * My Foods holds every food you saved (#180: it used to stop at 200 by name,
+ * and this filter said "No matches" for the 201st). A list that long with no
+ * way to narrow it is a scroll, not a list. The filter is local — these rows are already here, and
  * the tab's search box is the one that queries the database.
  */
 export default function FoodListScreen() {

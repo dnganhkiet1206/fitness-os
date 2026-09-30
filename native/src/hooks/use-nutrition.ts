@@ -12,6 +12,7 @@ import { offlineNow } from '@/lib/offline';
 import { OFFLINE_WRITE_KEY, type OfflineWrite } from '@/lib/offline-write';
 import { toast } from '@/lib/toast';
 import { foldRecentMeals } from '@/lib/recent-meals';
+import { readAllPages } from '@/lib/read-all';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';
 import { RECORD } from '@/lib/offline-class';
@@ -50,22 +51,37 @@ export function useFavoriteFoods() {
   });
 }
 
-/** The user's own manually-entered foods (the "My foods" card list) */
+/** Món của tôi đọc theo trang này, tới HẾT (#180). */
+const MY_FOODS_PAGE = 500;
+
+/**
+ * The user's own manually-entered foods (the "My foods" card list) — ALL of them.
+ *
+ * It was `.order('name').limit(200)`: past two hundred foods, the 201st by name
+ * never reached the client, favourite or not — `useMyFoodsSorted` puts
+ * favourites first, but only among the two hundred it was given, and the
+ * food-list filter answered "No matches" for a food that exists (#180). The
+ * list is shown whole and filtered locally, so it is read whole: page by page
+ * on a total order `(name, id)` until a page comes back short, and past the
+ * ceiling it fails loudly rather than returning part of it.
+ */
 export function useMyFoods() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['my_foods', user?.id],
     enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('food_items')
-        .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
-        .eq('user_id', user!.id)
-        .order('name')
-        .limit(200);
-      if (error) throw error;
-      return (data ?? []) as FoodItemRow[];
-    },
+    queryFn: async () =>
+      (await readAllPages(
+        (from, to) =>
+          supabase
+            .from('food_items')
+            .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
+            .eq('user_id', user!.id)
+            .order('name')
+            .order('id')
+            .range(from, to),
+        MY_FOODS_PAGE,
+      )) as FoodItemRow[],
   });
 }
 
