@@ -614,7 +614,7 @@ CASES += [
        new="  v_pat := replace(replace(v_q, '\\', '\\\\'), '_', '\\_');", expect='P6 '),
   dict(suite=FP, id='P7', mig=FPM, how="không thoát '_'",
        old="  v_pat := replace(replace(replace(v_q, '\\', '\\\\'), '%', '\\%'), '_', '\\_');",
-       new="  v_pat := replace(replace(v_q, '\\', '\\\\'), '%', '\\\\%');", expect='P7 '),
+       new="  v_pat := replace(replace(v_q, '\\', '\\\\'), '%', '\\%');", expect='P7 '),
   dict(suite=FP, id='P8', mig=FPM, how='nới trần 30 → 31', old='  LIMIT 30;', new='  LIMIT 31;', expect='P8 '),
   dict(suite=FP, id='P9', mig=FPM, how='cũ nhất đứng đầu',
        old='  ORDER BY p.created_at DESC, p.id', new='  ORDER BY p.created_at ASC, p.id', expect='P9 '),

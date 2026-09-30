@@ -10,9 +10,9 @@
 -- (P10–P12 đứng TRƯỚC P4 vì thế).
 \set ON_ERROR_STOP 1
 BEGIN;
-\pset ME '''fefefefe-0000-0000-0000-000000000101'''
-\pset NEU '''fefefefe-0000-0000-0000-000000000108'''
-\pset HID '''fefefefe-0000-0000-0000-000000000107'''
+\set ME '''fefefefe-0000-0000-0000-000000000101'''
+\set NEU '''fefefefe-0000-0000-0000-000000000108'''
+\set HID '''fefefefe-0000-0000-0000-000000000107'''
 INSERT INTO auth.users SELECT ('fefefefe-0000-0000-0000-0000000001' || lpad(g::text, 2, '0'))::uuid FROM generate_series(1, 8) g;
 
 CREATE OR REPLACE FUNCTION pg_temp.who(u text) RETURNS void LANGUAGE sql AS $$ SELECT set_config('request.jwt.claim.sub', u, false), set_config('request.jwt.claim.role', 'authenticated', false) $$;
