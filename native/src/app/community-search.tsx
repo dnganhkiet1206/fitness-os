@@ -1,7 +1,8 @@
 import { useLocalSearchParams } from 'expo-router';
-import { BadgeCheck, ChefHat, Search, UserPlus, X } from 'lucide-react-native';
+import { BadgeCheck, ChefHat, FileText, Search, UserPlus, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, TextInput, View } from 'react-native';
+import Animated, { useReducedMotion } from 'react-native-reanimated';
 
 import { CommunityAvatar } from '@/components/ascnd/community-avatar';
 import { EmptyState } from '@/components/ascnd/empty-state';
@@ -11,17 +12,20 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PostCard } from '@/components/ascnd/post-card';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
-import { SegmentPanel, Segmented } from '@/components/ascnd/segmented';
+import { SEGMENT_SWAP, SegmentPanel, Segmented } from '@/components/ascnd/segmented';
+import { SkeletonBlock } from '@/components/ascnd/skeleton';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import {
   type CommunityAuthor,
+  type FeedPost,
   searchTerm,
   useFindRecipes,
   useFollow,
   useFollowSuggestions,
   useSearchPeople,
+  useSearchPosts,
 } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
@@ -49,19 +53,30 @@ import { fillCopy } from '@/lib/copy-fill';
  *
  * ── Công thức (#43) ──
  *
- * Cùng một ô tìm, hai kết quả: đổi phân đoạn thì chữ đã gõ ở lại. Công thức
+ * Cùng một ô tìm, ba kết quả: đổi phân đoạn thì chữ đã gõ ở lại. Công thức
  * tìm theo tên món, không phân biệt dấu (server gập cả hai phía). Mỗi kết quả
  * là ĐÚNG cái thẻ trên feed (`PostCard`), như Thư viện Đã lưu: công thức là thứ
  * DÙNG được, nên kết quả tìm mang luôn "Thêm vào bữa ăn". Không có gợi ý khi ô
  * trống — chỉ một câu nói tìm được gì và gõ thế nào. `?mode=recipe` mở thẳng
  * phân đoạn Công thức.
+ *
+ * ── Bài viết (C) ──
+ *
+ * Phân đoạn thứ ba: tìm trong chú thích người viết và tên trong payload (tên
+ * buổi tập, tên món, tiêu đề tiến trình), không phân biệt dấu — cùng một máy
+ * tìm như công thức (`community_find_posts`). Kết quả là `PostCard` thật, với
+ * skeleton đúng hình thẻ khi đang tải và một cái fade vào so le nhẹ khi kết quả
+ * MỚI xuất hiện (không chạy lại khi danh sách chỉ đổi tim/lưu, vì key theo
+ * post.id). Reduce Motion: hiện ngay, không fade.
  */
 export default function CommunitySearchScreen() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const params = useLocalSearchParams<{ mode?: string }>();
-  const [mode, setMode] = useState<'people' | 'recipe'>(params.mode === 'recipe' ? 'recipe' : 'people');
+  const [mode, setMode] = useState<'people' | 'recipe' | 'posts'>(
+    params.mode === 'recipe' ? 'recipe' : params.mode === 'posts' ? 'posts' : 'people',
+  );
   const [q, setQ] = useState('');
   const [term, setTerm] = useState('');
   useEffect(() => {
@@ -70,10 +85,12 @@ export default function CommunitySearchScreen() {
   }, [q]);
 
   const recipes = mode === 'recipe';
+  const posts = mode === 'posts';
   const searching = searchTerm(term).length >= 2;
   /* Chỉ hỏi server cho phân đoạn đang mở. */
-  const results = useSearchPeople(recipes ? '' : term);
+  const results = useSearchPeople(!recipes && !posts ? term : '');
   const recipeHits = useFindRecipes(recipes ? term.trim() : '');
+  const postHits = useSearchPosts(posts ? term.trim() : '');
   const suggestions = useFollowSuggestions();
   const follow = useFollow();
 
@@ -82,9 +99,11 @@ export default function CommunitySearchScreen() {
 
   const list = searching ? results : suggestions;
   const rows = (list.data ?? []) as (CommunityAuthor & { i_follow?: boolean; recent_posts?: number })[];
+  const title = posts ? i18n.nCxPostTitle : recipes ? i18n.nSrRecipeTitle : i18n.nSrTitle;
+  const placeholder = posts ? i18n.nCxPostPlaceholder : recipes ? i18n.nSrRecipePlaceholder : i18n.nSrPlaceholder;
 
   return (
-    <Screen back refreshable title={recipes ? i18n.nSrRecipeTitle : i18n.nSrTitle}>
+    <Screen back refreshable title={title}>
       <Segmented
         variant="capsule"
         value={mode}
@@ -92,6 +111,7 @@ export default function CommunitySearchScreen() {
         options={[
           { key: 'people', label: i18n.nSrPeople },
           { key: 'recipe', label: i18n.nSrRecipes },
+          { key: 'posts', label: i18n.nCxPosts },
         ]}
       />
       <View style={styles.field}>
@@ -99,14 +119,14 @@ export default function CommunitySearchScreen() {
         <TextInput
           value={q}
           onChangeText={setQ}
-          placeholder={recipes ? i18n.nSrRecipePlaceholder : i18n.nSrPlaceholder}
+          placeholder={placeholder}
           placeholderTextColor={c.mutedForeground}
           autoFocus
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
           maxLength={40}
-          accessibilityLabel={recipes ? i18n.nSrRecipePlaceholder : i18n.nSrPlaceholder}
+          accessibilityLabel={placeholder}
           style={styles.input}
         />
         {q ? (
@@ -124,29 +144,40 @@ export default function CommunitySearchScreen() {
       {!searching && searchTerm(q).length === 1 ? <Text style={styles.hint}>{i18n.nSrMin}</Text> : null}
 
       {recipes ? (
-        !searching ? (
-          <GlassCard>
-            <EmptyState icon={ChefHat} title={i18n.nSrRecipeIntro} hint={i18n.nSrRecipeIntroHint} />
-          </GlassCard>
-        ) : recipeHits.isError ? (
-          <LoadFailed i18n={i18n} onRetry={() => recipeHits.refetch()} />
-        ) : recipeHits.isPending ? (
-          <ActivityIndicator color={c.mutedForeground} style={styles.loading} />
-        ) : (recipeHits.data ?? []).length === 0 ? (
-          <GlassCard>
-            <EmptyState icon={Search} title={fillCopy(i18n.nSrRecipeNone, { q: term.trim() })} hint={i18n.nSrRecipeNoneHint} />
-          </GlassCard>
-        ) : (
-          (recipeHits.data ?? []).map((post) => <PostCard key={post.id} post={post} />)
-        )
+        <PostHits
+          hits={recipeHits}
+          searching={searching}
+          introIcon={ChefHat}
+          introTitle={i18n.nSrRecipeIntro}
+          introHint={i18n.nSrRecipeIntroHint}
+          noneTitle={fillCopy(i18n.nSrRecipeNone, { q: term.trim() })}
+          noneHint={i18n.nSrRecipeNoneHint}
+          onRetry={() => recipeHits.refetch()}
+        />
       ) : null}
 
-      {!recipes && !searching ? <Text style={styles.heading}>{i18n.nSrSuggested}</Text> : null}
+      {posts ? (
+        <PostHits
+          hits={postHits}
+          searching={searching}
+          introIcon={FileText}
+          introTitle={i18n.nCxPostIntro}
+          introHint={i18n.nCxPostIntroHint}
+          noneTitle={fillCopy(i18n.nCxPostNone, { q: term.trim() })}
+          noneHint={i18n.nCxPostNoneHint}
+          onRetry={() => postHits.refetch()}
+        />
+      ) : null}
 
-      {recipes ? null : list.isError ? (
+      {!recipes && !posts && !searching ? <Text style={styles.heading}>{i18n.nSrSuggested}</Text> : null}
+
+      {recipes || posts ? null : list.isError ? (
         <LoadFailed i18n={i18n} onRetry={() => list.refetch()} />
       ) : list.isPending && (searching || !suggestions.data) ? (
-        <ActivityIndicator color={c.mutedForeground} style={styles.loading} />
+        <>
+          <SkeletonBlock height={64} />
+          <SkeletonBlock height={64} />
+        </>
       ) : rows.length === 0 ? (
         <GlassCard>
           {searching ? (
@@ -211,6 +242,79 @@ export default function CommunitySearchScreen() {
   );
 }
 
+/**
+ * Kết quả tìm dạng thẻ bài — dùng chung cho Công thức và Bài viết.
+ *
+ * Đang tải thì skeleton đúng hình thẻ (như feed), không phải con quay: con
+ * quay không nói gì về hình dạng thứ sắp tới. Kết quả MỚI fade vào so le nhẹ
+ * — cùng một cái fade với đổi phân đoạn (`SEGMENT_SWAP`), không thêm một ngôn
+ * ngữ chuyển động mới; delay chặn ở thẻ thứ 8 để gõ nhanh không phải chờ cả
+ * đoàn. Vì key theo post.id, đổi tim/lưu trên một thẻ không chạy lại animation.
+ * Reduce Motion: hiện ngay tại chỗ.
+ */
+function PostHits({
+  hits,
+  searching,
+  introIcon,
+  introTitle,
+  introHint,
+  noneTitle,
+  noneHint,
+  onRetry,
+}: {
+  hits: ReturnType<typeof useFindRecipes>;
+  searching: boolean;
+  introIcon: typeof ChefHat;
+  introTitle: string;
+  introHint: string;
+  noneTitle: string;
+  noneHint: string;
+  onRetry: () => void;
+}) {
+  const i18n = useI18n();
+  if (!searching) {
+    return (
+      <GlassCard>
+        <EmptyState icon={introIcon} title={introTitle} hint={introHint} />
+      </GlassCard>
+    );
+  }
+  if (hits.isError) {
+    return <LoadFailed i18n={i18n} onRetry={onRetry} />;
+  }
+  if (hits.isPending) {
+    return (
+      <>
+        <SkeletonBlock height={320} />
+        <SkeletonBlock height={320} />
+      </>
+    );
+  }
+  if ((hits.data ?? []).length === 0) {
+    return (
+      <GlassCard>
+        <EmptyState icon={Search} title={noneTitle} hint={noneHint} />
+      </GlassCard>
+    );
+  }
+  return (
+    <>
+      {(hits.data ?? []).map((post, i) => (
+        <ResultPost key={post.id} post={post} index={i} />
+      ))}
+    </>
+  );
+}
+
+function ResultPost({ post, index }: { post: FeedPost; index: number }) {
+  const reduce = useReducedMotion();
+  return (
+    <Animated.View entering={reduce ? undefined : SEGMENT_SWAP.delay(Math.min(index, 8) * 45)}>
+      <PostCard post={post} />
+    </Animated.View>
+  );
+}
+
 const stylesFor = makeStyles((c, m) => ({
   field: {
     flexDirection: 'row',
@@ -224,7 +328,6 @@ const stylesFor = makeStyles((c, m) => ({
   input: { ...type.body, flex: 1, color: c.foreground, paddingVertical: spacing.sm },
   hint: { ...type.footnote, color: c.mutedForeground, paddingHorizontal: spacing.xs },
   heading: { ...type.headline, color: c.foreground, marginTop: spacing.xs },
-  loading: { marginVertical: spacing.lg },
   list: { paddingVertical: spacing.xs },
   /*
     Nút Theo dõi XUỐNG DÒNG khi cột tên hẹp hơn 150 (#109). Đo ở 320 với chữ

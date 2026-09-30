@@ -167,7 +167,13 @@ function PostActions({ post, onComment, shareText }: { post: FeedPost; onComment
         onColor={c.readinessRed}
         toggle
         burst
-        onPress={() => like.mutate({ postId: post.id, on: !post.liked })}
+        /* Rung nhẹ đúng lúc tim nảy — nút này là Pressable trần, không phải
+           PressScale, nên không có haptic nào khác để thành rung kép. Chỉ rung
+           khi BẬT (thích), bỏ thích thì im như X. */
+        onPress={() => {
+          if (!post.liked) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          like.mutate({ postId: post.id, on: !post.liked });
+        }}
       />
       <Action icon={MessageCircle} label={i18n.nCmComment} count={post.comment_count} onPress={onComment} />
       <View style={styles.flex} />

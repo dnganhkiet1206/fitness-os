@@ -2048,6 +2048,14 @@ export type Database = {
           post_id: string
         }[]
       }
+      /* Tìm bài viết theo chú thích + tên (C): CHỈ trả ID — app đọc bài qua
+         RLS. Xem `20260930220000_community_find_posts.sql`. */
+      community_find_posts: {
+        Args: { p_q: string }
+        Returns: {
+          post_id: string
+        }[]
+      }
       community_search_profiles: {
         Args: { p_q: string }
         Returns: {

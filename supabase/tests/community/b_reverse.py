@@ -98,6 +98,7 @@ COVERAGE_OK = {
                '`SEARCH_CASES=/khong-co python3 b_reverse.py search_shared` thì mọi ca đỏ ở SC0.',
     },
     'find_recipes': {'F16': _GRANT},
+    'find_posts': {'P16': _GRANT},
     'fn_privilege': {
         'FP0': 'đối chứng của chính PHÉP NỐI catalog (pg_depend ↔ pg_policy), không của migration nào: '
                'mọi migration đều có policy gọi auth.uid().',
