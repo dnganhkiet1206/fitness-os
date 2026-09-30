@@ -335,6 +335,20 @@ link đúng project ở bước 1b:
 supabase db push
 ```
 
+### Đặt tên migration mới
+
+Timestamp trong tên file **không lấy theo ngày thật** — các migration của repo
+đã vượt ngày thật (tới tận 04/10), nên một file đặt theo hôm nay sẽ rơi vào
+GIỮA lịch sử và `supabase db push` từ chối (#183). Quy ước:
+
+```
+timestamp_mới = max(timestamp các file đã có) + 1 giờ
+```
+
+Ví dụ max hiện có là `20261004120000` thì file mới đặt `20261004130000_....sql`.
+Bước cổng `thứ tự migration` (`native/tools/migration-timestamp.mjs`) kiểm điều
+này trên mọi file chưa commit: timestamp không lớn hơn max đã có thì đỏ.
+
 Đó là con đường đúng. Danh sách dưới đây để **đối chiếu** — nếu dựng schema
 bằng tay thì thiếu một bảng là mất nguyên một màn hình. Kiểu dữ liệu đầy đủ ở
 `src/integrations/supabase/types.ts`.

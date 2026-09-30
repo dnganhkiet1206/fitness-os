@@ -265,6 +265,7 @@ const STEPS = [
      còn 4,04:1 — dưới sàn, suốt từ khi ô macro ra đời. */
   ['nền của chữ mờ', 'node', ['tools/muted-ground.mjs']],
   ['quyền của migration', 'node', ['tools/migration-privileges.mjs']],
+  ['thứ tự migration', 'node', ['tools/migration-timestamp.mjs']],
   ['deck thẻ', 'node', ['tools/card-deck.mjs']],
   ['tài liệu nối backend', 'node', ['tools/backend-doc.mjs']],
   ['vùng chạm', 'node', ['tools/tap-targets.mjs']],
