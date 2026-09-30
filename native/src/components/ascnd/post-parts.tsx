@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { usePathname } from 'expo-router';
-import { BadgeCheck, Bookmark, Heart, MessageCircle, MoreHorizontal, Share2 } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, Heart, MessageCircle, MoreHorizontal, Share as ShareIcon } from 'lucide-react-native';
 import type { ReactNode } from 'react';
 import { Alert, Pressable, Share, Text, View } from 'react-native';
 
@@ -186,7 +186,7 @@ function PostActions({ post, onComment, shareText }: { post: FeedPost; onComment
         onPress={toggleSave}
       />
       <Action
-        icon={Share2}
+        icon={ShareIcon}
         label={i18n.nCmShare}
         onPress={() => {
           Haptics.selectionAsync();
@@ -241,7 +241,11 @@ function Action({
       ) : (
         <Icon icon={icon} size={22} color={color} />
       )}
-      {count != null ? <RollingCount value={count} style={styles.actionCount} /> : null}
+      {count != null ? (
+        /* Số đếm đi theo màu trạng thái như X: tim đã thích thì "86" đỏ cùng
+           tim (mockup), chưa thích thì xám. Chỉ nút Thích có cả hai. */
+        <RollingCount value={count} style={[styles.actionCount, on && onColor ? { color: onColor } : null]} />
+      ) : null}
     </Pressable>
   );
 }
