@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { BadgeCheck, Bookmark, MoreHorizontal, Trophy, UserRound } from 'lucide-react-native';
@@ -74,7 +74,7 @@ export default function CommunityUserScreen() {
 
   const menu = () => {
     if (!p) return;
-    Haptics.selectionAsync();
+    Haptics.selection();
     Alert.alert(p.display_name, undefined, [
       {
         text: i18n.nCmReport,

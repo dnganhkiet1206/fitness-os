@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import type {
   SwipeableMethods,
@@ -803,7 +803,7 @@ export function SwipeRow({
       }
       if (buzzed.current) return;
       buzzed.current = true;
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      void Haptics.light();
     },
     [firstLeft, full, i18nCancel],
   );
@@ -838,7 +838,7 @@ export function SwipeRow({
       if (armed.current === on) return;
       armed.current = on;
       full.value = withSpring(on ? 1 : 0, spring(0.34, BOUNCE.bouncy));
-      if (on) void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      if (on) void Haptics.medium();
     },
     [full],
   );

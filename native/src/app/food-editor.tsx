@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { Check, Trash2 } from 'lucide-react-native';
@@ -106,7 +106,7 @@ export default function FoodEditorSheet() {
   const canSave = name.trim().length > 0 && !saving && !saved;
 
   const save = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     const data: FoodFormData = {
       name: name.trim(),
       brand: brand.trim(),
@@ -119,7 +119,7 @@ export default function FoodEditorSheet() {
     };
     const opts = {
       onSuccess: () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Haptics.success();
         nav.back();
         toast.success(isEdit ? i18n.foodUpdated : i18n.foodAdded);
       },
@@ -139,7 +139,7 @@ export default function FoodEditorSheet() {
         onPress: () =>
           remove.mutate(id, {
             onSuccess: () => {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Haptics.success();
               nav.back();
               toast.success(i18n.foodDeleted);
             },
@@ -188,7 +188,7 @@ export default function FoodEditorSheet() {
             <PressScale
               style={styles.autoCalcBtn}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setKcal(String(calcKcal));
               }}>
               <Text style={styles.autoCalcText}>{i18n.foodAutoCalc} ({calcKcal})</Text>

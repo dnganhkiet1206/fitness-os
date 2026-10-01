@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { supabase } from '@/integrations/supabase/client';
@@ -219,7 +219,7 @@ export function useCheckAwards() {
     */
     if (error && !isDuplicateAward(error)) throw error;
     if (!error) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       // Fire the confetti overlay in the user's language
       enqueueAward({
         title: text.title[lang],
@@ -826,7 +826,7 @@ export function useGroceryMutations() {
        nên trước đây nó rung HAI lần: một lúc chạm, một khi mạng xong. Nay chỉ
        còn cái ở đây, và nó phục vụ cả hai chỗ gọi. */
     onMutate: () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.light();
     },
     /* Ba lệnh ghi của danh sách đi chợ đều BÁO khi hỏng (#143). Trước đây cả
        ba im lặng và không chỗ gọi nào truyền `onError`: thêm hỏng thì chữ vừa
@@ -848,7 +848,7 @@ export function useGroceryMutations() {
    */
   const toggle = {
     set(id: string, checked: boolean) {
-      Haptics.selectionAsync();
+      Haptics.selection();
       const rows = queryClient.getQueryData<GroceryRow[]>(['grocery_items', user?.id]);
       const server = !!rows?.find((g) => g.id === id)?.checked;
       setState({

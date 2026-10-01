@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useEffect, useId, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
@@ -436,7 +436,7 @@ export function WaterChart({
                 accessibilityLabel={`${dayLabel(d.date, lang, 'long')}, ${volumeText(d.total, unit)}`}
                 style={styles.zone}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   setPicked((p) => (p === d.date ? null : d.date));
                 }}
               />

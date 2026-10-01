@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { Coins, Sparkles, X } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -213,12 +213,12 @@ export default function ShopScreen() {
     // Level-locked items cannot be bought until the buddy gets there (the card
     // shows the lock, but guard here too). TEST_UNLOCK_ALL ignores the gate.
     if (!TEST_UNLOCK_ALL && item.unlockLevel && level < item.unlockLevel) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Haptics.warning();
       toast.warning(i18n.nRoomLockLevel.replace('{n}', String(item.unlockLevel)));
       return;
     }
     if (!TEST_UNLOCK_ALL && balance < item.price) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Haptics.warning();
       toast.warning(i18n.nRoomNotEnough);
       return;
     }
@@ -242,11 +242,11 @@ export default function ShopScreen() {
       being that here there is nothing to promise.
     */
     if (offlineNow()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Haptics.warning();
       toast.warning(i18n.nShopOffline);
       return;
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.medium();
     setBuyingKey(item.key);
     buy.mutate(item, {
       onSuccess: () => toast.success(i18n.nRoomBought),
@@ -264,7 +264,7 @@ export default function ShopScreen() {
    * the balance has changed.
    */
   const claimSet = (id: string, amount: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.medium();
     claim.mutate(
       { refKey: collectionRefKey(id), amount, reason: `set:${id}` },
       {
@@ -339,7 +339,7 @@ export default function ShopScreen() {
         <CategoryRow
           current={cat}
           onPick={(c) => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setCat(c);
             setIndex(0);
           }}
@@ -369,7 +369,7 @@ export default function ShopScreen() {
               <PressScale
                 style={styles.emptyClosetBtn}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   setTab('outfit');
                   setIndex(0);
                 }}>
@@ -392,7 +392,7 @@ export default function ShopScreen() {
             buyingKey={buyingKey}
             onBuy={buyItem}
             onToggleEquip={(key, next) => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               // Wearing is the event the pose is a reaction to. Taking off is
               // not — there is nothing new to look down at.
               if (next) setWearTick((n) => n + 1);
@@ -410,7 +410,7 @@ export default function ShopScreen() {
         <PressScale
           style={styles.setsBanner}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setCollectionsOpen(true);
           }}>
           <View style={styles.setsChest}>

@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useRootNavigationState } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { X } from 'lucide-react-native';
@@ -56,11 +56,11 @@ export default function ScanBarcodeScreen() {
   const onScanned = async ({ data }: { data: string }) => {
     if (lockedRef.current) return;
     lockedRef.current = true;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.medium();
     setStatus('looking-up');
     const food = await lookupBarcode(data, lang).catch(() => null);
     if (food) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       setPendingScan(food);
       /* Same rule as the photo scanner: the destination is worked out, not
          passed in. This screen never took a parameter at all, so every barcode
@@ -68,7 +68,7 @@ export default function ScanBarcodeScreen() {
       if (stackHasMealSheet(navState)) nav.back();
       else nav.replace('/log-meal');
     } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Haptics.warning();
       setStatus('not-found');
       setTimeout(() => {
         lockedRef.current = false;

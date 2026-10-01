@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Check, Plus, Search, X } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -177,7 +177,7 @@ export function MealPlanWizard({
 
   const submitPlan = () => {
     if (!name.trim() || createPlan.isPending) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     createPlan.mutate(
       { name: name.trim(), goal, meals_per_day: mealsPerDay },
       {
@@ -307,7 +307,7 @@ export function MealPlanWizard({
           disabled={!plan && (!name.trim() || createPlan.isPending)}
           onPress={() => {
             if (plan) {
-              Haptics.selectionAsync();
+              Haptics.selection();
               onClose();
             } else {
               submitPlan();
@@ -367,7 +367,7 @@ export function MealPlanWizard({
                 <Segmented
                   value={goal}
                   onChange={(k) => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     setGoal(k);
                   }}
                   options={[
@@ -382,7 +382,7 @@ export function MealPlanWizard({
                 <Segmented
                   value={String(mealsPerDay)}
                   onChange={(k) => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     setMealsPerDay(Number(k));
                   }}
                   options={MEALS_PER_DAY.map((n) => ({ key: String(n), label: String(n) }))}
@@ -435,7 +435,7 @@ export function MealPlanWizard({
                     label={dayLabel(d)}
                     on={day === d}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      Haptics.selection();
                       setDay(d);
                     }}
                   />
@@ -451,7 +451,7 @@ export function MealPlanWizard({
                     label={mealLabel(m)}
                     on={meal === m}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      Haptics.selection();
                       setMeal(m);
                     }}
                   />

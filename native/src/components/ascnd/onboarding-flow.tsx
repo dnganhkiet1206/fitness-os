@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Check, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -278,7 +278,7 @@ export function OnboardingFlow() {
     (at === 'experience' && !trainingLevel);
 
   const hop = (d: 1 | -1) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     let n = step + d;
     /* Màn vắng mặt thì bước qua nó ở CẢ HAI chiều — nếu không thì nút Quay lại
        dẫn người ta tới một câu hỏi họ chưa từng thấy. */
@@ -307,7 +307,7 @@ export function OnboardingFlow() {
   };
 
   const connectHealth = async () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     const from = step;
     /* No error path. A refusal is an answer, not a failure, and the app works
        without it — telling somebody off for declining is how the next prompt
@@ -358,7 +358,7 @@ export function OnboardingFlow() {
       if (error) throw error;
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
     },
     onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
@@ -727,7 +727,7 @@ export function OnboardingFlow() {
                     activityLevel === a.val && styles.rowOn,
                   ]}
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     setActivityLevel(a.val);
                   }}>
                   <View style={styles.rowText}>
@@ -906,7 +906,7 @@ export function OnboardingFlow() {
         disabled={statsBad || finish.isPending}
         legal={i18n.obReadyLegal}
         onLegal={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           setLegalTab('terms');
         }}>
         {panes}
@@ -981,7 +981,7 @@ function HeightBody({
     Math.min(count - 1, Math.round(displayHeight(Number(cm) || 0, unit) * 10) - min10),
   );
   const pick = useCallback(() => {
-    Haptics.selectionAsync();
+    Haptics.selection();
   }, []);
   const { value, listRef, onIndex, onContentSizeChange } = useRulerIndex({
     seedIndex: seed,
@@ -1046,7 +1046,7 @@ function HeightBody({
           options={UNIT_H}
           value={unit}
           onChange={(u) => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             onUnit(u);
           }}
           compact
@@ -1154,7 +1154,7 @@ function WeightBody({
           options={UNIT_W}
           value={unit}
           onChange={(u) => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             onUnit(u);
           }}
           compact
@@ -1251,7 +1251,7 @@ function LegalSheet({
               aria-selected={tab === t.key} // web không dịch accessibilityState ra aria-selected (#99)
               style={[styles.legalTab, tab === t.key && styles.legalTabOn]}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 onTab(t.key);
               }}>
               <Text style={[styles.legalTabText, tab === t.key && styles.legalTabTextOn]}>

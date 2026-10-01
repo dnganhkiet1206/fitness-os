@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Minus, Plus } from 'lucide-react-native';
 import { useEffect } from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
@@ -140,7 +140,7 @@ export function RestTimer({
   const card = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
 
   const bump = (delta: number) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     onAdjust(delta);
   };
 

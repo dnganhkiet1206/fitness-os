@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { CheckCircle2, ChevronLeft, ChevronRight, Dumbbell, Moon, Plus, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -340,7 +340,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
   };
 
   const step = (by: number) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setWeekOffset((o) => Math.max(-WEEKS_BACK, Math.min(WEEKS_FORWARD, o + by)));
   };
 
@@ -545,7 +545,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                 onPress={() => {
                   const day = picking;
                   if (day === null) return;
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.light();
                   close();
                   nav.push({ pathname: '/workout-builder', params: { assignDay: String(day) } });
                 }}>

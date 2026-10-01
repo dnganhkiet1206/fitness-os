@@ -31,8 +31,10 @@
  *   impact     — hai vật va nhau, một thứ vừa khớp vào chỗ
  *   notification — KẾT QUẢ của một việc: xong, hỏng, cảnh báo
  *
- *     notificationAsync trong onSuccess   27 chỗ   ← ĐÚNG, đó là kết quả
- *     selectionAsync / impactAsync        5 chỗ    ← muộn, theo định nghĩa
+ *     success()/warning()/error() trong onSuccess   27 chỗ   ← ĐÚNG, đó là kết quả
+ *     selection()/light()/medium()/heavy()              5 chỗ    ← muộn, theo định nghĩa
+ *
+ * (Tên là tên của wrapper `@/lib/haptics`; nghĩa theo Apple không đổi.)
  *
  * "Lựa chọn đang đổi" xảy ra lúc ngón tay chạm. Đặt nó sau một lượt mạng là
  * nói sai thời điểm của chính thứ nó đại diện. Nên luật chỉ cấm hai loại đầu,
@@ -54,9 +56,11 @@ import { execFileSync } from 'node:child_process';
 
 import { NATIVE } from './lib/stack.mjs';
 
-/* Hai loại này là phản hồi cho CHÍNH cú chạm; loại thứ ba báo kết quả. */
-const AT_TAP = ['selectionAsync', 'impactAsync'];
-const AT_RESULT = 'notificationAsync';
+/* Hai loại này là phản hồi cho CHÍNH cú chạm; loại thứ ba báo kết quả.
+   Tên là tên của wrapper `@/lib/haptics` (xem `src/lib/haptics.ts`),
+   không phải tên gốc của expo-haptics. */
+const AT_TAP = ['selection', 'light', 'medium', 'heavy'];
+const AT_RESULT = ['success', 'warning', 'error'];
 
 const problems = [];
 const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', 'src'], {
@@ -92,7 +96,7 @@ for (const rel of files) {
   const src = strip(readFileSync(path.join(NATIVE, rel), 'utf8'));
   for (const cb of resultCallbacks(src)) {
     scanned++;
-    if (cb.body.includes(`Haptics.${AT_RESULT}`)) allowed++;
+    if (AT_RESULT.some((k) => cb.body.includes(`Haptics.${k}()`))) allowed++;
     for (const kind of AT_TAP) {
       if (!cb.body.includes(`Haptics.${kind}`)) continue;
       const line = src.slice(0, cb.at).split('\n').length;
@@ -100,7 +104,7 @@ for (const rel of files) {
         `${rel}:${line} \`Haptics.${kind}\` nằm trong \`${cb.name}\` — tức nó nổ khi MÁY CHỦ trả lời, `
           + 'muộn hơn ngón tay hàng trăm mili-giây. Theo định nghĩa của Apple, `selection` là phản hồi cho '
           + 'một lựa chọn ĐANG đổi và `impact` là hai vật vừa va nhau; cả hai xảy ra lúc chạm. Chuyển nó '
-          + `sang \`onMutate\`. (Báo kết quả một việc thì dùng \`${AT_RESULT}\`, và ở \`${cb.name}\` nó đúng chỗ — `
+          + `sang \`onMutate\`. (Báo kết quả một việc thì dùng \`Haptics.${AT_RESULT.join('()`/`Haptics.')}()\`, và ở \`${cb.name}\` nó đúng chỗ — `
           + 'luật này không đụng tới.)',
       );
     }
@@ -118,7 +122,7 @@ if (problems.length) {
 }
 console.log(
   `phản hồi chạm OK — quét ${scanned} callback \`onSuccess\`/\`onSettled\`: không chỗ nào bắn `
-    + `\`${AT_TAP.join('`/`')}\` ở đó, trong khi ${allowed} chỗ bắn \`${AT_RESULT}\` và được để yên. `
+    + `\`Haptics.${AT_TAP.join('()`/`Haptics.')}()\` ở đó, trong khi ${allowed} chỗ bắn \`Haptics.${AT_RESULT.join('()`/`Haptics.')}()\` và được để yên. `
     + 'Ranh giới ấy là của Apple: `selection`/`impact` là phản hồi cho cú chạm nên phải nổ lúc chạm, '
     + '`notification` báo kết quả nên nổ lúc có kết quả. Đo trước khi chọn phạm vi — 59 mutation, chỉ 8 '
     + 'lạc quan, nên một luật đòi `onMutate` ở mọi nơi sẽ kêu oan 51 lần; 32 chỗ rung sau mạng, 27 trong '

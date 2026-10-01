@@ -2,7 +2,7 @@ import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { router } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { GlassView, isLiquidGlassAvailable } from 'expo-glass-effect';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import {
   Camera,
   Dumbbell,
@@ -112,7 +112,8 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
 
   const go = (routeName: string, index: number) => {
     const active = state.index === index;
-    Haptics.impactAsync(active ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
+    if (active) Haptics.light();
+    else Haptics.medium();
     if (active) {
       // Tapping the tab you are already on goes back to the top of it — the
       // platform convention, and the only way up a long page short of a long
@@ -231,7 +232,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
   */
   const pendingAiRoute = useRef<(typeof AI_ITEMS)[number]['route'] | null>(null);
   const openAiItem = (route: (typeof AI_ITEMS)[number]['route']) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.medium();
     pendingAiRoute.current = route;
     setAiOpen(false);
   };
@@ -259,7 +260,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
         */}
         <PillSurface style={styles.accessory}>
           {centerButton(() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            Haptics.medium();
             setAiOpen((v) => !v);
           })}
         </PillSurface>
@@ -272,7 +273,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
         <Animated.View entering={FadeIn.duration(180)} exiting={FadeOut.duration(150)} style={styles.overlayBackdrop}>
           {/* Bảng không có nút đóng riêng, nên lớp nền LÀ nút đóng — và phải có
               tên, không thì VoiceOver gặp một ô không tên phủ cả màn (#120). */}
-          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yClose} style={StyleSheet.absoluteFill} onPress={() => { Haptics.selectionAsync(); setAiOpen(false); }} />
+          <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yClose} style={StyleSheet.absoluteFill} onPress={() => { Haptics.selection(); setAiOpen(false); }} />
           <Animated.View
             entering={FadeInDown.springify().stiffness(400).damping(30)}
             exiting={SlideOutDown.duration(180)}
@@ -303,7 +304,7 @@ export function LiquidTabBar({ state, navigation }: BottomTabBarProps) {
               <View style={styles.tabsDimmed}>{renderTab('index', true)}</View>
               <View style={styles.tabsDimmed}>{renderTab('nutrition', true)}</View>
               {centerButton(() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                Haptics.medium();
                 setAiOpen(false);
               })}
               <View style={styles.tabsDimmed}>{renderTab('workouts', true)}</View>

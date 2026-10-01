@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import {
   Activity,
   AlertTriangle,
@@ -296,7 +296,7 @@ export default function WeeklyReviewScreen() {
      neither, so the two effects it had are re-attached to the transitions
      themselves — a haptic when an analysis arrives, an alert when one fails. */
   useEffect(() => {
-    if (analyze.data) Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    if (analyze.data) Haptics.success();
   }, [analyze.data]);
   useEffect(() => {
     if (analyze.error) Alert.alert('ASCND', errorText(analyze.error, i18n));
@@ -495,7 +495,7 @@ export default function WeeklyReviewScreen() {
           hitSlop={8}
           style={styles.weekBtn}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setAsked(false);
             setWeekOffset((o) => o - 1);
           }}>
@@ -509,7 +509,7 @@ export default function WeeklyReviewScreen() {
           disabled={weekOffset >= 0}
           style={[styles.weekBtn, weekOffset >= 0 && styles.disabled]}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setAsked(false);
             setWeekOffset((o) => Math.min(o + 1, 0));
           }}>

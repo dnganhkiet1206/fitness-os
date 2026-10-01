@@ -1,5 +1,5 @@
 import { CheckCircle2, ChevronRight, Moon, Play, Plus } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -97,7 +97,7 @@ export function TodayTraining() {
   });
 
   const openPlan = (day: number) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     nav.push({ pathname: '/workouts/plan', params: { day: String(day) } });
   };
 
@@ -195,7 +195,7 @@ export function TodayTraining() {
             accessibilityLabel={i18n.nStartWorkout}
             style={styles.primary}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              Haptics.medium();
               nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
             }}>
             <Icon icon={Play} size={15} color={c.primaryForeground} strokeWidth={2.5} />
@@ -206,7 +206,7 @@ export function TodayTraining() {
             accessibilityLabel={i18n.nLogFree}
             style={styles.secondary}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               nav.push('/log-workout');
             }}>
             <Icon icon={Plus} size={17} color={c.foreground} strokeWidth={2.5} />
@@ -228,7 +228,7 @@ export function TodayTraining() {
           accessibilityLabel={i18n.nTodayExtra}
           style={styles.extraLink}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             nav.push('/log-workout');
           }}>
           <Text style={styles.extraLinkText}>{i18n.nTodayExtra}</Text>
@@ -239,7 +239,7 @@ export function TodayTraining() {
           accessibilityLabel={cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
           style={styles.quiet}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             if (cta === 'pick') nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
             else nav.push('/log-workout');
           }}>

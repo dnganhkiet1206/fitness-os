@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { ArrowLeft, Check, ChevronRight, Plus, Search, X } from 'lucide-react-native';
@@ -301,7 +301,7 @@ export default function WorkoutBuilderSheet() {
   );
 
   const toggle = (ex: { id: string; name: string }) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setItems((prev) =>
       prev.some((i) => i.exerciseId === ex.id)
         ? prev.filter((i) => i.exerciseId !== ex.id)
@@ -347,7 +347,7 @@ export default function WorkoutBuilderSheet() {
    * invalidates the query this screen is reading.
    */
   const openLibrary = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     nav.push({ pathname: '/exercises', params: { create: search.trim() } });
   };
 
@@ -422,7 +422,7 @@ export default function WorkoutBuilderSheet() {
 
   /** the back button's job, which is different on each face */
   const goBack = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     if (mode === 'edit-set') setEditing(null);
     else if (mode === 'review') setStep(1);
     else nav.back();
@@ -540,7 +540,7 @@ export default function WorkoutBuilderSheet() {
                 accessibilityState={{ selected: group === null }}
                 aria-selected={group === null}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   setGroup(null);
                 }}
                 style={[styles.groupTile, group === null && styles.groupTileOn]}>
@@ -559,7 +559,7 @@ export default function WorkoutBuilderSheet() {
                   accessibilityState={{ selected: group === g.key }}
                   aria-selected={group === g.key}
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     setGroup((cur) => (cur === g.key ? null : g.key));
                   }}
                   style={[styles.groupTile, group === g.key && styles.groupTileOn]}>
@@ -669,7 +669,7 @@ export default function WorkoutBuilderSheet() {
               accessibilityRole="button"
               disabled={items.length === 0}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.light();
                 setStep(2);
               }}
               style={[styles.primary, items.length === 0 && styles.disabled]}>
@@ -711,7 +711,7 @@ export default function WorkoutBuilderSheet() {
                   accessibilityState={{ selected: tType === t }}
                   aria-selected={tType === t}
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     setPickedType(t);
                   }}
                   style={[styles.chip, tType === t && styles.chipOn]}>
@@ -729,7 +729,7 @@ export default function WorkoutBuilderSheet() {
                 accessibilityRole="button"
                 accessibilityLabel={`${ex.exerciseName}, ${ex.sets} × ${ex.reps}`}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   setEditing(idx);
                 }}
                 style={styles.planRow}>
@@ -753,7 +753,7 @@ export default function WorkoutBuilderSheet() {
             <PressScale
               accessibilityRole="button"
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setStep(1);
               }}
               style={styles.newRow}>

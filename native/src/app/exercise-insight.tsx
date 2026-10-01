@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Activity, ChevronDown, Minus, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
@@ -200,7 +200,7 @@ function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weig
       aria-expanded={open} // web không dịch accessibilityState ra aria-expanded (#103)
       accessibilityLabel={`${i.exerciseName} — ${i18n[`nXiTrend${i.trend}` as keyof NativeStrings] as string}`}
       onPress={() => {
-        Haptics.selectionAsync();
+        Haptics.selection();
         setOpen((v) => !v);
       }}>
       <GlassCard style={styles.card}>
@@ -400,7 +400,7 @@ export default function ExerciseInsightScreen() {
                 accessibilityLabel={i18n.nXiShowAll}
                 hitSlop={8}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   router.setParams({ ex: '' });
                 }}>
                 <Text style={styles.showAll}>{i18n.nXiShowAll}</Text>

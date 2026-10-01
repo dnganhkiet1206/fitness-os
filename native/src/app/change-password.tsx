@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { useState } from 'react';
 import {
@@ -46,18 +46,18 @@ export default function ChangePasswordScreen() {
 
   const submit = async () => {
     if (!canSave) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     const r = await saveOp.run(async () => {
       const { error } = await supabase.auth.updateUser({ password: newPw });
       if (error) throw error;
     });
     if (r.status === 'stale') return;
     if (r.status === 'error') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Haptics.warning();
       toast.fail(r.error);
       return;
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Haptics.success();
     setSaved(true);
     nav.back();
     toast.success(i18n.settingsPasswordChanged);

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { Camera, Check, ChevronDown, ChevronRight, Clock, Minus, PencilLine, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
@@ -178,7 +178,7 @@ export default function LogMealSheet() {
    * empty when this is offered — see where it is rendered.
    */
   const repeatMeal = (meal: RecentMeal) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     setMealType(meal.meal_type as MealType);
     setItems(meal.foods.map((f) => ({ ...f })));
   };
@@ -222,7 +222,7 @@ export default function LogMealSheet() {
             serving_g: s.serving_g,
           })),
         ]);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Haptics.success();
       }
     }, []),
   );
@@ -249,7 +249,7 @@ export default function LogMealSheet() {
   });
 
   const pickFood = (f: NonNullable<typeof foods>[number]) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     addItem({
       food_item_id: f.id,
       food_name: f.name,
@@ -264,7 +264,7 @@ export default function LogMealSheet() {
   };
 
   const updateServings = (idx: number, delta: number) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setItems((prev) =>
       prev.map((it, i) =>
         i === idx ? { ...it, servings: Math.max(0.5, Math.round((it.servings + delta) * 2) / 2) } : it,
@@ -273,7 +273,7 @@ export default function LogMealSheet() {
   };
 
   const removeItem = (idx: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     setItems((prev) => prev.filter((_, i) => i !== idx));
     setEditingIdx(null);
   };
@@ -333,7 +333,7 @@ export default function LogMealSheet() {
 
   const addCustom = () => {
     if (!canAddCustom) return;
-    Haptics.selectionAsync();
+    Haptics.selection();
     const kcalVal = num(cKcal) > 0 ? num(cKcal) : Math.round(num(cProtein) * 4 + num(cCarbs) * 4 + num(cFat) * 9);
     addItem({
       food_item_id: null,
@@ -353,7 +353,7 @@ export default function LogMealSheet() {
   };
 
   const openEdit = (idx: number) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     if (editingIdx === idx) {
       setEditingIdx(null);
       return;
@@ -370,7 +370,7 @@ export default function LogMealSheet() {
 
   const applyEdit = () => {
     if (editingIdx == null || draftBad) return;
-    Haptics.selectionAsync();
+    Haptics.selection();
     setItems((prev) =>
       prev.map((it, i) =>
         i === editingIdx
@@ -412,17 +412,17 @@ export default function LogMealSheet() {
       return res.data?.suggestions ?? [];
     },
     onSuccess: (s) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       setSuggestions(s);
     },
     onError: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Haptics.warning();
       setSuggestions([]);
     },
   });
 
   const openAi = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     setAiOpen((v) => {
       const next = !v;
       if (next && suggestions.length === 0 && !aiSuggest.isPending) aiSuggest.mutate();
@@ -431,7 +431,7 @@ export default function LogMealSheet() {
   };
 
   const addSuggestion = (s: AiSuggestion) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     addItem({
       food_item_id: null,
       food_name: s.name,
@@ -481,7 +481,7 @@ export default function LogMealSheet() {
     */
     onMutate: () => {
       if (!offlineNow()) return;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       nav.back();
       toast.success(i18n.logMealQueued);
     },
@@ -490,7 +490,7 @@ export default function LogMealSheet() {
       // Just-logged foods should surface in the Nutrition tab's recent list
       queryClient.invalidateQueries({ queryKey: ['recent_foods', user?.id] });
       if (offlineNow()) return; // already acknowledged in onMutate
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       nav.back();
       toast.success(i18n.logMealSaved);
     },
@@ -590,7 +590,7 @@ export default function LogMealSheet() {
               itemKey={key}
               accessibilityLabel={label}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setMealType(key);
               }}
               style={styles.chip}>
@@ -658,7 +658,7 @@ export default function LogMealSheet() {
             accessibilityLabel={i18n.a11yScanFood}
             style={styles.iconBtn}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.light();
               nav.push('/scan-food');
             }}>
             <Icon icon={Camera} size={20} color={c.foreground} />
@@ -668,7 +668,7 @@ export default function LogMealSheet() {
             accessibilityLabel={i18n.a11yScanBarcode}
             style={styles.iconBtn}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.light();
               nav.push('/scan-barcode');
             }}>
             <Icon icon={ScanBarcode} size={20} color={c.foreground} />
@@ -697,7 +697,7 @@ export default function LogMealSheet() {
                 key={q.key}
                 style={styles.quickChip}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   addItem(q);
                 }}>
                 <Icon icon={q.fav ? Star : Clock} size={12} color={c.primary} />
@@ -762,7 +762,7 @@ export default function LogMealSheet() {
           aria-expanded={customOpen} // web không dịch accessibilityState ra aria-expanded (#103)
           style={[styles.aiToggle, customOpen && styles.aiToggleActive]}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.light();
             setCustomOpen((v) => !v);
           }}>
           <Icon icon={PencilLine} size={18} color={c.primary} />

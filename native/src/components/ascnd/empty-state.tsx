@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import type { LucideIcon } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
@@ -114,7 +114,7 @@ export function EmptyState({
           accessibilityRole="button"
           accessibilityLabel={action.label}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             action.onPress();
           }}>
           <Text style={styles.buttonText}>{action.label}</Text>

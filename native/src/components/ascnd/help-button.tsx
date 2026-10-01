@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { HelpCircle, X } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
@@ -48,7 +48,7 @@ export function useHelpTopic(topic: string) {
     nudge,
     close: () => setOpen(false),
     openHelp: () => {
-      Haptics.selectionAsync();
+      Haptics.selection();
       setNudge(false);
       setOpen(true);
       void noteHelpOpened(topic);
@@ -56,7 +56,7 @@ export function useHelpTopic(topic: string) {
     /* Dismissing is not reading: the showing was already counted, so it may
        come back tomorrow, up to the budget. */
     dismissNudge: () => {
-      Haptics.selectionAsync();
+      Haptics.selection();
       setNudge(false);
     },
   };

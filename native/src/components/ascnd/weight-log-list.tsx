@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View } from 'react-native';
@@ -140,7 +140,7 @@ export function WeightLogList({
           onPress: () =>
             del.mutate(date, {
               onSuccess: () => {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Haptics.success();
                 toast.success(i18n.deleted);
               },
               onError: (e: Error) => toast.fail(e),
@@ -157,7 +157,7 @@ export function WeightLogList({
         accessibilityState={{ expanded: open }}
         aria-expanded={open} // web không dịch accessibilityState ra aria-expanded (#103)
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           // Outside the updater on purpose: a state setter called from inside
           // another setter's reducer is a side effect in a function React is
           // allowed to run twice.
@@ -197,7 +197,7 @@ export function WeightLogList({
                   accessibilityLabel={i18n.a11yDelete}
                   hitSlop={10}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.light();
                     confirm(p.date, shown);
                   }}
                   style={styles.del}>
@@ -224,7 +224,7 @@ export function WeightLogList({
           accessibilityRole="button"
           style={styles.seeAll}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setAll(true);
           }}>
           <Text style={styles.seeAllText}>

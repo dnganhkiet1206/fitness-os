@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Minus, Plus } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -64,7 +64,7 @@ export default function StepsScreen() {
             hitSlop={6}
             style={styles.goalBtn}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               setGoal(GOAL - 500);
             }}>
             <Icon icon={Minus} size={14} color={c.foreground} />
@@ -76,7 +76,7 @@ export default function StepsScreen() {
             hitSlop={6}
             style={styles.goalBtn}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               setGoal(GOAL + 500);
             }}>
             <Icon icon={Plus} size={14} color={c.foreground} />

@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { ChevronRight, Dumbbell, PersonStanding, Plus } from 'lucide-react-native';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -141,7 +141,7 @@ export default function WorkoutsScreen() {
   const del = useDeleteWorkoutTemplate();
 
   const confirmDelete = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.medium();
     Alert.alert(i18n.nDeleteTemplate, '', [
       { text: i18n.nCancel, style: 'cancel' },
       {
@@ -267,7 +267,7 @@ export default function WorkoutsScreen() {
               accessibilityRole="button"
               hitSlop={8}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 nav.push('/templates');
               }}>
               <Text style={styles.libAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
@@ -297,7 +297,7 @@ export default function WorkoutsScreen() {
             accessibilityLabel={i18n.workoutsCreateNew}
             style={styles.addRow}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               nav.push('/workout-builder');
             }}>
             <Icon icon={Plus} size={15} color={c.primary} strokeWidth={2.5} />
@@ -353,7 +353,7 @@ export default function WorkoutsScreen() {
         accessibilityLabel={i18n.nLibraryHistory}
         style={styles.toolRow}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           nav.push('/workouts/library');
         }}>
         <Glyph name="dumbbell" size={17} />
@@ -375,7 +375,7 @@ export default function WorkoutsScreen() {
         accessibilityLabel={i18n.nToolsInsight}
         style={styles.toolRow}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           nav.push('/exercise-insight');
         }}>
         <Glyph name="gauge" size={17} />

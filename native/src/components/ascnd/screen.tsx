@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from 'expo-router';
 import { nav } from '@/lib/nav';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronLeft } from 'lucide-react-native';
 import { useCallback, useRef, useState } from 'react';
 import {
@@ -333,7 +333,7 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     setRefreshing(true);
     try {
       await queryClient.invalidateQueries();
@@ -441,7 +441,7 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
           hitSlop={8}
           style={styles.backBtn}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             nav.back();
           }}>
           <Icon icon={ChevronLeft} size={22} color={transparentHeader ? '#fff' : c.primary} />

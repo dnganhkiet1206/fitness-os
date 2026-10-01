@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useEffect, useRef, useState } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 
@@ -46,7 +46,7 @@ export function useFeedHold<T extends { id: string; mine: boolean }>(tab: string
   /* Chạm viên: mọi bài đang về đều thành đã thấy NGAY (không đợi tới đỉnh), rồi
      cuộn lên — bài mới hiện ra ở đúng chỗ người ta sắp nhìn. */
   const release = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setAck((a) => ({ ...a, [tab]: ids }));
     scrollActiveToTop();
   };

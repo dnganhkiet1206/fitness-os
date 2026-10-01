@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { Check, Plus, Trash2, UtensilsCrossed, X } from 'lucide-react-native';
@@ -119,11 +119,11 @@ export default function MealPlanScreen() {
   const eatMeal = (meal: string, foods: NonNullable<typeof items>) => {
     if (foods.length === 0 || logMeal.isPending) return;
     const write = () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.medium();
       /* Mất mạng thì bữa vào hàng đợi bền (#57) và câu báo nói đúng thế. */
       logMeal.log({ mealType: meal, foods }).then(
         (r) => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          Haptics.success();
           toast.success((r === 'queued' ? i18n.nMpEatQueued : i18n.nMpEatDone).replace('{m}', mealLabel(meal)));
         },
         (e: Error) => toast.fail(e),
@@ -152,7 +152,7 @@ export default function MealPlanScreen() {
         text: i18n.delete,
         style: 'destructive',
         onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.light();
           deletePlan.mutate(plan.id, {
             onSuccess: () => nav.back(),
             onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
@@ -209,7 +209,7 @@ export default function MealPlanScreen() {
               aria-selected={on} // web không dịch accessibilityState ra aria-selected (#99)
               accessibilityLabel={`${i18n.nDay} ${d + 1}`}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setDay(d);
               }}
               style={styles.cell}>
@@ -343,7 +343,7 @@ export default function MealPlanScreen() {
         accessibilityRole="button"
         accessibilityLabel={`${i18n.nMpAddFood} — ${i18n.nDay} ${day + 1}`}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.light();
           setAdding(true);
         }}
         style={styles.add}>

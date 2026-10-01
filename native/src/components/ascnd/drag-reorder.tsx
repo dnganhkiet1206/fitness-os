@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useCallback, useRef } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
@@ -339,7 +339,7 @@ export function DragReorder({
   );
 
   const tick = useCallback(() => {
-    Haptics.selectionAsync();
+    Haptics.selection();
   }, []);
 
   const setScrolling = useCallback(

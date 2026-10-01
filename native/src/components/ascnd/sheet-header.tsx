@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { X } from 'lucide-react-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { Text, View } from 'react-native';
@@ -110,7 +110,7 @@ export function SheetHeader({
           accessibilityLabel={i18n.a11yClose}
           hitSlop={8}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             onClose();
           }}
           style={styles.close}>

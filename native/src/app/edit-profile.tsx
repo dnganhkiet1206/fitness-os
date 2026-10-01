@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Check, RefreshCw } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -258,7 +258,7 @@ export default function EditProfileSheet() {
       return;
     }
     const plan = attempt.plan;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Haptics.success();
     setForm((f) => ({
       ...f,
       tdee_target_kcal: String(plan.tdee_target_kcal),
@@ -311,7 +311,7 @@ export default function EditProfileSheet() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       nav.back();
     },
     onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
@@ -693,7 +693,7 @@ export default function EditProfileSheet() {
                   accessibilityState={{ checked: on }}
                   aria-checked={on} // web không dịch accessibilityState ra aria-checked (#101)
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     setAllergies(on ? allergies.filter((x) => x !== a.value) : [...allergies, a.value]);
                   }}
                   style={[styles.badge, on && styles.badgeActive]}>
@@ -714,7 +714,7 @@ export default function EditProfileSheet() {
                   accessibilityState={{ checked: true }}
                   aria-checked={true} // web không dịch accessibilityState ra aria-checked (#101)
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     setAllergies(allergies.filter((x) => x !== v));
                   }}
                   style={[styles.badge, styles.badgeActive]}>
@@ -771,7 +771,7 @@ function ChipGrid({ options, value, onChange }: { options: { key: string; label:
           accessibilityLabel={o.label}
           style={styles.gridChip}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             onChange(o.key);
           }}>
           <Text style={[styles.gridChipText, value === o.key && styles.gridChipTextActive]}>{o.label}</Text>

@@ -139,10 +139,10 @@ export function problems(src, geo) {
         'có thể dừng lại ở một "+15" trôi nổi không ngữ cảnh, tự hiện rồi tự biến mất',
     );
   }
-  if (!/Haptics\.impactAsync/.test(src)) {
+  if (!/Haptics\.light\(\)/.test(src)) {
     out.push('màn diễn không có phản hồi rung — một lời chúc mừng không chạm vào tay là nửa lời');
   }
-  if (/Haptics\.notificationAsync/.test(src)) {
+  if (/Haptics\.(success|warning|error)\(\)/.test(src)) {
     out.push(
       'peek dùng rung mức "notification" — đó là mức của huy hiệu; một nhiệm vụ hằng ngày và ' +
         'một huy hiệu mà rung như nhau thì thứ bậc cảm giác biến mất',
@@ -199,7 +199,7 @@ if (path.resolve(process.argv[1] ?? '') === fileURLToPath(import.meta.url)) {
   const STUCK = FIXED.replace('if (!signal) {\n      setPlaying(false);\n      return;\n    }', 'if (!signal) return;');
   const REPLAY = FIXED.replace('if (played.current === signal) return;', '');
   const LOUD = FIXED.replace('accessibilityElementsHidden', 'accessible');
-  const NUMB = FIXED.replace('Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)', 'Promise.resolve()');
+  const NUMB = FIXED.replace('Haptics.light()', 'Promise.resolve()');
 
   const selftest = [];
   if (SHIPPED === FIXED) selftest.push('không dựng lại được bản đã ship (flex-end)');

@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Dimensions, type LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -222,7 +222,7 @@ export function StageRenderer({
    * transform on the container.
    */
   const poke = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
   };
 
   const charStyle = useAnimatedStyle(() => ({

@@ -1,6 +1,6 @@
 import { usePathname } from 'expo-router';
 import { nav } from '@/lib/nav';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { Easing, runOnJS, useAnimatedReaction, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -379,7 +379,7 @@ export function KoaCompanion() {
             accessibilityRole="button"
             accessibilityLabel={mascot.name}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               nav.push('/mascot-room');
             }}>
             {/* No outfits here: the wardrobe lives behind `useMascotInventory`,

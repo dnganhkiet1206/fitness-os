@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Camera, Pencil, ScanBarcode, Search } from 'lucide-react-native';
 import { Text, View } from 'react-native';
@@ -135,7 +135,7 @@ export function MealLogActions({ i18n }: { i18n: ReturnType<typeof useI18n> }) {
             accessibilityLabel={i18n[w.spoken] as string}
             style={styles.tile}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.light();
               nav.push(w.route as never);
             }}>
             <View style={[styles.chip, w.lead ? styles.chipLead : styles.chipPlain]}>

@@ -1,6 +1,6 @@
 import { Flame } from 'lucide-react-native';
 import { nav } from '@/lib/nav';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
@@ -67,7 +67,7 @@ export function StreakChip() {
       }
       style={[styles.chip, lit ? styles.chipLit : styles.chipRisk]}
       onPress={() => {
-        Haptics.selectionAsync();
+        Haptics.selection();
         nav.push('/mascot-room');
       }}>
       <View style={styles.row}>

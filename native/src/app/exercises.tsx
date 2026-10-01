@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { Plus, Trash2 } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
@@ -101,7 +101,7 @@ export default function ExercisesScreen() {
 
   const submit = () => {
     if (!name.trim()) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     addEx.mutate(
       {
         name: name.trim(),
@@ -139,7 +139,7 @@ export default function ExercisesScreen() {
         text: i18n.delete,
         style: 'destructive',
         onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.light();
           deleteEx.mutate(id, { onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)) });
         },
       },
@@ -160,7 +160,7 @@ export default function ExercisesScreen() {
         <PressScale
           style={styles.addBtn}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setAdding((v) => !v);
           }}>
           <Icon icon={Plus} size={14} color={c.primaryForeground} strokeWidth={2.5} />
@@ -229,7 +229,7 @@ export default function ExercisesScreen() {
                 accessibilityLabel={g}
                 style={styles.chip}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   setMuscleGroup(g);
                 }}>
                 <Text style={[styles.chipText, muscleGroup === g && styles.chipTextActive]}>{g}</Text>
@@ -253,7 +253,7 @@ export default function ExercisesScreen() {
                 accessibilityLabel={i18n[`nExKind${k}` as keyof typeof i18n] as string}
                 style={styles.chip}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   /* Tapping the chosen one clears it, so "nobody has said" stays
                      reachable after a mis-tap. Without that, the first tap on
                      this row is irreversible. */

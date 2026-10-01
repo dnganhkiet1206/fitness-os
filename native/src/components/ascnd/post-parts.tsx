@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { usePathname } from 'expo-router';
 import { BadgeCheck, Bookmark, Heart, MessageCircle, MoreHorizontal, Share as ShareIcon } from 'lucide-react-native';
 import type { ReactNode } from 'react';
@@ -171,7 +171,7 @@ function PostActions({ post, onComment, shareText }: { post: FeedPost; onComment
            PressScale, nên không có haptic nào khác để thành rung kép. Chỉ rung
            khi BẬT (thích), bỏ thích thì im như X. */
         onPress={() => {
-          if (!post.liked) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          if (!post.liked) Haptics.light();
           like.mutate({ postId: post.id, on: !post.liked });
         }}
       />
@@ -189,7 +189,7 @@ function PostActions({ post, onComment, shareText }: { post: FeedPost; onComment
         icon={ShareIcon}
         label={i18n.nCmShare}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           Share.share({ message: shareText() });
         }}
       />
@@ -309,7 +309,7 @@ function usePostMenu(post: FeedPost) {
     ]);
 
   return () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     if (post.mine) {
       askDelete();
       return;

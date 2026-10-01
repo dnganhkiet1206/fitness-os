@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -154,7 +154,7 @@ export default function LogBiometricsSheet() {
   };
 
   const commit = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     /*
       ── offline closes now; online waits for an answer ──
 
@@ -171,14 +171,14 @@ export default function LogBiometricsSheet() {
     */
     if (offlineNow()) {
       log.mutate(values());
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       nav.back();
       toast.success(i18n.logMealQueued);
       return;
     }
     log.mutate(values(), {
       onSuccess: () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Haptics.success();
         nav.back();
         toast.success(i18n.logBioSaved);
       },

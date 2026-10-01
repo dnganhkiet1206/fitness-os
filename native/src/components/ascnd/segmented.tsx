@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeInLeft, FadeInRight } from 'react-native-reanimated';
@@ -142,7 +142,7 @@ export function Segmented<K extends string>({
             style={[styles.seg, { height: cap ? CAP_H : height }]}
             onPress={() => {
               if (on) return;
-              Haptics.selectionAsync();
+              Haptics.selection();
               onChange(o.key);
             }}>
             {/*

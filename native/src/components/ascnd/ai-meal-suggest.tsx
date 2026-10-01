@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChefHat, ChevronDown, ChevronUp, Clock, Sparkles } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -46,7 +46,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
 
   const fetchSuggestions = async () => {
     if (!session || suggestOp.running()) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     // `callEdge` names the reason; the alert used to say "failed" for a function
     // that was never deployed, a missing model key and an expired session alike.
     const r = await suggestOp.run((signal) =>
@@ -112,7 +112,7 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
           aria-expanded={expanded === i} // web không dịch accessibilityState ra aria-expanded (#103)
           style={styles.card}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setExpanded(expanded === i ? null : i);
           }}>
           <View style={styles.cardTop}>

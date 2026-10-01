@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Dumbbell } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
@@ -97,7 +97,7 @@ export default function WorkoutLibraryScreen() {
    * chart afterwards.
    */
   const confirmDeleteSession = (id: string, date_time: string, label: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     Alert.alert(i18n.nDeleteSession, i18n.nDeleteSessionMsg.replace('{x}', label), [
       { text: i18n.cancel, style: 'cancel' },
       {
@@ -108,7 +108,7 @@ export default function WorkoutLibraryScreen() {
             { id, date_time },
             {
               onSuccess: () => {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Haptics.success();
                 toast.success(i18n.deleted);
               },
               onError: (e: Error) => toast.fail(e),
@@ -140,7 +140,7 @@ export default function WorkoutLibraryScreen() {
               accessibilityRole="button"
               hitSlop={8}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 nav.push('/sessions');
               }}>
               <Text style={styles.all}>{vi ? 'Xem tất cả' : 'See all'}</Text>

@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
 import { Plus, Star } from 'lucide-react-native';
@@ -129,7 +129,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
         accessibilityLabel={`${f.name}, ${Math.round(Number(f.kcal))} kcal`}
         style={styles.rowBody}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           nav.push({ pathname: '/food-editor', params: { id: f.id } });
         }}>
         <View style={styles.info}>
@@ -154,7 +154,7 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
         hitSlop={12}
         style={styles.fav}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           toggleFav.mutate({ id: f.id, is_favorite: !f.is_favorite });
         }}>
         <Icon
@@ -176,7 +176,7 @@ export function RecentFoodCard({ r, saved }: { r: RecentFood; saved: boolean }) 
   const createFood = useCreateFoodItem();
 
   const quickAdd = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     createFood.mutate({
       name: r.food_name,
       brand: '',

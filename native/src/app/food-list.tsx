@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { Plus, Search } from 'lucide-react-native';
@@ -123,7 +123,7 @@ export default function FoodListScreen() {
             accessibilityLabel={s.label}
             style={styles.seg}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               setSeg(s.key);
             }}>
             <Text style={[styles.segText, seg === s.key && styles.segTextActive]}>{s.label}</Text>
@@ -154,7 +154,7 @@ export default function FoodListScreen() {
             accessibilityLabel={i18n.foodAddCustom}
             style={styles.addBtn}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.light();
               nav.push('/food-editor');
             }}>
             <Icon icon={Plus} size={16} color={c.primaryForeground} strokeWidth={2.5} />

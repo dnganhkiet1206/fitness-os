@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { useEffect, useRef, useState } from 'react';
@@ -208,7 +208,7 @@ export default function AiCoachScreen() {
             accessibilityLabel={i18n.a11yBack}
             hitSlop={10}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.light();
               nav.back();
             }}
             style={styles.headerBtn}>
@@ -230,7 +230,7 @@ export default function AiCoachScreen() {
             accessibilityLabel={i18n.a11yHistory}
             hitSlop={10}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               setShowHistory((v) => !v);
             }}
             style={styles.headerBtn}>
@@ -474,7 +474,7 @@ export default function AiCoachScreen() {
                         hitSlop={8}
                         style={styles.historyDelete}
                         onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          Haptics.light();
                           /* Same reason as `coach-memory.tsx`: the delete can
                              now report that it touched nothing, and a report
                              nobody receives is the row silently reappearing. */

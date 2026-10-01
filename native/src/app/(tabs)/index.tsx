@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect } from 'expo-router';
 import { nav } from '@/lib/nav';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import {
   Apple,
   Check,
@@ -466,7 +466,7 @@ export default function TodayScreen() {
   const onRefresh = useCallback(async () => {
     // The gesture has no button to press, so the tap it never gets is repaid
     // here: the pull is confirmed the moment it takes, not when data lands.
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     setRefreshing(true);
     /* `finally`, không phải hai dòng gán: lời hứa kia hỏng thì vòng xoay quay
        mãi trên một trang không còn tải gì — một vòng xoay không bao giờ dừng
@@ -1116,7 +1116,7 @@ export default function TodayScreen() {
    */
   const toggleEdit = useCallback(
     (on: boolean) => {
-      Haptics.selectionAsync();
+      Haptics.selection();
       setEditMode(on);
       setNewGroupName('');
       scroller.current?.scrollTo({ y: 0, animated: true });
@@ -1124,7 +1124,7 @@ export default function TodayScreen() {
     [setEditMode],
   );
   const toggleHero = useCallback((index: number) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setExpandedAt((v) => (v === index ? null : index));
   }, []);
 
@@ -1361,7 +1361,7 @@ export default function TodayScreen() {
         }
         return sleepTotalMin > 0 ? (
           /* Vai nút cho VoiceOver; tên là chữ của thẻ, iOS gộp con của Pressable (#120). */
-          <PressScale accessibilityRole="button" onPress={() => { Haptics.selectionAsync(); nav.push('/sleep-insights'); }}>
+          <PressScale accessibilityRole="button" onPress={() => { Haptics.selection(); nav.push('/sleep-insights'); }}>
             <SleepCard
               totalMin={sleepTotalMin}
               targetHours={sleepTargetHours}
@@ -1413,7 +1413,7 @@ export default function TodayScreen() {
         // shortcut to `/log-meal` only when it was empty, which is backwards:
         // the moment you want more detail is the moment there *is* detail.
         return (
-          <PressScale onPress={() => { Haptics.selectionAsync(); nav.push('/nutrition'); }}>
+          <PressScale onPress={() => { Haptics.selection(); nav.push('/nutrition'); }}>
             {kcal > 0 ? (
               <NutritionCard
                 kcal={kcal}
@@ -2327,7 +2327,7 @@ export default function TodayScreen() {
               style={[styles.addGroupBtn, !newGroupName.trim() && styles.editDisabled, ]}
               disabled={!newGroupName.trim()}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.light();
                 addGroup(newGroupName);
                 setNewGroupName('');
               }}>
@@ -2338,7 +2338,7 @@ export default function TodayScreen() {
           <PressScale
             style={styles.resetBtn}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.light();
               resetConfig();
             }}>
             <Icon icon={RotateCcw} size={14} color={c.mutedForeground} />
@@ -2468,7 +2468,7 @@ export default function TodayScreen() {
                 accessibilityLabel={i18n.a11ySettings}
                 style={styles.avatarBtn}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   nav.push('/settings');
                 }}>
                 <AccountAvatar name={profile?.name} email={user?.email} />
@@ -2606,7 +2606,7 @@ function ArrowBtn({
       disabled={disabled}
       style={[styles.arrowBtn, disabled && styles.editDisabled]}
       onPress={() => {
-        Haptics.selectionAsync();
+        Haptics.selection();
         onPress();
       }}>
       <Icon icon={icon} size={15} color={c.mutedForeground} />

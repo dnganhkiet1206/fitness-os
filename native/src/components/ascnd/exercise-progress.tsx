@@ -1,5 +1,5 @@
 import { nav } from '@/lib/nav';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronRight, Minus, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
@@ -149,7 +149,7 @@ export function ExerciseProgress({
       disabled={!key}
       onPress={() => {
         if (!key) return;
-        Haptics.selectionAsync();
+        Haptics.selection();
         nav.push(insightHref(key));
       }}>
       <View style={styles.strip}>

@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
@@ -79,19 +79,19 @@ export function useWeightWrite() {
   */
   const submit = (kg: number, onDone?: () => void) => {
     if (kg <= 0 || boundError(kg)) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     if (offlineNow() && user) {
       /* Đóng ở đây chứ không trong callback: một mutation bị tạm dừng không bao
          giờ gọi callback nào — đúng cái lỗi đang được chữa. */
       onDone?.();
       queue.mutate({ kind: 'weight', userId: user.id, kg, date: localDateStr() });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       toast.success(i18n.logMealQueued);
       return;
     }
     logWeight.mutate(kg, {
       onSuccess: () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Haptics.success();
         onDone?.();
       },
       onError: (e: Error) => toast.fail(e),

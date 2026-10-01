@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown } from 'lucide-react-native';
 import { useEffect, useId } from 'react';
 import { Text, View } from 'react-native';
@@ -288,7 +288,7 @@ export function ActivityRingsCard({
         accessibilityLabel={i18n.dcActivity}
         hitSlop={14}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           onToggleDetail?.();
         }}
         style={styles.moreBtn}>

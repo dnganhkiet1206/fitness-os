@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -129,7 +129,7 @@ export function MuscleGrid({
           accessibilityRole="button"
           hitSlop={8}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             nav.push('/exercises');
           }}>
           <Text style={styles.libAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
@@ -147,7 +147,7 @@ export function MuscleGrid({
               }
               style={styles.libTile}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 // The art key, not the caption: the caption is a display string
                 // and the library has to match against every spelling of the
                 // group, which is what the key stands for.
@@ -173,7 +173,7 @@ export function MuscleGrid({
         aria-expanded={open} // web không dịch accessibilityState ra aria-expanded (#103)
         style={styles.libToggle}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           setOpen((v) => !v);
         }}>
         <Text style={styles.libToggleText}>

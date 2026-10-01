@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import type { LucideIcon } from 'lucide-react-native';
 import { type StyleProp, type ViewStyle } from 'react-native';
 
@@ -104,7 +104,7 @@ export function IconButton({
       disabled={disabled}
       hitSlop={slop}
       onPress={() => {
-        if (haptic) Haptics.selectionAsync();
+        if (haptic) Haptics.selection();
         onPress();
       }}
       style={[styles.base, { width: size, height: size }, disabled && styles.disabled, style]}>

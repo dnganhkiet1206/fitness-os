@@ -1,5 +1,5 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ArrowLeft, Globe } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
@@ -105,9 +105,8 @@ export function AuthScreen() {
       const r = await submitOp.run(() => supabase.auth.resetPasswordForEmail(email));
       if (r.status === 'stale') return;
       const error = r.status === 'ok' ? r.value.error : r.error;
-      Haptics.notificationAsync(
-        error ? Haptics.NotificationFeedbackType.Error : Haptics.NotificationFeedbackType.Success,
-      );
+      if (error) Haptics.error();
+      else Haptics.success();
       Alert.alert('ASCND', error ? errorText(error, i18n) : i18n.authResetSent);
       if (!error) setMode('signin');
       return;
@@ -149,7 +148,7 @@ export function AuthScreen() {
             key={l}
             itemKey={l}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               setLang(l);
             }}
             style={styles.langChip}>

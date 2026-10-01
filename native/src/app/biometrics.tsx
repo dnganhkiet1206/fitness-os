@@ -1,5 +1,5 @@
 import { nav } from '@/lib/nav';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Plus, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, Text, View } from 'react-native';
@@ -127,7 +127,7 @@ export default function BiometricsScreen() {
           hitSlop={8}
           style={styles.logBtn}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             nav.push('/log-biometrics');
           }}>
           <Icon icon={Plus} size={22} color={c.primary} />
@@ -223,7 +223,7 @@ export default function BiometricsScreen() {
                 style={styles.logDelete}
                 disabled={remove.isPending}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   Alert.alert(
                     vi ? 'Xoá lần đo này?' : 'Delete this reading?',
                     vi
@@ -239,7 +239,7 @@ export default function BiometricsScreen() {
                             { id: s.id, date_time: s.date_time },
                             {
                               onSuccess: () => {
-                                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                                Haptics.success();
                                 toast.success(i18n.deleted);
                               },
                               /* `recomputeDailyLog` throws now, and HRV is the

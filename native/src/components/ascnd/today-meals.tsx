@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { ChevronDown, Minus, Pencil, Plus, Trash2, UtensilsCrossed, type LucideIcon } from 'lucide-react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
@@ -131,7 +131,7 @@ const ACTION_W = 76;
 
 /** Nhịp chạm lúc tấm chốt mở. Ngoài component vì thư viện gửi nó qua `runOnJS`. */
 function swipeOpenHaptic() {
-  Haptics.selectionAsync();
+  Haptics.selection();
 }
 
 /**
@@ -214,7 +214,7 @@ function SwipeAction({
           accessibilityLabel={label}
           style={styles.swipeHit}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.light();
             methods.close();
             onPress();
           }}>
@@ -314,7 +314,7 @@ export function DayMeals({
    * có nút.
    */
   const sayDeleted = (snaps: (DeletedMealItem | null)[]) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Haptics.success();
     const keep = snaps.filter((s): s is DeletedMealItem => s != null);
     if (keep.length === 0) {
       toast.success(i18n.deleted);
@@ -336,7 +336,7 @@ export function DayMeals({
           onSettled: () => {
             left -= 1;
             if (left > 0 || broke) return;
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Haptics.success();
             toast.success(i18n.nItemRestored);
           },
         });
@@ -451,7 +451,7 @@ export function DayMeals({
     return (
       <PressScale
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.light();
           /* Mang NGÀY theo. Không có nó thì nút "chưa ghi bữa nào" trên một
              ngày đã qua mở ra form ghi vào HÔM NAY, và người dùng vừa được mời
              sửa thứ Ba lại ghi nhầm thêm một bữa vào thứ Sáu. */
@@ -517,7 +517,7 @@ export function DayMeals({
             { itemId: editing.id, entryId: editing.entry_id, servings },
             {
               onSuccess: () => {
-                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Haptics.success();
                 toast.success(i18n.nItemUpdated);
                 setEditing(null);
               },
@@ -717,7 +717,7 @@ function MealCard({
           else if (e.nativeEvent.actionName === 'deleteGroup') onDeleteGroup();
         }}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           setOpen((v) => !v);
         }}
         style={styles.mealHead}>
@@ -871,7 +871,7 @@ function MealRow({
         accessibilityLabel={i18n.nItemEdit}
         hitSlop={10}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           onEdit(it);
         }}
         style={styles.rowBtn}>
@@ -882,7 +882,7 @@ function MealRow({
         accessibilityLabel={i18n.nItemDelete}
         hitSlop={10}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.light();
           onDelete(it);
         }}
         style={styles.rowBtn}>
@@ -945,7 +945,7 @@ function EditServingsSheet({
   const step = (d: number) => {
     const next = Math.round((servings + d) * 2) / 2;
     if (next < 0.5 || next > 20) return;
-    Haptics.selectionAsync();
+    Haptics.selection();
     setServings(next);
   };
 

@@ -1,5 +1,5 @@
 import { useIsFocused } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useEffect, useId } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -739,7 +739,7 @@ export function ReadinessGauge({
         accessibilityLabel={vi ? 'Chi tiết điểm sẵn sàng' : 'Readiness details'}
         hitSlop={14}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           onToggleDetail?.();
         }}
         style={styles.moreBtn}>
@@ -871,7 +871,7 @@ export function ReadinessGauge({
           accessibilityRole="link"
           accessibilityLabel={vi ? 'Xem sinh trắc học' : 'Open biometrics'}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             onOpenDetail();
           }}
           style={styles.moreRow}>

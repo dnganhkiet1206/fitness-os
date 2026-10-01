@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Dumbbell, Plus, Search, X } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
@@ -60,7 +60,7 @@ export default function TemplatesScreen() {
   }, [templates, search]);
 
   const confirmDelete = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.medium();
     Alert.alert(i18n.nDeleteTemplate, '', [
       { text: i18n.nCancel, style: 'cancel' },
       {
@@ -140,7 +140,7 @@ export default function TemplatesScreen() {
         accessibilityRole="button"
         style={styles.createBtn}
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Haptics.light();
           nav.push('/workout-builder');
         }}>
         <Icon icon={Plus} size={15} color={c.primaryForeground} strokeWidth={2.5} />

@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -67,7 +67,7 @@ export function ChoiceCard({ label, desc, selected, onPress, size = 'md' }: Prop
       aria-checked={selected} // web không dịch accessibilityState ra aria-checked (#101)
       style={[styles.card, size === 'lg' ? styles.lg : styles.md, selected && styles.on]}
       onPress={() => {
-        Haptics.selectionAsync();
+        Haptics.selection();
         onPress();
       }}>
       <View style={styles.inner}>

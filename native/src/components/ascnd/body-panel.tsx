@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { nav } from '@/lib/nav';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import {
   Camera,
   ChevronRight,
@@ -721,7 +721,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
                     aria-selected={on}
                     style={styles.rangeBtn}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      Haptics.selection();
                       setRange(r.key);
                     }}>
                     <Text style={[styles.rangeText, on && styles.rangeTextOn]}>{i18n[r.label]}</Text>
@@ -739,7 +739,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
             <PressScale
               style={styles.goalRow}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setGoalOpen(true);
               }}>
               <Icon icon={Target} size={14} color={c.primary} />
@@ -794,7 +794,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
               accessibilityRole="button"
               accessibilityLabel={`${i18n.navSmartGoals} — ${i18n.nCalibrateHint}`}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 nav.push('/smart-goals');
               }}>
               <GlassCard style={styles.calCard}>
@@ -898,7 +898,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
                      đúng sàn của Apple HIG. 12 cho ra 40 — thiếu. */
                   hitSlop={14}
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     nav.push('/log-measurement');
                   }}>
                   <Text style={styles.mAdd}>{i18n.progressAddMeasurement}</Text>
@@ -1034,7 +1034,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
                       style={styles.historyDelete}
                       disabled={removeMeasurement.isPending}
                       onPress={() => {
-                        Haptics.selectionAsync();
+                        Haptics.selection();
                         Alert.alert(
                           i18n.progressDeleteMeasurement,
                           i18n.progressDeleteMeasurementBody,
@@ -1046,9 +1046,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
                               onPress: () =>
                                 removeMeasurement.mutate(row.id, {
                                   onSuccess: () => {
-                                    Haptics.notificationAsync(
-                                      Haptics.NotificationFeedbackType.Success,
-                                    );
+                                    Haptics.success();
                                     toast.success(i18n.deleted);
                                   },
                                   onError: (e: Error) => toast.fail(e),
@@ -1084,7 +1082,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
             icon={Share2}
             label={i18n.nPgEntry}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               nav.push('/community-share-progress');
             }}
           />
@@ -1093,7 +1091,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
             label={i18n.progressPhotos}
             value={photos && photos.length > 0 ? String(photos.length) : null}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               nav.push('/progress-photos');
             }}
           />

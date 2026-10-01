@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { MessageCircle, SendHorizontal, X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
@@ -62,7 +62,7 @@ export default function CommunityPostScreen() {
   const input = useRef<TextInput>(null);
 
   const startReply = (cm: CommunityComment) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setReplyTo(cm);
     /* Như X: người được trả lời đọc thấy tên mình ở đầu câu. Không chèn lại
        nếu người ta đã tự gõ. */
@@ -218,7 +218,7 @@ function CommentRow({
   /* Người viết và chủ bài xoá được (đúng như policy DELETE); người khác chỉ
      báo cáo được. Nhấn giữ, vì một bình luận không đáng một nút "…" riêng. */
   const menu = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     const canDelete = comment.mine || postMine;
     Alert.alert(comment.author?.display_name ?? '', undefined, [
       canDelete
@@ -321,7 +321,7 @@ function OlderComments({ q }: { q: { hasNextPage: boolean; isFetchingNextPage: b
       accessibilityRole="button"
       hitSlop={8}
       onPress={() => {
-        Haptics.selectionAsync();
+        Haptics.selection();
         q.fetchNextPage();
       }}
       style={styles.older}>

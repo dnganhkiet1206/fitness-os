@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Angry, Check, Frown, Laugh, Meh, Smile, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
@@ -251,7 +251,7 @@ export default function LogSleepSheet() {
       invalidate();
       // Sleep Insights screen reads its own multi-night history key
       queryClient.invalidateQueries({ queryKey: ['sleep_history', user?.id] });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       nav.back();
       toast.success(i18n.logSleepSaved);
     },
@@ -349,7 +349,7 @@ export default function LogSleepSheet() {
               accessibilityState={{ selected: active }}
               aria-selected={active}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setQuality(q.value);
               }}
               style={[
@@ -407,7 +407,7 @@ export default function LogSleepSheet() {
              disabled on `isPending`, no toast fired, the sheet never closed,
              and the paused mutation was dropped on the next launch. */
           if (offlineNow() && user) {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Haptics.success();
             nav.back();
             toast.success(i18n.logMealQueued);
             queue.mutate({

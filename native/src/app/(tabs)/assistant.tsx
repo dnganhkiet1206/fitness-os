@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { useMemo, useState } from 'react';
 import {
@@ -207,7 +207,7 @@ export default function AssistantScreen() {
     about, and `?` and `&` are ordinary punctuation in a sentence.
   */
   const askCoach = (question?: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     const to = question ? `/ai-coach?q=${encodeURIComponent(question)}` : '/ai-coach';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     nav.push(to as any);
@@ -392,7 +392,7 @@ export default function AssistantScreen() {
   );
 
   const go = (route: string) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     nav.push(route as any);
   };
@@ -475,7 +475,7 @@ export default function AssistantScreen() {
             accessibilityLabel={vi ? 'Về trang chủ' : 'Back to dashboard'}
             hitSlop={10}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.light();
               nav.navigate('/');
             }}
             style={styles.iconBtn}>
@@ -691,7 +691,7 @@ export default function AssistantScreen() {
               accessibilityState={{ selected: selected === m.kind }}
               aria-selected={selected === m.kind}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setSelected(m.kind);
               }}>
               <LiquidGlass

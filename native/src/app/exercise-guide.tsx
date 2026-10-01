@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Bookmark, Check, Maximize2, Play, X } from 'lucide-react-native';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
@@ -314,7 +314,7 @@ export default function ExerciseGuideSheet() {
     viên pill, mà nay hai thứ đổi cùng lúc.
   */
   const pickTab = useCallback((id: GuideTab) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setTab(id);
   }, []);
 
@@ -509,7 +509,7 @@ export default function ExerciseGuideSheet() {
                   styles={styles}
                   reduced={reduced}
                   onOpen={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     nav.push({
                       pathname: '/media-viewer',
                       params: { ex: g?.id ?? '', name: g?.name || title, i: String(i) },
@@ -960,7 +960,7 @@ export default function ExerciseGuideSheet() {
                 accessibilityLabel={i18n.nEgOpenMedia}
                 hitSlop={8}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   nav.push({
                     pathname: '/media-viewer',
                     /* Mở ĐÚNG tấm đang xem. Vuốt tới tấm ba rồi bấm mở mà ra
@@ -1072,7 +1072,7 @@ export default function ExerciseGuideSheet() {
             accessibilityRole="button"
             accessibilityLabel={i18n.nEgStart}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               nav.back();
             }}
             style={styles.cta}>
@@ -1102,7 +1102,7 @@ export default function ExerciseGuideSheet() {
         accessibilityLabel={i18n.a11yClose}
         hitSlop={8}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           nav.back();
         }}
         style={styles.close}>

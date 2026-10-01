@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Bell, Droplets, Dumbbell, HeartPulse, type LucideIcon, Moon, Pill, Sunrise, Utensils } from 'lucide-react-native';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
@@ -118,7 +118,7 @@ export default function RemindersScreen() {
           <Switch
             value={prefs.water.enabled}
             onValueChange={(v) => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               toggle('water', v);
             }}
             trackColor={{ true: c.readinessGreen, false: c.secondary }}
@@ -139,7 +139,7 @@ export default function RemindersScreen() {
                 accessibilityLabel={i18n.nReminderEveryHours.replace('{n}', String(n))}
                 style={styles.intervalChip}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   setWaterInterval(n);
                 }}>
                 <Text
@@ -184,7 +184,7 @@ export default function RemindersScreen() {
                 <Switch
                   value={r.enabled}
                   onValueChange={(v) => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     toggle(key, v);
                   }}
                   trackColor={{ true: c.readinessGreen, false: c.secondary }}
@@ -203,7 +203,7 @@ export default function RemindersScreen() {
                   hitSlop={8}
                   style={styles.smartBtn}
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     setTime(key, offer.hour, offer.minute);
                   }}>
                   <Text style={styles.smartBtnText}>

@@ -1,5 +1,5 @@
 import { nav } from '@/lib/nav';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Beef, Flame, Footprints, Milk, Minus, Moon, Salad, Star, Sunrise, Target, Wheat, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useId, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -1037,7 +1037,7 @@ export function NutritionCard({
         <PressScale
           accessibilityRole="button"
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setShowLeft((v) => !v);
           }}>
           {card}
@@ -1583,7 +1583,7 @@ function CompactWidget({
   );
 
   const press = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     onPress();
   };
 
@@ -1827,7 +1827,7 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
           disabled={!undoable}
           style={[styles.quickUndo, !undoable && styles.quickOff]}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             undo.mutate({ onError: (e: Error) => toast.fail(e) });
           }}>
           {/*
@@ -1855,7 +1855,7 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
             accessibilityLabel={i18n.a11yAddWater.replace('{x}', String(amount)).replace('{unit}', vl)}
             style={styles.quickBtn}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.light();
               add.mutate(volumeToMl(amount, unit), { onError: (e: Error) => toast.fail(e) });
             }}>
             {/* Gradient CHÉO, không phải ngang, và không phải một màu phẳng.

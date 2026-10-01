@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Check, ChevronDown, Info, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
@@ -674,7 +674,7 @@ export function DayPlan({
       setResting((s) => {
         if (s === null) return null;
         if (s.left <= 1) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          Haptics.success();
           return null;
         }
         return { ...s, left: s.left - 1 };
@@ -686,18 +686,18 @@ export function DayPlan({
   const restOf = useCallback((row: SetRow) => rest[row.key] ?? row.plannedRest, [rest]);
 
   const addExercise = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     setExtra((prev) => [...prev, { id: Crypto.randomUUID(), name: '', sets: 1 }]);
   };
   const renameExtra = (id: string, name: string) =>
     setExtra((prev) => prev.map((e) => (e.id === id ? { ...e, name } : e)));
   const addSet = (id: string) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     /* Same ceiling as every other set count in this file. */
     setExtra((prev) => prev.map((e) => (e.id === id ? { ...e, sets: Math.min(20, e.sets + 1) } : e)));
   };
   const removeExtra = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     setExtra((prev) => prev.filter((e) => e.id !== id));
   };
 
@@ -818,7 +818,7 @@ export function DayPlan({
 
   const doToggle = useCallback(
     (row: SetRow) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Haptics.medium();
       const secs = rest[row.key] ?? row.plannedRest;
       // `shown`, not `prev` — a row ticked by a logged session is absent from
       // `prev`, so `!prev[key]` would write `true` over a box already drawn
@@ -861,7 +861,7 @@ export function DayPlan({
           nhích là thứ người ta bấm lại ba lần rồi kết luận app hỏng.
         */
         if (row.adHoc && !rowReady(row)) {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          Haptics.warning();
           toast.error(i18n.nRdNeedInfo);
           return;
         }
@@ -916,7 +916,7 @@ export function DayPlan({
   );
 
   const bumpRest = (row: SetRow, by: number) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setRest((prev) => ({
       ...prev,
       [row.key]: Math.max(0, Math.min(REST_MAX, (prev[row.key] ?? row.plannedRest) + by)),
@@ -1038,7 +1038,7 @@ export function DayPlan({
      Thu lại là việc của thứ đã XONG, đúng như yêu cầu đặt ra. */
   const blockOpen = (b: { rows: SetRow[] }) => !blockDone(b) || (opened[blockKey(b)] ?? false);
   const toggleBlock = (b: { rows: SetRow[] }) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setOpened((prev) => ({ ...prev, [blockKey(b)]: !blockOpen(b) }));
   };
 
@@ -1124,7 +1124,7 @@ export function DayPlan({
         },
         {
           onSuccess: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Haptics.success();
             if (storeKey) AsyncStorage.removeItem(storeKey).catch(() => {});
             toast.success(i18n.nRdAppended);
           },
@@ -1210,7 +1210,7 @@ export function DayPlan({
         templateName: template?.name?.trim() || 'Workout',
         sessionRpe,
       });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       /* Cleared after the intention is queued, never before: the resume point
          is the only other copy of these sets until the write is in the cache. */
       if (storeKey) AsyncStorage.removeItem(storeKey).catch(() => {});
@@ -1229,7 +1229,7 @@ export function DayPlan({
       },
       {
         onSuccess: async (res) => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          Haptics.success();
           if (storeKey) AsyncStorage.removeItem(storeKey).catch(() => {});
           /* Cùng lời mời chia sẻ như sheet ghi buổi tập (#29): buổi xong từ lịch
              tuần cũng là một buổi xong. */
@@ -1442,7 +1442,7 @@ export function DayPlan({
                     accessibilityLabel={`${block.name} — ${i18n.nEgOpen}`}
                     hitSlop={{ top: 10, bottom: 10 }}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      Haptics.selection();
                       nav.push({
                         pathname: '/exercise-guide',
                         params: { ex: block.rows[0].exerciseId ?? '', name: block.name },
@@ -1704,7 +1704,7 @@ export function DayPlan({
                     accessibilityLabel={`${i18n.nWbRest} ${restLabel(secs)}`}
                     hitSlop={12}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      Haptics.selection();
                       setEditing(open ? null : row.key);
                     }}
                     style={[
@@ -1738,7 +1738,7 @@ export function DayPlan({
                     accessibilityLabel={`${i18n.nWbEffort} ${effort}`}
                     hitSlop={12}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      Haptics.selection();
                       setEditing(open ? null : row.key);
                     }}
                     style={[
@@ -1798,7 +1798,7 @@ export function DayPlan({
                           aria-selected={v === effort}
                           hitSlop={{ top: 8, bottom: 8 }}
                           onPress={() => {
-                            Haptics.selectionAsync();
+                            Haptics.selection();
                             setRpe((prev) => ({ ...prev, [row.key]: v }));
                             // Choosing is the end of the errand — it closes, the
                             // same way it opened itself, so the list goes back
@@ -1977,7 +1977,7 @@ export function DayPlan({
         next={resting?.next ?? null}
         i18n={i18n}
         onSkip={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           setResting(null);
         }}
         onAdjust={(delta) =>

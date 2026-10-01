@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, ChevronUp, Minus, Plus, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -103,7 +103,7 @@ function Stepper({
   };
 
   const bump = (dir: 1 | -1) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setStr(fmt(commit(num + dir * step)));
   };
 
@@ -269,7 +269,7 @@ export function WorkoutSetPanel({
           accessibilityLabel={i18n.nWbMoveUp}
           disabled={index === 0}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.light();
             onMove(index - 1);
           }}
           style={[styles.action, index === 0 && styles.stepOff]}>
@@ -282,7 +282,7 @@ export function WorkoutSetPanel({
           accessibilityLabel={i18n.nWbMoveDown}
           disabled={index >= total - 1}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            Haptics.light();
             onMove(index + 1);
           }}
           style={[styles.action, index >= total - 1 && styles.stepOff]}>
@@ -294,7 +294,7 @@ export function WorkoutSetPanel({
       <PressScale
         accessibilityRole="button"
         onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          Haptics.medium();
           onRemove();
         }}
         style={styles.remove}>

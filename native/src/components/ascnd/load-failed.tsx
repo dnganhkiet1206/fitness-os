@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { CloudOff, RotateCw } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
@@ -94,7 +94,7 @@ export function LoadFailed({
           accessibilityLabel={i18n.nRetry}
           disabled={busy}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             onRetry();
           }}
           style={[styles.retry, busy && styles.retryPressed]}>

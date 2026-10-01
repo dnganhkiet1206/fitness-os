@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -165,7 +165,7 @@ export function CardPeek({
        overlay uses — a quest is a small daily thing and a medal is not, and a
        hierarchy of feelings only exists if the small one is smaller. The daily
        cap is what keeps it from becoming a buzz you learn to ignore. */
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    Haptics.light();
 
     if (reduced) {
       rise.value = withSequence(

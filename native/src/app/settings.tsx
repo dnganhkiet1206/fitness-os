@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import type { LucideIcon } from 'lucide-react-native';
 import {
@@ -136,7 +136,7 @@ export default function SettingsScreen() {
   }, []);
 
   const shareCrashes = async () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     const body = crashes
       .map((c, i) => `#${i + 1}  ${c.at}  ${c.fatal ? 'FATAL' : 'non-fatal'}\n${c.message}\n${c.stack}`)
       .join('\n\n———\n\n');
@@ -172,7 +172,7 @@ export default function SettingsScreen() {
 
   const exportData = async () => {
     if (!user || exporting) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     setExporting(true);
     try {
       // The tables are independent, so they are fetched together rather than
@@ -252,7 +252,7 @@ export default function SettingsScreen() {
    */
   const [deleting, setDeleting] = useState(false);
   const confirmDeleteAccount = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Haptics.heavy();
     Alert.alert(i18n.nDeleteAccountTitle, i18n.nDeleteAccountBody, [
       { text: i18n.nCancel, style: 'cancel' },
       {
@@ -301,7 +301,7 @@ export default function SettingsScreen() {
   };
 
   const confirmSignOut = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     Alert.alert(i18n.nSignOut, i18n.nSignOutConfirm, [
       { text: i18n.nCancel, style: 'cancel' },
       {
@@ -337,7 +337,7 @@ export default function SettingsScreen() {
       <Animated.View entering={rise(0)}>
       <PressScale
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           nav.push('/edit-profile');
         }}>
         <GlassCard>
@@ -379,7 +379,7 @@ export default function SettingsScreen() {
           <Switch
             value={mascot.enabled}
             onValueChange={(v) => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               mascot.setEnabled(v);
             }}
             trackColor={{ true: c.readinessGreen, false: c.secondary }}
@@ -403,7 +403,7 @@ export default function SettingsScreen() {
             <Switch
               value={mascot.companion}
               onValueChange={(v) => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 mascot.setCompanion(v);
               }}
               trackColor={{ true: c.readinessGreen, false: c.secondary }}
@@ -430,7 +430,7 @@ export default function SettingsScreen() {
         */}
         <PressScale
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             nav.push('/mascot-room');
           }}>
           <View style={styles.roomRow}>
@@ -470,7 +470,7 @@ export default function SettingsScreen() {
                   aria-checked={selected} // web không dịch accessibilityState ra aria-checked (#101)
                   disabled={!m.unlocked}
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     mascot.setSelectedId(m.id);
                   }}
                   style={[
@@ -566,7 +566,7 @@ export default function SettingsScreen() {
                 t === 'system' ? i18n.settingsThemeSystem : t === 'light' ? i18n.settingsThemeLight : i18n.settingsThemeDark
               }
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setTheme(t);
               }}
               style={styles.langChip}>
@@ -595,7 +595,7 @@ export default function SettingsScreen() {
               itemKey={l}
               accessibilityLabel={l === 'vi' ? 'Tiếng Việt' : 'English'}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setLang(l);
               }}
               style={styles.langChip}>
@@ -612,7 +612,7 @@ export default function SettingsScreen() {
       <Animated.View entering={rise(4)}>
       <PressScale
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           nav.push('/reminders');
         }}>
         <GlassCard>
@@ -647,7 +647,7 @@ export default function SettingsScreen() {
             value={lock.enabled}
             disabled={!lock.available}
             onValueChange={(v) => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               lock.setEnabled(v);
             }}
             trackColor={{ true: c.readinessGreen, false: c.secondary }}
@@ -660,7 +660,7 @@ export default function SettingsScreen() {
       <Animated.View entering={rise(6)}>
       <PressScale
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           nav.push('/change-password');
         }}>
         <GlassCard>
@@ -741,7 +741,7 @@ export default function SettingsScreen() {
       <Animated.View entering={rise(9)}>
       <PressScale
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           nav.push('/legal');
         }}>
         <GlassCard>

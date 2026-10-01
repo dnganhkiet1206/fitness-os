@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import {
   Pressable as RNPressable,
   StyleSheet,
@@ -177,8 +177,8 @@ export function PressScale({
         onPressOut?.(e);
       }}
       onPress={(e) => {
-        if (haptic === 'selection') Haptics.selectionAsync();
-        else if (haptic === 'impact') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (haptic === 'selection') Haptics.selection();
+        else if (haptic === 'impact') Haptics.light();
         onPress?.(e);
       }}>
       {children}

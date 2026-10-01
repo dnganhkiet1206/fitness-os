@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
@@ -133,7 +133,7 @@ export function useShareRecipe() {
       return data as string;
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       qc.invalidateQueries({ queryKey: ['community_feed'] });
       qc.invalidateQueries({ queryKey: ['community_user_posts'] });
       qc.invalidateQueries({ queryKey: ['community_shared_sessions', user?.id] });

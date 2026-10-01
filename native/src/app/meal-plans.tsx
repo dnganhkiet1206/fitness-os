@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { UtensilsCrossed } from 'lucide-react-native';
 import { useState } from 'react';
@@ -95,7 +95,7 @@ export default function MealPlansScreen() {
                 perDay={p.meals_per_day ?? 3}
                 days={fill?.[p.id]}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   nav.push({ pathname: '/meal-plan', params: { plan: p.id } });
                 }}
               />

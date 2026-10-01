@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Text, View, useWindowDimensions } from 'react-native';
 import type Animated from 'react-native-reanimated';
@@ -216,9 +216,9 @@ export function WeightGoalDialog({
      * it.
      */
     if (Math.floor(next / 10) !== Math.floor(prev / 10)) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.light();
     } else {
-      Haptics.selectionAsync();
+      Haptics.selection();
     }
   }, []);
 
@@ -274,7 +274,7 @@ export function WeightGoalDialog({
             <PressScale
               style={styles.ghost}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 onSave(null);
                 onClose();
               }}>
@@ -284,7 +284,7 @@ export function WeightGoalDialog({
           <PressScale
             style={styles.done}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Haptics.light();
               onSave(weightToKg(value, unit));
               onClose();
             }}>

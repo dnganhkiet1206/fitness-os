@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useCallback, useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 
@@ -288,7 +288,7 @@ function useSyncMutation(silent: boolean) {
       queryClient.invalidateQueries({ queryKey: ['sleep_duration_history', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['recent_workouts', user?.id] });
       if (silent) return;
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       toast.success(i18n.nHealthSynced);
     },
     /* "No permission" and "no data yet" are the two ordinary outcomes of an

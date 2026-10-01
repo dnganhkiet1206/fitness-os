@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Medal as MedalIcon, Share2, Trophy } from 'lucide-react-native';
 import { useEffect, useRef } from 'react';
 import { Share, StyleSheet, Text, View } from 'react-native';
@@ -159,7 +159,7 @@ function MedalCard({
    * làm vào ngày phát hành nằm ở `docs/PRE_RELEASE.md` §8, kèm đủ các bước.
    */
   const share = async () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     try {
       await Share.share({ message: `🏅 ${title} — ${desc}! #ASCND` });
     } catch (e) {

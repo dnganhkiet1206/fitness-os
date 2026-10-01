@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Beef, ChevronRight, Flame, Milk, UtensilsCrossed, Wheat } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -117,7 +117,7 @@ export function RecipePostCard({
     `onMutate`, không thuộc `onSuccess`).
   */
   const addToMeal = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     const foods = toPlannedFoods(p);
     if (foods.length === 0) return;
     const write = async (mealType: string, label: string) => {

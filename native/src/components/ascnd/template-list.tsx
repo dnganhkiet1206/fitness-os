@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, Dumbbell, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -275,7 +275,7 @@ export function TemplateRow({
      ai đó sửa một bên. */
   const toggle = () => {
     if (exs.length === 0) return;
-    Haptics.selectionAsync();
+    Haptics.selection();
     setOpen((v) => !v);
   };
 

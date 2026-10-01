@@ -492,7 +492,7 @@ let longPress = 0;
      rằng chưa làm. */
   for (const [re, why] of [
     [/overshootLeft=\{fullSwipe\}/, 'không cho kéo quá bề rộng nút, nên không có chỗ nào để kéo dài'],
-    [/ImpactFeedbackStyle\.Medium/, 'không có tiếng haptic riêng cho ngưỡng kéo-dài'],
+    [/Haptics\.medium\(\)/, 'không có tiếng haptic riêng cho ngưỡng kéo-dài'],
     [/methods\.current\?\.close\(\)/, 'không đóng hàng lại sau khi cú kéo dài đã làm xong việc'],
   ]) {
     if (!re.test(src)) problems.push(`${COMPONENT}: ${why}`);

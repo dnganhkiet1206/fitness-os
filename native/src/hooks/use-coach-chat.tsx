@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { fetch as expoFetch } from 'expo/fetch';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Alert, AppState } from 'react-native';
@@ -192,7 +192,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
   }, [learnFrom]);
 
   const newChat = useCallback(() => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     learnFrom(messages);
     convoIdRef.current = null;
     setConversationId(null);
@@ -201,7 +201,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
   }, [messages, learnFrom]);
 
   const loadConversation = useCallback(async (id: string) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     // Newest first with a limit, then reversed — an old conversation could
     // otherwise be reloaded whole, and every message of it would ride along
     // on the next request.
@@ -241,7 +241,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
       const text = raw.trim();
       if (!text || loadingRef.current) return;
       loadingRef.current = true;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.light();
 
       const userMsg: Msg = { role: 'user', content: text };
       let newMessages: Msg[] = [];

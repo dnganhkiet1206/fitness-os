@@ -85,8 +85,28 @@ quyết định kỹ thuật — audit chỉ nói "muốn thì bắt buộc nati
 ## 5. Câu hỏi cần Kiệt trả lời trước Phase 2
 
 1. Rest timer có cần **chạy ngoài màn hình khóa / Dynamic Island** không?
-   (Không → giữ RN, bỏ mục Live Activities.)
+   → **Kiệt: CÓ** (01/10/2026). Live Activities thành yêu cầu sản phẩm, ưu tiên High.
 2. Có muốn **widget Home Screen** nào không? (streak? buổi tập hôm nay?)
+   → **Kiệt: CÓ** (01/10/2026). Cần Kiệt chọn widget cụ thể — xem đề xuất ở mục 6.
 3. Workout hiện tại Kiệt có thấy **giật ở thao tác nào cụ thể** trên máy thật
-   không? (Audit tĩnh không thấy bằng chứng; cảm nhận của Kiệt là dữ liệu
-   đầu vào cho Phase 3.)
+   không?
+   → **Kiệt: trả lời sau** (01/10/2026). Phase 3 đo đạc tạm chờ.
+
+## 6. Đề xuất Live Activities + Widgets (chờ Kiệt chọn)
+
+**Live Activity — Rest timer** (duy nhất, vì là thứ duy nhất có state "đang chạy"
+cần nhìn khi app đóng):
+- Lock Screen / Dynamic Island hiện: tên bài tập hiện tại, số set (vd "Set 3/5"),
+  thời gian nghỉ còn lại, nút "Bỏ qua nghỉ".
+- RN chỉ gửi state updates qua bridge → ActivityKit. Không duplicate logic đếm
+  giờ sang Swift: Swift chỉ render + nhận push state.
+
+**Widgets — đề xuất 2, làm 1 trước:**
+- W1 "Buổi tập hôm nay": tên buổi + giờ dự kiến + streak. Thông tin hữu ích ngay
+  từ Home Screen.
+- W2 "Streak / readiness": số ngày streak + điểm sẵn sàng hôm nay.
+- Không làm widget calories/cân nặng lẻ tẻ — chưa đủ lý do "useful information
+  ngay từ Home Screen" cho MVP.
+
+Thứ tự: Live Activity rest timer trước (gắn với workout = core), widget sau.
+Cả hai đều cần Phase 2b (foundation config plugin + EAS) xong trước.

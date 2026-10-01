@@ -15,7 +15,7 @@ import {
   Utensils,
   type LucideIcon,
 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useIsFocused } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -307,7 +307,7 @@ export default function MascotRoomScreen() {
   const { done: questDone, active: activeQuests, today, stepsGoal } = useDailyQuests();
 
   const reward = (refKey: string, amount: number, reason: string, xpGain: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.medium();
     const prevXp = wallet?.xp ?? 0;
     claim.mutate(
       { refKey, amount, reason },
@@ -324,7 +324,7 @@ export default function MascotRoomScreen() {
             const newR = rankForLevel(newLevel);
             if (newR.key !== prevR.key) {
               // Crossing a rank boundary is a full confetti moment
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              Haptics.success();
               fireCelebration({
                 title: newR.name[lang],
                 description: i18n.nRoomRankUp.replace('{r}', newR.name[lang]),
@@ -452,7 +452,7 @@ export default function MascotRoomScreen() {
           onLongPress={
             __DEV__
               ? () => {
-                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  Haptics.success();
                   claim.mutate(
                     { refKey: `dev:${Date.now()}`, amount: 300, reason: 'dev grant' },
                     { onSuccess: () => toast.success(fillCopy(i18n.nRoomEarned, { n: '300' })), onError: (e: Error) => toast.fail(e) },
@@ -508,7 +508,7 @@ export default function MascotRoomScreen() {
                 accessibilityRole="button"
                 hitSlop={9}
                 onPress={() => {
-                  Haptics.selectionAsync();
+                  Haptics.selection();
                   const next = label === 'auto' ? null : (label as (typeof DEV_EMOTIONS)[number]);
                   setDevEmo(next);
                   setDevEmotion(next);
@@ -523,7 +523,7 @@ export default function MascotRoomScreen() {
             accessibilityRole="button"
             hitSlop={9}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               nav.push('/koa-sheet');
             }}
             style={styles.devChip}>
@@ -535,7 +535,7 @@ export default function MascotRoomScreen() {
             accessibilityRole="button"
             hitSlop={9}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               nav.push('/koa-debug');
             }}
             style={styles.devChip}>
@@ -614,7 +614,7 @@ export default function MascotRoomScreen() {
           label={i18n.nRoomDressing}
           color={c.metricPurple}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             nav.push('/shop');
           }}
         />
@@ -623,7 +623,7 @@ export default function MascotRoomScreen() {
           label={i18n.nRoomChangeBuddy}
           color={c.metricOrangeGraphic}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             nav.push('/settings');
           }}
         />
@@ -705,7 +705,7 @@ export default function MascotRoomScreen() {
             accessibilityLabel={i18n.nFreezeBuy.replace('{n}', String(FREEZE_PRICE))}
             disabled={freezeFull || buyFreeze.isPending || balance < FREEZE_PRICE}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               buyFreeze.mutate(undefined, { onError: (e: Error) => toast.fail(e) });
             }}
             style={[

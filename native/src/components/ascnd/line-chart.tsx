@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useEffect, useId, useRef, useState } from 'react';
 import Animated, {
   Easing,
@@ -622,7 +622,7 @@ export function LineChart({ points, color: colorProp, height = 140, unit = '', e
     const i = nearest(px);
     if (i !== lastScrub.current) {
       lastScrub.current = i;
-      Haptics.selectionAsync();
+      Haptics.selection();
     }
   };
 

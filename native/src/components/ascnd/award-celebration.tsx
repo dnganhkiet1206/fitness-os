@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { X } from 'lucide-react-native';
 import { useEffect, useRef, useMemo } from 'react';
 import { Dimensions, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -140,7 +140,7 @@ export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAw
   const closing = useRef(false);
 
   useEffect(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    Haptics.success();
     backdrop.value = withTiming(1, { duration: 260 });
     pop.value = withDelay(140, withSpring(1, { stiffness: 220, damping: 14 }));
     confetti.value = withDelay(

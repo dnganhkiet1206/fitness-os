@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useIsFocused } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { Coins, X } from 'lucide-react-native';
@@ -441,7 +441,7 @@ export function Mascot({
     that a touch landed, and that is not a thing to ration.
   */
   const poke = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     emitKoa(
       { id: `greet:${localDateStr()}`, kind: 'koa_greeted', magnitude: 0.35 },
       refreshKoaContext(koaCtx),

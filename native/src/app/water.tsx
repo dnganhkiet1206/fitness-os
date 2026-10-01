@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, Droplets, Minus, PencilLine, Plus } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import {
@@ -169,7 +169,7 @@ export default function WaterScreen() {
                 .replace('{unit}', vl)}
               style={styles.quickBtn}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.light();
                 addWater.mutate(volumeToMl(amount, vUnit), {
                   onError: (e: Error) => toast.fail(e),
                 });
@@ -185,7 +185,7 @@ export default function WaterScreen() {
           accessibilityRole="button"
           style={styles.customBtn}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setManualText('');
             setManualOpen(true);
           }}>
@@ -229,7 +229,7 @@ export default function WaterScreen() {
             accessibilityState={{ expanded: logsOpen }}
             aria-expanded={logsOpen} // web không dịch accessibilityState ra aria-expanded (#103, #123)
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               setLogsOpen((v) => !v);
             }}
             style={styles.logHead}>

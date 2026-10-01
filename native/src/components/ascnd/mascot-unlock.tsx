@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useEffect, useRef, useMemo } from 'react';
 import { Dimensions, Modal, StyleSheet, Text, View } from 'react-native';
 import Animated, {
@@ -148,7 +148,7 @@ export function MascotCelebrationModal({ mascot, onClose }: { mascot: MascotDef;
   const closing = useRef(false);
 
   useEffect(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    Haptics.success();
     backdrop.value = withTiming(1, { duration: 280 });
     // Hero entrance: overshoot spring + a full 3D turn to show off
     pop.value = withDelay(140, withSpring(1, { stiffness: 210, damping: 12 }));
@@ -178,7 +178,7 @@ export function MascotCelebrationModal({ mascot, onClose }: { mascot: MascotDef;
   const dismiss = (use: boolean) => {
     if (closing.current) return;
     closing.current = true;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    Haptics.light();
     if (use) setSelectedId(mascot.id);
     backdrop.value = withTiming(0, { duration: 200 });
     setTimeout(onClose, 210);

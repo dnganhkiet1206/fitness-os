@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { CalendarDays, Check, Plus, X } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -167,7 +167,7 @@ export default function LogWorkoutSheet() {
 
   const usePlan = () => {
     if (!todaysPlan) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     const exs: TplExercise[] = Array.isArray(todaysPlan.exercises)
       ? (todaysPlan.exercises as TplExercise[])
       : [];
@@ -371,12 +371,12 @@ export default function LogWorkoutSheet() {
   };
 
   const toggleWarmup = (idx: number) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setSets((prev) => prev.map((s, i) => (i === idx ? { ...s, warmup: !s.warmup } : s)));
   };
 
   const pickExercise = (idx: number, ex: { id: string; name: string }) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setSets((prev) => prev.map((s, i) => (i === idx ? { ...s, exerciseId: ex.id, exerciseName: ex.name } : s)));
     setFocusedRow(null);
   };
@@ -390,7 +390,7 @@ export default function LogWorkoutSheet() {
   };
 
   const addSet = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setSets((prev) => {
       const last = prev[prev.length - 1];
       // Duplicate the previous exercise/weight — the common next-set case
@@ -413,12 +413,12 @@ export default function LogWorkoutSheet() {
 
   /** A blank row — the next *exercise*, where `addSet` gives the next set. */
   const addExercise = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setSets((prev) => [...prev, { ...EMPTY_SET }]);
   };
 
   const removeSet = (idx: number) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setSets((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== idx) : prev));
   };
 
@@ -590,7 +590,7 @@ export default function LogWorkoutSheet() {
     meta: { offline: RECORD },
     mutationKey: [...OFFLINE_WRITE_KEY],
     onMutate: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       finish(i18n.logMealQueued);
     },
   });
@@ -622,7 +622,7 @@ export default function LogWorkoutSheet() {
       return res;
     },
     onSuccess: (res) => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       if (res.records.length > 0) setRecords(res.records);
       else finish();
     },
@@ -939,7 +939,7 @@ export default function LogWorkoutSheet() {
               itemKey={String(v)}
               accessibilityLabel={String(v)}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setRpe(v);
               }}
               style={styles.chip}>

@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 
 import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
@@ -93,7 +93,7 @@ export function useToggleSupplement(date?: string) {
   const queryClient = useQueryClient();
   return {
     set(supplementId: string, taken: boolean) {
-      Haptics.selectionAsync();
+      Haptics.selection();
       const dateStr = date ?? today();
       const listKey = ['supplement_checklist', user?.id, dateStr];
       const rows = queryClient.getQueryData<SuppRow[]>(listKey);
@@ -164,7 +164,7 @@ export function useAddSupplement() {
       if (error) throw error;
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       queryClient.invalidateQueries({ queryKey: ['supplement_checklist'] });
     },
   });
@@ -267,7 +267,7 @@ export function useAddExercise() {
        báo KẾT QUẢ thì đã có `notificationAsync`, và 27 chỗ khác trong app dùng
        đúng nó. Xem `tools/tap-feedback.mjs`. */
     onMutate: () => {
-      Haptics.selectionAsync();
+      Haptics.selection();
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['exercises', user?.id] });
@@ -317,7 +317,7 @@ export function useAddWorkoutTemplate() {
       return data.id as string;
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       queryClient.invalidateQueries({ queryKey: ['workout_templates', user?.id] });
       queryClient.invalidateQueries({ queryKey: ['workout_template_names', user?.id] });
     },
@@ -427,7 +427,7 @@ export function useUpsertRoutineDay() {
        mạng xong), còn `toggleDeload` thì không rung gì cho tới khi mạng xong.
        Đặt ở đây thì cả hai chỗ có đúng một cú, đúng lúc. */
     onMutate: () => {
-      Haptics.selectionAsync();
+      Haptics.selection();
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['routine_days', user?.id] });
@@ -518,7 +518,7 @@ export function useCreateMealPlan() {
       return data;
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       queryClient.invalidateQueries({ queryKey: ['meal_plans', user?.id] });
     },
   });
@@ -602,7 +602,7 @@ export function useAddMealPlanItem() {
     /* Rung lúc chạm — `impact` là hai vật vừa va nhau, và cái va ấy là ngón
        tay, không phải gói tin trả về. Xem `tools/tap-feedback.mjs`. */
     onMutate: () => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Haptics.light();
     },
     onSuccess: (_data, item) => {
       queryClient.invalidateQueries({ queryKey: ['meal_plan_items', item.meal_plan_id] });

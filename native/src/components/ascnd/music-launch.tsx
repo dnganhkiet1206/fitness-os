@@ -1,5 +1,5 @@
 import { Music } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useEffect, useState } from 'react';
 import { Linking, Text, View } from 'react-native';
 
@@ -70,7 +70,7 @@ export function MusicLaunch() {
           accessibilityRole="button"
           accessibilityLabel={`${i18n.nMusicLabel}: ${a.label}`}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             /* Nothing to report if this fails: the app was there a moment ago
                when `canOpenURL` said so, and a toast about a music shortcut in
                the middle of logging a set is worse than a button that did

@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react-native';
 import { useState } from 'react';
@@ -84,7 +84,7 @@ export default function DiaryScreen() {
   const go = (days: number) => {
     const next = shiftLocalDate(dateStr, days);
     if (next > today) return;
-    Haptics.selectionAsync();
+    Haptics.selection();
     setDateStr(next);
   };
 
@@ -171,7 +171,7 @@ export default function DiaryScreen() {
           accessibilityRole="button"
           style={styles.todayPill}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setDateStr(today);
           }}>
           <Text style={styles.todayPillText}>{i18n.nDiaryToday}</Text>
@@ -221,7 +221,7 @@ export default function DiaryScreen() {
               accessibilityRole="button"
               style={styles.add}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Haptics.light();
                 nav.push(isToday ? '/log-meal' : `/log-meal?date=${dateStr}`);
               }}>
               <Icon icon={Plus} size={16} color={c.primary} />

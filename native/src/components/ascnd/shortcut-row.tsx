@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronRight, type LucideIcon } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
@@ -59,7 +59,7 @@ export function ShortcutRow({
          it that this component exists to add. */
       accessibilityLabel={value ? `${label}, ${value}` : label}
       onPress={() => {
-        Haptics.selectionAsync();
+        Haptics.selection();
         onPress();
       }}>
       <GlassCard style={styles.card}>

@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, ChevronRight } from 'lucide-react-native';
 import { useEffect, useId } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -138,7 +138,7 @@ export function HeroPanel({
         accessibilityLabel={i18n.nHeroDetails.replace('{n}', title)}
         hitSlop={14}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           onToggleDetail?.();
         }}
         style={styles.moreBtn}>
@@ -156,7 +156,7 @@ export function HeroPanel({
               accessibilityRole="link"
               accessibilityLabel={more.label}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 more.onPress();
               }}
               style={styles.moreRow}>

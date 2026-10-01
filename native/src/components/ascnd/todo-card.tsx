@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import {
   Bell,
   BellOff,
@@ -460,7 +460,7 @@ function TodoRow({
     mới là chỗ duy nhất gọi. Xem chú thích ở đó.
   */
   const press = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     /* Bấm để ghi trên một dòng đã bỏ qua là đổi ý, nên nó gỡ cờ luôn — lời hứa
        ở chú thích `todoProgress` ("chính lượt ghi ấy gỡ cờ bỏ qua"). Không gỡ
        thì việc vừa ghi vẫn nằm ngoài mẫu số và con số không nhúc nhích. */
@@ -542,7 +542,7 @@ function TodoRow({
             label: reminderOn ? i18n.nTodoOff : i18n.nTodoOn,
             tint: c.primary,
             onPress: () => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               toggle(reminderKey, !reminderOn);
             },
           },

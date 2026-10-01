@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
@@ -72,14 +72,14 @@ export default function KoaSheetScreen() {
   const label = KOA_EXPRESSIONS.find((e) => e.key === expression)?.label ?? expression.toUpperCase();
 
   const cycle = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     const i = KOA_EXPRESSIONS.findIndex((e) => e.key === expression);
     setExpression(KOA_EXPRESSIONS[(i + 1) % KOA_EXPRESSIONS.length].key);
   };
 
   /** tapping an item wears it; tapping it again takes it off */
   const toggle = (slot: KoaSlot, id: string) => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     setWorn((w) => ({ ...w, [slot]: w[slot] === id ? undefined : id }));
   };
 
@@ -107,7 +107,7 @@ export default function KoaSheetScreen() {
               accessibilityRole="button"
               key={e.key}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setExpression(e.key);
               }}
               style={[styles.tile, expression === e.key && styles.tileOn]}>
@@ -135,7 +135,7 @@ export default function KoaSheetScreen() {
               accessibilityRole="button"
               key={po.key}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setPose(po.key);
                 setExpression(POSE_FACE[po.key]);
               }}
@@ -156,7 +156,7 @@ export default function KoaSheetScreen() {
             <Pressable
               accessibilityRole="button"
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 setOpenSlot(open ? null : slot);
               }}
               style={styles.cardHead}>

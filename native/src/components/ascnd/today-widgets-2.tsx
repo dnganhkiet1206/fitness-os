@@ -1,5 +1,5 @@
 import { nav } from '@/lib/nav';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import {
   CalendarCheck,
   CheckCircle2,
@@ -240,7 +240,7 @@ export function BiometricsCard() {
   if (vitals.length === 0 && vo2 == null) return null;
 
   return (
-    <PressScale onPress={() => { Haptics.selectionAsync(); nav.push('/biometrics'); }}>
+    <PressScale onPress={() => { Haptics.selection(); nav.push('/biometrics'); }}>
       <GlassCard style={styles.stackCard}>
         <View style={styles.headRow}>
           <MicroTitle>{i18n.dcBioTitle}</MicroTitle>
@@ -821,7 +821,7 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
         accessibilityRole="button"
         accessibilityLabel={vi ? 'Xem tất cả buổi tập đã ghi' : 'See all logged workouts'}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           nav.push('/sessions');
         }}
         style={styles.latestRow}>
@@ -970,7 +970,7 @@ export function RecentAwardsCard() {
           accessibilityRole="button"
           hitSlop={8}
           style={styles.viewAll}
-          onPress={() => { Haptics.selectionAsync(); nav.push('/awards'); }}>
+          onPress={() => { Haptics.selection(); nav.push('/awards'); }}>
           <Text style={styles.viewAllText}>{i18n.dcViewAll}</Text>
           <Icon icon={ChevronRight} size={12} color={c.primary} />
         </Pressable>

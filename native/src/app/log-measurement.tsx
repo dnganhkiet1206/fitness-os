@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { useState } from 'react';
 import {
@@ -128,7 +128,7 @@ export default function LogMeasurementSheet() {
     !queue.isSuccess;
 
   const save = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     const payload: BodyMeasurementInput = { date: localDateStr(date) };
     for (const { key } of FIELDS) {
       const v = fields[key]?.trim();
@@ -142,7 +142,7 @@ export default function LogMeasurementSheet() {
        then dropped on the next launch. `date` is the upsert's conflict target,
        so a replay updates the same row rather than making a second one. */
     if (offlineNow() && user) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       nav.back();
       toast.success(i18n.logMealQueued);
       queue.mutate({
@@ -157,7 +157,7 @@ export default function LogMeasurementSheet() {
     }
     upsert.mutate(payload, {
       onSuccess: () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Haptics.success();
         nav.back();
         toast.success(i18n.progressSaved);
       },

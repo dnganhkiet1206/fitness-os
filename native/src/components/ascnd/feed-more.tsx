@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { CheckCheck, RotateCw } from 'lucide-react-native';
 import { ActivityIndicator, type NativeScrollEvent, type NativeSyntheticEvent, Text, View } from 'react-native';
 
@@ -46,7 +46,7 @@ export function FeedMore({ q }: { q: Pages }) {
   const styles = stylesFor(c);
   const i18n = useI18n();
   const more = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     q.fetchNextPage();
   };
 

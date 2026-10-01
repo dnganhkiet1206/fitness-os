@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Check, Plus, Trash2, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
@@ -98,7 +98,7 @@ export default function SupplementsScreen() {
           hitSlop={8}
           style={[styles.headerAdd, adding && styles.headerAddOn]}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setAdding((v) => !v);
           }}>
           <Icon icon={adding ? X : Plus} size={18} color={adding ? c.primary : c.foreground} />
@@ -138,7 +138,7 @@ export default function SupplementsScreen() {
                 itemKey={t.key}
                 accessibilityLabel={t.label}
                 style={styles.chip}
-                onPress={() => { Haptics.selectionAsync(); setTiming(t.key); }}>
+                onPress={() => { Haptics.selection(); setTiming(t.key); }}>
                 <Text style={[styles.chipText, timing === t.key && styles.chipTextActive]}>{t.label}</Text>
               </PickRow.Item>
             ))}

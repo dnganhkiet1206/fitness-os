@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { ChevronRight, ClipboardList, Pencil, Pill, Plus, ScanBarcode, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
@@ -117,7 +117,7 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
     g === 'bulk' ? i18n.goalBulk : g === 'cut' ? i18n.goalCut : g === 'maintain' ? i18n.goalMaintain : null;
 
   const open = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Haptics.light();
     setCreating(true);
   };
 
@@ -194,7 +194,7 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
             hitSlop={8}
             style={styles.planAllPill}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               nav.push('/meal-plans');
             }}>
             <Text style={styles.planAll}>{vi ? 'Xem tất cả' : 'See all'}</Text>
@@ -253,7 +253,7 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
               days={fill?.[p.id]}
               a11yLabel={`${p.name} — ${i18n.nMealPlanOpen}`}
               onPress={() => {
-                Haptics.selectionAsync();
+                Haptics.selection();
                 nav.push({ pathname: '/meal-plan', params: { plan: p.id } });
               }}
             />
@@ -362,7 +362,7 @@ export default function NutritionScreen() {
     to anything.
   */
   const seeMore = (tab: 'mine' | 'recent') => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     nav.push({ pathname: '/food-list', params: { tab } });
   };
   /**
@@ -450,7 +450,7 @@ export default function NutritionScreen() {
           accessibilityLabel={i18n.a11yEdit}
           hitSlop={10}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             nav.push({ pathname: '/food-editor', params: { id: f.id } });
           }}>
           <Icon icon={Pencil} size={15} color={c.mutedForeground} />
@@ -461,7 +461,7 @@ export default function NutritionScreen() {
         accessibilityLabel={i18n.a11yFavourite}
         hitSlop={10}
         onPress={() => {
-          Haptics.selectionAsync();
+          Haptics.selection();
           toggleFav.mutate({ id: f.id, is_favorite: !f.is_favorite });
         }}>
         <Icon
@@ -647,7 +647,7 @@ export default function NutritionScreen() {
                     hitSlop={8}
                     style={styles.planAllPill}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      Haptics.selection();
                       nav.push('/diary');
                     }}>
                     <Text style={styles.planAll}>{i18n.nDiaryOtherDays}</Text>
@@ -743,7 +743,7 @@ export default function NutritionScreen() {
                 hitSlop={8}
                 style={styles.addFoodBtn}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  Haptics.light();
                   nav.push('/food-editor');
                 }}>
                 <Icon icon={Plus} size={15} color={c.primary} strokeWidth={2.5} />
@@ -778,7 +778,7 @@ export default function NutritionScreen() {
                   hitSlop={8}
                   style={styles.scanBtn}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    Haptics.light();
                     nav.push('/scan-barcode');
                   }}>
                   <Icon icon={ScanBarcode} size={17} color={c.mutedForeground} />

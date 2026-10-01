@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Camera, Plus, Trash2, X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import {
@@ -50,7 +50,7 @@ export default function ProgressPhotosScreen() {
     p === 'front' ? i18n.nPhotoFront : p === 'side' ? i18n.nPhotoSide : i18n.nPhotoBack;
 
   const confirmDelete = (id: string, photo_url: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.medium();
     Alert.alert(i18n.nPhotoDelete, '', [
       { text: i18n.nCancel, style: 'cancel' },
       {
@@ -72,7 +72,7 @@ export default function ProgressPhotosScreen() {
           hitSlop={8}
           style={styles.addBtn}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             setCapturing(true);
           }}>
           <Icon icon={Plus} size={22} color={c.primary} />
@@ -141,7 +141,7 @@ export default function ProgressPhotosScreen() {
                       // 14pt glyph on a caption row; slop carries it to 44
                       hitSlop={15}
                       onPress={() => {
-                        Haptics.selectionAsync();
+                        Haptics.selection();
                         confirmDelete(p.id, p.photo_url);
                       }}>
                       <Icon icon={Trash2} size={14} color={c.mutedForeground} />
@@ -217,7 +217,7 @@ function CaptureView({
   const shoot = async () => {
     if (busyRef.current || !cameraRef.current) return;
     busyRef.current = true;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.medium();
     try {
       const photo = await cameraRef.current.takePictureAsync({
         base64: true,
@@ -269,7 +269,7 @@ function CaptureView({
             itemKey={p.key}
             accessibilityLabel={p.label}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               setPose(p.key);
             }}
             style={styles.poseChip}>

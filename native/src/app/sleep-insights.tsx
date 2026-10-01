@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Lightbulb, Moon, Trash2 } from 'lucide-react-native';
 import { useEffect, useMemo } from 'react';
@@ -475,7 +475,7 @@ export default function SleepInsightsScreen() {
                   style={styles.logDelete}
                   disabled={remove.isPending}
                   onPress={() => {
-                    Haptics.selectionAsync();
+                    Haptics.selection();
                     Alert.alert(
                       vi ? 'Xoá đêm này?' : 'Delete this night?',
                       vi
@@ -491,7 +491,7 @@ export default function SleepInsightsScreen() {
                               { id: s.id, waketime: s.waketime },
                               {
                                 onSuccess: () => {
-                                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                                  Haptics.success();
                                   toast.success(i18n.deleted);
                                 },
                                 onError: (e: Error) => toast.fail(e),

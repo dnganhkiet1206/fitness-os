@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Trash2 } from 'lucide-react-native';
 import { Alert, Text, View } from 'react-native';
 
@@ -173,7 +173,7 @@ export default function CoachMemoryScreen() {
                     hitSlop={8}
                     style={styles.forgetBtn}
                     onPress={() => {
-                      Haptics.selectionAsync();
+                      Haptics.selection();
                       /*
                         ── the write can now say it did nothing, so somebody has
                            to be listening ──
@@ -236,7 +236,7 @@ export default function CoachMemoryScreen() {
           style={styles.clearAll}
           disabled={forgetAll.isPending}
           onPress={() => {
-            Haptics.selectionAsync();
+            Haptics.selection();
             Alert.alert(
               vi ? 'Xoá toàn bộ trí nhớ?' : 'Erase everything?',
               vi

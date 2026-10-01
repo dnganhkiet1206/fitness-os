@@ -1,5 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { useRootNavigationState } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { X } from 'lucide-react-native';
@@ -79,7 +79,7 @@ export default function ScanFoodScreen() {
     const camera = cameraRef.current;
     if (scanOp.running() || !camera) return;
     setError(null);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Haptics.medium();
     const r = await scanOp.run(async (signal) => {
       const photo = await camera.takePictureAsync({
         base64: true,
@@ -97,7 +97,7 @@ export default function ScanFoodScreen() {
     });
     if (r.status === 'stale' || (r.status === 'ok' && r.value === null)) return;
     if (r.status === 'error') {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Haptics.error();
       setError(i18n.nScanError);
       setPhase('review');
       return;
@@ -107,7 +107,7 @@ export default function ScanFoodScreen() {
       // Named, not generic: a scan that fails because the function was never
       // deployed and one that fails because the photo was dark used to read
       // the same, and only one of them is worth retrying with a better photo.
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Haptics.error();
       setError(i18n[AI_FAILURE_KEY[res.failure]]);
       setPhase('review');
       return;
@@ -115,18 +115,18 @@ export default function ScanFoodScreen() {
 
     const found = normalize((res.data?.items ?? []) as RawItem[]).filter((i) => i.kcal > 0);
     if (found.length === 0) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      Haptics.warning();
       setError(i18n.nScanNoFood);
       setPhase('review');
     } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       setItems(found);
       setPhase('review');
     }
   };
 
   const retake = () => {
-    Haptics.selectionAsync();
+    Haptics.selection();
     scanOp.cancel();
     setItems([]);
     setPreview(null);
@@ -135,7 +135,7 @@ export default function ScanFoodScreen() {
   };
 
   const confirm = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Haptics.success();
     setPendingScan(items);
     /*
       Where the food goes is worked out here, not passed in.
@@ -244,7 +244,7 @@ export default function ScanFoodScreen() {
                         accessibilityLabel={i18n.a11yClose}
                         hitSlop={8}
                         onPress={() => {
-                          Haptics.selectionAsync();
+                          Haptics.selection();
                           setItems((prev) => prev.filter((_, i) => i !== idx));
                         }}>
                         <Icon icon={X} size={15} color={c.mutedForeground} />
@@ -303,7 +303,7 @@ export default function ScanFoodScreen() {
             itemKey={m}
             accessibilityLabel={m === 'food' ? i18n.nScanModeFood : i18n.nScanModeLabel}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               setMode(m);
             }}
             style={styles.modeChip}>

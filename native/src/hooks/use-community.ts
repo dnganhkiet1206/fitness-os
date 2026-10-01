@@ -1,5 +1,5 @@
 import { type InfiniteData, useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
@@ -270,7 +270,7 @@ export function useSaveCommunityProfile() {
       if (error) throw error;
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       qc.invalidateQueries({ queryKey: ['community_me', user?.id] });
       qc.invalidateQueries({ queryKey: ['community_feed'] });
     },
@@ -383,7 +383,7 @@ function useToggle(table: 'community_likes' | 'community_saves', flag: 'liked' |
       }
     },
     onMutate: ({ postId, on }) => {
-      Haptics.selectionAsync();
+      Haptics.selection();
       patchPost(qc, postId, (p) =>
         p[flag] === on ? p : { ...p, [flag]: on, [count]: Math.max(0, p[count] + (on ? 1 : -1)) },
       );
@@ -533,7 +533,7 @@ export function useAddComment(postId: string) {
     meta: { offline: now(2) },
     /* Rung lúc NGÓN TAY chạm Gửi, không phải lúc máy chủ trả lời — `selection`
        là phản hồi cho một cú chạm, và sau mạng nó trễ hàng trăm mili-giây. */
-    onMutate: () => Haptics.selectionAsync(),
+    onMutate: () => Haptics.selection(),
     /* `parentId` (#30): server gắn câu trả lời vào GỐC nếu đây là trả lời một
        câu trả lời, nên client gửi đúng thứ người ta đã bấm. */
     mutationFn: async ({ body, parentId = null }: { body: string; parentId?: string | null }) => {
@@ -675,7 +675,7 @@ export function useFollow() {
         );
       }
     },
-    onMutate: () => Haptics.selectionAsync(),
+    onMutate: () => Haptics.selection(),
     onSettled: (_d, _e, { userId }) => {
       qc.invalidateQueries({ queryKey: ['community_user', user?.id, userId] });
       qc.invalidateQueries({ queryKey: ['community_feed', user?.id, 'following'] });
@@ -763,7 +763,7 @@ export function useRequestReview() {
       if (error && error.code !== '23505') throw error;
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       qc.invalidateQueries({ queryKey: [HIDDEN_KEY, user?.id] });
     },
   });
@@ -779,7 +779,7 @@ export function useBlock() {
       if (error && error.code !== '23505') throw error;
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       qc.invalidateQueries({ queryKey: ['community_feed'] });
       qc.invalidateQueries({ queryKey: ['community_user'] });
       qc.invalidateQueries({ queryKey: ['community_user_posts'] });
@@ -849,7 +849,7 @@ export function useShareWorkout() {
       return data as string;
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       qc.invalidateQueries({ queryKey: ['community_feed'] });
       qc.invalidateQueries({ queryKey: ['community_user_posts'] });
       qc.invalidateQueries({ queryKey: ['community_shared_sessions', user?.id] });
@@ -1014,7 +1014,7 @@ export function useShareProgress() {
       if (error) throw error;
       return data as string;
     },
-    onMutate: () => Haptics.selectionAsync(),
+    onMutate: () => Haptics.selection(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['community_feed'] });
       qc.invalidateQueries({ queryKey: ['community_user_posts'] });
@@ -1109,7 +1109,7 @@ export function useJoinChallenge() {
         );
       }
     },
-    onMutate: () => Haptics.selectionAsync(),
+    onMutate: () => Haptics.selection(),
     onSettled: () => qc.invalidateQueries({ queryKey: ['community_challenges', user?.id] }),
   });
 }
@@ -1124,9 +1124,9 @@ export function useClaimChallenge() {
       if (error) throw error;
       return (data as number) ?? 0;
     },
-    onMutate: () => Haptics.selectionAsync(),
+    onMutate: () => Haptics.selection(),
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       qc.invalidateQueries({ queryKey: ['community_challenges', user?.id] });
       /* Xu vừa vào sổ: số dư trong phòng linh vật phải đọc lại. */
       qc.invalidateQueries({ queryKey: ['mascot_wallet'] });
@@ -1178,7 +1178,7 @@ export function useSetDefaultVisibility() {
         .upsert({ user_id: user!.id, default_visibility: v, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
       if (error) throw error;
     },
-    onMutate: () => Haptics.selectionAsync(),
+    onMutate: () => Haptics.selection(),
     onSettled: () => qc.invalidateQueries({ queryKey: ['community_settings', user?.id] }),
   });
 }
@@ -1199,7 +1199,7 @@ export function useSetShowBadges() {
         .upsert({ user_id: user!.id, show_badges: on, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
       if (error) throw error;
     },
-    onMutate: () => Haptics.selectionAsync(),
+    onMutate: () => Haptics.selection(),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['community_settings', user?.id] });
       qc.invalidateQueries({ queryKey: ['community_badges', user?.id] });
@@ -1281,7 +1281,7 @@ export function useUnblock() {
       if (!data || data.length === 0) throw new NothingWrittenError('Không bỏ chặn được — có thể bạn đã bỏ chặn ở thiết bị khác');
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       qc.invalidateQueries({ queryKey: ['community_blocks', user?.id] });
       qc.invalidateQueries({ queryKey: ['community_feed'] });
       qc.invalidateQueries({ queryKey: ['community_user'] });
@@ -1303,7 +1303,7 @@ export function useDeleteAllMyPosts() {
       return data?.length ?? 0;
     },
     onSuccess: () => {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Haptics.success();
       qc.invalidateQueries({ queryKey: ['community_feed'] });
       qc.invalidateQueries({ queryKey: ['community_user_posts'] });
       qc.invalidateQueries({ queryKey: ['community_shared_sessions', user?.id] });

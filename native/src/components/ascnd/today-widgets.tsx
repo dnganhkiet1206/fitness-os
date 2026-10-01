@@ -1,4 +1,4 @@
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Check, ChevronRight, PartyPopper, Sparkles } from 'lucide-react-native';
 import { Fragment, useEffect, useMemo, useState } from 'react';
@@ -553,7 +553,7 @@ export function SmartTipsCard() {
       accessibilityRole="button"
       accessibilityLabel={`${i18n.nSmartTips} — ${live ?? i18n.nTipsHint}`}
       onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        Haptics.light();
         nav.push('/assistant');
       }}>
       <GlassCard style={styles.tipsCard}>

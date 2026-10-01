@@ -1,5 +1,5 @@
 import { CheckCircle2, CircleDashed, Moon } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
+import { haptics as Haptics } from '@/lib/haptics';
 import { Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -208,7 +208,7 @@ export function WeekStrip({
                dưới: VoiceOver không đọc được một chấm (#99). */
             accessibilityLabel={`${longNames[idx]} ${d.getDate()}, ${DAY_STATE_LABEL[state](i18n)}`}
             onPress={() => {
-              Haptics.selectionAsync();
+              Haptics.selection();
               onPick(idx);
             }}
             style={styles.weekCell}>
