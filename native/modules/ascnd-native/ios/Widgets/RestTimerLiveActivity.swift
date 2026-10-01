@@ -18,9 +18,18 @@ import WidgetKit
 // - Never a mini dashboard: weight, reps, RPE stay in the app
 // - Timer is always rounded + monospacedDigit, the numerical focal point
 //
-// Interactivity: buttons are VISUAL ONLY in this revision (display-only per
-// #195). They reserve layout space and complete the design system; wiring
-// them needs AppIntents — a separate task.
+// Interactivity: controls are VISUAL ONLY in this revision (display-only per
+// #195). They match the mockup as circular icon-only buttons and reserve the
+// layout; wiring them needs AppIntents — a separate task. They are plain
+// views, not Buttons, so taps fall through and open the app.
+//
+// Countdown rendering: driven by a 1s native TimelineView, NOT
+// Text(timerInterval:). The Live Activity render server gives the timer-text
+// view an oversized, misaligned layout box (observed on-device 01/10/2026:
+// the digits sat ~37pt left of the ring centre while "/ total" centred
+// correctly). A plain Text fed by TimelineView has a stable intrinsic size,
+// and the same tick drives the ring progress. Still no JS bridge ticks:
+// endDate stays absolute, Swift owns rendering.
 
 @available(iOS 16.1, *)
 struct RestTimerLiveActivity: Widget {
@@ -39,7 +48,7 @@ struct RestTimerLiveActivity: Widget {
           ExpandedTrailing(context: context)
         }
         DynamicIslandExpandedRegion(.bottom) {
-          ExpandedBottom(context: context)
+          ExpandedBottom()
         }
       } compactLeading: {
         CompactLeading(context: context)
@@ -120,20 +129,103 @@ private struct ProgressRing: View {
   }
 }
 
+// MARK: - Rest countdown — one native timeline drives text + ring
+
+/// Formats remaining seconds as m:ss, ceiling so the display only reaches
+/// 0:00 exactly at endDate.
+private func formatCountdown(_ remaining: Double) -> String {
+  let total = max(Int(ceil(remaining)), 0)
+  return String(format: "%d:%02d", total / 60, total % 60)
+}
+
+private func formatTotal(seconds: Int) -> String {
+  String(format: "%d:%02d", seconds / 60, seconds % 60)
+}
+
+private func restProgress(endDate: Date, totalSeconds: Int, at date: Date) -> Double {
+  let total = max(Double(totalSeconds), 1)
+  let remaining = max(endDate.timeIntervalSince(date), 0)
+  return min(max(1 - remaining / total, 0), 1)
+}
+
+/// Countdown ring whose progress is recomputed on a 1s native timeline.
+/// (A progress value captured at render time freezes — the timer text ticks
+/// via the system clock without re-rendering the view.)
+@available(iOS 16.1, *)
+private struct RestRing: View {
+  let endDate: Date
+  let totalSeconds: Int
+  var size: CGFloat = 22
+  var lineWidth: CGFloat = 2.5
+
+  var body: some View {
+    TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
+      ProgressRing(
+        progress: restProgress(endDate: endDate, totalSeconds: totalSeconds, at: timeline.date),
+        size: size,
+        lineWidth: lineWidth
+      )
+    }
+  }
+}
+
+/// Expanded-island anchor: the ring with the countdown centred inside it.
+/// The text is an overlay on the fixed-size ring (not a ZStack sibling), so
+/// region layout can never separate them again.
+@available(iOS 16.1, *)
+private struct RestRingTimer: View {
+  let endDate: Date
+  let totalSeconds: Int
+
+  var body: some View {
+    TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
+      let remaining = max(endDate.timeIntervalSince(timeline.date), 0)
+      ProgressRing(
+        progress: restProgress(endDate: endDate, totalSeconds: totalSeconds, at: timeline.date),
+        size: 76,
+        lineWidth: 6
+      )
+      .overlay {
+        VStack(spacing: 0) {
+          Text(formatCountdown(remaining))
+            .font(Island.timerFont(size: 22, weight: .bold))
+            .foregroundStyle(.white)
+          Text("/ \(formatTotal(seconds: totalSeconds))")
+            .font(.caption2)
+            .foregroundStyle(Island.secondary)
+        }
+      }
+    }
+  }
+}
+
+/// Plain countdown text for the compact island — stable layout box.
+@available(iOS 16.1, *)
+private struct RestCompactTimer: View {
+  let endDate: Date
+
+  var body: some View {
+    TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
+      Text(formatCountdown(max(endDate.timeIntervalSince(timeline.date), 0)))
+        .font(Island.timerFont(size: 17))
+        .foregroundStyle(.white)
+    }
+  }
+}
+
 // MARK: - State helpers
 
 @available(iOS 16.1, *)
 private extension ActivityViewContext<RestTimerAttributes> {
-  /// Elapsed fraction of the rest, 0 → 1. Drives the progress ring.
-  var restProgress: Double {
-    let total = Double(state.totalSeconds)
-    guard total > 0 else { return 0 }
-    let remaining = state.endDate.timeIntervalSince(Date.now)
-    return min(max(1 - remaining / total, 0), 1)
-  }
-
   var setLabel: String {
     "Set \(state.setNumber) of \(state.totalSets)"
+  }
+
+  /// Glanceable form for the compact island ("Set 3/3"). The compact
+  /// trailing region is narrow — the full "Set 3 of 3" truncates on-device
+  /// ("Set 3…").
+  var compactSetLabel: String {
+    "Set \(state.setNumber)/\(state.totalSets)"
   }
 }
 
@@ -148,7 +240,7 @@ private struct CompactLeading: View {
       ASCNDMark(size: 18)
       switch context.state.activityState {
       case .resting:
-        ProgressRing(progress: context.restProgress, size: 22, lineWidth: 2.5)
+        RestRing(endDate: context.state.endDate, totalSeconds: context.state.totalSeconds, size: 22, lineWidth: 2.5)
       case .active:
         Image(systemName: "dumbbell.fill")
           .font(.system(size: 14, weight: .medium))
@@ -167,19 +259,17 @@ private struct CompactTrailing: View {
   var body: some View {
     switch context.state.activityState {
     case .resting:
-      HStack(spacing: 10) {
+      HStack(spacing: 8) {
         VStack(alignment: .leading, spacing: 1) {
           Text("Rest")
             .font(.caption)
             .fontWeight(.medium)
             .foregroundStyle(.white)
-          Text(context.setLabel)
+          Text(context.compactSetLabel)
             .font(.caption2)
             .foregroundStyle(Island.secondary)
         }
-        Text(timerInterval: Date.now...context.state.endDate, countsDown: true)
-          .font(Island.timerFont(size: 17))
-          .foregroundStyle(.white)
+        RestCompactTimer(endDate: context.state.endDate)
       }
     case .active:
       HStack(spacing: 10) {
@@ -211,7 +301,7 @@ private struct MinimalView: View {
   var body: some View {
     switch context.state.activityState {
     case .resting:
-      ProgressRing(progress: context.restProgress, size: 20, lineWidth: 2.5)
+      RestRing(endDate: context.state.endDate, totalSeconds: context.state.totalSeconds, size: 20, lineWidth: 2.5)
     case .active:
       Image(systemName: "dumbbell.fill")
         .font(.system(size: 13, weight: .medium))
@@ -280,87 +370,58 @@ private struct ExpandedTrailing: View {
   var body: some View {
     switch context.state.activityState {
     case .resting:
-      ZStack {
-        ProgressRing(progress: context.restProgress, size: 76, lineWidth: 6)
-        VStack(spacing: 0) {
-          Text(timerInterval: Date.now...context.state.endDate, countsDown: true)
-            .font(Island.timerFont(size: 22, weight: .bold))
-            .foregroundStyle(.white)
-          Text("/ \(formattedTotal)")
-            .font(.caption2)
-            .foregroundStyle(Island.secondary)
+      // One row, per the mockup: ring-with-timer, then circular controls.
+      HStack(spacing: 14) {
+        RestRingTimer(endDate: context.state.endDate, totalSeconds: context.state.totalSeconds)
+        HStack(spacing: 10) {
+          IslandCircleButton(icon: "pause.fill")
+          IslandCircleButton(icon: "forward.fill")
         }
       }
     case .active:
-      VStack(spacing: 0) {
-        Text(timerInterval: Date.now...context.state.endDate, countsDown: false)
-          .font(Island.timerFont(size: 26, weight: .bold))
-          .foregroundStyle(.white)
-        Text("/ \(formattedTotal)")
-          .font(.caption2)
-          .foregroundStyle(Island.secondary)
+      HStack(spacing: 14) {
+        VStack(spacing: 0) {
+          Text(timerInterval: Date.now...context.state.endDate, countsDown: false)
+            .font(Island.timerFont(size: 26, weight: .bold))
+            .foregroundStyle(.white)
+          Text("/ \(formatTotal(seconds: context.state.totalSeconds))")
+            .font(.caption2)
+            .foregroundStyle(Island.secondary)
+        }
+        HStack(spacing: 10) {
+          IslandCircleButton(icon: "pause.fill")
+          IslandCircleButton(icon: "checkmark", prominent: true)
+        }
       }
     case .ready:
       ASCNDMark(size: 44)
         .opacity(0.9)
     }
   }
-
-  private var formattedTotal: String {
-    let m = context.state.totalSeconds / 60
-    let s = context.state.totalSeconds % 60
-    return String(format: "%d:%02d", m, s)
-  }
 }
 
+/// The island is a single row — actions sit beside the ring in .trailing,
+/// per the mockup. Nothing belongs down here.
 @available(iOS 16.1, *)
 private struct ExpandedBottom: View {
-  let context: ActivityViewContext<RestTimerAttributes>
-
   var body: some View {
-    switch context.state.activityState {
-    case .resting:
-      HStack(spacing: 12) {
-        Spacer()
-        IslandButton(icon: "pause.fill", label: "Pause")
-        IslandButton(icon: "forward.fill", label: "Skip")
-        Spacer()
-      }
-    case .active:
-      HStack(spacing: 12) {
-        Spacer()
-        IslandButton(icon: "pause.fill", label: "Pause")
-        IslandButton(icon: "checkmark", label: "Done", prominent: true)
-        Spacer()
-      }
-    case .ready:
-      // Nothing — calm.
-      EmptyView()
-    }
+    EmptyView()
   }
 }
 
-/// Visual-only control. Layout-complete; needs AppIntents to act.
+/// Visual-only circular control (display-only per #195 — no AppIntent wired).
+/// A plain view, not a Button, so taps fall through and open the app.
 @available(iOS 16.1, *)
-private struct IslandButton: View {
+private struct IslandCircleButton: View {
   var icon: String
-  var label: String
   var prominent: Bool = false
 
   var body: some View {
-    HStack(spacing: 6) {
-      Image(systemName: icon)
-        .font(.system(size: 13, weight: .semibold))
-      Text(label)
-        .font(.subheadline)
-        .fontWeight(.medium)
-    }
-    .foregroundStyle(prominent ? .black : .white)
-    .padding(.horizontal, 16)
-    .padding(.vertical, 9)
-    .background(
-      Capsule().fill(prominent ? Island.gold : Color.white.opacity(0.16))
-    )
+    Image(systemName: icon)
+      .font(.system(size: 15, weight: .semibold))
+      .foregroundStyle(prominent ? .black : .white)
+      .frame(width: 44, height: 44)
+      .background(Circle().fill(prominent ? Island.gold : Color.white.opacity(0.16)))
   }
 }
 
@@ -374,7 +435,7 @@ private struct LockScreenView: View {
     switch context.state.activityState {
     case .resting:
       HStack(spacing: 14) {
-        ProgressRing(progress: context.restProgress, size: 52, lineWidth: 5)
+        RestRing(endDate: context.state.endDate, totalSeconds: context.state.totalSeconds, size: 52, lineWidth: 5)
         VStack(alignment: .leading, spacing: 2) {
           Text("REST")
             .font(.caption)
@@ -390,9 +451,11 @@ private struct LockScreenView: View {
             .foregroundStyle(Island.secondary)
         }
         Spacer()
-        Text(timerInterval: Date.now...context.state.endDate, countsDown: true)
-          .font(Island.timerFont(size: 30, weight: .bold))
-          .foregroundStyle(.white)
+        TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
+          Text(formatCountdown(max(context.state.endDate.timeIntervalSince(timeline.date), 0)))
+            .font(Island.timerFont(size: 30, weight: .bold))
+            .foregroundStyle(.white)
+        }
       }
       .padding()
     case .active:
