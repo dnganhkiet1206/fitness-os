@@ -51,7 +51,21 @@ const SWIFT_SOURCES = [
   'Widgets/RestTimerLiveActivity.swift',
 ];
 
-function extensionInfoPlist() {
+function extensionInfoPlist(buildNumber, shortVersion) {
+  /*
+    Version strings are baked in as LITERALS, not $(CURRENT_PROJECT_VERSION) /
+    $(MARKETING_VERSION).
+
+    Why: the extension target created below via addTarget() never gets
+    CURRENT_PROJECT_VERSION / MARKETING_VERSION build settings (Expo sets those
+    on the app target only), so the $(...) variables never resolve and the built
+    .appex ships with CFBundleVersion missing -> iOS refuses install
+    ("MissingBundleVersion"; Xcode warns the extension's CFBundleVersion (null)
+    must match the containing app's). iOS requires the extension's
+    CFBundleVersion to MATCH the parent app's build number, so we read it from
+    the same Expo config the app target uses. Prebuild re-runs this plugin from
+    scratch every time (locally and on EAS), so the literals can never go stale.
+  */
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -71,9 +85,9 @@ function extensionInfoPlist() {
 \t<key>CFBundlePackageType</key>
 \t<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 \t<key>CFBundleShortVersionString</key>
-\t<string>$(MARKETING_VERSION)</string>
+\t<string>${shortVersion}</string>
 \t<key>CFBundleVersion</key>
-\t<string>$(CURRENT_PROJECT_VERSION)</string>
+\t<string>${buildNumber}</string>
 \t<key>NSExtension</key>
 \t<dict>
 \t\t<key>NSExtensionPointIdentifier</key>
@@ -163,7 +177,15 @@ module.exports = function withAscndWidgets(config) {
     }
 
     // 2. Extension Info.plist (matches addTarget's default INFOPLIST_FILE).
-    fs.writeFileSync(path.join(extDir, INFO_PLIST_NAME), extensionInfoPlist());
+    // Versions are baked in as literals matching the app target (see
+    // extensionInfoPlist): the extension target has no CURRENT_PROJECT_VERSION /
+    // MARKETING_VERSION build settings for $(...) to resolve against.
+    const extBuildNumber = config.ios?.buildNumber ?? '1';
+    const extShortVersion = config.version ?? '1.0.0';
+    fs.writeFileSync(
+      path.join(extDir, INFO_PLIST_NAME),
+      extensionInfoPlist(extBuildNumber, extShortVersion),
+    );
 
     // 3. Create the app-extension target. This also adds the "Embed App
     //    Extensions" copy phase and a target dependency on the app target.
