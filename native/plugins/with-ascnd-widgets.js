@@ -188,17 +188,25 @@ module.exports = function withAscndWidgets(config) {
       target.uuid,
     ).buildPhase;
     for (const rel of SWIFT_SOURCES) {
-      const projRelPath = `${EXTENSION_NAME}/${rel}`;
-      const file = project.addFile(projRelPath, group.uuid, { target: target.uuid });
+      /*
+        `rel`, NOT `${EXTENSION_NAME}/${rel}`.
+
+        The PBXGroup above was created with path = "ASCNDWidgets", and Xcode
+        resolves a file's path RELATIVE to its containing group's path. Passing
+        "ASCNDWidgets/Shared/…" here produced "ASCNDWidgets/ASCNDWidgets/…" —
+        a doubled path that broke the extension's compile (caught on a real
+        prebuild: every Swift source ref resolved under the doubled prefix).
+      */
+      const file = project.addFile(rel, group.uuid, { target: target.uuid });
       if (!file) {
-        throw new Error(`[with-ascnd-widgets] failed to add source: ${projRelPath}`);
+        throw new Error(`[with-ascnd-widgets] failed to add source: ${EXTENSION_NAME}/${rel}`);
       }
       file.target = target.uuid;
       file.uuid = project.generateUuid();
       project.addToPbxBuildFileSection(file);
       sourcesPhase.files.push({
         value: file.uuid,
-        comment: `${projRelPath.split('/').pop()} in Sources`,
+        comment: `${rel.split('/').pop()} in Sources`,
       });
     }
 
