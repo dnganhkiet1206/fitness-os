@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { readAllPages } from '@/lib/read-all';
 import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { syncProfileWeight } from '@/lib/weight-sync';
@@ -915,16 +916,25 @@ export function useBodyMeasurements() {
   return useQuery({
     queryKey: ['body_measurements', user?.id],
     enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('body_measurements')
-        .select('*')
-        .eq('user_id', user!.id)
-        .order('date', { ascending: true })
-        .limit(90);
-      if (error) throw error;
-      return data ?? [];
-    },
+    /*
+      Đọc HẾT, cũ → mới (#196). Bản trước là `.order('date', asc).limit(90)`:
+      sắp TĂNG rồi mới cắt, tức giữ 90 lần đo CŨ NHẤT — và `body-panel` lấy
+      phần tử CUỐI làm "lần đo mới nhất". Từ lần đo thứ 91, lưới số đo hiện số
+      của lần thứ 90 như số hôm nay, và lần vừa lưu không bao giờ hiện. Cùng
+      dạng "cắt rồi mới sắp" với #170 và #180. Thứ tự toàn phần `(date, id)`.
+    */
+    queryFn: async () =>
+      readAllPages(
+        (from, to) =>
+          supabase
+            .from('body_measurements')
+            .select('*')
+            .eq('user_id', user!.id)
+            .order('date', { ascending: true })
+            .order('id', { ascending: true })
+            .range(from, to),
+        500,
+      ),
   });
 }
 

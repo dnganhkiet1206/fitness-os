@@ -231,6 +231,32 @@ else {
   if (/createSignedUrl\(/.test(photos)) problems.push('useProgressPhotos còn ký từng ảnh (`createSignedUrl(`)');
 }
 
+/* #196 · #197: hai lượt đọc nữa từng "cắt rồi mới sắp" / cắt không thứ tự. */
+/* Bỏ chú thích trước khi xét: chú thích ghi lại chính bản cũ ("`.limit(90)`"). */
+const noComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const cut = (file, start) => {
+  const src = noComments(readFileSync(path.join(NATIVE, file), 'utf8'));
+  const i = src.indexOf(start);
+  if (i < 0) return null;
+  const j = src.indexOf('\n}\n', i);
+  return src.slice(i, j < 0 ? undefined : j);
+};
+const meas = cut('src/hooks/use-fitness-data.ts', 'export function useBodyMeasurements(');
+if (!meas) problems.push('không thấy `export function useBodyMeasurements(`');
+else {
+  if (!/readAllPages\(/.test(meas)) problems.push('useBodyMeasurements không đọc qua readAllPages — từ lần đo thứ 91, thẻ Số đo hiện số cũ như số mới nhất (#196)');
+  if (/\.limit\(/.test(meas)) problems.push('useBodyMeasurements còn `.limit(` (#196)');
+  if (!/\.order\('date', \{ ascending: true \}\)\s*\.order\('id', \{ ascending: true \}\)\s*\.range\(from, to\)/.test(meas)) problems.push('useBodyMeasurements không đọc cũ → mới theo (date, id) bằng .range — body-panel lấy phần tử CUỐI làm lần đo mới nhất');
+}
+const extras = noComments(readFileSync(path.join(NATIVE, 'src/hooks/use-extras.ts'), 'utf8'));
+const wi = extras.indexOf(".from('water_logs')");
+const water = wi < 0 ? '' : extras.slice(extras.lastIndexOf('readAllPages(', wi) >= 0 && wi - extras.lastIndexOf('readAllPages(', wi) < 200 ? extras.lastIndexOf('readAllPages(', wi) : wi, extras.indexOf('),', wi) + 2);
+if (!water) problems.push("không thấy lượt đọc `water_logs` của nguồn huy chương");
+else {
+  if (!/^readAllPages\(/.test(water)) problems.push('nguồn huy chương nước không đọc hết qua readAllPages — uống 8 cốc/ngày thì mốc 100 ngày không bao giờ tới (#197)');
+  if (/\.limit\(/.test(extras.slice(wi, wi + 400))) problems.push('nguồn huy chương nước còn `.limit(` (#197)');
+}
+
 if (problems.length) {
   console.error('đọc hết theo trang CÓ LỖI:\n');
   for (const p of problems) console.error(`  • ${p}`);
@@ -240,7 +266,7 @@ console.log(
   `đọc hết theo trang OK — ${CASES.length} ca CHẠY THẬT lib/read-all.ts: số dòng chia hết và không chia hết, rỗng, trang giữa ` +
     'hỏng thì ném (không trả một phần), vượt trần thì ném (không cắt lặng lẽ), và đi hết 1 234 món nhiều tên trùng trên máy chủ ' +
     `giả theo (name, id) — đủ, đúng thứ tự. ${MUTANTS.length} bản hỏng (trang đầy coi là hết, bỏ qua lỗi, vượt trần trả một phần, ` +
-    'hai trang chồng nhau) đều bị bắt. useMyFoods (#180) và useProgressPhotos (#179) đọc hết qua nó, không còn .limit. ' +
+    'hai trang chồng nhau) đều bị bắt. useMyFoods (#180), useProgressPhotos (#179), useBodyMeasurements (#196) và nguồn huy chương nước (#197) đọc hết qua nó, không còn .limit. ' +
     `Ảnh tiến trình ký cả loạt: ${PHOTO_CASES.length} ca chạy thật signPhotos (http đi thẳng, loạt 100, giữ thứ tự, ký hỏng thì ô còn), ` +
     `${PHOTO_MUTANTS.length} bản hỏng bị bắt`,
 );

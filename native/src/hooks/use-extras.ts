@@ -25,6 +25,7 @@ import {
   type AwardSources,
 } from '@/lib/award-grant';
 import { LOGGED_DAY_FILTER, streakFrom, STREAK_WINDOW } from '@/lib/streak';
+import { readAllPages } from '@/lib/read-all';
 import { challengeStep } from '@/lib/challenge-progress';
 import { CHALLENGE_REWARD, challengeRefKey } from '@/lib/mascot-room';
 import type { Json } from '@/integrations/supabase/types';
@@ -125,10 +126,29 @@ export async function readAwardSources(uid: string): Promise<AwardSources> {
         này nói về THÓI QUEN, và thói quen đo bằng số ngày.
 
         Không có `count: 'exact'` cho DISTINCT trong PostgREST, nên đọc cột ngày
-        rồi đếm ở client. Giới hạn 400 hàng: ngưỡng cao nhất là 100 ngày, và
-        400 lần ghi đủ phủ nó ở mọi nhịp uống hợp lý.
+        rồi đếm ở client — đọc HẾT (#197). Bản trước là `.limit(400)`, không
+        `order`, "vì 400 lần ghi đủ phủ 100 ngày ở mọi nhịp uống hợp lý". Không
+        đủ: một hàng mỗi lần uống, 2 lít là tám lần chạm nút 250 ml, nên 400 hàng
+        là 50 ngày và huy chương 100 ngày không bao giờ tới — với đúng người uống
+        như app khuyên. Và 400 hàng không `order` là 400 hàng BẤT KỲ.
+        `readAllPages` ném khi một trang hỏng hay vượt trần (50 trang × 1 000):
+        `waterDays` lúc ấy là `null` ("không đọc được"), không phải một số thiếu.
       */
-      supabase.from('water_logs').select('date').eq('user_id', uid).limit(400),
+      readAllPages(
+        (from, to) =>
+          supabase
+            .from('water_logs')
+            .select('id, date')
+            .eq('user_id', uid)
+            .order('date', { ascending: true })
+            .order('id', { ascending: true })
+            .range(from, to),
+        1000,
+        50,
+      ).then(
+        (data) => ({ data, error: null }),
+        (error: unknown) => ({ data: null, error }),
+      ),
       supabase.from('sleep_logs').select('id', { count: 'exact', head: true }).eq('user_id', uid),
       supabase.from('weight_logs').select('id', { count: 'exact', head: true }).eq('user_id', uid),
     ]);

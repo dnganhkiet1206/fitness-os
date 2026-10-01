@@ -3947,6 +3947,70 @@ const SCENARIOS = [
   },
   {
     /*
+      #196: số đo từng là `.order('date', asc).limit(90)` — sắp TĂNG rồi mới
+      cắt, tức giữ 90 lần đo CŨ NHẤT, và `body-panel` lấy phần tử CUỐI làm "lần
+      đo mới nhất". Thế giới thêm 100 lần đo cũ hơn lần đo hôm nay; lần hôm nay
+      mang vòng eo 81.7 (không lần nào khác có số ấy):
+        (A) lưới số đo ở Tập luyện › Cơ thể hiện 81.7 — số của HÔM NAY.
+    */
+    name: 'Số đo: hơn 90 lần đo thì lưới vẫn hiện lần đo MỚI NHẤT (#196)',
+    route: '/workouts', mode: 'full',
+    async run(page, { world }) {
+      const today = world.body_measurements.find((m) => m.user_id === UID);
+      if (!today) return 'tự kiểm: fixture không có lần đo nào của người xem';
+      today.waist_cm = 81.7;
+      const d0 = new Date(`${today.date}T12:00:00Z`);
+      for (let i = 1; i <= 100; i++) {
+        world.body_measurements.push({ ...structuredClone(today), id: `bm196-${String(i).padStart(3, '0')}`,
+          date: new Date(d0.getTime() - i * 86_400_000).toISOString().slice(0, 10), waist_cm: 60 + i / 100 });
+      }
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      const seg = page.getByText(/^(Body|Cơ thể)$/).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await seg.count()); i++) await page.waitForTimeout(250);
+      await seg.click();
+      const has = () => page.evaluate(() => window.__shown('*').some((e) => e.children.length === 0 && /^81[.,]7$/.test((e.textContent ?? '').trim())));
+      for (let i = 0; i < 40 && !(await has()); i++) await page.waitForTimeout(250);
+      if (!(await has())) return '(A) lưới số đo không hiện vòng eo 81.7 của lần đo hôm nay — nó hiện một lần đo cũ như số mới nhất';
+      return null;
+    },
+  },
+  {
+    /*
+      #197: huy chương nước từng đếm ngày trong 400 lần ghi BẤT KỲ — một hàng
+      mỗi lần uống, nên tám cốc/ngày là 50 ngày và mốc 100 ngày không bao giờ
+      tới. Thế giới thêm 60 ngày × 8 lần uống (480 hàng, cũ hơn hôm nay):
+        (A) thẻ huy chương 100 ngày nói đúng số NGÀY có uống của người xem.
+    */
+    name: 'Huy chương nước: đếm đủ mọi ngày đã uống, kể cả khi mỗi ngày tám cốc (#197)',
+    route: '/awards', mode: 'full',
+    async run(page, { world }) {
+      const first = world.water_logs.find((w) => w.user_id === UID);
+      if (!first) return 'tự kiểm: fixture không có lần uống nào của người xem';
+      const d0 = new Date(`${first.date}T12:00:00Z`);
+      for (let d = 1; d <= 60; d++) {
+        const date = new Date(d0.getTime() - d * 86_400_000).toISOString().slice(0, 10);
+        for (let k = 0; k < 8; k++) {
+          world.water_logs.push({ ...structuredClone(first), id: `w197-${d}-${k}`, amount_ml: 250, date,
+            logged_at: `${date}T0${k + 1}:00:00.000Z`, created_at: `${date}T0${k + 1}:00:00.000Z` });
+        }
+      }
+      const days = new Set(world.water_logs.filter((w) => w.user_id === UID).map((w) => w.date)).size;
+      if (days < 60) return `tự kiểm: chỉ ${days} ngày có uống`;
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      const want = `${days} / 100`;
+      const has = () => page.evaluate((t) => window.__shown('*').some((e) => e.children.length === 0 && (e.textContent ?? '').trim() === t), want);
+      for (let i = 0; i < 40 && !(await has()); i++) await page.waitForTimeout(250);
+      if (!(await has())) {
+        const shown = await page.evaluate(() => window.__shown('*').filter((e) => e.children.length === 0 && /^\d+ \/ 100$/.test((e.textContent ?? '').trim())).map((e) => e.textContent.trim()));
+        return `(A) huy chương 100 ngày không nói "${want}" (thấy: ${shown.join(', ') || 'không có'})`;
+      }
+      return null;
+    },
+  },
+  {
+    /*
       #54 (đưa phép đo #47 vào bộ hồi quy): `PickRow scroll` phải cho thấy TRỌN
       ô đang chọn. Đo ở 320 với chữ trong ô phóng to (giả lập Dynamic Type) —
       trước #47: mở `/log-meal?meal=postworkout` thì ô "Sau tập" nằm HẲN ngoài
