@@ -248,6 +248,9 @@ Based on actual findings (not plans):
    native feature. It is the smallest Swift surface that touches real product
    state, and the spike already built its exact shape (absolute `endDate`,
    start/update/end, no per-second bridge traffic).
+   → **Done in #198** (TS wiring: `src/native/ios/rest-live-activity.ts`
+   + 4 hook points in `day-plan.tsx`). Still needs the EAS build + a real
+   device to validate end-to-end.
 3. After that: **provision the App Group + `updateWidgetData`** to light up
    Widget 1 with real data (Widget 2 follows on the same abstraction).
 

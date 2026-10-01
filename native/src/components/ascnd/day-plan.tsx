@@ -21,6 +21,11 @@ import { nav } from '@/lib/nav';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { RestTimer } from '@/components/ascnd/rest-timer';
+import {
+  restLiveActivityAdjusted,
+  restLiveActivityEnded,
+  restLiveActivityStarted,
+} from '@/native/ios/rest-live-activity';
 import { Retract } from '@/components/ascnd/retract';
 import { SEGMENT_SWAP } from '@/components/ascnd/segmented';
 import type { TplExercise } from '@/components/ascnd/template-list';
@@ -675,6 +680,7 @@ export function DayPlan({
         if (s === null) return null;
         if (s.left <= 1) {
           Haptics.success();
+          restLiveActivityEnded();
           return null;
         }
         return { ...s, left: s.left - 1 };
@@ -831,7 +837,7 @@ export function DayPlan({
          chạy, nó chỉ không hứa hẹn gì. */
       const after = rows[rows.findIndex((r) => r.key === row.key) + 1];
       // Rest belongs to finishing a set, not to changing your mind about one.
-      setResting(
+      const upcoming =
         next && secs > 0
           ? {
               left: secs,
@@ -840,8 +846,27 @@ export function DayPlan({
                 ? { name: after.exerciseName, ordinal: after.ordinal, of: after.of }
                 : null,
             }
-          : null,
-      );
+          : null;
+      setResting(upcoming);
+      /*
+        #198: mirror the rest onto the display-only Live Activity. The upcoming
+        set is what the rest is preparation for; on the last set there is no
+        upcoming one, so the activity shows the set just finished.
+      */
+      if (upcoming) {
+        const target = upcoming.next ?? {
+          name: row.exerciseName,
+          ordinal: row.ordinal,
+          of: row.of,
+        };
+        restLiveActivityStarted(
+          { exerciseName: target.name, setNumber: target.ordinal, totalSets: target.of },
+          upcoming.total,
+          upcoming.left,
+        );
+      } else {
+        restLiveActivityEnded();
+      }
     },
     [rest, rows, shown],
   );
@@ -1979,18 +2004,23 @@ export function DayPlan({
         onSkip={() => {
           Haptics.selection();
           setResting(null);
+          restLiveActivityEnded();
         }}
-        onAdjust={(delta) =>
-          setResting((s) => {
-            if (s === null) return null;
-            const left = Math.max(1, Math.min(REST_MAX, s.left + delta));
-            // Adding time grows what it is counting from as well, so the ring
-            // stays a fraction of something rather than trying to be more than
-            // whole. Taking time off leaves the total alone: the rest really
-            // was cut short, and the ring showing that is the honest reading.
-            return { ...s, left, total: Math.max(s.total, left) };
-          })
-        }
+        onAdjust={(delta) => {
+          // Read from the render's own state rather than the updater below:
+          // the new left/total are needed for the Live Activity push, and the
+          // component re-renders every tick so this closure is never stale.
+          const s = resting;
+          if (s === null) return;
+          const left = Math.max(1, Math.min(REST_MAX, s.left + delta));
+          // Adding time grows what it is counting from as well, so the ring
+          // stays a fraction of something rather than trying to be more than
+          // whole. Taking time off leaves the total alone: the rest really
+          // was cut short, and the ring showing that is the honest reading.
+          const total = Math.max(s.total, left);
+          setResting({ ...s, left, total });
+          restLiveActivityAdjusted(total, left);
+        }}
       />
 
     </View>

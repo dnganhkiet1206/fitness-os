@@ -20,8 +20,21 @@ export interface RestActivityState {
   setNumber: number;
   /** Total sets in the exercise, for "Set x of y". */
   totalSets: number;
-  /** Planned rest duration in seconds. */
+  /** Planned rest duration in seconds (display reference). */
   totalSeconds: number;
+  /**
+   * Seconds remaining from now — drives the absolute end timestamp sent to
+   * Swift. Defaults to totalSeconds (a fresh rest). Pass the current
+   * remaining count when pushing an adjustment so the native countdown
+   * stays exact instead of restarting from the full duration.
+   */
+  remainingSeconds?: number;
+}
+
+/** Absolute end timestamp (ms) for the native ContentState.endDate. */
+function endTimestampFor(state: RestActivityState): number {
+  const remaining = state.remainingSeconds ?? state.totalSeconds;
+  return Date.now() + Math.max(0, remaining) * 1000;
 }
 
 /** False on web, on Android, or where Live Activities are unsupported/disabled. */
@@ -42,7 +55,7 @@ export function areLiveActivitiesEnabled(): boolean {
 export async function startRestActivity(state: RestActivityState): Promise<string | null> {
   const mod = AscndNativeModule;
   if (!isAscndNativeAvailable() || !mod) return null;
-  const endTimestamp = Date.now() + state.totalSeconds * 1000;
+  const endTimestamp = endTimestampFor(state);
   try {
     return await mod.startRestActivity(
       state.exerciseName,
@@ -63,7 +76,7 @@ export async function updateRestActivity(
 ): Promise<boolean> {
   const mod = AscndNativeModule;
   if (!isAscndNativeAvailable() || !mod) return false;
-  const endTimestamp = Date.now() + state.totalSeconds * 1000;
+  const endTimestamp = endTimestampFor(state);
   try {
     await mod.updateRestActivity(
       activityId,
