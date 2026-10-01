@@ -2,6 +2,14 @@ const { withXcodeProject, withInfoPlist } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
+// Kiệt's Apple development team (personal team, free account). The extension
+// MUST be signed with the same team as the containing app, otherwise
+// `xcodebuild -target ASCNDWidgets` fails with "Signing for ASCNDWidgets
+// requires a development team" and the appex can't be installed.
+// NOTE: if the app ever moves to a different team (e.g. an org team on EAS),
+// update this to match — or better, make it dynamic.
+const APPLE_TEAM_ID = 'Z54JL44R9Z';
+
 /**
  * #195 spike — adds the ASCNDWidgets WidgetKit app-extension target.
  *
@@ -311,6 +319,10 @@ module.exports = function withAscndWidgets(config) {
     //    so the generated plist above is always the one Xcode processes.
     //    Re-applied on every prebuild (idempotent assignment), so config
     //    changes (version/buildNumber) always take effect.
+    //    Signing: the extension must carry the same development team as the
+    //    app (CODE_SIGN_STYLE Automatic). Without DEVELOPMENT_TEAM the target
+    //    fails to sign ("requires a development team") when built directly,
+    //    and `expo run:ios` only papers over it via a command-line override.
     const appSettings = Object.values(getBuildSettings(project, appTargetUuid));
     const deploymentTarget =
       appSettings.map((s) => s.IPHONEOS_DEPLOYMENT_TARGET).find(Boolean) ?? '"15.1"';
@@ -322,6 +334,18 @@ module.exports = function withAscndWidgets(config) {
       settings.CURRENT_PROJECT_VERSION = `"${extBuildNumber}"`;
       settings.MARKETING_VERSION = `"${extShortVersion}"`;
       settings.INFOPLIST_FILE = `"${EXTENSION_NAME}/${INFO_PLIST_NAME}"`;
+      settings.DEVELOPMENT_TEAM = APPLE_TEAM_ID;
+      settings.CODE_SIGN_STYLE = '"Automatic"';
+    }
+
+    // 5b. TargetAttributes DevelopmentTeam — mirrors what Xcode writes when a
+    // team is picked in the IDE's Signing & Capabilities pane. Idempotent.
+    {
+      const { firstProject } = project.getFirstProject();
+      const attrs = (firstProject.attributes = firstProject.attributes || {});
+      const ta = (attrs.TargetAttributes = attrs.TargetAttributes || {});
+      const entry = (ta[target.uuid] = ta[target.uuid] || {});
+      entry.DevelopmentTeam = APPLE_TEAM_ID;
     }
 
     return cfg;
