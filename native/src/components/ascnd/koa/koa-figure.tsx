@@ -609,11 +609,12 @@ function RenderNode({
       // `koa-light.ts`. Order: the hot spot and the ear's own modelling sit
       // under the rim, which is the last thing the light does.
       //
-      // Bản giấy vẽ lại: tắt hết hiệu ứng đèn (glow/form/body/rim) — giấy
-      // không có đèn, Koa bản sáng là illustration phẳng.
+      // Bản giấy vẽ lại: tắt hiệu ứng ĐÈN (glow = điểm nóng, rim = viền sáng)
+      // vì giấy không có đèn. Nhưng giữ FORM/BODY (khối tai/vai) để Koa có
+      // chiều sâu, không phẳng như sticker.
       const glow = !paper && hasGlow(n);
-      const form = !paper && hasForm(n);
-      const bod = !paper && hasBody(n);
+      const form = hasForm(n);
+      const bod = hasBody(n);
       const rim = !paper && hasRim(n);
       if (!glow && !form && !bod && !rim) return <Shape {...own} />;
       return (

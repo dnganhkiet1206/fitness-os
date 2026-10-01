@@ -616,6 +616,20 @@ function onPaper(hex: string): string {
  */
 const ALL_PAPER: LightRamp[] = [];
 
+/**
+ * Nhân RGB của mã hex với hệ số — dùng cho gradient giấy nhẹ (1.03/0.97).
+ * Không qua OKLab vì đây chỉ là điều chỉnh nhỏ quanh màu đã qua `onPaper()`.
+ */
+function shadeHex(hex: string, k: number): string {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex.trim());
+  if (!m) return hex;
+  const out = [0, 2, 4]
+    .map((i) => Math.max(0, Math.min(255, Math.round(parseInt(m[1].slice(i, i + 2), 16) * k))))
+    .map((v) => v.toString(16).padStart(2, '0'))
+    .join('');
+  return `#${out}`;
+}
+
 export function rampsFor(flags: Flags, paper = false): LightRamp[] {
   const want = new Set<string>();
   (function walk(nodes: Node[]) {
@@ -629,18 +643,25 @@ export function rampsFor(flags: Flags, paper = false): LightRamp[] {
   if (paper && ALL_PAPER.length === 0) {
     for (const r of ALL) {
       /*
-       * Bản sáng vẽ lại: phong cách illustration phẳng, KHÔNG còn gradient
-       * đèn từ trên xuống (giấy thì không có đèn). Lấy tông giữa (offset
-       * 0.35) làm màu phẳng — đó là màu "thật" của vật, không phải bản sáng
-       * hay bản tối của đèn. Kết quả: Koa bản sáng trông như sticker/minh
-       * hoạ, khác hẳn bản tối render 3D dưới đèn.
+       * Bản sáng vẽ lại: illustration có chiều sâu nhẹ, KHÔNG phải gradient
+       * đèn gắt từ trên xuống (giấy thì không có đèn) nhưng cũng KHÔNG phẳng
+       * như sticker. Dùng 3 stops với biên độ nhẹ: trên sáng hơn 3%, dưới tối
+       * hơn 3% — đủ để có khối mà vẫn là minh hoạ giấy, khác hẳn bản tối
+       * render 3D (1.1 → 0.84).
        *
        * Màu vẫn qua `onPaper()` nên cổng `tools/koa-paper.mjs` giữ nguyên
        * hiệu lực: viền tách khỏi giấy, khối tách khỏi giấy, viền tách khỏi
        * khối.
        */
       const base = r.stops[3][1];
-      ALL_PAPER.push({ ...r, stops: [[0, onPaper(base)] as [number, string]] });
+      ALL_PAPER.push({
+        ...r,
+        stops: [
+          [0, onPaper(shadeHex(base, 1.03))],
+          [0.5, onPaper(base)],
+          [1, onPaper(shadeHex(base, 0.97))],
+        ] as [number, string][],
+      });
     }
   }
   return (paper ? ALL_PAPER : ALL).filter((r) => want.has(r.id));
