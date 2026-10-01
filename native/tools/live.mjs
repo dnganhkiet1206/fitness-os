@@ -1609,6 +1609,86 @@ const SCENARIOS = [
   },
   {
     /*
+      #207: ghi buổi tập trong lúc Hôm nay ĐANG MỞ thì thẻ Hoạt động đổi ngay,
+      không phải kéo làm mới — đúng lỗi chủ dự án báo ("thẻ hoạt động … bị
+      chậm, bắt buộc phải refresh"), mà `today-fresh.mjs` chỉ canh bằng luật
+      tĩnh. Hôm nay không có số đo Health (`active_minutes`/`active_kcal`
+      null), nên vòng Tập luyện là phút TÍNH từ set đã ghi (`today_workout_sets`,
+      #168).
+        (A) mở chi tiết thẻ, đọc phút tập;
+        (B) sang tab Tập luyện, mở /log-workout bằng nút của app (điều hướng
+            trong app — Hôm nay vẫn mount), ghi Squat 60 × 8, lưu, sheet đóng;
+        (C) về lại Hôm nay, không tải lại trang: phút tập trên thẻ đã TĂNG.
+    */
+    name: 'Ghi buổi tập khi Hôm nay đang mở: thẻ Hoạt động đổi ngay, không phải kéo làm mới (#207)',
+    route: '/', mode: 'full',
+    async run(page, { world }) {
+      for (const d of world.daily_logs) if (d.user_id === UID) { d.active_minutes = null; d.active_kcal = null; }
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      const exercise = () => page.evaluate(() => {
+        const leaves = window.__shown('*').filter((e) => !/^(TEXTAREA|INPUT)$/.test(e.tagName) && e.children.length === 0)
+          .map((e) => (e.textContent ?? '').trim()).filter(Boolean);
+        const i = leaves.findIndex((t) => /^(Exercise|Tập luyện)$/.test(t));
+        if (i < 0) return null;
+        /* Phút tính từ set là ƯỚC LƯỢNG, nên thẻ in "~N" (`ringValueText`). */
+        const v = leaves.slice(i + 1, i + 3).find((t) => /^~?[\d.,]+$/.test(t));
+        return v == null ? null : Number(v.replace(/[~,]/g, ''));
+      });
+      const toggle = page.getByRole('button', { name: /^(Activity|Hoạt Động)$/ }).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await toggle.count()); i++) await page.waitForTimeout(250);
+      if (!(await toggle.count())) return 'tự kiểm: không thấy thẻ Hoạt động trên Hôm nay';
+      await toggle.click();
+      /* Dấu trên window: còn nguyên khi về = không có lượt tải lại trang nào,
+         tức thẻ KHÔNG được cứu bởi một lần mount mới. */
+      await page.evaluate(() => { window.__mark207 = 1; });
+      let before = null;
+      for (let i = 0; i < 40 && before == null; i++) { await page.waitForTimeout(250); before = await exercise(); }
+      if (before == null) return '(A) mở chi tiết thẻ Hoạt động mà không đọc được phút tập';
+
+      /* Sang tab Tập luyện rồi mở /log-workout từ đó — như trên iOS, tab Hôm
+         nay vẫn mount, nên không có lượt mount nào cứu số liệu cũ. */
+      const tab = (n) => page.getByRole('tab', { name: n, exact: true })
+        .or(page.getByRole('link', { name: n, exact: true }))
+        .or(page.getByRole('button', { name: n, exact: true }))
+        .filter({ visible: true }).first();
+      await tab('Workouts').click();
+      const extra = page.getByRole('button', { name: /^(Log an extra session|Log a session|Ghi thêm buổi phát sinh|Ghi buổi tập)$/ }).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await extra.count()); i++) await page.waitForTimeout(250);
+      if (!(await extra.count())) return '(B) tab Tập luyện không có nút ghi buổi tập';
+      await extra.click();
+      for (let i = 0; i < 40 && !/log-workout/.test(page.url()); i++) await page.waitForTimeout(250);
+      if (!/log-workout/.test(page.url())) return `(B) chạm nút ghi buổi tập mà không mở /log-workout: ${page.url()}`;
+      await page.getByPlaceholder(/^(Bài tập|Exercise)$/).first().fill('Squat');
+      await page.getByPlaceholder('—', { exact: true }).nth(0).fill('60');
+      await page.getByPlaceholder('—', { exact: true }).nth(1).fill('8');
+      await page.waitForTimeout(500);
+      const reads = [];
+      page.on('request', (r) => { if (r.method() === 'GET' && /workout_sessions\?select=sets/.test(r.url())) reads.push(r.url()); });
+      await page.getByText(/^(Lưu buổi tập|Save Workout)$/).filter({ visible: true }).first().click();
+      for (let i = 0; i < 40 && /log-workout/.test(page.url()); i++) await page.waitForTimeout(250);
+      if (/log-workout/.test(page.url())) return '(B) lưu xong mà sheet không đóng';
+      /* Về Hôm nay bằng nút Back của trình duyệt: trên expo-router web đó là
+         điều hướng TRONG app (popstate), không tải lại trang — Hôm nay vẫn là
+         cây đã mount từ trước khi ghi. (Thanh tab lúc này nằm dưới toast "đã
+         lưu" kèm lời mời chia sẻ.) */
+      await page.waitForTimeout(800);
+      await page.goBack();
+      for (let i = 0; i < 40 && new URL(page.url()).pathname !== '/'; i++) await page.waitForTimeout(250);
+      if (new URL(page.url()).pathname !== '/') return `(C) không về được Hôm nay: ${page.url()}`;
+      if (!(await page.evaluate(() => window.__mark207 === 1))) return 'tự kiểm: trang đã tải lại giữa chừng — phép đo không còn nói gì về một màn ĐANG mở';
+
+      let after = before;
+      for (let i = 0; i < 40 && after === before; i++) { await page.waitForTimeout(250); after = await exercise(); }
+      if (after == null) return '(C) lưu xong không còn đọc được phút tập trên thẻ';
+      if (!(after > before)) {
+        return `(C) ghi buổi tập Squat 60 × 8 mà thẻ Hoạt động vẫn ${before} phút (đọc lại hàng hôm nay: ${reads.length} lần) — phải kéo làm mới mới thấy`;
+      }
+      return null;
+    },
+  },
+  {
+    /*
       #168: lượt làm mới khi app trở lại (sau khi đã ghé năm tab, như iOS giữ
       mọi tab đã mount) không đọc một thứ hai lần.
         (A) các cửa sổ buổi tập ≤ 56 ngày là MỘT truy vấn (bản cũ: năm, cùng
