@@ -42,11 +42,20 @@ const world = {
     })),
   ],
   // Mới nhất trước, như SQL: bài thứ i cũ hơn bài thứ i-1 một phút.
-  community_posts: spec.recipes.titles.map((t, i) => ({
-    id: `00000000-0000-4000-8000-${String(100 + i).padStart(12, '0')}`,
-    author_id: AUTHOR, kind: 'recipe', payload: { title: t }, visibility: 'public', hidden: false,
-    created_at: new Date(Date.parse('2026-09-26T12:00:00Z') - (i + 1) * 60000).toISOString(),
-  })),
+  community_posts: [
+    ...spec.recipes.titles.map((t, i) => ({
+      id: `00000000-0000-4000-8000-${String(100 + i).padStart(12, '0')}`,
+      author_id: AUTHOR, kind: 'recipe', payload: { title: t }, visibility: 'public', hidden: false,
+      created_at: new Date(Date.parse('2026-09-26T12:00:00Z') - (i + 1) * 60000).toISOString(),
+    })),
+    /* #192: bài của tìm bài viết — có cả một công thức (chú thích khớp) để đo bộ lọc loại. */
+    ...spec.posts.items.map((it, i) => ({
+      id: `00000000-0000-4000-8000-${String(200 + i).padStart(12, '0')}`,
+      author_id: AUTHOR, kind: it.kind, caption: it.caption, payload: it.title == null ? {} : { title: it.title },
+      visibility: 'public', hidden: false,
+      created_at: new Date(Date.parse('2026-09-26T11:00:00Z') - (i + 1) * 60000).toISOString(),
+    })),
+  ],
   community_blocks: [],
   community_follows: [],
 };
@@ -57,6 +66,11 @@ function problemsOf(fixtures) {
   for (const c of spec.recipes.cases) {
     const got = fixtures.community_find_recipes.run({ p_q: c.q }, world).map((r) => titleOf.get(r.post_id));
     if (JSON.stringify(got) !== JSON.stringify(c.expect)) out.push(`tìm công thức ${JSON.stringify(c.q)} (${c.why}): fixture trả ${JSON.stringify(got)}, tệp ca đòi ${JSON.stringify(c.expect)}`);
+  }
+  const captionOf = new Map(world.community_posts.map((p) => [p.id, p.caption]));
+  for (const c of spec.posts.cases) {
+    const got = fixtures.community_find_posts.run({ p_q: c.q }, world).map((r) => captionOf.get(r.post_id));
+    if (JSON.stringify(got) !== JSON.stringify(c.expect)) out.push(`tìm bài viết ${JSON.stringify(c.q)} (${c.why}): fixture trả ${JSON.stringify(got)}, tệp ca đòi ${JSON.stringify(c.expect)}`);
   }
   for (const c of spec.profiles.cases) {
     const got = fixtures.community_search_profiles.run({ p_q: c.q }, world).map((r) => r.handle);
@@ -87,13 +101,30 @@ const problems = problemsOf(RPC_FIXTURES);
   }
 }
 
+/* #192: và bài công thức không lọt vào tìm bài viết — bỏ bộ lọc loại của fixture thì đỏ. */
+{
+  const src = readFileSync(path.join(TOOLS, 'live-rpc.mjs'), 'utf8');
+  const from = ".filter((p) => p.kind === 'workout' || p.kind === 'progress')";
+  if (!src.includes(from)) problems.push('thử ngược không áp được: community_find_posts trong live-rpc.mjs không còn bộ lọc loại — cập nhật search-parity.mjs');
+  else {
+    const tmp = path.join(TOOLS, `.search-parity-kind-${process.pid}.mjs`);
+    writeFileSync(tmp, src.replace(from, '.filter(() => true)'));
+    try {
+      const mut = await import(pathToFileURL(tmp).href);
+      if (!problemsOf(mut.RPC_FIXTURES).some((x) => x.startsWith('tìm bài viết'))) problems.push('bộ kiểm đã mất răng: tìm bài viết trả cả bài công thức mà mọi ca vẫn xanh');
+    } finally {
+      unlinkSync(tmp);
+    }
+  }
+}
+
 if (problems.length) {
   console.error('tìm kiếm SQL ↔ fixture CÓ LỖI:\n');
   for (const p of problems) console.error(`  • ${p}`);
   process.exit(1);
 }
 console.log(
-  `tìm kiếm SQL ↔ fixture OK — ${spec.recipes.cases.length} ca tìm công thức và ${spec.profiles.cases.length} ca tìm người của search_cases.json ` +
+  `tìm kiếm SQL ↔ fixture OK — ${spec.recipes.cases.length} ca tìm công thức, ${spec.profiles.cases.length} ca tìm người và ${spec.posts.cases.length} ca tìm bài viết (#192) của search_cases.json ` +
     'ra đúng danh sách, đúng thứ tự qua RPC_FIXTURES; cùng tệp ấy chạy trên Postgres thật trong community_search_shared.test.sql; ' +
-    'và fixture bị phá thành khớp chuỗi con (F3) thì bước này đỏ',
+    'và fixture bị phá thành khớp chuỗi con (F3), hay tìm bài viết bỏ bộ lọc loại (công thức lọt vào), thì bước này đỏ',
 );

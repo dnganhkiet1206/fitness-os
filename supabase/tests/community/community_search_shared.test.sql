@@ -1,5 +1,5 @@
--- Tìm công thức và tìm người trên CÙNG một tệp ca với fixture của thế giới giả
--- (#130): `search_cases.json`, cũng được `native/tools/search-parity.mjs` chạy
+-- Tìm công thức, tìm người và tìm bài viết (#192) trên CÙNG một tệp ca với fixture
+-- của thế giới giả (#130): `search_cases.json`, cũng được `native/tools/search-parity.mjs` chạy
 -- qua `RPC_FIXTURES` trong cổng. Hai bản của một nghĩa — SQL thật và bản dịch
 -- JS cho live.mjs — trước đây không gì so với nhau: fixture trôi thì live.mjs
 -- xanh trên một hành vi server không có.
@@ -17,7 +17,8 @@ BEGIN;
 CREATE TEMP TABLE sc AS SELECT :'cases'::jsonb AS j;
 GRANT SELECT ON sc TO authenticated;
 DO $$ BEGIN
-  ASSERT (SELECT jsonb_array_length(coalesce(j->'recipes'->'cases', '[]')) > 0 AND jsonb_array_length(coalesce(j->'profiles'->'cases', '[]')) > 0 FROM sc),
+  ASSERT (SELECT jsonb_array_length(coalesce(j->'recipes'->'cases', '[]')) > 0 AND jsonb_array_length(coalesce(j->'profiles'->'cases', '[]')) > 0
+            AND jsonb_array_length(coalesce(j->'posts'->'cases', '[]')) > 0 FROM sc),
     'SC0 không đọc được search_cases.json — biến môi trường SEARCH_CASES (run.sh, b_reverse.py)';
 END $$;
 
@@ -33,6 +34,13 @@ INSERT INTO community_posts (id, author_id, kind, payload, visibility, created_a
 SELECT ('fefefefe-0000-0000-0000-0000000004' || lpad(i::text, 2, '0'))::uuid, 'fefefefe-0000-0000-0000-000000000302', 'recipe',
        jsonb_build_object('title', t), 'public', now() - (i || ' minutes')::interval
 FROM sc, jsonb_array_elements_text(j->'recipes'->'titles') WITH ORDINALITY AS x(t, i);
+
+-- #192: bài của tìm bài viết — có cả một công thức có chú thích khớp, để đo bộ lọc loại.
+INSERT INTO community_posts (id, author_id, kind, caption, payload, visibility, created_at)
+SELECT ('fefefefe-0000-0000-0000-0000000005' || lpad(i::text, 2, '0'))::uuid, 'fefefefe-0000-0000-0000-000000000302', it->>'kind',
+       it->>'caption', CASE WHEN it->>'title' IS NULL THEN '{}'::jsonb ELSE jsonb_build_object('title', it->>'title') END,
+       'public', now() - interval '1 hour' - (i || ' minutes')::interval
+FROM sc, jsonb_array_elements(j->'posts'->'items') WITH ORDINALITY AS x(it, i);
 
 CREATE OR REPLACE FUNCTION pg_temp.who(u text) RETURNS void LANGUAGE sql AS $$ SELECT set_config('request.jwt.claim.sub', u, false), set_config('request.jwt.claim.role', 'authenticated', false) $$;
 SELECT pg_temp.who('fefefefe-0000-0000-0000-000000000301'); SET ROLE authenticated;
@@ -50,7 +58,14 @@ DO $$ DECLARE c jsonb; got jsonb; BEGIN
     WHERE r.user_id::text LIKE 'fefefefe-%';
     ASSERT got = c->'expect', format('SC2 tìm người %s (%s): SQL trả %s, tệp ca đòi %s', to_json(c->>'q'), c->>'why', got, c->'expect');
   END LOOP;
+  FOR c IN SELECT jsonb_array_elements(j->'posts'->'cases') FROM sc LOOP
+    SELECT coalesce(jsonb_agg(p.caption ORDER BY r.n), '[]') INTO got
+    FROM public.community_find_posts(c->>'q') WITH ORDINALITY AS r(post_id, n)
+    JOIN public.community_posts p ON p.id = r.post_id
+    WHERE p.id::text LIKE 'fefefefe-%';
+    ASSERT got = c->'expect', format('SC3 tìm bài viết %s (%s): SQL trả %s, tệp ca đòi %s', to_json(c->>'q'), c->>'why', got, c->'expect');
+  END LOOP;
 END $$;
 RESET ROLE;
-\echo TẤT CẢ 3 KỊCH BẢN TÌM KIẾM CHUNG ĐÚNG (SC0–SC2, mỗi ca của search_cases.json một lần)
+\echo TẤT CẢ 4 KỊCH BẢN TÌM KIẾM CHUNG ĐÚNG (SC0–SC3, mỗi ca của search_cases.json một lần)
 ROLLBACK;

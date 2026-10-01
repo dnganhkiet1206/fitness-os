@@ -4011,6 +4011,44 @@ const SCENARIOS = [
   },
   {
     /*
+      #192: màn Tìm, phân đoạn "Bài viết" (#182, C) — trước #192 thế giới giả
+      không có `community_find_posts`, nên RPC nhận [] và chỉ chụp được trạng
+      thái rỗng. Fixture nay chép thân SQL (cùng tệp ca với SQL thật qua
+      search-parity.mjs). Gõ "push":
+        (A) đúng một lời gọi `community_find_posts` mang p_q "push";
+        (B) thẻ của bài khớp hiện ra — bài workout "push" của thế giới giả;
+        (C) gõ một từ không khớp thì màn nói "No post matches …", không thẻ nào.
+    */
+    name: 'Tìm bài viết: gõ từ khoá thì thẻ bài khớp hiện ra, không khớp thì nói rõ (#192)',
+    route: '/community-search', mode: 'full',
+    async run(page, { world }) {
+      const target = world.community_posts.find((p) => p.id === 'cp000000-0000-4000-8000-000000000001');
+      if (!target || !/push/i.test(`${target.caption} ${target.payload?.title ?? ''}`)) return 'tự kiểm: bài cp…0001 của thế giới giả không còn khớp "push"';
+      const asked = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/rpc\/community_find_posts/.test(q.url())) asked.push(JSON.parse(q.postData() ?? '{}').p_q);
+      });
+      const tab = page.getByRole('tab', { name: /^(Posts|Bài viết)$/ });
+      for (let i = 0; i < 40 && !(await tab.count()); i++) await page.waitForTimeout(250);
+      if (!(await tab.count())) return 'không thấy phân đoạn "Posts"';
+      await tab.first().click();
+      const box = page.getByPlaceholder(/^(Caption or title|Chú thích hoặc tên bài)$/).filter({ visible: true }).first();
+      await box.fill('push');
+      const cap = String(target.caption ?? '').trim();
+      const shown = () => page.evaluate((c) => window.__shown('*').some((e) => !/^(TEXTAREA|INPUT)$/.test(e.tagName) && e.children.length === 0 && (e.textContent ?? '').trim() === c), cap);
+      for (let i = 0; i < 40 && !(await shown()); i++) await page.waitForTimeout(250);
+      if (!asked.includes('push')) return `(A) gõ "push" mà không hỏi community_find_posts với "push" — đã hỏi: ${JSON.stringify(asked)}`;
+      if (!(await shown())) return `(B) không thẻ nào mang chú thích "${cap}" của bài khớp`;
+      await box.fill('zzzzqx');
+      const none = page.getByText(/^(No post matches|Không có bài viết nào khớp)/).filter({ visible: true });
+      for (let i = 0; i < 40 && !(await none.count()); i++) await page.waitForTimeout(250);
+      if (!(await none.count())) return '(C) gõ một từ không khớp mà màn không nói "No post matches …"';
+      if (await shown()) return '(C) không khớp mà thẻ của lần tìm trước vẫn còn';
+      return null;
+    },
+  },
+  {
+    /*
       #54 (đưa phép đo #47 vào bộ hồi quy): `PickRow scroll` phải cho thấy TRỌN
       ô đang chọn. Đo ở 320 với chữ trong ô phóng to (giả lập Dynamic Type) —
       trước #47: mở `/log-meal?meal=postworkout` thì ô "Sau tập" nằm HẲN ngoài

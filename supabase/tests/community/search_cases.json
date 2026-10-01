@@ -1,5 +1,5 @@
 {
-  "_": "Ca CHUNG cho tìm công thức và tìm người (#130). Cùng tệp chạy qua SQL thật (community_search_shared.test.sql, trong run.sh) và qua fixture của thế giới giả (native/tools/search-parity.mjs, trong cổng). recipes.titles theo thứ tự MỚI NHẤT TRƯỚC; expect là tên món / handle theo đúng thứ tự hàm trả. Chỉ nghĩa của CHUỖI TÌM ở đây — ai thấy bài nào (RLS, chặn, theo dõi) chỉ SQL canh, fixture không có RLS.",
+  "_": "Ca CHUNG cho tìm công thức, tìm người (#130) và tìm bài viết (#192). Cùng tệp chạy qua SQL thật (community_search_shared.test.sql, trong run.sh) và qua fixture của thế giới giả (native/tools/search-parity.mjs, trong cổng). recipes.titles theo thứ tự MỚI NHẤT TRƯỚC; expect là tên món / handle theo đúng thứ tự hàm trả. Chỉ nghĩa của CHUỖI TÌM ở đây — ai thấy bài nào (RLS, chặn, theo dõi) chỉ SQL canh, fixture không có RLS.",
   "recipes": {
     "titles": ["Cơm gà áp chảo", "Phở bò tái", "Gà nướng mật ong", "Salad 100% rau", "Trà_sữa trân châu", "Ức gà luộc", "Đậu hũ sốt cà", "Bánh mì trứng"],
     "cases": [
@@ -47,6 +47,30 @@
       { "q": "dang", "expect": ["sp_dang"], "why": "Đ hoa gập về d" },
       { "q": "kh", "expect": ["sp_dang"], "why": "đầu từ thứ hai" },
       { "q": "x", "expect": [], "why": "dưới 2 ký tự" }
+    ]
+  },
+  "posts": {
+    "_": "Tìm bài viết (community_find_posts, #182): chỉ 'workout' và 'progress' — bài công thức thuộc tìm công thức, nên một công thức có chú thích khớp vẫn KHÔNG hiện ở đây. Khớp đầu một từ trong chú thích HAY trong tên (payload.title). items theo thứ tự MỚI NHẤT TRƯỚC; expect là chú thích theo đúng thứ tự hàm trả.",
+    "items": [
+      { "kind": "workout", "caption": "Buổi sáng bận rộn", "title": "Squat nặng" },
+      { "kind": "recipe", "caption": "Sáng nay nấu cơm", "title": null },
+      { "kind": "progress", "caption": "Ăn sáng đủ chất", "title": "Tháng 9" },
+      { "kind": "workout", "caption": "Đạt 100% mục tiêu", "title": "Kéo xà" },
+      { "kind": "workout", "caption": "Nghỉ một ngày", "title": "Bang_tay" }
+    ],
+    "cases": [
+      { "q": "sang", "expect": ["Buổi sáng bận rộn", "Ăn sáng đủ chất"], "why": "đầu một từ trong chú thích, mới nhất trước; công thức có chú thích khớp KHÔNG hiện" },
+      { "q": "SÁNG", "expect": ["Buổi sáng bận rộn", "Ăn sáng đủ chất"], "why": "gập dấu và chữ hoa" },
+      { "q": "  sang  ", "expect": ["Buổi sáng bận rộn", "Ăn sáng đủ chất"], "why": "btrim bỏ dấu cách hai đầu" },
+      { "q": "\tsang", "expect": [], "why": "btrim CHỈ bỏ dấu cách" },
+      { "q": "ang", "expect": [], "why": "giữa chữ không khớp" },
+      { "q": "squat", "expect": ["Buổi sáng bận rộn"], "why": "khớp TÊN ở payload, không chỉ chú thích" },
+      { "q": "keo xa", "expect": ["Đạt 100% mục tiêu"], "why": "tên nhiều từ, không dấu" },
+      { "q": "100%", "expect": ["Đạt 100% mục tiêu"], "why": "% là chữ thường, không phải ký tự đại diện" },
+      { "q": "%%", "expect": [], "why": "% không khớp mọi thứ" },
+      { "q": "bang_", "expect": ["Nghỉ một ngày"], "why": "_ là chữ thường" },
+      { "q": "ban_", "expect": [], "why": "_ không phải 'một ký tự bất kỳ'" },
+      { "q": "s", "expect": [], "why": "dưới 2 ký tự thì không hỏi" }
     ]
   }
 }

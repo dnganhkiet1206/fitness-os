@@ -239,6 +239,24 @@ export const RPC_FIXTURES = {
     },
   },
 
+  /* 20260930220000_community_find_posts.sql (#182, C; fixture: #192): phân đoạn "Bài viết" của màn
+     tìm — chỉ 'workout' và 'progress' (công thức là việc của hàm trên), cùng vị từ quyền đọc,
+     tiền tố của một TỪ trong chú thích HAY trong tên ở payload, mới nhất trước, tối đa 30. */
+  community_find_posts: {
+    sample: { p_q: 'squat' },
+    run({ p_q } = {}, world) {
+      const q = fold(btrim(p_q)).slice(0, 40);
+      if ([...q].length < 2) return [];
+      return rows(world, 'community_posts')
+        .filter((p) => p.kind === 'workout' || p.kind === 'progress')
+        .filter((p) => p.author_id === UID || (!p.hidden && !blockedBetween(world, UID, p.author_id) && (p.visibility === 'public' || follows(world, UID, p.author_id))))
+        .filter((p) => startsWord(fold(String(p.caption ?? '')), q) || startsWord(fold(String(p.payload?.title ?? '')), q))
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : a.id < b.id ? -1 : 1))
+        .slice(0, 30)
+        .map((p) => ({ post_id: p.id }));
+    },
+  },
+
   /* 20260930160000_community_search.sql */
   community_follow_suggestions: {
     sample: {},
