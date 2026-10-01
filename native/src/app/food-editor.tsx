@@ -2,7 +2,7 @@ import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { Check, Trash2 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -32,6 +32,7 @@ import {
   useUpdateFoodItem,
   type FoodFormData,
 } from '@/hooks/use-nutrition';
+import { useFormSeed } from '@/hooks/use-form-seed';
 
 /**
  * Chỉ chữ số, và không giữ số 0 thừa ở đầu.
@@ -81,17 +82,29 @@ export default function FoodEditorSheet() {
   const [fat, setFat] = useState('');
   const [fiber, setFiber] = useState('');
 
-  useEffect(() => {
-    if (!existing) return;
-    setName(existing.name ?? '');
-    setBrand(existing.brand ?? '');
-    setServing(String(Number(existing.serving_g) || 100));
-    setKcal(String(Math.round(Number(existing.kcal)) || ''));
-    setProtein(String(Math.round(Number(existing.protein_g)) || ''));
-    setCarbs(String(Math.round(Number(existing.carbs_g)) || ''));
-    setFat(String(Math.round(Number(existing.fat_g)) || ''));
-    setFiber(String(Math.round(Number(existing.fiber_g)) || ''));
-  }, [existing]);
+  /* Điền từ món đang sửa; dữ liệu tải lại thì điền lại CHỈ KHI chưa ai sửa ô
+     nào (#166) — bản trước ghi đè cả tám ô đang gõ dở. Xem `useFormSeed`. */
+  useFormSeed(existing, { name, brand, serving, kcal, protein, carbs, fat, fiber }, (existing) => {
+    const next = {
+      name: existing.name ?? '',
+      brand: existing.brand ?? '',
+      serving: String(Number(existing.serving_g) || 100),
+      kcal: String(Math.round(Number(existing.kcal)) || ''),
+      protein: String(Math.round(Number(existing.protein_g)) || ''),
+      carbs: String(Math.round(Number(existing.carbs_g)) || ''),
+      fat: String(Math.round(Number(existing.fat_g)) || ''),
+      fiber: String(Math.round(Number(existing.fiber_g)) || ''),
+    };
+    setName(next.name);
+    setBrand(next.brand);
+    setServing(next.serving);
+    setKcal(next.kcal);
+    setProtein(next.protein);
+    setCarbs(next.carbs);
+    setFat(next.fat);
+    setFiber(next.fiber);
+    return next;
+  });
 
   const num = (v: string) => Number(v) || 0;
   const calcKcal = Math.round(num(protein) * 4 + num(carbs) * 4 + num(fat) * 9);

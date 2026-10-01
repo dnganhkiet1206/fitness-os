@@ -593,6 +593,9 @@ const STEPS = [
   /* #164: luật báo số dòng mà bỏ chú thích bằng lối co chuỗi thì báo lệch lên
      đúng bằng số dòng chú thích phía trên chỗ lỗi (nav-guard: 222 cho dòng 329). */
   ['số dòng của luật', 'node', ['tools/strip-lines.mjs']],
+  /* #166: màn có ô nhập điền form theo dữ liệu truy vấn qua useFormSeed — một
+     useEffect(…, [data]) ghi đè thứ người ta đang gõ dở mỗi lần dữ liệu tải lại. */
+  ['điền form', 'node', ['tools/form-seed.mjs']],
   ['trạng thái ô chọn', 'node', ['tools/tab-state.mjs']],
   /* #105: chữ hiện ra đặt dấu MỘT kiểu (cũ: "hoá", "Huỷ"). `i18n.ts` từng có
      `cancel: 'Hủy'` trong khi mọi hộp hỏi lại viết `'Huỷ'`. */

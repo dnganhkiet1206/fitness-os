@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Check, RefreshCw } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -27,6 +27,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
+import { useFormSeed } from '@/hooks/use-form-seed';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/useTodayData';
@@ -140,45 +141,52 @@ export default function EditProfileSheet() {
   const [dislikes, setDislikes] = useState('');
   const { unit: vUnit, setUnit: setVUnit } = useVolumeUnit();
 
-  useEffect(() => {
-    if (!profile) return;
+  /* Điền từ hồ sơ, và điền lại khi hồ sơ mới về CHỈ KHI chưa ai sửa gì (#166):
+     một lượt tải lại lúc app trở lại từ nền, hay đồng bộ Health ghi cân nặng,
+     từng xoá sạch thứ người ta đang gõ dở ở đây. Xem `useFormSeed`. */
+  useFormSeed(profile, { form, wDisp, hDisp, waterDisp, allergies, dislikes }, (profile) => {
     const uW: WeightUnit = profile.units_weight === 'lbs' ? 'lbs' : 'kg';
     const uH: HeightUnit = profile.units_height === 'in' ? 'in' : 'cm';
-    setWDisp(profile.weight_kg == null ? '' : String(displayWeight(Number(profile.weight_kg), uW)));
-    setHDisp(profile.height_cm == null ? '' : String(displayHeight(Number(profile.height_cm), uH)));
-    setWaterDisp(
-      profile.water_target_ml == null ? '' : String(displayVolume(Number(profile.water_target_ml), vUnit)),
-    );
-    /* Folded onto the canonical values so an account that stored the
-       Vietnamese labels shows its chips selected instead of blank — see
-       `canonicalAllergy`. */
-    setAllergies(
-      Array.isArray(profile.allergies) ? profile.allergies.map(canonicalAllergy) : [],
-    );
-    setDislikes(dislikesText(profile.disliked_foods));
-    setForm({
-      name: profile.name ?? '',
-      dob: profile.dob ?? '',
-      sex: profile.sex ?? 'male',
-      activity_level: profile.activity_level ?? 'moderate',
-      training_level: profile.training_level ?? 'intermediate',
-      dietary_preference: profile.dietary_preference ?? 'omnivore',
-      height_cm: numText(profile.height_cm),
-      weight_kg: numText(profile.weight_kg),
-      goal: profile.goal ?? 'maintain',
-      tdee_target_kcal: numText(profile.tdee_target_kcal),
-      macro_protein_g: numText(profile.macro_protein_g),
-      macro_carbs_g: numText(profile.macro_carbs_g),
-      macro_fat_g: numText(profile.macro_fat_g),
-      macro_fiber_g: numText(profile.macro_fiber_g),
-      water_target_ml: numText(profile.water_target_ml),
-      units_weight: profile.units_weight ?? 'kg',
-      units_height: profile.units_height ?? 'cm',
-      sleep_target_hours: numText(profile.sleep_target_hours),
-      sleep_target_bedtime: (profile.sleep_target_bedtime ?? '23:00').slice(0, 5),
-      sleep_target_waketime: (profile.sleep_target_waketime ?? '07:00').slice(0, 5),
-    });
-  }, [profile]);
+    const next = {
+      wDisp: profile.weight_kg == null ? '' : String(displayWeight(Number(profile.weight_kg), uW)),
+      hDisp: profile.height_cm == null ? '' : String(displayHeight(Number(profile.height_cm), uH)),
+      waterDisp: profile.water_target_ml == null ? '' : String(displayVolume(Number(profile.water_target_ml), vUnit)),
+      /* Folded onto the canonical values so an account that stored the
+         Vietnamese labels shows its chips selected instead of blank — see
+         `canonicalAllergy`. */
+      allergies: Array.isArray(profile.allergies) ? profile.allergies.map(canonicalAllergy) : [],
+      dislikes: dislikesText(profile.disliked_foods),
+      form: {
+        name: profile.name ?? '',
+        dob: profile.dob ?? '',
+        sex: profile.sex ?? 'male',
+        activity_level: profile.activity_level ?? 'moderate',
+        training_level: profile.training_level ?? 'intermediate',
+        dietary_preference: profile.dietary_preference ?? 'omnivore',
+        height_cm: numText(profile.height_cm),
+        weight_kg: numText(profile.weight_kg),
+        goal: profile.goal ?? 'maintain',
+        tdee_target_kcal: numText(profile.tdee_target_kcal),
+        macro_protein_g: numText(profile.macro_protein_g),
+        macro_carbs_g: numText(profile.macro_carbs_g),
+        macro_fat_g: numText(profile.macro_fat_g),
+        macro_fiber_g: numText(profile.macro_fiber_g),
+        water_target_ml: numText(profile.water_target_ml),
+        units_weight: profile.units_weight ?? 'kg',
+        units_height: profile.units_height ?? 'cm',
+        sleep_target_hours: numText(profile.sleep_target_hours),
+        sleep_target_bedtime: (profile.sleep_target_bedtime ?? '23:00').slice(0, 5),
+        sleep_target_waketime: (profile.sleep_target_waketime ?? '07:00').slice(0, 5),
+      } as Form,
+    };
+    setWDisp(next.wDisp);
+    setHDisp(next.hDisp);
+    setWaterDisp(next.waterDisp);
+    setAllergies(next.allergies);
+    setDislikes(next.dislikes);
+    setForm(next.form);
+    return next;
+  });
 
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setForm((f) => ({ ...f, [k]: v }));
 

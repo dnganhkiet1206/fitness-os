@@ -1564,6 +1564,51 @@ const SCENARIOS = [
   },
   {
     /*
+      #166: form điền từ dữ liệu truy vấn KHÔNG bị ghi đè khi dữ liệu tải lại —
+      nhưng vẫn nhận dữ liệu mới khi chưa ai sửa gì.
+        (A) mở /edit-profile, chưa chạm gì; server đổi tên, app trở lại sau vài
+            phút (mọi truy vấn tải lại) → ô Tên hiện tên MỚI (form chưa sửa thì
+            không được giữ bản cũ của cache — Lưu sẽ ghi đè số mới bằng số cũ);
+        (B) gõ dở vào ô Tên; server đổi tên lần nữa, app trở lại → ô Tên vẫn
+            là thứ đang gõ, không bị thay bằng tên của server.
+    */
+    name: 'Sửa hồ sơ: dữ liệu tải lại không ghi đè ô đang gõ dở, nhưng vẫn điền khi chưa ai sửa (#166)',
+    route: '/edit-profile', mode: 'full',
+    async run(page, { world }) {
+      const me = world.profiles.find((p) => p.user_id === UID);
+      if (!me) return 'fixture: không có hồ sơ của UID';
+      const nameBox = () => page.locator('input').filter({ visible: true }).first();
+      const valueOf = async () => (await nameBox().inputValue().catch(() => null));
+      for (let i = 0; i < 40 && (await valueOf()) !== me.name; i++) await page.waitForTimeout(250);
+      if ((await valueOf()) !== me.name) return `tự kiểm: ô đầu tiên không phải ô Tên (ra "${await valueOf()}", hồ sơ là "${me.name}")`;
+
+      let shift = 0;
+      const comeBack = async () => {
+        const got = page.waitForResponse((r) => /\/rest\/v1\/profiles\?/.test(r.url()) && r.request().method() === 'GET', { timeout: 15000 });
+        shift += 10 * 60_000;
+        await page.clock.setFixedTime(Date.now() + shift);
+        await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange', { bubbles: true })));
+        await got;
+        await page.waitForTimeout(800);
+      };
+
+      me.name = 'Tên mới từ máy khác';
+      await comeBack();
+      if ((await valueOf()) !== 'Tên mới từ máy khác') {
+        return `(A) chưa sửa gì mà hồ sơ mới về, ô Tên vẫn là "${await valueOf()}" — bấm Lưu sẽ ghi đè tên mới bằng tên cũ`;
+      }
+
+      await nameBox().fill('Đang gõ dở');
+      me.name = 'Tên server đổi lần hai';
+      await comeBack();
+      if ((await valueOf()) !== 'Đang gõ dở') {
+        return `(B) đang gõ dở thì dữ liệu tải lại thay ô Tên thành "${await valueOf()}" — thứ người ta gõ mất không một lời`;
+      }
+      return null;
+    },
+  },
+  {
+    /*
       #168: lượt làm mới khi app trở lại (sau khi đã ghé năm tab, như iOS giữ
       mọi tab đã mount) không đọc một thứ hai lần.
         (A) các cửa sổ buổi tập ≤ 56 ngày là MỘT truy vấn (bản cũ: năm, cùng
