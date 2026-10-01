@@ -62,6 +62,12 @@ onlineManager.setEventListener((setOnline) =>
   liệu hôm nay CẦN tải lại, và số này nhỏ. Chỗ gộp được (5 cửa sổ
   `workout_sessions` cùng một `select`, hai truy vấn "hôm nay" gần trùng, một
   lượt đọc `community_profiles` trùng hẳn) ghi ở issue riêng, không tắt ở đây.
+
+  Đo lại 01/10 (#168), cùng cách: 40 GET, 40 URL khác nhau — lượt
+  `community_profiles` trùng hẳn đã không còn (hai lượt đọc nay khác bộ id).
+  Gộp năm cửa sổ `workout_sessions` ≤ 56 ngày thành một truy vấn và hai truy
+  vấn "hôm nay" thành một (`use-fitness-data.ts`): **35 GET, 35 URL khác nhau**,
+  cái cuối ở ~150 ms. Kịch bản live (#168) giữ cả ba điều.
 */
 if (Platform.OS !== 'web') {
   focusManager.setEventListener((handleFocus) => {

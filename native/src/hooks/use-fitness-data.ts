@@ -1,4 +1,6 @@
+import { useCallback } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { PROGRESS_DAYS } from '@/lib/user-state';
 
 import { readAllPages } from '@/lib/read-all';
 import { supabase } from '@/integrations/supabase/client';
@@ -480,37 +482,51 @@ export function useLogWorkoutSession() {
  * is where a measurement goes, and a computed number that lands in a column
  * meant for observations is indistinguishable from an observation a week later.
  */
-export function useTodayTrainingMinutes() {
+/*
+  Hàng buổi tập HÔM NAY (`sets`, `session_rpe`) — MỘT truy vấn cho cả hai hook
+  dưới đây (#168). Trước là hai truy vấn gần trùng (`select=sets` và
+  `select=sets,session_rpe`, cùng khoảng ngày), mỗi lượt làm mới đọc hai lần.
+  Mỗi hook là một `select` trên cùng truy vấn: đánh dấu cũ (một buổi vừa ghi,
+  `todayKeys`) thì truy vấn này được huỷ và đọc lại như mọi truy vấn có người
+  xem — không có bản dùng chung nào đứng ngoài vòng làm mới để trả số cũ.
+*/
+type TodaySessionRow = { sets: unknown; session_rpe: number | null };
+
+function useTodaySessionRows<T>(select: (rows: TodaySessionRow[]) => T) {
   const { user } = useAuth();
   return useQuery({
-    queryKey: ['today_training_minutes', user?.id],
+    queryKey: ['today_workout_sets', user?.id],
     enabled: !!user,
     queryFn: async () => {
       const day = localDayRangeISO(localDateStr());
       const { data, error } = await supabase
         .from('workout_sessions')
-        .select('sets')
+        .select('sets, session_rpe')
         .eq('user_id', user!.id)
         .gte('date_time', day.start)
         .lt('date_time', day.end);
       if (error) throw error;
-      // `sets` is free JSONB — a row can hold anything, including not an array
-      const all = (data ?? []).flatMap((s) =>
-        Array.isArray(s.sets) ? (s.sets as unknown as TimedSet[]) : [],
-      );
-      return trainingMinutes(all);
+      return (data ?? []) as TodaySessionRow[];
     },
+    select,
   });
+}
+
+const minutesOf = (rows: TodaySessionRow[]) =>
+  // `sets` is free JSONB — a row can hold anything, including not an array
+  trainingMinutes(rows.flatMap((s) => (Array.isArray(s.sets) ? (s.sets as unknown as TimedSet[]) : [])));
+
+export function useTodayTrainingMinutes() {
+  return useTodaySessionRows(minutesOf);
 }
 
 /**
  * Calo HOẠT ĐỘNG ước lượng cho các buổi tập ghi hôm nay.
  *
- * Anh em của `useTodayTrainingMinutes` ngay trên, và cố ý là một truy vấn
- * RIÊNG chứ không mở rộng cái kia: cái kia trả về phút và có nhiều chỗ đọc,
- * còn cái này cần thêm `session_rpe` và cần tính theo TỪNG buổi — hai buổi
- * cùng tổng số phút nhưng khác RPE không ra cùng một con số, nên gộp set của
- * cả ngày lại rồi tính một lần là sai.
+ * Anh em của `useTodayTrainingMinutes` ngay trên: cùng hàng (một truy vấn,
+ * #168), nhưng một PHÉP TÍNH riêng — cái kia trả về phút, cái này tính theo
+ * TỪNG buổi: hai buổi cùng tổng số phút nhưng khác RPE không ra cùng một con
+ * số, nên gộp set của cả ngày lại rồi tính một lần là sai.
  *
  * `null` khi chưa đủ dữ liệu hồ sơ, không phải 0. Xem `sessionActiveKcal`.
  */
@@ -745,24 +761,16 @@ export function useRestoreSession() {
 }
 
 export function useTodayActiveKcal(profile: EnergyProfile | null) {
-  const { user } = useAuth();
-  return useQuery({
-    queryKey: ['today_active_kcal', user?.id, profile],
-    enabled: !!user,
-    queryFn: async () => {
-      const day = localDayRangeISO(localDateStr());
-      const { data, error } = await supabase
-        .from('workout_sessions')
-        .select('sets, session_rpe')
-        .eq('user_id', user!.id)
-        .gte('date_time', day.start)
-        .lt('date_time', day.end);
-      if (error) throw error;
+  /* Tính theo TỪNG buổi trong `select`, trên cùng hàng của
+     `useTodayTrainingMinutes`. Hồ sơ đổi thì chỉ tính lại, không đọc lại —
+     bản trước đặt `profile` trong khoá, nên đổi cân nặng là một request. */
+  const kcalOf = useCallback(
+    (rows: TodaySessionRow[]) => {
       if (!profile) return null;
       let total = 0;
       let counted = 0;
-      for (const row of data ?? []) {
-        const kcal = sessionKcalOf(row, profile);
+      for (const row of rows) {
+        const kcal = sessionKcalOf(row as never, profile);
         if (kcal != null) {
           total += kcal;
           counted += 1;
@@ -770,14 +778,41 @@ export function useTodayActiveKcal(profile: EnergyProfile | null) {
       }
       return counted > 0 ? total : null;
     },
-  });
+    [profile],
+  );
+  return useTodaySessionRows(kcalOf);
 }
+
+/*
+  Cửa sổ ≤ 56 ngày (= `PROGRESS_DAYS`, tám tuần của thẻ tập luyện) đọc MỘT
+  truy vấn 56 ngày rồi cắt phần của mình bằng `select` (#168). Đo trước (web,
+  ghé năm tab rồi làm mới): năm truy vấn cùng `select`, chỉ khác cửa sổ 2 / 7 /
+  14 / 28 / 56 ngày. Khoá 56 ngày giữ nguyên hình dạng — `use-user-state.ts`
+  đọc thẳng `['workout_sessions', uid, PROGRESS_DAYS]` từ cache. Cửa sổ dài hơn
+  (Buổi tập 90 ngày, tuần cũ của lịch) vẫn là truy vấn riêng: kéo 90 ngày cho
+  mọi màn chỉ để hai màn ấy dùng là đổi một request lấy nhiều dữ liệu hơn.
+
+  Cắt bằng thời điểm (`Date.parse`), không so chuỗi: Postgres trả
+  `…+00:00`, `toISOString()` trả `…Z`, và hai chuỗi của cùng một khoảnh khắc
+  không xếp đúng thứ tự khi so như chữ.
+*/
+const SHARED_SESSION_DAYS = PROGRESS_DAYS;
 
 export function useWorkoutSessions(days = 14) {
   const { user } = useAuth();
+  const span = days <= SHARED_SESSION_DAYS ? SHARED_SESSION_DAYS : days;
+  const select = useCallback(
+    <R extends { date_time: string }>(rows: R[]) => {
+      if (days === span) return rows;
+      const cut = Date.parse(daysAgoISO(days));
+      return rows.filter((r) => Date.parse(r.date_time) >= cut);
+    },
+    [days, span],
+  );
   return useQuery({
-    queryKey: ['workout_sessions', user?.id, days],
+    queryKey: ['workout_sessions', user?.id, span],
     enabled: !!user,
+    select,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('workout_sessions')
@@ -791,7 +826,7 @@ export function useWorkoutSessions(days = 14) {
         */
         .select('id, date_time, template_name, session_rpe, volume_load, pr_detected, sets')
         .eq('user_id', user!.id)
-        .gte('date_time', daysAgoISO(days))
+        .gte('date_time', daysAgoISO(span))
         .order('date_time', { ascending: false });
       if (error) throw error;
       return data ?? [];

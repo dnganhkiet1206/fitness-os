@@ -1564,6 +1564,52 @@ const SCENARIOS = [
   },
   {
     /*
+      #168: lượt làm mới khi app trở lại (sau khi đã ghé năm tab, như iOS giữ
+      mọi tab đã mount) không đọc một thứ hai lần.
+        (A) các cửa sổ buổi tập ≤ 56 ngày là MỘT truy vấn (bản cũ: năm, cùng
+            `select`, cửa sổ 2 / 7 / 14 / 28 / 56 ngày);
+        (B) hàng buổi tập HÔM NAY là một truy vấn (bản cũ: `select=sets` và
+            `select=sets,session_rpe`, cùng khoảng ngày);
+        (C) không hai GET nào trùng hẳn URL.
+    */
+    name: 'Làm mới sau khi ghé năm tab: cửa sổ buổi tập và buổi hôm nay mỗi thứ đọc MỘT lần, không URL nào lặp (#168)',
+    route: '/', mode: 'full',
+    async run(page) {
+      const tab = (n) => page.getByRole('tab', { name: n, exact: true })
+        .or(page.getByRole('link', { name: n, exact: true }))
+        .or(page.getByRole('button', { name: n, exact: true }))
+        .filter({ visible: true }).first();
+      await page.waitForTimeout(2500);
+      for (const n of ['Nutrition', 'Workouts', 'Community', 'Today']) {
+        await tab(n).click({ timeout: 10000 });
+        await page.waitForTimeout(2000);
+      }
+      const urls = [];
+      const onReq = (r) => {
+        if (r.method() !== 'GET') return;
+        const u = new URL(r.url());
+        if (u.pathname.startsWith('/rest/v1/')) urls.push(u.pathname.slice(9) + '?' + decodeURIComponent(u.searchParams.toString()));
+      };
+      page.on('request', onReq);
+      await page.clock.setFixedTime(Date.now() + 5 * 60_000);
+      await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange', { bubbles: true })));
+      await page.waitForTimeout(3000);
+      page.off('request', onReq);
+      if (urls.length < 10) return `tự kiểm: lượt làm mới chỉ có ${urls.length} GET — visibilitychange không tới?`;
+      const windows = urls.filter((u) => u.startsWith('workout_sessions?select=id,date_time,template_name'));
+      if (windows.length !== 1) return `(A) ${windows.length} truy vấn cửa sổ buổi tập trong một lượt làm mới, phải MỘT: ${windows.map((u) => u.match(/date_time=gte\.([^&]+)/)?.[1]).join(', ')}`;
+      if (!/date_time=gte\./.test(windows[0])) return `(A) truy vấn cửa sổ không có mốc thời gian: ${windows[0]}`;
+      const today = urls.filter((u) => /^workout_sessions\?select=sets/.test(u));
+      if (today.length !== 1) return `(B) ${today.length} truy vấn buổi tập hôm nay, phải MỘT: ${today.map((u) => u.slice(0, 60)).join(' | ')}`;
+      const seen = new Map();
+      for (const u of urls) seen.set(u, (seen.get(u) ?? 0) + 1);
+      const dup = [...seen].filter(([, n]) => n > 1);
+      if (dup.length) return `(C) GET trùng hẳn URL: ${dup.map(([u, n]) => `${n}× ${u.slice(0, 120)}`).join(' | ')}`;
+      return null;
+    },
+  },
+  {
+    /*
       #171: "Đang theo dõi" đọc danh sách người mình theo dõi MỘT lần cho mọi
       trang, không một lời gọi `community_follows` mở đầu mỗi trang (bản cũ:
       làm mới 3 trang = 3 lời gọi, mỗi lời gọi là một chặng nối tiếp trước

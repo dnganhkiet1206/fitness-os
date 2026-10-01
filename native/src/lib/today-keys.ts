@@ -65,12 +65,12 @@ export function todayKeys(userId: string | undefined, dateStr: string): unknown[
       vừa bị ghi, có thể là thứ Ba tuần trước. Ghép vào thì ra một khoá không
       observer nào mang. Bỏ đoạn cuối đi thì nó thành tiền tố và bắt được.
 
-      `today_active_kcal` còn mang thêm một `profile` ở đoạn thứ ba, nên tiền
-      tố hai đoạn cũng là cách duy nhất bắt được nó mà không phải dựng lại cái
-      hồ sơ ấy ở đây.
+      (Bản trước #168, `today_active_kcal` còn mang thêm một `profile` ở đoạn
+      thứ ba; nay hồ sơ nằm trong `select`, không trong khoá.)
     */
-    ['today_training_minutes', userId],
-    ['today_active_kcal', userId],
+    /* Từ #168 hai con số ấy là hai `select` trên MỘT truy vấn — hàng buổi tập
+       hôm nay — nên một khoá làm cả hai cũ đi. */
+    ['today_workout_sets', userId],
     ['readiness_history', userId],
     ['recent_foods', userId],
     ['profile', userId],
