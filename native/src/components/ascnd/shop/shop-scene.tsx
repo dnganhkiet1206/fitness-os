@@ -224,6 +224,11 @@ export function ShopScene({
                */
               emotion="idle"
               dress={dress}
+              /* The fitting room is a night scene in both app themes — an
+                 illustration does not follow the theme, the same rule the
+                 Mascot Room's stage follows (#200) — so Koa is always drawn
+                 with the lamp-lit artwork here, never the flat paper version. */
+              paper={false}
             />
         </View>
       </Animated.View>

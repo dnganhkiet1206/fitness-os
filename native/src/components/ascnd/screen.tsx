@@ -26,7 +26,7 @@ import { BottomTabInset } from '@/constants/expo-template-theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeMaterialStyles, makeStyles, type PaletteKey, alpha } from '@/constants/theme';
-import { useMaterial, usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette, useThemeName } from '@/hooks/use-palette';
 import { press } from '@/constants/motion';
 import { closeOpenSwipeRow } from '@/components/ascnd/swipe-row';
 import { setActiveScroller } from '@/lib/scroll-to-top';
@@ -311,6 +311,7 @@ export function Screen(props: ScreenProps) {
 
 function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura, onHeaderHeight, contentScrollEnabled = true, keyboardAware = false, refreshable = false, onScroll, onScrollBeginDrag, overlay, children, style, ...props }: ScreenProps) {
   const c = usePalette();
+  const themeName = useThemeName();
   const m = useMaterial();
   const styles = stylesFor(c);
   const headerStyles = headerStylesFor(m);
@@ -433,18 +434,28 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
   };
 
   if (back) {
+    /*
+     * Nút back trên header nổi, bản sáng: hero thì tối nhưng cuộn qua khỏi
+     * hero là nền giấy sáng — một chevron trắng trơ trụi tàng hình ở đó
+     * (đã chụp màn hình xác nhận, #205). Đĩa vàng mờ — cùng ngôn ngữ với
+     * coin pill bên phải — giữ nó đọc được ở cả hai vị trí; chevron vàng
+     * đậm (cùng màu chữ coin) cho tương phản trên cả nền tối lẫn nền sáng,
+     * đúng cơ chế của coin pill. Bản tối giữ nguyên chevron trắng trơ trụi:
+     * nền tối ở mọi vị trí cuộn, đang tốt thì không đụng.
+     */
+    const floatDisc = transparentHeader && themeName === 'light';
     const headerBar = (
       <View style={styles.pageHeaderRow}>
         <PressScale to={press.deep}
           accessibilityRole="button"
           accessibilityLabel={i18n.a11yBack}
           hitSlop={8}
-          style={styles.backBtn}
+          style={[styles.backBtn, floatDisc && styles.backDisc]}
           onPress={() => {
             Haptics.selection();
             nav.back();
           }}>
-          <Icon icon={ChevronLeft} size={22} color={transparentHeader ? '#fff' : c.primary} />
+          <Icon icon={ChevronLeft} size={22} color={floatDisc ? c.readinessYellow : transparentHeader ? '#fff' : c.primary} />
         </PressScale>
         <Text style={[styles.pageTitle, transparentHeader && styles.pageTitleFloat]} numberOfLines={1}>
           {title}
@@ -640,6 +651,17 @@ const stylesFor = makeStyles((c, m) => ({
     paddingHorizontal: 4,
   },
   backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  /*
+   * Đĩa sau nút back trên header nổi bản sáng (#205): cùng ngôn ngữ với coin
+   * pill — vàng mờ 12%, viền hairline vàng 35%. Giữ chevron đọc được cả khi
+   * header còn trên hero tối lẫn khi đã cuộn qua khỏi hero xuống nền giấy.
+   */
+  backDisc: {
+    borderRadius: 22,
+    backgroundColor: alpha(c.readinessYellow, 0.12),
+    borderWidth: m.borderWidth,
+    borderColor: alpha(c.readinessYellow, 0.35),
+  },
   pageTitle: {
     flex: 1,
     fontSize: 17,
@@ -649,22 +671,17 @@ const stylesFor = makeStyles((c, m) => ({
     textAlign: 'center',
   },
   /*
-    ── QUYẾT ĐỊNH THIẾT KẾ CÒN MỞ, không phải một phép đổi token ──
+    ── QUYẾT ĐỊNH THIẾT KẾ (đã chốt sau khi chụp màn hình bản sáng, #205) ──
 
-    Bóng đen sau chữ là đúng khi chữ SÁNG nằm trên một tấm ảnh. Ở bản sáng thì
-    không: `pageTitleFloat` không đặt lại màu, nên nó thừa `color: c.foreground`
-    = #1a1917 — chữ gần đen, và một bóng đen sau chữ gần đen không làm gì cả.
-    Cùng lúc đó mũi quay lại ngay cạnh nó bị ghim cứng `'#fff'` (dòng 389), nên
-    ở bản sáng hai thứ trong cùng một hàng đầu trang đang nói hai chuyện khác
-    nhau.
-
-    Hai màn dùng nó: `mascot-room` và `shop`. Cả hai chưa từng được chụp ở bản
-    sáng, và câu hỏi "đầu trang trong suốt trên nền sáng thì chữ màu gì" là một
-    quyết định thiết kế chưa ai ra, chứ không phải một mã màu chép nhầm. Ghi
-    lại ở đây thay vì đoán.
+    Header nổi luôn nằm trên hero — mà hero của cả hai màn dùng nó
+    (mascot-room, shop) đều là ảnh phòng TỐI cố định ở cả hai theme. Nên chữ
+    tiêu đề luôn là TRẮNG, cả hai theme, kèm bóng đen cho tách khỏi ảnh.
+    Không thừa `c.foreground`: ở bản sáng đó là #1a1917 gần đen, và một bóng
+    đen sau chữ gần đen không làm gì cả — chữ tàng hình trên nền tối.
   */
   pageTitleFloat: {
     fontWeight: '700',
+    color: '#fff',
     textShadowColor: 'rgba(0,0,0,0.55)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 6,
