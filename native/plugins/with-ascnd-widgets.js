@@ -118,6 +118,51 @@ function getBuildSettings(project, targetUuid) {
   return out;
 }
 
+/**
+ * Idempotency: `expo prebuild` WITHOUT --clean re-runs this plugin on the
+ * existing project. Creating the target/group/sources unconditionally would
+ * duplicate them (two "ASCNDWidgets" targets -> "Multiple commands produce
+ * *.appex"). Find-or-create everywhere below.
+ */
+function findNativeTargetUuid(project, name) {
+  const section = project.pbxNativeTargetSection();
+  for (const uuid of Object.keys(section)) {
+    if (uuid.endsWith('_comment')) continue;
+    const t = section[uuid];
+    if (t && typeof t.name === 'string' && t.name.replace(/^"|"$/g, '') === name) {
+      return uuid;
+    }
+  }
+  return null;
+}
+
+function findSourcesPhaseUuid(project, targetUuid) {
+  const target = project.pbxNativeTargetSection()[targetUuid];
+  const phases = target.buildPhases || [];
+  const section = project.hash.project.objects.PBXSourcesBuildPhase || {};
+  for (const entry of phases) {
+    const uuid = typeof entry === 'string' ? entry : entry.value;
+    if (section[uuid]) return uuid;
+  }
+  return null;
+}
+
+function hasTargetDependency(project, targetUuid, dependencyTargetUuid) {
+  const section = project.hash.project.objects.PBXTargetDependency || {};
+  const targets = project.pbxNativeTargetSection();
+  for (const uuid of Object.keys(section)) {
+    if (uuid.endsWith('_comment')) continue;
+    const dep = section[uuid];
+    const depTarget = dep.target && (dep.target.value || dep.target);
+    if (depTarget !== dependencyTargetUuid) continue;
+    // The dependency must be owned by targetUuid's dependency list.
+    const owner = targets[targetUuid];
+    const deps = owner.dependencies || [];
+    if (deps.some((d) => (d.value || d) === uuid)) return true;
+  }
+  return false;
+}
+
 module.exports = function withAscndWidgets(config) {
   // (5) NSSupportsLiveActivities in the MAIN app's Info.plist — required for
   // ActivityKit Live Activities. No spike code path can start an activity
@@ -181,10 +226,15 @@ module.exports = function withAscndWidgets(config) {
     //    the target's CURRENT_PROJECT_VERSION / MARKETING_VERSION.
     fs.writeFileSync(path.join(extDir, INFO_PLIST_NAME), extensionInfoPlist());
 
-    // 3. Create the app-extension target. This also adds the "Embed App
-    //    Extensions" copy phase and a target dependency on the app target.
+    // 3. Create the app-extension target (find-or-create: a non-clean
+    //    prebuild re-runs this plugin and must NOT create a second target).
+    //    addTarget() also adds the "Embed App Extensions" copy phase and the
+    //    product reference on the app target.
     const bundleId = `${config.ios?.bundleIdentifier ?? 'com.ascnd.fitnessos'}.widgets`;
-    const target = project.addTarget(EXTENSION_NAME, 'app_extension', EXTENSION_NAME, bundleId);
+    const existingUuid = findNativeTargetUuid(project, EXTENSION_NAME);
+    const target = existingUuid
+      ? { uuid: existingUuid }
+      : project.addTarget(EXTENSION_NAME, 'app_extension', EXTENSION_NAME, bundleId);
 
     // 4. Add Swift sources to the extension target.
     //
@@ -195,15 +245,27 @@ module.exports = function withAscndWidgets(config) {
     //  - addToPbxSourcesBuildPhase() reuses the FIRST 'Sources' phase it finds
     //    (the app target's) instead of creating one for the new target, so we
     //    create the extension's Sources phase explicitly.
-    const group = project.addPbxGroup([], EXTENSION_NAME, EXTENSION_NAME);
-    attachGroupToMainGroup(project, group.uuid, EXTENSION_NAME);
-    const sourcesPhase = project.addBuildPhase(
-      [],
-      'PBXSourcesBuildPhase',
-      'Sources',
-      target.uuid,
-    ).buildPhase;
+    // Group: find-or-create (addPbxGroup returns {uuid}; pbxGroupByName
+    // returns the raw object, so normalize to uuid via the comment key).
+    let groupUuid = (() => {
+      const groups = project.hash.project.objects.PBXGroup || {};
+      for (const key of Object.keys(groups)) {
+        if (!/_comment$/.test(key)) continue;
+        if (groups[key] === EXTENSION_NAME) return key.replace(/_comment$/, '');
+      }
+      return null;
+    })();
+    if (!groupUuid) {
+      const g = project.addPbxGroup([], EXTENSION_NAME, EXTENSION_NAME);
+      groupUuid = g.uuid;
+      attachGroupToMainGroup(project, groupUuid, EXTENSION_NAME);
+    }
+    const existingPhaseUuid = findSourcesPhaseUuid(project, target.uuid);
+    const sourcesPhase = existingPhaseUuid
+      ? project.hash.project.objects.PBXSourcesBuildPhase[existingPhaseUuid]
+      : project.addBuildPhase([], 'PBXSourcesBuildPhase', 'Sources', target.uuid).buildPhase;
     for (const rel of SWIFT_SOURCES) {
+      if (project.hasFile(rel)) continue; // already added by a previous prebuild
       /*
         `rel`, NOT `${EXTENSION_NAME}/${rel}`.
 
@@ -213,7 +275,7 @@ module.exports = function withAscndWidgets(config) {
         a doubled path that broke the extension's compile (caught on a real
         prebuild: every Swift source ref resolved under the doubled prefix).
       */
-      const file = project.addFile(rel, group.uuid, { target: target.uuid });
+      const file = project.addFile(rel, groupUuid, { target: target.uuid });
       if (!file) {
         throw new Error(`[with-ascnd-widgets] failed to add source: ${EXTENSION_NAME}/${rel}`);
       }
@@ -235,7 +297,10 @@ module.exports = function withAscndWidgets(config) {
         project.hash.project.objects[section] = {};
       }
     }
-    project.addTargetDependency(project.getFirstTarget().uuid, [target.uuid]);
+    const appTargetUuid = project.getFirstTarget().uuid;
+    if (!hasTargetDependency(project, appTargetUuid, target.uuid)) {
+      project.addTargetDependency(appTargetUuid, [target.uuid]);
+    }
 
     // 5. Build settings: match the app's deployment target, Swift 5.0,
     //    app-extension API only — plus the version settings Xcode needs to
@@ -244,7 +309,8 @@ module.exports = function withAscndWidgets(config) {
     //    CFBundleVersion missing and iOS refuses install (MissingBundleVersion).
     //    INFOPLIST_FILE is set explicitly (not trusted to addTarget's default)
     //    so the generated plist above is always the one Xcode processes.
-    const appTargetUuid = project.getFirstTarget().uuid;
+    //    Re-applied on every prebuild (idempotent assignment), so config
+    //    changes (version/buildNumber) always take effect.
     const appSettings = Object.values(getBuildSettings(project, appTargetUuid));
     const deploymentTarget =
       appSettings.map((s) => s.IPHONEOS_DEPLOYMENT_TARGET).find(Boolean) ?? '"15.1"';
