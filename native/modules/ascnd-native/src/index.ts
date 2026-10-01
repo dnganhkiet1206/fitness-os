@@ -13,6 +13,7 @@ export interface AscndNativeModuleType {
   playHaptic(style: NativeHapticStyle): void;
   areLiveActivitiesEnabled(): boolean;
   startRestActivity(
+    activityState: string,
     exerciseName: string,
     setNumber: number,
     totalSets: number,
@@ -22,6 +23,7 @@ export interface AscndNativeModuleType {
   ): Promise<string>;
   updateRestActivity(
     activityId: string,
+    activityState: string,
     exerciseName: string,
     setNumber: number,
     totalSets: number,

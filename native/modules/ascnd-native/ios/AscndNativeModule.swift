@@ -32,6 +32,7 @@ private final class RestActivityStore {
   private init() {}
 
   func start(
+    activityState: RestTimerAttributes.ActivityState,
     exerciseName: String,
     setNumber: Int,
     totalSets: Int,
@@ -40,6 +41,7 @@ private final class RestActivityStore {
   ) throws -> String {
     let attributes = RestTimerAttributes(brandName: "ASCND")
     let state = RestTimerAttributes.ContentState(
+      activityState: activityState,
       exerciseName: exerciseName,
       setNumber: setNumber,
       totalSets: totalSets,
@@ -59,6 +61,7 @@ private final class RestActivityStore {
 
   func update(
     id: String,
+    activityState: RestTimerAttributes.ActivityState,
     exerciseName: String,
     setNumber: Int,
     totalSets: Int,
@@ -69,6 +72,7 @@ private final class RestActivityStore {
       throw AscndNativeError.activityNotFound(id)
     }
     let state = RestTimerAttributes.ContentState(
+      activityState: activityState,
       exerciseName: exerciseName,
       setNumber: setNumber,
       totalSets: totalSets,
@@ -125,6 +129,7 @@ public final class AscndNativeModule: Module {
 
     AsyncFunction("startRestActivity") {
       (
+        activityState: String,
         exerciseName: String,
         setNumber: Int,
         totalSets: Int,
@@ -137,7 +142,9 @@ public final class AscndNativeModule: Module {
         return
       }
       do {
+        let state = RestTimerAttributes.ActivityState(rawValue: activityState) ?? .resting
         let id = try RestActivityStore.shared.start(
+          activityState: state,
           exerciseName: exerciseName,
           setNumber: setNumber,
           totalSets: totalSets,
@@ -153,6 +160,7 @@ public final class AscndNativeModule: Module {
     AsyncFunction("updateRestActivity") {
       (
         activityId: String,
+        activityState: String,
         exerciseName: String,
         setNumber: Int,
         totalSets: Int,
@@ -166,8 +174,10 @@ public final class AscndNativeModule: Module {
       }
       Task {
         do {
+          let state = RestTimerAttributes.ActivityState(rawValue: activityState) ?? .resting
           try await RestActivityStore.shared.update(
             id: activityId,
+            activityState: state,
             exerciseName: exerciseName,
             setNumber: setNumber,
             totalSets: totalSets,

@@ -13,7 +13,11 @@
 import AscndNativeModule from 'ascnd-native';
 import { isAscndNativeAvailable } from './ASCNDNative';
 
+export type RestActivityStateKind = 'resting' | 'active' | 'ready';
+
 export interface RestActivityState {
+  /** What the Island is showing — resting (between sets), active (mid-set), ready (waiting). */
+  activityState: RestActivityStateKind;
   /** Current exercise, e.g. "Bench Press". */
   exerciseName: string;
   /** 1-based set number just completed (the rest precedes the next set). */
@@ -58,6 +62,7 @@ export async function startRestActivity(state: RestActivityState): Promise<strin
   const endTimestamp = endTimestampFor(state);
   try {
     return await mod.startRestActivity(
+      state.activityState,
       state.exerciseName,
       state.setNumber,
       state.totalSets,
@@ -80,6 +85,7 @@ export async function updateRestActivity(
   try {
     await mod.updateRestActivity(
       activityId,
+      state.activityState,
       state.exerciseName,
       state.setNumber,
       state.totalSets,

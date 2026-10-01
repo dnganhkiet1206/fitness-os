@@ -49,6 +49,7 @@ export function restLiveActivityStarted(
   }
   lastDisplay = display;
   void startRestActivity({
+    activityState: 'resting',
     exerciseName: display.exerciseName,
     setNumber: display.setNumber,
     totalSets: display.totalSets,
@@ -66,6 +67,7 @@ export function restLiveActivityStarted(
 export function restLiveActivityAdjusted(totalSeconds: number, remainingSeconds: number): void {
   if (activeId === null || lastDisplay === null) return;
   void updateRestActivity(activeId, {
+    activityState: 'resting',
     exerciseName: lastDisplay.exerciseName,
     setNumber: lastDisplay.setNumber,
     totalSets: lastDisplay.totalSets,
