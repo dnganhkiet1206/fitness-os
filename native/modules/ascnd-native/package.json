@@ -1,0 +1,1 @@
+{"dependencies":{"expo":"*"},"description":"ASCND native iOS capabilities — architecture spike #195. React Native stays the source of truth; Swift owns iOS-only rendering (ActivityKit, WidgetKit, haptics bridge validation).","main":"src/index.ts","name":"ascnd-native","peerDependencies":{"expo":"*"},"scripts":{},"types":"src/index.ts","version":"0.1.0"}

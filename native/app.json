@@ -75,7 +75,8 @@
       "expo-notifications",
       "@sentry/react-native/expo",
       "./plugins/with-free-test-entitlements.js",
-      "./plugins/with-music-app-queries.js"
+      "./plugins/with-music-app-queries.js",
+      "./plugins/with-ascnd-widgets.js"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -92,6 +92,11 @@ const KNOWN = {
   'lib/i18n.ts: useTranslation': 'API cũ của bản web, useI18n thay thế',
   'lib/training-card.ts: acwrPercent': 'chỉ tools/training-card.mjs kiểm',
   'lib/units.ts: formatWeight': 'displayWeight + weightLabel đang được gọi rời',
+  /* Spike #195 — điểm validate cầu RN→Swift KHÔNG qua ActivityKit. Cố ý chưa
+     nối vào product: haptics product ở lib/haptics.ts (#194), còn hàm này chỉ
+     để chứng minh bridge end-to-end khi chạy EAS validation build. Khi nó được
+     nối thật (native haptics production), self-test dưới sẽ bắt xoá dòng này. */
+  'native/ios/ASCNDHaptics.ts: playNativeHaptic': 'spike #195: validate bridge RN→Swift, chưa nối product theo thiết kế',
 };
 
 const unlinked = [];

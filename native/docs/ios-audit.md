@@ -110,3 +110,47 @@ cần nhìn khi app đóng):
 
 Thứ tự: Live Activity rest timer trước (gắn với workout = core), widget sau.
 Cả hai đều cần Phase 2b (foundation config plugin + EAS) xong trước.
+
+## 7. Quyết định của Kiệt cho #195 (01/10/2026)
+
+- Live Activity rest timer đầu tiên: **CHỈ HIỂN THỊ (display-only)** — chưa làm
+  nút "Bỏ qua nghỉ". Mục tiêu là validate ActivityKit lifecycle, đồng bộ state,
+  giao tiếp RN → native và EAS build trước khi thêm state hai chiều.
+- Widgets: **prototype CẢ HAI** (W1 "Buổi tập hôm nay" + W2 "Streak + Readiness"),
+  dùng chung một data abstraction native, không pipeline riêng lẻ.
+- Countdown: ưu tiên **`endDate` tuyệt đối** thay vì tick từng giây từ RN.
+
+## 8. #195 đã chứng minh (spike hoàn tất 01/10/2026)
+
+Chi tiết đầy đủ: `native/docs/native-spike-195.md`.
+
+- **Module Swift `AscndNative`** qua Expo Modules API: haptics (chỉ để validate
+  bridge — product haptics vẫn ở `src/lib/haptics.ts` #194) + ActivityKit
+  start/update/end display-only. TS facade ở `src/native/ios/`
+  (`ASCNDNative.ts`, `ASCNDHaptics.ts`, `ASCNDLiveActivity.ts`).
+- **Config plugin `plugins/with-ascnd-widgets.js`**: tạo WidgetKit
+  app-extension target `ASCNDWidgets` (`com.ascnd.fitnessos.widgets`) lúc
+  prebuild — Swift sources, Embed App Extensions phase, target dependency,
+  bundle ID, Info.plist (`com.apple.widgetkit-extension`) đều đúng trong
+  `.pbxproj` sinh ra. Không commit thư mục `ios/`.
+- **Hai khai báo native bắt buộc do plugin tự ghi lúc prebuild** (tìm ra khi
+  đối chiếu docs Expo chính thức, đã verify trong config resolve + `ios/`
+  sinh ra): `NSSupportsLiveActivities=true` trong Info.plist app chính
+  (không có thì mọi `Activity.request` đều hỏng) và
+  `extra.eas.build.experimental.ios.appExtensions` khai báo target
+  `ASCNDWidgets` cho EAS sign/provision (không có thì cloud build không ký
+  được extension).
+- **Cả 2 widget + UI Live Activity** trong một WidgetBundle, đọc chung từ
+  `WidgetData` abstraction; mock data ghi rõ SPIKE-ONLY.
+- `npx tsc --noEmit` sạch; `node tools/check.mjs` 296/296 xanh (rerun thật
+  ngày 01/10 — lần chạy đầu bắt 1 lỗi thật của spike: `playNativeHaptic`
+  chưa có chỗ gọi, đã fix bằng exemption có lý do trong `tools/linked.mjs`
+  theo đúng đường gate cho phép);
+  `expo prebuild --platform ios` thành công;
+  `expo-modules-autolinking resolve --platform ios` nhận pod `AscndNative`.
+- **Chưa chứng minh** (cần máy macOS/EAS + credentials): biên dịch Swift,
+  EAS build iOS, gọi RN → Swift lúc runtime, ActivityKit thật trên máy,
+  widget render trên máy. Lệnh EAS đã soạn sẵn trong doc spike.
+
+Quy tắc từ đây: không đi từ spike → implementation native lớn khi chưa có
+EAS build xanh và Kiệt duyệt.
