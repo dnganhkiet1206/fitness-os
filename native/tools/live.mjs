@@ -3890,7 +3890,16 @@ const SCENARIOS = [
       await seg.click();
       const row = page.getByRole('button', { name: /^(Progress photos|Ảnh tiến trình)(, \d+)?$/ });
       for (let i = 0; i < 40 && !(await row.count()); i++) await page.waitForTimeout(250);
-      const name = await row.first().getAttribute('aria-label');
+      /* Chờ CON SỐ, không chỉ chờ hàng: hàng hiện ngay, số tới khi truy vấn ảnh
+         về. Chạy riêng thì cache của lượt mở `/progress-photos` ngay trước đã
+         có sẵn số; trong lượt đủ (máy tải nặng) cache ấy có thể chưa lên đĩa
+         lúc điều hướng, và vế này từng đọc nhãn trước khi số về — đỏ "Progress
+         photos" không số. Hỏng thật thì số không bao giờ tới, và vẫn đỏ. */
+      let name = await row.first().getAttribute('aria-label');
+      for (let i = 0; i < 40 && !/, \d+$/.test(name ?? ''); i++) {
+        await page.waitForTimeout(250);
+        name = await row.first().getAttribute('aria-label');
+      }
       if (name !== `Progress photos, ${total}`) return `(C) hàng Ảnh tiến trình nói "${name}", phải "Progress photos, ${total}"`;
       return null;
     },
