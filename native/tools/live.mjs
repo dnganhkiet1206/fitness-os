@@ -1609,6 +1609,57 @@ const SCENARIOS = [
   },
   {
     /*
+      #210: toast "Workout saved!" (kèm nút Share, sống tám giây) không được nằm
+      đè lên thanh tab. Trên bản web nó từng đè thanh tab của bộ đo
+      (`BottomTabInset` = 0 trên web), nên lưu xong bấm sang tab khác không tới.
+        (A) lưu buổi tập từ tab Tập luyện, toast hiện;
+        (B) NGAY khi toast còn trên màn, bấm tab Today → tới /, không bị che;
+        (C) toast vẫn nằm trọn PHÍA TRÊN thanh tab (không giao nhau).
+    */
+    name: 'Toast sau khi lưu buổi tập không che thanh tab: bấm sang tab khác ngay được (#210)',
+    route: '/workouts', mode: 'full',
+    async run(page) {
+      const tab = (n) => page.getByRole('tab', { name: n, exact: true })
+        .or(page.getByRole('link', { name: n, exact: true }))
+        .or(page.getByRole('button', { name: n, exact: true }))
+        .filter({ visible: true }).first();
+      const extra = page.getByRole('button', { name: /^(Log an extra session|Log a session|Ghi thêm buổi phát sinh|Ghi buổi tập)$/ }).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await extra.count()); i++) await page.waitForTimeout(250);
+      if (!(await extra.count())) return 'tự kiểm: tab Tập luyện không có nút ghi buổi tập';
+      await extra.click();
+      for (let i = 0; i < 40 && !/log-workout/.test(page.url()); i++) await page.waitForTimeout(250);
+      await page.getByPlaceholder(/^(Bài tập|Exercise)$/).first().fill('Squat');
+      await page.getByPlaceholder('—', { exact: true }).nth(0).fill('60');
+      await page.getByPlaceholder('—', { exact: true }).nth(1).fill('8');
+      await page.waitForTimeout(500);
+      await page.getByText(/^(Lưu buổi tập|Save Workout)$/).filter({ visible: true }).first().click();
+      const share = page.getByRole('button', { name: /^(Chia sẻ|Share)$/ }).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await share.count()); i++) await page.waitForTimeout(150);
+      if (!(await share.count())) return '(A) lưu xong mà toast có nút Share không hiện';
+
+      const boxes = await page.evaluate(() => {
+        const btn = window.__shown('[role=button]').find((e) => /^(Chia sẻ|Share)$/.test(e.getAttribute('aria-label') || e.textContent.trim()));
+        let toast = btn;
+        for (let k = 0; k < 6 && toast?.parentElement; k++) toast = toast.parentElement;
+        const tabs = window.__shown('[role=tab],[role=link]').filter((e) => /^(Today|Workouts)$/.test(e.getAttribute('aria-label') || e.textContent.trim()));
+        const r = (e) => { const b = e.getBoundingClientRect(); return { top: b.top, bottom: b.bottom }; };
+        return { btn: btn && r(btn), tabTop: tabs.length ? Math.min(...tabs.map((t) => t.getBoundingClientRect().top)) : null };
+      });
+      if (boxes.btn && boxes.tabTop != null && boxes.btn.bottom > boxes.tabTop) {
+        return `(C) nút Share của toast (đáy ${Math.round(boxes.btn.bottom)}) nằm đè lên thanh tab (đỉnh ${Math.round(boxes.tabTop)})`;
+      }
+      try {
+        await tab('Today').click({ timeout: 3000 });
+      } catch {
+        return '(B) toast còn trên màn thì bấm tab Today không tới được — toast che thanh tab';
+      }
+      for (let i = 0; i < 20 && new URL(page.url()).pathname !== '/'; i++) await page.waitForTimeout(150);
+      if (new URL(page.url()).pathname !== '/') return `(B) bấm tab Today mà ở ${page.url()}`;
+      return null;
+    },
+  },
+  {
+    /*
       #207: ghi buổi tập trong lúc Hôm nay ĐANG MỞ thì thẻ Hoạt động đổi ngay,
       không phải kéo làm mới — đúng lỗi chủ dự án báo ("thẻ hoạt động … bị
       chậm, bắt buộc phải refresh"), mà `today-fresh.mjs` chỉ canh bằng luật

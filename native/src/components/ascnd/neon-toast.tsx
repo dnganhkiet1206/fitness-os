@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icon } from '@/components/ascnd/icon';
 import { useI18n } from '@/hooks/use-app-settings';
 import { BottomTabInset } from '@/constants/expo-template-theme';
+import { useHarnessBarHeight } from '@/lib/harness-bar';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { BOUNCE, duration, spring } from '@/constants/motion';
 import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
@@ -261,6 +262,9 @@ export function NeonToastHost() {
   const i18n = useI18n();
   const insets = useSafeAreaInsets();
   const screenReader = useScreenReader();
+  /* 0 trên iOS (thanh tab là UIKit, đã có trong `BottomTabInset`). Trên web
+     là chiều cao thanh tab của BỘ ĐO — xem chú thích ở chỗ đặt `bottom`. */
+  const harnessBar = useHarnessBarHeight();
 
   /*
     ── the sentence, resolved here and nowhere else ──
@@ -351,9 +355,17 @@ export function NeonToastHost() {
       Trên các sheet toàn màn (ghi buổi tập, ghi bữa) không có thanh tab, nên
       thanh toast nổi cao hơn cần thiết 72 điểm. Đó là phía an toàn của cùng
       phép đánh đổi: nổi cao thì thừa chỗ, nổi thấp thì mất nút.
+
+      ── và trên web: thanh tab của bộ đo (#210) ──
+
+      `BottomTabInset` bằng 0 trên web, nên trên bản web thanh nằm ĐÈ lên thanh
+      tab của bộ đo (`app-tabs.web.tsx`) suốt tám giây: lưu buổi tập xong, bấm
+      sang tab khác không tới được (#207 phải về bằng Back). Cộng chiều cao THẬT
+      mà thanh ấy báo — đúng cách Koa đã làm (`harness-bar.ts`, #152). Trên iOS
+      con số ấy là 0, nên vị trí trên máy không đổi.
     */
     <View
-      style={[styles.wrap, { bottom: insets.bottom + BottomTabInset + spacing.sm }]}
+      style={[styles.wrap, { bottom: insets.bottom + BottomTabInset + harnessBar + spacing.sm }]}
       pointerEvents="box-none"
       accessibilityLiveRegion="polite">
       <Animated.View
