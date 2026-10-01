@@ -41,13 +41,27 @@ function endTimestampFor(state: RestActivityState): number {
   return Date.now() + Math.max(0, remaining) * 1000;
 }
 
+/*
+  #209 follow-up: the facade is null-safe by contract (prod never depends on
+  the Island), but silent swallows made a real incident undebuggable — a
+  JS/native signature skew failed with zero surface. In __DEV__ only, log
+  the underlying error so the next skew shows up in the Metro terminal.
+*/
+function warnDev(fn: string, err: unknown): void {
+  if (__DEV__) {
+    // eslint-disable-next-line no-console
+    console.warn(`[AscndNative] ${fn} failed:`, err);
+  }
+}
+
 /** False on web, on Android, or where Live Activities are unsupported/disabled. */
 export function areLiveActivitiesEnabled(): boolean {
   const mod = AscndNativeModule;
   if (!isAscndNativeAvailable() || !mod) return false;
   try {
     return mod.areLiveActivitiesEnabled();
-  } catch {
+  } catch (err) {
+    warnDev('areLiveActivitiesEnabled', err);
     return false;
   }
 }
@@ -69,7 +83,8 @@ export async function startRestActivity(state: RestActivityState): Promise<strin
       state.totalSeconds,
       endTimestamp,
     );
-  } catch {
+  } catch (err) {
+    warnDev('startRestActivity', err);
     return null;
   }
 }
@@ -93,7 +108,8 @@ export async function updateRestActivity(
       endTimestamp,
     );
     return true;
-  } catch {
+  } catch (err) {
+    warnDev('updateRestActivity', err);
     return false;
   }
 }
@@ -104,7 +120,8 @@ export async function endRestActivity(activityId: string): Promise<void> {
   if (!isAscndNativeAvailable() || !mod) return;
   try {
     await mod.endRestActivity(activityId);
-  } catch {
+  } catch (err) {
     // Display-only surface: nothing to recover.
+    warnDev('endRestActivity', err);
   }
 }
