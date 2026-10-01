@@ -499,6 +499,7 @@ function RenderNode({
   blend,
   armPart,
   armHidden,
+  paper,
 }: {
   n: Node;
   flags: Flags;
@@ -531,6 +532,11 @@ function RenderNode({
    * and no version of it that is right at that angle, so it is dropped.
    */
   armHidden?: boolean;
+  /**
+   * Bản giấy vẽ lại: true → phong cách illustration phẳng, tắt mọi hiệu
+   * ứng đèn (glow/form/body/rim). Giấy không có đèn.
+   */
+  paper?: boolean;
 }) {
   if (n.if && !flags[n.if]) return null;
   if (armHidden) return null;
@@ -548,6 +554,7 @@ function RenderNode({
           rest={rest}
           dress={dress}
           blend={blend}
+          paper={paper}
           armPart={dress && n.id === 'ARMS' ? DRESS_ARM_AT[i] : undefined}
           armHidden={dress && n.id === 'ARMS' && DRESS_ARM_HIDE.indexOf(i) >= 0}
         />
@@ -601,15 +608,21 @@ function RenderNode({
       // is clipped to the shape for free and needs no geometry — see
       // `koa-light.ts`. Order: the hot spot and the ear's own modelling sit
       // under the rim, which is the last thing the light does.
-      const glow = hasGlow(n);
-      if (!glow && !hasForm(n) && !hasBody(n) && !hasRim(n)) return <Shape {...own} />;
+      //
+      // Bản giấy vẽ lại: tắt hết hiệu ứng đèn (glow/form/body/rim) — giấy
+      // không có đèn, Koa bản sáng là illustration phẳng.
+      const glow = !paper && hasGlow(n);
+      const form = !paper && hasForm(n);
+      const bod = !paper && hasBody(n);
+      const rim = !paper && hasRim(n);
+      if (!glow && !form && !bod && !rim) return <Shape {...own} />;
       return (
         <>
           <Shape {...own} />
           {glow ? <Shape {...own} fill={`url(#${glow})`} stroke="none" /> : null}
-          {hasForm(n) ? <Shape {...own} fill={`url(#${FORM_GRADIENT})`} stroke="none" /> : null}
-          {hasBody(n) ? <Shape {...own} fill={`url(#${BODY_GRADIENT})`} stroke="none" /> : null}
-          {hasRim(n) ? (
+          {form ? <Shape {...own} fill={`url(#${FORM_GRADIENT})`} stroke="none" /> : null}
+          {bod ? <Shape {...own} fill={`url(#${BODY_GRADIENT})`} stroke="none" /> : null}
+          {rim ? (
             <Shape {...own} fill="none" stroke={`url(#${RIM_GRADIENT})`} strokeWidth={RIM_WIDTH} />
           ) : null}
         </>
@@ -926,9 +939,10 @@ export function KoaFigure({
           rest={rest}
           dress={mounted}
           blend={blend}
+          paper={paper}
         />
       )),
-    [flags, clock, animated, look, swapMouth, rest, mounted, blend],
+    [flags, clock, animated, look, swapMouth, rest, mounted, blend, paper],
   );
 
   return (

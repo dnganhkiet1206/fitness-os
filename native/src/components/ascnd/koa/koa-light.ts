@@ -628,7 +628,19 @@ export function rampsFor(flags: Flags, paper = false): LightRamp[] {
   })(NODES);
   if (paper && ALL_PAPER.length === 0) {
     for (const r of ALL) {
-      ALL_PAPER.push({ ...r, stops: r.stops.map(([o, c]) => [o, onPaper(c)] as [number, string]) });
+      /*
+       * Bản sáng vẽ lại: phong cách illustration phẳng, KHÔNG còn gradient
+       * đèn từ trên xuống (giấy thì không có đèn). Lấy tông giữa (offset
+       * 0.35) làm màu phẳng — đó là màu "thật" của vật, không phải bản sáng
+       * hay bản tối của đèn. Kết quả: Koa bản sáng trông như sticker/minh
+       * hoạ, khác hẳn bản tối render 3D dưới đèn.
+       *
+       * Màu vẫn qua `onPaper()` nên cổng `tools/koa-paper.mjs` giữ nguyên
+       * hiệu lực: viền tách khỏi giấy, khối tách khỏi giấy, viền tách khỏi
+       * khối.
+       */
+      const base = r.stops[3][1];
+      ALL_PAPER.push({ ...r, stops: [[0, onPaper(base)] as [number, string]] });
     }
   }
   return (paper ? ALL_PAPER : ALL).filter((r) => want.has(r.id));
