@@ -3837,6 +3837,66 @@ const SCENARIOS = [
   },
   {
     /*
+      #179: ảnh tiến trình từng là `.order('date', desc).limit(50)` — từ ảnh thứ
+      51, ảnh CŨ NHẤT (ảnh "trước") lặng lẽ rơi khỏi lưới, và con số ở hàng
+      "Ảnh tiến trình" của Tập luyện › Cơ thể dừng ở 50. Thế giới thêm 60 ảnh
+      cũ hơn hai ảnh sẵn có, từng cặp CÙNG NGÀY (trước + nghiêng):
+        (A) đọc theo (date, id) bằng offset/limit, không `limit=50`;
+        (B) lưới có ĐỦ mọi ảnh (một nút xoá mỗi ô), và có ảnh cũ nhất;
+        (C) hàng "Ảnh tiến trình" ở Tập luyện › Cơ thể nói đúng số ảnh.
+    */
+    name: 'Ảnh tiến trình: đọc hết mọi ảnh — ảnh cũ nhất vẫn ở lưới, số ảnh đúng (#179)',
+    route: '/progress-photos', mode: 'full',
+    async run(page, { world }) {
+      const mine = () => world.progress_photos.filter((x) => x.user_id === UID);
+      const oldestKnown = mine().map((x) => x.date).sort()[0];
+      const d0 = new Date(`${oldestKnown}T12:00:00Z`);
+      const iso = (n) => new Date(d0.getTime() - n * 86_400_000).toISOString().slice(0, 10);
+      for (let i = 0; i < 60; i++) {
+        world.progress_photos.push({
+          id: `pp000179-0000-4000-8000-0000000000${String(i).padStart(2, '0')}`, user_id: UID,
+          date: iso(1 + Math.floor(i / 2)), pose: i % 2 ? 'side' : 'front',
+          photo_url: `http://127.0.0.1:9/p179-${i}.jpg`, notes: null, created_at: new Date().toISOString(),
+        });
+      }
+      const total = mine().length;
+      const oldest = mine().map((x) => x.date).sort()[0];
+
+      const reqs = [];
+      await page.route('**/rest/v1/progress_photos?*', async (route) => {
+        const u = new URL(route.request().url());
+        if (route.request().method() === 'GET') reqs.push({ order: u.searchParams.get('order'), offset: u.searchParams.get('offset') ?? '0', limit: u.searchParams.get('limit') });
+        return route.fallback();
+      });
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+
+      const dels = () => page.getByRole('button', { name: /^(Delete|Xoá) / });
+      for (let i = 0; i < 60 && (await dels().count()) < total; i++) await page.waitForTimeout(250);
+      if (!reqs.length || reqs[0].order !== 'date.desc,id.desc' || reqs[0].offset !== '0' || reqs[0].limit === '50') {
+        return `(A) không đọc theo trang (date, id): ${JSON.stringify(reqs)}`;
+      }
+      const n = await dels().count();
+      if (n !== total) return `(B) lưới có ${n} ô, thế giới có ${total} ảnh của người xem`;
+      const label = await page.evaluate((d) => {
+        const [y, m, dd] = d.split('-').map(Number);
+        return new Date(y, m - 1, dd).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+      }, oldest);
+      if (!(await page.getByRole('button', { name: new RegExp(`^Delete \\S+ ${label}$`) }).count())) return `(B) ảnh cũ nhất (${oldest}, "${label}") không có trong lưới`;
+
+      await page.goto(page.url().replace(/\/progress-photos.*$/, '/workouts'), { waitUntil: 'domcontentloaded' });
+      const seg = page.getByText(/^(Body|Cơ thể)$/).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await seg.count()); i++) await page.waitForTimeout(250);
+      await seg.click();
+      const row = page.getByRole('button', { name: /^(Progress photos|Ảnh tiến trình)(, \d+)?$/ });
+      for (let i = 0; i < 40 && !(await row.count()); i++) await page.waitForTimeout(250);
+      const name = await row.first().getAttribute('aria-label');
+      if (name !== `Progress photos, ${total}`) return `(C) hàng Ảnh tiến trình nói "${name}", phải "Progress photos, ${total}"`;
+      return null;
+    },
+  },
+  {
+    /*
       #54 (đưa phép đo #47 vào bộ hồi quy): `PickRow scroll` phải cho thấy TRỌN
       ô đang chọn. Đo ở 320 với chữ trong ô phóng to (giả lập Dynamic Type) —
       trước #47: mở `/log-meal?meal=postworkout` thì ô "Sau tập" nằm HẲN ngoài

@@ -155,6 +155,49 @@ for (const f of screens) {
 
   So the rule reaches into the query. Seven of forty-five were swallowing.
 */
+/**
+ * Mọi thân `queryFn: async (…) => …` của một tệp, kèm vị trí: thân KHỐI
+ * (`=> {`) hay thân BIỂU THỨC (`=> (await …)`). Bản trước chỉ xét khối, nên
+ * `useMyFoods` (#180) — thân biểu thức — không bao giờ bị xét: một vùng mù, tìm
+ * ra khi #179 đổi một hook khác sang cùng cách đọc. Biểu thức chạy tới dấu phẩy
+ * hay ngoặc đóng đầu tiên ở độ sâu 0.
+ */
+function queryBodies(src) {
+  const out = [];
+  for (const m of src.matchAll(/queryFn: async \([^)]*\) *(?::[^=]+)?=> */g)) {
+    const start = m.index + m[0].length;
+    let i = start;
+    if (src[i] === '{') {
+      let depth = 1;
+      i++;
+      while (i < src.length && depth > 0) {
+        if (src[i] === '{') depth++;
+        else if (src[i] === '}') depth--;
+        i++;
+      }
+      out.push({ at: m.index, body: src.slice(start + 1, i) });
+    } else {
+      let depth = 0;
+      while (i < src.length) {
+        const ch = src[i];
+        if ('([{'.includes(ch)) depth++;
+        else if (')]}'.includes(ch)) {
+          if (depth === 0) break;
+          depth--;
+        } else if (ch === ',' && depth === 0) break;
+        i++;
+      }
+      out.push({ at: m.index, body: src.slice(start, i) });
+    }
+  }
+  return out;
+}
+
+/* `readAllPages` NÉM lỗi của mọi trang (#180; `tools/read-all.mjs` chạy thật ca
+   "trang giữa hỏng thì ném, không trả một phần") — truyền lỗi lên là việc của
+   nó, không phải của thân queryFn. */
+const swallows = (body) => /supabase/.test(body) && !/\berror\b/.test(body) && !/\breadAllPages\(/.test(body);
+
 {
   /*
      Screens too, not just hooks. Two `useQuery` calls live directly in
@@ -168,19 +211,10 @@ for (const f of screens) {
   ].sort();
   for (const f of HOOKS) {
     const src = blank(readFileSync(path.join(NATIVE, f), 'utf8'));
-    for (const m of src.matchAll(/queryFn: async \([^)]*\) *(?::[^=]+)?=> *\{/g)) {
-      let i = m.index + m[0].length;
-      let depth = 1;
-      while (i < src.length && depth > 0) {
-        if (src[i] === '{') depth++;
-        else if (src[i] === '}') depth--;
-        i++;
-      }
-      const body = src.slice(m.index + m[0].length, i);
-      if (!/supabase/.test(body)) continue;
-      if (/\berror\b/.test(body)) continue;
+    for (const { at, body } of queryBodies(src)) {
+      if (!swallows(body)) continue;
       problems.push(
-        `${f}:${src.slice(0, m.index).split('\n').length} — queryFn bỏ qua error của Supabase — ` +
+        `${f}:${src.slice(0, at).split('\n').length} — queryFn bỏ qua error của Supabase — ` +
           'truy vấn hỏng sẽ *thành công* với data null, nên isError không bao giờ đúng ' +
           'và nhánh báo lỗi ở màn hình trở thành code không bao giờ chạy',
       );
@@ -256,6 +290,21 @@ const SELF = [
   ['queryFn nuốt lỗi — bị bắt', () => {
     const body = "const { data } = await supabase.from('x').select('*');\nreturn data ?? [];";
     return /supabase/.test(body) && !/\berror\b/.test(body);
+  }],
+  ['queryFn thân BIỂU THỨC nuốt lỗi — bị bắt (vùng mù trước #179)', () => {
+    const src = "useQuery({\n  queryFn: async () => (await supabase.from('x').select('*')).data ?? [],\n  enabled: true,\n});";
+    const b = queryBodies(src);
+    return b.length === 1 && /supabase/.test(b[0].body) && !/enabled/.test(b[0].body) && swallows(b[0].body);
+  }],
+  ['queryFn thân biểu thức qua readAllPages — không báo oan', () => {
+    const src = "useQuery({\n  queryFn: async () =>\n    (await readAllPages((a, b) => supabase.from('x').select('*').range(a, b), 500)) as X[],\n});";
+    const b = queryBodies(src);
+    return b.length === 1 && !swallows(b[0].body);
+  }],
+  ['queryFn thân khối vẫn tách đúng', () => {
+    const src = "useQuery({ queryFn: async () => { const { data } = await supabase.from('x').select('*'); return data; }, enabled: true });";
+    const b = queryBodies(src);
+    return b.length === 1 && swallows(b[0].body) && !/enabled/.test(b[0].body);
   }],
   ['queryFn có ném lỗi — không báo oan', () => {
     const body = "const { data, error } = await supabase.from('x').select('*');\nif (error) throw error;\nreturn data ?? [];";

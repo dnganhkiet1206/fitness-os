@@ -4,6 +4,8 @@ import { useAuth } from '@/hooks/use-auth';
 import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { localDateStr } from '@/lib/local-date';
+import { signPhotos } from '@/lib/photo-urls';
+import { readAllPages } from '@/lib/read-all';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';
 
@@ -39,28 +41,36 @@ function base64ToBytes(base64: string): Uint8Array {
   return bytes;
 }
 
+/** Ảnh tiến trình đọc theo trang này, tới HẾT (#179). */
+const PHOTO_PAGE = 200;
+
+/**
+ * Mọi ảnh tiến trình của người dùng, mới nhất trước.
+ *
+ * Từng là `.order('date', desc).limit(50)`: từ ảnh thứ 51, ảnh CŨ NHẤT — ảnh
+ * "trước", thứ duy nhất làm cả thư viện có nghĩa — lặng lẽ rơi khỏi lưới, và
+ * con số trên hàng "Ảnh tiến trình" ở Tập luyện › Cơ thể dừng ở 50 (#179). Nay
+ * đọc hết theo trang trên thứ tự toàn phần `(date, id)` (nhiều ảnh cùng ngày:
+ * trước, nghiêng, sau), và ký URL cả loạt (`signPhotos`).
+ */
 export function useProgressPhotos() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['progress_photos', user?.id],
     enabled: !!user,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('progress_photos')
-        .select('*')
-        .eq('user_id', user!.id)
-        .order('date', { ascending: false })
-        .limit(50);
-      if (error) throw error;
-      const withUrls = await Promise.all(
-        (data ?? []).map(async (photo) => {
-          const path = photo.photo_url as string;
-          if (path.startsWith('http')) return { ...photo, signedUrl: path } as ProgressPhoto;
-          const { data: signed } = await supabase.storage.from(BUCKET).createSignedUrl(path, 3600);
-          return { ...photo, signedUrl: signed?.signedUrl ?? path } as ProgressPhoto;
-        }),
+      const rows = await readAllPages(
+        (from, to) =>
+          supabase
+            .from('progress_photos')
+            .select('*')
+            .eq('user_id', user!.id)
+            .order('date', { ascending: false })
+            .order('id', { ascending: false })
+            .range(from, to),
+        PHOTO_PAGE,
       );
-      return withUrls;
+      return (await signPhotos(rows, (paths) => supabase.storage.from(BUCKET).createSignedUrls(paths, 3600))) as ProgressPhoto[];
     },
   });
 }

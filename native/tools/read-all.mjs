@@ -138,6 +138,76 @@ try {
   rmSync(out, { recursive: true, force: true });
 }
 
+/* ── #179: ảnh tiến trình — ký cả loạt (`lib/photo-urls.ts`) ── */
+const PHOTO_CASES = [
+  ['URL http đi thẳng, không ký; đường dẫn Storage được ký', async (m) => {
+    const calls = [];
+    const sign = async (paths) => (calls.push(paths), { data: paths.map((p) => ({ path: p, signedUrl: `S:${p}` })), error: null });
+    const r = await m.signPhotos([{ photo_url: 'http://x/a.jpg' }, { photo_url: 'u/b.jpg' }], sign);
+    return r[0].signedUrl === 'http://x/a.jpg' && r[1].signedUrl === 'S:u/b.jpg' && calls.length === 1 && calls[0].length === 1;
+  }],
+  ['250 ảnh: ký theo loạt 100 — ba lượt gọi, không phải 250', async (m) => {
+    const calls = [];
+    const sign = async (paths) => (calls.push(paths.length), { data: paths.map((p) => ({ path: p, signedUrl: `S:${p}` })), error: null });
+    const rows = Array.from({ length: 250 }, (_, i) => ({ photo_url: `u/${i}.jpg` }));
+    const r = await m.signPhotos(rows, sign);
+    return JSON.stringify(calls) === '[100,100,50]' && r.every((x, i) => x.signedUrl === `S:u/${i}.jpg`);
+  }],
+  ['giữ đúng thứ tự và mọi trường của dòng', async (m) => {
+    const sign = async (paths) => ({ data: [...paths].reverse().map((p) => ({ path: p, signedUrl: `S:${p}` })), error: null });
+    const r = await m.signPhotos([{ id: 1, photo_url: 'u/1' }, { id: 2, photo_url: 'u/2' }], sign);
+    return r.map((x) => `${x.id}:${x.signedUrl}`).join(',') === '1:S:u/1,2:S:u/2';
+  }],
+  ['ký hỏng (lỗi, hay ném): ô vẫn còn, signedUrl là đường dẫn — không ném', async (m) => {
+    const a = await m.signPhotos([{ photo_url: 'u/1' }], async () => ({ data: null, error: new Error('x') }));
+    const b = await m.signPhotos([{ photo_url: 'u/1' }], async () => { throw new Error('boom'); });
+    return a[0].signedUrl === 'u/1' && b[0].signedUrl === 'u/1';
+  }],
+  ['một ảnh không ký được giữa loạt: chỉ ảnh ấy rơi về đường dẫn', async (m) => {
+    const sign = async (paths) => ({ data: paths.map((p) => ({ path: p, signedUrl: p === 'u/2' ? null : `S:${p}` })), error: null });
+    const r = await m.signPhotos([{ photo_url: 'u/1' }, { photo_url: 'u/2' }], sign);
+    return r[0].signedUrl === 'S:u/1' && r[1].signedUrl === 'u/2';
+  }],
+];
+const PHOTO_MUTANTS = [
+  ['ký cả URL http', /\.filter\(\(p\) => !p\.startsWith\('http'\)\)/, ''],
+  ['một lần ký NÉM làm ném cả thư viện', /catch \{/, 'catch (e) { throw e;'],
+  ['bỏ chia loạt', /paths\.slice\(i, i \+ chunk\)/, 'paths'],
+];
+{
+  const out2 = mkdtempSync(path.join(tmpdir(), 'photo-urls-'));
+  try {
+    execFileSync('npx', ['tsc', 'src/lib/photo-urls.ts', '--ignoreConfig', '--outDir', out2,
+      '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+    { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
+    const compiled = readFileSync(path.join(out2, 'photo-urls.js'), 'utf8');
+    let k = 0;
+    const load = (src) => {
+      const f = path.join(out2, `p${k++}.js`);
+      writeFileSync(f, src);
+      return createRequire(import.meta.url)(f);
+    };
+    const runPhoto = async (m) => {
+      const bad = [];
+      for (const [name, fn] of PHOTO_CASES) {
+        try {
+          if (!(await fn(m))) bad.push(name);
+        } catch {
+          bad.push(name);
+        }
+      }
+      return bad;
+    };
+    problems.push(...(await runPhoto(load(compiled))).map((x) => `ảnh tiến trình: ${x}`));
+    for (const [name, re, to] of PHOTO_MUTANTS) {
+      if (!re.test(compiled)) fatal(`bản hỏng "${name}": không tìm thấy chỗ để sửa (${re})`);
+      if (!(await runPhoto(load(compiled.replace(re, to)))).length) fatal(`bản hỏng "${name}" vẫn qua hết các ca`);
+    }
+  } finally {
+    rmSync(out2, { recursive: true, force: true });
+  }
+}
+
 /* ── phần nối ── */
 const hook = readFileSync(path.join(NATIVE, 'src/hooks/use-nutrition.ts'), 'utf8');
 const i = hook.indexOf('export function useMyFoods(');
@@ -149,6 +219,17 @@ const WIRING = [
 if (!body) problems.push('không thấy `export function useMyFoods(` trong use-nutrition.ts');
 for (const [re, msg] of WIRING) if (!re.test(body)) problems.push(msg);
 if (/\.limit\(/.test(body)) problems.push('useMyFoods còn `.limit(` — món sau giới hạn không bao giờ về client (#180)');
+const photosSrc = readFileSync(path.join(NATIVE, 'src/hooks/use-progress-photos.ts'), 'utf8');
+const pi = photosSrc.indexOf('export function useProgressPhotos(');
+const photos = pi < 0 ? '' : photosSrc.slice(pi, photosSrc.indexOf('\n}\n', pi));
+if (!photos) problems.push('không thấy `export function useProgressPhotos(` trong use-progress-photos.ts');
+else {
+  if (!/readAllPages\(/.test(photos)) problems.push('useProgressPhotos không đọc qua readAllPages — ảnh cũ nhất lại rơi khỏi thư viện (#179)');
+  if (!/\.order\('date', \{ ascending: false \}\)\s*\.order\('id', \{ ascending: false \}\)\s*\.range\(from, to\)/.test(photos)) problems.push('useProgressPhotos không đọc theo thứ tự toàn phần (date, id) bằng .range — nhiều ảnh cùng ngày thì trang sau lặp hay bỏ ảnh');
+  if (/\.limit\(/.test(photos)) problems.push('useProgressPhotos còn `.limit(` (#179)');
+  if (!/signPhotos\(rows, \(paths\) => supabase\.storage\.from\(BUCKET\)\.createSignedUrls\(paths, 3600\)\)/.test(photos)) problems.push('useProgressPhotos không ký cả loạt qua signPhotos/createSignedUrls — một request cho mỗi ảnh');
+  if (/createSignedUrl\(/.test(photos)) problems.push('useProgressPhotos còn ký từng ảnh (`createSignedUrl(`)');
+}
 
 if (problems.length) {
   console.error('đọc hết theo trang CÓ LỖI:\n');
@@ -159,5 +240,7 @@ console.log(
   `đọc hết theo trang OK — ${CASES.length} ca CHẠY THẬT lib/read-all.ts: số dòng chia hết và không chia hết, rỗng, trang giữa ` +
     'hỏng thì ném (không trả một phần), vượt trần thì ném (không cắt lặng lẽ), và đi hết 1 234 món nhiều tên trùng trên máy chủ ' +
     `giả theo (name, id) — đủ, đúng thứ tự. ${MUTANTS.length} bản hỏng (trang đầy coi là hết, bỏ qua lỗi, vượt trần trả một phần, ` +
-    'hai trang chồng nhau) đều bị bắt. useMyFoods đọc hết qua nó, không còn .limit (#180)',
+    'hai trang chồng nhau) đều bị bắt. useMyFoods (#180) và useProgressPhotos (#179) đọc hết qua nó, không còn .limit. ' +
+    `Ảnh tiến trình ký cả loạt: ${PHOTO_CASES.length} ca chạy thật signPhotos (http đi thẳng, loạt 100, giữ thứ tự, ký hỏng thì ô còn), ` +
+    `${PHOTO_MUTANTS.length} bản hỏng bị bắt`,
 );
