@@ -30,6 +30,7 @@ import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CHROMIUM_ARGS } from './chromium-args.mjs';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const problems = [];
@@ -102,7 +103,7 @@ if (!chromium) {
   process.exit(1);
 }
 
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: CHROMIUM_ARGS });
 const page = await browser.newPage();
 /* Một lỗi trong trang mà không ai nghe thì bước này báo "mọi ô đều rỗng" và
    không nói vì sao — đúng lớp lỗi "dụng cụ đo im lặng" đã gặp hai lần. */

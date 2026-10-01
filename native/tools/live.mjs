@@ -83,6 +83,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFil
 import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { CHROMIUM_ARGS } from './chromium-args.mjs';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /* `LIVE_BUILD=<thư mục>`: chạy trên một bản dựng KHÁC — bản đã bị phá có chủ
@@ -423,7 +424,7 @@ async function restartApp(page, between) {
 }
 
 async function openPage(chromium, route, mode, settleMs = 9000, { width = 402, height = 874, lang = null } = {}) {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: CHROMIUM_ARGS });
   const ctx = await browser.newContext({ viewport: { width, height }, timezoneId: LIVE_TZ });
   /* #113: các vế tự truy vấn DOM đi qua `__shown(sel, root)`, không qua
      `querySelectorAll` trần. Màn trước còn trong DOM với `display: none` sau

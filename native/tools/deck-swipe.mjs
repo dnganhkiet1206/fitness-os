@@ -40,6 +40,7 @@ import http from 'node:http';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CHROMIUM_ARGS } from './chromium-args.mjs';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(NATIVE, 'tools', '.live-build');
@@ -104,7 +105,7 @@ function serve() {
 }
 
 async function openPage(chromium) {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: CHROMIUM_ARGS });
   const ctx = await browser.newContext({ timezoneId: LIVE_TZ /* #114: cùng múi với live.mjs */, viewport: { width: 402, height: 874 }, hasTouch: true });
   await ctx.addInitScript(([ref, session]) => {
     window.localStorage.setItem(`sb-${ref}-auth-token`, session);

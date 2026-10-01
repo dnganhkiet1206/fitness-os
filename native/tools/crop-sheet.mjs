@@ -46,6 +46,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
+import { CHROMIUM_ARGS } from './chromium-args.mjs';
 
 function loadPlaywright() {
   const req = createRequire(import.meta.url);
@@ -92,7 +93,7 @@ const names = String(flag('names', '')).split(',').filter(Boolean);
 const dataUrl = `data:image/png;base64,${readFileSync(sheet).toString('base64')}`;
 
 const { chromium } = loadPlaywright();
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: CHROMIUM_ARGS });
 const page = await browser.newPage();
 await page.goto('about:blank');
 

@@ -50,6 +50,7 @@ import { fileURLToPath } from 'node:url';
 
 import { FIXTURES, REF, UID, day, jwt } from './live-world.mjs';
 import { fakeSupabase } from './live-server.mjs';
+import { CHROMIUM_ARGS } from './chromium-args.mjs';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = path.join(NATIVE, 'tools', '.live-build');
@@ -98,7 +99,7 @@ function serve() {
 
 /** Watch the figure for `seconds`, with the app believing it is `hour` o'clock. */
 async function watch(chromium, hour, seconds) {
-  const browser = await chromium.launch();
+  const browser = await chromium.launch({ args: CHROMIUM_ARGS });
   const ctx = await browser.newContext({ viewport: { width: 402, height: 874 } });
 
   await ctx.addInitScript(
