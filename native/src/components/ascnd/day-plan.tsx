@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { haptics as Haptics } from '@/lib/haptics';
 import { Check, ChevronDown, Info, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { Alert, AppState, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -147,6 +147,42 @@ const tintFor = (c: Palette, rpe: number) => c[EFFORT_TINT[rpe] ?? 'foreground']
 /** Rest moves in fifteens, which is how a gym clock is read. */
 const REST_STEP = 15;
 const REST_MAX = 600;
+
+/**
+ * A rest in progress.
+ *
+ * `left` is DERIVED from `endsAt`, never counted down by ticks. iOS suspends
+ * the JS thread when the app leaves the foreground — switching to Spotify
+ * mid-rest, answering a call — so a `left - 1` counter freezes and comes back
+ * wrong. An absolute end timestamp keeps the countdown honest no matter how
+ * long the app was away, and it is the same end the Live Activity already
+ * counts from natively.
+ */
+interface RestCountdown {
+  /** seconds remaining, recomputed from `endsAt` on every tick */
+  left: number;
+  /** what the rest started at — the ring is the ratio of the two */
+  total: number;
+  /** absolute end of the rest, ms since epoch */
+  endsAt: number;
+  /** the set this rest is waiting for, or null at the end of the workout */
+  next: { name: string; ordinal: number; of: number } | null;
+}
+
+/**
+ * Recomputes the countdown from the absolute end; ends the rest when time is
+ * up. Shared by the per-second tick and the foreground-return handler, so the
+ * two can never disagree about what "time's up" means.
+ */
+function settleRest(s: RestCountdown): RestCountdown | null {
+  const left = Math.max(0, Math.ceil((s.endsAt - Date.now()) / 1000));
+  if (left <= 0) {
+    Haptics.success();
+    restLiveActivityEnded();
+    return null;
+  }
+  return s.left === left ? s : { ...s, left };
+}
 
 /**
  * Cụm điều khiển của một set đang mở thụt vào bằng đúng bề ngang của ô tick.
@@ -557,9 +593,7 @@ export function DayPlan({
    * vừa xong set mấy và sắp làm gì. Mang theo tên bài và set thứ mấy biến chỗ
    * chờ thành chỗ chuẩn bị.
    */
-  const [resting, setResting] = useState<
-    { left: number; total: number; next: { name: string; ordinal: number; of: number } | null } | null
-  >(null);
+  const [resting, setResting] = useState<RestCountdown | null>(null);
 
   /*
     Read back once, and only once.
@@ -671,22 +705,34 @@ export function DayPlan({
     One interval, started when a rest begins and cleared when it ends, rather
     than a timer that runs for the whole session and checks whether it has
     anything to do.
+
+    The tick does not count down — it re-derives `left` from the absolute
+    `endsAt` (see `settleRest`). A suspended-then-resumed app lands on the true
+    remaining time instead of the second it froze at.
   */
   const running = resting !== null;
   useEffect(() => {
     if (!running) return;
     const id = setInterval(() => {
-      setResting((s) => {
-        if (s === null) return null;
-        if (s.left <= 1) {
-          Haptics.success();
-          restLiveActivityEnded();
-          return null;
-        }
-        return { ...s, left: s.left - 1 };
-      });
+      setResting((s) => (s === null ? null : settleRest(s)));
     }, 1000);
     return () => clearInterval(id);
+  }, [running]);
+
+  /*
+    Recalculate the instant the app comes back to the foreground.
+
+    Without this the card can sit up to a second behind after a background
+    stretch — the user who ducked into Spotify mid-rest would see the old
+    number first — and a rest that expired while away would linger until the
+    next tick instead of ending the moment they return.
+  */
+  useEffect(() => {
+    if (!running) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setResting((s) => (s === null ? null : settleRest(s)));
+    });
+    return () => sub.remove();
   }, [running]);
 
   const restOf = useCallback((row: SetRow) => rest[row.key] ?? row.plannedRest, [rest]);
@@ -842,6 +888,7 @@ export function DayPlan({
           ? {
               left: secs,
               total: secs,
+              endsAt: Date.now() + secs * 1000,
               next: after
                 ? { name: after.exerciseName, ordinal: after.ordinal, of: after.of }
                 : null,
@@ -2012,13 +2059,17 @@ export function DayPlan({
           // component re-renders every tick so this closure is never stale.
           const s = resting;
           if (s === null) return;
-          const left = Math.max(1, Math.min(REST_MAX, s.left + delta));
+          // Derive from the absolute end, not the rendered `left`: a tick can
+          // be up to a second stale, and the adjustment must land on the true
+          // remaining time.
+          const fresh = Math.max(0, Math.ceil((s.endsAt - Date.now()) / 1000));
+          const left = Math.max(1, Math.min(REST_MAX, fresh + delta));
           // Adding time grows what it is counting from as well, so the ring
           // stays a fraction of something rather than trying to be more than
           // whole. Taking time off leaves the total alone: the rest really
           // was cut short, and the ring showing that is the honest reading.
           const total = Math.max(s.total, left);
-          setResting({ ...s, left, total });
+          setResting({ ...s, left, total, endsAt: Date.now() + left * 1000 });
           restLiveActivityAdjusted(total, left);
         }}
       />
