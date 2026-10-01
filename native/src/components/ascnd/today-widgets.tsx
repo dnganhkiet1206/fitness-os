@@ -4,6 +4,7 @@ import { Check, ChevronRight, PartyPopper, Sparkles } from 'lucide-react-native'
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { TrendDelta, trendDir } from '@/components/ascnd/trend-delta';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
@@ -80,10 +81,10 @@ const WEIGHT_ROWS = 3;
  * Mũi tên ĐÃ mang dấu, nên số bỏ dấu đi. Bản cũ in `↓ -0.3`: dấu trừ lặp lại
  * điều mũi tên vừa nói. Bản cũ chỉ có MỘT ô nên chuyện đó là chuyện thẩm mỹ; ở
  * đây bốn ô nằm thẳng hàng, và một cột số có cái thò dấu trừ ra cái không thì
- * đọc lệch hẳn.
+ * đọc lệch hẳn. Mũi tên nay là icon vẽ (`TrendDelta`, #159), không còn là ký tự.
  */
-function deltaText(delta: number): string {
-  return `${delta > 0 ? '↑' : '↓'} ${Math.abs(delta).toFixed(1)}`;
+function deltaNum(delta: number): string {
+  return Math.abs(delta).toFixed(1);
 }
 
 /**
@@ -281,7 +282,9 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
               const tone = weightDiffTone(c, bmi, diff);
               return (
                 <View style={[styles.diffPill, { backgroundColor: tone.bg }]}>
-                  <Text style={[styles.diffText, { color: tone.color }]}>{deltaText(diff)}</Text>
+                  <TrendDelta dir={trendDir(diff)} color={tone.color} textStyle={styles.diffText}>
+                    {deltaNum(diff)}
+                  </TrendDelta>
                 </View>
               );
             })() : null}
@@ -318,10 +321,12 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
                     ) : Math.abs(e.delta) < WEIGHT_EPS ? (
                       <Text style={styles.weightHistFlat}>{i18n.nWcNoChange}</Text>
                     ) : (
-                      <Text
-                        style={[styles.weightHistDelta, { color: weightDiffTone(c, bmi, e.delta).color }]}>
-                        {deltaText(e.delta)}
-                      </Text>
+                      <TrendDelta
+                        dir={trendDir(e.delta)}
+                        color={weightDiffTone(c, bmi, e.delta).color}
+                        textStyle={styles.weightHistDelta}>
+                        {deltaNum(e.delta)}
+                      </TrendDelta>
                     )}
                   </View>
                 ))}

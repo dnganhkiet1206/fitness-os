@@ -3,6 +3,7 @@ import { Minus, Plus } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { TrendDelta, trendDir } from '@/components/ascnd/trend-delta';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { ChartBar } from '@/components/ascnd/chart-bar';
@@ -90,9 +91,15 @@ export default function StepsScreen() {
           <Text style={styles.statLabel}>{i18n.nDailyAvg}</Text>
         </GlassCard>
         <GlassCard style={styles.statCard}>
-          <Text style={[styles.statValue, { color: stats.trend >= 0 ? c.readinessGreen : c.readinessRed }]}>
-            {stats.trend >= 0 ? '↑' : '↓'} {Math.abs(Math.round(stats.trend))}%
-          </Text>
+          {/* Theo con số ĐÃ làm tròn: bản cũ in "↑ 0%" (xanh, "tăng") khi xu hướng
+              làm tròn về 0. Không đổi là mũi tên ngang, màu trung tính. */}
+          <TrendDelta
+            dir={trendDir(Math.round(stats.trend))}
+            color={Math.round(stats.trend) > 0 ? c.readinessGreen : Math.round(stats.trend) < 0 ? c.readinessRed : c.mutedForeground}
+            size={20}
+            textStyle={styles.statValue}>
+            {`${Math.abs(Math.round(stats.trend))}%`}
+          </TrendDelta>
           <Text style={styles.statLabel}>{i18n.nLast7Days}</Text>
         </GlassCard>
       </View>

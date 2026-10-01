@@ -9,8 +9,10 @@ import {
   ChevronRight,
   Dumbbell,
   Flame,
+  HeartPulse,
   Minus,
   Moon,
+  Soup,
   Sparkles,
   Target,
   TrendingDown,
@@ -21,6 +23,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
+import { TrendDelta, trendDir } from '@/components/ascnd/trend-delta';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -62,7 +65,25 @@ interface AIAnalysis {
   recommendations: AIRecommendation[];
 }
 
-const TREND = { up: '↑', down: '↓', stable: '→' } as const;
+const TREND = { up: 'up', down: 'down', stable: 'flat' } as const;
+
+/*
+  Icon của một nhận xét theo MIỀN, không theo emoji AI tự chọn (#159).
+
+  `ai-weekly-review` trả `icon` là một chuỗi tự do — emoji do mô hình nghĩ ra,
+  nên cùng một miền có thể là 🥗 tuần này và 🍎 tuần sau, vẽ bằng phông emoji
+  của máy cạnh icon lucide của cả màn. Nhưng `category` thì là tập ĐÓNG (schema
+  của hàm ép `nutrition | training | sleep | recovery`), nên icon suy ra được từ
+  nó, bằng đúng glyph app đã gán cho miền ấy ở `constants/icon-tint` — nên màu
+  cũng là màu của miền. Miền lạ (schema đổi mà app chưa theo) rơi về
+  `TrendingUp`, glyph của "nhận xét".
+*/
+const INSIGHT_ICON: Record<string, LucideIcon> = {
+  nutrition: Soup,
+  training: Dumbbell,
+  sleep: Moon,
+  recovery: HeartPulse,
+};
 const PRIORITY_COLOR = {
   high: '#dc2f2f',
   medium: '#ef7c26',
@@ -642,11 +663,14 @@ export default function WeeklyReviewScreen() {
                 <Animated.View key={i} entering={rise(7 + i)}>
                 <GlassCard elevation="inset" style={styles.itemCard}>
                   <View style={styles.row}>
-                    <Text style={styles.iconEmoji}>{ins.icon}</Text>
+                    <View style={styles.insightIcon}>
+                      <Icon icon={INSIGHT_ICON[ins.category] ?? TrendingUp} size={22} />
+                    </View>
                     <View style={styles.info}>
-                      <Text style={styles.itemTitle}>
-                        {ins.title} <Text style={styles.trendMark}>{TREND[ins.trend] ?? ''}</Text>
-                      </Text>
+                      <View style={styles.insightTitleRow}>
+                        <Text style={[styles.itemTitle, styles.insightTitle]}>{ins.title}</Text>
+                        {TREND[ins.trend] ? <TrendDelta dir={TREND[ins.trend]} color={c.mutedForeground} size={15} /> : null}
+                      </View>
                       <Text style={styles.hint}>{ins.detail}</Text>
                     </View>
                   </View>
@@ -773,11 +797,10 @@ const stylesFor = makeStyles((c, m) => ({
   summary: { ...type.body, color: c.secondaryForeground, marginTop: spacing.sm, lineHeight: 21 },
   itemCard: { paddingVertical: spacing.md },
   row: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
-  /* Emoji bỏ qua `color`, nhưng khai nó ra để `tools/text-color.mjs` không
-     cần một danh sách ngoại lệ mà người sau phải hiểu. */
-  iconEmoji: { fontSize: 22, color: c.foreground },
+  insightIcon: { width: 26, alignItems: 'center', paddingTop: 1 },
   info: { flex: 1, minWidth: 0 },
   itemTitle: { ...type.body, fontWeight: '600', color: c.foreground },
-  trendMark: { color: c.mutedForeground },
+  insightTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs + 2 },
+  insightTitle: { flexShrink: 1 },
   priorityDot: { width: 10, height: 10, borderRadius: 5, marginTop: 5 },
 }));

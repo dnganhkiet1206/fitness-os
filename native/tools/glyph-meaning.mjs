@@ -29,7 +29,7 @@
  * nhau không. Đo trên toàn app sau bản sửa: 0 vi phạm. Dựng lại lỗi cũ: đúng
  * 1, đúng tệp, đúng hai đích. Không một chỗ nào bị kêu oan.
  */
-import { readdirSync, readFileSync } from 'node:fs';
+import { globSync, readdirSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -305,6 +305,50 @@ if (!/i18n\.nWeightGoalUnset/.test(progress)) {
   globalThis.__oneGlyphUsers = users;
 }
 
+/* ── mũi tên xu hướng là icon VẼ, không phải ký tự (#159) ──
+
+   Năm màn từng in `↑` / `↓` bằng chữ cạnh một con số thay đổi. Ký tự đi theo
+   phông chữ — nét, độ đậm, đường cơ sở của phông — nên cạnh icon lucide nó
+   trông như từ một app khác; và nó là thứ "Unicode glyphs standing in for an
+   icon system" mà skill thiết kế của repo cấm. Nay là `TrendDelta`
+   (components/ascnd/trend-delta.tsx), có nhãn trợ năng mang hướng.
+
+   Luật: không chuỗi, template hay chữ JSX nào trong src/ chứa `↑` hay `↓`.
+   `→` KHÔNG bị cấm: nó có chỗ dùng đúng là ký hiệu khoảng ("Từ {a} → {b}").
+   Đọc bằng AST, nên chú thích (nơi các mũi tên này đầy rẫy) không bị xét. */
+{
+  const STR = new Set([ts.SyntaxKind.StringLiteral, ts.SyntaxKind.NoSubstitutionTemplateLiteral, ts.SyntaxKind.TemplateHead,
+    ts.SyntaxKind.TemplateMiddle, ts.SyntaxKind.TemplateTail, ts.SyntaxKind.JsxText]);
+  const arrowsIn = (name, code) => {
+    const sf = ts.createSourceFile(name, code, ts.ScriptTarget.Latest, true, name.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+    const out = [];
+    const walk = (n) => {
+      if (STR.has(n.kind) && /[↑↓]/.test(n.text ?? '')) out.push(sf.getLineAndCharacterOfPosition(n.getStart()).line + 1);
+      ts.forEachChild(n, walk);
+    };
+    walk(sf);
+    return out;
+  };
+  /* thử ngược: chữ JSX, chuỗi, template → đỏ; chú thích → không bị xét */
+  if (arrowsIn('a.tsx', 'const X = () => <Text>↑ 5%</Text>;').length !== 1) problems.push('tự kiểm hỏng — không thấy ↑ trong chữ JSX');
+  if (arrowsIn('a.tsx', "const t = d > 0 ? '↑' : '↓';").length !== 2) problems.push('tự kiểm hỏng — không thấy ↑/↓ trong chuỗi');
+  if (arrowsIn('a.ts', 'const t = `${d > 0 ? 1 : 0}↓`;').length !== 1) problems.push('tự kiểm hỏng — không thấy ↓ trong template');
+  if (arrowsIn('a.ts', '/* ↑ lên ↓ xuống */ // ↑\nconst t = 1;').length !== 0) problems.push('tự kiểm hỏng — chú thích bị xét');
+  if (arrowsIn('a.ts', "const r = `${a} → ${b}`;").length !== 0) problems.push('tự kiểm hỏng — → (ký hiệu khoảng) bị cấm nhầm');
+
+  /* Cả `.ts`: chuỗi hiển thị sống cả ở native-strings.ts và các lib định dạng. */
+  const all = globSync('src/**/*.{ts,tsx}', { cwd: NATIVE }).map((f) => path.join(NATIVE, f));
+  let n = 0;
+  for (const file of all) {
+    const lines = arrowsIn(file, readFileSync(file, 'utf8'));
+    n += lines.length;
+    for (const l of lines) {
+      problems.push(`${path.relative(NATIVE, file)}:${l}: mũi tên xu hướng là ký tự (↑/↓) — dùng \`TrendDelta\` (components/ascnd/trend-delta.tsx): icon vẽ, có nhãn trợ năng mang hướng (#159)`);
+    }
+  }
+  globalThis.__arrowFiles = all.length;
+}
+
 if (problems.length) {
   console.error('icon và chữ trùng nghĩa:\n');
   for (const p of problems) console.error(`  ${p}`);
@@ -312,5 +356,5 @@ if (problems.length) {
 }
 
 console.log(
-  `icon một nghĩa OK — ${doors} cửa có hình trong ${scanned} tệp, không hình nào dẫn tới hai nơi. Luật hỏi HAI NGHĨA chứ không hỏi lặp: 21 tệp vẽ lặp icon và gần hết là đúng (ChevronRight ×5 là nội thất, Coins ×5 là một nghĩa vẽ nhiều chỗ), nên "cấm lặp" sẽ kêu oan 20 lần. Kèm luật CHỨA: ${globalThis.__glyphChecked} widget không được vẽ lại hình của mục chứa nó${globalThis.__glyphAllowed.length ? ` (miễn có lý do: ${globalThis.__glyphAllowed.join('; ')})` : ''}. Và hàng cân nặng mục tiêu: chỗ trống không được nhắc lại nhãn. Kèm luật NGƯỢC LẠI — một khái niệm một hình: lucide Scale và Weight không nhập lại được, nên ${globalThis.__oneGlyphUsers} tệp vẽ cân nặng đều vẽ cùng BodyScale, thay vì mỗi lần sửa lại bỏ sót một chỗ như hai lần trước`,
+  `icon một nghĩa OK — ${doors} cửa có hình trong ${scanned} tệp, không hình nào dẫn tới hai nơi. Luật hỏi HAI NGHĨA chứ không hỏi lặp: 21 tệp vẽ lặp icon và gần hết là đúng (ChevronRight ×5 là nội thất, Coins ×5 là một nghĩa vẽ nhiều chỗ), nên "cấm lặp" sẽ kêu oan 20 lần. Kèm luật CHỨA: ${globalThis.__glyphChecked} widget không được vẽ lại hình của mục chứa nó${globalThis.__glyphAllowed.length ? ` (miễn có lý do: ${globalThis.__glyphAllowed.join('; ')})` : ''}. Và hàng cân nặng mục tiêu: chỗ trống không được nhắc lại nhãn. Kèm luật NGƯỢC LẠI — một khái niệm một hình: lucide Scale và Weight không nhập lại được, nên ${globalThis.__oneGlyphUsers} tệp vẽ cân nặng đều vẽ cùng BodyScale, thay vì mỗi lần sửa lại bỏ sót một chỗ như hai lần trước. Và mũi tên xu hướng là icon VẼ: không chuỗi hay chữ JSX nào trong ${globalThis.__arrowFiles} tệp còn ↑/↓ (#159; thử ngược: chữ JSX, chuỗi, template đỏ; chú thích và → khoảng không bị xét)`,
 );

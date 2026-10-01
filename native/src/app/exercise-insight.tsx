@@ -4,6 +4,7 @@ import { Activity, ChevronDown, Minus, TrendingDown, TrendingUp } from 'lucide-r
 import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { TrendDelta, trendDir } from '@/components/ascnd/trend-delta';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Expander } from '@/components/ascnd/expander';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -236,10 +237,9 @@ function Card({ i, i18n, u }: { i: ExerciseInsight; i18n: NativeStrings; u: Weig
           <View style={styles.headlineWrap}>
             <Text style={styles.headline} numberOfLines={1}>{headline}</Text>
             {pct !== null ? (
-              <Text style={[styles.delta, { color: pct === 0 ? c.mutedForeground : tint }]}>
-                {pct > 0 ? '↑' : pct < 0 ? '↓' : '='}
-                {Math.abs(pct)}%
-              </Text>
+              <TrendDelta dir={trendDir(pct)} color={pct === 0 ? c.mutedForeground : tint} textStyle={styles.delta}>
+                {`${Math.abs(pct)}%`}
+              </TrendDelta>
             ) : null}
           </View>
           {spark.length >= 2 ? (

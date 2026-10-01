@@ -4,6 +4,7 @@ import { Dumbbell, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, Text, View } from 'react-native';
 
+import { TrendDelta, trendDir } from '@/components/ascnd/trend-delta';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { Screen } from '@/components/ascnd/screen';
@@ -190,14 +191,13 @@ export default function SessionsScreen() {
                       : ''}
                   </Text>
                   {change != null && change !== 0 ? (
-                    <Text
-                      style={[
-                        styles.monthChange,
-                        { color: change > 0 ? c.readinessGreen : c.mutedForeground },
-                      ]}>
-                      {change > 0 ? '↑' : '↓'} {Math.abs(change)}%{' '}
-                      {vi ? 'so với tháng trước' : 'vs previous'}
-                    </Text>
+                    <TrendDelta
+                      dir={change > 0 ? 'up' : 'down'}
+                      color={change > 0 ? c.readinessGreen : c.mutedForeground}
+                      size={11}
+                      textStyle={styles.monthChange}>
+                      {`${Math.abs(change)}% ${vi ? 'so với tháng trước' : 'vs previous'}`}
+                    </TrendDelta>
                   ) : null}
                 </View>
               </View>

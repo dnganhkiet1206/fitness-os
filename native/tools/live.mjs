@@ -3906,6 +3906,47 @@ const SCENARIOS = [
   },
   {
     /*
+      #159: mũi tên xu hướng là icon VẼ (`TrendDelta`), không phải ký tự `↑ ↓`.
+      Trên các màn có một con số thay đổi với dữ liệu của fixture — Bước chân
+      (xu hướng 7 ngày) và Hôm nay (chênh lệch cân). Buổi tập (so với tháng
+      trước) không có ở đây: fixture chỉ có buổi tập trong tháng này, nên màn
+      ấy không có mức thay đổi nào để vẽ — luật tĩnh ở glyph-meaning.mjs canh nó.
+        (A) có ít nhất một phần tử mang nhãn "Increase …" / "Decrease …" /
+            "No change …" kèm con số — hướng nằm trong NHÃN, vì icon thì
+            VoiceOver không đọc (nhãn trơn "Decrease" của nút − không tính);
+        (B) phần tử ấy chứa một svg (mũi tên vẽ), và chữ của nó không còn ↑/↓;
+        (C) không chữ lá nào trên màn còn ↑ hay ↓.
+    */
+    name: 'Mũi tên xu hướng là icon vẽ có nhãn mang hướng, không còn ký tự ↑↓ (#159)',
+    route: '/steps', mode: 'full',
+    async run(page) {
+      const probe = () => page.evaluate(() => {
+        /* Có chữ SAU hướng ("Decrease 0.6"): nút "−" của bộ chỉnh mục tiêu cũng mang
+           nhãn trơn "Decrease", và bản đầu của vế này đếm nhầm nó (ảnh chụp lộ ra). */
+        const trend = window.__shown('[aria-label]').filter((e) => /^(Increase|Decrease|No change) \S/.test(e.getAttribute('aria-label')));
+        const leaves = window.__shown('*').filter((e) => e.children.length === 0 && /[↑↓]/.test(e.textContent ?? ''));
+        return {
+          labels: trend.map((e) => e.getAttribute('aria-label')),
+          withSvg: trend.filter((e) => window.__shown('svg', e).length > 0 && !/[↑↓]/.test(e.textContent ?? '')).length,
+          glyphs: leaves.map((e) => e.textContent.trim()).slice(0, 3),
+        };
+      });
+      for (const route of ['/steps', '/']) {
+        if (route !== '/steps') await page.goto(page.url().replace(/(:\d+)\/.*$/, `$1${route}`), { waitUntil: 'domcontentloaded' });
+        let r = { labels: [], withSvg: 0, glyphs: [] };
+        for (let i = 0; i < 40 && !r.labels.length; i++) {
+          await page.waitForTimeout(250);
+          r = await probe();
+        }
+        if (!r.labels.length) return `(A ${route}) không phần tử nào mang nhãn xu hướng "Increase/Decrease/No change …"`;
+        if (r.withSvg !== r.labels.length) return `(B ${route}) ${r.labels.length - r.withSvg}/${r.labels.length} phần tử xu hướng không có mũi tên vẽ, hay vẫn có ký tự: ${r.labels.join(' | ')}`;
+        if (r.glyphs.length) return `(C ${route}) còn mũi tên ký tự trên màn: ${r.glyphs.join(' | ')}`;
+      }
+      return null;
+    },
+  },
+  {
+    /*
       #54 (đưa phép đo #47 vào bộ hồi quy): `PickRow scroll` phải cho thấy TRỌN
       ô đang chọn. Đo ở 320 với chữ trong ô phóng to (giả lập Dynamic Type) —
       trước #47: mở `/log-meal?meal=postworkout` thì ô "Sau tập" nằm HẲN ngoài

@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
+import { ChevronRight } from 'lucide-react-native';
 import Svg, { Line } from 'react-native-svg';
 
 import { ChartBar } from '@/components/ascnd/chart-bar';
+import { Icon } from '@/components/ascnd/icon';
+import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
@@ -257,12 +260,13 @@ export function MetricPanel({
         showed — so the coach answers about your fortnight rather than about
         the metric in general. Analysis in place, question out.
       */}
-      <Text
-        accessibilityRole="button"
-        onPress={onAsk}
-        style={[styles.ask, { color: tint }]}>
-        {vi ? 'Hỏi coach về chỉ số này →' : 'Ask the coach about this →'}
-      </Text>
+      {/* Một lối ra là một nút, và mũi tên của nó là chevron VẼ (#159) — ký tự
+          `→` đi theo phông chữ, không theo bộ icon, và VoiceOver đọc nó ra như
+          một phần của nhãn. */}
+      <PressScale accessibilityRole="button" hitSlop={10} onPress={onAsk} style={styles.askRow}>
+        <Text style={[styles.ask, { color: tint }]}>{vi ? 'Hỏi coach về chỉ số này' : 'Ask the coach about this'}</Text>
+        <Icon icon={ChevronRight} size={13} color={tint} strokeWidth={2.25} />
+      </PressScale>
     </View>
   );
 }
@@ -315,6 +319,7 @@ const stylesFor = makeStyles((c, m) => ({
   stat: { gap: 2 },
   statLabel: { fontSize: 11, color: c.glassMuted },
   statValue: { ...type.footnote, fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'] },
+  askRow: { flexDirection: 'row', alignItems: 'center', gap: 2, alignSelf: 'flex-start' },
   ask: {
     ...type.caption,
     fontWeight: '600',
