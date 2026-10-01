@@ -20,7 +20,7 @@
  *      thì không; sắp xếp gần hạn trước.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -84,9 +84,15 @@ try {
   /* `claimLine` điền câu bằng `fillCopy` (#67), import tương đối — chép cùng. */
   writeFileSync(path.join(out, 'copy-fill.ts'), readFileSync(path.join(NATIVE, 'src/lib/copy-fill.ts'), 'utf8'));
   writeFileSync(path.join(out, 'challenge-reminders.ts'), libSrc.replace("'@/lib/local-date'", "'./local-date'"));
+  /* `cwd: NATIVE`, không phải thư mục tạm: từ /tmp, `npx tsc` không thấy
+     TypeScript của dự án — trên CI nó tải gói giả `tsc@2.0.4` và bước này đỏ ở
+     CI mà xanh ở máy có TypeScript cài toàn cục. */
   try {
-    execFileSync('npx', ['tsc', 'challenge-reminders.ts', 'local-date.ts', 'copy-fill.ts', '--ignoreConfig', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'], { cwd: out, stdio: ['ignore', 'pipe', 'pipe'] });
-  } catch { /* emit is what matters */ }
+    execFileSync('npx', ['tsc', ...['challenge-reminders.ts', 'local-date.ts', 'copy-fill.ts'].map((f) => path.join(out, f)), '--outDir', out, '--ignoreConfig', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'], { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
+  } catch (e) {
+    /* Lỗi kiểu của tệp tách khỏi dự án thì bỏ qua — bản phát ra mới là thứ cần. */
+    if (!existsSync(path.join(out, 'challenge-reminders.js'))) throw new Error(`tsc không phát ra challenge-reminders.js:\n${e.stdout}${e.stderr}`);
+  }
   const { pendingClaims, CLAIM_WINDOW_DAYS: N } = createRequire(import.meta.url)(path.join(out, 'challenge-reminders.js'));
   if (typeof pendingClaims !== 'function') {
     problems.push('tự kiểm hỏng: không nạp được pendingClaims thật — đừng tin kết quả');

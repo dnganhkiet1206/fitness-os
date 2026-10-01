@@ -17,7 +17,7 @@
  *   3. Thử ngược từng vế.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -126,9 +126,17 @@ function loadBrowserAlert(src) {
   const out = mkdtempSync(path.join(tmpdir(), 'web-alert-'));
   try {
     writeFileSync(path.join(out, 'web-dialog.ts'), src);
+    /* `cwd: NATIVE`, không phải thư mục tạm: từ /tmp, `npx tsc` không thấy
+       TypeScript của dự án — trên máy có TypeScript cài toàn cục nó vẫn chạy,
+       còn trên CI nó tải gói giả `tsc@2.0.4` (chỉ in một câu rồi thoát), và
+       bước này đỏ ở CI mà xanh ở máy. */
     try {
-      execFileSync('npx', ['tsc', 'web-dialog.ts', '--ignoreConfig', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'], { cwd: out, stdio: ['ignore', 'pipe', 'pipe'] });
-    } catch { /* emit is what matters */ }
+      execFileSync('npx', ['tsc', path.join(out, 'web-dialog.ts'), '--outDir', out, '--ignoreConfig', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'], { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (e) {
+      /* Lỗi kiểu của một tệp tách khỏi dự án thì bỏ qua — bản phát ra mới là
+         thứ cần. Không phát ra được thì nói tsc đã nói gì. */
+      if (!existsSync(path.join(out, 'web-dialog.js'))) throw new Error(`tsc không phát ra web-dialog.js:\n${e.stdout}${e.stderr}`);
+    }
     return createRequire(import.meta.url)(path.join(out, 'web-dialog.js')).browserAlert;
   } finally {
     rmSync(out, { recursive: true, force: true });

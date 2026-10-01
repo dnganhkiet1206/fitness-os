@@ -586,6 +586,10 @@ const STEPS = [
      Chuỗi mang bộ chọn `{n:day|days}` và được điền bằng `fillCopy`; một khoá có
      bộ chọn mà tới được `.replace(` — thẳng, qua biến, hay qua hàm — thì đỏ. */
   ['câu đếm số ít', 'node', ['tools/plural-copy.mjs']],
+  /* `npx tsc` từ một thư mục tạm dùng TypeScript toàn cục ở máy có nó, còn trên
+     CI tải gói giả `tsc@2.0.4` — ba bước đỏ ở CI từ 25/09 tới 01/10 mà ở máy
+     vẫn xanh. Mọi lời gọi phải chạy từ native/. */
+  ['tsc của dự án', 'node', ['tools/tsc-cwd.mjs']],
   ['trạng thái ô chọn', 'node', ['tools/tab-state.mjs']],
   /* #105: chữ hiện ra đặt dấu MỘT kiểu (cũ: "hoá", "Huỷ"). `i18n.ts` từng có
      `cancel: 'Hủy'` trong khi mọi hộp hỏi lại viết `'Huỷ'`. */

@@ -29,7 +29,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -92,9 +92,15 @@ let fill = null;
   const dir = mkdtempSync(path.join(tmpdir(), 'plural-'));
   try {
     writeFileSync(path.join(dir, 'copy-fill.ts'), readFileSync(path.join(NATIVE, 'src/lib/copy-fill.ts'), 'utf8'));
+    /* `cwd: NATIVE`, không phải thư mục tạm: từ /tmp, `npx tsc` không thấy
+       TypeScript của dự án — trên CI nó tải gói giả `tsc@2.0.4` và bước này đỏ
+       ở CI mà xanh ở máy có TypeScript cài toàn cục. */
     try {
-      execFileSync('npx', ['tsc', 'copy-fill.ts', '--ignoreConfig', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'], { cwd: dir, stdio: ['ignore', 'pipe', 'pipe'] });
-    } catch { /* bản phát ra mới là thứ cần */ }
+      execFileSync('npx', ['tsc', path.join(dir, 'copy-fill.ts'), '--outDir', dir, '--ignoreConfig', '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'], { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] });
+    } catch (e) {
+      /* Lỗi kiểu của tệp tách khỏi dự án thì bỏ qua — bản phát ra mới là thứ cần. */
+      if (!existsSync(path.join(dir, 'copy-fill.js'))) throw new Error(`tsc không phát ra copy-fill.js:\n${e.stdout}${e.stderr}`);
+    }
     const { fillCopy } = createRequire(import.meta.url)(path.join(dir, 'copy-fill.js'));
     if (typeof fillCopy !== 'function') throw new Error('không nạp được fillCopy thật');
     fill = fillCopy;

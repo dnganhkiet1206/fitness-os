@@ -39,6 +39,11 @@ ios/**/xcuserdata
 .env.*
 !.env.example
 
+# Supabase CLI: trạng thái liên kết tới project (`supabase link`) và nhánh cục bộ —
+# của từng máy, không commit.
+supabase/.temp/
+supabase/.branches/
+
 .claude/worktrees/
 
 .claude/worktrees/
