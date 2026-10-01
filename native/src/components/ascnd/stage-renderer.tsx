@@ -318,6 +318,11 @@ export function StageRenderer({
               animated={animated}
               hold={hold}
               gaze={bugs}
+              /* The studio is a night scene in both app themes — an
+                 illustration does not follow the theme, same rule `PAGE`
+                 cites above — so the buddy is always drawn with the
+                 lamp-lit artwork, never the paper version. */
+              paper={false}
             />
           </Animated.View>
         </Pressable>

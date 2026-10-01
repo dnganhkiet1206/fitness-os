@@ -751,6 +751,18 @@ export interface KoaFigureProps {
    * the viewer, which is what those want anyway.
    */
   gaze?: SharedValue<number>;
+  /**
+   * Which artwork version to draw: the lamp-lit one or the paper one.
+   *
+   * Left out, the figure follows the app theme — paper on a light theme, lit
+   * on a dark one. That is right wherever the figure sits on the page itself,
+   * but wrong inside an illustration that does not follow the theme: the Koa
+   * Studio stays a night scene in both themes (see `stage-renderer.tsx`), so
+   * the buddy standing in it passes `false` here even on a light theme.
+   * Without the override, the paper version — drawn to read on `#f7f4ef` —
+   * stands in a dark room and comes out muddy, its lamp light darkened away.
+   */
+  paper?: boolean;
 }
 
 export function KoaFigure({
@@ -762,6 +774,7 @@ export function KoaFigure({
   animated = true,
   hold,
   gaze,
+  paper: paperOverride,
 }: KoaFigureProps) {
   const height = size * KOA_ASPECT;
   // `worn` arrives as a fresh object on most renders, so identity is no use
@@ -857,7 +870,7 @@ export function KoaFigure({
   /* Bản GIẤY của các dải: xem `PAPER_L` trong `koa-light.ts`. Trên #f7f4ef,
      bụng và mặt của nhân vật đo được 1,01:1 — tức khối bên trong trùng luôn
      với tờ giấy, và Koa đọc ra là một hình viền rỗng. */
-  const paper = !useMaterial().lit;
+  const paper = paperOverride ?? !useMaterial().lit;
   const ramps = useMemo(() => rampsFor(flags, paper), [flags, paper]);
   const glows = useMemo(() => glowsFor(flags), [flags]);
   /**

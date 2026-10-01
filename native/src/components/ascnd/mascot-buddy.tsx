@@ -37,6 +37,11 @@ export interface MascotBuddyProps {
    * be within about a minute. See `koa-gaze.ts`.
    */
   gaze?: SharedValue<number>;
+  /**
+   * Which artwork version Koa draws — see `KoaFigureProps.paper`. The Stage
+   * passes `false`: the studio is a night scene in both app themes.
+   */
+  paper?: boolean;
 }
 
 export function MascotBuddy({
@@ -49,6 +54,7 @@ export function MascotBuddy({
   animated = true,
   hold,
   gaze,
+  paper,
 }: MascotBuddyProps) {
   return (
     <MascotFigure
@@ -61,6 +67,7 @@ export function MascotBuddy({
       animated={animated}
       hold={hold}
       gaze={gaze}
+      paper={paper}
     />
   );
 }

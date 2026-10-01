@@ -41,6 +41,11 @@ interface Props {
   /** the room's insect clock — Koa glances at whichever one has landed */
   gaze?: SharedValue<number>;
   /**
+   * Which artwork version Koa draws — see `KoaFigureProps.paper`. Left out,
+   * the figure follows the app theme. Non-Koa characters ignore it.
+   */
+  paper?: boolean;
+  /**
    * Trying clothes on — the shop's dressing pose.
    *
    * Koa only. It overrides whatever the Emotion Engine was saying, because for
@@ -130,7 +135,7 @@ function FigureBody(props: Props & { emotion: MascotEmotion }) {
   // `mood` is not destructured: this branch does not use it, and the vector
   // fallback below takes it through `{...props}` with its own 'neutral'
   // default, so naming it here only left an unused local.
-  const { mascot, size = 160, animated = true, hold, emotion, gaze, dress } = props;
+  const { mascot, size = 160, animated = true, hold, emotion, gaze, dress, paper } = props;
 
   if (mascot.id === 'koa') {
     const state = koaStateFor(emotion);
@@ -150,6 +155,7 @@ function FigureBody(props: Props & { emotion: MascotEmotion }) {
         animated={animated}
         hold={hold}
         gaze={gaze}
+        paper={paper}
         worn={{ ...wornFrom(props.equippedOutfits), ...state.outfit }}
       />
     );
