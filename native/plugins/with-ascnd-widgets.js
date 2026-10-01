@@ -51,20 +51,14 @@ const SWIFT_SOURCES = [
   'Widgets/RestTimerLiveActivity.swift',
 ];
 
-function extensionInfoPlist(buildNumber, shortVersion) {
+function extensionInfoPlist() {
   /*
-    Version strings are baked in as LITERALS, not $(CURRENT_PROJECT_VERSION) /
-    $(MARKETING_VERSION).
-
-    Why: the extension target created below via addTarget() never gets
-    CURRENT_PROJECT_VERSION / MARKETING_VERSION build settings (Expo sets those
-    on the app target only), so the $(...) variables never resolve and the built
-    .appex ships with CFBundleVersion missing -> iOS refuses install
-    ("MissingBundleVersion"; Xcode warns the extension's CFBundleVersion (null)
-    must match the containing app's). iOS requires the extension's
-    CFBundleVersion to MATCH the parent app's build number, so we read it from
-    the same Expo config the app target uses. Prebuild re-runs this plugin from
-    scratch every time (locally and on EAS), so the literals can never go stale.
+    Uses $(MARKETING_VERSION) / $(CURRENT_PROJECT_VERSION) variables — resolved
+    by Xcode at build time from the extension target's build settings (set
+    explicitly in step 5 below, mirroring the app target). This is the same
+    mechanism the app target uses; a literal would also work, but the target
+    settings are the single source of truth Kiệt asked for, and they stay in
+    sync with app.json automatically on every prebuild.
   */
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -85,9 +79,9 @@ function extensionInfoPlist(buildNumber, shortVersion) {
 \t<key>CFBundlePackageType</key>
 \t<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 \t<key>CFBundleShortVersionString</key>
-\t<string>${shortVersion}</string>
+\t<string>$(MARKETING_VERSION)</string>
 \t<key>CFBundleVersion</key>
-\t<string>${buildNumber}</string>
+\t<string>$(CURRENT_PROJECT_VERSION)</string>
 \t<key>NSExtension</key>
 \t<dict>
 \t\t<key>NSExtensionPointIdentifier</key>
@@ -164,6 +158,12 @@ module.exports = function withAscndWidgets(config) {
     const moduleIosDir = path.join(projectRoot, 'modules', 'ascnd-native', 'ios');
     const extDir = path.join(platformProjectRoot, EXTENSION_NAME);
 
+    // Version source of truth: the extension's CFBundleVersion MUST match the
+    // containing app's, so both are read from the same Expo config every
+    // prebuild (never hardcoded, never stale).
+    const extBuildNumber = config.ios?.buildNumber ?? '1';
+    const extShortVersion = config.version ?? '1.0.0';
+
     // 1. Copy Swift sources (single source of truth -> generated target dir).
     fs.mkdirSync(extDir, { recursive: true });
     for (const rel of SWIFT_SOURCES) {
@@ -176,16 +176,10 @@ module.exports = function withAscndWidgets(config) {
       fs.copyFileSync(src, dest);
     }
 
-    // 2. Extension Info.plist (matches addTarget's default INFOPLIST_FILE).
-    // Versions are baked in as literals matching the app target (see
-    // extensionInfoPlist): the extension target has no CURRENT_PROJECT_VERSION /
-    // MARKETING_VERSION build settings for $(...) to resolve against.
-    const extBuildNumber = config.ios?.buildNumber ?? '1';
-    const extShortVersion = config.version ?? '1.0.0';
-    fs.writeFileSync(
-      path.join(extDir, INFO_PLIST_NAME),
-      extensionInfoPlist(extBuildNumber, extShortVersion),
-    );
+    // 2. Extension Info.plist (matches the target's INFOPLIST_FILE, set
+    //    explicitly in step 5). Version variables resolve at build time from
+    //    the target's CURRENT_PROJECT_VERSION / MARKETING_VERSION.
+    fs.writeFileSync(path.join(extDir, INFO_PLIST_NAME), extensionInfoPlist());
 
     // 3. Create the app-extension target. This also adds the "Embed App
     //    Extensions" copy phase and a target dependency on the app target.
@@ -244,7 +238,12 @@ module.exports = function withAscndWidgets(config) {
     project.addTargetDependency(project.getFirstTarget().uuid, [target.uuid]);
 
     // 5. Build settings: match the app's deployment target, Swift 5.0,
-    //    app-extension API only.
+    //    app-extension API only — plus the version settings Xcode needs to
+    //    resolve $(CURRENT_PROJECT_VERSION) / $(MARKETING_VERSION) in the
+    //    extension's Info.plist. Without these the built .appex ships with
+    //    CFBundleVersion missing and iOS refuses install (MissingBundleVersion).
+    //    INFOPLIST_FILE is set explicitly (not trusted to addTarget's default)
+    //    so the generated plist above is always the one Xcode processes.
     const appTargetUuid = project.getFirstTarget().uuid;
     const appSettings = Object.values(getBuildSettings(project, appTargetUuid));
     const deploymentTarget =
@@ -254,6 +253,9 @@ module.exports = function withAscndWidgets(config) {
       settings.SWIFT_VERSION = '"5.0"';
       settings.APPLICATION_EXTENSION_API_ONLY = '"YES"';
       settings.TARGETED_DEVICE_FAMILY = '"1,2"';
+      settings.CURRENT_PROJECT_VERSION = `"${extBuildNumber}"`;
+      settings.MARKETING_VERSION = `"${extShortVersion}"`;
+      settings.INFOPLIST_FILE = `"${EXTENSION_NAME}/${INFO_PLIST_NAME}"`;
     }
 
     return cfg;
