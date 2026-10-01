@@ -61,7 +61,7 @@ import { fileURLToPath } from 'node:url';
 
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
-const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' ')).replace(/(^|[^:])\/\/.*$/gm, (c, p) => p + ' '.repeat(c.length - p.length));
 const problems = [];
 const fatal = (m) => {
   console.error(`phép tự kiểm hỏng — ${m}, đừng tin kết quả`);
@@ -442,12 +442,17 @@ try {
   })(path.join(NATIVE, 'src'));
   let scanned = 0;
   for (const f of files) {
-    const src = strip(readFileSync(f, 'utf8'));
+    const raw = readFileSync(f, 'utf8');
+    const src = strip(raw);
     scanned++;
     for (const m of src.matchAll(/\bsignOut\(\)/g)) {
-      /* Cửa sổ 200 ký tự: đủ để bắt lệnh ngay sau, không đủ để quét sang một
-         handler khác. */
-      const after = src.slice(m.index, m.index + 200);
+      /* Cửa sổ 200 ký tự MÃ (chú thích XOÁ hẳn, không thành khoảng trắng): đủ để
+         bắt lệnh ngay sau, không đủ để quét sang một handler khác. `strip` giữ
+         nguyên độ dài (#164), nên `m.index` cũng là vị trí trong `raw`; cắt
+         thẳng 200 ký tự của `src` thì một chú thích giữa `signOut()` và lệnh
+         điều hướng chiếm chỗ của mã, và luật xanh oan. */
+      const after = raw.slice(m.index, m.index + 4000)
+        .replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1').slice(0, 200); // co chuỗi có chủ ý (#164): cửa sổ, không tính dòng
       const hit = after.match(/\b(nav|router)\.(push|replace|navigate|back|dismissAll)\(/);
       if (hit) {
         const line = src.slice(0, m.index).split('\n').length;

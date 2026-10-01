@@ -348,16 +348,20 @@ const CONDITIONAL_LABEL = [
 ];
 for (const file of CONDITIONAL_LABEL) {
   const src = readFileSync(path.join(NATIVE, file), 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/.*$/gm, (c, p) => p + ' '.repeat(c.length - p.length));
   const at = src.indexOf('styles.saveButton');
   if (at < 0) {
     conditional.push(`${file}: không còn thấy nút lưu — luật nhãn-có-điều-kiện đã lạc mục tiêu`);
     continue;
   }
-  /* Look just above the style line: that is where the element's own props are,
-     and a label belonging to some other control on the page must not count. */
-  const head = src.slice(Math.max(0, at - 400), at);
+  /* The element's own props: from its opening tag (the last `<Capital` above
+     the style line) to the style. A label belonging to some other control on
+     the page must not count. Not "the 400 characters above": `src` keeps its
+     length with comments blanked (#164), and these buttons carry a long
+     comment between their label and their style. */
+  const open = [...src.slice(0, at).matchAll(/<[A-Z][\w.]*/g)].at(-1);
+  const head = open ? src.slice(open.index, at) : '';
   if (!head.includes('accessibilityLabel')) {
     conditional.push(
       `${file}: nút lưu không có accessibilityLabel — nhánh đang gửi và đã xong không có <Text> nào, ` +
@@ -381,8 +385,8 @@ for (const file of CONDITIONAL_LABEL) {
      explaining why it is there. Third time this file family has been fooled by
      its own prose; it is a rule about code, so it reads code. */
   const toastHost = readFileSync(path.join(NATIVE, 'src/components/ascnd/neon-toast.tsx'), 'utf8')
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '))
+    .replace(/(^|[^:])\/\/.*$/gm, (c, p) => p + ' '.repeat(c.length - p.length));
   if (!/announceForAccessibility/.test(toastHost)) {
     conditional.push(
       'neon-toast.tsx: không đọc thông báo lên — đây là kênh xác nhận DUY NHẤT của app, ' +

@@ -38,7 +38,7 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
 const strip = (t) =>
   t
-    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '))
     .split('\n')
     .map((l) => l.replace(/(^|\s)\/\/.*$/, '$1'))
     .join('\n');

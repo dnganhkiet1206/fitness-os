@@ -63,7 +63,7 @@ const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ROOT = path.resolve(NATIVE, '..');
 const problems = [];
 const read = (f) => readFileSync(path.join(NATIVE, f), 'utf8');
-const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
+const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' ')).replace(/(^|[^:])\/\/.*$/gm, (c, p) => p + ' '.repeat(c.length - p.length));
 
 /* ─────────────────────────────────────────────────────────────────────────
    Shared: pull the PostgREST chains out of a file, comments already gone
@@ -160,7 +160,11 @@ const firstString = (args) => args.match(/^'([^']*)'/)?.[1] ?? null;
         const col = firstString(args);
         return col != null && !SCOPE_ONLY.has(col);
       });
-      if (/challenge_key === 'log_7'/.test(src.slice(Math.max(0, at - 400), at))) log7Seen = true;
+      /* Nhánh `challenge_key === …` GẦN NHẤT phía trên truy vấn là của nó — không
+         phải "trong 400 ký tự": `strip` giữ nguyên độ dài (#164), nên một chú
+         thích dày trong nhánh đẩy truy vấn ra xa mà nó vẫn là của nhánh ấy. */
+      const branchAt = src.lastIndexOf('challenge_key ===', at);
+      if (branchAt >= 0 && src.startsWith("challenge_key === 'log_7'", branchAt)) log7Seen = true;
 
       if (!usesShared && !ownPredicate) {
         problems.push(

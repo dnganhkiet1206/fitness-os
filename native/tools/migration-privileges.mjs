@@ -46,7 +46,7 @@ const problems = [];
    the thing. */
 const strip = (sql) =>
   sql
-    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' '))
     .split('\n')
     .map((l) => l.replace(/--.*$/, ''))
     .join('\n');

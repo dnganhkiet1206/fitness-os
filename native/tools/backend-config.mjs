@@ -75,7 +75,7 @@ for (const file of walk(SRC)) {
   const rel = path.relative(NATIVE, file);
   const text = readFileSync(file, 'utf8');
   // Comments explain the rule and must not trip it.
-  const code = text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  const code = text.replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' ')).replace(/^\s*\/\/.*$/gm, (c) => c.replace(/[^\n]/g, ' '));
   const at = (i) => `${rel}:${text.slice(0, i).split('\n').length}`;
 
   if (rel !== URL_HOME) {

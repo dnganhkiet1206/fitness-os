@@ -855,7 +855,7 @@ function handlerBody(code, hook) {
   ]) {
     /* Bỏ chú thích trước khi cắt: một chú thích nhắc tới `onScrollBeginDrag={…}`
        (screen.tsx có một, kể lại lỗi 29/09) không được thành "handler". */
-    const code = readFileSync(path.join(NATIVE, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    const code = readFileSync(path.join(NATIVE, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, (c) => c.replace(/[^\n]/g, ' ')).replace(/^\s*\/\/.*$/gm, (c) => c.replace(/[^\n]/g, ' '));
     if (!code.includes(how)) {
       problems.push(
         `${f}: bộ cuộn không gọi \`${how}\` — hàng vuốt mở rồi cuộn trang thì nó vẫn nằm đó, ` +

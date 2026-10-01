@@ -590,6 +590,9 @@ const STEPS = [
      CI tải gói giả `tsc@2.0.4` — ba bước đỏ ở CI từ 25/09 tới 01/10 mà ở máy
      vẫn xanh. Mọi lời gọi phải chạy từ native/. */
   ['tsc của dự án', 'node', ['tools/tsc-cwd.mjs']],
+  /* #164: luật báo số dòng mà bỏ chú thích bằng lối co chuỗi thì báo lệch lên
+     đúng bằng số dòng chú thích phía trên chỗ lỗi (nav-guard: 222 cho dòng 329). */
+  ['số dòng của luật', 'node', ['tools/strip-lines.mjs']],
   ['trạng thái ô chọn', 'node', ['tools/tab-state.mjs']],
   /* #105: chữ hiện ra đặt dấu MỘT kiểu (cũ: "hoá", "Huỷ"). `i18n.ts` từng có
      `cancel: 'Hủy'` trong khi mọi hộp hỏi lại viết `'Huỷ'`. */
