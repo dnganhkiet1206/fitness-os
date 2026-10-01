@@ -296,9 +296,38 @@ export function useSaveCommunityProfile() {
   Kéo làm mới (`invalidateQueries`) tải lại MỌI trang đang có, từ trang đầu, mỗi
   trang theo con trỏ của trang vừa về — người đã cuộn ba trang không bị ném về
   trang một.
+
+  Danh sách người mình theo dõi là MỘT truy vấn dùng chung cho mọi trang của
+  "Đang theo dõi" (#171), không phải một lời gọi `community_follows` mở đầu mỗi
+  trang. Đo trên web (máy chủ giả, 01/10), làm mới sau 1 / 3 / 5 trang: trước
+  là 7 request mỗi trang qua BA chặng nối tiếp (follows → posts → hydrate) —
+  11 / 23 / 35 request của Cộng đồng, xong ở 121 / 255 / 394 ms; Khám phá, không
+  có follows: 10 / 20 / 30, 78 / 244 / 405 ms. Sau: 11 / 21 / 31, một follows
+  cho cả lượt, 115 / 247 / 357 ms. Máy chủ giả trả gần như tức thì, nên số ms ở
+  đây chủ yếu là việc của client; trên mạng thật mỗi chặng bớt được là một
+  vòng khứ hồi. Phần còn lại của #171 (trần số trang hay không) là quyết định
+  sản phẩm, chưa làm.
 */
+const followeesKey = (me: string | undefined) => ['community_followees', me] as const;
+
+function followees(qc: QueryClient, me: string) {
+  return qc.fetchQuery({
+    queryKey: followeesKey(me),
+    queryFn: async () => {
+      const { data, error } = await supabase.from('community_follows').select('followee_id').eq('follower_id', me);
+      if (error) throw error;
+      return (data ?? []).map((x) => x.followee_id);
+    },
+    /* Đủ dài để mọi trang của MỘT lượt tải lại dùng chung kết quả; làm mới hay
+       theo dõi/bỏ theo dõi thì `invalidateQueries` đánh dấu nó cũ, và trang đầu
+       của lượt sau đọc lại đúng một lần. */
+    staleTime: 60_000,
+  });
+}
+
 export function useCommunityFeed(tab: CommunityTab) {
   const { user } = useAuth();
+  const qc = useQueryClient();
   return useInfiniteQuery({
     queryKey: ['community_feed', user?.id, tab, 'pages'],
     enabled: !!user,
@@ -315,14 +344,9 @@ export function useCommunityFeed(tab: CommunityTab) {
         .limit(PAGE);
       if (pageParam) q = q.or(olderThan(pageParam));
       if (tab === 'following') {
-        const { data: f, error: fErr } = await supabase
-          .from('community_follows')
-          .select('followee_id')
-          .eq('follower_id', me);
-        if (fErr) throw fErr;
         /* Bài của chính mình có mặt ở "Đang theo dõi", như mọi feed theo dõi:
            vừa chia sẻ xong mà quay lại không thấy bài mình là một cú hẫng. */
-        q = q.in('author_id', [me, ...(f ?? []).map((x) => x.followee_id)]);
+        q = q.in('author_id', [me, ...(await followees(qc, me))]);
       }
       const { data, error } = await q;
       if (error) throw error;
@@ -678,6 +702,9 @@ export function useFollow() {
     onMutate: () => Haptics.selection(),
     onSettled: (_d, _e, { userId }) => {
       qc.invalidateQueries({ queryKey: ['community_user', user?.id, userId] });
+      /* Danh sách theo dõi TRƯỚC feed: trang đầu của lượt tải lại đọc nó, và
+         bản còn tươi trong cache thì nó sẽ không đọc lại (#171). */
+      qc.invalidateQueries({ queryKey: followeesKey(user?.id) });
       qc.invalidateQueries({ queryKey: ['community_feed', user?.id, 'following'] });
       /* Tìm người & gợi ý (#19) mang cờ "đang theo dõi" của từng dòng. */
       qc.invalidateQueries({ queryKey: ['community_search'] });
@@ -780,6 +807,8 @@ export function useBlock() {
     },
     onSuccess: () => {
       Haptics.success();
+      /* Chặn xoá cả hai chiều theo dõi (trigger ở community_foundation). */
+      qc.invalidateQueries({ queryKey: followeesKey(user?.id) });
       qc.invalidateQueries({ queryKey: ['community_feed'] });
       qc.invalidateQueries({ queryKey: ['community_user'] });
       qc.invalidateQueries({ queryKey: ['community_user_posts'] });

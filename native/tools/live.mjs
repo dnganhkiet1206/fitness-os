@@ -1564,6 +1564,97 @@ const SCENARIOS = [
   },
   {
     /*
+      #171: "Đang theo dõi" đọc danh sách người mình theo dõi MỘT lần cho mọi
+      trang, không một lời gọi `community_follows` mở đầu mỗi trang (bản cũ:
+      làm mới 3 trang = 3 lời gọi, mỗi lời gọi là một chặng nối tiếp trước
+      trang của nó).
+        (A) đã cuộn 3 trang, app trở lại sau vài phút (mọi truy vấn tải lại):
+            đúng 3 lượt `community_posts` và đúng MỘT `community_follows`; cả 90
+            thẻ vẫn trên màn;
+        (B) danh sách ấy không bị giữ quá hạn: từ thẻ bài mở hồ sơ Linh, bỏ
+            theo dõi, quay lại — đọc lại nó (một lần) và feed không còn bài
+            nào của Linh.
+    */
+    name: 'Cộng đồng: "Đang theo dõi" đọc danh sách theo dõi một lần cho mọi trang, và đọc lại khi bỏ theo dõi (#171)',
+    route: '/community', mode: 'full',
+    async run(page, { world }) {
+      const LINH = 'c0000000-0000-4000-8000-0000000011a1';
+      const tpl = world.community_posts.find((p) => p.author_id === LINH && p.visibility === 'public');
+      if (!tpl) return 'fixture: Linh không có bài công khai nào để làm mẫu';
+      const base = Date.parse('1999-08-01T10:00:00.000Z');
+      for (let i = 0; i < 120; i++) {
+        world.community_posts.push({
+          ...structuredClone(tpl), id: `cp000000-0000-4000-8000-000000171${String(i).padStart(3, '0')}`, source_id: null,
+          caption: `Theo dõi #171 · ${i}`, like_count: 0, comment_count: 0, save_count: 0,
+          created_at: new Date(base - i * 60_000).toISOString(),
+        });
+      }
+      const reqs = [];
+      page.on('request', (r) => {
+        if (r.method() !== 'GET') return;
+        const m = /\/rest\/v1\/(community_posts|community_follows)\?/.exec(r.url());
+        /* Danh sách theo dõi = `community_follows` theo `follower_id` mà KHÔNG lọc
+           `followee_id`; lượt có `followee_id` là câu "mình có theo dõi người này
+           không" của màn hồ sơ — không phải nó. */
+        if (m && !(m[1] === 'community_follows' && new URL(r.url()).searchParams.has('followee_id'))) reqs.push(m[1]);
+      });
+      const count = (t) => reqs.filter((x) => x === t).length;
+      const cards = () => page.getByRole('button', { name: /^Like · \d+$/ }).count();
+      const linhCards = () => page.evaluate(() => window.__shown('*')
+        .filter((e) => e.children.length === 0 && /^Theo dõi #171 · \d+$/.test((e.textContent ?? '').trim())).length);
+      const scroll = (to) => page.evaluate((to) => {
+        const el = window.__shown('*').filter((e) => e.scrollHeight > e.clientHeight + 200 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+          .sort((a, b) => b.clientHeight - a.clientHeight)[0];
+        if (el) el.scrollTop = to === 'bottom' ? el.scrollHeight : 0;
+      }, to);
+      const settle = async () => {
+        let n = -1;
+        for (let i = 0; i < 40 && n !== reqs.length; i++) { n = reqs.length; await page.waitForTimeout(500); }
+      };
+
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.getByRole('tab', { name: /^Following/ }).first().click();
+      for (let i = 0; i < 40 && (await cards()) < 30; i++) await page.waitForTimeout(250);
+      for (let i = 0; i < 80 && (await cards()) < 90; i++) { await scroll('bottom'); await page.waitForTimeout(300); }
+      await scroll('top');
+      await settle();
+      const have = await cards();
+      if (have !== 90) return `tự kiểm: cuộn để có đúng 3 trang mà có ${have} thẻ`;
+
+      reqs.length = 0;
+      await page.clock.setFixedTime(Date.now() + 10 * 60_000);
+      await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange', { bubbles: true })));
+      for (let i = 0; i < 40 && count('community_posts') < 3; i++) await page.waitForTimeout(250);
+      await settle();
+      if (count('community_posts') !== 3) return `(A) làm mới 3 trang mà có ${count('community_posts')} lượt community_posts`;
+      if (count('community_follows') !== 1) {
+        return `(A) làm mới 3 trang đọc danh sách theo dõi ${count('community_follows')} lần — phải đúng MỘT lần cho mọi trang`;
+      }
+      if ((await cards()) !== 90) return `(A) làm mới xong còn ${await cards()} thẻ`;
+
+      reqs.length = 0;
+      await page.getByRole('button', { name: /^Linh Phạm/ }).filter({ visible: true }).first().click();
+      for (let i = 0; i < 40 && !/community-user/.test(page.url()); i++) await page.waitForTimeout(250);
+      if (!/community-user/.test(page.url())) return '(B) chạm tên Linh trên thẻ mà không mở hồ sơ';
+      const unfollow = page.getByRole('button', { name: /^(Đang theo dõi|Following)$/ }).filter({ visible: true }).first();
+      for (let i = 0; i < 40 && !(await unfollow.count()); i++) await page.waitForTimeout(250);
+      if (!(await unfollow.count())) return '(B) hồ sơ Linh không có nút "Following"';
+      reqs.length = 0;
+      await unfollow.click();
+      await page.waitForTimeout(800);
+      await page.goBack();
+      for (let i = 0; i < 40 && (await linhCards()) > 0; i++) await page.waitForTimeout(250);
+      await settle();
+      if (world.community_follows.some((f) => f.follower_id === UID && f.followee_id === LINH)) return '(B) tự kiểm: bỏ theo dõi mà thế giới vẫn còn dòng theo dõi';
+      if (count('community_follows') !== 1) return `(B) bỏ theo dõi xong, danh sách theo dõi được đọc lại ${count('community_follows')} lần — phải đúng một`;
+      const left = await linhCards();
+      if (left) return `(B) bỏ theo dõi Linh mà "Đang theo dõi" vẫn còn ${left} bài của Linh — danh sách theo dõi cũ`;
+      return null;
+    },
+  },
+  {
+    /*
       #26: bài của CHÍNH MÌNH đang ẩn (fixture cp…026: ba người báo cáo, hai
       "spam", một "inappropriate").
         (A) thẻ nói vì sao: "3 people reported this · mostly: spam", và có nút
