@@ -11,6 +11,7 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { HiddenNotice } from '@/components/ascnd/hidden-notice';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { ZoomLink } from '@/components/ascnd/zoom-link';
 import { spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -80,10 +81,17 @@ export function PostShell({
   );
 
   if (full || preview) return Body;
+  /*
+    Mở bài bằng chuyển cảnh zoom gốc của iOS 18 (#216): `ZoomLink` bọc thẻ,
+    giữ nguyên hiệu ứng nhấn của `PressScale` và vẫn hỏi chốt bấm dồn (#157)
+    như `nav.push`. Cú nhấn của `PressScale` nay đi qua `Slot` của Link —
+    không còn `onPress` riêng ở đây. Nút Bình luận (lối của VoiceOver) vẫn
+    `nav.push` thường qua `onComment`.
+  */
   return (
-    <PressScale accessible={false} onPress={openPost}>
-      {Body}
-    </PressScale>
+    <ZoomLink href={{ pathname: '/community-post', params: { id: post.id } }}>
+      <PressScale accessible={false}>{Body}</PressScale>
+    </ZoomLink>
   );
 }
 
@@ -94,32 +102,45 @@ function PostHeader({ post, preview }: { post: FeedPost; preview: boolean }) {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const menu = usePostMenu(post);
-  const openAuthor = () => post.author && nav.push({ pathname: '/community-user', params: { id: post.author.user_id } });
+  const whoInner = (
+    <>
+      <CommunityAvatar mascotId={post.author?.mascot_id} size={40} />
+      <View style={styles.whoText}>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>
+            {post.author?.display_name ?? '—'}
+          </Text>
+          {post.author?.is_official ? (
+            <View accessible accessibilityLabel={i18n.nCmVerified}>
+              <Icon icon={BadgeCheck} size={15} color={c.metricBlue} />
+            </View>
+          ) : null}
+        </View>
+        {/* Hai dòng: giờ đăng · "Chỉ người theo dõi" là HAI câu của app, và ở 320
+            chữ ×1.3 một dòng cắt mất đúng câu nói ai xem được bài (#63, lượt
+            quét hẹp). */}
+        <Text style={styles.meta} numberOfLines={2}>
+          {timeAgo(post.created_at, i18n, lang)}
+          {post.visibility === 'followers' ? ` · ${i18n.nCmFollowersOnly}` : ''}
+        </Text>
+      </View>
+    </>
+  );
+  /* Mở hồ sơ cũng zoom (#216). Không có tác giả thì chỉ là một cụm chữ,
+     không phải nút — giữ đúng hành vi cũ (bấm vào không làm gì). */
+  const who = post.author ? (
+    <ZoomLink href={{ pathname: '/community-user', params: { id: post.author.user_id } }}>
+      <Pressable accessibilityRole="button" style={styles.who} hitSlop={4}>
+        {whoInner}
+      </Pressable>
+    </ZoomLink>
+  ) : (
+    <View style={styles.who}>{whoInner}</View>
+  );
 
   return (
     <View style={styles.head}>
-      <Pressable accessibilityRole="button" onPress={openAuthor} style={styles.who} hitSlop={4}>
-        <CommunityAvatar mascotId={post.author?.mascot_id} size={40} />
-        <View style={styles.whoText}>
-          <View style={styles.nameRow}>
-            <Text style={styles.name} numberOfLines={1}>
-              {post.author?.display_name ?? '—'}
-            </Text>
-            {post.author?.is_official ? (
-              <View accessible accessibilityLabel={i18n.nCmVerified}>
-                <Icon icon={BadgeCheck} size={15} color={c.metricBlue} />
-              </View>
-            ) : null}
-          </View>
-          {/* Hai dòng: giờ đăng · "Chỉ người theo dõi" là HAI câu của app, và ở 320
-              chữ ×1.3 một dòng cắt mất đúng câu nói ai xem được bài (#63, lượt
-              quét hẹp). */}
-          <Text style={styles.meta} numberOfLines={2}>
-            {timeAgo(post.created_at, i18n, lang)}
-            {post.visibility === 'followers' ? ` · ${i18n.nCmFollowersOnly}` : ''}
-          </Text>
-        </View>
-      </Pressable>
+      {who}
       {!preview ? (
         <Pressable accessibilityRole="button" accessibilityLabel={i18n.nCmMore} onPress={menu} hitSlop={10} style={styles.moreBtn}>
           <Icon icon={MoreHorizontal} size={20} color={c.mutedForeground} />

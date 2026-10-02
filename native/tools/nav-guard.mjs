@@ -373,6 +373,36 @@ try {
   }
   if (scanned < 50) fatal(`chỉ quét được ${scanned} tệp — bộ quét hỏng`);
 
+  /*
+    ── 5b. `<Link>` cũng là một đường điều hướng ── (#216)
+
+    Luật trên chỉ bắt `router.push` gọi thẳng. Nhưng `<Link>` của expo-router
+    dispatch điều hướng theo đường riêng, không qua `nav.*` — một `<Link>`
+    trần mở lại đúng cái cửa #157 đã đóng (bấm dồn mở nhiều màn), mà trong
+    diff nó trông vô hại. Nên mọi `<Link>` điều hướng TRONG APP đều phải đi
+    qua `ZoomLink` (`src/components/ascnd/zoom-link.tsx`), thứ hỏi chốt y như
+    `nav.push`. Ngoại lệ duy nhất là `external-link.tsx`: nó mở URL NGOÀI app
+    (trình duyệt trong app / tab mới), không chạm vào stack điều hướng nên
+    chốt không có gì để giữ.
+  */
+  const LINK_ALLOWED = new Set([
+    'src/components/ascnd/zoom-link.tsx',
+    'src/components/external-link.tsx',
+  ]);
+  for (const f of files) {
+    if (LINK_ALLOWED.has(f)) continue;
+    const code = strip(read(f));
+    const m = /<Link(?![\w.])/.exec(code);
+    if (m) {
+      const line = code.slice(0, m.index).split('\n').length;
+      problems.push(
+        `${f}:${line}: dùng \`<Link>\` của expo-router — đi vòng qua chốt bấm dồn. ` +
+          'Điều hướng trong app thì dùng `ZoomLink` từ `@/components/ascnd/zoom-link` (#216); ' +
+          'mở URL ngoài app thì dùng `ExternalLink`',
+      );
+    }
+  }
+
   /* Và `nav.ts` thật sự phải HỎI chốt, chứ không chỉ bọc router lại. */
   const navSrc = strip(read('src/lib/nav.ts'));
   /*
