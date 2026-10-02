@@ -94,10 +94,18 @@ quyết định kỹ thuật — audit chỉ nói "muốn thì bắt buộc nati
 
 ## 6. Đề xuất Live Activities + Widgets (chờ Kiệt chọn)
 
+> **⚠️ ĐÃ BỊ THAY THẾ — đề xuất này KHÔNG còn là spec.**
+> Kiệt đã phủ quyết hai điểm trong §7 (01/10/2026): **nút "Bỏ qua nghỉ"**
+> (Live Activity làm display-only trước, chưa có nút nào) và **tên bài tập
+> hiện tại** (Island hiện set TIẾP theo, không phải bài hiện tại). **§7 mới là
+> quyết định cuối.** Giữ nguyên §6 dưới đây chỉ để tra lịch sử.
+
 **Live Activity — Rest timer** (duy nhất, vì là thứ duy nhất có state "đang chạy"
 cần nhìn khi app đóng):
-- Lock Screen / Dynamic Island hiện: tên bài tập hiện tại, số set (vd "Set 3/5"),
-  thời gian nghỉ còn lại, nút "Bỏ qua nghỉ".
+- Lock Screen / Dynamic Island hiện: ~~tên bài tập hiện tại~~ (~~bị phủ quyết~~
+  → set tiếp theo, quyết định của Kiệt), số set (vd "Set 3/5"),
+  thời gian nghỉ còn lại, ~~nút "Bỏ qua nghỉ"~~ (~~bị phủ quyết~~ → display-only,
+  không nút, quyết định của Kiệt).
 - RN chỉ gửi state updates qua bridge → ActivityKit. Không duplicate logic đếm
   giờ sang Swift: Swift chỉ render + nhận push state.
 
