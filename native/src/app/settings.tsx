@@ -33,6 +33,7 @@ import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
+import { LANGUAGES } from '@/lib/i18n';
 import { useAppLock } from '@/hooks/use-app-lock';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { clearCrashLog, readCrashLog, type CrashEntry } from '@/lib/crash-log';
@@ -589,18 +590,18 @@ export default function SettingsScreen() {
           radius={radius.md}
           gap={spacing.sm}
           style={styles.langRow}>
-          {(['vi', 'en'] as const).map((l) => (
+          {LANGUAGES.map(({ code, label }) => (
             <PickRow.Item
-              key={l}
-              itemKey={l}
-              accessibilityLabel={l === 'vi' ? 'Tiếng Việt' : 'English'}
+              key={code}
+              itemKey={code}
+              accessibilityLabel={label}
               onPress={() => {
                 Haptics.selection();
-                setLang(l);
+                setLang(code);
               }}
               style={styles.langChip}>
-              <Text style={[styles.langText, lang === l && styles.langTextActive]}>
-                {l === 'vi' ? 'Tiếng Việt' : 'English'}
+              <Text style={[styles.langText, lang === code && styles.langTextActive]}>
+                {label}
               </Text>
             </PickRow.Item>
           ))}
