@@ -847,6 +847,14 @@ const STEPS = [
     gì hỏng.
   */
   ['thẻ cân nặng', 'node', ['tools/weight-card.mjs']],
+  /*
+    Cờ TEST_* (dev-flags.ts) bật là bản release tặng miễn phí toàn bộ nội dung
+    trả phí: shop miễn phí, mascot mở hết, celebration bị nuốt. Gate chỉ CHẶN
+    ở chế độ release (ASCND_RELEASE=1); trên dev nó chỉ liệt kê và luôn xanh,
+    vì live.mjs và các cổng kinh tế đo với cờ bật — tắt cờ là quyết định của
+    chủ dự án, không phải của cổng.
+  */
+  ['cờ release', 'node', ['tools/release-flags.mjs']],
 ];
 
 /*
