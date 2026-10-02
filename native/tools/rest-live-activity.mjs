@@ -57,7 +57,7 @@ export async function endRestActivity(id: string): Promise<void> {
 import { createRestLiveActivity } from './rest-live-activity';
 import * as stub from './stub';
 
-const D = { exerciseName: 'Bench Press', setNumber: 2, totalSets: 3, restingText: 'Rest', setText: 'Set 2/3', nextText: 'Up next' };
+const D = { exerciseName: 'Bench Press', setNumber: 2, totalSets: 3, languageCode: 'en' };
 let failures = 0;
 const tick = () => new Promise((r) => setTimeout(r, 0));
 function check(name: string, cond: boolean, seen: string): void {

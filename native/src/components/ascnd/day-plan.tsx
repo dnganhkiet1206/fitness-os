@@ -36,6 +36,7 @@ import { alpha, makeStyles, type Palette, type PaletteKey } from '@/constants/th
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useExerciseInsights } from '@/hooks/use-exercise-insights';
 import type { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useAppendToSession, useLogWorkoutSession, useRemoveSetFromSession, useRestoreSession } from '@/hooks/use-fitness-data';
 import { useWorkoutShareInvite } from '@/hooks/use-workout-share-invite';
@@ -440,6 +441,7 @@ export function DayPlan({
   const c = usePalette();
   const m = useMaterial();
   const styles = stylesFor(c);
+  const { lang } = useAppSettings();
   /* Hàng set xếp hai dòng dưới 360 điểm — xem `setRowNarrow` (#72). */
   const narrow = useWindowDimensions().width < 360;
   const { weight: wUnit } = useUnits();
@@ -937,11 +939,7 @@ export function DayPlan({
             exerciseName: target.name,
             setNumber: target.ordinal,
             totalSets: target.of,
-            restingText: i18n.nRdResting,
-            setText: i18n.nRestSetOf
-              .replace('{n}', String(target.ordinal))
-              .replace('{t}', String(target.of)),
-            nextText: i18n.nRestNext,
+            languageCode: lang,
           },
           upcoming.total,
           upcoming.left,
@@ -950,7 +948,7 @@ export function DayPlan({
         restLiveActivityEnded();
       }
     },
-    [rest, rows, shown, i18n],
+    [rest, rows, shown, lang],
   );
 
   const toggle = useCallback(

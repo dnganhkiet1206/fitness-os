@@ -22,12 +22,8 @@ export interface AscndNativeModuleType {
     startTimestamp: number,
     /** Absolute end time, ms since epoch. Native derives the countdown from this. */
     endTimestamp: number,
-    /** Localized "Rest" — the Island follows the app language. */
-    restingText: string,
-    /** Localized "Set {n}/{t}", pre-formatted. */
-    setText: string,
-    /** Localized "Up next". */
-    nextText: string,
+    /** App language ('vi' | 'en') — Swift looks up localized Island strings. */
+    languageCode: string,
   ): Promise<string>;
   updateRestActivity(
     activityId: string,
@@ -40,9 +36,8 @@ export interface AscndNativeModuleType {
     startTimestamp: number,
     /** Absolute end time, ms since epoch. Native derives the countdown from this. */
     endTimestamp: number,
-    restingText: string,
-    setText: string,
-    nextText: string,
+    /** App language ('vi' | 'en') — Swift looks up localized Island strings. */
+    languageCode: string,
   ): Promise<void>;
   endRestActivity(activityId: string): Promise<void>;
 }

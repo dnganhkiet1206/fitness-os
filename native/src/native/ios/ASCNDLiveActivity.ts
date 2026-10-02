@@ -45,6 +45,8 @@ export interface RestActivityState {
   setText?: string;
   /** Localized "Up next" — the Island shows the NEXT set. */
   nextText?: string;
+  /** App language code ('vi' | 'en') — Swift looks up localized strings. */
+  languageCode?: string;
 }
 
 /** Absolute end timestamp (ms) for the native ContentState.endDate. */
@@ -87,10 +89,8 @@ export async function startRestActivity(state: RestActivityState): Promise<strin
   if (!isAscndNativeAvailable() || !mod) return null;
   const startTimestamp = state.startTimestamp ?? Date.now();
   const endTimestamp = endTimestampFor(state);
-  // Never pass undefined across the bridge — Swift String params crash on nil.
-  const restingText = state.restingText ?? 'Rest';
-  const setText = state.setText ?? `Set ${state.setNumber}/${state.totalSets}`;
-  const nextText = state.nextText ?? 'Up next';
+  // Bridge is 8 params: Swift looks up localized strings from languageCode.
+  const languageCode = state.languageCode ?? 'en';
   try {
     return await mod.startRestActivity(
       state.activityState,
@@ -100,9 +100,7 @@ export async function startRestActivity(state: RestActivityState): Promise<strin
       state.totalSeconds,
       startTimestamp,
       endTimestamp,
-      restingText,
-      setText,
-      nextText,
+      languageCode,
     );
   } catch (err) {
     warnDev('startRestActivity', err);
@@ -119,10 +117,8 @@ export async function updateRestActivity(
   if (!isAscndNativeAvailable() || !mod) return false;
   const startTimestamp = state.startTimestamp ?? Date.now();
   const endTimestamp = endTimestampFor(state);
-  // Never pass undefined across the bridge — Swift String params crash on nil.
-  const restingText = state.restingText ?? 'Rest';
-  const setText = state.setText ?? `Set ${state.setNumber}/${state.totalSets}`;
-  const nextText = state.nextText ?? 'Up next';
+  // Bridge is 8 params: Swift looks up localized strings from languageCode.
+  const languageCode = state.languageCode ?? 'en';
   try {
     await mod.updateRestActivity(
       activityId,
@@ -133,9 +129,7 @@ export async function updateRestActivity(
       state.totalSeconds,
       startTimestamp,
       endTimestamp,
-      restingText,
-      setText,
-      nextText,
+      languageCode,
     );
     return true;
   } catch (err) {

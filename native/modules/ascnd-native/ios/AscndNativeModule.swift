@@ -17,6 +17,19 @@ private enum AscndNativeError: Error, LocalizedError {
   }
 }
 
+/// Localized Island strings, keyed by app language. The bridge passes only
+/// the language code (1 param, not 3 strings) — Swift looks up the table.
+/// These MUST match native/src/lib/native-strings.ts (nRdResting, nRestSetOf,
+/// nRestNext). If the app adds a language, add it here too.
+private func islandStrings(for languageCode: String) -> (resting: String, setTemplate: String, next: String) {
+  switch languageCode {
+  case "vi":
+    return ("Nghỉ", "Set {n}/{t}", "Tiếp theo")
+  default:
+    return ("Rest", "Set {n}/{t}", "Up next")
+  }
+}
+
 /// ActivityKit state store for the display-only rest timer (spike #195).
 ///
 /// iOS 16.1+ only. All module entry points guard with `#available`, so the app
@@ -39,9 +52,7 @@ private final class RestActivityStore {
     totalSeconds: Int,
     startDate: Date,
     endDate: Date,
-    restingText: String,
-    setText: String,
-    nextText: String
+    languageCode: String
   ) async throws -> String {
     /*
       Only one rest activity may exist at a time. The TS side ends the
@@ -58,6 +69,7 @@ private final class RestActivityStore {
       try? await activity.end(nil, dismissalPolicy: .immediate)
     }
     let attributes = RestTimerAttributes(brandName: "ASCND")
+    let strings = islandStrings(for: languageCode)
     let state = RestTimerAttributes.ContentState(
       activityState: activityState,
       exerciseName: exerciseName,
@@ -66,9 +78,11 @@ private final class RestActivityStore {
       totalSeconds: totalSeconds,
       startDate: startDate,
       endDate: endDate,
-      restingText: restingText,
-      setText: setText,
-      nextText: nextText
+      restingText: strings.resting,
+      setText: strings.setTemplate
+        .replacingOccurrences(of: "{n}", with: String(setNumber))
+        .replacingOccurrences(of: "{t}", with: String(totalSets)),
+      nextText: strings.next
     )
     // staleDate lets the system replace a stale activity if updates stop.
     let content = ActivityContent(state: state, staleDate: endDate.addingTimeInterval(60))
@@ -90,13 +104,12 @@ private final class RestActivityStore {
     totalSeconds: Int,
     startDate: Date,
     endDate: Date,
-    restingText: String,
-    setText: String,
-    nextText: String
+    languageCode: String
   ) async throws {
     guard let activity = activities[id] else {
       throw AscndNativeError.activityNotFound(id)
     }
+    let strings = islandStrings(for: languageCode)
     let state = RestTimerAttributes.ContentState(
       activityState: activityState,
       exerciseName: exerciseName,
@@ -105,9 +118,11 @@ private final class RestActivityStore {
       totalSeconds: totalSeconds,
       startDate: startDate,
       endDate: endDate,
-      restingText: restingText,
-      setText: setText,
-      nextText: nextText
+      restingText: strings.resting,
+      setText: strings.setTemplate
+        .replacingOccurrences(of: "{n}", with: String(setNumber))
+        .replacingOccurrences(of: "{t}", with: String(totalSets)),
+      nextText: strings.next
     )
     await activity.update(
       ActivityContent(state: state, staleDate: endDate.addingTimeInterval(60))
@@ -166,9 +181,7 @@ public final class AscndNativeModule: Module {
         totalSeconds: Int,
         startTimestamp: Double,
         endTimestamp: Double,
-        restingText: String,
-        setText: String,
-        nextText: String,
+        languageCode: String,
         promise: Promise
       ) in
       guard #available(iOS 16.1, *) else {
@@ -186,9 +199,7 @@ public final class AscndNativeModule: Module {
             totalSeconds: totalSeconds,
             startDate: Date(timeIntervalSince1970: startTimestamp / 1000.0),
             endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0),
-            restingText: restingText,
-            setText: setText,
-            nextText: nextText
+            languageCode: languageCode
           )
           promise.resolve(id)
         } catch {
@@ -207,9 +218,7 @@ public final class AscndNativeModule: Module {
         totalSeconds: Int,
         startTimestamp: Double,
         endTimestamp: Double,
-        restingText: String,
-        setText: String,
-        nextText: String,
+        languageCode: String,
         promise: Promise
       ) in
       guard #available(iOS 16.1, *) else {
@@ -228,9 +237,7 @@ public final class AscndNativeModule: Module {
             totalSeconds: totalSeconds,
             startDate: Date(timeIntervalSince1970: startTimestamp / 1000.0),
             endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0),
-            restingText: restingText,
-            setText: setText,
-            nextText: nextText
+            languageCode: languageCode
           )
           promise.resolve()
         } catch {
