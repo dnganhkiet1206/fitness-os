@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const NATIVE = path.resolve(HERE, '../../native');
-const OUT = path.join(NATIVE, 'tools/.live-build');
+const OUT = process.env.LIVE_BUILD || path.join(NATIVE, 'tools/.live-build');
 const { FIXTURES, REF, UID, day, jwt } = await import(pathToFileURL(path.join(NATIVE, 'tools/live-world.mjs')).href);
 const { fakeSupabase } = await import(pathToFileURL(path.join(NATIVE, 'tools/live-server.mjs')).href);
 const require = createRequire(import.meta.url);
@@ -111,6 +111,23 @@ if (mode === 'still') {
 } else if (mode === 'eyes') {
   const { ctx, page } = await open(rest[0]);
   console.log(JSON.stringify(await page.evaluate(() => [...document.querySelectorAll('ellipse')].filter((e) => e.getAttribute('rx') === '19' && e.getAttribute('ry') === '25').map((e) => ({ fill: e.getAttribute('fill'), cx: e.getAttribute('cx'), ptf: e.parentElement.getAttribute('transform'), ptfs: getComputedStyle(e.parentElement).transform, n: document.querySelectorAll('ellipse').length })))));
+  await ctx.close();
+} else if (mode === 'rest') {
+  /* tick một set ở Kế hoạch ngày để mở đồng hồ nghỉ, chụp vài mốc */
+  const { ctx, page } = await open('/workouts/plan');
+  const box = page.getByRole('checkbox').filter({ visible: true });
+  console.log('ô tick:', await box.count());
+  await box.first().click();
+  mkdirSync(path.join(HERE, 'probe-rest'), { recursive: true });
+  if (process.env.SHORTEN) {
+    const minus = page.locator('[aria-label="Nghỉ −15"]');
+    await page.waitForTimeout(700);
+    for (let k = 0; k < 5; k++) { await minus.first().click({ timeout: 5000 }); await page.waitForTimeout(150); }
+  }
+  for (const [i, w] of (process.env.SHORTEN ? [[2, 8600], [3, 4300], [4, 500], [5, 500], [6, 500], [7, 500], [8, 500], [9, 500], [10, 500], [11, 500]] : [[0, 900], [1, 1500]])) {
+    await page.waitForTimeout(w);
+    await page.screenshot({ path: path.join(HERE, 'probe-rest', `rest-${process.env.THEME || 'light'}-${i}.png`) });
+  }
   await ctx.close();
 } else if (mode === 'burst') {
   /* nhiều khung liên tiếp của một màn đứng yên — để chọn khung Koa mở mắt */

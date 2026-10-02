@@ -1,7 +1,8 @@
+import { BlurView } from 'expo-blur';
 import { haptics as Haptics } from '@/lib/haptics';
-import { Minus, Plus } from 'lucide-react-native';
-import { useEffect } from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Check, Minus, Plus } from 'lucide-react-native';
+import { useEffect, useRef } from 'react';
+import { Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   FadeIn,
@@ -11,11 +12,13 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { radius, spacing, type } from '@/constants/ascnd';
+import { themeOf } from '@/constants/palette';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
@@ -65,9 +68,25 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
  * It was never the size that made the old one shout.
  */
 
-const SIZE = 150;
-const R = 63;
+/*
+  Thông số theo bản đề xuất của chủ dự án (02/10): thẻ nằm cao hơn và gọn hơn —
+  cách đỉnh ~170pt thay vì ~220, cao ~360pt thay vì ~430, lề trái/phải 24pt —
+  vòng 112pt nét 8, "9s" 34 semibold, "/ 1:30" 14 regular. Bản trước là một
+  thẻ hẹp 268pt giữa màn hình với vòng 150, nhìn như một hộp thoại chen ngang;
+  bản này là một tấm rộng đúng bằng các thẻ của trang bên dưới, nên nó đọc ra
+  như một phần của buổi tập.
+*/
+const SIZE = 112;
 const W = 8;
+const R = (SIZE - W) / 2;
+/* Cách đỉnh vùng an toàn. 59 (đảo động) + 111 ≈ 170pt của bản đề xuất. */
+const TOP_BELOW_SAFE_AREA = 111;
+/* Năm giây cuối vòng đổi sang đỏ — "sắp hết" là thứ duy nhất trên thẻ này đáng
+   được một màu cảnh báo, và chỉ trong đúng năm giây ấy. */
+const WARN_AT = 5;
+/* iOS có kính mờ thật; Android cần `BlurTargetView` bọc từng trang (xem
+   `status-scrim.tsx`), nên ở đó và trên web chỉ có lớp mờ màu. */
+const NATIVE_BLUR = Platform.OS === 'ios';
 const CIRC = 2 * Math.PI * R;
 
 export function RestTimer({
@@ -90,6 +109,15 @@ export function RestTimer({
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
+  const insets = useSafeAreaInsets();
+  /* Giá trị CUỐI CÙNG đã hiện. Lúc đóng, `left` thành null ngay khung đầu của
+     hiệu ứng mờ dần, và đọc thẳng nó thì thẻ đang biến mất lại ghi "0s" —
+     một con số chưa từng đúng (bấm Bỏ qua lúc 1:12 mà thấy 0s lướt qua). */
+  const shown = useRef(left ?? 0);
+  if (left !== null) shown.current = left;
+  const now = shown.current;
+  const done = now === 0;
+  const warn = now > 0 && now <= WARN_AT;
   const progress = useSharedValue(1);
   useEffect(() => {
     if (left === null || total <= 0) return;
@@ -148,6 +176,17 @@ export function RestTimer({
     <Modal visible={left !== null} transparent animationType="none" statusBarTranslucent onRequestClose={onSkip}>
       <Animated.View entering={FadeIn.duration(220)} exiting={FadeOut.duration(160)} style={styles.backdrop}>
         {/*
+          Trang phía sau MỜ đi chứ không chỉ tối đi. Bản trước chỉ phủ một lớp
+          màu, nên chữ của danh sách set vẫn sắc nét ngay cạnh mép thẻ và tranh
+          với nó — ảnh chụp máy thật cho thấy "Bench Press", "RPE 10" đọc được
+          rõ như chính thẻ. Làm mờ giữ được cảm giác "vẫn đang trong buổi tập"
+          mà không để thứ gì phía sau đòi được đọc.
+        */}
+        {NATIVE_BLUR ? (
+          <BlurView intensity={40} tint={themeOf(c) === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} pointerEvents="none" />
+        ) : null}
+        <View style={[StyleSheet.absoluteFill, styles.dim]} pointerEvents="none" />
+        {/*
           Chạm ra ngoài KHÔNG kết thúc nghỉ.
 
           Trước đây có một `Pressable` phủ kín màn hình gọi thẳng `onSkip`, kèm
@@ -162,7 +201,7 @@ export function RestTimer({
           được làm. Nay chỉ nút "Bỏ qua" kết thúc nghỉ — và vì nó thành lối ra
           DUY NHẤT, nó cũng phải trông ra thế (xem `styles.skip`).
         */}
-        <Animated.View entering={FadeIn.duration(200)} style={[styles.card, card]}>
+        <Animated.View entering={FadeIn.duration(200)} style={[styles.card, { marginTop: insets.top + TOP_BELOW_SAFE_AREA }, card]}>
           <Text style={styles.label}>{i18n.nRdResting}</Text>
 
           <View style={styles.ringWrap}>
@@ -184,7 +223,10 @@ export function RestTimer({
                 cy={SIZE / 2}
                 r={R}
                 fill="none"
-                stroke={c.primary}
+                stroke={warn ? c.destructive : c.primary}
+                /* Cạn hẳn thì nét bo tròn vẫn để lại một chấm ở 12 giờ; lúc
+                   xong chỉ còn rãnh và dấu tick. */
+                strokeOpacity={done ? 0 : 1}
                 strokeWidth={W}
                 strokeLinecap="round"
                 strokeDasharray={CIRC}
@@ -195,8 +237,16 @@ export function RestTimer({
             </Svg>
 
             <View style={styles.clockWrap} pointerEvents="none">
-              <Text style={styles.clock}>{restLabel(left ?? 0)}</Text>
-              <Text style={styles.total}>/ {restLabel(total)}</Text>
+              {/* Giây cuối cùng là một dấu tick, không phải "0s": quãng nghỉ
+                  đã xong, và thứ cần nói là "xong" chứ không phải một con số. */}
+              {done ? (
+                <Icon icon={Check} size={40} color={c.foreground} strokeWidth={2.5} />
+              ) : (
+                <>
+                  <Text style={styles.clock}>{restLabel(now)}</Text>
+                  <Text style={styles.total}>/ {restLabel(total)}</Text>
+                </>
+              )}
             </View>
           </View>
 
@@ -228,7 +278,7 @@ export function RestTimer({
               accessibilityLabel={`${i18n.nRdResting} −15`}
               onPress={() => bump(-15)}
               style={styles.round}>
-              <Icon icon={Minus} size={14} color={c.foreground} strokeWidth={2.5} />
+              <Icon icon={Minus} size={16} color={c.foreground} strokeWidth={2.25} />
               <Text style={styles.roundText}>15</Text>
             </PressScale>
 
@@ -245,7 +295,7 @@ export function RestTimer({
               accessibilityLabel={`${i18n.nRdResting} +15`}
               onPress={() => bump(15)}
               style={styles.round}>
-              <Icon icon={Plus} size={14} color={c.foreground} strokeWidth={2.5} />
+              <Icon icon={Plus} size={16} color={c.foreground} strokeWidth={2.25} />
               <Text style={styles.roundText}>15</Text>
             </PressScale>
           </View>
@@ -258,78 +308,78 @@ export function RestTimer({
 const stylesFor = makeStyles((c, m) => ({
   backdrop: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.lg,
-    /* 0.55, from 0.86 by way of 0.68. The room dims; it does not go out. What
-       is behind this is the list of sets you are working through, and keeping
-       it faintly readable is what makes the countdown feel like a moment inside
-       the workout rather than a screen you were sent to.
-
-       Màu là `colors.background` viết dưới dạng rgba vì cần alpha — cùng một
-       màu nền của trang, không phải một màu đen thứ hai. */
-    backgroundColor: alpha(c.primaryForeground, 0.55),
+    alignItems: 'stretch',
+    justifyContent: 'flex-start',
+    paddingHorizontal: spacing.lg,
   },
+  /* Lớp màu trên lớp mờ. Bản tối: đúng `colors.background` 55% như trước (trang
+     tối đi, không tắt hẳn). Bản sáng: trang sẫm nhẹ đi chứ không trắng xoá —
+     bản trước lấy `primaryForeground`, tức là TRẮNG ở bản sáng, nên thẻ trắng
+     nằm trên một trang bị phủ trắng và mất mép. */
+  dim: { backgroundColor: m.lit ? alpha(c.background, 0.55) : alpha(c.foreground, NATIVE_BLUR ? 0.14 : 0.22) },
   /*
     Cùng mặt phẳng với mọi tấm nổi khác của app, không phải một màu tự chọn.
 
     Bản cũ là `rgba(18,18,22,0.96)` bo 26 — cả hai đều là số gõ tay. App có ba
     nền tối (`card` #0e0e11, `muted` #161618, `secondary` #18181b) và cái này là
     cái thứ TƯ, lệch khỏi cả ba vừa đủ để không ai chỉ ra được, chỉ thấy thẻ như
-    dán từ chỗ khác vào. Lưới ô cơ thể từng dính đúng lỗi ấy và ghi lại nguyên
-    câu chẩn đoán: "a fourth dark in a screen that already has three, and it is
-    what made the section read as pasted in from somewhere else."
+    dán từ chỗ khác vào.
 
-    `colors.card` + `radius.xl` + viền hairline là vốn từ sẵn có cho một tấm
-    NỔI: sheet chọn ngày trong `week-plan.tsx` đã dùng đúng bộ ấy. Hai tấm nổi,
-    một cách làm.
+    `colors.card` + `radius.xl` (24) là vốn từ sẵn có cho một tấm NỔI. Bóng đổ
+    theo bản đề xuất (0 8 32, 8%) — lấy màu và việc bật/tắt từ chất liệu của
+    theme: bản tối không có bóng (RN vẽ bóng trên nền tối thành một quầng), nên
+    ở đó viền hairline làm việc tách thẻ khỏi trang.
   */
   card: {
     alignItems: 'center',
-    minWidth: 268,
-    gap: spacing.sm + 2,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingTop: 20,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
     borderRadius: radius.xl,
     backgroundColor: c.card,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: m.lit ? StyleSheet.hairlineWidth : 0,
     borderColor: c.border,
+    shadowColor: m.shadow.shadowColor,
+    shadowOpacity: m.shadow.shadowOpacity > 0 ? 0.08 : 0,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: m.shadow.elevation > 0 ? 6 : 0,
   },
   label: {
-    ...type.footnote,
+    fontSize: 16,
+    fontWeight: '500',
     color: c.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1.5,
-    fontWeight: '600',
   },
-  ringWrap: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' },
+  ringWrap: { width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center', marginTop: 12 },
   clockWrap: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   /* Tabular, so the whole thing does not shuffle sideways every time a 1 goes
      past. 34pt reads across a gym; the old 46 was not more legible, only
      louder. */
-  clock: { fontSize: 34, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
-  total: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
+  clock: { fontSize: 34, fontWeight: '600', color: c.foreground, fontVariant: ['tabular-nums'], lineHeight: 40 },
+  total: { fontSize: 14, fontWeight: '400', color: c.mutedForeground, fontVariant: ['tabular-nums'] },
   /* Khối "tiếp theo", ngăn với đồng hồ bằng một đường mảnh. Căn giữa như mọi
      thứ khác trong thẻ: đây là một tấm thẻ đọc từ xa, không phải một hàng dữ
      liệu để dò bằng mắt. */
-  nextWrap: { alignItems: 'center', alignSelf: 'stretch', gap: 2 },
+  nextWrap: { alignItems: 'center', alignSelf: 'stretch', marginTop: 16 },
   rule: {
     height: StyleSheet.hairlineWidth,
     alignSelf: 'stretch',
     backgroundColor: c.border,
-    marginBottom: spacing.sm,
+    marginBottom: 16,
   },
   nextLabel: {
-    ...type.caption,
+    fontSize: 12,
+    fontWeight: '500',
     color: c.mutedForeground,
     textTransform: 'uppercase',
-    letterSpacing: 1.2,
-    fontWeight: '600',
+    letterSpacing: 1.8,
   },
-  nextName: { ...type.headline, color: c.foreground, textAlign: 'center' },
-  nextSet: { ...type.footnote, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  nextName: { fontSize: 20, fontWeight: '600', letterSpacing: -0.2, color: c.foreground, textAlign: 'center', marginTop: 8 },
+  nextSet: { fontSize: 14, fontWeight: '400', color: c.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 4 },
 
-  controls: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 4 },
+  controls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 12, marginTop: 20 },
   /* Nút ±15 NÓI RA con số.
 
      Trước đây chúng chỉ có dấu cộng và dấu trừ, và "cộng bao nhiêu" chỉ tồn tại
@@ -339,42 +389,33 @@ const stylesFor = makeStyles((c, m) => ({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 1,
-    width: 56,
-    height: 48,
-    borderRadius: 24,
+    gap: 3,
+    width: 64,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: m.inset.bg,
     borderWidth: m.inset.borderWidth,
     borderColor: m.inset.border,
   },
-  roundText: { ...type.footnote, color: c.foreground, fontWeight: '600', fontVariant: ['tabular-nums'] },
+  roundText: { fontSize: 16, fontWeight: '500', color: c.foreground, fontVariant: ['tabular-nums'] },
   /*
-    Vẫn KHÔNG tô đặc, nhưng đã sáng hơn hẳn hai nút bên cạnh.
+    Vẫn KHÔNG tô đặc, nhưng sáng hơn hẳn hai nút bên cạnh.
 
-    Ghi chú cũ ở đây nói "outlined, not filled", vì một thanh bạc đặc cạnh một
-    vòng bạc là hai mảng sáng tranh nhau trong một tấm thẻ mà cả ý đồ là không
-    có gì gấp. Lập luận ấy vẫn đúng và nền vẫn không tô.
-
-    Nhưng tiền đề của nó đã đổi: hồi ấy chạm ra ngoài cũng thoát được, nên "Bỏ
-    qua" chỉ là một trong hai lối ra. Nay nó là lối ra DUY NHẤT, và một lối ra
-    duy nhất trông y hệt hai nút chỉnh giờ bên cạnh là một lối ra người ta phải
-    đi tìm. Viền sáng lên và chữ nặng hơn: đủ để mắt biết đâu là đường ra, chưa
-    đủ để thành mảng sáng thứ hai.
+    Từ khi chạm ra ngoài thôi kết thúc quãng nghỉ, "Bỏ qua" là lối ra DUY NHẤT,
+    và một lối ra duy nhất trông y hệt hai nút chỉnh giờ bên cạnh là một lối ra
+    người ta phải đi tìm. `secondary` là một BẬC thật trong bảng màu: đặc hơn
+    hai nút ±15 một bậc, đủ để mắt biết đâu là đường ra, chưa đủ để thành mảng
+    sáng thứ hai cạnh vòng đồng hồ.
   */
   skip: {
-    height: 48,
-    minWidth: 116,
-    paddingHorizontal: spacing.md,
+    height: 44,
+    width: 120,
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    /* `secondary` là một BẬC thật trong bảng màu, không phải một lớp trắng gõ
-       tay: hai nút ±15 là kính trên nền thẻ, cái này đặc hơn hẳn chúng một bậc.
-       Đủ để mắt biết đâu là đường ra mà không cần tô bạc đặc — xem ghi chú ở
-       trên về vì sao nó vẫn không tô. */
     backgroundColor: c.secondary,
     borderWidth: m.inset.borderWidth,
     borderColor: m.inset.border,
   },
-  skipText: { ...type.body, color: c.foreground, fontWeight: '700' },
+  skipText: { fontSize: 16, fontWeight: '600', color: c.foreground },
 }));

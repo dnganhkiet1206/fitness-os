@@ -175,11 +175,24 @@ interface RestCountdown {
  * two can never disagree about what "time's up" means.
  */
 function settleRest(s: RestCountdown): RestCountdown | null {
-  const left = Math.max(0, Math.ceil((s.endsAt - Date.now()) / 1000));
+  const now = Date.now();
+  const left = Math.max(0, Math.ceil((s.endsAt - now) / 1000));
   if (left <= 0) {
-    Haptics.success();
-    restLiveActivityEnded();
-    return null;
+    /*
+      Hết giờ thì thẻ ở lại với `left: 0` trong đúng giây đầu sau `endsAt` —
+      rest-timer.tsx vẽ dấu tick "xong" — rồi đóng. Đóng thẳng thì người dùng
+      chỉ thấy thẻ biến mất, không phân biệt được "đã hết" với "bị lỗi".
+
+      Vẫn suy từ `endsAt`, không đếm nhịp: quãng nghỉ đã hết từ lâu lúc app ở
+      nền (quá một giây) thì đóng NGAY khi quay lại, như #199 — không có dấu
+      tick nào cho một quãng nghỉ đã xong trong lúc người ta không nhìn.
+    */
+    if (s.left > 0) {
+      Haptics.success();
+      restLiveActivityEnded();
+    }
+    if (now - s.endsAt >= 1000) return null;
+    return s.left === 0 ? s : { ...s, left: 0 };
   }
   return s.left === left ? s : { ...s, left };
 }
