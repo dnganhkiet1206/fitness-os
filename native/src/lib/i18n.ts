@@ -1411,6 +1411,3 @@ export function useTranslation(lang: AppLang): Translations {
 export function t(lang: AppLang): Translations {
   return translations[lang];
 }
-
-// Re-export for backward compatibility
-export type GroceryLang = AppLang;
