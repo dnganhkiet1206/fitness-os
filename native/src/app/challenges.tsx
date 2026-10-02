@@ -45,9 +45,9 @@ export default function ChallengesScreen() {
     number it knows is stale.
   */
   const refreshProgress = useCallback(() => {
-    updateProgress.mutate(undefined, {
-      onError: (e: Error) => toast.fail(e),
-    });
+    /* onError lives on the mutation definition now (use-extras) — a per-call
+       one here would toast twice, since React Query fires both. */
+    updateProgress.mutate(undefined);
     // `updateProgress` is a fresh object each render; listing it would re-run
     // the effect below on every render rather than once per screen.
     // eslint-disable-next-line react-hooks/exhaustive-deps

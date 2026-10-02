@@ -777,6 +777,11 @@ export function useUpdateChallengeProgress() {
       // a completion moved the wallet, and the buddy's XP is derived from it
       queryClient.invalidateQueries({ queryKey: ['mascot_wallet', user?.id] });
     },
+    /* Heard at the definition, not only at the call sites: the Today tab
+       fires this on every focus and used to swallow the failure with
+       `.catch(() => {})` — a recompute that silently did nothing, leaving
+       stale progress on screen with no word about why. */
+    onError: (e: Error) => toast.fail(e),
   });
 }
 
