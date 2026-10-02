@@ -132,11 +132,15 @@ export function streakFrom(
 
   /* Merged and re-sorted rather than handled as a special case inside the loop.
      A frozen day *is* a day for every purpose except `loggedToday`, and the
-     cheapest way to be sure of that is to make the list say so. */
+     cheapest way to be sure of that is to make the list say so. Frozen days in
+     the future are dropped with the same `d <= today` rule as logged dates
+     above: a future freeze sorts to the top of the merged list and, being
+     neither today nor yesterday, ends the run at zero — the same wrong-clock
+     device that writes tomorrow's `daily_logs` can hold tomorrow's freeze. */
   const covered =
     frozen.length === 0
       ? datesDesc
-      : [...new Set([...datesDesc, ...frozen.filter((d) => d !== today)])].sort().reverse();
+      : [...new Set([...datesDesc, ...frozen.filter((d) => d !== today && d <= today)])].sort().reverse();
 
   if (covered.length === 0) return { count: 0, loggedToday: false };
   datesDesc = covered;
