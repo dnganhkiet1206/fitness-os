@@ -155,6 +155,17 @@ function findSourcesPhaseUuid(project, targetUuid) {
   return null;
 }
 
+function findResourcesPhaseUuid(project, targetUuid) {
+  const target = project.pbxNativeTargetSection()[targetUuid];
+  const phases = target.buildPhases || [];
+  const section = project.hash.project.objects.PBXResourcesBuildPhase || {};
+  for (const entry of phases) {
+    const uuid = typeof entry === 'string' ? entry : entry.value;
+    if (section[uuid]) return uuid;
+  }
+  return null;
+}
+
 function hasTargetDependency(project, targetUuid, dependencyTargetUuid) {
   const section = project.hash.project.objects.PBXTargetDependency || {};
   const targets = project.pbxNativeTargetSection();
@@ -296,7 +307,36 @@ module.exports = function withAscndWidgets(config) {
       });
     }
 
-    // 4b. Target dependency app -> extension. The `xcode` package's
+    // 4b. Logo asset: the REAL ASCND mark (assets/images/splash-icon.png —
+    //    white on transparent, the same artwork as the app icon). NOT redrawn:
+    //    brand-lockup.tsx documents why a hand-drawn second version drifts.
+    //    Copied into the extension dir and added to its Resources phase so
+    //    `Image("ascnd-mark")` resolves inside the widget bundle at runtime.
+    const LOGO_SRC = path.join(projectRoot, 'assets', 'images', 'splash-icon.png');
+    const LOGO_REL = 'ascnd-mark.png';
+    if (!fs.existsSync(LOGO_SRC)) {
+      throw new Error('[with-ascnd-widgets] missing logo asset: assets/images/splash-icon.png');
+    }
+    fs.copyFileSync(LOGO_SRC, path.join(extDir, LOGO_REL));
+    if (!project.hasFile(LOGO_REL)) {
+      const logoFile = project.addFile(LOGO_REL, groupUuid, { target: target.uuid });
+      if (!logoFile) {
+        throw new Error('[with-ascnd-widgets] failed to add logo asset');
+      }
+      logoFile.target = target.uuid;
+      logoFile.uuid = project.generateUuid();
+      project.addToPbxBuildFileSection(logoFile);
+      const existingResUuid = findResourcesPhaseUuid(project, target.uuid);
+      const resPhase = existingResUuid
+        ? project.hash.project.objects.PBXResourcesBuildPhase[existingResUuid]
+        : project.addBuildPhase([], 'PBXResourcesBuildPhase', 'Resources', target.uuid).buildPhase;
+      resPhase.files.push({
+        value: logoFile.uuid,
+        comment: `${LOGO_REL} in Resources`,
+      });
+    }
+
+    // 4c. Target dependency app -> extension. The `xcode` package's
     // addTargetDependency() silently no-ops when the PBXTargetDependency /
     // PBXContainerItemProxy sections don't exist yet (fresh Expo project), so
     // ensure the sections exist first.

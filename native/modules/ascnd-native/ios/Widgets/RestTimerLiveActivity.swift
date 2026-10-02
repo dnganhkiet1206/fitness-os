@@ -100,33 +100,22 @@ private enum Island {
 
 // MARK: - ASCND mark
 
-/// The geometric "A" — drawn, not typed, so it stays crisp at any size.
-/// Cream, per the reference design (the mark reads champagne, not white).
+/// The real ASCND mark — `splash-icon.png`, the same artwork as the app icon
+/// (white on transparent). NOT redrawn: `brand-lockup.tsx` documents why a
+/// hand-drawn second version always drifts from the original, and Kiệt's spec
+/// (01/10/2026) requires the exact asset. Bundled into the widget target's
+/// Resources by `with-ascnd-widgets.js`; tinted cream via template mode.
 @available(iOS 16.1, *)
 private struct ASCNDMark: View {
   var size: CGFloat = 20
 
   var body: some View {
-    Canvas { ctx, sz in
-      let w = sz.width, h = sz.height
-      var path = Path()
-      // Outer A: apex top-center, feet at bottom corners.
-      path.move(to: CGPoint(x: w * 0.5, y: h * 0.08))
-      path.addLine(to: CGPoint(x: w * 0.92, y: h * 0.92))
-      path.addLine(to: CGPoint(x: w * 0.72, y: h * 0.92))
-      path.addLine(to: CGPoint(x: w * 0.5, y: h * 0.42))
-      path.addLine(to: CGPoint(x: w * 0.28, y: h * 0.92))
-      path.addLine(to: CGPoint(x: w * 0.08, y: h * 0.92))
-      path.closeSubpath()
-      // Crossbar cutout.
-      path.move(to: CGPoint(x: w * 0.38, y: h * 0.68))
-      path.addLine(to: CGPoint(x: w * 0.62, y: h * 0.68))
-      path.addLine(to: CGPoint(x: w * 0.56, y: h * 0.80))
-      path.addLine(to: CGPoint(x: w * 0.44, y: h * 0.80))
-      path.closeSubpath()
-      ctx.fill(path, with: .color(Island.cream))
-    }
-    .frame(width: size, height: size)
+    Image("ascnd-mark")
+      .renderingMode(.template)
+      .resizable()
+      .aspectRatio(contentMode: .fit)
+      .foregroundStyle(Island.cream)
+      .frame(width: size, height: size)
   }
 }
 
@@ -192,15 +181,16 @@ private struct RestRing: View {
 /// background, lock screen, and with the app killed. Zero bridge traffic;
 /// endDate stays absolute (TypeScript owns it, Swift only renders).
 ///
-/// LAYOUT WARNING — read before changing the frame: the timer view reports
-/// a WIDE intrinsic box (~130pt, measured) but paints its glyphs at the
-/// box's LEADING edge. Unconstrained, the digits sat 42pt left of the ring
-/// centre on-device (01/10/2026, derived: box 130 − glyphs 46 = 84 / 2).
-/// The `.frame(width:)` below constrains the box to the digits' true width
-/// ("m:ss" is always 4 chars with monospaced digits, so width ≈ 2.1×font),
-/// which makes the leading edge irrelevant and centres the digits.
-/// Do NOT "fix" this by widening the frame to the ring size — that
-/// reintroduces the 42pt shift.
+/// LAYOUT — read before changing the frame:
+/// The timer view reports a WIDE intrinsic box (~130pt, measured) but paints
+/// its glyphs from the box's leading edge. Two guards fix both halves:
+/// - `.fixedSize(horizontal: true)` makes the Text take its TRUE glyph width
+///   instead of the 130pt placeholder, so the glyphs can be centred.
+/// - `.frame(width: fontSize * 3.0)` reserves room for "12:00" — 5 monospaced
+///   chars at 0.6em each. The old 2.1× multiplier only fit 4 chars ("m:ss"):
+///   "1:20" needs ~24pt at 10pt font but got 21pt, so it wrapped to two lines
+///   on-device (01/10/2026). Never shrink the font to fit; give it space.
+/// - `.lineLimit(1)` is the hard guarantee: the timer NEVER wraps.
 @available(iOS 16.1, *)
 private struct TimerDigits: View {
   let endDate: Date
@@ -212,8 +202,9 @@ private struct TimerDigits: View {
     Text(timerInterval: Date.now...endDate, countsDown: countsDown)
       .font(Island.timerFont(size: fontSize, weight: weight))
       .foregroundStyle(.white)
-      .multilineTextAlignment(.center)
-      .frame(width: fontSize * 2.1)
+      .lineLimit(1)
+      .fixedSize(horizontal: true, vertical: false)
+      .frame(width: fontSize * 3.0, alignment: .center)
   }
 }
 
@@ -224,9 +215,9 @@ private struct TimerDigits: View {
 private struct RestRingTimer: View {
   let endDate: Date
   let totalSeconds: Int
-  var size: CGFloat = 76
+  var size: CGFloat = 80
   var lineWidth: CGFloat = 5
-  var fontSize: CGFloat = 22
+  var fontSize: CGFloat = 23
   var showTotal: Bool = true
   var countsDown: Bool = true
 
@@ -270,7 +261,7 @@ private struct CompactLeading: View {
 
   var body: some View {
     HStack(spacing: 8) {
-      ASCNDMark(size: 18)
+      ASCNDMark(size: 17)
       switch context.state.activityState {
       case .resting:
         VStack(alignment: .leading, spacing: 1) {
@@ -310,18 +301,19 @@ private struct CompactTrailing: View {
   var body: some View {
     // The ring is the right-hand anchor, with the live timer inside it —
     // per the reference design. Nothing else lives in trailing.
+    // 34pt: +6% over the cramped 32pt, with room for the 3.0×font digits.
     switch context.state.activityState {
     case .resting:
       RestRingTimer(
         endDate: context.state.endDate,
         totalSeconds: context.state.totalSeconds,
-        size: 32, lineWidth: 2.5, fontSize: 10, showTotal: false
+        size: 34, lineWidth: 2.5, fontSize: 10, showTotal: false
       )
     case .active:
       RestRingTimer(
         endDate: context.state.endDate,
         totalSeconds: context.state.totalSeconds,
-        size: 32, lineWidth: 2.5, fontSize: 10, showTotal: false,
+        size: 34, lineWidth: 2.5, fontSize: 10, showTotal: false,
         countsDown: false
       )
     case .ready:
@@ -366,8 +358,7 @@ private struct ExpandedLeading: View {
       switch context.state.activityState {
       case .resting:
         Text("Resting")
-          .font(.title3)
-          .fontWeight(.semibold)
+          .font(.system(size: 19, weight: .semibold))
           .foregroundStyle(.white)
         Text(context.setLabel)
           .font(.subheadline)
@@ -472,10 +463,10 @@ private struct LockScreenView: View {
       HStack(spacing: 14) {
         VStack(alignment: .leading, spacing: 2) {
           Text("REST")
-            .font(.caption)
+            .font(.caption2)
             .fontWeight(.semibold)
-            .tracking(1.5)
-            .foregroundStyle(Island.gold)
+            .tracking(1.2)
+            .foregroundStyle(Island.gold.opacity(0.85))
           Text(context.state.exerciseName)
             .font(.headline)
             .foregroundStyle(.white)
