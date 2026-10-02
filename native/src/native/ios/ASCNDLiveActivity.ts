@@ -40,11 +40,11 @@ export interface RestActivityState {
    */
   startTimestamp?: number;
   /** Localized "Rest" — the Island follows the app language. */
-  restingText: string;
+  restingText?: string;
   /** Localized "Set {n}/{t}", pre-formatted. */
-  setText: string;
+  setText?: string;
   /** Localized "Up next" — the Island shows the NEXT set. */
-  nextText: string;
+  nextText?: string;
 }
 
 /** Absolute end timestamp (ms) for the native ContentState.endDate. */
@@ -87,6 +87,10 @@ export async function startRestActivity(state: RestActivityState): Promise<strin
   if (!isAscndNativeAvailable() || !mod) return null;
   const startTimestamp = state.startTimestamp ?? Date.now();
   const endTimestamp = endTimestampFor(state);
+  // Never pass undefined across the bridge — Swift String params crash on nil.
+  const restingText = state.restingText ?? 'Rest';
+  const setText = state.setText ?? `Set ${state.setNumber}/${state.totalSets}`;
+  const nextText = state.nextText ?? 'Up next';
   try {
     return await mod.startRestActivity(
       state.activityState,
@@ -96,9 +100,9 @@ export async function startRestActivity(state: RestActivityState): Promise<strin
       state.totalSeconds,
       startTimestamp,
       endTimestamp,
-      state.restingText,
-      state.setText,
-      state.nextText,
+      restingText,
+      setText,
+      nextText,
     );
   } catch (err) {
     warnDev('startRestActivity', err);
@@ -115,6 +119,10 @@ export async function updateRestActivity(
   if (!isAscndNativeAvailable() || !mod) return false;
   const startTimestamp = state.startTimestamp ?? Date.now();
   const endTimestamp = endTimestampFor(state);
+  // Never pass undefined across the bridge — Swift String params crash on nil.
+  const restingText = state.restingText ?? 'Rest';
+  const setText = state.setText ?? `Set ${state.setNumber}/${state.totalSets}`;
+  const nextText = state.nextText ?? 'Up next';
   try {
     await mod.updateRestActivity(
       activityId,
@@ -125,9 +133,9 @@ export async function updateRestActivity(
       state.totalSeconds,
       startTimestamp,
       endTimestamp,
-      state.restingText,
-      state.setText,
-      state.nextText,
+      restingText,
+      setText,
+      nextText,
     );
     return true;
   } catch (err) {
