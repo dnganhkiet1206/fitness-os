@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { moodFrom } from '@/lib/mascot-emotion';
 
@@ -47,62 +48,80 @@ export function useKoaContext(): KoaContext {
 
   const hour = new Date().getHours();
 
-  return {
-    hour,
+  /* Every field below is a primitive, computed before the memo — the memo's
+     deps ARE the values, so the identity changes exactly when something the
+     context says changes, and never otherwise. */
+  const streakCount = streak?.count ?? 0;
+  const mealCount = meals?.length ?? 0;
+  const mood = moodFrom({
     /* `read` is whether the day is actually in the cache. An unread day is
        `neutral`, never `tired` — see `moodFrom`. */
-    mood: moodFrom({
-      read: !!log,
+    read: !!log,
+    hour,
+    mealCount,
+    workedOut: Number(log?.workout_count ?? 0) > 0,
+  });
+  /* `false` when the day is unread — never a worried face over an unknown. */
+  const emptyToday = log
+    ? (Number(log.kcal) || 0) === 0 && (log.workout_count ?? 0) === 0 && (log.steps ?? 0) === 0
+    : false;
+  const riskHour = lateHour(habitFor('meal'), RISK_HOUR);
+  /* Asked, not assumed. `true` here used to be a shrug that cost real
+     moments: a record earned on another tab was declared handled and never
+     played. See `lib/koa-presence.ts`. */
+  const visible = koaOnScreen();
+
+  /*
+    Memoized: a fresh object on every render made this context unusable as an
+    effect dependency (it would fire every render), which is why every emitter
+    used to read it through a ref or a closure. Stable identity lets an
+    emitter depend on the context directly — the ref/closure pattern still
+    works, it just stops being mandatory.
+  */
+  return useMemo(
+    () => ({
       hour,
-      mealCount: meals?.length ?? 0,
-      workedOut: Number(log?.workout_count ?? 0) > 0,
+      mood,
+      streak: streakCount,
+      /* What kind of stretch this person is in. Read from the same cache and on
+         the same terms as everything else here — `useUserState` mounts no
+         observer either, and returns `settling_in`/`none` when there is nothing
+         to read, which is the value every branch downstream already handles. */
+      state,
+      emptyToday,
+      /*
+        ── their evening, not the app's ──
+
+        `streakInDanger` takes `riskHour` and falls back to `RISK_HOUR` when it is
+        absent, and this hook never set it — so the *held face* ran on the hour
+        this person actually logs (`use-mascot-emotion` passes exactly the line
+        below) while the *spoken event* ran on a stranger's six o'clock. `decide`
+        even read it as `{ ...ctx, riskHour: ctx.riskHour }`, a spread that
+        assigns a field to itself, which is what is left when the line that was
+        meant to supply it went missing.
+
+        `mascot-emotion.ts` records that these two had already drifted once — the
+        event version skipped the hour entirely — and the repair was to make both
+        call one function. They still disagreed, because one of them was called
+        with nothing. Measured, for somebody who logs at one in the morning:
+
+            khuôn mặt lo (giờ của họ)  : 02:00–08:00
+            sự kiện có lời (mặc định)  : 18:00–00:00
+
+        Not one hour in common. At three in the morning the face worries and
+        nothing is ever said; at seven in the evening the sentence arrives about a
+        day they have not finished yet.
+
+        This costs no request, which is the rule this whole hook is built on:
+        `habitFor` reads module state that `resetPersonalModel` clears on
+        sign-out, and `lateHour` is arithmetic. A person with no habit yet gets
+        `RISK_HOUR` back, so nothing changes for them.
+      */
+      riskHour,
+      visible,
     }),
-    streak: streak?.count ?? 0,
-    /* What kind of stretch this person is in. Read from the same cache and on
-       the same terms as everything else here — `useUserState` mounts no
-       observer either, and returns `settling_in`/`none` when there is nothing
-       to read, which is the value every branch downstream already handles. */
-    state,
-    /* `false` when the day is unread — never a worried face over an unknown. */
-    emptyToday: log
-      ? (Number(log.kcal) || 0) === 0 &&
-        (log.workout_count ?? 0) === 0 &&
-        (log.steps ?? 0) === 0
-      : false,
-    /*
-      ── their evening, not the app's ──
-
-      `streakInDanger` takes `riskHour` and falls back to `RISK_HOUR` when it is
-      absent, and this hook never set it — so the *held face* ran on the hour
-      this person actually logs (`use-mascot-emotion` passes exactly the line
-      below) while the *spoken event* ran on a stranger's six o'clock. `decide`
-      even read it as `{ ...ctx, riskHour: ctx.riskHour }`, a spread that
-      assigns a field to itself, which is what is left when the line that was
-      meant to supply it went missing.
-
-      `mascot-emotion.ts` records that these two had already drifted once — the
-      event version skipped the hour entirely — and the repair was to make both
-      call one function. They still disagreed, because one of them was called
-      with nothing. Measured, for somebody who logs at one in the morning:
-
-          khuôn mặt lo (giờ của họ)  : 02:00–08:00
-          sự kiện có lời (mặc định)  : 18:00–00:00
-
-      Not one hour in common. At three in the morning the face worries and
-      nothing is ever said; at seven in the evening the sentence arrives about a
-      day they have not finished yet.
-
-      This costs no request, which is the rule this whole hook is built on:
-      `habitFor` reads module state that `resetPersonalModel` clears on
-      sign-out, and `lateHour` is arithmetic. A person with no habit yet gets
-      `RISK_HOUR` back, so nothing changes for them.
-    */
-    riskHour: lateHour(habitFor('meal'), RISK_HOUR),
-    /* Asked, not assumed. `true` here used to be a shrug that cost real
-       moments: a record earned on another tab was declared handled and never
-       played. See `lib/koa-presence.ts`. */
-    visible: koaOnScreen(),
-  };
+    [hour, mood, streakCount, state, emptyToday, riskHour, visible],
+  );
 }
 
 /**
@@ -110,12 +129,13 @@ export function useKoaContext(): KoaContext {
  *
  * ── why a captured context is not a current one ──
  *
- * Every emitter holds this object across time. It has to: `useKoaContext`
- * returns a fresh object on every render, so listing it as an effect dependency
- * would run the effect on every render, and each emitter therefore reads it
- * through a ref or a closure. That is right for the fields it snapshots — the
- * streak and the day's totals come out of the query cache and do not change
- * between the render and the event.
+ * Every emitter holds this object across time. It has to: the fields it
+ * snapshots — the streak and the day's totals — come out of the query cache
+ * and do not change between the render and the event, and each emitter
+ * therefore reads it through a ref or a closure. The object itself is
+ * memoized (stable identity until a field actually changes), so listing it
+ * as an effect dependency is now safe too — the ref/closure pattern just
+ * stops being mandatory.
  *
  * Two fields are not like that, and both were wrong in ways that only showed up
  * at the moments they mattered:
