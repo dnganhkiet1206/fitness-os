@@ -10,7 +10,7 @@ import {
   Target,
   Trash2,
 } from 'lucide-react-native';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -303,9 +303,18 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
 
   const { weight: wUnit, height: lHUnit } = useUnits();
   const wl = weightLabel(wUnit);
-  // Stored kg; chart + tiles show the user's unit (BMI stays metric)
-  const weightData = (weight ?? []).map((d) => ({ ...d, value: displayWeight(d.value, wUnit) }));
-  const allWeight = (weightAll ?? []).map((d) => ({ ...d, value: displayWeight(d.value, wUnit) }));
+  // Stored kg; chart + tiles show the user's unit (BMI stays metric).
+  // Memoized: `chartPoints` filters from `allWeight`, so an unmemoized `.map`
+  // here would rebuild the memo's input every render and the memo below would
+  // never hit.
+  const weightData = useMemo(
+    () => (weight ?? []).map((d) => ({ ...d, value: displayWeight(d.value, wUnit) })),
+    [weight, wUnit],
+  );
+  const allWeight = useMemo(
+    () => (weightAll ?? []).map((d) => ({ ...d, value: displayWeight(d.value, wUnit) })),
+    [weightAll, wUnit],
+  );
 
   /*
     The chart's own window, filtered from the full history rather than fetched.
@@ -339,13 +348,20 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
   }, [rangeIdx, slide]);
   const pill = useAnimatedStyle(() => ({ transform: [{ translateX: slide.value * pillW }] }));
   const rangeDays = RANGES.find((r) => r.key === range)?.days ?? null;
-  const chartPoints =
-    rangeDays == null
-      ? allWeight
-      : (() => {
-          const from = localDaysAgoStr(rangeDays);
-          return allWeight.filter((d) => d.date >= from);
-        })();
+  /* Filtered from the memoized `allWeight` — switching range re-runs only the
+     filter, not the unit conversion above, and unrelated re-renders (scrub
+     gestures, tab switches) reuse the same array so the memoized `LineChart`
+     below skips its whole SVG rebuild. */
+  const chartPoints = useMemo(
+    () =>
+      rangeDays == null
+        ? allWeight
+        : (() => {
+            const from = localDaysAgoStr(rangeDays);
+            return allWeight.filter((d) => d.date >= from);
+          })(),
+    [allWeight, rangeDays],
+  );
   const currentWeight = weightData.length > 0 ? weightData[weightData.length - 1].value : null;
   const startWeight = weightData.length > 0 ? weightData[0].value : null;
   const weightDelta = currentWeight != null && startWeight != null ? currentWeight - startWeight : null;
@@ -369,15 +385,13 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
   const [bmiW, setBmiW] = useState(0);
   const bmiGrad = `bmiScale-${useId()}`;
 
-  // Circumference labels carry "(cm)"; swap to the user's length unit.
   // A measurement value in the display unit (cm columns convert; % stays).
-  const lbl = (s: string) => (lHUnit === 'in' ? s.replace('(cm)', '(in)') : s);
   const mval = (k: string, cm: number) => (k === 'body_fat_pct' ? cm : displayLength(cm, lHUnit));
 
 
   const measurement = measurements && measurements.length > 0 ? measurements[measurements.length - 1] : null;
   // Web history table: last 10 entries, newest first
-  const historyRows = (measurements ?? []).slice(-10).reverse();
+  const historyRows = useMemo(() => (measurements ?? []).slice(-10).reverse(), [measurements]);
   const shortLabel = (l: string) => l.replace(/\s*\(.*\)$/, '');
 
   /*
@@ -402,66 +416,88 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
   */
   const len = lengthLabel(lHUnit);
   const [sideL, sideR] = i18n.nMeasureSides.split(' · ');
-  const mnum = (k: string): number | null => {
-    const raw = measurement ? (measurement as Record<string, unknown>)[k] : null;
-    return raw != null && Number(raw) > 0 ? mval(k, Number(raw)) : null;
-  };
-  const dash = (v: number | null) => (v == null ? '—' : String(v));
   type Tile = { key: string; label: string; value: string; caption: string; a11y: string };
-  const single = (k: string, label: string, unit: string): Tile => ({
-    key: k,
-    label,
-    value: dash(mnum(k)),
-    caption: unit,
-    a11y: `${label} ${dash(mnum(k))} ${unit}`,
-  });
-  const pair = (kl: string, kr: string, label: string): Tile => ({
-    key: kl,
-    label,
-    value: `${dash(mnum(kl))} · ${dash(mnum(kr))}`,
-    caption: i18n.nMeasureSides,
-    a11y: `${label}: ${sideL} ${dash(mnum(kl))}, ${sideR} ${dash(mnum(kr))} ${len}`,
-  });
-  const TILES: Tile[] = [
-    single('neck_cm', shortLabel(i18n.measureNeck), len),
-    single('shoulders_cm', shortLabel(i18n.measureShoulders), len),
-    single('chest_cm', shortLabel(i18n.measureChest), len),
-    single('waist_cm', shortLabel(i18n.measureWaist), len),
-    single('hips_cm', shortLabel(i18n.measureHips), len),
-    pair('bicep_left_cm', 'bicep_right_cm', i18n.nMeasureBiceps),
-    pair('thigh_left_cm', 'thigh_right_cm', i18n.nMeasureThighs),
-    pair('calf_left_cm', 'calf_right_cm', i18n.nMeasureCalves),
-    single('body_fat_pct', shortLabel(i18n.measureBodyFat), '%'),
-  ];
-  const TILE_ROWS = [TILES.slice(0, 3), TILES.slice(3, 6), TILES.slice(6, 9)];
-  const HISTORY_COLS: { k: string; l: string }[] = [
-    { k: 'waist_cm', l: shortLabel(i18n.measureWaist) },
-    { k: 'chest_cm', l: shortLabel(i18n.measureChest) },
-    { k: 'bicep_left_cm', l: shortLabel(i18n.measureBicepL) },
-    { k: 'thigh_left_cm', l: shortLabel(i18n.measureThighL) },
-    { k: 'body_fat_pct', l: 'BF%' },
-  ];
+  /*
+    Nine tiles, built once per (measurement, unit, language) — not once per
+    render. Each `single`/`pair` runs unit conversions, and the parent
+    re-renders on scrub gestures and range switches that change none of the
+    inputs, so rebuilding here was pure waste on every one of those frames.
+  */
+  const TILES: Tile[] = useMemo(() => {
+    const toDisplay = (k: string, cm: number) => (k === 'body_fat_pct' ? cm : displayLength(cm, lHUnit));
+    const mnum = (k: string): number | null => {
+      const raw = measurement ? (measurement as Record<string, unknown>)[k] : null;
+      return raw != null && Number(raw) > 0 ? toDisplay(k, Number(raw)) : null;
+    };
+    const dash = (v: number | null) => (v == null ? '—' : String(v));
+    const single = (k: string, label: string, unit: string): Tile => ({
+      key: k,
+      label,
+      value: dash(mnum(k)),
+      caption: unit,
+      a11y: `${label} ${dash(mnum(k))} ${unit}`,
+    });
+    const pair = (kl: string, kr: string, label: string): Tile => ({
+      key: kl,
+      label,
+      value: `${dash(mnum(kl))} · ${dash(mnum(kr))}`,
+      caption: i18n.nMeasureSides,
+      a11y: `${label}: ${sideL} ${dash(mnum(kl))}, ${sideR} ${dash(mnum(kr))} ${len}`,
+    });
+    return [
+      single('neck_cm', shortLabel(i18n.measureNeck), len),
+      single('shoulders_cm', shortLabel(i18n.measureShoulders), len),
+      single('chest_cm', shortLabel(i18n.measureChest), len),
+      single('waist_cm', shortLabel(i18n.measureWaist), len),
+      single('hips_cm', shortLabel(i18n.measureHips), len),
+      pair('bicep_left_cm', 'bicep_right_cm', i18n.nMeasureBiceps),
+      pair('thigh_left_cm', 'thigh_right_cm', i18n.nMeasureThighs),
+      pair('calf_left_cm', 'calf_right_cm', i18n.nMeasureCalves),
+      single('body_fat_pct', shortLabel(i18n.measureBodyFat), '%'),
+    ];
+  }, [measurement, lHUnit, i18n, len, sideL, sideR]);
+  const TILE_ROWS = useMemo(
+    () => [TILES.slice(0, 3), TILES.slice(3, 6), TILES.slice(6, 9)],
+    [TILES],
+  );
+  const HISTORY_COLS: { k: string; l: string }[] = useMemo(
+    () => [
+      { k: 'waist_cm', l: shortLabel(i18n.measureWaist) },
+      { k: 'chest_cm', l: shortLabel(i18n.measureChest) },
+      { k: 'bicep_left_cm', l: shortLabel(i18n.measureBicepL) },
+      { k: 'thigh_left_cm', l: shortLabel(i18n.measureThighL) },
+      { k: 'body_fat_pct', l: 'BF%' },
+    ],
+    [i18n],
+  );
 
   // Web measurement-trend chart: 4 lines on a shared scale, same colours.
   // All series here are circumference (_cm) → convert to the display unit.
-  const seriesOf = (k: string) =>
-    (measurements ?? []).map((row) => {
-      const raw = (row as Record<string, unknown>)[k];
-      return raw != null ? convertLength(Number(raw), lHUnit) : null;
-    });
-  const trendSeries = [
-    /* Bốn ĐƯỜNG của một biểu đồ — không đường nào là chữ, nên vàng ở đây đọc
-       bảng đồ hoạ. Đây cũng là chỗ trả lời câu hỏi "thế còn `metricBeige`":
-       be là đường CÂN NẶNG của một thẻ khác, và bốn đường dưới đây là
-       vàng/lơ/tím/lục lam — hai màu vàng không bao giờ gặp nhau trong một hình. */
-    /* `lbl()`: `seriesOf` đổi giá trị sang đơn vị của người dùng, nên nhãn
-       phải đổi theo. Trước 24/09 nhãn đi thẳng từ `i18n`, và người đặt inch
-       đọc "Eo (cm)" cạnh một đường vẽ bằng inch. */
-    { label: lbl(i18n.measureWaist), color: c.readinessYellowGraphic, values: seriesOf('waist_cm') },
-    { label: lbl(i18n.measureChest), color: c.metricBlue, values: seriesOf('chest_cm') },
-    { label: lbl(i18n.measureBicepL), color: c.metricPurple, values: seriesOf('bicep_left_cm') },
-    { label: lbl(i18n.measureThighL), color: c.metricCyan, values: seriesOf('thigh_left_cm') },
-  ];
+  // Memoized: each `seriesOf` maps the WHOLE measurement history, so this was
+  // O(4n) unit conversions on every render — including renders caused by the
+  // chart's own scrub gesture, which changes no input here.
+  const trendSeries = useMemo(() => {
+    // Circumference labels carry "(cm)"; swap to the user's length unit.
+    const lbl = (s: string) => (lHUnit === 'in' ? s.replace('(cm)', '(in)') : s);
+    const seriesOf = (k: string) =>
+      (measurements ?? []).map((row) => {
+        const raw = (row as Record<string, unknown>)[k];
+        return raw != null ? convertLength(Number(raw), lHUnit) : null;
+      });
+    return [
+      /* Bốn ĐƯỜNG của một biểu đồ — không đường nào là chữ, nên vàng ở đây đọc
+         bảng đồ hoạ. Đây cũng là chỗ trả lời câu hỏi "thế còn `metricBeige`":
+         be là đường CÂN NẶNG của một thẻ khác, và bốn đường dưới đây là
+         vàng/lơ/tím/lục lam — hai màu vàng không bao giờ gặp nhau trong một hình. */
+      /* `lbl()`: `seriesOf` đổi giá trị sang đơn vị của người dùng, nên nhãn
+         phải đổi theo. Trước 24/09 nhãn đi thẳng từ `i18n`, và người đặt inch
+         đọc "Eo (cm)" cạnh một đường vẽ bằng inch. */
+      { label: lbl(i18n.measureWaist), color: c.readinessYellowGraphic, values: seriesOf('waist_cm') },
+      { label: lbl(i18n.measureChest), color: c.metricBlue, values: seriesOf('chest_cm') },
+      { label: lbl(i18n.measureBicepL), color: c.metricPurple, values: seriesOf('bicep_left_cm') },
+      { label: lbl(i18n.measureThighL), color: c.metricCyan, values: seriesOf('thigh_left_cm') },
+    ];
+  }, [measurements, i18n, lHUnit, c]);
 
   return (
     <>

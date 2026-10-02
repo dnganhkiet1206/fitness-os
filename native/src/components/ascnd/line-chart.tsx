@@ -1,5 +1,5 @@
 import { haptics as Haptics } from '@/lib/haptics';
-import { useEffect, useId, useRef, useState } from 'react';
+import { memo, useEffect, useId, useRef, useState } from 'react';
 import Animated, {
   Easing,
   useAnimatedProps,
@@ -366,7 +366,15 @@ export function niceTicks(lo: number, hi: number, want = 3): { ticks: number[]; 
  * The smoothing is safe to keep: the control points share their endpoints' y,
  * so the curve never bulges past a value that was recorded.
  */
-export function LineChart({ points, color: colorProp, height = 140, unit = '', emptyLabel = 'Not enough data yet', goal, goalLabel, grid = false, ambient = false, labels = true, locale, onScrubbing }: LineChartProps) {
+/*
+  Memoized: the parent (`body-panel`) passes memoized `points`/`series`, and
+  every render of this component rebuilds the whole SVG path from scratch
+  (values, times, x-positions, the curve string). Without the memo, a scrub
+  gesture or range switch on the parent re-ran all of that even when the data
+  had not changed. Props are primitives or memoized arrays, so the shallow
+  compare actually hits; internal gesture/animation state is unaffected.
+*/
+export const LineChart = memo(function LineChart({ points, color: colorProp, height = 140, unit = '', emptyLabel = 'Not enough data yet', goal, goalLabel, grid = false, ambient = false, labels = true, locale, onScrubbing }: LineChartProps) {
   const c = usePalette();
   const styles = stylesFor(c);
   /* Mặc định giải quyết ở đây, không ở danh sách tham số: một giá trị mặc định
@@ -1006,7 +1014,7 @@ export function LineChart({ points, color: colorProp, height = 140, unit = '', e
       )}
     </View>
   );
-}
+});
 
 export interface MultiSeries {
   label: string;
@@ -1024,8 +1032,11 @@ interface MultiLineChartProps {
 /**
  * Multi-series companion to LineChart — several smooth lines on a shared
  * scale with per-point dots and a legend (web measurement-trend chart).
+ *
+ * Memoized for the same reason as `LineChart` above: the parent passes a
+ * memoized `series` array, so re-renders only happen when the data changes.
  */
-export function MultiLineChart({ series, height = 200, emptyLabel = 'Not enough data yet' }: MultiLineChartProps) {
+export const MultiLineChart = memo(function MultiLineChart({ series, height = 200, emptyLabel = 'Not enough data yet' }: MultiLineChartProps) {
   const c = usePalette();
   const styles = stylesFor(c);
   const [width, setWidth] = useState(0);
@@ -1099,7 +1110,7 @@ export function MultiLineChart({ series, height = 200, emptyLabel = 'Not enough 
       )}
     </View>
   );
-}
+});
 
 const stylesFor = makeStyles((c, m) => ({
   empty: {
