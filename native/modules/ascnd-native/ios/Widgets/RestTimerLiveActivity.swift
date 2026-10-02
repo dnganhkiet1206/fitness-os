@@ -12,9 +12,10 @@ import WidgetKit
 //   .active  — exercise name leads, dumbbell mark, subtle progress
 //   .ready   — calm, almost empty; the mark does the talking
 //
-// Visual rules (from the redesign brief):
+// Visual rules (from the redesign brief + Kiệt's spec 01/10/2026):
 // - Near-black background, SF Pro typography, strong hierarchy, few elements
-// - ASCND gold (#E8B23A) appears ONLY in the progress ring / active indicator
+// - Cream/warm-white ring (#F5EEDB-ish) — the ring feels like part of the Island
+// - ASCND gold appears ONLY in the tiny "REST" eyebrow accent, never the ring
 // - Never a mini dashboard: weight, reps, RPE stay in the app
 // - Timer is always rounded + monospacedDigit, the numerical focal point
 //
@@ -152,7 +153,7 @@ private struct ProgressRing: View {
   }
 }
 
-// MARK: - Rest countdown — one native timeline drives text + ring
+// MARK: - Countdown primitives: system-ticked digits + coarse ring
 
 private func formatTotal(seconds: Int) -> String {
   String(format: "%d:%02d", seconds / 60, seconds % 60)
