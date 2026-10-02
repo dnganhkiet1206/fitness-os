@@ -100,6 +100,7 @@ private enum Island {
 // MARK: - ASCND mark
 
 /// The geometric "A" — drawn, not typed, so it stays crisp at any size.
+/// Cream, per the reference design (the mark reads champagne, not white).
 @available(iOS 16.1, *)
 private struct ASCNDMark: View {
   var size: CGFloat = 20
@@ -122,7 +123,7 @@ private struct ASCNDMark: View {
       path.addLine(to: CGPoint(x: w * 0.56, y: h * 0.80))
       path.addLine(to: CGPoint(x: w * 0.44, y: h * 0.80))
       path.closeSubpath()
-      ctx.fill(path, with: .color(.white))
+      ctx.fill(path, with: .color(Island.cream))
     }
     .frame(width: size, height: size)
   }
@@ -422,8 +423,14 @@ private struct ExpandedTrailing: View {
         )
       }
     case .ready:
-      ASCNDMark(size: 44)
-        .opacity(0.9)
+      // Reference panel 4: the mark sits in an app-icon tile — champagne A
+      // on dark bronze — not a bare glyph.
+      RoundedRectangle(cornerRadius: 16, style: .continuous)
+        .fill(Color(red: 0.24, green: 0.20, blue: 0.12))
+        .frame(width: 60, height: 60)
+        .overlay {
+          ASCNDMark(size: 34)
+        }
     }
   }
 }
