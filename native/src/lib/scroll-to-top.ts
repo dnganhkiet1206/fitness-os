@@ -17,11 +17,12 @@
  * event handler, and nothing renders differently because of it.
  */
 
-let current: (() => void) | null = null;
+type Scroller = { top: () => void; to: (y: number) => void };
+let current: Scroller | null = null;
 
 /** Claim the slot on focus; pass `null` on blur to release it. */
-export function setActiveScroller(fn: (() => void) | null) {
-  current = fn;
+export function setActiveScroller(s: Scroller | null) {
+  current = s;
 }
 
 /**
@@ -32,6 +33,18 @@ export function setActiveScroller(fn: (() => void) | null) {
  */
 export function scrollActiveToTop(): boolean {
   if (!current) return false;
-  current();
+  current.top();
+  return true;
+}
+
+/**
+ * Put the focused screen at offset `y`, with no animation — for a screen that
+ * has to hold the reader's place while content is inserted ABOVE them (the
+ * Community feed loading back a page it had dropped, #171). Same slot, same
+ * lifetime: the screen that can hear the insert never owns the scroll view.
+ */
+export function scrollActiveTo(y: number): boolean {
+  if (!current) return false;
+  current.to(y);
   return true;
 }

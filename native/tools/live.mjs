@@ -1609,6 +1609,39 @@ const SCENARIOS = [
   },
   {
     /*
+      #172: thử thách có hai thứ tiếng. Trước đây người dùng tiếng Anh đọc
+      "30 ngày kỷ luật" trên hero và trong câu toast lưu buổi tập.
+        (A) app tiếng Anh: hero Cộng đồng hiện "30 Days of Consistency", và
+            không chữ lá nào trên màn còn "30 ngày kỷ luật";
+        (B) thử thách CHƯA dịch vẫn hiện bằng bản gốc (trang tất cả thử thách:
+            "Tháng mới: 20 buổi"), không trống;
+        (C) đổi sang tiếng Việt (không đọc lại server): hero hiện bản gốc.
+    */
+    name: 'Thử thách hai thứ tiếng: tiếng Anh dùng title_en, chưa dịch thì bản gốc, tiếng Việt dùng bản gốc (#172)',
+    route: '/community', mode: 'full',
+    async run(page) {
+      const leaves = () => page.evaluate(() => window.__shown('*')
+        .filter((e) => !/^(TEXTAREA|INPUT)$/.test(e.tagName) && e.children.length === 0)
+        .map((e) => (e.textContent ?? '').trim()).filter(Boolean));
+      let got = [];
+      for (let i = 0; i < 40 && !got.includes('30 Days of Consistency'); i++) { await page.waitForTimeout(250); got = await leaves(); }
+      if (!got.includes('30 Days of Consistency')) return `(A) hero tiếng Anh không hiện "30 Days of Consistency" (thấy: ${got.filter((t) => /30|ngày|Days/.test(t)).slice(0, 6).join(' | ')})`;
+      if (got.some((t) => t.includes('30 ngày kỷ luật'))) return '(A) app tiếng Anh vẫn còn chữ "30 ngày kỷ luật" trên màn';
+
+      await page.goto(page.url().replace(/\/community.*$/, '/community-challenges'), { waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 40 && !(got = await leaves()).includes('Tháng mới: 20 buổi'); i++) await page.waitForTimeout(250);
+      if (!got.includes('Tháng mới: 20 buổi')) return '(B) thử thách chưa dịch không hiện bản gốc trên trang tất cả thử thách';
+
+      await page.evaluate(() => window.localStorage.setItem('ascnd_lang', 'vi'));
+      await page.goto(page.url().replace(/\/community-challenges.*$/, '/community'), { waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 40 && !(got = await leaves()).includes('30 ngày kỷ luật'); i++) await page.waitForTimeout(250);
+      if (!got.includes('30 ngày kỷ luật')) return '(C) app tiếng Việt không hiện tên gốc "30 ngày kỷ luật"';
+      if (got.includes('30 Days of Consistency')) return '(C) app tiếng Việt hiện tên tiếng Anh';
+      return null;
+    },
+  },
+  {
+    /*
       #210: toast "Workout saved!" (kèm nút Share, sống tám giây) không được nằm
       đè lên thanh tab. Trên bản web nó từng đè thanh tab của bộ đo
       (`BottomTabInset` = 0 trên web), nên lưu xong bấm sang tab khác không tới.
@@ -1872,6 +1905,167 @@ const SCENARIOS = [
       if (count('community_follows') !== 1) return `(B) bỏ theo dõi xong, danh sách theo dõi được đọc lại ${count('community_follows')} lần — phải đúng một`;
       const left = await linhCards();
       if (left) return `(B) bỏ theo dõi Linh mà "Đang theo dõi" vẫn còn ${left} bài của Linh — danh sách theo dõi cũ`;
+      return null;
+    },
+  },
+  {
+    /*
+      #171 (chủ dự án chọn (a)): feed giữ TỐI ĐA 5 trang. Thế giới thêm 300 bài
+      cũ hơn mọi bài sẵn có.
+        (A) cuộn xuống tới khi đã hỏi 7 trang: trên màn đúng 150 thẻ (5 × 30),
+            bài mới nhất của feed đã rời màn — và feed DỪNG ở 7 trang: trang
+            đầu bị bỏ mà chỗ đọc không được giữ thì màn nhảy xuống cả trang, tới
+            gần đáy mới, trang kế lại tải, feed tự trôi tới hết (đo được trước
+            khi có `usePageWindow`);
+        (A′) trực tiếp hơn: ở 5 trang, đứng gần đáy cho trang 6 về (trang 1 bị
+            bỏ) — bài đang ở đầu màn đứng yên (±2px);
+        (B) app trở lại sau 10 phút (mọi truy vấn tải lại): đúng 5 lượt
+            `community_posts`, không phải 7;
+        (C) cuộn ngược lên gần đỉnh của những gì còn giữ: một lượt hỏi trang
+            "mới hơn" (`created_at.gt`), bài trước bài đầu hiện ra, và bài đang
+            đứng ở đầu KHÔNG xê dịch trên màn (±2px) — trang chèn lên trên mà
+            người đọc không bị đẩy đi;
+        (D) suốt lúc ấy không có viên "N bài mới": trang về lại là trang ĐÃ
+            THẤY, không phải bài mới;
+        (E) cuộn tiếp lên tới đỉnh thật: bài mới nhất của feed hiện lại, đầu
+            feed không còn hàng "Show newer posts", và các bài của thế giới này
+            trên màn liền một dải, đúng thứ tự, không trùng, không hở; không lúc
+            nào quá 150 thẻ.
+      Chrome có neo cuộn riêng (`overflow-anchor`), UIScrollView thì không:
+      kịch bản tắt nó, để đo đúng thứ iPhone thấy — bật thì trình duyệt tự bù
+      và (C) không đo được gì của app.
+    */
+    name: 'Cộng đồng: feed giữ tối đa 5 trang — làm mới 5 lượt, cuộn ngược lên tải lại trang đã bỏ mà không xê dịch, không viên "bài mới" (#171)',
+    route: '/community', mode: 'full',
+    async run(page, { world }) {
+      const tpl = world.community_posts.find((p) => p.author_id !== UID && p.visibility === 'public');
+      const CAP = /^Trần #171 · \d{3}$/;
+      const cap = (i) => `Trần #171 · ${String(i).padStart(3, '0')}`;
+      const base = Date.parse('1999-07-01T10:00:00.000Z');
+      for (let i = 0; i < 300; i++) {
+        world.community_posts.push({
+          ...structuredClone(tpl), id: `cp000000-0000-4000-8000-000001710${String(i).padStart(3, '0')}`, source_id: null,
+          caption: cap(i), like_count: 0, comment_count: 0, save_count: 0, created_at: new Date(base - i * 60_000).toISOString(),
+        });
+      }
+      const newest = [...world.community_posts].filter((p) => p.visibility === 'public' && !CAP.test(p.caption ?? ''))
+        .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))[0];
+      if (!newest?.caption) return 'fixture: thế giới không có bài công khai có chú thích nào mới hơn 300 bài thêm vào';
+
+      const reqs = [];
+      page.on('request', (r) => {
+        if (r.method() !== 'GET' || !/\/rest\/v1\/community_posts\?/.test(r.url())) return;
+        const or = new URL(r.url()).searchParams.get('or') ?? '';
+        reqs.push(/created_at\.gt\./.test(or) ? 'newer' : /created_at\.lt\./.test(or) ? 'older' : 'first');
+      });
+      const count = (k) => reqs.filter((x) => x === k).length;
+      const settle = async () => {
+        let n = -1;
+        for (let i = 0; i < 40 && n !== reqs.length; i++) { n = reqs.length; await page.waitForTimeout(400); }
+      };
+      const cards = () => page.getByRole('button', { name: /^Like · \d+$/ }).count();
+      const caps = () => page.evaluate((src) => {
+        const re = new RegExp(src);
+        return window.__shown('*').filter((e) => e.children.length === 0 && re.test((e.textContent ?? '').trim())).map((e) => e.textContent.trim());
+      }, CAP.source);
+      const has = (t) => page.evaluate((t) => window.__shown('*').some((e) => e.children.length === 0 && (e.textContent ?? '').trim() === t), t);
+      const pill = () => page.getByRole('button', { name: /^Show \d+ new posts?$/ }).filter({ visible: true });
+      /* Đặt khung cuộn (hay chỉ đọc, khi `y` null) và trả vị trí trên màn của bài
+         `t` — đọc CÙNG lượt, trước khi trang kịp vẽ lại. */
+      const at = (y, t) => page.evaluate(([y, t]) => {
+        const el = window.__shown('*').filter((e) => e.scrollHeight > e.clientHeight + 200 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+          .sort((a, b) => b.clientHeight - a.clientHeight)[0];
+        if (!el) return null;
+        if (y === 'bottom') el.scrollTop = el.scrollHeight;
+        else if (y != null) el.scrollTop = y;
+        const c = t && window.__shown('*').find((e) => e.children.length === 0 && (e.textContent ?? '').trim() === t);
+        return { y: el.scrollTop, top: c ? c.getBoundingClientRect().top : null };
+      }, [y, t]);
+
+      await page.addStyleTag({ content: '* { overflow-anchor: none !important; }' });
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.addStyleTag({ content: '* { overflow-anchor: none !important; }' });
+      for (let i = 0; i < 40 && (await cards()) < 30; i++) await page.waitForTimeout(250);
+      if (!(await has(newest.caption))) return `tự kiểm: lần tải đầu không có bài mới nhất "${newest.caption}"`;
+
+      /* (A′) Cửa sổ trượt XUỐNG: đã có 5 trang, đứng cách đáy 300 điểm (trong
+         khoảng tải trang kế) — trang 6 nối vào và trang 1 bị bỏ. Bài đang ở đầu
+         màn phải đứng yên: không giữ chỗ thì nội dung phía trên ngắn đi cả
+         trang trong khi khung cuộn đứng yên, và màn nhảy xuống một trang. */
+      for (let i = 0; i < 120 && count('older') < 4; i++) { await at('bottom'); await page.waitForTimeout(250); }
+      await settle();
+      if (count('older') !== 4 || (await cards()) !== 150) return `(A′) cuộn tới trang 5 mà feed không đứng ở 5 trang đủ (150 thẻ): đã hỏi ${count('older') + 1} trang, ${await cards()} thẻ trên màn — feed tự trượt khi chưa ai cuộn`;
+      const lead = await page.evaluate((src) => {
+        const re = new RegExp(src);
+        const el = window.__shown('*').filter((e) => e.scrollHeight > e.clientHeight + 200 && /auto|scroll/.test(getComputedStyle(e).overflowY))
+          .sort((a, b) => b.clientHeight - a.clientHeight)[0];
+        el.scrollTop = el.scrollHeight - el.clientHeight - 300;
+        const box = el.getBoundingClientRect();
+        const c = window.__shown('*').find((e) => e.children.length === 0 && re.test((e.textContent ?? '').trim()) && e.getBoundingClientRect().top >= box.top);
+        return c ? { t: c.textContent.trim(), top: c.getBoundingClientRect().top } : null;
+      }, CAP.source);
+      if (!lead) return '(A′) không tìm thấy bài nào trên màn để làm mốc';
+      for (let i = 0; i < 40 && count('older') < 5; i++) await page.waitForTimeout(250);
+      await settle();
+      if (count('older') < 5) return `(A′) đứng cách đáy 300 điểm mà không tải trang 6`;
+      if (count('older') > 5) return `(A′) tải trang 6 xong feed tự tải tiếp tới trang ${count('older') + 1} — trang 1 bị bỏ thì màn nhảy xuống, tới gần đáy mới`;
+      const lead1 = await at(null, lead.t);
+      if (lead1?.top == null || Math.abs(lead1.top - lead.top) > 2) {
+        return `(A′) trang 6 về, trang 1 bị bỏ, và bài đang đọc bị đẩy đi: ${lead.t} ở ${Math.round(lead.top)} → ${lead1?.top == null ? 'rời màn' : Math.round(lead1.top)} px`;
+      }
+
+      let most = 0;
+      for (let i = 0; i < 120 && count('older') < 6; i++) {
+        await at('bottom');
+        await page.waitForTimeout(250);
+        most = Math.max(most, await cards());
+      }
+      await settle();
+      most = Math.max(most, await cards());
+      if (count('older') < 6) return `(A) cuộn tới đáy mãi mà chỉ hỏi ${count('older') + 1} trang`;
+      if (count('older') > 6) return `(A) thôi cuộn ở trang 7 mà feed tự tải tới trang ${count('older') + 1} — trang đầu bị bỏ thì màn nhảy xuống, không giữ chỗ đọc`;
+      const n7 = await cards();
+      if (n7 !== 150 || most > 150) return `(A) đã hỏi ${count('older') + 1} trang mà trên màn có ${n7} thẻ (nhiều nhất ${most}) — trần phải là 150 (5 trang)`;
+      if (await has(newest.caption)) return '(A) đã quá 5 trang mà bài mới nhất vẫn trên màn — trang đầu không rời bộ nhớ';
+
+      reqs.length = 0;
+      await page.clock.setFixedTime(Date.now() + 10 * 60_000);
+      await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange', { bubbles: true })));
+      for (let i = 0; i < 40 && reqs.length < 5; i++) await page.waitForTimeout(250);
+      await settle();
+      if (reqs.length !== 5) return `(B) làm mới sau 7 trang mà có ${reqs.length} lượt community_posts (${reqs.join(',')}) — phải đúng 5`;
+      if ((await cards()) !== 150) return `(B) làm mới xong còn ${await cards()} thẻ`;
+
+      const first = (await caps())[0];
+      const idx = Number(first.slice(-3));
+      if (!(idx > 0)) return `tự kiểm: bài đầu đang giữ là ${first} — không còn gì phía trên để tải lại`;
+      reqs.length = 0;
+      const b0 = await at(400, first);
+      if (b0?.top == null) return `(C) không đọc được vị trí của ${first}`;
+      for (let i = 0; i < 40 && !count('newer'); i++) await page.waitForTimeout(250);
+      if (!count('newer')) return `(C) cuộn lên gần đỉnh (y=${b0.y}) mà không hỏi trang "mới hơn" (${reqs.join(',') || 'không lượt nào'})`;
+      for (let i = 0; i < 40 && !(await has(cap(idx - 1))); i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(800);
+      if (await pill().count()) return `(D) trang về lại bị coi là bài mới: ${await pill().first().getAttribute('aria-label')}`;
+      if (!(await has(cap(idx - 1)))) return `(C) trang "mới hơn" về mà ${cap(idx - 1)} (ngay trên ${first}) không hiện`;
+      const b1 = await at(null, first);
+      if (Math.abs(b1.top - b0.top) > 2) return `(C) trang chèn lên trên đẩy bài đang đọc đi: ${first} ở ${Math.round(b0.top)} → ${Math.round(b1.top)} px trên màn`;
+
+      for (let i = 0; i < 60 && !((await has(newest.caption)) && !(await page.getByRole('button', { name: 'Show newer posts' }).count()) && (await at(null)).y < 5); i++) {
+        await at(0);
+        await page.waitForTimeout(300);
+        if (await pill().count()) return `(D) cuộn lên mà hiện viên "${await pill().first().getAttribute('aria-label')}"`;
+        most = Math.max(most, await cards());
+      }
+      await settle();
+      if (!(await has(newest.caption))) return `(E) cuộn tới đỉnh mà bài mới nhất "${newest.caption}" không về lại`;
+      if (await page.getByRole('button', { name: 'Show newer posts' }).count()) return '(E) đã ở đầu thật mà đầu feed vẫn mời "Show newer posts"';
+      if (most > 150) return `(E) có lúc ${most} thẻ trên màn — quá trần 5 trang`;
+      const got = await caps();
+      const from = Number(got[0].slice(-3));
+      const want = Array.from({ length: got.length }, (_, k) => cap(from + k));
+      if (from !== 0 || JSON.stringify(got) !== JSON.stringify(want)) return `(E) các bài sau khi đi ngược lên không liền một dải từ 000: ${got.slice(0, 6).join(' | ')} … (${got.length})`;
       return null;
     },
   },
@@ -3593,7 +3787,9 @@ const SCENARIOS = [
       await page.waitForTimeout(2500);
       const text = await page.locator('body').innerText();
       for (const [group, title] of [
-        [/Đang tham gia|Joined/, '30 ngày kỷ luật'],
+        /* App chạy tiếng Anh: thử thách đã dịch hiện bản tiếng Anh (#172), hai
+           thử thách chưa dịch hiện bản gốc. */
+        [/Đang tham gia|Joined/, '30 Days of Consistency'],
         [/Sắp bắt đầu|Starting soon/, 'Tháng mới: 20 buổi'],
         [/Đã hoàn thành|Completed/, 'Tháng 7: 12 buổi'],
       ]) {
@@ -4020,7 +4216,9 @@ const SCENARIOS = [
       await page.waitForTimeout(1500);
       let t = await readable(page);
       if (!joined) return 'fixture không có thử thách nào UID đã tham gia — vế này không đo gì';
-      if (!t.includes(joined.title)) return `tab Cộng đồng không có thẻ thử thách "${joined.title}" — RPC tổng quan không tới màn`;
+      /* App chạy tiếng Anh: thử thách có bản dịch thì hiện bản dịch (#172). */
+      const shown = joined.title_en || joined.title;
+      if (!t.includes(shown)) return `tab Cộng đồng không có thẻ thử thách "${shown}" — RPC tổng quan không tới màn`;
       if (!new RegExp(`\\b\\d+ / ${joined.target} (ngày|days)`).test(t)) return `thẻ thử thách không hiện tiến độ "… / ${joined.target}"`;
 
       await page.goto(`${origin}/community-search`, { waitUntil: 'domcontentloaded', timeout: 60000 });
@@ -4910,8 +5108,10 @@ const SCENARIOS = [
       const after = pick(overviews.at(-1));
       if (overviews.length < 2 || !after) return `(A) lưu xong mà không đọc lại thử thách (${overviews.length} lượt đọc)`;
       const n = Math.min(after.progress, after.target);
-      const want = new RegExp(`${after.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: ${n}/${after.target}`);
-      if (!want.test(t)) return `(A) câu toast "${t}" không nói số của server sau khi lưu (${after.title}: ${n}/${after.target})`;
+      /* App chạy tiếng Anh: tên đã dịch (#172) nếu có, không thì bản gốc. */
+      const shown = after.title_en || after.title;
+      const want = new RegExp(`${shown.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}: ${n}/${after.target}`);
+      if (!want.test(t)) return `(A) câu toast "${t}" không nói số của server sau khi lưu (${shown}: ${n}/${after.target})`;
       if (after.progress !== before.progress) return `(A) tự kiểm: buổi thứ hai CÙNG ngày đổi số ngày của server ${before.progress} → ${after.progress} — thế giới không còn đo được "+1 ở client"`;
       if (!(await page.getByRole('button', { name: /^(Chia sẻ|Share)$/ }).count())) return '(A) có hồ sơ mà không có nút Chia sẻ';
 

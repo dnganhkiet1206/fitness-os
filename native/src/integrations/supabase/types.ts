@@ -258,6 +258,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string
+          description_en: string | null
           ends_on: string
           id: string
           kind: string
@@ -265,10 +266,12 @@ export type Database = {
           starts_on: string
           target: number
           title: string
+          title_en: string | null
         }
         Insert: {
           created_at?: string
           description?: string
+          description_en?: string | null
           ends_on: string
           id?: string
           kind?: string
@@ -276,10 +279,12 @@ export type Database = {
           starts_on: string
           target: number
           title: string
+          title_en?: string | null
         }
         Update: {
           created_at?: string
           description?: string
+          description_en?: string | null
           ends_on?: string
           id?: string
           kind?: string
@@ -287,6 +292,7 @@ export type Database = {
           starts_on?: string
           target?: number
           title?: string
+          title_en?: string | null
         }
         Relationships: []
       }
@@ -2017,7 +2023,9 @@ export type Database = {
         Returns: {
           id: string
           title: string
+          title_en: string | null
           description: string
+          description_en: string | null
           target: number
           starts_on: string
           ends_on: string
@@ -2033,7 +2041,9 @@ export type Database = {
         Returns: {
           id: string
           title: string
+          title_en: string | null
           description: string
+          description_en: string | null
           target: number
           starts_on: string
           ends_on: string

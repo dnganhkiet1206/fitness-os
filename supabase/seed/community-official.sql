@@ -77,10 +77,13 @@ DROP TABLE _ascnd_official_posts;
 
 -- Thử thách mở màn (#9) — "30 ngày kỷ luật": 30 ngày có tập trong 60 ngày,
 -- thưởng 200 xu. Chạy lại không nhân đôi (khoá theo tiêu đề).
-INSERT INTO public.community_challenges (title, description, target, starts_on, ends_on, reward_coins)
+-- Bản tiếng Anh (#172): cùng chữ với migration `…_community_challenges_en`.
+INSERT INTO public.community_challenges (title, description, target, starts_on, ends_on, reward_coins, title_en, description_en)
 SELECT '30 ngày kỷ luật',
        'Tập 30 ngày khác nhau trong 60 ngày tới. Buổi nào cũng tính, miễn là bạn có mặt.',
-       30, current_date, current_date + 59, 200
+       30, current_date, current_date + 59, 200,
+       '30 Days of Consistency',
+       'Train on 30 different days over the next 60. Every session counts, as long as you show up.'
 WHERE NOT EXISTS (
   SELECT 1 FROM public.community_challenges WHERE title = '30 ngày kỷ luật'
 );

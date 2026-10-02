@@ -28,11 +28,20 @@ export function useFeedHold<T extends { id: string; mine: boolean }>(tab: string
   );
   const shown = all.filter((p) => !held.has(p.id));
 
-  /* Thứ đã vẽ là thứ đã thấy. So bằng chuỗi để một lần vẽ lại cùng danh sách
-     (một lượt thích đổi số đếm, không đổi bài nào) không ghi lại gì. */
+  /* Thứ đã vẽ là thứ đã thấy — và đã thấy thì THẤY MÃI, sổ chỉ thêm: feed có
+     trần 5 trang (#171), bài cuộn qua rồi rời bộ nhớ, và khi cuộn ngược lên
+     trang ấy về lại. Sổ chỉ ghi "đang vẽ" thì lúc ấy nó đã quên chúng, và cả
+     trang cũ bị giữ sau một viên "30 bài mới". So bằng chuỗi để một lần vẽ lại
+     cùng danh sách (một lượt thích đổi số đếm) không ghi lại gì. */
   const shownKey = shown.map((p) => p.id).join(',');
   useEffect(() => {
-    setAck((a) => ((a[tab] ?? []).join(',') === shownKey ? a : { ...a, [tab]: shownKey ? shownKey.split(',') : [] }));
+    if (!shownKey) return;
+    setAck((a) => {
+      const had = a[tab] ?? [];
+      const known = new Set(had);
+      const add = shownKey.split(',').filter((id) => !known.has(id));
+      return add.length ? { ...a, [tab]: [...had, ...add] } : a;
+    });
   }, [tab, shownKey]);
 
   /* Chỉ đặt state khi VƯỢT ngưỡng, không ở mỗi sự kiện cuộn (16ms một lần). */

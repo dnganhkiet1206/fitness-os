@@ -410,7 +410,10 @@ function ScreenBody({ title, eyebrow, headerRight, back, transparentHeader, aura
    */
   useFocusEffect(
     useCallback(() => {
-      setActiveScroller(() => scroller.current?.scrollTo({ y: 0, animated: true }));
+      setActiveScroller({
+        top: () => scroller.current?.scrollTo({ y: 0, animated: true }),
+        to: (y) => scroller.current?.scrollTo({ y, animated: false }),
+      });
       return () => setActiveScroller(null);
     }, []),
   );

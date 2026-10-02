@@ -175,6 +175,8 @@ export const RPC_FIXTURES = {
             joined: !!me,
             progress: me ? challengeProgress(world, c, UID, p_offset_min) : 0,
             claimed: !!me?.claimed_at,
+            /* 20261005130000_community_challenges_en.sql (#172) */
+            title_en: c.title_en ?? null, description_en: c.description_en ?? null,
           };
         });
     },
@@ -194,6 +196,7 @@ export const RPC_FIXTURES = {
           return {
             id: c.id, title: c.title, description: c.description, target: c.target,
             starts_on: c.starts_on, ends_on: c.ends_on, coins: t ? t.amount : 0, claimed_at: m.claimed_at,
+            title_en: c.title_en ?? null, description_en: c.description_en ?? null,
           };
         })
         .filter(Boolean)

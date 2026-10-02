@@ -73,6 +73,26 @@ function walkSaves(m, size) {
   return null;
 }
 
+/* Đi NGƯỢC lên (#171): bắt đầu từ trang thứ `from` (cỡ `size`) đã có, hỏi trang
+   "mới hơn" tới khi `prevCursor` nói đã tới đầu. Ghép lại phải ra đúng phần
+   đầu của bảng, đúng thứ tự feed. Trả cả số lần hỏi để ca kiểm nó DỪNG. */
+function walkUp(m, size, from) {
+  const start = ORDERED.slice(from * size, from * size + size);
+  let pages = [start];
+  let param = { at: 'x', id: 'x', newer: true }; // trang đang giữ đầu tiên không phải đầu thật
+  if (start.length < size) return null;
+  for (let n = 0; n < 50; n++) {
+    const cur = m.prevCursor(pages[0], param, size);
+    if (!cur) return { ids: pages.flat().map((r) => r.id), asks: n };
+    const q = new URLSearchParams({ order: 'created_at.asc,id.asc', limit: String(size) });
+    q.set('or', `(${m.newerThan(cur)})`);
+    const page = applyQuery(TABLE, new URL(`http://x/rest/v1/t?${q}`)).reverse();
+    pages = [page, ...pages];
+    param = cur;
+  }
+  return null;
+}
+
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const CASES = [
   ['bảng tự kiểm có bài cùng mốc vắt qua ranh giới trang 10', () => {
@@ -89,6 +109,24 @@ const CASES = [
   ['giá trị con trỏ nằm trong ngoặc kép', (m) => m.olderThan({ at: '2026-09-01T00:00:00.5+00:00', id: 'x' }) === 'created_at.lt."2026-09-01T00:00:00.5+00:00",and(created_at.eq."2026-09-01T00:00:00.5+00:00",id.lt."x")'],
   ['gần đáy: 800 điểm trước đáy là tải; xa hơn thì chưa; nội dung 0 thì không', (m) =>
     m.nearEnd(1200, 800, 2800) && !m.nearEnd(1100, 800, 2800) && !m.nearEnd(0, 800, 0)],
+  ['đi ngược lên (#171) từ trang 3/5 cỡ 10 và từ trang 2 cỡ 7: đúng phần đầu bảng, đúng thứ tự, không trùng, không hở, và DỪNG', (m) => {
+    const a = walkUp(m, 10, 3);
+    const b = walkUp(m, 7, 2);
+    const c = walkUp(m, 10, 5);
+    return !!a && !!b && !!c && same(a.ids, ORDERED.slice(0, 40).map((r) => r.id)) &&
+      same(b.ids, ORDERED.slice(0, 21).map((r) => r.id)) && same(c.ids, ORDERED.slice(0, 60).map((r) => r.id)) &&
+      a.asks <= 4 && c.asks <= 6;
+  }],
+  ['trang trước: trang đầu thật (con trỏ null) thì không có; trang "mới hơn" về thiếu là đầu; về đủ thì hỏi tiếp từ bài ĐẦU', (m) => {
+    const pg = [{ id: 'b', created_at: '2' }, { id: 'a', created_at: '1' }];
+    return m.prevCursor(pg, null, 2) === undefined &&
+      m.prevCursor(pg.slice(0, 1), { at: 'z', id: 'z', newer: true }, 2) === undefined &&
+      same(m.prevCursor(pg, { at: 'z', id: 'z', newer: true }, 2), { at: '2', id: 'b', newer: true }) &&
+      /* trang đến bằng con trỏ "cũ hơn" (đầu đã rời bộ nhớ) dù về thiếu vẫn có trang trước */
+      same(m.prevCursor(pg.slice(0, 1), { at: 'z', id: 'z' }, 2), { at: '2', id: 'b', newer: true });
+  }],
+  ['"mới hơn" là gương của "cũ hơn", trong ngoặc kép', (m) => m.newerThan({ at: 't.1', id: 'x' }) === 'created_at.gt."t.1",and(created_at.eq."t.1",id.gt."x")'],
+  ['gần đỉnh: dưới 800 điểm là tải; từ 800 trở đi thì chưa', (m) => m.nearStart(0) && m.nearStart(799) && !m.nearStart(800)],
   ['nối trang giữ thứ tự trang', (m) => same(m.flatPages([['a', 'b'], ['c']]), ['a', 'b', 'c'])],
   ['mapPosts: mảng, trang, và thứ không phải danh sách bài đều không ném', (m) => {
     const f = (p) => (p && p.id === 'x' ? { ...p, v: 1 } : p);
@@ -117,6 +155,10 @@ const MUTANTS = [
   ['trang đầy cũng coi là hết', /if \(page\.length < size\)\s*return undefined;/, 'if (page.length <= size) return undefined;'],
   ['mapPosts để yên trang `{ posts, next }`', /return q && Array\.isArray\(q\.posts\) \? \{ \.\.\.pg, posts: q\.posts\.map\(fn\) \} : pg;/, 'return pg;'],
   ['mapPosts không hiểu dạng trang', /if \(old && typeof old === 'object' && Array\.isArray\(old\.pages\)\) \{/, 'if (false) {'],
+  ['trang trước lấy bài CUỐI trang đầu (#171) — chồng lại chính trang ấy', /const top = first\[0\];/, 'const top = first[first.length - 1];'],
+  ['trang "mới hơn" về thiếu vẫn hỏi tiếp — không bao giờ dừng ở đầu feed', /if \(param\.newer && first\.length < size\)\s*return undefined;/, ''],
+  ['trang đầu thật vẫn có trang trước', /if \(!param\)\s*return undefined;/, ''],
+  ['"mới hơn" bằng gte — lặp lại bài neo', /created_at\.gt\.\\?"\$\{c\.at\}\\?",and\(created_at\.eq\.\\?"\$\{c\.at\}\\?",\$\{idCol\}\.gt\./, 'created_at.gte."${c.at}",and(created_at.eq."${c.at}",${idCol}.gte.'],
   ['gần đáy không có khoảng đệm', /y \+ viewport >= content - exports\.NEAR_END/, 'y + viewport >= content'],
 ];
 try {
@@ -159,11 +201,16 @@ const user = readFileSync(path.join(NATIVE, 'src/app/community-user.tsx'), 'utf8
 const WIRING = [];
 for (const [name, key] of [['useCommunityFeed', "['community_feed', user?.id, tab, 'pages']"], ['useCommunityUserPosts', "['community_user_posts', user?.id, userId, kind, 'pages']"]]) {
   const b = body(name);
+  const feed = name === 'useCommunityFeed';
   WIRING.push(
     [b, /useInfiniteQuery\(/, `${name} không đọc theo trang — bài thứ ${31} trở đi không bao giờ hiện`],
     [b, new RegExp(key.replace(/[[\]?.()]/g, '\\$&')), `${name}: khoá phải là ${key} — khoá cũ trên đĩa mang hình dạng mảng, hydrate vào truy vấn theo trang là ném`],
-    [b, /\.order\('created_at', \{ ascending: false \}\)\s*\.order\('id', \{ ascending: false \}\)/, `${name} không sắp theo thứ tự toàn phần (created_at, id) — con trỏ keyset hở/trùng ở bài cùng mốc`],
-    [b, /if \(pageParam\) q = q\.or\(olderThan\(pageParam\)\)/, `${name} không áp con trỏ — trang hai là trang đầu`],
+    [b, feed
+      ? /const up = !!pageParam\?\.newer;[\s\S]*\.order\('created_at', \{ ascending: up \}\)\s*\.order\('id', \{ ascending: up \}\)/
+      : /\.order\('created_at', \{ ascending: false \}\)\s*\.order\('id', \{ ascending: false \}\)/, `${name} không sắp theo thứ tự toàn phần (created_at, id) — con trỏ keyset hở/trùng ở bài cùng mốc`],
+    [b, feed
+      ? /if \(pageParam\) q = q\.or\(up \? newerThan\(pageParam\) : olderThan\(pageParam\)\)/
+      : /if \(pageParam\) q = q\.or\(olderThan\(pageParam\)\)/, `${name} không áp con trỏ — trang hai là trang đầu`],
     [b, /getNextPageParam: \(last: FeedPost\[\]\) => nextCursor\(last, PAGE\)/, `${name} không lấy con trỏ từ trang vừa về`],
     [b, /select: \(d\) => flatPages\(d\.pages\)/, `${name} không trả một mảng bài — màn feed và useFeedHold đọc mảng`],
   );
@@ -175,12 +222,27 @@ WIRING.push(
 );
 for (const [src, file] of [[tab, 'community.tsx'], [user, 'community-user.tsx']]) {
   WIRING.push(
-    [src, /useLoadMore\((feed|posts)\)/, `${file} không tải trang kế khi gần đáy`],
-    [src, /<FeedMore q=\{(feed|posts)\} \/>/, `${file} không có đuôi feed (đang tải · hỏng · đã hết)`],
+    [src, /useLoadMore\((win\.q|posts)\)/, `${file} không tải trang kế khi gần đáy`],
+    [src, /<FeedMore q=\{(win\.q|posts)\} \/>/, `${file} không có đuôi feed (đang tải · hỏng · đã hết)`],
     [src, /isError && !(feed|posts)\.isFetchNextPageError/, `${file}: trang kế hỏng thì thẻ lỗi thay CẢ feed đã tải`],
   );
 }
-WIRING.push([tab, /hold\.onScroll\(e\);\s*more\(e\);/, 'community.tsx: onScroll phải gọi cả viên bài mới lẫn tải thêm']);
+WIRING.push([tab, /hold\.onScroll\(e\);\s*more\(e\);\s*win\.onScroll\(e\);/, 'community.tsx: onScroll phải gọi viên bài mới, tải thêm VÀ tải ngược lên (#171)']);
+
+/* #171: trần 5 trang, nên phải đi được hai chiều. */
+const fb = body('useCommunityFeed');
+WIRING.push(
+  [fb, /maxPages: MAX_PAGES/, 'useCommunityFeed không có trần trang (#171) — làm mới sau 20 trang là 20 chặng nối tiếp'],
+  [hook, /const MAX_PAGES = 5;/, 'trần trang của feed phải là 5 (#171, chủ dự án chọn (a))'],
+  [fb, /getPreviousPageParam: \(first: FeedPost\[\], _all, firstParam\) => prevCursor\(first, firstParam, PAGE\)/, 'useCommunityFeed có trần trang mà không có trang TRƯỚC — trang đã rời bộ nhớ không bao giờ về lại'],
+  [fb, /hydrate\(up \? rows\.reverse\(\) : rows, me\)/, 'trang "mới hơn" hỏi tăng dần mà không đảo lại — feed sai thứ tự'],
+  [tab, /const win = usePageWindow\(feed, hold\.posts\.map\(\(p\) => p\.id\)\)/, 'community.tsx không có cửa sổ trang (#171): không tải ngược lên, không giữ chỗ khi cửa sổ trượt'],
+  [tab, /useLoadMore\(win\.q\)/, 'community.tsx gọi trang kế KHÔNG qua cửa sổ — trang đầu bị bỏ thì màn nhảy xuống cả trang'],
+  [tab, /<FeedMore q=\{win\.q\} \/>/, 'đuôi feed (nút xem bài cũ hơn / thử lại) gọi trang kế KHÔNG qua cửa sổ'],
+  [tab, /<View ref=\{win\.list\}[^>]*>\s*<FeedNewer q=\{win\.q\} \/>/, 'community.tsx không có đầu feed (đang tải · hỏng · xem bài mới hơn) trong danh sách đo điểm neo'],
+  [tab, /<View key=\{p\.id\} ref=\{win\.item\(p\.id\)\} collapsable=\{false\}>/, 'community.tsx: mỗi bài phải có View đo được (ref, không bị làm phẳng) để giữ chỗ khi cửa sổ trượt'],
+  [tab, /feed\.isError && !feed\.isFetchNextPageError && !feed\.isFetchPreviousPageError/, 'community.tsx: trang TRƯỚC hỏng thì thẻ lỗi thay CẢ feed đã tải (#171)'],
+);
 
 /* #170: bình luận theo trang, MỚI NHẤT trước. Trước đây `created_at asc` rồi cắt
    200 — ở bài hơn 200 bình luận, câu mới nhất (kể cả câu vừa gửi) không hiện. */

@@ -85,6 +85,59 @@ export function FeedMore({ q }: { q: Pages }) {
   );
 }
 
+/**
+ * Đầu feed khi trang đầu đang giữ KHÔNG phải đầu thật (#171: feed có trần 5
+ * trang, trang trên cùng rời bộ nhớ khi cuộn sâu). Thường thì trang ấy đã tự
+ * tải lại từ 800 điểm trước khi tới đây (`useLoadNewer`) và người ta không bao
+ * giờ thấy hàng này; nó ở đây cho lúc trang ấy HỎNG (không tự thử lại ở mỗi sự
+ * kiện cuộn, như đuôi feed) và cho VoiceOver.
+ *
+ * Cùng một chiều cao ở mọi trạng thái: hàng này nằm TRÊN điểm neo giữ chỗ, nên
+ * nó đổi cao lúc đang tải là cả feed nhảy theo.
+ */
+export function FeedNewer({ q }: { q: Pick<Prev, 'hasPreviousPage' | 'isFetchingPreviousPage' | 'isFetchPreviousPageError' | 'fetchPreviousPage'> }) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const i18n = useI18n();
+  if (!q.hasPreviousPage) return null;
+  const newer = () => {
+    Haptics.selection();
+    q.fetchPreviousPage();
+  };
+  if (q.isFetchingPreviousPage) {
+    return (
+      <View style={[styles.row, styles.fixed]} accessible accessibilityLabel={i18n.nCmNewerLoading}>
+        <ActivityIndicator color={c.mutedForeground} />
+      </View>
+    );
+  }
+  if (q.isFetchPreviousPageError) {
+    return (
+      <View style={[styles.row, styles.fixed]}>
+        <Text style={[styles.note, styles.noteOne]} numberOfLines={1}>{i18n.nCmNewerFailed}</Text>
+        <PressScale accessibilityRole="button" accessibilityLabel={i18n.nRetry} hitSlop={4} onPress={newer} style={styles.btn}>
+          <Icon icon={RotateCw} size={14} color={c.foreground} />
+          <Text style={styles.btnText}>{i18n.nRetry}</Text>
+        </PressScale>
+      </View>
+    );
+  }
+  return (
+    <View style={[styles.row, styles.fixed]}>
+      <PressScale accessibilityRole="button" hitSlop={4} onPress={newer} style={styles.btn}>
+        <Text style={styles.btnText}>{i18n.nCmNewer}</Text>
+      </PressScale>
+    </View>
+  );
+}
+
+type Prev = {
+  hasPreviousPage: boolean;
+  isFetchingPreviousPage: boolean;
+  isFetchPreviousPageError: boolean;
+  fetchPreviousPage: () => unknown;
+};
+
 const stylesFor = makeStyles((c, m) => ({
   row: {
     flexDirection: 'row',
@@ -95,6 +148,10 @@ const stylesFor = makeStyles((c, m) => ({
     paddingVertical: spacing.sm,
   },
   note: { ...type.footnote, color: c.mutedForeground },
+  /* Đầu feed (`FeedNewer`) cao CỐ ĐỊNH, chữ một dòng: nó nằm trên điểm neo giữ
+     chỗ, và một hàng đổi cao giữa ba trạng thái là cả feed nhảy theo. */
+  fixed: { height: 56, minHeight: 56, paddingVertical: 0 },
+  noteOne: { flexShrink: 1 },
   btn: {
     flexDirection: 'row',
     alignItems: 'center',

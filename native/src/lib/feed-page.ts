@@ -23,12 +23,19 @@
 export type FeedCursor = { at: string; id: string };
 
 /**
+ * Con trỏ của một trang trong feed có TRẦN số trang (#171): ngoài "cũ hơn"
+ * (trang kế, cuộn xuống) còn có "mới hơn" (trang trước, cuộn ngược lên tới chỗ
+ * đã bị bỏ khỏi bộ nhớ). `null` là trang ĐẦU THẬT của feed.
+ */
+export type FeedParam = FeedCursor & { newer?: true };
+
+/**
  * Con trỏ của trang kế tiếp, hoặc `undefined` khi đã hết feed.
  *
  * Trang về ít hơn một trang đầy = server không còn gì cũ hơn. Trang về ĐẦY thì
  * có thể còn, có thể không — một lần hỏi nữa trả mảng rỗng và dừng ở đấy.
  */
-export function nextCursor(page: readonly { created_at: string; id: string }[], size: number): FeedCursor | undefined {
+export function nextCursor(page: readonly { created_at: string; id: string }[], size: number): FeedParam | undefined {
   if (page.length < size) return undefined;
   const last = page[page.length - 1];
   return { at: last.created_at, id: last.id };
@@ -45,6 +52,39 @@ export function nextCursor(page: readonly { created_at: string; id: string }[], 
 export function olderThan(c: FeedCursor, idCol = 'id'): string {
   return `created_at.lt."${c.at}",and(created_at.eq."${c.at}",${idCol}.lt."${c.id}")`;
 }
+
+/**
+ * Con trỏ của trang TRƯỚC — trang mới hơn trang đầu đang giữ — hoặc
+ * `undefined` khi trang đầu đang giữ đã là đầu feed.
+ *
+ *   · trang đầu tải không con trỏ (`null`) là đầu thật;
+ *   · trang đầu là một trang "mới hơn" về THIẾU: không còn gì mới hơn nó lúc
+ *     hỏi, nên nó cũng là đầu. (Bài đăng sau đó vẫn tới: làm mới tải lại chính
+ *     trang ấy theo con trỏ của nó, và khi nó đầy trở lại thì lại có trang trước.)
+ *   · còn lại: những bài mới hơn bài ĐẦU của trang đầu.
+ */
+export function prevCursor(
+  first: readonly { created_at: string; id: string }[],
+  param: FeedParam | null,
+  size: number,
+): FeedParam | undefined {
+  if (!param) return undefined;
+  if (param.newer && first.length < size) return undefined;
+  const top = first[0];
+  return top ? { at: top.created_at, id: top.id, newer: true } : undefined;
+}
+
+/**
+ * Bộ lọc "mới hơn con trỏ" — gương của `olderThan`. Đi kèm thứ tự TĂNG
+ * `(created_at asc, id asc)` để `limit` lấy những bài NGAY trên con trỏ (không
+ * phải những bài mới nhất của feed), rồi đảo lại cho đúng thứ tự feed.
+ */
+export function newerThan(c: FeedCursor, idCol = 'id'): string {
+  return `created_at.gt."${c.at}",and(created_at.eq."${c.at}",${idCol}.gt."${c.id}")`;
+}
+
+/** Gần đỉnh chưa — gương của `nearEnd`, cùng khoảng đệm. */
+export const nearStart = (y: number) => y < NEAR_END;
 
 /**
  * Gần đáy chưa — tải trang kế TRƯỚC khi người ta chạm đáy, để lần cuộn liền

@@ -1,4 +1,6 @@
+import { useCallback } from 'react';
 import { type InfiniteData, useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { useAppSettings } from '@/hooks/use-app-settings';
 import { haptics as Haptics } from '@/lib/haptics';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +10,7 @@ import { useAuth } from './use-auth';
 import { useOnlineMutation } from './use-online-mutation';
 import type { TemplateExercise } from './use-library';
 import { now } from '@/lib/offline-class';
-import { type FeedCursor, flatPages, mapPosts, nextCursor, olderThan } from '@/lib/feed-page';
+import { type FeedCursor, type FeedParam, flatPages, mapPosts, newerThan, nextCursor, olderThan, prevCursor } from '@/lib/feed-page';
 import { mergeCommentPages, missingRoots } from '@/lib/comment-thread';
 import type { CommunityArt } from '@/lib/community-art';
 
@@ -305,9 +307,19 @@ export function useSaveCommunityProfile() {
   có follows: 10 / 20 / 30, 78 / 244 / 405 ms. Sau: 11 / 21 / 31, một follows
   cho cả lượt, 115 / 247 / 357 ms. Máy chủ giả trả gần như tức thì, nên số ms ở
   đây chủ yếu là việc của client; trên mạng thật mỗi chặng bớt được là một
-  vòng khứ hồi. Phần còn lại của #171 (trần số trang hay không) là quyết định
-  sản phẩm, chưa làm.
+  vòng khứ hồi.
+
+  TRẦN 5 trang (#171, chủ dự án chọn (a), 02/10). Làm mới tải lại mọi trang
+  đang giữ, nối tiếp; không trần thì người đã cuộn 20 trang trả 20 chặng × 5
+  request cho mỗi lần app trở lại. `maxPages` giữ 5 trang gần chỗ đang đọc nhất:
+  cuộn xuống trang thứ 6 thì trang ĐẦU rời bộ nhớ, nên đi ngược lên phải tải lại
+  được nó — trang "mới hơn" (`prevCursor`/`newerThan` trong `lib/feed-page.ts`),
+  hỏi theo thứ tự TĂNG rồi đảo lại. Màn feed tải nó khi tới gần đỉnh và giữ chỗ
+  đang đọc khi nó chèn lên trên (`community.tsx`). 5 trang = 150 bài: hơn hẳn
+  những gì một lần lướt nhìn lại, và lần làm mới tệ nhất là 5 chặng như số đo
+  "5 trang" ở trên, không hơn.
 */
+const MAX_PAGES = 5;
 const followeesKey = (me: string | undefined) => ['community_followees', me] as const;
 
 function followees(qc: QueryClient, me: string) {
@@ -331,18 +343,22 @@ export function useCommunityFeed(tab: CommunityTab) {
   return useInfiniteQuery({
     queryKey: ['community_feed', user?.id, tab, 'pages'],
     enabled: !!user,
-    initialPageParam: null as FeedCursor | null,
+    initialPageParam: null as FeedParam | null,
     getNextPageParam: (last: FeedPost[]) => nextCursor(last, PAGE) ?? null,
+    getPreviousPageParam: (first: FeedPost[], _all, firstParam) => prevCursor(first, firstParam, PAGE) ?? null,
+    maxPages: MAX_PAGES,
     select: (d) => flatPages(d.pages),
     queryFn: async ({ pageParam }) => {
       const me = user!.id;
+      /* Trang "mới hơn" hỏi TĂNG dần để `limit` lấy những bài ngay trên con trỏ. */
+      const up = !!pageParam?.newer;
       let q = supabase
         .from('community_posts')
         .select(POST_COLS)
-        .order('created_at', { ascending: false })
-        .order('id', { ascending: false })
+        .order('created_at', { ascending: up })
+        .order('id', { ascending: up })
         .limit(PAGE);
-      if (pageParam) q = q.or(olderThan(pageParam));
+      if (pageParam) q = q.or(up ? newerThan(pageParam) : olderThan(pageParam));
       if (tab === 'following') {
         /* Bài của chính mình có mặt ở "Đang theo dõi", như mọi feed theo dõi:
            vừa chia sẻ xong mà quay lại không thấy bài mình là một cú hẫng. */
@@ -350,7 +366,8 @@ export function useCommunityFeed(tab: CommunityTab) {
       }
       const { data, error } = await q;
       if (error) throw error;
-      return hydrate((data ?? []) as PostRow[], me);
+      const rows = (data ?? []) as PostRow[];
+      return hydrate(up ? rows.reverse() : rows, me);
     },
   });
 }
@@ -1065,6 +1082,30 @@ export interface CommunityChallenge {
   joined: boolean;
   progress: number;
   claimed: boolean;
+  /** Bản tiếng Anh (#172) — NULL khi thử thách chưa được dịch. */
+  title_en?: string | null;
+  description_en?: string | null;
+}
+
+/*
+  Thử thách có hai thứ tiếng ở hai cột (#172). Chọn ở ĐÂY, trong `select` của
+  hai hook đọc thử thách, chứ không ở từng màn: hero, trang thử thách, hộp thư
+  ("You reached …") và câu toast sau khi lưu buổi tập (`useWorkoutShareInvite`
+  đọc `refetch().data`, tức dữ liệu ĐÃ qua `select`) đều đọc `title`. Cache
+  giữ hàng gốc với cả hai cột, nên đổi ngôn ngữ không cần đọc lại.
+
+  Tiếng Anh mà chưa dịch → giữ bản gốc: một thử thách mới thêm từ dashboard
+  vẫn hiện được.
+*/
+type Bilingual = { title: string; description: string; title_en?: string | null; description_en?: string | null };
+
+export function localizeChallenge<T extends Bilingual>(row: T, lang: string): T {
+  if (lang !== 'en') return row;
+  return {
+    ...row,
+    title: row.title_en?.trim() ? row.title_en : row.title,
+    description: row.description_en?.trim() ? row.description_en : row.description,
+  };
 }
 
 /**
@@ -1077,9 +1118,12 @@ const utcOffsetMin = () => -new Date().getTimezoneOffset();
 
 export function useChallenges() {
   const { user } = useAuth();
+  const { lang } = useAppSettings();
+  const select = useCallback((rows: CommunityChallenge[]) => rows.map((r) => localizeChallenge(r, lang)), [lang]);
   return useQuery({
     queryKey: ['community_challenges', user?.id],
     enabled: !!user,
+    select,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('community_challenges_overview', { p_offset_min: utcOffsetMin() });
       if (error) throw error;
@@ -1099,6 +1143,8 @@ export interface ChallengeHistoryItem {
   /** Số xu ĐÃ VÀO SỔ khi nhận — không phải `reward_coins` hiện tại. */
   coins: number;
   claimed_at: string;
+  title_en?: string | null;
+  description_en?: string | null;
 }
 
 /**
@@ -1110,9 +1156,12 @@ export interface ChallengeHistoryItem {
  */
 export function useChallengeHistory(enabled = true) {
   const { user } = useAuth();
+  const { lang } = useAppSettings();
+  const select = useCallback((rows: ChallengeHistoryItem[]) => rows.map((r) => localizeChallenge(r, lang)), [lang]);
   return useQuery({
     queryKey: ['community_challenges', user?.id, 'history'],
     enabled: !!user && enabled,
+    select,
     queryFn: async () => {
       const { data, error } = await supabase.rpc('community_challenge_history');
       if (error) throw error;

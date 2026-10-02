@@ -6,7 +6,7 @@ import { CommunityAvatar } from '@/components/ascnd/community-avatar';
 import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
-import { FeedMore, useLoadMore } from '@/components/ascnd/feed-more';
+import { FeedMore, FeedNewer, useLoadMore } from '@/components/ascnd/feed-more';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { NewPostsPill } from '@/components/ascnd/new-posts-pill';
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -20,6 +20,7 @@ import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { type CommunityTab, useChallengeHistory, useChallenges, useCommunityFeed, useInbox, useMyCommunityProfile } from '@/hooks/use-community';
 import { useFeedHold } from '@/hooks/use-feed-hold';
+import { usePageWindow } from '@/hooks/use-page-window';
 import { usePalette } from '@/hooks/use-palette';
 import { pendingClaims } from '@/lib/challenge-reminders';
 import { localDateStr } from '@/lib/local-date';
@@ -61,8 +62,12 @@ export default function CommunityScreen() {
      "N bài mới", như X, thay vì chèn lên và đẩy bài đang đọc khỏi ngón tay
      (#160) — xem `lib/feed-hold.ts`. */
   const hold = useFeedHold(tab, feed.data);
+  /* Feed giữ tối đa 5 trang (#171) — một cửa sổ trượt: cuộn ngược lên tới chỗ
+     trang trên cùng đã rời bộ nhớ thì tải lại nó, và mỗi lần cửa sổ trượt (chèn
+     trên, bỏ trên) bài đang đọc đứng yên. MỌI lối gọi trang đi qua `win.q`. */
+  const win = usePageWindow(feed, hold.posts.map((p) => p.id));
   /* Trang kế tải khi tới gần đáy (#20). Cùng một `onScroll` với viên bài mới. */
-  const more = useLoadMore(feed);
+  const more = useLoadMore(win.q);
   const challenges = useChallenges();
   const noHero = tab === 'discover' && !!challenges.data && !featuredChallenge(challenges.data);
   const history = useChallengeHistory(noHero);
@@ -84,6 +89,7 @@ export default function CommunityScreen() {
       onScroll={(e) => {
         hold.onScroll(e);
         more(e);
+        win.onScroll(e);
       }}
       overlay={hold.held.length ? <NewPostsPill posts={hold.held} onPress={hold.release} /> : null}
       title={i18n.nCommunityTitle}
@@ -168,8 +174,9 @@ export default function CommunityScreen() {
 
       <SegmentPanel segment={tab} order={tabs.map((t) => t.key)}>
         {/* Trang KẾ hỏng thì bài đã có vẫn ở đó — đuôi feed nói ra và có nút
-            thử lại, không thay cả feed bằng thẻ lỗi (#20). */}
-        {feed.isError && !feed.isFetchNextPageError ? (
+            thử lại, không thay cả feed bằng thẻ lỗi (#20). Trang TRƯỚC (#171)
+            cũng thế, ở đầu feed. */}
+        {feed.isError && !feed.isFetchNextPageError && !feed.isFetchPreviousPageError ? (
           <LoadFailed i18n={i18n} onRetry={() => feed.refetch()} />
         ) : feed.isPending ? (
           <>
@@ -196,11 +203,14 @@ export default function CommunityScreen() {
             )}
           </GlassCard>
         ) : (
-          <View style={styles.list}>
+          <View ref={win.list} style={styles.list} collapsable={false}>
+            <FeedNewer q={win.q} />
             {hold.posts.map((p) => (
-              <PostCard key={p.id} post={p} />
+              <View key={p.id} ref={win.item(p.id)} collapsable={false}>
+                <PostCard post={p} />
+              </View>
             ))}
-            <FeedMore q={feed} />
+            <FeedMore q={win.q} />
           </View>
         )}
       </SegmentPanel>

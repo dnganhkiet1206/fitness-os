@@ -23,6 +23,8 @@ FRM116 = '20261001160000_community_find_recipes_one_fold'
 SPM = 'community_search_unaccent'
 SPM119 = '20261001170000_community_search_unaccent_one_fold'
 SPM150 = '20261001200000_community_search_unaccent_folded_column'
+CCM = '20261005120000_community_comment_count_visible'
+ENM = '20261005130000_community_challenges_en'
 CASES = [
   # ── hồ sơ ──
   dict(suite=F, id='1', mig=FM, how='trigger không gạt is_official khi TẠO',
@@ -76,8 +78,11 @@ CASES = [
        old='CREATE POLICY "Authors delete their own posts"',
        new='CREATE POLICY "x_open_update" ON public.community_posts FOR UPDATE TO authenticated USING (true) WITH CHECK (true);\nCREATE POLICY "Authors delete their own posts"',
        expect='21 người xem sửa'),
-  dict(suite=F, id='22', mig=FM, how='bỏ trigger đếm bình luận',
-       old='CREATE TRIGGER community_comments_count\n  AFTER INSERT OR DELETE ON public.community_comments\n  FOR EACH ROW EXECUTE FUNCTION public.community_count_bump();',
+  # #175: trigger đếm bình luận được migration `…_comment_count_visible` gỡ rồi
+  # tạo lại trên hàm riêng — phá bản ở foundation thì bản mới vẫn đếm, ca không
+  # đỏ vì luật. Nên ca phá đúng trigger đang sống.
+  dict(suite=F, id='22', mig=CCM, how='bỏ trigger đếm bình luận',
+       old='CREATE TRIGGER community_comments_count\n  AFTER INSERT OR DELETE OR UPDATE OF hidden ON public.community_comments\n  FOR EACH ROW EXECUTE FUNCTION public.community_comment_count_bump();',
        new='', expect='22 bộ đếm'),
   # ── chặn ──
   dict(suite=F, id='23', mig=FM, how='policy đọc bài bỏ vế chặn',
@@ -387,6 +392,31 @@ CASES += [
   dict(suite='search_shared', id='SC2', mig=SPM, how="tìm người không thoát '_', đo bằng tệp ca chung",
        old="  v_pat := replace(replace(replace(v_q, '\\', '\\\\'), '%', '\\%'), '_', '\\_');", new="  v_pat := replace(replace(v_q, '\\', '\\\\'), '%', '\\%');",
        expect='SC2 '),
+  # ── #172: thử thách có bản tiếng Anh ──
+  dict(suite='challenges_en', id='EN1', mig=ENM, how='tổng quan trả NULL thay cho title_en',
+       old='    me.claimed_at IS NOT NULL,\n    c.title_en, c.description_en', new='    me.claimed_at IS NOT NULL,\n    NULL::text, c.description_en', expect='EN1 '),
+  dict(suite='challenges_en', id='EN2', mig=ENM, how='thử thách chưa dịch trả bản gốc thay vì NULL',
+       old='    me.claimed_at IS NOT NULL,\n    c.title_en, c.description_en', new='    me.claimed_at IS NOT NULL,\n    coalesce(c.title_en, c.title), coalesce(c.description_en, c.description)', expect='EN2 '),
+  dict(suite='challenges_en', id='EN3', mig=ENM, how='lịch sử trả NULL thay cho title_en',
+       old='         coalesce(t.amount, 0)::integer, m.claimed_at,\n         c.title_en, c.description_en', new='         coalesce(t.amount, 0)::integer, m.claimed_at,\n         NULL::text, c.description_en', expect='EN3 '),
+  dict(suite='challenges_en', id='EN4', mig=ENM, how='CHECK title_en không btrim',
+       old="CHECK (title_en IS NULL OR char_length(btrim(title_en)) BETWEEN 1 AND 60)", new="CHECK (title_en IS NULL OR char_length(title_en) BETWEEN 1 AND 60)", expect='EN4 '),
+  dict(suite='challenges_en', id='EN5', mig=ENM, how='tạo lại tổng quan mà quên REVOKE khỏi PUBLIC (anon gọi được)',
+       old='REVOKE EXECUTE ON FUNCTION public.community_challenges_overview(integer) FROM PUBLIC, anon;', new='', expect='EN5 '),
+  # ── #175: comment_count chỉ đếm bình luận đang hiện ──
+  dict(suite='comment_count', id='CC1', mig=CCM, how='ẩn/bỏ ẩn không đổi bộ đếm',
+       old='      d := CASE WHEN NEW.hidden THEN -1 ELSE 1 END;', new='      d := 0;', expect='CC1 '),
+  dict(suite='comment_count', id='CC2', mig=CCM, how='xoá bình luận đã ẩn vẫn trừ (trừ hai lần)',
+       old='    IF NOT OLD.hidden THEN d := -1; END IF;', new='    d := -1;', expect='CC2 '),
+  dict(suite='comment_count', id='CC3', mig=CCM, how='bỏ ẩn không cộng lại',
+       old='      d := CASE WHEN NEW.hidden THEN -1 ELSE 1 END;', new='      d := CASE WHEN NEW.hidden THEN -1 ELSE 0 END;', expect='CC3 '),
+  dict(suite='comment_count', id='CC4', mig=CCM, how='mọi UPDATE đều đổi số, kể cả không đổi hidden',
+       old='    IF OLD.hidden IS DISTINCT FROM NEW.hidden THEN', new='    IF true THEN', expect='CC4 '),
+  dict(suite='comment_count', id='CC5', mig=CCM, how='xoá bình luận đang hiện không trừ',
+       old='    IF NOT OLD.hidden THEN d := -1; END IF;', new='    IF false THEN d := -1; END IF;', expect='CC5 '),
+  dict(suite='comment_count', id='CC6', mig=CCM, how='migration làm mất trigger đếm thích',
+       old='REVOKE ALL ON FUNCTION public.community_comment_count_bump() FROM PUBLIC, anon, authenticated;',
+       new='REVOKE ALL ON FUNCTION public.community_comment_count_bump() FROM PUBLIC, anon, authenticated;\nDROP TRIGGER community_likes_count ON public.community_likes;', expect='CC6 '),
   dict(suite='search_shared', id='SC3', mig='20260930220000_community_find_posts', how='tìm bài viết bỏ bộ lọc loại — bài công thức lọt vào (#192), đo bằng tệp ca chung',
        old="  WHERE p.kind IN ('workout', 'progress')", new="  WHERE true",
        expect='SC3 '),

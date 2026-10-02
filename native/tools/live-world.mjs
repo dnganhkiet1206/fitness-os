@@ -875,8 +875,12 @@ export const FIXTURES = {
      thử thách sắp mở mà UID chưa tham gia. */
   community_challenges: [
     {
+      /* #172: có bản tiếng Anh; ba thử thách dưới cố ý CHƯA dịch — app tiếng Anh
+         phải dùng bản gốc cho chúng, không để trống. */
       id: 'ch000000-0000-4000-8000-000000000001', title: '30 ngày kỷ luật',
       description: 'Tập ít nhất một buổi mỗi ngày. Ngày nào có buổi tập đã ghi thì được tính.',
+      title_en: '30 Days of Consistency',
+      description_en: 'Train at least once a day. Any day with a logged session counts.',
       kind: 'workout_days', target: 30, starts_on: dayStr(20), ends_on: dayStr(-9), reward_coins: 300, created_at: day(25),
     },
     /* #60: hết hạn 3 ngày trước, UID ĐÃ ĐẠT mà CHƯA nhận — thứ lời nhắc trong
