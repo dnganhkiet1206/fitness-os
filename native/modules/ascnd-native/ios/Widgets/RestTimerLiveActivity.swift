@@ -190,9 +190,15 @@ private struct RestRing: View {
 /// background, lock screen, and with the app killed. Zero bridge traffic;
 /// endDate stays absolute (TypeScript owns it, Swift only renders).
 ///
-/// The `.frame(width:)` + center alignment pin the digits to the ring's
-/// centre: the timer view's intrinsic box is opaque to us, so we constrain
-/// the box we CAN control and centre within it.
+/// LAYOUT WARNING — read before changing the frame: the timer view reports
+/// a WIDE intrinsic box (~130pt, measured) but paints its glyphs at the
+/// box's LEADING edge. Unconstrained, the digits sat 42pt left of the ring
+/// centre on-device (01/10/2026, derived: box 130 − glyphs 46 = 84 / 2).
+/// The `.frame(width:)` below constrains the box to the digits' true width
+/// ("m:ss" is always 4 chars with monospaced digits, so width ≈ 2.1×font),
+/// which makes the leading edge irrelevant and centres the digits.
+/// Do NOT "fix" this by widening the frame to the ring size — that
+/// reintroduces the 42pt shift.
 @available(iOS 16.1, *)
 private struct TimerDigits: View {
   let endDate: Date
@@ -205,6 +211,7 @@ private struct TimerDigits: View {
       .font(Island.timerFont(size: fontSize, weight: weight))
       .foregroundStyle(.white)
       .multilineTextAlignment(.center)
+      .frame(width: fontSize * 2.1)
   }
 }
 
@@ -231,10 +238,9 @@ private struct RestRingTimer: View {
     }
     .overlay {
       VStack(spacing: 1) {
+        // TimerDigits constrains its own box (see its LAYOUT WARNING);
+        // the overlay centres that narrow box on the ring.
         TimerDigits(endDate: endDate, fontSize: fontSize, countsDown: countsDown)
-          // Constrain the opaque timer box to the ring and centre it:
-          // without this the digits can sit off-centre (seen 01/10/2026).
-          .frame(width: size, alignment: .center)
         if showTotal {
           Text("/ \(formatTotal(seconds: totalSeconds))")
             .font(.caption2)
