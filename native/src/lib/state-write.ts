@@ -74,6 +74,3 @@ export function useStateOverlay(): <V>(key: string) => { value: V } | undefined 
   useSyncExternalStore(writer.subscribe, writer.version, writer.version);
   return (key: string) => writer.pending(key) as never;
 }
-
-/** Cho bước cổng và chẩn đoán. */
-export const stateWriter = writer;
