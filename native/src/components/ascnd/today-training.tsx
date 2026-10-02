@@ -162,7 +162,7 @@ export function TodayTraining() {
               ) : day?.is_rest && !unknown ? (
                 <Icon icon={Moon} size={13} color={c.metricPurple} />
               ) : null}
-              <Text style={styles.sub} numberOfLines={1}>{sub}</Text>
+              <Text style={styles.sub} numberOfLines={2}>{sub}</Text>
             </View>
           ) : null}
         </View>
