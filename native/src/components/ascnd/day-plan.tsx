@@ -735,6 +735,19 @@ export function DayPlan({
     return () => sub.remove();
   }, [running]);
 
+  /*
+    The island must not outlive this screen. `resting` is component state:
+    if the screen unmounts mid-rest — back navigation, a day switch — the
+    in-app timer is gone with it, and a Live Activity left running would
+    count down a rest that no longer exists anywhere. Ending on unmount
+    keeps every surface on the same state (#198 follow-up).
+  */
+  useEffect(() => {
+    return () => {
+      restLiveActivityEnded();
+    };
+  }, []);
+
   const restOf = useCallback((row: SetRow) => rest[row.key] ?? row.plannedRest, [rest]);
 
   const addExercise = () => {

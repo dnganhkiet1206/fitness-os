@@ -289,6 +289,7 @@ const STEPS = [
   ['phân trang feed (#20)', 'node', ['tools/feed-page.mjs']],
   ['kéo để tải lại', 'node', ['tools/refreshable.mjs']],
   ['đồng hồ nghỉ', 'node', ['tools/rest-timer.mjs']],
+  ['live activity không mồ côi (#198)', 'node', ['tools/rest-live-activity.mjs']],
   ['trạng thái mạng', 'node', ['tools/net-status.mjs']],
   ['bóng khi tải', 'node', ['tools/skeleton.mjs']],
   ['bố cục Today', 'node', ['tools/widgets.mjs']],
