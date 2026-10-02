@@ -1,6 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
 
+import { createAsyncStore } from '@/lib/async-store';
 import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
 /**
@@ -39,43 +39,23 @@ const STORAGE_KEY = 'ascnd-weight-goal-kg';
 const MIN_KG = 30;
 const MAX_KG = 300;
 
-let goalState: number | null = null;
-const listeners = new Set<() => void>();
-let hydrated = false;
-
-function emit() {
-  listeners.forEach((l) => l());
-}
-
-async function hydrate() {
-  if (hydrated) return;
-  hydrated = true;
-  try {
-    const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    const n = stored == null ? NaN : Number(stored);
-    if (Number.isFinite(n) && n >= MIN_KG && n <= MAX_KG) {
-      goalState = n;
-      emit();
-    }
-  } catch {
-    // keep unset
-  }
-}
-
-function subscribe(cb: () => void) {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
+const store = createAsyncStore<number | null>({
+  storageKey: STORAGE_KEY,
+  initial: null,
+  parse: (stored) => {
+    const n = Number(stored);
+    return Number.isFinite(n) && n >= MIN_KG && n <= MAX_KG ? n : undefined;
+  },
+  // `null` clears the goal: the key is removed rather than storing a string
+  // that the next read would have to reject.
+  serialize: (value) => (value == null ? null : String(value)),
+});
 
 /* A target weight is about as personal as this app gets, and deleting the key
-   on sign-out left the number itself in `goalState` with `hydrated` set — so
+   on sign-out left the number itself in the store with `hydrated` set — so
    the line drawn across the next account's chart was the previous person's
    goal. See `lib/user-scoped-reset.ts`. */
-onUserScopedReset(() => {
-  goalState = null;
-  hydrated = false;
-  emit();
-});
+onUserScopedReset(() => store.reset());
 
 /**
  * `null` clears the goal; anything else is clamped and rounded to 0.01 kg.
@@ -87,21 +67,16 @@ onUserScopedReset(() => {
  */
 export function setWeightGoalKg(value: number | null) {
   if (value == null) {
-    goalState = null;
-    emit();
-    AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
+    store.set(null);
     return;
   }
-  const clamped = Math.round(Math.max(MIN_KG, Math.min(MAX_KG, value)) * 100) / 100;
-  goalState = clamped;
-  emit();
-  AsyncStorage.setItem(STORAGE_KEY, String(clamped)).catch(() => {});
+  store.set(Math.round(Math.max(MIN_KG, Math.min(MAX_KG, value)) * 100) / 100);
 }
 
 export function useWeightGoal() {
-  const goalKg = useSyncExternalStore(subscribe, () => goalState);
+  const goalKg = useSyncExternalStore(store.subscribe, store.get);
   useEffect(() => {
-    hydrate();
+    store.hydrate();
   }, []);
   /* Stable identity — see use-steps-goal. */
   return useMemo(() => ({ goalKg, setGoalKg: setWeightGoalKg }), [goalKg]);

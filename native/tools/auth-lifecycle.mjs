@@ -159,6 +159,12 @@ try {
       [
         'tsc',
         'src/lib/user-scoped-reset.ts',
+        /* The stores' shared machinery: tsc does not resolve `@/` without the
+           project tsconfig, so a dependency that only enters through an `@/`
+           import is never emitted — and the driver then fails on
+           `require("../lib/async-store")`. Listed explicitly so the real
+           module the stores run against exists. */
+        'src/lib/async-store.ts',
         ...STORES.map((s) => s.file),
         '--ignoreConfig',
         '--outDir',
@@ -330,6 +336,25 @@ try {
     }
     const owns = watched.filter((k) => src.includes(`'${k}'`) || src.includes(`"${k}"`));
     if (owns.length === 0) continue;
+
+    /* ── a store built by the shared factory latches its read by construction ──
+       `createAsyncStore` keeps the once-per-launch latch and the module state
+       in one place; the key travels in the options object rather than a
+       hand-written `let`/`hydrate` pair, so the hand-latch scanner below no
+       longer sees it. The reset rule is the same — a latch that never clears
+       means the next account never gets its own read — so the registration
+       check applies to the builder call instead of the hand-written pattern. */
+    if (/createAsyncStore\s*[<(]/.test(src)) {
+      checked++;
+      if (!/onUserScopedReset\s*\(/.test(src)) {
+        problems.push(
+          `${f}: dựng kho async cho ${owns.join(', ')} qua createAsyncStore — cổng đọc-một-lần nằm ` +
+            'trong factory nên bộ quét không còn thấy `let hydrated` viết tay, nhưng đăng ký reset ' +
+            'khi đăng xuất vẫn phải có ở file này — thiếu nó thì giá trị trong bộ nhớ sống sót sang tài khoản sau',
+        );
+      }
+      continue;
+    }
 
     /* A once-per-launch latch guarding a storage read. */
     const latches = [];

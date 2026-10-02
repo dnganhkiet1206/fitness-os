@@ -1,5 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
+
+import { createAsyncStore } from '@/lib/async-store';
 
 import type { VolumeUnit } from '@/lib/units';
 
@@ -25,43 +26,23 @@ function deviceDefault(): VolumeUnit {
   }
 }
 
-let state: VolumeUnit = deviceDefault();
-const listeners = new Set<() => void>();
-let hydrated = false;
+const store = createAsyncStore<VolumeUnit>({
+  storageKey: STORAGE_KEY,
+  initial: deviceDefault,
+  parse: (stored) => (stored === 'ml' || stored === 'oz' ? stored : undefined),
+});
 
-function emit() {
-  listeners.forEach((l) => l());
-}
-
-async function hydrate() {
-  if (hydrated) return;
-  hydrated = true;
-  try {
-    const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (stored === 'ml' || stored === 'oz') {
-      state = stored;
-      emit();
-    }
-  } catch {
-    // keep default
-  }
-}
-
-function subscribe(cb: () => void) {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
+/* No onUserScopedReset here: this is a device display preference, not a
+   person's data — it deliberately survives sign-out, unlike the two goals. */
 
 export function setVolumeUnit(unit: VolumeUnit) {
-  state = unit;
-  emit();
-  AsyncStorage.setItem(STORAGE_KEY, unit).catch(() => {});
+  store.set(unit);
 }
 
 export function useVolumeUnit(): { unit: VolumeUnit; setUnit: (u: VolumeUnit) => void } {
-  const unit = useSyncExternalStore(subscribe, () => state);
+  const unit = useSyncExternalStore(store.subscribe, store.get);
   useEffect(() => {
-    hydrate();
+    store.hydrate();
   }, []);
   /* Stable identity — see use-steps-goal. */
   return useMemo(() => ({ unit, setUnit: setVolumeUnit }), [unit]);
