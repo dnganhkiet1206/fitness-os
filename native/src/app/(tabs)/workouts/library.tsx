@@ -167,7 +167,11 @@ export default function WorkoutLibraryScreen() {
             ))}
           </View>
         ) : (
-          <EmptyState icon={Dumbbell} title={i18n.nNoWorkouts} />
+          <EmptyState
+            icon={Dumbbell}
+            title={i18n.nNoWorkouts}
+            action={{ label: i18n.nPlanNewWorkout, onPress: () => nav.push('/workout-builder') }}
+          />
         )}
       </View>
     </Screen>
