@@ -160,6 +160,32 @@ function kgPerDay(points: { t: number; kg: number }[]): number {
 const dayNumber = (iso: string) => Math.floor(Date.parse(`${iso}T00:00:00Z`) / 86_400_000);
 
 /**
+ * Strict calendar date in YYYY-MM-DD — not "anything Date.parse accepts".
+ *
+ * Two failure modes this closes. Garbage (`""`, `"abc"`) makes `dayNumber`
+ * NaN, and NaN slides through every guard below (`NaN < MIN_SPAN_DAYS` is
+ * false, a Set of NaNs has size 1… or 2 with one real value), so one bad
+ * string poisons `measured` instead of refusing. Rollover (`"2024-02-30"`,
+ * which `Date.parse` quietly reads as 2024-03-01) moves a weigh-in to a
+ * different day and bends the trend line — a calendar date that never existed
+ * is not evidence either. The round-trip check catches the second class.
+ *
+ * Weigh-ins with a date that is not a date are dropped by the same rule that
+ * already drops weigh-ins with a weight that is not a weight (`w.kg > 0`),
+ * so the existing `not-enough-weight` refusal — not NaN — is what survives.
+ */
+const isCalendarDate = (iso: string): boolean => {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+  const d = new Date(`${iso}T00:00:00Z`);
+  return (
+    !Number.isNaN(d.getTime()) &&
+    d.getUTCFullYear() === Number(iso.slice(0, 4)) &&
+    d.getUTCMonth() + 1 === Number(iso.slice(5, 7)) &&
+    d.getUTCDate() === Number(iso.slice(8, 10))
+  );
+};
+
+/**
  * Estimate expenditure from what was eaten and what the scale did.
  *
  * `intake` and `weights` are whatever the window holds; filtering, ordering and
@@ -173,7 +199,7 @@ export function adaptiveTDEE(intake: DayIntake[], weights: WeighIn[]): AdaptiveR
   if (days.length < MIN_LOGGED_DAYS) return { ok: false, reason: 'not-enough-intake' };
 
   const points = weights
-    .filter((w) => w.kg > 0)
+    .filter((w) => w.kg > 0 && isCalendarDate(w.date))
     .map((w) => ({ t: dayNumber(w.date), kg: w.kg }))
     .sort((a, b) => a.t - b.t);
   if (points.length < MIN_WEIGH_INS) return { ok: false, reason: 'not-enough-weight' };
