@@ -136,7 +136,6 @@ export const questRefKey = (dateStr: string, key: QuestKey) => `d:${dateStr}:${k
  * per week already, so the week is in the id rather than in the key.
  */
 export const weeklyRefKey = (challengeId: string | number) => `w:${challengeId}`;
-export const buyRefKey = (itemKey: string) => `buy:${itemKey}`;
 
 /**
  * What finishing a weekly challenge is worth.
