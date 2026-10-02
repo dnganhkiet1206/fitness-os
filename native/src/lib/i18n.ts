@@ -93,6 +93,7 @@ interface Translations {
   settingsThemeLight: string;
   settingsThemeDark: string;
   settingsThemeSystem: string;
+  nCxSettingsLanguage: string;
   settingsPersonalInfo: string;
   settingsName: string;
   settingsDob: string;
@@ -601,6 +602,7 @@ const vi: Translations = {
   settingsThemeLight: 'Sáng',
   settingsThemeDark: 'Tối',
   settingsThemeSystem: 'Hệ thống',
+  nCxSettingsLanguage: 'Ngôn ngữ',
   settingsPersonalInfo: 'Thông Tin Cá Nhân',
   settingsName: 'Tên',
   settingsDob: 'Ngày sinh',
@@ -1043,6 +1045,7 @@ const en: Translations = {
   settingsThemeLight: 'Light',
   settingsThemeDark: 'Dark',
   settingsThemeSystem: 'System',
+  nCxSettingsLanguage: 'Language',
   settingsPersonalInfo: 'Personal Info',
   settingsName: 'Name',
   settingsDob: 'Date of birth',
