@@ -899,6 +899,12 @@ const STEPS = [
     1270 key cũ chốt hiện trạng trong tools/i18n-shared-keys.json.
   */
   ['namespace i18n', 'node', ['tools/i18n-namespaces.mjs']],
+  /*
+    Ghim khoá phiên bản chiều cao widget (mirror cache-shape): đổi hình dạng
+    thứ được persist mà không bump STORAGE_KEY thì số cũ đội lốt số mới qua
+    cập nhật app.
+  */
+  ['phiên bản widget', 'node', ['tools/widget-height-version.mjs']],
 ];
 
 /*
