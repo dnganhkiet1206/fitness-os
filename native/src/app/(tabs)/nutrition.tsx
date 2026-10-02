@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
-import { ChevronRight, ClipboardList, Pencil, Pill, Plus, ScanBarcode, Search, ShoppingCart, Star, Utensils } from 'lucide-react-native';
+import { ChevronRight, ClipboardList, Pill, Plus, ScanBarcode, Search, ShoppingCart, Utensils } from 'lucide-react-native';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -463,50 +463,8 @@ export default function NutritionScreen() {
     },
   });
 
-  const FoodRow = ({ f }: { f: FoodItemRow }) => (
-    <View style={styles.foodRow}>
-      <View style={styles.foodInfo}>
-        <Text style={styles.foodName} numberOfLines={1}>
-          {f.name}
-          {f.brand ? <Text style={styles.foodBrand}>  ({f.brand})</Text> : null}
-        </Text>
-        <Text style={styles.foodMacros}>
-          {Math.round(Number(f.kcal))} kcal · P{Math.round(Number(f.protein_g))} · C{Math.round(Number(f.carbs_g))} · F{Math.round(Number(f.fat_g))}
-        </Text>
-      </View>
-      {/* Own foods are editable (web: pencil when user_id matches) */}
-      {f.user_id === user?.id && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={i18n.a11yEdit}
-          hitSlop={10}
-          onPress={() => {
-            Haptics.selection();
-            nav.push({ pathname: '/food-editor', params: { id: f.id } });
-          }}>
-          <Icon icon={Pencil} size={15} color={c.mutedForeground} />
-        </Pressable>
-      )}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`${i18n.a11yFavourite}${toggleFav.pending(f) ? `, ${i18n.statePending}` : ''}`}
-        accessibilityState={{ selected: toggleFav.is(f) }}
-        aria-selected={toggleFav.is(f)}
-        hitSlop={10}
-        onPress={() => {
-          Haptics.selection();
-          /* Lớp Trạng thái (#165): sao đổi ngay, mất mạng thì ý chờ đợi mạng về. */
-          toggleFav.set(f, !toggleFav.is(f));
-        }}>
-        <Icon
-          icon={Star}
-          size={16}
-          color={toggleFav.is(f) ? c.readinessYellow : c.mutedForeground}
-          strokeWidth={toggleFav.is(f) ? 2.5 : 2}
-        />
-      </Pressable>
-    </View>
-  );
+  /* `FoodRow` từng ở đây — đã xoá 02/10/2026: không còn chỗ gọi nào
+     (danh sách dùng `FoodCard` từ food-cards.tsx), giữ lại chỉ là code chết. */
 
   return (
     <>
@@ -1027,11 +985,8 @@ const stylesFor = makeStyles((c, m) => ({
     borderColor: c.border,
     backgroundColor: alpha(c.secondary, 0.3),
   },
-  foodRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
-  foodInfo: { flex: 1, minWidth: 0, gap: 2 },
-  foodName: { fontSize: 14, fontWeight: '500', color: c.foreground },
-  foodBrand: { fontSize: 12, fontWeight: '400', color: c.mutedForeground },
-  foodMacros: { fontSize: 11, fontFamily: 'Menlo', color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  /* foodRow/foodInfo/foodName/foodBrand/foodMacros từng ở đây — đã xoá cùng
+     `FoodRow` 02/10/2026 (code chết, không chỗ gọi). */
   emptyText: { fontSize: 12, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.sm },
 
   // ── meal plans ──
