@@ -247,6 +247,12 @@ const USER_KEYS = [
   'ascnd_test_mascot_inventory',
   'ascnd_test_mascot_tx',
   'health:lastAutoSync',
+  /* Widget data trong App Group shared UserDefaults (native). Dữ liệu của
+     user (buổi tập hôm nay, streak) — đăng xuất phải xoá để không lọt sang
+     tài khoản sau. Lưu ý: AsyncStorage.removeItem không với tới App Group;
+     cần gọi native clear khi App Group provision (TODO). */
+  'ascnd.widget.todayWorkout',
+  'ascnd.widget.streakReadiness',
 ];
 
 export async function clearUserScopedStorage() {

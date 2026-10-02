@@ -97,6 +97,11 @@ const KNOWN = {
      để chứng minh bridge end-to-end khi chạy EAS validation build. Khi nó được
      nối thật (native haptics production), self-test dưới sẽ bắt xoá dòng này. */
   'native/ios/ASCNDHaptics.ts: playNativeHaptic': 'spike #195: validate bridge RN→Swift, chưa nối product theo thiết kế',
+  /* Widget production wiring [WIP] — bridge updateWidgetData đã có, nhưng App
+     Group chưa provision trong Apple Developer portal nên Swift side no-op.
+     Sẽ nối vào data source (use-fitness-data) khi App Group live. */
+  'native/ios/widget-data.ts: pushTodayWorkout': '[WIP] chờ App Group provision, chưa nối data source',
+  'native/ios/widget-data.ts: pushStreakReadiness': '[WIP] chờ App Group provision, chưa nối data source',
 };
 
 const unlinked = [];
