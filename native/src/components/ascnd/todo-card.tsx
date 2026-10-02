@@ -747,9 +747,6 @@ function ReminderRow({ itemKey }: { itemKey: TodoKey }) {
   );
 }
 
-/** Dùng chung cho công cụ: thứ tự dòng mà thẻ này vẽ. */
-export const TODO_KEYS = TODO_ORDER;
-
 const stylesFor = makeStyles((c, m) => ({
   card: { gap: spacing.sm },
   head: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
