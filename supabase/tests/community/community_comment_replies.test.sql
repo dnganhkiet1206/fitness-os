@@ -171,5 +171,32 @@ BEGIN
   ASSERT pg_temp.all_n('e2e2e2e2-0000-0000-0000-000000000032', 'ec000000-0000-0000-0000-0000000000c2') = 0, 'D1 xoá gốc mà reply của câu trả lời còn';
 END $$;
 
-\echo 'TẤT CẢ 13 KỊCH BẢN TRẢ LỜI VÀ NHẮC (#30) ĐÚNG'
+
+-- ── MV: nhắc chỉ tới người XEM ĐƯỢC bài (20261006120000) ──
+-- An đăng bài chỉ người theo dõi xem; Mai theo dõi An, Dũng thì không. Chi (theo
+-- dõi An) bình luận nhắc cả hai. Đối chứng ở MV2/MV3: không có chúng thì MV1
+-- xanh nhờ một hàm không nhắc ai cả.
+INSERT INTO auth.users VALUES ('e5e5e5e5-0000-0000-0000-000000000035'), ('e6e6e6e6-0000-0000-0000-000000000036');
+INSERT INTO community_profiles (user_id, handle, display_name) VALUES
+  ('e5e5e5e5-0000-0000-0000-000000000035', 'rp_mai', 'Mai'), ('e6e6e6e6-0000-0000-0000-000000000036', 'rp_dung', 'Dũng');
+INSERT INTO community_follows (follower_id, followee_id) VALUES
+  ('e3e3e3e3-0000-0000-0000-000000000033', 'e1e1e1e1-0000-0000-0000-000000000031'),
+  ('e5e5e5e5-0000-0000-0000-000000000035', 'e1e1e1e1-0000-0000-0000-000000000031')
+  ON CONFLICT DO NOTHING;
+INSERT INTO community_posts (id, author_id, kind, payload, visibility) VALUES
+  ('e0000000-0000-0000-0000-0000000000a9', 'e1e1e1e1-0000-0000-0000-000000000031', 'workout', '{}', 'followers');
+SELECT pg_temp.who('e3e3e3e3-0000-0000-0000-000000000033'); SET ROLE authenticated;
+INSERT INTO community_comments (id, post_id, body) VALUES
+  ('ec000000-0000-0000-0000-0000000000e9', 'e0000000-0000-0000-0000-0000000000a9', 'chào @rp_mai và @rp_dung'),
+  ('ec000000-0000-0000-0000-0000000000ea', 'e0000000-0000-0000-0000-0000000000a2', 'công khai: @rp_dung');
+RESET ROLE;
+DO $$ BEGIN
+  ASSERT pg_temp.n('e6e6e6e6-0000-0000-0000-000000000036', 'ec000000-0000-0000-0000-0000000000e9', 'mention') = 0
+     AND NOT EXISTS (SELECT 1 FROM community_comment_mentions WHERE comment_id = 'ec000000-0000-0000-0000-0000000000e9' AND user_id = 'e6e6e6e6-0000-0000-0000-000000000036'),
+    'MV1 người KHÔNG xem được bài (bài chỉ người theo dõi) vẫn được nhắc — lộ bài riêng và mở ra không được gì';
+  ASSERT pg_temp.n('e5e5e5e5-0000-0000-0000-000000000035', 'ec000000-0000-0000-0000-0000000000e9', 'mention') = 1, 'MV2 đối chứng: người theo dõi xem được bài mà không được nhắc';
+  ASSERT pg_temp.n('e6e6e6e6-0000-0000-0000-000000000036', 'ec000000-0000-0000-0000-0000000000ea', 'mention') = 1, 'MV3 đối chứng: bài công khai mà người không theo dõi không được nhắc';
+END $$;
+
+\echo 'TẤT CẢ 16 KỊCH BẢN TRẢ LỜI VÀ NHẮC (#30) ĐÚNG'
 ROLLBACK;

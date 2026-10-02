@@ -98,6 +98,11 @@ COVERAGE_OK = {
                '`SEARCH_CASES=/khong-co python3 b_reverse.py search_shared` thì mọi ca đỏ ở SC0.',
     },
     'find_recipes': {'F16': _GRANT},
+    'comment_replies': {
+        'MV3': 'đối chứng "bài công khai vẫn nhắc được". Mọi phép phá làm bài công khai thôi nhắc '
+               'đều làm M1 (nhắc trên bài công khai, đứng trước) đỏ trước — đo 02/10: ca MV3 riêng '
+               'đỏ ở M1. MV3 ở đó để MV1 không xanh nhờ một hàm không nhắc ai cả.',
+    },
     'find_posts': {'P16': _GRANT},
     'fn_privilege': {
         'FP0': 'đối chứng của chính PHÉP NỐI catalog (pg_depend ↔ pg_policy), không của migration nào: '
@@ -211,6 +216,29 @@ def make_db(db):
     return 'stub: ' + r.stderr[:200] if r.returncode else ''
 
 
+_FN_HEAD = re.compile(r'CREATE (?:OR REPLACE )?FUNCTION public\.(\w+)\(')
+
+
+def _fn_owner(src, old):
+    """Tên hàm chứa lần xuất hiện đầu của `old` (đã thay) — None nếu nằm ngoài hàm."""
+    i = src.find(old)
+    heads = [m for m in _FN_HEAD.finditer(src) if m.start() < i] if i >= 0 else []
+    if not heads:
+        return None
+    h = heads[-1]
+    end = src.find('$$;', src.find('$$', h.end()) + 2)
+    return h.group(1) if end == -1 or i < end else None
+
+
+def _fn_body(src, name):
+    """Toàn văn định nghĩa `CREATE … FUNCTION public.<name>(` … `$$;` trong tệp, hoặc None."""
+    m = re.search(r'CREATE (?:OR REPLACE )?FUNCTION public\.' + re.escape(name) + r'\(', src)
+    if not m:
+        return None
+    end = src.find('$$;', src.find('$$', m.end()) + 2)
+    return src[m.start():end + 3] if end != -1 else None
+
+
 def run_case(n, mig_key, old, new, nth, extra=(), also=()):
     db = f'r{n}'
     try:
@@ -228,6 +256,7 @@ def _run_case(db, mig_key, old, new, nth, extra=(), also=()):
     P = f'{PSQL} -d {db}'
     t0 = time.monotonic()
     hit = None
+    owner = None
     for m in migs:
         src = open(os.path.join(MIG, m)).read()
         for ak, ao, an in also:
@@ -239,7 +268,16 @@ def _run_case(db, mig_key, old, new, nth, extra=(), also=()):
         # LẪN `…_community_recipe_no_eaten_at.sql` (định nghĩa lại hàm), và
         # phải phá CẢ HAI — phá riêng bản cũ thì bản mới ghi đè, và ca "xanh"
         # không vì luật (như cách B viết).
-        if mig_key and mig_key in m:
+        orig = src
+        if mig_key and mig_key in m and hit and old and src.count(old) == 0:
+            # Tệp sau cùng khoá (`community_challenge` khớp cả `…_challenges_en`)
+            # không chứa đoạn cần phá: không có gì để phá ở đây — trước 02/10 đây
+            # là "CA SAI" cho 13 ca thử thách. Bản định nghĩa lại (nếu có) đi
+            # nhánh dưới.
+            body = _fn_body(src, owner) if owner else None
+            if body and body.count(old) == 1:
+                src = src.replace(body, body.replace(old, new))
+        elif mig_key and mig_key in m:
             cnt = src.count(old)
             if nth == 'all':
                 if cnt < 1:
@@ -259,6 +297,17 @@ def _run_case(db, mig_key, old, new, nth, extra=(), also=()):
                         return ('CA SAI', f'chuỗi phụ xuất hiện {src.count(o2)} lần trong {m}', {})
                     src = src.replace(o2, n2)
             hit = m
+            owner = _fn_owner(orig, old)
+        elif hit and owner and nth != 'all' and old:
+            # Một migration SAU định nghĩa lại CHÍNH hàm chứa đoạn bị phá — chép
+            # nguyên văn. Không phá nó thì bản mới đè lên bản đã phá và ca thành
+            # rỗng nghĩa (đo 02/10: #172 tạo lại hai hàm thử thách → 14 ca XANH;
+            # bản sửa nhắc của #30 → 6 ca XANH). Chỉ trong thân hàm cùng tên:
+            # một hàm KHÁC có đoạn giống hệt (thoát LIKE của tìm người và tìm
+            # công thức) không được phá theo — đo được SC2 đỏ sai chỗ khi phá rộng.
+            body = _fn_body(src, owner)
+            if body and body.count(old) == 1:
+                src = src.replace(body, body.replace(old, new))
         r = subprocess.run(f'{P} -f -', shell=True, input=src, capture_output=True, text=True)
         if r.returncode:
             return ('HỎNG', f'migration {m} không áp được sau đột biến: ' + r.stderr.strip()[:200], {})
