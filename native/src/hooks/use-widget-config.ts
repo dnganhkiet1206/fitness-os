@@ -257,21 +257,27 @@ export function useWidgetConfig() {
   const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
-      if (!raw) return;
-      try {
-        const parsed = JSON.parse(raw) as WidgetConfig;
-        if (parsed?.groups?.length) setConfigState(withNewWidgets(parsed));
-      } catch {
-        // corrupted config — keep defaults
-      }
-    });
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then((raw) => {
+        if (!raw) return;
+        try {
+          const parsed = JSON.parse(raw) as WidgetConfig;
+          if (parsed?.groups?.length) setConfigState(withNewWidgets(parsed));
+        } catch {
+          // corrupted config — keep defaults
+        }
+      })
+      /* A rejected read is not a reason to crash the dashboard: the defaults
+         are already in state, so there is nothing to fall back to doing. */
+      .catch(() => {});
   }, []);
 
   const setConfig = useCallback((updater: (prev: WidgetConfig) => WidgetConfig) => {
     setConfigState((prev) => {
       const next = updater(prev);
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      /* Fire-and-forget, but closed: a rejected write must not surface as an
+         unhandled rejection — the in-memory state is already correct. */
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
       return next;
     });
   }, []);
@@ -369,7 +375,7 @@ export function useWidgetConfig() {
   );
 
   const resetConfig = useCallback(() => {
-    AsyncStorage.removeItem(STORAGE_KEY);
+    AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
     setConfigState(DEFAULT_CONFIG);
   }, []);
 

@@ -102,11 +102,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === 'SIGNED_OUT') void forgetPreviousAccount();
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+    supabase
+      .auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      })
+      .catch(() => {
+        /* A rejected getSession must not strand the app on the splash screen:
+           no readable session is a signed-out state, not a loading one. */
+        setSession(null);
+        setUser(null);
+        setLoading(false);
+      });
 
     return () => subscription.unsubscribe();
   }, []);
