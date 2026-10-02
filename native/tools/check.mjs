@@ -869,6 +869,12 @@ const STEPS = [
     do vào NOT_USER_DATA của gate.
   */
   ['store theo user', 'node', ['tools/user-scoped-stores.mjs']],
+  /*
+    "Ký hỏng không ném" (#53): signer ném/reject/trả error thì mọi ô thư viện
+    ảnh vẫn có mặt với chính đường dẫn làm signedUrl — một lần ký hỏng không
+    được làm cả thư viện "không đọc được".
+  */
+  ['ký ảnh', 'node', ['tools/photo-sign.mjs']],
 ];
 
 /*
