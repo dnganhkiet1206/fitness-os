@@ -271,7 +271,7 @@ export default function ExercisesScreen() {
         <Field label={i18n.exercisesEquipment} hint={i18n.nExGearHint}>
           <TextInput
             style={styles.input}
-            placeholder="Barbell"
+            placeholder={i18n.nExGearPlaceholder}
             placeholderTextColor={c.mutedForeground}
             value={equipment}
             onChangeText={setEquipment}
