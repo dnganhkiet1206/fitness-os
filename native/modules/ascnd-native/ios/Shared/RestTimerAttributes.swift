@@ -36,8 +36,9 @@ struct RestTimerAttributes: ActivityAttributes {
     /// Planned rest duration in seconds (display fallback).
     var totalSeconds: Int
     /// ABSOLUTE end time. The widget/Live Activity UI counts down to this date
-    /// via `Text(timerInterval: Date.now...endDate)` — `Date.now` forces the
-    /// system to re-evaluate every render (stored startDate froze the digits).
+    /// via `Text(timerInterval: now...max(now, endDate))` — `Date.now` read
+    /// once forces the system to re-evaluate every render (stored startDate
+    /// froze the digits); `max` avoids a range trap when expired (A #217).
     var endDate: Date
     /// Localized "Rest" — the Island follows the app language (from TS i18n).
     var restingText: String

@@ -197,6 +197,17 @@ private struct RestRing: View {
 /// `startDate...endDate` (Dawnly pattern) — the system caches views with
 /// fixed dates and the digits FREEZE. `Date.now` forces re-evaluation every
 /// render. (01/10/2026, Kiệt's device: frozen 0:53/1:01/1:08.)
+///
+/// ANTI-CRASH (02/10/2026, A cross-check #217): `Date.now...endDate` TRAPS
+/// ("Range requires lowerBound <= upperBound", uncatchable) the instant
+/// `Date.now > endDate`. That happens in the normal flow: the rest ends while
+/// the app is backgrounded, JS never runs `restLiveActivityEnded()`, and the
+/// activity lives until `staleDate = endDate + 60s` — any redraw in that
+/// window kills the widget extension and the Island/lock screen goes blank
+/// (looks exactly like the old "timer disappeared" bugs). So the range is
+/// `now...max(now, endDate)`: when expired it shows "0:00" instead of
+/// crashing, and the stale activity is removed 60s later.
+/// Read `Date.now` ONCE — two calls can race so the second reads larger.
 @available(iOS 16.1, *)
 private struct TimerDigits: View {
   let endDate: Date
@@ -205,7 +216,8 @@ private struct TimerDigits: View {
   var countsDown: Bool = true
 
   var body: some View {
-    Text(timerInterval: Date.now...endDate, countsDown: countsDown)
+    let now = Date.now
+    Text(timerInterval: now...max(now, endDate), countsDown: countsDown)
       .font(Island.timerFont(size: fontSize, weight: weight))
       .foregroundStyle(.white)
       .lineLimit(1)
