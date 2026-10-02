@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -362,7 +362,12 @@ export function PickRow({
     scrollX.value = withSpring(target, TRAVEL);
   }, [scroll, here, viewport, content, reduceMotion, offset, scrollX, scroller]);
 
-  const report = (key: string, box: Box) => {
+  /*
+    Stable identity: without `useCallback`, every render of the row handed each
+    `Item` a new `report`, and without `useMemo` below, a new context object —
+    so every chip re-rendered whenever the row did, for no reason.
+  */
+  const report = useCallback((key: string, box: Box) => {
     setBoxes((prev) => {
       const old = prev[key];
       if (
@@ -376,7 +381,9 @@ export function PickRow({
       }
       return { ...prev, [key]: box };
     });
-  };
+  }, []);
+
+  const ctxValue = useMemo(() => ({ value, report }), [value, report]);
 
   const h = height ?? here?.h ?? 0;
   const r = Math.min(radius, h / 2);
@@ -432,14 +439,14 @@ export function PickRow({
         onContentSizeChange={(wd: number) => setContent(wd)}
         style={style}
         contentContainerStyle={[styles.row, { gap }, contentStyle]}>
-        <RowCtx.Provider value={{ value, report }}>{inner}</RowCtx.Provider>
+        <RowCtx.Provider value={ctxValue}>{inner}</RowCtx.Provider>
       </Animated.ScrollView>
     );
   }
 
   return (
     <View style={[styles.row, { gap }, style]}>
-      <RowCtx.Provider value={{ value, report }}>{inner}</RowCtx.Provider>
+      <RowCtx.Provider value={ctxValue}>{inner}</RowCtx.Provider>
     </View>
   );
 }
