@@ -213,6 +213,30 @@ export default function LogSleepSheet() {
         đêm, và `sleepDebt7d` chia cho SỐ HÀNG nên sai lệch đi theo suốt bảy
         ngày mà không có gì trên màn hình nói ra.
       */
+      /*
+        ── the check-then-act here is already serialized — no extra scope needed ──
+
+        `sleepRowToReplace` then insert/update looks like a race: two saves
+        interleaved could both find nothing to replace and insert two rows for
+        one night. On this device they cannot interleave, for two independent
+        reasons:
+
+        1. The Save button is `disabled` while `save.isPending`, so the UI
+           cannot enqueue two saves.
+        2. This mutation carries `mutationKey: [...OFFLINE_WRITE_KEY]` and no
+           explicit `scope`, so it inherits `scope: { id: 'offline-write' }`
+           from `registerOfflineWrites`' mutation defaults. TanStack's
+           `mutationCache.canRun` refuses to run a scoped mutation while
+           another with the same scope id is pending — the online save, the
+           offline queue drain, and any retry all wait for each other. The
+           second save's check therefore always sees the first save's row.
+
+        What no client scope can serialize is two DEVICES saving the same
+        night at once — only a unique constraint could, and `sleep_logs`
+        deliberately has none for manual rows (see above). The update branch
+        already defends its half with `confirmWrite`; a simultaneous insert
+        from another phone is the accepted residual.
+      */
       const replaceId = await sleepRowToReplace(
         user.id,
         bedDate.toISOString(),
