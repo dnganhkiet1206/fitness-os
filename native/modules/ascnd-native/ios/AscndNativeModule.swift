@@ -38,7 +38,19 @@ private final class RestActivityStore {
     totalSets: Int,
     totalSeconds: Int,
     endDate: Date
-  ) throws -> String {
+  ) async throws -> String {
+    /*
+      Only one rest activity may exist at a time. The TS side ends the
+      previous one by id — but that id is lost when the app is killed or
+      the JS thread was suspended at 0:00 (the end call never fired), leaving
+      a stale "0:00" activity that iOS keeps showing instead of the new one.
+      Ending everything of this type first makes start idempotent: no orphan
+      can ever outlive the rest it belonged to. (01/10/2026, Kiệt's device.)
+    */
+    for activity in Activity<RestTimerAttributes>.activities {
+      activities.removeValue(forKey: activity.id)
+      await activity.end(nil, dismissalPolicy: .immediate)
+    }
     let attributes = RestTimerAttributes(brandName: "ASCND")
     let state = RestTimerAttributes.ContentState(
       activityState: activityState,
@@ -141,19 +153,21 @@ public final class AscndNativeModule: Module {
         promise.reject(AscndNativeError.unsupportedOS)
         return
       }
-      do {
-        let state = RestTimerAttributes.ActivityState(rawValue: activityState) ?? .resting
-        let id = try RestActivityStore.shared.start(
-          activityState: state,
-          exerciseName: exerciseName,
-          setNumber: setNumber,
-          totalSets: totalSets,
-          totalSeconds: totalSeconds,
-          endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0)
-        )
-        promise.resolve(id)
-      } catch {
-        promise.reject(error)
+      Task {
+        do {
+          let state = RestTimerAttributes.ActivityState(rawValue: activityState) ?? .resting
+          let id = try await RestActivityStore.shared.start(
+            activityState: state,
+            exerciseName: exerciseName,
+            setNumber: setNumber,
+            totalSets: totalSets,
+            totalSeconds: totalSeconds,
+            endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0)
+          )
+          promise.resolve(id)
+        } catch {
+          promise.reject(error)
+        }
       }
     }
 
