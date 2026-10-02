@@ -26,6 +26,13 @@ export default function AppTabs() {
       <TabSlot style={{ flex: 1 }} />
       <TabList asChild>
         <CustomTabList>
+          {/* Nhãn tab TIẾNG ANH CỐ Ý — không đưa vào i18n. Tệp `.web.tsx` này
+              chỉ tồn tại cho bản web mà bộ đo `tools/live.mjs` dựng trong
+              Chromium, và bộ đo bấm tab bằng đúng tên tiếng Anh này
+              (`getByRole('tab', { name: 'Nutrition', exact: true })`,
+              `/^(Today|Workouts)$/` trên aria-label/textContent…). Đổi nhãn
+              theo ngôn ngữ là cả bộ đo mất neo. App iOS thật (bản ship) dùng
+              `app-tabs.tsx` với key i18n (`navToday`…). */}
           <TabTrigger name="index" href="/" asChild>
             <TabButton>Today</TabButton>
           </TabTrigger>
