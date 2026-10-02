@@ -6,10 +6,18 @@ Một trang, một câu trả lời: **hôm nay app đang đứng ở đâu.**
 là thứ khác: nó nói vòng rà soát gần nhất chạy khi nào, trên commit nào, đo bằng
 gì, và cái gì còn lại. Ai mở repo lần đầu đọc trang này trước.
 
-**Vòng gần nhất:** 2026-09-18 · màn ghi cân nặng mới (`/log-weight`), và một cái
-thước tôi viết lại dù repo đã có một bản tốt hơn — cổng bắt được · nhánh
+**Vòng gần nhất:** 2026-10-02 · chương trình Dynamic Island (#195–#217):
+bridge TS→Swift gọn còn **7 param** + promise, bài kiểm tra quyết định đang chờ
+Kiệt rebuild trên máy thật · và các queue audit #4–#9 (business logic,
+performance, i18n, gate coverage, docs) — cổng **311** bước · nhánh
 `claude/ios-fitness-rebuild-omgulr`
 (vòng rà pháp y đầy đủ gần nhất: 2026-09-14, commit `cf687a2`)
+
+> **Trang này đã lỗi thời lần thứ hai: 18/09 → 02/10 là 117 commit** (chương
+> trình Dynamic Island #195–#217 và toàn bộ queue #4–#8) mà mục trên vẫn ghi
+> 18/09. Lỗi 09/14 đã dạy rồi mà vẫn lặp lại — lần này ghi ra để nhớ: **trang
+> trả lời "hôm nay app đứng ở đâu" phải được chạm vào mỗi lần đóng một queue.**
+> Ghi chú thêm trong mục **02/10** bên dưới.
 
 > **AI BACKEND: HOÃN THEO YÊU CẦU CỦA CHỦ DỰ ÁN — KHÔNG LÀM LÚC NÀY.**
 > Trạng thái ở `docs/AI-TRIEN-KHAI.md` giữ nguyên, không đụng vào.
@@ -29,12 +37,62 @@ thước tôi viết lại dù repo đã có một bản tốt hơn — cổng b
 | Cổng | Kết quả | Ghi chú |
 |---|---|---|
 | TypeScript | **XANH** | `npx tsc --noEmit -p tsconfig.json` từ `native/` — **đo lại vòng này**, exit 0, đầu ra rỗng |
-| `node tools/check.mjs` | **XANH** | exit 0, **300** bước, tất cả xanh — **đo lại vòng này**. Và nó KHÔNG xanh lúc vòng này bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241 |
+| `node tools/check.mjs` | **XANH** | exit 0, **311** bước, tất cả xanh — **đo lại vòng này** (02/10). Ở vòng 18/09 nó KHÔNG xanh lúc vòng ấy bắt đầu: ở `aae4484` (đã đẩy lên remote) `plan-week.mjs` đỏ, vì lượt sửa dải lịch được nghiệm thu bằng ảnh chụp mà không chạy lại cổng. Xem mục **15/09** bên dưới. Chạy từ `native/`; chạy từ gốc repo là exit 2 và nó cố ý từ chối. Con số này được `tools/gate-count.mjs` giữ khớp với `STEPS.length`, vì nó đã sai hai lần: `quality-gate.yml` ghi 211 khi cổng đã 215 (sửa 09/09), rồi chính bảng này ghi 215 khi cổng đã 241. Từ 18/09 tới 02/10 cổng lên **300 → 311**: 1 gate `i18n-inline` (queue #6) + 10 gate mới (queue #7)
 | Quét runtime 45 route | **KHÔNG CHẠY LẠI VÒNG NÀY** | vòng này ĐỘNG vào `native/src` (biên bắt lỗi ở `_layout.tsx`). Bộ chạy web đầy đủ mất nhiều phút và không nằm trong cổng; thay vào đó biên được chứng minh bằng `tools/error-boundary.mjs` — React 19 + ReactDOM thật trong một trình duyệt thật. Số gần nhất của bộ chạy đầy đủ (vòng A11Y-2): không route nào trắng, 1 cảnh báo web-only trên `settings` |
-| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 300 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
-| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 300 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
-| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 300 bước ở trên |
+| Đổi theme, 9 màn | **KHÔNG CHẠY LẠI VÒNG NÀY** | biên đọc bảng màu qua `usePalette` như mọi màn khác và không thêm nhánh `m.lit` nào — `tools/theme-shape.mjs` **5 tệp, 6 nhánh** (từ 09/09; trước đó 6 tệp, 8 nhánh), và nó nằm trong 311 bước. Số gần nhất (A11Y-2): lỗi JS 5 → 1 |
+| Nút lồng trong nút, 6 tab chính | **KHÔNG CHẠY LẠI VÒNG NÀY** | `tools/a11y-swallow.mjs` và `tools/tap-targets.mjs` nằm trong 311 bước và vẫn xanh — nút thử lại của biên là một `Pressable` có nhãn, cao 44. Số gần nhất: 0/6 |
+| ESLint | **KHÔNG CHẠY ĐƯỢC** | `eslint` không có trong `node_modules`; `npx expo lint` báo `Cannot find module 'eslint'` **và vẫn thoát 0** — nên đừng đọc mã thoát của nó là "sạch". Cổng thật là 311 bước ở trên |
 | Bản dựng native | **CHƯA CHẠY Ở ĐÂY** | môi trường này là Linux; iOS phải dựng ở máy bạn |
+
+---
+
+## 02/10 — chương trình Dynamic Island (#195–#217) và sáu queue audit
+
+Hai việc cùng một ngày: Kiệt đưa bộ hẹn giờ nghỉ lên Dynamic Island / Live
+Activity thật, và các queue audit chạy liên tục (#4–#8, mỗi queue: audit →
+task → commit → handoff). #9 là queue kế tiếp theo framework, chưa chạy.
+
+### Dynamic Island: display-only từ đầu, Swift không compile ở đây
+
+#195 (spike): module Expo `AscndNative` + plugin tạo target WidgetKit
+`ASCNDWidgets`, Live Activity **display-only** theo đúng quyết định của Kiệt
+(không nút Skip; TS sở hữu mọi logic nghỉ, Swift chỉ render từ `endDate`
+tuyệt đối). #198: nối vào `day-plan.tsx`. #199: trạng thái nghỉ giữ `endsAt`
+tuyệt đối nên đồng hồ không đứng khi app vào nền.
+
+Vòng debug trên máy thật của Kiệt: #211 (timer lệch khỏi tâm vòng, vòng đứng →
+1s TimelineView), #212 (TimelineView KHÔNG tick từng giây trong Live Activity
+→ quay lại `Text(timerInterval:countsDown:)`, hệ thống tick ngoài tiến trình),
+#213 (Live Activity mồ côi khi start tới trễ — gate
+`tools/rest-live-activity.mjs` 8/8), #217 (crash khi hết giờ:
+`Date.now...endDate` → `now...max(now, endDate)`).
+
+**Bridge hiện nay: 7 param** (`activityState`, `exerciseName`, `setNumber`,
+`totalSets`, `totalSeconds`, `endTimestamp`, `languageCode`) + promise —
+commit `76819f2` rút gọn từ 3 chuỗi dịch sang một `languageCode` vì nghi 3
+param mới làm sập bridge. **Bài kiểm tra quyết định đang chờ Kiệt: pull
+`76819f2`, rebuild `prebuild --clean`, báo Island có hiện lại không** — tới
+khi ấy KHÔNG đụng DI bridge/native.
+
+**Bài học stale-build, hai lần:** Kiệt đã hai lần test trên bản build cũ và
+báo "vẫn hỏng" / "không thấy thay đổi" — đều là build thiếu commit mới nhất.
+Quy tắc mới trong `native/docs/ios-rebuild-checklist.md`: trước khi coi một
+bug DI là thật, Kiệt kiểm `git log --oneline -3` thấy commit mới nhất rồi
+mới rebuild. Swift **không compile được trên Linux** — mọi thay đổi native
+kết thúc bằng "Kiệt rebuild trên máy thật và gửi ảnh".
+
+### Queues #4–#8 (02/10, mỗi task một commit)
+
+| Queue | Nội dung | Kết quả |
+|---|---|---|
+| #4 | business logic + data layer + code health | 14/15 (1 skip: gate `challenge-reward` đã chốt semantics) |
+| #5 | performance (FlatList, memo, expo-image, rename hook) | 8/8 |
+| #6 | i18n | 6/6; gate mới `tools/i18n-inline.mjs` bắt ternary song ngữ inline (baseline **266** chỗ cũ) |
+| #7 | gate coverage | 10/10; **10 gate mới** → cổng 301 → **311** bước |
+| #8 | docs | 6 task (queue này) |
+
+Quy tắc giữ suốt: không đụng file của B, community files của A, DI Swift;
+không nới guard để xanh; commit tham chiếu issue/task; handoff lên issue #6.
 
 ---
 
