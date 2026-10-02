@@ -893,6 +893,12 @@ const STEPS = [
     qua biên 7/8 ngày, tương lai, ISO hỏng.
   */
   ['time-ago', 'node', ['tools/time-ago.mjs']],
+  /*
+    Key i18n mới phải có prefix chủ sở hữu (nPg/nRc/nCx) hoặc vào allowlist
+    dùng chung — không prefix thì key của A đè key của B mà không ai hay.
+    1270 key cũ chốt hiện trạng trong tools/i18n-shared-keys.json.
+  */
+  ['namespace i18n', 'node', ['tools/i18n-namespaces.mjs']],
 ];
 
 /*
