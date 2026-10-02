@@ -1,6 +1,6 @@
 import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, Dumbbell, Trash2 } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -483,10 +483,15 @@ export function TemplateList({
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
   const { data: exercises } = useExercises();
-  const groupOf: Record<string, string> = {};
-  for (const e of exercises ?? []) {
-    if (e.name && e.muscle_group) groupOf[e.name.trim().toLowerCase()] = e.muscle_group;
-  }
+  /* Memoized: dựng lại Record trên cả thư viện bài tập mỗi lần render là việc
+     thừa — `exercises` từ react-query giữ nguyên tham chiếu khi không đổi. */
+  const groupOf: Record<string, string> = useMemo(() => {
+    const m: Record<string, string> = {};
+    for (const e of exercises ?? []) {
+      if (e.name && e.muscle_group) m[e.name.trim().toLowerCase()] = e.muscle_group;
+    }
+    return m;
+  }, [exercises]);
 
   return (
     <View style={styles.tplStack}>
