@@ -881,6 +881,12 @@ const STEPS = [
     theo ngôn ngữ. Gate cấm mọi setAllergies/payload ghi từ .label.
   */
   ['dị ứng', 'node', ['tools/allergy-values.mjs']],
+  /*
+    Đổi đơn vị đi-về phải đúng: round-trip cho mọi converter + spot-check
+    hằng số vật lý (round-trip tự nhất quán ngay cả khi hằng số sai, nên
+    hằng số phải có assert riêng).
+  */
+  ['đơn vị', 'node', ['tools/units.mjs']],
 ];
 
 /*
