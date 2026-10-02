@@ -251,6 +251,10 @@ export default function LogSleepSheet() {
       invalidate();
       // Sleep Insights screen reads its own multi-night history key
       queryClient.invalidateQueries({ queryKey: ['sleep_history', user?.id] });
+      // Sleep Insights also reads the duration history key — the delete path
+      // (use-fitness-data.ts) and health-sync (use-health-sync.ts) both
+      // invalidate it, the online insert here did not.
+      queryClient.invalidateQueries({ queryKey: ['sleep_duration_history', user?.id] });
       Haptics.success();
       nav.back();
       toast.success(i18n.logSleepSaved);
