@@ -38,14 +38,6 @@
 /** The whole vocabulary. Five, because five is what the library has. */
 export type EquipmentKey = 'barbell' | 'bodyweight' | 'cable' | 'dumbbell' | 'machine';
 
-export const EQUIPMENT_KEYS: readonly EquipmentKey[] = [
-  'barbell',
-  'bodyweight',
-  'cable',
-  'dumbbell',
-  'machine',
-];
-
 /**
  * What each key is called, in each language the app renders.
  *
