@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 
 import type { VolumeUnit } from '@/lib/units';
 
@@ -63,5 +63,6 @@ export function useVolumeUnit(): { unit: VolumeUnit; setUnit: (u: VolumeUnit) =>
   useEffect(() => {
     hydrate();
   }, []);
-  return { unit, setUnit: setVolumeUnit };
+  /* Stable identity — see use-steps-goal. */
+  return useMemo(() => ({ unit, setUnit: setVolumeUnit }), [unit]);
 }

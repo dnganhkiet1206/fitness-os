@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { useI18n } from '@/hooks/use-app-settings';
 import { useRoutineDays } from '@/hooks/use-library';
@@ -271,15 +271,21 @@ export function useReminders() {
     [prefs, apply],
   );
 
-  return {
-    prefs,
-    loaded,
-    permission,
-    available: notificationsAvailable(),
-    toggle,
-    setTime,
-    setWaterInterval,
-  };
+  /* Stable identity: `prefs` comes from the external store (same reference
+     until it emits), the callbacks are memoized above, the rest are
+     primitives. */
+  return useMemo(
+    () => ({
+      prefs,
+      loaded,
+      permission,
+      available: notificationsAvailable(),
+      toggle,
+      setTime,
+      setWaterInterval,
+    }),
+    [prefs, loaded, permission, toggle, setTime, setWaterInterval],
+  );
 }
 
 /**

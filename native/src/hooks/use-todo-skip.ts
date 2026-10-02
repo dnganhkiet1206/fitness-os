@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from 'react';
 
 import { localDateStr } from '@/lib/local-date';
 import { TODO_ORDER, type TodoKey } from '@/lib/todo';
@@ -119,26 +119,33 @@ export function useTodoSkip() {
   }, []);
 
   const today = localDateStr();
-  const skipped = snap ? keysFor(today) : [];
+  /* A fresh array every render defeated the memo below — and `toggle` below
+     is stateless (module state only), so it can be stable too. */
+  const skipped = useMemo(() => (snap ? keysFor(today) : []), [snap, today]);
 
-  return {
-    /** Đã đọc xong đĩa chưa — thẻ chờ cái này rồi mới đếm. */
-    ready: settled,
-    skipped,
-    /** Bỏ qua, hoặc lấy lại. Cùng một cú vuốt, nên cùng một hàm. */
-    toggle(key: TodoKey) {
-      const now = localDateStr();
-      const current = keysFor(now);
-      const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
-      state = next;
-      stateDate = now;
-      emit();
-      void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ date: now, keys: next } satisfies Stored)).catch(
-        () => {
-          /* Ghi hỏng thì màn hình vẫn đúng cho phiên này. Mất một lượt bỏ qua
-             khi mở lại app là hỏi thừa một câu, không phải mất dữ liệu. */
-        },
-      );
-    },
-  };
+  /** Bỏ qua, hoặc lấy lại. Cùng một cú vuốt, nên cùng một hàm. */
+  const toggle = useCallback((key: TodoKey) => {
+    const now = localDateStr();
+    const current = keysFor(now);
+    const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
+    state = next;
+    stateDate = now;
+    emit();
+    void AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ date: now, keys: next } satisfies Stored)).catch(
+      () => {
+        /* Ghi hỏng thì màn hình vẫn đúng cho phiên này. Mất một lượt bỏ qua
+           khi mở lại app là hỏi thừa một câu, không phải mất dữ liệu. */
+      },
+    );
+  }, []);
+
+  return useMemo(
+    () => ({
+      /** Đã đọc xong đĩa chưa — thẻ chờ cái này rồi mới đếm. */
+      ready: settled,
+      skipped,
+      toggle,
+    }),
+    [skipped, toggle],
+  );
 }

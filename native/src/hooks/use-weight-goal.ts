@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 
 import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
@@ -103,5 +103,6 @@ export function useWeightGoal() {
   useEffect(() => {
     hydrate();
   }, []);
-  return { goalKg, setGoalKg: setWeightGoalKg };
+  /* Stable identity — see use-steps-goal. */
+  return useMemo(() => ({ goalKg, setGoalKg: setWeightGoalKg }), [goalKg]);
 }

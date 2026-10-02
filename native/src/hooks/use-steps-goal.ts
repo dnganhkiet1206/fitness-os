@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useEffect, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useSyncExternalStore } from 'react';
 
 import { onUserScopedReset } from '@/lib/user-scoped-reset';
 
@@ -83,5 +83,7 @@ export function useStepsGoal() {
   useEffect(() => {
     hydrate();
   }, []);
-  return { goal, setGoal: setStepsGoal, ready };
+  /* Stable identity: `setStepsGoal` is module-level, `goal`/`ready` are
+     primitives — the object only needs to change when they do. */
+  return useMemo(() => ({ goal, setGoal: setStepsGoal, ready }), [goal, ready]);
 }
