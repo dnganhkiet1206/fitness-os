@@ -516,10 +516,9 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
               key={t.id}
               accessibilityRole="button"
               accessibilityLabel={`${i18n.nChooseWorkout}: ${t.name}`}
-              onPress={() => {
-                Haptics.selection();
-                saveDay(selected, t.id);
-              }}
+              /* Không rung ở đây: `saveDay` đã rung trong `onMutate` (xem chú
+                 thích của nó). Rung thêm là hai lần cho một chạm. */
+              onPress={() => saveDay(selected, t.id)}
               style={styles.suggestRow}>
               <Icon icon={Dumbbell} size={16} color={c.mutedForeground} />
               <View style={styles.suggestText}>
