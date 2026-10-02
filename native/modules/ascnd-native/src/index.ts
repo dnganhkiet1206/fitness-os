@@ -39,6 +39,15 @@ export interface AscndNativeModuleType {
     /** App language ('vi' | 'en') — Swift looks up localized Island strings. */
     languageCode: string,
   ): Promise<void>;
+  /**
+   * Push widget data to the App Group shared UserDefaults (production wiring,
+   * replaces the SPIKE-ONLY mock in WidgetData.swift).
+   * @param key 'ascnd.widget.todayWorkout' | 'ascnd.widget.streakReadiness'
+   * @param json JSON string matching TodayWorkoutData / StreakReadinessData
+   * @returns true if written, false if App Group not provisioned (silent no-op)
+   * [WIP] Swift side uncompiled on Linux — needs Xcode to verify.
+   */
+  updateWidgetData(key: string, json: string): Promise<boolean>;
   endRestActivity(activityId: string): Promise<void>;
 }
 

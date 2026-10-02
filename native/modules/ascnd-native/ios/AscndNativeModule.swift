@@ -1,11 +1,14 @@
 import ActivityKit
 import ExpoModulesCore
 import UIKit
+import WidgetKit
 
 /// Errors surfaced to TypeScript from the #195 native spike.
 private enum AscndNativeError: Error, LocalizedError {
   case unsupportedOS
   case activityNotFound(String)
+  case invalidWidgetKey(String)
+  case invalidWidgetJSON
 
   var errorDescription: String? {
     switch self {
@@ -13,6 +16,10 @@ private enum AscndNativeError: Error, LocalizedError {
       return "Live Activities require iOS 16.1 or later."
     case .activityNotFound(let id):
       return "No rest activity with id \(id)."
+    case .invalidWidgetKey(let key):
+      return "Unknown widget data key: \(key)."
+    case .invalidWidgetJSON:
+      return "Widget data is not valid UTF-8 JSON."
     }
   }
 }
@@ -255,6 +262,37 @@ public final class AscndNativeModule: Module {
         await RestActivityStore.shared.end(id: activityId)
         promise.resolve()
       }
+    }
+
+    // MARK: - Widget data (production wiring, replaces SPIKE-ONLY mock)
+    //
+    // TypeScript -> updateWidgetData(key, json) -> App Group shared
+    // UserDefaults -> WidgetDataStore.read*() -> widgets.
+    // The App Group ("group.com.ascnd.fitnessos") must be provisioned in the
+    // Apple Developer portal AND added to both the app and ASCNDWidgets
+    // entitlements — without it, UserDefaults(suiteName:) returns nil and the
+    // write below silently no-ops (widgets keep showing mock data).
+    // [WIP] Uncompiled on Linux — needs Xcode to verify.
+    AsyncFunction("updateWidgetData") { (key: String, json: String, promise: Promise) in
+      guard key == "ascnd.widget.todayWorkout" || key == "ascnd.widget.streakReadiness" else {
+        promise.reject(AscndNativeError.invalidWidgetKey(key))
+        return
+      }
+      guard let data = json.data(using: .utf8) else {
+        promise.reject(AscndNativeError.invalidWidgetJSON)
+        return
+      }
+      guard let defaults = UserDefaults(suiteName: "group.com.ascnd.fitnessos") else {
+        // App Group not provisioned — silent no-op by design (widgets fall
+        // back to mock). Not an error: the app works without widgets.
+        promise.resolve(false)
+        return
+      }
+      defaults.set(data, forKey: key)
+      if #available(iOS 14.0, *) {
+        WidgetCenter.shared.reloadAllTimelines()
+      }
+      promise.resolve(true)
     }
   }
 }
