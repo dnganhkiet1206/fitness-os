@@ -117,6 +117,7 @@ export default function CommunitySearchScreen() {
       <View style={styles.field}>
         <Icon icon={Search} size={18} color={c.mutedForeground} />
         <TextInput
+          testID="community-search-input"
           value={q}
           onChangeText={setQ}
           placeholder={placeholder}
@@ -130,7 +131,7 @@ export default function CommunitySearchScreen() {
           style={styles.input}
         />
         {q ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={i18n.nSrClear} hitSlop={12} onPress={() => setQ('')}>
+          <Pressable testID="community-search-clear" accessibilityRole="button" accessibilityLabel={i18n.nSrClear} hitSlop={12} onPress={() => setQ('')}>
             <Icon icon={X} size={18} color={c.mutedForeground} />
           </Pressable>
         ) : null}
