@@ -182,15 +182,16 @@ private struct RestRing: View {
 /// endDate stays absolute (TypeScript owns it, Swift only renders).
 ///
 /// LAYOUT — read before changing the frame:
-/// The timer view reports a WIDE intrinsic box (~130pt, measured) but paints
-/// its glyphs from the box's leading edge. Two guards fix both halves:
-/// - `.fixedSize(horizontal: true)` makes the Text take its TRUE glyph width
-///   instead of the 130pt placeholder, so the glyphs can be centred.
+/// The timer view reports a WIDE intrinsic box (~130pt, measured). Constrain
+/// it with `.frame(width:)` and it lays out its glyphs inside that width:
 /// - `.frame(width: fontSize * 3.0)` reserves room for "12:00" — 5 monospaced
 ///   chars at 0.6em each. The old 2.1× multiplier only fit 4 chars ("m:ss"):
 ///   "1:20" needs ~24pt at 10pt font but got 21pt, so it wrapped to two lines
 ///   on-device (01/10/2026). Never shrink the font to fit; give it space.
 /// - `.lineLimit(1)` is the hard guarantee: the timer NEVER wraps.
+/// - Do NOT add `.fixedSize(horizontal: true)`: this is a live-updating view
+///   with no stable ideal width — fixedSize collapses it to zero and the
+///   digits vanish entirely (01/10/2026, Kiệt's device: empty rings).
 @available(iOS 16.1, *)
 private struct TimerDigits: View {
   let endDate: Date
@@ -203,7 +204,7 @@ private struct TimerDigits: View {
       .font(Island.timerFont(size: fontSize, weight: weight))
       .foregroundStyle(.white)
       .lineLimit(1)
-      .fixedSize(horizontal: true, vertical: false)
+      .multilineTextAlignment(.center)
       .frame(width: fontSize * 3.0, alignment: .center)
   }
 }
