@@ -375,6 +375,9 @@ const en = {
   nCxPostIntroHint: 'Accents are optional: "buoi sang", "meal prep".',
   nCxPostNone: 'No post matches "{q}"',
   nCxPostNoneHint: 'Try one word from the caption or title.',
+  /* Plan — ngày chưa gán buổi tập là trạng thái thứ ba, không phải ngày nghỉ (C, #215). */
+  nCxUnplanned: 'Not scheduled',
+  nCxSuggestTitle: 'Suggested',
   nUpAll: 'All',
   nUpProgress: 'Progress',
   nUpRecipe: 'Recipes',
@@ -1466,6 +1469,9 @@ const vi: typeof en = {
   nCxPostIntroHint: 'Gõ không dấu cũng được: "buoi sang", "meal prep".',
   nCxPostNone: 'Không có bài viết nào khớp "{q}"',
   nCxPostNoneHint: 'Thử gõ một từ trong chú thích hoặc tên bài.',
+  /* Plan — ngày chưa gán buổi tập là trạng thái thứ ba, không phải ngày nghỉ (C, #215). */
+  nCxUnplanned: 'Chưa lên lịch',
+  nCxSuggestTitle: 'Gợi ý',
   nUpAll: 'Tất cả',
   nUpProgress: 'Tiến trình',
   nUpRecipe: 'Công thức',

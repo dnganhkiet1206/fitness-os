@@ -1,4 +1,4 @@
-import { CheckCircle2, CircleDashed, Moon } from 'lucide-react-native';
+import { CheckCircle2, CalendarDays, CircleDashed, Moon } from 'lucide-react-native';
 import { haptics as Haptics } from '@/lib/haptics';
 import { Text, View } from 'react-native';
 
@@ -62,7 +62,7 @@ export const DAY_SHORT_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
  * Four states and no fifth. A rest day is not "done" when it passes — there was
  * nothing to do — so it keeps saying rest, today and afterwards.
  */
-export type DayState = 'rest' | 'done' | 'todo' | 'missed';
+export type DayState = 'rest' | 'done' | 'todo' | 'missed' | 'unplanned';
 
 /*
   Khoá của bảng màu, không phải mã màu: một mã màu ở phạm vi module bị ĐÓNG BĂNG
@@ -108,6 +108,13 @@ export const STATE_STYLE: Record<
     one thing a planned rest day is not.
   */
   rest: { icon: Moon, tint: 'metricPurple', wash: (c) => alpha(c.metricPurple, 0.14) },
+  /*
+    Unplanned is flat like missed, for the same reason: a day with no workout
+    assigned is a fact, not a choice, so it gets no colour of its own. It is
+    NOT rest — rest is something you decided (purple). The label carries the
+    difference; the dot stays quiet. (#215)
+  */
+  unplanned: { icon: CalendarDays, tint: 'mutedForeground', wash: (_c, m) => alpha(m.ink, 0.06) },
 };
 
 /**
@@ -115,8 +122,8 @@ export const STATE_STYLE: Record<
  * the week read it from.
  *
  * `trained` is the set of dates that have a session against them. A day with no
- * work planned is `rest` whether or not it is in the past — there was nothing
- * to miss.
+ * work planned is `unplanned` — NOT `rest` — whether or not it is in the past:
+ * there was nothing to miss, and rest is a choice the user never made. (#215)
  */
 /** Tên của mỗi trạng thái cho trình đọc màn hình (#99) — cùng bốn trạng thái mà chấm màu vẽ. */
 const DAY_STATE_LABEL: Record<DayState, (i18n: NativeStrings) => string> = {
@@ -124,15 +131,17 @@ const DAY_STATE_LABEL: Record<DayState, (i18n: NativeStrings) => string> = {
   done: (i) => i.nDayDone,
   todo: (i) => i.nDayTodo,
   missed: (i) => i.nDayMissed,
+  unplanned: (i) => i.nCxUnplanned,
 };
 
 export function dayStateOf(
   hasWork: boolean,
+  isRest: boolean,
   dStr: string,
   todayStr: string,
   trained: ReadonlySet<string>,
 ): DayState {
-  if (!hasWork) return 'rest';
+  if (!hasWork) return isRest ? 'rest' : 'unplanned';
   if (trained.has(dStr)) return 'done';
   return dStr < todayStr ? 'missed' : 'todo';
 }
@@ -140,6 +149,7 @@ export function dayStateOf(
 export function WeekStrip({
   dates,
   hasWork,
+  isRest,
   selected,
   todayStr,
   trained,
@@ -150,6 +160,9 @@ export function WeekStrip({
   dates: Date[];
   /** whether each of the seven days has training on it */
   hasWork: boolean[];
+  /** whether each day was explicitly marked rest — a day with no work and no
+      rest flag is `unplanned`, not `rest` (#215) */
+  isRest: boolean[];
   /** which cell is filled — `null` on the summary card, where no day is open */
   selected: number | null;
   todayStr: string;
@@ -194,7 +207,7 @@ export function WeekStrip({
         const dStr = localDateStr(d);
         const isToday = dStr === todayStr;
         const isOpen = idx === selected;
-        const state = dayStateOf(hasWork[idx] ?? false, dStr, todayStr, trained);
+        const state = dayStateOf(hasWork[idx] ?? false, isRest[idx] ?? false, dStr, todayStr, trained);
         return (
           <PressScale
             key={idx}

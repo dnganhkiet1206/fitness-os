@@ -309,8 +309,33 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
     const d = byDay.get(i);
     return !!d?.template_id && !d?.is_rest;
   });
+  /* Ngày nghỉ là lựa chọn rõ ràng, ngày trống là chưa quyết định (#215). */
+  const isRest = Array.from({ length: 7 }, (_, i) => !!byDay.get(i)?.is_rest);
 
-  const assign = (dayOfWeek: number, templateId: string | null) => {
+  /**
+   * Gợi ý cho ngày chưa lên lịch (#215): tối đa ba buổi, buổi nào được tập gần
+   * nhất lên trước. Sessions chỉ lưu `template_name` nên khớp theo tên đã trim;
+   * tên đổi thì buổi ấy rớt xuống cuối theo thứ tự gốc — vẫn hiện, chỉ không
+   * còn được ưu tiên.
+   */
+  const suggestions = useMemo(() => {
+    const all = templates ?? [];
+    if (all.length === 0) return [];
+    const lastUsed = new Map<string, number>();
+    for (const s of sessions ?? []) {
+      const name = (s.template_name ?? '').trim();
+      if (!name) continue;
+      const t = new Date(s.date_time).getTime();
+      if (!Number.isFinite(t)) continue;
+      const prev = lastUsed.get(name);
+      if (prev === undefined || t > prev) lastUsed.set(name, t);
+    }
+    return [...all]
+      .sort((a, b) => (lastUsed.get(b.name.trim()) ?? -1) - (lastUsed.get(a.name.trim()) ?? -1))
+      .slice(0, 3);
+  }, [templates, sessions]);
+
+  const saveDay = (dayOfWeek: number, templateId: string | null) => {
     /* KHÔNG rung ở đây — `useUpsertRoutineDay` rung trong `onMutate`, tức cùng
        khoảnh khắc này. Hai chỗ cùng rung thì người dùng thấy hai lần; đó đúng
        lỗi mà `use-water.ts` đã ghi lại và chủ dự án đã báo một lần. */
@@ -323,6 +348,10 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
       // it; the day is still part of the week's plan either way.
       is_deload: d?.is_deload ?? false,
     }, { onError: (e: Error) => toast.fail(e) });
+  };
+
+  const assign = (dayOfWeek: number, templateId: string | null) => {
+    saveDay(dayOfWeek, templateId);
     /* `close()`, không phải `setPicking(null)`: chọn xong cũng là một lối ra,
        và một lối ra không chạy hiệu ứng sẽ để `mounted` kẹt lại — sheet đứng
        nguyên trên màn. Mọi đường thoát khỏi sheet này đều đi qua một cửa. */
@@ -347,16 +376,18 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
   const dStr = localDateStr(dates[selected]);
   const openDay = byDay.get(selected);
   const openTpl = templateFor(openDay?.template_id);
-  const state = dayStateOf(!!openTpl && !openDay?.is_rest, dStr, todayStr, trained);
+  const state = dayStateOf(!!openTpl && !openDay?.is_rest, !!openDay?.is_rest, dStr, todayStr, trained);
   const look = STATE_STYLE[state];
   const stateLabel =
     state === 'rest'
       ? i18n.nRoutineRestDay
-      : state === 'done'
-        ? i18n.nRoutineDone
-        : state === 'missed'
-          ? i18n.nRoutineMissed
-          : i18n.nRoutineTodo;
+      : state === 'unplanned'
+        ? i18n.nCxUnplanned
+        : state === 'done'
+          ? i18n.nRoutineDone
+          : state === 'missed'
+            ? i18n.nRoutineMissed
+            : i18n.nRoutineTodo;
 
   return (
     <>
@@ -406,6 +437,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
       <WeekStrip
         dates={dates}
         hasWork={hasWork}
+        isRest={isRest}
         selected={selected}
         todayStr={todayStr}
         trained={trained}
@@ -469,6 +501,36 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
         i18n={i18n}
         onEdit={() => setPicking(selected)}
       />
+
+      {/*
+        Ngày chưa lên lịch không phải ngõ cụt: ba buổi dùng gần nhất, chạm là
+        gán luôn — một chạm thay vì mở sheet rồi chọn. Chỉ cho ngày trống, không
+        cho ngày nghỉ đã chốt: ngày nghỉ là một quyết định, không phải một chỗ
+        trống cần lấp. (#215)
+      */}
+      {!openTpl && !openDay?.is_rest && suggestions.length > 0 ? (
+        <View style={styles.suggestWrap}>
+          <Text style={styles.suggestTitle}>{i18n.nCxSuggestTitle}</Text>
+          {suggestions.map((t) => (
+            <PressScale
+              key={t.id}
+              accessibilityRole="button"
+              accessibilityLabel={`${i18n.nChooseWorkout}: ${t.name}`}
+              onPress={() => {
+                Haptics.selection();
+                saveDay(selected, t.id);
+              }}
+              style={styles.suggestRow}>
+              <Icon icon={Dumbbell} size={16} color={c.mutedForeground} />
+              <View style={styles.suggestText}>
+                <Text style={styles.suggestName} numberOfLines={1}>{t.name}</Text>
+                <Text style={styles.suggestMeta} numberOfLines={1}>{templateMeta(t)}</Text>
+              </View>
+              <Icon icon={Plus} size={16} color={c.foreground} />
+            </PressScale>
+          ))}
+        </View>
+      ) : null}
 
       {/*
         One day, everything about it.
@@ -800,6 +862,24 @@ const stylesFor = makeStyles((c, m) => ({
   pickerName: { ...type.body, color: c.foreground, flexShrink: 1 },
   pickerMeta: { ...type.caption, color: c.mutedForeground },
   pickerEmpty: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', padding: spacing.md },
+  /* Gợi ý cho ngày chưa lên lịch (#215): cùng ngôn ngữ với hàng trong sheet
+     chọn buổi tập, nhưng nằm ngay trên màn hình để một chạm là gán được. */
+  suggestWrap: { gap: spacing.xs, marginTop: spacing.md },
+  suggestTitle: { ...type.caption, color: c.mutedForeground, fontWeight: '600', paddingHorizontal: spacing.xs },
+  suggestRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.md,
+    backgroundColor: c.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+  },
+  suggestText: { flex: 1, minWidth: 0, gap: 1 },
+  suggestName: { ...type.body, color: c.foreground, flexShrink: 1 },
+  suggestMeta: { ...type.caption, color: c.mutedForeground },
   deloadRow: {
     flexDirection: 'row',
     alignItems: 'center',

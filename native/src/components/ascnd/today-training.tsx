@@ -95,6 +95,8 @@ export function TodayTraining() {
     const d = byDay.get(i);
     return !!d?.template_id && !d?.is_rest;
   });
+  /* Ngày nghỉ là lựa chọn rõ ràng, ngày trống là chưa quyết định (#215). */
+  const isRest = Array.from({ length: 7 }, (_, i) => !!byDay.get(i)?.is_rest);
 
   const openPlan = (day: number) => {
     Haptics.selection();
@@ -260,6 +262,7 @@ export function TodayTraining() {
       <WeekStrip
         dates={dates}
         hasWork={hasWork}
+        isRest={isRest}
         /* Không ô nào được TÔ. Ô tô nghĩa là "ngày bạn đang đọc", mà ở đây bạn
            không đọc ngày nào — hôm nay đã là dòng chữ phía trên, và vòng tròn
            quanh số của nó đã nói đúng điều cần nói. */

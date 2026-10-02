@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation } from '@tanstack/react-query';
 import { haptics as Haptics } from '@/lib/haptics';
-import { Check, ChevronDown, Info, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
+import { CalendarDays, Check, ChevronDown, Info, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, AppState, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import Animated, {
@@ -1328,9 +1328,13 @@ export function DayPlan({
   if (!template) {
     return (
       <GlassCard style={styles.empty}>
-        <Icon icon={Moon} size={22} color={c.mutedForeground} />
+        {/*
+          Mặt trăng là của ngày nghỉ đã chốt. Ngày chưa lên lịch là một trang
+          giấy trắng — icon lịch, không hint nghỉ ngơi. (#215)
+        */}
+        <Icon icon={isRest ? Moon : CalendarDays} size={22} color={c.mutedForeground} />
         <Text style={styles.emptyText}>{isRest ? i18n.nRoutineRestDay : i18n.nRdEmptyPlan}</Text>
-        <Text style={styles.emptyHint}>{i18n.nRoutineRestHint}</Text>
+        {isRest ? <Text style={styles.emptyHint}>{i18n.nRoutineRestHint}</Text> : null}
         <PressScale
           accessibilityRole="button"
           onPress={onEdit}
