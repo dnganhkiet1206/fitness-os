@@ -1,30 +1,35 @@
 import { getLocale } from '@/lib/i18n';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { haptics as Haptics } from '@/lib/haptics';
-import { Camera, Plus, Trash2, X } from 'lucide-react-native';
-import { useRef, useState } from 'react';
+import { Camera, ChevronLeft, Plus, Trash2, X } from 'lucide-react-native';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  Image,
+  FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
+  useWindowDimensions,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 
+import { AmbientLight } from '@/components/ascnd/ambient-light';
 import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
-import { Screen } from '@/components/ascnd/screen';
+import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
 import { radius, spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { makeMaterialStyles, makeStyles } from '@/constants/theme';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { PHOTO_QUALITY, pickPictureSize } from '@/lib/photo-size';
 import { parseLocalDate } from '@/lib/local-date';
@@ -33,127 +38,205 @@ import {
   useDeleteProgressPhoto,
   useProgressPhotos,
   useUploadProgressPhoto,
+  type ProgressPhoto,
 } from '@/hooks/use-progress-photos';
+
+/*
+  ── vì sao màn này không dùng `<Screen>` ──
+
+  Lưới ảnh là một danh sách dài (đọc hết theo trang, #179 — vài trăm ảnh là
+  chuyện thường), và nó cần virtualization thật: chỉ dựng những ô đang ở trên
+  màn hình. `Screen` luôn bọc children trong ScrollView của nó, mà một FlatList
+  nằm trong ScrollView thì được đo với chiều cao vô hạn và dựng HẾT mọi item —
+  virtualization chết ngay ở đó. Nên màn này tự làm vỏ (theo tiền lệ của
+  `workout-builder.tsx` và `(tabs)/index.tsx`): thanh đầu trang 44pt chép đúng
+  số đo của nhánh `back` trong `screen.tsx`, FlatList 2 cột làm scroller chính,
+  `RefreshControl` tự gọi `invalidateQueries()` đúng nghĩa với `refreshable`.
+
+  `tools/refreshable.mjs` chỉ quét các tệp dùng `<Screen>` nên không đỏ; cổng
+  `ambient.mjs` đòi ánh sáng nền nên `<AmbientLight />` được gắn tay ở đây.
+*/
 
 type Pose = 'front' | 'side' | 'back';
 
+const NUM_COLS = 2;
+/*
+  Chiều cao hàng cho `getItemLayout`, tính từ đúng những con số dựng nên ô —
+  không phải số đo sau:
+
+    cellW  = 47.8% của (rộng màn − 2 × padding ngang), y hệt `photoCell` cũ
+    photoH = cellW / 0.8, y hệt `aspectRatio: 0.8` của `photo`
+    META_H = 26: hàng meta có padding dọc 6 × 2 và nội dung cao nhất là glyph
+             thùng rác 14pt (dòng caption 11pt thấp hơn) → 12 + 14 = 26 đúng
+             bằng chiều cao tự nhiên, nên `height: 26` KHÔNG đổi một pixel nào
+    ROW_GAP = spacing.sm, khoảng cách dọc giữa các hàng như `gap` của lưới cũ
+
+  Đánh đổi đã biết: chiều cao là hằng số nên chữ caption ở cỡ Dynamic Type rất
+  lớn có thể chật trong 26pt — đó là cái giá của `getItemLayout`, và là lý do
+  Queue #3 từng SKIP đúng việc này ở workout-builder (hàng ở đó cao động thật).
+  Ở đây nội dung ô là cố định (nhãn pose ngắn, ngày ngắn, icon cố định) nên cái
+  giá ấy trả được để đổi lấy virtualization cho thư viện vài trăm ảnh.
+*/
+const META_H = 26;
+
 export default function ProgressPhotosScreen() {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
+  const headerStyles = headerStylesFor(m);
+  const insets = useSafeAreaInsets();
   const i18n = useI18n();
-  const { lang } = useAppSettings();
-  const { data: photos, isError, refetch, isRefetching } = useProgressPhotos();
+  const { width: winW } = useWindowDimensions();
+  const { data: photos, isPending, isError, refetch, isRefetching } = useProgressPhotos();
   const upload = useUploadProgressPhoto();
   const del = useDeleteProgressPhoto();
+  const queryClient = useQueryClient();
   const [capturing, setCapturing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const poseLabel = (p: string) =>
-    p === 'front' ? i18n.nPhotoFront : p === 'side' ? i18n.nPhotoSide : i18n.nPhotoBack;
+  /* `mutate` ổn định qua các lần render; lấy ra một lần để `confirmDelete` bên
+     dưới cũng ổn định, và hàng memo chỉ vẽ lại khi đúng ảnh của nó đổi. */
+  const delMutate = del.mutate;
+  const confirmDelete = useCallback(
+    (id: string, photo_url: string) => {
+      Haptics.medium();
+      Alert.alert(i18n.nPhotoDelete, '', [
+        { text: i18n.nCancel, style: 'cancel' },
+        {
+          text: i18n.nPhotoDelete,
+          style: 'destructive',
+          onPress: () =>
+            delMutate({ id, photo_url }, { onError: (e: Error) => toast.fail(e) }),
+        },
+      ]);
+    },
+    [delMutate, i18n],
+  );
 
-  const confirmDelete = (id: string, photo_url: string) => {
-    Haptics.medium();
-    Alert.alert(i18n.nPhotoDelete, '', [
-      { text: i18n.nCancel, style: 'cancel' },
-      {
-        text: i18n.nPhotoDelete,
-        style: 'destructive',
-        onPress: () =>
-          del.mutate({ id, photo_url }, { onError: (e: Error) => toast.fail(e) }),
-      },
-    ]);
-  };
+  /* Kéo-để-tải-lại: cùng ngữ nghĩa với `refreshable` của `Screen` — rung khi
+     cú kéo ăn, `invalidateQueries()` thật, hạ cờ trong `finally`. */
+  const onRefresh = useCallback(async () => {
+    Haptics.light();
+    setRefreshing(true);
+    try {
+      await queryClient.invalidateQueries();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient]);
+
+  const openCapture = useCallback(() => {
+    Haptics.selection();
+    setCapturing(true);
+  }, []);
+
+  const rowH = useMemo(() => {
+    const cellW = (winW - spacing.md * 2) * 0.478;
+    return cellW / 0.8 + META_H + spacing.sm;
+  }, [winW]);
+  const getItemLayout = useCallback(
+    (_data: ArrayLike<ProgressPhoto> | null | undefined, index: number) => {
+      const row = Math.floor(index / NUM_COLS);
+      return { length: rowH, offset: row * rowH, index };
+    },
+    [rowH],
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: ProgressPhoto }) => <PhotoCell photo={item} onDelete={confirmDelete} />,
+    [confirmDelete],
+  );
 
   return (
-    <Screen refreshable back
-      title={i18n.progressPhotos}
-      headerRight={
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={i18n.a11yAdd}
-          hitSlop={8}
-          style={styles.addBtn}
-          onPress={() => {
-            Haptics.selection();
-            setCapturing(true);
-          }}>
-          <Icon icon={Plus} size={22} color={c.primary} />
-        </PressScale>
-      }>
-      {upload.isPending && (
-        <GlassCard>
-          <View style={styles.uploadingRow}>
-            <ActivityIndicator color={c.primary} />
-            <Text style={styles.uploadingText}>{i18n.nPhotoUploading}</Text>
-          </View>
-        </GlassCard>
-      )}
-
-      {/* A failed read is not an empty gallery. `photos` comes back undefined,
-        the zero branch renders, and the screen tells somebody they have no
-        progress photos — the one thing in this app people would most hate to
-        believe they had lost. The failure is answered first. */}
-      {isError ? (
-        <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
-      ) : !photos || photos.length === 0 ? (
-        <GlassCard>
-          <View style={styles.empty}>
-            <Icon icon={Camera} size={40} color={c.mutedForeground} />
-            <Text style={styles.emptyText}>{i18n.progressNoPhotos}</Text>
+    <View style={styles.root}>
+      <AmbientLight />
+      {/* Thanh đầu trang: chép đúng số đo nhánh `back` của `screen.tsx`. */}
+      <View style={[styles.pageHeader, headerStyles.surface, { paddingTop: insets.top }]}>
+        <View style={styles.pageHeaderRow}>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yBack}
+            hitSlop={8}
+            style={styles.backBtn}
+            onPress={() => {
+              Haptics.selection();
+              nav.back();
+            }}>
+            <Icon icon={ChevronLeft} size={22} color={c.primary} />
+          </PressScale>
+          <Text style={styles.pageTitle} numberOfLines={1}>
+            {i18n.progressPhotos}
+          </Text>
+          <View style={styles.pageHeaderRight}>
             <PressScale
-              style={styles.emptyBtn}
-              onPress={() => setCapturing(true)}>
-              <Text style={styles.emptyBtnText}>{i18n.nPhotoAdd}</Text>
+              accessibilityRole="button"
+              accessibilityLabel={i18n.a11yAdd}
+              hitSlop={8}
+              style={styles.addBtn}
+              onPress={openCapture}>
+              <Icon icon={Plus} size={22} color={c.primary} />
             </PressScale>
           </View>
-        </GlassCard>
-      ) : (
-        <View style={styles.grid}>
-          {photos.map((p) => {
-            const when = parseLocalDate(p.date).toLocaleDateString(getLocale(lang), {
-              day: 'numeric',
-              month: 'short',
-            });
-            return (
-              <View key={p.id} style={styles.photoCell}>
-                {/*
-                  Nhấn giữ ảnh vẫn xoá — nhưng nó thôi là lối DUY NHẤT (#135).
-
-                  Trước đây cả ô là một `Pressable` chỉ có `onLongPress`: không
-                  gợi ý, không vai, không nút nào nhìn thấy được. Người không
-                  đoán ra thì không xoá được ảnh, và VoiceOver thì không có cách
-                  nào — `swipe.mjs` đã ghi đúng điều ấy cho cú vuốt: "vô hình cho
-                  tới khi đoán ra". Nay nút thùng rác ở hàng dưới là lối chính;
-                  nhấn giữ còn lại là lối tắt, và vì nó là BẢN SAO của nút ấy
-                  nên ẩn khỏi cây trợ năng.
-                */}
-                <Pressable
-                  accessible={false}
-                  tabIndex={-1}
-                  onLongPress={() => confirmDelete(p.id, p.photo_url)}>
-                  <Image source={{ uri: p.signedUrl }} style={styles.photo} />
-                </Pressable>
-                <View style={styles.photoMeta}>
-                  <Text style={styles.photoPose}>{poseLabel(p.pose)}</Text>
-                  <View style={styles.photoMetaEnd}>
-                    <Text style={styles.photoDate}>{when}</Text>
-                    <PressScale
-                      accessibilityRole="button"
-                      accessibilityLabel={`${i18n.a11yDelete} ${poseLabel(p.pose)} ${when}`}
-                      // 14pt glyph on a caption row; slop carries it to 44
-                      hitSlop={15}
-                      onPress={() => {
-                        Haptics.selection();
-                        confirmDelete(p.id, p.photo_url);
-                      }}>
-                      <Icon icon={Trash2} size={14} color={c.mutedForeground} />
-                    </PressScale>
-                  </View>
-                </View>
-              </View>
-            );
-          })}
         </View>
-      )}
+      </View>
+
+      <FlatList
+        data={photos ?? []}
+        keyExtractor={(p) => p.id}
+        numColumns={NUM_COLS}
+        columnWrapperStyle={styles.row}
+        getItemLayout={getItemLayout}
+        renderItem={renderItem}
+        style={styles.list}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: insets.bottom + spacing.xl },
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={c.mutedForeground}
+            progressViewOffset={12}
+          />
+        }
+        ListHeaderComponent={
+          upload.isPending ? (
+            <View style={styles.uploadHead}>
+              <GlassCard>
+                <View style={styles.uploadingRow}>
+                  <ActivityIndicator color={c.primary} />
+                  <Text style={styles.uploadingText}>{i18n.nPhotoUploading}</Text>
+                </View>
+              </GlassCard>
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          isPending ? (
+            /* Đang tải KHÁC với không có gì: trước đây nhánh này dựng luôn thẻ
+               "chưa có ảnh" trong lúc dữ liệu còn trên đường về — đúng lỗi mà
+               `tools/skeleton.mjs` mô tả ("một màn hình không được lẫn hai thứ
+               ấy"). Nay đang tải thì hiện vòng xoay. */
+            <View style={styles.emptyLoading}>
+              <ActivityIndicator color={c.mutedForeground} />
+            </View>
+          ) : isError ? (
+            /* Đọc hỏng không phải thư viện rỗng — trả lời lỗi trước, như cũ. */
+            <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+          ) : (
+            <GlassCard>
+              <View style={styles.empty}>
+                <Icon icon={Camera} size={40} color={c.mutedForeground} />
+                <Text style={styles.emptyText}>{i18n.progressNoPhotos}</Text>
+                <PressScale style={styles.emptyBtn} onPress={openCapture}>
+                  <Text style={styles.emptyBtnText}>{i18n.nPhotoAdd}</Text>
+                </PressScale>
+              </View>
+            </GlassCard>
+          )
+        }
+      />
 
       <Modal visible={capturing} animationType="slide" onRequestClose={() => setCapturing(false)}>
         <CaptureView
@@ -167,9 +250,97 @@ export default function ProgressPhotosScreen() {
           }}
         />
       </Modal>
-    </Screen>
+    </View>
   );
 }
+
+/*
+  Một ô ảnh, memo theo đúng ảnh của nó.
+
+  `photo` đến từ react-query nên tham chiếu ổn định giữa các lần render; cùng
+  với `onDelete` ổn định, ô chỉ vẽ lại khi chính ảnh ấy đổi (xoá, thêm) — một
+  chunk SSE hay một lần rung ở chỗ khác không lôi cả lưới vẽ lại.
+*/
+const PhotoCell = memo(function PhotoCell({
+  photo,
+  onDelete,
+}: {
+  photo: ProgressPhoto;
+  onDelete: (id: string, photoUrl: string) => void;
+}) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const pose =
+    photo.pose === 'front' ? i18n.nPhotoFront : photo.pose === 'side' ? i18n.nPhotoSide : i18n.nPhotoBack;
+  const when = useMemo(
+    () =>
+      parseLocalDate(photo.date).toLocaleDateString(getLocale(lang), {
+        day: 'numeric',
+        month: 'short',
+      }),
+    [photo.date, lang],
+  );
+  const onLongPress = useCallback(
+    () => onDelete(photo.id, photo.photo_url),
+    [onDelete, photo.id, photo.photo_url],
+  );
+  const onTrash = useCallback(() => {
+    Haptics.selection();
+    onDelete(photo.id, photo.photo_url);
+  }, [onDelete, photo.id, photo.photo_url]);
+
+  return (
+    <View style={styles.photoCell}>
+      {/*
+        Nhấn giữ ảnh vẫn xoá — nhưng nó thôi là lối DUY NHẤT (#135).
+
+        Trước đây cả ô là một `Pressable` chỉ có `onLongPress`: không
+        gợi ý, không vai, không nút nào nhìn thấy được. Người không
+        đoán ra thì không xoá được ảnh, và VoiceOver thì không có cách
+        nào — `swipe.mjs` đã ghi đúng điều ấy cho cú vuốt: "vô hình cho
+        tới khi đoán ra". Nay nút thùng rác ở hàng dưới là lối chính;
+        nhấn giữ còn lại là lối tắt, và vì nó là BẢN SAO của nút ấy
+        nên ẩn khỏi cây trợ năng.
+      */}
+      <Pressable accessible={false} tabIndex={-1} onLongPress={onLongPress}>
+        {/*
+          `expo-image` thay cho RN `Image`:
+
+          - `cacheKey: photo.id` — signed URL xoay mỗi lần refetch, và cache
+            mặc định của ảnh bám theo URI nên cả thư viện bị tải lại dù ảnh
+            không đổi. Khóa cache theo id ảnh thì lần refetch sau đọc từ đĩa.
+          - `contentFit="cover"` giữ đúng cách lấp đầy ô như `aspectRatio`
+            trước đây, nhưng do native module vẽ với bộ nhớ tốt hơn RN Image.
+        */}
+        <Image
+          source={{ uri: photo.signedUrl, cacheKey: photo.id }}
+          style={styles.photo}
+          contentFit="cover"
+        />
+      </Pressable>
+      <View style={styles.photoMeta}>
+        <Text style={styles.photoPose} numberOfLines={1}>
+          {pose}
+        </Text>
+        <View style={styles.photoMetaEnd}>
+          <Text style={styles.photoDate} numberOfLines={1}>
+            {when}
+          </Text>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={`${i18n.a11yDelete} ${pose} ${when}`}
+            // 14pt glyph on a caption row; slop carries it to 44
+            hitSlop={15}
+            onPress={onTrash}>
+            <Icon icon={Trash2} size={14} color={c.mutedForeground} />
+          </PressScale>
+        </View>
+      </View>
+    </View>
+  );
+});
 
 function CaptureView({
   onClose,
@@ -290,6 +461,40 @@ function CaptureView({
 }
 
 const stylesFor = makeStyles((c, m) => ({
+  root: { flex: 1, backgroundColor: c.background },
+  /* Đầu trang chép đúng nhánh `back` của `screen.tsx`. */
+  pageHeader: {},
+  pageHeaderRow: {
+    height: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  backBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  pageTitle: {
+    flex: 1,
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.2,
+    color: c.foreground,
+    textAlign: 'center',
+  },
+  pageHeaderRight: {
+    minWidth: 44,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingRight: spacing.sm,
+  },
+  list: { flex: 1, backgroundColor: 'transparent' },
+  listContent: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.stack,
+  },
+  /* Hàng 2 ô của FlatList: trải đều như lưới `flexWrap` cũ. */
+  row: { justifyContent: 'space-between' },
+  uploadHead: { marginBottom: spacing.stack },
+  emptyLoading: { paddingVertical: spacing.xl, alignItems: 'center' },
   addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center' },
   addBtnText: { fontSize: 22, color: c.primary, lineHeight: 26 },
   uploadingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -299,10 +504,11 @@ const stylesFor = makeStyles((c, m) => ({
   emptyText: { ...type.body, color: c.mutedForeground },
   emptyBtn: { marginTop: spacing.sm, height: 44, paddingHorizontal: spacing.xl, borderRadius: radius.full, backgroundColor: m.actionSurface, alignItems: 'center', justifyContent: 'center' },
   emptyBtnText: { ...type.headline, color: c.primaryForeground },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  photoCell: { width: '47.8%', borderRadius: radius.md, overflow: 'hidden', backgroundColor: c.card },
+  photoCell: { width: '47.8%', marginBottom: spacing.sm, borderRadius: radius.md, overflow: 'hidden', backgroundColor: c.card },
   photo: { width: '100%', aspectRatio: 0.8, backgroundColor: c.secondary },
-  photoMeta: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.sm, paddingVertical: 6 },
+  /* Chiều cao cố định đúng bằng chiều cao tự nhiên (12 padding + glyph 14pt),
+     để `getItemLayout` tính đúng tới pixel. Xem chú thích ở META_H. */
+  photoMeta: { height: META_H, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.sm },
   photoPose: { ...type.caption, color: c.foreground, fontWeight: '600', textTransform: 'capitalize' },
   photoDate: { ...type.caption, color: c.mutedForeground },
   photoMetaEnd: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -323,4 +529,12 @@ const stylesFor = makeStyles((c, m) => ({
   shutterRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   shutter: { width: 74, height: 74, borderRadius: 37, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#fff' },
+}));
+
+const headerStylesFor = makeMaterialStyles((m) => ({
+  surface: {
+    backgroundColor: m.bg,
+    borderBottomWidth: m.borderWidth,
+    borderBottomColor: m.border,
+  },
 }));
