@@ -88,6 +88,7 @@ export default function SupplementsScreen() {
   return (
     <Screen refreshable
       back
+      keyboardAware
       title={i18n.nSupplements}
       headerRight={
         <PressScale

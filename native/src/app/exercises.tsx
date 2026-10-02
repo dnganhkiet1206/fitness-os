@@ -156,6 +156,7 @@ export default function ExercisesScreen() {
           value={search}
           onChangeText={setSearch}
           autoCorrect={false}
+          clearButtonMode="while-editing"
         />
         <PressScale
           style={styles.addBtn}

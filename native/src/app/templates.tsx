@@ -89,6 +89,7 @@ export default function TemplatesScreen() {
             onChangeText={setSearch}
             autoCorrect={false}
             returnKeyType="search"
+            clearButtonMode="while-editing"
           />
           {search.length > 0 ? (
             <Pressable
