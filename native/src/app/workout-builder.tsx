@@ -2,7 +2,7 @@ import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { ArrowLeft, Check, ChevronRight, Plus, Search, X } from 'lucide-react-native';
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -190,6 +190,78 @@ function inferType(groups: Set<MuscleArtKey>): TemplateType {
   return 'full_body';
 }
 
+/*
+  ── vì sao KHÔNG có `getItemLayout` ở FlatList bên dưới ──
+
+  Audit gợi ý hàng cao cố định, nhưng chiều cao hàng là động theo Dynamic Type:
+  `exRow` không có height cố định nào — nó là padding 10 + nội dung hai dòng
+  text (`type.body` + `type.caption`, cả hai đều scale theo cỡ chữ hệ thống mà
+  app này không bao giờ tắt, xem `tools/dynamic-type.mjs`). Một `getItemLayout`
+  với chiều cao danh nghĩa sẽ ĐÚNG ở cỡ chữ mặc định và SAI ở cỡ trợ năng — cuộn
+  nhảy và khoảng trắng với chính những người cần chữ lớn nhất. Queue #3 Task 13
+  đã SKIP đúng việc này với cùng lý do.
+
+  Phần còn lại của tối ưu thì làm được: hàng memo + `toggle` ổn định, nên mỗi
+  lần chạm chỉ vẽ lại đúng hàng đổi trạng thái thay vì cả danh sách.
+*/
+export interface BuilderExercise {
+  id: string;
+  name: string;
+  muscle_group?: string | null;
+  equipment?: string | null;
+}
+
+/*
+  Một hàng bài tập, memo theo đúng props của nó.
+
+  `visible` là `useMemo` nên object bài tập giữ nguyên tham chiếu qua các lần
+  render; `chosen` chỉ đổi khi lựa chọn đổi; `onToggle` ổn định nhờ useCallback.
+  Kết quả: chạm một hàng chỉ vẽ lại hàng ấy (trạng thái `on` đổi), không phải
+  cả trăm hàng còn lại.
+*/
+const ExerciseRow = memo(function ExerciseRow({
+  ex,
+  on,
+  onToggle,
+}: {
+  ex: BuilderExercise;
+  on: boolean;
+  onToggle: (ex: BuilderExercise) => void;
+}) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const { lang } = useAppSettings();
+  const press = useCallback(() => onToggle(ex), [onToggle, ex]);
+  return (
+    <PressScale
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked: on }}
+      aria-checked={on} // web không dịch accessibilityState ra aria-checked (#101)
+      onPress={press}
+      style={[styles.exRow, on && styles.exRowOn]}>
+      {/* A fixed slot, because `MuscleArt` draws nothing for a
+          group it has no diagram for — without it those rows would
+          start 38pt to the left of the ones around them. */}
+      <View style={styles.art}>
+        <MuscleArt group={ex.muscle_group ?? ''} size={30} />
+      </View>
+      <View style={styles.exText}>
+        <Text style={styles.exName} numberOfLines={1}>{ex.name}</Text>
+        <Text style={styles.exMeta} numberOfLines={1}>
+          {/* Nhãn, không phải khoá: cột nay lưu `chest`/`dumbbell`,
+              và giá trị cũ chưa nhận ra được thì in nguyên văn. */}
+          {[muscleGroupLabel(ex.muscle_group, lang), equipmentLabel(ex.equipment, lang)]
+            .filter(Boolean)
+            .join(' · ')}
+        </Text>
+      </View>
+      <View style={[styles.tick, on && styles.tickOn]}>
+        {on ? <Icon icon={Check} size={14} color={c.primaryForeground} strokeWidth={3} /> : null}
+      </View>
+    </PressScale>
+  );
+});
+
 export default function WorkoutBuilderSheet() {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -300,14 +372,20 @@ export default function WorkoutBuilderSheet() {
     [items],
   );
 
-  const toggle = (ex: { id: string; name: string }) => {
+  /*
+    `useCallback`, không phải hàm trần: nó là prop `onToggle` của mỗi hàng memo
+    bên dưới. Một `toggle` mới mỗi lần render sẽ phá memo của TOÀN BỘ danh sách
+    — đúng thứ tốn kém nhất ở đây, vì mỗi lần chạm là một lần chọn đổi và một
+    lần render lại không cần thiết của hàng trăm hàng.
+  */
+  const toggle = useCallback((ex: { id: string; name: string }) => {
     Haptics.selection();
     setItems((prev) =>
       prev.some((i) => i.exerciseId === ex.id)
         ? prev.filter((i) => i.exerciseId !== ex.id)
         : [...prev, { exerciseId: ex.id, exerciseName: ex.name, ...DEFAULTS }],
     );
-  };
+  }, []);
 
   const patch = (idx: number, values: Partial<TemplateExercise>) =>
     setItems((prev) => prev.map((e, i) => (i === idx ? { ...e, ...values } : e)));
@@ -626,37 +704,9 @@ export default function WorkoutBuilderSheet() {
                 </PressScale>
               ) : null
             }
-            renderItem={({ item: e }) => {
-              const on = chosen.has(e.id);
-              return (
-                <PressScale
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: on }}
-                  aria-checked={on} // web không dịch accessibilityState ra aria-checked (#101)
-                  onPress={() => toggle(e)}
-                  style={[styles.exRow, on && styles.exRowOn]}>
-                  {/* A fixed slot, because `MuscleArt` draws nothing for a
-                      group it has no diagram for — without it those rows would
-                      start 38pt to the left of the ones around them. */}
-                  <View style={styles.art}>
-                    <MuscleArt group={e.muscle_group ?? ''} size={30} />
-                  </View>
-                  <View style={styles.exText}>
-                    <Text style={styles.exName} numberOfLines={1}>{e.name}</Text>
-                    <Text style={styles.exMeta} numberOfLines={1}>
-                      {/* Nhãn, không phải khoá: cột nay lưu `chest`/`dumbbell`,
-                          và giá trị cũ chưa nhận ra được thì in nguyên văn. */}
-                      {[muscleGroupLabel(e.muscle_group, lang), equipmentLabel(e.equipment, lang)]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </Text>
-                  </View>
-                  <View style={[styles.tick, on && styles.tickOn]}>
-                    {on ? <Icon icon={Check} size={14} color={c.primaryForeground} strokeWidth={3} /> : null}
-                  </View>
-                </PressScale>
-              );
-            }}
+            renderItem={({ item }) => (
+              <ExerciseRow ex={item} on={chosen.has(item.id)} onToggle={toggle} />
+            )}
           />
 
           <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.sm }]}>
