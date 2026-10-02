@@ -53,7 +53,9 @@ private final class RestActivityStore {
     */
     for activity in Activity<RestTimerAttributes>.activities {
       activities.removeValue(forKey: activity.id)
-      await activity.end(nil, dismissalPolicy: .immediate)
+      // Never let a stale end block the new activity — if this throws,
+      // the Island would never appear at all.
+      try? await activity.end(nil, dismissalPolicy: .immediate)
     }
     let attributes = RestTimerAttributes(brandName: "ASCND")
     let state = RestTimerAttributes.ContentState(
