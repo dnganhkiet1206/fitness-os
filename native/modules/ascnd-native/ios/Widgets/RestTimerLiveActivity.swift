@@ -392,6 +392,7 @@ private struct ExpandedTrailing: View {
       HStack(spacing: 14) {
         IslandCircleButton(icon: "pause.fill")
         RestRingTimer(
+          startDate: context.state.startDate,
           endDate: context.state.endDate,
           totalSeconds: context.state.totalSeconds,
           countsDown: false
@@ -462,6 +463,7 @@ private struct LockScreenView: View {
         // Ring at the far right with the live timer inside — same language
         // as the Island. Digits are system-ticked; the ring is coarse.
         RestRingTimer(
+          startDate: context.state.startDate,
           endDate: context.state.endDate,
           totalSeconds: context.state.totalSeconds,
           size: 52, lineWidth: 4, fontSize: 16
@@ -487,6 +489,7 @@ private struct LockScreenView: View {
         }
         Spacer()
         RestRingTimer(
+          startDate: context.state.startDate,
           endDate: context.state.endDate,
           totalSeconds: context.state.totalSeconds,
           size: 52, lineWidth: 4, fontSize: 16,
