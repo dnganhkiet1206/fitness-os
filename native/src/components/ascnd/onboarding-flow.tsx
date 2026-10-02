@@ -150,6 +150,83 @@ const DEFAULT_KG = 70;
 const SCALE_FRACTION = 0.72;
 const SCALE_MAX = 300;
 
+/**
+ * Module scope, not inside `OnboardingFlow`: defining it in the render body
+ * created a new component identity on every render, remounting the question
+ * header each time. Props are the whole contract — nothing captured.
+ */
+function Ask({ q, why }: { q: string; why: string }) {
+  const styles = stylesFor(usePalette());
+  return (
+    <View>
+      <Text style={styles.q}>{q}</Text>
+      <Text style={styles.why}>{why}</Text>
+    </View>
+  );
+}
+
+/**
+ * Module scope for the same reason as `Ask` — but here the remount was
+ * user-visible: a new identity per render remounted the ruler's ScrollView
+ * and reset its scroll position, so the finger lost its anchor on the very
+ * screens (07↔08) that share the tool.
+ *
+ * `sameTool` and `dragHint` arrive as props because they belong to the flow's
+ * step state and locale, not to the strip itself. Everything else the strip
+ * needs (palette, width, motion constants) it reads itself.
+ *
+ * Thước chạy HẾT bề ngang màn — một dụng cụ bị thụt lề hai bên đọc ra là
+ * một cái thẻ. Lề của `OnboardingScreen` được trả lại bằng margin âm.
+ */
+function RulerStrip({
+  count,
+  min10,
+  listRef,
+  onIndex,
+  onContentSizeChange,
+  sameTool,
+  dragHint,
+}: {
+  count: number;
+  min10: number;
+  listRef: React.RefObject<Animated.ScrollView | null>;
+  onIndex: (i: number) => void;
+  onContentSizeChange: () => void;
+  sameTool: boolean;
+  dragHint: string;
+}) {
+  const styles = stylesFor(usePalette());
+  const { width: screenW } = useWindowDimensions();
+  return (
+    /*
+      Hiệu ứng vào của cây thước chỉ chạy khi cây thước là NỘI DUNG MỚI.
+
+      Ở 07↔08 nó là vật dùng chung, và audit đo được nó tự phản bội đúng chỗ
+      phải giữ: `op 0 → 0,236 → 0,652` kèm `y 672 → 666 → 656 → 647`, tức mờ từ
+      số không và dâng lên 25 điểm, trong khi tấm bọc phía trên đã crossfade
+      đúng. Ngón tay mất điểm neo ngay ở cặp màn cần nó nhất.
+
+      Vào màn 07 từ màn 06 thì vẫn chạy — ở đó cây thước thật sự vừa xuất hiện.
+    */
+    <Animated.View
+      entering={sameTool ? undefined : FadeInDown.duration(duration.move).delay(60)}
+      style={styles.bleed}>
+      <View style={styles.ruler}>
+        <Ruler
+          count={count}
+          min10={min10}
+          width={screenW}
+          scrollRef={listRef}
+          onIndex={onIndex}
+          onContentSizeChange={onContentSizeChange}
+        />
+        <View style={styles.needle} pointerEvents="none" />
+      </View>
+      <Text style={styles.hint}>{dragHint}</Text>
+    </Animated.View>
+  );
+}
+
 export function OnboardingFlow() {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -430,57 +507,8 @@ export function OnboardingFlow() {
   const painted = rise(0) !== undefined;
   const { inFace, outFace, outKey, run } = useStageMotion<StepKey>({ screenW, dirSV, crossSV });
 
-  /* ── các mảnh chỉ luồng này dùng ── */
-
-  const Ask = ({ q, why }: { q: string; why: string }) => (
-    <View>
-      <Text style={styles.q}>{q}</Text>
-      <Text style={styles.why}>{why}</Text>
-    </View>
-  );
-
-  /** Thước chạy HẾT bề ngang màn — một dụng cụ bị thụt lề hai bên đọc ra là
-      một cái thẻ. Lề của `OnboardingScreen` được trả lại bằng margin âm. */
-  const RulerStrip = ({
-    count,
-    min10,
-    listRef,
-    onIndex,
-    onContentSizeChange,
-  }: {
-    count: number;
-    min10: number;
-    listRef: React.RefObject<Animated.ScrollView | null>;
-    onIndex: (i: number) => void;
-    onContentSizeChange: () => void;
-  }) => (
-    /*
-      Hiệu ứng vào của cây thước chỉ chạy khi cây thước là NỘI DUNG MỚI.
-
-      Ở 07↔08 nó là vật dùng chung, và audit đo được nó tự phản bội đúng chỗ
-      phải giữ: `op 0 → 0,236 → 0,652` kèm `y 672 → 666 → 656 → 647`, tức mờ từ
-      số không và dâng lên 25 điểm, trong khi tấm bọc phía trên đã crossfade
-      đúng. Ngón tay mất điểm neo ngay ở cặp màn cần nó nhất.
-
-      Vào màn 07 từ màn 06 thì vẫn chạy — ở đó cây thước thật sự vừa xuất hiện.
-    */
-    <Animated.View
-      entering={sameTool ? undefined : FadeInDown.duration(duration.move).delay(60)}
-      style={styles.bleed}>
-      <View style={styles.ruler}>
-        <Ruler
-          count={count}
-          min10={min10}
-          width={screenW}
-          scrollRef={listRef}
-          onIndex={onIndex}
-          onContentSizeChange={onContentSizeChange}
-        />
-        <View style={styles.needle} pointerEvents="none" />
-      </View>
-      <Text style={styles.hint}>{i18n.obDragHint}</Text>
-    </Animated.View>
-  );
+  /* ── các mảnh chỉ luồng này dùng: `Ask` và `RulerStrip` giờ ở module scope
+     (xem trên) — identity ổn định, cây thước không còn remount reset scroll. */
 
   /*
     ── màn 13 dựng khung của RIÊNG nó ──
@@ -683,6 +711,8 @@ export function OnboardingFlow() {
             styles={styles}
             ask={<Ask q={i18n.obHeightQ} why={i18n.obHeightWhy} />}
             strip={RulerStrip}
+            sameTool={sameTool}
+            dragHint={i18n.obDragHint}
             onCm={setHeightCm}
             onUnit={setHPick}
           />
@@ -699,6 +729,8 @@ export function OnboardingFlow() {
             title={i18n.obWeightQ}
             error={statError}
             strip={RulerStrip}
+            sameTool={sameTool}
+            dragHint={i18n.obDragHint}
             onKg={setWeightKg}
             onUnit={setWPick}
           />
@@ -947,6 +979,8 @@ type Strip = (p: {
   listRef: React.RefObject<Animated.ScrollView | null>;
   onIndex: (i: number) => void;
   onContentSizeChange: () => void;
+  sameTool: boolean;
+  dragHint: string;
 }) => React.ReactElement;
 
 /**
@@ -962,6 +996,8 @@ function HeightBody({
   styles,
   ask,
   strip: Strip,
+  sameTool,
+  dragHint,
   onCm,
   onUnit,
 }: {
@@ -970,6 +1006,8 @@ function HeightBody({
   styles: Styles;
   ask: React.ReactNode;
   strip: Strip;
+  sameTool: boolean;
+  dragHint: string;
   onCm: (v: string) => void;
   onUnit: (u: HeightUnit) => void;
 }) {
@@ -1084,6 +1122,8 @@ function HeightBody({
         listRef={listRef}
         onIndex={commit}
         onContentSizeChange={onContentSizeChange}
+        sameTool={sameTool}
+        dragHint={dragHint}
       />
     </View>
   );
@@ -1105,6 +1145,8 @@ function WeightBody({
   title,
   error,
   strip: Strip,
+  sameTool,
+  dragHint,
   onKg,
   onUnit,
 }: {
@@ -1115,6 +1157,8 @@ function WeightBody({
   title: string;
   error: string | null;
   strip: Strip;
+  sameTool: boolean;
+  dragHint: string;
   onKg: (v: string) => void;
   onUnit: (u: WeightUnit) => void;
 }) {
@@ -1179,6 +1223,8 @@ function WeightBody({
         listRef={listRef}
         onIndex={commit}
         onContentSizeChange={onContentSizeChange}
+        sameTool={sameTool}
+        dragHint={dragHint}
       />
     </View>
   );
