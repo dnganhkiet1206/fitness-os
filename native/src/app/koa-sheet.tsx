@@ -87,6 +87,12 @@ export default function KoaSheetScreen() {
     <Screen title="Koa · spec sheet" back>
       <View style={styles.hero}>
         {/* Chạm để đổi biểu cảm là việc chính của màn này, nên nó là một nút có tên (#120). */}
+        {/* Chữ TIẾNG VIỆT CỐ Ý — không đưa vào i18n. Màn này là spec sheet cho
+            dev (mở từ DEV bar của Mascot Room, production không link tới), và
+            toàn bộ nội dung của nó là bản tiếng Việt của design doc "KOALA
+            MASCOT – SVG DESIGN" ("3. BIỂU CẢM", "5. TƯ THẾ"…). Dịch 2 chuỗi
+            này mà để cả sheet tiếng Việt thì nửa vời; dịch cả sheet thì vô
+            nghĩa vì không user nào thấy. */}
         <Pressable accessibilityRole="button" accessibilityLabel="Đổi biểu cảm của Koa" onPress={cycle} hitSlop={8}>
           <KoaFigure expression={expression} pose={pose} worn={worn} size={200} />
         </Pressable>
