@@ -12,6 +12,7 @@ import { LoadFailed } from '@/components/ascnd/load-failed';
 import { PostCard } from '@/components/ascnd/post-card';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
+import { ZoomLink } from '@/components/ascnd/zoom-link';
 import { SEGMENT_SWAP, SegmentPanel, Segmented } from '@/components/ascnd/segmented';
 import { SkeletonBlock } from '@/components/ascnd/skeleton';
 import { radius, spacing, type } from '@/constants/ascnd';
@@ -28,7 +29,6 @@ import {
   useSearchPosts,
 } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
-import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
 import { fillCopy } from '@/lib/copy-fill';
 
@@ -200,10 +200,12 @@ export default function CommunitySearchScreen() {
                 : `@${p.handle}`;
             return (
               <View key={p.user_id} style={[styles.row, i > 0 && styles.rowRule]}>
+                {/* Mở hồ sơ cũng zoom như thẻ bài (#216): ZoomLink giữ chốt
+                    bấm dồn, cú nhấn của PressScale đi qua Slot của Link. */}
+                <ZoomLink href={{ pathname: '/community-user', params: { id: p.user_id } }}>
                 <PressScale
                   accessibilityRole="button"
                   accessibilityLabel={`${p.display_name}, @${p.handle}`}
-                  onPress={() => nav.push({ pathname: '/community-user', params: { id: p.user_id } })}
                   style={styles.who}>
                   <CommunityAvatar mascotId={p.mascot_id} size={44} />
                   <View style={styles.text}>
@@ -222,6 +224,7 @@ export default function CommunitySearchScreen() {
                     </Text>
                   </View>
                 </PressScale>
+                </ZoomLink>
                 <PressScale
                   accessibilityRole="button"
                   accessibilityLabel={`${following ? i18n.nCmFollowing : i18n.nCmFollow} ${p.display_name}`}
