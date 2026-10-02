@@ -28,7 +28,7 @@
  *    go green again if the `/ s` disappears
  */
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -39,14 +39,29 @@ const out = mkdtempSync(path.join(tmpdir(), 'repeatmeal-'));
 const problems = [];
 
 try {
-  execFileSync(
-    'npx',
-    ['tsc', 'src/lib/recent-meals.ts', '--ignoreConfig', '--outDir', out,
-     '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
-    { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
-  );
+  try {
+    execFileSync(
+      'npx',
+      ['tsc', 'src/lib/recent-meals.ts',
+        /* Shared dedup semantics (`lib/meal-names.ts`): tsc does not resolve
+           `@/` without the project tsconfig, so a dependency that only enters
+           through an `@/` import is never emitted — listed explicitly. */
+        'src/lib/meal-names.ts',
+        '--ignoreConfig', '--outDir', out,
+        '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
+      { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
+    );
+  } catch {
+    /* `@/` is unmapped without the project tsconfig: TS2307, non-zero exit —
+       it emits anyway, and the `@/` require in the emit is rewritten below. */
+  }
+  /* The emit's `require("@/lib/meal-names")` cannot resolve outside the
+     project tsconfig; the file sits next to the emit. */
+  const rmJs = path.join(out, 'recent-meals.js');
+  writeFileSync(rmJs, readFileSync(rmJs, 'utf8')
+    .replace(/require\("@\/lib\/meal-names"\)/g, 'require("./meal-names")'));
   const { foldRecentMeals, mealSignature } =
-    createRequire(import.meta.url)(path.join(out, 'recent-meals.js'));
+    createRequire(import.meta.url)(rmJs);
 
   /** an item as the database holds it: figures already multiplied by servings */
   const stored = (name, perServing, servings) => ({

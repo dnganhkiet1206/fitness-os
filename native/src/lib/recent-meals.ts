@@ -1,3 +1,5 @@
+import { foodNameSet, foodSetKey } from '@/lib/meal-names';
+
 /**
  * Turning logged meals back into meals you can eat again.
  *
@@ -61,12 +63,15 @@ export interface LoggedEntry {
 /**
  * What makes two meals the same meal.
  *
- * The meal type and the set of food names, folded to lower case and sorted —
- * the order foods were added in is not part of what makes two breakfasts the
- * same breakfast, and neither is whether one was typed with a capital.
+ * The meal type and the SET of food names — one definition shared with the
+ * plan's "already logged?" check, see `lib/meal-names.ts`. Order, case and
+ * spacing are not part of it, and neither is a duplicate: "egg,egg" is one
+ * egg logged twice, not a different breakfast. (The header above has always
+ * said "set"; the implementation used to sort-and-join the raw names, which
+ * kept duplicates and blanks — the multiset was the drift.)
  */
 export function mealSignature(mealType: string, names: string[]): string {
-  return `${mealType}|${names.map((n) => n.trim().toLowerCase()).sort().join(',')}`;
+  return `${mealType}|${foodSetKey(foodNameSet(names))}`;
 }
 
 /**

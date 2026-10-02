@@ -1,3 +1,5 @@
+import { foodNameSet } from '@/lib/meal-names';
+
 /**
  * Whether a planned meal is already in today's diary.
  *
@@ -62,15 +64,10 @@ export interface LoggedEntry {
   items: NamedFood[];
 }
 
-/** Lowercased, trimmed, blanks dropped — the form both sides are compared in. */
-function nameSet(foods: readonly NamedFood[]): Set<string> {
-  const out = new Set<string>();
-  for (const f of foods) {
-    const n = (f.food_name ?? '').trim().toLowerCase();
-    if (n) out.add(n);
-  }
-  return out;
-}
+/* The set both sides are compared in — one definition shared with
+   `lib/recent-meals.ts`, see `lib/meal-names.ts`. */
+const nameSet = (foods: readonly NamedFood[]): Set<string> =>
+  foodNameSet(foods.map((f) => f.food_name));
 
 function sameSet(a: Set<string>, b: Set<string>): boolean {
   if (a.size !== b.size) return false;
