@@ -33,7 +33,7 @@ import {
   useRecentMeals,
   type RecentMeal,
 } from '@/hooks/use-nutrition';
-import { useInvalidateToday } from '@/hooks/useTodayData';
+import { useInvalidateToday } from '@/hooks/use-today-data';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';
 import { supabase } from '@/integrations/supabase/client';

@@ -14,7 +14,7 @@ import { alpha, makeStyles } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useReminders } from '@/hooks/use-reminders';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import type { ReminderPrefs } from '@/lib/notifications';
 import type { TimedReminderKey } from '@/lib/reminder-plan';
 import { habitFor, usePersonalModel } from '@/lib/personal-model';

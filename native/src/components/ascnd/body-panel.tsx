@@ -39,7 +39,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useBodyMeasurements, useDeleteBodyMeasurement, useWeightHistory } from '@/hooks/use-fitness-data';
 import { useProgressPhotos } from '@/hooks/use-progress-photos';
 import { useUnits } from '@/hooks/use-units';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { useWeightGoal } from '@/hooks/use-weight-goal';
 import { getLocale } from '@/lib/i18n';
 import { localDaysAgoStr, parseLocalDate } from '@/lib/local-date';

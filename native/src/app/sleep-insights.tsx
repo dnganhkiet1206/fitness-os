@@ -21,7 +21,7 @@ import { useSleepRamp, usePalette } from '@/hooks/use-palette';
 import { useMuted } from '@/hooks/use-wash';
 import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { useProfile, useSleepHistory } from '@/hooks/useTodayData';
+import { useProfile, useSleepHistory } from '@/hooks/use-today-data';
 import { useDeleteSleepLog } from '@/hooks/use-fitness-data';
 import { getLocale } from '@/lib/i18n';
 import { asleepMinutes } from '@/lib/daily-log-service';

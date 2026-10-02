@@ -1,4 +1,4 @@
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import type { HeightUnit, WeightUnit } from '@/lib/units';
 
 /**

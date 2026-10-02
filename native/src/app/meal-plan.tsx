@@ -22,7 +22,7 @@ import {
   useMealPlans,
 } from '@/hooks/use-library';
 import { useLogPlannedMeal, useTodayLog } from '@/hooks/use-nutrition';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { calorieTargetFor } from '@/lib/macro-targets';
 import { MEAL_ORDER, PLAN_DAYS, plannedMealIsLoggedToday } from '@/lib/planned-meal';
 import { toast } from '@/lib/toast';

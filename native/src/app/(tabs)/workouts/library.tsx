@@ -14,7 +14,7 @@ import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useExercises } from '@/hooks/use-library';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { useUnits } from '@/hooks/use-units';
 import { energyProfileFrom, sessionKcalOf } from '@/lib/energy';
 import { nav } from '@/lib/nav';

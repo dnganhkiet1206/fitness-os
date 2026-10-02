@@ -6,7 +6,7 @@ import { useRoutineDays } from '@/hooks/use-library';
 import { useSupplementChecklist } from '@/hooks/use-library';
 import { useTodayWater } from '@/hooks/use-water';
 import { useTodayWeight, useWorkoutSessions } from '@/hooks/use-fitness-data';
-import { useDailyLog, useProfile, useTodayBiometrics, useTodaySleep } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useTodayBiometrics, useTodaySleep } from '@/hooks/use-today-data';
 import { localDateStr } from '@/lib/local-date';
 import {
   DEFAULT_REMINDERS,

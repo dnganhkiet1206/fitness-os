@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 
-import { useDailyLog, useProfile, useRecentWorkouts } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useRecentWorkouts } from '@/hooks/use-today-data';
 import type { AssistantSignal } from '@/lib/assistant-suggestions';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { hasRecoverySignal } from '@/lib/readiness-i18n';

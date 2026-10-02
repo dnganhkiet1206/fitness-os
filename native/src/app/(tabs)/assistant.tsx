@@ -26,7 +26,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useCoachChat } from '@/hooks/use-coach-chat';
 import { useSmartNudges } from '@/hooks/use-smart-nudges';
-import { useDailyLog, useProfile, useTodayBiometrics } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useTodayBiometrics } from '@/hooks/use-today-data';
 import { useBiometricHistory } from '@/hooks/use-biometrics';
 import { useKcalHistory, useReadinessHistory, useSleepDurationHistory } from '@/hooks/use-fitness-data';
 import { briefFor } from '@/lib/assistant-brief';

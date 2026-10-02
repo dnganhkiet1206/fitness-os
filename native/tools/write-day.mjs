@@ -231,7 +231,7 @@ for (const [k, why] of EXEMPT) {
       'useToggleSupplement không đọc ngày lúc CHẠM (trong `set`) hoặc ngày không nằm trong khoá gộp — bỏ tick sau nửa đêm sẽ xoá nhầm ngày',
     );
   }
-  const td = strip(readFileSync(path.join(NATIVE, 'src/hooks/useTodayData.ts'), 'utf8'));
+  const td = strip(readFileSync(path.join(NATIVE, 'src/hooks/use-today-data.ts'), 'utf8'));
   const inv = td.slice(td.indexOf('export function useInvalidateToday'));
   if (!/const dayOf = \(\) => date \?\? today\(\);/.test(inv) || !/todayKeys\(user\?\.id, dayOf\(\)\)/.test(inv)) {
     problems.push(

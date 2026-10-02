@@ -35,7 +35,7 @@ import { useExercises, useRoutineDays, useWorkoutTemplates } from '@/hooks/use-l
 import { useUnits } from '@/hooks/use-units';
 import { useUserState } from '@/hooks/use-user-state';
 import { useWorkoutShareInvite } from '@/hooks/use-workout-share-invite';
-import { useDailyLog, useProfile, useRecentWorkouts } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useRecentWorkouts } from '@/hooks/use-today-data';
 import { emitKoa } from '@/lib/koa-stage';
 import {
   exerciseKey,

@@ -6,7 +6,7 @@ import { useDailyStreak } from '@/hooks/use-mascot-room';
 import { habitFor, usePersonalModel } from '@/lib/personal-model';
 import { parseLocalDate } from '@/lib/local-date';
 import { lateHour } from '@/lib/user-rhythm';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import {
   DEV_EMOTIONS,
   getDevOverride,

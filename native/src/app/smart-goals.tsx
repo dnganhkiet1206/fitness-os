@@ -14,7 +14,7 @@ import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { useUnits } from '@/hooks/use-units';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { supabase } from '@/integrations/supabase/client';
 import { adaptiveTDEE, worthMentioning } from '@/lib/adaptive-tdee';
 import { calcTargetCalories } from '@/lib/fitness-calc';

@@ -48,7 +48,7 @@ const out = mkdtempSync(path.join(tmpdir(), 'nutri-'));
 try {
   execFileSync(
     'npx',
-    ['tsc', 'src/lib/fitness-calc.ts', 'src/lib/plausible.ts', '--ignoreConfig', '--outDir', out,
+    ['tsc', 'src/lib/fitness-calc.ts', 'src/lib/plausible.ts', 'src/lib/local-date.ts', '--ignoreConfig', '--outDir', out,
      '--module', 'esnext', '--target', 'es2020', '--moduleResolution', 'bundler', '--skipLibCheck'],
     { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
   );
@@ -59,7 +59,15 @@ try {
 }
 {
   const fc = path.join(out, 'fitness-calc.js');
-  writeFileSync(fc, readFileSync(fc, 'utf8').replace("'@/lib/plausible'", "'./plausible.js'"));
+  /* `local-date` joined the imports with Queue #4 Task 04 (`parseLocalDate`
+     replacing inline `new Date(...)`); it has no `@/` imports of its own, so
+     compiling it alongside and rewriting the specifier is the whole fix. */
+  writeFileSync(
+    fc,
+    readFileSync(fc, 'utf8')
+      .replace("'@/lib/plausible'", "'./plausible.js'")
+      .replace("'@/lib/local-date'", "'./local-date.js'"),
+  );
 }
 /*
   ── và ĐƯỜNG DỰ PHÒNG, thứ bước quét ở trên không bao giờ chạm ──

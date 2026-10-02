@@ -191,7 +191,7 @@ for (const [t, why] of KEPT) {
 
 /* ── 3. and the two queries that were the actual cost stay gone ── */
 {
-  const today = readFileSync(path.join(NATIVE, 'src/hooks/useTodayData.ts'), 'utf8')
+  const today = readFileSync(path.join(NATIVE, 'src/hooks/use-today-data.ts'), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
   for (const [table, why] of [
@@ -199,7 +199,7 @@ for (const [t, why] of KEPT) {
     ['wearable_sources', 'nó làm thẻ sinh trắc nói "chưa kết nối" cạnh dữ liệu Apple Health'],
   ]) {
     if (today.includes(`'${table}'`)) {
-      problems.push(`useTodayData.ts truy vấn lại '${table}' — ${why}`);
+      problems.push(`use-today-data.ts truy vấn lại '${table}' — ${why}`);
     }
   }
   const keys = readFileSync(path.join(NATIVE, 'src/lib/today-keys.ts'), 'utf8');

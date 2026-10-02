@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as Crypto from 'expo-crypto';
 
 import { useAuth } from '@/hooks/use-auth';
-import { useInvalidateToday } from '@/hooks/useTodayData';
+import { useInvalidateToday } from '@/hooks/use-today-data';
 import { supabase } from '@/integrations/supabase/client';
 import { confirmWrite } from '@/lib/write-result';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
@@ -190,7 +190,7 @@ export function useDeleteBiometricSample() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['biometric_history', user?.id] });
       /* `today_bio`, which is what the query is actually called
-         (`useTodayData.ts`). This said `today_biometrics` and so matched
+         (`use-today-data.ts`). This said `today_biometrics` and so matched
          nothing — the same shape as the `sleep_logs` line in
          `use-health-sync.ts`, and just as silent.
 

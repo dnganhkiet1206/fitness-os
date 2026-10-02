@@ -28,7 +28,7 @@ import { alpha, makeStyles, type Material } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useWorkoutSessions } from '@/hooks/use-fitness-data';
-import { useProfile, useRecentWorkouts, useTodayBiometrics } from '@/hooks/useTodayData';
+import { useProfile, useRecentWorkouts, useTodayBiometrics } from '@/hooks/use-today-data';
 import { AWARD_DEFINITIONS, useRecentAwards } from '@/hooks/use-extras';
 import { useUnits } from '@/hooks/use-units';
 import { connectedSourceLabel } from '@/lib/biometric-source';

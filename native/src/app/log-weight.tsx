@@ -16,7 +16,7 @@ import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useTodayWeight } from '@/hooks/use-fitness-data';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { useRulerIndex } from '@/hooks/use-ruler-index';
 import { useScaleWake } from '@/hooks/use-scale-wake';
 import { useUnits } from '@/hooks/use-units';

@@ -28,7 +28,7 @@ import { useI18n } from '@/hooks/use-app-settings';
 import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { useTodayWeight } from '@/hooks/use-fitness-data';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
-import { useTodayBiometrics } from '@/hooks/useTodayData';
+import { useTodayBiometrics } from '@/hooks/use-today-data';
 import { useReminders } from '@/hooks/use-reminders';
 import { useTodoSkip } from '@/hooks/use-todo-skip';
 import { nav } from '@/lib/nav';

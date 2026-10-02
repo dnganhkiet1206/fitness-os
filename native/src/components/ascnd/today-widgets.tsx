@@ -16,7 +16,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useReadinessHistory, useTodayWeight, useWeightHistory } from '@/hooks/use-fitness-data';
 import { useSupplementChecklist, useToggleSupplement } from '@/hooks/use-library';
 import { useSmartNudges } from '@/hooks/use-smart-nudges';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { useUnits } from '@/hooks/use-units';
 import { getLocale } from '@/lib/i18n';
 import { localDateStr, parseLocalDate } from '@/lib/local-date';

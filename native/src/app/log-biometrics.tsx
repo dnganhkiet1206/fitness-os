@@ -23,7 +23,7 @@ import { Check } from 'lucide-react-native';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
 import { useLogBiometrics } from '@/hooks/use-biometrics';
-import { useTodayBiometrics } from '@/hooks/useTodayData';
+import { useTodayBiometrics } from '@/hooks/use-today-data';
 import {
   HEALTH_OWNED_BIOMETRICS,
   healthValues,

@@ -91,7 +91,7 @@ try {
   try {
     execFileSync(
       'npx',
-      ['tsc', 'src/lib/plausible.ts', 'src/lib/fitness-calc.ts',
+      ['tsc', 'src/lib/plausible.ts', 'src/lib/fitness-calc.ts', 'src/lib/local-date.ts',
         '--ignoreConfig', '--outDir', out, '--module', 'commonjs', '--target', 'es2020', '--skipLibCheck'],
       { cwd: NATIVE, stdio: ['ignore', 'pipe', 'pipe'] },
     );
@@ -99,7 +99,14 @@ try {
     /* `@/` is unmapped without the project tsconfig — TS2307, emitted anyway. */
   }
   const fc = path.join(out, 'fitness-calc.js');
-  writeFileSync(fc, readFileSync(fc, 'utf8').replace('require("@/lib/plausible")', 'require("./plausible.js")'));
+  /* `local-date` joined the imports with Queue #4 Task 04; same treatment as
+     `plausible` — it has no `@/` imports of its own. */
+  writeFileSync(
+    fc,
+    readFileSync(fc, 'utf8')
+      .replace('require("@/lib/plausible")', 'require("./plausible.js")')
+      .replace('require("@/lib/local-date")', 'require("./local-date.js")'),
+  );
 
   writeFileSync(
     path.join(out, 'drive.cjs'),

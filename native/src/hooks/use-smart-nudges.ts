@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useDailyLog } from '@/hooks/useTodayData';
+import { useDailyLog } from '@/hooks/use-today-data';
 import { EDGE_FUNCTIONS } from '@/lib/backend';
 import { callEdge } from '@/lib/edge';
 import { localDateStr } from '@/lib/local-date';

@@ -30,7 +30,7 @@ import { usePalette } from '@/hooks/use-palette';
 import { useFormSeed } from '@/hooks/use-form-seed';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';

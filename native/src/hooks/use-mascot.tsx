@@ -4,7 +4,7 @@ import { useEffect, useMemo, useSyncExternalStore } from 'react';
 
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useDailyLog, useProfile, useTodayMeals } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useTodayMeals } from '@/hooks/use-today-data';
 import { useTodayWater } from '@/hooks/use-water';
 import { supabase } from '@/integrations/supabase/client';
 import { seeded } from '@/lib/bandit';

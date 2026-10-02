@@ -195,7 +195,7 @@ import { useReminderSync } from '@/hooks/use-reminders';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { TodaySkeleton } from '@/components/ascnd/skeleton';
 import { useTodayActiveKcal, useTodayTrainingMinutes } from '@/hooks/use-fitness-data';
-import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/use-today-data';
 import { asleepMinutes } from '@/lib/daily-log-service';
 import { energyProfileFrom } from '@/lib/energy';
 import { useTodayWater } from '@/hooks/use-water';

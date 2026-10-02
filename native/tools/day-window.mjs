@@ -55,7 +55,7 @@ function walk(dir) {
  *
  * A check that has quietly stopped matching anything reports a clean run, which
  * is indistinguishable from a clean codebase and considerably worse. The first
- * string is the code as it was written in `useTodayData.ts`; the second and
+ * string is the code as it was written in `use-today-data.ts`; the second and
  * third are the shapes that must NOT be flagged.
  */
 const SELF_TEST = [

@@ -19,7 +19,7 @@ import {
   type PersonalRecord,
 } from '@/lib/personal-record';
 import { useAuth } from './use-auth';
-import { useInvalidateToday } from './useTodayData';
+import { useInvalidateToday } from './use-today-data';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';
 import { RECORD } from '@/lib/offline-class';

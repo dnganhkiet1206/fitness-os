@@ -39,7 +39,7 @@ import { useRise } from '@/lib/entrance';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { AI_FAILURE_KEY, callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
 import { useAuth } from '@/hooks/use-auth';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { supabase } from '@/integrations/supabase/client';
 import { fillCopy } from '@/lib/copy-fill';
 import { localDateStr, localDayRangeISO, weekStartOf } from '@/lib/local-date';

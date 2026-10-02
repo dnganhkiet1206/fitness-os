@@ -40,7 +40,7 @@ import { clearCrashLog, readCrashLog, type CrashEntry } from '@/lib/crash-log';
 import { toast } from '@/lib/toast';
 import { useMascot } from '@/hooks/use-mascot';
 import { useAuth } from '@/hooks/use-auth';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr } from '@/lib/local-date';
 import { callEdge, EDGE_FUNCTIONS } from '@/lib/edge';

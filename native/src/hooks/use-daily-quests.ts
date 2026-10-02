@@ -4,7 +4,7 @@ import { claimedList, useDailyStreak, useMascotWallet } from '@/hooks/use-mascot
 import { useStepsAvailable } from '@/hooks/use-fitness-data';
 import { useStepsGoal } from '@/hooks/use-steps-goal';
 import { useTodayWater } from '@/hooks/use-water';
-import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile, useTodaySleep } from '@/hooks/use-today-data';
 import { DAILY_QUESTS, questRefKey, type QuestKey } from '@/lib/mascot-room';
 import { localDateStr } from '@/lib/local-date';
 import { mealDone, sleepDone } from '@/lib/todo';

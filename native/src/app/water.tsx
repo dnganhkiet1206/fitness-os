@@ -34,7 +34,7 @@ import { usePalette } from '@/hooks/use-palette';
 import { duration } from '@/constants/motion';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useVolumeUnit } from '@/hooks/use-volume-unit';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { useAddWater, useRemoveLastWater, useTodayWater, useTodayWaterLogs, useWaterWeek } from '@/hooks/use-water';
 import { displayVolume, volumeLabel, volumeToMl } from '@/lib/units';
 import { waterQuickAmounts } from '@/lib/water-presets';

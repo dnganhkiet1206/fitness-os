@@ -15,7 +15,7 @@ import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWorkoutSession, useWorkoutSessions } from '@/hooks/use-fitness-data';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { energyProfileFrom, sessionKcalOf } from '@/lib/energy';
 import { useUnits } from '@/hooks/use-units';
 import { getLocale } from '@/lib/i18n';

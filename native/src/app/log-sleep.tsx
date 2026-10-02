@@ -27,7 +27,7 @@ import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
-import { useInvalidateToday, useTodaySleep } from '@/hooks/useTodayData';
+import { useInvalidateToday, useTodaySleep } from '@/hooks/use-today-data';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
 import { recomputeDailyLog } from '@/lib/daily-log-service';

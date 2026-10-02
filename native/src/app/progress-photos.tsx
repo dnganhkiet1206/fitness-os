@@ -94,9 +94,11 @@ export default function ProgressPhotosScreen() {
   const [capturing, setCapturing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  /* `mutate` ổn định qua các lần render; lấy ra một lần để `confirmDelete` bên
-     dưới cũng ổn định, và hàng memo chỉ vẽ lại khi đúng ảnh của nó đổi. */
-  const delMutate = del.mutate;
+  /* `del` (kết quả useMutation) ổn định khi mutation idle — chỉ đổi tham chiếu
+     khi trạng thái chuyển (đang xoá/xong), lúc ấy refetch cũng vẽ lại lưới.
+     Gọi đúng dạng `del.mutate(` chứ không qua alias: `tools/silent-rollback.mjs`
+     đọc chỗ gọi theo dạng ấy để kiểm `onError` — một `delMutate(...)` đặt tên
+     khác là vô hình với nó và làm cổng đỏ oan. */
   const confirmDelete = useCallback(
     (id: string, photo_url: string) => {
       Haptics.medium();
@@ -106,11 +108,11 @@ export default function ProgressPhotosScreen() {
           text: i18n.nPhotoDelete,
           style: 'destructive',
           onPress: () =>
-            delMutate({ id, photo_url }, { onError: (e: Error) => toast.fail(e) }),
+            del.mutate({ id, photo_url }, { onError: (e: Error) => toast.fail(e) }),
         },
       ]);
     },
-    [delMutate, i18n],
+    [del, i18n],
   );
 
   /* Kéo-để-tải-lại: cùng ngữ nghĩa với `refreshable` của `Screen` — rung khi

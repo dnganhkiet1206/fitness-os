@@ -7,7 +7,7 @@ import { AppState } from 'react-native';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { toast } from '@/lib/toast';
-import { useInvalidateToday } from '@/hooks/useTodayData';
+import { useInvalidateToday } from '@/hooks/use-today-data';
 import { supabase } from '@/integrations/supabase/client';
 import {
   activityName,

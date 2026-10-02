@@ -231,7 +231,7 @@ if (!TZ) {
         'và Koa vẫn giữ mặt lo, cho người đã ghi rồi',
     );
   }
-  for (const f of ['src/hooks/useTodayData.ts', 'src/hooks/use-nutrition.ts']) {
+  for (const f of ['src/hooks/use-today-data.ts', 'src/hooks/use-nutrition.ts']) {
     const src = read(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
     // anchored on the *definition*: an unanchored match found a call site
     const block = src.match(/function (useInvalidateToday|invalidateLogQueries)\([\s\S]*?\n\}/);

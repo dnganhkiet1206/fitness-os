@@ -34,7 +34,7 @@ import { useMealPlanFill, useMealPlans } from '@/hooks/use-library';
 import { PlanRow } from '@/components/ascnd/plan-row';
 import { dedupeSeedShadows, useMyFoods, useMyFoodsSorted, useRecentFoods, useToggleFavoriteFood, useTodayLog, type FoodItemRow } from '@/hooks/use-nutrition';
 import { useTodayWater } from '@/hooks/use-water';
-import { useDailyLog, useProfile } from '@/hooks/useTodayData';
+import { useDailyLog, useProfile } from '@/hooks/use-today-data';
 import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 import { supabase } from '@/integrations/supabase/client';
 

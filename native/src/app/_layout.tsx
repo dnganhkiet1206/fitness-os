@@ -29,7 +29,7 @@ import { AppSettingsProvider, useAppSettings, useI18n } from '@/hooks/use-app-se
 import { AuthProvider, useAuth } from '@/hooks/use-auth';
 import { CoachChatProvider } from '@/hooks/use-coach-chat';
 import { useAutoHealthSync } from '@/hooks/use-health-sync';
-import { useProfile } from '@/hooks/useTodayData';
+import { useProfile } from '@/hooks/use-today-data';
 import { navGuardScreenListeners, useNavGuard } from '@/lib/nav';
 import { asyncStoragePersister, CACHE_BUSTER, queryClient } from '@/lib/query-client';
 
