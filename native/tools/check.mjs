@@ -905,6 +905,12 @@ const STEPS = [
     cập nhật app.
   */
   ['phiên bản widget', 'node', ['tools/widget-height-version.mjs']],
+  /*
+    Preset nước: mỗi đơn vị một bộ số tròn được chọn (250ml là 8.45oz — không
+    ai bấm số lẻ), không vế nào là bản quy đổi của vế kia, không hardcode ở
+    call-site — mọi chỗ qua waterQuickAmounts.
+  */
+  ['preset nước', 'node', ['tools/water-presets.mjs']],
 ];
 
 /*
