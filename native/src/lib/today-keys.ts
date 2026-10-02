@@ -72,6 +72,20 @@ export function todayKeys(userId: string | undefined, dateStr: string): unknown[
        hôm nay — nên một khoá làm cả hai cũ đi. */
     ['today_workout_sets', userId],
     ['readiness_history', userId],
+    /*
+      Calories-per-day history feeding the assistant's nutrition panel
+      (`useKcalHistory`, key `['kcal_history', userId, days]`). It reads
+      `daily_logs`, so logging a meal — which `recomputeDailyLog` folds into
+      today's row — changes its answer without any query here noticing: this
+      key appeared exactly once in the whole store, at the declaration, and no
+      write ever invalidated it. The panel and the tile above it read the same
+      table precisely so they cannot disagree — but only if both refresh.
+
+      No `dateStr`, for the same reason as `mascot_streak` above: the query is
+      keyed on the rolling window ending today, so the two-element prefix is
+      what `invalidateQueries` matches.
+    */
+    ['kcal_history', userId],
     ['recent_foods', userId],
     ['profile', userId],
     /* Lifetime counters — they drive the mascot unlocks, so a fresh log can pop
