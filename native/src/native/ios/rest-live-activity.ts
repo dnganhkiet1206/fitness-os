@@ -20,6 +20,12 @@ interface RestDisplay {
   exerciseName: string;
   setNumber: number;
   totalSets: number;
+  /** Localized "Rest" (i18n.nRdResting) — the Island follows the app language. */
+  restingText: string;
+  /** Localized "Set {n}/{t}" (i18n.nRestSetOf, pre-formatted). */
+  setText: string;
+  /** Localized "Up next" (i18n.nRestNext) — the Island shows the NEXT set. */
+  nextText: string;
 }
 
 interface Adjust {
@@ -86,6 +92,9 @@ export function createRestLiveActivity(facade: RestLiveActivityFacade) {
         totalSeconds,
         remainingSeconds,
         startTimestamp,
+        restingText: display.restingText,
+        setText: display.setText,
+        nextText: display.nextText,
       })
       .then((id) => {
         if (g !== generation) {
@@ -111,6 +120,9 @@ export function createRestLiveActivity(facade: RestLiveActivityFacade) {
             totalSeconds: adj.totalSeconds,
             remainingSeconds: adj.remainingSeconds,
             startTimestamp: startTimestamp ?? Date.now(),
+            restingText: lastDisplay.restingText,
+            setText: lastDisplay.setText,
+            nextText: lastDisplay.nextText,
           });
         }
       });
@@ -130,6 +142,9 @@ export function createRestLiveActivity(facade: RestLiveActivityFacade) {
         totalSeconds,
         remainingSeconds,
         startTimestamp: startTimestamp ?? Date.now(),
+        restingText: lastDisplay.restingText,
+        setText: lastDisplay.setText,
+        nextText: lastDisplay.nextText,
       });
       return;
     }

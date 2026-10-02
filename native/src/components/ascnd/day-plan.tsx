@@ -920,7 +920,16 @@ export function DayPlan({
           of: row.of,
         };
         restLiveActivityStarted(
-          { exerciseName: target.name, setNumber: target.ordinal, totalSets: target.of },
+          {
+            exerciseName: target.name,
+            setNumber: target.ordinal,
+            totalSets: target.of,
+            restingText: i18n.nRdResting,
+            setText: i18n.nRestSetOf
+              .replace('{n}', String(target.ordinal))
+              .replace('{t}', String(target.of)),
+            nextText: i18n.nRestNext,
+          },
           upcoming.total,
           upcoming.left,
         );
@@ -928,7 +937,7 @@ export function DayPlan({
         restLiveActivityEnded();
       }
     },
-    [rest, rows, shown],
+    [rest, rows, shown, i18n],
   );
 
   const toggle = useCallback(

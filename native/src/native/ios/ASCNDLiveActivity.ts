@@ -39,6 +39,12 @@ export interface RestActivityState {
    * dates, never `Date.now...endDate`. Defaults to now (a fresh rest).
    */
   startTimestamp?: number;
+  /** Localized "Rest" — the Island follows the app language. */
+  restingText: string;
+  /** Localized "Set {n}/{t}", pre-formatted. */
+  setText: string;
+  /** Localized "Up next" — the Island shows the NEXT set. */
+  nextText: string;
 }
 
 /** Absolute end timestamp (ms) for the native ContentState.endDate. */
@@ -90,6 +96,9 @@ export async function startRestActivity(state: RestActivityState): Promise<strin
       state.totalSeconds,
       startTimestamp,
       endTimestamp,
+      state.restingText,
+      state.setText,
+      state.nextText,
     );
   } catch (err) {
     warnDev('startRestActivity', err);
@@ -116,6 +125,9 @@ export async function updateRestActivity(
       state.totalSeconds,
       startTimestamp,
       endTimestamp,
+      state.restingText,
+      state.setText,
+      state.nextText,
     );
     return true;
   } catch (err) {

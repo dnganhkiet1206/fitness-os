@@ -42,6 +42,12 @@ struct RestTimerAttributes: ActivityAttributes {
     var startDate: Date
     /// ABSOLUTE end time. The widget/Live Activity UI counts down to this date.
     var endDate: Date
+    /// Localized "Rest" — the Island follows the app language (from TS i18n).
+    var restingText: String
+    /// Localized "Set {n}/{t}", pre-formatted by TS.
+    var setText: String
+    /// Localized "Up next" — the Island shows the NEXT set.
+    var nextText: String
   }
 
   /// Static branding, fixed at activity start.

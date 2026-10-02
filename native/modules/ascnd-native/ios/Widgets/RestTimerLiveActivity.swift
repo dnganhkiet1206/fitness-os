@@ -193,20 +193,19 @@ private struct RestRing: View {
 ///   with no stable ideal width — fixedSize collapses it to zero and the
 ///   digits vanish entirely (01/10/2026, Kiệt's device: empty rings).
 ///
-/// The interval is `startDate...endDate` — two STORED dates from ContentState.
-/// Never `Date.now...endDate`: if iOS re-renders after the countdown finished,
-/// `Date.now` is past `endDate`, the backwards range wedges at 0:00, and the
-/// Island looks stuck. (01/10/2026, from the Dawnly pattern.)
+/// The interval MUST be `Date.now...endDate`. We tried stored
+/// `startDate...endDate` (Dawnly pattern) — the system caches views with
+/// fixed dates and the digits FREEZE. `Date.now` forces re-evaluation every
+/// render. (01/10/2026, Kiệt's device: frozen 0:53/1:01/1:08.)
 @available(iOS 16.1, *)
 private struct TimerDigits: View {
-  let startDate: Date
   let endDate: Date
   var fontSize: CGFloat = 22
   var weight: Font.Weight = .bold
   var countsDown: Bool = true
 
   var body: some View {
-    Text(timerInterval: startDate...endDate, countsDown: countsDown)
+    Text(timerInterval: Date.now...endDate, countsDown: countsDown)
       .font(Island.timerFont(size: fontSize, weight: weight))
       .foregroundStyle(.white)
       .lineLimit(1)
@@ -220,7 +219,6 @@ private struct TimerDigits: View {
 /// cadence — see the header note); the digits above it are exact.
 @available(iOS 16.1, *)
 private struct RestRingTimer: View {
-  let startDate: Date
   let endDate: Date
   let totalSeconds: Int
   var size: CGFloat = 80
@@ -241,7 +239,7 @@ private struct RestRingTimer: View {
       VStack(spacing: 1) {
         // TimerDigits constrains its own box (see its LAYOUT comment);
         // the overlay centres that narrow box on the ring.
-        TimerDigits(startDate: startDate, endDate: endDate, fontSize: fontSize, countsDown: countsDown)
+        TimerDigits(endDate: endDate, fontSize: fontSize, countsDown: countsDown)
         if showTotal {
           Text("/ \(formatTotal(seconds: totalSeconds))")
             .font(.caption2)
@@ -256,8 +254,10 @@ private struct RestRingTimer: View {
 
 @available(iOS 16.1, *)
 private extension ActivityViewContext<RestTimerAttributes> {
+  /// Localized "Set {n}/{t}" — pre-formatted by TS from the app's i18n.
+  /// The Island follows the app language; never hardcode English here.
   var setLabel: String {
-    "Set \(state.setNumber) of \(state.totalSets)"
+    state.setText
   }
 }
 
@@ -286,15 +286,13 @@ private struct CompactTrailing: View {
     switch context.state.activityState {
     case .resting:
       RestRingTimer(
-        startDate: context.state.startDate,
-        endDate: context.state.endDate,
+                endDate: context.state.endDate,
         totalSeconds: context.state.totalSeconds,
         size: 34, lineWidth: 2.5, fontSize: 10, showTotal: false
       )
     case .active:
       RestRingTimer(
-        startDate: context.state.startDate,
-        endDate: context.state.endDate,
+                endDate: context.state.endDate,
         totalSeconds: context.state.totalSeconds,
         size: 34, lineWidth: 2.5, fontSize: 10, showTotal: false,
         countsDown: false
@@ -332,15 +330,18 @@ private struct ExpandedLeading: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
-      Text(context.attributes.brandName.uppercased())
-        .font(.caption2)
-        .fontWeight(.medium)
-        .tracking(1.2)
-        .foregroundStyle(Island.tertiary)
+      HStack(spacing: 6) {
+        ASCNDMark(size: 14)
+        Text(context.attributes.brandName.uppercased())
+          .font(.caption2)
+          .fontWeight(.medium)
+          .tracking(1.2)
+          .foregroundStyle(Island.tertiary)
+      }
 
       switch context.state.activityState {
       case .resting:
-        Text("Resting")
+        Text(context.state.restingText)
           .font(.system(size: 19, weight: .semibold))
           .foregroundStyle(.white)
         Text(context.setLabel)
@@ -386,14 +387,13 @@ private struct ExpandedTrailing: View {
       // media player (Kiệt's spec 01/10/2026).
       HStack(spacing: 14) {
         IslandCircleButton(icon: "pause.fill")
-        RestRingTimer(startDate: context.state.startDate, endDate: context.state.endDate, totalSeconds: context.state.totalSeconds)
+        RestRingTimer(endDate: context.state.endDate, totalSeconds: context.state.totalSeconds)
       }
     case .active:
       HStack(spacing: 14) {
         IslandCircleButton(icon: "pause.fill")
         RestRingTimer(
-          startDate: context.state.startDate,
-          endDate: context.state.endDate,
+                    endDate: context.state.endDate,
           totalSeconds: context.state.totalSeconds,
           countsDown: false
         )
@@ -446,7 +446,7 @@ private struct LockScreenView: View {
     case .resting:
       HStack(spacing: 14) {
         VStack(alignment: .leading, spacing: 2) {
-          Text("REST")
+          Text(context.state.restingText.uppercased())
             .font(.caption2)
             .fontWeight(.semibold)
             .tracking(1.2)
@@ -463,8 +463,7 @@ private struct LockScreenView: View {
         // Ring at the far right with the live timer inside — same language
         // as the Island. Digits are system-ticked; the ring is coarse.
         RestRingTimer(
-          startDate: context.state.startDate,
-          endDate: context.state.endDate,
+                    endDate: context.state.endDate,
           totalSeconds: context.state.totalSeconds,
           size: 52, lineWidth: 4, fontSize: 16
         )
@@ -489,8 +488,7 @@ private struct LockScreenView: View {
         }
         Spacer()
         RestRingTimer(
-          startDate: context.state.startDate,
-          endDate: context.state.endDate,
+                    endDate: context.state.endDate,
           totalSeconds: context.state.totalSeconds,
           size: 52, lineWidth: 4, fontSize: 16,
           countsDown: false

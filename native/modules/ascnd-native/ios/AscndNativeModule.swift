@@ -38,7 +38,10 @@ private final class RestActivityStore {
     totalSets: Int,
     totalSeconds: Int,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    restingText: String,
+    setText: String,
+    nextText: String
   ) async throws -> String {
     /*
       Only one rest activity may exist at a time. The TS side ends the
@@ -60,7 +63,10 @@ private final class RestActivityStore {
       totalSets: totalSets,
       totalSeconds: totalSeconds,
       startDate: startDate,
-      endDate: endDate
+      endDate: endDate,
+      restingText: restingText,
+      setText: setText,
+      nextText: nextText
     )
     // staleDate lets the system replace a stale activity if updates stop.
     let content = ActivityContent(state: state, staleDate: endDate.addingTimeInterval(60))
@@ -81,7 +87,10 @@ private final class RestActivityStore {
     totalSets: Int,
     totalSeconds: Int,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
+    restingText: String,
+    setText: String,
+    nextText: String
   ) async throws {
     guard let activity = activities[id] else {
       throw AscndNativeError.activityNotFound(id)
@@ -93,7 +102,10 @@ private final class RestActivityStore {
       totalSets: totalSets,
       totalSeconds: totalSeconds,
       startDate: startDate,
-      endDate: endDate
+      endDate: endDate,
+      restingText: restingText,
+      setText: setText,
+      nextText: nextText
     )
     await activity.update(
       ActivityContent(state: state, staleDate: endDate.addingTimeInterval(60))
@@ -152,6 +164,9 @@ public final class AscndNativeModule: Module {
         totalSeconds: Int,
         startTimestamp: Double,
         endTimestamp: Double,
+        restingText: String,
+        setText: String,
+        nextText: String,
         promise: Promise
       ) in
       guard #available(iOS 16.1, *) else {
@@ -168,7 +183,10 @@ public final class AscndNativeModule: Module {
             totalSets: totalSets,
             totalSeconds: totalSeconds,
             startDate: Date(timeIntervalSince1970: startTimestamp / 1000.0),
-            endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0)
+            endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0),
+            restingText: restingText,
+            setText: setText,
+            nextText: nextText
           )
           promise.resolve(id)
         } catch {
@@ -187,6 +205,9 @@ public final class AscndNativeModule: Module {
         totalSeconds: Int,
         startTimestamp: Double,
         endTimestamp: Double,
+        restingText: String,
+        setText: String,
+        nextText: String,
         promise: Promise
       ) in
       guard #available(iOS 16.1, *) else {
@@ -204,7 +225,10 @@ public final class AscndNativeModule: Module {
             totalSets: totalSets,
             totalSeconds: totalSeconds,
             startDate: Date(timeIntervalSince1970: startTimestamp / 1000.0),
-            endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0)
+            endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0),
+            restingText: restingText,
+            setText: setText,
+            nextText: nextText
           )
           promise.resolve()
         } catch {
