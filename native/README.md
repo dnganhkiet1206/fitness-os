@@ -1,56 +1,42 @@
-# Welcome to your Expo app 👋
+# ASCND native — React Native iOS rebuild
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Bản rebuild React Native (Expo) của app fitness ASCND, chạy trên iOS. Dev
+web đã dừng — đây là nơi mọi phát triển đang diễn ra, trên nhánh
+`claude/ios-fitness-rebuild-omgulr`.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Chạy app
 
 ```bash
-npm run reset-project
+npm install
+npx expo start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Bản native cần **development build** (không chạy đầy đủ trên Expo Go):
+`npx expo run:ios --device` sau `npx expo prebuild --platform ios --clean`.
+Xem checklist đầy đủ trong `docs/ios-rebuild-checklist.md` (Swift không
+compile được trên Linux — Kiệt rebuild trên máy thật của mình).
 
-### Other setup steps
+## Cổng chất lượng (phải xanh trước khi push)
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+Chạy từ thư mục này (`native/`), không chạy từ gốc repo:
 
-## Learn more
+```bash
+npx tsc --noEmit -p tsconfig.json
+node tools/check.mjs   # 311 bước
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Cấu trúc
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- `src/` — app (screens, components, hooks, lib). Convention: file
+  kebab-case, i18n key namespaced theo người (`nPg…`/`nRc…`/`nCx…`)
+- `src/native/ios/` — TS facade cho module native (`rest-live-activity.ts`…)
+- `modules/ascnd-native/ios/` — Swift: Expo module `AscndNative` (ActivityKit
+  rest timer display-only) + WidgetKit extension `ASCNDWidgets` (spike)
+- `tools/` — các gate chất lượng, chạy qua `tools/check.mjs`
+- `docs/` — tài liệu; bắt đầu ở `docs/AUDIT_STATE.md`
+- `supabase/` — backend (migrations + tests)
 
-## Join the community
+## Team A · B · C
 
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Phối hợp qua GitHub issue #6. Quy tắc: một issue một người, không sửa file
+của người khác, không nới guard để xanh, commit tham chiếu issue.
