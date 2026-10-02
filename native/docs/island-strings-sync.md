@@ -16,9 +16,9 @@ Vì vậy bridge chỉ truyền `languageCode` ('vi' | 'en'), Swift tự tra b�
 
 ## Quy tắc sync thủ công
 Khi thêm/sửa/xóa key i18n liên quan đến Dynamic Island trong
-`native/src/i18n/native-strings.ts`, **phải** sửa tương ứng trong `islandStrings()`:
+`native/src/lib/native-strings.ts`, **phải** sửa tương ứng trong `islandStrings()`:
 
-| native-strings.ts key | Swift islandStrings |
+| `native/src/lib/native-strings.ts` key | Swift islandStrings |
 |---|---|
 | (chuỗi "Nghỉ"/"Rest") | `resting` |
 | (chuỗi "Set {n}/{t}") | `setTemplate` |
@@ -30,7 +30,7 @@ Khi thêm/sửa/xóa key i18n liên quan đến Dynamic Island trong
 - Giải pháp duy nhất: hardcode + sync thủ công (đây là pattern chuẩn của Apple cho Live Activity localization).
 
 ## Checklist khi đổi chuỗi DI
-- [ ] Sửa `native/src/i18n/native-strings.ts`
+- [ ] Sửa `native/src/lib/native-strings.ts`
 - [ ] Sửa `islandStrings()` trong `AscndNativeModule.swift`
 - [ ] `npx tsc --noEmit` (TS)
 - [ ] Kiệt rebuild `--clean` (Swift không compile được trên Linux)
