@@ -83,9 +83,20 @@ const SEND_WINDOW = 20;
 const HISTORY_LIMIT = 60;
 
 export interface Msg {
+  /**
+   * Stable key for the transcript list. DB rows carry their row id; messages
+   * created on the device get a local one. Without this the list keys by
+   * index, and every streamed chunk re-renders every row instead of just the
+   * one being typed.
+   */
+  id: string;
   role: 'user' | 'assistant';
   content: string;
 }
+
+/* Local message ids — unique within a session; loaded messages keep their DB id. */
+let localMsgSeq = 0;
+const nextLocalMsgId = () => `local-${Date.now()}-${++localMsgSeq}`;
 
 interface CoachChat {
   messages: Msg[];
@@ -207,7 +218,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
     // on the next request.
     const { data } = await supabase
       .from('ai_messages')
-      .select('role, content')
+      .select('id, role, content')
       .eq('conversation_id', id)
       .order('created_at', { ascending: false })
       .limit(HISTORY_LIMIT);
@@ -216,7 +227,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
     const loaded = (data ?? [])
       .filter((m) => m.role === 'user' || m.role === 'assistant')
       .reverse()
-      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+      .map((m) => ({ id: m.id as string, role: m.role as 'user' | 'assistant', content: m.content }));
     setMessages(loaded);
     /* Everything in an old conversation has already been through extraction.
        Without this, opening one from the history panel and then backgrounding
@@ -243,7 +254,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
       loadingRef.current = true;
       Haptics.light();
 
-      const userMsg: Msg = { role: 'user', content: text };
+      const userMsg: Msg = { id: nextLocalMsgId(), role: 'user', content: text };
       let newMessages: Msg[] = [];
       setMessages((prev) => {
         newMessages = [...prev, userMsg];
@@ -273,7 +284,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
             if (last?.role === 'assistant') {
               return prev.map((m, i) => (i === prev.length - 1 ? { ...m, content: assistantSoFar } : m));
             }
-            return [...prev, { role: 'assistant', content: assistantSoFar }];
+            return [...prev, { id: nextLocalMsgId(), role: 'assistant', content: assistantSoFar }];
           });
           grew();
         };

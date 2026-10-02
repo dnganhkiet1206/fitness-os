@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { Text, View } from 'react-native';
 
 import { spacing, type } from '@/constants/ascnd';
@@ -8,8 +9,14 @@ import { usePalette } from '@/hooks/use-palette';
  * Minimal markdown renderer for AI chat replies — mirrors what the web
  * shows via ReactMarkdown for the subset the coach actually produces:
  * #/##/### headings, -/* bullets, 1. numbered lists, **bold** inline.
+ *
+ * Memoized on (text, mutedColor): during SSE streaming the parent re-renders
+ * on every chunk, and without this every already-finished message would
+ * re-split and re-parse its whole text for every chunk of the answer being
+ * typed below it. The streaming message itself still re-parses — its text
+ * prop changes — but that is exactly one message, not the whole transcript.
  */
-export function MarkdownLite({
+export const MarkdownLite = memo(function MarkdownLite({
   text,
   mutedColor,
 }: {
@@ -27,7 +34,7 @@ export function MarkdownLite({
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
-  const blocks = text.split('\n');
+  const blocks = useMemo(() => text.split('\n'), [text]);
   const marker = mutedColor ? { color: mutedColor } : null;
   return (
     <View style={styles.root}>
@@ -72,7 +79,7 @@ export function MarkdownLite({
       })}
     </View>
   );
-}
+});
 
 /*
   `styles` vào bằng THAM SỐ, không bằng hook.

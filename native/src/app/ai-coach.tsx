@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -28,7 +28,7 @@ import { toast } from '@/lib/toast';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useAuth } from '@/hooks/use-auth';
-import { useCoachChat } from '@/hooks/use-coach-chat';
+import { useCoachChat, type Msg } from '@/hooks/use-coach-chat';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';
 import { supabase } from '@/integrations/supabase/client';
@@ -303,39 +303,13 @@ export default function AiCoachScreen() {
                 allowed here at all: 8.4:1 at the aura's brightest. `mutedColor`
                 pulls the list markers up to the same measured grey the captions
                 use; at `mutedForeground` they sat at 2.57:1.
+
+                Each row is a memoized `ChatMessage` keyed by stable message id:
+                a streamed chunk re-renders exactly the row being typed, not the
+                whole transcript.
               */}
-              {messages.map((m, i) => (
-                <View key={i} style={[styles.msgRow, m.role === 'user' && styles.msgRowUser]}>
-                  {m.role === 'assistant' ? (
-                    <View style={styles.avatarAI}>
-                      <Glyph name="spark" size={14} />
-                    </View>
-                  ) : null}
-                  {m.role === 'assistant' ? (
-                    <LiquidGlass
-                      /* Bong bóng trả lời không phải một chỉ số. Tô tím mọi
-                         câu trả lời trong một cuộc trò chuyện dài là rất nhiều
-                         tím cho một thông tin đã có avatar nói rồi. */
-                      style={styles.bubble}
-                      tint={c.primary}
-                      radius={radius.lg}>
-                      <View style={styles.bubbleInner}>
-                        <MarkdownLite text={m.content} mutedColor={c.glassMuted} />
-                      </View>
-                    </LiquidGlass>
-                  ) : (
-                    <View style={[styles.bubble, styles.bubbleUser]}>
-                      <View style={styles.bubbleInner}>
-                        <Text style={styles.bubbleUserText}>{m.content}</Text>
-                      </View>
-                    </View>
-                  )}
-                  {m.role === 'user' ? (
-                    <View style={styles.avatarUser}>
-                      <Glyph name="user" size={14} />
-                    </View>
-                  ) : null}
-                </View>
+              {messages.map((m) => (
+                <ChatMessage key={m.id} msg={m} mutedColor={c.glassMuted} />
               ))}
               {isLoading && messages[messages.length - 1]?.role !== 'assistant' ? (
                 <View style={styles.msgRow}>
@@ -500,6 +474,60 @@ export default function AiCoachScreen() {
     </View>
   );
 }
+
+/*
+  One transcript row, memoized on its message object.
+
+  Streaming re-renders the transcript on every SSE chunk: the hook builds a new
+  messages array each time, but every message EXCEPT the one being typed keeps
+  its object identity (`upsertAssistant` maps the rest through untouched). With
+  a stable `key={m.id}` and this memo, a chunk re-renders exactly one row — the
+  one whose content changed — instead of re-splitting and re-parsing the
+  markdown of the whole conversation.
+*/
+const ChatMessage = memo(function ChatMessage({
+  msg,
+  mutedColor,
+}: {
+  msg: Msg;
+  mutedColor: string;
+}) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  return (
+    <View style={[styles.msgRow, msg.role === 'user' && styles.msgRowUser]}>
+      {msg.role === 'assistant' ? (
+        <View style={styles.avatarAI}>
+          <Glyph name="spark" size={14} />
+        </View>
+      ) : null}
+      {msg.role === 'assistant' ? (
+        <LiquidGlass
+          /* Bong bóng trả lời không phải một chỉ số. Tô tím mọi
+             câu trả lời trong một cuộc trò chuyện dài là rất nhiều
+             tím cho một thông tin đã có avatar nói rồi. */
+          style={styles.bubble}
+          tint={c.primary}
+          radius={radius.lg}>
+          <View style={styles.bubbleInner}>
+            <MarkdownLite text={msg.content} mutedColor={mutedColor} />
+          </View>
+        </LiquidGlass>
+      ) : (
+        <View style={[styles.bubble, styles.bubbleUser]}>
+          <View style={styles.bubbleInner}>
+            <Text style={styles.bubbleUserText}>{msg.content}</Text>
+          </View>
+        </View>
+      )}
+      {msg.role === 'user' ? (
+        <View style={styles.avatarUser}>
+          <Glyph name="user" size={14} />
+        </View>
+      ) : null}
+    </View>
+  );
+});
 
 const stylesFor = makeStyles((c, m) => ({
   root: { flex: 1, backgroundColor: c.background },
