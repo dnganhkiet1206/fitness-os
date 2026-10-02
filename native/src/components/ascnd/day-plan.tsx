@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useMutation } from '@tanstack/react-query';
 import { haptics as Haptics } from '@/lib/haptics';
 import { CalendarDays, Check, ChevronDown, Info, Minus, Moon, Pencil, Plus, Timer, X } from 'lucide-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Easing,
@@ -196,6 +196,124 @@ function settleRest(s: RestCountdown): RestCountdown | null {
     return s.left === 0 ? s : { ...s, left: 0 };
   }
   return s.left === left ? s : { ...s, left };
+}
+
+/**
+ * What the parent can ask the rest host to do. One method: the parent only
+ * ever *starts* a rest (ticking a set done). Skip, ±15s and the tick itself
+ * all live inside the host, next to the state they mutate.
+ */
+export interface RestHostHandle {
+  startRest: (r: RestCountdown | null) => void;
+}
+
+/**
+ * The rest countdown, isolated so its 1-second tick re-renders only the rest
+ * card — not the whole day plan, a tree of dozens of rows where every tick
+ * was re-running the entire render.
+ *
+ * Owns: the `resting` state, the tick interval, the foreground-return
+ * handler, and the unmount cleanup that ends the Live Activity with the
+ * screen (a rest must not outlive the screen that started it — #198).
+ */
+function RestHost({
+  hostRef,
+  i18n,
+}: {
+  hostRef: React.RefObject<RestHostHandle | null>;
+  i18n: ReturnType<typeof useI18n>;
+}) {
+  const [resting, setResting] = useState<RestCountdown | null>(null);
+
+  useImperativeHandle(
+    hostRef,
+    () => ({
+      startRest: (r) => setResting(r),
+    }),
+    [],
+  );
+
+  /*
+    The rest clock.
+
+    One interval, started when a rest begins and cleared when it ends, rather
+    than a timer that runs for the whole session and checks whether it has
+    anything to do.
+
+    The tick does not count down — it re-derives `left` from the absolute
+    `endsAt` (see `settleRest`). A suspended-then-resumed app lands on the true
+    remaining time instead of the second it froze at.
+  */
+  const running = resting !== null;
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => {
+      setResting((s) => (s === null ? null : settleRest(s)));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  /*
+    Recalculate the instant the app comes back to the foreground.
+
+    Without this the card can sit up to a second behind after a background
+    stretch — the user who ducked into Spotify mid-rest would see the old
+    number first — and a rest that expired while away would linger until the
+    next tick instead of ending the moment they return.
+  */
+  useEffect(() => {
+    if (!running) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') setResting((s) => (s === null ? null : settleRest(s)));
+    });
+    return () => sub.remove();
+  }, [running]);
+
+  /*
+    The island must not outlive this screen. `resting` is this host's state:
+    if the screen unmounts mid-rest — back navigation, a day switch — the
+    in-app timer is gone with it, and a Live Activity left running would
+    count down a rest that no longer exists anywhere. Ending on unmount
+    keeps every surface on the same state (#198 follow-up).
+  */
+  useEffect(() => {
+    return () => {
+      restLiveActivityEnded();
+    };
+  }, []);
+
+  return (
+    <RestTimer
+      left={resting?.left ?? null}
+      total={resting?.total ?? 0}
+      next={resting?.next ?? null}
+      i18n={i18n}
+      onSkip={() => {
+        Haptics.selection();
+        setResting(null);
+        restLiveActivityEnded();
+      }}
+      onAdjust={(delta) => {
+        // Read from this render's own state rather than the updater below:
+        // the new left/total are needed for the Live Activity push, and this
+        // host re-renders every tick so this closure is never stale.
+        const s = resting;
+        if (s === null) return;
+        // Derive from the absolute end, not the rendered `left`: a tick can
+        // be up to a second stale, and the adjustment must land on the true
+        // remaining time.
+        const fresh = Math.max(0, Math.ceil((s.endsAt - Date.now()) / 1000));
+        const left = Math.max(1, Math.min(REST_MAX, fresh + delta));
+        // Adding time grows what it is counting from as well, so the ring
+        // stays a fraction of something rather than trying to be more than
+        // whole. Taking time off leaves the total alone: the rest really
+        // was cut short, and the ring showing that is the honest reading.
+        const total = Math.max(s.total, left);
+        setResting({ ...s, left, total, endsAt: Date.now() + left * 1000 });
+        restLiveActivityAdjusted(total, left);
+      }}
+    />
+  );
 }
 
 /**
@@ -601,14 +719,15 @@ export function DayPlan({
    * full and then jump.
    */
   /**
-   * Nghỉ đang chạy — và SET KẾ TIẾP mà nó đang chờ.
+   * Nghỉ đang chạy — và SET KẾ TIẾP mà nó đang chờ. State này sống trong
+   * `RestHost` (module scope): tick 1s chỉ vẽ lại thẻ nghỉ, không vẽ lại
+   * cả màn hình. Bắt đầu nghỉ bằng `restHostRef.current?.startRest(...)`.
    *
    * `next` không phải trang trí. Một đồng hồ đếm ngược không nói nó đếm để làm
    * gì thì nó chỉ là một con số: bạn nhìn 1:27 rồi vẫn phải nhớ trong đầu mình
    * vừa xong set mấy và sắp làm gì. Mang theo tên bài và set thứ mấy biến chỗ
    * chờ thành chỗ chuẩn bị.
    */
-  const [resting, setResting] = useState<RestCountdown | null>(null);
 
   /*
     Read back once, and only once.
@@ -714,54 +833,10 @@ export function DayPlan({
     );
   }, [storeKey, loaded, done, rpe, rest, weightText, repsText, extra]);
 
-  /*
-    The rest clock.
-
-    One interval, started when a rest begins and cleared when it ends, rather
-    than a timer that runs for the whole session and checks whether it has
-    anything to do.
-
-    The tick does not count down — it re-derives `left` from the absolute
-    `endsAt` (see `settleRest`). A suspended-then-resumed app lands on the true
-    remaining time instead of the second it froze at.
-  */
-  const running = resting !== null;
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => {
-      setResting((s) => (s === null ? null : settleRest(s)));
-    }, 1000);
-    return () => clearInterval(id);
-  }, [running]);
-
-  /*
-    Recalculate the instant the app comes back to the foreground.
-
-    Without this the card can sit up to a second behind after a background
-    stretch — the user who ducked into Spotify mid-rest would see the old
-    number first — and a rest that expired while away would linger until the
-    next tick instead of ending the moment they return.
-  */
-  useEffect(() => {
-    if (!running) return;
-    const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') setResting((s) => (s === null ? null : settleRest(s)));
-    });
-    return () => sub.remove();
-  }, [running]);
-
-  /*
-    The island must not outlive this screen. `resting` is component state:
-    if the screen unmounts mid-rest — back navigation, a day switch — the
-    in-app timer is gone with it, and a Live Activity left running would
-    count down a rest that no longer exists anywhere. Ending on unmount
-    keeps every surface on the same state (#198 follow-up).
-  */
-  useEffect(() => {
-    return () => {
-      restLiveActivityEnded();
-    };
-  }, []);
+  /* The rest countdown lives in `RestHost` (module scope, above): its 1-second
+     tick re-renders only the rest card, not this whole tree. Started
+     imperatively when a set is ticked done. */
+  const restHostRef = useRef<RestHostHandle | null>(null);
 
   const restOf = useCallback((row: SetRow) => rest[row.key] ?? row.plannedRest, [rest]);
 
@@ -922,7 +997,7 @@ export function DayPlan({
                 : null,
             }
           : null;
-      setResting(upcoming);
+      restHostRef.current?.startRest(upcoming);
       /*
         #198: mirror the rest onto the display-only Live Activity. The upcoming
         set is what the rest is preparation for; on the last set there is no
@@ -2079,37 +2154,11 @@ export function DayPlan({
         where the app has exactly one job. It also could not be pinned, only
         absolutely positioned inside a scroll view, so it left with the content
         whenever the list moved.
+
+        `RestHost` owns the countdown state: the 1-second tick re-renders only
+        the host, not this whole screen.
       */}
-      <RestTimer
-        left={resting?.left ?? null}
-        total={resting?.total ?? 0}
-        next={resting?.next ?? null}
-        i18n={i18n}
-        onSkip={() => {
-          Haptics.selection();
-          setResting(null);
-          restLiveActivityEnded();
-        }}
-        onAdjust={(delta) => {
-          // Read from the render's own state rather than the updater below:
-          // the new left/total are needed for the Live Activity push, and the
-          // component re-renders every tick so this closure is never stale.
-          const s = resting;
-          if (s === null) return;
-          // Derive from the absolute end, not the rendered `left`: a tick can
-          // be up to a second stale, and the adjustment must land on the true
-          // remaining time.
-          const fresh = Math.max(0, Math.ceil((s.endsAt - Date.now()) / 1000));
-          const left = Math.max(1, Math.min(REST_MAX, fresh + delta));
-          // Adding time grows what it is counting from as well, so the ring
-          // stays a fraction of something rather than trying to be more than
-          // whole. Taking time off leaves the total alone: the rest really
-          // was cut short, and the ring showing that is the honest reading.
-          const total = Math.max(s.total, left);
-          setResting({ ...s, left, total, endsAt: Date.now() + left * 1000 });
-          restLiveActivityAdjusted(total, left);
-        }}
-      />
+      <RestHost hostRef={restHostRef} i18n={i18n} />
 
     </View>
   );
