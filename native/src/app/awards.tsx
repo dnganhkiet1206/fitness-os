@@ -20,6 +20,7 @@ import type { AwardSources } from '@/lib/award-grant';
 import { awardText } from '@/lib/gamification-i18n';
 import { toast } from '@/lib/toast';
 import type { AppLang } from '@/lib/i18n';
+import { getLocale } from '@/lib/i18n';
 
 /**
  * Nhóm theo MIỀN, không theo hạng.
@@ -275,7 +276,7 @@ export default function AwardsScreen() {
   const checkedRef = useRef(false);
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
+  const locale = getLocale(lang);
 
   // Web Awards runs the grant check on open too
   useEffect(() => {

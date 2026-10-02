@@ -1,3 +1,4 @@
+import { getLocale } from '@/lib/i18n';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { haptics as Haptics } from '@/lib/haptics';
 import { Camera, Plus, Trash2, X } from 'lucide-react-native';
@@ -108,7 +109,7 @@ export default function ProgressPhotosScreen() {
       ) : (
         <View style={styles.grid}>
           {photos.map((p) => {
-            const when = parseLocalDate(p.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
+            const when = parseLocalDate(p.date).toLocaleDateString(getLocale(lang), {
               day: 'numeric',
               month: 'short',
             });

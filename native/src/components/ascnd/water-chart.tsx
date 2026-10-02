@@ -1,3 +1,4 @@
+import { getLocale } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { useEffect, useId, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
@@ -120,7 +121,7 @@ function volumeText(ml: number, unit: 'ml' | 'oz'): string {
 
 /** A day, named. `long` for the screen reader, `short` for the chip. */
 function dayLabel(date: string, lang: 'vi' | 'en', form: 'short' | 'long'): string {
-  return parseLocalDate(date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US',
+  return parseLocalDate(date).toLocaleDateString(getLocale(lang),
     form === 'long'
       ? { weekday: 'long', day: 'numeric', month: 'long' }
       : { weekday: 'short', day: 'numeric', month: 'short' });
@@ -469,7 +470,7 @@ export function WaterChart({
       <View style={[styles.dayRow, { width: plotW }]}>
         {days.map((d) => (
           <Text key={d.date} style={[styles.dayText, d.date === todayStr && styles.dayToday]}>
-            {parseLocalDate(d.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
+            {parseLocalDate(d.date).toLocaleDateString(getLocale(lang), {
               weekday: 'short',
             })}
           </Text>

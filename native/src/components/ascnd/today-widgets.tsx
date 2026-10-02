@@ -441,7 +441,7 @@ export function ReadinessTrendCard() {
   const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
   const max = Math.max(...values);
   const min = Math.min(...values);
-  const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
+  const locale = getLocale(lang);
 
   const stats = [
     { label: lang === 'vi' ? 'TB' : 'Avg', value: avg },

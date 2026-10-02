@@ -1,3 +1,4 @@
+import { getLocale } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { Minus, Plus } from 'lucide-react-native';
 import { useMemo } from 'react';
@@ -110,7 +111,7 @@ export default function StepsScreen() {
           {stats.last7.map((d, i) => {
             const h = maxWeek > 0 ? (d.steps / maxWeek) * 100 : 0;
             const met = d.steps >= GOAL;
-            const dayLetter = parseLocalDate(d.date).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', { weekday: 'short' });
+            const dayLetter = parseLocalDate(d.date).toLocaleDateString(getLocale(lang), { weekday: 'short' });
             return (
               <View key={d.date} style={styles.barCol}>
                 <View style={styles.barColTrack}>

@@ -1,3 +1,4 @@
+import { getLocale } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, ChevronRight, Plus } from 'lucide-react-native';
@@ -112,7 +113,7 @@ export default function DiaryScreen() {
     ? i18n.nDiaryToday
     : dateStr === shiftLocalDate(today, -1)
       ? i18n.nDiaryYesterday
-      : parseLocalDate(dateStr).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
+      : parseLocalDate(dateStr).toLocaleDateString(getLocale(lang), {
           weekday: 'short',
           day: 'numeric',
           month: 'short',
@@ -136,7 +137,7 @@ export default function DiaryScreen() {
               "Hôm qua" không nói được hôm qua là ngày mấy. */}
           {isToday || dateStr === shiftLocalDate(today, -1) ? (
             <Text style={styles.daySub} numberOfLines={1}>
-              {parseLocalDate(dateStr).toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'en-US', {
+              {parseLocalDate(dateStr).toLocaleDateString(getLocale(lang), {
                 day: 'numeric',
                 month: 'short',
               })}

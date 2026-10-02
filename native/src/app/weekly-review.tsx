@@ -1,3 +1,4 @@
+import { getLocale } from '@/lib/i18n';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { haptics as Haptics } from '@/lib/haptics';
 import {
@@ -161,7 +162,7 @@ export default function WeeklyReviewScreen() {
   const { data: profile } = useProfile();
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const locale = lang === 'vi' ? 'vi-VN' : 'en-US';
+  const locale = getLocale(lang);
   const DAYS = lang === 'vi' ? DAYS_VI : DAYS_EN;
   const [weekOffset, setWeekOffset] = useState(0);
 

@@ -1,3 +1,4 @@
+import { getLocale, type AppLang } from '@/lib/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { haptics as Haptics } from '@/lib/haptics';
 import { Check, X } from 'lucide-react-native';
@@ -1425,7 +1426,7 @@ const CTA: Partial<Record<StepKey, 'obStart' | 'obKoaCta' | 'obHealthConnect'>> 
   health: 'obHealthConnect',
 };
 
-const group = (n: number, lang: string) => n.toLocaleString(lang === 'vi' ? 'vi-VN' : 'en-US');
+const group = (n: number, lang: AppLang) => n.toLocaleString(getLocale(lang));
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
 const stylesFor = makeStyles((c, m) => ({

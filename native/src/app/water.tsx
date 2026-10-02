@@ -1,3 +1,4 @@
+import { getLocale } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, Droplets, Minus, PencilLine, Plus } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -263,7 +264,7 @@ export default function WaterScreen() {
                     {displayVolume(Number(l.amount_ml), vUnit)} <Text style={styles.logUnit}>{vl}</Text>
                   </Text>
                   <Text style={styles.logTime}>
-                    {new Date(l.logged_at).toLocaleTimeString(lang === 'vi' ? 'vi-VN' : 'en-US', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(l.logged_at).toLocaleTimeString(getLocale(lang), { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </GlassCard>
               ))
