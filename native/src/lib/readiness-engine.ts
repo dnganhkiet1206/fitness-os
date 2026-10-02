@@ -261,7 +261,10 @@ export function readinessConfidence(dimensions: number): ReadinessConfidence {
 }
 
 export function computeReadiness(input: ReadinessInput): ReadinessResult | null {
-  const hasHRV = input.hrv_today != null && input.hrv_history_28d.length >= 5;
+  /* `Number.isFinite`, not `!= null`: a NaN reading (HealthKit gap, corrupt
+     row) passes the null check and poisons the whole score — `clamp` cannot
+     save a NaN. Treated as "no reading", same as a missing one. */
+  const hasHRV = Number.isFinite(input.hrv_today) && input.hrv_history_28d.length >= 5;
 
   const hrvScore = hasHRV
     ? computeHRVScore(input.hrv_today!, input.hrv_history_28d)
