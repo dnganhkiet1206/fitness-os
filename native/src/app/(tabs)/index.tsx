@@ -19,7 +19,7 @@ import {
   type LucideIcon,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, RefreshControl, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, RefreshControl, StyleSheet, Text, TextInput, View, useWindowDimensions } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import Animated, {
@@ -1544,6 +1544,16 @@ export default function TodayScreen() {
       ) : (
         <ReadinessAura status={readinessScore != null ? readinessStatus : null} />
       )}
+      {/*
+        Bàn phím che ô nhập tên nhóm ở cuối chế độ sửa (xem chú thích ở
+        `addGroupRow`): Today tự dựng ScrollView nên không có `Screen` nào
+        xử lý. Bọc vùng cuộn trong KeyboardAvoidingView theo đúng pattern
+        của grocery.tsx — chỉ co vùng cuộn, các lớp aura và hàng nút ghim
+        đứng yên.
+      */}
+      <KeyboardAvoidingView
+        style={styles.kav}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Animated.ScrollView
       ref={scroller}
       // Transparent, not `styles.root` as before. The wrapper already paints
@@ -2349,6 +2359,7 @@ export default function TodayScreen() {
         </View>
       )}
       </Animated.ScrollView>
+      </KeyboardAvoidingView>
       {/*
         Hàng nút GHIM, không cuộn theo trang.
 
@@ -2645,6 +2656,9 @@ const stylesFor = makeStyles((c, m) => ({
   // See the note at the top of the return — transparent so `AmbientLight`,
   // which sits behind this in the wrapper, is not painted over.
   scroller: { flex: 1, backgroundColor: 'transparent' },
+  /* Bọc vùng cuộn để bàn phím không che ô nhập cuối trang — flex: 1 để
+     vùng cuộn giữ đúng kích thước khi không có bàn phím. */
+  kav: { flex: 1 },
   content: { paddingHorizontal: spacing.md, gap: spacing.md },
   /* Cancels the page's own horizontal padding so the deck reaches both edges.
      Tied to the same token the padding uses, not a second copy of the number —
