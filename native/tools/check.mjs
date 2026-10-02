@@ -862,6 +862,13 @@ const STEPS = [
     "45s", water, stepper) ghi lý do trong ALLOWLIST của gate.
   */
   ['ô nhập số', 'node', ['tools/number-input.mjs']],
+  /*
+    Module-scope state giữ dữ liệu người dùng mà quên đăng ký
+    onUserScopedReset thì sống qua đăng xuất: B nhìn thấy số của A (lỗi thật
+    đã chạy ra số ở user-scoped-reset.ts). Store mới phải đăng ký hoặc ghi lý
+    do vào NOT_USER_DATA của gate.
+  */
+  ['store theo user', 'node', ['tools/user-scoped-stores.mjs']],
 ];
 
 /*
