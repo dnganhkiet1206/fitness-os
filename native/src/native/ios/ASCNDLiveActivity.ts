@@ -33,6 +33,12 @@ export interface RestActivityState {
    * stays exact instead of restarting from the full duration.
    */
   remainingSeconds?: number;
+  /**
+   * Absolute start timestamp (ms) of this rest. Swift pairs it with the end
+   * timestamp for `Text(timerInterval:)` — the range must be two STORED
+   * dates, never `Date.now...endDate`. Defaults to now (a fresh rest).
+   */
+  startTimestamp?: number;
 }
 
 /** Absolute end timestamp (ms) for the native ContentState.endDate. */
@@ -73,6 +79,7 @@ export function areLiveActivitiesEnabled(): boolean {
 export async function startRestActivity(state: RestActivityState): Promise<string | null> {
   const mod = AscndNativeModule;
   if (!isAscndNativeAvailable() || !mod) return null;
+  const startTimestamp = state.startTimestamp ?? Date.now();
   const endTimestamp = endTimestampFor(state);
   try {
     return await mod.startRestActivity(
@@ -81,6 +88,7 @@ export async function startRestActivity(state: RestActivityState): Promise<strin
       state.setNumber,
       state.totalSets,
       state.totalSeconds,
+      startTimestamp,
       endTimestamp,
     );
   } catch (err) {
@@ -96,6 +104,7 @@ export async function updateRestActivity(
 ): Promise<boolean> {
   const mod = AscndNativeModule;
   if (!isAscndNativeAvailable() || !mod) return false;
+  const startTimestamp = state.startTimestamp ?? Date.now();
   const endTimestamp = endTimestampFor(state);
   try {
     await mod.updateRestActivity(
@@ -105,6 +114,7 @@ export async function updateRestActivity(
       state.setNumber,
       state.totalSets,
       state.totalSeconds,
+      startTimestamp,
       endTimestamp,
     );
     return true;

@@ -49,6 +49,9 @@ export function createRestLiveActivity(facade: RestLiveActivityFacade) {
   /** A start() was issued and its promise has not resolved yet. */
   let startPending = false;
   let lastDisplay: RestDisplay | null = null;
+  /** When the current rest began (ms) — the stable lower bound of the
+      native timerInterval range. Never Date.now at render time. */
+  let startTimestamp: number | null = null;
   /** A ±15s that landed while the start promise was in flight. */
   let pendingAdjust: Adjust | null = null;
   let generation = 0;
@@ -73,6 +76,7 @@ export function createRestLiveActivity(facade: RestLiveActivityFacade) {
     startPending = true;
     pendingAdjust = null;
     lastDisplay = display;
+    startTimestamp = Date.now();
     void facade
       .startRestActivity({
         activityState: 'resting',
@@ -81,6 +85,7 @@ export function createRestLiveActivity(facade: RestLiveActivityFacade) {
         totalSets: display.totalSets,
         totalSeconds,
         remainingSeconds,
+        startTimestamp,
       })
       .then((id) => {
         if (g !== generation) {
@@ -105,6 +110,7 @@ export function createRestLiveActivity(facade: RestLiveActivityFacade) {
             totalSets: lastDisplay.totalSets,
             totalSeconds: adj.totalSeconds,
             remainingSeconds: adj.remainingSeconds,
+            startTimestamp: startTimestamp ?? Date.now(),
           });
         }
       });
@@ -123,6 +129,7 @@ export function createRestLiveActivity(facade: RestLiveActivityFacade) {
         totalSets: lastDisplay.totalSets,
         totalSeconds,
         remainingSeconds,
+        startTimestamp: startTimestamp ?? Date.now(),
       });
       return;
     }
@@ -141,6 +148,7 @@ export function createRestLiveActivity(facade: RestLiveActivityFacade) {
     startPending = false;
     pendingAdjust = null;
     lastDisplay = null;
+    startTimestamp = null;
     if (activeId === null) return;
     const id = activeId;
     activeId = null;

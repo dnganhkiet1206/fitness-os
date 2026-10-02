@@ -35,6 +35,11 @@ struct RestTimerAttributes: ActivityAttributes {
     var totalSets: Int
     /// Planned rest duration in seconds (display fallback).
     var totalSeconds: Int
+    /// ABSOLUTE start time. Paired with `endDate` for `Text(timerInterval:)`:
+    /// the range must be two STORED dates, never `Date.now...endDate` — if iOS
+    /// re-renders the view after the countdown finished, `Date.now` is past
+    /// `endDate` and the backwards range wedges the display at 0:00.
+    var startDate: Date
     /// ABSOLUTE end time. The widget/Live Activity UI counts down to this date.
     var endDate: Date
   }

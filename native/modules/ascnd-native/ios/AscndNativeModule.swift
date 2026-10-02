@@ -37,6 +37,7 @@ private final class RestActivityStore {
     setNumber: Int,
     totalSets: Int,
     totalSeconds: Int,
+    startDate: Date,
     endDate: Date
   ) async throws -> String {
     /*
@@ -58,6 +59,7 @@ private final class RestActivityStore {
       setNumber: setNumber,
       totalSets: totalSets,
       totalSeconds: totalSeconds,
+      startDate: startDate,
       endDate: endDate
     )
     // staleDate lets the system replace a stale activity if updates stop.
@@ -78,6 +80,7 @@ private final class RestActivityStore {
     setNumber: Int,
     totalSets: Int,
     totalSeconds: Int,
+    startDate: Date,
     endDate: Date
   ) async throws {
     guard let activity = activities[id] else {
@@ -89,6 +92,7 @@ private final class RestActivityStore {
       setNumber: setNumber,
       totalSets: totalSets,
       totalSeconds: totalSeconds,
+      startDate: startDate,
       endDate: endDate
     )
     await activity.update(
@@ -146,6 +150,7 @@ public final class AscndNativeModule: Module {
         setNumber: Int,
         totalSets: Int,
         totalSeconds: Int,
+        startTimestamp: Double,
         endTimestamp: Double,
         promise: Promise
       ) in
@@ -162,6 +167,7 @@ public final class AscndNativeModule: Module {
             setNumber: setNumber,
             totalSets: totalSets,
             totalSeconds: totalSeconds,
+            startDate: Date(timeIntervalSince1970: startTimestamp / 1000.0),
             endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0)
           )
           promise.resolve(id)
@@ -179,6 +185,7 @@ public final class AscndNativeModule: Module {
         setNumber: Int,
         totalSets: Int,
         totalSeconds: Int,
+        startTimestamp: Double,
         endTimestamp: Double,
         promise: Promise
       ) in
@@ -196,6 +203,7 @@ public final class AscndNativeModule: Module {
             setNumber: setNumber,
             totalSets: totalSets,
             totalSeconds: totalSeconds,
+            startDate: Date(timeIntervalSince1970: startTimestamp / 1000.0),
             endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0)
           )
           promise.resolve()

@@ -192,15 +192,21 @@ private struct RestRing: View {
 /// - Do NOT add `.fixedSize(horizontal: true)`: this is a live-updating view
 ///   with no stable ideal width — fixedSize collapses it to zero and the
 ///   digits vanish entirely (01/10/2026, Kiệt's device: empty rings).
+///
+/// The interval is `startDate...endDate` — two STORED dates from ContentState.
+/// Never `Date.now...endDate`: if iOS re-renders after the countdown finished,
+/// `Date.now` is past `endDate`, the backwards range wedges at 0:00, and the
+/// Island looks stuck. (01/10/2026, from the Dawnly pattern.)
 @available(iOS 16.1, *)
 private struct TimerDigits: View {
+  let startDate: Date
   let endDate: Date
   var fontSize: CGFloat = 22
   var weight: Font.Weight = .bold
   var countsDown: Bool = true
 
   var body: some View {
-    Text(timerInterval: Date.now...endDate, countsDown: countsDown)
+    Text(timerInterval: startDate...endDate, countsDown: countsDown)
       .font(Island.timerFont(size: fontSize, weight: weight))
       .foregroundStyle(.white)
       .lineLimit(1)
@@ -214,6 +220,7 @@ private struct TimerDigits: View {
 /// cadence — see the header note); the digits above it are exact.
 @available(iOS 16.1, *)
 private struct RestRingTimer: View {
+  let startDate: Date
   let endDate: Date
   let totalSeconds: Int
   var size: CGFloat = 80
@@ -232,9 +239,9 @@ private struct RestRingTimer: View {
     }
     .overlay {
       VStack(spacing: 1) {
-        // TimerDigits constrains its own box (see its LAYOUT WARNING);
+        // TimerDigits constrains its own box (see its LAYOUT comment);
         // the overlay centres that narrow box on the ring.
-        TimerDigits(endDate: endDate, fontSize: fontSize, countsDown: countsDown)
+        TimerDigits(startDate: startDate, endDate: endDate, fontSize: fontSize, countsDown: countsDown)
         if showTotal {
           Text("/ \(formatTotal(seconds: totalSeconds))")
             .font(.caption2)
@@ -255,43 +262,16 @@ private extension ActivityViewContext<RestTimerAttributes> {
 }
 
 // MARK: - Compact (minimized) — glanceable in under a second
-
+//
+// Apple-style minimal: the mark leading, the timer ring trailing, nothing
+// in between. The countdown IS the content — no labels fighting it for
+// space. Details live in the expanded view. (01/10/2026, Kiệt's call.)
 @available(iOS 16.1, *)
 private struct CompactLeading: View {
   let context: ActivityViewContext<RestTimerAttributes>
 
   var body: some View {
-    HStack(spacing: 8) {
-      ASCNDMark(size: 17)
-      switch context.state.activityState {
-      case .resting:
-        VStack(alignment: .leading, spacing: 1) {
-          Text("Rest")
-            .font(.caption)
-            .fontWeight(.medium)
-            .foregroundStyle(.white)
-          Text(context.setLabel)
-            .font(.caption2)
-            .foregroundStyle(Island.secondary)
-        }
-      case .active:
-        Image(systemName: "dumbbell.fill")
-          .font(.system(size: 14, weight: .medium))
-          .foregroundStyle(.white)
-        VStack(alignment: .leading, spacing: 1) {
-          Text(context.state.exerciseName)
-            .font(.caption)
-            .fontWeight(.medium)
-            .foregroundStyle(.white)
-            .lineLimit(1)
-          Text(context.setLabel)
-            .font(.caption2)
-            .foregroundStyle(Island.secondary)
-        }
-      case .ready:
-        EmptyView()
-      }
-    }
+    ASCNDMark(size: 17)
   }
 }
 
@@ -306,12 +286,14 @@ private struct CompactTrailing: View {
     switch context.state.activityState {
     case .resting:
       RestRingTimer(
+        startDate: context.state.startDate,
         endDate: context.state.endDate,
         totalSeconds: context.state.totalSeconds,
         size: 34, lineWidth: 2.5, fontSize: 10, showTotal: false
       )
     case .active:
       RestRingTimer(
+        startDate: context.state.startDate,
         endDate: context.state.endDate,
         totalSeconds: context.state.totalSeconds,
         size: 34, lineWidth: 2.5, fontSize: 10, showTotal: false,
@@ -404,7 +386,7 @@ private struct ExpandedTrailing: View {
       // media player (Kiệt's spec 01/10/2026).
       HStack(spacing: 14) {
         IslandCircleButton(icon: "pause.fill")
-        RestRingTimer(endDate: context.state.endDate, totalSeconds: context.state.totalSeconds)
+        RestRingTimer(startDate: context.state.startDate, endDate: context.state.endDate, totalSeconds: context.state.totalSeconds)
       }
     case .active:
       HStack(spacing: 14) {

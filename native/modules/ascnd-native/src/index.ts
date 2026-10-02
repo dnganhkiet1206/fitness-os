@@ -18,6 +18,8 @@ export interface AscndNativeModuleType {
     setNumber: number,
     totalSets: number,
     totalSeconds: number,
+    /** Absolute start time, ms since epoch. Paired with endTimestamp for the native timerInterval range. */
+    startTimestamp: number,
     /** Absolute end time, ms since epoch. Native derives the countdown from this. */
     endTimestamp: number,
   ): Promise<string>;
@@ -28,6 +30,9 @@ export interface AscndNativeModuleType {
     setNumber: number,
     totalSets: number,
     totalSeconds: number,
+    /** Absolute start time, ms since epoch. Paired with endTimestamp for the native timerInterval range. */
+    startTimestamp: number,
+    /** Absolute end time, ms since epoch. Native derives the countdown from this. */
     endTimestamp: number,
   ): Promise<void>;
   endRestActivity(activityId: string): Promise<void>;
