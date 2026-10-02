@@ -855,6 +855,13 @@ const STEPS = [
     chủ dự án, không phải của cổng.
   */
   ['cờ release', 'node', ['tools/release-flags.mjs']],
+  /*
+    Ô nhập số nối thẳng onChangeText vào state: "00040"/"000005" đã bị chụp
+    thật, và máy tiếng Việt gõ 71,5 thì parseFloat đọc thành 71. Mọi ô số qua
+    decText/intText (src/lib/number-input.ts); ba ngoại lệ có chủ ý (reps
+    "45s", water, stepper) ghi lý do trong ALLOWLIST của gate.
+  */
+  ['ô nhập số', 'node', ['tools/number-input.mjs']],
 ];
 
 /*
