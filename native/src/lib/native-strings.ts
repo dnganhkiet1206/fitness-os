@@ -397,7 +397,8 @@ const en = {
   a11yClose: 'Close',
   a11yDismiss: 'Dismiss',
   a11yDelete: 'Delete',
-  a11yEdit: 'Edit',
+  /* `a11yEdit` từng ở đây — đã xoá 02/10/2026 cùng `FoodRow` (Task 15), chỗ gọi
+     duy nhất của nó. `a11yEditLayout` dưới đây là khoá khác, vẫn dùng. */
   a11yAdd: 'Add',
   a11yIncrease: 'Increase',
   a11yDecrease: 'Decrease',
@@ -1491,7 +1492,7 @@ const vi: typeof en = {
   a11yClose: 'Đóng',
   a11yDismiss: 'Bỏ qua',
   a11yDelete: 'Xoá',
-  a11yEdit: 'Sửa',
+  /* `a11yEdit` từng ở đây — đã xoá 02/10/2026 cùng `FoodRow` (Task 15). */
   a11yAdd: 'Thêm',
   a11yIncrease: 'Tăng',
   a11yDecrease: 'Giảm',
