@@ -40,7 +40,6 @@ import { MANUAL_SOURCE } from '@/lib/biometric-source';
 
 /** Cột sinh trắc mà CẢ Apple Health lẫn ô nhập tay cùng ghi. */
 export const HEALTH_OWNED_BIOMETRICS = ['hr_bpm', 'spo2_pct', 'resp_rate_rpm'] as const;
-export type HealthOwnedBiometric = (typeof HEALTH_OWNED_BIOMETRICS)[number];
 
 /**
  * Hàng này có phải do một nguồn NGOÀI người dùng ghi không.
