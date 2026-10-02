@@ -875,6 +875,12 @@ const STEPS = [
     được làm cả thư viện "không đọc được".
   */
   ['ký ảnh', 'node', ['tools/photo-sign.mjs']],
+  /*
+    profiles.allergies chỉ chứa .value của COMMON_ALLERGIES: onboarding cũ
+    từng lưu chuỗi hiển thị ("Hải sản" vs "Shellfish") làm AI gợi ý món lệch
+    theo ngôn ngữ. Gate cấm mọi setAllergies/payload ghi từ .label.
+  */
+  ['dị ứng', 'node', ['tools/allergy-values.mjs']],
 ];
 
 /*
