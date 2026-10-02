@@ -459,6 +459,12 @@ const STEPS = [
   ['ngân sách ảnh', 'node', ['tools/photo-budget.mjs']],
   ['dịch thuật', 'node', ['tools/i18n.mjs']],
   /*
+    Queue #6 Task 03: ternary song ngữ inline MỚI (`vi ? '…' : '…'`). 266 chỗ
+    cũ nằm trong baseline của cổng — cổng chỉ đỏ khi có ternary mới xuất hiện.
+    Chữ mới phải đi qua `src/lib/i18n.ts`.
+  */
+  ['ternary song ngữ', 'node', ['tools/i18n-inline.mjs']],
+  /*
     Luồng bảy màn bị thay ở Giai đoạn 3 và chữ của nó nằm lại: 49 khoá không
     màn nào dựng nữa. Bước trên KHÔNG bắt được — nó nói thẳng rằng khoá không
     dùng thì bỏ qua, vì hồi ấy từ điển dùng chung với app web. Nhánh này xoá
