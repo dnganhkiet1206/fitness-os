@@ -1110,7 +1110,7 @@ vì một bản tóm tắt không đo lại được thì cũng chỉ là một 
 
 | | |
 |---|---|
-| `node tools/check.mjs` | **300/300 xanh**, exit 0 |
+| `node tools/check.mjs` | **311/311 xanh**, exit 0 |
 | `npx tsc --noEmit` | exit 0, đầu ra rỗng |
 | Máy thật | ❌ **không**. Ba thứ còn treo: vòng đếm ngược của thanh Hoàn tác ở đáy, thẻ bài tập lúc thu lại có giật không, dấu tích xanh ở tiêu đề bài tập có lệch baseline không |
 
