@@ -887,6 +887,12 @@ const STEPS = [
     hằng số phải có assert riêng).
   */
   ['đơn vị', 'node', ['tools/units.mjs']],
+  /*
+    timeAgo: bốn chuỗi nCm* là hợp đồng — MinAgo/HourAgo/DayAgo phải chứa
+    {n} (không thì feed hiện thiếu số), JustNow không được chứa. Chạy thật
+    qua biên 7/8 ngày, tương lai, ISO hỏng.
+  */
+  ['time-ago', 'node', ['tools/time-ago.mjs']],
 ];
 
 /*
