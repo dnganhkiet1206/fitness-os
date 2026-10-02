@@ -143,7 +143,14 @@ try {
   );
   shim(
     'react',
-    `module.exports = { useEffect: (fn) => { fn(); }, useSyncExternalStore: (sub, get) => get() };`,
+    `module.exports = {
+       useEffect: (fn) => { fn(); },
+       useSyncExternalStore: (sub, get) => get(),
+       useMemo: (fn) => fn(),
+       useCallback: (fn) => fn,
+       useState: (init) => [typeof init === 'function' ? init() : init, () => {}],
+       useRef: (init) => ({ current: init }),
+     };`,
   );
 
   try {
