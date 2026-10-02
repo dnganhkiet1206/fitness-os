@@ -33,12 +33,6 @@ export interface RestActivityState {
    * stays exact instead of restarting from the full duration.
    */
   remainingSeconds?: number;
-  /**
-   * Absolute start timestamp (ms) of this rest. Swift pairs it with the end
-   * timestamp for `Text(timerInterval:)` — the range must be two STORED
-   * dates, never `Date.now...endDate`. Defaults to now (a fresh rest).
-   */
-  startTimestamp?: number;
   /** Localized "Rest" — the Island follows the app language. */
   restingText?: string;
   /** Localized "Set {n}/{t}", pre-formatted. */
@@ -87,9 +81,8 @@ export function areLiveActivitiesEnabled(): boolean {
 export async function startRestActivity(state: RestActivityState): Promise<string | null> {
   const mod = AscndNativeModule;
   if (!isAscndNativeAvailable() || !mod) return null;
-  const startTimestamp = state.startTimestamp ?? Date.now();
   const endTimestamp = endTimestampFor(state);
-  // Bridge is 8 params: Swift looks up localized strings from languageCode.
+  // Bridge is 7 params: Swift looks up localized strings from languageCode.
   const languageCode = state.languageCode ?? 'en';
   try {
     return await mod.startRestActivity(
@@ -98,7 +91,6 @@ export async function startRestActivity(state: RestActivityState): Promise<strin
       state.setNumber,
       state.totalSets,
       state.totalSeconds,
-      startTimestamp,
       endTimestamp,
       languageCode,
     );
@@ -115,9 +107,8 @@ export async function updateRestActivity(
 ): Promise<boolean> {
   const mod = AscndNativeModule;
   if (!isAscndNativeAvailable() || !mod) return false;
-  const startTimestamp = state.startTimestamp ?? Date.now();
   const endTimestamp = endTimestampFor(state);
-  // Bridge is 8 params: Swift looks up localized strings from languageCode.
+  // Bridge is 7 params: Swift looks up localized strings from languageCode.
   const languageCode = state.languageCode ?? 'en';
   try {
     await mod.updateRestActivity(
@@ -127,7 +118,6 @@ export async function updateRestActivity(
       state.setNumber,
       state.totalSets,
       state.totalSeconds,
-      startTimestamp,
       endTimestamp,
       languageCode,
     );

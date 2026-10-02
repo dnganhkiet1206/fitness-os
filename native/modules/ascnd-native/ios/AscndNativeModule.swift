@@ -57,7 +57,6 @@ private final class RestActivityStore {
     setNumber: Int,
     totalSets: Int,
     totalSeconds: Int,
-    startDate: Date,
     endDate: Date,
     languageCode: String
   ) async throws -> String {
@@ -83,7 +82,6 @@ private final class RestActivityStore {
       setNumber: setNumber,
       totalSets: totalSets,
       totalSeconds: totalSeconds,
-      startDate: startDate,
       endDate: endDate,
       restingText: strings.resting,
       setText: strings.setTemplate
@@ -109,7 +107,6 @@ private final class RestActivityStore {
     setNumber: Int,
     totalSets: Int,
     totalSeconds: Int,
-    startDate: Date,
     endDate: Date,
     languageCode: String
   ) async throws {
@@ -123,7 +120,6 @@ private final class RestActivityStore {
       setNumber: setNumber,
       totalSets: totalSets,
       totalSeconds: totalSeconds,
-      startDate: startDate,
       endDate: endDate,
       restingText: strings.resting,
       setText: strings.setTemplate
@@ -186,7 +182,6 @@ public final class AscndNativeModule: Module {
         setNumber: Int,
         totalSets: Int,
         totalSeconds: Int,
-        startTimestamp: Double,
         endTimestamp: Double,
         languageCode: String,
         promise: Promise
@@ -204,7 +199,6 @@ public final class AscndNativeModule: Module {
             setNumber: setNumber,
             totalSets: totalSets,
             totalSeconds: totalSeconds,
-            startDate: Date(timeIntervalSince1970: startTimestamp / 1000.0),
             endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0),
             languageCode: languageCode
           )
@@ -223,7 +217,6 @@ public final class AscndNativeModule: Module {
         setNumber: Int,
         totalSets: Int,
         totalSeconds: Int,
-        startTimestamp: Double,
         endTimestamp: Double,
         languageCode: String,
         promise: Promise
@@ -242,7 +235,6 @@ public final class AscndNativeModule: Module {
             setNumber: setNumber,
             totalSets: totalSets,
             totalSeconds: totalSeconds,
-            startDate: Date(timeIntervalSince1970: startTimestamp / 1000.0),
             endDate: Date(timeIntervalSince1970: endTimestamp / 1000.0),
             languageCode: languageCode
           )
