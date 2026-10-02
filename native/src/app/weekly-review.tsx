@@ -587,7 +587,7 @@ export default function WeeklyReviewScreen() {
           </Animated.View>
           <Animated.View entering={rise(3)}>
           <GlassCard>
-            <Text style={styles.microTitle}>Volume Load</Text>
+            <Text style={styles.microTitle}>{i18n.nCxWeeklyReviewVolumeLoad}</Text>
             <WeekBars data={chartData.map((c) => c.volume)} color={c.metricBlue} days={DAYS} />
           </GlassCard>
           </Animated.View>

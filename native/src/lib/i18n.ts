@@ -283,6 +283,7 @@ interface Translations {
   weeklyReviewReadiness: string;
   weeklyReviewDailyNutrition: string;
   weeklyReviewSleepChart: string;
+  nCxWeeklyReviewVolumeLoad: string;
   weeklyReviewReadinessChart: string;
   weeklyReviewRecommendations: string;
   weeklyReviewSessions: string;
@@ -763,6 +764,7 @@ const vi: Translations = {
   weeklyReviewReadiness: 'Mức sẵn sàng',
   weeklyReviewDailyNutrition: 'Dinh Dưỡng Hàng Ngày',
   weeklyReviewSleepChart: 'Giấc Ngủ',
+  nCxWeeklyReviewVolumeLoad: 'Tổng Khối Lượng',
   weeklyReviewReadinessChart: 'Mức sẵn sàng',
   weeklyReviewRecommendations: 'Khuyến Nghị Tuần Tới',
   weeklyReviewSessions: '{n} buổi',
@@ -1204,6 +1206,7 @@ const en: Translations = {
   weeklyReviewReadiness: 'Readiness',
   weeklyReviewDailyNutrition: 'Daily Nutrition',
   weeklyReviewSleepChart: 'Sleep',
+  nCxWeeklyReviewVolumeLoad: 'Volume Load',
   weeklyReviewReadinessChart: 'Readiness',
   weeklyReviewRecommendations: 'Next Week Recommendations',
   weeklyReviewSessions: '{n} {n:session|sessions}',
