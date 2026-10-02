@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { useMascotMood } from '@/hooks/use-mascot';
 import { useDailyStreak } from '@/hooks/use-mascot-room';
 import { habitFor, usePersonalModel } from '@/lib/personal-model';
+import { parseLocalDate } from '@/lib/local-date';
 import { lateHour } from '@/lib/user-rhythm';
 import { useProfile } from '@/hooks/useTodayData';
 import {
@@ -67,7 +68,7 @@ export function useMascotEmotion(): MascotEmotion {
   const isBirthday = (() => {
     const dob = profile?.dob;
     if (!dob) return false;
-    const b = new Date(`${dob}T00:00:00`);
+    const b = parseLocalDate(dob);
     if (Number.isNaN(b.getTime())) return false;
     const now = new Date();
     return b.getMonth() === now.getMonth() && b.getDate() === now.getDate();

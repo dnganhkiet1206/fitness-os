@@ -30,6 +30,7 @@ import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { curveLength, onCurve, sampleCurve, yOnCurve, type CurvePoint } from '@/lib/curve';
+import { parseLocalDate } from '@/lib/local-date';
 
 export interface ChartPoint {
   date: string;
@@ -494,7 +495,7 @@ export function LineChart({ points, color: colorProp, height = 140, unit = '', e
    * If any date is unusable, or every reading landed on the same day, there is
    * no time axis to lay out against and it falls back to even spacing.
    */
-  const times = points.map((p) => new Date(`${p.date}T00:00:00`).getTime());
+  const times = points.map((p) => parseLocalDate(p.date).getTime());
   const usable = times.every((t) => Number.isFinite(t));
   const t0 = times[0];
   const tN = times[times.length - 1];
@@ -967,7 +968,7 @@ export function LineChart({ points, color: colorProp, height = 140, unit = '', e
             <ScrubChip at={rulerX} show={fade} min={chip.min} max={chip.max} top={chip.top}>
               <Text style={styles.scrubValue}>{fmt(at.value)}</Text>
               <Text style={styles.scrubDate}>
-                {new Date(`${at.date}T00:00:00`).toLocaleDateString(locale, {
+                {parseLocalDate(at.date).toLocaleDateString(locale, {
                   day: 'numeric',
                   month: 'short',
                   year: 'numeric',

@@ -18,6 +18,7 @@ import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
 import { useDeleteWeight } from '@/hooks/use-fitness-data';
 import { getLocale } from '@/lib/i18n';
+import { parseLocalDate } from '@/lib/local-date';
 import { toast } from '@/lib/toast';
 import { fillCopy } from '@/lib/copy-fill';
 
@@ -185,7 +186,7 @@ export function WeightLogList({
             return (
               <View key={p.date} style={styles.row}>
                 <Text style={styles.date}>
-                  {new Date(`${p.date}T00:00:00`).toLocaleDateString(getLocale(lang), {
+                  {parseLocalDate(p.date).toLocaleDateString(getLocale(lang), {
                     weekday: 'short',
                     day: 'numeric',
                     month: 'short',

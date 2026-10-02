@@ -1,5 +1,6 @@
 // ASCND – Fitness calculation utilities
 
+import { parseLocalDate } from '@/lib/local-date';
 import { plausible, readStat } from '@/lib/plausible';
 
 /** Mifflin-St Jeor BMR */
@@ -383,7 +384,7 @@ export function planFromEntry(input: {
 
 /** Age from DOB (parsed as local so the birthday doesn't shift a day in negative-offset timezones) */
 export function calcAge(dob: string): number {
-  const birth = new Date(`${dob}T00:00:00`);
+  const birth = parseLocalDate(dob);
   const now = new Date();
   let age = now.getFullYear() - birth.getFullYear();
   const m = now.getMonth() - birth.getMonth();
