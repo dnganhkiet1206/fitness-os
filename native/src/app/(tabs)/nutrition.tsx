@@ -282,6 +282,78 @@ function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boole
   );
 }
 
+/**
+ * A set of foods as one inset group.
+ *
+ * Module scope, not inside `NutritionScreen`: defining it in the render body
+ * created a new component identity on every keystroke of the search box,
+ * remounting the whole result list (and its rows) each time. Stable identity
+ * here means keystrokes only update text, not the tree.
+ *
+ * The separator is an element between rows rather than a border on one: a
+ * `marginLeft` to inset a border moves the whole row, and the trailing column
+ * stops lining up with the row above it.
+ */
+/* `groupOnCard`, không phải `group`: cả hai chỗ gọi `FoodGroup` nằm TRONG
+   `<GlassCard style={styles.foodLibrary}>`. Quyết định ấy đã được ghi ở
+   `food-cards.tsx` khi `groupOnCard` ra đời ("nested cards are always wrong")
+   nhưng chỉ áp cho danh sách thực đơn, và hai chỗ này bị bỏ lại. */
+function FoodGroup({
+  rows,
+  listStyles,
+}: {
+  rows: FoodItemRow[];
+  listStyles: ReturnType<typeof useFoodListStyles>;
+}) {
+  return (
+    <View style={listStyles.groupOnCard}>
+      {rows.map((f, i) => (
+        <View key={f.id}>
+          {i > 0 ? <View style={listStyles.sep} /> : null}
+          <FoodCard f={f} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Module scope for the same reason as `FoodGroup`: a new identity per render
+ * remounted the "see more" row on every keystroke.
+ */
+function SeeMore({
+  tab,
+  rest,
+  lang,
+  onSeeMore,
+}: {
+  tab: 'mine' | 'recent';
+  rest: number;
+  lang: string;
+  onSeeMore: (tab: 'mine' | 'recent') => void;
+}) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  return (
+    <PressScale
+      accessibilityRole="button"
+      /* Hàng cao 40 điểm, dưới sàn 44 của Apple. `hitSlop` đưa nó lên 56 khi
+         chạm mà không đổi một điểm ảnh nào khi nhìn — cùng cách `scanBtn` ở
+         cuối tệp này đã dùng cho nút quét mã. Nâng chiều cao thay vào đó sẽ
+         đẩy hàng ra khỏi nhịp của danh sách bên trên nó. */
+      hitSlop={8}
+      style={styles.seeMore}
+      onPress={() => onSeeMore(tab)}>
+      {/* How many more, not just that there are more — the difference between
+          "there is another screen" and a reason to open it. */}
+      <Text style={styles.seeMoreText}>
+        {lang === 'vi' ? `Xem thêm ${rest} món` : `See ${rest} more`}
+      </Text>
+      <Icon icon={ChevronRight} size={15} color={c.primary} />
+    </PressScale>
+  );
+}
+
 export default function NutritionScreen() {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -365,47 +437,6 @@ export default function NutritionScreen() {
     Haptics.selection();
     nav.push({ pathname: '/food-list', params: { tab } });
   };
-  /**
-   * A set of foods as one inset group.
-   *
-   * The separator is an element between rows rather than a border on one: a
-   * `marginLeft` to inset a border moves the whole row, and the trailing column
-   * stops lining up with the row above it.
-   */
-
-  /* `groupOnCard`, không phải `group`: cả hai chỗ gọi `FoodGroup` nằm TRONG
-     `<GlassCard style={styles.foodLibrary}>`. Quyết định ấy đã được ghi ở
-     `food-cards.tsx` khi `groupOnCard` ra đời ("nested cards are always wrong")
-     nhưng chỉ áp cho danh sách thực đơn, và hai chỗ này bị bỏ lại. */
-  const FoodGroup = ({ rows }: { rows: FoodItemRow[] }) => (
-    <View style={foodList.groupOnCard}>
-      {rows.map((f, i) => (
-        <View key={f.id}>
-          {i > 0 ? <View style={foodList.sep} /> : null}
-          <FoodCard f={f} />
-        </View>
-      ))}
-    </View>
-  );
-
-  const SeeMore = ({ tab, rest }: { tab: 'mine' | 'recent'; rest: number }) => (
-    <PressScale
-      accessibilityRole="button"
-      /* Hàng cao 40 điểm, dưới sàn 44 của Apple. `hitSlop` đưa nó lên 56 khi
-         chạm mà không đổi một điểm ảnh nào khi nhìn — cùng cách `scanBtn` ở
-         cuối tệp này đã dùng cho nút quét mã. Nâng chiều cao thay vào đó sẽ
-         đẩy hàng ra khỏi nhịp của danh sách bên trên nó. */
-      hitSlop={8}
-      style={styles.seeMore}
-      onPress={() => seeMore(tab)}>
-      {/* How many more, not just that there are more — the difference between
-          "there is another screen" and a reason to open it. */}
-      <Text style={styles.seeMoreText}>
-        {lang === 'vi' ? `Xem thêm ${rest} món` : `See ${rest} more`}
-      </Text>
-      <Icon icon={ChevronRight} size={15} color={c.primary} />
-    </PressScale>
-  );
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search.trim()), 250);
@@ -792,7 +823,7 @@ export default function NutritionScreen() {
 
             {debounced.length >= 2 && results ? (
               results.length > 0 ? (
-                <FoodGroup rows={results} />
+                <FoodGroup rows={results} listStyles={foodList} />
               ) : (
                 <Text style={styles.emptyText}>{i18n.nNoExercisesFound}</Text>
               )
@@ -833,9 +864,9 @@ export default function NutritionScreen() {
                   <MicroLabel>{lang === 'vi' ? 'Thực phẩm của tôi' : 'My Foods'}</MicroLabel>
                   {myFoodsSorted.length > 0 ? (
                     <>
-                      <FoodGroup rows={myFoodsSorted.slice(0, 5)} />
+                      <FoodGroup rows={myFoodsSorted.slice(0, 5)} listStyles={foodList} />
                       {myFoodsSorted.length > 5 ? (
-                        <SeeMore tab="mine" rest={myFoodsSorted.length - 5} />
+                        <SeeMore tab="mine" rest={myFoodsSorted.length - 5} lang={lang} onSeeMore={seeMore} />
                       ) : null}
                     </>
                   ) : (
@@ -862,7 +893,7 @@ export default function NutritionScreen() {
                         </View>
                       ))}
                     </View>
-                    {recents.length > 4 ? <SeeMore tab="recent" rest={recents.length - 4} /> : null}
+                    {recents.length > 4 ? <SeeMore tab="recent" rest={recents.length - 4} lang={lang} onSeeMore={seeMore} /> : null}
                   </View>
                 ) : null}
               </>
