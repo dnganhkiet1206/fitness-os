@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 
 import { authenticate, biometricLockAvailable } from '@/lib/biometric-lock';
@@ -91,8 +91,14 @@ export function AppLockProvider({ children, prompt }: { children: ReactNode; pro
     if (!v) setLocked(false);
   }, []);
 
+  /* Stable identity so consumers don't re-render on every provider render. */
+  const value = useMemo(
+    () => ({ enabled, available, locked, loaded, setEnabled, unlock }),
+    [enabled, available, locked, loaded, setEnabled, unlock],
+  );
+
   return (
-    <AppLockContext.Provider value={{ enabled, available, locked, loaded, setEnabled, unlock }}>
+    <AppLockContext.Provider value={value}>
       {children}
     </AppLockContext.Provider>
   );

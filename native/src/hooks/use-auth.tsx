@@ -1,7 +1,7 @@
 import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Crypto from 'expo-crypto';
 import * as Linking from 'expo-linking';
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { supabase } from '@/integrations/supabase/client';
 import { cancelAllReminders } from '@/lib/notifications';
@@ -120,7 +120,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, name: string) => {
+  /* All stateless — supabase/Linking/Crypto are module-level — so stable
+     identity is safe and keeps the provider value below from churning. */
+  const signUp = useCallback(async (email: string, password: string, name: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -130,14 +132,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     });
     return { error: error as Error | null };
-  };
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error as Error | null };
-  };
+  }, []);
 
-  const signInWithApple = async () => {
+  const signInWithApple = useCallback(async () => {
     try {
       // Supabase expects the RAW nonce; Apple receives its SHA-256 hash.
       const rawNonce = Crypto.randomUUID();
@@ -168,26 +170,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       return { error: e instanceof Error ? e : new Error(String(e)) };
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     /* The event above will have fired this too. Both, because every step is
        idempotent and the caller navigates as soon as this resolves — waiting
        here is what makes "signed out" mean the cleanup has finished. */
     await forgetPreviousAccount();
-  };
+  }, []);
 
 
-  const resetPassword = async (email: string) => {
+  const resetPassword = useCallback(async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: Linking.createURL('/auth?type=recovery'),
     });
     return { error: error as Error | null };
-  };
+  }, []);
+
+  /* Stable identity: every consumer re-renders only when the session actually
+     changes, not on every provider render. */
+  const value = useMemo(
+    () => ({ user, session, loading, signUp, signIn, signInWithApple, signOut, resetPassword }),
+    [user, session, loading, signUp, signIn, signInWithApple, signOut, resetPassword],
+  );
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signInWithApple, signOut, resetPassword }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

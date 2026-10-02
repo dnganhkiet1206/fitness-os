@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { haptics as Haptics } from '@/lib/haptics';
 import { fetch as expoFetch } from 'expo/fetch';
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState } from 'react-native';
 
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -379,8 +379,15 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
     [session, lang, i18n],
   );
 
+  /* Stable identity so chat consumers don't re-render on every keystroke
+     elsewhere in the provider tree. */
+  const value = useMemo(
+    () => ({ messages, isLoading, conversationId, send, newChat, loadConversation, onGrow }),
+    [messages, isLoading, conversationId, send, newChat, loadConversation, onGrow],
+  );
+
   return (
-    <Ctx.Provider value={{ messages, isLoading, conversationId, send, newChat, loadConversation, onGrow }}>
+    <Ctx.Provider value={value}>
       {children}
     </Ctx.Provider>
   );
