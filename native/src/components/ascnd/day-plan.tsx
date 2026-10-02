@@ -174,8 +174,12 @@ interface RestCountdown {
  * Recomputes the countdown from the absolute end; ends the rest when time is
  * up. Shared by the per-second tick and the foreground-return handler, so the
  * two can never disagree about what "time's up" means.
+ *
+ * PURE — no side effects. Updaters must stay pure (React may invoke them more
+ * than once); the haptic + Live Activity teardown for a just-ended rest are
+ * done by the caller in `restJustEnded`, outside the updater.
  */
-function settleRest(s: RestCountdown): RestCountdown | null {
+function settleRestState(s: RestCountdown): RestCountdown | null {
   const now = Date.now();
   const left = Math.max(0, Math.ceil((s.endsAt - now) / 1000));
   if (left <= 0) {
@@ -188,14 +192,21 @@ function settleRest(s: RestCountdown): RestCountdown | null {
       nền (quá một giây) thì đóng NGAY khi quay lại, như #199 — không có dấu
       tick nào cho một quãng nghỉ đã xong trong lúc người ta không nhìn.
     */
-    if (s.left > 0) {
-      Haptics.success();
-      restLiveActivityEnded();
-    }
     if (now - s.endsAt >= 1000) return null;
     return s.left === 0 ? s : { ...s, left: 0 };
   }
   return s.left === left ? s : { ...s, left };
+}
+
+/**
+ * The moment a rest ends gets one haptic and one Live Activity teardown —
+ * exactly once, and never from inside a state updater.
+ */
+function endRestEffects(prev: RestCountdown, next: RestCountdown | null) {
+  if (prev.left > 0 && (next === null || next.left === 0)) {
+    Haptics.success();
+    restLiveActivityEnded();
+  }
 }
 
 /**
@@ -224,6 +235,13 @@ function RestHost({
   i18n: ReturnType<typeof useI18n>;
 }) {
   const [resting, setResting] = useState<RestCountdown | null>(null);
+  /* The tick reads through this ref so the settle + side effects happen
+     outside the state updater (updaters must stay pure). Synced after every
+     render; the host re-renders on every tick, so it is never stale. */
+  const restingRef = useRef<RestCountdown | null>(null);
+  useEffect(() => {
+    restingRef.current = resting;
+  }, [resting]);
 
   useImperativeHandle(
     hostRef,
@@ -233,6 +251,15 @@ function RestHost({
     [],
   );
 
+  /** Settle once from the current state; run end-of-rest effects outside. */
+  const settleOnce = useCallback(() => {
+    const s = restingRef.current;
+    if (s === null) return;
+    const next = settleRestState(s);
+    endRestEffects(s, next);
+    setResting(next);
+  }, []);
+
   /*
     The rest clock.
 
@@ -241,17 +268,15 @@ function RestHost({
     anything to do.
 
     The tick does not count down — it re-derives `left` from the absolute
-    `endsAt` (see `settleRest`). A suspended-then-resumed app lands on the true
+    `endsAt` (see `settleRestState`). A suspended-then-resumed app lands on the true
     remaining time instead of the second it froze at.
   */
   const running = resting !== null;
   useEffect(() => {
     if (!running) return;
-    const id = setInterval(() => {
-      setResting((s) => (s === null ? null : settleRest(s)));
-    }, 1000);
+    const id = setInterval(settleOnce, 1000);
     return () => clearInterval(id);
-  }, [running]);
+  }, [running, settleOnce]);
 
   /*
     Recalculate the instant the app comes back to the foreground.
@@ -264,10 +289,10 @@ function RestHost({
   useEffect(() => {
     if (!running) return;
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') setResting((s) => (s === null ? null : settleRest(s)));
+      if (state === 'active') settleOnce();
     });
     return () => sub.remove();
-  }, [running]);
+  }, [running, settleOnce]);
 
   /*
     The island must not outlive this screen. `resting` is this host's state:
