@@ -98,6 +98,8 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
   const styles = stylesFor(c);
   const i18n = useI18n();
   const toggleFav = useToggleFavoriteFood();
+  /* Ý chờ gửi nếu có (lớp Trạng thái, #165), không thì bản của server. */
+  const fav = toggleFav.is(f);
 
   return (
     /*
@@ -148,21 +150,22 @@ export function FoodCard({ f }: { f: FoodItemRow }) {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={i18n.a11yFavourite}
-        accessibilityState={{ selected: !!f.is_favorite }}
-        aria-selected={!!f.is_favorite}
+        accessibilityLabel={`${i18n.a11yFavourite}${toggleFav.pending(f) ? `, ${i18n.statePending}` : ''}`}
+        accessibilityState={{ selected: fav }}
+        aria-selected={fav}
         hitSlop={12}
         style={styles.fav}
         onPress={() => {
           Haptics.selection();
-          toggleFav.mutate({ id: f.id, is_favorite: !f.is_favorite });
+          toggleFav.set(f, !fav);
         }}>
         <Icon
           icon={Star}
           size={17}
-          color={f.is_favorite ? c.readinessYellow : c.mutedForeground}
-          strokeWidth={f.is_favorite ? 2.5 : 2}
+          color={fav ? c.readinessYellow : c.mutedForeground}
+          strokeWidth={fav ? 2.5 : 2}
         />
+        {toggleFav.pending(f) ? <View style={styles.pendingDot} importantForAccessibility="no" /> : null}
       </Pressable>
     </View>
   );
@@ -243,6 +246,8 @@ const stylesFor = makeStyles((c) => ({
     paddingLeft: ROW_GAP / 2,
     paddingRight: spacing.md,
   },
+  /* Dấu chờ (#165), cùng dấu của ô đi chợ — dưới ngôi sao, không đẩy nó lệch. */
+  pendingDot: { position: 'absolute', bottom: 8, left: '50%', width: 6, height: 6, borderRadius: 3, backgroundColor: c.mutedForeground, opacity: 0.8 },
   info: { flex: 1, minWidth: 0, gap: 2 },
   name: { fontSize: 15, fontWeight: '500', color: c.foreground },
   brand: { fontSize: 12, fontWeight: '400', color: c.mutedForeground },

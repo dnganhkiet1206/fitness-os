@@ -4246,44 +4246,168 @@ const SCENARIOS = [
   },
   {
     /*
-      #49: ngoài Cộng đồng, mutation trần (`useMutation`, `networkMode` mặc
-      định) bị React Query TẠM DỪNG khi mất mạng: không chạy, không onError.
-      Đo trên bản chưa sửa, ở ngôi sao Yêu thích của `/food-list`: mất mạng,
-      bấm → không toast, không lệnh ghi; có mạng lại 10 giây vẫn KHÔNG lệnh
-      ghi nào. Tức nó vừa không báo, vừa không tự gửi — "từ chối thành tiếng"
-      (`useOnlineMutation`) không làm mất gì. Ngôi sao là thao tác HAI CHIỀU,
-      như tick thực phẩm bổ sung mà `offline-write.ts` đã quyết không xếp hàng.
-      Đòi: một câu báo nói rõ là không giữ lại, không lệnh ghi lúc mất mạng,
-      và có mạng lại cũng không tự gửi.
+      #165 (chủ dự án chọn (a)): ngôi sao Yêu thích là lớp Trạng thái — trước
+      đây (#49) mất mạng thì chạm sao bị từ chối. Trên /food-list:
+        (A) "Sinh tố…" (chưa yêu thích) chạm sao ba lần khi mất mạng: sao đổi
+            NGAY mỗi lần (true, false, true), có dấu chờ, câu báo nói sẽ gửi khi
+            có mạng; không lệnh ghi nào lúc mất mạng; có mạng lại ĐÚNG MỘT lệnh
+            ghi, `is_favorite: true`, và dấu chờ mất;
+        (B) "Cơm gà…" (đang yêu thích) chạm hai lần khi mất mạng rồi có mạng:
+            KHÔNG lệnh ghi nào;
+        (C) "Sinh tố…" bỏ yêu thích khi mất mạng, và món ấy đã bị xoá ở máy khác
+            (máy chủ sửa 0 hàng): bỏ ý chờ, có lời báo "removed elsewhere".
     */
-    name: 'Món của tôi: mất mạng thì ngôi sao Yêu thích báo ngay, không treo, không gửi sau',
+    name: 'Mất mạng, lớp Trạng thái: ngôi sao Yêu thích đổi ngay, gộp theo món, gửi một lệnh khi có mạng (#165)',
     route: '/food-list', mode: 'full',
     async run(page) {
       const writes = [];
       page.on('request', (q) => {
-        if (/\/rest\/v1\/food_items/.test(q.url()) && isWrite(q.method())) writes.push(q.method());
+        if (/\/rest\/v1\/food_items/.test(q.url()) && isWrite(q.method())) writes.push({ m: q.method(), url: q.url(), body: q.postData() ?? '' });
       });
-      await page.waitForTimeout(1500);
-      const star = page.getByRole('button', { name: /^(Bật\/tắt yêu thích|Toggle favourite)$/ }).first();
-      if ((await star.count()) === 0) return 'không thấy ngôi sao Yêu thích nào trên /food-list (fixture food_items?)';
+      const star = (n) => page.getByRole('button', { name: new RegExp(`^${n}, \\d+ kcal$`) }).filter({ visible: true })
+        .locator('xpath=following-sibling::*[1]');
+      const sel = (n) => star(n).getAttribute('aria-selected');
+      const label = async (n) => (await star(n).getAttribute('aria-label')) ?? '';
+      const toast = async () => (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
+      const A = 'Sinh tố chuối bơ đậu phộng';
+      const B = 'Cơm gà nhà làm';
+      for (let i = 0; i < 20 && !(await star(A).count()); i++) await page.waitForTimeout(250);
+      if ((await star(A).count()) !== 1 || (await star(B).count()) !== 1) return 'không thấy ngôi sao của hai món fixture trên /food-list';
+      if ((await sel(A)) !== 'false' || (await sel(B)) !== 'true') return `fixture: "${A}" phải chưa yêu thích, "${B}" phải đang yêu thích`;
+
+      // (A)
       await goOffline(page);
       await page.waitForTimeout(1500);
-      try {
-        await star.click();
-        let toastText = '';
-        for (let i = 0; i < 12 && !toastText; i++) {
-          await page.waitForTimeout(250);
-          toastText = (await page.locator('[aria-live="polite"]').filter({ visible: true }).allInnerTexts()).join(' ').trim();
-        }
-        if (!toastText) return 'mất mạng, bấm ngôi sao: không một câu nào — mutation bị tạm dừng im lặng (#49)';
-        if (!/giữ lại|kept/i.test(toastText)) return `câu báo phải nói rõ là không giữ lại để gửi sau, ra "${toastText}"`;
-        if (writes.length) return `mất mạng mà vẫn có ${writes.length} lệnh ghi đi ra`;
-      } finally {
-        await goOnline(page);
+      const seen = [];
+      for (let i = 0; i < 3; i++) {
+        await star(A).click();
+        await page.waitForTimeout(300);
+        seen.push(await sel(A));
       }
-      await page.waitForTimeout(5000);
-      if (await stillOffline(page)) return 'có mạng lại mà app vẫn tin là mất mạng — vế "không tự gửi" dưới đây sẽ không đo gì';
-      if (writes.length) return `có mạng lại thì tự gửi ${writes.length} lệnh ghi — ngôi sao không được xếp hàng`;
+      if (seen.join() !== 'true,false,true') return `(A) chạm sao ba lần khi mất mạng: sao phải đổi NGAY (true,false,true), ra ${seen.join()}`;
+      if (!/waiting to send|đang chờ gửi/.test(await label(A))) return `(A) ý đang chờ mà ngôi sao không có dấu chờ: "${await label(A)}"`;
+      const said = await toast();
+      if (!/back online|có mạng lại/.test(said)) return `(A) câu báo phải nói sẽ cập nhật khi có mạng, ra "${said}"`;
+      if (writes.length) return `(A) mất mạng mà đã có ${writes.length} lệnh ghi đi ra`;
+      await goOnline(page);
+      for (let i = 0; i < 16 && !writes.length; i++) await page.waitForTimeout(500);
+      await page.waitForTimeout(2000);
+      if (writes.length !== 1) return `(A) có mạng lại: phải ĐÚNG MỘT lệnh ghi, ra ${writes.map((w) => w.m).join(', ') || 'không lệnh nào'}`;
+      if (!/"is_favorite"\s*:\s*true/.test(writes[0].body)) return `(A) lệnh ghi phải đặt is_favorite=true, ra ${writes[0].body.slice(0, 80)}`;
+      if (/waiting to send|đang chờ gửi/.test(await label(A))) return '(A) đã gửi xong mà dấu chờ còn';
+      if ((await sel(A)) !== 'true') return '(A) đã gửi xong mà sao không còn sáng';
+
+      // (B)
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      await star(B).click();
+      await page.waitForTimeout(300);
+      await star(B).click();
+      await goOnline(page);
+      await page.waitForTimeout(4000);
+      if (writes.length !== 1) return `(B) chạm hai lần khi mất mạng rồi có mạng: không được có lệnh ghi nào, ra ${writes.length - 1}`;
+      if ((await sel(B)) !== 'true') return `(B) "${B}" phải về "đang yêu thích"`;
+
+      // (C)
+      await page.route(/\/rest\/v1\/food_items/, (r) => {
+        if (r.request().method() === 'PATCH') return r.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+        return r.fallback();
+      });
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      await star(A).click();
+      if ((await sel(A)) !== 'false') return '(C) bỏ yêu thích khi mất mạng mà sao không đổi ngay';
+      await goOnline(page);
+      let text = '';
+      for (let i = 0; i < 20 && !/removed elsewhere|bị xoá ở nơi khác/.test(text); i++) {
+        await page.waitForTimeout(250);
+        text = await toast();
+      }
+      if (!/removed elsewhere|bị xoá ở nơi khác/.test(text)) return `(C) món đã bị xoá ở nơi khác mà không có lời báo — ra "${text}"`;
+      await page.waitForTimeout(1500);
+      if (/waiting to send|đang chờ gửi/.test(await label(A))) return '(C) ý của một món đã xoá vẫn treo';
+      return null;
+    },
+  },
+  {
+    /*
+      #165: mặc đồ cho Koa là lớp Trạng thái, khoá theo NHÓM loại trừ (một món
+      mỗi ô). Tủ đồ có Băng đô (đang mặc) và Nón lưỡi trai, cùng ô đầu.
+
+      Bản dựng đang bật `TEST_UNLOCK_ALL` (`lib/dev-flags.ts`): kho đồ nằm trên
+      MÁY (`ascnd_test_mascot_inventory`), không trên server — nên kịch bản gieo
+      kho ở đó và đếm lượt GHI vào khoá ấy thay cho lệnh ghi lên server. Lớp
+      Trạng thái vẫn chờ mạng như mọi nơi (`onlineManager`), nên luật gộp đo
+      được y như thật. Nhánh server của `send` chỉ chạy khi cờ ấy tắt.
+        (A) mất mạng, mặc Nón: nút đổi NGAY sang "Take off" kèm dấu chờ, và
+            Băng đô — cùng nhóm — cũng đổi ngay sang "Wear": Koa không bao giờ
+            đội hai thứ; không lượt ghi nào lúc mất mạng. Có mạng lại: kho có
+            Nón đang mặc, Băng đô không; dấu chờ mất;
+        (B) mất mạng, cởi Nón rồi mặc lại: ý cuối trùng giá trị đã có → KHÔNG
+            lượt ghi nào.
+    */
+    name: 'Mất mạng, lớp Trạng thái: mặc đồ cho Koa đổi ngay, gộp theo ô, cùng ô không mặc hai món (#165)',
+    route: '/shop?tab=closet', mode: 'full',
+    async run(page) {
+      const KEY = 'ascnd_test_mascot_inventory';
+      await freshCache(page);
+      await page.evaluate((k) => localStorage.setItem(k, JSON.stringify([
+        { item_key: 'head_band', equipped: true },
+        { item_key: 'head_cap', equipped: false },
+      ])), KEY);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.evaluate((k) => {
+        window.__invWrites = 0;
+        const set = Storage.prototype.setItem;
+        Storage.prototype.setItem = function (key, v) {
+          if (key === k) window.__invWrites++;
+          return set.call(this, key, v);
+        };
+      }, KEY);
+      const writes = () => page.evaluate(() => window.__invWrites);
+      const inv = (item) => page.evaluate(([k, item]) => JSON.parse(localStorage.getItem(k) ?? '[]').find((r) => r.item_key === item)?.equipped, [KEY, item]);
+      const act = () => page.getByRole('button', { name: /^(Wear|Take off|Mặc|Cởi)(, (waiting to send|đang chờ gửi))?$/ }).filter({ visible: true });
+      const actLabel = async () => (await act().first().getAttribute('aria-label')) ?? '';
+      const go = async (dir) => {
+        await page.getByRole('button', { name: dir === 'next' ? 'Next item' : 'Previous item' }).filter({ visible: true }).first().click();
+        await page.waitForTimeout(500);
+      };
+      for (let i = 0; i < 20 && !(await act().count()); i++) await page.waitForTimeout(250);
+      if (!(await act().count())) return 'tủ đồ không có nút Wear/Take off nào — kho gieo trên máy không tới màn';
+      if (!/^Take off$/.test(await actLabel())) return `món đầu tủ đồ phải là Băng đô đang mặc ("Take off"), ra "${await actLabel()}"`;
+      await go('next');
+      if (!/^Wear$/.test(await actLabel())) return `món thứ hai phải là Nón chưa mặc ("Wear"), ra "${await actLabel()}"`;
+
+      // (A)
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      const w0 = await writes();
+      await act().first().click();
+      await page.waitForTimeout(300);
+      if (!/^Take off, (waiting to send|đang chờ gửi)$/.test(await actLabel())) return `(A) mặc Nón khi mất mạng: nút phải đổi NGAY và mang dấu chờ, ra "${await actLabel()}"`;
+      await go('prev');
+      if (!/^Wear, (waiting to send|đang chờ gửi)$/.test(await actLabel())) return `(A) mặc Nón mà Băng đô cùng ô vẫn "đang mặc": "${await actLabel()}" — Koa đội hai thứ`;
+      if ((await writes()) !== w0) return `(A) mất mạng mà kho đã bị ghi ${(await writes()) - w0} lần`;
+      await goOnline(page);
+      for (let i = 0; i < 16 && (await writes()) === w0; i++) await page.waitForTimeout(500);
+      await page.waitForTimeout(2000);
+      if ((await writes()) === w0) return '(A) có mạng lại mà kho không được ghi';
+      if ((await inv('head_cap')) !== true || (await inv('head_band')) !== false) return `(A) có mạng lại: kho phải có Nón đang mặc, Băng đô không — ra cap=${await inv('head_cap')}, band=${await inv('head_band')}`;
+      if (/waiting to send|đang chờ gửi/.test(await actLabel())) return '(A) đã gửi xong mà dấu chờ còn';
+
+      // (B)
+      await go('next');
+      await goOffline(page);
+      await page.waitForTimeout(1500);
+      const w1 = await writes();
+      await act().first().click();
+      await page.waitForTimeout(300);
+      if (!/^Wear, (waiting to send|đang chờ gửi)$/.test(await actLabel())) return `(B) cởi Nón khi mất mạng: nút phải đổi ngay, ra "${await actLabel()}"`;
+      await act().first().click();
+      await goOnline(page);
+      await page.waitForTimeout(4000);
+      if ((await writes()) !== w1) return `(B) cởi rồi mặc lại khi mất mạng: không được ghi gì, ra ${(await writes()) - w1} lượt`;
+      if ((await inv('head_cap')) !== true) return '(B) Nón phải vẫn đang mặc';
       return null;
     },
   },
@@ -5138,7 +5262,7 @@ const SCENARIOS = [
             sách chọn, có nút Đăng);
         (B) id không tồn tại, (C) bữa của NGƯỜI KHÁC, (D) bữa đã đăng → rơi về
             danh sách chọn, không màn đỏ; ở (D) bữa ấy hiện "Shared".
-      Lối vào trên thẻ bữa ở màn Dinh dưỡng chờ chủ dự án chọn chỗ đặt (#18).
+      Lối vào trên thẻ bữa ở màn Dinh dưỡng: kịch bản ngay dưới.
     */
     name: 'Chia sẻ công thức: ?meal= vào thẳng xem trước; id lạ, bữa người khác, bữa đã đăng thì về danh sách (#18)',
     route: '/community-share-recipe?meal=m2', mode: 'full',
@@ -5173,6 +5297,75 @@ const SCENARIOS = [
       if (!(await settle('list'))) return '(D) bữa đã đăng mà không rơi về danh sách chọn';
       if (await post().count()) return '(D) bữa đã đăng mà vẫn có nút Đăng — đăng lần hai';
       if (!(await page.getByText('Shared', { exact: true }).filter({ visible: true }).count())) return '(D) danh sách không đánh dấu bữa đã đăng';
+      return null;
+    },
+  },
+  {
+    /*
+      #18 (chủ dự án chọn (a)): lối vào trên thẻ bữa — mục "Share to
+      Community" là dòng cuối của thẻ đã mở, không phải nút trên đầu thẻ.
+        (A) mở thẻ Bữa trưa (một bản ghi, m2, chưa đăng): có mục ấy; chạm →
+            `/community-share-recipe?meal=m2`, vào thẳng bước xem trước;
+        (B) m2 đã đăng: thẻ Bữa trưa KHÔNG có mục ấy (đăng lần hai là thứ màn
+            chia sẻ chặn, lối vào không được hứa nó), còn Bữa sáng (m1, chưa
+            đăng) vẫn có; trình đọc màn hình có cùng hành động trên đầu thẻ;
+        (C) chưa biết bữa nào đã đăng (lượt đọc còn chờ) thì chưa hiện mục nào.
+    */
+    name: 'Dinh dưỡng: thẻ bữa đã mở có "Share to Community" → vào thẳng xem trước của đúng bữa; bữa đã đăng thì không có (#18)',
+    route: '/nutrition', mode: 'full',
+    async run(page, { world }) {
+      const head = (meal) => page.locator('[aria-expanded]').filter({ hasText: new RegExp(`^${meal}`) }).filter({ visible: true }).first();
+      const share = () => page.getByRole('button', { name: 'Share to Community', exact: true }).filter({ visible: true });
+      const post = () => page.getByRole('button', { name: /^(Post|Đăng)$/ }).filter({ visible: true });
+      const open = async (meal) => {
+        for (let i = 0; i < 40 && !(await head(meal).count()); i++) await page.waitForTimeout(250);
+        if (!(await head(meal).count())) return false;
+        if ((await head(meal).getAttribute('aria-expanded')) !== 'true') await head(meal).click();
+        await page.waitForTimeout(700);
+        return true;
+      };
+
+      if (!(await open('Lunch'))) return 'không thấy thẻ Bữa trưa (fixture m2)';
+      for (let i = 0; i < 20 && !(await share().count()); i++) await page.waitForTimeout(250);
+      if ((await share().count()) !== 1) return `(A) thẻ Bữa trưa đã mở mà có ${await share().count()} mục "Share to Community" — phải đúng một`;
+      await share().click();
+      for (let i = 0; i < 40 && !/community-share-recipe\?meal=m2/.test(page.url()); i++) await page.waitForTimeout(250);
+      if (!/community-share-recipe\?meal=m2/.test(page.url())) return `(A) chạm "Share to Community" mà không tới ?meal=m2: ${page.url()}`;
+      for (let i = 0; i < 40 && !(await post().count()); i++) await page.waitForTimeout(250);
+      if (!(await post().count())) return '(A) tới màn chia sẻ mà không vào thẳng bước xem trước';
+
+      const tpl = world.community_posts.find((p) => p.kind === 'recipe');
+      world.community_posts.push({ ...structuredClone(tpl), id: 'cp000000-0000-4000-8000-000000000018', author_id: UID, source_id: 'm2', hidden: false });
+      await freshCache(page);
+      await page.goto(page.url().replace(/\/community-share-recipe.*$/, '/nutrition'), { waitUntil: 'domcontentloaded' });
+      if (!(await open('Lunch'))) return '(B) không thấy lại thẻ Bữa trưa';
+      if (!(await open('Breakfast'))) return '(B) không thấy thẻ Bữa sáng';
+      for (let i = 0; i < 20 && !(await share().count()); i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(800);
+      if ((await share().count()) !== 1) return `(B) m2 đã đăng, m1 chưa: phải còn đúng MỘT mục "Share to Community" (của Bữa sáng), ra ${await share().count()}`;
+      const owner = await share().first().evaluate((el) => {
+        let n = el;
+        while (n && !n.querySelector?.('[aria-expanded]')) n = n.parentElement;
+        return n?.querySelector('[aria-expanded]')?.textContent ?? '';
+      });
+      if (!/^Breakfast/.test(owner)) return `(B) mục "Share to Community" còn lại phải thuộc Bữa sáng, ra thẻ "${owner.slice(0, 30)}"`;
+
+      /* (C) chưa biết bữa nào đã đăng (lượt đọc `source_id` còn đang chờ) thì
+         CHƯA hiện mục nào — hiện lúc ấy là hứa chia sẻ một bữa có thể đã đăng. */
+      let hold = true;
+      await page.route(/\/rest\/v1\/community_posts\?.*select=source_id/, async (r) => {
+        while (hold) await new Promise((ok) => setTimeout(ok, 100));
+        return r.fallback();
+      });
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      if (!(await open('Breakfast'))) { hold = false; return '(C) không thấy thẻ Bữa sáng'; }
+      await page.waitForTimeout(1500);
+      const early = await share().count();
+      hold = false;
+      if (early) return `(C) lượt đọc bữa đã đăng còn đang chờ mà đã hiện ${early} mục "Share to Community"`;
+      for (let i = 0; i < 20 && !(await share().count()); i++) await page.waitForTimeout(250);
+      if ((await share().count()) !== 1) return `(C) lượt đọc xong mà Bữa sáng không có mục "Share to Community" (${await share().count()})`;
       return null;
     },
   },

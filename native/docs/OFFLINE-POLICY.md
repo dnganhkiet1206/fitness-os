@@ -79,8 +79,46 @@ thay đổi mới hơn từ máy khác.
   `src/lib/offline-class.ts`.
 - Lớp Trạng thái: `src/lib/state-write-core.ts` (luật, không import gì) và
   `src/lib/state-write.ts` (mạng, đọc lại, câu báo). Đang dùng cho tick món đi
-  chợ và tick thực phẩm bổ sung. Lời nhắc bật/tắt chỉ lưu trên máy, không có
+  chợ và tick thực phẩm bổ sung — và từ #165, ngôi sao yêu thích và mặc đồ cho
+  Koa (mục dưới). Lời nhắc bật/tắt chỉ lưu trên máy, không có
   lệnh ghi server nào để xếp lớp.
 - Bước cổng: `tools/offline-class.mjs`. Kịch bản live: hai kịch bản
   "Mất mạng, lớp Trạng thái" trong `tools/live.mjs`.
+
+## Xếp lại theo sáu câu hỏi (#165, chủ dự án chọn 02/10)
+
+Năm thao tác mà sáu câu hỏi xếp khác hành vi lúc #161 làm. Hai cái chuyển lớp;
+ba cái giữ **Tức thời**, và lý do ghi ở đây để lần soát sau không phải tìm lại.
+
+**Chuyển sang Trạng thái** (câu 5):
+
+- **Ngôi sao yêu thích** (`useToggleFavoriteFood`, `hooks/use-nutrition.ts`).
+  Khoá `food:favorite:<id>`. Món dùng chung (seed) không sửa được dưới RLS, nên
+  "yêu thích" nó là chép nó vào danh sách của mình — và lượt gửi tìm bản chép
+  theo tên trước khi chèn, để gửi lại vẫn là một món, không phải hai.
+- **Mặc đồ cho Koa** (`useToggleEquip`, `hooks/use-mascot-room.ts`). Không tốn
+  xu (mua mới tốn — `useBuyItem` vẫn Tức thời, câu 1). Khoá là NHÓM loại trừ
+  (`wearGroup`: `stage`, `outfit:<ô>`, `item:<món>`), giá trị là món đang mặc
+  trong nhóm hay `null`: mặc A rồi B cùng ô lúc mất mạng là MỘT ý "ô này mặc
+  B", không phải hai ý cùng chờ và một Koa mặc cả hai. Ý chờ được áp vào
+  `useMascotInventory`, nên phòng, cửa hàng và mọi chỗ vẽ Koa thấy cùng một bộ
+  đồ.
+
+**Giữ Tức thời**, dù câu 4 hoặc 5 đúng về mặt chữ:
+
+- **Đồng bộ Apple Health** (`hooks/use-health-sync.ts`). Câu 4 nói Ghi nhận,
+  nhưng nguồn của nó là HealthKit, và nguồn ấy tự gửi lại: `useAutoHealthSync`
+  chạy lại khi app trở lại (mười lăm phút một lần), đọc lại đúng những mẫu ấy
+  và upsert theo `external_id` của chúng. Từ chối khi mất mạng không làm mất gì; xếp hàng thì chỉ thêm một bản
+  sao cũ của thứ lần sau sẽ đọc lại tươi hơn.
+- **Tải ảnh tiến trình** (`hooks/use-progress-photos.ts`). Câu 4 nói Ghi nhận,
+  nhưng xếp hàng bền một ảnh nghĩa là giữ cả TỆP ảnh (vài MB) trên máy tới khi
+  có mạng — cần chỗ chứa tệp, dọn dẹp, và quyết định khi tệp gốc bị xoá khỏi
+  thư viện ảnh. Đó là một tính năng, không phải một dòng khai lớp. Tới khi có
+  quyết định ấy: từ chối ngay, nói rõ, ảnh vẫn nằm trong thư viện máy.
+- **Đánh dấu hộp thư đã đọc** (`useMarkInboxRead`, `hooks/use-community.ts`).
+  Câu 5 nói Trạng thái, nhưng nó không có người bấm: nó tự chạy mỗi lần mở hộp
+  thư, im lặng có chủ ý (`onError: () => {}`), và lần mở sau chạy lại đúng lệnh
+  ấy. Lớp Trạng thái thêm một câu báo "sẽ cập nhật khi có mạng" cho một thao
+  tác không ai làm — thứ duy nhất nó đổi được là làm người ta bối rối.
 

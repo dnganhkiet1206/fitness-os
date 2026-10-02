@@ -128,6 +128,8 @@ export default function ShopScreen() {
 
   const owned = new Set((inventory ?? []).map((r) => r.item_key));
   const equipped = new Set((inventory ?? []).filter((r) => r.equipped).map((r) => r.item_key));
+  /* Món có ý mặc/cởi đang chờ gửi (lớp Trạng thái, #165) — nút của nó mang dấu chờ. */
+  const waiting = new Set((inventory ?? []).filter((r) => r.pending).map((r) => r.item_key));
   /* Dựng ở đây, không lưu ở đâu — xem `use-mascot-room.ts`: cache bị persist và
      Set không sống qua JSON. */
   /* Đọc phòng thủ: giá trị này tới từ cache trên đĩa, nơi một bản cũ đã từng ghi
@@ -386,6 +388,7 @@ export default function ShopScreen() {
             onIndex={pick}
             owned={owned}
             equipped={equipped}
+            waiting={waiting}
             balance={balance}
             level={level}
             pendingBuy={buy.isPending}
@@ -396,7 +399,8 @@ export default function ShopScreen() {
               // Wearing is the event the pose is a reaction to. Taking off is
               // not — there is nothing new to look down at.
               if (next) setWearTick((n) => n + 1);
-              equip.mutate({ itemKey: key, equipped: next });
+              /* Lớp Trạng thái (#165): Koa thay đồ ngay, mất mạng thì ý chờ đợi mạng về. */
+              equip.set(key, next);
             }}
             lang={lang}
             i18n={i18n}

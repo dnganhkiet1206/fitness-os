@@ -458,17 +458,20 @@ export default function NutritionScreen() {
       )}
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={i18n.a11yFavourite}
+        accessibilityLabel={`${i18n.a11yFavourite}${toggleFav.pending(f) ? `, ${i18n.statePending}` : ''}`}
+        accessibilityState={{ selected: toggleFav.is(f) }}
+        aria-selected={toggleFav.is(f)}
         hitSlop={10}
         onPress={() => {
           Haptics.selection();
-          toggleFav.mutate({ id: f.id, is_favorite: !f.is_favorite });
+          /* Lớp Trạng thái (#165): sao đổi ngay, mất mạng thì ý chờ đợi mạng về. */
+          toggleFav.set(f, !toggleFav.is(f));
         }}>
         <Icon
           icon={Star}
           size={16}
-          color={f.is_favorite ? c.readinessYellow : c.mutedForeground}
-          strokeWidth={f.is_favorite ? 2.5 : 2}
+          color={toggleFav.is(f) ? c.readinessYellow : c.mutedForeground}
+          strokeWidth={toggleFav.is(f) ? 2.5 : 2}
         />
       </Pressable>
     </View>

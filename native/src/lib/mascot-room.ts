@@ -443,6 +443,21 @@ export const conflictingKeys = (key: string): ShopItemKey[] => {
 };
 
 /**
+ * Nhóm "mặc một món một lúc" của một món — chính là tập `[key,
+ * ...conflictingKeys(key)]`, đặt tên: `stage`, `outfit:<slot>`, hay
+ * `item:<key>` cho món không loại trừ món nào. Khoá lớp Trạng thái của việc
+ * mặc (#165) là NHÓM chứ không phải món: mặc A rồi mặc B cùng ô lúc mất mạng là
+ * MỘT ý ("ô này mặc B"), không phải hai ý "A mặc" và "B mặc" cùng chờ — thứ
+ * sẽ vẽ Koa mặc cả hai.
+ */
+export const wearGroup = (key: string): string => {
+  const item = getShopItem(key);
+  if (item?.type === 'stage') return 'stage';
+  if (item?.type === 'outfit' && item.slot) return `outfit:${item.slot}`;
+  return `item:${key}`;
+};
+
+/**
  * Which stage skin the room should draw, from the equipped set — or `null` for
  * the free default.
  *

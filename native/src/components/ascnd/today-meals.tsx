@@ -1,6 +1,6 @@
 import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
-import { ChevronDown, Minus, Pencil, Plus, Trash2, UtensilsCrossed, type LucideIcon } from 'lucide-react-native';
+import { ChevronDown, Minus, Pencil, Plus, Share2, Trash2, UtensilsCrossed, type LucideIcon } from 'lucide-react-native';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import type { SwipeableMethods } from 'react-native-gesture-handler/lib/typescript/components/ReanimatedSwipeable/ReanimatedSwipeableProps';
 import { useEffect, useState } from 'react';
@@ -22,7 +22,9 @@ import { BOUNCE, spring, SWIPE_SNAP } from '@/constants/motion';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import type { useI18n } from '@/hooks/use-app-settings';
-import { localDateStr } from '@/lib/local-date';
+import { dayGap, localDateStr } from '@/lib/local-date';
+import { useMySharedSessions } from '@/hooks/use-community';
+import { SHARE_WINDOW_DAYS } from '@/hooks/use-community-recipe';
 import { toast } from '@/lib/toast';
 import {
   useDeleteMealItem,
@@ -290,6 +292,28 @@ export function DayMeals({
   const styles = stylesFor(c);
   /** Ngày đang vẽ có phải hôm nay không — quyết định chữ, không quyết định ghi. */
   const isToday = (date ?? localDateStr()) === localDateStr();
+
+  /*
+    "Chia sẻ lên Cộng đồng" (#18, chủ dự án chọn (a): một mục trong thẻ bữa,
+    không phải một nút trên đầu thẻ). Đi tới `community-share-recipe?meal=<id>`
+    — màn ấy vào thẳng bước xem trước của đúng bữa đó.
+
+    Chỉ hiện khi có gì để chia sẻ: một bản ghi bữa có món, CHƯA đăng, và nằm
+    trong cửa sổ mà màn chia sẻ liệt kê (`SHARE_WINDOW_DAYS`) — một `?meal=`
+    ngoài cửa sổ ấy rơi về danh sách chọn, tức một lối vào hứa một thứ rồi đưa
+    thứ khác. Bữa trưa ghi hai lần là hai bản ghi: còn đúng một bản chưa đăng
+    thì vào thẳng bản ấy, còn nhiều hơn thì mở danh sách chọn. Chưa biết bữa
+    nào đã đăng (đang đọc) thì chưa hiện, thay vì hiện cho một bữa đã đăng.
+  */
+  const shared = useMySharedSessions();
+  const viewed = date ?? localDateStr();
+  const inWindow = dayGap(viewed, localDateStr()) < SHARE_WINDOW_DAYS;
+  const shareTarget = (g: MealGroup): string | null => {
+    if (!shared.data || !inWindow) return null;
+    const open = [...new Set(g.items.map((it) => it.entry_id))].filter((id) => !shared.data.includes(id));
+    if (open.length === 0) return null;
+    return open.length === 1 ? `/community-share-recipe?meal=${open[0]}` : '/community-share-recipe';
+  };
   const label: Record<string, string> = {
     breakfast: i18n.nBreakfast,
     lunch: i18n.nLunch,
@@ -487,6 +511,10 @@ export function DayMeals({
           onEdit={setEditing}
           onDelete={confirmDelete}
           onDeleteGroup={() => confirmDeleteGroup(g, label[g.type] ?? g.type)}
+          onShare={(() => {
+            const to = shareTarget(g);
+            return to ? () => nav.push(to as never) : undefined;
+          })()}
           /* NGÀY phải đi cùng, y như lối vào ở thẻ rỗng phía trên.
 
              Cú vuốt "Thêm" được viết khi nhật ký chỉ có hôm nay, nên nó chỉ
@@ -545,6 +573,7 @@ function MealCard({
   onDelete,
   onDeleteGroup,
   onAddTo,
+  onShare,
 }: {
   g: MealGroup;
   label: string;
@@ -553,6 +582,8 @@ function MealCard({
   onDelete: (it: LoggedItem) => void;
   onDeleteGroup: () => void;
   onAddTo: () => void;
+  /** Có thì thẻ có mục "Chia sẻ lên Cộng đồng" (#18); không có gì để chia sẻ thì không. */
+  onShare?: () => void;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -711,10 +742,12 @@ function MealCard({
         accessibilityActions={[
           { name: 'addTo', label: i18n.nMealSwipeAdd },
           { name: 'deleteGroup', label: i18n.nMealSwipeDelete },
+          ...(onShare ? [{ name: 'share', label: i18n.nMealShare }] : []),
         ]}
         onAccessibilityAction={(e) => {
           if (e.nativeEvent.actionName === 'addTo') onAddTo();
           else if (e.nativeEvent.actionName === 'deleteGroup') onDeleteGroup();
+          else if (e.nativeEvent.actionName === 'share') onShare?.();
         }}
         onPress={() => {
           Haptics.selection();
@@ -758,6 +791,20 @@ function MealCard({
               onDelete={onDelete}
             />
           ))}
+          {/* Mục cuối của thẻ đã mở, như một dòng menu: không tranh cử chỉ
+              với vuốt trên đầu thẻ, và không thêm vùng chạm nào lên đầu thẻ. */}
+          {onShare ? (
+            <PressScale
+              accessibilityRole="button"
+              onPress={() => {
+                Haptics.selection();
+                onShare();
+              }}
+              style={styles.shareRow}>
+              <Icon icon={Share2} size={16} color={c.primary} />
+              <Text style={styles.shareText}>{i18n.nMealShare}</Text>
+            </PressScale>
+          ) : null}
         </View>
       </Animated.View>
     </GlassCard>
@@ -1035,6 +1082,9 @@ const stylesFor = makeStyles((c, m) => ({
     `overflow: 'hidden'` KHÔNG cần khai ở đây: `ReanimatedSwipeable` đã đặt sẵn
     trên `styles.container` của chính nó.
   */
+  /* Cao 44 — sàn vùng chạm của `tools/tap-target.mjs`. */
+  shareRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44, paddingTop: spacing.xs },
+  shareText: { ...type.body, fontWeight: '600', color: c.primary },
   swipeBox: { borderRadius: m.radius },
   swipeBoxOpen: { borderBottomLeftRadius: 0, borderBottomRightRadius: 0 },
   swipeAction: { width: ACTION_W },

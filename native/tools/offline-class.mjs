@@ -77,7 +77,7 @@ export function audit(file, raw) {
     if (meta[2] && !['1', '2', '3', '6'].includes(meta[2])) out.push(`${at}: \`now(${meta[2]})\` — lớp Tức thời chỉ do câu 1, 2, 3 hoặc 6 quyết`);
     if (m[1] === 'useMutation' && meta[2]) out.push(`${at}: \`useMutation\` trần khai \`now\` — nó sẽ TẠM DỪNG im lặng khi mất mạng (#45); dùng \`useOnlineMutation\``);
   }
-  for (const m of code.matchAll(/(?<![.\w])setState\(\s*\{/g)) {
+  for (const m of code.matchAll(/(?<![.\w])setState(?:<[^>()]*>)?\(\s*\{/g)) {
     if (file.endsWith('lib/state-write.ts')) continue;
     const obj = objectAt(code, m.index + m[0].length - 1);
     const at = `${file}:${lineOf(m.index)}`;
@@ -107,11 +107,11 @@ let states = 0;
 for (const f of files) {
   const raw = read(f);
   if (!f.endsWith('use-online-mutation.ts')) mutations += (strip(raw).match(/\b(useOnlineMutation|useMutation)\s*(<[^(]*>)?\(\s*\{/g) ?? []).length;
-  states += f.endsWith('lib/state-write.ts') ? 0 : (strip(raw).match(/(?<![.\w])setState\(\s*\{/g) ?? []).length;
+  states += f.endsWith('lib/state-write.ts') ? 0 : (strip(raw).match(/(?<![.\w])setState(?:<[^>()]*>)?\(\s*\{/g) ?? []).length;
   problems.push(...audit(f, raw));
 }
 if (mutations < 60) fatal(`chỉ đếm được ${mutations} thao tác ghi — bộ quét hỏng`);
-if (states < 2) problems.push(`chỉ có ${states} chỗ dùng lớp Trạng thái — tick đi chợ và tick thực phẩm bổ sung đều phải ở đây`);
+if (states < 4) problems.push(`chỉ có ${states} chỗ dùng lớp Trạng thái — tick đi chợ, tick thực phẩm bổ sung, ngôi sao yêu thích và mặc đồ cho Koa (#165) đều phải ở đây`);
 /* Đo được (#161): không có chỉ thị này, React Compiler ghi nhớ hàm đọc ý chờ và
    ô tick khi mất mạng không bao giờ đổi — câu báo hiện, kho có ý, màn đứng yên. */
 if (!/function useStateOverlay\([\s\S]*?\|\s*undefined\s*\{\s*'use no memo';/.test(strip(read('src/lib/state-write.ts')))) {

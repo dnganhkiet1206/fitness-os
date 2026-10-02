@@ -240,6 +240,10 @@ try {
         from: () => ({ select: () => ({ eq: () => ({ or: () => ({ order: () => ({ limit: async () => ({ data: [], error: null }) }) }) }) }) }),
       };`);
     writeFileSync(path.join(out, 'hooks/use-auth.js'), `exports.useAuth = () => ({ user: { id: 'u1' } });`);
+    /* #165: `use-mascot-room.ts` mặc đồ qua lớp Trạng thái, và `lib/state-write.ts`
+       kéo theo client truy vấn của cả app. Phép thử này chỉ lái `useBuyFreeze` —
+       thay lớp ấy bằng một bản rỗng, như `supabase/client` và `use-auth` ở trên. */
+    writeFileSync(path.join(out, 'lib/state-write.js'), `exports.setState = () => {}; exports.useStateOverlay = () => () => undefined;`);
     writeFileSync(path.join(out, 'cbus.js'), `module.exports = { calls: [], fail: false };`);
 
     const driver = path.join(out, 'cdrive.cjs');

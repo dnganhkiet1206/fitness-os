@@ -50,6 +50,7 @@ export function ShopPager({
   onIndex,
   owned,
   equipped,
+  waiting,
   balance,
   level,
   pendingBuy,
@@ -64,6 +65,8 @@ export function ShopPager({
   onIndex: (next: number) => void;
   owned: Set<string>;
   equipped: Set<string>;
+  /** Món có ý mặc/cởi đang chờ gửi (#165): nút mang dấu chờ, như ô đi chợ. */
+  waiting?: Set<string>;
   balance: number;
   level: number;
   pendingBuy: boolean;
@@ -159,11 +162,14 @@ export function ShopPager({
         </PressScale>
       ) : (
         <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={`${isEquipped ? offLabel : wearLabel}${waiting?.has(item.key) ? `, ${i18n.statePending}` : ''}`}
           style={[styles.action, isEquipped ? styles.actionOff : styles.actionWear]}
           onPress={() => onToggleEquip(item.key, !isEquipped)}>
           <Text style={[styles.wearText, isEquipped && styles.offText]}>
             {isEquipped ? offLabel : wearLabel}
           </Text>
+          {waiting?.has(item.key) ? <View style={styles.pendingDot} importantForAccessibility="no" /> : null}
         </PressScale>
       )}
     </View>
@@ -251,5 +257,7 @@ const stylesFor = makeStyles((c, m) => ({
   poorText: { color: c.mutedForeground },
   wearText: { ...type.headline, color: c.foreground },
   offText: { color: c.mutedForeground },
+  /* Cùng dấu chờ của ô đi chợ (#161): 6 điểm, màu chữ phụ. */
+  pendingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.mutedForeground, opacity: 0.8 },
   lockedText: { ...type.footnote, color: c.mutedForeground },
 }));

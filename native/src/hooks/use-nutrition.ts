@@ -16,6 +16,7 @@ import { readAllPages } from '@/lib/read-all';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';
 import { RECORD } from '@/lib/offline-class';
+import { setState, useStateOverlay } from '@/lib/state-write';
 export type { RecentMeal, RepeatFood } from '@/lib/recent-meals';
 
 export interface FoodItemRow {
@@ -184,13 +185,17 @@ export function dedupeSeedShadows<T extends { user_id?: string | null; name: str
   return rows.filter((r) => r.user_id != null || !ownNames.has(r.name.toLowerCase()));
 }
 
+const FOOD_QUERY_KEYS = [
+  ['favorite_foods'],
+  ['my_foods'],
+  ['nutrition_food_search'],
+  ['mealplan_food_search'],
+  ['food_items_search'],
+  ['food_item'],
+];
+
 function invalidateFoodQueries(qc: ReturnType<typeof useQueryClient>) {
-  qc.invalidateQueries({ queryKey: ['favorite_foods'] });
-  qc.invalidateQueries({ queryKey: ['my_foods'] });
-  qc.invalidateQueries({ queryKey: ['nutrition_food_search'] });
-  qc.invalidateQueries({ queryKey: ['mealplan_food_search'] });
-  qc.invalidateQueries({ queryKey: ['food_items_search'] });
-  qc.invalidateQueries({ queryKey: ['food_item'] });
+  for (const queryKey of FOOD_QUERY_KEYS) qc.invalidateQueries({ queryKey });
 }
 
 /** Single food row for the editor sheet (edit mode) */
@@ -251,53 +256,87 @@ export function useDeleteFoodItem() {
   });
 }
 
-export function useToggleFavoriteFood() {
-  const queryClient = useQueryClient();
-  const { user } = useAuth();
-  return useOnlineMutation({
-    meta: { offline: now(6) },
-    mutationFn: async ({ id, is_favorite }: { id: string; is_favorite: boolean }) => {
-      // Shared seed foods (user_id NULL) can't be updated under RLS — the
-      // update silently matches 0 rows and the star never lights up.
-      // Favoriting one instead clones it into the user's own list.
-      const { data: row, error: readError } = await supabase
-        .from('food_items')
-        .select('user_id, name, brand, serving_g, kcal, protein_g, carbs_g, fat_g, fiber_g')
-        .eq('id', id)
-        .single();
-      if (readError) throw readError;
+/** Khoá lớp Trạng thái (#165) của cờ yêu thích một món. */
+export const favoriteKey = (id: string) => `food:favorite:${id}`;
 
-      if (row.user_id === user!.id) {
-        await confirmWrite(
-          supabase.from('food_items').update({ is_favorite }).eq('id', id),
-          'Không lưu được món này — có thể nó đã được xoá ở thiết bị khác',
-        );
-      } else if (is_favorite) {
-        const { error } = await supabase.from('food_items').insert({
-          user_id: user!.id,
-          name: row.name,
-          brand: row.brand,
-          serving_g: row.serving_g,
-          kcal: row.kcal,
-          protein_g: row.protein_g,
-          carbs_g: row.carbs_g,
-          fat_g: row.fat_g,
-          fiber_g: row.fiber_g,
-          is_favorite: true,
-        });
-        if (error) throw error;
-      }
-      // Un-favoriting a seed row is a no-op: it was never favoritable
+/**
+ * Ngôi sao "yêu thích" — lớp Trạng thái của `docs/OFFLINE-POLICY.md` (#165,
+ * chủ dự án chọn (a)): một cờ TUYỆT ĐỐI, chỉ giá trị cuối cùng có nghĩa. Trước
+ * đây là `now(6)`: mất mạng thì chạm sao bị từ chối. Giờ chạm là sao đổi ngay
+ * (ý chờ, qua `useStateOverlay`), mất mạng thì ý ấy đợi mạng về, và chạm hai
+ * lần lúc mất mạng là không gửi gì cả.
+ *
+ * `send` nhận giá trị cần ĐẶT và gửi lại bao nhiêu lần cũng ra một kết quả:
+ *   · món của mình: `update is_favorite = v`; 0 dòng = món đã bị xoá ở máy
+ *     khác → `'gone'` (bỏ ý và báo);
+ *   · món dùng chung (seed, `user_id` NULL): RLS không cho sửa, nên yêu thích
+ *     nó là CHÉP nó vào danh sách của mình. Chép theo tên: đã có bản chép thì
+ *     đánh dấu bản ấy, không chèn bản thứ hai — một lần gửi lại sau khi lượt
+ *     chèn trước thật ra đã tới server là cùng một món, không phải hai;
+ *   · bỏ yêu thích một món seed: không có gì để làm (bản chép, nếu có, thay nó
+ *     trong mọi danh sách — `dedupeSeedShadows`).
+ *
+ * `is(f)` là thứ ngôi sao vẽ: ý chờ nếu có, không thì bản đọc từ server.
+ */
+export function useToggleFavoriteFood() {
+  const { user } = useAuth();
+  const overlay = useStateOverlay();
+  return {
+    is: (f: { id: string; is_favorite?: boolean | null }) => overlay<boolean>(favoriteKey(f.id))?.value ?? !!f.is_favorite,
+    /** Có ý đang chờ gửi — ngôi sao mang dấu chờ, như ô đi chợ (#161). */
+    pending: (f: { id: string }) => !!overlay<boolean>(favoriteKey(f.id)),
+    set(f: { id: string; is_favorite?: boolean | null }, value: boolean) {
+      setState({
+        key: favoriteKey(f.id),
+        value,
+        server: !!f.is_favorite,
+        refresh: FOOD_QUERY_KEYS,
+        send: async (v) => {
+          const { data: row, error: readError } = await supabase
+            .from('food_items')
+            .select('user_id, name, brand, serving_g, kcal, protein_g, carbs_g, fat_g, fiber_g')
+            .eq('id', f.id)
+            .maybeSingle();
+          if (readError) throw readError;
+          if (!row) return 'gone';
+          if (row.user_id === user!.id) {
+            const { data, error } = await supabase.from('food_items').update({ is_favorite: v }).eq('id', f.id).select('id');
+            if (error) throw error;
+            return data?.length ? 'ok' : 'gone';
+          }
+          if (!v) return 'ok';
+          const { data: mine, error: mineError } = await supabase
+            .from('food_items')
+            .select('id')
+            .eq('user_id', user!.id)
+            .eq('name', row.name)
+            .limit(1);
+          if (mineError) throw mineError;
+          if (mine?.length) {
+            /* Có dòng nào bị chạm không: bản chép vừa thấy có thể đã bị xoá ở máy
+               khác giữa hai lượt — khi ấy rơi xuống chèn bản mới. */
+            const { data: hit, error } = await supabase.from('food_items').update({ is_favorite: true }).eq('id', mine[0].id).select('id');
+            if (error) throw error;
+            if (hit?.length) return 'ok';
+          }
+          const { error } = await supabase.from('food_items').insert({
+            user_id: user!.id,
+            name: row.name,
+            brand: row.brand,
+            serving_g: row.serving_g,
+            kcal: row.kcal,
+            protein_g: row.protein_g,
+            carbs_g: row.carbs_g,
+            fat_g: row.fat_g,
+            fiber_g: row.fiber_g,
+            is_favorite: true,
+          });
+          if (error) throw error;
+          return 'ok';
+        },
+      });
     },
-    onSuccess: () => invalidateFoodQueries(queryClient),
-    /* In the hook, not at the two stars that fire it (Nutrition's list and
-       `food-cards.tsx`): neither had one, so a star tap that failed — the row
-       deleted on another device, a refused insert — did nothing and said
-       nothing, and the next tap looked like the first. Found when
-       `write-heard.mjs` stopped accepting ANY `onError` in the file as proof
-       that this hook had one. */
-    onError: (e: Error) => toast.fail(e),
-  });
+  };
 }
 
 /* ── today's log ──────────────────────────────────────────────────────── */

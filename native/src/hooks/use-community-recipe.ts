@@ -20,6 +20,8 @@ import { type MealItemRow, payloadFromMeal, type RecipePayload } from '@/lib/rec
 /** Ba mươi ngày, như màn chia sẻ buổi tập: đủ để đăng bữa tuần trước, đủ ngắn
     để danh sách không thành một kho lưu trữ. */
 const DAYS = 30;
+/** Cửa sổ ngày mà màn chia sẻ công thức liệt kê — lối vào trên thẻ bữa (#18) dùng cùng số. */
+export const SHARE_WINDOW_DAYS = DAYS;
 
 export interface ShareableMeal {
   id: string;

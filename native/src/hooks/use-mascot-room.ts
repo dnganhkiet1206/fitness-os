@@ -6,10 +6,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { TEST_UNLOCK_ALL } from '@/lib/dev-flags';
 import { localDateStr } from '@/lib/local-date';
 import { LOGGED_DAY_FILTER, missedDates, streakFrom, STREAK_WINDOW, type Streak } from '@/lib/streak';
-import { offlineNow } from '@/lib/offline';
 import { onUserScopedReset } from '@/lib/user-scoped-reset';
 import {
   conflictingKeys,
+  wearGroup,
   xpForRefKey,
   type ShopItem,
   type ShopItemKey,
@@ -18,6 +18,7 @@ import { useAuth } from './use-auth';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';
 import { toast } from '@/lib/toast';
+import { setState, useStateOverlay } from '@/lib/state-write';
 
 /**
  * While TEST_UNLOCK_ALL is on, the whole mascot economy lives in
@@ -36,6 +37,8 @@ interface LocalTx {
 interface LocalInv {
   item_key: string;
   equipped: boolean;
+  /** Nhóm của món có ý mặc đang chờ gửi (#165) — không bao giờ từ server. */
+  pending?: boolean;
 }
 
 async function readLocal<T>(key: string): Promise<T[]> {
@@ -300,9 +303,17 @@ export function useSpendFreeze() {
   });
 }
 
+/** Khoá lớp Trạng thái (#165) của một nhóm mặc — xem `wearGroup`. */
+export const wearKey = (group: string) => `koa:wear:${group}`;
+
+/**
+ * Kho đồ của Koa, VỚI ý mặc đang chờ gửi (#165) đã áp vào: Koa ở phòng, ở
+ * cửa hàng và ở mọi chỗ khác đều mặc thứ người ta vừa chọn, kể cả lúc mất mạng.
+ */
 export function useMascotInventory() {
   const { user } = useAuth();
-  return useQuery({
+  const overlay = useStateOverlay();
+  const q = useQuery({
     queryKey: ['mascot_inventory', user?.id],
     enabled: !!user,
     queryFn: async (): Promise<LocalInv[]> => {
@@ -315,6 +326,22 @@ export function useMascotInventory() {
       return data ?? [];
     },
   });
+  const data = q.data?.map((r) => {
+    const p = overlay<string | null>(wearKey(wearGroup(r.item_key)));
+    return p ? { ...r, equipped: p.value === r.item_key, pending: true } : r;
+  });
+  return { ...q, data };
+}
+
+/**
+ * Món đang mặc của một nhóm theo bản server: không món nào → `null`, đúng một
+ * → món ấy. Nhiều hơn một (người mua nhiều sân khấu dưới bản cũ, xem
+ * `activeStageKey`) → `'*'`: khác mọi lựa chọn, nên lựa chọn đầu tiên có chủ ý
+ * được gửi và tỉa nhóm còn một.
+ */
+function wornIn(rows: readonly LocalInv[] | undefined, group: string): string | null {
+  const on = (rows ?? []).filter((r) => r.equipped && wearGroup(r.item_key) === group).map((r) => r.item_key);
+  return on.length === 0 ? null : on.length === 1 ? on[0] : '*';
 }
 
 /** Claim a quest/bonus reward (idempotent via ref_key) */
@@ -417,80 +444,57 @@ async function unequipConflicts(userId: string, keepKey: string) {
     .in('item_key', keys);
 }
 
-/** Toggle wearing an owned item — one outfit per slot, one stage at a time. */
+/**
+ * Mặc / cởi một món đã sở hữu — lớp Trạng thái của `docs/OFFLINE-POLICY.md`
+ * (#165, chủ dự án chọn (a)). Không tốn xu: chỉ là món nào đang mặc ở mỗi
+ * nhóm, và chỉ lựa chọn CUỐI cùng có nghĩa. Trước đây là `now(6)`: mất mạng thì
+ * chạm "Mặc" bị từ chối.
+ *
+ * Koa thay đồ NGAY khi chạm: ý chờ của nhóm được áp vào kho đồ ở
+ * `useMascotInventory`, ở mọi màn — cùng điều bản lạc quan cũ (`onMutate`) làm,
+ * nhưng giờ cũng đúng khi mất mạng, và một câu trả lời cũ không ghi đè ý mới
+ * (`state-write-core.ts`).
+ *
+ * Khoá là NHÓM (`wearGroup`), giá trị là món mặc trong nhóm hoặc `null`. `send`
+ * đặt TUYỆT ĐỐI: món được chọn `equipped = true`, mọi món khác của nhóm
+ * `false` — gửi lại bao nhiêu lần cũng ra một tủ đồ. Món được chọn không còn
+ * trong kho (0 dòng) → `'gone'`, bỏ ý và báo.
+ */
 export function useToggleEquip() {
   const { user } = useAuth();
   const qc = useQueryClient();
-  return useOnlineMutation({
-    meta: { offline: now(6) },
-    mutationFn: async ({ itemKey, equipped }: { itemKey: string; equipped: boolean }) => {
-      if (TEST_UNLOCK_ALL) {
-        let rows = await readLocal<LocalInv>(LOCAL_INV_KEY);
-        if (equipped) {
-          const conflicts = conflictingKeys(itemKey);
-          if (conflicts.length) {
-            rows = rows.map((r) =>
-              conflicts.includes(r.item_key as ShopItemKey) ? { ...r, equipped: false } : r,
+  return {
+    set(itemKey: string, equipped: boolean) {
+      const group = wearGroup(itemKey);
+      const invKey = ['mascot_inventory', user?.id];
+      setState<string | null>({
+        key: wearKey(group),
+        value: equipped ? itemKey : null,
+        server: wornIn(qc.getQueryData<LocalInv[]>(invKey), group),
+        refresh: [invKey],
+        send: async (value) => {
+          const members = [itemKey, ...conflictingKeys(itemKey)];
+          if (TEST_UNLOCK_ALL) {
+            const rows = await readLocal<LocalInv>(LOCAL_INV_KEY);
+            await writeLocal(
+              LOCAL_INV_KEY,
+              rows.map((r) => (members.includes(r.item_key) ? { ...r, equipped: r.item_key === value } : r)),
             );
+            return 'ok';
           }
-        }
-        rows = rows.map((r) => (r.item_key === itemKey ? { ...r, equipped } : r));
-        await writeLocal(LOCAL_INV_KEY, rows);
-        return;
-      }
-      // The two writes touch disjoint rows — `conflictingKeys` excludes the key
-      // being switched on — so they have no reason to queue behind each other.
-      const [{ error }] = await Promise.all([
-        supabase
-          .from('mascot_inventory')
-          .update({ equipped })
-          .eq('user_id', user!.id)
-          .eq('item_key', itemKey),
-        equipped ? unequipConflicts(user!.id, itemKey) : Promise.resolve(),
-      ]);
-      if (error) throw error;
+          const off = members.filter((k) => k !== value);
+          const [on, rest] = await Promise.all([
+            value
+              ? supabase.from('mascot_inventory').update({ equipped: true }).eq('user_id', user!.id).eq('item_key', value).select('item_key')
+              : Promise.resolve(null),
+            supabase.from('mascot_inventory').update({ equipped: false }).eq('user_id', user!.id).in('item_key', off),
+          ]);
+          if (on?.error) throw on.error;
+          if (rest.error) throw rest.error;
+          if (on && !on.data?.length) return 'gone';
+          return 'ok';
+        },
+      });
     },
-    /**
-     * The mascot changes clothes on the tap, not on the reply.
-     *
-     * Dressing is the one place in the app where the result of the tap *is* the
-     * screen — you press "wear" to see it worn — and waiting a round trip to
-     * find out reads as the button having missed. The cache already knows
-     * everything needed to answer: which item, on or off, and which others come
-     * off with it.
-     *
-     * The rule is the same one the server applies, and the same one the offline
-     * `TEST_UNLOCK_ALL` branch above applies, so all three agree about what the
-     * wardrobe looks like a moment from now.
-     */
-    onMutate: async ({ itemKey, equipped }) => {
-      const key = ['mascot_inventory', user?.id];
-      // See `@/lib/offline` — dressing Koa in something the server never heard
-      // about is the same class of lie as logging water that was not drunk.
-      if (offlineNow()) return { key, previous: undefined };
-      await qc.cancelQueries({ queryKey: key });
-      const previous = qc.getQueryData<LocalInv[]>(key);
-      if (previous) {
-        const conflicts = equipped ? conflictingKeys(itemKey) : [];
-        qc.setQueryData<LocalInv[]>(
-          key,
-          previous.map((r) =>
-            r.item_key === itemKey
-              ? { ...r, equipped }
-              : conflicts.includes(r.item_key as ShopItemKey)
-                ? { ...r, equipped: false }
-                : r,
-          ),
-        );
-      }
-      return { key, previous };
-    },
-    /* Gỡ bản vá VÀ nói ra (#143): món vừa mặc lặng lẽ tuột khỏi Koa mà không
-       một lời là cùng lỗi #141 bắt ở thực phẩm bổ sung. */
-    onError: (e: Error, _vars, ctx) => {
-      if (ctx?.previous) qc.setQueryData(ctx.key, ctx.previous);
-      toast.fail(e);
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: ['mascot_inventory', user?.id] }),
-  });
+  };
 }

@@ -220,10 +220,15 @@ const PROBES = [
     'src/hooks/use-community.ts',
     (s) => s.replace(/onError: \(\) => \{\},/, ''),
   ],
+  /* Ngôi sao yêu thích từng là ca của luật này (bỏ onError của
+     useToggleFavoriteFood). Từ #165 nó là lớp Trạng thái: lỗi đi qua
+     `onError` của `lib/state-write.ts`, không qua một mutation — nên ca đổi
+     sang thả tim/lưu bài: hook riêng `useToggle` là tai DUY NHẤT của hai hook
+     bọc nó (`useToggleLike = () => useToggle(…)`). */
   [
-    'bỏ onError của useToggleFavoriteFood (hai ngôi sao không tự có)',
-    'src/hooks/use-nutrition.ts',
-    (s) => s.replace(/(export function useToggleFavoriteFood[\s\S]*?)onError: \(e: Error\) => toast\.fail\(e\),/, '$1'),
+    'bỏ onError của useToggle (thả tim / lưu bài)',
+    'src/hooks/use-community.ts',
+    (s) => s.replace(/(function useToggle\([\s\S]*?)onError: \(e: Error, \{ postId, on \}\) => \{/, '$1_unheard: (e: Error, { postId, on }) => {'),
   ],
   [
     'đưa một hook Cộng đồng về useMutation trần',
@@ -264,6 +269,6 @@ console.log(
     'lỗi (đọc thân hook, không phải cả tệp — đọc cả tệp thì 16 hook Cộng đồng qua nhờ một onError duy nhất, và từng ' +
     'giấu hai ngôi sao Yêu thích hỏng im lặng), hoặc là mutateAsync nằm trong try/catch. ' +
     `${community} mutation Cộng đồng đều là useOnlineMutation, không useMutation trần nào: mất mạng thì báo ngay ` +
-    'thay vì tạm dừng im lặng (#45). Thử ngược trên bản sao: gỡ onError của hộp thư, của ngôi sao, của opts ' +
+    'thay vì tạm dừng im lặng (#45). Thử ngược trên bản sao: gỡ onError của hộp thư, của thả tim/lưu bài, của opts ' +
     'food-editor, hay đưa một hook Cộng đồng về useMutation trần — cả bốn đều làm luật đỏ',
 );
