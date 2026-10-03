@@ -100,8 +100,6 @@ const KNOWN = {
   /* Widget production wiring [WIP] — bridge updateWidgetData đã có, nhưng App
      Group chưa provision trong Apple Developer portal nên Swift side no-op.
      Sẽ nối vào data source (use-fitness-data) khi App Group live. */
-  'native/ios/widget-data.ts: pushTodayWorkout': '[WIP] chờ App Group provision, chưa nối data source',
-  'native/ios/widget-data.ts: pushStreakReadiness': '[WIP] chờ App Group provision, chưa nối data source',
 };
 
 const unlinked = [];

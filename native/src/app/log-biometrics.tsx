@@ -261,6 +261,11 @@ export default function LogBiometricsSheet() {
                 accessibilityRole="button"
                 accessibilityLabel={`${n}`}
                 accessibilityState={{ selected: soreness === n }}
+                /* `accessibilityState` không ra `aria-selected` trên web (#174). */
+                aria-selected={soreness === n}
+                /* Viên 32 điểm, mười viên một hàng: bù chiều cao lên 44 bằng
+                   hitSlop dọc; chiều ngang không bù vì các viên sát nhau. */
+                hitSlop={{ top: 6, bottom: 6 }}
                 style={[styles.scalePill, soreness === n && styles.scalePillOn]}
                 onPress={() => {
                   Haptics.selection();
