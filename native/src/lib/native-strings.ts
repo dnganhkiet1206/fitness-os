@@ -982,6 +982,7 @@ const en = {
   nCxSoreness: 'Soreness',
   nCxSuppAdherence: 'Supplements',
   nCxWeeklyReviewWater: 'Water',
+  nCxWeeklyReviewVolume12w: '12-week trend',
 
   // Offline
   nOffline: 'Offline — showing saved data',
@@ -2022,6 +2023,7 @@ const vi: typeof en = {
   nCxSoreness: 'Đau nhức',
   nCxSuppAdherence: 'Thực phẩm bổ sung',
   nCxWeeklyReviewWater: 'Nước uống',
+  nCxWeeklyReviewVolume12w: 'Xu hướng 12 tuần',
 
   // Offline
   nOffline: 'Ngoại tuyến — đang hiển thị dữ liệu đã lưu',

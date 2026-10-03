@@ -44,7 +44,7 @@ import { useAuth } from '@/hooks/use-auth';
 import { useProfile } from '@/hooks/use-today-data';
 import { supabase } from '@/integrations/supabase/client';
 import { fillCopy } from '@/lib/copy-fill';
-import { localDateStr, localDayRangeISO, weekStartOf } from '@/lib/local-date';
+import { localDateStr, localDayRangeISO, parseLocalDate, weekStartOf } from '@/lib/local-date';
 import { metricMean } from '@/lib/nutrition-mean';
 import { deloadWarranted, recoveryBacked } from '@/lib/readiness-week';
 import { latestAcwr } from '@/lib/training-card';
@@ -253,6 +253,28 @@ export default function WeeklyReviewScreen() {
   });
 
   /*
+    P1-9 (DE-XUAT-2): 12-week volume sparkline. Progressive overload is the #1
+    training principle, and no screen answered "how much heavier was this week
+    than last". One query for 12 weeks of volume_load; aggregated by week.
+  */
+  const { data: volumeHistory } = useQuery({
+    queryKey: ['wr_volume_12w', user?.id, startStr],
+    enabled: !!user,
+    queryFn: async () => {
+      const from = new Date(weekStart);
+      from.setDate(from.getDate() - 12 * 7);
+      const { data, error } = await supabase
+        .from('daily_logs')
+        .select('date, volume_load')
+        .eq('user_id', user!.id)
+        .gte('date', localDateStr(from))
+        .lt('date', startStr);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  /*
     ── the analysis is kept, and it used to be thrown away ──
 
     This was a `useMutation`, which holds its result in component state and
@@ -383,6 +405,26 @@ export default function WeeklyReviewScreen() {
   const prevAvgKcal = metricMean(pLogs, (l) => Number(l.kcal)).mean;
   const prevAvgProtein = metricMean(pLogs, (l) => Number(l.protein_g)).mean;
   const prevTotalVolume = sum(pLogs.map((l) => Number(l.volume_load) || 0));
+
+  /* P1-9: weekly volume totals for the 12-week sparkline. */
+  const volumeWeekly = useMemo(() => {
+    const rows = volumeHistory ?? [];
+    const byWeek = new Map<string, number>();
+    for (const r of rows) {
+      const d = parseLocalDate(r.date);
+      const ws = getWeekStart(d);
+      const key = localDateStr(ws);
+      byWeek.set(key, (byWeek.get(key) ?? 0) + (Number(r.volume_load) || 0));
+    }
+    const points: { date: string; value: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const ws = new Date(weekStart);
+      ws.setDate(ws.getDate() - i * 7);
+      const key = localDateStr(ws);
+      points.push({ date: key, value: Math.round((byWeek.get(key) ?? 0) / 1000) });
+    }
+    return points;
+  }, [volumeHistory, weekStart]);
 
   const chartData = DAYS.map((day, i) => {
     const d = new Date(weekStart);
@@ -625,6 +667,15 @@ export default function WeeklyReviewScreen() {
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.nCxWeeklyReviewVolumeLoad}</Text>
             <WeekBars data={chartData.map((c) => c.volume)} color={c.metricBlue} days={DAYS} />
+            {/* P1-9: 12-week volume sparkline — "how much heavier was this week". */}
+            {volumeWeekly.some((p) => p.value > 0) && (
+              <View style={styles.volumeSpark}>
+                <Text style={styles.volumeSparkLabel}>
+                  {i18n.nCxWeeklyReviewVolume12w ?? '12 weeks'}
+                </Text>
+                <LineChart points={volumeWeekly} color={c.metricBlue} height={64} unit="t" labels={false} />
+              </View>
+            )}
           </GlassCard>
           </Animated.View>
 
@@ -806,6 +857,15 @@ const stylesFor = makeStyles((c, m) => ({
     color: c.mutedForeground,
   },
   microTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  /* P1-9: 12-week volume sparkline container. */
+  volumeSpark: { marginTop: spacing.md, gap: spacing.xs },
+  volumeSparkLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 2,
+    color: c.mutedForeground,
+  },
 
   recList: { gap: spacing.sm, marginTop: spacing.sm },
   recRow: {
