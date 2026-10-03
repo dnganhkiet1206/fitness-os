@@ -1,48 +1,65 @@
 import ActivityKit
 import AppIntents
 import Foundation
+import os.log
+
+private let islandLog = OSLog(subsystem: "com.ascnd.fitnessos", category: "IslandIntent")
 
 // MARK: - ASCND Dynamic Island intents (interactive, 02/10/2026)
 //
 // Kiệt's call after device testing: the Island is no longer display-only.
-// Pause actually pauses (no deep-link into the app), −15s/+15s mirror the
-// in-app rest card. This file lives in the WIDGET EXTENSION target (added to
-// SWIFT_SOURCES in plugins/with-ascnd-widgets.js) — intents run out of
-// process, inside the extension, which is exactly why they must:
+// −15s/+15s mirror the in-app rest card (pause was removed 03/10/2026 —
+// the in-app rest screen has no pause button, so the Island matches the
+// app: [-15][+15][Ring]). This file lives in the WIDGET EXTENSION target
+// (added to SWIFT_SOURCES in plugins/with-ascnd-widgets.js) — intents run
+// out of process, inside the extension, which is exactly why they must:
 //
 //   (a) mutate the ActivityKit ContentState directly (the app may be
 //       suspended — no bridge round-trip), and
-//   (b) report back to the main app so the in-app timer stays in sync:
-//       JSON payload -> App Group shared defaults -> Darwin notification.
-//       The Expo module (AscndNativeModule, app target) observes the
-//       notification and re-emits it to JavaScript.
+//   (b) report back to the main app so the in-app timer stays in sync.
+//       The Darwin notification ALWAYS fires; the main app reads the
+//       authoritative state straight from ActivityKit — NO App Group
+//       entitlement required (03/10/2026: the App Group was never
+//       provisioned, so the old payload write silently no-oped and the
+//       Darwin ping never fired — the buttons "did nothing").
 //
 // The bridge stays 7 params: pause state travels inside ContentState and the
 // intent payload, never as new bridge params (Kiệt's compact-bridge rule).
 
-/// Write the intent payload where the main app can read it, then ping it.
-/// `seq` lets the app ignore replays/duplicates.
+/// Ping the main app. The Darwin notification ALWAYS fires — the app reads
+/// the authoritative ActivityKit state on receipt, so this works with or
+/// without the App Group entitlement. The payload write is best-effort
+/// (kept for a future where the group is provisioned).
 private func notifyMainApp(_ payload: [String: Any]) {
-  guard let defaults = UserDefaults(suiteName: IslandIntentChannel.appGroup) else { return }
-  var full = payload
-  let seq = defaults.integer(forKey: IslandIntentChannel.seqKey) + 1
-  defaults.set(seq, forKey: IslandIntentChannel.seqKey)
-  full["seq"] = seq
-  guard let data = try? JSONSerialization.data(withJSONObject: full),
-    let json = String(data: data, encoding: .utf8)
-  else { return }
-  defaults.set(json, forKey: IslandIntentChannel.payloadKey)
+  if let defaults = UserDefaults(suiteName: IslandIntentChannel.appGroup) {
+    var full = payload
+    let seq = defaults.integer(forKey: IslandIntentChannel.seqKey) + 1
+    defaults.set(seq, forKey: IslandIntentChannel.seqKey)
+    full["seq"] = seq
+    if let data = try? JSONSerialization.data(withJSONObject: full),
+      let json = String(data: data, encoding: .utf8)
+    {
+      defaults.set(json, forKey: IslandIntentChannel.payloadKey)
+    }
+  } else {
+    os_log("IslandIntent: App Group unavailable, payload skipped (notification still fires)", log: islandLog, type: .info)
+  }
   let center = CFNotificationCenterGetDarwinNotifyCenter()
   CFNotificationCenterPostNotification(
     center,
     CFNotificationName(IslandIntentChannel.notificationName as CFString),
     nil, nil, true)
+  os_log("IslandIntent: Darwin notification posted", log: islandLog, type: .info)
 }
 
 private func currentRestActivity() -> Activity<RestTimerAttributes>? {
   // The extension only ever has one rest activity (the store ends stale ones
   // on start), so `first` is unambiguous here.
-  Activity<RestTimerAttributes>.activities.first
+  let activity = Activity<RestTimerAttributes>.activities.first
+  if activity == nil {
+    os_log("IslandIntent: no rest activity found in extension", log: islandLog, type: .error)
+  }
+  return activity
 }
 
 private func pushState(_ state: RestTimerAttributes.ContentState) async {
@@ -52,50 +69,11 @@ private func pushState(_ state: RestTimerAttributes.ContentState) async {
     state.isPaused
     ? Date().addingTimeInterval(state.pausedRemaining + 60)
     : state.endDate.addingTimeInterval(60)
-  await activity.update(ActivityContent(state: state, staleDate: horizon))
-}
-
-// MARK: - Pause / resume
-
-/// The Island pause button. Toggles: running -> frozen, frozen -> resumed.
-/// Runs entirely in the extension — the app is never foregrounded.
-@available(iOS 16.1, *)
-struct ToggleRestPauseIntent: AppIntent {
-  static var title: LocalizedStringResource = "Pause rest timer"
-  /// Explicit: tapping pause must NOT deep-link into the app (Kiệt 02/10/2026).
-  static var openAppWhenRun: Bool = false
-
-  /// Explicit parameterless init (defensive: AppIntent conformance needs it;
-  /// any future `init(...)` added here must keep this one too).
-  init() {}
-
-  func perform() async throws -> some IntentResult {
-    guard let activity = currentRestActivity() else { return .result() }
-    var state = activity.content.state
-    let now = Date()
-    if state.isPaused {
-      // Resume: the frozen remainder becomes a fresh countdown from now.
-      let remaining = max(state.pausedRemaining, 1)
-      state.startDate = now
-      state.endDate = now.addingTimeInterval(remaining)
-      state.isPaused = false
-      notifyMainApp([
-        "action": "resume",
-        "remainingSeconds": remaining,
-        "endTimestamp": state.endDate.timeIntervalSince1970 * 1000,
-      ])
-    } else {
-      // Pause: capture the true remainder; digits+ring freeze on it.
-      let remaining = max(state.endDate.timeIntervalSince(now), 0)
-      state.pausedRemaining = remaining
-      state.isPaused = true
-      notifyMainApp([
-        "action": "pause",
-        "remainingSeconds": remaining,
-      ])
-    }
-    await pushState(state)
-    return .result()
+  do {
+    try await activity.update(ActivityContent(state: state, staleDate: horizon))
+    os_log("IslandIntent: activity.update ok", log: islandLog, type: .info)
+  } catch {
+    os_log("IslandIntent: activity.update FAILED: %{public}@", log: islandLog, type: .error, String(describing: error))
   }
 }
 
@@ -103,6 +81,8 @@ struct ToggleRestPauseIntent: AppIntent {
 
 /// Mirrors the in-app rest card's ±15s. Works paused or running:
 /// paused adjusts the frozen remainder, running moves the absolute end.
+/// (Pause button removed 03/10/2026 — Kiệt: the in-app rest screen has no
+/// pause, so the Island matches the app: [-15][+15][Ring].)
 @available(iOS 16.1, *)
 struct AdjustRestIntent: AppIntent {
   static var title: LocalizedStringResource = "Adjust rest timer"
@@ -125,7 +105,11 @@ struct AdjustRestIntent: AppIntent {
   }
 
   func perform() async throws -> some IntentResult {
-    guard let activity = currentRestActivity() else { return .result() }
+    os_log("IslandIntent: AdjustRestIntent perform start (seconds=%d)", log: islandLog, type: .info, seconds)
+    guard let activity = currentRestActivity() else {
+      os_log("IslandIntent: adjust aborted, no activity", log: islandLog, type: .error)
+      return .result()
+    }
     var state = activity.content.state
     let now = Date()
     if state.isPaused {

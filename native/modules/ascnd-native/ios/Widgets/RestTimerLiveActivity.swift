@@ -48,20 +48,29 @@ import WidgetKit
 // - States (idle/resting/working) share one design language.
 //
 // Interactivity (Kiệt's call 02/10/2026, device shots): the Island is NO
-// LONGER display-only. Pause really pauses via AppIntent (no deep-link into
-// the app), −15s/+15s mirror the in-app rest card. Intents live in
+// LONGER display-only. −15s/+15s mirror the in-app rest card (pause was
+// removed 03/10/2026 — the in-app rest screen has no pause, so the Island
+// matches the app: [-15][+15][Ring]). Intents live in
 // RestTimerIntents.swift (widget extension target): they mutate the
-// ActivityKit ContentState directly, then report back to the main app via
-// App Group shared defaults + Darwin notification so the in-app timer
-// stays in sync. See AscndNativeModule.swift (relay) and
+// ActivityKit ContentState directly, then ping the main app via Darwin
+// notification; the app reads the authoritative ActivityKit state straight
+// back (NO App Group entitlement required — 03/10/2026 root-cause fix).
+// See AscndNativeModule.swift (relay) and
 // src/native/ios/rest-live-activity.ts (TS listener).
+//
+// Kiệt's acceptance bar (03/10/2026): "The Island must do exactly what the
+// app does and connect to real app state, not just display." Every direction
+// is real: island taps move the in-app timer, in-app taps update the Island
+// immediately, ring/digits/state always reflect true app state.
 //
 // Ring honesty note: the render server will NOT give us 60fps — TimelineView
 // entries in a Live Activity are best-effort (~30s cadence on iOS 26). The
 // ring is therefore computed from absolute startDate/endDate on every entry
-// so it is always CORRECT, and updates as often as the system allows. The
-// digits (system-ticked Text(timerInterval:)) are the exact source of truth;
-// the ring is the visual anchor. Do not promise in-app smoothness here.
+// so it is always CORRECT, and the app ALSO pushes a lightweight refresh
+// every 5s while foregrounded (day-plan rest tick) so the ring tracks the
+// true state whenever the user is looking at the phone. The digits
+// (system-ticked Text(timerInterval:)) are the exact source of truth; the
+// ring is the visual anchor. Do not promise in-app smoothness here.
 
 @available(iOS 16.1, *)
 struct RestTimerLiveActivity: Widget {
@@ -177,39 +186,6 @@ private func restProgress(startDate: Date, endDate: Date, at date: Date) -> Doub
 
 private func pausedProgress(pausedRemaining: Double, totalSeconds: Int) -> Double {
   1 - min(max(pausedRemaining / max(Double(totalSeconds), 1), 0), 1)
-}
-
-/// Countdown ring whose progress is recomputed on a 1s native timeline.
-/// (A progress value captured at render time freezes — the timer text ticks
-/// via the system clock without re-rendering the view.)
-///
-/// PROGRESS SOURCE (02/10/2026): segment-based from startDate/endDate, so
-/// ±15s adjustments keep the ring honest with no extra updates. Paused holds
-/// the frozen fraction. TimelineView entries are best-effort in a Live
-/// Activity (~30s on iOS 26) — the ring is always CORRECT, just not 60fps.
-@available(iOS 16.1, *)
-private struct RestRing: View {
-  let endDate: Date
-  let startDate: Date
-  let totalSeconds: Int
-  var isPaused: Bool = false
-  var pausedRemaining: Double = 0
-  var size: CGFloat = 22
-  var lineWidth: CGFloat = 2.5
-
-  var body: some View {
-    TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
-      let progress: Double =
-        isPaused
-        ? pausedProgress(pausedRemaining: pausedRemaining, totalSeconds: totalSeconds)
-        : restProgress(startDate: startDate, endDate: endDate, at: timeline.date)
-      ProgressRing(
-        progress: progress,
-        size: size,
-        lineWidth: lineWidth
-      )
-    }
-  }
 }
 
 /// The digits. System-ticked via `Text(timerInterval:countsDown:)` — the
@@ -337,17 +313,16 @@ private extension ActivityViewContext<RestTimerAttributes> {
   }
 }
 
-// MARK: - Compact (minimized) — glanceable in under a second
+// MARK: - Compact (minimized) — Apple Music style
 //
-// Apple-style minimal: the mark leading, the timer ring trailing, nothing
-// in between. The countdown IS the content — no labels fighting it for
-// space. Details live in the expanded view. (01/10/2026, Kiệt's call.)
+// Kiệt 03/10/2026: NO ring in compact — the mark leading, the live digits
+// trailing, like Apple Music. The ring lives in expanded only.
 @available(iOS 16.1, *)
 private struct CompactLeading: View {
   let context: ActivityViewContext<RestTimerAttributes>
 
   var body: some View {
-    ASCNDMark(size: 17)
+    ASCNDMark(size: 18)
   }
 }
 
@@ -356,42 +331,23 @@ private struct CompactTrailing: View {
   let context: ActivityViewContext<RestTimerAttributes>
 
   var body: some View {
-    // The ring is the right-hand anchor, with the live timer inside it —
-    // per the reference design. Nothing else lives in trailing.
-    //
-    // CLIPPING FIX (02/10/2026, Kiệt's compact shot): the ring rendered
-    // oversized and clipped in compactTrailing. RestRingTimer now uses a
-    // ZStack with an explicit outer frame instead of overlay, and the box
-    // here is fixed at 36pt — the ring can never exceed it, whatever the
-    // region proposes. 30pt ring leaves 3pt breathing room per side.
+    // Digits only — no ring (Kiệt 03/10/2026). System-ticked, always exact.
     let pause = context.pauseParams
-    ZStack {
-      switch context.state.activityState {
-      case .resting:
-        RestRingTimer(
-          endDate: context.state.endDate,
-          startDate: context.state.startDate,
-          totalSeconds: context.state.totalSeconds,
-          isPaused: pause.isPaused,
-          pausedRemaining: pause.pausedRemaining,
-          size: 30, lineWidth: 2.5, fontSize: 9, showTotal: false
-        )
-      case .active:
-        RestRingTimer(
-          endDate: context.state.endDate,
-          startDate: context.state.startDate,
-          totalSeconds: context.state.totalSeconds,
-          isPaused: pause.isPaused,
-          pausedRemaining: pause.pausedRemaining,
-          size: 30, lineWidth: 2.5, fontSize: 9, showTotal: false,
-          countsDown: false
-        )
-      case .ready:
-        // Calm: the mark alone. Nothing to report yet.
-        EmptyView()
-      }
+    switch context.state.activityState {
+    case .resting:
+      TimerDigits(
+        endDate: context.state.endDate, fontSize: 13, weight: .semibold,
+        isPaused: pause.isPaused, pausedRemaining: pause.pausedRemaining
+      )
+    case .active:
+      TimerDigits(
+        endDate: context.state.endDate, fontSize: 13, weight: .semibold,
+        countsDown: false,
+        isPaused: pause.isPaused, pausedRemaining: pause.pausedRemaining
+      )
+    case .ready:
+      EmptyView()
     }
-    .frame(width: 36, height: 36)
   }
 }
 
@@ -400,15 +356,10 @@ private struct MinimalView: View {
   let context: ActivityViewContext<RestTimerAttributes>
 
   var body: some View {
+    // No ring in minimal either — the mark does the talking (Kiệt 03/10/2026).
     switch context.state.activityState {
     case .resting:
-      RestRing(
-        endDate: context.state.endDate,
-        startDate: context.state.startDate,
-        totalSeconds: context.state.totalSeconds,
-        isPaused: context.state.isPaused,
-        pausedRemaining: context.state.pausedRemaining,
-        size: 20, lineWidth: 2.5)
+      ASCNDMark(size: 16)
     case .active:
       Image(systemName: "dumbbell.fill")
         .font(.system(size: 13, weight: .medium))
@@ -426,7 +377,10 @@ private struct ExpandedLeading: View {
   let context: ActivityViewContext<RestTimerAttributes>
 
   var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
+    // Kiệt 03/10/2026: the next-set label is GONE — no "Hiệp tiếp theo".
+    // Rebalanced: eyebrow + one strong title, generous spacing so the
+    // column breathes instead of leaving a hole where the label was.
+    VStack(alignment: .leading, spacing: 6) {
       HStack(spacing: 6) {
         ASCNDMark(size: 14)
         Text(context.attributes.brandName.uppercased())
@@ -439,11 +393,8 @@ private struct ExpandedLeading: View {
       switch context.state.activityState {
       case .resting:
         Text(context.state.restingText)
-          .font(.system(size: 19, weight: .semibold))
+          .font(.system(size: 21, weight: .semibold))
           .foregroundStyle(.white)
-        Text(context.setLabel)
-          .font(.subheadline)
-          .foregroundStyle(Island.secondary)
       case .active:
         Label {
           Text(context.state.exerciseName)
@@ -456,9 +407,6 @@ private struct ExpandedLeading: View {
             .font(.system(size: 14))
             .foregroundStyle(Island.secondary)
         }
-        Text(context.setLabel)
-          .font(.subheadline)
-          .foregroundStyle(Island.secondary)
       case .ready:
         Text("Ready to train")
           .font(.title3)
@@ -479,12 +427,11 @@ private struct ExpandedTrailing: View {
   var body: some View {
     switch context.state.activityState {
     case .resting:
-      // Kiệt 02/10/2026: [−15] [Pause/Play] [+15] [Ring], ring far-right.
-      // Real AppIntent buttons — taps run in the extension, the app is never
-      // foregrounded (the old visual-only button deep-linked on tap).
-      HStack(spacing: 10) {
+      // Kiệt 03/10/2026: [-15][+15][Ring] — pause is gone (the in-app rest
+      // screen has no pause, so the Island matches the app). Even spacing,
+      // ring far-right as the anchor.
+      HStack(spacing: 12) {
         IslandAdjustButton(seconds: -15)
-        IslandPauseButton(isPaused: context.state.isPaused)
         IslandAdjustButton(seconds: 15)
         RestRingTimer(
           endDate: context.state.endDate,
@@ -495,9 +442,8 @@ private struct ExpandedTrailing: View {
         )
       }
     case .active:
-      HStack(spacing: 10) {
+      HStack(spacing: 12) {
         IslandAdjustButton(seconds: -15)
-        IslandPauseButton(isPaused: context.state.isPaused)
         IslandAdjustButton(seconds: 15)
         RestRingTimer(
           endDate: context.state.endDate,
@@ -530,46 +476,15 @@ private struct ExpandedBottom: View {
   }
 }
 
-/// Real interactive controls (AppIntent, 02/10/2026 — Kiệt's call).
-/// `Button(intent:)` runs inside the widget extension: no deep-link, the app
-/// is never foregrounded. `.buttonStyle(.plain)` keeps our cream-on-dark
-/// Island language instead of the default button chrome.
-@available(iOS 16.1, *)
-private struct IslandPauseButton: View {
-  var isPaused: Bool
-
-  var body: some View {
-    // `Button(intent:)` is iOS 17+. On iOS 16 the button degrades to the
-    // old display-only look (no tap action) — do NOT raise the extension's
-    // deployment target, or Live Activities die on iOS 16 (Kiệt 02/10/2026).
-    Group {
-      if #available(iOS 17, *) {
-        Button(intent: ToggleRestPauseIntent()) {
-          pauseLabel
-        }
-        .buttonStyle(.plain)
-      } else {
-        pauseLabel
-      }
-    }
-  }
-
-  private var pauseLabel: some View {
-    Image(systemName: isPaused ? "play.fill" : "pause.fill")
-      .font(.system(size: 15, weight: .semibold))
-      .foregroundStyle(.white)
-      .frame(width: 44, height: 44)
-      .background(Circle().fill(Color.white.opacity(0.16)))
-  }
-}
-
 /// −15s / +15s — mirrors the in-app rest card (Kiệt 02/10/2026).
 @available(iOS 16.1, *)
 private struct IslandAdjustButton: View {
   var seconds: Int // -15 or +15
 
   var body: some View {
-    // Same iOS 17 gate as IslandPauseButton — iOS 16 gets display-only.
+    // `Button(intent:)` is iOS 17+. On iOS 16 the adjust buttons degrade to
+    // display-only (no tap action) — do NOT raise the extension's deployment
+    // target, or Live Activities die on iOS 16.
     Group {
       if #available(iOS 17, *) {
         Button(intent: AdjustRestIntent(seconds: seconds)) {

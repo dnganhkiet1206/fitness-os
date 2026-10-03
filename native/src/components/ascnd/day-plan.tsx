@@ -333,6 +333,28 @@ function RestHost({
   }, [running, settleOnce]);
 
   /*
+    Island ring refresh (03/10/2026 — Kiệt's acceptance bar: the Island must
+    reflect true app state, not just display).
+
+    The Live Activity render server throttles TimelineView entries, so the
+    Island ring can freeze while the in-app timer runs. While the app is
+    foregrounded and a rest is active, push a lightweight state refresh
+    every 5s so the ring tracks the true remainder. Cheap: ActivityKit
+    updates are local IPC, and the native side just re-renders from the
+    absolute endDate. No-op when paused (dormant path) or when the Island
+    isn't active.
+  */
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => {
+      const s = restingRef.current;
+      if (s === null || s.pausedLeft !== undefined) return;
+      restLiveActivityAdjusted(s.total, Math.max(0, Math.ceil(s.left)));
+    }, 5000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  /*
     Recalculate the instant the app comes back to the foreground.
 
     Without this the card can sit up to a second behind after a background

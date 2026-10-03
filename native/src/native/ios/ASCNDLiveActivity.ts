@@ -142,10 +142,16 @@ export async function endRestActivity(activityId: string): Promise<void> {
 
 // MARK: - Island intent relay (interactive Island, 02/10/2026)
 //
-// The pause / −15s / +15s AppIntents run in the widget extension and report
-// back via App Group shared defaults + Darwin notification. The native
-// module re-emits them as `onIslandRestIntent` so the in-app rest timer can
-// follow island taps. Payloads carry `seq` — the app ignores replays.
+// The −15s / +15s AppIntents run in the widget extension. On every tap the
+// extension updates the ActivityKit ContentState directly, then posts a
+// Darwin notification. The native module reads the AUTHORITATIVE state
+// straight from ActivityKit and re-emits it as `onIslandRestIntent` so the
+// in-app rest timer follows island taps.
+//
+// 03/10/2026 — NO App Group dependency: the group was never provisioned,
+// so the old shared-defaults payload silently no-oped AND the Darwin ping
+// never fired (the buttons "did nothing"). Now the ping always fires and
+// state comes from ActivityKit. Payloads carry `seq` when the group exists.
 
 /** What the widget extension reports after an island tap. */
 export interface IslandRestIntent {
@@ -197,9 +203,10 @@ export function addIslandRestIntentListener(
 }
 
 /**
- * Reads the last island intent payload from the App Group — the foreground
- * reconcile path for intents that fired while JS was suspended (the Darwin
- * ping is not queued). Returns null when none exists or unavailable.
+ * Reads the current island state — the foreground reconcile path for intents
+ * that fired while JS was suspended (the Darwin ping is not queued).
+ * The native side reads ActivityKit directly (no App Group needed).
+ * Returns null when none exists or unavailable.
  */
 export async function getIslandRestState(): Promise<IslandRestIntent | null> {
   const mod = AscndNativeModule;

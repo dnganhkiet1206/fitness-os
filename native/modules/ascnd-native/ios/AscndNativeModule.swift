@@ -160,14 +160,18 @@ private final class RestActivityStore {
 
 /// Bridge back from the widget extension to JavaScript (02/10/2026).
 ///
-/// The Island intents run out of process (widget extension) and report via
-/// App Group shared defaults + Darwin notification:
-///   "com.ascnd.fitnessos.island-intent" -> key "ascnd.island.intent" (JSON).
-/// This relay observes the Darwin notification and re-emits it to JS as
-/// `onIslandRestIntent`, so the in-app rest timer can follow island taps.
-/// Wired lazily on the first rest start — intents can't exist before one.
+/// The Island intents run out of process (widget extension). On every tap
+/// the extension posts a Darwin notification:
+///   "com.ascnd.fitnessos.island-intent".
+/// This relay observes it and re-emits to JS as `onIslandRestIntent`, so the
+/// in-app rest timer follows island taps.
 ///
-/// `seq` in the payload lets JS ignore replays/duplicates.
+/// 03/10/2026 — NO App Group dependency. The group was never provisioned
+/// (free Apple IDs can't), so `UserDefaults(suiteName:)` returned nil and
+/// the old payload read silently failed. The relay now reads the
+/// AUTHORITATIVE state straight from ActivityKit — the extension already
+/// updated it before pinging. Works with or without any entitlement.
+/// Wired lazily on the first rest start — intents can't exist before one.
 private final class IslandIntentRelay {
   static let shared = IslandIntentRelay()
   private weak var module: AscndNativeModule?
@@ -193,6 +197,27 @@ private final class IslandIntentRelay {
   }
 
   private func fire() {
+    // Authoritative path (03/10/2026): read the live ActivityKit state
+    // directly. The extension updated it before pinging, so this is always
+    // fresher than any payload. No App Group entitlement required.
+    if let activity = Activity<RestTimerAttributes>.activities.first {
+      let s = activity.content.state
+      let now = Date()
+      let remaining: Double =
+        s.isPaused ? s.pausedRemaining : max(s.endDate.timeIntervalSince(now), 0)
+      let endMs =
+        (s.isPaused ? now.addingTimeInterval(remaining) : s.endDate)
+        .timeIntervalSince1970 * 1000
+      let obj: [String: Any] = [
+        "action": "adjust",
+        "remainingSeconds": remaining,
+        "endTimestamp": endMs,
+        "paused": s.isPaused,
+      ]
+      module?.sendEvent("onIslandRestIntent", obj)
+      return
+    }
+    // Fallback: the old App Group payload (only when provisioned).
     guard
       let defaults = UserDefaults(suiteName: IslandIntentChannel.appGroup),
       let json = defaults.string(forKey: IslandIntentChannel.payloadKey),
@@ -202,11 +227,31 @@ private final class IslandIntentRelay {
     module?.sendEvent("onIslandRestIntent", obj)
   }
 
-  /// Last intent payload, for foreground reconcile (JS may have missed the
-  /// Darwin ping while suspended). Returns the raw JSON string or nil.
+  /// Last island intent state, for foreground reconcile (JS may have missed
+  /// the Darwin ping while suspended). Reads ActivityKit directly — no
+  /// App Group needed. Returns the raw JSON string or nil.
   func lastPayload() -> String? {
-    UserDefaults(suiteName: IslandIntentChannel.appGroup)?
-      .string(forKey: IslandIntentChannel.payloadKey)
+    guard let activity = Activity<RestTimerAttributes>.activities.first else {
+      return UserDefaults(suiteName: IslandIntentChannel.appGroup)?
+        .string(forKey: IslandIntentChannel.payloadKey)
+    }
+    let s = activity.content.state
+    let now = Date()
+    let remaining: Double =
+      s.isPaused ? s.pausedRemaining : max(s.endDate.timeIntervalSince(now), 0)
+    let endMs =
+      (s.isPaused ? now.addingTimeInterval(remaining) : s.endDate)
+      .timeIntervalSince1970 * 1000
+    let obj: [String: Any] = [
+      "action": "adjust",
+      "remainingSeconds": remaining,
+      "endTimestamp": endMs,
+      "paused": s.isPaused,
+    ]
+    guard let data = try? JSONSerialization.data(withJSONObject: obj),
+      let json = String(data: data, encoding: .utf8)
+    else { return nil }
+    return json
   }
 
   /// A fresh rest (or a finished one) invalidates any intent payload from a
