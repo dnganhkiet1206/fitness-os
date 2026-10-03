@@ -754,6 +754,7 @@ export default function NutritionScreen() {
                   value={search}
                   onChangeText={setSearch}
                   autoCorrect={false}
+                  clearButtonMode="while-editing"
                 />
                 {/*
                   Scanning is a way of searching, so it lives in the search

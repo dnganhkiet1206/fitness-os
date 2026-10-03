@@ -347,9 +347,6 @@ interface Translations {
   obGoalStrengthDesc: string;
   obGoalEndurance: string;
   obGoalEnduranceDesc: string;
-  obKoaName: string;
-  obKoaLine: string;
-  obKoaCta: string;
   obSexQ: string;
   obSexWhy: string;
   obSexMale: string;
@@ -831,9 +828,6 @@ const vi: Translations = {
   obGoalStrengthDesc: 'Nâng được nhiều hơn',
   obGoalEndurance: 'Bền hơn',
   obGoalEnduranceDesc: 'Đi xa hơn, lâu mệt hơn',
-  obKoaName: 'Mình là Koa.',
-  obKoaLine: 'Mình sẽ đi cùng bạn trên hành trình này.',
-  obKoaCta: 'Rất vui được gặp',
   obSexQ: 'Bạn thuộc nhóm nào?',
   obSexWhy: 'Công thức năng lượng nghỉ rẽ theo thông tin này.',
   obSexMale: 'Nam',
@@ -1279,9 +1273,6 @@ const en: Translations = {
   obGoalStrengthDesc: 'Move heavier weight',
   obGoalEndurance: 'More endurance',
   obGoalEnduranceDesc: 'Go further before you tire',
-  obKoaName: "I'm Koa.",
-  obKoaLine: "I'll be with you the whole way.",
-  obKoaCta: 'Nice to meet you',
   obSexQ: 'Which applies to you?',
   obSexWhy: 'The resting-energy formula branches on this.',
   obSexMale: 'Male',

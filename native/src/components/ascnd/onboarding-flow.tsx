@@ -87,7 +87,6 @@ const STEPS = [
   { key: 'welcome' },
   { key: 'intention' },
   { key: 'goal' },
-  { key: 'koa' },
   { key: 'sex' },
   { key: 'dob' },
   { key: 'height' },
@@ -610,16 +609,6 @@ export function OnboardingFlow() {
               ))}
             </View>
             <View style={styles.growWide} />
-          </View>
-        )}
-
-        {k === 'koa' && (
-          <View style={styles.centre}>
-            <View style={styles.grow} />
-            <KoaFigure expression="happy" pose="turn34" size={300} />
-            <Text style={styles.koaName}>{i18n.obKoaName}</Text>
-            <Text style={styles.koaLine}>{i18n.obKoaLine}</Text>
-            <View style={styles.grow} />
           </View>
         )}
 
@@ -1420,9 +1409,8 @@ const RULER_SCREENS: ReadonlySet<StepKey> = new Set(['height', 'weight']);
 const RANK_DOTS = [1, 2, 3, 4, 5, 6];
 
 /** Nút chính của những màn KHÔNG nói "Tiếp". */
-const CTA: Partial<Record<StepKey, 'obStart' | 'obKoaCta' | 'obHealthConnect'>> = {
+const CTA: Partial<Record<StepKey, 'obStart' | 'obHealthConnect'>> = {
   welcome: 'obStart',
-  koa: 'obKoaCta',
   health: 'obHealthConnect',
 };
 
@@ -1532,15 +1520,6 @@ const stylesFor = makeStyles((c, m) => ({
   /* ── 02 / 03 / 05 / 10 ── */
   stackBig: { gap: 14 },
   stackTight: { gap: 10 },
-
-  /* ── 04 ── */
-  koaName: {
-    ...type.largeTitle,
-    color: c.foreground,
-    marginTop: spacing.stack,
-    textAlign: 'center',
-  },
-  koaLine: { ...type.body, color: c.mutedForeground, marginTop: spacing.xs, textAlign: 'center' },
 
   /* ── 06 ── */
   wheel: { alignItems: 'center' },
