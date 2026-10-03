@@ -22,7 +22,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { PickRow } from '@/components/ascnd/pick-row';
+import { SettingsPickerSheet } from '@/components/ascnd/settings-picker-sheet';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -33,7 +33,6 @@ import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
-import { LANGUAGES } from '@/lib/i18n';
 import { useAppLock } from '@/hooks/use-app-lock';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { clearCrashLog, readCrashLog, type CrashEntry } from '@/lib/crash-log';
@@ -113,11 +112,13 @@ export default function SettingsScreen() {
   const rise = useRise();
   const { user, signOut } = useAuth();
   const { data: profile } = useProfile();
-  const { lang, setLang, theme, setTheme } = useAppSettings();
+  const { lang, langChoice, setLang, theme, setTheme } = useAppSettings();
   const i18n = useI18n();
   const mascot = useMascot();
   const lock = useAppLock();
   const [exporting, setExporting] = useState(false);
+  const [appearanceSheetVisible, setAppearanceSheetVisible] = useState(false);
+  const [languageSheetVisible, setLanguageSheetVisible] = useState(false);
 
   /*
     Nhật ký sự cố — chỉ hiện khi CÓ.
@@ -392,25 +393,9 @@ export default function SettingsScreen() {
           I don't want it moving about while I read" is this one — and somebody
           who feels that should not have to give up the character to say it.
 
-          Hidden when the mascot is off entirely: a switch for how a thing that
-          does not exist should behave is a switch that cannot mean anything.
+          2026-10-03 (Kiệt): companion nổi đã tắt hẳn — Koa chỉ còn trên Today.
+          Xóa toggle vì nó không còn điều khiển gì nữa.
         */}
-        {mascot.enabled ? (
-          <View style={[styles.toggleRow, styles.toggleRowNext]}>
-            <View style={styles.toggleInfo}>
-              <Text style={styles.cardTitle}>{i18n.nKoaCompanionTitle}</Text>
-              <Text style={styles.cardHint}>{i18n.nKoaCompanionHint}</Text>
-            </View>
-            <Switch
-              value={mascot.companion}
-              onValueChange={(v) => {
-                Haptics.selection();
-                mascot.setCompanion(v);
-              }}
-              trackColor={{ true: c.readinessGreen, false: c.secondary }}
-            />
-          </View>
-        ) : null}
         {/*
           ── the only way back into the room, when the figure is switched off ──
 
@@ -542,71 +527,70 @@ export default function SettingsScreen() {
       </Animated.View>
 
       {/*
-        Giao diện, ngay TRÊN ngôn ngữ.
-
-        Hai thứ cùng loại — tuỳ chọn của MÁY, không của tài khoản — nên chúng
-        đứng cạnh nhau, và cùng dùng `PickRow` để một cú chạm ở đây đọc ra
-        giống một cú chạm ở kia. "Theo máy" là mặc định và đứng đầu, vì đó là
-        thứ iOS đã dạy người dùng mong đợi.
+        Giao diện — Settings Row mở sheet chọn theme.
+        
+        Thay PickRow bằng row điều hướng: ít clutter hơn, hierarchy rõ ràng,
+        và sheet cho phép mô tả từng option (Screenshots trong spec).
       */}
       <Animated.View entering={rise(2)}>
-      <GlassCard>
-        <CardTitle icon={Contrast}>{i18n.settingsTheme}</CardTitle>
-        <PickRow
-          value={theme}
-          fill={m.actionSurface}
-          slotFill={c.secondary}
-          radius={radius.md}
-          gap={spacing.sm}
-          style={styles.langRow}>
-          {(['system', 'light', 'dark'] as const).map((t) => (
-            <PickRow.Item
-              key={t}
-              itemKey={t}
-              accessibilityLabel={
-                t === 'system' ? i18n.settingsThemeSystem : t === 'light' ? i18n.settingsThemeLight : i18n.settingsThemeDark
-              }
-              onPress={() => {
-                Haptics.selection();
-                setTheme(t);
-              }}
-              style={styles.langChip}>
-              <Text style={[styles.langText, theme === t && styles.langTextActive]}>
-                {t === 'system' ? i18n.settingsThemeSystem : t === 'light' ? i18n.settingsThemeLight : i18n.settingsThemeDark}
+      <PressScale
+        onPress={() => {
+          Haptics.selection();
+          setAppearanceSheetVisible(true);
+        }}>
+        <GlassCard>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderLeft}>
+              <Icon icon={Contrast} size={18} color={c.mutedForeground} />
+              <View style={styles.cardHeaderInfo}>
+                <Text style={styles.cardTitle}>{i18n.settingsTheme}</Text>
+                <Text style={styles.cardHint}>
+                  {theme === 'system' ? i18n.settingsThemeSystemDesc : theme === 'light' ? i18n.settingsThemeLightDesc : i18n.settingsThemeDarkDesc}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.cardHeaderRight}>
+              <Text style={styles.cardValue}>
+                {theme === 'system' ? i18n.settingsThemeSystem : theme === 'light' ? i18n.settingsThemeLight : i18n.settingsThemeDark}
               </Text>
-            </PickRow.Item>
-          ))}
-        </PickRow>
-      </GlassCard>
+              <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
+            </View>
+          </View>
+        </GlassCard>
+      </PressScale>
       </Animated.View>
 
+      {/*
+        Ngôn ngữ — Settings Row mở sheet chọn language.
+        
+        Thay PickRow segmented bằng row điều hướng theo spec: title + subtitle
+        localized (không hard-code "Language / Ngôn ngữ"), trailing là giá trị
+        hiện tại, tap mở sheet iOS-style.
+      */}
       <Animated.View entering={rise(3)}>
-      <GlassCard>
-        <CardTitle icon={Globe}>Language / Ngôn ngữ</CardTitle>
-        <PickRow
-          value={lang}
-          fill={m.actionSurface}
-          slotFill={c.secondary}
-          radius={radius.md}
-          gap={spacing.sm}
-          style={styles.langRow}>
-          {LANGUAGES.map(({ code, label }) => (
-            <PickRow.Item
-              key={code}
-              itemKey={code}
-              accessibilityLabel={label}
-              onPress={() => {
-                Haptics.selection();
-                setLang(code);
-              }}
-              style={styles.langChip}>
-              <Text style={[styles.langText, lang === code && styles.langTextActive]}>
-                {label}
+      <PressScale
+        onPress={() => {
+          Haptics.selection();
+          setLanguageSheetVisible(true);
+        }}>
+        <GlassCard>
+          <View style={styles.cardHeaderRow}>
+            <View style={styles.cardHeaderLeft}>
+              <Icon icon={Globe} size={18} color={c.mutedForeground} />
+              <View style={styles.cardHeaderInfo}>
+                <Text style={styles.cardTitle}>{i18n.settingsLanguage}</Text>
+                <Text style={styles.cardHint}>{i18n.settingsLanguageDesc}</Text>
+              </View>
+            </View>
+            <View style={styles.cardHeaderRight}>
+              <Text style={styles.cardValue}>
+                {langChoice === 'system' ? i18n.settingsLangSystem : lang === 'vi' ? 'Tiếng Việt' : lang === 'es' ? 'Español' : 'English'}
               </Text>
-            </PickRow.Item>
-          ))}
-        </PickRow>
-      </GlassCard>
+              <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
+            </View>
+          </View>
+        </GlassCard>
+      </PressScale>
       </Animated.View>
 
       {/* Reminders — local notifications */}
@@ -789,6 +773,71 @@ export default function SettingsScreen() {
         <Icon icon={ChevronRight} size={18} color={c.readinessRed} />
       </PressScale>
       </Animated.View>
+
+      {/* Appearance picker sheet */}
+      <SettingsPickerSheet
+        visible={appearanceSheetVisible}
+        onClose={() => setAppearanceSheetVisible(false)}
+        title={i18n.settingsThemeSheetTitle}
+        subtitle={i18n.settingsThemeSheetSubtitle}
+        selectedKey={theme}
+        onSelect={(key) => setTheme(key as 'system' | 'light' | 'dark')}
+        cancelLabel={i18n.settingsCancel}
+        options={[
+          {
+            key: 'light',
+            label: i18n.settingsThemeLight,
+            description: i18n.settingsThemeLightDesc,
+            leading: <Text style={styles.sheetLeading}>☀️</Text>,
+          },
+          {
+            key: 'dark',
+            label: i18n.settingsThemeDark,
+            description: i18n.settingsThemeDarkDesc,
+            leading: <Text style={styles.sheetLeading}>🌙</Text>,
+          },
+          {
+            key: 'system',
+            label: i18n.settingsThemeSystem,
+            description: i18n.settingsThemeSystemDesc,
+            leading: <Text style={styles.sheetLeading}>◐</Text>,
+          },
+        ]}
+      />
+
+      {/* Language picker sheet */}
+      <SettingsPickerSheet
+        visible={languageSheetVisible}
+        onClose={() => setLanguageSheetVisible(false)}
+        title={i18n.settingsLanguageSheetTitle}
+        subtitle={i18n.settingsLanguageSheetSubtitle}
+        selectedKey={langChoice}
+        onSelect={(key) => setLang(key as 'system' | 'vi' | 'en' | 'es')}
+        cancelLabel={i18n.settingsCancel}
+        options={[
+          {
+            key: 'system',
+            label: i18n.settingsLangSystem,
+            description: i18n.settingsLangSystemDesc,
+            leading: <Text style={styles.sheetLeading}>📱</Text>,
+          },
+          {
+            key: 'vi',
+            label: 'Tiếng Việt',
+            leading: <Text style={styles.sheetLeading}>🇻🇳</Text>,
+          },
+          {
+            key: 'en',
+            label: 'English',
+            leading: <Text style={styles.sheetLeading}>🇺🇸</Text>,
+          },
+          {
+            key: 'es',
+            label: 'Español',
+            leading: <Text style={styles.sheetLeading}>🇪🇸</Text>,
+          },
+        ]}
+      />
     </Screen>
   );
 }
@@ -841,6 +890,9 @@ const stylesFor = makeStyles((c) => ({
   cardHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
   cardHeaderLeft: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   cardHeaderInfo: { flex: 1, minWidth: 0 },
+  cardHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  cardValue: { ...type.body, color: c.mutedForeground },
+  sheetLeading: { fontSize: 22 },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: c.border,

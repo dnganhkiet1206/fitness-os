@@ -31,6 +31,12 @@ const THEME_KEY = 'ascnd_theme';
 export type ThemeChoice = 'system' | 'light' | 'dark';
 
 /**
+ * Language choice — 'system' means follow the device locale.
+ * Stored as a real choice (like ThemeChoice), not as "not chosen".
+ */
+export type LangChoice = 'system' | AppLang;
+
+/**
  * First-launch language: follow the device locale (Vietnamese devices
  * get vi, everyone else en) until the user explicitly picks one. Uses
  * the built-in Intl locale — no extra native module.
@@ -49,7 +55,9 @@ function deviceDefaultLang(): AppLang {
 
 const SettingsContext = createContext<{
   lang: AppLang;
-  setLang: (l: AppLang) => void;
+  /** The stored preference — 'system' or a specific language. */
+  langChoice: LangChoice;
+  setLang: (l: LangChoice) => void;
   theme: ThemeChoice;
   setTheme: (t: ThemeChoice) => void;
   /**
@@ -74,10 +82,12 @@ const SettingsContext = createContext<{
    * `useThemeName` giữ nguyên chữ ký.
    */
   themeName: 'light' | 'dark';
-}>({ lang: 'en', setLang: () => {}, theme: 'system', setTheme: () => {}, themeName: 'dark' });
+}>({ lang: 'en', langChoice: 'system', setLang: () => {}, theme: 'system', setTheme: () => {}, themeName: 'dark' });
 
 export function AppSettingsProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<AppLang>(deviceDefaultLang);
+  const [langChoice, setLangChoiceState] = useState<LangChoice>('system');
+  // Effective language — resolved from choice ('system' → device locale)
+  const lang: AppLang = langChoice === 'system' ? deviceDefaultLang() : langChoice;
   const [theme, setThemeState] = useState<ThemeChoice>('system');
   /*
     ── vì sao app KHÔNG được vẽ trước khi biết theme ──
@@ -117,7 +127,7 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
     Promise.all([
       AsyncStorage.getItem(LANG_KEY)
         .then((v) => {
-          if (v === 'vi' || v === 'en') setLangState(v);
+          if (v === 'system' || v === 'vi' || v === 'en' || v === 'es') setLangChoiceState(v as LangChoice);
         })
         .catch(() => {}),
       AsyncStorage.getItem(THEME_KEY)
@@ -131,8 +141,8 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(t);
   }, []);
 
-  const setLang = (l: AppLang) => {
-    setLangState(l);
+  const setLang = (l: LangChoice) => {
+    setLangChoiceState(l);
     AsyncStorage.setItem(LANG_KEY, l).catch(() => {});
   };
 
@@ -157,8 +167,8 @@ export function AppSettingsProvider({ children }: { children: ReactNode }) {
     theme === 'light' || theme === 'dark' ? theme : system === 'light' ? 'light' : 'dark';
 
   const value = useMemo(
-    () => ({ lang, setLang, theme, setTheme, themeName }),
-    [lang, theme, themeName],
+    () => ({ lang, langChoice, setLang, theme, setTheme, themeName }),
+    [lang, langChoice, theme, themeName],
   );
 
   /* Splash vẫn che (xem `SplashScreen.preventAutoHideAsync()` ở `_layout.tsx`),

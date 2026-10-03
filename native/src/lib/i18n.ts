@@ -94,6 +94,18 @@ interface Translations {
   settingsThemeLight: string;
   settingsThemeDark: string;
   settingsThemeSystem: string;
+  settingsLanguage: string;
+  settingsLanguageDesc: string;
+  settingsLanguageSheetTitle: string;
+  settingsLanguageSheetSubtitle: string;
+  settingsLangSystem: string;
+  settingsLangSystemDesc: string;
+  settingsCancel: string;
+  settingsThemeSheetTitle: string;
+  settingsThemeSheetSubtitle: string;
+  settingsThemeLightDesc: string;
+  settingsThemeDarkDesc: string;
+  settingsThemeSystemDesc: string;
   settingsPersonalInfo: string;
   settingsName: string;
   settingsDob: string;
@@ -591,6 +603,18 @@ const es: Translations = {
   settingsThemeLight: 'Claro',
   settingsThemeDark: 'Oscuro',
   settingsThemeSystem: 'Sistema',
+  settingsLanguage: 'Idioma',
+  settingsLanguageDesc: 'Idioma de visualización de ASCND',
+  settingsLanguageSheetTitle: 'Idioma',
+  settingsLanguageSheetSubtitle: 'Elige el idioma de visualización de ASCND',
+  settingsLangSystem: 'Sistema',
+  settingsLangSystemDesc: 'Usar el idioma del iPhone',
+  settingsCancel: 'Cancelar',
+  settingsThemeSheetTitle: 'Apariencia',
+  settingsThemeSheetSubtitle: 'Elige la apariencia de ASCND',
+  settingsThemeLightDesc: 'Interfaz clara, ideal con mucha luz',
+  settingsThemeDarkDesc: 'Interfaz oscura, más cómoda en la oscuridad',
+  settingsThemeSystemDesc: 'Cambia automáticamente con el dispositivo',
   settingsPersonalInfo: 'Información personal',
   settingsName: 'Nombre',
   settingsDob: 'Fecha de nacimiento',
@@ -1102,6 +1126,18 @@ const vi: Translations = {
   settingsThemeLight: 'Sáng',
   settingsThemeDark: 'Tối',
   settingsThemeSystem: 'Hệ thống',
+  settingsLanguage: 'Ngôn ngữ',
+  settingsLanguageDesc: 'Ngôn ngữ hiển thị của ASCND',
+  settingsLanguageSheetTitle: 'Ngôn ngữ',
+  settingsLanguageSheetSubtitle: 'Chọn ngôn ngữ hiển thị của ASCND',
+  settingsLangSystem: 'Theo hệ thống',
+  settingsLangSystemDesc: 'Sử dụng ngôn ngữ của iPhone',
+  settingsCancel: 'Hủy',
+  settingsThemeSheetTitle: 'Giao diện',
+  settingsThemeSheetSubtitle: 'Chọn giao diện của ASCND',
+  settingsThemeLightDesc: 'Giao diện sáng, phù hợp môi trường nhiều ánh sáng',
+  settingsThemeDarkDesc: 'Giao diện tối, dịu mắt hơn trong môi trường tối',
+  settingsThemeSystemDesc: 'Tự động chuyển theo cài đặt của thiết bị',
   settingsPersonalInfo: 'Thông Tin Cá Nhân',
   settingsName: 'Tên',
   settingsDob: 'Ngày sinh',
@@ -1547,6 +1583,18 @@ const en: Translations = {
   settingsThemeLight: 'Light',
   settingsThemeDark: 'Dark',
   settingsThemeSystem: 'System',
+  settingsLanguage: 'Language',
+  settingsLanguageDesc: 'Display language for ASCND',
+  settingsLanguageSheetTitle: 'Language',
+  settingsLanguageSheetSubtitle: 'Choose ASCND display language',
+  settingsLangSystem: 'System',
+  settingsLangSystemDesc: 'Use iPhone language',
+  settingsCancel: 'Cancel',
+  settingsThemeSheetTitle: 'Appearance',
+  settingsThemeSheetSubtitle: 'Choose ASCND appearance',
+  settingsThemeLightDesc: 'Light interface, good in bright environments',
+  settingsThemeDarkDesc: 'Dark interface, easier on the eyes in the dark',
+  settingsThemeSystemDesc: 'Automatically follows device settings',
   settingsPersonalInfo: 'Personal Info',
   settingsName: 'Name',
   settingsDob: 'Date of birth',
