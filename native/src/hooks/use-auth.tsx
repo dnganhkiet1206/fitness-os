@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { supabase } from '@/integrations/supabase/client';
 import { cancelAllReminders } from '@/lib/notifications';
 import { clearPersistedCache, clearUserScopedStorage } from '@/lib/query-client';
+import { clearWidgetData } from '@/native/ios/widget-data';
 import type { User, Session } from '@supabase/supabase-js';
 
 interface AuthContextType {
@@ -63,6 +64,15 @@ async function forgetPreviousAccount(): Promise<void> {
     switches still shown on.
   */
   await clearUserScopedStorage();
+  /*
+    And the iOS widget payloads, which live in the App Group shared
+    UserDefaults — AsyncStorage.removeItem cannot reach them. Without this,
+    the next account to sign in on the same phone sees the previous user's
+    "today's workout" and streak/readiness on their home-screen widgets
+    until a fresh push overwrites them. Fire-and-forget: widgets are
+    best-effort and sign-out must not fail because of them.
+  */
+  await clearWidgetData();
   /*
     And the notifications, which outlive the session by up to a week.
 

@@ -44,6 +44,13 @@ export interface AscndNativeModuleType {
    * [WIP] Swift side uncompiled on Linux — needs Xcode to verify.
    */
   updateWidgetData(key: string, json: string): Promise<boolean>;
+  /**
+   * Clear widget payloads from the App Group shared UserDefaults (sign-out
+   * privacy — AsyncStorage.removeItem cannot reach the App Group).
+   * @returns true if cleared, false if App Group not provisioned (silent no-op)
+   * [WIP] Swift side uncompiled on Linux — needs Xcode to verify.
+   */
+  clearWidgetData(): Promise<boolean>;
   endRestActivity(activityId: string): Promise<void>;
   /**
    * Last island intent payload (JSON) from the App Group — the foreground

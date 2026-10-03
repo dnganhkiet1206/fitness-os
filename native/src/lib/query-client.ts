@@ -250,7 +250,9 @@ const USER_KEYS = [
   /* Widget data trong App Group shared UserDefaults (native). Dữ liệu của
      user (buổi tập hôm nay, streak) — đăng xuất phải xoá để không lọt sang
      tài khoản sau. Lưu ý: AsyncStorage.removeItem không với tới App Group;
-     cần gọi native clear khi App Group provision (TODO). */
+     bản native thật được xoá bởi `clearWidgetData()` (gọi từ
+     `forgetPreviousAccount` trong use-auth). Hai khoá dưới đây chỉ là
+     shadow cũ — giữ lại để dọn máy của người đã cài bản trước. */
   'ascnd.widget.todayWorkout',
   'ascnd.widget.streakReadiness',
 ];

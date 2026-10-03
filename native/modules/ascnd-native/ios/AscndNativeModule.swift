@@ -427,5 +427,26 @@ public final class AscndNativeModule: Module {
       }
       promise.resolve(true)
     }
+
+    // MARK: - Widget data clear on sign-out (03/10/2026)
+    //
+    // Privacy: the widget payloads above live in App Group shared
+    // UserDefaults, which AsyncStorage.removeItem cannot reach. Without this,
+    // signing out leaves the previous account's "today's workout" and
+    // streak/readiness on the home-screen widgets for whoever signs in next.
+    // Called fire-and-forget from JS on sign-out; silent no-op when the App
+    // Group is not provisioned. [WIP] Uncompiled on Linux — needs Xcode.
+    AsyncFunction("clearWidgetData") { (promise: Promise) in
+      guard let defaults = UserDefaults(suiteName: "group.com.ascnd.fitnessos") else {
+        promise.resolve(false)
+        return
+      }
+      defaults.removeObject(forKey: "ascnd.widget.todayWorkout")
+      defaults.removeObject(forKey: "ascnd.widget.streakReadiness")
+      if #available(iOS 14.0, *) {
+        WidgetCenter.shared.reloadAllTimelines()
+      }
+      promise.resolve(true)
+    }
   }
 }

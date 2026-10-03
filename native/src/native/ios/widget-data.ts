@@ -65,3 +65,20 @@ async function pushWidgetData(key: string, data: unknown): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * Clear widget payloads from the App Group shared UserDefaults on sign-out.
+ * Fire-and-forget — resolves false when native is unavailable or the App
+ * Group is not provisioned. The AsyncStorage copies of these keys are stale
+ * shadows; THIS is the live copy the widgets actually read.
+ */
+export async function clearWidgetData(): Promise<boolean> {
+  const mod = AscndNativeModule;
+  if (!isAscndNativeAvailable() || !mod?.clearWidgetData) return false;
+  try {
+    return await mod.clearWidgetData();
+  } catch {
+    // Best-effort — sign-out must never fail because of a widget clear.
+    return false;
+  }
+}
