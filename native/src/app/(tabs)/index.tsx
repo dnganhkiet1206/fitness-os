@@ -39,6 +39,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ActivityRingsCard } from '@/components/ascnd/activity-rings';
+import { EnergyRing } from '@/components/ascnd/energy-ring';
 import { AmbientLight } from '@/components/ascnd/ambient-light';
 import {
   NutritionCard,
@@ -72,8 +73,10 @@ import {
   WorkoutStatusCard,
 } from '@/components/ascnd/today-widgets-2';
 import { useCheckAwards, useUpdateChallengeProgress } from '@/hooks/use-extras';
+import { useDailyQuests } from '@/hooks/use-daily-quests';
 import { BottomTabInset } from '@/constants/expo-template-theme';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { ENERGY_SIGNALS } from '@/lib/mascot-room';
 import { TodoCard } from '@/components/ascnd/todo-card';
 import { BOUNCE, spring } from '@/constants/motion';
 import Svg, { Defs, LinearGradient as SvgGradient, Rect, Stop } from 'react-native-svg';
@@ -155,6 +158,20 @@ const SHEET_BLUR = 36;
  * Bằng đúng cạnh của `squareBtn` — hàng chỉ cao bằng nút cao nhất trong nó.
  */
 const TOP_BAR_H = 44;
+
+/*
+  Palette keys for the five energy-ring signals — the same mapping mascot-room
+  uses (`SIGNAL_META`), so the ring on Today and the ring in mascot-room light
+  each signal in the same colour. Keys, not values: the palette resolves them
+  per theme at render time.
+*/
+const ENERGY_SIGNAL_COLORS: Record<string, PaletteKey> = {
+  meal: 'metricOrangeGraphic',
+  workout: 'metricRose',
+  water: 'metricCyan',
+  sleep: 'metricPurple',
+  steps: 'readinessGreen',
+};
 
 /**
  * Quãng hàng nút đi lên khi nó rời đi.
@@ -447,6 +464,15 @@ export default function TodayScreen() {
   const { config, editMode, setEditMode, moveWidget, moveGroup, moveGroupTo, removeGroup, addGroup, resetConfig } =
     useWidgetConfig();
   const { goal: stepsGoal } = useStepsGoal();
+  /*
+    EnergyRing reuse (P1-10 DE-XUAT-2): the same five daily signals mascot-room
+    draws, shown at the top of Today as a one-glyph "how is my day" answer.
+    `useDailyQuests` is the single source of quest-done state — the ring here
+    and the ring in mascot-room read the same hook, so the two can never
+    disagree about whether a signal is met.
+  */
+  const { done: questDone } = useDailyQuests();
+  const energyCount = ENERGY_SIGNALS.filter((k) => questDone[k]).length;
   // Reminders are dated one-shots, so the schedule has to be rebuilt as the day
   // is lived — see `useReminderSync`.
   useReminderSync();
@@ -1630,6 +1656,45 @@ export default function TodayScreen() {
       {!editMode && (
         <>
           {/*
+            Energy ring at the top of Today (P1-10 DE-XUAT-2): a compact row —
+            not a card — so it reads as a status glyph rather than one more
+            widget in the list. Same component, same signals, same colours as
+            mascot-room; the centre number is overlaid by the parent per the
+            component's contract. Tapping it goes to mascot-room, where the
+            full energy card (with per-signal pips) lives.
+          */}
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.nRoomEnergy}
+            onPress={() => nav.push('/mascot-room')}
+            style={styles.energyRow}>
+            <View style={styles.energyRingWrap}>
+              <EnergyRing
+                size={64}
+                stroke={8}
+                segments={ENERGY_SIGNALS.map((k) => ({ on: questDone[k], color: c[ENERGY_SIGNAL_COLORS[k]] }))}
+              />
+              <View style={styles.energyCenter} pointerEvents="none">
+                <Text style={styles.energyNum}>
+                  {energyCount}
+                  <Text style={styles.energyNumMax}>/{ENERGY_SIGNALS.length}</Text>
+                </Text>
+              </View>
+            </View>
+            <View style={styles.energyTextCol}>
+              <Text style={styles.energyTitle}>{i18n.nRoomEnergy}</Text>
+              <Text style={styles.energySub}>
+                {energyCount === 0
+                  ? i18n.nRoomEnergyEmpty
+                  : energyCount >= ENERGY_SIGNALS.length
+                    ? i18n.nRoomEnergyFull
+                    : energyCount >= 3
+                      ? i18n.nRoomEnergyMid
+                      : i18n.nRoomEnergyLow}
+              </Text>
+            </View>
+          </PressScale>
+          {/*
             Chỉ số sẵn sàng là thứ đầu tiên trên trang, và tràn hết bề ngang.
 
             Nó vốn nằm dưới Koa và bốn nút ghi — tức là dưới hai hàng điều
@@ -2671,6 +2736,34 @@ const stylesFor = makeStyles((c, m) => ({
      vùng cuộn giữ đúng kích thước khi không có bàn phím. */
   kav: { flex: 1 },
   content: { paddingHorizontal: spacing.md, gap: spacing.md },
+  /*
+    Energy ring row at the top of Today (P1-10 DE-XUAT-2). A compact row, not a
+    card: it reads as a status glyph — "how is my day" — rather than one more
+    widget. The ring is 64pt (mascot-room uses 104pt for the full card); the
+    centre number is overlaid by the parent per the component's contract.
+  */
+  energyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  energyRingWrap: { width: 64, height: 64, alignItems: 'center', justifyContent: 'center' },
+  energyCenter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  energyNum: { ...type.title, fontSize: 17, fontWeight: '700', color: c.foreground, fontVariant: ['tabular-nums'] },
+  energyNumMax: { ...type.footnote, fontWeight: '700', color: c.mutedForeground },
+  energyTextCol: { flex: 1, gap: 2 },
+  energyTitle: { ...type.headline, color: c.foreground },
+  energySub: { ...type.footnote, color: c.mutedForeground, lineHeight: 18 },
   /* Cancels the page's own horizontal padding so the deck reaches both edges.
      Tied to the same token the padding uses, not a second copy of the number —
      change `content` and this follows it. */
