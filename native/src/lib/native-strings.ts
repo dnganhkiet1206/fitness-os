@@ -977,6 +977,7 @@ const en = {
   nCxClaimReminderBodyLeft: 'Claim {c} coins for "{t}" — {n} days left',
   nCxClaimReminderDesc: 'Nudge when an earned challenge reward is about to expire',
   nCxViewTrends: 'Trends',
+  nCxSoreness: 'Soreness',
 
   // Offline
   nOffline: 'Offline — showing saved data',
@@ -2012,6 +2013,7 @@ const vi: typeof en = {
   nCxClaimReminderBodyLeft: 'Nhận {c} xu cho "{t}" — còn {n} ngày',
   nCxClaimReminderDesc: 'Nhắc khi thưởng thử thách sắp hết hạn nhận',
   nCxViewTrends: 'Xu hướng',
+  nCxSoreness: 'Đau nhức',
 
   // Offline
   nOffline: 'Ngoại tuyến — đang hiển thị dữ liệu đã lưu',

@@ -18,7 +18,7 @@ import { useBiometricHistory, useDeleteBiometricSample, type BiometricSample } f
 import { localStampStr } from '@/lib/local-date';
 import { toast } from '@/lib/toast';
 
-type MetricKey = 'hr' | 'hrvSdnn' | 'hrv' | 'spo2' | 'vo2max' | 'resp';
+type MetricKey = 'hr' | 'hrvSdnn' | 'hrv' | 'spo2' | 'vo2max' | 'resp' | 'soreness';
 
 interface MetricDef {
   key: MetricKey;
@@ -97,6 +97,9 @@ export default function BiometricsScreen() {
        in breaths, which has no international symbol, so the unit is translated
        rather than written here. Same string the Today card prints. */
     { key: 'resp', label: i18n.biometricsBreathRate, unit: i18n.biometricsBreathUnit, color: c.metricPurple, range: [12, 20], extract: (s) => s.resp_rate_rpm },
+    /* P2-14 (DE-XUAT-2): soreness from the morning check-in (P0-1 DE-XUAT).
+       1–10 scale; illness days are flagged in the detail list below. */
+    { key: 'soreness' as const, label: i18n.nCxSoreness ?? 'Soreness', unit: '/10', color: c.metricOrange, range: [1, 10] as [number, number], extract: (s) => s.soreness_1_10 },
   ];
 
   const series = useMemo(() => {
