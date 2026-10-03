@@ -39,7 +39,7 @@ export interface RestActivityState {
   setText?: string;
   /** Localized "Up next" — the Island shows the NEXT set. */
   nextText?: string;
-  /** App language code ('vi' | 'en') — Swift looks up localized strings. */
+  /** App language code ('vi' | 'en' | 'es') — Swift looks up localized strings. */
   languageCode?: string;
 }
 

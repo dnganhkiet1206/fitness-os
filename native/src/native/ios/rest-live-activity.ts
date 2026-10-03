@@ -20,7 +20,7 @@ interface RestDisplay {
   exerciseName: string;
   setNumber: number;
   totalSets: number;
-  /** App language ('vi' | 'en') — Swift looks up localized Island strings. */
+  /** App language ('vi' | 'en' | 'es') — Swift looks up localized Island strings. */
   languageCode: string;
 }
 

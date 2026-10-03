@@ -114,7 +114,7 @@ interface Tool {
   key: string;
   glyph: GlyphName;
   label: { vi: string; en: string; es?: string };
-  hint: { vi: string; en: string };
+  hint: { vi: string; en: string; es?: string };
   route: string;
 }
 
@@ -152,20 +152,20 @@ const TOOLS: Tool[] = [
     which page renders which. A calendar in cyan, and no other tile or metric on
     this page uses either.
   */
-  { key: 'week', glyph: 'calendar', label: { vi: 'Tổng kết tuần', en: 'Weekly review' }, hint: { vi: 'AI đọc cả tuần và gợi ý tuần tới', en: 'The coach reads your week, and the next one' }, route: '/weekly-review' },
+  { key: 'week', glyph: 'calendar', label: { vi: 'Tổng kết tuần', en: 'Weekly review', es: 'Resumen semanal' }, hint: { vi: 'AI đọc cả tuần và gợi ý tuần tới', en: 'The coach reads your week, and the next one', es: 'El coach lee tu semana y la siguiente' }, route: '/weekly-review' },
   /* This slot held "AI Coach → /ai-coach" and then "Past chats → /ai-coach",
      and both were the same mistake: a card offering to take you somewhere you
      already are. Past chats is a panel on this page now, reached from the
      conversation itself. The slot goes to something that is genuinely
      elsewhere. */
-  { key: 'steps', glyph: 'bolt', label: { vi: 'Vận động', en: 'Movement' }, hint: { vi: 'Bước chân và calo hôm nay', en: 'Steps and calories today' }, route: '/steps' },
-  { key: 'scan', glyph: 'camera', label: { vi: 'Quét thực phẩm', en: 'Scan a meal' }, hint: { vi: 'Hướng máy ảnh vào đĩa ăn', en: 'Point the camera at a plate' }, route: '/scan-food' },
-  { key: 'bio', glyph: 'heart', label: { vi: 'Sinh trắc học', en: 'Biometrics' }, hint: { vi: 'Nhịp tim, HRV, oxy', en: 'Heart rate, HRV, oxygen' }, route: '/biometrics' },
-  { key: 'sleep', glyph: 'moon', label: { vi: 'Giấc ngủ', en: 'Sleep' }, hint: { vi: 'Đêm qua, và xu hướng', en: 'Last night, and the trend' }, route: '/sleep-insights' },
+  { key: 'steps', glyph: 'bolt', label: { vi: 'Vận động', en: 'Movement', es: 'Movimiento' }, hint: { vi: 'Bước chân và calo hôm nay', en: 'Steps and calories today', es: 'Pasos y calorías de hoy' }, route: '/steps' },
+  { key: 'scan', glyph: 'camera', label: { vi: 'Quét thực phẩm', en: 'Scan a meal', es: 'Escanear comida' }, hint: { vi: 'Hướng máy ảnh vào đĩa ăn', en: 'Point the camera at a plate', es: 'Apunta la cámara a un plato' }, route: '/scan-food' },
+  { key: 'bio', glyph: 'heart', label: { vi: 'Sinh trắc học', en: 'Biometrics', es: 'Biometría' }, hint: { vi: 'Nhịp tim, HRV, oxy', en: 'Heart rate, HRV, oxygen', es: 'Frecuencia cardíaca, HRV, oxígeno' }, route: '/biometrics' },
+  { key: 'sleep', glyph: 'moon', label: { vi: 'Giấc ngủ', en: 'Sleep', es: 'Sueño' }, hint: { vi: 'Đêm qua, và xu hướng', en: 'Last night, and the trend', es: 'Anoche y la tendencia' }, route: '/sleep-insights' },
   /* The memory is the reason the coach stops asking the same questions, and a
      feature nobody can see does not feel like personalisation — it feels like
      luck. This is the door to it, and to the delete button. */
-  { key: 'memory', glyph: 'spark', label: { vi: 'Coach nhớ gì', en: 'Coach memory' }, hint: { vi: 'Những điều bạn đã kể, xem và xoá được', en: 'What you told it — view and erase' }, route: '/coach-memory' },
+  { key: 'memory', glyph: 'spark', label: { vi: 'Coach nhớ gì', en: 'Coach memory', es: 'Memoria del coach' }, hint: { vi: 'Những điều bạn đã kể, xem và xoá được', en: 'What you told it — view and erase', es: 'Lo que le contaste: ver y borrar' }, route: '/coach-memory' },
 ];
 
 export default function AssistantScreen() {
@@ -230,44 +230,44 @@ export default function AssistantScreen() {
     {
       key: 'hr',
       glyph: 'heart',
-      label: { vi: 'Nhịp tim', en: 'Heart rate' },
+      label: { vi: 'Nhịp tim', en: 'Heart rate', es: 'Frecuencia cardíaca' },
       value: hr != null ? String(hr) : '—',
       unit: hr != null ? 'bpm' : undefined,
       note: hr == null
-        ? { vi: 'Chưa có', en: 'No data' }
-        : hr < 60 ? { vi: 'Thấp', en: 'Low' } : hr <= 80 ? { vi: 'Bình thường', en: 'Normal' } : { vi: 'Cao', en: 'High' },
+        ? { vi: 'Chưa có', en: 'No data', es: 'Sin datos' }
+        : hr < 60 ? { vi: 'Thấp', en: 'Low', es: 'Baja' } : hr <= 80 ? { vi: 'Bình thường', en: 'Normal', es: 'Normal' } : { vi: 'Cao', en: 'High', es: 'Alta' },
       noteTint: hr == null ? c.glassMuted : hr <= 80 ? c.readinessGreen : c.readinessYellow,
       kind: 'hr',
     },
     {
       key: 'sleep',
       glyph: 'moon',
-      label: { vi: 'Giấc ngủ', en: 'Sleep' },
+      label: { vi: 'Giấc ngủ', en: 'Sleep', es: 'Sueño' },
       value: sleepMin > 0 ? `${Math.floor(sleepMin / 60)}h ${sleepMin % 60}` : '—',
       unit: sleepMin > 0 ? 'm' : undefined,
       note: sleepMin === 0
-        ? { vi: 'Chưa ghi', en: 'Not logged' }
-        : sleepMin >= 420 ? { vi: 'Tốt', en: 'Good' } : { vi: 'Thiếu', en: 'Short' },
+        ? { vi: 'Chưa ghi', en: 'Not logged', es: 'No registrado' }
+        : sleepMin >= 420 ? { vi: 'Tốt', en: 'Good', es: 'Bueno' } : { vi: 'Thiếu', en: 'Short', es: 'Corto' },
       noteTint: sleepMin === 0 ? c.glassMuted : sleepMin >= 420 ? c.readinessGreen : c.readinessYellow,
       kind: 'sleep',
     },
     {
       key: 'kcal',
       glyph: 'flame',
-      label: { vi: 'Calo', en: 'Calories' },
+      label: { vi: 'Calo', en: 'Calories', es: 'Calorías' },
       value: kcal > 0 ? kcal.toLocaleString() : '—',
-      note: { vi: 'Hôm nay', en: 'Today' },
+      note: { vi: 'Hôm nay', en: 'Today', es: 'Hoy' },
       noteTint: c.metricBlue,
       kind: 'kcal',
     },
     {
       key: 'readiness',
       glyph: 'gauge',
-      label: { vi: 'Sẵn sàng', en: 'Readiness' },
+      label: { vi: 'Sẵn sàng', en: 'Readiness', es: 'Readiness' },
       value: readiness != null ? String(readiness) : '—',
       note: readiness == null
-        ? { vi: 'Cần thêm dữ liệu', en: 'Needs data' }
-        : status === 'green' ? { vi: 'Tốt', en: 'Good' } : status === 'yellow' ? { vi: 'Vừa', en: 'Moderate' } : { vi: 'Thấp', en: 'Low' },
+        ? { vi: 'Cần thêm dữ liệu', en: 'Needs data', es: 'Necesita datos' }
+        : status === 'green' ? { vi: 'Tốt', en: 'Good', es: 'Bueno' } : status === 'yellow' ? { vi: 'Vừa', en: 'Moderate', es: 'Moderado' } : { vi: 'Thấp', en: 'Low', es: 'Baja' },
       noteTint:
         readiness == null
           ? c.glassMuted
@@ -926,7 +926,7 @@ export default function AssistantScreen() {
                       week, and the…") và ở chữ ×1.3. Ô cùng hàng vẫn cao bằng
                       nhau nhờ `flexGrow` của ô kính. */}
                   <Text style={styles.toolHint}>
-                    {vi ? t.hint.vi : t.hint.en}
+                    {t.hint[lang] ?? t.hint.en}
                   </Text>
                 </LiquidGlass>
               </PressScale>
