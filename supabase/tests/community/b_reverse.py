@@ -85,6 +85,22 @@ _GRANT = ('quyền của người ĐÃ ĐĂNG NHẬP: thu lại thì lời gọi
           '"permission denied" trước khi nhãn này kịp nói (đỏ sai chỗ); bỏ riêng dòng GRANT '
           'thì default privileges của stub vẫn cấp. Mọi kịch bản trước nó đã là bằng chứng.')
 COVERAGE_OK = {
+    'notify_more': {
+        'NM3': 'tự lưu bài mình và người không có hồ sơ còn bị BẢNG chặn (CHECK user_id <> actor_id của #13, '
+               'khoá ngoại actor → community_profiles): bỏ chốt trong hàm thì câu lưu bài ra ERROR chứ '
+               'không ra thông báo — lỗi lộ ra, không lặng lẽ.',
+        'NM9': 'canh hệ quả của NM5–NM7: lượt thử bị chặn thì không có hàng nào để trigger chạy. Không '
+               'đột biến nào sinh thông báo từ một câu ghi đã bị từ chối.',
+        'NS3': 'canh rằng bộ lọc trả NULL cho THÔNG BÁO chứ không chặn câu lưu bài — nằm ở chỗ trigger '
+               'được gắn (BEFORE INSERT trên community_notifications). Mọi đột biến làm câu lưu bài hỏng '
+               'đều ra ERROR ở chính câu ghi, trước nhãn này.',
+        'NS4': 'RLS UPDATE của community_settings là của 20260930130000 và đã có ca ở community_privacy.',
+        'NC5': 'trigger chỉ đọc thành viên của chính NEW.user_id; bỏ điều kiện ấy vẫn chỉ ghi cho '
+               'NEW.user_id với tiến độ của chính họ (một buổi / bốn) — không đột biến có nghĩa nào với tới.',
+        'NC8': 'được canh bằng ca NC8: bỏ bộ bắt lỗi rồi cho hàm tiến độ ném thì câu ghi buổi tập '
+               '(câu trần) ra ERROR "division by zero" ngay — ĐỎ trước khi tới nhãn, đúng chỗ dự đoán.',
+        'NC6': 'RLS đọc thông báo là của 20260930140000 và đã có ca ở community_notifications.',
+    },
     'challenge_history': {
         'H7': 'tập đầy đủ ĐỨNG CUỐI có chủ đích: mọi phép phá có tên bị một kịch bản cụ thể '
               'bắt trước. Nó là lưới cho thứ chưa ai nghĩ ra — một ca với tới được nó nghĩa là '
@@ -102,6 +118,46 @@ COVERAGE_OK = {
         'MV3': 'đối chứng "bài công khai vẫn nhắc được". Mọi phép phá làm bài công khai thôi nhắc '
                'đều làm M1 (nhắc trên bài công khai, đứng trước) đỏ trước — đo 02/10: ca MV3 riêng '
                'đỏ ở M1. MV3 ở đó để MV1 không xanh nhờ một hàm không nhắc ai cả.',
+    },
+    'golden_path': {
+        'GP1': 'share_workout: foundation 6–9 phá từng trường của payload.',
+        'GP2': 'share_workout: foundation 10–14 (set khởi động, set nặng nhất, bài thư viện).',
+        'GP3': 'policy đọc bài công khai: foundation 19/30.',
+        'GP4': 'share_progress không chỉ số: bộ progress (P-cases).',
+        'GP5': 'trigger thông báo lưu / thử: notify_more NM1–NM4.',
+        'GP6': 'build_progress_payload cân nặng: progress P2–P5.',
+        'GP7': 'chỉ số TẮT không lọt: progress P1/P6.',
+        'GP8': 'trigger thông báo thích / bình luận: notifications N2/N5.',
+        'GP9': 'bộ đếm: foundation 21–24 và comment_count.',
+        'GP10': 'trả lời / nhắc: comment_replies R-, M-cases.',
+        'GP13': 'mod_target: admin F11–F13.',
+        'GP19': 'bài đã gỡ vẫn ẩn (CHECK removed ⇒ hidden) + RLS cũ: admin G4, foundation 30.',
+        'GP22': 'cascade khi xoá bài: foundation 33, notify_more NM9.',
+    },
+    'admin': {
+        'B3': 'hệ quả của B1/B2: lời gọi bị từ chối ném lỗi và cuộn lại giao dịch của nó — '
+              'không phép phá nào của migration để lại hàng mà không làm B1/B2 đỏ trước.',
+        'R6': 'ba lớp chồng nhau: không cấp quyền (R6b có ca), `moderation_require` từ chối uid '
+              'null, rồi `app_role_of(null)` = user bị từ chối như R1 (có ca). Phá một lớp thì '
+              'hai lớp kia vẫn trả 42501.',
+        'R8': 'lời gọi bị từ chối ném lỗi ở DECLARE (`moderation_require`) trước mọi lệnh ghi; '
+              'không có thứ tự nào khác trong thân hàm để đột biến.',
+        'A2': 'hai luật cùng trả 22023: không-tự-đổi (A8 có ca, với hai admin) và admin-cuối. '
+              'Với MỘT admin, bỏ luật nào thì luật kia vẫn chặn.',
+        'M2': 'cùng cửa `moderation_require(true)` với M1, mà M1 lặp qua chính `admin_set_role` trước.',
+        'M5': 'hệ quả của M2/M3: vai trò chỉ đổi được qua hai đường ấy, cả hai đều có ca.',
+        'F1': 'UNIQUE(reporter_id, post_id) thuộc migration báo cáo cũ, không phải migration này; '
+              'ở đây F1 chỉ dựng dữ liệu cho F2/F3.',
+        'G5': 'bài đã gỡ vẫn `hidden` (CHECK removed ⇒ hidden) và RLS cũ giấu bài ẩn; mọi phép phá '
+              'làm bài gỡ không ẩn đều bị G3/G4 bắt trước.',
+        'I8': 'policy đọc `community_art` thuộc migration ảnh (#163); `active = false` đã bị I4/I6/I7 '
+              'phủ.',
+        'L3': 'xem ca `L3·đua` (green_ok): tuần tự thì luật không-tự-đổi chặn trước; luật admin-cuối '
+              'chỉ có tác dụng khi hai admin hạ nhau cùng lúc.',
+        'L5': 'hệ quả của L4: vai trò đọc lại ở mỗi lời gọi, nên hàng đã xoá thì quyền mất ngay; '
+              'phép phá giữ hàng lại bị L4 bắt.',
+        'L11': 'cùng luật với L10 (không khoá ngoại + trigger chỉ-thêm), trên cả bảy tài khoản; '
+               'L10 có ca.',
     },
     'find_posts': {'P16': _GRANT},
     'fn_privilege': {

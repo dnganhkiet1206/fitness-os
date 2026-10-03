@@ -63,10 +63,13 @@ DO $$ BEGIN
   ASSERT (SELECT top_reason FROM h_a WHERE post_id = 'f0000000-0000-0000-0000-0000000000a3') = 'harassment', 'H3 hoà lý do không theo thứ tự cố định';
 END $$;
 
--- ── H4: không lộ ai báo cáo — hàm KHÔNG trả cột nào ngoài năm cột gộp ──
+-- ── H4: không lộ ai báo cáo — hàm KHÔNG trả cột nào ngoài các cột gộp ──
+-- 20261007130000 thêm `removed` và `review_upheld`: hai cờ về CHÍNH bài của
+-- người gọi, không nói gì về người báo cáo. Danh sách được ghim lại ở đây để
+-- một cột thứ tám phải đi qua đúng câu hỏi này.
 DO $$ BEGIN
   ASSERT (SELECT array_to_string(proargnames, ',') FROM pg_proc WHERE proname = 'community_my_hidden_reasons')
-         = 'post_id,comment_id,reporters,top_reason,review_requested', 'H4 hàm trả thêm cột — có thể lộ người báo cáo hay ghi chú';
+         = 'post_id,comment_id,reporters,top_reason,review_requested,removed,review_upheld', 'H4 hàm trả thêm cột — có thể lộ người báo cáo hay ghi chú';
 END $$;
 
 -- ── H2 (chiều kia): người khác gọi thì chỉ thấy của chính họ (B thấy b1, không thấy a1) ──

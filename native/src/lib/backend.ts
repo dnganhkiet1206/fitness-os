@@ -151,6 +151,12 @@ export const EDGE_FUNCTIONS = {
    * this list is the deployment checklist.
    */
   deleteAccount: 'delete-account',
+  /**
+   * Admin console only (web): adds an image to the Community art library. The
+   * function checks the caller's role server-side; listing it here grants
+   * nothing — it is the deployment checklist.
+   */
+  adminArt: 'admin-art',
 } as const;
 
 export type EdgeFunction = (typeof EDGE_FUNCTIONS)[keyof typeof EDGE_FUNCTIONS];

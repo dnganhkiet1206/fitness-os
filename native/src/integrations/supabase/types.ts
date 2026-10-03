@@ -242,6 +242,63 @@ export type Database = {
         Relationships: []
       }
       /* Cộng đồng — viết tay khớp `20260927120000_community_foundation.sql`. */
+      app_roles: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      moderation_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          actor_role: string
+          created_at: string
+          id: number
+          metadata: Json
+          reason: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          actor_role: string
+          created_at?: string
+          id?: never
+          metadata?: Json
+          reason?: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          actor_role?: string
+          created_at?: string
+          id?: never
+          metadata?: Json
+          reason?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
       community_blocks: {
         Row: {
           blocked_id: string
@@ -307,18 +364,21 @@ export type Database = {
           challenge_id: string
           claimed_at: string | null
           joined_at: string
+          offset_min: number
           user_id: string
         }
         Insert: {
           challenge_id: string
           claimed_at?: string | null
           joined_at?: string
+          offset_min?: number
           user_id?: string
         }
         Update: {
           challenge_id?: string
           claimed_at?: string | null
           joined_at?: string
+          offset_min?: number
           user_id?: string
         }
         Relationships: []
@@ -347,6 +407,8 @@ export type Database = {
           id: string
           parent_id: string | null
           post_id: string
+          removed_at: string | null
+          removed_by: string | null
         }
         Insert: {
           author_id?: string
@@ -356,6 +418,8 @@ export type Database = {
           id?: string
           parent_id?: string | null
           post_id: string
+          removed_at?: string | null
+          removed_by?: string | null
         }
         Update: {
           author_id?: string
@@ -365,6 +429,8 @@ export type Database = {
           id?: string
           parent_id?: string | null
           post_id?: string
+          removed_at?: string | null
+          removed_by?: string | null
         }
         Relationships: []
       }
@@ -406,31 +472,37 @@ export type Database = {
       }
       community_notifications: {
         Row: {
-          actor_id: string
+          actor_id: string | null
+          challenge_id: string | null
           comment_id: string | null
           created_at: string
           id: string
           kind: string
+          milestone: number | null
           post_id: string | null
           read_at: string | null
           user_id: string
         }
         Insert: {
-          actor_id: string
+          actor_id: string | null
+          challenge_id?: string | null
           comment_id?: string | null
           created_at?: string
           id?: string
           kind: string
+          milestone?: number | null
           post_id?: string | null
           read_at?: string | null
           user_id: string
         }
         Update: {
-          actor_id?: string
+          actor_id?: string | null
+          challenge_id?: string | null
           comment_id?: string | null
           created_at?: string
           id?: string
           kind?: string
+          milestone?: number | null
           post_id?: string | null
           read_at?: string | null
           user_id?: string
@@ -477,12 +549,32 @@ export type Database = {
         }
         Relationships: []
       }
+      /* Ai đã thử buổi tập nào (20261007120000): mỗi người một lần mỗi bài. */
+      community_post_tries: {
+        Row: {
+          post_id: string
+          tried_at: string
+          user_id: string
+        }
+        Insert: {
+          post_id: string
+          tried_at?: string
+          user_id?: string
+        }
+        Update: {
+          post_id?: string
+          tried_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_posts: {
         Row: {
           art_id: string | null
           author_id: string
           caption: string
           comment_count: number
+          comments_off: boolean
           created_at: string
           hidden: boolean
           id: string
@@ -490,6 +582,8 @@ export type Database = {
           kind: string
           like_count: number
           payload: Json
+          removed_at: string | null
+          removed_by: string | null
           save_count: number
           source_id: string | null
           visibility: string
@@ -499,6 +593,7 @@ export type Database = {
           author_id: string
           caption?: string
           comment_count?: number
+          comments_off?: boolean
           created_at?: string
           hidden?: boolean
           id?: string
@@ -506,6 +601,8 @@ export type Database = {
           kind: string
           like_count?: number
           payload: Json
+          removed_at?: string | null
+          removed_by?: string | null
           save_count?: number
           source_id?: string | null
           visibility?: string
@@ -515,6 +612,7 @@ export type Database = {
           author_id?: string
           caption?: string
           comment_count?: number
+          comments_off?: boolean
           created_at?: string
           hidden?: boolean
           id?: string
@@ -522,6 +620,8 @@ export type Database = {
           kind?: string
           like_count?: number
           payload?: Json
+          removed_at?: string | null
+          removed_by?: string | null
           save_count?: number
           source_id?: string | null
           visibility?: string
@@ -604,7 +704,10 @@ export type Database = {
         Row: {
           comment_id: string | null
           created_at: string
+          decided_at: string | null
+          decided_by: string | null
           id: string
+          message: string
           post_id: string | null
           requester_id: string
           status: string
@@ -612,7 +715,10 @@ export type Database = {
         Insert: {
           comment_id?: string | null
           created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
           id?: string
+          message?: string
           post_id?: string | null
           requester_id: string
           status?: string
@@ -620,7 +726,10 @@ export type Database = {
         Update: {
           comment_id?: string | null
           created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
           id?: string
+          message?: string
           post_id?: string | null
           requester_id?: string
           status?: string
@@ -648,18 +757,39 @@ export type Database = {
       community_settings: {
         Row: {
           default_visibility: string
+          notify_challenges: boolean
+          notify_comments: boolean
+          notify_follows: boolean
+          notify_likes: boolean
+          notify_mentions: boolean
+          notify_saves: boolean
+          notify_tries: boolean
           show_badges: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
           default_visibility?: string
+          notify_challenges?: boolean
+          notify_comments?: boolean
+          notify_follows?: boolean
+          notify_likes?: boolean
+          notify_mentions?: boolean
+          notify_saves?: boolean
+          notify_tries?: boolean
           show_badges?: boolean
           updated_at?: string
           user_id?: string
         }
         Update: {
           default_visibility?: string
+          notify_challenges?: boolean
+          notify_comments?: boolean
+          notify_follows?: boolean
+          notify_likes?: boolean
+          notify_mentions?: boolean
+          notify_saves?: boolean
+          notify_tries?: boolean
           show_badges?: boolean
           updated_at?: string
           user_id?: string
@@ -2127,7 +2257,101 @@ export type Database = {
           reporters: number
           top_reason: string | null
           review_requested: boolean
+          removed: boolean
+          review_upheld: boolean
         }[]
+      }
+      community_set_comments_off: {
+        Args: { p_post_id: string; p_off: boolean }
+        Returns: undefined
+      }
+      community_user_stats: {
+        Args: { p_user: string }
+        Returns: {
+          posts: number
+          likes: number
+          tries: number
+        }[]
+      }
+      community_appeal: {
+        Args: { p_post_id: string | null; p_comment_id: string | null; p_message: string }
+        Returns: undefined
+      }
+      my_app_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      mod_hide: {
+        Args: { p_type: string; p_id: string; p_reason: string }
+        Returns: undefined
+      }
+      mod_restore: {
+        Args: { p_type: string; p_id: string; p_reason: string }
+        Returns: undefined
+      }
+      mod_remove: {
+        Args: { p_type: string; p_id: string; p_reason: string }
+        Returns: undefined
+      }
+      mod_dismiss: {
+        Args: { p_type: string; p_id: string; p_reason: string }
+        Returns: number
+      }
+      mod_decide_appeal: {
+        Args: { p_appeal: string; p_approve: boolean; p_reason: string }
+        Returns: undefined
+      }
+      mod_dashboard: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      mod_reports: {
+        Args: { p_status?: string; p_limit?: number }
+        Returns: Json
+      }
+      mod_target: {
+        Args: { p_type: string; p_id: string }
+        Returns: Json
+      }
+      mod_appeals: {
+        Args: { p_status?: string; p_limit?: number }
+        Returns: Json
+      }
+      admin_audit: {
+        Args: { p_limit?: number; p_before?: number; p_action?: string }
+        Returns: Json
+      }
+      admin_users: {
+        Args: { p_query?: string; p_limit?: number }
+        Returns: Json
+      }
+      admin_user: {
+        Args: { p_user: string }
+        Returns: Json
+      }
+      admin_set_role: {
+        Args: { p_user: string; p_role: string; p_reason: string }
+        Returns: undefined
+      }
+      admin_art: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      admin_add_art: {
+        Args: {
+          p_kind: string
+          p_style: string
+          p_tags: string[]
+          p_path: string
+          p_alt_en: string
+          p_alt_vi: string
+          p_sort?: number
+        }
+        Returns: string
+      }
+      admin_set_art_active: {
+        Args: { p_art: string; p_active: boolean; p_reason: string }
+        Returns: undefined
       }
       community_request_review: {
         Args: { p_post_id?: string; p_comment_id?: string }

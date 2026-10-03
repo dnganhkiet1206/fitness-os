@@ -37,7 +37,7 @@ Cách A cần Node 20 trở lên. Dưới đây viết `supabase <lệnh>`; nế
 thì đọc thành `npx supabase <lệnh>`.
 
 **Không chạy `supabase init`.** Lệnh đó tạo `supabase/` và `config.toml` mới —
-repo này đã có cả hai, và `init` sẽ ghi đè `project_id` cùng chín mục
+repo này đã có cả hai, và `init` sẽ ghi đè `project_id` cùng mười mục
 `verify_jwt = false` đang giữ cho các function gọi được.
 
 ## 0b. Khởi động
@@ -327,7 +327,7 @@ tồn tại ở project mới. Với một tài khoản test thì cách gọn nh
 
 ## 2. Tạo schema
 
-`supabase/migrations/` đã có **70 file SQL** dựng sẵn toàn bộ schema (16 file
+`supabase/migrations/` đã có **73 file SQL** dựng sẵn toàn bộ schema (16 file
 `<timestamp>_<uuid>.sql` do Lovable sinh ra, phần còn lại viết tay). Sau khi
 link đúng project ở bước 1b:
 
@@ -448,15 +448,15 @@ nên `ON DELETE CASCADE` không đụng tới chúng.** Xem §3.
 
 ---
 
-## 3. Edge function — cả 9 cái đã có sẵn
+## 3. Edge function — cả 10 cái đã có sẵn
 
-Mã nguồn của **cả chín** function đã nằm trong repo ở `supabase/functions/`,
+Mã nguồn của **cả mười** function đã nằm trong repo ở `supabase/functions/`,
 nên đây chỉ là việc deploy chứ không phải việc viết:
 
 ```bash
 supabase functions deploy ai-coach ai-coach-memory ai-meal-suggest \
   ai-smart-nudges ai-weekly-review scan-food \
-  verify-purchase store-webhook delete-account
+  verify-purchase store-webhook delete-account admin-art
 ```
 
 Deploy `db push` **trước** khi deploy function, để hạn mức có hiệu lực ngay từ
@@ -483,6 +483,7 @@ checklist, không phải tiện ích:
 | `verify-purchase` | sau giao dịch StoreKit | mua xong không mở khoá |
 | `store-webhook` | Apple gọi vào | gia hạn/huỷ không phản ánh vào app |
 | `delete-account` | nút Xoá tài khoản ở Cài đặt | app báo "máy chủ chưa bật chức năng này" |
+| `admin-art` | Thư viện ảnh của bảng quản trị (web, chỉ admin) | admin không tải được ảnh mới; mọi thứ khác chạy bình thường — xem `docs/ADMIN.md` |
 
 ### `delete-account` — bắt buộc để lên App Store
 

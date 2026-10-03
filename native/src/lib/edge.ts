@@ -74,7 +74,8 @@ export type EdgeResult<T> =
  */
 export async function callEdge<T>(
   fn: EdgeFunction,
-  body: Record<string, unknown>,
+  /* FormData cho `admin-art` (tải tệp ảnh); mọi function khác nhận JSON. */
+  body: Record<string, unknown> | FormData,
   /* Từ `useOperation` (#157): thao tác bị thay hay màn đã tháo thì huỷ luôn
      request, thay vì để nó chạy xong rồi bị bỏ. */
   signal?: AbortSignal,

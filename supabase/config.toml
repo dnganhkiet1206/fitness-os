@@ -31,3 +31,9 @@ verify_jwt = false
 # the function reads the caller's JWT itself — see `_shared/guard.ts`.
 [functions.delete-account]
 verify_jwt = false
+
+# Uploading to the Community art library needs the service role, so the
+# platform gate is off; the function checks the caller's JWT AND that their
+# app role is admin before touching storage — see `admin-art/index.ts`.
+[functions.admin-art]
+verify_jwt = false
