@@ -112,7 +112,15 @@ export function isHealthKitAvailable(): boolean {
 export async function requestHealthPermissions(): Promise<boolean> {
   if (!hk) return false;
   try {
-    return await hk.requestAuthorization({ toRead: [...READ_TYPES] });
+    /*
+      toWrite added P0-1 (DE-XUAT-2): body mass, workouts and sleep the user
+      logs in ASCND are written back to HealthKit, closing the one-way loop.
+      NSHealthUpdateUsageDescription in app.json covers the write prompt.
+    */
+    return await hk.requestAuthorization({
+      toRead: [...READ_TYPES],
+      toShare: [...WRITE_TYPES],
+    });
   } catch {
     return false;
   }
@@ -147,7 +155,10 @@ export async function requestHealthPermissions(): Promise<boolean> {
 export async function healthAlreadyAsked(): Promise<boolean> {
   if (!hk) return false;
   try {
-    const status = await hk.getRequestStatusForAuthorization({ toRead: [...READ_TYPES] });
+    const status = await hk.getRequestStatusForAuthorization({
+      toRead: [...READ_TYPES],
+      toShare: [...WRITE_TYPES],
+    });
     return status === hk.AuthorizationRequestStatus.unnecessary;
   } catch {
     return false;
@@ -581,5 +592,115 @@ export async function getRecentWorkouts(days = 7): Promise<HealthWorkout[]> {
       .filter((w) => w.minutes >= 5);
   } catch {
     return [];
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   WRITE-BACK — ASCND → Apple Health (P0-1, DE-XUAT-2)
+
+   The app ate Health data for a year and never gave any back:
+   weight logged here never reached Apple Health, workouts stayed
+   in our own database, sleep stayed typed-in. `lib/energy.ts:16`
+   admitted it outright.
+
+   All three writers below are fire-and-forget by design: HealthKit
+   is a mirror, never the source of truth. If the module is missing
+   (Expo Go), if the user denied write, if the save throws — the DB
+   write that already succeeded stands, and nothing here may crash
+   the flow that called it. Every function swallows its own errors.
+
+   Idempotency: each save carries our record id in metadata under
+   `HKExternalUUID`, so a duplicate can be traced back. The hook
+   points (useLogWeight, useLogWorkoutSession, log-sleep) each run
+   once per user action, so double-writes only happen if the user
+   logs twice — which is a user correction, not a bug.
+   ───────────────────────────────────────────────────────────── */
+
+const WRITE_TYPES = [
+  'HKQuantityTypeIdentifierBodyMass',
+  'HKWorkoutTypeIdentifier',
+  'HKCategoryTypeIdentifierSleepAnalysis',
+] as const;
+
+/** Our record id, stamped on every sample we write — see note above. */
+function writeMetadata(recordId: string): Record<string, string> {
+  return { HKExternalUUID: `ascnd:${recordId}` };
+}
+
+/* The library types metadata as `Record<string, never>` (no declared keys);
+   the native side accepts any string map, so cast once here. */
+function meta(recordId: string): never {
+  return writeMetadata(recordId) as unknown as never;
+}
+
+/**
+ * Body mass in kg. Called from `useLogWeight` after the DB upsert.
+ * `at` defaults to now; pass the log date when backfilling.
+ */
+export async function writeBodyMassToHealth(kg: number, recordId: string, at?: Date): Promise<void> {
+  if (!hk) return;
+  try {
+    const when = at ?? new Date();
+    await hk.saveQuantitySample(
+      'HKQuantityTypeIdentifierBodyMass',
+      'kg',
+      kg,
+      when,
+      when,
+      meta(recordId),
+    );
+  } catch {
+    /* mirror only — the DB write already succeeded */
+  }
+}
+
+/**
+ * A finished workout. `durationMin` comes from the logged sets;
+ * activity type defaults to traditional strength training (this is
+ * a lifting app — a session with no other signal is a lifting session).
+ */
+export async function writeWorkoutToHealth(
+  recordId: string,
+  start: Date,
+  end: Date,
+  opts?: { activityType?: number; totalKcal?: number },
+): Promise<void> {
+  if (!hk) return;
+  try {
+    const totals =
+      opts?.totalKcal != null ? { energyBurned: opts.totalKcal } : undefined;
+    await hk.saveWorkoutSample(
+      (opts?.activityType ?? hk.WorkoutActivityType.traditionalStrengthTraining) as never,
+      [],
+      start,
+      end,
+      totals,
+      meta(recordId),
+    );
+  } catch {
+    /* mirror only */
+  }
+}
+
+/**
+ * A logged night of sleep, written as one `asleepCore` sample spanning
+ * bedtime → waketime. Called from `log-sleep.tsx` after the DB write.
+ */
+export async function writeSleepToHealth(
+  recordId: string,
+  bedtime: Date,
+  waketime: Date,
+): Promise<void> {
+  if (!hk) return;
+  try {
+    await hk.saveCategorySample(
+      'HKCategoryTypeIdentifierSleepAnalysis',
+      hk.CategoryValueSleepAnalysis.asleepCore,
+      bedtime,
+      waketime,
+      meta(recordId),
+    );
+  } catch {
+    /* mirror only */
   }
 }

@@ -26,6 +26,7 @@ import { useI18n } from './use-app-settings';
 import { pushTodayWorkout, pushStreakReadiness } from '@/native/ios/widget-data';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';
+import { writeBodyMassToHealth, writeWorkoutToHealth } from '@/lib/health';
 import { RECORD } from '@/lib/offline-class';
 
 /**
@@ -105,11 +106,19 @@ export function useLogWeight() {
       if (error) throw error;
       await syncProfileWeight(user!.id, weight_kg);
     },
-    onSuccess: () => {
+    onSuccess: (_data, weight_kg) => {
       qc.invalidateQueries({ queryKey: ['weight_log', user?.id] });
       qc.invalidateQueries({ queryKey: ['weight_history', user?.id] });
       /* The profile moved, and everything derived from it is read from there. */
       qc.invalidateQueries({ queryKey: ['profile', user?.id] });
+      /*
+        P0-1 (DE-XUAT-2): write back to Apple Health. Fire-and-forget —
+        the function swallows its own errors, HealthKit is a mirror.
+        Record id is the upsert key, so the sample is traceable.
+      */
+      if (user) {
+        writeBodyMassToHealth(weight_kg, `${user.id}:${todayISO()}`).catch(() => {});
+      }
     },
   });
 }
@@ -464,7 +473,33 @@ export function useLogWorkoutSession() {
          the one that puts a figure up. See `app/log-workout.tsx`. */
       return { records, id: (inserted?.id as string | undefined) ?? null };
     },
-    onSuccess: () => invalidate(),
+    onSuccess: (data, variables) => {
+      invalidate();
+      /*
+        P0-1 (DE-XUAT-2): write the session back to Apple Health.
+        Fire-and-forget — the function swallows its own errors.
+
+        Timing: HealthKit wants a real interval. Sum the per-set durations
+        the user logged; fall back to 45 min when the session carries no
+        timing (a workout happened — writing it with an estimated window
+        beats not writing it). Backdated sessions anchor on their date.
+      */
+      try {
+        const totalSec = variables.sets.reduce(
+          (sum, s) => sum + (Number(s.durationSec) > 0 ? Number(s.durationSec) : 0),
+          0,
+        );
+        const durationMs = (totalSec > 0 ? totalSec : 45 * 60) * 1000;
+        const end = variables.date && variables.date !== localDateStr()
+          ? new Date(`${variables.date}T12:00:00`)
+          : new Date();
+        const start = new Date(end.getTime() - durationMs);
+        const recordId = data?.id ?? `${user?.id ?? 'anon'}:${Date.now()}`;
+        writeWorkoutToHealth(recordId, start, end).catch(() => {});
+      } catch {
+        /* never break the save flow for a mirror write */
+      }
+    },
   });
 }
 

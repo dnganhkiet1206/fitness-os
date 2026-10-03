@@ -31,6 +31,7 @@ import { useInvalidateToday, useTodaySleep } from '@/hooks/use-today-data';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { writeSleepToHealth } from '@/lib/health';
 import { localDateStr } from '@/lib/local-date';
 import { BOUNDS, plausible, plausibleText } from '@/lib/plausible';
 import { offlineNow } from '@/lib/offline';
@@ -269,6 +270,17 @@ export default function LogSleepSheet() {
         const { error } = await supabase.from('sleep_logs').insert(row);
         if (error) throw error;
       }
+      /*
+        P0-1 (DE-XUAT-2): write the night back to Apple Health as one
+        `asleepCore` sample. Fire-and-forget — the function swallows its
+        own errors, HealthKit is a mirror. Record id is user + bedtime,
+        stable across re-logs of the same night.
+      */
+      writeSleepToHealth(
+        `${user.id}:${bedDate.toISOString()}`,
+        bedDate,
+        wakeDate,
+      ).catch(() => {});
       await recomputeDailyLog(user.id, localDateStr());
     },
     onSuccess: () => {
