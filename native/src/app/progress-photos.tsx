@@ -1,7 +1,7 @@
 import { getLocale } from '@/lib/i18n';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { haptics as Haptics } from '@/lib/haptics';
-import { Camera, ChevronLeft, Plus, Trash2, X } from 'lucide-react-native';
+import { Camera, Check, ChevronLeft, Columns2, Plus, Trash2, X } from 'lucide-react-native';
 import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -40,6 +40,7 @@ import {
   useUploadProgressPhoto,
   type ProgressPhoto,
 } from '@/hooks/use-progress-photos';
+import { useBodyMeasurements, useWeightHistory } from '@/hooks/use-fitness-data';
 
 /*
   ── vì sao màn này không dùng `<Screen>` ──
@@ -94,6 +95,41 @@ export default function ProgressPhotosScreen() {
   const [capturing, setCapturing] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
+  /*
+    P1-7 (DE-XUAT-2): compare mode — pick two photos to see them side by side
+    with the weight/measurement delta between the two dates. Tapping a cell in
+    compare mode toggles selection instead of opening the viewer.
+  */
+  const [comparing, setComparing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const { data: weightHistory } = useWeightHistory(365);
+  const { data: measurements } = useBodyMeasurements();
+
+  const toggleCompare = useCallback(() => {
+    Haptics.selection();
+    setComparing((v) => {
+      if (v) setSelectedIds([]);
+      return !v;
+    });
+  }, []);
+
+  const toggleSelect = useCallback((id: string) => {
+    Haptics.selection();
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : prev.length >= 2 ? prev : [...prev, id],
+    );
+  }, []);
+
+  const selectedPhotos = useMemo((): [ProgressPhoto, ProgressPhoto] | null => {
+    if (selectedIds.length !== 2 || !photos) return null;
+    const byId = new Map(photos.map((p) => [p.id, p]));
+    const a = byId.get(selectedIds[0]);
+    const b = byId.get(selectedIds[1]);
+    if (!a || !b) return null;
+    /* Older first — the "before" is on the left. */
+    return (a.date <= b.date ? [a, b] : [b, a]) as [ProgressPhoto, ProgressPhoto];
+  }, [selectedIds, photos]);
+
   /* `del` (kết quả useMutation) ổn định khi mutation idle — chỉ đổi tham chiếu
      khi trạng thái chuyển (đang xoá/xong), lúc ấy refetch cũng vẽ lại lưới.
      Gọi đúng dạng `del.mutate(` chứ không qua alias: `tools/silent-rollback.mjs`
@@ -145,8 +181,16 @@ export default function ProgressPhotosScreen() {
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: ProgressPhoto }) => <PhotoCell photo={item} onDelete={confirmDelete} />,
-    [confirmDelete],
+    ({ item }: { item: ProgressPhoto }) => (
+      <PhotoCell
+        photo={item}
+        onDelete={confirmDelete}
+        compareMode={comparing}
+        selected={selectedIds.includes(item.id)}
+        onToggleSelect={toggleSelect}
+      />
+    ),
+    [confirmDelete, comparing, selectedIds, toggleSelect],
   );
 
   return (
@@ -170,6 +214,16 @@ export default function ProgressPhotosScreen() {
             {i18n.progressPhotos}
           </Text>
           <View style={styles.pageHeaderRight}>
+            {/* P1-7: compare mode toggle. */}
+            <PressScale
+              accessibilityRole="button"
+              accessibilityLabel={i18n.nPhotoCompare ?? 'Compare'}
+              accessibilityState={{ selected: comparing }}
+              hitSlop={8}
+              style={[styles.addBtn, comparing && styles.compareActive]}
+              onPress={toggleCompare}>
+              <Icon icon={Columns2} size={22} color={comparing ? c.primary : c.mutedForeground} />
+            </PressScale>
             <PressScale
               accessibilityRole="button"
               accessibilityLabel={i18n.a11yAdd}
@@ -252,7 +306,128 @@ export default function ProgressPhotosScreen() {
           }}
         />
       </Modal>
+
+      {/* P1-7: compare sheet — two photos side by side with deltas. */}
+      <CompareSheet
+        photos={selectedPhotos}
+        weightHistory={weightHistory ?? []}
+        measurements={measurements ?? []}
+        onClose={() => {
+          setSelectedIds([]);
+          setComparing(false);
+        }}
+      />
     </View>
+  );
+}
+
+/*
+  P1-7 (DE-XUAT-2): compare sheet.
+
+  Two photos side by side (older on the left), with the weight and waist delta
+  between the two dates. "Nearest reading on or before the photo date" — a
+  photo taken on a day with no weigh-in reads the last known value rather than
+  nothing, which is the honest answer for a body that changes slowly. No reading
+  within 30 days either side of a photo means "no data", not a zero.
+*/
+function nearestOnOrBefore<T extends { date: string }>(rows: T[], date: string): T | null {
+  let best: T | null = null;
+  for (const r of rows) {
+    if (r.date <= date && (best === null || r.date > best.date)) best = r;
+  }
+  return best;
+}
+
+function CompareSheet({
+  photos,
+  weightHistory,
+  measurements,
+  onClose,
+}: {
+  photos: [ProgressPhoto, ProgressPhoto] | null;
+  weightHistory: { date: string; value: number }[];
+  measurements: { date: string; waist_cm: number | null }[];
+  onClose: () => void;
+}) {
+  const c = usePalette();
+  const styles = stylesFor(c);
+  const i18n = useI18n();
+  const { lang } = useAppSettings();
+
+  if (!photos) return null;
+  const [before, after] = photos;
+
+  const wBefore = nearestOnOrBefore(weightHistory, before.date);
+  const wAfter = nearestOnOrBefore(weightHistory, after.date);
+  const mBefore = nearestOnOrBefore(
+    measurements.filter((m) => m.waist_cm != null),
+    before.date,
+  );
+  const mAfter = nearestOnOrBefore(
+    measurements.filter((m) => m.waist_cm != null),
+    after.date,
+  );
+
+  const weightDelta =
+    wBefore && wAfter ? Math.round((wAfter.value - wBefore.value) * 10) / 10 : null;
+  const waistDelta =
+    mBefore?.waist_cm != null && mAfter?.waist_cm != null
+      ? Math.round((mAfter.waist_cm - mBefore.waist_cm) * 10) / 10
+      : null;
+
+  const fmtDate = (d: string) =>
+    parseLocalDate(d).toLocaleDateString(getLocale(lang), {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+  const deltaText = (v: number | null, unit: string) => {
+    if (v === null) return '—';
+    const sign = v > 0 ? '+' : '';
+    return `${sign}${v}${unit}`;
+  };
+
+  return (
+    <Modal visible animationType="slide" onRequestClose={onClose}>
+      <View style={styles.compareRoot}>
+        <View style={styles.compareHeader}>
+          <Text style={styles.compareTitle}>{i18n.nPhotoCompare ?? 'Compare'}</Text>
+          <PressScale
+            accessibilityRole="button"
+            accessibilityLabel={i18n.a11yClose}
+            hitSlop={8}
+            onPress={onClose}>
+            <Icon icon={X} size={22} color={c.primary} />
+          </PressScale>
+        </View>
+        <View style={styles.compareRow}>
+          {photos.map((p) => (
+            <View key={p.id} style={styles.compareCol}>
+              <Image source={{ uri: p.signedUrl, cacheKey: p.id }} style={styles.comparePhoto} contentFit="cover" />
+              <Text style={styles.compareDate}>{fmtDate(p.date)}</Text>
+            </View>
+          ))}
+        </View>
+        <GlassCard style={styles.compareDeltas}>
+          <View style={styles.compareDeltaRow}>
+            <Text style={styles.compareDeltaLabel}>{i18n.nWeight ?? 'Weight'}</Text>
+            <Text style={styles.compareDeltaValue}>
+              {wBefore ? `${wBefore.value}kg` : '—'} → {wAfter ? `${wAfter.value}kg` : '—'}
+              <Text style={styles.compareDeltaDiff}> ({deltaText(weightDelta, 'kg')})</Text>
+            </Text>
+          </View>
+          <View style={styles.compareDeltaRow}>
+            <Text style={styles.compareDeltaLabel}>{i18n.nWaist ?? 'Waist'}</Text>
+            <Text style={styles.compareDeltaValue}>
+              {mBefore?.waist_cm != null ? `${mBefore.waist_cm}cm` : '—'} →{' '}
+              {mAfter?.waist_cm != null ? `${mAfter.waist_cm}cm` : '—'}
+              <Text style={styles.compareDeltaDiff}> ({deltaText(waistDelta, 'cm')})</Text>
+            </Text>
+          </View>
+        </GlassCard>
+      </View>
+    </Modal>
   );
 }
 
@@ -266,9 +441,15 @@ export default function ProgressPhotosScreen() {
 const PhotoCell = memo(function PhotoCell({
   photo,
   onDelete,
+  compareMode,
+  selected,
+  onToggleSelect,
 }: {
   photo: ProgressPhoto;
   onDelete: (id: string, photoUrl: string) => void;
+  compareMode: boolean;
+  selected: boolean;
+  onToggleSelect: (id: string) => void;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
@@ -293,6 +474,11 @@ const PhotoCell = memo(function PhotoCell({
     onDelete(photo.id, photo.photo_url);
   }, [onDelete, photo.id, photo.photo_url]);
 
+  /* P1-7: in compare mode the whole cell is a select toggle. */
+  const onCellPress = useCallback(() => {
+    if (compareMode) onToggleSelect(photo.id);
+  }, [compareMode, onToggleSelect, photo.id]);
+
   return (
     <View style={styles.photoCell}>
       {/*
@@ -306,7 +492,14 @@ const PhotoCell = memo(function PhotoCell({
         nhấn giữ còn lại là lối tắt, và vì nó là BẢN SAO của nút ấy
         nên ẩn khỏi cây trợ năng.
       */}
-      <Pressable accessible={false} tabIndex={-1} onLongPress={onLongPress}>
+      <Pressable
+        accessible={compareMode}
+        accessibilityRole={compareMode ? 'checkbox' : undefined}
+        accessibilityState={compareMode ? { selected } : undefined}
+        accessibilityLabel={compareMode ? `${pose} ${when}` : undefined}
+        tabIndex={-1}
+        onLongPress={compareMode ? undefined : onLongPress}
+        onPress={compareMode ? onCellPress : undefined}>
         {/*
           `expo-image` thay cho RN `Image`:
 
@@ -321,6 +514,12 @@ const PhotoCell = memo(function PhotoCell({
           style={styles.photo}
           contentFit="cover"
         />
+        {/* P1-7: selection badge in compare mode. */}
+        {compareMode && (
+          <View style={[styles.selectBadge, selected && styles.selectBadgeOn]} pointerEvents="none">
+            {selected && <Icon icon={Check} size={16} color="#fff" />}
+          </View>
+        )}
       </Pressable>
       <View style={styles.photoMeta}>
         <Text style={styles.photoPose} numberOfLines={1}>
@@ -498,6 +697,22 @@ const stylesFor = makeStyles((c, m) => ({
   uploadHead: { marginBottom: spacing.stack },
   emptyLoading: { paddingVertical: spacing.xl, alignItems: 'center' },
   addBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center' },
+  /* P1-7: compare mode active state. */
+  compareActive: { backgroundColor: c.primary },
+  selectBadge: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectBadgeOn: { backgroundColor: c.primary, borderColor: c.primary },
   addBtnText: { fontSize: 22, color: c.primary, lineHeight: 26 },
   uploadingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   uploadingText: { ...type.footnote, color: c.mutedForeground },
@@ -531,6 +746,21 @@ const stylesFor = makeStyles((c, m) => ({
   shutterRow: { position: 'absolute', left: 0, right: 0, alignItems: 'center' },
   shutter: { width: 74, height: 74, borderRadius: 37, borderWidth: 4, borderColor: '#fff', alignItems: 'center', justifyContent: 'center' },
   shutterInner: { width: 58, height: 58, borderRadius: 29, backgroundColor: '#fff' },
+  /*
+    P1-7: compare sheet styles.
+  */
+  compareRoot: { flex: 1, backgroundColor: c.background, paddingTop: 60, paddingHorizontal: spacing.md, gap: spacing.md },
+  compareHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  compareTitle: { ...type.title, color: c.foreground },
+  compareRow: { flexDirection: 'row', gap: spacing.sm },
+  compareCol: { flex: 1, gap: spacing.xs },
+  comparePhoto: { width: '100%', aspectRatio: 0.8, borderRadius: radius.md, backgroundColor: c.secondary },
+  compareDate: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
+  compareDeltas: { gap: spacing.sm },
+  compareDeltaRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
+  compareDeltaLabel: { ...type.headline, color: c.foreground },
+  compareDeltaValue: { ...type.body, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  compareDeltaDiff: { ...type.body, color: c.primary, fontWeight: '600' },
 }));
 
 const headerStylesFor = makeMaterialStyles((m) => ({

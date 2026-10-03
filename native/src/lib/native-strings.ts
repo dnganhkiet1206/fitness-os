@@ -52,6 +52,7 @@ const en = {
 
   // Progress
   nWeight: 'Weight',
+  nWaist: 'Waist',
   nLast30d: 'Last 30 days',
   nNotEnoughData: 'Not enough data yet',
 
@@ -865,6 +866,7 @@ const en = {
   nPhotoUploading: 'Uploading…',
   nPhotoDelete: 'Delete photo?',
   nPhotoAdd: 'Add progress photo',
+  nPhotoCompare: 'Compare',
 
   // Today's diary — collapsed meal cards + quick stats
   nDiaryItems: '{n} {n:item|items}',
@@ -1184,6 +1186,7 @@ const vi: typeof en = {
   nNoWorkouts: 'Chưa có buổi tập nào',
 
   nWeight: 'Cân nặng',
+  nWaist: 'Vòng eo',
   nLast30d: '30 ngày qua',
   nNotEnoughData: 'Chưa đủ dữ liệu',
 
@@ -1912,6 +1915,7 @@ const vi: typeof en = {
   nPhotoUploading: 'Đang tải lên…',
   nPhotoDelete: 'Xoá ảnh?',
   nPhotoAdd: 'Thêm ảnh tiến trình',
+  nPhotoCompare: 'So sánh',
 
   // Today's diary — collapsed meal cards + quick stats
   nDiaryItems: '{n} món',
