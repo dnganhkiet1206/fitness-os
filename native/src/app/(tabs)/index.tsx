@@ -1857,6 +1857,16 @@ export default function TodayScreen() {
               Phần tương phản cho chữ ở khúc dưới vốn dĩ là của LỚP PHỦ, không
               phải của blur — và lớp phủ vẫn `absoluteFill` như cũ.
             */}
+            {/*
+              Web: `@react-native-masked-view` trên web vẽ `maskElement` thành
+              view THƯỜNG và bỏ hẳn nội dung — tức là không có blur, chỉ có
+              chính cái mặt nạ, mà `maskBody` là trắng đặc. Ở bản tối nó thành
+              một tấm xám phủ nửa dưới màn, làm thẻ "Cần làm hôm nay" trông như
+              bị vô hiệu hoá (#162). `status-scrim.tsx` đã chặn đúng chỗ này
+              bằng `Platform.OS`; lớp phủ bên dưới vẫn chạy nên chữ vẫn đủ
+              tương phản.
+            */}
+            {Platform.OS !== 'web' ? (
             <MaskedView
               style={[styles.sheetGlass, { height: SCRIM_FADE + cover + GLASS_TAIL }]}
               maskElement={
@@ -1912,6 +1922,7 @@ export default function TodayScreen() {
               }>
               <BlurView intensity={SHEET_BLUR} tint={m.aura.blurTint} style={StyleSheet.absoluteFill} />
             </MaskedView>
+            ) : null}
             {/*
               Lớp phủ, và nó ĐI VỀ PHÍA NỀN CỦA THEME — không phải về phía đen.
 

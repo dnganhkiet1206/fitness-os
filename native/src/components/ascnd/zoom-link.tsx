@@ -1,7 +1,8 @@
 import { Link, type Href } from 'expo-router';
-import type { ReactNode } from 'react';
+import { cloneElement, type ReactElement } from 'react';
+import { Platform } from 'react-native';
 import { useReducedMotion } from '@/hooks/use-reduced-motion';
-import { navKey } from '@/lib/nav';
+import { nav, navKey } from '@/lib/nav';
 import { request } from '@/lib/nav-guard';
 
 /**
@@ -27,7 +28,8 @@ import { request } from '@/lib/nav-guard';
  *
  * Bật Reduce Motion thì không zoom: render con trần, điều hướng vẫn qua chốt
  * như thường. Trên web/Android `Link.AppleZoom` tự thành `Slot` (expo-router
- * chỉ bật zoom khi `EXPO_OS === 'ios'`), nên không cần rẽ nhánh theo nền tảng.
+ * chỉ bật zoom khi `EXPO_OS === 'ios'`); ngoài iOS component này không dùng
+ * `<Link>` nữa — xem chỗ rẽ nhánh.
  *
  * ── a11y ──
  *
@@ -42,8 +44,19 @@ import { request } from '@/lib/nav-guard';
  * `Slot` của Radix nối các `onPress` (con trước, cha sau), nên cả hiệu ứng
  * nhấn của nút lẫn chốt lẫn điều hướng đều chạy.
  */
-export function ZoomLink({ href, children }: { href: Href; children: ReactNode }) {
+export function ZoomLink({ href, children }: { href: Href; children: ReactElement<{ onPress?: () => void }> }) {
   const reduceMotion = useReducedMotion();
+  /*
+    Ngoài iOS không có zoom nào để giữ, nên cũng không bọc `<Link>`: gắn
+    `nav.push` lên chính nút con, đúng như trước #216.
+
+    Không phải chỉ cho gọn. Trên web `Link asChild` biến CẢ thẻ thành `<a>`,
+    và cú click của một nút BÊN TRONG thẻ (Thích, Lưu) nổi bọt lên thẻ `<a>`
+    ấy: bấm Thích trên feed là mở luôn bài viết (đo trên bản web 03/10, A).
+    Trên native thì không, vì hệ responder trao cú chạm cho nút con trong
+    cùng.
+  */
+  if (Platform.OS !== 'ios') return cloneElement(children, { onPress: () => nav.push(href) });
   return (
     <Link
       href={href}

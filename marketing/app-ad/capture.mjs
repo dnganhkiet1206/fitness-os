@@ -63,19 +63,6 @@ async function open(route) {
   await page.waitForTimeout(Number(process.env.SETTLE || 9000));
   /* Thanh tab chỉ có trên bản web (bộ đo) — iOS dùng thanh tab gốc của hệ thống, web không vẽ được. Ẩn nó. */
   await page.addStyleTag({ content: '#harness-tabs{display:none!important}' });
-  /* Mí mắt chớp của Koa trong phòng (koa-scene.ts, rx 19 · ry 25 tại cx 82/158): trên web mọi lớp
-     chuyển động của hình giữ khung t=0 mà KHÔNG có phép co scaleY(0) (koa-figure.tsx), nên mí phủ kín
-     mắt suốt. Trên iPhone mí chỉ phủ xuống lúc chớp. Ẩn đúng bốn elip ấy, không đụng gì khác. */
-  await page.evaluate(() => {
-    for (const e of document.querySelectorAll('ellipse')) {
-      if (e.getAttribute('rx') === '19' && e.getAttribute('ry') === '25' && ['82', '158'].includes(e.getAttribute('cx'))) e.style.opacity = '0';
-    }
-    /* Koa đồng hành nhỏ (vector-mascot.tsx): mí là ô màu lông #9fb0b2, cùng lỗi scaleY trên web. */
-    for (const el of document.querySelectorAll('div')) {
-      const r = el.getBoundingClientRect();
-      if (getComputedStyle(el).backgroundColor === 'rgb(159, 176, 178)' && r.width > 2 && r.width < 40 && r.height < 40) el.style.opacity = '0';
-    }
-  });
   await page.waitForTimeout(600);
   return { ctx, page };
 }

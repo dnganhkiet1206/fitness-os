@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, View } from 'react-native';
+import { AppState, Platform, View } from 'react-native';
 import Animated, {
   useAnimatedProps,
   useDerivedValue,
@@ -333,8 +333,27 @@ function AnimGroup({
     if (!op || op.length === 0) return { matrix };
     return { matrix, opacity: sampleOp(op, t, anim.ease) };
   });
+  // Web: `react-native-svg`'s web renderer drops the animated `matrix`, so
+  // without this the layer falls back to the IDENTITY matrix — not to its t=0
+  // frame. For most layers the two are the same; for the eyelids they are
+  // opposite: t=0 is `scaleY(0)` (open), identity is the full lid (shut), and
+  // Koa looked asleep on every web screen (#162). The same frame the frozen
+  // branch draws, as a plain attribute. Native only ever reads `animatedProps`
+  // — a static `transform` there would be re-applied on every React render
+  // and snap the layer to t=0 for a frame.
+  const still = useMemo(() => {
+    if (Platform.OS !== 'web') return null;
+    const early = delay > 0;
+    const m = mul(
+      baseM,
+      early ? opsMat(over, ox, oy) : tf && tf.length > 0 ? sampleMat(tf, 0, anim.ease, ox, oy) : IDENTITY,
+    );
+    const o: { opacity?: number } =
+      op && op.length > 0 ? { opacity: early ? ownOpacity : sampleOp(op, 0, anim.ease) } : {};
+    return { ...o, transform: `matrix(${m.join(' ')})` };
+  }, [baseM, over, ox, oy, tf, op, delay, anim.ease, ownOpacity]);
   return (
-    <AnimatedG {...gProps} animatedProps={props}>
+    <AnimatedG {...gProps} {...still} animatedProps={props}>
       {children}
     </AnimatedG>
   );

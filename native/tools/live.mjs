@@ -2269,6 +2269,100 @@ const SCENARIOS = [
   })),
   {
     /*
+      #216 đưa thẻ bài và cụm tác giả qua `ZoomLink` (`<Link asChild>` để có
+      zoom gốc iOS 18). Trên web `Link asChild` biến CẢ thẻ thành `<a>`, và cú
+      click của nút Thích bên trong nổi bọt lên đó: bấm Thích trên feed là mở
+      luôn bài viết. Native không bị (hệ responder trao chạm cho nút trong
+      cùng), nhưng mọi phép đo của bộ chạy này đi qua web.
+        (A) bấm Thích ở thẻ đầu: vẫn ở /community, nút thành "đã thích";
+        (B) bấm vào thân thẻ: mở đúng bài ấy (lối mở bài không bị mất).
+    */
+    name: 'Feed: bấm Thích trên thẻ không mở bài, bấm thân thẻ thì mở (#216)',
+    route: '/community', mode: 'full',
+    async run(page) {
+      const like = page.locator('[aria-label^="Like"]').filter({ visible: true }).first();
+      await like.waitFor({ timeout: 8000 });
+      const label = await like.getAttribute('aria-label');
+      await like.click();
+      await page.waitForTimeout(1500);
+      const url = new URL(page.url());
+      if (url.pathname !== '/community') return `(A) bấm Thích mà rời feed sang ${url.pathname}${url.search}`;
+      const after = await page.locator('[aria-label^="Like"], [aria-label^="Unlike"], [aria-label^="Liked"]').filter({ visible: true }).first().getAttribute('aria-label');
+      if (after === label) return `(A) bấm Thích mà nút không đổi: vẫn "${label}"`;
+      await page.getByText('Push Day', { exact: true }).first().click();
+      for (let i = 0; i < 16 && !page.url().includes('/community-post'); i++) await page.waitForTimeout(250);
+      if (!page.url().includes('/community-post?id=')) return `(B) bấm thân thẻ không mở bài: ${page.url()}`;
+      return null;
+    },
+  },
+  {
+    /*
+      #162 (ý phụ): Hôm nay ở bản TỐI có một tấm xám phủ nửa dưới — thẻ "Cần
+      làm hôm nay" trông như bị vô hiệu hoá. Nguyên nhân: trên web
+      `@react-native-masked-view` vẽ `maskElement` thành view thường và bỏ nội
+      dung, nên mặt nạ trắng đặc của lớp kính hiện ra nguyên hình. Bản tối
+      không có mặt nào là trắng đặc; một khối trắng lớn ở đây là mặt nạ lọt ra.
+      Thanh tab của bộ đo (`#harness-tabs`) không phải của app, được bỏ qua.
+    */
+    name: 'Hôm nay bản tối: không tấm trắng đặc nào lọt ra từ mặt nạ của lớp kính (#162)',
+    route: '/', mode: 'full',
+    async run(page) {
+      await page.evaluate(() => localStorage.setItem('ascnd_theme', 'dark'));
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      let bad = null;
+      for (let i = 0; i < 12; i++) {
+        await page.waitForTimeout(500);
+        bad = await page.evaluate(() => {
+          const vh = window.innerHeight;
+          const harness = document.getElementById('harness-tabs');
+          return window.__shown('div').filter((d) => {
+            if (harness && harness.contains(d)) return false;
+            if (getComputedStyle(d).backgroundColor !== 'rgb(255, 255, 255)') return false;
+            const r = d.getBoundingClientRect();
+            const h = Math.min(r.bottom, vh) - Math.max(r.top, 0);
+            return h > 0 && r.width * h > 20000;
+          }).map((d) => { const r = d.getBoundingClientRect(); return `${Math.round(r.width)}×${Math.round(r.height)} @y${Math.round(r.top)}`; });
+        });
+        if (bad.length) break;
+      }
+      if (bad.length) return `bản tối có ${bad.length} khối trắng đặc trên màn: ${bad.slice(0, 3).join(', ')}`;
+      return null;
+    },
+  },
+  {
+    /*
+      #162: trên web `react-native-svg` bỏ `matrix` động, nên mỗi lớp chuyển
+      động của Koa rơi về ma trận ĐƠN VỊ chứ không phải khung t=0. Với mí mắt hai
+      thứ ấy ngược nhau: t=0 là `scaleY(0)` (mở), đơn vị là cả mí (nhắm) — Koa
+      nhắm mắt trên mọi màn web, và video quảng cáo phải tự ẩn mí khi chụp.
+      Buổi sáng đã ăn mà chưa tập → biểu cảm `happy`, mắt mở. Bốn elip mí
+      (rx 19 · ry 25) phải co gần như phẳng; đo ra 50 px là mí phủ kín mắt.
+    */
+    name: 'Phòng Koa: mí mắt ở khung t=0 là MỞ trên web, không phủ kín mắt (#162)',
+    route: '/mascot-room', mode: 'full',
+    async run(page, { world }) {
+      const mine = world.daily_logs.filter((d) => d.user_id === UID);
+      const last = mine.reduce((a, b) => (String(a.date) > String(b.date) ? a : b));
+      last.workout_count = 0;
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      const measure = () => page.evaluate(() =>
+        window.__shown('ellipse')
+          .filter((e) => e.getAttribute('rx') === '19' && e.getAttribute('ry') === '25')
+          .map((e) => Math.round(e.getBoundingClientRect().height * 10) / 10));
+      let lids = [];
+      for (let i = 0; i < 24 && lids.length === 0; i++) {
+        await page.waitForTimeout(250);
+        lids = await measure();
+      }
+      if (lids.length === 0) return 'không tìm thấy elip mí mắt nào của Koa (rx 19 · ry 25) — hình đã đổi, cập nhật kịch bản';
+      const shut = lids.filter((h) => h > 4);
+      if (shut.length) return `mí mắt phủ mắt Koa ở khung t=0: cao ${lids.join(' / ')} px (mở thì ≈ 1 px)`;
+      return null;
+    },
+  },
+  {
+    /*
       #173 (chủ dự án chọn hướng 2): bài có 60 bình luận, câu MỚI NHẤT là câu
       trả lời cho câu CŨ NHẤT. Trang đầu (50 câu mới nhất) có câu trả lời mà
       không có gốc — trước #173 nó vẽ như một bình luận gốc trần.

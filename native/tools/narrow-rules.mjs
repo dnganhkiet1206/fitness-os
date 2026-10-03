@@ -22,6 +22,7 @@ const problems = [];
 
 /* [chữ, loại phải ra, vì sao]. Chuỗi app dùng ở đây phải còn trong từ điển —
    xem vế "còn trong từ điển" bên dưới. */
+const JSX_CASE = 'Apple Health';
 const CASES = [
   /* #87: `{n} ngày trước` là chỗ trống DUY NHẤT, ở đầu. `^.+ ngày trước$` khớp
      mọi chú thích tận cùng bằng " ngày trước". */
@@ -47,8 +48,10 @@ const CASES = [
   ['chưa ghi buổi tập', 'full', 'chữ viết thẳng `vi ? … : …` của đồng hồ sẵn sàng là chữ của app (#94)'],
   ['no workout logged', 'full', 'nhánh tiếng Anh của cùng điều kiện ấy là chữ của app (#94)'],
   ['Chưa ghi giấc ngủ. Nhấn để ghi.', 'full', 'chuỗi của i18n.ts là chữ của app (#94)'],
-  /* #109: chữ JSX viết thẳng, một ngôn ngữ. */
-  ['Language / Ngôn ngữ', 'full', 'chữ JSX viết thẳng (<Text>…</Text>) là chữ của app (#109)'],
+  /* #109: chữ JSX viết thẳng, một ngôn ngữ. Từng là "Language / Ngôn ngữ" —
+     `17db63f` chuyển chuỗi ấy sang i18n nên nó thôi là chữ JSX. Tên thương
+     hiệu thì không ai dịch, nên ca này đứng được lâu. */
+  [JSX_CASE, 'full', 'chữ JSX viết thẳng (<Text>…</Text>) là chữ của app (#109)'],
 ];
 
 for (const [text, want, why] of CASES) {
@@ -82,7 +85,9 @@ for (const s of ['buổi tập', 'Chỉ người theo dõi', 'vừa xong', '{n} 
   const noJsx = allAppCopy({ jsxText: false });
   const f = copyPatterns(noJsx).map((s) => new RegExp(s));
   const t = tailPatterns(noJsx).map((s) => new RegExp(s));
-  if (cutKind('Language / Ngôn ngữ', f, t) !== null) problems.push('thử ngược hỏng: "Language / Ngôn ngữ" khớp cả khi bỏ chữ JSX — ca #109 không đo gì');
+  if (!allAppCopy({ jsxText: true }).includes(JSX_CASE) || noJsx.includes(JSX_CASE)) {
+    problems.push(`ca #109: "${JSX_CASE}" không còn là chữ JSX viết thẳng của app (đã vào i18n hoặc bị xoá) — chọn một chữ JSX viết thẳng khác cho ca tự kiểm`);
+  } else if (cutKind(JSX_CASE, f, t) !== null) problems.push(`thử ngược hỏng: "${JSX_CASE}" khớp cả khi bỏ chữ JSX — ca #109 không đo gì`);
 }
 
 /* Thử ngược #94: với từ điển CŨ (chỉ native-strings.ts), ba ca #94 phải ra
