@@ -2076,8 +2076,9 @@ const SCENARIOS = [
         (A) thẻ nói vì sao: "3 people reported this · mostly: spam", và có nút
             "Request a review";
         (B) không lộ ai báo cáo: tên của ba người báo không có trên màn;
-        (C) chạm → đúng MỘT lời gọi `community_request_review` mang đúng
-            `p_post_id`; nút thành dòng "Review requested…", không còn nút;
+        (C) gõ lời nhắn rồi chạm → đúng MỘT lời gọi `community_appeal` (từ
+            03/10: kháng nghị kèm lời nhắn) mang đúng `p_post_id` VÀ đúng lời
+            nhắn; nút thành dòng "Review requested…", không còn nút;
         (D) tải lại (xoá cache) → vẫn "Review requested" — trạng thái của
             SERVER, không phải của lần bấm;
         (E) bình luận: một bình luận ẩn của mình và một của Linh trên bài 2 —
@@ -2088,7 +2089,7 @@ const SCENARIOS = [
     async run(page, { world }) {
       const calls = [];
       page.on('request', (q) => {
-        if (/\/rest\/v1\/rpc\/community_request_review/.test(q.url())) calls.push(q.postData() ?? '');
+        if (/\/rest\/v1\/rpc\/community_appeal/.test(q.url())) calls.push(q.postData() ?? '');
       });
       const has = (t) => page.evaluate((t) => window.__shown('*').some((e) => e.children.length === 0 && (e.textContent ?? '').trim() === t), t);
       const text = () => page.evaluate(() => window.__shown('*').filter((e) => e.children.length === 0).map((e) => e.textContent ?? '').join(' | '));
@@ -2102,13 +2103,17 @@ const SCENARIOS = [
       const all = await text();
       for (const who of ['Linh Phạm', 'linh.pham', 'Tuấn Nguyễn', 'tuan.ng']) if (all.includes(who)) return `(B) lộ người báo cáo: "${who}" có trên màn`;
 
+      const note = page.getByPlaceholder('Add a note for the reviewer (optional)').filter({ visible: true });
+      if ((await note.count()) !== 1) return '(C) không có ô lời nhắn cho người xem lại';
+      await note.fill('Buổi tập thật, có video');
       await ask().first().click();
       const sent = 'Review requested — it stays hidden until then';
       for (let i = 0; i < 24 && !(await has(sent)); i++) await page.waitForTimeout(250);
       if (!(await has(sent))) return '(C) gửi xong mà không thành dòng "Review requested"';
       if (await ask().count()) return '(C) gửi xong mà nút vẫn còn';
-      if (calls.length !== 1) return `(C) ${calls.length} lời gọi community_request_review, phải đúng một`;
+      if (calls.length !== 1) return `(C) ${calls.length} lời gọi community_appeal, phải đúng một`;
       if (JSON.parse(calls[0] || '{}').p_post_id !== 'cp000000-0000-4000-8000-000000000026') return `(C) lời gọi mang sai đích: ${calls[0]}`;
+      if (JSON.parse(calls[0] || '{}').p_message !== 'Buổi tập thật, có video') return `(C) lời nhắn không đi theo: ${calls[0]}`;
       if ((world.community_review_requests ?? []).length !== 1) return '(C) thế giới không ghi yêu cầu nào';
 
       await freshCache(page);
