@@ -40,6 +40,7 @@ export const MASCOTS: MascotDef[] = [
     tagline: {
       vi: 'Bạn đồng hành chăm chỉ, hơi buồn ngủ',
       en: 'Your diligent, slightly sleepy companion',
+      es: 'Tu compañero diligente, un poco soñoliento',
     },
   },
   {
@@ -50,11 +51,12 @@ export const MASCOTS: MascotDef[] = [
     tagline: {
       vi: 'Máu lửa — không bỏ lỡ buổi tập nào',
       en: 'Fiery — never misses a session',
+      es: 'Lleno de energía: no se pierde ningún entrenamiento',
     },
     unlock: {
       kind: 'workouts',
       count: 10,
-      label: { vi: 'Ghi 10 buổi tập', en: 'Log 10 workouts' },
+      label: { vi: 'Ghi 10 buổi tập', en: 'Log 10 workouts', es: 'Registra 10 entrenamientos' },
     },
   },
   {
@@ -65,11 +67,12 @@ export const MASCOTS: MascotDef[] = [
     tagline: {
       vi: 'Tinh ranh về dinh dưỡng',
       en: 'Sharp about nutrition',
+      es: 'Experto en nutrición',
     },
     unlock: {
       kind: 'meals',
       count: 25,
-      label: { vi: 'Ghi 25 bữa ăn', en: 'Log 25 meals' },
+      label: { vi: 'Ghi 25 bữa ăn', en: 'Log 25 meals', es: 'Registra 25 comidas' },
     },
   },
   {
@@ -80,11 +83,12 @@ export const MASCOTS: MascotDef[] = [
     tagline: {
       vi: 'Sức mạnh thuần khiết',
       en: 'Pure strength',
+      es: 'Fuerza pura',
     },
     unlock: {
       kind: 'workouts',
       count: 30,
-      label: { vi: 'Ghi 30 buổi tập', en: 'Log 30 workouts' },
+      label: { vi: 'Ghi 30 buổi tập', en: 'Log 30 workouts', es: 'Registra 30 entrenamientos' },
     },
   },
   {
@@ -95,6 +99,7 @@ export const MASCOTS: MascotDef[] = [
     tagline: {
       vi: 'Huyền thoại — sắp ra mắt',
       en: 'Legendary — coming soon',
+      es: 'Legendario: próximamente',
     },
     pro: true,
   },
@@ -106,6 +111,7 @@ export const MASCOTS: MascotDef[] = [
     tagline: {
       vi: 'Hiếm có — sắp ra mắt',
       en: 'Rare — coming soon',
+      es: 'Raro: próximamente',
     },
     pro: true,
   },

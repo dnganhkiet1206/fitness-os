@@ -9,17 +9,19 @@ import type { AppLang } from '@/lib/i18n';
  * stored prose fall through unchanged.
  */
 
-type Bi = { en: string; vi: string };
+type Bi = { en: string; vi: string; es: string };
 
 /** recommendation branch → localized copy */
 export const READINESS_RECO: Record<string, Bi> = {
   green_optimal: {
     en: 'Train as planned — push the top set + backoff sets.',
     vi: 'Tập theo kế hoạch — đẩy top set + backoff sets.',
+    es: 'Entrena según lo planeado: sube la serie principal + las series de descarga.',
   },
   green_watch: {
     en: 'Ready to train. Watch the volume — ACWR is a bit high.',
     vi: 'Sẵn sàng tập. Theo dõi khối lượng — ACWR hơi cao.',
+    es: 'Listo para entrenar. Vigila el volumen: el ACWR está un poco alto.',
   },
   /* Green with no ACWR at all. `green_watch` used to answer this case and told
      people their ratio was high when none had been computed — see the branch
@@ -28,14 +30,17 @@ export const READINESS_RECO: Record<string, Bi> = {
   green_no_load: {
     en: 'Ready to train. No sessions yet to compute ACWR — add volume gradually.',
     vi: 'Sẵn sàng tập. Chưa có buổi tập nào để tính ACWR — tăng khối lượng từ từ.',
+    es: 'Listo para entrenar. Aún no hay sesiones para calcular el ACWR: aumenta el volumen poco a poco.',
   },
   yellow_sleep: {
     en: 'Keep the intensity, cut total sets by 15%. Prioritize sleep tonight.',
     vi: 'Giữ cường độ, giảm 15% tổng sets. Ưu tiên ngủ tối nay.',
+    es: 'Mantén la intensidad, reduce las series totales un 15%. Prioriza el sueño esta noche.',
   },
   yellow_reduce: {
     en: 'Reduce volume 5–10%. Focus on technique and recovery.',
     vi: 'Giảm volume 5–10%. Tập trung kỹ thuật và phục hồi.',
+    es: 'Reduce el volumen un 5–10%. Enfócate en la técnica y la recuperación.',
   },
   /* Red where the only thing measured was training load. `red_recover` used to
      answer this too and prescribed active recovery to somebody whose sleep,
@@ -48,50 +53,54 @@ export const READINESS_RECO: Record<string, Bi> = {
   red_load_only: {
     en: 'Low from training load, not recovery. Steer volume back toward your usual, and log sleep for a fuller reading.',
     vi: 'Điểm thấp do tải tập, không phải do phục hồi. Đưa khối lượng về gần thói quen, và ghi giấc ngủ để có thêm cơ sở.',
+    es: 'Bajo por la carga de entrenamiento, no por la recuperación. Vuelve el volumen hacia tu nivel habitual y registra el sueño para una lectura más completa.',
   },
   red_rest: {
     en: 'Better to rest. Light cardio, 20–30 min max.',
     vi: 'Nên nghỉ ngơi. Cardio nhẹ tối đa 20–30 phút.',
+    es: 'Mejor descansar. Cardio ligero, 20–30 min como máximo.',
   },
   red_recover: {
     en: 'Active recovery only — zone 2, mobility, breathing.',
     vi: 'Chỉ phục hồi tích cực — zone 2, mobility, thở.',
+    es: 'Solo recuperación activa: zona 2, movilidad, respiración.',
   },
   listen: {
     en: 'Listen to your body. Move lightly if you feel up to it.',
     vi: 'Lắng nghe cơ thể. Vận động nhẹ nếu cảm thấy ổn.',
+    es: 'Escucha a tu cuerpo. Muévete con suavidad si te sientes con ganas.',
   },
 };
 
 /** factor key → localized short label */
 const FACTOR_LABEL: Record<string, Bi> = {
-  hrv: { en: 'HRV', vi: 'HRV' },
-  rhr: { en: 'Resting HR', vi: 'Nhịp tim nghỉ' },
-  sleep: { en: 'Sleep', vi: 'Giấc ngủ' },
-  load: { en: 'Training load', vi: 'Tải tập' },
+  hrv: { en: 'HRV', vi: 'HRV', es: 'HRV' },
+  rhr: { en: 'Resting HR', vi: 'Nhịp tim nghỉ', es: 'FC en reposo' },
+  sleep: { en: 'Sleep', vi: 'Giấc ngủ', es: 'Sueño' },
+  load: { en: 'Training load', vi: 'Tải tập', es: 'Carga de entrenamiento' },
 };
 
 /** factor key → impact term per score bucket (low <40 / mid / high >70) */
 const FACTOR_IMPACT: Record<string, { low: Bi; mid: Bi; high: Bi }> = {
   hrv: {
-    low: { en: 'low', vi: 'thấp' },
-    mid: { en: 'moderate', vi: 'trung bình' },
-    high: { en: 'good', vi: 'tốt' },
+    low: { en: 'low', vi: 'thấp', es: 'baja' },
+    mid: { en: 'moderate', vi: 'trung bình', es: 'moderada' },
+    high: { en: 'good', vi: 'tốt', es: 'buena' },
   },
   rhr: {
-    low: { en: 'high', vi: 'cao' },
-    mid: { en: 'moderate', vi: 'trung bình' },
-    high: { en: 'good', vi: 'tốt' },
+    low: { en: 'high', vi: 'cao', es: 'alta' },
+    mid: { en: 'moderate', vi: 'trung bình', es: 'moderada' },
+    high: { en: 'good', vi: 'tốt', es: 'buena' },
   },
   sleep: {
-    low: { en: 'poor', vi: 'kém' },
-    mid: { en: 'moderate', vi: 'trung bình' },
-    high: { en: 'good', vi: 'tốt' },
+    low: { en: 'poor', vi: 'kém', es: 'malo' },
+    mid: { en: 'moderate', vi: 'trung bình', es: 'moderado' },
+    high: { en: 'good', vi: 'tốt', es: 'bueno' },
   },
   load: {
-    low: { en: 'overreaching', vi: 'quá tải' },
-    mid: { en: 'moderate', vi: 'trung bình' },
-    high: { en: 'optimal', vi: 'tối ưu' },
+    low: { en: 'overreaching', vi: 'quá tải', es: 'sobrecarga' },
+    mid: { en: 'moderate', vi: 'trung bình', es: 'moderada' },
+    high: { en: 'optimal', vi: 'tối ưu', es: 'óptima' },
   },
 };
 

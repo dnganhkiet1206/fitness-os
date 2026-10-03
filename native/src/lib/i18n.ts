@@ -1,4 +1,4 @@
-export type AppLang = 'vi' | 'en';
+export type AppLang = 'vi' | 'en' | 'es';
 export type CurrencyCode = 'VND' | 'USD' | 'EUR' | 'GBP' | 'KRW';
 
 export const CURRENCIES: { code: CurrencyCode; symbol: string; label: string }[] = [
@@ -12,6 +12,7 @@ export const CURRENCIES: { code: CurrencyCode; symbol: string; label: string }[]
 export const LANGUAGES: { code: AppLang; label: string; flag: string }[] = [
   { code: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
   { code: 'en', label: 'English', flag: '🇺🇸' },
+  { code: 'es', label: 'Español', flag: '🇪🇸' },
 ];
 
 export function formatPrice(value: number, currency: CurrencyCode): string {
@@ -23,7 +24,7 @@ export function formatPrice(value: number, currency: CurrencyCode): string {
 }
 
 export function getLocale(lang: AppLang): string {
-  const map: Record<AppLang, string> = { vi: 'vi-VN', en: 'en-US' };
+  const map: Record<AppLang, string> = { vi: 'vi-VN', en: 'en-US', es: 'es-ES' };
   return map[lang];
 }
 
@@ -509,6 +510,501 @@ interface Translations {
   // Steps
   stepsGoal: string;
 }
+
+/* Từ điển tiếng Tây Ban Nha (es).
+   ĐẶT Ở ĐÂY (ngay trước dict vi), KHÔNG di chuyển: gate `native/tools/i18n.mjs`
+   đọc block từ điển bằng cách cắt từ marker vi đến marker en và từ marker en
+   đến hết file — nếu dict es nằm giữa vi/en hoặc sau en, gate sẽ đọc nhầm
+   block và báo sai. Khi thêm key mới, thêm vào cả ba dict vi/en/es. */
+const es: Translations = {
+  // Common
+  loading: 'Cargando...',
+  save: 'Guardar',
+  saving: 'Guardando...',
+  cancel: 'Cancelar',
+  delete: 'Eliminar',
+  deleted: 'Eliminado',
+  add: 'Añadir',
+  edit: 'Editar',
+  close: 'Cerrar',
+  search: 'Buscar',
+  back: 'Atrás',
+  next: 'Siguiente',
+  previous: 'Anterior',
+  confirm: 'Confirmar',
+  error: 'Error',
+  success: 'Éxito',
+  noData: 'Sin datos todavía',
+  today: 'Hoy',
+  target: 'Objetivo',
+  all: 'Todo',
+  other: 'Otro',
+  settings: 'Ajustes',
+
+  // Auth
+  authForgotPassword: '¿Olvidaste tu contraseña?',
+  authResetPassword: 'Restablecer contraseña',
+  authResetSent: '¡Revisa tu correo para restablecer tu contraseña!',
+  authBackToLogin: 'Volver al inicio de sesión',
+
+  // Sidebar / Nav
+  navToday: 'Hoy',
+  navNutrition: 'Nutrición',
+  navWorkouts: 'Entrenamientos',
+  navProgress: 'Progreso',
+  navSmartGoals: 'Calibración de objetivos',
+
+  // Dashboard
+  dashReadiness: 'Preparación',
+  /* Bốn nhận xét, mỗi cái đứng trên HAI con số cùng lúc — xem các mục tiếng
+     Việt. Không cái nào chẩn đoán gì. */
+  sleepNoteAlignedGood: 'Horas suficientes y te sentiste bien — ambas coinciden.',
+  sleepNoteAlignedPoor:
+    '{short} {short:minute|minutes} menos de tu objetivo, y lo notaste — ambas coinciden. Acuéstate más temprano esta noche.',
+  sleepNoteFeltWorse:
+    'Horas suficientes, pero aun así te sentiste cansado. La duración no es lo único que hace una buena noche; vale la pena notarlo si se repite.',
+  sleepNoteFeltBetter:
+    'Te sentiste bien, aunque anoche dormiste {short} {short:minute|minutes} menos. La puntuación del sueño se basa en la DURACIÓN, así que sale más baja de lo que sientes.',
+  sleepNoteScoreIsDuration: 'Tu propia valoración de calidad no forma parte de la puntuación — solo genera este comentario.',
+  logSleepReplaceGone:
+    'No se pudo actualizar esta noche — quizá se eliminó en otro dispositivo. Cierra y regístrala de nuevo.',
+  logBioBaselineNote:
+    'La FC en reposo y la HRV se puntúan contra tu propia base, así que se necesitan 5 lecturas en 28 días antes de que aparezcan en la tarjeta de preparación. Ingresarlas a mano cuenta igual que Apple Health — no necesitas reloj.',
+  /* Xem mục tiếng Việt để biết vì sao "3+ days" là ba khẳng định sai trong một
+     dòng. Vẫn ba cánh cửa, vẫn những con số ấy, do `tools/readiness-copy.mjs`
+     đối chiếu với engine và gate. */
+  dashReadinessMsg:
+    'Aún no hay datos suficientes. UNA de estas tres cosas te da una puntuación: un entrenamiento con series registradas, una noche de sueño registrada o 5 lecturas de FC en reposo/HRV en 28 días. Las comidas y las calorías no forman parte de esta puntuación.',
+  dashNutrition: 'Nutrición',
+  dashNutritionMsg: 'No hay comidas registradas hoy. Toca para abrir tu diario.',
+  dashSleep: 'Sueño',
+  dashSleepMsg: 'No hay sueño registrado. Toca para registrarlo.',
+
+  // Workout Status
+  workoutStatusTitle: 'Entrenamientos de hoy',
+  workoutStatusDone: '¡Completado!',
+  workoutStatusNotYet: 'Sin empezar',
+
+  // Settings
+  settingsTitle: 'Ajustes',
+  settingsTheme: 'Apariencia',
+  settingsThemeLight: 'Claro',
+  settingsThemeDark: 'Oscuro',
+  settingsThemeSystem: 'Sistema',
+  settingsPersonalInfo: 'Información personal',
+  settingsName: 'Nombre',
+  settingsDob: 'Fecha de nacimiento',
+  settingsSex: 'Sexo',
+  settingsSexMale: 'Masculino',
+  settingsSexFemale: 'Femenino',
+  settingsSexOther: 'Otro',
+  settingsHeight: 'Estatura',
+  settingsWeight: 'Peso',
+  settingsActivityLevel: 'Nivel de actividad',
+  settingsGoal: 'Objetivo',
+  settingsWaterTarget: 'Objetivo de agua',
+  settingsSleepTarget: 'Objetivo de sueño',
+  settingsSleepHours: 'Horas objetivo',
+  settingsBedtime: 'Hora de acostarse',
+  settingsWakeTime: 'Hora de despertarse',
+  settingsExportData: 'Exportar datos',
+  settingsExportDesc: 'Descarga todos tus datos de peso, nutrición, entrenamientos y sueño.',
+  settingsChangePassword: 'Cambiar contraseña',
+  settingsNewPassword: 'Nueva contraseña',
+  settingsConfirmPassword: 'Confirmar nueva contraseña',
+  settingsPasswordChanged: '¡Contraseña cambiada con éxito!',
+  settingsPasswordMismatch: 'Las contraseñas no coinciden',
+  settingsRecalcTargets: 'Recalcular según mis datos',
+  settingsRecalcDone: 'Objetivos recalculados según tus datos',
+
+  // Activity levels
+  activitySedentary: 'Sedentario',
+  activityLight: 'Ligero',
+  activityModerate: 'Moderado',
+  activityHigh: 'Alto',
+  activityAthlete: 'Atleta',
+  activityFreqSedentary: '0–1 sesiones/sem',
+  activityFreqLight: '1–3 sesiones/sem',
+  activityFreqModerate: '3–5 sesiones/sem',
+  activityFreqHigh: '6–7 sesiones/sem',
+  activityFreqAthlete: 'dos veces al día',
+  activityIncludesTraining:
+    'Esto ya incluye tu entrenamiento, así que la app no suma calorías después de una sesión — hacerlo contaría la misma hora dos veces.',
+
+  // Goals
+  goalBulk: 'Volumen',
+  goalCut: 'Definición',
+  goalMaintain: 'Mantenimiento',
+  goalRecomp: 'Recomposición',
+  goalStrength: 'Fuerza',
+  goalEndurance: 'Resistencia',
+
+  // Nutrition page
+  nutritionTitle: 'Nutrición',
+  nutritionFoods: 'Alimentos',
+  nutritionMealPlan: 'Plan de comidas',
+  nutritionSearchFood: 'Buscar alimentos...',
+  nutritionRecent: 'Recientes',
+  nutritionCreatePlan: 'Crear plan de comidas',
+  nutritionPlanName: 'Nombre del plan',
+  nutritionMealsPerDay: 'Comidas al día',
+
+  // Meal plan
+  mealPlanTitle: 'Plan de comidas',
+  mealBreakfast: 'Desayuno',
+  mealLunch: 'Almuerzo',
+  mealDinner: 'Cena',
+  mealSnack: 'Tentempié',
+  mealType: 'Tipo de comida',
+
+  // Supplements
+  supplementsAddTitle: 'Añadir suplemento',
+  supplementsName: 'Nombre',
+  supplementsDose: 'Dosis',
+  supplementsTiming: 'Momento',
+  supplementsTimMorning: 'Mañana',
+  supplementsTimPreWorkout: 'Preentreno',
+  supplementsTimPostWorkout: 'Postentreno',
+  supplementsTimWithMeal: 'Con la comida',
+  supplementsTimBeforeBed: 'Antes de acostarse',
+
+  // Sleep
+  sleepTitle: 'Sueño — 7 días',
+  sleepAvgQuality: 'Calidad prom.',
+  sleepAvgDeep: 'Profundo prom.',
+  sleepDebt: 'Deuda de sueño',
+  sleepInsights: 'Datos',
+  sleepNoData: 'Sin datos de sueño',
+  sleepNoDataMsg: 'Aún no hay datos de sueño. Regístralo desde el panel.',
+  sleepOk: 'Bien',
+  sleepDeep: 'Profundo',
+
+  // Workouts
+  workoutsTitle: 'Creador de entrenamientos',
+  workoutsExercises: 'Ejercicios',
+  workoutsCreateNew: 'Crear nuevo',
+  workoutsNoTemplates: 'Aún no hay plantillas',
+  workoutsExercisesAdded: 'Ejercicios añadidos',
+  workoutsVolume: 'Volumen',
+
+  // Exercise Library
+  exercisesAdd: 'Añadir ejercicio',
+  exercisesAddTitle: 'Añadir ejercicio',
+  exercisesSearch: 'Buscar ejercicios...',
+  exercisesName: 'Nombre',
+  exercisesMuscleGroup: 'Grupo muscular',
+  exercisesEquipment: 'Equipo',
+  exercisesAddBtn: 'Añadir ejercicio',
+
+  // Progress
+  progressWeight: 'Peso',
+  progressMeasurements: 'Medidas',
+  progressPhotos: 'Fotos de progreso',
+  progressCurrent: 'Actual',
+  progressChange: 'Cambio',
+  progressRecords: 'Récords',
+  progressWeightChart: 'Gráfica de peso',
+  progressMeasurementTrend: 'Tendencia de medidas',
+  progressMeasurementHistory: 'Historial de medidas',
+  progressDeleteMeasurement: '¿Eliminar esta medida?',
+  progressDeleteMeasurementBody: 'Se elimina toda la fila de esta fecha de la tabla y de la gráfica.',
+  progressAddMeasurement: 'Añadir medida',
+  progressDate: 'Fecha',
+  progressNoMeasurements: 'Aún no hay medidas. Toca arriba para empezar a registrar.',
+  progressNoPhotos: 'Aún no hay fotos de progreso',
+  progressSaved: '¡Medidas guardadas!',
+
+  // Biometrics
+  biometricsTitle: 'Biometría',
+  biometricsManual: 'Entrada manual',
+  biometricsNoData: 'Sin datos biométricos',
+  biometricsNoDataMsg: 'Usa la cámara o la entrada manual para empezar a registrar',
+  biometricsHeartRate: 'Frecuencia cardíaca en reposo',
+  biometricsBreathRate: 'Frecuencia respiratoria',
+  biometricsBloodOxygen: 'Oxígeno en sangre',
+  /** đơn vị nhịp thở — "rpm" là vòng/phút của động cơ, không phải hơi thở */
+  biometricsBreathUnit: 'resp/min',
+  biometricsDisclaimer1: 'Los datos biométricos son solo estimaciones y NO tienen precisión clínica ni médica. No los uses para diagnóstico ni tratamiento.',
+
+  // Log Biometrics Dialog
+  logBioTitle: 'Ingresar biometría',
+  logBioHR: 'Frecuencia cardíaca en reposo (lpm)',
+  logBioHRV: 'HRV RMSSD (ms)',
+  logBioSpO2: 'SpO₂ (%)',
+  logBioVO2: 'VO₂max (ml/kg/min) — estimado',
+  logBioResp: 'Frecuencia respiratoria (rpm)',
+  logBioSaved: '¡Biometría guardada!',
+  /** Ghi chú dưới các ô mà Apple Health đã điền sẵn. */
+  healthOwnedNote: 'Apple Health midió estos valores. Puedes editarlos, pero no añadir nuevos.',
+  /* Morning check-in (P0-1): optional soreness scale + illness toggle. */
+  nCxLogBioSoreness: 'Dolor muscular hoy (opcional)',
+  nCxLogBioSorenessHint: '1 = nada, 10 = máximo',
+  nCxLogBioIllness: 'Me siento enfermo hoy',
+  /* Widget payloads (P0-2): pushed to iOS widgets via widget-data.ts. */
+  nCxWidgetRestDay: 'Día de descanso',
+  nCxWidgetDone: 'Hecho',
+  nCxWidgetNoWorkout: 'Aún sin entrenamiento',
+  /** Tiêu đề hộp thoại khi người dùng sửa một số của Apple Health. */
+  healthOverrideTitle: '¿Reemplazar la lectura de Apple Health?',
+  /** Thân hộp thoại ấy. `{n}` là số chỉ số đang bị đổi. */
+  healthOverrideMsg:
+    'Estás cambiando {n} lectura(s) que midió Apple Health. Guarda y la app usará las tuyas, y Apple Health no las sobrescribirá de nuevo.',
+  /** Nút xác nhận trong hộp thoại ấy. */
+  healthOverrideConfirm: 'Usar mis valores',
+  /** Shown under a field whose value is outside anything a body produces. Carries {min}, {max}, {unit}. */
+  outOfRange: 'Debe estar entre {min} y {max} {unit}',
+  /** Refusing to work out a plan for a body nobody has described yet. */
+  statsRequired: 'Primero se necesitan estatura, peso y fecha de nacimiento válidos',
+  /** Sleep stages adding up to more than the night itself. Carries {sum}, {total}. */
+  sleepStagesOverrun: 'Las fases suman {sum} min, más que la noche entera ({total} min)',
+
+  // Log Meal Dialog
+  logMealSaved: '¡Comida guardada!',
+  logMealQueued: 'Guardado — se sincronizará cuando vuelvas a tener conexión',
+
+  // Log Workout Dialog
+  logWorkoutSaved: '¡Entrenamiento guardado!',
+
+  // Log Sleep Dialog
+  logSleepDeep: 'Profundo',
+  logSleepREM: 'REM',
+  logSleepLight: 'Ligero',
+  logSleepSaved: '¡Sueño registrado!',
+  logSleepMinutes: 'min',
+
+  // Awards
+  awardsTitle: 'Logros',
+  awardsEarned: 'Conseguidos',
+  awardsOf: 'logros',
+
+  // Weekly Review
+  weeklyReviewTitle: 'Revisión semanal',
+  weeklyReviewAvgCalories: 'Calorías prom.',
+  weeklyReviewAvgProtein: 'Proteína prom.',
+  weeklyReviewAvgSleep: 'Sueño prom.',
+  weeklyReviewVolume: 'Volumen',
+  weeklyReviewReadiness: 'Preparación',
+  weeklyReviewDailyNutrition: 'Nutrición diaria',
+  weeklyReviewSleepChart: 'Sueño',
+  nCxWeeklyReviewVolumeLoad: 'Carga de volumen',
+  weeklyReviewReadinessChart: 'Preparación',
+  weeklyReviewRecommendations: 'Recomendaciones para la próxima semana',
+  weeklyReviewSessions: '{n} {n:sesión|sesiones}',
+
+  // Smart Goals
+  smartGoalsTitle: 'Calibración de objetivos',
+  smartGoalsWeightTrend: 'Tendencia de peso (4 semanas)',
+  smartGoalsOnTrack: '¡Vas bien! Mantén tu rutina actual.',
+  smartGoalsOffTrack: 'Te has desviado. Mira las sugerencias abajo.',
+  smartGoalsCalorieSuggestion: 'Sugerencia de calorías',
+  smartGoalsMeasured: 'Medido a partir de tu propia ingesta y tu peso en los últimos {d} {d:día|días}, no de una fórmula.',
+  smartGoalsNeedData: 'Se necesitan al menos 3 registros de peso en las últimas 4 semanas',
+  smartGoalsNeedDataMsg: 'Registra tu peso a diario en el panel para el análisis.',
+  smartGoalsProteinCoach: 'Distribución de proteína',
+  smartGoalsPerDay: 'Objetivo/día',
+  smartGoalsPerMeal: '/ comida',
+  smartGoalsLowDays: 'días bajos/14 días',
+  smartGoalsProteinSplit: 'Sugerencia de reparto de proteína',
+  smartGoalsNoNutritionData: 'Aún no hay datos de nutrición. Registra comidas para recibir sugerencias.',
+
+  // AI Coach
+  aiCoachTitle: 'Entrenador IA',
+  aiCoachHello: '¡Hola!',
+  aiCoachIntro: 'Soy tu entrenador IA — analizo tus datos de entrenamiento, nutrición, sueño y recuperación para darte consejos personalizados.',
+  aiCoachPlaceholder: 'Pregunta sobre nutrición, entrenamiento, recuperación...',
+  aiCoachHistory: 'Historial de chat',
+  aiCoachNoHistory: 'Aún no hay conversaciones',
+
+  // Grocery
+  grocerySubtitle: 'Lista de compras del plan de comidas y lista personalizada',
+
+  /* ── onboarding 13 màn (Giai đoạn 3) ── */
+  obBack: 'Atrás',
+  obNext: 'Continuar',
+  obDragHint: 'Arrastra para ajustar',
+  obStart: 'Empezar',
+  obIntentionQ: '¿Qué quieres cambiar?',
+  obIntentionWhy: 'Esto decide tus calorías y macros cada día.',
+  obBranchBody: 'Cuerpo',
+  obBranchBodyDesc: 'Gana músculo, pierde grasa o ambas',
+  obBranchCapacity: 'Capacidad',
+  obBranchCapacityDesc: 'Sé más fuerte o rinde más',
+  obBranchMaintain: 'Mantener',
+  obBranchMaintainDesc: 'Mantén tu nivel actual',
+  obGoalQ: '¿Un poco más específico?',
+  obGoalBulk: 'Ganar músculo',
+  obGoalBulkDesc: 'Come en superávit, la proteína primero',
+  obGoalCut: 'Perder grasa',
+  obGoalCutDesc: 'Come en déficit, conserva el músculo',
+  obGoalRecomp: 'Ambas a la vez',
+  obGoalRecompDesc: 'Más lento, pero consigues ambas',
+  obGoalStrength: 'Más fuerza',
+  obGoalStrengthDesc: 'Mueve más peso',
+  obGoalEndurance: 'Más resistencia',
+  obGoalEnduranceDesc: 'Rinde más antes de cansarte',
+  obSexQ: '¿Cuál aplica en tu caso?',
+  obSexWhy: 'La fórmula de energía en reposo depende de esto.',
+  obSexMale: 'Masculino',
+  obSexFemale: 'Femenino',
+  obSexOther: 'Otro',
+  obDobQ: '¿Cuándo naciste?',
+  obDobWhy: 'La edad cambia tu energía en reposo.',
+  obDobBad: 'Tu fecha de nacimiento debe estar en el pasado y la edad por debajo de 130.',
+  obHeightQ: '¿Cuánto mides?',
+  obHeightWhy: 'Con tu peso, esto da tu energía en reposo.',
+  obWeightQ: '¿Cuánto pesas hoy?',
+  obActivityQ: '¿Cómo es un día normal para ti?',
+  obActivityWhy: 'Esto ya incluye tu entrenamiento.',
+  obActSedentary: 'Sedentario',
+  obActSedentaryDesc: 'Sentado la mayor parte del día',
+  obActLight: 'Ligero',
+  obActLightDesc: 'Un poco de pie',
+  obActModerate: 'Moderado',
+  obActModerateDesc: 'Entrenas 3–5 veces por semana',
+  obActHigh: 'Alto',
+  obActHighDesc: 'Entrenamiento duro o trabajo físico',
+  obActAthlete: 'Atleta',
+  obActAthleteDesc: 'Dos veces al día',
+  obExpQ: '¿Desde dónde empiezas?',
+  obExpWhy: 'Tu entrenador IA usa esto para elegir cómo hablarte.',
+  obExpNew: 'Estoy empezando',
+  obExpNewDesc: 'Nunca has entrenado, o vuelves tras un largo descanso',
+  obExpSteady: 'Llevo un tiempo en esto',
+  obExpSteadyDesc: 'Entre uno y tres años',
+  obExpDeep: 'Tengo años de experiencia',
+  obExpDeepDesc: 'Entrenando de forma constante más de tres años',
+  obPlanEyebrow: 'Tu plan',
+  obPlanFor: 'al día, para {goal}',
+  obPlanMacros: 'Proteína {p}g · Carbohidratos {c}g · Grasa {f}g',
+  obPlanWater: '{v} de agua al día',
+  obPlanSleep: '{h} {h:hora|horas} de sueño por noche',
+  obPlanRank: 'Nivel {n} — primero de seis',
+  obHealthQ: 'ASCND puede ver tu día con más claridad.',
+  obHealthChart: 'Cuatro días los registras tú · tres los completa el reloj',
+  obHealthRead1: 'Pasos y energía',
+  obHealthRead2: 'Sueño',
+  obHealthRead3: 'Frecuencia cardíaca en reposo y HRV',
+  obHealthRead4: 'Entrenamientos de tu reloj',
+  obHealthConnect: 'Conectar Salud',
+  obHealthLater: 'Ahora no',
+  obHealthLegal: 'Tus datos de salud nunca salen de este dispositivo.',
+  obReadyEyebrow: 'Todo está listo',
+  obReadyLine: 'Tu primer ascenso empieza aquí.',
+  obReadyCta: 'Empezar el viaje',
+  obReadyLegal: 'Al empezar aceptas los Términos, la Política de privacidad y el aviso de datos de salud.',
+
+  /*
+    Mười hai khoá mang tiền tố `onboarding` mà onboarding gần như không dựng:
+    `onboardingHealthWhy` là của màn 12, mười một khoá còn lại là nhãn của
+    **Sửa hồ sơ**. Cái tên nói dối, và nó nói dối vì luồng bảy màn cũ đã sinh
+    ra chúng — luồng ấy bị thay, còn chỗ dựng chúng thì không.
+
+    Không đổi tên trong lượt này, có chủ ý: một cú đổi tên chạm hai cột từ
+    điển và hai màn, mà không sửa một lỗi nào người dùng nhìn thấy được. Ghi
+    lại ở đây để người sau đọc `onboarding*` còn biết tiền tố ấy KHÔNG phải
+    một lời hứa về nơi khoá được dựng.
+  */
+  onboardingHealthWhy: 'La actividad, el sueño y las constantes de tu iPhone o Apple Watch mantienen el plan al día con tu semana, en lugar de esperar a que lo escribas cada día.',
+  onboardingTrainingLevel: 'Nivel de entrenamiento',
+  onboardingBeginner: 'Principiante',
+  onboardingIntermediate: 'Intermedio',
+  onboardingAdvanced: 'Avanzado',
+  onboardingDiet: 'Preferencia alimentaria',
+  onboardingAllergies: 'Alergias alimentarias',
+  onboardingDislikedFoods: 'Alimentos que no te gustan',
+  onboardingDietOmnivore: 'Omnívoro',
+  onboardingDietVegetarian: 'Vegetariano',
+  onboardingDietHalal: 'Halal',
+  onboardingDislikedFoodsPlaceholder: 'p. ej., cebolla, cilantro, casquería',
+
+  // Muscle groups
+  muscleChest: 'Pecho',
+  muscleBack: 'Espalda',
+  muscleShoulders: 'Hombros',
+  muscleBiceps: 'Bíceps',
+  muscleTriceps: 'Tríceps',
+  muscleQuads: 'Cuádriceps',
+  muscleHamstrings: 'Isquiotibiales',
+  muscleGlutes: 'Glúteos',
+  muscleAbs: 'Abdominales',
+  muscleFullBody: 'Cuerpo completo',
+  muscleCardio: 'Cardio',
+
+  // Measurements
+  measureNeck: 'Cuello (cm)',
+  measureShoulders: 'Hombros (cm)',
+  measureChest: 'Pecho (cm)',
+  measureWaist: 'Cintura (cm)',
+  measureHips: 'Cadera (cm)',
+  measureBicepL: 'Bíceps izq. (cm)',
+  measureBicepR: 'Bíceps der. (cm)',
+  measureThighL: 'Muslo izq. (cm)',
+  measureThighR: 'Muslo der. (cm)',
+  measureCalfL: 'Pantorrilla izq. (cm)',
+  measureCalfR: 'Pantorrilla der. (cm)',
+  measureBodyFat: 'Grasa corporal (%)',
+
+  // Dashboard components
+  dcActivity: 'Actividad',
+  dcActivityMove: 'Moverse',
+  dcActivityExercise: 'Ejercicio',
+  dcActivitySteps: 'Pasos',
+  dcActivityKcal: 'kcal',
+  dcActivityMin: 'min',
+  dcActivityStepsUnit: 'pasos',
+  dcActivityEmpty: 'Aún no hay actividad hoy. Conecta Apple Health para calorías y pasos, o registra un entrenamiento.',
+  dcActivityEstimated: '~ Los números con tilde son estimaciones de los entrenamientos que registraste, no mediciones de un dispositivo.',
+  dcNutritionTitle: 'Nutrición',
+  dcNutritionTarget: 'Objetivo',
+  dcNutritionRemaining: 'Restante',
+  /** macro tiles, tapped: still to eat / exactly met / eaten past */
+  dcMacroLeft: 'restante',
+  dcMacroDone: 'completo',
+  dcMacroOver: 'sobre el objetivo',
+  dcMacroEaten: 'consumido',
+  /** eaten past the target */
+  dcNutritionSurplus: 'Superávit',
+  /** still under the target — the same number as "remaining", named for the diet */
+  /** exactly on target, so neither word applies */
+  dcNutritionOnTarget: 'En el objetivo',
+  dcSleepTitle: 'Sueño',
+  dcSleepTarget: 'Objetivo',
+  dcSleepQuality: 'Calidad',
+  dcBioTitle: 'Biometría',
+  dcBioNotConnected: 'No conectado',
+  /** nhóm thứ hai của thẻ: VO₂max là năng lực thể lực, không phải dấu hiệu sinh tồn */
+  dcBioFitness: 'Forma física',
+  dcReadinessTitle: 'Puntuación de preparación',
+  /* A verdict, not a category name — see the Vietnamese entries. */
+  dcReadinessTrain: 'LISTO PARA ENTRENAR',
+  dcReadinessModerate: 'ENTRENA MODERADO',
+  dcReadinessRecover: 'RECUPERA HOY',
+  dcTrainingTitle: 'Entrenamiento',
+  dcRecentAwards: 'Logros recientes',
+  dcViewAll: 'Ver todo',
+
+  // Food Item CRUD
+  foodAddTitle: 'Añadir alimento',
+  foodEditTitle: 'Editar alimento',
+  foodName: 'Nombre del alimento',
+  foodNamePlaceholder: 'p. ej., pechuga de pollo, arroz...',
+  foodBrand: 'Marca',
+  foodBrandPlaceholder: 'p. ej., Kirkland, Optimum...',
+  foodServing: 'Tamaño de porción',
+  foodCalories: 'Calorías',
+  foodAutoCalc: 'Autocalcular',
+  foodProtein: 'Proteína',
+  foodCarbs: 'Carbohidratos',
+  foodFat: 'Grasa',
+  foodFiber: 'Fibra',
+  foodAdded: '¡Alimento añadido!',
+  foodUpdated: '¡Alimento actualizado!',
+  foodDeleted: '¡Alimento eliminado!',
+  foodAddCustom: 'Añadir alimento',
+
+  // Steps
+  stepsGoal: 'Objetivo',
+};
 
 const vi: Translations = {
   loading: 'Đang tải...',
@@ -1416,7 +1912,7 @@ const en: Translations = {
   stepsGoal: 'Goal',
 };
 
-const translations: Record<AppLang, Translations> = { vi, en };
+const translations: Record<AppLang, Translations> = { vi, en, es };
 
 export function useTranslation(lang: AppLang): Translations {
   return translations[lang];

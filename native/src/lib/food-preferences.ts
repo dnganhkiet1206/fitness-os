@@ -33,14 +33,14 @@ export interface AllergyOption {
 }
 
 export const COMMON_ALLERGIES: AllergyOption[] = [
-  { value: 'Dairy', label: { en: 'Dairy', vi: 'Sữa' } },
-  { value: 'Peanuts', label: { en: 'Peanuts', vi: 'Đậu phộng' } },
-  { value: 'Tree nuts', label: { en: 'Tree nuts', vi: 'Hạt cây' } },
-  { value: 'Eggs', label: { en: 'Eggs', vi: 'Trứng' } },
-  { value: 'Soy', label: { en: 'Soy', vi: 'Đậu nành' } },
-  { value: 'Wheat', label: { en: 'Wheat', vi: 'Lúa mì' } },
-  { value: 'Shellfish', label: { en: 'Shellfish', vi: 'Hải sản' } },
-  { value: 'Fish', label: { en: 'Fish', vi: 'Cá' } },
+  { value: 'Dairy', label: { en: 'Dairy', vi: 'Sữa', es: 'Lácteos' } },
+  { value: 'Peanuts', label: { en: 'Peanuts', vi: 'Đậu phộng', es: 'Cacahuetes' } },
+  { value: 'Tree nuts', label: { en: 'Tree nuts', vi: 'Hạt cây', es: 'Frutos secos' } },
+  { value: 'Eggs', label: { en: 'Eggs', vi: 'Trứng', es: 'Huevos' } },
+  { value: 'Soy', label: { en: 'Soy', vi: 'Đậu nành', es: 'Soja' } },
+  { value: 'Wheat', label: { en: 'Wheat', vi: 'Lúa mì', es: 'Trigo' } },
+  { value: 'Shellfish', label: { en: 'Shellfish', vi: 'Hải sản', es: 'Mariscos' } },
+  { value: 'Fish', label: { en: 'Fish', vi: 'Cá', es: 'Pescado' } },
 ];
 
 /**

@@ -1,3 +1,4 @@
+import type { AppLang } from '@/lib/i18n';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { ChevronLeft, ChevronRight, Coins, Lock } from 'lucide-react-native';
 
@@ -73,7 +74,7 @@ export function ShopPager({
   buyingKey?: string | null;
   onBuy: (item: ShopItem) => void;
   onToggleEquip: (key: string, next: boolean) => void;
-  lang: 'vi' | 'en';
+  lang: AppLang;
   i18n: ReturnType<typeof useI18n>;
 }) {
   const c = usePalette();

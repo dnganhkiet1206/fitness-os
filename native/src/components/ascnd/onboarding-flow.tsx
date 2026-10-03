@@ -1260,7 +1260,7 @@ function LegalSheet({
   onClose,
 }: {
   tab: 'terms' | 'privacy' | 'health' | null;
-  lang: 'vi' | 'en';
+  lang: AppLang;
   styles: Styles;
   c: ReturnType<typeof usePalette>;
   onTab: (t: 'terms' | 'privacy' | 'health') => void;

@@ -52,6 +52,9 @@ export type SuggestionTopic = 'readiness' | 'load' | 'sleep' | 'nutrition' | 'mo
 export interface Bilingual {
   vi: string;
   en: string;
+  /* Spanish — optional while the AI backend is postponed. Static tables carry
+     full `es`; dynamic assistant copy falls back to `en` until translated. */
+  es?: string;
 }
 
 export interface Suggestion {

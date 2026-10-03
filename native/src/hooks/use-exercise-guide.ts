@@ -304,6 +304,8 @@ export function useExerciseGuide(
         vấn nhỏ theo khoá chính, chạy đúng một lần mỗi lần mở sheet.
       */
       const withContent = async (row: GuideRow, matchedBy: 'id' | 'name') => {
+        // Guide content exists in vi/en only — Spanish falls back to English.
+        const guideLang = lang === 'es' ? 'en' : lang;
         /*
           Hai truy vấn phụ chạy SONG SONG.
 
@@ -338,7 +340,7 @@ export function useExerciseGuide(
           row,
           matchedBy,
           name,
-          pickContent((content.data ?? []) as GuideContentRow[], lang),
+          pickContent((content.data ?? []) as GuideContentRow[], guideLang),
           lang,
           (media.data ?? []) as MediaRow[],
         );
@@ -398,6 +400,8 @@ function shape(
   lang: AppLang,
   mediaRows: MediaRow[],
 ): ExerciseGuide {
+  // Guide media alt-text exists in vi/en only — Spanish falls back to English.
+  const guideLang = lang === 'es' ? 'en' : lang;
   /* Khoá → nhãn NGAY TẠI ĐÂY, không để màn hình làm. Hai hàm này cũng là thứ
      trả lại nguyên văn một giá trị lịch sử mà bảng đồng nghĩa không nhận ra,
      nên `Kettlebell` của người dùng đi qua mà không bị đụng. */
@@ -428,7 +432,7 @@ function shape(
     /* `video_url` vào đây làm ĐƯỜNG LUI, không làm nguồn chính — xem
        `resolveExerciseMedia`. Bài chưa có hàng `exercise_media` nào thì cột cũ
        vẫn được đọc, nên không dòng dữ liệu nào đang chạy bị làm trắng. */
-    media: resolveExerciseMedia(mediaRows, row.video_url, lang),
+    media: resolveExerciseMedia(mediaRows, row.video_url, guideLang),
     matchedBy,
     contentLocale: content?.locale ?? null,
     hasContent: instructions.length > 0 || formCues.length > 0 || commonMistakes.length > 0,

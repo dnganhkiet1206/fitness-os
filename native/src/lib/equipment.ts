@@ -46,12 +46,12 @@ export type EquipmentKey = 'barbell' | 'bodyweight' | 'cable' | 'dumbbell' | 'ma
  * `nRdBodyweight` in `native-strings.ts`. Two names for one idea inside one
  * product is the thing this file exists to stop.
  */
-export const EQUIPMENT_LABEL: Record<EquipmentKey, { vi: string; en: string }> = {
-  barbell: { vi: 'Tạ đòn', en: 'Barbell' },
-  bodyweight: { vi: 'Không tạ', en: 'Bodyweight' },
-  cable: { vi: 'Cáp', en: 'Cable' },
-  dumbbell: { vi: 'Tạ đơn', en: 'Dumbbell' },
-  machine: { vi: 'Máy tập', en: 'Machine' },
+export const EQUIPMENT_LABEL: Record<EquipmentKey, { vi: string; en: string; es: string }> = {
+  barbell: { vi: 'Tạ đòn', en: 'Barbell', es: 'Barra' },
+  bodyweight: { vi: 'Không tạ', en: 'Bodyweight', es: 'Peso corporal' },
+  cable: { vi: 'Cáp', en: 'Cable', es: 'Cable' },
+  dumbbell: { vi: 'Tạ đơn', en: 'Dumbbell', es: 'Mancuerna' },
+  machine: { vi: 'Máy tập', en: 'Machine', es: 'Máquina' },
 };
 
 /*
@@ -103,7 +103,7 @@ export function canonicalEquipment(raw: string | null | undefined): EquipmentKey
  */
 export function equipmentLabel(
   stored: string | null | undefined,
-  lang: 'vi' | 'en',
+  lang: 'vi' | 'en' | 'es',
 ): string {
   const key = canonicalEquipment(stored);
   if (key) return EQUIPMENT_LABEL[key][lang];

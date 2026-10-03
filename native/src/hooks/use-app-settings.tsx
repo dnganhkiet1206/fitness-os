@@ -38,7 +38,10 @@ export type ThemeChoice = 'system' | 'light' | 'dark';
 function deviceDefaultLang(): AppLang {
   try {
     const locale = Intl.DateTimeFormat().resolvedOptions().locale ?? '';
-    return locale.toLowerCase().startsWith('vi') ? 'vi' : 'en';
+    const lower = locale.toLowerCase();
+    if (lower.startsWith('vi')) return 'vi';
+    if (lower.startsWith('es')) return 'es';
+    return 'en';
   } catch {
     return 'en';
   }

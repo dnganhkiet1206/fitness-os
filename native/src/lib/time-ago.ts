@@ -1,3 +1,4 @@
+import type { AppLang } from './i18n';
 import { getLocale } from '@/lib/i18n';
 
 type Strings = { nCmJustNow: string; nCmMinAgo: string; nCmHourAgo: string; nCmDayAgo: string };
@@ -10,7 +11,7 @@ type Strings = { nCmJustNow: string; nCmMinAgo: string; nCmHourAgo: string; nCmD
  * "Invalid" ở chỗ thời gian là lỗi người ta thấy ngay. Quá bảy ngày thì ghi
  * ngày tháng — "43 ngày trước" bắt người đọc tự tính ngược.
  */
-export function timeAgo(iso: string, i18n: Strings, lang: string, now = Date.now()): string {
+export function timeAgo(iso: string, i18n: Strings, lang: AppLang, now = Date.now()): string {
   const t = Date.parse(iso);
   if (!Number.isFinite(t)) return '';
   const min = Math.max(0, Math.floor((now - t) / 60000));
@@ -20,5 +21,5 @@ export function timeAgo(iso: string, i18n: Strings, lang: string, now = Date.now
   if (h < 24) return i18n.nCmHourAgo.replace('{n}', String(h));
   const d = Math.floor(h / 24);
   if (d <= 7) return i18n.nCmDayAgo.replace('{n}', String(d));
-  return new Date(t).toLocaleDateString(getLocale(lang as 'vi' | 'en'), { day: 'numeric', month: 'short' });
+  return new Date(t).toLocaleDateString(getLocale(lang), { day: 'numeric', month: 'short' });
 }

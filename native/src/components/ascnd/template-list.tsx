@@ -1,3 +1,4 @@
+import type { AppLang } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, Dumbbell, Trash2 } from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
@@ -192,7 +193,7 @@ export function TemplateRow({
   wl,
   i18n,
   groupOf,
-  vi,
+  lang,
   onDelete,
 }: {
   tpl: Template;
@@ -203,7 +204,7 @@ export function TemplateRow({
   i18n: ReturnType<typeof useI18n>;
   /** tên bài (thường hoá) → nhóm cơ, tra từ thư viện bài tập */
   groupOf: Record<string, string>;
-  vi: boolean;
+  lang: AppLang;
   onDelete: (id: string) => void;
 }) {
   const c = usePalette();
@@ -258,7 +259,7 @@ export function TemplateRow({
     for (const k of muscleArtKeysFor(g)) {
       if (seen.has(k)) continue;
       seen.add(k);
-      muscles.push(vi ? MUSCLE_LABEL[k].vi : MUSCLE_LABEL[k].en);
+      muscles.push(MUSCLE_LABEL[k][lang] ?? MUSCLE_LABEL[k].en);
     }
   }
 
@@ -504,7 +505,7 @@ export function TemplateList({
           wl={wl}
           i18n={i18n}
           groupOf={groupOf}
-          vi={vi}
+          lang={lang}
           onDelete={onDelete}
         />
       ))}

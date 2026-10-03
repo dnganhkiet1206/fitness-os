@@ -120,7 +120,7 @@ export default function WorkoutLibraryScreen() {
 
   return (
     <Screen refreshable back title={i18n.nLibraryHistory} aura={PAGE_TINT.activity}>
-      <MuscleGrid exercises={exercises ?? []} failed={exercisesFailed} vi={vi} />
+      <MuscleGrid exercises={exercises ?? []} failed={exercisesFailed} lang={lang} />
 
       {/*
         Lịch sử: mười buổi gần nhất, phần còn lại ở `/sessions`.

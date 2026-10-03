@@ -1,3 +1,4 @@
+import type { AppLang } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, Trash2 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
@@ -95,7 +96,7 @@ export function WeightLogList({
   /** the display unit's suffix, resolved by the caller for the same reason */
   unit: string;
   i18n: ReturnType<typeof useI18n>;
-  lang: 'vi' | 'en';
+  lang: AppLang;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);

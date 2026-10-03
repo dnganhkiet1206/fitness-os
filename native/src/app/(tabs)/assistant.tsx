@@ -97,11 +97,11 @@ import { calorieTargetFor, macroTargetsFor } from '@/lib/macro-targets';
 interface Metric {
   key: string;
   glyph: GlyphName;
-  label: { vi: string; en: string };
+  label: { vi: string; en: string; es?: string };
   value: string;
   unit?: string;
   /** the small line under the number — a state, not a repeat of the number */
-  note: { vi: string; en: string };
+  note: { vi: string; en: string; es?: string };
   noteTint: string;
   /** which analysis this tile opens, in place */
   kind: MetricKind;
@@ -113,7 +113,7 @@ interface Metric {
 interface Tool {
   key: string;
   glyph: GlyphName;
-  label: { vi: string; en: string };
+  label: { vi: string; en: string; es?: string };
   hint: { vi: string; en: string };
   route: string;
 }
@@ -514,11 +514,11 @@ export default function AssistantScreen() {
               knows nothing about says so, rather than inventing a warm sentence
               about numbers it does not have. See `assistant-brief`.
             */}
-            <Text style={styles.greeting}>{vi ? brief.greeting.vi : brief.greeting.en}</Text>
+            <Text style={styles.greeting}>{brief.greeting[lang] ?? brief.greeting.en}</Text>
             <View style={styles.briefLines}>
               {brief.lines.map((l) => (
                 <Text key={l.key} style={styles.greetBody}>
-                  {vi ? l.text.vi : l.text.en}
+                  {l.text[lang] ?? l.text.en}
                 </Text>
               ))}
             </View>
@@ -687,7 +687,7 @@ export default function AssistantScreen() {
             <PressScale
               key={m.key}
               accessibilityRole="button"
-              accessibilityLabel={`${vi ? m.label.vi : m.label.en} ${m.value}`}
+              accessibilityLabel={`${m.label[lang] ?? m.label.en} ${m.value}`}
               accessibilityState={{ selected: selected === m.kind }}
               aria-selected={selected === m.kind}
               onPress={() => {
@@ -709,14 +709,14 @@ export default function AssistantScreen() {
                 <View style={[styles.metricIcon, { backgroundColor: `${litBy(m.glyph)}1f` }]}>
                   <Glyph name={m.glyph} size={19} />
                 </View>
-                <Text style={styles.metricLabel}>{vi ? m.label.vi : m.label.en}</Text>
+                <Text style={styles.metricLabel}>{m.label[lang] ?? m.label.en}</Text>
                 <View style={styles.metricValueRow}>
                   <Text style={styles.metricValue}>{m.value}</Text>
                   {m.unit ? <Text style={styles.metricUnit}>{m.unit}</Text> : null}
                 </View>
                 <View style={styles.metricNoteRow}>
                   <View style={[styles.metricDot, { backgroundColor: m.noteTint }]} />
-                  <Text style={styles.metricNote}>{vi ? m.note.vi : m.note.en}</Text>
+                  <Text style={styles.metricNote}>{m.note[lang] ?? m.note.en}</Text>
                 </View>
               </LiquidGlass>
             </PressScale>
@@ -748,7 +748,7 @@ export default function AssistantScreen() {
           <MetricPanel
             analysis={analysis}
             tint={selectedTint}
-            vi={vi}
+            lang={lang}
             /* Today's column carries its value, and only the caller knows the
                unit. Sleep reads "7h52", calories "2.150", the other two are
                plain numbers — the same forms the tile above them uses, so the
@@ -758,7 +758,7 @@ export default function AssistantScreen() {
                 ? `${Math.floor(v / 60)}h${String(Math.round(v % 60)).padStart(2, '0')}`
                 : Math.round(v).toLocaleString(vi ? 'vi-VN' : 'en-US')
             }
-            onAsk={() => askCoach(vi ? analysis.ask.vi : analysis.ask.en)}
+            onAsk={() => askCoach(analysis.ask[lang] ?? analysis.ask.en)}
           />
         </LiquidGlass>
         </Settle>
@@ -860,12 +860,12 @@ export default function AssistantScreen() {
                          asked. VoiceOver should hear the second one, because
                          "Tôi ngủ chưa đủ" does not describe what pressing it
                          does. */
-                      accessibilityLabel={vi ? s.question.vi : s.question.en}
-                      onPress={() => askCoach(vi ? s.question.vi : s.question.en)}>
+                      accessibilityLabel={s.question[lang] ?? s.question.en}
+                      onPress={() => askCoach(s.question[lang] ?? s.question.en)}>
                       {/* Chip hỏi nhanh là một lối đi — viền về màu chung. */}
                       <View style={styles.chip}>
                         <Glyph name={s.glyph} size={14} />
-                        <Text style={styles.chipText}>{vi ? s.label.vi : s.label.en}</Text>
+                        <Text style={styles.chipText}>{s.label[lang] ?? s.label.en}</Text>
                       </View>
                     </PressScale>
                   ))}
@@ -900,7 +900,7 @@ export default function AssistantScreen() {
               <PressScale
                 key={t.key}
                 accessibilityRole="button"
-                accessibilityLabel={vi ? t.label.vi : t.label.en}
+                accessibilityLabel={t.label[lang] ?? t.label.en}
                 onPress={() => go(t.route)}
                 style={styles.toolWrap}>
                 <LiquidGlass

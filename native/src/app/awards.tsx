@@ -38,8 +38,8 @@ import { getLocale } from '@/lib/i18n';
  *
  * Thứ tự: thang dài nhất trước, vì đó là thứ người ta theo lâu nhất.
  */
-const DOMAINS: { types: string[]; vi: string; en: string }[] = [
-  { types: ['streak'], vi: 'Chuỗi ngày', en: 'Streaks' },
+const DOMAINS: { types: string[]; vi: string; en: string; es: string }[] = [
+  { types: ['streak'], vi: 'Chuỗi ngày', en: 'Streaks', es: 'Rachas' },
   /*
     `first_workout` gộp vào Buổi tập, không đứng riêng.
 
@@ -53,13 +53,13 @@ const DOMAINS: { types: string[]; vi: string; en: string }[] = [
     chia của màn hình thôi phải trùng khít với cách chia của bảng dữ liệu —
     hai thứ ấy trả lời hai câu hỏi khác nhau.
   */
-  { types: ['first_workout', 'volume_milestone'], vi: 'Buổi tập', en: 'Workouts' },
-  { types: ['pr'], vi: 'Kỷ lục cá nhân', en: 'Personal records' },
-  { types: ['steps_goal'], vi: 'Bước chân', en: 'Steps' },
-  { types: ['nutrition'], vi: 'Dinh dưỡng', en: 'Nutrition' },
-  { types: ['water'], vi: 'Nước uống', en: 'Water' },
-  { types: ['sleep'], vi: 'Giấc ngủ', en: 'Sleep' },
-  { types: ['body'], vi: 'Cân nặng', en: 'Body' },
+  { types: ['first_workout', 'volume_milestone'], vi: 'Buổi tập', en: 'Workouts', es: 'Entrenamientos' },
+  { types: ['pr'], vi: 'Kỷ lục cá nhân', en: 'Personal records', es: 'Récords personales' },
+  { types: ['steps_goal'], vi: 'Bước chân', en: 'Steps', es: 'Pasos' },
+  { types: ['nutrition'], vi: 'Dinh dưỡng', en: 'Nutrition', es: 'Nutrición' },
+  { types: ['water'], vi: 'Nước uống', en: 'Water', es: 'Agua' },
+  { types: ['sleep'], vi: 'Giấc ngủ', en: 'Sleep', es: 'Sueño' },
+  { types: ['body'], vi: 'Cân nặng', en: 'Body', es: 'Cuerpo' },
 ];
 
 /**
@@ -355,7 +355,7 @@ export default function AwardsScreen() {
                   vẽ cùng một ngôi sao trên cả bốn tiêu đề, nên nó không phân
                   biệt được gì và chỉ là trang trí. */}
               <Icon icon={ICON_MAP[list[0].icon] ?? Trophy} size={14} color={c.mutedForeground} />
-              <Text style={styles.tierTitle}>{lang === 'vi' ? dom.vi : dom.en}</Text>
+              <Text style={styles.tierTitle}>{dom[lang] ?? dom.en}</Text>
               <View style={styles.tierLine} />
               <Text style={styles.tierCount}>
                 {done}/{list.length}

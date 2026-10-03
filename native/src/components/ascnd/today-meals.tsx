@@ -1,3 +1,4 @@
+import type { AppLang } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { ChevronDown, Minus, Pencil, Plus, Share2, Trash2, UtensilsCrossed, type LucideIcon } from 'lucide-react-native';
@@ -284,7 +285,7 @@ export function DayMeals({
 }: {
   meals: LoggedMeal[];
   i18n: ReturnType<typeof useI18n>;
-  lang: 'vi' | 'en';
+  lang: AppLang;
   /** ngày đang xem, `YYYY-MM-DD`. Bỏ trống là hôm nay — xem đầu tệp. */
   date?: string;
 }) {

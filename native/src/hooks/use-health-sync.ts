@@ -61,7 +61,6 @@ function useSyncMutation(silent: boolean) {
   const queryClient = useQueryClient();
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const vi = lang === 'vi';
 
   const sync = useOnlineMutation({
     meta: { offline: now(6) },
@@ -203,7 +202,7 @@ function useSyncMutation(silent: boolean) {
             date_time: w.date_time,
             sets: [],
             volume_load: 0,
-            template_name: `${activityName(w.activity_type, vi)} · ${w.minutes}′${w.kcal ? ` · ${w.kcal} kcal` : ''}`,
+            template_name: `${activityName(w.activity_type, lang)} · ${w.minutes}′${w.kcal ? ` · ${w.kcal} kcal` : ''}`,
             source: APPLE_SOURCE,
             external_id: w.external_id,
           })),

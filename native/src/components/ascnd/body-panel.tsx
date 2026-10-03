@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
+import type { AppLang } from '@/lib/i18n';
 import { nav } from '@/lib/nav';
 import { haptics as Haptics } from '@/lib/haptics';
 import {
@@ -152,7 +153,7 @@ const BMI_MAX = 40;
 const BMI_ZONES = [
   {
     to: 18.5,
-    vi: 'Thiếu cân',
+    vi: 'Thiếu cân', es: 'Bajo peso',
     en: 'Underweight',
     range: '< 18.5',
     color: 'metricBlue',
@@ -160,7 +161,7 @@ const BMI_ZONES = [
   },
   {
     to: 25,
-    vi: 'Lành mạnh',
+    vi: 'Lành mạnh', es: 'Saludable',
     en: 'Healthy',
     range: '18.5 – 24.9',
     color: 'readinessGreen',
@@ -168,7 +169,7 @@ const BMI_ZONES = [
   },
   {
     to: 30,
-    vi: 'Thừa cân',
+    vi: 'Thừa cân', es: 'Sobrepeso',
     en: 'Overweight',
     range: '25 – 29.9',
     color: 'readinessYellow',
@@ -176,13 +177,13 @@ const BMI_ZONES = [
   },
   {
     to: BMI_MAX,
-    vi: 'Béo phì',
+    vi: 'Béo phì', es: 'Obesidad',
     en: 'Obese',
     range: '≥ 30',
     color: 'readinessRed',
     alpha: 0.59,
   },
-] as const satisfies readonly { to: number; vi: string; en: string; range: string; color: PaletteKey; alpha: number }[];
+] as const satisfies readonly { to: number; vi: string; en: string; es: string; range: string; color: PaletteKey; alpha: number }[];
 
 /**
  * How far either side of a boundary the two colours blend, in BMI units.
@@ -235,9 +236,9 @@ function bmiZoneIndex(v: number) {
   return BMI_ZONES.length - 1;
 }
 
-function bmiCategory(v: number, vi: boolean) {
+function bmiCategory(v: number, lang: AppLang) {
   const z = BMI_ZONES[bmiZoneIndex(v)];
-  return { label: vi ? z.vi : z.en, color: z.color };
+  return { label: z[lang] ?? z.en, color: z.color };
 }
 
 /**
@@ -379,7 +380,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
   const goalDisplay = goalKg != null ? displayWeight(goalKg, wUnit) : null;
   const heightM = profile?.height_cm ? Number(profile.height_cm) / 100 : null;
   const bmi = currentKg != null && heightM ? currentKg / (heightM * heightM) : null;
-  const cat = bmi != null ? bmiCategory(bmi, vi) : null;
+  const cat = bmi != null ? bmiCategory(bmi, lang) : null;
   const bmiZone = bmi != null ? bmiZoneIndex(bmi) : -1;
   const bmiPct = bmi != null ? bmiPos(bmi) : 0;
   const [bmiW, setBmiW] = useState(0);
@@ -666,7 +667,7 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
                       <View key={z.en} style={styles.legendRow}>
                         <View style={[styles.legendDot, { backgroundColor: c[z.color], opacity: on ? 1 : 0.55 }]} />
                         <Text style={[styles.legendName, on && styles.legendNameOn]} numberOfLines={1}>
-                          {vi ? z.vi : z.en}
+                          {z[lang] ?? z.en}
                         </Text>
                         <Text style={[styles.legendRange, on && styles.legendRangeOn]}>{z.range}</Text>
                       </View>

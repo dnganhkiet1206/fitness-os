@@ -1,3 +1,4 @@
+import type { AppLang } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Check, ChevronRight, PartyPopper, Sparkles } from 'lucide-react-native';
@@ -98,7 +99,7 @@ function deltaNum(delta: number): string {
  * `parseLocalDate` chứ không phải `new Date(iso)`: chuỗi `YYYY-MM-DD` trần
  * được `Date` hiểu là UTC, nên ở Hà Nội mọi hàng lùi một ngày.
  */
-function dayLabel(date: string, lang: 'vi' | 'en'): string {
+function dayLabel(date: string, lang: AppLang): string {
   return parseLocalDate(date).toLocaleDateString(getLocale(lang), {
     weekday: 'short',
     day: 'numeric',

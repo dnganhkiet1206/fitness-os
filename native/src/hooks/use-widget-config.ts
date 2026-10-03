@@ -60,7 +60,7 @@ export const PROMOTED_TO_HERO: WidgetKey[] = ['nutrition', 'water', 'sleep'];
 
 export interface WidgetGroup {
   id: string;
-  title: { en: string; vi: string };
+  title: { en: string; vi: string; es: string };
   icon: string;
   widgets: WidgetKey[];
 }
@@ -75,13 +75,13 @@ export const DEFAULT_CONFIG: WidgetConfig = {
   groups: [
     {
       id: 'health',
-      title: { en: 'Health', vi: 'Sức khoẻ' },
+      title: { en: 'Health', vi: 'Sức khoẻ', es: 'Salud' },
       icon: '❤️',
       widgets: ['biometrics', 'steps'],
     },
     {
       id: 'nutrition',
-      title: { en: 'Nutrition', vi: 'Dinh dưỡng' },
+      title: { en: 'Nutrition', vi: 'Dinh dưỡng', es: 'Nutrición' },
       icon: '🍎',
       /* `nutrition` và `water` không còn ở đây — chúng nằm trong hero deck. Để
          lại thì phép thăng hạng sẽ dời chúng đi ngay ở lần merge đầu tiên, tức
@@ -101,13 +101,13 @@ export const DEFAULT_CONFIG: WidgetConfig = {
 
          Nhóm chứa buổi tập, trạng thái tập và cân nặng — "Thể lực" phủ đúng cả
          ba, còn "Tập luyện" chỉ phủ cái đầu. */
-      title: { en: 'Fitness', vi: 'Thể lực' },
+      title: { en: 'Fitness', vi: 'Thể lực', es: 'Fitness' },
       icon: '💪',
       widgets: ['training', 'workout-status', 'weight'],
     },
     {
       id: 'insights',
-      title: { en: 'Insights', vi: 'Phân tích' },
+      title: { en: 'Insights', vi: 'Phân tích', es: 'Análisis' },
       icon: '✨',
       widgets: ['readiness-trend', 'ai-tips', 'awards'],
     },
@@ -143,21 +143,21 @@ export function isCustomGroup(id: string): boolean {
   return !DEFAULT_GROUP_IDS.has(id);
 }
 
-export const WIDGET_META: Record<WidgetKey, { label: { en: string; vi: string } }> = {
-  readiness: { label: { en: 'Readiness', vi: 'Mức sẵn sàng' } },
-  activity: { label: { en: 'Activity', vi: 'Hoạt động' } },
-  'readiness-trend': { label: { en: 'Readiness Trend', vi: 'Xu hướng' } },
-  biometrics: { label: { en: 'Biometrics', vi: 'Sinh trắc học' } },
-  training: { label: { en: 'Training', vi: 'Tập luyện' } },
-  nutrition: { label: { en: 'Nutrition', vi: 'Dinh dưỡng' } },
-  sleep: { label: { en: 'Sleep', vi: 'Giấc ngủ' } },
-  weight: { label: { en: 'Weight', vi: 'Cân nặng' } },
-  'workout-status': { label: { en: 'Workout Status', vi: 'Trạng thái tập' } },
-  supplements: { label: { en: 'Supplements', vi: 'Thực phẩm bổ sung' } },
-  'ai-tips': { label: { en: 'AI Tips', vi: 'Gợi ý AI' } },
-  awards: { label: { en: 'Awards', vi: 'Thành tích' } },
-  water: { label: { en: 'Water', vi: 'Nước uống' } },
-  steps: { label: { en: 'Steps', vi: 'Bước đi' } },
+export const WIDGET_META: Record<WidgetKey, { label: { en: string; vi: string; es: string } }> = {
+  readiness: { label: { en: 'Readiness', vi: 'Mức sẵn sàng', es: 'Readiness' } },
+  activity: { label: { en: 'Activity', vi: 'Hoạt động', es: 'Actividad' } },
+  'readiness-trend': { label: { en: 'Readiness Trend', vi: 'Xu hướng', es: 'Tendencia de readiness' } },
+  biometrics: { label: { en: 'Biometrics', vi: 'Sinh trắc học', es: 'Biometría' } },
+  training: { label: { en: 'Training', vi: 'Tập luyện', es: 'Entrenamiento' } },
+  nutrition: { label: { en: 'Nutrition', vi: 'Dinh dưỡng', es: 'Nutrición' } },
+  sleep: { label: { en: 'Sleep', vi: 'Giấc ngủ', es: 'Sueño' } },
+  weight: { label: { en: 'Weight', vi: 'Cân nặng', es: 'Peso' } },
+  'workout-status': { label: { en: 'Workout Status', vi: 'Trạng thái tập', es: 'Estado del entrenamiento' } },
+  supplements: { label: { en: 'Supplements', vi: 'Thực phẩm bổ sung', es: 'Suplementos' } },
+  'ai-tips': { label: { en: 'AI Tips', vi: 'Gợi ý AI', es: 'Consejos IA' } },
+  awards: { label: { en: 'Awards', vi: 'Thành tích', es: 'Logros' } },
+  water: { label: { en: 'Water', vi: 'Nước uống', es: 'Agua' } },
+  steps: { label: { en: 'Steps', vi: 'Bước đi', es: 'Pasos' } },
 };
 
 /**
@@ -367,7 +367,7 @@ export function useWidgetConfig() {
         ...prev,
         groups: [
           ...prev.groups,
-          { id: `grp-${Date.now()}`, title: { en: trimmed, vi: trimmed }, icon: '📌', widgets: [] },
+          { id: `grp-${Date.now()}`, title: { en: trimmed, vi: trimmed, es: trimmed }, icon: '📌', widgets: [] },
         ],
       }));
     },

@@ -175,17 +175,17 @@ export function muscleArtFor(group: string | null | undefined): MuscleArtKey | n
  * `MuscleArtKey` thì thêm một nhóm cơ là sửa một tệp; để nhãn trong màn thì
  * thêm một nhóm là sửa hai tệp và quên một.
  */
-export const MUSCLE_LABEL: Record<MuscleArtKey, { vi: string; en: string }> = {
-  chest: { vi: 'Ngực', en: 'Chest' },
-  back: { vi: 'Lưng', en: 'Back' },
-  legs: { vi: 'Chân', en: 'Legs' },
-  shoulders: { vi: 'Vai', en: 'Shoulders' },
-  biceps: { vi: 'Tay trước', en: 'Biceps' },
-  triceps: { vi: 'Tay sau', en: 'Triceps' },
-  abs: { vi: 'Bụng', en: 'Abs' },
-  glutes: { vi: 'Mông', en: 'Glutes' },
-  calves: { vi: 'Bắp chân', en: 'Calves' },
-  cardio: { vi: 'Tim mạch', en: 'Cardio' },
+export const MUSCLE_LABEL: Record<MuscleArtKey, { vi: string; en: string; es: string }> = {
+  chest: { vi: 'Ngực', en: 'Chest', es: 'Pecho' },
+  back: { vi: 'Lưng', en: 'Back', es: 'Espalda' },
+  legs: { vi: 'Chân', en: 'Legs', es: 'Piernas' },
+  shoulders: { vi: 'Vai', en: 'Shoulders', es: 'Hombros' },
+  biceps: { vi: 'Tay trước', en: 'Biceps', es: 'Bíceps' },
+  triceps: { vi: 'Tay sau', en: 'Triceps', es: 'Tríceps' },
+  abs: { vi: 'Bụng', en: 'Abs', es: 'Abdominales' },
+  glutes: { vi: 'Mông', en: 'Glutes', es: 'Glúteos' },
+  calves: { vi: 'Bắp chân', en: 'Calves', es: 'Pantorrillas' },
+  cardio: { vi: 'Tim mạch', en: 'Cardio', es: 'Cardio' },
 };
 
 /**
@@ -226,7 +226,7 @@ export function canonicalMuscleGroup(group: string | null | undefined): string |
  */
 export function muscleGroupLabel(
   group: string | null | undefined,
-  lang: 'vi' | 'en',
+  lang: 'vi' | 'en' | 'es',
 ): string {
   const keys = muscleArtKeysFor(group);
   if (keys.length) return keys.map((k) => MUSCLE_LABEL[k][lang]).join(' / ');

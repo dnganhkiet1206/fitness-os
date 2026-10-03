@@ -98,12 +98,12 @@ export function workoutTags(exerciseNames: readonly string[]): string[] {
 
 /** Tên hiển thị của một phong cách. Khoá lạ (admin thêm sau) thì viết hoa chữ đầu. */
 export function styleLabel(style: string, lang: 'en' | 'vi'): string {
-  const known: Record<string, { en: string; vi: string }> = {
-    mono: { en: 'Mono', vi: 'Đơn sắc' },
-    neon: { en: 'Neon', vi: 'Neon' },
-    paper: { en: 'Paper', vi: 'Giấy' },
-    photo: { en: 'Photo', vi: 'Ảnh chụp' },
-    line: { en: 'Line', vi: 'Nét vẽ' },
+  const known: Record<string, { en: string; vi: string; es: string }> = {
+    mono: { en: 'Mono', vi: 'Đơn sắc', es: 'Mono' },
+    neon: { en: 'Neon', vi: 'Neon', es: 'Neón' },
+    paper: { en: 'Paper', vi: 'Giấy', es: 'Papel' },
+    photo: { en: 'Photo', vi: 'Ảnh chụp', es: 'Foto' },
+    line: { en: 'Line', vi: 'Nét vẽ', es: 'Línea' },
   };
   const k = known[style];
   if (k) return k[lang];

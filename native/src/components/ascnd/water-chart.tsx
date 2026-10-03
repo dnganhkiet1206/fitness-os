@@ -1,3 +1,4 @@
+import type { AppLang } from '@/lib/i18n';
 import { getLocale } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { useEffect, useId, useState } from 'react';
@@ -120,7 +121,7 @@ function volumeText(ml: number, unit: 'ml' | 'oz'): string {
 }
 
 /** A day, named. `long` for the screen reader, `short` for the chip. */
-function dayLabel(date: string, lang: 'vi' | 'en', form: 'short' | 'long'): string {
+function dayLabel(date: string, lang: AppLang, form: 'short' | 'long'): string {
   return parseLocalDate(date).toLocaleDateString(getLocale(lang),
     form === 'long'
       ? { weekday: 'long', day: 'numeric', month: 'long' }
@@ -258,7 +259,7 @@ export function WaterChart({
   /** the daily target in millilitres, so the ceiling never hides it */
   target: number;
   unit: 'ml' | 'oz';
-  lang: 'vi' | 'en';
+  lang: AppLang;
   i18n: ReturnType<typeof useI18n>;
 }) {
   const c = usePalette();

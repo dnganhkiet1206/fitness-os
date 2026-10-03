@@ -259,8 +259,8 @@ export default function AiCoachScreen() {
                   <PressScale
                     key={s.key}
                     accessibilityRole="button"
-                    accessibilityLabel={vi ? s.question.vi : s.question.en}
-                    onPress={() => submit(vi ? s.question.vi : s.question.en)}>
+                    accessibilityLabel={s.question[lang] ?? s.question.en}
+                    onPress={() => submit(s.question[lang] ?? s.question.en)}>
                     <LiquidGlass
                       /* Chip gợi ý là một LỐI ĐI, không phải một giá trị —
                          xem luật màu ở `index.tsx`, hàng quick-log. Màu ở lại
@@ -270,7 +270,7 @@ export default function AiCoachScreen() {
                       tint={c.primary} material="blur">
                       <View style={styles.promptInner}>
                         <Glyph name={s.glyph} size={15} />
-                        <Text style={styles.promptText}>{vi ? s.label.vi : s.label.en}</Text>
+                        <Text style={styles.promptText}>{s.label[lang] ?? s.label.en}</Text>
                       </View>
                     </LiquidGlass>
                   </PressScale>

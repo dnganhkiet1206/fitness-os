@@ -524,25 +524,27 @@ export interface HealthWorkout {
  * needs, and eighty translated strings for archery and curling would be eighty
  * strings nobody reads.
  */
-const ACTIVITY_NAMES: Record<number, { vi: string; en: string }> = {
-  13: { vi: 'Đạp xe', en: 'Cycling' },
-  16: { vi: 'Máy elliptical', en: 'Elliptical' },
-  20: { vi: 'Tập chức năng', en: 'Functional strength' },
-  24: { vi: 'Đi bộ đường dài', en: 'Hiking' },
-  35: { vi: 'Chèo thuyền', en: 'Rowing' },
-  37: { vi: 'Chạy bộ', en: 'Running' },
-  44: { vi: 'Leo cầu thang', en: 'Stair climbing' },
-  46: { vi: 'Bơi', en: 'Swimming' },
-  50: { vi: 'Tập tạ', en: 'Strength training' },
-  52: { vi: 'Đi bộ', en: 'Walking' },
-  59: { vi: 'Tập core', en: 'Core training' },
-  63: { vi: 'HIIT', en: 'HIIT' },
-  3000: { vi: 'Buổi tập', en: 'Workout' },
+const ACTIVITY_NAMES: Record<number, { vi: string; en: string; es: string }> = {
+  13: { vi: 'Đạp xe', en: 'Cycling', es: 'Ciclismo' },
+  16: { vi: 'Máy elliptical', en: 'Elliptical', es: 'Elíptica' },
+  20: { vi: 'Tập chức năng', en: 'Functional strength', es: 'Fuerza funcional' },
+  24: { vi: 'Đi bộ đường dài', en: 'Hiking', es: 'Senderismo' },
+  35: { vi: 'Chèo thuyền', en: 'Rowing', es: 'Remo' },
+  37: { vi: 'Chạy bộ', en: 'Running', es: 'Carrera' },
+  44: { vi: 'Leo cầu thang', en: 'Stair climbing', es: 'Subir escaleras' },
+  46: { vi: 'Bơi', en: 'Swimming', es: 'Natación' },
+  50: { vi: 'Tập tạ', en: 'Strength training', es: 'Entrenamiento de fuerza' },
+  52: { vi: 'Đi bộ', en: 'Walking', es: 'Caminata' },
+  59: { vi: 'Tập core', en: 'Core training', es: 'Entrenamiento de core' },
+  63: { vi: 'HIIT', en: 'HIIT', es: 'HIIT' },
+  3000: { vi: 'Buổi tập', en: 'Workout', es: 'Entrenamiento' },
 };
 
-export function activityName(type: number, vi: boolean): string {
+import type { AppLang } from '@/lib/i18n';
+
+export function activityName(type: number, lang: AppLang): string {
   const hit = ACTIVITY_NAMES[type] ?? ACTIVITY_NAMES[3000];
-  return vi ? hit.vi : hit.en;
+  return hit[lang] ?? hit.en;
 }
 
 /**

@@ -1,3 +1,4 @@
+import type { AppLang } from '@/lib/i18n';
 import { useState } from 'react';
 import { StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
@@ -67,14 +68,14 @@ const GAP = 6;
 export function MetricPanel({
   analysis,
   tint,
-  vi,
+  lang,
   format,
   onAsk,
 }: {
   analysis: Analysis;
   /** the metric's own colour, so the panel belongs to the tile that opened it */
   tint: string;
-  vi: boolean;
+  lang: AppLang;
   /** how today's value reads — "7h52", "2.150", "68". Owned by the caller,
       because only it knows what unit this metric is in. */
   format: (v: number) => string;
@@ -83,6 +84,7 @@ export function MetricPanel({
   const c = usePalette();
   const m = useMaterial();
   const styles = stylesFor(c);
+  const vi = lang === 'vi';
   const { headline, stats, bars, baseline } = analysis;
 
   /* The baseline is drawn in pixels, measured — a percentage inside `<Svg>`
@@ -107,7 +109,7 @@ export function MetricPanel({
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.headline}>{vi ? headline.vi : headline.en}</Text>
+      <Text style={styles.headline}>{headline[lang] ?? headline.en}</Text>
 
       <View style={styles.chart} onLayout={measure}>
         {bars.map((b, i) => (
@@ -175,7 +177,7 @@ export function MetricPanel({
               at 62% white over a saturated column is not legible on its own.
             */}
             <Text style={styles.baselineLabel} numberOfLines={1}>
-              {vi ? baseline.label.vi : baseline.label.en}
+              {baseline.label[lang] ?? baseline.label.en}
             </Text>
           </View>
         ) : null}
@@ -229,7 +231,7 @@ export function MetricPanel({
             key={b.date}
             style={[styles.axisDay, b.today && styles.axisToday]}
             numberOfLines={1}>
-            {b.today ? (vi ? 'Nay' : 'Now') : vi ? b.weekday.vi : b.weekday.en}
+            {b.today ? (vi ? 'Nay' : 'Now') : (b.weekday[lang] ?? b.weekday.en)}
           </Text>
         ))}
       </View>
@@ -246,7 +248,7 @@ export function MetricPanel({
         <View style={styles.stats}>
           {stats.map((s) => (
             <View key={s.key} style={styles.stat}>
-              <Text style={styles.statLabel}>{vi ? s.label.vi : s.label.en}</Text>
+              <Text style={styles.statLabel}>{s.label[lang] ?? s.label.en}</Text>
               <Text style={styles.statValue}>{s.value}</Text>
             </View>
           ))}

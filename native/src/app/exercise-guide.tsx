@@ -432,9 +432,11 @@ export default function ExerciseGuideSheet() {
       equipmentKey: g.equipmentKey,
     };
     const rows = (libraryRows ?? []) as LibraryRow[];
+    // Guide content exists in vi/en only — Spanish falls back to English.
+    const guideLang = lang === 'es' ? 'en' : lang;
     return {
-      equipment: sameEquipment(rows, subject, lang),
-      muscle: sameMuscle(rows, subject, lang),
+      equipment: sameEquipment(rows, subject, guideLang),
+      muscle: sameMuscle(rows, subject, guideLang),
     };
   }, [g, libraryRows, lang]);
 

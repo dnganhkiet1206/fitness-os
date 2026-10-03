@@ -1,3 +1,4 @@
+import type { AppLang } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 import { useState } from 'react';
@@ -25,17 +26,17 @@ import { nav } from '@/lib/nav';
  * matching data already filed under it, and a tile caption has no such
  * obligation.
  */
-const MUSCLE_TILES: { key: MuscleArtKey; vi: string; en: string }[] = [
-  { key: 'chest', vi: 'Ngực', en: 'Chest' },
-  { key: 'back', vi: 'Lưng', en: 'Back' },
-  { key: 'legs', vi: 'Chân', en: 'Legs' },
-  { key: 'shoulders', vi: 'Vai', en: 'Shoulders' },
-  { key: 'biceps', vi: 'Tay trước', en: 'Biceps' },
-  { key: 'triceps', vi: 'Tay sau', en: 'Triceps' },
-  { key: 'abs', vi: 'Bụng', en: 'Abs' },
-  { key: 'glutes', vi: 'Mông', en: 'Glutes' },
-  { key: 'calves', vi: 'Bắp chân', en: 'Calves' },
-  { key: 'cardio', vi: 'Tim mạch', en: 'Cardio' },
+const MUSCLE_TILES: { key: MuscleArtKey; vi: string; en: string; es: string }[] = [
+  { key: 'chest', vi: 'Ngực', en: 'Chest', es: 'Pecho' },
+  { key: 'back', vi: 'Lưng', en: 'Back', es: 'Espalda' },
+  { key: 'legs', vi: 'Chân', en: 'Legs', es: 'Piernas' },
+  { key: 'shoulders', vi: 'Vai', en: 'Shoulders', es: 'Hombros' },
+  { key: 'biceps', vi: 'Tay trước', en: 'Biceps', es: 'Bíceps' },
+  { key: 'triceps', vi: 'Tay sau', en: 'Triceps', es: 'Tríceps' },
+  { key: 'abs', vi: 'Bụng', en: 'Abs', es: 'Abdominales' },
+  { key: 'glutes', vi: 'Mông', en: 'Glutes', es: 'Glúteos' },
+  { key: 'calves', vi: 'Bắp chân', en: 'Calves', es: 'Pantorrillas' },
+  { key: 'cardio', vi: 'Tim mạch', en: 'Cardio', es: 'Cardio' },
 ];
 
 /** Two rows of three — what the library shows before you open it up. */
@@ -90,16 +91,17 @@ const TILES_COLLAPSED = 6;
 export function MuscleGrid({
   exercises,
   failed,
-  vi,
+  lang,
 }: {
   exercises: { muscle_group: string | null }[];
   /** the library did not load — show the shelves, do not claim they are empty */
   failed: boolean;
-  vi: boolean;
+  lang: AppLang;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
+  const vi = lang === 'vi';
   const [open, setOpen] = useState(false);
   /*
     Grouped by *art*, not by stored name.
@@ -143,7 +145,7 @@ export function MuscleGrid({
               key={t.key}
               accessibilityRole="button"
               accessibilityLabel={
-                failed ? (vi ? t.vi : t.en) : `${vi ? t.vi : t.en}, ${n} ${vi ? 'bài' : 'exercises'}`
+                failed ? (t[lang] ?? t.en) : `${t[lang] ?? t.en}, ${n} ${vi ? 'bài' : 'exercises'}`
               }
               style={styles.libTile}
               onPress={() => {
@@ -154,7 +156,7 @@ export function MuscleGrid({
                 nav.push({ pathname: '/exercises', params: { group: t.key } });
               }}>
               <MuscleArt group={t.key} size={64} />
-              <Text style={styles.libName} numberOfLines={1}>{vi ? t.vi : t.en}</Text>
+              <Text style={styles.libName} numberOfLines={1}>{t[lang] ?? t.en}</Text>
               {failed ? null : (
                 <Text style={styles.libCount}>
                   {n} {vi ? 'bài' : n === 1 ? 'exercise' : 'exercises'}

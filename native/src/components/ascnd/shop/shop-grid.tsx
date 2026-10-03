@@ -1,3 +1,4 @@
+import type { AppLang } from '@/lib/i18n';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Backpack, Check, Coins, Crown, Droplets, Dumbbell, Flame, Footprints, Ghost, Gift, Glasses, Headphones, LayoutGrid, Moon, Shirt, Snowflake, Sparkles, Star, Store, Trophy, Wind, type LucideIcon } from 'lucide-react-native';
 
@@ -86,7 +87,7 @@ export function CategoryRow({
 }: {
   current: ShopCategory | 'all';
   onPick: (c: ShopCategory | 'all') => void;
-  lang: 'vi' | 'en';
+  lang: AppLang;
   i18n: ReturnType<typeof useI18n>;
 }) {
   const c = usePalette();
@@ -136,7 +137,7 @@ export function CollectionRow({
   claimed: boolean;
   pending: boolean;
   onClaim: () => void;
-  lang: 'vi' | 'en';
+  lang: AppLang;
   i18n: ReturnType<typeof useI18n>;
 }) {
   const c = usePalette();

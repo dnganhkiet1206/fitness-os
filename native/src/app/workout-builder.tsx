@@ -48,6 +48,7 @@ import { fillCopy } from '@/lib/copy-fill';
 const DAY_LONG = {
   en: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
   vi: ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'],
+  es: ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'],
 } as const;
 
 /**
@@ -139,17 +140,17 @@ type TemplateType = (typeof TYPES)[number];
  * *stored* labels, and a filter caption carries no obligation to keep matching
  * data filed under an old spelling.
  */
-const GROUPS: { key: MuscleArtKey; en: string; vi: string }[] = [
-  { key: 'chest', en: 'Chest', vi: 'Ngực' },
-  { key: 'back', en: 'Back', vi: 'Lưng' },
-  { key: 'shoulders', en: 'Shoulders', vi: 'Vai' },
-  { key: 'biceps', en: 'Biceps', vi: 'Tay trước' },
-  { key: 'triceps', en: 'Triceps', vi: 'Tay sau' },
-  { key: 'abs', en: 'Abs', vi: 'Bụng' },
-  { key: 'legs', en: 'Legs', vi: 'Chân' },
-  { key: 'glutes', en: 'Glutes', vi: 'Mông' },
-  { key: 'calves', en: 'Calves', vi: 'Bắp chân' },
-  { key: 'cardio', en: 'Cardio', vi: 'Tim mạch' },
+const GROUPS: { key: MuscleArtKey; en: string; vi: string; es: string }[] = [
+  { key: 'chest', en: 'Chest', vi: 'Ngực', es: 'Pecho' },
+  { key: 'back', en: 'Back', vi: 'Lưng', es: 'Espalda' },
+  { key: 'shoulders', en: 'Shoulders', vi: 'Vai', es: 'Hombros' },
+  { key: 'biceps', en: 'Biceps', vi: 'Tay trước', es: 'Bíceps' },
+  { key: 'triceps', en: 'Triceps', vi: 'Tay sau', es: 'Tríceps' },
+  { key: 'abs', en: 'Abs', vi: 'Bụng', es: 'Abdominales' },
+  { key: 'legs', en: 'Legs', vi: 'Chân', es: 'Piernas' },
+  { key: 'glutes', en: 'Glutes', vi: 'Mông', es: 'Glúteos' },
+  { key: 'calves', en: 'Calves', vi: 'Bắp chân', es: 'Pantorrillas' },
+  { key: 'cardio', en: 'Cardio', vi: 'Tim mạch', es: 'Cardio' },
 ];
 
 /** what a newly added exercise starts at — unchanged from the old form */
@@ -267,7 +268,6 @@ export default function WorkoutBuilderSheet() {
   const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
-  const vi = lang === 'vi';
   const insets = useSafeAreaInsets();
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
@@ -290,7 +290,7 @@ export default function WorkoutBuilderSheet() {
   const [nameTouched, setNameTouched] = useState(false);
   const [pickedType, setPickedType] = useState<TemplateType | null>(null);
 
-  const label = useCallback((g: { en: string; vi: string }) => (vi ? g.vi : g.en), [vi]);
+  const label = useCallback((g: { en: string; vi: string; es: string }) => (g[lang] ?? g.en), [lang]);
 
   /** exercise id → the group it is filed under, for naming and typing below */
   const groupById = useMemo(() => {
@@ -464,7 +464,7 @@ export default function WorkoutBuilderSheet() {
             { day_of_week: planDay, template_id: id, is_rest: false, is_deload: false },
             {
               onSuccess: () =>
-                toast.success(i18n.nPlanAdded.replace('{d}', DAY_LONG[vi ? 'vi' : 'en'][planDay])),
+                toast.success(i18n.nPlanAdded.replace('{d}', (DAY_LONG[lang] ?? DAY_LONG.en)[planDay])),
               onError: (e: Error) => toast.fail(e),
             },
           );

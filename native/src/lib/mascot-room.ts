@@ -19,10 +19,10 @@ export interface QuestDef {
 }
 
 export const DAILY_QUESTS: QuestDef[] = [
-  { key: 'meal', coins: 10, xp: 10, name: { vi: 'Ghi 1 bữa ăn', en: 'Log a meal' } },
-  { key: 'workout', coins: 25, xp: 30, name: { vi: 'Hoàn thành 1 buổi tập', en: 'Complete a workout' } },
-  { key: 'water', coins: 15, xp: 15, name: { vi: 'Đạt mục tiêu nước', en: 'Hit your water target' } },
-  { key: 'sleep', coins: 15, xp: 15, name: { vi: 'Ghi giấc ngủ', en: 'Log your sleep' } },
+  { key: 'meal', coins: 10, xp: 10, name: { vi: 'Ghi 1 bữa ăn', en: 'Log a meal', es: 'Registra una comida' } },
+  { key: 'workout', coins: 25, xp: 30, name: { vi: 'Hoàn thành 1 buổi tập', en: 'Complete a workout', es: 'Completa un entrenamiento' } },
+  { key: 'water', coins: 15, xp: 15, name: { vi: 'Đạt mục tiêu nước', en: 'Hit your water target', es: 'Alcanza tu objetivo de agua' } },
+  { key: 'sleep', coins: 15, xp: 15, name: { vi: 'Ghi giấc ngủ', en: 'Log your sleep', es: 'Registra tu sueño' } },
   /*
     ── the number in this label was not the number being measured ──
 
@@ -42,7 +42,7 @@ export const DAILY_QUESTS: QuestDef[] = [
     the sentence cannot drift from the test again. The `steps_10k` medal keeps
     its literal 10 000 for the reason given there: it is *named* for the number.
   */
-  { key: 'steps', coins: 10, xp: 12, name: { vi: 'Đi {n} bước', en: 'Walk {n} steps' } },
+  { key: 'steps', coins: 10, xp: 12, name: { vi: 'Đi {n} bước', en: 'Walk {n} steps', es: 'Camina {n} pasos' } },
 ];
 
 /** Coins/XP for each completed weekly challenge (claimed on the room page) */
@@ -90,12 +90,12 @@ export interface RankDef {
 }
 
 export const RANKS: RankDef[] = [
-  { key: 'rookie', minLevel: 1, name: { vi: 'Tập sự', en: 'Rookie' }, color: '#8b93a4' },
-  { key: 'active', minLevel: 5, name: { vi: 'Năng động', en: 'Active' }, color: '#2bf5a8' },
-  { key: 'prime', minLevel: 10, name: { vi: 'Sung sức', en: 'Prime' }, color: '#3ba6ff' },
-  { key: 'peak', minLevel: 20, name: { vi: 'Đỉnh cao', en: 'Peak' }, color: '#b07de0' },
-  { key: 'apex', minLevel: 35, name: { vi: 'Tối thượng', en: 'Apex' }, color: '#e08a3a' },
-  { key: 'legend', minLevel: 55, name: { vi: 'Huyền thoại', en: 'Legend' }, color: '#ffd93d' },
+  { key: 'rookie', minLevel: 1, name: { vi: 'Tập sự', en: 'Rookie', es: 'Novato' }, color: '#8b93a4' },
+  { key: 'active', minLevel: 5, name: { vi: 'Năng động', en: 'Active', es: 'Activo' }, color: '#2bf5a8' },
+  { key: 'prime', minLevel: 10, name: { vi: 'Sung sức', en: 'Prime', es: 'En forma' }, color: '#3ba6ff' },
+  { key: 'peak', minLevel: 20, name: { vi: 'Đỉnh cao', en: 'Peak', es: 'Cima' }, color: '#b07de0' },
+  { key: 'apex', minLevel: 35, name: { vi: 'Tối thượng', en: 'Apex', es: 'Ápice' }, color: '#e08a3a' },
+  { key: 'legend', minLevel: 55, name: { vi: 'Huyền thoại', en: 'Legend', es: 'Leyenda' }, color: '#ffd93d' },
 ];
 
 /** Highest rank whose minLevel the buddy has reached */
@@ -200,10 +200,10 @@ export type ShopItemKey = string;
 export type Rarity = 'common' | 'rare' | 'epic' | 'legendary';
 
 export const RARITY: Record<Rarity, { name: Record<AppLang, string>; color: string; order: number }> = {
-  common: { name: { vi: 'Phổ thông', en: 'Common' }, color: '#2bf5a8', order: 0 },
-  rare: { name: { vi: 'Hiếm', en: 'Rare' }, color: '#3ba6ff', order: 1 },
-  epic: { name: { vi: 'Sử thi', en: 'Epic' }, color: '#b07de0', order: 2 },
-  legendary: { name: { vi: 'Huyền thoại', en: 'Legendary' }, color: '#ffd93d', order: 3 },
+  common: { name: { vi: 'Phổ thông', en: 'Common', es: 'Común' }, color: '#2bf5a8', order: 0 },
+  rare: { name: { vi: 'Hiếm', en: 'Rare', es: 'Raro' }, color: '#3ba6ff', order: 1 },
+  epic: { name: { vi: 'Sử thi', en: 'Epic', es: 'Épico' }, color: '#b07de0', order: 2 },
+  legendary: { name: { vi: 'Huyền thoại', en: 'Legendary', es: 'Legendario' }, color: '#ffd93d', order: 3 },
 };
 
 /**
@@ -245,6 +245,7 @@ const o = (
   price: number,
   vi: string,
   en: string,
+  es: string,
   extra: { collection?: string; unlockLevel?: number; special?: boolean } = {},
 ): ShopItem => ({
   key: `${slot}_${koaId}`,
@@ -254,59 +255,59 @@ const o = (
   category,
   rarity,
   price,
-  name: { vi, en },
+  name: { vi, en, es },
   ...extra,
 });
 
 export const SHOP_ITEMS: ShopItem[] = [
   // ── Đầu (head) ──
-  o('head', 'band', 'head', 'common', 80, 'Băng đô thể thao', 'Sport Headband'),
-  o('head', 'cap', 'head', 'common', 100, 'Nón lưỡi trai', 'Baseball Cap'),
-  o('head', 'beanie', 'head', 'rare', 150, 'Nón len', 'Knit Beanie'),
-  o('head', 'phones', 'head', 'rare', 200, 'Tai nghe', 'Headphones', { collection: 'runner' }),
+  o('head', 'band', 'head', 'common', 80, 'Băng đô thể thao', 'Sport Headband', 'Cinta deportiva'),
+  o('head', 'cap', 'head', 'common', 100, 'Nón lưỡi trai', 'Baseball Cap', 'Gorra de béisbol'),
+  o('head', 'beanie', 'head', 'rare', 150, 'Nón len', 'Knit Beanie', 'Gorro de lana'),
+  o('head', 'phones', 'head', 'rare', 200, 'Tai nghe', 'Headphones', 'Auriculares', { collection: 'runner' }),
   // ── Mặt (face) ──
-  o('face', 'shades', 'face', 'common', 60, 'Kính đen', 'Sunglasses'),
-  o('face', 'goggles', 'face', 'common', 80, 'Kính bơi', 'Swim Goggles'),
-  o('face', 'mask', 'face', 'common', 60, 'Khẩu trang', 'Face Mask'),
-  o('face', 'heart', 'face', 'rare', 150, 'Kính trái tim', 'Heart Glasses'),
-  o('face', 'vr', 'face', 'epic', 350, 'Kính VR', 'VR Headset'),
+  o('face', 'shades', 'face', 'common', 60, 'Kính đen', 'Sunglasses', 'Gafas de sol'),
+  o('face', 'goggles', 'face', 'common', 80, 'Kính bơi', 'Swim Goggles', 'Gafas de natación'),
+  o('face', 'mask', 'face', 'common', 60, 'Khẩu trang', 'Face Mask', 'Mascarilla'),
+  o('face', 'heart', 'face', 'rare', 150, 'Kính trái tim', 'Heart Glasses', 'Gafas de corazón'),
+  o('face', 'vr', 'face', 'epic', 350, 'Kính VR', 'VR Headset', 'Casco VR'),
   // ── Thân (top / bottom / shoes) ──
-  o('top', 'tank', 'body', 'common', 100, 'Áo tank top', 'Tank Top', { collection: 'gym' }),
-  o('top', 'tee', 'body', 'common', 80, 'Áo thun', 'T-Shirt'),
-  o('top', 'hoodie', 'body', 'rare', 180, 'Áo hoodie', 'Hoodie'),
-  o('top', 'jersey', 'body', 'rare', 160, 'Áo bóng đá', 'Jersey', { collection: 'runner' }),
-  o('bottom', 'short', 'body', 'common', 80, 'Quần short', 'Shorts', { collection: 'gym' }),
-  o('bottom', 'jogger', 'body', 'common', 100, 'Quần jogger', 'Joggers'),
-  o('bottom', 'legging', 'body', 'rare', 150, 'Quần legging', 'Leggings', { collection: 'runner' }),
-  o('bottom', 'camo', 'body', 'rare', 160, 'Quần rằn ri', 'Camo Pants'),
-  o('shoes', 'sneaker', 'body', 'common', 100, 'Giày sneaker', 'Sneakers', { collection: 'gym' }),
-  o('shoes', 'runner', 'body', 'rare', 200, 'Giày chạy bộ', 'Running Shoes', { collection: 'runner' }),
-  o('shoes', 'glow', 'body', 'epic', 350, 'Giày phát sáng', 'Glow Kicks'),
-  o('shoes', 'wing', 'body', 'legendary', 650, 'Giày có cánh', 'Winged Boots', { unlockLevel: 15 }),
+  o('top', 'tank', 'body', 'common', 100, 'Áo tank top', 'Tank Top', 'Camiseta de tirantes', { collection: 'gym' }),
+  o('top', 'tee', 'body', 'common', 80, 'Áo thun', 'T-Shirt', 'Camiseta'),
+  o('top', 'hoodie', 'body', 'rare', 180, 'Áo hoodie', 'Hoodie', 'Sudadera'),
+  o('top', 'jersey', 'body', 'rare', 160, 'Áo bóng đá', 'Jersey', 'Camiseta de fútbol', { collection: 'runner' }),
+  o('bottom', 'short', 'body', 'common', 80, 'Quần short', 'Shorts', 'Pantalones cortos', { collection: 'gym' }),
+  o('bottom', 'jogger', 'body', 'common', 100, 'Quần jogger', 'Joggers', 'Pantalones jogger'),
+  o('bottom', 'legging', 'body', 'rare', 150, 'Quần legging', 'Leggings', 'Mallas', { collection: 'runner' }),
+  o('bottom', 'camo', 'body', 'rare', 160, 'Quần rằn ri', 'Camo Pants', 'Pantalones de camuflaje'),
+  o('shoes', 'sneaker', 'body', 'common', 100, 'Giày sneaker', 'Sneakers', 'Zapatillas', { collection: 'gym' }),
+  o('shoes', 'runner', 'body', 'rare', 200, 'Giày chạy bộ', 'Running Shoes', 'Zapatillas de running', { collection: 'runner' }),
+  o('shoes', 'glow', 'body', 'epic', 350, 'Giày phát sáng', 'Glow Kicks', 'Zapatillas luminosas'),
+  o('shoes', 'wing', 'body', 'legendary', 650, 'Giày có cánh', 'Winged Boots', 'Botas aladas', { unlockLevel: 15 }),
   // ── Phụ kiện (back / hand) ──
-  o('back', 'backpack', 'gear', 'common', 100, 'Ba lô', 'Backpack'),
-  o('back', 'hydro', 'gear', 'rare', 180, 'Túi nước', 'Hydration Pack', { collection: 'runner' }),
-  o('back', 'cape', 'gear', 'epic', 400, 'Áo choàng', 'Hero Cape'),
-  o('hand', 'bottle', 'gear', 'common', 60, 'Bình nước', 'Water Bottle'),
-  o('hand', 'dumbbell', 'gear', 'common', 80, 'Tạ tay', 'Dumbbell', { collection: 'gym' }),
-  o('hand', 'towel', 'gear', 'common', 60, 'Khăn tập', 'Gym Towel'),
-  o('hand', 'rope', 'gear', 'rare', 140, 'Dây nhảy', 'Jump Rope'),
-  o('hand', 'trophy', 'gear', 'epic', 400, 'Cúp vàng', 'Gold Trophy', { unlockLevel: 10 }),
+  o('back', 'backpack', 'gear', 'common', 100, 'Ba lô', 'Backpack', 'Mochila'),
+  o('back', 'hydro', 'gear', 'rare', 180, 'Túi nước', 'Hydration Pack', 'Mochila de hidratación', { collection: 'runner' }),
+  o('back', 'cape', 'gear', 'epic', 400, 'Áo choàng', 'Hero Cape', 'Capa de héroe'),
+  o('hand', 'bottle', 'gear', 'common', 60, 'Bình nước', 'Water Bottle', 'Botella de agua'),
+  o('hand', 'dumbbell', 'gear', 'common', 80, 'Tạ tay', 'Dumbbell', 'Mancuerna', { collection: 'gym' }),
+  o('hand', 'towel', 'gear', 'common', 60, 'Khăn tập', 'Gym Towel', 'Toalla de gimnasio'),
+  o('hand', 'rope', 'gear', 'rare', 140, 'Dây nhảy', 'Jump Rope', 'Cuerda para saltar'),
+  o('hand', 'trophy', 'gear', 'epic', 400, 'Cúp vàng', 'Gold Trophy', 'Trofeo de oro', { unlockLevel: 10 }),
   // ── Đặc biệt (seasonal / themed) — each keeps its slot home *and* the
   //    Special shelf (special: true), so a Santa hat is under Đầu too. ──
-  o('head', 'santa', 'head', 'rare', 150, 'Nón Noel', 'Santa Hat', { collection: 'xmas', special: true }),
-  o('top', 'xmas', 'body', 'rare', 180, 'Áo len Noel', 'Xmas Sweater', { collection: 'xmas', special: true }),
-  o('head', 'khanxep', 'head', 'rare', 150, 'Khăn xếp', 'Tet Turban', { collection: 'tet', special: true }),
-  o('top', 'aodai', 'body', 'epic', 350, 'Áo dài', 'Ao Dai', { collection: 'tet', special: true }),
-  o('head', 'witch', 'head', 'rare', 160, 'Nón phù thuỷ', 'Witch Hat', { collection: 'halloween', special: true }),
-  o('top', 'ghost', 'body', 'rare', 180, 'Áo choàng ma', 'Ghost Cloak', { collection: 'halloween', special: true }),
-  o('back', 'dragonwing', 'gear', 'legendary', 800, 'Cánh Rồng', 'Dragon Wings', { unlockLevel: 20, special: true }),
+  o('head', 'santa', 'head', 'rare', 150, 'Nón Noel', 'Santa Hat', 'Gorro de Santa', { collection: 'xmas', special: true }),
+  o('top', 'xmas', 'body', 'rare', 180, 'Áo len Noel', 'Xmas Sweater', 'Jersey de Navidad', { collection: 'xmas', special: true }),
+  o('head', 'khanxep', 'head', 'rare', 150, 'Khăn xếp', 'Tet Turban', 'Turbante Tet', { collection: 'tet', special: true }),
+  o('top', 'aodai', 'body', 'epic', 350, 'Áo dài', 'Ao Dai', 'Ao Dai', { collection: 'tet', special: true }),
+  o('head', 'witch', 'head', 'rare', 160, 'Nón phù thuỷ', 'Witch Hat', 'Sombrero de bruja', { collection: 'halloween', special: true }),
+  o('top', 'ghost', 'body', 'rare', 180, 'Áo choàng ma', 'Ghost Cloak', 'Capa de fantasma', { collection: 'halloween', special: true }),
+  o('back', 'dragonwing', 'gear', 'legendary', 800, 'Cánh Rồng', 'Dragon Wings', 'Alas de dragón', { unlockLevel: 20, special: true }),
   // ── Stage skins — reskin the whole showcase behind the buddy. One is active
   //    at a time, chosen from the shop; none equipped is the free default. See
   //    `conflictingKeys` / `activeStageKey`. ──
-  { key: 'stage_night', type: 'stage', rarity: 'rare', price: 300, name: { vi: 'Sân khấu Đêm', en: 'Night Stage' } },
-  { key: 'stage_sunset', type: 'stage', rarity: 'epic', price: 500, name: { vi: 'Sân khấu Hoàng hôn', en: 'Sunset Stage' } },
-  { key: 'stage_champion', type: 'stage', rarity: 'legendary', price: 800, name: { vi: 'Sân khấu Vô địch', en: 'Champion Stage' } },
+  { key: 'stage_night', type: 'stage', rarity: 'rare', price: 300, name: { vi: 'Sân khấu Đêm', en: 'Night Stage', es: 'Escenario nocturno' } },
+  { key: 'stage_sunset', type: 'stage', rarity: 'epic', price: 500, name: { vi: 'Sân khấu Hoàng hôn', en: 'Sunset Stage', es: 'Escenario al atardecer' } },
+  { key: 'stage_champion', type: 'stage', rarity: 'legendary', price: 800, name: { vi: 'Sân khấu Vô địch', en: 'Champion Stage', es: 'Escenario del campeón' } },
 ];
 
 export const getShopItem = (key: string): ShopItem | undefined =>
@@ -314,11 +315,11 @@ export const getShopItem = (key: string): ShopItem | undefined =>
 
 /** Category tabs, in the order the icon row shows them (outfits only). */
 export const SHOP_CATEGORIES: { id: ShopCategory; name: Record<AppLang, string> }[] = [
-  { id: 'head', name: { vi: 'Đầu', en: 'Head' } },
-  { id: 'face', name: { vi: 'Mặt', en: 'Face' } },
-  { id: 'body', name: { vi: 'Thân', en: 'Body' } },
-  { id: 'gear', name: { vi: 'Phụ kiện', en: 'Gear' } },
-  { id: 'special', name: { vi: 'Đặc biệt', en: 'Special' } },
+  { id: 'head', name: { vi: 'Đầu', en: 'Head', es: 'Cabeza' } },
+  { id: 'face', name: { vi: 'Mặt', en: 'Face', es: 'Cara' } },
+  { id: 'body', name: { vi: 'Thân', en: 'Body', es: 'Cuerpo' } },
+  { id: 'gear', name: { vi: 'Phụ kiện', en: 'Gear', es: 'Accesorios' } },
+  { id: 'special', name: { vi: 'Đặc biệt', en: 'Special', es: 'Especial' } },
 ];
 
 /**
@@ -336,35 +337,35 @@ export interface Collection {
 export const COLLECTIONS: Collection[] = [
   {
     id: 'gym',
-    name: { vi: 'Bộ Gym', en: 'Gym Set' },
+    name: { vi: 'Bộ Gym', en: 'Gym Set', es: 'Conjunto gym' },
     itemKeys: ['head_band', 'top_tank', 'bottom_short', 'shoes_sneaker', 'hand_dumbbell'],
     rewardCoins: 120,
     rewardXp: 60,
   },
   {
     id: 'runner',
-    name: { vi: 'Bộ Chạy Bộ', en: 'Runner Set' },
+    name: { vi: 'Bộ Chạy Bộ', en: 'Runner Set', es: 'Conjunto runner' },
     itemKeys: ['head_phones', 'top_jersey', 'bottom_legging', 'shoes_runner', 'back_hydro'],
     rewardCoins: 180,
     rewardXp: 90,
   },
   {
     id: 'tet',
-    name: { vi: 'Bộ Tết', en: 'Tet Set' },
+    name: { vi: 'Bộ Tết', en: 'Tet Set', es: 'Conjunto Tet' },
     itemKeys: ['head_khanxep', 'top_aodai'],
     rewardCoins: 120,
     rewardXp: 60,
   },
   {
     id: 'xmas',
-    name: { vi: 'Bộ Giáng Sinh', en: 'Christmas Set' },
+    name: { vi: 'Bộ Giáng Sinh', en: 'Christmas Set', es: 'Conjunto de Navidad' },
     itemKeys: ['head_santa', 'top_xmas'],
     rewardCoins: 120,
     rewardXp: 60,
   },
   {
     id: 'halloween',
-    name: { vi: 'Bộ Halloween', en: 'Halloween Set' },
+    name: { vi: 'Bộ Halloween', en: 'Halloween Set', es: 'Conjunto de Halloween' },
     itemKeys: ['head_witch', 'top_ghost'],
     rewardCoins: 120,
     rewardXp: 60,
@@ -409,7 +410,7 @@ export const CONSUMABLES: ShopItem[] = [
     type: 'consumable',
     rarity: 'rare',
     price: 150,
-    name: { vi: 'Bảo hiểm chuỗi', en: 'Streak Freeze' },
+    name: { vi: 'Bảo hiểm chuỗi', en: 'Streak Freeze', es: 'Protector de racha' },
   },
 ];
 

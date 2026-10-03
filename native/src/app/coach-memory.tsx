@@ -34,11 +34,11 @@ interface Memory {
   lúc import và sẽ giữ màu của theme tối kể cả khi người dùng bật theme sáng.
   Bảng vẫn là hằng thật; chỗ vẽ — nơi luôn có `c` — mới đổi khoá thành màu.
 */
-const GROUPS: { kind: Memory['kind']; vi: string; en: string; tint: PaletteKey }[] = [
-  { kind: 'constraint', vi: 'Giới hạn', en: 'Limits', tint: 'readinessRed' },
-  { kind: 'goal', vi: 'Mục tiêu', en: 'Goals', tint: 'readinessGreen' },
-  { kind: 'preference', vi: 'Thói quen', en: 'Habits', tint: 'metricBlue' },
-  { kind: 'context', vi: 'Hoàn cảnh', en: 'Context', tint: 'metricPurple' },
+const GROUPS: { kind: Memory['kind']; vi: string; en: string; es: string; tint: PaletteKey }[] = [
+  { kind: 'constraint', vi: 'Giới hạn', en: 'Limits', es: 'Límites', tint: 'readinessRed' },
+  { kind: 'goal', vi: 'Mục tiêu', en: 'Goals', es: 'Objetivos', tint: 'readinessGreen' },
+  { kind: 'preference', vi: 'Thói quen', en: 'Habits', es: 'Hábitos', tint: 'metricBlue' },
+  { kind: 'context', vi: 'Hoàn cảnh', en: 'Context', es: 'Contexto', tint: 'metricPurple' },
 ];
 
 /**
@@ -147,7 +147,7 @@ export default function CoachMemoryScreen() {
               <View style={styles.groupHead}>
                 <View style={[styles.dot, { backgroundColor: c[g.tint] }]} />
                 <Text style={styles.groupTitle} accessibilityRole="header">
-                  {vi ? g.vi : g.en}
+                  {g[lang] ?? g.en}
                 </Text>
               </View>
               {items.map((m) => (
