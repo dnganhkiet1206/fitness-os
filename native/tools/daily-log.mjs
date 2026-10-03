@@ -85,7 +85,8 @@ const SERVICE = 'src/lib/daily-log-service.ts';
     writeFileSync(
       path.join(out, 'db.cjs'),
       `const T = { meal_entries: [], workout_sessions: [], sleep_logs: [], supplements: [],
-                   supplement_intake_logs: [], biometric_samples: [], profiles: [], daily_logs: [] };
+                   supplement_intake_logs: [], biometric_samples: [], profiles: [], daily_logs: [],
+                   water_logs: [] };
        let clock = 0;
        let LAG = 0;
        const wait = async () => { if (LAG) await new Promise((r) => setTimeout(r, LAG)); };

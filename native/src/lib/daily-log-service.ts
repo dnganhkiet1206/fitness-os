@@ -217,7 +217,7 @@ const CHRONIC_DAYS = 28;
  * rather than a list that drifts from `row`.
  */
 const PROJECTION_COLUMNS =
-  'kcal, protein_g, carbs_g, fat_g, fiber_g, sleep_duration_min, sleep_quality, ' +
+  'kcal, protein_g, carbs_g, fat_g, fiber_g, water_ml, sleep_duration_min, sleep_quality, ' +
   'workout_count, volume_load, supplement_taken, supplement_planned, ' +
   'readiness_score, readiness_status, readiness_explain, readiness_recommendation, acwr';
 
@@ -349,6 +349,7 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
     load7dRes,
     load28dRes,
     sleepLogs7dRes,
+    waterRes,
   ] = await Promise.all([
     // 1. Nutrition from meal_entries
     supabase
@@ -423,6 +424,13 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
       .eq('user_id', userId)
       .gte('waketime', acute.start)
       .lt('waketime', acute.end),
+    /* P2-16: water belongs to the day by its `date` column (a local-day
+       string, not a timestamptz) — same predicate `useTodayWater` uses. */
+    supabase
+      .from('water_logs')
+      .select('amount_ml')
+      .eq('user_id', userId)
+      .eq('date', date),
   ]);
 
   /*
@@ -443,6 +451,7 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
       ['workout_sessions (7d)', load7dRes],
       ['workout_sessions (28d)', load28dRes],
       ['sleep_logs (7d)', sleepLogs7dRes],
+      ['water_logs', waterRes],
     ] as const
   ).filter(([, r]) => r.error);
 
@@ -467,6 +476,7 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
   const load7d = load7dRes.data;
   const load28d = load28dRes.data;
   const sleepLogs7d = sleepLogs7dRes.data;
+  const waters = waterRes.data;
 
   /* Oldest session in the window → how many days the chronic average spans.
      No sessions means no span, which `computeLoadScore` reads as "no training
@@ -498,6 +508,10 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
 
   const workout_count = workouts?.length ?? 0;
   const volume_load = workouts?.reduce((s, w) => s + Number(w.volume_load), 0) ?? 0;
+
+  /* P2-16: the day's water, summed from water_logs — the most-logged habit in
+     the app finally has a trendable home. */
+  const water_ml = waters?.reduce((s, w) => s + Number(w.amount_ml), 0) ?? 0;
 
   const sleep = mainSleep(sleeps) ?? undefined;
   let sleep_duration_min = 0;
@@ -680,6 +694,7 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
     carbs_g,
     fat_g,
     fiber_g,
+    water_ml,
     sleep_duration_min,
     sleep_quality,
     workout_count,

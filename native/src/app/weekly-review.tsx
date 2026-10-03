@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Droplets,
   Dumbbell,
   Flame,
   HeartPulse,
@@ -194,7 +195,7 @@ export default function WeeklyReviewScreen() {
            below is a recovery question and the score alone cannot answer it —
            see `lib/readiness-week.ts`. Same row, one more column, no new table
            and no new query. */
-        .select('date, kcal, protein_g, volume_load, readiness_score, readiness_explain, acwr, sleep_duration_min, sleep_quality, supplement_taken, supplement_planned')
+        .select('date, kcal, protein_g, volume_load, readiness_score, readiness_explain, acwr, sleep_duration_min, sleep_quality, supplement_taken, supplement_planned, water_ml')
         .eq('user_id', user!.id)
         .gte('date', startStr)
         .lt('date', endStr)
@@ -341,6 +342,9 @@ export default function WeeklyReviewScreen() {
      row is not a meal. */
   const { mean: avgKcal } = metricMean(logs, (l) => Number(l.kcal));
   const { mean: avgProtein, count: proteinDays } = metricMean(logs, (l) => Number(l.protein_g));
+  /* P2-16 (DE-XUAT-2): water finally has a home in daily_logs — weekly average
+     in litres, same population rule as the other means. */
+  const { mean: avgWaterMl } = metricMean(logs, (l) => Number(l.water_ml));
   /*
     Độ dài một đêm là `asleepMinutes`, không phải tổng ba giai đoạn.
 
@@ -519,6 +523,14 @@ export default function WeeklyReviewScreen() {
           },
         ]
       : []),
+    /* P2-16: water average — the most-logged habit finally trendable. */
+    {
+      icon: Droplets,
+      label: i18n.nCxWeeklyReviewWater ?? 'Water',
+      value: `${(avgWaterMl / 1000).toFixed(1)}L`,
+      sub: `/${(Number(profile?.water_target_ml) || 2500) / 1000}L`,
+      d: null,
+    },
   ];
 
   const REC_STYLE = {

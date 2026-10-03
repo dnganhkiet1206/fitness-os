@@ -784,6 +784,7 @@ export type Database = {
           updated_at: string
           user_id: string
           volume_load: number | null
+          water_ml: number | null
           workout_count: number | null
         }
         Insert: {
@@ -810,6 +811,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           volume_load?: number | null
+          water_ml?: number | null
           workout_count?: number | null
         }
         Update: {
@@ -836,6 +838,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           volume_load?: number | null
+          water_ml?: number | null
           workout_count?: number | null
         }
         Relationships: []
