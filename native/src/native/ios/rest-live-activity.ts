@@ -11,9 +11,12 @@
 // where Live Activities are disabled, the facade resolves null and these
 // become no-ops. The workout never depends on the outcome.
 import {
+  addIslandRestIntentListener,
   endRestActivity,
+  getIslandRestState,
   startRestActivity,
   updateRestActivity,
+  type IslandRestIntent,
 } from './ASCNDLiveActivity';
 
 interface RestDisplay {
@@ -34,6 +37,67 @@ export interface RestLiveActivityFacade {
   startRestActivity: typeof startRestActivity;
   updateRestActivity: typeof updateRestActivity;
   endRestActivity: typeof endRestActivity;
+  addIslandRestIntentListener: typeof addIslandRestIntentListener;
+  getIslandRestState: typeof getIslandRestState;
+}
+
+/** Re-exported for the app layer (day-plan subscribes via the manager). */
+export { addIslandRestIntentListener, getIslandRestState };
+export type { IslandRestIntent };
+
+/** Handler the app registers to follow island taps (pause/resume/±15s). */
+export type IslandIntentHandler = (intent: IslandRestIntent) => void;
+
+let intentHandler: IslandIntentHandler | null = null;
+let lastIntentSeq = 0;
+let detachIntentListener: (() => void) | null = null;
+let intentFacade: Pick<
+  RestLiveActivityFacade,
+  'addIslandRestIntentListener' | 'getIslandRestState'
+> | null = null;
+
+function dispatchIntent(intent: IslandRestIntent): void {
+  if (intent.seq !== undefined) {
+    // Replay/duplicate guard (Darwin pings are not queued; the foreground
+    // reconcile may re-read the same payload).
+    if (intent.seq <= lastIntentSeq) return;
+    lastIntentSeq = intent.seq;
+  }
+  intentHandler?.(intent);
+}
+
+/**
+ * Registers the app-side follower for island taps. The native listener is
+ * attached once; setting null detaches. Safe to call with the test stub —
+ * the facade is injected, never imported directly here.
+ */
+export function setIslandIntentHandler(
+  facade: Pick<
+    RestLiveActivityFacade,
+    'addIslandRestIntentListener' | 'getIslandRestState'
+  >,
+  handler: IslandIntentHandler | null,
+): void {
+  intentFacade = facade;
+  intentHandler = handler;
+  if (handler !== null && detachIntentListener === null) {
+    detachIntentListener = facade.addIslandRestIntentListener(dispatchIntent);
+  } else if (handler === null && detachIntentListener !== null) {
+    detachIntentListener();
+    detachIntentListener = null;
+  }
+}
+
+/**
+ * Foreground reconcile: re-reads the last island intent payload. Covers
+ * intents that fired while JS was suspended (the Darwin ping is not
+ * queued). No-op when no handler is registered or nothing is pending.
+ */
+export async function reconcileIslandIntent(): Promise<void> {
+  if (!intentFacade || !intentHandler) return;
+  const intent = await intentFacade.getIslandRestState();
+  if (!intent) return;
+  dispatchIntent(intent);
 }
 
 /*
@@ -159,6 +223,8 @@ const singleton = createRestLiveActivity({
   startRestActivity,
   updateRestActivity,
   endRestActivity,
+  addIslandRestIntentListener,
+  getIslandRestState,
 });
 export const {
   restLiveActivityStarted,

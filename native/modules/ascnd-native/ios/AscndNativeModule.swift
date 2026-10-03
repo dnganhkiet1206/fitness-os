@@ -25,15 +25,16 @@ private enum AscndNativeError: Error, LocalizedError {
 }
 
 /// Localized Island strings, keyed by app language. The bridge passes only
-/// the language code (1 param, not 3 strings) — Swift looks up the table.
-/// These MUST match native/src/lib/native-strings.ts (nRdResting, nRestSetOf,
-/// nRestNext). If the app adds a language, add it here too.
-private func islandStrings(for languageCode: String) -> (resting: String, setTemplate: String, next: String) {
+/// the language code (1 param, not N strings) — Swift looks up the table.
+/// The next-set label ("Hiệp tiếp theo"/"Next set") replaced "Set {n}/{t}"
+/// per Kiệt 02/10/2026: the rest precedes the NEXT set, so numbering the
+/// finished set was wrong.
+private func islandStrings(for languageCode: String) -> (resting: String, nextSet: String) {
   switch languageCode {
   case "vi":
-    return ("Nghỉ", "Set {n}/{t}", "Tiếp theo")
+    return ("Nghỉ", "Hiệp tiếp theo")
   default:
-    return ("Rest", "Set {n}/{t}", "Up next")
+    return ("Rest", "Next set")
   }
 }
 
@@ -74,8 +75,12 @@ private final class RestActivityStore {
       // the Island would never appear at all.
       try? await activity.end(nil, dismissalPolicy: .immediate)
     }
+    // Fresh rest: drop any intent payload from a previous rest (see
+    // IslandIntentRelay.invalidatePayload).
+    IslandIntentRelay.shared.invalidatePayload()
     let attributes = RestTimerAttributes(brandName: "ASCND")
     let strings = islandStrings(for: languageCode)
+    let now = Date()
     let state = RestTimerAttributes.ContentState(
       activityState: activityState,
       exerciseName: exerciseName,
@@ -83,11 +88,12 @@ private final class RestActivityStore {
       totalSets: totalSets,
       totalSeconds: totalSeconds,
       endDate: endDate,
+      startDate: now,
+      isPaused: false,
+      pausedRemaining: 0,
       restingText: strings.resting,
-      setText: strings.setTemplate
-        .replacingOccurrences(of: "{n}", with: String(setNumber))
-        .replacingOccurrences(of: "{t}", with: String(totalSets)),
-      nextText: strings.next
+      setText: strings.nextSet,
+      nextText: strings.nextSet
     )
     // staleDate lets the system replace a stale activity if updates stop.
     let content = ActivityContent(state: state, staleDate: endDate.addingTimeInterval(60))
@@ -114,27 +120,102 @@ private final class RestActivityStore {
       throw AscndNativeError.activityNotFound(id)
     }
     let strings = islandStrings(for: languageCode)
-    let state = RestTimerAttributes.ContentState(
-      activityState: activityState,
-      exerciseName: exerciseName,
-      setNumber: setNumber,
-      totalSets: totalSets,
-      totalSeconds: totalSeconds,
-      endDate: endDate,
-      restingText: strings.resting,
-      setText: strings.setTemplate
-        .replacingOccurrences(of: "{n}", with: String(setNumber))
-        .replacingOccurrences(of: "{t}", with: String(totalSets)),
-      nextText: strings.next
-    )
-    await activity.update(
-      ActivityContent(state: state, staleDate: endDate.addingTimeInterval(60))
-    )
+    let now = Date()
+    var state = activity.content.state
+    /*
+      Pause-aware update (02/10/2026, interactive Island): the ±15s intents
+      mutate pause state natively. A TS-side update landing while paused
+      (in-app ±15s during an island pause) must adjust the FROZEN remainder,
+      not the endDate — otherwise resume would jump. The bridge sends an
+      absolute endTimestamp either way; pausedRemaining re-derives from it.
+    */
+    if state.isPaused {
+      state.pausedRemaining = max(endDate.timeIntervalSince(now), 0)
+    } else {
+      state.endDate = endDate
+    }
+    state.activityState = activityState
+    state.exerciseName = exerciseName
+    state.setNumber = setNumber
+    state.totalSets = totalSets
+    state.totalSeconds = totalSeconds
+    state.restingText = strings.resting
+    state.setText = strings.nextSet
+    state.nextText = strings.nextSet
+    // startDate is NEVER reset here: it anchors the ring's segment math.
+    // Only the pause intent (resume) re-anchors it.
+    let horizon =
+      state.isPaused
+      ? now.addingTimeInterval(state.pausedRemaining + 60)
+      : state.endDate.addingTimeInterval(60)
+    await activity.update(ActivityContent(state: state, staleDate: horizon))
   }
 
   func end(id: String) async {
     guard let activity = activities.removeValue(forKey: id) else { return }
     await activity.end(nil, dismissalPolicy: .immediate)
+    IslandIntentRelay.shared.invalidatePayload()
+  }
+}
+
+/// Bridge back from the widget extension to JavaScript (02/10/2026).
+///
+/// The Island intents run out of process (widget extension) and report via
+/// App Group shared defaults + Darwin notification:
+///   "com.ascnd.fitnessos.island-intent" -> key "ascnd.island.intent" (JSON).
+/// This relay observes the Darwin notification and re-emits it to JS as
+/// `onIslandRestIntent`, so the in-app rest timer can follow island taps.
+/// Wired lazily on the first rest start — intents can't exist before one.
+///
+/// `seq` in the payload lets JS ignore replays/duplicates.
+private final class IslandIntentRelay {
+  static let shared = IslandIntentRelay()
+  private weak var module: AscndNativeModule?
+  private var observing = false
+  private init() {}
+
+  func attach(_ module: AscndNativeModule) {
+    self.module = module
+    guard !observing else { return }
+    observing = true
+    let center = CFNotificationCenterGetDarwinNotifyCenter()
+    CFNotificationCenterAddObserver(
+      center,
+      Unmanaged.passUnretained(self).toOpaque(),
+      { _, observer, _, _, _ in
+        guard let observer else { return }
+        Unmanaged<IslandIntentRelay>.fromOpaque(observer)
+          .takeUnretainedValue().fire()
+      },
+      IslandIntentChannel.notificationName as CFString,
+      nil,
+      .deliverImmediately)
+  }
+
+  private func fire() {
+    guard
+      let defaults = UserDefaults(suiteName: IslandIntentChannel.appGroup),
+      let json = defaults.string(forKey: IslandIntentChannel.payloadKey),
+      let data = json.data(using: .utf8),
+      let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+    else { return }
+    module?.sendEvent("onIslandRestIntent", obj)
+  }
+
+  /// Last intent payload, for foreground reconcile (JS may have missed the
+  /// Darwin ping while suspended). Returns the raw JSON string or nil.
+  func lastPayload() -> String? {
+    UserDefaults(suiteName: IslandIntentChannel.appGroup)?
+      .string(forKey: IslandIntentChannel.payloadKey)
+  }
+
+  /// A fresh rest (or a finished one) invalidates any intent payload from a
+  /// previous rest — otherwise a foreground reconcile after app restart
+  /// could replay yesterday's pause onto today's rest. `seq` stays
+  /// monotonic; only the payload is dropped.
+  func invalidatePayload() {
+    UserDefaults(suiteName: IslandIntentChannel.appGroup)?
+      .removeObject(forKey: IslandIntentChannel.payloadKey)
   }
 }
 
@@ -145,6 +226,10 @@ private final class RestActivityStore {
 public final class AscndNativeModule: Module {
   public func definition() -> ModuleDefinition {
     Name("AscndNative")
+
+    // JS-subscribable: island intent events (pause/resume/adjust from the
+    // Dynamic Island). See IslandIntentRelay above.
+    Events("onIslandRestIntent")
 
     // MARK: - Haptics (bridge validation only)
     // Product haptics stay in TypeScript — see src/lib/haptics.ts (#194).
@@ -190,6 +275,8 @@ public final class AscndNativeModule: Module {
         promise.reject(AscndNativeError.unsupportedOS)
         return
       }
+      // The island can now receive taps — make sure intent events reach JS.
+      IslandIntentRelay.shared.attach(self)
       Task {
         do {
           let state = RestTimerAttributes.ActivityState(rawValue: activityState) ?? .resting
@@ -254,6 +341,15 @@ public final class AscndNativeModule: Module {
         await RestActivityStore.shared.end(id: activityId)
         promise.resolve()
       }
+    }
+
+    // MARK: - Island intent relay (interactive Island, 02/10/2026)
+    //
+    // The Darwin observer is attached lazily on first rest start — before
+    // that no intent can exist, so there's nothing to observe.
+    AsyncFunction("getIslandRestState") { (promise: Promise) in
+      IslandIntentRelay.shared.attach(self)
+      promise.resolve(IslandIntentRelay.shared.lastPayload())
     }
 
     // MARK: - Widget data (production wiring, replaces SPIKE-ONLY mock)

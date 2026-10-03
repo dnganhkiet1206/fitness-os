@@ -47,9 +47,21 @@ import WidgetKit
 // - Expanded: left = ASCND / title / set; right = [pause] [ring], ring last.
 // - States (idle/resting/working) share one design language.
 //
-// Interactivity: the pause control is VISUAL ONLY (display-only per #195).
-// It is a plain view, not a Button, so taps fall through and open the app.
-// Wiring it needs AppIntents — a separate task.
+// Interactivity (Kiệt's call 02/10/2026, device shots): the Island is NO
+// LONGER display-only. Pause really pauses via AppIntent (no deep-link into
+// the app), −15s/+15s mirror the in-app rest card. Intents live in
+// RestTimerIntents.swift (widget extension target): they mutate the
+// ActivityKit ContentState directly, then report back to the main app via
+// App Group shared defaults + Darwin notification so the in-app timer
+// stays in sync. See AscndNativeModule.swift (relay) and
+// src/native/ios/rest-live-activity.ts (TS listener).
+//
+// Ring honesty note: the render server will NOT give us 60fps — TimelineView
+// entries in a Live Activity are best-effort (~30s cadence on iOS 26). The
+// ring is therefore computed from absolute startDate/endDate on every entry
+// so it is always CORRECT, and updates as often as the system allows. The
+// digits (system-ticked Text(timerInterval:)) are the exact source of truth;
+// the ring is the visual anchor. Do not promise in-app smoothness here.
 
 @available(iOS 16.1, *)
 struct RestTimerLiveActivity: Widget {
@@ -154,20 +166,45 @@ private func restProgress(endDate: Date, totalSeconds: Int, at date: Date) -> Do
   return min(max(1 - remaining / total, 0), 1)
 }
 
+/// Segment-based progress: (now − start) / (end − start). ±15s moves `end`
+/// only, so adding time grows the whole (ring stays a fraction — same honesty
+/// rule as the in-app card) and cutting time keeps it. Frozen while paused.
+private func restProgress(startDate: Date, endDate: Date, at date: Date) -> Double {
+  let total = max(endDate.timeIntervalSince(startDate), 1)
+  let elapsed = max(date.timeIntervalSince(startDate), 0)
+  return min(max(elapsed / total, 0), 1)
+}
+
+private func pausedProgress(pausedRemaining: Double, totalSeconds: Int) -> Double {
+  1 - min(max(pausedRemaining / max(Double(totalSeconds), 1), 0), 1)
+}
+
 /// Countdown ring whose progress is recomputed on a 1s native timeline.
 /// (A progress value captured at render time freezes — the timer text ticks
 /// via the system clock without re-rendering the view.)
+///
+/// PROGRESS SOURCE (02/10/2026): segment-based from startDate/endDate, so
+/// ±15s adjustments keep the ring honest with no extra updates. Paused holds
+/// the frozen fraction. TimelineView entries are best-effort in a Live
+/// Activity (~30s on iOS 26) — the ring is always CORRECT, just not 60fps.
 @available(iOS 16.1, *)
 private struct RestRing: View {
   let endDate: Date
+  let startDate: Date
   let totalSeconds: Int
+  var isPaused: Bool = false
+  var pausedRemaining: Double = 0
   var size: CGFloat = 22
   var lineWidth: CGFloat = 2.5
 
   var body: some View {
     TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
+      let progress: Double =
+        isPaused
+        ? pausedProgress(pausedRemaining: pausedRemaining, totalSeconds: totalSeconds)
+        : restProgress(startDate: startDate, endDate: endDate, at: timeline.date)
       ProgressRing(
-        progress: restProgress(endDate: endDate, totalSeconds: totalSeconds, at: timeline.date),
+        progress: progress,
         size: size,
         lineWidth: lineWidth
       )
@@ -214,25 +251,43 @@ private struct TimerDigits: View {
   var fontSize: CGFloat = 22
   var weight: Font.Weight = .bold
   var countsDown: Bool = true
+  /// When paused the system ticker would keep running — show the frozen
+  /// remainder as static text instead (ceil, matching the in-app `left`).
+  var isPaused: Bool = false
+  var pausedRemaining: Double = 0
 
   var body: some View {
-    let now = Date.now
-    Text(timerInterval: now...max(now, endDate), countsDown: countsDown)
-      .font(Island.timerFont(size: fontSize, weight: weight))
-      .foregroundStyle(.white)
-      .lineLimit(1)
-      .multilineTextAlignment(.center)
-      .frame(width: fontSize * 3.0, alignment: .center)
+    Group {
+      if isPaused {
+        Text(formatTotal(seconds: Int(ceil(pausedRemaining))))
+      } else {
+        let now = Date.now
+        Text(timerInterval: now...max(now, endDate), countsDown: countsDown)
+      }
+    }
+    .font(Island.timerFont(size: fontSize, weight: weight))
+    .foregroundStyle(.white)
+    .lineLimit(1)
+    .multilineTextAlignment(.center)
+    .frame(width: fontSize * 3.0, alignment: .center)
   }
 }
 
 /// The visual anchor: a thin cream ring with the countdown centred inside
 /// it, per the reference design. The ring's progress is coarse (TimelineView
 /// cadence — see the header note); the digits above it are exact.
+///
+/// LAYOUT (02/10/2026, Kiệt's compact shot): ZStack + explicit outer frame,
+/// NOT overlay. The overlay version let the timer's wide intrinsic box fight
+/// the region sizing in compactTrailing and the ring rendered oversized and
+/// clipped. The ZStack sizes to the fixed frame; nothing can blow it out.
 @available(iOS 16.1, *)
 private struct RestRingTimer: View {
   let endDate: Date
+  let startDate: Date
   let totalSeconds: Int
+  var isPaused: Bool = false
+  var pausedRemaining: Double = 0
   var size: CGFloat = 80
   var lineWidth: CGFloat = 5
   var fontSize: CGFloat = 23
@@ -240,18 +295,20 @@ private struct RestRingTimer: View {
   var countsDown: Bool = true
 
   var body: some View {
-    TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
-      ProgressRing(
-        progress: restProgress(endDate: endDate, totalSeconds: totalSeconds, at: timeline.date),
-        size: size,
-        lineWidth: lineWidth
-      )
-    }
-    .overlay {
+    ZStack {
+      TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
+        let progress: Double =
+          isPaused
+          ? pausedProgress(pausedRemaining: pausedRemaining, totalSeconds: totalSeconds)
+          : restProgress(startDate: startDate, endDate: endDate, at: timeline.date)
+        ProgressRing(progress: progress, size: size, lineWidth: lineWidth)
+      }
       VStack(spacing: 1) {
         // TimerDigits constrains its own box (see its LAYOUT comment);
-        // the overlay centres that narrow box on the ring.
-        TimerDigits(endDate: endDate, fontSize: fontSize, countsDown: countsDown)
+        // the stack centres that narrow box on the ring.
+        TimerDigits(
+          endDate: endDate, fontSize: fontSize, countsDown: countsDown,
+          isPaused: isPaused, pausedRemaining: pausedRemaining)
         if showTotal {
           Text("/ \(formatTotal(seconds: totalSeconds))")
             .font(.caption2)
@@ -259,6 +316,7 @@ private struct RestRingTimer: View {
         }
       }
     }
+    .frame(width: size, height: size)
   }
 }
 
@@ -266,10 +324,16 @@ private struct RestRingTimer: View {
 
 @available(iOS 16.1, *)
 private extension ActivityViewContext<RestTimerAttributes> {
-  /// Localized "Set {n}/{t}" — pre-formatted by TS from the app's i18n.
+  /// Next-set label — "Hiệp tiếp theo" (vi) / "Next set" (en).
+  /// Kiệt 02/10/2026: the rest precedes the NEXT set; "Set 3/3" was wrong.
   /// The Island follows the app language; never hardcode English here.
   var setLabel: String {
     state.setText
+  }
+
+  /// Shorthand for the pause-aware countdown params threading every view.
+  var pauseParams: (isPaused: Bool, pausedRemaining: Double) {
+    (state.isPaused, state.pausedRemaining)
   }
 }
 
@@ -294,25 +358,40 @@ private struct CompactTrailing: View {
   var body: some View {
     // The ring is the right-hand anchor, with the live timer inside it —
     // per the reference design. Nothing else lives in trailing.
-    // 34pt: +6% over the cramped 32pt, with room for the 3.0×font digits.
-    switch context.state.activityState {
-    case .resting:
-      RestRingTimer(
-                endDate: context.state.endDate,
-        totalSeconds: context.state.totalSeconds,
-        size: 34, lineWidth: 2.5, fontSize: 10, showTotal: false
-      )
-    case .active:
-      RestRingTimer(
-                endDate: context.state.endDate,
-        totalSeconds: context.state.totalSeconds,
-        size: 34, lineWidth: 2.5, fontSize: 10, showTotal: false,
-        countsDown: false
-      )
-    case .ready:
-      // Calm: the mark alone. Nothing to report yet.
-      EmptyView()
+    //
+    // CLIPPING FIX (02/10/2026, Kiệt's compact shot): the ring rendered
+    // oversized and clipped in compactTrailing. RestRingTimer now uses a
+    // ZStack with an explicit outer frame instead of overlay, and the box
+    // here is fixed at 36pt — the ring can never exceed it, whatever the
+    // region proposes. 30pt ring leaves 3pt breathing room per side.
+    let pause = context.pauseParams
+    ZStack {
+      switch context.state.activityState {
+      case .resting:
+        RestRingTimer(
+          endDate: context.state.endDate,
+          startDate: context.state.startDate,
+          totalSeconds: context.state.totalSeconds,
+          isPaused: pause.isPaused,
+          pausedRemaining: pause.pausedRemaining,
+          size: 30, lineWidth: 2.5, fontSize: 9, showTotal: false
+        )
+      case .active:
+        RestRingTimer(
+          endDate: context.state.endDate,
+          startDate: context.state.startDate,
+          totalSeconds: context.state.totalSeconds,
+          isPaused: pause.isPaused,
+          pausedRemaining: pause.pausedRemaining,
+          size: 30, lineWidth: 2.5, fontSize: 9, showTotal: false,
+          countsDown: false
+        )
+      case .ready:
+        // Calm: the mark alone. Nothing to report yet.
+        EmptyView()
+      }
     }
+    .frame(width: 36, height: 36)
   }
 }
 
@@ -323,7 +402,13 @@ private struct MinimalView: View {
   var body: some View {
     switch context.state.activityState {
     case .resting:
-      RestRing(endDate: context.state.endDate, totalSeconds: context.state.totalSeconds, size: 20, lineWidth: 2.5)
+      RestRing(
+        endDate: context.state.endDate,
+        startDate: context.state.startDate,
+        totalSeconds: context.state.totalSeconds,
+        isPaused: context.state.isPaused,
+        pausedRemaining: context.state.pausedRemaining,
+        size: 20, lineWidth: 2.5)
     case .active:
       Image(systemName: "dumbbell.fill")
         .font(.system(size: 13, weight: .medium))
@@ -394,19 +479,32 @@ private struct ExpandedTrailing: View {
   var body: some View {
     switch context.state.activityState {
     case .resting:
-      // Per the reference: pause first, ring LAST — the ring hugs the far
-      // right edge as the visual anchor. No Skip: the Island is not a
-      // media player (Kiệt's spec 01/10/2026).
-      HStack(spacing: 14) {
-        IslandCircleButton(icon: "pause.fill")
-        RestRingTimer(endDate: context.state.endDate, totalSeconds: context.state.totalSeconds)
+      // Kiệt 02/10/2026: [−15] [Pause/Play] [+15] [Ring], ring far-right.
+      // Real AppIntent buttons — taps run in the extension, the app is never
+      // foregrounded (the old visual-only button deep-linked on tap).
+      HStack(spacing: 10) {
+        IslandAdjustButton(seconds: -15)
+        IslandPauseButton(isPaused: context.state.isPaused)
+        IslandAdjustButton(seconds: 15)
+        RestRingTimer(
+          endDate: context.state.endDate,
+          startDate: context.state.startDate,
+          totalSeconds: context.state.totalSeconds,
+          isPaused: context.state.isPaused,
+          pausedRemaining: context.state.pausedRemaining
+        )
       }
     case .active:
-      HStack(spacing: 14) {
-        IslandCircleButton(icon: "pause.fill")
+      HStack(spacing: 10) {
+        IslandAdjustButton(seconds: -15)
+        IslandPauseButton(isPaused: context.state.isPaused)
+        IslandAdjustButton(seconds: 15)
         RestRingTimer(
-                    endDate: context.state.endDate,
+          endDate: context.state.endDate,
+          startDate: context.state.startDate,
           totalSeconds: context.state.totalSeconds,
+          isPaused: context.state.isPaused,
+          pausedRemaining: context.state.pausedRemaining,
           countsDown: false
         )
       }
@@ -432,18 +530,41 @@ private struct ExpandedBottom: View {
   }
 }
 
-/// Visual-only circular control (display-only per #195 — no AppIntent wired).
-/// A plain view, not a Button, so taps fall through and open the app.
+/// Real interactive controls (AppIntent, 02/10/2026 — Kiệt's call).
+/// `Button(intent:)` runs inside the widget extension: no deep-link, the app
+/// is never foregrounded. `.buttonStyle(.plain)` keeps our cream-on-dark
+/// Island language instead of the default button chrome.
 @available(iOS 16.1, *)
-private struct IslandCircleButton: View {
-  var icon: String
+private struct IslandPauseButton: View {
+  var isPaused: Bool
 
   var body: some View {
-    Image(systemName: icon)
-      .font(.system(size: 15, weight: .semibold))
-      .foregroundStyle(.white)
-      .frame(width: 44, height: 44)
-      .background(Circle().fill(Color.white.opacity(0.16)))
+    Button(intent: ToggleRestPauseIntent()) {
+      Image(systemName: isPaused ? "play.fill" : "pause.fill")
+        .font(.system(size: 15, weight: .semibold))
+        .foregroundStyle(.white)
+        .frame(width: 44, height: 44)
+        .background(Circle().fill(Color.white.opacity(0.16)))
+    }
+    .buttonStyle(.plain)
+  }
+}
+
+/// −15s / +15s — mirrors the in-app rest card (Kiệt 02/10/2026).
+@available(iOS 16.1, *)
+private struct IslandAdjustButton: View {
+  var seconds: Int // -15 or +15
+
+  var body: some View {
+    Button(intent: AdjustRestIntent(seconds: seconds)) {
+      Text(seconds > 0 ? "+15" : "−15")
+        .font(.system(size: 12, weight: .semibold, design: .rounded))
+        .monospacedDigit()
+        .foregroundStyle(.white)
+        .frame(width: 38, height: 38)
+        .background(Circle().fill(Color.white.opacity(0.12)))
+    }
+    .buttonStyle(.plain)
   }
 }
 
@@ -474,9 +595,13 @@ private struct LockScreenView: View {
         Spacer()
         // Ring at the far right with the live timer inside — same language
         // as the Island. Digits are system-ticked; the ring is coarse.
+        // Pause-aware: frozen when the Island pause button was used.
         RestRingTimer(
-                    endDate: context.state.endDate,
+          endDate: context.state.endDate,
+          startDate: context.state.startDate,
           totalSeconds: context.state.totalSeconds,
+          isPaused: context.state.isPaused,
+          pausedRemaining: context.state.pausedRemaining,
           size: 52, lineWidth: 4, fontSize: 16
         )
       }
@@ -500,8 +625,11 @@ private struct LockScreenView: View {
         }
         Spacer()
         RestRingTimer(
-                    endDate: context.state.endDate,
+          endDate: context.state.endDate,
+          startDate: context.state.startDate,
           totalSeconds: context.state.totalSeconds,
+          isPaused: context.state.isPaused,
+          pausedRemaining: context.state.pausedRemaining,
           size: 52, lineWidth: 4, fontSize: 16,
           countsDown: false
         )

@@ -45,6 +45,13 @@ export interface AscndNativeModuleType {
    */
   updateWidgetData(key: string, json: string): Promise<boolean>;
   endRestActivity(activityId: string): Promise<void>;
+  /**
+   * Last island intent payload (JSON) from the App Group — the foreground
+   * reconcile path for pause/resume/±15s taps that fired while JS was
+   * suspended. Null when none pending or the module is unavailable.
+   * (Interactive Island, 02/10/2026.)
+   */
+  getIslandRestState(): Promise<string | null>;
 }
 
 // Optional: null on web / where the native module is not linked.

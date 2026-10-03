@@ -22,9 +22,14 @@ import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { RestTimer } from '@/components/ascnd/rest-timer';
 import {
+  addIslandRestIntentListener,
+  getIslandRestState,
+  reconcileIslandIntent,
   restLiveActivityAdjusted,
   restLiveActivityEnded,
   restLiveActivityStarted,
+  setIslandIntentHandler,
+  type IslandRestIntent,
 } from '@/native/ios/rest-live-activity';
 import { Retract } from '@/components/ascnd/retract';
 import { SEGMENT_SWAP } from '@/components/ascnd/segmented';
@@ -168,6 +173,13 @@ interface RestCountdown {
   endsAt: number;
   /** the set this rest is waiting for, or null at the end of the workout */
   next: { name: string; ordinal: number; of: number } | null;
+  /**
+   * Frozen remainder after an Island pause tap (AppIntent, 02/10/2026).
+   * Defined = paused: the tick holds, the card shows this number with a
+   * "paused" caption, and resume comes from the Island (or any later
+   * resume intent). Undefined = running normally.
+   */
+  pausedLeft?: number;
 }
 
 /**
@@ -180,6 +192,9 @@ interface RestCountdown {
  * done by the caller in `restJustEnded`, outside the updater.
  */
 function settleRestState(s: RestCountdown): RestCountdown | null {
+  // Island-paused: the countdown is frozen — the tick holds the frame.
+  // setResting(s) with the identical ref bails out, so this is cheap.
+  if (s.pausedLeft !== undefined) return s;
   const now = Date.now();
   const left = Math.max(0, Math.ceil((s.endsAt - now) / 1000));
   if (left <= 0) {
@@ -260,6 +275,45 @@ function RestHost({
     setResting(next);
   }, []);
 
+  /**
+   * Follows taps on the Dynamic Island (AppIntents, 02/10/2026 — Kiệt).
+   * The island already applied the intent natively, so this NEVER echoes
+   * back over the bridge — it only mirrors the authoritative remainder
+   * into the in-app state. No-ops when no rest is active (stale intents
+   * from a previous rest can't touch a fresh one: the payload is
+   * invalidated on start/end natively).
+   */
+  const applyIslandIntent = useCallback((intent: IslandRestIntent) => {
+    const s = restingRef.current;
+    if (s === null || intent.remainingSeconds === undefined) return;
+    if (intent.action === 'pause') {
+      setResting({ ...s, pausedLeft: Math.max(0, Math.ceil(intent.remainingSeconds)) });
+    } else if (intent.action === 'resume') {
+      const left = Math.max(1, Math.ceil(intent.remainingSeconds));
+      setResting({
+        ...s,
+        pausedLeft: undefined,
+        left,
+        endsAt: Date.now() + left * 1000,
+      });
+    } else if (intent.action === 'adjust') {
+      const left = Math.max(1, Math.min(REST_MAX, Math.ceil(intent.remainingSeconds)));
+      const total = Math.max(s.total, left);
+      if (intent.paused) {
+        // Island is paused: the frozen remainder moves, the freeze holds.
+        setResting({ ...s, pausedLeft: left, total });
+      } else {
+        setResting({ ...s, pausedLeft: undefined, left, total, endsAt: Date.now() + left * 1000 });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const facade = { addIslandRestIntentListener, getIslandRestState };
+    setIslandIntentHandler(facade, applyIslandIntent);
+    return () => setIslandIntentHandler(facade, null);
+  }, [applyIslandIntent]);
+
   /*
     The rest clock.
 
@@ -289,7 +343,12 @@ function RestHost({
   useEffect(() => {
     if (!running) return;
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') settleOnce();
+      if (state === 'active') {
+        settleOnce();
+        // Intents that fired while JS was suspended missed the Darwin ping —
+        // re-read the last payload (seq-guarded, so replays are dropped).
+        void reconcileIslandIntent();
+      }
     });
     return () => sub.remove();
   }, [running, settleOnce]);
@@ -309,9 +368,10 @@ function RestHost({
 
   return (
     <RestTimer
-      left={resting?.left ?? null}
+      left={resting?.pausedLeft ?? resting?.left ?? null}
       total={resting?.total ?? 0}
       next={resting?.next ?? null}
+      paused={resting?.pausedLeft !== undefined}
       i18n={i18n}
       onSkip={() => {
         Haptics.selection();
@@ -324,17 +384,27 @@ function RestHost({
         // host re-renders every tick so this closure is never stale.
         const s = resting;
         if (s === null) return;
-        // Derive from the absolute end, not the rendered `left`: a tick can
-        // be up to a second stale, and the adjustment must land on the true
-        // remaining time.
-        const fresh = Math.max(0, Math.ceil((s.endsAt - Date.now()) / 1000));
-        const left = Math.max(1, Math.min(REST_MAX, fresh + delta));
+        // Paused (Island): adjust the FROZEN remainder, keep the freeze.
+        // Running: derive from the absolute end, not the rendered `left`: a
+        // tick can be up to a second stale, and the adjustment must land on
+        // the true remaining time.
+        const base =
+          s.pausedLeft !== undefined
+            ? s.pausedLeft
+            : Math.max(0, Math.ceil((s.endsAt - Date.now()) / 1000));
+        const left = Math.max(1, Math.min(REST_MAX, base + delta));
         // Adding time grows what it is counting from as well, so the ring
         // stays a fraction of something rather than trying to be more than
         // whole. Taking time off leaves the total alone: the rest really
         // was cut short, and the ring showing that is the honest reading.
         const total = Math.max(s.total, left);
-        setResting({ ...s, left, total, endsAt: Date.now() + left * 1000 });
+        if (s.pausedLeft !== undefined) {
+          setResting({ ...s, pausedLeft: left, total });
+        } else {
+          setResting({ ...s, left, total, endsAt: Date.now() + left * 1000 });
+        }
+        // The native update() is pause-aware: while the island is paused
+        // this lands on the frozen remainder instead of the endDate.
         restLiveActivityAdjusted(total, left);
       }}
     />

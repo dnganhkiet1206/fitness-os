@@ -57,6 +57,7 @@ const SWIFT_SOURCES = [
   'Widgets/TodayWorkoutWidget.swift',
   'Widgets/StreakReadinessWidget.swift',
   'Widgets/RestTimerLiveActivity.swift',
+  'Widgets/RestTimerIntents.swift',
 ];
 
 function extensionInfoPlist() {
@@ -317,6 +318,10 @@ module.exports = function withAscndWidgets(config) {
     if (!fs.existsSync(LOGO_SRC)) {
       throw new Error('[with-ascnd-widgets] missing logo asset: assets/images/splash-icon.png');
     }
+    // ALWAYS copy — the old code coupled the copy to `!hasFile`, so a stale
+    // project reference (from an earlier prebuild) skipped the copy forever
+    // and `Image("ascnd-mark")` rendered empty on device (02/10/2026, Kiệt's
+    // compact shot: missing logo). Copying is idempotent and cheap.
     fs.copyFileSync(LOGO_SRC, path.join(extDir, LOGO_REL));
     if (!project.hasFile(LOGO_REL)) {
       const logoFile = project.addFile(LOGO_REL, groupUuid, { target: target.uuid });

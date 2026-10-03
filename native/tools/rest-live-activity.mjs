@@ -50,11 +50,34 @@ export async function updateRestActivity(id: string, s: any): Promise<boolean> {
 export async function endRestActivity(id: string): Promise<void> {
   calls.push('end:' + id);
 }
+let intentCb: ((i: any) => void) | null = null;
+let lastIntentJson: string | null = null;
+export function __emitIntent(intent: any): void {
+  if (intentCb) intentCb(intent);
+}
+export function __setLastIntent(json: string | null): void {
+  lastIntentJson = json;
+}
+export function addIslandRestIntentListener(cb: (i: any) => void): () => void {
+  intentCb = cb;
+  return () => { intentCb = null; };
+}
+export async function getIslandRestState(): Promise<any | null> {
+  return lastIntentJson ? JSON.parse(lastIntentJson) : null;
+}
+export interface IslandRestIntent {
+  action: 'pause' | 'resume' | 'adjust';
+  adjustSeconds?: number;
+  remainingSeconds?: number;
+  endTimestamp?: number;
+  paused?: boolean;
+  seq?: number;
+}
 `,
   );
 
   const HARNESS = `
-import { createRestLiveActivity } from './rest-live-activity';
+import { createRestLiveActivity, reconcileIslandIntent, setIslandIntentHandler } from './rest-live-activity';
 import * as stub from './stub';
 
 const D = { exerciseName: 'Bench Press', setNumber: 2, totalSets: 3, languageCode: 'en' };
@@ -169,6 +192,33 @@ async function scenario8(): Promise<void> {
   check('idle end/adjust: silent', stub.calls.length === 0, stub.calls.join(','));
 }
 
+async function scenario9(): Promise<void> {
+  const seen: string[] = [];
+  setIslandIntentHandler(stub as any, (i: any) => { seen.push(i.action + ':' + i.seq); });
+  stub.__emitIntent({ action: 'pause', remainingSeconds: 42, seq: 7 });
+  stub.__emitIntent({ action: 'pause', remainingSeconds: 42, seq: 7 }); // replay
+  stub.__emitIntent({ action: 'resume', remainingSeconds: 40, seq: 6 }); // stale
+  await tick();
+  setIslandIntentHandler(stub as any, null);
+  check(
+    'intent seq guard: one delivery, replays/stale dropped',
+    seen.join(',') === 'pause:7',
+    seen.join(','),
+  );
+}
+
+async function scenario10(): Promise<void> {
+  const seen: string[] = [];
+  setIslandIntentHandler(stub as any, (i: any) => { seen.push(i.action); });
+  stub.__setLastIntent(JSON.stringify({ action: 'adjust', adjustSeconds: -15, seq: 9 }));
+  await reconcileIslandIntent();
+  await reconcileIslandIntent(); // same payload twice
+  stub.__setLastIntent(null);
+  await reconcileIslandIntent(); // nothing pending
+  setIslandIntentHandler(stub as any, null);
+  check('reconcile: delivers once, silent when empty', seen.join(',') === 'adjust', seen.join(','));
+}
+
 (async () => {
   await scenario1();
   await scenario2();
@@ -178,8 +228,10 @@ async function scenario8(): Promise<void> {
   await scenario6();
   await scenario7();
   await scenario8();
+  await scenario9();
+  await scenario10();
   if (failures > 0) { throw new Error(failures + ' scenario(s) failed'); }
-  console.log('8/8 race scenarios green');
+  console.log('10/10 race scenarios green');
 })();
 `;
   writeFileSync(path.join(tmp, 'harness.ts'), HARNESS);

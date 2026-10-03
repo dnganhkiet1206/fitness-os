@@ -139,3 +139,79 @@ export async function endRestActivity(activityId: string): Promise<void> {
     warnDev('endRestActivity', err);
   }
 }
+
+// MARK: - Island intent relay (interactive Island, 02/10/2026)
+//
+// The pause / −15s / +15s AppIntents run in the widget extension and report
+// back via App Group shared defaults + Darwin notification. The native
+// module re-emits them as `onIslandRestIntent` so the in-app rest timer can
+// follow island taps. Payloads carry `seq` — the app ignores replays.
+
+/** What the widget extension reports after an island tap. */
+export interface IslandRestIntent {
+  action: 'pause' | 'resume' | 'adjust';
+  /** ±15 for adjust. */
+  adjustSeconds?: number;
+  /** Authoritative remaining seconds at intent time. */
+  remainingSeconds?: number;
+  /** Absolute end (ms) for resume / running adjust. */
+  endTimestamp?: number;
+  /** True when the island was paused at adjust time. */
+  paused?: boolean;
+  /** Monotonic — ignore payloads with seq <= last seen. */
+  seq?: number;
+}
+
+let islandEmitter: IslandEventSource | null = null;
+
+/**
+ * Structural typing for the Expo module's event surface. Since SDK 52 the
+ * native module object IS an EventEmitter — `Events("onIslandRestIntent")`
+ * in the module definition gives the JS proxy a working `addListener`.
+ */
+interface IslandEventSource {
+  addListener(
+    eventName: string,
+    listener: (payload: IslandRestIntent) => void,
+  ): { remove(): void };
+}
+
+function getIslandEmitter(): IslandEventSource | null {
+  const mod = AscndNativeModule;
+  if (!isAscndNativeAvailable() || !mod) return null;
+  if (islandEmitter === null) islandEmitter = mod as unknown as IslandEventSource;
+  return islandEmitter;
+}
+
+/**
+ * Subscribes to island intent events. Returns an unsubscribe function.
+ * Null-safe: on web/Android/unsupported this is a no-op returning noop.
+ */
+export function addIslandRestIntentListener(
+  cb: (intent: IslandRestIntent) => void,
+): () => void {
+  const emitter = getIslandEmitter();
+  if (!emitter) return () => {};
+  const sub = emitter.addListener('onIslandRestIntent', cb);
+  return () => sub.remove();
+}
+
+/**
+ * Reads the last island intent payload from the App Group — the foreground
+ * reconcile path for intents that fired while JS was suspended (the Darwin
+ * ping is not queued). Returns null when none exists or unavailable.
+ */
+export async function getIslandRestState(): Promise<IslandRestIntent | null> {
+  const mod = AscndNativeModule;
+  if (!isAscndNativeAvailable() || !mod || !mod.getIslandRestState) return null;
+  try {
+    const json: string | null = await mod.getIslandRestState();
+    if (!json) return null;
+    const parsed = JSON.parse(json) as IslandRestIntent;
+    if (!parsed || typeof parsed.action !== 'string') return null;
+    return parsed;
+  } catch (err) {
+    warnDev('getIslandRestState', err);
+    return null;
+  }
+}

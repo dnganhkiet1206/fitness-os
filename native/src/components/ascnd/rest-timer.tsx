@@ -93,6 +93,7 @@ export function RestTimer({
   left,
   total,
   next,
+  paused,
   i18n,
   onAdjust,
   onSkip,
@@ -103,6 +104,12 @@ export function RestTimer({
   total: number;
   /** the set this rest is waiting for, or null at the end of the workout */
   next: { name: string; ordinal: number; of: number } | null;
+  /**
+   * True after an Island pause tap (AppIntent, 02/10/2026): `left` is the
+   * frozen remainder. The card shows it with a paused caption; resume comes
+   * from the Island.
+   */
+  paused?: boolean;
   i18n: ReturnType<typeof useI18n>;
   onAdjust: (delta: number) => void;
   onSkip: () => void;
@@ -117,7 +124,9 @@ export function RestTimer({
   if (left !== null) shown.current = left;
   const now = shown.current;
   const done = now === 0;
-  const warn = now > 0 && now <= WARN_AT;
+  // A frozen (island-paused) ring must not glow red: the urgency signal is
+  // about time running out, and time is not running.
+  const warn = !paused && now > 0 && now <= WARN_AT;
   const progress = useSharedValue(1);
   useEffect(() => {
     if (left === null || total <= 0) return;
@@ -202,7 +211,9 @@ export function RestTimer({
           DUY NHẤT, nó cũng phải trông ra thế (xem `styles.skip`).
         */}
         <Animated.View entering={FadeIn.duration(200)} style={[styles.card, { marginTop: insets.top + TOP_BELOW_SAFE_AREA }, card]}>
-          <Text style={styles.label}>{i18n.nRdResting}</Text>
+          <Text style={styles.label}>
+            {paused ? `${i18n.nRdResting} · ${i18n.nCxIslandPaused}` : i18n.nRdResting}
+          </Text>
 
           <View style={styles.ringWrap}>
             <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
