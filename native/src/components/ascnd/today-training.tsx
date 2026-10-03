@@ -1,6 +1,6 @@
 import { CheckCircle2, ChevronRight, Clock, Dumbbell, Moon, MoreHorizontal, Play, Plus } from 'lucide-react-native';
 import { haptics as Haptics } from '@/lib/haptics';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -172,22 +172,26 @@ export function TodayTraining() {
               <View style={styles.metaRow}>
                 <Icon icon={Dumbbell} size={13} color={c.mutedForeground} />
                 <Text style={styles.metaText}>
-                  {items.length} {i18n.nExercises} · {items.reduce((s, e) => s + (e.sets ?? 0), 0)} sets
+                  {fillCopy(i18n.nExerciseCount, { n: String(items.length) })} · {items.reduce((s, e) => s + (e.sets ?? 0), 0)} sets
                 </Text>
               </View>
               <View style={styles.metaRow}>
                 <Icon icon={Clock} size={13} color={c.mutedForeground} />
-                <Text style={styles.metaText}>~ {estimatedMinutes(items)} {i18n.nCmMinutes}</Text>
+                <Text style={styles.metaText}>{fillCopy(i18n.nCmMinutes, { n: String(estimatedMinutes(items)) })}</Text>
               </View>
             </View>
           ) : sub ? (
             <Text style={styles.sub} numberOfLines={2}>{sub}</Text>
           ) : null}
         </View>
-        {/* Ảnh workout bên phải — dumbbell illustration theo concept */}
+        {/* Ảnh workout bên phải — 3D dumbbell theo concept */}
         {planned && tpl ? (
           <View style={styles.heroImage}>
-            <Icon icon={Dumbbell} size={48} color={c.mutedForeground} />
+            <Image
+              source={require('@/assets/images/dumbbell-hero.png')}
+              style={styles.heroImg}
+              resizeMode="contain"
+            />
           </View>
         ) : null}
       </View>
@@ -261,7 +265,8 @@ const stylesFor = makeStyles((c, m) => ({
   },
   hero: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   heroCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
-  heroImage: { width: 88, height: 88, alignItems: 'center', justifyContent: 'center' },
+  heroImage: { width: 96, height: 96, alignItems: 'center', justifyContent: 'center' },
+  heroImg: { width: 96, height: 96 },
   eyebrow: {
     ...type.caption,
     color: c.mutedForeground,
