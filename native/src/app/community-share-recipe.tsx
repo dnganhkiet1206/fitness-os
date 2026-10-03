@@ -122,6 +122,7 @@ export default function CommunityShareRecipeScreen() {
           saved: false,
           mine: true,
           art: artChoice.art,
+          commentsOff: false,
         }
       : null;
 

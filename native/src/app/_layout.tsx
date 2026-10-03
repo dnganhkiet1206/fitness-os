@@ -4,6 +4,7 @@ import * as SystemUI from 'expo-system-ui';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { defaultShouldDehydrateQuery } from '@tanstack/react-query';
 import { useEffect, useMemo, type ReactNode } from 'react';
 
 import { AppLockGate } from '@/components/ascnd/app-lock-gate';
@@ -489,7 +490,18 @@ export default function RootLayout() {
     <GestureHandlerRootView style={styles.root}>
     <PersistQueryClientProvider
       client={queryClient}
-      persistOptions={{ persister: asyncStoragePersister, maxAge: 1000 * 60 * 60 * 24, buster: CACHE_BUSTER }}
+      persistOptions={{
+        persister: asyncStoragePersister,
+        maxAge: 1000 * 60 * 60 * 24,
+        buster: CACHE_BUSTER,
+        /* Dữ liệu của bảng quản trị (`admin_*`: hàng đợi báo cáo, email người
+           dùng, nhật ký kiểm toán) không xuống ổ đĩa: nó không có ích gì khi
+           mở app lúc offline, và không được nằm lại trong trình duyệt sau khi
+           người kiểm duyệt đăng xuất. Mọi query khác vẫn persist như cũ. */
+        dehydrateOptions: {
+          shouldDehydrateQuery: (q) => defaultShouldDehydrateQuery(q) && !String(q.queryKey[0]).startsWith('admin_'),
+        },
+      }}
       /*
         Finish whatever the last session could not send.
 

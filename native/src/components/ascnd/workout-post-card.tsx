@@ -7,7 +7,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
-import { type FeedPost, workoutFromPost } from '@/hooks/use-community';
+import { type FeedPost, useRecordTry, workoutFromPost } from '@/hooks/use-community';
 import { useAddWorkoutTemplate } from '@/hooks/use-library';
 import { usePalette } from '@/hooks/use-palette';
 import { useUnits } from '@/hooks/use-units';
@@ -61,6 +61,7 @@ export function WorkoutPostCard({
   const { weight: wUnit } = useUnits();
   const wl = weightLabel(wUnit);
   const addTemplate = useAddWorkoutTemplate();
+  const recordTry = useRecordTry();
 
   const p = post.payload;
   const title = p.title ?? i18n.nCmWorkout;
@@ -79,6 +80,9 @@ export function WorkoutPostCard({
     }
     try {
       await addTemplate.mutateAsync({ name: w.name, type: 'community', exercises: w.exercises });
+      /* Sau mẫu tập, không trước: thử mà không có mẫu tập thì tác giả nhận
+         một thông báo về việc chưa xảy ra. */
+      await recordTry.mutateAsync(post.id);
       toast.success(
         w.skipped > 0
           ? `${i18n.nCmTried} · ${i18n.nCmTriedSkipped.replace('{n}', String(w.skipped))}`

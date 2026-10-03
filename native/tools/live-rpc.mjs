@@ -29,7 +29,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { UID, dayStr } from './live-world.mjs';
+import { FIXTURES as WORLD0, UID, dayStr } from './live-world.mjs';
 
 const MIGRATIONS = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'supabase', 'migrations');
 
@@ -155,6 +155,8 @@ function metric(pts, from) {
   const sorted = [...pts].sort((a, b) => (a.date < b.date ? -1 : 1));
   return { start: round1(sorted[0].v), end: round1(sorted[sorted.length - 1].v), series: weekly(pts, from) };
 }
+
+const SAMPLE_ART = (WORLD0.community_art ?? [])[0]?.id;
 
 export const RPC_FIXTURES = {
   /* 20260930120000_community_challenges.sql */
@@ -370,12 +372,17 @@ export const RPC_FIXTURES = {
           comment_id: key === 'comment_id' ? id : null,
           reporters: new Set(mine.map((r) => r.reporter_id)).size,
           top_reason: top ? top[0] : null,
-          review_requested: asks.some((q) => q[key] === id),
+          /* 20261007130000: "đã yêu cầu" = một yêu cầu ĐANG CHỜ; thêm đã gỡ và
+             đã xem lại-giữ nguyên. */
+          review_requested: asks.some((q) => q[key] === id && q.status === 'open'),
+          removed: !!removedAt,
+          review_upheld: asks.some((q) => q[key] === id && q.status === 'upheld'),
         };
       };
+      let removedAt = null;
       return [
-        ...rows(world, 'community_posts').filter((p) => p.author_id === UID && p.hidden).map((p) => one('post_id', p.id)),
-        ...rows(world, 'community_comments').filter((c) => c.author_id === UID && c.hidden).map((c) => one('comment_id', c.id)),
+        ...rows(world, 'community_posts').filter((p) => p.author_id === UID && p.hidden).map((p) => ((removedAt = p.removed_at ?? null), one('post_id', p.id))),
+        ...rows(world, 'community_comments').filter((c) => c.author_id === UID && c.hidden).map((c) => ((removedAt = c.removed_at ?? null), one('comment_id', c.id))),
       ];
     },
   },
@@ -389,9 +396,39 @@ export const RPC_FIXTURES = {
       const [table, key, id] = p_post_id ? ['community_posts', 'post_id', p_post_id] : ['community_comments', 'comment_id', p_comment_id];
       if (!rows(world, table).some((x) => x.id === id && x.author_id === UID && x.hidden)) throw rpcError('P0002', 'nothing hidden of yours');
       const asks = (world.community_review_requests ??= []);
-      if (asks.some((q) => q[key] === id)) throw rpcError('23505', 'duplicate key value violates unique constraint');
-      asks.push({ id: randomUUID(), requester_id: UID, post_id: p_post_id, comment_id: p_comment_id, status: 'open', created_at: new Date().toISOString() });
+      if (asks.some((q) => q[key] === id && (q.status === 'open' || q.status === 'upheld'))) throw rpcError('23505', 'duplicate key value violates unique constraint');
+      asks.push({ id: randomUUID(), requester_id: UID, post_id: p_post_id, comment_id: p_comment_id, status: 'open', message: '', created_at: new Date().toISOString() });
       return null;
+    },
+  },
+
+  /* 20261007120000_community_notify_more.sql: chỉ bài của mình; "không phải
+     của mình" và "không có bài" là cùng một P0002. */
+  community_set_comments_off: {
+    sample: { p_post_id: 'cp000000-0000-4000-8000-000000000026', p_off: true },
+    run({ p_post_id, p_off } = {}, world) {
+      if (p_off == null) throw rpcError('22023', 'p_off is required');
+      const post = rows(world, 'community_posts').find((p) => p.id === p_post_id && p.author_id === UID);
+      if (!post) throw rpcError('P0002', 'post not found');
+      post.comments_off = p_off;
+      return null;
+    },
+  },
+
+  /* Cùng tệp: thành tích chỉ trên bài NGƯỜI XEM thấy được; chặn nhau → rỗng. */
+  community_user_stats: {
+    sample: { p_user: 'c0000000-0000-4000-8000-0000000011a1' },
+    run({ p_user } = {}, world) {
+      const blocked = rows(world, 'community_blocks').some((b) => (b.blocker_id === UID && b.blocked_id === p_user) || (b.blocker_id === p_user && b.blocked_id === UID));
+      if (blocked) return [];
+      const follows = rows(world, 'community_follows').some((f) => f.follower_id === UID && f.followee_id === p_user);
+      const seen = rows(world, 'community_posts').filter((p) => p.author_id === p_user && (p_user === UID || (!p.hidden && (p.visibility !== 'followers' || follows))));
+      const ids = new Set(seen.map((p) => p.id));
+      return [{
+        posts: seen.length,
+        likes: seen.reduce((n, p) => n + (p.like_count ?? 0), 0),
+        tries: rows(world, 'community_post_tries').filter((t) => ids.has(t.post_id)).length,
+      }];
     },
   },
 
@@ -453,4 +490,337 @@ export const RPC_FIXTURES = {
       return Object.fromEntries(Object.entries({ weeks: p_weeks, from, to, weight, waist, lift }).filter(([, v]) => v != null));
     },
   },
+  /* 20261007130000_community_admin.sql — vai trò và kiểm duyệt. Vai trò đọc từ
+     `world.app_roles` (thế giới mặc định không có: người dùng thường). Mỗi hàm
+     hỏi vai trò như `moderation_require`: thiếu quyền → 42501 → 403. */
+  my_app_role: {
+    prepare: asStaff,
+    sample: {},
+    run(_a, world) {
+      return roleOf(world, UID);
+    },
+  },
+  community_appeal: {
+    sample: { p_post_id: 'cp000000-0000-4000-8000-000000000026', p_comment_id: null, p_message: 'x' },
+    run({ p_post_id = null, p_comment_id = null, p_message = '' } = {}, world) {
+      if ((p_message ?? '').length > 500) throw rpcError('22023', 'message too long');
+      if ((p_post_id == null) === (p_comment_id == null)) throw rpcError('22023', 'exactly one of post or comment');
+      const [table, key, id] = p_post_id ? ['community_posts', 'post_id', p_post_id] : ['community_comments', 'comment_id', p_comment_id];
+      if (!rows(world, table).some((x) => x.id === id && x.author_id === UID && x.hidden && !x.removed_at)) throw rpcError('P0002', 'nothing hidden of yours');
+      const asks = (world.community_review_requests ??= []);
+      if (asks.some((q) => q[key] === id && (q.status === 'open' || q.status === 'upheld'))) throw rpcError('23505', 'duplicate key value violates unique constraint');
+      asks.push({ id: randomUUID(), requester_id: UID, post_id: p_post_id, comment_id: p_comment_id, status: 'open', message: (p_message ?? '').trim(), created_at: new Date().toISOString() });
+      return null;
+    },
+  },
+  mod_dashboard: {
+    prepare: asStaff,
+    sample: {},
+    run(_a, world) {
+      requireRole(world, false);
+      const reps = rows(world, 'community_reports');
+      const posts = rows(world, 'community_posts');
+      const today = new Date().toISOString().slice(0, 10);
+      return {
+        pending_reports: new Set(reps.filter((r) => r.status === 'open').map((r) => r.post_id ?? r.comment_id)).size,
+        pending_appeals: rows(world, 'community_review_requests').filter((q) => q.status === 'open').length,
+        hidden_posts: posts.filter((p) => p.hidden && !p.removed_at).length,
+        hidden_comments: rows(world, 'community_comments').filter((c) => c.hidden && !c.removed_at).length,
+        removed_posts: posts.filter((p) => p.removed_at).length,
+        reports_today: reps.filter((r) => String(r.created_at).slice(0, 10) === today).length,
+        recent: auditRows(world).slice(0, 10),
+      };
+    },
+  },
+  mod_reports: {
+    prepare: asStaff,
+    sample: { p_status: 'open', p_limit: 50 },
+    run({ p_status = 'open', p_limit = 50 } = {}, world) {
+      requireRole(world, false);
+      if (!['open', 'actioned', 'dismissed'].includes(p_status)) throw rpcError('22023', 'bad status');
+      const groups = new Map();
+      for (const r of rows(world, 'community_reports').filter((x) => x.status === p_status)) {
+        const id = r.post_id ?? r.comment_id;
+        const g = groups.get(id) ?? { type: r.post_id ? 'post' : 'comment', id, who: new Set(), reasons: {}, last: r.created_at };
+        g.who.add(r.reporter_id);
+        g.reasons[r.reason] = (g.reasons[r.reason] ?? 0) + 1;
+        if (r.created_at > g.last) g.last = r.created_at;
+        groups.set(id, g);
+      }
+      return [...groups.values()]
+        .sort((a, b) => (a.last < b.last ? 1 : -1))
+        .slice(0, p_limit)
+        .map((g) => {
+          const t = findTarget(world, g.type, g.id);
+          const appeal = rows(world, 'community_review_requests').filter((q) => (q.post_id ?? q.comment_id) === g.id).at(-1);
+          return {
+            target_type: g.type, target_id: g.id, report_count: g.who.size, reasons: g.reasons, last_at: g.last,
+            target: t && { kind: t.kind, caption: t.caption, body: t.body, post_id: t.post_id, hidden: !!t.hidden, removed: !!t.removed_at, author_id: t.author_id, created_at: t.created_at },
+            author: t ? person(world, t.author_id) : null,
+            appeal: appeal ? { id: appeal.id, status: appeal.status, created_at: appeal.created_at } : null,
+          };
+        });
+    },
+  },
+  mod_appeals: {
+    prepare: asStaff,
+    sample: { p_status: 'open', p_limit: 50 },
+    run({ p_status = 'open', p_limit = 50 } = {}, world) {
+      requireRole(world, false);
+      if (!['open', 'restored', 'upheld'].includes(p_status)) throw rpcError('22023', 'bad status');
+      return rows(world, 'community_review_requests')
+        .filter((q) => q.status === p_status)
+        .slice(0, p_limit)
+        .map((q) => {
+          const type = q.post_id ? 'post' : 'comment';
+          const id = q.post_id ?? q.comment_id;
+          const t = findTarget(world, type, id);
+          return {
+            id: q.id, status: q.status, message: q.message ?? '', created_at: q.created_at, decided_at: q.decided_at ?? null,
+            target_type: type, target_id: id, excerpt: t ? (t.caption ?? t.body ?? '').slice(0, 160) : null,
+            reports: new Set(rows(world, 'community_reports').filter((r) => (r.post_id ?? r.comment_id) === id).map((r) => r.reporter_id)).size,
+            author: person(world, q.requester_id),
+          };
+        });
+    },
+  },
+  mod_target: {
+    prepare: asStaff,
+    sample: { p_type: 'post', p_id: 'cp000000-0000-4000-8000-000000000026' },
+    run({ p_type, p_id } = {}, world) {
+      requireRole(world, false);
+      if (p_type !== 'post' && p_type !== 'comment') throw rpcError('22023', 'target type must be post or comment');
+      const t = findTarget(world, p_type, p_id);
+      if (!t) throw rpcError('P0002', 'target not found');
+      const author = person(world, t.author_id);
+      return {
+        type: p_type,
+        target: { id: t.id, kind: t.kind, caption: t.caption, body: t.body, post_id: t.post_id, visibility: t.visibility, hidden: !!t.hidden, removed_at: t.removed_at ?? null, like_count: t.like_count, comment_count: t.comment_count, created_at: t.created_at },
+        author: author && { ...author, role: roleOf(world, t.author_id) },
+        reports: rows(world, 'community_reports')
+          .filter((r) => (r.post_id ?? r.comment_id) === p_id)
+          .map((r) => ({ id: r.id, reason: r.reason, note: r.note, status: r.status, created_at: r.created_at, reporter: person(world, r.reporter_id) })),
+        appeals: rows(world, 'community_review_requests')
+          .filter((q) => (q.post_id ?? q.comment_id) === p_id)
+          .map((q) => ({ id: q.id, status: q.status, message: q.message ?? '', created_at: q.created_at, decided_at: q.decided_at ?? null })),
+        history: auditRows(world).filter((a) => a.target_id === p_id || a.metadata?.target_id === p_id),
+      };
+    },
+  },
+  mod_hide: modAction('hide'),
+  mod_restore: modAction('restore'),
+  mod_remove: modAction('remove'),
+  mod_dismiss: modAction('dismiss'),
+  mod_decide_appeal: {
+    prepare: asStaff,
+    sample: { p_appeal: 'c8000000-0000-4000-8000-000000000001', p_approve: true, p_reason: 'x' },
+    run({ p_appeal, p_approve, p_reason = '' } = {}, world) {
+      const actor = requireRole(world, false);
+      if (p_approve == null) throw rpcError('22023', 'p_approve is required');
+      const q = rows(world, 'community_review_requests').find((x) => x.id === p_appeal);
+      if (!q) throw rpcError('P0002', 'appeal not found');
+      if (q.status !== 'open') throw rpcError('22023', 'appeal already decided');
+      const type = q.post_id ? 'post' : 'comment';
+      const id = q.post_id ?? q.comment_id;
+      const t = findTarget(world, type, id);
+      if (p_approve) {
+        Object.assign(t, { hidden: false, removed_at: null, removed_by: null });
+        closeReports(world, id, 'dismissed');
+        closeAppeals(world, id, ['open', 'upheld'], 'restored');
+      } else {
+        closeReports(world, id, 'actioned');
+        closeAppeals(world, id, ['open'], 'upheld');
+      }
+      logAudit(world, actor, p_approve ? 'APPROVE_APPEAL' : 'REJECT_APPEAL', 'appeal', p_appeal, p_reason, { target_type: type, target_id: id });
+      return null;
+    },
+  },
+  admin_audit: {
+    prepare: asStaff,
+    sample: { p_limit: 100 },
+    run({ p_limit = 100, p_before = null, p_action = null } = {}, world) {
+      requireRole(world, true);
+      return auditRows(world).filter((a) => (p_before == null || a.id < p_before) && (p_action == null || a.action === p_action)).slice(0, p_limit);
+    },
+  },
+  admin_users: {
+    prepare: asStaff,
+    sample: { p_query: '', p_limit: 50 },
+    run({ p_query = '', p_limit = 50 } = {}, world) {
+      requireRole(world, true);
+      const q = (p_query ?? '').trim().toLowerCase();
+      const people = [{ user_id: UID, handle: null, display_name: null }, ...rows(world, 'community_profiles')];
+      const seen = new Set();
+      return people
+        .filter((p) => !seen.has(p.user_id) && seen.add(p.user_id))
+        .map((p) => {
+          const prof = rows(world, 'community_profiles').find((x) => x.user_id === p.user_id);
+          const email = p.user_id === UID ? 'demo@ascnd.app' : null;
+          return { prof, row: {
+            user_id: p.user_id, email, handle: prof?.handle ?? null, display_name: prof?.display_name ?? null, role: roleOf(world, p.user_id),
+            posts: rows(world, 'community_posts').filter((x) => x.author_id === p.user_id).length,
+            hidden_posts: rows(world, 'community_posts').filter((x) => x.author_id === p.user_id && x.hidden && !x.removed_at).length,
+            removed_posts: rows(world, 'community_posts').filter((x) => x.author_id === p.user_id && x.removed_at).length,
+            open_reports_against: rows(world, 'community_reports').filter((r) => r.status === 'open' && findTarget(world, r.post_id ? 'post' : 'comment', r.post_id ?? r.comment_id)?.author_id === p.user_id).length,
+            reports_filed: rows(world, 'community_reports').filter((r) => r.reporter_id === p.user_id).length,
+          } };
+        })
+        .filter(({ row }) => !q || [row.handle, row.display_name, row.email, row.user_id].some((v) => v && v.toLowerCase().includes(q)))
+        .map(({ row }) => row)
+        .slice(0, p_limit);
+    },
+  },
+  admin_user: {
+    prepare: asStaff,
+    sample: { p_user: 'c0000000-0000-4000-8000-0000000011a1' },
+    run({ p_user } = {}, world) {
+      requireRole(world, true);
+      const prof = rows(world, 'community_profiles').find((x) => x.user_id === p_user);
+      if (!prof && p_user !== UID) throw rpcError('P0002', 'user not found');
+      const posts = rows(world, 'community_posts').filter((x) => x.author_id === p_user);
+      const ids = new Set(posts.map((x) => x.id));
+      return {
+        user_id: p_user, email: p_user === UID ? 'demo@ascnd.app' : null, role: roleOf(world, p_user),
+        profile: prof ? { handle: prof.handle, display_name: prof.display_name, bio: prof.bio ?? '' } : null,
+        posts: posts.map((x) => ({ id: x.id, kind: x.kind, caption: (x.caption ?? '').slice(0, 160), hidden: !!x.hidden, removed: !!x.removed_at, created_at: x.created_at,
+          reports: rows(world, 'community_reports').filter((r) => r.post_id === x.id).length })),
+        reports_against: rows(world, 'community_reports').filter((r) => ids.has(r.post_id)).map((r) => ({ id: r.id, reason: r.reason, status: r.status, created_at: r.created_at, target_type: 'post', target_id: r.post_id })),
+        reports_filed: rows(world, 'community_reports').filter((r) => r.reporter_id === p_user).length,
+        history: auditRows(world).filter((a) => a.target_id === p_user || ids.has(a.target_id)),
+      };
+    },
+  },
+  admin_set_role: {
+    prepare: asStaff,
+    sample: { p_user: 'c0000000-0000-4000-8000-0000000011a1', p_role: 'moderator', p_reason: 'x' },
+    run({ p_user, p_role, p_reason = '' } = {}, world) {
+      const actor = requireRole(world, true);
+      if (!['user', 'moderator', 'admin'].includes(p_role)) throw rpcError('22023', 'bad role');
+      if (p_user === actor) throw rpcError('22023', 'you cannot change your own role');
+      const from = roleOf(world, p_user);
+      if (from === p_role) throw rpcError('22023', 'user already has that role');
+      if (from === 'admin' && rows(world, 'app_roles').filter((r) => r.role === 'admin').length <= 1) throw rpcError('22023', 'cannot remove the last admin');
+      world.app_roles = rows(world, 'app_roles').filter((r) => r.user_id !== p_user);
+      if (p_role !== 'user') world.app_roles.push({ user_id: p_user, role: p_role, granted_by: actor, granted_at: new Date().toISOString() });
+      logAudit(world, actor, 'ROLE_CHANGE', 'user', p_user, p_reason, { from, to: p_role });
+      return null;
+    },
+  },
+  admin_art: {
+    prepare: asStaff,
+    sample: {},
+    run(_a, world) {
+      requireRole(world, true);
+      return rows(world, 'community_art').map((a) => ({ ...a, used_by: rows(world, 'community_posts').filter((p) => p.art_id === a.id).length }));
+    },
+  },
+  admin_set_art_active: {
+    prepare: asStaff,
+    sample: { p_art: SAMPLE_ART, p_active: false, p_reason: 'x' },
+    run({ p_art, p_active, p_reason = '' } = {}, world) {
+      const actor = requireRole(world, true);
+      if (p_active == null) throw rpcError('22023', 'p_active is required');
+      const a = rows(world, 'community_art').find((x) => x.id === p_art);
+      if (!a) throw rpcError('P0002', 'image not found');
+      if (a.active === p_active) throw rpcError('22023', 'image already in that state');
+      a.active = p_active;
+      logAudit(world, actor, p_active ? 'RESTORE_IMAGE' : 'REMOVE_IMAGE', 'image', p_art, p_reason, {});
+      return null;
+    },
+  },
 };
+
+/* ── kiểm duyệt (20261007130000): trợ giúp cho các fixture ở trên ── */
+function roleOf(world, uid) {
+  return rows(world, 'app_roles').find((r) => r.user_id === uid)?.role ?? 'user';
+}
+function requireRole(world, adminOnly) {
+  const r = roleOf(world, UID);
+  if (r === 'admin' || (!adminOnly && r === 'moderator')) return UID;
+  throw rpcError('42501', `forbidden: ${adminOnly ? 'admin' : 'moderator'} role required`);
+}
+function person(world, uid) {
+  const p = rows(world, 'community_profiles').find((x) => x.user_id === uid);
+  return p ? { user_id: p.user_id, handle: p.handle, display_name: p.display_name } : null;
+}
+function findTarget(world, type, id) {
+  return rows(world, type === 'post' ? 'community_posts' : 'community_comments').find((x) => x.id === id) ?? null;
+}
+function closeReports(world, id, status) {
+  let n = 0;
+  for (const r of rows(world, 'community_reports')) if (r.status === 'open' && (r.post_id ?? r.comment_id) === id) (r.status = status), n++;
+  return n;
+}
+function closeAppeals(world, id, from, to) {
+  for (const q of rows(world, 'community_review_requests')) {
+    if (from.includes(q.status) && (q.post_id ?? q.comment_id) === id) Object.assign(q, { status: to, decided_by: UID, decided_at: new Date().toISOString() });
+  }
+}
+function logAudit(world, actor, action, type, id, reason, metadata) {
+  const log = (world.moderation_audit_log ??= []);
+  log.push({ id: log.length + 1, actor_id: actor, actor_role: roleOf(world, actor), action, target_type: type, target_id: id, reason: (reason ?? '').trim(), metadata, created_at: new Date().toISOString() });
+}
+function auditRows(world) {
+  return [...rows(world, 'moderation_audit_log')].reverse().map((a) => ({ ...a, actor: person(world, a.actor_id) }));
+}
+function modAction(kind) {
+  return {
+    prepare: asStaff,
+    /* hide / dismiss cần một đích ĐANG HIỆN (dismiss: có báo cáo mở — `asStaff`
+       thêm một); restore / remove dùng bài đang ẩn 026. */
+    sample: { p_type: 'post', p_id: kind === 'hide' || kind === 'dismiss' ? 'cp000000-0000-4000-8000-000000000003' : 'cp000000-0000-4000-8000-000000000026', p_reason: 'x' },
+    run({ p_type, p_id, p_reason = '' } = {}, world) {
+      const actor = requireRole(world, false);
+      if (p_type !== 'post' && p_type !== 'comment') throw rpcError('22023', 'target type must be post or comment');
+      const t = findTarget(world, p_type, p_id);
+      if (!t) throw rpcError('P0002', 'target not found');
+      const P = p_type === 'post' ? 'POST' : 'COMMENT';
+      if (kind === 'hide') {
+        if (t.hidden) throw rpcError('22023', 'already hidden');
+        t.hidden = true;
+        logAudit(world, actor, `HIDE_${P}`, p_type, p_id, p_reason, { reports_closed: closeReports(world, p_id, 'actioned') });
+      } else if (kind === 'restore') {
+        if (!t.hidden) throw rpcError('22023', 'not hidden');
+        if (t.removed_at && roleOf(world, actor) !== 'admin') throw rpcError('42501', 'forbidden: only an admin can restore removed content');
+        const was = !!t.removed_at;
+        Object.assign(t, { hidden: false, removed_at: null, removed_by: null });
+        const n = closeReports(world, p_id, 'dismissed');
+        closeAppeals(world, p_id, ['open', 'upheld'], 'restored');
+        logAudit(world, actor, `RESTORE_${P}`, p_type, p_id, p_reason, { reports_dismissed: n, was_removed: was });
+      } else if (kind === 'remove') {
+        if (!(p_reason ?? '').trim()) throw rpcError('22023', 'a reason is required to remove content');
+        if (t.removed_at) throw rpcError('22023', 'already removed');
+        Object.assign(t, { hidden: true, removed_at: new Date().toISOString(), removed_by: actor });
+        const n = closeReports(world, p_id, 'actioned');
+        closeAppeals(world, p_id, ['open'], 'upheld');
+        logAudit(world, actor, `REMOVE_${P}`, p_type, p_id, p_reason, { reports_closed: n });
+      } else {
+        if (t.hidden) throw rpcError('22023', 'target is hidden: restore or remove it instead');
+        const n = closeReports(world, p_id, 'dismissed');
+        if (n === 0) throw rpcError('22023', 'no open reports');
+        logAudit(world, actor, 'DISMISS_REPORT', p_type, p_id, p_reason, { reports_dismissed: n });
+        return n;
+      }
+      return null;
+    },
+  };
+}
+
+/* Thế giới cho MẪU của các fixture kiểm duyệt (fixture-schema gọi `prepare`
+   trước `run`): người dùng demo là admin, có một kháng nghị đang chờ trên bài
+   ẩn 026 và một báo cáo mở trên bài đang hiện 003. Kịch bản live dựng trạng
+   thái của riêng nó bằng cùng hàm này. */
+export function asStaff(world, role = 'admin') {
+  world.app_roles = [...rows(world, 'app_roles').filter((r) => r.user_id !== UID), { user_id: UID, role, granted_by: null, granted_at: new Date().toISOString() }];
+  const asks = (world.community_review_requests ??= []);
+  if (!asks.some((q) => q.id === 'c8000000-0000-4000-8000-000000000001')) {
+    asks.push({ id: 'c8000000-0000-4000-8000-000000000001', requester_id: UID, post_id: 'cp000000-0000-4000-8000-000000000026', comment_id: null, status: 'open', message: 'Đây là buổi tập thật của tôi', created_at: new Date().toISOString() });
+  }
+  if (!rows(world, 'moderation_audit_log').length) {
+    world.moderation_audit_log = [{ id: 1, actor_id: null, actor_role: 'system', action: 'ROLE_CHANGE', target_type: 'user', target_id: UID, reason: 'bootstrap', metadata: { from: 'user', to: 'admin' }, created_at: new Date().toISOString() }];
+  }
+  const reps = (world.community_reports ??= []);
+  if (!reps.some((r) => r.id === 'c7000000-0000-4000-8000-000000000009')) {
+    reps.push({ id: 'c7000000-0000-4000-8000-000000000009', reporter_id: 'c0000000-0000-4000-8000-0000000022b2', post_id: 'cp000000-0000-4000-8000-000000000003', comment_id: null, reported_user_id: null, reason: 'misleading', note: 'số liệu không thật', status: 'open', created_at: new Date().toISOString() });
+  }
+}

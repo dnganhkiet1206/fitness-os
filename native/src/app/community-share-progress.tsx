@@ -109,6 +109,7 @@ export default function CommunityShareProgressScreen() {
           saved: false,
           mine: true,
           art: artChoice.art,
+          commentsOff: false,
         }
       : null;
 

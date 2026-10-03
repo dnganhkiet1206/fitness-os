@@ -26,10 +26,12 @@ import {
   useFollow,
   useReport,
   useUserBadges,
+  useUserStats,
 } from '@/hooks/use-community';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * Hồ sơ cộng đồng của một người: ai, bao nhiêu người theo dõi, và những bài
@@ -61,6 +63,7 @@ export default function CommunityUserScreen() {
      cuối cùng của một loại không được để người ta đứng trước một bộ lọc rỗng. */
   const kinds = useCommunityUserKinds(id);
   const badges = useUserBadges(id);
+  const stats = useUserStats(id);
   const [kindPick, setKind] = useState<PostKindFilter>('all');
   const kind = kindPick !== 'all' && !(kinds.data ?? []).includes(kindPick) ? 'all' : kindPick;
   const posts = useCommunityUserPosts(id, kind);
@@ -146,6 +149,15 @@ export default function CommunityUserScreen() {
               <Count n={u!.followers} label={i18n.nCmFollowers} />
               <Count n={u!.following} label={i18n.nCmFollowing} />
             </View>
+            {/* Thành tích cộng đồng (A 03/10): server đếm chỉ trên bài người xem
+                được thấy. Một dòng chữ, không thêm ô số: năm ô một hàng ở 320
+                là chữ bị cắt. Chưa có bài nào thì không vẽ — "0 bài" không nói
+                thêm điều gì mà danh sách trống bên dưới chưa nói. */}
+            {stats.data && stats.data.posts > 0 ? (
+              <Text style={styles.stats}>
+                {fillCopy(i18n.nPgUserStats, { p: String(stats.data.posts), l: String(stats.data.likes), t: String(stats.data.tries) })}
+              </Text>
+            ) : null}
             {/* Huy hiệu thử thách (#42): chỉ có khi người ấy đã BẬT trong Quyền
                 riêng tư — server trả rỗng khi chưa bật hay khi hai người chặn
                 nhau, nên rỗng thì không vẽ gì, không một dòng "chưa có". Viên
@@ -258,6 +270,7 @@ const stylesFor = makeStyles((c, m) => ({
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name: { ...type.title, color: c.foreground },
   bio: { ...type.body, color: c.mutedForeground, textAlign: 'center', paddingHorizontal: spacing.lg },
+  stats: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', paddingHorizontal: spacing.lg },
   counts: { flexDirection: 'row', gap: spacing.xl, marginTop: spacing.xs },
   count: { alignItems: 'center' },
   countN: { ...type.headline, color: c.foreground, fontVariant: ['tabular-nums'] },

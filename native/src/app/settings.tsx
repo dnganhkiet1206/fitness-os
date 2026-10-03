@@ -1,5 +1,6 @@
 import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
+import { useAppRole } from '@/hooks/use-admin';
 import type { LucideIcon } from 'lucide-react-native';
 import {
   Bell,
@@ -8,6 +9,7 @@ import {
   Download,
   Dumbbell,
   FileText,
+  Gavel,
   Flame,
   Globe,
   Info,
@@ -19,7 +21,7 @@ import {
   User,
 } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Share, StyleSheet, Switch, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { SettingsPickerSheet } from '@/components/ascnd/settings-picker-sheet';
@@ -114,6 +116,10 @@ export default function SettingsScreen() {
   const { data: profile } = useProfile();
   const { lang, langChoice, setLang, theme, setTheme } = useAppSettings();
   const i18n = useI18n();
+  /* Vai trò chỉ để quyết có VẼ hàng bảng kiểm duyệt không (web, moderator /
+     admin). Quyền thật nằm ở database — docs/ADMIN.md. */
+  const appRole = useAppRole();
+  const staff = Platform.OS === 'web' && (appRole.data === 'admin' || appRole.data === 'moderator');
   const mascot = useMascot();
   const lock = useAppLock();
   const [exporting, setExporting] = useState(false);
@@ -740,6 +746,26 @@ export default function SettingsScreen() {
         </GlassCard>
 </PressScale>
       </Animated.View>
+
+      {staff ? (
+        <Animated.View entering={rise(9)}>
+          <PressScale
+            onPress={() => {
+              Haptics.selection();
+              nav.push('/admin' as never);
+            }}>
+            <GlassCard>
+              <View style={styles.cardHeaderRow}>
+                <View style={styles.cardHeaderLeft}>
+                  <Icon icon={Gavel} size={18} color={c.mutedForeground} />
+                  <Text style={styles.cardTitle}>{i18n.nPgAdConsole}</Text>
+                </View>
+                <Icon icon={ChevronRight} size={20} color={c.mutedForeground} />
+              </View>
+            </GlassCard>
+          </PressScale>
+        </Animated.View>
+      ) : null}
 
       <Animated.View entering={rise(10)}>
       <PressScale

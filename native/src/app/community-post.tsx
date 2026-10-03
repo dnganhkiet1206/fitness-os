@@ -152,7 +152,11 @@ export default function CommunityPostScreen() {
             </View>
           ) : null}
           <View style={styles.bar}>
-          {me.data ? (
+          {post.data.commentsOff && !post.data.mine ? (
+            /* Tác giả đã tắt bình luận: nói ra thay vì để một ô gõ gửi đi rồi
+               bị server từ chối (policy RESTRICTIVE, 20261007120000). */
+            <Text style={styles.closed}>{i18n.nPgCommentsClosed}</Text>
+          ) : me.data ? (
             <>
               <CommunityAvatar mascotId={me.data.mascot_id} size={32} />
               <TextInput
@@ -378,4 +382,5 @@ const stylesFor = makeStyles((c) => ({
   sendBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   setup: { flex: 1, height: 44, alignItems: 'center', justifyContent: 'center' },
   setupText: { ...type.headline, color: c.foreground },
+  closed: { ...type.footnote, color: c.mutedForeground, flex: 1, textAlign: 'center', paddingVertical: spacing.sm },
 }));

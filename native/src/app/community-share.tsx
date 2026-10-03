@@ -104,6 +104,7 @@ export default function CommunityShareScreen() {
           saved: false,
           mine: true,
           art: artChoice.art,
+          commentsOff: false,
         }
       : null;
 

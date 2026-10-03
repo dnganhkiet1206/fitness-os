@@ -724,6 +724,10 @@ export const FIXTURES = {
     một bài có sẵn chỉ để chạm mở được — hộp thư không vẽ nội dung bài, và
     thêm một bài của UID sẽ làm lệch mọi phép đo feed.
   */
+  /* A 03/10 (20261007120000): Kiệt đã thử buổi Push Day của Linh. */
+  community_post_tries: [
+    { post_id: 'cp000000-0000-4000-8000-000000000001', user_id: UID, tried_at: day(3) },
+  ],
   community_notifications: [
     { id: 'cn000000-0000-4000-8000-000000000001', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'like', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: null, created_at: minsAgo(29), read_at: null },
     { id: 'cn000000-0000-4000-8000-000000000002', user_id: UID, actor_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'like', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: null, created_at: minsAgo(72), read_at: null },
@@ -732,6 +736,11 @@ export const FIXTURES = {
     { id: 'cn000000-0000-4000-8000-000000000005', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000022b2', kind: 'reply', post_id: 'cp000000-0000-4000-8000-000000000001', comment_id: 'cc000000-0000-4000-8000-000000000003', created_at: minsAgo(40), read_at: null },
     { id: 'cn000000-0000-4000-8000-000000000006', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000022b2', kind: 'mention', post_id: 'cp000000-0000-4000-8000-000000000002', comment_id: 'cc000000-0000-4000-8000-000000000004', created_at: minsAgo(35), read_at: null },
     { id: 'cn000000-0000-4000-8000-000000000004', user_id: UID, actor_id: 'c0000000-0000-4000-8000-00000000a5cd', kind: 'follow', post_id: null, comment_id: null, created_at: day(2), read_at: day(1) },
+    /* A 03/10 (20261007120000): lưu bài, thử buổi tập, và một mốc thử thách —
+       thông báo của hệ thống, không có người gây ra (`actor_id` null). */
+    { id: 'cn000000-0000-4000-8000-000000000007', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000022b2', kind: 'save', post_id: 'cp000000-0000-4000-8000-000000000026', comment_id: null, challenge_id: null, milestone: null, created_at: minsAgo(50), read_at: null },
+    { id: 'cn000000-0000-4000-8000-000000000008', user_id: UID, actor_id: 'c0000000-0000-4000-8000-0000000011a1', kind: 'try', post_id: 'cp000000-0000-4000-8000-000000000026', comment_id: null, challenge_id: null, milestone: null, created_at: minsAgo(55), read_at: null },
+    { id: 'cn000000-0000-4000-8000-000000000009', user_id: UID, actor_id: null, kind: 'challenge_milestone', post_id: null, comment_id: null, challenge_id: 'ch000000-0000-4000-8000-000000000001', milestone: 50, created_at: minsAgo(65), read_at: null },
   ],
   /* #163: thư viện ảnh của app. `workout/broken.webp` CỐ Ý không có tệp (máy chủ
      giả trả 404) để nhánh "ảnh tải hỏng" của thẻ bài có dữ liệu. Ảnh CHÂN đứng

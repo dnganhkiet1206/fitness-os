@@ -1,4 +1,4 @@
-import { AtSign, Bell, Heart, MessageCircle, Reply, Trophy, UserPlus } from 'lucide-react-native';
+import { AtSign, Bell, Bookmark, Dumbbell, Heart, MessageCircle, Reply, Trophy, UserPlus } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
@@ -20,7 +20,7 @@ import { nav } from '@/lib/nav';
 import { timeAgo } from '@/lib/time-ago';
 import { fillCopy } from '@/lib/copy-fill';
 
-const KIND_ICON = { like: Heart, comment: MessageCircle, follow: UserPlus, reply: Reply, mention: AtSign } as const;
+const KIND_ICON = { like: Heart, comment: MessageCircle, follow: UserPlus, reply: Reply, mention: AtSign, save: Bookmark, try: Dumbbell, challenge_milestone: Trophy } as const;
 
 /**
  * Hộp thông báo cộng đồng — issue #13.
@@ -66,7 +66,8 @@ export default function CommunityInboxScreen() {
   }, [items, fresh, markRead]);
 
   const open = (x: InboxItem) => {
-    if (x.kind === 'follow') nav.push({ pathname: '/community-user', params: { id: x.actors[0].user_id } });
+    if (x.challenge) nav.push({ pathname: '/community-challenge', params: { id: x.challenge.id } });
+    else if (x.kind === 'follow') nav.push({ pathname: '/community-user', params: { id: x.actors[0].user_id } });
     else if (x.postId) nav.push({ pathname: '/community-post', params: { id: x.postId } });
   };
 
@@ -79,7 +80,15 @@ export default function CommunityInboxScreen() {
           ? i18n.nNtReply
           : x.kind === 'mention'
             ? i18n.nNtMention
-            : x.count > 1
+            : x.kind === 'save'
+              ? i18n.nPgNtSave
+              : x.kind === 'try'
+                ? i18n.nPgNtTry
+                : x.challenge
+                  ? x.challenge.milestone === 100
+                    ? i18n.nPgNtDone
+                    : i18n.nPgNtHalf
+                  : x.count > 1
           ? fillCopy(i18n.nNtLikeMany, { n: String(x.count - 1) })
           : i18n.nNtLike;
 
@@ -126,8 +135,9 @@ export default function CommunityInboxScreen() {
           {inbox.data.length ? (
             <GlassCard style={styles.list}>
               {inbox.data.map((x, i) => {
-                const name = x.actors[0].display_name;
-                const [before, after] = sentence(x).split('{name}');
+                /* Mốc thử thách không có người gây ra: chữ đậm là TÊN thử thách. */
+                const name = x.challenge ? x.challenge.title : x.actors[0].display_name;
+                const [before, after] = sentence(x).split(x.challenge ? '{title}' : '{name}');
                 const isNew = fresh?.includes(x.key) ?? x.unread;
                 const when = timeAgo(x.at, i18n, lang);
                 return (
@@ -137,12 +147,18 @@ export default function CommunityInboxScreen() {
                     accessibilityLabel={`${before}${name}${after}, ${when}${isNew ? `, ${i18n.nNtUnread}` : ''}`}
                     onPress={() => open(x)}
                     style={[styles.row, i > 0 && styles.rowRule]}>
-                    <View>
-                      <CommunityAvatar mascotId={x.actors[0].mascot_id} size={44} />
-                      <View style={styles.badge}>
-                        <Icon icon={KIND_ICON[x.kind]} size={11} color={c.foreground} />
+                    {x.challenge ? (
+                      <View style={styles.trophy}>
+                        <Icon icon={Trophy} size={20} color={c.readinessYellow} />
                       </View>
-                    </View>
+                    ) : (
+                      <View>
+                        <CommunityAvatar mascotId={x.actors[0].mascot_id} size={44} />
+                        <View style={styles.badge}>
+                          <Icon icon={KIND_ICON[x.kind]} size={11} color={c.foreground} />
+                        </View>
+                      </View>
+                    )}
                     <View style={styles.body}>
                       {/* Ba dòng (#118): tên người + câu của app. Ở 320 ×1.3 hai
                           dòng cắt mất chính câu của app — "Linh Phạm và 1 người

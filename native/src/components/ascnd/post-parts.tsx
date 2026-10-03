@@ -20,6 +20,7 @@ import {
   type ReportReason,
   useBlock,
   useDeletePost,
+  useSetCommentsOff,
   useReport,
   useToggleLike,
   useToggleSave,
@@ -283,6 +284,7 @@ function usePostMenu(post: FeedPost) {
   const report = useReport();
   const block = useBlock();
   const del = useDeletePost();
+  const commentsOff = useSetCommentsOff();
   const handle = post.author?.handle ?? '';
 
   const askReason = () => {
@@ -332,7 +334,22 @@ function usePostMenu(post: FeedPost) {
   return () => {
     Haptics.selection();
     if (post.mine) {
-      askDelete();
+      const off = !post.commentsOff;
+      Alert.alert(i18n.nPgMyPost, undefined, [
+        {
+          text: off ? i18n.nPgCommentsTurnOff : i18n.nPgCommentsTurnOn,
+          onPress: () =>
+            commentsOff.mutate(
+              { postId: post.id, off },
+              {
+                onSuccess: () => toast.success(off ? i18n.nPgCommentsOffDone : i18n.nPgCommentsOnDone),
+                onError: (e: Error) => toast.fail(e),
+              },
+            ),
+        },
+        { text: i18n.nCmDeletePost, style: 'destructive', onPress: askDelete },
+        { text: i18n.cancel, style: 'cancel' },
+      ]);
       return;
     }
     Alert.alert(post.author?.display_name ?? '', undefined, [

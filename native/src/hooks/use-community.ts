@@ -89,6 +89,8 @@ export interface FeedPost {
   /** Ảnh của thư viện app (#163). `null` cho bài đăng trước #163 — thẻ tự vẽ
       một nền theo loại bài, không bao giờ là một ô vỡ. */
   art: CommunityArt | null;
+  /** Tác giả đã tắt bình luận (20261007120000): chỉ tác giả còn bình luận được. */
+  commentsOff: boolean;
 }
 
 export interface CommunityComment {
@@ -111,7 +113,7 @@ const PROFILE_COLS = 'user_id, handle, display_name, mascot_id, is_official, bio
 /* Export cho Thư viện Đã lưu (#10, B — chủ dự án cho B sửa đúng bốn điểm ở
    #23): thư viện dựng FeedPost y như feed, nên đọc lại chính ba thứ này. */
 export const POST_COLS =
-  'id, author_id, kind, payload, caption, visibility, like_count, comment_count, save_count, hidden, created_at, art_id';
+  'id, author_id, kind, payload, caption, visibility, like_count, comment_count, save_count, hidden, created_at, art_id, comments_off';
 export const ART_COLS = 'id, kind, style, tags, path, alt_en, alt_vi, active, sort';
 
 /**
@@ -180,6 +182,8 @@ export type PostRow = {
   hidden: boolean;
   created_at: string;
   art_id?: string | null;
+  /** Vắng ở các RPC tìm kiếm (chúng không trả cột này) — nghĩa là `false`. */
+  comments_off?: boolean;
 };
 
 /** Gắn tác giả + trạng thái thích/lưu của NGƯỜI XEM vào một loạt bài. */
@@ -222,6 +226,7 @@ export async function hydrate(rows: PostRow[], me: string): Promise<FeedPost[]> 
     saved: saved.has(r.id),
     mine: r.author_id === me,
     art: (r.art_id && artById.get(r.art_id)) || null,
+    commentsOff: r.comments_off === true,
   }));
 }
 
@@ -389,6 +394,22 @@ export function useCommunityPost(id: string | undefined) {
 
 /** Sửa một bài ở MỌI bộ nhớ đệm đang giữ nó — feed hai tab, trang chi tiết,
     trang hồ sơ — để trái tim đổi ngay dưới ngón tay ở bất cứ đâu. */
+/**
+ * Tắt / bật bình luận trên bài của MÌNH. Qua RPC: bài không có policy UPDATE
+ * cho client, và hàm tự kiểm "bài của mình" (không phải thì P0002).
+ */
+export function useSetCommentsOff() {
+  const qc = useQueryClient();
+  return useOnlineMutation({
+    meta: { offline: now(2) },
+    mutationFn: async ({ postId, off }: { postId: string; off: boolean }) => {
+      const { error } = await supabase.rpc('community_set_comments_off', { p_post_id: postId, p_off: off });
+      if (error) throw error;
+    },
+    onSuccess: (_d, { postId, off }) => patchPost(qc, postId, (p) => ({ ...p, commentsOff: off })),
+  });
+}
+
 function patchPost(qc: QueryClient, id: string, fn: (p: FeedPost) => FeedPost) {
   /* Hai tiền tố chứa cả mảng lẫn trang (#20) — `mapPosts` hiểu cả hai. */
   const each = (p: FeedPost) => (p.id === id ? fn(p) : p);
@@ -761,7 +782,12 @@ export interface HiddenReason {
   reporters: number;
   /** Lý do phổ biến nhất; hoà thì server chọn theo thứ tự cố định. */
   top_reason: ReportReason | null;
+  /** Đang có một yêu cầu xem lại CHỜ cho đợt ẩn này. */
   review_requested: boolean;
+  /** Đội kiểm duyệt đã GỠ: quyết định cuối, không kháng nghị được nữa. */
+  removed: boolean;
+  /** Đã xem lại và giữ nguyên ẩn cho đợt này. */
+  review_upheld: boolean;
 }
 
 const HIDDEN_KEY = 'community_hidden_reasons';
@@ -786,23 +812,27 @@ export function useHiddenReasons(enabled: boolean) {
         reporters: Number(r.reporters) || 0,
         top_reason: (r.top_reason as ReportReason | null) ?? null,
         review_requested: !!r.review_requested,
+        removed: !!r.removed,
+        review_upheld: !!r.review_upheld,
       }));
     },
   });
 }
 
-/** Một lần mỗi bài/bình luận. Lần hai (23505 — đã gửi ở thiết bị khác) là
-    trạng thái người ta muốn rồi, không phải lỗi, như Báo cáo và Chặn. Không
-    tự bỏ ẩn: dashboard xử lý. */
+/** Một lần mỗi ĐỢT ẩn (20261007130000), kèm lời nhắn tuỳ chọn cho người xem
+    lại. Lần hai (23505 — đã gửi ở thiết bị khác) là trạng thái người ta muốn
+    rồi, không phải lỗi, như Báo cáo và Chặn. Không tự bỏ ẩn: người kiểm duyệt
+    quyết ở bảng kiểm duyệt. */
 export function useRequestReview() {
   const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
     meta: { offline: now(2) },
-    mutationFn: async (t: { postId?: string; commentId?: string }) => {
-      const { error } = await supabase.rpc('community_request_review', {
-        p_post_id: t.postId,
-        p_comment_id: t.commentId,
+    mutationFn: async (t: { postId?: string; commentId?: string; message?: string }) => {
+      const { error } = await supabase.rpc('community_appeal', {
+        p_post_id: t.postId ?? null,
+        p_comment_id: t.commentId ?? null,
+        p_message: (t.message ?? '').trim(),
       });
       if (error && error.code !== '23505') throw error;
     },
@@ -1170,6 +1200,22 @@ export function useChallengeHistory(enabled = true) {
   });
 }
 
+/**
+ * Ghi rằng mình đã thử một bài buổi tập (20261007120000) — để tác giả nhận
+ * thông báo "đã thử buổi tập của bạn". Mẫu tập vẫn được tạo ở máy như trước;
+ * đây chỉ là dấu vết trên server. Thử lần hai (23505) là chuyện bình thường.
+ */
+export function useRecordTry() {
+  const { user } = useAuth();
+  return useOnlineMutation({
+    meta: { offline: now(2) },
+    mutationFn: async (postId: string) => {
+      const { error } = await supabase.from('community_post_tries').insert({ post_id: postId, user_id: user!.id });
+      if (error && error.code !== '23505') throw error;
+    },
+  });
+}
+
 export function useJoinChallenge() {
   const { user } = useAuth();
   const qc = useQueryClient();
@@ -1177,7 +1223,11 @@ export function useJoinChallenge() {
     meta: { offline: now(2) },
     mutationFn: async ({ id, on }: { id: string; on: boolean }) => {
       if (on) {
-        const { error } = await supabase.from('community_challenge_members').insert({ challenge_id: id, user_id: user!.id });
+        /* `offset_min`: server đếm mốc thử thách (20261007120000) theo ngày ĐỊA
+           PHƯƠNG lúc tham gia — xem `utcOffsetMin`. */
+        const { error } = await supabase
+          .from('community_challenge_members')
+          .insert({ challenge_id: id, user_id: user!.id, offset_min: utcOffsetMin() });
         if (error && error.code !== '23505') throw error;
       } else {
         await confirmWrite(
@@ -1232,16 +1282,45 @@ export function useCommunitySettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('community_settings')
-        .select('default_visibility, show_badges')
+        .select(`default_visibility, show_badges, ${NOTIFY_KEYS.map((k) => `notify_${k}`).join(', ')}`)
         .eq('user_id', user!.id)
         .maybeSingle();
       if (error) throw error;
+      const row = data as unknown as Record<string, unknown> | null;
       return {
-        defaultVisibility: (data?.default_visibility === 'followers' ? 'followers' : 'public') as Visibility,
+        defaultVisibility: (row?.default_visibility === 'followers' ? 'followers' : 'public') as Visibility,
         /* Chưa có dòng cài đặt = TẮT, đúng như DEFAULT của cột (#42). */
-        showBadges: data?.show_badges === true,
+        showBadges: row?.show_badges === true,
+        /* Thông báo thì ngược lại: chưa có dòng = BẬT hết (DEFAULT true). */
+        notify: Object.fromEntries(NOTIFY_KEYS.map((k) => [k, row?.[`notify_${k}`] !== false])) as Record<NotifyKey, boolean>,
       };
     },
+  });
+}
+
+/** Nhóm thông báo bật/tắt được (20261007120000) — đúng thứ tự hiện trên màn. */
+export const NOTIFY_KEYS = ['likes', 'comments', 'mentions', 'follows', 'saves', 'tries', 'challenges'] as const;
+export type NotifyKey = (typeof NOTIFY_KEYS)[number];
+type NotifyColumn = `notify_${NotifyKey}`;
+const notifyPatch = (key: NotifyKey, on: boolean) => ({ [`notify_${key}`]: on }) as { [K in NotifyColumn]?: boolean };
+
+/**
+ * Bật/tắt một nhóm thông báo. Lọc ở SERVER (một trigger trước khi ghi), nên
+ * tắt là không hàng nào của nhóm ấy được tạo nữa — không phải "tạo rồi ẩn".
+ */
+export function useSetNotify() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useOnlineMutation({
+    meta: { offline: now(2) },
+    mutationFn: async ({ key, on }: { key: NotifyKey; on: boolean }) => {
+      const { error } = await supabase
+        .from('community_settings')
+        .upsert({ user_id: user!.id, ...notifyPatch(key, on), updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+      if (error) throw error;
+    },
+    onMutate: () => Haptics.selection(),
+    onSettled: () => qc.invalidateQueries({ queryKey: ['community_settings', user?.id] }),
   });
 }
 
@@ -1297,6 +1376,31 @@ export interface CommunityBadge {
  * thành đã được server xác minh. Server trả rỗng khi người ấy chưa bật hay hai
  * người chặn nhau, nên màn không cần biết vì sao: rỗng thì không vẽ hàng nào.
  */
+/**
+ * Thành tích cộng đồng của một người (20261007120000): số bài, lượt thích
+ * nhận được, số người đã thử buổi tập — CHỈ trên những bài người xem được
+ * thấy, do server đếm. Chặn nhau thì server trả rỗng → `null`, không vẽ gì.
+ */
+export interface UserStats {
+  posts: number;
+  likes: number;
+  tries: number;
+}
+
+export function useUserStats(userId: string | undefined) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_user_stats', user?.id, userId],
+    enabled: !!user && !!userId,
+    queryFn: async (): Promise<UserStats | null> => {
+      const { data, error } = await supabase.rpc('community_user_stats', { p_user: userId! });
+      if (error) throw error;
+      const r = Array.isArray(data) ? data[0] : null;
+      return r ? { posts: r.posts ?? 0, likes: r.likes ?? 0, tries: r.tries ?? 0 } : null;
+    },
+  });
+}
+
 export function useUserBadges(userId: string | undefined) {
   const { user } = useAuth();
   return useQuery({
@@ -1391,7 +1495,7 @@ export function useDeleteAllMyPosts() {
 
 /* ── hộp thông báo (#13) ────────────────────────────────────────────────── */
 
-export type NotificationKind = 'like' | 'comment' | 'follow' | 'reply' | 'mention';
+export type NotificationKind = 'like' | 'comment' | 'follow' | 'reply' | 'mention' | 'save' | 'try' | 'challenge_milestone';
 
 /**
  * Một dòng trong hộp thư. Lượt THÍCH cùng một bài gộp làm một dòng ("Linh và
@@ -1408,38 +1512,58 @@ export interface InboxItem {
   postId: string | null;
   at: string;
   unread: boolean;
+  /** Mốc thử thách: thông báo của HỆ THỐNG, không ai gây ra nên `actors` rỗng. */
+  challenge?: { id: string; title: string; milestone: 50 | 100 };
 }
 
 const INBOX_LIMIT = 100;
 
 export function useInbox() {
   const { user } = useAuth();
+  const { lang } = useAppSettings();
   return useQuery({
-    queryKey: ['community_inbox', user?.id],
+    /* `lang` trong khoá: tên thử thách của dòng mốc được dịch lúc đọc. */
+    queryKey: ['community_inbox', user?.id, lang],
     enabled: !!user,
     queryFn: async (): Promise<InboxItem[]> => {
       const { data: rows, error } = await supabase
         .from('community_notifications')
-        .select('id, actor_id, kind, post_id, created_at, read_at')
+        .select('id, actor_id, kind, post_id, challenge_id, milestone, created_at, read_at')
         .eq('user_id', user!.id)
         .order('created_at', { ascending: false })
         .limit(INBOX_LIMIT);
       if (error) throw error;
       const list = rows ?? [];
       if (list.length === 0) return [];
-      const ids = [...new Set(list.map((r) => r.actor_id))];
-      const { data: profs, error: pe } = await supabase.from('community_profiles').select(PROFILE_COLS).in('user_id', ids);
+      const ids = [...new Set(list.flatMap((r) => (r.actor_id ? [r.actor_id] : [])))];
+      const { data: profs, error: pe } = ids.length
+        ? await supabase.from('community_profiles').select(PROFILE_COLS).in('user_id', ids)
+        : { data: [], error: null };
       if (pe) throw pe;
       const byId = new Map(((profs as CommunityAuthor[] | null) ?? []).map((p) => [p.user_id, p]));
+      /* Mốc thử thách nói TÊN thử thách: đọc một lần cho mọi mốc trong hộp. */
+      const chIds = [...new Set(list.flatMap((r) => (r.challenge_id ? [r.challenge_id] : [])))];
+      const { data: chs, error: ce } = chIds.length
+        ? await supabase.from('community_challenges').select('id, title, title_en, description, description_en').in('id', chIds)
+        : { data: [], error: null };
+      if (ce) throw ce;
+      const chById = new Map((chs ?? []).map((ch) => [ch.id, localizeChallenge(ch, lang)]));
 
       /* Hàng đã theo thứ tự mới → cũ, nên dòng gộp đầu tiên của một bài mang
          thời điểm của lượt thích MỚI NHẤT, và người đứng đầu là người ấy. */
       const out: InboxItem[] = [];
       const likeGroups = new Map<string, InboxItem>();
       for (const r of list) {
-        const kind = (['like', 'comment', 'follow', 'reply', 'mention'] as const).find((k) => k === r.kind);
+        const kind = (['like', 'comment', 'follow', 'reply', 'mention', 'save', 'try', 'challenge_milestone'] as const).find((k) => k === r.kind);
         if (!kind) continue;
-        const actor = byId.get(r.actor_id);
+        if (kind === 'challenge_milestone') {
+          const ch = r.challenge_id ? chById.get(r.challenge_id) : undefined;
+          if (!ch || (r.milestone !== 50 && r.milestone !== 100)) continue;
+          out.push({ key: r.id, kind, actors: [], count: 1, postId: null, at: r.created_at, unread: r.read_at === null,
+            challenge: { id: ch.id, title: ch.title, milestone: r.milestone } });
+          continue;
+        }
+        const actor = r.actor_id ? byId.get(r.actor_id) : undefined;
         if (kind === 'like' && r.post_id) {
           const g = likeGroups.get(r.post_id);
           if (g) {
@@ -1455,8 +1579,9 @@ export function useInbox() {
         }
         out.push({ key: r.id, kind, actors: actor ? [actor] : [], count: 1, postId: r.post_id, at: r.created_at, unread: r.read_at === null });
       }
-      /* Một dòng mà không còn ai có hồ sơ thì không có tên nào để nói — bỏ. */
-      return out.filter((x) => x.actors.length > 0);
+      /* Một dòng mà không còn ai có hồ sơ thì không có tên nào để nói — bỏ.
+         Mốc thử thách không có ai, và nói tên thử thách thay. */
+      return out.filter((x) => x.actors.length > 0 || x.challenge);
     },
   });
 }

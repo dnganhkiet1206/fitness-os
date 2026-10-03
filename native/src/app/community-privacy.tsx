@@ -1,4 +1,4 @@
-import { ActivityIndicator, Alert, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Switch, Text, View } from 'react-native';
 
 import { CommunityAvatar } from '@/components/ascnd/community-avatar';
 import { GlassCard } from '@/components/ascnd/glass-card';
@@ -11,10 +11,13 @@ import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
   type BlockedUser,
+  NOTIFY_KEYS,
+  type NotifyKey,
   useBlockedUsers,
   useCommunitySettings,
   useDeleteAllMyPosts,
   useSetDefaultVisibility,
+  useSetNotify,
   useSetShowBadges,
   useUnblock,
 } from '@/hooks/use-community';
@@ -49,6 +52,7 @@ export default function CommunityPrivacyScreen() {
   const settings = useCommunitySettings();
   const setVis = useSetDefaultVisibility();
   const setBadges = useSetShowBadges();
+  const setNotify = useSetNotify();
   const blocked = useBlockedUsers();
   const unblock = useUnblock();
   const wipe = useDeleteAllMyPosts();
@@ -60,6 +64,19 @@ export default function CommunityPrivacyScreen() {
 
   /* Như `vis` ở trên: đang gửi thì hiện lựa chọn vừa bấm, xong mới là server. */
   const badgesOn = setBadges.isPending && setBadges.variables !== undefined ? setBadges.variables : (settings.data?.showBadges ?? false);
+
+  const notifyLabel: Record<NotifyKey, string> = {
+    likes: i18n.nPgNotifyLikes,
+    comments: i18n.nPgNotifyComments,
+    mentions: i18n.nPgNotifyMentions,
+    follows: i18n.nPgNotifyFollows,
+    saves: i18n.nPgNotifySaves,
+    tries: i18n.nPgNotifyTries,
+    challenges: i18n.nPgNotifyChallenges,
+  };
+  /* Như `badgesOn`: công tắc đang gửi hiện giá trị vừa bật, xong mới là server. */
+  const notifyOn = (k: NotifyKey) =>
+    setNotify.isPending && setNotify.variables?.key === k ? setNotify.variables.on : (settings.data?.notify[k] ?? true);
 
   const askUnblock = (b: BlockedUser) => {
     const name = b.profile ? b.profile.display_name : i18n.nPvNoProfile;
@@ -131,6 +148,29 @@ export default function CommunityPrivacyScreen() {
             ]}
           />
           <Text style={styles.sub}>{i18n.nBdHint}</Text>
+        </View>
+      )}
+
+      {/* Thông báo (A 03/10). Lọc ở server: tắt là thông báo ấy không được tạo
+          nữa; việc của người khác (thích, lưu…) vẫn diễn ra như thường. */}
+      {settings.isError ? null : (
+        <View style={styles.section}>
+          <Text style={styles.heading}>{i18n.nPgNotifyTitle}</Text>
+          <GlassCard style={styles.list}>
+            {NOTIFY_KEYS.map((k, i) => (
+              <View key={k} style={[styles.row, i > 0 && styles.rowRule]}>
+                <Text style={[styles.who, styles.label]}>{notifyLabel[k]}</Text>
+                <Switch
+                  accessibilityLabel={notifyLabel[k]}
+                  value={notifyOn(k)}
+                  disabled={settings.isPending}
+                  onValueChange={(on) => setNotify.mutate({ key: k, on }, { onError: (e: Error) => toast.fail(e) })}
+                  trackColor={{ true: c.readinessGreen, false: c.secondary }}
+                />
+              </View>
+            ))}
+          </GlassCard>
+          <Text style={styles.sub}>{i18n.nPgNotifyHint}</Text>
         </View>
       )}
 
@@ -210,6 +250,7 @@ const stylesFor = makeStyles((c) => ({
   rowRule: { borderTopWidth: 1, borderTopColor: c.border },
   who: { flex: 1, minWidth: 0 },
   name: { ...type.body, color: c.foreground, fontWeight: '600' },
+  label: { ...type.body, color: c.foreground },
   meta: { ...type.footnote, color: c.mutedForeground },
   /* 36 + hitSlop 4 = 44: viên nhỏ để tên người đứng trước, vùng chạm vẫn đủ. */
   pill: {

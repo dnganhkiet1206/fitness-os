@@ -92,7 +92,7 @@ const OUT = process.env.LIVE_BUILD ? path.resolve(process.env.LIVE_BUILD) : path
 const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt, LIVE_TZ } from './live-world.mjs';
-import { RPC_FIXTURES, rewardAmountFor } from './live-rpc.mjs';
+import { RPC_FIXTURES, asStaff, rewardAmountFor } from './live-rpc.mjs';
 import { fakeSupabase } from './live-server.mjs';
 import { DESTRUCTIVE } from './live-press.mjs';
 import {
@@ -2267,6 +2267,330 @@ const SCENARIOS = [
       return null;
     },
   })),
+  {
+    /*
+      A 03/10 (20261007120000): ba loại thông báo mới. Lưu bài và thử buổi tập
+      nói TÊN người làm; mốc thử thách là thông báo của hệ thống — không avatar,
+      chữ đậm là tên thử thách (dịch theo ngôn ngữ, #172) — và chạm vào thì mở
+      đúng thử thách ấy. Trước bản này hộp thư lọc bỏ mọi dòng không có người
+      gây ra, nên dòng mốc sẽ biến mất không một lời.
+    */
+    name: 'Hộp thư: lưu bài, thử buổi tập và mốc thử thách có dòng riêng; mốc mở đúng thử thách (A 03/10)',
+    route: '/community-inbox', mode: 'full',
+    async run(page) {
+      await page.waitForTimeout(1500);
+      const row = (re) => page.getByRole('button', { name: re }).filter({ visible: true });
+      if ((await row(/saved your post|đã lưu bài của bạn/).count()) !== 1) return 'không có đúng một dòng "đã lưu bài của bạn"';
+      if ((await row(/tried your workout|đã thử buổi tập của bạn/).count()) !== 1) return 'không có đúng một dòng "đã thử buổi tập của bạn"';
+      const half = row(/halfway through 30 Days of Consistency|nửa chặng 30 ngày kỷ luật/);
+      if ((await half.count()) !== 1) return 'không có đúng một dòng mốc 50% của "30 Days of Consistency" (dòng không có người gây ra bị lọc mất?)';
+      await half.click();
+      for (let i = 0; i < 16 && !page.url().includes('/community-challenge'); i++) await page.waitForTimeout(250);
+      if (!page.url().includes('/community-challenge?id=ch000000-0000-4000-8000-000000000001')) return `chạm dòng mốc không mở đúng thử thách: ${page.url()}`;
+      return null;
+    },
+  },
+  {
+    /*
+      A 03/10: cài đặt thông báo. Lọc ở SERVER (trigger trước khi ghi), nên điều
+      cần đo ở đây là lệnh ghi: đúng một upsert `community_settings` mang
+      `notify_saves: false` và KHÔNG chạm nhóm nào khác; mở lại màn (xoá cache)
+      thì công tắc vẫn tắt — trạng thái đọc từ server, không từ lần bấm.
+    */
+    name: 'Cài đặt thông báo: tắt "Có người lưu bài" ghi đúng notify_saves = false, mở lại vẫn tắt (A 03/10)',
+    route: '/community-privacy', mode: 'full',
+    async run(page) {
+      const writes = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/community_settings/.test(q.url()) && isWrite(q.method())) writes.push(q.postData() ?? '');
+      });
+      await page.waitForTimeout(1500);
+      const sw = () => page.getByRole('switch', { name: /^(Someone saved your post|Có người lưu bài của bạn)$/ }).filter({ visible: true });
+      if ((await sw().count()) !== 1) return 'không có đúng một công tắc "Có người lưu bài của bạn"';
+      if (!(await sw().isChecked())) return 'chưa có hàng cài đặt mà công tắc không BẬT sẵn (DEFAULT true)';
+      await sw().click();
+      for (let i = 0; i < 16 && !writes.length; i++) await page.waitForTimeout(250);
+      if (writes.length !== 1) return `phải đúng một lệnh ghi community_settings, ra ${writes.length}`;
+      if (!/"notify_saves"\s*:\s*false/.test(writes[0])) return `lệnh ghi không mang notify_saves:false: ${writes[0].slice(0, 160)}`;
+      const others = (writes[0].match(/"notify_\w+"/g) ?? []).filter((k) => k !== '"notify_saves"');
+      if (others.length) return `lệnh ghi chạm cả nhóm khác: ${others.join(', ')}`;
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2500);
+      if (await sw().isChecked()) return 'mở lại màn mà công tắc lại BẬT — trạng thái không đọc từ server';
+      return null;
+    },
+  },
+  {
+    /*
+      A 03/10: tắt bình luận.
+        (A) menu ⋯ của bài MÌNH có "Tắt bình luận" (hộp nhiều nút trên web là
+            một prompt đánh số, #83): đúng một lời gọi community_set_comments_off
+            mang p_off = true và đúng id bài;
+        (B) bài của NGƯỜI KHÁC đã tắt bình luận: thay ô gõ là một dòng nói rõ —
+            không để người ta gõ rồi bị server từ chối.
+    */
+    name: 'Tắt bình luận: menu bài của mình gọi đúng RPC; bài đã tắt thì không có ô gõ mà có dòng nói rõ (A 03/10)',
+    route: '/community-post?id=cp000000-0000-4000-8000-000000000026', mode: 'full',
+    async run(page, { world }) {
+      const calls = [];
+      page.on('request', (q) => {
+        if (/\/rpc\/community_set_comments_off/.test(q.url())) calls.push(q.postData() ?? '');
+      });
+      page.on('dialog', (d) => (d.type() === 'prompt' ? d.accept('1') : d.accept()));
+      await page.waitForTimeout(2000);
+      const more = page.getByRole('button', { name: /^(More|Thêm)$/ }).filter({ visible: true }).first();
+      if ((await more.count()) === 0) return '(A) không thấy nút ⋯ trên bài của mình';
+      await more.click();
+      for (let i = 0; i < 16 && !calls.length; i++) await page.waitForTimeout(250);
+      if (calls.length !== 1) return `(A) phải đúng một lời gọi community_set_comments_off, ra ${calls.length}`;
+      if (!/"p_off"\s*:\s*true/.test(calls[0]) || !/cp000000-0000-4000-8000-000000000026/.test(calls[0])) return `(A) lời gọi sai: ${calls[0]}`;
+
+      const other = world.community_posts.find((p) => p.id === 'cp000000-0000-4000-8000-000000000002');
+      other.comments_off = true;
+      await freshCache(page);
+      await page.goto(page.url().replace(/\/community-post.*$/, '/community-post?id=cp000000-0000-4000-8000-000000000002'), { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(3000);
+      const closed = page.getByText(/The author turned off comments on this post|Tác giả đã tắt bình luận cho bài này/).filter({ visible: true });
+      if ((await closed.count()) !== 1) return '(B) bài đã tắt bình luận mà không có dòng nói rõ';
+      if ((await page.getByPlaceholder(/Add a comment|Viết bình luận/).filter({ visible: true }).count()) !== 0) return '(B) bài đã tắt bình luận mà vẫn còn ô gõ';
+      return null;
+    },
+  },
+  {
+    /*
+      A 03/10: "Thử buổi tập" để lại dấu trên server — đúng một lệnh ghi
+      `community_post_tries` cho đúng bài, và chỉ SAU khi mẫu tập đã được tạo
+      (thử mà không có mẫu tập thì tác giả nhận thông báo về việc chưa xảy ra).
+    */
+    name: 'Thử buổi tập: tạo mẫu tập rồi mới ghi đúng một lượt thử cho đúng bài (A 03/10)',
+    route: '/community', mode: 'full',
+    async run(page) {
+      const order = [];
+      page.on('request', (q) => {
+        if (!isWrite(q.method())) return;
+        if (/\/rest\/v1\/workout_templates/.test(q.url())) order.push('template');
+        if (/\/rest\/v1\/community_post_tries/.test(q.url())) order.push(`try:${q.postData() ?? ''}`);
+      });
+      await page.waitForTimeout(2000);
+      const tryBtn = page.getByRole('button', { name: /^(Try workout|Thử workout)$/ }).filter({ visible: true }).first();
+      if ((await tryBtn.count()) === 0) return 'không thấy nút "Thử buổi tập" trên feed';
+      await tryBtn.click();
+      for (let i = 0; i < 20 && !order.some((o) => o.startsWith('try')); i++) await page.waitForTimeout(250);
+      const tries = order.filter((o) => o.startsWith('try'));
+      if (tries.length !== 1) return `phải đúng một lệnh ghi community_post_tries, ra ${tries.length} (${order.join(' → ')})`;
+      if (order.indexOf('template') === -1 || order.indexOf('template') > order.findIndex((o) => o.startsWith('try'))) return `lượt thử được ghi TRƯỚC mẫu tập: ${order.join(' → ')}`;
+      if (!/"post_id"\s*:\s*"cp000000-0000-4000-8000-0000000000\d\d"/.test(tries[0])) return `lượt thử không mang post_id: ${tries[0]}`;
+      return null;
+    },
+  },
+  {
+    /*
+      A 03/10 — bảng kiểm duyệt, người dùng THƯỜNG mở thẳng /admin (thế giới
+      mặc định không có vai trò): thấy "không có quyền", và KHÔNG một lời gọi
+      `mod_*` / `admin_*` nào rời trình duyệt — chỉ `my_app_role`. Quyền thật ở
+      database (SQL: R1/R6/M1); đây đo rằng client không kéo dữ liệu về rồi mới
+      giấu đi.
+    */
+    name: 'Bảng kiểm duyệt: người dùng thường mở thẳng /admin thấy "không có quyền" và không gọi RPC quản trị nào (A 03/10)',
+    route: '/admin', mode: 'full',
+    async run(page) {
+      const calls = [];
+      page.on('request', (q) => {
+        const m = q.url().match(/\/rpc\/((mod|admin)_\w+)/);
+        if (m) calls.push(m[1]);
+      });
+      await page.waitForTimeout(3000);
+      if ((await page.getByTestId('admin-no-access').filter({ visible: true }).count()) !== 1) return 'không thấy màn "không có quyền"';
+      for (const r of ['/admin/reports', '/admin/audit', '/admin/users']) {
+        await page.goto(page.url().replace(/\/admin.*$/, r), { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(2000);
+        if ((await page.getByTestId('admin-no-access').filter({ visible: true }).count()) !== 1) return `${r}: không thấy màn "không có quyền"`;
+      }
+      if (calls.length) return `người dùng thường vẫn gọi: ${[...new Set(calls)].join(', ')}`;
+      return null;
+    },
+  },
+  {
+    /*
+      A 03/10 — golden path của ADMIN: Tổng quan (việc chờ) → Báo cáo → bài tự
+      ẩn 026 → đủ ba báo cáo, lời nhắn kháng nghị, tác giả → "Chấp nhận và khôi
+      phục" → đúng một `mod_decide_appeal(p_approve: true)` → bài hiện lại →
+      Nhật ký có dòng "Chấp nhận kháng nghị".
+    */
+    name: 'Bảng kiểm duyệt: admin đi từ Tổng quan → báo cáo → bài tự ẩn → chấp nhận kháng nghị → nhật ký (A 03/10)',
+    route: '/admin', mode: 'full',
+    async run(page, { world }) {
+      asStaff(world, 'admin');
+      const decide = [];
+      page.on('request', (q) => {
+        if (/\/rpc\/mod_decide_appeal/.test(q.url())) decide.push(q.postData() ?? '');
+      });
+      page.on('dialog', (d) => d.accept());
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(3000);
+      const reportsLink = page.getByRole('link', { name: /reported items?|mục bị báo cáo/ }).filter({ visible: true });
+      if ((await reportsLink.count()) !== 1) return 'Tổng quan không có dòng "mục bị báo cáo"';
+      if ((await page.getByRole('link', { name: /1 (appeal|kháng nghị)/ }).filter({ visible: true }).count()) !== 1) return 'Tổng quan không nói có 1 kháng nghị';
+      await reportsLink.click();
+      await page.waitForTimeout(2000);
+      const row = page.getByRole('link', { name: /Morning push/ }).filter({ visible: true }).first();
+      const any = page.getByRole('link', { name: /^(Post|Bài): / }).filter({ visible: true });
+      if ((await any.count()) < 2) return `hàng đợi phải có ≥ 2 mục, ra ${await any.count()}`;
+      const target = (await row.count()) ? row : any.filter({ hasText: /3 (reports|báo cáo)/ }).first();
+      if ((await target.count()) === 0) return 'hàng đợi không có mục 3 báo cáo của bài 026';
+      await target.click();
+      await page.waitForTimeout(2500);
+      if (!/\/admin\/target/.test(page.url())) return `không mở trang nội dung: ${page.url()}`;
+      if ((await page.getByText('Đây là buổi tập thật của tôi').filter({ visible: true }).count()) !== 1) return 'trang nội dung không hiện lời nhắn kháng nghị';
+      const approve = page.getByRole('button', { name: /^(Approve and restore|Chấp nhận và khôi phục)$/ }).filter({ visible: true });
+      if ((await approve.count()) !== 1) return 'không có nút "Chấp nhận và khôi phục"';
+      await approve.click();
+      for (let i = 0; i < 16 && !decide.length; i++) await page.waitForTimeout(250);
+      if (decide.length !== 1 || !/"p_approve"\s*:\s*true/.test(decide[0])) return `phải đúng một mod_decide_appeal(p_approve: true), ra ${JSON.stringify(decide)}`;
+      if (world.community_posts.find((p) => p.id === 'cp000000-0000-4000-8000-000000000026').hidden) return 'chấp nhận mà bài vẫn ẩn';
+      await page.goto(page.url().replace(/\/admin.*$/, '/admin/audit'), { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2500);
+      if ((await page.getByText(/^(Approved an appeal|Chấp nhận kháng nghị)$/).filter({ visible: true }).count()) < 1) return 'nhật ký không có dòng "Chấp nhận kháng nghị"';
+      return null;
+    },
+  },
+  {
+    /*
+      A 03/10 — golden path của MODERATOR: thanh điều hướng chỉ có Tổng quan /
+      Báo cáo / Kháng nghị; ẩn được một bài (hỏi lại, đúng một `mod_hide`); "Gỡ"
+      không có lý do thì KHÔNG gọi gì; trang chỉ-admin (/admin/audit) ra "không
+      có quyền" và không gọi `admin_audit`.
+    */
+    name: 'Bảng kiểm duyệt: moderator ẩn được bài, gỡ thiếu lý do bị chặn, trang chỉ-admin bị từ chối (A 03/10)',
+    route: '/admin', mode: 'full',
+    async run(page, { world }) {
+      asStaff(world, 'moderator');
+      const calls = [];
+      page.on('request', (q) => {
+        const m = q.url().match(/\/rpc\/((mod|admin)_\w+)/);
+        if (m) calls.push({ fn: m[1], body: q.postData() ?? '' });
+      });
+      page.on('dialog', (d) => d.accept());
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(3000);
+      const tabs = await page.getByRole('tab').filter({ visible: true }).allInnerTexts();
+      if (tabs.length !== 3) return `moderator phải thấy đúng 3 mục điều hướng, ra ${JSON.stringify(tabs)}`;
+      await page.goto(page.url().replace(/\/admin.*$/, '/admin/target?type=post&id=cp000000-0000-4000-8000-000000000003'), { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2500);
+      const remove = page.getByRole('button', { name: /^(Remove|Gỡ)$/ }).filter({ visible: true });
+      if ((await remove.count()) !== 1) return 'không có nút "Gỡ"';
+      await remove.click();
+      await page.waitForTimeout(800);
+      if (calls.some((c) => c.fn === 'mod_remove')) return '"Gỡ" không có lý do mà vẫn gọi mod_remove';
+      const hide = page.getByRole('button', { name: /^(Hide|Ẩn)$/ }).filter({ visible: true });
+      await hide.click();
+      for (let i = 0; i < 16 && !calls.some((c) => c.fn === 'mod_hide'); i++) await page.waitForTimeout(250);
+      const hides = calls.filter((c) => c.fn === 'mod_hide');
+      if (hides.length !== 1 || !/cp000000-0000-4000-8000-000000000003/.test(hides[0].body)) return `phải đúng một mod_hide cho bài 003, ra ${JSON.stringify(hides)}`;
+      if (!world.community_posts.find((p) => p.id === 'cp000000-0000-4000-8000-000000000003').hidden) return 'ẩn xong mà bài vẫn hiện';
+      await page.goto(page.url().replace(/\/admin.*$/, '/admin/audit'), { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2500);
+      if ((await page.getByTestId('admin-no-access').filter({ visible: true }).count()) !== 1) return 'moderator mở /admin/audit mà không bị từ chối';
+      if (calls.some((c) => c.fn.startsWith('admin_'))) return `moderator vẫn gọi: ${calls.filter((c) => c.fn.startsWith('admin_')).map((c) => c.fn).join(', ')}`;
+      return null;
+    },
+  },
+  {
+    /*
+      A 03/10 — thư viện ảnh (admin): ảnh đã tắt vẫn có trong danh sách; tắt một
+      ảnh hỏi lại rồi gọi đúng một `admin_set_art_active(p_active: false)`.
+    */
+    name: 'Bảng kiểm duyệt: thư viện ảnh liệt kê cả ảnh đã tắt; tắt một ảnh hỏi lại và gọi đúng RPC (A 03/10)',
+    route: '/admin/images', mode: 'full',
+    async run(page, { world }) {
+      asStaff(world, 'admin');
+      const calls = [];
+      page.on('request', (q) => {
+        if (/\/rpc\/admin_set_art_active/.test(q.url())) calls.push(q.postData() ?? '');
+      });
+      let asked = 0;
+      page.on('dialog', (d) => {
+        asked++;
+        d.accept();
+      });
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(3000);
+      const all = world.community_art.length;
+      const offs = page.getByRole('button', { name: /^(Turn off|Tắt): / }).filter({ visible: true });
+      const ons = page.getByRole('button', { name: /^(Turn on|Bật lại): / }).filter({ visible: true });
+      const shown = (await offs.count()) + (await ons.count());
+      if (shown !== all) return `thư viện phải liệt kê cả ${all} ảnh (kể cả đã tắt), ra ${shown}`;
+      if ((await ons.count()) < 1) return 'ảnh đã tắt không có trong danh sách';
+      await offs.first().click();
+      for (let i = 0; i < 16 && !calls.length; i++) await page.waitForTimeout(250);
+      if (asked !== 1) return `tắt ảnh phải hỏi lại đúng một lần, ra ${asked}`;
+      if (calls.length !== 1 || !/"p_active"\s*:\s*false/.test(calls[0])) return `phải đúng một admin_set_art_active(p_active: false), ra ${JSON.stringify(calls)}`;
+      return null;
+    },
+  },
+  {
+    /*
+      A 03/10 — người dùng & vai trò (admin): tìm theo @handle, mở người ấy, đổi
+      vai trò thành moderator (hỏi lại) → đúng một `admin_set_role`. Trên trang
+      của CHÍNH mình thì không có bộ chọn vai trò.
+    */
+    name: 'Bảng kiểm duyệt: admin tìm người dùng, đổi vai trò (hỏi lại, đúng RPC); không tự đổi vai trò mình (A 03/10)',
+    route: '/admin/users', mode: 'full',
+    async run(page, { world }) {
+      asStaff(world, 'admin');
+      const calls = [];
+      page.on('request', (q) => {
+        if (/\/rpc\/admin_set_role/.test(q.url())) calls.push(q.postData() ?? '');
+      });
+      page.on('dialog', (d) => d.accept());
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(3000);
+      const prof = world.community_profiles.find((p) => p.user_id === 'c0000000-0000-4000-8000-0000000011a1');
+      await page.getByRole('textbox').filter({ visible: true }).first().fill(prof.handle);
+      await page.waitForTimeout(1500);
+      const row = page.getByRole('link', { name: new RegExp(`^${prof.display_name},`) }).filter({ visible: true });
+      if ((await row.count()) !== 1) return `tìm "${prof.handle}" không ra đúng một ${prof.display_name}`;
+      await row.click();
+      await page.waitForTimeout(2500);
+      await page.getByText(/^(Moderator|Người kiểm duyệt)$/).filter({ visible: true }).first().click();
+      await page.getByRole('button', { name: /^(Change role|Đổi vai trò)$/ }).filter({ visible: true }).click();
+      for (let i = 0; i < 16 && !calls.length; i++) await page.waitForTimeout(250);
+      if (calls.length !== 1 || !/"p_role"\s*:\s*"moderator"/.test(calls[0])) return `phải đúng một admin_set_role(p_role: moderator), ra ${JSON.stringify(calls)}`;
+      await page.goto(page.url().replace(/\/admin.*$/, `/admin/user?id=${UID}`), { waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2500);
+      if ((await page.getByRole('button', { name: /^(Change role|Đổi vai trò)$/ }).filter({ visible: true }).count()) !== 0) return 'trang của chính mình vẫn có nút đổi vai trò';
+      return null;
+    },
+  },
+  {
+    /*
+      A 03/10: thành tích cộng đồng trên hồ sơ. Con số do server đếm (fixture
+      `community_user_stats` dịch đúng luật của hàm: chỉ bài người xem thấy được);
+      ở đây đo rằng dòng hiện đúng BA con số ấy, theo đúng thứ tự, và không hiện
+      gì khi người ấy chưa có bài nào.
+    */
+    name: 'Hồ sơ: dòng thành tích nói đúng số bài, lượt thích và số người đã thử (A 03/10)',
+    route: '/community-user?id=c0000000-0000-4000-8000-0000000011a1', mode: 'full',
+    async run(page, { world }) {
+      const uid = 'c0000000-0000-4000-8000-0000000011a1';
+      const seen = world.community_posts.filter((p) => p.author_id === uid && !p.hidden && p.visibility !== 'followers');
+      const ids = new Set(seen.map((p) => p.id));
+      const want = { p: seen.length, l: seen.reduce((n, p) => n + (p.like_count ?? 0), 0), t: world.community_post_tries.filter((x) => ids.has(x.post_id)).length };
+      if (want.p === 0 || want.t === 0) return `fixture không còn đủ dữ liệu để đo (bài ${want.p}, lượt thử ${want.t})`;
+      await page.waitForTimeout(2500);
+      const line = page.getByText(/ (posts?|bài) · /).filter({ visible: true });
+      if ((await line.count()) !== 1) return 'hồ sơ không có đúng một dòng thành tích';
+      const text = (await line.innerText()).trim();
+      const nums = (text.match(/\d+/g) ?? []).map(Number);
+      if (nums.join(',') !== [want.p, want.l, want.t].join(',')) return `dòng thành tích "${text}" — phải là ${want.p} bài · ${want.l} lượt thích · ${want.t} người đã thử`;
+      return null;
+    },
+  },
   {
     /*
       #216 đưa thẻ bài và cụm tác giả qua `ZoomLink` (`<Link asChild>` để có
