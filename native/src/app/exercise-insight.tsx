@@ -2,7 +2,7 @@ import { haptics as Haptics } from '@/lib/haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Activity, ChevronDown, Minus, TrendingDown, TrendingUp } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
-import { Text, View } from 'react-native';
+import { ActivityIndicator, Text, View } from 'react-native';
 
 import { TrendDelta, trendDir } from '@/components/ascnd/trend-delta';
 import { EmptyState } from '@/components/ascnd/empty-state';
@@ -331,7 +331,7 @@ export default function ExerciseInsightScreen() {
   const styles = stylesFor(c);
   const i18n = useI18n();
   const { weight: u } = useUnits();
-  const { insights, loading, failed } = useExerciseInsights();
+  const { insights, loading, failed, refetch, isRefetching } = useExerciseInsights();
   const { ex } = useLocalSearchParams<{ ex?: string }>();
   const days = useRoutineDays();
   const templates = useWorkoutTemplates();
@@ -385,8 +385,12 @@ export default function ExerciseInsightScreen() {
   return (
     <Screen refreshable back title={i18n.nXiTitle}>
       {failed ? (
-        <LoadFailed i18n={i18n} />
-      ) : loading ? null : insights.length === 0 ? (
+        <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+      ) : loading ? (
+        <View style={{ paddingVertical: 48, alignItems: 'center' }}>
+          <ActivityIndicator />
+        </View>
+      ) : insights.length === 0 ? (
         <EmptyState icon={Activity} title={i18n.nXiEmpty} hint={i18n.nXiEmptyHint} />
       ) : (
         <>

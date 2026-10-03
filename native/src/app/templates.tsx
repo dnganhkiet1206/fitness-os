@@ -72,7 +72,7 @@ export default function TemplatesScreen() {
   };
 
   return (
-    <Screen refreshable title={vi ? 'Danh sách buổi tập' : 'Workout list'}>
+    <Screen refreshable back title={vi ? 'Danh sách buổi tập' : 'Workout list'}>
       {/*
         The search box is only drawn once there is enough to search. On four
         routines it is a control that costs a tap to dismiss and finds nothing

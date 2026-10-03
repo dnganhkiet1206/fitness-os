@@ -80,7 +80,7 @@ export default function DiaryScreen() {
   );
   const isToday = dateStr === today;
 
-  const { data: meals, isError: diaryFailed, isPending } = useTodayLog(dateStr);
+  const { data: meals, isError: diaryFailed, isPending, refetch, isRefetching } = useTodayLog(dateStr);
 
   const go = (days: number) => {
     const next = shiftLocalDate(dateStr, days);
@@ -189,7 +189,7 @@ export default function DiaryScreen() {
         dưỡng ở tab kia đã phải tách `isPending` ra để sửa.
       */}
       {diaryFailed ? (
-        <LoadFailed i18n={i18n} />
+        <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
       ) : isPending ? (
         <View style={styles.loading}>
           <SkeletonBlock height={70} />

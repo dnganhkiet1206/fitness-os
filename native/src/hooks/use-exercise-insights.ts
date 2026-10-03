@@ -46,6 +46,9 @@ export interface ExerciseInsights {
    * tells somebody their training is missing.
    */
   failed: boolean;
+  /** Retry the underlying sessions query (wired to LoadFailed's retry). */
+  refetch: () => void;
+  isRefetching: boolean;
 }
 
 export function useExerciseInsights(days: number = INSIGHT_DAYS): ExerciseInsights {
@@ -89,5 +92,7 @@ export function useExerciseInsights(days: number = INSIGHT_DAYS): ExerciseInsigh
        them. Sessions are the subject, so it is held back for those. */
     loading: sessions.isLoading,
     failed: sessions.isError,
+    refetch: sessions.refetch,
+    isRefetching: sessions.isRefetching,
   };
 }
