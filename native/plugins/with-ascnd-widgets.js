@@ -331,14 +331,48 @@ module.exports = function withAscndWidgets(config) {
       logoFile.target = target.uuid;
       logoFile.uuid = project.generateUuid();
       project.addToPbxBuildFileSection(logoFile);
+    }
+
+    // 4b-verify. UNCONDITIONAL Resources-phase wiring (separate from the
+    // hasFile guard above): a stale .pbxproj from a non-clean prebuild can
+    // hold the PBXFileReference without the Resources phase entry — then
+    // `Image("ascnd-mark")` renders empty with ZERO build warnings and the
+    // bug is invisible until Kiệt's device shots (03/10/2026). Scan the
+    // phase; repair if missing. Idempotent.
+    {
       const existingResUuid = findResourcesPhaseUuid(project, target.uuid);
       const resPhase = existingResUuid
         ? project.hash.project.objects.PBXResourcesBuildPhase[existingResUuid]
         : project.addBuildPhase([], 'PBXResourcesBuildPhase', 'Resources', target.uuid).buildPhase;
-      resPhase.files.push({
-        value: logoFile.uuid,
-        comment: `${LOGO_REL} in Resources`,
-      });
+      const phaseFiles = resPhase.files || (resPhase.files = []);
+      const hasLogoInPhase = phaseFiles.some((f) => (f.comment || '').includes(LOGO_REL));
+      if (!hasLogoInPhase) {
+        const fileRefs = project.hash.project.objects.PBXFileReference || {};
+        let fileRefUuid = null;
+        for (const k of Object.keys(fileRefs)) {
+          if (k.endsWith('_comment')) continue;
+          const p = String(fileRefs[k].path || '').replace(/^"|"$/g, '');
+          if (p === LOGO_REL || p.endsWith('/' + LOGO_REL)) { fileRefUuid = k; break; }
+        }
+        if (!fileRefUuid) {
+          throw new Error('[with-ascnd-widgets] logo file ref missing for ' + LOGO_REL);
+        }
+        const buildFiles = project.hash.project.objects.PBXBuildFile || {};
+        let buildUuid = null;
+        for (const k of Object.keys(buildFiles)) {
+          if (k.endsWith('_comment')) continue;
+          const bf = buildFiles[k];
+          const fr = typeof bf.fileRef === 'string' ? bf.fileRef : (bf.fileRef && bf.fileRef.value);
+          if (fr === fileRefUuid) { buildUuid = k; break; }
+        }
+        if (!buildUuid) {
+          buildUuid = project.generateUuid();
+          const section = project.hash.project.objects.PBXBuildFile;
+          section[buildUuid] = { isa: 'PBXBuildFile', fileRef: fileRefUuid, fileRef_comment: LOGO_REL };
+          section[buildUuid + '_comment'] = LOGO_REL + ' in Resources';
+        }
+        phaseFiles.push({ value: buildUuid, comment: LOGO_REL + ' in Resources' });
+      }
     }
 
     // 4c. Target dependency app -> extension. The `xcode` package's

@@ -105,16 +105,31 @@ struct AdjustRestIntent: AppIntent {
   }
 
   func perform() async throws -> some IntentResult {
-    os_log("IslandIntent: AdjustRestIntent perform start (seconds=%d)", log: islandLog, type: .info, seconds)
-    guard let activity = currentRestActivity() else {
-      os_log("IslandIntent: adjust aborted, no activity", log: islandLog, type: .error)
+    os_log("IslandIntent: AdjustRestIntent perform() entered (seconds=%d)", log: islandLog, type: .info, seconds)
+
+    // 03/10/2026 diagnostic — Kiệt: logo missing in widget bundle?
+    // One tap answers it definitively in Console.app (Mac).
+    if let logoURL = Bundle.main.url(forResource: "ascnd-mark", withExtension: "png") {
+      os_log("IslandIntent: logo PRESENT in widget bundle: %{public}@", log: islandLog, type: .info, logoURL.path)
+    } else {
+      os_log("IslandIntent: logo MISSING from widget bundle (ascnd-mark.png not found)", log: islandLog, type: .error)
+    }
+
+    let matches = Activity<RestTimerAttributes>.activities
+    os_log("IslandIntent: Activity<RestTimerAttributes>.activities.count=%d", log: islandLog, type: .info, matches.count)
+    guard let activity = matches.first else {
+      os_log("IslandIntent: adjust aborted — no rest activity visible from extension process", log: islandLog, type: .error)
       return .result()
     }
+    // An ended/dismissed activity rejects updates — log it so we can see it.
+    os_log("IslandIntent: activity id=%{public}@ activityState=%{public}@", log: islandLog, type: .info, activity.id, String(describing: activity.activityState))
     var state = activity.content.state
     let now = Date()
     if state.isPaused {
+      let oldRemaining = state.pausedRemaining
       let remaining = max(state.pausedRemaining + Double(seconds), 1)
       state.pausedRemaining = remaining
+      os_log("IslandIntent: paused adjust: remaining %.1fs -> %.1fs", log: islandLog, type: .info, oldRemaining, remaining)
       notifyMainApp([
         "action": "adjust",
         "adjustSeconds": seconds,
@@ -125,11 +140,13 @@ struct AdjustRestIntent: AppIntent {
       // Same honesty rule as the in-app card: adding time grows the total
       // (ring stays a fraction); taking time keeps it (the rest was cut).
       // startDate is untouched, so the ring math needs no other change.
+      let oldEnd = state.endDate
       let flooredEnd = max(
         state.endDate.addingTimeInterval(Double(seconds)),
         now.addingTimeInterval(1))
       state.endDate = flooredEnd
       let remaining = max(flooredEnd.timeIntervalSince(now), 0)
+      os_log("IslandIntent: running adjust: endDate %{public}@ -> %{public}@ (remaining %.1fs)", log: islandLog, type: .info, String(describing: oldEnd), String(describing: flooredEnd), remaining)
       notifyMainApp([
         "action": "adjust",
         "adjustSeconds": seconds,
