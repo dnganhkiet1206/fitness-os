@@ -65,6 +65,10 @@ struct ToggleRestPauseIntent: AppIntent {
   /// Explicit: tapping pause must NOT deep-link into the app (Kiệt 02/10/2026).
   static var openAppWhenRun: Bool = false
 
+  /// Explicit parameterless init (defensive: AppIntent conformance needs it;
+  /// any future `init(...)` added here must keep this one too).
+  init() {}
+
   func perform() async throws -> some IntentResult {
     guard let activity = currentRestActivity() else { return .result() }
     var state = activity.content.state
@@ -106,6 +110,11 @@ struct AdjustRestIntent: AppIntent {
 
   @Parameter(title: "Seconds")
   var seconds: Int
+
+  /// AppIntent requires a parameterless `init()` — adding ONLY `init(seconds:)`
+  /// removes the synthesized `init()` and breaks protocol conformance
+  /// ("does not conform to protocol 'AppIntent'"). Keep both.
+  init() {}
 
   /// Explicit init: without this, the synthesized memberwise init expects
   /// `IntentParameter<Int>` and `AdjustRestIntent(seconds: 15)` fails to
