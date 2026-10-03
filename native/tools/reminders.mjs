@@ -59,6 +59,8 @@ try {
     meal: { enabled: true, hour: 20, minute: 0 },
     biometrics: { enabled: true, hour: 7, minute: 30 },
     sleepLog: { enabled: true, hour: 8, minute: 0 },
+    /* P0-3: khoá one-shot — bật để đo trường hợp nặng nhất như các khoá khác. */
+    challengeClaim: { enabled: true },
   };
   const CLEAR = {
     workedOutToday: false,
@@ -69,6 +71,8 @@ try {
     bioLoggedToday: false,
     sleepLoggedToday: false,
     trainingDays: null,
+    /* P0-3: không có claim nào đang chờ trong test này. */
+    pendingClaims: [],
   };
   /** a Wednesday, mid-morning — before every reminder time except water's first */
   const NOW = new Date(2026, 7, 5, 8, 30);
@@ -203,7 +207,7 @@ try {
   if (!union || !arr) {
     problems.push('không đọc được danh sách khoá nhắc (union ReminderKey hoặc mảng `timed`)');
   } else {
-    const keys = [...union[1].matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1]).filter((k) => k !== 'water');
+    const keys = [...union[1].matchAll(/'([a-zA-Z]+)'/g)].map((m) => m[1]).filter((k) => k !== 'water' && k !== 'challengeClaim');
     const shown = [...arr[1].matchAll(/key: '([a-zA-Z]+)'/g)].map((m) => m[1]);
     const missing = keys.filter((k) => !shown.includes(k));
     if (missing.length) {

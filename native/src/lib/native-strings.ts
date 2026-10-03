@@ -972,6 +972,10 @@ const en = {
   nReminderSleepLog: 'Log last night',
   nReminderSleepLogBody: 'How did you sleep? Write it down 🌙',
   nReminderEveryHours: 'Every {n}h',
+  nCxClaimReminderTitle: 'Reward expiring soon',
+  nCxClaimReminderBody: 'Claim {c} coins for "{t}" — last day today!',
+  nCxClaimReminderBodyLeft: 'Claim {c} coins for "{t}" — {n} days left',
+  nCxClaimReminderDesc: 'Nudge when an earned challenge reward is about to expire',
 
   // Offline
   nOffline: 'Offline — showing saved data',
@@ -2002,6 +2006,10 @@ const vi: typeof en = {
   nReminderSleepLog: 'Ghi đêm qua',
   nReminderSleepLogBody: 'Đêm qua ngủ thế nào? Ghi lại nhé 🌙',
   nReminderEveryHours: 'Mỗi {n} giờ',
+  nCxClaimReminderTitle: 'Thưởng sắp hết hạn',
+  nCxClaimReminderBody: 'Nhận {c} xu cho "{t}" — hôm nay là ngày cuối!',
+  nCxClaimReminderBodyLeft: 'Nhận {c} xu cho "{t}" — còn {n} ngày',
+  nCxClaimReminderDesc: 'Nhắc khi thưởng thử thách sắp hết hạn nhận',
 
   // Offline
   nOffline: 'Ngoại tuyến — đang hiển thị dữ liệu đã lưu',

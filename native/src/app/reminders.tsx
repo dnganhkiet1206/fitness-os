@@ -1,5 +1,5 @@
 import { haptics as Haptics } from '@/lib/haptics';
-import { Bell, Droplets, Dumbbell, HeartPulse, type LucideIcon, Moon, Pill, Sunrise, Utensils } from 'lucide-react-native';
+import { Bell, Droplets, Dumbbell, HeartPulse, type LucideIcon, Moon, Pill, Sunrise, Trophy, Utensils } from 'lucide-react-native';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { DateField } from '@/components/ascnd/date-field';
@@ -161,6 +161,29 @@ export default function RemindersScreen() {
         )}
       </GlassCard>
 
+      {/* Challenge claim — one-shot on the reward deadline, no time to pick */}
+      <GlassCard>
+        <View style={styles.rowHead}>
+          <View style={styles.rowTitleWrap}>
+            <View style={[styles.iconBadge, { backgroundColor: alpha(c.metricOrangeGraphic, 0.14) }]}>
+              <Icon icon={Trophy} size={16} />
+            </View>
+            <View>
+              <Text style={styles.rowTitle}>{i18n.nCxClaimReminderTitle}</Text>
+              <Text style={styles.rowSub}>{i18n.nCxClaimReminderDesc}</Text>
+            </View>
+          </View>
+          <Switch
+            value={prefs.challengeClaim.enabled}
+            onValueChange={(v) => {
+              Haptics.selection();
+              toggle('challengeClaim', v);
+            }}
+            trackColor={{ true: c.readinessGreen, false: c.secondary }}
+          />
+        </View>
+      </GlassCard>
+
       {/* Daily fixed-time reminders */}
       {timed.map(({ key, icon, color, title }) => {
         const r = prefs[key] as ReminderPrefs[TimedKey];
@@ -240,6 +263,7 @@ const stylesFor = makeStyles((c) => ({
      đọc ra là hai hệ thống. */
   iconBadge: { width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   rowTitle: { ...type.headline, color: c.foreground, flexShrink: 1 },
+  rowSub: { ...type.caption, color: c.glassMuted, marginTop: 2, flexShrink: 1 },
   rowRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   intervalRow: { marginTop: spacing.md },
   /* Quiet, and below the control it talks about: this is the app explaining

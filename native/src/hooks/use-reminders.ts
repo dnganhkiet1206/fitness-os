@@ -26,6 +26,9 @@ import {
 } from '@/lib/reminder-plan';
 import { mealDone, sleepDone } from '@/lib/todo';
 import { onUserScopedReset } from '@/lib/user-scoped-reset';
+import { useChallenges } from '@/hooks/use-community';
+import { CLAIM_WINDOW_DAYS, pendingClaims } from '@/lib/challenge-reminders';
+import { shiftLocalDate } from '@/lib/local-date';
 
 const PREFS_KEY = 'ascnd_reminders';
 /** the signature of the plan last written to the OS — see the effect below */
@@ -46,6 +49,9 @@ function merge(stored: Partial<ReminderPrefs> | null): ReminderPrefs {
     meal: { ...DEFAULT_REMINDERS.meal, ...stored.meal },
     biometrics: { ...DEFAULT_REMINDERS.biometrics, ...stored.biometrics },
     sleepLog: { ...DEFAULT_REMINDERS.sleepLog, ...stored.sleepLog },
+    /* P0-3: khoá mới — thiết bị đã lưu bộ cũ thì stored.challengeClaim là
+       undefined, spread lên mặc định (bật, xem chú thích ở DEFAULT_REMINDERS). */
+    challengeClaim: { ...DEFAULT_REMINDERS.challengeClaim, ...stored.challengeClaim },
   };
 }
 
@@ -166,6 +172,8 @@ export function useReminders() {
     meal: { title: i18n.nReminderMeal, body: i18n.nReminderMealBody },
     biometrics: { title: i18n.nReminderBiometrics, body: i18n.nReminderBiometricsBody },
     sleepLog: { title: i18n.nReminderSleepLog, body: i18n.nReminderSleepLogBody },
+    /* P0-3: fallback — items thật mang title/body riêng từ plan. */
+    challengeClaim: { title: i18n.nCxClaimReminderTitle, body: i18n.nCxClaimReminderTitle },
   };
 
   /*
@@ -184,6 +192,29 @@ export function useReminders() {
   const { data: dailyLog } = useDailyLog();
   const { data: todaySleep } = useTodaySleep();
   const { data: todayBio } = useTodayBiometrics();
+  /* P0-3: thử thách đã đạt-chưa-nhận — dùng hook public của community (chỉ đọc,
+     không sửa file của A). */
+  const { data: challenges } = useChallenges();
+
+  const pendingClaimItems = (pendingClaims(challenges ?? [], localDateStr())).map((c) => {
+    const claimBy = shiftLocalDate(c.ends_on, CLAIM_WINDOW_DAYS);
+    const daysLeft = c.daysLeft;
+    const body = daysLeft === 0
+      ? i18n.nCxClaimReminderBody
+          .replace('{c}', String(c.reward_coins))
+          .replace('{t}', c.title)
+      : i18n.nCxClaimReminderBodyLeft
+          .replace('{c}', String(c.reward_coins))
+          .replace('{t}', c.title)
+          .replace('{n}', String(daysLeft));
+    return {
+      id: c.id,
+      title: i18n.nCxClaimReminderTitle,
+      claimBy,
+      rewardCoins: c.reward_coins,
+      body,
+    };
+  });
 
   const ctx: ReminderContext = {
     workedOutToday: (sessions ?? []).some(
@@ -205,6 +236,7 @@ export function useReminders() {
     trainingDays: routineDays
       ? routineDays.filter((d) => d.template_id && !d.is_rest).map((d) => d.day_of_week)
       : null,
+    pendingClaims: pendingClaimItems,
   };
 
   useEffect(() => {

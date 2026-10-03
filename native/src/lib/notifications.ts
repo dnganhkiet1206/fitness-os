@@ -59,6 +59,12 @@ export const DEFAULT_REMINDERS: ReminderPrefs = {
   meal: { enabled: false, hour: 20, minute: 0 },
   biometrics: { enabled: false, hour: 7, minute: 30 },
   sleepLog: { enabled: false, hour: 8, minute: 0 },
+  /*
+    P0-3: default ON — unlike the others this key only ever fires when a
+    reward is actually about to be forfeited, so there is no "extra noise"
+    to opt out of. Silence here is the harm.
+  */
+  challengeClaim: { enabled: true },
 };
 
 /** Copy for each reminder in the active language. */
@@ -71,6 +77,8 @@ export interface ReminderCopy {
   meal: { title: string; body: string };
   biometrics: { title: string; body: string };
   sleepLog: { title: string; body: string };
+  /* P0-3: fallback; real items carry their own title/body from the plan. */
+  challengeClaim: { title: string; body: string };
 }
 
 export function notificationsAvailable(): boolean {
@@ -170,7 +178,11 @@ export async function scheduleReminderPlan(
       return { requested: plan.length, scheduled: 0, supported: true };
     }
     for (const item of plan) {
-      const text = copy[item.key];
+      /* P0-3: a planned item may carry its own text (challenge claim names
+         its challenge); fall back to the shared copy for its key. */
+      const text = item.title != null || item.body != null
+        ? { title: item.title ?? copy[item.key].title, body: item.body ?? copy[item.key].body }
+        : copy[item.key];
       try {
         await api.scheduleNotificationAsync({
           content: { title: text.title, body: text.body },

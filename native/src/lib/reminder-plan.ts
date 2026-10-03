@@ -69,17 +69,19 @@ export type ReminderKey =
   | 'workout'
   | 'meal'
   | 'biometrics'
-  | 'sleepLog';
+  | 'sleepLog'
+  | 'challengeClaim';
 
 /**
- * Khoá có MỘT giờ cố định — tức mọi khoá trừ `water`, vốn là một khoảng lặp.
+ * Khoá có MỘT giờ cố định — tức mọi khoá trừ `water` (vốn là một khoảng lặp,
+ * không có giờ) và `challengeClaim` (one-shot theo deadline, không có giờ).
  *
  * Dẫn ra bằng `Exclude` chứ không gõ lại: hai chỗ từng giữ danh sách này bằng
  * tay (`setTime` trong `use-reminders`, `TimedKey` trong màn Nhắc nhở), nên
  * thêm một khoá mới là ba lần sửa, và cái bị quên sẽ không báo lỗi — nó chỉ im
  * lặng không cho đặt giờ.
  */
-export type TimedReminderKey = Exclude<ReminderKey, 'water'>;
+export type TimedReminderKey = Exclude<ReminderKey, 'water' | 'challengeClaim'>;
 
 export interface ReminderPrefs {
   water: { enabled: boolean; everyHours: number };
@@ -90,6 +92,13 @@ export interface ReminderPrefs {
   meal: { enabled: boolean; hour: number; minute: number };
   biometrics: { enabled: boolean; hour: number; minute: number };
   sleepLog: { enabled: boolean; hour: number; minute: number };
+  /*
+    P0-3 (DE-XUAT-2): one-shot, not recurring — no hour/minute. The plan
+    derives the fire time from each claim's deadline (see below).
+    Default ON: losing a reward in silence is the exact harm #60 was filed
+    for, and this key only fires when a claim is actually pending.
+  */
+  challengeClaim: { enabled: boolean };
 }
 
 /** What is already true today, and what the week says about training. */
@@ -109,6 +118,14 @@ export interface ReminderContext {
   /** today's water has reached the target */
   waterDone: boolean;
   /**
+   * P0-3 (DE-XUAT-2): challenges earned but not yet claimed, with their
+   * claim deadlines. From `pendingClaims` in challenge-reminders.ts —
+   * `claimBy` is the last `YYYY-MM-DD` the reward can still be claimed.
+   * `title`/`body` are pre-built by the caller (it owns i18n); the plan
+   * carries them onto the scheduled item.
+   */
+  pendingClaims: { id: string; title: string; claimBy: string; rewardCoins: number; body: string }[];
+  /**
    * Weekday indices (Monday = 0) that have a workout planned.
    *
    * `null` means the routine has not been read — not that every day is a rest
@@ -122,6 +139,13 @@ export interface PlannedReminder {
   key: ReminderKey;
   /** the exact local moment to fire */
   at: Date;
+  /*
+    P0-3: per-item content override. Most keys share one copy; a challenge
+    claim names its challenge, so the plan carries the text. The scheduler
+    prefers these over `copy[key]` when present.
+  */
+  title?: string;
+  body?: string;
 }
 
 /** Water fires through the waking day, on the hour. */
@@ -249,6 +273,35 @@ export function planReminders(
     const trainsToday = ctx.trainingDays === null || ctx.trainingDays.includes(weekday);
     if (prefs.workout.enabled && trainsToday && !(isToday && ctx.workedOutToday)) {
       push('workout', at(now, day, prefs.workout.hour, prefs.workout.minute));
+    }
+  }
+
+  /*
+    P0-3 (DE-XUAT-2): one-shot nudges for earned-but-unclaimed challenge
+    rewards. Each claim fires once, at 10:00 on its last claimable day —
+    early enough to act, late enough not to wake anyone. If that moment has
+    already passed today (today IS the last day and it is past 10:00), fire
+    in 30 minutes instead: a late nudge beats a silent forfeiture.
+
+    The per-challenge text was built by the caller (it owns i18n) and rides
+    on the context item; the scheduler prefers it over `copy[key]`.
+  */
+  if (prefs.challengeClaim.enabled) {
+    for (const claim of ctx.pendingClaims ?? []) {
+      const [y, m, d] = claim.claimBy.split('-').map(Number);
+      if (!y || !m || !d) continue;
+      const lastDay = new Date(y, m - 1, d, 10, 0, 0);
+      if (lastDay.getTime() > now.getTime()) {
+        out.push({ key: 'challengeClaim', at: lastDay, title: claim.title, body: claim.body });
+      } else {
+        /* Last day, morning already gone — nudge soon rather than never. */
+        const soon = new Date(now.getTime() + 30 * 60 * 1000);
+        /* Only if the claim is still valid today (claimBy >= today). */
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        if (claim.claimBy >= todayStr) {
+          out.push({ key: 'challengeClaim', at: soon, title: claim.title, body: claim.body });
+        }
+      }
     }
   }
 
