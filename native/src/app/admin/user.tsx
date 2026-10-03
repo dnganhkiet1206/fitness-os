@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
@@ -23,6 +23,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useAuth } from '@/hooks/use-auth';
 import { type AdminUserDetail, type AppRole, useAdminUser, useSetRole } from '@/hooks/use-admin';
 import { usePalette } from '@/hooks/use-palette';
+import { nav } from '@/lib/nav';
 import { fillCopy } from '@/lib/copy-fill';
 import { timeAgo } from '@/lib/time-ago';
 import { toast } from '@/lib/toast';
@@ -143,7 +144,7 @@ function Detail({ d }: { d: AdminUserDetail }) {
                 style={[a.row, i > 0 && a.rule]}
                 accessibilityRole="link"
                 accessibilityLabel={p.caption || i18n.nPgAdNoText}
-                onPress={() => router.push(`/admin/target?type=post&id=${p.id}` as never)}
+                onPress={() => nav.push(`/admin/target?type=post&id=${p.id}` as never)}
               >
                 <View style={a.rowHead}>
                   <StateTag hidden={p.hidden} removed={p.removed} />
@@ -173,7 +174,7 @@ function Detail({ d }: { d: AdminUserDetail }) {
                 style={[a.row, i > 0 && a.rule]}
                 accessibilityRole="link"
                 accessibilityLabel={reasonLabel(r.reason)}
-                onPress={() => router.push(`/admin/target?type=${r.target_type}&id=${r.target_id}` as never)}
+                onPress={() => nav.push(`/admin/target?type=${r.target_type}&id=${r.target_id}` as never)}
               >
                 <View style={a.rowHead}>
                   <Text style={a.strong}>{reasonLabel(r.reason)}</Text>

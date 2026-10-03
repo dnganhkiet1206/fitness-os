@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
@@ -11,6 +10,7 @@ import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { type AppealItem, type AppealStatus, useModAppeals } from '@/hooks/use-admin';
 import { usePalette } from '@/hooks/use-palette';
+import { nav } from '@/lib/nav';
 import { fillCopy } from '@/lib/copy-fill';
 import { timeAgo } from '@/lib/time-ago';
 
@@ -69,7 +69,7 @@ function AppealRow({ item, first }: { item: AppealItem; first: boolean }) {
       style={[a.row, !first && a.rule]}
       accessibilityRole="link"
       accessibilityLabel={`${kind}: ${text}`}
-      onPress={() => router.push(`/admin/target?type=${item.target_type}&id=${item.target_id}` as never)}
+      onPress={() => nav.push(`/admin/target?type=${item.target_type}&id=${item.target_id}` as never)}
     >
       <View style={a.rowHead}>
         <Text style={styles.kind}>{kind}</Text>

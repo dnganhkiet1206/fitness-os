@@ -1,8 +1,10 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { callEdge, EDGE_FUNCTIONS } from '@/lib/edge';
+import { now } from '@/lib/offline-class';
 
 /**
  * Bảng điều khiển vận hành Cộng đồng (A, 03/10) — dữ liệu.
@@ -315,7 +317,9 @@ export type ModAction = 'hide' | 'restore' | 'remove' | 'dismiss';
 
 export function useModAction() {
   const refresh = useRefreshAll();
-  return useMutation({
+  return useOnlineMutation({
+    /* quyết định kiểm duyệt: người khác thấy kết quả — không xếp hàng khi mất mạng */
+    meta: { offline: now(2) },
     mutationFn: async ({ action, type, id, reason }: { action: ModAction; type: TargetType; id: string; reason: string }) => {
       const args = { p_type: type, p_id: id, p_reason: reason };
       const { error } =
@@ -334,7 +338,9 @@ export function useModAction() {
 
 export function useDecideAppeal() {
   const refresh = useRefreshAll();
-  return useMutation({
+  return useOnlineMutation({
+    /* quyết định kiểm duyệt: người khác thấy kết quả — không xếp hàng khi mất mạng */
+    meta: { offline: now(2) },
     mutationFn: async ({ id, approve, reason }: { id: string; approve: boolean; reason: string }) => {
       const { error } = await supabase.rpc('mod_decide_appeal', { p_appeal: id, p_approve: approve, p_reason: reason });
       if (error) throw error;
@@ -345,7 +351,9 @@ export function useDecideAppeal() {
 
 export function useSetRole() {
   const refresh = useRefreshAll();
-  return useMutation({
+  return useOnlineMutation({
+    /* quyết định kiểm duyệt: đụng tới tài khoản của người khác — không xếp hàng khi mất mạng */
+    meta: { offline: now(1) },
     mutationFn: async ({ userId, role, reason }: { userId: string; role: AppRole; reason: string }) => {
       const { error } = await supabase.rpc('admin_set_role', { p_user: userId, p_role: role, p_reason: reason });
       if (error) throw error;
@@ -356,7 +364,9 @@ export function useSetRole() {
 
 export function useSetArtActive() {
   const refresh = useRefreshAll();
-  return useMutation({
+  return useOnlineMutation({
+    /* quyết định kiểm duyệt: người khác thấy kết quả — không xếp hàng khi mất mạng */
+    meta: { offline: now(2) },
     mutationFn: async ({ id, active, reason }: { id: string; active: boolean; reason: string }) => {
       const { error } = await supabase.rpc('admin_set_art_active', { p_art: id, p_active: active, p_reason: reason });
       if (error) throw error;
@@ -379,7 +389,9 @@ export interface ArtUpload {
  *  chạm Storage, rồi ghi hàng bằng chính token này. */
 export function useUploadArt() {
   const refresh = useRefreshAll();
-  return useMutation({
+  return useOnlineMutation({
+    /* quyết định kiểm duyệt: người khác thấy kết quả — không xếp hàng khi mất mạng */
+    meta: { offline: now(2) },
     mutationFn: async (u: ArtUpload) => {
       const form = new FormData();
       form.append('file', u.file, u.name);

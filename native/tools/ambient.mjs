@@ -100,6 +100,8 @@ function routeFiles(dir, prefix = '') {
 const lit = (src) =>
   /<AmbientLight\b/.test(src) ||
   /<AssistantAura\b/.test(src) ||
+  /* bảng kiểm duyệt (A 03/10): `AdminShell` dựng đúng một `<Screen>` ở mọi nhánh */
+  /<AdminShell\b/.test(src) ||
   /from '@\/components\/ascnd\/screen'/.test(src);
 
 function audit(layoutSource, files) {

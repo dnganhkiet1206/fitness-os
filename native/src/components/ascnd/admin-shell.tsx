@@ -1,4 +1,4 @@
-import { router, usePathname } from 'expo-router';
+import { usePathname } from 'expo-router';
 import { ActivityIndicator, Alert, Platform, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { LoadFailed } from '@/components/ascnd/load-failed';
@@ -9,6 +9,7 @@ import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { type AppRole, type AuditRow, useAppRole } from '@/hooks/use-admin';
 import { usePalette } from '@/hooks/use-palette';
+import { nav } from '@/lib/nav';
 import { fillCopy } from '@/lib/copy-fill';
 import { timeAgo } from '@/lib/time-ago';
 
@@ -93,7 +94,7 @@ export function AdminShell({
             {i18n.nPgAdNoAccess}
           </Text>
           <Text style={styles.gateBody}>{i18n.nPgAdNoAccessBody}</Text>
-          <PressScale style={styles.gateBtn} accessibilityRole="link" onPress={() => router.replace('/')}>
+          <PressScale style={styles.gateBtn} accessibilityRole="link" onPress={() => nav.replace('/')}>
             <Text style={styles.gateBtnText}>{i18n.nPgAdBackToApp}</Text>
           </PressScale>
         </View>
@@ -112,7 +113,7 @@ export function AdminShell({
   const items = NAV.filter((n) => !n.adminOnly || r === 'admin');
 
   return (
-    <Screen back={back} title={title}>
+    <Screen back={back} title={title} keyboardAware>
       <View style={styles.frame}>
         {back ? null : (
           <View style={styles.navWrap}>
@@ -126,7 +127,7 @@ export function AdminShell({
                     accessibilityState={{ selected: on }}
                     aria-selected={on}
                     style={[styles.navItem, on && styles.navItemOn]}
-                    onPress={() => (on ? undefined : router.replace(n.path as never))}
+                    onPress={() => (on ? undefined : nav.replace(n.path as never))}
                   >
                     <Text style={[styles.navText, on && styles.navTextOn]}>{label[n.key]}</Text>
                   </PressScale>
@@ -251,7 +252,7 @@ export function AuditLine({ row, first }: { row: AuditRow; first: boolean }) {
       style={[styles.auditRow, !first && styles.rule]}
       accessibilityRole="link"
       accessibilityLabel={`${actionLabel(row.action)}, ${who}`}
-      onPress={() => router.push(`/admin/target?type=${row.target_type}&id=${row.target_id}` as never)}
+      onPress={() => nav.push(`/admin/target?type=${row.target_type}&id=${row.target_id}` as never)}
     >
       {body}
     </PressScale>

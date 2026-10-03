@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 
@@ -29,6 +29,7 @@ import {
   useModTarget,
 } from '@/hooks/use-admin';
 import { usePalette } from '@/hooks/use-palette';
+import { nav } from '@/lib/nav';
 import { timeAgo } from '@/lib/time-ago';
 import { toast } from '@/lib/toast';
 
@@ -122,7 +123,7 @@ function Detail({ d, role }: { d: TargetDetail; role: AppRole }) {
           <PressScale
             style={[a.btn, styles.inlineBtn]}
             accessibilityRole="link"
-            onPress={() => router.push(`/admin/target?type=post&id=${t.post_id}` as never)}
+            onPress={() => nav.push(`/admin/target?type=post&id=${t.post_id}` as never)}
           >
             <Text style={a.btnText}>{i18n.nPgAdPost}</Text>
           </PressScale>
@@ -133,7 +134,7 @@ function Detail({ d, role }: { d: TargetDetail; role: AppRole }) {
               style={styles.author}
               accessibilityRole="link"
               accessibilityLabel={`${i18n.nPgAdAuthor}: @${d.author.handle}`}
-              onPress={() => router.push(`/admin/user?id=${d.author!.user_id}` as never)}
+              onPress={() => nav.push(`/admin/user?id=${d.author!.user_id}` as never)}
             >
               <Text style={a.meta}>{i18n.nPgAdAuthor}</Text>
               <Text style={styles.authorName}>

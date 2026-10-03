@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { ActivityIndicator, Text, View } from 'react-native';
 
 import { AdminShell, AuditLine, Empty, adminStyles } from '@/components/ascnd/admin-shell';
@@ -9,6 +8,7 @@ import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { useModDashboard } from '@/hooks/use-admin';
 import { usePalette } from '@/hooks/use-palette';
+import { nav } from '@/lib/nav';
 import { fillCopy } from '@/lib/copy-fill';
 
 /**
@@ -44,7 +44,7 @@ function Body() {
         ) : (
           <View style={a.panel}>
             {v.pending_reports > 0 ? (
-              <PressScale style={styles.queueRow} accessibilityRole="link" onPress={() => router.replace('/admin/reports' as never)}>
+              <PressScale style={styles.queueRow} accessibilityRole="link" onPress={() => nav.replace('/admin/reports' as never)}>
                 <Text style={styles.queueLabel}>{fillCopy(i18n.nPgAdPendingReports, { n: v.pending_reports })}</Text>
                 <Text style={a.meta}>{i18n.nPgAdOpenItem}</Text>
               </PressScale>
@@ -53,7 +53,7 @@ function Body() {
               <PressScale
                 style={[styles.queueRow, v.pending_reports > 0 && a.rule]}
                 accessibilityRole="link"
-                onPress={() => router.replace('/admin/appeals' as never)}
+                onPress={() => nav.replace('/admin/appeals' as never)}
               >
                 <Text style={styles.queueLabel}>{fillCopy(i18n.nPgAdPendingAppeals, { n: v.pending_appeals })}</Text>
                 <Text style={a.meta}>{i18n.nPgAdOpenItem}</Text>

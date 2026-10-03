@@ -63,7 +63,8 @@ function walk(dir) {
 */
 const SHEETS = walk(path.join(NATIVE, 'src/app')).filter((f) => {
   const src = codeOnly(readFileSync(f, 'utf8'));
-  return /<TextInput/.test(src) && !/<Screen[\s>]/.test(src);
+  /* `AdminShell` (bảng kiểm duyệt) dựng `<Screen keyboardAware>` ở mọi nhánh. */
+  return /<TextInput/.test(src) && !/<Screen[\s>]/.test(src) && !/<AdminShell\b/.test(src);
 });
 
 /**

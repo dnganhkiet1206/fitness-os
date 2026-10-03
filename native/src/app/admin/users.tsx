@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Text, TextInput, View } from 'react-native';
 
@@ -10,6 +9,7 @@ import { makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
 import { type AdminUserRow, useAdminUsers } from '@/hooks/use-admin';
 import { usePalette } from '@/hooks/use-palette';
+import { nav } from '@/lib/nav';
 import { fillCopy } from '@/lib/copy-fill';
 
 /** Người dùng (chỉ admin): tìm theo tên, @handle hoặc email; mỗi dòng nói vai
@@ -77,7 +77,7 @@ function UserRow({ u, first }: { u: AdminUserRow; first: boolean }) {
       style={[a.row, !first && a.rule]}
       accessibilityRole="link"
       accessibilityLabel={`${name}, ${roleLabel(u.role)}`}
-      onPress={() => router.push(`/admin/user?id=${u.user_id}` as never)}
+      onPress={() => nav.push(`/admin/user?id=${u.user_id}` as never)}
     >
       <View style={a.rowHead}>
         <Text style={a.strong}>{name}</Text>

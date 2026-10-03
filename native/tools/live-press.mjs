@@ -33,4 +33,4 @@
  * "Quên" trơn — nên hai động từ này chỉ khớp khi theo sau là ":" hay hết chuỗi:
  * "Quên mật khẩu?" / "Forgot password?" không phá huỷ gì.
  */
-export const DESTRUCTIVE = /^(?:(?:Xoá|Rời|Chặn|Bỏ chặn|Bỏ theo dõi|Bỏ khỏi|Bỏ tích|Đăng xuất|Delete|Remove|Erase|Clear|Untick|Leave|Block|Unblock|Unfollow|Sign out)(?=\s|$)|(?:Quên|Forget)(?=:|$))/i;
+export const DESTRUCTIVE = /^(?:(?:Xoá|Rời|Chặn|Bỏ chặn|Bỏ theo dõi|Bỏ khỏi|Bỏ tích|Đăng xuất|Gỡ|Delete|Remove|Erase|Clear|Untick|Leave|Block|Unblock|Unfollow|Sign out)(?=\s|$)|(?:Quên|Forget)(?=:|$))/i;

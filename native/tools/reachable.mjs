@@ -80,8 +80,10 @@ const TAB_ROUTES = new Map([
 const problems = [];
 
 /* `(tabs)` is a route group: it shapes the file tree and not the URL. */
+/* `x/index.tsx` là URL `/x` (A 03/10: `/admin` của bảng kiểm duyệt từng bị đọc
+   thành `/admin/index` và báo "không ai mở"). */
 const routeOf = (rel) =>
-  '/' + rel.replace(/\\/g, '/').replace(/^app\//, '').replace(/\(tabs\)\//, '').replace(/\.tsx$/, '');
+  '/' + rel.replace(/\\/g, '/').replace(/^app\//, '').replace(/\(tabs\)\//, '').replace(/\.tsx$/, '').replace(/\/index$/, '');
 
 const files = walk(APP).filter((f) => !/_layout\.tsx$/.test(f));
 const sources = walk(SRC).map((f) => [f, readFileSync(f, 'utf8')]);
