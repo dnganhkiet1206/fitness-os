@@ -52,6 +52,9 @@ let stateDate = localDateStr();
 const listeners = new Set<() => void>();
 let hydrated = false;
 let settled = false;
+/* Generation guard: discard a stale hydrate that lands after sign-out reset.
+   See `lib/async-store.ts` for the race. */
+let generation = 0;
 
 function emit() {
   listeners.forEach((l) => l());
@@ -65,8 +68,10 @@ function keysFor(today: string): TodoKey[] {
 async function hydrate() {
   if (hydrated) return;
   hydrated = true;
+  const gen = generation;
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    if (gen !== generation) return; // reset() during read — discard stale
     if (raw) {
       const parsed = JSON.parse(raw) as Stored;
       /* Lọc qua `TODO_ORDER` chứ không tin đĩa: một khoá đã bị gỡ khỏi app vẫn
@@ -81,6 +86,7 @@ async function hydrate() {
     /* giữ danh sách rỗng — không bỏ qua gì cả là mặc định an toàn: app hỏi
        thừa một câu còn hơn im lặng về một việc người ta chưa làm */
   } finally {
+    if (gen !== generation) return; // stale read settles nothing
     settled = true;
     emit();
   }
@@ -105,6 +111,7 @@ function snapshot(): string {
 }
 
 onUserScopedReset(() => {
+  generation++;
   state = [];
   stateDate = localDateStr();
   hydrated = false;

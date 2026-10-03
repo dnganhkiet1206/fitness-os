@@ -69,6 +69,9 @@ const heights: Record<string, number> = {};
 let hydrated = false;
 let dirty = false;
 let flushTimer: ReturnType<typeof setTimeout> | null = null;
+/* Generation guard: discard a stale hydrate that lands after sign-out reset.
+   See `lib/async-store.ts` for the race. */
+let generation = 0;
 
 /*
   ── the read has to survive arriving late ──
@@ -96,8 +99,10 @@ const subscribe = (cb: () => void) => {
 export async function hydrateWidgetHeights(): Promise<void> {
   if (hydrated) return;
   hydrated = true;
+  const gen = generation;
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
+    if (gen !== generation) return; // reset() during read — discard stale
     if (raw) {
       const parsed = JSON.parse(raw);
       /* Anything unexpected in storage is dropped rather than trusted: a
@@ -126,6 +131,7 @@ export async function hydrateWidgetHeights(): Promise<void> {
   meant the next account never read its own. See `lib/user-scoped-reset.ts`.
 */
 onUserScopedReset(() => {
+  generation++;
   for (const k of Object.keys(heights)) delete heights[k];
   hydrated = false;
   dirty = false;

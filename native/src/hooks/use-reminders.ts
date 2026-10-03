@@ -77,18 +77,24 @@ function merge(stored: Partial<ReminderPrefs> | null): ReminderPrefs {
 let prefsState: ReminderPrefs = DEFAULT_REMINDERS;
 let hydrated = false;
 let settled = false;
+/* Generation guard: discard a stale hydrate that lands after sign-out reset.
+   See `lib/async-store.ts` for the race. */
+let generation = 0;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
 async function hydratePrefs(): Promise<void> {
   if (hydrated) return;
   hydrated = true;
+  const gen = generation;
   try {
     const raw = await AsyncStorage.getItem(PREFS_KEY);
+    if (gen !== generation) return; // reset() during read — discard stale
     prefsState = merge(raw ? JSON.parse(raw) : null);
   } catch {
     prefsState = DEFAULT_REMINDERS;
   } finally {
+    if (gen !== generation) return; // stale read settles nothing
     settled = true;
     emit();
   }
@@ -102,6 +108,7 @@ function subscribePrefs(cb: () => void) {
 /** Back to the state a fresh launch has — the latch goes too, or the next
     account never reads its own switches either. */
 onUserScopedReset(() => {
+  generation++;
   prefsState = DEFAULT_REMINDERS;
   hydrated = false;
   settled = false;

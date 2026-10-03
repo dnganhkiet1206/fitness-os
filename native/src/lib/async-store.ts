@@ -100,6 +100,13 @@ export function createAsyncStore<T>(options: AsyncStoreOptions<T>): AsyncStore<T
   const listeners = new Set<() => void>();
   let hydrated = false;
   let settled = false;
+  /*
+    Generation guard against the hydrate/reset race: if `reset()` (sign-out)
+    runs while a `getItem` is in flight, the stale read must not overwrite the
+    fresh post-reset state when it lands. Each `reset()` bumps the generation;
+    `hydrate()` captures it at dispatch and discards the result if it changed.
+  */
+  let generation = 0;
 
   function emit() {
     listeners.forEach((l) => l());
@@ -108,8 +115,10 @@ export function createAsyncStore<T>(options: AsyncStoreOptions<T>): AsyncStore<T
   async function hydrate(): Promise<void> {
     if (hydrated) return;
     hydrated = true;
+    const gen = generation;
     try {
       const stored = await AsyncStorage.getItem(storageKey);
+      if (gen !== generation) return; // reset() during read — discard stale
       if (stored != null) {
         const next = parse(stored);
         if (next !== undefined) state = next;
@@ -117,6 +126,7 @@ export function createAsyncStore<T>(options: AsyncStoreOptions<T>): AsyncStore<T
     } catch {
       // keep the current value
     } finally {
+      if (gen !== generation) return; // stale read settles nothing
       // Always emit: observers of `settled` must wake up even when the
       // stored string was missing or invalid. Primitives bail out of
       // re-render via Object.is, so the extra notify is free.
@@ -144,6 +154,7 @@ export function createAsyncStore<T>(options: AsyncStoreOptions<T>): AsyncStore<T
   }
 
   function reset(): void {
+    generation++;
     state = fresh();
     hydrated = false;
     settled = false;
