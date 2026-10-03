@@ -928,17 +928,31 @@ export function BodyPanel({ onScrubbing }: { onScrubbing: (scrubbing: boolean) =
             <View style={styles.mHeadRow}>
               <SectionTitle>{i18n.progressMeasurements}</SectionTitle>
               {measurement ? (
-                <Pressable
-                  accessibilityRole="button"
-                  /* Chữ cỡ 13 không đặt lineHeight cao ~16 điểm; 16 + 2×14 = 44,
-                     đúng sàn của Apple HIG. 12 cho ra 40 — thiếu. */
-                  hitSlop={14}
-                  onPress={() => {
-                    Haptics.selection();
-                    nav.push('/log-measurement');
-                  }}>
-                  <Text style={styles.mAdd}>{i18n.progressAddMeasurement}</Text>
-                </Pressable>
+                <View style={styles.mHeadLinks}>
+                  <Pressable
+                    accessibilityRole="button"
+                    hitSlop={14}
+                    onPress={() => {
+                      Haptics.selection();
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      nav.push('/measurements-trend' as any);
+                    }}>
+                    <Text style={styles.mAdd}>
+                      {i18n.nCxViewTrends ?? 'Trends'}
+                    </Text>
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    /* Chữ cỡ 13 không đặt lineHeight cao ~16 điểm; 16 + 2×14 = 44,
+                       đúng sàn của Apple HIG. 12 cho ra 40 — thiếu. */
+                    hitSlop={14}
+                    onPress={() => {
+                      Haptics.selection();
+                      nav.push('/log-measurement');
+                    }}>
+                    <Text style={styles.mAdd}>{i18n.progressAddMeasurement}</Text>
+                  </Pressable>
+                </View>
               ) : null}
             </View>
             {measurement ? (
@@ -1292,6 +1306,7 @@ const stylesFor = makeStyles((c, m) => ({
   mHead: { gap: 2 },
   /* Cùng hình với `libHead` bên segment Buổi tập: tiêu đề trái, liên kết phải. */
   mHeadRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  mHeadLinks: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   mLatest: { ...type.footnote, color: c.mutedForeground },
   mAdd: { ...type.footnote, fontWeight: '600', color: c.primary },
   mGrid: { gap: spacing.sm },

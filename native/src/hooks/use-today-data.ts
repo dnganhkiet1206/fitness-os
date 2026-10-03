@@ -200,6 +200,28 @@ export function useNutritionHistory(days = 7) {
   });
 }
 
+/**
+ * Body measurement history for the Measurements Trend screen (P1-6, DE-XUAT-2).
+ * 12 fields were logged and never shown back — this is the read side.
+ */
+export function useMeasurementHistory(limit = 24) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['measurement_history', user?.id, limit],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('body_measurements')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('measured_at', { ascending: true })
+        .limit(limit);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useInvalidateToday(date?: string) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
