@@ -838,10 +838,24 @@ export function OnboardingFlow() {
               <Text style={styles.planQuiet}>
                 {i18n.obPlanWater.replace(
                   '{v}',
-                  `${displayVolume(attempt.plan.water_target_ml, vUnit).toFixed(1)} ${volumeLabel(vUnit)}`,
+                  /*
+                    P2-13: ml is a whole number — "2500.0 ml" reads like a bug.
+                    oz keeps one decimal (84.5 oz is real precision). Grouped
+                    per locale: 2,500 ml / 2.500 ml.
+                  */
+                  `${vUnit === 'oz'
+                    ? displayVolume(attempt.plan.water_target_ml, vUnit).toFixed(1)
+                    : Math.round(displayVolume(attempt.plan.water_target_ml, vUnit)).toLocaleString(getLocale(lang))} ${volumeLabel(vUnit)}`,
                 )}
               </Text>
-              <Text style={styles.planQuiet}>{fillCopy(i18n.obPlanSleep, { h: '8,0' })}</Text>
+              <Text style={styles.planQuiet}>
+                {/*
+                  P2-14: was hardcoded '8,0' — a comma decimal in English reads
+                  as a typo ("8,0 hours"). The sleep target defaults to 8h
+                  (profiles.sleep_target_hours); format per locale.
+                */}
+                {fillCopy(i18n.obPlanSleep, { h: (8).toLocaleString(getLocale(lang)) })}
+              </Text>
             </Animated.View>
             <View style={styles.growSmall} />
             <Animated.View entering={rise(4)}>

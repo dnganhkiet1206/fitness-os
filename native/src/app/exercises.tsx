@@ -1,7 +1,7 @@
 import { haptics as Haptics } from '@/lib/haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { Plus, Trash2 } from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { PickRow } from '@/components/ascnd/pick-row';
@@ -39,6 +39,16 @@ export default function ExercisesScreen() {
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const [search, setSearch] = useState('');
+  /*
+    Debounce the filter (P2-12): without this, every keystroke re-runs the
+    filter + group over ~200 rows and re-renders the whole list. Same 250ms
+    pattern as the nutrition tab's food search.
+  */
+  const [debounced, setDebounced] = useState('');
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
 
   // Add form (web ExerciseLibrary dialog: name / muscle group / equipment)
   const MUSCLE_GROUPS = [
@@ -83,7 +93,7 @@ export default function ExercisesScreen() {
   const [kind, setKind] = useState<ExerciseKind | null>(null);
 
   const grouped = useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = debounced.toLowerCase();
     const filtered = (exercises ?? [])
       .filter((e) => !only || muscleArtKeysFor(e.muscle_group).includes(only))
       .filter((e) => !q || e.name.toLowerCase().includes(q));
@@ -97,7 +107,7 @@ export default function ExercisesScreen() {
       map.get(g)!.push(e);
     }
     return [...map.entries()];
-  }, [exercises, search, only, lang]);
+  }, [exercises, debounced, only, lang]);
 
   const submit = () => {
     if (!name.trim()) return;
