@@ -52,6 +52,7 @@ const INFO_PLIST_NAME = `${EXTENSION_NAME}-Info.plist`;
 // Relative to modules/ascnd-native/ios — the single source of truth.
 const SWIFT_SOURCES = [
   'Shared/RestTimerAttributes.swift',
+  'Shared/ASCNDMarkEmbedded.swift',
   'Widgets/WidgetData.swift',
   'Widgets/ASCNDWidgets.swift',
   'Widgets/TodayWorkoutWidget.swift',

@@ -277,25 +277,37 @@ function RestHost({
 
   /**
    * Follows taps on the Dynamic Island (AppIntents, 02/10/2026 — Kiệt).
-   * The island already applied the intent natively, so this NEVER echoes
-   * back over the bridge — it only mirrors the authoritative remainder
-   * into the in-app state. No-ops when no rest is active (stale intents
-   * from a previous rest can't touch a fresh one: the payload is
-   * invalidated on start/end natively).
+   *
+   * 03/10/2026: this DOES push back over the bridge now. The old "never
+   * echoes" rule assumed the intent's native ContentState update always
+   * rendered — Kiệt's device proved it doesn't always (DI stayed stale
+   * until the app foregrounded). The bridge update is the path known to
+   * render, so after mirroring the intent into app state we push the
+   * authoritative remainder back. Idempotent: same endDate the intent set
+   * (±1s ceil rounding), never a loop — the bridge never re-triggers this
+   * handler.
+   *
+   * No-ops when no rest is active (stale intents from a previous rest can't
+   * touch a fresh one: the payload is invalidated on start/end natively).
    */
   const applyIslandIntent = useCallback((intent: IslandRestIntent) => {
     const s = restingRef.current;
     if (s === null || intent.remainingSeconds === undefined) return;
     if (intent.action === 'pause') {
-      setResting({ ...s, pausedLeft: Math.max(0, Math.ceil(intent.remainingSeconds)) });
+      const pausedLeft = Math.max(0, Math.ceil(intent.remainingSeconds));
+      setResting({ ...s, pausedLeft });
+      restLiveActivityAdjusted(s.total, pausedLeft);
     } else if (intent.action === 'resume') {
       const left = Math.max(1, Math.ceil(intent.remainingSeconds));
+      const total = Math.max(s.total, left);
       setResting({
         ...s,
         pausedLeft: undefined,
         left,
+        total,
         endsAt: Date.now() + left * 1000,
       });
+      restLiveActivityAdjusted(total, left);
     } else if (intent.action === 'adjust') {
       const left = Math.max(1, Math.min(REST_MAX, Math.ceil(intent.remainingSeconds)));
       const total = Math.max(s.total, left);
@@ -305,6 +317,7 @@ function RestHost({
       } else {
         setResting({ ...s, pausedLeft: undefined, left, total, endsAt: Date.now() + left * 1000 });
       }
+      restLiveActivityAdjusted(total, left);
     }
   }, []);
 

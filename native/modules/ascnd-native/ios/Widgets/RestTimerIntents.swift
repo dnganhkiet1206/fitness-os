@@ -107,13 +107,12 @@ struct AdjustRestIntent: AppIntent {
   func perform() async throws -> some IntentResult {
     os_log("IslandIntent: AdjustRestIntent perform() entered (seconds=%d)", log: islandLog, type: .info, seconds)
 
-    // 03/10/2026 diagnostic — Kiệt: logo missing in widget bundle?
-    // One tap answers it definitively in Console.app (Mac).
-    if let logoURL = Bundle.main.url(forResource: "ascnd-mark", withExtension: "png") {
-      os_log("IslandIntent: logo PRESENT in widget bundle: %{public}@", log: islandLog, type: .info, logoURL.path)
-    } else {
-      os_log("IslandIntent: logo MISSING from widget bundle (ascnd-mark.png not found)", log: islandLog, type: .error)
-    }
+    // 03/10/2026: logo is now code-embedded (ASCNDMarkEmbedded) — no bundle
+    // lookup needed. Log that the embedded bytes decode, so Console shows
+    // the logo path is healthy without depending on prebuild/Resources.
+    os_log("IslandIntent: embedded logo bytes %{public}@ (always available, no bundle dependency)",
+           log: islandLog, type: .info,
+           EmbeddedASCNDMark.uiImage == nil ? "MISSING — decode failed" : "ok")
 
     let matches = Activity<RestTimerAttributes>.activities
     os_log("IslandIntent: Activity<RestTimerAttributes>.activities.count=%d", log: islandLog, type: .info, matches.count)

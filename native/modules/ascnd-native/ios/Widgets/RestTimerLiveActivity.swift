@@ -124,19 +124,27 @@ private enum Island {
 /// The real ASCND mark — `splash-icon.png`, the same artwork as the app icon
 /// (white on transparent). NOT redrawn: `brand-lockup.tsx` documents why a
 /// hand-drawn second version always drifts from the original, and Kiệt's spec
-/// (01/10/2026) requires the exact asset. Bundled into the widget target's
-/// Resources by `with-ascnd-widgets.js`; tinted cream via template mode.
+/// (01/10/2026) requires the exact asset.
+///
+/// 03/10/2026: embedded from code (Shared/ASCNDMarkEmbedded.swift), NOT from
+/// the bundle. The widget extension's Resources phase silently dropped the
+/// asset on Kiệt's device twice — code-embedded bytes render if and only if
+/// this file compiles. Tinted cream via template mode.
 @available(iOS 16.1, *)
 private struct ASCNDMark: View {
   var size: CGFloat = 20
 
   var body: some View {
-    Image("ascnd-mark")
-      .renderingMode(.template)
-      .resizable()
-      .aspectRatio(contentMode: .fit)
-      .foregroundStyle(Island.cream)
-      .frame(width: size, height: size)
+    Group {
+      if let logo = EmbeddedASCNDMark.image {
+        logo
+          .renderingMode(.template)
+          .resizable()
+          .aspectRatio(contentMode: .fit)
+          .foregroundStyle(Island.cream)
+          .frame(width: size, height: size)
+      }
+    }
   }
 }
 
@@ -246,6 +254,13 @@ private struct TimerDigits: View {
     .lineLimit(1)
     .multilineTextAlignment(.center)
     .frame(width: fontSize * 3.0, alignment: .center)
+    // 03/10/2026: force a fresh Text(timerInterval:) whenever the deadline
+    // moves. The system-ticked timer can keep counting toward the OLD
+    // interval across ContentState updates if SwiftUI reuses the view
+    // identity (island ±15s taps updated state but the digits never moved).
+    // endDate is stable during a normal countdown, so this only recreates
+    // on real adjustments — never mid-tick.
+    .id("digits-\(endDate.timeIntervalSince1970)-\(isPaused)-\(Int(pausedRemaining))")
   }
 }
 
