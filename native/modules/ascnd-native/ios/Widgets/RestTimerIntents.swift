@@ -107,6 +107,14 @@ struct AdjustRestIntent: AppIntent {
   @Parameter(title: "Seconds")
   var seconds: Int
 
+  /// Explicit init: without this, the synthesized memberwise init expects
+  /// `IntentParameter<Int>` and `AdjustRestIntent(seconds: 15)` fails to
+  /// compile ("cannot convert value of type 'Int'..."). Assigning the wrapped
+  /// value here initializes the parameter wrapper correctly.
+  init(seconds: Int) {
+    self.seconds = seconds
+  }
+
   func perform() async throws -> some IntentResult {
     guard let activity = currentRestActivity() else { return .result() }
     var state = activity.content.state

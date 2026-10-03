@@ -539,14 +539,27 @@ private struct IslandPauseButton: View {
   var isPaused: Bool
 
   var body: some View {
-    Button(intent: ToggleRestPauseIntent()) {
-      Image(systemName: isPaused ? "play.fill" : "pause.fill")
-        .font(.system(size: 15, weight: .semibold))
-        .foregroundStyle(.white)
-        .frame(width: 44, height: 44)
-        .background(Circle().fill(Color.white.opacity(0.16)))
+    // `Button(intent:)` is iOS 17+. On iOS 16 the button degrades to the
+    // old display-only look (no tap action) — do NOT raise the extension's
+    // deployment target, or Live Activities die on iOS 16 (Kiệt 02/10/2026).
+    Group {
+      if #available(iOS 17, *) {
+        Button(intent: ToggleRestPauseIntent()) {
+          pauseLabel
+        }
+        .buttonStyle(.plain)
+      } else {
+        pauseLabel
+      }
     }
-    .buttonStyle(.plain)
+  }
+
+  private var pauseLabel: some View {
+    Image(systemName: isPaused ? "play.fill" : "pause.fill")
+      .font(.system(size: 15, weight: .semibold))
+      .foregroundStyle(.white)
+      .frame(width: 44, height: 44)
+      .background(Circle().fill(Color.white.opacity(0.16)))
   }
 }
 
@@ -556,15 +569,26 @@ private struct IslandAdjustButton: View {
   var seconds: Int // -15 or +15
 
   var body: some View {
-    Button(intent: AdjustRestIntent(seconds: seconds)) {
-      Text(seconds > 0 ? "+15" : "−15")
-        .font(.system(size: 12, weight: .semibold, design: .rounded))
-        .monospacedDigit()
-        .foregroundStyle(.white)
-        .frame(width: 38, height: 38)
-        .background(Circle().fill(Color.white.opacity(0.12)))
+    // Same iOS 17 gate as IslandPauseButton — iOS 16 gets display-only.
+    Group {
+      if #available(iOS 17, *) {
+        Button(intent: AdjustRestIntent(seconds: seconds)) {
+          adjustLabel
+        }
+        .buttonStyle(.plain)
+      } else {
+        adjustLabel
+      }
     }
-    .buttonStyle(.plain)
+  }
+
+  private var adjustLabel: some View {
+    Text(seconds > 0 ? "+15" : "−15")
+      .font(.system(size: 12, weight: .semibold, design: .rounded))
+      .monospacedDigit()
+      .foregroundStyle(.white)
+      .frame(width: 38, height: 38)
+      .background(Circle().fill(Color.white.opacity(0.12)))
   }
 }
 
