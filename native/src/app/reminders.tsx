@@ -39,10 +39,12 @@ export default function RemindersScreen() {
     ── the times the app already knew ──
 
     Two of these four defaults were constants somebody typed once for everybody:
-    a wind-down alert at 22:30 and a weigh-in at 07:00. Onboarding *asks* for a
-    bedtime and a waketime, so an app that ships those constants can fire a
-    weigh-in reminder an hour before somebody wakes up — which is how a person
-    learns to switch notifications off for good.
+    a wind-down alert at 22:30 and a weigh-in at 07:00. The profile *can* hold a
+    bedtime and a waketime (edit-profile), but onboarding never asks — the
+    columns default to '23:00' / '07:00' — so an app that ships those constants
+    can fire a weigh-in reminder an hour before somebody wakes up, which is how
+    a person learns to switch notifications off for good. The `*_set` flags
+    (P0-3) distinguish a time the user chose from the default.
 
     The third source is the app's own: the hour this person is actually observed
     logging a workout (`lib/user-rhythm.ts`, six observations minimum and a real
@@ -56,9 +58,16 @@ export default function RemindersScreen() {
      than on whatever render happens next. */
   usePersonalModel();
   const workout = habitFor('workout');
+  /*
+    P0-3: `sleep_target_bedtime` / `sleep_target_waketime` default to '23:00' /
+    '07:00' in the DB, and onboarding never asks for them — so a raw value is
+    not evidence the user chose it. Only suggest when the user actually saved
+    the times themselves (edit-profile sets the flags). Otherwise Koa would
+    "notice" a bedtime the user never stated.
+  */
   const known = {
-    bedtime: profile?.sleep_target_bedtime,
-    waketime: profile?.sleep_target_waketime,
+    bedtime: profile?.sleep_target_bedtime_set ? profile?.sleep_target_bedtime : null,
+    waketime: profile?.sleep_target_waketime_set ? profile?.sleep_target_waketime : null,
     workoutHour: workout?.hour ?? null,
   };
   const SOURCE: Record<TimedReminder, string | null> = {

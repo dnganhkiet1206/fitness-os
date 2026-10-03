@@ -7,10 +7,12 @@
  * 22:30, weigh-in 07:00, workout 17:00. They are the same four numbers for
  * everybody who installs the app.
  *
- * Meanwhile the onboarding flow **asks** for a bedtime and a waketime, stores
- * them in `sleep_target_bedtime` / `sleep_target_waketime`, and the sleep card
- * prints them back. So somebody who told the app "I go to bed at half past
- * midnight and get up at eight" receives:
+ * Meanwhile the profile **can hold** a bedtime and a waketime, stored in
+ * `sleep_target_bedtime` / `sleep_target_waketime`, and the sleep card prints
+ * them back — but only when the user actually saved them in edit-profile
+ * (onboarding never asks; the columns default to '23:00' / '07:00'). So
+ * somebody who told the app "I go to bed at half past midnight and get up
+ * at eight" receives:
  *
  *   · a wind-down reminder at 22:30 — two hours before they wind down, and
  *   · a weigh-in reminder at 07:00, **an hour before they wake up**.

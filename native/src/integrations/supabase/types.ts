@@ -1375,8 +1375,10 @@ export type Database = {
           onboarding_completed: boolean | null
           sex: string | null
           sleep_target_bedtime: string | null
+          sleep_target_bedtime_set: boolean
           sleep_target_hours: number | null
           sleep_target_waketime: string | null
+          sleep_target_waketime_set: boolean
           tdee_target_kcal: number | null
           training_level: string | null
           units_height: string | null
@@ -1405,8 +1407,10 @@ export type Database = {
           onboarding_completed?: boolean | null
           sex?: string | null
           sleep_target_bedtime?: string | null
+          sleep_target_bedtime_set?: boolean
           sleep_target_hours?: number | null
           sleep_target_waketime?: string | null
+          sleep_target_waketime_set?: boolean
           tdee_target_kcal?: number | null
           training_level?: string | null
           units_height?: string | null
@@ -1435,8 +1439,10 @@ export type Database = {
           onboarding_completed?: boolean | null
           sex?: string | null
           sleep_target_bedtime?: string | null
+          sleep_target_bedtime_set?: boolean
           sleep_target_hours?: number | null
           sleep_target_waketime?: string | null
+          sleep_target_waketime_set?: boolean
           tdee_target_kcal?: number | null
           training_level?: string | null
           units_height?: string | null

@@ -310,6 +310,13 @@ export default function EditProfileSheet() {
             sleep_target_hours: Number(form.sleep_target_hours) || null,
             sleep_target_bedtime: form.sleep_target_bedtime,
             sleep_target_waketime: form.sleep_target_waketime,
+            /*
+              P0-3: the user just typed these times themselves, so they stop
+              being the DB default. The reminders screen gates its "Koa
+              noticed you go to bed at …" suggestion on these flags.
+            */
+            sleep_target_bedtime_set: true,
+            sleep_target_waketime_set: true,
             allergies,
             disliked_foods: parseDislikes(dislikes),
           })
