@@ -13,6 +13,7 @@ import {
   HeartPulse,
   Minus,
   Moon,
+  Pill,
   Soup,
   Sparkles,
   Target,
@@ -193,7 +194,7 @@ export default function WeeklyReviewScreen() {
            below is a recovery question and the score alone cannot answer it —
            see `lib/readiness-week.ts`. Same row, one more column, no new table
            and no new query. */
-        .select('date, kcal, protein_g, volume_load, readiness_score, readiness_explain, acwr')
+        .select('date, kcal, protein_g, volume_load, readiness_score, readiness_explain, acwr, sleep_duration_min, sleep_quality, supplement_taken, supplement_planned')
         .eq('user_id', user!.id)
         .gte('date', startStr)
         .lt('date', endStr)
@@ -352,6 +353,17 @@ export default function WeeklyReviewScreen() {
   const avgSleepH = avgSleepMin / 60;
   const totalVolume = sum(logs.map((l) => Number(l.volume_load) || 0));
   const workoutCount = (workouts ?? []).length;
+  /* P2-15 (DE-XUAT-2): supplement adherence — taken/planned ratio over the week.
+     Only days where supplements were planned count; a week with no plan shows —. */
+  const suppDays = logs.filter((l) => Number(l.supplement_planned) > 0);
+  const suppAdherence =
+    suppDays.length === 0
+      ? null
+      : Math.round(
+          (suppDays.reduce((a, l) => a + Number(l.supplement_taken || 0), 0) /
+            suppDays.reduce((a, l) => a + Number(l.supplement_planned || 0), 0)) *
+            100,
+        );
   /* Already population-correct before this round — kept as it was, and the day
      count now travels with it for the same reason the other two carry one. */
   const readinessDays = logs.filter((l) => l.readiness_score).length;
@@ -495,6 +507,18 @@ export default function WeeklyReviewScreen() {
     { icon: Moon, label: i18n.weeklyReviewAvgSleep, value: `${avgSleepH.toFixed(1)}h`, sub: `/${targets.sleepH}h`, d: null },
     { icon: Dumbbell, label: i18n.weeklyReviewVolume, value: `${Math.round(totalVolume / 1000)}k`, sub: fillCopy(i18n.weeklyReviewSessions, { n: String(workoutCount) }), d: delta(totalVolume, prevTotalVolume) },
     { icon: Activity, label: i18n.weeklyReviewReadiness, value: `${Math.round(avgReadiness)}`, sub: acwr != null ? `ACWR ${acwr}` : '—', d: null },
+    /* P2-15: supplement adherence widget — only when there was a plan. */
+    ...(suppAdherence != null
+      ? [
+          {
+            icon: Pill,
+            label: i18n.nCxSuppAdherence ?? 'Supplements',
+            value: `${suppAdherence}%`,
+            sub: `/${suppDays.length}d`,
+            d: null,
+          },
+        ]
+      : []),
   ];
 
   const REC_STYLE = {
