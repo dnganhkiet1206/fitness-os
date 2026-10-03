@@ -215,10 +215,21 @@ export function TodayTraining() {
           <Icon icon={Play} size={16} color="#fff" strokeWidth={2.5} />
           <Text style={styles.primaryText}>{i18n.nStartWorkout}</Text>
         </PressScale>
+      ) : cta === 'extra' ? (
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={i18n.nTodayExtra}
+          style={styles.quiet}
+          onPress={() => {
+            Haptics.selection();
+            nav.push('/log-workout');
+          }}>
+          <Text style={styles.quietText}>{i18n.nTodayExtra}</Text>
+        </PressScale>
       ) : (
         <PressScale
           accessibilityRole="button"
-          accessibilityLabel={cta === 'extra' ? i18n.nTodayExtra : cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
+          accessibilityLabel={cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
           style={styles.quiet}
           onPress={() => {
             Haptics.selection();
@@ -226,7 +237,7 @@ export function TodayTraining() {
             else nav.push('/log-workout');
           }}>
           <Text style={styles.quietText}>
-            {cta === 'extra' ? i18n.nTodayExtra : cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
+            {cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
           </Text>
         </PressScale>
       )}

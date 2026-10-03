@@ -141,13 +141,13 @@ try {
     );
   }
 
-  /* Nhãn phải có ở CẢ HAI thứ tiếng, kẻo bản Việt rơi về khoá. */
+  /* Nhãn phải có ở CẢ BA thứ tiếng (vi/en/es), kẻo bản nào rơi về khoá. */
   const strings = read('src/lib/native-strings.ts');
   const labels = [...strings.matchAll(/\n  nTodayExtra: '([^']+)'/g)].map((m) => m[1]);
-  if (labels.length !== 2) {
-    problems.push(`nTodayExtra chỉ có ${labels.length} bản dịch, cần 2`);
-  } else if (labels[0] === labels[1]) {
-    problems.push(`nTodayExtra giống hệt nhau ở hai thứ tiếng ("${labels[0]}") — một bản chưa được dịch`);
+  if (labels.length !== 3) {
+    problems.push(`nTodayExtra chỉ có ${labels.length} bản dịch, cần 3 (vi/en/es)`);
+  } else if (new Set(labels).size !== 3) {
+    problems.push(`nTodayExtra có bản trùng nhau ("${labels.join('", "')}") — một bản chưa được dịch`);
   }
 
   if (problems.length) {
@@ -157,7 +157,7 @@ try {
   }
 
   console.log(
-    `thẻ hôm nay OK — ${cases} tổ hợp CHẠY THẬT: đã tập xong thì nút không bao giờ mang nhãn của việc chưa làm (kể cả ngày trống, vốn mời "Chọn buổi tập" cho một ngày đã tập), nhưng đường sang sổ ghi tự do vẫn còn nguyên cho buổi phát sinh; nhãn có đủ hai thứ tiếng`,
+    `thẻ hôm nay OK — ${cases} tổ hợp CHẠY THẬT: đã tập xong thì nút không bao giờ mang nhãn của việc chưa làm (kể cả ngày trống, vốn mời "Chọn buổi tập" cho một ngày đã tập), nhưng đường sang sổ ghi tự do vẫn còn nguyên cho buổi phát sinh; nhãn có đủ ba thứ tiếng`,
   );
 } finally {
   rmSync(out, { recursive: true, force: true });

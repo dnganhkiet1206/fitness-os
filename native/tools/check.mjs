@@ -182,6 +182,7 @@ const STEPS = [
   ['src sạch', 'node', ['tools/src-clean.mjs']],
   ['Health làm chủ chỉ số', 'node', ['tools/health-owned.mjs']],
   ['thẻ hôm nay mời gì', 'node', ['tools/today-cta.mjs']],
+  ['thẻ workout hero', 'node', ['tools/workout-hero-card.mjs']],
   ['thẻ cần làm', 'node', ['tools/todo-card.mjs']],
   ['gọi được từ worklet', 'node', ['tools/worklet-callable.mjs']],
   ['icon một nghĩa', 'node', ['tools/glyph-meaning.mjs']],
