@@ -550,6 +550,26 @@ export default function NutritionScreen() {
             )}
 
             {/*
+              P1-5 (DE-XUAT-2): entry to the 7-day nutrition insights — the
+              trend view the most-logged domain never had.
+            */}
+            <PressScale
+              accessibilityRole="button"
+              onPress={() => {
+                Haptics.selection();
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                nav.push('/nutrition-insights' as any);
+              }}
+            >
+              <GlassCard style={styles.insightLink}>
+                <Text style={styles.insightLinkText}>
+                  {lang === 'vi' ? 'Xem xu hướng 7 ngày' : 'View 7-day trends'}
+                </Text>
+                <Icon icon={ChevronRight} size={16} color={c.glassMuted} />
+              </GlassCard>
+            </PressScale>
+
+            {/*
               The four ways to log, directly under the ring they move.
 
               This is where the floating ⊕ went — see `meal-log-actions.tsx`
@@ -885,6 +905,15 @@ export default function NutritionScreen() {
 }
 
 const stylesFor = makeStyles((c, m) => ({
+
+  /* P1-5: entry row to the nutrition insights screen. */
+  insightLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: spacing.lg,
+  },
+  insightLinkText: { ...type.headline, color: c.foreground },
 
   /* 34pt with no hitSlop is a 34pt-tall target on a control that spans the
      screen — and `tap-targets.mjs` never saw it, because it skipped anything

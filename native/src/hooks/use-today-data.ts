@@ -174,6 +174,32 @@ export function useSleepHistory(days = 7) {
   });
 }
 
+/**
+ * Recent days for the Nutrition Insights screen (P1-5, DE-XUAT-2).
+ * daily_logs already carries protein/carbs/fat/fiber per day — the domain
+ * the user logs most consistently had no trend view at all.
+ */
+export function useNutritionHistory(days = 7) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['nutrition_history', user?.id, days],
+    enabled: !!user,
+    queryFn: async () => {
+      const from = new Date();
+      from.setDate(from.getDate() - days);
+      const fromStr = from.toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from('daily_logs')
+        .select('date, kcal, protein_g, carbs_g, fat_g, fiber_g')
+        .eq('user_id', user!.id)
+        .gte('date', fromStr)
+        .order('date', { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+}
+
 export function useInvalidateToday(date?: string) {
   const queryClient = useQueryClient();
   const { user } = useAuth();
