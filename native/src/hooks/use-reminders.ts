@@ -25,6 +25,7 @@ import {
   type TimedReminderKey,
 } from '@/lib/reminder-plan';
 import { mealDone, sleepDone } from '@/lib/todo';
+import { suggestedTime } from '@/lib/reminder-timing';
 import { onUserScopedReset } from '@/lib/user-scoped-reset';
 import { useChallenges } from '@/hooks/use-community';
 import { CLAIM_WINDOW_DAYS, pendingClaims } from '@/lib/challenge-reminders';
@@ -119,6 +120,26 @@ onUserScopedReset(() => {
   hydrated = false;
   settled = false;
   emit();
+});
+
+/*
+  P1-12 (DE-XUAT-2): one-time smart timing.
+
+  The hand-typed defaults (bedtime 22:30, weighIn 07:00) are wrong for anybody
+  whose real schedule differs — and the app already knows the real schedule
+  once the user saved it in edit-profile (the `sleep_target_*_set` flags from
+  P0-3, never the DB defaults).
+
+  When both hold — real schedule known, reminder time never touched by the
+  user — the derived time is applied once, at first schedule. A time the user
+  set themselves is never moved: silently rescheduling somebody's alarm is not
+  personalisation. The latch is user-scoped so the next account gets its own
+  pass.
+*/
+const SMART_TIME_KEY = 'ascnd_reminder_smart_time_v1';
+
+onUserScopedReset(() => {
+  AsyncStorage.removeItem(SMART_TIME_KEY).catch(() => {});
 });
 
 function writePrefs(next: ReminderPrefs): void {
@@ -245,6 +266,51 @@ export function useReminders() {
       setPermission(await hasNotificationPermission());
     })();
   }, []);
+
+  /* P1-12: apply derived times once — see the note at SMART_TIME_KEY. */
+  useEffect(() => {
+    if (!loaded || !profile) return;
+    (async () => {
+      const latched = await AsyncStorage.getItem(SMART_TIME_KEY).catch(() => '1');
+      if (latched) return;
+      const bedSet = !!profile.sleep_target_bedtime_set;
+      const wakeSet = !!profile.sleep_target_waketime_set;
+      if (!bedSet && !wakeSet) {
+        await AsyncStorage.setItem(SMART_TIME_KEY, '1').catch(() => {});
+        return;
+      }
+      const known = {
+        bedtime: bedSet ? profile.sleep_target_bedtime : null,
+        waketime: wakeSet ? profile.sleep_target_waketime : null,
+      };
+      let next = prefs;
+      const applied: string[] = [];
+      /* Still the hand-typed default = the user never chose a time. */
+      if (bedSet && next.bedtime.hour === 22 && next.bedtime.minute === 30) {
+        const t = suggestedTime('bedtime', known);
+        if (t && (t.hour !== 22 || t.minute !== 30)) {
+          next = { ...next, bedtime: { ...next.bedtime, hour: t.hour, minute: t.minute } };
+          applied.push(`bedtime→${t.hour}:${String(t.minute).padStart(2, '0')}`);
+        }
+      }
+      if (wakeSet && next.weighIn.hour === 7 && next.weighIn.minute === 0) {
+        const t = suggestedTime('weighIn', known);
+        if (t && (t.hour !== 7 || t.minute !== 0)) {
+          next = { ...next, weighIn: { ...next.weighIn, hour: t.hour, minute: t.minute } };
+          applied.push(`weighIn→${t.hour}:${String(t.minute).padStart(2, '0')}`);
+        }
+      }
+      await AsyncStorage.setItem(SMART_TIME_KEY, '1').catch(() => {});
+      if (applied.length > 0) {
+        /* The log P1-12 asks for: one line, only when something moved. */
+        console.log(`[reminders] smart timing applied once: ${applied.join(', ')}`);
+        writePrefs(next);
+      }
+    })();
+    // `prefs` read once at latch time on purpose — this must not re-fire when
+    // the write above lands.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded, profile]);
 
   /** Persist + reschedule; requests permission the first time anything turns on. */
   const apply = useCallback(
