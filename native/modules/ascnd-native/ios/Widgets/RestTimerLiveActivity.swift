@@ -32,10 +32,11 @@ import WidgetKit
 // zero bridge traffic. It stays exact in foreground, background, lock
 // screen, and with the app killed, because endDate is absolute.
 //
-// The RING cannot use that primitive (no circular timer view exists), so it
-// stays on the coarse TimelineView (~30s cadence on iOS 26): it moves, just
-// not smoothly. The digits are the source of truth; the ring is the visual
-// anchor. This is a platform limitation, not a bug in our code.
+// The RING uses `ProgressView(timerInterval:)` — the date-relative sibling
+// of the timer text: the system advances its fraction from the absolute
+// start/end dates with no app polling. Digits stay the exact source of
+// truth; the ring is the visual anchor. (03/10/2026: replaced the throttled
+// TimelineView ring per Kiệt's critical fix — see RingProgressStyle.)
 //
 // Visual direction (Kiệt's spec 01/10/2026, from the reference design):
 // - The ring is the visual anchor and sits at the FAR RIGHT everywhere.
@@ -63,14 +64,11 @@ import WidgetKit
 // is real: island taps move the in-app timer, in-app taps update the Island
 // immediately, ring/digits/state always reflect true app state.
 //
-// Ring honesty note: the render server will NOT give us 60fps — TimelineView
-// entries in a Live Activity are best-effort (~30s cadence on iOS 26). The
-// ring is therefore computed from absolute startDate/endDate on every entry
-// so it is always CORRECT, and the app ALSO pushes a lightweight refresh
-// every 5s while foregrounded (day-plan rest tick) so the ring tracks the
-// true state whenever the user is looking at the phone. The digits
-// (system-ticked Text(timerInterval:)) are the exact source of truth; the
-// ring is the visual anchor. Do not promise in-app smoothness here.
+// Ring note (03/10/2026): the ring is date-relative
+// (`ProgressView(timerInterval:)` + `RingProgressStyle`) — the system moves
+// it from the absolute start/end dates, so no foreground refresh is needed
+// to keep it tracking. The digits (`Text(timerInterval:)`) are the exact
+// source of truth; the ring is the visual anchor.
 
 @available(iOS 16.1, *)
 struct RestTimerLiveActivity: Widget {
@@ -129,7 +127,13 @@ private enum Island {
 /// 03/10/2026: embedded from code (Shared/ASCNDMarkEmbedded.swift), NOT from
 /// the bundle. The widget extension's Resources phase silently dropped the
 /// asset on Kiệt's device twice — code-embedded bytes render if and only if
-/// this file compiles. Tinted cream via template mode.
+/// this file compiles.
+///
+/// RENDERING — read before touching: the embedded PNG has Island.cream baked
+/// into its RGB channels (alpha untouched). Render it as-is (`.original`);
+/// do NOT use `.renderingMode(.template)` — on Kiệt's device 03/10/2026 the
+/// template mask rendered a SOLID CREAM SQUARE despite the PNG's alpha being
+/// verified correct, so template mode is banned here.
 @available(iOS 16.1, *)
 private struct ASCNDMark: View {
   var size: CGFloat = 20
@@ -138,17 +142,49 @@ private struct ASCNDMark: View {
     Group {
       if let logo = EmbeddedASCNDMark.image {
         logo
-          .renderingMode(.template)
           .resizable()
           .aspectRatio(contentMode: .fit)
-          .foregroundStyle(Island.cream)
           .frame(width: size, height: size)
       }
     }
   }
 }
 
-// MARK: - Progress ring
+// MARK: - Progress ring (date-relative, 03/10/2026)
+//
+// Kiệt's critical fix: the old ring was driven by
+// `TimelineView(.periodic(from:by: 1))` computing
+// `(now − startDate) / (endDate − startDate)` on every entry. The Live
+// Activity render server throttles timeline entries (~30s cadence on iOS 26),
+// so the ring stood still then JUMPED whenever a state update forced a
+// re-render — never continuously.
+//
+// `ProgressView(timerInterval:)` is the Apple-blessed date-relative
+// primitive for this (same family as the system-ticked
+// `Text(timerInterval:)` driving the digits): the system advances
+// `fractionCompleted` from the absolute interval with zero app polling and
+// zero `Activity.update` traffic — the ring keeps moving even with the app
+// suspended or killed. A custom `ProgressViewStyle` draws our exact ring
+// (thin cream, round caps, 12-o'clock start) from that fraction. ±15s
+// creates a new interval (same startDate, moved endDate) and the fraction
+// re-derives honestly: adding time grows the total, cutting keeps it.
+
+/// Circular ring driven by a date interval — no timers, no re-renders.
+@available(iOS 16.1, *)
+private struct RingProgressStyle: ProgressViewStyle {
+  var lineWidth: CGFloat = 5
+
+  func makeBody(configuration: Configuration) -> some View {
+    ZStack {
+      Circle()
+        .stroke(Color.white.opacity(0.18), lineWidth: lineWidth)
+      Circle()
+        .trim(from: 0, to: CGFloat(min(max(configuration.fractionCompleted ?? 0, 0.01), 1)))
+        .stroke(Island.cream, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
+        .rotationEffect(.degrees(-90))
+    }
+  }
+}
 
 /// Circular countdown — the visual anchor of the resting state.
 @available(iOS 16.1, *)
@@ -165,7 +201,6 @@ private struct ProgressRing: View {
         .trim(from: 0, to: min(max(progress, 0.01), 1))
         .stroke(Island.cream, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
         .rotationEffect(.degrees(-90))
-        .animation(.easeInOut(duration: 0.3), value: progress)
     }
     .frame(width: size, height: size)
   }
@@ -175,21 +210,6 @@ private struct ProgressRing: View {
 
 private func formatTotal(seconds: Int) -> String {
   String(format: "%d:%02d", seconds / 60, seconds % 60)
-}
-
-private func restProgress(endDate: Date, totalSeconds: Int, at date: Date) -> Double {
-  let total = max(Double(totalSeconds), 1)
-  let remaining = max(endDate.timeIntervalSince(date), 0)
-  return min(max(1 - remaining / total, 0), 1)
-}
-
-/// Segment-based progress: (now − start) / (end − start). ±15s moves `end`
-/// only, so adding time grows the whole (ring stays a fraction — same honesty
-/// rule as the in-app card) and cutting time keeps it. Frozen while paused.
-private func restProgress(startDate: Date, endDate: Date, at date: Date) -> Double {
-  let total = max(endDate.timeIntervalSince(startDate), 1)
-  let elapsed = max(date.timeIntervalSince(startDate), 0)
-  return min(max(elapsed / total, 0), 1)
 }
 
 private func pausedProgress(pausedRemaining: Double, totalSeconds: Int) -> Double {
@@ -287,12 +307,23 @@ private struct RestRingTimer: View {
 
   var body: some View {
     ZStack {
-      TimelineView(.periodic(from: Date(), by: 1.0)) { timeline in
-        let progress: Double =
-          isPaused
-          ? pausedProgress(pausedRemaining: pausedRemaining, totalSeconds: totalSeconds)
-          : restProgress(startDate: startDate, endDate: endDate, at: timeline.date)
-        ProgressRing(progress: progress, size: size, lineWidth: lineWidth)
+      if isPaused {
+        // Frozen: the countdown is held mid-air — a static ring at the
+        // paused fraction. No timer drives it while paused.
+        ProgressRing(
+          progress: pausedProgress(pausedRemaining: pausedRemaining, totalSeconds: totalSeconds),
+          size: size, lineWidth: lineWidth)
+      } else {
+        // Live: date-relative progress, system-driven (see RingProgressStyle).
+        // No TimelineView, no polling, no per-second Activity.update.
+        // The interval is clamped so an expired rest shows a full ring
+        // instead of a broken range.
+        ProgressView(timerInterval: startDate...max(startDate, endDate), countsDown: false) {
+          EmptyView()
+        } currentValueLabel: {
+          EmptyView()
+        }
+        .progressViewStyle(RingProgressStyle(lineWidth: lineWidth))
       }
       VStack(spacing: 1) {
         // TimerDigits constrains its own box (see its LAYOUT comment);

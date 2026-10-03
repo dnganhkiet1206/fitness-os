@@ -311,11 +311,16 @@ function RestHost({
     } else if (intent.action === 'adjust') {
       const left = Math.max(1, Math.min(REST_MAX, Math.ceil(intent.remainingSeconds)));
       const total = Math.max(s.total, left);
+      // Prefer the intent's exact endTimestamp (the relay reads it fresh
+      // from ActivityKit after the update-then-ping ordering fix) over
+      // re-deriving from ceil'd seconds — the in-app clock and the Island
+      // then share the identical deadline.
+      const endsAt = intent.endTimestamp ?? Date.now() + left * 1000;
       if (intent.paused) {
         // Island is paused: the frozen remainder moves, the freeze holds.
         setResting({ ...s, pausedLeft: left, total });
       } else {
-        setResting({ ...s, pausedLeft: undefined, left, total, endsAt: Date.now() + left * 1000 });
+        setResting({ ...s, pausedLeft: undefined, left, total, endsAt });
       }
       restLiveActivityAdjusted(total, left);
     }
@@ -346,26 +351,14 @@ function RestHost({
   }, [running, settleOnce]);
 
   /*
-    Island ring refresh (03/10/2026 — Kiệt's acceptance bar: the Island must
-    reflect true app state, not just display).
-
-    The Live Activity render server throttles TimelineView entries, so the
-    Island ring can freeze while the in-app timer runs. While the app is
-    foregrounded and a rest is active, push a lightweight state refresh
-    every 5s so the ring tracks the true remainder. Cheap: ActivityKit
-    updates are local IPC, and the native side just re-renders from the
-    absolute endDate. No-op when paused (dormant path) or when the Island
-    isn't active.
+    REMOVED 03/10/2026 (Kiệt's critical fix): the Island ring is now
+    date-relative (`ProgressView(timerInterval:)` + `RingProgressStyle`) and
+    the digits are system-ticked (`Text(timerInterval:)`) — both move with
+    the system clock from the absolute endDate, with zero app polling and
+    zero periodic `Activity.update`. The 5s foreground refresh existed only
+    to unstick the old throttled-TimelineView ring; keeping it would violate
+    the no-polling rule. Event-driven updates (start/±15/end) remain.
   */
-  useEffect(() => {
-    if (!running) return;
-    const id = setInterval(() => {
-      const s = restingRef.current;
-      if (s === null || s.pausedLeft !== undefined) return;
-      restLiveActivityAdjusted(s.total, Math.max(0, Math.ceil(s.left)));
-    }, 5000);
-    return () => clearInterval(id);
-  }, [running]);
 
   /*
     Recalculate the instant the app comes back to the foreground.

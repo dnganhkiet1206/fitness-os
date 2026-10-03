@@ -124,17 +124,20 @@ struct AdjustRestIntent: AppIntent {
     os_log("IslandIntent: activity id=%{public}@ activityState=%{public}@", log: islandLog, type: .info, activity.id, String(describing: activity.activityState))
     var state = activity.content.state
     let now = Date()
+    // The Darwin payload mirrors the state below — built first, posted after
+    // the ActivityKit update (see the update-then-ping note).
+    var payload: [String: Any]
     if state.isPaused {
       let oldRemaining = state.pausedRemaining
       let remaining = max(state.pausedRemaining + Double(seconds), 1)
       state.pausedRemaining = remaining
       os_log("IslandIntent: paused adjust: remaining %.1fs -> %.1fs", log: islandLog, type: .info, oldRemaining, remaining)
-      notifyMainApp([
+      payload = [
         "action": "adjust",
         "adjustSeconds": seconds,
         "remainingSeconds": remaining,
         "paused": true,
-      ])
+      ]
     } else {
       // Same honesty rule as the in-app card: adding time grows the total
       // (ring stays a fraction); taking time keeps it (the rest was cut).
@@ -146,15 +149,26 @@ struct AdjustRestIntent: AppIntent {
       state.endDate = flooredEnd
       let remaining = max(flooredEnd.timeIntervalSince(now), 0)
       os_log("IslandIntent: running adjust: endDate %{public}@ -> %{public}@ (remaining %.1fs)", log: islandLog, type: .info, String(describing: oldEnd), String(describing: flooredEnd), remaining)
-      notifyMainApp([
+      payload = [
         "action": "adjust",
         "adjustSeconds": seconds,
         "remainingSeconds": remaining,
         "endTimestamp": flooredEnd.timeIntervalSince1970 * 1000,
         "paused": false,
-      ])
+      ]
     }
+    // 03/10/2026 — UPDATE-THEN-PING (was ping-then-update). This was the
+    // root cause of "±15 changes the app but not the Island": the app-side
+    // relay (AscndNativeModule.IslandIntentRelay) reads the authoritative
+    // state straight from ActivityKit the moment the Darwin notification
+    // fires. When the ping went out BEFORE the update landed, the relay
+    // forwarded STALE state to JS, and the app's bridge echo then clobbered
+    // the intent's correct endDate with the old one — the Island showed the
+    // previous time until something else forced a re-render. Awaiting the
+    // ActivityKit update first makes the relay's read fresh, so the echo
+    // becomes idempotent instead of destructive.
     await pushState(state)
+    notifyMainApp(payload)
     return .result()
   }
 }
