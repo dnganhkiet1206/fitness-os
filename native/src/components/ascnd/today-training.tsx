@@ -1,4 +1,4 @@
-import { CheckCircle2, ChevronRight, Moon, Play, Plus } from 'lucide-react-native';
+import { CheckCircle2, ChevronRight, Clock, Dumbbell, Moon, MoreHorizontal, Play, Plus } from 'lucide-react-native';
 import { haptics as Haptics } from '@/lib/haptics';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -26,42 +26,25 @@ import { nav } from '@/lib/nav';
 import { fillCopy } from '@/lib/copy-fill';
 
 /**
- * Hôm nay: câu trả lời, và cái nút.
+ * Hôm nay: hero card theo concept Workout Redesign.
  *
- * ── vì sao khối này tồn tại ──
+ * ── cấu trúc theo concept ──
  *
- * Tab Tập luyện từng mở ra với năm đích đến ngang hàng nhau — thẻ Plan, ba pill
- * (tiến bộ, thư viện, tạo mới) và một thanh "Ghi buổi tập" — và không cái nào
- * nói cho bạn biết nên bấm cái nào. Đó là một BẢNG CHỌN, không phải một luồng.
+ * WeekStrip nằm NGOÀI card (do parent render), card chỉ chứa:
+ * - Eyebrow: "HÔM NAY · THỨ 7"
+ * - Title: tên buổi tập (lớn, đậm)
+ * - Ảnh workout bên phải
+ * - Metadata: "3 bài · 9 sets" và "◷ ~25 phút"
+ * - Progress bar
+ * - CTA đen full-width: "▶ Bắt đầu buổi tập"
+ * - Nút "..." góc trên phải
  *
- * Người mở tab này gần như luôn muốn đúng một trong hai việc: TẬP BÂY GIỜ, hoặc
- * sửa kế hoạch. Việc thứ nhất là việc hằng ngày, và trước bản này nó không có
- * nút nào cả: bạn phải tự biết rằng đường vào buổi tập hôm nay là chạm vào thẻ
- * Plan, rồi tìm đúng ngày, rồi cuộn xuống panel.
+ * ── bốn trạng thái ──
  *
- * Khối này trả lời "hôm nay tập gì" ngay tại chỗ và mang theo MỘT hành động
- * chính. Đó là chỗ mà "flow hoàn chỉnh" bắt đầu: hôm nay → tập → xong → lịch sử.
- *
- * ── bốn trạng thái, bốn câu, bốn nút khác nhau ──
- *
- * Một khối "hôm nay" chỉ trung thực nếu nó nói khác nhau ở bốn tình huống khác
- * nhau. Một nút "Bắt đầu" sáng rực trên một ngày nghỉ là app không biết bạn
- * đang ở đâu trong tuần của chính mình.
- *
- *   có kế hoạch, chưa tập   tên buổi + số bài + phút   → Bắt đầu (nút đặc)
- *   đã tập xong             tên buổi + đã hoàn thành   → Ghi buổi nữa (nhạt)
- *   ngày nghỉ               Ngày nghỉ                  → Ghi buổi tập (nhạt)
- *   chưa có kế hoạch        Chưa có buổi tập           → Chọn buổi tập
- *
- * Chỉ trạng thái thứ nhất có nút ĐẶC. Ba trạng thái còn lại không có việc gì
- * cấp bách để làm, nên nút của chúng là nút nhạt — màu là thứ dành cho việc
- * đang chờ bạn, không phải cho mọi thứ bấm được.
- *
- * ── dải ngày ở lại ──
- *
- * Cùng `week-strip` mà Plan dùng, nên tuần vẫn đọc được ở đây và chạm một ngày
- * vẫn mở đúng ngày đó. Khác biệt: hôm nay không còn là "một ô trong bảy ô" —
- * nó là dòng chữ phía trên, vì hôm nay là ngày duy nhất bạn có thể tập.
+ *   có kế hoạch, chưa tập   → Bắt đầu (nút đặc đen)
+ *   đã tập xong             → Xem kết quả (nút nhạt)
+ *   ngày nghỉ               → UI nghỉ ngơi (không phải hero card)
+ *   chưa có kế hoạch        → Chọn buổi tập (nút nhạt)
  */
 
 /** Đọc `exercises` JSONB của template một cách phòng thủ — cột là free-form. */
@@ -95,7 +78,6 @@ export function TodayTraining() {
     const d = byDay.get(i);
     return !!d?.template_id && !d?.is_rest;
   });
-  /* Ngày nghỉ là lựa chọn rõ ràng, ngày trống là chưa quyết định (#215). */
   const isRest = Array.from({ length: 7 }, (_, i) => !!byDay.get(i)?.is_rest);
 
   const openPlan = (day: number) => {
@@ -149,123 +131,16 @@ export function TodayTraining() {
         ? i18n.nTodayRestHint
         : i18n.nTodayNoneHint;
 
+  // Progress: 0% nếu chưa tập, 100% nếu đã xong
+  const progress = done ? 1 : 0;
+
   return (
-    <GlassCard style={styles.card}>
-      <View style={styles.head}>
-        <View style={styles.headCopy}>
-          <Text style={styles.eyebrow}>
-            {i18n.nTodayTraining} · {longNames[today]}
-          </Text>
-          <Text style={styles.title} numberOfLines={1}>{heading}</Text>
-          {sub ? (
-            <View style={styles.subRow}>
-              {done && planned ? (
-                <Icon icon={CheckCircle2} size={13} color={c.readinessGreen} />
-              ) : day?.is_rest && !unknown ? (
-                <Icon icon={Moon} size={13} color={c.metricPurple} />
-              ) : null}
-              <Text style={styles.sub} numberOfLines={2}>{sub}</Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-
-      {/*
-        Một hành động, và nó nói ra việc nó làm.
-
-        Nút ĐẶC chỉ xuất hiện đúng một trường hợp: hôm nay có buổi tập và bạn
-        chưa tập. Mọi trường hợp khác dùng nút nhạt — không có gì đang chờ, nên
-        không có gì phải sáng lên.
-      */}
-      {cta === 'none' ? null : cta === 'start' ? (
-        /*
-          HAI nút, không phải một.
-
-          Bản trước thay nút "Ghi buổi tập" bằng "Bắt đầu buổi tập" ở trạng thái
-          này — và thế là vào một ngày có kế hoạch, tức là hầu hết các ngày tập,
-          KHÔNG còn đường nào ghi một buổi tự do trên cả tab. Người dùng báo
-          "mất luôn một số thẻ rồi", và đó chính là nó.
-
-          Hai việc ấy không thay thế nhau: một cái là làm theo kế hoạch, một cái
-          là ghi lại thứ bạn vừa tập ngoài kế hoạch. Nút đặc dành cho cái thứ
-          nhất vì hôm nay nó đang chờ bạn; nút thứ hai đứng cạnh, nhạt hơn, và
-          không bao giờ biến mất.
-        */
-        <View style={styles.actions}>
-          <PressScale
-            accessibilityRole="button"
-            accessibilityLabel={i18n.nStartWorkout}
-            style={styles.primary}
-            onPress={() => {
-              Haptics.medium();
-              nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
-            }}>
-            <Icon icon={Play} size={15} color={c.primaryForeground} strokeWidth={2.5} />
-            <Text style={styles.primaryText}>{i18n.nStartWorkout}</Text>
-          </PressScale>
-          <PressScale
-            accessibilityRole="button"
-            accessibilityLabel={i18n.nLogFree}
-            style={styles.secondary}
-            onPress={() => {
-              Haptics.selection();
-              nav.push('/log-workout');
-            }}>
-            <Icon icon={Plus} size={17} color={c.foreground} strokeWidth={2.5} />
-          </PressScale>
-        </View>
-      ) : cta === 'extra' ? (
-        /*
-          Đã tập xong thì đường đi vẫn còn, nhưng nó KHÔNG còn là hành động
-          chính — nên nó thôi làm viên nút.
-
-          Một viên 48 điểm chạy hết bề ngang, ngay dưới dòng "✓ Đã tập hôm
-          nay", đọc ra là "vẫn còn việc phải làm" dù chữ trên nó nói gì. Ở đây
-          không còn gì đang chờ: việc duy nhất còn lại là cái hiếm — hôm nay
-          phát sinh thêm một buổi — nên nó mang đúng hình dạng của tấm kế
-          hoạch cho cùng việc ấy (`nRdExtra`), một dòng chữ gạch chân.
-        */
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={i18n.nTodayExtra}
-          style={styles.extraLink}
-          onPress={() => {
-            Haptics.selection();
-            nav.push('/log-workout');
-          }}>
-          <Text style={styles.extraLinkText}>{i18n.nTodayExtra}</Text>
-        </PressScale>
-      ) : (
-        <PressScale
-          accessibilityRole="button"
-          accessibilityLabel={cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
-          style={styles.quiet}
-          onPress={() => {
-            Haptics.selection();
-            if (cta === 'pick') nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
-            else nav.push('/log-workout');
-          }}>
-          <Icon
-            icon={cta === 'log-free' ? Plus : ChevronRight}
-            size={15}
-            color={c.foreground}
-            strokeWidth={2.5}
-          />
-          <Text style={styles.quietText}>
-            {cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
-          </Text>
-        </PressScale>
-      )}
-
-      <View style={styles.rule} />
-
+    <>
+      {/* Lịch tuần — nằm NGOÀI card, theo concept */}
       <WeekStrip
         dates={dates}
         hasWork={hasWork}
         isRest={isRest}
-        /* Không ô nào được TÔ. Ô tô nghĩa là "ngày bạn đang đọc", mà ở đây bạn
-           không đọc ngày nào — hôm nay đã là dòng chữ phía trên, và vòng tròn
-           quanh số của nó đã nói đúng điều cần nói. */
         selected={null}
         todayStr={todayStr}
         trained={trained}
@@ -273,15 +148,109 @@ export function TodayTraining() {
         shortNames={shortNames}
         onPick={openPlan}
       />
+      <GlassCard style={styles.card}>
+      {/* Nút "..." góc trên phải */}
+      <PressScale
+        style={styles.overflow}
+        accessibilityRole="button"
+        accessibilityLabel={vi ? 'Tùy chọn' : 'More options'}
+        onPress={() => {
+          Haptics.selection();
+          nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
+        }}>
+        <Icon icon={MoreHorizontal} size={20} color={c.mutedForeground} />
+      </PressScale>
 
+      <View style={styles.hero}>
+        <View style={styles.heroCopy}>
+          <Text style={styles.eyebrow}>
+            {i18n.nTodayTraining} · {longNames[today]}
+          </Text>
+          <Text style={styles.title} numberOfLines={2}>{heading}</Text>
+          {planned && !unknown ? (
+            <View style={styles.meta}>
+              <View style={styles.metaRow}>
+                <Icon icon={Dumbbell} size={13} color={c.mutedForeground} />
+                <Text style={styles.metaText}>
+                  {items.length} {i18n.nExercises} · {items.reduce((s, e) => s + (e.sets ?? 0), 0)} sets
+                </Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Icon icon={Clock} size={13} color={c.mutedForeground} />
+                <Text style={styles.metaText}>~ {estimatedMinutes(items)} {i18n.nCmMinutes}</Text>
+              </View>
+            </View>
+          ) : sub ? (
+            <Text style={styles.sub} numberOfLines={2}>{sub}</Text>
+          ) : null}
+        </View>
+        {/* Ảnh workout bên phải — dumbbell illustration theo concept */}
+        {planned && tpl ? (
+          <View style={styles.heroImage}>
+            <Icon icon={Dumbbell} size={48} color={c.mutedForeground} />
+          </View>
+        ) : null}
+      </View>
+
+      {/* Progress bar */}
+      {planned && !unknown ? (
+        <View style={styles.progressWrap}>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          </View>
+          <Text style={styles.progressText}>{Math.round(progress * 100)}%</Text>
+        </View>
+      ) : null}
+
+      {/* CTA */}
+      {cta === 'none' ? null : cta === 'start' ? (
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={i18n.nStartWorkout}
+          style={styles.primary}
+          onPress={() => {
+            Haptics.medium();
+            nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
+          }}>
+          <Icon icon={Play} size={16} color="#fff" strokeWidth={2.5} />
+          <Text style={styles.primaryText}>{i18n.nStartWorkout}</Text>
+        </PressScale>
+      ) : (
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={cta === 'extra' ? i18n.nTodayExtra : cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
+          style={styles.quiet}
+          onPress={() => {
+            Haptics.selection();
+            if (cta === 'pick') nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
+            else nav.push('/log-workout');
+          }}>
+          <Text style={styles.quietText}>
+            {cta === 'extra' ? i18n.nTodayExtra : cta === 'log-free' ? i18n.nLogFree : i18n.nTodayPick}
+          </Text>
+        </PressScale>
+      )}
     </GlassCard>
+    </>
   );
 }
 
 const stylesFor = makeStyles((c, m) => ({
-  card: { gap: spacing.sm, borderRadius: radius.xl },
-  head: { flexDirection: 'row', alignItems: 'center' },
-  headCopy: { flex: 1, minWidth: 0, gap: 2 },
+  card: { gap: spacing.md, borderRadius: radius.xl, padding: spacing.lg },
+  overflow: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radius.full,
+    zIndex: 1,
+  },
+  hero: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  heroCopy: { flex: 1, minWidth: 0, gap: spacing.xs },
+  heroImage: { width: 88, height: 88, alignItems: 'center', justifyContent: 'center' },
   eyebrow: {
     ...type.caption,
     color: c.mutedForeground,
@@ -289,49 +258,40 @@ const stylesFor = makeStyles((c, m) => ({
     letterSpacing: 0.8,
     fontWeight: '600',
   },
-  title: { ...type.title, color: c.foreground },
-  subRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  sub: { ...type.footnote, color: c.mutedForeground, flexShrink: 1 },
-  /* Nút đặc, cao 48 — nó là hành động chính của cả tab, không phải một pill
-     trong một hàng pill. */
-  primary: {
+  title: { ...type.largeTitle, color: c.foreground, fontWeight: '700' },
+  meta: { gap: 4, marginTop: spacing.xs },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  metaText: { ...type.footnote, color: c.mutedForeground },
+  sub: { ...type.footnote, color: c.mutedForeground, marginTop: spacing.xs },
+  progressWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  progressTrack: {
     flex: 1,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: c.secondary,
+    overflow: 'hidden',
+  },
+  progressFill: { height: '100%', borderRadius: 3, backgroundColor: c.foreground },
+  progressText: { ...type.caption, color: c.mutedForeground, fontWeight: '600', minWidth: 36, textAlign: 'right' },
+  /* CTA đen full-width theo concept */
+  primary: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 7,
-    height: 48,
-    borderRadius: radius.full,
-    backgroundColor: m.actionSurface,
-    marginTop: 2,
+    gap: 8,
+    height: 52,
+    borderRadius: radius.lg,
+    backgroundColor: '#1a1a1a',
   },
-  primaryText: { ...type.headline, fontWeight: '700', color: c.primaryForeground },
+  primaryText: { ...type.headline, fontWeight: '700', color: '#fff' },
   quiet: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 7,
-    height: 48,
-    borderRadius: radius.full,
-    backgroundColor: alpha(m.ink, 0.07),
-    marginTop: 2,
+    height: 52,
+    borderRadius: radius.lg,
+    backgroundColor: c.secondary,
   },
   quietText: { ...type.headline, fontWeight: '600', color: c.foreground },
-  /* Cùng hình dạng với liên kết "Tập thêm bài phát sinh?" ở tấm kế hoạch: cùng
-     một việc thì cùng một giọng, kẻo hai màn hình nói hai kiểu về cùng cái
-     hiếm ấy. */
-  extraLink: { alignItems: 'center', paddingVertical: spacing.sm, marginTop: 2 },
-  extraLinkText: { ...type.footnote, color: c.mutedForeground, textDecorationLine: 'underline' },
-  rule: { height: StyleSheet.hairlineWidth, backgroundColor: c.border, marginTop: 2 },
-  /* Nút chính và nút phụ nằm cùng một hàng: nút phụ chỉ là một ô vuông mang dấu
-     cộng, vì việc của nó đã được nói bằng nhãn trợ năng và bằng chỗ đứng. */
-  actions: { flexDirection: 'row', gap: spacing.sm, marginTop: 2 },
-  secondary: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: alpha(m.ink, 0.07),
-  },
 }));
