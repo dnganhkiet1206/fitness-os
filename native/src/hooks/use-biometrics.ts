@@ -24,6 +24,8 @@ export interface BiometricSample {
   resp_rate_rpm: number | null;
   confidence: number | null;
   notes: string | null;
+  soreness_1_10: number | null;
+  illness_flag: boolean | null;
 }
 
 export function useBiometricHistory(days = 14, enabled = true) {
@@ -53,6 +55,10 @@ export interface BiometricInput {
   spo2_pct?: number | null;
   vo2max_mlkgmin?: number | null;
   resp_rate_rpm?: number | null;
+  /* Morning check-in (P0-1): 1–10 soreness/pain, optional. Null = not asked. */
+  soreness_1_10?: number | null;
+  /* Morning check-in (P0-1): feeling ill today. False = not ill / not asked. */
+  illness_flag?: boolean;
 }
 
 /**
@@ -125,6 +131,8 @@ export function useLogBiometrics() {
           spo2Pct: values.spo2_pct ?? null,
           respRateRpm: values.resp_rate_rpm ?? null,
           vo2maxMlkgmin: values.vo2max_mlkgmin ?? null,
+          soreness110: values.soreness_1_10 ?? null,
+          illnessFlag: values.illness_flag ?? false,
         },
         /* Forwarded so the screen can still say what happened. These are
            per-call callbacks and are not persisted — which is correct: they

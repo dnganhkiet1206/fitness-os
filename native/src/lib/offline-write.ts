@@ -185,6 +185,13 @@ export type OfflineWrite =
       spo2Pct: number | null;
       respRateRpm: number | null;
       vo2maxMlkgmin: number | null;
+      /*
+        Morning check-in (P0-1): optional 1–10 soreness/pain scale + illness
+        flag. Feeds the three readiness-engine branches that existed with
+        hardcoded inputs before. Null/false = not answered, never a low value.
+      */
+      soreness110: number | null;
+      illnessFlag: boolean;
     }
   | {
       /*
@@ -627,6 +634,8 @@ export async function applyOfflineWrite(w: OfflineWrite): Promise<void> {
           spo2_pct: w.spo2Pct,
           resp_rate_rpm: w.respRateRpm,
           vo2max_mlkgmin: w.vo2maxMlkgmin,
+          soreness_1_10: w.soreness110,
+          illness_flag: w.illnessFlag,
         },
         IDEMPOTENT,
       );

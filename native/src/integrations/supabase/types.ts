@@ -173,8 +173,10 @@ export type Database = {
           hrv_rmssd_ms: number | null
           hrv_sdnn_ms: number | null
           id: string
+          illness_flag: boolean
           notes: string | null
           resp_rate_rpm: number | null
+          soreness_1_10: number | null
           source: string
           spo2_pct: number | null
           user_id: string
@@ -189,8 +191,10 @@ export type Database = {
           hrv_rmssd_ms?: number | null
           hrv_sdnn_ms?: number | null
           id?: string
+          illness_flag?: boolean
           notes?: string | null
           resp_rate_rpm?: number | null
+          soreness_1_10?: number | null
           source?: string
           spo2_pct?: number | null
           user_id: string
@@ -205,8 +209,10 @@ export type Database = {
           hrv_rmssd_ms?: number | null
           hrv_sdnn_ms?: number | null
           id?: string
+          illness_flag?: boolean
           notes?: string | null
           resp_rate_rpm?: number | null
+          soreness_1_10?: number | null
           source?: string
           spo2_pct?: number | null
           user_id?: string

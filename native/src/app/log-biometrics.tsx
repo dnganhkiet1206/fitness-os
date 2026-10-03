@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -44,6 +45,13 @@ export default function LogBiometricsSheet() {
   const [spo2, setSpo2] = useState('');
   const [vo2, setVo2] = useState('');
   const [resp, setResp] = useState('');
+  /*
+    Morning check-in (P0-1): optional 1–10 soreness/pain + illness toggle.
+    These feed the three readiness-engine branches that used to receive
+    hardcoded inputs. Null/false = not answered — absence is not a low value.
+  */
+  const [soreness, setSoreness] = useState<number | null>(null);
+  const [ill, setIll] = useState(false);
 
   /*
     ── ô nào Apple Health đã trả lời ──
@@ -99,8 +107,14 @@ export default function LogBiometricsSheet() {
   };
   const anyBad = Object.values(errors).some(Boolean);
 
-  const canSave =
-    (hr || hrv || spo2 || vo2 || resp).length > 0 && !anyBad && !log.isPending && !log.isSuccess;
+  /*
+    The check-in answers count as input too: somebody opening this screen only
+    to say "I'm ill today" should be able to save that alone. They are optional
+    in the other direction — leaving them blank never blocks a biometric save.
+  */
+  const hasAnyInput =
+    (hr || hrv || spo2 || vo2 || resp).length > 0 || soreness !== null || ill;
+  const canSave = hasAnyInput && !anyBad && !log.isPending && !log.isSuccess;
 
   /*
     ── the rebuild moved, and had to ──
@@ -123,6 +137,8 @@ export default function LogBiometricsSheet() {
     spo2_pct: num(spo2),
     vo2max_mlkgmin: num(vo2),
     resp_rate_rpm: num(resp),
+    soreness_1_10: soreness,
+    illness_flag: ill,
   });
 
   /*
@@ -230,6 +246,46 @@ export default function LogBiometricsSheet() {
         </View>
         <Field label={i18n.logBioResp} placeholder="14" unit="rpm" value={resp} onChange={setResp} error={errors.resp} />
 
+        {/*
+          Morning check-in (P0-1): the readiness engine has always had branches
+          for soreness, illness and pain, but no screen ever asked — so a user
+          with the flu could get a green score. Optional: tapping the selected
+          number again clears it.
+        */}
+        <View style={styles.field}>
+          <Text style={styles.fieldLabel}>{i18n.nCxLogBioSoreness}</Text>
+          <View style={styles.scaleRow}>
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+              <PressScale
+                key={n}
+                accessibilityRole="button"
+                accessibilityLabel={`${n}`}
+                accessibilityState={{ selected: soreness === n }}
+                style={[styles.scalePill, soreness === n && styles.scalePillOn]}
+                onPress={() => {
+                  Haptics.selection();
+                  setSoreness(soreness === n ? null : n);
+                }}>
+                <Text style={[styles.scaleText, soreness === n && styles.scaleTextOn]}>{n}</Text>
+              </PressScale>
+            ))}
+          </View>
+          <Text style={styles.hint}>{i18n.nCxLogBioSorenessHint}</Text>
+        </View>
+
+        <View style={styles.toggleRow}>
+          <Text style={styles.toggleText}>{i18n.nCxLogBioIllness}</Text>
+          <Switch
+            value={ill}
+            onValueChange={(v) => {
+              Haptics.selection();
+              setIll(v);
+            }}
+            trackColor={{ true: c.readinessGreen, false: c.secondary }}
+            accessibilityLabel={i18n.nCxLogBioIllness}
+          />
+        </View>
+
         <PressScale
                     /* The name has to be a constant, because the *text* is not.
 
@@ -309,6 +365,28 @@ const stylesFor = makeStyles((c, m) => ({
   fieldError: { ...type.footnote, color: c.readinessRed },
   row: { flexDirection: 'row', gap: spacing.sm },
   half: { flex: 1 },
+  scaleRow: { flexDirection: 'row', gap: 6, justifyContent: 'space-between' },
+  scalePill: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: c.border,
+    backgroundColor: c.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scalePillOn: { backgroundColor: m.actionSurface, borderColor: m.actionSurface },
+  scaleText: { ...type.footnote, color: c.mutedForeground },
+  scaleTextOn: { color: c.primaryForeground, fontWeight: '600' },
+  hint: { ...type.footnote, color: c.mutedForeground },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+  },
+  toggleText: { ...type.body, color: c.foreground },
   saveButton: { height: 50, borderRadius: radius.full, backgroundColor: m.actionSurface, alignItems: 'center', justifyContent: 'center', marginTop: spacing.sm },
   saveDisabled: { opacity: 0.4 },
   saveText: { ...type.headline, color: c.primaryForeground },

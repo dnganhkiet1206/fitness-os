@@ -242,6 +242,10 @@ interface Translations {
   logBioSaved: string;
   /** Ghi chú dưới các ô mà Apple Health đã điền sẵn. */
   healthOwnedNote: string;
+  /* Morning check-in (P0-1): optional soreness scale + illness toggle. */
+  nCxLogBioSoreness: string;
+  nCxLogBioSorenessHint: string;
+  nCxLogBioIllness: string;
   /** Tiêu đề hộp thoại khi người dùng sửa một số của Apple Health. */
   healthOverrideTitle: string;
   /** Thân hộp thoại ấy. `{n}` là số chỉ số đang bị đổi. */
@@ -733,6 +737,9 @@ const vi: Translations = {
   logBioResp: 'Nhịp thở (rpm)',
   logBioSaved: 'Đã lưu chỉ số sinh trắc!',
   healthOwnedNote: 'Apple Health đã đo các số này. Bạn sửa được, nhưng không thêm số mới.',
+  nCxLogBioSoreness: 'Đau nhức hôm nay (không bắt buộc)',
+  nCxLogBioSorenessHint: '1 = không đau, 10 = đau nhất',
+  nCxLogBioIllness: 'Hôm nay bị ốm',
   healthOverrideTitle: 'Thay số của Apple Health?',
   healthOverrideMsg:
     'Bạn đang đổi {n} chỉ số Apple Health đã đo. Lưu xong app dùng số của bạn, và Apple Health sẽ không ghi đè lên nữa.',
@@ -1175,6 +1182,9 @@ const en: Translations = {
   logBioResp: 'Respiratory rate (rpm)',
   logBioSaved: 'Biometrics saved!',
   healthOwnedNote: 'Apple Health measured these. You can edit them, but not add new ones.',
+  nCxLogBioSoreness: 'Soreness today (optional)',
+  nCxLogBioSorenessHint: '1 = none, 10 = worst',
+  nCxLogBioIllness: 'Feeling ill today',
   healthOverrideTitle: 'Replace the Apple Health reading?',
   healthOverrideMsg:
     'You are changing {n} reading(s) Apple Health measured. Save and the app uses yours, and Apple Health will not overwrite it again.',

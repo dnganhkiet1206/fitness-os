@@ -386,7 +386,7 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
     // 5. Readiness inputs: today's biometrics, the sleep target, and history
     supabase
       .from('biometric_samples')
-      .select('hr_bpm, hrv_rmssd_ms, hrv_sdnn_ms')
+      .select('hr_bpm, hrv_rmssd_ms, hrv_sdnn_ms, soreness_1_10, illness_flag')
       .eq('user_id', userId)
       .gte('date_time', day.start)
       .lt('date_time', day.end)
@@ -636,9 +636,19 @@ export async function recomputeDailyLog(userId: string, date: string, attempt = 
         session actually in the window.
       */
       training_days_28d: trainingDays28d,
-      soreness_today: undefined,
-      illness_flag: false,
-      pain_flag_max: undefined,
+      /*
+        Morning check-in (P0-1): these used to be hardcoded
+        (`soreness_today: undefined, illness_flag: false, pain_flag_max:
+        undefined`), so the engine's three soreness/illness/pain branches were
+        unreachable — a user with the flu could get a green readiness score.
+        Now they come from today's biometric row, where the log-biometrics
+        screen asks optionally. Null/false = not answered, never a low value.
+      */
+      soreness_today:
+        bio?.[0]?.soreness_1_10 != null ? Number(bio[0].soreness_1_10) : undefined,
+      illness_flag: bio?.[0]?.illness_flag === true,
+      pain_flag_max:
+        bio?.[0]?.soreness_1_10 != null ? Number(bio[0].soreness_1_10) : undefined,
       hrv_history_28d: hrvHistory,
       rhr_history_28d: rhrHistory,
     };
