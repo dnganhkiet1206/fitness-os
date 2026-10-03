@@ -582,7 +582,7 @@ export default function SettingsScreen() {
 
       <Animated.View entering={rise(3)}>
       <GlassCard>
-        <CardTitle icon={Globe}>{i18n.nCxSettingsLanguage}</CardTitle>
+        <CardTitle icon={Globe}>Language / Ngôn ngữ</CardTitle>
         <PickRow
           value={lang}
           fill={m.actionSurface}
