@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PROGRESS_DAYS } from '@/lib/user-state';
 
@@ -20,6 +20,10 @@ import {
 } from '@/lib/personal-record';
 import { useAuth } from './use-auth';
 import { useInvalidateToday } from './use-today-data';
+import { useDailyLog } from './use-today-data';
+import { useDailyStreak } from './use-mascot-room';
+import { useI18n } from './use-app-settings';
+import { pushTodayWorkout, pushStreakReadiness } from '@/native/ios/widget-data';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';
 import { RECORD } from '@/lib/offline-class';
@@ -1173,4 +1177,92 @@ export function useDeleteBodyMeasurement() {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['body_measurements', user?.id] }),
   });
+}
+
+/**
+ * Push real data to the two iOS widgets (P0-2).
+ *
+ * `widget-data.ts` has had `pushTodayWorkout()` / `pushStreakReadiness()` since
+ * the #195 spike, but zero callers — both widgets Kiệt approved ("Today's
+ * Workout" + "Streak + Readiness") were running on Swift mock data.
+ *
+ * This hook closes that gap on the TS side: it reads today's sessions, the
+ * streak and today's readiness, and pushes both payloads fire-and-forget.
+ * The push functions already null-check the native module and swallow errors,
+ * so this never crashes the app — and until the App Group is provisioned the
+ * Swift side silently no-ops (see widget-data.ts header).
+ *
+ * Mount once, high in the tree (the tabs layout), so the widgets stay fresh
+ * whatever tab the user is on. A ref-keyed guard pushes only when the payload
+ * actually changes — not on every render.
+ */
+export function usePushWidgetData() {
+  const { user } = useAuth();
+  const i18n = useI18n();
+  const { data: dailyLog } = useDailyLog();
+  const { data: streak } = useDailyStreak();
+
+  const { data: todaySessions } = useQuery({
+    queryKey: ['widget_today_sessions', user?.id, localDateStr()],
+    enabled: !!user,
+    staleTime: 1000 * 60 * 5,
+    queryFn: async () => {
+      const day = localDayRangeISO(localDateStr());
+      const { data, error } = await supabase
+        .from('workout_sessions')
+        .select('template_name, sets')
+        .eq('user_id', user!.id)
+        .gte('date_time', day.start)
+        .lt('date_time', day.end)
+        .order('date_time', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as { template_name: string | null; sets: unknown }[];
+    },
+  });
+
+  const pushedKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+
+    /* ── Today's Workout payload ── */
+    const latest = todaySessions?.[0];
+    const sets = Array.isArray(latest?.sets) ? (latest!.sets as unknown[]) : [];
+    const workoutPayload = latest
+      ? {
+          workoutName: latest.template_name || 'Workout',
+          statusText: i18n.nCxWidgetDone,
+          completedExercises: sets.length,
+          totalExercises: sets.length,
+        }
+      : {
+          workoutName: i18n.nCxWidgetRestDay,
+          statusText: i18n.nCxWidgetNoWorkout,
+          completedExercises: 0,
+          totalExercises: 0,
+        };
+
+    /* ── Streak + Readiness payload ── */
+    const readiness =
+      dailyLog?.readiness_score != null ? Number(dailyLog.readiness_score) : undefined;
+    const streakPayload = {
+      streakDays: streak?.count ?? 0,
+      ...(readiness !== undefined ? { readinessScore: Math.round(readiness) } : {}),
+      statusText:
+        readiness !== undefined
+          ? `${Math.round(readiness)}/100`
+          : i18n.nCxWidgetNoWorkout,
+    };
+
+    /* Push only when something actually changed — the queries refetch on
+       focus/invalidation, and re-pushing identical JSON is a wasted bridge. */
+    const key = JSON.stringify([workoutPayload, streakPayload]);
+    if (pushedKey.current === key) return;
+    pushedKey.current = key;
+
+    /* Fire-and-forget by contract: pushWidgetData already returns false (never
+       throws) when the native module is missing or the App Group is unprovisioned. */
+    void pushTodayWorkout(workoutPayload);
+    void pushStreakReadiness(streakPayload);
+  }, [user, i18n, dailyLog, streak, todaySessions]);
 }

@@ -5,6 +5,7 @@ import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useI18n } from '@/hooks/use-app-settings';
+import { usePushWidgetData } from '@/hooks/use-fitness-data';
 import { scrollActiveToTop } from '@/lib/scroll-to-top';
 import { resetTabBar, showTopChrome } from '@/lib/tab-bar-visibility';
 
@@ -141,6 +142,13 @@ export default function AppTabs() {
   const i18n = useI18n();
   const c = usePalette();
   const CONTENT = contentFor(c).scene;
+
+  /*
+    Push real data to the two iOS widgets (P0-2). Mounted here — high in the
+    tree, always alive while the app is open — so the widgets stay fresh on
+    every tab. Fire-and-forget; no-ops until the App Group is provisioned.
+  */
+  usePushWidgetData();
 
   /*
     ── the bar's visibility is frozen while anything is pushed over it ──

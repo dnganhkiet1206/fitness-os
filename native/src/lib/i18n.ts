@@ -246,6 +246,10 @@ interface Translations {
   nCxLogBioSoreness: string;
   nCxLogBioSorenessHint: string;
   nCxLogBioIllness: string;
+  /* Widget payloads (P0-2): pushed to iOS widgets via widget-data.ts. */
+  nCxWidgetRestDay: string;
+  nCxWidgetDone: string;
+  nCxWidgetNoWorkout: string;
   /** Tiêu đề hộp thoại khi người dùng sửa một số của Apple Health. */
   healthOverrideTitle: string;
   /** Thân hộp thoại ấy. `{n}` là số chỉ số đang bị đổi. */
@@ -740,6 +744,9 @@ const vi: Translations = {
   nCxLogBioSoreness: 'Đau nhức hôm nay (không bắt buộc)',
   nCxLogBioSorenessHint: '1 = không đau, 10 = đau nhất',
   nCxLogBioIllness: 'Hôm nay bị ốm',
+  nCxWidgetRestDay: 'Ngày nghỉ',
+  nCxWidgetDone: 'Hoàn thành',
+  nCxWidgetNoWorkout: 'Chưa có buổi tập',
   healthOverrideTitle: 'Thay số của Apple Health?',
   healthOverrideMsg:
     'Bạn đang đổi {n} chỉ số Apple Health đã đo. Lưu xong app dùng số của bạn, và Apple Health sẽ không ghi đè lên nữa.',
@@ -1185,6 +1192,9 @@ const en: Translations = {
   nCxLogBioSoreness: 'Soreness today (optional)',
   nCxLogBioSorenessHint: '1 = none, 10 = worst',
   nCxLogBioIllness: 'Feeling ill today',
+  nCxWidgetRestDay: 'Rest day',
+  nCxWidgetDone: 'Done',
+  nCxWidgetNoWorkout: 'No workout yet',
   healthOverrideTitle: 'Replace the Apple Health reading?',
   healthOverrideMsg:
     'You are changing {n} reading(s) Apple Health measured. Save and the app uses yours, and Apple Health will not overwrite it again.',
