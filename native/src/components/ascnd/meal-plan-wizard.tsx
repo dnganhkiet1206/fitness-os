@@ -135,7 +135,7 @@ export function MealPlanWizard({
     queryFn: async () => {
       const { data, error } = await supabase
         .from('food_items')
-        .select('id, user_id, name, kcal, protein_g, carbs_g, fat_g, serving_g')
+        .select('id, user_id, name, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g')
         .ilike('name', `%${debounced}%`)
         .order('name')
         .limit(15);
@@ -197,6 +197,7 @@ export function MealPlanWizard({
     protein_g: number;
     carbs_g: number;
     fat_g: number;
+    fiber_g: number | null;
     serving_g: number;
   }) => {
     if (!activeId) return;
@@ -211,6 +212,7 @@ export function MealPlanWizard({
         protein_g: Math.round(Number(f.protein_g) || 0),
         carbs_g: Math.round(Number(f.carbs_g) || 0),
         fat_g: Math.round(Number(f.fat_g) || 0),
+        fiber_g: Math.round(Number(f.fiber_g) || 0),
         food_item_id: f.id,
       },
       {

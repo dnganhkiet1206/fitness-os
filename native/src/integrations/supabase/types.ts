@@ -1266,6 +1266,7 @@ export type Database = {
           created_at: string
           day_index: number
           fat_g: number | null
+          fiber_g: number | null
           food_item_id: string | null
           food_name: string
           id: string
@@ -1280,6 +1281,7 @@ export type Database = {
           created_at?: string
           day_index?: number
           fat_g?: number | null
+          fiber_g?: number | null
           food_item_id?: string | null
           food_name?: string
           id?: string
@@ -1294,6 +1296,7 @@ export type Database = {
           created_at?: string
           day_index?: number
           fat_g?: number | null
+          fiber_g?: number | null
           food_item_id?: string | null
           food_name?: string
           id?: string

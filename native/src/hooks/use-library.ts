@@ -567,7 +567,7 @@ export function useMealPlanItems(planId: string | null) {
       */
       const { data, error } = await supabase
         .from('meal_plan_items')
-        .select('id, day_index, meal_type, food_name, serving_g, kcal, protein_g, carbs_g, fat_g, food_item_id')
+        .select('id, day_index, meal_type, food_name, serving_g, kcal, protein_g, carbs_g, fat_g, fiber_g, food_item_id')
         .eq('meal_plan_id', planId!)
         .order('day_index')
         .order('meal_type');
@@ -587,6 +587,7 @@ export interface MealPlanItemInput {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  fiber_g?: number | null;
   food_item_id?: string | null;
 }
 

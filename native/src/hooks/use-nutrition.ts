@@ -893,6 +893,7 @@ export interface PlannedFood {
   protein_g: number | null;
   carbs_g: number | null;
   fat_g: number | null;
+  fiber_g?: number | null;
 }
 
 /**
@@ -984,8 +985,8 @@ export function useLogPlannedMeal(date?: string) {
         protein_g: Math.round(total('protein_g')),
         carbs_g: Math.round(total('carbs_g')),
         fat_g: Math.round(total('fat_g')),
-        // See the note above: the plan has no fibre to carry over.
-        fiber_g: 0,
+        /* P1-6: fibre now travels from the plan — no longer hardcoded to 0. */
+        fiber_g: Math.round(total('fiber_g')),
       },
       items: foods.map((f) => ({
         id: Crypto.randomUUID(),
@@ -997,7 +998,7 @@ export function useLogPlannedMeal(date?: string) {
         protein_g: n(f.protein_g),
         carbs_g: n(f.carbs_g),
         fat_g: n(f.fat_g),
-        fiber_g: 0,
+        fiber_g: n(f.fiber_g),
       })),
     };
     if (offlineNow()) {
