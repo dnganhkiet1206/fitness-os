@@ -120,7 +120,7 @@ serve(async (req) => {
       return d.toISOString().split("T")[0];
     })();
 
-    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, memoryRes] = await Promise.all([
+    const [profileRes, dailyLogsRes, sleepRes, workoutsRes, bioRes, memoryRes, weightRes] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", userId).single(),
       supabase.from("daily_logs").select("*").eq("user_id", userId).gte("date", weekAgo).order("date", { ascending: false }).limit(7),
       supabase.from("sleep_logs").select("*").eq("user_id", userId).gte("waketime", `${weekAgo}T00:00:00Z`).order("waketime", { ascending: false }).limit(7),
@@ -130,7 +130,9 @@ serve(async (req) => {
          một mảng rỗng, và dòng prompt dặn mô hình xử lý "pain flags" chưa bao
          giờ có gì để xử lý. Xem PS-3 trong `docs/FORENSIC-AUDIT.md`. */
       supabase.from("workout_sessions").select("template_name, volume_load, session_rpe, date_time, sets").eq("user_id", userId).gte("date_time", `${weekAgo}T00:00:00Z`).order("date_time", { ascending: false }).limit(7),
-      supabase.from("biometric_samples").select("hr_bpm, hrv_rmssd_ms, hrv_sdnn_ms, date_time").eq("user_id", userId).order("date_time", { ascending: false }).limit(3),
+      supabase.from("biometric_samples").select("hr_bpm, hrv_rmssd_ms, hrv_sdnn_ms, soreness_1_10, illness_flag, date_time").eq("user_id", userId).order("date_time", { ascending: false }).limit(3),
+      /* Weight trend for the coach: last 14 days of weigh-ins, oldest → newest. */
+      supabase.from("weight_logs").select("date, weight_kg").eq("user_id", userId).order("date", { ascending: false }).limit(14),
       /* What this person has told the coach in past conversations. The logs
          above are what the app measured; this is what it was told, and it is
          the half that used to be thrown away when the chat closed. */
@@ -143,6 +145,51 @@ serve(async (req) => {
     const workouts = workoutsRes.data ?? [];
     const biometrics = bioRes.data ?? [];
     const memory = memoryRes.data ?? [];
+    const weightLogs = (weightRes.data ?? []) as { date: string; weight_kg: number }[];
+
+    /*
+      P0-2 (DE-XUAT-2): the coach could see nutrition rows but not the
+      aggregates a coach actually reasons with — and it was blind to
+      streak, steps and weight trend entirely.
+
+      - streak_days: consecutive logged days ending today/yesterday.
+        A day counts when anything was logged (meal, workout, sleep,
+        supplement) — same rule as `lib/streak.ts`'s LOGGED_DAY_FILTER.
+      - protein_avg_7d / steps_avg_7d: means over the fetched week,
+        null when nothing was logged (not zero — see prompt rules).
+      - weight_trend_kg: last minus first weigh-in over ≤14 days,
+        null when fewer than 2 weigh-ins.
+    */
+    const isLoggedDay = (d: Record<string, unknown>) =>
+      Number(d.kcal) > 0 || Number(d.workout_count) > 0 ||
+      Number(d.sleep_duration_min) > 0 || Number(d.supplement_taken) > 0;
+    const logDates = new Set(
+      (dailyLogs as Record<string, unknown>[])
+        .filter(isLoggedDay)
+        .map((d) => String(d.date)),
+    );
+    let streak_days = 0;
+    {
+      const cursor = new Date(`${today}T00:00:00Z`);
+      // Today may not be over yet — start counting from today, then walk back.
+      for (let i = 0; i < 30; i++) {
+        const key = cursor.toISOString().split("T")[0];
+        if (i === 0 && !logDates.has(key)) { cursor.setUTCDate(cursor.getUTCDate() - 1); continue; }
+        if (!logDates.has(key)) break;
+        streak_days++;
+        cursor.setUTCDate(cursor.getUTCDate() - 1);
+      }
+    }
+    const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+    const avg = (vals: (number | null)[]) => {
+      const xs = vals.filter((v): v is number => v != null);
+      return xs.length ? Math.round(xs.reduce((a, b) => a + b, 0) / xs.length * 10) / 10 : null;
+    };
+    const protein_avg_7d = avg((dailyLogs as Record<string, unknown>[]).map((d) => num(d.protein_g)));
+    const steps_avg_7d = avg((dailyLogs as Record<string, unknown>[]).map((d) => num(d.steps)));
+    const weight_trend_kg = weightLogs.length >= 2
+      ? Math.round((weightLogs[0].weight_kg - weightLogs[weightLogs.length - 1].weight_kg) * 10) / 10
+      : null;
 
     /*
       Remembered facts, each with the date it was last mentioned.
@@ -162,6 +209,11 @@ serve(async (req) => {
 
     // Build context
     const ctx = {
+      /* P0-2: aggregates the coach reasons with — null means not measured. */
+      streak_days,
+      protein_avg_7d_g: protein_avg_7d,
+      steps_avg_7d,
+      weight_trend_kg_14d: weight_trend_kg,
       profile: profile ? {
         name: profile.name,
         goal: profile.goal,
@@ -219,6 +271,10 @@ serve(async (req) => {
            reported, with its name attached. */
         hrv_sdnn_ms: b.hrv_sdnn_ms ?? undefined,
         hrv_rmssd_ms: b.hrv_rmssd_ms ?? undefined,
+        /* P0-2: morning check-in (DE-XUAT P0-1) — pain/illness the coach
+           should know before suggesting training. */
+        soreness_1_10: b.soreness_1_10 ?? undefined,
+        illness_flag: b.illness_flag ?? undefined,
       })),
     };
 
