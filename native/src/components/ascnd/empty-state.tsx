@@ -3,8 +3,6 @@ import type { LucideIcon } from 'lucide-react-native';
 import { Text, View } from 'react-native';
 
 import { Icon } from '@/components/ascnd/icon';
-import { MascotFigure } from '@/components/ascnd/mascot-figure';
-import { useMascotIdentity } from '@/hooks/use-mascot';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
@@ -61,7 +59,6 @@ export function EmptyState({
   title,
   hint,
   action,
-  companion = false,
 }: {
   icon: LucideIcon;
   /** One line. What goes here, not an apology for it being missing. */
@@ -70,42 +67,20 @@ export function EmptyState({
   hint?: string;
   /** Omit when there is genuinely nothing to press. */
   action?: { label: string; onPress: () => void };
-  /**
-   * Show Koa instead of the glyph.
-   *
-   * Only true where the emptiness is the person's to change and `action` is the
-   * way to change it — see the note above. `icon` is still required and is what
-   * shows if the companion is switched off in settings, so no screen loses its
-   * empty state to a preference.
-   */
-  companion?: boolean;
 }) {
   const c = usePalette();
   const styles = stylesFor(c);
-  /* Identity only — the same rule the error card is built on. This renders
-     *because* a read came back with nothing, and a hook that reads would put a
-     fresh observer on the very query that came back empty. See
-     `useMascotIdentity`. */
-  const { enabled, mascot } = useMascotIdentity();
-  const showKoa = enabled;
 
   return (
     <View style={styles.root}>
-      {companion && showKoa ? (
-        /* No chip behind it: the chip exists to stop a lone outline glyph
-           reading as a broken image, and a drawn character has no such
-           problem. `happy` rather than `sad` on purpose — a disappointed
-           companion in front of a screen you have not used yet is a scold
-           before you have done anything, which is the failure mode a mascot
-           has to avoid rather than lean into. */
-        <MascotFigure mascot={mascot} size={72} emotion="happy" animated />
-      ) : (
-        /* A tinted chip rather than a bare glyph: a lone outline icon on a dark
-           card reads as a broken image. */
-        <View style={styles.chip}>
-          <Icon icon={icon} size={24} color={c.mutedForeground} />
-        </View>
-      )}
+      {/*
+        A tinted chip rather than a bare glyph: a lone outline icon on a dark
+        card reads as a broken image.
+        2026-10-03 (Kiệt): Koa chỉ còn trên Today — xóa companion khỏi empty state.
+      */}
+      <View style={styles.chip}>
+        <Icon icon={icon} size={24} color={c.mutedForeground} />
+      </View>
       <Text style={styles.title}>{title}</Text>
       {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       {action ? (

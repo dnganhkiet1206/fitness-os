@@ -11,7 +11,6 @@ import { AppLockGate } from '@/components/ascnd/app-lock-gate';
 import { AuthScreen } from '@/components/ascnd/auth-screen';
 import { LoadFailed } from '@/components/ascnd/load-failed';
 import { CelebrationHost } from '@/components/ascnd/celebration-host';
-import { KoaCompanion } from '@/components/ascnd/koa-companion';
 import { QuestAutoClaim } from '@/components/ascnd/quest-autoclaim';
 import { MascotUnlockCelebration } from '@/components/ascnd/mascot-unlock';
 import { NeonToastHost } from '@/components/ascnd/neon-toast';
@@ -374,7 +373,6 @@ function Gate() {
         this branch so it is absent whenever `Gate` is showing `LoadFailed` —
         the card that exists because a read failed must not gain a neighbour
         that reads. */}
-    <KoaCompanion />
     </>
   );
 }
