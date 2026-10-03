@@ -1,10 +1,13 @@
-import { CheckCircle2, ChevronRight, Clock, Dumbbell, Moon, MoreHorizontal, Play, Plus } from 'lucide-react-native';
+import { CalendarDays, CheckCircle2, ChevronRight, Clock, Dumbbell, Leaf, Moon, MoreHorizontal, PersonStanding, Play, Plus, Sun } from 'lucide-react-native';
 import { haptics as Haptics } from '@/lib/haptics';
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { WorkoutPickerSheet } from '@/components/ascnd/workout-picker-sheet';
 import {
   DAY_LONG_EN,
   DAY_LONG_VI,
@@ -56,6 +59,7 @@ function exercisesOf(tpl: { exercises?: unknown } | null | undefined): TplExerci
 export function TodayTraining() {
   const c = usePalette();
   const styles = stylesFor(c);
+  const [pickerVisible, setPickerVisible] = useState(false);
   const { data: days, isPending: daysPending, isError: daysFailed } = useRoutineDays();
   const { data: templates } = useWorkoutTemplates();
   /* Cùng cửa sổ 14 ngày mà phần lịch sử bên dưới đã hỏi, nên khối này không tốn
@@ -133,6 +137,125 @@ export function TodayTraining() {
 
   // Progress: 0% nếu chưa tập, 100% nếu đã xong
   const progress = done ? 1 : 0;
+
+  // ── Ngày nghỉ: thẻ riêng theo concept khung 2 (issue 221) ──
+  // Không có thanh tiến độ, không danh sách bài tập, không nút ⋯.
+  if (!unknown && day?.is_rest) {
+    return (
+      <>
+        <WeekStrip
+          dates={dates}
+          hasWork={hasWork}
+          isRest={isRest}
+          selected={null}
+          todayStr={todayStr}
+          trained={trained}
+          longNames={longNames}
+          shortNames={shortNames}
+          onPick={openPlan}
+        />
+        <GlassCard style={[styles.card, styles.restCardBg]}>
+          {/* Minh hoạ SVG: trăng lưỡi liềm trong đĩa tròn sáng + mây mờ */}
+          <View style={styles.restVisual} accessibilityRole="image">
+            <Svg width={120} height={96} viewBox="0 0 120 96">
+              {/* đĩa tròn sáng */}
+              <Circle cx={60} cy={44} r={34} fill={c.secondary} opacity={0.55} />
+              {/* mây mờ */}
+              <Circle cx={30} cy={66} r={14} fill={c.secondary} opacity={0.35} />
+              <Circle cx={92} cy={70} r={11} fill={c.secondary} opacity={0.3} />
+              {/* trăng lưỡi liềm */}
+              <Path
+                d="M72 22a22 22 0 1 0 12 40A26 26 0 0 1 72 22Z"
+                fill="#8b7cf0"
+              />
+            </Svg>
+          </View>
+          <Text style={styles.eyebrowCenter}>
+            {i18n.nTodayTraining} · {longNames[today]}
+          </Text>
+          <Text style={styles.restTitle}>{i18n.nTodayRest}</Text>
+          <Text style={styles.restDesc}>{i18n.nTodayRestHint}</Text>
+
+          <Text style={styles.suggestTitle}>
+            {vi ? 'Gợi ý hôm nay' : lang === 'es' ? 'Sugerencias de hoy' : "Today's suggestions"}
+          </Text>
+          <View style={styles.suggestRow}>
+            <PressScale
+              style={styles.suggestTile}
+              accessibilityRole="button"
+              onPress={() => Haptics.selection()}>
+              <Icon icon={PersonStanding} size={24} color="#f59e0b" />
+              <Text style={styles.suggestLabel}>{vi ? 'Đi bộ nhẹ' : lang === 'es' ? 'Caminata' : 'Easy walk'}</Text>
+              <Text style={styles.suggestSub}>20–30 {vi ? 'phút' : 'min'}</Text>
+            </PressScale>
+            <PressScale
+              style={styles.suggestTile}
+              accessibilityRole="button"
+              onPress={() => Haptics.selection()}>
+              <Icon icon={Leaf} size={24} color="#22c55e" />
+              <Text style={styles.suggestLabel}>{vi ? 'Giãn cơ' : lang === 'es' ? 'Estirar' : 'Stretch'}</Text>
+              <Text style={styles.suggestSub}>10–15 {vi ? 'phút' : 'min'}</Text>
+            </PressScale>
+            <PressScale
+              style={styles.suggestTile}
+              accessibilityRole="button"
+              onPress={() => Haptics.selection()}>
+              <Icon icon={Sun} size={24} color="#eab308" />
+              <Text style={styles.suggestLabel}>{vi ? 'Vận động nhẹ' : lang === 'es' ? 'Suave' : 'Light activity'}</Text>
+              <Text style={styles.suggestSub}>{vi ? 'Tuỳ chọn' : lang === 'es' ? 'Opcional' : 'Optional'}</Text>
+            </PressScale>
+          </View>
+
+          <PressScale
+            style={styles.restPrimary}
+            accessibilityRole="button"
+            onPress={() => Haptics.selection()}>
+            <Text style={styles.restPrimaryText}>
+              {vi ? 'Vận động nhẹ' : lang === 'es' ? 'Actividad suave' : 'Light activity'} ›
+            </Text>
+          </PressScale>
+          <PressScale
+            style={styles.restSecondary}
+            accessibilityRole="button"
+            onPress={() => {
+              Haptics.selection();
+              setPickerVisible(true);
+            }}>
+            <Icon icon={CalendarDays} size={16} color={c.foreground} />
+            <Text style={styles.restSecondaryText}>{i18n.nTodayPick}</Text>
+          </PressScale>
+        </GlassCard>
+        <WorkoutPickerSheet
+          visible={pickerVisible}
+          onClose={() => setPickerVisible(false)}
+          dateLabel={`${longNames[today]}`}
+          templates={(templates ?? []).map((t) => ({
+            id: t.id,
+            name: t.name,
+            exerciseCount: Array.isArray(t.exercises) ? t.exercises.length : 0,
+            setCount: Array.isArray(t.exercises)
+              ? t.exercises.reduce((s: number, e: any) => s + (e.sets ?? 0), 0)
+              : 0,
+            minutes: 25,
+          }))}
+          selectedTemplateId={tpl?.id ?? null}
+          isRestSelected={!!day?.is_rest}
+          onSelectRest={() => {
+            // TODO: ghi is_rest=true qua mutation (issue 221)
+            Haptics.selection();
+          }}
+          onSelectTemplate={(id) => {
+            // TODO: ghi template_id qua mutation (issue 221)
+            Haptics.selection();
+          }}
+          onCreateNew={() => {
+            setPickerVisible(false);
+            nav.push('/workout-builder');
+          }}
+        />
+      </>
+    );
+  }
 
   return (
     <>
@@ -310,4 +433,53 @@ const stylesFor = makeStyles((c, m) => ({
     backgroundColor: c.secondary,
   },
   quietText: { ...type.headline, fontWeight: '600', color: c.foreground },
+  /* ── Ngày nghỉ (khung 2, issue 221) ── */
+  restCardBg: { alignItems: 'center' },
+  restVisual: { marginVertical: spacing.sm },
+  eyebrowCenter: {
+    ...type.caption,
+    color: c.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  restTitle: { ...type.largeTitle, fontWeight: '700', color: c.foreground, textAlign: 'center', marginTop: spacing.xs },
+  restDesc: { ...type.body, color: c.mutedForeground, textAlign: 'center', marginTop: spacing.xs, paddingHorizontal: spacing.lg },
+  suggestTitle: { ...type.footnote, fontWeight: '700', color: c.foreground, alignSelf: 'flex-start', marginTop: spacing.lg },
+  suggestRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, alignSelf: 'stretch' },
+  suggestTile: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: c.secondary,
+    borderRadius: radius.lg,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xs,
+    minHeight: 44,
+  },
+  suggestLabel: { ...type.footnote, fontWeight: '600', color: c.foreground, textAlign: 'center' },
+  suggestSub: { ...type.caption, color: c.mutedForeground, textAlign: 'center' },
+  restPrimary: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: c.border,
+    backgroundColor: c.card,
+    marginTop: spacing.lg,
+  },
+  restPrimaryText: { ...type.headline, fontWeight: '600', color: c.foreground },
+  restSecondary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    minHeight: 44,
+    paddingVertical: spacing.sm,
+  },
+  restSecondaryText: { ...type.body, color: c.foreground },
 }));

@@ -1132,7 +1132,7 @@ const vi: Translations = {
   settingsLanguageSheetSubtitle: 'Chọn ngôn ngữ hiển thị của ASCND',
   settingsLangSystem: 'Theo hệ thống',
   settingsLangSystemDesc: 'Sử dụng ngôn ngữ của iPhone',
-  settingsCancel: 'Hủy',
+  settingsCancel: 'Huỷ',
   settingsThemeSheetTitle: 'Giao diện',
   settingsThemeSheetSubtitle: 'Chọn giao diện của ASCND',
   settingsThemeLightDesc: 'Giao diện sáng, phù hợp môi trường nhiều ánh sáng',

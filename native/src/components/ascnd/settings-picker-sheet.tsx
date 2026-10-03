@@ -174,10 +174,15 @@ export function SettingsPickerSheet({
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent>
-      <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)} style={styles.scrim}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={cancelLabel} />
+      <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(180)} style={styles.scrim}>
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel={cancelLabel}
+        />
         <Animated.View
-          entering={SlideInDown.duration(300)}
+          entering={SlideInDown.duration(320)}
           exiting={SlideOutDown.duration(200)}
           style={styles.sheet}>
           <View style={styles.handle} />

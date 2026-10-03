@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TodayTraining - Current Implementation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+    background: #f5f2ec;
+    padding: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+  .card {
+    background: rgba(255,255,255,0.7);
+    border-radius: 24px;
+    padding: 24px;
+    position: relative;
+    backdrop-filter: blur(20px);
+  }
+  .overflow {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 20px;
+    color: #999;
+  }
+  .hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .hero-copy { flex: 1; }
+  .eyebrow {
+    font-size: 11px;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .title {
+    font-size: 34px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+  .meta { display: flex; flex-direction: column; gap: 4px; }
+  .meta-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #999;
+  }
+  .hero-image {
+    width: 88px;
+    height: 88px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    color: #999;
+  }
+  .progress-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .progress-track {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: #e5e5e5;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: #1a1a1a;
+    border-radius: 3px;
+  }
+  .progress-text {
+    font-size: 11px;
+    color: #999;
+    font-weight: 600;
+    min-width: 36px;
+    text-align: right;
+  }
+  .cta {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 52px;
+    border-radius: 16px;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .label {
+    font-size: 12px;
+    color: #666;
+    margin: 20px 0 8px;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div class="label">CURRENT IMPLEMENTATION (từ code today-training.tsx)</div>
+  <div class="card">
+    <div class="overflow">···</div>
+    <div class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow">Hôm nay · Thứ 7</div>
+        <div class="title">Tập Tay trước</div>
+        <div class="meta">
+          <div class="meta-row">🏋️ 3 Bài tập · 9 sets</div>
+          <div class="meta-row">◷ ~ 25 phút</div>
+        </div>
+      </div>
+      <div class="hero-image">🏋️</div>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill"></div></div>
+      <div class="progress-text">0%</div>
+    </div>
+    <div class="cta">▶ Bắt đầu buổi tập</div>
+  </div>
+
+  <div class="label" style="margin-top: 30px; color: #c00;">ĐIỂM CHƯA GIỐNG CONCEPT:</div>
+  <div style="font-size: 14px; line-height: 1.8; color: #333;">
+    1. <b>Ảnh:</b> Concept dùng ảnh 3D dumbbell thật, code đang dùng icon Lucide<br>
+    2. <b>Eyebrow:</b> Concept "HÔM NAY · THỨ 7" uppercase hoàn toàn<br>
+    3. <b>Title size:</b> Cần đo chính xác<br>
+    4. <b>Card padding:</b> Cần đo chính xác<br>
+    5. <b>Progress bar:</b> Concept track màu xám nhạt hơn<br>
+  </div>
+</body>
+</html>
