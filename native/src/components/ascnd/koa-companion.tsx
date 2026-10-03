@@ -126,8 +126,12 @@ const SURFACE_MS = 520;
  * So the app goes from Koa on one screen to Koa on every tab — in the form that
  * suits each one. `tools/koa-companion.mjs` checks that: a new tab added to
  * `app/(tabs)/` has to appear here or be given a reason.
+ *
+ * 2026-10-03 (Kiệt): Koa chỉ còn trên Today. Companion nổi tắt hẳn —
+ * Today đã có <Mascot /> 54pt làm đường vào mascot room, các tab khác
+ * không cần Koa nữa.
  */
-const COMPANION_ROUTES = ['/nutrition', '/workouts', '/community'];
+const COMPANION_ROUTES = [] as string[];
 
 export function KoaCompanion() {
   const pathname = usePathname();

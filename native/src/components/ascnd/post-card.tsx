@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { FeedPost } from '@/hooks/use-community';
 
 import { ProgressPostCard } from '@/components/ascnd/progress-post-card';
@@ -16,7 +17,7 @@ import { WorkoutPostCard } from '@/components/ascnd/workout-post-card';
  * một thẻ hỏng trên feed của người khác. Ẩn đi là đúng cho tới khi thẻ của nó
  * có mặt.
  */
-export function PostCard({ post, full, preview }: { post: FeedPost; full?: boolean; preview?: boolean }) {
+export const PostCard = memo(function PostCard({ post, full, preview }: { post: FeedPost; full?: boolean; preview?: boolean }) {
   switch (post.kind) {
     case 'workout':
       return <WorkoutPostCard post={post} full={full} preview={preview} />;
@@ -27,4 +28,4 @@ export function PostCard({ post, full, preview }: { post: FeedPost; full?: boole
     default:
       return null;
   }
-}
+});
