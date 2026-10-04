@@ -95,7 +95,15 @@ export default function LogMealSheet() {
     `undefined` lọt qua đây sẽ im lặng rơi về hôm nay ở MỘT trong hai chỗ chứ
     không phải cả hai — đúng kiểu lệch ngày mà cả thay đổi này sinh ra để chặn.
   */
-  const dateStr = dateParam ?? localDateStr();
+  const dateStr = (() => {
+    /* Route param là chuỗi tuỳ ý từ bên ngoài (deep link): phải validate
+       trước khi `diaryStampAt` gọi `.toISOString()` — Date invalid throw
+       RangeError trong save handler. Pattern như diary.tsx. */
+    const today = localDateStr();
+    return dateParam && /^\d{4}-\d{2}-\d{2}$/.test(dateParam) && dateParam <= today
+      ? dateParam
+      : today;
+  })();
   const invalidate = useInvalidateToday(dateStr);
   const queryClient = useQueryClient();
   const i18n = useI18n();
