@@ -454,9 +454,21 @@ export async function getLastNightSleep(): Promise<HealthSleep | null> {
     });
     if (!samples.length) return null;
 
+    /* ── Skip samples WE wrote (same reason as in `getRecentWorkouts`) ──
+       Our sleep write-back stamps `HKExternalUUID: ascnd:<recordId>`. Without
+       this filter a deleted night resurrects on the next sync: the DB row is
+       gone so the manual-overlap guard finds nothing, and our own mirror is
+       re-imported as APPLE_SOURCE. Filter BEFORE clustering so our samples
+       can't bridge two real clusters together. */
+    const foreign = samples.filter((s) => {
+      const ext = (s.metadata as Record<string, unknown> | undefined)?.['HKExternalUUID'];
+      return typeof ext !== 'string' || !ext.startsWith('ascnd:');
+    });
+    if (!foreign.length) return null;
+
     /* The last cluster: walk back from the newest sample while the gap to the
        one before it is smaller than a nap's worth of silence. */
-    const sorted = [...samples].sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate));
+    const sorted = [...foreign].sort((a, b) => +new Date(a.startDate) - +new Date(b.startDate));
     let start = sorted.length - 1;
     while (start > 0) {
       const gapMs = +new Date(sorted[start].startDate) - +new Date(sorted[start - 1].endDate);
@@ -578,6 +590,16 @@ export async function getRecentWorkouts(days = 7): Promise<HealthWorkout[]> {
       ascending: false,
     });
     return samples
+      /* ── Skip samples WE wrote ──
+         Every write-back stamps `HKExternalUUID: ascnd:<recordId>` (see
+         `writeMetadata` below). Importing our own mirror back creates a
+         duplicate row (fresh HealthKit UUID ≠ our DB id, so the upsert
+         never conflicts) and resurrects deleted logs. The read path must
+         exclude them. */
+      .filter((w) => {
+        const ext = (w.metadata as Record<string, unknown> | undefined)?.['HKExternalUUID'];
+        return typeof ext !== 'string' || !ext.startsWith('ascnd:');
+      })
       .map((w) => {
         const minutes = Math.round(Number(w.duration?.quantity ?? 0) / 60);
         const kcal = w.totalEnergyBurned?.quantity;

@@ -196,19 +196,43 @@ function useSyncMutation(silent: boolean) {
         whose whole job is to be trustworthy.
       */
       if (workouts.length > 0) {
-        const { error } = await supabase.from('workout_sessions').upsert(
-          workouts.map((w) => ({
-            user_id: user.id,
-            date_time: w.date_time,
-            sets: [],
-            volume_load: 0,
-            template_name: `${activityName(w.activity_type, lang)} · ${w.minutes}′${w.kcal ? ` · ${w.kcal} kcal` : ''}`,
-            source: APPLE_SOURCE,
-            external_id: w.external_id,
-          })),
-          { onConflict: 'user_id,external_id' },
+        /*
+          ── manual-overlap guard (mirrors the sleep path above) ──
+          A workout the user logged by hand (no HealthKit write permission yet,
+          or logged before granting) must not gain a second row when the watch
+          reports the same session. For each imported workout, skip it when a
+          manual session already exists within ±2h of its start. The metadata
+          filter in `getRecentWorkouts` already excludes samples WE wrote; this
+          covers the remaining case: the same real-world session recorded by
+          two different sources.
+        */
+        const { data: manuals, error: manualErr } = await supabase
+          .from('workout_sessions')
+          .select('date_time')
+          .eq('user_id', user.id)
+          .eq('source', 'manual')
+          .gte('date_time', new Date(Math.min(...workouts.map((w) => +new Date(w.date_time))) - 2 * 3600 * 1000).toISOString())
+          .lte('date_time', new Date(Math.max(...workouts.map((w) => +new Date(w.date_time))) + 2 * 3600 * 1000).toISOString());
+        if (manualErr) throw manualErr;
+        const manualTimes = (manuals ?? []).map((m) => +new Date(m.date_time));
+        const fresh = workouts.filter(
+          (w) => !manualTimes.some((t) => Math.abs(t - +new Date(w.date_time)) <= 2 * 3600 * 1000),
         );
-        if (error) throw error;
+        if (fresh.length > 0) {
+          const { error } = await supabase.from('workout_sessions').upsert(
+            fresh.map((w) => ({
+              user_id: user.id,
+              date_time: w.date_time,
+              sets: [],
+              volume_load: 0,
+              template_name: `${activityName(w.activity_type, lang)} · ${w.minutes}′${w.kcal ? ` · ${w.kcal} kcal` : ''}`,
+              source: APPLE_SOURCE,
+              external_id: w.external_id,
+            })),
+            { onConflict: 'user_id,external_id' },
+          );
+          if (error) throw error;
+        }
       }
 
       /*
