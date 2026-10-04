@@ -100,8 +100,10 @@ const code = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\{\/\*[\s\S]*?\*\/\}
 
 /* Thẻ Bước đi phải THẬT SỰ bật thanh lên. Không có vế này thì luật đo một chỗ
    vẽ mà màn hình không dùng tới. */
-const steps = code.slice(code.indexOf('export function StepsWidget'));
-const stepsBody = steps.slice(0, steps.indexOf('\n}') + 2);
+const stepsIdx = code.search(/function StepsWidget\(/);
+const steps = stepsIdx >= 0 ? code.slice(stepsIdx) : '';
+const stepsEnd = steps.search(/\n\}\);/);
+const stepsBody = stepsEnd >= 0 ? steps.slice(0, stepsEnd + 4) : steps;
 if (!/^\s*bar\s*$/m.test(stepsBody)) {
   problems.push(
     `${CARD}: \`StepsWidget\` không còn truyền \`bar\` — thẻ Bước đi đã thôi vẽ thanh tiến độ, nên luật `

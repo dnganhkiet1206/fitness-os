@@ -1,7 +1,7 @@
 import { nav } from '@/lib/nav';
 import { haptics as Haptics } from '@/lib/haptics';
 import { Beef, Flame, Footprints, Milk, Minus, Moon, Salad, Star, Sunrise, Target, Wheat, type LucideIcon } from 'lucide-react-native';
-import { useEffect, useId, useRef, useState } from 'react';
+import { memo, useEffect, useId, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -578,7 +578,7 @@ function MacroSwap({
   );
 }
 
-export function NutritionCard({
+export const NutritionCard = memo(function NutritionCard({
   kcal,
   calorieTarget,
   protein,
@@ -1056,7 +1056,7 @@ export function NutritionCard({
       <NutritionExplainer visible={help.open} onClose={help.close} />
     </>
   );
-}
+});
 
 // ─── Sleep card (web SleepCard) ────────────────────────────────────────
 
@@ -1069,7 +1069,7 @@ interface SleepCardProps {
   stages?: { deep: number; rem: number; light: number } | null;
 }
 
-export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, stages }: SleepCardProps) {
+export const SleepCard = memo(function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, stages }: SleepCardProps) {
   const c = usePalette();
   const sleep = useSleepRamp();
   const styles = stylesFor(c);
@@ -1157,7 +1157,7 @@ export function SleepCard({ totalMin, targetHours, quality, bedtime, waketime, s
       )}
     </GlassCard>
   );
-}
+});
 
 // ─── Water / Steps compact widgets (web WaterWidget / StepsWidget) ─────
 
@@ -1908,7 +1908,7 @@ function WaterQuickAdd({ unit, canUndo }: { unit: VolumeUnit; canUndo: boolean }
   );
 }
 
-export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: number; labels: { title: string } }) {
+export const WaterWidget = memo(function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: number; labels: { title: string } }) {
   const styles = stylesFor(usePalette());
   const { unit } = useVolumeUnit();
   const pct = Math.min(100, Math.round((ml / (targetMl || 1)) * 100));
@@ -1973,7 +1973,7 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
       footer={<WaterQuickAdd unit={unit} canUndo={ml > 0} />}
     />
   );
-}
+});
 
 /**
  * Thẻ Bước đi.
@@ -2016,7 +2016,7 @@ export function WaterWidget({ ml, targetMl, labels }: { ml: number; targetMl: nu
  * Không phải "8% nghe hợp lý" — 6% hụt cả hai bên và 10% thì bắt đầu đọc ra
  * thành một cái nút bấm được. 8 là chỗ duy nhất trong dải vừa đủ cả hai.
  */
-export function StepsWidget({ steps, target, labels }: { steps: number; target: number; labels: { title: string } }) {
+export const StepsWidget = memo(function StepsWidget({ steps, target, labels }: { steps: number; target: number; labels: { title: string } }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const { lang } = useAppSettings();
@@ -2072,7 +2072,7 @@ export function StepsWidget({ steps, target, labels }: { steps: number; target: 
       onPress={() => nav.push('/steps')}
     />
   );
-}
+});
 
 const stylesFor = makeStyles((c, m) => ({
   microTitle: {

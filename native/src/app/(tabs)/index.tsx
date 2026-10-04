@@ -1190,12 +1190,34 @@ export default function TodayScreen() {
   // Shared with the Nutrition tab, which draws the same card — see
   // `lib/macro-targets.ts`.
   const calorieTarget = calorieTargetFor(profile);
-  const macroTargets = macroTargetsFor(profile);
+  /* useMemo: `macroTargetsFor` tạo object mới mỗi lần gọi — không memo thì
+     `macroProps` (prop của `NutritionCard` đã memo) tính lại mỗi render. */
+  const macroTargets = useMemo(() => macroTargetsFor(profile), [profile]);
 
   // Sleep
-  const stages = sleep
-    ? { deep: sleep.deep_min ?? 0, rem: sleep.rem_min ?? 0, light: sleep.light_min ?? 0 }
-    : null;
+  /* useMemo: `stages` là object prop của `SleepCard` đã memo — object mới mỗi
+     render sẽ phá memo. Chỉ tạo lại khi `sleep` đổi thật. */
+  const stages = useMemo(
+    () =>
+      sleep
+        ? { deep: sleep.deep_min ?? 0, rem: sleep.rem_min ?? 0, light: sleep.light_min ?? 0 }
+        : null,
+    [sleep],
+  );
+  /* useMemo: object props cho các widget đã memo (`StepsWidget`,
+     `WaterWidget`, `NutritionCard`) — object mới mỗi render sẽ phá memo.
+     Chỉ tạo lại khi dữ liệu gốc đổi thật. */
+  const stepsLabels = useMemo(() => ({ title: lang === 'vi' ? 'Bước đi' : 'Steps' }), [lang]);
+  const waterLabels = useMemo(() => ({ title: lang === 'vi' ? 'Nước uống' : 'Water' }), [lang]);
+  const macroProps = useMemo(
+    () => ({
+      protein: { current: Number(dailyLog?.protein_g) || 0, target: macroTargets.protein },
+      carbs: { current: Number(dailyLog?.carbs_g) || 0, target: macroTargets.carbs },
+      fat: { current: Number(dailyLog?.fat_g) || 0, target: macroTargets.fat },
+      fiber: { current: Number(dailyLog?.fiber_g) || 0, target: macroTargets.fiber },
+    }),
+    [dailyLog, macroTargets],
+  );
   /*
     ── ĐỘ DÀI một đêm là `asleepMinutes`, KHÔNG phải tổng ba giai đoạn ──
 
@@ -1413,7 +1435,7 @@ export default function TodayScreen() {
           </GlassCard>
         );
       case 'steps':
-        return <StepsWidget steps={steps} target={stepsGoal} labels={{ title: lang === 'vi' ? 'Bước đi' : 'Steps' }} />;
+        return <StepsWidget steps={steps} target={stepsGoal} labels={stepsLabels} />;
       case 'nutrition':
         /* Trong deck thì mang vỏ hero. Thẻ danh sách bên dưới vẫn còn nguyên và
            vẫn đúng: ai dời nutrition xuống một nhóm ở chế độ sửa sẽ nhận lại nó.
@@ -1444,10 +1466,10 @@ export default function TodayScreen() {
               <NutritionCard
                 kcal={kcal}
                 calorieTarget={calorieTarget}
-                protein={{ current: Number(dailyLog?.protein_g) || 0, target: macroTargets.protein }}
-                carbs={{ current: Number(dailyLog?.carbs_g) || 0, target: macroTargets.carbs }}
-                fat={{ current: Number(dailyLog?.fat_g) || 0, target: macroTargets.fat }}
-                fiber={{ current: Number(dailyLog?.fiber_g) || 0, target: macroTargets.fiber }}
+                protein={macroProps.protein}
+                carbs={macroProps.carbs}
+                fat={macroProps.fat}
+                fiber={macroProps.fiber}
               />
             ) : (
               <GlassCard style={styles.emptyCard}>
@@ -1469,7 +1491,7 @@ export default function TodayScreen() {
             />
           );
         }
-        return <WaterWidget ml={waterMl ?? 0} targetMl={waterTarget} labels={{ title: lang === 'vi' ? 'Nước uống' : 'Water' }} />;
+        return <WaterWidget ml={waterMl ?? 0} targetMl={waterTarget} labels={waterLabels} />;
       case 'supplements':
         return <SupplementChecklistCard />;
       case 'training':

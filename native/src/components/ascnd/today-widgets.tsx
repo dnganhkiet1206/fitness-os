@@ -2,7 +2,7 @@ import type { AppLang } from '@/lib/i18n';
 import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Check, ChevronRight, PartyPopper, Sparkles } from 'lucide-react-native';
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { memo, Fragment, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { TrendDelta, trendDir } from '@/components/ascnd/trend-delta';
@@ -340,7 +340,7 @@ export function WeightCheckinCard({ profileWeight }: { profileWeight: number | n
 }
 
 /** Supplement checklist — tap to toggle taken; hidden when user has none */
-export function SupplementChecklistCard() {
+export const SupplementChecklistCard = memo(function SupplementChecklistCard() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -398,7 +398,7 @@ export function SupplementChecklistCard() {
       )}
     </GlassCard>
   );
-}
+});
 
 /* Nhận bảng màu qua THAM SỐ, không gọi hook: nó được gọi trong một `.map()`
    của bảy cột, và một hook ở đó là lỗi lúc chạy mà kiểu không nhìn thấy. */
@@ -429,7 +429,7 @@ const readinessZoneGraphic = (c: Palette, v: number) =>
  * coloured by zone, avg/max/min stats, and the three-zone legend. Hidden
  * until there are 2+ points.
  */
-export function ReadinessTrendCard() {
+export const ReadinessTrendCard = memo(function ReadinessTrendCard() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -506,7 +506,7 @@ export function ReadinessTrendCard() {
       </View>
     </GlassCard>
   );
-}
+});
 
 /**
  * The dashboard's door into today's insight.
@@ -538,7 +538,7 @@ export function ReadinessTrendCard() {
  * a promise about a reading that no longer matches the day, and tapping now
  * genuinely does produce a different one.
  */
-export function SmartTipsCard() {
+export const SmartTipsCard = memo(function SmartTipsCard() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -588,7 +588,7 @@ export function SmartTipsCard() {
       </GlassCard>
     </PressScale>
   );
-}
+});
 
 
 const stylesFor = makeStyles((c, m) => ({

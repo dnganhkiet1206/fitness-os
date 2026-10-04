@@ -323,7 +323,9 @@ try {
 
   /* ── thẻ vẽ đúng thứ đã hứa ── */
   const card = stripComments(read('src/components/ascnd/dashboard-cards.tsx'));
-  const water = card.slice(card.indexOf('export function WaterWidget'), card.indexOf('export function StepsWidget'));
+  const waterStart = card.search(/function WaterWidget\(/);
+  const waterEnd = card.search(/function StepsWidget\(/);
+  const water = waterStart >= 0 && waterEnd > waterStart ? card.slice(waterStart, waterEnd) : '';
   if (!/figure=\{<WaterGlass/.test(water)) {
     problems.push('WaterWidget không còn vẽ cái cốc ở cuối hàng');
   }

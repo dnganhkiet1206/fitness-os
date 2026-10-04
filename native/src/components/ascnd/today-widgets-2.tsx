@@ -10,7 +10,7 @@ import {
   WifiOff,
   type LucideIcon,
 } from 'lucide-react-native';
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 
@@ -397,7 +397,7 @@ const whenLabel = (days: number, vi: boolean) => {
  *
  * Everything on the card is now either a sentence, a weight, or a date.
  */
-export function TrainingCard({ acwr }: { acwr: number | null }) {
+export const TrainingCard = memo(function TrainingCard({ acwr }: { acwr: number | null }) {
   const m = useMaterial();
   const c = usePalette();
   const styles = stylesFor(c);
@@ -869,11 +869,11 @@ export function TrainingCard({ acwr }: { acwr: number | null }) {
       <TrainingExplainer visible={help.open} onClose={help.close} />
     </GlassCard>
   );
-}
+});
 
 // ─── WorkoutStatus (web dashboard/WorkoutStatus) ───────────────────────
 
-export function WorkoutStatusCard({ planned }: { planned: number }) {
+export const WorkoutStatusCard = memo(function WorkoutStatusCard({ planned }: { planned: number }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -924,7 +924,7 @@ export function WorkoutStatusCard({ planned }: { planned: number }) {
       )}
     </GlassCard>
   );
-}
+});
 
 // ─── RecentAwards (web dashboard/RecentAwards) ─────────────────────────
 
@@ -953,7 +953,7 @@ function medalOf(key: string) {
   return AWARD_DEFINITIONS.find((d) => d.key === key);
 }
 
-export function RecentAwardsCard() {
+export const RecentAwardsCard = memo(function RecentAwardsCard() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -1020,7 +1020,7 @@ export function RecentAwardsCard() {
       </View>
     </GlassCard>
   );
-}
+});
 
 const stylesFor = makeStyles((c, m) => ({
   stackCard: { gap: spacing.md },
