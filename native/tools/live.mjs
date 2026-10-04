@@ -4861,7 +4861,10 @@ const SCENARIOS = [
       const reqs = [];
       await page.route('**/rest/v1/food_items?*', async (route) => {
         const u = new URL(route.request().url());
-        if (route.request().method() === 'GET' && u.searchParams.get('user_id') === `eq.${UID}`) {
+        /* Chỉ lượt đọc DANH SÁCH Món của tôi: chip món yêu thích (`useFavoriteFoods`,
+           `is_favorite=eq.true`, trần 50) cũng lọc theo user_id từ ab5617c, và nó không
+           phải thứ vế này đo. */
+        if (route.request().method() === 'GET' && u.searchParams.get('user_id') === `eq.${UID}` && !u.searchParams.has('is_favorite')) {
           reqs.push({ order: u.searchParams.get('order'), offset: u.searchParams.get('offset') ?? '0', limit: u.searchParams.get('limit') });
         }
         return route.fallback();
