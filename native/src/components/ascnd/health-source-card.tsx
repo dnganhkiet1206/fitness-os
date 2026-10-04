@@ -9,8 +9,6 @@ import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings } from '@/hooks/use-app-settings';
 import { useHealthSync } from '@/hooks/use-health-sync';
 
-const TINT = '#ff3b5c';
-
 /**
  * Where today's numbers came from, and a way to go and get them.
  *
@@ -38,6 +36,8 @@ const TINT = '#ff3b5c';
  */
 export function HealthSourceCard() {
   const c = usePalette();
+  /* Theme-aware destructive (was hardcoded dark `#ff3b5c`; light is `#de0b44`). */
+  const TINT = c.destructive;
   const styles = stylesFor(c);
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
