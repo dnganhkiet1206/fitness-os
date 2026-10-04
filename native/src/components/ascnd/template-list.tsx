@@ -18,11 +18,35 @@ import { radius, spacing } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, type useI18n } from '@/hooks/use-app-settings';
-import { useExercises } from '@/hooks/use-library';
+import { useExercises, useTemplateLastTrained } from '@/hooks/use-library';
 import { useRise } from '@/lib/entrance';
 import { MUSCLE_LABEL, muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { DEFAULT_REST, DEFAULT_RPE, restLabel, uniformValue } from '@/lib/prescription';
 import { displayWeight, type WeightUnit } from '@/lib/units';
+
+/**
+ * "Lần tập gần nhất" — chuỗi tương đối từ ISO date.
+ *
+ * Hôm nay / hôm qua / N ngày trước, theo local date (không phải 24h tròn).
+ * Trả về chuỗi đã localize đầy đủ, ví dụ "Lần tập gần nhất · 3 ngày trước".
+ */
+export function lastTrainedLabel(
+  iso: string | undefined,
+  i18n: { nCxLastTrained: string; nCxTrainedToday: string; nCxTrainedYesterday: string; nCxTrainedDaysAgo: string; nCxNeverTrained: string },
+): string {
+  if (!iso) return `${i18n.nCxLastTrained} · ${i18n.nCxNeverTrained}`;
+  const d = new Date(iso);
+  const now = new Date();
+  const dayOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const diffDays = Math.round((dayOf(now) - dayOf(d)) / 86400000);
+  const rel =
+    diffDays <= 0
+      ? i18n.nCxTrainedToday
+      : diffDays === 1
+        ? i18n.nCxTrainedYesterday
+        : i18n.nCxTrainedDaysAgo.replace('{n}', String(diffDays));
+  return `${i18n.nCxLastTrained} · ${rel}`;
+}
 
 /**
  * The saved workouts.
@@ -193,6 +217,7 @@ export function TemplateRow({
   wl,
   i18n,
   groupOf,
+  lastTrained,
   lang,
   onDelete,
 }: {
@@ -204,6 +229,8 @@ export function TemplateRow({
   i18n: ReturnType<typeof useI18n>;
   /** tên bài (thường hoá) → nhóm cơ, tra từ thư viện bài tập */
   groupOf: Record<string, string>;
+  /** ISO date lần tập gần nhất của mẫu này — undefined nếu chưa tập lần nào */
+  lastTrained: string | undefined;
   lang: AppLang;
   onDelete: (id: string) => void;
 }) {
@@ -343,6 +370,11 @@ export function TemplateRow({
             ) : null}
             <Text style={styles.tplMeta}>
               {exs.length} {i18n.workoutsExercises} · {setCount} {i18n.nSetsShort}
+            </Text>
+            {/* Lần tập gần nhất của mẫu này — dữ liệu từ `workout_sessions`,
+                đã có sẵn từ mỗi lần tập hoàn thành. */}
+            <Text style={styles.tplLastTrained}>
+              {lastTrainedLabel(lastTrained, i18n)}
             </Text>
             {/*
               On the face of the card, not inside the fold.
@@ -484,6 +516,16 @@ export function TemplateList({
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
   const { data: exercises } = useExercises();
+  /* Lần tập gần nhất của từng mẫu — một query cho cả danh sách, cùng lý do
+     với `groupOf` ở dưới: không phải một query mỗi hàng. */
+  const { data: lastTrainedMap } = useTemplateLastTrained();
+  const lastTrained: Record<string, string> = useMemo(() => {
+    const r: Record<string, string> = {};
+    lastTrainedMap?.forEach((v, k) => {
+      r[k] = v;
+    });
+    return r;
+  }, [lastTrainedMap]);
   /* Memoized: dựng lại Record trên cả thư viện bài tập mỗi lần render là việc
      thừa — `exercises` từ react-query giữ nguyên tham chiếu khi không đổi. */
   const groupOf: Record<string, string> = useMemo(() => {
@@ -505,6 +547,7 @@ export function TemplateList({
           wl={wl}
           i18n={i18n}
           groupOf={groupOf}
+          lastTrained={lastTrained[t.id]}
           lang={lang}
           onDelete={onDelete}
         />
@@ -542,6 +585,7 @@ const stylesFor = makeStyles((c) => ({
      việc. Cùng màu thì hai dòng thành một khối xám và mắt phải đọc cả hai. */
   tplMuscles: { fontSize: 13, fontWeight: '600', color: c.foreground },
   tplMeta: { fontSize: 12, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
+  tplLastTrained: { fontSize: 12, color: c.mutedForeground, fontVariant: ['tabular-nums'], marginTop: 2 },
   tplActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm + 2 },
   /* The prescription on the face of the card, under the count and volume.
      Same size and colour as the line above it because it is the same kind of

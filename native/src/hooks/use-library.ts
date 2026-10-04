@@ -406,6 +406,39 @@ export function useWorkoutTemplates() {
   });
 }
 
+/**
+ * Lần tập gần nhất của từng mẫu tập — map template_id → date_time ISO.
+ *
+ * Dữ liệu đã có sẵn: mỗi buổi tập hoàn thành ghi `template_id` vào
+ * `workout_sessions` (xem `offline-write.ts`). Hook này chỉ đọc: lấy tất cả
+ * sessions của user theo thứ tự mới nhất, rồi giữ lại bản ghi đầu tiên của
+ * mỗi template_id — tức là lần tập gần nhất của mẫu đó.
+ */
+export function useTemplateLastTrained() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['template_last_trained', user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('workout_sessions')
+        .select('template_id, date_time')
+        .eq('user_id', user!.id)
+        .not('template_id', 'is', null)
+        .order('date_time', { ascending: false });
+      if (error) throw error;
+      const map = new Map<string, string>();
+      for (const row of data ?? []) {
+        const tid = row.template_id as string | null;
+        if (tid && !map.has(tid)) {
+          map.set(tid, row.date_time as string);
+        }
+      }
+      return map;
+    },
+  });
+}
+
 /** Assign / clear a routine day — same upsert contract as the web app */
 export function useUpsertRoutineDay() {
   const { user } = useAuth();

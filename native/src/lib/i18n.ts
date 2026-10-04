@@ -263,6 +263,13 @@ interface Translations {
   nCxWidgetRestDay: string;
   nCxWidgetDone: string;
   nCxWidgetNoWorkout: string;
+  /* Lần tập gần nhất của mẫu tập — hiện trên thẻ template. */
+  nCxLastTrained: string;
+  nCxTrainedToday: string;
+  nCxTrainedYesterday: string;
+  /** `{n}` là số ngày. */
+  nCxTrainedDaysAgo: string;
+  nCxNeverTrained: string;
   /** Tiêu đề hộp thoại khi người dùng sửa một số của Apple Health. */
   healthOverrideTitle: string;
   /** Thân hộp thoại ấy. `{n}` là số chỉ số đang bị đổi. */
@@ -768,6 +775,11 @@ const es: Translations = {
   nCxWidgetRestDay: 'Día de descanso',
   nCxWidgetDone: 'Hecho',
   nCxWidgetNoWorkout: 'Aún sin entrenamiento',
+  nCxLastTrained: 'Último entrenamiento',
+  nCxTrainedToday: 'Hoy',
+  nCxTrainedYesterday: 'Ayer',
+  nCxTrainedDaysAgo: 'hace {n} días',
+  nCxNeverTrained: 'Aún no entrenado',
   /** Tiêu đề hộp thoại khi người dùng sửa một số của Apple Health. */
   healthOverrideTitle: '¿Reemplazar la lectura de Apple Health?',
   /** Thân hộp thoại ấy. `{n}` là số chỉ số đang bị đổi. */
@@ -1276,6 +1288,11 @@ const vi: Translations = {
   nCxWidgetRestDay: 'Ngày nghỉ',
   nCxWidgetDone: 'Hoàn thành',
   nCxWidgetNoWorkout: 'Chưa có buổi tập',
+  nCxLastTrained: 'Lần tập gần nhất',
+  nCxTrainedToday: 'Hôm nay',
+  nCxTrainedYesterday: 'Hôm qua',
+  nCxTrainedDaysAgo: '{n} ngày trước',
+  nCxNeverTrained: 'Chưa tập lần nào',
   healthOverrideTitle: 'Thay số của Apple Health?',
   healthOverrideMsg:
     'Bạn đang đổi {n} chỉ số Apple Health đã đo. Lưu xong app dùng số của bạn, và Apple Health sẽ không ghi đè lên nữa.',
@@ -1733,6 +1750,11 @@ const en: Translations = {
   nCxWidgetRestDay: 'Rest day',
   nCxWidgetDone: 'Done',
   nCxWidgetNoWorkout: 'No workout yet',
+  nCxLastTrained: 'Last trained',
+  nCxTrainedToday: 'Today',
+  nCxTrainedYesterday: 'Yesterday',
+  nCxTrainedDaysAgo: '{n} days ago',
+  nCxNeverTrained: 'Not trained yet',
   healthOverrideTitle: 'Replace the Apple Health reading?',
   healthOverrideMsg:
     'You are changing {n} reading(s) Apple Health measured. Save and the app uses yours, and Apple Health will not overwrite it again.',
