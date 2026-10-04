@@ -230,6 +230,10 @@ const DEVICE_KEYS = [
 const USER_KEYS = [
   'ascnd_reminder_plan',
   'ascnd_reminders',
+  /* P1-12 smart-time latch — user-scoped (xem SMART_TIME_KEY trong
+     use-reminders.ts). Đã được onUserScopedReset xoá, nhưng key phải nằm
+     trong list chính tắc này để tools/signed-out.mjs kiểm được. */
+  'ascnd_reminder_smart_time_v1',
   'ascnd-weight-goal-kg',
   'ascnd-steps-goal',
   'ascnd-help-nudge',
