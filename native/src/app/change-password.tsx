@@ -79,6 +79,7 @@ export default function ChangePasswordScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>{i18n.settingsNewPassword}</Text>
             <TextInput
+              accessibilityLabel={i18n.settingsNewPassword}
               style={styles.input}
               secureTextEntry
               autoCapitalize="none"
@@ -98,6 +99,7 @@ export default function ChangePasswordScreen() {
           <View style={styles.field}>
             <Text style={styles.label}>{i18n.settingsConfirmPassword}</Text>
             <TextInput
+              accessibilityLabel={i18n.settingsConfirmPassword}
               style={styles.input}
               secureTextEntry
               autoCapitalize="none"

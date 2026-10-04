@@ -424,6 +424,7 @@ export default function EditProfileSheet() {
         {/* Name */}
         <Field label={i18n.settingsName}>
           <TextInput
+            accessibilityLabel={i18n.settingsName}
             style={styles.input}
             value={form.name}
             onChangeText={(v) => set('name', v)}
@@ -571,6 +572,7 @@ export default function EditProfileSheet() {
         {/* Daily calories */}
         <Field label={`${i18n.nDailyTarget} (kcal)`}>
           <TextInput
+            accessibilityLabel={`${i18n.nDailyTarget} (kcal)`}
             style={[styles.input, styles.bigInput]}
             keyboardType="number-pad"
             value={form.tdee_target_kcal}
@@ -581,20 +583,20 @@ export default function EditProfileSheet() {
         {/* Macros */}
         <View style={styles.row}>
           <Field label={i18n.nProtein} style={styles.third}>
-            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_protein_g} onChangeText={(v) => set('macro_protein_g', intText(v))} />
+            <TextInput accessibilityLabel={i18n.nProtein} style={styles.input} keyboardType="number-pad" value={form.macro_protein_g} onChangeText={(v) => set('macro_protein_g', intText(v))} />
           </Field>
           <Field label={i18n.nCarbs} style={styles.third}>
-            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_carbs_g} onChangeText={(v) => set('macro_carbs_g', intText(v))} />
+            <TextInput accessibilityLabel={i18n.nCarbs} style={styles.input} keyboardType="number-pad" value={form.macro_carbs_g} onChangeText={(v) => set('macro_carbs_g', intText(v))} />
           </Field>
           <Field label={i18n.nFat} style={styles.third}>
-            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_fat_g} onChangeText={(v) => set('macro_fat_g', intText(v))} />
+            <TextInput accessibilityLabel={i18n.nFat} style={styles.input} keyboardType="number-pad" value={form.macro_fat_g} onChangeText={(v) => set('macro_fat_g', intText(v))} />
           </Field>
           {/* Fibre was computed by `calcMacros` and then dropped on the floor here:
               the form had no field for it, so "tính lại" left it at whatever
               onboarding wrote. Invisible while it was a flat 30 for everybody;
               a real drift now that it scales with the calorie target. */}
           <Field label={i18n.foodFiber} style={styles.third}>
-            <TextInput style={styles.input} keyboardType="number-pad" value={form.macro_fiber_g} onChangeText={(v) => set('macro_fiber_g', intText(v))} />
+            <TextInput accessibilityLabel={i18n.foodFiber} style={styles.input} keyboardType="number-pad" value={form.macro_fiber_g} onChangeText={(v) => set('macro_fiber_g', intText(v))} />
           </Field>
         </View>
 
@@ -620,6 +622,7 @@ export default function EditProfileSheet() {
         <View style={styles.row}>
           <Field label={`${i18n.settingsWaterTarget} (${vUnit})`} style={styles.half}>
             <TextInput
+              accessibilityLabel={`${i18n.settingsWaterTarget} (${vUnit})`}
               style={styles.input}
               keyboardType="number-pad"
               value={waterDisp}
@@ -651,6 +654,7 @@ export default function EditProfileSheet() {
         {/* Sleep targets (web Settings sleep page) */}
         <Field label={`${i18n.settingsSleepTarget} — ${i18n.settingsSleepHours}`}>
           <TextInput
+            accessibilityLabel={`${i18n.settingsSleepTarget} — ${i18n.settingsSleepHours}`}
             style={styles.input}
             keyboardType="decimal-pad"
             value={form.sleep_target_hours}
@@ -748,6 +752,7 @@ export default function EditProfileSheet() {
 
         <Field label={i18n.onboardingDislikedFoods}>
           <TextInput
+            accessibilityLabel={i18n.onboardingDislikedFoods}
             style={styles.input}
             placeholder={i18n.onboardingDislikedFoodsPlaceholder}
             placeholderTextColor={c.mutedForeground}
