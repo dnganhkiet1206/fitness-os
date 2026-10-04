@@ -496,8 +496,9 @@ export function useLogWorkoutSession() {
         const start = new Date(end.getTime() - durationMs);
         const recordId = data?.id ?? `${user?.id ?? 'anon'}:${Date.now()}`;
         writeWorkoutToHealth(recordId, start, end).catch(() => {});
-      } catch {
-        /* never break the save flow for a mirror write */
+      } catch (e) {
+        /* Không phá luồng lưu vì lỗi ghi mirror — nhưng ghi log để còn biết. */
+        console.warn('mirror write failed:', (e as Error).message);
       }
     },
   });

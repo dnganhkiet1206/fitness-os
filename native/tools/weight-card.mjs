@@ -75,7 +75,13 @@ if (at < 0) {
       + 'dưới đây đang canh một component không tồn tại. Đọc lại bằng mắt rồi sửa luật, đừng để nó xanh suông',
   );
 }
-const body = at < 0 ? '' : code.slice(at, code.indexOf('\nexport function ', at + 1));
+/* Component tiếp theo có thể là `export function` hoặc `export const` (memo).
+   Chỉ tìm `export function` sẽ nuốt luôn thân component sau vào `body`,
+   và `onPress` của nó bị đổ oan cho thẻ cân nặng. */
+const nextFn = code.indexOf('\nexport function ', at + 1);
+const nextConst = code.indexOf('\nexport const ', at + 1);
+const next = [nextFn, nextConst].filter((i) => i > at);
+const body = at < 0 ? '' : code.slice(at, next.length > 0 ? Math.min(...next) : code.length);
 
 /* ── vế 1: lối ghi còn tồn tại ở ĐÂU ĐÓ trong app ── */
 /*

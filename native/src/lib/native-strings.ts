@@ -54,7 +54,7 @@ const es: typeof en = {
   nLogWorkoutBtn: 'Registrar entrenamiento',
   nNoWorkouts: 'Aún no hay entrenamientos',
   nWeight: 'Peso',
-  nWaist: 'Cintura',
+  nCxWaist: 'Cintura',
   nLast30d: 'Últimos 30 días',
   nNotEnoughData: 'Aún no hay suficientes datos',
   nLogMealTitle: 'Registrar comida',
@@ -929,7 +929,7 @@ const es: typeof en = {
   nPhotoUploading: 'Subiendo…',
   nPhotoDelete: '¿Eliminar foto?',
   nPhotoAdd: 'Añadir foto de progreso',
-  nPhotoCompare: 'Comparar',
+  nCxPhotoCompare: 'Comparar',
   nDiaryItems: '{n} {n:elemento|elementos}',
   nDiaryEntries: '{n} comidas',
   nDiaryOtherDays: 'Otros días',
@@ -1014,8 +1014,8 @@ const es: typeof en = {
   nReminderSleepLogBody: '¿Cómo dormiste? Anótalo 🌙',
   nReminderEveryHours: 'Cada {n} h',
   nCxClaimReminderTitle: 'Recompensa por vencer pronto',
-  nCxClaimReminderBody: 'Reclama {c} monedas por "{t}" — ¡último día hoy!',
-  nCxClaimReminderBodyLeft: 'Reclama {c} monedas por "{t}" — quedan {n} días',
+  nCxClaimReminderBody: 'Reclama {c} {c:moneda|monedas} por "{t}" — ¡último día hoy!',
+  nCxClaimReminderBodyLeft: 'Reclama {c} {c:moneda|monedas} por "{t}" — quedan {n} {n:día|días}',
   nCxClaimReminderDesc: 'Avisa cuando una recompensa de desafío esté por vencer',
   nCxViewTrends: 'Tendencias',
   nCxSoreness: 'Dolor muscular',
@@ -1200,7 +1200,7 @@ const en = {
 
   // Progress
   nWeight: 'Weight',
-  nWaist: 'Waist',
+  nCxWaist: 'Waist',
   nLast30d: 'Last 30 days',
   nNotEnoughData: 'Not enough data yet',
 
@@ -2204,7 +2204,7 @@ const en = {
   nPhotoUploading: 'Uploading…',
   nPhotoDelete: 'Delete photo?',
   nPhotoAdd: 'Add progress photo',
-  nPhotoCompare: 'Compare',
+  nCxPhotoCompare: 'Compare',
 
   // Today's diary — collapsed meal cards + quick stats
   nDiaryItems: '{n} {n:item|items}',
@@ -2313,8 +2313,8 @@ const en = {
   nReminderSleepLogBody: 'How did you sleep? Write it down 🌙',
   nReminderEveryHours: 'Every {n}h',
   nCxClaimReminderTitle: 'Reward expiring soon',
-  nCxClaimReminderBody: 'Claim {c} coins for "{t}" — last day today!',
-  nCxClaimReminderBodyLeft: 'Claim {c} coins for "{t}" — {n} days left',
+  nCxClaimReminderBody: 'Claim {c} {c:coin|coins} for "{t}" — last day today!',
+  nCxClaimReminderBodyLeft: 'Claim {c} {c:coin|coins} for "{t}" — {n} {n:day|days} left',
   nCxClaimReminderDesc: 'Nudge when an earned challenge reward is about to expire',
   nCxViewTrends: 'Trends',
   nCxSoreness: 'Soreness',
@@ -2526,7 +2526,7 @@ const vi: typeof en = {
   nNoWorkouts: 'Chưa có buổi tập nào',
 
   nWeight: 'Cân nặng',
-  nWaist: 'Vòng eo',
+  nCxWaist: 'Vòng eo',
   nLast30d: '30 ngày qua',
   nNotEnoughData: 'Chưa đủ dữ liệu',
 
@@ -3445,7 +3445,7 @@ const vi: typeof en = {
   nPhotoUploading: 'Đang tải lên…',
   nPhotoDelete: 'Xoá ảnh?',
   nPhotoAdd: 'Thêm ảnh tiến trình',
-  nPhotoCompare: 'So sánh',
+  nCxPhotoCompare: 'So sánh',
 
   // Today's diary — collapsed meal cards + quick stats
   nDiaryItems: '{n} món',

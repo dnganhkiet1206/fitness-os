@@ -220,7 +220,9 @@ export function useMeasurementHistory(limit = 24) {
         .from('body_measurements')
         .select('*')
         .eq('user_id', user!.id)
-        .order('measured_at', { ascending: true })
+        /* Cột là `date` (migration 20260212045102), không phải `measured_at`
+           — PostgREST trả 400 nếu order theo cột không tồn tại. */
+        .order('date', { ascending: true })
         .limit(limit);
       if (error) throw error;
       return data ?? [];

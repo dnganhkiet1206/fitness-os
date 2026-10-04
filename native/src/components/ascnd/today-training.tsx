@@ -7,6 +7,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { WorkoutPickerSheet } from '@/components/ascnd/workout-picker-sheet';
 import {
   DAY_LONG_EN,
@@ -275,8 +276,10 @@ export function TodayTraining() {
       {/* Nút "..." góc trên phải */}
       <PressScale
         style={styles.overflow}
+        /* Vùng chạm 44pt theo chuẩn iOS — giữ hình 36pt, nới hitSlop. */
+        hitSlop={4}
         accessibilityRole="button"
-        accessibilityLabel={vi ? 'Tùy chọn' : 'More options'}
+        accessibilityLabel={vi ? 'Tuỳ chọn' : lang === 'es' ? 'Más opciones' : 'More options'}
         onPress={() => {
           Haptics.selection();
           nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });
@@ -320,11 +323,12 @@ export function TodayTraining() {
         ) : null}
       </View>
 
-      {/* Progress bar */}
+      {/* Progress bar — dùng component dùng chung (trượt bằng transform,
+          không dùng width % gây chạy lại layout). */}
       {planned && !unknown ? (
         <View style={styles.progressWrap}>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+          <View style={styles.progressBarFlex}>
+            <ProgressBar pct={progress} color={c.primary} height={6} />
           </View>
           <Text style={styles.progressText}>{Math.round(progress * 100)}%</Text>
         </View>
@@ -404,14 +408,7 @@ const stylesFor = makeStyles((c, m) => ({
   metaText: { ...type.footnote, color: c.mutedForeground },
   sub: { ...type.footnote, color: c.mutedForeground, marginTop: spacing.xs },
   progressWrap: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  progressTrack: {
-    flex: 1,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: c.secondary,
-    overflow: 'hidden',
-  },
-  progressFill: { height: '100%', borderRadius: 3, backgroundColor: c.foreground },
+  progressBarFlex: { flex: 1 },
   progressText: { ...type.caption, color: c.mutedForeground, fontWeight: '600', minWidth: 36, textAlign: 'right' },
   /* CTA đen full-width theo concept */
   primary: {

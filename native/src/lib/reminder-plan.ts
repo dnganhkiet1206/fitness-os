@@ -286,7 +286,9 @@ export function planReminders(
     The per-challenge text was built by the caller (it owns i18n) and rides
     on the context item; the scheduler prefers it over `copy[key]`.
   */
-  if (prefs.challengeClaim.enabled) {
+  /* `challengeClaim` thêm ở P0-3 — cài đặt lưu từ trước không có khoá này,
+     nên đọc optional + mặc định tắt thay vì ném TypeError. */
+  if (prefs.challengeClaim?.enabled ?? false) {
     for (const claim of ctx.pendingClaims ?? []) {
       const [y, m, d] = claim.claimBy.split('-').map(Number);
       if (!y || !m || !d) continue;

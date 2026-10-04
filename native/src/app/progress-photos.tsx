@@ -217,8 +217,10 @@ export default function ProgressPhotosScreen() {
             {/* P1-7: compare mode toggle. */}
             <PressScale
               accessibilityRole="button"
-              accessibilityLabel={i18n.nPhotoCompare ?? 'Compare'}
+              accessibilityLabel={i18n.nCxPhotoCompare ?? 'Compare'}
               accessibilityState={{ selected: comparing }}
+              /* Song song cho web: accessibilityState chỉ có tác dụng native. */
+              aria-selected={comparing}
               hitSlop={8}
               style={[styles.addBtn, comparing && styles.compareActive]}
               onPress={toggleCompare}>
@@ -392,7 +394,7 @@ function CompareSheet({
     <Modal visible animationType="slide" onRequestClose={onClose}>
       <View style={styles.compareRoot}>
         <View style={styles.compareHeader}>
-          <Text style={styles.compareTitle}>{i18n.nPhotoCompare ?? 'Compare'}</Text>
+          <Text style={styles.compareTitle}>{i18n.nCxPhotoCompare ?? 'Compare'}</Text>
           <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yClose}
@@ -418,7 +420,7 @@ function CompareSheet({
             </Text>
           </View>
           <View style={styles.compareDeltaRow}>
-            <Text style={styles.compareDeltaLabel}>{i18n.nWaist ?? 'Waist'}</Text>
+            <Text style={styles.compareDeltaLabel}>{i18n.nCxWaist ?? 'Waist'}</Text>
             <Text style={styles.compareDeltaValue}>
               {mBefore?.waist_cm != null ? `${mBefore.waist_cm}cm` : '—'} →{' '}
               {mAfter?.waist_cm != null ? `${mAfter.waist_cm}cm` : '—'}

@@ -10,6 +10,7 @@
  * No visual redesign: call sites pass their existing styles through.
  */
 import { useEffect, useRef, useState } from 'react';
+import { decText, intText } from '@/lib/number-input';
 import {
   Text,
   TextInput,
@@ -130,8 +131,12 @@ export function Stepper({
           value={str}
           selectTextOnFocus
           onChangeText={(t) => {
-            setStr(t);
-            commit(Number(t.replace(',', '.')) || 0);
+            /* Lọc qua decText/intText trước khi vào state: `number-pad` trên
+               iOS vẫn cho dán ký tự lạ, và `decimal-pad` in dấu `,` theo vùng
+               máy (parseFloat('71,5') = 71 — mất nửa lạng im lặng). */
+            const clean = decimals ? decText(t) : intText(t);
+            setStr(clean);
+            commit(Number(clean.replace(',', '.')) || 0);
           }}
           onEndEditing={() => setStr(fmt(value))}
         />
