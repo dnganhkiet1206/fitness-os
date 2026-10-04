@@ -119,6 +119,12 @@ COVERAGE_OK = {
                'đều làm M1 (nhắc trên bài công khai, đứng trước) đỏ trước — đo 02/10: ca MV3 riêng '
                'đỏ ở M1. MV3 ở đó để MV1 không xanh nhờ một hàm không nhắc ai cả.',
     },
+    'report_trust': {
+        'RT8': 'cùng luật với RT7 (cờ `counted` do trigger đặt): báo cáo luôn vào hàng đợi — '
+               'không phép phá nào bỏ được dòng báo cáo mà không làm RT7/RT13 đỏ trước.',
+        'RT12': 'cùng luật với RT7 (chỉ phiếu được tính mới đếm), trên dữ liệu trộn 2 + 1; '
+                'mọi phép phá vế `counted` bị RT7 bắt trước.',
+    },
     'golden_path': {
         'GP1': 'share_workout: foundation 6–9 phá từng trường của payload.',
         'GP2': 'share_workout: foundation 10–14 (set khởi động, set nặng nhất, bài thư viện).',

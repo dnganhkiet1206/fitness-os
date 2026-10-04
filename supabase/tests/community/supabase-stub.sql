@@ -1,7 +1,10 @@
 -- Phần Supabase tối thiểu migration cần.
 CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN BYPASSRLS;
 CREATE SCHEMA auth;
-CREATE TABLE auth.users (id uuid PRIMARY KEY, email text);
+-- `created_at` (20261007220000, chống lạm dụng báo cáo): tài khoản dưới 30 ngày
+-- không được tính vào ngưỡng tự ẩn. Mặc định CŨ ở stub để người dùng của các
+-- bộ test là tài khoản bình thường; bộ nào cần tài khoản MỚI thì tự đặt.
+CREATE TABLE auth.users (id uuid PRIMARY KEY, email text, created_at timestamptz NOT NULL DEFAULT now() - interval '400 days');
 CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 CREATE FUNCTION auth.role() RETURNS text LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.role', true), '') $$;
 GRANT USAGE ON SCHEMA auth, public TO anon, authenticated, service_role;

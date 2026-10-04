@@ -20,6 +20,8 @@ import {
   type ReportReason,
   useBlock,
   useDeletePost,
+  useHidePost,
+  useMute,
   useSetCommentsOff,
   useReport,
   useToggleLike,
@@ -273,7 +275,8 @@ function Action({
 }
 
 /**
- * Menu "…": của mình thì Xoá; của người khác thì Báo cáo và Chặn.
+ * Menu "…": của mình thì Xoá; của người khác thì Ẩn bài, Tắt tiếng 30 ngày,
+ * Báo cáo và Chặn — nhẹ trước, nặng sau.
  *
  * `Alert` của hệ thống chứ không một tấm tự dựng: việc hiếm, nghiêm túc, cần
  * xác nhận — đúng thứ hộp thoại hệ thống làm, và nó tự đọc được bằng
@@ -283,16 +286,33 @@ function usePostMenu(post: FeedPost) {
   const i18n = useI18n();
   const report = useReport();
   const block = useBlock();
+  const hide = useHidePost();
+  const mute = useMute();
   const del = useDeletePost();
   const commentsOff = useSetCommentsOff();
   const handle = post.author?.handle ?? '';
 
+  const doMute = () =>
+    post.author &&
+    mute.mutate(post.author.user_id, {
+      onSuccess: () => toast.success(i18n.nPgMuted.replace('{h}', handle)),
+      onError: (e: Error) => toast.fail(e),
+    });
+
+  /* Sau báo cáo bài đã biến khỏi bảng tin của người báo cáo (server ẩn riêng).
+     Bước tiếp theo người ta thường cần là không thấy NGƯỜI ấy nữa — mời ngay
+     lúc đó, vì báo cáo của một tài khoản chưa đủ điều kiện không tính vào
+     ngưỡng tự ẩn (#6), và đây là phần chắc chắn có tác dụng. */
+  const afterReport = () =>
+    Alert.alert(i18n.nPgReportedNext, i18n.nPgReportedNextBody.replace('{h}', handle), [
+      { text: i18n.nPgMute.replace('{h}', handle), onPress: doMute },
+      { text: i18n.nCmBlock.replace('{h}', handle), style: 'destructive', onPress: askBlock },
+      { text: i18n.nPgReportedOk, style: 'cancel' },
+    ]);
+
   const askReason = () => {
     const send = (reason: ReportReason) =>
-      report.mutate(
-        { postId: post.id, reason },
-        { onSuccess: () => toast.success(i18n.nCmReported), onError: (e: Error) => toast.fail(e) },
-      );
+      report.mutate({ postId: post.id, reason }, { onSuccess: afterReport, onError: (e: Error) => toast.fail(e) });
     Alert.alert(i18n.nCmReportWhy, undefined, [
       { text: i18n.nCmReasonSpam, onPress: () => send('spam') },
       { text: i18n.nCmReasonHarass, onPress: () => send('harassment') },
@@ -353,6 +373,12 @@ function usePostMenu(post: FeedPost) {
       return;
     }
     Alert.alert(post.author?.display_name ?? '', undefined, [
+      {
+        text: i18n.nPgHidePost,
+        onPress: () =>
+          hide.mutate(post.id, { onSuccess: () => toast.success(i18n.nPgPostHidden), onError: (e: Error) => toast.fail(e) }),
+      },
+      { text: i18n.nPgMute.replace('{h}', handle), onPress: doMute },
       { text: i18n.nCmReport, onPress: askReason },
       { text: i18n.nCmBlock.replace('{h}', handle), style: 'destructive', onPress: askBlock },
       { text: i18n.cancel, style: 'cancel' },

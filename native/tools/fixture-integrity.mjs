@@ -262,6 +262,10 @@ export function readSchema(dir = MIG) {
             const d = dm[1].toLowerCase();
             t.defaults[col] = d === 'now()' ? { now: true } : d === 'gen_random_uuid()' ? { uuid: true } : d === 'auth.uid()' ? { uid: true }
               : dm[2] !== undefined ? { value: dm[2] } : d === 'true' ? { value: true } : d === 'false' ? { value: false } : { value: Number(dm[1]) };
+            /* `now() + interval 'N days'` (hạn tắt tiếng của #6): đọc thành
+               `now()` thì hàng vừa chèn đã hết hạn ngay ở máy chủ giả. */
+            const plus = p.match(/\bDEFAULT\s+now\(\)\s*\+\s*interval\s*'(\d+)\s*days?'/i);
+            if (plus) t.defaults[col] = { now: true, days: Number(plus[1]) };
           }
           if (/PRIMARY KEY/i.test(p)) {
             t.pk = [col];

@@ -8,6 +8,10 @@ BEGIN;
 \set C '''f3f3f3f3-0000-0000-0000-000000000026'''
 \set D '''f4f4f4f4-0000-0000-0000-000000000026'''
 INSERT INTO auth.users VALUES (:A), (:B), (:C), (:D);
+-- Người dùng của bộ này là tài khoản hoạt động: một buổi tập gần đây là
+-- "đóng góp" theo luật báo cáo đáng tin (20261007220000), nên báo cáo của
+-- họ được tính vào ngưỡng tự ẩn như trước.
+INSERT INTO workout_sessions (user_id) VALUES (:A), (:B), (:C), (:D);
 INSERT INTO community_profiles (user_id, handle, display_name) VALUES
   (:A, 'hr_an', 'An'), (:B, 'hr_binh', 'Bình'), (:C, 'hr_chi', 'Chi'), (:D, 'hr_dung', 'Dũng');
 -- a1: bị ẩn (2 spam + 1 harassment). a2: một báo cáo, KHÔNG ẩn. a3: ẩn, hoà ba

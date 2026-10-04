@@ -10,6 +10,7 @@ import { haptics as Haptics } from '@/lib/haptics';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/lib/toast';
 import { confirmWrite, NothingWrittenError } from '@/lib/write-result';
+import { KeyedError } from '@/lib/error-copy';
 import { useAuth } from './use-auth';
 import { useOnlineMutation } from './use-online-mutation';
 import type { TemplateExercise } from './use-library';
@@ -761,6 +762,7 @@ export type ReportReason = 'spam' | 'harassment' | 'inappropriate' | 'misleading
 
 export function useReport() {
   const { user } = useAuth();
+  const qc = useQueryClient();
   return useOnlineMutation({
     meta: { offline: now(2) },
     mutationFn: async (r: { postId?: string; commentId?: string; userId?: string; reason: ReportReason }) => {
@@ -771,8 +773,130 @@ export function useReport() {
         reported_user_id: r.userId ?? null,
         reason: r.reason,
       });
+      /* Trần báo cáo mỗi ngày (#6, migration community_report_trust): câu của
+         app, không phải "program_limit_exceeded" của PostgreSQL. Giữ `code` để
+         `permanentFailure` không thử lại — trần không mở ra sau vài giây. */
+      if (error?.code === '54000') throw Object.assign(new KeyedError('nPgReportLimit'), { code: '54000' });
       // Báo cáo lại cùng một bài: lần đầu đã được ghi, đó là kết quả người ta muốn.
       if (error && error.code !== '23505') throw error;
+    },
+    onSuccess: (_d, r) => {
+      /* Báo cáo một bài thì bài ấy ẩn RIÊNG với người báo cáo (trigger ở
+         server) — các danh sách đọc lại để nó biến khỏi đó ngay. */
+      if (!r.postId) return;
+      qc.invalidateQueries({ queryKey: ['community_feed'] });
+      qc.invalidateQueries({ queryKey: ['community_user_posts'] });
+    },
+  });
+}
+
+/* ── ẩn riêng và tắt tiếng (#6) ────────────────────────────────────────────
+   Công cụ của RIÊNG người xem, không cần đủ điều kiện như báo cáo: chỉ đổi
+   những gì CHÍNH mình thấy (policy RESTRICTIVE trên community_posts), không
+   chạm tới ai khác. Tắt tiếng có hạn 30 ngày — server đặt hạn, client không
+   gửi giờ của máy mình. */
+
+export function useHidePost() {
+  const qc = useQueryClient();
+  return useOnlineMutation({
+    meta: { offline: now(2) },
+    mutationFn: async (postId: string) => {
+      const { error } = await supabase.from('community_post_hides').insert({ post_id: postId });
+      if (error && error.code !== '23505') throw error;
+    },
+    onSuccess: () => {
+      Haptics.success();
+      qc.invalidateQueries({ queryKey: ['community_feed'] });
+      qc.invalidateQueries({ queryKey: ['community_user_posts'] });
+    },
+  });
+}
+
+export interface MutedUser {
+  user_id: string;
+  until: string;
+  profile: CommunityAuthor | null;
+}
+
+/** Người mình đang tắt tiếng — chỉ những dòng CÒN HẠN; dòng hết hạn không còn
+    tác dụng gì (policy so `until > now()`), nên không đáng một dòng trên màn. */
+export function useMutedUsers() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_mutes', user?.id],
+    enabled: !!user,
+    queryFn: async (): Promise<MutedUser[]> => {
+      const { data: rows, error } = await supabase
+        .from('community_mutes')
+        .select('muted_id, until')
+        .eq('user_id', user!.id)
+        .gt('until', new Date().toISOString())
+        .order('until', { ascending: true });
+      if (error) throw error;
+      const ids = (rows ?? []).map((r) => r.muted_id);
+      if (ids.length === 0) return [];
+      const { data: profs, error: pe } = await supabase.from('community_profiles').select(PROFILE_COLS).in('user_id', ids);
+      if (pe) throw pe;
+      const byId = new Map((profs as CommunityAuthor[] | null ?? []).map((p) => [p.user_id, p]));
+      return (rows ?? []).map((r) => ({ user_id: r.muted_id, until: r.until, profile: byId.get(r.muted_id) ?? null }));
+    },
+  });
+}
+
+function invalidateMutes(qc: QueryClient, uid: string | undefined) {
+  qc.invalidateQueries({ queryKey: ['community_mutes', uid] });
+  qc.invalidateQueries({ queryKey: ['community_feed'] });
+  qc.invalidateQueries({ queryKey: ['community_user_posts'] });
+}
+
+export function useMute() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useOnlineMutation({
+    meta: { offline: now(2) },
+    mutationFn: async (userId: string) => {
+      const ins = () => supabase.from('community_mutes').insert({ muted_id: userId });
+      const { error } = await ins();
+      if (error && error.code !== '23505') throw error;
+      if (error?.code !== '23505') return;
+      /* Đã có một dòng cho người này — có thể đã HẾT HẠN (khoá là cặp hai
+         người, dòng hết hạn vẫn nằm đó). Coi 23505 là "xong" thì tắt tiếng lại
+         sau 30 ngày lặng lẽ không có tác dụng. Không có policy UPDATE (hạn do
+         server đặt), nên xoá dòng của chính mình rồi chèn lại: hạn mới 30 ngày. */
+      await confirmWrite(
+        supabase.from('community_mutes').delete().eq('user_id', user!.id).eq('muted_id', userId),
+        'nPgUnmuteGone',
+        'muted_id',
+      );
+      const { error: again } = await ins();
+      if (again && again.code !== '23505') throw again;
+    },
+    onSuccess: () => {
+      Haptics.success();
+      invalidateMutes(qc, user?.id);
+    },
+  });
+}
+
+export function useUnmute() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useOnlineMutation({
+    meta: { offline: now(2) },
+    mutationFn: async (userId: string) => {
+      /* Khoá là cặp hai người, không có cột `id` cho `confirmWrite` hỏi lại. */
+      const { data, error } = await supabase
+        .from('community_mutes')
+        .delete()
+        .eq('user_id', user!.id)
+        .eq('muted_id', userId)
+        .select('muted_id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw new KeyedError('nPgUnmuteGone');
+    },
+    onSuccess: () => {
+      Haptics.success();
+      invalidateMutes(qc, user?.id);
     },
   });
 }

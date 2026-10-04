@@ -10,6 +10,10 @@ BEGIN;
 \set D '''c8c8c8c8-0000-0000-0000-000000000175'''
 \set E '''c9c9c9c9-0000-0000-0000-000000000175'''
 INSERT INTO auth.users VALUES (:A), (:B), (:C), (:D), (:E);
+-- Người dùng của bộ này là tài khoản hoạt động: một buổi tập gần đây là
+-- "đóng góp" theo luật báo cáo đáng tin (20261007220000), nên báo cáo của
+-- họ được tính vào ngưỡng tự ẩn như trước.
+INSERT INTO workout_sessions (user_id) VALUES (:A), (:B), (:C), (:D), (:E);
 INSERT INTO community_profiles (user_id, handle, display_name) VALUES
   (:A, 'cc_an', 'An'), (:B, 'cc_binh', 'Bình'), (:C, 'cc_chi', 'Chi'), (:D, 'cc_dung', 'Dũng'), (:E, 'cc_em', 'Em');
 INSERT INTO community_posts (id, author_id, kind, payload) VALUES

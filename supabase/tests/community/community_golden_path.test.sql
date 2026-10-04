@@ -18,6 +18,10 @@
 \set R2 '''9a000000-0000-0000-0000-0000000000d2'''
 \set R3 '''9a000000-0000-0000-0000-0000000000d3'''
 INSERT INTO auth.users (id) VALUES (:A), (:B), (:MOD), (:ADM), (:R1), (:R2), (:R3);
+-- Người dùng của bộ này là tài khoản hoạt động: một buổi tập gần đây là
+-- "đóng góp" theo luật báo cáo đáng tin (20261007220000), nên báo cáo của
+-- họ được tính vào ngưỡng tự ẩn như trước.
+INSERT INTO workout_sessions (user_id) VALUES (:A), (:B), (:MOD), (:ADM), (:R1), (:R2), (:R3);
 INSERT INTO community_profiles (user_id, handle, display_name) VALUES
   (:A, 'gp.anh', 'Anh'), (:B, 'gp.binh', 'Bình'), (:MOD, 'gp.mod', 'Mod'), (:ADM, 'gp.adm', 'Adm'),
   (:R1, 'gp.r1', 'R1'), (:R2, 'gp.r2', 'R2'), (:R3, 'gp.r3', 'R3');

@@ -2575,23 +2575,28 @@ const SCENARIOS = [
   {
     /*
       A 04/10 — đề xuất 3: thẻ "Hành trình" trên hồ sơ, ở bộ lọc Tiến trình.
-      Thêm một bài Progress CŨ HƠN (cân nặng 50 → 52, Squat) cho cùng người.
-      Đòi:
+      Thêm một bài Progress CŨ HƠN (cân nặng 50 → 52, Squat) và một bài BỊ ẨN
+      (cân nặng 30 → 99) cho cùng người. Đòi:
         (A) dòng Cân nặng = số ĐẦU của bài cũ nhất → số CUỐI của bài mới nhất:
-            50 → 55.4 kg, +5.4 kg; "2 updates";
+            50 → 55.4 kg, +5.4 kg; "2 updates" — bài bị ẩn không được tính;
         (B) vòng eo chỉ có ở MỘT bài → không có dòng; Bench và Squat mỗi bài một
             lần → không có dòng sức mạnh (không gộp hai bài tập khác nhau);
         (C) ở bộ lọc "Tất cả" thì không có thẻ.
-      Bài bị ẩn / chỉ-người-theo-dõi KHÔNG được tính là việc của RLS (hook đọc
-      qua chính policy đọc bài), nên nó được đo ở SQL (foundation 19/30, golden
-      path GP19) — máy chủ giả không mô phỏng policy ấy, đo ở đây là đo nó.
+      Bài bị ẩn không được tính là việc của policy đọc bài (hook đọc qua chính
+      nó): SQL đo policy (foundation 19/30, GP19); từ 04/10 máy chủ giả cũng
+      mô phỏng nó (`readable` trong live-server.mjs), nên ở đây đo được rằng
+      thẻ không đọc vòng qua policy. Bài ẩn CŨ NHẤT: nếu lọt vào thì số đầu
+      thành 30, không phải 50.
     */
-    name: 'Hồ sơ: thẻ Hành trình gộp từ bài Tiến trình cũ nhất tới mới nhất, không gộp hai bài tập khác nhau (A 04/10)',
+    name: 'Hồ sơ: thẻ Hành trình gộp từ bài Tiến trình cũ nhất tới mới nhất, không tính bài ẩn, không gộp hai bài tập khác nhau (A 04/10)',
     route: '/community-user?id=c0000000-0000-4000-8000-0000000011a1', mode: 'full',
     async run(page, { world }) {
       const base = world.community_posts.find((p) => p.id === 'cp000000-0000-4000-8000-000000000003');
       const older = new Date(Date.parse(base.created_at) - 60 * 86400e3).toISOString();
+      const oldest = new Date(Date.parse(base.created_at) - 90 * 86400e3).toISOString();
       world.community_posts.push(
+        { ...structuredClone(base), id: 'cp000000-0000-4000-8000-0000000004a2', created_at: oldest, hidden: true, like_count: 0, comment_count: 0, save_count: 0,
+          payload: { weeks: 4, weight: { start: 30, end: 99, series: [30, 99] } } },
         { ...structuredClone(base), id: 'cp000000-0000-4000-8000-0000000004a1', created_at: older, like_count: 0, comment_count: 0, save_count: 0,
           payload: { weeks: 8, weight: { start: 50, end: 52, series: [50, 51, 52] }, lift: { exerciseId: 'e12', name: 'Squat', start: 60, end: 70, series: [60, 70] } } },
       );
@@ -2611,6 +2616,103 @@ const SCENARIOS = [
       if ((await box.getByText(/^2 (updates|lần cập nhật)/).count()) !== 1) return `(A) phải nói "2 lần cập nhật" — thừa hoặc thiếu một bài: ${JSON.stringify(await box.allInnerTexts())}`;
       if ((await box.getByLabel(/^(Waist|Vòng eo): /).count()) !== 0) return '(B) vòng eo chỉ có ở một bài mà vẫn có dòng';
       if ((await box.getByLabel(/^(Bench Press|Squat): /).count()) !== 0) return '(B) gộp hai bài tập khác nhau thành một dòng sức mạnh';
+      return null;
+    },
+  },
+  {
+    /*
+      A 04/10 — #6 (ngưỡng Kiệt chốt): công cụ của riêng người xem, và trần báo
+      cáo. Trên hồ sơ Linh, theo thứ tự:
+        (A) "Ẩn bài này" ở menu ⋯ → đúng một dòng community_post_hides của UID
+            cho đúng bài, và bài ấy biến khỏi danh sách;
+        (B) Báo cáo một bài → dòng báo cáo; trigger ẩn riêng bài ấy với người
+            báo cáo (máy chủ giả mô phỏng), nên nó cũng biến; ngay sau đó một
+            hộp mời Tắt tiếng / Chặn @linh.pham;
+        (C) đã có 10 báo cáo trong 24 giờ → lần thứ 11 bị từ chối (54000) và
+            toast nói bằng câu của app, không phải chữ của PostgreSQL; bài vẫn
+            còn đó (không ghi gì);
+        (D) "Tắt tiếng" từ menu hồ sơ → dòng community_mutes hạn ~30 ngày (server
+            đặt, client không gửi `until`); mọi bài còn lại biến, và thay vào là
+            một dòng nói đang tắt tiếng đến bao giờ. Thế giới giả có sẵn một lượt
+            tắt tiếng Linh ĐÃ HẾT HẠN (cùng khoá chính): chèn thẳng ra 23505, và
+            bản đầu của hook coi 23505 là "xong" — tắt tiếng lại không tác dụng;
+        (E) "Bỏ tắt tiếng" ở dòng ấy → dòng mute bị xoá, bài CHƯA ẩn quay lại;
+            hai bài đã ẩn ở (A)/(B) thì vẫn ẩn.
+      Hộp thoại nhiều lựa chọn là `prompt()` có danh sách đánh số (web-dialog.ts);
+      vế chọn theo CHỮ của dòng, không theo số thứ tự.
+    */
+    name: 'Ẩn bài, báo cáo rồi mời tắt tiếng, trần 10 báo cáo/ngày, tắt tiếng 30 ngày và bỏ tắt tiếng (A 04/10, #6)',
+    route: '/community-user?id=c0000000-0000-4000-8000-0000000011a1', mode: 'full',
+    async run(page, { world }) {
+      const LINH = 'c0000000-0000-4000-8000-0000000011a1';
+      const want = [];
+      const seen = [];
+      page.on('dialog', async (d) => {
+        const msg = d.message();
+        seen.push(msg);
+        if (d.type() !== 'prompt') return d.accept().catch(() => {});
+        const w = want.shift();
+        const line = w ? msg.split('\n').find((l) => /^\d+\. /.test(l) && w.test(l)) : null;
+        await d.accept(line ? line.split('.')[0] : '').catch(() => {});
+      });
+      const more = () => page.getByRole('button', { name: /^(More|Thêm)$/ }).filter({ visible: true });
+      const until = async (f) => { for (let i = 0; i < 24 && !(await f()); i++) await page.waitForTimeout(250); return f(); };
+      await page.waitForTimeout(2500);
+      const n0 = await more().count();
+      /* nút ⋯ ở đầu trang (menu hồ sơ) + ít nhất ba bài */
+      if (n0 < 4) return `hồ sơ Linh phải có ít nhất ba bài có nút ⋯, thấy ${n0 - 1}`;
+
+      want.push(/Hide this post|Ẩn bài này/);
+      await more().nth(1).click();
+      if (!(await until(async () => (await more().count()) === n0 - 1))) return `(A) ẩn bài mà danh sách không bớt một bài (${await more().count()} nút ⋯)`;
+      const hides = () => (world.community_post_hides ?? []).filter((h) => h.user_id === UID);
+      if (hides().length !== 1) return `(A) phải đúng một dòng ẩn riêng của UID, có ${hides().length}`;
+      if (world.community_posts.find((p) => p.id === hides()[0].post_id)?.author_id !== LINH) return '(A) dòng ẩn riêng trỏ vào bài không phải của Linh';
+
+      const mine = () => (world.community_reports ?? []).filter((r) => r.reporter_id === UID);
+      const r0 = mine().length;
+      want.push(/^\d+\. (Report|Báo cáo)$/, /Spam|Nội dung rác/, null);
+      await more().nth(1).click();
+      if (!(await until(async () => (await more().count()) === n0 - 2))) return `(B) báo cáo mà bài không biến khỏi danh sách (${await more().count()} nút ⋯)`;
+      if (mine().length !== r0 + 1) return `(B) phải thêm đúng một báo cáo, thêm ${mine().length - r0}`;
+      if (hides().length !== 2) return `(B) trigger không ẩn riêng bài vừa báo cáo (${hides().length} dòng ẩn)`;
+      await until(async () => seen.some((m) => /Report sent|Đã gửi báo cáo/.test(m)));
+      const next = seen.find((m) => /Report sent|Đã gửi báo cáo/.test(m)) ?? '';
+      if (!/(Mute|Tắt tiếng) @linh\.pham/.test(next) || !/(Block|Chặn) @linh\.pham/.test(next)) return `(B) sau báo cáo không mời tắt tiếng / chặn: "${next.slice(0, 160)}"`;
+
+      const day0 = Date.now();
+      while (mine().length < 10) {
+        world.community_reports.push({ id: `c7000000-0000-4000-8000-${String(900000000000 + mine().length)}`, reporter_id: UID, post_id: null, comment_id: null,
+          reported_user_id: 'c0000000-0000-4000-8000-00000000a5cd', reason: 'spam', note: '', status: 'open', counted: true, created_at: new Date(day0 - mine().length * 60e3).toISOString() });
+      }
+      const before = world.community_reports.length;
+      /* Không xếp câu trả lời cho hộp mời: báo cáo bị từ chối thì hộp ấy không mở. */
+      want.push(/^\d+\. (Report|Báo cáo)$/, /Spam|Nội dung rác/);
+      await more().nth(1).click();
+      const limit = page.getByText(/sent a lot of reports today|đã gửi nhiều báo cáo/).filter({ visible: true });
+      if (!(await until(async () => (await limit.count()) > 0))) return '(C) báo cáo thứ 11 trong 24 giờ mà không có toast nói rõ trần';
+      if ((await page.getByText(/54000|program_limit|report limit reached/).filter({ visible: true }).count()) !== 0) return '(C) toast lộ chữ của PostgreSQL';
+      if (world.community_reports.length !== before) return '(C) báo cáo vượt trần vẫn được ghi';
+      if ((await more().count()) !== n0 - 2) return '(C) báo cáo bị từ chối mà bài vẫn biến';
+
+      if (want.length) return `(C) còn ${want.length} câu trả lời chưa dùng — một hộp thoại đã không mở`;
+      want.push(/(Mute|Tắt tiếng) @linh\.pham/);
+      await more().first().click();
+      const notice = page.getByTestId('muted-notice').filter({ visible: true });
+      if (!(await until(async () => (await notice.count()) === 1))) {
+        return `(D) tắt tiếng mà hồ sơ không nói đang tắt tiếng — hộp cuối: "${(seen.at(-1) ?? '').replace(/\n/g, ' | ').slice(0, 200)}", ` +
+          `community_mutes: ${JSON.stringify((world.community_mutes ?? []).map((x) => [x.muted_id.slice(-4), x.until.slice(0, 10)]))}`;
+      }
+      const m = (world.community_mutes ?? []).find((x) => x.user_id === UID && x.muted_id === LINH && x.until > new Date().toISOString());
+      if (!m) return '(D) không có dòng tắt tiếng còn hạn cho Linh';
+      const days = (Date.parse(m.until) - Date.now()) / 86400e3;
+      if (days < 29 || days > 31) return `(D) hạn tắt tiếng phải ~30 ngày, ra ${days.toFixed(1)}`;
+      if ((await more().count()) !== 1) return `(D) đã tắt tiếng mà vẫn còn bài của Linh (${(await more().count()) - 1})`;
+
+      await notice.getByRole('button', { name: /^(Unmute|Bỏ tắt tiếng)$/ }).click();
+      if (!(await until(async () => (await notice.count()) === 0))) return '(E) bỏ tắt tiếng mà dòng báo vẫn còn';
+      if ((world.community_mutes ?? []).some((x) => x.user_id === UID && x.muted_id === LINH && x.until > new Date().toISOString())) return '(E) dòng tắt tiếng còn hạn chưa bị xoá';
+      if (!(await until(async () => (await more().count()) === n0 - 2))) return `(E) bỏ tắt tiếng mà bài chưa ẩn không quay lại, hoặc bài đã ẩn quay lại (${(await more().count()) - 1} bài)`;
       return null;
     },
   },

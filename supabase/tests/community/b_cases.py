@@ -101,14 +101,18 @@ CASES = [
   dict(suite=F, id='27', mig=FM, how="policy báo cáo bỏ status = 'open'",
        old="WITH CHECK (auth.uid() = reporter_id AND status = 'open');",
        new='WITH CHECK (auth.uid() = reporter_id);', expect='27 tự đóng'),
-  # Hàm tự ẩn được định nghĩa lại ở 20261007130000 (chỉ đếm báo cáo đang mở):
-  # phá bản cũ là phá một bản không còn chạy (rỗng nghĩa từ 03/10).
-  dict(suite=F, id='28', mig='20261007130000_community_admin', how='ngưỡng tự ẩn bài hạ xuống 2',
-       old="WHERE post_id = NEW.post_id AND status = 'open'\n  ) >= 3 THEN", new="WHERE post_id = NEW.post_id AND status = 'open'\n  ) >= 2 THEN", expect='28 hai báo cáo'),
-  # Hàm tự ẩn được định nghĩa lại ở 20261007130000 (chỉ đếm báo cáo đang mở):
-  # phá bản cũ là phá một bản không còn chạy (rỗng nghĩa từ 03/10).
-  dict(suite=F, id='29', mig='20261007130000_community_admin', how='ngưỡng tự ẩn bài nâng lên 4',
-       old="WHERE post_id = NEW.post_id AND status = 'open'\n  ) >= 3 THEN", new="WHERE post_id = NEW.post_id AND status = 'open'\n  ) >= 4 THEN", expect='29 ba người'),
+  # Hàm tự ẩn được định nghĩa lại ở 20261007130000 (chỉ đếm báo cáo đang mở) rồi
+  # ở 20261007220000 (chỉ đếm báo cáo ĐƯỢC TÍNH): phá bản cũ là phá một bản không
+  # còn chạy (rỗng nghĩa từ 03/10, rồi lại từ 04/10).
+  dict(suite=F, id='28', mig='20261007220000_community_report_trust', how='ngưỡng tự ẩn bài hạ xuống 2',
+       old="WHERE post_id = NEW.post_id AND status = 'open' AND counted\n  ) >= 3 THEN", new="WHERE post_id = NEW.post_id AND status = 'open' AND counted\n  ) >= 2 THEN", expect='28 hai báo cáo'),
+  dict(suite=F, id='29', mig='20261007220000_community_report_trust', how='ngưỡng tự ẩn bài nâng lên 4',
+       old="WHERE post_id = NEW.post_id AND status = 'open' AND counted\n  ) >= 3 THEN", new="WHERE post_id = NEW.post_id AND status = 'open' AND counted\n  ) >= 4 THEN", expect='29 ba người'),
+  # 30b là ĐỐI CHỨNG của 30: người xem gỡ được dòng ẩn riêng của mình, nên 30
+  # chỉ còn đo cờ `hidden` chung. Phá policy gỡ ẩn thì 30b phải đỏ.
+  dict(suite=F, id='30b', mig='20261007220000_community_report_trust', how='ĐỐI CHỨNG: không gỡ được dòng ẩn riêng',
+       old="ON public.community_post_hides FOR DELETE TO authenticated USING (auth.uid() = user_id);",
+       new="ON public.community_post_hides FOR DELETE TO authenticated USING (false);", expect='30b'),
   dict(suite=F, id='30', mig=FM, how='policy đọc bài bỏ NOT hidden',
        old='    OR (\n      NOT hidden\n      AND NOT public.community_blocked_between(auth.uid(), author_id)\n      AND (\n        visibility',
        new='    OR (\n      true\n      AND NOT public.community_blocked_between(auth.uid(), author_id)\n      AND (\n        visibility',
@@ -930,7 +934,10 @@ CASES += [
 ADM = '20261007130000_community_admin'
 ADS = 'admin'
 _REQ = "  IF v_role = 'admin' OR (NOT p_admin AND v_role = 'moderator') THEN"
-_AUTOHIDE_P = "WHERE post_id = NEW.post_id AND status = 'open'\n  ) >= 3 THEN"
+# Hàm tự ẩn chạy thật là bản ở 20261007220000 (chỉ đếm báo cáo được tính) —
+# phá bản ở ADM là phá một bản đã bị thay.
+_AUTOHIDE_M = '20261007220000_community_report_trust'
+_AUTOHIDE_P = "WHERE post_id = NEW.post_id AND status = 'open' AND counted\n  ) >= 3 THEN"
 _REJECT = "  ELSE\n    n := public.moderation_close_reports(v_type, v_id, 'actioned');"
 CASES += [
   dict(suite=ADS, id='B1', mig=ADM, how='cấp bootstrap cho người dùng',
@@ -993,8 +1000,8 @@ CASES += [
        new="GRANT SELECT, UPDATE ON public.app_roles TO authenticated;\nCREATE POLICY m3 ON public.app_roles FOR UPDATE TO authenticated USING (true) WITH CHECK (true);", expect='M3 '),
   dict(suite=ADS, id='M4', mig=ADM, how='chỉ admin qua được cửa kiểm duyệt',
        old=_REQ, new="  IF v_role = 'admin' THEN", expect='M4 '),
-  dict(suite=ADS, id='F2', mig=ADM, how='ngưỡng tự ẩn bài là 2', old=_AUTOHIDE_P, new=_AUTOHIDE_P.replace('>= 3', '>= 2'), expect='F2 '),
-  dict(suite=ADS, id='F3', mig=ADM, how='ngưỡng tự ẩn bài là 4', old=_AUTOHIDE_P, new=_AUTOHIDE_P.replace('>= 3', '>= 4'), expect='F3 '),
+  dict(suite=ADS, id='F2', mig=_AUTOHIDE_M, how='ngưỡng tự ẩn bài là 2', old=_AUTOHIDE_P, new=_AUTOHIDE_P.replace('>= 3', '>= 2'), expect='F2 '),
+  dict(suite=ADS, id='F3', mig=_AUTOHIDE_M, how='ngưỡng tự ẩn bài là 4', old=_AUTOHIDE_P, new=_AUTOHIDE_P.replace('>= 3', '>= 4'), expect='F3 '),
   dict(suite=ADS, id='F4', mig=ADM, how='bỏ chỉ mục một-yêu-cầu-sống-mỗi-bài',
        old="CREATE UNIQUE INDEX community_review_requests_one_live_per_post\n  ON public.community_review_requests (post_id) WHERE status IN ('open', 'upheld');\n",
        new="", expect='F4 '),
@@ -1044,9 +1051,9 @@ CASES += [
        old="  PERFORM public.moderation_close_appeals(p_type, p_id, ARRAY['open', 'upheld'], 'restored', v_actor);\n", new="", expect='K2 '),
   dict(suite=ADS, id='K3', mig=ADM, how='nhật ký ghi mọi người làm là admin',
        old="ELSE public.app_role_of(p_actor) END", new="ELSE 'admin' END", expect='K3 '),
-  dict(suite=ADS, id='K4', mig=ADM, how='tự ẩn đếm cả báo cáo đã đóng (lỗi cũ)',
-       old="WHERE post_id = NEW.post_id AND status = 'open'", new="WHERE post_id = NEW.post_id", expect='K4 '),
-  dict(suite=ADS, id='K5', mig=ADM, how='bài từng được khôi phục không bao giờ tự ẩn lại',
+  dict(suite=ADS, id='K4', mig=_AUTOHIDE_M, how='tự ẩn đếm cả báo cáo đã đóng (lỗi cũ)',
+       old="WHERE post_id = NEW.post_id AND status = 'open' AND counted", new="WHERE post_id = NEW.post_id AND counted", expect='K4 '),
+  dict(suite=ADS, id='K5', mig=_AUTOHIDE_M, how='bài từng được khôi phục không bao giờ tự ẩn lại',
        old=_AUTOHIDE_P,
        new=_AUTOHIDE_P.replace(" THEN", " AND NOT EXISTS (SELECT 1 FROM public.community_reports d WHERE d.post_id = NEW.post_id AND d.status <> 'open') THEN"), expect='K5 '),
   dict(suite=ADS, id='K6', mig=ADM, how='giữ UNIQUE(post_id) cũ: một kháng nghị trọn đời',
@@ -1090,8 +1097,8 @@ CASES += [
        old="  n := public.moderation_close_reports(p_type, p_id, 'dismissed');\n  IF n = 0 THEN", new="  n := public.moderation_close_reports(p_type, p_id, 'actioned');\n  IF n = 0 THEN", expect='H7 '),
   dict(suite=ADS, id='H8', mig=ADM, how='bác không ghi nhật ký',
        old="  PERFORM public.moderation_log(v_actor, 'DISMISS_REPORT', p_type, p_id, p_reason, jsonb_build_object('reports_dismissed', n));\n", new="", expect='H8 '),
-  dict(suite=ADS, id='C1', mig=ADM, how='ngưỡng tự ẩn bình luận là 4',
-       old="WHERE comment_id = NEW.comment_id AND status = 'open'\n  ) >= 3 THEN", new="WHERE comment_id = NEW.comment_id AND status = 'open'\n  ) >= 4 THEN", expect='C1 '),
+  dict(suite=ADS, id='C1', mig=_AUTOHIDE_M, how='ngưỡng tự ẩn bình luận là 4',
+       old="WHERE comment_id = NEW.comment_id AND status = 'open' AND counted\n  ) >= 3 THEN", new="WHERE comment_id = NEW.comment_id AND status = 'open' AND counted\n  ) >= 4 THEN", expect='C1 '),
   dict(suite=ADS, id='C2', mig=ADM, how='hàng đợi coi mọi đích là bài',
        old="CASE WHEN r.post_id IS NOT NULL THEN 'post' ELSE 'comment' END AS target_type", new="'post' AS target_type", expect='C2 '),
   dict(suite=ADS, id='C3', mig=ADM, how='gỡ bình luận không đặt removed_at',
@@ -1164,7 +1171,7 @@ CASES += [
 #    ca ở bộ sở hữu luật (COVERAGE_OK['golden_path'] nói bộ nào).
 GPS = 'golden_path'
 CASES += [
-  dict(suite=GPS, id='GP11', mig=ADM, how='ngưỡng tự ẩn bài là 4', old=_AUTOHIDE_P, new=_AUTOHIDE_P.replace('>= 3', '>= 4'), expect='GP11 '),
+  dict(suite=GPS, id='GP11', mig=_AUTOHIDE_M, how='ngưỡng tự ẩn bài là 4', old=_AUTOHIDE_P, new=_AUTOHIDE_P.replace('>= 3', '>= 4'), expect='GP11 '),
   dict(suite=GPS, id='GP12', mig=ADM, how='lý do phổ biến nhất lấy ÍT nhất',
        old="ORDER BY k.n DESC, array_position", new="ORDER BY k.n ASC, array_position", expect='GP12 '),
   dict(suite=GPS, id='GP14', mig=ADM, how='chấp nhận không bỏ ẩn',
@@ -1183,4 +1190,73 @@ CASES += [
        new="p_type, p_id, '', jsonb_build_object('reports_closed', n));\nEND;\n$$;\n\n-- Bác báo cáo", expect='GP20 '),
   dict(suite=GPS, id='GP21', mig=ADM, how='nhật ký không ghi từng bị gỡ',
        old="'was_removed', t.removed", new="'was_removed', false", expect='GP21 '),
+]
+
+# ── Báo cáo đáng tin (A, 04/10 — ngưỡng chủ dự án chốt ở #6) ──
+RTM = '20261007220000_community_report_trust'
+RTS = 'report_trust'
+_RT_P = "WHERE post_id = NEW.post_id AND status = 'open' AND counted\n  ) >= 3 THEN"
+_RT_HIDE = "      NOT EXISTS (SELECT 1 FROM public.community_post_hides h WHERE h.user_id = auth.uid() AND h.post_id = community_posts.id)\n"
+CASES += [
+  dict(suite=RTS, id='RT1', mig=RTM, how='buổi tập không còn là đóng góp',
+       old="      OR EXISTS (SELECT 1 FROM workout_sessions x WHERE x.user_id = p_user AND x.date_time >= now() - interval '30 days')\n", new="", expect='RT1 '),
+  dict(suite=RTS, id='RT2', mig=RTM, how='lượt thích không còn là đóng góp',
+       old="      OR EXISTS (SELECT 1 FROM community_likes x WHERE x.user_id = p_user AND x.created_at >= now() - interval '30 days')\n", new="", expect='RT2 '),
+  dict(suite=RTS, id='RT3', mig=RTM, how='bỏ điều kiện tuổi tài khoản',
+       old="coalesce((SELECT u.created_at <= now() - interval '30 days' FROM auth.users u WHERE u.id = p_user), false)", new="true", expect='RT3 '),
+  dict(suite=RTS, id='RT4', mig=RTM, how='bỏ điều kiện đóng góp',
+       old="    AND (\n         EXISTS (SELECT 1 FROM community_posts x", new="    AND (true OR\n         EXISTS (SELECT 1 FROM community_posts x", expect='RT4 '),
+  dict(suite=RTS, id='RT5', mig=RTM, how='cửa sổ đóng góp 60 ngày',
+       old="x.date_time >= now() - interval '30 days'", new="x.date_time >= now() - interval '60 days'", expect='RT5 '),
+  dict(suite=RTS, id='RT6', mig=RTM, how='bài đăng không còn là đóng góp',
+       old="         EXISTS (SELECT 1 FROM community_posts x WHERE x.author_id = p_user AND x.created_at >= now() - interval '30 days')\n      OR ",
+       new="         ", expect='RT6 '),
+  dict(suite=RTS, id='RT7', mig=RTM, how='tự ẩn đếm cả báo cáo không được tính',
+       old=_RT_P, new=_RT_P.replace(" AND counted", ""), expect='RT7 '),
+  dict(suite=RTS, id='RT9', mig=RTM, how='hàng đợi đếm phiếu được tính sai',
+       old="WHERE r3.status = p_status AND r3.counted AND", new="WHERE r3.status = p_status AND", expect='RT9 '),
+  dict(suite=RTS, id='RT10', mig=RTM, how='chi tiết luôn nói "được tính"',
+       old="                 'counted', r.counted,", new="                 'counted', true,", expect='RT10 '),
+  dict(suite=RTS, id='RT11', mig=RTM, how='ngưỡng tự ẩn bài là 2', old=_RT_P, new=_RT_P.replace('>= 3', '>= 2'), expect='RT11 '),
+  dict(suite=RTS, id='RT13', mig=RTM, how='không gắn cờ được tính (bỏ trigger)',
+       old="CREATE TRIGGER community_reports_guard\n  BEFORE INSERT ON public.community_reports\n  FOR EACH ROW EXECUTE FUNCTION public.community_reports_guard();\n", new="", expect='RT13 '),
+  dict(suite=RTS, id='RT14', mig=RTM, how='nghe theo cờ client gửi lên',
+       old="  NEW.counted := public.community_reporter_eligible(NEW.reporter_id);", new="  NEW.counted := NEW.counted OR public.community_reporter_eligible(NEW.reporter_id);", expect='RT14 '),
+  dict(suite=RTS, id='RT15', mig=RTM, how='cho người báo sửa báo cáo của mình',
+       old="ALTER TABLE public.community_reports\n  ADD COLUMN counted boolean NOT NULL DEFAULT false;\n",
+       new="ALTER TABLE public.community_reports\n  ADD COLUMN counted boolean NOT NULL DEFAULT false;\nCREATE POLICY rt15 ON public.community_reports FOR UPDATE TO authenticated USING (auth.uid() = reporter_id);\n", expect='RT15 '),
+  dict(suite=RTS, id='RT16', mig=RTM, how='báo cáo không ẩn bài cho người báo',
+       old="    INSERT INTO community_post_hides (user_id, post_id) VALUES (NEW.reporter_id, NEW.post_id)\n    ON CONFLICT DO NOTHING;\n", new="", expect='RT16 '),
+  # Hai lớp: RLS của bảng ẩn cũng chạy BÊN TRONG policy (người khác không đọc
+  # được dòng ẩn của mình), nên phải phá cả hai — RT17·một-lớp ghi lại điều đó.
+  dict(suite=RTS, id='RT17', mig=RTM, how='ẩn của một người áp cho mọi người (bỏ cả lọc người lẫn RLS bảng ẩn)',
+       old="h.user_id = auth.uid() AND h.post_id", new="h.post_id", expect='RT17 ',
+       extra=(("ON public.community_post_hides FOR SELECT TO authenticated USING (auth.uid() = user_id);", "ON public.community_post_hides FOR SELECT TO authenticated USING (true);"),)),
+  dict(suite=RTS, id='RT17·một-lớp', mig=RTM, how='chỉ bỏ lọc người trong policy — RLS bảng ẩn vẫn chặn, PHẢI xanh', green_ok=True,
+       old="h.user_id = auth.uid() AND h.post_id", new="h.post_id", expect='RT17 '),
+  dict(suite=RTS, id='RT18', mig=RTM, how='ai cũng đọc được danh sách ẩn',
+       old="ON public.community_post_hides FOR SELECT TO authenticated USING (auth.uid() = user_id);", new="ON public.community_post_hides FOR SELECT TO authenticated USING (true);", expect='RT18 '),
+  dict(suite=RTS, id='RT19', mig=RTM, how='không bỏ ẩn được',
+       old="CREATE POLICY \"Users unhide posts for themselves\"\n  ON public.community_post_hides FOR DELETE TO authenticated USING (auth.uid() = user_id);\n", new="", expect='RT19 '),
+  dict(suite=RTS, id='RT20', mig=RTM, how='bỏ vế tạm ẩn tác giả',
+       old="      AND NOT EXISTS (SELECT 1 FROM public.community_mutes m\n                       WHERE m.user_id = auth.uid() AND m.muted_id = community_posts.author_id AND m.until > now())\n", new="", expect='RT20 '),
+  dict(suite=RTS, id='RT21', mig=RTM, how='tạm ẩn một người làm ẩn mọi tác giả',
+       old="AND m.muted_id = community_posts.author_id ", new="", expect='RT21 '),
+  dict(suite=RTS, id='RT22', mig=RTM, how='tạm ẩn được chính mình',
+       old=",\n  CONSTRAINT community_mutes_not_self CHECK (user_id <> muted_id)", new="", expect='RT22 '),
+  dict(suite=RTS, id='RT23', mig=RTM, how='tạm ẩn không có trần',
+       old="WITH CHECK (auth.uid() = user_id AND until <= now() + interval '31 days');", new="WITH CHECK (auth.uid() = user_id);", expect='RT23 '),
+  dict(suite=RTS, id='RT24', mig=RTM, how='tạm ẩn không bao giờ hết hạn', old=" AND m.until > now()", new="", expect='RT24 '),
+  dict(suite=RTS, id='RT25', mig=RTM, how='lọc cả bài của chính mình',
+       old="  USING (\n    author_id = auth.uid()\n    OR (\n" + _RT_HIDE, new="  USING (\n    false\n    OR (\n" + _RT_HIDE, expect='RT25 '),
+  dict(suite=RTS, id='RT26', mig=RTM, how='ai cũng đọc được danh sách tạm ẩn',
+       old="ON public.community_mutes FOR SELECT TO authenticated USING (auth.uid() = user_id);", new="ON public.community_mutes FOR SELECT TO authenticated USING (true);", expect='RT26 '),
+  dict(suite=RTS, id='RT27', mig=RTM, how='trần báo cáo 100/ngày',
+       old="created_at > now() - interval '24 hours') >= 10 THEN", new="created_at > now() - interval '24 hours') >= 100 THEN", expect='RT27 '),
+  dict(suite=RTS, id='RT28', mig=RTM, how='cửa sổ trần 48 giờ',
+       old="created_at > now() - interval '24 hours') >= 10 THEN", new="created_at > now() - interval '48 hours') >= 10 THEN", expect='RT28 '),
+  dict(suite=RTS, id='RT29', mig=RTM, how='cấp hàm xét điều kiện cho client',
+       old="REVOKE EXECUTE ON FUNCTION public.community_reporter_eligible(uuid) FROM PUBLIC, anon, authenticated;",
+       new="REVOKE EXECUTE ON FUNCTION public.community_reporter_eligible(uuid) FROM PUBLIC, anon;", expect='RT29 '),
+  dict(suite=RTS, id='RT30', mig=RTM, how='anon giữ quyền trên bảng ẩn', old="REVOKE ALL ON public.community_post_hides FROM anon;\n", new="", expect='RT30 '),
 ]

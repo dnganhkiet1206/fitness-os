@@ -4,6 +4,10 @@
 \set C '''cccccccc-0000-0000-0000-000000000003'''
 \set D '''dddddddd-0000-0000-0000-000000000004'''
 INSERT INTO auth.users VALUES (:A),(:B),(:C),(:D);
+-- Người dùng của bộ này là tài khoản hoạt động: một buổi tập gần đây là
+-- "đóng góp" theo luật báo cáo đáng tin (20261007220000), nên báo cáo của
+-- họ được tính vào ngưỡng tự ẩn như trước.
+INSERT INTO workout_sessions (user_id) VALUES (:A),(:B),(:C),(:D);
 -- thư viện: một bài chung, một bài tự tạo của A
 INSERT INTO exercises (id, user_id, name) VALUES ('11111111-0000-0000-0000-000000000001', NULL, 'Incline DB Press'), ('22222222-0000-0000-0000-000000000002', :A, 'My Custom Press');
 INSERT INTO workout_sessions (id, user_id, template_name, volume_load, pr_detected, sets) VALUES
@@ -108,6 +112,11 @@ DO $$ BEGIN ASSERT (SELECT hidden FROM community_posts WHERE id = (SELECT post_a
 SELECT pg_temp.who(:B); SET ROLE authenticated; INSERT INTO community_reports (post_id, reason) VALUES (:'post_a', 'spam'); RESET ROLE;
 DO $$ BEGIN ASSERT (SELECT hidden FROM community_posts WHERE id = (SELECT post_a FROM ids)), '29 ba người báo cáo mà chưa ẩn'; END $$;
 SELECT pg_temp.who(:C); SET ROLE authenticated;
+-- C là người báo cáo, nên từ 20261007220000 bài cũng bị ẩn RIÊNG với C. Gỡ dòng
+-- ẩn riêng ấy để 30 chỉ đo cờ `hidden` chung — không thì bỏ `NOT hidden` khỏi
+-- policy mà 30 vẫn xanh (lớp ẩn riêng che hộ).
+DELETE FROM community_post_hides WHERE post_id = :'post_a';
+DO $$ BEGIN ASSERT (SELECT count(*) FROM community_post_hides) = 0, '30b C còn ẩn riêng bài — 30 không đo được gì'; END $$;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_posts WHERE id = (SELECT post_a FROM ids)) = 0, '30 bài đã ẩn vẫn hiện với người khác'; END $$;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_reports) = 1, '31 đọc được báo cáo của người khác'; END $$;
 RESET ROLE;
@@ -135,4 +144,4 @@ RESET ROLE;
 -- ── xoá tài khoản ──
 DELETE FROM auth.users WHERE id = :A;
 DO $$ BEGIN ASSERT (SELECT count(*) FROM community_profiles WHERE user_id = 'aaaaaaaa-0000-0000-0000-000000000001') = 0 AND (SELECT count(*) FROM community_posts) = 0, '36 xoá tài khoản để lại dữ liệu cộng đồng'; END $$;
-\echo TẤT CẢ 39 KỊCH BẢN ĐÚNG
+\echo TẤT CẢ 40 KỊCH BẢN ĐÚNG

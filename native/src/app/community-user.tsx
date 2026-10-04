@@ -17,7 +17,7 @@ import { PostCard } from '@/components/ascnd/post-card';
 import { ProgressJourney } from '@/components/ascnd/progress-journey';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
-import { useI18n } from '@/hooks/use-app-settings';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
   type PostKindFilter,
   useBlock,
@@ -25,7 +25,10 @@ import {
   useCommunityUserKinds,
   useCommunityUserPosts,
   useFollow,
+  useMute,
+  useMutedUsers,
   useReport,
+  useUnmute,
   useUserBadges,
   useUserStats,
 } from '@/hooks/use-community';
@@ -33,6 +36,7 @@ import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 import { toast } from '@/lib/toast';
 import { fillCopy } from '@/lib/copy-fill';
+import { getLocale } from '@/lib/i18n';
 
 /**
  * Hồ sơ cộng đồng của một người: ai, bao nhiêu người theo dõi, và những bài
@@ -72,14 +76,34 @@ export default function CommunityUserScreen() {
   const follow = useFollow();
   const report = useReport();
   const block = useBlock();
+  const mute = useMute();
+  const unmute = useUnmute();
+  const mutes = useMutedUsers();
+  const { lang } = useAppSettings();
 
   const u = user.data;
   const p = u?.profile;
+  /* Đang tắt tiếng người này (#6): bài của họ bị policy giấu khỏi CHÍNH trang
+     này, nên phải nói vì sao trang trống và đến bao giờ. */
+  const muted = p ? (mutes.data ?? []).find((x) => x.user_id === p.user_id) : undefined;
+  const mutedUntil = muted ? new Date(muted.until).toLocaleDateString(getLocale(lang), { day: 'numeric', month: 'short' }) : '';
+  const doUnmute = () =>
+    p && unmute.mutate(p.user_id, { onSuccess: () => toast.success(i18n.nPgUnmuted), onError: (e: Error) => toast.fail(e) });
 
   const menu = () => {
     if (!p) return;
     Haptics.selection();
     Alert.alert(p.display_name, undefined, [
+      muted
+        ? { text: i18n.nPgUnmute, onPress: doUnmute }
+        : {
+            text: i18n.nPgMute.replace('{h}', p.handle),
+            onPress: () =>
+              mute.mutate(p.user_id, {
+                onSuccess: () => toast.success(i18n.nPgMuted.replace('{h}', p.handle)),
+                onError: (e: Error) => toast.fail(e),
+              }),
+          },
       {
         text: i18n.nCmReport,
         onPress: () =>
@@ -237,12 +261,21 @@ export default function CommunityUserScreen() {
               bài này), gộp cả hành trình lên đầu danh sách. */}
           {id && (kind === 'progress' || (kinds.data ?? []).join() === 'progress') ? <ProgressJourney userId={id} /> : null}
 
+          {muted ? (
+            <GlassCard style={styles.mutedCard} testID="muted-notice">
+              <Text style={styles.mutedText}>{fillCopy(i18n.nPgMutedNotice, { h: p.handle, d: mutedUntil })}</Text>
+              <PressScale accessibilityRole="button" disabled={unmute.isPending} onPress={doUnmute} style={styles.quietBtn}>
+                <Text style={styles.quietText}>{i18n.nPgUnmute}</Text>
+              </PressScale>
+            </GlassCard>
+          ) : null}
+
           {posts.isError && !posts.isFetchNextPageError ? (
             <LoadFailed i18n={i18n} onRetry={() => posts.refetch()} />
           ) : posts.isPending ? (
             <ActivityIndicator color={c.mutedForeground} />
           ) : (posts.data ?? []).length === 0 ? (
-            <Text style={styles.none}>{i18n.nCmEmptyDiscover}</Text>
+            muted ? null : <Text style={styles.none}>{i18n.nCmEmptyDiscover}</Text>
           ) : (
             <>
               {(posts.data ?? []).map((post) => (
@@ -284,6 +317,8 @@ const stylesFor = makeStyles((c, m) => ({
   solidText: { ...type.headline, color: c.primaryForeground },
   quietBtn: { height: 44, borderRadius: radius.full, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center' },
   quietText: { ...type.headline, color: c.foreground },
+  mutedCard: { gap: spacing.md },
+  mutedText: { ...type.body, color: c.foreground },
   meRow: { flexDirection: 'row', gap: spacing.sm },
   savedBtn: { flexDirection: 'row', gap: spacing.sm },
   flex: { flex: 1 },

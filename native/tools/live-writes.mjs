@@ -68,7 +68,7 @@ function withDefaults(table, row) {
   const out = { ...row };
   for (const [col, def] of Object.entries(d)) {
     if (out[col] !== undefined) continue;
-    if (def.now) out[col] = new Date().toISOString();
+    if (def.now) out[col] = new Date(Date.now() + (def.days ?? 0) * 86400000).toISOString();
     else if (def.uuid) out[col] = randomUUID();
     else if (def.uid) out[col] = UID;
     else out[col] = def.value;

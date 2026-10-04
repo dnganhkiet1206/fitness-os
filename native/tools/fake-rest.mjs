@@ -721,7 +721,12 @@ if (!/if \(table === 'rpc'\) \{[\s\S]{0,1600}rpcArgsRejection\(fn, args\)[\s\S]{
     try { got = run(); } catch (e) { got = `ném lỗi: ${e.message}`; }
     if (got !== want) problems.push(`Content-Range / offset sai (#70): ${label} — ra "${got}", phải là "${want}"`);
   }
-  if (!/'content-range': contentRange\(world\[table\] \?\? \[\], u, rows\.length, req\.headers\(\)\['prefer'\] \?\? ''\)/.test(serverSrc)) {
+  /* Từ #7 (A 04/10) tổng đếm là của những hàng người xem ĐỌC ĐƯỢC (`seen` =
+     `readable(…)`), như PostgREST đếm sau RLS — không phải cả bảng. */
+  if (
+    !/const seen = readable\(world, table, world\[table\] \?\? \[\]\);/.test(serverSrc) ||
+    !/'content-range': contentRange\(seen, u, rows\.length, req\.headers\(\)\['prefer'\] \?\? ''\)/.test(serverSrc)
+  ) {
     problems.push('tools/live-server.mjs không đặt `Content-Range` từ `contentRange(…)` cho lượt đọc bảng — mọi số đếm của app lại thành null (#70)');
   }
   if (!/'access-control-expose-headers': 'Content-Range'/.test(serverSrc)) {

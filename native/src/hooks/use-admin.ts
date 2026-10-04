@@ -60,6 +60,8 @@ export interface QueueItem {
   target_type: TargetType;
   target_id: string;
   report_count: number;
+  /** Trong số đó, bao nhiêu được tính vào ngưỡng tự ẩn (#6). */
+  counted_count: number;
   reasons: Record<string, number>;
   last_at: string;
   target: {
@@ -98,6 +100,9 @@ export interface TargetDetail {
     note: string | null;
     status: ReportStatus;
     created_at: string;
+    /** Người báo cáo đủ điều kiện lúc báo cáo (#6) — chỉ báo cáo được tính mới
+        góp vào ngưỡng tự ẩn. */
+    counted: boolean;
     reporter: { user_id: string; handle: string } | null;
   }[];
   appeals: {

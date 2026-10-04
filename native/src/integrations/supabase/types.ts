@@ -470,6 +470,27 @@ export type Database = {
         }
         Relationships: []
       }
+      community_mutes: {
+        Row: {
+          created_at: string
+          muted_id: string
+          until: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          muted_id: string
+          until?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          muted_id?: string
+          until?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_notifications: {
         Row: {
           actor_id: string | null
@@ -550,6 +571,24 @@ export type Database = {
         Relationships: []
       }
       /* Ai đã thử buổi tập nào (20261007120000): mỗi người một lần mỗi bài. */
+      community_post_hides: {
+        Row: {
+          created_at: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          post_id: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_post_tries: {
         Row: {
           post_id: string
@@ -667,6 +706,7 @@ export type Database = {
       community_reports: {
         Row: {
           comment_id: string | null
+          counted: boolean
           created_at: string
           id: string
           note: string
@@ -678,6 +718,7 @@ export type Database = {
         }
         Insert: {
           comment_id?: string | null
+          counted?: boolean
           created_at?: string
           id?: string
           note?: string
@@ -689,6 +730,7 @@ export type Database = {
         }
         Update: {
           comment_id?: string | null
+          counted?: boolean
           created_at?: string
           id?: string
           note?: string

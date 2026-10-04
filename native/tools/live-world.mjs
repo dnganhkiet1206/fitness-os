@@ -697,6 +697,11 @@ export const FIXTURES = {
     { user_id: 'c0000000-0000-4000-8000-00000000a5cd', handle: 'ascnd', display_name: 'ASCND', bio: 'Buổi tập mẫu, thử thách và mẹo từ đội ngũ ASCND.', mascot_id: 'koa', is_official: true, created_at: day(60), updated_at: day(60) },
     { user_id: 'c0000000-0000-4000-8000-0000000011a1', handle: 'linh.pham', display_name: 'Linh Phạm', bio: '', mascot_id: 'blaze', is_official: false, created_at: day(40), updated_at: day(40) },
     { user_id: 'c0000000-0000-4000-8000-0000000022b2', handle: 'tuan.ng', display_name: 'Tuấn Nguyễn', bio: '', mascot_id: 'koa', is_official: false, created_at: day(30), updated_at: day(30) },
+    /* Minh: người UID đã chặn (Quyền riêng tư, dòng có hồ sơ). Hà: người UID
+       đang tắt tiếng (#6). Cả hai KHÔNG có bài nào, để chặn và tắt tiếng không
+       đổi bảng tin mà các kịch bản khác đo. */
+    { user_id: 'c0000000-0000-4000-8000-0000000044d4', handle: 'minh.vo', display_name: 'Minh Võ', bio: '', mascot_id: 'blaze', is_official: false, created_at: day(25), updated_at: day(25) },
+    { user_id: 'c0000000-0000-4000-8000-0000000055e5', handle: 'ha.le', display_name: 'Hà Lê', bio: '', mascot_id: 'koa', is_official: false, created_at: day(22), updated_at: day(22) },
   ],
   community_follows: [
     { follower_id: UID, followee_id: 'c0000000-0000-4000-8000-0000000011a1', created_at: day(5) },
@@ -708,8 +713,19 @@ export const FIXTURES = {
     đầu vẫn là của UID. Người ấy không có bài nào ở đây: bài của người bị chặn
     không bao giờ về tới client, và feed giả không lọc.
   */
+  /* #6: một lượt tắt tiếng còn hạn (màn Quyền riêng tư có danh sách) và một
+     lượt đã hết hạn — policy so `until > now()`, nên dòng hết hạn không được
+     hiện ở danh sách lẫn không được giấu bài. */
+  community_mutes: [
+    { user_id: UID, muted_id: 'c0000000-0000-4000-8000-0000000055e5', until: new Date(Date.now() + 12 * 86400000).toISOString(), created_at: day(18) },
+    { user_id: UID, muted_id: 'c0000000-0000-4000-8000-0000000011a1', until: day(2), created_at: day(32) },
+  ],
   community_blocks: [
-    { blocker_id: UID, blocked_id: 'c0000000-0000-4000-8000-0000000022b2', created_at: day(3) },
+    /* Người bị chặn CÒN hồ sơ là Minh (không bài, không bình luận). Trước 04/10
+       là Tuấn — người có bình luận mà kịch bản #30/#173 đòi thấy; máy chủ giả
+       chưa mô phỏng policy đọc nên mâu thuẫn ấy không lộ. Từ #7 (`readable`)
+       bình luận của người bị chặn bị giấu như trên server thật. */
+    { blocker_id: UID, blocked_id: 'c0000000-0000-4000-8000-0000000044d4', created_at: day(3) },
     { blocker_id: UID, blocked_id: 'c0000000-0000-4000-8000-0000000033c3', created_at: day(12) },
   ],
   /* #42: UID CHƯA bật huy hiệu (mặc định), Linh đã bật — hồ sơ Linh có hàng
@@ -1218,5 +1234,6 @@ export const FIXTURES = {
   thì phải rời khỏi đây.
 */
 export const FIXTURE_EMPTY_OK = {
+  community_post_hides: 'app chỉ GHI bảng này (Ẩn bài, và trigger ghi hộ khi báo cáo), không đọc; tác dụng của nó đo qua policy đọc bài mô phỏng (`readable` của live-server) trong kịch bản #6',
   entitlements: 'hạng MIỄN PHÍ là trạng thái đang được đo; một dòng pro lật mọi cổng tính năng của cả app, và việc mở khoá khi thử (TEST_UNLOCK_ALL) còn chờ chủ dự án quyết',
 };

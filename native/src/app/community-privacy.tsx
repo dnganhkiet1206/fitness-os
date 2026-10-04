@@ -16,10 +16,12 @@ import {
   useBlockedUsers,
   useCommunitySettings,
   useDeleteAllMyPosts,
+  useMutedUsers,
   useSetDefaultVisibility,
   useSetNotify,
   useSetShowBadges,
   useUnblock,
+  useUnmute,
 } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
 import { getLocale } from '@/lib/i18n';
@@ -39,6 +41,8 @@ import { fillCopy } from '@/lib/copy-fill';
  *                       vĩnh viễn. Bỏ chặn không tự theo dõi lại — trigger
  *                       chặn đã gỡ quan hệ ấy và không ai nên bị theo dõi lại
  *                       mà không tự bấm.
+ *   Đã tắt tiếng        (#6) người mình tạm không thấy bài, kèm hạn; chỉ hiện
+ *                       khi có ai.
  *   Xoá mọi bài         hai lần hỏi, vì không hoàn tác được. Hồ sơ giữ nguyên:
  *                       xoá hồ sơ là việc của xoá tài khoản.
  *
@@ -55,6 +59,8 @@ export default function CommunityPrivacyScreen() {
   const setNotify = useSetNotify();
   const blocked = useBlockedUsers();
   const unblock = useUnblock();
+  const muted = useMutedUsers();
+  const unmute = useUnmute();
   const wipe = useDeleteAllMyPosts();
 
   const locale = getLocale(lang);
@@ -223,6 +229,53 @@ export default function CommunityPrivacyScreen() {
           </GlassCard>
         )}
       </View>
+
+      {/* Tắt tiếng (#6): tạm thời và nhẹ hơn chặn — chỉ hiện khi có người đang
+          bị tắt tiếng. Hết hạn là tự hết; một mục rỗng thường trực ở đây chỉ
+          là thêm một thứ để đọc qua. Bỏ tắt tiếng không hỏi lại: không mất gì,
+          bấm lại từ menu bài là xong. */}
+      {muted.isError ? (
+        <View style={styles.section}>
+          <Text style={styles.heading}>{i18n.nPgMutedTitle}</Text>
+          <LoadFailed i18n={i18n} onRetry={() => muted.refetch()} />
+        </View>
+      ) : muted.data && muted.data.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={styles.heading}>{i18n.nPgMutedTitle}</Text>
+          <Text style={styles.sub}>{i18n.nPgMutedHint}</Text>
+          <GlassCard style={styles.list} testID="muted-list">
+            {muted.data.map((m, i) => (
+              <View key={m.user_id} style={[styles.row, i > 0 && styles.rowRule]}>
+                <CommunityAvatar mascotId={m.profile?.mascot_id ?? null} size={40} />
+                <View style={styles.who}>
+                  <Text style={styles.name} numberOfLines={2}>
+                    {m.profile ? m.profile.display_name : i18n.nPvNoProfile}
+                  </Text>
+                  {m.profile ? (
+                    <Text style={styles.meta} numberOfLines={1}>
+                      @{m.profile.handle}
+                    </Text>
+                  ) : null}
+                  <Text style={styles.meta}>
+                    {i18n.nPgMutedUntil.replace('{d}', new Date(m.until).toLocaleDateString(locale, { day: 'numeric', month: 'short' }))}
+                  </Text>
+                </View>
+                <PressScale
+                  accessibilityRole="button"
+                  accessibilityLabel={`${i18n.nPgUnmute} ${m.profile?.display_name ?? ''}`.trim()}
+                  disabled={unmute.isPending}
+                  hitSlop={4}
+                  onPress={() =>
+                    unmute.mutate(m.user_id, { onSuccess: () => toast.success(i18n.nPgUnmuted), onError: (e: Error) => toast.fail(e) })
+                  }
+                  style={styles.pill}>
+                  <Text style={styles.pillText}>{i18n.nPgUnmute}</Text>
+                </PressScale>
+              </View>
+            ))}
+          </GlassCard>
+        </View>
+      ) : null}
 
       <View style={styles.section}>
         <Text style={styles.heading}>{i18n.nPvPosts}</Text>

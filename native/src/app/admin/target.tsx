@@ -201,6 +201,9 @@ function Detail({ d, role }: { d: TargetDetail; role: AppRole }) {
         <Text style={a.heading} accessibilityRole="header">
           {i18n.nPgAdReportsHeading}
         </Text>
+        {/* Báo cáo của tài khoản chưa đủ điều kiện (#6) vẫn hiện — người
+            kiểm duyệt cần thấy hết — nhưng nói rõ nó không đẩy bài tới ngưỡng. */}
+        {d.reports.some((r) => r.counted === false) ? <Text style={a.meta}>{i18n.nPgAdNotCountedHint}</Text> : null}
         {d.reports.length === 0 ? (
           <Empty text={i18n.nPgAdNoReports} />
         ) : (
@@ -212,6 +215,7 @@ function Detail({ d, role }: { d: TargetDetail; role: AppRole }) {
                   <Text style={a.meta}>
                     {r.status === 'open' ? i18n.nPgAdStatusOpen : r.status === 'actioned' ? i18n.nPgAdStatusActioned : i18n.nPgAdStatusDismissed}
                   </Text>
+                  {r.counted === false ? <Text style={styles.notCounted}>{i18n.nPgAdNotCounted}</Text> : null}
                   <Text style={styles.when}>{timeAgo(r.created_at, i18n, lang)}</Text>
                 </View>
                 {r.note ? <Text style={a.excerpt}>{r.note}</Text> : null}
@@ -269,6 +273,9 @@ function Btn({
 
 const stylesFor = makeStyles((c) => ({
   content: { ...type.body, color: c.foreground, lineHeight: 22, maxWidth: 680 },
+  /* Chữ caption đậm như nhãn trạng thái của hàng đợi, màu trầm: một ghi chú cho
+     người kiểm duyệt, không phải một cảnh báo. */
+  notCounted: { ...type.caption, color: c.mutedForeground, fontWeight: '700' },
   inlineBtn: { alignSelf: 'flex-start' },
   author: { gap: 2, alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
   authorName: { ...type.body, color: c.foreground, fontWeight: '600' },

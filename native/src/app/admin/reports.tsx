@@ -89,6 +89,7 @@ function QueueRow({ item, first }: { item: QueueItem; first: boolean }) {
       <Text style={a.meta}>
         {item.author ? `@${item.author.handle} · ` : ''}
         {fillCopy(i18n.nPgAdReportsN, { n: item.report_count })}
+        {item.counted_count < item.report_count ? ` · ${fillCopy(i18n.nPgAdCountedN, { n: item.counted_count })}` : ''}
         {top ? ` · ${reasonLabel(top[0])}` : ''}
       </Text>
     </PressScale>

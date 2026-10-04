@@ -101,12 +101,17 @@ export function fakeSupabase({ world, mode = 'full', report = {} }) {
          `gte`/`lt`; giới hạn ấy ghi ở kịch bản "nhật ký ngày khác" của
          `live.mjs` và vẫn còn nguyên. */
       const req = r.request();
+      const limited = reportLimit(world, table, req.method());
+      if (limited) return r.fulfill(limited);
+      const before = table === 'community_reports' ? (world.community_reports ?? []).length : 0;
       const wrote = applyWrite(world, table, req.method(), u, req.postData(), req.headers());
+      if (table === 'community_reports' && wrote) reportsAfterInsert(world, before);
       if (wrote) {
         if (!wrote.applied) note('writesNotApplied', `${req.method()} ${table} (${unsupportedFilters(u).join(', ')})`);
         return r.fulfill({ status: wrote.status, contentType: 'application/json', body: wrote.body });
       }
-      const rows = applyQuery(world[table] ?? [], u);
+      const seen = readable(world, table, world[table] ?? []);
+      const rows = applyQuery(seen, u);
       /* #140: tài nguyên nhúng một tầng; nhúng không dựng được thì ghi ra. */
       const embedded = embedRows(world, table, rows, u, TYPE_RELATIONSHIPS);
       for (const x of embedded.unsupported) note('selectMisses', `nhúng không dựng được: ${x}`);
@@ -118,7 +123,7 @@ export function fakeSupabase({ world, mode = 'full', report = {} }) {
       return r.fulfill({
         status: 200, contentType: 'application/json',
         headers: {
-          'content-range': contentRange(world[table] ?? [], u, rows.length, req.headers()['prefer'] ?? ''),
+          'content-range': contentRange(seen, u, rows.length, req.headers()['prefer'] ?? ''),
           'access-control-expose-headers': 'Content-Range',
         },
         body: req.method() === 'HEAD' ? '' : JSON.stringify(single ? (embedded.rows[0] ?? null) : embedded.rows),
@@ -181,3 +186,72 @@ function solidPng(seed) {
     chunk('IHDR', ihdr), chunk('IDAT', deflateSync(raw)), chunk('IEND', Buffer.alloc(0)),
   ]);
 }
+
+/*
+  Policy đọc bài và bình luận của cộng đồng, mô phỏng (A 04/10, việc #7 ở #6).
+
+  Trước đây bộ chạy KHÔNG mô phỏng RLS: bài `hidden` của người khác, bài
+  chỉ-người-theo-dõi của người mình không theo dõi, bài của người đã chặn
+  nhau — đều được trả về. Kịch bản thẻ "Hành trình" đo ra điều ấy: thêm một bài
+  ẩn của người khác vào thế giới thì app ĐẾM nó, trong khi trên Postgres thật
+  policy đã lọc mất. Mọi phép đo về "người xem không thấy X" vì vậy mù ở live.
+
+  Chép đúng ba vế của policy SELECT (`20260927120000_community_foundation.sql`
+  và các bản sửa): của mình thì luôn thấy; của người khác thì phải KHÔNG ẩn,
+  không chặn nhau (hai chiều), và công khai HOẶC mình đang theo dõi. Bình luận:
+  của mình luôn thấy; của người khác phải không ẩn, không chặn nhau, và bài cha
+  phải đọc được.
+*/
+export function readable(world, table, rows) {
+  if (table !== 'community_posts' && table !== 'community_comments') return rows;
+  const blocks = world.community_blocks ?? [];
+  const blocked = (a, b) => blocks.some((x) => (x.blocker_id === a && x.blocked_id === b) || (x.blocker_id === b && x.blocked_id === a));
+  const follows = (b) => (world.community_follows ?? []).some((f) => f.follower_id === UID && f.followee_id === b);
+  /* Policy RESTRICTIVE của 20261007220000 (#6): bài mình ẩn riêng và bài của
+     người mình đang tắt tiếng (còn hạn) — chỉ với bài, không với bình luận. */
+  const hid = (id) => (world.community_post_hides ?? []).some((h) => h.user_id === UID && h.post_id === id);
+  const now = new Date().toISOString();
+  const muted = (a) => (world.community_mutes ?? []).some((m) => m.user_id === UID && m.muted_id === a && m.until > now);
+  const postOk = (p) =>
+    p.author_id === UID || (!p.hidden && !blocked(UID, p.author_id) && (p.visibility !== 'followers' || follows(p.author_id)));
+  if (table === 'community_posts') return rows.filter((p) => postOk(p) && (p.author_id === UID || (!hid(p.id) && !muted(p.author_id))));
+  const posts = new Map((world.community_posts ?? []).map((p) => [p.id, p]));
+  return rows.filter((c) => {
+    if (c.author_id === UID) return true;
+    const parent = posts.get(c.post_id);
+    return !c.hidden && !blocked(UID, c.author_id) && (!parent || postOk(parent));
+  });
+}
+
+/*
+  Hai trigger của báo cáo (20261007220000, #6), mô phỏng:
+
+  trần     BEFORE INSERT: đã có ≥ 10 báo cáo trong 24 giờ → 54000. PostgREST
+           trả lớp 54 bằng HTTP 500, nên máy chủ giả cũng vậy.
+  ẩn riêng AFTER INSERT: báo cáo một bài thì bài ấy ẩn với chính người báo cáo.
+
+  `counted` (người báo cáo đủ điều kiện) KHÔNG mô phỏng: người dùng của thế
+  giới giả là tài khoản cũ có hoạt động, và client không đọc lại cột ấy.
+*/
+export const REPORT_DAILY_LIMIT = 10;
+
+function reportLimit(world, table, method) {
+  if (table !== 'community_reports' || method !== 'POST') return null;
+  const since = new Date(Date.now() - 86400000).toISOString();
+  const n = (world.community_reports ?? []).filter((x) => x.reporter_id === UID && x.created_at > since).length;
+  if (n < REPORT_DAILY_LIMIT) return null;
+  return {
+    status: 500, contentType: 'application/json',
+    body: JSON.stringify({ code: '54000', details: null, hint: null, message: 'report limit reached: at most 10 reports per 24 hours' }),
+  };
+}
+
+function reportsAfterInsert(world, before) {
+  const hides = (world.community_post_hides ??= []);
+  for (const x of (world.community_reports ?? []).slice(before)) {
+    if (x.post_id && !hides.some((h) => h.user_id === x.reporter_id && h.post_id === x.post_id)) {
+      hides.push({ user_id: x.reporter_id, post_id: x.post_id, created_at: new Date().toISOString() });
+    }
+  }
+}
+
