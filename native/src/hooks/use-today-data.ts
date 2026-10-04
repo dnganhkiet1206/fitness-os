@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { localDateStr, localDayRangeISO } from '@/lib/local-date';
+import { mainSleep } from '@/lib/daily-log-service';
 import { todayKeys } from '@/lib/today-keys';
 import { useAuth } from './use-auth';
 
@@ -78,11 +79,13 @@ export function useTodaySleep() {
         .eq('user_id', user!.id)
         .gte('waketime', day.start)
         .lt('waketime', day.end)
-        .order('waketime', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('waketime', { ascending: false });
       if (error) throw error;
-      return data;
+      /* Cùng định nghĩa "giấc chính" với readiness engine: giấc DÀI NHẤT
+         (mainSleep), không phải giấc kết thúc muộn nhất. Ngày có đêm 8h +
+         nap 1h thì limit(1) theo waketime trả về nap, trong khi readiness
+         tính từ đêm — màn chính tự mâu thuẫn. */
+      return mainSleep(data);
     },
   });
 }
