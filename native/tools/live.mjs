@@ -93,7 +93,7 @@ const SHOTS = path.join(NATIVE, 'tools', '.live-shots');
 const PORT = 8731;
 import { FIXTURES, REF, UID, applyQuery, day, jwt, LIVE_TZ } from './live-world.mjs';
 import { RPC_FIXTURES, asStaff, rewardAmountFor } from './live-rpc.mjs';
-import { fakeSupabase } from './live-server.mjs';
+import { fakeSupabase, readable as policyReadable } from './live-server.mjs';
 import { DESTRUCTIVE } from './live-press.mjs';
 import {
   LARGE_LANGS, LARGE_TEXT, NARROW, NARROW_LANGS, NARROW_ROUTES, NARROW_ROUTES_MAIN, NARROW_ROUTES_NUTRITION, clipExempt, copyPatterns,
@@ -1955,6 +1955,9 @@ const SCENARIOS = [
       const reqs = [];
       page.on('request', (r) => {
         if (r.method() !== 'GET' || !/\/rest\/v1\/community_posts\?/.test(r.url())) return;
+        /* Khối "Hữu ích tuần này" (A 04/10) cũng đọc community_posts khi làm mới —
+           một truy vấn riêng, không phải một trang của feed. */
+        if (/useful_score=/.test(r.url())) return;
         const or = new URL(r.url()).searchParams.get('or') ?? '';
         reqs.push(/created_at\.gt\./.test(or) ? 'newer' : /created_at\.lt\./.test(or) ? 'older' : 'first');
       });
@@ -2713,6 +2716,63 @@ const SCENARIOS = [
       if (!(await until(async () => (await notice.count()) === 0))) return '(E) bỏ tắt tiếng mà dòng báo vẫn còn';
       if ((world.community_mutes ?? []).some((x) => x.user_id === UID && x.muted_id === LINH && x.until > new Date().toISOString())) return '(E) dòng tắt tiếng còn hạn chưa bị xoá';
       if (!(await until(async () => (await more().count()) === n0 - 2))) return `(E) bỏ tắt tiếng mà bài chưa ẩn không quay lại, hoặc bài đã ẩn quay lại (${(await more().count()) - 1} bài)`;
+      return null;
+    },
+  },
+  {
+    /*
+      A 04/10 — "Hữu ích tuần này" (concept §19, bàn với C ở #6). Thêm vào thế
+      giới ba bài đáng lẽ KHÔNG được chọn, mỗi bài điểm cao hơn mọi bài thật:
+        · bài 10 ngày trước (điểm 999) — ngoài cửa sổ 7 ngày;
+        · bài mới mà UID đã ẩn riêng (điểm 900) — RLS phải giấu nó;
+        · bài của chính UID (điểm 950) — không giới thiệu bài của mình;
+      và một bài mới điểm 4 — dưới ngưỡng 5. Đòi:
+        (A) khối có, đúng ba hàng, đúng thứ tự điểm của những bài ĐỌC ĐƯỢC;
+        (B) không hàng nào là một trong bốn bài trên;
+        (C) mỗi hàng nói lý do (người thử / lượt lưu…), không nói "điểm";
+        (D) chạm hàng đầu mở đúng bài;
+        (E) ở "Đang theo dõi" không có khối.
+    */
+    name: 'Khám phá: khối Hữu ích tuần này chọn đúng ba bài đọc được của 7 ngày, xếp theo điểm, mở đúng bài (A 04/10)',
+    route: '/community', mode: 'full',
+    async run(page, { world }) {
+      const LINH = 'c0000000-0000-4000-8000-0000000011a1';
+      const base = world.community_posts.find((p) => p.id === 'cp000000-0000-4000-8000-000000000001');
+      const mk = (id, author, daysAgo, score) => ({
+        ...structuredClone(base), id, author_id: author, created_at: new Date(Date.now() - daysAgo * 86400e3).toISOString(),
+        useful_score: score, try_count: 0, like_count: 1, save_count: 0, comment_count: 0,
+      });
+      const OLD = 'cp000000-0000-4000-8000-0000000005a1';
+      const HID = 'cp000000-0000-4000-8000-0000000005a2';
+      const MINE = 'cp000000-0000-4000-8000-0000000005a3';
+      const LOW = 'cp000000-0000-4000-8000-0000000005a4';
+      world.community_posts.push(mk(OLD, LINH, 10, 999), mk(HID, LINH, 1, 900), mk(MINE, UID, 1, 950), mk(LOW, LINH, 1, 4));
+      (world.community_post_hides ??= []).push({ user_id: UID, post_id: HID, created_at: new Date().toISOString() });
+      const since = new Date(Date.now() - 7 * 86400e3).toISOString();
+      const want = policyReadable(world, 'community_posts', world.community_posts)
+        .filter((p) => p.author_id !== UID && p.created_at >= since && (p.useful_score ?? 0) >= 5)
+        .sort((a, b) => b.useful_score - a.useful_score || (a.created_at < b.created_at ? 1 : -1))
+        .slice(0, 3)
+        .map((p) => p.id);
+      if (want.length !== 3) return `thế giới giả không đủ ba bài đủ điều kiện để đo (có ${want.length})`;
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      const box = page.getByTestId('useful-this-week').filter({ visible: true });
+      for (let i = 0; i < 40 && !(await box.count()); i++) await page.waitForTimeout(250);
+      if ((await box.count()) !== 1) return '(A) Khám phá không có khối Hữu ích tuần này';
+      const ids = (await box.locator('[data-testid^="useful-cp"]').evaluateAll((es) => es.map((e) => e.getAttribute('data-testid')))).map((x) => x.replace(/^useful-/, ''));
+      for (const bad of [OLD, HID, MINE, LOW]) if (ids.includes(bad)) return `(B) khối chọn bài không được chọn: ${bad} (${{ [OLD]: 'cũ hơn 7 ngày', [HID]: 'UID đã ẩn riêng', [MINE]: 'của chính UID', [LOW]: 'dưới ngưỡng' }[bad]})`;
+      if (JSON.stringify(ids) !== JSON.stringify(want)) return `(A) khối không đúng ba bài theo thứ tự điểm: thấy ${ids.join(', ')} — phải là ${want.join(', ')}`;
+      const text = (await box.innerText()).replace(/\s+/g, ' ');
+      if (!/(tried it|người đã thử|lo probó|lo probaron)/.test(text) || !/(saves?|lượt lưu|guardados?)\b/.test(text)) return `(C) hàng không nói lý do (người thử / lượt lưu): "${text.slice(0, 200)}"`;
+      if (/\b(score|điểm)\b/i.test(text)) return '(C) khối lộ con số điểm thay vì lý do';
+      await box.getByTestId(`useful-${want[0]}`).click();
+      for (let i = 0; i < 20 && !page.url().includes(`community-post?id=${want[0]}`); i++) await page.waitForTimeout(250);
+      if (!page.url().includes(`community-post?id=${want[0]}`)) return `(D) chạm hàng đầu mà tới ${page.url().replace(/^.*8731/, '')}`;
+      await page.goBack();
+      await page.getByRole('tab', { name: /^(Following|Đang theo dõi)/ }).filter({ visible: true }).first().click();
+      await page.waitForTimeout(1200);
+      if ((await page.getByTestId('useful-this-week').filter({ visible: true }).count()) !== 0) return '(E) "Đang theo dõi" cũng có khối Hữu ích tuần này';
       return null;
     },
   },

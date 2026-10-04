@@ -382,6 +382,45 @@ export function useCommunityFeed(tab: CommunityTab) {
   });
 }
 
+/* ── Hữu ích tuần này (A 04/10, concept §19) ──────────────────────────────
+   Tối đa ba bài của 7 ngày qua, điểm hữu ích cao nhất (20261007230000: thử ×4,
+   lưu ×3, người bình luận ×2, thích ×1 — chỉ hành động của người KHÁC). Đọc
+   thẳng `community_posts`, tức đi qua RLS: bài ẩn, bị chặn, chỉ-người-theo-
+   dõi, ẩn riêng, tắt tiếng đều tự rơi ra. Khoá nằm DƯỚI `community_feed`: mọi
+   chỗ làm mới feed (ẩn bài, tắt tiếng, báo cáo, chặn) làm mới luôn khối này,
+   và `patchPost` (thích/lưu lạc quan) đi qua được vì phần tử vẫn là FeedPost. */
+export const USEFUL_MIN_SCORE = 5;
+export const USEFUL_WINDOW_DAYS = 7;
+export type UsefulPost = FeedPost & { tries: number };
+
+export function useUsefulThisWeek(enabled = true) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_feed', user?.id, 'useful'],
+    enabled: !!user && enabled,
+    queryFn: async (): Promise<UsefulPost[]> => {
+      const me = user!.id;
+      /* Cửa sổ trượt 7 × 24 giờ tính bằng mốc thời gian, không phải ngày lịch:
+         "tuần này" của khối là 168 giờ gần nhất, cho mọi múi giờ như nhau. */
+      const since = new Date(Date.now() - USEFUL_WINDOW_DAYS * 24 * 3600 * 1000).toISOString();
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select(`${POST_COLS}, try_count`)
+        .gte('created_at', since)
+        .neq('author_id', me)
+        .gte('useful_score', USEFUL_MIN_SCORE)
+        .order('useful_score', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      const rows = (data ?? []) as (PostRow & { try_count: number })[];
+      const posts = await hydrate(rows, me);
+      return posts.map((p) => ({ ...p, tries: rows.find((r) => r.id === p.id)?.try_count ?? 0 }));
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
 export function useCommunityPost(id: string | undefined) {
   const { user } = useAuth();
   return useQuery({

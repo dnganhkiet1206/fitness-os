@@ -786,7 +786,7 @@ export const FIXTURES = {
         ],
       },
       caption: 'Cuối cùng cũng lên được incline hôm nay. Thấy khoẻ hơn hẳn 🔥', visibility: 'public',
-      like_count: 128, comment_count: 3, save_count: 9, hidden: false, created_at: at(0, '11:07:12'),
+      try_count: 4, useful_score: 177, like_count: 128, comment_count: 3, save_count: 9, hidden: false, created_at: at(0, '11:07:12'),
       image_source: 'library', art_id: 'ca000000-0000-4000-8000-000000000001',
     },
     {
@@ -801,7 +801,7 @@ export const FIXTURES = {
         ],
       },
       caption: 'Kéo xà trước khi mỏi, chèo tạ đòn giữ lưng thẳng. Chất lượng mỗi rep hơn số rep.', visibility: 'public',
-      like_count: 86, comment_count: 1, save_count: 31, hidden: false, created_at: day(1),
+      try_count: 6, useful_score: 205, like_count: 86, comment_count: 1, save_count: 31, hidden: false, created_at: day(1),
       image_source: 'library', art_id: 'ca000000-0000-4000-8000-000000000004',
     },
     /* Bài Progress (#8) — đúng mockup màn 4: 12 tuần, 52.1 → 55.4 kg, vòng eo
@@ -815,7 +815,7 @@ export const FIXTURES = {
         lift: { exerciseId: 'e11', name: 'Bench Press', start: 40, end: 55, series: [40, 42.5, 42.5, 45, 45, 47.5, 47.5, 50, 50, 52.5, 55, 55] },
       },
       caption: '12 tuần tập đều đặn. Vẫn còn nhiều việc phải làm nhưng rất tự hào về sự thay đổi này.', visibility: 'public',
-      like_count: 342, comment_count: 0, save_count: 18, hidden: false, created_at: at(0, '02:00'),
+      try_count: 0, useful_score: 396, like_count: 342, comment_count: 0, save_count: 18, hidden: false, created_at: at(0, '02:00'),
     },
     /*
       Bài RECIPE (#7, người làm: B) — đúng hình mà `share_recipe` dựng phía
@@ -840,7 +840,7 @@ export const FIXTURES = {
         ],
       },
       caption: 'Một bữa ăn đơn giản, dễ làm, giàu protein và rất phù hợp cho những ngày tập luyện.', visibility: 'public',
-      like_count: 212, comment_count: 0, save_count: 24, hidden: false, created_at: at(1, '23:36'),
+      try_count: 1, useful_score: 288, like_count: 212, comment_count: 0, save_count: 24, hidden: false, created_at: at(1, '23:36'),
     },
     /*
       Bài CỦA CHÍNH MÌNH đang bị ẩn (#26): ba người khác nhau báo cáo (hai
@@ -858,7 +858,7 @@ export const FIXTURES = {
         ],
       },
       caption: 'Squat 100 kg lần đầu tiên!', visibility: 'public',
-      like_count: 2, comment_count: 0, save_count: 0, hidden: true, created_at: at(3, '18:20'),
+      try_count: 2, useful_score: 80, like_count: 2, comment_count: 0, save_count: 0, hidden: true, created_at: at(3, '18:20'),
       image_source: 'library', art_id: 'ca000000-0000-4000-8000-000000000001',
     },
   ],

@@ -1260,3 +1260,35 @@ CASES += [
        new="REVOKE EXECUTE ON FUNCTION public.community_reporter_eligible(uuid) FROM PUBLIC, anon;", expect='RT29 '),
   dict(suite=RTS, id='RT30', mig=RTM, how='anon giữ quyền trên bảng ẩn', old="REVOKE ALL ON public.community_post_hides FROM anon;\n", new="", expect='RT30 '),
 ]
+
+# ── Hữu ích tuần này (A, 04/10 — concept §19, bàn với C ở #6) ──
+USM = '20261007230000_community_useful'
+USS = 'useful'
+CASES += [
+  dict(suite=USS, id='U1', mig=USM, how='tính cả hành động của tác giả',
+       old="  IF author IS NULL OR actor = author THEN", new="  IF author IS NULL THEN", expect='U1 '),
+  dict(suite=USS, id='U2', mig=USM, how='bỏ trigger đếm lượt thử',
+       old="CREATE TRIGGER community_post_tries_count\n  AFTER INSERT OR DELETE ON public.community_post_tries\n  FOR EACH ROW EXECUTE FUNCTION public.community_try_count_bump();\n", new="", expect='U2 '),
+  dict(suite=USS, id='U3', mig=USM, how='thích nặng 2 điểm',
+       old="WHEN 'community_saves' THEN 3 ELSE 1 END;", new="WHEN 'community_saves' THEN 3 ELSE 2 END;", expect='U3 '),
+  dict(suite=USS, id='U4', mig=USM, how='lưu nặng 1 điểm',
+       old="WHEN 'community_saves' THEN 3 ELSE 1 END;", new="WHEN 'community_saves' THEN 1 ELSE 1 END;", expect='U4 '),
+  dict(suite=USS, id='U5', mig=USM, how='thử nặng 3 điểm',
+       old="WHEN 'community_post_tries' THEN 4 WHEN", new="WHEN 'community_post_tries' THEN 3 WHEN", expect='U5 '),
+  dict(suite=USS, id='U6', mig=USM, how='try_count không cộng',
+       old="SET try_count = greatest(try_count + d, 0) WHERE id = pid;", new="SET try_count = try_count WHERE id = pid;", expect='U2 '),
+  dict(suite=USS, id='U7', mig=USM, how='câu đầu tiên tự thấy chính nó (bỏ c.id <> r.id)',
+       old="c.author_id = actor AND c.id <> r.id", new="c.author_id = actor", expect='U7 '),
+  dict(suite=USS, id='U8', mig=USM, how='mỗi CÂU bình luận đều cộng',
+       old="    IF EXISTS (\n      SELECT 1 FROM public.community_comments c", new="    IF false AND EXISTS (\n      SELECT 1 FROM public.community_comments c", expect='U8 '),
+  dict(suite=USS, id='U10', mig=USM, how='xoá không trừ điểm',
+       old="  d      integer := CASE WHEN TG_OP = 'INSERT' THEN 1 ELSE -1 END;", new="  d      integer := 1;", expect='U10 '),
+  dict(suite=USS, id='U11', mig=USM, how='điểm đọc nhầm trọng số khi xoá (trừ 1 thay vì w)',
+       old="SET useful_score = greatest(useful_score + d * w, 0)", new="SET useful_score = greatest(useful_score + CASE WHEN d > 0 THEN w ELSE -1 END, 0)", expect='U10 '),
+  dict(suite=USS, id='U14', mig=USM, how='cấp hàm trigger cho client',
+       old="REVOKE EXECUTE ON FUNCTION public.community_useful_bump() FROM PUBLIC, anon, authenticated;",
+       new="GRANT EXECUTE ON FUNCTION public.community_useful_bump() TO authenticated;", expect='U14 '),
+  dict(suite=USS, id='U15', mig=USM, how='bình luận nặng 3 điểm trong trigger (lệch công thức)',
+       old="    actor := r.author_id;\n    w := 2;", new="    actor := r.author_id;\n    w := 3;", expect='U7 '),
+]
+

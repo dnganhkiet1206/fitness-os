@@ -119,6 +119,25 @@ COVERAGE_OK = {
                'đều làm M1 (nhắc trên bài công khai, đứng trước) đỏ trước — đo 02/10: ca MV3 riêng '
                'đỏ ở M1. MV3 ở đó để MV1 không xanh nhờ một hàm không nhắc ai cả.',
     },
+    'useful': {
+        'U6': 'cùng luật với U2 (trigger đếm lượt thử): phá trigger ấy (ca U2, U6) thì U2 đỏ trước.',
+        'U11': 'cùng đường trừ điểm với U10: phá chiều xoá (ca U10, U11) thì U10 đỏ trước.',
+        'U15': 'U15 so trigger với công thức tính lại; phá trọng số trong trigger (ca U3–U5, U15) bị '
+               'U3–U7 bắt trước — chính các nhãn ấy đo từng trọng số.',
+        'U9': 'cùng luật với U8 (người bình luận đếm một lần): phá vế "còn câu khác" thì U8 đỏ trước.',
+        'U12': 'cùng luật với U1 (bỏ qua tác giả), ở chiều xoá: phá vế ấy thì U1 đỏ trước.',
+        'U13': 'bài không có policy UPDATE cho client là luật của community_foundation (§7), có ca ở đó; '
+               'migration này không thêm gì để phá.',
+        'U16': 'lọc 7 ngày nằm trong TRUY VẤN của app (useUsefulThisWeek), không trong migration — '
+               'kịch bản live đo nó.',
+        'U17': 'ẩn riêng là policy RESTRICTIVE của 20261007220000, có ca RT ở report_trust.',
+        'U18': 'tắt tiếng là policy RESTRICTIVE của 20261007220000, có ca RT ở report_trust.',
+        'U19': 'không giới thiệu bài của mình là điều kiện trong truy vấn của app; kịch bản live đo nó.',
+        'U20': 'ngưỡng 5 nằm trong truy vấn của app; kịch bản live đo nó.',
+        'U21': 'thứ tự đọc từ cột điểm; mọi phép phá trọng số bị U3–U7 bắt trước.',
+        'U22': 'xoá bài cascade: không phép phá nào trong trigger làm lệnh xoá hỏng mà không làm '
+               'U1–U11 đỏ trước (bài đã xoá thì UPDATE không khớp dòng nào).',
+    },
     'report_trust': {
         'RT8': 'cùng luật với RT7 (cờ `counted` do trigger đặt): báo cáo luôn vào hàng đợi — '
                'không phép phá nào bỏ được dòng báo cáo mà không làm RT7/RT13 đỏ trước.',

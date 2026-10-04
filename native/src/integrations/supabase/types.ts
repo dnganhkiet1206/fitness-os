@@ -625,6 +625,8 @@ export type Database = {
           removed_by: string | null
           save_count: number
           source_id: string | null
+          try_count: number
+          useful_score: number
           visibility: string
         }
         Insert: {
@@ -644,6 +646,8 @@ export type Database = {
           removed_by?: string | null
           save_count?: number
           source_id?: string | null
+          try_count?: number
+          useful_score?: number
           visibility?: string
         }
         Update: {
@@ -663,6 +667,8 @@ export type Database = {
           removed_by?: string | null
           save_count?: number
           source_id?: string | null
+          try_count?: number
+          useful_score?: number
           visibility?: string
         }
         Relationships: []

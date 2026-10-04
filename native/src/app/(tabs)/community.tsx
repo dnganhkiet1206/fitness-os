@@ -13,6 +13,7 @@ import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { Segmented, SegmentPanel } from '@/components/ascnd/segmented';
 import { ChallengeHero, SeeAllChallenges, featuredChallenge } from '@/components/ascnd/challenge-hero';
+import { UsefulThisWeek } from '@/components/ascnd/useful-this-week';
 import { SkeletonBlock } from '@/components/ascnd/skeleton';
 import { PostCard } from '@/components/ascnd/post-card';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
@@ -171,6 +172,11 @@ export default function CommunityScreen() {
           </GlassCard>
         </PressScale>
       )}
+
+      {/* Hữu ích tuần này (A 04/10, concept §19): chỉ ở Khám phá, như thẻ thử
+          thách — "Đang theo dõi" là bài của người mình chọn. Không có bài nào
+          đủ ngưỡng thì khối tự không vẽ. */}
+      {tab === 'discover' ? <UsefulThisWeek /> : null}
 
       <SegmentPanel segment={tab} order={tabs.map((t) => t.key)}>
         {/* Trang KẾ hỏng thì bài đã có vẫn ở đó — đuôi feed nói ra và có nút
