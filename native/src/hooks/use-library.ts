@@ -178,7 +178,7 @@ export function useDeleteSupplement() {
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('supplements').delete().eq('id', id).eq('user_id', user!.id),
-        'Không xoá được thực phẩm bổ sung này',
+        'nCxNothingWrittenSupplement',
       );
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['supplement_checklist'] }),
@@ -229,7 +229,7 @@ export function useDeleteExercise() {
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('exercises').delete().eq('id', id).eq('user_id', user!.id),
-        'Không xoá được bài tập này',
+        'nCxNothingWrittenExercise',
       );
     },
     onSuccess: () => {
@@ -336,7 +336,7 @@ export function useDeleteWorkoutTemplate() {
           .delete()
           .eq('id', id)
           .eq('user_id', user!.id),
-        'Không xoá được mẫu tập này',
+        'nCxNothingWrittenTemplate',
       );
     },
     onSuccess: () => {
@@ -536,7 +536,7 @@ export function useDeleteMealPlan() {
           .delete()
           .eq('id', id)
           .eq('user_id', user!.id),
-        'Không xoá được thực đơn này',
+        'nCxNothingWrittenMealPlan',
       );
     },
     onSuccess: () => {
@@ -624,7 +624,7 @@ export function useDeleteMealPlanItem() {
     mutationFn: async ({ id }: { id: string; planId: string }) => {
       await confirmWrite(
         supabase.from('meal_plan_items').delete().eq('id', id),
-        'Không xoá được món trong thực đơn',
+        'nCxNothingWrittenMealPlanItem',
       );
     },
     onSuccess: (_data, { planId }) => {

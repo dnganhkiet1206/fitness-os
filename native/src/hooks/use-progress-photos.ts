@@ -134,7 +134,7 @@ export function useDeleteProgressPhoto() {
       */
       await confirmWrite(
         supabase.from('progress_photos').delete().eq('id', id).eq('user_id', user!.id),
-        'Không xoá được ảnh này',
+        'nCxNothingWrittenPhoto',
       );
       if (storagePath) await supabase.storage.from(BUCKET).remove([storagePath]);
     },

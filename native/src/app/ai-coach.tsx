@@ -123,7 +123,7 @@ export default function AiCoachScreen() {
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('ai_conversations').delete().eq('id', id).eq('user_id', session!.user.id),
-        'Không xoá được cuộc trò chuyện này',
+        'nCxNothingWrittenChat',
       );
     },
     onSuccess: (_, id) => {

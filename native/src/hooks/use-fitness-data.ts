@@ -153,7 +153,7 @@ export function useDeleteWeight() {
           .delete()
           .eq('user_id', user!.id)
           .eq('date', date),
-        'Không xoá được lần cân này — có thể nó đã được xoá ở thiết bị khác',
+        'nCxNothingWrittenWeight',
       );
     },
     onSuccess: () => {
@@ -219,7 +219,7 @@ export function useDeleteWorkoutSession() {
           .delete()
           .eq('id', id)
           .eq('user_id', user!.id),
-        'Không xoá được buổi tập — có thể nó đã được xoá ở thiết bị khác',
+        'nCxNothingWrittenSession',
       );
 
       const day = localDateStr(new Date(date_time));
@@ -673,7 +673,7 @@ export function useAppendToSession() {
           })
           .eq('id', sessionId)
           .eq('user_id', user.id),
-        'Không ghi thêm được vào buổi tập',
+        'nCxNothingWrittenAppendSets',
       );
 
       /* Cùng lý do đường ghi mới có dòng này: một hàng mới mà ngày không dựng
@@ -750,7 +750,7 @@ export function useRemoveSetFromSession() {
       if (left.length === 0) {
         await confirmWrite(
           supabase.from('workout_sessions').delete().eq('id', sessionId).eq('user_id', user.id),
-          'Không gỡ được hiệp khỏi buổi tập',
+          'nCxNothingWrittenRemoveSet',
         );
       } else {
         await confirmWrite(
@@ -775,7 +775,7 @@ export function useRemoveSetFromSession() {
             })
             .eq('id', sessionId)
             .eq('user_id', user.id),
-          'Không gỡ được hiệp khỏi buổi tập',
+          'nCxNothingWrittenRemoveSet',
         );
       }
       await recomputeDailyLog(user.id, date);
@@ -1179,7 +1179,7 @@ export function useDeleteSleepLog() {
           .delete()
           .eq('id', id)
           .eq('user_id', user!.id),
-        'Không xoá được giấc ngủ này — có thể nó đã được xoá ở thiết bị khác',
+        'nCxNothingWrittenSleep',
       );
 
       const day = localDateStr(new Date(waketime));
@@ -1214,7 +1214,7 @@ export function useDeleteBodyMeasurement() {
           .delete()
           .eq('id', id)
           .eq('user_id', user!.id),
-        'Không xoá được số đo này — có thể nó đã được xoá ở thiết bị khác',
+        'nCxNothingWrittenMeasure',
       );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['body_measurements', user?.id] }),

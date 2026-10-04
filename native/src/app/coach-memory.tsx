@@ -92,7 +92,7 @@ export default function CoachMemoryScreen() {
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('coach_memory').delete().eq('id', id),
-        'Không xoá được ghi nhớ này',
+        'nCxNothingWrittenMemory',
       );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['coach_memory', user?.id] }),
@@ -103,7 +103,7 @@ export default function CoachMemoryScreen() {
     mutationFn: async () => {
       await confirmWrite(
         supabase.from('coach_memory').delete().eq('user_id', user!.id),
-        'Không xoá được ghi nhớ này',
+        'nCxNothingWrittenMemory',
       );
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['coach_memory', user?.id] }),

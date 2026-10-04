@@ -187,7 +187,7 @@ export function useDeleteBiometricSample() {
           .delete()
           .eq('id', id)
           .eq('user_id', user!.id),
-        'Không xoá được chỉ số này — có thể nó đã được xoá ở thiết bị khác',
+        'nCxNothingWrittenBiometric',
       );
 
       const day = localDateStr(new Date(date_time));

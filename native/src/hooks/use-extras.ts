@@ -753,7 +753,7 @@ export function useUpdateChallengeProgress() {
               })
               .eq('id', ch.id)
               .eq('user_id', user!.id),
-            'Không cập nhật được tiến trình thử thách',
+            'nCxNothingWrittenChallenge',
           );
         }
 
@@ -886,7 +886,7 @@ export function useGroceryMutations() {
           try {
             await confirmWrite(
               supabase.from('grocery_items').update({ checked: value }).eq('id', id).eq('user_id', user!.id),
-              'Không cập nhật được danh sách đi chợ',
+              'nCxNothingWrittenGrocery',
             );
             return 'ok';
           } catch (e) {
@@ -903,7 +903,7 @@ export function useGroceryMutations() {
     mutationFn: async (id: string) => {
       await confirmWrite(
         supabase.from('grocery_items').delete().eq('id', id).eq('user_id', user!.id),
-        'Không cập nhật được danh sách đi chợ',
+        'nCxNothingWrittenGrocery',
       );
     },
     onError: (e: Error) => toast.fail(e),

@@ -323,7 +323,7 @@ export default function EditProfileSheet() {
             disliked_foods: parseDislikes(dislikes),
           })
           .eq('user_id', user.id),
-        'Không lưu được hồ sơ — hãy đăng nhập lại rồi thử lần nữa',
+        'nCxNothingWrittenProfile',
       );
     },
     onSuccess: () => {

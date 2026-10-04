@@ -69,11 +69,20 @@ interface Confirmable {
  * failure: a refused request is worth retrying, while "the row you were editing
  * is not there any more" is worth *refetching*. Same reason
  * `DailyLogRebuildError` exists.
+ *
+ * The sentence rides as an i18n KEY, not as words: `confirmWrite` throws with
+ * `msgKey` (`nCxNothingWritten*`), and `failureKeyFor` (lib/error-copy.ts)
+ * returns it, so `toast.fail` shows the toast host's rendering in the reader's
+ * language. A direct `new NothingWrittenError(sentence)` — the community
+ * unblock path, owned by A — keeps working with the raw sentence and no key;
+ * then the key is absent and the sentence shows verbatim, as before.
  */
 export class NothingWrittenError extends Error {
-  constructor(what: string) {
+  readonly msgKey?: string;
+  constructor(what: string, msgKey?: string) {
     super(what);
     this.name = 'NothingWrittenError';
+    this.msgKey = msgKey;
   }
 }
 
@@ -89,12 +98,14 @@ export class NothingWrittenError extends Error {
  *   a real server. The web harness did not notice because its fake REST returns
  *   rows without checking columns. `tools/confirm-write-cols.mjs` now reads
  *   every call against `types.ts`.
- * @param what what did not happen, in the person's language, ready to show:
- *   *"Không xoá được buổi tập — có thể nó đã bị xoá ở thiết bị khác"*. Not a
- *   table name: the message is read by somebody who has never heard of
- *   `workout_sessions`.
+ * @param msgKey i18n key naming what did not happen — `nCxNothingWritten*`,
+ *   resolved at RENDER by `NeonToastHost` (via `toast.fail` → `failureKeyFor`),
+ *   so the reader sees their own language. Not a table name: the sentence is
+ *   read by somebody who has never heard of `workout_sessions`. The key doubles
+ *   as the error's message; it is never shown raw while the key resolves, which
+ *   the i18n gate guarantees across vi/en/es.
  */
-export async function confirmWrite(builder: Confirmable, what: string, key = 'id'): Promise<void> {
+export async function confirmWrite(builder: Confirmable, msgKey: string, key = 'id'): Promise<void> {
   const { data, error } = await builder.select(key);
   /* The server's error AS IS — never `new Error(error.message)`. Wrapping it
      dropped `code` and turned the server's sentence into an `Error`, which
@@ -103,5 +114,5 @@ export async function confirmWrite(builder: Confirmable, what: string, key = 'id
      raw English instead of the translated copy (#31, found live: unliking a
      post against a 500 still printed "server error"). */
   if (error) throw error;
-  if (!data || data.length === 0) throw new NothingWrittenError(what);
+  if (!data || data.length === 0) throw new NothingWrittenError(msgKey, msgKey);
 }

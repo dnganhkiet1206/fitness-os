@@ -166,6 +166,15 @@ export function classifyError(err: unknown): FailureKind | null {
  * One call at each `onError`, so a screen never decides this for itself.
  */
 export function failureKeyFor(err: unknown): string | null {
+  /*
+    A keyed app-authored error: the app's own sentence, as a key. The shape is
+    read by property, not by import, so this file still imports nothing —
+    same as the `OnlineOnlyError` name check in `classifyError`.
+  */
+  if (err != null && typeof err === 'object') {
+    const k = (err as { msgKey?: unknown }).msgKey;
+    if (typeof k === 'string' && k.length > 0) return k;
+  }
   const kind = classifyError(err);
   return kind == null ? null : FAILURE_KEY[kind];
 }

@@ -290,7 +290,7 @@ export function useRemoveLastWater(date?: string) {
       if (!last) return;
       await confirmWrite(
         supabase.from('water_logs').delete().eq('id', last.id).eq('user_id', user.id),
-        'Không bỏ được lần uống gần nhất',
+        'nCxNothingWrittenWater',
       );
     },
     onMutate: (dateStr) => patchWater(queryClient, user?.id, dateStr, (logs) => logs.slice(1)),
