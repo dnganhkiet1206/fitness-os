@@ -17,7 +17,7 @@ import { Icon } from '@/components/ascnd/icon';
 import { Medal, TIER_CONFIG } from '@/components/ascnd/medal';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { useMaterial, usePalette } from '@/hooks/use-palette';
 /* Từ `lib/`, không qua `hooks/use-extras`: một component không cần kéo theo cả
    tầng truy vấn chỉ để tra một danh mục tĩnh. */
 import { AWARD_DEFINITIONS } from '@/lib/award-grant';
@@ -123,6 +123,7 @@ function ConfettiPiece({ progress, piece }: { progress: SharedValue<number>; pie
 
 export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAward; onClose: () => void }) {
   const c = usePalette();
+  const m = useMaterial();
   const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
@@ -221,8 +222,8 @@ export function AwardCelebrationModal({ award, onClose }: { award: CelebrationAw
           <Text style={styles.kicker}>{kicker}</Text>
           <Text style={styles.title}>{award.title}</Text>
           <Text style={styles.desc}>{award.description}</Text>
-          <View style={[styles.tierBadge, { backgroundColor: tier.color }]}>
-            <Text style={styles.tierText}>{tier.label}</Text>
+          <View style={[styles.tierBadge, { backgroundColor: m.lit ? tier.onLight : tier.onDark }]}>
+            <Text style={[styles.tierText, { color: m.lit ? '#fff' : '#1a1917' }]}>{tier.label}</Text>
           </View>
         </Animated.View>
 
@@ -288,6 +289,7 @@ const stylesFor = makeStyles((c) => ({
     fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 2,
-    color: '#fff',
+    /* Màu chữ do inline style quyết định theo theme (trắng trên nền tối,
+       đậm trên nền sáng) — không hardcode ở đây. */
   },
 }));

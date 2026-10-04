@@ -518,5 +518,7 @@ const stylesFor = makeStyles((c, m) => ({
   sheetBtnPrimary: { backgroundColor: c.metricBlue },
   sheetBtnDisabled: { opacity: 0.4 },
   sheetBtnText: { ...type.footnote, fontWeight: '600', color: c.foreground },
-  sheetBtnTextPrimary: { color: '#04121f' },
+  /* Chữ trên nút xanh dương: đen tuyệt đối ở bản sáng (#04121f chỉ được 3.78:1),
+     trắng ở bản tối. */
+  sheetBtnTextPrimary: { color: m.lit ? '#000000' : '#ffffff' },
 }));

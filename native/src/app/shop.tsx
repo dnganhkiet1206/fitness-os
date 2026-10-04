@@ -554,7 +554,9 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
     backgroundColor: c.readinessGreen,
   },
-  setsBadgeText: { fontSize: 12, fontWeight: '800', color: '#04120c' },
+  /* Chữ trên badge xanh lá: đen tuyệt đối ở bản sáng (#04120c chỉ được 3.85:1),
+     trắng ở bản tối. Ngưỡng 4.5:1 cho chữ 12px/800. */
+  setsBadgeText: { fontSize: 12, fontWeight: '800', color: m.lit ? '#000000' : '#ffffff' },
   setsBannerText: { flex: 1, minWidth: 0, gap: 2 },
   setsChest: {
     width: 40,
