@@ -219,7 +219,7 @@ export default function SettingsScreen() {
       all[ITEMS_TABLE] = items;
       const json = JSON.stringify(all, null, 2);
       await Share.share({
-        title: `ASCND export ${localDateStr()}`,
+        title: i18n.nCxExportTitle.replace('{date}', localDateStr()),
         message: json,
       });
     } catch (e) {

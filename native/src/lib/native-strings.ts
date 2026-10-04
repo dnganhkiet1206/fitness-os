@@ -1107,6 +1107,7 @@ const es: typeof en = {
   nSvEmptyWorkouts: 'No hay entrenamientos guardados',
   nSvEmptyRecipes: 'No hay recetas guardadas',
   nSvFindRecipes: 'Buscar recetas',
+  nCxExportTitle: 'Exportación ASCND {date}',
 };
 
 const en = {
@@ -2391,6 +2392,7 @@ const en = {
   nSvEmptyRecipes: 'No saved recipes',
   /* #108: lối vào thứ hai của tìm công thức (#43). */
   nSvFindRecipes: 'Find recipes',
+  nCxExportTitle: 'ASCND export {date}',
 };
 
 const vi: typeof en = {
@@ -3558,6 +3560,7 @@ const vi: typeof en = {
   nSvEmptyWorkouts: 'Chưa lưu buổi tập nào',
   nSvEmptyRecipes: 'Chưa lưu công thức nào',
   nSvFindRecipes: 'Tìm công thức',
+  nCxExportTitle: 'Xuất ASCND {date}',
 };
 
 export const nativeStrings: Record<AppLang, typeof en> = { vi, en, es };
