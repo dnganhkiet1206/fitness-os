@@ -87,11 +87,6 @@ const INSIGHT_ICON: Record<string, LucideIcon> = {
   sleep: Moon,
   recovery: HeartPulse,
 };
-const PRIORITY_COLOR = {
-  high: '#dc2f2f',
-  medium: '#ef7c26',
-  low: '#a8b2c4',
-} as const;
 
 const DAYS_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 const DAYS_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -154,6 +149,13 @@ function WeekBars({
 export default function WeeklyReviewScreen() {
   const c = usePalette();
   const styles = stylesFor(c);
+  /* Priority colors từ tokens (không hardcode): `#dc2f2f` cũ là màu light,
+     ở dark thành đỏ xỉn cạnh neon `destructive`. */
+  const PRIORITY_COLOR = {
+    high: c.destructive,
+    medium: c.metricOrange,
+    low: '#a8b2c4',
+  } as const;
   /* Lần vẽ đầu hiện NGAY, cascade chỉ chạy cho thứ mount vào một màn hình
      đã ở đó — xem `useRise`. Bản trước gọi `rise` trần, tức là mười cái
      lò xo bắt đầu bên trong giây đầu tiên của một màn cũng đang chạy truy
@@ -576,7 +578,7 @@ export default function WeeklyReviewScreen() {
   ];
 
   const REC_STYLE = {
-    warning: { color: '#dc2f2f', bg: 'rgba(220,47,47,0.1)', icon: AlertTriangle },
+    warning: { color: c.destructive, bg: alpha(c.destructive, 0.1), icon: AlertTriangle },
     success: { color: c.readinessGreen, bg: alpha(c.readinessGreen, 0.1), icon: CheckCircle2 },
     info: { color: c.metricBlue, bg: alpha(c.metricBlue, 0.1), icon: Activity },
   } as const;
@@ -631,9 +633,9 @@ export default function WeeklyReviewScreen() {
                   <Icon
                     icon={card.d > 0 ? TrendingUp : TrendingDown}
                     size={11}
-                    color={card.d > 0 ? c.readinessGreen : '#dc2f2f'}
+                    color={card.d > 0 ? c.readinessGreen : c.destructive}
                   />
-                  <Text style={[styles.deltaText, { color: card.d > 0 ? c.readinessGreen : '#dc2f2f' }]}>
+                  <Text style={[styles.deltaText, { color: card.d > 0 ? c.readinessGreen : c.destructive }]}>
                     {Math.abs(card.d)}%
                   </Text>
                 </View>
@@ -652,7 +654,7 @@ export default function WeeklyReviewScreen() {
           <Animated.View entering={rise(1)}>
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.weeklyReviewDailyNutrition}</Text>
-            <WeekBars data={chartData.map((c) => c.kcal)} color="#ef7c26" target={targets.kcal} days={DAYS} />
+            <WeekBars data={chartData.map((c) => c.kcal)} color={c.metricOrange} target={targets.kcal} days={DAYS} />
           </GlassCard>
           </Animated.View>
 
@@ -660,7 +662,7 @@ export default function WeeklyReviewScreen() {
           <Animated.View entering={rise(2)}>
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.weeklyReviewSleepChart}</Text>
-            <WeekBars data={chartData.map((c) => c.sleep_h)} color="#b45cff" target={targets.sleepH} unit="h" days={DAYS} />
+            <WeekBars data={chartData.map((c) => c.sleep_h)} color={c.metricPurple} target={targets.sleepH} unit="h" days={DAYS} />
           </GlassCard>
           </Animated.View>
           <Animated.View entering={rise(3)}>
@@ -683,7 +685,7 @@ export default function WeeklyReviewScreen() {
           <Animated.View entering={rise(4)}>
           <GlassCard>
             <Text style={styles.microTitle}>{i18n.weeklyReviewReadinessChart}</Text>
-            <LineChart points={readinessPoints} color="#ffd93d" height={140} />
+            <LineChart points={readinessPoints} color={c.readinessYellow} height={140} />
           </GlassCard>
           </Animated.View>
 
