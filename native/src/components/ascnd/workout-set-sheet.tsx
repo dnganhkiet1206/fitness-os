@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { Stepper } from '@/components/ascnd/stepper';
 import { Icon } from '@/components/ascnd/icon';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
@@ -59,92 +60,8 @@ import { displayWeight, weightLabel, weightToKg, type WeightUnit } from '@/lib/u
  * being moved, disabled at the ends.
  */
 
-const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
 /** Two decimal places, so 2.5-kg steps cannot drift into 82.50000000000001 */
 const tidy = (n: number) => Math.round(n * 100) / 100;
-
-/**
- * One `−  value  +` control.
- *
- * `initial` is read once, on mount. That is safe *because* the sheet is mounted
- * fresh each time an exercise is opened — nothing pushes a new value in from
- * outside while it is on screen, so the stepper owning its own number cannot
- * drift from the parent's. If that ever stops being true, this needs a sync
- * effect and the comment above it explaining why.
- */
-function Stepper({
-  initial,
-  min,
-  max,
-  step,
-  decimals = 0,
-  a11yLabel,
-  onChange,
-}: {
-  initial: number;
-  min: number;
-  max: number;
-  step: number;
-  decimals?: number;
-  a11yLabel: string;
-  onChange: (n: number) => void;
-}) {
-  const c = usePalette();
-  const styles = stylesFor(c);
-  const fmt = (n: number) => (decimals ? String(n) : String(Math.round(n)));
-  const [num, setNum] = useState(initial);
-  const [str, setStr] = useState(() => fmt(initial));
-
-  const commit = (n: number) => {
-    const c = clamp(tidy(n), min, max);
-    setNum(c);
-    onChange(c);
-    return c;
-  };
-
-  const bump = (dir: 1 | -1) => {
-    Haptics.selection();
-    setStr(fmt(commit(num + dir * step)));
-  };
-
-  return (
-    <View style={styles.stepper}>
-      <PressScale
-        accessibilityRole="button"
-        accessibilityLabel={`${a11yLabel} −`}
-        disabled={num <= min}
-        onPress={() => bump(-1)}
-        style={[styles.stepBtn, num <= min && styles.stepOff]}>
-        <Icon icon={Minus} size={16} color={c.foreground} strokeWidth={2.5} />
-      </PressScale>
-
-      <TextInput
-        accessibilityLabel={a11yLabel}
-        style={styles.stepValue}
-        keyboardType={decimals ? 'decimal-pad' : 'number-pad'}
-        value={str}
-        selectTextOnFocus
-        onChangeText={(t) => {
-          // The field keeps whatever was typed — including the empty string
-          // mid-edit — while the stored number is the clamped reading of it.
-          setStr(t);
-          commit(Number(t.replace(',', '.')) || 0);
-        }}
-        // Leaving the field is where a half-finished entry becomes a number
-        onEndEditing={() => setStr(fmt(num))}
-      />
-
-      <PressScale
-        accessibilityRole="button"
-        accessibilityLabel={`${a11yLabel} +`}
-        disabled={num >= max}
-        onPress={() => bump(1)}
-        style={[styles.stepBtn, num >= max && styles.stepOff]}>
-        <Icon icon={Plus} size={16} color={c.foreground} strokeWidth={2.5} />
-      </PressScale>
-    </View>
-  );
-}
 
 function Row({
   label,
@@ -204,23 +121,37 @@ export function WorkoutSetPanel({
 
       <Row label={i18n.nWbSets}>
         <Stepper
-          initial={item.sets}
+          value={item.sets}
+          onChange={(n) => onChange({ sets: n })}
           min={1}
           max={20}
           step={1}
-          a11yLabel={i18n.nWbSets}
-          onChange={(n) => onChange({ sets: n })}
+          a11yDecrease={`${i18n.nWbSets} −`}
+          a11yIncrease={`${i18n.nWbSets} +`}
+          editable
+          disableAtBounds
+          containerStyle={styles.stepper}
+          buttonStyle={styles.stepBtn}
+          disabledButtonStyle={styles.stepOff}
+          valueStyle={styles.stepValue}
         />
       </Row>
 
       <Row label={i18n.nWbReps}>
         <Stepper
-          initial={item.reps}
+          value={item.reps}
+          onChange={(n) => onChange({ reps: n })}
           min={1}
           max={100}
           step={1}
-          a11yLabel={i18n.nWbReps}
-          onChange={(n) => onChange({ reps: n })}
+          a11yDecrease={`${i18n.nWbReps} −`}
+          a11yIncrease={`${i18n.nWbReps} +`}
+          editable
+          disableAtBounds
+          containerStyle={styles.stepper}
+          buttonStyle={styles.stepBtn}
+          disabledButtonStyle={styles.stepOff}
+          valueStyle={styles.stepValue}
         />
       </Row>
 
@@ -231,35 +162,56 @@ export function WorkoutSetPanel({
       */}
       <Row label={`${i18n.nWbLoad} (${wl})`} hint={item.weight ? undefined : i18n.nWbBodyweight}>
         <Stepper
-          initial={displayWeight(item.weight, unit)}
+          value={displayWeight(item.weight, unit)}
+          onChange={(n) => onChange({ weight: tidy(weightToKg(n, unit)) })}
           min={0}
           max={unit === 'kg' ? 500 : 1100}
           step={unit === 'kg' ? 2.5 : 5}
           decimals={1}
-          a11yLabel={i18n.nWbLoad}
-          onChange={(n) => onChange({ weight: tidy(weightToKg(n, unit)) })}
+          a11yDecrease={`${i18n.nWbLoad} −`}
+          a11yIncrease={`${i18n.nWbLoad} +`}
+          editable
+          disableAtBounds
+          containerStyle={styles.stepper}
+          buttonStyle={styles.stepBtn}
+          disabledButtonStyle={styles.stepOff}
+          valueStyle={styles.stepValue}
         />
       </Row>
 
       <Row label={i18n.nWbRest} hint={restLabel(item.restSeconds ?? DEFAULT_REST)}>
         <Stepper
-          initial={item.restSeconds ?? DEFAULT_REST}
+          value={item.restSeconds ?? DEFAULT_REST}
+          onChange={(n) => onChange({ restSeconds: n })}
           min={0}
           max={600}
           step={15}
-          a11yLabel={i18n.nWbRest}
-          onChange={(n) => onChange({ restSeconds: n })}
+          a11yDecrease={`${i18n.nWbRest} −`}
+          a11yIncrease={`${i18n.nWbRest} +`}
+          editable
+          disableAtBounds
+          containerStyle={styles.stepper}
+          buttonStyle={styles.stepBtn}
+          disabledButtonStyle={styles.stepOff}
+          valueStyle={styles.stepValue}
         />
       </Row>
 
       <Row label={i18n.nWbEffort} hint={i18n.nWbEffortHint}>
         <Stepper
-          initial={item.rpe ?? DEFAULT_RPE}
+          value={item.rpe ?? DEFAULT_RPE}
+          onChange={(n) => onChange({ rpe: n })}
           min={5}
           max={10}
           step={1}
-          a11yLabel={i18n.nWbEffort}
-          onChange={(n) => onChange({ rpe: n })}
+          a11yDecrease={`${i18n.nWbEffort} −`}
+          a11yIncrease={`${i18n.nWbEffort} +`}
+          editable
+          disableAtBounds
+          containerStyle={styles.stepper}
+          buttonStyle={styles.stepBtn}
+          disabledButtonStyle={styles.stepOff}
+          valueStyle={styles.stepValue}
         />
       </Row>
 

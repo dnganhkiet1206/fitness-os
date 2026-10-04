@@ -15,6 +15,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { Stepper } from '@/components/ascnd/stepper';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 
@@ -990,13 +991,6 @@ function EditServingsSheet({
   // What the row will say once saved — the same ratio the mutation applies, so
   // the preview and the result cannot disagree.
   const k = servings / (item.servings || 1);
-  const step = (d: number) => {
-    const next = Math.round((servings + d) * 2) / 2;
-    if (next < 0.5 || next > 20) return;
-    Haptics.selection();
-    setServings(next);
-  };
-
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       {/* `accessible={false}`: đây là một vùng NUỐT CHẠM, không phải một nút.
@@ -1013,23 +1007,21 @@ function EditServingsSheet({
           </Text>
           <Text style={styles.sheetSub}>{i18n.nItemServings}</Text>
 
-          <View style={styles.stepper}>
-            <PressScale
-              accessibilityRole="button"
-              accessibilityLabel={i18n.nServingsLess}
-              onPress={() => step(-0.5)}
-              style={styles.stepBtn}>
-              <Icon icon={Minus} size={18} color={c.foreground} />
-            </PressScale>
-            <Text style={styles.stepValue}>{servings % 1 === 0 ? servings : servings.toFixed(1)}</Text>
-            <PressScale
-              accessibilityRole="button"
-              accessibilityLabel={i18n.nServingsMore}
-              onPress={() => step(0.5)}
-              style={styles.stepBtn}>
-              <Icon icon={Plus} size={18} color={c.foreground} />
-            </PressScale>
-          </View>
+          <Stepper
+            value={servings}
+            onChange={setServings}
+            min={0.5}
+            max={20}
+            step={0.5}
+            decimals={1}
+            a11yDecrease={i18n.nServingsLess}
+            a11yIncrease={i18n.nServingsMore}
+            formatValue={(n) => (n % 1 === 0 ? String(n) : n.toFixed(1))}
+            iconSize={18}
+            containerStyle={styles.stepper}
+            buttonStyle={styles.stepBtn}
+            valueStyle={styles.stepValue}
+          />
 
           <Text style={styles.sheetPreview}>
             {Math.round(item.kcal * k)} kcal · P{Math.round(item.protein_g * k)} · C

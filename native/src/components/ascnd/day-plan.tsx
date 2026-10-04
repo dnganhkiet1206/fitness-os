@@ -17,6 +17,7 @@ import { ExerciseProgress } from '@/components/ascnd/exercise-progress';
 import { Expander } from '@/components/ascnd/expander';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { Stepper } from '@/components/ascnd/stepper';
 import { nav } from '@/lib/nav';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
@@ -1218,11 +1219,10 @@ export function DayPlan({
     [cutSet, dateStr, doToggle, i18n, proven, restore, rowReady, sessions, shown],
   );
 
-  const bumpRest = (row: SetRow, by: number) => {
-    Haptics.selection();
+  const setRestSecs = (row: SetRow, n: number) => {
     setRest((prev) => ({
       ...prev,
-      [row.key]: Math.max(0, Math.min(REST_MAX, (prev[row.key] ?? row.plannedRest) + by)),
+      [row.key]: Math.max(0, Math.min(REST_MAX, n)),
     }));
   };
 
@@ -2073,25 +2073,20 @@ export function DayPlan({
                 <Retract style={styles.editors}>
                   <View style={styles.editorRow}>
                     <Text style={styles.editorLabel}>{i18n.nWbRest}</Text>
-                    <View style={styles.stepper}>
-                      <PressScale
-                        accessibilityRole="button"
-                        accessibilityLabel={`${i18n.nWbRest} −${REST_STEP}`}
-                        hitSlop={{ top: 8, bottom: 8 }}
-                        onPress={() => bumpRest(row, -REST_STEP)}
-                        style={styles.stepBtn}>
-                        <Icon icon={Minus} size={14} color={c.foreground} strokeWidth={2.5} />
-                      </PressScale>
-                      <Text style={styles.stepValue}>{restLabel(secs)}</Text>
-                      <PressScale
-                        accessibilityRole="button"
-                        accessibilityLabel={`${i18n.nWbRest} +${REST_STEP}`}
-                        hitSlop={{ top: 8, bottom: 8 }}
-                        onPress={() => bumpRest(row, REST_STEP)}
-                        style={styles.stepBtn}>
-                        <Icon icon={Plus} size={14} color={c.foreground} strokeWidth={2.5} />
-                      </PressScale>
-                    </View>
+                    <Stepper
+                      value={secs}
+                      onChange={(n) => setRestSecs(row, n)}
+                      min={0}
+                      max={REST_MAX}
+                      step={REST_STEP}
+                      a11yDecrease={`${i18n.nWbRest} −${REST_STEP}`}
+                      a11yIncrease={`${i18n.nWbRest} +${REST_STEP}`}
+                      formatValue={restLabel}
+                      iconSize={14}
+                      containerStyle={styles.stepper}
+                      buttonStyle={styles.stepBtn}
+                      valueStyle={styles.stepValue}
+                    />
                   </View>
 
                   <View style={[styles.editorRow, narrow && styles.editorRowNarrow]}>

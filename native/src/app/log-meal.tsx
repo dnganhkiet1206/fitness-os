@@ -19,6 +19,7 @@ import {
 
 import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
+import { Stepper } from '@/components/ascnd/stepper';
 import { Icon } from '@/components/ascnd/icon';
 import { SheetHeader } from '@/components/ascnd/sheet-header';
 import { radius, spacing, type } from '@/constants/ascnd';
@@ -263,12 +264,9 @@ export default function LogMealSheet() {
     setSearch('');
   };
 
-  const updateServings = (idx: number, delta: number) => {
-    Haptics.selection();
+  const setServings = (idx: number, n: number) => {
     setItems((prev) =>
-      prev.map((it, i) =>
-        i === idx ? { ...it, servings: Math.max(0.5, Math.round((it.servings + delta) * 2) / 2) } : it,
-      ),
+      prev.map((it, i) => (i === idx ? { ...it, servings: n } : it)),
     );
   };
 
@@ -826,15 +824,20 @@ export default function LogMealSheet() {
                       {Math.round(it.kcal * it.servings)} kcal · P{Math.round(it.protein_g * it.servings)} · C{Math.round(it.carbs_g * it.servings)} · F{Math.round(it.fat_g * it.servings)}
                     </Text>
                   </Pressable>
-                  <View style={styles.stepper}>
-                    <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yDecrease} hitSlop={8} style={styles.stepBtn} onPress={() => updateServings(idx, -0.5)}>
-                      <Icon icon={Minus} size={16} color={c.foreground} />
-                    </Pressable>
-                    <Text style={styles.stepValue}>{it.servings}</Text>
-                    <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yIncrease} hitSlop={8} style={styles.stepBtn} onPress={() => updateServings(idx, 0.5)}>
-                      <Icon icon={Plus} size={16} color={c.foreground} />
-                    </Pressable>
-                  </View>
+                  <Stepper
+                    value={it.servings}
+                    onChange={(n) => setServings(idx, n)}
+                    min={0.5}
+                    step={0.5}
+                    decimals={1}
+                    a11yDecrease={i18n.a11yDecrease}
+                    a11yIncrease={i18n.a11yIncrease}
+                    formatValue={(n) => (n % 1 === 0 ? String(n) : n.toFixed(1))}
+                    iconSize={16}
+                    containerStyle={styles.stepper}
+                    buttonStyle={styles.stepBtn}
+                    valueStyle={styles.stepValue}
+                  />
                   <Pressable accessibilityRole="button" accessibilityLabel={i18n.a11yRemove} hitSlop={8} onPress={() => removeItem(idx)}>
                     <Icon icon={X} size={15} color={c.mutedForeground} />
                   </Pressable>
