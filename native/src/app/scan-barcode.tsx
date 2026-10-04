@@ -4,6 +4,7 @@ import { useRootNavigationState } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
+import { useOperation } from '@/hooks/use-operation';
 import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -52,13 +53,23 @@ export default function ScanBarcodeScreen() {
   const { lang } = useAppSettings();
   const [status, setStatus] = useState<'scanning' | 'looking-up' | 'not-found'>('scanning');
   const lockedRef = useRef(false);
+  /* Same guard as the photo scanner: if the user backs out mid-lookup, the
+     late result is `stale` and must not navigate (it would pop/replace the
+     wrong screen). */
+  const scanOp = useOperation();
 
   const onScanned = async ({ data }: { data: string }) => {
-    if (lockedRef.current) return;
+    if (lockedRef.current || scanOp.running()) return;
     lockedRef.current = true;
     Haptics.medium();
     setStatus('looking-up');
-    const food = await lookupBarcode(data, lang).catch(() => null);
+    const r = await scanOp.run(async () => lookupBarcode(data, lang).catch(() => null));
+    if (r.status !== 'ok') {
+      /* `stale`: user backed out mid-lookup — do not navigate. `error`:
+         lookup threw; fall through to the not-found path below. */
+      if (r.status === 'stale') return;
+    }
+    const food = r.status === 'ok' ? r.value : null;
     if (food) {
       Haptics.success();
       setPendingScan(food);

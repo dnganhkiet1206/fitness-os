@@ -1269,13 +1269,23 @@ export function usePushWidgetData() {
 
     /* ── Today's Workout payload ── */
     const latest = todaySessions?.[0];
-    const sets = Array.isArray(latest?.sets) ? (latest!.sets as unknown[]) : [];
+    const sets = Array.isArray(latest?.sets) ? (latest!.sets as { exerciseName?: string }[]) : [];
+    /*
+      Distinct exercises, not set rows: `sets.length` counts every set entry,
+      so "12/12" was always a full bar by construction. Without the day's plan
+      template in this hook we cannot know the planned total; reporting the
+      logged distinct count for both keeps the "N/N exercises" label truthful
+      ("3 exercises logged") instead of a fake 100% of plan.
+    */
+    const distinctExercises = new Set(
+      sets.map((s) => String(s?.exerciseName ?? '').trim().toLowerCase()).filter(Boolean),
+    ).size;
     const workoutPayload = latest
       ? {
           workoutName: latest.template_name || 'Workout',
           statusText: i18n.nCxWidgetDone,
-          completedExercises: sets.length,
-          totalExercises: sets.length,
+          completedExercises: distinctExercises,
+          totalExercises: distinctExercises,
         }
       : {
           workoutName: i18n.nCxWidgetRestDay,

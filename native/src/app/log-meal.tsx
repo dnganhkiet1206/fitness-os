@@ -419,6 +419,9 @@ export default function LogMealSheet() {
            the hour it fits suggestions to, hence `tzOffset`. */
         date: localDateStr(),
         tzOffset: new Date().getTimezoneOffset(),
+        /* Sibling caller `ai-meal-suggest.tsx` sends this; without it the
+           server defaults to Vietnamese for everyone. */
+        lang,
       });
       if (!res.ok) throw new Error(i18n[AI_FAILURE_KEY[res.failure]]);
       return res.data?.suggestions ?? [];

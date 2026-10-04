@@ -1039,12 +1039,15 @@ export function useRecentMeals(limit = 6) {
     enabled: !!user,
     queryFn: async () => {
       // RLS scopes these to the caller; the nested select is one round trip
-      // rather than an entry query followed by one per entry.
+      // rather than an entry query followed by one per entry. The explicit
+      // user_id filter is defense-in-depth, consistent with every sibling
+      // query in this file.
       const { data, error } = await supabase
         .from('meal_entries')
         .select(
           'id, meal_type, date_time, meal_entry_items(food_name, food_item_id, servings, kcal, protein_g, carbs_g, fat_g, fiber_g)',
         )
+        .eq('user_id', user!.id)
         .order('date_time', { ascending: false })
         .limit(40);
       if (error) throw error;
