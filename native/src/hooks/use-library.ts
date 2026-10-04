@@ -171,12 +171,13 @@ export function useAddSupplement() {
 }
 
 export function useDeleteSupplement() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   return useOnlineMutation({
     meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
-        supabase.from('supplements').delete().eq('id', id),
+        supabase.from('supplements').delete().eq('id', id).eq('user_id', user!.id),
         'Không xoá được thực phẩm bổ sung này',
       );
     },

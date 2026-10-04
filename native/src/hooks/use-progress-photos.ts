@@ -133,7 +133,7 @@ export function useDeleteProgressPhoto() {
         genuinely only reached once the row is gone.
       */
       await confirmWrite(
-        supabase.from('progress_photos').delete().eq('id', id),
+        supabase.from('progress_photos').delete().eq('id', id).eq('user_id', user!.id),
         'Không xoá được ảnh này',
       );
       if (storagePath) await supabase.storage.from(BUCKET).remove([storagePath]);

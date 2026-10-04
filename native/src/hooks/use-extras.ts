@@ -751,7 +751,8 @@ export function useUpdateChallengeProgress() {
                   ? { completed_at: new Date().toISOString() }
                   : {}),
               })
-              .eq('id', ch.id),
+              .eq('id', ch.id)
+              .eq('user_id', user!.id),
             'Không cập nhật được tiến trình thử thách',
           );
         }
@@ -884,7 +885,7 @@ export function useGroceryMutations() {
         send: async (value) => {
           try {
             await confirmWrite(
-              supabase.from('grocery_items').update({ checked: value }).eq('id', id),
+              supabase.from('grocery_items').update({ checked: value }).eq('id', id).eq('user_id', user!.id),
               'Không cập nhật được danh sách đi chợ',
             );
             return 'ok';
@@ -901,7 +902,7 @@ export function useGroceryMutations() {
     meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
-        supabase.from('grocery_items').delete().eq('id', id),
+        supabase.from('grocery_items').delete().eq('id', id).eq('user_id', user!.id),
         'Không cập nhật được danh sách đi chợ',
       );
     },

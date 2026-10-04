@@ -379,7 +379,8 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
           await supabase
             .from('ai_conversations')
             .update({ updated_at: new Date().toISOString() })
-            .eq('id', convoIdRef.current);
+            .eq('id', convoIdRef.current)
+            .eq('user_id', session!.user.id);
           // the history panel lists by `updated_at`, and it just changed
           queryClient.invalidateQueries({ queryKey: ['ai_conversations'] });
         }

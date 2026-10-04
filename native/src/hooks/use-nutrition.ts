@@ -43,6 +43,7 @@ export function useFavoriteFoods() {
       const { data, error } = await supabase
         .from('food_items')
         .select('id, user_id, name, brand, kcal, protein_g, carbs_g, fat_g, fiber_g, serving_g, is_favorite')
+        .eq('user_id', user!.id)
         .eq('is_favorite', true)
         .order('name')
         .limit(50);
@@ -243,12 +244,13 @@ export function useUpdateFoodItem() {
 }
 
 export function useDeleteFoodItem() {
+  const { user } = useAuth();
   const qc = useQueryClient();
   return useOnlineMutation({
     meta: { offline: now(3) },
     mutationFn: async (id: string) => {
       await confirmWrite(
-        supabase.from('food_items').delete().eq('id', id),
+        supabase.from('food_items').delete().eq('id', id).eq('user_id', user!.id),
         'Không lưu được món này — có thể nó đã được xoá ở thiết bị khác',
       );
     },
@@ -315,7 +317,7 @@ export function useToggleFavoriteFood() {
           if (mine?.length) {
             /* Có dòng nào bị chạm không: bản chép vừa thấy có thể đã bị xoá ở máy
                khác giữa hai lượt — khi ấy rơi xuống chèn bản mới. */
-            const { data: hit, error } = await supabase.from('food_items').update({ is_favorite: true }).eq('id', mine[0].id).select('id');
+            const { data: hit, error } = await supabase.from('food_items').update({ is_favorite: true }).eq('id', mine[0].id).eq('user_id', user!.id).select('id');
             if (error) throw error;
             if (hit?.length) return 'ok';
           }
@@ -688,7 +690,7 @@ export function useDeleteMealItem(date?: string) {
     mutationFn: async ({ itemId, entryId }: { itemId: string; entryId: string }): Promise<DeletedMealItem | null> => {
       const [itemRead, entryRead] = await Promise.all([
         supabase.from('meal_entry_items').select(ITEM_COLS).eq('id', itemId).maybeSingle(),
-        supabase.from('meal_entries').select(ENTRY_COLS).eq('id', entryId).maybeSingle(),
+        supabase.from('meal_entries').select(ENTRY_COLS).eq('id', entryId).eq('user_id', user!.id).maybeSingle(),
       ]);
       const snapshot =
         itemRead.data && entryRead.data

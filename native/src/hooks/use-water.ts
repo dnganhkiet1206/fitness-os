@@ -289,7 +289,7 @@ export function useRemoveLastWater(date?: string) {
       if (findError) throw findError;
       if (!last) return;
       await confirmWrite(
-        supabase.from('water_logs').delete().eq('id', last.id),
+        supabase.from('water_logs').delete().eq('id', last.id).eq('user_id', user.id),
         'Không bỏ được lần uống gần nhất',
       );
     },
