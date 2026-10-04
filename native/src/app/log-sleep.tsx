@@ -3,6 +3,7 @@ import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Angry, Check, Frown, Laugh, Meh, Smile, type LucideIcon } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
+import { useMountedRef } from '@/hooks/use-mounted-ref';
 import * as Crypto from 'expo-crypto';
 import {
   ActivityIndicator,
@@ -63,6 +64,7 @@ const QUALITY: { value: number; icon: LucideIcon; color: PaletteKey }[] = [
 ];
 
 export default function LogSleepSheet() {
+  const mountedRef = useMountedRef();
   const c = usePalette();
   const styles = stylesFor(c);
   const { user } = useAuth();
@@ -292,7 +294,8 @@ export default function LogSleepSheet() {
       // invalidate it, the online insert here did not.
       queryClient.invalidateQueries({ queryKey: ['sleep_duration_history', user?.id] });
       Haptics.success();
-      nav.back();
+      /* #157 class: guard against popping someone else's screen. */
+      if (mountedRef.current) nav.back();
       toast.success(i18n.logSleepSaved);
     },
     onError: (e: Error) => toast.fail(e),

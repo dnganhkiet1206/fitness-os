@@ -122,6 +122,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const convoIdRef = useRef<string | null>(null);
+  const loadGenRef = useRef(0);
 
   /*
     Both screens want to scroll to the bottom as the answer streams in, and
@@ -213,6 +214,10 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
 
   const loadConversation = useCallback(async (id: string) => {
     Haptics.selection();
+    /* Generation guard: two history taps in quick succession resolve out of
+       order — without this the slower (older) tap wins and the next `send()`
+       files into the wrong conversation via `convoIdRef`. */
+    const gen = ++loadGenRef.current;
     // Newest first with a limit, then reversed — an old conversation could
     // otherwise be reloaded whole, and every message of it would ride along
     // on the next request.
@@ -222,6 +227,7 @@ export function CoachChatProvider({ children }: { children: React.ReactNode }) {
       .eq('conversation_id', id)
       .order('created_at', { ascending: false })
       .limit(HISTORY_LIMIT);
+    if (gen !== loadGenRef.current) return;
     convoIdRef.current = id;
     setConversationId(id);
     const loaded = (data ?? [])

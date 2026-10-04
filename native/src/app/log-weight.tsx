@@ -1,5 +1,6 @@
 import { ArrowRight } from 'lucide-react-native';
 import { useMemo } from 'react';
+import { useMountedRef } from '@/hooks/use-mounted-ref';
 import { ActivityIndicator, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -71,6 +72,7 @@ const SCALE_FRACTION = 0.68;
 const SCALE_MAX = 300;
 
 export default function LogWeightSheet() {
+  const mountedRef = useMountedRef();
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -148,7 +150,9 @@ export default function LogWeightSheet() {
   const error = boundError(kg);
   const scaleW = Math.min(SCALE_MAX, screenW * SCALE_FRACTION);
 
-  const save = () => submit(kg, () => nav.back());
+  /* #157 class: `onDone` fires from mutation `onSuccess` — if the user already
+     backed out, `nav.back()` would pop someone else's screen. */
+  const save = () => submit(kg, () => { if (mountedRef.current) nav.back(); });
 
   return (
     <View style={styles.page}>

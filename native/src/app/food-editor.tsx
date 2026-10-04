@@ -3,6 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { Check, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
+import { useMountedRef } from '@/hooks/use-mounted-ref';
 import {
   ActivityIndicator,
   Alert,
@@ -62,6 +63,7 @@ const MACRO_COLORS = MACRO_TINT;
 
 /** Add/edit custom food — mirrors the web FoodItemDialog */
 export default function FoodEditorSheet() {
+  const mountedRef = useMountedRef();
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -133,7 +135,8 @@ export default function FoodEditorSheet() {
     const opts = {
       onSuccess: () => {
         Haptics.success();
-        nav.back();
+        /* #157 class: guard against popping someone else's screen. */
+        if (mountedRef.current) nav.back();
         toast.success(isEdit ? i18n.foodUpdated : i18n.foodAdded);
       },
       onError: (e: Error) => toast.fail(e),
@@ -153,7 +156,8 @@ export default function FoodEditorSheet() {
           remove.mutate(id, {
             onSuccess: () => {
               Haptics.success();
-              nav.back();
+              /* #157 class: guard against popping someone else's screen. */
+              if (mountedRef.current) nav.back();
               toast.success(i18n.foodDeleted);
             },
             onError: (e: Error) => toast.fail(e),

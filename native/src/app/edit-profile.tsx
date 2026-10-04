@@ -4,6 +4,7 @@ import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Check, RefreshCw } from 'lucide-react-native';
 import { useState } from 'react';
+import { useMountedRef } from '@/hooks/use-mounted-ref';
 import {
   ActivityIndicator,
   Alert,
@@ -124,6 +125,7 @@ function dateToTime(d: Date): string {
 }
 
 export default function EditProfileSheet() {
+  const mountedRef = useMountedRef();
   const c = usePalette();
   const styles = stylesFor(c);
   const { user } = useAuth();
@@ -327,7 +329,8 @@ export default function EditProfileSheet() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', user?.id] });
       Haptics.success();
-      nav.back();
+      /* #157 class: guard against popping someone else's screen. */
+      if (mountedRef.current) nav.back();
     },
     onError: (e: Error) => Alert.alert('ASCND', errorText(e, i18n)),
   });

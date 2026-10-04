@@ -5,6 +5,7 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { Camera, Check, ChevronDown, ChevronRight, Clock, Minus, PencilLine, Plus, ScanBarcode, Sparkles, Star, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
+import { useMountedRef } from '@/hooks/use-mounted-ref';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -77,6 +78,7 @@ interface AiSuggestion {
 }
 
 export default function LogMealSheet() {
+  const mountedRef = useMountedRef();
   const c = usePalette();
   const m = useMaterial();
   const styles = stylesFor(c);
@@ -503,7 +505,9 @@ export default function LogMealSheet() {
       queryClient.invalidateQueries({ queryKey: ['recent_foods', user?.id] });
       if (offlineNow()) return; // already acknowledged in onMutate
       Haptics.success();
-      nav.back();
+      /* #157 class: user may have backed out while the request was in flight;
+         `nav.back()` then would pop someone else's screen. */
+      if (mountedRef.current) nav.back();
       toast.success(i18n.logMealSaved);
     },
     onError: (e: Error) => {

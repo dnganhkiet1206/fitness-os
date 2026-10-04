@@ -3,6 +3,7 @@ import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { CalendarDays, Check, Plus, X } from 'lucide-react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMountedRef } from '@/hooks/use-mounted-ref';
 import * as Crypto from 'expo-crypto';
 import {
   ActivityIndicator,
@@ -112,6 +113,7 @@ function rowsFromTemplate(exercises: TplExercise[], unit: WeightUnit): SetRow[] 
 
 
 export default function LogWorkoutSheet() {
+  const mountedRef = useMountedRef();
   const c = usePalette();
   const m = useMaterial();
   const styles = stylesFor(c);
@@ -559,7 +561,9 @@ export default function LogWorkoutSheet() {
        call would pop the screen behind it as well. */
     if (leaving.current) return;
     leaving.current = true;
-    nav.back();
+    /* #157 class: if the user already backed out (X) while the save was in
+       flight, `nav.back()` here would pop someone else's screen. */
+    if (mountedRef.current) nav.back();
     invite.announce(message, afterSave.current.id, afterSave.current.line);
   };
 

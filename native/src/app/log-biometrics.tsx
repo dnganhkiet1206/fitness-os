@@ -1,6 +1,7 @@
 import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { useEffect, useRef, useState } from 'react';
+import { useMountedRef } from '@/hooks/use-mounted-ref';
 import {
   Alert,
   ActivityIndicator,
@@ -36,6 +37,7 @@ import { offlineNow } from '@/lib/offline';
 import { decText } from '@/lib/number-input';
 
 export default function LogBiometricsSheet() {
+  const mountedRef = useMountedRef();
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
@@ -195,7 +197,8 @@ export default function LogBiometricsSheet() {
     log.mutate(values(), {
       onSuccess: () => {
         Haptics.success();
-        nav.back();
+        /* #157 class: guard against popping someone else's screen. */
+        if (mountedRef.current) nav.back();
         toast.success(i18n.logBioSaved);
       },
       onError: (e: Error) => toast.fail(e),
