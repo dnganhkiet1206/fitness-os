@@ -39,7 +39,7 @@ const required = [
   ['title', /styles\.title/, 'thiếu title tên buổi tập'],
   ['heroImage', /heroImage/, 'thiếu ảnh workout bên phải'],
   ['metadata', /metaRow/, 'thiếu metadata "3 bài · 9 sets"'],
-  ['progress', /progressTrack/, 'thiếu progress bar'],
+  ['progress', /progressTrack|ProgressBar/, 'thiếu progress bar'],
   ['CTA', /nStartWorkout/, 'thiếu CTA "Bắt đầu buổi tập"'],
   ['overflow', /overflow/, 'thiếu nút "..." góc trên phải'],
 ];

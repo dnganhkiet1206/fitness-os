@@ -18,6 +18,7 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useProfile, useNutritionHistory } from '@/hooks/use-today-data';
 import { macroTargetsFor } from '@/lib/macro-targets';
 import { getLocale } from '@/lib/i18n';
+import { fillCopy } from '@/lib/copy-fill';
 
 /*
   P1-5 (DE-XUAT-2): nutrition was the most consistently logged domain and the
@@ -68,26 +69,30 @@ export default function NutritionInsightsScreen() {
     const gap = targets.protein - stats.avgProtein;
     if (gap > 10) {
       out.push(
-        vi
-          ? `Protein trung bình ${Math.round(stats.avgProtein)}g/ngày, thiếu ${Math.round(gap)}g so với mục tiêu ${targets.protein}g.`
-          : `Averaging ${Math.round(stats.avgProtein)}g protein/day, ${Math.round(gap)}g short of your ${targets.protein}g target.`,
+        fillCopy(i18n.nCxInsightProteinGap, {
+          avg: String(Math.round(stats.avgProtein)),
+          gap: String(Math.round(gap)),
+          target: String(targets.protein),
+        }),
       );
     } else if (stats.proteinDays >= 5) {
       out.push(
-        vi
-          ? `Đạt mục tiêu protein ${stats.proteinDays}/${stats.n} ngày — giữ vững!`
-          : `Hit your protein target ${stats.proteinDays}/${stats.n} days — keep it up!`,
+        fillCopy(i18n.nCxInsightProteinHit, {
+          days: String(stats.proteinDays),
+          n: String(stats.n),
+        }),
       );
     }
     if (targets.fiber > 0 && stats.avgFiber < targets.fiber * 0.6) {
       out.push(
-        vi
-          ? `Chất xơ trung bình ${Math.round(stats.avgFiber)}g, thấp hơn nhiều so với mục tiêu ${targets.fiber}g. Thêm rau hoặc yến mạch vào bữa sáng.`
-          : `Averaging ${Math.round(stats.avgFiber)}g fiber, well under your ${targets.fiber}g target. Add vegetables or oats to breakfast.`,
+        fillCopy(i18n.nCxInsightFiberLow, {
+          avg: String(Math.round(stats.avgFiber)),
+          target: String(targets.fiber),
+        }),
       );
     }
     return out;
-  }, [stats, targets, vi]);
+  }, [stats, targets, i18n]);
 
   const maxProtein = Math.max(targets.protein * 1.15, ...rows.map((r) => r.protein));
 
@@ -95,7 +100,7 @@ export default function NutritionInsightsScreen() {
     <Screen
       refreshable
       back
-      title={vi ? 'Dinh dưỡng 7 ngày' : '7-day nutrition'}
+      title={i18n.nCxInsightTitle7d}
     >
       {isError ? (
         <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
@@ -106,24 +111,20 @@ export default function NutritionInsightsScreen() {
       ) : rows.length === 0 ? (
         <EmptyState
           icon={UtensilsCrossed}
-          title={vi ? 'Chưa có dữ liệu' : 'No data yet'}
-          hint={vi ? 'Ghi bữa ăn vài ngày để xem xu hướng ở đây.' : 'Log meals for a few days to see trends here.'}
+          title={i18n.nCxInsightEmpty}
+          hint={i18n.nCxInsightEmptyHint}
         />
       ) : (
         <View style={styles.body}>
           {stats && (
             <HeroMetric
               value={`${Math.round(stats.avgProtein)}g`}
-              caption={
-                vi
-                  ? `Protein trung bình/ngày · mục tiêu ${targets.protein}g`
-                  : `Avg protein/day · target ${targets.protein}g`
-              }
+              caption={fillCopy(i18n.nCxInsightProteinCaption, { target: String(targets.protein) })}
             />
           )}
 
           <GlassCard style={styles.card}>
-            <Text style={styles.cardTitle}>{vi ? 'Protein 7 ngày qua' : 'Protein, last 7 days'}</Text>
+            <Text style={styles.cardTitle}>{i18n.nCxInsightProteinTitle}</Text>
             <View style={styles.bars}>
               {rows.map((r, i) => (
                 <View key={i} style={styles.barCol}>
@@ -151,7 +152,7 @@ export default function NutritionInsightsScreen() {
             <GlassCard style={styles.card}>
               <View style={styles.insightHead}>
                 <Icon icon={Lightbulb} size={16} color={c.primary} />
-                <Text style={styles.cardTitle}>{vi ? 'Nhận xét' : 'Insights'}</Text>
+                <Text style={styles.cardTitle}>{i18n.nCxInsightHead}</Text>
               </View>
               {insights.map((s, i) => (
                 <Text key={i} style={styles.insight}>

@@ -279,7 +279,7 @@ export function TodayTraining() {
         /* Vùng chạm 44pt theo chuẩn iOS — giữ hình 36pt, nới hitSlop. */
         hitSlop={4}
         accessibilityRole="button"
-        accessibilityLabel={vi ? 'Tuỳ chọn' : lang === 'es' ? 'Más opciones' : 'More options'}
+        accessibilityLabel={i18n.nCxMoreOptions}
         onPress={() => {
           Haptics.selection();
           nav.push({ pathname: '/workouts/plan', params: { day: String(today) } });

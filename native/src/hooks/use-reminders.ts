@@ -8,6 +8,7 @@ import { useTodayWater } from '@/hooks/use-water';
 import { useTodayWeight, useWorkoutSessions } from '@/hooks/use-fitness-data';
 import { useDailyLog, useProfile, useTodayBiometrics, useTodaySleep } from '@/hooks/use-today-data';
 import { localDateStr } from '@/lib/local-date';
+import { fillCopy } from '@/lib/copy-fill';
 import {
   DEFAULT_REMINDERS,
   hasNotificationPermission,
@@ -220,14 +221,15 @@ export function useReminders() {
   const pendingClaimItems = (pendingClaims(challenges ?? [], localDateStr())).map((c) => {
     const claimBy = shiftLocalDate(c.ends_on, CLAIM_WINDOW_DAYS);
     const daysLeft = c.daysLeft;
+    /* Dùng fillCopy để giải cú pháp số nhiều {c:coin|coins} — .replace chỉ
+       thay chỗ {c} đầu tiên, để lọt nguyên văn "{c:coin|coins}" ra màn hình. */
     const body = daysLeft === 0
-      ? i18n.nCxClaimReminderBody
-          .replace('{c}', String(c.reward_coins))
-          .replace('{t}', c.title)
-      : i18n.nCxClaimReminderBodyLeft
-          .replace('{c}', String(c.reward_coins))
-          .replace('{t}', c.title)
-          .replace('{n}', String(daysLeft));
+      ? fillCopy(i18n.nCxClaimReminderBody, { c: String(c.reward_coins), t: c.title })
+      : fillCopy(i18n.nCxClaimReminderBodyLeft, {
+          c: String(c.reward_coins),
+          t: c.title,
+          n: String(daysLeft),
+        });
     return {
       id: c.id,
       title: i18n.nCxClaimReminderTitle,

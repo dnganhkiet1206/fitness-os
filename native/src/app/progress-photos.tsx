@@ -398,7 +398,8 @@ function CompareSheet({
           <PressScale
             accessibilityRole="button"
             accessibilityLabel={i18n.a11yClose}
-            hitSlop={8}
+            /* Icon 22 + hitSlop 11×2 = 44pt vùng chạm theo chuẩn. */
+            hitSlop={11}
             onPress={onClose}>
             <Icon icon={X} size={22} color={c.primary} />
           </PressScale>

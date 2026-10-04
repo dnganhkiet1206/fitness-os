@@ -78,14 +78,14 @@ export default function MeasurementsTrendScreen() {
   }, [rows, i18n]);
 
   return (
-    <Screen refreshable back title={vi ? 'Số đo cơ thể' : lang === 'es' ? 'Medidas corporales' : 'Body measurements'}>
+    <Screen refreshable back title={i18n.nCxBodyMeasurements}>
       {isError ? (
         <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
       ) : series.length === 0 ? (
         <EmptyState
           icon={Ruler}
-          title={vi ? 'Chưa có số đo' : lang === 'es' ? 'Sin medidas aún' : 'No measurements yet'}
-          hint={vi ? 'Ghi số đo vài lần để xem xu hướng ở đây.' : lang === 'es' ? 'Registra medidas algunas veces para ver tendencias aquí.' : 'Log measurements a few times to see trends here.'}
+          title={i18n.nCxNoMeasurements}
+          hint={i18n.nCxNoMeasurementsHint}
         />
       ) : (
         <View style={styles.body}>

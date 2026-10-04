@@ -101,7 +101,7 @@ type Tab = 'today' | 'plan';
  * is exactly the person looking at this screen, and "no meal plans yet" tells
  * them only that they have not done a thing they may not have a name for.
  */
-function MealPlanTab({ i18n, vi, lang }: { i18n: ReturnType<typeof useI18n>; vi: boolean; lang: string }) {
+function MealPlanTab({ i18n, vi }: { i18n: ReturnType<typeof useI18n>; vi: boolean }) {
   const c = usePalette();
   const styles = stylesFor(c);
   const foodList = useFoodListStyles();
@@ -197,7 +197,7 @@ function MealPlanTab({ i18n, vi, lang }: { i18n: ReturnType<typeof useI18n>; vi:
               Haptics.selection();
               nav.push('/meal-plans');
             }}>
-            <Text style={styles.planAll}>{vi ? 'Xem tất cả' : lang === 'es' ? 'Ver todo' : 'See all'}</Text>
+            <Text style={styles.planAll}>{i18n.nCxSeeAll}</Text>
             <Icon icon={ChevronRight} size={13} color={c.primary} />
           </PressScale>
         ) : null}
@@ -563,7 +563,7 @@ export default function NutritionScreen() {
             >
               <GlassCard style={styles.insightLink}>
                 <Text style={styles.insightLinkText}>
-                  {lang === 'vi' ? 'Xem xu hướng 7 ngày' : lang === 'es' ? 'Ver tendencias de 7 días' : 'View 7-day trends'}
+                  {i18n.nCxViewTrends7d}
                 </Text>
                 <Icon icon={ChevronRight} size={16} color={c.glassMuted} />
               </GlassCard>
@@ -677,7 +677,7 @@ export default function NutritionScreen() {
               Người ta mở mục này để xem mình định ăn gì; tìm món là việc làm khi
               đã biết mình cần thêm gì vào đó.
             */}
-            <MealPlanTab i18n={i18n} vi={lang === 'vi'} lang={lang} />
+            <MealPlanTab i18n={i18n} vi={lang === 'vi'} />
 
             {/* Gợi ý bữa ăn sinh ra KẾ HOẠCH, nên nó đứng cùng kế hoạch chứ
                 không nằm dưới tiêu đề "Thực phẩm" — thư viện là món lẻ bạn đã

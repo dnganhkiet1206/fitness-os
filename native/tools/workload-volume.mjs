@@ -99,7 +99,9 @@ const want = (ok, message) => { if (!ok) problems.push(message); };
      than what the app writes: the driver builds watch sessions at tonnage 0 and
      de-duplicates on external_id because THIS is what use-health-sync does. */
   const sync = strip(read('src/hooks/use-health-sync.ts'));
-  const workoutUpsert = sync.match(/from\('workout_sessions'\)[\s\S]{0,700}?\);/)?.[0] ?? '';
+  /* Nhắm đúng lệnh .upsert( — từ 0f6211a, from('workout_sessions') ĐẦU TIÊN là
+     câu select('date_time') chống trùng buổi nhập tay, không phải chỗ ghi. */
+  const workoutUpsert = sync.match(/from\('workout_sessions'\)\.upsert\([\s\S]{0,900}?\);/)?.[0] ?? '';
   want(
     /volume_load:\s*0\b/.test(workoutUpsert) && /sets:\s*\[\]/.test(workoutUpsert),
     'use-health-sync không còn ghi volume_load: 0 và sets: [] cho buổi tập từ đồng hồ — ' +

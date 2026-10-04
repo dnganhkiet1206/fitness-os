@@ -23,9 +23,8 @@ import { useRise } from '@/lib/entrance';
 import { MUSCLE_LABEL, muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-group';
 import { DEFAULT_REST, DEFAULT_RPE, restLabel, uniformValue } from '@/lib/prescription';
 import { displayWeight, type WeightUnit } from '@/lib/units';
-
-/** Số ms trong một ngày — dùng để đổi chênh lệch timestamp ra số ngày. */
-const MS_PER_DAY = 86400000;
+import { dayGap, localDateStr } from '@/lib/local-date';
+import { fillCopy } from '@/lib/copy-fill';
 
 /**
  * "Lần tập gần nhất" — chuỗi tương đối từ ISO date.
@@ -38,16 +37,14 @@ export function lastTrainedLabel(
   i18n: { nCxLastTrained: string; nCxTrainedToday: string; nCxTrainedYesterday: string; nCxTrainedDaysAgo: string; nCxNeverTrained: string },
 ): string {
   if (!iso) return `${i18n.nCxLastTrained} · ${i18n.nCxNeverTrained}`;
-  const d = new Date(iso);
-  const now = new Date();
-  const dayOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const diffDays = Math.round((dayOf(now) - dayOf(d)) / MS_PER_DAY);
+  /* Dùng dayGap thay vì chia MS_PER_DAY tự chế — luật cổng chỉ nhận dayGap. */
+  const diffDays = dayGap(localDateStr(new Date(iso)), localDateStr(new Date()));
   const rel =
     diffDays <= 0
       ? i18n.nCxTrainedToday
       : diffDays === 1
         ? i18n.nCxTrainedYesterday
-        : i18n.nCxTrainedDaysAgo.replace('{n}', String(diffDays));
+        : fillCopy(i18n.nCxTrainedDaysAgo, { n: String(diffDays) });
   return `${i18n.nCxLastTrained} · ${rel}`;
 }
 

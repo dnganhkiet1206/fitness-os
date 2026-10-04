@@ -778,7 +778,7 @@ const es: Translations = {
   nCxLastTrained: 'Último entrenamiento',
   nCxTrainedToday: 'Hoy',
   nCxTrainedYesterday: 'Ayer',
-  nCxTrainedDaysAgo: 'hace {n} días',
+  nCxTrainedDaysAgo: 'hace {n} {n:día|días}',
   nCxNeverTrained: 'Aún no entrenado',
   /** Tiêu đề hộp thoại khi người dùng sửa một số của Apple Health. */
   healthOverrideTitle: '¿Reemplazar la lectura de Apple Health?',
@@ -1753,7 +1753,7 @@ const en: Translations = {
   nCxLastTrained: 'Last trained',
   nCxTrainedToday: 'Today',
   nCxTrainedYesterday: 'Yesterday',
-  nCxTrainedDaysAgo: '{n} days ago',
+  nCxTrainedDaysAgo: '{n} {n:day|days} ago',
   nCxNeverTrained: 'Not trained yet',
   healthOverrideTitle: 'Replace the Apple Health reading?',
   healthOverrideMsg:
