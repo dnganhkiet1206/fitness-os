@@ -27,11 +27,16 @@ import {
   useDecideAppeal,
   useModAction,
   useModTarget,
+  useModRestrict,
+  useModUnrestrict,
+  useModUserRestriction,
 } from '@/hooks/use-admin';
 import { usePalette } from '@/hooks/use-palette';
 import { nav } from '@/lib/nav';
 import { timeAgo } from '@/lib/time-ago';
 import { toast } from '@/lib/toast';
+import { fillCopy } from '@/lib/copy-fill';
+import { getLocale } from '@/lib/i18n';
 
 /**
  * Một bài hoặc một bình luận, đủ để quyết định: nội dung, tác giả, từng báo
@@ -166,6 +171,10 @@ function Detail({ d, role }: { d: TargetDetail; role: AppRole }) {
         {removed && role !== 'admin' ? <Text style={a.meta}>{i18n.nPgAdAdminRestoreOnly}</Text> : null}
       </View>
 
+      {d.author && d.author.role === 'user' ? (
+        <AuthorRestriction user={d.author.user_id} handle={d.author.handle} reason={reason} onDone={() => setReason('')} />
+      ) : null}
+
       <View style={a.section}>
         <Text style={a.heading} accessibilityRole="header">
           {i18n.nPgAdAppealsHeading}
@@ -268,6 +277,75 @@ function Btn({
     >
       <Text style={danger ? a.btnDangerText : primary ? a.btnPrimaryText : a.btnText}>{label}</Text>
     </PressScale>
+  );
+}
+
+/**
+ * Khoá đăng tác giả (20261007235000) — ngay dưới quyết định về bài, vì người
+ * kiểm duyệt nhìn thấy kẻ rải bài ĐÚNG ở đây. Dùng chung ô lý do ở trên; khoá
+ * bắt buộc có lý do (server cũng từ chối), và luôn hỏi lại trước.
+ */
+function AuthorRestriction({ user, handle, reason, onDone }: { user: string; handle: string; reason: string; onDone: () => void }) {
+  const c = usePalette();
+  const a = adminStyles(c);
+  const i18n = useI18n();
+  const { lang } = useAppSettings();
+  const q = useModUserRestriction(user);
+  const restrict = useModRestrict();
+  const unrestrict = useModUnrestrict();
+  const busy = restrict.isPending || unrestrict.isPending;
+  const fail = (e: unknown) => toast.error(decisionError(e, i18n));
+  const done = () => {
+    onDone();
+    toast.success(i18n.nPgAdDone);
+  };
+  const ask = (hours: number) => {
+    if (!reason.trim()) {
+      toast.error(i18n.nPgAdRestrictNeedsReason);
+      return;
+    }
+    confirmThen(
+      fillCopy(i18n.nPgAdRestrictTitle, { h: handle }),
+      i18n.nPgAdRestrictBody,
+      hours === 24 ? i18n.nPgAdRestrict24 : i18n.nPgAdRestrict7d,
+      i18n.cancel,
+      () => restrict.mutate({ user, hours, reason: reason.trim() }, { onSuccess: done, onError: fail }),
+    );
+  };
+  const r = q.data;
+  return (
+    <View style={a.section} testID="author-restriction">
+      <Text style={a.heading} accessibilityRole="header">
+        {i18n.nPgAdRestrictHeading}
+      </Text>
+      {q.isError ? (
+        <LoadFailed i18n={i18n} onRetry={() => q.refetch()} />
+      ) : q.isPending ? null : r ? (
+        <>
+          <Text style={a.meta}>
+            {fillCopy(i18n.nPgAdRestrictedUntil, {
+              d: new Date(r.until).toLocaleDateString(getLocale(lang), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }),
+              r: r.reason,
+            })}
+          </Text>
+          <View style={a.actions}>
+            <Btn
+              label={i18n.nPgAdUnrestrict}
+              onPress={() => unrestrict.mutate({ user, reason: reason.trim() }, { onSuccess: done, onError: fail })}
+              disabled={busy}
+            />
+          </View>
+        </>
+      ) : (
+        <>
+          <Text style={a.meta}>{i18n.nPgAdNotRestricted}</Text>
+          <View style={a.actions}>
+            <Btn label={i18n.nPgAdRestrict24} onPress={() => ask(24)} disabled={busy} danger />
+            <Btn label={i18n.nPgAdRestrict7d} onPress={() => ask(24 * 7)} disabled={busy} danger />
+          </View>
+        </>
+      )}
+    </View>
   );
 }
 

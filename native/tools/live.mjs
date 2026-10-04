@@ -2839,6 +2839,84 @@ const SCENARIOS = [
   },
   {
     /*
+      A 04/10 — chống spam: tạm khoá đăng từ màn kiểm duyệt (moderator), rồi
+      phía người bị khoá.
+        (A) bài của Linh (người dùng thường) có mục "Tài khoản tác giả" nói đang
+            đăng bình thường; "Khoá đăng 24 giờ" KHÔNG có lý do thì không gọi gì;
+            có lý do → hỏi lại → đúng một mod_restrict (Linh, 24 giờ, lý do);
+            mục chuyển sang "Đang khoá đăng đến …" và có "Mở khoá đăng";
+        (B) UID bị khoá → tab Cộng đồng thay ô soạn bài bằng thẻ nói đến bao giờ
+            và vì sao; màn bài viết thay ô bình luận bằng một dòng;
+        (C) bị khoá SAU khi màn đã mở (app chưa biết) → gửi bình luận → server
+            từ chối CR001 → toast nói đúng câu tạm khoá, không phải "phiên hết
+            hạn" của 42501 hay chữ của PostgreSQL.
+    */
+    name: 'Tạm khoá đăng: moderator khoá có lý do và hỏi lại; người bị khoá thấy rõ đến bao giờ; bình luận bị từ chối nói đúng câu (A 04/10)',
+    route: '/admin', mode: 'full',
+    async run(page, { world }) {
+      asStaff(world, 'moderator');
+      const LINH = 'c0000000-0000-4000-8000-0000000011a1';
+      const calls = [];
+      page.on('request', (q) => {
+        const m = q.url().match(/\/rpc\/(mod_\w+)/);
+        if (m) calls.push({ fn: m[1], body: q.postData() ?? '' });
+      });
+      page.on('dialog', (d) => d.accept());
+      await page.goto(page.url().replace(/\/admin.*$/, '/admin/target?type=post&id=cp000000-0000-4000-8000-000000000003'), { waitUntil: 'domcontentloaded' });
+      const box = page.getByTestId('author-restriction').filter({ visible: true });
+      for (let i = 0; i < 40 && !(await box.count()); i++) await page.waitForTimeout(250);
+      if ((await box.count()) !== 1) return '(A) bài của người dùng thường mà không có mục "Tài khoản tác giả"';
+      if ((await box.getByText(/^(Can post normally\.|Đang đăng bài bình thường\.)$/).count()) !== 1) return '(A) mục tác giả không nói đang đăng bình thường';
+      const btn24 = box.getByRole('button', { name: /^(Pause posting for 24 h|Khoá đăng 24 giờ)$/ });
+      await btn24.click();
+      await page.waitForTimeout(800);
+      if (calls.some((c) => c.fn === 'mod_restrict')) return '(A) khoá không có lý do mà vẫn gọi mod_restrict';
+      await page.getByPlaceholder(/^(Reason|Lý do)/).filter({ visible: true }).first().fill('rải link quảng cáo');
+      await btn24.click();
+      for (let i = 0; i < 20 && !calls.some((c) => c.fn === 'mod_restrict'); i++) await page.waitForTimeout(250);
+      const rc = calls.filter((c) => c.fn === 'mod_restrict');
+      if (rc.length !== 1) return `(A) phải đúng một mod_restrict, ra ${rc.length}`;
+      const body = JSON.parse(rc[0].body || '{}');
+      if (body.p_user !== LINH || body.p_hours !== 24 || body.p_reason !== 'rải link quảng cáo') return `(A) mod_restrict sai đối số: ${rc[0].body}`;
+      const until = box.getByText(/^(Posting paused until|Đang khoá đăng đến) .* · rải link quảng cáo$/);
+      for (let i = 0; i < 20 && !(await until.count()); i++) await page.waitForTimeout(250);
+      if ((await until.count()) !== 1) return `(A) khoá xong mà mục không nói đang khoá đến bao giờ: ${JSON.stringify(await box.allInnerTexts())}`;
+      if ((await box.getByRole('button', { name: /^(Resume posting|Mở khoá đăng)$/ }).count()) !== 1) return '(A) đang khoá mà không có nút mở khoá';
+
+      world.community_restrictions = (world.community_restrictions ?? []).filter((r) => r.user_id !== UID);
+      world.community_restrictions.push({ user_id: UID, until: new Date(Date.now() + 2 * 86400e3).toISOString(), reason: 'spam bình luận', created_by: LINH, created_at: new Date().toISOString() });
+      await freshCache(page);
+      await page.goto(page.url().replace(/\/admin.*$/, '/community'), { waitUntil: 'domcontentloaded' });
+      const card = page.getByTestId('restricted-card').filter({ visible: true });
+      for (let i = 0; i < 40 && !(await card.count()); i++) await page.waitForTimeout(250);
+      if ((await card.count()) !== 1) return '(B) bị khoá mà tab Cộng đồng không nói';
+      if (!/spam bình luận/.test(await card.innerText())) return '(B) thẻ khoá không nói lý do';
+      if ((await page.getByText(/^(Share a workout…|Chia sẻ một buổi tập…)$/).filter({ visible: true }).count()) !== 0) return '(B) bị khoá mà ô soạn bài vẫn còn';
+      await page.goto(page.url().replace(/\/community.*$/, '/community-post?id=cp000000-0000-4000-8000-000000000001'), { waitUntil: 'domcontentloaded' });
+      const line = page.getByTestId('restricted-notice').filter({ visible: true });
+      for (let i = 0; i < 40 && !(await line.count()); i++) await page.waitForTimeout(250);
+      if ((await line.count()) !== 1) return '(B) bị khoá mà màn bài viết vẫn có ô bình luận';
+
+      world.community_restrictions = world.community_restrictions.filter((r) => r.user_id !== UID);
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      const input = page.getByPlaceholder(/^(Add a comment|Viết bình luận)/).filter({ visible: true });
+      for (let i = 0; i < 40 && !(await input.count()); i++) await page.waitForTimeout(250);
+      if ((await input.count()) !== 1) return '(C) gỡ khoá rồi mà không có ô bình luận';
+      world.community_restrictions.push({ user_id: UID, until: new Date(Date.now() + 86400e3).toISOString(), reason: 'x', created_by: LINH, created_at: new Date().toISOString() });
+      await input.fill('thử gửi khi đang bị khoá');
+      await page.getByRole('button', { name: /^(Send|Gửi)$/ }).filter({ visible: true }).click();
+      const toastText = page.getByText(/temporarily paused posting|đang tạm khoá đăng bài/).filter({ visible: true });
+      for (let i = 0; i < 20 && !(await toastText.count()); i++) await page.waitForTimeout(250);
+      if ((await toastText.count()) === 0) {
+        const shown = await page.getByText(/signed out|phiên|CR001|posting restricted/i).filter({ visible: true }).allInnerTexts();
+        return `(C) bình luận bị từ chối mà toast không nói câu tạm khoá: ${JSON.stringify(shown).slice(0, 200)}`;
+      }
+      return null;
+    },
+  },
+  {
+    /*
       A 03/10: thành tích cộng đồng trên hồ sơ. Con số do server đếm (fixture
       `community_user_stats` dịch đúng luật của hàm: chỉ bài người xem thấy được);
       ở đây đo rằng dòng hiện đúng BA con số ấy, theo đúng thứ tự, và không hiện

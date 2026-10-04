@@ -1304,3 +1304,53 @@ CASES += [
        old="cardinality(discover_kinds) >= 1 AND discover_kinds <@ ARRAY['workout', 'progress', 'recipe']", new="cardinality(discover_kinds) >= 1", expect='DK4 '),
 ]
 
+# ── Chống spam đăng bài (A, 04/10 — concept §17 Admin) ──
+PLM = '20261007235000_community_posting_limits'
+PLS = 'posting_limits'
+_PL_POSTS = "WHERE author_id = v_author AND created_at > now() - interval '60 minutes';\n    IF n >= 10 THEN"
+_PL_CMTS = "WHERE author_id = v_author AND created_at > now() - interval '60 minutes';\n    IF n >= 30 THEN"
+CASES += [
+  dict(suite=PLS, id='PL1', mig=PLM, how='trần bài là 9', old=_PL_POSTS, new=_PL_POSTS.replace('>= 10', '>= 9'), expect='PL1 '),
+  dict(suite=PLS, id='PL2', mig=PLM, how='trần bài là 11', old=_PL_POSTS, new=_PL_POSTS.replace('>= 10', '>= 11'), expect='PL2 '),
+  dict(suite=PLS, id='PL3', mig=PLM, how='cửa sổ bài 10 giờ', old=_PL_POSTS, new=_PL_POSTS.replace("'60 minutes'", "'600 minutes'"), expect='PL3 '),
+  dict(suite=PLS, id='PL4', mig=PLM, how='trần bình luận là 29', old=_PL_CMTS, new=_PL_CMTS.replace('>= 30', '>= 29'), expect='PL4 '),
+  dict(suite=PLS, id='PL5', mig=PLM, how='trần bình luận là 31', old=_PL_CMTS, new=_PL_CMTS.replace('>= 30', '>= 31'), expect='PL5 '),
+  dict(suite=PLS, id='PL6', mig=PLM, how='đội kiểm duyệt cũng bị trần',
+       old="  IF public.app_role_of(v_author) IN ('moderator', 'admin') THEN\n    RETURN NEW;\n  END IF;\n", new="", expect='PL6 '),
+  dict(suite=PLS, id='PL7', mig=PLM, how='ai cũng khoá được', nth=1,
+       old="  v_actor uuid := public.moderation_require(false);\n  v_until timestamptz;", new="  v_actor uuid := auth.uid();\n  v_until timestamptz;", expect='PL7 '),
+  dict(suite=PLS, id='PL8', mig=PLM, how='client ghi thẳng bảng khoá',
+       old="GRANT SELECT ON public.community_restrictions TO authenticated;",
+       new="GRANT SELECT, INSERT ON public.community_restrictions TO authenticated;\nCREATE POLICY pl8 ON public.community_restrictions FOR INSERT TO authenticated WITH CHECK (true);", expect='PL8 '),
+  dict(suite=PLS, id='PL9', mig=PLM, how='khoá không cần lý do',
+       old="  IF coalesce(btrim(p_reason), '') = '' THEN\n    RAISE EXCEPTION 'a reason is required' USING ERRCODE = '22023';\n  END IF;\n", new="", expect='PL9 '),
+  dict(suite=PLS, id='PL10', mig=PLM, how='khoá tối đa 1000 giờ', old="p_hours > 720 THEN", new="p_hours > 1000 THEN", expect='PL10 '),
+  dict(suite=PLS, id='PL11', mig=PLM, how='khoá được người trong đội',
+       old="  IF public.app_role_of(p_user) IN ('moderator', 'admin') THEN\n    RAISE EXCEPTION 'cannot restrict a staff account", new="  IF false THEN\n    RAISE EXCEPTION 'cannot restrict a staff account", expect='PL11 '),
+  dict(suite=PLS, id='PL12', mig=PLM, how='bỏ chốt tự khoá mình — chốt đội kiểm duyệt còn, nên PHẢI vẫn xanh (lớp dự phòng)', green_ok=True,
+       old="  IF p_user = v_actor THEN\n    RAISE EXCEPTION 'you cannot restrict yourself' USING ERRCODE = '22023';\n  END IF;\n", new="", expect='PL12 '),
+  dict(suite=PLS, id='PL14', mig=PLM, how='màn kiểm duyệt không đọc được lý do',
+       old="jsonb_build_object('until', r.until, 'reason', r.reason, 'created_at', r.created_at)", new="jsonb_build_object('until', r.until, 'created_at', r.created_at)", expect='PL14 '),
+  dict(suite=PLS, id='PL15', mig=PLM, how='hạn khoá tính theo ngày', old="make_interval(hours => p_hours)", new="make_interval(days => p_hours)", expect='PL15 '),
+  dict(suite=PLS, id='PL16', mig=PLM, how='khoá không ghi nhật ký',
+       old="  PERFORM public.moderation_log(v_actor, 'RESTRICT_USER', 'user', p_user, p_reason,\n                                jsonb_build_object('hours', p_hours, 'until', v_until));\n", new="", expect='PL16 '),
+  dict(suite=PLS, id='PL17', mig=PLM, how='bỏ chốt khoá trong cửa đăng',
+       old="  IF v_until IS NOT NULL THEN\n    RAISE EXCEPTION 'posting restricted until %', v_until USING ERRCODE = 'CR001';\n  END IF;\n", new="", expect='PL17 '),
+  dict(suite=PLS, id='PL19', mig=PLM, how='người bị khoá không đọc được dòng của mình',
+       old="ON public.community_restrictions FOR SELECT TO authenticated USING (auth.uid() = user_id);", new="ON public.community_restrictions FOR SELECT TO authenticated USING (false);", expect='PL19 '),
+  dict(suite=PLS, id='PL21', mig=PLM, how='ai cũng đọc được ai đang bị khoá',
+       old="ON public.community_restrictions FOR SELECT TO authenticated USING (auth.uid() = user_id);", new="ON public.community_restrictions FOR SELECT TO authenticated USING (true);", expect='PL21 '),
+  dict(suite=PLS, id='PL22', mig=PLM, how='người thường hỏi được trạng thái khoá', nth=2,
+       old="  v_actor uuid := public.moderation_require(false);\nBEGIN", new="  v_actor uuid := auth.uid();\nBEGIN", expect='PL22 '),
+  dict(suite=PLS, id='PL23', mig=PLM, how='khoá hết hạn vẫn chặn',
+       old="WHERE r.user_id = v_author AND r.until > now();", new="WHERE r.user_id = v_author;", expect='PL23 '),
+  dict(suite=PLS, id='PL24', mig=PLM, how='gỡ khoá người không bị khoá mà không báo',
+       old="  IF NOT FOUND THEN\n    RAISE EXCEPTION 'user is not restricted' USING ERRCODE = '22023';\n  END IF;\n", new="", expect='PL24 '),
+  dict(suite=PLS, id='PL25', mig=PLM, how='gỡ khoá không ghi nhật ký',
+       old="  PERFORM public.moderation_log(v_actor, 'UNRESTRICT_USER', 'user', p_user, p_reason, '{}'::jsonb);\n", new="", expect='PL25 '),
+  dict(suite=PLS, id='PL27', mig=PLM, how='cấp hàm cửa đăng cho client',
+       old="REVOKE EXECUTE ON FUNCTION public.community_posting_guard() FROM PUBLIC, anon, authenticated;", new="GRANT EXECUTE ON FUNCTION public.community_posting_guard() TO authenticated;", expect='PL27 '),
+  dict(suite=PLS, id='PL28', mig=PLM, how='cấp mod_restrict cho anon',
+       old="REVOKE EXECUTE ON FUNCTION public.mod_restrict(uuid, integer, text) FROM PUBLIC, anon;", new="GRANT EXECUTE ON FUNCTION public.mod_restrict(uuid, integer, text) TO anon;", expect='PL28 '),
+]
+

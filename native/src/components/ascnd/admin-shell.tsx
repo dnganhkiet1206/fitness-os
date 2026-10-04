@@ -218,6 +218,8 @@ export function useActionLabel() {
     REMOVE_IMAGE: i18n.nPgAdActRemoveImage,
     RESTORE_IMAGE: i18n.nPgAdActRestoreImage,
     ROLE_CHANGE: i18n.nPgAdActRole,
+    RESTRICT_USER: i18n.nPgAdActRestrict,
+    UNRESTRICT_USER: i18n.nPgAdActUnrestrict,
   };
   return (a: string) => map[a] ?? a;
 }

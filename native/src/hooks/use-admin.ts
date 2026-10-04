@@ -341,6 +341,53 @@ export function useModAction() {
   });
 }
 
+/* ── tạm khoá đăng (20261007235000) ─────────────────────────────────────── */
+
+export interface UserRestriction {
+  until: string;
+  reason: string;
+  created_at: string;
+}
+
+/** Trạng thái khoá của một người cho màn kiểm duyệt — `null` khi không bị khoá. */
+export function useModUserRestriction(user: string | undefined) {
+  const { userId, ok } = useStaff();
+  return useQuery({
+    queryKey: ['admin_restriction', userId, user],
+    enabled: ok && !!user,
+    queryFn: async (): Promise<UserRestriction | null> => {
+      const { data, error } = await supabase.rpc('mod_user_restriction', { p_user: user! });
+      if (error) throw error;
+      return (data as unknown as UserRestriction | null) ?? null;
+    },
+  });
+}
+
+export function useModRestrict() {
+  const refresh = useRefreshAll();
+  return useOnlineMutation({
+    /* quyết định kiểm duyệt: người khác chịu kết quả — không xếp hàng khi mất mạng */
+    meta: { offline: now(2) },
+    mutationFn: async ({ user, hours, reason }: { user: string; hours: number; reason: string }) => {
+      const { error } = await supabase.rpc('mod_restrict', { p_user: user, p_hours: hours, p_reason: reason });
+      if (error) throw error;
+    },
+    onSettled: refresh,
+  });
+}
+
+export function useModUnrestrict() {
+  const refresh = useRefreshAll();
+  return useOnlineMutation({
+    meta: { offline: now(2) },
+    mutationFn: async ({ user, reason }: { user: string; reason: string }) => {
+      const { error } = await supabase.rpc('mod_unrestrict', { p_user: user, p_reason: reason });
+      if (error) throw error;
+    },
+    onSettled: refresh,
+  });
+}
+
 export function useDecideAppeal() {
   const refresh = useRefreshAll();
   return useOnlineMutation({

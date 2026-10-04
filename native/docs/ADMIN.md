@@ -96,6 +96,20 @@ Mỗi dòng có người làm, vai của họ lúc làm, đích, lý do và th�
   một lần mới.
 - Moderator / admin: chấp nhận (nội dung hiện lại, báo cáo đóng) hoặc từ chối
   (vẫn ẩn), hoặc gỡ hẳn.
+- Từ 04/10 (#6): chỉ báo cáo của tài khoản **đủ điều kiện** (≥ 30 ngày tuổi VÀ
+  có đóng góp trong 30 ngày) mới tính vào ngưỡng; màn kiểm duyệt gắn nhãn
+  "Không tính" cho phần còn lại. Mỗi người tối đa 10 báo cáo / 24 giờ.
+
+## Chống spam đăng bài
+
+- Trần tự động: 10 bài và 30 bình luận mỗi 60 phút cho một người (đội kiểm
+  duyệt không bị trần). Vượt trần thì app nói "đợi một lúc", không ghi gì.
+- **Tạm khoá đăng** (moderator / admin, ở mục "Tài khoản tác giả" của màn một
+  bài hay bình luận): 24 giờ hoặc 7 ngày (server nhận 1–720 giờ), **bắt buộc lý
+  do**, luôn hỏi lại, ghi `RESTRICT_USER` / `UNRESTRICT_USER` vào nhật ký.
+  Người bị khoá vẫn đọc, thích, theo dõi — chỉ không đăng bài hay bình luận —
+  và app nói rõ đến bao giờ, vì sao. Hết hạn thì tự hết.
+- Không khoá được chính mình hay người trong đội kiểm duyệt (đổi vai trò trước).
 
 ## Thư viện ảnh
 

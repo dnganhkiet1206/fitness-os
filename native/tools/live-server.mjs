@@ -101,7 +101,7 @@ export function fakeSupabase({ world, mode = 'full', report = {} }) {
          `gte`/`lt`; giới hạn ấy ghi ở kịch bản "nhật ký ngày khác" của
          `live.mjs` và vẫn còn nguyên. */
       const req = r.request();
-      const limited = reportLimit(world, table, req.method());
+      const limited = reportLimit(world, table, req.method()) ?? postingGuard(world, table, req.method());
       if (limited) return r.fulfill(limited);
       const before = table === 'community_reports' ? (world.community_reports ?? []).length : 0;
       const wrote = applyWrite(world, table, req.method(), u, req.postData(), req.headers());
@@ -253,5 +253,23 @@ function reportsAfterInsert(world, before) {
       hides.push({ user_id: x.reporter_id, post_id: x.post_id, created_at: new Date().toISOString() });
     }
   }
+}
+
+/*
+  Cửa đăng của 20261007235000, mô phỏng cho bình luận (bài sinh qua hàm share_*
+  — fixture của chúng ở live-rpc.mjs): đang bị tạm khoá → CR001 (PostgREST:
+  lớp lạ → 400); ≥ 30 bình luận trong 60 phút → 54000 (HTTP 500).
+*/
+function postingGuard(world, table, method) {
+  if (table !== 'community_comments' || method !== 'POST') return null;
+  const now = new Date().toISOString();
+  if ((world.community_restrictions ?? []).some((x) => x.user_id === UID && x.until > now)) {
+    return { status: 400, contentType: 'application/json', body: JSON.stringify({ code: 'CR001', details: null, hint: null, message: 'posting restricted' }) };
+  }
+  const since = new Date(Date.now() - 3600e3).toISOString();
+  if ((world.community_comments ?? []).filter((c) => c.author_id === UID && c.created_at > since).length >= 30) {
+    return { status: 500, contentType: 'application/json', body: JSON.stringify({ code: '54000', details: null, hint: null, message: 'comment limit reached' }) };
+  }
+  return null;
 }
 

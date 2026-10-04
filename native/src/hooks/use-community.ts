@@ -657,7 +657,7 @@ export function useAddComment(postId: string) {
       const { error } = await supabase
         .from('community_comments')
         .insert({ post_id: postId, author_id: user!.id, body: body.trim(), parent_id: parentId });
-      if (error) throw error;
+      if (error) throw postingError(error, 'comment');
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['community_comments', user?.id, postId] });
@@ -837,6 +837,41 @@ export function useReport() {
       qc.invalidateQueries({ queryKey: ['community_feed'] });
       qc.invalidateQueries({ queryKey: ['community_user_posts'] });
     },
+  });
+}
+
+/* ── cửa đăng bài (20261007235000) ─────────────────────────────────────────
+   Trần mỗi giờ (54000) và tạm khoá do đội kiểm duyệt đặt (CR001): câu của app,
+   không phải chữ của PostgreSQL. Giữ `code` để `permanentFailure` không thử lại
+   — trần không mở sau vài giây, khoá không tự gỡ khi bấm lại. */
+export function postingError(error: { code?: string }, what: 'post' | 'comment'): unknown {
+  if (error.code === '54000') return Object.assign(new KeyedError(what === 'post' ? 'nPgPostLimit' : 'nPgCommentLimit'), { code: '54000' });
+  if (error.code === 'CR001') return Object.assign(new KeyedError('nPgRestricted'), { code: 'CR001' });
+  return error;
+}
+
+export interface MyRestriction {
+  until: string;
+  reason: string;
+}
+
+/** Mình có đang bị tạm khoá đăng không — dòng của CHÍNH mình (RLS), còn hạn. */
+export function useMyRestriction() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_restriction', user?.id],
+    enabled: !!user,
+    queryFn: async (): Promise<MyRestriction | null> => {
+      const { data, error } = await supabase
+        .from('community_restrictions')
+        .select('until, reason')
+        .eq('user_id', user!.id)
+        .gt('until', new Date().toISOString())
+        .maybeSingle();
+      if (error) throw error;
+      return data ? { until: data.until, reason: data.reason } : null;
+    },
+    staleTime: 60_000,
   });
 }
 
@@ -1099,7 +1134,7 @@ export function useShareWorkout() {
           });
       if (error?.code === '23505') throw new AlreadySharedError(error.message);
       if (error?.code === 'P0001') throw new ProfileRequiredError(error.message);
-      if (error) throw error;
+      if (error) throw postingError(error, 'post');
       return data as string;
     },
     onSuccess: () => {
@@ -1265,7 +1300,7 @@ export function useShareProgress() {
             p_visibility: o.visibility,
           });
       if (error?.code === 'P0001') throw new ProfileRequiredError(error.message);
-      if (error) throw error;
+      if (error) throw postingError(error, 'post');
       return data as string;
     },
     onMutate: () => Haptics.selection(),

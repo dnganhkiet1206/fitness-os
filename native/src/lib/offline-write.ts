@@ -366,7 +366,8 @@ export function permanentFailure(error: unknown): boolean {
     code.startsWith('PGRST') ||
     /* 54000: trần báo cáo mỗi ngày của cộng đồng (#6) — hỏi lại trong vài
        giây không làm qua ngày mới. */
-    ['42501', '42703', '23505', '23503', '23514', '23502', '22P02', '22007', '54000'].includes(code)
+    /* CR001: đội kiểm duyệt tạm khoá đăng bài (20261007235000) — tới hạn mới hết. */
+    ['42501', '42703', '23505', '23503', '23514', '23502', '22P02', '22007', '54000', 'CR001'].includes(code)
   );
 }
 

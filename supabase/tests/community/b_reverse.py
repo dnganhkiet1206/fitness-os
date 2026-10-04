@@ -119,6 +119,14 @@ COVERAGE_OK = {
                'đều làm M1 (nhắc trên bài công khai, đứng trước) đỏ trước — đo 02/10: ca MV3 riêng '
                'đỏ ở M1. MV3 ở đó để MV1 không xanh nhờ một hàm không nhắc ai cả.',
     },
+    'posting_limits': {
+        'PL12': 'hai lớp: bỏ chốt tự khoá thì chốt "không khoá người trong đội" vẫn chặn (ca PL12 green_ok), '
+                'và bỏ chốt đội thì PL11 đỏ.',
+        'PL13': 'khoá thành công là phần dương của PL7–PL12; mọi phép phá đường khoá bị PL15/PL16 bắt.',
+        'PL18': 'migration không chạm bảng thích; không phép phá nào trong nó chặn được lượt thích.',
+        'PL20': 'cùng chốt với PL17 (cửa chung cho bài và bình luận): phá chốt ấy thì PL17 đỏ trước.',
+        'PL26': 'cùng đường gỡ khoá với PL24/PL25.',
+    },
     'discover_kinds': {
         'DK2': 'ghi một lựa chọn hợp lệ: migration chỉ THÊM cột và CHECK — phá CHECK thì DK3/DK4 đỏ, '
                'không phép phá nào trong nó chặn được một UPDATE hợp lệ.',

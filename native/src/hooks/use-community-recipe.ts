@@ -2,7 +2,7 @@ import { haptics as Haptics } from '@/lib/haptics';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { useAuth } from '@/hooks/use-auth';
-import { AlreadySharedError, ProfileRequiredError } from '@/hooks/use-community';
+import { AlreadySharedError, ProfileRequiredError, postingError } from '@/hooks/use-community';
 import { useOnlineMutation } from '@/hooks/use-online-mutation';
 import { now } from '@/lib/offline-class';
 import { supabase } from '@/integrations/supabase/client';
@@ -131,7 +131,7 @@ export function useShareRecipe() {
       if (error?.code === '23505') throw new AlreadySharedError(error.message);
       if (error?.code === 'P0001') throw new ProfileRequiredError(error.message);
       if (error?.code === '22023' && /empty meal/.test(error.message)) throw new EmptyMealError(error.message);
-      if (error) throw error;
+      if (error) throw postingError(error, 'post');
       return data as string;
     },
     onSuccess: () => {

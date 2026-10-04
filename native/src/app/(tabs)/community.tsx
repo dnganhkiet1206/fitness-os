@@ -18,8 +18,10 @@ import { SkeletonBlock } from '@/components/ascnd/skeleton';
 import { PostCard } from '@/components/ascnd/post-card';
 import { PAGE_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { makeStyles } from '@/constants/theme';
-import { useI18n } from '@/hooks/use-app-settings';
-import { type CommunityTab, useChallengeHistory, useChallenges, useCommunityFeed, useInbox, useMyCommunityProfile } from '@/hooks/use-community';
+import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { fillCopy } from '@/lib/copy-fill';
+import { getLocale } from '@/lib/i18n';
+import { type CommunityTab, useChallengeHistory, useChallenges, useCommunityFeed, useInbox, useMyCommunityProfile, useMyRestriction } from '@/hooks/use-community';
 import { useFeedHold } from '@/hooks/use-feed-hold';
 import { usePageWindow } from '@/hooks/use-page-window';
 import { usePalette } from '@/hooks/use-palette';
@@ -56,8 +58,10 @@ export default function CommunityScreen() {
   const c = usePalette();
   const styles = stylesFor(c);
   const i18n = useI18n();
+  const { lang } = useAppSettings();
   const [tab, setTab] = useState<CommunityTab>('discover');
   const me = useMyCommunityProfile();
+  const restriction = useMyRestriction();
   const feed = useCommunityFeed(tab);
   /* Bài mới về khi người ta đang đọc giữa feed thì được GIỮ lại sau một viên
      "N bài mới", như X, thay vì chèn lên và đẩy bài đang đọc khỏi ngón tay
@@ -144,7 +148,19 @@ export default function CommunityScreen() {
           hồ sơ chỉ đơn giản là chưa về là nói sai về một người đã có hồ sơ,
           rồi mời họ tạo lại (và tên người dùng của chính họ sẽ báo "đã có
           người dùng"). Lỗi của feed bên dưới đã có thẻ thử lại của nó. */}
-      {me.isPending || me.isError ? null : !me.data ? (
+      {me.isPending || me.isError ? null : restriction.data ? (
+        /* Đang bị tạm khoá đăng (20261007235000): thay ô soạn bài bằng một câu
+           nói đến bao giờ và vì sao — không để soạn xong rồi mới bị từ chối. */
+        <GlassCard style={styles.setup} testID="restricted-card">
+          <Text style={styles.setupTitle}>{i18n.nPgRestrictedTitle}</Text>
+          <Text style={styles.setupHint}>
+            {fillCopy(i18n.nPgRestrictedNotice, {
+              d: new Date(restriction.data.until).toLocaleDateString(getLocale(lang), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }),
+            })}
+          </Text>
+          {restriction.data.reason ? <Text style={styles.setupHint}>{fillCopy(i18n.nPgRestrictedReason, { r: restriction.data.reason })}</Text> : null}
+        </GlassCard>
+      ) : !me.data ? (
         <GlassCard style={styles.setup}>
           <Text style={styles.setupTitle}>{i18n.nCmSetupTitle}</Text>
           <Text style={styles.setupHint}>{i18n.nCmSetupHint}</Text>

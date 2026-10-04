@@ -23,11 +23,13 @@ import {
   useCommunityPost,
   useDeleteComment,
   useMyCommunityProfile,
+  useMyRestriction,
   useReport,
 } from '@/hooks/use-community';
 import { usePalette } from '@/hooks/use-palette';
 import { mentionParts, replyPrefix, threadComments } from '@/lib/comment-thread';
 import { fillCopy } from '@/lib/copy-fill';
+import { getLocale } from '@/lib/i18n';
 import { nav } from '@/lib/nav';
 import { timeAgo } from '@/lib/time-ago';
 import { toast } from '@/lib/toast';
@@ -54,6 +56,8 @@ export default function CommunityPostScreen() {
   const post = useCommunityPost(id);
   const comments = useComments(id);
   const me = useMyCommunityProfile();
+  const restriction = useMyRestriction();
+  const { lang } = useAppSettings();
   const add = useAddComment(id ?? '');
   const [draft, setDraft] = useState('');
   /* Đang trả lời ai (#30). Gửi `parentId` của CHÍNH bình luận được bấm — server
@@ -156,6 +160,12 @@ export default function CommunityPostScreen() {
             /* Tác giả đã tắt bình luận: nói ra thay vì để một ô gõ gửi đi rồi
                bị server từ chối (policy RESTRICTIVE, 20261007120000). */
             <Text style={styles.closed}>{i18n.nPgCommentsClosed}</Text>
+          ) : restriction.data ? (
+            /* Đang bị tạm khoá đăng (20261007235000): cùng lý do như trên — nói
+               đến bao giờ thay vì để gõ xong mới bị từ chối. */
+            <Text style={styles.closed} testID="restricted-notice">
+              {fillCopy(i18n.nPgRestrictedNotice, { d: new Date(restriction.data.until).toLocaleDateString(getLocale(lang), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) })}
+            </Text>
           ) : me.data ? (
             <>
               <CommunityAvatar mascotId={me.data.mascot_id} size={32} />

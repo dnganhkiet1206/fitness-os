@@ -748,6 +748,30 @@ export type Database = {
         }
         Relationships: []
       }
+      community_restrictions: {
+        Row: {
+          created_at: string
+          created_by: string
+          reason: string
+          until: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          reason?: string
+          until: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          reason?: string
+          until?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       community_review_requests: {
         Row: {
           comment_id: string | null
@@ -2166,6 +2190,18 @@ export type Database = {
       /* Hand-written, like the columns above: these are the RPCs that exist
          because the tables behind them refuse client writes. Regenerating this
          file from the live project will produce them properly. */
+      mod_restrict: {
+        Args: { p_hours: number; p_reason: string; p_user: string }
+        Returns: string
+      }
+      mod_unrestrict: {
+        Args: { p_reason: string; p_user: string }
+        Returns: undefined
+      }
+      mod_user_restriction: {
+        Args: { p_user: string }
+        Returns: Json
+      }
       claim_ai_call: {
         Args: { p_kind: string }
         Returns: boolean

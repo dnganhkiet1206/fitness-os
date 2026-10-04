@@ -129,8 +129,11 @@ DO $$ BEGIN ASSERT NOT EXISTS (SELECT 1 FROM community_mutes), 'RT26 đọc đư
 RESET ROLE;
 
 -- ── tối đa 10 báo cáo mỗi 24 giờ ──
-INSERT INTO community_posts (id, author_id, kind, payload, caption)
-SELECT ('a7b00000-0000-0000-0000-0000000000' || lpad(i::text, 2, '0'))::uuid, 'a7000000-0000-0000-0000-0000000000a1', 'workout', '{}', 'loạt ' || i
+-- Bài nền đăng rải trong 11 giờ qua: từ 20261007235000 một người chỉ đăng được
+-- 10 bài mỗi giờ, và trần ấy không phải thứ bộ này đo.
+INSERT INTO community_posts (id, author_id, kind, payload, caption, created_at)
+SELECT ('a7b00000-0000-0000-0000-0000000000' || lpad(i::text, 2, '0'))::uuid, 'a7000000-0000-0000-0000-0000000000a1', 'workout', '{}', 'loạt ' || i,
+       now() - make_interval(hours => i)
 FROM generate_series(1, 11) i;
 DO $$ BEGIN
   FOR i IN 1..9 LOOP

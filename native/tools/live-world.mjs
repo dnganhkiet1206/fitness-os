@@ -716,6 +716,13 @@ export const FIXTURES = {
   /* #6: một lượt tắt tiếng còn hạn (màn Quyền riêng tư có danh sách) và một
      lượt đã hết hạn — policy so `until > now()`, nên dòng hết hạn không được
      hiện ở danh sách lẫn không được giấu bài. */
+  /* Tạm khoá đăng (20261007235000): Tuấn đang bị khoá (màn kiểm duyệt có trạng
+     thái để vẽ), và một lượt khoá UID đã HẾT HẠN — app lọc `until > now()`, nên
+     UID vẫn đăng bình thường ở mọi kịch bản khác. */
+  community_restrictions: [
+    { user_id: 'c0000000-0000-4000-8000-0000000022b2', until: new Date(Date.now() + 3 * 86400000).toISOString(), reason: 'rải link quảng cáo', created_by: 'c0000000-0000-4000-8000-00000000a5cd', created_at: day(1) },
+    { user_id: UID, until: day(5), reason: 'thử', created_by: 'c0000000-0000-4000-8000-00000000a5cd', created_at: day(8) },
+  ],
   community_mutes: [
     { user_id: UID, muted_id: 'c0000000-0000-4000-8000-0000000055e5', until: new Date(Date.now() + 12 * 86400000).toISOString(), created_at: day(18) },
     { user_id: UID, muted_id: 'c0000000-0000-4000-8000-0000000011a1', until: day(2), created_at: day(32) },

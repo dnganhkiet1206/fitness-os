@@ -706,6 +706,47 @@ export const RPC_FIXTURES = {
       return null;
     },
   },
+  /* Tạm khoá đăng (20261007235000): đúng luật của hàm — đội kiểm duyệt,
+     1..720 giờ, bắt buộc lý do, không tự khoá, không khoá người trong đội. */
+  mod_restrict: {
+    prepare: asStaff,
+    sample: { p_user: 'c0000000-0000-4000-8000-0000000011a1', p_hours: 24, p_reason: 'x' },
+    run({ p_user, p_hours, p_reason = '' } = {}, world) {
+      const actor = requireRole(world, false);
+      if (!(p_hours >= 1 && p_hours <= 720)) throw rpcError('22023', 'hours must be between 1 and 720');
+      if (!String(p_reason).trim()) throw rpcError('22023', 'a reason is required');
+      if (p_user === actor) throw rpcError('22023', 'you cannot restrict yourself');
+      if (['moderator', 'admin'].includes(roleOf(world, p_user))) throw rpcError('22023', 'cannot restrict a staff account');
+      const until = new Date(Date.now() + p_hours * 3600e3).toISOString();
+      world.community_restrictions = rows(world, 'community_restrictions').filter((r) => r.user_id !== p_user);
+      world.community_restrictions.push({ user_id: p_user, until, reason: String(p_reason).trim(), created_by: actor, created_at: new Date().toISOString() });
+      logAudit(world, actor, 'RESTRICT_USER', 'user', p_user, p_reason, { hours: p_hours, until });
+      return until;
+    },
+  },
+  mod_unrestrict: {
+    prepare: asStaff,
+    sample: { p_user: 'c0000000-0000-4000-8000-0000000022b2', p_reason: 'x' },
+    run({ p_user, p_reason = '' } = {}, world) {
+      const actor = requireRole(world, false);
+      const now = new Date().toISOString();
+      const before = rows(world, 'community_restrictions').length;
+      world.community_restrictions = rows(world, 'community_restrictions').filter((r) => !(r.user_id === p_user && r.until > now));
+      if (world.community_restrictions.length === before) throw rpcError('22023', 'user is not restricted');
+      logAudit(world, actor, 'UNRESTRICT_USER', 'user', p_user, p_reason, {});
+      return null;
+    },
+  },
+  mod_user_restriction: {
+    prepare: asStaff,
+    sample: { p_user: 'c0000000-0000-4000-8000-0000000022b2' },
+    run({ p_user } = {}, world) {
+      requireRole(world, false);
+      const now = new Date().toISOString();
+      const r = rows(world, 'community_restrictions').find((x) => x.user_id === p_user && x.until > now);
+      return r ? { until: r.until, reason: r.reason, created_at: r.created_at } : null;
+    },
+  },
   admin_art: {
     prepare: asStaff,
     sample: {},

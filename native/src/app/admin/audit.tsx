@@ -24,6 +24,8 @@ const ACTIONS = [
   'REMOVE_IMAGE',
   'RESTORE_IMAGE',
   'ROLE_CHANGE',
+  'RESTRICT_USER',
+  'UNRESTRICT_USER',
 ] as const;
 
 /** Nhật ký kiểm toán (chỉ admin): đọc qua `admin_audit`, lọc theo hành động.
