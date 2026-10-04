@@ -9,6 +9,7 @@ import { registerOfflineWrites } from '@/lib/offline-write';
 import { persistPausedNow } from '@/lib/persist-paused';
 import { resetPersonalModel } from '@/lib/personal-model';
 import { runUserScopedResets } from '@/lib/user-scoped-reset';
+import { DAY_PROGRESS_PREFIX } from '@/lib/local-date';
 
 /**
  * Offline-aware React Query client.
@@ -273,6 +274,24 @@ export async function clearUserScopedStorage() {
     } catch {
       // keep going; a stale preference is better than a stale everything
     }
+  }
+  /* `routine-day:*` resume points (day-plan.tsx) — keys are dynamic
+     (`routine-day:<date>:<templateId>`) so they can't be listed above.
+     Not user-scoped: user A ticks sets, signs out, user B opens the same
+     template the same day and sees A's ticks as their own resume point.
+     Sweep by prefix on sign-out. */
+  try {
+    const allKeys = await AsyncStorage.getAllKeys();
+    const progressKeys = allKeys.filter((k) => k.startsWith(DAY_PROGRESS_PREFIX));
+    for (const key of progressKeys) {
+      try {
+        await AsyncStorage.removeItem(key);
+      } catch {
+        // keep going
+      }
+    }
+  } catch {
+    // getAllKeys failed — the explicit list above is already cleared
   }
   /* Module-scope state, which no `removeItem` can reach — see
      `resetPersonalModel`. */
