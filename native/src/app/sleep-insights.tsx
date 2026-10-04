@@ -2,7 +2,7 @@ import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Lightbulb, Moon, Trash2 } from 'lucide-react-native';
 import { useEffect, useMemo } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring } from 'react-native-reanimated';
 
 import { CardHeader } from '@/components/ascnd/card-header';
@@ -72,7 +72,7 @@ export default function SleepInsightsScreen() {
   const { lang } = useAppSettings();
   const i18n = useI18n();
   const locale = getLocale(lang);
-  const { data: sleepLogs, isError, refetch, isRefetching } = useSleepHistory(7);
+  const { data: sleepLogs, isPending, isError, refetch, isRefetching } = useSleepHistory(7);
   const { data: profile } = useProfile();
   const vi = lang === 'vi';
   const remove = useDeleteSleepLog();
@@ -224,6 +224,10 @@ export default function SleepInsightsScreen() {
         true. */}
       {isError ? (
         <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+      ) : isPending ? (
+        <GlassCard>
+          <ActivityIndicator />
+        </GlassCard>
       ) : !stats ? (
         <GlassCard>
           {/* Told a new user there was no sleep data and stopped there, leaving

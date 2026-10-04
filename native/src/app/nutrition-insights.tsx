@@ -2,7 +2,7 @@ import { haptics as Haptics } from '@/lib/haptics';
 import { nav } from '@/lib/nav';
 import { Lightbulb, UtensilsCrossed } from 'lucide-react-native';
 import { useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { HeroMetric } from '@/components/ascnd/hero-metric';
@@ -38,7 +38,7 @@ export default function NutritionInsightsScreen() {
   const i18n = useI18n();
   const locale = getLocale(lang);
   const vi = lang === 'vi';
-  const { data: days, isError, refetch, isRefetching } = useNutritionHistory(7);
+  const { data: days, isPending, isError, refetch, isRefetching } = useNutritionHistory(7);
   const { data: profile } = useProfile();
   const targets = macroTargetsFor(profile);
 
@@ -99,6 +99,10 @@ export default function NutritionInsightsScreen() {
     >
       {isError ? (
         <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+      ) : isPending ? (
+        <View style={styles.center}>
+          <ActivityIndicator />
+        </View>
       ) : rows.length === 0 ? (
         <EmptyState
           icon={UtensilsCrossed}
@@ -182,5 +186,6 @@ const stylesFor = makeStyles((c) =>
     barLabel: { ...type.caption, color: c.glassMuted, marginTop: spacing.xs },
     insightHead: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm },
     insight: { ...type.body, color: c.foreground, marginBottom: spacing.sm, lineHeight: 22 },
+    center: { alignItems: 'center', paddingVertical: spacing.xl },
   }),
 );
