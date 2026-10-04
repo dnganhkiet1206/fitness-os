@@ -862,11 +862,18 @@ export function DayPlan({
   */
   const storeKey = template ? dayProgressKey(dateStr, template.id) : null;
   const [loaded, setLoaded] = useState(false);
+  /* Which key the in-memory done/rpe/... state was loaded from. On a day
+     switch, `setLoaded(false)` below only schedules a re-render — the
+     write-back effect runs first with the old closure (loaded=true, old
+     state, NEW key) and would persist yesterday's ticks under today's key.
+     Gating on this ref closes that window. */
+  const loadedKeyRef = useRef<string | null>(null);
   useEffect(() => {
     let alive = true;
     if (!storeKey) return;
     void pruneOldProgress();
     setLoaded(false);
+    loadedKeyRef.current = null;
     AsyncStorage.getItem(storeKey)
       .then((raw) => {
         if (!alive) return;
@@ -899,9 +906,18 @@ export function DayPlan({
             // a corrupt entry is not worth a crash — start the workout fresh
           }
         }
+        loadedKeyRef.current = storeKey;
         setLoaded(true);
       })
-      .catch(() => alive && setLoaded(true));
+      .catch(() => {
+        if (!alive) return;
+        /* Corrupt/missing blob: state stays as-is (fresh), but the key is
+           marked loaded so the write-back doesn't see a stale key. Without
+           this, a corrupt new-day blob would let yesterday's state persist
+           under today's key. */
+        loadedKeyRef.current = storeKey;
+        setLoaded(true);
+      });
     return () => {
       alive = false;
     };
@@ -947,6 +963,10 @@ export function DayPlan({
 
   useEffect(() => {
     if (!storeKey || !loaded) return;
+    /* Don't write old-day state under the new day's key: the read effect
+       clears `loadedKeyRef` on key change, and only sets it once the new
+       key's blob has landed. */
+    if (loadedKeyRef.current !== storeKey) return;
     AsyncStorage.setItem(
       storeKey,
       JSON.stringify({ done, rpe, rest, weightText, repsText, extra }),
