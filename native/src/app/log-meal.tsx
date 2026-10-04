@@ -148,6 +148,10 @@ export default function LogMealSheet() {
   const [debounced, setDebounced] = useState('');
   const [aiOpen, setAiOpen] = useState(false);
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
+  /* Distinguish "AI returned zero ideas" from "the request failed": without
+     this, a network error renders identically to an empty result and offers
+     no retry. */
+  const [suggestFailed, setSuggestFailed] = useState(false);
 
   // Custom food entry — user types their own dish + macros
   const [customOpen, setCustomOpen] = useState(false);
@@ -412,10 +416,12 @@ export default function LogMealSheet() {
     onSuccess: (s) => {
       Haptics.success();
       setSuggestions(s);
+      setSuggestFailed(false);
     },
     onError: () => {
       Haptics.warning();
       setSuggestions([]);
+      setSuggestFailed(true);
     },
   });
 
@@ -726,6 +732,18 @@ export default function LogMealSheet() {
               <View style={styles.aiLoading}>
                 <ActivityIndicator color={c.primary} />
                 <Text style={styles.aiLoadingText}>{i18n.nAiThinking}</Text>
+              </View>
+            ) : suggestFailed ? (
+              <View style={styles.aiError}>
+                <Text style={styles.aiEmpty}>{i18n.nAiNoIdeas}</Text>
+                <PressScale
+                  style={styles.aiRetry}
+                  onPress={() => {
+                    setSuggestFailed(false);
+                    aiSuggest.mutate();
+                  }}>
+                  <Text style={styles.aiRetryText}>{i18n.nRetry}</Text>
+                </PressScale>
               </View>
             ) : suggestions.length === 0 ? (
               <Text style={styles.aiEmpty}>{i18n.nAiNoIdeas}</Text>
@@ -1065,6 +1083,14 @@ const stylesFor = makeStyles((c, m) => ({
   aiLoading: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md, justifyContent: 'center' },
   aiLoadingText: { ...type.footnote, color: c.mutedForeground },
   aiEmpty: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', paddingVertical: spacing.md },
+  aiError: { alignItems: 'center', paddingVertical: spacing.sm, gap: spacing.sm },
+  aiRetry: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: c.primary,
+  },
+  aiRetryText: { ...type.footnote, color: c.primaryForeground, fontWeight: '600' },
   suggestion: {
     flexDirection: 'row',
     alignItems: 'center',
