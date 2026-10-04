@@ -473,6 +473,7 @@ export default function EditProfileSheet() {
         <View style={styles.row}>
           <Field label={`${i18n.settingsHeight} (${form.units_height})`} style={styles.half}>
             <TextInput
+              accessibilityLabel={`${i18n.settingsHeight} (${form.units_height})`}
               style={[styles.input, heightError && styles.inputBad]}
               keyboardType="decimal-pad"
               value={hDisp}
@@ -486,6 +487,7 @@ export default function EditProfileSheet() {
           </Field>
           <Field label={`${i18n.settingsWeight} (${form.units_weight})`} style={styles.half}>
             <TextInput
+              accessibilityLabel={`${i18n.settingsWeight} (${form.units_weight})`}
               style={[styles.input, weightError && styles.inputBad]}
               keyboardType="decimal-pad"
               value={wDisp}

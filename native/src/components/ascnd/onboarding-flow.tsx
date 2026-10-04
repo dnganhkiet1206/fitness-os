@@ -410,7 +410,9 @@ export function OnboardingFlow() {
       const { error } = await supabase.from('profiles').upsert(
         {
           user_id: user.id,
-          name: 'Athlete',
+          /* Không ghi `name` ở đây: signup đã lưu tên user chọn vào
+             `raw_user_meta_data` → trigger `handle_new_user()` ghi vào
+             `profiles.name`. Upsert với `name: 'Athlete'` sẽ đè mất tên thật. */
           sex,
           dob: localDateStr(dob),
           height_cm: attempt.height_cm,
