@@ -147,7 +147,9 @@ export function ShopPager({
         <PressScale
           disabled={pendingBuy}
           style={[styles.action, styles.actionBuy, !affordable && styles.actionPoor]}
-          onPress={() => onBuy(item)}>
+          onPress={() => onBuy(item)}
+          accessibilityLabel={`${item.name[lang]}, ${price}`}
+          accessibilityState={{ busy: buyingKey === item.key }}>
           {buyingKey === item.key ? (
             <ActivityIndicator size="small" color={c.primaryForeground} />
           ) : (

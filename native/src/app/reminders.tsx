@@ -126,6 +126,7 @@ export default function RemindersScreen() {
           </View>
           <Switch
             value={prefs.water.enabled}
+            accessibilityLabel={i18n.nReminderWater}
             onValueChange={(v) => {
               Haptics.selection();
               toggle('water', v);
@@ -175,6 +176,7 @@ export default function RemindersScreen() {
           </View>
           <Switch
             value={prefs.challengeClaim.enabled}
+            accessibilityLabel={i18n.nCxClaimReminderTitle}
             onValueChange={(v) => {
               Haptics.selection();
               toggle('challengeClaim', v);
@@ -215,6 +217,7 @@ export default function RemindersScreen() {
                 )}
                 <Switch
                   value={r.enabled}
+                  accessibilityLabel={title}
                   onValueChange={(v) => {
                     Haptics.selection();
                     toggle(key, v);

@@ -700,6 +700,7 @@ export function WeekPlan({ initialDay }: { initialDay?: number | null }) {
                 </View>
                 <Switch
                   value={byDay.get(picking)?.is_deload ?? false}
+                  accessibilityLabel={i18n.nDeload}
                   onValueChange={(v) => toggleDeload(picking, v)}
                   trackColor={{ true: c.readinessYellow, false: c.secondary }}
                 />

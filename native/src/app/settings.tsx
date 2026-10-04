@@ -387,6 +387,7 @@ export default function SettingsScreen() {
           </View>
           <Switch
             value={mascot.enabled}
+            accessibilityLabel={i18n.nMascotTitle}
             onValueChange={(v) => {
               Haptics.selection();
               mascot.setEnabled(v);
@@ -638,6 +639,7 @@ export default function SettingsScreen() {
           <Switch
             value={lock.enabled}
             disabled={!lock.available}
+            accessibilityLabel={i18n.nLockTitle}
             onValueChange={(v) => {
               Haptics.selection();
               lock.setEnabled(v);
