@@ -2091,8 +2091,8 @@ const SCENARIOS = [
       page.on('request', (q) => {
         if (/\/rest\/v1\/rpc\/community_appeal/.test(q.url())) calls.push(q.postData() ?? '');
       });
-      const has = (t) => page.evaluate((t) => window.__shown('*').some((e) => e.children.length === 0 && (e.textContent ?? '').trim() === t), t);
-      const text = () => page.evaluate(() => window.__shown('*').filter((e) => e.children.length === 0).map((e) => e.textContent ?? '').join(' | '));
+      const has = (t) => page.evaluate((t) => window.__shown('*').some((e) => !/^(TEXTAREA|INPUT)$/.test(e.tagName) && e.children.length === 0 && (e.textContent ?? '').trim() === t), t);
+      const text = () => page.evaluate(() => window.__shown('*').filter((e) => !/^(TEXTAREA|INPUT)$/.test(e.tagName) && e.children.length === 0).map((e) => e.textContent ?? '').join(' | '));
       const ask = () => page.getByRole('button', { name: 'Request a review', exact: true }).filter({ visible: true });
       const why = '3 people reported this · mostly: spam';
       for (let i = 0; i < 40 && !(await has(why)); i++) await page.waitForTimeout(250);
@@ -2139,7 +2139,7 @@ const SCENARIOS = [
       for (let i = 0; i < 40 && !(await has(cwhy)); i++) await page.waitForTimeout(250);
       if (!(await has('Bình luận ẩn của tôi (#26)'))) return '(E) bình luận ẩn của mình không hiện với chính mình';
       if (!(await has(cwhy))) return `(E) bình luận ẩn của mình không nói vì sao: thiếu "${cwhy}"`;
-      const notices = await page.evaluate(() => window.__shown('*').filter((e) => e.children.length === 0 && (e.textContent ?? '').trim() === 'Hidden from others after reports').length);
+      const notices = await page.evaluate(() => window.__shown('*').filter((e) => !/^(TEXTAREA|INPUT)$/.test(e.tagName) && e.children.length === 0 && (e.textContent ?? '').trim() === 'Hidden from others after reports').length);
       if (notices !== 1) return `(E) ${notices} khối "đang ẩn" — phải đúng một, của mình (bình luận ẩn của Linh không phải việc của mình)`;
       if ((await ask().count()) !== 1) return `(E) bình luận ẩn của mình phải có đúng một nút "Request a review", có ${await ask().count()}`;
       return null;
