@@ -34,6 +34,8 @@ import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { LANGS, perLang } from './lang-blocks.mjs';
+
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const ts = createRequire(path.join(NATIVE, 'x.cjs'))('typescript');
 
@@ -199,6 +201,10 @@ const ALLOW = {
       let body = null;
       const seek = (n) => {
         if (ts.isFunctionDeclaration(n) && n.name?.getText() === comp) body = n.getText();
+        /* `export const X = memo(function X…)` (widget Hôm nay được memo hoá ở
+           1cee141): thân là cả bộ khởi tạo. Bỏ sót dạng này thì bản đồ chỉ nối
+           được 2 widget và luật kêu "bản đồ hỏng". */
+        if (ts.isVariableDeclaration(n) && n.name.getText() === comp && n.initializer) body = n.initializer.getText();
         ts.forEachChild(n, seek);
       };
       seek(sf);
@@ -235,15 +241,17 @@ const ALLOW = {
   nó không được mở rộng ra khỏi hình dạng nhãn-và-giá-trị.
 */
 const strings = readFileSync(path.join(NATIVE, 'src/lib/native-strings.ts'), 'utf8');
-const val = (k) => [...strings.matchAll(new RegExp(`\\n  ${k}: '([^']*)'`, 'g'))].map((m) => m[1]);
-const titles = val('nWeightGoalTitle');
-const unset = val('nWeightGoalUnset');
-if (titles.length !== 2 || unset.length !== 2) {
+/* Theo TÊN khối ngôn ngữ (`lang-blocks.mjs`), không theo thứ tự xuất hiện. */
+const tBy = perLang(strings, 'nWeightGoalTitle');
+const uBy = perLang(strings, 'nWeightGoalUnset');
+const titles = LANGS.map((l) => tBy[l]);
+const unset = LANGS.map((l) => uBy[l]);
+if (titles.includes(null) || unset.includes(null)) {
   problems.push(
-    `nWeightGoalTitle/nWeightGoalUnset không đủ hai bản dịch (${titles.length}/${unset.length})`,
+    `nWeightGoalTitle/nWeightGoalUnset thiếu bản dịch (${LANGS.filter((l, i) => titles[i] == null || unset[i] == null).join(', ')})`,
   );
 } else {
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < LANGS.length; i++) {
     if (unset[i].toLowerCase().includes(titles[i].toLowerCase())) {
       problems.push(
         `hàng cân nặng mục tiêu: chỗ trống ghi "${unset[i]}" trong khi nhãn đã là "${titles[i]}" — giá trị đang nói lại cái nhãn vừa nói`,

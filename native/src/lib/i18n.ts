@@ -579,11 +579,11 @@ const es: Translations = {
      Việt. Không cái nào chẩn đoán gì. */
   sleepNoteAlignedGood: 'Horas suficientes y te sentiste bien — ambas coinciden.',
   sleepNoteAlignedPoor:
-    '{short} {short:minute|minutes} menos de tu objetivo, y lo notaste — ambas coinciden. Acuéstate más temprano esta noche.',
+    '{short} {short:minuto|minutos} menos de tu objetivo, y lo notaste — ambas coinciden. Acuéstate más temprano esta noche.',
   sleepNoteFeltWorse:
     'Horas suficientes, pero aun así te sentiste cansado. La duración no es lo único que hace una buena noche; vale la pena notarlo si se repite.',
   sleepNoteFeltBetter:
-    'Te sentiste bien, aunque anoche dormiste {short} {short:minute|minutes} menos. La puntuación del sueño se basa en la DURACIÓN, así que sale más baja de lo que sientes.',
+    'Te sentiste bien, aunque anoche dormiste {short} {short:minuto|minutos} menos. La puntuación del sueño se basa en la DURACIÓN, así que sale más baja de lo que sientes.',
   sleepNoteScoreIsDuration: 'Tu propia valoración de calidad no forma parte de la puntuación — solo genera este comentario.',
   logSleepReplaceGone:
     'No se pudo actualizar esta noche — quizá se eliminó en otro dispositivo. Cierra y regístrala de nuevo.',

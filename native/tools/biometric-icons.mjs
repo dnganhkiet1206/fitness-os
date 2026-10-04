@@ -29,6 +29,8 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { LANGS, perLang } from './lang-blocks.mjs';
+
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 /** số ca tự kiểm đã chạy — gán trong khối tự kiểm, in ra ở câu kết luận */
 let SELF_TESTS = 0;
@@ -429,8 +431,10 @@ export function units(sources) {
   for (const m of i18n.matchAll(/biometricsBreathUnit: '([^']+)'/g)) {
     if (/rpm/i.test(m[1])) bad.push(`i18n: biometricsBreathUnit = '${m[1]}'`);
   }
-  if ((i18n.match(/biometricsBreathUnit: '/g) ?? []).length !== 2) {
-    bad.push('biometricsBreathUnit thiếu một trong hai ngôn ngữ');
+  {
+    const by = perLang(i18n, 'biometricsBreathUnit');
+    const miss = LANGS.filter((l) => by[l] == null);
+    if (miss.length) bad.push(`biometricsBreathUnit thiếu bản ${miss.join(', ')}`);
   }
   return bad;
 }
@@ -555,9 +559,10 @@ export function units(sources) {
     card: "export function BiometricsCard() {\n const u = 'mL/kg/min'; const v = i18n.biometricsBreathUnit;\n}",
     screen: "const m = [{ unit: 'mL/kg/min' }, { unit: i18n.biometricsBreathUnit }];",
     plausible: "vo2max_mlkgmin: { min: 10, max: 100, unit: 'mL/kg/min' },",
-    i18n: "biometricsBreathUnit: 'nhịp/phút',\nbiometricsBreathUnit: 'breaths/min',",
+    i18n: "const es: T = {\nbiometricsBreathUnit: 'resp/min',\nconst vi: T = {\nbiometricsBreathUnit: 'nhịp/phút',\nconst en: T = {\nbiometricsBreathUnit: 'breaths/min',",
   };
   push('đơn vị đúng thì im', () => units(goodUnits), false);
+  push('thiếu bản es bị bắt', () => units({ ...goodUnits, i18n: goodUnits.i18n.replace("biometricsBreathUnit: 'resp/min',", '') }), true);
   push('rpm quay lại bị bắt', () => units({ ...goodUnits, card: `${goodUnits.card.slice(0, -1)} const w = 'rpm'; }` }), true);
   push('ml thường bị bắt', () => units({ ...goodUnits, screen: goodUnits.screen.replace('mL/kg', 'ml/kg') }), true);
   push('plausible lệch đơn vị bị bắt', () => units({ ...goodUnits, plausible: goodUnits.plausible.replace('mL', 'ml') }), true);

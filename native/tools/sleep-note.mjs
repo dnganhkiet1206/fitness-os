@@ -32,6 +32,8 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { LANGS, perLang } from './lang-blocks.mjs';
+
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(path.join(NATIVE, rel), 'utf8');
 const OUT = path.join(NATIVE, 'node_modules', '.cache', 'sleep-note');
@@ -141,8 +143,13 @@ const block = read('src/components/ascnd/sleep-note-block.tsx');
 const lib = read('src/lib/sleep-note.ts');
 const KEYS = ['sleepNoteAlignedGood', 'sleepNoteAlignedPoor', 'sleepNoteFeltWorse', 'sleepNoteFeltBetter'];
 for (const k of KEYS) {
-  const n = (i18n.match(new RegExp(`\\b${k}:\\s*\\n?\\s*'`, 'g')) ?? []).length;
-  if (n !== 2) problems.push(`${k}: cần đúng 2 bản dịch, thấy ${n}`);
+  /* Mỗi ngôn ngữ một bản, theo TÊN khối (`lang-blocks.mjs`). */
+  const by = perLang(i18n, k);
+  for (const l of LANGS) if (by[l] == null) problems.push(`${k}: thiếu bản ${l}`);
+  /* Bộ chọn số ít/số nhiều phải là chữ của CHÍNH ngôn ngữ ấy: bản es đầu tiên
+     chép nguyên `{short:minute|minutes}` từ tiếng Anh, nên người đọc tiếng Tây
+     Ban Nha thấy "20 minutes" giữa một câu tiếng Tây Ban Nha. */
+  if (by.es && /\{\w+:minute\|minutes\}/.test(by.es)) problems.push(`${k}: bản es dùng bộ chọn tiếng Anh {…:minute|minutes} — phải là {…:minuto|minutos}`);
   /* Khoá sống trong bảng `sleepNoteText` ở `lib/sleep-note.ts`; component chỉ
      gọi bảng ấy. Kiểm ở nơi khoá THẬT SỰ nằm, không ở nơi nó đi qua. */
   if (!lib.includes(`${k}:`)) problems.push(`${k}: thiếu trong bảng sleepNoteText`);

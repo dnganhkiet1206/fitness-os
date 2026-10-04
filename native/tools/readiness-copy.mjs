@@ -38,6 +38,8 @@ import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { LANGS, perLang } from './lang-blocks.mjs';
+
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (rel) => readFileSync(path.join(NATIVE, rel), 'utf8');
 
@@ -154,11 +156,11 @@ if (!baseline) {
 }
 const N = baseline ? Number(baseline[1]) : null;
 
-/* Cả hai bản dịch, lấy theo thứ tự xuất hiện. */
-const msgs = [...i18n.matchAll(/dashReadinessMsg:\s*\n?\s*'((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]);
-if (msgs.length !== 2) {
-  problems.push(`${I18N}: cần đúng 2 bản dịch của dashReadinessMsg, thấy ${msgs.length}`);
-}
+/* Mỗi ngôn ngữ một bản, đọc theo TÊN khối (`lang-blocks.mjs`) — từ khi có
+   `es`, thứ tự xuất hiện không còn là vi rồi en. */
+const msgBy = perLang(i18n, 'dashReadinessMsg');
+for (const l of LANGS) if (msgBy[l] == null) problems.push(`${I18N}: dashReadinessMsg thiếu bản ${l}`);
+const msgs = LANGS.map((l) => msgBy[l]).filter((x) => x != null);
 for (const msg of msgs) {
   /*
     Cổng KHÔNG có số hạng nào về số ngày, nên câu chữ không được hứa một con số
@@ -166,7 +168,7 @@ for (const msg of msgs) {
     ngày" là một CỬA SỔ và vẫn hợp lệ; "Cần 3+ ngày dữ liệu" là một YÊU CẦU và
     là đúng câu đã sai.
   */
-  const claim = /(cần|need)[^.]{0,24}?\d+\s*\+?\s*(ngày|days)/i.exec(msg);
+  const claim = /(cần|need|necesit\w*)[^.]{0,24}?\d+\s*\+?\s*(ngày|days|días)/i.exec(msg);
   if (claim) {
     problems.push(
       `${I18N}: câu trống hứa một số NGÀY tối thiểu ("${claim[0].trim()}") — ` +
@@ -179,7 +181,7 @@ for (const msg of msgs) {
         `sinh ra điểm, và câu cũ hứa 3 (đúng cổng, sai kết quả) là lỗi đã bị báo`,
     );
   }
-  if (!/(bữa ăn|calo|meal|calorie)/i.test(msg)) {
+  if (!/(bữa ăn|calo|meal|calorie|comida|caloría)/i.test(msg)) {
     problems.push(`${I18N}: câu trống không trả lời "ăn uống có tính không" — câu hỏi đã bị hỏi thẳng`);
   }
 }
@@ -204,9 +206,9 @@ if (!inputType) {
 }
 
 /* ── 5. ba nhãn trạng thái phải đọc ra là PHÁN QUYẾT ────────────────────── */
-const labels = [...i18n.matchAll(/dcReadiness(Train|Moderate|Recover): '([^']+)'/g)].map((m) => m[2]);
-if (labels.length !== 6) {
-  problems.push(`${I18N}: cần đúng 6 nhãn trạng thái (3 × 2 ngôn ngữ), thấy ${labels.length}`);
+const zone = { Train: perLang(i18n, 'dcReadinessTrain'), Moderate: perLang(i18n, 'dcReadinessModerate'), Recover: perLang(i18n, 'dcReadinessRecover') };
+for (const [z, by] of Object.entries(zone)) {
+  for (const l of LANGS) if (by[l] == null) problems.push(`${I18N}: nhãn trạng thái dcReadiness${z} thiếu bản ${l}`);
 }
 /*
   ── đếm từ là chưa đủ, và bản đầu của luật này đã chứng minh điều đó ──
@@ -224,12 +226,13 @@ if (labels.length !== 6) {
 
   Vùng đỏ chịu cùng một phép thử với chữ "phục hồi"/"recover".
 */
-const [viTrain, viMod, viRec, enTrain, enMod, enRec] = labels;
 for (const [l, want, why] of [
-  [viTrain, /sẵn sàng/i, 'vùng xanh nghĩa là người dùng ĐANG SẴN SÀNG — nhãn phải nói ra chữ đó'],
-  [enTrain, /ready/i, 'the green zone means the person IS ready — the label has to say so'],
-  [viRec, /phục hồi/i, 'vùng đỏ là lời khuyên phục hồi'],
-  [enRec, /recover/i, 'the red zone is a recovery verdict'],
+  [zone.Train.vi, /sẵn sàng/i, 'vùng xanh nghĩa là người dùng ĐANG SẴN SÀNG — nhãn phải nói ra chữ đó'],
+  [zone.Train.en, /ready/i, 'the green zone means the person IS ready — the label has to say so'],
+  [zone.Train.es, /list[oa]/i, 'la zona verde significa que la persona ESTÁ lista — la etiqueta tiene que decirlo'],
+  [zone.Recover.vi, /phục hồi/i, 'vùng đỏ là lời khuyên phục hồi'],
+  [zone.Recover.en, /recover/i, 'the red zone is a recovery verdict'],
+  [zone.Recover.es, /recupera/i, 'la zona roja es un veredicto de recuperación'],
 ]) {
   if (l && !want.test(l)) {
     problems.push(
@@ -241,13 +244,13 @@ for (const [l, want, why] of [
 }
 /* Và ba vùng phải nói ba điều khác nhau — hai nhãn trùng chữ là một thang đo
    không phân biệt được hai đầu của chính nó. */
-for (const [a, b, lang] of [[viTrain, viMod, 'vi'], [viMod, viRec, 'vi'], [enTrain, enMod, 'en'], [enMod, enRec, 'en']]) {
-  if (a && b && a.trim().toLowerCase() === b.trim().toLowerCase()) {
-    problems.push(`${I18N} (${lang}): hai vùng dùng chung nhãn "${a}"`);
+for (const lang of LANGS) {
+  for (const [a, b] of [[zone.Train[lang], zone.Moderate[lang]], [zone.Moderate[lang], zone.Recover[lang]]]) {
+    if (a && b && a.trim().toLowerCase() === b.trim().toLowerCase()) {
+      problems.push(`${I18N} (${lang}): hai vùng dùng chung nhãn "${a}"`);
+    }
   }
 }
-void viMod;
-void enMod;
 
 /* ── 6. một tỉ số ACWR, một bảng màu, ba màn hình ───────────────────────── */
 const GAUGE = 'src/components/ascnd/readiness-gauge.tsx';
@@ -323,15 +326,14 @@ if (N !== null && !new RegExp(`cần ${N} lần đo`).test(gauge)) {
 }
 /* Và màn NHẬP phải nói cùng con số, ở cả hai ngôn ngữ — đó là chỗ người ta
    đang gõ số vào và tự hỏi vì sao không thấy gì. */
-const notes = [...i18n.matchAll(/logBioBaselineNote:\s*\n?\s*'((?:[^'\\]|\\.)*)'/g)].map((m) => m[1]);
-if (notes.length !== 2) {
-  problems.push(`${I18N}: cần đúng 2 bản dịch của logBioBaselineNote, thấy ${notes.length}`);
-}
+const noteBy = perLang(i18n, 'logBioBaselineNote');
+for (const l of LANGS) if (noteBy[l] == null) problems.push(`${I18N}: logBioBaselineNote thiếu bản ${l}`);
+const notes = LANGS.map((l) => noteBy[l]).filter((x) => x != null);
 for (const note of notes) {
   if (N !== null && !new RegExp(`\\b${N}\\b`).test(note)) {
     problems.push(`${I18N}: ghi chú màn nhập sinh trắc không nói con số ${N}`);
   }
-  if (!/(Apple Health|đồng hồ|watch)/i.test(note)) {
+  if (!/(Apple Health|đồng hồ|watch|reloj)/i.test(note)) {
     problems.push(
       `${I18N}: ghi chú màn nhập sinh trắc không dập hiểu nhầm "cần Apple Watch" — ` +
         'nhập tay ghi vào đúng bảng, đúng cột mà Apple Health ghi, và câu hỏi đã bị hỏi thẳng',

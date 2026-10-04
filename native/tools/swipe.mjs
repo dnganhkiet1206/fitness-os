@@ -288,7 +288,10 @@ let longPress = 0;
     problems.push(...out);
     longPress += n;
   }
-  if (longPress < 3) problems.push(`chỉ thấy ${longPress} chỗ chỉ-nhấn-giữ — bộ đọc hỏng, đừng tin kết quả`);
+  /* Sàn 2, không phải 3: từ chế độ so sánh ảnh (46633eb) ô ảnh tiến trình có
+     thêm `onPress`, nên nó thôi là chỗ CHỈ nhấn giữ — còn lại mascot-room
+     (dev) và bình luận. Bộ đọc vẫn được canh bằng phép thử ngược ngay dưới. */
+  if (longPress < 2) problems.push(`chỉ thấy ${longPress} chỗ chỉ-nhấn-giữ — bộ đọc hỏng, đừng tin kết quả`);
   /* Thử ngược: ô ảnh tiến trình như trước #135 — cả ô là Pressable chỉ-nhấn-giữ. */
   const old = `<Pressable key={p.id} style={styles.photoCell} onLongPress={() => confirmDelete(p.id, p.photo_url)}>`;
   if (longPressGaps('thử.tsx', `const a = ${old}<Image /></Pressable>;`).out.length !== 1) problems.push('thử ngược hỏng: ô ảnh chỉ-nhấn-giữ như trước #135 mà luật vẫn xanh');

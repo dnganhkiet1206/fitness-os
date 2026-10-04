@@ -33,6 +33,8 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { LANGS, perLang } from './lang-blocks.mjs';
+
 const NATIVE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(path.join(NATIVE, p), 'utf8');
 
@@ -719,12 +721,12 @@ const problems = [];
 */
 {
   const dict = read('src/lib/i18n.ts');
-  const hrLabels = [...dict.matchAll(/biometricsHeartRate:\s*'([^']*)'/g)].map((m) => m[1]);
-  if (hrLabels.length < 2) {
-    problems.push('i18n.ts: không tìm thấy đủ hai bản dịch của biometricsHeartRate — luật dưới đây đang không kiểm gì');
-  }
+  /* Theo TÊN khối ngôn ngữ (`lang-blocks.mjs`): vi "nghỉ", en "resting", es "reposo". */
+  const hrBy = perLang(dict, 'biometricsHeartRate');
+  for (const l of LANGS) if (hrBy[l] == null) problems.push(`i18n.ts: biometricsHeartRate thiếu bản ${l} — luật dưới đây đang không kiểm đủ`);
+  const hrLabels = LANGS.map((l) => hrBy[l]).filter((x) => x != null);
   for (const label of hrLabels) {
-    if (!/nghỉ|resting/i.test(label)) {
+    if (!/nghỉ|resting|reposo/i.test(label)) {
       problems.push(
         `i18n.ts: hr_bpm hiện lên là "${label}" — cột đó là nhịp tim NGHỈ (HealthKit RestingHeartRate, ` +
           'và điểm sẵn sàng chấm nó như nhịp nghỉ). Gọi là "nhịp tim" mời người dùng so với số trên đồng hồ',
