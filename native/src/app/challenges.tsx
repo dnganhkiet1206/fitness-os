@@ -4,8 +4,10 @@ import { Text, View } from 'react-native';
 
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
+import { LoadFailed } from '@/components/ascnd/load-failed';
 import { ProgressBar } from '@/components/ascnd/progress-bar';
 import { Screen } from '@/components/ascnd/screen';
+import { SkeletonBlock } from '@/components/ascnd/skeleton';
 import { StaggerItem } from '@/components/ascnd/stagger-item';
 import { toast } from '@/lib/toast';
 import { spacing, type, radius } from '@/constants/ascnd';
@@ -22,7 +24,7 @@ import { challengeText } from '@/lib/gamification-i18n';
 export default function ChallengesScreen() {
   const c = usePalette();
   const styles = stylesFor(c);
-  const { data: challenges } = useWeeklyChallenges();
+  const { data: challenges, isPending, isError, refetch, isRefetching } = useWeeklyChallenges();
   const initChallenges = useInitWeeklyChallenges();
   const updateProgress = useUpdateChallengeProgress();
   const initializedRef = useRef(false);
@@ -66,7 +68,14 @@ export default function ChallengesScreen() {
 
   return (
     <Screen refreshable back title={i18n.nChallenges}>
-      {challenges && challenges.length > 0 ? (
+      {isError ? (
+        <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
+      ) : isPending ? (
+        <View style={styles.loading}>
+          <SkeletonBlock height={70} />
+          <SkeletonBlock height={70} />
+        </View>
+      ) : challenges && challenges.length > 0 ? (
         challenges.map((ch, i) => {
           const target = Number(ch.target_value) || 1;
           const current = Math.min(Number(ch.current_value) || 0, target);
@@ -111,6 +120,7 @@ export default function ChallengesScreen() {
 }
 
 const stylesFor = makeStyles((c) => ({
+  loading: { gap: spacing.md },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   iconWrap: { width: 40, height: 40, borderRadius: radius.sm, backgroundColor: c.secondary, alignItems: 'center', justifyContent: 'center' },
   info: { flex: 1, minWidth: 0, gap: 2 },
