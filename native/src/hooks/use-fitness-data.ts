@@ -758,13 +758,20 @@ export function useRemoveSetFromSession() {
             .from('workout_sessions')
             .update({
               sets: left.map((x, i) => ({ ...x, setIndex: i + 1 })) as never,
+              /* Warm-ups excluded — same rule as the save path above: a
+                 rehearsal is not the session's work. */
               volume_load: Math.round(
-                left.reduce((sum, x) => sum + (Number(x.weight) || 0) * (Number(x.reps) || 0), 0),
+                left.reduce(
+                  (sum, x) => (x.warmup === true ? sum : sum + (Number(x.weight) || 0) * (Number(x.reps) || 0)),
+                  0,
+                ),
               ),
-              session_rpe: Math.max(
-                1,
-                ...left.map((x) => Number(x.rpe) || 0),
-              ),
+              /* Deleting a set does not change how the whole session felt.
+                 `session_rpe` is asked once per session (log-workout) and
+                 cannot be reconstructed from per-set rpe (always null) —
+                 recomputing here collapsed it to 1 and deflated the load
+                 feeding ACWR/readiness. Keep the row's value. */
+              session_rpe: row.session_rpe,
             })
             .eq('id', sessionId)
             .eq('user_id', user.id),

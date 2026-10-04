@@ -1172,6 +1172,16 @@ export function DayPlan({
 
   const toggle = useCallback(
     (row: SetRow) => {
+      /*
+        ── một untick đang bay thì không nhận thêm ──
+        `useRemoveSetFromSession` là read-modify-write: hai mutations cùng đọc
+        một `old` sẽ cùng cắt một set, cùng ghi đè — một untick mất lặng lẽ.
+        Chặn ở cửa (kèm haptic) thay vì để race xảy ra trong DB.
+      */
+      if (cutSet.isPending) {
+        Haptics.warning();
+        return;
+      }
       if (!shown[row.key]) {
         /*
           ── chưa đủ thì KHÔNG tích được ──
