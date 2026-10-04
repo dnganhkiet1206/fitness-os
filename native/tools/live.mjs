@@ -5574,6 +5574,11 @@ const SCENARIOS = [
       if (!/(Hoàn thành thử thách!|Challenge complete!).*100/.test(toastText)) return `câu báo sau khi nhận không nói số xu: "${toastText}"`;
       if (!claimed.test(await page.locator('body').innerText())) return 'đã nhận mà màn đọc lại không ra "Đã nhận thưởng" — thế giới giả không nhớ RPC ghi (#80)';
       if ((await claimBtn.count()) !== 0) return 'đã nhận mà nút "Nhận 100 xu" vẫn còn';
+      /* P0-4 (C nhờ, 03/10): nhận thưởng mở màn chúc mừng (hàng đợi
+         celebration), mang tên thử thách VÀ số xu — không chỉ cộng xu lặng lẽ. */
+      const cheer = page.getByText(/ · \+100 (xu|coins)$/).filter({ visible: true });
+      for (let i = 0; i < 16 && (await cheer.count()) === 0; i++) await page.waitForTimeout(250);
+      if ((await cheer.count()) !== 1) return 'nhận thưởng mà không có màn chúc mừng mang tên thử thách và "+100 xu"';
       return null;
     },
   },

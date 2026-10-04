@@ -1,6 +1,9 @@
 import { useCallback } from 'react';
 import { type InfiniteData, useInfiniteQuery, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useAppSettings } from '@/hooks/use-app-settings';
+import { enqueueAward } from '@/lib/celebration-queue';
+import { nativeStrings } from '@/lib/native-strings';
+import { fillCopy } from '@/lib/copy-fill';
 import { haptics as Haptics } from '@/lib/haptics';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -1244,6 +1247,7 @@ export function useJoinChallenge() {
 
 export function useClaimChallenge() {
   const { user } = useAuth();
+  const { lang } = useAppSettings();
   const qc = useQueryClient();
   return useOnlineMutation({
     meta: { offline: now(1) },
@@ -1253,8 +1257,23 @@ export function useClaimChallenge() {
       return (data as number) ?? 0;
     },
     onMutate: () => Haptics.selection(),
-    onSuccess: () => {
+    onSuccess: (coins, id) => {
       Haptics.success();
+      /* Màn chúc mừng (C nhờ, DE-XUAT-2 P0-4): nhận thưởng từng chỉ làm số xu
+         tăng lặng lẽ. Cùng hàng đợi và cùng dáng với thử thách tuần
+         (use-extras.ts). Tên thử thách đọc từ chính cache tổng quan — hàng vừa
+         bấm "Nhận" đang ở đó — và dịch như mọi chỗ khác. */
+      const raw = qc.getQueryData<CommunityChallenge[]>(['community_challenges', user?.id]);
+      const row = raw?.find((r) => r.id === id);
+      const t = nativeStrings[lang];
+      const title = row ? localizeChallenge(row, lang).title : '';
+      const got = coins > 0 ? fillCopy(t.nChGot, { n: coins }) : '';
+      enqueueAward({
+        title: t.nChDone,
+        description: [title, got].filter(Boolean).join(' · '),
+        icon: 'trophy',
+        tier: 'gold',
+      });
       qc.invalidateQueries({ queryKey: ['community_challenges', user?.id] });
       /* Xu vừa vào sổ: số dư trong phòng linh vật phải đọc lại. */
       qc.invalidateQueries({ queryKey: ['mascot_wallet'] });
