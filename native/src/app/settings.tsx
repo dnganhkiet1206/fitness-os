@@ -37,6 +37,7 @@ import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { useRise } from '@/lib/entrance';
 import { useAppLock } from '@/hooks/use-app-lock';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { LANGUAGES } from '@/lib/i18n';
 import { clearCrashLog, readCrashLog, type CrashEntry } from '@/lib/crash-log';
 import { toast } from '@/lib/toast';
 import { useMascot } from '@/hooks/use-mascot';
@@ -847,21 +848,12 @@ export default function SettingsScreen() {
             description: i18n.settingsLangSystemDesc,
             leading: <Text style={styles.sheetLeading}>📱</Text>,
           },
-          {
-            key: 'vi',
-            label: 'Tiếng Việt',
-            leading: <Text style={styles.sheetLeading}>🇻🇳</Text>,
-          },
-          {
-            key: 'en',
-            label: 'English',
-            leading: <Text style={styles.sheetLeading}>🇺🇸</Text>,
-          },
-          {
-            key: 'es',
-            label: 'Español',
-            leading: <Text style={styles.sheetLeading}>🇪🇸</Text>,
-          },
+          /* Sinh từ LANGUAGES để thêm/bớt ngôn ngữ chỉ sửa một chỗ. */
+          ...LANGUAGES.map((l) => ({
+            key: l.code,
+            label: l.label,
+            leading: <Text style={styles.sheetLeading}>{l.flag}</Text>,
+          })),
         ]}
       />
     </Screen>

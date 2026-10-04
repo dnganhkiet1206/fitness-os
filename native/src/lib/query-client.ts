@@ -289,7 +289,3 @@ export async function clearUserScopedStorage() {
   */
   runUserScopedResets();
 }
-
-/** Exported for `tools/signed-out.mjs`, which checks the two lists cover every
- *  key the app actually writes and that they never overlap. */
-export const STORAGE_KEYS = { device: DEVICE_KEYS, user: USER_KEYS };

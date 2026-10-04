@@ -73,8 +73,6 @@ function readSlop(attrs) {
   return { top: side('top'), bottom: side('bottom'), left: side('left'), right: side('right') };
 }
 
-/** `IconButton` is the sanctioned way; it enforces both rules by construction. */
-const EXEMPT = [path.join('src', 'components', 'ascnd', 'icon-button.tsx')];
 
 /** Yield `{ start, attrs, body }` for every `<Pressable …>…</Pressable>`. */
 function pressables(text) {
@@ -178,7 +176,6 @@ const shortLabelled = [];
 
 for (const file of walk(SRC)) {
   const rel = path.relative(NATIVE, file);
-  if (EXEMPT.includes(rel)) continue;
   const text = readFileSync(file, 'utf8');
   const styles = Object.fromEntries([...text.matchAll(/(\w+):\s*\{([^{}]*)\}/g)].map((m) => [m[1], m[2]]));
   const lineOf = (i) => text.slice(0, i).split('\n').length;
