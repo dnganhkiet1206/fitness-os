@@ -569,7 +569,9 @@ const stylesFor = makeStyles((c, m) => ({
   setsTitle: { ...type.headline, color: c.foreground },
   sheet: {
     maxHeight: '78%',
-    backgroundColor: '#101014',
+    /* `c.card` thay vì `#101014` hardcoded: nền đen cố định làm chữ theme
+       (`c.foreground` ở light) tàng hình 1.08:1 ở light mode. */
+    backgroundColor: c.card,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     borderWidth: StyleSheet.hairlineWidth,

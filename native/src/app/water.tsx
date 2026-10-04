@@ -474,7 +474,9 @@ const stylesFor = makeStyles((c, m) => ({
     gap: spacing.sm,
     padding: spacing.lg,
     borderRadius: radius.lg,
-    backgroundColor: '#1b1b1f',
+    /* `c.card` thay vì `#1b1b1f` hardcoded: nền đen cố định làm chữ theme
+       (`c.foreground` = `#1a1917` ở light) tàng hình 1.02:1 ở light mode. */
+    backgroundColor: c.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: c.border,
     alignItems: 'center',
