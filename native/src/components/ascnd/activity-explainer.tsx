@@ -1,9 +1,4 @@
-import { Text, View } from 'react-native';
-
-import { FormSheet } from '@/components/ascnd/form-sheet';
-import { spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { ExplainerSheet } from '@/components/ascnd/explainer-sheet';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { EXERCISE_TARGET_MIN, MOVE_TARGET_KCAL } from '@/lib/activity';
 
@@ -51,8 +46,6 @@ export function ActivityExplainer({
   /** mục tiêu bước chân CỦA NGƯỜI DÙNG — sheet nói đúng con số họ đã đặt */
   stepsTarget: number;
 }) {
-  const c = usePalette();
-  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -94,25 +87,16 @@ export function ActivityExplainer({
   ];
 
   return (
-    <FormSheet visible={visible} title={i18n.dcActivity} onClose={onClose}>
-      <Text style={styles.lede}>
-        {vi
+    <ExplainerSheet
+      visible={visible}
+      onClose={onClose}
+      title={i18n.dcActivity}
+      lede={
+        vi
           ? 'Ba vòng cho ba câu hỏi khác nhau về hôm nay: bạn đốt bao nhiêu, bạn tập bao lâu, và bạn đi được bao xa. Một vòng "đóng" khi nó chạm hoặc vượt mục tiêu của nó.'
-          : 'Three rings for three different questions about today: how much you burned, how long you trained, and how far you walked. A ring "closes" when it reaches or passes its target.'}
-      </Text>
-      {rows.map((r) => (
-        <View key={r.term} style={styles.row}>
-          <Text style={styles.term}>{r.term}</Text>
-          <Text style={styles.body}>{r.body}</Text>
-        </View>
-      ))}
-    </FormSheet>
+          : 'Three rings for three different questions about today: how much you burned, how long you trained, and how far you walked. A ring "closes" when it reaches or passes its target.'
+      }
+      rows={rows}
+    />
   );
 }
-
-const stylesFor = makeStyles((c) => ({
-  lede: { ...type.body, color: c.foreground, marginBottom: spacing.md },
-  row: { gap: 4, marginBottom: spacing.md },
-  term: { ...type.headline, color: c.foreground },
-  body: { ...type.footnote, color: c.mutedForeground, lineHeight: 19 },
-}));

@@ -1,9 +1,4 @@
-import { Text, View } from 'react-native';
-
-import { FormSheet } from '@/components/ascnd/form-sheet';
-import { spacing, type } from '@/constants/ascnd';
-import { makeStyles } from '@/constants/theme';
-import { usePalette } from '@/hooks/use-palette';
+import { ExplainerSheet } from '@/components/ascnd/explainer-sheet';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 
 /**
@@ -46,8 +41,6 @@ import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
  * it is made three times and then never again.
  */
 export function NutritionExplainer({ visible, onClose }: { visible: boolean; onClose: () => void }) {
-  const c = usePalette();
-  const styles = stylesFor(c);
   const i18n = useI18n();
   const { lang } = useAppSettings();
   const vi = lang === 'vi';
@@ -80,25 +73,16 @@ export function NutritionExplainer({ visible, onClose }: { visible: boolean; onC
   ];
 
   return (
-    <FormSheet visible={visible} title={i18n.nToday} onClose={onClose}>
-      <Text style={styles.lede}>
-        {vi
+    <ExplainerSheet
+      visible={visible}
+      onClose={onClose}
+      title={i18n.nToday}
+      lede={
+        vi
           ? 'Vòng lớn là calo hôm nay so với mục tiêu của riêng bạn. Đây là cách con số đó được tính.'
-          : 'The big ring is today’s calories against your own target. Here is how that number is worked out.'}
-      </Text>
-      {rows.map((r) => (
-        <View key={r.term} style={styles.row}>
-          <Text style={styles.term}>{r.term}</Text>
-          <Text style={styles.body}>{r.body}</Text>
-        </View>
-      ))}
-    </FormSheet>
+          : 'The big ring is today’s calories against your own target. Here is how that number is worked out.'
+      }
+      rows={rows}
+    />
   );
 }
-
-const stylesFor = makeStyles((c) => ({
-  lede: { ...type.body, color: c.foreground, marginBottom: spacing.md },
-  row: { gap: 4, marginBottom: spacing.md },
-  term: { ...type.headline, color: c.foreground },
-  body: { ...type.footnote, color: c.mutedForeground, lineHeight: 19 },
-}));
