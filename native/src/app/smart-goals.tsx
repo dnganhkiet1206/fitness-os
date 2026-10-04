@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { Flame } from 'lucide-react-native';
+import { Flame, Target } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
@@ -307,10 +308,7 @@ export default function SmartGoalsScreen() {
             )}
           </>
         ) : (
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{i18n.smartGoalsNeedData}</Text>
-            <Text style={styles.emptyMsg}>{i18n.smartGoalsNeedDataMsg}</Text>
-          </View>
+          <EmptyState icon={Target} title={i18n.smartGoalsNeedData} hint={i18n.smartGoalsNeedDataMsg} />
         )}
       </GlassCard>
 
@@ -382,8 +380,6 @@ const stylesFor = makeStyles((c) => ({
   suggestionTitle: { ...type.footnote, color: c.foreground, fontWeight: '600' },
   suggestionValue: { ...type.title, color: c.readinessYellow, fontVariant: ['tabular-nums'], marginTop: 2 },
   suggestionDetail: { ...type.caption, color: c.mutedForeground, fontVariant: ['tabular-nums'] },
-  empty: { alignItems: 'center', paddingVertical: spacing.xl, gap: spacing.xs },
-  emptyTitle: { ...type.body, color: c.foreground, fontWeight: '600' },
   emptyMsg: { ...type.footnote, color: c.mutedForeground, textAlign: 'center', marginTop: spacing.sm },
   proteinGrid: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   proteinStat: { flex: 1, alignItems: 'center', backgroundColor: c.background, borderRadius: radius.md, paddingVertical: spacing.md, gap: 2 },

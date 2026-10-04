@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Check, Plus, UtensilsCrossed, X } from 'lucide-react-native';
+import { Check, Plus, ShoppingCart, UtensilsCrossed, X } from 'lucide-react-native';
 import { useState } from 'react';
 import {
   Alert,
@@ -14,6 +14,7 @@ import {
 import Animated from 'react-native-reanimated';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LoadFailed } from '@/components/ascnd/load-failed';
@@ -235,10 +236,7 @@ export default function GroceryScreen() {
             </Animated.View>
           ))
         ) : (
-          <GlassCard>
-            <Text style={styles.emptyTitle}>{i18n.nNoGrocery}</Text>
-            <Text style={styles.emptyHint}>{i18n.nNoGroceryHint}</Text>
-          </GlassCard>
+          <EmptyState icon={ShoppingCart} title={i18n.nNoGrocery} hint={i18n.nNoGroceryHint} />
         )}
       </Screen>
     </KeyboardAvoidingView>
@@ -295,8 +293,6 @@ const stylesFor = makeStyles((c, m) => ({
      một báo động (#161). */
   pendingDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.mutedForeground, opacity: 0.8 },
   remove: { color: c.mutedForeground, fontSize: 15 },
-  emptyTitle: { ...type.headline, color: c.foreground },
-  emptyHint: { ...type.footnote, color: c.mutedForeground, marginTop: 2 },
 
   planCard: { gap: spacing.sm },
   planHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },

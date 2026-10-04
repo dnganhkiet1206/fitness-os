@@ -1,10 +1,11 @@
 import { nav } from '@/lib/nav';
 import { haptics as Haptics } from '@/lib/haptics';
-import { Plus, Trash2 } from 'lucide-react-native';
+import { Activity, Plus, Trash2 } from 'lucide-react-native';
 import { useMemo } from 'react';
 import { Alert, Text, View } from 'react-native';
 
 import { PressScale } from '@/components/ascnd/press-scale';
+import { EmptyState } from '@/components/ascnd/empty-state';
 import { GlassCard } from '@/components/ascnd/glass-card';
 import { Icon } from '@/components/ascnd/icon';
 import { LineChart } from '@/components/ascnd/line-chart';
@@ -144,17 +145,12 @@ export default function BiometricsScreen() {
       {isError ? (
         <LoadFailed i18n={i18n} onRetry={() => void refetch()} busy={isRefetching} />
       ) : !hasAny ? (
-        <GlassCard>
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>{i18n.biometricsNoData}</Text>
-            <Text style={styles.emptyMsg}>{i18n.biometricsNoDataMsg}</Text>
-            <PressScale
-              style={styles.emptyBtn}
-              onPress={() => nav.push('/log-biometrics')}>
-              <Text style={styles.emptyBtnText}>{i18n.biometricsManual}</Text>
-            </PressScale>
-          </View>
-        </GlassCard>
+        <EmptyState
+          icon={Activity}
+          title={i18n.biometricsNoData}
+          hint={i18n.biometricsNoDataMsg}
+          action={{ label: i18n.biometricsManual, onPress: () => nav.push('/log-biometrics') }}
+        />
       ) : (
         metrics.map((m) => {
           const pts = series.get(m.key) ?? [];
@@ -302,19 +298,6 @@ const stylesFor = makeStyles((c, m) => ({
     justifyContent: 'center',
   },
   logBtnText: { fontSize: 22, color: c.primary, lineHeight: 26 },
-  empty: { alignItems: 'center', paddingVertical: spacing.lg, gap: spacing.sm },
-  emptyTitle: { ...type.body, color: c.foreground, fontWeight: '600' },
-  emptyMsg: { ...type.footnote, color: c.mutedForeground, textAlign: 'center' },
-  emptyBtn: {
-    marginTop: spacing.sm,
-    height: 44,
-    paddingHorizontal: spacing.xl,
-    borderRadius: radius.full,
-    backgroundColor: m.actionSurface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyBtnText: { ...type.headline, color: c.primaryForeground },
   metricHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   metricTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   statusDot: { width: 8, height: 8, borderRadius: 4 },
