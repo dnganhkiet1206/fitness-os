@@ -129,7 +129,10 @@ struct AdjustRestIntent: AppIntent {
     var payload: [String: Any]
     if state.isPaused {
       let oldRemaining = state.pausedRemaining
-      let remaining = max(state.pausedRemaining + Double(seconds), 1)
+      // Mirror the app's REST_MAX cap (600s): the in-app card clamps there,
+      // so the island must too — otherwise a +15s tap on a 595s rest would
+      // overshoot until the app-side echo clamps it back.
+      let remaining = min(max(state.pausedRemaining + Double(seconds), 1), 600)
       state.pausedRemaining = remaining
       os_log("IslandIntent: paused adjust: remaining %.1fs -> %.1fs", log: islandLog, type: .info, oldRemaining, remaining)
       payload = [
@@ -142,10 +145,13 @@ struct AdjustRestIntent: AppIntent {
       // Same honesty rule as the in-app card: adding time grows the total
       // (ring stays a fraction); taking time keeps it (the rest was cut).
       // startDate is untouched, so the ring math needs no other change.
+      // Capped at REST_MAX (600s) like the app — see the paused branch.
       let oldEnd = state.endDate
-      let flooredEnd = max(
-        state.endDate.addingTimeInterval(Double(seconds)),
-        now.addingTimeInterval(1))
+      let flooredEnd = min(
+        max(
+          state.endDate.addingTimeInterval(Double(seconds)),
+          now.addingTimeInterval(1)),
+        now.addingTimeInterval(600))
       state.endDate = flooredEnd
       let remaining = max(flooredEnd.timeIntervalSince(now), 0)
       os_log("IslandIntent: running adjust: endDate %{public}@ -> %{public}@ (remaining %.1fs)", log: islandLog, type: .info, String(describing: oldEnd), String(describing: flooredEnd), remaining)

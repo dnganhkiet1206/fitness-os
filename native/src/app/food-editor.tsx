@@ -4,6 +4,7 @@ import { nav } from '@/lib/nav';
 import { Check, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { useMountedRef } from '@/hooks/use-mounted-ref';
+import { outOfRangeMessage } from '@/lib/plausible';
 import {
   ActivityIndicator,
   Alert,
@@ -118,7 +119,24 @@ export default function FoodEditorSheet() {
   const saving = create.isPending || update.isPending;
   // Stays disabled after success so the closing sheet can't double-submit
   const saved = create.isSuccess || update.isSuccess || remove.isSuccess;
-  const canSave = name.trim().length > 0 && !saving && !saved;
+  /*
+    ── plausible bounds cho food library ──
+
+    Trước đây chỉ check tên: `Number('-50') || 0` = -50 (chỉ bắt NaN/0), typo
+    `100000` kcal ghi thẳng DB rồi lan vào daily_logs.kcal → adaptiveTDEE →
+    readiness. Path meal-logging (log-meal.tsx) đã có bounds `meal_kcal`/
+    `macro_g` — đây là cùng một luật, áp cho library editor (cả create lẫn
+    update vì chung một form).
+  */
+  const fieldErrors = {
+    kcal: outOfRangeMessage('meal_kcal', kcal, i18n.outOfRange),
+    protein: outOfRangeMessage('macro_g', protein, i18n.outOfRange),
+    carbs: outOfRangeMessage('macro_g', carbs, i18n.outOfRange),
+    fat: outOfRangeMessage('macro_g', fat, i18n.outOfRange),
+    fiber: outOfRangeMessage('macro_g', fiber, i18n.outOfRange),
+  };
+  const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
+  const canSave = name.trim().length > 0 && !saving && !saved && !hasFieldErrors;
 
   const save = () => {
     Haptics.light();
@@ -242,6 +260,12 @@ export default function FoodEditorSheet() {
             </View>
           </View>
         </View>
+
+        {hasFieldErrors && (
+          <Text style={styles.fieldError} accessibilityRole="alert">
+            {fieldErrors.kcal ?? fieldErrors.protein ?? fieldErrors.carbs ?? fieldErrors.fat ?? fieldErrors.fiber}
+          </Text>
+        )}
 
         <View style={styles.actionsRow}>
           {isEdit && (
@@ -438,6 +462,12 @@ const stylesFor = makeStyles((c, m) => ({
   },
 
   actionsRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+  fieldError: {
+    color: c.readinessRed,
+    fontSize: 13,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+  },
   deleteBtn: {
     width: 50,
     height: 50,
