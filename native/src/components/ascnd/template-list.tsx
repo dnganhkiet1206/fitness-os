@@ -24,6 +24,9 @@ import { MUSCLE_LABEL, muscleArtKeysFor, type MuscleArtKey } from '@/lib/muscle-
 import { DEFAULT_REST, DEFAULT_RPE, restLabel, uniformValue } from '@/lib/prescription';
 import { displayWeight, type WeightUnit } from '@/lib/units';
 
+/** Số ms trong một ngày — dùng để đổi chênh lệch timestamp ra số ngày. */
+const MS_PER_DAY = 86400000;
+
 /**
  * "Lần tập gần nhất" — chuỗi tương đối từ ISO date.
  *
@@ -38,7 +41,7 @@ export function lastTrainedLabel(
   const d = new Date(iso);
   const now = new Date();
   const dayOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const diffDays = Math.round((dayOf(now) - dayOf(d)) / 86400000);
+  const diffDays = Math.round((dayOf(now) - dayOf(d)) / MS_PER_DAY);
   const rel =
     diffDays <= 0
       ? i18n.nCxTrainedToday
@@ -517,15 +520,16 @@ export function TemplateList({
   const vi = lang === 'vi';
   const { data: exercises } = useExercises();
   /* Lần tập gần nhất của từng mẫu — một query cho cả danh sách, cùng lý do
-     với `groupOf` ở dưới: không phải một query mỗi hàng. */
-  const { data: lastTrainedMap } = useTemplateLastTrained();
+     với `groupOf` ở dưới: không phải một query mỗi hàng. Hook trả về mảng
+     cặp (persist-safe), dựng Map ở đây. */
+  const { data: lastTrainedPairs } = useTemplateLastTrained();
   const lastTrained: Record<string, string> = useMemo(() => {
     const r: Record<string, string> = {};
-    lastTrainedMap?.forEach((v, k) => {
+    for (const [k, v] of lastTrainedPairs ?? []) {
       r[k] = v;
-    });
+    }
     return r;
-  }, [lastTrainedMap]);
+  }, [lastTrainedPairs]);
   /* Memoized: dựng lại Record trên cả thư viện bài tập mỗi lần render là việc
      thừa — `exercises` từ react-query giữ nguyên tham chiếu khi không đổi. */
   const groupOf: Record<string, string> = useMemo(() => {

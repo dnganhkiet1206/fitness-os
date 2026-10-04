@@ -427,14 +427,19 @@ export function useTemplateLastTrained() {
         .not('template_id', 'is', null)
         .order('date_time', { ascending: false });
       if (error) throw error;
-      const map = new Map<string, string>();
+      /* Trả về MẢNG các cặp [template_id, date_time], không phải Map — cache
+         của app persist xuống AsyncStorage, và JSON.stringify biến Map thành
+         `{}`. Chỗ dùng dựng Map lại từ mảng này. */
+      const pairs: Array<[string, string]> = [];
+      const seen = new Set<string>();
       for (const row of data ?? []) {
         const tid = row.template_id as string | null;
-        if (tid && !map.has(tid)) {
-          map.set(tid, row.date_time as string);
+        if (tid && !seen.has(tid)) {
+          seen.add(tid);
+          pairs.push([tid, row.date_time as string]);
         }
       }
-      return map;
+      return pairs;
     },
   });
 }
