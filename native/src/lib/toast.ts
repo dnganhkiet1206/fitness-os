@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 
-import { failureKeyFor } from '@/lib/error-copy';
+import { failureKeyFor, slotsOf } from '@/lib/error-copy';
 
 /**
  * Lightweight global toast store (module-level, same pattern as the
@@ -24,6 +24,12 @@ export interface ToastData {
    * re-words a toast that is still on screen.
    */
   failureKey?: string;
+  /**
+   * Values for `{slots}` in the keyed copy — e.g. `{parts}` naming which
+   * health-sync parts did not land. Filled at render by `NeonToastHost`, so
+   * the sentence is still assembled in the reader's language.
+   */
+  slots?: Record<string, string>;
   /**
    * Một việc người dùng có thể làm từ chính thanh toast — Hoàn tác, và từ #12
    * là "Chia sẻ" sau khi lưu một buổi tập.
@@ -51,8 +57,14 @@ function emit() {
   listeners.forEach((l) => l());
 }
 
-export function showToast(kind: ToastKind, message: string, failureKey?: string, action?: ToastAction) {
-  current = { id: ++seq, kind, message, failureKey, action };
+export function showToast(
+  kind: ToastKind,
+  message: string,
+  failureKey?: string,
+  action?: ToastAction,
+  slots?: Record<string, string>,
+) {
+  current = { id: ++seq, kind, message, failureKey, action, slots };
   emit();
 }
 
@@ -64,9 +76,11 @@ export const toast = {
   info: (message: string) => showToast('info', message),
   /**
    * Một câu của app theo KHOÁ i18n, cho mã chạy ngoài React (không có ngôn ngữ
-   * trong tay) — `NeonToastHost` dịch nó, như khoá của `fail`.
+   * trong tay) — `NeonToastHost` dịch nó, như khoá của `fail`. `slots` điền
+   * các `{slot}` của câu đó lúc vẽ.
    */
-  keyed: (kind: ToastKind, key: string) => showToast(kind, '', key),
+  keyed: (kind: ToastKind, key: string, slots?: Record<string, string>) =>
+    showToast(kind, '', key, undefined, slots),
   /**
    * A thrown error, shown as a sentence rather than as SQL.
    *
@@ -74,12 +88,14 @@ export const toast = {
    * *duplicate key value violates unique constraint "daily_logs_user_id_date_key"*
    * in front of somebody who had tapped Save twice. `failureKeyFor` returns
    * `null` for an error the app wrote itself — those are already sentences for
-   * a person and are shown unchanged.
+   * a person and are shown unchanged. A keyed app error (`msgKey`, e.g.
+   * `KeyedError` or `NothingWrittenError` from keyed `confirmWrite`) resolves
+   * like `keyed`, with its `slots` forwarded.
    */
   fail: (err: unknown) => {
     const key = failureKeyFor(err);
     const raw = err instanceof Error ? err.message : String(err ?? '');
-    showToast('error', key ? '' : raw, key ?? undefined);
+    showToast('error', key ? '' : raw, key ?? undefined, undefined, slotsOf(err));
   },
   /**
    * "Đã xoá" kèm một nút lấy lại.

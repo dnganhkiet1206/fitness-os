@@ -161,6 +161,69 @@ export function classifyError(err: unknown): FailureKind | null {
 }
 
 /**
+ * An app-authored error that carries its i18n key — and optional `{slot}`
+ * values — instead of a ready sentence.
+ *
+ * `NothingWrittenError` (lib/write-result.ts) carries `msgKey` the same way
+ * without extending this class, because one of its constructions (A's
+ * community unblock path) still passes a raw sentence. Both are read the same
+ * way: `failureKeyFor` returns the key, `toast.fail` forwards key and slots to
+ * the toast host, and `NeonToastHost` renders the copy in the reader's
+ * language — the same "store a token, localize at render" split as
+ * `FAILURE_KEY` above, for the same reason: the language lives in React
+ * context, not here. Nothing here imports anything, so `tools/error-copy.mjs`
+ * can keep compiling this file standalone.
+ */
+export class KeyedError extends Error {
+  readonly msgKey: string;
+  readonly slots?: Record<string, string>;
+  constructor(msgKey: string, slots?: Record<string, string>) {
+    super(msgKey);
+    this.name = 'KeyedError';
+    this.msgKey = msgKey;
+    this.slots = slots;
+  }
+}
+
+/** Slot values riding on a keyed error, if any. Anything non-string is not a slot. */
+export function slotsOf(err: unknown): Record<string, string> | undefined {
+  if (err == null || typeof err !== 'object') return undefined;
+  const s = (err as { slots?: unknown }).slots;
+  if (s == null || typeof s !== 'object') return undefined;
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(s)) if (typeof v === 'string') out[k] = v;
+  return out;
+}
+
+/** Fill `{slots}` in a keyed copy. Unknown placeholders are left as-is. */
+export function fillSlots(copy: string, slots?: Record<string, string>): string {
+  if (slots == null) return copy;
+  return copy.replace(/\{(\w+)\}/g, (m, k: string) => (k in slots ? slots[k] : m));
+}
+
+/**
+ * Resolve key-tokens inside an already-filled copy: `nCxHealthSyncPartToday`,
+ * or `nCxHealthSyncPartRebuild:2026-01-02` where the `:arg` fills that copy's
+ * `{day}`.
+ *
+ * Lets lib code without i18n compose a sentence from keyed fragments — the
+ * health-sync aggregate reports *which parts* did not land, and the parts
+ * differ per failure, so one static key cannot name them. Resolution still
+ * happens at render against the reader's dictionary, like everything else
+ * here. Tokens naming no key are left untouched.
+ */
+export function resolveKeyTokens(text: string, dict: Record<string, unknown>): string {
+  return text.replace(/nCx[A-Za-z0-9_]*(?::[^;\s]+)?/g, (tok) => {
+    const i = tok.indexOf(':');
+    const key = i < 0 ? tok : tok.slice(0, i);
+    const arg = i < 0 ? undefined : tok.slice(i + 1);
+    const copy = dict[key];
+    if (typeof copy !== 'string') return tok;
+    return arg === undefined ? copy : copy.replace('{day}', arg);
+  });
+}
+
+/**
  * The i18n key to show for a failure, or `null` to show the error's own text.
  *
  * One call at each `onError`, so a screen never decides this for itself.
@@ -194,7 +257,8 @@ export function errorText(err: unknown, dict: Record<string, unknown>): string {
        the lookup is checked rather than cast. A key with no copy yields an
        empty string, which the callers treat as "fall back to your own line". */
     const copy = dict[key];
-    return typeof copy === 'string' ? copy : '';
+    if (typeof copy !== 'string') return '';
+    return resolveKeyTokens(fillSlots(copy, slotsOf(err)), dict);
   }
   return err instanceof Error ? err.message : String(err ?? '');
 }

@@ -22,6 +22,7 @@ import { BOUNCE, duration, spring } from '@/constants/motion';
 import { alpha, makeStyles, type PaletteKey } from '@/constants/theme';
 import { useMaterial, usePalette } from '@/hooks/use-palette';
 import { dismissToast, toastHideMs, useCurrentToast, type ToastKind } from '@/lib/toast';
+import { fillSlots, resolveKeyTokens } from '@/lib/error-copy';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -271,15 +272,23 @@ export function NeonToastHost() {
 
     `toast.fail` stores an i18n KEY when the thrown thing came from PostgreSQL
     or GoTrue, because the store is module-level and the language is in React
-    context. Resolving it at render is what makes a language switch re-word a
-    toast that is already on screen, and it keeps every screen from having to
-    know the difference between an error written for a person and one written
-    for a developer.
+    context. A keyed APP error (`msgKey` — `KeyedError`, or `NothingWrittenError`
+    from keyed `confirmWrite`) stores one too, with `slots` for its `{slots}`.
+    Resolving at render is what makes a language switch re-word a toast that is
+    already on screen, and it keeps every screen from having to know the
+    difference between an error written for a person and one written for a
+    developer. Key-tokens inside a filled slot (`nCxHealthSyncPartToday`,
+    `nCxHealthSyncPartRebuild:2026-01-02`) resolve against the same dictionary.
 
-    The fallback is the raw text, which is correct: a key is only ever set for
-    a system error, so anything without one is a sentence the app wrote.
+    The fallback is the raw text, which is correct: anything without a key is
+    a sentence the app wrote.
   */
-  const text = t == null ? '' : t.failureKey ? errorCopy(i18n, t.failureKey, t.message) : t.message;
+  const text =
+    t == null
+      ? ''
+      : t.failureKey
+        ? resolveKeyTokens(fillSlots(errorCopy(i18n, t.failureKey, t.message), t.slots), i18n)
+        : t.message;
 
   /*
     Hạn của thanh này, tính MỘT lần.

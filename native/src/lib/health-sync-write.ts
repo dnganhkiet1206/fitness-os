@@ -1,4 +1,5 @@
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { KeyedError } from '@/lib/error-copy';
 import { touchedDays, type SyncedDaysInput } from '@/lib/health-days';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -114,7 +115,7 @@ export async function writeHealthSync(input: HealthSyncWrite): Promise<void> {
       .upsert({ user_id: userId, date: today, ...measured }, { onConflict: 'user_id,date' });
     if (error) {
       console.warn('health sync (today):', error.message);
-      failures.push('hôm nay');
+      failures.push('nCxHealthSyncPartToday');
     }
   }
 
@@ -126,7 +127,7 @@ export async function writeHealthSync(input: HealthSyncWrite): Promise<void> {
     );
     if (error) {
       console.warn('health sync (step backfill):', error.message);
-      failures.push('bù bước chân');
+      failures.push('nCxHealthSyncPartSteps');
     }
   }
 
@@ -137,7 +138,7 @@ export async function writeHealthSync(input: HealthSyncWrite): Promise<void> {
       await recomputeDailyLog(userId, day);
     } catch (e) {
       console.warn(`health sync (rebuild ${day}):`, (e as Error).message);
-      failures.push(`dựng lại ${day}`);
+      failures.push(`nCxHealthSyncPartRebuild:${day}`);
     }
   }
 
@@ -154,8 +155,15 @@ export async function writeHealthSync(input: HealthSyncWrite): Promise<void> {
     What a reader can use is *which part* did not land, so that is what is kept.
     The underlying message is still worth having for whoever is debugging, and
     it goes to the console rather than to the person holding the phone.
+
+    The parts ride as KEY TOKENS (`nCxHealthSyncPartToday`,
+    `nCxHealthSyncPartRebuild:2026-01-02`), not as Vietnamese fragments — this
+    file has no language in hand, and the old fragments showed Vietnamese to
+    en/es readers (DE-XUAT-6 #4). `KeyedError` carries them in `slots.parts`;
+    `NeonToastHost` resolves the tokens against the reader's dictionary at
+    render. See `resolveKeyTokens` in lib/error-copy.ts.
   */
   if (failures.length > 0) {
-    throw new Error(`Đồng bộ sức khoẻ chưa xong — ${failures.join('; ')}`);
+    throw new KeyedError('nCxHealthSyncIncomplete', { parts: failures.join('; ') });
   }
 }
