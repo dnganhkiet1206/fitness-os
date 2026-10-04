@@ -182,6 +182,7 @@ export default function FoodEditorSheet() {
               keyboardType="number-pad"
               value={serving}
               onChangeText={(v) => setServing(digits(v))}
+              accessibilityLabel={i18n.foodServing}
             />
             <Text style={styles.unit}>g</Text>
           </View>

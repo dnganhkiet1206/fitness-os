@@ -26,6 +26,7 @@ import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { toast } from '@/lib/toast';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
+import { getLocale } from '@/lib/i18n';
 import { useAssistantSignal } from '@/hooks/use-assistant-signal';
 import { useAuth } from '@/hooks/use-auth';
 import { useCoachChat, type Msg } from '@/hooks/use-coach-chat';
@@ -435,7 +436,7 @@ export default function AiCoachScreen() {
                       }}>
                       <Text style={styles.historyTitle} numberOfLines={1}>{convo.title ?? '—'}</Text>
                       <Text style={styles.historyDate}>
-                        {new Date(convo.updated_at).toLocaleDateString(vi ? 'vi-VN' : 'en-US', {
+                        {new Date(convo.updated_at).toLocaleDateString(getLocale(lang), {
                           month: 'short',
                           day: 'numeric',
                         })}

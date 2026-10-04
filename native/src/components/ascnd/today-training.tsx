@@ -314,6 +314,7 @@ export function TodayTraining() {
               source={require('@/assets/images/dumbbell-hero.png')}
               style={styles.heroImg}
               resizeMode="contain"
+              accessible={false}
             />
           </View>
         ) : null}

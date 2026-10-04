@@ -247,7 +247,7 @@ export function RestTimer({
               />
             </Svg>
 
-            <View style={styles.clockWrap} pointerEvents="none">
+            <View style={styles.clockWrap} pointerEvents="none" accessibilityLabel={i18n.nRdResting}>
               {/* Giây cuối cùng là một dấu tick, không phải "0s": quãng nghỉ
                   đã xong, và thứ cần nói là "xong" chứ không phải một con số. */}
               {done ? (

@@ -756,7 +756,7 @@ export default function AssistantScreen() {
             format={(v) =>
               selected === 'sleep'
                 ? `${Math.floor(v / 60)}h${String(Math.round(v % 60)).padStart(2, '0')}`
-                : Math.round(v).toLocaleString(vi ? 'vi-VN' : 'en-US')
+                : Math.round(v).toLocaleString(getLocale(lang))
             }
             onAsk={() => askCoach(analysis.ask[lang] ?? analysis.ask.en)}
           />

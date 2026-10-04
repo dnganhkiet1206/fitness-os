@@ -194,7 +194,7 @@ export function useReminders() {
     biometrics: { title: i18n.nReminderBiometrics, body: i18n.nReminderBiometricsBody },
     sleepLog: { title: i18n.nReminderSleepLog, body: i18n.nReminderSleepLogBody },
     /* P0-3: fallback — items thật mang title/body riêng từ plan. */
-    challengeClaim: { title: i18n.nCxClaimReminderTitle, body: i18n.nCxClaimReminderTitle },
+    challengeClaim: { title: i18n.nCxClaimReminderTitle, body: i18n.nCxClaimReminderBody },
   };
 
   /*

@@ -404,7 +404,7 @@ function CompareSheet({
         <View style={styles.compareRow}>
           {photos.map((p) => (
             <View key={p.id} style={styles.compareCol}>
-              <Image source={{ uri: p.signedUrl, cacheKey: p.id }} style={styles.comparePhoto} contentFit="cover" />
+              <Image source={{ uri: p.signedUrl, cacheKey: p.id }} style={styles.comparePhoto} contentFit="cover" accessibilityLabel={fmtDate(p.date)} />
               <Text style={styles.compareDate}>{fmtDate(p.date)}</Text>
             </View>
           ))}
@@ -513,6 +513,7 @@ const PhotoCell = memo(function PhotoCell({
           source={{ uri: photo.signedUrl, cacheKey: photo.id }}
           style={styles.photo}
           contentFit="cover"
+          accessibilityLabel={photo.date}
         />
         {/* P1-7: selection badge in compare mode. */}
         {compareMode && (
