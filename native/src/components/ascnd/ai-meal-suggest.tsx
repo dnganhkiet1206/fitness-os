@@ -5,7 +5,7 @@ import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'rea
 
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Icon } from '@/components/ascnd/icon';
-import { radius, spacing, type } from '@/constants/ascnd';
+import { MACRO_TINT, radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
@@ -124,9 +124,11 @@ export function AiMealSuggest({ mealType }: { mealType?: string }) {
               <Text style={styles.desc} numberOfLines={2}>{meal.description}</Text>
               <View style={styles.macroRow}>
                 <Text style={[styles.macro, styles.macroKcal]}>{meal.kcal} kcal</Text>
-                <Text style={[styles.macro, { color: c.primary }]}>P{meal.protein_g}g</Text>
-                <Text style={[styles.macro, { color: '#ef7c26' }]}>C{meal.carbs_g}g</Text>
-                <Text style={[styles.macro, { color: '#b45cff' }]}>F{meal.fat_g}g</Text>
+                {/* Màu macro theo MACRO_TINT (một chỗ duy nhất): protein rose,
+                    carbs orange, fat blue — không phải primary/tím hardcoded. */}
+                <Text style={[styles.macro, { color: c[MACRO_TINT.protein] }]}>P{meal.protein_g}g</Text>
+                <Text style={[styles.macro, { color: c[MACRO_TINT.carbs] }]}>C{meal.carbs_g}g</Text>
+                <Text style={[styles.macro, { color: c[MACRO_TINT.fat] }]}>F{meal.fat_g}g</Text>
               </View>
             </View>
             <View style={styles.cardMeta}>
