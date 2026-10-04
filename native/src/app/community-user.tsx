@@ -14,6 +14,7 @@ import { PickRow } from '@/components/ascnd/pick-row';
 import { PressScale } from '@/components/ascnd/press-scale';
 import { Screen } from '@/components/ascnd/screen';
 import { PostCard } from '@/components/ascnd/post-card';
+import { ProgressJourney } from '@/components/ascnd/progress-journey';
 import { radius, spacing, type } from '@/constants/ascnd';
 import { alpha, makeStyles } from '@/constants/theme';
 import { useI18n } from '@/hooks/use-app-settings';
@@ -231,6 +232,10 @@ export default function CommunityUserScreen() {
               ))}
             </PickRow>
           ) : null}
+
+          {/* Đề xuất 3: khi đang xem bài Tiến trình (hoặc người ấy chỉ có loại
+              bài này), gộp cả hành trình lên đầu danh sách. */}
+          {id && (kind === 'progress' || (kinds.data ?? []).join() === 'progress') ? <ProgressJourney userId={id} /> : null}
 
           {posts.isError && !posts.isFetchNextPageError ? (
             <LoadFailed i18n={i18n} onRetry={() => posts.refetch()} />

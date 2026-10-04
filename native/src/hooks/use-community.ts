@@ -4,6 +4,7 @@ import { useAppSettings } from '@/hooks/use-app-settings';
 import { enqueueAward } from '@/lib/celebration-queue';
 import { nativeStrings } from '@/lib/native-strings';
 import { fillCopy } from '@/lib/copy-fill';
+import { buildJourney, type Journey } from '@/lib/progress-journey';
 import { haptics as Haptics } from '@/lib/haptics';
 
 import { supabase } from '@/integrations/supabase/client';
@@ -1416,6 +1417,32 @@ export function useUserStats(userId: string | undefined) {
       if (error) throw error;
       const r = Array.isArray(data) ? data[0] : null;
       return r ? { posts: r.posts ?? 0, likes: r.likes ?? 0, tries: r.tries ?? 0 } : null;
+    },
+  });
+}
+
+/**
+ * Hành trình tiến trình (đề xuất 3): mọi bài Progress của một người mà NGƯỜI
+ * XEM được thấy — RLS lọc bài chỉ-người-theo-dõi, bài bị ẩn, người đã chặn —
+ * gộp bằng `buildJourney` (lib/progress-journey.ts). Không đọc số liệu nào
+ * ngoài những gì người ấy đã đăng. Trần 100 bài: gần hai năm chia sẻ mỗi tuần.
+ */
+export function useProgressJourney(userId: string | undefined, enabled = true) {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['community_user_posts', user?.id, userId, 'journey'],
+    enabled: !!user && !!userId && enabled,
+    queryFn: async (): Promise<Journey> => {
+      const { data, error } = await supabase
+        .from('community_posts')
+        .select('id, created_at, payload')
+        .eq('author_id', userId!)
+        .eq('kind', 'progress')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return buildJourney((data ?? []).map((r) => ({ id: r.id, createdAt: r.created_at, payload: r.payload })));
     },
   });
 }

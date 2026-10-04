@@ -2574,6 +2574,48 @@ const SCENARIOS = [
   },
   {
     /*
+      A 04/10 — đề xuất 3: thẻ "Hành trình" trên hồ sơ, ở bộ lọc Tiến trình.
+      Thêm một bài Progress CŨ HƠN (cân nặng 50 → 52, Squat) cho cùng người.
+      Đòi:
+        (A) dòng Cân nặng = số ĐẦU của bài cũ nhất → số CUỐI của bài mới nhất:
+            50 → 55.4 kg, +5.4 kg; "2 updates";
+        (B) vòng eo chỉ có ở MỘT bài → không có dòng; Bench và Squat mỗi bài một
+            lần → không có dòng sức mạnh (không gộp hai bài tập khác nhau);
+        (C) ở bộ lọc "Tất cả" thì không có thẻ.
+      Bài bị ẩn / chỉ-người-theo-dõi KHÔNG được tính là việc của RLS (hook đọc
+      qua chính policy đọc bài), nên nó được đo ở SQL (foundation 19/30, golden
+      path GP19) — máy chủ giả không mô phỏng policy ấy, đo ở đây là đo nó.
+    */
+    name: 'Hồ sơ: thẻ Hành trình gộp từ bài Tiến trình cũ nhất tới mới nhất, không gộp hai bài tập khác nhau (A 04/10)',
+    route: '/community-user?id=c0000000-0000-4000-8000-0000000011a1', mode: 'full',
+    async run(page, { world }) {
+      const base = world.community_posts.find((p) => p.id === 'cp000000-0000-4000-8000-000000000003');
+      const older = new Date(Date.parse(base.created_at) - 60 * 86400e3).toISOString();
+      world.community_posts.push(
+        { ...structuredClone(base), id: 'cp000000-0000-4000-8000-0000000004a1', created_at: older, like_count: 0, comment_count: 0, save_count: 0,
+          payload: { weeks: 8, weight: { start: 50, end: 52, series: [50, 51, 52] }, lift: { exerciseId: 'e12', name: 'Squat', start: 60, end: 70, series: [60, 70] } } },
+      );
+      await freshCache(page);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.waitForTimeout(2500);
+      const card = () => page.getByRole('heading', { name: /^(Journey|Hành trình)$/ }).filter({ visible: true });
+      if ((await card().count()) !== 0) return '(C) bộ lọc "Tất cả" mà đã có thẻ Hành trình';
+      await page.getByRole('tab', { name: /^(Progress|Tiến trình)$/ }).filter({ visible: true }).first().click();
+      for (let i = 0; i < 16 && (await card().count()) === 0; i++) await page.waitForTimeout(250);
+      if ((await card().count()) !== 1) return 'bộ lọc Tiến trình mà không có thẻ Hành trình';
+      const box = page.getByTestId('progress-journey').filter({ visible: true });
+      const w = box.getByLabel(/^(Weight|Cân nặng): /);
+      if ((await w.count()) !== 1) return `(A) không có đúng một dòng Cân nặng: ${JSON.stringify(await w.evaluateAll((es) => es.map((e) => e.getAttribute('aria-label'))))}`;
+      const label = (await w.getAttribute('aria-label')) ?? '';
+      if (!/50 → 55[.,]4 kg, \+5[.,]4 kg/.test(label)) return `(A) dòng Cân nặng sai: "${label}" — phải là 50 → 55.4 kg, +5.4 kg `;
+      if ((await box.getByText(/^2 (updates|lần cập nhật)/).count()) !== 1) return `(A) phải nói "2 lần cập nhật" — thừa hoặc thiếu một bài: ${JSON.stringify(await box.allInnerTexts())}`;
+      if ((await box.getByLabel(/^(Waist|Vòng eo): /).count()) !== 0) return '(B) vòng eo chỉ có ở một bài mà vẫn có dòng';
+      if ((await box.getByLabel(/^(Bench Press|Squat): /).count()) !== 0) return '(B) gộp hai bài tập khác nhau thành một dòng sức mạnh';
+      return null;
+    },
+  },
+  {
+    /*
       A 03/10: thành tích cộng đồng trên hồ sơ. Con số do server đếm (fixture
       `community_user_stats` dịch đúng luật của hàm: chỉ bài người xem thấy được);
       ở đây đo rằng dòng hiện đúng BA con số ấy, theo đúng thứ tự, và không hiện
