@@ -14,6 +14,7 @@ import { usePalette } from '@/hooks/use-palette';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import { useMeasurementHistory } from '@/hooks/use-today-data';
 import { getLocale } from '@/lib/i18n';
+import { localDateStr } from '@/lib/local-date';
 
 /*
   P1-6 (DE-XUAT-2): 12 body measurements were logged and never shown back.
@@ -64,7 +65,9 @@ export default function MeasurementsTrendScreen() {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         label: (i18n as any)[f.labelKey] as string,
         points: points.map((p) => ({
-          date: new Date(p.t).toISOString().split('T')[0],
+          /* Local date: `toISOString()` is UTC — a measurement logged when
+             local date != UTC date plots a day early. */
+          date: localDateStr(new Date(p.t)),
           value: p.v,
         })),
         last,

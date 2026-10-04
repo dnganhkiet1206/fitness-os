@@ -190,7 +190,10 @@ export function useNutritionHistory(days = 7) {
     queryFn: async () => {
       const from = new Date();
       from.setDate(from.getDate() - days);
-      const fromStr = from.toISOString().split('T')[0];
+      /* Local date, not UTC: `toISOString()` is the UTC calendar date —
+         for UTC+ users opening the app after midnight local, the bound
+         lands a day early and the "7-day" view shows 8 days. */
+      const fromStr = localDateStr(from);
       const { data, error } = await supabase
         .from('daily_logs')
         .select('date, kcal, protein_g, carbs_g, fat_g, fiber_g')
