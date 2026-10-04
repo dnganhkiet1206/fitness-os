@@ -338,9 +338,11 @@ const stylesFor = makeStyles((c) => ({
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f5f5f5',
+    /* `c.primary` thay vì `#f5f5f5` hardcoded: nền xám cố định tàng hình
+       1.01:1 trên `c.background` light. */
+    backgroundColor: c.primary,
   },
-  doneText: { ...type.headline, color: '#111111' },
+  doneText: { ...type.headline, color: c.primaryForeground },
   ghost: { alignItems: 'center', paddingVertical: spacing.sm },
   ghostText: { ...type.footnote, color: c.mutedForeground },
 }));
