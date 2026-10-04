@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/integrations/supabase/client';
 import { recomputeDailyLog } from '@/lib/daily-log-service';
+import { classifyError } from './error-copy';
 import { biometricRowToReplace, sleepRowToReplace } from './same-day-entry';
 import { localDateStr } from '@/lib/local-date';
 import { syncProfileWeight } from '@/lib/weight-sync';
@@ -705,8 +706,28 @@ export function registerOfflineWrites(client: QueryClient): void {
       Weather is worth retrying; a refusal is not. See `permanentFailure`.
       Four attempts at a row RLS will never accept only delays the moment the
       write is discarded, and holds the queue behind it while it waits.
+
+      ── DE-XUAT-6 #2: fake-online must not drop the write ──
+
+      Captive portal: NetInfo reports online, a paused write resumes, every
+      attempt fails at the network, and after the 3rd retry the write was
+      dropped SILENTLY — the person thought it was logged. An error
+      `classifyError` reads as 'offline' (no response at all: a TypeError
+      network failure, ENOTFOUND, ETIMEDOUT…) is weather by definition, so it
+      keeps its retries without bound: the write waits instead of dying, and
+      lands when the network is real. A refusal still stops at once; other
+      weather (a 5xx with a response) keeps the old bound of 3.
+
+      Two things this does NOT do, deliberately. While the device is TRULY
+      offline TanStack's retryer pauses on its own — no burn (verified in
+      @tanstack/query-core's retryer.js: `canContinue() ? void 0 : pause()`),
+      so the unbounded arm only spends during fake-online. And only paused
+      mutations are persisted (`defaultShouldDehydrateMutation`), so a
+      force-quit mid-retry still loses the write — the same as today's
+      post-retry state, not a new loss; the common case (app alive, portal
+      accepted later) now survives instead of dropping after ~7s.
     */
-    retry: (failureCount, error) => !permanentFailure(error) && failureCount < 3,
+    retry: (failureCount, error) => !permanentFailure(error) && (classifyError(error) === 'offline' || failureCount < 3),
     retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 30_000),
     /*
       ── the refresh has to be a default too ──
