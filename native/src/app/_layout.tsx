@@ -1,5 +1,5 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
-import { Appearance, Image, StyleSheet, View } from 'react-native';
+import { Appearance, Image, StyleSheet, Text, View } from 'react-native';
 import * as SystemUI from 'expo-system-ui';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import * as SplashScreen from 'expo-splash-screen';
@@ -10,6 +10,7 @@ import { useEffect, useMemo, type ReactNode } from 'react';
 import { AppLockGate } from '@/components/ascnd/app-lock-gate';
 import { AuthScreen } from '@/components/ascnd/auth-screen';
 import { LoadFailed } from '@/components/ascnd/load-failed';
+import { PressScale } from '@/components/ascnd/press-scale';
 import { CelebrationHost } from '@/components/ascnd/celebration-host';
 import { QuestAutoClaim } from '@/components/ascnd/quest-autoclaim';
 import { MascotUnlockCelebration } from '@/components/ascnd/mascot-unlock';
@@ -200,7 +201,7 @@ function Gate() {
      xuống để đóng lộ ra đúng cái mép ấy. */
   const c = usePalette();
   const gateStyles = gateStylesFor(c);
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const {
     data: profile,
     isLoading: profileLoading,
@@ -279,6 +280,11 @@ function Gate() {
     return (
       <View style={gateStyles.gateFail}>
         <LoadFailed i18n={i18n} onRetry={() => void refetchProfile()} busy={profileRefetching} />
+        {/* Escape hatch: nếu profile row mất vĩnh viễn (PGRST116), retry mãi
+            vẫn fail. Cho user đăng xuất để thử lại từ đầu thay vì kẹt. */}
+        <PressScale onPress={() => void signOut()} style={gateStyles.signOutBtn}>
+          <Text style={gateStyles.signOutText}>{i18n.nSignOut}</Text>
+        </PressScale>
       </View>
     );
   }
@@ -547,5 +553,14 @@ const gateStylesFor = makeStyles((c) => ({
     justifyContent: 'center',
     paddingHorizontal: 20,
     backgroundColor: c.background,
+  },
+  signOutBtn: {
+    marginTop: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  signOutText: {
+    color: c.mutedForeground,
+    fontSize: 15,
   },
 }));
