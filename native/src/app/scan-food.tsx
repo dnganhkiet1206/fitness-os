@@ -7,6 +7,7 @@ import { useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -158,14 +159,17 @@ export default function ScanFoodScreen() {
   if (!permission) return <View style={styles.root} />;
 
   if (!permission.granted) {
+    /* Permanent denial: `requestPermission()` resolves without showing a
+       dialog, so the button would silently do nothing. Offer Settings. */
+    const blocked = !permission.canAskAgain;
     return (
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.permTitle}>{i18n.nCameraNeeded}</Text>
         <Text style={styles.permHint}>{i18n.nScanFoodHint}</Text>
         <PressScale
           style={styles.permBtn}
-          onPress={requestPermission}>
-          <Text style={styles.permBtnText}>{i18n.nAllowCamera}</Text>
+          onPress={blocked ? () => void Linking.openSettings() : requestPermission}>
+          <Text style={styles.permBtnText}>{blocked ? i18n.nCxOpenSettings : i18n.nAllowCamera}</Text>
         </PressScale>
         <Pressable accessibilityRole="button" onPress={() => nav.back()}>
           <Text style={styles.cancelText}>{i18n.nCancel}</Text>

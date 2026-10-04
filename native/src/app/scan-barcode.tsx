@@ -4,7 +4,7 @@ import { useRootNavigationState } from 'expo-router';
 import { nav } from '@/lib/nav';
 import { X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressScale } from '@/components/ascnd/press-scale';
@@ -80,12 +80,15 @@ export default function ScanBarcodeScreen() {
   if (!permission) return <View style={styles.root} />;
 
   if (!permission.granted) {
+    /* Permanent denial: `requestPermission()` resolves without showing a
+       dialog, so the button would silently do nothing. Offer Settings. */
+    const blocked = !permission.canAskAgain;
     return (
       <View style={[styles.root, styles.center, { paddingTop: insets.top }]}>
         <Text style={styles.permTitle}>{i18n.nCameraNeeded}</Text>
         <Text style={styles.permHint}>{i18n.nCameraHint}</Text>
-        <PressScale style={styles.permBtn} onPress={requestPermission}>
-          <Text style={styles.permBtnText}>{i18n.nAllowCamera}</Text>
+        <PressScale style={styles.permBtn} onPress={blocked ? () => void Linking.openSettings() : requestPermission}>
+          <Text style={styles.permBtnText}>{blocked ? i18n.nCxOpenSettings : i18n.nAllowCamera}</Text>
         </PressScale>
         <Pressable accessibilityRole="button" onPress={() => nav.back()}>
           <Text style={styles.cancelText}>{i18n.nCancel}</Text>
