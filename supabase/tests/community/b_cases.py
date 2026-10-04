@@ -1292,3 +1292,15 @@ CASES += [
        old="    actor := r.author_id;\n    w := 2;", new="    actor := r.author_id;\n    w := 3;", expect='U7 '),
 ]
 
+# ── Loại bài ở Khám phá (A, 04/10 — concept §17 "Content preferences") ──
+DKM = '20261007233000_community_discover_kinds'
+DKS = 'discover_kinds'
+CASES += [
+  dict(suite=DKS, id='DK1', mig=DKM, how='mặc định chỉ Buổi tập',
+       old="DEFAULT ARRAY['workout', 'progress', 'recipe']", new="DEFAULT ARRAY['workout']", expect='DK1 '),
+  dict(suite=DKS, id='DK3', mig=DKM, how='nhận mảng rỗng',
+       old="CHECK (cardinality(discover_kinds) >= 1 AND discover_kinds", new="CHECK (discover_kinds", expect='DK3 '),
+  dict(suite=DKS, id='DK4', mig=DKM, how='nhận loại bài lạ',
+       old="cardinality(discover_kinds) >= 1 AND discover_kinds <@ ARRAY['workout', 'progress', 'recipe']", new="cardinality(discover_kinds) >= 1", expect='DK4 '),
+]
+

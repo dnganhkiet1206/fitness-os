@@ -71,7 +71,7 @@ function withDefaults(table, row) {
     if (def.now) out[col] = new Date(Date.now() + (def.days ?? 0) * 86400000).toISOString();
     else if (def.uuid) out[col] = randomUUID();
     else if (def.uid) out[col] = UID;
-    else out[col] = def.value;
+    else out[col] = Array.isArray(def.value) ? [...def.value] : def.value;
   }
   return out;
 }

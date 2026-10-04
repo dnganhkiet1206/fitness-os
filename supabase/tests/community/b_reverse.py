@@ -119,6 +119,12 @@ COVERAGE_OK = {
                'đều làm M1 (nhắc trên bài công khai, đứng trước) đỏ trước — đo 02/10: ca MV3 riêng '
                'đỏ ở M1. MV3 ở đó để MV1 không xanh nhờ một hàm không nhắc ai cả.',
     },
+    'discover_kinds': {
+        'DK2': 'ghi một lựa chọn hợp lệ: migration chỉ THÊM cột và CHECK — phá CHECK thì DK3/DK4 đỏ, '
+               'không phép phá nào trong nó chặn được một UPDATE hợp lệ.',
+        'DK5': 'cùng luật với DK2, qua upsert của app.',
+        'DK6': 'RLS của community_settings là của 20260930130000_community_privacy, có ca V ở privacy.',
+    },
     'useful': {
         'U6': 'cùng luật với U2 (trigger đếm lượt thử): phá trigger ấy (ca U2, U6) thì U2 đỏ trước.',
         'U11': 'cùng đường trừ điểm với U10: phá chiều xoá (ca U10, U11) thì U10 đỏ trước.',

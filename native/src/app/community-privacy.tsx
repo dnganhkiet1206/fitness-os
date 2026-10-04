@@ -11,6 +11,8 @@ import { makeStyles } from '@/constants/theme';
 import { useAppSettings, useI18n } from '@/hooks/use-app-settings';
 import {
   type BlockedUser,
+  DISCOVER_KINDS,
+  type DiscoverKind,
   NOTIFY_KEYS,
   type NotifyKey,
   useBlockedUsers,
@@ -18,6 +20,7 @@ import {
   useDeleteAllMyPosts,
   useMutedUsers,
   useSetDefaultVisibility,
+  useSetDiscoverKinds,
   useSetNotify,
   useSetShowBadges,
   useUnblock,
@@ -36,6 +39,7 @@ import { fillCopy } from '@/lib/copy-fill';
  *   Mặc định khi đăng   giá trị sẵn ở MỌI màn chia sẻ; lúc đăng vẫn đổi được.
  *                       Lưu ở bảng riêng chỉ chủ nhân đọc — không phải trên hồ
  *                       sơ, thứ cả cộng đồng đọc được.
+ *   Khám phá hiển thị   (A 04/10) loại bài muốn thấy ở Khám phá; ít nhất một.
  *   Đã chặn             chặn có ở menu mọi bài (App Store 1.2), nhưng trước
  *                       màn này không có chỗ nào để BỎ chặn: chặn nhầm là
  *                       vĩnh viễn. Bỏ chặn không tự theo dõi lại — trigger
@@ -57,6 +61,7 @@ export default function CommunityPrivacyScreen() {
   const setVis = useSetDefaultVisibility();
   const setBadges = useSetShowBadges();
   const setNotify = useSetNotify();
+  const setKinds = useSetDiscoverKinds();
   const blocked = useBlockedUsers();
   const unblock = useUnblock();
   const muted = useMutedUsers();
@@ -80,6 +85,14 @@ export default function CommunityPrivacyScreen() {
     tries: i18n.nPgNotifyTries,
     challenges: i18n.nPgNotifyChallenges,
   };
+  /* Như `vis`: đang gửi thì hiện lựa chọn vừa bấm, xong mới là server. */
+  const kinds = setKinds.isPending && setKinds.variables ? setKinds.variables : (settings.data?.discoverKinds ?? [...DISCOVER_KINDS]);
+  const kindLabel: Record<DiscoverKind, string> = {
+    workout: i18n.nPgDiscoverWorkout,
+    progress: i18n.nPgDiscoverProgress,
+    recipe: i18n.nPgDiscoverRecipe,
+  };
+
   /* Như `badgesOn`: công tắc đang gửi hiện giá trị vừa bật, xong mới là server. */
   const notifyOn = (k: NotifyKey) =>
     setNotify.isPending && setNotify.variables?.key === k ? setNotify.variables.on : (settings.data?.notify[k] ?? true);
@@ -154,6 +167,39 @@ export default function CommunityPrivacyScreen() {
             ]}
           />
           <Text style={styles.sub}>{i18n.nBdHint}</Text>
+        </View>
+      )}
+
+      {/* Loại bài ở Khám phá (A 04/10, concept §17 "Content preferences"). Công
+          tắc cuối cùng còn bật thì không tắt được — server cũng từ chối mảng
+          rỗng (CHECK), và một Khám phá không loại nào là màn trống không lý do. */}
+      {settings.isError ? null : (
+        <View style={styles.section}>
+          <Text style={styles.heading}>{i18n.nPgDiscoverTitle}</Text>
+          <GlassCard style={styles.list} testID="discover-kinds">
+            {DISCOVER_KINDS.map((k, i) => {
+              const on = kinds.includes(k);
+              const last = on && kinds.length === 1;
+              return (
+                <View key={k} style={[styles.row, i > 0 && styles.rowRule]}>
+                  <Text style={[styles.who, styles.label]}>{kindLabel[k]}</Text>
+                  <Switch
+                    accessibilityLabel={kindLabel[k]}
+                    value={on}
+                    disabled={settings.isPending || last}
+                    onValueChange={(v) =>
+                      setKinds.mutate(
+                        DISCOVER_KINDS.filter((x) => (x === k ? v : kinds.includes(x))),
+                        { onError: (e: Error) => toast.fail(e) },
+                      )
+                    }
+                    trackColor={{ true: c.readinessGreen, false: c.secondary }}
+                  />
+                </View>
+              );
+            })}
+          </GlassCard>
+          <Text style={styles.sub}>{i18n.nPgDiscoverHint}</Text>
         </View>
       )}
 

@@ -805,6 +805,7 @@ export type Database = {
       community_settings: {
         Row: {
           default_visibility: string
+          discover_kinds: string[]
           notify_challenges: boolean
           notify_comments: boolean
           notify_follows: boolean
@@ -818,6 +819,7 @@ export type Database = {
         }
         Insert: {
           default_visibility?: string
+          discover_kinds?: string[]
           notify_challenges?: boolean
           notify_comments?: boolean
           notify_follows?: boolean
@@ -831,6 +833,7 @@ export type Database = {
         }
         Update: {
           default_visibility?: string
+          discover_kinds?: string[]
           notify_challenges?: boolean
           notify_comments?: boolean
           notify_follows?: boolean

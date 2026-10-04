@@ -54,10 +54,14 @@ function splitTop(body) {
   const parts = [];
   let d = 0;
   let cur = '';
+  let q = false;
   for (const ch of body) {
-    if (ch === '(') d++;
-    if (ch === ')') d--;
-    if (ch === ',' && d === 0) {
+    /* Ngoặc vuông và chuỗi trong nháy cũng là một tầng: `DEFAULT ARRAY['a', 'b']`
+       (20261007233000) không được cắt ở dấu phẩy bên trong. */
+    if (ch === "'") q = !q;
+    if (!q && (ch === '(' || ch === '[')) d++;
+    if (!q && (ch === ')' || ch === ']')) d--;
+    if (ch === ',' && d === 0 && !q) {
       parts.push(cur.trim());
       cur = '';
     } else cur += ch;
@@ -297,6 +301,11 @@ export function readSchema(dir = MIG) {
             t.defaults[a[1]] = d === 'now()' ? { now: true } : d === 'gen_random_uuid()' ? { uuid: true } : d === 'auth.uid()' ? { uid: true }
               : dm[2] !== undefined ? { value: dm[2] } : d === 'true' ? { value: true } : d === 'false' ? { value: false } : { value: Number(dm[1]) };
           }
+          /* `DEFAULT ARRAY['a', 'b']` (discover_kinds, 20261007233000): cột
+             NOT NULL mà máy chủ giả không biết DEFAULT thì mọi INSERT thiếu cột
+             ra 23502 — bật huy hiệu, tắt thông báo đều hỏng ở đây. */
+          const arr = action.match(/\bDEFAULT\s+ARRAY\[([^\]]*)\]/i);
+          if (arr && !(a[1] in t.defaults)) t.defaults[a[1]] = { value: [...arr[1].matchAll(/'([^']*)'/g)].map((m) => m[1]) };
         } else if ((a = action.match(/^DROP COLUMN (?:IF EXISTS )?"?(\w+)"?/i))) {
           t.columns = t.columns.filter((c) => c !== a[1]);
           t.notNull = t.notNull.filter((c) => c !== a[1]);

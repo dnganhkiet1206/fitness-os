@@ -373,6 +373,11 @@ export function useCommunityFeed(tab: CommunityTab) {
         /* Bài của chính mình có mặt ở "Đang theo dõi", như mọi feed theo dõi:
            vừa chia sẻ xong mà quay lại không thấy bài mình là một cú hẫng. */
         q = q.in('author_id', [me, ...(await followees(qc, me))]);
+      } else {
+        /* Loại bài người ấy chọn thấy ở Khám phá (20261007233000). "Đang theo
+           dõi" không lọc: đó là bài của người mình chọn theo dõi. */
+        const kinds = await discoverFilter(qc, me);
+        if (kinds) q = q.in('kind', kinds);
       }
       const { data, error } = await q;
       if (error) throw error;
@@ -395,6 +400,7 @@ export type UsefulPost = FeedPost & { tries: number };
 
 export function useUsefulThisWeek(enabled = true) {
   const { user } = useAuth();
+  const qc = useQueryClient();
   return useQuery({
     queryKey: ['community_feed', user?.id, 'useful'],
     enabled: !!user && enabled,
@@ -403,12 +409,17 @@ export function useUsefulThisWeek(enabled = true) {
       /* Cửa sổ trượt 7 × 24 giờ tính bằng mốc thời gian, không phải ngày lịch:
          "tuần này" của khối là 168 giờ gần nhất, cho mọi múi giờ như nhau. */
       const since = new Date(Date.now() - USEFUL_WINDOW_DAYS * 24 * 3600 * 1000).toISOString();
-      const { data, error } = await supabase
+      let q = supabase
         .from('community_posts')
         .select(`${POST_COLS}, try_count`)
         .gte('created_at', since)
         .neq('author_id', me)
-        .gte('useful_score', USEFUL_MIN_SCORE)
+        .gte('useful_score', USEFUL_MIN_SCORE);
+      /* Cùng loại bài như Khám phá bên dưới — khối không giới thiệu thứ người
+         ấy đã chọn không thấy. */
+      const kinds = await discoverFilter(qc, me);
+      if (kinds) q = q.in('kind', kinds);
+      const { data, error } = await q
         .order('useful_score', { ascending: false })
         .order('created_at', { ascending: false })
         .limit(3);
@@ -1457,26 +1468,85 @@ export type Visibility = 'public' | 'followers';
  * Chưa có dòng thì là `public`, đúng như DEFAULT của cột: người chưa từng mở
  * màn này không cần một lần ghi để có giá trị.
  */
+/** Ba loại bài, theo thứ tự hiện trên màn chọn (Quyền riêng tư). */
+export const DISCOVER_KINDS = ['workout', 'progress', 'recipe'] as const;
+export type DiscoverKind = (typeof DISCOVER_KINDS)[number];
+
+/** Mảng loại bài đọc từ server → chỉ những loại hợp lệ; rỗng / lạ / chưa có
+    dòng = cả ba, đúng như DEFAULT của cột (20261007233000). */
+export function readDiscoverKinds(v: unknown): DiscoverKind[] {
+  const ok = Array.isArray(v) ? DISCOVER_KINDS.filter((k) => v.includes(k)) : [];
+  return ok.length ? ok : [...DISCOVER_KINDS];
+}
+
+async function readCommunitySettings(uid: string) {
+  const { data, error } = await supabase
+    .from('community_settings')
+    .select(`default_visibility, show_badges, discover_kinds, ${NOTIFY_KEYS.map((k) => `notify_${k}`).join(', ')}`)
+    .eq('user_id', uid)
+    .maybeSingle();
+  if (error) throw error;
+  const row = data as unknown as Record<string, unknown> | null;
+  return {
+    defaultVisibility: (row?.default_visibility === 'followers' ? 'followers' : 'public') as Visibility,
+    /* Chưa có dòng cài đặt = TẮT, đúng như DEFAULT của cột (#42). */
+    showBadges: row?.show_badges === true,
+    /* Thông báo thì ngược lại: chưa có dòng = BẬT hết (DEFAULT true). */
+    notify: Object.fromEntries(NOTIFY_KEYS.map((k) => [k, row?.[`notify_${k}`] !== false])) as Record<NotifyKey, boolean>,
+    discoverKinds: readDiscoverKinds(row?.discover_kinds),
+  };
+}
+
+const settingsQuery = (uid: string) => ({
+  queryKey: ['community_settings', uid] as const,
+  queryFn: () => readCommunitySettings(uid),
+});
+
+/** Loại bài Khám phá đang lọc — `null` khi người ấy để cả ba (không lọc gì).
+    Đọc qua cache của cài đặt: feed và khối Hữu ích không hỏi lại server mỗi trang. */
+async function discoverFilter(qc: QueryClient, uid: string): Promise<DiscoverKind[] | null> {
+  const s = await qc.fetchQuery({ ...settingsQuery(uid), staleTime: 60_000 });
+  return s.discoverKinds.length < DISCOVER_KINDS.length ? s.discoverKinds : null;
+}
+
 export function useCommunitySettings() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ['community_settings', user?.id],
     enabled: !!user,
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: () => readCommunitySettings(user!.id),
+  });
+}
+
+/**
+ * Loại bài muốn thấy ở Khám phá (concept §17 "Content preferences"). Server
+ * từ chối mảng rỗng (CHECK), và màn không cho tắt công tắc cuối cùng — hai
+ * lớp cho cùng một luật. Đổi xong thì Khám phá và khối Hữu ích đọc lại.
+ */
+export function useSetDiscoverKinds() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useOnlineMutation({
+    meta: { offline: now(2) },
+    mutationFn: async (kinds: DiscoverKind[]) => {
+      const { error } = await supabase
         .from('community_settings')
-        .select(`default_visibility, show_badges, ${NOTIFY_KEYS.map((k) => `notify_${k}`).join(', ')}`)
-        .eq('user_id', user!.id)
-        .maybeSingle();
+        .upsert({ user_id: user!.id, discover_kinds: kinds, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
       if (error) throw error;
-      const row = data as unknown as Record<string, unknown> | null;
-      return {
-        defaultVisibility: (row?.default_visibility === 'followers' ? 'followers' : 'public') as Visibility,
-        /* Chưa có dòng cài đặt = TẮT, đúng như DEFAULT của cột (#42). */
-        showBadges: row?.show_badges === true,
-        /* Thông báo thì ngược lại: chưa có dòng = BẬT hết (DEFAULT true). */
-        notify: Object.fromEntries(NOTIFY_KEYS.map((k) => [k, row?.[`notify_${k}`] !== false])) as Record<NotifyKey, boolean>,
-      };
+    },
+    onMutate: () => Haptics.selection(),
+    /* Ghi lựa chọn mới vào cache NGAY, trước khi feed đọc lại: feed hỏi cài
+       đặt qua `fetchQuery` với staleTime, và một bản cũ còn "mới" (nhất là bản
+       persist khi mở lại app) sẽ cho Khám phá lọc theo lựa chọn trước. */
+    onSuccess: (_d, kinds) => {
+      qc.setQueryData(['community_settings', user?.id], (old: Awaited<ReturnType<typeof readCommunitySettings>> | undefined) =>
+        old ? { ...old, discoverKinds: kinds } : old,
+      );
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['community_settings', user?.id] });
+      qc.invalidateQueries({ queryKey: ['community_feed', user?.id, 'discover'] });
+      qc.invalidateQueries({ queryKey: ['community_feed', user?.id, 'useful'] });
     },
   });
 }

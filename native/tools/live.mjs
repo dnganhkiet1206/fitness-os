@@ -2778,6 +2778,67 @@ const SCENARIOS = [
   },
   {
     /*
+      A 04/10 — loại bài ở Khám phá (concept §17 "Content preferences"). Ở Quyền
+      riêng tư:
+        (A) ba công tắc Buổi tập / Tiến trình / Công thức, BẬT sẵn khi chưa chọn;
+        (B) tắt Công thức → đúng một lệnh ghi community_settings mang
+            discover_kinds = [workout, progress];
+        (C) Khám phá thôi có bài Công thức — ở feed lẫn khối Hữu ích tuần này —
+            mà bài Buổi tập vẫn còn;
+        (D) "Đang theo dõi" vẫn có bài Công thức của người mình theo dõi;
+        (E) tắt thêm Tiến trình thì công tắc cuối cùng (Buổi tập) không tắt
+            được nữa.
+    */
+    name: 'Quyền riêng tư: chọn loại bài ở Khám phá — feed và khối Hữu ích lọc theo, Đang theo dõi không lọc, giữ ít nhất một (A 04/10)',
+    route: '/community-privacy', mode: 'full',
+    async run(page, { world }) {
+      const writes = [];
+      const usefulReqs = [];
+      page.on('request', (q) => {
+        if (/\/rest\/v1\/community_settings/.test(q.url()) && isWrite(q.method())) writes.push(q.postData() ?? '');
+        if (/useful_score=/.test(q.url())) usefulReqs.push(q.url());
+      });
+      const sw = (re) => page.getByTestId('discover-kinds').filter({ visible: true }).getByRole('switch', { name: re });
+      const WORKOUT = /^(Workouts|Buổi tập)$/;
+      const PROGRESS = /^(Progress|Tiến trình)$/;
+      const RECIPE = /^(Recipes|Công thức)$/;
+      for (let i = 0; i < 20 && !(await sw(RECIPE).count()); i++) await page.waitForTimeout(250);
+      for (const re of [WORKOUT, PROGRESS, RECIPE]) {
+        if ((await sw(re).count()) !== 1) return `(A) không có đúng một công tắc ${re}`;
+        if (!(await sw(re).isChecked())) return `(A) chưa chọn gì mà công tắc ${re} không BẬT sẵn`;
+      }
+      await sw(RECIPE).click();
+      for (let i = 0; i < 16 && !writes.length; i++) await page.waitForTimeout(250);
+      if (writes.length !== 1) return `(B) phải đúng một lệnh ghi community_settings, ra ${writes.length}`;
+      if (!/"discover_kinds"\s*:\s*\[\s*"workout"\s*,\s*"progress"\s*\]/.test(writes[0])) return `(B) lệnh ghi sai: ${writes[0].slice(0, 160)}`;
+      /* Cache được persist có điều tiết; đợi nó xuống đĩa trước khi tải trang
+         khác (một người thật chuyển tab trong app, không tải lại). */
+      await page.waitForTimeout(2000);
+
+      const RECIPE_POST = 'cp000000-0000-4000-8000-000000000004';
+      const recipeTitle = world.community_posts.find((p) => p.id === RECIPE_POST)?.payload?.title ?? 'High Protein Chicken Bowl';
+      await page.goto(page.url().replace(/\/community-privacy.*$/, '/community'), { waitUntil: 'domcontentloaded' });
+      const box = page.getByTestId('useful-this-week').filter({ visible: true });
+      for (let i = 0; i < 40 && !(await box.count()); i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(1500);
+      if ((await box.getByTestId(`useful-${RECIPE_POST}`).count()) !== 0) return `(C) khối Hữu ích vẫn giới thiệu bài Công thức — truy vấn: ${usefulReqs.map((u) => decodeURIComponent(u.replace(/^.*\?/, ''))).join(' | ').slice(0, 400)}; cài đặt: ${JSON.stringify((world.community_settings ?? []).find((r) => r.user_id === UID))}`;
+      if ((await page.getByText(recipeTitle, { exact: false }).filter({ visible: true }).count()) !== 0) return `(C) Khám phá vẫn có bài Công thức "${recipeTitle}"`;
+      if ((await page.getByText('Push Day', { exact: false }).filter({ visible: true }).count()) === 0) return '(C) lọc mất cả bài Buổi tập';
+      await page.getByRole('tab', { name: /^(Following|Đang theo dõi)/ }).filter({ visible: true }).first().click();
+      for (let i = 0; i < 20 && !(await page.getByText(recipeTitle, { exact: false }).filter({ visible: true }).count()); i++) await page.waitForTimeout(250);
+      if ((await page.getByText(recipeTitle, { exact: false }).filter({ visible: true }).count()) === 0) return '(D) "Đang theo dõi" cũng lọc mất bài Công thức của người mình theo dõi';
+
+      await page.goto(page.url().replace(/\/community.*$/, '/community-privacy'), { waitUntil: 'domcontentloaded' });
+      for (let i = 0; i < 20 && !(await sw(PROGRESS).count()); i++) await page.waitForTimeout(250);
+      await sw(PROGRESS).click();
+      for (let i = 0; i < 16 && writes.length < 2; i++) await page.waitForTimeout(250);
+      await page.waitForTimeout(800);
+      if (!(await sw(WORKOUT).isDisabled())) return '(E) chỉ còn Buổi tập mà công tắc ấy vẫn tắt được';
+      return null;
+    },
+  },
+  {
+    /*
       A 03/10: thành tích cộng đồng trên hồ sơ. Con số do server đếm (fixture
       `community_user_stats` dịch đúng luật của hàm: chỉ bài người xem thấy được);
       ở đây đo rằng dòng hiện đúng BA con số ấy, theo đúng thứ tự, và không hiện
