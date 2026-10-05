@@ -33,6 +33,8 @@ Không ai push thẳng vào `native/ios-rewrite`. Nhánh làm việc đi sau nh�
    - `REVIEW: CHANGES REQUESTED`: kèm danh sách cụ thể.
    - `BLOCK`: xem mục dưới.
 5. **Reviewer merge**, tác giả không bao giờ tự merge PR của mình. Dùng squash merge, giữ tiêu đề PR làm commit message.
+   **Ngoại lệ: chuỗi PR xếp chồng** (PR có base là nhánh `agent/...` khác). Với chuỗi này dùng **"Create a merge commit"**. Squash tạo ra commit mới, nên mọi PR con phía trên phải giải lại toàn bộ lịch sử. Khi PR nền đã merge, tác giả đổi base của PR con sang `native/ios-rewrite`.
+6. **Hàng review:** ưu tiên theo mức phụ thuộc, không theo số PR. Thứ tự: P0 là PR đang chặn PR khác; P1 là core, contract hoặc component dùng chung; P2 là feature độc lập; P3 là docs và cleanup nhỏ. Khi có từ 8 PR trở lên đang chờ review, C và D review trước rồi mới nhận việc mới. #222 là bảng điều phối.
 
 ## Quyền BLOCK của D
 
