@@ -182,3 +182,17 @@ struct ExerciseSourceMappingTests {
     #expect(list[0].isBuiltIn && list[1].userId == "u1" && list[1].kind == "isolation")
   }
 }
+
+struct ExerciseGuideSourceMappingTests {
+  @Test func mediaRowsMapToDomain() throws {
+    let rows = try JSONDecoder().decode([SupabaseExerciseGuideSource.MediaRowDTO].self, from: Data("""
+      [{"kind":"video","uri":"v.mp4","position":1,"duration_s":"45.5","poster_uri":null,"alt":null,
+        "exercise_media_content":[{"locale":"vi","title":"Video","description":null}]},
+       {"kind":"image","uri":"a.png","position":null,"duration_s":12,"poster_uri":null,"alt":"A","exercise_media_content":null}]
+      """.utf8))
+    let media = rows.map(\.domain)
+    #expect(media[0].durationS == 45.5 && media[0].captions?.first?.title == "Video")
+    #expect(media[1].position == nil && media[1].durationS == 12)
+    #expect(MediaState.resolve(media, legacy: nil, lang: .vi).shape == .video)
+  }
+}
