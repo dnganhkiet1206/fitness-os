@@ -27,6 +27,8 @@ settings:
 packages:
   ASCNDKit:
     path: Packages/ASCNDKit
+  ASCNDBackend:
+    path: Packages/ASCNDBackend
 
 targets:
   ASCND:
@@ -39,6 +41,11 @@ targets:
         product: ASCNDCore
       - package: ASCNDKit
         product: ASCNDDesignSystem
+      - package: ASCNDBackend
+        product: ASCNDBackend
+    configFiles:
+      Debug: Config/Backend.xcconfig
+      Release: Config/Backend.xcconfig
     info:
       path: ASCND/Info.plist
       properties:
@@ -50,6 +57,9 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        # Điền từ Config/Backend.xcconfig — chỗ duy nhất ghi project Supabase.
+        ASCNDSupabaseURL: https://$(ASCND_SUPABASE_HOST)
+        ASCNDSupabaseKey: $(ASCND_SUPABASE_KEY)
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
