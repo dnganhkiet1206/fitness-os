@@ -52,6 +52,35 @@ public struct SupabaseAuthAPI: AuthAPI {
     try await client.auth.resetPasswordForEmail(email, redirectTo: Self.recoveryRedirect)
   }
 
+  /// `supabase.auth.updateUser({ password })` (`change-password.tsx:49`).
+  /// Thành công thì supabase-swift tự cập nhật phiên và phát `USER_UPDATED`.
+  public func updatePassword(_ password: String) async throws {
+    do {
+      _ = try await client.auth.update(user: UserAttributes(password: password))
+    } catch {
+      throw Self.passwordFailure(error)
+    }
+  }
+
+  /// Mã lỗi của Supabase Auth → `PasswordChangeFailure`.
+  static func passwordFailure(_ error: any Error) -> PasswordChangeFailure {
+    if NetworkFailure.isOffline(error) { return .offline }
+    guard let auth = error as? AuthError else { return .server(code: nil) }
+    if case .weakPassword(_, let reasons) = auth { return .weakPassword(reasons: reasons) }
+    return passwordFailure(code: auth.errorCode.rawValue)
+  }
+
+  static func passwordFailure(code: String) -> PasswordChangeFailure {
+    switch code {
+    case ErrorCode.samePassword.rawValue: .samePassword
+    case ErrorCode.weakPassword.rawValue: .weakPassword(reasons: [])
+    case ErrorCode.reauthenticationNeeded.rawValue: .reauthenticationNeeded
+    case ErrorCode.sessionNotFound.rawValue: .signedOut
+    case ErrorCode.overRequestRateLimit.rawValue: .rateLimited
+    default: .server(code: code)
+    }
+  }
+
   public func signOut() async throws {
     try await client.auth.signOut()
   }

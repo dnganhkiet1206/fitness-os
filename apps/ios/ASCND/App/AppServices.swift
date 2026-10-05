@@ -197,6 +197,7 @@ private struct UnconfiguredAuth: AuthAPI {
   func currentSession() async throws -> AuthSession? { nil }
   func stateChanges() -> AsyncStream<(AuthEvent, AuthSession?)> { AsyncStream { $0.finish() } }
   func signUp(email: String, password: String, name: String) async throws { throw NotConfigured() }
+  func updatePassword(_ password: String) async throws { throw NotConfigured() }
   func signIn(email: String, password: String) async throws { throw NotConfigured() }
   func signInWithApple(identityToken: String, rawNonce: String) async throws { throw NotConfigured() }
   func resetPassword(email: String) async throws { throw NotConfigured() }
