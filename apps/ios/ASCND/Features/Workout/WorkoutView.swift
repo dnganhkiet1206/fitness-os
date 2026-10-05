@@ -150,6 +150,9 @@ public struct WorkoutView: View {
     let performed = controller.performed(row)
     let resting = restingRowKey == row.key
 
+    // Không `.combine`: mỗi phần tử tương tác (nút tick, ô nhập, menu)
+    // là một điểm dừng VoiceOver riêng. Thông tin hàng ("Bench Press,
+    // hiệp 2 trên 3, 60 kg × 8, đã xong") nằm trong label của nút tick.
     return VStack(alignment: .leading, spacing: DS.Spacing.xs) {
       HStack(spacing: DS.Spacing.sm) {
         // Tick — controller từ chối khi chưa đủ (không tên/không reps).
@@ -165,15 +168,8 @@ public struct WorkoutView: View {
         }
         .disabled(!ready && !done)
         .opacity((!ready && !done) ? 0.4 : 1)
-        .accessibilityLabel(
-          Text(
-            done
-              ? String(localized: "workout.untick")
-              : ready
-                ? String(localized: "workout.tick")
-                : String(localized: "workout.notReady")
-          )
-        )
+        .accessibilityLabel(Text(tickLabel(row, performed: performed, done: done, ready: ready)))
+        .accessibilityAddTraits(done ? [.isButton, .isSelected] : .isButton)
 
         Text("\(row.ordinal)/\(row.of)")
           .font(DS.Type.footnote.monospacedDigit())
@@ -257,8 +253,18 @@ public struct WorkoutView: View {
       }
       .padding(.leading, 52)
     }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel(Text(rowVoiceOver(row, performed: performed, done: done)))
+  }
+
+  /// Label nút tick: thông tin hàng + hành động (#276, #278).
+  /// "Bench Press, hiệp 2 trên 3, 60 kg × 8, đã xong. Bỏ đánh dấu."
+  private func tickLabel(
+    _ row: PlannedSet, performed: PerformedSet, done: Bool, ready: Bool
+  ) -> String {
+    let summary = rowVoiceOver(row, performed: performed, done: done)
+    let action = String(
+      localized: done ? "workout.untick" : ready ? "workout.tick" : "workout.notReady"
+    )
+    return "\(summary). \(action)"
   }
 
   /// "Bench Press, hiệp 2 trên 3, 60 kg × 8, đã xong" (#276).
