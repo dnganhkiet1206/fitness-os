@@ -51,8 +51,13 @@ private struct SignedInScope<Content: View>: View {
       await f.start()
     }
     .onChange(of: scenePhase) { _, phase in
-      // Qua nửa đêm khi app ở nền: "hôm nay" và màn tập theo ngày mới.
+      // Ra tiền cảnh: qua nửa đêm thì "hôm nay" đổi; dữ liệu cũ hơn một phút
+      // thì làm mới (`focusManager` của baseline).
       if phase == .active, let flow { Task { await flow.becameActive() } }
+    }
+    .onChange(of: services.sync.online) { _, online in
+      // Có mạng lại (`refetchOnReconnect` của baseline).
+      if online, let flow { Task { await flow.reconnected() } }
     }
   }
 }
