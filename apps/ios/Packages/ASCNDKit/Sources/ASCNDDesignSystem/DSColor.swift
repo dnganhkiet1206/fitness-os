@@ -5,7 +5,6 @@
 //
 // Mỗi token có hai biến thể light/dark, chọn theo trait của hệ thống.
 #if canImport(SwiftUI)
-#if canImport(SwiftUI)
 @_exported import SwiftUI
 
 public extension DS {
@@ -53,7 +52,7 @@ public extension DS {
 }
 
 /// Một màu có hai biến thể light/dark, đọc từ trait của hệ thống.
-public struct DSColor {
+public struct DSColor: Sendable {
   let light: (Int, Int, Int)
   let dark: (Int, Int, Int)
 

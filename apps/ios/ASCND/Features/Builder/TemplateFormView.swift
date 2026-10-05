@@ -213,10 +213,10 @@ public struct ExerciseConfigRow: View {
       Text(exercise.name)
         .font(.headline)
       HStack {
-        Text("\(exercise.sets) × \(exercise.reps)")
+        Text(String(localized: "builder.exercise.setsReps \(exercise.sets) \(exercise.reps)"))
           .font(.subheadline)
         if let weight = exercise.weightKg {
-          Text("· \(weight, format: .number) kg")
+          Text(String(localized: "builder.exercise.weight \(weight.formatted(.number))"))
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }

@@ -2,7 +2,6 @@
 //
 // Dòng tiêu đề cho các mục trong màn hình (ví dụ: các mục ở tab Hôm nay).
 #if canImport(SwiftUI)
-#if canImport(SwiftUI)
 @_exported import SwiftUI
 
 public struct DSSectionHeader: View {
