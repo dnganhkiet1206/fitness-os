@@ -90,3 +90,12 @@ struct TemplateSourceMappingTests {
     #expect(s.plan(for: monday, today: monday).status == .todo)
   }
 }
+
+struct TrainingHistoryMappingTests {
+  @Test func postgrestTimestampsParse() throws {
+    let rows = try JSONDecoder().decode([SupabaseTrainingHistory.Row].self, from: Data("""
+      [{"date_time":"2026-10-05T07:00:00+00:00"},{"date_time":"2026-10-04T23:30:00.123456+00:00"},{"date_time":"bad"}]
+      """.utf8))
+    #expect(SupabaseTrainingHistory.times(rows) == [EpochMillis(1_791_183_600_000), EpochMillis(1_791_156_600_123)])
+  }
+}

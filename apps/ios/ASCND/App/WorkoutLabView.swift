@@ -103,83 +103,84 @@ private struct LabSession: View {
   let user: AuthSession
   @Environment(AppServices.self) private var services
   @Environment(RestTimerController.self) private var rest
+  @Environment(\.scenePhase) private var scenePhase
+  @State private var today: TodayController?
   @State private var controller: WorkoutSessionController?
-  @State private var today: TodayPlan?
-  @State private var source = "—"
-  @State private var refreshError: String?
   @State private var useSample = false
 
   var body: some View {
     List {
-      Section {
-        LabRow(label: "Today", value: today.map { "\($0.date) · \($0.status.rawValue)\($0.isDeload ? " · deload" : "")" } ?? "…")
-        LabRow(label: "Template", value: today?.template.map { "\($0.name) (\($0.exercises.count) bài)" } ?? "—")
-        LabRow(label: "Plan source", value: source)
-        if let refreshError {
-          LabRow(label: "Refresh failed", value: refreshError).foregroundStyle(.orange)
+      if let today {
+        Section {
+          LabRow(label: "Today", value: today.plan.map { "\($0.date) · \($0.status.rawValue)\($0.isDeload ? " · deload" : "")" } ?? "\(today.today) · no plan")
+          LabRow(label: "Template", value: today.plan?.template.map { "\($0.name) (\($0.exercises.count) bài)" } ?? "—")
+          LabRow(label: "Plan source", value: Self.describe(today.source))
+          LabRow(label: "Trained (14d)", value: "\(today.trained.count) ngày")
+          if let e = today.refreshError {
+            LabRow(label: "Refresh failed", value: e).foregroundStyle(.orange)
+          }
+          if today.plan?.sessionPlan == nil {
+            Toggle(isOn: $useSample) { Text(verbatim: "Hôm nay không có buổi — dùng kế hoạch mẫu (Lab)") }
+          }
+        } header: {
+          Text(verbatim: "Today (TodayController)")
         }
-        if today?.sessionPlan == nil {
-          Toggle(isOn: $useSample) { Text(verbatim: "Hôm nay không có buổi — dùng kế hoạch mẫu (Lab)") }
-        }
-      } header: {
-        Text(verbatim: "Plan (routine_days + workout_templates)")
       }
       if let controller {
         LabWorkout(c: controller)
       }
     }
-    .task(id: user.userId) { await loadPlan() }
+    .task(id: user.userId) {
+      let t = services.makeToday(userId: user.userId)
+      today = t
+      await t.load()
+      install()
+    }
     .onChange(of: useSample) { install() }
-    .refreshable { await loadPlan() }
-  }
-
-  /// Local-first: cache trên máy hiện ngay (kể cả offline), rồi làm mới từ server.
-  private func loadPlan() async {
-    let date = LocalDate(SystemWallClock().nowMillis(), in: .current)
-    if let cached = await services.templates.cached(userId: user.userId) {
-      today = cached.plan(for: date, today: date)
-      source = "cache · \(cached.fetchedAt.date.formatted(date: .omitted, time: .shortened))"
+    .onChange(of: controller?.loggedSessionId) { _, id in
+      // Chốt xong: ngày thành done ngay, không đợi server.
+      if id != nil, let today { Task { await today.markTrained(today.today) } }
+    }
+    .onChange(of: scenePhase) { _, phase in
+      if phase == .active, let today { Task { await today.clockTick(); install() } }
+    }
+    .refreshable {
+      await today?.refresh()
       install()
     }
-    do {
-      let fresh = try await services.templates.refresh(userId: user.userId)
-      today = fresh.plan(for: date, today: date)
-      source = "server · \(fresh.fetchedAt.date.formatted(date: .omitted, time: .shortened))"
-      refreshError = nil
-      install()
-    } catch {
-      refreshError = "\(error)"
-    }
-    if today == nil { today = TodayPlan.unknown(date) }
   }
 
-  /// Dựng controller cho kế hoạch hiện tại. Không thay controller đang có
-  /// tiến độ: kế hoạch đổi giữa buổi (server mới hơn cache) chỉ áp khi chưa
-  /// tick gì — tiến độ đã bền trên máy, mở lại sẽ khớp theo khoá ngày.
+  static func describe(_ s: TodayController.Source) -> String {
+    switch s {
+    case .none: "—"
+    case .cache(let t): "cache · \(t.date.formatted(date: .omitted, time: .shortened))"
+    case .server(let t): "server · \(t.date.formatted(date: .omitted, time: .shortened))"
+    }
+  }
+
+  /// Dựng màn tập cho kế hoạch hiện tại. Không thay controller đang có tiến
+  /// độ: kế hoạch mới (server sau cache) chỉ áp khi chưa tick gì.
   private func install() {
-    let plan = today?.sessionPlan ?? (useSample ? WorkoutLabPlan.plan(on: today?.date ?? LocalDate(SystemWallClock().nowMillis(), in: .current)) : nil)
-    guard let plan else {
+    guard let today else { return }
+    let sync = services.sync
+    let rest = self.rest
+    let onRest: @MainActor (RestEvent, PlannedSet?) -> Void = { event, next in
+      rest.handle(event, target: next.map { RestTarget(exerciseName: $0.exerciseName, setNumber: $0.ordinal, totalSets: $0.of) })
+    }
+    let onEnqueued: @MainActor (OutboxEntry) -> Void = { _ in sync.kick() }
+    var next = today.makeSession(onRest: onRest, onEnqueued: onEnqueued)
+    if next == nil, useSample {
+      next = WorkoutSessionController(
+        plan: WorkoutLabPlan.plan(on: today.today), userId: user.userId, store: services.workouts,
+        onRest: onRest, onEnqueued: onEnqueued)
+    }
+    guard let next else {
       controller = nil
       return
     }
-    if let c = controller, c.plan == plan || c.phase != .idle { return }
-    let sync = services.sync
-    let rest = self.rest
-    let c = WorkoutSessionController(
-      plan: plan, userId: user.userId, store: services.workouts,
-      onRest: { event, next in
-        rest.handle(event, target: next.map { RestTarget(exerciseName: $0.exerciseName, setNumber: $0.ordinal, totalSets: $0.of) })
-      },
-      onEnqueued: { _ in sync.kick() })
-    controller = c
-    Task { await c.load() }
-  }
-}
-
-private extension TodayPlan {
-  /// Chưa có cache và server không trả lời: chưa biết gì về hôm nay.
-  static func unknown(_ date: LocalDate) -> TodayPlan {
-    WorkoutPlanning.plan(for: date, today: date, routine: [], templates: [])
+    if let c = controller, (c.plan == next.plan && c.loggedElsewhere == next.loggedElsewhere) || c.phase != .idle { return }
+    controller = next
+    Task { await next.load() }
   }
 }
 
@@ -192,7 +193,7 @@ private struct LabWorkout: View {
   var body: some View {
     Group {
       Section {
-        LabRow(label: "Phase", value: "\(c.phase)")
+        LabRow(label: "Phase", value: "\(c.phase)\(c.loggedElsewhere ? " · logged elsewhere" : "")")
         LabRow(label: "Day key", value: c.key)
         if let u = c.unsaved {
           LabRow(label: "UNSAVED", value: u.message).foregroundStyle(.red)
