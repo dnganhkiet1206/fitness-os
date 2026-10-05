@@ -53,7 +53,10 @@ public struct AdjustRestIntent: LiveActivityIntent {
 /// `RestActivityDriver` thật. Không giữ bảng id trong bộ nhớ (bản RN mất bảng
 /// ấy khi JS nạp lại và `update` ném lỗi bị nuốt — #227 H2): luôn hỏi hệ
 /// thống activity nào đang sống.
-@MainActor
+///
+/// KHÔNG `@MainActor`: `Activity` không `Sendable`, và gọi `end`/`update` của
+/// nó từ main actor là "gửi" nó sang ngữ cảnh khác (Swift 6 từ chối). ActivityKit
+/// không đòi main thread; thứ tự các lời gọi đã do `RestTimerController` giữ.
 public struct ActivityKitRestDriver: RestActivityDriver {
   public init() {}
 
