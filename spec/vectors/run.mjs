@@ -20,6 +20,7 @@ import { fileURLToPath } from 'node:url';
 // để node --experimental-strip-types chạy được.
 import { restLabel } from './lib/prescription.ts';
 import { parseRepEntry } from './lib/rep-entry.ts';
+import { findRecords } from './lib/personal-record.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const problems = [];
@@ -46,28 +47,17 @@ function clampRest(n) {
 
 const entered = (e) => e.reps > 0 || (e.durationSec ?? 0) > 0;
 
-/* ── checkRecord: BẢN CHÉP GIẢN LƯỢC từ native/src/lib/personal-record.ts ──
- * RN thật dùng findRecords() phức tạp; bản này giữ logic cốt lõi cho vectors
- * WS-8, ĐÃ SỬA theo #495: round2(weight) trước khi so (như RN dòng 179, 203).
- * round2: Math.round(w * 100) / 100 */
-const WEIGHT_EPSILON_KG = 0.05;
-const round2 = (w) => Math.round(w * 100) / 100;
-const weightKey = (w) => (Math.round(w / WEIGHT_EPSILON_KG) * WEIGHT_EPSILON_KG).toFixed(2);
-function counts(s) {
-  return s.warmup !== true && Number.isFinite(s.weight) && Number.isFinite(s.reps)
-    && s.reps >= 1 && s.weight >= 0;
-}
+/* ── checkRecord: GỌI THẬT findRecords từ native/src/lib/personal-record.ts ──
+ * (copy vào spec/vectors/lib/ với import đã sửa, như restLabel/parseRepEntry).
+ * Ánh xạ input vector → RN: history {topWeight, repsByWeight} → Bests;
+ * set → RecordSet với exerciseName 'X' (exerciseKey('X') === 'x', đã verify).
+ * Không còn bản chép thuật toán. */
 function checkRecord(set, history) {
-  const hasHistory = (history.topWeight ?? 0) > 0 || Object.keys(history.repsByWeight ?? {}).length > 0;
-  if (!hasHistory) return { isRecord: false };
-  if (!counts(set)) return { isRecord: false };
-  const w = round2(set.weight), r = set.reps;  // #495: round2 như RN
-  if (w > 0 && w > round2(history.topWeight ?? 0) + WEIGHT_EPSILON_KG)
-    return { isRecord: true, kind: 'weight' };
-  const prev = history.repsByWeight?.[weightKey(w)];
-  if (prev === undefined) return { isRecord: false };
-  if (r > prev) return { isRecord: true, kind: 'reps' };
-  return { isRecord: false };
+  const h = history ?? {};
+  const has = (h.topWeight ?? 0) > 0 || Object.keys(h.repsByWeight ?? {}).length > 0;
+  const r = findRecords([{ exerciseName: 'X', ...set }],
+    has ? { x: { topWeight: h.topWeight ?? 0, repsAt: h.repsByWeight ?? {} } } : {});
+  return r.length ? { isRecord: true, kind: r[0].kind } : { isRecord: false };
 }
 
 /* ── volume: WS-5 (dùng parseRepEntry thật) ── */
@@ -115,6 +105,13 @@ function runVector(v) {
 
 for (const f of ['rest-timer.json', 'workout-state.json']) {
   const vectors = JSON.parse(readFileSync(path.join(ROOT, 'spec', 'vectors', f), 'utf8'));
+  // Không trùng id vector — Swift runner của A (GoldenVectorTests.everySpecVectorFileIsWellFormed)
+  // từ chối id trùng; báo lỗi ở đây để JS cũng bắt được (#504).
+  const seen = new Set();
+  for (const v of vectors) {
+    if (seen.has(v.rule)) problems.push(`${f}: duplicate vector id ${v.rule}`);
+    seen.add(v.rule);
+  }
   for (const v of vectors) runVector(v);
 }
 
