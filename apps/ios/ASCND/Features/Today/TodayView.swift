@@ -37,11 +37,9 @@ public struct TodayView: View {
       }
       .navigationTitle(Text("tab.today"))
     }
-    // VoiceOver đọc trạng thái + tên buổi (#275).
-    .accessibilityLabel(Text(voiceOverLabel))
   }
 
-  // MARK: - Nhãn đọc màn hình
+  // MARK: - Nhãn trạng thái (copy từ baseline RN)
 
   private var statusText: String {
     switch state.status {
@@ -51,13 +49,6 @@ public struct TodayView: View {
     case .rest: String(localized: "today.status.rest")
     case .unplanned: String(localized: "today.status.unplanned")
     }
-  }
-
-  private var voiceOverLabel: String {
-    if let name = state.templateName {
-      return "\(statusText): \(name)"
-    }
-    return statusText
   }
 
   // MARK: - todo: có buổi, chưa tập
