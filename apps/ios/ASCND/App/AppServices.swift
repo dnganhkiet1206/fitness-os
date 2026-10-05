@@ -27,6 +27,8 @@ final class AppServices {
   @ObservationIgnored let recordCache: any RecordBookCache
   @ObservationIgnored let performanceSource: any PerformanceSource
   @ObservationIgnored let performanceCache: any PerformanceCache
+  /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
+  @ObservationIgnored private let readCache: GRDBTemplateCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
@@ -54,6 +56,7 @@ final class AppServices {
 
     workouts = GRDBWorkoutStore(database)
     let templateCache = GRDBTemplateCache(database)
+    readCache = templateCache
     templates = TodayRepository(
       source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
       cache: templateCache)
@@ -99,6 +102,12 @@ final class AppServices {
   /// Tầng ứng dụng của màn Today cho người đang đăng nhập (#271).
   func makeToday(userId: String) -> TodayController {
     TodayController(userId: userId, repository: templates, history: history, workouts: workouts)
+  }
+
+  /// Phiên của `userId` bắt đầu: bỏ read model của mọi người khác. Lượt làm
+  /// mới của người vừa rời đi có thể về SAU lượt dọn lúc đăng xuất (#335).
+  func forgetOtherAccounts(keeping userId: String) async {
+    _ = try? await readCache.clearAll(except: userId)
   }
 
   /// Việc dọn thêm khi phiên kết thúc, của những thứ không do AppServices

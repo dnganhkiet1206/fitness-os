@@ -97,7 +97,10 @@ extension InMemoryWorkoutStore: OutboxPersistence {
   }
 
   public func dropAllOnSignOut() async throws -> Int {
-    defer { outbox = [] }
+    defer {
+      outbox = []
+      deadEntries = []
+    }
     return outbox.count
   }
 }

@@ -276,6 +276,25 @@ struct GRDBRecordBookCacheTests {
   }
 }
 
+/// #335: đăng nhập dọn read model của mọi người khác — kể cả hàng mà lượt
+/// làm mới của người vừa rời đi ghi SAU lượt dọn lúc đăng xuất.
+struct ReadCacheAccountTests {
+  @Test func signInForgetsEveryOtherAccount() async throws {
+    let db = try ASCNDDatabase()
+    let templates = GRDBTemplateCache(db)
+    let records = GRDBRecordBookCache(db)
+    let snap = TemplateSnapshot(routine: [], templates: [], fetchedAt: EpochMillis(1))
+    let bests = PersonalRecords.bests(from: [RecordSet(exerciseName: "Bench", weightKg: 100, reps: 5)])
+    try await templates.save(userId: "u1", snap)
+    try await records.save(userId: "u1", bests)
+    try await templates.save(userId: "u2", snap)
+    #expect(try await templates.clearAll(except: "u2") == 2)
+    #expect(try await templates.load(userId: "u1") == nil)
+    #expect(try await records.load(userId: "u1") == nil)
+    #expect(try await templates.load(userId: "u2") == snap)
+  }
+}
+
 struct GRDBPerformanceCacheTests {
   @Test func roundTripPerUser() async throws {
     let db = try ASCNDDatabase()

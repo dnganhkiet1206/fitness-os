@@ -36,6 +36,8 @@ public final class WorkoutFlow {
   @ObservationIgnored private var refreshing: Task<Void, Never>?
   /// Lần cuối dữ liệu server về đủ (`TodayController.failure == nil`).
   @ObservationIgnored private var freshAt: EpochMillis?
+  /// Phiên đã kết thúc (`close`): không làm mới, không nuốt gì nữa.
+  @ObservationIgnored private var closed = false
 
   /// `staleTime` của baseline (`query-client.ts:85`): một phút. Cũ hơn thì
   /// ra tiền cảnh / có mạng lại là làm mới.
@@ -72,8 +74,18 @@ public final class WorkoutFlow {
     _ = await (records, performance)
   }
 
+  /// Phiên kết thúc (đăng xuất, đổi tài khoản): huỷ lượt làm mới đang bay —
+  /// truy vấn mạng bị huỷ thì không có gì để ghi vào cache của người vừa rời
+  /// đi. Lượt nào lọt qua khe vẫn bị `clearAll(except:)` dọn ở lần đăng nhập.
+  public func close() {
+    closed = true
+    refreshing?.cancel()
+    absorbing?.cancel()
+  }
+
   /// Kéo để làm mới. Gọi chồng thì chờ lượt đang chạy.
   public func refresh() async {
+    guard !closed else { return }
     if let running = refreshing {
       await running.value
       return
@@ -88,6 +100,7 @@ public final class WorkoutFlow {
   /// đổi; dữ liệu cũ hơn một phút thì làm mới — template sửa ở máy khác hiện
   /// ra mà không cần kéo.
   public func becameActive() async {
+    guard !closed else { return }
     await today.clockTick()
     if isStale {
       await refresh()
@@ -98,7 +111,7 @@ public final class WorkoutFlow {
 
   /// Có mạng lại (`refetchOnReconnect` của baseline).
   public func reconnected() async {
-    if isStale { await refresh() }
+    if !closed, isStale { await refresh() }
   }
 
   /// Chưa từng về đủ, lần cuối hỏng, hoặc quá một phút.
@@ -205,6 +218,7 @@ public final class WorkoutFlow {
     { [weak self] entry in
       guard let self else { return }
       self.onEnqueued(entry)
+      guard !closed else { return }
       let previous = absorbing
       absorbing = Task {
         await previous?.value
