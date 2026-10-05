@@ -67,7 +67,7 @@ struct AuthView: View {
                 contentType: .username,
                 keyboard: .emailAddress
               )
-              fieldError(emailError)
+              fieldError(attemptedSubmit ? emailError : nil)
 
               if mode != .forgot {
                 SecureField(
@@ -81,7 +81,7 @@ struct AuthView: View {
                 .background(DS.Color.secondary.swiftUI)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                 .accessibilityLabel(Text(String(localized: "auth.password")))
-                fieldError(passwordError)
+                fieldError(attemptedSubmit ? passwordError : nil)
 
                 // Nhập lại mật khẩu (chỉ signup, #313).
                 if mode == .signup {
@@ -96,7 +96,7 @@ struct AuthView: View {
                   .background(DS.Color.secondary.swiftUI)
                   .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                   .accessibilityLabel(Text(String(localized: "auth.confirmPassword")))
-                  fieldError(confirmError)
+                  fieldError(attemptedSubmit ? confirmError : nil)
                 }
               }
 
@@ -122,13 +122,14 @@ struct AuthView: View {
                 style: .primary,
                 action: { Task { await submit() } }
               )
-              .disabled(!canSubmit || busy)
+              .disabled(busy)
               .opacity(canSubmit && !busy ? 1 : 0.5)
 
               if mode == .signin {
                 Button(String(localized: "auth.forgot")) {
                   mode = .forgot
                   errorMessage = nil
+                  attemptedSubmit = false
                 }
                 .font(DS.TextStyle.footnote)
                 .foregroundStyle(DS.Color.metricBlue.swiftUI)
@@ -154,6 +155,7 @@ struct AuthView: View {
             Button {
               mode = mode == .signin ? .signup : .signin
               errorMessage = nil
+              attemptedSubmit = false
             } label: {
               Text(mode == .signin
                 ? String(localized: "auth.switchToSignup")
@@ -172,6 +174,7 @@ struct AuthView: View {
               mode = .signin
               errorMessage = nil
               resetSent = false
+              attemptedSubmit = false
             }
             .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.metricBlue.swiftUI)
@@ -271,6 +274,8 @@ struct AuthView: View {
   // MARK: - Gửi
 
   private func submit() async {
+    // Đánh dấu đã chạm submit — lỗi field chỉ hiện từ đây (#313).
+    attemptedSubmit = true
     guard canSubmit, !busy else { return }
     busy = true
     defer { busy = false }
