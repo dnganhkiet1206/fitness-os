@@ -50,7 +50,7 @@ public struct SyncStrip: View {
       Image(systemName: systemImage)
         .foregroundStyle(tint.swiftUI)
       Text(text)
-        .font(DS.Type.footnote)
+        .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.foreground.swiftUI)
       Spacer(minLength: 0)
     }

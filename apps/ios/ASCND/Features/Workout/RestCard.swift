@@ -52,7 +52,7 @@ public struct RestCard: View {
               )
               .rotationEffect(.degrees(-90))
             Text("\(left)s")
-              .font(DS.Type.mono(.title))
+              .font(DS.TextStyle.mono(.title))
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .monospacedDigit()
           }
@@ -68,15 +68,15 @@ public struct RestCard: View {
 
           VStack(alignment: .leading, spacing: DS.Spacing.xs) {
             Text(String(localized: "workout.rest.title"))
-              .font(DS.Type.headline)
+              .font(DS.TextStyle.headline)
               .foregroundStyle(DS.Color.foreground.swiftUI)
             if warning {
               Text(String(localized: "workout.rest.warning"))
-                .font(DS.Type.footnote)
+                .font(DS.TextStyle.footnote)
                 .foregroundStyle(DS.Color.destructive.swiftUI)
             } else {
               Text(String(localized: "workout.rest.hint"))
-                .font(DS.Type.footnote)
+                .font(DS.TextStyle.footnote)
                 .foregroundStyle(DS.Color.mutedForeground.swiftUI)
             }
           }
@@ -92,7 +92,7 @@ public struct RestCard: View {
           Button(String(localized: "workout.rest.skip")) {
             onSkip()
           }
-          .font(DS.Type.footnote)
+          .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.metricBlue.swiftUI)
           .frame(minHeight: 44)
           .accessibilityAddTraits(.isButton)
@@ -106,7 +106,7 @@ public struct RestCard: View {
       onAdjust(delta)
     } label: {
       Text(delta > 0 ? "+\(delta)s" : "\(delta)s")
-        .font(DS.Type.footnote)
+        .font(DS.TextStyle.footnote)
         .padding(.horizontal, DS.Spacing.md)
         .frame(minHeight: 44)
         .background(DS.Color.secondary.swiftUI)

@@ -483,7 +483,7 @@ private struct WorkoutPreviewHost: View {
       await controller.load()
       _ = await controller.toggle("bp1")
     case .empty:
-      store = InMemoryWorkoutStore()
+      store = PreviewStore()
       controller = WorkoutSessionController(plan: plan, userId: "u1", store: store)
       await controller.load()
     }
