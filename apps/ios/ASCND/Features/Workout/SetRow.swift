@@ -57,6 +57,9 @@ public struct SetRow: View {
   var onToggle: () -> Void
   /// Focus state từ parent (để giữ focus khi weight → reps).
   @FocusState.Binding var focusedField: WorkoutFieldFocus?
+  /// Local editable state — đồng bộ từ display, gọi callback khi đổi.
+  @State private var weightText: String
+  @State private var repsText: String
 
   public init(
     display: SetRowDisplay,
@@ -67,6 +70,8 @@ public struct SetRow: View {
   ) {
     self.display = display
     self._focusedField = focusedField
+    self._weightText = State(initialValue: display.weightText)
+    self._repsText = State(initialValue: display.repsText)
     self.onWeightChange = onWeightChange
     self.onRepsChange = onRepsChange
     self.onToggle = onToggle
@@ -102,7 +107,10 @@ public struct SetRow: View {
 
         // Weight field
         VStack(alignment: .trailing, spacing: 2) {
-          TextField("", text: .constant(display.weightText))
+          TextField("", text: $weightText)
+            .onChange(of: weightText) { _, newValue in
+              onWeightChange(newValue)
+            }
             .keyboardType(.decimalPad)
             .multilineTextAlignment(.trailing)
             .font(DS.TextStyle.body.monospacedDigit())
@@ -125,7 +133,10 @@ public struct SetRow: View {
 
         // Reps field
         VStack(alignment: .trailing, spacing: 2) {
-          TextField("", text: .constant(display.repsText))
+          TextField("", text: $repsText)
+            .onChange(of: repsText) { _, newValue in
+              onRepsChange(newValue)
+            }
             .keyboardType(.numberPad)
             .multilineTextAlignment(.trailing)
             .font(DS.TextStyle.body.monospacedDigit())
