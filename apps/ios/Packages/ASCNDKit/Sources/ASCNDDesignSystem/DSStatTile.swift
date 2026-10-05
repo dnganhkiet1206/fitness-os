@@ -19,15 +19,15 @@ public struct DSStatTile: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.xs) {
       Text(label)
-        .font(DS.Type.caption)
+        .font(DS.TextStyle.caption)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       HStack(alignment: .firstTextBaseline, spacing: 4) {
         Text(value)
-          .font(DS.Type.mono(.title))
+          .font(DS.TextStyle.mono(.title))
           .foregroundStyle(DS.Color.foreground.swiftUI)
         if let unit {
           Text(unit)
-            .font(DS.Type.footnote)
+            .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
       }
