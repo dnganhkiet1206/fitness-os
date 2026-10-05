@@ -52,7 +52,8 @@ public extension DS {
 }
 
 /// Một màu có hai biến thể light/dark, đọc từ trait của hệ thống.
-public struct DSColor {
+/// Token màu bất biến — `Sendable` để dùng được trong `static let` (Swift 6).
+public struct DSColor: Sendable {
   let light: (Int, Int, Int)
   let dark: (Int, Int, Int)
 
