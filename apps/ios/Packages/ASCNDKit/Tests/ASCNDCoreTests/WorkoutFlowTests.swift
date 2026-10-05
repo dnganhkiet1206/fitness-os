@@ -415,6 +415,19 @@ struct WorkoutFlowTests {
 /// Các mảnh thật nối như trong app (`AppServices`): một store giữ cả ngày lẫn
 /// outbox (như một tệp SQLite), `SyncWorker` thật, server giả có bảng
 /// `workout_sessions`. "Kill app" = vứt flow + worker, giữ store và server.
+/// Lịch sử đọc thẳng từ bảng của server giả.
+private struct ServerHistory: HistorySource {
+  let server: FakeServer
+  func sessions(userId: String, since: EpochMillis) async throws -> [JSONValue] {
+    Array(await server.table.values)
+  }
+}
+private actor HistoryCaches: HistoryCache {
+  var store: [String: [HistoryEntry]] = [:]
+  func load(userId: String) async throws -> [HistoryEntry]? { store[userId] }
+  func save(userId: String, _ entries: [HistoryEntry]) async throws { store[userId] = entries }
+}
+
 @MainActor
 private final class Pipeline {
   let clock = ManualClock(EpochMillis(mondayAt2pm))
@@ -422,6 +435,7 @@ private final class Pipeline {
   let server = FakeServer()
   let templates = Templates(snap(template(sets: 3)))
   let caches = Caches()
+  let historyCache = HistoryCaches()
   private(set) var flow: WorkoutFlow!
   private(set) var worker: SyncWorker!
 
@@ -434,10 +448,13 @@ private final class Pipeline {
     let today = TodayController(
       userId: "u1", repository: TodayRepository(source: templates, cache: templates), history: NoHistory(),
       workouts: store, clock: clock, timeZone: saigon)
+    let history = HistoryBook(
+      userId: "u1", source: ServerHistory(server: server), cache: historyCache, store: store, clock: clock,
+      onEnqueued: { _ in worker.kick() })
     flow = WorkoutFlow(
       today: today, records: RecordBook(userId: "u1", history: NoHistory(), cache: caches),
       performance: PerformanceBook(userId: "u1", source: NoHistory(), cache: caches, clock: clock, timeZone: saigon),
-      store: store, clock: clock, timeZone: saigon, onEnqueued: { _ in worker.kick() })
+      history: history, store: store, clock: clock, timeZone: saigon, onEnqueued: { _ in worker.kick() })
   }
 
   /// `AppServices.start()`: thử gửi hàng đợi ngay khi mở.
@@ -531,6 +548,36 @@ struct WorkoutPipelineTests {
     #expect(await p.server.table.isEmpty)
     #expect(await p.store.outbox.isEmpty)
     #expect(p.flow.today.plan?.status == .todo)
+  }
+
+  /// #400: chốt → hiện ngay trong lịch sử → xoá từ lịch sử lúc offline: hôm
+  /// nay thôi "đã tập", buổi đang mở đọc lại (không còn giữ set nào, không
+  /// còn tổng kết), "lần trước" quên nó → có mạng: hàng biến khỏi server, và
+  /// lịch sử làm mới không hồi sinh nó.
+  @Test func deletingFromHistoryReachesTodayTheSessionAndTheServer() async throws {
+    let p = Pipeline()
+    await p.start()
+    let s = try #require(p.flow.session)
+    await s.toggle("0-0")
+    let summary = try await p.flow.finish()
+    await p.worker.settle()
+    await p.flow.settled()
+    let history = try #require(p.flow.history)
+    #expect(history.entries.map(\.id) == [summary.sessionId], "WH-4a")
+
+    p.worker.setOnline(false)
+    try await history.delete(summary.sessionId)
+    await p.flow.settled()
+    #expect(history.entries.isEmpty)
+    #expect(p.flow.today.plan?.status == .todo)
+    #expect(s.loggedKeys.isEmpty && s.summary == nil)
+    #expect(p.flow.performance.last(for: "Bench") == nil)
+
+    p.worker.setOnline(true)
+    await p.worker.settle()
+    #expect(await p.server.table.isEmpty)
+    await history.refresh()
+    #expect(history.entries.isEmpty)
   }
 
   /// Gỡ rồi hoàn tác trước khi có mạng: server nhận đủ ba lệnh theo thứ tự và

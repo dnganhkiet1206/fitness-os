@@ -85,6 +85,17 @@ public actor InMemoryWorkoutStore: WorkoutStore {
     return true
   }
 
+  public func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws {
+    try await enter()
+    guard !outbox.contains(where: { $0.id == entry.id }) else { return }
+    for (k, s) in days where s.loggedSessionId == sessionId {
+      var state = s
+      state.loggedKeys = []
+      days[k] = state
+    }
+    outbox.append(entry)
+  }
+
   /// Ngày đã chốt bằng id khác → từ chối, không ghi gì (hợp đồng `WorkoutStore`).
   private func locked(_ key: String, against id: String?) throws {
     if let logged = days[key]?.loggedSessionId, logged != id {

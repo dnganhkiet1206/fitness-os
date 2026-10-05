@@ -64,6 +64,12 @@ public protocol WorkoutStore: Sendable {
   /// `true` nếu hàng outbox mới được chèn, `false` nếu id đã có từ trước.
   @discardableResult
   func commitFinish(_ key: String, _ state: DayState, _ entry: OutboxEntry) async throws -> Bool
+
+  /// Xoá cả buổi từ lịch sử (#400): MỘT giao dịch — hàng outbox xoá, và mọi
+  /// ngày trên máy đã chốt bằng `sessionId` thôi giữ set nào trong buổi
+  /// (`loggedKeys` rỗng: Today hết "đã tập", tick lại thì nối thêm dựng lại
+  /// buổi). Id hàng outbox đã có → không ghi lại gì.
+  func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws
 }
 
 /// Ngày đã được chốt bằng buổi `sessionId` — bởi controller khác, hay trước
