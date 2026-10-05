@@ -82,7 +82,7 @@ public struct WorkoutHistoryView: View {
           DSErrorView(message: message, onRetry: onRetry)
         }
       }
-      .navigationTitle(Text("history.title"))
+      .navigationTitle(String(localized: "history.title"))
     }
   }
 
@@ -134,7 +134,12 @@ public struct WorkoutHistoryView: View {
     .padding(.vertical, DS.Spacing.xs)
     .accessibilityElement(children: .combine)
     .accessibilityLabel(
-      Text("\(s.templateName), \(s.volumeKg) kg, \(s.completedSets) sets")
+      Text(
+        String(
+          format: String(localized: "history.a11y.row"),
+          s.templateName, s.volumeKg, s.completedSets
+        )
+      )
     )
   }
 
