@@ -7,7 +7,7 @@ import UIKit
 struct ASCNDApp: App {
   @Environment(\.scenePhase) private var scenePhase
   @State private var rest: RestTimerController
-  @State private var services = AppServices()
+  @State private var services: AppServices
 
   init() {
     let store = RestTimerStore()
@@ -18,6 +18,11 @@ struct ASCNDApp: App {
     // RT-6: hết giờ tự nhiên → một rung "thành công", đúng một lần.
     controller.onRestFinished = { UINotificationFeedbackGenerator().notificationOccurred(.success) }
     _rest = State(initialValue: controller)
+    let services = AppServices()
+    _services = State(initialValue: services)
+    // Quãng nghỉ (và Live Activity trên màn khoá, có tên bài) của người vừa
+    // rời đi không ở lại cho người sau.
+    services.onSessionEnded { controller.handle(.cancel) }
     // Gán ngay trong init: khi hệ thống mở app ở nền chỉ để chạy nút ±15 của
     // Island, không có view nào xuất hiện — intent vẫn phải tìm được controller.
     RestIntentRouter.adjust = { delta in controller.adjust(by: delta) }
@@ -25,7 +30,7 @@ struct ASCNDApp: App {
 
   var body: some Scene {
     WindowGroup {
-      RootTabView()
+      RootGate()
         .environment(rest)
         .environment(services)
         .task { await rest.reconcile() }

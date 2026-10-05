@@ -74,6 +74,24 @@ struct SessionStoreTests {
   }
 
   /// Mở app khi chưa từng đăng nhập: không có ai để dọn.
+  /// Phiên bị thay thẳng bằng tài khoản khác (không có `signedOut`): dữ
+  /// liệu của người trước vẫn phải được dọn. Cùng người làm mới token thì không.
+  @Test func switchingAccountsRunsCleanup() async {
+    let api = FakeAuth(stored: .success(alice))
+    let store = SessionStore(api: api)
+    var cleaned = 0
+    store.onSignedOut { cleaned += 1 }
+    await store.start()
+    api.emit(.tokenRefreshed, alice)
+    await eventually { false }
+    #expect(cleaned == 0, "làm mới token của cùng người không phải kết thúc phiên")
+    let bob = AuthSession(userId: "u-bob", email: "b@example.com")
+    api.emit(.signedIn, bob)
+    await eventually { cleaned == 1 }
+    #expect(cleaned == 1)
+    #expect(store.phase == .signedIn(bob))
+  }
+
   @Test func initialSessionWithoutUserIsNotASignOut() async {
     let api = FakeAuth()
     let store = SessionStore(api: api)

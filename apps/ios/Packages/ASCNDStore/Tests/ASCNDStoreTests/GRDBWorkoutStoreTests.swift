@@ -80,6 +80,18 @@ struct GRDBWorkoutStoreTests {
     #expect(day?.progress.done == ["a": true])
   }
 
+  /// Đăng xuất: ngày đã chốt của người trước không còn khoá người sau.
+  @Test func clearAllDropsEveryDayIncludingLocks() async throws {
+    let db = try ASCNDDatabase()
+    let store = GRDBWorkoutStore(db)
+    try await store.commitFinish("k", DayState(loggedSessionId: "s1"), entry("s1"))
+    try await store.saveDay("k2", ticked("a"))
+    #expect(try await store.clearAll() == 2)
+    #expect(try await store.loadDay("k") == nil)
+    try await store.commitFinish("k", DayState(loggedSessionId: "s2"), entry("s2"))
+    #expect(try await store.loadDay("k")?.loggedSessionId == "s2")
+  }
+
   @Test func pruneKeepsFourteenDays() async throws {
     let store = GRDBWorkoutStore(try ASCNDDatabase())
     let today = try #require(LocalDate("2026-10-05"))
