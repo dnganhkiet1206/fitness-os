@@ -912,6 +912,11 @@ const STEPS = [
     call-site — mọi chỗ qua waterQuickAmounts.
   */
   ['preset nước', 'node', ['tools/water-presets.mjs']],
+  /*
+    Golden vectors: mỗi tệp spec/vectors/*.json phải đăng ký runner trong
+    runners.json — vector không runner là vector không ai chạy (#328).
+  */
+  ['vector runners', 'node', ['../spec/vectors/check-runners.mjs']],
 ];
 
 /*
