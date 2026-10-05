@@ -18,7 +18,12 @@ public struct SupabaseRemoteWriter: RemoteWriter {
   /// là bản ghi bản build này không phát lại được (`UnusableWriteError`).
   static let tables: [String: String] = [
     WorkoutSessionRecord.outboxKind: "workout_sessions",
+    WorkoutSessionRecord.revisionKind: "workout_sessions",
   ]
+
+  /// Bản ghi lại (#296) GHI ĐÈ hàng có sẵn; bản ghi mới thì bỏ trùng
+  /// (`IDEMPOTENT`). Cả hai đều idempotent: phát lại cùng nội dung ra cùng hàng.
+  static func overwrites(_ kind: String) -> Bool { kind == WorkoutSessionRecord.revisionKind }
 
   private let client: SupabaseClient
   private let afterWrite: @Sendable (OutboxEntry) async -> Void
@@ -38,7 +43,7 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     guard let table = Self.tables[entry.kind], Self.isRow(entry) else { throw .unusable }
     do {
       try await client.from(table)
-        .upsert(entry.payload, onConflict: "id", ignoreDuplicates: true)
+        .upsert(entry.payload, onConflict: "id", ignoreDuplicates: !Self.overwrites(entry.kind))
         .execute()
     } catch {
       throw Self.classify(error)
@@ -46,10 +51,12 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     await afterWrite(entry)
   }
 
-  /// Payload phải là một hàng có `id` trùng id bản ghi — không thì upsert theo
-  /// `id` không còn idempotent, và phát lại thành hàng mới.
+  /// Payload phải là một hàng có `id` khớp bản ghi — không thì upsert theo
+  /// `id` không còn idempotent, và phát lại thành hàng mới. Bản ghi lại mang
+  /// id `"<buổi>@<số hàng>"`, hàng của nó là `<buổi>`.
   static func isRow(_ entry: OutboxEntry) -> Bool {
-    entry.payload["id"]?.stringValue == entry.id
+    guard let rowId = entry.payload["id"]?.stringValue, !rowId.isEmpty else { return false }
+    return overwrites(entry.kind) ? entry.id.hasPrefix(rowId + "@") : rowId == entry.id
   }
 
   /// Dịch lỗi của supabase-swift / URLSession về `WriteFailure`.

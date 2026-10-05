@@ -64,6 +64,19 @@ struct RemoteWriterClassifyTests {
     #expect(!SupabaseRemoteWriter.isRow(e(.null)))
   }
 
+  /// Bản ghi lại (#296): id hàng outbox `"<buổi>@<n>"`, hàng là `<buổi>`; ghi đè.
+  @Test func revisionRowsOverwriteTheSession() {
+    func e(_ id: String, _ row: String) -> OutboxEntry {
+      OutboxEntry(id: id, userId: "u", kind: "workout-revision", payload: .object(["id": .string(row)]), createdAt: EpochMillis(0))
+    }
+    #expect(SupabaseRemoteWriter.isRow(e("s1@3", "s1")))
+    #expect(!SupabaseRemoteWriter.isRow(e("s1@3", "s2")))
+    #expect(!SupabaseRemoteWriter.isRow(e("s1", "s1")))
+    #expect(SupabaseRemoteWriter.overwrites("workout-revision"))
+    #expect(!SupabaseRemoteWriter.overwrites("workout"))
+    #expect(SupabaseRemoteWriter.tables["workout-revision"] == "workout_sessions")
+  }
+
   @Test func workoutGoesToWorkoutSessions() {
     #expect(SupabaseRemoteWriter.tables["workout"] == "workout_sessions")
     #expect(SupabaseRemoteWriter.tables["telepathy"] == nil)
