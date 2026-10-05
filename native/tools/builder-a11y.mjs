@@ -32,6 +32,7 @@ const check = (cond, msg) => { if (!cond) problems.push(msg); };
 const list = readFileSync(path.join(BUILDER, 'TemplateListView.swift'), 'utf8');
 const weekday = readFileSync(path.join(BUILDER, 'WeekdayAssignmentView.swift'), 'utf8');
 const form = readFileSync(path.join(BUILDER, 'TemplateFormView.swift'), 'utf8');
+const builder = readFileSync(path.join(BUILDER, 'WorkoutBuilderView.swift'), 'utf8');
 
 // 1. Không onTapGesture trên hàng List — phải là Button đúng semantics.
 check(!/\.onTapGesture/.test(list),
@@ -75,9 +76,18 @@ for (const s of ['isSaving', 'saveError', 'validationError']) {
     `TemplateFormView.swift: thiếu .onChange(of: ${s}) để thông báo VoiceOver`);
 }
 
+// #462 (audit PR #410): nút Thử lại phải là callback thật (không action rỗng),
+// và các nút bordered trong builder phải đủ 44pt.
+check(/var onRetry/.test(builder) && /onRetry\(\)/.test(builder),
+  'WorkoutBuilderView.swift: nút Thử lại phải gọi callback onRetry, không để action rỗng');
+check(/\.buttonStyle\(\.bordered\)\s*\n?\s*\.frame\(minHeight:\s*44\)/.test(builder),
+  'WorkoutBuilderView.swift: nút Thử lại phải minHeight 44');
+check(/\.buttonStyle\(\.borderedProminent\)\s*\n?\s*\.frame\(minHeight:\s*44\)/.test(list),
+  'TemplateListView.swift: nút Tạo mới (empty state) phải minHeight 44');
+
 if (problems.length) {
-  console.error('builder a11y/i18n (#466):');
+  console.error('builder a11y/i18n (#466/#462):');
   for (const p of problems) console.error(`  ✗ ${p}`);
   process.exit(1);
 }
-console.log('builder a11y/i18n (#466): 4 findings được giữ (Button semantics, key đếm en/vi/es, 44pt, announcements)');
+console.log('builder a11y/i18n: #466 4 findings + #462 (onRetry thật, nút bordered 44pt) được giữ');

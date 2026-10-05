@@ -15,6 +15,8 @@ public struct WorkoutBuilderView: View {
 
   var onSaveTemplate: (_ template: MockTemplate) -> Void
   var onDeleteTemplate: (_ id: String) -> Void
+  /// Thử lại khi tải danh sách lỗi — presentation-only, tầng trên quyết định.
+  var onRetry: () -> Void
 
   public init(
     templates: [MockTemplate] = [],
@@ -22,7 +24,8 @@ public struct WorkoutBuilderView: View {
     loadError: String? = nil,
     isOffline: Bool = false,
     onSaveTemplate: @escaping (_ template: MockTemplate) -> Void = { _ in },
-    onDeleteTemplate: @escaping (_ id: String) -> Void = { _ in }
+    onDeleteTemplate: @escaping (_ id: String) -> Void = { _ in },
+    onRetry: @escaping () -> Void = {}
   ) {
     self._templates = State(initialValue: templates)
     self.isLoading = isLoading
@@ -30,6 +33,7 @@ public struct WorkoutBuilderView: View {
     self.isOffline = isOffline
     self.onSaveTemplate = onSaveTemplate
     self.onDeleteTemplate = onDeleteTemplate
+    self.onRetry = onRetry
   }
 
   public var body: some View {
@@ -119,9 +123,10 @@ public struct WorkoutBuilderView: View {
       Text(message)
         .multilineTextAlignment(.center)
       Button(String(localized: "common.retry")) {
-        // Callback retry sẽ được nối ở tầng cao hơn
+        onRetry()
       }
       .buttonStyle(.bordered)
+      .frame(minHeight: 44)
     }
     .padding()
   }

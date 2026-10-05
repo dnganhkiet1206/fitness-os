@@ -80,6 +80,7 @@ public struct TemplateListView<Template: WorkoutTemplateProtocol>: View {
         onCreate()
       }
       .buttonStyle(.borderedProminent)
+      .frame(minHeight: 44)
     }
     .padding()
     .accessibilityElement(children: .combine)
