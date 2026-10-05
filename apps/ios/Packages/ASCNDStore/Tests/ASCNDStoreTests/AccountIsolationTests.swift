@@ -147,6 +147,72 @@ struct AccountIsolationTests {
     for p in probes(reopened) { #expect(try await p.read("a"), "\(p.name): người cũ đăng nhập lại vẫn dùng được") }
   }
 
+  /// #459: xoá cũng qua chốt. A không xoá được của B; lúc không ai đăng nhập
+  /// không xoá được của ai; tên rỗng không làm gì; A xoá của chính mình thì được.
+  @Test func deleteIsFencedLikeEveryOtherMutation() async throws {
+    let db = try ASCNDDatabase()
+    let store = GRDBOnboardingStore(db)
+    func drafts(_ u: String) throws -> Int {
+      try db.queue.read {
+        try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM read_cache WHERE userId = ? AND kind = ?",
+                         arguments: [u, ReadCacheNamespace.onboardingDraft]) ?? 0
+      }
+    }
+    try await signIn(db, "b")
+    try await store.saveDraft(userId: "b", OnboardingDraft())
+    db.accounts.signIn("a")
+    try await store.saveDraft(userId: "a", OnboardingDraft())
+    try await store.clearDraft(userId: "b")
+    #expect(try drafts("b") == 1, "A không xoá được của B")
+    db.accounts.signOut()
+    try await store.clearDraft(userId: "a")
+    #expect(try drafts("a") == 1, "không ai đăng nhập: không xoá được của ai")
+    db.accounts.signIn("a")
+    try await store.clearDraft(userId: "")
+    try await store.saveDraft(userId: "", OnboardingDraft())
+    #expect(try drafts("") == 0 && drafts("a") == 1, "tên rỗng không ghi / xoá gì")
+    try await store.clearDraft(userId: "a")
+    #expect(try drafts("a") == 0, "A xoá của chính mình được")
+  }
+
+  /// #459 (TOCTOU): lượt ghi của A qua cửa lúc A còn đăng nhập nhưng phải XẾP
+  /// HÀNG chờ SQLite; trong lúc chờ, A đăng xuất và lượt dọn chạy. Chốt hỏi
+  /// trong giao dịch, nên lượt ghi tới sau không để lại gì.
+  @Test func aWriteQueuedAcrossSignOutLeavesNothing() async throws {
+    let db = try ASCNDDatabase()
+    try await signIn(db, "a")
+    let entered = DispatchSemaphore(value: 0)
+    let release = DispatchSemaphore(value: 0)
+    // Giữ hàng đợi ghi của SQLite bằng một giao dịch đang mở.
+    let blocker = Task.detached {
+      try await db.queue.write { _ in
+        entered.signal()
+        release.wait()
+      }
+    }
+    await Task.detached { entered.wait() }.value
+    let late = Task { try await GRDBProfileCache(db).save(userId: "a", Profile(row: .object(["user_id": .string("a")]))!) }
+    try await Task.sleep(nanoseconds: 50_000_000)  // lượt ghi đã qua mọi kiểm tra ngoài giao dịch
+    db.accounts.signOut()
+    release.signal()
+    try await blocker.value
+    try await late.value
+    #expect(try rows(db, "a") == 0, "lượt ghi đã qua cửa trước khi đăng xuất không ghi gì — kể cả trước lượt dọn")
+    // Thứ tự ngược: dọn trước, ghi muộn sau — vẫn không có gì.
+    try await GRDBProfileCache(db).save(userId: "a", Profile(row: .object(["user_id": .string("a")]))!)
+    #expect(try rows(db, "a") == 0)
+  }
+
+  /// Dọn xuyên tài khoản (`ReadCacheCleanup`) giữ của người mới không phân
+  /// biệt hoa thường — như chốt.
+  @Test func cleanupKeepsTheNewAccountCaseInsensitively() async throws {
+    let db = try ASCNDDatabase()
+    for p in probes(db) { try await p.write("abc") }
+    for p in probes(db) { try await p.write("other") }
+    try await ReadCacheCleanup(db).forgetEveryone(except: "ABC")
+    #expect(try rows(db, "abc") > 0 && rows(db, "other") == 0)
+  }
+
   /// Chốt: tên tài khoản không phân biệt hoa thường; tên rỗng không bao giờ.
   @Test func scopeMatchesCaseInsensitivelyAndNeverEmpty() {
     let s = AccountScope()
