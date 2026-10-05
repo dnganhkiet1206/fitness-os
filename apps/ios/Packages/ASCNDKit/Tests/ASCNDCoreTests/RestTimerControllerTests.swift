@@ -16,11 +16,19 @@ private final class FakeDriver: RestActivityDriver, @unchecked Sendable {
     self.startDelayNanos = startDelayNanos
   }
 
+  private var _startsBegun = 0
+
   var calls: [Call] { lock.withLock { _calls } }
   var showing: RestActivityContent? { lock.withLock { _showing } }
 
+  /// Đợi tới khi một `start` đã vào driver (đang bay).
+  func untilStartBegins() async {
+    while lock.withLock({ _startsBegun }) == 0 { await Task.yield() }
+  }
+
   func current() async -> RestActivityContent? { showing }
   func start(_ c: RestActivityContent) async {
+    lock.withLock { _startsBegun += 1 }
     if startDelayNanos > 0 { try? await Task.sleep(nanoseconds: startDelayNanos) }
     lock.withLock { _calls.append(.start(c)); _showing = c }
   }
@@ -57,7 +65,7 @@ struct RestTimerControllerTests {
     let driver = FakeDriver(startDelayNanos: 30_000_000)
     let c = RestTimerController(driver: driver, clock: clock)
     c.handle(.start(seconds: 90), target: squat)
-    await Task.yield()
+    await driver.untilStartBegins()
     clock.advance(60_000)
     c.adjust(by: 15)
     await c.flush()
@@ -72,7 +80,7 @@ struct RestTimerControllerTests {
     let driver = FakeDriver(startDelayNanos: 30_000_000)
     let c = RestTimerController(driver: driver, clock: TestClock(0))
     c.handle(.start(seconds: 90), target: squat)
-    await Task.yield()
+    await driver.untilStartBegins()
     c.handle(.cancel)
     await c.flush()
     #expect(driver.showing == nil)
@@ -154,6 +162,39 @@ struct RestTimerControllerTests {
     await c.reconcile()
     #expect(c.timer == nil)
     #expect(saved == t, "khôi phục mà đã quá hạn thì không có gì để lưu lại")
+  }
+
+  /// #274: app đã bị kill, người dùng bấm +15 trên màn khoá. Hệ thống khởi
+  /// động app Ở NỀN chỉ để chạy intent — trước cả `reconcile()`. Activity đang
+  /// hiện phải được UPDATE. Bản trước coi "chưa đọc" là "không có gì" và gọi
+  /// `start`: driver thật end mọi activity rồi `Activity.request`, mà request
+  /// từ nền bị ActivityKit từ chối → Island BIẾN MẤT đúng lúc người dùng chạm.
+  @Test func coldBackgroundIntentUpdatesTheShownActivity() async throws {
+    let t = try #require(RestTimer.start(seconds: 90, at: EpochMillis(0)))
+    let driver = FakeDriver(showing: t.activityContent(target: squat))
+    let c = RestTimerController(driver: driver, clock: TestClock(40_000), restored: (t, squat))
+    c.adjust(by: 15)
+    await c.flush()
+    #expect(driver.calls.count == 1)
+    guard case .update(let shown)? = driver.calls.first else {
+      Issue.record("phải là update, không start/end: \(driver.calls)")
+      return
+    }
+    #expect(shown.endsAt == EpochMillis(105_000))
+    #expect(shown.target == squat)
+  }
+
+  /// `reconcile()` gọi khi một vòng đồng bộ đang bay: đọc lại hệ thống TRONG
+  /// vòng, không đè `shown` từ bên ngoài — không start hai lần, không mồ côi.
+  @Test func reconcileDuringInFlightStartStartsOnce() async {
+    let driver = FakeDriver(startDelayNanos: 30_000_000)
+    let c = RestTimerController(driver: driver, clock: TestClock(0))
+    c.handle(.start(seconds: 90), target: squat)
+    await driver.untilStartBegins()
+    await c.reconcile()
+    await c.flush()
+    #expect(driver.calls.count == 1)
+    #expect(driver.showing == c.timer?.activityContent(target: squat))
   }
 
   @Test func persistsEveryChange() async {
