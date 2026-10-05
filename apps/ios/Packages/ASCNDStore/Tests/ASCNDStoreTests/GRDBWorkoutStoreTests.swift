@@ -20,6 +20,25 @@ private func tempPath() -> String {
 /// Hợp đồng `WorkoutStore` trên SQLite thật — cùng các điều mà store giả của
 /// ASCNDCore giữ, để test của controller nói đúng về bản chạy trên máy.
 struct GRDBWorkoutStoreTests {
+  /// #418: bản nháp ghi tay khứ hồi qua SQLite; ô đã ghi bị khoá như ngày
+  /// theo kế hoạch; blob cũ (không có `manual`) vẫn đọc được.
+  @Test func manualDraftRoundTripsAndLocks() async throws {
+    let store = GRDBWorkoutStore(try ASCNDDatabase())
+    let key = ManualLogController.slotKey(date: LocalDate("2026-10-05")!, 0)
+    let draft = ManualDraft(name: "Arms", rpe: 8, rows: [
+      ManualSetRow(id: "r1", exerciseName: "Curl", weight: "12.5", reps: "45s", warmup: true),
+    ], planUsed: true)
+    try await store.saveDay(key, DayState(manual: draft))
+    #expect(try await store.loadDay(key)?.manual == draft)
+    try await store.commitFinish(key, DayState(loggedSessionId: "s1", manual: draft), entry("s1"))
+    await #expect(throws: DayAlreadyLogged.self) { try await store.saveDay(key, DayState(manual: draft)) }
+    await #expect(throws: DayAlreadyLogged.self) {
+      try await store.commitFinish(key, DayState(loggedSessionId: "s2", manual: draft), entry("s2"))
+    }
+    let old = try JSONDecoder().decode(DayState.self, from: Data(#"{"progress":{"done":{}}}"#.utf8))
+    #expect(old.manual == nil)
+  }
+
   @Test func saveThenLoad() async throws {
     let store = GRDBWorkoutStore(try ASCNDDatabase())
     #expect(try await store.loadDay("k") == nil)
