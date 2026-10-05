@@ -11,6 +11,8 @@ public actor InMemoryWorkoutStore: WorkoutStore {
 
   public private(set) var days: [String: DayState]
   public private(set) var outbox: [OutboxEntry] = []
+  /// Hàng đã sang `dead` — khi store này đóng vai `OutboxPersistence`.
+  public private(set) var deadEntries: [DeadEntry] = []
   public private(set) var writes = 0
   private var failures = 0
   private var loadFailures = 0
@@ -73,5 +75,29 @@ public actor InMemoryWorkoutStore: WorkoutStore {
       failures -= 1
       throw Failure()
     }
+  }
+}
+
+/// Cùng một store đóng vai nơi lưu của vòng sync — như bản GRDB, nơi ngày đã
+/// chốt và hàng outbox nằm chung một tệp. Test đầu-cuối nhờ vậy dựng được
+/// "chốt xong rồi app chết trước khi kịp gửi" mà không cần cầu nối giả.
+/// Ngữ nghĩa `persist` y như `OutboxStore`: chỉ xoá hàng `settled` / `dead`.
+extension InMemoryWorkoutStore: OutboxPersistence {
+  public func load() async throws -> Outbox {
+    Outbox(pending: outbox, dead: deadEntries)
+  }
+
+  public func persist(_ snapshot: Outbox, settled: Set<String>) async throws {
+    let finished = settled.union(snapshot.dead.map(\.entry.id)).subtracting(snapshot.pending.map(\.id))
+    outbox.removeAll { finished.contains($0.id) }
+    for e in snapshot.pending {
+      if let i = outbox.firstIndex(where: { $0.id == e.id }) { outbox[i] = e } else { outbox.append(e) }
+    }
+    if snapshot.dead.count > deadEntries.count { deadEntries += snapshot.dead.dropFirst(deadEntries.count) }
+  }
+
+  public func dropAllOnSignOut() async throws -> Int {
+    defer { outbox = [] }
+    return outbox.count
   }
 }
