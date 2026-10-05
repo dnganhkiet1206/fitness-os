@@ -68,6 +68,18 @@ struct WorkoutSessionControllerTests {
 
   // MARK: ghi
 
+  /// RN BUG FOUND (bản native trước đây, cùng lỗi `log-workout`): ô tạ lưu
+  /// nguyên chữ, máy tiếng Việt gõ `71,5` → `Double` nil → 0 kg im lặng. RN lọc
+  /// bằng `decText` lúc gõ (`day-plan.tsx:1979`); setter giờ lọc như vậy.
+  @Test func decimalCommaWeightIsKept() async {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    #expect(await c.setWeightText("71,5", for: "b1"))
+    #expect(c.progress.weightText["b1"] == "71.5")
+    #expect(c.performed(bench1).weightKg == 71.5)
+    #expect(await store.days[c.key]?.progress.weightText["b1"] == "71.5")
+  }
+
   /// Hàm trả về thì thay đổi đã nằm trong store — không phải "sẽ ghi".
   @Test func editIsDurableWhenItReturns() async {
     let store = InMemoryWorkoutStore()
