@@ -55,4 +55,45 @@ struct OutboxAccountFenceTests {
     }
     #expect(try store.load().pending.isEmpty)
   }
+
+  /// `append` cũng là đường ghi bảng outbox — cùng hàng rào như `enqueue`.
+  @Test func appendForWrongUserIsRefused() throws {
+    let db = try ASCNDDatabase()
+    let store = OutboxStore(db)
+    db.accounts.signIn("b")
+    #expect(throws: AccountScopeClosed.self) {
+      try store.append(planEntry("a-1", user: "a"))
+    }
+    #expect(try store.load().pending.isEmpty)
+  }
+
+  @Test func appendWhileSignedOutIsRefused() throws {
+    let db = try ASCNDDatabase()
+    let store = OutboxStore(db)
+    db.accounts.signOut()
+    #expect(throws: AccountScopeClosed.self) {
+      try store.append(planEntry("a-1", user: "a"))
+    }
+    #expect(try store.load().pending.isEmpty)
+  }
+
+  /// TOCTOU (#485 follow-up): với fence nằm TRONG cùng transaction ghi, thứ tự
+  /// giữa lượt enqueue muộn và lượt dọn của `sessionEnded` (signOut →
+  /// `dropAllOnSignOut`) không thể để lại hàng mồ côi — GRDB xếp mọi `db.write`
+  /// nối tiếp: hoặc (check+insert) chạy trước DELETE rồi bị dọn, hoặc DELETE
+  /// chạy trước rồi check thấy signedOut → ném. Mô phỏng lượt ghi muộn tới sau
+  /// lượt dọn: bị từ chối, không có hàng nào.
+  @Test func lateEnqueueAfterSignOutCleanupWritesNothing() throws {
+    let db = try ASCNDDatabase()
+    let store = OutboxStore(db)
+    db.accounts.signIn("a")
+    try store.enqueue([planEntry("a-1", user: "a")])
+    // Thứ tự của AccountLifecycle.sessionEnded: đóng chốt trước, dọn sau.
+    db.accounts.signOut()
+    try store.dropAllOnSignOut()
+    #expect(throws: AccountScopeClosed.self) {
+      try store.enqueue([planEntry("a-2", user: "a")])
+    }
+    #expect(try store.load().pending.isEmpty)
+  }
 }
