@@ -9,7 +9,7 @@
  *
  * Chạy: node apps/ios/tools/native-interaction-states.mjs
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT = new URL('../../..', import.meta.url).pathname;
@@ -62,7 +62,12 @@ function walk(dir) {
   }
 }
 
-try { walk(DS_DIR); } catch {}
+// Thư mục không tồn tại = FAIL (không nuốt lỗi rồi báo xanh giả).
+if (!existsSync(DS_DIR)) {
+  console.log(`FAIL — interaction states: không tìm thấy thư mục ${relative(ROOT, DS_DIR)}`);
+  process.exit(1);
+}
+walk(DS_DIR);
 
 if (issues.length > 0) {
   console.log('FAIL — interaction states:');
