@@ -70,7 +70,7 @@ public struct WorkoutProgressHeader: View {
         .font(DS.TextStyle.headline.monospacedDigit())
         .foregroundStyle(
           progress.isFinished
-            ? DS.Color.metricGreen.swiftUI
+            ? DS.Color.readinessGreen.swiftUI
             : DS.Color.foreground.swiftUI
         )
       }
@@ -84,7 +84,7 @@ public struct WorkoutProgressHeader: View {
           RoundedRectangle(cornerRadius: DS.Radius.sm)
             .fill(
               progress.isFinished
-                ? DS.Color.metricGreen.swiftUI
+                ? DS.Color.readinessGreen.swiftUI
                 : DS.Color.primary.swiftUI
             )
             .frame(
