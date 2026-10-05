@@ -180,10 +180,26 @@ public final class WorkoutFlow {
     next.map { RestTarget(exerciseName: $0.exerciseName, setNumber: $0.ordinal, totalSets: $0.of) }
   }
 
+  @ObservationIgnored private var installing: Task<Void, Never>?
+
+  /// Các lượt dựng màn chạy NỐI TIẾP (đề xuất audit của C, 05/10): lượt sau
+  /// chỉ xét buổi khi lượt trước đã đọc xong nó. Chạy chồng thì lượt sau thấy
+  /// buổi còn `.loading` — chưa biết đã có tiến độ hay chưa — và coi là "chưa
+  /// chạm", thay mất một buổi có thể đang tập dở.
+  private func install() async {
+    let previous = installing
+    let task = Task {
+      await previous?.value
+      await self.installNow()
+    }
+    installing = task
+    await task.value
+  }
+
   /// Dựng màn tập cho kế hoạch hiện tại. Không bao giờ bỏ một buổi đang tập
   /// dở: kế hoạch mới (server sau cache, sửa template ở máy khác, qua nửa đêm)
   /// chỉ thay buổi chưa được chạm, hoặc buổi đã chốt của một ngày đã qua.
-  private func install() async {
+  private func installNow() async {
     let next = makeSession()
     if let current = session {
       if let next, current.plan == next.plan, current.loggedElsewhere == next.loggedElsewhere {

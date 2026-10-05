@@ -379,6 +379,30 @@ struct WorkoutFlowTests {
     #expect(h.flow.session == nil)
   }
 
+  /// Đề xuất audit của C (#364): các lượt dựng màn chạy nối tiếp. Buổi thứ
+  /// Hai đang tập dở trên đĩa, đang được đọc lên thì qua nửa đêm (ra tiền
+  /// cảnh): lượt dựng thứ Ba phải chờ buổi thứ Hai đọc xong — thấy nó `.active`
+  /// thì giữ, không coi `.loading` là "chưa chạm" mà thay mất.
+  @Test func installsAreSerializedAcrossMidnight() async throws {
+    var p = DayProgress()
+    p.done = ["0-0": true]
+    let key = DayProgressStore.key(date: monday, templateId: "tpl")
+    let h = Harness(store: InMemoryWorkoutStore(days: [key: DayState(progress: p)]))
+    h.clock.advance(35_970_000)  // 23:59:30 thứ Hai
+    // Lần đọc đầu của khoá là của Today ("đã chốt trên máy?"), lần hai của buổi.
+    await h.store.holdLoad(of: key, after: 1)
+    async let start: Void = h.flow.start()
+    while await h.store.heldLoads == 0 { await Task.yield() }
+    h.clock.advance(40_000)  // 00:00:10 thứ Ba — dữ liệu chưa cũ, không làm mới
+    async let active: Void = h.flow.becameActive()
+    for _ in 0..<50 { await Task.yield() }
+    await h.store.releaseLoad()
+    _ = await (start, active)
+    let s = try #require(h.flow.session)
+    #expect(s.plan.date == monday, "buổi đang tập dở không bị thay")
+    #expect(s.phase == .active)
+  }
+
   @Test func finishWithoutSessionRefuses() async {
     let h = Harness(snap(rest: true))
     await h.flow.start()
