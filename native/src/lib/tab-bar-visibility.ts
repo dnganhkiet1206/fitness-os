@@ -143,7 +143,7 @@ const lastYUI = makeMutable(0);
  * `delta > THRESHOLD` đúng ở rất nhiều khung hình liên tiếp. Không nhớ đích thì
  * mỗi khung hình ấy lại `withSpring(0)` một lần nữa — lò xo bị khởi động lại
  * liên tục, không bao giờ chạy hết, nên thứ nó điều khiển (thanh tab, và độ mờ
- * của Koa qua `koa-companion`) rung theo ngón tay thay vì trôi một nhịp.
+ * của Koa qua `koa-companion` (đã xoá ở #239)) rung theo ngón tay thay vì trôi một nhịp.
  *
  * Nhớ đích thì một cú vuốt mạnh sinh ĐÚNG MỘT lò xo, và cú nhảy sang JS để lên
  * dây hẹn giờ cũng chỉ xảy ra một lần thay vì mỗi khung hình.
