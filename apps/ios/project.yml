@@ -1,0 +1,75 @@
+# ASCND iOS — XcodeGen. Nguồn sự thật của project; `ASCND.xcodeproj` sinh ra
+# từ đây và không commit (ADR-0001: bốn agent sửa song song không conflict
+# .pbxproj). Sinh lại: `xcodegen` trong thư mục này.
+name: ASCND
+
+options:
+  bundleIdPrefix: com.ascnd
+  developmentLanguage: en
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: Z54JL44R9Z
+    CODE_SIGN_STYLE: Automatic
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+    DEAD_CODE_STRIPPING: YES
+
+packages:
+  ASCNDKit:
+    path: Packages/ASCNDKit
+
+targets:
+  ASCND:
+    type: application
+    platform: iOS
+    sources:
+      - path: ASCND
+    dependencies:
+      - package: ASCNDKit
+        product: ASCNDCore
+      - package: ASCNDKit
+        product: ASCNDDesignSystem
+    info:
+      path: ASCND/Info.plist
+      properties:
+        CFBundleDisplayName: $(APP_DISPLAY_NAME)
+        CFBundleAllowMixedLocalizations: true
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    settings:
+      base:
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      configs:
+        # Release trùng bundle của app RN để bản native cập nhật đè app đang
+        # có trên App Store. Debug có hậu tố riêng để Kiệt cài cả bản RN lẫn
+        # bản native cạnh nhau mà so.
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev
+          APP_DISPLAY_NAME: ASCND Dev
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos
+          APP_DISPLAY_NAME: ASCND
+
+schemes:
+  ASCND:
+    build:
+      targets:
+        ASCND: all
+    run:
+      config: Debug
+    archive:
+      config: Release
