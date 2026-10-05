@@ -113,6 +113,12 @@ public final class PlanEditor {
     /// Không có template này trong kế hoạch của mình (đã xoá, hoặc không phải
     /// của mình). Gán vào nó thì server từ chối (FK / RLS) và lệnh vào `dead`.
     case unknownTemplate
+    /// Id này đã bị xoá khi hàng tạo của nó còn chờ gửi. Ghi lại cùng id thì
+    /// hàng tạo mới bị bỏ (id hàng outbox trùng, idempotent) và server nhận
+    /// "tạo bản cũ → xoá": template biến mất, bản mới mất im lặng (C42, #435).
+    /// Template mới phải lấy id mới (`newTemplateId()`). Baseline không có
+    /// "sửa template" — chỉ `insert` / `delete` (`use-library.ts:289`, `:328`).
+    case deleted
     case storage(LocalWriteError)
   }
 
@@ -160,6 +166,7 @@ public final class PlanEditor {
     let kind = type.trimmingCharacters(in: .whitespacesAndNewlines)
     let template = WorkoutTemplate(
       id: id, name: trimmed, exercises: exercises, type: kind.isEmpty ? PlanEdit.defaultType : kind)
+    try await refuseIfDeletedWhilePending(id)
     let now = clock.nowMillis()
     var entries = [OutboxEntry(
       id: id, userId: userId, kind: PlanEdit.templateKind, payload: .object([
@@ -222,6 +229,23 @@ public final class PlanEditor {
         "is_rest": .bool(isRest),
         "is_deload": .bool(isDeload),
       ]), createdAt: at)
+  }
+
+  /// Hàng tạo `id` còn chờ VÀ một lệnh xoá `id` cũng đang chờ. Chỉ khi cả
+  /// hai — bấm Lưu lại khi hàng tạo còn chờ (chưa xoá) vẫn là một template
+  /// (TW-5a); tạo lại sau khi lệnh tạo cũ đã tới server thì hàng mới ghi được.
+  private func refuseIfDeletedWhilePending(_ id: String) async throws(Refusal) {
+    let pending: [OutboxEntry]
+    do {
+      pending = try await store.pending(userId: userId)
+    } catch {
+      throw .storage(LocalWriteError("\(error)"))
+    }
+    guard pending.contains(where: { $0.id == id }) else { return }
+    let deleted = pending.contains {
+      $0.kind == PlanEdit.templateDeleteKind && $0.payload["id"]?.stringValue?.lowercased() == id
+    }
+    if deleted { throw .deleted }
   }
 
   private func commit(_ entries: [OutboxEntry]) async throws(Refusal) {
