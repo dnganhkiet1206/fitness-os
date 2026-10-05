@@ -2,16 +2,18 @@
 /**
  * SwiftUI performance audit — C (#319).
  *
- * Tìm:
+ * Static scan (không đo thời gian chạy — không claim số ms):
  *  1. AnyView / type erasure không cần thiết
- *  2. String(format:) trong body (nên cache hoặc dùng Text format)
- *  3. id: \.self với type không ổn định
+ *  2. String(format:) trong body (nên cache hoặc dùng Text format) — INFO
+ *  3. id: \.self — chỉ ghi nhận, không tự kết luận (no-op, chưa bật)
  *  4. UUID() trong ForEach (unstable ID)
- *  5. #Preview code trong production (ngoài #Preview block)
+ *
+ * NOTE: #Preview blocks được loại khỏi scan (prodSrc); không có check riêng
+ * cho "preview code leak" nên không claim có.
  *
  * Chạy: node apps/ios/tools/native-perf-audit.mjs
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 
 const ROOT = new URL('../../..', import.meta.url).pathname;
@@ -65,7 +67,13 @@ function scanFile(path) {
 }
 
 for (const d of SCAN_DIRS) {
-  try { walk(join(ROOT, d)); } catch {}
+  const dir = join(ROOT, d);
+  // Thư mục không tồn tại = FAIL (không nuốt lỗi rồi báo xanh giả).
+  if (!existsSync(dir)) {
+    console.log(`FAIL: không tìm thấy thư mục quét ${d}`);
+    process.exit(1);
+  }
+  walk(dir);
 }
 
 const errors = issues.filter(i => !i.includes('INFO'));
