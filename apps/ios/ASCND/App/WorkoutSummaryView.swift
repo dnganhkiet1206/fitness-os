@@ -1,159 +1,173 @@
-// Màn tóm tắt sau buổi tập — C sở hữu (#248).
+// Màn tóm tắt sau buổi tập — C sở hữu UI (#248, #279).
 //
-// CHỈ HIỂN THỊ: nhận [PlannedSet] + DayProgress, tính bằng WorkoutDay /
-// WorkoutMath của A. Không ghi server (outbox là phần của A, #225),
-// không phát hiện kỷ lục (chờ A nối lịch sử).
+// SEAM cho A (#279): nhận `WorkoutSummary` THẬT do
+// `WorkoutSessionController.finish()` trả về, KHÔNG tự tính lại từ
+// `[PlannedSet] + DayProgress`.
+//  - Số trên màn (volume, số set, số bài) = đúng `volume_load` gửi lên
+//    server (Int, đã bỏ khởi động) — lấy từ `summary`, không gọi
+//    `WorkoutMath` trong View (lệch làm tròn với `Math.round` baseline).
+//  - Danh sách chi tiết lấy từ `sets` (A8 dựng từ bản ghi đã chốt).
+//  - Fixture độc lập cho Preview (không cần controller thật).
 #if canImport(SwiftUI)
 import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-/// Một dòng set đã làm, để hiển thị.
-private struct SummaryRow: Hashable {
-  let set: PlannedSet
-  let performed: PerformedSet
-  let ticked: Bool
+/// Một set đã làm, để hiển thị — A8 (#272) dựng từ bản ghi đã chốt.
+public struct SummarySet: Hashable, Sendable {
+  public let exerciseName: String
+  public let weightKg: Double?
+  public let reps: Int
+  public let durationSec: Int?
+  public let warmup: Bool
+
+  public init(
+    exerciseName: String,
+    weightKg: Double? = nil,
+    reps: Int,
+    durationSec: Int? = nil,
+    warmup: Bool = false
+  ) {
+    self.exerciseName = exerciseName
+    self.weightKg = weightKg
+    self.reps = reps
+    self.durationSec = durationSec
+    self.warmup = warmup
+  }
 }
 
 public struct WorkoutSummaryView: View {
-  let rows: [PlannedSet]
-  let progress: DayProgress
+  /// Tổng hợp thật từ `finish()` — số trên màn = số lên server.
+  let summary: WorkoutSummary
+  /// Chi tiết từng set đã làm (kể cả khởi động, hiện mờ).
+  let sets: [SummarySet]
 
-  public init(rows: [PlannedSet], progress: DayProgress) {
-    self.rows = rows
-    self.progress = progress
+  public init(summary: WorkoutSummary, sets: [SummarySet]) {
+    self.summary = summary
+    self.sets = sets
   }
 
-  private var summaryRows: [SummaryRow] {
-    rows.map { row in
-      SummaryRow(
-        set: row,
-        performed: WorkoutDay.performed(row, progress),
-        ticked: progress.done[row.key] ?? false
-      )
-    }
-  }
-
-  private var loggedSets: [LoggedSet] {
-    summaryRows.filter(\.ticked).map { r in
-      LoggedSet(
-        reps: r.performed.reps,
-        weight: r.performed.weightKg > 0 ? r.performed.weightKg : nil,
-        warmup: r.set.warmup,
-        durationSec: r.performed.durationSec
-      )
-    }
-  }
-
-  private var exerciseGroups: [(name: String, rows: [SummaryRow])] {
-    let ticked = summaryRows.filter(\.ticked)
+  private var exerciseGroups: [(name: String, rows: [SummarySet])] {
     var order: [String] = []
-    var groups: [String: [SummaryRow]] = [:]
-    for r in ticked {
-      if groups[r.set.exerciseName] == nil { order.append(r.set.exerciseName) }
-      groups[r.set.exerciseName, default: []].append(r)
+    var groups: [String: [SummarySet]] = [:]
+    for s in sets {
+      if groups[s.exerciseName] == nil { order.append(s.exerciseName) }
+      groups[s.exerciseName, default: []].append(s)
     }
     return order.map { (name: $0, rows: groups[$0] ?? []) }
   }
 
   public var body: some View {
-    let volume = WorkoutMath.volume(of: loggedSets)
-    let setCount = WorkoutMath.performedSetCount(loggedSets)
-
     ScrollView {
       VStack(spacing: DS.Spacing.md) {
         DSCard {
           HStack(spacing: DS.Spacing.md) {
             DSStatTile(
               label: String(localized: "summary.volume"),
-              value: String(format: "%.0f", volume),
+              value: "\(summary.volumeKg)",
               unit: "kg"
             )
             DSStatTile(
               label: String(localized: "summary.sets"),
-              value: "\(setCount)"
+              value: "\(summary.completedSets)"
             )
             DSStatTile(
               label: String(localized: "summary.exercises"),
-              value: "\(exerciseGroups.count)"
+              value: "\(summary.exerciseCount)"
             )
           }
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(
+          Text(
+            String(
+              format: String(localized: "summary.stats.accessibility"),
+              summary.volumeKg, summary.completedSets, summary.exerciseCount
+            )
+          )
+        )
 
         ForEach(exerciseGroups, id: \.name) { group in
           VStack(alignment: .leading, spacing: DS.Spacing.sm) {
             DSSectionHeader(group.name)
-            ForEach(group.rows, id: \.set.key) { r in
+            ForEach(group.rows, id: \.self) { s in
               HStack {
-                Text(setLabel(r))
+                Text(setLabel(s))
                   .font(DS.Type.body.monospacedDigit())
                   .foregroundStyle(DS.Color.foreground.swiftUI)
                 Spacer()
-                if r.set.warmup {
+                if s.warmup {
                   Text(String(localized: "summary.warmup"))
                     .font(DS.Type.caption)
                     .foregroundStyle(DS.Color.mutedForeground.swiftUI)
                 }
               }
-              .opacity(r.set.warmup ? 0.5 : 1)
+              .opacity(s.warmup ? 0.5 : 1)
               .accessibilityElement(children: .combine)
-              .accessibilityLabel(Text("\(group.name), \(setLabel(r))"))
+              .accessibilityLabel(Text("\(group.name), \(setLabel(s))"))
             }
           }
         }
       }
       .padding(DS.Spacing.md)
     }
-    .navigationTitle(Text(String(localized: "summary.title")))
+    .navigationTitle(Text(summary.templateName))
   }
 
-  private func setLabel(_ r: SummaryRow) -> String {
-    if let secs = r.performed.durationSec, secs > 0 {
+  private func setLabel(_ s: SummarySet) -> String {
+    if let secs = s.durationSec, secs > 0 {
       return "\(secs)s"
     }
-    let w = r.performed.weightKg
-    if w > 0 {
-      return "\(String(format: "%g", w)) kg × \(r.performed.reps)"
+    if let w = s.weightKg, w > 0 {
+      return "\(String(format: "%g", w)) kg × \(s.reps)"
     }
-    return "× \(r.performed.reps)"
+    return "× \(s.reps)"
   }
+}
+
+// MARK: - Fixture độc lập (không cần controller thật)
+
+extension WorkoutSummaryView {
+  static let sampleSummary = WorkoutSummary(
+    sessionId: "preview-1",
+    dateTime: EpochMillis(1_728_000_000_000),
+    templateName: "Ngực – Vai – Tay",
+    completedSets: 4,
+    warmupSets: 1,
+    holdSets: 1,
+    exerciseCount: 2,
+    volumeKg: 1340,
+    sessionRpe: 8,
+    prDetected: false
+  )
+
+  static let sampleSets: [SummarySet] = [
+    SummarySet(exerciseName: "Bench Press", weightKg: 40, reps: 8, warmup: true),
+    SummarySet(exerciseName: "Bench Press", weightKg: 60, reps: 8),
+    SummarySet(exerciseName: "Bench Press", weightKg: 60, reps: 8),
+    SummarySet(exerciseName: "Bench Press", weightKg: 62.5, reps: 6),
+    SummarySet(exerciseName: "Plank", reps: 0, durationSec: 45),
+  ]
 }
 
 #Preview("Light") {
   NavigationStack {
-    WorkoutSummaryView(rows: WorkoutSummaryView.sampleRows, progress: WorkoutSummaryView.sampleProgress)
+    WorkoutSummaryView(summary: .sampleSummary, sets: .sampleSets)
   }
   .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
   NavigationStack {
-    WorkoutSummaryView(rows: WorkoutSummaryView.sampleRows, progress: WorkoutSummaryView.sampleProgress)
+    WorkoutSummaryView(summary: .sampleSummary, sets: .sampleSets)
   }
   .preferredColorScheme(.dark)
 }
 
 #Preview("Dynamic Type XXL") {
   NavigationStack {
-    WorkoutSummaryView(rows: WorkoutSummaryView.sampleRows, progress: WorkoutSummaryView.sampleProgress)
+    WorkoutSummaryView(summary: .sampleSummary, sets: .sampleSets)
   }
   .dynamicTypeSize(.accessibility3)
-}
-
-extension WorkoutSummaryView {
-  static let sampleRows: [PlannedSet] = [
-    PlannedSet(key: "w1", exerciseName: "Bench Press", ordinal: 1, of: 3, weightKg: 40, reps: 8, plannedRest: 90, warmup: true),
-    PlannedSet(key: "s1", exerciseName: "Bench Press", ordinal: 1, of: 3, weightKg: 60, reps: 8, plannedRest: 90),
-    PlannedSet(key: "s2", exerciseName: "Bench Press", ordinal: 2, of: 3, weightKg: 60, reps: 8, plannedRest: 90),
-    PlannedSet(key: "s3", exerciseName: "Bench Press", ordinal: 3, of: 3, weightKg: 62.5, reps: 6, plannedRest: 120),
-    PlannedSet(key: "p1", exerciseName: "Plank", ordinal: 1, of: 2, weightKg: 0, reps: 0, plannedRest: 60),
-  ]
-
-  static let sampleProgress: DayProgress = {
-    var p = DayProgress()
-    p.done = ["w1": true, "s1": true, "s2": true, "s3": true, "p1": true]
-    p.repsText = ["p1": "45s"]
-    return p
-  }()
 }
 #endif
