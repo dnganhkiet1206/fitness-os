@@ -13,7 +13,7 @@ struct RootGate: View {
       ProgressView()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     case .signedOut:
-      SignInView()
+      AuthView()
     case .signedIn(let s):
       // `id`: đổi tài khoản dựng lại cả cây — không state nào của người trước
       // (tab đang mở, màn tập, ô đang gõ) sống sót sang người sau.
