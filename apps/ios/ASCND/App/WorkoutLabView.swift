@@ -12,9 +12,10 @@ import SwiftUI
 /// và kiểm những điều mà test không thay được: tắt mạng, kill app giữa buổi,
 /// mở lại, bật mạng, xem buổi lên `workout_sessions`.
 ///
-/// Kế hoạch là dữ liệu mẫu (`templateId = nil` → `template_id` null trên
-/// server — id bịa là khoá ngoại hỏng). Đọc template thật là việc của slice
-/// Workouts.
+/// Kế hoạch đọc từ `routine_days` + `workout_templates` thật (#270), cache
+/// trên máy trước rồi làm mới từ server. Ngày không có buổi thì có thể bật kế
+/// hoạch mẫu (`templateId = nil` → `template_id` null trên server — id bịa là
+/// khoá ngoại hỏng).
 struct WorkoutLabView: View {
   @Environment(AppServices.self) private var services
 
@@ -103,28 +104,82 @@ private struct LabSession: View {
   @Environment(AppServices.self) private var services
   @Environment(RestTimerController.self) private var rest
   @State private var controller: WorkoutSessionController?
+  @State private var today: TodayPlan?
+  @State private var source = "—"
+  @State private var refreshError: String?
+  @State private var useSample = false
 
   var body: some View {
-    Group {
+    List {
+      Section {
+        LabRow(label: "Today", value: today.map { "\($0.date) · \($0.status.rawValue)\($0.isDeload ? " · deload" : "")" } ?? "…")
+        LabRow(label: "Template", value: today?.template.map { "\($0.name) (\($0.exercises.count) bài)" } ?? "—")
+        LabRow(label: "Plan source", value: source)
+        if let refreshError {
+          LabRow(label: "Refresh failed", value: refreshError).foregroundStyle(.orange)
+        }
+        if today?.sessionPlan == nil {
+          Toggle(isOn: $useSample) { Text(verbatim: "Hôm nay không có buổi — dùng kế hoạch mẫu (Lab)") }
+        }
+      } header: {
+        Text(verbatim: "Plan (routine_days + workout_templates)")
+      }
       if let controller {
         LabWorkout(c: controller)
-      } else {
-        ProgressView()
       }
     }
-    .task(id: user.userId) {
-      let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
-      let sync = services.sync
-      let rest = self.rest
-      let c = WorkoutSessionController(
-        plan: WorkoutLabPlan.plan(on: today), userId: user.userId, store: services.workouts,
-        onRest: { event, next in
-          rest.handle(event, target: next.map { RestTarget(exerciseName: $0.exerciseName, setNumber: $0.ordinal, totalSets: $0.of) })
-        },
-        onEnqueued: { _ in sync.kick() })
-      await c.load()
-      controller = c
+    .task(id: user.userId) { await loadPlan() }
+    .onChange(of: useSample) { install() }
+    .refreshable { await loadPlan() }
+  }
+
+  /// Local-first: cache trên máy hiện ngay (kể cả offline), rồi làm mới từ server.
+  private func loadPlan() async {
+    let date = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    if let cached = await services.templates.cached(userId: user.userId) {
+      today = cached.plan(for: date, today: date)
+      source = "cache · \(cached.fetchedAt.date.formatted(date: .omitted, time: .shortened))"
+      install()
     }
+    do {
+      let fresh = try await services.templates.refresh(userId: user.userId)
+      today = fresh.plan(for: date, today: date)
+      source = "server · \(fresh.fetchedAt.date.formatted(date: .omitted, time: .shortened))"
+      refreshError = nil
+      install()
+    } catch {
+      refreshError = "\(error)"
+    }
+    if today == nil { today = TodayPlan.unknown(date) }
+  }
+
+  /// Dựng controller cho kế hoạch hiện tại. Không thay controller đang có
+  /// tiến độ: kế hoạch đổi giữa buổi (server mới hơn cache) chỉ áp khi chưa
+  /// tick gì — tiến độ đã bền trên máy, mở lại sẽ khớp theo khoá ngày.
+  private func install() {
+    let plan = today?.sessionPlan ?? (useSample ? WorkoutLabPlan.plan(on: today?.date ?? LocalDate(SystemWallClock().nowMillis(), in: .current)) : nil)
+    guard let plan else {
+      controller = nil
+      return
+    }
+    if let c = controller, c.plan == plan || c.phase != .idle { return }
+    let sync = services.sync
+    let rest = self.rest
+    let c = WorkoutSessionController(
+      plan: plan, userId: user.userId, store: services.workouts,
+      onRest: { event, next in
+        rest.handle(event, target: next.map { RestTarget(exerciseName: $0.exerciseName, setNumber: $0.ordinal, totalSets: $0.of) })
+      },
+      onEnqueued: { _ in sync.kick() })
+    controller = c
+    Task { await c.load() }
+  }
+}
+
+private extension TodayPlan {
+  /// Chưa có cache và server không trả lời: chưa biết gì về hôm nay.
+  static func unknown(_ date: LocalDate) -> TodayPlan {
+    WorkoutPlanning.plan(for: date, today: date, routine: [], templates: [])
   }
 }
 
@@ -135,7 +190,7 @@ private struct LabWorkout: View {
   @State private var finishError: String?
 
   var body: some View {
-    List {
+    Group {
       Section {
         LabRow(label: "Phase", value: "\(c.phase)")
         LabRow(label: "Day key", value: c.key)

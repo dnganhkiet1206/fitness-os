@@ -20,6 +20,8 @@ final class AppServices {
   let session: SessionStore
   let sync: SyncWorker
   @ObservationIgnored let workouts: GRDBWorkoutStore
+  /// Kế hoạch tuần + template thật, local-first (#270).
+  @ObservationIgnored let templates: TodayRepository
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
@@ -46,6 +48,10 @@ final class AppServices {
     }
 
     workouts = GRDBWorkoutStore(database)
+    let templateCache = GRDBTemplateCache(database)
+    templates = TodayRepository(
+      source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
+      cache: templateCache)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: OutboxStore(database),
@@ -55,6 +61,8 @@ final class AppServices {
 
     // Đăng xuất: bỏ hàng đợi như baseline (#241 chờ Kiệt).
     session.onSignedOut { [sync] in await sync.signOut() }
+    // Kế hoạch của người vừa rời đi không nằm lại trên máy.
+    session.onSignedOut { try? await templateCache.clearAll() }
     startNetworkMonitor()
   }
 
@@ -98,6 +106,11 @@ private struct UnconfiguredAuth: AuthAPI {
   func signInWithApple(identityToken: String, rawNonce: String) async throws { throw NotConfigured() }
   func resetPassword(email: String) async throws { throw NotConfigured() }
   func signOut() async throws {}
+}
+
+private struct UnconfiguredTemplates: TemplateSource {
+  struct NotConfigured: Error {}
+  func fetch(userId: String) async throws -> TemplateSnapshot { throw NotConfigured() }
 }
 
 /// Không có backend thì không gửi được — coi như mất mạng, hàng đợi giữ nguyên.
