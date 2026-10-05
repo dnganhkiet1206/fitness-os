@@ -1,0 +1,4 @@
+[
+  { "rule": "sum: hai số dương", "input": { "a": 2, "b": 3 }, "expected": 5 },
+  { "rule": "sum: âm cộng dương", "input": { "a": -4, "b": 1 }, "expected": -3, "note": "trường lạ bị bỏ qua" }
+]
