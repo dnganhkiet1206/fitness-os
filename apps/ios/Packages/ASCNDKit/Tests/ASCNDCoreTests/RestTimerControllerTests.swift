@@ -146,6 +146,33 @@ struct RestTimerControllerTests {
     #expect(driver.showing == t.activityContent(target: squat))
   }
 
+  /// C42 (#252): A nghỉ giữa chừng → app bị kill → phiên mất khi app không
+  /// chạy → mở lại ở trạng thái đăng xuất. Quãng nghỉ của A không được phát
+  /// lại; Island A để lại bị end; bản lưu bị xoá.
+  @Test func signedOutLaunchDropsThePreviousUsersRest() async throws {
+    let t = try #require(RestTimer.start(seconds: 90, at: EpochMillis(0)))
+    let left = t.activityContent(target: squat)
+    let driver = FakeDriver(showing: left)
+    var saved: RestTimer? = t
+    let c = RestTimerController(
+      driver: driver, clock: TestClock(40_000), restored: (t, squat), persist: { t, _ in saved = t })
+    await c.reconcile(signedIn: false)
+    #expect(c.timer == nil && c.target == nil)
+    #expect(saved == nil)
+    #expect(driver.showing == nil)
+    #expect(!driver.calls.contains { if case .start = $0 { true } else { false } })
+  }
+
+  /// Còn phiên: nghỉ tiếp như cũ.
+  @Test func signedInLaunchKeepsTheRest() async throws {
+    let t = try #require(RestTimer.start(seconds: 90, at: EpochMillis(0)))
+    let driver = FakeDriver()
+    let c = RestTimerController(driver: driver, clock: TestClock(40_000), restored: (t, squat))
+    await c.reconcile(signedIn: true)
+    #expect(c.timer == t)
+    #expect(driver.showing == t.activityContent(target: squat))
+  }
+
   /// Quãng nghỉ đã hết hẳn trong lúc app bị đóng: không hồi sinh, không haptic.
   @Test func reconcileDropsRestThatEndedWhileKilled() async throws {
     let t = try #require(RestTimer.start(seconds: 90, at: EpochMillis(0)))
