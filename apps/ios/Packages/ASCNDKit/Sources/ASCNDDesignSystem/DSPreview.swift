@@ -12,7 +12,7 @@ struct DSColorPreview: View {
             RoundedRectangle(cornerRadius: DS.Radius.md)
               .fill(color.swiftUI)
               .frame(height: 56)
-            Text(name).font(DS.Type.caption)
+            Text(name).font(DS.TextStyle.caption)
           }
         }
       }

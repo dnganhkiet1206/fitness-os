@@ -33,12 +33,12 @@ public struct DSEmptyState: View {
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .accessibilityHidden(true)
       Text(title)
-        .font(DS.Type.title2)
+        .font(DS.TextStyle.title2)
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .multilineTextAlignment(.center)
       if let message {
         Text(message)
-          .font(DS.Type.body)
+          .font(DS.TextStyle.body)
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .multilineTextAlignment(.center)
       }
