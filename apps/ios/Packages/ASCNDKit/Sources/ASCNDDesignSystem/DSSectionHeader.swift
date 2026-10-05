@@ -20,13 +20,13 @@ public struct DSSectionHeader: View {
     // để VoiceOver đọc đúng vai và bấm được nút.
     HStack {
       Text(title)
-        .font(DS.Type.title2)
+        .font(DS.TextStyle.title2)
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .accessibilityAddTraits(.isHeader)
       Spacer()
       if let actionTitle, let action {
         Button(actionTitle, action: action)
-          .font(DS.Type.footnote)
+          .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.metricBlue.swiftUI)
           .frame(minHeight: 44)
           .accessibilityLabel(Text(actionTitle))

@@ -26,8 +26,8 @@ public struct DSCard<Content: View>: View {
 #Preview("Light") {
   DSCard {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      Text("Buổi tập hôm nay").font(DS.Type.headline)
-      Text("3 bài · 45 phút").font(DS.Type.body).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Text("Buổi tập hôm nay").font(DS.TextStyle.headline)
+      Text("3 bài · 45 phút").font(DS.TextStyle.body).foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
   }
   .padding()
@@ -37,8 +37,8 @@ public struct DSCard<Content: View>: View {
 #Preview("Dark") {
   DSCard {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      Text("Buổi tập hôm nay").font(DS.Type.headline)
-      Text("3 bài · 45 phút").font(DS.Type.body).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Text("Buổi tập hôm nay").font(DS.TextStyle.headline)
+      Text("3 bài · 45 phút").font(DS.TextStyle.body).foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
   }
   .padding()
@@ -48,8 +48,8 @@ public struct DSCard<Content: View>: View {
 #Preview("Dynamic Type XXL") {
   DSCard {
     VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-      Text("Buổi tập hôm nay").font(DS.Type.headline)
-      Text("3 bài · 45 phút").font(DS.Type.body).foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      Text("Buổi tập hôm nay").font(DS.TextStyle.headline)
+      Text("3 bài · 45 phút").font(DS.TextStyle.body).foregroundStyle(DS.Color.mutedForeground.swiftUI)
     }
   }
   .padding()

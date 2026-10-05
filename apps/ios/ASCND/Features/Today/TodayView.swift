@@ -61,13 +61,13 @@ public struct TodayView: View {
           HStack {
             if let name = state.templateName {
               Text(name)
-                .font(DS.Type.title2)
+                .font(DS.TextStyle.title2)
                 .foregroundStyle(DS.Color.foreground.swiftUI)
             }
             Spacer()
             if state.isDeload {
               Text("today.deload")
-                .font(DS.Type.caption)
+                .font(DS.TextStyle.caption)
                 .padding(.horizontal, DS.Spacing.sm)
                 .padding(.vertical, DS.Spacing.xs)
                 .background(DS.Color.secondary.swiftUI)
@@ -91,11 +91,11 @@ public struct TodayView: View {
   private func exerciseRow(_ e: TodayExercise) -> some View {
     HStack {
       Text(e.name)
-        .font(DS.Type.body)
+        .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.foreground.swiftUI)
       Spacer()
       Text("\(e.sets)×\(e.reps) · \(Int(e.weightKg)) kg")
-        .font(DS.Type.footnote)
+        .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .monospacedDigit()
     }
