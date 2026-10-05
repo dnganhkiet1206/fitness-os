@@ -88,6 +88,69 @@ Bảng cho biết **chính xác còn thiếu gì**. Mỗi luật một dòng.
 | Vòng lệch chiều | app rút, Island đầy | H4 | ✅ (bug) rest-timer.tsx:141 | 🔲 #252 mở | 🔲 | 🔲 | 🔲 | B |
 | State lệch | suspend lỡ ping | H5 | ✅ (bug) day-plan.tsx:378 | 🔲 #251 mở | 🔲 | 🔲 | 🔲 | B |
 
+## Template read model (A6)
+
+| Feature | Behavior | Rule ID | RN | Swift | Vector | Automated test | iPhone | Owner |
+|---|---|---|---|---|---|---|---|---|
+| TodayPlan | routine_days + templates → plan, local-first | TPL-1 | ✅ use-library.ts:349,387 | 🔲 #285 mở | 🔲 | 🔲 | 🔲 | A |
+| Expand sets | kẹp [1,20], khoá "<bài>-<hiệp>" | TPL-2 | ✅ day-plan.tsx:547 | 🔲 #285 mở | 🔲 | 🔲 | 🔲 | A |
+| routineIndex | (getDay()+6)%7, Thứ Hai = 0 | TPL-3 | ✅ local-date.ts:188 | 🔲 #285 mở | 🔲 | 🔲 | 🔲 | A |
+| Rest/unplanned | is_rest thắng template_id; template xoá → unplanned ≠ rest | TPL-4 | ✅ week-plan.tsx:306-313 | 🔲 #285 mở | 🔲 | 🔲 | 🔲 | A |
+| sets hỏng | sets không đọc được → coi như thiếu = 1 hiệp (không rớt bài) | TPL-5 | ✅ (bug) day-plan.tsx:555 | 🔲 #285 mở | 🔲 | unreadableSetCountKeepsTheExercise | 🔲 | A |
+
+## Today (A7)
+
+| Feature | Behavior | Rule ID | RN | Swift | Vector | Automated test | iPhone | Owner |
+|---|---|---|---|---|---|---|---|---|
+| Ngày thật | today theo múi người dùng; clockTick đổi ngày qua nửa đêm | TD-1 | ✅ — | 🔲 #290 mở | 🔲 | 🔲 | 🔲 | A |
+| Local-first | load() hiện cache ngay, refresh() từ server, refreshError khi hỏng | TD-2 | ✅ — | 🔲 #290 mở | 🔲 | 🔲 | 🔲 | A |
+| Trạng thái ngày | todo/done/missed/rest/unplanned | TD-3 | ✅ week-strip.tsx:137 | 🔲 #290 mở | 🔲 | 🔲 | 🔲 | A |
+| Đã tập | hợp server (14 ngày, múi người dùng) + máy (loggedSessionId, offline OK) | TD-4 | ✅ useWorkoutSessions(14) | 🔲 #290 mở | 🔲 | 🔲 | 🔲 | A |
+| Chốt trùng máy khác | tick được, chốt bị từ chối (loggedElsewhere) — chặn buổi thứ hai | TD-5 | ✅ day-plan.tsx:1297 | 🔲 #290 mở | 🔲 | 🔲 | 🔲 | A |
+
+## App wiring (A8)
+
+| Feature | Behavior | Rule ID | RN | Swift | Vector | Automated test | iPhone | Owner |
+|---|---|---|---|---|---|---|---|---|
+| Today → Workout | màn thật nối vào AppServices, Lab chỉ debug | APP-1 | 🔲 | 🔲 #272 chưa có PR | 🔲 | 🔲 | 🔲 | A |
+
+## Session lifecycle (A9)
+
+| Feature | Behavior | Rule ID | RN | Swift | Vector | Automated test | iPhone | Owner |
+|---|---|---|---|---|---|---|---|---|
+| Dọn khi hết phiên | mọi đường (đăng xuất/token hết/bị xoá/đổi TK) → dữ liệu người cũ rời máy | SL-1 | ✅ use-auth.tsx:53 | 🔲 #293 mở | 🔲 | switchingAccountsRunsCleanup | 🔲 | A |
+| Thứ tự dọn | bỏ hàng đợi → xoá tiến độ ngày → xoá cache kế hoạch → gán lại user sync | SL-2 | ✅ query-client.ts:94 | 🔲 #293 mở | 🔲 | 🔲 | 🔲 | A |
+| Đổi tài khoản | đổi userId cũng dọn (RN chỉ dọn khi SIGNED_OUT — native mạnh hơn, có chủ đích) | SL-3 | ✅ (thiếu) use-auth.tsx:112 | 🔲 #293 mở | 🔲 | switchingAccountsRunsCleanup | 🔲 | A |
+| Gate màn | RootGate: đọc phiên → chờ; chưa đăng nhập → SignIn; đã đăng nhập → tabs .id(userId) | SL-4 | ✅ — | 🔲 #293 mở | 🔲 | 🔲 | 🔲 | A |
+
+## Dynamic Island hardening (A10)
+
+| Feature | Behavior | Rule ID | RN | Swift | Vector | Automated test | iPhone | Owner |
+|---|---|---|---|---|---|---|---|---|
+| Khôi phục sau kill | app terminate khi đang nghỉ → mở lại khôi phục | DI-1 | 🔲 | 🔲 #274 chưa có PR | 🔲 | 🔲 | 🔲 | A/B |
+
+## Personal Records (A11)
+
+| Feature | Behavior | Rule ID | RN | Swift | Vector | Automated test | iPhone | Owner |
+|---|---|---|---|---|---|---|---|---|
+| Kỷ lục weight | nặng hơn topWeight + 0.05kg | PR-1 | ✅ personal-record.ts:189 | 🔲 #298 mở | ✅ personal-record.json PR-1 | run-personal-record.mjs PR-1 | 🔲 | D/A |
+| Kỷ lục reps | nhiều reps hơn ở mức tạ đã dùng | PR-2 | ✅ personal-record.ts:189 | 🔲 #298 mở | ✅ personal-record.json PR-2 | run-personal-record.mjs PR-2 | 🔲 | D/A |
+| Warmup | khởi động không bao giờ là kỷ lục (RN đánh rơi cờ → native mang theo, có chủ đích) | PR-3 | ✅ (bug) use-fitness-data.ts:375 | 🔲 #298 mở | ✅ personal-record.json PR-3 | sessionWarmupDoesNotPostARecord | 🔲 | D/A |
+| Không lịch sử | bài chưa từng tập → không kỷ lục | PR-4 | ✅ personal-record.ts:189 | 🔲 #298 mở | ✅ personal-record.json PR-4 | run-personal-record.mjs PR-4 | 🔲 | D/A |
+| Epsilon 0.05kg | chống kỷ lục ma khi đổi kg↔lb | PR-5 | ✅ personal-record.ts:141 | 🔲 #298 mở | ✅ personal-record.json PR-5 | run-personal-record.mjs PR-5 | 🔲 | D/A |
+| Một/bài, xếp hạng | mỗi bài một kỷ lục, tạ thắng reps, xếp theo gain | PR-6/7 | ✅ personal-record.ts:189 | 🔲 #298 mở | ✅ personal-record.json PR-6/7 | run-personal-record.mjs PR-6/7 | 🔲 | D/A |
+| Sắp xếp ổn định | như Array.prototype.sort | PR-10 | ✅ personal-record.ts | 🔲 #298 mở | 🔲 | 🔲 | 🔲 | A |
+
+## Append (A12)
+
+| Feature | Behavior | Rule ID | RN | Swift | Vector | Automated test | iPhone | Owner |
+|---|---|---|---|---|---|---|---|---|
+| Điều kiện nối | appending = logged && pendingReady && !future | AP-1 | ✅ day-plan.tsx:1329 | 🔲 #307 mở | ✅ append.json AP-1 | run-append.mjs AP-1 | 🔲 | D/A |
+| Viết lại cả hàng | native dựng lại toàn bộ hàng, upsert qua outbox (RN: đọc → cộng mảng → update) | AP-2 | ✅ use-fitness-data.ts:599 | 🔲 #307 mở | ✅ append.json AP-2 | run-append.mjs AP-2 | 🔲 | D/A |
+| Idempotent | native có (id outbox "<buổi>@<số hàng>"); RN không (timeout → nối hai lần) | AP-3 | ✅ (thiếu) use-fitness-data.ts:599 | 🔲 #307 mở | 🔲 | 🔲 | 🔲 | A |
+| Offline | RN: nút tắt + lỗi; native: chạy được, lưu máy gửi sau (có chủ đích) | AP-4 | ✅ day-plan.tsx:1434 | 🔲 #307 mở | ✅ append.json AP-2c | run-append.mjs AP-2c | 🔲 | D/A |
+| Volume/RPE | RN cộng addedVolume (gồm warmup); native tính lại bỏ warmup (có chủ đích) | AP-5 | ✅ use-fitness-data.ts | 🔲 #307 mở | 🔲 | 🔲 | 🔲 | A |
+
 ## Còn thiếu (ô trống cần lấp)
 
 ### Vector chưa có
@@ -95,9 +158,11 @@ Bảng cho biết **chính xác còn thiếu gì**. Mỗi luật một dòng.
 - WS-1, WS-3, WS-4, WS-6, WS-7, WS-9, WS-10, WS-11, WS-12, WS-13, WS-14, WS-15 — Owner: D
 - RPE-1..4, LT-1..5 — Owner: D
 - H1–H5 — Owner: D (sau khi B chốt root cause)
+- TPL-1..4, TD-1..4, TD-6, SL-1/2/4, DI-1, PR-10, AP-3, AP-5 — Owner: D (sau khi A chốt PR)
 
 ### Swift chưa merge
 - Tất cả PR #238, #242, #244, #251, #252 đều đang MỞ — Owner: A/B
+- PR #285 (A6), #290 (A7), #293 (A9), #298 (A11), #307 (A12) đang MỞ; #272 (A8), #274 (A10) chưa có PR — Owner: A
 
 ### iPhone chưa test
 - Tất cả — chỉ Kiệt được điền ✅
