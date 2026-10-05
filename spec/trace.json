@@ -171,7 +171,7 @@
       "name": "progressRoundTripsAndToleratesOldBlobs"
     },
     "vector": {
-      "branch": "agent/d/workout-session-vectors",
+      "branch": "origin/agent/d/workout-session-vectors",
       "file": "workout-session.json"
     }
   },
@@ -193,7 +193,7 @@
       "name": "workoutSessionVectors"
     },
     "vector": {
-      "branch": "agent/d/workout-session-vectors",
+      "branch": "origin/agent/d/workout-session-vectors",
       "file": "workout-session.json"
     }
   },
@@ -215,7 +215,7 @@
       "name": "workoutSessionVectors"
     },
     "vector": {
-      "branch": "agent/d/workout-session-vectors",
+      "branch": "origin/agent/d/workout-session-vectors",
       "file": "workout-session.json"
     }
   },
@@ -237,7 +237,7 @@
       "name": "workoutSessionVectors"
     },
     "vector": {
-      "branch": "agent/d/workout-session-vectors",
+      "branch": "origin/agent/d/workout-session-vectors",
       "file": "workout-session.json"
     }
   },
@@ -259,7 +259,7 @@
       "name": "progressRoundTripsAndToleratesOldBlobs"
     },
     "vector": {
-      "branch": "agent/d/workout-session-vectors",
+      "branch": "origin/agent/d/workout-session-vectors",
       "file": "workout-session.json"
     }
   },
@@ -281,7 +281,7 @@
       "name": "accountAndUnusableArePermanentOfflineIsNot"
     },
     "vector": {
-      "branch": "agent/d/sync-vectors",
+      "branch": "origin/agent/d/sync-vectors",
       "file": "sync.json"
     }
   },
@@ -303,7 +303,7 @@
       "name": "delaysMatchTanStack"
     },
     "vector": {
-      "branch": "agent/d/sync-vectors",
+      "branch": "origin/agent/d/sync-vectors",
       "file": "sync.json"
     }
   },
@@ -325,7 +325,7 @@
       "name": "enqueueIsIdempotentById"
     },
     "vector": {
-      "branch": "agent/d/sync-vectors",
+      "branch": "origin/agent/d/sync-vectors",
       "file": "sync.json"
     }
   },
