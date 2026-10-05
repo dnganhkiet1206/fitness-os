@@ -1,7 +1,7 @@
 // Spacing và radius của ASCND — C sở hữu (#229, #246).
 // Sinh từ `spec/design/tokens.json`. Không bịa số mới khi token đã có.
 #if canImport(SwiftUI)
-import SwiftUI
+@_exported import SwiftUI
 
 public extension DS {
   enum Spacing {
