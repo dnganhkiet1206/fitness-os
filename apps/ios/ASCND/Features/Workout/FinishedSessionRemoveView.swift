@@ -1,6 +1,7 @@
 // Seam xoá exercise khỏi session đã finish — C sở hữu (#408).
 //
-// UI seam cho flow "remove exercise from finished session".
+// UI seam cho flow A19 (#415): `canRemove(key)` đúng → hiện hộp hỏi lại
+// kiểu destructive này → xác nhận thì parent gọi `removeLoggedSet`.
 // KHÔNG quyết định policy offline (#235/#241) — chỉ consume
 // typed contract trong tương lai.
 #if canImport(SwiftUI)
@@ -12,19 +13,19 @@ public struct FinishedSessionRemoveView: View {
   let exerciseName: String
   let sessionDate: String
 
-  var onConfirm: () -> Void
-  var onCancel: () -> Void
+  var onConfirmRemoval: () -> Void
+  var onCancelRemoval: () -> Void
 
   public init(
     exerciseName: String,
     sessionDate: String,
-    onConfirm: @escaping () -> Void = {},
-    onCancel: @escaping () -> Void = {}
+    onConfirmRemoval: @escaping () -> Void = {},
+    onCancelRemoval: @escaping () -> Void = {}
   ) {
     self.exerciseName = exerciseName
     self.sessionDate = sessionDate
-    self.onConfirm = onConfirm
-    self.onCancel = onCancel
+    self.onConfirmRemoval = onConfirmRemoval
+    self.onCancelRemoval = onCancelRemoval
   }
 
   public var body: some View {
@@ -47,7 +48,7 @@ public struct FinishedSessionRemoveView: View {
       .multilineTextAlignment(.center)
       HStack(spacing: 12) {
         Button(String(localized: "common.cancel")) {
-          onCancel()
+          onCancelRemoval()
         }
         .buttonStyle(.bordered)
         .frame(minHeight: 44)
@@ -55,7 +56,7 @@ public struct FinishedSessionRemoveView: View {
           String(localized: "extra.remove.finished.confirm"),
           role: .destructive
         ) {
-          onConfirm()
+          onConfirmRemoval()
         }
         .buttonStyle(.borderedProminent)
         .frame(minHeight: 44)

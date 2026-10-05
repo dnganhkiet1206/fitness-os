@@ -54,3 +54,37 @@ public struct MockExtraExercise: ExtraExerciseProtocol {
 
 /// Số sets tối đa cho phép.
 public let maxExtraSets = 20
+
+/// Cửa sổ undo — mirror A19 `undoWindowMillis` = 8 000 (issue #415).
+/// A19: `undo(removal)` chỉ hợp lệ trong cửa sổ này.
+public let undoWindowMillis = 8_000
+
+/// Mirror presentation-side của A19 `Removal` (issue #415):
+/// `removeLoggedSet(key) async throws(RemoveRefusal) -> Removal`.
+/// UI không gọi API, không mutation — chỉ consume model để banner
+/// hiển thị đúng tên và hết hạn đúng lúc (`expiresAt`).
+public struct UndoRemoval: Equatable {
+  /// Key của hàng bị gỡ. D-24 (AH-1/AH-3): id ổn định, key `x${id}-${n}`;
+  /// xoá theo id, đổi tên giữ id.
+  public let key: String
+  public let sessionId: String
+  public let expiresAt: Date
+  /// true nếu lần gỡ này xoá cả hàng (gỡ set cuối cùng — A19 RS-3a).
+  public let deletedSession: Bool
+  /// Tên hiển thị — UI resolve từ key (mock; A20 #399 cung cấp model thật).
+  public let exerciseName: String
+
+  public init(
+    key: String,
+    sessionId: String,
+    expiresAt: Date,
+    deletedSession: Bool = false,
+    exerciseName: String
+  ) {
+    self.key = key
+    self.sessionId = sessionId
+    self.expiresAt = expiresAt
+    self.deletedSession = deletedSession
+    self.exerciseName = exerciseName
+  }
+}

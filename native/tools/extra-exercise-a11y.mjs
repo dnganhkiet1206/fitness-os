@@ -75,9 +75,9 @@ check(/\.frame\(minHeight:\s*44\)/.test(undo),
 check(/\.onChange\(of:\s*exercise\.name\)/.test(row),
   'ExtraExerciseRow.swift: thiếu .onChange(of: exercise.name) sync tên từ parent');
 
-// 5. Reset đếm ngược khi tái dùng container.
-check(/\.onChange\(of:\s*exerciseName\)/.test(undo),
-  'UndoBanner.swift: thiếu .onChange(of: exerciseName) reset countdown');
+// 5. Reset đếm ngược khi tái dùng container (theo removal mới, A19).
+check(/\.onChange\(of:\s*removal\)/.test(undo),
+  'UndoBanner.swift: thiếu .onChange(of: removal) reset countdown');
 
 // 6. Không cắt tên bài tập ở Dynamic Type lớn.
 check(!/extra\.undo\.deleted\.format[\s\S]{0,400}\.lineLimit\(1\)/.test(undo),
@@ -86,6 +86,22 @@ check(!/extra\.undo\.deleted\.format[\s\S]{0,400}\.lineLimit\(1\)/.test(undo),
 // 7. Stepper chặn max-20 ở UI seam.
 check(/in:\s*1\.\.\.maxExtraSets/.test(row),
   'ExtraExerciseRow.swift: Stepper phải giới hạn in: 1...maxExtraSets');
+
+// 8. Align A19 (#415): UndoRemoval mirror Removal (key/sessionId/expiresAt/
+//    deletedSession), cửa sổ undo 8000ms, container consume removal.
+const models = readFileSync(path.join(WORKOUT, 'ExtraExerciseModels.swift'), 'utf8');
+check(/struct UndoRemoval/.test(models),
+  'ExtraExerciseModels.swift: thiếu UndoRemoval (mirror A19 Removal)');
+for (const f of ['key', 'sessionId', 'expiresAt', 'deletedSession', 'exerciseName']) {
+  check(new RegExp(`let ${f}:`).test(models),
+    `ExtraExerciseModels.swift: UndoRemoval thiếu trường '${f}'`);
+}
+check(/undoWindowMillis\s*=\s*8_000/.test(models),
+  'ExtraExerciseModels.swift: undoWindowMillis phải = 8_000 (A19)');
+check(/init\(\s*\n?\s*removal:\s*UndoRemoval/.test(undo),
+  'UndoBanner.swift: UndoBannerContainer phải init(removal:)');
+check(/onUndoExpired/.test(undo),
+  'UndoBanner.swift: callback hết hạn phải tên onUndoExpired (A19 expired)');
 
 if (problems.length) {
   console.error('extra exercise a11y/i18n (#462):');

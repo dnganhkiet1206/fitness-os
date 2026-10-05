@@ -71,31 +71,41 @@ public struct UndoBanner: View {
   }
 }
 
-/// Container quản lý countdown 8s cho undo banner.
+/// Container quản lý countdown cho undo banner.
+///
+/// Align A19 (#415): nhận `UndoRemoval` (mirror của `Removal` —
+/// key/sessionId/expiresAt/deletedSession), đếm ngược dẫn xuất từ
+/// `expiresAt`, hết hạn gọi `onUndoExpired` (ứng với `RemoveRefusal.expired`).
+/// Không session mutation — callbacks thuần presentation, A20 nối tiếp.
 public struct UndoBannerContainer: View {
-  let exerciseName: String
-  @State private var secondsRemaining = 8
-  @State private var isExpired = false
+  let removal: UndoRemoval
+  @State private var secondsRemaining: Int
+  @State private var isExpired: Bool
   @State private var timer: Timer?
 
   var onUndo: () -> Void
-  var onExpire: () -> Void
+  var onUndoExpired: () -> Void
 
   public init(
-    exerciseName: String,
+    removal: UndoRemoval,
     onUndo: @escaping () -> Void = {},
-    onExpire: @escaping () -> Void = {}
+    onUndoExpired: @escaping () -> Void = {}
   ) {
-    self.exerciseName = exerciseName
+    self.removal = removal
+    // Deterministic: hết hạn ngay nếu expiresAt đã qua (preview "expired"
+    // dùng .distantPast — không phụ thuộc thời điểm xem).
+    let remaining = Int(removal.expiresAt.timeIntervalSinceNow.rounded(.up))
+    self._secondsRemaining = State(initialValue: max(0, remaining))
+    self._isExpired = State(initialValue: removal.expiresAt <= Date.now)
     self.onUndo = onUndo
-    self.onExpire = onExpire
+    self.onUndoExpired = onUndoExpired
   }
 
   public var body: some View {
     Group {
       if !isExpired {
         UndoBanner(
-          exerciseName: exerciseName,
+          exerciseName: removal.exerciseName,
           secondsRemaining: secondsRemaining,
           onUndo: {
             timer?.invalidate()
@@ -108,11 +118,12 @@ public struct UndoBannerContainer: View {
         .onDisappear {
           timer?.invalidate()
         }
-        // Parent tái dùng container cho lần xoá khác (cùng identity):
-        // reset đếm ngược, không giữ số giây cũ.
-        .onChange(of: exerciseName) { _, _ in
-          secondsRemaining = 8
-          isExpired = false
+        // Parent tái dùng container cho lần gỡ khác (cùng identity):
+        // reset đếm ngược theo removal mới, không giữ số giây cũ.
+        .onChange(of: removal) { _, _ in
+          let remaining = Int(removal.expiresAt.timeIntervalSinceNow.rounded(.up))
+          secondsRemaining = max(0, remaining)
+          isExpired = removal.expiresAt <= Date.now
           startCountdown()
         }
       }
@@ -127,7 +138,7 @@ public struct UndoBannerContainer: View {
       } else {
         t.invalidate()
         isExpired = true
-        onExpire()
+        onUndoExpired()
       }
     }
   }
@@ -147,6 +158,33 @@ public struct UndoBannerContainer: View {
   UndoBanner(
     exerciseName: "Cable Fly",
     secondsRemaining: 1
+  )
+  .padding()
+}
+
+#Preview("UndoBannerContainer — Visible") {
+  UndoBannerContainer(
+    removal: UndoRemoval(
+      key: "x1",
+      sessionId: "preview-session",
+      expiresAt: Date.now.addingTimeInterval(6),
+      exerciseName: "Incline Dumbbell Press"
+    )
+  )
+  .padding()
+}
+
+#Preview("UndoBannerContainer — Expired") {
+  // Deterministic: expiresAt đã qua → banner không hiện (trạng thái
+  // "hết hạn" thật, không phụ thuộc thời điểm xem preview).
+  UndoBannerContainer(
+    removal: UndoRemoval(
+      key: "x1",
+      sessionId: "preview-session",
+      expiresAt: .distantPast,
+      deletedSession: true,
+      exerciseName: "Bench Press"
+    )
   )
   .padding()
 }

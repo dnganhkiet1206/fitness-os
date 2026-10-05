@@ -4,6 +4,12 @@
 #endif
 
 /// Hàng thêm/sửa extra exercise.
+///
+/// Align D-24 (#413 vectors):
+/// - AH-1/AH-3: mọi callback key theo `exercise.id` ổn định — xoá theo id,
+///   đổi tên giữ id (không key theo tên hay index).
+/// - AH-2: trần 20 sets chặn ở UI seam (`1...maxExtraSets`); model seam
+///   là contract A20 #399 (chưa có — không bịa).
 public struct ExtraExerciseRow: View {
   let exercise: MockExtraExercise
   @State private var editedName: String
