@@ -451,8 +451,8 @@ public final class ManualLogController {
 
   private func persist() async -> Bool {
     let state = DayState(manual: snapshot)
-    let store = self.store, key = Self.slotKey(date: date, slot)
-    return await write({ try await store.saveDay(key, state) }) == nil
+    let store = self.store, key = Self.slotKey(date: date, slot), userId = self.userId
+    return await write({ try await store.saveDay(key, state, userId: userId) }) == nil
   }
 
   /// Các lần ghi nối tiếp nhau; `unsaved` chỉ nghe lần mới nhất (như

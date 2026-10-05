@@ -619,8 +619,8 @@ public final class WorkoutSessionController {
 
   private func persist() async -> Bool {
     let state = dayState
-    let store = self.store, key = self.key
-    return await write({ try await store.saveDay(key, state) }) == nil
+    let store = self.store, key = self.key, userId = self.userId
+    return await write({ try await store.saveDay(key, state, userId: userId) }) == nil
   }
 
   /// Xếp một lần ghi vào sau mọi lần ghi trước, đợi nó bền. `nil` = thành.

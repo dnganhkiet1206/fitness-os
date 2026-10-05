@@ -61,9 +61,14 @@ public struct DayState: Sendable, Hashable, Codable {
 ///   hai controller cùng mở một ngày (hai màn, khôi phục chồng lên nhau) sinh
 ///   hai id — chỉ khoá ở tầng lưu mới chặn được buổi thứ hai, và chặn được bản
 ///   chụp cũ "mở khoá" ngày đã chốt.
+/// - mỗi phép ghi nói nó ghi CHO AI (#454): `saveDay(userId:)`, và
+///   `entry.userId` của `commitFinish` / `commitDelete`. Bản lưu theo tài khoản
+///   (GRDB) từ chối — trước khi có gì bền — phép ghi cho người không phải người
+///   đang đăng nhập, hay khi không ai đăng nhập: lượt ghi muộn của controller
+///   cũ không lọt vào ngày của người kế tiếp.
 public protocol WorkoutStore: Sendable {
   func loadDay(_ key: String) async throws -> DayState?
-  func saveDay(_ key: String, _ state: DayState) async throws
+  func saveDay(_ key: String, _ state: DayState, userId: String) async throws
   /// `true` nếu hàng outbox mới được chèn, `false` nếu id đã có từ trước.
   @discardableResult
   func commitFinish(_ key: String, _ state: DayState, _ entry: OutboxEntry) async throws -> Bool

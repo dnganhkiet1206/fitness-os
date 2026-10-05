@@ -47,10 +47,25 @@ public final class AccountScope: @unchecked Sendable {
   }
 
   /// Hàng của `userId` có được đọc / ghi lúc này không.
-  public func allows(_ userId: String) -> Bool {
+  public func allows(_ userId: String) -> Bool { Self.allows(userId, in: current) }
+
+  /// Chủ để ghi CHO `userId` (#454): `owner` nếu `userId` được phép, không
+  /// thì `nil`. Đọc chốt MỘT lần — `owner` rồi `allows` riêng rẽ để hở một khe:
+  /// đổi tài khoản giữa hai lần đọc thì phép ghi cho người mới mang chủ cũ.
+  public func owner(writingFor userId: String) -> String? {
+    let state = current
+    guard Self.allows(userId, in: state) else { return nil }
+    return switch state {
+    case .unrestricted: ""
+    case .signedIn(let who): who
+    case .signedOut: nil
+    }
+  }
+
+  private static func allows(_ userId: String, in state: State) -> Bool {
     let id = userId.lowercased()
     guard !id.isEmpty else { return false }
-    return switch current {
+    return switch state {
     case .unrestricted: true
     case .signedIn(let who): who == id
     case .signedOut: false
