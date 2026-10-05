@@ -59,6 +59,7 @@ private struct LabSession: View {
   @Environment(RestTimerController.self) private var rest
   @Environment(\.scenePhase) private var scenePhase
   @State private var today: TodayController?
+  @State private var records: RecordBook?
   @State private var controller: WorkoutSessionController?
   @State private var useSample = false
 
@@ -70,6 +71,7 @@ private struct LabSession: View {
           LabRow(label: "Template", value: today.plan?.template.map { "\($0.name) (\($0.exercises.count) bài)" } ?? "—")
           LabRow(label: "Plan source", value: Self.describe(today.source))
           LabRow(label: "Trained (14d)", value: "\(today.trained.count) ngày")
+          LabRow(label: "Record history", value: records?.bests.map { "\($0.count) bài" } ?? "chưa biết (không nhận kỷ lục)")
           if let e = today.refreshError {
             LabRow(label: "Refresh failed", value: e).foregroundStyle(.orange)
           }
@@ -86,7 +88,10 @@ private struct LabSession: View {
     }
     .task(id: user.userId) {
       let t = services.makeToday(userId: user.userId)
+      let book = services.makeRecordBook(userId: user.userId)
       today = t
+      records = book
+      await book.load()
       await t.load()
       install()
     }
@@ -121,12 +126,18 @@ private struct LabSession: View {
     let onRest: @MainActor (RestEvent, PlannedSet?) -> Void = { event, next in
       rest.handle(event, target: next.map { RestTarget(exerciseName: $0.exerciseName, setNumber: $0.ordinal, totalSets: $0.of) })
     }
-    let onEnqueued: @MainActor (OutboxEntry) -> Void = { _ in sync.kick() }
-    var next = today.makeSession(onRest: onRest, onEnqueued: onEnqueued)
+    let book = records
+    let onEnqueued: @MainActor (OutboxEntry) -> Void = { entry in
+      sync.kick()
+      // Buổi vừa chốt thành lịch sử kỷ lục — buổi sau không nổ lại cùng kỷ lục.
+      if let book { Task { await book.absorb(setsJSON: entry.payload["sets"]) } }
+    }
+    let bests: @MainActor () -> PersonalRecords.Bests? = { book?.bests }
+    var next = today.makeSession(bests: bests, onRest: onRest, onEnqueued: onEnqueued)
     if next == nil, useSample {
       next = WorkoutSessionController(
         plan: WorkoutLabPlan.plan(on: today.today), userId: user.userId, store: services.workouts,
-        onRest: onRest, onEnqueued: onEnqueued)
+        bests: bests, onRest: onRest, onEnqueued: onEnqueued)
     }
     guard let next else {
       controller = nil
@@ -202,6 +213,7 @@ private struct LabWorkout: View {
           LabRow(label: "Exercises", value: "\(s.exerciseCount)")
           LabRow(label: "Volume (kg)", value: "\(s.volumeKg)")
           LabRow(label: "Session RPE", value: "\(s.sessionRpe)")
+          LabRow(label: "PR", value: s.records.isEmpty ? "—" : s.records.map { "\($0.exercise) \($0.kind.rawValue) \($0.previous.formatted())→\($0.value.formatted())" }.joined(separator: "; "))
         }
       }
 

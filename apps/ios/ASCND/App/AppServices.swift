@@ -23,6 +23,8 @@ final class AppServices {
   /// Kế hoạch tuần + template thật, local-first (#270).
   @ObservationIgnored let templates: TodayRepository
   @ObservationIgnored let history: any TrainingHistory
+  @ObservationIgnored let recordHistory: any RecordHistory
+  @ObservationIgnored let recordCache: any RecordBookCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
@@ -54,6 +56,8 @@ final class AppServices {
       source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
       cache: templateCache)
     history = backend.map { SupabaseTrainingHistory(backend: $0) as any TrainingHistory } ?? UnconfiguredHistory()
+    recordHistory = backend.map { SupabaseRecordHistory(backend: $0) as any RecordHistory } ?? UnconfiguredRecords()
+    recordCache = GRDBRecordBookCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: OutboxStore(database),
@@ -99,6 +103,11 @@ final class AppServices {
     session.onSignedOut(cleanup)
   }
 
+  /// Bảng kỷ lục của người đang đăng nhập (#295).
+  func makeRecordBook(userId: String) -> RecordBook {
+    RecordBook(userId: userId, history: recordHistory, cache: recordCache)
+  }
+
   func didBecomeActive() {
     sync.kick()
   }
@@ -135,6 +144,11 @@ private struct UnconfiguredAuth: AuthAPI {
 
 private struct UnconfiguredHistory: TrainingHistory {
   func sessionTimes(userId: String, since: EpochMillis) async throws -> [EpochMillis] { [] }
+}
+
+private struct UnconfiguredRecords: RecordHistory {
+  struct NotConfigured: Error {}
+  func recentSessionSets(userId: String, limit: Int) async throws -> [JSONValue] { throw NotConfigured() }
 }
 
 private struct UnconfiguredTemplates: TemplateSource {

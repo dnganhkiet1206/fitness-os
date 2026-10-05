@@ -230,3 +230,17 @@ struct GRDBTemplateCacheTests {
     #expect(try await cache.load(userId: "u1") == nil)
   }
 }
+
+struct GRDBRecordBookCacheTests {
+  @Test func roundTripPerUserAndClearedWithReadCache() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBRecordBookCache(db)
+    let bests = PersonalRecords.bests(from: [RecordSet(exerciseName: "Bench", weightKg: 100, reps: 5)])
+    try await cache.save(userId: "u1", bests)
+    #expect(try await cache.load(userId: "u1") == bests)
+    #expect(try await cache.load(userId: "u2") == nil)
+    // Đăng xuất xoá cả bảng read_cache (GRDBTemplateCache.clearAll).
+    try await GRDBTemplateCache(db).clearAll()
+    #expect(try await cache.load(userId: "u1") == nil)
+  }
+}

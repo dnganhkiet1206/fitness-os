@@ -106,6 +106,9 @@ public final class WorkoutSessionController {
   /// Ngày này đã có buổi trên server. Tick vẫn được (xem lại, chuẩn bị), chốt
   /// thì không — nối thêm vào buổi đã có (`appending`) chưa có ở native.
   public let loggedElsewhere: Bool
+  /// Bảng tốt-nhất để so kỷ lục lúc chốt (#295); `nil` = chưa biết lịch sử →
+  /// không nhận kỷ lục (như baseline khi đọc lịch sử lỗi).
+  private let bests: @MainActor () -> PersonalRecords.Bests?
   private var writes: Task<(any Error)?, Never>?
   private var issued = 0
   private var settled = 0
@@ -118,6 +121,7 @@ public final class WorkoutSessionController {
   public init(
     plan: Plan, userId: String, store: any WorkoutStore, clock: any WallClock = SystemWallClock(),
     timeZone: TimeZone = .current, loggedElsewhere: Bool = false,
+    bests: @escaping @MainActor () -> PersonalRecords.Bests? = { nil },
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
     onRest: @escaping @MainActor (RestEvent, PlannedSet?) -> Void = { _, _ in },
     onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
@@ -131,6 +135,7 @@ public final class WorkoutSessionController {
     self.onRest = onRest
     self.onEnqueued = onEnqueued
     self.loggedElsewhere = loggedElsewhere
+    self.bests = bests
   }
 
   public var key: String {
@@ -228,13 +233,19 @@ public final class WorkoutSessionController {
     guard !loggedElsewhere else { throw .loggedElsewhere }
     let now = clock.nowMillis()
     let id = pendingId ?? makeId()
-    guard let record = WorkoutSessionRecord(
+    guard let draft = WorkoutSessionRecord(
       id: id, userId: userId,
       dateTime: WorkoutSessionRecord.stamp(
         for: plan.date, today: LocalDate(now, in: timeZone), now: now, timeZone: timeZone),
       templateId: plan.templateId, templateName: plan.templateName,
       sets: WorkoutDay.sessionSets(plan.rows, progress, toKg: toKg))
     else { throw .nothingDone }
+    // Kỷ lục: so với lịch sử TRƯỚC buổi này (`use-fitness-data.ts:350`), một
+    // lần, lúc chốt — `pr_detected` nằm trong hàng outbox, phát lại không đổi.
+    let records = bests().map { PersonalRecords.findRecords(draft.recordSets, bests: $0) } ?? []
+    let record = WorkoutSessionRecord(
+      id: draft.id, userId: draft.userId, dateTime: draft.dateTime, templateId: draft.templateId,
+      templateName: draft.templateName, sets: draft.sets, prDetected: !records.isEmpty)!
 
     pendingId = id
     finishing = true
@@ -255,7 +266,7 @@ public final class WorkoutSessionController {
     }
     pendingId = nil
     loggedSessionId = id
-    let result = WorkoutSummary(record)
+    let result = WorkoutSummary(record, records: records)
     summary = result
     onEnqueued(entry)
     return result
