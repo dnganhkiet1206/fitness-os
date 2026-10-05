@@ -14,6 +14,15 @@ struct NetworkFailureTests {
     #expect(NetworkFailure.isOffline(CancellationError()))
   }
 
+  /// Audit của C (#222, 05/10): lỗi xác thực là "phiên hết hạn", không phải
+  /// mất mạng — chúng rơi vào `.unavailable` ("tới được server mà không đọc
+  /// được"), không vào `.offline`. Khoá lại để không ai thêm nhầm.
+  @Test(arguments: [URLError.Code.userAuthenticationRequired, .userCancelledAuthentication])
+  func authenticationIsNotOffline(code: URLError.Code) {
+    #expect(!NetworkFailure.isOffline(URLError(code)))
+    #expect(!NetworkFailure.isOffline(NSError(domain: NSURLErrorDomain, code: code.rawValue)))
+  }
+
   @Test func otherErrorsAreNot() {
     struct Boom: Error {}
     #expect(!NetworkFailure.isOffline(URLError(.badServerResponse)))
