@@ -1,5 +1,3 @@
-public import Foundation
-
 /// Một giá trị JSON bất kỳ, có kiểu.
 ///
 /// Dùng ở hai chỗ có hình dạng chưa cố định: `input`/`expected` của golden
