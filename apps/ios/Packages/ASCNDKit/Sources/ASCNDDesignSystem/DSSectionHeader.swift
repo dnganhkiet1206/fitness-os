@@ -26,6 +26,7 @@ public struct DSSectionHeader: View {
         Button(actionTitle, action: action)
           .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.metricBlue.swiftUI)
+          .frame(minHeight: 44)
           .accessibilityLabel(Text(actionTitle))
           .accessibilityAddTraits(.isButton)
       }
