@@ -16,11 +16,13 @@ import GRDB
 /// của Core đã thử khứ hồi; không có ánh xạ cột thứ hai để lệch.
 public final class OutboxStore: Sendable {
   private let db: DatabaseQueue
+  private let accounts: AccountScope
 
   /// Dùng chung cơ sở dữ liệu của app — để `GRDBWorkoutStore.commitFinish`
   /// ghi hàng outbox và ngày đã chốt trong CÙNG một transaction.
   public init(_ database: ASCNDDatabase) {
     db = database.queue
+    accounts = database.accounts
   }
 
   /// Mở (hoặc tạo) cơ sở dữ liệu riêng ở `path` và chạy migration.
@@ -116,6 +118,12 @@ extension OutboxStore: OutboxPersistence {}
 /// ngày cùng bền hoặc cùng không, đúng thứ tự `seq`.
 extension OutboxStore: PlanWriteStore {
   public func enqueue(_ entries: [OutboxEntry]) throws {
+    // Hàng rào tài khoản (#485): mọi entry phải của người đang đăng nhập —
+    // lượt ghi muộn của controller người cũ không chèn hàng của A trong phiên
+    // của B. Kiểm TRƯỚC khi ghi: tất-cả-hoặc-không.
+    for e in entries {
+      guard accounts.owner(writingFor: e.userId) != nil else { throw AccountScopeClosed() }
+    }
     let rows = try entries.map { ($0, try Self.json($0)) }
     try db.write { db in
       for (e, json) in rows {
