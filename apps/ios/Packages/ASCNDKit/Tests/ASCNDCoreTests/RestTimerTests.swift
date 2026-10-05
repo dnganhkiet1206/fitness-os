@@ -150,57 +150,79 @@ struct RestTimerInvariantTests {
   }
 }
 
-/// Runner cho `spec/vectors/rest-timer.json` (D, #230). Tệp chưa có thì không
-/// có ca nào để chạy — test vẫn xanh, và `everySpecVectorFileIsWellFormed`
-/// soát định dạng khi tệp tới.
-struct RestTimerVectorTests {
-  struct Input: Decodable, Sendable {
-    struct Event: Decodable, Sendable {
-      let at: Int64
-      let op: String
-      let seconds: Int?
-      let delta: Int?
+/// Runner cho golden vectors của D (#230, #237). Định dạng của D: chọn hàm
+/// theo tiền tố `rule`, `input` là tham số của hàm đó. Tệp chưa có thì không
+/// có ca nào để chạy. Tiền tố lạ là lỗi — luật mới phải kèm runner, giống
+/// `spec/vectors/run.mjs`.
+struct WorkoutVectorTests {
+  private func run(_ c: GoldenVector<JSONValue, JSONValue>) -> JSONValue? {
+    let i = c.input
+    let rule = c.rule
+    func int(_ k: String) -> Int? { i[k]?.intValue }
+    func set(_ v: JSONValue) -> LoggedSet {
+      LoggedSet(reps: v["reps"]?.intValue ?? 0, weight: v["weight"]?.doubleValue,
+                warmup: v["warmup"]?.boolValue ?? false, durationSec: v["durationSec"]?.intValue)
     }
-    let events: [Event]
-    let at: Int64
+    func sets() -> [LoggedSet] {
+      if case .array(let a)? = i["sets"] { return a.map(set) }
+      return []
+    }
+    if rule.hasPrefix("RT-7"), let base = int("base"), let delta = int("delta") {
+      // Runner RN của D cố định total = 90 cho nhóm này.
+      let r = RestTimer.adjust(base: base, delta: delta, total: 90)
+      return .object(["left": .number(Double(r.left)), "total": .number(Double(r.total))])
+    }
+    if rule.hasPrefix("RT-15"), let s = int("seconds") {
+      return .object(["label": .string(RestTimer.label(seconds: s))])
+    }
+    if rule.hasPrefix("RT-10"), let now = int("now") {
+      return .object(["warn": .bool(RestTimer.warns(left: now, paused: i["paused"]?.boolValue ?? false))])
+    }
+    if rule.hasPrefix("RT-16"), let n = int("n") {
+      return .object(["clamped": .number(Double(RestTimer.clampPlanned(n)))])
+    }
+    if rule.hasPrefix("WS-2") {
+      let e = RepEntry.parse(i["reps"]?.stringValue)
+      var o: [String: JSONValue] = ["counted": .bool(e.isEntered)]
+      if e.reps > 0 { o["reps"] = .number(Double(e.reps)) }
+      if let d = e.durationSec, d > 0 { o["durationSec"] = .number(Double(d)) }
+      return .object(o)
+    }
+    if rule.hasPrefix("WS-5") {
+      return .object(["volume": .number(WorkoutMath.volume(of: sets()))])
+    }
+    if rule.hasPrefix("WS-8"), let s = i["set"], let h = i["history"] {
+      var repsAt: [String: Int] = [:]
+      if case .object(let o)? = h["repsByWeight"] { for (k, v) in o { repsAt[k] = v.intValue } }
+      let top = h["topWeight"]?.doubleValue ?? 0
+      let best = top > 0 || !repsAt.isEmpty ? PersonalRecords.Best(topWeight: top, repsAt: repsAt) : nil
+      guard let kind = PersonalRecords.check(set(s), best: best) else { return .object(["isRecord": .bool(false)]) }
+      return .object(["isRecord": .bool(true), "kind": .string(kind.rawValue)])
+    }
+    if rule == "LT-6" {
+      let n = WorkoutMath.performedSetCount(sets())
+      return .object(["counted": .bool(n > 0), "setCount": .number(Double(n)),
+                      "volume": .number(WorkoutMath.volume(of: sets()))])
+    }
+    return nil
   }
 
-  struct Expected: Decodable, Sendable {
-    let phase: String
-    let left: Int?
-    let total: Int?
-    let endsAt: Int64?
-  }
-
-  @Test func goldenVectors() throws {
-    let url = RepoPaths.specVectors.appendingPathComponent("rest-timer.json")
+  @Test(arguments: ["rest-timer.json", "workout-state.json"])
+  func goldenVectors(file: String) throws {
+    let url = RepoPaths.specVectors.appendingPathComponent(file)
     guard FileManager.default.fileExists(atPath: url.path) else { return }
-    let cases = try GoldenVectors.load(url, as: GoldenVector<Input, Expected>.self)
-    for c in cases {
-      var state: RestTimer?
-      for e in c.input.events {
-        let event: RestEvent
-        switch e.op {
-        case "start": event = .start(seconds: try #require(e.seconds, "\(c.rule): start thiếu seconds"))
-        case "adjust": event = .adjust(delta: try #require(e.delta, "\(c.rule): adjust thiếu delta"))
-        case "cancel": event = .cancel
-        default:
-          Issue.record("\(c.rule): op lạ '\(e.op)'")
-          continue
-        }
-        state = RestTimer.reduce(state, event, at: at(e.at))
+    for c in try GoldenVectors.load(url, as: GoldenVector<JSONValue, JSONValue>.self) {
+      guard let actual = run(c) else {
+        Issue.record("\(file) \(c.rule): không có runner Swift cho luật này")
+        continue
       }
-      let now = at(c.input.at)
-      let phase: String
-      switch state?.phase(at: now) {
-      case .running?: phase = "running"
-      case .done?: phase = "done"
-      case .over?, nil: phase = "idle"
+      guard case .object(let expected) = c.expected else {
+        Issue.record("\(c.rule): expected không phải object")
+        continue
       }
-      #expect(phase == c.expected.phase, "\(c.rule)")
-      if let left = c.expected.left { #expect(state?.remaining(at: now) == left, "\(c.rule): left") }
-      if let total = c.expected.total { #expect(state?.total == total, "\(c.rule): total") }
-      if let endsAt = c.expected.endsAt { #expect(state?.endsAt.millis == endsAt, "\(c.rule): endsAt") }
+      for (k, v) in expected {
+        #expect(actual[k] == v, "\(c.rule).\(k): kỳ vọng \(v), ra \(String(describing: actual[k]))")
+      }
     }
   }
 }

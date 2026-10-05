@@ -65,8 +65,36 @@ public struct RestTimer: Sendable, Hashable, Codable {
   /// đang vẽ — nhịp vẽ có thể chậm tới một giây. Kết quả kẹp trong
   /// [1, `maxSeconds`]: −15 khi còn 10 giây để lại 1 giây (baseline, #235).
   public func adjusted(by delta: Int, at now: EpochMillis) -> RestTimer {
-    let left = min(Self.maxSeconds, max(1, remaining(at: now) + delta))
-    return RestTimer(endsAt: now + Int64(left) * 1000, total: max(total, left))
+    let next = Self.adjust(base: remaining(at: now), delta: delta, total: total)
+    return RestTimer(endsAt: now + Int64(next.left) * 1000, total: next.total)
+  }
+
+  /// Phép tính của ±15 tách khỏi thời gian (vector RT-7): còn `base` giây,
+  /// chỉnh `delta` → còn bao nhiêu, mẫu số mới là gì.
+  public static func adjust(base: Int, delta: Int, total: Int) -> (left: Int, total: Int) {
+    let left = min(maxSeconds, max(1, base + delta))
+    return (left, max(total, left))
+  }
+
+  /// Thời gian nghỉ đặt cho từng hàng, kẹp [0, `maxSeconds`] (RT-16). 0 là
+  /// "bài này không nghỉ", hợp lệ — khác với ±15 vốn kẹp từ 1.
+  public static func clampPlanned(_ seconds: Int) -> Int {
+    min(maxSeconds, max(0, seconds))
+  }
+
+  /// Vòng đổi màu cảnh báo ở 5 giây cuối (RT-10, `rest-timer.tsx:129`).
+  /// `paused` giữ cho đúng chữ ký baseline; pause chưa có trong v1 (#235).
+  public static let warnAtSeconds = 5
+  public static func warns(left: Int, paused: Bool = false) -> Bool {
+    !paused && left > 0 && left <= warnAtSeconds
+  }
+
+  /// Nhãn thời gian nghỉ: "45s" dưới một phút, "1:30" từ một phút (RT-15,
+  /// `prescription.ts:restLabel`). Không dịch: "s" là ký hiệu, như trên đồng hồ.
+  public static func label(seconds: Int) -> String {
+    if seconds < 60 { return "\(seconds)s" }
+    let s = seconds % 60
+    return "\(seconds / 60):\(s < 10 ? "0" : "")\(s)"
   }
 
   /// Gốc của khoảng thời gian mà vòng chạy trên: `endsAt − total`.
