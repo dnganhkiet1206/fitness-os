@@ -3,7 +3,8 @@
 // Dùng khi chưa có nội dung (ví dụ: tab Hôm nay chưa có kế hoạch).
 // Thay PlaceholderScreen của #232 khi màn hình thật chưa có.
 #if canImport(SwiftUI)
-import SwiftUI
+#if canImport(SwiftUI)
+@_exported import SwiftUI
 
 public struct DSEmptyState: View {
   let systemImage: String

@@ -5,7 +5,8 @@
 // KHÔNG cỡ chữ cố định — ngoại lệ duy nhất là số trong hình vẽ
 // (xem RING_TEXT_MAX_SCALE trong app RN).
 #if canImport(SwiftUI)
-import SwiftUI
+#if canImport(SwiftUI)
+@_exported import SwiftUI
 
 public extension DS {
   enum Type {

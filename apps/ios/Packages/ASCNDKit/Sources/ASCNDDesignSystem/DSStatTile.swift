@@ -3,7 +3,8 @@
 // Nhãn + số lớn + đơn vị. Dùng cho volume, số set, thời gian ở màn Summary.
 // Số dùng font mono để cột số không nhảy khi giá trị đổi.
 #if canImport(SwiftUI)
-import SwiftUI
+#if canImport(SwiftUI)
+@_exported import SwiftUI
 
 public struct DSStatTile: View {
   let label: String
