@@ -61,7 +61,11 @@ public actor FakeServer: RemoteWriter {
   private func apply(_ entry: OutboxEntry) {
     if rows[entry.id] == nil { rows[entry.id] = entry }
     guard let rowId = entry.payload["id"]?.stringValue else { return }
-    if entry.kind == WorkoutSessionRecord.revisionKind || table[rowId] == nil { table[rowId] = entry.payload }
+    if entry.kind == WorkoutSessionRecord.deleteKind {
+      table[rowId] = nil
+    } else if entry.kind == WorkoutSessionRecord.revisionKind || table[rowId] == nil {
+      table[rowId] = entry.payload
+    }
   }
 }
 

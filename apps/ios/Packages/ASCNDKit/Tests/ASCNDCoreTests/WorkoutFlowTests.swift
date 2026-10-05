@@ -480,6 +480,52 @@ struct WorkoutPipelineTests {
     #expect(await p.server.table.count == 1)
   }
 
+  /// #398: chốt có mạng → gỡ set cuối cùng lúc offline → kill → mở lại có
+  /// mạng: hàng biến khỏi server; trong lúc chờ, hôm nay đã thôi "đã tập" và
+  /// "lần trước" không còn trỏ vào buổi đã xoá.
+  @Test func removingTheLastSetOfflineDeletesTheRowAfterKill() async throws {
+    let p = Pipeline()
+    await p.start()
+    let s = try #require(p.flow.session)
+    await s.toggle("0-0")
+    let summary = try await p.flow.finish()
+    await p.worker.settle()
+    await p.flow.settled()
+    #expect(await p.server.table.keys.sorted() == [summary.sessionId])
+    #expect(p.flow.today.plan?.status == .done)
+    #expect(p.flow.performance.last(for: "Bench") != nil)
+
+    p.worker.setOnline(false)
+    let removal = try await s.removeLoggedSet("0-0")
+    #expect(removal.deletedSession)
+    await p.flow.settled()
+    #expect(p.flow.today.plan?.status == .todo, "local-first: thôi đã tập ngay")
+    #expect(p.flow.performance.last(for: "Bench") == nil)
+
+    p.launch(online: true)
+    await p.start()
+    #expect(await p.server.table.isEmpty)
+    #expect(await p.store.outbox.isEmpty)
+    #expect(p.flow.today.plan?.status == .todo)
+  }
+
+  /// Gỡ rồi hoàn tác trước khi có mạng: server nhận đủ ba lệnh theo thứ tự và
+  /// kết thúc với hàng đầy đủ — không mất set.
+  @Test func undoBeforeSyncKeepsTheSession() async throws {
+    let p = Pipeline(online: false)
+    await p.start()
+    let s = try #require(p.flow.session)
+    await s.toggle("0-0")
+    await s.toggle("0-1")
+    let summary = try await p.flow.finish()
+    let removal = try await s.removeLoggedSet("0-1")
+    try await s.undo(removal)
+    p.worker.setOnline(true)
+    await p.worker.settle()
+    #expect(await p.server.attempts == [summary.sessionId, "\(summary.sessionId)@r1", "\(summary.sessionId)@r2"])
+    #expect(await p.sets(summary.sessionId) == 2)
+  }
+
   /// Chốt → nối thêm set lúc offline → kill → mở lại có mạng: hàng trên server
   /// có đủ mọi set, theo đúng thứ tự gửi (gốc trước, bản ghi lại sau).
   @Test func appendAfterKillReachesTheSameRow() async throws {

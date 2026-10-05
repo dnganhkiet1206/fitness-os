@@ -19,11 +19,16 @@ public struct SupabaseRemoteWriter: RemoteWriter {
   static let tables: [String: String] = [
     WorkoutSessionRecord.outboxKind: "workout_sessions",
     WorkoutSessionRecord.revisionKind: "workout_sessions",
+    WorkoutSessionRecord.deleteKind: "workout_sessions",
   ]
 
   /// Bản ghi lại (#296) GHI ĐÈ hàng có sẵn; bản ghi mới thì bỏ trùng
   /// (`IDEMPOTENT`). Cả hai đều idempotent: phát lại cùng nội dung ra cùng hàng.
   static func overwrites(_ kind: String) -> Bool { kind == WorkoutSessionRecord.revisionKind }
+
+  /// Bản ghi nói về một hàng ĐÃ có (ghi lại / xoá): id hàng outbox là
+  /// `"<buổi>@…"`, không phải chính id buổi.
+  static func revises(_ kind: String) -> Bool { overwrites(kind) || kind == WorkoutSessionRecord.deleteKind }
 
   private let client: SupabaseClient
   private let afterWrite: @Sendable (OutboxEntry) async -> Void
@@ -42,9 +47,19 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     guard signedIn == entry.userId.lowercased() else { throw .wrongAccount }
     guard let table = Self.tables[entry.kind], Self.isRow(entry) else { throw .unusable }
     do {
-      try await client.from(table)
-        .upsert(entry.payload, onConflict: "id", ignoreDuplicates: !Self.overwrites(entry.kind))
-        .execute()
+      if entry.kind == WorkoutSessionRecord.deleteKind {
+        // Gỡ set cuối cùng (#398): xoá hàng — idempotent, xoá hàng đã mất
+        // không phải lỗi. Lọc cả `user_id` như baseline (`:746`), RLS cũng chặn.
+        try await client.from(table)
+          .delete()
+          .eq("id", value: entry.payload["id"]?.stringValue ?? "")
+          .eq("user_id", value: entry.userId)
+          .execute()
+      } else {
+        try await client.from(table)
+          .upsert(entry.payload, onConflict: "id", ignoreDuplicates: !Self.overwrites(entry.kind))
+          .execute()
+      }
     } catch {
       throw Self.classify(error)
     }
@@ -56,7 +71,7 @@ public struct SupabaseRemoteWriter: RemoteWriter {
   /// id `"<buổi>@<số hàng>"`, hàng của nó là `<buổi>`.
   static func isRow(_ entry: OutboxEntry) -> Bool {
     guard let rowId = entry.payload["id"]?.stringValue, !rowId.isEmpty else { return false }
-    return overwrites(entry.kind) ? entry.id.hasPrefix(rowId + "@") : rowId == entry.id
+    return revises(entry.kind) ? entry.id.hasPrefix(rowId + "@") : rowId == entry.id
   }
 
   /// Dịch lỗi của supabase-swift / URLSession về `WriteFailure`.

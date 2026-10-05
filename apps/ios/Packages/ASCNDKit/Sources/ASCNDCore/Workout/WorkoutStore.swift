@@ -19,16 +19,25 @@ public struct DayState: Sendable, Hashable, Codable {
   public var loggedAt: EpochMillis?
   /// `pr_detected` của buổi: chỉ bật lên, không bao giờ tắt (`use-fitness-data.ts:673`).
   public var loggedPR: Bool?
+  /// Số bản ghi lại đã sinh cho buổi (#398) — id hàng outbox `"<buổi>@r<n>"`.
+  /// Đếm, không suy từ số set: gỡ set rồi nối lại cho cùng số set, và id trùng
+  /// một bản còn chờ gửi thì `INSERT OR IGNORE` lặng lẽ bỏ bản mới.
+  public var loggedRevision: Int?
+  /// `session_rpe` đã ghi: gỡ set không làm nó giảm (`use-fitness-data.ts:756`).
+  public var loggedRpe: Int?
 
   public init(
     progress: DayProgress = DayProgress(), loggedSessionId: String? = nil,
-    loggedKeys: [String]? = nil, loggedAt: EpochMillis? = nil, loggedPR: Bool? = nil
+    loggedKeys: [String]? = nil, loggedAt: EpochMillis? = nil, loggedPR: Bool? = nil,
+    loggedRevision: Int? = nil, loggedRpe: Int? = nil
   ) {
     self.progress = progress
     self.loggedSessionId = loggedSessionId
     self.loggedKeys = loggedKeys
     self.loggedAt = loggedAt
     self.loggedPR = loggedPR
+    self.loggedRevision = loggedRevision
+    self.loggedRpe = loggedRpe
   }
 }
 

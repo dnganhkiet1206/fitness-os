@@ -421,7 +421,7 @@ struct AppendToSessionTests {
     #expect(s.completedSets == 2)
     #expect(s.volumeKg == 960)
     let outbox = await store.outbox
-    #expect(outbox.map(\.id) == [first.sessionId, "\(first.sessionId)@2"])
+    #expect(outbox.map(\.id) == [first.sessionId, "\(first.sessionId)@r1"])
     #expect(outbox[1].kind == "workout-revision")
     #expect(outbox[1].payload["id"] == .string(first.sessionId))
     #expect(outbox[1].payload["date_time"] == outbox[0].payload["date_time"], "giữ dấu thời gian của buổi")
@@ -457,7 +457,7 @@ struct AppendToSessionTests {
     await #expect(throws: WorkoutSessionController.FinishRefusal.self) { try await c.append() }
     #expect(await store.outbox.count == 1)
     _ = try await c.append()
-    #expect(await store.outbox.map(\.id) == [first.sessionId, "\(first.sessionId)@2"])
+    #expect(await store.outbox.map(\.id) == [first.sessionId, "\(first.sessionId)@r1"])
     await #expect(throws: WorkoutSessionController.FinishRefusal.nothingToAppend) { try await c.append() }
   }
 
@@ -510,3 +510,172 @@ struct AppendToSessionTests {
   }
 }
 
+
+/// #398: bỏ tick set đã nằm trong buổi đã chốt → gỡ set khỏi buổi, hoàn tác 8 s
+/// (`useRemoveSetFromSession` / `useRestoreSession`, `day-plan.tsx:1173-1247`).
+@MainActor
+struct RemoveLoggedSetTests {
+  private func sets(_ e: OutboxEntry) -> Int? {
+    if case .array(let a)? = e.payload["sets"] { return a.count }
+    return nil
+  }
+
+  /// Gỡ ĐÚNG set của hàng bị bỏ tick; cả hàng được ghi lại (cùng id buổi, cùng
+  /// dấu thời gian); volume tính lại; `session_rpe` KHÔNG giảm (RS-4a) dù set
+  /// bị gỡ là set nặng nhất.
+  @Test func removesThatRowsSetAndKeepsSessionRpe() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    await c.setRpe(9, for: "b1")
+    await c.toggle("b2")
+    let first = try await c.finish()
+    #expect(c.canRemove("b1"))
+    let removal = try await c.removeLoggedSet("b1")
+    #expect(!removal.deletedSession)
+    #expect(c.loggedKeys == ["b2"])
+    #expect(c.progress.done["b1"] == false)
+    let outbox = await store.outbox
+    #expect(outbox.map(\.id) == [first.sessionId, "\(first.sessionId)@r1"])
+    #expect(outbox[1].kind == WorkoutSessionRecord.revisionKind)
+    #expect(sets(outbox[1]) == 1)
+    #expect(outbox[1].payload["session_rpe"] == .number(9), "gỡ set không đổi cảm nhận của buổi")
+    #expect(outbox[1].payload["volume_load"] == .number(480))
+    #expect(outbox[1].payload["date_time"] == outbox[0].payload["date_time"])
+    #expect(c.summary?.completedSets == 1)
+  }
+
+  /// Gỡ set cuối cùng → xoá cả hàng (RS-3a).
+  @Test func removingTheLastSetDeletesTheSession() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    let first = try await c.finish()
+    let removal = try await c.removeLoggedSet("b1")
+    #expect(removal.deletedSession)
+    let last = try #require(await store.outbox.last)
+    #expect(last.kind == WorkoutSessionRecord.deleteKind)
+    #expect(last.payload == .object(["id": .string(first.sessionId)]))
+    #expect(c.loggedKeys.isEmpty)
+    #expect(c.summary == nil)
+  }
+
+  /// Hoàn tác trong cửa sổ: set trở lại buổi, hàng được ghi lại — dựng lại cả
+  /// khi đã bị xoá (RS-5a).
+  @Test func undoRestoresTheSetEvenAfterDelete() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    let first = try await c.finish()
+    let removal = try await c.removeLoggedSet("b1")
+    try await c.undo(removal)
+    #expect(c.loggedKeys == ["b1"])
+    #expect(c.progress.done["b1"] == true)
+    let outbox = await store.outbox
+    #expect(outbox.map(\.id) == [first.sessionId, "\(first.sessionId)@r1", "\(first.sessionId)@r2"])
+    #expect(outbox[2].kind == WorkoutSessionRecord.revisionKind)
+    #expect(sets(outbox[2]) == 1)
+    await #expect(throws: WorkoutSessionController.RemoveRefusal.expired) { try await c.undo(removal) }
+  }
+
+  /// Quá 8 giây: hoàn tác bị từ chối, không ghi gì.
+  @Test func undoExpiresAfterTheWindow() async throws {
+    let store = InMemoryWorkoutStore()
+    let clock = ManualClock(EpochMillis(1_791_183_600_000))
+    let c = WorkoutSessionController(
+      plan: .init(date: today, templateId: "tpl-push", templateName: "Push A", rows: [bench1, bench2]),
+      userId: "u1", store: store, clock: clock, timeZone: saigon)
+    await c.load()
+    await c.toggle("b1")
+    await c.toggle("b2")
+    _ = try await c.finish()
+    let removal = try await c.removeLoggedSet("b2")
+    clock.advance(WorkoutSessionController.undoWindowMillis)
+    let before = await store.outbox.count
+    await #expect(throws: WorkoutSessionController.RemoveRefusal.expired) { try await c.undo(removal) }
+    #expect(await store.outbox.count == before)
+    #expect(c.loggedKeys == ["b1"])
+  }
+
+  /// Chạm đúp: lần gỡ thứ hai trong lúc lần đầu đang ghi bị chặn ở cửa (RS-6a).
+  @Test func secondRemovalWhileWritingIsRefused() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    await c.toggle("b2")
+    _ = try await c.finish()
+    await store.hold()
+    async let first = try? c.removeLoggedSet("b1")
+    while await store.parked == 0 { await Task.yield() }
+    await #expect(throws: WorkoutSessionController.RemoveRefusal.inProgress) { try await c.removeLoggedSet("b2") }
+    await store.release()
+    #expect(await first != nil)
+    #expect(c.loggedKeys == ["b2"])
+  }
+
+  /// Gỡ rồi nối lại cùng số set: hai bản ghi lại KHÁC id. Cách đặt id cũ
+  /// (`"<buổi>@<số set>"`) cho trùng, và `INSERT OR IGNORE` bỏ bản mới.
+  @Test func revisionIdsNeverCollide() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    await c.toggle("b2")
+    let first = try await c.finish()
+    _ = try await c.removeLoggedSet("b2")
+    #expect(await c.toggle("b2"), "set vừa gỡ tick lại được — thành hàng nối thêm")
+    _ = try await c.append()
+    let ids = await store.outbox.map(\.id)
+    #expect(ids == [first.sessionId, "\(first.sessionId)@r1", "\(first.sessionId)@r2"])
+    #expect(Set(ids).count == ids.count)
+  }
+
+  /// Kill sau khi gỡ: mở lại đúng trạng thái, số đếm bản ghi lại tiếp tục.
+  @Test func removalSurvivesReloadAndCounterContinues() async throws {
+    let store = InMemoryWorkoutStore()
+    let first: WorkoutSummary
+    do {
+      let c = await controller(store)
+      await c.toggle("b1")
+      await c.toggle("b2")
+      first = try await c.finish()
+      _ = try await c.removeLoggedSet("b2")
+    }
+    let c = await controller(store)
+    #expect(c.loggedKeys == ["b1"])
+    #expect(c.canRemove("b1") && !c.canRemove("b2"))
+    _ = try await c.removeLoggedSet("b1")
+    #expect(await store.outbox.last?.id == "\(first.sessionId)@r2")
+    #expect(await store.outbox.last?.kind == WorkoutSessionRecord.deleteKind)
+  }
+
+  @Test func onlyLoggedRowsOfThisDeviceCanBeRemoved() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await #expect(throws: WorkoutSessionController.RemoveRefusal.notLogged) { try await c.removeLoggedSet("b1") }
+    await c.toggle("b1")
+    _ = try await c.finish()
+    await c.toggle("b2")
+    #expect(!c.canRemove("b2"), "hàng chờ nối thêm: bỏ tick thường, không phải gỡ")
+    await #expect(throws: WorkoutSessionController.RemoveRefusal.notLogged) { try await c.removeLoggedSet("b2") }
+
+    let elsewhere = WorkoutSessionController(
+      plan: .init(date: today, templateId: "tpl-x", templateName: "X", rows: [bench1]),
+      userId: "u1", store: InMemoryWorkoutStore(), clock: clock, timeZone: saigon, loggedElsewhere: true)
+    await elsewhere.load()
+    await #expect(throws: WorkoutSessionController.RemoveRefusal.loggedElsewhere) { try await elsewhere.removeLoggedSet("b1") }
+  }
+
+  /// Ghi máy hỏng: không có gì đổi — set vẫn trong buổi, vẫn tick.
+  @Test func failedRemovalChangesNothing() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    await c.toggle("b2")
+    _ = try await c.finish()
+    await store.failNext()
+    await #expect(throws: WorkoutSessionController.RemoveRefusal.self) { try await c.removeLoggedSet("b1") }
+    #expect(c.loggedKeys == ["b1", "b2"])
+    #expect(c.progress.done["b1"] == true)
+    #expect(await store.outbox.count == 1)
+  }
+}

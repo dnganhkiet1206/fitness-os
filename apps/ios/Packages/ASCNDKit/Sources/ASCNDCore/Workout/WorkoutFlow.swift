@@ -234,6 +234,13 @@ public final class WorkoutFlow {
       let previous = absorbing
       absorbing = Task {
         await previous?.value
+        if entry.kind == WorkoutSessionRecord.deleteKind {
+          // Gỡ set cuối cùng (#398): buổi không còn. Bảng kỷ lục giữ nguyên —
+          // tốt-nhất là phép max, không gỡ được; lần làm mới sau sửa lại.
+          await self.today.markUntrained(date)
+          if let id = entry.payload["id"]?.stringValue { await self.performance.forget(sessionId: id) }
+          return
+        }
         await self.today.markTrained(date)
         await self.records.absorb(setsJSON: entry.payload["sets"])
         await self.performance.absorb(row: entry.payload)
