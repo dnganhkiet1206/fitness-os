@@ -59,6 +59,10 @@ jobs:
         working-directory: apps/ios/Packages/ASCNDKit
         run: swift test
 
+      - name: swift test (ASCNDStore, macOS)
+        working-directory: apps/ios/Packages/ASCNDStore
+        run: swift test
+
       - name: Build app (iOS Simulator, không ký)
         working-directory: apps/ios
         run: |

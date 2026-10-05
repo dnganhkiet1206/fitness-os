@@ -85,6 +85,12 @@ public struct Outbox: Sendable, Hashable, Codable {
 
   public init() {}
 
+  /// Dựng lại từ nơi lưu (`ASCNDStore`), theo đúng thứ tự đã ghi.
+  public init(pending: [OutboxEntry], dead: [DeadEntry]) {
+    self.pending = pending
+    self.dead = dead
+  }
+
   private enum CodingKeys: String, CodingKey { case pending, dead }
 
   public enum Next: Sendable, Hashable {
