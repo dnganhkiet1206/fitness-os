@@ -17,8 +17,10 @@ private let today = LocalDate("2026-10-05")!
 /// Đếm số id đã sinh — id buổi chỉ được sinh MỘT lần dù chốt bao nhiêu lần.
 private final class IdMint: Sendable {
   private let n = Mutex(0)
+  private let prefix: String
+  init(_ prefix: String = "sess") { self.prefix = prefix }
   var minted: Int { n.withLock { $0 } }
-  func next() -> String { n.withLock { $0 += 1; return "sess-\($0)" } }
+  func next() -> String { n.withLock { $0 += 1; return "\(prefix)-\($0)" } }
 }
 
 @MainActor
@@ -313,6 +315,38 @@ struct WorkoutSessionControllerTests {
     let ids = await store.outbox.map(\.id)
     #expect(ids.count == 1)
     #expect(c2.loggedSessionId == ids.first)
+  }
+
+  /// Hai controller cùng mở một ngày (hai màn / khôi phục chồng): mỗi cái
+  /// sinh một id, nên idempotent theo id không cứu được. Khoá ở tầng lưu thì
+  /// cứu: một buổi, cái thứ hai chuyển sang "đã chốt" chứ không báo lỗi đĩa.
+  @Test func twoControllersOnOneDayFinishOnce() async throws {
+    let store = InMemoryWorkoutStore()
+    let a = await controller(store, mint: IdMint("a"))
+    let b = await controller(store, mint: IdMint("b"))
+    await a.toggle("b1")
+    await b.toggle("b2")
+    let s = try await a.finish()
+    await #expect(throws: WorkoutSessionController.FinishRefusal.alreadyLogged(sessionId: s.sessionId)) {
+      try await b.finish()
+    }
+    #expect(await store.outbox.count == 1)
+    #expect(b.phase == .finished(sessionId: s.sessionId))
+    #expect(b.unsaved == nil)
+  }
+
+  /// Bản chụp của controller cũ không được "mở khoá" ngày đã chốt — không thì
+  /// nút Chốt sáng lại và lần bấm sau là buổi thứ hai.
+  @Test func staleControllerCannotUnlockALoggedDay() async throws {
+    let store = InMemoryWorkoutStore()
+    let stale = await controller(store, mint: IdMint("stale"))
+    let a = await controller(store, mint: IdMint("a"))
+    await a.toggle("b1")
+    let s = try await a.finish()
+    #expect(await stale.toggle("b2") == false)
+    #expect(await store.days[a.key]?.loggedSessionId == s.sessionId)
+    #expect(stale.phase == .finished(sessionId: s.sessionId))
+    #expect(stale.unsaved == nil)
   }
 }
 

@@ -35,16 +35,25 @@ public actor InMemoryWorkoutStore: WorkoutStore {
 
   public func saveDay(_ key: String, _ state: DayState) async throws {
     try await enter()
+    try locked(key, against: state.loggedSessionId)
     days[key] = state
   }
 
   @discardableResult
   public func commitFinish(_ key: String, _ state: DayState, _ entry: OutboxEntry) async throws -> Bool {
     try await enter()
+    try locked(key, against: entry.id)
     days[key] = state
     guard !outbox.contains(where: { $0.id == entry.id }) else { return false }
     outbox.append(entry)
     return true
+  }
+
+  /// Ngày đã chốt bằng id khác → từ chối, không ghi gì (hợp đồng `WorkoutStore`).
+  private func locked(_ key: String, against id: String?) throws {
+    if let logged = days[key]?.loggedSessionId, logged != id {
+      throw DayAlreadyLogged(sessionId: logged)
+    }
   }
 
   private func enter() async throws {

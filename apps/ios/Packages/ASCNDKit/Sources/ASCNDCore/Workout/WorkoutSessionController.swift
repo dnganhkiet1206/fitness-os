@@ -93,7 +93,7 @@ public final class WorkoutSessionController {
   private let makeId: @Sendable () -> String
   private let onRest: @MainActor (RestEvent, PlannedSet?) -> Void
   private let onEnqueued: @MainActor (OutboxEntry) -> Void
-  private var writes: Task<LocalWriteError?, Never>?
+  private var writes: Task<(any Error)?, Never>?
   private var issued = 0
   private var settled = 0
 
@@ -230,7 +230,11 @@ public final class WorkoutSessionController {
     let state = DayState(progress: progress, loggedSessionId: id)
     let store = self.store, key = self.key
     if let failure = await write({ _ = try await store.commitFinish(key, state, entry) }) {
-      throw .storage(failure)
+      if let logged = failure as? DayAlreadyLogged {
+        pendingId = nil
+        throw .alreadyLogged(sessionId: logged.sessionId)
+      }
+      throw .storage(LocalWriteError("\(failure)"))
     }
     pendingId = nil
     loggedSessionId = id
@@ -256,25 +260,29 @@ public final class WorkoutSessionController {
   ///
   /// `unsaved` chỉ nghe lần ghi MỚI NHẤT đã xong: bản chụp sau chứa mọi thứ
   /// của bản trước, nên một lần cũ hỏng được lần mới thành "chữa", còn một lần
-  /// cũ thành không được xoá lỗi của lần mới hơn.
-  private func write(_ op: @escaping @Sendable () async throws -> Void) async -> LocalWriteError? {
+  /// cũ thành không được xoá lỗi của lần mới hơn. Tầng lưu báo ngày đã bị chốt
+  /// ở nơi khác thì màn chuyển sang đã chốt — đó không phải dữ liệu chưa bền.
+  private func write(_ op: @escaping @Sendable () async throws -> Void) async -> (any Error)? {
     issued += 1
     let ticket = issued
     let previous = writes
-    let task = Task<LocalWriteError?, Never> {
+    let task = Task<(any Error)?, Never> {
       _ = await previous?.value
       do {
         try await op()
         return nil
       } catch {
-        return LocalWriteError("\(error)")
+        return error
       }
     }
     writes = task
     let failure = await task.value
+    if let logged = failure as? DayAlreadyLogged {
+      loggedSessionId = logged.sessionId
+    }
     if ticket > settled {
       settled = ticket
-      unsaved = failure
+      unsaved = failure.flatMap { $0 is DayAlreadyLogged ? nil : LocalWriteError("\($0)") }
     }
     return failure
   }

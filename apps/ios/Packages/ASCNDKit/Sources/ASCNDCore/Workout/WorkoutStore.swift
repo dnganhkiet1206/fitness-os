@@ -28,13 +28,26 @@ public struct DayState: Sendable, Hashable, Codable {
 ///   ngày chưa chốt" (chốt lại được → buổi thứ hai) hay ngược lại (ngày chốt mà
 ///   buổi không bao giờ gửi → mất set);
 /// - `commitFinish` idempotent theo `entry.id`: gọi lại với cùng id không chèn
-///   hàng thứ hai (INSERT OR IGNORE), và trả `false`.
+///   hàng thứ hai (INSERT OR IGNORE), và trả `false`;
+/// - ngày đã chốt là KHOÁ, kiểm trong chính giao dịch: `commitFinish` với một
+///   id khác, hay `saveDay` mang `loggedSessionId` khác, ném `DayAlreadyLogged`
+///   và không ghi gì. Id idempotent chỉ chặn được cùng một controller bấm lại;
+///   hai controller cùng mở một ngày (hai màn, khôi phục chồng lên nhau) sinh
+///   hai id — chỉ khoá ở tầng lưu mới chặn được buổi thứ hai, và chặn được bản
+///   chụp cũ "mở khoá" ngày đã chốt.
 public protocol WorkoutStore: Sendable {
   func loadDay(_ key: String) async throws -> DayState?
   func saveDay(_ key: String, _ state: DayState) async throws
   /// `true` nếu hàng outbox mới được chèn, `false` nếu id đã có từ trước.
   @discardableResult
   func commitFinish(_ key: String, _ state: DayState, _ entry: OutboxEntry) async throws -> Bool
+}
+
+/// Ngày đã được chốt bằng buổi `sessionId` — bởi controller khác, hay trước
+/// lần mở này. Không phải lỗi đĩa: không có gì để thử lại.
+public struct DayAlreadyLogged: Error, Sendable, Hashable {
+  public let sessionId: String
+  public init(sessionId: String) { self.sessionId = sessionId }
 }
 
 /// Lỗi ghi XUỐNG MÁY — khác hẳn `WriteFailure` (ghi lên server). Ghi máy hỏng
