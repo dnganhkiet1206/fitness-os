@@ -1,1 +1,203 @@
-{"$schema":"golden-vectors/v1","domain":"template-write","source":{"rn":["native/src/hooks/use-library.ts#useCreateWorkoutTemplate,useDeleteWorkoutTemplate,useUpsertRoutineDay"],"spec":"spec/behavior/workout.md"},"vectors":[{"expected":{"exercises":[{"name":"Bench Press","reps":8,"sets":3}],"name":"Push Day","type":"custom","user_id":"u-alice"},"id":"TW-1a","input":{"exercises":[{"name":"Bench Press","reps":8,"sets":3}],"name":"Push Day","userId":"u-alice"},"name":"Create payload: đủ user_id, name, exercises; type thiếu → custom"},{"expected":{"id":"tpl-abc123"},"id":"TW-1b","input":{"insertReturns":"tpl-abc123"},"name":"Create trả về id ổn định của hàng mới"},{"expected":{"onConflict":"user_id,day_of_week","row":{"day_of_week":1,"template_id":"tpl-abc123","user_id":"u-alice"}},"id":"TW-2a","input":{"day_of_week":1,"template_id":"tpl-abc123","userId":"u-alice"},"name":"Assign: upsert routine_days, conflict theo user+ngày"},{"expected":{"onConflict":"user_id,day_of_week","row":{"day_of_week":1,"template_id":"tpl-xyz789","user_id":"u-alice"}},"id":"TW-2b","input":{"day_of_week":1,"template_id":"tpl-xyz789","userId":"u-alice"},"name":"Reassign: cùng ngày ghi đè template cũ, không sinh hàng mới"},{"expected":{"cleared":{"day_of_week":1,"template_id":null},"onConflict":"user_id,day_of_week"},"id":"TW-2c","input":{"clear":true,"day_of_week":1,"userId":"u-alice"},"name":"Clear: gán template_id null, giữ hàng ngày"},{"expected":{"scopedBy":["id","user_id"]},"id":"TW-3a","input":{"id":"tpl-abc123","userId":"u-alice"},"name":"Delete: xóa theo id + user_id, không chạm template người khác"},{"expected":{"invalidated":[["workout_templates","u-alice"],["workout_template_names","u-alice"]]},"id":"TW-4a","input":{"op":"create","userId":"u-alice"},"name":"Sau create: invalidate cache templates + names"},{"expected":{"invalidated":[["routine_days","u-alice"]]},"id":"TW-4b","input":{"op":"assign","userId":"u-alice"},"name":"Sau assign: invalidate cache routine_days"},{"expected":{"templates":1},"id":"TW-5a","input":{"retries":3,"templateId":"tpl-abc123"},"name":"Idempotent retry: bấm lại 3 lần cùng id → một template"},{"expected":{"order":["create","assign"]},"id":"TW-5b","input":{"ops":["create","assign"]},"name":"Outbox ordering: create trước assign (assign cần id)"},{"expected":{"activeWorkoutUnchanged":true},"id":"TW-6a","input":{"activeTemplateId":"tpl-old","newTemplateId":"tpl-new"},"name":"Đổi template không sửa buổi đang tập dở"},{"expected":{"todaySees":"tpl-new"},"id":"TW-6b","input":{"assignedTemplateId":"tpl-new"},"name":"Plan mới assign hiện cho TodayController"}]}
+{
+ "$schema": "golden-vectors/v1",
+ "domain": "template-write",
+ "source": {
+  "rn": [
+   "native/src/hooks/use-library.ts#useCreateWorkoutTemplate,useDeleteWorkoutTemplate,useUpsertRoutineDay"
+  ],
+  "spec": "spec/behavior/workout.md"
+ },
+ "vectors": [
+  {
+   "expected": {
+    "exercises": [
+     {
+      "name": "Bench Press",
+      "reps": 8,
+      "sets": 3
+     }
+    ],
+    "name": "Push Day",
+    "type": "custom",
+    "user_id": "u-alice"
+   },
+   "id": "TW-1a",
+   "input": {
+    "exercises": [
+     {
+      "name": "Bench Press",
+      "reps": 8,
+      "sets": 3
+     }
+    ],
+    "name": "Push Day",
+    "userId": "u-alice"
+   },
+   "name": "Create payload: đủ user_id, name, exercises; type thiếu → custom"
+  },
+  {
+   "expected": {
+    "id": "tpl-abc123"
+   },
+   "id": "TW-1b",
+   "input": {
+    "insertReturns": "tpl-abc123"
+   },
+   "name": "Create trả về id ổn định của hàng mới"
+  },
+  {
+   "expected": {
+    "onConflict": "user_id,day_of_week",
+    "row": {
+     "day_of_week": 1,
+     "template_id": "tpl-abc123",
+     "user_id": "u-alice"
+    }
+   },
+   "id": "TW-2a",
+   "input": {
+    "day_of_week": 1,
+    "template_id": "tpl-abc123",
+    "userId": "u-alice"
+   },
+   "name": "Assign: upsert routine_days, conflict theo user+ngày"
+  },
+  {
+   "expected": {
+    "onConflict": "user_id,day_of_week",
+    "row": {
+     "day_of_week": 1,
+     "template_id": "tpl-xyz789",
+     "user_id": "u-alice"
+    }
+   },
+   "id": "TW-2b",
+   "input": {
+    "day_of_week": 1,
+    "template_id": "tpl-xyz789",
+    "userId": "u-alice"
+   },
+   "name": "Reassign: cùng ngày ghi đè template cũ, không sinh hàng mới"
+  },
+  {
+   "expected": {
+    "cleared": {
+     "day_of_week": 1,
+     "template_id": null
+    },
+    "onConflict": "user_id,day_of_week"
+   },
+   "id": "TW-2c",
+   "input": {
+    "clear": true,
+    "day_of_week": 1,
+    "userId": "u-alice"
+   },
+   "name": "Clear: gán template_id null, giữ hàng ngày"
+  },
+  {
+   "expected": {
+    "scopedBy": [
+     "id",
+     "user_id"
+    ]
+   },
+   "id": "TW-3a",
+   "input": {
+    "id": "tpl-abc123",
+    "userId": "u-alice"
+   },
+   "name": "Delete: xóa theo id + user_id, không chạm template người khác"
+  },
+  {
+   "expected": {
+    "invalidated": [
+     [
+      "workout_templates",
+      "u-alice"
+     ],
+     [
+      "workout_template_names",
+      "u-alice"
+     ]
+    ]
+   },
+   "id": "TW-4a",
+   "input": {
+    "op": "create",
+    "userId": "u-alice"
+   },
+   "name": "Sau create: invalidate cache templates + names"
+  },
+  {
+   "expected": {
+    "invalidated": [
+     [
+      "routine_days",
+      "u-alice"
+     ]
+    ]
+   },
+   "id": "TW-4b",
+   "input": {
+    "op": "assign",
+    "userId": "u-alice"
+   },
+   "name": "Sau assign: invalidate cache routine_days"
+  },
+  {
+   "expected": {
+    "templates": 1
+   },
+   "id": "TW-5a",
+   "input": {
+    "retries": 3,
+    "templateId": "tpl-abc123"
+   },
+   "name": "Idempotent retry: bấm lại 3 lần cùng id → một template",
+   "specOnly": true,
+   "specOnlyReason": "Không có production logic idempotency nào trên RN để gọi — double-tap Save tạo template thứ hai (workout-builder.tsx tự ghi nhận). Idempotency thật nằm ở Swift PlanEditor (INSERT OR IGNORE / refuseIfDeletedWhilePending), không chạy được trên Linux. Giữ làm spec ghi lại hành vi mong muốn."
+  },
+  {
+   "expected": {
+    "order": [
+     "create",
+     "assign"
+    ]
+   },
+   "id": "TW-5b",
+   "input": {
+    "ops": [
+     "create",
+     "assign"
+    ]
+   },
+   "name": "Outbox ordering: create trước assign (assign cần id)"
+  },
+  {
+   "expected": {
+    "activeWorkoutUnchanged": true
+   },
+   "id": "TW-6a",
+   "input": {
+    "activeTemplateId": "tpl-old",
+    "newTemplateId": "tpl-new"
+   },
+   "name": "Đổi template không sửa buổi đang tập dở",
+   "specOnly": true,
+   "specOnlyReason": "Snapshot template lúc bắt đầu buổi tập là logic Swift (WorkoutSessionController), không chạy được trên Linux. Giữ làm spec ghi lại hành vi mong muốn."
+  },
+  {
+   "expected": {
+    "todaySees": "tpl-new"
+   },
+   "id": "TW-6b",
+   "input": {
+    "assignedTemplateId": "tpl-new"
+   },
+   "name": "Plan mới assign hiện cho TodayController",
+   "specOnly": true,
+   "specOnlyReason": "TodayController đọc routine_days là logic Swift, không chạy được trên Linux. Giữ làm spec ghi lại hành vi mong muốn."
+  }
+ ]
+}
