@@ -24,6 +24,8 @@ public final class WorkoutFlow {
   public let history: HistoryBook?
   /// Phân tích bài tập (#419) — `nil` khi app chưa dựng màn phân tích.
   public let insights: InsightBook?
+  /// Thư viện bài tập (#420) — `nil` khi app chưa dựng.
+  public let library: ExerciseLibrary?
   /// Buổi tập của hôm nay; `nil` khi hôm nay không có buổi (nghỉ / chưa lên
   /// lịch) và không có kế hoạch tự do.
   public private(set) var session: WorkoutSessionController?
@@ -56,7 +58,7 @@ public final class WorkoutFlow {
   ///   - onEnqueued: hàng outbox vừa bền — app gọi `sync.kick()`.
   public init(
     today: TodayController, records: RecordBook, performance: PerformanceBook, history: HistoryBook? = nil,
-    insights: InsightBook? = nil,
+    insights: InsightBook? = nil, library: ExerciseLibrary? = nil,
     store: any WorkoutStore, planStore: (any PlanWriteStore)? = nil,
     clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
@@ -68,6 +70,13 @@ public final class WorkoutFlow {
     self.performance = performance
     self.history = history
     self.insights = insights
+    self.library = library
+    // Loại bài khai báo (curl là isolation, không phải e1RM) theo thư viện.
+    library?.onChange = { [weak insights, weak performance] list in
+      let kinds = ExerciseCatalog.declaredKinds(list)
+      if insights?.declaredKinds != kinds { insights?.declaredKinds = kinds }
+      performance?.declaredKinds = kinds
+    }
     self.store = store
     self.clock = clock
     self.timeZone = timeZone
@@ -120,15 +129,18 @@ public final class WorkoutFlow {
     async let performance: Void = self.performance.load()
     async let history: Void = self.loadHistory()
     async let insights: Void = self.loadInsights()
+    async let library: Void = self.loadLibrary()
     await today.load()
     markFresh()
     await install()
-    _ = await (records, performance, history, insights)
+    _ = await (records, performance, history, insights, library)
   }
 
   private func loadHistory() async { await history?.load() }
   private func refreshHistory() async { await history?.refresh() }
   private func loadInsights() async { await insights?.load() }
+  private func loadLibrary() async { await library?.load() }
+  private func refreshLibrary() async { await library?.refresh() }
   private func refreshInsights() async { await insights?.refresh() }
 
   /// Phiên kết thúc (đăng xuất, đổi tài khoản): huỷ lượt làm mới đang bay —
@@ -192,7 +204,8 @@ public final class WorkoutFlow {
     async let performance: Void = self.performance.refresh()
     async let history: Void = self.refreshHistory()
     async let insights: Void = self.refreshInsights()
-    _ = await (records, performance, history, insights)
+    async let library: Void = self.refreshLibrary()
+    _ = await (records, performance, history, insights, library)
   }
 
   private func markFresh() {

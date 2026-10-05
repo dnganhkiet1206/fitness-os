@@ -150,3 +150,16 @@ struct TrainingHistoryMappingTests {
     #expect(SupabaseTrainingHistory.times(rows) == [EpochMillis(1_791_183_600_000), EpochMillis(1_791_156_600_123)])
   }
 }
+
+struct ExerciseSourceMappingTests {
+  @Test func rowsMapToDomain() throws {
+    let rows = try JSONDecoder().decode([SupabaseExerciseSource.Row].self, from: Data("""
+      [{"id":"AAAA","user_id":null,"name":"Bench Press","muscle_group":"chest","equipment":"barbell","exercise_kind":null},
+       {"id":"b","user_id":"U1","name":"Curl","muscle_group":null,"equipment":null,"exercise_kind":"isolation"},
+       {"id":"c","user_id":null,"name":"  ","muscle_group":"back","equipment":null,"exercise_kind":null}]
+      """.utf8))
+    let list = SupabaseExerciseSource.map(rows)
+    #expect(list.map(\.id) == ["aaaa", "b"])
+    #expect(list[0].isBuiltIn && list[1].userId == "u1" && list[1].kind == "isolation")
+  }
+}

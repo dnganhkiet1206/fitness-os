@@ -233,6 +233,8 @@ public final class PerformanceBook {
   @ObservationIgnored private let timeZone: TimeZone
   /// Lần cân của lần làm mới gần nhất — để buổi vừa chốt cũng có cân nặng.
   @ObservationIgnored private var weighIns: [WeighIn] = []
+  /// Loại bài khai báo trong thư viện (#420); áp từ lần làm mới sau.
+  @ObservationIgnored public var declaredKinds: [String: String] = [:]
 
   public init(
     userId: String, source: any PerformanceSource, cache: any PerformanceCache,
@@ -264,7 +266,7 @@ public final class PerformanceBook {
     // `weights.data ?? []`).
     let from = LocalDate(since, in: timeZone)
     weighIns = (try? await source.weighIns(userId: userId, since: from)) ?? weighIns
-    table = PerformanceHistory.lastByExercise(rows, weighIns: weighIns, timeZone: timeZone)
+    table = PerformanceHistory.lastByExercise(rows, weighIns: weighIns, declaredKinds: declaredKinds, timeZone: timeZone)
     try? await cache.save(userId: userId, table)
   }
 

@@ -376,3 +376,19 @@ struct GRDBInsightCacheTests {
     #expect(try await cache.load(userId: "u1") == nil, "đăng nhập người khác dọn cả phân tích")
   }
 }
+
+struct GRDBExerciseCacheTests {
+  @Test func roundTripPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBExerciseCache(db)
+    let list = [
+      LibraryExercise(id: "1", userId: nil, name: "Bench Press", muscleGroup: "chest", equipment: "barbell", kind: nil),
+      LibraryExercise(id: "2", userId: "u1", name: "Curl", muscleGroup: "Tay trước", equipment: nil, kind: "isolation"),
+    ]
+    try await cache.save(userId: "u1", list)
+    #expect(try await cache.load(userId: "u1") == list)
+    #expect(try await cache.load(userId: "u2") == nil)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await cache.load(userId: "u1") == nil, "đăng nhập người khác dọn cả thư viện")
+  }
+}

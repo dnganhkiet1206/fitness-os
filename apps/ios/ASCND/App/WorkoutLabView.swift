@@ -90,6 +90,9 @@ private struct LabSession: View {
       if let insights = flow.insights {
         LabInsights(book: insights)
       }
+      if let library = flow.library {
+        LabLibrary(library: library)
+      }
     }
     .onChange(of: useSample) { _, on in
       Task {
@@ -404,6 +407,28 @@ private struct LabInsights: View {
       }
     } header: {
       Text(verbatim: "Insights (90 days) — \(book.insights.count)")
+    }
+  }
+}
+
+/// Thư viện bài tập (#420): gộp theo nhãn nhóm cơ, ô tìm như màn RN.
+private struct LabLibrary: View {
+  let library: ExerciseLibrary
+  @State private var query = ""
+
+  var body: some View {
+    Section {
+      TextField(text: $query) { Text(verbatim: "Tìm bài") }
+      if let f = library.failure {
+        LabRow(label: "Library refresh failed", value: "\(f)").foregroundStyle(.orange)
+      }
+      ForEach(ExerciseCatalog.sections(library.exercises, query: query, lang: .vi)) { section in
+        LabRow(
+          label: section.title,
+          value: section.exercises.map { $0.name + ($0.isBuiltIn ? "" : " ★") }.joined(separator: ", "))
+      }
+    } header: {
+      Text(verbatim: "Exercise library — \(library.exercises.count)")
     }
   }
 }
