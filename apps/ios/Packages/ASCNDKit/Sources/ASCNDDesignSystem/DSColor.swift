@@ -5,7 +5,10 @@
 //
 // Mỗi token có hai biến thể light/dark, chọn theo trait của hệ thống.
 #if canImport(SwiftUI)
-import SwiftUI
+public import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 public extension DS {
   /// Bảng màu thương hiệu. Dùng `DS.Color.background` thay vì hardcode hex.
@@ -52,16 +55,23 @@ public extension DS {
 }
 
 /// Một màu có hai biến thể light/dark, đọc từ trait của hệ thống.
-public struct DSColor {
+public struct DSColor: Sendable, Hashable {
   let light: (Int, Int, Int)
   let dark: (Int, Int, Int)
 
   public var swiftUI: SwiftUI.Color {
-    SwiftUI.Color(UIColor { traits in
+    #if canImport(UIKit)
+    return SwiftUI.Color(UIColor { traits in
       let rgb = traits.userInterfaceStyle == .dark ? self.dark : self.light
       return UIColor(red: CGFloat(rgb.0) / 255, green: CGFloat(rgb.1) / 255,
                      blue: CGFloat(rgb.2) / 255, alpha: 1)
     })
+    #else
+    // macOS chỉ để chạy test, không ship — dùng bản light.
+    return SwiftUI.Color(
+      red: Double(light.0) / 255, green: Double(light.1) / 255, blue: Double(light.2) / 255
+    )
+    #endif
   }
 }
 #endif
