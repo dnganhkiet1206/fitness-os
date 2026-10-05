@@ -53,8 +53,8 @@
    - Ý cuối trùng giá trị của server thì không gửi.
    - Mỗi khoá chỉ một lượt gửi; phản hồi cũ không được đè phản hồi mới.
 9. **Đổi tài khoản:**
-   - Bản ghi mang `userId`. Bản ghi của tài khoản khác bị coi là vĩnh viễn (như `WrongAccountError`), không gửi dưới phiên đăng nhập khác.
-   - Đăng xuất **không xoá** hàng đợi Ghi nhận: đăng nhập lại đúng tài khoản thì gửi tiếp.
+   - Bản ghi mang `userId`. Bản ghi của tài khoản khác bị coi là vĩnh viễn (như `WrongAccountError`), không bao giờ gửi dưới phiên đăng nhập khác.
+   - **Đăng xuất xoá hàng đợi Ghi nhận, giống baseline**: `clearPersistedCache()` ở `query-client.ts:172` chạy `queryClient.clear()`, xoá luôn các mutation đang chờ. Có nên giữ lại hay hỏi trước khi xoá là quyết định sản phẩm, đang chờ Kiệt ở #241.
 
 ## Phương án đã cân nhắc
 
@@ -77,6 +77,8 @@ Trade-off của GRDB là thêm một dependency. Bù lại: mã nguồn mở, �
 6. Lớp Trạng thái: bộ gộp trong bộ nhớ.
 
 ## Giả định cần soát
+
+- **Chỗ lệch có chủ đích so với code baseline, nhưng khớp với spec.** Trong TanStack (`retryer.js:89–94`), lỗi mất mạng **cũng tăng** `failureCount`. Vì vậy chuỗi mất mạng ×3 rồi một lỗi 5xx sẽ làm `failureCount < 3` sai, và bản ghi bị bỏ. Điều này trái với OFFLINE-POLICY ("xếp hàng, gửi khi có mạng"). Bản native chỉ tính **lỗi tạm thời không phải mất mạng** vào ngân sách 3 lần thử lại. Khoảng chờ vẫn tăng theo mọi lần lỗi như baseline. D soát giúp: nếu D thấy cần giữ đúng code baseline thì mở `needs-clarification`.
 
 - Danh sách mã lỗi vĩnh viễn được chép nguyên từ baseline. Nếu server thêm mã mới (như CR001 hôm 04/10), phải thêm ở **một** chỗ là core, kèm vector.
 - `42501` được coi là vĩnh viễn như baseline. Khi phiên hết hạn, auth (#224) phải refresh token **trước khi** worker gửi, để không biến một lỗi phiên thành mất bản ghi. Sẽ ghi rõ ở PR worker.
