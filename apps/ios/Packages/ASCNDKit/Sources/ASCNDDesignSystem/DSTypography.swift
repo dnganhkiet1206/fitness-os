@@ -8,7 +8,8 @@
 import SwiftUI
 
 public extension DS {
-  enum Type {
+  /// Thang chữ — tên `TextStyle` vì `Type` đụng từ khoá `Foo.Type` (Swift 6).
+  enum TextStyle {
     /// hero: 44pt light — con số trả lời cả màn, trên largeTitle một bậc.
     public static let hero = Font.system(size: 44, weight: .light, design: .default)
     public static let largeTitle = Font.largeTitle.weight(.bold)
