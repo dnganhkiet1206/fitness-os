@@ -78,8 +78,8 @@ public struct WorkoutView: View {
           style: .primary,
           action: { Task { await doFinish() } }
         )
-        .disabled(!controller.canFinish)
-        .opacity(controller.canFinish ? 1 : 0.5)
+        .disabled(!controller.canFinish || isFinishing)
+        .opacity(controller.canFinish && !isFinishing ? 1 : 0.5)
         .padding(.top, DS.Spacing.sm)
       }
       .padding(DS.Spacing.md)
@@ -322,6 +322,8 @@ public struct WorkoutView: View {
   }
 
   private func doFinish() async {
+    // Chống bấm 2 lần khi lần chốt trước chưa xong (#317).
+    guard !isFinishing else { return }
     isFinishing = true
     defer { isFinishing = false }
     do {
