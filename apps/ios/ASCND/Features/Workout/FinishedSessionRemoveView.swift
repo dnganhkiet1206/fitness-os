@@ -37,7 +37,9 @@ public struct FinishedSessionRemoveView: View {
         .font(.headline)
       Text(
         String(
-          localized: "extra.remove.finished.message \(exerciseName) \(sessionDate)"
+          format: String(localized: "extra.remove.finished.message.format"),
+          exerciseName,
+          sessionDate
         )
       )
       .font(.subheadline)

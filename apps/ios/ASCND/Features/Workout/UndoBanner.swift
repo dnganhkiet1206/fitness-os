@@ -26,12 +26,18 @@ public struct UndoBanner: View {
         .accessibilityHidden(true)
       VStack(alignment: .leading, spacing: 2) {
         Text(
-          String(localized: "extra.undo.deleted \(exerciseName)")
+          String(
+            format: String(localized: "extra.undo.deleted.format"),
+            exerciseName
+          )
         )
         .font(.subheadline)
         .lineLimit(1)
         Text(
-          String(localized: "extra.undo.countdown \(secondsRemaining)")
+          String(
+            format: String(localized: "extra.undo.countdown.format"),
+            secondsRemaining
+          )
         )
         .font(.caption)
         .foregroundStyle(.secondary)
@@ -49,10 +55,16 @@ public struct UndoBanner: View {
     .shadow(radius: 4)
     .accessibilityElement(children: .combine)
     .accessibilityLabel(
-      String(localized: "extra.undo.deleted \(exerciseName)")
+      String(
+        format: String(localized: "extra.undo.deleted.format"),
+        exerciseName
+      )
     )
     .accessibilityHint(
-      String(localized: "extra.undo.hint \(secondsRemaining)")
+      String(
+        format: String(localized: "extra.undo.hint.format"),
+        secondsRemaining
+      )
     )
   }
 }

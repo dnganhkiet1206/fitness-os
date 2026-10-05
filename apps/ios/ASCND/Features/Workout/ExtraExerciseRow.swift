@@ -58,9 +58,14 @@ public struct ExtraExerciseRow: View {
 
       // Hiển thị max constraint
       if exercise.setCount >= maxExtraSets {
-        Text(String(localized: "extra.exercise.sets.max \(maxExtraSets)"))
-          .font(.caption)
-          .foregroundStyle(.secondary)
+        Text(
+          String(
+            format: String(localized: "extra.exercise.sets.max.format"),
+            maxExtraSets
+          )
+        )
+        .font(.caption)
+        .foregroundStyle(.secondary)
       }
 
       // Trạng thái incomplete
