@@ -101,7 +101,7 @@ public struct WorkoutView: View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         Text(group.name)
-          .font(DS.Type.title2)
+          .font(DS.TextStyle.title2)
           .foregroundStyle(DS.Color.foreground.swiftUI)
           .accessibilityAddTraits(.isHeader)
         ForEach(group.rows) { row in
@@ -148,7 +148,7 @@ public struct WorkoutView: View {
         )
 
         Text("\(row.ordinal)/\(row.of)")
-          .font(DS.Type.footnote.monospacedDigit())
+          .font(DS.TextStyle.footnote.monospacedDigit())
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .frame(minWidth: 36)
 
@@ -156,7 +156,7 @@ public struct WorkoutView: View {
         TextField("", text: weightBinding(for: row))
           .keyboardType(.decimalPad)
           .multilineTextAlignment(.trailing)
-          .font(DS.Type.body.monospacedDigit())
+          .font(DS.TextStyle.body.monospacedDigit())
           .frame(width: 64, minHeight: 44)
           .padding(.horizontal, DS.Spacing.xs)
           .background(DS.Color.secondary.swiftUI)
@@ -169,7 +169,7 @@ public struct WorkoutView: View {
         TextField("", text: repsBinding(for: row))
           .keyboardType(.numbersAndPunctuation)
           .multilineTextAlignment(.trailing)
-          .font(DS.Type.body.monospacedDigit())
+          .font(DS.TextStyle.body.monospacedDigit())
           .frame(width: 64, minHeight: 44)
           .padding(.horizontal, DS.Spacing.xs)
           .background(DS.Color.secondary.swiftUI)
@@ -192,7 +192,7 @@ public struct WorkoutView: View {
             "\(WorkoutDay.restSeconds(row, controller.progress))s",
             systemImage: "timer"
           )
-          .font(DS.Type.footnote)
+          .font(DS.TextStyle.footnote)
           .padding(.horizontal, DS.Spacing.sm)
           .frame(minHeight: 44)
           .background(DS.Color.secondary.swiftUI)
@@ -210,7 +210,7 @@ public struct WorkoutView: View {
           }
         } label: {
           Text("RPE \(controller.progress.rpe[row.key] ?? row.plannedRpe)")
-            .font(DS.Type.footnote)
+            .font(DS.TextStyle.footnote)
             .padding(.horizontal, DS.Spacing.sm)
             .frame(minHeight: 44)
             .background(DS.Color.secondary.swiftUI)
@@ -221,7 +221,7 @@ public struct WorkoutView: View {
 
         if resting {
           Label(String(localized: "workout.resting"), systemImage: "hourglass")
-            .font(DS.Type.footnote)
+            .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.metricBlue.swiftUI)
         }
 
@@ -283,7 +283,7 @@ public struct WorkoutView: View {
       Image(systemName: "exclamationmark.triangle.fill")
         .foregroundStyle(DS.Color.destructive.swiftUI)
       Text(String(localized: "workout.unsaved"))
-        .font(DS.Type.footnote)
+        .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.foreground.swiftUI)
     }
     .padding(DS.Spacing.sm)
@@ -312,10 +312,33 @@ public struct WorkoutView: View {
   }
 }
 
-// MARK: - Preview (InMemoryWorkoutStore — không cần A, không cần máy)
+// MARK: - Preview (không cần A, không cần máy)
 
 #if DEBUG
-import ASCNDTestSupport
+// Store tối thiểu cho Preview — `ASCNDTestSupport` không phải product nên
+// app target không import được (lỗi của issue #276, A nhận).
+private actor PreviewStore: WorkoutStore {
+  var days: [String: DayState]
+  var failSaves: Bool
+
+  init(days: [String: DayState] = [:], failSaves: Bool = false) {
+    self.days = days
+    self.failSaves = failSaves
+  }
+
+  func loadDay(_ key: String) async throws -> DayState? { days[key] }
+
+  func saveDay(_ key: String, _ state: DayState) async throws {
+    struct Failed: Error {}
+    if failSaves { throw Failed() }
+    days[key] = state
+  }
+
+  func commitFinish(_ key: String, _ state: DayState, _ entry: OutboxEntry) async throws -> Bool {
+    days[key] = state
+    return true
+  }
+}
 
 private struct WorkoutPreviewHost: View {
   enum Scenario { case idle, active, finished, unsaved }
@@ -356,31 +379,30 @@ private struct WorkoutPreviewHost: View {
       templateName: "Ngực – Vai – Tay", rows: rows
     )
     let storeKey = DayProgressStore.key(date: date, templateId: "tpl-preview")
-    let store: InMemoryWorkoutStore
+    let store: PreviewStore
     let controller: WorkoutSessionController
 
     switch scenario {
     case .idle:
-      store = InMemoryWorkoutStore()
+      store = PreviewStore()
       controller = WorkoutSessionController(plan: plan, userId: "u1", store: store)
       await controller.load()
     case .active:
       // Tick sẵn 1 set để thấy trạng thái active.
       var progress = DayProgress()
       progress.done["bp1"] = true
-      store = InMemoryWorkoutStore(days: [storeKey: DayState(progress: progress)])
+      store = PreviewStore(days: [storeKey: DayState(progress: progress)])
       controller = WorkoutSessionController(plan: plan, userId: "u1", store: store)
       await controller.load()
     case .finished:
-      store = InMemoryWorkoutStore(days: [
+      store = PreviewStore(days: [
         storeKey: DayState(loggedSessionId: "session-preview")
       ])
       controller = WorkoutSessionController(plan: plan, userId: "u1", store: store)
       await controller.load()
     case .unsaved:
-      // Lần ghi kế tiếp hỏng → unsaved hiện banner.
-      store = InMemoryWorkoutStore()
-      await store.failNext(1)
+      // Lần ghi hỏng → unsaved hiện banner.
+      store = PreviewStore(failSaves: true)
       controller = WorkoutSessionController(plan: plan, userId: "u1", store: store)
       await controller.load()
       _ = await controller.toggle("bp1")
