@@ -1,5 +1,5 @@
 public import ASCNDCore
-public import Foundation
+import Foundation
 import Supabase
 
 /// `RemoteWriter` thật: gửi MỘT bản ghi outbox lên Supabase.
