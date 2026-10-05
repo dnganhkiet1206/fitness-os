@@ -144,7 +144,9 @@ public enum FitnessCalc {
   /// `readStat(q, text, true)`: chữ số thập phân thật (`-?\d+(\.\d*)?|\.\d+`),
   /// trong cận; trống hay sai dạng → `nil`. Không bao giờ thay bằng mặc định.
   static func readStat(_ text: String, _ bounds: ClosedRange<Double>) -> Double? {
-    let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    // `text.trim()` của JS: bỏ BOM (U+FEFF), giữ NEL (U+0085) — khác
+    // `whitespacesAndNewlines` ở đúng hai ký tự ấy.
+    let t = RepEntry.trimJS(text)
     guard !t.isEmpty, isDecimal(t), let v = Double(t), v.isFinite, bounds.contains(v) else { return nil }
     return v
   }

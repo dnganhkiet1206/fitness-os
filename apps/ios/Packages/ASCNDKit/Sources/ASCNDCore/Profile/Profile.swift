@@ -113,7 +113,7 @@ public enum FoodPreferences {
   /// `parseDislikes`: tách theo dấu phẩy, cắt, bỏ rỗng.
   public static func parseDislikes(_ text: String) -> [String] {
     text.split(separator: ",", omittingEmptySubsequences: false)
-      .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
+      .map { RepEntry.trimJS(String($0)) }.filter { !$0.isEmpty }
   }
 
   public static func dislikesText(_ list: [String]?) -> String { (list ?? []).joined(separator: ", ") }
@@ -192,7 +192,7 @@ public struct ProfileForm: Sendable, Hashable {
 
   /// `readStat(q, text, false)`: trống là hợp lệ (ghi `null`).
   static func read(_ text: String, _ bounds: ClosedRange<Double>) -> StatReading {
-    if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return .blank }
+    if RepEntry.trimJS(text).isEmpty { return .blank }
     return FitnessCalc.readStat(text, bounds).map(StatReading.value) ?? .outOfRange
   }
 
@@ -216,17 +216,66 @@ public struct ProfileForm: Sendable, Hashable {
     return []
   }
 
-  /// `Number(x) || null` của JS: trống, 0, sai dạng → `null`.
+  /// `Number(x) || null` của JS: trống, 0, sai dạng → `null`; `±Infinity`
+  /// qua `JSON.stringify` cũng thành `null`.
   static func numberOrNull(_ text: String) -> JSONValue {
-    let t = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard let v = t.isEmpty ? 0 : jsNumber(t), v.isFinite, v != 0 else { return .null }
+    guard let v = jsNumber(text), v.isFinite, v != 0 else { return .null }
     return .number(v)
   }
 
-  /// `Number(s)` của JS cho chuỗi đã cắt (không có dạng hex / mũ thì như Double).
-  static func jsNumber(_ t: String) -> Double? {
-    if t.lowercased().hasPrefix("0x") { return UInt64(t.dropFirst(2), radix: 16).map(Double.init) }
-    return Double(t)
+  /// `Number(s)` của JS (StringToNumber): cắt như `trim`, rỗng là 0;
+  /// `0x` / `0o` / `0b` (không dấu); thập phân ASCII có dấu, mũ, `Infinity`.
+  /// `nil` = NaN. `Double(_:)` của Swift khác ở chỗ nhận `-0x10`, `inf`,
+  /// `nan` và từ chối `0b101` / `0o17`.
+  static func jsNumber(_ raw: String) -> Double? {
+    let t = Substring(RepEntry.trimJS(raw))
+    if t.isEmpty { return 0 }
+    func digit(_ u: Unicode.Scalar) -> Int? {
+      switch u.value {
+      case 48...57: Int(u.value - 48)
+      case 65...70: Int(u.value - 55)
+      case 97...102: Int(u.value - 87)
+      default: nil
+      }
+    }
+    for (prefix, radix) in [("0x", 16), ("0o", 8), ("0b", 2)] where t.lowercased().hasPrefix(prefix) {
+      let body = t.dropFirst(2).unicodeScalars
+      guard !body.isEmpty else { return nil }
+      var v = 0.0
+      for u in body {
+        guard let d = digit(u), d < radix else { return nil }
+        v = v * Double(radix) + Double(d)
+      }
+      return v
+    }
+    var body = t
+    var sign = 1.0
+    if let f = body.first, f == "+" || f == "-" {
+      sign = f == "-" ? -1 : 1
+      body = body.dropFirst()
+    }
+    if body == "Infinity" { return sign * .infinity }
+    // digits [. digits] | . digits, rồi [e[±]digits] — chỉ chữ số ASCII.
+    let u = Array(body.unicodeScalars)
+    var i = 0
+    func digits() -> Int {
+      let start = i
+      while i < u.count, (48...57).contains(u[i].value) { i += 1 }
+      return i - start
+    }
+    var mantissa = digits()
+    if i < u.count, u[i] == "." {
+      i += 1
+      mantissa += digits()
+    }
+    guard mantissa > 0 else { return nil }
+    if i < u.count, u[i] == "e" || u[i] == "E" {
+      i += 1
+      if i < u.count, u[i] == "+" || u[i] == "-" { i += 1 }
+      guard digits() > 0 else { return nil }
+    }
+    guard i == u.count, let v = Double(String(body)) else { return nil }
+    return sign * v
   }
 
   /// Hàng `update` của `save` (`edit-profile.tsx:275`). `nil` khi số đo ngoài
