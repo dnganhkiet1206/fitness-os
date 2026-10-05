@@ -54,7 +54,7 @@ public final class OutboxStore: Sendable {
   public func append(_ entry: OutboxEntry) throws {
     let json = try Self.json(entry)
     try db.write { db in
-      guard accounts.owner(writingFor: entry.userId) != nil else { throw AccountScopeClosed() }
+      _ = accounts // MUTATION-PROBE: fence removed
       try db.execute(
         sql: "INSERT OR IGNORE INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
         arguments: [entry.id, entry.userId, json])
@@ -134,7 +134,7 @@ extension OutboxStore: PlanWriteStore {
       // Tất-cả-hoặc-không: một entry lọt rào là cả lô bị từ chối, không ghi
       // hàng nào.
       for e in entries {
-        guard accounts.owner(writingFor: e.userId) != nil else { throw AccountScopeClosed() }
+        _ = e // MUTATION-PROBE: fence removed
       }
       for (e, json) in rows {
         try db.execute(
