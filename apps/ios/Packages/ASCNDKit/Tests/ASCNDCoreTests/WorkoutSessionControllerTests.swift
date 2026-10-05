@@ -679,3 +679,117 @@ struct RemoveLoggedSetTests {
     #expect(await store.outbox.count == 1)
   }
 }
+
+/// #399: bài thêm ngoài kế hoạch (`extra: AdHoc[]`, `day-plan.tsx:486-1000`).
+/// Vector AH-* của D-24 (#404).
+@MainActor
+struct AdHocExerciseTests {
+  @Test func rowsFollowTheBaselineShape() {
+    let rows = WorkoutPlanning.adHocRows([AdHocExercise(id: "x-1", name: "Curls", sets: 2)])
+    #expect(rows.map(\.key) == ["xx-1-0", "xx-1-1"], "AH-5a")
+    #expect(rows.map(\.heads) == [true, false], "AH-5c")
+    #expect(rows.allSatisfy { $0.weightKg == 0 && $0.reps == 0 }, "AH-5d: ô mở trống")
+    #expect(rows.allSatisfy { $0.adHoc == "x-1" && $0.plannedRest == WorkoutPlanning.defaultRest })
+    #expect(WorkoutPlanning.adHocRows([AdHocExercise(id: "x-1", name: "Curls", sets: 4000)]).count == 20, "AH-5b")
+  }
+
+  @Test func restoreIsLenient() throws {
+    let legacy = try JSONDecoder().decode(DayProgress.self, from: Data(#"{"done":{"b1":true}}"#.utf8))
+    #expect(legacy.extra.isEmpty, "AH-4a")
+    let messy = try JSONDecoder().decode(DayProgress.self, from: Data(#"""
+      {"extra":[{"id":"x-1","name":"Curls","sets":2},{"id":"","name":"Broken","sets":1},null,{"name":"no id"},{"id":"x-2","sets":"oops"}]}
+      """#.utf8))
+    #expect(messy.extra == [AdHocExercise(id: "x-1", name: "Curls", sets: 2), AdHocExercise(id: "x-2", name: "", sets: 1)], "AH-4b; sets hỏng → 1")
+    let round = try JSONDecoder().decode(DayProgress.self, from: JSONEncoder().encode(messy))
+    #expect(round == messy)
+  }
+
+  @Test func addRenameExtendRemove() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store, rows: [bench1])
+    let id = try #require(await c.addExercise())
+    #expect(c.progress.extra == [AdHocExercise(id: id)], "AH-1a")
+    #expect(c.rows.map(\.key) == ["b1", "x\(id)-0"])
+    #expect(await c.renameExercise(id, to: "Curls"))
+    #expect(c.progress.extra.first?.name == "Curls", "AH-1b")
+    #expect(await c.addSet(to: id))
+    #expect(c.rows.count == 3, "AH-2b")
+    for _ in 0..<30 { await c.addSet(to: id) }
+    #expect(c.progress.extra.first?.sets == 20, "AH-2a: trần 20")
+    await c.setRepsText("12", for: "x\(id)-0")
+    await c.toggle("x\(id)-0")
+    #expect(await c.removeExercise(id))
+    #expect(c.progress.extra.isEmpty, "AH-3a")
+    #expect(c.progress.done.isEmpty && c.progress.repsText.isEmpty, "không để lại dấu tích mồ côi")
+    #expect(c.phase == .idle)
+  }
+
+  /// Bài thêm chưa tên / chưa rep thì không tick được (`rowReady`, `:1196`).
+  @Test func blankAddedRowCannotBeTicked() async throws {
+    let c = await controller(InMemoryWorkoutStore(), rows: [bench1])
+    let id = try #require(await c.addExercise())
+    let key = "x\(id)-0"
+    #expect(await c.toggle(key) == false)
+    await c.renameExercise(id, to: "Curls")
+    #expect(await c.toggle(key) == false, "có tên mà chưa có rep")
+    await c.setRepsText("12", for: key)
+    #expect(await c.toggle(key))
+  }
+
+  /// Chốt có bài thêm: set của nó vào buổi dưới tên đã gõ; kill rồi mở lại
+  /// vẫn còn bài.
+  @Test func finishCarriesAddedSetsAndSurvivesKill() async throws {
+    let store = InMemoryWorkoutStore()
+    let id: String
+    do {
+      let c = await controller(store, rows: [bench1])
+      id = try #require(await c.addExercise())
+      await c.renameExercise(id, to: "  Curls ")
+      await c.setWeightText("12.5", for: "x\(id)-0")
+      await c.setRepsText("10", for: "x\(id)-0")
+      await c.toggle("x\(id)-0")
+      await c.toggle("b1")
+      _ = try await c.finish()
+    }
+    let row = try #require(await store.outbox.first)
+    guard case .array(let sets)? = row.payload["sets"] else { Issue.record("no sets"); return }
+    #expect(sets.count == 2)
+    #expect(sets.last?["exerciseName"] == .string("Curls"))
+    #expect(sets.last?["weight"] == .number(12.5))
+    #expect(row.payload["template_id"] == .string("tpl-push"), "bài thêm không biến buổi theo kế hoạch thành buổi tự do")
+
+    let c = await controller(store, rows: [bench1])
+    #expect(c.progress.extra.map(\.id) == [id])
+    #expect(c.loggedKeys == ["b1", "x\(id)-0"])
+  }
+
+  /// Sau khi chốt: thêm hiệp được (thành hàng nối thêm); đổi tên / bỏ bài thì
+  /// bị khoá cho tới khi gỡ hết set đã chốt của nó (#398).
+  @Test func loggedAddedExerciseIsLockedUntilItsSetsAreRemoved() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store, rows: [bench1])
+    let id = try #require(await c.addExercise())
+    await c.renameExercise(id, to: "Curls")
+    await c.setRepsText("10", for: "x\(id)-0")
+    await c.toggle("x\(id)-0")
+    await c.toggle("b1")
+    _ = try await c.finish()
+
+    #expect(c.adHocLocked(id))
+    #expect(await c.renameExercise(id, to: "Hammer curls") == false)
+    #expect(await c.removeExercise(id) == false)
+
+    #expect(await c.addSet(to: id))
+    await c.setRepsText("8", for: "x\(id)-1")
+    #expect(await c.toggle("x\(id)-1"))
+    #expect(c.pendingRows.map(\.key) == ["x\(id)-1"])
+    let s = try await c.append()
+    #expect(s.completedSets == 3)
+
+    _ = try await c.removeLoggedSet("x\(id)-0")
+    _ = try await c.removeLoggedSet("x\(id)-1")
+    #expect(!c.adHocLocked(id))
+    #expect(await c.removeExercise(id))
+    #expect(c.rows.map(\.key) == ["b1"])
+  }
+}
