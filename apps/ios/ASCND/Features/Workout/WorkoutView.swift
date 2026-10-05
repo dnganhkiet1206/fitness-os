@@ -23,6 +23,10 @@ public struct WorkoutView: View {
   @State private var weightTexts: [String: String] = [:]
   @State private var repsTexts: [String: String] = [:]
   @State private var finishMessage: String?
+  /// Summary thật từ finish() — để mở màn Summary (#317).
+  @State private var finishedSummary: WorkoutSummary?
+  /// Đang chốt buổi (hiện loading, #317).
+  @State private var isFinishing = false
 
   public init(controller: WorkoutSessionController, restingRowKey: String? = nil) {
     self.controller = controller
@@ -294,16 +298,36 @@ public struct WorkoutView: View {
   }
 
   private var finishedView: some View {
-    DSEmptyState(
-      systemImage: "checkmark.circle.fill",
-      title: String(localized: "workout.finished.title"),
-      message: String(localized: "workout.finished.message")
-    )
+    Group {
+      if let summary = finishedSummary {
+        // Màn Summary thật với WorkoutSummary từ finish() (#317).
+        WorkoutSummaryView(
+          summary: summary,
+          sets: [],
+          onDone: {
+            // Về Today — A8 nối navigation thật.
+            finishedSummary = nil
+          }
+        )
+      } else if isFinishing {
+        DSLoadingView(message: String(localized: "workout.finishing"))
+      } else {
+        DSEmptyState(
+          systemImage: "checkmark.circle.fill",
+          title: String(localized: "workout.finished.title"),
+          message: String(localized: "workout.finished.message")
+        )
+      }
+    }
   }
 
   private func doFinish() async {
+    isFinishing = true
+    defer { isFinishing = false }
     do {
-      _ = try await controller.finish()
+      let summary = try await controller.finish()
+      // Giữ summary thật để mở màn Summary (#317).
+      finishedSummary = summary
     } catch let refusal as WorkoutSessionController.FinishRefusal {
       finishMessage = String(describing: refusal)
     } catch {

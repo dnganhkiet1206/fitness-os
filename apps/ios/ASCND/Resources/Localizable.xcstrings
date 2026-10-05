@@ -599,6 +599,29 @@
      }
     }
    }
+  },
+  "workout.finishing": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Finishing workout…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang chốt buổi tập…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Terminando entrenamiento…"
+     }
+    }
+   }
   }
  }
 }
