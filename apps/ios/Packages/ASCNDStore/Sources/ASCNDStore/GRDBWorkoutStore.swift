@@ -123,6 +123,18 @@ public final class GRDBWorkoutStore: WorkoutStore {
     }
   }
 
+  /// Như `clearAll`, nhưng giữ ngày của `userId` (#455): khi đổi thẳng tài
+  /// khoản, người mới có thể đã đăng nhập và ghi TRƯỚC khi lượt dọn của người
+  /// cũ chạy tới đây — dọn của người cũ không được xoá của người mới. Hàng
+  /// `#legacy` cũng bị bỏ, như `clearAll`.
+  @discardableResult
+  public func clearAll(except userId: String) async throws -> Int {
+    try await db.write { db in
+      try db.execute(sql: "DELETE FROM workout_day WHERE userId != ?", arguments: [userId.lowercased()])
+      return db.changesCount
+    }
+  }
+
   /// Blob không giải mã được (bản build khác ghi, tệp hỏng) = không có điểm
   /// quay lại: bắt đầu lại ngày, như baseline ("a corrupt entry is not worth a
   /// crash — start the workout fresh", `day-plan.tsx:906`).
