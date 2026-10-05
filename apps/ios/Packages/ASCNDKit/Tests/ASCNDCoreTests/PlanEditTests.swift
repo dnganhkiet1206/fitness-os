@@ -400,3 +400,95 @@ struct PlanEditTests {
     #expect(t.type == nil && t.createdAt == nil)
   }
 }
+
+/// Bản sao template (#430): "Thử workout" — hành động sao chép duy nhất của RN
+/// (`workoutFromPost`) — và các bất biến chống trùng id / ghi đè.
+@MainActor
+struct TemplateCopyTests {
+  private let lines = [
+    SharedWorkoutLine(exerciseId: "ex-bench", exerciseName: "Bench Press", library: true, sets: 4, reps: 6),
+    SharedWorkoutLine(exerciseId: "ex-mine", exerciseName: "My Curl", library: false, sets: 3, reps: 12),
+    SharedWorkoutLine(exerciseId: nil, exerciseName: "Typed Row", library: true, sets: 3, reps: 10),
+    SharedWorkoutLine(exerciseId: "ex-dip", exerciseName: "Dips", library: true, sets: 0, reps: -2),
+  ]
+
+  /// `workoutFromPost`: chỉ bài thư viện có id, tạ về 0, sets/reps ≥ 1, đếm bài bỏ.
+  @Test func sharedWorkoutKeepsStructureNotLoad() {
+    let d = TemplateCopy.fromShared(title: nil, lines: lines, fallbackName: "Buổi tập")
+    #expect(d.name == "Buổi tập" && d.skipped == 2)
+    #expect(d.exercises.map(\.exerciseId) == ["ex-bench", "ex-dip"])
+    #expect(d.exercises.allSatisfy { $0.weightKg == 0 })
+    #expect(d.exercises[1].sets == 1 && d.exercises[1].reps == 1)
+    #expect(TemplateCopy.fromShared(title: "Push A", lines: [], fallbackName: "x").name == "Push A")
+  }
+
+  /// Thử: template MỚI loại `community`, không gán ngày; bấm lại cùng id là
+  /// idempotent — kể cả sau khi đã lên server và làm mới.
+  @Test func tryCreatesACommunityTemplateIdempotently() async throws {
+    let h = Harness()
+    await h.flow.start()
+    let (t, skipped) = try await h.editor.copyShared(id: "TRY-1", title: "Push A", lines: lines, fallbackName: "x")
+    #expect(t.id == "try-1" && t.type == "community" && skipped == 2)
+    _ = try await h.editor.copyShared(id: "try-1", title: "Push A", lines: lines, fallbackName: "x")
+    #expect(await h.store.outbox.count == 1)
+    #expect(await h.store.outbox.allSatisfy { $0.kind == PlanEdit.templateKind }, "không gán ngày")
+    _ = await h.sync()
+    await h.flow.refresh()
+    _ = try await h.editor.copyShared(id: "try-1", title: "Push A", lines: lines, fallbackName: "x")
+    #expect(await h.server.templates.count == 1)
+    await #expect(throws: PlanEditor.Refusal.noExercises) {
+      _ = try await h.editor.copyShared(id: "try-2", title: nil, lines: [lines[1]], fallbackName: "x")
+    }
+  }
+
+  /// Bất biến chống trùng (âm): id đã là của template KHÁC nội dung → từ chối.
+  /// Trước #430 lệnh "tạo" trả về template CŨ, hàng mới bị server bỏ trùng và
+  /// gán ngày trỏ vào template cũ — người dùng tưởng có template mới.
+  @Test func reusingAnIdForDifferentContentIsRefused() async throws {
+    let h = Harness()
+    try await h.seed("tpl-old", exercises: [squat])
+    let before = await h.server.attempts.count
+    await #expect(throws: PlanEditor.Refusal.idInUse) {
+      _ = try await h.editor.create(id: "tpl-old", name: "Legs", exercises: [bench], scheduleOn: 1)
+    }
+    await #expect(throws: PlanEditor.Refusal.idInUse) {
+      _ = try await h.editor.create(id: "TPL-OLD", name: "Other", exercises: [squat])
+    }
+    #expect(await h.store.outbox.isEmpty, "không có hàng nào vào hàng đợi")
+    #expect(await h.server.attempts.count == before)
+    // Cùng nội dung (gửi lại sau khi đã lên server) vẫn được.
+    _ = try await h.editor.create(id: "tpl-old", name: "Legs", exercises: [squat])
+    // Kể cả khi đọc lại làm tròn: 61.234 kg lên server là 61.23 — vẫn là cùng
+    // một template, không phải "id của template khác".
+    let odd = TemplateExercise(exerciseName: "Row", sets: 3, reps: 8, weightKg: 61.234)
+    _ = try await h.editor.create(id: "tpl-row", name: "Row", exercises: [odd])
+    _ = await h.sync()
+    await h.flow.refresh()
+    _ = try await h.editor.create(id: "tpl-row", name: "Row", exercises: [odd])
+  }
+
+  /// Bản sao độc lập với nguồn: xoá nguồn không chạm bản sao; gán lại ngày
+  /// sang bản sao không đổi buổi đang tập dở (TW-6a).
+  @Test func copyIsIndependentAndActiveSessionIsIsolated() async throws {
+    let h = Harness()
+    try await h.seed("tpl-old", exercises: [squat, bench])
+    let session = try #require(h.flow.session)
+    #expect(session.plan.templateId == "tpl-old")
+    await session.toggle("0-0")
+    let source = try #require(h.flow.today.library?.templates.first { $0.id == "tpl-old" })
+    let copy = try await h.editor.create(id: "tpl-copy", name: "Legs (2)", exercises: source.exercises)
+    try await h.editor.assign(day: 0, templateId: "tpl-copy")
+    await h.flow.settled()
+    #expect(h.flow.session === session, "buổi đang tập dở giữ nguyên")
+    #expect(session.plan.templateId == "tpl-old" && session.progress.done["0-0"] == true)
+    try await h.editor.delete(templateId: "tpl-old")
+    await h.flow.settled()
+    let lib = try #require(h.flow.today.library)
+    #expect(lib.templates.map(\.id) == ["tpl-copy"])
+    #expect(lib.templates.first?.exercises == copy.exercises)
+    #expect(lib.routine.first { $0.dayOfWeek == 0 }?.templateId == "tpl-copy", "ngày không bị cascade theo nguồn")
+    _ = await h.sync()
+    let server = await h.server.templates
+    #expect(server["tpl-copy"] != nil && server["tpl-old"] == nil)
+  }
+}
