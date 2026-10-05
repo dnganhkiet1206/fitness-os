@@ -3,9 +3,13 @@
 // Gallery deterministic cho Live Activity / Dynamic Island states.
 // Dùng fixture, không đổi timer semantics.
 //
-// States: started, counting, near-finish, completed/cancelled, inactive.
+// States: resting, near-finish, active, ready.
 //
-// NOTE: Đây là SwiftUI mock để review layout. DI thật cần máy thật.
+// NOTE: Đây là SwiftUI mock để review layout (mở file này trong Xcode →
+// canvas #Preview). DI thật cần máy thật.
+// File nằm trong Shared/ của module AscndNative nên được compile vào app
+// target qua podspec (Shared/**/*.swift) — KHÔNG đưa vào widget extension
+// (plugin with-ascnd-widgets.js chỉ copy file liệt kê trong SWIFT_SOURCES).
 // #235 chưa resolve — không đoán product decisions.
 import SwiftUI
 
@@ -144,11 +148,23 @@ struct DIGallery: View {
         gallerySection("Expanded — active") {
           DIExpandedMock(fixture: .active)
         }
+        gallerySection("Expanded — active") {
+          DIExpandedMock(fixture: .active)
+        }
+        gallerySection("Expanded — ready") {
+          DIExpandedMock(fixture: .ready)
+        }
         gallerySection("Compact — resting") {
           DICompactMock(fixture: .resting)
         }
         gallerySection("Compact — near finish") {
           DICompactMock(fixture: .nearFinish)
+        }
+        gallerySection("Compact — active") {
+          DICompactMock(fixture: .active)
+        }
+        gallerySection("Compact — ready") {
+          DICompactMock(fixture: .ready)
         }
       }
       .padding(.vertical)
