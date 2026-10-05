@@ -104,3 +104,7 @@ public final class OutboxStore: Sendable {
     return String(decoding: try encoder.encode(value), as: UTF8.self)
   }
 }
+
+/// `SyncWorker` (ASCNDCore) đọc và ghi hàng đợi qua đây. Các hàm đồng bộ của
+/// GRDB thoả yêu cầu `async` của giao thức; worker gọi chúng ngoài main actor.
+extension OutboxStore: OutboxPersistence {}
