@@ -338,18 +338,25 @@ public struct WorkoutView: View {
 
   /// Flush tất cả ghi đang chờ — gọi khi Done/hạ bàn phím (#300).
   private func flushWrites() {
+    // Chỉ flush các field đang có ghi chờ — không ghi lại toàn bộ rows
+    // (seedTexts đã điền mọi ô, ghi lại hết sẽ spam controller và có thể
+    // ghi đè state đang bay).
+    let pendingKeys = Array(pendingWrites.keys)
     for task in pendingWrites.values {
       task.cancel()
     }
     pendingWrites.removeAll()
-    // Ghi ngay giá trị hiện tại cho mọi ô (không chờ debounce).
-    for row in controller.plan.rows {
-      let key = row.key
-      if let w = weightTexts[key] {
-        Task { await controller.setWeightText(w, for: key) }
-      }
-      if let r = repsTexts[key] {
-        Task { await controller.setRepsText(r, for: key) }
+    for pkey in pendingKeys {
+      if pkey.hasPrefix("w:") {
+        let key = String(pkey.dropFirst(2))
+        if let w = weightTexts[key] {
+          Task { await controller.setWeightText(w, for: key) }
+        }
+      } else if pkey.hasPrefix("r:") {
+        let key = String(pkey.dropFirst(2))
+        if let r = repsTexts[key] {
+          Task { await controller.setRepsText(r, for: key) }
+        }
       }
     }
   }

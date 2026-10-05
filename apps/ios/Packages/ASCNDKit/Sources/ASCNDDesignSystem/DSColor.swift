@@ -5,7 +5,7 @@
 //
 // Mỗi token có hai biến thể light/dark, chọn theo trait của hệ thống.
 #if canImport(SwiftUI)
-import SwiftUI
+@_exported import SwiftUI
 
 public extension DS {
   /// Bảng màu thương hiệu. Dùng `DS.Color.background` thay vì hardcode hex.
