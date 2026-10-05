@@ -197,4 +197,14 @@ struct ExerciseGuideSourceMappingTests {
     // kiểu của cả bộ (luật "một bộ là một kiểu" của RN).
     #expect(MediaState.resolve(media, legacy: nil, lang: .vi).shape == .imageSingle)
   }
+
+  /// Phần tử null trong mảng chữ (Postgres cho phép) không làm hỏng lượt
+  /// đọc: bỏ đi như `clean` của RN, nội dung còn lại vẫn hiện.
+  @Test func nullElementsInTextArraysAreSkipped() throws {
+    let rows = try JSONDecoder().decode([SupabaseExerciseGuideSource.ContentRow].self, from: Data("""
+      [{"locale":"vi","instructions":["Đứng thẳng",null,"  "],"form_cues":[null],"common_mistakes":null}]
+      """.utf8))
+    let content = try #require(GuideContent.pick(rows.map(\.domain), .vi))
+    #expect(content.instructions == ["Đứng thẳng"] && content.formCues.isEmpty && content.commonMistakes.isEmpty)
+  }
 }
