@@ -53,11 +53,17 @@ public struct SupabaseExerciseGuideSource: ExerciseGuideSource {
 
   struct ContentRow: Decodable, Sendable {
     let locale: String?
-    let instructions: [String]?
-    let form_cues: [String]?
-    let common_mistakes: [String]?
+    /// `TEXT[] NOT NULL` — mảng không null, nhưng PHẦN TỬ thì Postgres cho
+    /// phép null. RN bỏ qua chúng (`clean`: `(s ?? '').trim()` rồi lọc rỗng);
+    /// giải mã `[String]` thì một phần tử null làm hỏng cả lượt đọc và sheet
+    /// thành "không đọc được dữ liệu". Đọc `[String?]`, bỏ null — cùng kết quả.
+    let instructions: [String?]?
+    let form_cues: [String?]?
+    let common_mistakes: [String?]?
     var domain: GuideContentRow {
-      GuideContentRow(locale: locale ?? "", instructions: instructions, formCues: form_cues, commonMistakes: common_mistakes)
+      GuideContentRow(
+        locale: locale ?? "", instructions: instructions?.compactMap { $0 }, formCues: form_cues?.compactMap { $0 },
+        commonMistakes: common_mistakes?.compactMap { $0 })
     }
   }
 

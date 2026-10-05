@@ -31,7 +31,7 @@ struct FitnessCalcGoldenTests {
 
   @Test func planFromEntryMatchesRN() throws {
     guard case .array(let cases)? = try Self.golden()["cases"] else { throw CocoaError(.fileReadCorruptFile) }
-    #expect(cases.count == 1035)
+    #expect(cases.count == 1041)
     var mismatches = 0
     for c in cases {
       let i = c["input"]
