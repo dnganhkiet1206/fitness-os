@@ -73,6 +73,10 @@ private func signIn(_ db: ASCNDDatabase, _ userId: String) async throws {
   try await GRDBTemplateCache(db).clearAll(except: userId)
 }
 
+/// Chờ đồng bộ một semaphore — gọi từ luồng riêng (`Task.detached`), không
+/// từ ngữ cảnh async (SDK của Apple cấm `wait()` trực tiếp ở đó).
+private func blockUntilSignalled(_ s: DispatchSemaphore) { s.wait() }
+
 struct AccountIsolationTests {
   /// Test này phủ MỌI không gian tên đã khai báo — thêm cache mới mà không
   /// khai báo thì `put` trượt assert; khai báo mà không thêm probe thì đỏ ở đây.
@@ -190,7 +194,7 @@ struct AccountIsolationTests {
         release.wait()
       }
     }
-    await Task.detached { entered.wait() }.value
+    await Task.detached { blockUntilSignalled(entered) }.value
     let late = Task { try await GRDBProfileCache(db).save(userId: "a", Profile(row: .object(["user_id": .string("a")]))!) }
     try await Task.sleep(nanoseconds: 50_000_000)  // lượt ghi đã qua mọi kiểm tra ngoài giao dịch
     db.accounts.signOut()
