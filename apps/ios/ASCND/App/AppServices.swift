@@ -32,6 +32,7 @@ final class AppServices {
   @ObservationIgnored let performanceCache: any PerformanceCache
   @ObservationIgnored let historySource: any HistorySource
   @ObservationIgnored let historyCache: any HistoryCache
+  @ObservationIgnored let insightCache: any InsightCache
   /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
   @ObservationIgnored private let readCache: GRDBTemplateCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
@@ -74,6 +75,7 @@ final class AppServices {
     performanceCache = GRDBPerformanceCache(database)
     historySource = backend.map { SupabaseHistorySource(backend: $0) as any HistorySource } ?? UnconfiguredHistorySource()
     historyCache = GRDBHistoryCache(database)
+    insightCache = GRDBInsightCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: outboxStore,
@@ -144,9 +146,12 @@ final class AppServices {
     let history = HistoryBook(
       userId: userId, source: historySource, cache: historyCache, store: workouts,
       onEnqueued: { _ in sync.kick() })
+    // Phân tích bài tập (#419): cùng nguồn 90 ngày với "lần trước".
+    let insights = InsightBook(userId: userId, source: performanceSource, cache: insightCache)
     return WorkoutFlow(
       today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
-      performance: makePerformanceBook(userId: userId), history: history, store: workouts, planStore: outbox,
+      performance: makePerformanceBook(userId: userId), history: history, insights: insights, store: workouts,
+      planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
       onEnqueued: { _ in sync.kick() })
   }

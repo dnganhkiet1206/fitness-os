@@ -98,7 +98,7 @@ public struct LastPerformance: Sendable, Hashable, Codable {
 }
 
 /// Một hàng `workout_sessions` như truy vấn lịch sử trả về.
-public struct SessionHistoryRow: Sendable, Hashable {
+public struct SessionHistoryRow: Sendable, Hashable, Codable {
   public let id: String
   public let at: EpochMillis
   public let sets: JSONValue?

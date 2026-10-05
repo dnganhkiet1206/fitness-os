@@ -22,6 +22,8 @@ public final class WorkoutFlow {
   public let performance: PerformanceBook
   /// Lịch sử buổi tập (#400) — `nil` khi app chưa dựng màn lịch sử.
   public let history: HistoryBook?
+  /// Phân tích bài tập (#419) — `nil` khi app chưa dựng màn phân tích.
+  public let insights: InsightBook?
   /// Buổi tập của hôm nay; `nil` khi hôm nay không có buổi (nghỉ / chưa lên
   /// lịch) và không có kế hoạch tự do.
   public private(set) var session: WorkoutSessionController?
@@ -54,6 +56,7 @@ public final class WorkoutFlow {
   ///   - onEnqueued: hàng outbox vừa bền — app gọi `sync.kick()`.
   public init(
     today: TodayController, records: RecordBook, performance: PerformanceBook, history: HistoryBook? = nil,
+    insights: InsightBook? = nil,
     store: any WorkoutStore, planStore: (any PlanWriteStore)? = nil,
     clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
@@ -64,6 +67,7 @@ public final class WorkoutFlow {
     self.records = records
     self.performance = performance
     self.history = history
+    self.insights = insights
     self.store = store
     self.clock = clock
     self.timeZone = timeZone
@@ -97,6 +101,7 @@ public final class WorkoutFlow {
   func sessionDeleted(_ id: String, at: EpochMillis) async {
     await today.markUntrained(LocalDate(at, in: timeZone))
     await performance.forget(sessionId: id)
+    await insights?.forget(sessionId: id)
     if let session, session.loggedSessionId == id { await session.load() }
   }
 
@@ -114,14 +119,17 @@ public final class WorkoutFlow {
     async let records: Void = self.records.load()
     async let performance: Void = self.performance.load()
     async let history: Void = self.loadHistory()
+    async let insights: Void = self.loadInsights()
     await today.load()
     markFresh()
     await install()
-    _ = await (records, performance, history)
+    _ = await (records, performance, history, insights)
   }
 
   private func loadHistory() async { await history?.load() }
   private func refreshHistory() async { await history?.refresh() }
+  private func loadInsights() async { await insights?.load() }
+  private func refreshInsights() async { await insights?.refresh() }
 
   /// Phiên kết thúc (đăng xuất, đổi tài khoản): huỷ lượt làm mới đang bay —
   /// truy vấn mạng bị huỷ thì không có gì để ghi vào cache của người vừa rời
@@ -156,6 +164,8 @@ public final class WorkoutFlow {
   public func becameActive() async {
     guard !closed else { return }
     await today.clockTick()
+    // "Bỏ lâu" / "N ngày trước" của phân tích đếm theo hôm nay.
+    insights?.recompute()
     if isStale {
       await refresh()
     } else {
@@ -181,7 +191,8 @@ public final class WorkoutFlow {
     async let records: Void = self.records.refresh()
     async let performance: Void = self.performance.refresh()
     async let history: Void = self.refreshHistory()
-    _ = await (records, performance, history)
+    async let insights: Void = self.refreshInsights()
+    _ = await (records, performance, history, insights)
   }
 
   private func markFresh() {
@@ -312,12 +323,16 @@ public final class WorkoutFlow {
           // Gỡ set cuối cùng (#398): buổi không còn. Bảng kỷ lục giữ nguyên —
           // tốt-nhất là phép max, không gỡ được; lần làm mới sau sửa lại.
           await self.today.markUntrained(date)
-          if let id = entry.payload["id"]?.stringValue { await self.performance.forget(sessionId: id) }
+          if let id = entry.payload["id"]?.stringValue {
+            await self.performance.forget(sessionId: id)
+            await self.insights?.forget(sessionId: id)
+          }
           return
         }
         await self.today.markTrained(date)
         await self.records.absorb(setsJSON: entry.payload["sets"])
         await self.performance.absorb(row: entry.payload)
+        await self.insights?.absorb(row: entry.payload)
       }
     }
   }
