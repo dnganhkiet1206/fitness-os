@@ -178,7 +178,7 @@ export function TodayTraining() {
           <Text style={styles.restDesc}>{i18n.nTodayRestHint}</Text>
 
           <Text style={styles.suggestTitle}>
-            {vi ? 'Gợi ý hôm nay' : lang === 'es' ? 'Sugerencias de hoy' : "Today's suggestions"}
+            {i18n.nRestSuggestTitle}
           </Text>
           <View style={styles.suggestRow}>
             <PressScale
@@ -186,24 +186,24 @@ export function TodayTraining() {
               accessibilityRole="button"
               onPress={() => Haptics.selection()}>
               <Icon icon={PersonStanding} size={24} color="#f59e0b" />
-              <Text style={styles.suggestLabel}>{vi ? 'Đi bộ nhẹ' : lang === 'es' ? 'Caminata' : 'Easy walk'}</Text>
-              <Text style={styles.suggestSub}>20–30 {vi ? 'phút' : 'min'}</Text>
+              <Text style={styles.suggestLabel}>{i18n.nRestWalk}</Text>
+              <Text style={styles.suggestSub}>20–30 {i18n.nRestMinutes}</Text>
             </PressScale>
             <PressScale
               style={styles.suggestTile}
               accessibilityRole="button"
               onPress={() => Haptics.selection()}>
               <Icon icon={Leaf} size={24} color="#22c55e" />
-              <Text style={styles.suggestLabel}>{vi ? 'Giãn cơ' : lang === 'es' ? 'Estirar' : 'Stretch'}</Text>
-              <Text style={styles.suggestSub}>10–15 {vi ? 'phút' : 'min'}</Text>
+              <Text style={styles.suggestLabel}>{i18n.nRestStretch}</Text>
+              <Text style={styles.suggestSub}>10–15 {i18n.nRestMinutes}</Text>
             </PressScale>
             <PressScale
               style={styles.suggestTile}
               accessibilityRole="button"
               onPress={() => Haptics.selection()}>
               <Icon icon={Sun} size={24} color="#eab308" />
-              <Text style={styles.suggestLabel}>{vi ? 'Vận động nhẹ' : lang === 'es' ? 'Suave' : 'Light activity'}</Text>
-              <Text style={styles.suggestSub}>{vi ? 'Tuỳ chọn' : lang === 'es' ? 'Opcional' : 'Optional'}</Text>
+              <Text style={styles.suggestLabel}>{i18n.nRestLight}</Text>
+              <Text style={styles.suggestSub}>{i18n.nRestOptional}</Text>
             </PressScale>
           </View>
 
@@ -212,7 +212,7 @@ export function TodayTraining() {
             accessibilityRole="button"
             onPress={() => Haptics.selection()}>
             <Text style={styles.restPrimaryText}>
-              {vi ? 'Vận động nhẹ' : lang === 'es' ? 'Actividad suave' : 'Light activity'} ›
+              {i18n.nRestLight} ›
             </Text>
           </PressScale>
           <PressScale
