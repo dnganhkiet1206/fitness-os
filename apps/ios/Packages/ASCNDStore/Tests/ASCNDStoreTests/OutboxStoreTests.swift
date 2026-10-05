@@ -26,7 +26,7 @@ struct OutboxStoreTests {
     }
     _ = box.next(now: EpochMillis(0), online: true, signedInUser: "u1")
     box.failed(id: "a", .server(code: nil), now: EpochMillis(0))
-    try store.persist(box)
+    try store.persist(box, settled: [])
     var loaded = try store.load()
     #expect(loaded.pending.first?.history.transientFailures == 1)
     #expect(loaded.pending.first?.notBefore == EpochMillis(1000))
@@ -35,14 +35,14 @@ struct OutboxStoreTests {
     box.succeeded(id: "a")
     _ = box.next(now: EpochMillis(1000), online: true, signedInUser: "u1")
     box.failed(id: "b", .server(code: "23514"), now: EpochMillis(1000))
-    try store.persist(box)
+    try store.persist(box, settled: ["a"])
     loaded = try store.load()
     #expect(loaded.pending.map(\.id) == ["c"])
     #expect(loaded.dead.map(\.entry.id) == ["b"])
     #expect(loaded.dead.first?.reason == .refused)
 
     // persist lần hai không nhân đôi `dead`.
-    try store.persist(box)
+    try store.persist(box, settled: ["a"])
     #expect(try store.load().dead.count == 1)
   }
 
@@ -54,8 +54,22 @@ struct OutboxStoreTests {
       try store.append(entry(id))
     }
     box.dropAllOnSignOut()
-    try store.persist(box)
+    #expect(try store.dropAllOnSignOut() == 2)
     #expect(try store.load().pending.isEmpty)
+  }
+
+  /// Màn tập chốt buổi (append) SAU khi worker đã nạp hàng đợi; worker gửi
+  /// xong hàng cũ rồi ghi bước của nó. Buổi mới phải còn nguyên — đó là thứ
+  /// màn hình vừa báo "đã lưu".
+  @Test func persistNeverDropsRowsTheWorkerHasNotSeen() throws {
+    let store = try OutboxStore()
+    try store.append(entry("a"))
+    var box = try store.load()
+    try store.append(entry("late"))
+    _ = box.next(now: EpochMillis(0), online: true, signedInUser: "u1")
+    box.succeeded(id: "a")
+    try store.persist(box, settled: ["a"])
+    #expect(try store.load().pending.map(\.id) == ["late"])
   }
 
   /// "Tắt app": mở lại cùng tệp, hàng đợi còn nguyên. Migration chạy lại

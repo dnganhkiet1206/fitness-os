@@ -9,8 +9,8 @@ import GRDB
 /// - `append`: ghi một bản ghi mới, COMMIT xong mới trả về — màn hình chỉ được
 ///   nói "đã lưu trên máy" sau khi hàm này trả về. Đóng lỗ hổng `:729` của
 ///   baseline (tắt app giữa chừng là mất bản ghi).
-/// - `persist`: sau mỗi bước của worker (gửi xong, lỗi, bỏ sang `dead`, đăng
-///   xuất), làm đĩa khớp với giá trị trong MỘT transaction.
+/// - `persist`: sau mỗi bước của worker (gửi xong, lỗi, bỏ sang `dead`), ghi
+///   bước ấy xuống đĩa trong MỘT transaction — không đụng hàng worker chưa nạp.
 ///
 /// Bản ghi lưu dưới dạng JSON của `OutboxEntry` — cùng một `Codable` mà test
 /// của Core đã thử khứ hồi; không có ánh xạ cột thứ hai để lệch.
@@ -71,15 +71,21 @@ public final class OutboxStore: Sendable {
     }
   }
 
-  /// Làm đĩa khớp với `outbox`, trong một transaction: hàng không còn trong
-  /// `pending` bị xoá, hàng còn lại cập nhật lịch sử lỗi / hạn chờ, hàng mới
-  /// được thêm vào cuối, bản ghi `dead` mới được nối thêm.
-  public func persist(_ outbox: Outbox) throws {
+  /// Ghi các bước của worker xuống đĩa, trong một transaction: hàng còn trong
+  /// `pending` cập nhật lịch sử lỗi / hạn chờ, hàng mới của worker thêm vào
+  /// cuối, bản ghi `dead` mới được nối thêm, và hàng bị XOÁ chỉ khi worker nói
+  /// rõ nó đã xong — `settled` (gửi thành) hoặc đã sang `dead`.
+  ///
+  /// Không "xoá mọi thứ không có trong `pending`": `append` (màn tập chốt
+  /// buổi) chạy song song với worker, và hàng vừa chèn sau lần `load()` của
+  /// worker không có trong giá trị của nó. Xoá theo "không thấy" là xoá mất
+  /// một buổi tập vừa được báo "đã lưu".
+  public func persist(_ outbox: Outbox, settled: Set<String>) throws {
     let pending = try outbox.pending.map { ($0, try Self.json($0)) }
     let dead = try outbox.dead.map { ($0.entry.id, try Self.json($0)) }
+    let finished = settled.union(outbox.dead.map(\.entry.id)).subtracting(outbox.pending.map(\.id))
     try db.write { db in
-      let keep = Set(outbox.pending.map(\.id))
-      for id in try String.fetchAll(db, sql: "SELECT id FROM outbox") where !keep.contains(id) {
+      for id in finished {
         try db.execute(sql: "DELETE FROM outbox WHERE id = ?", arguments: [id])
       }
       for (entry, json) in pending {
@@ -94,6 +100,16 @@ public final class OutboxStore: Sendable {
       for (id, json) in dead.dropFirst(stored) {
         try db.execute(sql: "INSERT INTO outbox_dead (id, dead) VALUES (?, ?)", arguments: [id, json])
       }
+    }
+  }
+
+  /// Đăng xuất: bỏ cả hàng đợi như baseline (`clearPersistedCache`, #241 chờ
+  /// Kiệt) — một câu lệnh, kể cả hàng worker chưa nạp. Trả về số hàng bỏ.
+  @discardableResult
+  public func dropAllOnSignOut() throws -> Int {
+    try db.write { db in
+      try db.execute(sql: "DELETE FROM outbox")
+      return db.changesCount
     }
   }
 
