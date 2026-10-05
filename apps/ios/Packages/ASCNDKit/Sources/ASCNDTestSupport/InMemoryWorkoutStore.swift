@@ -13,6 +13,7 @@ public actor InMemoryWorkoutStore: WorkoutStore {
   public private(set) var outbox: [OutboxEntry] = []
   public private(set) var writes = 0
   private var failures = 0
+  private var loadFailures = 0
   private var holding = false
   private var parkedWrites: [CheckedContinuation<Void, Never>] = []
 
@@ -31,7 +32,16 @@ public actor InMemoryWorkoutStore: WorkoutStore {
   /// Số lần ghi đang bị giữ ở cổng.
   public var parked: Int { parkedWrites.count }
 
-  public func loadDay(_ key: String) async throws -> DayState? { days[key] }
+  /// Làm hỏng N lần ĐỌC kế tiếp (SQLite bận, tệp đang khoá bảo vệ).
+  public func failNextLoad(_ n: Int = 1) { loadFailures = n }
+
+  public func loadDay(_ key: String) async throws -> DayState? {
+    if loadFailures > 0 {
+      loadFailures -= 1
+      throw Failure()
+    }
+    return days[key]
+  }
 
   public func saveDay(_ key: String, _ state: DayState) async throws {
     try await enter()

@@ -211,6 +211,20 @@ struct WorkoutFlowTests {
     #expect(h.enqueued.count == 1, "chỉ buổi của màn kia")
   }
 
+  /// Đọc ngày từ máy hỏng lúc mở: ra tiền cảnh lần sau thì đọc lại, cùng buổi.
+  @Test func becameActiveRetriesAFailedLoad() async throws {
+    let h = Harness()
+    // Lần đọc đầu là của Today ("ngày đã chốt trên máy?"), lần hai của buổi.
+    await h.store.failNextLoad(2)
+    await h.flow.start()
+    let s = try #require(h.flow.session)
+    #expect(s.loadFailed)
+    await h.flow.becameActive()
+    #expect(h.flow.session === s)
+    #expect(!s.loadFailed)
+    #expect(s.phase == .idle)
+  }
+
   @Test func finishWithoutSessionRefuses() async {
     let h = Harness(snap(rest: true))
     await h.flow.start()

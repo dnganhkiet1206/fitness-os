@@ -73,6 +73,15 @@ public protocol TrainingHistory: Sendable {
 ///   buổi chưa lên server.
 @MainActor @Observable
 public final class TodayController {
+  /// Vì sao làm mới không xong, theo thứ người dùng làm được với nó.
+  public enum RefreshFailure: Sendable, Hashable {
+    /// Không tới được server. Kế hoạch đang hiện (nếu có) là bản trên máy.
+    case offline
+    /// Tới được server mà không đọc được (lỗi server, dữ liệu hỏng, phiên
+    /// hết hạn). Thử lại sau.
+    case unavailable
+  }
+
   public enum Source: Sendable, Hashable {
     case none
     case cache(EpochMillis)
@@ -86,7 +95,12 @@ public final class TodayController {
   public private(set) var today: LocalDate
   public private(set) var plan: TodayPlan?
   public private(set) var source: Source = .none
-  public private(set) var refreshError: String?
+  /// Lần làm mới gần nhất không xong — thứ DUY NHẤT màn hình được dùng để
+  /// nói về lỗi (#334). `nil` = xong hết.
+  public private(set) var failure: RefreshFailure?
+  /// Chi tiết lỗi thô (mã PostgREST, mô tả URLError). CHỈ cho Lab / log —
+  /// không bao giờ hiện cho người dùng.
+  public private(set) var failureDetail: String?
   public private(set) var trained: Set<LocalDate> = []
 
   @ObservationIgnored private let repository: TodayRepository
@@ -122,23 +136,31 @@ public final class TodayController {
 
   /// Hỏi server kế hoạch + lịch sử. Hỏng phần nào thì giữ phần đã có.
   public func refresh() async {
-    var failures: [String] = []
+    var errors: [(String, any Error)] = []
     do {
       let fresh = try await repository.refresh(userId: userId)
       snapshot = fresh
       source = .server(fresh.fetchedAt)
     } catch {
-      failures.append("plan: \(error)")
+      errors.append(("plan", error))
     }
     do {
       let since = EpochMillis(Self.startOfDay(today.adding(days: -(Self.historyDays - 1)), in: timeZone))
       let times = try await history.sessionTimes(userId: userId, since: since)
       serverTrained = Set(times.map { LocalDate($0, in: timeZone) })
     } catch {
-      failures.append("history: \(error)")
+      errors.append(("history", error))
     }
-    refreshError = failures.isEmpty ? nil : failures.joined(separator: "\n")
+    failure = Self.failure(errors.map(\.1))
+    failureDetail = errors.isEmpty ? nil : errors.map { "\($0): \($1)" }.joined(separator: "\n")
     await recompute()
+  }
+
+  /// Mất mạng ở bất kỳ phần nào → `offline`: đó là điều người dùng sửa được
+  /// (bật mạng), và cũng là lý do thường gặp nhất khiến phần kia hỏng theo.
+  static func failure(_ errors: [any Error]) -> RefreshFailure? {
+    if errors.isEmpty { return nil }
+    return errors.contains(where: NetworkFailure.isOffline) ? .offline : .unavailable
   }
 
   /// Gọi khi app ra tiền cảnh / mỗi phút: qua nửa đêm thì "hôm nay" đổi.
