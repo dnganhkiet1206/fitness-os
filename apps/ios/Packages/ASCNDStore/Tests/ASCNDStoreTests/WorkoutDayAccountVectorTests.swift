@@ -30,7 +30,8 @@ import Testing
 /// - `load {day, expect}` — `loadDay`; `null` = không thấy; object = chỉ so các
 ///   trường có mặt (`done` sắp xếp, `loggedSessionId`, `loggedKeys`).
 /// - `raw {owner, day, expect}` — đọc thẳng hàng của `owner` trên đĩa.
-/// - `prune {today, expect: n}` — `pruneDays`.
+/// - `prune {today, expect}` — `pruneDays`; `expect` là số ngày bỏ, hoặc
+///   `closed` khi không ai đăng nhập (#469).
 /// `expect` của phép ghi: `ok` | `closed` (`AccountScopeClosed`) |
 /// `dayAlreadyLogged`.
 
@@ -211,8 +212,13 @@ private final class Run {
       if let m = mismatch(state, expect) { check(false, i, op, "\(owner): \(m)") }
     case "prune":
       let today = try #require(LocalDate(s["today"]?.stringValue ?? ""))
-      let n = try await store.pruneDays(today: today)
-      check(n == expect?.intValue, i, op, "dọn \(n), chờ \(expect.map { "\($0)" } ?? "?")")
+      if expect?.stringValue == "closed" {
+        let got = await outcome { _ = try await self.store.pruneDays(today: today) }
+        check(got == "closed", i, op, "\(got), chờ closed")
+      } else {
+        let n = try await store.pruneDays(today: today)
+        check(n == expect?.intValue, i, op, "dọn \(n), chờ \(expect.map { "\($0)" } ?? "?")")
+      }
     default:
       throw VectorFailure(description: "bước \(i): op lạ '\(op)'")
     }

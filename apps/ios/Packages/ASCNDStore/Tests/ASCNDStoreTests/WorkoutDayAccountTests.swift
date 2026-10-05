@@ -164,7 +164,8 @@ struct WorkoutDayAccountTests {
 
   /// Nâng cấp từ bản cũ (v3: `workout_day` không có chủ): hàng cũ được giữ
   /// nhưng KHÔNG gán cho ai — không người đăng nhập nào (kể cả chế độ không
-  /// chốt) đọc / ghi / chốt / xoá được chúng; dọn theo tuổi vẫn dọn.
+  /// chốt) đọc / ghi / chốt / xoá / dọn được chúng; chỉ lượt dọn xuyên tài
+  /// khoản của vòng đời phiên (`clearAll(except:)`) bỏ chúng.
   @Test func legacyRowsAreKeptButNeverAdopted() async throws {
     let path = tempPath()
     defer { try? FileManager.default.removeItem(atPath: path) }
@@ -192,12 +193,15 @@ struct WorkoutDayAccountTests {
       try String.fetchOne(db, sql: "SELECT state FROM workout_day WHERE userId = ? AND key = ?", arguments: [AccountScope.legacyOwner, key])
     }
     #expect(legacyState?.contains("\"loggedKeys\":[\"0-0\"]") == true, "xoá của A không chạm hàng cũ")
-    #expect(try await store.pruneDays(today: today) == 1, "dọn theo tuổi gồm cả hàng cũ")
-    #expect(try owners(db).sorted() == [AccountScope.legacyOwner, "a"])
+    #expect(try await store.pruneDays(today: today) == 0, "dọn ngày cũ chỉ của A — hàng cũ không phải của A (#469)")
+    #expect(try owners(db) == [AccountScope.legacyOwner, AccountScope.legacyOwner, "a"])
+    #expect(try await store.clearAll(except: "a") == 2)
+    #expect(try owners(db) == ["a"])
   }
 
-  /// Dọn 14 ngày theo tuổi, mọi chủ — chạy lúc mở app khi chưa ai đăng nhập.
-  @Test func pruneIsByAgeAcrossOwners() async throws {
+  /// Dọn 14 ngày CHỈ của người đang đăng nhập (#469); chốt đóng thì từ chối,
+  /// không chạm hàng của ai.
+  @Test func pruneIsScopedToTheSignedInAccount() async throws {
     let db = try ASCNDDatabase()
     let store = GRDBWorkoutStore(db)
     let old = DayProgressStore.key(date: today.adding(days: -20), templateId: "tpl")
@@ -207,7 +211,10 @@ struct WorkoutDayAccountTests {
       try await store.saveDay(key, progress(), userId: user)
     }
     db.accounts.signOut()
-    #expect(try await store.pruneDays(today: today) == 2)
-    #expect(try owners(db) == ["a", "b"])
+    await #expect(throws: AccountScopeClosed.self) { try await store.pruneDays(today: today) }
+    #expect(try owners(db) == ["a", "a", "b", "b"])
+    db.accounts.signIn("A")
+    #expect(try await store.pruneDays(today: today) == 1)
+    #expect(try owners(db) == ["a", "b", "b"], "ngày cũ của B không bị A dọn")
   }
 }

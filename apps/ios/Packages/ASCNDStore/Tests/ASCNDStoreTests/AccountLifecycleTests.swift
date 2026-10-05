@@ -139,7 +139,7 @@ struct AccountLifecycleTests {
     #expect(await !c.toggle("b1"), "chưa đăng nhập: ghi bị từ chối")
     #expect(c.unsaved != nil)
     #expect(try d.owners().isEmpty)
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     let a = await d.controller("a")
     #expect(await a.toggle("b1"))
     #expect(try d.owners() == ["a"])
@@ -149,7 +149,7 @@ struct AccountLifecycleTests {
   /// `between` (lúc hàng đợi đang bị bỏ) đã bị từ chối; sau đó không còn gì.
   @Test func signOutClosesTheScopeBeforeCleanup() async throws {
     let d = try Device()
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     let a = await d.controller("a")
     #expect(await a.toggle("b1"))
     try await d.cacheTemplates("a")
@@ -171,7 +171,7 @@ struct AccountLifecycleTests {
   @Test(arguments: Release.allCases)
   func delayedWriteOfThePreviousAccount(_ when: Release) async throws {
     let d = try Device()
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     let held = HeldStore(d.store)
     let a = await d.controller("a", store: held)
     #expect(await a.toggle("b1"))
@@ -186,7 +186,7 @@ struct AccountLifecycleTests {
       if when == .midCleanup { await r.run() }
     }
     if when == .afterCleanup { await release() }
-    await d.life.sessionStarted(userId: "b")
+    await d.life.sessionStarted(userId: "b", today: today)
     if when == .afterNextStarted { await release() }
 
     // Lượt chốt muộn của A (buổi được dựng khi A còn trong phiên), tới sau đổi.
@@ -212,7 +212,7 @@ struct AccountLifecycleTests {
   /// ngày / cache của B. (Trước #455: `clearAll()` xoá luôn tick của B.)
   @Test func nextAccountStartingMidCleanupKeepsItsData() async throws {
     let d = try Device()
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     let a = await d.controller("a")
     #expect(await a.toggle("b1"))
     try await d.cacheTemplates("a")
@@ -221,7 +221,7 @@ struct AccountLifecycleTests {
     let b = Box2()
     await life.sessionEnded(next: "B") { @MainActor in
       // Lượt dọn nhường (bỏ hàng đợi); màn của B chạy.
-      await life.sessionStarted(userId: "B")
+      await life.sessionStarted(userId: "B", today: today)
       b.controller = await d.controller("B")
       #expect(await b.controller!.toggle("b2"))
       try? await d.cacheTemplates("B")
@@ -238,9 +238,9 @@ struct AccountLifecycleTests {
   /// Lượt dọn vẫn không đóng chốt của B, không xoá của B.
   @Test func nextAccountStartedBeforeCleanupBegins() async throws {
     let d = try Device()
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     #expect(await d.controller("a").toggle("b1"))
-    await d.life.sessionStarted(userId: "b")
+    await d.life.sessionStarted(userId: "b", today: today)
     let b = await d.controller("b")
     #expect(await b.toggle("b2"))
     await d.life.sessionEnded(next: "b")
@@ -252,12 +252,12 @@ struct AccountLifecycleTests {
   /// Thứ tự thường (dọn của A xong rồi B mới mở phiên): như trên.
   @Test func nextAccountStartingAfterCleanup() async throws {
     let d = try Device()
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     #expect(await d.controller("a").toggle("b1"))
     await d.life.sessionEnded(next: "b")
     #expect(d.db.accounts.current == .signedOut, "B chưa mở phiên: chốt đóng")
     #expect(try d.owners().isEmpty)
-    await d.life.sessionStarted(userId: "b")
+    await d.life.sessionStarted(userId: "b", today: today)
     let b = await d.controller("b")
     #expect(b.progress.done.isEmpty)
     #expect(await b.toggle("b2"))
@@ -269,11 +269,11 @@ struct AccountLifecycleTests {
   @Test func killAndReopenAtEachBoundary() async throws {
     let d = try Device()
     // Kill giữa phiên của A.
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     #expect(await d.controller("a").toggle("b1"))
     try d.launch()
     #expect(try await d.store.loadDay(dayKey) == nil, "mở lại: chốt đóng")
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     #expect(await d.controller("a").progress.done == ["b1": true], "A mở lại thấy của A")
 
     // Kill giữa lượt dọn: chốt đã đóng (bước đầu), chưa dọn gì. Ngày của A
@@ -281,7 +281,7 @@ struct AccountLifecycleTests {
     d.db.accounts.signOut()
     try d.launch()
     #expect(try d.owners() == ["a"])
-    await d.life.sessionStarted(userId: "b")
+    await d.life.sessionStarted(userId: "b", today: today)
     #expect(await d.controller("b").progress.done.isEmpty, "B không thấy gì của A")
 
     // Kill sau khi B chốt buổi; mở lại, B thấy khoá của mình; A thì không.
@@ -289,10 +289,10 @@ struct AccountLifecycleTests {
     #expect(await b.toggle("b2"))
     _ = try await b.finish()
     try d.launch()
-    await d.life.sessionStarted(userId: "b")
+    await d.life.sessionStarted(userId: "b", today: today)
     #expect(await d.controller("b").loggedSessionId != nil)
     await d.life.sessionEnded(next: "a")
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     #expect(await d.controller("a").loggedSessionId == nil, "A không thừa hưởng khoá của B")
   }
 
@@ -301,13 +301,13 @@ struct AccountLifecycleTests {
   /// chốt được cùng khoá ngày mà B đã chốt.
   @Test func aThenBThenA() async throws {
     let d = try Device()
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     let a1 = await d.controller("a")
     #expect(await a1.toggle("b1"))
     _ = try await a1.finish()
 
     await d.life.sessionEnded(next: "b")
-    await d.life.sessionStarted(userId: "b")
+    await d.life.sessionStarted(userId: "b", today: today)
     let b = await d.controller("b")
     #expect(b.loggedSessionId == nil, "khoá của A không theo sang B")
     #expect(await b.toggle("b2"))
@@ -315,7 +315,7 @@ struct AccountLifecycleTests {
     #expect(await !a1.toggle("b2"), "controller cũ của A không ghi được trong phiên B")
 
     await d.life.sessionEnded(next: "a")
-    await d.life.sessionStarted(userId: "a")
+    await d.life.sessionStarted(userId: "a", today: today)
     let a2 = await d.controller("a")
     #expect(a2.loggedSessionId == nil && a2.progress.done.isEmpty, "A không thấy gì của B")
     #expect(await a2.toggle("b1"))
@@ -324,18 +324,37 @@ struct AccountLifecycleTests {
     #expect(try d.owners() == ["a"])
   }
 
-  /// Dọn ngày cũ lúc mở app chạy khi chốt đóng — theo tuổi, mọi chủ.
-  @Test func pruneRunsWhileClosed() async throws {
+  /// #469: mở app (có phiên cũ hay không) không đọc / ghi / dọn gì khi chốt
+  /// đóng. Phiên mở: mở chốt, bỏ ngày của người khác (sót lại từ app chết giữa
+  /// lượt dọn), rồi dọn ngày cũ CHỈ của người ấy.
+  @Test func coldLaunchTouchesNothingUntilTheSessionOpens() async throws {
     let d = try Device()
     let old = DayProgressStore.key(date: today.adding(days: -20), templateId: "tpl")
     for user in ["a", "b"] {
-      await d.life.sessionStarted(userId: user)
+      d.db.accounts.signIn(user)
       try await d.store.saveDay(old, DayState(), userId: user)
       try await d.store.saveDay(dayKey, DayState(), userId: user)
     }
     try d.launch()
-    #expect(await d.life.pruneDays(today: today) == 2)
-    #expect(try d.owners() == ["a", "b"])
+    #expect(try d.owners() == ["a", "a", "b", "b"], "mở app không dọn gì")
+    await #expect(throws: AccountScopeClosed.self) { try await d.store.pruneDays(today: today) }
+    #expect(try d.owners() == ["a", "a", "b", "b"])
+    await d.life.sessionStarted(userId: "A", today: today)
+    #expect(try d.owners() == ["a"], "của B đi; ngày cũ của A đi; hôm nay của A ở lại")
+    #expect(try await d.store.loadDay(dayKey) != nil)
+  }
+
+  /// #469: khởi động với phiên đã hết hạn — `SessionStore` báo hết phiên ngay
+  /// lúc đọc: dọn hết, chốt vẫn đóng, không có lượt dọn ngày cũ nào chạy.
+  @Test func expiredSessionAtStartupClearsAndStaysClosed() async throws {
+    let d = try Device()
+    d.db.accounts.signIn("a")
+    try await d.store.saveDay(dayKey, DayState(), userId: "a")
+    try d.launch()
+    await d.life.sessionEnded(next: nil)
+    #expect(d.db.accounts.current == .signedOut)
+    #expect(try d.owners().isEmpty)
+    await #expect(throws: AccountScopeClosed.self) { try await d.store.pruneDays(today: today) }
   }
 }
 

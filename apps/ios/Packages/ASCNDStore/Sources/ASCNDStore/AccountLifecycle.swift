@@ -4,11 +4,17 @@ import Foundation
 /// Thứ tự vòng đời tài khoản của dữ liệu trên máy (#431, #455) — `read_cache`
 /// và `workout_day` — ở MỘT chỗ, để `AppServices` và test chạy cùng một thứ tự.
 ///
-/// - App mở: chốt ĐÓNG (`launched`) — chưa ai đăng nhập thì không đọc / ghi
-///   được gì của ai, kể cả lượt dọn ngày cũ (dọn theo tuổi, không cần chốt).
-/// - Phiên mở (`sessionStarted`): mở chốt cho người ấy, RỒI dọn read model của
-///   mọi người khác (lượt làm mới muộn của người trước có thể về sau lượt dọn
-///   lúc đăng xuất, #335).
+/// - App mở: chốt ĐÓNG (`launched`) — chưa ai đăng nhập thì không đọc / ghi /
+///   dọn được gì của ai (#469: kể cả dọn ngày cũ — không còn lượt dọn nào lúc
+///   mở app).
+/// - Phiên mở (`sessionStarted`): mở chốt cho người ấy, RỒI dọn read model và
+///   điểm quay lại của mọi người khác (lượt làm mới / ghi muộn của người trước
+///   có thể về sau lượt dọn lúc đăng xuất, #335; app chết giữa lượt dọn; hàng
+///   `#legacy`), RỒI dọn ngày quá 14 ngày của chính người ấy.
+///
+/// Hai lối XUYÊN tài khoản (`clearAll`, `clearAll(except:)`) chỉ được gọi từ
+/// đây. Mọi lối khác của `GRDBWorkoutStore` — kể cả `pruneDays` — chỉ chạm
+/// ngày của người đang đăng nhập.
 /// - Phiên kết thúc (`sessionEnded`): đóng chốt TRƯỚC mọi bước dọn — lượt ghi
 ///   muộn của người vừa rời đi bị từ chối ngay, không đợi dọn xong — rồi dọn
 ///   của họ.
@@ -37,10 +43,13 @@ public final class AccountLifecycle: Sendable {
     accounts.signOut()
   }
 
-  /// Phiên của `userId` bắt đầu: mở chốt, rồi bỏ read model của mọi người khác.
-  public func sessionStarted(userId: String) async {
+  /// Phiên của `userId` bắt đầu (`today`: hôm nay theo giờ máy): mở chốt, bỏ
+  /// dữ liệu của mọi người khác, rồi dọn ngày cũ của người ấy.
+  public func sessionStarted(userId: String, today: LocalDate) async {
     accounts.signIn(userId)
     _ = try? await readCache.clearAll(except: userId)
+    _ = try? await workouts.clearAll(except: userId)
+    _ = try? await workouts.pruneDays(today: today)
   }
 
   /// Phiên kết thúc. `next`: người của phiên mới khi đổi thẳng tài khoản,
@@ -60,9 +69,4 @@ public final class AccountLifecycle: Sendable {
     }
   }
 
-  /// Dọn điểm quay lại quá 14 ngày — theo tuổi, mọi chủ (`pruneDays`).
-  @discardableResult
-  public func pruneDays(today: LocalDate) async -> Int {
-    (try? await workouts.pruneDays(today: today)) ?? 0
-  }
 }
