@@ -263,9 +263,11 @@ public final class ManualLogController {
     }
   }
 
+  /// Lọc `decText` như `log-workout.tsx:787`: máy tiếng Việt gõ `71,5`, lưu
+  /// nguyên thì `weightKg` đọc ra 0 — buổi ghi bodyweight mà không báo gì.
   @discardableResult
   public func setWeight(_ text: String, row id: String) async -> Bool {
-    await edit(id) { $0.weight = text }
+    await edit(id) { $0.weight = NumberInput.decimal(text) }
   }
 
   @discardableResult
@@ -363,7 +365,7 @@ public final class ManualLogController {
   }
 
   /// Ô tạ → kg. Trống / không phải số → 0 (`Number(x) || 0`: bodyweight).
-  /// Âm thì giữ để cận báo lỗi.
+  /// Ô đã qua `decText` nên không gõ được số âm; âm (nháp cũ) vẫn để cận báo.
   static func weightKg(_ text: String, toKg: (Double) -> Double) -> Double {
     let t = text.trimmingCharacters(in: .whitespaces)
     guard let v = Double(t), v.isFinite else { return 0 }
