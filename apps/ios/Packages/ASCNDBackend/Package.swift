@@ -15,7 +15,8 @@ let package = Package(
   ],
   dependencies: [
     .package(path: "../ASCNDKit"),
-    .package(url: "https://github.com/supabase/supabase-swift.git", from: "2.0.0"),
+    // Khoá về bản đã build xanh trên CI (05/10, Xcode 26.3); chỉ nhận bản vá.
+    .package(url: "https://github.com/supabase/supabase-swift.git", .upToNextMinor(from: "2.55.3")),
   ],
   targets: [
     .target(
