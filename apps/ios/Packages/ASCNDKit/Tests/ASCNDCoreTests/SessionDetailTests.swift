@@ -77,6 +77,18 @@ struct SessionDetailTests {
     #expect(zero.volumeKg == 0, "0 kg đã lưu là con số thật, khác cột trống")
   }
 
+  /// Phút tập trên số THÔ như `trainingMinutes` của RN; tên cắt như `trim()`
+  /// của JS. Giá trị kỳ vọng chạy bằng node trên đúng công thức RN:
+  /// [8.5 rep / nghỉ 20.5, 0.4 / 3, "12" / "30"] → 2; [0.4 / 0] → 1.
+  @Test func minutesAndNamesFollowJavaScript() {
+    let mixed = #"[{"exerciseName":"\uFEFFBench\u00A0","weight":60,"reps":8.5,"restSeconds":20.5},{"exerciseName":"Row","weight":40,"reps":0.4,"restSeconds":3},{"exerciseName":"Dip","weight":0,"reps":"12","restSeconds":"30"}]"#
+    let d = SessionDetail(entry(row("s1", "2026-10-05T07:00:00Z", sets: mixed, name: #""\uFEFF Push ""#)), history: [])
+    #expect(d.estimatedMinutes == 2)
+    #expect(d.exercises.first?.name == "Bench" && d.title == "Push")
+    let tiny = SessionDetail(entry(row("s2", "2026-10-05T07:00:00Z", sets: #"[{"exerciseName":"Row","reps":0.4,"restSeconds":0}]"#)), history: [])
+    #expect(tiny.estimatedMinutes == 1, "0.4 rep vẫn là set có rep (RN: Number(reps) > 0)")
+  }
+
   /// Kỷ lục: chỉ khi buổi được ghi là có; chỉ so với buổi TRƯỚC nó.
   @Test func recordsOnlyForFlaggedSessionsAgainstEarlierOnes() {
     let older = entry(row("a", "2026-09-20T07:00:00Z", sets: #"[{"exerciseName":"Squat","weight":100,"reps":5},{"exerciseName":"Bench","weight":70,"reps":5}]"#))
