@@ -193,6 +193,8 @@ struct ExerciseGuideSourceMappingTests {
     let media = rows.map(\.domain)
     #expect(media[0].durationS == 45.5 && media[0].captions?.first?.title == "Video")
     #expect(media[1].position == nil && media[1].durationS == 12)
-    #expect(MediaState.resolve(media, legacy: nil, lang: .vi).shape == .video)
+    // `position: null` là 0 — tấm ảnh đứng trước video ở vị trí 1 và quyết
+    // kiểu của cả bộ (luật "một bộ là một kiểu" của RN).
+    #expect(MediaState.resolve(media, legacy: nil, lang: .vi).shape == .imageSingle)
   }
 }
