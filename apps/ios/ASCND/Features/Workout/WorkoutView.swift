@@ -23,6 +23,16 @@ public struct WorkoutView: View {
   @State private var weightTexts: [String: String] = [:]
   @State private var repsTexts: [String: String] = [:]
   @State private var finishMessage: String?
+  /// Focus: weight → reps → done (#300).
+  @FocusState private var focusedField: FieldFocus?
+  /// Debounce ghi controller — tránh ghi mỗi phím gõ (#300).
+  @State private var pendingWrites: [String: Task<Void, Never>] = [:]
+
+  /// Ô nào đang focus.
+  enum FieldFocus: Hashable {
+    case weight(String)
+    case reps(String)
+  }
 
   public init(controller: WorkoutSessionController, restingRowKey: String? = nil) {
     self.controller = controller
@@ -152,7 +162,7 @@ public struct WorkoutView: View {
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .frame(minWidth: 36)
 
-        // Ô tạ / reps — gõ chữ, View truyền thẳng cho controller.
+        // Ô tạ / reps — gõ chữ, View debounce rồi truyền cho controller (#300).
         TextField("", text: weightBinding(for: row))
           .keyboardType(.decimalPad)
           .multilineTextAlignment(.trailing)
@@ -162,12 +172,18 @@ public struct WorkoutView: View {
           .background(DS.Color.secondary.swiftUI)
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
           .accessibilityLabel(Text(String(localized: "workout.weight")))
+          .focused($focusedField, equals: .weight(row.key))
+          .submitLabel(.next)
+          .onSubmit {
+            // Focus weight → reps (#300).
+            focusedField = .reps(row.key)
+          }
 
         Text("×")
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
 
         TextField("", text: repsBinding(for: row))
-          .keyboardType(.numbersAndPunctuation)
+          .keyboardType(.numberPad)
           .multilineTextAlignment(.trailing)
           .font(DS.TextStyle.body.monospacedDigit())
           .frame(width: 64, minHeight: 44)
@@ -175,6 +191,22 @@ public struct WorkoutView: View {
           .background(DS.Color.secondary.swiftUI)
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
           .accessibilityLabel(Text(String(localized: "workout.reps")))
+          .focused($focusedField, equals: .reps(row.key))
+          .submitLabel(.done)
+          .onSubmit {
+            // Done: flush ghi ngay + hạ bàn phím (#300).
+            flushWrites()
+            focusedField = nil
+          }
+          .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+              Spacer()
+              Button(String(localized: "workout.done")) {
+                flushWrites()
+                focusedField = nil
+              }
+            }
+          }
 
         Spacer(minLength: 0)
       }
@@ -243,14 +275,48 @@ public struct WorkoutView: View {
     )
   }
 
-  // MARK: - Binding ô nhập (phản hồi tức thì, ghi bền async)
+  // MARK: - Binding ô nhập (phản hồi tức thì, ghi bền debounce)
+
+  /// Ghi debounce: huỷ lần ghi cũ, chờ 0.6s rồi mới gọi controller (#300).
+  /// Gõ nhanh không spam controller; giá trị cuối cùng vẫn được ghi.
+  private func scheduleWrite(key: String, write: @escaping () async -> Void) {
+    pendingWrites[key]?.cancel()
+    pendingWrites[key] = Task {
+      try? await Task.sleep(nanoseconds: 600_000_000)
+      guard !Task.isCancelled else { return }
+      await write()
+    }
+  }
+
+  /// Lọc chữ thập phân: chỉ số + một dấu chấm/phẩy (#300).
+  private func filteredDecimal(_ text: String) -> String {
+    var seenSeparator = false
+    var result = ""
+    for ch in text {
+      if ch.isNumber {
+        result.append(ch)
+      } else if (ch == "." || ch == ",") && !seenSeparator {
+        seenSeparator = true
+        result.append(".")
+      }
+    }
+    return result
+  }
+
+  /// Lọc số nguyên (reps): chỉ số.
+  private func filteredInteger(_ text: String) -> String {
+    text.filter(\.isNumber)
+  }
 
   private func weightBinding(for row: PlannedSet) -> Binding<String> {
     Binding(
       get: { weightTexts[row.key] ?? "\(Int(row.weightKg))" },
       set: { new in
-        weightTexts[row.key] = new
-        Task { await controller.setWeightText(new, for: row.key) }
+        let clean = filteredDecimal(new)
+        weightTexts[row.key] = clean
+        scheduleWrite(key: "w:\(row.key)") {
+          await controller.setWeightText(clean, for: row.key)
+        }
       }
     )
   }
@@ -259,10 +325,33 @@ public struct WorkoutView: View {
     Binding(
       get: { repsTexts[row.key] ?? "\(row.reps)" },
       set: { new in
-        repsTexts[row.key] = new
-        Task { await controller.setRepsText(new, for: row.key) }
+        // Plank nhập "45s" ở ô reps — giữ chữ, `RepEntry.parse` ở domain lo.
+        // Chỉ lọc khi là số thuần; chữ (như "45s") giữ nguyên.
+        let clean = new.allSatisfy({ $0.isNumber }) ? filteredInteger(new) : new
+        repsTexts[row.key] = clean
+        scheduleWrite(key: "r:\(row.key)") {
+          await controller.setRepsText(clean, for: row.key)
+        }
       }
     )
+  }
+
+  /// Flush tất cả ghi đang chờ — gọi khi Done/hạ bàn phím (#300).
+  private func flushWrites() {
+    for task in pendingWrites.values {
+      task.cancel()
+    }
+    pendingWrites.removeAll()
+    // Ghi ngay giá trị hiện tại cho mọi ô (không chờ debounce).
+    for row in controller.plan.rows {
+      let key = row.key
+      if let w = weightTexts[key] {
+        Task { await controller.setWeightText(w, for: key) }
+      }
+      if let r = repsTexts[key] {
+        Task { await controller.setRepsText(r, for: key) }
+      }
+    }
   }
 
   private func seedTexts() {
