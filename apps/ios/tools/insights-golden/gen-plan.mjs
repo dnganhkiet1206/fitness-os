@@ -52,5 +52,12 @@ for (const sex of ['female', 'other']) for (const goal of ['cut', 'bulk', 'maint
     const input = { heightText: h, weightText: w, dob: '1926-10-05', sex, goal, activity_level: act };
     cases.push({ input, out: planFromEntry(input) });
   }
+// Khoảng trắng: `String.prototype.trim` bỏ BOM (U+FEFF), NBSP, U+3000, LS / PS,
+// tab; GIỮ NEL (U+0085) và ZWSP (U+200B) — ô có chúng là sai dạng.
+for (const [h, w] of [['\uFEFF170', '70'], ['170\uFEFF', '\u00A070\u3000'], ['\u2028170\u2029', '70\t'],
+  ['\u0085170', '70'], ['170', '70\u0085'], ['\u200B170', '70']]) {
+  const input = { heightText: h, weightText: w, dob: '1995-06-15', sex: 'male', goal: 'cut', activity_level: 'moderate' };
+  cases.push({ input, out: planFromEntry(input) });
+}
 const ages = ['2000-10-05', '2000-10-06', '2000-10-04', '2024-02-29', '1926-10-05'].map((d) => ({ dob: d, age: calcAge(d) }));
 process.stdout.write(JSON.stringify({ source: 'native/src/lib/fitness-calc.ts @ fac9ac2', today: '2026-10-05', cases, ages }, null, 0) + '\n');
