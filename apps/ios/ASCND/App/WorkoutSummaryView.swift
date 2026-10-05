@@ -41,10 +41,17 @@ public struct WorkoutSummaryView: View {
   let summary: WorkoutSummary
   /// Chi tiết từng set đã làm (kể cả khởi động, hiện mờ).
   let sets: [SummarySet]
+  /// Về Today — A8 nối navigation thật (#305).
+  var onDone: (() -> Void)?
 
-  public init(summary: WorkoutSummary, sets: [SummarySet]) {
+  public init(
+    summary: WorkoutSummary,
+    sets: [SummarySet],
+    onDone: (() -> Void)? = nil
+  ) {
     self.summary = summary
     self.sets = sets
+    self.onDone = onDone
   }
 
   private var exerciseGroups: [(name: String, rows: [SummarySet])] {
@@ -60,6 +67,23 @@ public struct WorkoutSummaryView: View {
   public var body: some View {
     ScrollView {
       VStack(spacing: DS.Spacing.md) {
+        // PR section — chỉ hiện khi model báo có (#305).
+        // Không tự detect PR; prDetected=false → ẩn section.
+        if summary.prDetected {
+          DSCard {
+            HStack(spacing: DS.Spacing.sm) {
+              Image(systemName: "trophy.fill")
+                .foregroundStyle(DS.Color.metricAmber.swiftUI)
+                .accessibilityHidden(true)
+              Text(String(localized: "summary.pr"))
+                .font(DS.TextStyle.headline)
+                .foregroundStyle(DS.Color.foreground.swiftUI)
+            }
+          }
+          .accessibilityElement(children: .combine)
+          .accessibilityLabel(Text(String(localized: "summary.pr")))
+        }
+
         DSCard {
           HStack(spacing: DS.Spacing.md) {
             DSStatTile(
@@ -87,26 +111,44 @@ public struct WorkoutSummaryView: View {
           )
         )
 
-        ForEach(exerciseGroups, id: \.name) { group in
-          VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-            DSSectionHeader(group.name)
-            ForEach(group.rows, id: \.self) { s in
-              HStack {
-                Text(setLabel(s))
-                  .font(DS.TextStyle.body.monospacedDigit())
-                  .foregroundStyle(DS.Color.foreground.swiftUI)
-                Spacer()
-                if s.warmup {
-                  Text(String(localized: "summary.warmup"))
-                    .font(DS.TextStyle.caption)
-                    .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        // Empty: chưa có set nào (#305).
+        if sets.isEmpty {
+          DSEmptyState(
+            title: String(localized: "summary.empty.title"),
+            message: String(localized: "summary.empty.message")
+          )
+        } else {
+          ForEach(exerciseGroups, id: \.name) { group in
+            VStack(alignment: .leading, spacing: DS.Spacing.sm) {
+              DSSectionHeader(group.name)
+              ForEach(group.rows, id: \.self) { s in
+                HStack {
+                  Text(setLabel(s))
+                    .font(DS.TextStyle.body.monospacedDigit())
+                    .foregroundStyle(DS.Color.foreground.swiftUI)
+                  Spacer()
+                  if s.warmup {
+                    Text(String(localized: "summary.warmup"))
+                      .font(DS.TextStyle.caption)
+                      .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+                  }
                 }
+                .opacity(s.warmup ? 0.5 : 1)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(Text("\(group.name), \(setLabel(s))"))
               }
-              .opacity(s.warmup ? 0.5 : 1)
-              .accessibilityElement(children: .combine)
-              .accessibilityLabel(Text("\(group.name), \(setLabel(s))"))
             }
           }
+        }
+
+        // CTA về Today (#305).
+        if let onDone {
+          DSButton(
+            String(localized: "summary.backToToday"),
+            style: .primary,
+            action: onDone
+          )
+          .padding(.top, DS.Spacing.md)
         }
       }
       .padding(DS.Spacing.md)
@@ -141,6 +183,34 @@ extension WorkoutSummaryView {
     prDetected: false
   )
 
+  /// Fixture có PR (#305).
+  static let prSummary = WorkoutSummary(
+    sessionId: "preview-pr",
+    dateTime: EpochMillis(1_728_000_000_000),
+    templateName: "Ngực – Vai – Tay",
+    completedSets: 5,
+    warmupSets: 1,
+    holdSets: 0,
+    exerciseCount: 2,
+    volumeKg: 1520,
+    sessionRpe: 9,
+    prDetected: true
+  )
+
+  /// Fixture rỗng (#305).
+  static let emptySummary = WorkoutSummary(
+    sessionId: "preview-empty",
+    dateTime: EpochMillis(1_728_000_000_000),
+    templateName: "Ngực – Vai – Tay",
+    completedSets: 0,
+    warmupSets: 0,
+    holdSets: 0,
+    exerciseCount: 0,
+    volumeKg: 0,
+    sessionRpe: 0,
+    prDetected: false
+  )
+
   static let sampleSets: [SummarySet] = [
     SummarySet(exerciseName: "Bench Press", weightKg: 40, reps: 8, warmup: true),
     SummarySet(exerciseName: "Bench Press", weightKg: 60, reps: 8),
@@ -164,9 +234,23 @@ extension WorkoutSummaryView {
   .preferredColorScheme(.dark)
 }
 
+#Preview("PR detected") {
+  NavigationStack {
+    WorkoutSummaryView(summary: .prSummary, sets: .sampleSets) {}
+  }
+  .preferredColorScheme(.light)
+}
+
+#Preview("Empty") {
+  NavigationStack {
+    WorkoutSummaryView(summary: .emptySummary, sets: []) {}
+  }
+  .preferredColorScheme(.light)
+}
+
 #Preview("Dynamic Type XXL") {
   NavigationStack {
-    WorkoutSummaryView(summary: .sampleSummary, sets: .sampleSets)
+    WorkoutSummaryView(summary: .sampleSummary, sets: .sampleSets) {}
   }
   .dynamicTypeSize(.accessibility3)
 }
