@@ -1,0 +1,5 @@
+{
+ "adhoc-exercise.json": "run-adhoc-exercise.mjs",
+ "remove-set-undo.json": "run-remove-set-undo.mjs",
+ "template-write.json": "run-template-write.mjs"
+}
