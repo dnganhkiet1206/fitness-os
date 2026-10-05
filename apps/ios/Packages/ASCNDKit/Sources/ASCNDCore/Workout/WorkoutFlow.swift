@@ -63,7 +63,14 @@ public final class WorkoutFlow {
   /// Mở màn: kế hoạch trước (cache rồi server) để màn tập có ngay; hai bảng
   /// lịch sử đọc song song — `bests` được hỏi lúc chốt, không lúc dựng, nên
   /// chúng tới muộn vẫn kịp.
+  ///
+  /// Chạy như một lượt làm mới (`refreshing`): ra tiền cảnh / có mạng lại
+  /// trong lúc nó còn bay thì chờ chung, không bắn lượt thứ hai.
   public func start() async {
+    await coalesced { await self.initialLoad() }
+  }
+
+  private func initialLoad() async {
     async let records: Void = self.records.load()
     async let performance: Void = self.performance.load()
     await today.load()
@@ -74,11 +81,16 @@ public final class WorkoutFlow {
 
   /// Kéo để làm mới. Gọi chồng thì chờ lượt đang chạy.
   public func refresh() async {
+    await coalesced { await self.fetch() }
+  }
+
+  /// Một lượt tải tại một thời điểm: đang có lượt bay thì chờ nó.
+  private func coalesced(_ work: @escaping @MainActor () async -> Void) async {
     if let running = refreshing {
       await running.value
       return
     }
-    let task = Task { await self.fetch() }
+    let task = Task { await work() }
     refreshing = task
     await task.value
     refreshing = nil

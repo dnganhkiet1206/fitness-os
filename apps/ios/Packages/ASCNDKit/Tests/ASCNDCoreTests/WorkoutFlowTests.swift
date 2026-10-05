@@ -302,6 +302,21 @@ struct WorkoutFlowTests {
     #expect(await h.templates.fetches == 2)
   }
 
+  /// Ra tiền cảnh trong lúc lượt tải đầu tiên còn đang bay (mở app): chờ
+  /// chung lượt ấy, không bắn lượt thứ hai (`freshAt` lúc đó còn trống).
+  @Test func foregroundDuringStartSharesTheFirstLoad() async {
+    let h = Harness()
+    await h.templates.hold()
+    async let start: Void = h.flow.start()
+    while await h.templates.waiting == 0 { await Task.yield() }
+    async let active: Void = h.flow.becameActive()
+    for _ in 0..<50 { await Task.yield() }
+    await h.templates.release()
+    _ = await (start, active)
+    #expect(await h.templates.fetches == 1)
+    #expect(h.flow.session != nil)
+  }
+
   /// Template bị xoá trên server: ngày thành "chưa lên lịch", buổi chưa chạm
   /// biến mất; buổi đang tập dở thì ở lại.
   @Test func deletedTemplatePropagates() async throws {
