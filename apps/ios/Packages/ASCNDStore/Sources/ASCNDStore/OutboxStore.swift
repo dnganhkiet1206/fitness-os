@@ -16,11 +16,13 @@ import GRDB
 /// của Core đã thử khứ hồi; không có ánh xạ cột thứ hai để lệch.
 public final class OutboxStore: Sendable {
   private let db: DatabaseQueue
+  private let accounts: AccountScope
 
   /// Dùng chung cơ sở dữ liệu của app — để `GRDBWorkoutStore.commitFinish`
   /// ghi hàng outbox và ngày đã chốt trong CÙNG một transaction.
   public init(_ database: ASCNDDatabase) {
     db = database.queue
+    accounts = database.accounts
   }
 
   /// Mở (hoặc tạo) cơ sở dữ liệu riêng ở `path` và chạy migration.
@@ -47,9 +49,12 @@ public final class OutboxStore: Sendable {
 
   /// Ghi một bản ghi mới. Trả về SAU khi commit. Cùng `id` ghi hai lần là một
   /// hàng (idempotent, như `Outbox.enqueue`).
+  ///
+  /// Hàng rào tài khoản (#485) như `enqueue`: kiểm tra NGAY TRONG transaction.
   public func append(_ entry: OutboxEntry) throws {
     let json = try Self.json(entry)
     try db.write { db in
+      guard accounts.owner(writingFor: entry.userId) != nil else { throw AccountScopeClosed() }
       try db.execute(
         sql: "INSERT OR IGNORE INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
         arguments: [entry.id, entry.userId, json])
@@ -118,6 +123,19 @@ extension OutboxStore: PlanWriteStore {
   public func enqueue(_ entries: [OutboxEntry]) throws {
     let rows = try entries.map { ($0, try Self.json($0)) }
     try db.write { db in
+      // Hàng rào tài khoản (#485): kiểm tra NGAY TRONG transaction ghi — như
+      // `GRDBWorkoutStore.writer(for:)`. Kiểm NGOÀI transaction để hở TOCTOU:
+      // sign-out (+ `dropAllOnSignOut`) xen giữa check và write sẽ chèn hàng
+      // SAU lượt dọn, để lại hàng mồ côi của người đã rời đi. GRDB xếp mọi
+      // `db.write` nối tiếp nhau, và `sessionEnded` luôn đóng chốt trước khi
+      // dọn, nên thứ tự chỉ có thể là: (check+insert) trước DELETE → hàng bị
+      // dọn sạch; hoặc DELETE trước (check+insert) → check thấy signedOut →
+      // ném `AccountScopeClosed`. Không có thứ tự nào để lại hàng mồ côi.
+      // Tất-cả-hoặc-không: một entry lọt rào là cả lô bị từ chối, không ghi
+      // hàng nào.
+      for e in entries {
+        guard accounts.owner(writingFor: e.userId) != nil else { throw AccountScopeClosed() }
+      }
       for (e, json) in rows {
         try db.execute(
           sql: "INSERT OR IGNORE INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
