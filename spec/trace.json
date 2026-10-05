@@ -1,0 +1,853 @@
+[
+ {
+  "behavior": "±15s: cộng tăng left và total, trừ kẹp ≥ 1s, trần 600s",
+  "id": "RT-7",
+  "nativeDiffers": null,
+  "rn": "native/src/components/ascnd/day-plan.tsx#onAdjust",
+  "rule": "RT-7",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/rest-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/RestTimer.swift",
+   "symbol": "RestTimer.adjust(base:delta:total:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/rest-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/RestTimerTests.swift",
+   "name": "plusFifteenGrowsLeftKeepsTotal"
+  },
+  "vector": {
+   "branch": null,
+   "file": "rest-timer.json"
+  }
+ },
+ {
+  "behavior": "Nhãn nghỉ: dưới 60s dạng '45s', còn lại 'm:ss'",
+  "id": "RT-15",
+  "nativeDiffers": null,
+  "rn": "native/src/lib/prescription.ts#restLabel",
+  "rule": "RT-15",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/rest-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/RestTimer.swift",
+   "symbol": "RestTimer.label(seconds:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/rest-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/RestTimerTests.swift",
+   "name": "goldenVectors"
+  },
+  "vector": {
+   "branch": null,
+   "file": "rest-timer.json"
+  }
+ },
+ {
+  "behavior": "Chuông cảnh báo khi còn ≤ 5s và không pause",
+  "id": "RT-10",
+  "nativeDiffers": null,
+  "rn": "native/src/components/ascnd/rest-timer.tsx#WARN_AT",
+  "rule": "RT-10",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/rest-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/RestTimer.swift",
+   "symbol": "RestTimer.warns(left:paused:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/rest-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/RestTimerTests.swift",
+   "name": "goldenVectors"
+  },
+  "vector": {
+   "branch": null,
+   "file": "rest-timer.json"
+  }
+ },
+ {
+  "behavior": "Kẹp giây nghỉ mỗi hàng trong 0..600",
+  "id": "RT-16",
+  "nativeDiffers": null,
+  "rn": "native/src/components/ascnd/day-plan.tsx#setRestSecs",
+  "rule": "RT-16",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/rest-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/RestTimer.swift",
+   "symbol": "RestTimer.clampPlanned(_:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/rest-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/RestTimerTests.swift",
+   "name": "goldenVectors"
+  },
+  "vector": {
+   "branch": null,
+   "file": "rest-timer.json"
+  }
+ },
+ {
+  "behavior": "'10' = 10 reps, '45s' = hold 45s, chữ rác = 0 (không tính)",
+  "id": "WS-2",
+  "nativeDiffers": null,
+  "rn": "native/src/lib/rep-entry.ts#parseRepEntry",
+  "rule": "WS-2",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/workout-day",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/RepEntry.swift",
+   "symbol": "RepEntry.parse(_:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/workout-day",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutDayTests.swift",
+   "name": "typedValuesWinAndHoldIsRecorded"
+  },
+  "vector": {
+   "branch": null,
+   "file": "workout-state.json"
+  }
+ },
+ {
+  "behavior": "performed: tạ gõ tay thắng kế hoạch, tạ trống = 0, đổi lbs→kg khi ghi",
+  "id": "WS-2-performed",
+  "nativeDiffers": null,
+  "rn": "native/src/components/ascnd/day-plan.tsx#performed",
+  "rule": "WS-2",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/workout-day",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutDay.swift",
+   "symbol": "WorkoutDay.performed(_:_:toKg:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/workout-day",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutDayTests.swift",
+   "name": "performedFallsBackToPlan"
+  },
+  "vector": {
+   "branch": null,
+   "file": "workout-state.json"
+  }
+ },
+ {
+  "behavior": "volume = Σ kg×reps, bỏ hiệp khởi động",
+  "id": "WS-5",
+  "nativeDiffers": null,
+  "rn": "native/src/hooks/use-fitness-data.ts#useLogWorkoutSession (volume_load)",
+  "rule": "WS-5",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/workout-day",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/SetMath.swift",
+   "symbol": "LoggedSet"
+  },
+  "test": {
+   "branch": "origin/agent/a/workout-day",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/RestTimerTests.swift",
+   "name": "goldenVectors"
+  },
+  "vector": {
+   "branch": null,
+   "file": "workout-state.json"
+  }
+ },
+ {
+  "behavior": "Mở ngày mới → idle; mở lại sau kill → khôi phục tick/tạ/reps/RPE",
+  "id": "WS-S1",
+  "nativeDiffers": null,
+  "rn": "native/src/components/ascnd/day-plan.tsx#storeKey (dayProgressKey)",
+  "rule": "WS-S1",
+  "status": "planned",
+  "swift": {
+   "branch": "origin/agent/a/workout-day",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutDay.swift",
+   "symbol": "DayProgressStore.key(date:templateId:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/workout-day",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutDayTests.swift",
+   "name": "progressRoundTripsAndToleratesOldBlobs"
+  },
+  "vector": {
+   "branch": "origin/agent/d/workout-session-vectors",
+   "file": "workout-session.json"
+  }
+ },
+ {
+  "behavior": "Chốt: chỉ hàng đã tick; session_rpe = max; volume_load bỏ warmup; template_id null cho buổi tự do",
+  "id": "WS-S3",
+  "nativeDiffers": null,
+  "rn": "native/src/components/ascnd/day-plan.tsx#finish",
+  "rule": "WS-S3",
+  "status": "planned",
+  "swift": {
+   "branch": "origin/agent/a/workout-app",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController"
+  },
+  "test": {
+   "branch": "origin/agent/a/workout-app",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutVectorTests.swift",
+   "name": "workoutSessionVectors"
+  },
+  "vector": {
+   "branch": "origin/agent/d/workout-session-vectors",
+   "file": "workout-session.json"
+  }
+ },
+ {
+  "behavior": "Chốt hai lần → một buổi, cùng id (không bắn mutation mới)",
+  "id": "WS-S4",
+  "nativeDiffers": "RN chặn ghi trùng bằng `logged` đọc từ server; native dùng idempotency-key trong một transaction — hành vi native mạnh hơn RN.",
+  "rn": "native/src/components/ascnd/day-plan.tsx#canFinish",
+  "rule": "WS-S4",
+  "status": "planned",
+  "swift": {
+   "branch": "origin/agent/a/workout-app",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController"
+  },
+  "test": {
+   "branch": "origin/agent/a/workout-app",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutVectorTests.swift",
+   "name": "workoutSessionVectors"
+  },
+  "vector": {
+   "branch": "origin/agent/d/workout-session-vectors",
+   "file": "workout-session.json"
+  }
+ },
+ {
+  "behavior": "Ngày tương lai: tick được, chốt không được; ngày đã chốt → khoá",
+  "id": "WS-S5",
+  "nativeDiffers": null,
+  "rn": "native/src/components/ascnd/day-plan.tsx#future",
+  "rule": "WS-S5",
+  "status": "planned",
+  "swift": {
+   "branch": "origin/agent/a/workout-app",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController"
+  },
+  "test": {
+   "branch": "origin/agent/a/workout-app",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutVectorTests.swift",
+   "name": "workoutSessionVectors"
+  },
+  "vector": {
+   "branch": "origin/agent/d/workout-session-vectors",
+   "file": "workout-session.json"
+  }
+ },
+ {
+  "behavior": "Dấu thời gian: hôm nay = lúc này; ngày khác = 12:00 trưa địa phương",
+  "id": "WS-S6",
+  "nativeDiffers": null,
+  "rn": "native/src/lib/local-date.ts#diaryStampAt",
+  "rule": "WS-S6",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/workout-day",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/LocalDate.swift",
+   "symbol": "LocalDate"
+  },
+  "test": {
+   "branch": "origin/agent/a/workout-day",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutDayTests.swift",
+   "name": "progressRoundTripsAndToleratesOldBlobs"
+  },
+  "vector": {
+   "branch": "origin/agent/d/workout-session-vectors",
+   "file": "workout-session.json"
+  }
+ },
+ {
+  "behavior": "Lỗi 42501/23505… = vĩnh viễn (không thử lại); offline/5xx = thử lại",
+  "id": "OB-1",
+  "nativeDiffers": "PGRST301/302: native cố ý xếp vĩnh viễn, baseline xếp thử lại.",
+  "rn": "native/src/lib/offline-write.ts#permanentFailure",
+  "rule": "OB-1",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/sync-core",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Sync/RetryPolicy.swift",
+   "symbol": "RetryPolicy.isPermanent(_:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/sync-core",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/SyncTests.swift",
+   "name": "accountAndUnusableArePermanentOfflineIsNot"
+  },
+  "vector": {
+   "branch": "origin/agent/d/sync-vectors",
+   "file": "sync.json"
+  }
+ },
+ {
+  "behavior": "Lịch thử lại trùng TanStack: 1s, 2s, 5s, 10s, 30s",
+  "id": "OB-2",
+  "nativeDiffers": null,
+  "rn": "node_modules/@tanstack/query-core#defaultRetryDelay",
+  "rule": "OB-2",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/sync-core",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Sync/RetryPolicy.swift",
+   "symbol": "RetryPolicy.delayMillis(afterFailures:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/sync-core",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/SyncTests.swift",
+   "name": "delaysMatchTanStack"
+  },
+  "vector": {
+   "branch": "origin/agent/d/sync-vectors",
+   "file": "sync.json"
+  }
+ },
+ {
+  "behavior": "Hàng đợi: gửi theo thứ tự, một lần một hàng; trùng id không chèn hai lần",
+  "id": "OB-3",
+  "nativeDiffers": null,
+  "rn": "native/src/lib/offline-write.ts#OFFLINE_WRITE_KEY",
+  "rule": "OB-3",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/sync-core",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Sync/Outbox.swift",
+   "symbol": "Outbox.enqueue(_:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/sync-core",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/SyncTests.swift",
+   "name": "enqueueIsIdempotentById"
+  },
+  "vector": {
+   "branch": "origin/agent/d/sync-vectors",
+   "file": "sync.json"
+  }
+ },
+ {
+  "behavior": "Đăng nhập xong → session lưu bền, mở lại app vẫn còn",
+  "id": "AUTH-1",
+  "nativeDiffers": null,
+  "rn": "native/src/hooks/use-auth.tsx#signIn",
+  "rule": "AUTH-1",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/auth-session",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Auth/SessionStore.swift",
+   "symbol": "SessionStore"
+  },
+  "test": {
+   "branch": "origin/agent/a/auth-session",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/SessionStoreTests.swift",
+   "name": "restoresStoredSession"
+  },
+  "vector": null
+ },
+ {
+  "behavior": "Đăng xuất phía server → dọn session local, không kẹt ở trạng thái loading",
+  "id": "AUTH-2",
+  "nativeDiffers": null,
+  "rn": "native/src/hooks/use-auth.tsx#signOut",
+  "rule": "AUTH-2",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/auth-session",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Auth/SessionStore.swift",
+   "symbol": "SessionStore.signOut()"
+  },
+  "test": {
+   "branch": "origin/agent/a/auth-session",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/SessionStoreTests.swift",
+   "name": "serverSideSignOutRunsCleanup"
+  },
+  "vector": null
+ },
+ {
+  "behavior": "Apple Sign In: nonce hash SHA256 hex thường, mỗi lần một nonce mới",
+  "id": "AUTH-3",
+  "nativeDiffers": null,
+  "rn": "native/src/hooks/use-auth.tsx#signInWithApple",
+  "rule": "AUTH-3",
+  "status": "verified",
+  "swift": {
+   "branch": "origin/agent/a/auth-session",
+   "file": "apps/ios/Packages/ASCNDBackend/Sources/ASCNDBackend/SupabaseAuthAPI.swift",
+   "symbol": "SupabaseAuthAPI"
+  },
+  "test": {
+   "branch": "origin/agent/a/auth-session",
+   "file": "apps/ios/Packages/ASCNDBackend/Tests/ASCNDBackendTests/AuthMappingTests.swift",
+   "name": "nonceHashIsLowercaseHexSHA256"
+  },
+  "vector": null
+ },
+ {
+  "id": "TPL-1",
+  "rule": "TPL-1",
+  "rn": "native/src/hooks/use-library.ts#useRoutineDays",
+  "behavior": "Kế hoạch hôm nay từ routine_days + workout_templates, local-first (cache trước, server sau)",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayPlan.swift",
+   "symbol": "TodayRepository"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayControllerTests.swift",
+   "name": "offlineUsesCache"
+  },
+  "nativeDiffers": null,
+  "status": "verified"
+ },
+ {
+  "id": "TPL-2",
+  "rule": "TPL-2",
+  "rn": "native/src/components/ascnd/day-plan.tsx#expand",
+  "behavior": "Mỗi bài nở thành hiệp [1,20], khoá '<bài>-<hiệp>'",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayPlan.swift",
+   "symbol": "WorkoutPlanning.rows"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayPlanTests.swift",
+   "name": "eachExerciseBecomesItsSets"
+  },
+  "nativeDiffers": null,
+  "status": "verified"
+ },
+ {
+  "id": "TPL-3",
+  "rule": "TPL-3",
+  "rn": "native/src/lib/local-date.ts#routineIndex",
+  "behavior": "Thứ Hai = 0: (getDay()+6)%7",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayPlan.swift",
+   "symbol": "WorkoutPlanning.routineIndex"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayPlanTests.swift",
+   "name": "mondayIsZero"
+  },
+  "nativeDiffers": null,
+  "status": "verified"
+ },
+ {
+  "id": "TPL-5",
+  "rule": "TPL-5",
+  "rn": "native/src/components/ascnd/day-plan.tsx#expand",
+  "behavior": "sets trong JSON không đọc được → coi như thiếu = 1 hiệp (RN: bài biến mất lặng lẽ, bug)",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayPlan.swift",
+   "symbol": "TemplateExercise"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayPlanTests.swift",
+   "name": "unreadableSetCountKeepsTheExercise"
+  },
+  "nativeDiffers": "RN rớt bài khi sets hỏng; native giữ lại 1 hiệp — sửa bug có chủ đích, #285.",
+  "status": "verified"
+ },
+ {
+  "id": "TD-2",
+  "rule": "TD-2",
+  "rn": "native/src/components/ascnd/day-plan.tsx#load",
+  "behavior": "Local-first: hiện cache ngay, refresh từ server, refreshError khi hỏng",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayController.swift",
+   "symbol": "TodayController.load"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayControllerTests.swift",
+   "name": "offlineUsesCache"
+  },
+  "nativeDiffers": null,
+  "status": "verified"
+ },
+ {
+  "id": "TD-4",
+  "rule": "TD-4",
+  "rn": "native/src/hooks/use-fitness-data.ts#useWorkoutSessions",
+  "behavior": "'Đã tập' = hợp server (14 ngày, múi người dùng) + máy (loggedSessionId, offline OK)",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayController.swift",
+   "symbol": "TodayController.markTrained"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayControllerTests.swift",
+   "name": "serverSessionTodayLocksFinish"
+  },
+  "nativeDiffers": null,
+  "status": "verified"
+ },
+ {
+  "id": "TD-5",
+  "rule": "TD-5",
+  "rn": "native/src/components/ascnd/day-plan.tsx#logged",
+  "behavior": "Buổi chốt từ máy khác: tick được, chốt bị từ chối (loggedElsewhere) — chặn buổi thứ hai",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController.loggedElsewhere"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayControllerTests.swift",
+   "name": "serverSessionTodayLocksFinish"
+  },
+  "nativeDiffers": null,
+  "status": "verified"
+ },
+ {
+  "id": "SL-1",
+  "rule": "SL-1",
+  "rn": "native/src/hooks/use-auth.tsx#forgetPreviousAccount",
+  "behavior": "Hết phiên (đăng xuất/token hết/bị xoá/đổi TK) → dữ liệu người cũ rời máy, theo thứ tự: hàng đợi → tiến độ ngày → cache kế hoạch → gán user sync",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/session-lifecycle",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Auth/SessionStore.swift",
+   "symbol": "SessionStore"
+  },
+  "test": {
+   "branch": "origin/agent/a/session-lifecycle",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/SessionStoreTests.swift",
+   "name": "switchingAccountsRunsCleanup"
+  },
+  "nativeDiffers": "RN chỉ dọn khi SIGNED_OUT; native dọn cả khi đổi userId — mạnh hơn có chủ đích, #293.",
+  "status": "verified"
+ },
+ {
+  "id": "PR-1",
+  "rule": "PR-1",
+  "rn": "native/src/lib/personal-record.ts#findRecords",
+  "behavior": "Tạ nặng hơn topWeight + 0.05kg → kỷ lục weight",
+  "vector": {
+   "file": "personal-record.json",
+   "branch": "origin/agent/d/personal-record-vectors"
+  },
+  "swift": {
+   "branch": "origin/agent/a/personal-records",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/PersonalRecordBook.swift",
+   "symbol": "PersonalRecords.findRecords"
+  },
+  "test": {
+   "branch": "origin/agent/a/personal-records",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/PersonalRecordBookTests.swift",
+   "name": "heavierIsAWeightRecord"
+  },
+  "nativeDiffers": null,
+  "status": "verified"
+ },
+ {
+  "id": "PR-3",
+  "rule": "PR-3",
+  "rn": "native/src/lib/personal-record.ts#counts",
+  "behavior": "Hiệp khởi động không bao giờ là kỷ lục (RN đánh rơi cờ warmup ở use-fitness-data.ts:375 → kỷ lục reps giả)",
+  "vector": {
+   "file": "personal-record.json",
+   "branch": "origin/agent/d/personal-record-vectors"
+  },
+  "swift": {
+   "branch": "origin/agent/a/personal-records",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/PersonalRecordBook.swift",
+   "symbol": "PersonalRecords.findRecords"
+  },
+  "test": {
+   "branch": "origin/agent/a/personal-records",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/PersonalRecordBookTests.swift",
+   "name": "sessionWarmupDoesNotPostARecord"
+  },
+  "nativeDiffers": "Native mang cờ warmup theo (WorkoutSessionRecord.recordSets); RN đánh rơi → sửa bug có chủ đích, #298.",
+  "status": "verified"
+ },
+ {
+  "id": "AP-1",
+  "rule": "AP-1",
+  "rn": "native/src/components/ascnd/day-plan.tsx#appending",
+  "behavior": "appending = logged && pendingReady && !future; ngày đã chốt có bài phát sinh → nút chuyển sang 'nối'",
+  "vector": {
+   "file": "append.json",
+   "branch": "origin/agent/d/append-vectors"
+  },
+  "swift": {
+   "branch": "origin/agent/a/append-sets",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController.canAppend"
+  },
+  "test": {
+   "branch": "origin/agent/a/append-sets",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutSessionControllerTests.swift",
+   "name": "appendRewritesTheWholeSession"
+  },
+  "nativeDiffers": null,
+  "status": "verified"
+ },
+ {
+  "id": "AP-2",
+  "rule": "AP-2",
+  "rn": "native/src/hooks/use-fitness-data.ts#useAppendToSession",
+  "behavior": "Nối vào đúng buổi: RN đọc → cộng mảng sets → update; native dựng lại toàn bộ hàng, upsert qua outbox, idempotent",
+  "vector": {
+   "file": "append.json",
+   "branch": "origin/agent/d/append-vectors"
+  },
+  "swift": {
+   "branch": "origin/agent/a/append-sets",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController.append"
+  },
+  "test": {
+   "branch": "origin/agent/a/append-sets",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutSessionControllerTests.swift",
+   "name": "failedAppendRetriesIdempotently"
+  },
+  "nativeDiffers": "RN: không idempotent (timeout → nối hai lần), offline tắt nút; native: idempotent + chạy offline — khác có chủ đích, #307.",
+  "status": "verified"
+ },
+ {
+  "id": "TP-1",
+  "rn": "native/src/components/ascnd/day-plan.tsx#expand",
+  "behavior": "Mỗi bài trong template nở thành đúng số set, key 'i-n', đánh lại ordinal/of",
+  "rule": "TP-1",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayPlan.swift",
+   "symbol": "WorkoutPlanning.rows"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayPlanTests.swift",
+   "name": "eachExerciseBecomesItsSets"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ },
+ {
+  "id": "TP-2",
+  "rn": "native/src/components/ascnd/day-plan.tsx#expand",
+  "behavior": "Bài thiếu field lấy default: sets=1, reps=0, weight=0, rpe=7, rest=90",
+  "rule": "TP-2",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayPlan.swift",
+   "symbol": "TemplateExercise.init(json:)"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayPlanTests.swift",
+   "name": "missingFieldsTakeDefaults"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ },
+ {
+  "id": "TP-3",
+  "rn": "native/src/lib/today-cta.ts#todayCta",
+  "behavior": "Trạng thái ngày: assigned / rest / unplanned / completed — CTA theo trạng thái",
+  "rule": "TP-3",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayPlan.swift",
+   "symbol": "DayStatus"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-plan",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayPlanTests.swift",
+   "name": "eachExerciseBecomesItsSets"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ },
+ {
+  "id": "TC-1",
+  "rn": "native/src/lib/today-cta.ts#todayCta",
+  "behavior": "CTA ưu tiên done > planned > rest; ngày tương lai không cho start",
+  "rule": "TC-1",
+  "vector": {
+   "branch": "origin/agent/d/today-controller-vectors",
+   "file": "today-controller.json"
+  },
+  "swift": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayController.swift",
+   "symbol": "TodayController"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayControllerTests.swift",
+   "name": "todayIsTheUsersLocalDay"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ },
+ {
+  "id": "TC-2",
+  "rn": "native/src/lib/local-date.ts#localDateStr",
+  "behavior": "Biên ngày theo giờ địa phương user, không UTC",
+  "rule": "TC-2",
+  "vector": {
+   "branch": "origin/agent/d/today-controller-vectors",
+   "file": "today-controller.json"
+  },
+  "swift": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/LocalDate.swift",
+   "symbol": "LocalDate"
+  },
+  "test": {
+   "branch": "origin/agent/a/today-controller",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/TodayControllerTests.swift",
+   "name": "todayIsTheUsersLocalDay"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ },
+ {
+  "id": "SL-2",
+  "rn": "native/src/hooks/use-auth.tsx#forgetPreviousAccount",
+  "behavior": "Đổi tài khoản chạy cleanup, không lẫn data A/B",
+  "rule": "SL-2",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/session-lifecycle",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Auth/SessionStore.swift",
+   "symbol": "SessionStore"
+  },
+  "test": {
+   "branch": "origin/agent/a/session-lifecycle",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/SessionStoreTests.swift",
+   "name": "switchingAccountsRunsCleanup"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ },
+ {
+  "id": "SL-3",
+  "rn": "native/src/hooks/use-auth.tsx#forgetPreviousAccount",
+  "behavior": "Sign-in cập nhật phase, restore session đã lưu",
+  "rule": "SL-3",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/session-lifecycle",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Auth/SessionStore.swift",
+   "symbol": "SessionStore"
+  },
+  "test": {
+   "branch": "origin/agent/a/session-lifecycle",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/SessionStoreTests.swift",
+   "name": "signInEventUpdatesPhase"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ },
+ {
+  "id": "PR-2",
+  "rn": "native/src/lib/personal-record.ts#bestsFrom",
+  "behavior": "Best mỗi bài: topWeight và topReps theo từng mức tạ",
+  "rule": "PR-2",
+  "vector": {
+   "branch": "origin/agent/d/personal-record-vectors",
+   "file": "personal-record.json"
+  },
+  "swift": {
+   "branch": "origin/agent/a/personal-records",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/PersonalRecordBook.swift",
+   "symbol": "PersonalRecord.bests"
+  },
+  "test": {
+   "branch": "origin/agent/a/personal-records",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/PersonalRecordBookTests.swift",
+   "name": "heavierIsAWeightRecord"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ },
+ {
+  "id": "PR-4",
+  "rn": "native/src/lib/personal-record.ts#findRecords",
+  "behavior": "So sánh có epsilon, tránh float noise khi phát hiện kỷ lục",
+  "rule": "PR-4",
+  "vector": {
+   "branch": "origin/agent/d/personal-record-vectors",
+   "file": "personal-record.json"
+  },
+  "swift": {
+   "branch": "origin/agent/a/personal-records",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/PersonalRecordBook.swift",
+   "symbol": "PersonalRecord.findRecords"
+  },
+  "test": {
+   "branch": "origin/agent/a/personal-records",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/PersonalRecordBookTests.swift",
+   "name": "moreRepsAtAKnownLoadIsARepRecord"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ },
+ {
+  "id": "AP-3",
+  "rn": "native/src/hooks/use-fitness-data.ts#useAppendToSession",
+  "behavior": "Append idempotent: cùng idempotency key không sinh set trùng",
+  "rule": "AP-2",
+  "vector": {
+   "branch": "origin/agent/d/append-vectors",
+   "file": "append.json"
+  },
+  "swift": {
+   "branch": "origin/agent/a/append-sets",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController"
+  },
+  "test": {
+   "branch": "origin/agent/a/append-sets",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutSessionControllerTests.swift",
+   "name": "editIsDurableWhenItReturns"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ },
+ {
+  "id": "AP-4",
+  "rn": "native/src/hooks/use-fitness-data.ts#useAppendToSession",
+  "behavior": "Kill/reopen giữa chừng: session restore đúng trạng thái",
+  "rule": "AP-4",
+  "vector": null,
+  "swift": {
+   "branch": "origin/agent/a/append-sets",
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSession.swift",
+   "symbol": "WorkoutSession"
+  },
+  "test": {
+   "branch": "origin/agent/a/append-sets",
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutSessionControllerTests.swift",
+   "name": "restoresAfterKill"
+  },
+  "status": "verified",
+  "nativeDiffers": null
+ }
+]
