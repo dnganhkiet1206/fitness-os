@@ -57,7 +57,7 @@ const es: typeof en = {
   nCxWaist: 'Cintura',
   /* Insight dinh dưỡng 7 ngày — chuyển từ ternary sang khoá (luật cổng). */
   nCxInsightProteinGap: 'Promedio de {avg}g de proteína/día, {gap}g por debajo de tu objetivo de {target}g.',
-  nCxInsightProteinHit: 'Alcanzaste tu objetivo de proteína {days}/{n} días — ¡sigue así!',
+  nCxInsightProteinHit: 'Alcanzaste tu objetivo de proteína {days}/{n} {n:día|días} — ¡sigue así!',
   nCxInsightFiberLow: 'Promedio de {avg}g de fibra, muy por debajo de tu objetivo de {target}g. Añade verduras o avena al desayuno.',
   nCxInsightTitle7d: 'Nutrición de 7 días',
   nCxInsightEmpty: 'Sin datos aún',
@@ -1247,7 +1247,7 @@ const en = {
   nCxWaist: 'Waist',
   /* Nutrition 7-day insights — moved from ternaries to keys (gate rule). */
   nCxInsightProteinGap: 'Averaging {avg}g protein/day, {gap}g short of your {target}g target.',
-  nCxInsightProteinHit: 'Hit your protein target {days}/{n} days — keep it up!',
+  nCxInsightProteinHit: 'Hit your protein target {days}/{n} {n:day|days} — keep it up!',
   nCxInsightFiberLow: 'Averaging {avg}g fiber, well under your {target}g target. Add vegetables or oats to breakfast.',
   nCxInsightTitle7d: '7-day nutrition',
   nCxInsightEmpty: 'No data yet',
