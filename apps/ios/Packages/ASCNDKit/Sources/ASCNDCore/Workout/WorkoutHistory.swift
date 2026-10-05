@@ -23,10 +23,17 @@ public struct HistoryEntry: Sendable, Hashable, Codable, Identifiable {
   /// Set đã làm, không tính khởi động (như `WorkoutSummary.completedSets`).
   public let completedSets: Int
   public let exerciseCount: Int
+  /// Cột `sets` nguyên văn — cho màn chi tiết (#428). Tuỳ chọn: cache ghi
+  /// trước #428 không có, đọc ra `nil` (chi tiết khi ấy chưa có set, chờ lần
+  /// làm mới) thay vì làm hỏng cả cache.
+  public let sets: JSONValue?
+  /// `volume_load` như đã lưu; `nil` khi cột trống (`volume_load != null` của
+  /// `session-row.tsx` — không hiện "0 kg" cho một con số không có).
+  public let volumeLoad: Int?
 
   public init(
     id: String, at: EpochMillis, templateName: String, sessionRpe: Int, volumeKg: Int, prDetected: Bool,
-    completedSets: Int, exerciseCount: Int
+    completedSets: Int, exerciseCount: Int, sets: JSONValue? = nil, volumeLoad: Int? = nil
   ) {
     self.id = id
     self.at = at
@@ -36,6 +43,8 @@ public struct HistoryEntry: Sendable, Hashable, Codable, Identifiable {
     self.prDetected = prDetected
     self.completedSets = completedSets
     self.exerciseCount = exerciseCount
+    self.sets = sets
+    self.volumeLoad = volumeLoad
   }
 
   /// Một hàng `workout_sessions` (server, hoặc payload outbox của buổi vừa
@@ -54,7 +63,10 @@ public struct HistoryEntry: Sendable, Hashable, Codable, Identifiable {
       volumeKg: PersonalRecords.jsNumber(row["volume_load"]).map { Int($0) } ?? 0,
       prDetected: row["pr_detected"]?.boolValue == true,
       completedSets: counted.count,
-      exerciseCount: Set(counted.map { PersonalRecords.exerciseKey($0.exerciseName) }).count)
+      exerciseCount: Set(counted.map { PersonalRecords.exerciseKey($0.exerciseName) }).count,
+      sets: row["sets"],
+      volumeLoad: row["volume_load"] == nil || row["volume_load"] == .null
+        ? nil : PersonalRecords.jsNumber(row["volume_load"]).map { Int($0) })
   }
 
   /// Mới trước (`.order('date_time', { ascending: false })`); cùng thời điểm
