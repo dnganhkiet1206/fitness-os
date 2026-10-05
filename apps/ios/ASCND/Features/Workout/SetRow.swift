@@ -81,7 +81,7 @@ public struct SetRow: View {
             .font(.title2)
             .foregroundStyle(
               isCompleted
-                ? DS.Color.metricGreen.swiftUI
+                ? DS.Color.primary.swiftUI
                 : DS.Color.mutedForeground.swiftUI
             )
         }
