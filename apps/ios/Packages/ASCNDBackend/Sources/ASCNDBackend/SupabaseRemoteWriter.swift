@@ -23,6 +23,8 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     PlanEdit.templateKind: "workout_templates",
     PlanEdit.templateDeleteKind: "workout_templates",
     PlanEdit.routineDayKind: "routine_days",
+    ExerciseEdit.createKind: "exercises",
+    ExerciseEdit.deleteKind: "exercises",
   ]
 
   /// Bản ghi lại (#296) GHI ĐÈ hàng có sẵn; bản ghi mới thì bỏ trùng
@@ -32,13 +34,17 @@ public struct SupabaseRemoteWriter: RemoteWriter {
   /// Bản ghi nói về một hàng ĐÃ có (ghi lại / xoá): id hàng outbox là
   /// `"<buổi>@…"`, không phải chính id buổi.
   static func revises(_ kind: String) -> Bool {
-    overwrites(kind) || kind == WorkoutSessionRecord.deleteKind || kind == PlanEdit.templateDeleteKind
+    overwrites(kind) || deletes(kind)
   }
 
   /// Xoá theo `id` + `user_id` (`use-library.ts:335`, `use-fitness-data.ts:746`).
   static func deletes(_ kind: String) -> Bool {
-    kind == WorkoutSessionRecord.deleteKind || kind == PlanEdit.templateDeleteKind
+    kind == WorkoutSessionRecord.deleteKind || kind == PlanEdit.templateDeleteKind || kind == ExerciseEdit.deleteKind
   }
+
+  /// Hàng mang `user_id` phải là của chủ bản ghi — không thì một bản ghi hỏng
+  /// chèn bài / template vào tài khoản khác (RLS cũng chặn, đây chặn sớm).
+  static let ownedRows: Set<String> = [PlanEdit.templateKind, ExerciseEdit.createKind]
 
   private let client: SupabaseClient
   private let afterWrite: @Sendable (OutboxEntry) async -> Void
@@ -58,7 +64,8 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     guard let table = Self.tables[entry.kind], Self.isRow(entry) else { throw .unusable }
     do {
       if Self.deletes(entry.kind) {
-        // Gỡ set cuối cùng (#398) / xoá buổi (#400) / xoá template (#401): xoá
+        // Gỡ set cuối cùng (#398) / xoá buổi (#400) / xoá template (#401) /
+        // xoá bài (#421): xoá
         // hàng — idempotent, xoá hàng đã mất không phải lỗi. Lọc cả `user_id`
         // như baseline, RLS cũng chặn.
         try await client.from(table)
@@ -97,6 +104,11 @@ public struct SupabaseRemoteWriter: RemoteWriter {
       return true
     }
     guard let rowId = entry.payload["id"]?.stringValue, !rowId.isEmpty else { return false }
+    if ownedRows.contains(entry.kind),
+      entry.payload["user_id"]?.stringValue?.lowercased() != entry.userId.lowercased()
+    {
+      return false
+    }
     return revises(entry.kind) ? entry.id.hasPrefix(rowId + "@") : rowId == entry.id
   }
 

@@ -415,6 +415,7 @@ private struct LabInsights: View {
 private struct LabLibrary: View {
   let library: ExerciseLibrary
   @State private var query = ""
+  @State private var error: String?
 
   var body: some View {
     Section {
@@ -426,6 +427,40 @@ private struct LabLibrary: View {
         LabRow(
           label: section.title,
           value: section.exercises.map { $0.name + ($0.isBuiltIn ? "" : " ★") }.joined(separator: ", "))
+      }
+      // #421: thêm một bài thử (tên = ô tìm), vuốt bài của mình để xoá.
+      Button {
+        Task {
+          do throws(ExerciseLibrary.Refusal) {
+            try await library.create(
+              id: library.newExerciseId(), name: query.isEmpty ? "Lab exercise" : query, muscleGroup: "chest")
+            error = nil
+          } catch {
+            self.error = "\(error)"
+          }
+        }
+      } label: {
+        Text(verbatim: "Thêm bài (tên = ô tìm, nhóm Ngực)")
+      }
+      ForEach(library.exercises.filter { !$0.isBuiltIn }) { e in
+        LabRow(label: "★ \(e.name)", value: MuscleGroup.label(e.muscleGroup, .vi))
+          .swipeActions {
+            Button(role: .destructive) {
+              Task {
+                do throws(ExerciseLibrary.Refusal) {
+                  try await library.delete(id: e.id)
+                  error = nil
+                } catch {
+                  self.error = "\(error)"
+                }
+              }
+            } label: {
+              Text(verbatim: "Delete exercise")
+            }
+          }
+      }
+      if let error {
+        Text(verbatim: error).foregroundStyle(.red).font(.footnote)
       }
     } header: {
       Text(verbatim: "Exercise library — \(library.exercises.count)")
