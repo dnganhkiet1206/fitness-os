@@ -147,9 +147,32 @@ public struct WorkoutBuilderView: View {
 }
 
 /// Route cho navigation trong Builder.
+/// `MockTemplate` chứa `[TemplateExerciseProtocol]` nên không auto-synthesize
+/// Hashable được — so sánh/hash theo `id` (định danh tự nhiên của template).
 private enum BuilderRoute: Hashable {
   case create
   case edit(MockTemplate)
+
+  static func == (lhs: BuilderRoute, rhs: BuilderRoute) -> Bool {
+    switch (lhs, rhs) {
+    case (.create, .create):
+      return true
+    case (.edit(let a), .edit(let b)):
+      return a.id == b.id
+    default:
+      return false
+    }
+  }
+
+  func hash(into hasher: inout Hasher) {
+    switch self {
+    case .create:
+      hasher.combine(0)
+    case .edit(let template):
+      hasher.combine(1)
+      hasher.combine(template.id)
+    }
+  }
 }
 
 // MARK: - Previews
