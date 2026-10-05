@@ -65,6 +65,36 @@ struct ProfileModelTests {
     #expect(row["user_id"] == nil, "update theo eq('user_id'), không ghi user_id")
   }
 
+  /// `Number(x) || null` đúng như JS, kể cả các dạng `Double(_:)` của Swift
+  /// đọc khác. Cột phải: giá trị của chính node —
+  /// `node -e 'console.log(Number(x) || null)'` (`±Infinity` → `null` khi
+  /// `JSON.stringify` gửi đi).
+  @Test func numberOrNullMatchesJavaScript() throws {
+    let table: [(String, Double?)] = [
+      ("", nil), ("  ", nil), ("0", nil), ("-0", nil), ("12", 12), ("+12", 12), (" 12.5 ", 12.5), ("1e3", 1000),
+      ("1E-2", 0.01), (".5", 0.5), ("5.", 5), ("-.5", -0.5), ("0x1A", 26), ("0X1a", 26), ("-0x10", nil),
+      ("0b101", 5), ("0o17", 15), ("0x", nil), ("0b2", nil), ("Infinity", nil), ("-Infinity", nil),
+      ("infinity", nil), ("inf", nil), ("nan", nil), ("NaN", nil), ("1_000", nil), ("12abc", nil),
+      ("\u{FEFF}42", 42), ("42\u{85}", nil), ("\u{A0}42\u{3000}", 42), ("1e400", nil), ("0.0", nil),
+      ("00012", 12), ("1.2.3", nil), ("+-1", nil), ("٤٢", nil), ("１２", nil),
+    ]
+    for (text, js) in table {
+      var f = ProfileForm()
+      f.tdeeTargetKcal = text
+      let row = try #require(f.updateRow())
+      #expect(row["tdee_target_kcal"] == js.map(JSONValue.number) ?? .null, "Number(\(text.debugDescription)) || null")
+    }
+  }
+
+  /// Ô số đo: "trống" theo `trim()` của JS — BOM là trống, NEL thì không.
+  @Test func statBlankUsesJavaScriptTrim() {
+    var f = ProfileForm()
+    f.heightCm = "\u{FEFF} "
+    f.weightKg = "\u{85}"
+    #expect(f.height == .blank)
+    #expect(f.weight == .outOfRange)
+  }
+
   /// "Tính lại": thiếu số đo thì từ chối và nói đúng ô thiếu, không đụng mục
   /// tiêu đang có (từng ra 2539 kcal cho một hồ sơ trống).
   @Test func recalcRefusesWithoutStats() {
@@ -86,6 +116,8 @@ struct ProfileModelTests {
 
   @Test func dislikesAndAllergies() {
     #expect(FoodPreferences.parseDislikes(" okra, ,liver ,") == ["okra", "liver"])
+    // `s.trim()` của JS: BOM / NBSP bỏ, NEL giữ (node: ["cà tím", "\u0085x"]).
+    #expect(FoodPreferences.parseDislikes("\u{FEFF}cà tím\u{A0},\u{85}x") == ["cà tím", "\u{85}x"])
     #expect(FoodPreferences.canonicalAllergy("hải sản") == "Shellfish")
     #expect(FoodPreferences.canonicalAllergy("Kiwi") == "Kiwi")
   }

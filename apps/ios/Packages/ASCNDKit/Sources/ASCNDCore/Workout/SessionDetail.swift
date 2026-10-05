@@ -132,7 +132,8 @@ extension SessionDetail {
     let counted = raw.filter { !$0.warmup && (($0.reps ?? 0) > 0 || ($0.durationSec ?? 0) > 0) }
     id = entry.id
     at = entry.at
-    let trimmed = entry.templateName.trimmingCharacters(in: .whitespacesAndNewlines)
+    // `s.template_name?.trim() || null` — `trim()` của JS.
+    let trimmed = RepEntry.trimJS(entry.templateName)
     title = trimmed.isEmpty ? nil : trimmed
     sessionRpe = (1...10).contains(entry.sessionRpe) ? entry.sessionRpe : nil
     volumeKg = entry.volumeLoad
@@ -153,7 +154,11 @@ extension SessionDetail {
     let rpe: Int?
     let warmup: Bool
     let durationSec: Int?
-    let restSeconds: Int?
+    /// `Number(s.reps)` / `Number(s.restSeconds)` CHƯA làm tròn — phút tập
+    /// của RN (`trainingMinutes`) tính trên số thô, không trên số đã làm tròn
+    /// để hiện.
+    let repsValue: Double?
+    let restValue: Double?
   }
 
   /// Đọc phòng thủ mọi set là object (`payloadFromSession` không bỏ set nào
@@ -166,24 +171,27 @@ extension SessionDetail {
       let reps = PersonalRecords.jsNumber(r["reps"]).map { FitnessCalc.jsRound($0) }
       return RawSet(
         exerciseId: id,
-        name: (r["exerciseName"]?.stringValue ?? "").trimmingCharacters(in: .whitespacesAndNewlines),
+        name: RepEntry.trimJS(r["exerciseName"]?.stringValue ?? ""),
         weight: r["weight"].flatMap { $0 == .null ? nil : PersonalRecords.jsNumber($0) },
         reps: r["reps"] == nil || r["reps"] == .null ? nil : reps,
         rpe: PersonalRecords.jsNumber(r["rpe"]).flatMap { (1...10).contains($0) ? Int($0) : nil },
         warmup: r["warmup"]?.boolValue == true,
         durationSec: PersonalRecords.jsNumber(r["durationSec"]).flatMap { $0 > 0 ? Int($0) : nil },
-        restSeconds: r["restSeconds"] == nil || r["restSeconds"] == .null
-          ? nil : PersonalRecords.jsNumber(r["restSeconds"]).map { Int($0) })
+        repsValue: PersonalRecords.jsNumber(r["reps"]),
+        restValue: r["restSeconds"] == nil || r["restSeconds"] == .null
+          ? nil : PersonalRecords.jsNumber(r["restSeconds"]))
     }
   }
 
-  /// `trainingMinutes`: chỉ set có rep; mỗi set `reps × 3 + nghỉ` giây;
-  /// `max(1, round(giây / 60))`; không có set nào → `nil` (RN: 0).
+  /// `trainingMinutes`: chỉ set có `Number(reps) > 0`; mỗi set
+  /// `reps × 3 + nghỉ` giây trên số THÔ (8.5 rep là 25.5 giây, 0.4 rep vẫn là
+  /// set có rep); `max(1, round(giây / 60))`; không có set nào → `nil` (RN: 0).
+  /// Nghỉ không đọc được là 90 giây — RN ra `NaN` phút ở đây.
   static func trainingMinutes(_ sets: [RawSet]) -> Int? {
-    let real = sets.filter { ($0.reps ?? 0) > 0 }
+    let real = sets.filter { ($0.repsValue ?? 0) > 0 }
     guard !real.isEmpty else { return nil }
-    let seconds = real.reduce(0) { $0 + ($1.reps ?? 0) * 3 + ($1.restSeconds ?? defaultRestSeconds) }
-    return max(1, FitnessCalc.jsRound(Double(seconds) / 60))
+    let seconds = real.reduce(0.0) { $0 + ($1.repsValue ?? 0) * 3 + ($1.restValue ?? Double(defaultRestSeconds)) }
+    return max(1, FitnessCalc.jsRound(seconds / 60))
   }
 }
 

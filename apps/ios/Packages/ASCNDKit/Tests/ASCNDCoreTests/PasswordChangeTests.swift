@@ -36,6 +36,18 @@ struct PasswordChangeTests {
     #expect(c.canSave)
   }
 
+  /// Hai ô trùng theo `===` của JS (từng đơn vị UTF-16), không theo tương
+  /// đương chuẩn hoá: "é" dựng sẵn và "e" + dấu tổ hợp là hai mật khẩu khác.
+  @Test func confirmationMatchesByteForByteLikeJavaScript() {
+    let c = PasswordChangeController(change: { _ throws(PasswordChangeFailure) in })
+    c.newPassword = "caf\u{E9}123"
+    c.confirmation = "cafe\u{301}123"
+    #expect(c.newPassword == c.confirmation, "Swift coi là bằng")
+    #expect(c.mismatch && !c.canSave)
+    c.confirmation = "caf\u{E9}123"
+    #expect(!c.mismatch && c.canSave)
+  }
+
   /// Một lời gọi; xong thì nút tắt luôn — không gửi lần hai.
   @Test func savesOnceThenStaysDisabled() async {
     let calls = Calls()

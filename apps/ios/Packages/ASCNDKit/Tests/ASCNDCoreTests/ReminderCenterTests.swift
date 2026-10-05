@@ -33,8 +33,21 @@ private actor FakeCenter: ReminderScheduler {
   }
 
   func set(refuseFrom: Int?) { self.refuseFrom = refuseFrom }
+  /// Giữ hộp xin quyền "đang mở" tới `answer()`.
+  private var holding = false
+  private var asked: [CheckedContinuation<Void, Never>] = []
+  func holdPrompt() { holding = true }
+  var prompts: Int { asked.count }
+  func answer() {
+    holding = false
+    asked.forEach { $0.resume() }
+    asked = []
+  }
+  /// Trả lời riêng lượt hỏi MỚI NHẤT; các lượt khác vẫn chờ.
+  func answerNewest() { asked.popLast()?.resume() }
   func hasPermission() async -> Bool { granted }
   func requestPermission() async -> Bool {
+    if holding { await withCheckedContinuation { asked.append($0) } }
     requests += 1
     granted = granted || grantOnRequest
     return granted
@@ -254,23 +267,125 @@ struct ReminderCenterTests {
   @Test func smartTimingAppliesOnceToUntouchedDefaults() async {
     let store = MemoryStore()
     let c = center(store)
-    #expect(await c.applySmartTiming(bedtime: "00:15:00", waketime: "06:00"))
+    #expect(await c.applySmartTiming(.init(bedtime: "00:15:00", waketime: "06:00")))
     #expect(c.prefs.bedtime.clock == ReminderClock(hour: 23, minute: 45))
     #expect(c.prefs.weighIn.clock == ReminderClock(hour: 6, minute: 15))
     #expect(c.prefs.sleepLog == ReminderPrefs.defaults.sleepLog, "như RN: chỉ bedtime và weighIn")
-    #expect(!(await c.applySmartTiming(bedtime: "21:00", waketime: nil)), "chốt đã đặt")
+    #expect(!(await c.applySmartTiming(.init(bedtime: "21:00", waketime: nil))), "chốt đã đặt")
 
     let chosen = MemoryStore()
     var p = ReminderPrefs.defaults
     p.bedtime.hour = 23
     chosen.set(p.encoded(), forKey: ReminderCenter.prefsKey)
     let c2 = center(chosen)
-    #expect(!(await c2.applySmartTiming(bedtime: "00:15", waketime: nil)), "giờ tự chọn không bị dời")
+    #expect(!(await c2.applySmartTiming(.init(bedtime: "00:15", waketime: nil))), "giờ tự chọn không bị dời")
     #expect(c2.prefs.bedtime.hour == 23)
 
     let none = MemoryStore()
-    #expect(!(await center(none).applySmartTiming(bedtime: nil, waketime: nil)))
+    #expect(!(await center(none).applySmartTiming(.init(bedtime: nil, waketime: nil))))
     #expect(none.string(forKey: ReminderCenter.smartTimeKey) == "1", "không biết gì cũng chốt")
+  }
+
+  /// #457 (1): sửa cài đặt đặt lịch theo cài đặt MỚI ngay lần ấy — lịch
+  /// đang chờ là đúng kế hoạch của cài đặt vừa sửa, chữ ký khớp.
+  @Test func aSettingChangeSchedulesTheNewSettingsAtOnce() async {
+    let store = MemoryStore()
+    let os = FakeCenter(granted: true)
+    let c = center(store, os)
+    await c.refreshPermission()
+    await c.setEnabled(.bedtime, true)
+    await c.setTime(.bedtime, hour: 21, minute: 5)
+    let expected = ReminderPlan.plan(c.prefs, c.context, now: monday6am, calendar: hcm)
+    #expect(c.prefs.bedtime.hour == 21 && c.prefs.bedtime.minute == 5)
+    #expect(await os.pending.map(\.at) == expected.map(\.at))
+    #expect(store.string(forKey: ReminderCenter.planKey) == ReminderPlan.signature(expected))
+  }
+
+  /// #457 (1): sửa thêm trong lúc hộp xin quyền đang mở — lịch cuối cùng theo
+  /// lần sửa MỚI NHẤT, không theo cài đặt của lượt đã hỏi quyền.
+  @Test func editsWhileThePermissionPromptIsOpenScheduleTheLatest() async {
+    let store = MemoryStore()
+    let os = FakeCenter(granted: false)
+    let c = center(store, os)
+    await os.holdPrompt()
+    let first = Task { await c.setEnabled(.bedtime, true) }
+    for _ in 0..<1000 where await os.prompts < 1 { await Task.yield() }
+    let second = Task { await c.setTime(.bedtime, hour: 21, minute: 5) }
+    for _ in 0..<1000 where await os.prompts < 2 { await Task.yield() }
+    #expect(await os.prompts == 2, "cả hai lượt sửa đang chờ hộp xin quyền")
+    // Lượt sửa sau xong hẳn TRƯỚC, rồi lượt đầu mới tiếp tục — lượt đầu không
+    // được đặt đè lịch bằng cài đặt nó mang từ trước khi hỏi quyền.
+    await os.answerNewest()
+    await second.value
+    await os.answer()
+    await first.value
+    let expected = ReminderPlan.plan(c.prefs, c.context, now: monday6am, calendar: hcm)
+    #expect(c.prefs.bedtime.hour == 21)
+    #expect(await os.pending.map(\.at) == expected.map(\.at))
+    #expect(store.string(forKey: ReminderCenter.planKey) == ReminderPlan.signature(expected))
+  }
+
+  /// Cùng mẫu "trạng thái cũ" (#457): đăng xuất trong lúc hộp xin quyền của
+  /// A đang mở — lượt sửa của A tiếp tục SAU lượt dọn và không đặt lời nhắc
+  /// nào của A lên máy của người sau, không ghi lại cài đặt của A.
+  @Test func signOutDuringThePermissionPromptSchedulesNothingOfTheLeaver() async {
+    let store = MemoryStore()
+    let os = FakeCenter(granted: false)
+    let c = center(store, os)
+    await os.holdPrompt()
+    let edit = Task { await c.setEnabled(.bedtime, true) }
+    for _ in 0..<1000 where await os.prompts < 1 { await Task.yield() }
+    await c.clearUserScoped()
+    await os.answer()
+    await edit.value
+    #expect(c.prefs == .defaults)
+    #expect(store.string(forKey: ReminderCenter.prefsKey) == nil)
+    #expect(await os.pending.isEmpty, "không lời nhắc nào của A")
+  }
+
+  /// #457 (2): gọi trước khi hồ sơ nạp xong không chốt — lần gọi với hồ sơ
+  /// thật sau đó vẫn áp được.
+  @Test func smartTimingBeforeTheProfileLoadsDoesNotLatch() async {
+    let store = MemoryStore()
+    let c = center(store)
+    #expect(!(await c.applySmartTiming(nil)))
+    #expect(store.string(forKey: ReminderCenter.smartTimeKey) == nil)
+    #expect(await c.applySmartTiming(.init(bedtime: "00:15", waketime: nil)))
+    #expect(c.prefs.bedtime.clock == ReminderClock(hour: 23, minute: 45))
+    #expect(store.string(forKey: ReminderCenter.smartTimeKey) == "1")
+  }
+
+  /// #457 (2): OS đặt hụt — giờ đã dời và chốt vẫn giữ (một lần), chữ ký
+  /// không ghi; lần đồng bộ sau đặt lại đủ.
+  @Test func smartTimingSurvivesAFailedOSSchedule() async {
+    let store = MemoryStore()
+    let os = FakeCenter(granted: true)
+    let c = center(store, os)
+    await c.refreshPermission()
+    await c.setEnabled(.bedtime, true)
+    await os.set(refuseFrom: 1)
+    #expect(await c.applySmartTiming(.init(bedtime: "00:15", waketime: nil)))
+    #expect(store.string(forKey: ReminderCenter.smartTimeKey) == "1")
+    let moved = ReminderPlan.plan(c.prefs, c.context, now: monday6am, calendar: hcm)
+    #expect(store.string(forKey: ReminderCenter.planKey) != ReminderPlan.signature(moved), "đặt hụt: chưa ghi chữ ký")
+    await os.set(refuseFrom: nil)
+    await c.sync(c.context)
+    #expect(await os.pending.map(\.at) == moved.map(\.at))
+    #expect(store.string(forKey: ReminderCenter.planKey) == ReminderPlan.signature(moved))
+    #expect(!(await c.applySmartTiming(.init(bedtime: "21:00", waketime: nil))), "một lần")
+  }
+
+  /// App chết sau khi ghi giờ đã dời, trước khi chốt: lần sau chỉ chốt, không
+  /// dời lần hai (giờ không còn là mặc định gõ tay).
+  @Test func smartTimingRerunAfterACrashOnlyLatches() async {
+    var moved = ReminderPrefs.defaults
+    moved.bedtime.hour = 23
+    moved.bedtime.minute = 45
+    let store = MemoryStore([ReminderCenter.prefsKey: moved.encoded()])
+    let c = center(store)
+    #expect(!(await c.applySmartTiming(.init(bedtime: "01:00", waketime: nil))))
+    #expect(c.prefs.bedtime.clock == ReminderClock(hour: 23, minute: 45))
+    #expect(store.string(forKey: ReminderCenter.smartTimeKey) == "1")
   }
 
   /// Đăng xuất: huỷ thông báo đang chờ, xoá ba khoá theo tài khoản, cài đặt
@@ -281,7 +396,7 @@ struct ReminderCenterTests {
     let c = center(store, os)
     await c.refreshPermission()
     await c.setEnabled(.bedtime, true)
-    _ = await c.applySmartTiming(bedtime: nil, waketime: nil)
+    _ = await c.applySmartTiming(.init(bedtime: nil, waketime: nil))
     #expect(await os.pending.count == 7)
     await c.clearUserScoped()
     #expect(await os.pending.isEmpty)
