@@ -21,7 +21,13 @@ struct RootTabView: View {
         PlaceholderScreen(title: "tab.nutrition", systemImage: "fork.knife")
       }
       Tab("tab.workouts", systemImage: "dumbbell", value: AppTab.workouts) {
-        PlaceholderScreen(title: "tab.workouts", systemImage: "dumbbell")
+        #if DEBUG
+          // Tạm thời: màn thử quãng nghỉ cho Kiệt kiểm Live Activity trên máy
+          // (#227). Màn tập thật thay chỗ này.
+          RestLabView()
+        #else
+          PlaceholderScreen(title: "tab.workouts", systemImage: "dumbbell")
+        #endif
       }
       Tab("tab.community", systemImage: "person.2", value: AppTab.community) {
         PlaceholderScreen(title: "tab.community", systemImage: "person.2")

@@ -43,6 +43,9 @@ targets:
         product: ASCNDDesignSystem
       - package: ASCNDBackend
         product: ASCNDBackend
+      - package: ASCNDKit
+        product: ASCNDLiveActivity
+      - target: ASCNDWidgets
     configFiles:
       Debug: Config/Backend.xcconfig
       Release: Config/Backend.xcconfig
@@ -64,6 +67,7 @@ targets:
             CFBundleURLSchemes: [ascnd]
         ASCNDSupabaseURL: https://$(ASCND_SUPABASE_HOST)
         ASCNDSupabaseKey: $(ASCND_SUPABASE_KEY)
+        NSSupportsLiveActivities: true
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -77,6 +81,30 @@ targets:
         Release:
           PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos
           APP_DISPLAY_NAME: ASCND
+
+  # Widget extension: Live Activity / Dynamic Island của quãng nghỉ (#227).
+  ASCNDWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ASCNDWidgets
+    dependencies:
+      - package: ASCNDKit
+        product: ASCNDCore
+      - package: ASCNDKit
+        product: ASCNDLiveActivity
+    info:
+      path: ASCNDWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: ASCND
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.widgets
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.widgets
 
 schemes:
   ASCND:
