@@ -11,22 +11,40 @@ import GRDB
 /// - ngày đã chốt là khoá, kiểm TRONG transaction: id khác → `DayAlreadyLogged`,
 ///   không ghi gì. Kiểm ở đây chứ không ở controller vì hai controller có thể
 ///   cùng mở một ngày, và chỉ tầng lưu thấy cả hai.
+///
+/// Theo tài khoản (#452): mỗi hàng `workout_day` có chủ — người đang đăng nhập
+/// theo `AccountScope` của database (chốt DUY NHẤT, cùng chốt với
+/// `read_cache`). Đọc / ghi / chốt / xoá chỉ chạm hàng của chủ ấy; không ai
+/// đăng nhập thì đọc không thấy gì và ghi bị từ chối (`AccountScopeClosed`)
+/// trước khi có gì bền. Chủ được đọc TRONG transaction, cùng lúc với phép ghi.
 public final class GRDBWorkoutStore: WorkoutStore {
   private let db: DatabaseQueue
+  private let accounts: AccountScope
 
   public init(_ database: ASCNDDatabase) {
     db = database.queue
+    accounts = database.accounts
+  }
+
+  /// Chủ của lượt ghi này, hoặc từ chối.
+  private func writer() throws -> String {
+    guard let owner = accounts.owner else { throw AccountScopeClosed() }
+    return owner
   }
 
   public func loadDay(_ key: String) async throws -> DayState? {
-    try await db.read { db in try Self.day(db, key) }
+    try await db.read { [accounts] db in
+      guard let owner = accounts.owner else { return nil }
+      return try Self.day(db, owner, key)
+    }
   }
 
   public func saveDay(_ key: String, _ state: DayState) async throws {
     let json = try OutboxStore.json(state)
     try await db.write { db in
-      try Self.ensureUnlocked(db, key, for: state.loggedSessionId)
-      try Self.upsert(db, key, json)
+      let owner = try self.writer()
+      try Self.ensureUnlocked(db, owner, key, for: state.loggedSessionId)
+      try Self.upsert(db, owner, key, json)
     }
   }
 
@@ -35,8 +53,9 @@ public final class GRDBWorkoutStore: WorkoutStore {
     let day = try OutboxStore.json(state)
     let row = try OutboxStore.json(entry)
     return try await db.write { db in
-      try Self.ensureUnlocked(db, key, for: state.loggedSessionId)
-      try Self.upsert(db, key, day)
+      let owner = try self.writer()
+      try Self.ensureUnlocked(db, owner, key, for: state.loggedSessionId)
+      try Self.upsert(db, owner, key, day)
       try db.execute(
         sql: "INSERT OR IGNORE INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
         arguments: [entry.id, entry.userId, row])
@@ -47,12 +66,13 @@ public final class GRDBWorkoutStore: WorkoutStore {
   public func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws {
     let row = try OutboxStore.json(entry)
     try await db.write { db in
+      let owner = try self.writer()
       let exists = try Bool.fetchOne(db, sql: "SELECT EXISTS(SELECT 1 FROM outbox WHERE id = ?)", arguments: [entry.id]) ?? false
       guard !exists else { return }
-      for key in try String.fetchAll(db, sql: "SELECT key FROM workout_day") {
-        guard var state = try Self.day(db, key), state.loggedSessionId == sessionId else { continue }
+      for key in try String.fetchAll(db, sql: "SELECT key FROM workout_day WHERE userId = ?", arguments: [owner]) {
+        guard var state = try Self.day(db, owner, key), state.loggedSessionId == sessionId else { continue }
         state.loggedKeys = []
-        try Self.upsert(db, key, try OutboxStore.json(state))
+        try Self.upsert(db, owner, key, try OutboxStore.json(state))
       }
       try db.execute(
         sql: "INSERT OR IGNORE INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
@@ -63,15 +83,21 @@ public final class GRDBWorkoutStore: WorkoutStore {
   /// Dọn điểm quay lại quá 14 ngày (`DayProgressStore.stale`, luật của
   /// baseline). Ngày đã chốt cũng bị dọn: buổi của nó đã nằm ở outbox/server,
   /// và cửa sổ mở lại của baseline cũng chỉ 14 ngày. Trả về số ngày bỏ.
+  ///
+  /// Theo TUỔI, không theo chủ: chạy lúc mở app (trước khi ai đăng nhập) và
+  /// dọn cả hàng của người khác / hàng `#legacy` — xoá một ngày đã quá hạn
+  /// không lộ gì của ai.
   @discardableResult
   public func pruneDays(today: LocalDate) async throws -> Int {
     try await db.write { db in
-      let keys = try String.fetchAll(db, sql: "SELECT key FROM workout_day")
-      let stale = DayProgressStore.stale(keys, today: today)
+      let keys = Set(try String.fetchAll(db, sql: "SELECT key FROM workout_day"))
+      let stale = DayProgressStore.stale(Array(keys), today: today)
+      var removed = 0
       for k in stale {
         try db.execute(sql: "DELETE FROM workout_day WHERE key = ?", arguments: [k])
+        removed += db.changesCount
       }
-      return stale.count
+      return removed
     }
   }
 
@@ -94,24 +120,32 @@ public final class GRDBWorkoutStore: WorkoutStore {
   /// Trước đây lỗi giải mã được ném ra. `ensureUnlocked` cũng đọc qua hàm này,
   /// nên mọi `saveDay` / `commitFinish` của ngày ấy hỏng VĨNH VIỄN: không lưu
   /// được set nào, không chốt được buổi nào. Lỗi của SQLite vẫn ném như cũ.
-  private static func day(_ db: Database, _ key: String) throws -> DayState? {
-    guard let json = try String.fetchOne(db, sql: "SELECT state FROM workout_day WHERE key = ?", arguments: [key])
+  private static func day(_ db: Database, _ owner: String, _ key: String) throws -> DayState? {
+    guard
+      let json = try String.fetchOne(
+        db, sql: "SELECT state FROM workout_day WHERE userId = ? AND key = ?", arguments: [owner, key])
     else { return nil }
     return try? JSONDecoder().decode(DayState.self, from: Data(json.utf8))
   }
 
-  private static func ensureUnlocked(_ db: Database, _ key: String, for id: String?) throws {
-    if let logged = try day(db, key)?.loggedSessionId, logged != id {
+  private static func ensureUnlocked(_ db: Database, _ owner: String, _ key: String, for id: String?) throws {
+    if let logged = try day(db, owner, key)?.loggedSessionId, logged != id {
       throw DayAlreadyLogged(sessionId: logged)
     }
   }
 
-  private static func upsert(_ db: Database, _ key: String, _ json: String) throws {
+  private static func upsert(_ db: Database, _ owner: String, _ key: String, _ json: String) throws {
     try db.execute(
       sql: """
-        INSERT INTO workout_day (key, state) VALUES (?, ?)
-        ON CONFLICT(key) DO UPDATE SET state = excluded.state
+        INSERT INTO workout_day (userId, key, state) VALUES (?, ?, ?)
+        ON CONFLICT(userId, key) DO UPDATE SET state = excluded.state
         """,
-      arguments: [key, json])
+      arguments: [owner, key, json])
   }
+}
+
+/// Ghi `workout_day` khi không ai đăng nhập (#452): từ chối trước khi có gì
+/// bền — lượt ghi muộn của người vừa rời đi không dựng lại ngày của họ.
+public struct AccountScopeClosed: Error, Sendable, Hashable {
+  public init() {}
 }
