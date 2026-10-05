@@ -274,7 +274,21 @@ struct ManualLogTests {
     #expect(log.errors()[log.rows[0].id] == [.reps])
     await log.setWeight("-5", row: log.rows[0].id)
     await log.setReps("5", row: log.rows[0].id)
-    #expect(log.errors()[log.rows[0].id] == [.weight])
+    #expect(log.rows[0].weight == "5", "decText bỏ dấu trừ như RN — ô số không gõ được số âm")
+    #expect(log.errors()[log.rows[0].id] == nil)
+  }
+
+  /// RN BUG FOUND (ở bản native, RN đúng): `decimal-pad` của máy tiếng Việt in
+  /// `71,5`. RN lọc qua `decText` (`log-workout.tsx:787`); native từng lưu
+  /// nguyên → `Double("71,5")` nil → set ghi 0 kg im lặng.
+  @Test func decimalCommaWeightIsSaved() async throws {
+    let h = Harness()
+    let log = await h.open()
+    await fill(log, 0, "Bench", "71,5", "5")
+    #expect(log.rows[0].weight == "71.5")
+    _ = try await log.save()
+    let set = try #require(await h.store.outbox.last?.payload["sets"]).asArray?.first
+    #expect(set?["weight"]?.doubleValue == 71.5)
   }
 
   @Test func nothingToSave() async throws {
