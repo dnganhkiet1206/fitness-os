@@ -849,5 +849,181 @@
   },
   "status": "verified",
   "nativeDiffers": null
+ },
+ {
+  "id": "RS-1",
+  "rule": "RS-1",
+  "behavior": "Gỡ set đã chốt khỏi buổi: tìm set cuối cùng trùng tên (case-insensitive), reindex, volume loại warmup",
+  "rn": "native/src/components/ascnd/day-plan.tsx#useRemoveSetFromSession",
+  "nativeDiffers": "Native: Removal struct với expiresAt (EpochMillis), undoWindowMillis=8000",
+  "vector": {
+   "file": "remove-set-undo.json",
+   "branch": "pr-412"
+  },
+  "swift": {
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController.removeLoggedSet(_:)",
+   "branch": "pr-415"
+  },
+  "test": {
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutSessionControllerTests.swift",
+   "name": "removeLoggedSet",
+   "branch": "pr-415"
+  },
+  "status": "planned"
+ },
+ {
+  "id": "RS-2",
+  "rule": "RS-2",
+  "behavior": "Hoàn tác gỡ set trong 8s: snapshot nguyên vẹn, chặn double-tap",
+  "rn": "native/src/components/ascnd/day-plan.tsx#cutSet.mutate",
+  "nativeDiffers": null,
+  "vector": {
+   "file": "remove-set-undo.json",
+   "branch": "pr-412"
+  },
+  "swift": {
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController.undo(_:)",
+   "branch": "pr-415"
+  },
+  "test": {
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutSessionControllerTests.swift",
+   "name": "undoRemoval",
+   "branch": "pr-415"
+  },
+  "status": "planned"
+ },
+ {
+  "id": "AH-1",
+  "rule": "AH-1",
+  "behavior": "Thêm bài ngoài kế hoạch: id ổn định, tên rỗng được, mặc định 1 set",
+  "rn": "native/src/components/ascnd/day-plan.tsx#adHocRows",
+  "nativeDiffers": "Native: AdHocExercise(id,name,sets) — sets thay vì setCount (D-28)",
+  "vector": {
+   "file": "adhoc-exercise.json",
+   "branch": "pr-413"
+  },
+  "swift": {
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController.addAdHoc",
+   "branch": "pr-416"
+  },
+  "test": {
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutSessionControllerTests.swift",
+   "name": "addAdHoc",
+   "branch": "pr-416"
+  },
+  "status": "planned"
+ },
+ {
+  "id": "AH-2",
+  "rule": "AH-2",
+  "behavior": "Trần 20 sets cho bài ad-hoc; rename giữ id ổn định",
+  "rn": "native/src/components/ascnd/day-plan.tsx#adHocRows",
+  "nativeDiffers": null,
+  "vector": {
+   "file": "adhoc-exercise.json",
+   "branch": "pr-413"
+  },
+  "swift": {
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutSessionController.swift",
+   "symbol": "WorkoutSessionController.renameAdHoc",
+   "branch": "pr-416"
+  },
+  "test": {
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutSessionControllerTests.swift",
+   "name": "adHocMaxSets",
+   "branch": "pr-416"
+  },
+  "status": "planned"
+ },
+ {
+  "id": "WH-1",
+  "rule": "WH-1",
+  "behavior": "Lịch sử buổi tập: newest-first, per-user, local-first",
+  "rn": "native/src/hooks/use-fitness-data.ts#useWorkoutSessions",
+  "nativeDiffers": null,
+  "vector": {
+   "file": "workout-history.json",
+   "branch": "pr-414"
+  },
+  "swift": {
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutHistory.swift",
+   "symbol": "WorkoutHistory.load(userId:)",
+   "branch": "pr-433"
+  },
+  "test": {
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutHistoryTests.swift",
+   "name": "historyNewestFirst",
+   "branch": "pr-433"
+  },
+  "status": "planned"
+ },
+ {
+  "id": "WH-2",
+  "rule": "WH-2",
+  "behavior": "Xoá buổi: theo id+user_id, idempotent, chặn xoá của người khác",
+  "rn": "native/src/hooks/use-fitness-data.ts#useDeleteWorkoutSession",
+  "nativeDiffers": "Native: offline delete qua outbox, pending-session overlay",
+  "vector": {
+   "file": "workout-history.json",
+   "branch": "pr-414"
+  },
+  "swift": {
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/WorkoutHistory.swift",
+   "symbol": "WorkoutHistory.delete(id:userId:)",
+   "branch": "pr-433"
+  },
+  "test": {
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/WorkoutHistoryTests.swift",
+   "name": "deleteScopedToUser",
+   "branch": "pr-433"
+  },
+  "status": "planned"
+ },
+ {
+  "id": "TW-1",
+  "rule": "TW-1",
+  "behavior": "Ghi template: type thiếu → custom, trả id hàng mới",
+  "rn": "native/src/hooks/use-library.ts#useAddWorkoutTemplate",
+  "nativeDiffers": null,
+  "vector": {
+   "file": "template-write.json",
+   "branch": "pr-409"
+  },
+  "swift": {
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/PlanEdits.swift",
+   "symbol": "PlanEdits.createTemplate(_:)",
+   "branch": "pr-435"
+  },
+  "test": {
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/PlanEditsTests.swift",
+   "name": "createTemplate",
+   "branch": "pr-435"
+  },
+  "status": "planned"
+ },
+ {
+  "id": "TW-2",
+  "rule": "TW-2",
+  "behavior": "Gán ngày trong tuần: onConflict(user_id,day_of_week), idempotent retry",
+  "rn": "native/src/hooks/use-library.ts#useUpsertRoutineDay",
+  "nativeDiffers": "Native: write ordering (create trước assign), cache invalidation",
+  "vector": {
+   "file": "template-write.json",
+   "branch": "pr-409"
+  },
+  "swift": {
+   "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/PlanEdits.swift",
+   "symbol": "PlanEdits.assignRoutineDay(_:)",
+   "branch": "pr-435"
+  },
+  "test": {
+   "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/PlanEditsTests.swift",
+   "name": "assignRoutineDay",
+   "branch": "pr-435"
+  },
+  "status": "planned"
  }
 ]
