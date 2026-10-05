@@ -117,6 +117,18 @@ final class AppServices {
     PerformanceBook(userId: userId, source: performanceSource, cache: performanceCache)
   }
 
+  /// Luồng tập của người đang đăng nhập (#272): Today → buổi tập → nghỉ →
+  /// chốt → máy → outbox → sync. Dựng MỘT lần mỗi phiên (`SignedInScope`);
+  /// màn Today / Workout và Lab chỉ đọc nó.
+  func makeWorkoutFlow(userId: String, rest: RestTimerController) -> WorkoutFlow {
+    let sync = self.sync
+    return WorkoutFlow(
+      today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
+      performance: makePerformanceBook(userId: userId), store: workouts,
+      onRest: { event, target in rest.handle(event, target: target) },
+      onEnqueued: { _ in sync.kick() })
+  }
+
   func didBecomeActive() {
     sync.kick()
   }
