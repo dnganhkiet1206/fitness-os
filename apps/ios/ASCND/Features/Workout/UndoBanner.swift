@@ -32,7 +32,8 @@ public struct UndoBanner: View {
           )
         )
         .font(.subheadline)
-        .lineLimit(1)
+        // Dynamic Type lớn: cho xuống 2 dòng thay vì cắt tên bài tập.
+        .lineLimit(2)
         Text(
           String(
             format: String(localized: "extra.undo.countdown.format"),
@@ -47,7 +48,8 @@ public struct UndoBanner: View {
         onUndo()
       }
       .buttonStyle(.borderedProminent)
-      .controlSize(.small)
+      // 44pt theo HIG — nút undo bấm gấp, càng cần dễ trúng.
+      .frame(minHeight: 44)
     }
     .padding()
     .background(.regularMaterial)
@@ -105,6 +107,13 @@ public struct UndoBannerContainer: View {
         }
         .onDisappear {
           timer?.invalidate()
+        }
+        // Parent tái dùng container cho lần xoá khác (cùng identity):
+        // reset đếm ngược, không giữ số giây cũ.
+        .onChange(of: exerciseName) { _, _ in
+          secondsRemaining = 8
+          isExpired = false
+          startCountdown()
         }
       }
     }

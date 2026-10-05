@@ -50,6 +50,7 @@ public struct FinishedSessionRemoveView: View {
           onCancel()
         }
         .buttonStyle(.bordered)
+        .frame(minHeight: 44)
         Button(
           String(localized: "extra.remove.finished.confirm"),
           role: .destructive
@@ -57,10 +58,13 @@ public struct FinishedSessionRemoveView: View {
           onConfirm()
         }
         .buttonStyle(.borderedProminent)
+        .frame(minHeight: 44)
       }
     }
     .padding()
-    .accessibilityElement(children: .combine)
+    // .contain — KHÔNG .combine: combine gộp 2 nút thành 1 phần tử,
+    // VoiceOver không bấm riêng từng nút được.
+    .accessibilityElement(children: .contain)
   }
 }
 

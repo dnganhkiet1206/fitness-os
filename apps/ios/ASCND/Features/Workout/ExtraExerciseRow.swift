@@ -43,6 +43,8 @@ public struct ExtraExerciseRow: View {
       HStack {
         Text(String(localized: "extra.exercise.sets.label"))
           .font(.subheadline)
+          // Stepper đã có accessibilityLabel riêng — ẩn chữ tĩnh cho gọn.
+          .accessibilityHidden(true)
         Spacer()
         Stepper(
           "\(exercise.setCount)",
@@ -75,7 +77,7 @@ public struct ExtraExerciseRow: View {
           .foregroundStyle(.orange)
       }
 
-      // Nút xoá
+      // Nút xoá — 44pt theo HIG, cả chiều rộng hàng để dễ bấm.
       Button(role: .destructive) {
         showingDeleteConfirm = true
       } label: {
@@ -84,6 +86,7 @@ public struct ExtraExerciseRow: View {
           systemImage: "trash"
         )
         .font(.caption)
+        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
       }
     }
     .padding()
@@ -103,6 +106,11 @@ public struct ExtraExerciseRow: View {
       Button(String(localized: "common.cancel"), role: .cancel) {}
     }
     .accessibilityElement(children: .contain)
+    // Đồng bộ khi parent đổi tên từ bên ngoài (cùng id): @State init chỉ chạy
+    // một lần nên không có dòng này TextField giữ tên cũ.
+    .onChange(of: exercise.name) { _, newName in
+      editedName = newName
+    }
   }
 }
 
