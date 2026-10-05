@@ -29,6 +29,8 @@ packages:
     path: Packages/ASCNDKit
   ASCNDBackend:
     path: Packages/ASCNDBackend
+  ASCNDStore:
+    path: Packages/ASCNDStore
 
 targets:
   ASCND:
@@ -43,6 +45,8 @@ targets:
         product: ASCNDDesignSystem
       - package: ASCNDBackend
         product: ASCNDBackend
+      - package: ASCNDStore
+        product: ASCNDStore
       - package: ASCNDKit
         product: ASCNDLiveActivity
       - target: ASCNDWidgets

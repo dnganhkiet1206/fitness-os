@@ -7,6 +7,7 @@ import UIKit
 struct ASCNDApp: App {
   @Environment(\.scenePhase) private var scenePhase
   @State private var rest: RestTimerController
+  @State private var services = AppServices()
 
   init() {
     let store = RestTimerStore()
@@ -26,12 +27,22 @@ struct ASCNDApp: App {
     WindowGroup {
       RootTabView()
         .environment(rest)
+        .environment(services)
         .task { await rest.reconcile() }
+        .task { await services.start() }
+        // Phiên đổi (đăng nhập, đăng xuất, đổi tài khoản) → vòng sync biết
+        // gửi hàng của ai; bản ghi của tài khoản khác không bao giờ đi.
+        .onChange(of: services.session.session?.userId, initial: true) { _, user in
+          services.sync.setSignedInUser(user)
+        }
     }
     .onChange(of: scenePhase) { _, phase in
       // Quay lại foreground: tính lại từ `endsAt` ngay, đóng quãng nghỉ đã hết
-      // trong lúc app ở nền (RT-4, RT-5).
-      if phase == .active { rest.settle() }
+      // trong lúc app ở nền (RT-4, RT-5); thử gửi hàng đợi.
+      if phase == .active {
+        rest.settle()
+        services.didBecomeActive()
+      }
     }
   }
 }

@@ -35,12 +35,19 @@ extension WorkoutSessionRecord {
 @MainActor @Observable
 public final class WorkoutSessionController {
   public struct Plan: Sendable, Hashable {
+    /// Khoá ngày của buổi không theo template nào.
+    public static let adHocKey = "adhoc"
+
     public let date: LocalDate
-    public let templateId: String
+    /// Id hàng `workout_templates`, hoặc `nil` cho buổi tự do. Đây là KHOÁ
+    /// NGOẠI trên server (`workout_sessions.template_id`): id bịa là 23503,
+    /// lỗi vĩnh viễn — buổi tập vào `dead`. Không có template thật thì để nil,
+    /// như sheet ghi tự do của baseline.
+    public let templateId: String?
     public let templateName: String
     public let rows: [PlannedSet]
 
-    public init(date: LocalDate, templateId: String, templateName: String, rows: [PlannedSet]) {
+    public init(date: LocalDate, templateId: String?, templateName: String, rows: [PlannedSet]) {
       self.date = date
       self.templateId = templateId
       self.templateName = templateName
@@ -119,7 +126,9 @@ public final class WorkoutSessionController {
     self.onEnqueued = onEnqueued
   }
 
-  public var key: String { DayProgressStore.key(date: plan.date, templateId: plan.templateId) }
+  public var key: String {
+    DayProgressStore.key(date: plan.date, templateId: plan.templateId ?? Plan.adHocKey)
+  }
 
   public var phase: Phase {
     if !loaded { return .loading }
