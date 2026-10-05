@@ -19,14 +19,32 @@ public struct WorkoutView: View {
   /// Key của set đang nghỉ sau khi tick — A8 (#272) nối `RestTimerController`
   /// vào đây. Nil thì không set nào hiện "đang nghỉ".
   var restingRowKey: String?
+  /// Quãng nghỉ đang chạy — A8 nối `RestTimerController`. Nil thì không hiện thẻ nghỉ.
+  var restTimer: RestTimer?
+  var onAdjustRest: (Int) -> Void
+  var onSkipRest: () -> Void
+  /// Trạng thái outbox — A8 nối `SyncWorker`. Mặc định `.ok` (không hiện).
+  var outboxStatus: OutboxStatus
 
   @State private var weightTexts: [String: String] = [:]
   @State private var repsTexts: [String: String] = [:]
   @State private var finishMessage: String?
+  @State private var isFinishing = false
 
-  public init(controller: WorkoutSessionController, restingRowKey: String? = nil) {
+  public init(
+    controller: WorkoutSessionController,
+    restingRowKey: String? = nil,
+    restTimer: RestTimer? = nil,
+    onAdjustRest: @escaping (Int) -> Void = {},
+    onSkipRest: @escaping () -> Void = {},
+    outboxStatus: OutboxStatus = .ok
+  ) {
     self.controller = controller
     self.restingRowKey = restingRowKey
+    self.restTimer = restTimer
+    self.onAdjustRest = onAdjustRest
+    self.onSkipRest = onSkipRest
+    self.outboxStatus = outboxStatus
   }
 
   public var body: some View {
@@ -66,17 +84,27 @@ public struct WorkoutView: View {
         if controller.unsaved != nil {
           unsavedBanner
         }
-        ForEach(exerciseGroups, id: \.key) { group in
-          exerciseCard(group)
+        SyncStrip(status: outboxStatus)
+        if let timer = restTimer {
+          RestCard(timer: timer, onAdjust: onAdjustRest, onSkip: onSkipRest)
         }
-        DSButton(
-          String(localized: "workout.finish"),
-          style: .primary,
-          action: { Task { await doFinish() } }
-        )
-        .disabled(!controller.canFinish)
-        .opacity(controller.canFinish ? 1 : 0.5)
-        .padding(.top, DS.Spacing.sm)
+        if controller.plan.rows.isEmpty {
+          emptyView
+        } else {
+          ForEach(exerciseGroups, id: \.key) { group in
+            exerciseCard(group)
+          }
+          DSButton(
+            isFinishing
+              ? String(localized: "workout.finishing")
+              : String(localized: "workout.finish"),
+            style: .primary,
+            action: { Task { await doFinish() } }
+          )
+          .disabled(!controller.canFinish || isFinishing)
+          .opacity(controller.canFinish && !isFinishing ? 1 : 0.5)
+          .padding(.top, DS.Spacing.sm)
+        }
       }
       .padding(DS.Spacing.md)
     }
@@ -276,7 +304,15 @@ public struct WorkoutView: View {
     }
   }
 
-  // MARK: - Chưa bền / đã chốt
+  // MARK: - Trạng thái rỗng / đang chốt / đã chốt
+
+  private var emptyView: some View {
+    DSEmptyState(
+      systemImage: "dumbbell",
+      title: String(localized: "workout.empty.title"),
+      message: String(localized: "workout.empty.message")
+    )
+  }
 
   private var unsavedBanner: some View {
     HStack(spacing: DS.Spacing.sm) {
@@ -302,12 +338,32 @@ public struct WorkoutView: View {
   }
 
   private func doFinish() async {
+    isFinishing = true
+    defer { isFinishing = false }
     do {
       _ = try await controller.finish()
     } catch let refusal as WorkoutSessionController.FinishRefusal {
-      finishMessage = String(describing: refusal)
+      finishMessage = refusalMessage(refusal)
     } catch {
       finishMessage = error.localizedDescription
+    }
+  }
+
+  /// Mỗi `FinishRefusal` có chữ riêng cho người dùng (#277).
+  private func refusalMessage(_ refusal: WorkoutSessionController.FinishRefusal) -> String {
+    switch refusal {
+    case .loading:
+      return String(localized: "workout.refusal.loading")
+    case .inProgress:
+      return String(localized: "workout.refusal.inProgress")
+    case .futureDay:
+      return String(localized: "workout.refusal.futureDay")
+    case .nothingDone:
+      return String(localized: "workout.refusal.nothingDone")
+    case .alreadyLogged:
+      return String(localized: "workout.refusal.alreadyLogged")
+    case .storage:
+      return String(localized: "workout.refusal.storage")
     }
   }
 }
@@ -318,16 +374,25 @@ public struct WorkoutView: View {
 import ASCNDTestSupport
 
 private struct WorkoutPreviewHost: View {
-  enum Scenario { case idle, active, finished, unsaved }
+  enum Scenario { case idle, active, finished, unsaved, empty }
 
   let scenario: Scenario
   let restingRowKey: String?
+  var showRestCard: Bool = false
+  var outboxStatus: OutboxStatus = .ok
   @State private var controller: WorkoutSessionController?
 
   var body: some View {
     Group {
       if let controller {
-        WorkoutView(controller: controller, restingRowKey: restingRowKey)
+        WorkoutView(
+          controller: controller,
+          restingRowKey: restingRowKey,
+          restTimer: showRestCard
+            ? RestTimer.start(seconds: 90, at: EpochMillis(Date().addingTimeInterval(-30)))
+            : nil,
+          outboxStatus: outboxStatus
+        )
       } else {
         ProgressView()
       }
@@ -339,18 +404,23 @@ private struct WorkoutPreviewHost: View {
 
   static func make(scenario: Scenario) async -> WorkoutSessionController {
     let date = LocalDate("2026-10-05")!
-    let rows = [
-      PlannedSet(key: "bp1", exerciseName: "Bench Press", ordinal: 1, of: 3,
-                 weightKg: 60, reps: 8, plannedRest: 90),
-      PlannedSet(key: "bp2", exerciseName: "Bench Press", ordinal: 2, of: 3,
-                 weightKg: 60, reps: 8, plannedRest: 90),
-      PlannedSet(key: "bp3", exerciseName: "Bench Press", ordinal: 3, of: 3,
-                 weightKg: 60, reps: 8, plannedRest: 90),
-      PlannedSet(key: "pl1", exerciseName: "Plank", ordinal: 1, of: 2,
-                 weightKg: 0, reps: 0, plannedRest: 60),
-      PlannedSet(key: "pl2", exerciseName: "Plank", ordinal: 2, of: 2,
-                 weightKg: 0, reps: 0, plannedRest: 60),
-    ]
+    let rows: [PlannedSet]
+    if scenario == .empty {
+      rows = []
+    } else {
+      rows = [
+        PlannedSet(key: "bp1", exerciseName: "Bench Press", ordinal: 1, of: 3,
+                   weightKg: 60, reps: 8, plannedRest: 90),
+        PlannedSet(key: "bp2", exerciseName: "Bench Press", ordinal: 2, of: 3,
+                   weightKg: 60, reps: 8, plannedRest: 90),
+        PlannedSet(key: "bp3", exerciseName: "Bench Press", ordinal: 3, of: 3,
+                   weightKg: 60, reps: 8, plannedRest: 90),
+        PlannedSet(key: "pl1", exerciseName: "Plank", ordinal: 1, of: 2,
+                   weightKg: 0, reps: 0, plannedRest: 60),
+        PlannedSet(key: "pl2", exerciseName: "Plank", ordinal: 2, of: 2,
+                   weightKg: 0, reps: 0, plannedRest: 60),
+      ]
+    }
     let plan = WorkoutSessionController.Plan(
       date: date, templateId: "tpl-preview",
       templateName: "Ngực – Vai – Tay", rows: rows
@@ -384,6 +454,10 @@ private struct WorkoutPreviewHost: View {
       controller = WorkoutSessionController(plan: plan, userId: "u1", store: store)
       await controller.load()
       _ = await controller.toggle("bp1")
+    case .empty:
+      store = InMemoryWorkoutStore()
+      controller = WorkoutSessionController(plan: plan, userId: "u1", store: store)
+      await controller.load()
     }
     return controller
   }
@@ -414,5 +488,17 @@ private struct WorkoutPreviewHost: View {
 #Preview("Dynamic Type XXXL") {
   WorkoutPreviewHost(scenario: .active, restingRowKey: nil)
     .dynamicTypeSize(.accessibility3)
+}
+#Preview("empty") {
+  WorkoutPreviewHost(scenario: .empty, restingRowKey: nil)
+}
+#Preview("with RestCard") {
+  WorkoutPreviewHost(scenario: .active, restingRowKey: "bp2", showRestCard: true)
+}
+#Preview("sync pending") {
+  WorkoutPreviewHost(scenario: .active, restingRowKey: nil, outboxStatus: .pending(3))
+}
+#Preview("sync dead") {
+  WorkoutPreviewHost(scenario: .active, restingRowKey: nil, outboxStatus: .dead(1))
 }
 #endif
