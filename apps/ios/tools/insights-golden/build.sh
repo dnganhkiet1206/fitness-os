@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "$0")"
 rm -rf lib out && mkdir lib
-for f in exercise-trend exercise-performance personal-record local-date exercise-kind exercise-key muscle-group equipment guide-content exercise-media guide-related; do
+for f in exercise-trend exercise-performance personal-record local-date exercise-kind exercise-key muscle-group equipment guide-content exercise-media guide-related fitness-calc plausible; do
   git show "fac9ac2:native/src/lib/$f.ts" > "lib/$f.ts"
 done
 # Hai phụ thuộc chỉ để lấy một hằng / một kiểu.
