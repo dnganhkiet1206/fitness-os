@@ -368,9 +368,10 @@ private struct LabPlan: View {
     }
   }
 
-  private func run(_ op: @escaping @MainActor () async throws(PlanEditor.Refusal) -> Void) {
+  /// Lỗi là `PlanEditor.Refusal`; closure không khai kiểu ném nên nhận `any Error`.
+  private func run(_ op: @escaping @MainActor () async throws -> Void) {
     Task { @MainActor in
-      do throws(PlanEditor.Refusal) {
+      do {
         try await op()
         error = nil
       } catch {
