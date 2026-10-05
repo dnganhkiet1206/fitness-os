@@ -17,35 +17,20 @@ import GRDB
 public final class OutboxStore: Sendable {
   private let db: DatabaseQueue
 
-  /// Mở (hoặc tạo) cơ sở dữ liệu ở `path` và chạy migration.
-  public init(path: String) throws {
-    db = try DatabaseQueue(path: path)
-    try Self.migrator.migrate(db)
+  /// Dùng chung cơ sở dữ liệu của app — để `GRDBWorkoutStore.commitFinish`
+  /// ghi hàng outbox và ngày đã chốt trong CÙNG một transaction.
+  public init(_ database: ASCNDDatabase) {
+    db = database.queue
+  }
+
+  /// Mở (hoặc tạo) cơ sở dữ liệu riêng ở `path` và chạy migration.
+  public convenience init(path: String) throws {
+    self.init(try ASCNDDatabase(path: path))
   }
 
   /// Cơ sở dữ liệu trong bộ nhớ — cho test.
-  public init() throws {
-    db = try DatabaseQueue()
-    try Self.migrator.migrate(db)
-  }
-
-  static var migrator: DatabaseMigrator {
-    var m = DatabaseMigrator()
-    m.registerMigration("v1-outbox") { db in
-      try db.create(table: "outbox") { t in
-        // `seq` tăng dần = thứ tự tạo = thứ tự gửi (một làn tuần tự).
-        t.autoIncrementedPrimaryKey("seq")
-        t.column("id", .text).notNull().unique()
-        t.column("userId", .text).notNull()
-        t.column("entry", .text).notNull()
-      }
-      try db.create(table: "outbox_dead") { t in
-        t.autoIncrementedPrimaryKey("seq")
-        t.column("id", .text).notNull()
-        t.column("dead", .text).notNull()
-      }
-    }
-    return m
+  public convenience init() throws {
+    self.init(try ASCNDDatabase())
   }
 
   /// Nạp hàng đợi theo đúng thứ tự đã ghi.
@@ -113,7 +98,7 @@ public final class OutboxStore: Sendable {
     }
   }
 
-  private static func json<T: Encodable>(_ value: T) throws -> String {
+  static func json<T: Encodable>(_ value: T) throws -> String {
     let encoder = JSONEncoder()
     encoder.outputFormatting = .sortedKeys
     return String(decoding: try encoder.encode(value), as: UTF8.self)
