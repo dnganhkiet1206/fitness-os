@@ -28,7 +28,7 @@
 
 1. **`native/ios-rewrite`**
    - Require a pull request before merging. Đặt **Required approvals = 0**, vì mọi agent dùng chung một tài khoản nên không tự approve được; review bằng comment `REVIEW: APPROVE`.
-   - Require status checks: `gate` (Cổng chất lượng). Không bắt buộc `iOS`/`SQL` vì hai workflow này lọc theo path; nếu bắt buộc, PR không chạm path đó sẽ treo ở trạng thái chờ.
+   - Require status checks: `gate` (Cổng chất lượng), **chỉ sau khi #233 xong**. Baseline `fac9ac2` đang đỏ sẵn 11/312 bước; bắt buộc `gate` lúc này thì không PR nào merge được. Không bắt buộc `iOS`/`SQL` vì hai workflow này lọc theo path; nếu bắt buộc, PR không chạm path đó sẽ treo ở trạng thái chờ.
    - Block force pushes. Block deletions.
 2. **`claude/ios-fitness-rebuild-omgulr`:** Lock branch (read-only).
 3. **`main`:** Require a pull request. Block force pushes.

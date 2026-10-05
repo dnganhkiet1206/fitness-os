@@ -18,6 +18,7 @@ Không ai push thẳng vào `native/ios-rewrite`. Nhánh làm việc đi sau nh�
 1. Issue có nhãn `agent:X` + `difficulty:*` + `ios-rewrite`.
 2. Agent tạo `agent/x/<slug>` rồi mở PR vào `native/ios-rewrite` theo [template](../.github/pull_request_template.md). PR nhỏ, mỗi PR một ý.
 3. CI phải xanh: `Cổng chất lượng` luôn chạy; `iOS` chạy khi chạm `apps/ios/**`; `SQL cộng đồng` chạy khi chạm `supabase/**`.
+   **Ngoại lệ tạm thời (#233):** baseline đỏ sẵn 11/312 bước của Cổng chất lượng. Cho tới khi #233 xong, `gate` được coi là đạt nếu **không có bước hỏng nào ngoài 11 bước ghi trong #233**. Reviewer phải so danh sách bước `HỎNG` trong log, không chỉ nhìn dấu đỏ.
 4. Review:
 
    | Tác giả | Reviewer |
