@@ -15,7 +15,9 @@ struct RootTabView: View {
   var body: some View {
     TabView(selection: $selection) {
       Tab("tab.today", systemImage: "house", value: AppTab.today) {
-        PlaceholderScreen(title: "tab.today", systemImage: "house")
+        // #275: khung màn Hôm nay — đang dùng fixture; A7 (#271) cung cấp
+        // TodayDisplay thật, chỉ thay state, không sửa View.
+        TodayView(state: .fixture(status: .unplanned))
       }
       Tab("tab.nutrition", systemImage: "fork.knife", value: AppTab.nutrition) {
         PlaceholderScreen(title: "tab.nutrition", systemImage: "fork.knife")
