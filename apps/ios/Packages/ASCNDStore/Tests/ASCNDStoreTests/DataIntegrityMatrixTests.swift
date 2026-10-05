@@ -105,29 +105,49 @@ struct DataIntegrityMatrixTests {
     }
   }
 
+  /// Ma trận outbox — test FENCE THẬT của #492 (D-27), không assert giả.
+  ///
+  /// Fence: `OutboxStore.enqueue`/`append` kiểm `accounts.owner(writingFor:)`
+  /// NGAY TRONG `db.write` (đóng TOCTOU), tất-cả-hoặc-không. Test này chạy
+  /// trên implementation thật sau khi merge #492; trên base a46 (chưa có
+  /// fence) các `#expect(throws:)` sẽ đỏ — đúng như HIGH-1 yêu cầu.
   @Test func outboxMatrix() async throws {
     let db = try ASCNDDatabase()
     let store = OutboxStore(db)
 
-    // 1. Signed-out enqueue → AccountScopeClosed (D-27)
+    // 1. Signed-out enqueue → AccountScopeClosed, không hàng nào lọt
     db.accounts.signOut()
     #expect(throws: AccountScopeClosed.self) {
       try store.enqueue([outboxEntry("a-1", user: "a")])
     }
-    #expect(try store.load().pending.isEmpty)
+    #expect(try store.load().pending.isEmpty, "signed-out: không ghi")
 
-    // 3. A→B: entry của A không lọt vào khi B đăng nhập
+    // 2. Tất-cả-hoặc-không: lô lẫn 1 entry sai user → cả lô bị từ chối
     db.accounts.signIn("a")
+    #expect(throws: AccountScopeClosed.self) {
+      try store.enqueue([outboxEntry("a-2", user: "a"), outboxEntry("b-2", user: "b")])
+    }
+    #expect(try store.load().pending.isEmpty, "lô lẫn bị từ chối toàn bộ")
+
+    // 3. A→B switch: entry của A không lọt vào khi B đăng nhập
     try store.enqueue([outboxEntry("a-1", user: "a")])
     db.accounts.signIn("b")
     #expect(throws: AccountScopeClosed.self) {
-      try store.enqueue([outboxEntry("a-2", user: "a")])
+      try store.enqueue([outboxEntry("a-3", user: "a")])
     }
     #expect(try store.load().pending.map(\.id) == ["a-1"], "chỉ hàng của A từ trước")
 
-    // B ghi được của B
+    // 4. B ghi được của B
     try store.enqueue([outboxEntry("b-1", user: "b")])
     #expect(try store.load().pending.map(\.id).sorted() == ["a-1", "b-1"])
+
+    // 5. append cũng có fence (đóng cùng #492)
+    #expect(throws: AccountScopeClosed.self) {
+      try store.append(outboxEntry("a-4", user: "a"))
+    }
+    #expect(try store.load().pending.map(\.id).sorted() == ["a-1", "b-1"])
+    try store.append(outboxEntry("b-2", user: "b"))
+    #expect(try store.load().pending.map(\.id).sorted() == ["a-1", "b-1", "b-2"])
   }
 
   @Test func killReopenMatrix() async throws {
@@ -165,28 +185,52 @@ struct DataIntegrityMatrixTests {
     #expect(try OutboxStore(db).load().pending.map(\.id) == ["a-1"])
   }
 
-  /// Mutation âm: nếu một ranh giới bỏ kiểm tra tài khoản, ma trận phải đỏ.
-  /// Test này mô phỏng bằng cách gọi API trực tiếp qua mặt chốt (SQL thẳng)
-  /// — chứng minh ma trận đọc đúng trên đĩa.
-  @Test func matrixDetectsInjectedLeak() async throws {
+  /// Mutation âm THẬT: chứng minh ma trận BẮT ĐƯỢC khi một ranh giới mất chốt.
+  ///
+  /// Khác bản tautology cũ (chèn SQL rồi assert hàng tồn tại — pass dù có
+  /// guard hay không): test này KHÓA behavior của chốt. Bước 1 và 4 assert
+  /// `saveDay` ném `AccountScopeClosed` khi signed-out — nếu ai đó xóa
+  /// `guard accounts.owner(...)` khỏi production code, hai dòng này ĐỎ ngay.
+  /// Bước 2–3 mô phỏng "chốt bị gỡ" (ghi thẳng SQL, đúng câu lệnh `saveDay`
+  /// sẽ chạy nếu không có guard) và chứng minh ma trận phát hiện sự lệch
+  /// giữa "API cho phép" và "đĩa đang có".
+  ///
+  /// Đã kiểm chứng bằng mutation probe trên bản copy: xóa guard khỏi
+  /// `GRDBWorkoutStore.saveDay` → test này ĐỎ tại bước 4 (xem PR comment).
+  @Test func matrixDetectsGuardRemoval() async throws {
     let db = try ASCNDDatabase()
     let store = GRDBWorkoutStore(db)
 
-    db.accounts.signIn("a")
-    try await store.saveDay(dayKey, dayState(), userId: "a")
+    // 1. Chốt còn đó: signed-out write bị từ chối, đĩa sạch.
+    db.accounts.signOut()
+    await #expect(throws: AccountScopeClosed.self) {
+      try await store.saveDay(dayKey, dayState(), userId: "a")
+    }
+    #expect(try count(db, table: "workout_day", user: "a") == 0,
+            "chốt chặn: signed-out không ghi được")
 
-    // Giả lập leak: chèn thẳng hàng của A mà không qua chốt
+    // 2. Mô phỏng chốt bị gỡ: ghi thẳng SQL, qua mặt AccountScope.
+    db.accounts.signIn("b")
     try await db.queue.write { db in
       try db.execute(
         sql: "INSERT INTO workout_day (userId, key, state) VALUES (?, ?, ?)",
-        arguments: ["a", "leaked-key", "{}"])
+        arguments: ["a", "guardless-key", "{}"])
     }
 
-    // Ma trận phát hiện: đĩa có hàng không qua API đúng
-    let leaked = try db.queue.read { db in
-      try String.fetchAll(db, sql: "SELECT key FROM workout_day WHERE userId = ?", arguments: ["a"])
+    // 3. Ma trận phát hiện: API có chốt (B) không thấy hàng của A...
+    #expect(try await store.loadDay("guardless-key") == nil,
+            "API có chốt không để lộ hàng lọt")
+    // ...nhưng kiểm tra trên đĩa (cơ chế của ma trận) thấy hàng lọt chốt.
+    #expect(try count(db, table: "workout_day", user: "a") == 1,
+            "ma trận phát hiện hàng của A lọt vào khi B đăng nhập")
+
+    // 4. Khóa chốt: nếu guard bị gỡ khỏi saveDay, dòng này KHÔNG ném → test đỏ.
+    //    Đây là negative mutation thật, không phải tautology.
+    db.accounts.signOut()
+    await #expect(throws: AccountScopeClosed.self) {
+      try await store.saveDay("guardless-key-2", dayState(), userId: "a")
     }
-    #expect(leaked.contains("leaked-key"), "ma trận thấy hàng lọt qua mặt chốt")
-    #expect(leaked.contains(dayKey), "hàng đúng vẫn đó")
+    #expect(try count(db, table: "workout_day", user: "a") == 1,
+            "chốt chặn: chỉ có hàng mô phỏng, không thêm hàng mới")
   }
 }
