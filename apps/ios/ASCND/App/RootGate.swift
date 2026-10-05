@@ -19,11 +19,14 @@ struct RootGate: View {
       switch services.session.phase {
       case .loading:
         DSLoadingView(message: String(localized: "rootgate.loading"))
+          .transition(.opacity)
       case .signedOut:
         AuthView()
+          .transition(.opacity)
       case .signedIn(let s):
         RootTabView()
           .id(s.userId)
+          .transition(.opacity)
       }
     }
     .animation(
