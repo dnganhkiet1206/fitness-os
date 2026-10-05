@@ -18,6 +18,9 @@ import Observation
 @Observable
 final class AppServices {
   let session: SessionStore
+  /// Cài đặt của app (#426): ngôn ngữ, theme, đơn vị nước theo MÁY; linh vật
+  /// theo tài khoản. Sống suốt đời app — đăng xuất chỉ xoá phần theo tài khoản.
+  let preferences: AppPreferences
   let sync: SyncWorker
   @ObservationIgnored let workouts: GRDBWorkoutStore
   /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
@@ -97,6 +100,8 @@ final class AppServices {
     profileWriter = backend.map { SupabaseProfileWriter(backend: $0) as any ProfileWriter } ?? UnconfiguredProfile()
     profileCache = GRDBProfileCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
+    let prefs = AppPreferences(store: UserDefaultsStore())
+    preferences = prefs
     sync = SyncWorker(
       store: outboxStore,
       remote: backend.map { SupabaseRemoteWriter(backend: $0) as any RemoteWriter } ?? UnconfiguredRemote(),
@@ -115,6 +120,8 @@ final class AppServices {
       try? await workouts.clearAll()
       // Kế hoạch đã cache.
       try? await templateCache.clearAll()
+      // Cài đặt theo tài khoản (linh vật); theo máy thì giữ (`DEVICE_KEYS`).
+      prefs.clearUserScoped()
       // Đổi thẳng tài khoản: người mới đã đăng nhập — vòng sync gửi hàng của
       // họ (`signOut` ở trên vừa đặt nó về nil).
       sync.setSignedInUser(session?.session?.userId)
