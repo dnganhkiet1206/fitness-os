@@ -805,7 +805,7 @@ const realTabs = [
   /useExercises\(needsLibrary\)/.test(sheet)
     ? null
     : '`useExercises()` không còn đi qua `needsLibrary` — mở sheet là gọi mạng, kể cả khi không ai mở tab Liên quan',
-  /sameEquipment\(rows, subject, lang\)/.test(sheet) && /sameMuscle\(rows, subject, lang\)/.test(sheet)
+  /sameEquipment\(rows, subject, \w+\)/.test(sheet) && /sameMuscle\(rows, subject, \w+\)/.test(sheet)
     ? null
     : 'hai danh sách "bài khác" không còn đến từ `lib/guide-related.ts`',
   /style=\{\[styles\.tabs[\s\S]{0,200}?pointerEvents="none"/.test(sheet)

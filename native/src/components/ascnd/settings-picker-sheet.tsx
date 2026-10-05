@@ -80,8 +80,7 @@ export function SettingsPickerSheet({
       width: 36,
       height: 5,
       borderRadius: 3,
-      backgroundColor: c.mutedForeground,
-      opacity: 0.4,
+      backgroundColor: c.border,
       alignSelf: 'center',
       marginTop: spacing.sm,
       marginBottom: spacing.sm,
@@ -201,9 +200,11 @@ export function SettingsPickerSheet({
                   <Pressable
                     style={[styles.option, selected && styles.optionSelected]}
                     onPress={() => handleSelect(opt.key)}
-                    accessibilityRole="button"
+                    accessibilityRole="checkbox"
                     accessibilityLabel={opt.accessibilityLabel ?? opt.label}
-                    accessibilityState={{ selected }}>
+                    accessibilityState={{ selected, checked: selected }}
+                    aria-checked={selected}
+                    aria-selected={selected}>
                     {opt.leading ? <View style={styles.leading}>{opt.leading}</View> : null}
                     <View style={styles.textWrap}>
                       <Text style={styles.label}>{opt.label}</Text>

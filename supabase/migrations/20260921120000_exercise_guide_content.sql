@@ -64,9 +64,9 @@ CREATE TABLE IF NOT EXISTS public.exercise_guide_content (
   exercise_id UUID NOT NULL REFERENCES public.exercises(id) ON DELETE CASCADE,
 
   -- Exactly the languages the app can render. `AppLang` in `src/lib/i18n.ts`
-  -- is `'vi' | 'en'`; a third locale here would be content nobody can read, so
-  -- it is refused at the door rather than stored and ignored.
-  locale TEXT NOT NULL CHECK (locale IN ('vi', 'en')),
+  -- is `'vi' | 'en' | 'es'`; a fourth locale here would be content nobody can
+  -- read, so it is refused at the door rather than stored and ignored.
+  locale TEXT NOT NULL CHECK (locale IN ('vi', 'en', 'es')),
 
   -- NOT NULL with an empty default, because empty and absent must not both be
   -- expressible. An empty array means "this exercise has no common mistakes

@@ -827,8 +827,6 @@ const es: typeof en = {
   nMascotTitle: 'Compañero',
   nMascotToggleHint: 'Tu compañero te anima según los datos de hoy',
   nMusicLabel: 'Música',
-  nKoaCompanionTitle: 'Koa te acompaña',
-  nKoaCompanionHint: 'Koa está a tu lado en cada pantalla y se mueve según cambia tu día. Desactívalo para que Koa solo esté en Hoy.',
   nMascotRoomTitle: 'Sala del compañero, tienda y retos',
   errOffline: 'Sin conexión — tu cambio aún no se guardó. Se aplicará cuando vuelvas a estar en línea.',
   errOnlineOnly: 'Sin conexión — no enviado ni guardado para enviar después.',
@@ -2120,8 +2118,6 @@ const en = {
   nMascotTitle: 'Companion',
   nMascotToggleHint: 'Your companion nudges you based on today\u2019s data',
   nMusicLabel: 'Music',
-  nKoaCompanionTitle: 'Koa follows you',
-  nKoaCompanionHint: 'Koa stands beside you on every screen and moves as your day changes. Turn this off to keep Koa on Today only.',
   nMascotRoomTitle: 'Companion room, shop & challenges',
   /* ── what a failed write says, when the thing that failed wrote SQL ──
      Keys, not sentences, at the throw site: see `lib/error-copy.ts`. Each one
@@ -3413,8 +3409,6 @@ const vi: typeof en = {
   nMascotTitle: 'Bạn đồng hành',
   nMascotToggleHint: 'Linh vật sẽ nhắc bạn dựa trên dữ liệu hôm nay',
   nMusicLabel: 'Nhạc',
-  nKoaCompanionTitle: 'Koa đi cùng bạn',
-  nKoaCompanionHint: 'Koa đứng cạnh bạn ở mọi màn và đổi chỗ theo diễn biến trong ngày. Tắt đi thì Koa chỉ ở lại màn Hôm nay.',
   nMascotRoomTitle: 'Phòng bạn đồng hành, cửa hàng & thử thách',
   errOffline: 'Không có kết nối — thay đổi chưa được lưu. App sẽ gửi lại khi bạn online.',
   errOnlineOnly: 'Không có kết nối — chưa gửi, và không giữ lại để gửi sau.',
