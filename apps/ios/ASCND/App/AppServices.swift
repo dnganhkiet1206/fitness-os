@@ -4,6 +4,7 @@ import ASCNDStore
 import Foundation
 import Network
 import Observation
+import UserNotifications
 
 /// Gốc lắp ráp của app: nơi DUY NHẤT dựng các mảnh thật và nối chúng với nhau.
 ///
@@ -21,6 +22,11 @@ final class AppServices {
   /// Cài đặt của app (#426): ngôn ngữ, theme, đơn vị nước theo MÁY; linh vật
   /// theo tài khoản. Sống suốt đời app — đăng xuất chỉ xoá phần theo tài khoản.
   let preferences: AppPreferences
+  /// Nhắc nhở (#427): cài đặt theo tài khoản + lịch thông báo cục bộ. Một bản
+  /// cho cả app — màn Nhắc nhở và Hôm nay dùng chung (RN từng có hai bản ghi
+  /// đè lịch của nhau).
+  let reminders: ReminderCenter
+  @ObservationIgnored private let reminderPresenter = ReminderPresenter()
   let sync: SyncWorker
   @ObservationIgnored let workouts: GRDBWorkoutStore
   /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
@@ -102,6 +108,9 @@ final class AppServices {
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     let prefs = AppPreferences(store: UserDefaultsStore())
     preferences = prefs
+    let reminderCenter = ReminderCenter(
+      store: UserDefaultsStore(), scheduler: NotificationReminderScheduler(), copy: ReminderCopyTable.copy(prefs.lang))
+    reminders = reminderCenter
     sync = SyncWorker(
       store: outboxStore,
       remote: backend.map { SupabaseRemoteWriter(backend: $0) as any RemoteWriter } ?? UnconfiguredRemote(),
@@ -122,10 +131,14 @@ final class AppServices {
       try? await templateCache.clearAll()
       // Cài đặt theo tài khoản (linh vật); theo máy thì giữ (`DEVICE_KEYS`).
       prefs.clearUserScoped()
+      // Nhắc nhở: huỷ thông báo đang chờ của người vừa rời đi, xoá cài đặt /
+      // chữ ký lịch / chốt giờ thông minh (`forgetPreviousAccount`).
+      await reminderCenter.clearUserScoped()
       // Đổi thẳng tài khoản: người mới đã đăng nhập — vòng sync gửi hàng của
       // họ (`signOut` ở trên vừa đặt nó về nil).
       sync.setSignedInUser(session?.session?.userId)
     }
+    UNUserNotificationCenter.current().delegate = reminderPresenter
     startNetworkMonitor()
   }
 
@@ -135,6 +148,14 @@ final class AppServices {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     _ = try? await workouts.pruneDays(today: today)
     sync.kick()
+    await reminders.refreshPermission()
+  }
+
+  /// Đổi ngôn ngữ app: chữ của lời nhắc theo cùng (lịch không đặt lại — không
+  /// giờ nào đổi; thông báo đang chờ giữ chữ cũ tới lần đặt kế, như RN).
+  func setLanguage(_ choice: AppPreferences.LangChoice) {
+    preferences.setLang(choice)
+    reminders.copy = ReminderCopyTable.copy(preferences.lang)
   }
 
   /// Tầng ứng dụng của màn Today cho người đang đăng nhập (#271).
