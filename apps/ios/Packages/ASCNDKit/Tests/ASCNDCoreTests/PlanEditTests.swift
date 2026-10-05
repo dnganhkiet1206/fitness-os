@@ -352,6 +352,35 @@ struct PlanEditTests {
     #expect(await h.store.outbox.count == 1, "lệnh bị từ chối không ghi gì")
   }
 
+  /// C42 (#435): tạo X (chưa gửi) → xoá X → tạo lại CÙNG id X. Hàng tạo thứ
+  /// hai trùng id hàng đang chờ nên bị bỏ, server nhận "tạo bản cũ → xoá" —
+  /// bản mới mất im lặng. Giờ bị từ chối thành lỗi có tên; id mới thì được.
+  @Test func recreatingADeletedPendingIdIsRefused() async throws {
+    let h = Harness()
+    await h.flow.start()
+    try await h.editor.create(id: "tpl-x", name: "Push v1", exercises: [bench])
+    try await h.editor.delete(templateId: "tpl-x")
+    await #expect(throws: PlanEditor.Refusal.deleted) {
+      try await h.editor.create(id: "tpl-x", name: "Push v2", exercises: [squat])
+    }
+    #expect(await h.store.outbox.count == 2, "lệnh bị từ chối không ghi gì")
+    let fresh = h.editor.newTemplateId()
+    try await h.editor.create(id: fresh, name: "Push v2", exercises: [squat])
+    _ = await h.sync()
+    #expect(await h.server.templates.values.compactMap { $0["name"]?.stringValue } == ["Push v2"])
+  }
+
+  /// Lệnh tạo cũ đã tới server rồi mới xoá: tạo lại cùng id ghi được — hàng
+  /// đợi là "xoá → tạo", server ra đúng bản mới.
+  @Test func recreatingAfterTheCreateWasSentIsAllowed() async throws {
+    let h = Harness()
+    try await h.seed("tpl-x")
+    try await h.editor.delete(templateId: "tpl-x")
+    try await h.editor.create(id: "tpl-x", name: "Legs v2", exercises: [bench])
+    _ = await h.sync()
+    #expect(await h.server.templates.values.compactMap { $0["name"]?.stringValue } == ["Legs v2"])
+  }
+
   /// Ghi máy hỏng: báo lỗi, kế hoạch không đổi.
   @Test func storageFailureChangesNothing() async throws {
     let h = Harness()
