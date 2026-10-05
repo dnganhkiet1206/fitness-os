@@ -578,7 +578,7 @@ public final class WorkoutSessionController {
     let entry = OutboxEntry(
       id: "\(sessionId)@r\(revision)", userId: userId,
       kind: record == nil ? WorkoutSessionRecord.deleteKind : WorkoutSessionRecord.revisionKind,
-      payload: record?.row ?? .object(["id": .string(sessionId)]), createdAt: clock.nowMillis())
+      payload: record?.row ?? WorkoutSessionRecord.deletePayload(id: sessionId, at: stamp), createdAt: clock.nowMillis())
     let rpe = record?.sessionRpe ?? loggedRpe
     let state = DayState(
       progress: progress, loggedSessionId: sessionId, loggedKeys: keys.sorted(), loggedAt: stamp,

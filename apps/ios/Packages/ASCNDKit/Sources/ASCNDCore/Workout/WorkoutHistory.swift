@@ -94,6 +94,9 @@ public protocol HistoryCache: Sendable {
 /// Native behavior: cache hiện ngay (kể cả offline); buổi vừa chốt hiện ngay,
 ///   không đợi sync (`absorb`, WH-4a); xoá biến khỏi danh sách ngay và đi qua
 ///   outbox (chạy cả offline, idempotent) — cùng đường xoá với #398.
+/// Mở lại app (#429): lịch sử = bản server ⊕ buổi còn trong outbox
+///   (`PendingSessions`) — buổi đã xoá mà lệnh xoá chưa gửi không sống lại,
+///   buổi vừa chốt mà chưa gửi không biến mất.
 /// Chưa port: dựng lại `daily_log` / readiness sau khi xoá (WH-3a) — thuộc
 ///   quyết định #266.
 @MainActor @Observable
@@ -114,6 +117,8 @@ public final class HistoryBook {
   @ObservationIgnored private let clock: any WallClock
   @ObservationIgnored private let makeId: @Sendable () -> String
   @ObservationIgnored private let onEnqueued: @MainActor (OutboxEntry) -> Void
+  @ObservationIgnored private let pending: (any PendingWrites)?
+  @ObservationIgnored private var log = SessionChangeLog()
   /// Buổi đã xoá trên máy mà server có thể chưa biết — lần làm mới không được
   /// hồi sinh chúng trước khi lệnh xoá tới nơi.
   @ObservationIgnored private var deleted: Set<String> = []
@@ -125,8 +130,10 @@ public final class HistoryBook {
     userId: String, source: any HistorySource, cache: any HistoryCache, store: any WorkoutStore,
     clock: any WallClock = SystemWallClock(),
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
-    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
+    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in },
+    pending: (any PendingWrites)? = nil
   ) {
+    self.pending = pending
     self.userId = userId
     self.source = source
     self.cache = cache
@@ -147,8 +154,13 @@ public final class HistoryBook {
 
   public func refresh() async {
     let since = clock.nowMillis() - Int64(Self.windowDays) * 86_400_000
+    // Hàng chờ đọc TRƯỚC truy vấn (xem `SessionChangeLog`). Đọc hỏng (đĩa) thì
+    // giữ nguyên thứ đang có thay vì coi là "không có gì chờ".
+    let mark = log.mark
+    guard let queued = await pending.changes(userId: userId) else { return }
     do {
-      let rows = try await source.sessions(userId: userId, since: since)
+      let fetched = try await source.sessions(userId: userId, since: since)
+      let rows = PendingSessions.apply(queued + log.settle(since: mark), to: fetched)
       var seen = Set<String>()
       entries = rows.compactMap(HistoryEntry.init(row:))
         .filter { !deleted.contains($0.id) && seen.insert($0.id).inserted }
@@ -163,6 +175,7 @@ public final class HistoryBook {
 
   /// Hàng outbox vừa bền (chốt / nối / gỡ set / xoá): danh sách theo ngay.
   public func absorb(_ entry: OutboxEntry) async {
+    if let change = SessionChange(entry, userId: userId) { log.record(change) }
     if entry.kind == WorkoutSessionRecord.deleteKind {
       guard let id = entry.payload["id"]?.stringValue else { return }
       deleted.insert(id)
@@ -195,7 +208,7 @@ public final class HistoryBook {
     guard let victim = entries.first(where: { $0.id == id }) else { throw .notFound }
     let entry = OutboxEntry(
       id: "\(id)@del-\(makeId())", userId: userId, kind: WorkoutSessionRecord.deleteKind,
-      payload: .object(["id": .string(id)]), createdAt: clock.nowMillis())
+      payload: WorkoutSessionRecord.deletePayload(id: id, at: victim.at), createdAt: clock.nowMillis())
     do {
       try await store.commitDelete(sessionId: id, entry)
     } catch {
