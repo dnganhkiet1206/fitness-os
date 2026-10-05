@@ -47,3 +47,50 @@ public struct SupabaseOnboardingWriter: OnboardingWriter {
     }
   }
 }
+
+/// Hồ sơ (#425): `useProfile` — `select('*') … eq('user_id')`.
+public struct SupabaseProfileSource: ProfileSource {
+  private let client: SupabaseClient
+
+  public init(backend: Backend) {
+    self.client = backend.client
+  }
+
+  public func profile(userId: String) async throws -> JSONValue? {
+    let rows: [JSONValue] = try await client.from("profiles")
+      .select("*")
+      .eq("user_id", value: userId)
+      .limit(1)
+      .execute().value
+    return rows.first
+  }
+}
+
+/// Lưu hồ sơ (`edit-profile.tsx:275`): `update … eq('user_id')` qua
+/// `confirmWrite` — không chạm hàng nào là lỗi `nothingWritten`.
+public struct SupabaseProfileWriter: ProfileWriter {
+  private let client: SupabaseClient
+
+  public init(backend: Backend) {
+    self.client = backend.client
+  }
+
+  struct Touched: Decodable, Sendable {
+    let user_id: String?
+  }
+
+  public func update(userId: String, row: JSONValue) async throws {
+    let touched: [Touched]
+    do {
+      touched = try await client.from("profiles")
+        .update(row)
+        .eq("user_id", value: userId)
+        .select("user_id")
+        .execute().value
+    } catch {
+      if NetworkFailure.isOffline(error) { throw ProfileSaveFailure.offline }
+      throw ProfileSaveFailure.server(code: (error as? PostgrestError)?.code)
+    }
+    if touched.isEmpty { throw ProfileSaveFailure.nothingWritten }
+  }
+}

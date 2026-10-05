@@ -40,6 +40,9 @@ final class AppServices {
   @ObservationIgnored let onboardingStatus: any OnboardingStatusSource
   @ObservationIgnored let onboardingWriter: any OnboardingWriter
   @ObservationIgnored let onboardingStore: any OnboardingStore
+  @ObservationIgnored let profileSource: any ProfileSource
+  @ObservationIgnored let profileWriter: any ProfileWriter
+  @ObservationIgnored let profileCache: any ProfileCache
   /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
   @ObservationIgnored private let readCache: GRDBTemplateCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
@@ -90,6 +93,9 @@ final class AppServices {
     onboardingStatus = backend.map { SupabaseOnboardingStatus(backend: $0) as any OnboardingStatusSource } ?? UnconfiguredOnboarding()
     onboardingWriter = backend.map { SupabaseOnboardingWriter(backend: $0) as any OnboardingWriter } ?? UnconfiguredOnboarding()
     onboardingStore = GRDBOnboardingStore(database)
+    profileSource = backend.map { SupabaseProfileSource(backend: $0) as any ProfileSource } ?? UnconfiguredProfile()
+    profileWriter = backend.map { SupabaseProfileWriter(backend: $0) as any ProfileWriter } ?? UnconfiguredProfile()
+    profileCache = GRDBProfileCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: outboxStore,
@@ -188,6 +194,11 @@ final class AppServices {
       onFinished: { [weak gate] in await gate?.completed() })
   }
 
+  /// Hồ sơ của người đang đăng nhập (#425) — màn Cài đặt / Sửa hồ sơ của C.
+  func makeProfileBook(userId: String) -> ProfileBook {
+    ProfileBook(userId: userId, source: profileSource, writer: profileWriter, cache: profileCache)
+  }
+
   func didBecomeActive() {
     sync.kick()
   }
@@ -258,6 +269,12 @@ private struct UnconfiguredOnboarding: OnboardingStatusSource, OnboardingWriter 
   struct NotConfigured: Error {}
   func onboardingCompleted(userId: String) async throws -> Bool? { throw NotConfigured() }
   func completeOnboarding(userId: String, row: JSONValue) async throws { throw NotConfigured() }
+}
+
+private struct UnconfiguredProfile: ProfileSource, ProfileWriter {
+  struct NotConfigured: Error {}
+  func profile(userId: String) async throws -> JSONValue? { throw NotConfigured() }
+  func update(userId: String, row: JSONValue) async throws { throw NotConfigured() }
 }
 
 private struct UnconfiguredTemplates: TemplateSource {
