@@ -74,6 +74,7 @@ public struct UndoBannerContainer: View {
   let exerciseName: String
   @State private var secondsRemaining = 8
   @State private var isExpired = false
+  @State private var timer: Timer?
 
   var onUndo: () -> Void
   var onExpire: () -> Void
@@ -95,22 +96,27 @@ public struct UndoBannerContainer: View {
           exerciseName: exerciseName,
           secondsRemaining: secondsRemaining,
           onUndo: {
+            timer?.invalidate()
             onUndo()
           }
         )
         .onAppear {
           startCountdown()
         }
+        .onDisappear {
+          timer?.invalidate()
+        }
       }
     }
   }
 
   private func startCountdown() {
-    Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { timer in
+    timer?.invalidate()
+    timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { t in
       if secondsRemaining > 1 {
         secondsRemaining -= 1
       } else {
-        timer.invalidate()
+        t.invalidate()
         isExpired = true
         onExpire()
       }
