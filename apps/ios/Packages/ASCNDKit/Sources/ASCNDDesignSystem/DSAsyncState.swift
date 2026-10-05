@@ -3,6 +3,7 @@
 // Bộ presentation components cho Today/Auth/Workout:
 // loading, retryable error, empty, offline, submitting.
 // KHÔNG networking/domain logic — chỉ vẽ theo state được truyền vào.
+#if canImport(SwiftUI)
 import SwiftUI
 
 /// Trạng thái async chung cho mọi màn.
@@ -150,3 +151,4 @@ public struct DSSubmittingOverlay: View {
 #Preview("Submitting") {
   DSSubmittingOverlay(message: "Đang gửi…")
 }
+#endif
