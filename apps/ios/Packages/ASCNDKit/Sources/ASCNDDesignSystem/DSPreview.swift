@@ -7,7 +7,7 @@ struct DSColorPreview: View {
   var body: some View {
     ScrollView {
       LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: DS.Spacing.md) {
-        ForEach(DSColorPreview.tokens, id: \.0) { name, color in
+        ForEach(DSColorTokens.tokens, id: \.0) { name, color in
           VStack(spacing: DS.Spacing.xs) {
             RoundedRectangle(cornerRadius: DS.Radius.md)
               .fill(color.swiftUI)
@@ -21,7 +21,7 @@ struct DSColorPreview: View {
   }
 }
 
-enum DSColorPreview {
+enum DSColorTokens {
   static let tokens: [(String, DSColor)] = [
     ("background", DS.Color.background),
     ("card", DS.Color.card),
