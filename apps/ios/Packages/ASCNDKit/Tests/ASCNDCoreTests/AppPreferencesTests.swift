@@ -48,12 +48,12 @@ struct AppPreferencesTests {
     p.setTheme(.light)
     p.setVolumeUnit(.oz)
     p.setMascotEnabled(false)
-    p.selectMascot("pip")
+    p.selectMascot("blaze")
     #expect(store.string(forKey: "ascnd_lang") == "es" && store.string(forKey: "ascnd_theme") == "light")
     #expect(store.string(forKey: "ascnd-volume-unit") == "oz" && store.string(forKey: "ascnd_mascot_enabled") == "0")
     let again = AppPreferences(store: store, deviceLocale: "vi")
     #expect(again.lang == .es && again.theme == .light && again.volumeUnit == .oz)
-    #expect(!again.mascotEnabled && again.mascotCompanion && again.mascotSelected == "pip")
+    #expect(!again.mascotEnabled && again.mascotCompanion && again.mascotSelected == "blaze")
   }
 
   /// Giá trị lạ đã lưu (bản build khác, gõ tay) = như chưa lưu.
@@ -68,6 +68,46 @@ struct AppPreferencesTests {
     #expect(p.mascotSelected == "koa")
   }
 
+  /// Vùng của đơn vị nước: thẻ BCP-47 (RN) và định danh iOS, kể cả từ khoá `@`.
+  @Test func volumeRegionFromIOSIdentifiers() {
+    for (locale, unit) in [
+      ("en-US", AppPreferences.VolumeUnit.oz), ("en_US", .oz), ("en_US@calendar=gregorian", .oz), ("my_MM", .oz),
+      ("en-LR", .oz), ("vi_VN@numbers=latn", .ml), ("en_GB", .ml), ("zh-Hant_TW", .ml), ("en", .ml), ("", .ml),
+    ] {
+      #expect(AppPreferences.deviceVolumeUnit(locale) == unit, "\(locale)")
+    }
+  }
+
+  /// Linh vật đã lưu (#458): chỉ id có thật trong `MASCOTS`; thiếu, rỗng,
+  /// lạ, sai hoa thường, có khoảng trắng → `koa` (như `getMascot` của RN).
+  @Test func storedMascotMustBeAKnownId() {
+    for (stored, expected) in [
+      (nil, "koa"), ("", "koa"), ("nova", "nova"), ("drago", "drago"), ("pip", "koa"), ("KOA", "koa"),
+      ("Blaze", "koa"), (" titan", "koa"), ("swift\n", "koa"), ("{\"id\":\"nova\"}", "koa"), ("koa\u{0}", "koa"),
+    ] as [(String?, String)] {
+      let store = Memory(stored.map { ["ascnd_mascot_selected": $0] } ?? [:])
+      #expect(AppPreferences(store: store, deviceLocale: "vi").mascotSelected == expected, "\(stored.debugDescription)")
+    }
+    #expect(AppPreferences.mascotIds == ["koa", "blaze", "swift", "titan", "drago", "nova"])
+  }
+
+  /// Chọn linh vật lạ: từ chối, không đổi trạng thái, không ghi gì.
+  @Test func selectingAnUnknownMascotIsRefused() {
+    let store = Memory()
+    let p = AppPreferences(store: store, deviceLocale: "vi")
+    #expect(p.selectMascot("titan"))
+    for junk in ["", "pip", "TITAN", " nova"] {
+      #expect(!p.selectMascot(junk), "\(junk.debugDescription)")
+    }
+    #expect(p.mascotSelected == "titan" && store.string(forKey: "ascnd_mascot_selected") == "titan")
+    // Đã lưu một id lạ (bản cũ): đọc ra koa; chọn lại id thật thì ghi đè.
+    let legacy = Memory(["ascnd_mascot_selected": "pip"])
+    let q = AppPreferences(store: legacy, deviceLocale: "vi")
+    #expect(q.mascotSelected == "koa")
+    q.clearUserScoped()
+    #expect(q.mascotSelected == "koa" && legacy.string(forKey: "ascnd_mascot_selected") == nil)
+  }
+
   /// Đăng xuất: khoá theo tài khoản xoá VÀ trạng thái về mặc định; khoá theo
   /// máy (ngôn ngữ, theme, đơn vị nước, khoá app) giữ nguyên.
   @Test func signOutClearsOnlyAccountScoped() {
@@ -78,7 +118,7 @@ struct AppPreferencesTests {
     p.setVolumeUnit(.oz)
     p.setMascotEnabled(false)
     p.setMascotCompanion(false)
-    p.selectMascot("pip")
+    p.selectMascot("blaze")
     p.clearUserScoped()
     #expect(p.mascotEnabled && p.mascotCompanion && p.mascotSelected == "koa")
     #expect(p.lang == .en && p.theme == .light && p.volumeUnit == .oz)

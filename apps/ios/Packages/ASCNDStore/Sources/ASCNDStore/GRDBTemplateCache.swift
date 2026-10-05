@@ -7,11 +7,11 @@ import GRDB
 public final class GRDBTemplateCache: TemplateCache {
   static let kind = ReadCacheNamespace.templates
   private let table: ReadCacheTable
-  private let db: DatabaseQueue
+  private let cleanup: ReadCacheCleanup
 
   public init(_ database: ASCNDDatabase) {
     table = ReadCacheTable(database)
-    db = database.queue
+    cleanup = ReadCacheCleanup(database)
   }
 
   public func load(userId: String) async throws -> TemplateSnapshot? {
@@ -22,9 +22,9 @@ public final class GRDBTemplateCache: TemplateCache {
     try await table.save(snapshot, userId: userId, kind: Self.kind)
   }
 
-  /// Đăng xuất: bỏ cache của mọi người dùng trên máy.
+  /// Đăng xuất: bỏ cache của mọi người dùng trên máy (`ReadCacheCleanup`).
   public func clearAll() async throws {
-    try await db.write { db in try db.execute(sql: "DELETE FROM read_cache") }
+    try await cleanup.forgetEveryone()
   }
 
   /// Đăng nhập: bỏ cache của MỌI người khác. Lượt làm mới của người vừa rời
@@ -32,9 +32,6 @@ public final class GRDBTemplateCache: TemplateCache {
   /// lần này dọn nốt. Trả về số hàng bỏ.
   @discardableResult
   public func clearAll(except userId: String) async throws -> Int {
-    try await db.write { db in
-      try db.execute(sql: "DELETE FROM read_cache WHERE userId != ?", arguments: [userId])
-      return db.changesCount
-    }
+    try await cleanup.forgetEveryone(except: userId)
   }
 }
