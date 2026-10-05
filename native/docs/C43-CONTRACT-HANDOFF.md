@@ -42,7 +42,10 @@
 
 ```swift
 func historyState(of book: HistoryBook) -> HistoryState {
-  if !book.loaded { return .loading }
+  // QUAN TRỌNG: kiểm tra failure TRƯỚC loaded. HistoryBook.refresh() khi lỗi
+  // chỉ set failure mà KHÔNG set loaded (WorkoutHistory.swift) — lần load đầu
+  // offline (chưa có cache) cho trạng thái loaded=false + failure=.offline.
+  // Kiểm tra loaded trước sẽ trả .loading mãi, che mất lỗi offline.
   if let f = book.failure {
     let sessions = book.entries.map(HistorySession.init(entry:))
     switch f {
@@ -50,6 +53,7 @@ func historyState(of book: HistoryBook) -> HistoryState {
     case .unavailable:  return .error(unavailableText)
     }
   }
+  if !book.loaded { return .loading }
   if book.entries.isEmpty { return .empty }
   return .loaded(book.entries.map(HistorySession.init(entry:)))
 }

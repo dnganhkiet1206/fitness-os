@@ -53,8 +53,12 @@ const C = {
   HistoryCallbacks: ['onRetry', 'onSelect'], // onDelete: GAP — view chưa có seam (xem handoff note 3.3)
   WorkoutTemplateProtocol: ['id', 'name', 'exercises', 'assignedWeekdays'],
   TemplateExerciseProtocol: ['id', 'name', 'sets', 'reps', 'weightKg'],
+  // Callbacks có thật trên các view (đã verify code thật 05/10/2026 — KHÔNG có
+  // `weekdaySelected`; WeekdayAssignmentView dùng @Binding, không phải callback).
   BuilderCallbacks: ['onSelect', 'onCreate', 'onDelete', 'onSave', 'onCancel', 'onAddExercise',
-    'onSaveTemplate', 'onDeleteTemplate', 'onRetry', 'weekdaySelected'],
+    'onSaveTemplate', 'onDeleteTemplate', 'onRetry'],
+  // Cơ chế chọn ngày: @Binding, không phải callback — wiring diff Set<Int>.
+  WeekdayBinding: ['selected'],
 };
 
 // Adapter rules tường minh: C-field -> { a: A-field | null, via: mô tả }
@@ -84,7 +88,7 @@ const ADAPTERS = {
   '(new) type': { a: 'WorkoutTemplate.type', via: 'PlanEdit.defaultType khi tạo' },
   onSaveTemplate: { a: 'PlanEditor.create', via: 'newTemplateId() 1 lần/form + create(nil) + assign từng ngày' },
   onDeleteTemplate: { a: 'PlanEditor.delete', via: 'trực tiếp; Refusal → error state' },
-  weekdaySelected: { a: 'PlanEditor.assign', via: 'chọn → assign(id); bỏ → assign(nil)' },
+  'WeekdayAssignmentView.selected': { a: 'PlanEditor.assign', via: '@Binding Set<Int> — wiring diff ngày thay đổi → assign(day:) từng ngày (chọn → assign(id), bỏ → assign(nil))' },
 };
 
 // Mismatch đã biết — PHẢI khai báo tường minh, cấm im lặng.
@@ -105,7 +109,7 @@ const cFields = [
   'HistoryState.*', 'onRetry',
   ...C.WorkoutTemplateProtocol.map((f) => `WorkoutTemplateProtocol.${f}`),
   ...C.TemplateExerciseProtocol.map((f) => `TemplateExerciseProtocol.${f}`),
-  'onSaveTemplate', 'onDeleteTemplate', 'weekdaySelected',
+  'onSaveTemplate', 'onDeleteTemplate', 'WeekdayAssignmentView.selected',
 ];
 for (const f of cFields) {
   check(`adapter cho ${f}`, f in ADAPTERS);
@@ -176,7 +180,19 @@ if (LIVE) {
     todayCtl: 'apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/TodayController.swift',
     historyView: 'apps/ios/ASCND/Features/Workout/WorkoutHistoryView.swift',
     builderModels: 'apps/ios/ASCND/Features/Builder/WorkoutBuilderModels.swift',
+    builderView: 'apps/ios/ASCND/Features/Builder/WorkoutBuilderView.swift',
+    listView: 'apps/ios/ASCND/Features/Builder/TemplateListView.swift',
+    formView: 'apps/ios/ASCND/Features/Builder/TemplateFormView.swift',
+    weekdayView: 'apps/ios/ASCND/Features/Builder/WeekdayAssignmentView.swift',
   };
+  // Callbacks kỳ vọng trên từng view thật (đã verify code thật 05/10/2026).
+  // Bắt drift kiểu "đổi tên/xoá callback mà contract chưa cập nhật".
+  const viewCallbacks = [
+    ['C28 WorkoutHistoryView', BR.c28, P.historyView, ['onRetry', 'onSelect']],
+    ['C37 WorkoutBuilderView', BR.c37, P.builderView, ['onSaveTemplate', 'onDeleteTemplate', 'onRetry']],
+    ['C37 TemplateListView', BR.c37, P.listView, ['onCreate', 'onDelete', 'onSelect']],
+    ['C37 TemplateFormView', BR.c37, P.formView, ['onSave', 'onCancel', 'onAddExercise', 'onDelete']],
+  ];
   const liveChecks = [
     ['A21 HistoryEntry', BR.a21, P.history, 'HistoryEntry', A.HistoryEntry],
     ['A21 HistoryBook', BR.a21, P.history, 'HistoryBook', A.HistoryBook],
@@ -199,6 +215,22 @@ if (LIVE) {
     check(`live: ${label} đủ fields [${expected.join(',')}]`, missing.length === 0);
     if (missing.length) console.log(`   thiếu: ${missing.join(', ')}`);
   }
+  for (const [label, branch, file, expected] of viewCallbacks) {
+    let src;
+    try { src = stripComments(gitShow(branch, file)); }
+    catch { check(`live: đọc được ${label}`, false); continue; }
+    const vars = new Set([...src.matchAll(/var\s+(on[A-Za-z]+)\s*:/g)].map((m) => m[1]));
+    const missing = expected.filter((f) => !vars.has(f));
+    check(`live: ${label} đủ callbacks [${expected.join(',')}]`, missing.length === 0);
+    if (missing.length) console.log(`   thiếu: ${missing.join(', ')}`);
+  }
+  // WeekdayAssignmentView dùng @Binding, KHÔNG có callback chọn ngày.
+  try {
+    const wsrc = stripComments(gitShow(BR.c37, P.weekdayView));
+    const hasBinding = /@Binding\s+var\s+selected\s*:\s*Set<Int>/.test(wsrc);
+    const hasPhantom = /var\s+weekdaySelected\s*:/.test(wsrc);
+    check('live: WeekdayAssignmentView dùng @Binding selected (không callback)', hasBinding && !hasPhantom);
+  } catch { check('live: đọc được WeekdayAssignmentView', false); }
   // C views không được import module của A.
   for (const [label, branch, file] of [
     ['C28', BR.c28, P.historyView],
