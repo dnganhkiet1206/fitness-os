@@ -193,41 +193,47 @@ public enum WorkoutFieldFocus: Hashable {
 
 // MARK: - Preview
 
+/// Wrapper cho preview: `@FocusState.Binding` không có `.constant`,
+/// nên preview cần một @FocusState thật để truyền binding vào SetRow.
+private struct SetRowPreviewHost: View {
+  @FocusState private var field: WorkoutFieldFocus?
+  let display: SetRowDisplay
+
+  var body: some View {
+    SetRow(display: display, focusedField: $field)
+      .padding()
+  }
+}
+
 #Preview("SetRow — normal") {
-  SetRow(
+  SetRowPreviewHost(
     display: .init(
       key: "s1", ordinal: 1, total: 4,
       exerciseName: "Bench Press",
       weightText: "60", repsText: "8"
-    ),
-    focusedField: .constant(nil)
+    )
   )
-  .padding()
 }
 
 #Preview("SetRow — error") {
-  SetRow(
+  SetRowPreviewHost(
     display: .init(
       key: "s1", ordinal: 1, total: 4,
       exerciseName: "Bench Press",
       state: .error("Giá trị không hợp lệ"),
       weightText: "-5", repsText: "8",
       weightError: "Tạ phải ≥ 0"
-    ),
-    focusedField: .constant(nil)
+    )
   )
-  .padding()
 }
 
 #Preview("SetRow — completed") {
-  SetRow(
+  SetRowPreviewHost(
     display: .init(
       key: "s1", ordinal: 1, total: 4,
       exerciseName: "Bench Press",
       state: .completed,
       weightText: "60", repsText: "8"
-    ),
-    focusedField: .constant(nil)
+    )
   )
-  .padding()
 }
