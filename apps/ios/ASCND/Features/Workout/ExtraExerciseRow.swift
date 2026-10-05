@@ -53,19 +53,19 @@ public struct ExtraExerciseRow: View {
           .accessibilityHidden(true)
         Spacer()
         Stepper(
-          "\(exercise.setCount)",
+          "\(exercise.sets)",
           value: Binding(
-            get: { exercise.setCount },
+            get: { exercise.sets },
             set: { onSetCountChange(exercise.id, $0) }
           ),
           in: 1...maxExtraSets
         )
         .accessibilityLabel(String(localized: "extra.exercise.sets.label"))
-        .accessibilityValue("\(exercise.setCount)")
+        .accessibilityValue("\(exercise.sets)")
       }
 
       // Hiển thị max constraint
-      if exercise.setCount >= maxExtraSets {
+      if exercise.sets >= maxExtraSets {
         Text(
           String(
             format: String(localized: "extra.exercise.sets.max.format"),
@@ -133,7 +133,7 @@ public struct ExtraExerciseRow: View {
   ExtraExerciseRow(
     exercise: MockExtraExercise(
       name: "Incline Dumbbell Press",
-      setCount: 4,
+      sets: 4,
       state: .editing
     )
   )
@@ -144,7 +144,7 @@ public struct ExtraExerciseRow: View {
   ExtraExerciseRow(
     exercise: MockExtraExercise(
       name: "",
-      setCount: 0,
+      sets: 0,
       state: .incomplete
     )
   )
@@ -155,7 +155,7 @@ public struct ExtraExerciseRow: View {
   ExtraExerciseRow(
     exercise: MockExtraExercise(
       name: "Cable Fly",
-      setCount: 20,
+      sets: 20,
       state: .atMaxSets
     )
   )

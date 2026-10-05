@@ -25,10 +25,11 @@ public enum ExtraExerciseState: Equatable {
 }
 
 /// Protocol cho extra exercise — A20 sẽ cung cấp model thật.
+/// Khớp `AdHocExercise` của A20 (#399) và vectors D-24 (#404): `sets`.
 public protocol ExtraExerciseProtocol: Identifiable {
   var id: String { get }
   var name: String { get }
-  var setCount: Int { get }
+  var sets: Int { get }
   var state: ExtraExerciseState { get }
 }
 
@@ -36,18 +37,18 @@ public protocol ExtraExerciseProtocol: Identifiable {
 public struct MockExtraExercise: ExtraExerciseProtocol {
   public let id: String
   public let name: String
-  public let setCount: Int
+  public let sets: Int
   public let state: ExtraExerciseState
 
   public init(
     id: String = UUID().uuidString,
     name: String = "",
-    setCount: Int = 3,
+    sets: Int = 3,
     state: ExtraExerciseState = .new
   ) {
     self.id = id
     self.name = name
-    self.setCount = setCount
+    self.sets = sets
     self.state = state
   }
 }
