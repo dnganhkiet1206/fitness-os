@@ -25,6 +25,11 @@ public struct SettingsView: View {
   @State private var showSignOutConfirm = false
   @State private var selectedLanguage = "vi"
 
+  /// Version từ bundle — không hardcode.
+  private var appVersion: String {
+    Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
+  }
+
   public init(
     account: AccountSummary? = nil,
     onSignOut: @escaping () -> Void = {},
@@ -92,7 +97,7 @@ public struct SettingsView: View {
           HStack {
             Text(String(localized: "settings.version"))
             Spacer()
-            Text("1.0.0")
+            Text(appVersion)
               .foregroundStyle(DS.Color.mutedForeground.swiftUI)
               .monospacedDigit()
           }
