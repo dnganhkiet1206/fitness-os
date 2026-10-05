@@ -875,6 +875,98 @@
      }
     }
    }
+  },
+  "auth.confirmPassword": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confirm password"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhập lại mật khẩu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Confirmar contraseña"
+     }
+    }
+   }
+  },
+  "auth.error.emailInvalid": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Please enter a valid email."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Vui lòng nhập email hợp lệ."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ingresa un correo válido."
+     }
+    }
+   }
+  },
+  "auth.error.passwordShort": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Password must be at least 6 characters."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mật khẩu phải từ 6 ký tự."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "La contraseña debe tener al menos 6 caracteres."
+     }
+    }
+   }
+  },
+  "auth.error.passwordMismatch": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Passwords don't match."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mật khẩu nhập lại không khớp."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Las contraseñas no coinciden."
+     }
+    }
+   }
   }
  }
 }

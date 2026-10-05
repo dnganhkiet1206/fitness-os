@@ -26,9 +26,12 @@ struct AuthView: View {
   @State private var name = ""
   @State private var email = ""
   @State private var password = ""
+  @State private var confirmPassword = ""
   @State private var busy = false
   @State private var errorMessage: String?
   @State private var resetSent = false
+  /// Đã chạm submit — hiện lỗi field (#313).
+  @State private var attemptedSubmit = false
 
   var body: some View {
     NavigationStack {
@@ -64,19 +67,37 @@ struct AuthView: View {
                 contentType: .username,
                 keyboard: .emailAddress
               )
+              fieldError(emailError)
 
               if mode != .forgot {
                 SecureField(
                   String(localized: "auth.password"),
                   text: $password
                 )
-                .textContentType(.password)
+                .textContentType(mode == .signup ? .newPassword : .password)
                 .font(DS.TextStyle.body)
                 .padding(DS.Spacing.sm)
                 .frame(minHeight: 48)
                 .background(DS.Color.secondary.swiftUI)
                 .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
                 .accessibilityLabel(Text(String(localized: "auth.password")))
+                fieldError(passwordError)
+
+                // Nhập lại mật khẩu (chỉ signup, #313).
+                if mode == .signup {
+                  SecureField(
+                    String(localized: "auth.confirmPassword"),
+                    text: $confirmPassword
+                  )
+                  .textContentType(.newPassword)
+                  .font(DS.TextStyle.body)
+                  .padding(DS.Spacing.sm)
+                  .frame(minHeight: 48)
+                  .background(DS.Color.secondary.swiftUI)
+                  .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+                  .accessibilityLabel(Text(String(localized: "auth.confirmPassword")))
+                  fieldError(confirmError)
+                }
               }
 
               if let errorMessage {
@@ -185,12 +206,47 @@ struct AuthView: View {
   private var canSubmit: Bool {
     switch mode {
     case .signin:
-      return !email.isEmpty && !password.isEmpty
+      return emailError == nil && passwordError == nil
+        && !email.isEmpty && !password.isEmpty
     case .signup:
-      return !name.isEmpty && !email.isEmpty && !password.isEmpty
+      return emailError == nil && passwordError == nil && confirmError == nil
+        && !name.isEmpty && !email.isEmpty && !password.isEmpty
+        && !confirmPassword.isEmpty
     case .forgot:
-      return !email.isEmpty
+      return emailError == nil && !email.isEmpty
     }
+  }
+
+  /// Email hợp lệ? (format cơ bản — server validate kỹ, #313).
+  private var emailError: String? {
+    guard !email.isEmpty else { return nil }
+    // Format cơ bản: có @ và dấu chấm sau @.
+    let parts = email.split(separator: "@")
+    guard parts.count == 2,
+          parts[1].contains("."),
+          !parts[0].isEmpty,
+          !parts[1].isEmpty else {
+      return String(localized: "auth.error.emailInvalid")
+    }
+    return nil
+  }
+
+  /// Mật khẩu đủ mạnh? (tối thiểu 6 ký tự — theo Supabase default, #313).
+  private var passwordError: String? {
+    guard mode != .forgot, !password.isEmpty else { return nil }
+    guard password.count >= 6 else {
+      return String(localized: "auth.error.passwordShort")
+    }
+    return nil
+  }
+
+  /// Nhập lại khớp? (chỉ signup, #313).
+  private var confirmError: String? {
+    guard mode == .signup, !confirmPassword.isEmpty else { return nil }
+    guard confirmPassword == password else {
+      return String(localized: "auth.error.passwordMismatch")
+    }
+    return nil
   }
 
   private func authField(
@@ -325,4 +381,27 @@ struct AuthView: View {
   AuthView()
     .environment(AppServices())
     .dynamicTypeSize(.accessibility3)
+}
+
+/// Modifier hiện lỗi dưới field (#313).
+private struct FieldErrorModifier: ViewModifier {
+  let message: String?
+
+  func body(content: Content) -> some View {
+    VStack(alignment: .leading, spacing: 4) {
+      content
+      if let message {
+        Text(message)
+          .font(DS.TextStyle.caption)
+          .foregroundStyle(DS.Color.destructive.swiftUI)
+          .accessibilityLabel(Text(message))
+      }
+    }
+  }
+}
+
+extension View {
+  fileprivate func fieldError(_ message: String?) -> some View {
+    modifier(FieldErrorModifier(message: message))
+  }
 }
