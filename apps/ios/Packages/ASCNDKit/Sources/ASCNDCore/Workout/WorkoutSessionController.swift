@@ -233,10 +233,12 @@ public final class WorkoutSessionController {
     return await persist()
   }
 
+  /// Ô tạ lọc qua `decText` như `day-plan.tsx:1979`: máy tiếng Việt gõ `71,5`,
+  /// lưu nguyên thì `performed()` đọc ra 0 kg — mất tạ mà không báo gì.
   @discardableResult
   public func setWeightText(_ text: String, for key: String) async -> Bool {
     guard editable(key), row(key) != nil else { return false }
-    progress.weightText[key] = text
+    progress.weightText[key] = NumberInput.decimal(text)
     return await persist()
   }
 
