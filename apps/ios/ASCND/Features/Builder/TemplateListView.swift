@@ -29,9 +29,13 @@ public struct TemplateListView<Template: WorkoutTemplateProtocol>: View {
       } else {
         List {
           ForEach(templates) { template in
-            TemplateRowView(template: template)
-              .onTapGesture { onSelect(template) }
-              .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            Button {
+              onSelect(template)
+            } label: {
+              TemplateRowView(template: template)
+            }
+            .buttonStyle(.plain)
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 Button(role: .destructive) {
                   onDelete(template)
                 } label: {
@@ -95,13 +99,9 @@ public struct TemplateRowView<Template: WorkoutTemplateProtocol>: View {
       Text(template.name)
         .font(.headline)
       HStack {
-        Text(
-          String(
-            localized: "builder.exercise.count \(template.exercises.count)"
-          )
-        )
-        .font(.caption)
-        .foregroundStyle(.secondary)
+        Text(exerciseCountText)
+          .font(.caption)
+          .foregroundStyle(.secondary)
         if !template.assignedWeekdays.isEmpty {
           Text(weekdaySummary)
             .font(.caption)
@@ -109,8 +109,16 @@ public struct TemplateRowView<Template: WorkoutTemplateProtocol>: View {
         }
       }
     }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel("\(template.name), \(template.exercises.count) exercises")
+  }
+
+  /// Số bài tập đã localize — "1 exercise" / "N exercises" (en/vi/es).
+  /// Row giữ thuần presentation; Button bọc ngoài cung cấp semantics trợ năng.
+  private var exerciseCountText: String {
+    let count = template.exercises.count
+    if count == 1 {
+      return String(localized: "builder.exercise.count.one")
+    }
+    return String(localized: "builder.exercise.count.other \(count)")
   }
 
   private var weekdaySummary: String {

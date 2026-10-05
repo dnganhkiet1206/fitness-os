@@ -2,6 +2,16 @@
 #if canImport(SwiftUI)
 @_exported import SwiftUI
 #endif
+#if canImport(UIKit)
+import UIKit
+#endif
+
+/// Thông báo VoiceOver khi trạng thái lưu/lỗi thay đổi mà focus không tự di chuyển.
+fileprivate func announceForVoiceOver(_ message: String) {
+  #if canImport(UIKit)
+    UIAccessibility.post(notification: .announcement, argument: message)
+  #endif
+}
 
 /// Form tạo hoặc sửa template.
 public struct TemplateFormView: View {
@@ -143,6 +153,22 @@ public struct TemplateFormView: View {
       Text(String(localized: "builder.delete.confirm.message"))
     }
     .disabled(isSaving)
+    // VoiceOver: overlay lỗi/lưu xuất hiện mà focus không di chuyển → thông báo rõ.
+    .onChange(of: isSaving) { _, newValue in
+      if newValue {
+        announceForVoiceOver(String(localized: "builder.saving"))
+      }
+    }
+    .onChange(of: saveError) { _, newValue in
+      if let message = newValue {
+        announceForVoiceOver(message)
+      }
+    }
+    .onChange(of: validationError) { _, newValue in
+      if let message = newValue {
+        announceForVoiceOver(message)
+      }
+    }
   }
 
   private var savingOverlay: some View {
@@ -153,6 +179,8 @@ public struct TemplateFormView: View {
         .padding()
         .background(.regularMaterial)
         .cornerRadius(12)
+        // Dynamic Type lớn: cho card cao thêm thay vì cắt chữ.
+        .fixedSize(horizontal: false, vertical: true)
     }
     .accessibilityElement(children: .combine)
   }

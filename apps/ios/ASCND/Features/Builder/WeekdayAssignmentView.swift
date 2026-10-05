@@ -12,16 +12,19 @@ public struct WeekdayAssignmentView: View {
   }
 
   public var body: some View {
-    HStack(spacing: 8) {
-      ForEach(1...7, id: \.self) { day in
-        WeekdayButton(
-          day: day,
-          isSelected: selected.contains(day)
-        ) {
-          if selected.contains(day) {
-            selected.remove(day)
-          } else {
-            selected.insert(day)
+    // Scroll ngang: 7 nút × 44pt không vừa màn hình hẹp (SE) ở mọi cỡ chữ.
+    ScrollView(.horizontal, showsIndicators: false) {
+      HStack(spacing: 4) {
+        ForEach(1...7, id: \.self) { day in
+          WeekdayButton(
+            day: day,
+            isSelected: selected.contains(day)
+          ) {
+            if selected.contains(day) {
+              selected.remove(day)
+            } else {
+              selected.insert(day)
+            }
           }
         }
       }
@@ -42,11 +45,15 @@ private struct WeekdayButton: View {
       Text(shortName)
         .font(.caption)
         .fontWeight(.medium)
+        .lineLimit(1)
+        .minimumScaleFactor(0.75)
         .frame(width: 36, height: 36)
         .background(isSelected ? Color.accentColor : Color.secondary.opacity(0.2))
         .foregroundStyle(isSelected ? .white : .primary)
         .clipShape(Circle())
     }
+    // Hit target 44×44 theo HIG; vòng tròn hiển thị giữ 36pt.
+    .frame(width: 44, height: 44)
     .accessibilityLabel(fullName)
     .accessibilityValue(
       isSelected
