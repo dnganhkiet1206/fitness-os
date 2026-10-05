@@ -139,3 +139,15 @@ extension InMemoryWorkoutStore: OutboxPersistence {
     return outbox.count
   }
 }
+
+/// Lệnh sửa kế hoạch (#401) đi cùng hàng đợi — như `OutboxStore`.
+extension InMemoryWorkoutStore: PlanWriteStore {
+  public func enqueue(_ entries: [OutboxEntry]) async throws {
+    try await enter()
+    for e in entries where !outbox.contains(where: { $0.id == e.id }) { outbox.append(e) }
+  }
+
+  public func pending(userId: String) async throws -> [OutboxEntry] {
+    outbox.filter { $0.userId == userId }
+  }
+}
