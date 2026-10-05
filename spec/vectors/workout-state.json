@@ -252,7 +252,7 @@
   "rule": "LT-6"
  },
  {
-  "rule": "WS-2f",
+  "rule": "WS-2h",
   "input": {
    "reps": "45.5s"
   },
@@ -272,7 +272,7 @@
   }
  },
  {
-  "rule": "WS-8e",
+  "rule": "WS-8g",
   "input": {
    "set": {
     "reps": 8,
