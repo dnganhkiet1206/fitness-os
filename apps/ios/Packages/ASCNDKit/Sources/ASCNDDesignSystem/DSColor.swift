@@ -5,7 +5,6 @@
 //
 // Mỗi token có hai biến thể light/dark, chọn theo trait của hệ thống.
 #if canImport(SwiftUI)
-#if canImport(SwiftUI)
 @_exported import SwiftUI
 
 public extension DS {
