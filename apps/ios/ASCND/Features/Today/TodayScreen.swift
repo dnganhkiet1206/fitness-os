@@ -10,21 +10,29 @@ import ASCNDDesignSystem
 import SwiftUI
 
 /// Container production: nối TodayController thật vào TodayView.
+///
+/// A8b (#364): WorkoutFlow dựng một lần mỗi phiên và đã gọi `today.load()`,
+/// nên TodayScreen KHÔNG tự load. Refresh qua `onRefresh` để flow làm mới
+/// cả buổi tập, bảng kỷ lục và "lần trước".
 public struct TodayScreen: View {
   @Bindable var controller: TodayController
-  /// Bắt đầu buổi tập — A8 (#272) nối navigation thật.
+  /// Bắt đầu buổi tập — A8b mở WorkoutView với flow.session.
   var onStartWorkout: () -> Void
   /// Chọn plan khác.
   var onChoosePlan: () -> Void
+  /// Làm mới — A8b truyền `{ await flow.refresh() }`.
+  var onRefresh: () async -> Void
 
   public init(
     controller: TodayController,
     onStartWorkout: @escaping () -> Void = {},
-    onChoosePlan: @escaping () -> Void = {}
+    onChoosePlan: @escaping () -> Void = {},
+    onRefresh: @escaping () async -> Void = {}
   ) {
     self.controller = controller
     self.onStartWorkout = onStartWorkout
     self.onChoosePlan = onChoosePlan
+    self.onRefresh = onRefresh
   }
 
   public var body: some View {
@@ -34,8 +42,9 @@ public struct TodayScreen: View {
         DSLoadingView(message: String(localized: "today.loading"))
       } else if let error = controller.refreshError, controller.plan == nil {
         // Lỗi và chưa có cache.
+        // TODO (#383): dùng `failure: RefreshFailure?` thay cho refreshError.
         DSErrorView(message: error) {
-          Task { await controller.refresh() }
+          Task { await onRefresh() }
         }
       } else if let display = todayDisplay {
         // Có dữ liệu (cache hoặc server).
@@ -51,25 +60,27 @@ public struct TodayScreen: View {
           )
         }
         .refreshable {
-          await controller.refresh()
+          await onRefresh()
         }
       } else {
         DSErrorView(message: String(localized: "async.error.generic")) {
-          Task { await controller.refresh() }
+          Task { await onRefresh() }
         }
       }
     }
-    .task {
-      await controller.load()
-    }
+    // KHÔNG .task { await controller.load() } — WorkoutFlow đã gọi (#364).
   }
 
   /// Map TodayController → TodayDisplay (không duplicate dayStateOf).
   private var todayDisplay: TodayDisplay? {
     guard let plan = controller.plan else { return nil }
-    let date = Date(
-      timeIntervalSince1970: TimeInterval(plan.date.daysSinceEpoch) * 86_400
-    )
+    // Dựng Date từ components theo Calendar.current — không lệch múi giờ (#364).
+    let calendar = Calendar.current
+    // LocalDate không expose year/month/day trực tiếp; dùng daysSinceEpoch
+    // quy về Date rồi lấy components. (A có thể thêm helper LocalDate→Date.)
+    let utcDate = Date(timeIntervalSince1970: TimeInterval(plan.date.daysSinceEpoch) * 86_400)
+    let comps = calendar.dateComponents([.year, .month, .day], from: utcDate)
+    let date = calendar.date(from: comps) ?? utcDate
     return TodayDisplay(
       date: date,
       status: mapStatus(plan.status),
