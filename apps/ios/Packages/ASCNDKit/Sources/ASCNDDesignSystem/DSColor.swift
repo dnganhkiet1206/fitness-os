@@ -58,11 +58,18 @@ public struct DSColor: Sendable {
   let dark: (Int, Int, Int)
 
   public var swiftUI: SwiftUI.Color {
+    #if os(iOS)
+    // Dynamic provider là API của UIKit — chỉ có trên iOS.
     SwiftUI.Color(UIColor { traits in
       let rgb = traits.userInterfaceStyle == .dark ? self.dark : self.light
       return UIColor(red: CGFloat(rgb.0) / 255, green: CGFloat(rgb.1) / 255,
                      blue: CGFloat(rgb.2) / 255, alpha: 1)
     })
+    #else
+    // macOS (preview/CI): biến thể light tĩnh — UIColor không tồn tại trên macOS.
+    SwiftUI.Color(red: Double(light.0) / 255, green: Double(light.1) / 255,
+                  blue: Double(light.2) / 255)
+    #endif
   }
 }
 #endif
