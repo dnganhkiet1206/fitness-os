@@ -142,6 +142,11 @@ public final class ReminderCenter {
   }
 
   /// Lưu + đặt lại; xin quyền lần đầu có cái bật.
+  ///
+  /// Kế hoạch dựng từ `prefs` HIỆN TẠI sau khi chờ quyền, không từ `next`:
+  /// `write(next)` đã đặt `prefs = next` trước đó (#457 — kế hoạch không cũ),
+  /// và nếu trong lúc hộp xin quyền đang mở người dùng sửa thêm, lượt này phải
+  /// đặt theo lần sửa MỚI NHẤT chứ không theo `next` đã cũ.
   private func apply(_ next: ReminderPrefs) async {
     write(next)
     if next.anyEnabled && !permission { permission = await scheduler.requestPermission() }
@@ -194,17 +199,39 @@ public final class ReminderCenter {
 
   // MARK: - Giờ thông minh (P1-12)
 
-  /// Áp giờ suy từ hồ sơ MỘT LẦN cho mỗi tài khoản. `bedtime` / `waketime` chỉ
-  /// truyền khi người dùng đã tự lưu (`sleep_target_*_set`). Trả về `true` nếu
-  /// có giờ được dời (và lịch đã đặt lại).
+  /// Giờ ngủ / dậy mà người dùng đã TỰ lưu, đọc từ hồ sơ ĐÃ NẠP: mỗi giờ
+  /// chỉ có khi cờ `sleep_target_*_set` của nó bật (không bao giờ giờ mặc
+  /// định của DB).
+  public struct SleepSchedule: Sendable, Hashable {
+    public let bedtime: String?
+    public let waketime: String?
+    public init(bedtime: String?, waketime: String?) {
+      self.bedtime = bedtime
+      self.waketime = waketime
+    }
+  }
+
+  /// Áp giờ suy từ hồ sơ MỘT LẦN cho mỗi tài khoản (P1-12, `use-reminders.ts:273`).
+  /// Trả về `true` nếu có giờ được dời (và lịch đã đặt lại).
+  ///
+  /// `schedule == nil` = hồ sơ CHƯA nạp: không làm gì, không chốt (#457 —
+  /// trước đây gọi sớm là chốt vĩnh viễn, lần gọi đúng sau đó bị bỏ). RN chỉ
+  /// chạy khi `loaded && profile`. Khi hồ sơ đã nạp thì chốt như RN, kể cả
+  /// khi không dời gì (chưa tự lưu giờ nào, giờ không đọc được, hay người
+  /// dùng đã tự chọn giờ) — một giờ người dùng chọn không bao giờ bị dời.
+  ///
+  /// Thứ tự: ghi cài đặt TRƯỚC rồi mới chốt — app chết giữa chừng thì lần sau
+  /// chạy lại, gặp giờ đã dời (không còn mặc định gõ tay) và chỉ chốt. Đặt
+  /// lịch hỏng không gỡ chốt: cài đặt đã lưu, chữ ký chưa ghi, `sync` kế tiếp
+  /// đặt lại.
   @discardableResult
-  public func applySmartTiming(bedtime: String?, waketime: String?) async -> Bool {
-    guard store.string(forKey: Self.smartTimeKey) == nil else { return false }
+  public func applySmartTiming(_ schedule: SleepSchedule?) async -> Bool {
+    guard let schedule, store.string(forKey: Self.smartTimeKey) == nil else { return false }
+    let next = schedule.bedtime != nil || schedule.waketime != nil
+      ? ReminderTiming.smartDefaults(prefs, bedtime: schedule.bedtime, waketime: schedule.waketime) : nil
+    if let next { write(next) }
     store.set("1", forKey: Self.smartTimeKey)
-    guard bedtime != nil || waketime != nil,
-      let next = ReminderTiming.smartDefaults(prefs, bedtime: bedtime, waketime: waketime)
-    else { return false }
-    write(next)
+    guard next != nil else { return false }
     await sync(context)
     return true
   }

@@ -88,6 +88,13 @@ public enum ReadCacheNamespace {
 /// Cửa DUY NHẤT vào bảng `read_cache`: khoá (người, không gian tên), qua chốt
 /// tài khoản. Mọi cache theo người dùng dùng nó thay vì tự viết SQL — chín bản
 /// chép cùng một câu lệnh là chín chỗ có thể quên lọc `userId`.
+///
+/// Mọi lối — đọc, ghi, XOÁ — hỏi chốt TRONG giao dịch của chính nó (#459): hỏi
+/// trước rồi mới xếp hàng chờ SQLite thì lượt ghi của A đã qua cửa có thể nằm
+/// chờ qua cả đăng xuất lẫn lượt dọn, rồi ghi xuống sau đó. Trong giao dịch,
+/// nó và lượt dọn (cũng là một giao dịch) xếp hàng nối nhau: hoặc nó chạy
+/// trước và bị dọn, hoặc chạy sau và thấy chốt đã đóng. Xoá xuyên tài khoản
+/// chỉ có ở `ReadCacheCleanup`.
 struct ReadCacheTable: Sendable {
   let db: DatabaseQueue
   let accounts: AccountScope
@@ -99,9 +106,10 @@ struct ReadCacheTable: Sendable {
 
   /// JSON thô của (người, kind); `nil` khi không có hoặc chốt không cho đọc.
   func string(userId: String, kind: String) async throws -> String? {
-    guard accounts.allows(userId) else { return nil }
-    return try await db.read { db in
-      try String.fetchOne(db, sql: "SELECT json FROM read_cache WHERE userId = ? AND kind = ?", arguments: [userId, kind])
+    try await db.read { [accounts] db in
+      guard accounts.allows(userId) else { return nil }
+      return try String.fetchOne(
+        db, sql: "SELECT json FROM read_cache WHERE userId = ? AND kind = ?", arguments: [userId, kind])
     }
   }
 
@@ -117,8 +125,8 @@ struct ReadCacheTable: Sendable {
   /// muộn của người đã rời đi không có gì để báo cho ai.
   func put(_ json: String, userId: String, kind: String) async throws {
     assert(ReadCacheNamespace.isRegistered(kind), "kind chưa khai báo trong ReadCacheNamespace: \(kind)")
-    guard accounts.allows(userId) else { return }
-    try await db.write { db in
+    try await db.write { [accounts] db in
+      guard accounts.allows(userId) else { return }
       try db.execute(
         sql: """
           INSERT INTO read_cache (userId, kind, json) VALUES (?, ?, ?)
@@ -132,9 +140,43 @@ struct ReadCacheTable: Sendable {
     try await put(try OutboxStore.json(value), userId: userId, kind: kind)
   }
 
+  /// Xoá (người, kind) — chỉ của người chốt cho phép (#459). Không thì bỏ, như
+  /// `put`: A không xoá được của B, lúc không ai đăng nhập không xoá được của ai.
   func delete(userId: String, kind: String) async throws {
-    try await db.write { db in
+    try await db.write { [accounts] db in
+      guard accounts.allows(userId) else { return }
       try db.execute(sql: "DELETE FROM read_cache WHERE userId = ? AND kind = ?", arguments: [userId, kind])
+    }
+  }
+}
+
+/// Dọn `read_cache` XUYÊN tài khoản — chỉ cho vòng đời phiên (`AppServices`):
+/// hết phiên thì bỏ hết, phiên mới thì bỏ của mọi người khác. Không đi qua
+/// chốt, nên không nằm trên `ReadCacheTable` — một cache thường không có lý do
+/// gì để xoá hàng của người khác (#459).
+public struct ReadCacheCleanup: Sendable {
+  private let db: DatabaseQueue
+
+  public init(_ database: ASCNDDatabase) {
+    db = database.queue
+  }
+
+  /// Bỏ mọi hàng của mọi người. Trả về số hàng bỏ.
+  @discardableResult
+  public func forgetEveryone() async throws -> Int {
+    try await db.write { db in
+      try db.execute(sql: "DELETE FROM read_cache")
+      return db.changesCount
+    }
+  }
+
+  /// Bỏ mọi hàng của người KHÁC `userId` — so không phân biệt hoa thường,
+  /// như chốt (`AccountScope.allows`). Trả về số hàng bỏ.
+  @discardableResult
+  public func forgetEveryone(except userId: String) async throws -> Int {
+    try await db.write { db in
+      try db.execute(sql: "DELETE FROM read_cache WHERE lower(userId) != lower(?)", arguments: [userId])
+      return db.changesCount
     }
   }
 }

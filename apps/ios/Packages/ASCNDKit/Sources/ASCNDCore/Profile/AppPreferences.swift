@@ -36,7 +36,9 @@ public final class UserDefaultsStore: KeyValueStore, @unchecked Sendable {
 ///   linh vật bật (`ascnd_mascot_enabled`, "1"/"0", mặc định bật), linh vật
 ///   đồng hành (`ascnd_mascot_companion`, mặc định bật), linh vật đã chọn
 ///   (`ascnd_mascot_selected`, mặc định `koa`);
-/// - giá trị lạ đã lưu = như chưa lưu (mặc định), không bao giờ ném.
+/// - giá trị lạ đã lưu không bao giờ ném: ngôn ngữ / theme / đơn vị / linh vật
+///   lạ = như chưa lưu (mặc định); cờ linh vật lưu khác "1" là TẮT, như RN
+///   (`e != null ? e === '1' : true`).
 /// Đơn vị cân / chiều cao KHÔNG ở đây: chúng là cột hồ sơ (`useUnits`, #425).
 /// Khoá ứng dụng (`ascnd_app_lock`) KHÔNG port ở đây: ngữ nghĩa bảo mật của nó
 /// trên iOS (Face ID, lúc khoá) chưa được chốt — xem PR.
@@ -54,6 +56,10 @@ public final class AppPreferences {
   public static let mascotCompanionKey = "ascnd_mascot_companion"
   public static let mascotSelectedKey = "ascnd_mascot_selected"
   public static let defaultMascot = "koa"
+  /// Linh vật có thật — `MASCOTS` của `lib/mascots.ts` @ fac9ac2, đúng thứ tự.
+  /// Id ngoài danh sách (bản cũ, tệp hỏng, gõ tay) là `koa`: RN lưu nguyên
+  /// chuỗi nhưng `getMascot` trả `MASCOTS[0]` cho id lạ (#458).
+  public static let mascotIds = ["koa", "blaze", "swift", "titan", "drago", "nova"]
 
   /// Khoá theo máy: đăng xuất KHÔNG xoá (`DEVICE_KEYS`).
   public static let deviceKeys = [langKey, volumeUnitKey, "ascnd_app_lock", themeKey]
@@ -92,8 +98,11 @@ public final class AppPreferences {
   }
 
   /// `deviceDefault` của đơn vị nước: vùng của locale (`en-US`, `en_US`).
+  /// Định danh của iOS có thể mang từ khoá sau `@` (`en_US@calendar=…`) mà
+  /// thẻ BCP-47 của `Intl` bên RN không có — bỏ trước khi tách.
   public static func deviceVolumeUnit(_ locale: String) -> VolumeUnit {
-    let parts = locale.split(whereSeparator: { $0 == "-" || $0 == "_" })
+    let tag = locale.split(separator: "@", maxSplits: 1, omittingEmptySubsequences: false).first ?? ""
+    let parts = tag.split(whereSeparator: { $0 == "-" || $0 == "_" })
     let region = parts.count > 1 ? parts[1].uppercased() : ""
     return ["US", "LR", "MM"].contains(region) ? .oz : .ml
   }
@@ -145,9 +154,19 @@ public final class AppPreferences {
     store.set(on ? "1" : "0", forKey: Self.mascotCompanionKey)
   }
 
-  public func selectMascot(_ id: String) {
-    mascotSelected = id.isEmpty ? Self.defaultMascot : id
-    store.set(mascotSelected, forKey: Self.mascotSelectedKey)
+  /// Chọn linh vật. Id lạ bị từ chối (`false`): không đổi gì, không lưu gì.
+  @discardableResult
+  public func selectMascot(_ id: String) -> Bool {
+    guard Self.mascotIds.contains(id) else { return false }
+    mascotSelected = id
+    store.set(id, forKey: Self.mascotSelectedKey)
+    return true
+  }
+
+  /// Id đã lưu → linh vật dùng được: khớp đúng (phân biệt hoa thường, không
+  /// cắt khoảng trắng — như `getMascot`), không thì mặc định.
+  public static func mascotId(_ stored: String?) -> String {
+    stored.flatMap { mascotIds.contains($0) ? $0 : nil } ?? defaultMascot
   }
 
   /// Phiên kết thúc (`clearUserScopedStorage` + `onUserScopedReset`): xoá khoá
@@ -163,6 +182,6 @@ public final class AppPreferences {
     let e = store.string(forKey: mascotEnabledKey)
     let c = store.string(forKey: mascotCompanionKey)
     let s = store.string(forKey: mascotSelectedKey)
-    return (e.map { $0 == "1" } ?? true, c.map { $0 == "1" } ?? true, (s?.isEmpty ?? true) ? defaultMascot : s!)
+    return (e.map { $0 == "1" } ?? true, c.map { $0 == "1" } ?? true, mascotId(s))
   }
 }

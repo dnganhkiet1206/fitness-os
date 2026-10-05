@@ -20,6 +20,12 @@ public enum PasswordRules {
   /// Độ dài như JS đếm (`"😀".length == 2`) — để cùng một mật khẩu qua cùng
   /// một luật ở cả hai app.
   public static func length(_ s: String) -> Int { s.utf16.count }
+
+  /// `a === b` của JS: so từng đơn vị UTF-16. `==` của Swift coi hai chuỗi
+  /// tương đương chuẩn hoá là bằng ("é" dựng sẵn = "e" + dấu tổ hợp), nên hai
+  /// ô gõ khác byte vẫn "trùng" và mật khẩu gửi đi không phải thứ người dùng
+  /// gõ lại ở ô thứ hai.
+  public static func same(_ a: String, _ b: String) -> Bool { a.utf16.elementsEqual(b.utf16) }
 }
 
 /// Vì sao đổi mật khẩu không xong, theo thứ người dùng làm được với nó.
@@ -71,10 +77,11 @@ public final class PasswordChangeController {
   }
 
   /// Ô nhập lại có chữ mà không trùng (`mismatch`).
-  public var mismatch: Bool { !confirmation.isEmpty && newPassword != confirmation }
+  public var mismatch: Bool { !confirmation.isEmpty && !PasswordRules.same(newPassword, confirmation) }
 
   public var canSave: Bool {
-    PasswordRules.length(newPassword) >= PasswordRules.minLength && newPassword == confirmation && !saving && !saved
+    PasswordRules.length(newPassword) >= PasswordRules.minLength && PasswordRules.same(newPassword, confirmation)
+      && !saving && !saved
   }
 
   /// Gửi. `true` khi đã đổi — màn quay lại và báo "đã đổi".
