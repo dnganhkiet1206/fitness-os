@@ -9,6 +9,8 @@ import GRDB
 /// một migration đã phát hành — chỉ thêm cái mới.
 public final class ASCNDDatabase: Sendable {
   let queue: DatabaseQueue
+  /// Tài khoản mà các cache theo người dùng đang phục vụ (#431).
+  public let accounts = AccountScope()
 
   public init(path: String) throws {
     queue = try DatabaseQueue(path: path)
