@@ -211,6 +211,7 @@ export function WorkoutPickerSheet({
             </View>
             <PressScale
               style={styles.closeBtn}
+              hitSlop={4}
               accessibilityRole="button"
               accessibilityLabel={i18n.nCancel}
               onPress={onClose}>
