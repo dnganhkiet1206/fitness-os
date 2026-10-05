@@ -472,6 +472,13 @@ const STEPS = [
     `src/` ở gốc, nên lý do ấy đã hết đúng trong khi câu chữ thì còn.
   */
   ['khoá mồ côi', 'node', ['tools/i18n-orphans.mjs']],
+  /*
+    #370: ma trận fixture từng chỉ là Markdown liệt kê chuỗi mẫu — không gì
+    chạy, không gì đỏ được. Cổng này biến tools/fixture-matrix-data.mjs thành
+    assert: khoá đủ 3 locale, plural có bộ chọn và render đúng dạng, label a11y
+    mang nội dung động, fixture "dài" đạt ngưỡng cả 3 locale, data deterministic.
+  */
+  ['ma trận fixture', 'node', ['tools/fixture-matrix.mjs']],
   ['chuyển cảnh onboarding', 'node', ['tools/onboarding-transition.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   /*
