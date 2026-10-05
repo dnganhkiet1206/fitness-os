@@ -60,6 +60,7 @@ private struct LabSession: View {
   @Environment(\.scenePhase) private var scenePhase
   @State private var today: TodayController?
   @State private var records: RecordBook?
+  @State private var performance: PerformanceBook?
   @State private var controller: WorkoutSessionController?
   @State private var useSample = false
 
@@ -83,15 +84,18 @@ private struct LabSession: View {
         }
       }
       if let controller {
-        LabWorkout(c: controller)
+        LabWorkout(c: controller, performance: performance)
       }
     }
     .task(id: user.userId) {
       let t = services.makeToday(userId: user.userId)
       let book = services.makeRecordBook(userId: user.userId)
+      let perf = services.makePerformanceBook(userId: user.userId)
       today = t
       records = book
+      performance = perf
       await book.load()
+      await perf.load()
       await t.load()
       install()
     }
@@ -127,8 +131,11 @@ private struct LabSession: View {
       rest.handle(event, target: next.map { RestTarget(exerciseName: $0.exerciseName, setNumber: $0.ordinal, totalSets: $0.of) })
     }
     let book = records
+    let perf = performance
     let onEnqueued: @MainActor (OutboxEntry) -> Void = { entry in
       sync.kick()
+      // Buổi vừa chốt thành "lần trước" ngay, không đợi sync.
+      if let perf { Task { await perf.absorb(row: entry.payload) } }
       // Buổi vừa chốt thành lịch sử kỷ lục — buổi sau không nổ lại cùng kỷ lục.
       if let book { Task { await book.absorb(setsJSON: entry.payload["sets"]) } }
     }
@@ -151,6 +158,7 @@ private struct LabSession: View {
 
 private struct LabWorkout: View {
   let c: WorkoutSessionController
+  let performance: PerformanceBook?
   @Environment(AppServices.self) private var services
   @Environment(RestTimerController.self) private var rest
   @State private var finishError: String?
@@ -186,6 +194,10 @@ private struct LabWorkout: View {
 
       Section {
         ForEach(c.plan.rows) { row in
+          if row.ordinal == 1, let last = performance?.last(for: row.exerciseName), let d = last.display {
+            Text(verbatim: "Last (\(last.date)): \(Self.describe(d))")
+              .font(.caption).foregroundStyle(.secondary)
+          }
           LabSetRow(c: c, row: row)
         }
       }
@@ -257,6 +269,16 @@ private struct LabWorkout: View {
           Text(verbatim: "Sign out (drops outbox, #241)")
         }
       }
+    }
+  }
+}
+
+extension LabWorkout {
+  static func describe(_ d: LastPerformance.Display) -> String {
+    switch d {
+    case .hold(let s): "\(s)s"
+    case .bodyweight(let r): "\(r) reps × bodyweight"
+    case .loaded(let w, let r): "\(w.formatted()) kg × \(r)"
     }
   }
 }
