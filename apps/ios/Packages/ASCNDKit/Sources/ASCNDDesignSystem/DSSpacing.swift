@@ -4,7 +4,7 @@
 import SwiftUI
 
 public extension DS {
-  enum Spacing {
+  public enum Spacing {
     public static let xs: CGFloat = 4
     public static let sm: CGFloat = 8
     public static let md: CGFloat = 16
@@ -14,7 +14,7 @@ public extension DS {
     public static let xl: CGFloat = 32
   }
 
-  enum Radius {
+  public enum Radius {
     public static let sm: CGFloat = 12
     public static let md: CGFloat = 16
     public static let lg: CGFloat = 20
