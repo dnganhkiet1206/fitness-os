@@ -48,8 +48,12 @@ private struct SignedInScope<Content: View>: View {
     .task {
       let f = services.makeWorkoutFlow(userId: userId, rest: rest)
       flow = f
+      await services.forgetOtherAccounts(keeping: userId)
       await f.start()
     }
+    // Phiên kết thúc (đăng xuất, đổi tài khoản → `.id` đổi): huỷ lượt làm mới
+    // đang bay, để nó không ghi cache của người vừa rời đi.
+    .onDisappear { flow?.close() }
     .onChange(of: scenePhase) { _, phase in
       // Ra tiền cảnh: qua nửa đêm thì "hôm nay" đổi; dữ liệu cũ hơn một phút
       // thì làm mới (`focusManager` của baseline).

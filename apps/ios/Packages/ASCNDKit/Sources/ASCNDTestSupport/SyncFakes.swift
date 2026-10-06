@@ -114,7 +114,10 @@ public actor InMemoryOutboxStore: OutboxPersistence {
   }
 
   public func dropAllOnSignOut() async throws -> Int {
-    defer { pending = [] }
+    defer {
+      pending = []
+      dead = []
+    }
     return pending.count
   }
 }

@@ -25,6 +25,8 @@ private actor Templates: TemplateSource, TemplateCache {
   func fetch(userId: String) async throws -> TemplateSnapshot {
     fetches += 1
     if holding { await withCheckedContinuation { parked.append($0) } }
+    // Như URLSession: task bị huỷ thì truy vấn ném, không trả dữ liệu.
+    try Task.checkCancellation()
     if down { throw URLError(.notConnectedToInternet) }
     return snapshot
   }
@@ -339,6 +341,42 @@ struct WorkoutFlowTests {
     await h.templates.set(TemplateSnapshot(routine: [], templates: [], fetchedAt: EpochMillis(2)))
     await h.flow.refresh()
     #expect(h.flow.session === s)
+  }
+
+  /// #335: phiên kết thúc khi lượt làm mới còn đang bay → lượt ấy bị huỷ,
+  /// không ghi kế hoạch của người vừa rời đi vào cache; flow đã đóng không
+  /// làm mới nữa.
+  @Test func closeCancelsInFlightRefresh() async {
+    let h = Harness()
+    await h.flow.start()
+    let before = await h.templates.cached
+    await h.templates.set(snap(template(sets: 3)))
+    await h.templates.hold()
+    let refresh = Task { await h.flow.refresh() }
+    while await h.templates.waiting == 0 { await Task.yield() }
+    h.flow.close()
+    await h.templates.release()
+    await refresh.value
+    #expect(await h.templates.cached == before)
+
+    h.clock.advance(120_000)
+    await h.flow.becameActive()
+    await h.flow.reconnected()
+    #expect(await h.templates.fetches == 2, "đã đóng thì không truy vấn nữa")
+  }
+
+  /// Phiên kết thúc khi lượt tải ĐẦU TIÊN còn bay: `close()` huỷ cả lượt ấy
+  /// (nó chạy trong `refreshing`, không còn là con của `.task` của SwiftUI).
+  @Test func closeCancelsTheFirstLoad() async {
+    let h = Harness()
+    await h.templates.hold()
+    async let start: Void = h.flow.start()
+    while await h.templates.waiting == 0 { await Task.yield() }
+    h.flow.close()
+    await h.templates.release()
+    await start
+    #expect(await h.templates.cached == nil, "không ghi kế hoạch của phiên đã đóng")
+    #expect(h.flow.session == nil)
   }
 
   @Test func finishWithoutSessionRefuses() async {
