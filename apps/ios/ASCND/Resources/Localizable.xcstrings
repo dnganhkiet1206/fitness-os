@@ -416,37 +416,254 @@
     }
    }
   },
-<<<<<<< HEAD
-  "builder.create": {
-=======
   "ds.empty.title": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Create"
-=======
       "value": "Nothing here yet"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Tạo mới"
-=======
       "value": "Chưa có gì ở đây"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
+      "value": "Nada aquí todavía"
+     }
+    }
+   }
+  },
+  "ds.empty.message": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "When there's something to show, it'll appear here."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khi có nội dung, nó sẽ hiện ở đây."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cuando haya algo que mostrar, aparecerá aquí."
+     }
+    }
+   }
+  },
+  "ds.empty.action": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Get started"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bắt đầu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Empezar"
+     }
+    }
+   }
+  },
+  "weekstrip.today": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hôm nay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "hoy"
+     }
+    }
+   }
+  },
+  "weekstrip.hint": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tap to open this day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chạm để mở ngày này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Toca para abrir este día"
+     }
+    }
+   }
+  },
+  "day.rest": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rest"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nghỉ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Descanso"
+     }
+    }
+   }
+  },
+  "day.done": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Done"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hecho"
+     }
+    }
+   }
+  },
+  "day.todo": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "To do"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cần tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Por hacer"
+     }
+    }
+   }
+  },
+  "day.missed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Missed"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bỏ lỡ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Perdido"
+     }
+    }
+   }
+  },
+  "day.unplanned": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Unplanned"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa lên lịch"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin plan"
+     }
+    }
+   }
+  },
+  "builder.create": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Create"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạo mới"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
       "value": "Crear"
      }
     }
@@ -1096,188 +1313,19 @@
     }
    }
   },
-  "ds.empty.action": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Get started"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Bắt đầu"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Empezar"
-=======
-      "value": "Nada aquí todavía"
->>>>>>> origin/native/ios-rewrite
-     }
-    }
-   }
-  },
-  "ds.empty.message": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "When there's something to show, it'll appear here."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Khi có nội dung, nó sẽ hiện ở đây."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Cuando haya algo que mostrar, aparecerá aquí."
-     }
-    }
-   }
-  },
-<<<<<<< HEAD
-  "ds.empty.title": {
-=======
-  "ds.empty.action": {
->>>>>>> origin/native/ios-rewrite
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-<<<<<<< HEAD
-      "value": "Nothing here yet"
-=======
-      "value": "Get started"
->>>>>>> origin/native/ios-rewrite
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-<<<<<<< HEAD
-      "value": "Chưa có gì ở đây"
-=======
-      "value": "Bắt đầu"
->>>>>>> origin/native/ios-rewrite
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-<<<<<<< HEAD
-      "value": "Nada aquí todavía"
-=======
-      "value": "Empezar"
->>>>>>> origin/native/ios-rewrite
-     }
-    }
-   }
-  },
-<<<<<<< HEAD
   "setrow.completed": {
-=======
-  "weekstrip.today": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Completed"
-=======
-      "value": "today"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Đã xong"
-=======
-      "value": "hôm nay"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "hoy"
-     }
-    }
-   }
-  },
-  "weekstrip.hint": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Tap to open this day"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Chạm để mở ngày này"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Toca para abrir este día"
-     }
-    }
-   }
-  },
-  "day.rest": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Rest"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Nghỉ"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Descanso"
-     }
-    }
-   }
-  },
-  "day.done": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Done"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đã tập"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
@@ -1288,115 +1336,70 @@
     }
    }
   },
-<<<<<<< HEAD
   "setrow.notCompleted": {
-=======
-  "day.todo": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Not completed"
-=======
-      "value": "To do"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Chưa xong"
-=======
-      "value": "Cần tập"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Sin hacer"
-=======
-      "value": "Por hacer"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
   "setrow.reps": {
-=======
-  "day.missed": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Reps"
-=======
-      "value": "Missed"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Reps"
-=======
-      "value": "Bỏ lỡ"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Reps"
-=======
-      "value": "Perdido"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
   "setrow.saving": {
-=======
-  "day.unplanned": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Saving…"
-=======
-      "value": "Unplanned"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Đang lưu…"
-=======
-      "value": "Chưa lên lịch"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
       "value": "Guardando…"
      }
     }
@@ -1789,9 +1792,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "· %@ kg"
-=======
-      "value": "Sin plan"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
