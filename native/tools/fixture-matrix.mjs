@@ -52,6 +52,10 @@ const { FIXTURES, SCREENS, LOCALES } = await import(
 /* ── luật render: cùng semantics với fillCopy trong src/lib/copy-fill.ts ── */
 const SELECT = /\{(\w+):([^|{}]*)\|([^{}]*)\}/g;
 const SLOT = /\{(\w+)\}/g;
+/* Bản không /g cho .test(): regex /g giữ lastIndex giữa các lần gọi, nên
+   SLOT.test() trên cùng một chuỗi trả true, false, true… — kết quả phụ thuộc
+   lần gọi trước. .replace() dùng SLOT/SELECT (cần /g); .test() dùng HAS_SLOT. */
+const HAS_SLOT = /\{(\w+)\}/;
 const isOne = (v) => {
   if (v === undefined) return false;
   const n = typeof v === 'number' ? v : Number(String(v).replace(/[^\d.-]/g, ''));
@@ -120,17 +124,17 @@ function checkCopy(fx, D) {
         fail(fx.id, `pluralization sai — n=1 và n=5 render giống nhau: "${one}"`);
     }
   }
-  if (fx.a11y && !SLOT.test(tplEn.replace(SELECT, ''))) {
+  if (fx.a11y && !HAS_SLOT.test(tplEn.replace(SELECT, ''))) {
     // a11y:true đòi template có placeholder động — nhưng SELECT cũng là dạng
     // động ({n:một|nhiều} chứa n). Chỉ đỏ khi KHÔNG còn placeholder nào.
     const withoutSelectors = tplEn.replace(SELECT, '{$1}');
-    if (!SLOT.test(withoutSelectors))
+    if (!HAS_SLOT.test(withoutSelectors))
       fail(fx.id, `thiếu nội dung động — label a11y tĩnh hoàn toàn: "${tplEn}"`);
   }
 }
 
 function checkA11yPattern(fx, D) {
-  if (!SLOT.test(fx.pattern))
+  if (!HAS_SLOT.test(fx.pattern))
     return fail(fx.id, `pattern a11y không có placeholder động: "${fx.pattern}"`);
   for (const k of fx.keys) {
     for (const loc of LOCALES) {
