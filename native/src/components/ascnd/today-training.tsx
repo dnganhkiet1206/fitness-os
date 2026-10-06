@@ -187,7 +187,7 @@ export function TodayTraining() {
               onPress={() => Haptics.selection()}>
               <Icon icon={PersonStanding} size={24} color="#f59e0b" />
               <Text style={styles.suggestLabel}>{vi ? 'Đi bộ nhẹ' : lang === 'es' ? 'Caminata' : 'Easy walk'}</Text>
-              <Text style={styles.suggestSub}>20–30 {vi ? 'phút' : 'min'}</Text>
+              <Text style={styles.suggestSub}>{fillCopy(i18n.nCxSuggestMinRange, { r: '20–30' })}</Text>
             </PressScale>
             <PressScale
               style={styles.suggestTile}
@@ -195,7 +195,7 @@ export function TodayTraining() {
               onPress={() => Haptics.selection()}>
               <Icon icon={Leaf} size={24} color="#22c55e" />
               <Text style={styles.suggestLabel}>{vi ? 'Giãn cơ' : lang === 'es' ? 'Estirar' : 'Stretch'}</Text>
-              <Text style={styles.suggestSub}>10–15 {vi ? 'phút' : 'min'}</Text>
+              <Text style={styles.suggestSub}>{fillCopy(i18n.nCxSuggestMinRange, { r: '10–15' })}</Text>
             </PressScale>
             <PressScale
               style={styles.suggestTile}
