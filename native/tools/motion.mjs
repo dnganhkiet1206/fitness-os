@@ -378,7 +378,7 @@ for (const f of files) {
 const LEGACY = new Set([
   'src/app/(tabs)/assistant.tsx', 'src/app/food-list.tsx', 'src/app/water.tsx',
   'src/components/ascnd/assistant-aura.tsx', 'src/components/ascnd/day-plan.tsx',
-  'src/components/ascnd/help-button.tsx', 'src/components/ascnd/koa-companion.tsx',
+  'src/components/ascnd/help-button.tsx',
   'src/components/ascnd/line-chart.tsx', 'src/components/ascnd/liquid-tab-bar.tsx',
   'src/components/ascnd/readiness-gauge.tsx',
   'src/components/ascnd/rest-timer.tsx', 'src/components/ascnd/studio/sky-live.tsx',

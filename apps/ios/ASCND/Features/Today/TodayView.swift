@@ -37,9 +37,12 @@ public struct TodayView: View {
       }
       .navigationTitle(Text("tab.today"))
     }
+    // Không gắn accessibilityLabel lên cả cây: container không gộp thì nhãn
+    // đè xuống từng phần tử con (nút Bắt đầu, từng bài đều đọc thành
+    // "Hôm nay: …"). Trạng thái đã có ở DSSectionHeader / tiêu đề DSEmptyState.
   }
 
-  // MARK: - Nhãn trạng thái (copy từ baseline RN)
+  // MARK: - Nhãn đọc màn hình
 
   private var statusText: String {
     switch state.status {
@@ -94,20 +97,31 @@ public struct TodayView: View {
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.foreground.swiftUI)
       Spacer()
-      Text("\(e.sets)×\(e.reps) · \(Int(e.weightKg)) kg")
+      Text(weightText(e).map { "\(e.sets)×\(e.reps) · \($0) kg" } ?? "\(e.sets)×\(e.reps)")
         .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .monospacedDigit()
     }
     .accessibilityElement(children: .combine)
-    .accessibilityLabel(
-      Text(
-        String(
-          format: String(localized: "today.exercise.accessibility"),
-          e.name, e.sets, e.reps, Int(e.weightKg)
-        )
-      )
-    )
+    .accessibilityLabel(Text(exerciseAccessibility(e)))
+  }
+
+  /// Mức tạ theo locale, giữ phần lẻ (62,5 kg — không cắt `Int` thành 62).
+  /// `nil` = bài không tạ, không hiện "0 kg".
+  private func weightText(_ e: TodayExercise) -> String? {
+    guard e.weightKg > 0 else { return nil }
+    return e.weightKg.formatted(.number.precision(.fractionLength(0...2)))
+  }
+
+  private func exerciseAccessibility(_ e: TodayExercise) -> String {
+    if let w = weightText(e) {
+      return String(
+        format: String(localized: "today.exercise.accessibility"),
+        e.name, e.sets, e.reps, w)
+    }
+    return String(
+      format: String(localized: "today.exercise.accessibility.noWeight"),
+      e.name, e.sets, e.reps)
   }
 
   // MARK: - done: đã tập xong
