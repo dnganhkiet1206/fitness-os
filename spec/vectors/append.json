@@ -1,0 +1,273 @@
+[
+  {
+    "desc": "Ngày đã chốt + có bài phát sinh đủ điều kiện → được nối thêm",
+    "expected": {
+      "appending": true,
+      "canFinish": true,
+      "pendingReady": true
+    },
+    "input": {
+      "doneCount": 2,
+      "future": false,
+      "logged": true,
+      "pendingRows": [
+        {
+          "durationSec": null,
+          "name": "Curls",
+          "reps": 10
+        }
+      ]
+    },
+    "nativeDiffers": "Native (#307 chưa xong): ngày đã chốt là chỉ đọc, không có đường nối thêm — appending luôn false.",
+    "rule": "AP-1a",
+    "trace": "day-plan.tsx:1275 (pendingReady) + 1329 (appending) + 1330-1332 (canFinish)"
+  },
+  {
+    "desc": "Ngày đã chốt, không thêm gì → khoá, nút tắt",
+    "expected": {
+      "appending": false,
+      "canFinish": false,
+      "pendingReady": false
+    },
+    "input": {
+      "doneCount": 2,
+      "future": false,
+      "logged": true,
+      "pendingRows": []
+    },
+    "nativeDiffers": "Native: giống RN (khoá).",
+    "rule": "AP-1b",
+    "trace": "day-plan.tsx:1329 (pendingRows rỗng → pendingReady false)"
+  },
+  {
+    "desc": "Ngày tương lai: tick được nhưng không nối được",
+    "expected": {
+      "appending": false,
+      "canFinish": false,
+      "pendingReady": true
+    },
+    "input": {
+      "doneCount": 0,
+      "future": true,
+      "logged": true,
+      "pendingRows": [
+        {
+          "durationSec": null,
+          "name": "Curls",
+          "reps": 10
+        }
+      ]
+    },
+    "nativeDiffers": "Native: giống RN (future không chốt/nối).",
+    "rule": "AP-1c",
+    "trace": "day-plan.tsx:1329 (appending cần !future)"
+  },
+  {
+    "desc": "Chưa chốt, có set đã tick → chốt thường (không phải nối)",
+    "expected": {
+      "appending": false,
+      "canFinish": true,
+      "pendingReady": false
+    },
+    "input": {
+      "doneCount": 2,
+      "future": false,
+      "logged": false,
+      "pendingRows": []
+    },
+    "nativeDiffers": "Native: giống RN.",
+    "rule": "AP-1d",
+    "trace": "day-plan.tsx:1330-1332 (nhánh chốt thường)"
+  },
+  {
+    "desc": "Bài phát sinh thiếu tên → pendingReady false, không nối được",
+    "expected": {
+      "appending": false,
+      "canFinish": false,
+      "pendingReady": false
+    },
+    "input": {
+      "doneCount": 2,
+      "future": false,
+      "logged": true,
+      "pendingRows": [
+        {
+          "durationSec": null,
+          "name": "   ",
+          "reps": 10
+        }
+      ]
+    },
+    "nativeDiffers": "Native: không có đường nối.",
+    "rule": "AP-1e",
+    "trace": "day-plan.tsx:1109-1116 (rowReady: tên rỗng → false) + 1275"
+  },
+  {
+    "desc": "Viết lại cả buổi: sets cũ + mới, setIndex nối tiếp, volume cộng dồn, rpe lấy max",
+    "expected": {
+      "blockedOffline": false,
+      "prDetected": false,
+      "sessionId": "s-1",
+      "sessionRpe": 9,
+      "setCount": 3,
+      "setIndices": [
+        3
+      ],
+      "volumeLoad": 2160
+    },
+    "input": {
+      "newSets": [
+        {
+          "name": "Row",
+          "reps": 12,
+          "rpe": 9,
+          "weight": 60
+        }
+      ],
+      "offline": false,
+      "oldPrDetected": false,
+      "oldRpe": 8,
+      "oldSets": [
+        {
+          "name": "Bench",
+          "reps": 10,
+          "weight": 80
+        },
+        {
+          "name": "Bench",
+          "reps": 8,
+          "weight": 80
+        }
+      ],
+      "oldVolume": 1440,
+      "sessionId": "s-1"
+    },
+    "nativeDiffers": "Native: chưa có API nối thêm (A12 #307 còn mở).",
+    "rule": "AP-2a",
+    "trace": "use-fitness-data.ts: useAppendToSession (setIndex = old.length + i + 1; volume_load += Σ; session_rpe = max)"
+  },
+  {
+    "desc": "pr_detected chỉ bật lên không bao giờ tắt: buổi cũ đã có kỷ lục, lượt nối không có → vẫn true",
+    "expected": {
+      "blockedOffline": false,
+      "prDetected": true,
+      "sessionId": "s-1",
+      "sessionRpe": 8,
+      "setCount": 3,
+      "volumeLoad": 2160
+    },
+    "input": {
+      "newRecords": 0,
+      "newSets": [
+        {
+          "name": "Row",
+          "reps": 12,
+          "rpe": 7,
+          "weight": 60
+        }
+      ],
+      "offline": false,
+      "oldPrDetected": true,
+      "oldRpe": 8,
+      "oldSets": [
+        {
+          "name": "Bench",
+          "reps": 10,
+          "weight": 80
+        },
+        {
+          "name": "Bench",
+          "reps": 8,
+          "weight": 80
+        }
+      ],
+      "oldVolume": 1440,
+      "sessionId": "s-1"
+    },
+    "nativeDiffers": "Native: chưa có API nối thêm.",
+    "rule": "AP-2b",
+    "trace": "use-fitness-data.ts: pr_detected = Boolean(row.pr_detected) || records.length > 0"
+  },
+  {
+    "desc": "Mất mạng → không xếp hàng, báo lỗi ngay (class now), không bắn mutation",
+    "expected": {
+      "blockedOffline": true
+    },
+    "input": {
+      "newSets": [
+        {
+          "name": "Row",
+          "reps": 12,
+          "rpe": 9,
+          "weight": 60
+        }
+      ],
+      "offline": true,
+      "oldSets": [
+        {
+          "name": "Bench",
+          "reps": 10,
+          "weight": 80
+        }
+      ],
+      "oldVolume": 800,
+      "sessionId": "s-1"
+    },
+    "nativeDiffers": "Native: outbox chỉ biết CHÈN buổi mới — lệnh nối cần đọc trước khi ghi nên cũng không làm được offline.",
+    "rule": "AP-2c",
+    "trace": "day-plan.tsx:1434-1437 (offlineNow → toast nRdAppendOffline, return) + offline-class.ts: now(3)"
+  },
+  {
+    "desc": "Chỉ gửi pendingRows, không gửi lại doneRows (chống nhân đôi)",
+    "expected": {
+      "blockedOffline": false,
+      "extraCount": 1,
+      "sentDoneCount": 0
+    },
+    "input": {
+      "doneCount": 2,
+      "logged": true,
+      "newSets": [
+        {
+          "name": "Curls",
+          "reps": 10,
+          "rpe": 8,
+          "weight": 30
+        }
+      ],
+      "offline": false,
+      "pendingRows": [
+        {
+          "durationSec": null,
+          "name": "Curls",
+          "reps": 10
+        }
+      ]
+    },
+    "nativeDiffers": "Native: chưa có đường nối.",
+    "rule": "AP-2d",
+    "trace": "day-plan.tsx:1419-1428 (nhánh nối chỉ gửi pendingRows)"
+  },
+  {
+    "desc": "Nối vào đúng session id cũ — một hàng được sửa, không phải buổi thứ hai",
+    "expected": {
+      "rowOp": "update",
+      "sameSessionId": true,
+      "sessionId": "s-1"
+    },
+    "input": {
+      "newSets": [
+        {
+          "name": "Row",
+          "reps": 12,
+          "rpe": 9,
+          "weight": 60
+        }
+      ],
+      "sessionId": "s-1"
+    },
+    "nativeDiffers": "Native: idempotency theo id buổi (GRDBWorkoutStore.commitFinish) — cùng nguyên tắc, khác tầng.",
+    "rule": "AP-2e",
+    "trace": "use-fitness-data.ts: .update(...).eq('id', sessionId) + confirmWrite"
+  }
+]
