@@ -22,6 +22,7 @@ final class AppServices {
   @ObservationIgnored let workouts: GRDBWorkoutStore
   /// Kế hoạch tuần + template thật, local-first (#270).
   @ObservationIgnored let templates: TodayRepository
+  @ObservationIgnored let history: any TrainingHistory
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
@@ -52,6 +53,7 @@ final class AppServices {
     templates = TodayRepository(
       source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
       cache: templateCache)
+    history = backend.map { SupabaseTrainingHistory(backend: $0) as any TrainingHistory } ?? UnconfiguredHistory()
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: OutboxStore(database),
@@ -72,6 +74,11 @@ final class AppServices {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     _ = try? await workouts.pruneDays(today: today)
     sync.kick()
+  }
+
+  /// Tầng ứng dụng của màn Today cho người đang đăng nhập (#271).
+  func makeToday(userId: String) -> TodayController {
+    TodayController(userId: userId, repository: templates, history: history, workouts: workouts)
   }
 
   func didBecomeActive() {
@@ -106,6 +113,10 @@ private struct UnconfiguredAuth: AuthAPI {
   func signInWithApple(identityToken: String, rawNonce: String) async throws { throw NotConfigured() }
   func resetPassword(email: String) async throws { throw NotConfigured() }
   func signOut() async throws {}
+}
+
+private struct UnconfiguredHistory: TrainingHistory {
+  func sessionTimes(userId: String, since: EpochMillis) async throws -> [EpochMillis] { [] }
 }
 
 private struct UnconfiguredTemplates: TemplateSource {

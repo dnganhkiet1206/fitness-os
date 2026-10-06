@@ -76,6 +76,9 @@ public final class WorkoutSessionController {
     /// Ngày đã chốt từ trước (mở lại app sau khi chốt) — không có tổng kết
     /// trong bộ nhớ để trả lại.
     case alreadyLogged(sessionId: String)
+    /// Server đã có buổi của ngày này (ghi từ app RN, máy khác) — baseline
+    /// `logged = sessions.length > 0` cũng tắt nút Chốt (`day-plan.tsx:1297`).
+    case loggedElsewhere
     /// Giao dịch ghi máy hỏng: KHÔNG có gì được ghi, bấm lại là an toàn và
     /// dùng lại đúng id cũ.
     case storage(LocalWriteError)
@@ -100,6 +103,9 @@ public final class WorkoutSessionController {
   private let makeId: @Sendable () -> String
   private let onRest: @MainActor (RestEvent, PlannedSet?) -> Void
   private let onEnqueued: @MainActor (OutboxEntry) -> Void
+  /// Ngày này đã có buổi trên server. Tick vẫn được (xem lại, chuẩn bị), chốt
+  /// thì không — nối thêm vào buổi đã có (`appending`) chưa có ở native.
+  public let loggedElsewhere: Bool
   private var writes: Task<(any Error)?, Never>?
   private var issued = 0
   private var settled = 0
@@ -111,7 +117,7 @@ public final class WorkoutSessionController {
   ///   - onEnqueued: hàng outbox vừa bền — vòng sync nên thử gửi.
   public init(
     plan: Plan, userId: String, store: any WorkoutStore, clock: any WallClock = SystemWallClock(),
-    timeZone: TimeZone = .current,
+    timeZone: TimeZone = .current, loggedElsewhere: Bool = false,
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
     onRest: @escaping @MainActor (RestEvent, PlannedSet?) -> Void = { _, _ in },
     onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
@@ -124,6 +130,7 @@ public final class WorkoutSessionController {
     self.makeId = makeId
     self.onRest = onRest
     self.onEnqueued = onEnqueued
+    self.loggedElsewhere = loggedElsewhere
   }
 
   public var key: String {
@@ -140,7 +147,7 @@ public final class WorkoutSessionController {
 
   /// Nút Chốt sáng khi nào (baseline `canFinish`, nhánh ghi mới).
   public var canFinish: Bool {
-    loaded && loggedSessionId == nil && !finishing && !isFuture
+    loaded && loggedSessionId == nil && !loggedElsewhere && !finishing && !isFuture
       && plan.rows.contains { progress.done[$0.key] == true }
   }
 
@@ -220,6 +227,7 @@ public final class WorkoutSessionController {
     guard loaded else { throw .loading }
     guard !finishing else { throw .inProgress }
     guard !isFuture else { throw .futureDay }
+    guard !loggedElsewhere else { throw .loggedElsewhere }
     let now = clock.nowMillis()
     let id = pendingId ?? makeId()
     guard let record = WorkoutSessionRecord(
