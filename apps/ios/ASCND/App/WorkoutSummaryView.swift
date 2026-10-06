@@ -73,7 +73,7 @@ public struct WorkoutSummaryView: View {
           DSCard {
             HStack(spacing: DS.Spacing.sm) {
               Image(systemName: "trophy.fill")
-                .foregroundStyle(DS.Color.metricAmber.swiftUI)
+                .foregroundStyle(DS.Color.readinessYellow.swiftUI)
                 .accessibilityHidden(true)
               Text(String(localized: "summary.pr"))
                 .font(DS.TextStyle.headline)

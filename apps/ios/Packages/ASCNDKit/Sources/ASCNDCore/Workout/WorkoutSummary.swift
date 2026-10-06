@@ -18,11 +18,13 @@ public struct WorkoutSummary: Sendable, Hashable {
   /// Σ kg × reps, khởi động bị loại — đúng `volume_load` của hàng gửi đi.
   public let volumeKg: Int
   public let sessionRpe: Int
-  /// Luôn `false` ở bản này: kỷ lục là phép so với lịch sử, chốt buổi không đợi
-  /// mạng nên không có lịch sử để so (WS-10, đường offline của baseline).
+  /// = `pr_detected` của hàng gửi đi.
   public let prDetected: Bool
+  /// Kỷ lục của buổi, mức tăng lớn nhất trước (`findRecords`); phần tử đầu là
+  /// câu "headline" của baseline (`headlineRecord`).
+  public let records: [PersonalRecord]
 
-  public init(_ record: WorkoutSessionRecord) {
+  public init(_ record: WorkoutSessionRecord, records: [PersonalRecord] = []) {
     let counted = record.sets.filter { !$0.warmup && ($0.reps > 0 || ($0.durationSec ?? 0) > 0) }
     sessionId = record.id
     dateTime = record.dateTime
@@ -35,10 +37,11 @@ public struct WorkoutSummary: Sendable, Hashable {
     volumeKg = record.volumeLoad
     sessionRpe = record.sessionRpe
     prDetected = record.prDetected
+    self.records = records
   }
 
   /// Init từng trường cho Preview/fixture (#279) — giá trị phải đúng những
-  /// gì `init(_ record:)` sẽ tính, để Preview không lệch với thật.
+  /// gì `init(_ record:records:)` sẽ tính, để Preview không lệch với thật.
   public init(
     sessionId: String,
     dateTime: EpochMillis,
@@ -49,7 +52,8 @@ public struct WorkoutSummary: Sendable, Hashable {
     exerciseCount: Int,
     volumeKg: Int,
     sessionRpe: Int,
-    prDetected: Bool
+    prDetected: Bool,
+    records: [PersonalRecord] = []
   ) {
     self.sessionId = sessionId
     self.dateTime = dateTime
@@ -61,5 +65,6 @@ public struct WorkoutSummary: Sendable, Hashable {
     self.volumeKg = volumeKg
     self.sessionRpe = sessionRpe
     self.prDetected = prDetected
+    self.records = records
   }
 }
