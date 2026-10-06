@@ -64,11 +64,10 @@ const fixtures = vectors.map((v) => ({
 const inPath = path.join(tmpdir(), `diff-in-${Date.now()}.json`);
 const outPath = path.join(tmpdir(), `diff-out-${Date.now()}.json`);
 writeFileSync(inPath, JSON.stringify(fixtures));
-const swiftBin = path.join(process.env.HOME ?? '', 'workspace/.swift/swift-6.1.2-RELEASE-ubuntu24.04/usr/bin');
 try {
   execFileSync('swift', ['test', '--filter', 'DifferentialHarness'], {
     cwd: KIT,
-    env: { ...process.env, PATH: `${swiftBin}:${process.env.PATH}`, DIFF_INPUT: inPath, DIFF_OUTPUT: outPath },
+    env: { ...process.env, DIFF_INPUT: inPath, DIFF_OUTPUT: outPath },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 } catch (e) {

@@ -8,8 +8,13 @@ import Testing
 /// Fixtures: [{id, history: [{exerciseName, weight, reps, warmup?}],
 ///              session: [{exerciseName, weight, reps, warmup?}]}]
 /// Output:   [{id, records: [{exercise, kind, value, previous}]}]
+///
+/// Chỉ chạy khi có `DIFF_INPUT` (tức là qua `run-differential.mjs`). `swift
+/// test` trơn — cả hai job CI — bỏ qua nó thay vì đỏ vì thiếu môi trường.
 struct DifferentialHarness {
-  @Test func run() throws {
+  @Test(.enabled(if: ProcessInfo.processInfo.environment["DIFF_INPUT"] != nil,
+                 "chỉ chạy qua spec/differential/run-differential.mjs"))
+  func run() throws {
     let fm = FileManager.default
     guard let inPath = ProcessInfo.processInfo.environment["DIFF_INPUT"],
           let outPath = ProcessInfo.processInfo.environment["DIFF_OUTPUT"] else {
