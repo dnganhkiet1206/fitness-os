@@ -310,7 +310,8 @@ struct WorkoutSessionControllerTests {
     let c = await controller(store)
     #expect(c.phase == .finished(sessionId: id))
     #expect(!c.canFinish)
-    #expect(await c.toggle("b2") == false)
+    #expect(await c.toggle("b1") == false, "hàng đã nằm trong buổi bị khoá")
+    #expect(await c.setWeightText("999", for: "b1") == false)
     await #expect(throws: WorkoutSessionController.FinishRefusal.alreadyLogged(sessionId: id)) { try await c.finish() }
     #expect(await store.outbox.count == 1)
   }
@@ -412,3 +413,90 @@ struct LocalDateInstantTests {
     #expect(LocalDate(EpochMillis(-1), in: TimeZone(identifier: "UTC")!).description == "1969-12-31")
   }
 }
+
+/// Nối thêm set vào buổi đã chốt (#296).
+@MainActor
+struct AppendToSessionTests {
+  /// Chốt b1 → tick b2 → nối: MỘT buổi (cùng id), hàng outbox thứ hai là bản
+  /// ghi lại TOÀN BỘ hàng, cùng dấu thời gian; volume/số set tính từ đủ set.
+  @Test func appendRewritesTheWholeSession() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    let first = try await c.finish()
+    #expect(!c.canAppend)
+    #expect(await c.toggle("b2"), "hàng chưa có trong buổi tick được")
+    #expect(c.pendingRows.map(\.key) == ["b2"])
+    #expect(c.canAppend)
+    let s = try await c.append()
+    #expect(s.sessionId == first.sessionId)
+    #expect(s.completedSets == 2)
+    #expect(s.volumeKg == 960)
+    let outbox = await store.outbox
+    #expect(outbox.map(\.id) == [first.sessionId, "\(first.sessionId)@2"])
+    #expect(outbox[1].kind == "workout-revision")
+    #expect(outbox[1].payload["id"] == .string(first.sessionId))
+    #expect(outbox[1].payload["date_time"] == outbox[0].payload["date_time"], "giữ dấu thời gian của buổi")
+    #expect(outbox[1].payload["volume_load"] == .number(960))
+    #expect(c.pendingRows.isEmpty && !c.canAppend)
+  }
+
+  /// Kill sau khi nối: mở lại, mọi hàng đã nằm trong buổi, không còn gì để nối.
+  @Test func appendSurvivesKill() async throws {
+    let store = InMemoryWorkoutStore()
+    do {
+      let c = await controller(store)
+      await c.toggle("b1")
+      _ = try await c.finish()
+      await c.toggle("b2")
+      _ = try await c.append()
+    }
+    let c = await controller(store)
+    #expect(c.loggedKeys == ["b1", "b2"])
+    #expect(c.pendingRows.isEmpty)
+    #expect(await c.toggle("b2") == false)
+  }
+
+  /// Nối hỏng ghi đĩa: không có gì được ghi; bấm lại dùng ĐÚNG id hàng outbox
+  /// (xác định theo số hàng) — không bao giờ hai bản ghi lại cho cùng tập hàng.
+  @Test func failedAppendRetriesIdempotently() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    let first = try await c.finish()
+    await c.toggle("b2")
+    await store.failNext()
+    await #expect(throws: WorkoutSessionController.FinishRefusal.self) { try await c.append() }
+    #expect(await store.outbox.count == 1)
+    _ = try await c.append()
+    #expect(await store.outbox.map(\.id) == [first.sessionId, "\(first.sessionId)@2"])
+    await #expect(throws: WorkoutSessionController.FinishRefusal.nothingToAppend) { try await c.append() }
+  }
+
+  /// `pendingReady`: MỌI hàng mới phải đủ (có tên + reps/thời gian giữ).
+  @Test func pendingMustAllBeReady() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store)
+    await c.toggle("b1")
+    _ = try await c.finish()
+    await c.setRepsText("45s", for: "p1")
+    await c.toggle("p1")
+    await c.setRepsText("", for: "p1")
+    #expect(!c.canAppend)
+    await #expect(throws: WorkoutSessionController.FinishRefusal.nothingToAppend) { try await c.append() }
+  }
+
+  /// Blob trước #296 (không có `loggedKeys`): mọi hàng đã tick lúc ấy là hàng của buổi.
+  @Test func legacyBlobTreatsTickedRowsAsLogged() async {
+    var p = DayProgress()
+    p.done = ["b1": true]
+    let key = DayProgressStore.key(date: today, templateId: "tpl-push")
+    let store = InMemoryWorkoutStore(days: [key: DayState(progress: p, loggedSessionId: "old")])
+    let c = await controller(store)
+    #expect(c.loggedKeys == ["b1"])
+    #expect(await c.toggle("b1") == false)
+    #expect(await c.toggle("b2"))
+    #expect(c.canAppend)
+  }
+}
+

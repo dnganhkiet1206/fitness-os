@@ -42,7 +42,7 @@ public actor InMemoryWorkoutStore: WorkoutStore {
   @discardableResult
   public func commitFinish(_ key: String, _ state: DayState, _ entry: OutboxEntry) async throws -> Bool {
     try await enter()
-    try locked(key, against: entry.id)
+    try locked(key, against: state.loggedSessionId)
     days[key] = state
     guard !outbox.contains(where: { $0.id == entry.id }) else { return false }
     outbox.append(entry)

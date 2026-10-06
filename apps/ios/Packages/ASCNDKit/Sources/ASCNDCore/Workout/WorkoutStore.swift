@@ -11,10 +11,24 @@ public import Foundation
 public struct DayState: Sendable, Hashable, Codable {
   public var progress: DayProgress
   public var loggedSessionId: String?
+  /// Các hàng đã nằm trong buổi (#296) — hàng tick SAU khi chốt mà không có
+  /// ở đây là hàng được nối thêm (`pendingRows` của baseline). `nil` (blob cũ)
+  /// = mọi hàng đã tick lúc ấy.
+  public var loggedKeys: [String]?
+  /// Thời điểm đóng dấu của buổi — lần nối thêm ghi lại đúng dấu ấy.
+  public var loggedAt: EpochMillis?
+  /// `pr_detected` của buổi: chỉ bật lên, không bao giờ tắt (`use-fitness-data.ts:673`).
+  public var loggedPR: Bool?
 
-  public init(progress: DayProgress = DayProgress(), loggedSessionId: String? = nil) {
+  public init(
+    progress: DayProgress = DayProgress(), loggedSessionId: String? = nil,
+    loggedKeys: [String]? = nil, loggedAt: EpochMillis? = nil, loggedPR: Bool? = nil
+  ) {
     self.progress = progress
     self.loggedSessionId = loggedSessionId
+    self.loggedKeys = loggedKeys
+    self.loggedAt = loggedAt
+    self.loggedPR = loggedPR
   }
 }
 
@@ -29,8 +43,8 @@ public struct DayState: Sendable, Hashable, Codable {
 ///   buổi không bao giờ gửi → mất set);
 /// - `commitFinish` idempotent theo `entry.id`: gọi lại với cùng id không chèn
 ///   hàng thứ hai (INSERT OR IGNORE), và trả `false`;
-/// - ngày đã chốt là KHOÁ, kiểm trong chính giao dịch: `commitFinish` với một
-///   id khác, hay `saveDay` mang `loggedSessionId` khác, ném `DayAlreadyLogged`
+/// - ngày đã chốt là KHOÁ, kiểm trong chính giao dịch: `commitFinish` /
+///   `saveDay` mang `state.loggedSessionId` khác buổi đã chốt ném `DayAlreadyLogged`
 ///   và không ghi gì. Id idempotent chỉ chặn được cùng một controller bấm lại;
 ///   hai controller cùng mở một ngày (hai màn, khôi phục chồng lên nhau) sinh
 ///   hai id — chỉ khoá ở tầng lưu mới chặn được buổi thứ hai, và chặn được bản

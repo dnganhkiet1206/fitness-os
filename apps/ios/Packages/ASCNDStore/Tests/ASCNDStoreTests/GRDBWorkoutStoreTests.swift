@@ -92,6 +92,22 @@ struct GRDBWorkoutStoreTests {
     #expect(try await store.loadDay("k")?.loggedSessionId == "s2")
   }
 
+  /// Bản ghi lại cùng buổi (#296): id hàng outbox khác, nhưng `state` vẫn là
+  /// buổi đã chốt → khoá cho qua; một buổi khác thì vẫn bị chặn.
+  @Test func revisionOfTheLoggedSessionPassesTheLock() async throws {
+    let db = try ASCNDDatabase()
+    let store = GRDBWorkoutStore(db)
+    try await store.commitFinish("k", DayState(loggedSessionId: "s1", loggedKeys: ["a"]), entry("s1"))
+    let rev = OutboxEntry(id: "s1@2", userId: "u1", kind: "workout-revision", payload: .object(["id": .string("s1")]), createdAt: EpochMillis(0))
+    #expect(try await store.commitFinish("k", DayState(loggedSessionId: "s1", loggedKeys: ["a", "b"]), rev))
+    #expect(try await store.commitFinish("k", DayState(loggedSessionId: "s1", loggedKeys: ["a", "b"]), rev) == false)
+    #expect(try await store.loadDay("k")?.loggedKeys == ["a", "b"])
+    #expect(try OutboxStore(db).load().pending.map(\.id) == ["s1", "s1@2"])
+    await #expect(throws: DayAlreadyLogged(sessionId: "s1")) {
+      try await store.commitFinish("k", DayState(loggedSessionId: "s9"), entry("s9"))
+    }
+  }
+
   @Test func pruneKeepsFourteenDays() async throws {
     let store = GRDBWorkoutStore(try ASCNDDatabase())
     let today = try #require(LocalDate("2026-10-05"))

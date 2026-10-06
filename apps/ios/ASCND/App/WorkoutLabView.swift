@@ -204,6 +204,21 @@ private struct LabWorkout: View {
           Text(verbatim: "Finish workout")
         }
         .disabled(!c.canFinish)
+        if c.loggedSessionId != nil {
+          Button {
+            Task {
+              do throws(WorkoutSessionController.FinishRefusal) {
+                _ = try await c.append()
+                finishError = nil
+              } catch {
+                finishError = "\(error)"
+              }
+            }
+          } label: {
+            Text(verbatim: "Append \(c.pendingRows.count) new set(s) to this session")
+          }
+          .disabled(!c.canAppend)
+        }
         if let finishError {
           Text(verbatim: finishError).foregroundStyle(.red).font(.footnote)
         }

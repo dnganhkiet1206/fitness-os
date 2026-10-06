@@ -35,7 +35,7 @@ public final class GRDBWorkoutStore: WorkoutStore {
     let day = try OutboxStore.json(state)
     let row = try OutboxStore.json(entry)
     return try await db.write { db in
-      try Self.ensureUnlocked(db, key, for: entry.id)
+      try Self.ensureUnlocked(db, key, for: state.loggedSessionId)
       try Self.upsert(db, key, day)
       try db.execute(
         sql: "INSERT OR IGNORE INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
