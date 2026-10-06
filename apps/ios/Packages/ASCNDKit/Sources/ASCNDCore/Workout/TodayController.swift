@@ -151,13 +151,14 @@ public final class TodayController {
 
   /// Màn tập cho kế hoạch hôm nay; `nil` khi hôm nay không có buổi.
   public func makeSession(
+    bests: @escaping @MainActor () -> PersonalRecords.Bests? = { nil },
     onRest: @escaping @MainActor (RestEvent, PlannedSet?) -> Void = { _, _ in },
     onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
   ) -> WorkoutSessionController? {
     guard let sessionPlan = plan?.sessionPlan else { return nil }
     return WorkoutSessionController(
       plan: sessionPlan, userId: userId, store: workouts, clock: clock, timeZone: timeZone,
-      loggedElsewhere: serverTrained.contains(today), onRest: onRest, onEnqueued: onEnqueued)
+      loggedElsewhere: serverTrained.contains(today), bests: bests, onRest: onRest, onEnqueued: onEnqueued)
   }
 
   /// Màn tập vừa chốt: ngày thành `done` ngay, không đợi server.
