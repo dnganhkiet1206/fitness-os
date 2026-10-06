@@ -1,0 +1,13 @@
+# XcodeGen sinh ra — nguồn sự thật là project.yml.
+*.xcodeproj/
+*.xcworkspace/
+ASCND/Info.plist
+# Build
+build/
+DerivedData/
+.build/
+.swiftpm/
+*.xcuserstate
+xcuserdata/
+Backend.local.xcconfig
+ASCNDWidgets/Info.plist
