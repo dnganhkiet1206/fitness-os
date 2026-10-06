@@ -338,6 +338,16 @@ private actor PreviewStore: WorkoutStore {
     days[key] = state
     return true
   }
+
+  /// Xoá buổi từ lịch sử (#400, \`WorkoutStore.commitDelete\`): ngày đã chốt
+  /// bằng buổi ấy thôi giữ set nào. Preview không có outbox thật.
+  func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws {
+    for (k, s) in days where s.loggedSessionId == sessionId {
+      var state = s
+      state.loggedKeys = []
+      days[k] = state
+    }
+  }
 }
 
 private struct WorkoutPreviewHost: View {
