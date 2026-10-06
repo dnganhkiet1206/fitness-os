@@ -49,13 +49,19 @@ struct OutboxStoreTests {
   @Test func signOutDropPersists() throws {
     let store = try OutboxStore()
     var box = Outbox()
-    for id in ["a", "b"] {
-      box.enqueue(entry(id))
-      try store.append(entry(id))
+    // Bản ghi của tài khoản khác ở ĐẦU hàng → `dead`, xuống đĩa.
+    for e in [entry("x", user: "u9"), entry("a"), entry("b")] {
+      box.enqueue(e)
+      try store.append(e)
     }
+    _ = box.next(now: EpochMillis(0), online: true, signedInUser: "u1")
+    try store.persist(box, settled: [])
+    #expect(try store.load().dead.count == 1)
+
     box.dropAllOnSignOut()
     #expect(try store.dropAllOnSignOut() == 2)
     #expect(try store.load().pending.isEmpty)
+    #expect(try store.load().dead.isEmpty, "buổi tập của người vừa rời đi không ở lại (#335)")
   }
 
   /// Màn tập chốt buổi (append) SAU khi worker đã nạp hàng đợi; worker gửi

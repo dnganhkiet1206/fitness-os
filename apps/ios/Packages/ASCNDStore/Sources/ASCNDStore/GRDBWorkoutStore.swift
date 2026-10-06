@@ -35,7 +35,7 @@ public final class GRDBWorkoutStore: WorkoutStore {
     let day = try OutboxStore.json(state)
     let row = try OutboxStore.json(entry)
     return try await db.write { db in
-      try Self.ensureUnlocked(db, key, for: entry.id)
+      try Self.ensureUnlocked(db, key, for: state.loggedSessionId)
       try Self.upsert(db, key, day)
       try db.execute(
         sql: "INSERT OR IGNORE INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
@@ -71,10 +71,17 @@ public final class GRDBWorkoutStore: WorkoutStore {
     }
   }
 
+  /// Blob không giải mã được (bản build khác ghi, tệp hỏng) = không có điểm
+  /// quay lại: bắt đầu lại ngày, như baseline ("a corrupt entry is not worth a
+  /// crash — start the workout fresh", `day-plan.tsx:906`).
+  ///
+  /// Trước đây lỗi giải mã được ném ra. `ensureUnlocked` cũng đọc qua hàm này,
+  /// nên mọi `saveDay` / `commitFinish` của ngày ấy hỏng VĨNH VIỄN: không lưu
+  /// được set nào, không chốt được buổi nào. Lỗi của SQLite vẫn ném như cũ.
   private static func day(_ db: Database, _ key: String) throws -> DayState? {
     guard let json = try String.fetchOne(db, sql: "SELECT state FROM workout_day WHERE key = ?", arguments: [key])
     else { return nil }
-    return try JSONDecoder().decode(DayState.self, from: Data(json.utf8))
+    return try? JSONDecoder().decode(DayState.self, from: Data(json.utf8))
   }
 
   private static func ensureUnlocked(_ db: Database, _ key: String, for id: String?) throws {
