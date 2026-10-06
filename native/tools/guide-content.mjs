@@ -160,18 +160,56 @@ if (!/exercise_id UUID NOT NULL REFERENCES public\.exercises\(id\) ON DELETE CAS
   );
 }
 
-/* ── 11 · locale bị chặn ở cửa, đúng bằng những tiếng app vẽ được ── */
+/* ── 11 · locale bị chặn ở cửa, đúng bằng những tiếng app ĐỌC nội dung ──
+   Từ 9a49d05 (thêm 'es'), hook không hỏi bảng bằng `lang` mà bằng `guideLang`:
+   `const guideLang = lang === 'es' ? 'en' : lang` — tiếng Tây Ban Nha đọc nội
+   dung hướng dẫn tiếng Anh. Nên tập locale bảng phải nhận là `AppLang` đi qua
+   CHÍNH phép ánh xạ ấy, đọc từ hook chứ không chép ra đây.
+   Hai chiều vẫn như cũ:
+   - bỏ đường lui (hook hỏi 'es' thật) mà CHECK chưa có 'es' → đỏ: app hỏi một
+     locale bảng từ chối lưu;
+   - thêm 'es' vào CHECK mà hook vẫn đổi es → en → đỏ: nội dung không ai đọc.
+   Mọi khai báo `guideLang` trong hook phải cùng một phép ánh xạ — hai phép là
+   hai câu trả lời cho cùng một câu hỏi. */
 CASES++;
 const langs = [...read('src/lib/i18n.ts').matchAll(/export type AppLang = ([^\n;]+)/g)]
   .flatMap((m) => [...m[1].matchAll(/'(\w+)'/g)].map((x) => x[1]))
   .sort();
+const guideHook = read(HOOK);
+/* MỌI khai báo, kể cả `const guideLang = lang;` (không đổi gì) — đếm riêng
+   dạng ternary thì một chỗ bỏ đường lui sẽ lọt qua vì chỗ kia vẫn còn. */
+const fallbacks = [...guideHook.matchAll(/const guideLang = ([^;]+);/g)].map((m) => {
+  const t = /^lang === '(\w+)' \? '(\w+)' : lang$/.exec(m[1].trim());
+  return t ? `${t[1]}→${t[2]}` : m[1].trim() === 'lang' ? 'không đổi' : `lạ: ${m[1].trim()}`;
+});
+const fallback = new Map([...new Set(fallbacks)].filter((f) => f.includes('→')).map((f) => f.split('→')));
+if (!fallbacks.length) problems.push(`${HOOK}: không còn khai báo \`guideLang\` nào — luật locale không đọc được phép ánh xạ`);
+for (const f of fallbacks.filter((x) => x.startsWith('lạ: '))) {
+  problems.push(`${HOOK}: \`guideLang\` khai báo dạng luật không đọc được (${f.slice(4)}) — viết \`lang === 'x' ? 'y' : lang\``);
+}
+const readLangs = [...new Set(langs.map((l) => fallback.get(l) ?? l))].sort();
 const inCheck = (/locale TEXT NOT NULL CHECK \(locale IN \(([^)]*)\)\)/.exec(sql)?.[1] ?? '')
   .match(/'(\w+)'/g)?.map((s) => s.replace(/'/g, '')).sort() ?? [];
-if (!langs.length || JSON.stringify(langs) !== JSON.stringify(inCheck)) {
+if (!guideHook.includes('pickContent((content.data ?? []) as GuideContentRow[], guideLang)')) {
   problems.push(
-    `${MIGRATION}: CHECK của \`locale\` là [${inCheck}] còn \`AppLang\` là [${langs}]. Một locale mà app ` +
-      'không vẽ được là nội dung không ai đọc; một locale app vẽ được mà bảng từ chối là một tính năng ' +
-      'không lưu được nội dung',
+    `${HOOK}: nội dung hướng dẫn không còn được chọn bằng \`guideLang\` — luật locale bên dưới đọc ` +
+      'phép ánh xạ ấy để biết bảng phải nhận những tiếng nào; đổi chỗ chọn thì đổi cả luật',
+  );
+}
+if (new Set(fallbacks).size > 1) {
+  problems.push(`${HOOK}: \`guideLang\` có hai phép ánh xạ khác nhau (${[...new Set(fallbacks)]}) — chọn một`);
+}
+for (const [from, to] of fallback) {
+  if (!langs.includes(from) || !langs.includes(to)) {
+    problems.push(`${HOOK}: \`guideLang\` đổi ${from} → ${to} nhưng \`AppLang\` là [${langs}]`);
+  }
+}
+if (!langs.length || JSON.stringify(readLangs) !== JSON.stringify(inCheck)) {
+  problems.push(
+    `${MIGRATION}: CHECK của \`locale\` là [${inCheck}] còn app đọc nội dung bằng [${readLangs}] ` +
+      `(\`AppLang\` [${langs}] qua \`guideLang\` ${[...fallback].map(([a, b]) => `${a}→${b}`).join(', ') || 'không đổi'}). ` +
+      'Một locale mà app không đọc là nội dung không ai đọc; một locale app đọc mà bảng từ chối là một ' +
+      'tính năng không lưu được nội dung',
   );
 }
 
