@@ -78,6 +78,13 @@ private struct SignedInScope<Content: View>: View {
     // Phiên kết thúc (đăng xuất, đổi tài khoản → `.id` đổi): huỷ lượt làm mới
     // đang bay, để nó không ghi cache của người vừa rời đi.
     .onDisappear { flow?.close() }
+    // Transition opacity (#302) giữ cây cũ thêm một nhịp sau khi phase đổi;
+    // `onDisappear` chỉ chạy khi gỡ xong. Đóng ngay lúc phiên không còn là
+    // của `userId` này, để lượt làm mới của người cũ không ghi cache sau
+    // `forgetOtherAccounts` của người mới. `close()` gọi lại là vô hại.
+    .onChange(of: isCurrentSession) { _, current in
+      if !current { flow?.close() }
+    }
     .onChange(of: scenePhase) { _, phase in
       // Ra tiền cảnh: qua nửa đêm thì "hôm nay" đổi; dữ liệu cũ hơn một phút
       // thì làm mới (`focusManager` của baseline).
@@ -87,6 +94,11 @@ private struct SignedInScope<Content: View>: View {
       // Có mạng lại (`refetchOnReconnect` của baseline).
       if online, let flow { Task { await flow.reconnected() } }
     }
+  }
+
+  private var isCurrentSession: Bool {
+    if case .signedIn(let s) = services.session.phase { return s.userId == userId }
+    return false
   }
 }
 
