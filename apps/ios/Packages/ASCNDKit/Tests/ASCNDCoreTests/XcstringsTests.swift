@@ -48,7 +48,7 @@ struct XcstringsTests {
 
   @Test func everyKeyHasEnViEs() throws {
     let strings = try load()
-    #require(!strings.isEmpty, "không đọc được khoá nào từ Localizable.xcstrings")
+    try #require(!strings.isEmpty, "không đọc được khoá nào từ Localizable.xcstrings")
     for (key, entry) in strings.sorted(by: { $0.key < $1.key }) {
       let locales = entry.localizations ?? [:]
       for locale in Self.requiredLocales {
