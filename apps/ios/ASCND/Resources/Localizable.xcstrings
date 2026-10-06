@@ -485,65 +485,132 @@
     }
    }
   },
+<<<<<<< HEAD
   "setrow.weight": {
+=======
+  "weekstrip.today": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Weight"
+=======
+      "value": "today"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Tạ"
+=======
+      "value": "hôm nay"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Peso"
+=======
+      "value": "hoy"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "setrow.reps": {
+=======
+  "weekstrip.hint": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Reps"
+=======
+      "value": "Tap to open this day"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Reps"
+=======
+      "value": "Chạm để mở ngày này"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Reps"
+=======
+      "value": "Toca para abrir este día"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "setrow.completed": {
+=======
+  "day.rest": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Completed"
+=======
+      "value": "Rest"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Đã xong"
+=======
+      "value": "Nghỉ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Descanso"
+     }
+    }
+   }
+  },
+  "day.done": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Done"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã tập"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
@@ -554,48 +621,103 @@
     }
    }
   },
+<<<<<<< HEAD
   "setrow.notCompleted": {
+=======
+  "day.todo": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Not completed"
+=======
+      "value": "To do"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Chưa xong"
+=======
+      "value": "Cần tập"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Sin hacer"
+=======
+      "value": "Por hacer"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "setrow.saving": {
+=======
+  "day.missed": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Saving…"
+=======
+      "value": "Missed"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Đang lưu…"
+=======
+      "value": "Bỏ lỡ"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Guardando…"
+=======
+      "value": "Perdido"
+     }
+    }
+   }
+  },
+  "day.unplanned": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Unplanned"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa lên lịch"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin plan"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }

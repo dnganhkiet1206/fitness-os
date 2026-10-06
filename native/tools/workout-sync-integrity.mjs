@@ -92,15 +92,21 @@ const want = (ok, message) => { if (!ok) problems.push(message); };
   );
 
   /* A5 — and it still fails. The fix is "do not let one failure cancel
-     unrelated work", not "stop reporting". */
+     unrelated work", not "stop reporting". Từ 4b7d37c lỗi ném là KeyedError
+     mang khoá nCxHealthSyncIncomplete (không còn câu tiếng Việt thuần trong
+     message) — nên quy tắc kiểm tra CÚ NÉM MANG ĐÚNG KHOÁ, không phải chữ
+     "throw new Error". Phép thử ngược: bỏ câu ném, hoặc ném khoá khác → đỏ. */
   want(
-    /if \(failures\.length > 0\)[\s\S]{0,120}?throw new Error/.test(lib),
+    /if \(failures\.length > 0\)[\s\S]{0,200}?throw new \w+\(\s*['"]nCxHealthSyncIncomplete['"]/.test(lib),
     'writeHealthSync không còn ném khi có lỗi — mục tiêu là không để một lỗi huỷ việc khác, ' +
       'KHÔNG phải biến mọi lỗi thành thành công; onError phải vẫn nổ',
   );
 
-  /* A6 — the source-side facts every behavioural case rests on (breaks 6, 7). */
-  const upsert = hook.match(/from\('workout_sessions'\)[\s\S]{0,700}?\);/)?.[0] ?? '';
+  /* A6 — the source-side facts every behavioural case rests on (breaks 6, 7).
+     Nhắm đúng lệnh .upsert( — từ 0f6211a, from('workout_sessions') ĐẦU TIÊN là
+     câu select('date_time') chống trùng buổi nhập tay, không phải chỗ ghi
+     (cùng cách sửa workload-volume.mjs đã làm ở 91b1c8c). */
+  const upsert = hook.match(/from\('workout_sessions'\)\.upsert\([\s\S]{0,900}?\);/)?.[0] ?? '';
   want(
     /volume_load:\s*0\b/.test(upsert) && /sets:\s*\[\]/.test(upsert),
     'buổi tập từ đồng hồ không còn ghi volume_load: 0 và sets: [] — tonnage bịa ra cho một buổi chạy ' +
@@ -113,9 +119,15 @@ const want = (ok, message) => { if (!ok) problems.push(message); };
   /* The payload itself. `writeHealthSync` does not write workout_sessions and
      the hook cannot be loaded in Node, so this upsert is reachable only
      structurally — which means the rule has to name what it carries, not just
-     the options object after it. */
+     the options object after it. Từ 0f6211a mảng ghi là `fresh` — workouts đã
+     lọc trùng buổi nhập tay (`const fresh = workouts.filter(...)`) — nên quy
+     tắc chấp nhận workouts.map( hoặc X.map( với X suy ra từ workouts.filter(.
+     Phép thử ngược: upsert nhận mảng không suy ra từ workouts → đỏ. */
+  const upsertArg = upsert.match(/upsert\(\s*\n?\s*(\w+)\.map\(/)?.[1] ?? '';
+  const argFromWorkouts =
+    upsertArg === 'workouts' || new RegExp(`const ${upsertArg} = workouts\\.filter\\s*\\(`).test(hook);
   want(
-    /upsert\(\s*\n?\s*workouts\.map\(/.test(upsert),
+    upsertArg !== '' && argFromWorkouts,
     'lệnh upsert workout_sessions không còn nhận workouts.map(...) — buổi tập từ đồng hồ sẽ ' +
       'không bao giờ tới bảng, và workout_count vĩnh viễn là 0 cho người chỉ tập bằng đồng hồ',
   );
@@ -405,13 +417,18 @@ const out = { cases: [] };
         stepDays: [{ date: await shift(D0, -1), steps: 5000 }],
         bio: null, sleep: null, workouts: [{ date_time: String(iso) }],
       });
-    } catch (e) { threw = e.message; }
+    } catch (e) { threw = e; }
     const s = await state(d9);
     add('B+C · CẢ HAI lệnh ghi cột sức khoẻ hỏng, buổi tập 9 ngày trước',
       s.sessions === 1 && s.workout_count === 1 && s.streakCountsDay === true,
       'bảng=' + s.sessions + ' workout_count=' + s.workout_count + ' chuỗi tính ngày=' + s.streakCountsDay);
-    add('B+C · và hàm VẪN báo lỗi', threw != null && /chưa xong/.test(threw || ''),
-      'ném=' + JSON.stringify((threw || '').slice(0, 80)));
+    /* Từ 4b7d37c lỗi là KeyedError mang khoá nCxHealthSyncIncomplete — hợp đồng
+       "hàm VẪN báo lỗi" kiểm tra KHOÁ lỗi, không phải mảnh câu tiếng Việt trong
+       message. Phép thử ngược: không ném, hoặc ném khoá khác → đỏ. */
+    const threwIncomplete = threw != null &&
+      ((threw.msgKey || '') === 'nCxHealthSyncIncomplete' || /chưa xong/.test(threw.message || ''));
+    add('B+C · và hàm VẪN báo lỗi', threwIncomplete,
+      'ném=' + JSON.stringify(String((threw && (threw.msgKey || threw.message)) || '').slice(0, 80)));
     add('B+C · buổi tập từ đồng hồ giữ tonnage 0 và acwr null',
       s.volume_load === 0 && s.acwr === null, 'volume=' + s.volume_load + ' acwr=' + s.acwr);
   }
@@ -446,14 +463,19 @@ const out = { cases: [] };
     try {
       await writeHealthSync({ userId: A, today: D0, measured: {}, stepDays: [], bio: null, sleep: null,
         workouts: [{ date_time: String(await at(dA, '07:00')) }, { date_time: String(await at(dB, '07:00')) }] });
-    } catch (e) { threw = e.message; }
+    } catch (e) { threw = e; }
     c.query = orig;
     const sA = await state(dA); const sB = await state(dB);
     add('D · một ngày dựng hỏng, ngày kia vẫn dựng',
       hits > 0 && sB.workout_count === 1,
       'ngày cũ workout_count=' + sA.workout_count + ' ngày mới workout_count=' + sB.workout_count + ' (lần ép hỏng=' + hits + ')');
+    /* Từ 4b7d37c ngày hỏng nằm trong slots.parts dạng token
+       nCxHealthSyncPartRebuild:<ngày> — "được kể tên" kiểm tra TOKEN/PARTS,
+       không phải message thuần. Phép thử ngược: parts thiếu ngày → đỏ. */
+    const threwParts = (threw && threw.slots && threw.slots.parts) || '';
     add('D · và ngày hỏng được kể tên trong lỗi',
-      threw != null && String(threw).includes(dA), 'ném=' + JSON.stringify(String(threw || '').slice(0, 110)));
+      threw != null && (String(threwParts).includes(dA) || String(threw.message || '').includes(dA)),
+      'ném=' + JSON.stringify(String(threw && (threw.msgKey || threw.message) || '').slice(0, 110)));
   }
 
   /* ── E: no workout written → no phantom projection ── */
