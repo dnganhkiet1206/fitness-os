@@ -21,7 +21,13 @@ struct RootTabView: View {
         PlaceholderScreen(title: "tab.nutrition", systemImage: "fork.knife")
       }
       Tab("tab.workouts", systemImage: "dumbbell", value: AppTab.workouts) {
-        PlaceholderScreen(title: "tab.workouts", systemImage: "dumbbell")
+        #if DEBUG
+          // Tạm thời: các màn thử cho Kiệt kiểm trên máy — lát dọc màn tập
+          // (A5) và Live Activity (#227). Màn tập thật thay chỗ này.
+          LabsView()
+        #else
+          PlaceholderScreen(title: "tab.workouts", systemImage: "dumbbell")
+        #endif
       }
       Tab("tab.community", systemImage: "person.2", value: AppTab.community) {
         PlaceholderScreen(title: "tab.community", systemImage: "person.2")
@@ -32,6 +38,28 @@ struct RootTabView: View {
     }
   }
 }
+
+#if DEBUG
+  /// Chọn giữa các màn thử (chỉ bản Debug). Nhớ lựa chọn qua các lần mở app.
+  private struct LabsView: View {
+    @AppStorage("lab.which") private var which = 0
+
+    var body: some View {
+      VStack(spacing: 0) {
+        Picker(selection: $which) {
+          Text(verbatim: "Workout").tag(0)
+          Text(verbatim: "Rest").tag(1)
+        } label: {
+          Text(verbatim: "Lab")
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+        .padding(.top, 8)
+        if which == 0 { WorkoutLabView() } else { RestLabView() }
+      }
+    }
+  }
+#endif
 
 /// Chỗ giữ màn cho tới khi slice của nó tới (docs/MIGRATION_STATUS.md).
 /// Có NavigationStack thật để tiêu đề lớn, cuộn và chuyển cảnh đã đúng kiểu

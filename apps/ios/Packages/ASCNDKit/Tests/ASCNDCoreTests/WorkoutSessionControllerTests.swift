@@ -362,6 +362,23 @@ struct WorkoutSessionControllerTests {
   }
 }
 
+/// Buổi không có template thật: `template_id` gửi đi là null — không bịa id,
+/// vì đó là khoá ngoại và id bịa là lỗi vĩnh viễn.
+@MainActor
+struct AdHocPlanTests {
+  @Test func noTemplateSendsNullTemplateId() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = WorkoutSessionController(
+      plan: .init(date: today, templateId: nil, templateName: "Lab", rows: [bench1]),
+      userId: "u1", store: store, clock: clock, timeZone: saigon, makeId: { "s" })
+    await c.load()
+    await c.toggle("b1")
+    _ = try await c.finish()
+    #expect(c.key == "routine-day:2026-10-05:adhoc")
+    #expect(await store.outbox.first?.payload["template_id"] == .null)
+  }
+}
+
 struct WorkoutSummaryTests {
   /// Khởi động không vào volume, không vào số set; set giữ có tính.
   @Test func warmupsAreExcluded() throws {
