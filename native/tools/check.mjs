@@ -918,6 +918,11 @@ const STEPS = [
     mọi mismatch có adapter tường minh. `--live` đối chiếu lại 4 branch thật.
   */
   ['contract handoff C43', 'node', ['tools/contract-handoff.mjs']],
+  /*
+    Golden vectors: mỗi tệp spec/vectors/*.json phải đăng ký runner trong
+    runners.json — vector không runner là vector không ai chạy (#328).
+  */
+  ['vector runners', 'node', ['../spec/vectors/check-runners.mjs']],
 ];
 
 /*
