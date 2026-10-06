@@ -3,7 +3,8 @@
 // Helper nhất quán cho Reduce Motion:
 // - DSMotion.animation(_:) trả về nil khi Reduce Motion bật
 // - Dùng cho mọi animation/transition trong app.
-import SwiftUI
+#if canImport(SwiftUI)
+public import SwiftUI
 
 /// Policy animation của ASCND.
 public enum DSMotion {
@@ -40,3 +41,4 @@ extension View {
     )
   }
 }
+#endif
