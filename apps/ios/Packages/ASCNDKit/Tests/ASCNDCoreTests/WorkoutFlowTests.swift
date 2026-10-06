@@ -231,3 +231,118 @@ struct WorkoutFlowTests {
     await #expect(throws: WorkoutSessionController.FinishRefusal.loading) { try await h.flow.finish() }
   }
 }
+
+// MARK: - đầu-cuối: màn tập → máy → outbox → sync → server (#332)
+
+/// Các mảnh thật nối như trong app (`AppServices`): một store giữ cả ngày lẫn
+/// outbox (như một tệp SQLite), `SyncWorker` thật, server giả có bảng
+/// `workout_sessions`. "Kill app" = vứt flow + worker, giữ store và server.
+@MainActor
+private final class Pipeline {
+  let clock = ManualClock(EpochMillis(mondayAt2pm))
+  let store = InMemoryWorkoutStore()
+  let server = FakeServer()
+  let templates = Templates(snap(template(sets: 3)))
+  let caches = Caches()
+  private(set) var flow: WorkoutFlow!
+  private(set) var worker: SyncWorker!
+
+  init(online: Bool = true) { launch(online: online) }
+
+  /// Mở app (lần đầu, hoặc sau khi bị kill).
+  func launch(online: Bool) {
+    let worker = SyncWorker(store: store, remote: server, clock: clock, online: online, signedInUser: "u1", sleep: clock.sleeper)
+    self.worker = worker
+    let today = TodayController(
+      userId: "u1", repository: TodayRepository(source: templates, cache: templates), history: NoHistory(),
+      workouts: store, clock: clock, timeZone: saigon)
+    flow = WorkoutFlow(
+      today: today, records: RecordBook(userId: "u1", history: NoHistory(), cache: caches),
+      performance: PerformanceBook(userId: "u1", source: NoHistory(), cache: caches, clock: clock, timeZone: saigon),
+      store: store, clock: clock, timeZone: saigon, onEnqueued: { _ in worker.kick() })
+  }
+
+  /// `AppServices.start()`: thử gửi hàng đợi ngay khi mở.
+  func start() async {
+    await flow.start()
+    worker.kick()
+    await worker.settle()
+  }
+
+  func sets(_ id: String) async -> Int? {
+    if case .array(let a)? = await server.table[id]?["sets"] { return a.count }
+    return nil
+  }
+}
+
+@MainActor
+struct WorkoutPipelineTests {
+  /// Chốt lúc offline → app bị kill → mở lại có mạng: buổi lên server đúng
+  /// MỘT lần, hàng đợi trống.
+  @Test func offlineFinishSurvivesKillAndLandsOnce() async throws {
+    let p = Pipeline(online: false)
+    await p.start()
+    let s = try #require(p.flow.session)
+    await s.toggle("0-0")
+    let summary = try await p.flow.finish()
+    await p.worker.settle()
+    #expect(await p.server.table.isEmpty)
+    #expect(await p.store.outbox.map(\.id) == [summary.sessionId], "bền trên máy trước khi gửi")
+
+    p.launch(online: true)
+    await p.start()
+    #expect(await p.server.table.keys.sorted() == [summary.sessionId])
+    #expect(await p.store.outbox.isEmpty)
+    #expect(p.flow.session?.loggedSessionId == summary.sessionId, "mở lại vẫn là buổi đã chốt")
+  }
+
+  /// Server đã ghi nhưng phản hồi mất (timeout): gửi lại không thành hàng
+  /// thứ hai.
+  @Test func lostResponseIsRetriedNotDuplicated() async throws {
+    let p = Pipeline(online: false)
+    await p.start()
+    let s = try #require(p.flow.session)
+    await s.toggle("0-0")
+    let summary = try await p.flow.finish()
+    await p.server.script(summary.sessionId, .lostResponse)
+    p.worker.setOnline(true)
+    await p.worker.settle()
+    #expect(await p.server.attempts == [summary.sessionId, summary.sessionId])
+    #expect(await p.server.table.count == 1)
+    #expect(await p.store.outbox.isEmpty)
+  }
+
+  /// Chạm đúp "Chốt": một buổi, một hàng outbox, một hàng server.
+  @Test func doubleTapFinishIsOneSession() async throws {
+    let p = Pipeline()
+    await p.start()
+    let s = try #require(p.flow.session)
+    await s.toggle("0-0")
+    async let a = try? p.flow.finish()
+    async let b = try? p.flow.finish()
+    let ids = await [a, b].compactMap { $0?.sessionId }
+    await p.worker.settle()
+    #expect(Set(ids).count == 1)
+    #expect(await p.server.table.count == 1)
+  }
+
+  /// Chốt → nối thêm set lúc offline → kill → mở lại có mạng: hàng trên server
+  /// có đủ mọi set, theo đúng thứ tự gửi (gốc trước, bản ghi lại sau).
+  @Test func appendAfterKillReachesTheSameRow() async throws {
+    let p = Pipeline(online: false)
+    await p.start()
+    let s = try #require(p.flow.session)
+    await s.toggle("0-0")
+    await s.toggle("0-1")
+    let summary = try await p.flow.finish()
+    await s.toggle("0-2")
+    _ = try await p.flow.append()
+
+    p.launch(online: true)
+    await p.start()
+    #expect(await p.server.table.keys.sorted() == [summary.sessionId])
+    #expect(await p.sets(summary.sessionId) == 3)
+    #expect(await p.server.attempts.first == summary.sessionId)
+    #expect(await p.store.outbox.isEmpty)
+  }
+}
