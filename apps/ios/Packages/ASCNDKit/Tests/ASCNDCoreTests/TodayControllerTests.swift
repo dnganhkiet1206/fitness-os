@@ -55,6 +55,23 @@ private actor Flaky: TemplateSource {
     return snap()
   }
 }
+private actor Counting: TemplateSource {
+  private(set) var fetches = 0
+  private var holding = false
+  private var parked: [CheckedContinuation<Void, Never>] = []
+  var waiting: Int { parked.count }
+  func hold() { holding = true }
+  func release() {
+    holding = false
+    parked.forEach { $0.resume() }
+    parked = []
+  }
+  func fetch(userId: String) async throws -> TemplateSnapshot {
+    fetches += 1
+    if holding { await withCheckedContinuation { parked.append($0) } }
+    return snap()
+  }
+}
 private struct History: TrainingHistory {
   let result: Result<[EpochMillis], Down>
   func sessionTimes(userId: String, since: EpochMillis) async throws -> [EpochMillis] { try result.get() }
@@ -131,6 +148,25 @@ struct TodayControllerTests {
     await c.load()
     #expect(c.plan == nil)
     #expect(c.failure == .offline)
+  }
+
+  /// Đề xuất audit của C (#290): `load` / `refresh` gọi chồng → một lượt truy
+  /// vấn (màn Today tự `load` trong `.task` trong khi flow cũng đang tải).
+  @Test func overlappingLoadsShareOneFetch() async {
+    let source = Counting()
+    let c = TodayController(
+      userId: "u1", repository: TodayRepository(source: source, cache: Cache()),
+      history: History(result: .success([])), workouts: InMemoryWorkoutStore(), clock: monday2pm, timeZone: saigon)
+    await source.hold()
+    async let a: Void = c.load()
+    async let b: Void = c.refresh()
+    async let d: Void = c.load()
+    while await source.waiting == 0 { await Task.yield() }
+    for _ in 0..<20 { await Task.yield() }
+    await source.release()
+    _ = await (a, b, d)
+    #expect(await source.fetches == 1)
+    #expect(c.plan?.status == .todo)
   }
 
   /// Làm mới thành công thì lỗi cũ biến mất.

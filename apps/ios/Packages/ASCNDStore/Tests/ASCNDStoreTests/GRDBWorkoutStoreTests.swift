@@ -295,6 +295,38 @@ struct ReadCacheAccountTests {
   }
 }
 
+/// #400: xoá buổi từ lịch sử — một giao dịch: hàng outbox + mở khoá ngày.
+struct CommitDeleteTests {
+  @Test func unlocksTheDayAndEnqueuesOnce() async throws {
+    let db = try ASCNDDatabase()
+    let store = GRDBWorkoutStore(db)
+    try await store.saveDay("2026-10-05:tpl", DayState(progress: ticked("a").progress, loggedSessionId: "s1", loggedKeys: ["a"]))
+    try await store.saveDay("2026-10-04:tpl", DayState(loggedSessionId: "s0", loggedKeys: ["a"]))
+    let del = OutboxEntry(
+      id: "s1@del-1", userId: "u1", kind: "workout-delete", payload: .object(["id": .string("s1")]), createdAt: EpochMillis(0))
+    try await store.commitDelete(sessionId: "s1", del)
+    try await store.commitDelete(sessionId: "s1", del)
+    #expect(try await store.loadDay("2026-10-05:tpl")?.loggedKeys == [])
+    #expect(try await store.loadDay("2026-10-05:tpl")?.progress.done == ["a": true], "dấu tích giữ — tick lại / nối thêm dựng lại buổi")
+    #expect(try await store.loadDay("2026-10-04:tpl")?.loggedKeys == ["a"], "buổi khác không đụng")
+    let outbox = try OutboxStore(db).load()
+    #expect(outbox.pending.map(\.id) == ["s1@del-1"])
+  }
+}
+
+struct GRDBHistoryCacheTests {
+  @Test func roundTripPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBHistoryCache(db)
+    let e = HistoryEntry(id: "s1", at: EpochMillis(1), templateName: "Push", sessionRpe: 8, volumeKg: 480, prDetected: true, completedSets: 3, exerciseCount: 2)
+    try await cache.save(userId: "u1", [e])
+    #expect(try await cache.load(userId: "u1") == [e])
+    #expect(try await cache.load(userId: "u2") == nil)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await cache.load(userId: "u1") == nil, "đăng nhập người khác dọn cả lịch sử")
+  }
+}
+
 struct GRDBPerformanceCacheTests {
   @Test func roundTripPerUser() async throws {
     let db = try ASCNDDatabase()

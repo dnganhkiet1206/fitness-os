@@ -244,6 +244,8 @@ public final class WorkoutSessionController {
         loggedPR = s.loggedPR ?? false
         loggedRevision = s.loggedRevision ?? 0
         loggedRpe = s.loggedRpe
+        // Buổi đã bị xoá từ lịch sử (#400): không còn gì để tổng kết.
+        if loggedKeys.isEmpty { summary = nil }
       }
     } catch {
       // Không đọc được ≠ không có gì. Coi là "chưa có gì" thì lần tick đầu
