@@ -17,8 +17,42 @@ struct RootGate: View {
     case .signedIn(let s):
       // `id`: đổi tài khoản dựng lại cả cây — không state nào của người trước
       // (tab đang mở, màn tập, ô đang gõ) sống sót sang người sau.
-      RootTabView()
-        .id(s.userId)
+      SignedInScope(userId: s.userId) {
+        RootTabView()
+      }
+      .id(s.userId)
+    }
+  }
+}
+
+/// Mọi thứ sống theo một phiên đăng nhập. Hiện là luồng tập (#272): dựng một
+/// lần ở đây, mọi màn nhận qua `environment` — không màn nào tự dựng
+/// controller, nên Today, màn tập và Summary luôn nhìn cùng một buổi.
+private struct SignedInScope<Content: View>: View {
+  let userId: String
+  @ViewBuilder let content: Content
+  @Environment(AppServices.self) private var services
+  @Environment(RestTimerController.self) private var rest
+  @Environment(\.scenePhase) private var scenePhase
+  @State private var flow: WorkoutFlow?
+
+  var body: some View {
+    Group {
+      if let flow {
+        content.environment(flow)
+      } else {
+        ProgressView()
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+      }
+    }
+    .task {
+      let f = services.makeWorkoutFlow(userId: userId, rest: rest)
+      flow = f
+      await f.start()
+    }
+    .onChange(of: scenePhase) { _, phase in
+      // Qua nửa đêm khi app ở nền: "hôm nay" và màn tập theo ngày mới.
+      if phase == .active, let flow { Task { await flow.becameActive() } }
     }
   }
 }

@@ -27,8 +27,8 @@ struct WorkoutLabView: View {
           ProgressView()
         case .signedOut:
           SignInView()
-        case .signedIn(let s):
-          LabSession(user: s)
+        case .signedIn:
+          LabSession()
         }
       }
       .navigationTitle(Text(verbatim: "Workout Lab"))
@@ -53,64 +53,44 @@ enum WorkoutLabPlan {
   }
 }
 
+/// Chỉ đọc `WorkoutFlow` của phiên (#272) — cùng flow mà màn thật dùng. Lab
+/// không còn tự nối controller, nên thứ Kiệt thử ở đây là đường của bản Release.
 private struct LabSession: View {
-  let user: AuthSession
-  @Environment(AppServices.self) private var services
-  @Environment(RestTimerController.self) private var rest
-  @Environment(\.scenePhase) private var scenePhase
-  @State private var today: TodayController?
-  @State private var records: RecordBook?
-  @State private var performance: PerformanceBook?
-  @State private var controller: WorkoutSessionController?
+  @Environment(WorkoutFlow.self) private var flow
   @State private var useSample = false
 
   var body: some View {
+    let today = flow.today
     List {
-      if let today {
-        Section {
-          LabRow(label: "Today", value: today.plan.map { "\($0.date) · \($0.status.rawValue)\($0.isDeload ? " · deload" : "")" } ?? "\(today.today) · no plan")
-          LabRow(label: "Template", value: today.plan?.template.map { "\($0.name) (\($0.exercises.count) bài)" } ?? "—")
-          LabRow(label: "Plan source", value: Self.describe(today.source))
-          LabRow(label: "Trained (14d)", value: "\(today.trained.count) ngày")
-          LabRow(label: "Record history", value: records?.bests.map { "\($0.count) bài" } ?? "chưa biết (không nhận kỷ lục)")
-          if let e = today.refreshError {
-            LabRow(label: "Refresh failed", value: e).foregroundStyle(.orange)
-          }
-          if today.plan?.sessionPlan == nil {
-            Toggle(isOn: $useSample) { Text(verbatim: "Hôm nay không có buổi — dùng kế hoạch mẫu (Lab)") }
-          }
-        } header: {
-          Text(verbatim: "Today (TodayController)")
+      Section {
+        LabRow(label: "Today", value: today.plan.map { "\($0.date) · \($0.status.rawValue)\($0.isDeload ? " · deload" : "")" } ?? "\(today.today) · no plan")
+        LabRow(label: "Template", value: today.plan?.template.map { "\($0.name) (\($0.exercises.count) bài)" } ?? "—")
+        LabRow(label: "Plan source", value: Self.describe(today.source))
+        LabRow(label: "Trained (14d)", value: "\(today.trained.count) ngày")
+        LabRow(label: "Record history", value: flow.records.bests.map { "\($0.count) bài" } ?? "chưa biết (không nhận kỷ lục)")
+        if let e = today.refreshError {
+          LabRow(label: "Refresh failed", value: e).foregroundStyle(.orange)
+        }
+        if today.plan?.sessionPlan == nil {
+          Toggle(isOn: $useSample) { Text(verbatim: "Hôm nay không có buổi — dùng kế hoạch mẫu (Lab)") }
+        }
+      } header: {
+        Text(verbatim: "Today (WorkoutFlow)")
+      }
+      if let c = flow.session {
+        LabWorkout(c: c)
+      }
+    }
+    .onChange(of: useSample) { _, on in
+      Task {
+        if on {
+          await flow.setAdHoc { WorkoutLabPlan.plan(on: $0) }
+        } else {
+          await flow.setAdHoc(nil)
         }
       }
-      if let controller {
-        LabWorkout(c: controller, performance: performance)
-      }
     }
-    .task(id: user.userId) {
-      let t = services.makeToday(userId: user.userId)
-      let book = services.makeRecordBook(userId: user.userId)
-      let perf = services.makePerformanceBook(userId: user.userId)
-      today = t
-      records = book
-      performance = perf
-      await book.load()
-      await perf.load()
-      await t.load()
-      install()
-    }
-    .onChange(of: useSample) { install() }
-    .onChange(of: controller?.loggedSessionId) { _, id in
-      // Chốt xong: ngày thành done ngay, không đợi server.
-      if id != nil, let today { Task { await today.markTrained(today.today) } }
-    }
-    .onChange(of: scenePhase) { _, phase in
-      if phase == .active, let today { Task { await today.clockTick(); install() } }
-    }
-    .refreshable {
-      await today?.refresh()
-      install()
-    }
+    .refreshable { await flow.refresh() }
   }
 
   static func describe(_ s: TodayController.Source) -> String {
@@ -120,45 +100,11 @@ private struct LabSession: View {
     case .server(let t): "server · \(t.date.formatted(date: .omitted, time: .shortened))"
     }
   }
-
-  /// Dựng màn tập cho kế hoạch hiện tại. Không thay controller đang có tiến
-  /// độ: kế hoạch mới (server sau cache) chỉ áp khi chưa tick gì.
-  private func install() {
-    guard let today else { return }
-    let sync = services.sync
-    let rest = self.rest
-    let onRest: @MainActor (RestEvent, PlannedSet?) -> Void = { event, next in
-      rest.handle(event, target: next.map { RestTarget(exerciseName: $0.exerciseName, setNumber: $0.ordinal, totalSets: $0.of) })
-    }
-    let book = records
-    let perf = performance
-    let onEnqueued: @MainActor (OutboxEntry) -> Void = { entry in
-      sync.kick()
-      // Buổi vừa chốt thành "lần trước" ngay, không đợi sync.
-      if let perf { Task { await perf.absorb(row: entry.payload) } }
-      // Buổi vừa chốt thành lịch sử kỷ lục — buổi sau không nổ lại cùng kỷ lục.
-      if let book { Task { await book.absorb(setsJSON: entry.payload["sets"]) } }
-    }
-    let bests: @MainActor () -> PersonalRecords.Bests? = { book?.bests }
-    var next = today.makeSession(bests: bests, onRest: onRest, onEnqueued: onEnqueued)
-    if next == nil, useSample {
-      next = WorkoutSessionController(
-        plan: WorkoutLabPlan.plan(on: today.today), userId: user.userId, store: services.workouts,
-        bests: bests, onRest: onRest, onEnqueued: onEnqueued)
-    }
-    guard let next else {
-      controller = nil
-      return
-    }
-    if let c = controller, (c.plan == next.plan && c.loggedElsewhere == next.loggedElsewhere) || c.phase != .idle { return }
-    controller = next
-    Task { await next.load() }
-  }
 }
 
 private struct LabWorkout: View {
   let c: WorkoutSessionController
-  let performance: PerformanceBook?
+  @Environment(WorkoutFlow.self) private var flow
   @Environment(AppServices.self) private var services
   @Environment(RestTimerController.self) private var rest
   @State private var finishError: String?
@@ -194,7 +140,7 @@ private struct LabWorkout: View {
 
       Section {
         ForEach(c.plan.rows) { row in
-          if row.ordinal == 1, let last = performance?.last(for: row.exerciseName), let d = last.display {
+          if row.ordinal == 1, let last = flow.performance.last(for: row.exerciseName), let d = last.display {
             Text(verbatim: "Last (\(last.date)): \(Self.describe(d))")
               .font(.caption).foregroundStyle(.secondary)
           }
@@ -206,7 +152,7 @@ private struct LabWorkout: View {
         Button {
           Task {
             do throws(WorkoutSessionController.FinishRefusal) {
-              _ = try await c.finish()
+              _ = try await flow.finish()
               finishError = nil
             } catch {
               finishError = "\(error)"
@@ -220,7 +166,7 @@ private struct LabWorkout: View {
           Button {
             Task {
               do throws(WorkoutSessionController.FinishRefusal) {
-                _ = try await c.append()
+                _ = try await flow.append()
                 finishError = nil
               } catch {
                 finishError = "\(error)"
