@@ -5,15 +5,18 @@
 // KHÔNG cỡ chữ cố định — ngoại lệ duy nhất là số trong hình vẽ
 // (xem RING_TEXT_MAX_SCALE trong app RN).
 #if canImport(SwiftUI)
-@_exported import SwiftUI
+public import SwiftUI
 
 public extension DS {
-  enum Type {
+  /// Thang chữ — tên `TextStyle` vì `Type` đụng từ khoá `Foo.Type` (Swift 6).
+  enum TextStyle {
     /// hero: 44pt light — con số trả lời cả màn, trên largeTitle một bậc.
     public static let hero = Font.system(size: 44, weight: .light, design: .default)
-    public static let largeTitle = Font.largeTitle.weight(.bold)
-    public static let title = Font.title.weight(.bold)
-    public static let title2 = Font.title3.weight(.bold)
+    // Mapping theo đúng `iosTextStyle` trong tokens.json — KHÔNG dùng tên
+    // trùng SwiftUI (Font.largeTitle = 34pt, lớn hơn token "largeTitle" một bậc).
+    public static let largeTitle = Font.title.weight(.bold) // iosTextStyle: title1 (28pt)
+    public static let title = Font.title2.weight(.bold) // iosTextStyle: title2 (22pt)
+    public static let title2 = Font.title3.weight(.bold) // iosTextStyle: title3 (20pt, gần nhất với 18pt)
     public static let headline = Font.headline.weight(.semibold)
     public static let body = Font.subheadline.weight(.regular)
     public static let footnote = Font.footnote.weight(.medium)

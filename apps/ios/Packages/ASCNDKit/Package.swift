@@ -31,10 +31,13 @@ let package = Package(
   products: [
     .library(name: "ASCNDCore", targets: ["ASCNDCore"]),
     .library(name: "ASCNDDesignSystem", targets: ["ASCNDDesignSystem"]),
+    .library(name: "ASCNDLiveActivity", targets: ["ASCNDLiveActivity"]),
   ],
   targets: [
     .target(name: "ASCNDCore", swiftSettings: swiftSettings),
     .target(name: "ASCNDDesignSystem", dependencies: ["ASCNDCore"], swiftSettings: swiftSettings),
+    // Live Activity dùng chung app + widget extension (chỉ có nội dung trên iOS).
+    .target(name: "ASCNDLiveActivity", dependencies: ["ASCNDCore"], swiftSettings: swiftSettings),
     .target(name: "ASCNDTestSupport", dependencies: ["ASCNDCore"], swiftSettings: swiftSettings),
     .testTarget(
       name: "ASCNDCoreTests",
