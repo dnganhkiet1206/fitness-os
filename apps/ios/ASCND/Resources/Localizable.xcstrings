@@ -485,195 +485,116 @@
     }
    }
   },
-<<<<<<< HEAD
-  "summary.title": {
-=======
   "weekstrip.today": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Workout Summary"
-=======
       "value": "today"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Tóm tắt buổi tập"
-=======
       "value": "hôm nay"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Resumen del entrenamiento"
-=======
       "value": "hoy"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
-  "summary.volume": {
-=======
   "weekstrip.hint": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Volume"
-=======
       "value": "Tap to open this day"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Volume"
-=======
       "value": "Chạm để mở ngày này"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Volumen"
-=======
       "value": "Toca para abrir este día"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
-  "summary.sets": {
-=======
   "day.rest": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Sets"
-=======
       "value": "Rest"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Số set"
-=======
       "value": "Nghỉ"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Series"
-=======
       "value": "Descanso"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
-  "summary.exercises": {
-=======
   "day.done": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Exercises"
-=======
       "value": "Done"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Số bài"
-=======
       "value": "Đã tập"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Ejercicios"
-=======
       "value": "Hecho"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
-  "summary.warmup": {
-=======
   "day.todo": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Warm-up"
-=======
       "value": "To do"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Khởi động"
-=======
       "value": "Cần tập"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Calentamiento"
-=======
       "value": "Por hacer"
      }
     }
@@ -721,7 +642,121 @@
      "stringUnit": {
       "state": "translated",
       "value": "Sin plan"
->>>>>>> origin/native/ios-rewrite
+     }
+    }
+   }
+  },
+  "summary.title": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Workout Summary"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tóm tắt buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Resumen del entrenamiento"
+     }
+    }
+   }
+  },
+  "summary.volume": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Volume"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Volume"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Volumen"
+     }
+    }
+   }
+  },
+  "summary.sets": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sets"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Số set"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Series"
+     }
+    }
+   }
+  },
+  "summary.exercises": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Exercises"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Số bài"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ejercicios"
+     }
+    }
+   }
+  },
+  "summary.warmup": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Warm-up"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Khởi động"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Calentamiento"
      }
     }
    }
