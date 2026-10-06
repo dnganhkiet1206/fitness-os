@@ -20,6 +20,8 @@ public final class WorkoutFlow {
   public let today: TodayController
   public let records: RecordBook
   public let performance: PerformanceBook
+  /// Lịch sử buổi tập (#400) — `nil` khi app chưa dựng màn lịch sử.
+  public let history: HistoryBook?
   /// Buổi tập của hôm nay; `nil` khi hôm nay không có buổi (nghỉ / chưa lên
   /// lịch) và không có kế hoạch tự do.
   public private(set) var session: WorkoutSessionController?
@@ -47,7 +49,8 @@ public final class WorkoutFlow {
   ///   - onRest: nối vào `RestTimerController.handle(_:target:)`.
   ///   - onEnqueued: hàng outbox vừa bền — app gọi `sync.kick()`.
   public init(
-    today: TodayController, records: RecordBook, performance: PerformanceBook, store: any WorkoutStore,
+    today: TodayController, records: RecordBook, performance: PerformanceBook, history: HistoryBook? = nil,
+    store: any WorkoutStore,
     clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
     onRest: @escaping @MainActor (RestEvent, RestTarget?) -> Void = { _, _ in },
     onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
@@ -55,11 +58,22 @@ public final class WorkoutFlow {
     self.today = today
     self.records = records
     self.performance = performance
+    self.history = history
     self.store = store
     self.clock = clock
     self.timeZone = timeZone
     self.onRest = onRest
     self.onEnqueued = onEnqueued
+    history?.onDeleted = { [weak self] id, at in await self?.sessionDeleted(id, at: at) }
+  }
+
+  /// Một buổi bị xoá từ lịch sử (#400): ngày ấy thôi "đã tập", "lần trước"
+  /// quên nó, và buổi tập đang mở (nếu chính là nó) đọc lại trạng thái đã mở
+  /// khoá — không thì lần nối thêm sau dựng lại đúng buổi vừa xoá từ bộ nhớ.
+  func sessionDeleted(_ id: String, at: EpochMillis) async {
+    await today.markUntrained(LocalDate(at, in: timeZone))
+    await performance.forget(sessionId: id)
+    if let session, session.loggedSessionId == id { await session.load() }
   }
 
   /// Mở màn: kế hoạch trước (cache rồi server) để màn tập có ngay; hai bảng
@@ -75,11 +89,15 @@ public final class WorkoutFlow {
   private func initialLoad() async {
     async let records: Void = self.records.load()
     async let performance: Void = self.performance.load()
+    async let history: Void = self.loadHistory()
     await today.load()
     markFresh()
     await install()
-    _ = await (records, performance)
+    _ = await (records, performance, history)
   }
+
+  private func loadHistory() async { await history?.load() }
+  private func refreshHistory() async { await history?.refresh() }
 
   /// Phiên kết thúc (đăng xuất, đổi tài khoản): huỷ lượt làm mới đang bay —
   /// truy vấn mạng bị huỷ thì không có gì để ghi vào cache của người vừa rời
@@ -138,7 +156,8 @@ public final class WorkoutFlow {
     await install()
     async let records: Void = self.records.refresh()
     async let performance: Void = self.performance.refresh()
-    _ = await (records, performance)
+    async let history: Void = self.refreshHistory()
+    _ = await (records, performance, history)
   }
 
   private func markFresh() {
@@ -180,10 +199,26 @@ public final class WorkoutFlow {
     next.map { RestTarget(exerciseName: $0.exerciseName, setNumber: $0.ordinal, totalSets: $0.of) }
   }
 
+  @ObservationIgnored private var installing: Task<Void, Never>?
+
+  /// Các lượt dựng màn chạy NỐI TIẾP (đề xuất audit của C, 05/10): lượt sau
+  /// chỉ xét buổi khi lượt trước đã đọc xong nó. Chạy chồng thì lượt sau thấy
+  /// buổi còn `.loading` — chưa biết đã có tiến độ hay chưa — và coi là "chưa
+  /// chạm", thay mất một buổi có thể đang tập dở.
+  private func install() async {
+    let previous = installing
+    let task = Task {
+      await previous?.value
+      await self.installNow()
+    }
+    installing = task
+    await task.value
+  }
+
   /// Dựng màn tập cho kế hoạch hiện tại. Không bao giờ bỏ một buổi đang tập
   /// dở: kế hoạch mới (server sau cache, sửa template ở máy khác, qua nửa đêm)
   /// chỉ thay buổi chưa được chạm, hoặc buổi đã chốt của một ngày đã qua.
-  private func install() async {
+  private func installNow() async {
     let next = makeSession()
     if let current = session {
       if let next, current.plan == next.plan, current.loggedElsewhere == next.loggedElsewhere {
@@ -234,6 +269,7 @@ public final class WorkoutFlow {
       let previous = absorbing
       absorbing = Task {
         await previous?.value
+        await self.history?.absorb(entry)
         if entry.kind == WorkoutSessionRecord.deleteKind {
           // Gỡ set cuối cùng (#398): buổi không còn. Bảng kỷ lục giữ nguyên —
           // tốt-nhất là phép max, không gỡ được; lần làm mới sau sửa lại.

@@ -15,12 +15,14 @@ struct DayCellDisplay: Hashable {
   /// Số ngày trong tháng.
   let dayNumber: Int
   /// Trạng thái: rest/done/todo/missed/unplanned (5 trạng thái baseline).
-  let state: DayState
+  let state: WeekDayState
   /// Có phải hôm nay không.
   let isToday: Bool
 }
 
-enum DayState: Hashable {
+/// Tên riêng cho trạng thái HIỂN THỊ của một ô: `DayState` trần sẽ che
+/// `ASCNDCore.DayState` (điểm quay lại của ngày) trong cả target app.
+enum WeekDayState: Hashable {
   case rest, done, todo, missed, unplanned
 }
 
@@ -87,7 +89,7 @@ struct WeekStripView: View {
     .accessibilityHint(Text(String(localized: "weekstrip.hint")))
   }
 
-  private func stateColor(_ state: DayState) -> DSColor {
+  private func stateColor(_ state: WeekDayState) -> DSColor {
     switch state {
     case .done: DS.Color.readinessGreen
     case .todo: DS.Color.primary
@@ -97,7 +99,7 @@ struct WeekStripView: View {
     }
   }
 
-  private func stateWash(_ state: DayState) -> DSColor {
+  private func stateWash(_ state: WeekDayState) -> DSColor {
     // Nền nhạt theo trạng thái — RN dùng alpha() trên palette; ở đây dùng
     // secondary cho đơn giản (DS chưa có wash token).
     DS.Color.secondary
@@ -110,7 +112,7 @@ struct WeekStripView: View {
     return cell.isToday ? base + ", " + String(localized: "weekstrip.today") : base
   }
 
-  private func stateLabel(_ state: DayState) -> String {
+  private func stateLabel(_ state: WeekDayState) -> String {
     switch state {
     case .rest: String(localized: "day.rest")
     case .done: String(localized: "day.done")
