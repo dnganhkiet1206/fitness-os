@@ -1,0 +1,4 @@
+[
+  { "rule": "ok", "input": { "a": 1, "b": 1 }, "expected": 2 },
+  { "rule": "thiếu b", "input": { "a": 1 }, "expected": 1 }
+]
