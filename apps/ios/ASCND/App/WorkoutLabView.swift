@@ -80,6 +80,9 @@ private struct LabSession: View {
       if let c = flow.session {
         LabWorkout(c: c)
       }
+      if let history = flow.history {
+        LabHistory(history: history)
+      }
     }
     .onChange(of: useSample) { _, on in
       Task {
@@ -141,7 +144,10 @@ private struct LabWorkout: View {
       }
 
       Section {
-        ForEach(c.plan.rows) { row in
+        ForEach(c.rows) { row in
+          if let id = row.adHoc, row.heads {
+            LabAdHocHeader(c: c, id: id)
+          }
           if row.ordinal == 1, let last = flow.performance.last(for: row.exerciseName), let d = last.display {
             Text(verbatim: "Last (\(last.date)): \(Self.describe(d))")
               .font(.caption).foregroundStyle(.secondary)
@@ -163,6 +169,11 @@ private struct LabWorkout: View {
                 }
               }
             }
+        }
+        Button {
+          Task { await c.addExercise() }
+        } label: {
+          Text(verbatim: "+ Add exercise (not in plan)")
         }
       }
 
@@ -259,6 +270,66 @@ extension LabWorkout {
     case .bodyweight(let r): "\(r) reps × bodyweight"
     case .loaded(let w, let r): "\(w.formatted()) kg × \(r)"
     }
+  }
+}
+
+/// Lịch sử buổi tập (#400): 90 ngày, mới trước; vuốt để xoá.
+private struct LabHistory: View {
+  let history: HistoryBook
+  @State private var error: String?
+
+  var body: some View {
+    Section {
+      if let f = history.failure {
+        LabRow(label: "History refresh failed", value: "\(f)").foregroundStyle(.orange)
+      }
+      ForEach(history.entries) { e in
+        LabRow(
+          label: e.at.date.formatted(date: .abbreviated, time: .shortened),
+          value: "\(e.templateName) · \(e.completedSets) sets · \(e.exerciseCount) ex · \(e.volumeKg) kg\(e.prDetected ? " · PR" : "")")
+          .swipeActions {
+            Button(role: .destructive) {
+              Task {
+                do throws(HistoryBook.DeleteRefusal) {
+                  try await history.delete(e.id)
+                  error = nil
+                } catch {
+                  self.error = "\(error)"
+                }
+              }
+            } label: {
+              Text(verbatim: "Delete session")
+            }
+          }
+      }
+      if let error {
+        Text(verbatim: error).foregroundStyle(.red).font(.footnote)
+      }
+    } header: {
+      Text(verbatim: "History (90 days) — \(history.entries.count)")
+    }
+  }
+}
+
+/// Đầu thẻ của một bài thêm (#399): tên, thêm hiệp, bỏ bài.
+private struct LabAdHocHeader: View {
+  let c: WorkoutSessionController
+  let id: String
+
+  var body: some View {
+    let locked = c.adHocLocked(id)
+    HStack {
+      TextField(text: Binding(
+        get: { c.progress.extra.first { $0.id == id }?.name ?? "" },
+        set: { v in Task { await c.renameExercise(id, to: v) } })
+      ) { Text(verbatim: "Exercise name") }
+        .disabled(locked)
+      Button { Task { await c.addSet(to: id) } } label: { Text(verbatim: "+ set") }
+      Button(role: .destructive) { Task { await c.removeExercise(id) } } label: { Text(verbatim: "Remove") }
+        .disabled(locked)
+    }
+    .buttonStyle(.borderless)
+    .font(.footnote)
   }
 }
 
