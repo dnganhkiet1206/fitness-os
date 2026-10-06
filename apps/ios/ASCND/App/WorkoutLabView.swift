@@ -141,7 +141,10 @@ private struct LabWorkout: View {
       }
 
       Section {
-        ForEach(c.plan.rows) { row in
+        ForEach(c.rows) { row in
+          if let id = row.adHoc, row.heads {
+            LabAdHocHeader(c: c, id: id)
+          }
           if row.ordinal == 1, let last = flow.performance.last(for: row.exerciseName), let d = last.display {
             Text(verbatim: "Last (\(last.date)): \(Self.describe(d))")
               .font(.caption).foregroundStyle(.secondary)
@@ -163,6 +166,11 @@ private struct LabWorkout: View {
                 }
               }
             }
+        }
+        Button {
+          Task { await c.addExercise() }
+        } label: {
+          Text(verbatim: "+ Add exercise (not in plan)")
         }
       }
 
@@ -259,6 +267,28 @@ extension LabWorkout {
     case .bodyweight(let r): "\(r) reps × bodyweight"
     case .loaded(let w, let r): "\(w.formatted()) kg × \(r)"
     }
+  }
+}
+
+/// Đầu thẻ của một bài thêm (#399): tên, thêm hiệp, bỏ bài.
+private struct LabAdHocHeader: View {
+  let c: WorkoutSessionController
+  let id: String
+
+  var body: some View {
+    let locked = c.adHocLocked(id)
+    HStack {
+      TextField(text: Binding(
+        get: { c.progress.extra.first { $0.id == id }?.name ?? "" },
+        set: { v in Task { await c.renameExercise(id, to: v) } })
+      ) { Text(verbatim: "Exercise name") }
+        .disabled(locked)
+      Button { Task { await c.addSet(to: id) } } label: { Text(verbatim: "+ set") }
+      Button(role: .destructive) { Task { await c.removeExercise(id) } } label: { Text(verbatim: "Remove") }
+        .disabled(locked)
+    }
+    .buttonStyle(.borderless)
+    .font(.footnote)
   }
 }
 
