@@ -178,7 +178,7 @@ export function TodayTraining() {
           <Text style={styles.restDesc}>{i18n.nTodayRestHint}</Text>
 
           <Text style={styles.suggestTitle}>
-            {i18n.nRestSuggestTitle}
+            {i18n.nCxRestSuggestTitle}
           </Text>
           <View style={styles.suggestRow}>
             <PressScale
@@ -186,24 +186,24 @@ export function TodayTraining() {
               accessibilityRole="button"
               onPress={() => Haptics.selection()}>
               <Icon icon={PersonStanding} size={24} color="#f59e0b" />
-              <Text style={styles.suggestLabel}>{i18n.nRestWalk}</Text>
-              <Text style={styles.suggestSub}>20–30 {i18n.nRestMinutes}</Text>
+              <Text style={styles.suggestLabel}>{i18n.nCxRestWalk}</Text>
+              <Text style={styles.suggestSub}>{fillCopy(i18n.nCxSuggestMinRange, { r: '20–30' })}</Text>
             </PressScale>
             <PressScale
               style={styles.suggestTile}
               accessibilityRole="button"
               onPress={() => Haptics.selection()}>
               <Icon icon={Leaf} size={24} color="#22c55e" />
-              <Text style={styles.suggestLabel}>{i18n.nRestStretch}</Text>
-              <Text style={styles.suggestSub}>10–15 {i18n.nRestMinutes}</Text>
+              <Text style={styles.suggestLabel}>{i18n.nCxRestStretch}</Text>
+              <Text style={styles.suggestSub}>{fillCopy(i18n.nCxSuggestMinRange, { r: '10–15' })}</Text>
             </PressScale>
             <PressScale
               style={styles.suggestTile}
               accessibilityRole="button"
               onPress={() => Haptics.selection()}>
               <Icon icon={Sun} size={24} color="#eab308" />
-              <Text style={styles.suggestLabel}>{i18n.nRestLight}</Text>
-              <Text style={styles.suggestSub}>{i18n.nRestOptional}</Text>
+              <Text style={styles.suggestLabel}>{i18n.nCxRestLight}</Text>
+              <Text style={styles.suggestSub}>{i18n.nCxRestOptional}</Text>
             </PressScale>
           </View>
 
@@ -212,7 +212,7 @@ export function TodayTraining() {
             accessibilityRole="button"
             onPress={() => Haptics.selection()}>
             <Text style={styles.restPrimaryText}>
-              {i18n.nRestLight} ›
+              {i18n.nCxRestLight} ›
             </Text>
           </PressScale>
           <PressScale
