@@ -975,19 +975,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@, set %2$d of %3$d, %4$@ kg × %5$d, %6$@"
+      "value": "%1$@, set %2$d of %3$d, %4$@ × %5$d, %6$@"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@, hiệp %2$d trên %3$d, %4$@ kg × %5$d, %6$@"
+      "value": "%1$@, hiệp %2$d trên %3$d, %4$@ × %5$d, %6$@"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@, serie %2$d de %3$d, %4$@ kg × %5$d, %6$@"
+      "value": "%1$@, serie %2$d de %3$d, %4$@ × %5$d, %6$@"
      }
     }
    }
@@ -5282,6 +5282,29 @@
      "stringUnit": {
       "state": "translated",
       "value": "Entrenamiento registrado"
+     }
+    }
+   }
+  },
+  "workout.bodyweight": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "bodyweight"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "tạ cơ thể"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "peso corporal"
      }
     }
    }
