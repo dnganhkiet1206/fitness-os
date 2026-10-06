@@ -9,14 +9,14 @@ import Testing
 /// với seed cố định (`SplitMix64`) — tất định, không flaky. Bất biến sau mọi
 /// thao tác:
 ///
-/// 1. Không bao giờ trùng set: mỗi hàng outbox mang id `"<buổi>@<số hàng>"` —
+/// 1. Không bao giờ trùng set: mỗi hàng outbox mang id `"<buổi>@r<n>"` (#415) —
 ///    phát lại / bấm lại cùng id không nhân đôi set.
 /// 2. Session id được giữ: mọi bản ghi lại mang đúng id buổi gốc.
 /// 3. Dấu thời gian được giữ: bản ghi lại cùng `date_time` với buổi gốc.
 /// 4. Kill/reopen giữa chừng: không mất dữ liệu đã commit, không sinh buổi mới.
 ///
 /// Đảo ngược (chứng minh test bắt lỗi): cho `append()` sinh id outbox mới mỗi
-/// lần gọi thay vì `"<buổi>@<số hàng>"` → bất biến 1 đỏ ngay (hai hàng cùng
+/// lần gọi thay vì `"<buổi>@r<n>"` → bất biến 1 đỏ ngay (hai hàng cùng
 /// tập set).
 @MainActor
 struct AppendIdempotencyFuzzTests {
@@ -123,7 +123,10 @@ struct AppendIdempotencyFuzzTests {
         try await c.append()
       }
       #expect(await store.outbox.map(\.id) == afterFirst, "không thêm hàng khi hết pending")
-      #expect(afterFirst == [first.sessionId, "\(first.sessionId)@2"])
+      // Id bản ghi lại là "<buổi>@r<n>", n đếm bền trong `DayState.loggedRevision`
+      // (#415). Dạng cũ "<buổi>@<số set>" trùng khi gỡ set rồi nối lại cùng số
+      // set. Bất biến giữ nguyên: đúng MỘT bản ghi lại sau bản chốt.
+      #expect(afterFirst == [first.sessionId, "\(first.sessionId)@r1"])
     }
   }
 }
