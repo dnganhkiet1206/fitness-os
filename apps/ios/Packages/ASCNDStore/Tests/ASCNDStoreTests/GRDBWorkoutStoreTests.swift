@@ -155,3 +155,42 @@ struct WorkoutFlowOnSQLiteTests {
     #expect(try outbox.load().pending.map(\.id) == ["sess-a"])
   }
 }
+
+/// Server giả tối thiểu: nhận theo id (upsert `ignoreDuplicates`).
+private actor Server: RemoteWriter {
+  var rows: [String: JSONValue] = [:]
+  func send(_ entry: OutboxEntry) async throws(WriteFailure) {
+    if rows[entry.id] == nil { rows[entry.id] = entry.payload }
+  }
+}
+
+/// Đầu-cuối trên SQLite thật: chốt OFFLINE → kill → mở lại → có mạng → buổi
+/// lên server đúng một lần, hàng đợi trên đĩa rỗng.
+@MainActor
+struct OfflineFinishThenSyncTests {
+  @Test func finishOfflineKillReopenSync() async throws {
+    let path = tempPath()
+    defer { try? FileManager.default.removeItem(atPath: path) }
+    let server = Server()
+    let rows = [PlannedSet(key: "b1", exerciseId: "ex", exerciseName: "Bench", ordinal: 1, of: 1, weightKg: 60, reps: 8, plannedRest: 0)]
+    do {
+      let db = try ASCNDDatabase(path: path)
+      let worker = SyncWorker(store: OutboxStore(db), remote: server, online: false, signedInUser: "u1")
+      let c = WorkoutSessionController(
+        plan: .init(date: LocalDate("2026-10-05")!, templateId: "t", templateName: "Push", rows: rows),
+        userId: "u1", store: GRDBWorkoutStore(db), timeZone: TimeZone(identifier: "UTC")!,
+        makeId: { "sess-1" }, onEnqueued: { _ in worker.kick() })
+      await c.load()
+      await c.toggle("b1")
+      _ = try await c.finish()
+      await worker.settle()
+      #expect(await server.rows.isEmpty)
+    }
+    let db = try ASCNDDatabase(path: path)
+    let worker = SyncWorker(store: OutboxStore(db), remote: server, online: false, signedInUser: "u1")
+    worker.setOnline(true)
+    await worker.settle()
+    #expect(await server.rows.keys.sorted() == ["sess-1"])
+    #expect(try OutboxStore(db).load().pending.isEmpty)
+  }
+}
