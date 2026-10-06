@@ -3,7 +3,7 @@
 // Nhãn + số lớn + đơn vị. Dùng cho volume, số set, thời gian ở màn Summary.
 // Số dùng font mono để cột số không nhảy khi giá trị đổi.
 #if canImport(SwiftUI)
-import SwiftUI
+public import SwiftUI
 
 public struct DSStatTile: View {
   let label: String
@@ -19,15 +19,15 @@ public struct DSStatTile: View {
   public var body: some View {
     VStack(alignment: .leading, spacing: DS.Spacing.xs) {
       Text(label)
-        .font(DS.Type.caption)
+        .font(DS.TextStyle.caption)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
       HStack(alignment: .firstTextBaseline, spacing: 4) {
         Text(value)
-          .font(DS.Type.mono(.title))
+          .font(DS.TextStyle.mono(.title))
           .foregroundStyle(DS.Color.foreground.swiftUI)
         if let unit {
           Text(unit)
-            .font(DS.Type.footnote)
+            .font(DS.TextStyle.footnote)
             .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
       }
