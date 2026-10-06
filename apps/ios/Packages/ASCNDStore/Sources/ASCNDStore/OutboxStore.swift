@@ -89,12 +89,15 @@ public final class OutboxStore: Sendable {
   }
 
   /// Đăng xuất: bỏ cả hàng đợi như baseline (`clearPersistedCache`, #241 chờ
-  /// Kiệt) — một câu lệnh, kể cả hàng worker chưa nạp. Trả về số hàng bỏ.
+  /// Kiệt) — kể cả hàng worker chưa nạp, và cả `outbox_dead` (buổi tập của
+  /// người vừa rời đi, #335). Trả về số hàng CHỜ GỬI bỏ.
   @discardableResult
   public func dropAllOnSignOut() throws -> Int {
     try db.write { db in
       try db.execute(sql: "DELETE FROM outbox")
-      return db.changesCount
+      let n = db.changesCount
+      try db.execute(sql: "DELETE FROM outbox_dead")
+      return n
     }
   }
 

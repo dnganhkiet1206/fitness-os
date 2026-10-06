@@ -4,7 +4,7 @@
 // loading, retryable error, empty, offline, submitting.
 // KHÔNG networking/domain logic — chỉ vẽ theo state được truyền vào.
 #if canImport(SwiftUI)
-@_exported import SwiftUI
+public import SwiftUI
 
 /// Trạng thái async chung cho mọi màn.
 public enum AsyncState: Hashable, Sendable {
