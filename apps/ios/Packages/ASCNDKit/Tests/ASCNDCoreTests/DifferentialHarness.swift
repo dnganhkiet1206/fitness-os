@@ -18,7 +18,8 @@ struct DifferentialHarness {
     let fm = FileManager.default
     guard let inPath = ProcessInfo.processInfo.environment["DIFF_INPUT"],
           let outPath = ProcessInfo.processInfo.environment["DIFF_OUTPUT"] else {
-      Issue.record("thiếu DIFF_INPUT/DIFF_OUTPUT")
+      // Chỉ chạy qua differential runner (run-differential.mjs set env).
+      // Bỏ qua khi chạy `swift test` thường — thiếu env không phải lỗi.
       return
     }
     struct Fixture: Decodable {
