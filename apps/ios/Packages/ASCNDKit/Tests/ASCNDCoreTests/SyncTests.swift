@@ -171,6 +171,16 @@ struct OutboxTests {
     #expect(box.inFlight == nil)
   }
 
+  /// #335: `dead` cũng là buổi tập của người vừa rời đi — bỏ cùng hàng đợi.
+  @Test func signOutDropsDeadToo() {
+    var box = Outbox()
+    box.enqueue(entry("x", user: "u9"))
+    _ = box.next(now: at(0), online: true, signedInUser: "u1")
+    #expect(box.dead.count == 1)
+    box.dropAllOnSignOut()
+    #expect(box.dead.isEmpty)
+  }
+
   /// Lưu xuống đĩa rồi nạp lại: hàng đợi, lịch sử lỗi, hạn chờ còn nguyên;
   /// "đang gửi" thì không — app chết giữa lượt gửi thì lần sau gửi lại.
   @Test func persistsAcrossRelaunchWithoutInFlight() throws {

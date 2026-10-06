@@ -85,6 +85,12 @@ public struct Outbox: Sendable, Hashable, Codable {
 
   public init() {}
 
+  /// Dựng lại từ nơi lưu (`ASCNDStore`), theo đúng thứ tự đã ghi.
+  public init(pending: [OutboxEntry], dead: [DeadEntry]) {
+    self.pending = pending
+    self.dead = dead
+  }
+
   private enum CodingKeys: String, CodingKey { case pending, dead }
 
   public enum Next: Sendable, Hashable {
@@ -155,11 +161,15 @@ public struct Outbox: Sendable, Hashable, Codable {
   }
 
   /// Đăng xuất: xoá hàng đợi như baseline (`clearPersistedCache`, #241 chờ
-  /// Kiệt). Trả về số bản ghi bị bỏ — để có thể báo, nếu #241 chọn (c).
+  /// Kiệt). Trả về số bản ghi CHỜ GỬI bị bỏ — để có thể báo, nếu #241 chọn (c).
+  ///
+  /// Bỏ cả `dead`: đó vẫn là buổi tập của người vừa rời đi (payload đầy đủ).
+  /// Trước đây chúng ở lại, và người đăng nhập sau thấy chúng (#335).
   @discardableResult
   public mutating func dropAllOnSignOut() -> Int {
     let n = pending.count
     pending.removeAll()
+    dead.removeAll()
     inFlight = nil
     return n
   }
