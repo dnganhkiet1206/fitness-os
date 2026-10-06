@@ -59,6 +59,10 @@ jobs:
         working-directory: apps/ios/Packages/ASCNDKit
         run: swift test
 
+      - name: swift test (ASCNDBackend, macOS)
+        working-directory: apps/ios/Packages/ASCNDBackend
+        run: swift test
+
       - name: swift test (ASCNDStore, macOS)
         working-directory: apps/ios/Packages/ASCNDStore
         run: swift test
