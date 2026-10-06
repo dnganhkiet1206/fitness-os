@@ -80,6 +80,9 @@ private struct LabSession: View {
       if let c = flow.session {
         LabWorkout(c: c)
       }
+      if let history = flow.history {
+        LabHistory(history: history)
+      }
     }
     .onChange(of: useSample) { _, on in
       Task {
@@ -266,6 +269,44 @@ extension LabWorkout {
     case .hold(let s): "\(s)s"
     case .bodyweight(let r): "\(r) reps × bodyweight"
     case .loaded(let w, let r): "\(w.formatted()) kg × \(r)"
+    }
+  }
+}
+
+/// Lịch sử buổi tập (#400): 90 ngày, mới trước; vuốt để xoá.
+private struct LabHistory: View {
+  let history: HistoryBook
+  @State private var error: String?
+
+  var body: some View {
+    Section {
+      if let f = history.failure {
+        LabRow(label: "History refresh failed", value: "\(f)").foregroundStyle(.orange)
+      }
+      ForEach(history.entries) { e in
+        LabRow(
+          label: e.at.date.formatted(date: .abbreviated, time: .shortened),
+          value: "\(e.templateName) · \(e.completedSets) sets · \(e.exerciseCount) ex · \(e.volumeKg) kg\(e.prDetected ? " · PR" : "")")
+          .swipeActions {
+            Button(role: .destructive) {
+              Task {
+                do throws(HistoryBook.DeleteRefusal) {
+                  try await history.delete(e.id)
+                  error = nil
+                } catch {
+                  self.error = "\(error)"
+                }
+              }
+            } label: {
+              Text(verbatim: "Delete session")
+            }
+          }
+      }
+      if let error {
+        Text(verbatim: error).foregroundStyle(.red).font(.footnote)
+      }
+    } header: {
+      Text(verbatim: "History (90 days) — \(history.entries.count)")
     }
   }
 }
