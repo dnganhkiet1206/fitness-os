@@ -32,6 +32,10 @@ public actor FakeServer: RemoteWriter {
   }
 
   public private(set) var rows: [String: OutboxEntry] = [:]
+  /// Bảng `workout_sessions` như server thấy, theo `payload.id`: bản ghi mới
+  /// là upsert bỏ trùng (`ignoreDuplicates`), bản ghi lại (#296) ghi đè cả hàng
+  /// — đúng như `SupabaseRemoteWriter`.
+  public private(set) var table: [String: JSONValue] = [:]
   /// Mọi lần gửi, theo thứ tự — kể cả gửi lại.
   public private(set) var attempts: [String] = []
   private var script: [String: [Reply]] = [:]
@@ -45,12 +49,22 @@ public actor FakeServer: RemoteWriter {
     let reply = script[entry.id]?.isEmpty == false ? script[entry.id]!.removeFirst() : .ok
     switch reply {
     case .ok:
-      if rows[entry.id] == nil { rows[entry.id] = entry }
+      apply(entry)
     case .fail(let f):
       throw f
     case .lostResponse:
-      if rows[entry.id] == nil { rows[entry.id] = entry }
+      apply(entry)
       throw .offline
+    }
+  }
+
+  private func apply(_ entry: OutboxEntry) {
+    if rows[entry.id] == nil { rows[entry.id] = entry }
+    guard let rowId = entry.payload["id"]?.stringValue else { return }
+    if entry.kind == WorkoutSessionRecord.deleteKind {
+      table[rowId] = nil
+    } else if entry.kind == WorkoutSessionRecord.revisionKind || table[rowId] == nil {
+      table[rowId] = entry.payload
     }
   }
 }
@@ -104,7 +118,10 @@ public actor InMemoryOutboxStore: OutboxPersistence {
   }
 
   public func dropAllOnSignOut() async throws -> Int {
-    defer { pending = [] }
+    defer {
+      pending = []
+      dead = []
+    }
     return pending.count
   }
 }
