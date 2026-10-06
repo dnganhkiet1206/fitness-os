@@ -25,6 +25,8 @@ final class AppServices {
   @ObservationIgnored let history: any TrainingHistory
   @ObservationIgnored let recordHistory: any RecordHistory
   @ObservationIgnored let recordCache: any RecordBookCache
+  @ObservationIgnored let performanceSource: any PerformanceSource
+  @ObservationIgnored let performanceCache: any PerformanceCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
@@ -58,6 +60,8 @@ final class AppServices {
     history = backend.map { SupabaseTrainingHistory(backend: $0) as any TrainingHistory } ?? UnconfiguredHistory()
     recordHistory = backend.map { SupabaseRecordHistory(backend: $0) as any RecordHistory } ?? UnconfiguredRecords()
     recordCache = GRDBRecordBookCache(database)
+    performanceSource = backend.map { SupabasePerformanceSource(backend: $0) as any PerformanceSource } ?? UnconfiguredPerformance()
+    performanceCache = GRDBPerformanceCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: OutboxStore(database),
@@ -108,6 +112,11 @@ final class AppServices {
     RecordBook(userId: userId, history: recordHistory, cache: recordCache)
   }
 
+  /// "Lần trước" của người đang đăng nhập (#331).
+  func makePerformanceBook(userId: String) -> PerformanceBook {
+    PerformanceBook(userId: userId, source: performanceSource, cache: performanceCache)
+  }
+
   func didBecomeActive() {
     sync.kick()
   }
@@ -144,6 +153,11 @@ private struct UnconfiguredAuth: AuthAPI {
 
 private struct UnconfiguredHistory: TrainingHistory {
   func sessionTimes(userId: String, since: EpochMillis) async throws -> [EpochMillis] { [] }
+}
+
+private struct UnconfiguredPerformance: PerformanceSource {
+  struct NotConfigured: Error {}
+  func sessions(userId: String, since: EpochMillis) async throws -> [SessionHistoryRow] { throw NotConfigured() }
 }
 
 private struct UnconfiguredRecords: RecordHistory {

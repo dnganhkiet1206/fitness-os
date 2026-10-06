@@ -260,3 +260,17 @@ struct GRDBRecordBookCacheTests {
     #expect(try await cache.load(userId: "u1") == nil)
   }
 }
+
+struct GRDBPerformanceCacheTests {
+  @Test func roundTripPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBPerformanceCache(db)
+    let table = PerformanceHistory.lastByExercise(
+      [SessionHistoryRow(id: "s", at: EpochMillis(1), sets: .array([.object([
+        "exerciseName": .string("Bench"), "weight": .number(60), "reps": .number(8)])]))],
+      timeZone: TimeZone(identifier: "UTC")!)
+    try await cache.save(userId: "u1", table)
+    #expect(try await cache.load(userId: "u1") == table)
+    #expect(try await cache.load(userId: "u2") == nil)
+  }
+}
