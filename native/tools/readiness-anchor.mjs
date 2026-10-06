@@ -587,7 +587,12 @@ const show = (a, b) => FIELDS
     for (let k = 0; k <= 20; k++) { await bio(await shift(D0, -k), 40, 150); await lifted(await shift(D0, -k), 10, 240); }
     await recomputeDailyLog(A, day);
     const a0 = await row(day);
-    for (let k = 0; k <= 6; k++) await lifted(await shift(D0, -k), 10, 400);
+    /* Tuần nặng phải SAU day, không phải sau "hôm nay": day là ngày đổi giờ
+       gần nhất, có thể là hôm nay (Lord_Howe đổi giờ 04/10/2026) — khi đó
+       shift(D0, -k) rơi vào trong cửa sổ của chính day và điểm ĐỔI là đúng,
+       test đỏ oan. Neo theo day thì ca này luôn đo đúng luật "tương lai
+       không lay được quá khứ", bất kể hôm nay là ngày nào (#233). */
+    for (let k = 1; k <= 7; k++) await lifted(await shift(day, k), 10, 400);
     await recomputeDailyLog(A, day);
     const a1 = await row(day);
     add('ngày đổi giờ', a0 != null && a0.readiness_score != null && same(a0, a1),

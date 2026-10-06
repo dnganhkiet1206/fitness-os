@@ -2,7 +2,7 @@
 //
 // Dòng tiêu đề cho các mục trong màn hình (ví dụ: các mục ở tab Hôm nay).
 #if canImport(SwiftUI)
-import SwiftUI
+public import SwiftUI
 
 public struct DSSectionHeader: View {
   let title: String
@@ -18,13 +18,13 @@ public struct DSSectionHeader: View {
   public var body: some View {
     HStack {
       Text(title)
-        .font(DS.Type.title2)
+        .font(DS.TextStyle.title2)
         .foregroundStyle(DS.Color.foreground.swiftUI)
         .accessibilityAddTraits(.isHeader)
       Spacer()
       if let actionTitle, let action {
         Button(actionTitle, action: action)
-          .font(DS.Type.footnote)
+          .font(DS.TextStyle.footnote)
           .foregroundStyle(DS.Color.metricBlue.swiftUI)
           .accessibilityLabel(Text(actionTitle))
           .accessibilityAddTraits(.isButton)

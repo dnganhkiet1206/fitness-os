@@ -181,7 +181,8 @@ public struct WorkoutView: View {
           .keyboardType(.decimalPad)
           .multilineTextAlignment(.trailing)
           .font(DS.TextStyle.body.monospacedDigit())
-          .frame(width: 64, minHeight: 44)
+          .frame(width: 64)
+          .frame(minHeight: 44)
           .padding(.horizontal, DS.Spacing.xs)
           .background(DS.Color.secondary.swiftUI)
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
@@ -194,7 +195,8 @@ public struct WorkoutView: View {
           .keyboardType(.numbersAndPunctuation)
           .multilineTextAlignment(.trailing)
           .font(DS.TextStyle.body.monospacedDigit())
-          .frame(width: 64, minHeight: 44)
+          .frame(width: 64)
+          .frame(minHeight: 44)
           .padding(.horizontal, DS.Spacing.xs)
           .background(DS.Color.secondary.swiftUI)
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
@@ -399,6 +401,16 @@ private actor PreviewStore: WorkoutStore {
   func commitFinish(_ key: String, _ state: DayState, _ entry: OutboxEntry) async throws -> Bool {
     days[key] = state
     return true
+  }
+
+  /// Xoá buổi từ lịch sử (#400, \`WorkoutStore.commitDelete\`): ngày đã chốt
+  /// bằng buổi ấy thôi giữ set nào. Preview không có outbox thật.
+  func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws {
+    for (k, s) in days where s.loggedSessionId == sessionId {
+      var state = s
+      state.loggedKeys = []
+      days[k] = state
+    }
   }
 }
 
