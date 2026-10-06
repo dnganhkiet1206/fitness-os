@@ -108,6 +108,8 @@ private struct LabWorkout: View {
   @Environment(AppServices.self) private var services
   @Environment(RestTimerController.self) private var rest
   @State private var finishError: String?
+  /// Lần gỡ set gần nhất (#398) — hoàn tác được trong 8 giây.
+  @State private var removal: WorkoutSessionController.Removal?
 
   var body: some View {
     Group {
@@ -145,6 +147,22 @@ private struct LabWorkout: View {
               .font(.caption).foregroundStyle(.secondary)
           }
           LabSetRow(c: c, row: row)
+            .swipeActions {
+              if c.canRemove(row.key) {
+                Button(role: .destructive) {
+                  Task {
+                    do throws(WorkoutSessionController.RemoveRefusal) {
+                      removal = try await c.removeLoggedSet(row.key)
+                      finishError = nil
+                    } catch {
+                      finishError = "\(error)"
+                    }
+                  }
+                } label: {
+                  Text(verbatim: "Remove set")
+                }
+              }
+            }
         }
       }
 
@@ -176,6 +194,21 @@ private struct LabWorkout: View {
             Text(verbatim: "Append \(c.pendingRows.count) new set(s) to this session")
           }
           .disabled(!c.canAppend)
+        }
+        if let r = removal {
+          Button {
+            Task {
+              do throws(WorkoutSessionController.RemoveRefusal) {
+                try await c.undo(r)
+                finishError = nil
+              } catch {
+                finishError = "\(error)"
+              }
+              removal = nil
+            }
+          } label: {
+            Text(verbatim: "Undo remove \(r.key)\(r.deletedSession ? " (session deleted)" : "") — 8 s")
+          }
         }
         if let finishError {
           Text(verbatim: finishError).foregroundStyle(.red).font(.footnote)
@@ -265,7 +298,9 @@ private struct LabSetRow: View {
       ) { Text(verbatim: "reps") }
         .frame(width: 48)
     }
-    .disabled(c.loggedSessionId != nil)
+    // Chỉ khoá hàng đã nằm trong buổi: hàng mới tick được để nối thêm (#296);
+    // hàng đã chốt thì vuốt để gỡ (#398).
+    .disabled(c.loggedKeys.contains(row.key))
   }
 }
 

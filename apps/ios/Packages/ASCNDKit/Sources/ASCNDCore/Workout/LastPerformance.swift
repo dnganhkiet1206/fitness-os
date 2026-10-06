@@ -184,13 +184,26 @@ public final class PerformanceBook {
   }
 
   /// Buổi vừa chốt (hàng outbox: `id`, `date_time`, `sets`) thành "lần trước".
+  /// Bản ghi lại (#296, #398) thay hẳn phần của buổi ấy: bài vừa bị gỡ hết set
+  /// không còn trỏ vào buổi này.
   public func absorb(row: JSONValue) async {
     guard let id = row["id"]?.stringValue, let at = row["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) })
     else { return }
+    table = table.filter { $0.value.sessionId != id }
     let fresh = PerformanceHistory.lastByExercise([SessionHistoryRow(id: id, at: at, sets: row["sets"])], timeZone: timeZone)
     for (key, p) in fresh where table[key].map({ $0.at <= p.at }) ?? true {
       table[key] = p
     }
+    try? await cache.save(userId: userId, table)
+  }
+
+  /// Buổi bị xoá trên máy (gỡ set cuối cùng, #398): mọi bài không còn trỏ vào
+  /// nó. Bài ấy mất dòng "lần trước" tới lần làm mới sau — server mới biết buổi
+  /// trước đó của nó.
+  public func forget(sessionId: String) async {
+    let kept = table.filter { $0.value.sessionId != sessionId }
+    guard kept.count != table.count else { return }
+    table = kept
     try? await cache.save(userId: userId, table)
   }
 }

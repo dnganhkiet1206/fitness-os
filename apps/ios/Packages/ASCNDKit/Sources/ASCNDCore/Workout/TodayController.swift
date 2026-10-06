@@ -110,6 +110,8 @@ public final class TodayController {
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private var snapshot: TemplateSnapshot?
   @ObservationIgnored private var serverTrained: Set<LocalDate> = []
+  /// Ngày đã chốt trên máy này (có thể chưa lên server) — giữ qua nửa đêm.
+  @ObservationIgnored private var localTrained: Set<LocalDate> = []
 
   public init(
     userId: String, repository: TodayRepository, history: any TrainingHistory, workouts: any WorkoutStore,
@@ -185,7 +187,16 @@ public final class TodayController {
 
   /// Màn tập vừa chốt: ngày thành `done` ngay, không đợi server.
   public func markTrained(_ date: LocalDate) async {
-    trained.insert(date)
+    localTrained.insert(date)
+    await recompute()
+  }
+
+  /// Buổi của ngày vừa bị xoá trên máy (gỡ set cuối cùng, #398): ngày không
+  /// còn "đã tập" — kể cả khi server chưa nhận lệnh xoá (local-first). Lần làm
+  /// mới sau server nói lại sự thật.
+  public func markUntrained(_ date: LocalDate) async {
+    localTrained.remove(date)
+    serverTrained.remove(date)
     await recompute()
   }
 
@@ -194,14 +205,16 @@ public final class TodayController {
       plan = nil
       return
     }
-    var days = serverTrained.union(trained)
-    // Ngày đã chốt trên máy này (có thể chưa lên server).
+    var days = serverTrained.union(localTrained)
+    // Ngày đã chốt trên máy này (có thể chưa lên server). Buổi đã bị gỡ hết
+    // set (`loggedKeys` rỗng) thì không còn là buổi.
     let draft = snapshot.plan(for: today, today: today, trained: days)
     if let tpl = draft.template,
       let state = try? await workouts.loadDay(DayProgressStore.key(date: today, templateId: tpl.id)),
-      state.loggedSessionId != nil
+      state.loggedSessionId != nil, state.loggedKeys.map({ !$0.isEmpty }) ?? true
     {
       days.insert(today)
+      localTrained.insert(today)
     }
     trained = days
     plan = snapshot.plan(for: today, today: today, trained: days)
