@@ -86,12 +86,12 @@ public struct WorkoutSummaryView: View {
             ForEach(group.rows, id: \.set.key) { r in
               HStack {
                 Text(setLabel(r))
-                  .font(DS.Type.body.monospacedDigit())
+                  .font(DS.TextStyle.body.monospacedDigit())
                   .foregroundStyle(DS.Color.foreground.swiftUI)
                 Spacer()
                 if r.set.warmup {
                   Text(String(localized: "summary.warmup"))
-                    .font(DS.Type.caption)
+                    .font(DS.TextStyle.caption)
                     .foregroundStyle(DS.Color.mutedForeground.swiftUI)
                 }
               }
