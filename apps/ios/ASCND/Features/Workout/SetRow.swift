@@ -57,7 +57,9 @@ public struct SetRow: View {
   var onToggle: () -> Void
   /// Focus state từ parent (để giữ focus khi weight → reps).
   @FocusState.Binding var focusedField: WorkoutFieldFocus?
-  /// Local editable state — đồng bộ từ display, gọi callback khi đổi.
+  /// Local editable state — gọi callback khi người dùng gõ; khi parent đổi
+  /// `display` (hoàn tác, điền lại "lần trước", server đối soát) thì kéo về
+  /// theo `display` để ô nhập không giữ chữ cũ.
   @State private var weightText: String
   @State private var repsText: String
 
@@ -92,7 +94,10 @@ public struct SetRow: View {
         }
         .frame(minWidth: 44, minHeight: 44)
         .disabled(isLocked || isSaving)
-        .accessibilityLabel(
+        // Nhiều hàng trên một màn: nhãn phải nói set nào của bài nào,
+        // trạng thái tick đi vào value.
+        .accessibilityLabel(Text(setAccessibilityLabel))
+        .accessibilityValue(
           Text(
             isCompleted
               ? String(localized: "setrow.completed")
@@ -173,6 +178,19 @@ public struct SetRow: View {
       }
     }
     .opacity(isLocked ? 0.5 : 1.0)
+    .onChange(of: display.weightText) { _, newValue in
+      if newValue != weightText { weightText = newValue }
+    }
+    .onChange(of: display.repsText) { _, newValue in
+      if newValue != repsText { repsText = newValue }
+    }
+  }
+
+  private var setAccessibilityLabel: String {
+    String(
+      format: String(localized: "setrow.a11y.set.format"),
+      display.exerciseName, display.ordinal, display.total
+    )
   }
 
   private var isCompleted: Bool {
