@@ -1,0 +1,197 @@
+import ASCNDBackend
+import ASCNDCore
+import ASCNDStore
+import Foundation
+import Network
+import Observation
+
+/// Gốc lắp ráp của app: nơi DUY NHẤT dựng các mảnh thật và nối chúng với nhau.
+///
+///     màn tập ─▶ WorkoutSessionController ─▶ GRDBWorkoutStore ┐
+///                                                              ├─ ascnd.sqlite (một tệp,
+///     SyncWorker ◀─ OutboxStore ◀──────────────────────────────┘  một transaction khi chốt)
+///         │
+///         └─▶ SupabaseRemoteWriter ─▶ workout_sessions
+///
+/// Mọi thứ khác nhận các mảnh này qua `environment`, không tự dựng.
+@MainActor
+@Observable
+final class AppServices {
+  let session: SessionStore
+  let sync: SyncWorker
+  @ObservationIgnored let workouts: GRDBWorkoutStore
+  /// Kế hoạch tuần + template thật, local-first (#270).
+  @ObservationIgnored let templates: TodayRepository
+  @ObservationIgnored let history: any TrainingHistory
+  @ObservationIgnored let recordHistory: any RecordHistory
+  @ObservationIgnored let recordCache: any RecordBookCache
+  @ObservationIgnored let performanceSource: any PerformanceSource
+  @ObservationIgnored let performanceCache: any PerformanceCache
+  /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
+  @ObservationIgnored private let readCache: GRDBTemplateCache
+  /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
+  private(set) var startupError: String?
+
+  @ObservationIgnored private let monitor = NWPathMonitor()
+
+  init() {
+    let backend: Backend?
+    var problems: [String] = []
+    do {
+      backend = Backend(config: try BackendConfig.fromMainBundle())
+    } catch {
+      backend = nil
+      problems.append("backend: \(error)")
+    }
+
+    let database: ASCNDDatabase
+    do {
+      database = try ASCNDDatabase(path: try Self.databasePath())
+    } catch {
+      // Không mở được tệp thì vẫn chạy trong bộ nhớ: dữ liệu KHÔNG bền, và
+      // `startupError` nói điều đó ra — không bao giờ giả vờ "đã lưu".
+      problems.append("database: \(error)")
+      database = try! ASCNDDatabase()  // trong bộ nhớ: không có lý do thất bại ngoài hết RAM
+    }
+
+    workouts = GRDBWorkoutStore(database)
+    let templateCache = GRDBTemplateCache(database)
+    readCache = templateCache
+    templates = TodayRepository(
+      source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
+      cache: templateCache)
+    history = backend.map { SupabaseTrainingHistory(backend: $0) as any TrainingHistory } ?? UnconfiguredHistory()
+    recordHistory = backend.map { SupabaseRecordHistory(backend: $0) as any RecordHistory } ?? UnconfiguredRecords()
+    recordCache = GRDBRecordBookCache(database)
+    performanceSource = backend.map { SupabasePerformanceSource(backend: $0) as any PerformanceSource } ?? UnconfiguredPerformance()
+    performanceCache = GRDBPerformanceCache(database)
+    session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
+    sync = SyncWorker(
+      store: OutboxStore(database),
+      remote: backend.map { SupabaseRemoteWriter(backend: $0) as any RemoteWriter } ?? UnconfiguredRemote(),
+      online: false)
+    startupError = problems.isEmpty ? nil : problems.joined(separator: "\n")
+
+    // Phiên kết thúc (nút Đăng xuất, token hết hạn, tài khoản bị xoá, hay đổi
+    // thẳng sang tài khoản khác): mọi thứ của người vừa rời đi rời khỏi máy —
+    // như `forgetPreviousAccount` của baseline (`use-auth.tsx:53`). MỘT closure,
+    // chạy tuần tự, để thứ tự không phụ thuộc thứ tự đăng ký.
+    let workouts = self.workouts
+    session.onSignedOut { [sync = self.sync, weak session = self.session] in
+      // Hàng đợi chưa gửi: bỏ, như baseline (#241 chờ Kiệt).
+      await sync.signOut()
+      // Điểm quay lại `routine-day:*` (`clearUserScopedStorage`).
+      try? await workouts.clearAll()
+      // Kế hoạch đã cache.
+      try? await templateCache.clearAll()
+      // Đổi thẳng tài khoản: người mới đã đăng nhập — vòng sync gửi hàng của
+      // họ (`signOut` ở trên vừa đặt nó về nil).
+      sync.setSignedInUser(session?.session?.userId)
+    }
+    startNetworkMonitor()
+  }
+
+  /// App mở / quay lại tiền cảnh: đọc phiên, dọn ngày cũ, thử gửi hàng đợi.
+  func start() async {
+    await session.start()
+    let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
+    _ = try? await workouts.pruneDays(today: today)
+    sync.kick()
+  }
+
+  /// Tầng ứng dụng của màn Today cho người đang đăng nhập (#271).
+  func makeToday(userId: String) -> TodayController {
+    TodayController(userId: userId, repository: templates, history: history, workouts: workouts)
+  }
+
+  /// Phiên của `userId` bắt đầu: bỏ read model của mọi người khác. Lượt làm
+  /// mới của người vừa rời đi có thể về SAU lượt dọn lúc đăng xuất (#335).
+  func forgetOtherAccounts(keeping userId: String) async {
+    _ = try? await readCache.clearAll(except: userId)
+  }
+
+  /// Việc dọn thêm khi phiên kết thúc, của những thứ không do AppServices
+  /// dựng (quãng nghỉ / Live Activity).
+  func onSessionEnded(_ cleanup: @escaping @MainActor @Sendable () async -> Void) {
+    session.onSignedOut(cleanup)
+  }
+
+  /// Bảng kỷ lục của người đang đăng nhập (#295).
+  func makeRecordBook(userId: String) -> RecordBook {
+    RecordBook(userId: userId, history: recordHistory, cache: recordCache)
+  }
+
+  /// "Lần trước" của người đang đăng nhập (#331).
+  func makePerformanceBook(userId: String) -> PerformanceBook {
+    PerformanceBook(userId: userId, source: performanceSource, cache: performanceCache)
+  }
+
+  /// Luồng tập của người đang đăng nhập (#272): Today → buổi tập → nghỉ →
+  /// chốt → máy → outbox → sync. Dựng MỘT lần mỗi phiên (`SignedInScope`);
+  /// màn Today / Workout và Lab chỉ đọc nó.
+  func makeWorkoutFlow(userId: String, rest: RestTimerController) -> WorkoutFlow {
+    let sync = self.sync
+    return WorkoutFlow(
+      today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
+      performance: makePerformanceBook(userId: userId), store: workouts,
+      onRest: { event, target in rest.handle(event, target: target) },
+      onEnqueued: { _ in sync.kick() })
+  }
+
+  func didBecomeActive() {
+    sync.kick()
+  }
+
+  /// `Application Support/ascnd.sqlite`. Bảo vệ "tới lần mở khoá đầu tiên":
+  /// app ở nền (nút ±15 của Island, vòng sync) vẫn đọc được sau khi máy khoá.
+  private static func databasePath() throws -> String {
+    let fm = FileManager.default
+    let dir = try fm.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+    try fm.setAttributes([.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication], ofItemAtPath: dir.path)
+    return dir.appendingPathComponent("ascnd.sqlite").path
+  }
+
+  private func startNetworkMonitor() {
+    monitor.pathUpdateHandler = { [weak self] path in
+      let online = path.status == .satisfied
+      Task { @MainActor in self?.sync.setOnline(online) }
+    }
+    monitor.start(queue: DispatchQueue(label: "ascnd.network"))
+  }
+}
+
+/// Thiếu cấu hình Supabase (Backend.xcconfig): không đăng nhập được, nói rõ.
+private struct UnconfiguredAuth: AuthAPI {
+  struct NotConfigured: Error {}
+  func currentSession() async throws -> AuthSession? { nil }
+  func stateChanges() -> AsyncStream<(AuthEvent, AuthSession?)> { AsyncStream { $0.finish() } }
+  func signUp(email: String, password: String, name: String) async throws { throw NotConfigured() }
+  func signIn(email: String, password: String) async throws { throw NotConfigured() }
+  func signInWithApple(identityToken: String, rawNonce: String) async throws { throw NotConfigured() }
+  func resetPassword(email: String) async throws { throw NotConfigured() }
+  func signOut() async throws {}
+}
+
+private struct UnconfiguredHistory: TrainingHistory {
+  func sessionTimes(userId: String, since: EpochMillis) async throws -> [EpochMillis] { [] }
+}
+
+private struct UnconfiguredPerformance: PerformanceSource {
+  struct NotConfigured: Error {}
+  func sessions(userId: String, since: EpochMillis) async throws -> [SessionHistoryRow] { throw NotConfigured() }
+}
+
+private struct UnconfiguredRecords: RecordHistory {
+  struct NotConfigured: Error {}
+  func recentSessionSets(userId: String, limit: Int) async throws -> [JSONValue] { throw NotConfigured() }
+}
+
+private struct UnconfiguredTemplates: TemplateSource {
+  struct NotConfigured: Error {}
+  func fetch(userId: String) async throws -> TemplateSnapshot { throw NotConfigured() }
+}
+
+/// Không có backend thì không gửi được — coi như mất mạng, hàng đợi giữ nguyên.
+private struct UnconfiguredRemote: RemoteWriter {
+  func send(_ entry: OutboxEntry) async throws(WriteFailure) { throw .offline }
+}
