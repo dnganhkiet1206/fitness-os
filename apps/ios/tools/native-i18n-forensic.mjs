@@ -8,7 +8,9 @@
  *  2. Bilingual ternary: lang == "vi" ? "..." : "..."
  *  3. Text(verbatim: "...") với text user-facing
  *
- * Bỏ qua: Preview, sample/test data, comment.
+ * Bỏ qua: Preview, sample/test data, comment, và code trong `#if DEBUG`
+ * (Lab/màn thử: không vào bản phát hành, chữ cố ý không vào catalog —
+ * `WorkoutLabView.swift`, `LabsView` trong `RootTabView.swift`).
  *
  * Exit 1 nếu có hit. Negative test: thêm literal cố ý → gate phải đỏ.
  */
@@ -41,9 +43,23 @@ function scanFile(path) {
   // Bỏ qua file Preview-only
   const isPreviewOnly = /#Preview/.test(src) && !/struct.*View/.test(src.replace(/#Preview[\s\S]*/g, ''));
 
+  // Vùng chỉ có ở bản Debug: ngăn xếp `#if` — mỗi tầng ghi nhánh hiện tại
+  // có phải nhánh DEBUG không (`#if DEBUG` → true, `#else` của nó → false).
+  const cond = [];
+  const debugAt = lines.map((line) => {
+    const t = line.trim();
+    if (/^#if\b/.test(t)) cond.push(/^#if\s+DEBUG\b/.test(t));
+    else if (/^#else\b/.test(t) && cond.length) cond[cond.length - 1] = false;
+    else if (/^#endif\b/.test(t)) cond.pop();
+    return cond.includes(true);
+  });
+
   lines.forEach((line, i) => {
     const n = i + 1;
     const trimmed = line.trim();
+
+    // Bỏ qua code chỉ có ở bản Debug
+    if (debugAt[i]) return;
 
     // Bỏ qua comment
     if (trimmed.startsWith('//')) return;
