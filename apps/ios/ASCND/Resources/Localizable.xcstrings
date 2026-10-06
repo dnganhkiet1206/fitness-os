@@ -484,8 +484,6 @@
      }
     }
    }
-<<<<<<< HEAD
-=======
   },
   "weekstrip.today": {
    "extractionState": "manual",
@@ -647,7 +645,6 @@
      }
     }
    }
->>>>>>> origin/native/ios-rewrite
   }
  }
 }
