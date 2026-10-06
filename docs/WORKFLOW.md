@@ -18,7 +18,7 @@ Không ai push thẳng vào `native/ios-rewrite`. Nhánh làm việc đi sau nh�
 1. Issue có nhãn `agent:X` + `difficulty:*` + `ios-rewrite`.
 2. Agent tạo `agent/x/<slug>` rồi mở PR vào `native/ios-rewrite` theo [template](../.github/pull_request_template.md). PR nhỏ, mỗi PR một ý.
 3. CI phải xanh: `Cổng chất lượng` luôn chạy; `iOS` chạy khi chạm `apps/ios/**`; `SQL cộng đồng` chạy khi chạm `supabase/**`.
-   **Ngoại lệ tạm thời (#233):** baseline đỏ sẵn 11/312 bước của Cổng chất lượng. Cho tới khi #233 xong, `gate` được coi là đạt nếu **không có bước hỏng nào ngoài 11 bước ghi trong #233**. Reviewer phải so danh sách bước `HỎNG` trong log, không chỉ nhìn dấu đỏ.
+   **Baseline:** ngoại lệ tạm thời của #233 (baseline `fac9ac2` đỏ sẵn 11/312 bước) đã hết hiệu lực. Baseline giảm 11 → 10 (#339) → 7 (#234) → **0** (#239, 06/10; báo cáo ở #233/#523). Từ đó `gate` chỉ đạt khi **không có bước `HỎNG` nào**. Reviewer vẫn đọc log, không chỉ nhìn dấu xanh: dòng `HEAD is now at <merge-ref> Merge <head> into <base>` phải trỏ đúng base hiện tại của `native/ios-rewrite`.
 4. Review:
 
    | Tác giả | Reviewer |
@@ -29,10 +29,11 @@ Không ai push thẳng vào `native/ios-rewrite`. Nhánh làm việc đi sau nh�
    | D | C (+ A/B nếu chạm kiến trúc) |
 
    Mọi agent dùng chung một tài khoản GitHub, nên không dùng được nút Approve. Review là một **comment** mở đầu bằng một trong ba dòng:
-   - `REVIEW: APPROVE`
+   - `REVIEW: APPROVE` (hàng tích hợp #523 dùng dạng `**APPROVED — <agent>** · head <sha>`, có hiệu lực như nhau và ghi rõ head được duyệt)
    - `REVIEW: CHANGES REQUESTED`: kèm danh sách cụ thể.
    - `BLOCK`: xem mục dưới.
 5. **Reviewer merge**, tác giả không bao giờ tự merge PR của mình. Dùng squash merge, giữ tiêu đề PR làm commit message.
+   **Thực tế từ #523 (B, cần Kiệt xác nhận giữ hay bỏ):** mọi PR vào `native/ios-rewrite` đang được merge bằng **merge commit**, không squash. Lý do: hàng đợi phải gộp `native/ios-rewrite` vào nhánh PR nhiều lần để gỡ xung đột (nhất là `Localizable.xcstrings`), và evidence CI gắn với merge-ref `<head> into <base>`. Squash sẽ xoá dấu vết đó, và mọi PR con xếp chồng sẽ phải giải lại lịch sử.
    **Ngoại lệ: chuỗi PR xếp chồng** (PR có base là nhánh `agent/...` khác). Với chuỗi này dùng **"Create a merge commit"**. Squash tạo ra commit mới, nên mọi PR con phía trên phải giải lại toàn bộ lịch sử. Khi PR nền đã merge, tác giả đổi base của PR con sang `native/ios-rewrite`.
 6. **Hàng review:** ưu tiên theo mức phụ thuộc, không theo số PR. Thứ tự: P0 là PR đang chặn PR khác; P1 là core, contract hoặc component dùng chung; P2 là feature độc lập; P3 là docs và cleanup nhỏ. Khi có từ 8 PR trở lên đang chờ review, C và D review trước rồi mới nhận việc mới. #222 là bảng điều phối.
 
