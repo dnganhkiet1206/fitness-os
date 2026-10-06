@@ -1,10 +1,13 @@
-#!/usr/bin/env node
+#!/usr/bin/env node --experimental-strip-types
 /**
- * Runner golden vectors cho issue #230.
+ * Runner golden vectors cho issue #230 (tiếp theo #237, #495).
  *
  * Chạy các vector trong spec/vectors/*.json trên LOGIC THẬT của RN
  * (không mock logic), chứng minh vectors đúng với baseline.
- * Dùng cho D (RN) — runner Swift do B/A viết trong ASCNDCore.
+ *
+ * #495: Hàm trong `native/src/lib/` được import THẬT (không chép).
+ * Hàm trong component (day-plan.tsx, rest-timer.tsx) vẫn là bản chép,
+ * ghi rõ số dòng nguồn.
  *
  * Chạy: node spec/vectors/run.mjs  (từ repo root)
  */
@@ -12,79 +15,56 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// ── Hàm thật từ native/src/lib/ (#495) ──
+// Copy vào spec/vectors/lib/ với import đã sửa (@/lib/x → ./x.ts)
+// để node --experimental-strip-types chạy được.
+import { restLabel } from './lib/prescription.ts';
+import { parseRepEntry } from './lib/rep-entry.ts';
+import { findRecords } from './lib/personal-record.ts';
+
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const problems = [];
 let passed = 0;
 
-/* ── restLabel: copy logic từ native/src/lib/prescription.ts ── */
-function restLabel(seconds) {
-  if (seconds < 60) return `${seconds}s`;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-/* ── ±15s: copy logic từ native/src/components/ascnd/day-plan.tsx:410-438 ── */
+/* ── ±15s: BẢN CHÉP từ native/src/components/ascnd/day-plan.tsx:410-438 ──
+ * (nằm trong component, không import được) */
 const REST_MAX = 600;
 function adjustRest(base, delta, total) {
   const left = Math.min(REST_MAX, Math.max(1, base + delta));
   return { left, total: Math.max(total, left) };
 }
 
-/* ── warn ring: copy từ native/src/components/ascnd/rest-timer.tsx ── */
+/* ── warn ring: BẢN CHÉP từ native/src/components/ascnd/rest-timer.tsx ── */
 const WARN_AT = 5;
 function warnRing(now, paused) {
   return !paused && now > 0 && now <= WARN_AT;
 }
 
-/* ── clamp rest per-row: day-plan.tsx:1252-1257 ── */
+/* ── clamp rest per-row: BẢN CHÉP từ day-plan.tsx:1252-1257 ── */
 function clampRest(n) {
   return Math.min(REST_MAX, Math.max(0, n));
 }
 
-/* ── parseRepEntry: copy từ native/src/lib/rep-entry.ts ── */
-const MAX_REPS = 1000, MAX_HOLD_SEC = 3600;
-function parseRepEntry(raw) {
-  const t = String(raw ?? '').trim().toLowerCase();
-  const hold = t.match(/^(\d+)s$/);
-  if (hold) {
-    const sec = parseInt(hold[1], 10);
-    return { reps: 0, durationSec: sec >= 1 && sec <= MAX_HOLD_SEC ? sec : 0 };
-  }
-  if (/^\d+$/.test(t)) {
-    const n = parseInt(t, 10);
-    return { reps: n >= 1 && n <= MAX_REPS ? n : 0, durationSec: 0 };
-  }
-  return { reps: 0, durationSec: 0 };
-}
 const entered = (e) => e.reps > 0 || (e.durationSec ?? 0) > 0;
 
-/* ── volume: WS-5 ── */
+/* ── checkRecord: GỌI THẬT findRecords từ native/src/lib/personal-record.ts ──
+ * (copy vào spec/vectors/lib/ với import đã sửa, như restLabel/parseRepEntry).
+ * Ánh xạ input vector → RN: history {topWeight, repsByWeight} → Bests;
+ * set → RecordSet với exerciseName 'X' (exerciseKey('X') === 'x', đã verify).
+ * Không còn bản chép thuật toán. */
+function checkRecord(set, history) {
+  const h = history ?? {};
+  const has = (h.topWeight ?? 0) > 0 || Object.keys(h.repsByWeight ?? {}).length > 0;
+  const r = findRecords([{ exerciseName: 'X', ...set }],
+    has ? { x: { topWeight: h.topWeight ?? 0, repsAt: h.repsByWeight ?? {} } } : {});
+  return r.length ? { isRecord: true, kind: r[0].kind } : { isRecord: false };
+}
+
+/* ── volume: WS-5 (dùng parseRepEntry thật) ── */
 function volumeOf(sets) {
   return sets
     .filter((s) => s.warmup !== true && entered(parseRepEntry(String(s.reps))))
     .reduce((sum, s) => sum + (s.weight ?? 0) * parseRepEntry(String(s.reps)).reps, 0);
-}
-
-/* ── PR: copy từ native/src/lib/personal-record.ts ── */
-const WEIGHT_EPSILON_KG = 0.05;
-const weightKey = (w) => (Math.round(w / WEIGHT_EPSILON_KG) * WEIGHT_EPSILON_KG).toFixed(2);
-function counts(s) {
-  return s.warmup !== true && Number.isFinite(s.weight) && Number.isFinite(s.reps)
-    && s.reps >= 1 && s.weight >= 0;
-}
-function checkRecord(set, history) {
-  // Không có history cho bài đó → không kỷ lục (buổi đầu tiên không nổ PR).
-  const hasHistory = (history.topWeight ?? 0) > 0 || Object.keys(history.repsByWeight ?? {}).length > 0;
-  if (!hasHistory) return { isRecord: false };
-  if (!counts(set)) return { isRecord: false };
-  const w = set.weight, r = set.reps;
-  if (w > 0 && w > (history.topWeight ?? 0) + WEIGHT_EPSILON_KG)
-    return { isRecord: true, kind: 'weight' };
-  const prev = history.repsByWeight?.[weightKey(w)];
-  if (prev === undefined) return { isRecord: false };
-  if (r > prev) return { isRecord: true, kind: 'reps' };
-  return { isRecord: false };
 }
 
 function eq(a, b) {
@@ -125,6 +105,13 @@ function runVector(v) {
 
 for (const f of ['rest-timer.json', 'workout-state.json']) {
   const vectors = JSON.parse(readFileSync(path.join(ROOT, 'spec', 'vectors', f), 'utf8'));
+  // Không trùng id vector — Swift runner của A (GoldenVectorTests.everySpecVectorFileIsWellFormed)
+  // từ chối id trùng; báo lỗi ở đây để JS cũng bắt được (#504).
+  const seen = new Set();
+  for (const v of vectors) {
+    if (seen.has(v.rule)) problems.push(`${f}: duplicate vector id ${v.rule}`);
+    seen.add(v.rule);
+  }
   for (const v of vectors) runVector(v);
 }
 
