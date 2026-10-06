@@ -108,7 +108,7 @@ public struct WorkoutHistoryView: View {
           if s.hasPR {
             Image(systemName: "trophy.fill")
               .font(.caption)
-              .foregroundStyle(DS.Color.metricAmber.swiftUI)
+              .foregroundStyle(DS.Color.readinessYellow.swiftUI)
               .accessibilityLabel(Text(String(localized: "history.pr")))
           }
         }
