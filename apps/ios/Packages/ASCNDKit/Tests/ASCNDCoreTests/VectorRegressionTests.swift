@@ -38,10 +38,28 @@ struct VectorRegressionTests {
 
   /// Mọi tệp vector phải đọc được (định dạng hợp đồng #230) — hỏng ở đây thì
   /// các runner cũng không chạy nổi, báo sớm cho rõ.
+  /// Hai dạng tệp hợp lệ, như `vectorFileProblems` ở GoldenVectorTests: mảng
+  /// vector (`rule`), hoặc object `golden-vectors/v1` với mảng `vectors` (`id`).
   @Test func everyVectorFileLoads() throws {
     for url in Self.vectorFiles() {
-      let cases = try GoldenVectors.load(url, as: GoldenVector<JSONValue, JSONValue>.self)
-      #expect(!cases.isEmpty, "\(url.lastPathComponent) rỗng")
+      let name = url.lastPathComponent
+      let json = try JSONDecoder().decode(JSONValue.self, from: Data(contentsOf: url))
+      switch json {
+      case .array:
+        let cases = try GoldenVectors.load(url, as: GoldenVector<JSONValue, JSONValue>.self)
+        #expect(!cases.isEmpty, "\(name) rỗng")
+      case .object(let o) where o["$schema"]?.stringValue == "golden-vectors/v1":
+        guard case .array(let cases)? = o["vectors"] else {
+          Issue.record("\(name): golden-vectors/v1 thiếu mảng vectors")
+          continue
+        }
+        #expect(!cases.isEmpty, "\(name) rỗng")
+        for c in cases {
+          #expect(c["input"] != nil && c["expected"] != nil, "\(name): ca thiếu input / expected")
+        }
+      default:
+        Issue.record("\(name): không phải mảng vector, cũng không phải golden-vectors/v1")
+      }
     }
   }
 }
