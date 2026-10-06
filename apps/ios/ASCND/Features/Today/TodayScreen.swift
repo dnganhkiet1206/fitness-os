@@ -37,14 +37,19 @@ public struct TodayScreen: View {
 
   public var body: some View {
     Group {
-      if controller.plan == nil && controller.refreshError == nil {
+      if controller.plan == nil && controller.failure == nil {
         // Đang tải lần đầu.
         DSLoadingView(message: String(localized: "today.loading"))
-      } else if let error = controller.refreshError, controller.plan == nil {
-        // Lỗi và chưa có cache.
-        // TODO (#383): dùng `failure: RefreshFailure?` thay cho refreshError.
-        DSErrorView(message: error) {
-          Task { await onRefresh() }
+      } else if let failure = controller.failure, controller.plan == nil {
+        // Lỗi và chưa có cache. Chỉ nói theo `failure` có kiểu (#334) —
+        // `failureDetail` là chi tiết thô cho Lab/log, không hiện ra đây.
+        switch failure {
+        case .offline:
+          DSOfflineView { Task { await onRefresh() } }
+        case .unavailable:
+          DSErrorView(message: String(localized: "async.error.generic")) {
+            Task { await onRefresh() }
+          }
         }
       } else if let display = todayDisplay {
         // Có dữ liệu (cache hoặc server).
