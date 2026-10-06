@@ -10,3 +10,4 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 Backend.local.xcconfig
+ASCNDWidgets/Info.plist

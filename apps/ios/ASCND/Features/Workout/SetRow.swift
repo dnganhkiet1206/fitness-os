@@ -57,6 +57,9 @@ public struct SetRow: View {
   var onToggle: () -> Void
   /// Focus state từ parent (để giữ focus khi weight → reps).
   @FocusState.Binding var focusedField: WorkoutFieldFocus?
+  /// Local editable state — đồng bộ từ display, gọi callback khi đổi.
+  @State private var weightText: String
+  @State private var repsText: String
 
   public init(
     display: SetRowDisplay,
@@ -67,6 +70,8 @@ public struct SetRow: View {
   ) {
     self.display = display
     self._focusedField = focusedField
+    self._weightText = State(initialValue: display.weightText)
+    self._repsText = State(initialValue: display.repsText)
     self.onWeightChange = onWeightChange
     self.onRepsChange = onRepsChange
     self.onToggle = onToggle
@@ -81,7 +86,7 @@ public struct SetRow: View {
             .font(.title2)
             .foregroundStyle(
               isCompleted
-                ? DS.Color.primary.swiftUI
+                ? DS.Color.readinessGreen.swiftUI
                 : DS.Color.mutedForeground.swiftUI
             )
         }
@@ -102,11 +107,14 @@ public struct SetRow: View {
 
         // Weight field
         VStack(alignment: .trailing, spacing: 2) {
-          TextField("", text: .constant(display.weightText))
+          TextField("", text: $weightText)
+            .onChange(of: weightText) { _, newValue in
+              onWeightChange(newValue)
+            }
             .keyboardType(.decimalPad)
             .multilineTextAlignment(.trailing)
             .font(DS.TextStyle.body.monospacedDigit())
-            .frame(minWidth: 64, minHeight: 44)
+            .frame(width: 64, minHeight: 44)
             .padding(.horizontal, DS.Spacing.xs)
             .background(fieldBackground)
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
@@ -125,11 +133,14 @@ public struct SetRow: View {
 
         // Reps field
         VStack(alignment: .trailing, spacing: 2) {
-          TextField("", text: .constant(display.repsText))
+          TextField("", text: $repsText)
+            .onChange(of: repsText) { _, newValue in
+              onRepsChange(newValue)
+            }
             .keyboardType(.numberPad)
             .multilineTextAlignment(.trailing)
             .font(DS.TextStyle.body.monospacedDigit())
-            .frame(minWidth: 64, minHeight: 44)
+            .frame(width: 64, minHeight: 44)
             .padding(.horizontal, DS.Spacing.xs)
             .background(fieldBackground)
             .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
@@ -193,47 +204,41 @@ public enum WorkoutFieldFocus: Hashable {
 
 // MARK: - Preview
 
-/// Wrapper cho preview: `@FocusState.Binding` không có `.constant`,
-/// nên preview cần một @FocusState thật để truyền binding vào SetRow.
-private struct SetRowPreviewHost: View {
-  @FocusState private var field: WorkoutFieldFocus?
-  let display: SetRowDisplay
-
-  var body: some View {
-    SetRow(display: display, focusedField: $field)
-      .padding()
-  }
-}
-
 #Preview("SetRow — normal") {
-  SetRowPreviewHost(
+  SetRow(
     display: .init(
       key: "s1", ordinal: 1, total: 4,
       exerciseName: "Bench Press",
       weightText: "60", repsText: "8"
-    )
+    ),
+    focusedField: .constant(nil)
   )
+  .padding()
 }
 
 #Preview("SetRow — error") {
-  SetRowPreviewHost(
+  SetRow(
     display: .init(
       key: "s1", ordinal: 1, total: 4,
       exerciseName: "Bench Press",
       state: .error("Giá trị không hợp lệ"),
       weightText: "-5", repsText: "8",
       weightError: "Tạ phải ≥ 0"
-    )
+    ),
+    focusedField: .constant(nil)
   )
+  .padding()
 }
 
 #Preview("SetRow — completed") {
-  SetRowPreviewHost(
+  SetRow(
     display: .init(
       key: "s1", ordinal: 1, total: 4,
       exerciseName: "Bench Press",
       state: .completed,
       weightText: "60", repsText: "8"
-    )
+    ),
+    focusedField: .constant(nil)
   )
+  .padding()
 }

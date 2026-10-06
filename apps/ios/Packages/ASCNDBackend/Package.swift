@@ -27,7 +27,10 @@ let package = Package(
       ],
       swiftSettings: [.enableUpcomingFeature("ExistentialAny")]
     ),
-    .testTarget(name: "ASCNDBackendTests", dependencies: ["ASCNDBackend"]),
+    .testTarget(
+      name: "ASCNDBackendTests",
+      dependencies: ["ASCNDBackend", .product(name: "Supabase", package: "supabase-swift")]
+    ),
   ],
   swiftLanguageModes: [.v6]
 )

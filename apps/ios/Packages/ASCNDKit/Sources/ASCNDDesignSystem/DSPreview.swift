@@ -1,13 +1,13 @@
 // Preview bảng màu — C sở hữu (#229, #246).
 // Mở trong Xcode để xem token ở cả hai theme.
 #if canImport(SwiftUI)
-import SwiftUI
+public import SwiftUI
 
 struct DSColorPreview: View {
   var body: some View {
     ScrollView {
       LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: DS.Spacing.md) {
-        ForEach(DSColorTokens.tokens, id: \.0) { name, color in
+        ForEach(DSColorTokens.all, id: \.0) { name, color in
           VStack(spacing: DS.Spacing.xs) {
             RoundedRectangle(cornerRadius: DS.Radius.md)
               .fill(color.swiftUI)
@@ -21,8 +21,9 @@ struct DSColorPreview: View {
   }
 }
 
+/// Bảng token cho preview — tách khỏi View để không trùng tên (Swift 6).
 enum DSColorTokens {
-  static let tokens: [(String, DSColor)] = [
+  static let all: [(String, DSColor)] = [
     ("background", DS.Color.background),
     ("card", DS.Color.card),
     ("secondary", DS.Color.secondary),
