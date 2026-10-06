@@ -45,6 +45,17 @@ public final class ASCNDDatabase: Sendable {
         t.column("state", .text).notNull()
       }
     }
+    m.registerMigration("v3-read-cache") { db in
+      // Read model local-first (#270): bản chụp mới nhất từ server, theo người
+      // dùng — mở app offline vẫn có kế hoạch; đổi tài khoản không thấy của
+      // người trước.
+      try db.create(table: "read_cache") { t in
+        t.column("userId", .text).notNull()
+        t.column("kind", .text).notNull()
+        t.column("json", .text).notNull()
+        t.primaryKey(["userId", "kind"])
+      }
+    }
     return m
   }
 }

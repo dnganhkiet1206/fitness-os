@@ -69,3 +69,24 @@ struct RemoteWriterClassifyTests {
     #expect(SupabaseRemoteWriter.tables["telepathy"] == nil)
   }
 }
+
+struct TemplateSourceMappingTests {
+  /// Hàng thật như PostgREST trả về → domain, kể cả cột null.
+  @Test func rowsMapToDomain() throws {
+    let days = try JSONDecoder().decode([SupabaseTemplateSource.RoutineRow].self, from: Data("""
+      [{"day_of_week":0,"is_rest":false,"is_deload":null,"template_id":"AAAAAAAA-0000-0000-0000-000000000001"},
+       {"day_of_week":6,"is_rest":null,"is_deload":true,"template_id":null}]
+      """.utf8))
+    let tpls = try JSONDecoder().decode([SupabaseTemplateSource.TemplateRow].self, from: Data("""
+      [{"id":"aaaaaaaa-0000-0000-0000-000000000001","name":"Push","exercises":[{"exerciseName":"Bench","sets":3,"reps":8,"weight":60}]},
+       {"id":"b","name":null,"exercises":null}]
+      """.utf8))
+    let s = SupabaseTemplateSource.snapshot(days: days, templates: tpls, at: EpochMillis(0))
+    #expect(s.routine[0].templateId == "aaaaaaaa-0000-0000-0000-000000000001", "uuid so khớp không phân biệt hoa thường")
+    #expect(s.routine[1].isRest == false && s.routine[1].isDeload)
+    #expect(s.templates[0].exercises.first?.sets == 3)
+    #expect(s.templates[1].exercises.isEmpty && s.templates[1].name == "")
+    let monday = LocalDate("2026-10-05")!
+    #expect(s.plan(for: monday, today: monday).status == .todo)
+  }
+}

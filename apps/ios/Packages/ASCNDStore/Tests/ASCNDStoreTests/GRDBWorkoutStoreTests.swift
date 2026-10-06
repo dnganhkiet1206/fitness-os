@@ -194,3 +194,27 @@ struct OfflineFinishThenSyncTests {
     #expect(try OutboxStore(db).load().pending.isEmpty)
   }
 }
+
+struct GRDBTemplateCacheTests {
+  private let snap = TemplateSnapshot(
+    routine: [RoutineDay(dayOfWeek: 0, isRest: false, isDeload: true, templateId: "t1")],
+    templates: [WorkoutTemplate(id: "t1", name: "Push", exercises: [
+      TemplateExercise(exerciseId: "b", exerciseName: "Bench", sets: 3, reps: 8, weightKg: 62.5, rpe: 8, restSeconds: 120),
+    ])],
+    fetchedAt: EpochMillis(1_791_216_000_000))
+
+  @Test func roundTripPerUserAndSurvivesReopen() async throws {
+    let path = tempPath()
+    defer { try? FileManager.default.removeItem(atPath: path) }
+    do {
+      let cache = GRDBTemplateCache(try ASCNDDatabase(path: path))
+      #expect(try await cache.load(userId: "u1") == nil)
+      try await cache.save(userId: "u1", snap)
+    }
+    let cache = GRDBTemplateCache(try ASCNDDatabase(path: path))
+    #expect(try await cache.load(userId: "u1") == snap)
+    #expect(try await cache.load(userId: "u2") == nil)
+    try await cache.clearAll()
+    #expect(try await cache.load(userId: "u1") == nil)
+  }
+}
