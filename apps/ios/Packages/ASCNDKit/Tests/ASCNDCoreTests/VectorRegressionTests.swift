@@ -4,7 +4,8 @@ import Foundation
 import Testing
 
 /// Harness hồi quy native (D-7, #282): mọi tệp golden vector trong
-/// `spec/vectors` đều phải có một runner Swift đã đăng ký ở đây.
+/// `spec/vectors` đều phải có một runner Swift đã đăng ký ở đây — hoặc nằm
+/// trong `rnOnly` với lý do được chính test này kiểm.
 ///
 /// Thêm tệp vector mới mà quên runner Swift → test này đỏ. Đây là chốt chặn
 /// để "mọi golden vector có runner Swift" luôn đúng, không phải lời hứa.
@@ -15,6 +16,20 @@ struct VectorRegressionTests {
     ("workout-state.json", "WorkoutVectorTests.goldenVectors"),
     ("sync.json", "SyncVectorTests"),
     ("workout-session.json", "WorkoutSessionVectorTests"),
+    ("personal-record.json", "PersonalRecordVectorTests"),
+  ]
+
+  /// Tệp vector CHỈ chạy ở RN, kèm lý do. Đây không phải chỗ để giấu một
+  /// runner còn thiếu: mỗi mục phải nói native khác ở đâu hoặc chờ việc gì, và
+  /// `rnOnlyListStaysHonest` đỏ khi mục ấy thôi đúng.
+  static let rnOnly: [(file: String, reason: String)] = [
+    ("append.json",
+     "mô tả cờ trạng thái của day-plan.tsx (appending/canFinish/pendingReady); native cố ý khác — "
+       + "nối thêm cả khi offline qua outbox, canAppend tách khỏi canFinish — và MỖI ca ghi `nativeDiffers`. "
+       + "Hành vi native có test riêng: AppendToSessionTests"),
+    ("template-write.json",
+     "payload ghi template/routine_days của use-library.ts; native chưa có đường ghi template "
+       + "(A22, #435 còn mở) — khi có, viết runner Swift và bỏ dòng này"),
   ]
 
   /// Tệp vector trong `spec/vectors` — trừ `runners.json`, bảng runner JS
@@ -26,7 +41,7 @@ struct VectorRegressionTests {
   @Test func everyVectorFileHasASwiftRunner() throws {
     let files = Self.vectorFiles().map { $0.lastPathComponent }.sorted()
     #expect(!files.isEmpty, "spec/vectors rỗng — harness không có gì để giữ")
-    for f in files {
+    for f in files where !Self.rnOnly.contains(where: { $0.file == f }) {
       #expect(
         Self.runners.contains { $0.file == f },
         "spec/vectors/\(f) chưa có runner Swift — viết runner rồi đăng ký ở VectorRegressionTests.runners")
@@ -36,8 +51,31 @@ struct VectorRegressionTests {
     }
   }
 
+  /// Danh sách chỉ-RN phải còn đúng: tệp tồn tại, không đồng thời có runner
+  /// Swift, và với `append.json` thì mọi ca vẫn ghi `nativeDiffers` (lý do của
+  /// mục ấy).
+  @Test func rnOnlyListStaysHonest() throws {
+    let files = Set(Self.vectorFiles().map { $0.lastPathComponent })
+    for e in Self.rnOnly {
+      #expect(files.contains(e.file), "rnOnly ghi \(e.file) nhưng tệp không còn — bỏ dòng ấy")
+      #expect(!Self.runners.contains { $0.file == e.file }, "\(e.file) đã có runner Swift — bỏ khỏi rnOnly")
+      #expect(!e.reason.isEmpty)
+    }
+    let append = try JSONDecoder().decode(
+      JSONValue.self, from: Data(contentsOf: RepoPaths.specVectors.appendingPathComponent("append.json")))
+    guard case .array(let cases) = append else {
+      Issue.record("append.json không còn là mảng vector")
+      return
+    }
+    for c in cases {
+      #expect(!(c["nativeDiffers"]?.stringValue ?? "").isEmpty,
+              "append.json \(c["rule"]?.stringValue ?? "?"): thiếu nativeDiffers — lý do chỉ-RN không còn đúng")
+    }
+  }
+
   /// Mọi tệp vector phải đọc được (định dạng hợp đồng #230) — hỏng ở đây thì
   /// các runner cũng không chạy nổi, báo sớm cho rõ.
+  ///
   /// Hai dạng tệp hợp lệ, như `vectorFileProblems` ở GoldenVectorTests: mảng
   /// vector (`rule`), hoặc object `golden-vectors/v1` với mảng `vectors` (`id`).
   @Test func everyVectorFileLoads() throws {
