@@ -26,7 +26,7 @@ struct WorkoutLabView: View {
         case .loading:
           ProgressView()
         case .signedOut:
-          SignInView()
+          AuthView()
         case .signedIn:
           LabSession()
         }
