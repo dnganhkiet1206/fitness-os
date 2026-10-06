@@ -97,8 +97,6 @@ private struct SignedInScope<Content: View>: View {
     .environment(AppServices())
 }
 
-#Preview("RootGate — Reduce Motion") {
-  RootGate()
-    .environment(AppServices())
-    .environment(\.accessibilityReduceMotion, true)
-}
+// Reduce Motion không dựng được bằng preview: `accessibilityReduceMotion` là
+// EnvironmentValues chỉ đọc (theo cài đặt hệ thống). Kiểm bằng Accessibility
+// Inspector / bật Reduce Motion trên máy.
