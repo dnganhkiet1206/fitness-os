@@ -127,17 +127,47 @@ public final class TodayController {
   }
 
   /// Cache trên máy trước (hiện ngay, kể cả offline), rồi server.
+  ///
+  /// Gọi chồng (`load` / `refresh` từ hai chỗ cùng lúc) thì chờ chung một
+  /// lượt, không bắn hai lượt truy vấn (đề xuất audit của C, 05/10).
   public func load() async {
+    await coalesced { await self.loadNow() }
+  }
+
+  /// Hỏi server kế hoạch + lịch sử. Hỏng phần nào thì giữ phần đã có.
+  public func refresh() async {
+    await coalesced { await self.refreshNow() }
+  }
+
+  @ObservationIgnored private var inFlight: Task<Void, Never>?
+
+  /// Một lượt đọc tại một thời điểm. Huỷ người chờ thì huỷ cả lượt — `close()`
+  /// của `WorkoutFlow` phải dừng được truy vấn mạng của phiên vừa kết thúc.
+  private func coalesced(_ work: @escaping @MainActor () async -> Void) async {
+    if let running = inFlight {
+      await running.value
+      return
+    }
+    let task = Task { await work() }
+    inFlight = task
+    await withTaskCancellationHandler {
+      await task.value
+    } onCancel: {
+      task.cancel()
+    }
+    inFlight = nil
+  }
+
+  private func loadNow() async {
     if let cached = await repository.cached(userId: userId) {
       snapshot = cached
       source = .cache(cached.fetchedAt)
       await recompute()
     }
-    await refresh()
+    await refreshNow()
   }
 
-  /// Hỏi server kế hoạch + lịch sử. Hỏng phần nào thì giữ phần đã có.
-  public func refresh() async {
+  private func refreshNow() async {
     var errors: [(String, any Error)] = []
     do {
       let fresh = try await repository.refresh(userId: userId)
@@ -224,6 +254,11 @@ public final class TodayController {
   static func startOfDay(_ date: LocalDate, in tz: TimeZone) -> Date {
     var cal = Calendar(identifier: .gregorian)
     cal.timeZone = tz
-    return cal.date(from: DateComponents(year: date.year, month: date.month, day: date.day)) ?? Date(timeIntervalSince1970: 0)
+    if let d = cal.date(from: DateComponents(year: date.year, month: date.month, day: date.day)) { return d }
+    // Không dựng được ngày (lịch hỏng): nửa đêm UTC của ngày ấy, lệch theo múi
+    // — sai tối đa một giờ quanh đổi giờ. Trước đây rơi về 1970, và truy vấn
+    // "14 ngày" thành "mọi buổi từ 1970" (đề xuất audit của C).
+    let utcMidnight = Date(timeIntervalSince1970: TimeInterval(date.daysSinceEpoch) * 86_400)
+    return utcMidnight.addingTimeInterval(-TimeInterval(tz.secondsFromGMT(for: utcMidnight)))
   }
 }
