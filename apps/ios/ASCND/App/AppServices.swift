@@ -27,6 +27,8 @@ final class AppServices {
   @ObservationIgnored let recordCache: any RecordBookCache
   @ObservationIgnored let performanceSource: any PerformanceSource
   @ObservationIgnored let performanceCache: any PerformanceCache
+  @ObservationIgnored let historySource: any HistorySource
+  @ObservationIgnored let historyCache: any HistoryCache
   /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
   @ObservationIgnored private let readCache: GRDBTemplateCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
@@ -65,6 +67,8 @@ final class AppServices {
     recordCache = GRDBRecordBookCache(database)
     performanceSource = backend.map { SupabasePerformanceSource(backend: $0) as any PerformanceSource } ?? UnconfiguredPerformance()
     performanceCache = GRDBPerformanceCache(database)
+    historySource = backend.map { SupabaseHistorySource(backend: $0) as any HistorySource } ?? UnconfiguredHistorySource()
+    historyCache = GRDBHistoryCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: OutboxStore(database),
@@ -131,9 +135,13 @@ final class AppServices {
   /// màn Today / Workout và Lab chỉ đọc nó.
   func makeWorkoutFlow(userId: String, rest: RestTimerController) -> WorkoutFlow {
     let sync = self.sync
+    // Lịch sử buổi tập (#400): xoá từ lịch sử đi qua cùng outbox.
+    let history = HistoryBook(
+      userId: userId, source: historySource, cache: historyCache, store: workouts,
+      onEnqueued: { _ in sync.kick() })
     return WorkoutFlow(
       today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
-      performance: makePerformanceBook(userId: userId), store: workouts,
+      performance: makePerformanceBook(userId: userId), history: history, store: workouts,
       onRest: { event, target in rest.handle(event, target: target) },
       onEnqueued: { _ in sync.kick() })
   }
@@ -179,6 +187,11 @@ private struct UnconfiguredHistory: TrainingHistory {
 private struct UnconfiguredPerformance: PerformanceSource {
   struct NotConfigured: Error {}
   func sessions(userId: String, since: EpochMillis) async throws -> [SessionHistoryRow] { throw NotConfigured() }
+}
+
+private struct UnconfiguredHistorySource: HistorySource {
+  struct NotConfigured: Error {}
+  func sessions(userId: String, since: EpochMillis) async throws -> [JSONValue] { throw NotConfigured() }
 }
 
 private struct UnconfiguredRecords: RecordHistory {
