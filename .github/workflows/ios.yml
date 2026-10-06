@@ -1,0 +1,71 @@
+# iOS native (apps/ios) — ADR-0001, #223.
+#
+# Hai job, hai lời hứa khác nhau:
+#   core-linux  ASCNDCore + golden vectors build và test được trên Linux. Nếu
+#               ai đưa UIKit/SwiftUI vào Core, job này đỏ — ranh giới giữ bằng
+#               máy, không bằng lời dặn. Chạy nhanh, không tốn runner macOS.
+#   app-macos   XcodeGen sinh project từ project.yml, app build cho simulator,
+#               test của package chạy trên macOS. Không ký: ký là việc của máy
+#               Kiệt (Xcode) hoặc TestFlight (#226).
+#
+# Lọc theo path: PR không chạm iOS thì không tốn mười phút macOS. Vì thế job
+# này KHÔNG đặt làm required check (ADR-0002) — PR không chạm path sẽ treo.
+name: iOS
+
+on:
+  push:
+    branches: ['native/**', main]
+    paths: ['apps/ios/**', 'spec/vectors/**', '.github/workflows/ios.yml']
+  pull_request:
+    paths: ['apps/ios/**', 'spec/vectors/**', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  core-linux:
+    runs-on: ubuntu-24.04
+    container: swift:6.1-noble
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: swift test (ASCNDKit)
+        working-directory: apps/ios/Packages/ASCNDKit
+        run: swift test
+
+  app-macos:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      # Ảnh runner có nhiều bản Xcode; lấy bản mới nhất để SDK iOS mới nhất
+      # (Liquid Glass cần SDK iOS 26) mà không ghim một số phiên bản sẽ cũ.
+      - name: Chọn Xcode mới nhất
+        run: |
+          latest=$(ls -d /Applications/Xcode_*.app | grep -v beta | sort -V | tail -1)
+          sudo xcode-select -s "$latest"
+          xcodebuild -version
+
+      - name: XcodeGen
+        working-directory: apps/ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: swift test (ASCNDKit, macOS)
+        working-directory: apps/ios/Packages/ASCNDKit
+        run: swift test
+
+      - name: Build app (iOS Simulator, không ký)
+        working-directory: apps/ios
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project ASCND.xcodeproj -scheme ASCND -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee build.log | grep -E "warning:|error:|BUILD (SUCCEEDED|FAILED)" || true
+          grep -q "BUILD SUCCEEDED" build.log
