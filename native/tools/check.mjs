@@ -913,6 +913,11 @@ const STEPS = [
     call-site — mọi chỗ qua waterQuickAmounts.
   */
   ['preset nước', 'node', ['tools/water-presets.mjs']],
+  /*
+    C-43 (#484): contract History/Builder — fields C-28/C-37 khớp APIs A21/A22,
+    mọi mismatch có adapter tường minh. `--live` đối chiếu lại 4 branch thật.
+  */
+  ['contract handoff C43', 'node', ['tools/contract-handoff.mjs']],
 ];
 
 /*

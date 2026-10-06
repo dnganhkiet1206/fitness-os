@@ -3,7 +3,7 @@
 // Ba kiểu: primary (hành động chính), secondary (hành động phụ),
 // destructive (hành động huỷ bỏ). Vùng chạm ≥ 44pt theo HIG.
 #if canImport(SwiftUI)
-@_exported import SwiftUI
+public import SwiftUI
 
 /// Kiểu nút trong design system.
 public enum DSButtonStyle {
