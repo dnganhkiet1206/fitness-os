@@ -1,0 +1,319 @@
+#if DEBUG
+import ASCNDCore
+import SwiftUI
+
+/// Màn thử lát dọc đầu tiên — CHỈ có trong bản Debug ("ASCND Dev"), như Rest
+/// Lab. Không phải màn tập thật: không dùng DS của C, chữ không vào catalog
+/// (`verbatim`). Mục đích duy nhất: để Kiệt chạy trên iPhone thật đúng chuỗi
+///
+///     đăng nhập → kế hoạch hôm nay → tick / sửa set → nghỉ (Island) → chốt
+///     → lưu trên máy → outbox → Supabase
+///
+/// và kiểm những điều mà test không thay được: tắt mạng, kill app giữa buổi,
+/// mở lại, bật mạng, xem buổi lên `workout_sessions`.
+///
+/// Kế hoạch đọc từ `routine_days` + `workout_templates` thật (#270), cache
+/// trên máy trước rồi làm mới từ server. Ngày không có buổi thì có thể bật kế
+/// hoạch mẫu (`templateId = nil` → `template_id` null trên server — id bịa là
+/// khoá ngoại hỏng).
+struct WorkoutLabView: View {
+  @Environment(AppServices.self) private var services
+
+  var body: some View {
+    NavigationStack {
+      Group {
+        switch services.session.phase {
+        case .loading:
+          ProgressView()
+        case .signedOut:
+          SignInView()
+        case .signedIn:
+          LabSession()
+        }
+      }
+      .navigationTitle(Text(verbatim: "Workout Lab"))
+    }
+  }
+}
+
+/// Kế hoạch mẫu: hai bài có tạ (nghỉ 90 s, 60 s) và một bài giữ không nghỉ.
+enum WorkoutLabPlan {
+  static func plan(on date: LocalDate) -> WorkoutSessionController.Plan {
+    func sets(_ name: String, _ id: String, _ n: Int, kg: Double, reps: Int, rest: Int) -> [PlannedSet] {
+      (1...n).map {
+        PlannedSet(key: "\(id)-\($0)", exerciseName: name, ordinal: $0, of: n, weightKg: kg, reps: reps, plannedRest: rest)
+      }
+    }
+    return .init(
+      date: date, templateId: nil, templateName: "Lab Push",
+      rows: sets("Bench Press", "bench", 3, kg: 60, reps: 8, rest: 90)
+        + sets("Overhead Press", "ohp", 2, kg: 35, reps: 10, rest: 60)
+        // reps 0: phải gõ "45s" mới tick được — thử luật set giữ (WS-2).
+        + sets("Plank", "plank", 1, kg: 0, reps: 0, rest: 0))
+  }
+}
+
+/// Chỉ đọc `WorkoutFlow` của phiên (#272) — cùng flow mà màn thật dùng. Lab
+/// không còn tự nối controller, nên thứ Kiệt thử ở đây là đường của bản Release.
+private struct LabSession: View {
+  @Environment(WorkoutFlow.self) private var flow
+  @State private var useSample = false
+
+  var body: some View {
+    let today = flow.today
+    List {
+      Section {
+        LabRow(label: "Today", value: today.plan.map { "\($0.date) · \($0.status.rawValue)\($0.isDeload ? " · deload" : "")" } ?? "\(today.today) · no plan")
+        LabRow(label: "Template", value: today.plan?.template.map { "\($0.name) (\($0.exercises.count) bài)" } ?? "—")
+        LabRow(label: "Plan source", value: Self.describe(today.source))
+        LabRow(label: "Trained (14d)", value: "\(today.trained.count) ngày")
+        LabRow(label: "Record history", value: flow.records.bests.map { "\($0.count) bài" } ?? "chưa biết (không nhận kỷ lục)")
+        if let f = today.failure {
+          LabRow(label: "Refresh failed (\(f))", value: today.failureDetail ?? "").foregroundStyle(.orange)
+        }
+        if today.plan?.sessionPlan == nil {
+          Toggle(isOn: $useSample) { Text(verbatim: "Hôm nay không có buổi — dùng kế hoạch mẫu (Lab)") }
+        }
+      } header: {
+        Text(verbatim: "Today (WorkoutFlow)")
+      }
+      if let c = flow.session {
+        LabWorkout(c: c)
+      }
+    }
+    .onChange(of: useSample) { _, on in
+      Task {
+        if on {
+          await flow.setAdHoc { WorkoutLabPlan.plan(on: $0) }
+        } else {
+          await flow.setAdHoc(nil)
+        }
+      }
+    }
+    .refreshable { await flow.refresh() }
+  }
+
+  static func describe(_ s: TodayController.Source) -> String {
+    switch s {
+    case .none: "—"
+    case .cache(let t): "cache · \(t.date.formatted(date: .omitted, time: .shortened))"
+    case .server(let t): "server · \(t.date.formatted(date: .omitted, time: .shortened))"
+    }
+  }
+}
+
+private struct LabWorkout: View {
+  let c: WorkoutSessionController
+  @Environment(WorkoutFlow.self) private var flow
+  @Environment(AppServices.self) private var services
+  @Environment(RestTimerController.self) private var rest
+  @State private var finishError: String?
+  /// Lần gỡ set gần nhất (#398) — hoàn tác được trong 8 giây.
+  @State private var removal: WorkoutSessionController.Removal?
+
+  var body: some View {
+    Group {
+      Section {
+        LabRow(label: "Phase", value: "\(c.phase)\(c.loggedElsewhere ? " · logged elsewhere" : "")")
+        LabRow(label: "Day key", value: c.key)
+        if let u = c.unsaved {
+          LabRow(label: "UNSAVED", value: u.message).foregroundStyle(.red)
+        }
+      }
+
+      if rest.timer != nil {
+        Section {
+          TimelineView(.periodic(from: .now, by: 1)) { context in
+            let left = rest.timer?.remaining(at: EpochMillis(context.date)) ?? 0
+            HStack {
+              Text(verbatim: "Rest \(RestTimer.label(seconds: left))").monospacedDigit()
+              if let t = rest.target {
+                Text(verbatim: "→ \(t.exerciseName) \(t.setNumber)/\(t.totalSets)").foregroundStyle(.secondary)
+              }
+              Spacer()
+              Button { rest.adjust(by: -15) } label: { Text(verbatim: "−15") }
+              Button { rest.adjust(by: 15) } label: { Text(verbatim: "+15") }
+              Button(role: .destructive) { rest.handle(.cancel) } label: { Text(verbatim: "Skip") }
+            }
+            .buttonStyle(.borderless)
+          }
+        }
+      }
+
+      Section {
+        ForEach(c.plan.rows) { row in
+          if row.ordinal == 1, let last = flow.performance.last(for: row.exerciseName), let d = last.display {
+            Text(verbatim: "Last (\(last.date)): \(Self.describe(d))")
+              .font(.caption).foregroundStyle(.secondary)
+          }
+          LabSetRow(c: c, row: row)
+            .swipeActions {
+              if c.canRemove(row.key) {
+                Button(role: .destructive) {
+                  Task {
+                    do throws(WorkoutSessionController.RemoveRefusal) {
+                      removal = try await c.removeLoggedSet(row.key)
+                      finishError = nil
+                    } catch {
+                      finishError = "\(error)"
+                    }
+                  }
+                } label: {
+                  Text(verbatim: "Remove set")
+                }
+              }
+            }
+        }
+      }
+
+      Section {
+        Button {
+          Task {
+            do throws(WorkoutSessionController.FinishRefusal) {
+              _ = try await flow.finish()
+              finishError = nil
+            } catch {
+              finishError = "\(error)"
+            }
+          }
+        } label: {
+          Text(verbatim: "Finish workout")
+        }
+        .disabled(!c.canFinish)
+        if c.loggedSessionId != nil {
+          Button {
+            Task {
+              do throws(WorkoutSessionController.FinishRefusal) {
+                _ = try await flow.append()
+                finishError = nil
+              } catch {
+                finishError = "\(error)"
+              }
+            }
+          } label: {
+            Text(verbatim: "Append \(c.pendingRows.count) new set(s) to this session")
+          }
+          .disabled(!c.canAppend)
+        }
+        if let r = removal {
+          Button {
+            Task {
+              do throws(WorkoutSessionController.RemoveRefusal) {
+                try await c.undo(r)
+                finishError = nil
+              } catch {
+                finishError = "\(error)"
+              }
+              removal = nil
+            }
+          } label: {
+            Text(verbatim: "Undo remove \(r.key)\(r.deletedSession ? " (session deleted)" : "") — 8 s")
+          }
+        }
+        if let finishError {
+          Text(verbatim: finishError).foregroundStyle(.red).font(.footnote)
+        }
+        if let s = c.summary {
+          LabRow(label: "Session", value: s.sessionId)
+          LabRow(label: "Sets / holds / warm-ups", value: "\(s.completedSets) / \(s.holdSets) / \(s.warmupSets)")
+          LabRow(label: "Exercises", value: "\(s.exerciseCount)")
+          LabRow(label: "Volume (kg)", value: "\(s.volumeKg)")
+          LabRow(label: "Session RPE", value: "\(s.sessionRpe)")
+          LabRow(label: "PR", value: s.records.isEmpty ? "—" : s.records.map { "\($0.exercise) \($0.kind.rawValue) \($0.previous.formatted())→\($0.value.formatted())" }.joined(separator: "; "))
+        }
+      }
+
+      Section {
+        LabRow(label: "Online", value: "\(services.sync.online)")
+        LabRow(label: "Signed in", value: services.sync.signedInUser ?? "—")
+        LabRow(label: "Outbox pending", value: "\(services.sync.pendingCount)")
+        LabRow(label: "Outbox dead", value: "\(services.sync.deadCount)")
+        LabRow(label: "Sending", value: "\(services.sync.isRunning)")
+        if let u = services.sync.unsaved {
+          LabRow(label: "Outbox unsaved", value: u.message).foregroundStyle(.red)
+        }
+        ForEach(services.sync.outbox.dead, id: \.entry.id) { d in
+          LabRow(label: "dead \(d.reason)", value: "\(d.entry.id.prefix(8)) \(d.failure.map { "\($0)" } ?? "")")
+            .foregroundStyle(.red)
+        }
+        Button { services.sync.kick() } label: { Text(verbatim: "Sync now") }
+      } header: {
+        Text(verbatim: "Outbox")
+      }
+
+      Section {
+        Button(role: .destructive) {
+          Task { await services.session.signOut() }
+        } label: {
+          Text(verbatim: "Sign out (drops outbox, #241)")
+        }
+      }
+    }
+  }
+}
+
+extension LabWorkout {
+  static func describe(_ d: LastPerformance.Display) -> String {
+    switch d {
+    case .hold(let s): "\(s)s"
+    case .bodyweight(let r): "\(r) reps × bodyweight"
+    case .loaded(let w, let r): "\(w.formatted()) kg × \(r)"
+    }
+  }
+}
+
+private struct LabSetRow: View {
+  let c: WorkoutSessionController
+  let row: PlannedSet
+
+  var body: some View {
+    let done = c.progress.done[row.key] == true
+    HStack(spacing: 12) {
+      Button {
+        Task { await c.toggle(row.key) }
+      } label: {
+        Image(systemName: done ? "checkmark.circle.fill" : "circle").font(.title2)
+      }
+      .buttonStyle(.borderless)
+      .accessibilityLabel(Text(verbatim: "\(row.exerciseName) set \(row.ordinal)"))
+      .accessibilityAddTraits(done ? .isSelected : [])
+
+      VStack(alignment: .leading) {
+        Text(verbatim: row.exerciseName)
+        Text(verbatim: "\(row.ordinal)/\(row.of) · rest \(RestTimer.label(seconds: WorkoutDay.restSeconds(row, c.progress)))")
+          .font(.caption).foregroundStyle(.secondary)
+      }
+      Spacer()
+      TextField(text: Binding(
+        get: { c.progress.weightText[row.key] ?? WorkoutMath.round2(row.weightKg).formatted() },
+        set: { v in Task { await c.setWeightText(v, for: row.key) } })
+      ) { Text(verbatim: "kg") }
+        .keyboardType(.decimalPad)
+        .frame(width: 56)
+        .multilineTextAlignment(.trailing)
+      Text(verbatim: "×")
+      TextField(text: Binding(
+        get: { c.progress.repsText[row.key] ?? (row.reps > 0 ? String(row.reps) : "") },
+        set: { v in Task { await c.setRepsText(v, for: row.key) } })
+      ) { Text(verbatim: "reps") }
+        .frame(width: 48)
+    }
+    // Chỉ khoá hàng đã nằm trong buổi: hàng mới tick được để nối thêm (#296);
+    // hàng đã chốt thì vuốt để gỡ (#398).
+    .disabled(c.loggedKeys.contains(row.key))
+  }
+}
+
+private struct LabRow: View {
+  let label: String
+  let value: String
+
+  var body: some View {
+    LabeledContent {
+      Text(verbatim: value).font(.footnote.monospaced()).textSelection(.enabled)
+    } label: {
+      Text(verbatim: label)
+    }
+  }
+}
+#endif
