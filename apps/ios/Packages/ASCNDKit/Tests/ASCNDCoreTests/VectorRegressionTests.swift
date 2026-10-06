@@ -17,8 +17,14 @@ struct VectorRegressionTests {
     ("workout-session.json", "WorkoutSessionVectorTests"),
   ]
 
+  /// Tệp vector trong `spec/vectors` — trừ `runners.json`, bảng runner JS
+  /// (#359), không phải một tệp vector.
+  static func vectorFiles() -> [URL] {
+    GoldenVectors.allFiles().filter { $0.lastPathComponent != "runners.json" }
+  }
+
   @Test func everyVectorFileHasASwiftRunner() throws {
-    let files = GoldenVectors.allFiles().map { $0.lastPathComponent }.sorted()
+    let files = Self.vectorFiles().map { $0.lastPathComponent }.sorted()
     #expect(!files.isEmpty, "spec/vectors rỗng — harness không có gì để giữ")
     for f in files {
       #expect(
@@ -33,7 +39,7 @@ struct VectorRegressionTests {
   /// Mọi tệp vector phải đọc được (định dạng hợp đồng #230) — hỏng ở đây thì
   /// các runner cũng không chạy nổi, báo sớm cho rõ.
   @Test func everyVectorFileLoads() throws {
-    for url in GoldenVectors.allFiles() {
+    for url in Self.vectorFiles() {
       let cases = try GoldenVectors.load(url, as: GoldenVector<JSONValue, JSONValue>.self)
       #expect(!cases.isEmpty, "\(url.lastPathComponent) rỗng")
     }

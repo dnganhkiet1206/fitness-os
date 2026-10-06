@@ -9,7 +9,7 @@ import Testing
 /// (`SplitMix64`) — tất định, không flaky. Bất biến sau mỗi lượt:
 ///
 /// 1. Mỗi ngày tối đa MỘT hàng outbox (chốt là idempotent theo id buổi);
-/// 2. `summary.volumeKg == Σ kg×reps` của đúng các hàng đã tick (bỏ warmup),
+/// 2. `summary.volumeKg == Σ kg×reps` của đúng các hàng đã chốt (bỏ warmup),
 ///    tính từ `performed` — con số người dùng thấy và con số lên server là một.
 ///
 /// Đảo ngược (chứng minh test bắt lỗi): cho `makeId` sinh id mới mỗi lần
@@ -88,10 +88,13 @@ struct WorkoutSessionFuzzTests {
         #expect(ids.count <= 1, "một ngày một hàng outbox")
       }
 
-      // Bất biến 2: volume chốt == Σ ticked kg×reps (bỏ warmup), tính từ performed.
+      // Bất biến 2: volume chốt == Σ kg×reps của các hàng ĐÃ CHỐT (bỏ warmup),
+      // tính từ performed. Hàng tick SAU khi chốt là `pendingRows` — chưa nằm
+      // trong buổi đã lưu cho tới khi nối thêm (#296) — nên không thuộc
+      // `summary`; tính cả chúng là so số đã lưu với số chưa lưu.
       if let summary = c.summary {
         var expected = 0.0
-        for row in fuzzRows() where c.progress.done[row.key] == true {
+        for row in fuzzRows() where c.loggedKeys.contains(row.key) && c.progress.done[row.key] == true {
           let p = c.performed(row)
           expected += p.weightKg * Double(p.reps)
         }
