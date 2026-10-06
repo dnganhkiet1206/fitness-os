@@ -1,0 +1,236 @@
+{
+ "$schema": "golden-vectors/v1",
+ "domain": "remove-set-undo",
+ "source": {
+  "rn": [
+   "native/src/hooks/use-fitness-data.ts#useRemoveSetFromSession"
+  ],
+  "spec": "spec/behavior/workout.md"
+ },
+ "vectors": [
+  {
+   "expected": {
+    "cutIndex": 2,
+    "removed": {
+     "exerciseName": "Bench Press",
+     "reps": 8,
+     "weight": 60
+    }
+   },
+   "id": "RS-1a",
+   "input": {
+    "exerciseName": "Bench Press",
+    "sets": [
+     {
+      "exerciseName": "Bench Press",
+      "reps": 10,
+      "weight": 60
+     },
+     {
+      "exerciseName": "Squat",
+      "reps": 8,
+      "weight": 80
+     },
+     {
+      "exerciseName": "Bench Press",
+      "reps": 8,
+      "weight": 60
+     }
+    ]
+   },
+   "name": "Gỡ set CUỐI cùng tên bài (không phải set đầu)"
+  },
+  {
+   "expected": {
+    "cutIndex": 1,
+    "matchedName": "bench press"
+   },
+   "id": "RS-1b",
+   "input": {
+    "exerciseName": "  BENCH PRESS ",
+    "sets": [
+     {
+      "exerciseName": "Bench Press",
+      "reps": 10,
+      "weight": 60
+     },
+     {
+      "exerciseName": "bench press",
+      "reps": 8,
+      "weight": 60
+     }
+    ]
+   },
+   "name": "Khớp tên không phân biệt hoa/thường/khoảng trắng"
+  },
+  {
+   "expected": {
+    "cutIndex": -1,
+    "error": "Set not found"
+   },
+   "id": "RS-1c",
+   "input": {
+    "exerciseName": "Deadlift",
+    "sets": [
+     {
+      "exerciseName": "Bench Press",
+      "reps": 10,
+      "weight": 60
+     }
+    ]
+   },
+   "name": "Không tìm thấy set → lỗi"
+  },
+  {
+   "expected": {
+    "left": [
+     {
+      "exerciseName": "Bench Press",
+      "reps": 10,
+      "setIndex": 1,
+      "weight": 60
+     },
+     {
+      "exerciseName": "Squat",
+      "reps": 8,
+      "setIndex": 2,
+      "weight": 80
+     }
+    ],
+    "volume": 1240
+   },
+   "id": "RS-2a",
+   "input": {
+    "exerciseName": "Bench Press",
+    "sets": [
+     {
+      "exerciseName": "Bench Press",
+      "reps": 10,
+      "setIndex": 1,
+      "weight": 60
+     },
+     {
+      "exerciseName": "Squat",
+      "reps": 8,
+      "setIndex": 2,
+      "weight": 80
+     },
+     {
+      "exerciseName": "Bench Press",
+      "reps": 8,
+      "setIndex": 3,
+      "weight": 60
+     }
+    ],
+    "warmups": []
+   },
+   "name": "Gỡ xong đánh lại setIndex từ 1; volume trừ warmup"
+  },
+  {
+   "expected": {
+    "volume": 480
+   },
+   "id": "RS-2b",
+   "input": {
+    "exerciseName": "Bench Press",
+    "sets": [
+     {
+      "exerciseName": "Bench Press",
+      "reps": 10,
+      "setIndex": 1,
+      "warmup": true,
+      "weight": 60
+     },
+     {
+      "exerciseName": "Bench Press",
+      "reps": 8,
+      "setIndex": 2,
+      "weight": 60
+     },
+     {
+      "exerciseName": "Bench Press",
+      "reps": 6,
+      "setIndex": 3,
+      "weight": 70
+     }
+    ]
+   },
+   "name": "Volume loại warmup: gỡ set cuối, chỉ tính set chính còn lại"
+  },
+  {
+   "expected": {
+    "deleted": true
+   },
+   "id": "RS-3a",
+   "input": {
+    "exerciseName": "Bench Press",
+    "sets": [
+     {
+      "exerciseName": "Bench Press",
+      "reps": 10,
+      "setIndex": 1,
+      "weight": 60
+     }
+    ]
+   },
+   "name": "Gỡ set cuối cùng → xóa cả hàng buổi"
+  },
+  {
+   "expected": {
+    "rpe": 8
+   },
+   "id": "RS-4a",
+   "input": {
+    "exerciseName": "Bench Press",
+    "sessionRpe": 8,
+    "sets": [
+     {
+      "exerciseName": "Bench Press",
+      "reps": 10,
+      "weight": 60
+     },
+     {
+      "exerciseName": "Bench Press",
+      "reps": 8,
+      "weight": 60
+     }
+    ]
+   },
+   "name": "Giữ nguyên session_rpe của buổi"
+  },
+  {
+   "expected": {
+    "restored": true
+   },
+   "id": "RS-5a",
+   "input": {
+    "snapshot": {
+     "id": "sess-1",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "reps": 10,
+       "weight": 60
+      },
+      {
+       "exerciseName": "Bench Press",
+       "reps": 8,
+       "weight": 60
+      }
+     ]
+    }
+   },
+   "name": "Undo: upsert lại snapshot nguyên vẹn"
+  },
+  {
+   "expected": {
+    "secondBlocked": true
+   },
+   "id": "RS-6a",
+   "input": {
+    "taps": 2
+   },
+   "name": "Double-tap: lần hai bị chặn khi đang xử lý"
+  }
+ ]
+}

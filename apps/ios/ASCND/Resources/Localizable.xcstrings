@@ -485,117 +485,243 @@
     }
    }
   },
+<<<<<<< HEAD
   "summary.title": {
+=======
+  "weekstrip.today": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Workout Summary"
+=======
+      "value": "today"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Tóm tắt buổi tập"
+=======
+      "value": "hôm nay"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Resumen del entrenamiento"
+=======
+      "value": "hoy"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "summary.volume": {
+=======
+  "weekstrip.hint": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Volume"
+=======
+      "value": "Tap to open this day"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Volume"
+=======
+      "value": "Chạm để mở ngày này"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Volumen"
+=======
+      "value": "Toca para abrir este día"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "summary.sets": {
+=======
+  "day.rest": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Sets"
+=======
+      "value": "Rest"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Số set"
+=======
+      "value": "Nghỉ"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Series"
+=======
+      "value": "Descanso"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "summary.exercises": {
+=======
+  "day.done": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Exercises"
+=======
+      "value": "Done"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Số bài"
+=======
+      "value": "Đã tập"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Ejercicios"
+=======
+      "value": "Hecho"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "summary.warmup": {
+=======
+  "day.todo": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Warm-up"
+=======
+      "value": "To do"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Khởi động"
+=======
+      "value": "Cần tập"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Calentamiento"
+=======
+      "value": "Por hacer"
+     }
+    }
+   }
+  },
+  "day.missed": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Missed"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bỏ lỡ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Perdido"
+     }
+    }
+   }
+  },
+  "day.unplanned": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Unplanned"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa lên lịch"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin plan"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
