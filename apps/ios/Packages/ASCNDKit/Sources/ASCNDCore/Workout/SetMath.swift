@@ -44,7 +44,7 @@ public enum PersonalRecords {
   /// Biên chống "kỷ lục ma" khi đổi kg ↔ lb khứ hồi.
   public static let weightEpsilonKg = 0.05
 
-  public struct Best: Sendable, Hashable {
+  public struct Best: Sendable, Hashable, Codable {
     public var topWeight: Double
     /// Khoá là `weightKey(w)`, ví dụ "100.00".
     public var repsAt: [String: Int]
@@ -54,7 +54,7 @@ public enum PersonalRecords {
     }
   }
 
-  public enum Kind: String, Sendable, Hashable { case weight, reps }
+  public enum Kind: String, Sendable, Hashable, Codable { case weight, reps }
 
   /// Ô 0,05 kg của một mức tạ, cùng chuỗi với `weightKey` bên RN để lịch sử
   /// dựng ở hai app đọc được của nhau.
