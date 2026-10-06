@@ -72,8 +72,7 @@ export function WorkoutPickerSheet({
       width: 36,
       height: 5,
       borderRadius: 3,
-      backgroundColor: c.mutedForeground,
-      opacity: 0.4,
+      backgroundColor: c.border,
       alignSelf: 'center',
       marginTop: spacing.sm,
       marginBottom: spacing.sm,
@@ -214,6 +213,7 @@ export function WorkoutPickerSheet({
               hitSlop={4}
               accessibilityRole="button"
               accessibilityLabel={i18n.nCancel}
+              hitSlop={4}
               onPress={onClose}>
               <Icon icon={X} size={18} color={c.foreground} />
             </PressScale>
@@ -224,6 +224,7 @@ export function WorkoutPickerSheet({
               style={[styles.restRow, isRestSelected && styles.restRowSelected]}
               accessibilityRole="radio"
               accessibilityState={{ selected: isRestSelected }}
+              aria-checked={isRestSelected}
               onPress={handleSelectRest}>
               <View style={styles.restIcon}>
                 <Icon icon={Moon} size={22} color="#8b7cf0" />
@@ -252,6 +253,7 @@ export function WorkoutPickerSheet({
                     style={styles.tplRow}
                     accessibilityRole="radio"
                     accessibilityState={{ selected }}
+                    aria-checked={selected}
                     onPress={() => handleSelectTemplate(tpl.id)}>
                     <View style={styles.tplThumb}>
                       <Text style={{ fontSize: 24 }}>💪</Text>
