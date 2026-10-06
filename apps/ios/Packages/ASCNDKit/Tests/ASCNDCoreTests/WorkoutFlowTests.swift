@@ -8,9 +8,26 @@ private struct Down: Error {}
 private actor Templates: TemplateSource, TemplateCache {
   var snapshot: TemplateSnapshot
   var cached: TemplateSnapshot?
+  private(set) var fetches = 0
+  private var down = false
+  private var holding = false
+  private var parked: [CheckedContinuation<Void, Never>] = []
   init(_ s: TemplateSnapshot) { snapshot = s }
   func set(_ s: TemplateSnapshot) { snapshot = s }
-  func fetch(userId: String) async throws -> TemplateSnapshot { snapshot }
+  func setDown(_ d: Bool) { down = d }
+  func hold() { holding = true }
+  var waiting: Int { parked.count }
+  func release() {
+    holding = false
+    parked.forEach { $0.resume() }
+    parked = []
+  }
+  func fetch(userId: String) async throws -> TemplateSnapshot {
+    fetches += 1
+    if holding { await withCheckedContinuation { parked.append($0) } }
+    if down { throw URLError(.notConnectedToInternet) }
+    return snapshot
+  }
   func load(userId: String) async throws -> TemplateSnapshot? { cached }
   func save(userId: String, _ snapshot: TemplateSnapshot) async throws { cached = snapshot }
 }
@@ -223,6 +240,105 @@ struct WorkoutFlowTests {
     #expect(h.flow.session === s)
     #expect(!s.loadFailed)
     #expect(s.phase == .idle)
+  }
+
+  // MARK: làm mới (#333) — luật của baseline: staleTime 1 phút, làm mới khi
+  // ra tiền cảnh (`focusManager` ↔ `AppState`) và khi có mạng lại.
+
+  /// Template sửa ở máy khác hiện ra khi quay lại app sau hơn một phút —
+  /// không cần kéo làm mới. Trong vòng một phút: không bắn truy vấn.
+  @Test func foregroundRefreshesOnlyWhenStale() async throws {
+    let h = Harness()
+    await h.flow.start()
+    #expect(await h.templates.fetches == 1)
+    await h.templates.set(snap(template(sets: 3)))
+
+    h.clock.advance(30_000)
+    await h.flow.becameActive()
+    #expect(await h.templates.fetches == 1)
+    #expect(try #require(h.flow.session).plan.rows.count == 2)
+
+    h.clock.advance(31_000)
+    await h.flow.becameActive()
+    #expect(await h.templates.fetches == 2)
+    #expect(try #require(h.flow.session).plan.rows.count == 3)
+  }
+
+  /// Lần làm mới hỏng thì dữ liệu vẫn "cũ": lần ra tiền cảnh kế tiếp thử lại
+  /// ngay, không đợi thêm một phút.
+  @Test func failedRefreshStaysStale() async {
+    let h = Harness()
+    await h.templates.setDown(true)
+    await h.flow.start()
+    #expect(h.flow.isStale)
+    #expect(h.flow.today.failure == .offline)
+    await h.templates.setDown(false)
+    await h.flow.becameActive()
+    #expect(await h.templates.fetches == 2)
+    #expect(!h.flow.isStale)
+    #expect(h.flow.session != nil)
+  }
+
+  @Test func reconnectRefreshesOnlyWhenStale() async {
+    let h = Harness()
+    await h.flow.start()
+    await h.flow.reconnected()
+    #expect(await h.templates.fetches == 1)
+    h.clock.advance(60_000)
+    await h.flow.reconnected()
+    #expect(await h.templates.fetches == 2)
+  }
+
+  /// Kéo làm mới đúng lúc ra tiền cảnh: một lượt truy vấn, không phải hai.
+  @Test func overlappingRefreshesShareOneFetch() async {
+    let h = Harness()
+    await h.flow.start()
+    await h.templates.hold()
+    async let a: Void = h.flow.refresh()
+    async let b: Void = h.flow.refresh()
+    while await h.templates.waiting == 0 { await Task.yield() }
+    await h.templates.release()
+    _ = await (a, b)
+    #expect(await h.templates.fetches == 2)
+  }
+
+  /// Ra tiền cảnh trong lúc lượt tải đầu tiên còn đang bay (mở app): chờ
+  /// chung lượt ấy, không bắn lượt thứ hai (`freshAt` lúc đó còn trống).
+  @Test func foregroundDuringStartSharesTheFirstLoad() async {
+    let h = Harness()
+    await h.templates.hold()
+    async let start: Void = h.flow.start()
+    while await h.templates.waiting == 0 { await Task.yield() }
+    async let active: Void = h.flow.becameActive()
+    for _ in 0..<50 { await Task.yield() }
+    await h.templates.release()
+    _ = await (start, active)
+    #expect(await h.templates.fetches == 1)
+    #expect(h.flow.session != nil)
+  }
+
+  /// Template bị xoá trên server: ngày thành "chưa lên lịch", buổi chưa chạm
+  /// biến mất; buổi đang tập dở thì ở lại.
+  @Test func deletedTemplatePropagates() async throws {
+    let h = Harness()
+    await h.flow.start()
+    let gone = TemplateSnapshot(
+      routine: [RoutineDay(dayOfWeek: 0, isRest: false, templateId: "tpl")], templates: [], fetchedAt: EpochMillis(2))
+    await h.templates.set(gone)
+    await h.flow.refresh()
+    #expect(h.flow.today.plan?.status == .unplanned)
+    #expect(h.flow.session == nil)
+    #expect(await h.templates.cached == gone, "cache theo server, mở offline không hồi sinh template đã xoá")
+  }
+
+  @Test func deletedTemplateKeepsAnActiveSession() async throws {
+    let h = Harness()
+    await h.flow.start()
+    let s = try #require(h.flow.session)
+    await s.toggle("0-0")
+    await h.templates.set(TemplateSnapshot(routine: [], templates: [], fetchedAt: EpochMillis(2)))
+    await h.flow.refresh()
+    #expect(h.flow.session === s)
   }
 
   @Test func finishWithoutSessionRefuses() async {

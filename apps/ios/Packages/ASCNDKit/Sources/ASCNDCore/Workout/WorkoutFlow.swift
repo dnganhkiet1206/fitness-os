@@ -31,6 +31,15 @@ public final class WorkoutFlow {
   @ObservationIgnored private let onEnqueued: @MainActor (OutboxEntry) -> Void
   @ObservationIgnored private var adHoc: (@MainActor (LocalDate) -> WorkoutSessionController.Plan)?
   @ObservationIgnored private var absorbing: Task<Void, Never>?
+  /// Lượt làm mới đang chạy — gọi chồng (kéo làm mới đúng lúc ra tiền cảnh)
+  /// chờ chung một lượt, không bắn hai lượt truy vấn.
+  @ObservationIgnored private var refreshing: Task<Void, Never>?
+  /// Lần cuối dữ liệu server về đủ (`TodayController.failure == nil`).
+  @ObservationIgnored private var freshAt: EpochMillis?
+
+  /// `staleTime` của baseline (`query-client.ts:85`): một phút. Cũ hơn thì
+  /// ra tiền cảnh / có mạng lại là làm mới.
+  public static let staleAfterMillis: Int64 = 60_000
 
   /// - Parameters:
   ///   - onRest: nối vào `RestTimerController.handle(_:target:)`.
@@ -54,27 +63,73 @@ public final class WorkoutFlow {
   /// Mở màn: kế hoạch trước (cache rồi server) để màn tập có ngay; hai bảng
   /// lịch sử đọc song song — `bests` được hỏi lúc chốt, không lúc dựng, nên
   /// chúng tới muộn vẫn kịp.
+  ///
+  /// Chạy như một lượt làm mới (`refreshing`): ra tiền cảnh / có mạng lại
+  /// trong lúc nó còn bay thì chờ chung, không bắn lượt thứ hai.
   public func start() async {
+    await coalesced { await self.initialLoad() }
+  }
+
+  private func initialLoad() async {
     async let records: Void = self.records.load()
     async let performance: Void = self.performance.load()
     await today.load()
+    markFresh()
     await install()
     _ = await (records, performance)
   }
 
-  /// Kéo để làm mới.
+  /// Kéo để làm mới. Gọi chồng thì chờ lượt đang chạy.
   public func refresh() async {
+    await coalesced { await self.fetch() }
+  }
+
+  /// Một lượt tải tại một thời điểm: đang có lượt bay thì chờ nó.
+  private func coalesced(_ work: @escaping @MainActor () async -> Void) async {
+    if let running = refreshing {
+      await running.value
+      return
+    }
+    let task = Task { await work() }
+    refreshing = task
+    await task.value
+    refreshing = nil
+  }
+
+  /// App ra tiền cảnh (`focusManager` của baseline): qua nửa đêm thì "hôm nay"
+  /// đổi; dữ liệu cũ hơn một phút thì làm mới — template sửa ở máy khác hiện
+  /// ra mà không cần kéo.
+  public func becameActive() async {
+    await today.clockTick()
+    if isStale {
+      await refresh()
+    } else {
+      await install()
+    }
+  }
+
+  /// Có mạng lại (`refetchOnReconnect` của baseline).
+  public func reconnected() async {
+    if isStale { await refresh() }
+  }
+
+  /// Chưa từng về đủ, lần cuối hỏng, hoặc quá một phút.
+  public var isStale: Bool {
+    guard let freshAt else { return true }
+    return clock.nowMillis().millis - freshAt.millis >= Self.staleAfterMillis
+  }
+
+  private func fetch() async {
     await today.refresh()
+    markFresh()
     await install()
     async let records: Void = self.records.refresh()
     async let performance: Void = self.performance.refresh()
     _ = await (records, performance)
   }
 
-  /// App ra tiền cảnh: qua nửa đêm thì "hôm nay" đổi, và màn tập theo.
-  public func becameActive() async {
-    await today.clockTick()
-    await install()
+  private func markFresh() {
+    freshAt = today.failure == nil ? clock.nowMillis() : nil
   }
 
   /// Kế hoạch tự do cho ngày không có buổi (chỉ Lab dùng). `nil` để tắt.

@@ -122,6 +122,17 @@ struct TodayControllerTests {
     #expect(off.plan?.status == .todo, "vẫn tập được từ cache")
   }
 
+  /// #333: cache theo người dùng — đổi tài khoản lúc offline không bao giờ
+  /// thấy kế hoạch của người trước.
+  @Test func cacheIsPerUser() async {
+    let c = TodayController(
+      userId: "u2", repository: TodayRepository(source: Throwing(URLError(.notConnectedToInternet)), cache: Cache(["u1": snap(7)])),
+      history: History(result: .failure(Down())), workouts: InMemoryWorkoutStore(), clock: monday2pm, timeZone: saigon)
+    await c.load()
+    #expect(c.plan == nil)
+    #expect(c.failure == .offline)
+  }
+
   /// Làm mới thành công thì lỗi cũ biến mất.
   @Test func successClearsFailure() async {
     let source = Flaky()
