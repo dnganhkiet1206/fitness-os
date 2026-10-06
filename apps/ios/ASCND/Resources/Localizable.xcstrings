@@ -416,24 +416,37 @@
     }
    }
   },
+<<<<<<< HEAD
   "common.cancel": {
+=======
+  "ds.empty.title": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Cancel"
+=======
+      "value": "Nothing here yet"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Huỷ"
+=======
+      "value": "Chưa có gì ở đây"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Cancelar"
      }
     }
@@ -458,6 +471,9 @@
      "stringUnit": {
       "state": "translated",
       "value": "Empezar"
+=======
+      "value": "Nada aquí todavía"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
@@ -485,110 +501,183 @@
     }
    }
   },
+<<<<<<< HEAD
   "ds.empty.title": {
+=======
+  "ds.empty.action": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Nothing here yet"
+=======
+      "value": "Get started"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Chưa có gì ở đây"
+=======
+      "value": "Bắt đầu"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Nada aquí todavía"
+=======
+      "value": "Empezar"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "extra.exercise.delete": {
+=======
+  "weekstrip.today": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Delete exercise"
+=======
+      "value": "today"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Xoá bài tập"
+=======
+      "value": "hôm nay"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Eliminar ejercicio"
+=======
+      "value": "hoy"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "extra.exercise.delete.confirm": {
+=======
+  "weekstrip.hint": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Delete"
+=======
+      "value": "Tap to open this day"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Xoá"
+=======
+      "value": "Chạm để mở ngày này"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Eliminar"
+=======
+      "value": "Toca para abrir este día"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "extra.exercise.delete.confirm.title": {
+=======
+  "day.rest": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Delete this exercise?"
+=======
+      "value": "Rest"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Xoá bài tập này?"
+=======
+      "value": "Nghỉ"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "¿Eliminar ejercicio?"
+=======
+      "value": "Descanso"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "extra.exercise.incomplete": {
+=======
+  "day.done": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Add a name and at least 1 set."
+=======
+      "value": "Done"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Thêm tên và ít nhất 1 hiệp."
      }
     },
@@ -866,6 +955,9 @@
      "stringUnit": {
       "state": "translated",
       "value": "Đã xong"
+=======
+      "value": "Đã tập"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
@@ -876,70 +968,115 @@
     }
    }
   },
+<<<<<<< HEAD
   "setrow.notCompleted": {
+=======
+  "day.todo": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Not completed"
+=======
+      "value": "To do"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Chưa xong"
+=======
+      "value": "Cần tập"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Sin hacer"
+=======
+      "value": "Por hacer"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "setrow.reps": {
+=======
+  "day.missed": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Reps"
+=======
+      "value": "Missed"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Reps"
+=======
+      "value": "Bỏ lỡ"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Reps"
+=======
+      "value": "Perdido"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "setrow.saving": {
+=======
+  "day.unplanned": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Saving…"
+=======
+      "value": "Unplanned"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Đang lưu…"
+=======
+      "value": "Chưa lên lịch"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Guardando…"
      }
     }
@@ -964,6 +1101,9 @@
      "stringUnit": {
       "state": "translated",
       "value": "Peso"
+=======
+      "value": "Sin plan"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
