@@ -68,7 +68,11 @@ struct VectorRegressionTests {
       return
     }
     for c in cases {
-      #expect(!(c["nativeDiffers"]?.stringValue ?? "").isEmpty,
+      // Tính trước rồi mới #expect: swift-testing 6.1 trên Linux bóc sai
+      // `!(x ?? "").isEmpty` (ghi `.isEmpty → ()`) và báo đỏ cả khi chuỗi có chữ.
+      let note = c["nativeDiffers"]?.stringValue ?? ""
+      let documented = !note.isEmpty
+      #expect(documented,
               "append.json \(c["rule"]?.stringValue ?? "?"): thiếu nativeDiffers — lý do chỉ-RN không còn đúng")
     }
   }
