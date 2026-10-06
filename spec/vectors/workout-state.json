@@ -1,1 +1,291 @@
-[{"expected":{"counted":true,"reps":10},"input":{"reps":"10"},"rule":"WS-2a"},{"expected":{"counted":true,"durationSec":45},"input":{"reps":"45s"},"rule":"WS-2b"},{"expected":{"counted":false},"input":{"reps":"0"},"rule":"WS-2c"},{"expected":{"counted":false},"input":{"reps":"abc"},"rule":"WS-2d"},{"expected":{"counted":false},"input":{"reps":"8.5"},"rule":"WS-2e"},{"expected":{"counted":false},"input":{"reps":"-5"},"rule":"WS-2f"},{"expected":{"volume":1000},"input":{"sets":[{"reps":10,"warmup":false,"weight":100}]},"rule":"WS-5a"},{"expected":{"volume":0},"input":{"sets":[{"reps":12,"warmup":true,"weight":60}]},"rule":"WS-5b"},{"expected":{"volume":2000},"input":{"sets":[{"reps":10,"warmup":false,"weight":100},{"reps":12,"warmup":true,"weight":60},{"reps":10,"warmup":false,"weight":100}]},"rule":"WS-5c"},{"expected":{"volume":0},"input":{"sets":[{"reps":10,"warmup":false,"weight":null}]},"rule":"WS-5d"},{"expected":{"isRecord":true,"kind":"weight"},"input":{"history":{"repsByWeight":{},"topWeight":100},"set":{"reps":8,"warmup":false,"weight":102.5}},"rule":"WS-8a"},{"expected":{"isRecord":false},"input":{"history":{"repsByWeight":{},"topWeight":100},"set":{"reps":8,"warmup":false,"weight":100.02}},"rule":"WS-8b"},{"expected":{"isRecord":false},"input":{"history":{"repsByWeight":{},"topWeight":100},"set":{"reps":12,"warmup":true,"weight":120}},"rule":"WS-8c"},{"expected":{"isRecord":true,"kind":"reps"},"input":{"history":{"repsByWeight":{"100.00":8},"topWeight":100},"set":{"reps":10,"warmup":false,"weight":100}},"rule":"WS-8d"},{"expected":{"isRecord":true,"kind":"weight"},"input":{"history":{"repsByWeight":{},"topWeight":100},"set":{"reps":10,"warmup":false,"weight":110}},"rule":"WS-8e"},{"expected":{"isRecord":false},"input":{"history":{"repsByWeight":{},"topWeight":0},"set":{"reps":10,"warmup":false,"weight":60}},"rule":"WS-8f"},{"expected":{"counted":true,"setCount":1,"volume":0},"input":{"name":"Plank","sets":[{"durationSec":45,"reps":0,"warmup":false,"weight":null}]},"rule":"LT-6"}]
+[
+ {
+  "expected": {
+   "counted": true,
+   "reps": 10
+  },
+  "input": {
+   "reps": "10"
+  },
+  "rule": "WS-2a"
+ },
+ {
+  "expected": {
+   "counted": true,
+   "durationSec": 45
+  },
+  "input": {
+   "reps": "45s"
+  },
+  "rule": "WS-2b"
+ },
+ {
+  "expected": {
+   "counted": false
+  },
+  "input": {
+   "reps": "0"
+  },
+  "rule": "WS-2c"
+ },
+ {
+  "expected": {
+   "counted": false
+  },
+  "input": {
+   "reps": "abc"
+  },
+  "rule": "WS-2d"
+ },
+ {
+  "expected": {
+   "counted": false
+  },
+  "input": {
+   "reps": "8.5"
+  },
+  "rule": "WS-2e"
+ },
+ {
+  "expected": {
+   "counted": false
+  },
+  "input": {
+   "reps": "-5"
+  },
+  "rule": "WS-2f"
+ },
+ {
+  "expected": {
+   "volume": 1000
+  },
+  "input": {
+   "sets": [
+    {
+     "reps": 10,
+     "warmup": false,
+     "weight": 100
+    }
+   ]
+  },
+  "rule": "WS-5a"
+ },
+ {
+  "expected": {
+   "volume": 0
+  },
+  "input": {
+   "sets": [
+    {
+     "reps": 12,
+     "warmup": true,
+     "weight": 60
+    }
+   ]
+  },
+  "rule": "WS-5b"
+ },
+ {
+  "expected": {
+   "volume": 2000
+  },
+  "input": {
+   "sets": [
+    {
+     "reps": 10,
+     "warmup": false,
+     "weight": 100
+    },
+    {
+     "reps": 12,
+     "warmup": true,
+     "weight": 60
+    },
+    {
+     "reps": 10,
+     "warmup": false,
+     "weight": 100
+    }
+   ]
+  },
+  "rule": "WS-5c"
+ },
+ {
+  "expected": {
+   "volume": 0
+  },
+  "input": {
+   "sets": [
+    {
+     "reps": 10,
+     "warmup": false,
+     "weight": null
+    }
+   ]
+  },
+  "rule": "WS-5d"
+ },
+ {
+  "expected": {
+   "isRecord": true,
+   "kind": "weight"
+  },
+  "input": {
+   "history": {
+    "repsByWeight": {},
+    "topWeight": 100
+   },
+   "set": {
+    "reps": 8,
+    "warmup": false,
+    "weight": 102.5
+   }
+  },
+  "rule": "WS-8a"
+ },
+ {
+  "expected": {
+   "isRecord": false
+  },
+  "input": {
+   "history": {
+    "repsByWeight": {},
+    "topWeight": 100
+   },
+   "set": {
+    "reps": 8,
+    "warmup": false,
+    "weight": 100.02
+   }
+  },
+  "rule": "WS-8b"
+ },
+ {
+  "expected": {
+   "isRecord": false
+  },
+  "input": {
+   "history": {
+    "repsByWeight": {},
+    "topWeight": 100
+   },
+   "set": {
+    "reps": 12,
+    "warmup": true,
+    "weight": 120
+   }
+  },
+  "rule": "WS-8c"
+ },
+ {
+  "expected": {
+   "isRecord": true,
+   "kind": "reps"
+  },
+  "input": {
+   "history": {
+    "repsByWeight": {
+     "100.00": 8
+    },
+    "topWeight": 100
+   },
+   "set": {
+    "reps": 10,
+    "warmup": false,
+    "weight": 100
+   }
+  },
+  "rule": "WS-8d"
+ },
+ {
+  "expected": {
+   "isRecord": true,
+   "kind": "weight"
+  },
+  "input": {
+   "history": {
+    "repsByWeight": {},
+    "topWeight": 100
+   },
+   "set": {
+    "reps": 10,
+    "warmup": false,
+    "weight": 110
+   }
+  },
+  "rule": "WS-8e"
+ },
+ {
+  "expected": {
+   "isRecord": false
+  },
+  "input": {
+   "history": {
+    "repsByWeight": {},
+    "topWeight": 0
+   },
+   "set": {
+    "reps": 10,
+    "warmup": false,
+    "weight": 60
+   }
+  },
+  "rule": "WS-8f"
+ },
+ {
+  "expected": {
+   "counted": true,
+   "setCount": 1,
+   "volume": 0
+  },
+  "input": {
+   "name": "Plank",
+   "sets": [
+    {
+     "durationSec": 45,
+     "reps": 0,
+     "warmup": false,
+     "weight": null
+    }
+   ]
+  },
+  "rule": "LT-6"
+ },
+ {
+  "rule": "WS-2h",
+  "input": {
+   "reps": "45.5s"
+  },
+  "expected": {
+   "counted": true,
+   "durationSec": 46
+  }
+ },
+ {
+  "rule": "WS-2g",
+  "input": {
+   "reps": "45 s"
+  },
+  "expected": {
+   "counted": true,
+   "durationSec": 45
+  }
+ },
+ {
+  "rule": "WS-8g",
+  "input": {
+   "set": {
+    "reps": 8,
+    "warmup": false,
+    "weight": 82.499
+   },
+   "history": {
+    "repsByWeight": {},
+    "topWeight": 82.5
+   }
+  },
+  "expected": {
+   "isRecord": false
+  }
+ }
+]
