@@ -485,162 +485,271 @@
     }
    }
   },
+<<<<<<< HEAD
   "auth.title": {
+=======
+  "weekstrip.today": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Sign in"
+=======
+      "value": "today"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Đăng nhập"
+=======
+      "value": "hôm nay"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Iniciar sesión"
+=======
+      "value": "hoy"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "auth.subtitle.signin": {
+=======
+  "weekstrip.hint": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Welcome back to ASCND."
+=======
+      "value": "Tap to open this day"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Chào mừng trở lại ASCND."
+=======
+      "value": "Chạm để mở ngày này"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Bienvenido de nuevo a ASCND."
+=======
+      "value": "Toca para abrir este día"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "auth.subtitle.signup": {
+=======
+  "day.rest": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Create your ASCND account."
+=======
+      "value": "Rest"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Tạo tài khoản ASCND của bạn."
+=======
+      "value": "Nghỉ"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Crea tu cuenta de ASCND."
+=======
+      "value": "Descanso"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "auth.subtitle.forgot": {
+=======
+  "day.done": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Enter your email to receive a reset link."
+=======
+      "value": "Done"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Nhập email để nhận link đặt lại mật khẩu."
+=======
+      "value": "Đã tập"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Introduce tu email para recibir un enlace de restablecimiento."
+=======
+      "value": "Hecho"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "auth.name": {
+=======
+  "day.todo": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Name"
+=======
+      "value": "To do"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Tên"
+=======
+      "value": "Cần tập"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Nombre"
+=======
+      "value": "Por hacer"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "auth.email": {
+=======
+  "day.missed": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Email"
+=======
+      "value": "Missed"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Email"
+=======
+      "value": "Bỏ lỡ"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Email"
+=======
+      "value": "Perdido"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
+<<<<<<< HEAD
   "auth.password": {
+=======
+  "day.unplanned": {
+>>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Password"
+=======
+      "value": "Unplanned"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Mật khẩu"
+=======
+      "value": "Chưa lên lịch"
+>>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
+<<<<<<< HEAD
       "value": "Contraseña"
      }
     }
@@ -1102,6 +1211,9 @@
      "stringUnit": {
       "state": "translated",
       "value": "Enviando…"
+=======
+      "value": "Sin plan"
+>>>>>>> origin/native/ios-rewrite
      }
     }
    }
