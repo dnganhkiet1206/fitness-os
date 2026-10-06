@@ -28,6 +28,21 @@ struct GRDBWorkoutStoreTests {
     #expect(try await store.loadDay("k")?.progress.done == ["a": true, "b": true])
   }
 
+  /// Blob hỏng (bản build khác, tệp hỏng) = bắt đầu lại ngày, như baseline.
+  /// Bản trước ném lỗi giải mã cả trong `ensureUnlocked`, nên ngày ấy không
+  /// bao giờ lưu hay chốt được nữa.
+  @Test func corruptBlobStartsTheDayFresh() async throws {
+    let database = try ASCNDDatabase()
+    try await database.queue.write { db in
+      try db.execute(sql: "INSERT INTO workout_day (key, state) VALUES ('k', '{\"progress\": 42')")
+    }
+    let store = GRDBWorkoutStore(database)
+    #expect(try await store.loadDay("k") == nil)
+    try await store.saveDay("k", ticked("a"))
+    #expect(try await store.loadDay("k")?.progress.done == ["a": true])
+    #expect(try await store.commitFinish("k", DayState(loggedSessionId: "s"), entry("s")))
+  }
+
   /// "Kill app": mở lại cùng tệp, ngày còn nguyên.
   @Test func survivesReopen() async throws {
     let path = tempPath()
@@ -78,6 +93,34 @@ struct GRDBWorkoutStoreTests {
     let day = try await store.loadDay("k")
     #expect(day?.loggedSessionId == "s1")
     #expect(day?.progress.done == ["a": true])
+  }
+
+  /// Đăng xuất: ngày đã chốt của người trước không còn khoá người sau.
+  @Test func clearAllDropsEveryDayIncludingLocks() async throws {
+    let db = try ASCNDDatabase()
+    let store = GRDBWorkoutStore(db)
+    try await store.commitFinish("k", DayState(loggedSessionId: "s1"), entry("s1"))
+    try await store.saveDay("k2", ticked("a"))
+    #expect(try await store.clearAll() == 2)
+    #expect(try await store.loadDay("k") == nil)
+    try await store.commitFinish("k", DayState(loggedSessionId: "s2"), entry("s2"))
+    #expect(try await store.loadDay("k")?.loggedSessionId == "s2")
+  }
+
+  /// Bản ghi lại cùng buổi (#296): id hàng outbox khác, nhưng `state` vẫn là
+  /// buổi đã chốt → khoá cho qua; một buổi khác thì vẫn bị chặn.
+  @Test func revisionOfTheLoggedSessionPassesTheLock() async throws {
+    let db = try ASCNDDatabase()
+    let store = GRDBWorkoutStore(db)
+    try await store.commitFinish("k", DayState(loggedSessionId: "s1", loggedKeys: ["a"]), entry("s1"))
+    let rev = OutboxEntry(id: "s1@2", userId: "u1", kind: "workout-revision", payload: .object(["id": .string("s1")]), createdAt: EpochMillis(0))
+    #expect(try await store.commitFinish("k", DayState(loggedSessionId: "s1", loggedKeys: ["a", "b"]), rev))
+    #expect(try await store.commitFinish("k", DayState(loggedSessionId: "s1", loggedKeys: ["a", "b"]), rev) == false)
+    #expect(try await store.loadDay("k")?.loggedKeys == ["a", "b"])
+    #expect(try OutboxStore(db).load().pending.map(\.id) == ["s1", "s1@2"])
+    await #expect(throws: DayAlreadyLogged(sessionId: "s1")) {
+      try await store.commitFinish("k", DayState(loggedSessionId: "s9"), entry("s9"))
+    }
   }
 
   @Test func pruneKeepsFourteenDays() async throws {
@@ -192,5 +235,76 @@ struct OfflineFinishThenSyncTests {
     await worker.settle()
     #expect(await server.rows.keys.sorted() == ["sess-1"])
     #expect(try OutboxStore(db).load().pending.isEmpty)
+  }
+}
+
+struct GRDBTemplateCacheTests {
+  private let snap = TemplateSnapshot(
+    routine: [RoutineDay(dayOfWeek: 0, isRest: false, isDeload: true, templateId: "t1")],
+    templates: [WorkoutTemplate(id: "t1", name: "Push", exercises: [
+      TemplateExercise(exerciseId: "b", exerciseName: "Bench", sets: 3, reps: 8, weightKg: 62.5, rpe: 8, restSeconds: 120),
+    ])],
+    fetchedAt: EpochMillis(1_791_216_000_000))
+
+  @Test func roundTripPerUserAndSurvivesReopen() async throws {
+    let path = tempPath()
+    defer { try? FileManager.default.removeItem(atPath: path) }
+    do {
+      let cache = GRDBTemplateCache(try ASCNDDatabase(path: path))
+      #expect(try await cache.load(userId: "u1") == nil)
+      try await cache.save(userId: "u1", snap)
+    }
+    let cache = GRDBTemplateCache(try ASCNDDatabase(path: path))
+    #expect(try await cache.load(userId: "u1") == snap)
+    #expect(try await cache.load(userId: "u2") == nil)
+    try await cache.clearAll()
+    #expect(try await cache.load(userId: "u1") == nil)
+  }
+}
+
+struct GRDBRecordBookCacheTests {
+  @Test func roundTripPerUserAndClearedWithReadCache() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBRecordBookCache(db)
+    let bests = PersonalRecords.bests(from: [RecordSet(exerciseName: "Bench", weightKg: 100, reps: 5)])
+    try await cache.save(userId: "u1", bests)
+    #expect(try await cache.load(userId: "u1") == bests)
+    #expect(try await cache.load(userId: "u2") == nil)
+    // Đăng xuất xoá cả bảng read_cache (GRDBTemplateCache.clearAll).
+    try await GRDBTemplateCache(db).clearAll()
+    #expect(try await cache.load(userId: "u1") == nil)
+  }
+}
+
+/// #335: đăng nhập dọn read model của mọi người khác — kể cả hàng mà lượt
+/// làm mới của người vừa rời đi ghi SAU lượt dọn lúc đăng xuất.
+struct ReadCacheAccountTests {
+  @Test func signInForgetsEveryOtherAccount() async throws {
+    let db = try ASCNDDatabase()
+    let templates = GRDBTemplateCache(db)
+    let records = GRDBRecordBookCache(db)
+    let snap = TemplateSnapshot(routine: [], templates: [], fetchedAt: EpochMillis(1))
+    let bests = PersonalRecords.bests(from: [RecordSet(exerciseName: "Bench", weightKg: 100, reps: 5)])
+    try await templates.save(userId: "u1", snap)
+    try await records.save(userId: "u1", bests)
+    try await templates.save(userId: "u2", snap)
+    #expect(try await templates.clearAll(except: "u2") == 2)
+    #expect(try await templates.load(userId: "u1") == nil)
+    #expect(try await records.load(userId: "u1") == nil)
+    #expect(try await templates.load(userId: "u2") == snap)
+  }
+}
+
+struct GRDBPerformanceCacheTests {
+  @Test func roundTripPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBPerformanceCache(db)
+    let table = PerformanceHistory.lastByExercise(
+      [SessionHistoryRow(id: "s", at: EpochMillis(1), sets: .array([.object([
+        "exerciseName": .string("Bench"), "weight": .number(60), "reps": .number(8)])]))],
+      timeZone: TimeZone(identifier: "UTC")!)
+    try await cache.save(userId: "u1", table)
+    #expect(try await cache.load(userId: "u1") == table)
+    #expect(try await cache.load(userId: "u2") == nil)
   }
 }
