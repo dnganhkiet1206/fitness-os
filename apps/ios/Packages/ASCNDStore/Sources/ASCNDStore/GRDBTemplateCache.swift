@@ -37,4 +37,15 @@ public final class GRDBTemplateCache: TemplateCache {
   public func clearAll() async throws {
     try await db.write { db in try db.execute(sql: "DELETE FROM read_cache") }
   }
+
+  /// Đăng nhập: bỏ cache của MỌI người khác. Lượt làm mới của người vừa rời
+  /// đi có thể về SAU lượt dọn lúc đăng xuất và ghi lại cache của họ (#335);
+  /// lần này dọn nốt. Trả về số hàng bỏ.
+  @discardableResult
+  public func clearAll(except userId: String) async throws -> Int {
+    try await db.write { db in
+      try db.execute(sql: "DELETE FROM read_cache WHERE userId != ?", arguments: [userId])
+      return db.changesCount
+    }
+  }
 }

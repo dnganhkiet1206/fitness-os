@@ -91,7 +91,7 @@ struct WeekStripView: View {
 
   private func stateColor(_ state: DayState) -> DS.Color {
     switch state {
-    case .done: DS.Color.metricGreen
+    case .done: DS.Color.readinessGreen
     case .todo: DS.Color.primary
     case .missed: DS.Color.mutedForeground
     case .rest: DS.Color.metricPurple
