@@ -11,6 +11,10 @@
 // target qua podspec (Shared/**/*.swift) — KHÔNG đưa vào widget extension
 // (plugin with-ascnd-widgets.js chỉ copy file liệt kê trong SWIFT_SOURCES).
 // #235 chưa resolve — không đoán product decisions.
+//
+// Chỉ bản Debug: podspec biên dịch `Shared/**/*.swift` vào app, nên không có
+// cờ này thì mock + gallery đi vào bản phát hành dù không ai dùng (#523).
+#if DEBUG
 import SwiftUI
 
 /// Fixture cho DI ContentState.
@@ -148,9 +152,6 @@ struct DIGallery: View {
         gallerySection("Expanded — active") {
           DIExpandedMock(fixture: .active)
         }
-        gallerySection("Expanded — active") {
-          DIExpandedMock(fixture: .active)
-        }
         gallerySection("Expanded — ready") {
           DIExpandedMock(fixture: .ready)
         }
@@ -194,3 +195,4 @@ struct DIGallery: View {
   DIGallery()
     .preferredColorScheme(.dark)
 }
+#endif
