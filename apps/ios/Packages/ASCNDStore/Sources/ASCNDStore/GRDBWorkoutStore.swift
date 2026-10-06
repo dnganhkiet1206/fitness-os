@@ -59,6 +59,18 @@ public final class GRDBWorkoutStore: WorkoutStore {
     }
   }
 
+  /// Đăng xuất / đổi tài khoản: bỏ mọi điểm quay lại — như baseline xoá các
+  /// khoá `routine-day:*` trong `clearUserScopedStorage` (`query-client.ts:94`).
+  /// Không thì khoá "ngày đã chốt" của người trước (vd khoá `adhoc`) chặn
+  /// người sau chốt buổi của chính họ. Trả về số ngày bỏ.
+  @discardableResult
+  public func clearAll() async throws -> Int {
+    try await db.write { db in
+      try db.execute(sql: "DELETE FROM workout_day")
+      return db.changesCount
+    }
+  }
+
   private static func day(_ db: Database, _ key: String) throws -> DayState? {
     guard let json = try String.fetchOne(db, sql: "SELECT state FROM workout_day WHERE key = ?", arguments: [key])
     else { return nil }

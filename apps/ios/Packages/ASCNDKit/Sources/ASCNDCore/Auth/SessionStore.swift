@@ -94,11 +94,18 @@ public final class SessionStore {
   }
 
   private func apply(_ event: AuthEvent, _ session: AuthSession?) async {
-    let wasSignedIn = self.session != nil
+    let previous = self.session?.userId
     phase = session.map(Phase.signedIn) ?? .signedOut
     // `initialSession` không có phiên là một lần mở app chưa từng đăng nhập —
     // không phải một lần đăng xuất, không có gì của ai để dọn.
-    if event == .signedOut || (wasSignedIn && session == nil && event != .initialSession) {
+    let ended = event == .signedOut || (previous != nil && session == nil && event != .initialSession)
+    // Đổi thẳng sang tài khoản khác, không có `signedOut` xen giữa.
+    // RN behavior: chỉ dọn khi `SIGNED_OUT` (`use-auth.tsx:112`) — người sau
+    //   thừa hưởng dữ liệu trên máy của người trước nếu phiên bị thay thẳng.
+    // Native behavior: đổi `userId` cũng là kết thúc phiên của người trước.
+    // Reason: an toàn dữ liệu. Test: switchingAccountsRunsCleanup.
+    let switched = previous != nil && session != nil && session?.userId != previous
+    if ended || switched {
       await runCleanups()
     }
   }

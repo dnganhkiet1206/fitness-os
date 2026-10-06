@@ -61,10 +61,22 @@ final class AppServices {
       online: false)
     startupError = problems.isEmpty ? nil : problems.joined(separator: "\n")
 
-    // Đăng xuất: bỏ hàng đợi như baseline (#241 chờ Kiệt).
-    session.onSignedOut { [sync] in await sync.signOut() }
-    // Kế hoạch của người vừa rời đi không nằm lại trên máy.
-    session.onSignedOut { try? await templateCache.clearAll() }
+    // Phiên kết thúc (nút Đăng xuất, token hết hạn, tài khoản bị xoá, hay đổi
+    // thẳng sang tài khoản khác): mọi thứ của người vừa rời đi rời khỏi máy —
+    // như `forgetPreviousAccount` của baseline (`use-auth.tsx:53`). MỘT closure,
+    // chạy tuần tự, để thứ tự không phụ thuộc thứ tự đăng ký.
+    let workouts = self.workouts
+    session.onSignedOut { [sync = self.sync, weak session = self.session] in
+      // Hàng đợi chưa gửi: bỏ, như baseline (#241 chờ Kiệt).
+      await sync.signOut()
+      // Điểm quay lại `routine-day:*` (`clearUserScopedStorage`).
+      try? await workouts.clearAll()
+      // Kế hoạch đã cache.
+      try? await templateCache.clearAll()
+      // Đổi thẳng tài khoản: người mới đã đăng nhập — vòng sync gửi hàng của
+      // họ (`signOut` ở trên vừa đặt nó về nil).
+      sync.setSignedInUser(session?.session?.userId)
+    }
     startNetworkMonitor()
   }
 
@@ -79,6 +91,12 @@ final class AppServices {
   /// Tầng ứng dụng của màn Today cho người đang đăng nhập (#271).
   func makeToday(userId: String) -> TodayController {
     TodayController(userId: userId, repository: templates, history: history, workouts: workouts)
+  }
+
+  /// Việc dọn thêm khi phiên kết thúc, của những thứ không do AppServices
+  /// dựng (quãng nghỉ / Live Activity).
+  func onSessionEnded(_ cleanup: @escaping @MainActor @Sendable () async -> Void) {
+    session.onSignedOut(cleanup)
   }
 
   func didBecomeActive() {

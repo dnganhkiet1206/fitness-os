@@ -26,7 +26,7 @@ struct WorkoutLabView: View {
         case .loading:
           ProgressView()
         case .signedOut:
-          LabSignIn()
+          SignInView()
         case .signedIn(let s):
           LabSession(user: s)
         }
@@ -50,52 +50,6 @@ enum WorkoutLabPlan {
         + sets("Overhead Press", "ohp", 2, kg: 35, reps: 10, rest: 60)
         // reps 0: phải gõ "45s" mới tick được — thử luật set giữ (WS-2).
         + sets("Plank", "plank", 1, kg: 0, reps: 0, rest: 0))
-  }
-}
-
-private struct LabSignIn: View {
-  @Environment(AppServices.self) private var services
-  @State private var email = ""
-  @State private var password = ""
-  @State private var busy = false
-  @State private var error: String?
-
-  var body: some View {
-    Form {
-      Section {
-        TextField(text: $email) { Text(verbatim: "Email") }
-          .textContentType(.username)
-          .keyboardType(.emailAddress)
-          .textInputAutocapitalization(.never)
-        SecureField(text: $password) { Text(verbatim: "Password") }
-          .textContentType(.password)
-      } footer: {
-        Text(verbatim: "Tài khoản ASCND thật (cùng Supabase với app RN). Buổi tập sẽ được ghi thật.")
-      }
-      Section {
-        Button {
-          busy = true
-          Task {
-            do {
-              try await services.session.signIn(email: email, password: password)
-              error = nil
-            } catch {
-              self.error = "\(error)"
-            }
-            busy = false
-          }
-        } label: {
-          Text(verbatim: busy ? "…" : "Sign in")
-        }
-        .disabled(busy || email.isEmpty || password.isEmpty)
-      }
-      if let error {
-        Section { Text(verbatim: error).foregroundStyle(.red).font(.footnote) }
-      }
-      if let problem = services.startupError {
-        Section { Text(verbatim: problem).foregroundStyle(.red).font(.footnote) }
-      }
-    }
   }
 }
 
