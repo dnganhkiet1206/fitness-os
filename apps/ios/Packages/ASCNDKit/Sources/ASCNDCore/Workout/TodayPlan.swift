@@ -185,6 +185,24 @@ public enum WorkoutPlanning {
     return rows
   }
 
+  /// Hàng của các bài thêm trong ngày (`adHocRows`, `day-plan.tsx:509`): cùng
+  /// hình dạng với hàng theo kế hoạch, nên tick, điểm quay lại, chốt, nối
+  /// thêm nhận chúng mà không cần biết chúng tồn tại. Tạ và rep kế hoạch là 0
+  /// — "kế hoạch không yêu cầu" — nên ô mở trống; nghỉ / RPE theo mặc định.
+  /// Khoá `"x<id>-<hiệp>"`; số hiệp kẹp [1, 20] như `expand`.
+  public static func adHocRows(_ list: [AdHocExercise]) -> [PlannedSet] {
+    var rows: [PlannedSet] = []
+    for e in list {
+      let count = min(maxSets, max(1, e.sets))
+      for n in 0..<count {
+        rows.append(PlannedSet(
+          key: "x\(e.id)-\(n)", exerciseName: e.name, ordinal: n + 1, of: count, weightKg: 0, reps: 0,
+          plannedRest: defaultRest, plannedRpe: defaultRpe, adHoc: e.id))
+      }
+    }
+    return rows
+  }
+
   /// Kế hoạch của `date`. `trained`: các ngày đã có buổi được ghi.
   ///
   /// Có buổi ⇔ ngày có `template_id`, template ấy CÒN tồn tại, và ngày không

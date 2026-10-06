@@ -74,6 +74,7 @@ struct AuthView: View {
                   String(localized: "auth.password"),
                   text: $password
                 )
+                // Đăng ký: `.newPassword` để iOS gợi ý mật khẩu mạnh.
                 .textContentType(mode == .signup ? .newPassword : .password)
                 .font(DS.TextStyle.body)
                 .padding(DS.Spacing.sm)
@@ -210,18 +211,25 @@ struct AuthView: View {
     switch mode {
     case .signin:
       return emailError == nil && passwordError == nil
-        && !email.isEmpty && !password.isEmpty
+        && !trimmedEmail.isEmpty && !password.isEmpty
     case .signup:
       return emailError == nil && passwordError == nil && confirmError == nil
-        && !name.isEmpty && !email.isEmpty && !password.isEmpty
+        && !name.isEmpty && !trimmedEmail.isEmpty && !password.isEmpty
         && !confirmPassword.isEmpty
     case .forgot:
-      return emailError == nil && !email.isEmpty
+      return emailError == nil && !trimmedEmail.isEmpty
     }
   }
 
   /// Email hợp lệ? (format cơ bản — server validate kỹ, #313).
+  /// Email đã bỏ khoảng trắng hai đầu — baseline `email.trim()`
+  /// (`auth-screen.tsx:99`); autofill hay để dư dấu cách.
+  private var trimmedEmail: String {
+    email.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
   private var emailError: String? {
+    let email = trimmedEmail
     guard !email.isEmpty else { return nil }
     // Format cơ bản: có @ và dấu chấm sau @.
     let parts = email.split(separator: "@")
@@ -284,11 +292,11 @@ struct AuthView: View {
     do {
       switch mode {
       case .signin:
-        try await services.session.signIn(email: email, password: password)
+        try await services.session.signIn(email: trimmedEmail, password: password)
       case .signup:
-        try await services.session.signUp(email: email, password: password, name: name)
+        try await services.session.signUp(email: trimmedEmail, password: password, name: name)
       case .forgot:
-        try await services.session.resetPassword(email: email)
+        try await services.session.resetPassword(email: trimmedEmail)
         resetSent = true
       }
     } catch {
@@ -298,6 +306,11 @@ struct AuthView: View {
 
   /// Lỗi bằng chữ người đọc được, không `"\(error)"` (#294).
   private func readableError(_ error: Error) -> String {
+    // URLError có localizedDescription theo ngôn ngữ máy — so chuỗi tiếng Anh
+    // trượt trên máy tiếng Việt. Hỏi theo mã lỗi trước (NetworkFailure của A).
+    if NetworkFailure.isOffline(error) {
+      return String(localized: "auth.error.network")
+    }
     let desc = error.localizedDescription.lowercased()
     if desc.contains("invalid login") || desc.contains("invalid credentials") {
       return String(localized: "auth.error.invalidCredentials")
@@ -342,8 +355,14 @@ struct AuthView: View {
             identityToken: token, rawNonce: appleNonce
           )
           errorMessage = nil
-        case .failure:
-          errorMessage = String(localized: "auth.error.appleCancelled")
+        case .failure(let error):
+          // Chỉ huỷ thật mới nói "đã huỷ"; lỗi khác (thiếu capability,
+          // không phản hồi…) là lỗi chung.
+          if (error as? ASAuthorizationError)?.code == .canceled {
+            errorMessage = String(localized: "auth.error.appleCancelled")
+          } else {
+            errorMessage = String(localized: "auth.error.generic")
+          }
         }
       } catch {
         errorMessage = readableError(error)
@@ -351,15 +370,14 @@ struct AuthView: View {
     }
   }
 
+  /// Nonce từ CSPRNG hệ thống. Bản trước bỏ qua status của
+  /// `SecRandomCopyBytes`: lỗi → mảng giữ nguyên toàn 0 → nonce toàn "0",
+  /// đoán được. `SystemRandomNumberGenerator` không trả về im lặng khi hỏng;
+  /// `randomElement` chọn đều, không phụ thuộc số ký tự của bảng.
   private func randomNonce(length: Int = 32) -> String {
-    let chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._"
-    var result = ""
-    var bytes = [UInt8](repeating: 0, count: length)
-    _ = SecRandomCopyBytes(kSecRandomDefault, length, &bytes)
-    for b in bytes {
-      result.append(chars[chars.index(chars.startIndex, offsetBy: Int(b) % chars.count)])
-    }
-    return result
+    let chars = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+    var rng = SystemRandomNumberGenerator()
+    return String((0..<length).map { _ in chars.randomElement(using: &rng)! })
   }
 
   private func sha256(_ input: String) -> String {

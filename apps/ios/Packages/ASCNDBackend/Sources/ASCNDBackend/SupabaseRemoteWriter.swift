@@ -18,7 +18,17 @@ public struct SupabaseRemoteWriter: RemoteWriter {
   /// là bản ghi bản build này không phát lại được (`UnusableWriteError`).
   static let tables: [String: String] = [
     WorkoutSessionRecord.outboxKind: "workout_sessions",
+    WorkoutSessionRecord.revisionKind: "workout_sessions",
+    WorkoutSessionRecord.deleteKind: "workout_sessions",
   ]
+
+  /// Bản ghi lại (#296) GHI ĐÈ hàng có sẵn; bản ghi mới thì bỏ trùng
+  /// (`IDEMPOTENT`). Cả hai đều idempotent: phát lại cùng nội dung ra cùng hàng.
+  static func overwrites(_ kind: String) -> Bool { kind == WorkoutSessionRecord.revisionKind }
+
+  /// Bản ghi nói về một hàng ĐÃ có (ghi lại / xoá): id hàng outbox là
+  /// `"<buổi>@…"`, không phải chính id buổi.
+  static func revises(_ kind: String) -> Bool { overwrites(kind) || kind == WorkoutSessionRecord.deleteKind }
 
   private let client: SupabaseClient
   private let afterWrite: @Sendable (OutboxEntry) async -> Void
@@ -37,19 +47,31 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     guard signedIn == entry.userId.lowercased() else { throw .wrongAccount }
     guard let table = Self.tables[entry.kind], Self.isRow(entry) else { throw .unusable }
     do {
-      try await client.from(table)
-        .upsert(entry.payload, onConflict: "id", ignoreDuplicates: true)
-        .execute()
+      if entry.kind == WorkoutSessionRecord.deleteKind {
+        // Gỡ set cuối cùng (#398): xoá hàng — idempotent, xoá hàng đã mất
+        // không phải lỗi. Lọc cả `user_id` như baseline (`:746`), RLS cũng chặn.
+        try await client.from(table)
+          .delete()
+          .eq("id", value: entry.payload["id"]?.stringValue ?? "")
+          .eq("user_id", value: entry.userId)
+          .execute()
+      } else {
+        try await client.from(table)
+          .upsert(entry.payload, onConflict: "id", ignoreDuplicates: !Self.overwrites(entry.kind))
+          .execute()
+      }
     } catch {
       throw Self.classify(error)
     }
     await afterWrite(entry)
   }
 
-  /// Payload phải là một hàng có `id` trùng id bản ghi — không thì upsert theo
-  /// `id` không còn idempotent, và phát lại thành hàng mới.
+  /// Payload phải là một hàng có `id` khớp bản ghi — không thì upsert theo
+  /// `id` không còn idempotent, và phát lại thành hàng mới. Bản ghi lại mang
+  /// id `"<buổi>@<số hàng>"`, hàng của nó là `<buổi>`.
   static func isRow(_ entry: OutboxEntry) -> Bool {
-    entry.payload["id"]?.stringValue == entry.id
+    guard let rowId = entry.payload["id"]?.stringValue, !rowId.isEmpty else { return false }
+    return revises(entry.kind) ? entry.id.hasPrefix(rowId + "@") : rowId == entry.id
   }
 
   /// Dịch lỗi của supabase-swift / URLSession về `WriteFailure`.
@@ -66,22 +88,14 @@ public struct SupabaseRemoteWriter: RemoteWriter {
   /// - Còn lại (5xx không có thân lỗi, lỗi lạ) → `server(code: nil)`: thời tiết.
   static func classify(_ error: any Error) -> WriteFailure {
     if let e = error as? WriteFailure { return e }
-    if error is CancellationError { return .offline }
-    if let e = error as? URLError { return offlineCodes.contains(e.code) ? .offline : .server(code: nil) }
+    // Danh sách mã "không tới được server" dùng chung với các màn đọc (Core).
+    if NetworkFailure.isOffline(error) { return .offline }
     if let e = error as? PostgrestError {
       guard let code = e.code else { return .server(code: nil) }
       return authCodes.contains(code) ? .server(code: nil) : .server(code: code)
     }
-    let ns = error as NSError
-    if ns.domain == NSURLErrorDomain, offlineCodes.contains(where: { $0.rawValue == ns.code }) { return .offline }
     return .server(code: nil)
   }
 
   static let authCodes: Set<String> = ["PGRST301", "PGRST302"]
-
-  static let offlineCodes: Set<URLError.Code> = [
-    .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost,
-    .dnsLookupFailed, .internationalRoamingOff, .dataNotAllowed, .callIsActive, .cancelled,
-    .secureConnectionFailed, .cannotLoadFromNetwork, .backgroundSessionWasDisconnected,
-  ]
 }

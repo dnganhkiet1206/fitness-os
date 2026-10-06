@@ -73,6 +73,15 @@ public protocol TrainingHistory: Sendable {
 ///   buổi chưa lên server.
 @MainActor @Observable
 public final class TodayController {
+  /// Vì sao làm mới không xong, theo thứ người dùng làm được với nó.
+  public enum RefreshFailure: Sendable, Hashable {
+    /// Không tới được server. Kế hoạch đang hiện (nếu có) là bản trên máy.
+    case offline
+    /// Tới được server mà không đọc được (lỗi server, dữ liệu hỏng, phiên
+    /// hết hạn). Thử lại sau.
+    case unavailable
+  }
+
   public enum Source: Sendable, Hashable {
     case none
     case cache(EpochMillis)
@@ -86,7 +95,12 @@ public final class TodayController {
   public private(set) var today: LocalDate
   public private(set) var plan: TodayPlan?
   public private(set) var source: Source = .none
-  public private(set) var refreshError: String?
+  /// Lần làm mới gần nhất không xong — thứ DUY NHẤT màn hình được dùng để
+  /// nói về lỗi (#334). `nil` = xong hết.
+  public private(set) var failure: RefreshFailure?
+  /// Chi tiết lỗi thô (mã PostgREST, mô tả URLError). CHỈ cho Lab / log —
+  /// không bao giờ hiện cho người dùng.
+  public private(set) var failureDetail: String?
   public private(set) var trained: Set<LocalDate> = []
 
   @ObservationIgnored private let repository: TodayRepository
@@ -96,6 +110,8 @@ public final class TodayController {
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private var snapshot: TemplateSnapshot?
   @ObservationIgnored private var serverTrained: Set<LocalDate> = []
+  /// Ngày đã chốt trên máy này (có thể chưa lên server) — giữ qua nửa đêm.
+  @ObservationIgnored private var localTrained: Set<LocalDate> = []
 
   public init(
     userId: String, repository: TodayRepository, history: any TrainingHistory, workouts: any WorkoutStore,
@@ -111,34 +127,72 @@ public final class TodayController {
   }
 
   /// Cache trên máy trước (hiện ngay, kể cả offline), rồi server.
+  ///
+  /// Gọi chồng (`load` / `refresh` từ hai chỗ cùng lúc) thì chờ chung một
+  /// lượt, không bắn hai lượt truy vấn (đề xuất audit của C, 05/10).
   public func load() async {
+    await coalesced { await self.loadNow() }
+  }
+
+  /// Hỏi server kế hoạch + lịch sử. Hỏng phần nào thì giữ phần đã có.
+  public func refresh() async {
+    await coalesced { await self.refreshNow() }
+  }
+
+  @ObservationIgnored private var inFlight: Task<Void, Never>?
+
+  /// Một lượt đọc tại một thời điểm. Huỷ người chờ thì huỷ cả lượt — `close()`
+  /// của `WorkoutFlow` phải dừng được truy vấn mạng của phiên vừa kết thúc.
+  private func coalesced(_ work: @escaping @MainActor () async -> Void) async {
+    if let running = inFlight {
+      await running.value
+      return
+    }
+    let task = Task { await work() }
+    inFlight = task
+    await withTaskCancellationHandler {
+      await task.value
+    } onCancel: {
+      task.cancel()
+    }
+    inFlight = nil
+  }
+
+  private func loadNow() async {
     if let cached = await repository.cached(userId: userId) {
       snapshot = cached
       source = .cache(cached.fetchedAt)
       await recompute()
     }
-    await refresh()
+    await refreshNow()
   }
 
-  /// Hỏi server kế hoạch + lịch sử. Hỏng phần nào thì giữ phần đã có.
-  public func refresh() async {
-    var failures: [String] = []
+  private func refreshNow() async {
+    var errors: [(String, any Error)] = []
     do {
       let fresh = try await repository.refresh(userId: userId)
       snapshot = fresh
       source = .server(fresh.fetchedAt)
     } catch {
-      failures.append("plan: \(error)")
+      errors.append(("plan", error))
     }
     do {
       let since = EpochMillis(Self.startOfDay(today.adding(days: -(Self.historyDays - 1)), in: timeZone))
       let times = try await history.sessionTimes(userId: userId, since: since)
       serverTrained = Set(times.map { LocalDate($0, in: timeZone) })
     } catch {
-      failures.append("history: \(error)")
+      errors.append(("history", error))
     }
-    refreshError = failures.isEmpty ? nil : failures.joined(separator: "\n")
+    failure = Self.failure(errors.map(\.1))
+    failureDetail = errors.isEmpty ? nil : errors.map { "\($0): \($1)" }.joined(separator: "\n")
     await recompute()
+  }
+
+  /// Mất mạng ở bất kỳ phần nào → `offline`: đó là điều người dùng sửa được
+  /// (bật mạng), và cũng là lý do thường gặp nhất khiến phần kia hỏng theo.
+  static func failure(_ errors: [any Error]) -> RefreshFailure? {
+    if errors.isEmpty { return nil }
+    return errors.contains(where: NetworkFailure.isOffline) ? .offline : .unavailable
   }
 
   /// Gọi khi app ra tiền cảnh / mỗi phút: qua nửa đêm thì "hôm nay" đổi.
@@ -151,18 +205,28 @@ public final class TodayController {
 
   /// Màn tập cho kế hoạch hôm nay; `nil` khi hôm nay không có buổi.
   public func makeSession(
+    bests: @escaping @MainActor () -> PersonalRecords.Bests? = { nil },
     onRest: @escaping @MainActor (RestEvent, PlannedSet?) -> Void = { _, _ in },
     onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
   ) -> WorkoutSessionController? {
     guard let sessionPlan = plan?.sessionPlan else { return nil }
     return WorkoutSessionController(
       plan: sessionPlan, userId: userId, store: workouts, clock: clock, timeZone: timeZone,
-      loggedElsewhere: serverTrained.contains(today), onRest: onRest, onEnqueued: onEnqueued)
+      loggedElsewhere: serverTrained.contains(today), bests: bests, onRest: onRest, onEnqueued: onEnqueued)
   }
 
   /// Màn tập vừa chốt: ngày thành `done` ngay, không đợi server.
   public func markTrained(_ date: LocalDate) async {
-    trained.insert(date)
+    localTrained.insert(date)
+    await recompute()
+  }
+
+  /// Buổi của ngày vừa bị xoá trên máy (gỡ set cuối cùng, #398): ngày không
+  /// còn "đã tập" — kể cả khi server chưa nhận lệnh xoá (local-first). Lần làm
+  /// mới sau server nói lại sự thật.
+  public func markUntrained(_ date: LocalDate) async {
+    localTrained.remove(date)
+    serverTrained.remove(date)
     await recompute()
   }
 
@@ -171,14 +235,16 @@ public final class TodayController {
       plan = nil
       return
     }
-    var days = serverTrained.union(trained)
-    // Ngày đã chốt trên máy này (có thể chưa lên server).
+    var days = serverTrained.union(localTrained)
+    // Ngày đã chốt trên máy này (có thể chưa lên server). Buổi đã bị gỡ hết
+    // set (`loggedKeys` rỗng) thì không còn là buổi.
     let draft = snapshot.plan(for: today, today: today, trained: days)
     if let tpl = draft.template,
       let state = try? await workouts.loadDay(DayProgressStore.key(date: today, templateId: tpl.id)),
-      state.loggedSessionId != nil
+      state.loggedSessionId != nil, state.loggedKeys.map({ !$0.isEmpty }) ?? true
     {
       days.insert(today)
+      localTrained.insert(today)
     }
     trained = days
     plan = snapshot.plan(for: today, today: today, trained: days)
@@ -188,6 +254,11 @@ public final class TodayController {
   static func startOfDay(_ date: LocalDate, in tz: TimeZone) -> Date {
     var cal = Calendar(identifier: .gregorian)
     cal.timeZone = tz
-    return cal.date(from: DateComponents(year: date.year, month: date.month, day: date.day)) ?? Date(timeIntervalSince1970: 0)
+    if let d = cal.date(from: DateComponents(year: date.year, month: date.month, day: date.day)) { return d }
+    // Không dựng được ngày (lịch hỏng): nửa đêm UTC của ngày ấy, lệch theo múi
+    // — sai tối đa một giờ quanh đổi giờ. Trước đây rơi về 1970, và truy vấn
+    // "14 ngày" thành "mọi buổi từ 1970" (đề xuất audit của C).
+    let utcMidnight = Date(timeIntervalSince1970: TimeInterval(date.daysSinceEpoch) * 86_400)
+    return utcMidnight.addingTimeInterval(-TimeInterval(tz.secondsFromGMT(for: utcMidnight)))
   }
 }

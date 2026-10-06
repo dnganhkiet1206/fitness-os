@@ -42,6 +42,36 @@ private struct Source: TemplateSource {
   let result: Result<TemplateSnapshot, Down>
   func fetch(userId: String) async throws -> TemplateSnapshot { try result.get() }
 }
+private struct Throwing: TemplateSource {
+  let error: any Error & Sendable
+  init(_ error: any Error & Sendable) { self.error = error }
+  func fetch(userId: String) async throws -> TemplateSnapshot { throw error }
+}
+private actor Flaky: TemplateSource {
+  var down = true
+  func heal() { down = false }
+  func fetch(userId: String) async throws -> TemplateSnapshot {
+    if down { throw URLError(.timedOut) }
+    return snap()
+  }
+}
+private actor Counting: TemplateSource {
+  private(set) var fetches = 0
+  private var holding = false
+  private var parked: [CheckedContinuation<Void, Never>] = []
+  var waiting: Int { parked.count }
+  func hold() { holding = true }
+  func release() {
+    holding = false
+    parked.forEach { $0.resume() }
+    parked = []
+  }
+  func fetch(userId: String) async throws -> TemplateSnapshot {
+    fetches += 1
+    if holding { await withCheckedContinuation { parked.append($0) } }
+    return snap()
+  }
+}
 private struct History: TrainingHistory {
   let result: Result<[EpochMillis], Down>
   func sessionTimes(userId: String, since: EpochMillis) async throws -> [EpochMillis] { try result.get() }
@@ -90,7 +120,67 @@ struct TodayControllerTests {
     await c.load()
     #expect(c.plan?.status == .todo)
     #expect(c.source == .cache(EpochMillis(7)))
-    #expect(c.refreshError != nil)
+    #expect(c.failure == .unavailable)
+    #expect(c.failureDetail?.contains("plan") == true)
+  }
+
+  /// #334: màn hình chỉ thấy lỗi có kiểu. Mất mạng → `offline` (bật mạng là
+  /// sửa được), dù chỉ một phần hỏng vì mạng.
+  @Test func offlineIsTyped() async {
+    let c = controller(cache: Cache(["u1": snap(7)]), history: .failure(Down()))
+    await c.load()
+    #expect(c.failure == .unavailable, "lịch sử hỏng không vì mạng")
+
+    let off = TodayController(
+      userId: "u1", repository: TodayRepository(source: Throwing(URLError(.notConnectedToInternet)), cache: Cache(["u1": snap(7)])),
+      history: History(result: .failure(Down())), workouts: InMemoryWorkoutStore(), clock: monday2pm, timeZone: saigon)
+    await off.load()
+    #expect(off.failure == .offline)
+    #expect(off.plan?.status == .todo, "vẫn tập được từ cache")
+  }
+
+  /// #333: cache theo người dùng — đổi tài khoản lúc offline không bao giờ
+  /// thấy kế hoạch của người trước.
+  @Test func cacheIsPerUser() async {
+    let c = TodayController(
+      userId: "u2", repository: TodayRepository(source: Throwing(URLError(.notConnectedToInternet)), cache: Cache(["u1": snap(7)])),
+      history: History(result: .failure(Down())), workouts: InMemoryWorkoutStore(), clock: monday2pm, timeZone: saigon)
+    await c.load()
+    #expect(c.plan == nil)
+    #expect(c.failure == .offline)
+  }
+
+  /// Đề xuất audit của C (#290): `load` / `refresh` gọi chồng → một lượt truy
+  /// vấn (màn Today tự `load` trong `.task` trong khi flow cũng đang tải).
+  @Test func overlappingLoadsShareOneFetch() async {
+    let source = Counting()
+    let c = TodayController(
+      userId: "u1", repository: TodayRepository(source: source, cache: Cache()),
+      history: History(result: .success([])), workouts: InMemoryWorkoutStore(), clock: monday2pm, timeZone: saigon)
+    await source.hold()
+    async let a: Void = c.load()
+    async let b: Void = c.refresh()
+    async let d: Void = c.load()
+    while await source.waiting == 0 { await Task.yield() }
+    for _ in 0..<20 { await Task.yield() }
+    await source.release()
+    _ = await (a, b, d)
+    #expect(await source.fetches == 1)
+    #expect(c.plan?.status == .todo)
+  }
+
+  /// Làm mới thành công thì lỗi cũ biến mất.
+  @Test func successClearsFailure() async {
+    let source = Flaky()
+    let c = TodayController(
+      userId: "u1", repository: TodayRepository(source: source, cache: Cache()),
+      history: History(result: .success([])), workouts: InMemoryWorkoutStore(), clock: monday2pm, timeZone: saigon)
+    await c.load()
+    #expect(c.failure == .offline)
+    await source.heal()
+    await c.refresh()
+    #expect(c.failure == nil)
+    #expect(c.failureDetail == nil)
   }
 
   @Test func nothingAnywhereIsNoPlan() async {

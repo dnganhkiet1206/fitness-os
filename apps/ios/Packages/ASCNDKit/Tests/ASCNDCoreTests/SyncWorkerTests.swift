@@ -209,6 +209,18 @@ struct SyncWorkerTests {
     #expect(await store.pending.isEmpty)
     #expect(w.pendingCount == 0)
   }
+
+  /// #335: bản ghi đã chết của người vừa rời đi không ở lại cho người sau
+  /// thấy — cả trong bộ nhớ lẫn trên đĩa.
+  @Test func signOutDropsDeadEntries() async {
+    let store = InMemoryOutboxStore([entry("x", user: "u9")])
+    let w = worker(store, FakeServer())
+    await run(w)
+    #expect(await store.dead.count == 1)
+    await w.signOut()
+    #expect(await store.dead.isEmpty)
+    #expect(w.outbox.dead.isEmpty)
+  }
 }
 
 /// Đầu-cuối trong Core: màn tập chốt → outbox → worker → server.
@@ -252,5 +264,8 @@ private actor BridgingStore: WorkoutStore {
     days[key] = state
     await outbox.append(entry)
     return true
+  }
+  func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws {
+    await outbox.append(entry)
   }
 }

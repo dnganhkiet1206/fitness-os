@@ -17,9 +17,11 @@ struct RootTabView: View {
       Tab("tab.today", systemImage: "house", value: AppTab.today) {
         PlaceholderScreen(title: "tab.today", systemImage: "house")
       }
+      .accessibilityHint(Text(String(localized: "tab.today.hint")))
       Tab("tab.nutrition", systemImage: "fork.knife", value: AppTab.nutrition) {
         PlaceholderScreen(title: "tab.nutrition", systemImage: "fork.knife")
       }
+      .accessibilityHint(Text(String(localized: "tab.nutrition.hint")))
       Tab("tab.workouts", systemImage: "dumbbell", value: AppTab.workouts) {
         #if DEBUG
           // Tạm thời: các màn thử cho Kiệt kiểm trên máy — lát dọc màn tập
@@ -29,12 +31,15 @@ struct RootTabView: View {
           PlaceholderScreen(title: "tab.workouts", systemImage: "dumbbell")
         #endif
       }
+      .accessibilityHint(Text(String(localized: "tab.workouts.hint")))
       Tab("tab.community", systemImage: "person.2", value: AppTab.community) {
         PlaceholderScreen(title: "tab.community", systemImage: "person.2")
       }
+      .accessibilityHint(Text(String(localized: "tab.community.hint")))
       Tab("tab.assistant", systemImage: "heart.text.square", value: AppTab.assistant, role: .search) {
         PlaceholderScreen(title: "tab.assistant", systemImage: "heart.text.square")
       }
+      .accessibilityHint(Text(String(localized: "tab.assistant.hint")))
     }
   }
 }
