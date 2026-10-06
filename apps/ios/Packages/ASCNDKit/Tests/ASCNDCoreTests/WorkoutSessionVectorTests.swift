@@ -207,8 +207,11 @@ struct WorkoutSessionVectorTests {
     do {
       _ = try await c.finish()
       Issue.record("WS-S5a: ngày tương lai mà chốt được")
-    } catch let e as WorkoutSessionController.FinishRefusal {
-      #expect(e == .futureDay, "WS-S5a")
+    } catch {
+      // `finish()` là `throws(FinishRefusal)`, nên `error` đã mang đúng kiểu ấy.
+      // Viết `catch let e as FinishRefusal` thừa ở đây và làm swift-frontend
+      // 6.2.4 (Xcode 26.3) sập trong SILGenCleanup.
+      #expect(error == .futureDay, "WS-S5a")
     }
   }
 
