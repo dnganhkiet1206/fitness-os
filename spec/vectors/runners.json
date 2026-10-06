@@ -1,6 +1,7 @@
 {
  "append.json": "run-append.mjs",
  "personal-record.json": "run-personal-record.mjs",
+ "remove-set-undo.json": "run-remove-set-undo.mjs",
  "rest-timer.json": "run.mjs",
  "sync.json": "run-sync.mjs",
  "template-write.json": "run-template-write.mjs",
