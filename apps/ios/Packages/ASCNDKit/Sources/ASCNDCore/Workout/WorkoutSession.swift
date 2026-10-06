@@ -41,11 +41,15 @@ public struct WorkoutSessionRecord: Sendable, Hashable {
   public let prDetected: Bool
 
   /// `nil` khi không có set nào — baseline từ chối ("No sets").
+  /// - Parameter sessionRpeFloor: `session_rpe` đã ghi của buổi. Bản ghi lại
+  ///   sau khi gỡ set giữ nguyên nó — gỡ một set không đổi cảm nhận của cả buổi
+  ///   (`use-fitness-data.ts:756`).
   public init?(
     id: String, userId: String, dateTime: EpochMillis, templateId: String?, templateName: String,
-    sets: [SessionSet], prDetected: Bool = false
+    sets: [SessionSet], prDetected: Bool = false, sessionRpeFloor: Int? = nil
   ) {
-    guard let rpe = sets.map(\.rpe).max() else { return nil }
+    guard let computed = sets.map(\.rpe).max() else { return nil }
+    let rpe = max(computed, sessionRpeFloor ?? computed)
     self.id = id
     self.userId = userId
     self.dateTime = dateTime

@@ -2,8 +2,7 @@
 //
 // Vùng chứa nội dung có mặt thẻ, viền và bo góc theo token.
 #if canImport(SwiftUI)
-#if canImport(SwiftUI)
-@_exported import SwiftUI
+public import SwiftUI
 
 public struct DSCard<Content: View>: View {
   let content: Content
