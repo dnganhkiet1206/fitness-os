@@ -1,0 +1,10 @@
+{
+ "append.json": "run-append.mjs",
+ "personal-record.json": "run-personal-record.mjs",
+ "rest-timer.json": "run.mjs",
+ "sync.json": "run-sync.mjs",
+ "template-write.json": "run-template-write.mjs",
+ "today-controller.json": "run-today-controller.mjs",
+ "workout-session.json": "run-workout-session.mjs",
+ "workout-state.json": "run.mjs"
+}
