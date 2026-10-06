@@ -58,6 +58,10 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         # Điền từ Config/Backend.xcconfig — chỗ duy nhất ghi project Supabase.
+        # Link trong email xác nhận / đặt lại mật khẩu quay về app (như bản RN).
+        CFBundleURLTypes:
+          - CFBundleURLName: com.ascnd.fitnessos
+            CFBundleURLSchemes: [ascnd]
         ASCNDSupabaseURL: https://$(ASCND_SUPABASE_HOST)
         ASCNDSupabaseKey: $(ASCND_SUPABASE_KEY)
     settings:
