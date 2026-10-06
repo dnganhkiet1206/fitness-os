@@ -118,7 +118,11 @@ public final class WorkoutFlow {
   private func install() async {
     let next = makeSession()
     if let current = session {
-      if let next, current.plan == next.plan, current.loggedElsewhere == next.loggedElsewhere { return }
+      if let next, current.plan == next.plan, current.loggedElsewhere == next.loggedElsewhere {
+        // Cùng buổi mà lần đọc trước hỏng: thử đọc lại, không dựng mới.
+        if current.loadFailed { await current.load() }
+        return
+      }
       guard Self.replaceable(current, today: today.today) else { return }
     }
     session = next

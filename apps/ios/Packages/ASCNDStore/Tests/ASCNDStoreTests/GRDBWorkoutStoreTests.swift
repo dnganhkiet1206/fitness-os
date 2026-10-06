@@ -28,6 +28,21 @@ struct GRDBWorkoutStoreTests {
     #expect(try await store.loadDay("k")?.progress.done == ["a": true, "b": true])
   }
 
+  /// Blob hỏng (bản build khác, tệp hỏng) = bắt đầu lại ngày, như baseline.
+  /// Bản trước ném lỗi giải mã cả trong `ensureUnlocked`, nên ngày ấy không
+  /// bao giờ lưu hay chốt được nữa.
+  @Test func corruptBlobStartsTheDayFresh() async throws {
+    let database = try ASCNDDatabase()
+    try await database.queue.write { db in
+      try db.execute(sql: "INSERT INTO workout_day (key, state) VALUES ('k', '{\"progress\": 42')")
+    }
+    let store = GRDBWorkoutStore(database)
+    #expect(try await store.loadDay("k") == nil)
+    try await store.saveDay("k", ticked("a"))
+    #expect(try await store.loadDay("k")?.progress.done == ["a": true])
+    #expect(try await store.commitFinish("k", DayState(loggedSessionId: "s"), entry("s")))
+  }
+
   /// "Kill app": mở lại cùng tệp, ngày còn nguyên.
   @Test func survivesReopen() async throws {
     let path = tempPath()

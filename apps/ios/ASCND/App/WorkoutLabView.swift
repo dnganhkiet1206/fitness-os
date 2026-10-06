@@ -68,8 +68,8 @@ private struct LabSession: View {
         LabRow(label: "Plan source", value: Self.describe(today.source))
         LabRow(label: "Trained (14d)", value: "\(today.trained.count) ngày")
         LabRow(label: "Record history", value: flow.records.bests.map { "\($0.count) bài" } ?? "chưa biết (không nhận kỷ lục)")
-        if let e = today.refreshError {
-          LabRow(label: "Refresh failed", value: e).foregroundStyle(.orange)
+        if let f = today.failure {
+          LabRow(label: "Refresh failed (\(f))", value: today.failureDetail ?? "").foregroundStyle(.orange)
         }
         if today.plan?.sessionPlan == nil {
           Toggle(isOn: $useSample) { Text(verbatim: "Hôm nay không có buổi — dùng kế hoạch mẫu (Lab)") }

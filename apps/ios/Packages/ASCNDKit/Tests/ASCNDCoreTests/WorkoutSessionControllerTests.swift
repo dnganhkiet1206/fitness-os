@@ -486,6 +486,28 @@ struct AppendToSessionTests {
     await #expect(throws: WorkoutSessionController.FinishRefusal.nothingToAppend) { try await c.append() }
   }
 
+  /// #334: đọc ngày từ máy hỏng (SQLite bận, tệp đang khoá) KHÔNG phải "chưa
+  /// có gì". Bản trước coi là ngày rỗng, và tick đầu tiên ghi đè các set đã lưu.
+  @Test func failedLoadNeverClobbersSavedProgress() async {
+    var p = DayProgress()
+    p.done = ["b1": true]
+    let key = DayProgressStore.key(date: today, templateId: "tpl-push")
+    let store = InMemoryWorkoutStore(days: [key: DayState(progress: p)])
+    await store.failNextLoad()
+    let c = await controller(store)
+    #expect(c.loadFailed)
+    #expect(c.phase == .loading)
+    #expect(await c.toggle("b2") == false, "không sửa khi chưa đọc được")
+    await #expect(throws: WorkoutSessionController.FinishRefusal.loading) { try await c.finish() }
+    #expect(await store.days[key]?.progress.done == ["b1": true], "điểm quay lại còn nguyên")
+    #expect(await store.writes == 0)
+
+    await c.load()
+    #expect(!c.loadFailed)
+    #expect(c.progress.done == ["b1": true])
+    #expect(await c.toggle("b2"))
+  }
+
   /// Blob trước #296 (không có `loggedKeys`): mọi hàng đã tick lúc ấy là hàng của buổi.
   @Test func legacyBlobTreatsTickedRowsAsLogged() async {
     var p = DayProgress()

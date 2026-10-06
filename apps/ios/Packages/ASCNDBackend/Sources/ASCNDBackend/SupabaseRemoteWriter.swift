@@ -73,22 +73,14 @@ public struct SupabaseRemoteWriter: RemoteWriter {
   /// - Còn lại (5xx không có thân lỗi, lỗi lạ) → `server(code: nil)`: thời tiết.
   static func classify(_ error: any Error) -> WriteFailure {
     if let e = error as? WriteFailure { return e }
-    if error is CancellationError { return .offline }
-    if let e = error as? URLError { return offlineCodes.contains(e.code) ? .offline : .server(code: nil) }
+    // Danh sách mã "không tới được server" dùng chung với các màn đọc (Core).
+    if NetworkFailure.isOffline(error) { return .offline }
     if let e = error as? PostgrestError {
       guard let code = e.code else { return .server(code: nil) }
       return authCodes.contains(code) ? .server(code: nil) : .server(code: code)
     }
-    let ns = error as NSError
-    if ns.domain == NSURLErrorDomain, offlineCodes.contains(where: { $0.rawValue == ns.code }) { return .offline }
     return .server(code: nil)
   }
 
   static let authCodes: Set<String> = ["PGRST301", "PGRST302"]
-
-  static let offlineCodes: Set<URLError.Code> = [
-    .notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotFindHost, .cannotConnectToHost,
-    .dnsLookupFailed, .internationalRoamingOff, .dataNotAllowed, .callIsActive, .cancelled,
-    .secureConnectionFailed, .cannotLoadFromNetwork, .backgroundSessionWasDisconnected,
-  ]
 }

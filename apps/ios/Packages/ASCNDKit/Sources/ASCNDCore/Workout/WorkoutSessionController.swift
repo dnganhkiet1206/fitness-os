@@ -99,6 +99,10 @@ public final class WorkoutSessionController {
   private var loggedAt: EpochMillis?
   private var loggedPR = false
   public private(set) var loaded = false
+  /// Lần đọc gần nhất từ máy hỏng (lỗi SQLite, không phải "chưa có gì"). Màn
+  /// hình nói "Không đọc được buổi đã lưu" và cho thử lại; mọi thao tác ghi bị
+  /// từ chối cho tới khi đọc được.
+  public private(set) var loadFailed = false
   /// Lần ghi máy gần nhất hỏng: những gì trên màn CHƯA bền.
   public private(set) var unsaved: LocalWriteError?
   /// Tổng kết của lần chốt trong phiên này (màn Tổng kết của C đọc nó).
@@ -204,8 +208,14 @@ public final class WorkoutSessionController {
         loggedPR = s.loggedPR ?? false
       }
     } catch {
-      unsaved = LocalWriteError("load: \(error)")
+      // Không đọc được ≠ không có gì. Coi là "chưa có gì" thì lần tick đầu
+      // tiên ghi một ngày rỗng ĐÈ lên các set đã lưu (RN còn tệ hơn: ghi đè
+      // ngay khi đọc hỏng, chưa cần chạm). Ở lại `.loading`, không cho sửa;
+      // `load()` gọi lại được (`WorkoutFlow` thử lại khi ra tiền cảnh / làm mới).
+      loadFailed = true
+      return
     }
+    loadFailed = false
     loaded = true
   }
 
