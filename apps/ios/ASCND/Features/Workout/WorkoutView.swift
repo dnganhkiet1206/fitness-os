@@ -27,6 +27,7 @@ public struct WorkoutView: View {
   @FocusState private var focusedField: FieldFocus?
   /// Debounce ghi controller — tránh ghi mỗi phím gõ (#300).
   @State private var pendingWrites: [String: Task<Void, Never>] = [:]
+  @Environment(\.scenePhase) private var scenePhase
 
   /// Ô nào đang focus.
   enum FieldFocus: Hashable {
@@ -53,6 +54,22 @@ public struct WorkoutView: View {
       }
       .navigationTitle(controller.plan.templateName)
       .navigationBarTitleDisplayMode(.large)
+      // Một thanh "Xong" trên bàn phím cho cả màn — gắn trên từng ô reps thì
+      // mỗi hàng góp một nút.
+      .toolbar {
+        ToolbarItemGroup(placement: .keyboard) {
+          Spacer()
+          Button(String(localized: "workout.done")) {
+            Task { await flushWrites() }
+            focusedField = nil
+          }
+        }
+      }
+    }
+    // Rời tiền cảnh (vào nền, bị kill sau đó): chữ đang chờ debounce phải
+    // tới controller ngay, không đợi hết 0.6 s.
+    .onChange(of: scenePhase) { _, phase in
+      if phase != .active { Task { await flushWrites() } }
     }
     .onAppear(perform: seedTexts)
     .alert(
@@ -136,7 +153,12 @@ public struct WorkoutView: View {
       HStack(spacing: DS.Spacing.sm) {
         // Tick — controller từ chối khi chưa đủ (không tên/không reps).
         Button {
-          Task { await controller.toggle(row.key) }
+          // Chữ vừa gõ (đang chờ debounce) phải tới controller TRƯỚC khi tick,
+          // không thì set được chốt với số cũ.
+          Task {
+            await flushWrites()
+            await controller.toggle(row.key)
+          }
         } label: {
           Image(systemName: done ? "checkmark.circle.fill" : "circle")
             .font(.system(size: 26))
@@ -184,7 +206,9 @@ public struct WorkoutView: View {
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
 
         TextField("", text: repsBinding(for: row))
-          .keyboardType(.numberPad)
+          // Ô reps nhận cả "45s" (bài giữ, `RepEntry.parse`): bàn phím số thuần
+          // không có chữ "s".
+          .keyboardType(.numbersAndPunctuation)
           .multilineTextAlignment(.trailing)
           .font(DS.TextStyle.body.monospacedDigit())
           .frame(width: 64)
@@ -197,17 +221,8 @@ public struct WorkoutView: View {
           .submitLabel(.done)
           .onSubmit {
             // Done: flush ghi ngay + hạ bàn phím (#300).
-            flushWrites()
+            Task { await flushWrites() }
             focusedField = nil
-          }
-          .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-              Spacer()
-              Button(String(localized: "workout.done")) {
-                flushWrites()
-                focusedField = nil
-              }
-            }
           }
 
         Spacer(minLength: 0)
@@ -338,8 +353,9 @@ public struct WorkoutView: View {
     )
   }
 
-  /// Flush tất cả ghi đang chờ — gọi khi Done/hạ bàn phím (#300).
-  private func flushWrites() {
+  /// Flush tất cả ghi đang chờ, CHỜ tới khi controller nhận xong: gọi trước
+  /// tick / finish, khi Done / hạ bàn phím, và khi rời tiền cảnh (#300).
+  private func flushWrites() async {
     // Chỉ flush các field đang có ghi chờ — không ghi lại toàn bộ rows
     // (seedTexts đã điền mọi ô, ghi lại hết sẽ spam controller và có thể
     // ghi đè state đang bay).
@@ -352,12 +368,12 @@ public struct WorkoutView: View {
       if pkey.hasPrefix("w:") {
         let key = String(pkey.dropFirst(2))
         if let w = weightTexts[key] {
-          Task { await controller.setWeightText(w, for: key) }
+          await controller.setWeightText(w, for: key)
         }
       } else if pkey.hasPrefix("r:") {
         let key = String(pkey.dropFirst(2))
         if let r = repsTexts[key] {
-          Task { await controller.setRepsText(r, for: key) }
+          await controller.setRepsText(r, for: key)
         }
       }
     }
@@ -400,6 +416,7 @@ public struct WorkoutView: View {
   }
 
   private func doFinish() async {
+    await flushWrites()
     do {
       _ = try await controller.finish()
     } catch let refusal as WorkoutSessionController.FinishRefusal {
