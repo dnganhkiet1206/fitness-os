@@ -25,6 +25,10 @@ final class AppServices {
   @ObservationIgnored let history: any TrainingHistory
   @ObservationIgnored let recordHistory: any RecordHistory
   @ObservationIgnored let recordCache: any RecordBookCache
+  @ObservationIgnored let performanceSource: any PerformanceSource
+  @ObservationIgnored let performanceCache: any PerformanceCache
+  /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
+  @ObservationIgnored private let readCache: GRDBTemplateCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
@@ -52,12 +56,15 @@ final class AppServices {
 
     workouts = GRDBWorkoutStore(database)
     let templateCache = GRDBTemplateCache(database)
+    readCache = templateCache
     templates = TodayRepository(
       source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
       cache: templateCache)
     history = backend.map { SupabaseTrainingHistory(backend: $0) as any TrainingHistory } ?? UnconfiguredHistory()
     recordHistory = backend.map { SupabaseRecordHistory(backend: $0) as any RecordHistory } ?? UnconfiguredRecords()
     recordCache = GRDBRecordBookCache(database)
+    performanceSource = backend.map { SupabasePerformanceSource(backend: $0) as any PerformanceSource } ?? UnconfiguredPerformance()
+    performanceCache = GRDBPerformanceCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: OutboxStore(database),
@@ -97,6 +104,12 @@ final class AppServices {
     TodayController(userId: userId, repository: templates, history: history, workouts: workouts)
   }
 
+  /// Phiên của `userId` bắt đầu: bỏ read model của mọi người khác. Lượt làm
+  /// mới của người vừa rời đi có thể về SAU lượt dọn lúc đăng xuất (#335).
+  func forgetOtherAccounts(keeping userId: String) async {
+    _ = try? await readCache.clearAll(except: userId)
+  }
+
   /// Việc dọn thêm khi phiên kết thúc, của những thứ không do AppServices
   /// dựng (quãng nghỉ / Live Activity).
   func onSessionEnded(_ cleanup: @escaping @MainActor @Sendable () async -> Void) {
@@ -106,6 +119,23 @@ final class AppServices {
   /// Bảng kỷ lục của người đang đăng nhập (#295).
   func makeRecordBook(userId: String) -> RecordBook {
     RecordBook(userId: userId, history: recordHistory, cache: recordCache)
+  }
+
+  /// "Lần trước" của người đang đăng nhập (#331).
+  func makePerformanceBook(userId: String) -> PerformanceBook {
+    PerformanceBook(userId: userId, source: performanceSource, cache: performanceCache)
+  }
+
+  /// Luồng tập của người đang đăng nhập (#272): Today → buổi tập → nghỉ →
+  /// chốt → máy → outbox → sync. Dựng MỘT lần mỗi phiên (`SignedInScope`);
+  /// màn Today / Workout và Lab chỉ đọc nó.
+  func makeWorkoutFlow(userId: String, rest: RestTimerController) -> WorkoutFlow {
+    let sync = self.sync
+    return WorkoutFlow(
+      today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
+      performance: makePerformanceBook(userId: userId), store: workouts,
+      onRest: { event, target in rest.handle(event, target: target) },
+      onEnqueued: { _ in sync.kick() })
   }
 
   func didBecomeActive() {
@@ -144,6 +174,11 @@ private struct UnconfiguredAuth: AuthAPI {
 
 private struct UnconfiguredHistory: TrainingHistory {
   func sessionTimes(userId: String, since: EpochMillis) async throws -> [EpochMillis] { [] }
+}
+
+private struct UnconfiguredPerformance: PerformanceSource {
+  struct NotConfigured: Error {}
+  func sessions(userId: String, since: EpochMillis) async throws -> [SessionHistoryRow] { throw NotConfigured() }
 }
 
 private struct UnconfiguredRecords: RecordHistory {

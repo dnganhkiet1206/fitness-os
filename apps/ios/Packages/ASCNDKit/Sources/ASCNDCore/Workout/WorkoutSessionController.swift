@@ -5,10 +5,14 @@ extension WorkoutSessionRecord {
   /// `kind` của hàng outbox — cùng tên với hàng đợi bền của baseline
   /// (`offline-write.ts`, `kind: 'workout'`).
   public static let outboxKind = "workout"
-  /// Bản ghi lại toàn bộ hàng sau khi nối thêm set (#296): upsert GHI ĐÈ theo
-  /// `id` buổi. Id hàng outbox là `"<buổi>@<số hàng>"` — nối lại cùng tập hàng
-  /// cho cùng id, nên phát lại không bao giờ nhân đôi.
+  /// Bản ghi lại toàn bộ hàng sau khi nối thêm / gỡ set (#296, #398): upsert
+  /// GHI ĐÈ theo `id` buổi. Id hàng outbox là `"<buổi>@r<n>"`, `n` đếm bền trong
+  /// `DayState.loggedRevision` — bản ghi bền cùng giao dịch với số đếm, nên phát
+  /// lại không nhân đôi, và hai bản khác nhau không bao giờ trùng id.
   public static let revisionKind = "workout-revision"
+  /// Gỡ set CUỐI CÙNG của buổi: xoá cả hàng (`use-fitness-data.ts:746`). Payload
+  /// chỉ có `id`; id hàng outbox cùng dạng `"<buổi>@r<n>"`.
+  public static let deleteKind = "workout-delete"
 }
 
 /// Tầng ứng dụng của màn tập một ngày: UI gọi vào đây, đây gọi domain
@@ -90,6 +94,33 @@ public final class WorkoutSessionController {
     case storage(LocalWriteError)
   }
 
+  /// Bỏ tick một set ĐÃ nằm trong buổi đã chốt (#398) — hoàn tác được trong
+  /// `undoWindowMillis`.
+  public struct Removal: Sendable, Hashable {
+    public let key: String
+    public let sessionId: String
+    public let expiresAt: EpochMillis
+    /// Đó là set cuối cùng: cả hàng buổi bị xoá (hoàn tác dựng lại nó).
+    public let deletedSession: Bool
+  }
+
+  public enum RemoveRefusal: Error, Sendable, Hashable {
+    case loading
+    /// Đang có một lần ghi buổi (chốt / nối / gỡ / hoàn tác) chạy — chặn ở cửa
+    /// như baseline (`cutSet.isPending`, `day-plan.tsx:1181`).
+    case inProgress
+    /// Hàng không nằm trong buổi đã chốt — không có gì để gỡ.
+    case notLogged
+    /// Buổi ghi từ máy khác: không có bản đầy đủ của hàng để ghi lại.
+    case loggedElsewhere
+    /// Hết cửa sổ hoàn tác, hoặc buổi đã đổi từ lúc gỡ.
+    case expired
+    case storage(LocalWriteError)
+  }
+
+  /// Cửa sổ hoàn tác: `ACTION_HIDE_MS` của baseline (`day-plan.tsx:1236`).
+  public static let undoWindowMillis: Int64 = 8_000
+
   public let plan: Plan
   public let userId: String
   public private(set) var progress = DayProgress()
@@ -98,7 +129,13 @@ public final class WorkoutSessionController {
   public private(set) var loggedKeys: Set<String> = []
   private var loggedAt: EpochMillis?
   private var loggedPR = false
+  private var loggedRevision = 0
+  private var loggedRpe: Int?
   public private(set) var loaded = false
+  /// Lần đọc gần nhất từ máy hỏng (lỗi SQLite, không phải "chưa có gì"). Màn
+  /// hình nói "Không đọc được buổi đã lưu" và cho thử lại; mọi thao tác ghi bị
+  /// từ chối cho tới khi đọc được.
+  public private(set) var loadFailed = false
   /// Lần ghi máy gần nhất hỏng: những gì trên màn CHƯA bền.
   public private(set) var unsaved: LocalWriteError?
   /// Tổng kết của lần chốt trong phiên này (màn Tổng kết của C đọc nó).
@@ -202,10 +239,18 @@ public final class WorkoutSessionController {
         loggedKeys = Set(s.loggedKeys ?? s.progress.done.filter(\.value).map(\.key))
         loggedAt = s.loggedAt
         loggedPR = s.loggedPR ?? false
+        loggedRevision = s.loggedRevision ?? 0
+        loggedRpe = s.loggedRpe
       }
     } catch {
-      unsaved = LocalWriteError("load: \(error)")
+      // Không đọc được ≠ không có gì. Coi là "chưa có gì" thì lần tick đầu
+      // tiên ghi một ngày rỗng ĐÈ lên các set đã lưu (RN còn tệ hơn: ghi đè
+      // ngay khi đọc hỏng, chưa cần chạm). Ở lại `.loading`, không cho sửa;
+      // `load()` gọi lại được (`WorkoutFlow` thử lại khi ra tiền cảnh / làm mới).
+      loadFailed = true
+      return
     }
+    loadFailed = false
     loaded = true
   }
 
@@ -223,10 +268,12 @@ public final class WorkoutSessionController {
     return await persist()
   }
 
+  /// Ô tạ lọc qua `decText` như `day-plan.tsx:1979`: máy tiếng Việt gõ `71,5`,
+  /// lưu nguyên thì `performed()` đọc ra 0 kg — mất tạ mà không báo gì.
   @discardableResult
   public func setWeightText(_ text: String, for key: String) async -> Bool {
     guard editable(key), row(key) != nil else { return false }
-    progress.weightText[key] = text
+    progress.weightText[key] = NumberInput.decimal(text)
     return await persist()
   }
 
@@ -291,7 +338,7 @@ public final class WorkoutSessionController {
     let keys = plan.rows.filter { progress.done[$0.key] == true }.map(\.key)
     let state = DayState(
       progress: progress, loggedSessionId: id, loggedKeys: keys, loggedAt: record.dateTime,
-      loggedPR: record.prDetected)
+      loggedPR: record.prDetected, loggedRevision: 0, loggedRpe: record.sessionRpe)
     let store = self.store, key = self.key
     if let failure = await write({ _ = try await store.commitFinish(key, state, entry) }) {
       if let logged = failure as? DayAlreadyLogged {
@@ -305,6 +352,8 @@ public final class WorkoutSessionController {
     loggedKeys = Set(keys)
     loggedAt = record.dateTime
     loggedPR = record.prDetected
+    loggedRevision = 0
+    loggedRpe = record.sessionRpe
     let result = WorkoutSummary(record, records: records)
     summary = result
     onEnqueued(entry)
@@ -332,46 +381,144 @@ public final class WorkoutSessionController {
     }
     let pending = pendingRows
     let allKeys = loggedKeys.union(pending.map(\.key))
-    let rows = plan.rows.filter { allKeys.contains($0.key) && progress.done[$0.key] == true }
-    let stamp = loggedAt ?? clock.nowMillis()
-    guard let draft = WorkoutSessionRecord(
-      id: sessionId, userId: userId, dateTime: stamp, templateId: plan.templateId,
-      templateName: plan.templateName, sets: WorkoutDay.sessionSets(rows, progress, toKg: toKg))
-    else { throw .nothingToAppend }
     let added = WorkoutDay.sessionSets(pending, progress, toKg: toKg).map {
       RecordSet(exerciseName: $0.exerciseName, weightKg: $0.weightKg, reps: $0.reps, warmup: $0.warmup, durationSec: $0.durationSec)
     }
     let records = bests().map { PersonalRecords.findRecords(added, bests: $0) } ?? []
     let pr = loggedPR || !records.isEmpty
-    let record = WorkoutSessionRecord(
-      id: draft.id, userId: draft.userId, dateTime: draft.dateTime, templateId: draft.templateId,
-      templateName: draft.templateName, sets: draft.sets, prDetected: pr)!
-
-    finishing = true
-    defer { finishing = false }
-    let entry = OutboxEntry(
-      id: "\(sessionId)@\(record.sets.count)", userId: userId, kind: WorkoutSessionRecord.revisionKind,
-      payload: record.row, createdAt: clock.nowMillis())
-    let state = DayState(
-      progress: progress, loggedSessionId: sessionId, loggedKeys: allKeys.sorted(), loggedAt: stamp, loggedPR: pr)
-    let store = self.store, key = self.key
-    if let failure = await write({ _ = try await store.commitFinish(key, state, entry) }) {
-      if let logged = failure as? DayAlreadyLogged { throw .alreadyLogged(sessionId: logged.sessionId) }
-      throw .storage(LocalWriteError("\(failure)"))
+    let outcome: Revised
+    do throws(RevisionFailure) {
+      outcome = try await revise(sessionId: sessionId, keys: allKeys, pr: pr, toKg: toKg)
+    } catch {
+      switch error {
+      case .alreadyLogged(let id): throw .alreadyLogged(sessionId: id)
+      case .storage(let e): throw .storage(e)
+      }
     }
-    loggedKeys = allKeys
-    loggedPR = pr
+    guard let record = outcome.record else { throw .nothingToAppend }
     let result = WorkoutSummary(record, records: records)
     summary = result
-    onEnqueued(entry)
     return result
+  }
+
+  // MARK: - gỡ set đã chốt (#398)
+
+  /// Gỡ được hàng này không: nằm trong buổi đã chốt của chính máy này.
+  public func canRemove(_ key: String) -> Bool {
+    loaded && !finishing && !loggedElsewhere && loggedSessionId != nil && loggedKeys.contains(key)
+  }
+
+  /// Bỏ tick một set đã nằm trong buổi (`useRemoveSetFromSession`). Màn hình hỏi
+  /// lại TRƯỚC khi gọi (hộp destructive, `day-plan.tsx:1206`).
+  ///
+  /// RN behavior: đọc hàng trên server, gỡ set CUỐI cùng tên bài, `update` (hoặc
+  ///   `delete` nếu hết set); chỉ online; hoàn tác = upsert ảnh chụp hàng cũ.
+  /// Native behavior: gỡ ĐÚNG set của hàng bị bỏ tick — native biết hàng nào
+  ///   là set nào (`loggedKeys`), còn RN chỉ có tên bài nên phải chọn "set cuối"
+  ///   để các dấu tích không nhảy chỗ (`:700`). Ghi lại TOÀN BỘ hàng qua outbox
+  ///   (cùng đường với nối thêm, #296): chạy cả offline, idempotent, không có
+  ///   cuộc đua đọc–sửa–ghi. Set cuối cùng → hàng outbox xoá buổi.
+  /// Giữ như RN: `session_rpe` không đổi; volume tính lại, bỏ khởi động.
+  public func removeLoggedSet(_ key: String, toKg: (Double) -> Double = { $0 }) async throws(RemoveRefusal) -> Removal {
+    guard loaded else { throw .loading }
+    guard !finishing else { throw .inProgress }
+    guard !loggedElsewhere else { throw .loggedElsewhere }
+    guard let sessionId = loggedSessionId, loggedKeys.contains(key) else { throw .notLogged }
+    let wasDone = progress.done[key]
+    progress.done[key] = false
+    let keys = loggedKeys.subtracting([key])
+    let outcome: Revised
+    do throws(RevisionFailure) {
+      outcome = try await revise(sessionId: sessionId, keys: keys, pr: loggedPR, toKg: toKg)
+    } catch {
+      progress.done[key] = wasDone
+      switch error {
+      case .alreadyLogged: throw .expired
+      case .storage(let e): throw .storage(e)
+      }
+    }
+    summary = outcome.record.map { WorkoutSummary($0, records: []) }
+    onRest(.cancel, nil)
+    return Removal(
+      key: key, sessionId: sessionId, expiresAt: clock.nowMillis() + Self.undoWindowMillis,
+      deletedSession: outcome.record == nil)
+  }
+
+  /// Hoàn tác một lần gỡ trong cửa sổ 8 giây: set trở lại buổi, hàng được ghi
+  /// lại (dựng lại nếu đã bị xoá).
+  public func undo(_ removal: Removal, toKg: (Double) -> Double = { $0 }) async throws(RemoveRefusal) {
+    guard loaded else { throw .loading }
+    guard !finishing else { throw .inProgress }
+    guard clock.nowMillis() < removal.expiresAt, removal.sessionId == loggedSessionId,
+      !loggedKeys.contains(removal.key), row(removal.key) != nil
+    else { throw .expired }
+    let wasDone = progress.done[removal.key]
+    progress.done[removal.key] = true
+    let outcome: Revised
+    do throws(RevisionFailure) {
+      outcome = try await revise(
+        sessionId: removal.sessionId, keys: loggedKeys.union([removal.key]), pr: loggedPR, toKg: toKg)
+    } catch {
+      progress.done[removal.key] = wasDone
+      switch error {
+      case .alreadyLogged: throw .expired
+      case .storage(let e): throw .storage(e)
+      }
+    }
+    summary = outcome.record.map { WorkoutSummary($0, records: []) }
+  }
+
+  private struct Revised {
+    /// `nil` = không còn set nào: hàng buổi bị xoá.
+    let record: WorkoutSessionRecord?
+  }
+
+  private enum RevisionFailure: Error {
+    case alreadyLogged(String)
+    case storage(LocalWriteError)
+  }
+
+  /// Ghi lại TOÀN BỘ hàng buổi từ các hàng `keys`, cùng `id` buổi và cùng dấu
+  /// thời gian, qua outbox — một giao dịch với trạng thái ngày. Không còn set
+  /// nào → hàng outbox xoá buổi.
+  private func revise(
+    sessionId: String, keys: Set<String>, pr: Bool, toKg: (Double) -> Double
+  ) async throws(RevisionFailure) -> Revised {
+    let rows = plan.rows.filter { keys.contains($0.key) && progress.done[$0.key] == true }
+    let stamp = loggedAt ?? clock.nowMillis()
+    let record = WorkoutSessionRecord(
+      id: sessionId, userId: userId, dateTime: stamp, templateId: plan.templateId,
+      templateName: plan.templateName, sets: WorkoutDay.sessionSets(rows, progress, toKg: toKg),
+      prDetected: pr, sessionRpeFloor: loggedRpe)
+    let revision = loggedRevision + 1
+    let entry = OutboxEntry(
+      id: "\(sessionId)@r\(revision)", userId: userId,
+      kind: record == nil ? WorkoutSessionRecord.deleteKind : WorkoutSessionRecord.revisionKind,
+      payload: record?.row ?? .object(["id": .string(sessionId)]), createdAt: clock.nowMillis())
+    let rpe = record?.sessionRpe ?? loggedRpe
+    let state = DayState(
+      progress: progress, loggedSessionId: sessionId, loggedKeys: keys.sorted(), loggedAt: stamp,
+      loggedPR: pr, loggedRevision: revision, loggedRpe: rpe)
+    finishing = true
+    defer { finishing = false }
+    let store = self.store, key = self.key
+    if let failure = await write({ _ = try await store.commitFinish(key, state, entry) }) {
+      if let logged = failure as? DayAlreadyLogged { throw .alreadyLogged(logged.sessionId) }
+      throw .storage(LocalWriteError("\(failure)"))
+    }
+    loggedKeys = keys
+    loggedPR = pr
+    loggedRevision = revision
+    loggedRpe = rpe
+    onEnqueued(entry)
+    return Revised(record: record)
   }
 
   // MARK: - nội bộ
 
   /// Ngày chưa chốt: mọi hàng sửa được. Đã chốt: chỉ hàng CHƯA nằm trong buổi
-  /// (hàng sẽ được nối thêm). Bỏ tick / sửa hàng đã ghi ở baseline là gỡ set
-  /// khỏi server (`useRemoveSetFromSession`) — chưa port, nên khoá.
+  /// (hàng sẽ được nối thêm). Bỏ tick hàng đã ghi đi qua `removeLoggedSet`
+  /// (có hộp hỏi lại và hoàn tác), không qua `toggle`.
   private func editable(_ key: String) -> Bool {
     loaded && !finishing && (loggedSessionId == nil || !loggedKeys.contains(key))
   }
@@ -382,7 +529,8 @@ public final class WorkoutSessionController {
     DayState(
       progress: progress, loggedSessionId: loggedSessionId,
       loggedKeys: loggedSessionId == nil ? nil : loggedKeys.sorted(), loggedAt: loggedAt,
-      loggedPR: loggedSessionId == nil ? nil : loggedPR)
+      loggedPR: loggedSessionId == nil ? nil : loggedPR,
+      loggedRevision: loggedSessionId == nil ? nil : loggedRevision, loggedRpe: loggedRpe)
   }
 
   private func persist() async -> Bool {
