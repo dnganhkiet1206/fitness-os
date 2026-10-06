@@ -22,6 +22,7 @@ struct PreviewGallery: View {
             DSButton("Destructive", style: .destructive) {}
             DSButton("Disabled", style: .primary) {}
               .disabled(true)
+              .disabled(true)
           }
         }
 
@@ -52,6 +53,7 @@ struct PreviewGallery: View {
 
         gallerySection("Empty states") {
           DSEmptyState(
+            systemImage: "tray",
             title: "Chưa có dữ liệu",
             message: "Hoàn thành một buổi tập để xem ở đây."
           )
