@@ -200,7 +200,7 @@ export function SettingsPickerSheet({
                   <Pressable
                     style={[styles.option, selected && styles.optionSelected]}
                     onPress={() => handleSelect(opt.key)}
-                    accessibilityRole="checkbox"
+                    accessibilityRole="radio"
                     accessibilityLabel={opt.accessibilityLabel ?? opt.label}
                     accessibilityState={{ selected, checked: selected }}
                     aria-checked={selected}
