@@ -485,271 +485,323 @@
     }
    }
   },
-<<<<<<< HEAD
-  "workout.loading": {
-=======
   "weekstrip.today": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Loading workout…"
-=======
       "value": "today"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Đang tải buổi tập…"
-=======
       "value": "hôm nay"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Cargando entrenamiento…"
-=======
       "value": "hoy"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
-  "workout.finish": {
-=======
   "weekstrip.hint": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Finish workout"
-=======
       "value": "Tap to open this day"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Chốt buổi"
-=======
       "value": "Chạm để mở ngày này"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Terminar entrenamiento"
-=======
       "value": "Toca para abrir este día"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
-  "workout.tick": {
-=======
   "day.rest": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Mark set done"
-=======
       "value": "Rest"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Đánh dấu đã xong"
-=======
       "value": "Nghỉ"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Marcar serie hecha"
-=======
       "value": "Descanso"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
-  "workout.untick": {
-=======
   "day.done": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Unmark set"
-=======
       "value": "Done"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Bỏ đánh dấu"
-=======
       "value": "Đã tập"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Desmarcar serie"
-=======
       "value": "Hecho"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
-  "workout.notReady": {
-=======
   "day.todo": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Enter weight and reps first"
-=======
       "value": "To do"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Nhập tạ và reps trước đã"
-=======
       "value": "Cần tập"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Introduce peso y repeticiones primero"
-=======
       "value": "Por hacer"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
-  "workout.weight": {
-=======
   "day.missed": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Weight"
-=======
       "value": "Missed"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Tạ"
-=======
       "value": "Bỏ lỡ"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Peso"
-=======
       "value": "Perdido"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
   },
-<<<<<<< HEAD
-  "workout.reps": {
-=======
   "day.unplanned": {
->>>>>>> origin/native/ios-rewrite
    "extractionState": "manual",
    "localizations": {
     "en": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Reps"
-=======
       "value": "Unplanned"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
-      "value": "Reps"
-=======
       "value": "Chưa lên lịch"
->>>>>>> origin/native/ios-rewrite
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-<<<<<<< HEAD
+      "value": "Sin plan"
+     }
+    }
+   }
+  },
+  "workout.loading": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Loading workout…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang tải buổi tập…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Cargando entrenamiento…"
+     }
+    }
+   }
+  },
+  "workout.finish": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Finish workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chốt buổi"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Terminar entrenamiento"
+     }
+    }
+   }
+  },
+  "workout.tick": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Mark set done"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đánh dấu đã xong"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Marcar serie hecha"
+     }
+    }
+   }
+  },
+  "workout.untick": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Unmark set"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bỏ đánh dấu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Desmarcar serie"
+     }
+    }
+   }
+  },
+  "workout.notReady": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Enter weight and reps first"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Nhập tạ và reps trước đã"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Introduce peso y repeticiones primero"
+     }
+    }
+   }
+  },
+  "workout.weight": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Weight"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tạ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Peso"
+     }
+    }
+   }
+  },
+  "workout.reps": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reps"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reps"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
       "value": "Repeticiones"
      }
     }
@@ -981,9 +1033,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "%1$@, serie %2$d de %3$d, %4$d kg × %5$d, %6$@"
-=======
-      "value": "Sin plan"
->>>>>>> origin/native/ios-rewrite
      }
     }
    }
