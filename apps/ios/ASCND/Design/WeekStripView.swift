@@ -82,14 +82,12 @@ struct WeekStripView: View {
       }
     }
     .frame(minHeight: 44)
-    .accessibilityLabel(
-      Text("\(cell.longName), \(stateLabel(cell.state))\(cell.isToday ? ", \(String(localized: "weekstrip.today"))" : "")")
-    )
+    .accessibilityLabel(Text(a11yLabel(cell)))
     .accessibilityAddTraits(index == selected ? .isSelected : [])
     .accessibilityHint(Text(String(localized: "weekstrip.hint")))
   }
 
-  private func stateColor(_ state: DayState) -> DS.Color {
+  private func stateColor(_ state: DayState) -> DSColor {
     switch state {
     case .done: DS.Color.readinessGreen
     case .todo: DS.Color.primary
@@ -99,10 +97,17 @@ struct WeekStripView: View {
     }
   }
 
-  private func stateWash(_ state: DayState) -> DS.Color {
+  private func stateWash(_ state: DayState) -> DSColor {
     // Nền nhạt theo trạng thái — RN dùng alpha() trên palette; ở đây dùng
     // secondary cho đơn giản (DS chưa có wash token).
     DS.Color.secondary
+  }
+
+  /// Tách khỏi `dayCell`: một chuỗi nội suy lồng ternary trong modifier làm
+  /// trình kiểm kiểu của Swift quá thời gian ("unable to type-check").
+  private func a11yLabel(_ cell: DayCellDisplay) -> String {
+    let base = "\(cell.longName), \(stateLabel(cell.state))"
+    return cell.isToday ? base + ", " + String(localized: "weekstrip.today") : base
   }
 
   private func stateLabel(_ state: DayState) -> String {
