@@ -132,9 +132,13 @@ public struct UndoBannerContainer: View {
 
   private func startCountdown() {
     timer?.invalidate()
+    // Mỗi tick tính lại từ `expiresAt`, không trừ dần: app vào nền thì Timer
+    // ngừng, quay lại phải thấy đúng số giây A19 còn cho (hoặc đã hết).
+    let expiresAt = removal.expiresAt
     timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { t in
-      if secondsRemaining > 1 {
-        secondsRemaining -= 1
+      let remaining = Int(expiresAt.timeIntervalSinceNow.rounded(.up))
+      if remaining > 0 {
+        secondsRemaining = remaining
       } else {
         t.invalidate()
         isExpired = true
