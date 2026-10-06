@@ -42,7 +42,7 @@ public struct SyncStatusBanner: View {
           format: String(localized: "sync.queued"),
           count
         ),
-        color: DS.Color.metricAmber
+        color: DS.Color.readinessYellow
       )
     case .saving:
       HStack(spacing: DS.Spacing.xs) {
