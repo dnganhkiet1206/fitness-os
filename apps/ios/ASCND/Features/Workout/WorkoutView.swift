@@ -41,6 +41,13 @@ public struct WorkoutView: View {
     case reps(String)
   }
   @State private var isFinishing = false
+  /// Hàng đã nằm trong buổi đã chốt mà người dùng vừa bấm bỏ tích — chờ hỏi
+  /// lại (RN `nRdUntickTitle`).
+  @State private var untickTarget: PlannedSet?
+  /// Lần gỡ gần nhất, còn trong cửa sổ hoàn tác 8 giây.
+  @State private var removal: WorkoutSessionController.Removal?
+  /// Tăng mỗi lần chốt / nối thêm thành công — kích phản hồi xúc giác.
+  @State private var successTick = 0
 
   public init(
     controller: WorkoutSessionController,
@@ -67,7 +74,11 @@ public struct WorkoutView: View {
         case .idle, .active:
           workoutContent
         case .finished:
-          finishedView
+          // Như RN: buổi đã chốt VẪN là danh sách hàng — bỏ tích một hàng đã
+          // ghi để gỡ nó (có hoàn tác), tích thêm hàng để nối vào buổi.
+          // Bản trước thay cả màn bằng một ô "Đã chốt", nên hai việc ấy chỉ
+          // làm được trong Lab.
+          workoutContent
         }
       }
       .navigationTitle(controller.plan.templateName)
@@ -108,6 +119,19 @@ public struct WorkoutView: View {
     } message: {
       Text(finishMessage ?? "")
     }
+    .alert(
+      String(localized: "workout.untick.title"),
+      isPresented: Binding(get: { untickTarget != nil }, set: { if !$0 { untickTarget = nil } }),
+      presenting: untickTarget
+    ) { row in
+      Button(String(localized: "common.cancel"), role: .cancel) {}
+      Button(String(localized: "workout.untick.confirm"), role: .destructive) {
+        Task { await removeLogged(row) }
+      }
+    } message: { _ in
+      Text(String(localized: "workout.untick.message"))
+    }
+    .sensoryFeedback(.success, trigger: successTick)
   }
 
   // MARK: - Nội dung buổi tập
@@ -117,6 +141,9 @@ public struct WorkoutView: View {
       VStack(alignment: .leading, spacing: DS.Spacing.md) {
         if controller.unsaved != nil {
           unsavedBanner
+        }
+        if let removal {
+          undoBar(removal)
         }
         SyncStrip(status: outboxStatus)
         if let timer = restTimer {
@@ -128,16 +155,8 @@ public struct WorkoutView: View {
           ForEach(exerciseGroups, id: \.key) { group in
             exerciseCard(group)
           }
-          DSButton(
-            isFinishing
-              ? String(localized: "workout.finishing")
-              : String(localized: "workout.finish"),
-            style: .primary,
-            action: { Task { await doFinish() } }
-          )
-          .disabled(!controller.canFinish || isFinishing)
-          .opacity(controller.canFinish && !isFinishing ? 1 : 0.5)
-          .padding(.top, DS.Spacing.sm)
+          finishButton
+            .padding(.top, DS.Spacing.sm)
         }
       }
       .padding(DS.Spacing.md)
@@ -193,6 +212,12 @@ public struct WorkoutView: View {
         Button {
           // Chữ vừa gõ (đang chờ debounce) phải tới controller TRƯỚC khi tick,
           // không thì set được chốt với số cũ.
+          // Hàng đã nằm trong buổi đã chốt: bỏ tích là nói nó KHÔNG xảy ra —
+          // hỏi lại trước (RN `nRdUntick*`), rồi gỡ khỏi buổi.
+          if controller.canRemove(row.key) {
+            untickTarget = row
+            return
+          }
           Task {
             await flushWrites()
             await controller.toggle(row.key)
@@ -467,12 +492,105 @@ public struct WorkoutView: View {
     .accessibilityLabel(Text(String(localized: "workout.unsaved")))
   }
 
-  private var finishedView: some View {
-    DSEmptyState(
-      systemImage: "checkmark.circle.fill",
-      title: String(localized: "workout.finished.title"),
-      message: String(localized: "workout.finished.message")
-    )
+  /// Nút cuối danh sách — bốn trạng thái như RN (`day-plan.tsx` nút finish):
+  /// nối thêm (có hàng mới sau khi chốt), đã ghi, ngày chưa tới, hoàn thành.
+  @ViewBuilder private var finishButton: some View {
+    if controller.loggedSessionId != nil, !controller.pendingRows.isEmpty {
+      DSButton(String(localized: "workout.append"), style: .secondary, action: { Task { await doAppend() } })
+        .disabled(!controller.canAppend || isFinishing)
+        .opacity(controller.canAppend && !isFinishing ? 1 : 0.5)
+    } else if controller.loggedSessionId != nil {
+      // Không phải một nút tắt mang chữ cũ: nói điều đã xảy ra (RN nRdAlready).
+      Label(String(localized: "workout.finishError.alreadyLogged"), systemImage: "checkmark.circle.fill")
+        .font(DS.TextStyle.headline)
+        .foregroundStyle(DS.Color.readinessGreen.swiftUI)
+        .frame(maxWidth: .infinity, minHeight: 48)
+    } else {
+      DSButton(
+        isFinishing
+          ? String(localized: "workout.finishing")
+          : controller.isFuture
+            ? String(localized: "workout.finishError.future")
+            : String(localized: "workout.finish"),
+        style: .primary,
+        action: { Task { await doFinish() } }
+      )
+      .disabled(!controller.canFinish || isFinishing)
+      .opacity(controller.canFinish && !isFinishing ? 1 : 0.5)
+    }
+  }
+
+  /// "Đã gỡ hiệp khỏi buổi tập · Hoàn tác" trong 8 giây (RN `toast.undo`,
+  /// cùng `ACTION_HIDE_MS`). Hết giờ thì tự biến mất.
+  private func undoBar(_ r: WorkoutSessionController.Removal) -> some View {
+    TimelineView(.periodic(from: .now, by: 1)) { context in
+      let left = Int((r.expiresAt.date.timeIntervalSince(context.date)).rounded(.up))
+      if left > 0 {
+        HStack(spacing: DS.Spacing.sm) {
+          Image(systemName: "arrow.uturn.backward.circle")
+            .accessibilityHidden(true)
+          Text(String(localized: "workout.setRemoved"))
+            .font(DS.TextStyle.footnote)
+          Spacer(minLength: DS.Spacing.sm)
+          Button(String(localized: "extra.undo.action")) {
+            Task { await undoRemoval(r) }
+          }
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .frame(minHeight: 44)
+        }
+        .padding(.horizontal, DS.Spacing.sm)
+        .background(DS.Color.secondary.swiftUI)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+      }
+    }
+  }
+
+  private func removeLogged(_ row: PlannedSet) async {
+    untickTarget = nil
+    await flushWrites()
+    do throws(WorkoutSessionController.RemoveRefusal) {
+      removal = try await controller.removeLoggedSet(row.key)
+      AccessibilityNotification.Announcement(String(localized: "workout.setRemoved")).post()
+    } catch {
+      finishMessage = Self.removeMessage(error)
+    }
+  }
+
+  private func undoRemoval(_ r: WorkoutSessionController.Removal) async {
+    do throws(WorkoutSessionController.RemoveRefusal) {
+      try await controller.undo(r)
+    } catch {
+      finishMessage = Self.removeMessage(error)
+    }
+    removal = nil
+  }
+
+  /// Câu cho lý do không gỡ / hoàn tác được. `nil` = không báo: hết cửa sổ
+  /// hoàn tác (dải đã biến mất), đang bận, hàng không còn trong buổi.
+  static func removeMessage(_ refusal: WorkoutSessionController.RemoveRefusal) -> String? {
+    switch refusal {
+    case .loading, .inProgress, .notLogged, .expired:
+      return nil
+    case .loggedElsewhere:
+      return String(localized: "workout.finishError.alreadyLogged")
+    case .storage:
+      return String(localized: "workout.finishError.generic")
+    }
+  }
+
+  private func doAppend() async {
+    isFinishing = true
+    defer { isFinishing = false }
+    await flushWrites()
+    do {
+      _ = try await controller.append()
+      successTick += 1
+      AccessibilityNotification.Announcement(String(localized: "workout.appended")).post()
+    } catch let refusal as WorkoutSessionController.FinishRefusal {
+      finishMessage = Self.refusalMessage(refusal)
+    } catch {
+      finishMessage = String(localized: "workout.finishError.generic")
+    }
   }
 
   private func doFinish() async {
@@ -481,6 +599,9 @@ public struct WorkoutView: View {
     await flushWrites()
     do {
       _ = try await controller.finish()
+      // RN: Haptics.success + "Đã ghi buổi tập" (nRdSaved).
+      successTick += 1
+      AccessibilityNotification.Announcement(String(localized: "workout.saved")).post()
     } catch let refusal as WorkoutSessionController.FinishRefusal {
       finishMessage = Self.refusalMessage(refusal)
     } catch {

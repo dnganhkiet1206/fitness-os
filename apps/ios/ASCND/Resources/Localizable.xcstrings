@@ -670,6 +670,7 @@
    }
   },
   "workout.finish": {
+   "comment": "RN nRdFinish",
    "extractionState": "manual",
    "localizations": {
     "en": {
@@ -681,7 +682,7 @@
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Chốt buổi"
+      "value": "Hoàn thành buổi tập"
      }
     },
     "es": {
@@ -872,52 +873,6 @@
      "stringUnit": {
       "state": "translated",
       "value": "Aún no se pudo guardar en el dispositivo — las series se ven pero no son duraderas. Se guardarán cuando la escritura tenga éxito."
-     }
-    }
-   }
-  },
-  "workout.finished.title": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Workout logged"
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Đã chốt buổi"
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Entrenamiento registrado"
-     }
-    }
-   }
-  },
-  "workout.finished.message": {
-   "extractionState": "manual",
-   "localizations": {
-    "en": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "This session is saved on the device and queued to sync."
-     }
-    },
-    "vi": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Buổi này đã lưu trên máy và xếp hàng đồng bộ."
-     }
-    },
-    "es": {
-     "stringUnit": {
-      "state": "translated",
-      "value": "Esta sesión está guardada en el dispositivo y en cola para sincronizar."
      }
     }
    }
@@ -5159,6 +5114,174 @@
      "stringUnit": {
       "state": "translated",
       "value": "Volver a Hoy"
+     }
+    }
+   }
+  },
+  "workout.untick.title": {
+   "comment": "RN nRdUntickTitle",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Undo this set?"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bỏ tích hiệp này?"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "¿Desmarcar esta serie?"
+     }
+    }
+   }
+  },
+  "workout.untick.message": {
+   "comment": "RN nRdUntickMsg",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "It is ticked as done. Unticking says it did not happen, and takes it out of what gets saved."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hiệp này đang được tích là đã xong. Bỏ tích tức là nói nó KHÔNG xảy ra, và nó sẽ không được ghi."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Está marcada como hecha. Desmarcarla dice que no ocurrió y la quita de lo que se guarda."
+     }
+    }
+   }
+  },
+  "workout.untick.confirm": {
+   "comment": "RN nRdUntickConfirm",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Untick"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Bỏ tích"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Desmarcar"
+     }
+    }
+   }
+  },
+  "workout.setRemoved": {
+   "comment": "RN nRdSetRemoved",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Set removed from the workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã gỡ hiệp khỏi buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Serie quitada del entrenamiento"
+     }
+    }
+   }
+  },
+  "workout.append": {
+   "comment": "RN nRdAppend",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Add to today’s workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ghi thêm vào buổi hôm nay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añadir al entrenamiento de hoy"
+     }
+    }
+   }
+  },
+  "workout.appended": {
+   "comment": "RN nRdAppended",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Added to today’s workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã ghi thêm vào buổi hôm nay"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Añadido al entrenamiento de hoy"
+     }
+    }
+   }
+  },
+  "workout.saved": {
+   "comment": "RN nRdSaved — announced after a successful finish",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Workout logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã ghi buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamiento registrado"
      }
     }
    }
