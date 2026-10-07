@@ -28,7 +28,6 @@
         print("PROBE A2 locale-param interp \(code):", String(localized: "sets \(3)", bundle: b, locale: loc))
         let res = LocalizedStringResource("hello", locale: loc, bundle: .atURL(b.bundleURL))
         print("PROBE D resource \(code):", String(localized: res))
-        print("PROBE E localizations-param \(code):", b.localizedString(forKey: "hello", value: nil, table: nil, localizations: [Locale.Language(identifier: code)]))
       }
       let b2 = try Self.bundle()
       object_setClass(b2, PrefBundle.self)
