@@ -17,6 +17,7 @@ struct VectorRegressionTests {
     ("sync.json", "SyncVectorTests"),
     ("workout-session.json", "WorkoutSessionVectorTests"),
     ("personal-record.json", "PersonalRecordVectorTests"),
+    ("workout-history.json", "WorkoutHistoryVectorTests (WH-3a: notPorted, #266)"),
   ]
 
   /// Tệp vector CHỈ chạy ở RN, kèm lý do. Đây không phải chỗ để giấu một
@@ -41,9 +42,6 @@ struct VectorRegressionTests {
     ("today-controller.json",
      "TC-1 `todayCta` (extra/log-free/none) CHƯA port; TC-3 khoá ngày giữ bằng WorkoutDayTests "
        + "(DayProgressStore.key), TC-2/TC-4 bằng TodayControllerTests; chưa có runner Swift"),
-    ("workout-history.json",
-     "WH-3a (dựng lại daily_log sau khi xoá) CHƯA port (#266); WH-1/2/4 giữ bằng HistoryBookTests và "
-       + "WorkoutPipelineTests; chưa có runner Swift"),
   ]
 
   /// Tệp vector trong `spec/vectors` — trừ `runners.json`, bảng runner JS
