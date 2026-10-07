@@ -439,3 +439,19 @@ struct GRDBOnboardingStoreTests {
     #expect(try await GRDBOnboardingStore(db).loadDraft(userId: "u1") == nil)
   }
 }
+
+struct GRDBProfileCacheTests {
+  @Test func roundTripPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBProfileCache(db)
+    var p = Profile(userId: "u1")
+    p.weightKg = 78.5
+    p.dob = LocalDate("1995-06-15")
+    p.allergies = ["Dairy"]
+    try await cache.save(userId: "u1", p)
+    #expect(try await cache.load(userId: "u1") == p)
+    #expect(try await cache.load(userId: "u2") == nil)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await cache.load(userId: "u1") == nil)
+  }
+}
