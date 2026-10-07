@@ -286,6 +286,27 @@ struct OnboardingGateTests {
     #expect(gate.state == .needsOnboarding)
   }
 
+  /// Cổng và luồng nối như `AppServices.makeOnboarding` (#527 1.3): ghi xong
+  /// thì cổng mở ra app; ghi hỏng thì cổng giữ người dùng ở lại luồng.
+  @Test func finishingTheFlowOpensTheGate() async {
+    let store = Store()
+    let writer = Writer()
+    let gate = OnboardingGate(userId: "u1", source: Status(false), store: store)
+    await gate.check()
+    #expect(gate.state == .needsOnboarding)
+    let c = OnboardingController(
+      userId: "u1", store: store, writer: writer, healthAvailable: false, clock: clock, timeZone: saigon,
+      onFinished: { [weak gate] in await gate?.completed() })
+    await c.load()
+    answerAll(c)
+    await writer.setFail(URLError(.notConnectedToInternet))
+    #expect(!(await c.finish()))
+    #expect(c.failure == .offline && gate.state == .needsOnboarding)
+    #expect(await c.finish())
+    #expect(gate.state == .completed)
+    #expect(await store.completed["u1"] == true)
+  }
+
   /// Luồng xong → cổng mở, và nhớ cho lần mở sau offline.
   @Test func completingOpensTheGateForGood() async {
     let store = Store()
