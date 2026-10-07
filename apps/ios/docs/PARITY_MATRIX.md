@@ -1,0 +1,96 @@
+# Parity matrix RN → Native iOS (sống)
+
+Chủ: B (#523). Chi tiết từng hành vi (nguồn RN, dòng): [PORTING_INVENTORY.md](PORTING_INVENTORY.md) (A18).
+Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence kiểm được (PR đã merge, test, tệp). Không ô nào điền theo cảm giác.
+
+- **Base đối chiếu:** `native/ios-rewrite` @ `82a89b05` (07/10/2026).
+- **RN:** `native/src/app/**` có **75 route**. RN tiếp tục là bản Android; iOS là native. Hai bản dùng chung backend và dữ liệu.
+
+## Thang trạng thái
+
+| Ký hiệu | Nghĩa |
+|---|---|
+| ✅ DONE | Hành vi tương đương RN, **có test**, đã vào `native/ios-rewrite`. Cột Evidence chỉ ra PR, test hoặc vector |
+| 🟡 PARTIAL | Có lõi; còn hành vi RN cụ thể chưa có (ghi ở cột Còn thiếu) |
+| 🔵 IN QUEUE | Code đã có trong PR đang chờ merge, chưa vào base. Chưa tính là DONE |
+| 🔴 TODO | Chưa có gì trong native |
+| ⚪ DECISION | Chờ quyết định sản phẩm (Kiệt); không làm khi chưa có quyết định |
+
+"Có màn compile được" **không** phải DONE (directive §2, §19).
+
+## 1. Theo mảng
+
+| Mảng | RN | Native | Parity | Tests | Trạng thái | Evidence / còn thiếu |
+|---|---|---|---|---|---|---|
+| Đăng nhập email / Apple / quên MK | ✅ | ✅ | 🟡 | 🟡 | 🟡 PARTIAL | `SessionStore`+`SupabaseAuthAPI` (#245), `AuthView` (#297). Nonce Apple theo từng lượt (P1, nhánh B). Thiếu: kiểm tra form (#350, IN QUEUE), capability Apple trong `project.yml` (A/Kiệt) |
+| Gate phiên, đổi tài khoản | ✅ | ✅ | ✅ | ✅ | ✅ DONE | #293, #397, #338; `AccountIsolationTests`, D-22 #390 |
+| Đổi mật khẩu | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A29 #441 |
+| Onboarding | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A30 #442 |
+| Hôm nay (5 trạng thái, kế hoạch) | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `TodayController` (#290), `TodayScreen` (#345), vectors TC (#380). Thiếu: CTA `todayCta` (extra/log-free/none, TC-1) chưa port; widget Hôm nay (mục 3) |
+| Màn tập trong ngày | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | #263/#268/#287/#389; vectors WS (#286), append (#347), remove-set (#412). Thiếu: VoiceOver từng control (#288 IN QUEUE), focus/flush ô nhập (#318 IN QUEUE), tạ lẻ + lỗi chốt (P2, nhánh B) |
+| Gỡ set đã chốt + hoàn tác 8 s | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A19 #415; vectors RS (#412); `WorkoutSessionControllerTests` RS-3..6. RS-1/2 chưa có test bám ID |
+| Bài thêm ngoài kế hoạch | ✅ | 🟡 | 🟡 | 🟡 | 🟡 PARTIAL | Dữ liệu A20 #416. UI #411 (IN QUEUE). Vectors AH #413 (IN QUEUE) |
+| Kỷ lục cá nhân | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A11 #298; vectors PR (#344, runner gọi logic RN) |
+| "Lần trước" mỗi bài | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A13 #349 + A23 #434 (bodyweight) |
+| Lịch sử buổi + xoá | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | Dữ liệu A21 #433, vectors WH (#414). UI `WorkoutHistoryView` #375 (IN QUEUE). WH-3a (dựng lại `daily_log` sau xoá) **chưa port** |
+| Ghi buổi bằng tay | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A24 #436 |
+| Template + gán ngày (ghi) | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A22 #435 (approved); builder UI #410 (đã merge, dùng mock tới khi #435 vào) |
+| Thư viện bài tập / hướng dẫn / insight | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A26 #438, A27 #439, A28 #440, A25 #437 |
+| Hồ sơ | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A31 #443; vỏ `SettingsView` #394 |
+| Cài đặt app / nhắc nhở / chi tiết buổi | ✅ | ⚪ | — | — | ⚪ DECISION | A32 #444 / A33 #445 / A34 #446: ranh giới quyết định; 11 PR xếp chồng phía trên chờ theo |
+| Quãng nghỉ + Live Activity | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `RestTimerController` + `ASCNDLiveActivity`; #378 (IN QUEUE: intent khi app bị kill + request bị từ chối). Thiếu so với Island RN: **tạm dừng** (`isPaused`), 3 trạng thái `resting/active/ready`, nhãn "hiệp tiếp theo" theo ngôn ngữ. Pause thuộc **#235 (khoá)**. Hiện gì khi `isStale` là câu hỏi mở (#378) |
+| Đồng bộ / outbox | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | ADR-0003, #264/#265/#267; property tests D-13 #357. **Chỉ cho luồng tập**: nước, bữa ăn, cân nặng… chưa có |
+| Readiness / `daily_logs` | ✅ | 🔴 | — | — | ⚪ DECISION | #266 (khoá) |
+| HealthKit (bước, năng lượng, ngủ) | ✅ (`use-health-sync.ts`, 25+ tệp dùng) | 🔴 | — | — | ⚪ DECISION | **Không có trong native** (chỉ có 1 dòng ghi chú trong PORTING_INVENTORY §6). Bảng mẫu của directive ghi DONE: **không đúng** |
+| Dinh dưỡng | ✅ | 🔴 | — | — | 🔴 TODO | 13 route (mục 2) |
+| Cộng đồng | ✅ | 🔴 | — | — | 🔴 TODO | 14 route |
+| Trợ lý / coach AI | ✅ | 🔴 | — | — | 🔴 TODO | 3 route |
+| Theo dõi cơ thể | ✅ | 🔴 | — | — | 🔴 TODO | 11 route |
+| Kinh tế / gamification (huy chương, cửa hàng, Koa) | ✅ | 🔴 | — | — | 🔴 TODO | 5 route; luật thưởng/streak/coin **không được đổi** |
+| Quản trị (`admin/*`) | ✅ | 🔴 | — | — | ⚪ DECISION | 8 route; native v1 có kèm console quản trị? |
+| Thông báo cục bộ (nhắc nhở) | ✅ (`expo-notifications`) | 🔴 | — | — | 🔴 TODO | 0 tệp `UNUserNotificationCenter` trong `apps/ios` |
+| Widget màn hình chính | ✅ (`TodayWorkoutWidget`, `StreakReadinessWidget`) | 🔴 | — | — | 🔴 TODO | `apps/ios/ASCNDWidgets` chỉ có Live Activity. Nếu iOS chuyển hẳn sang native mà chưa port thì **mất 2 widget** |
+| Deep link (`ascnd://`) | ✅ | 🔴 | — | — | 🔴 TODO | Chưa audit route nào nhận link |
+| Localization en/vi/es | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `XcstringsTests` (#249) + `XcstringsUsageTests` (#345). Chữ cứng trong Lab là Debug-only (#340) |
+
+## 2. Theo route RN (75)
+
+| Route RN | Mảng | Native | Trạng thái |
+|---|---|---|---|
+| `_layout`, `(tabs)/_layout` | Khung, 5 tab | `RootGate`, `RootTabView` (#351) | ✅ DONE (khung); 4 tab ngoài Hôm nay còn là placeholder |
+| `(tabs)/index` | Hôm nay | `TodayScreen` (#345) | 🟡 PARTIAL |
+| `(tabs)/workouts/_layout`, `index`, `plan`, `library` | Tập luyện | Builder (#410, mock), `WorkoutView` | 🟡 / 🔵 (A22 #435, A26 #438) |
+| `log-workout` | Ghi tay | — | 🔵 A24 #436 |
+| `sessions` | Lịch sử | dữ liệu #433; UI #375 | 🔵 |
+| `templates`, `workout-builder` | Template | #410 + #435 | 🔵 |
+| `exercises`, `exercise-guide`, `exercise-insight` | Thư viện | — | 🔵 A26/A27/A28/A25 |
+| `change-password` | Tài khoản | — | 🔵 A29 #441 |
+| `edit-profile` | Hồ sơ | — | 🔵 A31 #443 |
+| `settings` | Cài đặt | vỏ #394 | ⚪ A32 #444 (ranh giới) |
+| `reminders` | Nhắc nhở | — | ⚪ A33 #445 (ranh giới) |
+| `legal`, `media-viewer` | Khác | — | 🔴 TODO |
+| `(tabs)/nutrition`, `diary`, `food-editor`, `food-list`, `grocery`, `log-meal`, `meal-plan`, `meal-plans`, `nutrition-insights`, `scan-barcode`, `scan-food`, `supplements`, `water` | Dinh dưỡng | — | 🔴 TODO (13) |
+| `(tabs)/community`, `community-challenge`, `community-challenges`, `community-inbox`, `community-post`, `community-privacy`, `community-profile`, `community-saved`, `community-search`, `community-share`, `community-share-progress`, `community-share-recipe`, `community-user`, `challenges` | Cộng đồng | — | 🔴 TODO (14) |
+| `(tabs)/assistant`, `ai-coach`, `coach-memory` | Trợ lý | — | 🔴 TODO (3) |
+| `biometrics`, `log-biometrics`, `log-measurement`, `log-sleep`, `log-weight`, `measurements-trend`, `progress-photos`, `sleep-insights`, `steps`, `weekly-review`, `smart-goals` | Cơ thể | — | 🔴 TODO (11) |
+| `awards`, `shop`, `mascot-room`, `koa-sheet`, `koa-debug` | Kinh tế / Koa | — | 🔴 TODO (5; `koa-debug` là công cụ dev) |
+| `admin/_layout`, `appeals`, `audit`, `images`, `index`, `reports`, `target`, `user`, `users` | Quản trị | — | ⚪ DECISION (9 tệp, 8 màn) |
+
+## 3. Năng lực iOS ngoài route
+
+| Năng lực | RN (iOS) | Native | Ghi chú |
+|---|---|---|---|
+| Live Activity nghỉ | `native/modules/ascnd-native/ios/Widgets/RestTimerLiveActivity.swift` | `apps/ios/ASCNDWidgets/RestLiveActivity.swift` + `ASCNDLiveActivity` | Hai bản thuộc **hai app khác nhau** (RN-iOS và native), không phải bản trùng trong một app. Bản chuẩn cho iOS native: `apps/ios`. Khoảng hở xem mục 1 |
+| App Intents (±15) | `RestTimerIntents.swift` | `AdjustRestIntent` (`RestActivity.swift`) | ✅ (±15); thiếu intent pause (#235) |
+| Widget Hôm nay / Streak | `TodayWorkoutWidget.swift`, `StreakReadinessWidget.swift` | không | 🔴 TODO |
+| HealthKit | `use-health-sync.ts` | không | ⚪ DECISION |
+
+## 4. Đa thiết bị (iPhone ↔ Android, cùng backend)
+
+Theo dõi riêng ở #523 (audit read → modify → write). Đã có:
+- chốt buổi idempotent theo id (`upsert ignoreDuplicates`);
+- bản ghi lại theo `"<buổi>@…"`;
+- `routine_days` upsert theo `(user_id, day_of_week)`;
+- `isRow` chặn ghi cho tài khoản khác.
+
+Chưa kiểm: last-write-wins giữa hai thiết bị khi cùng ghi lại một buổi, và profile.

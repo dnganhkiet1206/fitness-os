@@ -1,6 +1,6 @@
 #!/usr/bin/env node --experimental-strip-types
 /**
- * Runner golden vectors cho issue #230 (tiếp theo #237, #495).
+ * Runner golden vectors cho issue #230 (tiếp theo #237, #495) + #254.
  *
  * Chạy các vector trong spec/vectors/*.json trên LOGIC THẬT của RN
  * (không mock logic), chứng minh vectors đúng với baseline.
@@ -11,6 +11,7 @@
  *
  * Chạy: node spec/vectors/run.mjs  (từ repo root)
  */
+import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +24,13 @@ import { parseRepEntry } from './lib/rep-entry.ts';
 import { findRecords } from './lib/personal-record.ts';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+
+// Sync vectors (#254) chạy bằng runner riêng (logic thật từ offline-write.ts)
+try {
+  execFileSync('node', [path.join(ROOT, 'spec', 'vectors', 'run-sync.mjs')], { stdio: 'inherit' });
+} catch {
+  process.exit(1);
+}
 const problems = [];
 let passed = 0;
 
