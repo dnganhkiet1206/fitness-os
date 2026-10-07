@@ -16,3 +16,13 @@ else
   rm -f "$TMP"
   exit 1
 fi
+SFIX=../../Packages/ASCNDKit/Tests/ASCNDCoreTests/Fixtures/streak-golden.json
+node gen-streak.mjs > "$TMP"
+if cmp -s "$TMP" "$SFIX"; then
+  echo "streak golden: khớp mã RN ($(wc -c < "$SFIX") byte)"
+  rm -f "$TMP"
+else
+  echo "streak golden: LỆCH mã RN — chạy apps/ios/tools/daily-log-golden/gen-streak.mjs" >&2
+  rm -f "$TMP"
+  exit 1
+fi

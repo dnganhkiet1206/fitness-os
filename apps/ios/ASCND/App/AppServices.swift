@@ -19,6 +19,8 @@ import Observation
 final class AppServices {
   let session: SessionStore
   let sync: SyncWorker
+  /// Hai widget màn hình chính (#66): dữ liệu thật, xoá khi phiên kết thúc.
+  @ObservationIgnored let widgets: WidgetRefresher
   @ObservationIgnored let workouts: GRDBWorkoutStore
   /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
   /// vào đây và Today đọc lại phần chưa gửi.
@@ -97,15 +99,20 @@ final class AppServices {
     profileWriter = backend.map { SupabaseProfileWriter(backend: $0) as any ProfileWriter } ?? UnconfiguredProfile()
     profileCache = GRDBProfileCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
+    let rows = backend.map { SupabaseRowStore(backend: $0) }
+    let widgets = WidgetRefresher(store: rows)
+    self.widgets = widgets
     sync = SyncWorker(
       store: outboxStore,
       remote: backend.map { b -> any RemoteWriter in
         // Server đã nhận một lệnh buổi tập → dựng lại `daily_logs` của ngày ấy
-        // (+ hôm nay), như `rebuildAfterReplay` của RN (#266). Lỗi dựng lại
-        // không làm hỏng lượt gửi — ghi đã thành rồi.
+        // (+ hôm nay), như `rebuildAfterReplay` của RN (#266), rồi làm mới
+        // widget (điểm sẵn sàng / buổi hôm nay vừa đổi). Lỗi dựng lại không
+        // làm hỏng lượt gửi — ghi đã thành rồi.
         let rows = SupabaseRowStore(backend: b)
         return SupabaseRemoteWriter(backend: b, afterWrite: { entry in
           _ = await DailyLog.rebuildAfterWrite(entry, store: rows)
+          await widgets.refresh()
         })
       } ?? UnconfiguredRemote(),
       online: false)
@@ -123,6 +130,8 @@ final class AppServices {
       try? await workouts.clearAll()
       // Kế hoạch đã cache.
       try? await templateCache.clearAll()
+      // Widget màn hình chính không giữ số của người vừa rời đi (`clearWidgetData`).
+      widgets.setUser(session?.session?.userId)
       // Đổi thẳng tài khoản: người mới đã đăng nhập — vòng sync gửi hàng của
       // họ (`signOut` ở trên vừa đặt nó về nil).
       sync.setSignedInUser(session?.session?.userId)
@@ -209,6 +218,7 @@ final class AppServices {
 
   func didBecomeActive() {
     sync.kick()
+    Task { [widgets] in await widgets.refresh() }
   }
 
   /// `Application Support/ascnd.sqlite`. Bảo vệ "tới lần mở khoá đầu tiên":

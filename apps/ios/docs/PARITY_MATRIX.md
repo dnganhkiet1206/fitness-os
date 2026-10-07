@@ -49,7 +49,7 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 | Kinh tế / gamification (huy chương, cửa hàng, Koa) | ✅ | 🔴 | — | — | 🔴 TODO | 5 route; luật thưởng/streak/coin **không được đổi** |
 | Quản trị (`admin/*`) | ✅ | 🔴 | — | — | ⚪ DECISION | 8 route; native v1 có kèm console quản trị? |
 | Thông báo cục bộ (nhắc nhở) | ✅ (`expo-notifications`) | 🔴 | — | — | 🔴 TODO | 0 tệp `UNUserNotificationCenter` trong `apps/ios` |
-| Widget màn hình chính | ✅ (`TodayWorkoutWidget`, `StreakReadinessWidget`) | 🔴 | — | — | 🔴 TODO | `apps/ios/ASCNDWidgets` chỉ có Live Activity. Nếu iOS chuyển hẳn sang native mà chưa port thì **mất 2 widget** |
+| Widget màn hình chính | 🟡 (`TodayWorkoutWidget`, `StreakReadinessWidget`; dữ liệu App Group, RN rơi về SỐ GIẢ của spike khi chưa có dữ liệu) | ✅ | ✅ | — | 🟡 PARTIAL | #66 (Kiệt chốt ở #523): cùng kind, cỡ, bố cục, App Group `group.com.ascnd.fitnessos`, khoá và JSON như RN (đọc được dữ liệu bản RN để lại — `storeSpeaksRNsJSON`). Payload như `usePushWidgetData` (buổi mới nhất hôm nay, đếm bài khác nhau; `daily_logs.readiness_score` hôm nay); chuỗi ngày = `streakFrom` của RN, golden 401 ca sinh từ chính `lib/streak.ts` (so từng byte ở bước cổng). Làm mới khi mở app / về tiền cảnh / sau mỗi lệnh buổi tập server nhận; đăng xuất xoá. **Khác RN có chủ đích:** không hiện số giả khi chưa có dữ liệu ("Mở ASCND để cập nhật"); đọc hỏng thì giữ số cũ thay vì đẩy "0 ngày"; chữ widget theo ngôn ngữ máy (RN cứng tiếng Anh). Entitlement App Group cần được cấp ở Apple Developer (ký tự động sẽ đăng ký). Chưa chạy trên iPhone thật |
 | Deep link (`ascnd://`) | ✅ | 🔴 | — | — | 🔴 TODO | Chưa audit route nào nhận link |
 | Localization en/vi/es | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `XcstringsTests` (#249) + `XcstringsUsageTests` (#345). Chữ cứng trong Lab là Debug-only (#340) |
 
@@ -82,7 +82,7 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 |---|---|---|---|
 | Live Activity nghỉ | `native/modules/ascnd-native/ios/Widgets/RestTimerLiveActivity.swift` | `apps/ios/ASCNDWidgets/RestLiveActivity.swift` + `ASCNDLiveActivity` | Hai bản thuộc **hai app khác nhau** (RN-iOS và native), không phải bản trùng trong một app. Bản chuẩn cho iOS native: `apps/ios`. Khoảng hở xem mục 1 |
 | App Intents (±15) | `RestTimerIntents.swift` | `AdjustRestIntent` (`RestActivity.swift`) | ✅ (±15); thiếu intent pause (#235) |
-| Widget Hôm nay / Streak | `TodayWorkoutWidget.swift`, `StreakReadinessWidget.swift` | không | 🔴 TODO |
+| Widget Hôm nay / Streak | `TodayWorkoutWidget.swift`, `StreakReadinessWidget.swift` | `HomeScreenWidgets.swift` (extension) + `HomeWidgets` / `WidgetSync` / `Streak` (Core) | ✅ (#66) |
 | HealthKit | `use-health-sync.ts` | không | ⚪ DECISION |
 
 ## 4. Đa thiết bị (iPhone ↔ Android, cùng backend)
