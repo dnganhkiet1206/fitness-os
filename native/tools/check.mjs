@@ -938,6 +938,15 @@ const STEPS = [
     app ra thấy tiếng Anh. Bản DEBUG (`#if DEBUG`) và #Preview được bỏ qua.
   */
   ['chuỗi iOS native qua xcstrings', 'node', ['../apps/ios/tools/native-i18n-forensic.mjs']],
+  /*
+    Plural trong String Catalog phải nhắc tới con số (#527). Xcode từ chối
+    `variations.plural` mà dạng `other` không có số ("ngày", "days") — nhưng
+    chỉ ở `xcodebuild` trên macOS (run 37648967552, widget). Bước thứ nhất quét
+    mọi `.xcstrings` của apps/ios; bước thứ hai là bằng chứng nó bắt đúng lỗi
+    ấy: fixture lấy nguyên từ commit lỗi phải đỏ, bản sửa phải xanh.
+  */
+  ['plural xcstrings nhắc tới con số', 'node', ['../apps/ios/tools/native-xcstrings-plural.mjs']],
+  ['plural xcstrings — fixture lỗi widget phải đỏ', 'node', ['../apps/ios/tools/native-xcstrings-plural.mjs', '--self-test']],
 ];
 
 /*
