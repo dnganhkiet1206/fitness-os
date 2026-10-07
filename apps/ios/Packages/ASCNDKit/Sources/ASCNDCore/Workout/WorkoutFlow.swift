@@ -34,6 +34,7 @@ public final class WorkoutFlow {
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private let onRest: @MainActor (RestEvent, RestTarget?) -> Void
   @ObservationIgnored private let onEnqueued: @MainActor (OutboxEntry) -> Void
+  @ObservationIgnored private let makeId: @Sendable () -> String
   @ObservationIgnored private var adHoc: (@MainActor (LocalDate) -> WorkoutSessionController.Plan)?
   @ObservationIgnored private var absorbing: Task<Void, Never>?
   /// Lượt làm mới đang chạy — gọi chồng (kéo làm mới đúng lúc ra tiền cảnh)
@@ -68,6 +69,7 @@ public final class WorkoutFlow {
     self.timeZone = timeZone
     self.onRest = onRest
     self.onEnqueued = onEnqueued
+    self.makeId = makeId
     history?.onDeleted = { [weak self] id, at in await self?.sessionDeleted(id, at: at) }
     if let planStore {
       plan = PlanEditor(
@@ -184,6 +186,20 @@ public final class WorkoutFlow {
 
   private func markFresh() {
     freshAt = today.failure == nil ? clock.nowMillis() : nil
+  }
+
+  /// Màn "Ghi buổi tập" thủ công (#418) cho hôm nay: gợi ý kế hoạch hôm nay,
+  /// kỷ lục so với cùng bảng, và buổi ghi xong đi đúng đường của buổi theo kế
+  /// hoạch — Today "đã tập", lịch sử, kỷ lục, "lần trước" theo ngay.
+  /// Gọi `load()` trước khi hiện form.
+  public func makeManualLog() -> ManualLogController {
+    let date = today.today
+    return ManualLogController(
+      userId: today.userId, date: date, store: store,
+      todaysTemplate: { [weak today] in today?.plan.flatMap { $0.date == date ? $0.template : nil } },
+      loggedToday: { [weak today] in today?.trained.contains(date) ?? false },
+      bests: { [records] in records.bests }, clock: clock, makeId: makeId,
+      onEnqueued: enqueued(for: date))
   }
 
   /// Kế hoạch tự do cho ngày không có buổi (chỉ Lab dùng). `nil` để tắt.

@@ -94,6 +94,7 @@ private struct LabSession: View {
       if let editor = flow.plan {
         LabPlan(today: today, editor: editor)
       }
+      LabManualLog(flow: flow)
     }
     .onChange(of: useSample) { _, on in
       Task {
@@ -384,6 +385,72 @@ private struct LabPlan: View {
       } catch {
         self.error = "\(error)"
       }
+    }
+  }
+}
+
+/// Ghi buổi thủ công (#418): không phải màn của C — chỉ để thử bản nháp bền
+/// (kill rồi mở lại), gợi ý kế hoạch, và ghi qua outbox trên máy thật.
+private struct LabManualLog: View {
+  let flow: WorkoutFlow
+  @State private var log: ManualLogController?
+  @State private var message: String?
+
+  var body: some View {
+    Section {
+      if let log {
+        LabRow(label: "Draft", value: "\(log.name.isEmpty ? "—" : log.name) · RPE \(log.rpe) · \(log.validRows.count)/\(log.rows.count) hàng ghi được")
+        ForEach(log.rows) { r in
+          LabRow(
+            label: "\(log.setNumbers[r.id] ?? 0). \(r.exerciseName.isEmpty ? "—" : r.exerciseName)\(r.warmup ? " · warm-up" : "")",
+            value: "\(r.weight.isEmpty ? "BW" : r.weight) × \(r.reps.isEmpty ? "—" : r.reps)")
+        }
+        if let plan = log.planOffer {
+          Button { Task { await log.usePlan() } } label: { Text(verbatim: "Dùng kế hoạch hôm nay: \(plan.name)") }
+        }
+        Button {
+          Task {
+            if !(log.rows.last?.reps.isEmpty ?? true) { await log.addExercise() }
+            guard let id = log.rows.last?.id else { return }
+            await log.setExerciseName("Curl", row: id)
+            await log.setWeight("10", row: id)
+            await log.setReps("10", row: id)
+          }
+        } label: {
+          Text(verbatim: "Thêm set Curl 10 × 10")
+        }
+        Button {
+          Task {
+            do throws(ManualLogController.SaveRefusal) {
+              let s = try await log.save()
+              message = "Đã ghi \(s.completedSets) set · \(s.volumeKg) kg\(s.prDetected ? " · PR" : "")"
+            } catch {
+              message = "\(error)"
+            }
+          }
+        } label: {
+          Text(verbatim: "Lưu buổi")
+        }
+        .disabled(!log.canSave())
+        if log.loggedSessionId != nil {
+          Button { Task { await log.startNew() } } label: { Text(verbatim: "Ghi buổi khác") }
+        }
+        if let message {
+          Text(verbatim: message).font(.footnote)
+        }
+      } else {
+        Button {
+          Task {
+            let l = flow.makeManualLog()
+            await l.load()
+            log = l
+          }
+        } label: {
+          Text(verbatim: "Mở form ghi tay (khôi phục nháp nếu có)")
+        }
+      }
+    } header: {
+      Text(verbatim: "Manual log (#418)")
     }
   }
 }
