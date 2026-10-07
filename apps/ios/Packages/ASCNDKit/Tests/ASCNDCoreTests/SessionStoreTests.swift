@@ -28,6 +28,7 @@ private final class FakeAuth: AuthAPI, @unchecked Sendable {
   func signIn(email: String, password: String) async throws { record("signIn:\(email)") }
   func signInWithApple(identityToken: String, rawNonce: String) async throws { record("apple:\(rawNonce)") }
   func resetPassword(email: String) async throws { record("reset:\(email)") }
+  func updatePassword(_ password: String) async throws { record("password:\(password.count)") }
   func signOut() async throws {
     record("signOut")
     if signOutFails { throw URLError(.notConnectedToInternet) }
