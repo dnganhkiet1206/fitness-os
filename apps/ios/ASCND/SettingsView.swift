@@ -25,6 +25,11 @@ public struct SettingsView: View {
   @State private var showSignOutConfirm = false
   @State private var selectedLanguage = "vi"
 
+  /// Ngôn ngữ app hỗ trợ: mã + tên bằng chính ngôn ngữ ấy (endonym).
+  static let languages: [(code: String, endonym: String)] = [
+    ("vi", "Tiếng Việt"), ("en", "English"), ("es", "Español"),
+  ]
+
   /// Version từ bundle — không hardcode.
   private var appVersion: String {
     Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "—"
@@ -69,9 +74,13 @@ public struct SettingsView: View {
             String(localized: "settings.language"),
             selection: $selectedLanguage
           ) {
-            Text("Tiếng Việt").tag("vi")
-            Text("English").tag("en")
-            Text("Español").tag("es")
+            // Tên ngôn ngữ viết bằng CHÍNH ngôn ngữ ấy, không dịch — người
+            // không đọc được ngôn ngữ đang chọn vẫn tìm ra ngôn ngữ của mình
+            // (như RN `i18n.ts` LANGUAGES, như Cài đặt iOS). `verbatim`: không
+            // tra xcstrings bằng chính chuỗi hiển thị.
+            ForEach(Self.languages, id: \.code) { lang in
+              Text(verbatim: lang.endonym).tag(lang.code)
+            }
           }
           .onChange(of: selectedLanguage) { _, new in
             onLanguageChange(new)
