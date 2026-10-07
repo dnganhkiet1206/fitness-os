@@ -577,10 +577,22 @@ public final class WorkoutSessionController {
       templateName: plan.templateName, sets: WorkoutDay.sessionSets(kept, progress, toKg: toKg),
       prDetected: pr, sessionRpeFloor: loggedRpe)
     let revision = loggedRevision + 1
+    // Các set ĐÃ ghi trước lần sửa này: hàng đã ghi không sửa được, nên tính
+    // lại từ `loggedKeys` ra đúng mảng đã gửi (gỡ set đã bỏ tick hàng ấy trước
+    // khi gọi vào đây, nên đặt lại "đã làm" cho mọi hàng đã ghi). Writer gộp
+    // phần thay đổi lên hàng server lúc gửi, không đè set máy khác (#523 P1).
+    var before = progress
+    for k in loggedKeys { before.done[k] = true }
+    let base = WorkoutSessionRecord(
+      id: sessionId, userId: userId, dateTime: stamp, templateId: recordTemplateId,
+      templateName: plan.templateName,
+      sets: WorkoutDay.sessionSets(rows.filter { loggedKeys.contains($0.key) }, before, toKg: toKg)
+    )?.row["sets"] ?? .array([])
     let entry = OutboxEntry(
       id: "\(sessionId)@r\(revision)", userId: userId,
       kind: record == nil ? WorkoutSessionRecord.deleteKind : WorkoutSessionRecord.revisionKind,
-      payload: record?.row ?? .object(["id": .string(sessionId)]), createdAt: clock.nowMillis())
+      payload: record?.row ?? .object(["id": .string(sessionId)]), createdAt: clock.nowMillis(),
+      base: base)
     let rpe = record?.sessionRpe ?? loggedRpe
     let state = DayState(
       progress: progress, loggedSessionId: sessionId, loggedKeys: keys.sorted(), loggedAt: stamp,

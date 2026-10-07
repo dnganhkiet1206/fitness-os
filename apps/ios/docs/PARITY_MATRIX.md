@@ -93,4 +93,25 @@ Theo dõi riêng ở #523 (audit read → modify → write). Đã có:
 - `routine_days` upsert theo `(user_id, day_of_week)`;
 - `isRow` chặn ghi cho tài khoản khác.
 
-Chưa kiểm: last-write-wins giữa hai thiết bị khi cùng ghi lại một buổi, và profile.
+**Phát hiện P1 (B, 07/10): bản ghi lại buổi đè dữ liệu của thiết bị khác.**
+
+- **Native:** nối thêm (#307) và gỡ set (#415) tạo `workout-revision`. Hàng outbox mang **cả hàng `workout_sessions`** dựng từ ảnh chụp *trên máy này lúc đưa vào hàng đợi* (`WorkoutSessionController.revise`). `SupabaseRemoteWriter` upsert **ghi đè** khi gửi. Gỡ set cuối tạo `workout-delete`, xoá cả hàng.
+- **RN** (`useAppendToSession`, `use-fitness-data.ts:599`): đọc hàng server **ngay trước khi ghi**, rồi `update({ sets: [...old, ...added] })`; lớp `offline: now`, cần mạng.
+- **Kịch bản mất dữ liệu:**
+  1. iPhone chốt buổi.
+  2. iPhone offline nối thêm hoặc gỡ một set.
+  3. Android nối thêm set vào cùng buổi (đọc mới nhất, ghi).
+  4. iPhone có mạng → upsert ảnh chụp cũ → **set của Android mất**. Trường hợp gỡ set cuối: **xoá cả buổi**.
+- **Đã sửa (B, `b/wip`, chờ CI):** gộp **lúc gửi** (`SessionRevisionMerge`, ASCNDCore).
+  - Hàng outbox mang thêm `base` = các set máy này đã ghi trước lần sửa (trường optional; hàng outbox cũ vẫn giải mã được và giữ cách ghi cũ).
+  - `SupabaseRemoteWriter` đọc `sets, session_rpe, pr_detected` của hàng **ngay lúc gửi**, rồi `update` theo `id` + `user_id` như RN. Hết set thì `delete`.
+  - Theo từng nội dung set (bỏ `setIndex`): máy này thêm → `max(server, local)`; máy này gỡ → `min(server, local)`; không đụng → giữ như server. `max`/`min` để **phát lại không nhân đôi**.
+  - Hàng đã bị máy khác xoá → không dựng lại (RN: `confirmWrite` báo lỗi). Ngoại lệ: hoàn tác lần gỡ set cuối của chính máy này.
+  - `volume_load` tính lại (bỏ khởi động); `session_rpe` không giảm; `pr_detected` không mất — như RN nối thêm.
+  - **Đánh đổi đã biết:** hai máy cùng thêm hai set *giống hệt* (cùng bài, mức, reps, RPE) thì giữ một. Còn khe nhỏ giữa đọc và ghi, đúng bằng khe của RN.
+  - **Bằng chứng:**
+    - `SessionRevisionMergeTests` (8 test): thêm/thêm, gỡ/thêm, máy kia đã gỡ, phát lại idempotent, gỡ set cuối khi máy kia còn set, hàng mất, các trường hàng, khoá set.
+    - `WorkoutPipelineTests`: `offlineAppendDoesNotOverwriteAnotherDevicesSet`, `offlineRemovalKeepsAnotherDevicesSet` (đầu-cuối qua outbox + SyncWorker; `FakeServer` gộp đúng như writer).
+    - Trạng thái **DONE chỉ sau khi iOS CI xanh**; chưa thử trên máy thật.
+
+**Không phải hồi quy:** `routine_days` upsert đủ 4 trường theo trạng thái trên máy. RN cũng làm vậy (`week-plan.tsx:343`), cùng last-write-wins. Hồ sơ: chưa kiểm (A31 #443 còn trong hàng đợi).
