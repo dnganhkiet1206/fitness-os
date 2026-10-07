@@ -946,6 +946,13 @@ const STEPS = [
     từng byte: RN đổi luật mà Swift chưa port lại thì đỏ ở đây.
   */
   ['daily_logs golden = mã RN', 'sh', ['../apps/ios/tools/daily-log-golden/verify.sh']],
+  /*
+    #66 (Apple Health): app iOS native gom giấc ngủ đêm qua, sinh trắc mới
+    nhất, buổi tập từ đồng hồ và bước theo ngày rồi ghi vào CÙNG các bảng app
+    RN ghi. Golden của `HealthGoldenTests` là output của CHÍNH `health.ts` RN
+    chạy trên HealthKit giả ở sáu múi giờ; bước này sinh lại và so từng byte.
+  */
+  ['Apple Health golden = mã RN', 'sh', ['../apps/ios/tools/health-golden/verify.sh']],
 ];
 
 /*

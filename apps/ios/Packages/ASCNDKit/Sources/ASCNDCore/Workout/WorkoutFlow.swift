@@ -42,6 +42,9 @@ public final class WorkoutFlow {
   @ObservationIgnored private let onEnqueued: @MainActor (OutboxEntry) -> Void
   @ObservationIgnored private let makeId: @Sendable () -> String
   @ObservationIgnored private var adHoc: (@MainActor (LocalDate) -> WorkoutSessionController.Plan)?
+  /// Buổi GHI TAY vừa bền (không phải buổi theo kế hoạch) — app ghi ngược nó
+  /// vào Apple Health như `useLogWorkout` của RN.
+  @ObservationIgnored public var onManualLogged: (@MainActor (OutboxEntry) -> Void)?
   @ObservationIgnored private var absorbing: Task<Void, Never>?
   /// Lượt làm mới đang chạy — gọi chồng (kéo làm mới đúng lúc ra tiền cảnh)
   /// chờ chung một lượt, không bắn hai lượt truy vấn.
@@ -226,7 +229,11 @@ public final class WorkoutFlow {
       todaysTemplate: { [weak today] in today?.plan.flatMap { $0.date == date ? $0.template : nil } },
       loggedToday: { [weak today] in today?.trained.contains(date) ?? false },
       bests: { [records] in records.bests }, clock: clock, makeId: makeId,
-      onEnqueued: enqueued(for: date))
+      onEnqueued: { [weak self] entry in
+        guard let self else { return }
+        self.enqueued(for: date)(entry)
+        if entry.kind == WorkoutSessionRecord.outboxKind { self.onManualLogged?(entry) }
+      })
   }
 
   /// Kế hoạch tự do cho ngày không có buổi (chỉ Lab dùng). `nil` để tắt.

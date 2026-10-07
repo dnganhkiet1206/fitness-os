@@ -21,6 +21,8 @@ final class AppServices {
   let sync: SyncWorker
   /// Hai widget màn hình chính (#66): dữ liệu thật, xoá khi phiên kết thúc.
   @ObservationIgnored let widgets: WidgetRefresher
+  /// Apple Health (#66): đồng bộ vào server, ghi ngược buổi ghi tay.
+  @ObservationIgnored let health: HealthSyncCoordinator
   @ObservationIgnored let workouts: GRDBWorkoutStore
   /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
   /// vào đây và Today đọc lại phần chưa gửi.
@@ -102,6 +104,7 @@ final class AppServices {
     let rows = backend.map { SupabaseRowStore(backend: $0) }
     let widgets = WidgetRefresher(store: rows)
     self.widgets = widgets
+    health = HealthSyncCoordinator(store: rows)
     sync = SyncWorker(
       store: outboxStore,
       remote: backend.map { b -> any RemoteWriter in
@@ -145,6 +148,7 @@ final class AppServices {
     let today = LocalDate(SystemWallClock().nowMillis(), in: .current)
     _ = try? await workouts.pruneDays(today: today)
     sync.kick()
+    autoSyncHealth()
   }
 
   /// Tầng ứng dụng của màn Today cho người đang đăng nhập (#271).
@@ -185,7 +189,7 @@ final class AppServices {
       onEnqueued: { _ in sync.kick() })
     // Phân tích bài tập (#419): cùng nguồn 90 ngày với "lần trước".
     let insights = InsightBook(userId: userId, source: performanceSource, cache: insightCache)
-    return WorkoutFlow(
+    let flow = WorkoutFlow(
       today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
       performance: makePerformanceBook(userId: userId), history: history, insights: insights,
       library: ExerciseLibrary(
@@ -196,6 +200,8 @@ final class AppServices {
       planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
       onEnqueued: { _ in sync.kick() })
+    flow.onManualLogged = { [health] entry in health.mirrorManualWorkout(entry) }
+    return flow
   }
 
   /// Onboarding (#424): cổng sau đăng nhập của người này. `RootGate` nối nó
@@ -219,6 +225,23 @@ final class AppServices {
   func didBecomeActive() {
     sync.kick()
     Task { [widgets] in await widgets.refresh() }
+    autoSyncHealth()
+  }
+
+  /// `useAutoHealthSync`: về tiền cảnh, đã hỏi quyền, cách lần trước ≥ 15 phút;
+  /// xong thì widget đọc số mới.
+  func autoSyncHealth() {
+    let user = session.session?.userId
+    Task { [health, widgets] in
+      await health.autoSync(userId: user, lang: Self.appLang)
+      await widgets.refresh()
+    }
+  }
+
+  /// Ngôn ngữ chữ của app đang hiện — tên buổi tập từ đồng hồ theo nó.
+  static var appLang: String {
+    let code = Bundle.main.preferredLocalizations.first ?? "en"
+    return code.hasPrefix("vi") ? "vi" : code.hasPrefix("es") ? "es" : "en"
   }
 
   /// `Application Support/ascnd.sqlite`. Bảo vệ "tới lần mở khoá đầu tiên":

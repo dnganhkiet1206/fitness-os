@@ -54,11 +54,20 @@ public struct SupabaseRowStore: RowStore {
     }
   }
 
+  public func upsert(_ table: String, _ rows: [[String: JSONValue]], onConflict: String) async throws(RowStoreError) {
+    do {
+      try await client.from(table).upsert(rows, onConflict: onConflict).execute()
+    } catch {
+      throw Self.wrap(error)
+    }
+  }
+
   static func apply(_ f: RowQuery.Filter, _ q: PostgrestFilterBuilder) -> PostgrestFilterBuilder {
     switch f {
     case .eq(let c, let v): q.eq(c, value: value(v))
     case .gte(let c, let v): q.gte(c, value: value(v))
     case .lt(let c, let v): q.lt(c, value: value(v))
+    case .lte(let c, let v): q.lte(c, value: value(v))
     case .or(let filters): q.or(filters)
     }
   }
