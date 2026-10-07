@@ -23,6 +23,7 @@ public struct WorkoutView: View {
   var restTimer: RestTimer?
   var onAdjustRest: (Int) -> Void
   var onSkipRest: () -> Void
+  var onSetRestPaused: (Bool) -> Void
   /// Trạng thái outbox — A8 nối `SyncWorker`. Mặc định `.ok` (không hiện).
   var outboxStatus: OutboxStatus
 
@@ -55,6 +56,7 @@ public struct WorkoutView: View {
     restTimer: RestTimer? = nil,
     onAdjustRest: @escaping (Int) -> Void = { _ in },
     onSkipRest: @escaping () -> Void = {},
+    onSetRestPaused: @escaping (Bool) -> Void = { _ in },
     outboxStatus: OutboxStatus = .ok
   ) {
     self.controller = controller
@@ -62,6 +64,7 @@ public struct WorkoutView: View {
     self.restTimer = restTimer
     self.onAdjustRest = onAdjustRest
     self.onSkipRest = onSkipRest
+    self.onSetRestPaused = onSetRestPaused
     self.outboxStatus = outboxStatus
   }
 
@@ -147,7 +150,7 @@ public struct WorkoutView: View {
         }
         SyncStrip(status: outboxStatus)
         if let timer = restTimer {
-          RestCard(timer: timer, onAdjust: onAdjustRest, onSkip: onSkipRest)
+          RestCard(timer: timer, onAdjust: onAdjustRest, onSkip: onSkipRest, onSetPaused: onSetRestPaused)
         }
         if controller.plan.rows.isEmpty {
           emptyView

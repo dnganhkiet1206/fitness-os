@@ -88,6 +88,28 @@
     }
   },
   {
+    "behavior": "Tạm dừng: đóng băng số giây còn lại (cả giây 'xong'), thời gian trôi không hết giờ, ±15 chỉnh số đóng băng, tiếp tục = max(1, số đóng băng) và neo lại endsAt",
+    "id": "RT-17",
+    "nativeDiffers": null,
+    "rn": "native/src/components/ascnd/day-plan.tsx#applyIslandIntent",
+    "rule": "RT-17",
+    "status": "verified",
+    "swift": {
+      "branch": null,
+      "file": "apps/ios/Packages/ASCNDKit/Sources/ASCNDCore/Workout/RestTimer.swift",
+      "symbol": "RestTimer.paused(at:)"
+    },
+    "test": {
+      "branch": null,
+      "file": "apps/ios/Packages/ASCNDKit/Tests/ASCNDCoreTests/RestTimerTests.swift",
+      "name": "goldenVectors"
+    },
+    "vector": {
+      "branch": null,
+      "file": "rest-timer.json"
+    }
+  },
+  {
     "behavior": "'10' = 10 reps, '45s' = hold 45s, chữ rác = 0 (không tính)",
     "id": "WS-2",
     "nativeDiffers": null,

@@ -26,6 +26,7 @@ public struct RestActivityAttributes: ActivityAttributes {
 @MainActor
 public enum RestIntentRouter {
   public static var adjust: (@MainActor (Int) -> Void)?
+  public static var setPaused: (@MainActor (Bool) -> Void)?
 }
 
 /// Nút ±15 trên Island và màn khoá. Là `LiveActivityIntent`: `perform()` chạy
@@ -46,6 +47,29 @@ public struct AdjustRestIntent: LiveActivityIntent {
   @MainActor
   public func perform() async throws -> some IntentResult {
     RestIntentRouter.adjust?(seconds)
+    return .result()
+  }
+}
+
+/// Nút tạm dừng / tiếp tục trên Island và màn khoá (#235; RN `pause` /
+/// `resume` của `RestTimerIntents.swift` @ 02/10). Mang trạng thái ĐÍCH chứ
+/// không đảo: hai lần chạm trước khi Island kịp vẽ lại không lật ngược nhau.
+public struct SetRestPausedIntent: LiveActivityIntent {
+  public static let title: LocalizedStringResource = "Pause rest"
+  public static let isDiscoverable = false
+
+  @Parameter(title: "Paused")
+  public var paused: Bool
+
+  public init() {}
+
+  public init(paused: Bool) {
+    self.paused = paused
+  }
+
+  @MainActor
+  public func perform() async throws -> some IntentResult {
+    RestIntentRouter.setPaused?(paused)
     return .result()
   }
 }
@@ -119,8 +143,12 @@ public struct ActivityKitRestDriver: RestActivityDriver {
   /// - chạm ±15: intent → không còn quãng nghỉ → `end`.
   ///
   /// Hiện gì khi `isStale` là quyết định sản phẩm (#274), chưa đổi ở đây.
+  ///
+  /// Đang dừng: `endsAt` đứng yên giữa chừng, nên mốc cũ tính từ BÂY GIỜ cộng
+  /// số giây đóng băng (RN `staleDate` khi `isPaused`).
   static func stale(_ c: RestActivityContent) -> Date {
-    c.endsAt.date.addingTimeInterval(60)
+    if let left = c.pausedLeft { return Date().addingTimeInterval(Double(left) + 60) }
+    return c.endsAt.date.addingTimeInterval(60)
   }
 }
 #endif

@@ -53,6 +53,68 @@ function clampRest(n) {
   return Math.min(REST_MAX, Math.max(0, n));
 }
 
+/* ── tạm dừng (#235): BẢN CHÉP từ native/src/components/ascnd/day-plan.tsx ──
+ * Trạng thái là `RestCountdown` rút gọn {endsAt, total, pausedLeft?}.
+ * - settle: `settleRestState` (day-plan.tsx:195-216) — đang dừng thì giữ;
+ *   hết giờ ≥ 1 giây thì đóng (null).
+ * - pause / resume: `applyIslandIntent` (day-plan.tsx:297-311). Số giây intent
+ *   mang là `remaining` của AscndNativeModule.swift:206-207: đang dừng thì
+ *   `pausedRemaining`, không thì `max(endDate − now, 0)`.
+ * - adjust: `onAdjust` (day-plan.tsx:410-437) — đang dừng chỉnh số đóng băng.
+ * - cancel: `onSkip` (`setResting(null)`). */
+function restRemaining(s, now) {
+  return s.pausedLeft !== undefined ? s.pausedLeft : Math.max((s.endsAt - now) / 1000, 0);
+}
+function restStep(s, step) {
+  if (s === null) return null;
+  const now = step.at;
+  switch (step.op) {
+    case 'settle': {
+      if (s.pausedLeft !== undefined) return s;
+      const left = Math.max(0, Math.ceil((s.endsAt - now) / 1000));
+      if (left <= 0 && now - s.endsAt >= 1000) return null;
+      return s;
+    }
+    case 'pause': {
+      const pausedLeft = Math.max(0, Math.ceil(restRemaining(s, now)));
+      return { ...s, pausedLeft };
+    }
+    case 'resume': {
+      const left = Math.max(1, Math.ceil(restRemaining(s, now)));
+      const total = Math.max(s.total, left);
+      return { endsAt: now + left * 1000, total };
+    }
+    case 'adjust': {
+      const base = s.pausedLeft !== undefined ? s.pausedLeft : Math.max(0, Math.ceil((s.endsAt - now) / 1000));
+      const left = Math.max(1, Math.min(REST_MAX, base + step.delta));
+      const total = Math.max(s.total, left);
+      if (s.pausedLeft !== undefined) return { ...s, pausedLeft: left, total };
+      return { endsAt: now + left * 1000, total };
+    }
+    case 'cancel':
+      return null;
+    default:
+      throw new Error(`op lạ: ${step.op}`);
+  }
+}
+function runPause(input) {
+  let s = { endsAt: input.start.at + input.start.seconds * 1000, total: input.start.seconds };
+  let at = input.start.at;
+  for (const step of input.steps) {
+    s = restStep(s, step);
+    at = step.at;
+  }
+  if (s === null) return { ended: true };
+  const paused = s.pausedLeft !== undefined;
+  return {
+    ended: false,
+    paused,
+    left: paused ? s.pausedLeft : Math.max(0, Math.ceil((s.endsAt - at) / 1000)),
+    total: s.total,
+    ...(paused ? {} : { endsAt: s.endsAt }),
+  };
+}
+
 const entered = (e) => e.reps > 0 || (e.durationSec ?? 0) > 0;
 
 /* ── checkRecord: GỌI THẬT findRecords từ native/src/lib/personal-record.ts ──
@@ -88,6 +150,8 @@ function runVector(v) {
     actual = { label: restLabel(input.seconds) };
   } else if (rule.startsWith('RT-10')) {
     actual = { warn: warnRing(input.now, input.paused) };
+  } else if (rule.startsWith('RT-17')) {
+    actual = runPause(input);
   } else if (rule.startsWith('RT-16')) {
     actual = { clamped: clampRest(input.n) };
   } else if (rule.startsWith('WS-2')) {

@@ -118,6 +118,79 @@ struct RestTimerControllerTests {
     if case .update(let last)? = driver.calls.last { #expect(last.totalSeconds == 165) }
   }
 
+  /// #235: tạm dừng đóng băng CẢ app lẫn Island; thời gian trôi không làm
+  /// hết giờ; ±15 lúc dừng chỉnh số đóng băng; tiếp tục neo lại `endsAt`.
+  @Test func pauseFreezesAppAndIsland() async throws {
+    let clock = TestClock(0)
+    let driver = FakeDriver()
+    let c = RestTimerController(driver: driver, clock: clock)
+    var finished = 0
+    c.onRestFinished = { finished += 1 }
+    c.handle(.start(seconds: 90), target: squat)
+    clock.advance(30_000)
+    c.setPaused(true)
+    await c.flush()
+    #expect(driver.showing?.pausedLeft == 60)
+
+    clock.advance(600_000)
+    c.settle()
+    #expect(c.timer?.remaining(at: clock.nowMillis()) == 60, "đứng yên")
+    #expect(finished == 0)
+
+    c.adjust(by: 15)
+    await c.flush()
+    #expect(driver.showing?.pausedLeft == 75)
+    #expect(c.timer?.isPaused == true)
+
+    c.setPaused(false)
+    await c.flush()
+    let shown = try #require(driver.showing)
+    #expect(shown.pausedLeft == nil)
+    #expect(shown.endsAt == clock.nowMillis() + 75_000)
+    #expect(shown == c.timer?.activityContent(target: squat))
+  }
+
+  /// Hai lần chạm "tạm dừng" dồn nhau (Island chưa kịp vẽ lại) không lật về
+  /// chạy: intent mang trạng thái ĐÍCH.
+  @Test func repeatedPauseStaysPaused() async {
+    let clock = TestClock(0)
+    let c = RestTimerController(driver: FakeDriver(), clock: clock)
+    c.handle(.start(seconds: 90), target: nil)
+    clock.advance(10_000)
+    c.setPaused(true)
+    clock.advance(5_000)
+    c.setPaused(true)
+    #expect(c.timer?.isPaused == true)
+    #expect(c.timer?.remaining(at: clock.nowMillis()) == 80)
+  }
+
+  /// Quãng nghỉ đang dừng sống qua kill app: lưu, mở lại muộn bao lâu vẫn là
+  /// quãng nghỉ đang dừng với đúng số giây.
+  @Test func pausedRestSurvivesKill() async throws {
+    let clock = TestClock(0)
+    var saved: RestTimer?
+    let c = RestTimerController(driver: FakeDriver(), clock: clock, persist: { t, _ in saved = t })
+    c.handle(.start(seconds: 90), target: nil)
+    clock.advance(20_000)
+    c.setPaused(true)
+    let data = try JSONEncoder().encode(try #require(saved))
+    let restored = try JSONDecoder().decode(RestTimer.self, from: data)
+    clock.advance(3_600_000)
+    let reopened = RestTimerController(driver: FakeDriver(), clock: clock, restored: (restored, nil))
+    #expect(reopened.timer?.isPaused == true)
+    #expect(reopened.timer?.remaining(at: clock.nowMillis()) == 70)
+  }
+
+  /// Bản đã lưu / activity đang hiện của bản TRƯỚC (chưa có `pausedLeft`) vẫn
+  /// đọc được, là đang chạy.
+  @Test func stateWithoutPauseFieldDecodes() throws {
+    let t = try JSONDecoder().decode(RestTimer.self, from: Data(#"{"endsAt":90000,"total":90}"#.utf8))
+    #expect(!t.isPaused && t.remaining(at: EpochMillis(0)) == 90)
+    let a = try JSONDecoder().decode(
+      RestActivityContent.self, from: Data(#"{"endsAt":90000,"ringStart":0,"totalSeconds":90}"#.utf8))
+    #expect(a.pausedLeft == nil && a.target == nil)
+  }
+
   /// RT-5/RT-6: hết giờ quá 1 giây → đóng; haptic đúng MỘT lần.
   @Test func settleEndsExactlyOnce() async {
     let clock = TestClock(0)

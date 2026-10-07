@@ -157,6 +157,9 @@ private struct LabWorkout: View {
               Spacer()
               Button { rest.adjust(by: -15) } label: { Text(verbatim: "−15") }
               Button { rest.adjust(by: 15) } label: { Text(verbatim: "+15") }
+              Button { rest.setPaused(rest.timer?.isPaused != true) } label: {
+                Image(systemName: rest.timer?.isPaused == true ? "play.fill" : "pause.fill")
+              }
               Button(role: .destructive) { rest.handle(.cancel) } label: { Text(verbatim: "Skip") }
             }
             .buttonStyle(.borderless)
