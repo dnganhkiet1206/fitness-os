@@ -19,6 +19,7 @@ struct VectorRegressionTests {
     ("personal-record.json", "PersonalRecordVectorTests"),
     ("workout-history.json", "WorkoutHistoryVectorTests (WH-3a: notPorted, #266)"),
     ("remove-set-undo.json", "RemoveSetVectorTests (RS-1: native gỡ đúng hàng, không phải set cuối cùng tên)"),
+    ("today-controller.json", "TodayVectorTests"),
   ]
 
   /// Tệp vector CHỈ chạy ở RN, kèm lý do. Đây không phải chỗ để giấu một
@@ -37,9 +38,6 @@ struct VectorRegressionTests {
     ("adhoc-exercise.json",
      "bài thêm ngoài kế hoạch (#413); chưa có runner Swift đọc JSON — hành vi giữ bằng "
        + "AdHocExerciseTests / AdHocPlanTests"),
-    ("today-controller.json",
-     "TC-1 `todayCta` (extra/log-free/none) CHƯA port; TC-3 khoá ngày giữ bằng WorkoutDayTests "
-       + "(DayProgressStore.key), TC-2/TC-4 bằng TodayControllerTests; chưa có runner Swift"),
   ]
 
   /// Tệp vector trong `spec/vectors` — trừ `runners.json`, bảng runner JS
