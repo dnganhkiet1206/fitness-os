@@ -4017,19 +4017,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Remove %@?"
+      "value": "Remove %@? Your training load and readiness will be recalculated."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Xoá %@?"
+      "value": "Xoá %@? Khối lượng tập và điểm sẵn sàng sẽ được tính lại."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "¿Eliminar %@?"
+      "value": "¿Quitar %@? Tu carga de entrenamiento y tu preparación se recalcularán."
      }
     }
    },

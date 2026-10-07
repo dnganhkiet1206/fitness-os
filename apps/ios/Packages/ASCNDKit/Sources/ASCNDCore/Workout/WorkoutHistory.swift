@@ -183,7 +183,10 @@ public final class HistoryBook {
     guard let victim = entries.first(where: { $0.id == id }) else { throw .notFound }
     let entry = OutboxEntry(
       id: "\(id)@del-\(makeId())", userId: userId, kind: WorkoutSessionRecord.deleteKind,
-      payload: .object(["id": .string(id)]), createdAt: clock.nowMillis())
+      // `date_time` chỉ để dựng lại đúng ngày sau khi xoá (#266, WH-3a); lệnh
+      // xoá chỉ đọc `id`.
+      payload: .object(["id": .string(id), "date_time": .string(WorkoutSessionRecord.iso8601(victim.at))]),
+      createdAt: clock.nowMillis())
     do {
       try await store.commitDelete(sessionId: id, entry)
     } catch {

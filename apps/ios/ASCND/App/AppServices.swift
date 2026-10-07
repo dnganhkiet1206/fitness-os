@@ -99,7 +99,15 @@ final class AppServices {
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: outboxStore,
-      remote: backend.map { SupabaseRemoteWriter(backend: $0) as any RemoteWriter } ?? UnconfiguredRemote(),
+      remote: backend.map { b -> any RemoteWriter in
+        // Server đã nhận một lệnh buổi tập → dựng lại `daily_logs` của ngày ấy
+        // (+ hôm nay), như `rebuildAfterReplay` của RN (#266). Lỗi dựng lại
+        // không làm hỏng lượt gửi — ghi đã thành rồi.
+        let rows = SupabaseRowStore(backend: b)
+        return SupabaseRemoteWriter(backend: b, afterWrite: { entry in
+          _ = await DailyLog.rebuildAfterWrite(entry, store: rows)
+        })
+      } ?? UnconfiguredRemote(),
       online: false)
     startupError = problems.isEmpty ? nil : problems.joined(separator: "\n")
 
