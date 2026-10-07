@@ -22,23 +22,23 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 
 | Mảng | RN | Native | Parity | Tests | Trạng thái | Evidence / còn thiếu |
 |---|---|---|---|---|---|---|
-| Đăng nhập email / Apple / quên MK | ✅ | ✅ | 🟡 | 🟡 | 🟡 PARTIAL | `SessionStore`+`SupabaseAuthAPI` (#245), `AuthView` (#297). Nonce Apple theo từng lượt (P1, nhánh B). Thiếu: kiểm tra form (#350, IN QUEUE), capability Apple trong `project.yml` (A/Kiệt) |
+| Đăng nhập email / Apple / quên MK | ✅ | ✅ | 🟡 | 🟡 | 🟡 PARTIAL | `SessionStore`+`SupabaseAuthAPI` (#245), `AuthView` (#297). Nonce Apple theo từng lượt (P1, batch 1, `AppleSignInNoncesTests`). Kiểm tra form #350 (batch 3; **cải tiến** so với RN: RN chỉ đòi khác rỗng). Thiếu: capability Apple trong `project.yml` (A/Kiệt) |
 | Gate phiên, đổi tài khoản | ✅ | ✅ | ✅ | ✅ | ✅ DONE | #293, #397, #338; `AccountIsolationTests`, D-22 #390 |
 | Đổi mật khẩu | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A29 #441 |
 | Onboarding | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A30 #442 |
 | Hôm nay (5 trạng thái, kế hoạch) | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `TodayController` (#290), `TodayScreen` (#345), vectors TC (#380). Thiếu: CTA `todayCta` (extra/log-free/none, TC-1) chưa port; widget Hôm nay (mục 3) |
-| Màn tập trong ngày | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | #263/#268/#287/#389; vectors WS (#286), append (#347), remove-set (#412). Thiếu: VoiceOver từng control (#288 IN QUEUE), focus/flush ô nhập (#318 IN QUEUE), tạ lẻ + lỗi chốt (P2, nhánh B) |
+| Màn tập trong ngày | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | #263/#268/#287/#389; vectors WS (#286), append (#347), remove-set (#412). Tạ lẻ `plannedLoad` + lỗi chốt chữ RN (batch 1, golden node). VoiceOver từng control #288 + #291, focus/flush ô nhập #318 (batch 3). Thiếu: RestCard / SyncStrip chưa nối controller |
 | Gỡ set đã chốt + hoàn tác 8 s | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A19 #415; vectors RS (#412); `WorkoutSessionControllerTests` RS-3..6. RS-1/2 chưa có test bám ID |
-| Bài thêm ngoài kế hoạch | ✅ | 🟡 | 🟡 | 🟡 | 🟡 PARTIAL | Dữ liệu A20 #416. UI #411 (IN QUEUE). Vectors AH #413 (IN QUEUE) |
+| Bài thêm ngoài kế hoạch | ✅ | ✅ | ✅ | ✅ | ✅ DONE | Dữ liệu A20 #416, UI #411, vectors AH #413 (batch 1). Chưa thử trên máy thật |
 | Kỷ lục cá nhân | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A11 #298; vectors PR (#344, runner gọi logic RN) |
 | "Lần trước" mỗi bài | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A13 #349 + A23 #434 (bodyweight) |
-| Lịch sử buổi + xoá | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | Dữ liệu A21 #433, vectors WH (#414). UI `WorkoutHistoryView` #375 (IN QUEUE). WH-3a (dựng lại `daily_log` sau xoá) **chưa port** |
+| Lịch sử buổi + xoá | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | Dữ liệu A21 #433, vectors WH (#414). UI #375 (B port lại theo `sessions.tsx`, batch 3): nhóm tháng + % so tháng trước (`HistoryMonths`, golden node TZ Sài Gòn/UTC), lỗi ≠ rỗng, xoá vuốt + nút + hỏi lại. **Chưa port:** WH-3a (dựng lại `daily_log` sau xoá — câu hỏi lại vì thế bỏ vế "điểm sẵn sàng sẽ được tính lại"), kcal mỗi buổi, đơn vị lb, nút "Ghi buổi tập" ở trạng thái rỗng. Chỉ vào được từ Lab (tab Tập luyện production chưa có) |
 | Ghi buổi bằng tay | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A24 #436 |
-| Template + gán ngày (ghi) | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A22 #435 (approved); builder UI #410 (đã merge, dùng mock tới khi #435 vào) |
+| Template + gán ngày (ghi) | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | A22 #435 (batch 1); builder UI #410 còn dùng mock — chưa nối `PlanEditor` |
 | Thư viện bài tập / hướng dẫn / insight | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A26 #438, A27 #439, A28 #440, A25 #437 |
 | Hồ sơ | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A31 #443; vỏ `SettingsView` #394 |
 | Cài đặt app / nhắc nhở / chi tiết buổi | ✅ | ⚪ | — | — | ⚪ DECISION | A32 #444 / A33 #445 / A34 #446: ranh giới quyết định; 11 PR xếp chồng phía trên chờ theo |
-| Quãng nghỉ + Live Activity | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `RestTimerController` + `ASCNDLiveActivity`; #378 (IN QUEUE: intent khi app bị kill + request bị từ chối). Thiếu so với Island RN: **tạm dừng** (`isPaused`), 3 trạng thái `resting/active/ready`, nhãn "hiệp tiếp theo" theo ngôn ngữ. Pause thuộc **#235 (khoá)**. Hiện gì khi `isStale` là câu hỏi mở (#378) |
+| Quãng nghỉ + Live Activity | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `RestTimerController` + `ASCNDLiveActivity`; #378 (batch 2: intent khi app bị kill; `Activity.request` bị từ chối không còn tính là đã hiện — `refusedStartIsNotRecordedAsShown`). Thiếu so với Island RN: **tạm dừng** (`isPaused`), 3 trạng thái `resting/active/ready`, nhãn "hiệp tiếp theo" theo ngôn ngữ. Pause thuộc **#235 (khoá)**. Hiện gì khi `isStale` là câu hỏi mở (#378) |
 | Đồng bộ / outbox | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | ADR-0003, #264/#265/#267; property tests D-13 #357. **Chỉ cho luồng tập**: nước, bữa ăn, cân nặng… chưa có |
 | Readiness / `daily_logs` | ✅ | 🔴 | — | — | ⚪ DECISION | #266 (khoá) |
 | HealthKit (bước, năng lượng, ngủ) | ✅ (`use-health-sync.ts`, 25+ tệp dùng) | 🔴 | — | — | ⚪ DECISION | **Không có trong native** (chỉ có 1 dòng ghi chú trong PORTING_INVENTORY §6). Bảng mẫu của directive ghi DONE: **không đúng** |
@@ -61,7 +61,7 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 | `(tabs)/index` | Hôm nay | `TodayScreen` (#345) | 🟡 PARTIAL |
 | `(tabs)/workouts/_layout`, `index`, `plan`, `library` | Tập luyện | Builder (#410, mock), `WorkoutView` | 🟡 / 🔵 (A22 #435, A26 #438) |
 | `log-workout` | Ghi tay | — | 🔵 A24 #436 |
-| `sessions` | Lịch sử | dữ liệu #433; UI #375 | 🔵 |
+| `sessions` | Lịch sử | dữ liệu #433; UI #375 (batch 3) | 🟡 |
 | `templates`, `workout-builder` | Template | #410 + #435 | 🔵 |
 | `exercises`, `exercise-guide`, `exercise-insight` | Thư viện | — | 🔵 A26/A27/A28/A25 |
 | `change-password` | Tài khoản | — | 🔵 A29 #441 |
@@ -102,7 +102,7 @@ Theo dõi riêng ở #523 (audit read → modify → write). Đã có:
   2. iPhone offline nối thêm hoặc gỡ một set.
   3. Android nối thêm set vào cùng buổi (đọc mới nhất, ghi).
   4. iPhone có mạng → upsert ảnh chụp cũ → **set của Android mất**. Trường hợp gỡ set cuối: **xoá cả buổi**.
-- **Đã sửa (B, `b/wip`, chờ CI):** gộp **lúc gửi** (`SessionRevisionMerge`, ASCNDCore).
+- **Đã sửa (B, batch 2):** gộp **lúc gửi** (`SessionRevisionMerge`, ASCNDCore).
   - Hàng outbox mang thêm `base` = các set máy này đã ghi trước lần sửa (trường optional; hàng outbox cũ vẫn giải mã được và giữ cách ghi cũ).
   - `SupabaseRemoteWriter` đọc `sets, session_rpe, pr_detected` của hàng **ngay lúc gửi**, rồi `update` theo `id` + `user_id` như RN. Hết set thì `delete`.
   - Theo từng nội dung set (bỏ `setIndex`): máy này thêm → `max(server, local)`; máy này gỡ → `min(server, local)`; không đụng → giữ như server. `max`/`min` để **phát lại không nhân đôi**.
@@ -112,6 +112,6 @@ Theo dõi riêng ở #523 (audit read → modify → write). Đã có:
   - **Bằng chứng:**
     - `SessionRevisionMergeTests` (8 test): thêm/thêm, gỡ/thêm, máy kia đã gỡ, phát lại idempotent, gỡ set cuối khi máy kia còn set, hàng mất, các trường hàng, khoá set.
     - `WorkoutPipelineTests`: `offlineAppendDoesNotOverwriteAnotherDevicesSet`, `offlineRemovalKeepsAnotherDevicesSet` (đầu-cuối qua outbox + SyncWorker; `FakeServer` gộp đúng như writer).
-    - Trạng thái **DONE chỉ sau khi iOS CI xanh**; chưa thử trên máy thật.
+    - iOS CI trên batch 2 `f41f2572` (run 37552501155): core-linux **319 test pass**, gồm cả các test trên; app-macos xanh. Chưa thử trên máy thật (hai máy thật).
 
 **Không phải hồi quy:** `routine_days` upsert đủ 4 trường theo trạng thái trên máy. RN cũng làm vậy (`week-plan.tsx:343`), cùng last-write-wins. Hồ sơ: chưa kiểm (A31 #443 còn trong hàng đợi).
