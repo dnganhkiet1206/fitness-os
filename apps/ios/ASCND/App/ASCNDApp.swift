@@ -21,7 +21,6 @@ struct ASCNDApp: App {
     let services = AppServices()
     // Ngôn ngữ đã chọn (hoặc theo máy, như `deviceDefaultLang` của RN) cho
     // MỌI lần tra chữ, từ khung hình đầu tiên (#527 · 1.7).
-    AppLanguage.install(on: .main)
     AppLanguage.shared.set(services.preferences.lang.rawValue)
     _services = State(initialValue: services)
     // Quãng nghỉ (và Live Activity trên màn khoá, có tên bài) của người vừa

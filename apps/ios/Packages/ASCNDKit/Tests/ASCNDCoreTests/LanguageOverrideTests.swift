@@ -1,26 +1,25 @@
-#if canImport(ObjectiveC)
-  @testable import ASCNDCore
+#if canImport(Darwin)
+  import ASCNDCore
   import Foundation
   import Observation
   import Testing
 
-  /// Đổi ngôn ngữ trong app (#527 · 1.7) trên Foundation THẬT của Apple: một
-  /// bundle có `en/vi/es.lproj` (`Fixtures/l10n`), được `AppLanguage.install`
-  /// đổi lớp như app đổi `Bundle.main`. Chạy ở job macOS của CI (Linux không
-  /// có runtime Objective-C).
+  /// Đổi ngôn ngữ trong app (#527 · 1.7) trên Foundation THẬT của Apple (job
+  /// macOS của CI): bundle `Fixtures/l10n` có `en/vi/es.lproj`.
+  ///
+  /// Test này ở MODULE KHÁC với `ASCNDCore`, như app và DesignSystem: nó chứng
+  /// minh `String(localized:)` ở chỗ gọi bình thường đi vào overload che của
+  /// ASCNDCore chứ không vào Foundation (Foundation không đổi theo lựa chọn
+  /// trong app — xem `LanguageOverride.swift`).
   ///
   /// Nối tiếp nhau (`.serialized`): `AppLanguage.shared` là một giá trị chung.
   @Suite(.serialized)
   struct LanguageOverrideTests {
     static func bundle() throws -> Bundle {
       let url = try #require(Bundle.module.url(forResource: "l10n", withExtension: nil, subdirectory: "Fixtures"))
-      let b = try #require(Bundle(path: url.path))
-      AppLanguage.install(on: b)
-      return b
+      return try #require(Bundle(path: url.path))
     }
 
-    /// `String(localized:)` — cách mọi màn native tra chữ — đổi theo lựa chọn
-    /// ngay, không khởi động lại.
     @Test func stringLocalizedFollowsTheInAppChoice() throws {
       let b = try Self.bundle()
       defer { AppLanguage.shared.set(nil) }
@@ -38,28 +37,29 @@
       defer { AppLanguage.shared.set(nil) }
       AppLanguage.shared.set("vi")
       #expect(String(localized: "sets \(3)", bundle: b) == "3 hiệp")
+      AppLanguage.shared.set("es")
+      #expect(String(localized: "sets \(3)", bundle: b) == "3 series")
       AppLanguage.shared.set("en")
       #expect(String(localized: "sets \(3)", bundle: b) == "3 sets")
     }
 
-    /// `NSLocalizedString` (đường cũ của Foundation) cũng đi qua.
-    @Test func nsLocalizedStringFollowsTheChoice() throws {
+    /// Không ghi đè (widget, trước khi app đặt): đường của hệ thống, không
+    /// trả ra khoá trần.
+    @Test func noOverrideUsesTheSystemPath() throws {
+      let b = try Self.bundle()
+      AppLanguage.shared.set(nil)
+      #expect(["Hello", "Xin chào", "Hola"].contains(String(localized: "hello", bundle: b)))
+    }
+
+    /// Đường Foundation gốc (gọi đủ tham số, không qua overload) KHÔNG đổi
+    /// theo lựa chọn trong app — lý do overload phải tồn tại. Đỏ ở đây nghĩa
+    /// là Foundation đã đổi hành vi, và overload có thể bỏ.
+    @Test func foundationAloneIgnoresTheInAppChoice() throws {
       let b = try Self.bundle()
       defer { AppLanguage.shared.set(nil) }
       AppLanguage.shared.set("vi")
-      #expect(NSLocalizedString("hello", bundle: b, comment: "") == "Xin chào")
-    }
-
-    /// Không ghi đè / ngôn ngữ không có bản dịch: về đường của hệ thống, không
-    /// trả ra khoá trần.
-    @Test func noOverrideOrMissingLanguageFallsBackToTheSystem() throws {
-      let b = try Self.bundle()
-      defer { AppLanguage.shared.set(nil) }
-      AppLanguage.shared.set(nil)
-      let system = String(localized: "hello", bundle: b)
-      #expect(["Hello", "Xin chào", "Hola"].contains(system))
-      AppLanguage.shared.set("fr")
-      #expect(String(localized: "hello", bundle: b) == system)
+      let foundation = String(localized: "hello", table: nil, bundle: b, locale: Locale(identifier: "vi"), comment: nil)
+      #expect(foundation != "Xin chào")
     }
 
     /// Một `body` SwiftUI tính chữ được Observation ghi nhận phụ thuộc vào
@@ -77,14 +77,6 @@
       }
       AppLanguage.shared.set("en")
       #expect(changed.value)
-    }
-
-    @Test func installTwiceIsHarmless() throws {
-      let b = try Self.bundle()
-      AppLanguage.install(on: b)
-      defer { AppLanguage.shared.set(nil) }
-      AppLanguage.shared.set("vi")
-      #expect(String(localized: "hello", bundle: b) == "Xin chào")
     }
   }
 #endif
