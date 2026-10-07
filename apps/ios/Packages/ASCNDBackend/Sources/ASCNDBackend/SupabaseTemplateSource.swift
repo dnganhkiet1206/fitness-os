@@ -19,7 +19,7 @@ public struct SupabaseTemplateSource: TemplateSource {
       .order("day_of_week")
       .execute().value
     async let templates: [TemplateRow] = client.from("workout_templates")
-      .select("id, name, exercises")
+      .select("id, name, type, exercises, created_at")
       .eq("user_id", value: userId)
       .order("name")
       .execute().value
@@ -36,7 +36,9 @@ public struct SupabaseTemplateSource: TemplateSource {
   struct TemplateRow: Decodable, Sendable {
     let id: String
     let name: String?
+    let type: String?
     let exercises: JSONValue?
+    let created_at: String?
   }
 
   /// Ánh xạ hàng → domain. Cột nullable lấy đúng mặc định baseline đọc:
@@ -48,7 +50,9 @@ public struct SupabaseTemplateSource: TemplateSource {
                    templateId: $0.template_id?.lowercased())
       },
       templates: templates.map {
-        WorkoutTemplate(id: $0.id.lowercased(), name: $0.name ?? "", exercisesJSON: $0.exercises)
+        WorkoutTemplate(
+          id: $0.id.lowercased(), name: $0.name ?? "", exercisesJSON: $0.exercises, type: $0.type,
+          createdAt: $0.created_at.flatMap { EpochMillis(iso8601: $0) })
       },
       fetchedAt: at)
   }

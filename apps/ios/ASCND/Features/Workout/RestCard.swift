@@ -16,7 +16,7 @@ public struct RestCard: View {
 
   public init(
     timer: RestTimer,
-    onAdjust: @escaping (Int) -> Void = {},
+    onAdjust: @escaping (Int) -> Void = { _ in },
     onSkip: @escaping () -> Void = {}
   ) {
     self.timer = timer
@@ -51,7 +51,7 @@ public struct RestCard: View {
                 style: StrokeStyle(lineWidth: 10, lineCap: .round)
               )
               .rotationEffect(.degrees(-90))
-            Text("\(left)s")
+            Text(verbatim: "\(left)s")
               .font(DS.TextStyle.mono(.title))
               .foregroundStyle(DS.Color.foreground.swiftUI)
               .monospacedDigit()

@@ -90,6 +90,29 @@ struct RemoteWriterClassifyTests {
     #expect(SupabaseRemoteWriter.tables["workout-delete"] == "workout_sessions")
   }
 
+  /// #401: tạo template theo id (bỏ trùng), xoá theo `"<template>@del-…"`,
+  /// gán ngày không có id — hàng là (người, ngày), người phải là chủ bản ghi.
+  @Test func planEditsTargetTheirTables() {
+    func e(_ id: String, _ kind: String, _ payload: JSONValue) -> OutboxEntry {
+      OutboxEntry(id: id, userId: "U1", kind: kind, payload: payload, createdAt: EpochMillis(0))
+    }
+    #expect(SupabaseRemoteWriter.tables[PlanEdit.templateKind] == "workout_templates")
+    #expect(SupabaseRemoteWriter.tables[PlanEdit.templateDeleteKind] == "workout_templates")
+    #expect(SupabaseRemoteWriter.tables[PlanEdit.routineDayKind] == "routine_days")
+    #expect(SupabaseRemoteWriter.isRow(e("t1", PlanEdit.templateKind, .object(["id": .string("t1")]))))
+    #expect(!SupabaseRemoteWriter.overwrites(PlanEdit.templateKind))
+    #expect(SupabaseRemoteWriter.isRow(e("t1@del-x", PlanEdit.templateDeleteKind, .object(["id": .string("t1")]))))
+    #expect(!SupabaseRemoteWriter.isRow(e("t1", PlanEdit.templateDeleteKind, .object(["id": .string("t1")]))))
+    #expect(SupabaseRemoteWriter.deletes(PlanEdit.templateDeleteKind))
+    let day = { (d: Double, user: String) in
+      e("day0@x", PlanEdit.routineDayKind, .object(["day_of_week": .number(d), "user_id": .string(user)]))
+    }
+    #expect(SupabaseRemoteWriter.isRow(day(0, "u1")))
+    #expect(!SupabaseRemoteWriter.isRow(day(7, "u1")))
+    #expect(!SupabaseRemoteWriter.isRow(day(1.5, "u1")))
+    #expect(!SupabaseRemoteWriter.isRow(day(0, "u2")), "kế hoạch của người khác")
+  }
+
   @Test func workoutGoesToWorkoutSessions() {
     #expect(SupabaseRemoteWriter.tables["workout"] == "workout_sessions")
     #expect(SupabaseRemoteWriter.tables["telepathy"] == nil)
@@ -105,13 +128,15 @@ struct TemplateSourceMappingTests {
       """.utf8))
     let tpls = try JSONDecoder().decode([SupabaseTemplateSource.TemplateRow].self, from: Data("""
       [{"id":"aaaaaaaa-0000-0000-0000-000000000001","name":"Push","exercises":[{"exerciseName":"Bench","sets":3,"reps":8,"weight":60}]},
-       {"id":"b","name":null,"exercises":null}]
+       {"id":"b","name":null,"exercises":null,"type":"strength","created_at":"2026-10-05T07:00:00+00:00"}]
       """.utf8))
     let s = SupabaseTemplateSource.snapshot(days: days, templates: tpls, at: EpochMillis(0))
+    #expect(s.templates[0].type == nil && s.templates[0].createdAt == nil, "cột thiếu → nil")
     #expect(s.routine[0].templateId == "aaaaaaaa-0000-0000-0000-000000000001", "uuid so khớp không phân biệt hoa thường")
     #expect(s.routine[1].isRest == false && s.routine[1].isDeload)
     #expect(s.templates[0].exercises.first?.sets == 3)
     #expect(s.templates[1].exercises.isEmpty && s.templates[1].name == "")
+    #expect(s.templates[1].type == "strength" && s.templates[1].createdAt == EpochMillis(1_791_183_600_000))
     let monday = LocalDate("2026-10-05")!
     #expect(s.plan(for: monday, today: monday).status == .todo)
   }

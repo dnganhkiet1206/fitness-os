@@ -29,10 +29,10 @@ const pendingReady = (rows) => rows.length > 0 && rows.every(rowReady);
 /* ── day-plan.tsx:1329 ── */
 const appending = (logged, ready, future) => logged && ready && !future;
 /* ── day-plan.tsx:1330-1332 ── */
-const canFinish = ({ logged, future, doneCount, isAppending, appendPending }) =>
+const canFinish = ({ logged, future, doneCount, isAppending, appendPending, logIsPending }) =>
   isAppending
     ? !appendPending
-    : doneCount > 0 && !logged && !future;
+    : doneCount > 0 && !logIsPending && !logged && !future;
 
 /* ── use-fitness-data.ts: useAppendToSession (lõi mutationFn) ── */
 function appendPayload(v) {
@@ -82,6 +82,7 @@ for (const v of vectors) {
         doneCount: v.input.doneCount ?? 0,
         isAppending,
         appendPending: false,
+        logIsPending: v.input.logIsPending ?? false,
       }),
     };
   } else {
