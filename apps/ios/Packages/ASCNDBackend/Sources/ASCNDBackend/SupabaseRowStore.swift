@@ -45,7 +45,7 @@ public struct SupabaseRowStore: RowStore {
     _ table: String, _ row: [String: JSONValue], where filters: [RowQuery.Filter]
   ) async throws(RowStoreError) -> Int {
     do {
-      var q = client.from(table).update(row)
+      var q = try client.from(table).update(row)
       for f in filters { q = Self.apply(f, q) }
       let touched: [JSONValue] = try await q.select("id").execute().value
       return touched.count
