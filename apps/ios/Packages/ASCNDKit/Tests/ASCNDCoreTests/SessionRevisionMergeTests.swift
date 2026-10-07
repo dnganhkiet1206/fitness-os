@@ -48,7 +48,8 @@ struct SessionRevisionMergeTests {
     #expect(names(out) == [a, b, c, d], "set của máy B còn; set của A nối vào cuối")
     guard case .update(let f) = out, case .array(let sets)? = f["sets"] else { Issue.record("không phải update"); return }
     #expect(sets.map { $0["setIndex"] ?? .null } == [1, 2, 3, 4].map { JSONValue.number(Double($0)) }, "đánh số lại liền mạch")
-    #expect(f["volume_load"] == .number(Double(Int(60 * 8 + 100 * 5 + 50 * 10 + 12.5 * 12 + 0.5))))
+    // 60×8 + 100×5 + 50×10 + 12,5×12 = 480 + 500 + 500 + 150.
+    #expect(f["volume_load"] == .number(1630))
   }
 
   /// Máy A gỡ set B; máy B đã nối set C: chỉ B biến mất.
