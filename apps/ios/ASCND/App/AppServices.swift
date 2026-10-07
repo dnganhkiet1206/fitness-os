@@ -54,6 +54,9 @@ final class AppServices {
   @ObservationIgnored let profileCache: any ProfileCache
   /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
   @ObservationIgnored private let readCache: GRDBTemplateCache
+  /// Chốt tài khoản của mọi cache theo người dùng (#431): đóng lúc mở app và
+  /// lúc phiên kết thúc, chỉ mở cho đúng người đang đăng nhập.
+  @ObservationIgnored private let accounts: AccountScope
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
@@ -79,6 +82,9 @@ final class AppServices {
       database = try! ASCNDDatabase()  // trong bộ nhớ: không có lý do thất bại ngoài hết RAM
     }
 
+    // Chưa ai đăng nhập cho tới khi phiên mở (`forgetOtherAccounts`).
+    database.accounts.signOut()
+    accounts = database.accounts
     workouts = GRDBWorkoutStore(database)
     let outboxStore = OutboxStore(database)
     outbox = outboxStore
@@ -122,7 +128,11 @@ final class AppServices {
     // như `forgetPreviousAccount` của baseline (`use-auth.tsx:53`). MỘT closure,
     // chạy tuần tự, để thứ tự không phụ thuộc thứ tự đăng ký.
     let workouts = self.workouts
+    let accounts = self.accounts
     session.onSignedOut { [sync = self.sync, weak session = self.session] in
+      // Đóng chốt TRƯỚC khi dọn: lượt làm mới của người vừa rời đi về sau đó
+      // không ghi lại được gì lên đĩa (#431).
+      accounts.signOut()
       // Hàng đợi chưa gửi: bỏ, như baseline (#241 chờ Kiệt).
       await sync.signOut()
       // Điểm quay lại `routine-day:*` (`clearUserScopedStorage`).
@@ -166,6 +176,7 @@ final class AppServices {
   /// Phiên của `userId` bắt đầu: bỏ read model của mọi người khác. Lượt làm
   /// mới của người vừa rời đi có thể về SAU lượt dọn lúc đăng xuất (#335).
   func forgetOtherAccounts(keeping userId: String) async {
+    accounts.signIn(userId)
     _ = try? await readCache.clearAll(except: userId)
   }
 

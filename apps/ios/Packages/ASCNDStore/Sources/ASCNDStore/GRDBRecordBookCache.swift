@@ -5,31 +5,18 @@ import GRDB
 /// `RecordBookCache` trên SQLite — bảng tốt-nhất theo người dùng (#295), cùng
 /// bảng `read_cache` với kế hoạch tuần.
 public final class GRDBRecordBookCache: RecordBookCache {
-  static let kind = "record-bests"
-  private let db: DatabaseQueue
+  static let kind = ReadCacheNamespace.recordBests
+  private let table: ReadCacheTable
 
   public init(_ database: ASCNDDatabase) {
-    db = database.queue
+    table = ReadCacheTable(database)
   }
 
   public func load(userId: String) async throws -> PersonalRecords.Bests? {
-    let json = try await db.read { db in
-      try String.fetchOne(
-        db, sql: "SELECT json FROM read_cache WHERE userId = ? AND kind = ?", arguments: [userId, Self.kind])
-    }
-    guard let json else { return nil }
-    return try JSONDecoder().decode(PersonalRecords.Bests.self, from: Data(json.utf8))
+    try await table.load(PersonalRecords.Bests.self, userId: userId, kind: Self.kind)
   }
 
   public func save(userId: String, _ bests: PersonalRecords.Bests) async throws {
-    let json = try OutboxStore.json(bests)
-    try await db.write { db in
-      try db.execute(
-        sql: """
-          INSERT INTO read_cache (userId, kind, json) VALUES (?, ?, ?)
-          ON CONFLICT(userId, kind) DO UPDATE SET json = excluded.json
-          """,
-        arguments: [userId, Self.kind, json])
-    }
+    try await table.save(bests, userId: userId, kind: Self.kind)
   }
 }
