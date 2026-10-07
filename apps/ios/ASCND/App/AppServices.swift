@@ -177,12 +177,12 @@ final class AppServices {
 
   /// Bảng kỷ lục của người đang đăng nhập (#295).
   func makeRecordBook(userId: String) -> RecordBook {
-    RecordBook(userId: userId, history: recordHistory, cache: recordCache)
+    RecordBook(userId: userId, history: recordHistory, cache: recordCache, pending: outbox)
   }
 
   /// "Lần trước" của người đang đăng nhập (#331).
   func makePerformanceBook(userId: String) -> PerformanceBook {
-    PerformanceBook(userId: userId, source: performanceSource, cache: performanceCache)
+    PerformanceBook(userId: userId, source: performanceSource, cache: performanceCache, pending: outbox)
   }
 
   /// Luồng tập của người đang đăng nhập (#272): Today → buổi tập → nghỉ →
@@ -193,9 +193,9 @@ final class AppServices {
     // Lịch sử buổi tập (#400): xoá từ lịch sử đi qua cùng outbox.
     let history = HistoryBook(
       userId: userId, source: historySource, cache: historyCache, store: workouts,
-      onEnqueued: { _ in sync.kick() })
+      onEnqueued: { _ in sync.kick() }, pending: outbox)
     // Phân tích bài tập (#419): cùng nguồn 90 ngày với "lần trước".
-    let insights = InsightBook(userId: userId, source: performanceSource, cache: insightCache)
+    let insights = InsightBook(userId: userId, source: performanceSource, cache: insightCache, pending: outbox)
     return WorkoutFlow(
       today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
       performance: makePerformanceBook(userId: userId), history: history, insights: insights,

@@ -32,12 +32,10 @@ public enum PlanEdit {
 
 /// Ghi bền các lệnh kế hoạch, và đọc lại những lệnh chưa tới server
 /// (`ASCNDStore.OutboxStore`).
-public protocol PlanWriteStore: Sendable {
+public protocol PlanWriteStore: PendingWrites {
   /// Ghi các hàng outbox trong MỘT giao dịch, đúng thứ tự. Id đã có thì bỏ qua
   /// hàng ấy (idempotent).
   func enqueue(_ entries: [OutboxEntry]) async throws
-  /// Các hàng còn chờ gửi của `userId`, theo thứ tự hàng đợi.
-  func pending(userId: String) async throws -> [OutboxEntry]
 }
 
 extension TemplateSnapshot {

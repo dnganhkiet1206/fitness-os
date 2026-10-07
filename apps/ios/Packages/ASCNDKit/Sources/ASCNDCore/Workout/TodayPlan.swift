@@ -293,6 +293,12 @@ public struct TodayRepository: Sendable {
     return all.filter { $0.userId == userId && PlanEdit.kinds.contains($0.kind) }
   }
 
+  /// Thay đổi buổi tập còn chờ gửi (#429) — để "đã tập" không tính buổi đã
+  /// xoá mà lệnh xoá chưa tới server. `nil` khi đọc hỏng.
+  public func pendingSessionChanges(userId: String) async -> [SessionChange]? {
+    await (edits as (any PendingWrites)?).changes(userId: userId)
+  }
+
   public func cached(userId: String) async -> TemplateSnapshot? {
     try? await cache.load(userId: userId)
   }

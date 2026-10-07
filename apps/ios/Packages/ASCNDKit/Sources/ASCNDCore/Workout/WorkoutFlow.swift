@@ -110,11 +110,19 @@ public final class WorkoutFlow {
   /// Một buổi bị xoá từ lịch sử (#400): ngày ấy thôi "đã tập", "lần trước"
   /// quên nó, và buổi tập đang mở (nếu chính là nó) đọc lại trạng thái đã mở
   /// khoá — không thì lần nối thêm sau dựng lại đúng buổi vừa xoá từ bộ nhớ.
+  /// "Lần trước" và bảng kỷ lục dựng lại (#429): buổi bị xoá có thể đang giữ một mức tốt-nhất
+  /// — một buổi ghi nhầm 100 kg thay vì 10 làm mọi buổi sau không bao giờ là
+  /// kỷ lục. Offline thì giữ bảng cũ tới lần làm mới sau.
   func sessionDeleted(_ id: String, at: EpochMillis) async {
-    await today.markUntrained(LocalDate(at, in: timeZone))
+    await today.markUntrained(LocalDate(at, in: timeZone), at: at)
     await performance.forget(sessionId: id)
     await insights?.forget(sessionId: id)
+    records.forget(sessionId: id)
     if let session, session.loggedSessionId == id { await session.load() }
+    // Như `invalidateToday` của RN: đọc lại (lớp phủ loại buổi đã xoá) để bài
+    // có lại "lần trước" từ buổi trước đó, và bảng kỷ lục bỏ mức của buổi này.
+    await records.refresh()
+    await performance.refresh()
   }
 
   /// Mở màn: kế hoạch trước (cache rồi server) để màn tập có ngay; hai bảng
@@ -336,17 +344,19 @@ public final class WorkoutFlow {
         await previous?.value
         await self.history?.absorb(entry)
         if entry.kind == WorkoutSessionRecord.deleteKind {
-          // Gỡ set cuối cùng (#398): buổi không còn. Bảng kỷ lục giữ nguyên —
-          // tốt-nhất là phép max, không gỡ được; lần làm mới sau sửa lại.
-          await self.today.markUntrained(date)
+          // Gỡ set cuối cùng (#398): buổi không còn — như xoá từ lịch sử.
+          let at = entry.payload["date_time"]?.stringValue.flatMap { EpochMillis(iso8601: $0) }
+          await self.today.markUntrained(date, at: at)
           if let id = entry.payload["id"]?.stringValue {
             await self.performance.forget(sessionId: id)
             await self.insights?.forget(sessionId: id)
+            self.records.forget(sessionId: id)
+            await self.records.refresh()
           }
           return
         }
         await self.today.markTrained(date)
-        await self.records.absorb(setsJSON: entry.payload["sets"])
+        await self.records.absorb(row: entry.payload)
         await self.performance.absorb(row: entry.payload)
         await self.insights?.absorb(row: entry.payload)
       }
