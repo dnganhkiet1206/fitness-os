@@ -1020,19 +1020,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@, set %2$d of %3$d, %4$d kg × %5$d, %6$@"
+      "value": "%1$@, set %2$d of %3$d, %4$@ kg × %5$d, %6$@"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@, hiệp %2$d trên %3$d, %4$d kg × %5$d, %6$@"
+      "value": "%1$@, hiệp %2$d trên %3$d, %4$@ kg × %5$d, %6$@"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%1$@, serie %2$d de %3$d, %4$d kg × %5$d, %6$@"
+      "value": "%1$@, serie %2$d de %3$d, %4$@ kg × %5$d, %6$@"
      }
     }
    }
@@ -3333,6 +3333,75 @@
      "stringUnit": {
       "state": "translated",
       "value": "Verificando tu sesión…"
+     }
+    }
+   }
+  },
+  "workout.finishError.future": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Not this day yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa tới ngày này"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún no es este día"
+     }
+    }
+   }
+  },
+  "workout.finishError.alreadyLogged": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Already logged"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đã ghi buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ya registrado"
+     }
+    }
+   }
+  },
+  "workout.finishError.generic": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Could not save. Try again in a moment."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa lưu được. Thử lại sau một chút."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No se pudo guardar. Inténtalo de nuevo en un momento."
      }
     }
    }

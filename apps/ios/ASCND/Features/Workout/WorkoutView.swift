@@ -240,7 +240,7 @@ public struct WorkoutView: View {
     String(
       format: String(localized: "workout.row.accessibility"),
       row.exerciseName, row.ordinal, row.of,
-      Int(performed.weightKg), performed.reps,
+      a11yLoad(performed.weightKg), performed.reps,
       String(localized: done ? "workout.row.done" : "workout.row.notDone")
     )
   }
@@ -249,7 +249,7 @@ public struct WorkoutView: View {
 
   private func weightBinding(for row: PlannedSet) -> Binding<String> {
     Binding(
-      get: { weightTexts[row.key] ?? "\(Int(row.weightKg))" },
+      get: { weightTexts[row.key] ?? NumberInput.plannedLoad(row.weightKg) },
       set: { new in
         weightTexts[row.key] = new
         Task { await controller.setWeightText(new, for: row.key) }
@@ -259,7 +259,7 @@ public struct WorkoutView: View {
 
   private func repsBinding(for row: PlannedSet) -> Binding<String> {
     Binding(
-      get: { repsTexts[row.key] ?? "\(row.reps)" },
+      get: { repsTexts[row.key] ?? NumberInput.plannedReps(row.reps) },
       set: { new in
         repsTexts[row.key] = new
         Task { await controller.setRepsText(new, for: row.key) }
@@ -270,10 +270,10 @@ public struct WorkoutView: View {
   private func seedTexts() {
     for row in controller.plan.rows {
       if weightTexts[row.key] == nil {
-        weightTexts[row.key] = controller.progress.weightText[row.key] ?? "\(Int(row.weightKg))"
+        weightTexts[row.key] = controller.progress.weightText[row.key] ?? NumberInput.plannedLoad(row.weightKg)
       }
       if repsTexts[row.key] == nil {
-        repsTexts[row.key] = controller.progress.repsText[row.key] ?? "\(row.reps)"
+        repsTexts[row.key] = controller.progress.repsText[row.key] ?? NumberInput.plannedReps(row.reps)
       }
     }
   }
@@ -307,10 +307,33 @@ public struct WorkoutView: View {
     do {
       _ = try await controller.finish()
     } catch let refusal as WorkoutSessionController.FinishRefusal {
-      finishMessage = String(describing: refusal)
+      finishMessage = Self.refusalMessage(refusal)
     } catch {
-      finishMessage = error.localizedDescription
+      // Không lộ mô tả lỗi thô (tên kiểu, mã nội bộ) cho người dùng.
+      finishMessage = String(localized: "workout.finishError.generic")
     }
+  }
+
+  /// Câu người đọc được cho lý do không chốt được — không bao giờ là
+  /// `String(describing:)` của enum (#523 P2). `nil` = không báo gì: các trường
+  /// hợp mà baseline tắt nút Chốt (`canFinish`) hoặc là lần bấm thứ hai.
+  static func refusalMessage(_ refusal: WorkoutSessionController.FinishRefusal) -> String? {
+    switch refusal {
+    case .loading, .inProgress, .nothingDone, .nothingToAppend:
+      return nil
+    case .futureDay:
+      return String(localized: "workout.finishError.future")  // nRdFuture
+    case .alreadyLogged, .loggedElsewhere:
+      return String(localized: "workout.finishError.alreadyLogged")  // nRdAlready
+    case .storage:
+      return String(localized: "workout.finishError.generic")  // errUnknown
+    }
+  }
+
+  /// Mức tạ cho VoiceOver — cùng phần lẻ với ô nhập, "0" khi không tạ.
+  private func a11yLoad(_ kg: Double) -> String {
+    let t = NumberInput.plannedLoad(kg)
+    return t.isEmpty ? "0" : t
   }
 }
 
