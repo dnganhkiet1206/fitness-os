@@ -100,6 +100,9 @@ private struct LabSession: View {
       }
       if let library = flow.library {
         LabLibrary(library: library)
+        if let guides = flow.guides {
+          LabGuide(guides: guides, library: library)
+        }
       }
     }
     .onChange(of: useSample) { _, on in
@@ -472,6 +475,42 @@ private struct LabLibrary: View {
       }
     } header: {
       Text(verbatim: "Exercise library — \(library.exercises.count)")
+    }
+  }
+}
+
+/// Hướng dẫn bài tập (#422): mở sheet cho một bài của thư viện, xem đúng thứ
+/// C sẽ vẽ (nội dung theo tiếng, media, bài liên quan).
+private struct LabGuide: View {
+  let guides: ExerciseGuideBook
+  let library: ExerciseLibrary
+  @State private var picked: String?
+
+  var body: some View {
+    Section {
+      Picker(selection: $picked) {
+        Text(verbatim: "—").tag(String?.none)
+        ForEach(library.exercises) { e in Text(verbatim: e.name).tag(String?.some(e.id)) }
+      } label: {
+        Text(verbatim: "Bài")
+      }
+      if let f = guides.failure {
+        LabRow(label: "Guide failed", value: "\(f)").foregroundStyle(.orange)
+      }
+      if let g = guides.guide {
+        LabRow(label: "\(g.name) · \(g.matchedBy.rawValue)", value: "\(g.muscleGroup ?? "—") · \(g.equipment ?? "—")")
+        LabRow(label: "Content (\(g.contentLocale?.rawValue ?? "—"))", value: (g.instructions + g.formCues + g.commonMistakes).joined(separator: " | "))
+        LabRow(label: "Media \(g.media.shape.rawValue)", value: g.media.items.map(\.uri).joined(separator: ", "))
+        let subject = GuideRelated.Subject(g)
+        LabRow(label: "Cùng thiết bị", value: GuideRelated.sameEquipment(library.exercises, subject).map(\.name).joined(separator: ", "))
+        LabRow(label: "Cùng nhóm cơ", value: GuideRelated.sameMuscle(library.exercises, subject).map(\.name).joined(separator: ", "))
+      }
+    } header: {
+      Text(verbatim: "Exercise guide (#422)")
+    }
+    .onChange(of: picked) { _, id in
+      guard let id, let e = library.exercise(id: id) else { return }
+      Task { await guides.open(exerciseId: e.id, name: e.name, lang: .vi) }
     }
   }
 }

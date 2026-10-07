@@ -182,3 +182,29 @@ struct ExerciseSourceMappingTests {
     #expect(list[0].isBuiltIn && list[1].userId == "u1" && list[1].kind == "isolation")
   }
 }
+
+struct ExerciseGuideSourceMappingTests {
+  @Test func mediaRowsMapToDomain() throws {
+    let rows = try JSONDecoder().decode([SupabaseExerciseGuideSource.MediaRowDTO].self, from: Data("""
+      [{"kind":"video","uri":"v.mp4","position":1,"duration_s":"45.5","poster_uri":null,"alt":null,
+        "exercise_media_content":[{"locale":"vi","title":"Video","description":null}]},
+       {"kind":"image","uri":"a.png","position":null,"duration_s":12,"poster_uri":null,"alt":"A","exercise_media_content":null}]
+      """.utf8))
+    let media = rows.map(\.domain)
+    #expect(media[0].durationS == 45.5 && media[0].captions?.first?.title == "Video")
+    #expect(media[1].position == nil && media[1].durationS == 12)
+    // `position: null` là 0 — tấm ảnh đứng trước video ở vị trí 1 và quyết
+    // kiểu của cả bộ (luật "một bộ là một kiểu" của RN).
+    #expect(MediaState.resolve(media, legacy: nil, lang: .vi).shape == .imageSingle)
+  }
+
+  /// Phần tử null trong mảng chữ (Postgres cho phép) không làm hỏng lượt
+  /// đọc: bỏ đi như `clean` của RN, nội dung còn lại vẫn hiện.
+  @Test func nullElementsInTextArraysAreSkipped() throws {
+    let rows = try JSONDecoder().decode([SupabaseExerciseGuideSource.ContentRow].self, from: Data("""
+      [{"locale":"vi","instructions":["Đứng thẳng",null,"  "],"form_cues":[null],"common_mistakes":null}]
+      """.utf8))
+    let content = try #require(GuideContent.pick(rows.map(\.domain), .vi))
+    #expect(content.instructions == ["Đứng thẳng"] && content.formCues.isEmpty && content.commonMistakes.isEmpty)
+  }
+}

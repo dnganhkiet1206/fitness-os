@@ -392,3 +392,21 @@ struct GRDBExerciseCacheTests {
     #expect(try await cache.load(userId: "u1") == nil, "đăng nhập người khác dọn cả thư viện")
   }
 }
+
+struct GRDBExerciseGuideCacheTests {
+  @Test func roundTripPerUserAndKey() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBExerciseGuideCache(db)
+    let g = ExerciseGuide.shape(
+      GuideExerciseRow(id: "e", userId: nil, name: "Bench", muscleGroup: "chest", equipment: "barbell", videoUrl: "https://x/a.gif"),
+      matchedBy: .id, fallbackName: "Bench",
+      content: [GuideContentRow(locale: "vi", instructions: ["Nằm"], formCues: nil, commonMistakes: nil)], media: [],
+      lang: .vi)
+    try await cache.save(userId: "u1", key: "e|bench|vi", g)
+    #expect(try await cache.load(userId: "u1", key: "e|bench|vi") == g)
+    #expect(try await cache.load(userId: "u1", key: "e|bench|en") == nil)
+    #expect(try await cache.load(userId: "u2", key: "e|bench|vi") == nil)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await cache.load(userId: "u1", key: "e|bench|vi") == nil)
+  }
+}

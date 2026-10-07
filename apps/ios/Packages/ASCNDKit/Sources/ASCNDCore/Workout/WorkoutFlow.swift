@@ -26,6 +26,8 @@ public final class WorkoutFlow {
   public let insights: InsightBook?
   /// Thư viện bài tập (#420) — `nil` khi app chưa dựng.
   public let library: ExerciseLibrary?
+  /// Sheet hướng dẫn bài tập (#422) — chỉ đọc, không vòng đời riêng.
+  public let guides: ExerciseGuideBook?
   /// Buổi tập của hôm nay; `nil` khi hôm nay không có buổi (nghỉ / chưa lên
   /// lịch) và không có kế hoạch tự do.
   public private(set) var session: WorkoutSessionController?
@@ -58,7 +60,7 @@ public final class WorkoutFlow {
   ///   - onEnqueued: hàng outbox vừa bền — app gọi `sync.kick()`.
   public init(
     today: TodayController, records: RecordBook, performance: PerformanceBook, history: HistoryBook? = nil,
-    insights: InsightBook? = nil, library: ExerciseLibrary? = nil,
+    insights: InsightBook? = nil, library: ExerciseLibrary? = nil, guides: ExerciseGuideBook? = nil,
     store: any WorkoutStore, planStore: (any PlanWriteStore)? = nil,
     clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
     makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
@@ -71,6 +73,7 @@ public final class WorkoutFlow {
     self.history = history
     self.insights = insights
     self.library = library
+    self.guides = guides
     // Loại bài khai báo (curl là isolation, không phải e1RM) theo thư viện.
     library?.onChange = { [weak insights, weak performance] list in
       let kinds = ExerciseCatalog.declaredKinds(list)

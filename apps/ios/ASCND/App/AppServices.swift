@@ -35,6 +35,8 @@ final class AppServices {
   @ObservationIgnored let insightCache: any InsightCache
   @ObservationIgnored let exerciseSource: any ExerciseSource
   @ObservationIgnored let exerciseCache: any ExerciseCache
+  @ObservationIgnored let guideSource: any ExerciseGuideSource
+  @ObservationIgnored let guideCache: any ExerciseGuideCache
   /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
   @ObservationIgnored private let readCache: GRDBTemplateCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
@@ -80,6 +82,8 @@ final class AppServices {
     insightCache = GRDBInsightCache(database)
     exerciseSource = backend.map { SupabaseExerciseSource(backend: $0) as any ExerciseSource } ?? UnconfiguredExercises()
     exerciseCache = GRDBExerciseCache(database)
+    guideSource = backend.map { SupabaseExerciseGuideSource(backend: $0) as any ExerciseGuideSource } ?? UnconfiguredGuides()
+    guideCache = GRDBExerciseGuideCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: outboxStore,
@@ -158,6 +162,7 @@ final class AppServices {
       library: ExerciseLibrary(
         userId: userId, source: exerciseSource, cache: exerciseCache, store: outbox,
         onEnqueued: { _ in sync.kick() }),
+      guides: ExerciseGuideBook(userId: userId, source: guideSource, cache: guideCache),
       store: workouts,
       planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
@@ -220,6 +225,13 @@ private struct UnconfiguredRecords: RecordHistory {
 private struct UnconfiguredExercises: ExerciseSource {
   struct NotConfigured: Error {}
   func exercises(userId: String) async throws -> [LibraryExercise] { throw NotConfigured() }
+}
+
+private struct UnconfiguredGuides: ExerciseGuideSource {
+  struct NotConfigured: Error {}
+  func guideRows(userId: String, id: String?) async throws -> [GuideExerciseRow] { throw NotConfigured() }
+  func guideContent(exerciseId: String) async throws -> [GuideContentRow] { throw NotConfigured() }
+  func guideMedia(exerciseId: String) async throws -> [MediaRow] { throw NotConfigured() }
 }
 
 private struct UnconfiguredTemplates: TemplateSource {
