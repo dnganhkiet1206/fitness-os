@@ -1,0 +1,13 @@
+// Backend của app iOS — chỗ DUY NHẤT ghi project Supabase (giống
+// native/src/lib/backend.ts bên RN). Đổi project: sửa hai dòng dưới, hoặc tạo
+// Backend.local.xcconfig (không commit) để đè trên máy mình.
+//
+// Host chứ không phải URL: trong .xcconfig, `//` bắt đầu một chú thích, nên
+// "https://…" bị cắt còn "https:". Info.plist ghép lại thành https://$(host).
+//
+// Key là publishable / anon: được phép nằm trong app — RLS mới là thứ bảo vệ
+// dữ liệu, không phải bí mật của key này.
+ASCND_SUPABASE_HOST = guqmbqtgxqleuwajvwvg.supabase.co
+ASCND_SUPABASE_KEY = sb_publishable_HU-mMPAU34iCDOHOukYPWA_XY_Vh9nX
+
+#include? "Backend.local.xcconfig"
