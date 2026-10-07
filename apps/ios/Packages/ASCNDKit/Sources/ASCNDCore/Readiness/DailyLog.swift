@@ -52,8 +52,12 @@ public enum DailyLog {
   static func midnight(_ date: LocalDate, _ tz: TimeZone) -> EpochMillis {
     var cal = Calendar(identifier: .gregorian)
     cal.timeZone = tz
-    let d = cal.date(from: DateComponents(year: date.year, month: date.month, day: date.day, hour: 0, minute: 0))
-    return EpochMillis(d ?? TodayController.startOfDay(date, in: tz))
+    if let d = cal.date(from: DateComponents(year: date.year, month: date.month, day: date.day, hour: 0, minute: 0)) {
+      return EpochMillis(d)
+    }
+    // Lịch không dựng được ngày: nửa đêm UTC lệch theo múi (như `TodayController.startOfDay`).
+    let utc = Date(timeIntervalSince1970: TimeInterval(date.daysSinceEpoch) * 86_400)
+    return EpochMillis(utc.addingTimeInterval(-TimeInterval(tz.secondsFromGMT(for: utc))))
   }
 
   /// `new Date(s).getTime()`; không đọc được → NaN.
