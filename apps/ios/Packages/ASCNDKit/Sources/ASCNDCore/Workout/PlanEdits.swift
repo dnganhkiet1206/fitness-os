@@ -113,6 +113,11 @@ public final class PlanEditor {
     /// Không có template này trong kế hoạch của mình (đã xoá, hoặc không phải
     /// của mình). Gán vào nó thì server từ chối (FK / RLS) và lệnh vào `dead`.
     case unknownTemplate
+    /// `id` đã là của một template KHÁC nội dung (#430). Server bỏ trùng theo
+    /// `id` (`ignoreDuplicates`) nên hàng mới không bao giờ tới nơi, còn người
+    /// gọi tưởng đã có template mới — và gán ngày sẽ trỏ vào template cũ. Bản
+    /// sao phải mang id mới; gửi lại ĐÚNG nội dung cũ thì vẫn idempotent.
+    case idInUse
     /// Id này đã bị xoá khi hàng tạo của nó còn chờ gửi. Ghi lại cùng id thì
     /// hàng tạo mới bị bỏ (id hàng outbox trùng, idempotent) và server nhận
     /// "tạo bản cũ → xoá": template biến mất, bản mới mất im lặng (C42, #435).
@@ -166,6 +171,14 @@ public final class PlanEditor {
     let kind = type.trimmingCharacters(in: .whitespacesAndNewlines)
     let template = WorkoutTemplate(
       id: id, name: trimmed, exercises: exercises, type: kind.isEmpty ? PlanEdit.defaultType : kind)
+    if let existing = current()?.templates.first(where: { $0.id == id }),
+      // So qua đúng đường đọc lại (`init(json:)`): template trên server / trong
+      // lớp phủ được dựng từ JSON, gửi lại cùng nội dung phải ra bằng nhau.
+      existing.name != template.name || existing.exercises != exercises.map({ TemplateExercise(json: $0.json) })
+        || (existing.type ?? PlanEdit.defaultType) != template.type
+    {
+      throw .idInUse
+    }
     try await refuseIfDeletedWhilePending(id)
     let now = clock.nowMillis()
     var entries = [OutboxEntry(
