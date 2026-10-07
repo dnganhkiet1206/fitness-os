@@ -39,4 +39,32 @@ public struct WorkoutSummary: Sendable, Hashable {
     prDetected = record.prDetected
     self.records = records
   }
+
+  /// Init từng trường cho Preview/fixture (#279) — giá trị phải đúng những
+  /// gì `init(_ record:records:)` sẽ tính, để Preview không lệch với thật.
+  public init(
+    sessionId: String,
+    dateTime: EpochMillis,
+    templateName: String,
+    completedSets: Int,
+    warmupSets: Int,
+    holdSets: Int,
+    exerciseCount: Int,
+    volumeKg: Int,
+    sessionRpe: Int,
+    prDetected: Bool,
+    records: [PersonalRecord] = []
+  ) {
+    self.sessionId = sessionId
+    self.dateTime = dateTime
+    self.templateName = templateName
+    self.completedSets = completedSets
+    self.warmupSets = warmupSets
+    self.holdSets = holdSets
+    self.exerciseCount = exerciseCount
+    self.volumeKg = volumeKg
+    self.sessionRpe = sessionRpe
+    self.prDetected = prDetected
+    self.records = records
+  }
 }
