@@ -43,8 +43,12 @@ extension RestTimer {
 public protocol RestActivityDriver: Sendable {
   /// Activity đang hiện (nếu có) — đọc lúc mở app để đối chiếu.
   func current() async -> RestActivityContent?
-  func start(_ content: RestActivityContent) async
-  func update(_ content: RestActivityContent) async
+  /// `true` khi activity THẬT đang hiện `content` sau lời gọi. `false` khi hệ
+  /// thống từ chối (Live Activity bị tắt, app ở nền, hết hạn mức…): controller
+  /// không được coi trạng thái mong muốn là trạng thái thật (#523 P1).
+  func start(_ content: RestActivityContent) async -> Bool
+  /// Như `start`; không còn activity để cập nhật thì driver tự `start`.
+  func update(_ content: RestActivityContent) async -> Bool
   func end() async
 }
 
@@ -73,6 +77,13 @@ public final class RestTimerController {
   @ObservationIgnored public var onRestFinished: (@MainActor () -> Void)?
 
   @ObservationIgnored private var shown: RestActivityContent?
+  /// Chưa biết hệ thống đang hiện gì — hỏi `driver.current()` trước lời gọi
+  /// đầu tiên. Mặc định `true`: process có thể vừa được hệ thống khởi động ở
+  /// nền CHỈ để chạy nút ±15 (`LiveActivityIntent`), trước cả `reconcile()`.
+  @ObservationIgnored private var needsRead = true
+  /// Lần đồng bộ gần nhất hệ thống từ chối hiện activity. Đồng hồ trong app
+  /// vẫn đúng (nguồn sự thật là `timer`); chỉ Island / màn khoá không có.
+  public private(set) var activityFailed = false
   @ObservationIgnored private var syncing: Task<Void, Never>?
 
   /// - Parameters:
@@ -119,7 +130,9 @@ public final class RestTimerController {
   /// Có activity mà không còn quãng nghỉ → end (activity mồ côi, #213); có
   /// quãng nghỉ mà activity lệch hoặc mất → đưa về đúng.
   public func reconcile() async {
-    shown = await driver.current()
+    // Đọc trong vòng đồng bộ, không đọc thẳng ở đây: một vòng đang bay (nút
+    // ±15 tới trước) sẽ ghi `shown` sau khi ta đọc, và hai bên đè nhau.
+    needsRead = true
     if let t = timer, t.phase(at: clock.nowMillis()) == .over {
       timer = nil
       target = nil
@@ -149,15 +162,34 @@ public final class RestTimerController {
   private func scheduleSync() {
     guard syncing == nil else { return }  // vòng đang chạy sẽ thấy trạng thái mới
     syncing = Task { [weak self] in
-      while let self, self.shown != self.desired {
+      while let self {
+        if self.needsRead {
+          self.needsRead = false
+          self.shown = await self.driver.current()
+          continue  // trạng thái mong muốn có thể đã đổi trong lúc đọc
+        }
+        guard self.shown != self.desired else { break }
         let want = self.desired
+        let applied: Bool
         switch (self.shown, want) {
-        case (nil, let w?): await self.driver.start(w)
-        case (_?, let w?): await self.driver.update(w)
-        case (_?, nil): await self.driver.end()
-        case (nil, nil): break
+        case (nil, let w?): applied = await self.driver.start(w)
+        case (_?, let w?): applied = await self.driver.update(w)
+        case (_?, nil):
+          await self.driver.end()
+          applied = true
+        case (nil, nil): applied = true
+        }
+        // Chỉ ghi `shown` khi driver xác nhận. Hỏng thì KHÔNG coi mong muốn là
+        // thật, không quay vòng thử lại ngay (hệ thống từ chối sẽ từ chối
+        // tiếp): thoát, và sự kiện kế (±15, tick, reconcile, settle) đọc lại
+        // hệ thống trước khi thử.
+        guard applied else {
+          self.needsRead = true
+          self.activityFailed = true
+          break
         }
         self.shown = want
+        self.activityFailed = false
       }
       self?.syncing = nil
     }

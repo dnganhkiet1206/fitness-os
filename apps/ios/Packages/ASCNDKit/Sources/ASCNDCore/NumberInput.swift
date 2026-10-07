@@ -31,6 +31,25 @@ public enum NumberInput {
     stripLeadingZeros(String(String.UnicodeScalarView(raw.unicodeScalars.filter { ("0"..."9").contains($0) })))
   }
 
+  /// Chữ điền sẵn vào ô tạ, đúng `plannedLoad` của baseline
+  /// (`day-plan.tsx:1011`): tạ > 0 thì `String(Math.round(w * 10) / 10)`,
+  /// không thì chuỗi rỗng (ô trống hiện placeholder, không hiện "0").
+  /// Giữ phần lẻ: 62.5 kg là "62.5", không cắt `Int` thành "62" (#523 P2).
+  public static func plannedLoad(_ kg: Double) -> String {
+    guard kg.isFinite, kg > 0 else { return "" }
+    // JS Math.round lấy nửa lên; với số dương trùng `.toNearestOrAwayFromZero`.
+    let r = (kg * 10).rounded(.toNearestOrAwayFromZero) / 10
+    // `String(number)` của JS: số nguyên không có ".0".
+    if r == r.rounded(.towardZero), abs(r) < 1e15 { return String(Int64(r)) }
+    return String(r)
+  }
+
+  /// Chữ điền sẵn vào ô reps, đúng `plannedReps` (`day-plan.tsx:1016`):
+  /// reps > 0 thì số, không thì chuỗi rỗng.
+  public static func plannedReps(_ reps: Int) -> String {
+    reps > 0 ? String(reps) : ""
+  }
+
   /// `/^0+(?=\d)/`: cắt các số 0 đầu khi theo sau còn một chữ số.
   private static func stripLeadingZeros(_ s: String) -> String {
     var scalars = Substring(s).unicodeScalars
