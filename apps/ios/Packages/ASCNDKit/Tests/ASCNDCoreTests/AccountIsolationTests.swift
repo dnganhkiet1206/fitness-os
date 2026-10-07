@@ -25,6 +25,8 @@ private final class FakeAuth: AuthAPI, @unchecked Sendable {
   func signInWithApple(identityToken: String, rawNonce: String) async throws {}
   func resetPassword(email: String) async throws {}
   func signOut() async throws {}
+  /// #441 thêm vào `AuthAPI`; luồng phiên ở đây không đổi mật khẩu.
+  func updatePassword(_ password: String) async throws {}
 }
 
 @MainActor

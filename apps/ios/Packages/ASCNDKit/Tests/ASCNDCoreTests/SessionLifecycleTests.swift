@@ -20,6 +20,8 @@ private final class ScriptedAuth: AuthAPI, @unchecked Sendable {
   func signInWithApple(identityToken: String, rawNonce: String) async throws {}
   func resetPassword(email: String) async throws {}
   func signOut() async throws { lock.withLock { _stored = nil } }
+  /// #441 thêm vào `AuthAPI`; luồng phiên ở đây không đổi mật khẩu.
+  func updatePassword(_ password: String) async throws {}
 }
 
 private let alice = AuthSession(userId: "u-alice", email: "a@example.com")
