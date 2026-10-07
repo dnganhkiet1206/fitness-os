@@ -135,9 +135,16 @@ struct StreakReadinessView: View {
           Text(verbatim: "\(data.streakDays)")
             .font(.system(size: 34, weight: .bold, design: .rounded))
             .monospacedDigit()
-          Text("widget.streak.days \(data.streakDays)")
-            .font(.caption)
-            .foregroundStyle(.secondary)
+          Group {
+            // RN: `streakDays == 1 ? "day" : "days"` — con số đã vẽ riêng ở trên.
+            if data.streakDays == 1 {
+              Text("widget.streak.day")
+            } else {
+              Text("widget.streak.days")
+            }
+          }
+          .font(.caption)
+          .foregroundStyle(.secondary)
         }
         .accessibilityElement(children: .combine)
         if let score = data.readinessScore {
