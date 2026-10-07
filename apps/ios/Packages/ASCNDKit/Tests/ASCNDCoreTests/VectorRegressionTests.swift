@@ -27,9 +27,23 @@ struct VectorRegressionTests {
      "mô tả cờ trạng thái của day-plan.tsx (appending/canFinish/pendingReady); native cố ý khác — "
        + "nối thêm cả khi offline qua outbox, canAppend tách khỏi canFinish — và MỖI ca ghi `nativeDiffers`. "
        + "Hành vi native có test riêng: AppendToSessionTests"),
+    // Các mục dưới: CHƯA có runner Swift đọc JSON — là khoảng hở thật, ghi ở
+    // PARITY_MATRIX (#523). Hành vi đang được giữ bằng test viết tay nêu tên.
     ("template-write.json",
-     "payload ghi template/routine_days của use-library.ts; native chưa có đường ghi template "
-       + "(A22, #435 còn mở) — khi có, viết runner Swift và bỏ dòng này"),
+     "payload ghi template/routine_days của use-library.ts; đường ghi native đã có (A22 #435, `PlanEditor`) "
+       + "nhưng chưa có runner Swift đọc JSON — hành vi giữ bằng PlanEditTests"),
+    ("adhoc-exercise.json",
+     "bài thêm ngoài kế hoạch (#413); chưa có runner Swift đọc JSON — hành vi giữ bằng "
+       + "AdHocExerciseTests / AdHocPlanTests"),
+    ("remove-set-undo.json",
+     "gỡ set đã chốt + hoàn tác (#412); RN chỉ biết tên bài nên RS-1/RS-2 chọn set CUỐI cùng tên, native gỡ "
+       + "đúng hàng bị bỏ tick (`loggedKeys`) — RS-3..6 giữ bằng RemoveLoggedSetTests; chưa có runner Swift"),
+    ("today-controller.json",
+     "TC-1 `todayCta` (extra/log-free/none) CHƯA port; TC-3 khoá ngày giữ bằng WorkoutDayTests "
+       + "(DayProgressStore.key), TC-2/TC-4 bằng TodayControllerTests; chưa có runner Swift"),
+    ("workout-history.json",
+     "WH-3a (dựng lại daily_log sau khi xoá) CHƯA port (#266); WH-1/2/4 giữ bằng HistoryBookTests và "
+       + "WorkoutPipelineTests; chưa có runner Swift"),
   ]
 
   /// Tệp vector trong `spec/vectors` — trừ `runners.json`, bảng runner JS
