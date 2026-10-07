@@ -355,7 +355,7 @@ export function NeonToastHost() {
       Đặt thanh ở `insets.bottom + 8` là đặt nó sau lưng thanh tab.
 
       `BottomTabInset` là con số app đã có sẵn cho đúng câu hỏi ấy, và
-      `koa-companion.tsx` đã dùng nó cho đúng việc ấy: một vật nổi phải đứng
+      `koa-companion.tsx` (đã xoá ở #239) đã dùng nó cho đúng việc ấy: một vật nổi phải đứng
       trên thanh tab. Chú thích của chính hằng ấy nói vì sao nó rộng rãi: "being
       a little generous costs a few points of scroll where being short hides the
       last card behind the bar" — ở đây cái giá của việc thiếu còn nặng hơn, vì
