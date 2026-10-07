@@ -32,6 +32,20 @@ public final class AccountScope: @unchecked Sendable {
   public func signIn(_ userId: String) { lock.withLock { state = .signedIn(userId.lowercased()) } }
   public func signOut() { lock.withLock { state = .signedOut } }
 
+  /// Chủ của hàng `workout_day` cũ (trước v4) — không tài khoản nào trùng.
+  public static let legacyOwner = "#legacy"
+
+  /// Chủ của dữ liệu theo người dùng lúc này: người đang đăng nhập; `""` khi
+  /// chưa ai đặt chốt (công cụ / test); `nil` khi không ai đăng nhập — đọc
+  /// không thấy gì, ghi bị từ chối.
+  public var owner: String? {
+    switch current {
+    case .unrestricted: ""
+    case .signedIn(let who): who
+    case .signedOut: nil
+    }
+  }
+
   /// Hàng của `userId` có được đọc / ghi lúc này không.
   public func allows(_ userId: String) -> Bool {
     let id = userId.lowercased()
