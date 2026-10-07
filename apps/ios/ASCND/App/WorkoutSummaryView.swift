@@ -114,6 +114,7 @@ public struct WorkoutSummaryView: View {
         // Empty: chưa có set nào (#305).
         if sets.isEmpty {
           DSEmptyState(
+            systemImage: "list.bullet.clipboard",
             title: String(localized: "summary.empty.title"),
             message: String(localized: "summary.empty.message")
           )
@@ -135,7 +136,9 @@ public struct WorkoutSummaryView: View {
                 }
                 .opacity(s.warmup ? 0.5 : 1)
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel(Text("\(group.name), \(setLabel(s))"))
+                // Dữ liệu ghép, không phải câu dịch: `verbatim`, không tra
+                // xcstrings bằng khoá "%@, %@".
+                .accessibilityLabel(Text(verbatim: "\(group.name), \(setLabel(s))"))
               }
             }
           }
@@ -161,7 +164,8 @@ public struct WorkoutSummaryView: View {
       return "\(secs)s"
     }
     if let w = s.weightKg, w > 0 {
-      return "\(String(format: "%g", w)) kg × \(s.reps)"
+      // Cùng cách hiện mức tạ như màn tập (RN `plannedLoad`: một chữ số lẻ).
+      return "\(NumberInput.plannedLoad(w)) kg × \(s.reps)"
     }
     return "× \(s.reps)"
   }
@@ -222,35 +226,35 @@ extension WorkoutSummaryView {
 
 #Preview("Light") {
   NavigationStack {
-    WorkoutSummaryView(summary: .sampleSummary, sets: .sampleSets)
+    WorkoutSummaryView(summary: WorkoutSummaryView.sampleSummary, sets: WorkoutSummaryView.sampleSets)
   }
   .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
   NavigationStack {
-    WorkoutSummaryView(summary: .sampleSummary, sets: .sampleSets)
+    WorkoutSummaryView(summary: WorkoutSummaryView.sampleSummary, sets: WorkoutSummaryView.sampleSets)
   }
   .preferredColorScheme(.dark)
 }
 
 #Preview("PR detected") {
   NavigationStack {
-    WorkoutSummaryView(summary: .prSummary, sets: .sampleSets) {}
+    WorkoutSummaryView(summary: WorkoutSummaryView.prSummary, sets: WorkoutSummaryView.sampleSets) {}
   }
   .preferredColorScheme(.light)
 }
 
 #Preview("Empty") {
   NavigationStack {
-    WorkoutSummaryView(summary: .emptySummary, sets: []) {}
+    WorkoutSummaryView(summary: WorkoutSummaryView.emptySummary, sets: []) {}
   }
   .preferredColorScheme(.light)
 }
 
 #Preview("Dynamic Type XXL") {
   NavigationStack {
-    WorkoutSummaryView(summary: .sampleSummary, sets: .sampleSets) {}
+    WorkoutSummaryView(summary: WorkoutSummaryView.sampleSummary, sets: WorkoutSummaryView.sampleSets) {}
   }
   .dynamicTypeSize(.accessibility3)
 }
