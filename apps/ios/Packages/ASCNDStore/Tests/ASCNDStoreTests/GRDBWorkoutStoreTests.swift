@@ -359,3 +359,20 @@ struct GRDBPerformanceCacheTests {
     #expect(try await cache.load(userId: "u2") == nil)
   }
 }
+
+struct GRDBInsightCacheTests {
+  @Test func roundTripPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBInsightCache(db)
+    let snap = InsightSnapshot(
+      rows: [SessionHistoryRow(id: "s1", at: EpochMillis(1_791_183_600_000), sets: .array([
+        .object(["exerciseName": .string("Bench"), "weight": .number(82.5), "reps": .number(5)]),
+      ]))],
+      weighIns: [WeighIn(date: LocalDate("2026-10-01")!, kg: 71.2)])
+    try await cache.save(userId: "u1", snap)
+    #expect(try await cache.load(userId: "u1") == snap)
+    #expect(try await cache.load(userId: "u2") == nil)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await cache.load(userId: "u1") == nil, "đăng nhập người khác dọn cả phân tích")
+  }
+}

@@ -95,6 +95,9 @@ private struct LabSession: View {
         LabPlan(today: today, editor: editor)
       }
       LabManualLog(flow: flow)
+      if let insights = flow.insights {
+        LabInsights(book: insights)
+      }
     }
     .onChange(of: useSample) { _, on in
       Task {
@@ -385,6 +388,30 @@ private struct LabPlan: View {
       } catch {
         self.error = "\(error)"
       }
+    }
+  }
+}
+
+/// Phân tích bài tập (#419): đúng thứ tự và các con số C sẽ vẽ — không phải
+/// màn của C, chỉ để đối chiếu với app RN trên cùng tài khoản.
+private struct LabInsights: View {
+  let book: InsightBook
+
+  var body: some View {
+    Section {
+      if let f = book.failure {
+        LabRow(label: "Insights refresh failed", value: "\(f)").foregroundStyle(.orange)
+      }
+      ForEach(book.insights) { i in
+        LabRow(
+          label: "\(i.exerciseName) · \(i.kind.rawValue)",
+          value: "\(i.trend.rawValue) · \(i.readiness.rawValue) · \(i.confidence.rawValue) · \(i.sessions) buổi"
+            + (i.bestE1rmKg.map { " · e1RM \($0.formatted())" } ?? "")
+            + (i.changePct.map { " · \(($0 * 100).formatted(.number.precision(.fractionLength(1))))%" } ?? "")
+            + (i.stale ? " · stale" : ""))
+      }
+    } header: {
+      Text(verbatim: "Insights (90 days) — \(book.insights.count)")
     }
   }
 }
