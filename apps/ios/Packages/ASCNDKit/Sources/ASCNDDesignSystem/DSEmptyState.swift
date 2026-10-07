@@ -28,20 +28,26 @@ public struct DSEmptyState: View {
 
   public var body: some View {
     VStack(spacing: DS.Spacing.md) {
-      Image(systemName: systemImage)
-        .font(.system(size: 48))
-        .foregroundStyle(DS.Color.mutedForeground.swiftUI)
-        .accessibilityHidden(true)
-      Text(title)
-        .font(DS.TextStyle.title2)
-        .foregroundStyle(DS.Color.foreground.swiftUI)
-        .multilineTextAlignment(.center)
-      if let message {
-        Text(message)
-          .font(DS.TextStyle.body)
+      // Chữ gộp thành một phần tử đọc; nút action (nếu có) giữ riêng để
+      // VoiceOver vẫn bấm được — `.combine` cả VStack sẽ nuốt nút.
+      VStack(spacing: DS.Spacing.md) {
+        Image(systemName: systemImage)
+          .font(.system(size: 48))
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .accessibilityHidden(true)
+        Text(title)
+          .font(DS.TextStyle.title2)
+          .foregroundStyle(DS.Color.foreground.swiftUI)
           .multilineTextAlignment(.center)
+        if let message {
+          Text(message)
+            .font(DS.TextStyle.body)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .multilineTextAlignment(.center)
+        }
       }
+      .accessibilityElement(children: .combine)
+
       if let actionTitle, let action {
         DSButton(actionTitle, style: .primary, action: action)
           .padding(.top, DS.Spacing.sm)
@@ -49,7 +55,6 @@ public struct DSEmptyState: View {
     }
     .padding(DS.Spacing.xl)
     .frame(maxWidth: .infinity, maxHeight: .infinity)
-    .accessibilityElement(children: .combine)
   }
 }
 

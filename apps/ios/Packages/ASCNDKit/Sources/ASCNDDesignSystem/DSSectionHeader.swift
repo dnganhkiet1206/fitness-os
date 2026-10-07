@@ -16,6 +16,8 @@ public struct DSSectionHeader: View {
   }
 
   public var body: some View {
+    // Không `.combine`: tiêu đề (header) và nút action là hai phần tử riêng
+    // để VoiceOver đọc đúng vai và bấm được nút.
     HStack {
       Text(title)
         .font(DS.TextStyle.title2)
@@ -31,7 +33,6 @@ public struct DSSectionHeader: View {
           .accessibilityAddTraits(.isButton)
       }
     }
-    .accessibilityElement(children: .combine)
   }
 }
 
