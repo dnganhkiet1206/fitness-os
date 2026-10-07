@@ -3,7 +3,7 @@
 // Ba kiểu: primary (hành động chính), secondary (hành động phụ),
 // destructive (hành động huỷ bỏ). Vùng chạm ≥ 44pt theo HIG.
 #if canImport(SwiftUI)
-import SwiftUI
+public import SwiftUI
 
 /// Kiểu nút trong design system.
 public enum DSButtonStyle {
@@ -16,6 +16,8 @@ public struct DSButton: View {
   let title: String
   let style: DSButtonStyle
   let action: () -> Void
+  /// Trạng thái disabled — View cha truyền vào qua `.disabled()`.
+  @Environment(\.isEnabled) private var isEnabled
 
   public init(_ title: String, style: DSButtonStyle = .primary, action: @escaping () -> Void) {
     self.title = title
@@ -32,7 +34,10 @@ public struct DSButton: View {
         .background(backgroundColor.swiftUI)
         .foregroundStyle(foregroundColor.swiftUI)
         .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+        // Disabled: mờ đi (#304).
+        .opacity(isEnabled ? 1.0 : 0.5)
     }
+    .buttonStyle(DSButtonPressStyle())
     .accessibilityLabel(Text(title))
     .accessibilityAddTraits(.isButton)
   }
@@ -51,6 +56,15 @@ public struct DSButton: View {
     case .secondary: DS.Color.foreground
     case .destructive: DS.Color.destructiveForeground
     }
+  }
+}
+
+/// Pressed state: scale nhẹ khi chạm (#304).
+private struct DSButtonPressStyle: ButtonStyle {
+  func makeBody(configuration: Configuration) -> some View {
+    configuration.label
+      .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+      .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
   }
 }
 

@@ -27,6 +27,10 @@ settings:
 packages:
   ASCNDKit:
     path: Packages/ASCNDKit
+  ASCNDBackend:
+    path: Packages/ASCNDBackend
+  ASCNDStore:
+    path: Packages/ASCNDStore
 
 targets:
   ASCND:
@@ -45,6 +49,16 @@ targets:
         product: ASCNDCore
       - package: ASCNDKit
         product: ASCNDDesignSystem
+      - package: ASCNDBackend
+        product: ASCNDBackend
+      - package: ASCNDStore
+        product: ASCNDStore
+      - package: ASCNDKit
+        product: ASCNDLiveActivity
+      - target: ASCNDWidgets
+    configFiles:
+      Debug: Config/Backend.xcconfig
+      Release: Config/Backend.xcconfig
     info:
       path: ASCND/Info.plist
       properties:
@@ -56,6 +70,14 @@ targets:
           UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+        # Điền từ Config/Backend.xcconfig — chỗ duy nhất ghi project Supabase.
+        # Link trong email xác nhận / đặt lại mật khẩu quay về app (như bản RN).
+        CFBundleURLTypes:
+          - CFBundleURLName: com.ascnd.fitnessos
+            CFBundleURLSchemes: [ascnd]
+        ASCNDSupabaseURL: https://$(ASCND_SUPABASE_HOST)
+        ASCNDSupabaseKey: $(ASCND_SUPABASE_KEY)
+        NSSupportsLiveActivities: true
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
@@ -69,6 +91,30 @@ targets:
         Release:
           PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos
           APP_DISPLAY_NAME: ASCND
+
+  # Widget extension: Live Activity / Dynamic Island của quãng nghỉ (#227).
+  ASCNDWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ASCNDWidgets
+    dependencies:
+      - package: ASCNDKit
+        product: ASCNDCore
+      - package: ASCNDKit
+        product: ASCNDLiveActivity
+    info:
+      path: ASCNDWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: ASCND
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.dev.widgets
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos.widgets
 
 schemes:
   ASCND:
