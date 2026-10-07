@@ -269,5 +269,23 @@
     "nativeDiffers": "Native: idempotency theo id buổi (GRDBWorkoutStore.commitFinish) — cùng nguyên tắc, khác tầng.",
     "rule": "AP-2e",
     "trace": "use-fitness-data.ts: .update(...).eq('id', sessionId) + confirmWrite"
+  },
+  {
+    "desc": "Đang chốt (log.isPending) → nút tắt, chống double-submit",
+    "expected": {
+      "appending": false,
+      "canFinish": false,
+      "pendingReady": false
+    },
+    "input": {
+      "doneCount": 2,
+      "future": false,
+      "logged": false,
+      "logIsPending": true,
+      "pendingRows": []
+    },
+    "nativeDiffers": "Native: giống RN.",
+    "rule": "AP-1d-regression",
+    "trace": "day-plan.tsx:1330-1332 — thiếu !log.isPending là bug (fix bởi C audit)"
   }
 ]

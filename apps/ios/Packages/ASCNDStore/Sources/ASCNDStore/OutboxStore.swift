@@ -111,3 +111,22 @@ public final class OutboxStore: Sendable {
 /// `SyncWorker` (ASCNDCore) đọc và ghi hàng đợi qua đây. Các hàm đồng bộ của
 /// GRDB thoả yêu cầu `async` của giao thức; worker gọi chúng ngoài main actor.
 extension OutboxStore: OutboxPersistence {}
+
+/// Lệnh sửa kế hoạch (#401): nhiều hàng một giao dịch — tạo template và gán
+/// ngày cùng bền hoặc cùng không, đúng thứ tự `seq`.
+extension OutboxStore: PlanWriteStore {
+  public func enqueue(_ entries: [OutboxEntry]) throws {
+    let rows = try entries.map { ($0, try Self.json($0)) }
+    try db.write { db in
+      for (e, json) in rows {
+        try db.execute(
+          sql: "INSERT OR IGNORE INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
+          arguments: [e.id, e.userId, json])
+      }
+    }
+  }
+
+  public func pending(userId: String) throws -> [OutboxEntry] {
+    try load().pending.filter { $0.userId == userId }
+  }
+}

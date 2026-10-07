@@ -136,6 +136,17 @@ public final class WorkoutSessionController {
   /// hình nói "Không đọc được buổi đã lưu" và cho thử lại; mọi thao tác ghi bị
   /// từ chối cho tới khi đọc được.
   public private(set) var loadFailed = false
+  /// Template của buổi đã bị xoá khi buổi còn mở (#401). Buổi vẫn tập / chốt /
+  /// nối thêm bình thường, nhưng hàng ghi lên KHÔNG trỏ vào nó nữa.
+  ///
+  /// RN BUG FOUND: xoá template (`templates.tsx`) trong lúc màn ngày tập của
+  /// nó còn mở, rồi chốt → `insert workout_sessions` mang `template_id` của
+  /// hàng đã mất → 23503 (FK) / RLS "Session points at own template" → lỗi
+  /// vĩnh viễn; bản offline vào thẳng `dead`. Mất cả buổi tập.
+  /// NATIVE FIX: buổi chốt sau khi template bị xoá ghi `template_id = null` —
+  /// đúng thứ server tự làm với buổi chốt TRƯỚC đó (`ON DELETE SET NULL`).
+  /// (test `deletedTemplateDetachesTheOpenSession`.)
+  public private(set) var templateDetached = false
   /// Lần ghi máy gần nhất hỏng: những gì trên màn CHƯA bền.
   public private(set) var unsaved: LocalWriteError?
   /// Tổng kết của lần chốt trong phiên này (màn Tổng kết của C đọc nó).
@@ -322,7 +333,7 @@ public final class WorkoutSessionController {
       id: id, userId: userId,
       dateTime: WorkoutSessionRecord.stamp(
         for: plan.date, today: LocalDate(now, in: timeZone), now: now, timeZone: timeZone),
-      templateId: plan.templateId, templateName: plan.templateName,
+      templateId: recordTemplateId, templateName: plan.templateName,
       sets: WorkoutDay.sessionSets(rows, progress, toKg: toKg))
     else { throw .nothingDone }
     // Kỷ lục: so với lịch sử TRƯỚC buổi này (`use-fitness-data.ts:350`), một
@@ -535,6 +546,14 @@ public final class WorkoutSessionController {
     summary = outcome.record.map { WorkoutSummary($0, records: []) }
   }
 
+  /// Template đã bị xoá trên máy này (lệnh xoá đã bền). Không phải template
+  /// của buổi thì không làm gì.
+  public func templateDeleted(_ id: String) {
+    if plan.templateId?.lowercased() == id.lowercased() { templateDetached = true }
+  }
+
+  private var recordTemplateId: String? { templateDetached ? nil : plan.templateId }
+
   private struct Revised {
     /// `nil` = không còn set nào: hàng buổi bị xoá.
     let record: WorkoutSessionRecord?
@@ -554,7 +573,7 @@ public final class WorkoutSessionController {
     let kept = rows.filter { keys.contains($0.key) && progress.done[$0.key] == true }
     let stamp = loggedAt ?? clock.nowMillis()
     let record = WorkoutSessionRecord(
-      id: sessionId, userId: userId, dateTime: stamp, templateId: plan.templateId,
+      id: sessionId, userId: userId, dateTime: stamp, templateId: recordTemplateId,
       templateName: plan.templateName, sets: WorkoutDay.sessionSets(kept, progress, toKg: toKg),
       prDetected: pr, sessionRpeFloor: loggedRpe)
     let revision = loggedRevision + 1
@@ -565,7 +584,7 @@ public final class WorkoutSessionController {
     var before = progress
     for k in loggedKeys { before.done[k] = true }
     let base = WorkoutSessionRecord(
-      id: sessionId, userId: userId, dateTime: stamp, templateId: plan.templateId,
+      id: sessionId, userId: userId, dateTime: stamp, templateId: recordTemplateId,
       templateName: plan.templateName,
       sets: WorkoutDay.sessionSets(rows.filter { loggedKeys.contains($0.key) }, before, toKg: toKg)
     )?.row["sets"] ?? .array([])

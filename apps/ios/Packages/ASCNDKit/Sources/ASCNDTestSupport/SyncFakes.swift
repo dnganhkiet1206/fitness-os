@@ -37,6 +37,13 @@ public actor FakeServer: RemoteWriter {
   /// gộp lên hàng hiện có, không có (bản cũ) thì ghi đè cả hàng — đúng như
   /// `SupabaseRemoteWriter`.
   public private(set) var table: [String: JSONValue] = [:]
+  /// `workout_templates` / `routine_days` (#401), theo id / `day_of_week`.
+  /// Khoá ngoại như Postgres: gán ngày vào template không có là 23503; xoá
+  /// template xoá các ngày trỏ vào nó (`ON DELETE CASCADE`) và gỡ nó khỏi các
+  /// buổi (`ON DELETE SET NULL`); buổi MỚI trỏ vào template đã xoá là 23503.
+  public private(set) var templates: [String: JSONValue] = [:]
+  public private(set) var routine: [Int: JSONValue] = [:]
+  private var deletedTemplates: Set<String> = []
   /// Mọi lần gửi, theo thứ tự — kể cả gửi lại.
   public private(set) var attempts: [String] = []
   private var script: [String: [Reply]] = [:]
@@ -50,10 +57,12 @@ public actor FakeServer: RemoteWriter {
     let reply = script[entry.id]?.isEmpty == false ? script[entry.id]!.removeFirst() : .ok
     switch reply {
     case .ok:
+      try check(entry)
       apply(entry)
     case .fail(let f):
       throw f
     case .lostResponse:
+      try check(entry)
       apply(entry)
       throw .offline
     }
@@ -62,8 +71,45 @@ public actor FakeServer: RemoteWriter {
   /// Một máy KHÁC ghi thẳng vào bảng (`nil` = xoá hàng) — dựng cảnh nhiều máy.
   public func externalWrite(_ rowId: String, _ row: JSONValue?) { table[rowId] = row }
 
+  private func check(_ entry: OutboxEntry) throws(WriteFailure) {
+    let target = entry.payload["template_id"]?.stringValue
+    switch entry.kind {
+    case PlanEdit.routineDayKind:
+      if let target, templates[target] == nil { throw .server(code: "23503") }
+    case WorkoutSessionRecord.revisionKind
+    where entry.base != nil && entry.payload["id"]?.stringValue.flatMap({ table[$0] }) != nil:
+      // Bản ghi lại có `base` chỉ `update` các cột set của hàng có sẵn
+      // (`sendMerged`), không ghi `template_id` — khoá ngoại không xét.
+      break
+    case WorkoutSessionRecord.outboxKind, WorkoutSessionRecord.revisionKind:
+      if let target, deletedTemplates.contains(target) { throw .server(code: "23503") }
+    default:
+      break
+    }
+  }
+
   private func apply(_ entry: OutboxEntry) {
     if rows[entry.id] == nil { rows[entry.id] = entry }
+    switch entry.kind {
+    case PlanEdit.templateKind:
+      if let id = entry.payload["id"]?.stringValue, templates[id] == nil { templates[id] = entry.payload }
+      return
+    case PlanEdit.templateDeleteKind:
+      guard let id = entry.payload["id"]?.stringValue, templates.removeValue(forKey: id) != nil else { return }
+      deletedTemplates.insert(id)
+      routine = routine.filter { $0.value["template_id"]?.stringValue != id }
+      for (k, row) in table where row["template_id"]?.stringValue == id {
+        guard case .object(var o) = row else { continue }
+        o["template_id"] = .null
+        table[k] = .object(o)
+      }
+      return
+    case PlanEdit.routineDayKind:
+      if let day = entry.payload["day_of_week"]?.intValue { routine[day] = entry.payload }
+      return
+    default:
+      break
+    }
     guard let rowId = entry.payload["id"]?.stringValue else { return }
     let revises = entry.kind == WorkoutSessionRecord.revisionKind || entry.kind == WorkoutSessionRecord.deleteKind
     if revises, let base = entry.base {
