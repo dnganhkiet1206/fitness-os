@@ -99,7 +99,7 @@ struct RemoteWriterClassifyTests {
     #expect(SupabaseRemoteWriter.tables[PlanEdit.templateKind] == "workout_templates")
     #expect(SupabaseRemoteWriter.tables[PlanEdit.templateDeleteKind] == "workout_templates")
     #expect(SupabaseRemoteWriter.tables[PlanEdit.routineDayKind] == "routine_days")
-    #expect(SupabaseRemoteWriter.isRow(e("t1", PlanEdit.templateKind, .object(["id": .string("t1")]))))
+    #expect(SupabaseRemoteWriter.isRow(e("t1", PlanEdit.templateKind, .object(["id": .string("t1"), "user_id": .string("u1")]))))
     #expect(!SupabaseRemoteWriter.overwrites(PlanEdit.templateKind))
     #expect(SupabaseRemoteWriter.isRow(e("t1@del-x", PlanEdit.templateDeleteKind, .object(["id": .string("t1")]))))
     #expect(!SupabaseRemoteWriter.isRow(e("t1", PlanEdit.templateDeleteKind, .object(["id": .string("t1")]))))
@@ -111,6 +111,25 @@ struct RemoteWriterClassifyTests {
     #expect(!SupabaseRemoteWriter.isRow(day(7, "u1")))
     #expect(!SupabaseRemoteWriter.isRow(day(1.5, "u1")))
     #expect(!SupabaseRemoteWriter.isRow(day(0, "u2")), "kế hoạch của người khác")
+  }
+
+  /// #421: thêm bài theo id (bỏ trùng), chỉ cho chính chủ; xoá theo
+  /// `"<bài>@del-…"` + `user_id`.
+  @Test func exerciseEditsTargetExercises() {
+    func e(_ id: String, _ kind: String, _ payload: JSONValue) -> OutboxEntry {
+      OutboxEntry(id: id, userId: "u1", kind: kind, payload: payload, createdAt: EpochMillis(0))
+    }
+    #expect(SupabaseRemoteWriter.tables[ExerciseEdit.createKind] == "exercises")
+    #expect(SupabaseRemoteWriter.tables[ExerciseEdit.deleteKind] == "exercises")
+    #expect(SupabaseRemoteWriter.isRow(e("x1", ExerciseEdit.createKind, .object(["id": .string("x1"), "user_id": .string("U1")]))))
+    #expect(!SupabaseRemoteWriter.isRow(e("x1", ExerciseEdit.createKind, .object(["id": .string("x1"), "user_id": .string("u2")]))))
+    #expect(!SupabaseRemoteWriter.isRow(e("x1", ExerciseEdit.createKind, .object(["id": .string("x1")]))))
+    #expect(!SupabaseRemoteWriter.overwrites(ExerciseEdit.createKind))
+    #expect(SupabaseRemoteWriter.isRow(e("x1@del-a", ExerciseEdit.deleteKind, .object(["id": .string("x1")]))))
+    #expect(!SupabaseRemoteWriter.isRow(e("x1", ExerciseEdit.deleteKind, .object(["id": .string("x1")]))))
+    #expect(SupabaseRemoteWriter.deletes(ExerciseEdit.deleteKind))
+    // Template cũng phải là của chủ bản ghi.
+    #expect(!SupabaseRemoteWriter.isRow(e("t1", PlanEdit.templateKind, .object(["id": .string("t1"), "user_id": .string("u2")]))))
   }
 
   @Test func workoutGoesToWorkoutSessions() {

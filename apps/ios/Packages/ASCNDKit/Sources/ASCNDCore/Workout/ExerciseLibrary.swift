@@ -200,6 +200,89 @@ public enum ExerciseCatalog {
   }
 }
 
+/// Thiết bị (`lib/equipment.ts`): năm khoá, bí danh khớp NGUYÊN chữ (không
+/// bao giờ khớp một phần — "db" là tạ đơn chỉ khi đứng một mình).
+public enum Equipment: String, Sendable, Hashable, Codable, CaseIterable {
+  case barbell, bodyweight, cable, dumbbell, machine
+
+  static let aliases: [String: Equipment] = [
+    "barbell": .barbell, "bodyweight": .bodyweight, "body weight": .bodyweight, "cable": .cable,
+    "dumbbell": .dumbbell, "dumbbells": .dumbbell, "db": .dumbbell, "machine": .machine,
+  ]
+
+  static func fold(_ s: String) -> String {
+    s.lowercased().split(whereSeparator: \.isWhitespace).joined(separator: " ")
+  }
+
+  /// `canonicalEquipment`.
+  public static func canonical(_ raw: String?) -> Equipment? {
+    let f = fold(raw ?? "")
+    return f.isEmpty ? nil : aliases[f]
+  }
+
+  public func label(_ lang: MuscleGroup.Language) -> String {
+    switch (self, lang) {
+    case (.barbell, .vi): "Tạ đòn"
+    case (.barbell, .en): "Barbell"
+    case (.barbell, .es): "Barra"
+    case (.bodyweight, .vi): "Không tạ"
+    case (.bodyweight, .en): "Bodyweight"
+    case (.bodyweight, .es): "Peso corporal"
+    case (.cable, .vi): "Cáp"
+    case (.cable, .en): "Cable"
+    case (.cable, .es): "Cable"
+    case (.dumbbell, .vi): "Tạ đơn"
+    case (.dumbbell, .en): "Dumbbell"
+    case (.dumbbell, .es): "Mancuerna"
+    case (.machine, .vi): "Máy tập"
+    case (.machine, .en): "Machine"
+    case (.machine, .es): "Máquina"
+    }
+  }
+
+  /// `equipmentLabel`: nhãn theo ngôn ngữ, không nhận ra thì chữ gốc (cắt).
+  public static func label(_ stored: String?, _ lang: MuscleGroup.Language) -> String {
+    canonical(stored)?.label(lang) ?? (stored ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+}
+
+/// Ghi thư viện bài tập (#421) — `useAddExercise` / `useDeleteExercise`
+/// (`use-library.ts:224`, `:241`).
+public enum ExerciseEdit {
+  /// Thêm bài: `insert` theo `id` máy sinh, bỏ trùng — phát lại là một hàng.
+  public static let createKind = "exercise"
+  /// Xoá bài: `delete` theo `id` + `user_id`; id hàng outbox `"<bài>@del-<op>"`.
+  public static let deleteKind = "exercise-delete"
+  public static let kinds: Set<String> = [createKind, deleteKind]
+}
+
+extension ExerciseCatalog {
+  /// Danh sách sau khi các lệnh chưa tới server được áp lên, theo thứ tự — làm
+  /// đúng việc server làm, nên áp lại lệnh đã nhận không đổi gì:
+  /// - thêm: id đã có thì giữ bản của server (`ignoreDuplicates`); bài mới
+  ///   đứng cuối tới lần làm mới sau (server mới xếp theo nhóm, tên);
+  /// - xoá: chỉ xoá bài CỦA người ra lệnh (`.eq('user_id', …)` + RLS) — bài
+  ///   mẫu và bài của người khác không bao giờ biến mất vì một lệnh xoá.
+  public static func applying(_ list: [LibraryExercise], _ entries: [OutboxEntry]) -> [LibraryExercise] {
+    var out = list
+    for e in entries {
+      guard let id = e.payload["id"]?.stringValue?.lowercased() else { continue }
+      switch e.kind {
+      case ExerciseEdit.createKind:
+        guard !out.contains(where: { $0.id == id }), let name = e.payload["name"]?.stringValue else { continue }
+        out.append(LibraryExercise(
+          id: id, userId: e.userId, name: name, muscleGroup: e.payload["muscle_group"]?.stringValue,
+          equipment: e.payload["equipment"]?.stringValue, kind: e.payload["exercise_kind"]?.stringValue))
+      case ExerciseEdit.deleteKind:
+        out.removeAll { $0.id == id && $0.userId?.lowercased() == e.userId.lowercased() }
+      default:
+        continue
+      }
+    }
+    return out
+  }
+}
+
 /// Đọc thư viện từ server (`ASCNDBackend.SupabaseExerciseSource`).
 public protocol ExerciseSource: Sendable {
   func exercises(userId: String) async throws -> [LibraryExercise]
@@ -213,12 +296,29 @@ public protocol ExerciseCache: Sendable {
 /// Thư viện bài tập, local-first — cùng mẫu với `HistoryBook`.
 ///
 /// RN behavior: đọc mỗi lần mở màn (cache của React Query); offline lần đầu
-///   thì không có bài nào để chọn.
+///   thì không có bài nào để chọn; thêm / xoá chỉ chạy online.
 /// Native behavior: bản trên máy hiện ngay, kể cả offline; theo người dùng.
+///   Thêm / xoá (#421) đi qua outbox — chạy cả offline, idempotent — và danh
+///   sách = bản server ⊕ lệnh chưa gửi (cùng cách `TodayController.library`).
 @MainActor @Observable
 public final class ExerciseLibrary {
+  public enum Refusal: Error, Sendable, Hashable {
+    /// Tên rỗng sau khi cắt (`if (!name.trim()) return`, `exercises.tsx:116`).
+    case emptyName
+    /// `exercise_kind` ngoài bốn giá trị CHECK của server.
+    case invalidKind
+    case notFound
+    /// Bài mẫu hay bài của người khác: màn chỉ hiện nút xoá cho bài của mình
+    /// (`exercises.tsx:326`), server lọc `user_id` + RLS.
+    case notOwn
+    /// App không đưa chỗ ghi.
+    case readOnly
+    case storage(LocalWriteError)
+  }
+
   public let userId: String
-  /// Thứ tự của server (`muscle_group`, `name`).
+  /// Bản server ⊕ lệnh chưa gửi; thứ tự của server (`muscle_group`, `name`),
+  /// bài vừa thêm ở cuối.
   public private(set) var exercises: [LibraryExercise] = []
   public private(set) var loaded = false
   public private(set) var failure: TodayController.RefreshFailure?
@@ -228,40 +328,151 @@ public final class ExerciseLibrary {
 
   @ObservationIgnored private let source: any ExerciseSource
   @ObservationIgnored private let cache: any ExerciseCache
+  @ObservationIgnored private let store: (any PlanWriteStore)?
+  @ObservationIgnored private let clock: any WallClock
+  @ObservationIgnored private let makeId: @Sendable () -> String
+  @ObservationIgnored private let onEnqueued: @MainActor (OutboxEntry) -> Void
+  @ObservationIgnored private var server: [LibraryExercise] = []
+  @ObservationIgnored private var edits: [(seq: Int, entry: OutboxEntry)] = []
+  @ObservationIgnored private var editSeq = 0
 
-  public init(userId: String, source: any ExerciseSource, cache: any ExerciseCache) {
+  /// - Parameters:
+  ///   - store: nơi ghi lệnh (outbox); `nil` = chỉ đọc.
+  ///   - onEnqueued: hàng vừa bền — app gọi `sync.kick()`.
+  public init(
+    userId: String, source: any ExerciseSource, cache: any ExerciseCache, store: (any PlanWriteStore)? = nil,
+    clock: any WallClock = SystemWallClock(),
+    makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
+    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
+  ) {
     self.userId = userId
     self.source = source
     self.cache = cache
+    self.store = store
+    self.clock = clock
+    self.makeId = makeId
+    self.onEnqueued = onEnqueued
   }
 
-  public func exercise(id: String) -> LibraryExercise? { exercises.first { $0.id == id } }
+  public func exercise(id: String) -> LibraryExercise? { exercises.first { $0.id == id.lowercased() } }
 
   public var declaredKinds: [String: String] { ExerciseCatalog.declaredKinds(exercises) }
 
   public func load() async {
+    let mark = editSeq
+    let pending = await pendingEdits()
     if !loaded, let cached = try? await cache.load(userId: userId) {
-      set(cached)
+      server = cached
+      loaded = true
     }
+    if let pending { merge(pending, since: mark, replacing: false) }
+    if loaded || !edits.isEmpty { publish() }
     await refresh()
   }
 
+  /// Đọc lệnh chưa gửi TRƯỚC khi hỏi server (xem `TodayController.refreshNow`).
   public func refresh() async {
+    let mark = editSeq
+    let pending = await pendingEdits()
     do {
       let fresh = try await source.exercises(userId: userId)
       // RLS đã lọc; lọc lại để cache không bao giờ giữ bài riêng của người khác.
-      set(fresh.filter { $0.userId == nil || $0.userId == userId })
+      var seen = Set<String>()
+      server = fresh.filter { ($0.userId == nil || $0.userId == userId) && seen.insert($0.id).inserted }
+      loaded = true
       failure = nil
-      try? await cache.save(userId: userId, exercises)
+      if let pending { merge(pending, since: mark, replacing: true) }
+      try? await cache.save(userId: userId, server)
     } catch {
       failure = TodayController.failure([error])
+      if let pending { merge(pending, since: mark, replacing: false) }
     }
+    publish()
   }
 
-  private func set(_ list: [LibraryExercise]) {
+  // MARK: - Ghi (#421)
+
+  /// Id cho một bài sắp thêm: form giữ nó, bấm Thêm lại là MỘT bài.
+  public func newExerciseId() -> String { makeId() }
+
+  /// Thêm bài của mình (`useAddExercise`): nhóm cơ và thiết bị lưu KHOÁ khi
+  /// nhận ra (`canonicalMuscleGroup(g) ?? g`, `canonicalEquipment(e) ?? e`),
+  /// thiết bị trống thì bỏ trường; loại bài chỉ gửi khi người dùng chọn — mặc
+  /// định là một lời khẳng định không ai nói ra.
+  @discardableResult
+  public func create(
+    id: String, name: String, muscleGroup: String, equipment: String = "", kind: ExerciseKind? = nil
+  ) async throws(Refusal) -> LibraryExercise {
+    guard let store else { throw .readOnly }
+    let id = id.lowercased()
+    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !trimmed.isEmpty else { throw .emptyName }
+    let group = MuscleGroup.canonical(muscleGroup) ?? muscleGroup
+    let gear = Equipment.canonical(equipment)?.rawValue ?? equipment.trimmingCharacters(in: .whitespacesAndNewlines)
+    var payload: [String: JSONValue] = [
+      "id": .string(id), "user_id": .string(userId), "name": .string(trimmed), "muscle_group": .string(group),
+    ]
+    if !gear.isEmpty { payload["equipment"] = .string(gear) }
+    if let kind { payload["exercise_kind"] = .string(kind.rawValue) }
+    let entry = OutboxEntry(
+      id: id, userId: userId, kind: ExerciseEdit.createKind, payload: .object(payload), createdAt: clock.nowMillis())
+    try await commit(entry, to: store)
+    return exercise(id: id)
+      ?? LibraryExercise(id: id, userId: userId, name: trimmed, muscleGroup: group, equipment: gear.isEmpty ? nil : gear,
+                         kind: kind?.rawValue)
+  }
+
+  /// Xoá bài của mình (`useDeleteExercise`). Template và buổi đã ghi trỏ vào
+  /// bài này KHÔNG đổi: chúng mang tên bài trong JSON của chúng, như baseline
+  /// (không xoá dây chuyền).
+  public func delete(id: String) async throws(Refusal) {
+    guard let store else { throw .readOnly }
+    let id = id.lowercased()
+    guard let target = exercise(id: id) else { throw .notFound }
+    guard target.userId?.lowercased() == userId.lowercased() else { throw .notOwn }
+    let entry = OutboxEntry(
+      id: "\(id)@del-\(makeId())", userId: userId, kind: ExerciseEdit.deleteKind,
+      payload: .object(["id": .string(id)]), createdAt: clock.nowMillis())
+    try await commit(entry, to: store)
+  }
+
+  private func commit(_ entry: OutboxEntry, to store: any PlanWriteStore) async throws(Refusal) {
+    do {
+      try await store.enqueue([entry])
+    } catch {
+      throw .storage(LocalWriteError("\(error)"))
+    }
+    if !edits.contains(where: { $0.entry.id == entry.id }) {
+      editSeq += 1
+      edits.append((editSeq, entry))
+    }
+    publish()
+    onEnqueued(entry)
+  }
+
+  // MARK: - Bản server ⊕ lệnh chưa gửi
+
+  private func pendingEdits() async -> [OutboxEntry]? {
+    guard let store else { return [] }
+    guard let all = try? await store.pending(userId: userId) else { return nil }
+    return all.filter { $0.userId == userId && ExerciseEdit.kinds.contains($0.kind) }
+  }
+
+  /// Như `TodayController.mergeEdits`: bản server vừa về thì lệnh đã gửi xong
+  /// nằm trong nó — chỉ giữ thêm lệnh nhận SAU `mark`.
+  private func merge(_ pending: [OutboxEntry], since mark: Int, replacing: Bool) {
+    let kept = replacing ? edits.filter { $0.seq > mark } : edits
+    var merged: [(seq: Int, entry: OutboxEntry)] = []
     var seen = Set<String>()
-    exercises = list.filter { seen.insert($0.id).inserted }
-    loaded = true
+    for e in pending where seen.insert(e.id).inserted {
+      merged.append((kept.first { $0.entry.id == e.id }?.seq ?? 0, e))
+    }
+    for k in kept where seen.insert(k.entry.id).inserted { merged.append(k) }
+    edits = merged
+  }
+
+  private func publish() {
+    exercises = ExerciseCatalog.applying(server, edits.map(\.entry))
     onChange?(exercises)
   }
 }

@@ -155,7 +155,10 @@ final class AppServices {
     return WorkoutFlow(
       today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
       performance: makePerformanceBook(userId: userId), history: history, insights: insights,
-      library: ExerciseLibrary(userId: userId, source: exerciseSource, cache: exerciseCache), store: workouts,
+      library: ExerciseLibrary(
+        userId: userId, source: exerciseSource, cache: exerciseCache, store: outbox,
+        onEnqueued: { _ in sync.kick() }),
+      store: workouts,
       planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
       onEnqueued: { _ in sync.kick() })

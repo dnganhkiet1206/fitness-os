@@ -44,6 +44,12 @@ public actor FakeServer: RemoteWriter {
   public private(set) var templates: [String: JSONValue] = [:]
   public private(set) var routine: [Int: JSONValue] = [:]
   private var deletedTemplates: Set<String> = []
+  /// `exercises` (#421): bài mẫu (`user_id` null) gieo bằng `seedExercise`;
+  /// xoá chỉ xoá bài của chính người gửi (`.eq('user_id', …)` + RLS).
+  public private(set) var exercises: [String: JSONValue] = [:]
+  public func seedExercise(_ row: JSONValue) {
+    if let id = row["id"]?.stringValue { exercises[id] = row }
+  }
   /// Mọi lần gửi, theo thứ tự — kể cả gửi lại.
   public private(set) var attempts: [String] = []
   private var script: [String: [Reply]] = [:]
@@ -106,6 +112,14 @@ public actor FakeServer: RemoteWriter {
       return
     case PlanEdit.routineDayKind:
       if let day = entry.payload["day_of_week"]?.intValue { routine[day] = entry.payload }
+      return
+    case ExerciseEdit.createKind:
+      if let id = entry.payload["id"]?.stringValue, exercises[id] == nil { exercises[id] = entry.payload }
+      return
+    case ExerciseEdit.deleteKind:
+      if let id = entry.payload["id"]?.stringValue, exercises[id]?["user_id"]?.stringValue == entry.userId {
+        exercises[id] = nil
+      }
       return
     default:
       break
