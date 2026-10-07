@@ -38,12 +38,6 @@ targets:
     platform: iOS
     sources:
       - path: ASCND
-        excludes:
-          # PreviewFixtures.swift tham chiếu display models của #306 (chưa
-          # tồn tại: TodayDisplay/TodayStatus/WorkoutSummary/...) nên chưa
-          # compile được — loại khỏi target để không gãy build, bỏ exclude
-          # khi #306 land.
-          - "PreviewFixtures.swift"
     dependencies:
       - package: ASCNDKit
         product: ASCNDCore

@@ -5,6 +5,11 @@
 // empty, offline, partial, completed, error, Dynamic Type lớn.
 //
 // KHÔNG network/backend. Mọi fixture đều cố định, không random.
+//
+// Chỉ có trong bản DEBUG: chữ mẫu cố ý không dịch, không được lọt vào bản
+// phát hành.
+#if DEBUG
+import ASCNDCore
 import Foundation
 
 /// Fixture cho màn Today.
@@ -139,3 +144,4 @@ public enum AuthFixtures {
   public static var validEmail: String { "test@example.com" }
   public static var validPassword: String { "password123" }
 }
+#endif
