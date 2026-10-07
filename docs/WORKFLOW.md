@@ -11,7 +11,11 @@
 | `native/ios-rewrite` | Nhánh tích hợp. Mọi thay đổi vào đây qua PR. | Chỉ merge PR |
 | `agent/<a\|b\|c\|d>/<slug>` | Nhánh làm việc của từng agent, mỗi việc một nhánh, tạo từ `native/ios-rewrite`. | Agent sở hữu |
 
-Không ai push thẳng vào `native/ios-rewrite`. Nhánh làm việc đi sau nhánh tích hợp thì rebase hoặc merge `native/ios-rewrite` vào, không force-push lên nhánh của người khác.
+Không ai push code thẳng vào `native/ios-rewrite`. Nhánh chỉ tiến theo hai cách, cả hai đều không viết lại lịch sử:
+- merge PR bằng **merge commit** (mặc định);
+- **fast-forward** tới đúng một commit tích hợp mà CI (`Cổng chất lượng` + `iOS`) đã xanh trên chính commit ấy. Đây là cách B làm ở #523 batch 1–6 (`098bf207 → … → d074b71a`): mỗi batch là các head đã duyệt, merge `--no-ff` trên `claude/b-batchN`.
+
+Không bao giờ force-push. Nhánh làm việc đi sau nhánh tích hợp thì merge `native/ios-rewrite` vào (hoặc rebase nhánh của chính mình); không force-push lên nhánh của người khác.
 
 ## Vòng đời một việc
 
@@ -32,9 +36,10 @@ Không ai push thẳng vào `native/ios-rewrite`. Nhánh làm việc đi sau nh�
    - `REVIEW: APPROVE` (hàng tích hợp #523 dùng dạng `**APPROVED — <agent>** · head <sha>`, có hiệu lực như nhau và ghi rõ head được duyệt)
    - `REVIEW: CHANGES REQUESTED`: kèm danh sách cụ thể.
    - `BLOCK`: xem mục dưới.
-5. **Reviewer merge**, tác giả không bao giờ tự merge PR của mình. Dùng squash merge, giữ tiêu đề PR làm commit message.
-   **Thực tế từ #523 (B, cần Kiệt xác nhận giữ hay bỏ):** mọi PR vào `native/ios-rewrite` đang được merge bằng **merge commit**, không squash. Lý do: hàng đợi phải gộp `native/ios-rewrite` vào nhánh PR nhiều lần để gỡ xung đột (nhất là `Localizable.xcstrings`), và evidence CI gắn với merge-ref `<head> into <base>`. Squash sẽ xoá dấu vết đó, và mọi PR con xếp chồng sẽ phải giải lại lịch sử.
-   **Ngoại lệ: chuỗi PR xếp chồng** (PR có base là nhánh `agent/...` khác). Với chuỗi này dùng **"Create a merge commit"**. Squash tạo ra commit mới, nên mọi PR con phía trên phải giải lại toàn bộ lịch sử. Khi PR nền đã merge, tác giả đổi base của PR con sang `native/ios-rewrite`.
+5. **Reviewer merge**, tác giả không bao giờ tự merge PR của mình. **Dùng merge commit, không squash** (Kiệt chốt ở #523, comment 6031586118). Lý do:
+   - giữ topology và audit trail: hàng đợi phải merge `native/ios-rewrite` vào nhánh PR nhiều lần để gỡ xung đột (nhất là `Localizable.xcstrings`), và evidence CI gắn với merge-ref `<head> into <base>`; squash xoá dấu vết ấy;
+   - chuỗi PR xếp chồng (PR có base là nhánh `agent/...` khác): squash tạo commit mới, nên mọi PR con phía trên phải giải lại toàn bộ lịch sử. Khi PR nền đã merge, đổi base của PR con sang `native/ios-rewrite`; nếu head của PR con đã nằm trong native (GitHub báo "no new commits") thì đóng kèm bằng chứng tổ tiên.
+   Chuỗi phụ thuộc merge **tuần tự**: base hiện tại → CI đúng merge-ref → review → merge → cập nhật base → re-gate PR kế tiếp. PR nào sai hành vi RN hoặc có regression thì BLOCK, không vì đứng trong chuỗi mà bỏ qua review.
 6. **Hàng review:** ưu tiên theo mức phụ thuộc, không theo số PR. Thứ tự: P0 là PR đang chặn PR khác; P1 là core, contract hoặc component dùng chung; P2 là feature độc lập; P3 là docs và cleanup nhỏ. Khi có từ 8 PR trở lên đang chờ review, C và D review trước rồi mới nhận việc mới. #222 là bảng điều phối.
 
 ## Quyền BLOCK của D
