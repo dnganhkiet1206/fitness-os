@@ -83,6 +83,9 @@ private struct LabSession: View {
       if let history = flow.history {
         LabHistory(history: history)
       }
+      if let editor = flow.plan {
+        LabPlan(today: today, editor: editor)
+      }
     }
     .onChange(of: useSample) { _, on in
       Task {
@@ -307,6 +310,72 @@ private struct LabHistory: View {
       }
     } header: {
       Text(verbatim: "History (90 days) — \(history.entries.count)")
+    }
+  }
+}
+
+/// Ghi kế hoạch (#401): tạo template mẫu gán cho hôm nay, cho hôm nay nghỉ,
+/// vuốt để xoá template. Không phải builder (C-37 #410) — chỉ để thử đường ghi
+/// trên máy thật: online / offline / mở lại app.
+private struct LabPlan: View {
+  let today: TodayController
+  let editor: PlanEditor
+  @State private var error: String?
+
+  var body: some View {
+    let library = today.library
+    let day = WorkoutPlanning.routineIndex(today.today)
+    Section {
+      ForEach((library?.templates ?? []).sorted(by: WorkoutTemplate.newestFirst)) { t in
+        LabRow(
+          label: t.name + (library?.day(day)?.templateId == t.id ? " · hôm nay" : ""),
+          value: "\(t.exercises.count) bài · \(t.type ?? PlanEdit.defaultType)\(t.createdAt == nil ? " · chưa lên server" : "")")
+          .swipeActions {
+            Button(role: .destructive) { run { try await editor.delete(templateId: t.id) } } label: {
+              Text(verbatim: "Delete template")
+            }
+            Button { run { try await editor.assign(day: day, templateId: t.id) } } label: {
+              Text(verbatim: "Hôm nay")
+            }
+          }
+      }
+      Button {
+        run {
+          try await editor.create(
+            id: editor.newTemplateId(), name: "Lab \(Date().formatted(date: .omitted, time: .shortened))",
+            exercises: [
+              TemplateExercise(exerciseName: "Bench Press", sets: 3, reps: 8, weightKg: 60),
+              TemplateExercise(exerciseName: "Row", sets: 2, reps: 10, weightKg: 40),
+            ], scheduleOn: day)
+        }
+      } label: {
+        Text(verbatim: "Tạo template mẫu, gán cho hôm nay")
+      }
+      Button { run { try await editor.assign(day: day, templateId: nil) } } label: {
+        Text(verbatim: "Hôm nay nghỉ")
+      }
+      Button {
+        run { try await editor.setDeload(day: day, !(library?.day(day)?.isDeload ?? false)) }
+      } label: {
+        Text(verbatim: "Bật / tắt deload hôm nay")
+      }
+      if let error {
+        Text(verbatim: error).foregroundStyle(.red).font(.footnote)
+      }
+    } header: {
+      Text(verbatim: "Plan (#401) — \(library?.templates.count ?? 0) templates")
+    }
+  }
+
+  /// Lỗi là `PlanEditor.Refusal`; closure không khai kiểu ném nên nhận `any Error`.
+  private func run(_ op: @escaping @MainActor () async throws -> Void) {
+    Task { @MainActor in
+      do {
+        try await op()
+        error = nil
+      } catch {
+        self.error = "\(error)"
+      }
     }
   }
 }

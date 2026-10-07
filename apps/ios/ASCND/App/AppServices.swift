@@ -20,6 +20,9 @@ final class AppServices {
   let session: SessionStore
   let sync: SyncWorker
   @ObservationIgnored let workouts: GRDBWorkoutStore
+  /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
+  /// vào đây và Today đọc lại phần chưa gửi.
+  @ObservationIgnored let outbox: OutboxStore
   /// Kế hoạch tuần + template thật, local-first (#270).
   @ObservationIgnored let templates: TodayRepository
   @ObservationIgnored let history: any TrainingHistory
@@ -57,11 +60,13 @@ final class AppServices {
     }
 
     workouts = GRDBWorkoutStore(database)
+    let outboxStore = OutboxStore(database)
+    outbox = outboxStore
     let templateCache = GRDBTemplateCache(database)
     readCache = templateCache
     templates = TodayRepository(
       source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
-      cache: templateCache)
+      cache: templateCache, edits: outboxStore)
     history = backend.map { SupabaseTrainingHistory(backend: $0) as any TrainingHistory } ?? UnconfiguredHistory()
     recordHistory = backend.map { SupabaseRecordHistory(backend: $0) as any RecordHistory } ?? UnconfiguredRecords()
     recordCache = GRDBRecordBookCache(database)
@@ -71,7 +76,7 @@ final class AppServices {
     historyCache = GRDBHistoryCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
-      store: OutboxStore(database),
+      store: outboxStore,
       remote: backend.map { SupabaseRemoteWriter(backend: $0) as any RemoteWriter } ?? UnconfiguredRemote(),
       online: false)
     startupError = problems.isEmpty ? nil : problems.joined(separator: "\n")
@@ -141,7 +146,7 @@ final class AppServices {
       onEnqueued: { _ in sync.kick() })
     return WorkoutFlow(
       today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
-      performance: makePerformanceBook(userId: userId), history: history, store: workouts,
+      performance: makePerformanceBook(userId: userId), history: history, store: workouts, planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
       onEnqueued: { _ in sync.kick() })
   }

@@ -20,6 +20,9 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     WorkoutSessionRecord.outboxKind: "workout_sessions",
     WorkoutSessionRecord.revisionKind: "workout_sessions",
     WorkoutSessionRecord.deleteKind: "workout_sessions",
+    PlanEdit.templateKind: "workout_templates",
+    PlanEdit.templateDeleteKind: "workout_templates",
+    PlanEdit.routineDayKind: "routine_days",
   ]
 
   /// Bản ghi lại (#296) GHI ĐÈ hàng có sẵn; bản ghi mới thì bỏ trùng
@@ -28,7 +31,14 @@ public struct SupabaseRemoteWriter: RemoteWriter {
 
   /// Bản ghi nói về một hàng ĐÃ có (ghi lại / xoá): id hàng outbox là
   /// `"<buổi>@…"`, không phải chính id buổi.
-  static func revises(_ kind: String) -> Bool { overwrites(kind) || kind == WorkoutSessionRecord.deleteKind }
+  static func revises(_ kind: String) -> Bool {
+    overwrites(kind) || kind == WorkoutSessionRecord.deleteKind || kind == PlanEdit.templateDeleteKind
+  }
+
+  /// Xoá theo `id` + `user_id` (`use-library.ts:335`, `use-fitness-data.ts:746`).
+  static func deletes(_ kind: String) -> Bool {
+    kind == WorkoutSessionRecord.deleteKind || kind == PlanEdit.templateDeleteKind
+  }
 
   private let client: SupabaseClient
   private let afterWrite: @Sendable (OutboxEntry) async -> Void
@@ -47,13 +57,21 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     guard signedIn == entry.userId.lowercased() else { throw .wrongAccount }
     guard let table = Self.tables[entry.kind], Self.isRow(entry) else { throw .unusable }
     do {
-      if entry.kind == WorkoutSessionRecord.deleteKind {
-        // Gỡ set cuối cùng (#398): xoá hàng — idempotent, xoá hàng đã mất
-        // không phải lỗi. Lọc cả `user_id` như baseline (`:746`), RLS cũng chặn.
+      if Self.deletes(entry.kind) {
+        // Gỡ set cuối cùng (#398) / xoá buổi (#400) / xoá template (#401): xoá
+        // hàng — idempotent, xoá hàng đã mất không phải lỗi. Lọc cả `user_id`
+        // như baseline, RLS cũng chặn.
         try await client.from(table)
           .delete()
           .eq("id", value: entry.payload["id"]?.stringValue ?? "")
           .eq("user_id", value: entry.userId)
+          .execute()
+      } else if entry.kind == PlanEdit.routineDayKind {
+        // Gán ngày (#401): `upsert … onConflict: 'user_id,day_of_week'` như
+        // baseline (`use-library.ts:461`) — một hàng mỗi ngày, gửi lại là ghi
+        // đè cùng nội dung.
+        try await client.from(table)
+          .upsert(entry.payload, onConflict: "user_id,day_of_week")
           .execute()
       } else {
         try await client.from(table)
@@ -70,6 +88,14 @@ public struct SupabaseRemoteWriter: RemoteWriter {
   /// `id` không còn idempotent, và phát lại thành hàng mới. Bản ghi lại mang
   /// id `"<buổi>@<số hàng>"`, hàng của nó là `<buổi>`.
   static func isRow(_ entry: OutboxEntry) -> Bool {
+    if entry.kind == PlanEdit.routineDayKind {
+      // Không có `id`: hàng xác định bởi (người, ngày). Người phải là chủ bản
+      // ghi — không thì upsert ghi vào kế hoạch của ai khác (RLS cũng chặn).
+      guard let day = entry.payload["day_of_week"]?.intValue, PlanEdit.days.contains(day),
+        entry.payload["user_id"]?.stringValue?.lowercased() == entry.userId.lowercased()
+      else { return false }
+      return true
+    }
     guard let rowId = entry.payload["id"]?.stringValue, !rowId.isEmpty else { return false }
     return revises(entry.kind) ? entry.id.hasPrefix(rowId + "@") : rowId == entry.id
   }
