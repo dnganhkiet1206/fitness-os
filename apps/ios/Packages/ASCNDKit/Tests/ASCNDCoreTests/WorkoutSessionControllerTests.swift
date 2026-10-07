@@ -554,6 +554,9 @@ struct RemoveLoggedSetTests {
     #expect(outbox[1].payload["session_rpe"] == .number(9), "gỡ set không đổi cảm nhận của buổi")
     #expect(outbox[1].payload["volume_load"] == .number(480))
     #expect(outbox[1].payload["date_time"] == outbox[0].payload["date_time"])
+    // #523 P1: bản ghi lại mang các set ĐÃ ghi trước lần sửa (cả set vừa gỡ),
+    // để writer chỉ áp phần thay đổi lên hàng server.
+    #expect(outbox[1].base == outbox[0].payload["sets"])
     #expect(c.summary?.completedSets == 1)
   }
 
@@ -587,6 +590,8 @@ struct RemoveLoggedSetTests {
     #expect(outbox.map(\.id) == [first.sessionId, "\(first.sessionId)@r1", "\(first.sessionId)@r2"])
     #expect(outbox[2].kind == WorkoutSessionRecord.revisionKind)
     #expect(sets(outbox[2]) == 1)
+    #expect(outbox[1].base == outbox[0].payload["sets"], "bản ghi xoá biết set nào là của máy này")
+    #expect(outbox[2].base == .array([]), "hoàn tác sau khi xoá: chưa có set nào → writer dựng lại hàng")
     await #expect(throws: WorkoutSessionController.RemoveRefusal.expired) { try await c.undo(removal) }
   }
 

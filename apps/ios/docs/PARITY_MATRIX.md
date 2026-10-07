@@ -102,7 +102,16 @@ Theo dõi riêng ở #523 (audit read → modify → write). Đã có:
   2. iPhone offline nối thêm hoặc gỡ một set.
   3. Android nối thêm set vào cùng buổi (đọc mới nhất, ghi).
   4. iPhone có mạng → upsert ảnh chụp cũ → **set của Android mất**. Trường hợp gỡ set cuối: **xoá cả buổi**.
-- **Hướng sửa (đang làm):** gộp ba chiều **lúc gửi**. Base là bộ set máy này ghi lần trước, local là bộ mới, server là bộ đọc ngay lúc gửi. Kết quả = server − (base − local) + (local − base). Gỡ set cuối chỉ xoá hàng khi server không còn set nào ngoài phần máy này gỡ.
-- **Bằng chứng cần có:** test trong ASCNDCore cho hàm gộp (thêm/thêm, thêm/gỡ, gỡ set cuối khi máy kia đã thêm) và test ở writer.
+- **Đã sửa (B, `b/wip`, chờ CI):** gộp **lúc gửi** (`SessionRevisionMerge`, ASCNDCore).
+  - Hàng outbox mang thêm `base` = các set máy này đã ghi trước lần sửa (trường optional; hàng outbox cũ vẫn giải mã được và giữ cách ghi cũ).
+  - `SupabaseRemoteWriter` đọc `sets, session_rpe, pr_detected` của hàng **ngay lúc gửi**, rồi `update` theo `id` + `user_id` như RN. Hết set thì `delete`.
+  - Theo từng nội dung set (bỏ `setIndex`): máy này thêm → `max(server, local)`; máy này gỡ → `min(server, local)`; không đụng → giữ như server. `max`/`min` để **phát lại không nhân đôi**.
+  - Hàng đã bị máy khác xoá → không dựng lại (RN: `confirmWrite` báo lỗi). Ngoại lệ: hoàn tác lần gỡ set cuối của chính máy này.
+  - `volume_load` tính lại (bỏ khởi động); `session_rpe` không giảm; `pr_detected` không mất — như RN nối thêm.
+  - **Đánh đổi đã biết:** hai máy cùng thêm hai set *giống hệt* (cùng bài, mức, reps, RPE) thì giữ một. Còn khe nhỏ giữa đọc và ghi, đúng bằng khe của RN.
+  - **Bằng chứng:**
+    - `SessionRevisionMergeTests` (8 test): thêm/thêm, gỡ/thêm, máy kia đã gỡ, phát lại idempotent, gỡ set cuối khi máy kia còn set, hàng mất, các trường hàng, khoá set.
+    - `WorkoutPipelineTests`: `offlineAppendDoesNotOverwriteAnotherDevicesSet`, `offlineRemovalKeepsAnotherDevicesSet` (đầu-cuối qua outbox + SyncWorker; `FakeServer` gộp đúng như writer).
+    - Trạng thái **DONE chỉ sau khi iOS CI xanh**; chưa thử trên máy thật.
 
 **Không phải hồi quy:** `routine_days` upsert đủ 4 trường theo trạng thái trên máy. RN cũng làm vậy (`week-plan.tsx:343`), cùng last-write-wins. Hồ sơ: chưa kiểm (A31 #443 còn trong hàng đợi).

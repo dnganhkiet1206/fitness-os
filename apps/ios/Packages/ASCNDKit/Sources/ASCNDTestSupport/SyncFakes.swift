@@ -33,8 +33,9 @@ public actor FakeServer: RemoteWriter {
 
   public private(set) var rows: [String: OutboxEntry] = [:]
   /// Bảng `workout_sessions` như server thấy, theo `payload.id`: bản ghi mới
-  /// là upsert bỏ trùng (`ignoreDuplicates`), bản ghi lại (#296) ghi đè cả hàng
-  /// — đúng như `SupabaseRemoteWriter`.
+  /// là upsert bỏ trùng (`ignoreDuplicates`), bản ghi lại (#296) có `base` thì
+  /// gộp lên hàng hiện có, không có (bản cũ) thì ghi đè cả hàng — đúng như
+  /// `SupabaseRemoteWriter`.
   public private(set) var table: [String: JSONValue] = [:]
   /// Mọi lần gửi, theo thứ tự — kể cả gửi lại.
   public private(set) var attempts: [String] = []
@@ -58,10 +59,27 @@ public actor FakeServer: RemoteWriter {
     }
   }
 
+  /// Một máy KHÁC ghi thẳng vào bảng (`nil` = xoá hàng) — dựng cảnh nhiều máy.
+  public func externalWrite(_ rowId: String, _ row: JSONValue?) { table[rowId] = row }
+
   private func apply(_ entry: OutboxEntry) {
     if rows[entry.id] == nil { rows[entry.id] = entry }
     guard let rowId = entry.payload["id"]?.stringValue else { return }
-    if entry.kind == WorkoutSessionRecord.deleteKind {
+    let revises = entry.kind == WorkoutSessionRecord.revisionKind || entry.kind == WorkoutSessionRecord.deleteKind
+    if revises, let base = entry.base {
+      // Như `SupabaseRemoteWriter.sendMerged`: đọc hàng lúc gửi rồi gộp.
+      let local = entry.kind == WorkoutSessionRecord.revisionKind ? entry.payload : nil
+      switch SessionRevisionMerge.merge(server: table[rowId], base: base, local: local) {
+      case .skip: break
+      case .delete: table[rowId] = nil
+      case .update(let fields):
+        if case .object(var row)? = table[rowId], case .object(let f) = fields {
+          for (k, v) in f { row[k] = v }
+          table[rowId] = .object(row)
+        }
+      case .upsert(let row): table[rowId] = row
+      }
+    } else if entry.kind == WorkoutSessionRecord.deleteKind {
       table[rowId] = nil
     } else if entry.kind == WorkoutSessionRecord.revisionKind || table[rowId] == nil {
       table[rowId] = entry.payload

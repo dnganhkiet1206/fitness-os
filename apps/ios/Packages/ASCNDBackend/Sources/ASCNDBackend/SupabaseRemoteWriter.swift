@@ -47,7 +47,9 @@ public struct SupabaseRemoteWriter: RemoteWriter {
     guard signedIn == entry.userId.lowercased() else { throw .wrongAccount }
     guard let table = Self.tables[entry.kind], Self.isRow(entry) else { throw .unusable }
     do {
-      if entry.kind == WorkoutSessionRecord.deleteKind {
+      if Self.revises(entry.kind), let base = entry.base {
+        try await sendMerged(entry, base: base, table: table)
+      } else if entry.kind == WorkoutSessionRecord.deleteKind {
         // Gỡ set cuối cùng (#398): xoá hàng — idempotent, xoá hàng đã mất
         // không phải lỗi. Lọc cả `user_id` như baseline (`:746`), RLS cũng chặn.
         try await client.from(table)
@@ -64,6 +66,42 @@ public struct SupabaseRemoteWriter: RemoteWriter {
       throw Self.classify(error)
     }
     await afterWrite(entry)
+  }
+
+  /// Bản ghi lại / gỡ set có `base`: đọc hàng NGAY lúc gửi, áp phần máy này
+  /// đã đổi lên đó (`SessionRevisionMerge`) — không đè set máy khác đã ghi vào
+  /// cùng buổi (#523 P1). Như baseline (`useAppendToSession`, gỡ set): đọc rồi
+  /// `update` theo `id` + `user_id`; hết set thì `delete`. Còn một khe nhỏ giữa
+  /// đọc và ghi, đúng bằng của baseline; khe "đọc trong máy, ghi sau vài giờ
+  /// offline" thì đã đóng.
+  private func sendMerged(_ entry: OutboxEntry, base: JSONValue, table: String) async throws {
+    let rowId = entry.payload["id"]?.stringValue ?? ""
+    let found: [JSONValue] = try await client.from(table)
+      .select("sets,session_rpe,pr_detected")
+      .eq("id", value: rowId)
+      .eq("user_id", value: entry.userId)
+      .limit(1)
+      .execute()
+      .value
+    let local = entry.kind == WorkoutSessionRecord.revisionKind ? entry.payload : nil
+    switch SessionRevisionMerge.merge(server: found.first, base: base, local: local) {
+    case .skip:
+      return
+    case .delete:
+      try await client.from(table)
+        .delete()
+        .eq("id", value: rowId)
+        .eq("user_id", value: entry.userId)
+        .execute()
+    case .update(let fields):
+      try await client.from(table)
+        .update(fields)
+        .eq("id", value: rowId)
+        .eq("user_id", value: entry.userId)
+        .execute()
+    case .upsert(let row):
+      try await client.from(table).upsert(row, onConflict: "id").execute()
+    }
   }
 
   /// Payload phải là một hàng có `id` khớp bản ghi — không thì upsert theo
