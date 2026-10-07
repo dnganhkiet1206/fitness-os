@@ -102,7 +102,7 @@ final class HealthKitSource: @unchecked Sendable {
 
   private func latest(_ id: HKQuantityTypeIdentifier, _ unit: HKUnit, since: EpochMillis) async -> HealthData.Reading? {
     let p = HKQuery.predicateForSamples(withStart: since.date, end: nil)
-    return await samples(HKQuantityType(id), predicate: p, limit: 1, ascending: false) { sample in
+    return await samples(HKQuantityType(id), predicate: p, limit: 1, ascending: false) { (sample: HKSample) -> HealthData.Reading? in
       guard let s = sample as? HKQuantitySample, s.quantity.is(compatibleWith: unit) else { return nil }
       return HealthData.Reading(value: s.quantity.doubleValue(for: unit), at: EpochMillis(s.startDate), uuid: s.uuid.uuidString)
     }.first
@@ -135,8 +135,8 @@ final class HealthKitSource: @unchecked Sendable {
 
   private func sleepSamples(since: EpochMillis, to: EpochMillis) async -> [HealthData.SleepSample] {
     let p = HKQuery.predicateForSamples(withStart: since.date, end: to.date)
-    return await samples(HKCategoryType(.sleepAnalysis), predicate: p, limit: HKObjectQueryNoLimit, ascending: true) {
-      guard let s = $0 as? HKCategorySample else { return nil }
+    return await samples(HKCategoryType(.sleepAnalysis), predicate: p, limit: HKObjectQueryNoLimit, ascending: true) { (sample: HKSample) -> HealthData.SleepSample? in
+      guard let s = sample as? HKCategorySample else { return nil }
       return HealthData.SleepSample(
         start: EpochMillis(s.startDate), end: EpochMillis(s.endDate), value: s.value, externalUUID: Self.external(s.metadata))
     }
@@ -144,8 +144,8 @@ final class HealthKitSource: @unchecked Sendable {
 
   private func workoutSamples(since: EpochMillis, to: EpochMillis) async -> [HealthData.WorkoutSample] {
     let p = HKQuery.predicateForSamples(withStart: since.date, end: to.date)
-    return await samples(.workoutType(), predicate: p, limit: HKObjectQueryNoLimit, ascending: false) {
-      guard let w = $0 as? HKWorkout else { return nil }
+    return await samples(.workoutType(), predicate: p, limit: HKObjectQueryNoLimit, ascending: false) { (sample: HKSample) -> HealthData.WorkoutSample? in
+      guard let w = sample as? HKWorkout else { return nil }
       return HealthData.WorkoutSample(
         uuid: w.uuid.uuidString, start: EpochMillis(w.startDate), durationSec: w.duration,
         kcal: w.statistics(for: HKQuantityType(.activeEnergyBurned))?.sumQuantity()?.doubleValue(for: .kilocalorie()),
