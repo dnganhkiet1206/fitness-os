@@ -619,5 +619,778 @@
     }
    ]
   }
- ]
+ ],
+ "netinfo": {
+  "config": {
+   "url": "https://clients3.google.com/generate_204",
+   "method": "HEAD",
+   "requestTimeout": 15000,
+   "shortTimeout": 5000,
+   "longTimeout": 60000
+  },
+  "cases": [
+   {
+    "name": "mở app trên Wi-Fi có internet → dò, có, dò lại sau 60 s",
+    "initial": {
+     "type": "wifi",
+     "isConnected": true
+    },
+    "events": [],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "status": 204,
+      "after": 300
+     }
+    ],
+    "until": 70000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": null
+     },
+     {
+      "at": 300,
+      "value": true
+     }
+    ],
+    "probes": [
+     {
+      "at": 0,
+      "result": 204
+     },
+     {
+      "at": 60300,
+      "result": 204
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   },
+   {
+    "name": "cổng đăng nhập Wi-Fi (captive portal) → mất mạng, dò lại mỗi 5 s, bấm đồng ý thì về",
+    "initial": {
+     "type": "wifi",
+     "isConnected": true
+    },
+    "events": [],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "status": 200,
+      "after": 300
+     },
+     {
+      "from": 15000,
+      "status": 204,
+      "after": 300
+     }
+    ],
+    "until": 25000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     },
+     {
+      "at": 300,
+      "status": "offline"
+     },
+     {
+      "at": 16200,
+      "status": "reconnecting"
+     },
+     {
+      "at": 16800,
+      "status": "online"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": null
+     },
+     {
+      "at": 300,
+      "value": false
+     },
+     {
+      "at": 16200,
+      "value": true
+     }
+    ],
+    "probes": [
+     {
+      "at": 0,
+      "result": 200
+     },
+     {
+      "at": 5300,
+      "result": 200
+     },
+     {
+      "at": 10600,
+      "result": 200
+     },
+     {
+      "at": 15900,
+      "result": 204
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   },
+   {
+    "name": "phép dò treo → timeout 15 s → mất mạng, dò lại sau 5 s",
+    "initial": {
+     "type": "wifi",
+     "isConnected": true
+    },
+    "events": [],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "hang": true
+     },
+     {
+      "from": 10000,
+      "status": 204,
+      "after": 300
+     }
+    ],
+    "until": 22000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     },
+     {
+      "at": 15000,
+      "status": "offline"
+     },
+     {
+      "at": 20300,
+      "status": "reconnecting"
+     },
+     {
+      "at": 20900,
+      "status": "online"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": null
+     },
+     {
+      "at": 15000,
+      "value": false
+     },
+     {
+      "at": 20300,
+      "value": true
+     }
+    ],
+    "probes": [
+     {
+      "at": 0,
+      "result": "timeout"
+     },
+     {
+      "at": 20000,
+      "result": 204
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   },
+   {
+    "name": "có sóng 4G mà hết dung lượng → lỗi mạng ở mọi phép dò",
+    "initial": {
+     "type": "cellular",
+     "isConnected": true
+    },
+    "events": [],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "error": true,
+      "after": 300
+     }
+    ],
+    "until": 26000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     },
+     {
+      "at": 300,
+      "status": "offline"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": null
+     },
+     {
+      "at": 300,
+      "value": false
+     }
+    ],
+    "probes": [
+     {
+      "at": 0,
+      "result": "error"
+     },
+     {
+      "at": 5300,
+      "result": "error"
+     },
+     {
+      "at": 10600,
+      "result": "error"
+     },
+     {
+      "at": 15900,
+      "result": "error"
+     },
+     {
+      "at": 21200,
+      "result": "error"
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   },
+   {
+    "name": "Wi-Fi → 4G khi đang có internet → không về \"chưa biết\", dò lại",
+    "initial": {
+     "type": "wifi",
+     "isConnected": true
+    },
+    "events": [
+     {
+      "at": 10000,
+      "native": {
+       "type": "cellular",
+       "isConnected": true
+      }
+     }
+    ],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "status": 204,
+      "after": 300
+     }
+    ],
+    "until": 12000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": null
+     },
+     {
+      "at": 300,
+      "value": true
+     }
+    ],
+    "probes": [
+     {
+      "at": 0,
+      "result": 204
+     },
+     {
+      "at": 10000,
+      "result": 204
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   },
+   {
+    "name": "đổi Wi-Fi → 4G giữa lúc đang dò → huỷ phép dò cũ, dò mới",
+    "initial": {
+     "type": "wifi",
+     "isConnected": true
+    },
+    "events": [
+     {
+      "at": 1000,
+      "native": {
+       "type": "cellular",
+       "isConnected": true
+      }
+     }
+    ],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "status": 204,
+      "after": 2000
+     },
+     {
+      "from": 1000,
+      "status": 204,
+      "after": 300
+     }
+    ],
+    "until": 5000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": null
+     },
+     {
+      "at": 1300,
+      "value": true
+     }
+    ],
+    "probes": [
+     {
+      "at": 1000,
+      "result": 204
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   },
+   {
+    "name": "mất sóng rồi có lại → mất mạng, chưa biết (kết nối lại), dò có",
+    "initial": {
+     "type": "wifi",
+     "isConnected": true
+    },
+    "events": [
+     {
+      "at": 5000,
+      "native": {
+       "type": "none",
+       "isConnected": false
+      }
+     },
+     {
+      "at": 8000,
+      "native": {
+       "type": "wifi",
+       "isConnected": true
+      }
+     }
+    ],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "status": 204,
+      "after": 300
+     }
+    ],
+    "until": 12000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     },
+     {
+      "at": 5000,
+      "status": "offline"
+     },
+     {
+      "at": 8000,
+      "status": "reconnecting"
+     },
+     {
+      "at": 8600,
+      "status": "online"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": null
+     },
+     {
+      "at": 300,
+      "value": true
+     },
+     {
+      "at": 5000,
+      "value": false
+     },
+     {
+      "at": 8000,
+      "value": null
+     },
+     {
+      "at": 8300,
+      "value": true
+     }
+    ],
+    "probes": [
+     {
+      "at": 0,
+      "result": 204
+     },
+     {
+      "at": 8000,
+      "result": 204
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   },
+   {
+    "name": "mất sóng giữa lúc đang dò → huỷ, mất mạng ngay",
+    "initial": {
+     "type": "wifi",
+     "isConnected": true
+    },
+    "events": [
+     {
+      "at": 2000,
+      "native": {
+       "type": "cellular",
+       "isConnected": true
+      }
+     },
+     {
+      "at": 3000,
+      "native": {
+       "type": "none",
+       "isConnected": false
+      }
+     }
+    ],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "status": 204,
+      "after": 300
+     },
+     {
+      "from": 2000,
+      "status": 204,
+      "after": 5000
+     }
+    ],
+    "until": 6000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     },
+     {
+      "at": 3000,
+      "status": "offline"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": null
+     },
+     {
+      "at": 300,
+      "value": true
+     },
+     {
+      "at": 3000,
+      "value": false
+     }
+    ],
+    "probes": [
+     {
+      "at": 0,
+      "result": 204
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   },
+   {
+    "name": "mạng về nhưng là cổng đăng nhập → kết nối lại rồi lại mất mạng",
+    "initial": {
+     "type": "wifi",
+     "isConnected": true
+    },
+    "events": [
+     {
+      "at": 2000,
+      "native": {
+       "type": "none",
+       "isConnected": false
+      }
+     },
+     {
+      "at": 4000,
+      "native": {
+       "type": "wifi",
+       "isConnected": true
+      }
+     }
+    ],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "status": 204,
+      "after": 300
+     },
+     {
+      "from": 4000,
+      "status": 200,
+      "after": 300
+     }
+    ],
+    "until": 9500,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     },
+     {
+      "at": 2000,
+      "status": "offline"
+     },
+     {
+      "at": 4000,
+      "status": "reconnecting"
+     },
+     {
+      "at": 4300,
+      "status": "offline"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": null
+     },
+     {
+      "at": 300,
+      "value": true
+     },
+     {
+      "at": 2000,
+      "value": false
+     },
+     {
+      "at": 4000,
+      "value": null
+     },
+     {
+      "at": 4300,
+      "value": false
+     }
+    ],
+    "probes": [
+     {
+      "at": 0,
+      "result": 204
+     },
+     {
+      "at": 4000,
+      "result": 200
+     },
+     {
+      "at": 9300,
+      "result": null
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   },
+   {
+    "name": "bấm Thử lại khi đang ở cổng đăng nhập → đo lại, dò lại",
+    "initial": {
+     "type": "wifi",
+     "isConnected": true
+    },
+    "events": [
+     {
+      "at": 1000,
+      "retry": true
+     }
+    ],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "status": 200,
+      "after": 300
+     },
+     {
+      "from": 1000,
+      "status": 204,
+      "after": 300
+     }
+    ],
+    "until": 3000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     },
+     {
+      "at": 300,
+      "status": "offline"
+     },
+     {
+      "at": 1000,
+      "status": "reconnecting"
+     },
+     {
+      "at": 1600,
+      "status": "online"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": null
+     },
+     {
+      "at": 300,
+      "value": false
+     },
+     {
+      "at": 1000,
+      "value": null
+     },
+     {
+      "at": 1300,
+      "value": true
+     }
+    ],
+    "probes": [
+     {
+      "at": 0,
+      "result": 200
+     },
+     {
+      "at": 1000,
+      "result": 204
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   },
+   {
+    "name": "mở app lúc không có mạng",
+    "initial": {
+     "type": "none",
+     "isConnected": false
+    },
+    "events": [],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "status": 204,
+      "after": 300
+     }
+    ],
+    "until": 10000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     },
+     {
+      "at": 0,
+      "status": "offline"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": false
+     }
+    ],
+    "probes": [],
+    "url": null,
+    "method": null
+   },
+   {
+    "name": "mở app không mạng rồi Wi-Fi về có internet",
+    "initial": {
+     "type": "none",
+     "isConnected": false
+    },
+    "events": [
+     {
+      "at": 3000,
+      "native": {
+       "type": "wifi",
+       "isConnected": true
+      }
+     }
+    ],
+    "probeSchedule": [
+     {
+      "from": 0,
+      "status": 204,
+      "after": 300
+     }
+    ],
+    "until": 5000,
+    "transitions": [
+     {
+      "at": 0,
+      "status": "online"
+     },
+     {
+      "at": 0,
+      "status": "offline"
+     },
+     {
+      "at": 3000,
+      "status": "reconnecting"
+     },
+     {
+      "at": 3600,
+      "status": "online"
+     }
+    ],
+    "reachability": [
+     {
+      "at": 0,
+      "value": false
+     },
+     {
+      "at": 3000,
+      "value": null
+     },
+     {
+      "at": 3300,
+      "value": true
+     }
+    ],
+    "probes": [
+     {
+      "at": 3000,
+      "result": 204
+     }
+    ],
+    "url": "https://clients3.google.com/generate_204",
+    "method": "HEAD"
+   }
+  ]
+ }
 }

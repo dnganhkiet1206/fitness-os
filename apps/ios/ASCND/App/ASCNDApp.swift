@@ -49,6 +49,8 @@ struct ASCNDApp: App {
       if phase == .active {
         rest.settle()
         services.didBecomeActive()
+      } else if phase == .background {
+        services.didEnterBackground()
       }
     }
   }

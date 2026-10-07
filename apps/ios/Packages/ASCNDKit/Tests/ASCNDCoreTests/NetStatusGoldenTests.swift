@@ -39,6 +39,67 @@ struct NetStatusGoldenTests {
     }
     let table: [Row]
     let cases: [Case]
+    let netinfo: NetInfo
+  }
+
+  /// Phần 2 của golden: NetInfo THẬT (`state.ts` + `internetReachability.ts`)
+  /// nối với `net-status.ts`, `fetch` giả theo lịch.
+  struct NetInfo: Decodable {
+    struct Config: Decodable {
+      let url: String
+      let method: String
+      let requestTimeout: Int64
+      let shortTimeout: Int64
+      let longTimeout: Int64
+    }
+    struct Path: Decodable {
+      let type: String
+      let isConnected: Bool
+    }
+    struct Event: Decodable {
+      let at: Int64
+      let native: Path?
+      let retry: Bool?
+    }
+    struct Outcome: Decodable {
+      let from: Int64
+      let status: Int?
+      let error: Bool?
+      let hang: Bool?
+      let after: Int64?
+    }
+    struct Reach: Decodable, Equatable, CustomStringConvertible {
+      let at: Int64
+      let value: Bool?
+      var description: String { "\(value.map(String.init) ?? "nil")@\(at)" }
+    }
+    struct Probe: Decodable, Equatable, CustomStringConvertible {
+      let at: Int64
+      let result: ProbeResult?
+      var description: String { "\(at):\(result.map { "\($0)" } ?? "bay")" }
+    }
+    enum ProbeResult: Decodable, Equatable {
+      case status(Int)
+      case word(String)
+      init(from decoder: any Decoder) throws {
+        let c = try decoder.singleValueContainer()
+        if let n = try? c.decode(Int.self) { self = .status(n) } else { self = .word(try c.decode(String.self)) }
+      }
+    }
+    struct Case: Decodable {
+      let name: String
+      let initial: Path
+      let events: [Event]
+      let probeSchedule: [Outcome]
+      let until: Int64
+      let transitions: [Golden.Transition]
+      let reachability: [Reach]
+      let probes: [Probe]
+      let url: String?
+      let method: String?
+    }
+    let config: Config
+    let cases: [Case]
   }
 
   static func golden() throws -> Golden {
@@ -73,6 +134,59 @@ struct NetStatusGoldenTests {
       }
       clock.advance(to: c.until)
       #expect(seen == c.transitions, "\(c.name)")
+    }
+  }
+
+  /// Cấu hình phép dò = mặc định của NetInfo bản đang cài (app RN không gọi
+  /// `configure`).
+  @Test func reachabilityConfigMatchesNetInfo() throws {
+    let c = try Self.golden().netinfo.config
+    let mine = ReachabilityConfig.netInfoDefault
+    #expect(mine.url == c.url)
+    #expect(mine.method == c.method)
+    #expect(mine.requestTimeoutMillis == c.requestTimeout)
+    #expect(mine.shortTimeoutMillis == c.shortTimeout)
+    #expect(mine.longTimeoutMillis == c.longTimeout)
+  }
+
+  /// Toàn bộ đường đi: đường mạng → phép dò → trạng thái app, như app RN trên
+  /// iOS. Cùng mốc đổi trạng thái, cùng chuỗi giá trị "ra được internet", cùng
+  /// các phép dò không bị huỷ (lúc gửi + kết quả: 204, 200 của cổng đăng nhập,
+  /// lỗi mạng, timeout 15 s).
+  @Test func netInfoMatchesRN() throws {
+    let g = try Self.golden().netinfo
+    #expect(g.cases.count >= 10)
+    for c in g.cases {
+      let clock = VirtualNetTimers()
+      let prober = ScheduledProber(clock: clock, schedule: c.probeSchedule, timeout: g.config.requestTimeout)
+      let monitor = NetStatusMonitor(timers: clock)
+      monitor.busyProbe = { false }
+      var seen = [Golden.Transition(at: 0, status: monitor.status.rawValue)]
+      monitor.onChange = { seen.append(.init(at: clock.now, status: $0.rawValue)) }
+      var reach: [NetInfo.Reach] = []
+      let observer = NetworkObserver(prober: prober, timers: clock) { connected, reachable in
+        if reach.last?.value != reachable || reach.isEmpty { reach.append(.init(at: clock.now, value: reachable)) }
+        monitor.apply(connected: connected, internetReachable: reachable)
+      }
+      var current = NetPath(rnType: c.initial.type)
+      observer.pathChanged(current)
+      for e in c.events {
+        clock.advance(to: e.at)
+        if let p = e.native {
+          current = NetPath(rnType: p.type)
+          #expect(current.isConnected == p.isConnected, "\(c.name)")
+          observer.pathChanged(current)
+        }
+        if e.retry == true {
+          let s = observer.refresh(current)
+          monitor.apply(connected: s.connected, internetReachable: s.reachable)
+        }
+      }
+      clock.advance(to: c.until)
+      #expect(seen == c.transitions, "\(c.name)")
+      #expect(reach == c.reachability, "\(c.name)")
+      #expect(prober.kept == c.probes, "\(c.name)")
+      if let url = c.url { #expect(prober.urls.allSatisfy { $0 == url }) }
     }
   }
 
@@ -143,5 +257,79 @@ final class VirtualNetTimers: NetTimers {
     nextId += 1
     timers.append(timer)
     return NetTimerToken(id: timer.id)
+  }
+}
+
+extension NetPath {
+  /// Loại của `RNCConnectionState` (`type` của NetInfo).
+  init(rnType: String) {
+    self.init(kind: Kind(rawValue: rnType) ?? .other)
+  }
+}
+
+/// `fetch` giả của golden, dịch sang Swift: phép dò BẮT ĐẦU ở mốc t nhận kết
+/// quả của dòng lịch cuối có mốc ≤ t; trả kết quả sau `after` ms trên đồng hồ
+/// ảo. Ghi lại các phép dò không bị huỷ — phép dò treo bị cắt đúng ở mốc
+/// timeout là "timeout", như gen.mjs.
+@MainActor
+final class ScheduledProber: ReachabilityProber {
+  final class Probe: ReachabilityProbe {
+    let at: Int64
+    let hang: Bool
+    var result: NetStatusGoldenTests.NetInfo.ProbeResult?
+    var cancelled = false
+    weak var owner: ScheduledProber?
+    var token: NetTimerToken?
+    init(at: Int64, hang: Bool) {
+      self.at = at
+      self.hang = hang
+    }
+    func cancel() {
+      guard let owner, result == nil else { return }
+      if hang, owner.clock.now - at == owner.timeout {
+        result = .word("timeout")
+      } else {
+        cancelled = true
+      }
+      if let token { owner.clock.cancel(token) }
+    }
+  }
+
+  let clock: VirtualNetTimers
+  let schedule: [NetStatusGoldenTests.NetInfo.Outcome]
+  let timeout: Int64
+  private(set) var all: [Probe] = []
+  private(set) var urls: [String] = []
+
+  init(clock: VirtualNetTimers, schedule: [NetStatusGoldenTests.NetInfo.Outcome], timeout: Int64) {
+    self.clock = clock
+    self.schedule = schedule
+    self.timeout = timeout
+  }
+
+  var kept: [NetStatusGoldenTests.NetInfo.Probe] {
+    all.filter { !$0.cancelled }.map { .init(at: $0.at, result: $0.result) }
+  }
+
+  func start(_ config: ReachabilityConfig, _ done: @escaping @MainActor (Int?) -> Void) -> any ReachabilityProbe {
+    urls.append(config.url)
+    let o = schedule.last { $0.from <= clock.now }
+    let hang = o == nil || o?.hang == true
+    let p = Probe(at: clock.now, hang: hang)
+    p.owner = self
+    all.append(p)
+    if let o, !hang {
+      p.token = clock.after(o.after ?? 300) { [weak p] in
+        guard let p, !p.cancelled, p.result == nil else { return }
+        if o.error == true {
+          p.result = .word("error")
+          done(nil)
+        } else {
+          p.result = .status(o.status ?? 0)
+          done(o.status)
+        }
+      }
+    }
+    return p
   }
 }
