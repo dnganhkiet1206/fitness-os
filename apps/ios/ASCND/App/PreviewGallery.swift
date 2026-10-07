@@ -8,6 +8,10 @@
 // controller/backend).
 //
 // KHÔNG phải iPhone validation. Kiệt là người validate trên máy.
+//
+// Chỉ có trong bản DEBUG: đây là công cụ review, chữ mẫu cố ý không dịch —
+// không được lọt vào bản phát hành.
+#if DEBUG
 import ASCNDDesignSystem
 import SwiftUI
 
@@ -108,3 +112,4 @@ struct PreviewGallery: View {
   }
   .dynamicTypeSize(.accessibility3)
 }
+#endif
