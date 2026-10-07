@@ -33,8 +33,9 @@ public actor FakeServer: RemoteWriter {
 
   public private(set) var rows: [String: OutboxEntry] = [:]
   /// Bảng `workout_sessions` như server thấy, theo `payload.id`: bản ghi mới
-  /// là upsert bỏ trùng (`ignoreDuplicates`), bản ghi lại (#296) ghi đè cả hàng
-  /// — đúng như `SupabaseRemoteWriter`.
+  /// là upsert bỏ trùng (`ignoreDuplicates`), bản ghi lại (#296) có `base` thì
+  /// gộp lên hàng hiện có, không có (bản cũ) thì ghi đè cả hàng — đúng như
+  /// `SupabaseRemoteWriter`.
   public private(set) var table: [String: JSONValue] = [:]
   /// `workout_templates` / `routine_days` (#401), theo id / `day_of_week`.
   /// Khoá ngoại như Postgres: gán ngày vào template không có là 23503; xoá
@@ -73,11 +74,19 @@ public actor FakeServer: RemoteWriter {
     }
   }
 
+  /// Một máy KHÁC ghi thẳng vào bảng (`nil` = xoá hàng) — dựng cảnh nhiều máy.
+  public func externalWrite(_ rowId: String, _ row: JSONValue?) { table[rowId] = row }
+
   private func check(_ entry: OutboxEntry) throws(WriteFailure) {
     let target = entry.payload["template_id"]?.stringValue
     switch entry.kind {
     case PlanEdit.routineDayKind:
       if let target, templates[target] == nil { throw .server(code: "23503") }
+    case WorkoutSessionRecord.revisionKind
+    where entry.base != nil && entry.payload["id"]?.stringValue.flatMap({ table[$0] }) != nil:
+      // Bản ghi lại có `base` chỉ `update` các cột set của hàng có sẵn
+      // (`sendMerged`), không ghi `template_id` — khoá ngoại không xét.
+      break
     case WorkoutSessionRecord.outboxKind, WorkoutSessionRecord.revisionKind:
       if let target, deletedTemplates.contains(target) { throw .server(code: "23503") }
     default:
@@ -116,7 +125,21 @@ public actor FakeServer: RemoteWriter {
       break
     }
     guard let rowId = entry.payload["id"]?.stringValue else { return }
-    if entry.kind == WorkoutSessionRecord.deleteKind {
+    let revises = entry.kind == WorkoutSessionRecord.revisionKind || entry.kind == WorkoutSessionRecord.deleteKind
+    if revises, let base = entry.base {
+      // Như `SupabaseRemoteWriter.sendMerged`: đọc hàng lúc gửi rồi gộp.
+      let local = entry.kind == WorkoutSessionRecord.revisionKind ? entry.payload : nil
+      switch SessionRevisionMerge.merge(server: table[rowId], base: base, local: local) {
+      case .skip: break
+      case .delete: table[rowId] = nil
+      case .update(let fields):
+        if case .object(var row)? = table[rowId], case .object(let f) = fields {
+          for (k, v) in f { row[k] = v }
+          table[rowId] = .object(row)
+        }
+      case .upsert(let row): table[rowId] = row
+      }
+    } else if entry.kind == WorkoutSessionRecord.deleteKind {
       table[rowId] = nil
     } else if entry.kind == WorkoutSessionRecord.revisionKind || table[rowId] == nil {
       table[rowId] = entry.payload
