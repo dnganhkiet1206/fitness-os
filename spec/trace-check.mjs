@@ -77,8 +77,11 @@ function checkRow(r) {
       let vectors;
       try { vectors = JSON.parse(hit.content); }
       catch { vectors = null; }
-      const ok = Array.isArray(vectors) &&
-        vectors.some((v) => v.rule === r.rule || String(v.rule).startsWith(r.rule + '-') || String(v.rule).startsWith(r.rule));
+      // Hỗ trợ cả format cũ (mảng) và format golden-vectors/v1 ({vectors: [...]}).
+      const list = Array.isArray(vectors) ? vectors
+        : (vectors && Array.isArray(vectors.vectors) ? vectors.vectors : null);
+      const ok = list &&
+        list.some((v) => v.rule === r.rule || String(v.rule).startsWith(r.rule + '-') || String(v.rule).startsWith(r.rule) || v.id === r.rule || String(v.id).startsWith(r.rule));
       if (!ok) problems.push(`${r.id}: không có vector nào mang rule ${r.rule} trong ${r.vector.file}`);
     }
   }
