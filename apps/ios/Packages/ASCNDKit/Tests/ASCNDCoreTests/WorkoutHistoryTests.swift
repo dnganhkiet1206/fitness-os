@@ -119,7 +119,15 @@ struct HistoryBookTests {
     #expect(b.entries.map(\.id) == ["s2"])
     let entry = try #require(await store.outbox.last)
     #expect(entry.kind == WorkoutSessionRecord.deleteKind)
-    #expect(entry.payload == .object(["id": .string("s1")]))
+    // Lệnh xoá chỉ xoá theo `id`; `date_time` (của chính buổi bị xoá) để
+    // dựng lại đúng ngày ấy + hôm nay sau khi server nhận (#266, WH-3a).
+    guard case .object(let payload) = entry.payload else {
+      Issue.record("payload không phải object")
+      return
+    }
+    #expect(Set(payload.keys) == ["id", "date_time"])
+    #expect(payload["id"] == .string("s1"))
+    #expect(payload["date_time"]?.stringValue.flatMap { EpochMillis(iso8601: $0) } == EpochMillis(iso8601: "2026-10-05T07:00:00Z"))
     #expect(entry.id.hasPrefix("s1@"))
     #expect(await store.days["2026-10-05:tpl"]?.loggedKeys == [], "ngày thôi giữ set nào trong buổi")
     await b.refresh()
