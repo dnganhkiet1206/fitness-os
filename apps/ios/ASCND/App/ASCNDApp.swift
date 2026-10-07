@@ -31,6 +31,8 @@ struct ASCNDApp: App {
   var body: some Scene {
     WindowGroup {
       RootGate()
+        // Dải trạng thái kết nối ở trên mọi màn, kể cả Đăng nhập (`_layout.tsx`).
+        .overlay(alignment: .top) { ConnectionBanner() }
         .environment(rest)
         .environment(services)
         .task { await rest.reconcile() }

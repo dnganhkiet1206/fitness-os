@@ -72,6 +72,10 @@ private struct SignedInScope<Content: View>: View {
     .task {
       let f = services.makeWorkoutFlow(userId: userId, rest: rest)
       flow = f
+      // "Đang kết nối lại" thoát khi lượt tải của phiên này xong. Giữ `weak`:
+      // phiên đã đóng thì không còn gì để chờ. Không gỡ ở `onDisappear` — cây
+      // của người mới có thể đã đăng ký trước khi cây cũ gỡ xong.
+      services.net.busyProbe = { [weak f] in f?.isRefreshing ?? false }
       await services.forgetOtherAccounts(keeping: userId)
       await f.start()
     }

@@ -1,0 +1,623 @@
+{
+ "table": [
+  {
+   "name": "máy bay / không sóng",
+   "state": {
+    "isConnected": false,
+    "isInternetReachable": false
+   },
+   "usable": false
+  },
+  {
+   "name": "Wi-Fi tốt",
+   "state": {
+    "isConnected": true,
+    "isInternetReachable": true
+   },
+   "usable": true
+  },
+  {
+   "name": "Wi-Fi quán cà phê chưa bấm đồng ý điều khoản",
+   "state": {
+    "isConnected": true,
+    "isInternetReachable": false
+   },
+   "usable": false
+  },
+  {
+   "name": "vừa mở app, NetInfo còn đang dò",
+   "state": {
+    "isConnected": true,
+    "isInternetReachable": null
+   },
+   "usable": true
+  },
+  {
+   "name": "không rõ loại mạng, chưa dò xong",
+   "state": {
+    "isConnected": null,
+    "isInternetReachable": null
+   },
+   "usable": true
+  },
+  {
+   "name": "mất kết nối, chưa dò xong",
+   "state": {
+    "isConnected": false,
+    "isInternetReachable": null
+   },
+   "usable": false
+  }
+ ],
+ "cases": [
+  {
+   "name": "mất mạng rồi có lại, còn đang tải → ở \"đang kết nối lại\"",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": null,
+   "until": 0,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    },
+    {
+     "at": 0,
+     "status": "reconnecting"
+    }
+   ]
+  },
+  {
+   "name": "mạng vẫn tốt, NetInfo báo lại → không dựng ra lần kết nối lại",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": null,
+   "until": 2000,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    }
+   ]
+  },
+  {
+   "name": "vào vùng Wi-Fi có sóng mà không có internet",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": false
+     }
+    }
+   ],
+   "busyUntil": null,
+   "until": 2000,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    }
+   ]
+  },
+  {
+   "name": "không còn gì đang tải → về online đúng ở sàn",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": 0,
+   "until": 1200,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    },
+    {
+     "at": 0,
+     "status": "reconnecting"
+    },
+    {
+     "at": 600,
+     "status": "online"
+    }
+   ]
+  },
+  {
+   "name": "còn đang tải thì ở lại, không về sớm",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": null,
+   "until": 1200,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    },
+    {
+     "at": 0,
+     "status": "reconnecting"
+    }
+   ]
+  },
+  {
+   "name": "tải không bao giờ xong → trần 12 giây",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 1000,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": null,
+   "until": 20000,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    },
+    {
+     "at": 1000,
+     "status": "reconnecting"
+    },
+    {
+     "at": 13000,
+     "status": "online"
+    }
+   ]
+  },
+  {
+   "name": "tải xong giữa hai nhịp dò → về ở nhịp kế tiếp",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": 900,
+   "until": 3000,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    },
+    {
+     "at": 0,
+     "status": "reconnecting"
+    },
+    {
+     "at": 1100,
+     "status": "online"
+    }
+   ]
+  },
+  {
+   "name": "tải xong đúng lúc hết sàn",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": 600,
+   "until": 3000,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    },
+    {
+     "at": 0,
+     "status": "reconnecting"
+    },
+    {
+     "at": 600,
+     "status": "online"
+    }
+   ]
+  },
+  {
+   "name": "mất mạng lại giữa lúc đang kết nối lại → huỷ hẹn giờ cũ",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    },
+    {
+     "at": 300,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 5000,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": null,
+   "until": 30000,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    },
+    {
+     "at": 0,
+     "status": "reconnecting"
+    },
+    {
+     "at": 300,
+     "status": "offline"
+    },
+    {
+     "at": 5000,
+     "status": "reconnecting"
+    },
+    {
+     "at": 17000,
+     "status": "online"
+    }
+   ]
+  },
+  {
+   "name": "NetInfo báo có mạng lần nữa giữa lúc kết nối lại → không bắt đầu lại",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    },
+    {
+     "at": 400,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": 2000,
+   "until": 5000,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    },
+    {
+     "at": 0,
+     "status": "reconnecting"
+    },
+    {
+     "at": 2100,
+     "status": "online"
+    }
+   ]
+  },
+  {
+   "name": "không ai đăng ký cách hỏi → về online ngay",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": null,
+   "probe": false,
+   "until": 2000,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    },
+    {
+     "at": 0,
+     "status": "reconnecting"
+    },
+    {
+     "at": 0,
+     "status": "online"
+    }
+   ]
+  },
+  {
+   "name": "mở app lúc NetInfo còn dò → không nháy cảnh báo",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": null,
+      "isInternetReachable": null
+     }
+    },
+    {
+     "at": 50,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": null
+     }
+    },
+    {
+     "at": 80,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": true
+     }
+    }
+   ],
+   "busyUntil": null,
+   "until": 2000,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    }
+   ]
+  },
+  {
+   "name": "mở app lúc đã mất mạng",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": false,
+      "isInternetReachable": false
+     }
+    }
+   ],
+   "busyUntil": null,
+   "until": 2000,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    }
+   ]
+  },
+  {
+   "name": "Wi-Fi chết rồi dò xong là chưa biết → kết nối lại",
+   "events": [
+    {
+     "at": 0,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": false
+     }
+    },
+    {
+     "at": 200,
+     "state": {
+      "isConnected": true,
+      "isInternetReachable": null
+     }
+    }
+   ],
+   "busyUntil": 0,
+   "until": 2000,
+   "probe": true,
+   "transitions": [
+    {
+     "at": 0,
+     "status": "online"
+    },
+    {
+     "at": 0,
+     "status": "offline"
+    },
+    {
+     "at": 200,
+     "status": "reconnecting"
+    },
+    {
+     "at": 800,
+     "status": "online"
+    }
+   ]
+  }
+ ]
+}

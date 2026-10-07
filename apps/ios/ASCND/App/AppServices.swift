@@ -28,6 +28,8 @@ final class AppServices {
   let reminders: ReminderCenter
   @ObservationIgnored private let reminderPresenter = ReminderPresenter()
   let sync: SyncWorker
+  /// Trạng thái mạng ba nhánh (#527 · 1.11, `net-status.ts`): dải báo ở gốc app.
+  let net = NetStatusMonitor()
   @ObservationIgnored let workouts: GRDBWorkoutStore
   /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
   /// vào đây và Today đọc lại phần chưa gửi.
@@ -251,10 +253,31 @@ final class AppServices {
     return dir.appendingPathComponent("ascnd.sqlite").path
   }
 
+  /// MỘT định nghĩa "có mạng" cho cả app — vòng sync và dải báo đọc cùng một
+  /// phép đo (luật 4 của `tools/net-status.mjs`).
+  ///
+  /// `NWPath` chỉ trả lời "có nối vào một mạng không" (`isConnected`); không có
+  /// trường nào như `isInternetReachable` của NetInfo, nên Wi-Fi có sóng mà
+  /// không ra được internet (quán cà phê chưa bấm đồng ý) vẫn đọc ra có mạng.
+  /// Ghi ở #527 (PARTIAL): NetInfo dò bằng một yêu cầu HTTP; native chưa dò.
+  nonisolated private static func isUsable(_ path: NWPath) -> Bool {
+    NetReachability.isUsable(connected: path.status == .satisfied, internetReachable: nil)
+  }
+
+  private func applyNetwork(usable: Bool) {
+    sync.setOnline(usable)
+    net.apply(usable: usable)
+  }
+
+  /// "Thử lại" của dải báo: ĐO lại thay vì tự tuyên bố đã có mạng (`retryNow`).
+  func retryNetwork() {
+    applyNetwork(usable: Self.isUsable(monitor.currentPath))
+  }
+
   private func startNetworkMonitor() {
     monitor.pathUpdateHandler = { [weak self] path in
-      let online = path.status == .satisfied
-      Task { @MainActor in self?.sync.setOnline(online) }
+      let usable = Self.isUsable(path)
+      Task { @MainActor in self?.applyNetwork(usable: usable) }
     }
     monitor.start(queue: DispatchQueue(label: "ascnd.network"))
   }
