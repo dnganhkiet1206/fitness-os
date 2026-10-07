@@ -72,24 +72,31 @@ public struct ActivityKitRestDriver: RestActivityDriver {
   /// in your app's code while the app is in the foreground"). Vì vậy
   /// controller không bao giờ gọi `start` khi đã có activity đang hiện. Nếu
   /// gọi, activity cũ sẽ bị end ở dưới đây và request mới bị từ chối từ nền.
-  public func start(_ content: RestActivityContent) async {
+  public func start(_ content: RestActivityContent) async -> Bool {
     // Một quãng nghỉ tại một thời điểm: dọn mọi activity cũ trước.
     for a in Activity<RestActivityAttributes>.activities {
       await a.end(nil, dismissalPolicy: .immediate)
     }
-    guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-    _ = try? Activity.request(
-      attributes: RestActivityAttributes(),
-      content: ActivityContent(state: content, staleDate: Self.stale(content)),
-      pushType: nil)
+    guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
+    // Không `try?` rồi giả định đã có activity: request hỏng (app ở nền, hết
+    // hạn mức, bị tắt giữa chừng) phải về tới controller (#523 P1).
+    do {
+      _ = try Activity.request(
+        attributes: RestActivityAttributes(),
+        content: ActivityContent(state: content, staleDate: Self.stale(content)),
+        pushType: nil)
+      return true
+    } catch {
+      return false
+    }
   }
 
-  public func update(_ content: RestActivityContent) async {
+  public func update(_ content: RestActivityContent) async -> Bool {
     guard let a = live else {
-      await start(content)
-      return
+      return await start(content)
     }
     await a.update(ActivityContent(state: content, staleDate: Self.stale(content)))
+    return true
   }
 
   public func end() async {

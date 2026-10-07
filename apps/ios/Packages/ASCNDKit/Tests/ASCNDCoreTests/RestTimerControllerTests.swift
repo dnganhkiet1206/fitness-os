@@ -10,10 +10,18 @@ private final class FakeDriver: RestActivityDriver, @unchecked Sendable {
   private var _calls: [Call] = []
   private var _showing: RestActivityContent?
   let startDelayNanos: UInt64
+  /// Hệ thống từ chối `start` (Live Activity bị tắt, app ở nền).
+  private var _refuseStarts: Bool
 
-  init(showing: RestActivityContent? = nil, startDelayNanos: UInt64 = 0) {
+  init(showing: RestActivityContent? = nil, startDelayNanos: UInt64 = 0, refuseStarts: Bool = false) {
     _showing = showing
     self.startDelayNanos = startDelayNanos
+    _refuseStarts = refuseStarts
+  }
+
+  var refuseStarts: Bool {
+    get { lock.withLock { _refuseStarts } }
+    set { lock.withLock { _refuseStarts = newValue } }
   }
 
   private var _startsBegun = 0
@@ -27,12 +35,20 @@ private final class FakeDriver: RestActivityDriver, @unchecked Sendable {
   }
 
   func current() async -> RestActivityContent? { showing }
-  func start(_ c: RestActivityContent) async {
+  func start(_ c: RestActivityContent) async -> Bool {
     lock.withLock { _startsBegun += 1 }
     if startDelayNanos > 0 { try? await Task.sleep(nanoseconds: startDelayNanos) }
-    lock.withLock { _calls.append(.start(c)); _showing = c }
+    return lock.withLock {
+      _calls.append(.start(c))
+      if _refuseStarts { return false }
+      _showing = c
+      return true
+    }
   }
-  func update(_ c: RestActivityContent) async { lock.withLock { _calls.append(.update(c)); _showing = c } }
+  func update(_ c: RestActivityContent) async -> Bool {
+    lock.withLock { _calls.append(.update(c)); _showing = c }
+    return true
+  }
   func end() async { lock.withLock { _calls.append(.end); _showing = nil } }
 }
 
@@ -195,6 +211,34 @@ struct RestTimerControllerTests {
     await c.flush()
     #expect(driver.calls.count == 1)
     #expect(driver.showing == c.timer?.activityContent(target: squat))
+  }
+
+  /// #523 P1: hệ thống từ chối `Activity.request` (Live Activity tắt, app ở
+  /// nền). Controller KHÔNG được coi mong muốn là thật: không ghi `shown`,
+  /// không quay vòng thử lại; lần sự kiện sau đọc lại hệ thống rồi `start` lại.
+  @Test func refusedStartIsNotRecordedAsShown() async {
+    let driver = FakeDriver(refuseStarts: true)
+    let c = RestTimerController(driver: driver, clock: TestClock(0))
+    c.handle(.start(seconds: 90), target: squat)
+    await c.flush()
+    #expect(driver.showing == nil)
+    #expect(driver.calls.count == 1, "một lần thử, không quay vòng")
+    #expect(c.activityFailed)
+    #expect(c.timer != nil, "đồng hồ trong app vẫn chạy — nguồn sự thật là timer")
+
+    // Hệ thống cho phép lại (người dùng bật Live Activity, app ra tiền cảnh).
+    driver.refuseStarts = false
+    c.adjust(by: 15)
+    await c.flush()
+    // Bản cũ đã ghi shown = mong muốn ở lần 1 nên lần này gọi `update` vào một
+    // activity không tồn tại. Giờ: đọc lại (không có gì) → `start` mới.
+    guard case .start(let shown)? = driver.calls.last else {
+      Issue.record("phải start lại sau khi bị từ chối: \(driver.calls)")
+      return
+    }
+    #expect(driver.showing == shown)
+    #expect(shown.endsAt == EpochMillis(105_000))
+    #expect(!c.activityFailed)
   }
 
   @Test func persistsEveryChange() async {

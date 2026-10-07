@@ -43,8 +43,12 @@ extension RestTimer {
 public protocol RestActivityDriver: Sendable {
   /// Activity đang hiện (nếu có) — đọc lúc mở app để đối chiếu.
   func current() async -> RestActivityContent?
-  func start(_ content: RestActivityContent) async
-  func update(_ content: RestActivityContent) async
+  /// `true` khi activity THẬT đang hiện `content` sau lời gọi. `false` khi hệ
+  /// thống từ chối (Live Activity bị tắt, app ở nền, hết hạn mức…): controller
+  /// không được coi trạng thái mong muốn là trạng thái thật (#523 P1).
+  func start(_ content: RestActivityContent) async -> Bool
+  /// Như `start`; không còn activity để cập nhật thì driver tự `start`.
+  func update(_ content: RestActivityContent) async -> Bool
   func end() async
 }
 
@@ -77,6 +81,9 @@ public final class RestTimerController {
   /// đầu tiên. Mặc định `true`: process có thể vừa được hệ thống khởi động ở
   /// nền CHỈ để chạy nút ±15 (`LiveActivityIntent`), trước cả `reconcile()`.
   @ObservationIgnored private var needsRead = true
+  /// Lần đồng bộ gần nhất hệ thống từ chối hiện activity. Đồng hồ trong app
+  /// vẫn đúng (nguồn sự thật là `timer`); chỉ Island / màn khoá không có.
+  public private(set) var activityFailed = false
   @ObservationIgnored private var syncing: Task<Void, Never>?
 
   /// - Parameters:
@@ -163,13 +170,26 @@ public final class RestTimerController {
         }
         guard self.shown != self.desired else { break }
         let want = self.desired
+        let applied: Bool
         switch (self.shown, want) {
-        case (nil, let w?): await self.driver.start(w)
-        case (_?, let w?): await self.driver.update(w)
-        case (_?, nil): await self.driver.end()
-        case (nil, nil): break
+        case (nil, let w?): applied = await self.driver.start(w)
+        case (_?, let w?): applied = await self.driver.update(w)
+        case (_?, nil):
+          await self.driver.end()
+          applied = true
+        case (nil, nil): applied = true
+        }
+        // Chỉ ghi `shown` khi driver xác nhận. Hỏng thì KHÔNG coi mong muốn là
+        // thật, không quay vòng thử lại ngay (hệ thống từ chối sẽ từ chối
+        // tiếp): thoát, và sự kiện kế (±15, tick, reconcile, settle) đọc lại
+        // hệ thống trước khi thử.
+        guard applied else {
+          self.needsRead = true
+          self.activityFailed = true
+          break
         }
         self.shown = want
+        self.activityFailed = false
       }
       self?.syncing = nil
     }
