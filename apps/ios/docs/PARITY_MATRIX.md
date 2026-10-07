@@ -27,7 +27,7 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 | Đổi mật khẩu | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A29 #441 |
 | Onboarding | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A30 #442 |
 | Hôm nay (5 trạng thái, kế hoạch) | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `TodayController` (#290), `TodayScreen` (#345), vectors TC (#380). Thiếu: CTA `todayCta` (extra/log-free/none, TC-1) chưa port; widget Hôm nay (mục 3) |
-| Màn tập trong ngày | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | #263/#268/#287/#389; vectors WS (#286), append (#347), remove-set (#412). Tạ lẻ `plannedLoad` + lỗi chốt chữ RN (batch 1, golden node). VoiceOver từng control #288 + #291, focus/flush ô nhập #318 (batch 3). Thiếu: RestCard / SyncStrip chưa nối controller |
+| Màn tập trong ngày | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | #263/#268/#287/#389; vectors WS (#286), append (#347), remove-set (#412). Tạ lẻ `plannedLoad` + lỗi chốt chữ RN (batch 1, golden node). VoiceOver từng control #288 + #291, focus/flush ô nhập #318 (batch 3). Ô nhập đọc `controller.progress` (không seed một lần), khoá khi controller không cho sửa (`canEditMatchesWhatTheSettersAccept`). Thiếu: RestCard / SyncStrip chưa nối controller; `WorkoutView` chưa được gắn vào tab production |
 | Gỡ set đã chốt + hoàn tác 8 s | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A19 #415; vectors RS (#412); `WorkoutSessionControllerTests` RS-3..6. RS-1/2 chưa có test bám ID |
 | Bài thêm ngoài kế hoạch | ✅ | ✅ | ✅ | ✅ | ✅ DONE | Dữ liệu A20 #416, UI #411, vectors AH #413 (batch 1). Chưa thử trên máy thật |
 | Kỷ lục cá nhân | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A11 #298; vectors PR (#344, runner gọi logic RN) |

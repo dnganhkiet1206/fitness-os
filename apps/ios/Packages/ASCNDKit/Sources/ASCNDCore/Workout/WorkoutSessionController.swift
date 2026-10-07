@@ -482,6 +482,11 @@ public final class WorkoutSessionController {
   // MARK: - gỡ set đã chốt (#398)
 
   /// Gỡ được hàng này không: nằm trong buổi đã chốt của chính máy này.
+  /// Ô tạ / reps của hàng này có sửa được lúc này không — cùng luật với
+  /// `setWeightText` / `setRepsText` (đã tải, không đang chốt, chưa nằm trong
+  /// buổi đã chốt). View khoá ô theo nó, để ô không hiện con số bị từ chối.
+  public func canEdit(_ key: String) -> Bool { editable(key) && row(key) != nil }
+
   public func canRemove(_ key: String) -> Bool {
     loaded && !finishing && !loggedElsewhere && loggedSessionId != nil && loggedKeys.contains(key)
   }

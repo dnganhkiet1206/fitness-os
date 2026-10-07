@@ -99,6 +99,30 @@ struct WorkoutSessionControllerTests {
     #expect(await store.writes == 0)
   }
 
+  /// #523 P2 (ô nhập cũ): `canEdit` nói ĐÚNG điều `setWeightText` sẽ làm —
+  /// View khoá ô theo nó. Chưa tải / hàng lạ / hàng đã nằm trong buổi đã chốt
+  /// → khoá; hàng chưa chốt của buổi đã chốt (sẽ nối thêm) → mở.
+  @Test func canEditMatchesWhatTheSettersAccept() async throws {
+    let store = InMemoryWorkoutStore()
+    let fresh = WorkoutSessionController(
+      plan: .init(date: today, templateId: "tpl-push", templateName: "Push A", rows: [bench1, bench2]),
+      userId: "u1", store: store, clock: clock, timeZone: saigon)
+    #expect(!fresh.canEdit("b1"), "chưa tải xong: khoá")
+    #expect(await fresh.setWeightText("62.5", for: "b1") == false)
+
+    let c = await controller(store, rows: [bench1, bench2])
+    #expect(c.canEdit("b1"))
+    #expect(!c.canEdit("nope"))
+    #expect(await c.setWeightText("62.5", for: "b1"))
+    #expect(c.progress.weightText["b1"] == "62.5", "ô đọc lại đúng số lẻ từ progress")
+    #expect(await c.toggle("b1"))
+    _ = try await c.finish()
+    #expect(!c.canEdit("b1"), "đã nằm trong buổi đã chốt")
+    #expect(await c.setWeightText("70", for: "b1") == false)
+    #expect(c.canEdit("b2"), "hàng chưa chốt vẫn sửa được để nối thêm")
+    #expect(await c.setWeightText("65", for: "b2"))
+  }
+
   @Test func unknownRowIsRefused() async {
     let c = await controller(InMemoryWorkoutStore())
     #expect(await c.toggle("nope") == false)

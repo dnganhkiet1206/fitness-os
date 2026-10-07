@@ -89,7 +89,14 @@ public struct WorkoutView: View {
     .onChange(of: scenePhase) { _, phase in
       if phase != .active { Task { await flushWrites() } }
     }
-    .onAppear(perform: seedTexts)
+    // Cùng chỗ trên màn nhưng là buổi khác (sang ngày mới, kế hoạch đổi):
+    // bộ đệm thuộc buổi cũ — bỏ, để ô đọc `progress` của buổi mới.
+    .onChange(of: ObjectIdentifier(controller)) { _, _ in
+      for task in pendingWrites.values { task.cancel() }
+      pendingWrites.removeAll()
+      weightTexts.removeAll()
+      repsTexts.removeAll()
+    }
     .alert(
       String(localized: "workout.finishError.title"),
       isPresented: Binding(
@@ -219,6 +226,10 @@ public struct WorkoutView: View {
           .background(DS.Color.secondary.swiftUI)
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
           .accessibilityLabel(Text(String(localized: "workout.weight")))
+          // Hàng controller không cho sửa (đang tải, đã nằm trong buổi đã
+          // chốt, đang chốt): khoá ô — gõ vào sẽ hiện một con số controller
+          // đã từ chối, tức ô nói dối.
+          .disabled(!controller.canEdit(row.key))
           .focused($focusedField, equals: .weight(row.key))
           .submitLabel(.next)
           .onSubmit {
@@ -241,6 +252,7 @@ public struct WorkoutView: View {
           .background(DS.Color.secondary.swiftUI)
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
           .accessibilityLabel(Text(String(localized: "workout.reps")))
+          .disabled(!controller.canEdit(row.key))
           .focused($focusedField, equals: .reps(row.key))
           .submitLabel(.done)
           .onSubmit {
@@ -327,6 +339,13 @@ public struct WorkoutView: View {
   }
 
   // MARK: - Binding ô nhập (phản hồi tức thì, ghi bền debounce)
+  //
+  // Nguồn sự thật là `controller.progress` (bền, đã nạp lại sau kill, đã qua
+  // `NumberInput.decimal`). `weightTexts` / `repsTexts` CHỈ là bộ đệm của chữ
+  // đang chờ debounce: có thì hiện nó, ghi xong thì bỏ. Bản trước chép
+  // `progress` vào bộ đệm một lần ở `onAppear` — mà `WorkoutFlow` đưa buổi ra
+  // TRƯỚC khi `load()` xong, và nạp lại buổi sau khi xoá từ lịch sử — nên ô
+  // giữ số kế hoạch / số cũ trong khi controller (và lượt chốt) dùng số khác.
 
   /// Ghi debounce: huỷ lần ghi cũ, chờ 0.6s rồi mới gọi controller (#300).
   /// Gõ nhanh không spam controller; giá trị cuối cùng vẫn được ghi.
@@ -361,12 +380,16 @@ public struct WorkoutView: View {
 
   private func weightBinding(for row: PlannedSet) -> Binding<String> {
     Binding(
-      get: { weightTexts[row.key] ?? NumberInput.plannedLoad(row.weightKg) },
+      get: {
+        weightTexts[row.key] ?? controller.progress.weightText[row.key]
+          ?? NumberInput.plannedLoad(row.weightKg)
+      },
       set: { new in
         let clean = filteredDecimal(new)
         weightTexts[row.key] = clean
         scheduleWrite(key: "w:\(row.key)") {
           await controller.setWeightText(clean, for: row.key)
+          if weightTexts[row.key] == clean { weightTexts[row.key] = nil }
         }
       }
     )
@@ -374,7 +397,10 @@ public struct WorkoutView: View {
 
   private func repsBinding(for row: PlannedSet) -> Binding<String> {
     Binding(
-      get: { repsTexts[row.key] ?? NumberInput.plannedReps(row.reps) },
+      get: {
+        repsTexts[row.key] ?? controller.progress.repsText[row.key]
+          ?? NumberInput.plannedReps(row.reps)
+      },
       set: { new in
         // Plank nhập "45s" ở ô reps — giữ chữ, `RepEntry.parse` ở domain lo.
         // Chỉ lọc khi là số thuần; chữ (như "45s") giữ nguyên.
@@ -382,6 +408,7 @@ public struct WorkoutView: View {
         repsTexts[row.key] = clean
         scheduleWrite(key: "r:\(row.key)") {
           await controller.setRepsText(clean, for: row.key)
+          if repsTexts[row.key] == clean { repsTexts[row.key] = nil }
         }
       }
     )
@@ -391,8 +418,8 @@ public struct WorkoutView: View {
   /// tick / finish, khi Done / hạ bàn phím, và khi rời tiền cảnh (#300).
   private func flushWrites() async {
     // Chỉ flush các field đang có ghi chờ — không ghi lại toàn bộ rows
-    // (seedTexts đã điền mọi ô, ghi lại hết sẽ spam controller và có thể
-    // ghi đè state đang bay).
+    // (ghi lại hết sẽ spam controller và có thể ghi đè state đang bay).
+    // Ghi xong thì bỏ bộ đệm: từ đó ô đọc `controller.progress`.
     let pendingKeys = Array(pendingWrites.keys)
     for task in pendingWrites.values {
       task.cancel()
@@ -403,23 +430,14 @@ public struct WorkoutView: View {
         let key = String(pkey.dropFirst(2))
         if let w = weightTexts[key] {
           await controller.setWeightText(w, for: key)
+          if weightTexts[key] == w { weightTexts[key] = nil }
         }
       } else if pkey.hasPrefix("r:") {
         let key = String(pkey.dropFirst(2))
         if let r = repsTexts[key] {
           await controller.setRepsText(r, for: key)
+          if repsTexts[key] == r { repsTexts[key] = nil }
         }
-      }
-    }
-  }
-
-  private func seedTexts() {
-    for row in controller.plan.rows {
-      if weightTexts[row.key] == nil {
-        weightTexts[row.key] = controller.progress.weightText[row.key] ?? NumberInput.plannedLoad(row.weightKg)
-      }
-      if repsTexts[row.key] == nil {
-        repsTexts[row.key] = controller.progress.repsText[row.key] ?? NumberInput.plannedReps(row.reps)
       }
     }
   }
