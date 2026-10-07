@@ -1,4 +1,5 @@
 {
+ "adhoc-exercise.json": "run-adhoc-exercise.mjs",
  "append.json": "run-append.mjs",
  "personal-record.json": "run-personal-record.mjs",
  "remove-set-undo.json": "run-remove-set-undo.mjs",

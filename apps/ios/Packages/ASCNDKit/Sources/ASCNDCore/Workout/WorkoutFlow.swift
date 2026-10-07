@@ -25,6 +25,9 @@ public final class WorkoutFlow {
   /// Buổi tập của hôm nay; `nil` khi hôm nay không có buổi (nghỉ / chưa lên
   /// lịch) và không có kế hoạch tự do.
   public private(set) var session: WorkoutSessionController?
+  /// Ghi kế hoạch (#401): builder, danh sách template, màn Plan. `nil` khi app
+  /// không đưa chỗ ghi.
+  public private(set) var plan: PlanEditor?
 
   @ObservationIgnored private let store: any WorkoutStore
   @ObservationIgnored private let clock: any WallClock
@@ -50,8 +53,9 @@ public final class WorkoutFlow {
   ///   - onEnqueued: hàng outbox vừa bền — app gọi `sync.kick()`.
   public init(
     today: TodayController, records: RecordBook, performance: PerformanceBook, history: HistoryBook? = nil,
-    store: any WorkoutStore,
+    store: any WorkoutStore, planStore: (any PlanWriteStore)? = nil,
     clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current,
+    makeId: @escaping @Sendable () -> String = { UUID().uuidString.lowercased() },
     onRest: @escaping @MainActor (RestEvent, RestTarget?) -> Void = { _, _ in },
     onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
   ) {
@@ -65,6 +69,24 @@ public final class WorkoutFlow {
     self.onRest = onRest
     self.onEnqueued = onEnqueued
     history?.onDeleted = { [weak self] id, at in await self?.sessionDeleted(id, at: at) }
+    if let planStore {
+      plan = PlanEditor(
+        userId: today.userId, store: planStore, current: { [weak today] in today?.library }, clock: clock,
+        makeId: makeId, onEnqueued: { [weak self] entries in await self?.planEdited(entries) })
+    }
+  }
+
+  /// Lệnh sửa kế hoạch vừa bền (#401): vòng sync gửi; Today áp lên kế hoạch
+  /// ngay (TW-6b); màn tập dựng lại theo luật thay buổi — buổi đang tập dở
+  /// KHÔNG đổi (TW-6a). Template của buổi đang mở bị xoá thì buổi tách khỏi nó.
+  func planEdited(_ entries: [OutboxEntry]) async {
+    for e in entries { onEnqueued(e) }
+    guard !closed else { return }
+    for e in entries where e.kind == PlanEdit.templateDeleteKind {
+      if let id = e.payload["id"]?.stringValue { session?.templateDeleted(id) }
+    }
+    await today.adopt(entries)
+    await install()
   }
 
   /// Một buổi bị xoá từ lịch sử (#400): ngày ấy thôi "đã tập", "lần trước"

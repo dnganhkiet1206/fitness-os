@@ -99,4 +99,17 @@ struct OutboxStoreTests {
     }
     #expect(e.id == "a")
   }
+
+  /// #401: tạo + gán ngày là một giao dịch, theo thứ tự; gửi lại cùng id là
+  /// một hàng; `pending` chỉ trả hàng của người hỏi.
+  @Test func planEditsEnqueueAtomicallyInOrder() async throws {
+    let store = try OutboxStore()
+    let create = OutboxEntry(id: "tpl", userId: "u1", kind: PlanEdit.templateKind, payload: .object(["id": .string("tpl")]), createdAt: EpochMillis(0))
+    let assign = OutboxEntry(id: "tpl@day0", userId: "u1", kind: PlanEdit.routineDayKind, payload: .object(["day_of_week": .number(0)]), createdAt: EpochMillis(0))
+    try store.append(entry("other", user: "u2"))
+    try await store.enqueue([create, assign])
+    try await store.enqueue([create, assign])
+    #expect(try store.load().pending.map(\.id) == ["other", "tpl", "tpl@day0"])
+    #expect(try await store.pending(userId: "u1").map(\.id) == ["tpl", "tpl@day0"])
+  }
 }

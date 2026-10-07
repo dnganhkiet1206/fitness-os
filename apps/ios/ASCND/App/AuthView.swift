@@ -258,14 +258,18 @@ struct AuthView: View {
 
   // MARK: - Sign in with Apple
 
-  @State private var appleNonce = ""
+  /// Nonce theo từng lượt xin quyền (`state` ↔ nonce thô), không dùng chung
+  /// một biến: lượt sau không được ghi đè nonce của lượt trước (#523 P1).
+  @State private var appleNonces = AppleSignInNonces()
 
   private func configureAppleRequest(_ request: ASAuthorizationAppleIDRequest) {
-    // Nonce ngẫu nhiên + SHA256 — `AppleSignInNonce` (#245) chưa có nên tự
-    // tạo ở đây bằng CryptoKit (chuẩn Apple).
+    // Nonce ngẫu nhiên + SHA256 bằng CryptoKit (chuẩn Apple). `state` gắn
+    // nonce với ĐÚNG lượt này; Apple trả lại nó trong credential.
     let nonce = randomNonce()
-    appleNonce = nonce
+    let state = randomNonce()
+    appleNonces.register(state: state, rawNonce: nonce)
     request.requestedScopes = [.fullName, .email]
+    request.state = state
     request.nonce = sha256(nonce)
   }
 
@@ -278,13 +282,16 @@ struct AuthView: View {
         case .success(let auth):
           guard let credential = auth.credential as? ASAuthorizationAppleIDCredential,
                 let tokenData = credential.identityToken,
-                let token = String(data: tokenData, encoding: .utf8)
+                let token = String(data: tokenData, encoding: .utf8),
+                // Nonce của ĐÚNG lượt đã tạo credential này, dùng một lần.
+                // Không có (state thiếu/lạ/đã dùng) thì dừng, không đoán.
+                let rawNonce = appleNonces.take(state: credential.state)
           else {
             errorMessage = String(localized: "auth.error.generic")
             return
           }
           try await services.session.signInWithApple(
-            identityToken: token, rawNonce: appleNonce
+            identityToken: token, rawNonce: rawNonce
           )
           errorMessage = nil
         case .failure(let error):
