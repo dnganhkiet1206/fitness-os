@@ -3314,6 +3314,29 @@
     }
    }
   },
+  "rootgate.loading": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Checking your session…"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang kiểm tra phiên…"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Verificando tu sesión…"
+     }
+    }
+   }
+  },
   "extra.exercise.delete": {
    "extractionState": "manual",
    "localizations": {
