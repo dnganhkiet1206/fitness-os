@@ -62,6 +62,15 @@ extension EpochMillis {
 /// `ASCNDBackend.SupabaseTrainingHistory` hiện thực.
 public protocol TrainingHistory: Sendable {
   func sessionTimes(userId: String, since: EpochMillis) async throws -> [EpochMillis]
+  /// Các hàng `workout_sessions` trong [from, to), mới trước — cột `id,
+  /// date_time, session_rpe, pr_detected, sets` (RN `day-plan.tsx` đọc buổi
+  /// của ngày để biết hàng nào đã được chứng minh, `proven`).
+  func sessions(userId: String, from: EpochMillis, to: EpochMillis) async throws -> [JSONValue]
+}
+
+extension TrainingHistory {
+  /// Mặc định: không có bằng chứng — hành vi trước đây (chỉ biết "đã tập").
+  public func sessions(userId: String, from: EpochMillis, to: EpochMillis) async throws -> [JSONValue] { [] }
 }
 
 /// Tầng ứng dụng của màn Today (#271): ngày thật của người dùng, kế hoạch
@@ -114,6 +123,9 @@ public final class TodayController {
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private var snapshot: TemplateSnapshot?
   @ObservationIgnored private var serverTrained: Set<LocalDate> = []
+  /// Các buổi trên server của ngày ấy (đọc khi ngày ấy đã có buổi) — để màn
+  /// tập nhận buổi ghi từ máy khác (#523, RN `proven`).
+  @ObservationIgnored private var serverSessions: (date: LocalDate, rows: [JSONValue])?
   /// Ngày đã chốt trên máy này (có thể chưa lên server) — giữ qua nửa đêm.
   @ObservationIgnored private var localTrained: Set<LocalDate> = []
   /// Lệnh sửa kế hoạch chưa tới server (#401), theo thứ tự hàng đợi, kèm số
@@ -212,6 +224,16 @@ public final class TodayController {
     } catch {
       errors.append(("history", error))
     }
+    if serverTrained.contains(today) {
+      // Không đọc được buổi thì vẫn biết "đã tập" — chỉ thiếu bằng chứng từng
+      // hàng; không tính là lỗi của màn.
+      let from = EpochMillis(Self.startOfDay(today, in: timeZone))
+      let to = EpochMillis(Self.startOfDay(today.adding(days: 1), in: timeZone))
+      let rows = (try? await history.sessions(userId: userId, from: from, to: to)) ?? []
+      serverSessions = (today, rows)
+    } else {
+      serverSessions = nil
+    }
     failure = Self.failure(errors.map(\.1))
     failureDetail = errors.isEmpty ? nil : errors.map { "\($0): \($1)" }.joined(separator: "\n")
     await recompute()
@@ -241,7 +263,9 @@ public final class TodayController {
     guard let sessionPlan = plan?.sessionPlan else { return nil }
     return WorkoutSessionController(
       plan: sessionPlan, userId: userId, store: workouts, clock: clock, timeZone: timeZone,
-      loggedElsewhere: serverTrained.contains(today), bests: bests, onRest: onRest, onEnqueued: onEnqueued)
+      loggedElsewhere: serverTrained.contains(today),
+      remoteSessions: serverSessions?.date == today ? serverSessions?.rows ?? [] : [],
+      bests: bests, onRest: onRest, onEnqueued: onEnqueued)
   }
 
   /// Lệnh sửa kế hoạch vừa bền (#401): kế hoạch đổi ngay, không đợi server

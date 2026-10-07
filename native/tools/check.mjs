@@ -220,6 +220,8 @@ const STEPS = [
   ['rãnh vòng tròn', 'node', ['tools/ring-track.mjs']],
   ['lớp phủ tấm nội dung', 'node', ['tools/sheet-scrim.mjs']],
   ['nút lồng trong nút', 'node', ['tools/a11y-swallow.mjs']],
+  ['builder a11y/i18n', 'node', ['tools/builder-a11y.mjs']],
+  ['extra exercise a11y/i18n', 'node', ['tools/extra-exercise-a11y.mjs']],
   ['hình dạng cây theo theme', 'node', ['tools/theme-shape.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
@@ -472,6 +474,13 @@ const STEPS = [
     `src/` ở gốc, nên lý do ấy đã hết đúng trong khi câu chữ thì còn.
   */
   ['khoá mồ côi', 'node', ['tools/i18n-orphans.mjs']],
+  /*
+    #370: ma trận fixture từng chỉ là Markdown liệt kê chuỗi mẫu — không gì
+    chạy, không gì đỏ được. Cổng này biến tools/fixture-matrix-data.mjs thành
+    assert: khoá đủ 3 locale, plural có bộ chọn và render đúng dạng, label a11y
+    mang nội dung động, fixture "dài" đạt ngưỡng cả 3 locale, data deterministic.
+  */
+  ['ma trận fixture', 'node', ['tools/fixture-matrix.mjs']],
   ['chuyển cảnh onboarding', 'node', ['tools/onboarding-transition.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   /*
@@ -912,6 +921,23 @@ const STEPS = [
     call-site — mọi chỗ qua waterQuickAmounts.
   */
   ['preset nước', 'node', ['tools/water-presets.mjs']],
+  /*
+    C-43 (#484): contract History/Builder — fields C-28/C-37 khớp APIs A21/A22,
+    mọi mismatch có adapter tường minh. `--live` đối chiếu lại 4 branch thật.
+  */
+  ['contract handoff C43', 'node', ['tools/contract-handoff.mjs']],
+  /*
+    Golden vectors: mỗi tệp spec/vectors/*.json phải đăng ký runner trong
+    runners.json — vector không runner là vector không ai chạy (#328).
+  */
+  ['vector runners', 'node', ['../spec/vectors/check-runners.mjs']],
+  /*
+    Chuỗi người dùng thấy trong app iOS native phải đi qua Localizable.xcstrings
+    (#523 P3). Tool của #340 đã về 0 hit nhưng chưa nằm trong cổng: một
+    `Text("…")` cứng mới lọt vào thì không ai thấy cho tới khi người Việt mở
+    app ra thấy tiếng Anh. Bản DEBUG (`#if DEBUG`) và #Preview được bỏ qua.
+  */
+  ['chuỗi iOS native qua xcstrings', 'node', ['../apps/ios/tools/native-i18n-forensic.mjs']],
 ];
 
 /*

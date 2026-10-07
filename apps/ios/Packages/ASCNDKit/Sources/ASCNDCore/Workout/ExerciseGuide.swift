@@ -21,7 +21,13 @@ public import Observation
 public enum GuideLang: String, Sendable, Hashable, Codable {
   case vi, en
 
-  public init(_ lang: MuscleGroup.Language) { self = lang == .vi ? .vi : .en }
+  /// es (và mọi ngôn ngữ khác vi) đọc nội dung en (`guideLang`).
+  public init(_ lang: MuscleGroup.Language) {
+    switch lang {
+    case .vi: self = .vi
+    case .en, .es: self = .en
+    }
+  }
 }
 
 /// Một hàng `exercise_guide_content`.
