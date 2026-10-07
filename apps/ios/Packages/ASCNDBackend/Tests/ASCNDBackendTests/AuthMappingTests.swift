@@ -1,5 +1,7 @@
 @testable import ASCNDBackend
 import ASCNDCore
+import Foundation
+import Supabase
 import Testing
 
 struct AuthMappingTests {
@@ -22,5 +24,18 @@ struct AuthMappingTests {
     #expect(SupabaseAuthAPI.event(from: .initialSession) == AuthEvent.initialSession)
     #expect(SupabaseAuthAPI.event(from: .tokenRefreshed) == AuthEvent.tokenRefreshed)
     #expect(SupabaseAuthAPI.event(from: .passwordRecovery) == AuthEvent.passwordRecovery)
+  }
+
+  /// Đổi mật khẩu (#423): mã của Supabase Auth → lỗi có tên.
+  @Test func passwordFailuresAreNamed() {
+    #expect(SupabaseAuthAPI.passwordFailure(code: "same_password") == .samePassword)
+    #expect(SupabaseAuthAPI.passwordFailure(code: "weak_password") == .weakPassword(reasons: []))
+    #expect(SupabaseAuthAPI.passwordFailure(code: "reauthentication_needed") == .reauthenticationNeeded)
+    #expect(SupabaseAuthAPI.passwordFailure(code: "session_not_found") == .signedOut)
+    #expect(SupabaseAuthAPI.passwordFailure(code: "over_request_rate_limit") == .rateLimited)
+    #expect(SupabaseAuthAPI.passwordFailure(code: "teapot") == .server(code: "teapot"))
+    #expect(SupabaseAuthAPI.passwordFailure(AuthError.weakPassword(message: "weak", reasons: ["length"])) == .weakPassword(reasons: ["length"]))
+    #expect(SupabaseAuthAPI.passwordFailure(AuthError.sessionMissing) == .signedOut)
+    #expect(SupabaseAuthAPI.passwordFailure(URLError(.notConnectedToInternet)) == .offline)
   }
 }

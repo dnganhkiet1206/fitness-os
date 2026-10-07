@@ -25,11 +25,17 @@ public struct DayState: Sendable, Hashable, Codable {
   public var loggedRevision: Int?
   /// `session_rpe` đã ghi: gỡ set không làm nó giảm (`use-fitness-data.ts:756`).
   public var loggedRpe: Int?
+  /// Bản nháp của màn ghi buổi thủ công (#418) — `nil` với ngày theo kế hoạch.
+  public var manual: ManualDraft?
+  /// Hàng do một buổi KHÁC (cũ hơn, cùng ngày, ghi ở máy khác) chứng minh: đã
+  /// tích, khoá, không phải hàng mới để nối (#523). `nil` (blob cũ) = không có.
+  public var provenElsewhere: [String]?
 
   public init(
     progress: DayProgress = DayProgress(), loggedSessionId: String? = nil,
     loggedKeys: [String]? = nil, loggedAt: EpochMillis? = nil, loggedPR: Bool? = nil,
-    loggedRevision: Int? = nil, loggedRpe: Int? = nil
+    loggedRevision: Int? = nil, loggedRpe: Int? = nil, manual: ManualDraft? = nil,
+    provenElsewhere: [String]? = nil
   ) {
     self.progress = progress
     self.loggedSessionId = loggedSessionId
@@ -38,6 +44,8 @@ public struct DayState: Sendable, Hashable, Codable {
     self.loggedPR = loggedPR
     self.loggedRevision = loggedRevision
     self.loggedRpe = loggedRpe
+    self.manual = manual
+    self.provenElsewhere = provenElsewhere
   }
 }
 

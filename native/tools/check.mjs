@@ -220,6 +220,8 @@ const STEPS = [
   ['rãnh vòng tròn', 'node', ['tools/ring-track.mjs']],
   ['lớp phủ tấm nội dung', 'node', ['tools/sheet-scrim.mjs']],
   ['nút lồng trong nút', 'node', ['tools/a11y-swallow.mjs']],
+  ['builder a11y/i18n', 'node', ['tools/builder-a11y.mjs']],
+  ['extra exercise a11y/i18n', 'node', ['tools/extra-exercise-a11y.mjs']],
   ['hình dạng cây theo theme', 'node', ['tools/theme-shape.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
@@ -929,6 +931,13 @@ const STEPS = [
     runners.json — vector không runner là vector không ai chạy (#328).
   */
   ['vector runners', 'node', ['../spec/vectors/check-runners.mjs']],
+  /*
+    Chuỗi người dùng thấy trong app iOS native phải đi qua Localizable.xcstrings
+    (#523 P3). Tool của #340 đã về 0 hit nhưng chưa nằm trong cổng: một
+    `Text("…")` cứng mới lọt vào thì không ai thấy cho tới khi người Việt mở
+    app ra thấy tiếng Anh. Bản DEBUG (`#if DEBUG`) và #Preview được bỏ qua.
+  */
+  ['chuỗi iOS native qua xcstrings', 'node', ['../apps/ios/tools/native-i18n-forensic.mjs']],
 ];
 
 /*

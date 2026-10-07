@@ -19,14 +19,50 @@ public struct WorkoutView: View {
   /// Key của set đang nghỉ sau khi tick — A8 (#272) nối `RestTimerController`
   /// vào đây. Nil thì không set nào hiện "đang nghỉ".
   var restingRowKey: String?
+  /// Quãng nghỉ đang chạy — A8 nối `RestTimerController`. Nil thì không hiện thẻ nghỉ.
+  var restTimer: RestTimer?
+  var onAdjustRest: (Int) -> Void
+  var onSkipRest: () -> Void
+  /// Trạng thái outbox — A8 nối `SyncWorker`. Mặc định `.ok` (không hiện).
+  var outboxStatus: OutboxStatus
 
   @State private var weightTexts: [String: String] = [:]
   @State private var repsTexts: [String: String] = [:]
   @State private var finishMessage: String?
+  /// Focus: weight → reps → done (#300).
+  @FocusState private var focusedField: FieldFocus?
+  /// Debounce ghi controller — tránh ghi mỗi phím gõ (#300).
+  @State private var pendingWrites: [String: Task<Void, Never>] = [:]
+  @Environment(\.scenePhase) private var scenePhase
 
-  public init(controller: WorkoutSessionController, restingRowKey: String? = nil) {
+  /// Ô nào đang focus.
+  enum FieldFocus: Hashable {
+    case weight(String)
+    case reps(String)
+  }
+  @State private var isFinishing = false
+  /// Hàng đã nằm trong buổi đã chốt mà người dùng vừa bấm bỏ tích — chờ hỏi
+  /// lại (RN `nRdUntickTitle`).
+  @State private var untickTarget: PlannedSet?
+  /// Lần gỡ gần nhất, còn trong cửa sổ hoàn tác 8 giây.
+  @State private var removal: WorkoutSessionController.Removal?
+  /// Tăng mỗi lần chốt / nối thêm thành công — kích phản hồi xúc giác.
+  @State private var successTick = 0
+
+  public init(
+    controller: WorkoutSessionController,
+    restingRowKey: String? = nil,
+    restTimer: RestTimer? = nil,
+    onAdjustRest: @escaping (Int) -> Void = { _ in },
+    onSkipRest: @escaping () -> Void = {},
+    outboxStatus: OutboxStatus = .ok
+  ) {
     self.controller = controller
     self.restingRowKey = restingRowKey
+    self.restTimer = restTimer
+    self.onAdjustRest = onAdjustRest
+    self.onSkipRest = onSkipRest
+    self.outboxStatus = outboxStatus
   }
 
   public var body: some View {
@@ -38,13 +74,40 @@ public struct WorkoutView: View {
         case .idle, .active:
           workoutContent
         case .finished:
-          finishedView
+          // Như RN: buổi đã chốt VẪN là danh sách hàng — bỏ tích một hàng đã
+          // ghi để gỡ nó (có hoàn tác), tích thêm hàng để nối vào buổi.
+          // Bản trước thay cả màn bằng một ô "Đã chốt", nên hai việc ấy chỉ
+          // làm được trong Lab.
+          workoutContent
         }
       }
       .navigationTitle(controller.plan.templateName)
       .navigationBarTitleDisplayMode(.large)
+      // Một thanh "Xong" trên bàn phím cho cả màn — gắn trên từng ô reps thì
+      // mỗi hàng góp một nút.
+      .toolbar {
+        ToolbarItemGroup(placement: .keyboard) {
+          Spacer()
+          Button(String(localized: "workout.done")) {
+            Task { await flushWrites() }
+            focusedField = nil
+          }
+        }
+      }
     }
-    .onAppear(perform: seedTexts)
+    // Rời tiền cảnh (vào nền, bị kill sau đó): chữ đang chờ debounce phải
+    // tới controller ngay, không đợi hết 0.6 s.
+    .onChange(of: scenePhase) { _, phase in
+      if phase != .active { Task { await flushWrites() } }
+    }
+    // Cùng chỗ trên màn nhưng là buổi khác (sang ngày mới, kế hoạch đổi):
+    // bộ đệm thuộc buổi cũ — bỏ, để ô đọc `progress` của buổi mới.
+    .onChange(of: ObjectIdentifier(controller)) { _, _ in
+      for task in pendingWrites.values { task.cancel() }
+      pendingWrites.removeAll()
+      weightTexts.removeAll()
+      repsTexts.removeAll()
+    }
     .alert(
       String(localized: "workout.finishError.title"),
       isPresented: Binding(
@@ -56,6 +119,19 @@ public struct WorkoutView: View {
     } message: {
       Text(finishMessage ?? "")
     }
+    .alert(
+      String(localized: "workout.untick.title"),
+      isPresented: Binding(get: { untickTarget != nil }, set: { if !$0 { untickTarget = nil } }),
+      presenting: untickTarget
+    ) { row in
+      Button(String(localized: "common.cancel"), role: .cancel) {}
+      Button(String(localized: "workout.untick.confirm"), role: .destructive) {
+        Task { await removeLogged(row) }
+      }
+    } message: { _ in
+      Text(String(localized: "workout.untick.message"))
+    }
+    .sensoryFeedback(.success, trigger: successTick)
   }
 
   // MARK: - Nội dung buổi tập
@@ -66,17 +142,22 @@ public struct WorkoutView: View {
         if controller.unsaved != nil {
           unsavedBanner
         }
-        ForEach(exerciseGroups, id: \.key) { group in
-          exerciseCard(group)
+        if let removal {
+          undoBar(removal)
         }
-        DSButton(
-          String(localized: "workout.finish"),
-          style: .primary,
-          action: { Task { await doFinish() } }
-        )
-        .disabled(!controller.canFinish)
-        .opacity(controller.canFinish ? 1 : 0.5)
-        .padding(.top, DS.Spacing.sm)
+        SyncStrip(status: outboxStatus)
+        if let timer = restTimer {
+          RestCard(timer: timer, onAdjust: onAdjustRest, onSkip: onSkipRest)
+        }
+        if controller.plan.rows.isEmpty {
+          emptyView
+        } else {
+          ForEach(exerciseGroups, id: \.key) { group in
+            exerciseCard(group)
+          }
+          finishButton
+            .padding(.top, DS.Spacing.sm)
+        }
       }
       .padding(DS.Spacing.md)
     }
@@ -122,11 +203,25 @@ public struct WorkoutView: View {
     let performed = controller.performed(row)
     let resting = restingRowKey == row.key
 
+    // Không `.combine`: mỗi phần tử tương tác (nút tick, ô nhập, menu)
+    // là một điểm dừng VoiceOver riêng. Thông tin hàng ("Bench Press,
+    // hiệp 2 trên 3, 60 kg × 8, đã xong") nằm trong label của nút tick.
     return VStack(alignment: .leading, spacing: DS.Spacing.xs) {
       HStack(spacing: DS.Spacing.sm) {
         // Tick — controller từ chối khi chưa đủ (không tên/không reps).
         Button {
-          Task { await controller.toggle(row.key) }
+          // Chữ vừa gõ (đang chờ debounce) phải tới controller TRƯỚC khi tick,
+          // không thì set được chốt với số cũ.
+          // Hàng đã nằm trong buổi đã chốt: bỏ tích là nói nó KHÔNG xảy ra —
+          // hỏi lại trước (RN `nRdUntick*`), rồi gỡ khỏi buổi.
+          if controller.canRemove(row.key) {
+            untickTarget = row
+            return
+          }
+          Task {
+            await flushWrites()
+            await controller.toggle(row.key)
+          }
         } label: {
           Image(systemName: done ? "checkmark.circle.fill" : "circle")
             .font(.system(size: 26))
@@ -137,22 +232,15 @@ public struct WorkoutView: View {
         }
         .disabled(!ready && !done)
         .opacity((!ready && !done) ? 0.4 : 1)
-        .accessibilityLabel(
-          Text(
-            done
-              ? String(localized: "workout.untick")
-              : ready
-                ? String(localized: "workout.tick")
-                : String(localized: "workout.notReady")
-          )
-        )
+        .accessibilityLabel(Text(tickLabel(row, performed: performed, done: done, ready: ready)))
+        .accessibilityAddTraits(done ? [.isButton, .isSelected] : .isButton)
 
         Text("\(row.ordinal)/\(row.of)")
           .font(DS.TextStyle.footnote.monospacedDigit())
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
           .frame(minWidth: 36)
 
-        // Ô tạ / reps — gõ chữ, View truyền thẳng cho controller.
+        // Ô tạ / reps — gõ chữ, View debounce rồi truyền cho controller (#300).
         TextField("", text: weightBinding(for: row))
           .keyboardType(.decimalPad)
           .multilineTextAlignment(.trailing)
@@ -163,11 +251,23 @@ public struct WorkoutView: View {
           .background(DS.Color.secondary.swiftUI)
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
           .accessibilityLabel(Text(String(localized: "workout.weight")))
+          // Hàng controller không cho sửa (đang tải, đã nằm trong buổi đã
+          // chốt, đang chốt): khoá ô — gõ vào sẽ hiện một con số controller
+          // đã từ chối, tức ô nói dối.
+          .disabled(!controller.canEdit(row.key))
+          .focused($focusedField, equals: .weight(row.key))
+          .submitLabel(.next)
+          .onSubmit {
+            // Focus weight → reps (#300).
+            focusedField = .reps(row.key)
+          }
 
         Text("×")
           .foregroundStyle(DS.Color.mutedForeground.swiftUI)
 
         TextField("", text: repsBinding(for: row))
+          // Ô reps nhận cả "45s" (bài giữ, `RepEntry.parse`): bàn phím số thuần
+          // không có chữ "s".
           .keyboardType(.numbersAndPunctuation)
           .multilineTextAlignment(.trailing)
           .font(DS.TextStyle.body.monospacedDigit())
@@ -177,6 +277,14 @@ public struct WorkoutView: View {
           .background(DS.Color.secondary.swiftUI)
           .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
           .accessibilityLabel(Text(String(localized: "workout.reps")))
+          .disabled(!controller.canEdit(row.key))
+          .focused($focusedField, equals: .reps(row.key))
+          .submitLabel(.done)
+          .onSubmit {
+            // Done: flush ghi ngay + hạ bàn phím (#300).
+            Task { await flushWrites() }
+            focusedField = nil
+          }
 
         Spacer(minLength: 0)
       }
@@ -231,8 +339,18 @@ public struct WorkoutView: View {
       }
       .padding(.leading, 52)
     }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel(Text(rowVoiceOver(row, performed: performed, done: done)))
+  }
+
+  /// Label nút tick: thông tin hàng + hành động (#276, #278).
+  /// "Bench Press, hiệp 2 trên 3, 60 kg × 8, đã xong. Bỏ đánh dấu."
+  private func tickLabel(
+    _ row: PlannedSet, performed: PerformedSet, done: Bool, ready: Bool
+  ) -> String {
+    let summary = rowVoiceOver(row, performed: performed, done: done)
+    let action = String(
+      localized: done ? "workout.untick" : ready ? "workout.tick" : "workout.notReady"
+    )
+    return "\(summary). \(action)"
   }
 
   /// "Bench Press, hiệp 2 trên 3, 60 kg × 8, đã xong" (#276).
@@ -240,45 +358,124 @@ public struct WorkoutView: View {
     String(
       format: String(localized: "workout.row.accessibility"),
       row.exerciseName, row.ordinal, row.of,
-      Int(performed.weightKg), performed.reps,
+      a11yLoad(performed.weightKg), performed.reps,
       String(localized: done ? "workout.row.done" : "workout.row.notDone")
     )
   }
 
-  // MARK: - Binding ô nhập (phản hồi tức thì, ghi bền async)
+  // MARK: - Binding ô nhập (phản hồi tức thì, ghi bền debounce)
+  //
+  // Nguồn sự thật là `controller.progress` (bền, đã nạp lại sau kill, đã qua
+  // `NumberInput.decimal`). `weightTexts` / `repsTexts` CHỈ là bộ đệm của chữ
+  // đang chờ debounce: có thì hiện nó, ghi xong thì bỏ. Bản trước chép
+  // `progress` vào bộ đệm một lần ở `onAppear` — mà `WorkoutFlow` đưa buổi ra
+  // TRƯỚC khi `load()` xong, và nạp lại buổi sau khi xoá từ lịch sử — nên ô
+  // giữ số kế hoạch / số cũ trong khi controller (và lượt chốt) dùng số khác.
+
+  /// Ghi debounce: huỷ lần ghi cũ, chờ 0.6s rồi mới gọi controller (#300).
+  /// Gõ nhanh không spam controller; giá trị cuối cùng vẫn được ghi.
+  private func scheduleWrite(key: String, write: @escaping () async -> Void) {
+    pendingWrites[key]?.cancel()
+    pendingWrites[key] = Task {
+      try? await Task.sleep(nanoseconds: 600_000_000)
+      guard !Task.isCancelled else { return }
+      await write()
+    }
+  }
+
+  /// Lọc chữ thập phân: chỉ số + một dấu chấm/phẩy (#300).
+  private func filteredDecimal(_ text: String) -> String {
+    var seenSeparator = false
+    var result = ""
+    for ch in text {
+      if ch.isNumber {
+        result.append(ch)
+      } else if (ch == "." || ch == ",") && !seenSeparator {
+        seenSeparator = true
+        result.append(".")
+      }
+    }
+    return result
+  }
+
+  /// Lọc số nguyên (reps): chỉ số.
+  private func filteredInteger(_ text: String) -> String {
+    text.filter(\.isNumber)
+  }
 
   private func weightBinding(for row: PlannedSet) -> Binding<String> {
     Binding(
-      get: { weightTexts[row.key] ?? "\(Int(row.weightKg))" },
+      get: {
+        weightTexts[row.key] ?? controller.progress.weightText[row.key]
+          ?? NumberInput.plannedLoad(row.weightKg)
+      },
       set: { new in
-        weightTexts[row.key] = new
-        Task { await controller.setWeightText(new, for: row.key) }
+        let clean = filteredDecimal(new)
+        weightTexts[row.key] = clean
+        scheduleWrite(key: "w:\(row.key)") {
+          await controller.setWeightText(clean, for: row.key)
+          if weightTexts[row.key] == clean { weightTexts[row.key] = nil }
+        }
       }
     )
   }
 
   private func repsBinding(for row: PlannedSet) -> Binding<String> {
     Binding(
-      get: { repsTexts[row.key] ?? "\(row.reps)" },
+      get: {
+        repsTexts[row.key] ?? controller.progress.repsText[row.key]
+          ?? NumberInput.plannedReps(row.reps)
+      },
       set: { new in
-        repsTexts[row.key] = new
-        Task { await controller.setRepsText(new, for: row.key) }
+        // Plank nhập "45s" ở ô reps — giữ chữ, `RepEntry.parse` ở domain lo.
+        // Chỉ lọc khi là số thuần; chữ (như "45s") giữ nguyên.
+        let clean = new.allSatisfy({ $0.isNumber }) ? filteredInteger(new) : new
+        repsTexts[row.key] = clean
+        scheduleWrite(key: "r:\(row.key)") {
+          await controller.setRepsText(clean, for: row.key)
+          if repsTexts[row.key] == clean { repsTexts[row.key] = nil }
+        }
       }
     )
   }
 
-  private func seedTexts() {
-    for row in controller.plan.rows {
-      if weightTexts[row.key] == nil {
-        weightTexts[row.key] = controller.progress.weightText[row.key] ?? "\(Int(row.weightKg))"
-      }
-      if repsTexts[row.key] == nil {
-        repsTexts[row.key] = controller.progress.repsText[row.key] ?? "\(row.reps)"
+  /// Flush tất cả ghi đang chờ, CHỜ tới khi controller nhận xong: gọi trước
+  /// tick / finish, khi Done / hạ bàn phím, và khi rời tiền cảnh (#300).
+  private func flushWrites() async {
+    // Chỉ flush các field đang có ghi chờ — không ghi lại toàn bộ rows
+    // (ghi lại hết sẽ spam controller và có thể ghi đè state đang bay).
+    // Ghi xong thì bỏ bộ đệm: từ đó ô đọc `controller.progress`.
+    let pendingKeys = Array(pendingWrites.keys)
+    for task in pendingWrites.values {
+      task.cancel()
+    }
+    pendingWrites.removeAll()
+    for pkey in pendingKeys {
+      if pkey.hasPrefix("w:") {
+        let key = String(pkey.dropFirst(2))
+        if let w = weightTexts[key] {
+          await controller.setWeightText(w, for: key)
+          if weightTexts[key] == w { weightTexts[key] = nil }
+        }
+      } else if pkey.hasPrefix("r:") {
+        let key = String(pkey.dropFirst(2))
+        if let r = repsTexts[key] {
+          await controller.setRepsText(r, for: key)
+          if repsTexts[key] == r { repsTexts[key] = nil }
+        }
       }
     }
   }
 
-  // MARK: - Chưa bền / đã chốt
+  // MARK: - Trạng thái rỗng / đang chốt / đã chốt
+
+  private var emptyView: some View {
+    DSEmptyState(
+      systemImage: "dumbbell",
+      title: String(localized: "workout.empty.title"),
+      message: String(localized: "workout.empty.message")
+    )
+  }
 
   private var unsavedBanner: some View {
     HStack(spacing: DS.Spacing.sm) {
@@ -295,22 +492,144 @@ public struct WorkoutView: View {
     .accessibilityLabel(Text(String(localized: "workout.unsaved")))
   }
 
-  private var finishedView: some View {
-    DSEmptyState(
-      systemImage: "checkmark.circle.fill",
-      title: String(localized: "workout.finished.title"),
-      message: String(localized: "workout.finished.message")
-    )
+  /// Nút cuối danh sách — bốn trạng thái như RN (`day-plan.tsx` nút finish):
+  /// nối thêm (có hàng mới sau khi chốt), đã ghi, ngày chưa tới, hoàn thành.
+  @ViewBuilder private var finishButton: some View {
+    if controller.loggedSessionId != nil, !controller.pendingRows.isEmpty {
+      DSButton(String(localized: "workout.append"), style: .secondary, action: { Task { await doAppend() } })
+        .disabled(!controller.canAppend || isFinishing)
+        .opacity(controller.canAppend && !isFinishing ? 1 : 0.5)
+    } else if controller.loggedSessionId != nil {
+      // Không phải một nút tắt mang chữ cũ: nói điều đã xảy ra (RN nRdAlready).
+      Label(String(localized: "workout.finishError.alreadyLogged"), systemImage: "checkmark.circle.fill")
+        .font(DS.TextStyle.headline)
+        .foregroundStyle(DS.Color.readinessGreen.swiftUI)
+        .frame(maxWidth: .infinity, minHeight: 48)
+    } else {
+      DSButton(
+        isFinishing
+          ? String(localized: "workout.finishing")
+          : controller.isFuture
+            ? String(localized: "workout.finishError.future")
+            : String(localized: "workout.finish"),
+        style: .primary,
+        action: { Task { await doFinish() } }
+      )
+      .disabled(!controller.canFinish || isFinishing)
+      .opacity(controller.canFinish && !isFinishing ? 1 : 0.5)
+    }
+  }
+
+  /// "Đã gỡ hiệp khỏi buổi tập · Hoàn tác" trong 8 giây (RN `toast.undo`,
+  /// cùng `ACTION_HIDE_MS`). Hết giờ thì tự biến mất.
+  private func undoBar(_ r: WorkoutSessionController.Removal) -> some View {
+    TimelineView(.periodic(from: .now, by: 1)) { context in
+      let left = Int((r.expiresAt.date.timeIntervalSince(context.date)).rounded(.up))
+      if left > 0 {
+        HStack(spacing: DS.Spacing.sm) {
+          Image(systemName: "arrow.uturn.backward.circle")
+            .accessibilityHidden(true)
+          Text(String(localized: "workout.setRemoved"))
+            .font(DS.TextStyle.footnote)
+          Spacer(minLength: DS.Spacing.sm)
+          Button(String(localized: "extra.undo.action")) {
+            Task { await undoRemoval(r) }
+          }
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .frame(minHeight: 44)
+        }
+        .padding(.horizontal, DS.Spacing.sm)
+        .background(DS.Color.secondary.swiftUI)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Radius.sm))
+      }
+    }
+  }
+
+  private func removeLogged(_ row: PlannedSet) async {
+    untickTarget = nil
+    await flushWrites()
+    do throws(WorkoutSessionController.RemoveRefusal) {
+      removal = try await controller.removeLoggedSet(row.key)
+      AccessibilityNotification.Announcement(String(localized: "workout.setRemoved")).post()
+    } catch {
+      finishMessage = Self.removeMessage(error)
+    }
+  }
+
+  private func undoRemoval(_ r: WorkoutSessionController.Removal) async {
+    do throws(WorkoutSessionController.RemoveRefusal) {
+      try await controller.undo(r)
+    } catch {
+      finishMessage = Self.removeMessage(error)
+    }
+    removal = nil
+  }
+
+  /// Câu cho lý do không gỡ / hoàn tác được. `nil` = không báo: hết cửa sổ
+  /// hoàn tác (dải đã biến mất), đang bận, hàng không còn trong buổi.
+  static func removeMessage(_ refusal: WorkoutSessionController.RemoveRefusal) -> String? {
+    switch refusal {
+    case .loading, .inProgress, .notLogged, .expired:
+      return nil
+    case .loggedElsewhere:
+      return String(localized: "workout.finishError.alreadyLogged")
+    case .storage:
+      return String(localized: "workout.finishError.generic")
+    }
+  }
+
+  private func doAppend() async {
+    isFinishing = true
+    defer { isFinishing = false }
+    await flushWrites()
+    do {
+      _ = try await controller.append()
+      successTick += 1
+      AccessibilityNotification.Announcement(String(localized: "workout.appended")).post()
+    } catch let refusal as WorkoutSessionController.FinishRefusal {
+      finishMessage = Self.refusalMessage(refusal)
+    } catch {
+      finishMessage = String(localized: "workout.finishError.generic")
+    }
   }
 
   private func doFinish() async {
+    isFinishing = true
+    defer { isFinishing = false }
+    await flushWrites()
     do {
       _ = try await controller.finish()
+      // RN: Haptics.success + "Đã ghi buổi tập" (nRdSaved).
+      successTick += 1
+      AccessibilityNotification.Announcement(String(localized: "workout.saved")).post()
     } catch let refusal as WorkoutSessionController.FinishRefusal {
-      finishMessage = String(describing: refusal)
+      finishMessage = Self.refusalMessage(refusal)
     } catch {
-      finishMessage = error.localizedDescription
+      // Không lộ mô tả lỗi thô (tên kiểu, mã nội bộ) cho người dùng.
+      finishMessage = String(localized: "workout.finishError.generic")
     }
+  }
+
+  /// Câu người đọc được cho lý do không chốt được — không bao giờ là
+  /// `String(describing:)` của enum (#523 P2). `nil` = không báo gì: các trường
+  /// hợp mà baseline tắt nút Chốt (`canFinish`) hoặc là lần bấm thứ hai.
+  static func refusalMessage(_ refusal: WorkoutSessionController.FinishRefusal) -> String? {
+    switch refusal {
+    case .loading, .inProgress, .nothingDone, .nothingToAppend:
+      return nil
+    case .futureDay:
+      return String(localized: "workout.finishError.future")  // nRdFuture
+    case .alreadyLogged, .loggedElsewhere:
+      return String(localized: "workout.finishError.alreadyLogged")  // nRdAlready
+    case .storage:
+      return String(localized: "workout.finishError.generic")  // errUnknown
+    }
+  }
+
+  /// Mức tạ cho VoiceOver — cùng phần lẻ với ô nhập, "0" khi không tạ.
+  private func a11yLoad(_ kg: Double) -> String {
+    let t = NumberInput.plannedLoad(kg)
+    return t.isEmpty ? "0" : t
   }
 }
 
@@ -353,16 +672,25 @@ private actor PreviewStore: WorkoutStore {
 }
 
 private struct WorkoutPreviewHost: View {
-  enum Scenario { case idle, active, finished, unsaved }
+  enum Scenario { case idle, active, finished, unsaved, empty }
 
   let scenario: Scenario
   let restingRowKey: String?
+  var showRestCard: Bool = false
+  var outboxStatus: OutboxStatus = .ok
   @State private var controller: WorkoutSessionController?
 
   var body: some View {
     Group {
       if let controller {
-        WorkoutView(controller: controller, restingRowKey: restingRowKey)
+        WorkoutView(
+          controller: controller,
+          restingRowKey: restingRowKey,
+          restTimer: showRestCard
+            ? RestTimer.start(seconds: 90, at: EpochMillis(Date().addingTimeInterval(-30)))
+            : nil,
+          outboxStatus: outboxStatus
+        )
       } else {
         ProgressView()
       }
@@ -374,18 +702,23 @@ private struct WorkoutPreviewHost: View {
 
   static func make(scenario: Scenario) async -> WorkoutSessionController {
     let date = LocalDate("2026-10-05")!
-    let rows = [
-      PlannedSet(key: "bp1", exerciseName: "Bench Press", ordinal: 1, of: 3,
-                 weightKg: 60, reps: 8, plannedRest: 90),
-      PlannedSet(key: "bp2", exerciseName: "Bench Press", ordinal: 2, of: 3,
-                 weightKg: 60, reps: 8, plannedRest: 90),
-      PlannedSet(key: "bp3", exerciseName: "Bench Press", ordinal: 3, of: 3,
-                 weightKg: 60, reps: 8, plannedRest: 90),
-      PlannedSet(key: "pl1", exerciseName: "Plank", ordinal: 1, of: 2,
-                 weightKg: 0, reps: 0, plannedRest: 60),
-      PlannedSet(key: "pl2", exerciseName: "Plank", ordinal: 2, of: 2,
-                 weightKg: 0, reps: 0, plannedRest: 60),
-    ]
+    let rows: [PlannedSet]
+    if scenario == .empty {
+      rows = []
+    } else {
+      rows = [
+        PlannedSet(key: "bp1", exerciseName: "Bench Press", ordinal: 1, of: 3,
+                   weightKg: 60, reps: 8, plannedRest: 90),
+        PlannedSet(key: "bp2", exerciseName: "Bench Press", ordinal: 2, of: 3,
+                   weightKg: 60, reps: 8, plannedRest: 90),
+        PlannedSet(key: "bp3", exerciseName: "Bench Press", ordinal: 3, of: 3,
+                   weightKg: 60, reps: 8, plannedRest: 90),
+        PlannedSet(key: "pl1", exerciseName: "Plank", ordinal: 1, of: 2,
+                   weightKg: 0, reps: 0, plannedRest: 60),
+        PlannedSet(key: "pl2", exerciseName: "Plank", ordinal: 2, of: 2,
+                   weightKg: 0, reps: 0, plannedRest: 60),
+      ]
+    }
     let plan = WorkoutSessionController.Plan(
       date: date, templateId: "tpl-preview",
       templateName: "Ngực – Vai – Tay", rows: rows
@@ -418,6 +751,10 @@ private struct WorkoutPreviewHost: View {
       controller = WorkoutSessionController(plan: plan, userId: "u1", store: store)
       await controller.load()
       _ = await controller.toggle("bp1")
+    case .empty:
+      store = PreviewStore()
+      controller = WorkoutSessionController(plan: plan, userId: "u1", store: store)
+      await controller.load()
     }
     return controller
   }
@@ -448,5 +785,17 @@ private struct WorkoutPreviewHost: View {
 #Preview("Dynamic Type XXXL") {
   WorkoutPreviewHost(scenario: .active, restingRowKey: nil)
     .dynamicTypeSize(.accessibility3)
+}
+#Preview("empty") {
+  WorkoutPreviewHost(scenario: .empty, restingRowKey: nil)
+}
+#Preview("with RestCard") {
+  WorkoutPreviewHost(scenario: .active, restingRowKey: "bp2", showRestCard: true)
+}
+#Preview("sync pending") {
+  WorkoutPreviewHost(scenario: .active, restingRowKey: nil, outboxStatus: .pending(3))
+}
+#Preview("sync dead") {
+  WorkoutPreviewHost(scenario: .active, restingRowKey: nil, outboxStatus: .dead(1))
 }
 #endif

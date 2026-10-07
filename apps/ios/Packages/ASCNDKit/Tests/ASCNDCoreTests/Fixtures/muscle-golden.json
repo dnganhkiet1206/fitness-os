@@ -1,0 +1,504 @@
+{
+ "source": "native/src/lib/muscle-group.ts @ fac9ac2",
+ "cases": [
+  {
+   "input": null,
+   "keys": [],
+   "canonical": null,
+   "vi": "",
+   "en": "",
+   "es": ""
+  },
+  {
+   "input": "",
+   "keys": [],
+   "canonical": null,
+   "vi": "",
+   "en": "",
+   "es": ""
+  },
+  {
+   "input": "   ",
+   "keys": [],
+   "canonical": null,
+   "vi": "",
+   "en": "",
+   "es": ""
+  },
+  {
+   "input": "chest",
+   "keys": [
+    "chest"
+   ],
+   "canonical": "chest",
+   "vi": "Ngực",
+   "en": "Chest",
+   "es": "Pecho"
+  },
+  {
+   "input": "Chest",
+   "keys": [
+    "chest"
+   ],
+   "canonical": "chest",
+   "vi": "Ngực",
+   "en": "Chest",
+   "es": "Pecho"
+  },
+  {
+   "input": "CHEST ",
+   "keys": [
+    "chest"
+   ],
+   "canonical": "chest",
+   "vi": "Ngực",
+   "en": "Chest",
+   "es": "Pecho"
+  },
+  {
+   "input": "Ngực",
+   "keys": [
+    "chest"
+   ],
+   "canonical": "chest",
+   "vi": "Ngực",
+   "en": "Chest",
+   "es": "Pecho"
+  },
+  {
+   "input": "ngực",
+   "keys": [
+    "chest"
+   ],
+   "canonical": "chest",
+   "vi": "Ngực",
+   "en": "Chest",
+   "es": "Pecho"
+  },
+  {
+   "input": "NGỰC",
+   "keys": [
+    "chest"
+   ],
+   "canonical": "chest",
+   "vi": "Ngực",
+   "en": "Chest",
+   "es": "Pecho"
+  },
+  {
+   "input": "Lưng",
+   "keys": [
+    "back"
+   ],
+   "canonical": "back",
+   "vi": "Lưng",
+   "en": "Back",
+   "es": "Espalda"
+  },
+  {
+   "input": "Vai",
+   "keys": [
+    "shoulders"
+   ],
+   "canonical": "shoulders",
+   "vi": "Vai",
+   "en": "Shoulders",
+   "es": "Hombros"
+  },
+  {
+   "input": "Tay trước",
+   "keys": [
+    "biceps"
+   ],
+   "canonical": "biceps",
+   "vi": "Tay trước",
+   "en": "Biceps",
+   "es": "Bíceps"
+  },
+  {
+   "input": "Tay sau",
+   "keys": [
+    "triceps"
+   ],
+   "canonical": "triceps",
+   "vi": "Tay sau",
+   "en": "Triceps",
+   "es": "Tríceps"
+  },
+  {
+   "input": "Chân",
+   "keys": [
+    "legs"
+   ],
+   "canonical": "legs",
+   "vi": "Chân",
+   "en": "Legs",
+   "es": "Piernas"
+  },
+  {
+   "input": "Chân trước",
+   "keys": [
+    "legs"
+   ],
+   "canonical": "legs",
+   "vi": "Chân",
+   "en": "Legs",
+   "es": "Piernas"
+  },
+  {
+   "input": "Chân sau",
+   "keys": [
+    "legs"
+   ],
+   "canonical": "legs",
+   "vi": "Chân",
+   "en": "Legs",
+   "es": "Piernas"
+  },
+  {
+   "input": "Bắp chân",
+   "keys": [
+    "calves"
+   ],
+   "canonical": "calves",
+   "vi": "Bắp chân",
+   "en": "Calves",
+   "es": "Pantorrillas"
+  },
+  {
+   "input": "Bắp tay trước",
+   "keys": [
+    "biceps"
+   ],
+   "canonical": "biceps",
+   "vi": "Tay trước",
+   "en": "Biceps",
+   "es": "Bíceps"
+  },
+  {
+   "input": "Mông",
+   "keys": [
+    "glutes"
+   ],
+   "canonical": "glutes",
+   "vi": "Mông",
+   "en": "Glutes",
+   "es": "Glúteos"
+  },
+  {
+   "input": "Bụng",
+   "keys": [
+    "abs"
+   ],
+   "canonical": "abs",
+   "vi": "Bụng",
+   "en": "Abs",
+   "es": "Abdominales"
+  },
+  {
+   "input": "Toàn thân",
+   "keys": [
+    "cardio"
+   ],
+   "canonical": "cardio",
+   "vi": "Tim mạch",
+   "en": "Cardio",
+   "es": "Cardio"
+  },
+  {
+   "input": "Tim mạch",
+   "keys": [
+    "cardio"
+   ],
+   "canonical": "cardio",
+   "vi": "Tim mạch",
+   "en": "Cardio",
+   "es": "Cardio"
+  },
+  {
+   "input": "quads",
+   "keys": [
+    "legs"
+   ],
+   "canonical": "legs",
+   "vi": "Chân",
+   "en": "Legs",
+   "es": "Piernas"
+  },
+  {
+   "input": "Hamstrings",
+   "keys": [
+    "legs"
+   ],
+   "canonical": "legs",
+   "vi": "Chân",
+   "en": "Legs",
+   "es": "Piernas"
+  },
+  {
+   "input": "hamstring",
+   "keys": [
+    "legs"
+   ],
+   "canonical": "legs",
+   "vi": "Chân",
+   "en": "Legs",
+   "es": "Piernas"
+  },
+  {
+   "input": "Core",
+   "keys": [
+    "abs"
+   ],
+   "canonical": "abs",
+   "vi": "Bụng",
+   "en": "Abs",
+   "es": "Abdominales"
+  },
+  {
+   "input": "Full Body",
+   "keys": [
+    "cardio"
+   ],
+   "canonical": "cardio",
+   "vi": "Tim mạch",
+   "en": "Cardio",
+   "es": "Cardio"
+  },
+  {
+   "input": "fullbody",
+   "keys": [
+    "cardio"
+   ],
+   "canonical": "cardio",
+   "vi": "Tim mạch",
+   "en": "Cardio",
+   "es": "Cardio"
+  },
+  {
+   "input": "cardio",
+   "keys": [
+    "cardio"
+   ],
+   "canonical": "cardio",
+   "vi": "Tim mạch",
+   "en": "Cardio",
+   "es": "Cardio"
+  },
+  {
+   "input": "glutes",
+   "keys": [
+    "glutes"
+   ],
+   "canonical": "glutes",
+   "vi": "Mông",
+   "en": "Glutes",
+   "es": "Glúteos"
+  },
+  {
+   "input": "calves",
+   "keys": [
+    "calves"
+   ],
+   "canonical": "calves",
+   "vi": "Bắp chân",
+   "en": "Calves",
+   "es": "Pantorrillas"
+  },
+  {
+   "input": "Chest/Triceps",
+   "keys": [
+    "chest",
+    "triceps"
+   ],
+   "canonical": "chest/triceps",
+   "vi": "Ngực / Tay sau",
+   "en": "Chest / Triceps",
+   "es": "Pecho / Tríceps"
+  },
+  {
+   "input": "chest, shoulders",
+   "keys": [
+    "chest",
+    "shoulders"
+   ],
+   "canonical": "chest/shoulders",
+   "vi": "Ngực / Vai",
+   "en": "Chest / Shoulders",
+   "es": "Pecho / Hombros"
+  },
+  {
+   "input": "back+biceps",
+   "keys": [
+    "back",
+    "biceps"
+   ],
+   "canonical": "back/biceps",
+   "vi": "Lưng / Tay trước",
+   "en": "Back / Biceps",
+   "es": "Espalda / Bíceps"
+  },
+  {
+   "input": "legs & glutes",
+   "keys": [
+    "legs",
+    "glutes"
+   ],
+   "canonical": "legs/glutes",
+   "vi": "Chân / Mông",
+   "en": "Legs / Glutes",
+   "es": "Piernas / Glúteos"
+  },
+  {
+   "input": "Quads/Hamstrings",
+   "keys": [
+    "legs"
+   ],
+   "canonical": "legs",
+   "vi": "Chân",
+   "en": "Legs",
+   "es": "Piernas"
+  },
+  {
+   "input": "Upper chest",
+   "keys": [
+    "chest"
+   ],
+   "canonical": "chest",
+   "vi": "Ngực",
+   "en": "Chest",
+   "es": "Pecho"
+  },
+  {
+   "input": "lower back",
+   "keys": [
+    "back"
+   ],
+   "canonical": "back",
+   "vi": "Lưng",
+   "en": "Back",
+   "es": "Espalda"
+  },
+  {
+   "input": "rear delts",
+   "keys": [],
+   "canonical": null,
+   "vi": "rear delts",
+   "en": "rear delts",
+   "es": "rear delts"
+  },
+  {
+   "input": "Đùi",
+   "keys": [],
+   "canonical": null,
+   "vi": "Đùi",
+   "en": "Đùi",
+   "es": "Đùi"
+  },
+  {
+   "input": "đùi trước",
+   "keys": [],
+   "canonical": null,
+   "vi": "đùi trước",
+   "en": "đùi trước",
+   "es": "đùi trước"
+  },
+  {
+   "input": "Cẳng tay",
+   "keys": [],
+   "canonical": null,
+   "vi": "Cẳng tay",
+   "en": "Cẳng tay",
+   "es": "Cẳng tay"
+  },
+  {
+   "input": "Chest  /  Back",
+   "keys": [
+    "chest",
+    "back"
+   ],
+   "canonical": "chest/back",
+   "vi": "Ngực / Lưng",
+   "en": "Chest / Back",
+   "es": "Pecho / Espalda"
+  },
+  {
+   "input": "Bắp   chân",
+   "keys": [
+    "calves"
+   ],
+   "canonical": "calves",
+   "vi": "Bắp chân",
+   "en": "Calves",
+   "es": "Pantorrillas"
+  },
+  {
+   "input": "Lưng xô",
+   "keys": [
+    "back"
+   ],
+   "canonical": "back",
+   "vi": "Lưng",
+   "en": "Back",
+   "es": "Espalda"
+  },
+  {
+   "input": "Calves/Calves",
+   "keys": [
+    "calves"
+   ],
+   "canonical": "calves",
+   "vi": "Bắp chân",
+   "en": "Calves",
+   "es": "Pantorrillas"
+  },
+  {
+   "input": "Biceps/Bicep curl",
+   "keys": [
+    "biceps"
+   ],
+   "canonical": "biceps",
+   "vi": "Tay trước",
+   "en": "Biceps",
+   "es": "Bíceps"
+  },
+  {
+   "input": "abs / core",
+   "keys": [
+    "abs"
+   ],
+   "canonical": "abs",
+   "vi": "Bụng",
+   "en": "Abs",
+   "es": "Abdominales"
+  },
+  {
+   "input": "Shoulders (side)",
+   "keys": [
+    "shoulders"
+   ],
+   "canonical": "shoulders",
+   "vi": "Vai",
+   "en": "Shoulders",
+   "es": "Hombros"
+  },
+  {
+   "input": "xyz",
+   "keys": [],
+   "canonical": null,
+   "vi": "xyz",
+   "en": "xyz",
+   "es": "xyz"
+  },
+  {
+   "input": "Tim mạch/Toàn thân",
+   "keys": [
+    "cardio"
+   ],
+   "canonical": "cardio",
+   "vi": "Tim mạch",
+   "en": "Cardio",
+   "es": "Cardio"
+  }
+ ]
+}

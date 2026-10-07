@@ -62,6 +62,15 @@ extension EpochMillis {
 /// `ASCNDBackend.SupabaseTrainingHistory` hiện thực.
 public protocol TrainingHistory: Sendable {
   func sessionTimes(userId: String, since: EpochMillis) async throws -> [EpochMillis]
+  /// Các hàng `workout_sessions` trong [from, to), mới trước — cột `id,
+  /// date_time, session_rpe, pr_detected, sets` (RN `day-plan.tsx` đọc buổi
+  /// của ngày để biết hàng nào đã được chứng minh, `proven`).
+  func sessions(userId: String, from: EpochMillis, to: EpochMillis) async throws -> [JSONValue]
+}
+
+extension TrainingHistory {
+  /// Mặc định: không có bằng chứng — hành vi trước đây (chỉ biết "đã tập").
+  public func sessions(userId: String, from: EpochMillis, to: EpochMillis) async throws -> [JSONValue] { [] }
 }
 
 /// Tầng ứng dụng của màn Today (#271): ngày thật của người dùng, kế hoạch
@@ -102,6 +111,10 @@ public final class TodayController {
   /// không bao giờ hiện cho người dùng.
   public private(set) var failureDetail: String?
   public private(set) var trained: Set<LocalDate> = []
+  /// Kế hoạch cả tuần + mọi template, đúng như máy này đang thấy: bản server
+  /// (hoặc cache) với các lệnh sửa chưa gửi áp lên (#401). Màn Plan, danh
+  /// sách template, builder đọc từ đây.
+  public private(set) var library: TemplateSnapshot?
 
   @ObservationIgnored private let repository: TodayRepository
   @ObservationIgnored private let history: any TrainingHistory
@@ -110,8 +123,15 @@ public final class TodayController {
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private var snapshot: TemplateSnapshot?
   @ObservationIgnored private var serverTrained: Set<LocalDate> = []
+  /// Các buổi trên server của ngày ấy (đọc khi ngày ấy đã có buổi) — để màn
+  /// tập nhận buổi ghi từ máy khác (#523, RN `proven`).
+  @ObservationIgnored private var serverSessions: (date: LocalDate, rows: [JSONValue])?
   /// Ngày đã chốt trên máy này (có thể chưa lên server) — giữ qua nửa đêm.
   @ObservationIgnored private var localTrained: Set<LocalDate> = []
+  /// Lệnh sửa kế hoạch chưa tới server (#401), theo thứ tự hàng đợi, kèm số
+  /// thứ tự lúc nhận — để lượt làm mới biết lệnh nào tới SAU khi nó bắt đầu.
+  @ObservationIgnored private var edits: [(seq: Int, entry: OutboxEntry)] = []
+  @ObservationIgnored private var editSeq = 0
 
   public init(
     userId: String, repository: TodayRepository, history: any TrainingHistory, workouts: any WorkoutStore,
@@ -159,22 +179,34 @@ public final class TodayController {
   }
 
   private func loadNow() async {
+    let mark = editSeq
+    let pending = await repository.pendingEdits(userId: userId)
     if let cached = await repository.cached(userId: userId) {
       snapshot = cached
       source = .cache(cached.fetchedAt)
-      await recompute()
     }
+    if let pending { mergeEdits(pending, since: mark, replacing: false) }
+    if snapshot != nil || !edits.isEmpty { await recompute() }
     await refreshNow()
   }
 
   private func refreshNow() async {
     var errors: [(String, any Error)] = []
+    // Đọc lệnh chưa gửi TRƯỚC khi hỏi server: lệnh nào gửi xong giữa chừng thì
+    // hoặc server đã có nó, hoặc nó còn trong danh sách này — áp lại lệnh
+    // server đã nhận không đổi gì. Đọc SAU thì một lệnh vừa gửi xong mà truy
+    // vấn chưa thấy sẽ biến mất cho tới lần làm mới sau.
+    let mark = editSeq
+    let pending = await repository.pendingEdits(userId: userId)
     do {
       let fresh = try await repository.refresh(userId: userId)
       snapshot = fresh
       source = .server(fresh.fetchedAt)
+      if let pending { mergeEdits(pending, since: mark, replacing: true) }
     } catch {
       errors.append(("plan", error))
+      // Server không trả lời: bản đang có là bản cũ — giữ mọi lệnh đã áp.
+      if let pending { mergeEdits(pending, since: mark, replacing: false) }
     }
     do {
       let since = EpochMillis(Self.startOfDay(today.adding(days: -(Self.historyDays - 1)), in: timeZone))
@@ -182,6 +214,16 @@ public final class TodayController {
       serverTrained = Set(times.map { LocalDate($0, in: timeZone) })
     } catch {
       errors.append(("history", error))
+    }
+    if serverTrained.contains(today) {
+      // Không đọc được buổi thì vẫn biết "đã tập" — chỉ thiếu bằng chứng từng
+      // hàng; không tính là lỗi của màn.
+      let from = EpochMillis(Self.startOfDay(today, in: timeZone))
+      let to = EpochMillis(Self.startOfDay(today.adding(days: 1), in: timeZone))
+      let rows = (try? await history.sessions(userId: userId, from: from, to: to)) ?? []
+      serverSessions = (today, rows)
+    } else {
+      serverSessions = nil
     }
     failure = Self.failure(errors.map(\.1))
     failureDetail = errors.isEmpty ? nil : errors.map { "\($0): \($1)" }.joined(separator: "\n")
@@ -212,7 +254,34 @@ public final class TodayController {
     guard let sessionPlan = plan?.sessionPlan else { return nil }
     return WorkoutSessionController(
       plan: sessionPlan, userId: userId, store: workouts, clock: clock, timeZone: timeZone,
-      loggedElsewhere: serverTrained.contains(today), bests: bests, onRest: onRest, onEnqueued: onEnqueued)
+      loggedElsewhere: serverTrained.contains(today),
+      remoteSessions: serverSessions?.date == today ? serverSessions?.rows ?? [] : [],
+      bests: bests, onRest: onRest, onEnqueued: onEnqueued)
+  }
+
+  /// Lệnh sửa kế hoạch vừa bền (#401): kế hoạch đổi ngay, không đợi server
+  /// (D-26 TW-6b). Nhận lại cùng lệnh là không đổi gì.
+  public func adopt(_ entries: [OutboxEntry]) async {
+    for e in entries where PlanEdit.kinds.contains(e.kind) && e.userId == userId {
+      guard !edits.contains(where: { $0.entry.id == e.id }) else { continue }
+      editSeq += 1
+      edits.append((editSeq, e))
+    }
+    await recompute()
+  }
+
+  /// `pending`: lệnh còn trong outbox lúc `mark`. `replacing`: bản server vừa
+  /// về, nên lệnh đã gửi xong (không còn trong `pending`) đã nằm trong nó —
+  /// chỉ giữ thêm những lệnh nhận SAU `mark`. Không thì giữ hết.
+  private func mergeEdits(_ pending: [OutboxEntry], since mark: Int, replacing: Bool) {
+    let kept = replacing ? edits.filter { $0.seq > mark } : edits
+    var merged: [(seq: Int, entry: OutboxEntry)] = []
+    var seen = Set<String>()
+    for e in pending where seen.insert(e.id).inserted {
+      merged.append((kept.first { $0.entry.id == e.id }?.seq ?? 0, e))
+    }
+    for k in kept where seen.insert(k.entry.id).inserted { merged.append(k) }
+    edits = merged
   }
 
   /// Màn tập vừa chốt: ngày thành `done` ngay, không đợi server.
@@ -231,10 +300,15 @@ public final class TodayController {
   }
 
   private func recompute() async {
-    guard let snapshot else {
+    // Chưa từng có bản nào (offline từ lần mở đầu) mà đã sửa: kế hoạch rỗng
+    // cộng các lệnh — template vừa tạo vẫn hiện.
+    let base = snapshot ?? (edits.isEmpty ? nil : TemplateSnapshot(routine: [], templates: [], fetchedAt: EpochMillis(0)))
+    guard let snapshot = base?.applying(edits.map(\.entry)) else {
+      library = nil
       plan = nil
       return
     }
+    library = snapshot
     var days = serverTrained.union(localTrained)
     // Ngày đã chốt trên máy này (có thể chưa lên server). Buổi đã bị gỡ hết
     // set (`loggedKeys` rỗng) thì không còn là buổi.

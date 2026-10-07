@@ -616,4 +616,79 @@ struct WorkoutPipelineTests {
     #expect(await p.server.attempts.first == summary.sessionId)
     #expect(await p.store.outbox.isEmpty)
   }
+
+  /// #523 P1, hai máy: máy này chốt có mạng rồi offline nối thêm một set;
+  /// trong lúc ấy máy khác nối set của nó vào CÙNG buổi. Có mạng lại: hàng
+  /// trên server giữ cả hai — bản ghi lại không đè set của máy khác.
+  @Test func offlineAppendDoesNotOverwriteAnotherDevicesSet() async throws {
+    let p = Pipeline()
+    await p.start()
+    let s = try #require(p.flow.session)
+    await s.toggle("0-0")
+    let summary = try await p.flow.finish()
+    await p.worker.settle()
+    #expect(await p.sets(summary.sessionId) == 1)
+
+    p.worker.setOnline(false)
+    await s.toggle("0-1")
+    _ = try await p.flow.append()
+
+    let other: JSONValue = .object([
+      "exerciseId": .string("ex-row"), "exerciseName": .string("Row (máy khác)"), "setIndex": .number(2),
+      "weight": .number(50), "reps": .number(10), "rpe": .number(7),
+    ])
+    let row = try #require(await p.server.table[summary.sessionId])
+    guard case .object(var o) = row, case .array(let sets)? = o["sets"] else {
+      Issue.record("hàng không có sets")
+      return
+    }
+    o["sets"] = .array(sets + [other])
+    await p.server.externalWrite(summary.sessionId, .object(o))
+
+    p.worker.setOnline(true)
+    await p.worker.settle()
+    #expect(await p.sets(summary.sessionId) == 3, "set của máy khác còn, set nối thêm của máy này cũng có")
+    guard case .array(let after)? = await p.server.table[summary.sessionId]?["sets"] else {
+      Issue.record("mất hàng")
+      return
+    }
+    #expect(after.contains { $0["exerciseName"] == .string("Row (máy khác)") })
+    #expect(await p.store.outbox.isEmpty)
+  }
+
+  /// #523 P1, hai máy: máy này gỡ một set lúc offline; máy khác đã nối set
+  /// của nó. Có mạng lại: chỉ set bị gỡ biến mất.
+  @Test func offlineRemovalKeepsAnotherDevicesSet() async throws {
+    let p = Pipeline()
+    await p.start()
+    let s = try #require(p.flow.session)
+    await s.toggle("0-0")
+    await s.toggle("0-1")
+    let summary = try await p.flow.finish()
+    await p.worker.settle()
+
+    p.worker.setOnline(false)
+    _ = try await s.removeLoggedSet("0-1")
+
+    let other: JSONValue = .object([
+      "exerciseId": .string("ex-row"), "exerciseName": .string("Row (máy khác)"), "setIndex": .number(3),
+      "weight": .number(50), "reps": .number(10), "rpe": .number(7),
+    ])
+    let row = try #require(await p.server.table[summary.sessionId])
+    guard case .object(var o) = row, case .array(let sets)? = o["sets"] else {
+      Issue.record("hàng không có sets")
+      return
+    }
+    o["sets"] = .array(sets + [other])
+    await p.server.externalWrite(summary.sessionId, .object(o))
+
+    p.worker.setOnline(true)
+    await p.worker.settle()
+    guard case .array(let after)? = await p.server.table[summary.sessionId]?["sets"] else {
+      Issue.record("mất hàng")
+      return
+    }
+    #expect(after.count == 2, "còn một set của máy này + set của máy khác")
+    #expect(after.contains { $0["exerciseName"] == .string("Row (máy khác)") })
+  }
 }

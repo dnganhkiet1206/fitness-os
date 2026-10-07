@@ -20,6 +20,25 @@ private func tempPath() -> String {
 /// Hợp đồng `WorkoutStore` trên SQLite thật — cùng các điều mà store giả của
 /// ASCNDCore giữ, để test của controller nói đúng về bản chạy trên máy.
 struct GRDBWorkoutStoreTests {
+  /// #418: bản nháp ghi tay khứ hồi qua SQLite; ô đã ghi bị khoá như ngày
+  /// theo kế hoạch; blob cũ (không có `manual`) vẫn đọc được.
+  @Test func manualDraftRoundTripsAndLocks() async throws {
+    let store = GRDBWorkoutStore(try ASCNDDatabase())
+    let key = ManualLogController.slotKey(date: LocalDate("2026-10-05")!, 0)
+    let draft = ManualDraft(name: "Arms", rpe: 8, rows: [
+      ManualSetRow(id: "r1", exerciseName: "Curl", weight: "12.5", reps: "45s", warmup: true),
+    ], planUsed: true)
+    try await store.saveDay(key, DayState(manual: draft))
+    #expect(try await store.loadDay(key)?.manual == draft)
+    try await store.commitFinish(key, DayState(loggedSessionId: "s1", manual: draft), entry("s1"))
+    await #expect(throws: DayAlreadyLogged.self) { try await store.saveDay(key, DayState(manual: draft)) }
+    await #expect(throws: DayAlreadyLogged.self) {
+      try await store.commitFinish(key, DayState(loggedSessionId: "s2", manual: draft), entry("s2"))
+    }
+    let old = try JSONDecoder().decode(DayState.self, from: Data(#"{"progress":{"done":{}}}"#.utf8))
+    #expect(old.manual == nil)
+  }
+
   @Test func saveThenLoad() async throws {
     let store = GRDBWorkoutStore(try ASCNDDatabase())
     #expect(try await store.loadDay("k") == nil)
@@ -338,5 +357,101 @@ struct GRDBPerformanceCacheTests {
     try await cache.save(userId: "u1", table)
     #expect(try await cache.load(userId: "u1") == table)
     #expect(try await cache.load(userId: "u2") == nil)
+  }
+}
+
+struct GRDBInsightCacheTests {
+  @Test func roundTripPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBInsightCache(db)
+    let snap = InsightSnapshot(
+      rows: [SessionHistoryRow(id: "s1", at: EpochMillis(1_791_183_600_000), sets: .array([
+        .object(["exerciseName": .string("Bench"), "weight": .number(82.5), "reps": .number(5)]),
+      ]))],
+      weighIns: [WeighIn(date: LocalDate("2026-10-01")!, kg: 71.2)])
+    try await cache.save(userId: "u1", snap)
+    #expect(try await cache.load(userId: "u1") == snap)
+    #expect(try await cache.load(userId: "u2") == nil)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await cache.load(userId: "u1") == nil, "đăng nhập người khác dọn cả phân tích")
+  }
+}
+
+struct GRDBExerciseCacheTests {
+  @Test func roundTripPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBExerciseCache(db)
+    let list = [
+      LibraryExercise(id: "1", userId: nil, name: "Bench Press", muscleGroup: "chest", equipment: "barbell", kind: nil),
+      LibraryExercise(id: "2", userId: "u1", name: "Curl", muscleGroup: "Tay trước", equipment: nil, kind: "isolation"),
+    ]
+    try await cache.save(userId: "u1", list)
+    #expect(try await cache.load(userId: "u1") == list)
+    #expect(try await cache.load(userId: "u2") == nil)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await cache.load(userId: "u1") == nil, "đăng nhập người khác dọn cả thư viện")
+  }
+}
+
+struct GRDBExerciseGuideCacheTests {
+  @Test func roundTripPerUserAndKey() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBExerciseGuideCache(db)
+    let g = ExerciseGuide.shape(
+      GuideExerciseRow(id: "e", userId: nil, name: "Bench", muscleGroup: "chest", equipment: "barbell", videoUrl: "https://x/a.gif"),
+      matchedBy: .id, fallbackName: "Bench",
+      content: [GuideContentRow(locale: "vi", instructions: ["Nằm"], formCues: nil, commonMistakes: nil)], media: [],
+      lang: .vi)
+    try await cache.save(userId: "u1", key: "e|bench|vi", g)
+    #expect(try await cache.load(userId: "u1", key: "e|bench|vi") == g)
+    #expect(try await cache.load(userId: "u1", key: "e|bench|en") == nil)
+    #expect(try await cache.load(userId: "u2", key: "e|bench|vi") == nil)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await cache.load(userId: "u1", key: "e|bench|vi") == nil)
+  }
+}
+
+struct GRDBOnboardingStoreTests {
+  @Test func draftAndFlagPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let store = GRDBOnboardingStore(db)
+    var draft = OnboardingDraft()
+    draft.step = .height
+    draft.branch = .capacity
+    draft.dob = LocalDate("1990-02-28")!
+    try await store.saveDraft(userId: "u1", draft)
+    #expect(try await store.loadDraft(userId: "u1") == draft)
+    #expect(try await store.loadDraft(userId: "u2") == nil)
+    try await store.clearDraft(userId: "u1")
+    #expect(try await store.loadDraft(userId: "u1") == nil)
+    #expect(try await store.loadCompleted(userId: "u1") == nil)
+    try await store.saveCompleted(userId: "u1", true)
+    #expect(try await store.loadCompleted(userId: "u1") == true)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await store.loadCompleted(userId: "u1") == nil, "đăng nhập người khác dọn cả cờ")
+  }
+
+  @Test func corruptDraftStartsOver() async throws {
+    let db = try ASCNDDatabase()
+    try await db.queue.write { db in
+      try db.execute(sql: "INSERT INTO read_cache (userId, kind, json) VALUES ('u1', 'onboarding-draft', '{\"step\": 42')")
+    }
+    #expect(try await GRDBOnboardingStore(db).loadDraft(userId: "u1") == nil)
+  }
+}
+
+struct GRDBProfileCacheTests {
+  @Test func roundTripPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let cache = GRDBProfileCache(db)
+    var p = Profile(userId: "u1")
+    p.weightKg = 78.5
+    p.dob = LocalDate("1995-06-15")
+    p.allergies = ["Dairy"]
+    try await cache.save(userId: "u1", p)
+    #expect(try await cache.load(userId: "u1") == p)
+    #expect(try await cache.load(userId: "u2") == nil)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await cache.load(userId: "u1") == nil)
   }
 }

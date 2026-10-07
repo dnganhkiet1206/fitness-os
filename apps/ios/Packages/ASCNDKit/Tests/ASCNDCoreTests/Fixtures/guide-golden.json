@@ -1,0 +1,2106 @@
+{
+ "source": "native/src/lib @ fac9ac2",
+ "content": [
+  {
+   "name": "empty",
+   "rows": [],
+   "lang": "vi",
+   "out": null
+  },
+  {
+   "name": "empty",
+   "rows": [],
+   "lang": "en",
+   "out": null
+  },
+  {
+   "name": "vi-and-en",
+   "rows": [
+    {
+     "locale": "vi",
+     "instructions": [
+      " Nằm ",
+      "",
+      "  "
+     ],
+     "form_cues": [
+      "Siết bụng"
+     ],
+     "common_mistakes": null
+    },
+    {
+     "locale": "en",
+     "instructions": [
+      "Lie down"
+     ],
+     "form_cues": [],
+     "common_mistakes": [
+      "Flared elbows "
+     ]
+    }
+   ],
+   "lang": "vi",
+   "out": {
+    "locale": "vi",
+    "instructions": [
+     "Nằm"
+    ],
+    "formCues": [
+     "Siết bụng"
+    ],
+    "commonMistakes": []
+   }
+  },
+  {
+   "name": "vi-and-en",
+   "rows": [
+    {
+     "locale": "vi",
+     "instructions": [
+      " Nằm ",
+      "",
+      "  "
+     ],
+     "form_cues": [
+      "Siết bụng"
+     ],
+     "common_mistakes": null
+    },
+    {
+     "locale": "en",
+     "instructions": [
+      "Lie down"
+     ],
+     "form_cues": [],
+     "common_mistakes": [
+      "Flared elbows "
+     ]
+    }
+   ],
+   "lang": "en",
+   "out": {
+    "locale": "en",
+    "instructions": [
+     "Lie down"
+    ],
+    "formCues": [],
+    "commonMistakes": [
+     "Flared elbows"
+    ]
+   }
+  },
+  {
+   "name": "en-blank-falls-back-to-vi",
+   "rows": [
+    {
+     "locale": "en",
+     "instructions": [
+      "  "
+     ],
+     "form_cues": null,
+     "common_mistakes": []
+    },
+    {
+     "locale": "vi",
+     "instructions": [
+      "Đẩy"
+     ],
+     "form_cues": null,
+     "common_mistakes": null
+    }
+   ],
+   "lang": "vi",
+   "out": {
+    "locale": "vi",
+    "instructions": [
+     "Đẩy"
+    ],
+    "formCues": [],
+    "commonMistakes": []
+   }
+  },
+  {
+   "name": "en-blank-falls-back-to-vi",
+   "rows": [
+    {
+     "locale": "en",
+     "instructions": [
+      "  "
+     ],
+     "form_cues": null,
+     "common_mistakes": []
+    },
+    {
+     "locale": "vi",
+     "instructions": [
+      "Đẩy"
+     ],
+     "form_cues": null,
+     "common_mistakes": null
+    }
+   ],
+   "lang": "en",
+   "out": {
+    "locale": "vi",
+    "instructions": [
+     "Đẩy"
+    ],
+    "formCues": [],
+    "commonMistakes": []
+   }
+  },
+  {
+   "name": "only-en",
+   "rows": [
+    {
+     "locale": "en",
+     "instructions": [
+      "Push"
+     ],
+     "form_cues": null,
+     "common_mistakes": null
+    }
+   ],
+   "lang": "vi",
+   "out": null
+  },
+  {
+   "name": "only-en",
+   "rows": [
+    {
+     "locale": "en",
+     "instructions": [
+      "Push"
+     ],
+     "form_cues": null,
+     "common_mistakes": null
+    }
+   ],
+   "lang": "en",
+   "out": {
+    "locale": "en",
+    "instructions": [
+     "Push"
+    ],
+    "formCues": [],
+    "commonMistakes": []
+   }
+  },
+  {
+   "name": "unknown-locale",
+   "rows": [
+    {
+     "locale": "es",
+     "instructions": [
+      "Empujar"
+     ],
+     "form_cues": null,
+     "common_mistakes": null
+    }
+   ],
+   "lang": "vi",
+   "out": null
+  },
+  {
+   "name": "unknown-locale",
+   "rows": [
+    {
+     "locale": "es",
+     "instructions": [
+      "Empujar"
+     ],
+     "form_cues": null,
+     "common_mistakes": null
+    }
+   ],
+   "lang": "en",
+   "out": null
+  }
+ ],
+ "media": [
+  {
+   "name": "none",
+   "rows": [],
+   "legacy": null,
+   "lang": "vi",
+   "out": {
+    "type": "none",
+    "items": []
+   }
+  },
+  {
+   "name": "none",
+   "rows": [],
+   "legacy": null,
+   "lang": "en",
+   "out": {
+    "type": "none",
+    "items": []
+   }
+  },
+  {
+   "name": "legacy-gif",
+   "rows": [],
+   "legacy": " https://x/a.GIF?v=2 ",
+   "lang": "vi",
+   "out": {
+    "type": "image_single",
+    "items": [
+     {
+      "kind": "image",
+      "uri": "https://x/a.GIF?v=2",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": null,
+      "description": ""
+     }
+    ]
+   }
+  },
+  {
+   "name": "legacy-gif",
+   "rows": [],
+   "legacy": " https://x/a.GIF?v=2 ",
+   "lang": "en",
+   "out": {
+    "type": "image_single",
+    "items": [
+     {
+      "kind": "image",
+      "uri": "https://x/a.GIF?v=2",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": null,
+      "description": ""
+     }
+    ]
+   }
+  },
+  {
+   "name": "legacy-video",
+   "rows": [],
+   "legacy": "https://youtu.be/abc",
+   "lang": "vi",
+   "out": {
+    "type": "video",
+    "items": [
+     {
+      "kind": "video",
+      "uri": "https://youtu.be/abc",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": null,
+      "description": ""
+     }
+    ]
+   }
+  },
+  {
+   "name": "legacy-video",
+   "rows": [],
+   "legacy": "https://youtu.be/abc",
+   "lang": "en",
+   "out": {
+    "type": "video",
+    "items": [
+     {
+      "kind": "video",
+      "uri": "https://youtu.be/abc",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": null,
+      "description": ""
+     }
+    ]
+   }
+  },
+  {
+   "name": "legacy-blank",
+   "rows": null,
+   "legacy": "   ",
+   "lang": "vi",
+   "out": {
+    "type": "none",
+    "items": []
+   }
+  },
+  {
+   "name": "legacy-blank",
+   "rows": null,
+   "legacy": "   ",
+   "lang": "en",
+   "out": {
+    "type": "none",
+    "items": []
+   }
+  },
+  {
+   "name": "gallery",
+   "legacy": "https://ignored.mp4",
+   "rows": [
+    {
+     "kind": "image",
+     "uri": "b.png",
+     "position": 2,
+     "duration_s": 9,
+     "poster_uri": "p",
+     "alt": " Bên ",
+     "exercise_media_content": [
+      {
+       "locale": "vi",
+       "title": "Bước 2",
+       "description": null
+      },
+      {
+       "locale": "en",
+       "title": "Step 2",
+       "description": "Lower"
+      }
+     ]
+    },
+    {
+     "kind": "image",
+     "uri": " a.png ",
+     "position": 1,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null,
+     "exercise_media_content": [
+      {
+       "locale": "en",
+       "title": " ",
+       "description": "x"
+      },
+      {
+       "locale": "vi",
+       "title": "Bước 1",
+       "description": " Hạ "
+      }
+     ]
+    },
+    {
+     "kind": "video",
+     "uri": "v.mp4",
+     "position": 3,
+     "duration_s": 12,
+     "poster_uri": null,
+     "alt": null,
+     "exercise_media_content": null
+    },
+    {
+     "kind": "gif",
+     "uri": "z.gif",
+     "position": 0,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null
+    },
+    {
+     "kind": "image",
+     "uri": "  ",
+     "position": 0,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null
+    }
+   ],
+   "lang": "vi",
+   "out": {
+    "type": "image_gallery",
+    "items": [
+     {
+      "kind": "image",
+      "uri": "a.png",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": "Bước 1",
+      "description": "Hạ"
+     },
+     {
+      "kind": "image",
+      "uri": "b.png",
+      "durationS": null,
+      "posterUri": null,
+      "alt": "Bên",
+      "title": "Bước 2",
+      "description": ""
+     }
+    ]
+   }
+  },
+  {
+   "name": "gallery",
+   "legacy": "https://ignored.mp4",
+   "rows": [
+    {
+     "kind": "image",
+     "uri": "b.png",
+     "position": 2,
+     "duration_s": 9,
+     "poster_uri": "p",
+     "alt": " Bên ",
+     "exercise_media_content": [
+      {
+       "locale": "vi",
+       "title": "Bước 2",
+       "description": null
+      },
+      {
+       "locale": "en",
+       "title": "Step 2",
+       "description": "Lower"
+      }
+     ]
+    },
+    {
+     "kind": "image",
+     "uri": " a.png ",
+     "position": 1,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null,
+     "exercise_media_content": [
+      {
+       "locale": "en",
+       "title": " ",
+       "description": "x"
+      },
+      {
+       "locale": "vi",
+       "title": "Bước 1",
+       "description": " Hạ "
+      }
+     ]
+    },
+    {
+     "kind": "video",
+     "uri": "v.mp4",
+     "position": 3,
+     "duration_s": 12,
+     "poster_uri": null,
+     "alt": null,
+     "exercise_media_content": null
+    },
+    {
+     "kind": "gif",
+     "uri": "z.gif",
+     "position": 0,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null
+    },
+    {
+     "kind": "image",
+     "uri": "  ",
+     "position": 0,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null
+    }
+   ],
+   "lang": "en",
+   "out": {
+    "type": "image_gallery",
+    "items": [
+     {
+      "kind": "image",
+      "uri": "a.png",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": "Bước 1",
+      "description": "Hạ"
+     },
+     {
+      "kind": "image",
+      "uri": "b.png",
+      "durationS": null,
+      "posterUri": null,
+      "alt": "Bên",
+      "title": "Step 2",
+      "description": "Lower"
+     }
+    ]
+   }
+  },
+  {
+   "name": "single-image",
+   "legacy": null,
+   "rows": [
+    {
+     "kind": "image",
+     "uri": "one.jpg",
+     "position": null,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": "Alt"
+    }
+   ],
+   "lang": "vi",
+   "out": {
+    "type": "image_single",
+    "items": [
+     {
+      "kind": "image",
+      "uri": "one.jpg",
+      "durationS": null,
+      "posterUri": null,
+      "alt": "Alt",
+      "title": null,
+      "description": ""
+     }
+    ]
+   }
+  },
+  {
+   "name": "single-image",
+   "legacy": null,
+   "rows": [
+    {
+     "kind": "image",
+     "uri": "one.jpg",
+     "position": null,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": "Alt"
+    }
+   ],
+   "lang": "en",
+   "out": {
+    "type": "image_single",
+    "items": [
+     {
+      "kind": "image",
+      "uri": "one.jpg",
+      "durationS": null,
+      "posterUri": null,
+      "alt": "Alt",
+      "title": null,
+      "description": ""
+     }
+    ]
+   }
+  },
+  {
+   "name": "video-first",
+   "legacy": null,
+   "rows": [
+    {
+     "kind": "video",
+     "uri": "v2.mp4",
+     "position": 1,
+     "duration_s": "45.5",
+     "poster_uri": " poster.jpg ",
+     "alt": null,
+     "exercise_media_content": [
+      {
+       "locale": "vi",
+       "title": "Video",
+       "description": "Mô tả"
+      }
+     ]
+    },
+    {
+     "kind": "video",
+     "uri": "v1.mp4",
+     "position": 1,
+     "duration_s": "abc",
+     "poster_uri": null,
+     "alt": null
+    },
+    {
+     "kind": "image",
+     "uri": "i.png",
+     "position": 5,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null
+    }
+   ],
+   "lang": "vi",
+   "out": {
+    "type": "video",
+    "items": [
+     {
+      "kind": "video",
+      "uri": "v1.mp4",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": null,
+      "description": ""
+     }
+    ]
+   }
+  },
+  {
+   "name": "video-first",
+   "legacy": null,
+   "rows": [
+    {
+     "kind": "video",
+     "uri": "v2.mp4",
+     "position": 1,
+     "duration_s": "45.5",
+     "poster_uri": " poster.jpg ",
+     "alt": null,
+     "exercise_media_content": [
+      {
+       "locale": "vi",
+       "title": "Video",
+       "description": "Mô tả"
+      }
+     ]
+    },
+    {
+     "kind": "video",
+     "uri": "v1.mp4",
+     "position": 1,
+     "duration_s": "abc",
+     "poster_uri": null,
+     "alt": null
+    },
+    {
+     "kind": "image",
+     "uri": "i.png",
+     "position": 5,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null
+    }
+   ],
+   "lang": "en",
+   "out": {
+    "type": "video",
+    "items": [
+     {
+      "kind": "video",
+      "uri": "v1.mp4",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": null,
+      "description": ""
+     }
+    ]
+   }
+  },
+  {
+   "name": "tie-on-position",
+   "legacy": null,
+   "rows": [
+    {
+     "kind": "image",
+     "uri": "b.png",
+     "position": 0,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null
+    },
+    {
+     "kind": "image",
+     "uri": "a.png",
+     "position": 0,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null
+    }
+   ],
+   "lang": "vi",
+   "out": {
+    "type": "image_gallery",
+    "items": [
+     {
+      "kind": "image",
+      "uri": "a.png",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": null,
+      "description": ""
+     },
+     {
+      "kind": "image",
+      "uri": "b.png",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": null,
+      "description": ""
+     }
+    ]
+   }
+  },
+  {
+   "name": "tie-on-position",
+   "legacy": null,
+   "rows": [
+    {
+     "kind": "image",
+     "uri": "b.png",
+     "position": 0,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null
+    },
+    {
+     "kind": "image",
+     "uri": "a.png",
+     "position": 0,
+     "duration_s": null,
+     "poster_uri": null,
+     "alt": null
+    }
+   ],
+   "lang": "en",
+   "out": {
+    "type": "image_gallery",
+    "items": [
+     {
+      "kind": "image",
+      "uri": "a.png",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": null,
+      "description": ""
+     },
+     {
+      "kind": "image",
+      "uri": "b.png",
+      "durationS": null,
+      "posterUri": null,
+      "alt": null,
+      "title": null,
+      "description": ""
+     }
+    ]
+   }
+  }
+ ],
+ "clocks": [
+  {
+   "seconds": 0,
+   "label": "0:01"
+  },
+  {
+   "seconds": 0.4,
+   "label": "0:01"
+  },
+  {
+   "seconds": 1,
+   "label": "0:01"
+  },
+  {
+   "seconds": 59.5,
+   "label": "1:00"
+  },
+  {
+   "seconds": 60,
+   "label": "1:00"
+  },
+  {
+   "seconds": 61,
+   "label": "1:01"
+  },
+  {
+   "seconds": 125.49,
+   "label": "2:05"
+  },
+  {
+   "seconds": 3600,
+   "label": "60:00"
+  }
+ ],
+ "equipment": [
+  {
+   "raw": null,
+   "key": null
+  },
+  {
+   "raw": "",
+   "key": null
+  },
+  {
+   "raw": " Barbell ",
+   "key": "barbell"
+  },
+  {
+   "raw": "DB",
+   "key": "dumbbell"
+  },
+  {
+   "raw": "dumbbells",
+   "key": "dumbbell"
+  },
+  {
+   "raw": "Body  weight",
+   "key": "bodyweight"
+  },
+  {
+   "raw": "Kettlebell",
+   "key": "raw:kettlebell"
+  },
+  {
+   "raw": "kettle  BELL",
+   "key": "raw:kettle bell"
+  },
+  {
+   "raw": "db row",
+   "key": "raw:db row"
+  }
+ ],
+ "library": [
+  {
+   "id": "1",
+   "name": "Bench Press",
+   "muscle_group": "chest",
+   "equipment": "barbell"
+  },
+  {
+   "id": "2",
+   "name": "Incline Press",
+   "muscle_group": "Chest/Shoulders",
+   "equipment": "Barbell"
+  },
+  {
+   "id": "3",
+   "name": "bench press",
+   "muscle_group": "chest",
+   "equipment": "barbell"
+  },
+  {
+   "id": "4",
+   "name": "Push-up",
+   "muscle_group": "Ngực",
+   "equipment": "bodyweight"
+  },
+  {
+   "id": "5",
+   "name": "Overhead Press",
+   "muscle_group": "shoulders",
+   "equipment": "barbell"
+  },
+  {
+   "id": "6",
+   "name": "Lateral Raise",
+   "muscle_group": "Vai",
+   "equipment": "dumbbell"
+  },
+  {
+   "id": "7",
+   "name": "Dip",
+   "muscle_group": "Chest/Triceps",
+   "equipment": "Body weight"
+  },
+  {
+   "id": "8",
+   "name": "  ",
+   "muscle_group": "chest",
+   "equipment": "barbell"
+  },
+  {
+   "id": "9",
+   "name": "Cable Fly",
+   "muscle_group": "chest",
+   "equipment": "cable"
+  },
+  {
+   "id": "10",
+   "name": "Arnold Press",
+   "muscle_group": "shoulders/triceps",
+   "equipment": "Dumbbells"
+  },
+  {
+   "id": "11",
+   "name": "Kettlebell Swing",
+   "muscle_group": "glutes",
+   "equipment": "Kettlebell"
+  },
+  {
+   "id": "12",
+   "name": "Goblet Squat",
+   "muscle_group": "legs",
+   "equipment": "kettlebell"
+  },
+  {
+   "id": "13",
+   "name": "Front Raise",
+   "muscle_group": "Vai",
+   "equipment": "dumbbell"
+  },
+  {
+   "id": "14",
+   "name": "Zercher Push Press",
+   "muscle_group": "shoulders + chest",
+   "equipment": "barbell"
+  }
+ ],
+ "related": [
+  {
+   "subject": {
+    "id": "1",
+    "name": "Bench Press",
+    "muscleKeys": [
+     "chest"
+    ],
+    "equipmentKey": "barbell"
+   },
+   "lang": "vi",
+   "limit": 3,
+   "sameEquipment": [
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Ngực / Vai",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 0
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Vai / Ngực",
+     "shared": 1
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "9",
+     "name": "Cable Fly",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Ngực",
+     "shared": 1
+    },
+    {
+     "id": "7",
+     "name": "Dip",
+     "muscleKeys": [
+      "chest",
+      "triceps"
+     ],
+     "muscleLabel": "Ngực / Tay sau",
+     "shared": 1
+    },
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Ngực / Vai",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": "1",
+    "name": "Bench Press",
+    "muscleKeys": [
+     "chest"
+    ],
+    "equipmentKey": "barbell"
+   },
+   "lang": "vi",
+   "limit": 8,
+   "sameEquipment": [
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Ngực / Vai",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 0
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Vai / Ngực",
+     "shared": 1
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "9",
+     "name": "Cable Fly",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Ngực",
+     "shared": 1
+    },
+    {
+     "id": "7",
+     "name": "Dip",
+     "muscleKeys": [
+      "chest",
+      "triceps"
+     ],
+     "muscleLabel": "Ngực / Tay sau",
+     "shared": 1
+    },
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Ngực / Vai",
+     "shared": 1
+    },
+    {
+     "id": "4",
+     "name": "Push-up",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Ngực",
+     "shared": 1
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Vai / Ngực",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": "1",
+    "name": "Bench Press",
+    "muscleKeys": [
+     "chest"
+    ],
+    "equipmentKey": "barbell"
+   },
+   "lang": "en",
+   "limit": 3,
+   "sameEquipment": [
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Chest / Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 0
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Shoulders / Chest",
+     "shared": 1
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "9",
+     "name": "Cable Fly",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Chest",
+     "shared": 1
+    },
+    {
+     "id": "7",
+     "name": "Dip",
+     "muscleKeys": [
+      "chest",
+      "triceps"
+     ],
+     "muscleLabel": "Chest / Triceps",
+     "shared": 1
+    },
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Chest / Shoulders",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": "1",
+    "name": "Bench Press",
+    "muscleKeys": [
+     "chest"
+    ],
+    "equipmentKey": "barbell"
+   },
+   "lang": "en",
+   "limit": 8,
+   "sameEquipment": [
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Chest / Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 0
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Shoulders / Chest",
+     "shared": 1
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "9",
+     "name": "Cable Fly",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Chest",
+     "shared": 1
+    },
+    {
+     "id": "7",
+     "name": "Dip",
+     "muscleKeys": [
+      "chest",
+      "triceps"
+     ],
+     "muscleLabel": "Chest / Triceps",
+     "shared": 1
+    },
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Chest / Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "4",
+     "name": "Push-up",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Chest",
+     "shared": 1
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Shoulders / Chest",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": null,
+    "name": "Lateral Raise",
+    "muscleKeys": [
+     "shoulders"
+    ],
+    "equipmentKey": "dumbbell"
+   },
+   "lang": "vi",
+   "limit": 3,
+   "sameEquipment": [
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Vai / Tay sau",
+     "shared": 1
+    },
+    {
+     "id": "13",
+     "name": "Front Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 1
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Vai / Tay sau",
+     "shared": 1
+    },
+    {
+     "id": "13",
+     "name": "Front Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 1
+    },
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Ngực / Vai",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": null,
+    "name": "Lateral Raise",
+    "muscleKeys": [
+     "shoulders"
+    ],
+    "equipmentKey": "dumbbell"
+   },
+   "lang": "vi",
+   "limit": 8,
+   "sameEquipment": [
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Vai / Tay sau",
+     "shared": 1
+    },
+    {
+     "id": "13",
+     "name": "Front Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 1
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Vai / Tay sau",
+     "shared": 1
+    },
+    {
+     "id": "13",
+     "name": "Front Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 1
+    },
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Ngực / Vai",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 1
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Vai / Ngực",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": null,
+    "name": "Lateral Raise",
+    "muscleKeys": [
+     "shoulders"
+    ],
+    "equipmentKey": "dumbbell"
+   },
+   "lang": "en",
+   "limit": 3,
+   "sameEquipment": [
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Shoulders / Triceps",
+     "shared": 1
+    },
+    {
+     "id": "13",
+     "name": "Front Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 1
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Shoulders / Triceps",
+     "shared": 1
+    },
+    {
+     "id": "13",
+     "name": "Front Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Chest / Shoulders",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": null,
+    "name": "Lateral Raise",
+    "muscleKeys": [
+     "shoulders"
+    ],
+    "equipmentKey": "dumbbell"
+   },
+   "lang": "en",
+   "limit": 8,
+   "sameEquipment": [
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Shoulders / Triceps",
+     "shared": 1
+    },
+    {
+     "id": "13",
+     "name": "Front Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 1
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Shoulders / Triceps",
+     "shared": 1
+    },
+    {
+     "id": "13",
+     "name": "Front Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "2",
+     "name": "Incline Press",
+     "muscleKeys": [
+      "chest",
+      "shoulders"
+     ],
+     "muscleLabel": "Chest / Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Shoulders / Chest",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": "11",
+    "name": "Kettlebell Swing",
+    "muscleKeys": [
+     "glutes"
+    ],
+    "equipmentKey": "raw:kettlebell"
+   },
+   "lang": "vi",
+   "limit": 3,
+   "sameEquipment": [
+    {
+     "id": "12",
+     "name": "Goblet Squat",
+     "muscleKeys": [
+      "legs"
+     ],
+     "muscleLabel": "Chân",
+     "shared": 0
+    }
+   ],
+   "sameMuscle": []
+  },
+  {
+   "subject": {
+    "id": "11",
+    "name": "Kettlebell Swing",
+    "muscleKeys": [
+     "glutes"
+    ],
+    "equipmentKey": "raw:kettlebell"
+   },
+   "lang": "vi",
+   "limit": 8,
+   "sameEquipment": [
+    {
+     "id": "12",
+     "name": "Goblet Squat",
+     "muscleKeys": [
+      "legs"
+     ],
+     "muscleLabel": "Chân",
+     "shared": 0
+    }
+   ],
+   "sameMuscle": []
+  },
+  {
+   "subject": {
+    "id": "11",
+    "name": "Kettlebell Swing",
+    "muscleKeys": [
+     "glutes"
+    ],
+    "equipmentKey": "raw:kettlebell"
+   },
+   "lang": "en",
+   "limit": 3,
+   "sameEquipment": [
+    {
+     "id": "12",
+     "name": "Goblet Squat",
+     "muscleKeys": [
+      "legs"
+     ],
+     "muscleLabel": "Legs",
+     "shared": 0
+    }
+   ],
+   "sameMuscle": []
+  },
+  {
+   "subject": {
+    "id": "11",
+    "name": "Kettlebell Swing",
+    "muscleKeys": [
+     "glutes"
+    ],
+    "equipmentKey": "raw:kettlebell"
+   },
+   "lang": "en",
+   "limit": 8,
+   "sameEquipment": [
+    {
+     "id": "12",
+     "name": "Goblet Squat",
+     "muscleKeys": [
+      "legs"
+     ],
+     "muscleLabel": "Legs",
+     "shared": 0
+    }
+   ],
+   "sameMuscle": []
+  },
+  {
+   "subject": {
+    "id": null,
+    "name": "Mystery",
+    "muscleKeys": [],
+    "equipmentKey": null
+   },
+   "lang": "vi",
+   "limit": 3,
+   "sameEquipment": [],
+   "sameMuscle": []
+  },
+  {
+   "subject": {
+    "id": null,
+    "name": "Mystery",
+    "muscleKeys": [],
+    "equipmentKey": null
+   },
+   "lang": "vi",
+   "limit": 8,
+   "sameEquipment": [],
+   "sameMuscle": []
+  },
+  {
+   "subject": {
+    "id": null,
+    "name": "Mystery",
+    "muscleKeys": [],
+    "equipmentKey": null
+   },
+   "lang": "en",
+   "limit": 3,
+   "sameEquipment": [],
+   "sameMuscle": []
+  },
+  {
+   "subject": {
+    "id": null,
+    "name": "Mystery",
+    "muscleKeys": [],
+    "equipmentKey": null
+   },
+   "lang": "en",
+   "limit": 8,
+   "sameEquipment": [],
+   "sameMuscle": []
+  },
+  {
+   "subject": {
+    "id": "2",
+    "name": "Incline Press",
+    "muscleKeys": [
+     "chest",
+     "shoulders"
+    ],
+    "equipmentKey": "barbell"
+   },
+   "lang": "vi",
+   "limit": 3,
+   "sameEquipment": [
+    {
+     "id": "1",
+     "name": "Bench Press",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Ngực",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 1
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Vai / Ngực",
+     "shared": 2
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Vai / Ngực",
+     "shared": 2
+    },
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Vai / Tay sau",
+     "shared": 1
+    },
+    {
+     "id": "1",
+     "name": "Bench Press",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Ngực",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": "2",
+    "name": "Incline Press",
+    "muscleKeys": [
+     "chest",
+     "shoulders"
+    ],
+    "equipmentKey": "barbell"
+   },
+   "lang": "vi",
+   "limit": 8,
+   "sameEquipment": [
+    {
+     "id": "1",
+     "name": "Bench Press",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Ngực",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 1
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Vai / Ngực",
+     "shared": 2
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Vai / Ngực",
+     "shared": 2
+    },
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Vai / Tay sau",
+     "shared": 1
+    },
+    {
+     "id": "1",
+     "name": "Bench Press",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Ngực",
+     "shared": 1
+    },
+    {
+     "id": "9",
+     "name": "Cable Fly",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Ngực",
+     "shared": 1
+    },
+    {
+     "id": "7",
+     "name": "Dip",
+     "muscleKeys": [
+      "chest",
+      "triceps"
+     ],
+     "muscleLabel": "Ngực / Tay sau",
+     "shared": 1
+    },
+    {
+     "id": "13",
+     "name": "Front Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 1
+    },
+    {
+     "id": "6",
+     "name": "Lateral Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Vai",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": "2",
+    "name": "Incline Press",
+    "muscleKeys": [
+     "chest",
+     "shoulders"
+    ],
+    "equipmentKey": "barbell"
+   },
+   "lang": "en",
+   "limit": 3,
+   "sameEquipment": [
+    {
+     "id": "1",
+     "name": "Bench Press",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Chest",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Shoulders / Chest",
+     "shared": 2
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Shoulders / Chest",
+     "shared": 2
+    },
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Shoulders / Triceps",
+     "shared": 1
+    },
+    {
+     "id": "1",
+     "name": "Bench Press",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Chest",
+     "shared": 1
+    }
+   ]
+  },
+  {
+   "subject": {
+    "id": "2",
+    "name": "Incline Press",
+    "muscleKeys": [
+     "chest",
+     "shoulders"
+    ],
+    "equipmentKey": "barbell"
+   },
+   "lang": "en",
+   "limit": 8,
+   "sameEquipment": [
+    {
+     "id": "1",
+     "name": "Bench Press",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Chest",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Shoulders / Chest",
+     "shared": 2
+    }
+   ],
+   "sameMuscle": [
+    {
+     "id": "14",
+     "name": "Zercher Push Press",
+     "muscleKeys": [
+      "shoulders",
+      "chest"
+     ],
+     "muscleLabel": "Shoulders / Chest",
+     "shared": 2
+    },
+    {
+     "id": "10",
+     "name": "Arnold Press",
+     "muscleKeys": [
+      "shoulders",
+      "triceps"
+     ],
+     "muscleLabel": "Shoulders / Triceps",
+     "shared": 1
+    },
+    {
+     "id": "1",
+     "name": "Bench Press",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Chest",
+     "shared": 1
+    },
+    {
+     "id": "9",
+     "name": "Cable Fly",
+     "muscleKeys": [
+      "chest"
+     ],
+     "muscleLabel": "Chest",
+     "shared": 1
+    },
+    {
+     "id": "7",
+     "name": "Dip",
+     "muscleKeys": [
+      "chest",
+      "triceps"
+     ],
+     "muscleLabel": "Chest / Triceps",
+     "shared": 1
+    },
+    {
+     "id": "13",
+     "name": "Front Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "6",
+     "name": "Lateral Raise",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 1
+    },
+    {
+     "id": "5",
+     "name": "Overhead Press",
+     "muscleKeys": [
+      "shoulders"
+     ],
+     "muscleLabel": "Shoulders",
+     "shared": 1
+    }
+   ]
+  }
+ ]
+}

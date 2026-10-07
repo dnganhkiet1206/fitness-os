@@ -63,7 +63,9 @@ public struct RepEntry: Sendable, Hashable {
     }
   }
 
-  private static func trimJS(_ s: String) -> String {
+  /// `String.prototype.trim` — dùng chung cho mọi ô nhập chép từ RN (cũng ở
+  /// `FitnessCalc.readStat`).
+  static func trimJS(_ s: String) -> String {
     var scalars = Substring(s).unicodeScalars
     while let f = scalars.first, isJSWhitespace(f) { scalars.removeFirst() }
     while let l = scalars.last, isJSWhitespace(l) { scalars.removeLast() }

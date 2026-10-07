@@ -27,6 +27,9 @@ public protocol AuthAPI: Sendable {
   func signIn(email: String, password: String) async throws
   func signInWithApple(identityToken: String, rawNonce: String) async throws
   func resetPassword(email: String) async throws
+  /// Đổi mật khẩu của phiên đang mở (`auth.updateUser({ password })`). Nên
+  /// ném `PasswordChangeFailure` đã gọi đúng tên.
+  func updatePassword(_ password: String) async throws
   func signOut() async throws
 }
 
@@ -57,6 +60,8 @@ public final class SessionStore {
   }
 
   @ObservationIgnored private let api: any AuthAPI
+  /// Cho các phần mở rộng trong module (đổi mật khẩu, #423).
+  var authAPI: any AuthAPI { api }
   /// Dọn dữ liệu của người dùng vừa rời đi (hàng đợi offline theo #241, cache,
   /// tiến độ ngày…). Mỗi chủ dữ liệu tự đăng ký phần của mình.
   @ObservationIgnored private var cleanups: [@MainActor @Sendable () async -> Void] = []

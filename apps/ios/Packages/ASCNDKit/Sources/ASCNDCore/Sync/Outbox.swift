@@ -10,6 +10,12 @@ public struct OutboxEntry: Sendable, Hashable, Codable, Identifiable {
   public let kind: String
   public let payload: JSONValue
   public let createdAt: EpochMillis
+  /// Bản ghi lại / xoá một buổi đã chốt: mảng set ĐÃ ghi trước lần sửa này.
+  /// Lúc gửi, writer gộp phần thay đổi (`base` → `payload`) lên hàng đọc từ
+  /// server thay vì đè cả hàng (`SessionRevisionMerge`). `nil` = bản ghi cũ
+  /// (xếp hàng trước khi có trường này) hoặc loại không cần gộp — giữ cách ghi
+  /// cũ. Optional nên hàng outbox đã lưu vẫn giải mã được.
+  public let base: JSONValue?
 
   public internal(set) var history = FailureHistory()
   /// Sớm nhất được gửi lại lúc nào; `nil` = gửi ngay.
@@ -17,12 +23,16 @@ public struct OutboxEntry: Sendable, Hashable, Codable, Identifiable {
   /// Lần lỗi trước là mất mạng: chờ có mạng rồi mới gửi.
   public internal(set) var needsNetwork = false
 
-  public init(id: String, userId: String, kind: String, payload: JSONValue, createdAt: EpochMillis) {
+  public init(
+    id: String, userId: String, kind: String, payload: JSONValue, createdAt: EpochMillis,
+    base: JSONValue? = nil
+  ) {
     self.id = id
     self.userId = userId
     self.kind = kind
     self.payload = payload
     self.createdAt = createdAt
+    self.base = base
   }
 }
 

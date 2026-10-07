@@ -1,0 +1,7082 @@
+{
+ "source": "native/src/lib @ fac9ac2",
+ "timeZone": "Asia/Ho_Chi_Minh",
+ "cases": [
+  {
+   "name": "empty",
+   "sessions": [],
+   "weighIns": [],
+   "declaredKinds": {},
+   "now": "2026-10-05T07:00:00.000Z",
+   "performances": [],
+   "insights": []
+  },
+  {
+   "name": "single",
+   "sessions": [
+    {
+     "id": "b1",
+     "date_time": "2026-09-05T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 40,
+       "reps": 10,
+       "warmup": true
+      },
+      {
+       "exerciseName": "Bench Press",
+       "weight": 60,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Bench Press",
+       "weight": 60,
+       "reps": 7
+      }
+     ]
+    }
+   ],
+   "weighIns": [],
+   "declaredKinds": {},
+   "now": "2026-10-05T07:00:00.000Z",
+   "performances": [
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b1",
+     "at": "2026-09-05T11:00:00.000Z",
+     "date": "2026-09-05",
+     "kind": "compound",
+     "setCount": 2,
+     "totalReps": 15,
+     "totalVolumeKg": 900,
+     "bestWeightKg": 60,
+     "bestReps": 8,
+     "bestE1rmKg": 76,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    }
+   ],
+   "insights": [
+    {
+     "exerciseKey": "bench press",
+     "lastTrainedDays": 30,
+     "stale": true,
+     "exerciseName": "Bench Press",
+     "kind": "compound",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 1,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "kg",
+     "bestWeightKg": 60,
+     "bestReps": 8,
+     "bestE1rmKg": 76,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        76
+       ],
+       "dates": [
+        "2026-09-05"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 60,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "too-few-sessions",
+       "have": 1,
+       "need": 3
+      },
+      {
+       "kind": "last-trained",
+       "days": 30,
+       "stale": true
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 60,
+       "reps": 8
+      },
+      {
+       "kind": "e1rm",
+       "value": 76
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "multi",
+   "sessions": [
+    {
+     "id": "o5",
+     "date_time": "2026-10-03T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      },
+      {
+       "exerciseName": "",
+       "weight": 50,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Junk",
+       "weight": "x",
+       "reps": "y"
+      }
+     ]
+    },
+    {
+     "id": "o4",
+     "date_time": "2026-09-26T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40.5,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "o3",
+     "date_time": "2026-09-19T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": "41",
+       "reps": "8"
+      }
+     ]
+    },
+    {
+     "id": "o2",
+     "date_time": "2026-09-13T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "o1",
+     "date_time": "2026-09-06T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "d2",
+     "date_time": "2026-08-26T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Deadlift",
+       "weight": 150,
+       "reps": 3
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 62,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "d1",
+     "date_time": "2026-08-16T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Deadlift",
+       "weight": 140,
+       "reps": 3
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "c2",
+     "date_time": "2026-09-27T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Curl",
+       "weight": 15,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 60,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "c1",
+     "date_time": "2026-09-20T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Curl",
+       "weight": 12.5,
+       "reps": 10
+      },
+      {
+       "exerciseName": "Leg Press",
+       "weight": 100,
+       "reps": 12
+      }
+     ]
+    },
+    {
+     "id": "p4",
+     "date_time": "2026-09-30T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 12
+      },
+      {
+       "exerciseName": "Curl",
+       "weight": 12.5,
+       "reps": 12
+      },
+      {
+       "exerciseName": "Leg Press",
+       "weight": 100,
+       "reps": 15
+      }
+     ]
+    },
+    {
+     "id": "p3",
+     "date_time": "2026-09-23T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 10,
+       "reps": 6
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 50
+      }
+     ]
+    },
+    {
+     "id": "p2",
+     "date_time": "2026-09-16T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 10
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 60
+      }
+     ]
+    },
+    {
+     "id": "p1",
+     "date_time": "2026-09-09T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 45
+      }
+     ]
+    },
+    {
+     "id": "b7",
+     "date_time": "2026-09-25T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 70,
+       "reps": 6
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 90,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b6",
+     "date_time": "2026-09-22T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 70,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 95,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b5",
+     "date_time": "2026-09-18T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 67.5,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 100,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b4",
+     "date_time": "2026-09-15T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 65,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 100,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b3",
+     "date_time": "2026-09-11T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 65,
+       "reps": 6
+      }
+     ]
+    },
+    {
+     "id": "b2",
+     "date_time": "2026-09-08T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 62.5,
+       "reps": 8
+      },
+      {
+       "exerciseName": "bench  press",
+       "weight": 62.5,
+       "reps": 6
+      }
+     ]
+    },
+    {
+     "id": "b1",
+     "date_time": "2026-09-05T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 40,
+       "reps": 10,
+       "warmup": true
+      },
+      {
+       "exerciseName": "Bench Press",
+       "weight": 60,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Bench Press",
+       "weight": 60,
+       "reps": 7
+      }
+     ]
+    }
+   ],
+   "weighIns": [
+    {
+     "date": "2026-09-05",
+     "value": 70
+    },
+    {
+     "date": "2026-09-20",
+     "value": 71.234
+    }
+   ],
+   "declaredKinds": {
+    "curl": "isolation"
+   },
+   "now": "2026-10-05T07:00:00.000Z",
+   "performances": [
+    {
+     "exerciseKey": "deadlift",
+     "exerciseName": "Deadlift",
+     "sessionId": "d1",
+     "at": "2026-08-16T11:00:00.000Z",
+     "date": "2026-08-16",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 3,
+     "totalVolumeKg": 420,
+     "bestWeightKg": 140,
+     "bestReps": 3,
+     "bestE1rmKg": 154,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "d1",
+     "at": "2026-08-16T11:00:00.000Z",
+     "date": "2026-08-16",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "deadlift",
+     "exerciseName": "Deadlift",
+     "sessionId": "d2",
+     "at": "2026-08-26T11:00:00.000Z",
+     "date": "2026-08-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 3,
+     "totalVolumeKg": 450,
+     "bestWeightKg": 150,
+     "bestReps": 3,
+     "bestE1rmKg": 165,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Deadlift",
+       "kind": "weight",
+       "value": 150,
+       "previous": 140
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "d2",
+     "at": "2026-08-26T11:00:00.000Z",
+     "date": "2026-08-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 496,
+     "bestWeightKg": 62,
+     "bestReps": 8,
+     "bestE1rmKg": 78.53,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Row",
+       "kind": "weight",
+       "value": 62,
+       "previous": 40
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b1",
+     "at": "2026-09-05T11:00:00.000Z",
+     "date": "2026-09-05",
+     "kind": "compound",
+     "setCount": 2,
+     "totalReps": 15,
+     "totalVolumeKg": 900,
+     "bestWeightKg": 60,
+     "bestReps": 8,
+     "bestE1rmKg": 76,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o1",
+     "at": "2026-09-06T11:00:00.000Z",
+     "date": "2026-09-06",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "bench  press",
+     "sessionId": "b2",
+     "at": "2026-09-08T11:00:00.000Z",
+     "date": "2026-09-08",
+     "kind": "compound",
+     "setCount": 2,
+     "totalReps": 14,
+     "totalVolumeKg": 875,
+     "bestWeightKg": 62.5,
+     "bestReps": 8,
+     "bestE1rmKg": 79.17,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 62.5,
+       "previous": 60
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p1",
+     "at": "2026-09-09T11:00:00.000Z",
+     "date": "2026-09-09",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 8,
+     "bestE1rmKg": 88.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p1",
+     "at": "2026-09-09T11:00:00.000Z",
+     "date": "2026-09-09",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 45,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b3",
+     "at": "2026-09-11T11:00:00.000Z",
+     "date": "2026-09-11",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 390,
+     "bestWeightKg": 65,
+     "bestReps": 6,
+     "bestE1rmKg": 78,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 65,
+       "previous": 62.5
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o2",
+     "at": "2026-09-13T11:00:00.000Z",
+     "date": "2026-09-13",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b4",
+     "at": "2026-09-15T11:00:00.000Z",
+     "date": "2026-09-15",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 520,
+     "bestWeightKg": 65,
+     "bestReps": 8,
+     "bestE1rmKg": 82.33,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "reps",
+       "value": 8,
+       "previous": 6,
+       "atWeight": 65
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b4",
+     "at": "2026-09-15T11:00:00.000Z",
+     "date": "2026-09-15",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 500,
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p2",
+     "at": "2026-09-16T11:00:00.000Z",
+     "date": "2026-09-16",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 10,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 10,
+     "bestE1rmKg": 93.33,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "reps",
+       "value": 10,
+       "previous": 8,
+       "atWeight": 0
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p2",
+     "at": "2026-09-16T11:00:00.000Z",
+     "date": "2026-09-16",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 60,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b5",
+     "at": "2026-09-18T11:00:00.000Z",
+     "date": "2026-09-18",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 337.5,
+     "bestWeightKg": 67.5,
+     "bestReps": 5,
+     "bestE1rmKg": 78.75,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 67.5,
+       "previous": 65
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b5",
+     "at": "2026-09-18T11:00:00.000Z",
+     "date": "2026-09-18",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 500,
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o3",
+     "at": "2026-09-19T11:00:00.000Z",
+     "date": "2026-09-19",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 328,
+     "bestWeightKg": 41,
+     "bestReps": 8,
+     "bestE1rmKg": 51.93,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "OHP",
+       "kind": "weight",
+       "value": 41,
+       "previous": 40
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "c1",
+     "at": "2026-09-20T11:00:00.000Z",
+     "date": "2026-09-20",
+     "kind": "isolation",
+     "setCount": 1,
+     "totalReps": 10,
+     "totalVolumeKg": 125,
+     "bestWeightKg": 12.5,
+     "bestReps": 10,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "leg press",
+     "exerciseName": "Leg Press",
+     "sessionId": "c1",
+     "at": "2026-09-20T11:00:00.000Z",
+     "date": "2026-09-20",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 1200,
+     "bestWeightKg": 100,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b6",
+     "at": "2026-09-22T11:00:00.000Z",
+     "date": "2026-09-22",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 350,
+     "bestWeightKg": 70,
+     "bestReps": 5,
+     "bestE1rmKg": 81.67,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 70,
+       "previous": 67.5
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b6",
+     "at": "2026-09-22T11:00:00.000Z",
+     "date": "2026-09-22",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 475,
+     "bestWeightKg": 95,
+     "bestReps": 5,
+     "bestE1rmKg": 110.83,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p3",
+     "at": "2026-09-23T11:00:00.000Z",
+     "date": "2026-09-23",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 60,
+     "bestWeightKg": 10,
+     "bestReps": 6,
+     "bestE1rmKg": 97.48,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "weight",
+       "value": 10,
+       "previous": 0
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p3",
+     "at": "2026-09-23T11:00:00.000Z",
+     "date": "2026-09-23",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 50,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b7",
+     "at": "2026-09-25T11:00:00.000Z",
+     "date": "2026-09-25",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 420,
+     "bestWeightKg": 70,
+     "bestReps": 6,
+     "bestE1rmKg": 84,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "reps",
+       "value": 6,
+       "previous": 5,
+       "atWeight": 70
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b7",
+     "at": "2026-09-25T11:00:00.000Z",
+     "date": "2026-09-25",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 450,
+     "bestWeightKg": 90,
+     "bestReps": 5,
+     "bestE1rmKg": 105,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o4",
+     "at": "2026-09-26T11:00:00.000Z",
+     "date": "2026-09-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 324,
+     "bestWeightKg": 40.5,
+     "bestReps": 8,
+     "bestE1rmKg": 51.3,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "c2",
+     "at": "2026-09-27T11:00:00.000Z",
+     "date": "2026-09-27",
+     "kind": "isolation",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 120,
+     "bestWeightKg": 15,
+     "bestReps": 8,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Curl",
+       "kind": "weight",
+       "value": 15,
+       "previous": 12.5
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "c2",
+     "at": "2026-09-27T11:00:00.000Z",
+     "date": "2026-09-27",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 480,
+     "bestWeightKg": 60,
+     "bestReps": 8,
+     "bestE1rmKg": 76,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeight": 0
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "isolation",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 150,
+     "bestWeightKg": 12.5,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Curl",
+       "kind": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeight": 12.5
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "leg press",
+     "exerciseName": "Leg Press",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 15,
+     "totalVolumeKg": 1500,
+     "bestWeightKg": 100,
+     "bestReps": 15,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Leg Press",
+       "kind": "reps",
+       "value": 15,
+       "previous": 12,
+       "atWeight": 100
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o5",
+     "at": "2026-10-03T11:00:00.000Z",
+     "date": "2026-10-03",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    }
+   ],
+   "insights": [
+    {
+     "exerciseKey": "squat",
+     "lastTrainedDays": 10,
+     "stale": false,
+     "exerciseName": "Squat",
+     "kind": "compound",
+     "trend": "DECLINING",
+     "readiness": "NOT_READY",
+     "confidence": "high",
+     "sessions": 4,
+     "current": 110.83,
+     "previous": 116.67,
+     "changePct": -0.05005571269392306,
+     "unit": "kg",
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        116.67,
+        116.67,
+        110.83,
+        105
+       ],
+       "dates": [
+        "2026-09-15",
+        "2026-09-18",
+        "2026-09-22",
+        "2026-09-25"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 100,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 100,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 95,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 90,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 116.67,
+       "to": 110.83,
+       "unit": "kg",
+       "pct": -0.05
+      },
+      {
+       "kind": "last-trained",
+       "days": 10,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 90,
+       "reps": 5
+      },
+      {
+       "kind": "e1rm",
+       "value": 116.67
+      }
+     ]
+    },
+    {
+     "exerciseKey": "bench press",
+     "lastTrainedDays": 10,
+     "stale": false,
+     "exerciseName": "Bench Press",
+     "kind": "compound",
+     "trend": "PLATEAU",
+     "readiness": "MAINTAIN",
+     "confidence": "high",
+     "sessions": 6,
+     "current": 84,
+     "previous": 82.33,
+     "changePct": 0.02028422203328072,
+     "unit": "kg",
+     "bestWeightKg": 70,
+     "bestReps": 8,
+     "bestE1rmKg": 84,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        79.17,
+        78,
+        82.33,
+        78.75,
+        81.67,
+        84
+       ],
+       "dates": [
+        "2026-09-08",
+        "2026-09-11",
+        "2026-09-15",
+        "2026-09-18",
+        "2026-09-22",
+        "2026-09-25"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 62.5,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 65,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 65,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 67.5,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 70,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 70,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 82.33,
+       "to": 84,
+       "unit": "kg",
+       "pct": 0.02
+      },
+      {
+       "kind": "no-upward-trend",
+       "sessions": 6
+      },
+      {
+       "kind": "last-trained",
+       "days": 10,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 70,
+       "reps": 6
+      },
+      {
+       "kind": "e1rm",
+       "value": 84
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 6,
+       "previous": 5,
+       "atWeightKg": 70,
+       "daysAgo": 10
+      }
+     ]
+    },
+    {
+     "exerciseKey": "ohp",
+     "lastTrainedDays": 2,
+     "stale": false,
+     "exerciseName": "OHP",
+     "kind": "compound",
+     "trend": "PLATEAU",
+     "readiness": "MAINTAIN",
+     "confidence": "high",
+     "sessions": 5,
+     "current": 51.3,
+     "previous": 50.67,
+     "changePct": 0.012433392539964385,
+     "unit": "kg",
+     "bestWeightKg": 41,
+     "bestReps": 8,
+     "bestE1rmKg": 51.93,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        50.67,
+        50.67,
+        51.93,
+        51.3,
+        50.67
+       ],
+       "dates": [
+        "2026-09-06",
+        "2026-09-13",
+        "2026-09-19",
+        "2026-09-26",
+        "2026-10-03"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 41,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40.5,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 50.67,
+       "to": 51.3,
+       "unit": "kg",
+       "pct": 0.012
+      },
+      {
+       "kind": "no-upward-trend",
+       "sessions": 5
+      },
+      {
+       "kind": "last-trained",
+       "days": 2,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 40,
+       "reps": 8
+      },
+      {
+       "kind": "e1rm",
+       "value": 51.93
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 41,
+       "previous": 40,
+       "atWeightKg": null,
+       "daysAgo": 16
+      }
+     ]
+    },
+    {
+     "exerciseKey": "pull-up",
+     "lastTrainedDays": 5,
+     "stale": false,
+     "exerciseName": "Pull-up",
+     "kind": "bodyweight",
+     "trend": "IMPROVING",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 4,
+     "current": 854.76,
+     "previous": 700,
+     "changePct": 0.22108571428571427,
+     "unit": "kg-rep",
+     "bestWeightKg": 10,
+     "bestReps": 12,
+     "bestE1rmKg": 97.48,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg-rep",
+       "values": [
+        560,
+        700,
+        487.38,
+        854.76
+       ],
+       "dates": [
+        "2026-09-09",
+        "2026-09-16",
+        "2026-09-23",
+        "2026-09-30"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 0,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": 70
+        },
+        {
+         "weightKg": 0,
+         "reps": 10,
+         "durationSec": null,
+         "bodyweightKg": 70
+        },
+        {
+         "weightKg": 10,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": 71.23
+        },
+        {
+         "weightKg": 0,
+         "reps": 12,
+         "durationSec": null,
+         "bodyweightKg": 71.23
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 700,
+       "to": 854.76,
+       "unit": "kg-rep",
+       "pct": 0.221
+      },
+      {
+       "kind": "last-trained",
+       "days": 5,
+       "stale": false
+      },
+      {
+       "kind": "volatile",
+       "spread": 0.304
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 0,
+       "reps": 12
+      },
+      {
+       "kind": "e1rm",
+       "value": 97.48
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeightKg": 0,
+       "daysAgo": 5
+      }
+     ]
+    },
+    {
+     "exerciseKey": "row",
+     "lastTrainedDays": 8,
+     "stale": false,
+     "exerciseName": "Row",
+     "kind": "compound",
+     "trend": "IMPROVING",
+     "readiness": "MAINTAIN",
+     "confidence": "medium",
+     "sessions": 3,
+     "current": 76,
+     "previous": 50.67,
+     "changePct": 0.4999013222814288,
+     "unit": "kg",
+     "bestWeightKg": 62,
+     "bestReps": 8,
+     "bestE1rmKg": 78.53,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        50.67,
+        78.53,
+        76
+       ],
+       "dates": [
+        "2026-08-16",
+        "2026-08-26",
+        "2026-09-27"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 62,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 60,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 50.67,
+       "to": 76,
+       "unit": "kg",
+       "pct": 0.5
+      },
+      {
+       "kind": "last-trained",
+       "days": 8,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 60,
+       "reps": 8
+      },
+      {
+       "kind": "e1rm",
+       "value": 78.53
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 62,
+       "previous": 40,
+       "atWeightKg": null,
+       "daysAgo": 40
+      }
+     ]
+    },
+    {
+     "exerciseKey": "plank",
+     "lastTrainedDays": 12,
+     "stale": false,
+     "exerciseName": "Plank",
+     "kind": "timed",
+     "trend": "IMPROVING",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 3,
+     "current": 50,
+     "previous": 45,
+     "changePct": 0.1111111111111111,
+     "unit": "sec",
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 60,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "sec",
+       "values": [
+        45,
+        60,
+        50
+       ],
+       "dates": [
+        "2026-09-09",
+        "2026-09-16",
+        "2026-09-23"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 45,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 60,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 50,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 45,
+       "to": 50,
+       "unit": "sec",
+       "pct": 0.111
+      },
+      {
+       "kind": "last-trained",
+       "days": 12,
+       "stale": false
+      },
+      {
+       "kind": "volatile",
+       "spread": 0.167
+      },
+      {
+       "kind": "best-set",
+       "weightKg": null,
+       "reps": null
+      }
+     ]
+    },
+    {
+     "exerciseKey": "curl",
+     "lastTrainedDays": 5,
+     "stale": false,
+     "exerciseName": "Curl",
+     "kind": "isolation",
+     "trend": "IMPROVING",
+     "readiness": "READY_TO_PROGRESS",
+     "confidence": "medium",
+     "sessions": 3,
+     "current": 150,
+     "previous": 125,
+     "changePct": 0.2,
+     "unit": "kg-rep",
+     "bestWeightKg": 15,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg-rep",
+       "values": [
+        125,
+        120,
+        150
+       ],
+       "dates": [
+        "2026-09-20",
+        "2026-09-27",
+        "2026-09-30"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 12.5,
+         "reps": 10,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 15,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 12.5,
+         "reps": 12,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 125,
+       "to": 150,
+       "unit": "kg-rep",
+       "pct": 0.2
+      },
+      {
+       "kind": "last-trained",
+       "days": 5,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 12.5,
+       "reps": 12
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeightKg": 12.5,
+       "daysAgo": 5
+      }
+     ]
+    },
+    {
+     "exerciseKey": "deadlift",
+     "lastTrainedDays": 40,
+     "stale": true,
+     "exerciseName": "Deadlift",
+     "kind": "compound",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 2,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "kg",
+     "bestWeightKg": 150,
+     "bestReps": 3,
+     "bestE1rmKg": 165,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        154,
+        165
+       ],
+       "dates": [
+        "2026-08-16",
+        "2026-08-26"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 140,
+         "reps": 3,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 150,
+         "reps": 3,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "too-few-sessions",
+       "have": 2,
+       "need": 3
+      },
+      {
+       "kind": "last-trained",
+       "days": 40,
+       "stale": true
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 150,
+       "reps": 3
+      },
+      {
+       "kind": "e1rm",
+       "value": 165
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 150,
+       "previous": 140,
+       "atWeightKg": null,
+       "daysAgo": 40
+      }
+     ]
+    },
+    {
+     "exerciseKey": "leg press",
+     "lastTrainedDays": null,
+     "stale": false,
+     "exerciseName": "Leg Press",
+     "kind": "compound",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "none",
+     "sessions": 0,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "kg",
+     "bestWeightKg": 100,
+     "bestReps": 15,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "too-few-sessions",
+       "have": 0,
+       "need": 3
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 100,
+       "reps": 15
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 15,
+       "previous": 12,
+       "atWeightKg": 100,
+       "daysAgo": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "multi-deleted",
+   "sessions": [
+    {
+     "id": "o5",
+     "date_time": "2026-10-03T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      },
+      {
+       "exerciseName": "",
+       "weight": 50,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Junk",
+       "weight": "x",
+       "reps": "y"
+      }
+     ]
+    },
+    {
+     "id": "o4",
+     "date_time": "2026-09-26T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40.5,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "o3",
+     "date_time": "2026-09-19T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": "41",
+       "reps": "8"
+      }
+     ]
+    },
+    {
+     "id": "o2",
+     "date_time": "2026-09-13T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "o1",
+     "date_time": "2026-09-06T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "d2",
+     "date_time": "2026-08-26T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Deadlift",
+       "weight": 150,
+       "reps": 3
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 62,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "d1",
+     "date_time": "2026-08-16T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Deadlift",
+       "weight": 140,
+       "reps": 3
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "c2",
+     "date_time": "2026-09-27T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Curl",
+       "weight": 15,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 60,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "c1",
+     "date_time": "2026-09-20T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Curl",
+       "weight": 12.5,
+       "reps": 10
+      },
+      {
+       "exerciseName": "Leg Press",
+       "weight": 100,
+       "reps": 12
+      }
+     ]
+    },
+    {
+     "id": "p4",
+     "date_time": "2026-09-30T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 12
+      },
+      {
+       "exerciseName": "Curl",
+       "weight": 12.5,
+       "reps": 12
+      },
+      {
+       "exerciseName": "Leg Press",
+       "weight": 100,
+       "reps": 15
+      }
+     ]
+    },
+    {
+     "id": "p3",
+     "date_time": "2026-09-23T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 10,
+       "reps": 6
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 50
+      }
+     ]
+    },
+    {
+     "id": "p1",
+     "date_time": "2026-09-09T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 45
+      }
+     ]
+    },
+    {
+     "id": "b7",
+     "date_time": "2026-09-25T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 70,
+       "reps": 6
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 90,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b6",
+     "date_time": "2026-09-22T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 70,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 95,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b5",
+     "date_time": "2026-09-18T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 67.5,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 100,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b3",
+     "date_time": "2026-09-11T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 65,
+       "reps": 6
+      }
+     ]
+    },
+    {
+     "id": "b2",
+     "date_time": "2026-09-08T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 62.5,
+       "reps": 8
+      },
+      {
+       "exerciseName": "bench  press",
+       "weight": 62.5,
+       "reps": 6
+      }
+     ]
+    },
+    {
+     "id": "b1",
+     "date_time": "2026-09-05T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 40,
+       "reps": 10,
+       "warmup": true
+      },
+      {
+       "exerciseName": "Bench Press",
+       "weight": 60,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Bench Press",
+       "weight": 60,
+       "reps": 7
+      }
+     ]
+    }
+   ],
+   "weighIns": [
+    {
+     "date": "2026-09-05",
+     "value": 70
+    },
+    {
+     "date": "2026-09-20",
+     "value": 71.234
+    }
+   ],
+   "declaredKinds": {
+    "curl": "isolation"
+   },
+   "now": "2026-10-05T07:00:00.000Z",
+   "performances": [
+    {
+     "exerciseKey": "deadlift",
+     "exerciseName": "Deadlift",
+     "sessionId": "d1",
+     "at": "2026-08-16T11:00:00.000Z",
+     "date": "2026-08-16",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 3,
+     "totalVolumeKg": 420,
+     "bestWeightKg": 140,
+     "bestReps": 3,
+     "bestE1rmKg": 154,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "d1",
+     "at": "2026-08-16T11:00:00.000Z",
+     "date": "2026-08-16",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "deadlift",
+     "exerciseName": "Deadlift",
+     "sessionId": "d2",
+     "at": "2026-08-26T11:00:00.000Z",
+     "date": "2026-08-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 3,
+     "totalVolumeKg": 450,
+     "bestWeightKg": 150,
+     "bestReps": 3,
+     "bestE1rmKg": 165,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Deadlift",
+       "kind": "weight",
+       "value": 150,
+       "previous": 140
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "d2",
+     "at": "2026-08-26T11:00:00.000Z",
+     "date": "2026-08-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 496,
+     "bestWeightKg": 62,
+     "bestReps": 8,
+     "bestE1rmKg": 78.53,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Row",
+       "kind": "weight",
+       "value": 62,
+       "previous": 40
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b1",
+     "at": "2026-09-05T11:00:00.000Z",
+     "date": "2026-09-05",
+     "kind": "compound",
+     "setCount": 2,
+     "totalReps": 15,
+     "totalVolumeKg": 900,
+     "bestWeightKg": 60,
+     "bestReps": 8,
+     "bestE1rmKg": 76,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o1",
+     "at": "2026-09-06T11:00:00.000Z",
+     "date": "2026-09-06",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "bench  press",
+     "sessionId": "b2",
+     "at": "2026-09-08T11:00:00.000Z",
+     "date": "2026-09-08",
+     "kind": "compound",
+     "setCount": 2,
+     "totalReps": 14,
+     "totalVolumeKg": 875,
+     "bestWeightKg": 62.5,
+     "bestReps": 8,
+     "bestE1rmKg": 79.17,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 62.5,
+       "previous": 60
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p1",
+     "at": "2026-09-09T11:00:00.000Z",
+     "date": "2026-09-09",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 8,
+     "bestE1rmKg": 88.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p1",
+     "at": "2026-09-09T11:00:00.000Z",
+     "date": "2026-09-09",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 45,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b3",
+     "at": "2026-09-11T11:00:00.000Z",
+     "date": "2026-09-11",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 390,
+     "bestWeightKg": 65,
+     "bestReps": 6,
+     "bestE1rmKg": 78,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 65,
+       "previous": 62.5
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o2",
+     "at": "2026-09-13T11:00:00.000Z",
+     "date": "2026-09-13",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b5",
+     "at": "2026-09-18T11:00:00.000Z",
+     "date": "2026-09-18",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 337.5,
+     "bestWeightKg": 67.5,
+     "bestReps": 5,
+     "bestE1rmKg": 78.75,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 67.5,
+       "previous": 65
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b5",
+     "at": "2026-09-18T11:00:00.000Z",
+     "date": "2026-09-18",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 500,
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o3",
+     "at": "2026-09-19T11:00:00.000Z",
+     "date": "2026-09-19",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 328,
+     "bestWeightKg": 41,
+     "bestReps": 8,
+     "bestE1rmKg": 51.93,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "OHP",
+       "kind": "weight",
+       "value": 41,
+       "previous": 40
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "c1",
+     "at": "2026-09-20T11:00:00.000Z",
+     "date": "2026-09-20",
+     "kind": "isolation",
+     "setCount": 1,
+     "totalReps": 10,
+     "totalVolumeKg": 125,
+     "bestWeightKg": 12.5,
+     "bestReps": 10,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "leg press",
+     "exerciseName": "Leg Press",
+     "sessionId": "c1",
+     "at": "2026-09-20T11:00:00.000Z",
+     "date": "2026-09-20",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 1200,
+     "bestWeightKg": 100,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b6",
+     "at": "2026-09-22T11:00:00.000Z",
+     "date": "2026-09-22",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 350,
+     "bestWeightKg": 70,
+     "bestReps": 5,
+     "bestE1rmKg": 81.67,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 70,
+       "previous": 67.5
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b6",
+     "at": "2026-09-22T11:00:00.000Z",
+     "date": "2026-09-22",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 475,
+     "bestWeightKg": 95,
+     "bestReps": 5,
+     "bestE1rmKg": 110.83,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p3",
+     "at": "2026-09-23T11:00:00.000Z",
+     "date": "2026-09-23",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 60,
+     "bestWeightKg": 10,
+     "bestReps": 6,
+     "bestE1rmKg": 97.48,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "weight",
+       "value": 10,
+       "previous": 0
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p3",
+     "at": "2026-09-23T11:00:00.000Z",
+     "date": "2026-09-23",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 50,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b7",
+     "at": "2026-09-25T11:00:00.000Z",
+     "date": "2026-09-25",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 420,
+     "bestWeightKg": 70,
+     "bestReps": 6,
+     "bestE1rmKg": 84,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "reps",
+       "value": 6,
+       "previous": 5,
+       "atWeight": 70
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b7",
+     "at": "2026-09-25T11:00:00.000Z",
+     "date": "2026-09-25",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 450,
+     "bestWeightKg": 90,
+     "bestReps": 5,
+     "bestE1rmKg": 105,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o4",
+     "at": "2026-09-26T11:00:00.000Z",
+     "date": "2026-09-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 324,
+     "bestWeightKg": 40.5,
+     "bestReps": 8,
+     "bestE1rmKg": 51.3,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "c2",
+     "at": "2026-09-27T11:00:00.000Z",
+     "date": "2026-09-27",
+     "kind": "isolation",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 120,
+     "bestWeightKg": 15,
+     "bestReps": 8,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Curl",
+       "kind": "weight",
+       "value": 15,
+       "previous": 12.5
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "c2",
+     "at": "2026-09-27T11:00:00.000Z",
+     "date": "2026-09-27",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 480,
+     "bestWeightKg": 60,
+     "bestReps": 8,
+     "bestE1rmKg": 76,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "reps",
+       "value": 12,
+       "previous": 8,
+       "atWeight": 0
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "isolation",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 150,
+     "bestWeightKg": 12.5,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Curl",
+       "kind": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeight": 12.5
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "leg press",
+     "exerciseName": "Leg Press",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 15,
+     "totalVolumeKg": 1500,
+     "bestWeightKg": 100,
+     "bestReps": 15,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Leg Press",
+       "kind": "reps",
+       "value": 15,
+       "previous": 12,
+       "atWeight": 100
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o5",
+     "at": "2026-10-03T11:00:00.000Z",
+     "date": "2026-10-03",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    }
+   ],
+   "insights": [
+    {
+     "exerciseKey": "squat",
+     "lastTrainedDays": 10,
+     "stale": false,
+     "exerciseName": "Squat",
+     "kind": "compound",
+     "trend": "DECLINING",
+     "readiness": "NOT_READY",
+     "confidence": "medium",
+     "sessions": 3,
+     "current": 105,
+     "previous": 116.67,
+     "changePct": -0.10002571355104141,
+     "unit": "kg",
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        116.67,
+        110.83,
+        105
+       ],
+       "dates": [
+        "2026-09-18",
+        "2026-09-22",
+        "2026-09-25"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 100,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 95,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 90,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 116.67,
+       "to": 105,
+       "unit": "kg",
+       "pct": -0.1
+      },
+      {
+       "kind": "last-trained",
+       "days": 10,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 90,
+       "reps": 5
+      },
+      {
+       "kind": "e1rm",
+       "value": 116.67
+      }
+     ]
+    },
+    {
+     "exerciseKey": "ohp",
+     "lastTrainedDays": 2,
+     "stale": false,
+     "exerciseName": "OHP",
+     "kind": "compound",
+     "trend": "PLATEAU",
+     "readiness": "MAINTAIN",
+     "confidence": "high",
+     "sessions": 5,
+     "current": 51.3,
+     "previous": 50.67,
+     "changePct": 0.012433392539964385,
+     "unit": "kg",
+     "bestWeightKg": 41,
+     "bestReps": 8,
+     "bestE1rmKg": 51.93,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        50.67,
+        50.67,
+        51.93,
+        51.3,
+        50.67
+       ],
+       "dates": [
+        "2026-09-06",
+        "2026-09-13",
+        "2026-09-19",
+        "2026-09-26",
+        "2026-10-03"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 41,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40.5,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 50.67,
+       "to": 51.3,
+       "unit": "kg",
+       "pct": 0.012
+      },
+      {
+       "kind": "no-upward-trend",
+       "sessions": 5
+      },
+      {
+       "kind": "last-trained",
+       "days": 2,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 40,
+       "reps": 8
+      },
+      {
+       "kind": "e1rm",
+       "value": 51.93
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 41,
+       "previous": 40,
+       "atWeightKg": null,
+       "daysAgo": 16
+      }
+     ]
+    },
+    {
+     "exerciseKey": "bench press",
+     "lastTrainedDays": 10,
+     "stale": false,
+     "exerciseName": "Bench Press",
+     "kind": "compound",
+     "trend": "IMPROVING",
+     "readiness": "READY_TO_PROGRESS",
+     "confidence": "high",
+     "sessions": 6,
+     "current": 84,
+     "previous": 79.17,
+     "changePct": 0.06100795755968168,
+     "unit": "kg",
+     "bestWeightKg": 70,
+     "bestReps": 8,
+     "bestE1rmKg": 84,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        76,
+        79.17,
+        78,
+        78.75,
+        81.67,
+        84
+       ],
+       "dates": [
+        "2026-09-05",
+        "2026-09-08",
+        "2026-09-11",
+        "2026-09-18",
+        "2026-09-22",
+        "2026-09-25"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 60,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 62.5,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 65,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 67.5,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 70,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 70,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 79.17,
+       "to": 84,
+       "unit": "kg",
+       "pct": 0.061
+      },
+      {
+       "kind": "last-trained",
+       "days": 10,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 70,
+       "reps": 6
+      },
+      {
+       "kind": "e1rm",
+       "value": 84
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 6,
+       "previous": 5,
+       "atWeightKg": 70,
+       "daysAgo": 10
+      }
+     ]
+    },
+    {
+     "exerciseKey": "row",
+     "lastTrainedDays": 8,
+     "stale": false,
+     "exerciseName": "Row",
+     "kind": "compound",
+     "trend": "IMPROVING",
+     "readiness": "MAINTAIN",
+     "confidence": "medium",
+     "sessions": 3,
+     "current": 76,
+     "previous": 50.67,
+     "changePct": 0.4999013222814288,
+     "unit": "kg",
+     "bestWeightKg": 62,
+     "bestReps": 8,
+     "bestE1rmKg": 78.53,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        50.67,
+        78.53,
+        76
+       ],
+       "dates": [
+        "2026-08-16",
+        "2026-08-26",
+        "2026-09-27"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 62,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 60,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 50.67,
+       "to": 76,
+       "unit": "kg",
+       "pct": 0.5
+      },
+      {
+       "kind": "last-trained",
+       "days": 8,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 60,
+       "reps": 8
+      },
+      {
+       "kind": "e1rm",
+       "value": 78.53
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 62,
+       "previous": 40,
+       "atWeightKg": null,
+       "daysAgo": 40
+      }
+     ]
+    },
+    {
+     "exerciseKey": "pull-up",
+     "lastTrainedDays": 5,
+     "stale": false,
+     "exerciseName": "Pull-up",
+     "kind": "bodyweight",
+     "trend": "IMPROVING",
+     "readiness": "READY_TO_PROGRESS",
+     "confidence": "medium",
+     "sessions": 3,
+     "current": 854.76,
+     "previous": 560,
+     "changePct": 0.5263571428571429,
+     "unit": "kg-rep",
+     "bestWeightKg": 10,
+     "bestReps": 12,
+     "bestE1rmKg": 97.48,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg-rep",
+       "values": [
+        560,
+        487.38,
+        854.76
+       ],
+       "dates": [
+        "2026-09-09",
+        "2026-09-23",
+        "2026-09-30"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 0,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": 70
+        },
+        {
+         "weightKg": 10,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": 71.23
+        },
+        {
+         "weightKg": 0,
+         "reps": 12,
+         "durationSec": null,
+         "bodyweightKg": 71.23
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 560,
+       "to": 854.76,
+       "unit": "kg-rep",
+       "pct": 0.526
+      },
+      {
+       "kind": "last-trained",
+       "days": 5,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 0,
+       "reps": 12
+      },
+      {
+       "kind": "e1rm",
+       "value": 97.48
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 12,
+       "previous": 8,
+       "atWeightKg": 0,
+       "daysAgo": 5
+      }
+     ]
+    },
+    {
+     "exerciseKey": "curl",
+     "lastTrainedDays": 5,
+     "stale": false,
+     "exerciseName": "Curl",
+     "kind": "isolation",
+     "trend": "IMPROVING",
+     "readiness": "READY_TO_PROGRESS",
+     "confidence": "medium",
+     "sessions": 3,
+     "current": 150,
+     "previous": 125,
+     "changePct": 0.2,
+     "unit": "kg-rep",
+     "bestWeightKg": 15,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg-rep",
+       "values": [
+        125,
+        120,
+        150
+       ],
+       "dates": [
+        "2026-09-20",
+        "2026-09-27",
+        "2026-09-30"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 12.5,
+         "reps": 10,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 15,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 12.5,
+         "reps": 12,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 125,
+       "to": 150,
+       "unit": "kg-rep",
+       "pct": 0.2
+      },
+      {
+       "kind": "last-trained",
+       "days": 5,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 12.5,
+       "reps": 12
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeightKg": 12.5,
+       "daysAgo": 5
+      }
+     ]
+    },
+    {
+     "exerciseKey": "deadlift",
+     "lastTrainedDays": 40,
+     "stale": true,
+     "exerciseName": "Deadlift",
+     "kind": "compound",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 2,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "kg",
+     "bestWeightKg": 150,
+     "bestReps": 3,
+     "bestE1rmKg": 165,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        154,
+        165
+       ],
+       "dates": [
+        "2026-08-16",
+        "2026-08-26"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 140,
+         "reps": 3,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 150,
+         "reps": 3,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "too-few-sessions",
+       "have": 2,
+       "need": 3
+      },
+      {
+       "kind": "last-trained",
+       "days": 40,
+       "stale": true
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 150,
+       "reps": 3
+      },
+      {
+       "kind": "e1rm",
+       "value": 165
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 150,
+       "previous": 140,
+       "atWeightKg": null,
+       "daysAgo": 40
+      }
+     ]
+    },
+    {
+     "exerciseKey": "plank",
+     "lastTrainedDays": 12,
+     "stale": false,
+     "exerciseName": "Plank",
+     "kind": "timed",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 2,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "sec",
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 50,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "sec",
+       "values": [
+        45,
+        50
+       ],
+       "dates": [
+        "2026-09-09",
+        "2026-09-23"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 45,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 50,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "too-few-sessions",
+       "have": 2,
+       "need": 3
+      },
+      {
+       "kind": "last-trained",
+       "days": 12,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": null,
+       "reps": null
+      }
+     ]
+    },
+    {
+     "exerciseKey": "leg press",
+     "lastTrainedDays": null,
+     "stale": false,
+     "exerciseName": "Leg Press",
+     "kind": "compound",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "none",
+     "sessions": 0,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "kg",
+     "bestWeightKg": 100,
+     "bestReps": 15,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "too-few-sessions",
+       "have": 0,
+       "need": 3
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 100,
+       "reps": 15
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 15,
+       "previous": 12,
+       "atWeightKg": 100,
+       "daysAgo": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "no-weighins",
+   "sessions": [
+    {
+     "id": "o5",
+     "date_time": "2026-10-03T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      },
+      {
+       "exerciseName": "",
+       "weight": 50,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Junk",
+       "weight": "x",
+       "reps": "y"
+      }
+     ]
+    },
+    {
+     "id": "o4",
+     "date_time": "2026-09-26T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40.5,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "o3",
+     "date_time": "2026-09-19T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": "41",
+       "reps": "8"
+      }
+     ]
+    },
+    {
+     "id": "o2",
+     "date_time": "2026-09-13T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "o1",
+     "date_time": "2026-09-06T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "d2",
+     "date_time": "2026-08-26T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Deadlift",
+       "weight": 150,
+       "reps": 3
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 62,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "d1",
+     "date_time": "2026-08-16T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Deadlift",
+       "weight": 140,
+       "reps": 3
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "c2",
+     "date_time": "2026-09-27T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Curl",
+       "weight": 15,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 60,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "c1",
+     "date_time": "2026-09-20T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Curl",
+       "weight": 12.5,
+       "reps": 10
+      },
+      {
+       "exerciseName": "Leg Press",
+       "weight": 100,
+       "reps": 12
+      }
+     ]
+    },
+    {
+     "id": "p4",
+     "date_time": "2026-09-30T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 12
+      },
+      {
+       "exerciseName": "Curl",
+       "weight": 12.5,
+       "reps": 12
+      },
+      {
+       "exerciseName": "Leg Press",
+       "weight": 100,
+       "reps": 15
+      }
+     ]
+    },
+    {
+     "id": "p3",
+     "date_time": "2026-09-23T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 10,
+       "reps": 6
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 50
+      }
+     ]
+    },
+    {
+     "id": "p2",
+     "date_time": "2026-09-16T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 10
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 60
+      }
+     ]
+    },
+    {
+     "id": "p1",
+     "date_time": "2026-09-09T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 45
+      }
+     ]
+    },
+    {
+     "id": "b7",
+     "date_time": "2026-09-25T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 70,
+       "reps": 6
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 90,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b6",
+     "date_time": "2026-09-22T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 70,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 95,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b5",
+     "date_time": "2026-09-18T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 67.5,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 100,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b4",
+     "date_time": "2026-09-15T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 65,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 100,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b3",
+     "date_time": "2026-09-11T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 65,
+       "reps": 6
+      }
+     ]
+    },
+    {
+     "id": "b2",
+     "date_time": "2026-09-08T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 62.5,
+       "reps": 8
+      },
+      {
+       "exerciseName": "bench  press",
+       "weight": 62.5,
+       "reps": 6
+      }
+     ]
+    },
+    {
+     "id": "b1",
+     "date_time": "2026-09-05T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 40,
+       "reps": 10,
+       "warmup": true
+      },
+      {
+       "exerciseName": "Bench Press",
+       "weight": 60,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Bench Press",
+       "weight": 60,
+       "reps": 7
+      }
+     ]
+    }
+   ],
+   "weighIns": [],
+   "declaredKinds": {},
+   "now": "2026-10-05T07:00:00.000Z",
+   "performances": [
+    {
+     "exerciseKey": "deadlift",
+     "exerciseName": "Deadlift",
+     "sessionId": "d1",
+     "at": "2026-08-16T11:00:00.000Z",
+     "date": "2026-08-16",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 3,
+     "totalVolumeKg": 420,
+     "bestWeightKg": 140,
+     "bestReps": 3,
+     "bestE1rmKg": 154,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "d1",
+     "at": "2026-08-16T11:00:00.000Z",
+     "date": "2026-08-16",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "deadlift",
+     "exerciseName": "Deadlift",
+     "sessionId": "d2",
+     "at": "2026-08-26T11:00:00.000Z",
+     "date": "2026-08-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 3,
+     "totalVolumeKg": 450,
+     "bestWeightKg": 150,
+     "bestReps": 3,
+     "bestE1rmKg": 165,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Deadlift",
+       "kind": "weight",
+       "value": 150,
+       "previous": 140
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "d2",
+     "at": "2026-08-26T11:00:00.000Z",
+     "date": "2026-08-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 496,
+     "bestWeightKg": 62,
+     "bestReps": 8,
+     "bestE1rmKg": 78.53,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Row",
+       "kind": "weight",
+       "value": 62,
+       "previous": 40
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b1",
+     "at": "2026-09-05T11:00:00.000Z",
+     "date": "2026-09-05",
+     "kind": "compound",
+     "setCount": 2,
+     "totalReps": 15,
+     "totalVolumeKg": 900,
+     "bestWeightKg": 60,
+     "bestReps": 8,
+     "bestE1rmKg": 76,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o1",
+     "at": "2026-09-06T11:00:00.000Z",
+     "date": "2026-09-06",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "bench  press",
+     "sessionId": "b2",
+     "at": "2026-09-08T11:00:00.000Z",
+     "date": "2026-09-08",
+     "kind": "compound",
+     "setCount": 2,
+     "totalReps": 14,
+     "totalVolumeKg": 875,
+     "bestWeightKg": 62.5,
+     "bestReps": 8,
+     "bestE1rmKg": 79.17,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 62.5,
+       "previous": 60
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p1",
+     "at": "2026-09-09T11:00:00.000Z",
+     "date": "2026-09-09",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 8,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p1",
+     "at": "2026-09-09T11:00:00.000Z",
+     "date": "2026-09-09",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 45,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b3",
+     "at": "2026-09-11T11:00:00.000Z",
+     "date": "2026-09-11",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 390,
+     "bestWeightKg": 65,
+     "bestReps": 6,
+     "bestE1rmKg": 78,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 65,
+       "previous": 62.5
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o2",
+     "at": "2026-09-13T11:00:00.000Z",
+     "date": "2026-09-13",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b4",
+     "at": "2026-09-15T11:00:00.000Z",
+     "date": "2026-09-15",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 520,
+     "bestWeightKg": 65,
+     "bestReps": 8,
+     "bestE1rmKg": 82.33,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "reps",
+       "value": 8,
+       "previous": 6,
+       "atWeight": 65
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b4",
+     "at": "2026-09-15T11:00:00.000Z",
+     "date": "2026-09-15",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 500,
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p2",
+     "at": "2026-09-16T11:00:00.000Z",
+     "date": "2026-09-16",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 10,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 10,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "reps",
+       "value": 10,
+       "previous": 8,
+       "atWeight": 0
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p2",
+     "at": "2026-09-16T11:00:00.000Z",
+     "date": "2026-09-16",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 60,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b5",
+     "at": "2026-09-18T11:00:00.000Z",
+     "date": "2026-09-18",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 337.5,
+     "bestWeightKg": 67.5,
+     "bestReps": 5,
+     "bestE1rmKg": 78.75,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 67.5,
+       "previous": 65
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b5",
+     "at": "2026-09-18T11:00:00.000Z",
+     "date": "2026-09-18",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 500,
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o3",
+     "at": "2026-09-19T11:00:00.000Z",
+     "date": "2026-09-19",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 328,
+     "bestWeightKg": 41,
+     "bestReps": 8,
+     "bestE1rmKg": 51.93,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "OHP",
+       "kind": "weight",
+       "value": 41,
+       "previous": 40
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "c1",
+     "at": "2026-09-20T11:00:00.000Z",
+     "date": "2026-09-20",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 10,
+     "totalVolumeKg": 125,
+     "bestWeightKg": 12.5,
+     "bestReps": 10,
+     "bestE1rmKg": 16.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "leg press",
+     "exerciseName": "Leg Press",
+     "sessionId": "c1",
+     "at": "2026-09-20T11:00:00.000Z",
+     "date": "2026-09-20",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 1200,
+     "bestWeightKg": 100,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b6",
+     "at": "2026-09-22T11:00:00.000Z",
+     "date": "2026-09-22",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 350,
+     "bestWeightKg": 70,
+     "bestReps": 5,
+     "bestE1rmKg": 81.67,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 70,
+       "previous": 67.5
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b6",
+     "at": "2026-09-22T11:00:00.000Z",
+     "date": "2026-09-22",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 475,
+     "bestWeightKg": 95,
+     "bestReps": 5,
+     "bestE1rmKg": 110.83,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p3",
+     "at": "2026-09-23T11:00:00.000Z",
+     "date": "2026-09-23",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 60,
+     "bestWeightKg": 10,
+     "bestReps": 6,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "weight",
+       "value": 10,
+       "previous": 0
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p3",
+     "at": "2026-09-23T11:00:00.000Z",
+     "date": "2026-09-23",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 50,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b7",
+     "at": "2026-09-25T11:00:00.000Z",
+     "date": "2026-09-25",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 420,
+     "bestWeightKg": 70,
+     "bestReps": 6,
+     "bestE1rmKg": 84,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "reps",
+       "value": 6,
+       "previous": 5,
+       "atWeight": 70
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b7",
+     "at": "2026-09-25T11:00:00.000Z",
+     "date": "2026-09-25",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 450,
+     "bestWeightKg": 90,
+     "bestReps": 5,
+     "bestE1rmKg": 105,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o4",
+     "at": "2026-09-26T11:00:00.000Z",
+     "date": "2026-09-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 324,
+     "bestWeightKg": 40.5,
+     "bestReps": 8,
+     "bestE1rmKg": 51.3,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "c2",
+     "at": "2026-09-27T11:00:00.000Z",
+     "date": "2026-09-27",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 120,
+     "bestWeightKg": 15,
+     "bestReps": 8,
+     "bestE1rmKg": 19,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Curl",
+       "kind": "weight",
+       "value": 15,
+       "previous": 12.5
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "c2",
+     "at": "2026-09-27T11:00:00.000Z",
+     "date": "2026-09-27",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 480,
+     "bestWeightKg": 60,
+     "bestReps": 8,
+     "bestE1rmKg": 76,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeight": 0
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 150,
+     "bestWeightKg": 12.5,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Curl",
+       "kind": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeight": 12.5
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "leg press",
+     "exerciseName": "Leg Press",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 15,
+     "totalVolumeKg": 1500,
+     "bestWeightKg": 100,
+     "bestReps": 15,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Leg Press",
+       "kind": "reps",
+       "value": 15,
+       "previous": 12,
+       "atWeight": 100
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o5",
+     "at": "2026-10-03T11:00:00.000Z",
+     "date": "2026-10-03",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    }
+   ],
+   "insights": [
+    {
+     "exerciseKey": "squat",
+     "lastTrainedDays": 10,
+     "stale": false,
+     "exerciseName": "Squat",
+     "kind": "compound",
+     "trend": "DECLINING",
+     "readiness": "NOT_READY",
+     "confidence": "high",
+     "sessions": 4,
+     "current": 110.83,
+     "previous": 116.67,
+     "changePct": -0.05005571269392306,
+     "unit": "kg",
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        116.67,
+        116.67,
+        110.83,
+        105
+       ],
+       "dates": [
+        "2026-09-15",
+        "2026-09-18",
+        "2026-09-22",
+        "2026-09-25"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 100,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 100,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 95,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 90,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 116.67,
+       "to": 110.83,
+       "unit": "kg",
+       "pct": -0.05
+      },
+      {
+       "kind": "last-trained",
+       "days": 10,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 90,
+       "reps": 5
+      },
+      {
+       "kind": "e1rm",
+       "value": 116.67
+      }
+     ]
+    },
+    {
+     "exerciseKey": "bench press",
+     "lastTrainedDays": 10,
+     "stale": false,
+     "exerciseName": "Bench Press",
+     "kind": "compound",
+     "trend": "PLATEAU",
+     "readiness": "MAINTAIN",
+     "confidence": "high",
+     "sessions": 6,
+     "current": 84,
+     "previous": 82.33,
+     "changePct": 0.02028422203328072,
+     "unit": "kg",
+     "bestWeightKg": 70,
+     "bestReps": 8,
+     "bestE1rmKg": 84,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        79.17,
+        78,
+        82.33,
+        78.75,
+        81.67,
+        84
+       ],
+       "dates": [
+        "2026-09-08",
+        "2026-09-11",
+        "2026-09-15",
+        "2026-09-18",
+        "2026-09-22",
+        "2026-09-25"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 62.5,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 65,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 65,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 67.5,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 70,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 70,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 82.33,
+       "to": 84,
+       "unit": "kg",
+       "pct": 0.02
+      },
+      {
+       "kind": "no-upward-trend",
+       "sessions": 6
+      },
+      {
+       "kind": "last-trained",
+       "days": 10,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 70,
+       "reps": 6
+      },
+      {
+       "kind": "e1rm",
+       "value": 84
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 6,
+       "previous": 5,
+       "atWeightKg": 70,
+       "daysAgo": 10
+      }
+     ]
+    },
+    {
+     "exerciseKey": "ohp",
+     "lastTrainedDays": 2,
+     "stale": false,
+     "exerciseName": "OHP",
+     "kind": "compound",
+     "trend": "PLATEAU",
+     "readiness": "MAINTAIN",
+     "confidence": "high",
+     "sessions": 5,
+     "current": 51.3,
+     "previous": 50.67,
+     "changePct": 0.012433392539964385,
+     "unit": "kg",
+     "bestWeightKg": 41,
+     "bestReps": 8,
+     "bestE1rmKg": 51.93,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        50.67,
+        50.67,
+        51.93,
+        51.3,
+        50.67
+       ],
+       "dates": [
+        "2026-09-06",
+        "2026-09-13",
+        "2026-09-19",
+        "2026-09-26",
+        "2026-10-03"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 41,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40.5,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 50.67,
+       "to": 51.3,
+       "unit": "kg",
+       "pct": 0.012
+      },
+      {
+       "kind": "no-upward-trend",
+       "sessions": 5
+      },
+      {
+       "kind": "last-trained",
+       "days": 2,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 40,
+       "reps": 8
+      },
+      {
+       "kind": "e1rm",
+       "value": 51.93
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 41,
+       "previous": 40,
+       "atWeightKg": null,
+       "daysAgo": 16
+      }
+     ]
+    },
+    {
+     "exerciseKey": "pull-up",
+     "lastTrainedDays": 5,
+     "stale": false,
+     "exerciseName": "Pull-up",
+     "kind": "bodyweight",
+     "trend": "IMPROVING",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 4,
+     "current": 12,
+     "previous": 10,
+     "changePct": 0.2,
+     "unit": "kg-rep",
+     "bestWeightKg": 10,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg-rep",
+       "values": [
+        8,
+        10,
+        6,
+        12
+       ],
+       "dates": [
+        "2026-09-09",
+        "2026-09-16",
+        "2026-09-23",
+        "2026-09-30"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 0,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 0,
+         "reps": 10,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 10,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 0,
+         "reps": 12,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 10,
+       "to": 12,
+       "unit": "kg-rep",
+       "pct": 0.2
+      },
+      {
+       "kind": "last-trained",
+       "days": 5,
+       "stale": false
+      },
+      {
+       "kind": "volatile",
+       "spread": 0.4
+      },
+      {
+       "kind": "bodyweight-unknown"
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 0,
+       "reps": 12
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeightKg": 0,
+       "daysAgo": 5
+      }
+     ]
+    },
+    {
+     "exerciseKey": "row",
+     "lastTrainedDays": 8,
+     "stale": false,
+     "exerciseName": "Row",
+     "kind": "compound",
+     "trend": "IMPROVING",
+     "readiness": "MAINTAIN",
+     "confidence": "medium",
+     "sessions": 3,
+     "current": 76,
+     "previous": 50.67,
+     "changePct": 0.4999013222814288,
+     "unit": "kg",
+     "bestWeightKg": 62,
+     "bestReps": 8,
+     "bestE1rmKg": 78.53,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        50.67,
+        78.53,
+        76
+       ],
+       "dates": [
+        "2026-08-16",
+        "2026-08-26",
+        "2026-09-27"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 62,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 60,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 50.67,
+       "to": 76,
+       "unit": "kg",
+       "pct": 0.5
+      },
+      {
+       "kind": "last-trained",
+       "days": 8,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 60,
+       "reps": 8
+      },
+      {
+       "kind": "e1rm",
+       "value": 78.53
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 62,
+       "previous": 40,
+       "atWeightKg": null,
+       "daysAgo": 40
+      }
+     ]
+    },
+    {
+     "exerciseKey": "plank",
+     "lastTrainedDays": 12,
+     "stale": false,
+     "exerciseName": "Plank",
+     "kind": "timed",
+     "trend": "IMPROVING",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 3,
+     "current": 50,
+     "previous": 45,
+     "changePct": 0.1111111111111111,
+     "unit": "sec",
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 60,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "sec",
+       "values": [
+        45,
+        60,
+        50
+       ],
+       "dates": [
+        "2026-09-09",
+        "2026-09-16",
+        "2026-09-23"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 45,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 60,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 50,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 45,
+       "to": 50,
+       "unit": "sec",
+       "pct": 0.111
+      },
+      {
+       "kind": "last-trained",
+       "days": 12,
+       "stale": false
+      },
+      {
+       "kind": "volatile",
+       "spread": 0.167
+      },
+      {
+       "kind": "best-set",
+       "weightKg": null,
+       "reps": null
+      }
+     ]
+    },
+    {
+     "exerciseKey": "deadlift",
+     "lastTrainedDays": 40,
+     "stale": true,
+     "exerciseName": "Deadlift",
+     "kind": "compound",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 2,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "kg",
+     "bestWeightKg": 150,
+     "bestReps": 3,
+     "bestE1rmKg": 165,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        154,
+        165
+       ],
+       "dates": [
+        "2026-08-16",
+        "2026-08-26"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 140,
+         "reps": 3,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 150,
+         "reps": 3,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "too-few-sessions",
+       "have": 2,
+       "need": 3
+      },
+      {
+       "kind": "last-trained",
+       "days": 40,
+       "stale": true
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 150,
+       "reps": 3
+      },
+      {
+       "kind": "e1rm",
+       "value": 165
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 150,
+       "previous": 140,
+       "atWeightKg": null,
+       "daysAgo": 40
+      }
+     ]
+    },
+    {
+     "exerciseKey": "curl",
+     "lastTrainedDays": 8,
+     "stale": false,
+     "exerciseName": "Curl",
+     "kind": "compound",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 2,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "kg",
+     "bestWeightKg": 15,
+     "bestReps": 12,
+     "bestE1rmKg": 19,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        16.67,
+        19
+       ],
+       "dates": [
+        "2026-09-20",
+        "2026-09-27"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 12.5,
+         "reps": 10,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 15,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "too-few-sessions",
+       "have": 2,
+       "need": 3
+      },
+      {
+       "kind": "last-trained",
+       "days": 8,
+       "stale": false
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 12.5,
+       "reps": 12
+      },
+      {
+       "kind": "e1rm",
+       "value": 19
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeightKg": 12.5,
+       "daysAgo": 8
+      }
+     ]
+    },
+    {
+     "exerciseKey": "leg press",
+     "lastTrainedDays": null,
+     "stale": false,
+     "exerciseName": "Leg Press",
+     "kind": "compound",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "none",
+     "sessions": 0,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "kg",
+     "bestWeightKg": 100,
+     "bestReps": 15,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "too-few-sessions",
+       "have": 0,
+       "need": 3
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 100,
+       "reps": 15
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 15,
+       "previous": 12,
+       "atWeightKg": 100,
+       "daysAgo": null
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "name": "later",
+   "sessions": [
+    {
+     "id": "o5",
+     "date_time": "2026-10-03T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      },
+      {
+       "exerciseName": "",
+       "weight": 50,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Junk",
+       "weight": "x",
+       "reps": "y"
+      }
+     ]
+    },
+    {
+     "id": "o4",
+     "date_time": "2026-09-26T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40.5,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "o3",
+     "date_time": "2026-09-19T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": "41",
+       "reps": "8"
+      }
+     ]
+    },
+    {
+     "id": "o2",
+     "date_time": "2026-09-13T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "o1",
+     "date_time": "2026-09-06T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "OHP",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "d2",
+     "date_time": "2026-08-26T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Deadlift",
+       "weight": 150,
+       "reps": 3
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 62,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "d1",
+     "date_time": "2026-08-16T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Deadlift",
+       "weight": 140,
+       "reps": 3
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 40,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "c2",
+     "date_time": "2026-09-27T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Curl",
+       "weight": 15,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Row",
+       "weight": 60,
+       "reps": 8
+      }
+     ]
+    },
+    {
+     "id": "c1",
+     "date_time": "2026-09-20T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Curl",
+       "weight": 12.5,
+       "reps": 10
+      },
+      {
+       "exerciseName": "Leg Press",
+       "weight": 100,
+       "reps": 12
+      }
+     ]
+    },
+    {
+     "id": "p4",
+     "date_time": "2026-09-30T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 12
+      },
+      {
+       "exerciseName": "Curl",
+       "weight": 12.5,
+       "reps": 12
+      },
+      {
+       "exerciseName": "Leg Press",
+       "weight": 100,
+       "reps": 15
+      }
+     ]
+    },
+    {
+     "id": "p3",
+     "date_time": "2026-09-23T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 10,
+       "reps": 6
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 50
+      }
+     ]
+    },
+    {
+     "id": "p2",
+     "date_time": "2026-09-16T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 10
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 60
+      }
+     ]
+    },
+    {
+     "id": "p1",
+     "date_time": "2026-09-09T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Pull-up",
+       "weight": 0,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Plank",
+       "weight": 0,
+       "reps": 0,
+       "durationSec": 45
+      }
+     ]
+    },
+    {
+     "id": "b7",
+     "date_time": "2026-09-25T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 70,
+       "reps": 6
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 90,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b6",
+     "date_time": "2026-09-22T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 70,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 95,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b5",
+     "date_time": "2026-09-18T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 67.5,
+       "reps": 5
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 100,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b4",
+     "date_time": "2026-09-15T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 65,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Squat",
+       "weight": 100,
+       "reps": 5
+      }
+     ]
+    },
+    {
+     "id": "b3",
+     "date_time": "2026-09-11T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 65,
+       "reps": 6
+      }
+     ]
+    },
+    {
+     "id": "b2",
+     "date_time": "2026-09-08T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 62.5,
+       "reps": 8
+      },
+      {
+       "exerciseName": "bench  press",
+       "weight": 62.5,
+       "reps": 6
+      }
+     ]
+    },
+    {
+     "id": "b1",
+     "date_time": "2026-09-05T11:00:00.000Z",
+     "sets": [
+      {
+       "exerciseName": "Bench Press",
+       "weight": 40,
+       "reps": 10,
+       "warmup": true
+      },
+      {
+       "exerciseName": "Bench Press",
+       "weight": 60,
+       "reps": 8
+      },
+      {
+       "exerciseName": "Bench Press",
+       "weight": 60,
+       "reps": 7
+      }
+     ]
+    }
+   ],
+   "weighIns": [
+    {
+     "date": "2026-09-05",
+     "value": 70
+    },
+    {
+     "date": "2026-09-20",
+     "value": 71.234
+    }
+   ],
+   "declaredKinds": {
+    "curl": "isolation"
+   },
+   "now": "2026-11-20T07:00:00.000Z",
+   "performances": [
+    {
+     "exerciseKey": "deadlift",
+     "exerciseName": "Deadlift",
+     "sessionId": "d1",
+     "at": "2026-08-16T11:00:00.000Z",
+     "date": "2026-08-16",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 3,
+     "totalVolumeKg": 420,
+     "bestWeightKg": 140,
+     "bestReps": 3,
+     "bestE1rmKg": 154,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "d1",
+     "at": "2026-08-16T11:00:00.000Z",
+     "date": "2026-08-16",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "deadlift",
+     "exerciseName": "Deadlift",
+     "sessionId": "d2",
+     "at": "2026-08-26T11:00:00.000Z",
+     "date": "2026-08-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 3,
+     "totalVolumeKg": 450,
+     "bestWeightKg": 150,
+     "bestReps": 3,
+     "bestE1rmKg": 165,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Deadlift",
+       "kind": "weight",
+       "value": 150,
+       "previous": 140
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "d2",
+     "at": "2026-08-26T11:00:00.000Z",
+     "date": "2026-08-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 496,
+     "bestWeightKg": 62,
+     "bestReps": 8,
+     "bestE1rmKg": 78.53,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Row",
+       "kind": "weight",
+       "value": 62,
+       "previous": 40
+      }
+     ],
+     "bodyweightKg": null
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b1",
+     "at": "2026-09-05T11:00:00.000Z",
+     "date": "2026-09-05",
+     "kind": "compound",
+     "setCount": 2,
+     "totalReps": 15,
+     "totalVolumeKg": 900,
+     "bestWeightKg": 60,
+     "bestReps": 8,
+     "bestE1rmKg": 76,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o1",
+     "at": "2026-09-06T11:00:00.000Z",
+     "date": "2026-09-06",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "bench  press",
+     "sessionId": "b2",
+     "at": "2026-09-08T11:00:00.000Z",
+     "date": "2026-09-08",
+     "kind": "compound",
+     "setCount": 2,
+     "totalReps": 14,
+     "totalVolumeKg": 875,
+     "bestWeightKg": 62.5,
+     "bestReps": 8,
+     "bestE1rmKg": 79.17,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 62.5,
+       "previous": 60
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p1",
+     "at": "2026-09-09T11:00:00.000Z",
+     "date": "2026-09-09",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 8,
+     "bestE1rmKg": 88.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p1",
+     "at": "2026-09-09T11:00:00.000Z",
+     "date": "2026-09-09",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 45,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b3",
+     "at": "2026-09-11T11:00:00.000Z",
+     "date": "2026-09-11",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 390,
+     "bestWeightKg": 65,
+     "bestReps": 6,
+     "bestE1rmKg": 78,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 65,
+       "previous": 62.5
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o2",
+     "at": "2026-09-13T11:00:00.000Z",
+     "date": "2026-09-13",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b4",
+     "at": "2026-09-15T11:00:00.000Z",
+     "date": "2026-09-15",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 520,
+     "bestWeightKg": 65,
+     "bestReps": 8,
+     "bestE1rmKg": 82.33,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "reps",
+       "value": 8,
+       "previous": 6,
+       "atWeight": 65
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b4",
+     "at": "2026-09-15T11:00:00.000Z",
+     "date": "2026-09-15",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 500,
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p2",
+     "at": "2026-09-16T11:00:00.000Z",
+     "date": "2026-09-16",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 10,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 10,
+     "bestE1rmKg": 93.33,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "reps",
+       "value": 10,
+       "previous": 8,
+       "atWeight": 0
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p2",
+     "at": "2026-09-16T11:00:00.000Z",
+     "date": "2026-09-16",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 60,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b5",
+     "at": "2026-09-18T11:00:00.000Z",
+     "date": "2026-09-18",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 337.5,
+     "bestWeightKg": 67.5,
+     "bestReps": 5,
+     "bestE1rmKg": 78.75,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 67.5,
+       "previous": 65
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b5",
+     "at": "2026-09-18T11:00:00.000Z",
+     "date": "2026-09-18",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 500,
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o3",
+     "at": "2026-09-19T11:00:00.000Z",
+     "date": "2026-09-19",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 328,
+     "bestWeightKg": 41,
+     "bestReps": 8,
+     "bestE1rmKg": 51.93,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "OHP",
+       "kind": "weight",
+       "value": 41,
+       "previous": 40
+      }
+     ],
+     "bodyweightKg": 70
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "c1",
+     "at": "2026-09-20T11:00:00.000Z",
+     "date": "2026-09-20",
+     "kind": "isolation",
+     "setCount": 1,
+     "totalReps": 10,
+     "totalVolumeKg": 125,
+     "bestWeightKg": 12.5,
+     "bestReps": 10,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "leg press",
+     "exerciseName": "Leg Press",
+     "sessionId": "c1",
+     "at": "2026-09-20T11:00:00.000Z",
+     "date": "2026-09-20",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 1200,
+     "bestWeightKg": 100,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b6",
+     "at": "2026-09-22T11:00:00.000Z",
+     "date": "2026-09-22",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 350,
+     "bestWeightKg": 70,
+     "bestReps": 5,
+     "bestE1rmKg": 81.67,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "weight",
+       "value": 70,
+       "previous": 67.5
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b6",
+     "at": "2026-09-22T11:00:00.000Z",
+     "date": "2026-09-22",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 475,
+     "bestWeightKg": 95,
+     "bestReps": 5,
+     "bestE1rmKg": 110.83,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p3",
+     "at": "2026-09-23T11:00:00.000Z",
+     "date": "2026-09-23",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 60,
+     "bestWeightKg": 10,
+     "bestReps": 6,
+     "bestE1rmKg": 97.48,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "weight",
+       "value": 10,
+       "previous": 0
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "plank",
+     "exerciseName": "Plank",
+     "sessionId": "p3",
+     "at": "2026-09-23T11:00:00.000Z",
+     "date": "2026-09-23",
+     "kind": "timed",
+     "setCount": 1,
+     "totalReps": 0,
+     "totalVolumeKg": 0,
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 50,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "bench press",
+     "exerciseName": "Bench Press",
+     "sessionId": "b7",
+     "at": "2026-09-25T11:00:00.000Z",
+     "date": "2026-09-25",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 6,
+     "totalVolumeKg": 420,
+     "bestWeightKg": 70,
+     "bestReps": 6,
+     "bestE1rmKg": 84,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Bench Press",
+       "kind": "reps",
+       "value": 6,
+       "previous": 5,
+       "atWeight": 70
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "squat",
+     "exerciseName": "Squat",
+     "sessionId": "b7",
+     "at": "2026-09-25T11:00:00.000Z",
+     "date": "2026-09-25",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 5,
+     "totalVolumeKg": 450,
+     "bestWeightKg": 90,
+     "bestReps": 5,
+     "bestE1rmKg": 105,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o4",
+     "at": "2026-09-26T11:00:00.000Z",
+     "date": "2026-09-26",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 324,
+     "bestWeightKg": 40.5,
+     "bestReps": 8,
+     "bestE1rmKg": 51.3,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "c2",
+     "at": "2026-09-27T11:00:00.000Z",
+     "date": "2026-09-27",
+     "kind": "isolation",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 120,
+     "bestWeightKg": 15,
+     "bestReps": 8,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Curl",
+       "kind": "weight",
+       "value": 15,
+       "previous": 12.5
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "row",
+     "exerciseName": "Row",
+     "sessionId": "c2",
+     "at": "2026-09-27T11:00:00.000Z",
+     "date": "2026-09-27",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 480,
+     "bestWeightKg": 60,
+     "bestReps": 8,
+     "bestE1rmKg": 76,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "pull-up",
+     "exerciseName": "Pull-up",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "bodyweight",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 0,
+     "bestWeightKg": 0,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Pull-up",
+       "kind": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeight": 0
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "curl",
+     "exerciseName": "Curl",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "isolation",
+     "setCount": 1,
+     "totalReps": 12,
+     "totalVolumeKg": 150,
+     "bestWeightKg": 12.5,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Curl",
+       "kind": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeight": 12.5
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "leg press",
+     "exerciseName": "Leg Press",
+     "sessionId": "p4",
+     "at": "2026-09-30T11:00:00.000Z",
+     "date": "2026-09-30",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 15,
+     "totalVolumeKg": 1500,
+     "bestWeightKg": 100,
+     "bestReps": 15,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "records": [
+      {
+       "exercise": "Leg Press",
+       "kind": "reps",
+       "value": 15,
+       "previous": 12,
+       "atWeight": 100
+      }
+     ],
+     "bodyweightKg": 71.23
+    },
+    {
+     "exerciseKey": "ohp",
+     "exerciseName": "OHP",
+     "sessionId": "o5",
+     "at": "2026-10-03T11:00:00.000Z",
+     "date": "2026-10-03",
+     "kind": "compound",
+     "setCount": 1,
+     "totalReps": 8,
+     "totalVolumeKg": 320,
+     "bestWeightKg": 40,
+     "bestReps": 8,
+     "bestE1rmKg": 50.67,
+     "bestDurationSec": null,
+     "records": [],
+     "bodyweightKg": 71.23
+    }
+   ],
+   "insights": [
+    {
+     "exerciseKey": "squat",
+     "lastTrainedDays": 56,
+     "stale": true,
+     "exerciseName": "Squat",
+     "kind": "compound",
+     "trend": "DECLINING",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 4,
+     "current": 110.83,
+     "previous": 116.67,
+     "changePct": -0.05005571269392306,
+     "unit": "kg",
+     "bestWeightKg": 100,
+     "bestReps": 5,
+     "bestE1rmKg": 116.67,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        116.67,
+        116.67,
+        110.83,
+        105
+       ],
+       "dates": [
+        "2026-09-15",
+        "2026-09-18",
+        "2026-09-22",
+        "2026-09-25"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 100,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 100,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 95,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 90,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 116.67,
+       "to": 110.83,
+       "unit": "kg",
+       "pct": -0.05
+      },
+      {
+       "kind": "last-trained",
+       "days": 56,
+       "stale": true
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 90,
+       "reps": 5
+      },
+      {
+       "kind": "e1rm",
+       "value": 116.67
+      }
+     ]
+    },
+    {
+     "exerciseKey": "bench press",
+     "lastTrainedDays": 56,
+     "stale": true,
+     "exerciseName": "Bench Press",
+     "kind": "compound",
+     "trend": "PLATEAU",
+     "readiness": "MAINTAIN",
+     "confidence": "low",
+     "sessions": 6,
+     "current": 84,
+     "previous": 82.33,
+     "changePct": 0.02028422203328072,
+     "unit": "kg",
+     "bestWeightKg": 70,
+     "bestReps": 8,
+     "bestE1rmKg": 84,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        79.17,
+        78,
+        82.33,
+        78.75,
+        81.67,
+        84
+       ],
+       "dates": [
+        "2026-09-08",
+        "2026-09-11",
+        "2026-09-15",
+        "2026-09-18",
+        "2026-09-22",
+        "2026-09-25"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 62.5,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 65,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 65,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 67.5,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 70,
+         "reps": 5,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 70,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 82.33,
+       "to": 84,
+       "unit": "kg",
+       "pct": 0.02
+      },
+      {
+       "kind": "no-upward-trend",
+       "sessions": 6
+      },
+      {
+       "kind": "last-trained",
+       "days": 56,
+       "stale": true
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 70,
+       "reps": 6
+      },
+      {
+       "kind": "e1rm",
+       "value": 84
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 6,
+       "previous": 5,
+       "atWeightKg": 70,
+       "daysAgo": 56
+      }
+     ]
+    },
+    {
+     "exerciseKey": "ohp",
+     "lastTrainedDays": 48,
+     "stale": true,
+     "exerciseName": "OHP",
+     "kind": "compound",
+     "trend": "PLATEAU",
+     "readiness": "MAINTAIN",
+     "confidence": "low",
+     "sessions": 5,
+     "current": 51.3,
+     "previous": 50.67,
+     "changePct": 0.012433392539964385,
+     "unit": "kg",
+     "bestWeightKg": 41,
+     "bestReps": 8,
+     "bestE1rmKg": 51.93,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        50.67,
+        50.67,
+        51.93,
+        51.3,
+        50.67
+       ],
+       "dates": [
+        "2026-09-06",
+        "2026-09-13",
+        "2026-09-19",
+        "2026-09-26",
+        "2026-10-03"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 41,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40.5,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 50.67,
+       "to": 51.3,
+       "unit": "kg",
+       "pct": 0.012
+      },
+      {
+       "kind": "no-upward-trend",
+       "sessions": 5
+      },
+      {
+       "kind": "last-trained",
+       "days": 48,
+       "stale": true
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 40,
+       "reps": 8
+      },
+      {
+       "kind": "e1rm",
+       "value": 51.93
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 41,
+       "previous": 40,
+       "atWeightKg": null,
+       "daysAgo": 62
+      }
+     ]
+    },
+    {
+     "exerciseKey": "pull-up",
+     "lastTrainedDays": 51,
+     "stale": true,
+     "exerciseName": "Pull-up",
+     "kind": "bodyweight",
+     "trend": "IMPROVING",
+     "readiness": "MAINTAIN",
+     "confidence": "low",
+     "sessions": 4,
+     "current": 854.76,
+     "previous": 700,
+     "changePct": 0.22108571428571427,
+     "unit": "kg-rep",
+     "bestWeightKg": 10,
+     "bestReps": 12,
+     "bestE1rmKg": 97.48,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg-rep",
+       "values": [
+        560,
+        700,
+        487.38,
+        854.76
+       ],
+       "dates": [
+        "2026-09-09",
+        "2026-09-16",
+        "2026-09-23",
+        "2026-09-30"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 0,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": 70
+        },
+        {
+         "weightKg": 0,
+         "reps": 10,
+         "durationSec": null,
+         "bodyweightKg": 70
+        },
+        {
+         "weightKg": 10,
+         "reps": 6,
+         "durationSec": null,
+         "bodyweightKg": 71.23
+        },
+        {
+         "weightKg": 0,
+         "reps": 12,
+         "durationSec": null,
+         "bodyweightKg": 71.23
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 700,
+       "to": 854.76,
+       "unit": "kg-rep",
+       "pct": 0.221
+      },
+      {
+       "kind": "last-trained",
+       "days": 51,
+       "stale": true
+      },
+      {
+       "kind": "volatile",
+       "spread": 0.304
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 0,
+       "reps": 12
+      },
+      {
+       "kind": "e1rm",
+       "value": 97.48
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeightKg": 0,
+       "daysAgo": 51
+      }
+     ]
+    },
+    {
+     "exerciseKey": "row",
+     "lastTrainedDays": 54,
+     "stale": true,
+     "exerciseName": "Row",
+     "kind": "compound",
+     "trend": "IMPROVING",
+     "readiness": "MAINTAIN",
+     "confidence": "low",
+     "sessions": 3,
+     "current": 76,
+     "previous": 50.67,
+     "changePct": 0.4999013222814288,
+     "unit": "kg",
+     "bestWeightKg": 62,
+     "bestReps": 8,
+     "bestE1rmKg": 78.53,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        50.67,
+        78.53,
+        76
+       ],
+       "dates": [
+        "2026-08-16",
+        "2026-08-26",
+        "2026-09-27"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 40,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 62,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 60,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 50.67,
+       "to": 76,
+       "unit": "kg",
+       "pct": 0.5
+      },
+      {
+       "kind": "last-trained",
+       "days": 54,
+       "stale": true
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 60,
+       "reps": 8
+      },
+      {
+       "kind": "e1rm",
+       "value": 78.53
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 62,
+       "previous": 40,
+       "atWeightKg": null,
+       "daysAgo": 86
+      }
+     ]
+    },
+    {
+     "exerciseKey": "plank",
+     "lastTrainedDays": 58,
+     "stale": true,
+     "exerciseName": "Plank",
+     "kind": "timed",
+     "trend": "IMPROVING",
+     "readiness": "MAINTAIN",
+     "confidence": "low",
+     "sessions": 3,
+     "current": 50,
+     "previous": 45,
+     "changePct": 0.1111111111111111,
+     "unit": "sec",
+     "bestWeightKg": null,
+     "bestReps": null,
+     "bestE1rmKg": null,
+     "bestDurationSec": 60,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "sec",
+       "values": [
+        45,
+        60,
+        50
+       ],
+       "dates": [
+        "2026-09-09",
+        "2026-09-16",
+        "2026-09-23"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 45,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 60,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": null,
+         "reps": null,
+         "durationSec": 50,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 45,
+       "to": 50,
+       "unit": "sec",
+       "pct": 0.111
+      },
+      {
+       "kind": "last-trained",
+       "days": 58,
+       "stale": true
+      },
+      {
+       "kind": "volatile",
+       "spread": 0.167
+      },
+      {
+       "kind": "best-set",
+       "weightKg": null,
+       "reps": null
+      }
+     ]
+    },
+    {
+     "exerciseKey": "curl",
+     "lastTrainedDays": 51,
+     "stale": true,
+     "exerciseName": "Curl",
+     "kind": "isolation",
+     "trend": "IMPROVING",
+     "readiness": "MAINTAIN",
+     "confidence": "low",
+     "sessions": 3,
+     "current": 150,
+     "previous": 125,
+     "changePct": 0.2,
+     "unit": "kg-rep",
+     "bestWeightKg": 15,
+     "bestReps": 12,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg-rep",
+       "values": [
+        125,
+        120,
+        150
+       ],
+       "dates": [
+        "2026-09-20",
+        "2026-09-27",
+        "2026-09-30"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 12.5,
+         "reps": 10,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 15,
+         "reps": 8,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 12.5,
+         "reps": 12,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "change",
+       "from": 125,
+       "to": 150,
+       "unit": "kg-rep",
+       "pct": 0.2
+      },
+      {
+       "kind": "last-trained",
+       "days": 51,
+       "stale": true
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 12.5,
+       "reps": 12
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 12,
+       "previous": 10,
+       "atWeightKg": 12.5,
+       "daysAgo": 51
+      }
+     ]
+    },
+    {
+     "exerciseKey": "deadlift",
+     "lastTrainedDays": 86,
+     "stale": true,
+     "exerciseName": "Deadlift",
+     "kind": "compound",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "low",
+     "sessions": 2,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "kg",
+     "bestWeightKg": 150,
+     "bestReps": 3,
+     "bestE1rmKg": 165,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "series",
+       "unit": "kg",
+       "values": [
+        154,
+        165
+       ],
+       "dates": [
+        "2026-08-16",
+        "2026-08-26"
+       ]
+      },
+      {
+       "kind": "best-sets",
+       "values": [
+        {
+         "weightKg": 140,
+         "reps": 3,
+         "durationSec": null,
+         "bodyweightKg": null
+        },
+        {
+         "weightKg": 150,
+         "reps": 3,
+         "durationSec": null,
+         "bodyweightKg": null
+        }
+       ]
+      },
+      {
+       "kind": "too-few-sessions",
+       "have": 2,
+       "need": 3
+      },
+      {
+       "kind": "last-trained",
+       "days": 86,
+       "stale": true
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 150,
+       "reps": 3
+      },
+      {
+       "kind": "e1rm",
+       "value": 165
+      },
+      {
+       "kind": "window-best",
+       "of": "weight",
+       "value": 150,
+       "previous": 140,
+       "atWeightKg": null,
+       "daysAgo": 86
+      }
+     ]
+    },
+    {
+     "exerciseKey": "leg press",
+     "lastTrainedDays": null,
+     "stale": false,
+     "exerciseName": "Leg Press",
+     "kind": "compound",
+     "trend": "INSUFFICIENT_DATA",
+     "readiness": "NOT_READY",
+     "confidence": "none",
+     "sessions": 0,
+     "current": null,
+     "previous": null,
+     "changePct": null,
+     "unit": "kg",
+     "bestWeightKg": 100,
+     "bestReps": 15,
+     "bestE1rmKg": null,
+     "bestDurationSec": null,
+     "evidence": [
+      {
+       "kind": "too-few-sessions",
+       "have": 0,
+       "need": 3
+      },
+      {
+       "kind": "best-set",
+       "weightKg": 100,
+       "reps": 15
+      },
+      {
+       "kind": "window-best",
+       "of": "reps",
+       "value": 15,
+       "previous": 12,
+       "atWeightKg": 100,
+       "daysAgo": null
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

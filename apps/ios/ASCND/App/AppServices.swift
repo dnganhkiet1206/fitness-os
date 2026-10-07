@@ -20,6 +20,9 @@ final class AppServices {
   let session: SessionStore
   let sync: SyncWorker
   @ObservationIgnored let workouts: GRDBWorkoutStore
+  /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
+  /// vào đây và Today đọc lại phần chưa gửi.
+  @ObservationIgnored let outbox: OutboxStore
   /// Kế hoạch tuần + template thật, local-first (#270).
   @ObservationIgnored let templates: TodayRepository
   @ObservationIgnored let history: any TrainingHistory
@@ -29,6 +32,17 @@ final class AppServices {
   @ObservationIgnored let performanceCache: any PerformanceCache
   @ObservationIgnored let historySource: any HistorySource
   @ObservationIgnored let historyCache: any HistoryCache
+  @ObservationIgnored let insightCache: any InsightCache
+  @ObservationIgnored let exerciseSource: any ExerciseSource
+  @ObservationIgnored let exerciseCache: any ExerciseCache
+  @ObservationIgnored let guideSource: any ExerciseGuideSource
+  @ObservationIgnored let guideCache: any ExerciseGuideCache
+  @ObservationIgnored let onboardingStatus: any OnboardingStatusSource
+  @ObservationIgnored let onboardingWriter: any OnboardingWriter
+  @ObservationIgnored let onboardingStore: any OnboardingStore
+  @ObservationIgnored let profileSource: any ProfileSource
+  @ObservationIgnored let profileWriter: any ProfileWriter
+  @ObservationIgnored let profileCache: any ProfileCache
   /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
   @ObservationIgnored private let readCache: GRDBTemplateCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
@@ -57,11 +71,13 @@ final class AppServices {
     }
 
     workouts = GRDBWorkoutStore(database)
+    let outboxStore = OutboxStore(database)
+    outbox = outboxStore
     let templateCache = GRDBTemplateCache(database)
     readCache = templateCache
     templates = TodayRepository(
       source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
-      cache: templateCache)
+      cache: templateCache, edits: outboxStore)
     history = backend.map { SupabaseTrainingHistory(backend: $0) as any TrainingHistory } ?? UnconfiguredHistory()
     recordHistory = backend.map { SupabaseRecordHistory(backend: $0) as any RecordHistory } ?? UnconfiguredRecords()
     recordCache = GRDBRecordBookCache(database)
@@ -69,9 +85,20 @@ final class AppServices {
     performanceCache = GRDBPerformanceCache(database)
     historySource = backend.map { SupabaseHistorySource(backend: $0) as any HistorySource } ?? UnconfiguredHistorySource()
     historyCache = GRDBHistoryCache(database)
+    insightCache = GRDBInsightCache(database)
+    exerciseSource = backend.map { SupabaseExerciseSource(backend: $0) as any ExerciseSource } ?? UnconfiguredExercises()
+    exerciseCache = GRDBExerciseCache(database)
+    guideSource = backend.map { SupabaseExerciseGuideSource(backend: $0) as any ExerciseGuideSource } ?? UnconfiguredGuides()
+    guideCache = GRDBExerciseGuideCache(database)
+    onboardingStatus = backend.map { SupabaseOnboardingStatus(backend: $0) as any OnboardingStatusSource } ?? UnconfiguredOnboarding()
+    onboardingWriter = backend.map { SupabaseOnboardingWriter(backend: $0) as any OnboardingWriter } ?? UnconfiguredOnboarding()
+    onboardingStore = GRDBOnboardingStore(database)
+    profileSource = backend.map { SupabaseProfileSource(backend: $0) as any ProfileSource } ?? UnconfiguredProfile()
+    profileWriter = backend.map { SupabaseProfileWriter(backend: $0) as any ProfileWriter } ?? UnconfiguredProfile()
+    profileCache = GRDBProfileCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
-      store: OutboxStore(database),
+      store: outboxStore,
       remote: backend.map { SupabaseRemoteWriter(backend: $0) as any RemoteWriter } ?? UnconfiguredRemote(),
       online: false)
     startupError = problems.isEmpty ? nil : problems.joined(separator: "\n")
@@ -139,11 +166,37 @@ final class AppServices {
     let history = HistoryBook(
       userId: userId, source: historySource, cache: historyCache, store: workouts,
       onEnqueued: { _ in sync.kick() })
+    // Phân tích bài tập (#419): cùng nguồn 90 ngày với "lần trước".
+    let insights = InsightBook(userId: userId, source: performanceSource, cache: insightCache)
     return WorkoutFlow(
       today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
-      performance: makePerformanceBook(userId: userId), history: history, store: workouts,
+      performance: makePerformanceBook(userId: userId), history: history, insights: insights,
+      library: ExerciseLibrary(
+        userId: userId, source: exerciseSource, cache: exerciseCache, store: outbox,
+        onEnqueued: { _ in sync.kick() }),
+      guides: ExerciseGuideBook(userId: userId, source: guideSource, cache: guideCache),
+      store: workouts,
+      planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
       onEnqueued: { _ in sync.kick() })
+  }
+
+  /// Onboarding (#424): cổng sau đăng nhập của người này. `RootGate` nối nó
+  /// khi màn của C sẵn sàng; tới lúc đó cổng hiện tại giữ nguyên.
+  func makeOnboardingGate(userId: String) -> OnboardingGate {
+    OnboardingGate(userId: userId, source: onboardingStatus, store: onboardingStore)
+  }
+
+  /// Luồng onboarding; xong thì mở cổng.
+  func makeOnboarding(userId: String, gate: OnboardingGate, healthAvailable: Bool) -> OnboardingController {
+    OnboardingController(
+      userId: userId, store: onboardingStore, writer: onboardingWriter, healthAvailable: healthAvailable,
+      onFinished: { [weak gate] in await gate?.completed() })
+  }
+
+  /// Hồ sơ của người đang đăng nhập (#425) — màn Cài đặt / Sửa hồ sơ của C.
+  func makeProfileBook(userId: String) -> ProfileBook {
+    ProfileBook(userId: userId, source: profileSource, writer: profileWriter, cache: profileCache)
   }
 
   func didBecomeActive() {
@@ -174,6 +227,7 @@ private struct UnconfiguredAuth: AuthAPI {
   func currentSession() async throws -> AuthSession? { nil }
   func stateChanges() -> AsyncStream<(AuthEvent, AuthSession?)> { AsyncStream { $0.finish() } }
   func signUp(email: String, password: String, name: String) async throws { throw NotConfigured() }
+  func updatePassword(_ password: String) async throws { throw NotConfigured() }
   func signIn(email: String, password: String) async throws { throw NotConfigured() }
   func signInWithApple(identityToken: String, rawNonce: String) async throws { throw NotConfigured() }
   func resetPassword(email: String) async throws { throw NotConfigured() }
@@ -197,6 +251,30 @@ private struct UnconfiguredHistorySource: HistorySource {
 private struct UnconfiguredRecords: RecordHistory {
   struct NotConfigured: Error {}
   func recentSessionSets(userId: String, limit: Int) async throws -> [JSONValue] { throw NotConfigured() }
+}
+
+private struct UnconfiguredExercises: ExerciseSource {
+  struct NotConfigured: Error {}
+  func exercises(userId: String) async throws -> [LibraryExercise] { throw NotConfigured() }
+}
+
+private struct UnconfiguredGuides: ExerciseGuideSource {
+  struct NotConfigured: Error {}
+  func guideRows(userId: String, id: String?) async throws -> [GuideExerciseRow] { throw NotConfigured() }
+  func guideContent(exerciseId: String) async throws -> [GuideContentRow] { throw NotConfigured() }
+  func guideMedia(exerciseId: String) async throws -> [MediaRow] { throw NotConfigured() }
+}
+
+private struct UnconfiguredOnboarding: OnboardingStatusSource, OnboardingWriter {
+  struct NotConfigured: Error {}
+  func onboardingCompleted(userId: String) async throws -> Bool? { throw NotConfigured() }
+  func completeOnboarding(userId: String, row: JSONValue) async throws { throw NotConfigured() }
+}
+
+private struct UnconfiguredProfile: ProfileSource, ProfileWriter {
+  struct NotConfigured: Error {}
+  func profile(userId: String) async throws -> JSONValue? { throw NotConfigured() }
+  func update(userId: String, row: JSONValue) async throws { throw NotConfigured() }
 }
 
 private struct UnconfiguredTemplates: TemplateSource {
