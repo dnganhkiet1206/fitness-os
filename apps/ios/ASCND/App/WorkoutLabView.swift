@@ -81,6 +81,14 @@ private struct LabSession: View {
         LabWorkout(c: c)
       }
       if let history = flow.history {
+        Section {
+          // Màn lịch sử thật (#375) — cùng `HistoryBook` với bảng thô dưới.
+          NavigationLink {
+            WorkoutHistoryView(book: history)
+          } label: {
+            Text(verbatim: "Buổi tập đã ghi (màn thật)")
+          }
+        }
         LabHistory(history: history)
       }
       if let editor = flow.plan {
