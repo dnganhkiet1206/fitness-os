@@ -50,6 +50,27 @@ public enum TodayRules {
     return ticks
   }
 
+  /// Như `sessionTicks`, nhưng nói hàng nào ứng với set THỨ MẤY của buổi
+  /// (cùng thứ tự gán) — để nhận buổi từ máy khác với đúng tạ / reps của set.
+  public static func sessionAssignment(
+    rows: [(key: String, exerciseName: String)], setNames: [String?]
+  ) -> [String: Int] {
+    var queue: [String: [Int]] = [:]
+    for (i, name) in setNames.enumerated() {
+      let k = PersonalRecords.exerciseKey(name ?? "")
+      guard !k.isEmpty else { continue }
+      queue[k, default: []].append(i)
+    }
+    var out: [String: Int] = [:]
+    for row in rows {
+      let k = PersonalRecords.exerciseKey(row.exerciseName)
+      guard var q = queue[k], !q.isEmpty else { continue }
+      out[row.key] = q.removeFirst()
+      queue[k] = q
+    }
+    return out
+  }
+
   /// Bằng chứng chỉ LẤP CHỖ TRỐNG, không lật quyết định người dùng đã ghi
   /// trên máy (RN `mergeProgress`): hàng đã có trong `stored` — kể cả `false`
   /// (đã bỏ tích bằng tay) — giữ nguyên.
