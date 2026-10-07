@@ -265,4 +265,7 @@ private actor BridgingStore: WorkoutStore {
     await outbox.append(entry)
     return true
   }
+  func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws {
+    await outbox.append(entry)
+  }
 }

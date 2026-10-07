@@ -44,6 +44,22 @@ public final class GRDBWorkoutStore: WorkoutStore {
     }
   }
 
+  public func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws {
+    let row = try OutboxStore.json(entry)
+    try await db.write { db in
+      let exists = try Bool.fetchOne(db, sql: "SELECT EXISTS(SELECT 1 FROM outbox WHERE id = ?)", arguments: [entry.id]) ?? false
+      guard !exists else { return }
+      for key in try String.fetchAll(db, sql: "SELECT key FROM workout_day") {
+        guard var state = try Self.day(db, key), state.loggedSessionId == sessionId else { continue }
+        state.loggedKeys = []
+        try Self.upsert(db, key, try OutboxStore.json(state))
+      }
+      try db.execute(
+        sql: "INSERT OR IGNORE INTO outbox (id, userId, entry) VALUES (?, ?, ?)",
+        arguments: [entry.id, entry.userId, row])
+    }
+  }
+
   /// Dọn điểm quay lại quá 14 ngày (`DayProgressStore.stale`, luật của
   /// baseline). Ngày đã chốt cũng bị dọn: buổi của nó đã nằm ở outbox/server,
   /// và cửa sổ mở lại của baseline cũng chỉ 14 ngày. Trả về số ngày bỏ.

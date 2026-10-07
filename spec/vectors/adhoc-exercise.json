@@ -1,0 +1,182 @@
+{
+ "$schema": "golden-vectors/v1",
+ "domain": "adhoc-exercise",
+ "source": {
+  "rn": [
+   "native/src/components/ascnd/day-plan.tsx#adHocRows,extra-state"
+  ],
+  "spec": "spec/behavior/workout.md"
+ },
+ "vectors": [
+  {
+   "expected": {
+    "idStable": true,
+    "name": "",
+    "sets": 1
+   },
+   "id": "AH-1a",
+   "input": {
+    "op": "add"
+   },
+   "name": "Thêm hàng AdHoc: id ổn định, tên rỗng, 1 set"
+  },
+  {
+   "expected": {
+    "name": "Curls"
+   },
+   "id": "AH-1b",
+   "input": {
+    "id": "x-1",
+    "name": "Curls",
+    "op": "rename"
+   },
+   "name": "Đổi tên giữ nguyên id"
+  },
+  {
+   "expected": {
+    "sets": 20
+   },
+   "id": "AH-2a",
+   "input": {
+    "id": "x-1",
+    "op": "increment",
+    "sets": 20
+   },
+   "name": "Tăng set trần 20: đã 20 thì không tăng nữa"
+  },
+  {
+   "expected": {
+    "sets": 2
+   },
+   "id": "AH-2b",
+   "input": {
+    "id": "x-1",
+    "op": "increment",
+    "sets": 1
+   },
+   "name": "Tăng set thường: 1 → 2"
+  },
+  {
+   "expected": {
+    "count": 0
+   },
+   "id": "AH-3a",
+   "input": {
+    "id": "x-1",
+    "op": "delete"
+   },
+   "name": "Xóa hàng AdHoc theo id"
+  },
+  {
+   "expected": {
+    "extra": []
+   },
+   "id": "AH-4a",
+   "input": {
+    "savedExtra": null
+   },
+   "name": "Legacy blob thiếu extra → mảng rỗng"
+  },
+  {
+   "expected": {
+    "extra": [
+     {
+      "id": "x-1",
+      "name": "Curls",
+      "sets": 2
+     }
+    ]
+   },
+   "id": "AH-4b",
+   "input": {
+    "savedExtra": [
+     {
+      "id": "x-1",
+      "name": "Curls",
+      "sets": 2
+     },
+     {
+      "id": "",
+      "name": "Broken",
+      "sets": 1
+     },
+     null
+    ]
+   },
+   "name": "Lọc bỏ entry không id khi restore"
+  },
+  {
+   "expected": {
+    "keys": [
+     "xx-1-0",
+     "xx-1-1"
+    ],
+    "rows": 2
+   },
+   "id": "AH-5a",
+   "input": {
+    "list": [
+     {
+      "id": "x-1",
+      "name": "Curls",
+      "sets": 2
+     }
+    ]
+   },
+   "name": "adHocRows: 2 sets → 2 hàng, key ổn định"
+  },
+  {
+   "expected": {
+    "rows": 20
+   },
+   "id": "AH-5b",
+   "input": {
+    "list": [
+     {
+      "id": "x-1",
+      "name": "Curls",
+      "sets": 4000
+     }
+    ]
+   },
+   "name": "adHocRows: clamp 4000 → 20 hàng"
+  },
+  {
+   "expected": {
+    "heads": [
+     true,
+     false
+    ]
+   },
+   "id": "AH-5c",
+   "input": {
+    "list": [
+     {
+      "id": "x-1",
+      "name": "Curls",
+      "sets": 2
+     }
+    ]
+   },
+   "name": "Chỉ hàng đầu mở thẻ mới (heads)"
+  },
+  {
+   "expected": {
+    "blank": true,
+    "reps": 0,
+    "weight": 0
+   },
+   "id": "AH-5d",
+   "input": {
+    "list": [
+     {
+      "id": "x-1",
+      "name": "",
+      "sets": 1
+     }
+    ]
+   },
+   "name": "Hàng AdHoc mở ô trống: weight/reps = 0"
+  }
+ ]
+}

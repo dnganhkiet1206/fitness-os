@@ -126,3 +126,106 @@ struct PerformanceBookTests {
     #expect(book.last(for: "Bench")?.sessionId == "a")
   }
 }
+
+/// #417: loại bài (`exercise-kind.ts`) + cân nặng ngày tập (`bodyweightOn`).
+struct BodyweightPerformanceTests {
+  private func set(_ w: Double, _ reps: Int, duration: Int? = nil) -> RecordSet {
+    RecordSet(exerciseName: "x", weightKg: w, reps: reps, durationSec: duration)
+  }
+  private let day = 86_400_000 as Int64
+
+  @Test func resolveKindFollowsTheBaseline() {
+    #expect(ExerciseKind.resolve(declared: "isolation", sets: [set(0, 10)]) == .isolation, "khai báo thắng")
+    #expect(ExerciseKind.resolve(declared: "nonsense", sets: [set(60, 5)]) == .compound)
+    #expect(ExerciseKind.resolve(declared: nil, sets: []) == .compound)
+    #expect(ExerciseKind.resolve(declared: nil, sets: [set(0, 0, duration: 45)]) == .timed, "giữ xét trước bodyweight")
+    #expect(ExerciseKind.resolve(declared: nil, sets: [set(0, 8), set(0, 8), set(10, 6), set(10, 6)]) == .bodyweight,
+            "hít xà 0,0,10,10: nửa không tạ vẫn là bodyweight")
+    #expect(ExerciseKind.resolve(declared: nil, sets: [set(100, 5), set(100, 5), set(100, 5), set(0, 5)]) == .compound,
+            "một ô tạ quên điền không biến squat thành bodyweight")
+  }
+
+  @Test func bodyweightOnUsesTheLatestWeighInAtOrBefore() {
+    let w = [
+      WeighIn(date: LocalDate("2026-09-01")!, kg: 70.004), WeighIn(date: LocalDate("2026-10-01")!, kg: 72),
+      WeighIn(date: LocalDate("2026-10-10")!, kg: 99), WeighIn(date: LocalDate("2026-09-20")!, kg: -1),
+    ]
+    #expect(WeighIn.bodyweight(on: LocalDate("2026-10-05")!, w) == 72, "không dùng lần cân SAU ngày tập")
+    #expect(WeighIn.bodyweight(on: LocalDate("2026-10-01")!, w) == 72, "cùng ngày được")
+    #expect(WeighIn.bodyweight(on: LocalDate("2026-09-25")!, w) == 70, "bỏ số âm; làm tròn 2 chữ số")
+    #expect(WeighIn.bodyweight(on: LocalDate("2026-08-01")!, w) == nil, "không có → nil, không phải 0")
+  }
+
+  /// Hít xà đeo đai 10 kg ngày cân 72 kg → "82 kg × 6"; không biết cân nặng →
+  /// chỉ tạ đeo (như `lastSetText`); bài compound không cộng cân nặng.
+  @Test func bodyweightLoadAddsTheBody() {
+    let rows = [
+      row("a", 1 * day, #"[{"exerciseName":"Pull-up","weight":0,"reps":8},{"exerciseName":"Squat","weight":100,"reps":5}]"#),
+      row("b", 5 * day, #"[{"exerciseName":"Pull-up","weight":10,"reps":6},{"exerciseName":"Squat","weight":105,"reps":5}]"#),
+    ]
+    let weighed = PerformanceHistory.lastByExercise(rows, weighIns: [WeighIn(date: LocalDate("1970-01-03")!, kg: 72)], timeZone: utc)
+    #expect(weighed["pull-up"]?.kind == .bodyweight, "loại theo CẢ cửa sổ: 0 và 10")
+    #expect(weighed["pull-up"]?.bodyweightKg == 72)
+    #expect(weighed["pull-up"]?.display == .loaded(weightKg: 82, reps: 6))
+    #expect(weighed["squat"]?.display == .loaded(weightKg: 105, reps: 5))
+
+    let unknown = PerformanceHistory.lastByExercise(rows, timeZone: utc)
+    #expect(unknown["pull-up"]?.bodyweightKg == nil)
+    #expect(unknown["pull-up"]?.display == .loaded(weightKg: 10, reps: 6), "không biết cơ thể: chỉ tạ đeo")
+
+    let bare = PerformanceHistory.lastByExercise(Array(rows.prefix(1)), timeZone: utc)
+    #expect(bare["pull-up"]?.display == .bodyweight(reps: 8))
+  }
+
+  /// Cache trước #417 (không `kind` / `bodyweightKg`) vẫn đọc được.
+  @Test func legacyCacheDecodes() throws {
+    let old = #"{"exerciseKey":"bench","exerciseName":"Bench","sessionId":"s","at":1000,"date":"1970-01-01","setCount":1,"totalReps":8,"totalVolumeKg":480,"topSet":{"weightKg":60,"reps":8}}"#
+    let p = try JSONDecoder().decode(LastPerformance.self, from: Data(old.utf8))
+    #expect(p.kind == .compound && p.bodyweightKg == nil)
+    #expect(p.display == .loaded(weightKg: 60, reps: 8))
+  }
+}
+
+private actor WeighingSource: PerformanceSource {
+  let rows: [SessionHistoryRow]
+  let weights: [WeighIn]
+  private(set) var since: LocalDate?
+  init(_ rows: [SessionHistoryRow], _ weights: [WeighIn]) {
+    self.rows = rows
+    self.weights = weights
+  }
+  func sessions(userId: String, since: EpochMillis) async throws -> [SessionHistoryRow] { rows }
+  func weighIns(userId: String, since: LocalDate) async throws -> [WeighIn] {
+    self.since = since
+    return weights
+  }
+}
+private actor MemCache: PerformanceCache {
+  var t: [String: LastPerformance]?
+  func load(userId: String) async throws -> [String: LastPerformance]? { t }
+  func save(userId: String, _ table: [String: LastPerformance]) async throws { t = table }
+}
+
+@MainActor
+struct BodyweightBookTests {
+  /// Làm mới đọc cân nặng cùng cửa sổ 90 ngày; buổi vừa chốt dùng lần cân đã
+  /// có, và giữ loại bài đã biết từ cả cửa sổ.
+  @Test func bookCarriesWeighInsIntoAbsorb() async {
+    let day: Int64 = 86_400_000
+    let src = WeighingSource(
+      [row("a", 1 * day, #"[{"exerciseName":"Pull-up","weight":0,"reps":8}]"#)],
+      [WeighIn(date: LocalDate("1970-01-01")!, kg: 70)])
+    let clock = ManualClock(EpochMillis(100 * day))
+    let book = PerformanceBook(userId: "u", source: src, cache: MemCache(), clock: clock, timeZone: utc)
+    await book.load()
+    #expect(await src.since == LocalDate("1970-01-11"), "100 − 90 ngày")
+    // Lần cân ngày 1/1, buổi ngày 2/1 → dùng được.
+    #expect(book.last(for: "pull-up")?.bodyweightKg == 70)
+    #expect(book.last(for: "pull-up")?.display == .loaded(weightKg: 70, reps: 8))
+    await book.absorb(row: json(#"{"id":"b","date_time":"1970-04-10T00:00:00Z","sets":[{"exerciseName":"Pull-up","weight":10,"reps":5}]}"#))
+    let p = book.last(for: "pull-up")
+    #expect(p?.sessionId == "b")
+    #expect(p?.kind == .bodyweight, "một buổi đeo đai không đổi loại đã biết")
+    #expect(p?.display == .loaded(weightKg: 80, reps: 5))
+  }
+}

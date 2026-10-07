@@ -26,7 +26,7 @@ struct WorkoutLabView: View {
         case .loading:
           ProgressView()
         case .signedOut:
-          SignInView()
+          AuthView()
         case .signedIn:
           LabSession()
         }
@@ -79,6 +79,12 @@ private struct LabSession: View {
       }
       if let c = flow.session {
         LabWorkout(c: c)
+      }
+      if let history = flow.history {
+        LabHistory(history: history)
+      }
+      if let editor = flow.plan {
+        LabPlan(today: today, editor: editor)
       }
     }
     .onChange(of: useSample) { _, on in
@@ -141,7 +147,10 @@ private struct LabWorkout: View {
       }
 
       Section {
-        ForEach(c.plan.rows) { row in
+        ForEach(c.rows) { row in
+          if let id = row.adHoc, row.heads {
+            LabAdHocHeader(c: c, id: id)
+          }
           if row.ordinal == 1, let last = flow.performance.last(for: row.exerciseName), let d = last.display {
             Text(verbatim: "Last (\(last.date)): \(Self.describe(d))")
               .font(.caption).foregroundStyle(.secondary)
@@ -163,6 +172,11 @@ private struct LabWorkout: View {
                 }
               }
             }
+        }
+        Button {
+          Task { await c.addExercise() }
+        } label: {
+          Text(verbatim: "+ Add exercise (not in plan)")
         }
       }
 
@@ -259,6 +273,132 @@ extension LabWorkout {
     case .bodyweight(let r): "\(r) reps × bodyweight"
     case .loaded(let w, let r): "\(w.formatted()) kg × \(r)"
     }
+  }
+}
+
+/// Lịch sử buổi tập (#400): 90 ngày, mới trước; vuốt để xoá.
+private struct LabHistory: View {
+  let history: HistoryBook
+  @State private var error: String?
+
+  var body: some View {
+    Section {
+      if let f = history.failure {
+        LabRow(label: "History refresh failed", value: "\(f)").foregroundStyle(.orange)
+      }
+      ForEach(history.entries) { e in
+        LabRow(
+          label: e.at.date.formatted(date: .abbreviated, time: .shortened),
+          value: "\(e.templateName) · \(e.completedSets) sets · \(e.exerciseCount) ex · \(e.volumeKg) kg\(e.prDetected ? " · PR" : "")")
+          .swipeActions {
+            Button(role: .destructive) {
+              Task {
+                do throws(HistoryBook.DeleteRefusal) {
+                  try await history.delete(e.id)
+                  error = nil
+                } catch {
+                  self.error = "\(error)"
+                }
+              }
+            } label: {
+              Text(verbatim: "Delete session")
+            }
+          }
+      }
+      if let error {
+        Text(verbatim: error).foregroundStyle(.red).font(.footnote)
+      }
+    } header: {
+      Text(verbatim: "History (90 days) — \(history.entries.count)")
+    }
+  }
+}
+
+/// Ghi kế hoạch (#401): tạo template mẫu gán cho hôm nay, cho hôm nay nghỉ,
+/// vuốt để xoá template. Không phải builder (C-37 #410) — chỉ để thử đường ghi
+/// trên máy thật: online / offline / mở lại app.
+private struct LabPlan: View {
+  let today: TodayController
+  let editor: PlanEditor
+  @State private var error: String?
+
+  var body: some View {
+    let library = today.library
+    let day = WorkoutPlanning.routineIndex(today.today)
+    Section {
+      ForEach((library?.templates ?? []).sorted(by: WorkoutTemplate.newestFirst)) { t in
+        LabRow(
+          label: t.name + (library?.day(day)?.templateId == t.id ? " · hôm nay" : ""),
+          value: "\(t.exercises.count) bài · \(t.type ?? PlanEdit.defaultType)\(t.createdAt == nil ? " · chưa lên server" : "")")
+          .swipeActions {
+            Button(role: .destructive) { run { try await editor.delete(templateId: t.id) } } label: {
+              Text(verbatim: "Delete template")
+            }
+            Button { run { try await editor.assign(day: day, templateId: t.id) } } label: {
+              Text(verbatim: "Hôm nay")
+            }
+          }
+      }
+      Button {
+        run {
+          try await editor.create(
+            id: editor.newTemplateId(), name: "Lab \(Date().formatted(date: .omitted, time: .shortened))",
+            exercises: [
+              TemplateExercise(exerciseName: "Bench Press", sets: 3, reps: 8, weightKg: 60),
+              TemplateExercise(exerciseName: "Row", sets: 2, reps: 10, weightKg: 40),
+            ], scheduleOn: day)
+        }
+      } label: {
+        Text(verbatim: "Tạo template mẫu, gán cho hôm nay")
+      }
+      Button { run { try await editor.assign(day: day, templateId: nil) } } label: {
+        Text(verbatim: "Hôm nay nghỉ")
+      }
+      Button {
+        run { try await editor.setDeload(day: day, !(library?.day(day)?.isDeload ?? false)) }
+      } label: {
+        Text(verbatim: "Bật / tắt deload hôm nay")
+      }
+      if let error {
+        Text(verbatim: error).foregroundStyle(.red).font(.footnote)
+      }
+    } header: {
+      Text(verbatim: "Plan (#401) — \(library?.templates.count ?? 0) templates")
+    }
+  }
+
+  /// Lỗi là `PlanEditor.Refusal`; closure không khai kiểu ném nên nhận `any Error`.
+  private func run(_ op: @escaping @MainActor () async throws -> Void) {
+    Task { @MainActor in
+      do {
+        try await op()
+        error = nil
+      } catch {
+        self.error = "\(error)"
+      }
+    }
+  }
+}
+
+/// Đầu thẻ của một bài thêm (#399): tên, thêm hiệp, bỏ bài.
+private struct LabAdHocHeader: View {
+  let c: WorkoutSessionController
+  let id: String
+
+  var body: some View {
+    let locked = c.adHocLocked(id)
+    HStack {
+      TextField(text: Binding(
+        get: { c.progress.extra.first { $0.id == id }?.name ?? "" },
+        set: { v in Task { await c.renameExercise(id, to: v) } })
+      ) { Text(verbatim: "Exercise name") }
+        .disabled(locked)
+      Button { Task { await c.addSet(to: id) } } label: { Text(verbatim: "+ set") }
+      Button(role: .destructive) { Task { await c.removeExercise(id) } } label: { Text(verbatim: "Remove") }
+        .disabled(locked)
+    }
+    .buttonStyle(.borderless)
+    .font(.footnote)
   }
 }
 

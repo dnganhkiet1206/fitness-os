@@ -51,6 +51,22 @@ public struct TemplateExercise: Sendable, Hashable, Codable {
     restSeconds = Self.jsRound(Self.number(json["restSeconds"]) ?? Double(WorkoutPlanning.defaultRest))
   }
 
+  /// Một phần tử của `exercises` như builder ghi (`TemplateExercise` của
+  /// `use-library.ts:279`). `exerciseId` thiếu thì bỏ trường — đọc lại ra `nil`
+  /// như `exerciseId || undefined`. Đọc lại bằng `init(json:)` ra đúng giá trị này.
+  public var json: JSONValue {
+    var o: [String: JSONValue] = [
+      "exerciseName": .string(exerciseName),
+      "sets": .number(Double(sets)),
+      "reps": .number(Double(reps)),
+      "weight": .number(WorkoutMath.round2(weightKg)),
+      "rpe": .number(Double(rpe)),
+      "restSeconds": .number(Double(restSeconds)),
+    ]
+    if let exerciseId { o["exerciseId"] = .string(exerciseId) }
+    return .object(o)
+  }
+
   /// Số từ JSON: số hữu hạn, hoặc chuỗi số (JS ép kiểu chuỗi khi làm toán).
   /// `null`, thiếu, hay chữ không phải số → `nil` (dùng mặc định).
   static func number(_ v: JSONValue?) -> Double? {
@@ -76,20 +92,33 @@ public struct WorkoutTemplate: Sendable, Hashable, Codable, Identifiable {
   public let id: String
   public let name: String
   public let exercises: [TemplateExercise]
+  /// `workout_templates.type` (`'custom'` khi thiếu, `use-library.ts:311`).
+  /// Tuỳ chọn để cache cũ (trước #401) vẫn đọc được.
+  public let type: String?
+  /// `created_at` — danh sách template xếp mới trước (`newestFirst`,
+  /// `template-list.tsx:155`). `nil`: cache cũ, hoặc template vừa tạo trên
+  /// máy chưa có giờ của server.
+  public let createdAt: EpochMillis?
 
-  public init(id: String, name: String, exercises: [TemplateExercise]) {
+  public init(
+    id: String, name: String, exercises: [TemplateExercise], type: String? = nil, createdAt: EpochMillis? = nil
+  ) {
     self.id = id
     self.name = name
     self.exercises = exercises
+    self.type = type
+    self.createdAt = createdAt
   }
 
   /// `exercises` không phải mảng → không có bài nào (`Array.isArray`, `day-plan.tsx:722`).
-  public init(id: String, name: String, exercisesJSON: JSONValue?) {
+  public init(
+    id: String, name: String, exercisesJSON: JSONValue?, type: String? = nil, createdAt: EpochMillis? = nil
+  ) {
     var list: [TemplateExercise] = []
     if case .array(let a)? = exercisesJSON {
       list = a.map(TemplateExercise.init(json:))
     }
-    self.init(id: id, name: name, exercises: list)
+    self.init(id: id, name: name, exercises: list, type: type, createdAt: createdAt)
   }
 }
 
@@ -185,6 +214,24 @@ public enum WorkoutPlanning {
     return rows
   }
 
+  /// Hàng của các bài thêm trong ngày (`adHocRows`, `day-plan.tsx:509`): cùng
+  /// hình dạng với hàng theo kế hoạch, nên tick, điểm quay lại, chốt, nối
+  /// thêm nhận chúng mà không cần biết chúng tồn tại. Tạ và rep kế hoạch là 0
+  /// — "kế hoạch không yêu cầu" — nên ô mở trống; nghỉ / RPE theo mặc định.
+  /// Khoá `"x<id>-<hiệp>"`; số hiệp kẹp [1, 20] như `expand`.
+  public static func adHocRows(_ list: [AdHocExercise]) -> [PlannedSet] {
+    var rows: [PlannedSet] = []
+    for e in list {
+      let count = min(maxSets, max(1, e.sets))
+      for n in 0..<count {
+        rows.append(PlannedSet(
+          key: "x\(e.id)-\(n)", exerciseName: e.name, ordinal: n + 1, of: count, weightKg: 0, reps: 0,
+          plannedRest: defaultRest, plannedRpe: defaultRpe, adHoc: e.id))
+      }
+    }
+    return rows
+  }
+
   /// Kế hoạch của `date`. `trained`: các ngày đã có buổi được ghi.
   ///
   /// Có buổi ⇔ ngày có `template_id`, template ấy CÒN tồn tại, và ngày không
@@ -223,13 +270,27 @@ public protocol TemplateCache: Sendable {
 /// Read model local-first: `cached` trả ngay thứ đang có trên máy (kể cả lúc
 /// offline); `refresh` hỏi server rồi ghi đè cache. Server hỏng thì cache cũ
 /// vẫn nguyên — màn vẫn mở được buổi tập.
+///
+/// Cache chỉ giữ bản của SERVER. Lệnh sửa kế hoạch chưa gửi (#401) sống ở
+/// outbox và được áp lên mỗi lần đọc (`pendingEdits`) — một nguồn sự thật cho
+/// "máy này đã sửa gì", không có bản lạc quan thứ hai trong cache để lệch.
 public struct TodayRepository: Sendable {
   private let source: any TemplateSource
   private let cache: any TemplateCache
+  private let edits: (any PlanWriteStore)?
 
-  public init(source: any TemplateSource, cache: any TemplateCache) {
+  public init(source: any TemplateSource, cache: any TemplateCache, edits: (any PlanWriteStore)? = nil) {
     self.source = source
     self.cache = cache
+    self.edits = edits
+  }
+
+  /// Lệnh sửa kế hoạch còn chờ gửi, theo thứ tự hàng đợi. `nil` khi không đọc
+  /// được (đĩa hỏng) — người gọi giữ thứ đang có, không coi là "không có gì".
+  public func pendingEdits(userId: String) async -> [OutboxEntry]? {
+    guard let edits else { return [] }
+    guard let all = try? await edits.pending(userId: userId) else { return nil }
+    return all.filter { $0.userId == userId && PlanEdit.kinds.contains($0.kind) }
   }
 
   public func cached(userId: String) async -> TemplateSnapshot? {

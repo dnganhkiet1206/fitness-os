@@ -16,13 +16,21 @@ public struct PlannedSet: Sendable, Hashable, Codable, Identifiable {
   public let plannedRest: Int
   public let plannedRpe: Int
   public let warmup: Bool
+  /// Hàng của một bài THÊM trong buổi (#399) — id của bài ấy, để màn đổi tên,
+  /// thêm hiệp, bỏ bài. `nil` = hàng theo kế hoạch.
+  public let adHoc: String?
+
+  /// Hàng đầu của một bài: mở thẻ mới (`heads`, `day-plan.tsx:531`).
+  public var heads: Bool { ordinal == 1 }
 
   public var id: String { key }
 
   public init(
     key: String, exerciseId: String? = nil, exerciseName: String, ordinal: Int, of: Int,
-    weightKg: Double, reps: Int, plannedRest: Int, plannedRpe: Int = 7, warmup: Bool = false
+    weightKg: Double, reps: Int, plannedRest: Int, plannedRpe: Int = 7, warmup: Bool = false,
+    adHoc: String? = nil
   ) {
+    self.adHoc = adHoc
     self.key = key
     self.exerciseId = exerciseId
     self.exerciseName = exerciseName
@@ -42,12 +50,38 @@ public struct PlannedSet: Sendable, Hashable, Codable, Identifiable {
 /// (`day-plan.tsx:970`): tick, RPE, nghỉ, và hai ô nhập dưới dạng CHỮ đúng như
 /// người dùng gõ. Quãng nghỉ đang chạy KHÔNG nằm ở đây (baseline cũng không
 /// lưu nó) — `RestTimer` là chuyện của #227/#228 và sống ở chỗ khác.
+/// Một bài thêm trong ngày (#399, `AdHoc`, `day-plan.tsx:486`): tên, và đã
+/// làm bao nhiêu hiệp.
+public struct AdHocExercise: Sendable, Hashable, Codable {
+  public let id: String
+  public var name: String
+  public var sets: Int
+
+  public init(id: String, name: String = "", sets: Int = 1) {
+    self.id = id
+    self.name = name
+    self.sets = sets
+  }
+
+  /// Đọc từ điểm quay lại, khoan dung như baseline (`:900`): phần tử không có
+  /// `id` bị bỏ. `sets` không đọc được → 1 (RN ra `NaN` và bài biến mất — cùng
+  /// lỗi đã sửa ở `TemplateExercise`, #270).
+  init?(json: JSONValue) {
+    guard let id = json["id"]?.stringValue, !id.isEmpty else { return nil }
+    self.id = id
+    name = json["name"]?.stringValue ?? ""
+    sets = TemplateExercise.number(json["sets"]).map(TemplateExercise.jsRound) ?? 1
+  }
+}
+
 public struct DayProgress: Sendable, Hashable, Codable {
   public var done: [String: Bool] = [:]
   public var rpe: [String: Int] = [:]
   public var rest: [String: Int] = [:]
   public var weightText: [String: String] = [:]
   public var repsText: [String: String] = [:]
+  /// Bài thêm ngoài kế hoạch (#399), lưu cùng điểm quay lại như baseline.
+  public var extra: [AdHocExercise] = []
 
   public init() {}
 
@@ -60,6 +94,9 @@ public struct DayProgress: Sendable, Hashable, Codable {
     rest = try c.decodeIfPresent([String: Int].self, forKey: .rest) ?? [:]
     weightText = try c.decodeIfPresent([String: String].self, forKey: .weightText) ?? [:]
     repsText = try c.decodeIfPresent([String: String].self, forKey: .repsText) ?? [:]
+    // Blob trước #399 không có `extra` = không có bài thêm (AH-4a).
+    let raw = (try? c.decodeIfPresent([JSONValue].self, forKey: .extra)) ?? nil
+    extra = (raw ?? []).compactMap(AdHocExercise.init(json:))
   }
 }
 

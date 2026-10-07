@@ -20,6 +20,9 @@ final class AppServices {
   let session: SessionStore
   let sync: SyncWorker
   @ObservationIgnored let workouts: GRDBWorkoutStore
+  /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
+  /// vào đây và Today đọc lại phần chưa gửi.
+  @ObservationIgnored let outbox: OutboxStore
   /// Kế hoạch tuần + template thật, local-first (#270).
   @ObservationIgnored let templates: TodayRepository
   @ObservationIgnored let history: any TrainingHistory
@@ -27,6 +30,8 @@ final class AppServices {
   @ObservationIgnored let recordCache: any RecordBookCache
   @ObservationIgnored let performanceSource: any PerformanceSource
   @ObservationIgnored let performanceCache: any PerformanceCache
+  @ObservationIgnored let historySource: any HistorySource
+  @ObservationIgnored let historyCache: any HistoryCache
   /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
   @ObservationIgnored private let readCache: GRDBTemplateCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
@@ -55,19 +60,23 @@ final class AppServices {
     }
 
     workouts = GRDBWorkoutStore(database)
+    let outboxStore = OutboxStore(database)
+    outbox = outboxStore
     let templateCache = GRDBTemplateCache(database)
     readCache = templateCache
     templates = TodayRepository(
       source: backend.map { SupabaseTemplateSource(backend: $0) as any TemplateSource } ?? UnconfiguredTemplates(),
-      cache: templateCache)
+      cache: templateCache, edits: outboxStore)
     history = backend.map { SupabaseTrainingHistory(backend: $0) as any TrainingHistory } ?? UnconfiguredHistory()
     recordHistory = backend.map { SupabaseRecordHistory(backend: $0) as any RecordHistory } ?? UnconfiguredRecords()
     recordCache = GRDBRecordBookCache(database)
     performanceSource = backend.map { SupabasePerformanceSource(backend: $0) as any PerformanceSource } ?? UnconfiguredPerformance()
     performanceCache = GRDBPerformanceCache(database)
+    historySource = backend.map { SupabaseHistorySource(backend: $0) as any HistorySource } ?? UnconfiguredHistorySource()
+    historyCache = GRDBHistoryCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
-      store: OutboxStore(database),
+      store: outboxStore,
       remote: backend.map { SupabaseRemoteWriter(backend: $0) as any RemoteWriter } ?? UnconfiguredRemote(),
       online: false)
     startupError = problems.isEmpty ? nil : problems.joined(separator: "\n")
@@ -131,9 +140,13 @@ final class AppServices {
   /// màn Today / Workout và Lab chỉ đọc nó.
   func makeWorkoutFlow(userId: String, rest: RestTimerController) -> WorkoutFlow {
     let sync = self.sync
+    // Lịch sử buổi tập (#400): xoá từ lịch sử đi qua cùng outbox.
+    let history = HistoryBook(
+      userId: userId, source: historySource, cache: historyCache, store: workouts,
+      onEnqueued: { _ in sync.kick() })
     return WorkoutFlow(
       today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
-      performance: makePerformanceBook(userId: userId), store: workouts,
+      performance: makePerformanceBook(userId: userId), history: history, store: workouts, planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
       onEnqueued: { _ in sync.kick() })
   }
@@ -179,6 +192,11 @@ private struct UnconfiguredHistory: TrainingHistory {
 private struct UnconfiguredPerformance: PerformanceSource {
   struct NotConfigured: Error {}
   func sessions(userId: String, since: EpochMillis) async throws -> [SessionHistoryRow] { throw NotConfigured() }
+}
+
+private struct UnconfiguredHistorySource: HistorySource {
+  struct NotConfigured: Error {}
+  func sessions(userId: String, since: EpochMillis) async throws -> [JSONValue] { throw NotConfigured() }
 }
 
 private struct UnconfiguredRecords: RecordHistory {

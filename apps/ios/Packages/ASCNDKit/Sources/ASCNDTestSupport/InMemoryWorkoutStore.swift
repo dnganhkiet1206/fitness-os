@@ -16,6 +16,9 @@ public actor InMemoryWorkoutStore: WorkoutStore {
   public private(set) var writes = 0
   private var failures = 0
   private var loadFailures = 0
+  private var heldKey: String?
+  private var heldSkip = 0
+  private var parkedLoads: [CheckedContinuation<Void, Never>] = []
   private var holding = false
   private var parkedWrites: [CheckedContinuation<Void, Never>] = []
 
@@ -37,7 +40,28 @@ public actor InMemoryWorkoutStore: WorkoutStore {
   /// Làm hỏng N lần ĐỌC kế tiếp (SQLite bận, tệp đang khoá bảo vệ).
   public func failNextLoad(_ n: Int = 1) { loadFailures = n }
 
+  /// Giữ lần đọc thứ `skip + 1` của `key` lại cho tới `releaseLoad()` — dựng
+  /// đúng cảnh "buổi đang được đọc lên thì việc khác xảy ra".
+  public func holdLoad(of key: String, after skip: Int = 0) {
+    heldKey = key
+    heldSkip = skip
+  }
+  public var heldLoads: Int { parkedLoads.count }
+  public func releaseLoad() {
+    heldKey = nil
+    let parked = parkedLoads
+    parkedLoads = []
+    for c in parked { c.resume() }
+  }
+
   public func loadDay(_ key: String) async throws -> DayState? {
+    if key == heldKey {
+      if heldSkip > 0 {
+        heldSkip -= 1
+      } else {
+        await withCheckedContinuation { parkedLoads.append($0) }
+      }
+    }
     if loadFailures > 0 {
       loadFailures -= 1
       throw Failure()
@@ -59,6 +83,17 @@ public actor InMemoryWorkoutStore: WorkoutStore {
     guard !outbox.contains(where: { $0.id == entry.id }) else { return false }
     outbox.append(entry)
     return true
+  }
+
+  public func commitDelete(sessionId: String, _ entry: OutboxEntry) async throws {
+    try await enter()
+    guard !outbox.contains(where: { $0.id == entry.id }) else { return }
+    for (k, s) in days where s.loggedSessionId == sessionId {
+      var state = s
+      state.loggedKeys = []
+      days[k] = state
+    }
+    outbox.append(entry)
   }
 
   /// Ngày đã chốt bằng id khác → từ chối, không ghi gì (hợp đồng `WorkoutStore`).
@@ -102,5 +137,17 @@ extension InMemoryWorkoutStore: OutboxPersistence {
       deadEntries = []
     }
     return outbox.count
+  }
+}
+
+/// Lệnh sửa kế hoạch (#401) đi cùng hàng đợi — như `OutboxStore`.
+extension InMemoryWorkoutStore: PlanWriteStore {
+  public func enqueue(_ entries: [OutboxEntry]) async throws {
+    try await enter()
+    for e in entries where !outbox.contains(where: { $0.id == e.id }) { outbox.append(e) }
+  }
+
+  public func pending(userId: String) async throws -> [OutboxEntry] {
+    outbox.filter { $0.userId == userId }
   }
 }

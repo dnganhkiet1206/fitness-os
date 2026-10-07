@@ -136,6 +136,17 @@ public final class WorkoutSessionController {
   /// hình nói "Không đọc được buổi đã lưu" và cho thử lại; mọi thao tác ghi bị
   /// từ chối cho tới khi đọc được.
   public private(set) var loadFailed = false
+  /// Template của buổi đã bị xoá khi buổi còn mở (#401). Buổi vẫn tập / chốt /
+  /// nối thêm bình thường, nhưng hàng ghi lên KHÔNG trỏ vào nó nữa.
+  ///
+  /// RN BUG FOUND: xoá template (`templates.tsx`) trong lúc màn ngày tập của
+  /// nó còn mở, rồi chốt → `insert workout_sessions` mang `template_id` của
+  /// hàng đã mất → 23503 (FK) / RLS "Session points at own template" → lỗi
+  /// vĩnh viễn; bản offline vào thẳng `dead`. Mất cả buổi tập.
+  /// NATIVE FIX: buổi chốt sau khi template bị xoá ghi `template_id = null` —
+  /// đúng thứ server tự làm với buổi chốt TRƯỚC đó (`ON DELETE SET NULL`).
+  /// (test `deletedTemplateDetachesTheOpenSession`.)
+  public private(set) var templateDetached = false
   /// Lần ghi máy gần nhất hỏng: những gì trên màn CHƯA bền.
   public private(set) var unsaved: LocalWriteError?
   /// Tổng kết của lần chốt trong phiên này (màn Tổng kết của C đọc nó).
@@ -185,6 +196,9 @@ public final class WorkoutSessionController {
     self.bests = bests
   }
 
+  /// Mọi hàng của ngày: theo kế hoạch, rồi các bài thêm (#399).
+  public var rows: [PlannedSet] { plan.rows + WorkoutPlanning.adHocRows(progress.extra) }
+
   public var key: String {
     DayProgressStore.key(date: plan.date, templateId: plan.templateId ?? Plan.adHocKey)
   }
@@ -200,13 +214,13 @@ public final class WorkoutSessionController {
   /// Nút Chốt sáng khi nào (baseline `canFinish`, nhánh ghi mới).
   public var canFinish: Bool {
     loaded && loggedSessionId == nil && !loggedElsewhere && !finishing && !isFuture
-      && plan.rows.contains { progress.done[$0.key] == true }
+      && rows.contains { progress.done[$0.key] == true }
   }
 
   /// Hàng tick sau khi chốt, chưa có trong buổi (`pendingRows`, `day-plan.tsx:1260`).
   public var pendingRows: [PlannedSet] {
     guard loggedSessionId != nil else { return [] }
-    return plan.rows.filter { progress.done[$0.key] == true && !loggedKeys.contains($0.key) }
+    return rows.filter { progress.done[$0.key] == true && !loggedKeys.contains($0.key) }
   }
 
   /// Nút "nối thêm" sáng khi nào (baseline `appending`, `day-plan.tsx:1329`):
@@ -241,6 +255,8 @@ public final class WorkoutSessionController {
         loggedPR = s.loggedPR ?? false
         loggedRevision = s.loggedRevision ?? 0
         loggedRpe = s.loggedRpe
+        // Buổi đã bị xoá từ lịch sử (#400): không còn gì để tổng kết.
+        if loggedKeys.isEmpty { summary = nil }
       }
     } catch {
       // Không đọc được ≠ không có gì. Coi là "chưa có gì" thì lần tick đầu
@@ -264,7 +280,7 @@ public final class WorkoutSessionController {
     let on = !(progress.done[key] ?? false)
     if on && !WorkoutDay.isReady(row, progress) { return false }
     let event = WorkoutDay.toggle(row, &progress)
-    onRest(event, WorkoutDay.next(after: row, in: plan.rows))
+    onRest(event, WorkoutDay.next(after: row, in: rows))
     return await persist()
   }
 
@@ -317,8 +333,8 @@ public final class WorkoutSessionController {
       id: id, userId: userId,
       dateTime: WorkoutSessionRecord.stamp(
         for: plan.date, today: LocalDate(now, in: timeZone), now: now, timeZone: timeZone),
-      templateId: plan.templateId, templateName: plan.templateName,
-      sets: WorkoutDay.sessionSets(plan.rows, progress, toKg: toKg))
+      templateId: recordTemplateId, templateName: plan.templateName,
+      sets: WorkoutDay.sessionSets(rows, progress, toKg: toKg))
     else { throw .nothingDone }
     // Kỷ lục: so với lịch sử TRƯỚC buổi này (`use-fitness-data.ts:350`), một
     // lần, lúc chốt — `pr_detected` nằm trong hàng outbox, phát lại không đổi.
@@ -335,7 +351,7 @@ public final class WorkoutSessionController {
     // Điểm quay lại GIỮ NGUYÊN, khoá bằng `loggedSessionId`: mở lại app lúc
     // offline vẫn thấy đã làm gì. Baseline xoá nó vì "đã chốt" của baseline
     // đọc từ server; ở đây nó là read model của chính ngày ấy.
-    let keys = plan.rows.filter { progress.done[$0.key] == true }.map(\.key)
+    let keys = rows.filter { progress.done[$0.key] == true }.map(\.key)
     let state = DayState(
       progress: progress, loggedSessionId: id, loggedKeys: keys, loggedAt: record.dateTime,
       loggedPR: record.prDetected, loggedRevision: 0, loggedRpe: record.sessionRpe)
@@ -399,6 +415,68 @@ public final class WorkoutSessionController {
     let result = WorkoutSummary(record, records: records)
     summary = result
     return result
+  }
+
+  // MARK: - bài thêm ngoài kế hoạch (#399)
+
+  /// Thêm một bài trống, một hiệp (`addExercise`, `day-plan.tsx:987`). Trả id
+  /// của bài — màn đặt con trỏ vào ô tên của nó.
+  @discardableResult
+  public func addExercise() async -> String? {
+    guard loaded, !finishing else { return nil }
+    let id = makeId()
+    progress.extra.append(AdHocExercise(id: id))
+    return await persist() ? id : nil
+  }
+
+  /// Đổi tên bài thêm. Bị từ chối khi bài đã có set nằm trong buổi đã chốt —
+  /// xem `adHocLocked`.
+  @discardableResult
+  public func renameExercise(_ id: String, to name: String) async -> Bool {
+    guard loaded, !finishing, !adHocLocked(id), let i = progress.extra.firstIndex(where: { $0.id == id }) else {
+      return false
+    }
+    progress.extra[i].name = name
+    return await persist()
+  }
+
+  /// Thêm một hiệp cho bài thêm, trần 20 (`addSet`, `:994`). Được cả sau khi
+  /// chốt: hiệp mới là hàng nối thêm (#296).
+  @discardableResult
+  public func addSet(to id: String) async -> Bool {
+    guard loaded, !finishing, let i = progress.extra.firstIndex(where: { $0.id == id }),
+      progress.extra[i].sets < WorkoutPlanning.maxSets
+    else { return false }
+    progress.extra[i].sets += 1
+    return await persist()
+  }
+
+  /// Bỏ một bài thêm (`removeExtra`, `:998`), cùng mọi ghi đè của các hàng của
+  /// nó — không thì dấu tích mồ côi giữ `phase` ở `.active` cho hàng không còn.
+  @discardableResult
+  public func removeExercise(_ id: String) async -> Bool {
+    guard loaded, !finishing, !adHocLocked(id), progress.extra.contains(where: { $0.id == id }) else { return false }
+    let keys = Set(rows.filter { $0.adHoc == id }.map(\.key))
+    progress.extra.removeAll { $0.id == id }
+    for k in keys {
+      progress.done[k] = nil
+      progress.rpe[k] = nil
+      progress.rest[k] = nil
+      progress.weightText[k] = nil
+      progress.repsText[k] = nil
+    }
+    return await persist()
+  }
+
+  /// Bài thêm có set đã nằm trong buổi đã chốt: không đổi tên, không bỏ được.
+  ///
+  /// RN behavior: đổi tên / bỏ bài lúc nào cũng được — chỉ đổi màn, còn
+  ///   `workout_sessions` vẫn giữ các set cũ dưới tên cũ: màn và buổi đã lưu
+  ///   nói hai điều khác nhau.
+  /// Native behavior: gỡ các set ấy trước (`removeLoggedSet`, #398), rồi mới
+  ///   đổi tên / bỏ bài — buổi đã lưu luôn khớp với màn.
+  public func adHocLocked(_ id: String) -> Bool {
+    loggedSessionId != nil && rows.contains { $0.adHoc == id && loggedKeys.contains($0.key) }
   }
 
   // MARK: - gỡ set đã chốt (#398)
@@ -468,6 +546,14 @@ public final class WorkoutSessionController {
     summary = outcome.record.map { WorkoutSummary($0, records: []) }
   }
 
+  /// Template đã bị xoá trên máy này (lệnh xoá đã bền). Không phải template
+  /// của buổi thì không làm gì.
+  public func templateDeleted(_ id: String) {
+    if plan.templateId?.lowercased() == id.lowercased() { templateDetached = true }
+  }
+
+  private var recordTemplateId: String? { templateDetached ? nil : plan.templateId }
+
   private struct Revised {
     /// `nil` = không còn set nào: hàng buổi bị xoá.
     let record: WorkoutSessionRecord?
@@ -484,17 +570,29 @@ public final class WorkoutSessionController {
   private func revise(
     sessionId: String, keys: Set<String>, pr: Bool, toKg: (Double) -> Double
   ) async throws(RevisionFailure) -> Revised {
-    let rows = plan.rows.filter { keys.contains($0.key) && progress.done[$0.key] == true }
+    let kept = rows.filter { keys.contains($0.key) && progress.done[$0.key] == true }
     let stamp = loggedAt ?? clock.nowMillis()
     let record = WorkoutSessionRecord(
-      id: sessionId, userId: userId, dateTime: stamp, templateId: plan.templateId,
-      templateName: plan.templateName, sets: WorkoutDay.sessionSets(rows, progress, toKg: toKg),
+      id: sessionId, userId: userId, dateTime: stamp, templateId: recordTemplateId,
+      templateName: plan.templateName, sets: WorkoutDay.sessionSets(kept, progress, toKg: toKg),
       prDetected: pr, sessionRpeFloor: loggedRpe)
     let revision = loggedRevision + 1
+    // Các set ĐÃ ghi trước lần sửa này: hàng đã ghi không sửa được, nên tính
+    // lại từ `loggedKeys` ra đúng mảng đã gửi (gỡ set đã bỏ tick hàng ấy trước
+    // khi gọi vào đây, nên đặt lại "đã làm" cho mọi hàng đã ghi). Writer gộp
+    // phần thay đổi lên hàng server lúc gửi, không đè set máy khác (#523 P1).
+    var before = progress
+    for k in loggedKeys { before.done[k] = true }
+    let base = WorkoutSessionRecord(
+      id: sessionId, userId: userId, dateTime: stamp, templateId: recordTemplateId,
+      templateName: plan.templateName,
+      sets: WorkoutDay.sessionSets(rows.filter { loggedKeys.contains($0.key) }, before, toKg: toKg)
+    )?.row["sets"] ?? .array([])
     let entry = OutboxEntry(
       id: "\(sessionId)@r\(revision)", userId: userId,
       kind: record == nil ? WorkoutSessionRecord.deleteKind : WorkoutSessionRecord.revisionKind,
-      payload: record?.row ?? .object(["id": .string(sessionId)]), createdAt: clock.nowMillis())
+      payload: record?.row ?? .object(["id": .string(sessionId)]), createdAt: clock.nowMillis(),
+      base: base)
     let rpe = record?.sessionRpe ?? loggedRpe
     let state = DayState(
       progress: progress, loggedSessionId: sessionId, loggedKeys: keys.sorted(), loggedAt: stamp,
@@ -523,7 +621,7 @@ public final class WorkoutSessionController {
     loaded && !finishing && (loggedSessionId == nil || !loggedKeys.contains(key))
   }
 
-  private func row(_ key: String) -> PlannedSet? { plan.rows.first { $0.key == key } }
+  private func row(_ key: String) -> PlannedSet? { rows.first { $0.key == key } }
 
   private var dayState: DayState {
     DayState(
