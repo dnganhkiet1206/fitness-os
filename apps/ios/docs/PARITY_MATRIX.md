@@ -24,19 +24,19 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 |---|---|---|---|---|---|---|
 | Đăng nhập email / Apple / quên MK | ✅ | ✅ | 🟡 | 🟡 | 🟡 PARTIAL | `SessionStore`+`SupabaseAuthAPI` (#245), `AuthView` (#297). Nonce Apple theo từng lượt (P1, batch 1, `AppleSignInNoncesTests`). Kiểm tra form #350 (batch 3; **cải tiến** so với RN: RN chỉ đòi khác rỗng). Thiếu: capability Apple trong `project.yml` (A/Kiệt) |
 | Gate phiên, đổi tài khoản | ✅ | ✅ | ✅ | ✅ | ✅ DONE | #293, #397, #338; `AccountIsolationTests`, D-22 #390 |
-| Đổi mật khẩu | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A29 #441 |
-| Onboarding | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A30 #442 |
-| Hôm nay (5 trạng thái, kế hoạch) | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `TodayController` (#290), `TodayScreen` (#345), vectors TC (#380). Thiếu: CTA `todayCta` (extra/log-free/none, TC-1) chưa port; widget Hôm nay (mục 3) |
-| Màn tập trong ngày | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | #263/#268/#287/#389; vectors WS (#286), append (#347), remove-set (#412). Tạ lẻ `plannedLoad` + lỗi chốt chữ RN (batch 1, golden node). VoiceOver từng control #288 + #291, focus/flush ô nhập #318 (batch 3). Ô nhập đọc `controller.progress` (không seed một lần), khoá khi controller không cho sửa (`canEditMatchesWhatTheSettersAccept`). Thiếu: RestCard / SyncStrip chưa nối controller; `WorkoutView` chưa được gắn vào tab production |
+| Đổi mật khẩu | ✅ | 🟡 | ✅ | ✅ | 🟡 PARTIAL | A29 #441 (batch 5): `PasswordChangeController`, luật RN (≥6 đơn vị UTF-16, so từng đơn vị như JS), lỗi có tên. Chưa có màn production |
+| Onboarding | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | A30 #442 (batch 5): trạng thái, luật bước, nháp bền, `FitnessCalc` (golden `plan-golden.json` sinh từ RN). Chưa có màn production |
+| Hôm nay (5 trạng thái, kế hoạch) | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `TodayController` (#290), `TodayScreen` (#345), vectors TC (#380). `todayCta` / `sessionTicks` / `mergeProgress` port vào Core (`TodayRules`, batch 5, runner TodayVectorTests). Thiếu: TodayView chưa dùng `cta`; widget Hôm nay (mục 3) |
+| Màn tập trong ngày | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | #263/#268/#287/#389; vectors WS (#286), append (#347), remove-set (#412). Tạ lẻ `plannedLoad` + lỗi chốt chữ RN (batch 1, golden node). VoiceOver từng control #288 + #291, focus/flush ô nhập #318 (batch 3). Ô nhập đọc `controller.progress` (không seed một lần), khoá khi controller không cho sửa (`canEditMatchesWhatTheSettersAccept`). Sau khi chốt (batch 4): bỏ tích → hỏi lại chữ RN → gỡ + hoàn tác 8 s; "Ghi thêm vào buổi hôm nay"; rung + VoiceOver khi xong. **Thiếu (cross-device):** hàng được buổi ghi ở máy khác chứng minh chưa được tích sẵn, và chưa nối thêm được vào buổi của máy khác (RN làm được) — xem §4. Thiếu: RestCard / SyncStrip chưa nối controller; `WorkoutView` chưa được gắn vào tab production |
 | Gỡ set đã chốt + hoàn tác 8 s | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A19 #415; vectors RS (#412); `WorkoutSessionControllerTests` RS-3..6. RS-1/2 chưa có test bám ID |
 | Bài thêm ngoài kế hoạch | ✅ | ✅ | ✅ | ✅ | ✅ DONE | Dữ liệu A20 #416, UI #411, vectors AH #413 (batch 1). Chưa thử trên máy thật |
 | Kỷ lục cá nhân | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A11 #298; vectors PR (#344, runner gọi logic RN) |
 | "Lần trước" mỗi bài | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A13 #349 + A23 #434 (bodyweight) |
 | Lịch sử buổi + xoá | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | Dữ liệu A21 #433, vectors WH (#414). UI #375 (B port lại theo `sessions.tsx`, batch 3): nhóm tháng + % so tháng trước (`HistoryMonths`, golden node TZ Sài Gòn/UTC), lỗi ≠ rỗng, xoá vuốt + nút + hỏi lại. **Chưa port:** WH-3a (dựng lại `daily_log` sau xoá — câu hỏi lại vì thế bỏ vế "điểm sẵn sàng sẽ được tính lại"), kcal mỗi buổi, đơn vị lb, nút "Ghi buổi tập" ở trạng thái rỗng. Chỉ vào được từ Lab (tab Tập luyện production chưa có) |
-| Ghi buổi bằng tay | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A24 #436 |
+| Ghi buổi bằng tay | ✅ | 🟡 | ✅ | ✅ | 🟡 PARTIAL | A24 #436 (batch 5): `ManualLogController` — RPE 6…10 mặc định 7, cận `lift_kg` 0…600 / `set_reps` 1…500, `validSets`, nháp bền, gợi ý kế hoạch (đã đối chiếu `log-workout.tsx`). Chỉ có trong Lab |
 | Template + gán ngày (ghi) | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | A22 #435 (batch 1); builder UI #410 còn dùng mock — chưa nối `PlanEditor` |
-| Thư viện bài tập / hướng dẫn / insight | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A26 #438, A27 #439, A28 #440, A25 #437 |
-| Hồ sơ | ✅ | 🔵 | — | — | 🔵 IN QUEUE | A31 #443; vỏ `SettingsView` #394 |
+| Thư viện bài tập / hướng dẫn / insight | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | A25 #437 insight (golden sinh bằng mã RN), A26 #438 thư viện, A27 #439 ghi thư viện qua outbox, A28 #440 hướng dẫn (golden) — batch 5. Read model + Lab; chưa có màn production |
+| Hồ sơ | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | A31 #443 (batch 5): model đọc/ghi, form sửa, đơn vị. Ghi `update eq user_id` các cột form — last-write-wins **giống RN** `edit-profile.tsx:275`, cần mạng như RN. Vỏ `SettingsView` #394 |
 | Cài đặt app / nhắc nhở / chi tiết buổi | ✅ | ⚪ | — | — | ⚪ DECISION | A32 #444 / A33 #445 / A34 #446: ranh giới quyết định; 11 PR xếp chồng phía trên chờ theo |
 | Quãng nghỉ + Live Activity | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `RestTimerController` + `ASCNDLiveActivity`; #378 (batch 2: intent khi app bị kill; `Activity.request` bị từ chối không còn tính là đã hiện — `refusedStartIsNotRecordedAsShown`). Thiếu so với Island RN: **tạm dừng** (`isPaused`), 3 trạng thái `resting/active/ready`, nhãn "hiệp tiếp theo" theo ngôn ngữ. Pause thuộc **#235 (khoá)**. Hiện gì khi `isStale` là câu hỏi mở (#378) |
 | Đồng bộ / outbox | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | ADR-0003, #264/#265/#267; property tests D-13 #357. **Chỉ cho luồng tập**: nước, bữa ăn, cân nặng… chưa có |
@@ -114,4 +114,9 @@ Theo dõi riêng ở #523 (audit read → modify → write). Đã có:
     - `WorkoutPipelineTests`: `offlineAppendDoesNotOverwriteAnotherDevicesSet`, `offlineRemovalKeepsAnotherDevicesSet` (đầu-cuối qua outbox + SyncWorker; `FakeServer` gộp đúng như writer).
     - iOS CI trên batch 2 `f41f2572` (run 37552501155): core-linux **319 test pass**, gồm cả các test trên; app-macos xanh. Chưa thử trên máy thật (hai máy thật).
 
-**Không phải hồi quy:** `routine_days` upsert đủ 4 trường theo trạng thái trên máy. RN cũng làm vậy (`week-plan.tsx:343`), cùng last-write-wins. Hồ sơ: chưa kiểm (A31 #443 còn trong hàng đợi).
+**Khoảng hở đa thiết bị còn mở (B, 07/10):** buổi đã ghi trên Android cho hôm nay.
+- RN (`day-plan.tsx` `proven = sessionTicks(rows, sessions.sets)`): các hàng được buổi ấy chứng minh hiện ĐÃ TÍCH, không tính là hàng mới; tích thêm hàng khác thì "Ghi thêm" nối vào `sessions[0].id` (đọc hàng rồi update).
+- Native: chỉ biết "hôm nay đã tập" (`TrainingHistory.sessionTimes`), nên hàng hiện TRỐNG và nối thêm bị chặn (`canAppend` khi `loggedElsewhere`).
+- Hướng sửa: `TrainingHistory` trả `sets` của buổi hôm nay → `provenKeys` (đã có `TodayRules.sessionTicks`) khoá các hàng ấy; nối thêm dựng bản ghi lại từ set THẬT trên server + set mới, `base` = set server → `SessionRevisionMerge` không nhân đôi. Cần test hai máy trước khi đánh DONE.
+
+**Không phải hồi quy:** `routine_days` upsert đủ 4 trường theo trạng thái trên máy. RN cũng làm vậy (`week-plan.tsx:343`), cùng last-write-wins. Hồ sơ (A31 #443): last-write-wins các cột form, giống RN (`edit-profile.tsx:275`) — không phải hồi quy (đã kiểm ở batch 5; hàng đợi).
