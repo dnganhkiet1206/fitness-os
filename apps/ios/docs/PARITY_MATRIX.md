@@ -93,4 +93,16 @@ Theo dõi riêng ở #523 (audit read → modify → write). Đã có:
 - `routine_days` upsert theo `(user_id, day_of_week)`;
 - `isRow` chặn ghi cho tài khoản khác.
 
-Chưa kiểm: last-write-wins giữa hai thiết bị khi cùng ghi lại một buổi, và profile.
+**Phát hiện P1 (B, 07/10): bản ghi lại buổi đè dữ liệu của thiết bị khác.**
+
+- **Native:** nối thêm (#307) và gỡ set (#415) tạo `workout-revision`. Hàng outbox mang **cả hàng `workout_sessions`** dựng từ ảnh chụp *trên máy này lúc đưa vào hàng đợi* (`WorkoutSessionController.revise`). `SupabaseRemoteWriter` upsert **ghi đè** khi gửi. Gỡ set cuối tạo `workout-delete`, xoá cả hàng.
+- **RN** (`useAppendToSession`, `use-fitness-data.ts:599`): đọc hàng server **ngay trước khi ghi**, rồi `update({ sets: [...old, ...added] })`; lớp `offline: now`, cần mạng.
+- **Kịch bản mất dữ liệu:**
+  1. iPhone chốt buổi.
+  2. iPhone offline nối thêm hoặc gỡ một set.
+  3. Android nối thêm set vào cùng buổi (đọc mới nhất, ghi).
+  4. iPhone có mạng → upsert ảnh chụp cũ → **set của Android mất**. Trường hợp gỡ set cuối: **xoá cả buổi**.
+- **Hướng sửa (đang làm):** gộp ba chiều **lúc gửi**. Base là bộ set máy này ghi lần trước, local là bộ mới, server là bộ đọc ngay lúc gửi. Kết quả = server − (base − local) + (local − base). Gỡ set cuối chỉ xoá hàng khi server không còn set nào ngoài phần máy này gỡ.
+- **Bằng chứng cần có:** test trong ASCNDCore cho hàm gộp (thêm/thêm, thêm/gỡ, gỡ set cuối khi máy kia đã thêm) và test ở writer.
+
+**Không phải hồi quy:** `routine_days` upsert đủ 4 trường theo trạng thái trên máy. RN cũng làm vậy (`week-plan.tsx:343`), cùng last-write-wins. Hồ sơ: chưa kiểm (A31 #443 còn trong hàng đợi).
