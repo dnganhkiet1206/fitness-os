@@ -37,6 +37,9 @@ final class AppServices {
   @ObservationIgnored let exerciseCache: any ExerciseCache
   @ObservationIgnored let guideSource: any ExerciseGuideSource
   @ObservationIgnored let guideCache: any ExerciseGuideCache
+  @ObservationIgnored let onboardingStatus: any OnboardingStatusSource
+  @ObservationIgnored let onboardingWriter: any OnboardingWriter
+  @ObservationIgnored let onboardingStore: any OnboardingStore
   /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
   @ObservationIgnored private let readCache: GRDBTemplateCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
@@ -84,6 +87,9 @@ final class AppServices {
     exerciseCache = GRDBExerciseCache(database)
     guideSource = backend.map { SupabaseExerciseGuideSource(backend: $0) as any ExerciseGuideSource } ?? UnconfiguredGuides()
     guideCache = GRDBExerciseGuideCache(database)
+    onboardingStatus = backend.map { SupabaseOnboardingStatus(backend: $0) as any OnboardingStatusSource } ?? UnconfiguredOnboarding()
+    onboardingWriter = backend.map { SupabaseOnboardingWriter(backend: $0) as any OnboardingWriter } ?? UnconfiguredOnboarding()
+    onboardingStore = GRDBOnboardingStore(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: outboxStore,
@@ -169,6 +175,19 @@ final class AppServices {
       onEnqueued: { _ in sync.kick() })
   }
 
+  /// Onboarding (#424): cổng sau đăng nhập của người này. `RootGate` nối nó
+  /// khi màn của C sẵn sàng; tới lúc đó cổng hiện tại giữ nguyên.
+  func makeOnboardingGate(userId: String) -> OnboardingGate {
+    OnboardingGate(userId: userId, source: onboardingStatus, store: onboardingStore)
+  }
+
+  /// Luồng onboarding; xong thì mở cổng.
+  func makeOnboarding(userId: String, gate: OnboardingGate, healthAvailable: Bool) -> OnboardingController {
+    OnboardingController(
+      userId: userId, store: onboardingStore, writer: onboardingWriter, healthAvailable: healthAvailable,
+      onFinished: { [weak gate] in await gate?.completed() })
+  }
+
   func didBecomeActive() {
     sync.kick()
   }
@@ -233,6 +252,12 @@ private struct UnconfiguredGuides: ExerciseGuideSource {
   func guideRows(userId: String, id: String?) async throws -> [GuideExerciseRow] { throw NotConfigured() }
   func guideContent(exerciseId: String) async throws -> [GuideContentRow] { throw NotConfigured() }
   func guideMedia(exerciseId: String) async throws -> [MediaRow] { throw NotConfigured() }
+}
+
+private struct UnconfiguredOnboarding: OnboardingStatusSource, OnboardingWriter {
+  struct NotConfigured: Error {}
+  func onboardingCompleted(userId: String) async throws -> Bool? { throw NotConfigured() }
+  func completeOnboarding(userId: String, row: JSONValue) async throws { throw NotConfigured() }
 }
 
 private struct UnconfiguredTemplates: TemplateSource {

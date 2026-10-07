@@ -410,3 +410,32 @@ struct GRDBExerciseGuideCacheTests {
     #expect(try await cache.load(userId: "u1", key: "e|bench|vi") == nil)
   }
 }
+
+struct GRDBOnboardingStoreTests {
+  @Test func draftAndFlagPerUser() async throws {
+    let db = try ASCNDDatabase()
+    let store = GRDBOnboardingStore(db)
+    var draft = OnboardingDraft()
+    draft.step = .height
+    draft.branch = .capacity
+    draft.dob = LocalDate("1990-02-28")!
+    try await store.saveDraft(userId: "u1", draft)
+    #expect(try await store.loadDraft(userId: "u1") == draft)
+    #expect(try await store.loadDraft(userId: "u2") == nil)
+    try await store.clearDraft(userId: "u1")
+    #expect(try await store.loadDraft(userId: "u1") == nil)
+    #expect(try await store.loadCompleted(userId: "u1") == nil)
+    try await store.saveCompleted(userId: "u1", true)
+    #expect(try await store.loadCompleted(userId: "u1") == true)
+    try await GRDBTemplateCache(db).clearAll(except: "u2")
+    #expect(try await store.loadCompleted(userId: "u1") == nil, "đăng nhập người khác dọn cả cờ")
+  }
+
+  @Test func corruptDraftStartsOver() async throws {
+    let db = try ASCNDDatabase()
+    try await db.queue.write { db in
+      try db.execute(sql: "INSERT INTO read_cache (userId, kind, json) VALUES ('u1', 'onboarding-draft', '{\"step\": 42')")
+    }
+    #expect(try await GRDBOnboardingStore(db).loadDraft(userId: "u1") == nil)
+  }
+}
