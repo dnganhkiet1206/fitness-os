@@ -33,6 +33,8 @@ final class AppServices {
   @ObservationIgnored let historySource: any HistorySource
   @ObservationIgnored let historyCache: any HistoryCache
   @ObservationIgnored let insightCache: any InsightCache
+  @ObservationIgnored let exerciseSource: any ExerciseSource
+  @ObservationIgnored let exerciseCache: any ExerciseCache
   /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
   @ObservationIgnored private let readCache: GRDBTemplateCache
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
@@ -76,6 +78,8 @@ final class AppServices {
     historySource = backend.map { SupabaseHistorySource(backend: $0) as any HistorySource } ?? UnconfiguredHistorySource()
     historyCache = GRDBHistoryCache(database)
     insightCache = GRDBInsightCache(database)
+    exerciseSource = backend.map { SupabaseExerciseSource(backend: $0) as any ExerciseSource } ?? UnconfiguredExercises()
+    exerciseCache = GRDBExerciseCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
     sync = SyncWorker(
       store: outboxStore,
@@ -150,7 +154,8 @@ final class AppServices {
     let insights = InsightBook(userId: userId, source: performanceSource, cache: insightCache)
     return WorkoutFlow(
       today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
-      performance: makePerformanceBook(userId: userId), history: history, insights: insights, store: workouts,
+      performance: makePerformanceBook(userId: userId), history: history, insights: insights,
+      library: ExerciseLibrary(userId: userId, source: exerciseSource, cache: exerciseCache), store: workouts,
       planStore: outbox,
       onRest: { event, target in rest.handle(event, target: target) },
       onEnqueued: { _ in sync.kick() })
@@ -207,6 +212,11 @@ private struct UnconfiguredHistorySource: HistorySource {
 private struct UnconfiguredRecords: RecordHistory {
   struct NotConfigured: Error {}
   func recentSessionSets(userId: String, limit: Int) async throws -> [JSONValue] { throw NotConfigured() }
+}
+
+private struct UnconfiguredExercises: ExerciseSource {
+  struct NotConfigured: Error {}
+  func exercises(userId: String) async throws -> [LibraryExercise] { throw NotConfigured() }
 }
 
 private struct UnconfiguredTemplates: TemplateSource {
