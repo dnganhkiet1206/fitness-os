@@ -11,7 +11,7 @@ import { makeMutable } from 'react-native-reanimated';
  *
  * Nó đè vì NỘI DUNG đi tới chỗ nó.
  *
- * `koa-companion.tsx` là một lớp phủ neo theo KHUNG NHÌN, và chú thích của nó
+ * `koa-companion.tsx` (đã xoá ở #239) từng là một lớp phủ neo theo KHUNG NHÌN, và chú thích của nó
  * khẳng định dải ấy là "chỗ đã được dành sẵn" — `BottomTabInset`, thứ mọi màn
  * đều chừa ra. Câu ấy đúng khi trang đứng yên ở cuối, và SAI ở mọi vị trí cuộn
  * khác: khoảng chừa nằm ở CUỐI NỘI DUNG, không nằm ở một chỗ cố định trên
@@ -58,7 +58,7 @@ export function resetKoaBand() {
  * Đọc một khung hình cuộn và nói dải ấy có trống không.
  *
  * `reserve` là khoảng mà màn hình đã chừa ở cuối nội dung — chỗ gọi truyền
- * `BottomTabInset` vào, cùng hằng số mà `koa-companion.tsx` dùng để đặt đáy
+ * `BottomTabInset` vào, cùng hằng số mà `koa-companion.tsx` (đã xoá ở #239) từng dùng để đặt đáy
  * lớp của mình. Hai bên phải đọc CÙNG một con số, nếu không dải mà một bên
  * tưởng là trống lại là dải bên kia đang vẽ.
  */
