@@ -50,6 +50,14 @@ targets:
       - package: ASCNDKit
         product: ASCNDLiveActivity
       - target: ASCNDWidgets
+    # App Group dùng chung với widget màn hình chính — CÙNG nhóm bản RN dùng
+    # (`group.com.ascnd.fitnessos`, `WidgetData.swift`), để dữ liệu widget còn
+    # nguyên khi bản native cập nhật đè app RN (#66).
+    entitlements:
+      path: ASCND/ASCND.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.ascnd.fitnessos
     configFiles:
       Debug: Config/Backend.xcconfig
       Release: Config/Backend.xcconfig
@@ -86,7 +94,8 @@ targets:
           PRODUCT_BUNDLE_IDENTIFIER: com.ascnd.fitnessos
           APP_DISPLAY_NAME: ASCND
 
-  # Widget extension: Live Activity / Dynamic Island của quãng nghỉ (#227).
+  # Widget extension: Live Activity / Dynamic Island của quãng nghỉ (#227) và
+  # hai widget màn hình chính (#66).
   ASCNDWidgets:
     type: app-extension
     platform: iOS
@@ -97,6 +106,11 @@ targets:
         product: ASCNDCore
       - package: ASCNDKit
         product: ASCNDLiveActivity
+    entitlements:
+      path: ASCNDWidgets/ASCNDWidgets.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.ascnd.fitnessos
     info:
       path: ASCNDWidgets/Info.plist
       properties:

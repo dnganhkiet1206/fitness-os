@@ -59,6 +59,7 @@ public struct SupabaseRowStore: RowStore {
     case .eq(let c, let v): q.eq(c, value: value(v))
     case .gte(let c, let v): q.gte(c, value: value(v))
     case .lt(let c, let v): q.lt(c, value: value(v))
+    case .or(let filters): q.or(filters)
     }
   }
 
