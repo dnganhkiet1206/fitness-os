@@ -309,7 +309,9 @@ struct WorkoutUnitsTests {
     for e in await store.outbox { try await server.send(e) }
     let sets = try await serverSets(server, "s-other")
     #expect(sets.count == 3)
-    #expect(sets.filter { $0["exerciseName"] == .string("Bench Press") }.map { $0["weight"]?.doubleValue }.sorted { ($0 ?? 0) < ($1 ?? 0) } == [60, 61.23])
+    let bench: [JSONValue] = sets.filter { $0["exerciseName"]?.stringValue == "Bench Press" }
+    let weights: [Double] = bench.compactMap { $0["weight"]?.doubleValue }.sorted()
+    #expect(weights == [60, 61.23])
   }
 
   /// Hàng CHƯA ghi giữ hành vi RN: đổi đơn vị không viết lại chữ người dùng gõ.
