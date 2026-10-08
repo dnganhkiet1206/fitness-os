@@ -70,7 +70,6 @@ const all = files.map((f) => ({ f: path.relative(SRC, f), s: strip(readFileSync(
  * down is that the nineteenth one cannot hide among them.
  */
 const KNOWN = {
-  'components/ascnd/icon-button.tsx: IconButton': 'nút icon dùng chung, chưa màn nào dùng',
   'components/ascnd/liquid-glass.tsx: SolidCard': 'biến thể thẻ đặc, chưa dùng',
   'components/ascnd/liquid-tab-bar.tsx: LiquidTabBar': 'thanh tab cũ, đã thay bằng NativeTabs',
   'components/ascnd/quick-stats.tsx: QuickStats': 'dải chỉ số nhanh, chưa gắn vào màn nào',

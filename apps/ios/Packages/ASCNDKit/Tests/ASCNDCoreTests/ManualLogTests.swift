@@ -119,6 +119,76 @@ struct ManualLogTests {
     #expect(h.enqueued.map(\.id) == [e.id])
   }
 
+  /// Hồ sơ lbs (#527 1.9-C, `log-workout.tsx:103` / `:481` / `:618`): flow đưa
+  /// đơn vị vào form — gợi ý kế hoạch hiện lb (82.5 kg → "181.9"), cận và ghi
+  /// đổi chữ lb về kg (rồi 2 chữ số lẻ như mọi set — gợi ý 181.9 lb ghi 82.51 kg, đúng như RN). "1000" lb (453.6 kg) hợp
+  /// lệ; cùng chữ ấy dưới kg là ngoài cận.
+  @Test func lbsProfileLogsInPounds() async throws {
+    let h = Harness()
+    await h.flow.start()
+    h.flow.setWeightUnit(.lbs)
+    let log = await h.open()
+    #expect(log.weightUnit == .lbs)
+    #expect(await log.usePlan())
+    #expect(log.rows.first?.weight == "181.9")
+    await fill(log, 0, "Bench", "1000", "5")
+    #expect(log.canSave())
+    _ = try await log.save()
+    guard case .array(let sets)? = await h.store.outbox.last?.payload["sets"] else {
+      Issue.record("sets")
+      return
+    }
+    #expect(sets.prefix(2).map { $0["weight"]?.doubleValue } == [453.59, 82.51], "181.9 lb gợi ý → 82.508 → 82.51, như RN")
+
+    let kg = Harness()
+    let kgLog = await kg.open()
+    #expect(kgLog.weightUnit == .kg)
+    await fill(kgLog, 0, "Bench", "1000", "5")
+    #expect(!kgLog.canSave(), "1000 kg ngoài cận")
+  }
+
+  /// Khối lượng xem trước (`volumeLoad`, `:489`): tạ × reps của hàng sẽ ghi,
+  /// kể cả khởi động như RN; set giữ góp 0 (RN: NaN làm cả dòng thành "—").
+  @Test func volumePreviewIgnoresHolds() async {
+    let h = Harness()
+    let log = await h.open()
+    await fill(log, 0, "Bench", "60", "8")
+    await fill(log, 1, "Bench", "40", "10", warmup: true)
+    await fill(log, 2, "Plank", "", "45s")
+    await fill(log, 3, "Row", "50", "")  // chưa có reps: không tính
+    #expect(log.volumeKg() == 60 * 8 + 40 * 10)
+    let h2 = Harness()
+    h2.flow.setWeightUnit(.lbs)
+    let lb = await h2.open()
+    await fill(lb, 0, "Bench", "135", "5")
+    #expect(lb.volumeKg() == 135 / 2.2046226218 * 5, "chữ lb đổi về kg, không làm tròn")
+  }
+
+  /// Lỗi đầu tiên theo thứ tự hàng, ô tạ trước ô reps (`firstSetError`).
+  @Test func firstErrorFollowsRowOrderAndPrefersWeight() async {
+    let h = Harness()
+    let log = await h.open()
+    await fill(log, 0, "Bench", "60", "8")
+    #expect(log.firstError() == nil)
+    await fill(log, 1, "Squat", "700", "900")
+    await fill(log, 2, "Row", "50", "600")
+    let e = log.firstError()
+    #expect(e?.row == log.rows[1].id && e?.field == .weight)
+    await log.setWeight("100", row: log.rows[1].id)
+    #expect(log.firstError()?.row == log.rows[1].id && log.firstError()?.field == .reps)
+  }
+
+  /// Gợi ý thư viện (`suggestionsFor`, `:387`): chứa chữ gõ, không phân biệt
+  /// hoa thường, bỏ bài trùng đúng chữ gõ, tối đa 5; ô trống → cả thư viện.
+  @Test func librarySuggestionsMatchRN() {
+    let lib = ["Bench Press", "Incline Bench Press", "Squat", "Front Squat", "Bench", "Deadlift", "Row", "Close-Grip Bench"]
+      .enumerated().map { LibraryExercise(id: "e\($0.offset)", userId: nil, name: $0.element, muscleGroup: nil, equipment: nil, kind: nil) }
+    #expect(ManualLogController.suggestions(for: "bench", in: lib).map(\.name) == ["Bench Press", "Incline Bench Press", "Close-Grip Bench"])
+    #expect(ManualLogController.suggestions(for: "  SQUAT ", in: lib).map(\.name) == ["Front Squat"])
+    #expect(ManualLogController.suggestions(for: "", in: lib).count == 5)
+    #expect(ManualLogController.suggestions(for: "zzz", in: lib).isEmpty)
+  }
+
   @Test func emptyNameIsWorkout() async throws {
     let h = Harness()
     let log = await h.open()

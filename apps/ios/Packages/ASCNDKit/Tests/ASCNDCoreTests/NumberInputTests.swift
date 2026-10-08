@@ -70,4 +70,36 @@ struct NumberInputTests {
     let once = NumberInput.decimal(raw)
     #expect(NumberInput.decimal(once) == once)
   }
+
+  /// `plannedLoad` của `day-plan.tsx:1011` — kỳ vọng sinh bằng node từ đúng
+  /// biểu thức `w > 0 ? String(Math.round(w * 10) / 10) : ''` (#523 P2:
+  /// 62.5 kg không được cắt thành 62).
+  static let plannedLoadCases: [(Double, String)] = [
+    (60, "60"),
+    (62.5, "62.5"),
+    (62.56, "62.6"),
+    (0.04, "0"),
+    (0.05, "0.1"),
+    (100.25, "100.3"),
+    (7.5, "7.5"),
+    (1e-9, "0"),
+    (180.04, "180"),
+    (0, ""),
+    (-5, ""),
+    (2.25, "2.3"),
+    (1.15, "1.2"),
+    (57.35, "57.4"),
+    (0.15, "0.2"),
+  ]
+
+  @Test(arguments: plannedLoadCases)
+  func plannedLoadMatchesBaseline(kg: Double, expected: String) {
+    #expect(NumberInput.plannedLoad(kg) == expected)
+  }
+
+  @Test func plannedRepsMatchesBaseline() {
+    #expect(NumberInput.plannedReps(8) == "8")
+    #expect(NumberInput.plannedReps(0) == "")
+    #expect(NumberInput.plannedReps(-1) == "")
+  }
 }

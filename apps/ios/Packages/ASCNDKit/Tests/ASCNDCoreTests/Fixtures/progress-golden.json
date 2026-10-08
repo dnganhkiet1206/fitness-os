@@ -1,0 +1,1996 @@
+{
+ "performances": [
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": 61,
+    "bestReps": null,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "61s",
+    "lbs": "61s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "8 reps × bodyweight",
+    "lbs": "8 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "2.5 kg × 1 rep",
+    "lbs": "5.5 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": 45,
+    "bestReps": null,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "45s",
+    "lbs": "45s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "102.1 kg × 2 reps",
+    "lbs": "225 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "1 rep × bodyweight",
+    "lbs": "1 rep × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": 20,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2.5 kg × 2 reps",
+    "lbs": "5.5 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 8 reps",
+    "lbs": "220.5 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 20,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20 kg × 1 rep",
+    "lbs": "44.1 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 0,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "2 reps × bodyweight",
+    "lbs": "2 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 100,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "100 kg × 5 reps",
+    "lbs": "220.5 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "1 rep × bodyweight",
+    "lbs": "1 rep × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 5 reps",
+    "lbs": "220.5 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "5 reps × bodyweight",
+    "lbs": "5 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": 61,
+    "bestReps": 1,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "102.1 kg × 1 rep",
+    "lbs": "225 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "102.1 kg × 5 reps",
+    "lbs": "225 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 61,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "61s",
+    "lbs": "61s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "102.1 kg × 5 reps",
+    "lbs": "225 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": 20,
+    "bestReps": 5,
+    "bestWeightKg": 100,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "100 kg × 5 reps",
+    "lbs": "220.5 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 5 reps",
+    "lbs": "220.5 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": 61,
+    "bestReps": null,
+    "bestWeightKg": 100,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "61s",
+    "lbs": "61s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "1 rep × bodyweight",
+    "lbs": "1 rep × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2.5 kg × 2 reps",
+    "lbs": "5.5 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 45,
+    "bestReps": null,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "45s",
+    "lbs": "45s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 61.23,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "8 reps × bodyweight",
+    "lbs": "8 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "2.5 kg × 12 reps",
+    "lbs": "5.5 lb × 12 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": 45,
+    "bestReps": null,
+    "bestWeightKg": 61.23,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "45s",
+    "lbs": "45s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 20,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "20 kg × 2 reps",
+    "lbs": "44.1 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2.5 kg × 5 reps",
+    "lbs": "5.5 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 20,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 20,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20 kg × 5 reps",
+    "lbs": "44.1 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2.5 kg × 8 reps",
+    "lbs": "5.5 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 12 reps",
+    "lbs": "220.5 lb × 12 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "5 reps × bodyweight",
+    "lbs": "5 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "1 rep × bodyweight",
+    "lbs": "1 rep × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "1 rep × bodyweight",
+    "lbs": "1 rep × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2 reps × bodyweight",
+    "lbs": "2 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "8 reps × bodyweight",
+    "lbs": "8 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": 20,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "5 reps × bodyweight",
+    "lbs": "5 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "70 kg × 8 reps",
+    "lbs": "154.3 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": 61,
+    "bestReps": 12,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2.5 kg × 12 reps",
+    "lbs": "5.5 lb × 12 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "2 reps × bodyweight",
+    "lbs": "2 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "5 reps × bodyweight",
+    "lbs": "5 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 100,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "100 kg × 12 reps",
+    "lbs": "220.5 lb × 12 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": 20,
+    "bestReps": 12,
+    "bestWeightKg": 20,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20 kg × 12 reps",
+    "lbs": "44.1 lb × 12 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 12 reps",
+    "lbs": "220.5 lb × 12 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 45,
+    "bestReps": null,
+    "bestWeightKg": 20,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "45s",
+    "lbs": "45s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 2 reps",
+    "lbs": "220.5 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 45,
+    "bestReps": null,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "45s",
+    "lbs": "45s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 0,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "70 kg × 8 reps",
+    "lbs": "154.3 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "102.1 kg × 2 reps",
+    "lbs": "225 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "8 reps × bodyweight",
+    "lbs": "8 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 61.23,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "131.2 kg × 2 reps",
+    "lbs": "289.3 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "8 reps × bodyweight",
+    "lbs": "8 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 20,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "90 kg × 8 reps",
+    "lbs": "198.4 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 61,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "61s",
+    "lbs": "61s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2.5 kg × 1 rep",
+    "lbs": "5.5 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 0,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2 reps × bodyweight",
+    "lbs": "2 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 0,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "1 rep × bodyweight",
+    "lbs": "1 rep × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "1 rep × bodyweight",
+    "lbs": "1 rep × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2 reps × bodyweight",
+    "lbs": "2 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2.5 kg × 8 reps",
+    "lbs": "5.5 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "102.1 kg × 5 reps",
+    "lbs": "225 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 20,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20 kg × 1 rep",
+    "lbs": "44.1 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "102.1 kg × 1 rep",
+    "lbs": "225 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 61,
+    "bestReps": null,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "61s",
+    "lbs": "61s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "102.1 kg × 1 rep",
+    "lbs": "225 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 8 reps",
+    "lbs": "220.5 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "184.5 kg × 8 reps",
+    "lbs": "406.7 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": 20,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 0,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "82.4 kg × 8 reps",
+    "lbs": "181.7 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": 61,
+    "bestReps": 2,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "2 reps × bodyweight",
+    "lbs": "2 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2 reps × bodyweight",
+    "lbs": "2 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2 reps × bodyweight",
+    "lbs": "2 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2.5 kg × 8 reps",
+    "lbs": "5.5 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": 61,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 61,
+    "bestReps": 1,
+    "bestWeightKg": 61.23,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "61.2 kg × 1 rep",
+    "lbs": "135 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 61.23,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "61.2 kg × 2 reps",
+    "lbs": "135 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2.5 kg × 12 reps",
+    "lbs": "5.5 lb × 12 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "5 reps × bodyweight",
+    "lbs": "5 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": 0,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 2 reps",
+    "lbs": "220.5 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "1 rep × bodyweight",
+    "lbs": "1 rep × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 20,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20 kg × 2 reps",
+    "lbs": "44.1 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": 45,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "45s",
+    "lbs": "45s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 0,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "82.4 kg × 5 reps",
+    "lbs": "181.7 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2.5 kg × 5 reps",
+    "lbs": "5.5 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": 61,
+    "bestReps": null,
+    "bestWeightKg": 20,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "61s",
+    "lbs": "61s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "1 rep × bodyweight",
+    "lbs": "1 rep × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 61,
+    "bestReps": null,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "61s",
+    "lbs": "61s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "8 reps × bodyweight",
+    "lbs": "8 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": 20,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 20,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "20 kg × 8 reps",
+    "lbs": "44.1 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "72.5 kg × 1 rep",
+    "lbs": "159.8 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 20,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "90 kg × 8 reps",
+    "lbs": "198.4 lb × 8 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "8 reps × bodyweight",
+    "lbs": "8 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": null,
+    "lbs": null
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 45,
+    "bestReps": null,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "45s",
+    "lbs": "45s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "102.1 kg × 1 rep",
+    "lbs": "225 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 20,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20 kg × 1 rep",
+    "lbs": "44.1 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 45,
+    "bestReps": null,
+    "bestWeightKg": 0,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "45s",
+    "lbs": "45s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": 61,
+    "bestReps": null,
+    "bestWeightKg": 100,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "61s",
+    "lbs": "61s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": null,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "5 reps × bodyweight",
+    "lbs": "5 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 2 reps",
+    "lbs": "220.5 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": null,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "1 rep × bodyweight",
+    "lbs": "1 rep × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": null,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "2 reps × bodyweight",
+    "lbs": "2 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 20,
+    "bestReps": null,
+    "bestWeightKg": 61.23,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "20s",
+    "lbs": "20s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": 45,
+    "bestReps": null,
+    "bestWeightKg": 2.5,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "45s",
+    "lbs": "45s"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 61.23,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "61.2 kg × 2 reps",
+    "lbs": "135 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 61.23,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "61.2 kg × 2 reps",
+    "lbs": "135 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 12 reps",
+    "lbs": "220.5 lb × 12 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "compound",
+    "bestDurationSec": null,
+    "bestReps": 2,
+    "bestWeightKg": 100,
+    "bodyweightKg": 70
+   },
+   "text": {
+    "kg": "100 kg × 2 reps",
+    "lbs": "220.5 lb × 2 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 12,
+    "bestWeightKg": 0,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "12 reps × bodyweight",
+    "lbs": "12 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "isolation",
+    "bestDurationSec": null,
+    "bestReps": 5,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 5 reps",
+    "lbs": "220.5 lb × 5 reps"
+   }
+  },
+  {
+   "performance": {
+    "kind": "timed",
+    "bestDurationSec": null,
+    "bestReps": 8,
+    "bestWeightKg": null,
+    "bodyweightKg": 82.4
+   },
+   "text": {
+    "kg": "8 reps × bodyweight",
+    "lbs": "8 reps × bodyweight"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": null,
+    "bestReps": 1,
+    "bestWeightKg": 100,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "100 kg × 1 rep",
+    "lbs": "220.5 lb × 1 rep"
+   }
+  },
+  {
+   "performance": {
+    "kind": "bodyweight",
+    "bestDurationSec": 61,
+    "bestReps": 12,
+    "bestWeightKg": 102.06,
+    "bodyweightKg": null
+   },
+   "text": {
+    "kg": "102.1 kg × 12 reps",
+    "lbs": "225 lb × 12 reps"
+   }
+  }
+ ],
+ "percents": [
+  {
+   "changePct": null,
+   "pct": null
+  },
+  {
+   "changePct": 0,
+   "pct": 0
+  },
+  {
+   "changePct": 0.004,
+   "pct": 0
+  },
+  {
+   "changePct": 0.005,
+   "pct": 1
+  },
+  {
+   "changePct": -0.005,
+   "pct": 0
+  },
+  {
+   "changePct": -0.006,
+   "pct": -1
+  },
+  {
+   "changePct": 0.0349,
+   "pct": 3
+  },
+  {
+   "changePct": 0.125,
+   "pct": 13
+  },
+  {
+   "changePct": -0.0849,
+   "pct": -8
+  },
+  {
+   "changePct": 1.5,
+   "pct": 150
+  }
+ ]
+}
