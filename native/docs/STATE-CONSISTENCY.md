@@ -11,7 +11,7 @@ Tài liệu nhất quán state visuals (#388).
 | Empty | `DSEmptyState` | Today (unplanned), History, Summary |
 | Offline | `DSOfflineView` / banner | Today, History |
 | Submitting | `DSSubmittingOverlay` | Auth, Workout (finish) |
-| Sync status | `SyncStatusBanner` | Today, Workout, Summary |
+| Sync status | `SyncStrip` | Workout |
 
 ## CTA placement
 
