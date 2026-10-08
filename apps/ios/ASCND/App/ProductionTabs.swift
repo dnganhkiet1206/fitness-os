@@ -103,8 +103,15 @@ private struct SettingsSheet: View {
     SettingsView(
       account: account,
       onSignOut: { Task { await services.session.signOut() } },
-      // Đổi ngôn ngữ trong app chưa đổi chữ (#527): chữ theo ngôn ngữ máy.
-      showsLanguage: false
+      // Đổi ngay trong app, mọi chữ theo (`AppLanguage`, #527 · 1.7).
+      onLanguageChange: { code in
+        if let choice = AppPreferences.LangChoice(rawValue: code) { services.setLanguage(choice) }
+      },
+      language: services.preferences.lang.rawValue,
+      theme: services.preferences.theme.rawValue,
+      onThemeChange: { code in
+        if let t = AppPreferences.Theme(rawValue: code) { services.preferences.setTheme(t) }
+      }
     )
     .presentationDragIndicator(.visible)
   }

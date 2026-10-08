@@ -957,6 +957,16 @@ const STEPS = [
   */
   ['plural xcstrings nhắc tới con số', 'node', ['../apps/ios/tools/native-xcstrings-plural.mjs']],
   ['plural xcstrings — fixture lỗi widget phải đỏ', 'node', ['../apps/ios/tools/native-xcstrings-plural.mjs', '--self-test']],
+  /*
+    #533 (1.7): đổi ngôn ngữ trong app chỉ đi qua overload che
+    `String(localized:)` của ASCNDCore — Foundation một mình KHÔNG nghe lựa
+    chọn trong app (đo trên Foundation thật). Một chỗ gọi thêm `table:` /
+    `locale:` / `comment:`, hay `NSLocalizedString` / `LocalizedStringResource`
+    dựng tay, rơi về ngôn ngữ máy mà không test nào đỏ. Bước thứ hai: fixture
+    của từng dạng ấy phải đỏ, dạng đúng phải xanh.
+  */
+  ['tra chữ qua overload ngôn ngữ', 'node', ['../apps/ios/tools/native-l10n-override.mjs']],
+  ['tra chữ — fixture dạng rơi về Foundation phải đỏ', 'node', ['../apps/ios/tools/native-l10n-override.mjs', '--self-test']],
 ];
 
 /*
