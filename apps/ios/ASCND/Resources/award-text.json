@@ -1,0 +1,353 @@
+{
+ "source": "native/src/lib/gamification-i18n.ts AWARD_TEXT — sinh bằng apps/ios/tools/award-text/gen.mjs, đừng sửa tay",
+ "awards": {
+  "first_meal": {
+   "title": {
+    "vi": "Bữa Đầu Tiên",
+    "en": "First Plate",
+    "es": "Primer Plato"
+   },
+   "desc": {
+    "vi": "Ghi bữa ăn đầu tiên",
+    "en": "Log your first meal",
+    "es": "Registra tu primera comida"
+   }
+  },
+  "first_pr": {
+   "title": {
+    "vi": "Kỷ Lục Mới!",
+    "en": "New Record!",
+    "es": "¡Nuevo Récord!"
+   },
+   "desc": {
+    "vi": "Đạt PR đầu tiên",
+    "en": "Hit your first PR",
+    "es": "Logra tu primer PR"
+   }
+  },
+  "first_workout": {
+   "title": {
+    "vi": "Bước Đầu",
+    "en": "First Step",
+    "es": "Primer Paso"
+   },
+   "desc": {
+    "vi": "Hoàn thành buổi tập đầu tiên",
+    "en": "Complete your first workout",
+    "es": "Completa tu primer entrenamiento"
+   }
+  },
+  "meals_250": {
+   "title": {
+    "vi": "Khách Quen Của Bếp",
+    "en": "Kitchen Regular",
+    "es": "Habitual de la Cocina"
+   },
+   "desc": {
+    "vi": "Ghi 250 bữa ăn",
+    "en": "Log 250 meals",
+    "es": "Registra 250 comidas"
+   }
+  },
+  "meals_50": {
+   "title": {
+    "vi": "Năm Mươi Bữa",
+    "en": "Fifty Plates",
+    "es": "Cincuenta Platos"
+   },
+   "desc": {
+    "vi": "Ghi 50 bữa ăn",
+    "en": "Log 50 meals",
+    "es": "Registra 50 comidas"
+   }
+  },
+  "pr_5": {
+   "title": {
+    "vi": "5x PR",
+    "en": "5x PR",
+    "es": "5x PR"
+   },
+   "desc": {
+    "vi": "Đạt 5 PR",
+    "en": "Hit 5 personal records",
+    "es": "Logra 5 récords personales"
+   }
+  },
+  "sleep_100": {
+   "title": {
+    "vi": "Trăm Đêm",
+    "en": "Hundred Nights",
+    "es": "Cien Noches"
+   },
+   "desc": {
+    "vi": "Ghi 100 đêm ngủ",
+    "en": "Log 100 nights of sleep",
+    "es": "Registra 100 noches de sueño"
+   }
+  },
+  "sleep_30": {
+   "title": {
+    "vi": "Tháng Yên Giấc",
+    "en": "Month of Rest",
+    "es": "Mes de Descanso"
+   },
+   "desc": {
+    "vi": "Ghi 30 đêm ngủ",
+    "en": "Log 30 nights of sleep",
+    "es": "Registra 30 noches de sueño"
+   }
+  },
+  "sleep_7": {
+   "title": {
+    "vi": "Bảy Đêm",
+    "en": "Seven Nights",
+    "es": "Siete Noches"
+   },
+   "desc": {
+    "vi": "Ghi 7 đêm ngủ",
+    "en": "Log 7 nights of sleep",
+    "es": "Registra 7 noches de sueño"
+   }
+  },
+  "steps_10k": {
+   "title": {
+    "vi": "10K Steps",
+    "en": "10K Steps",
+    "es": "10K Pasos"
+   },
+   "desc": {
+    "vi": "Đạt 10,000 bước trong 1 ngày",
+    "en": "Hit 10,000 steps in a day",
+    "es": "Alcanza 10,000 pasos en un día"
+   }
+  },
+  "steps_15k": {
+   "title": {
+    "vi": "Đường Dài",
+    "en": "Long Way",
+    "es": "Largo Camino"
+   },
+   "desc": {
+    "vi": "Đạt 15.000 bước trong 1 ngày",
+    "en": "Hit 15,000 steps in a day",
+    "es": "Alcanza 15,000 pasos en un día"
+   }
+  },
+  "steps_20k": {
+   "title": {
+    "vi": "Hai Vạn Bước",
+    "en": "Twenty Thousand",
+    "es": "Veinte Mil"
+   },
+   "desc": {
+    "vi": "Đạt 20.000 bước trong 1 ngày",
+    "en": "Hit 20,000 steps in a day",
+    "es": "Alcanza 20,000 pasos en un día"
+   }
+  },
+  "streak_100": {
+   "title": {
+    "vi": "Trăm Ngày",
+    "en": "Hundred Days",
+    "es": "Cien Días"
+   },
+   "desc": {
+    "vi": "Ghi log 100 ngày liên tiếp",
+    "en": "Log 100 days in a row",
+    "es": "Registra 100 días seguidos"
+   }
+  },
+  "streak_14": {
+   "title": {
+    "vi": "Kiên Trì",
+    "en": "Persistent",
+    "es": "Persistente"
+   },
+   "desc": {
+    "vi": "Ghi log 14 ngày liên tiếp",
+    "en": "Log 14 days in a row",
+    "es": "Registra 14 días seguidos"
+   }
+  },
+  "streak_180": {
+   "title": {
+    "vi": "Nửa Năm",
+    "en": "Half a Year",
+    "es": "Medio Año"
+   },
+   "desc": {
+    "vi": "Ghi log 180 ngày liên tiếp",
+    "en": "Log 180 days in a row",
+    "es": "Registra 180 días seguidos"
+   }
+  },
+  "streak_3": {
+   "title": {
+    "vi": "Khởi Đầu",
+    "en": "First Spark",
+    "es": "Primera Chispa"
+   },
+   "desc": {
+    "vi": "Ghi log 3 ngày liên tiếp",
+    "en": "Log 3 days in a row",
+    "es": "Registra 3 días seguidos"
+   }
+  },
+  "streak_30": {
+   "title": {
+    "vi": "Thép Đã Tôi",
+    "en": "Forged in Steel",
+    "es": "Forjado en Acero"
+   },
+   "desc": {
+    "vi": "Ghi log 30 ngày liên tiếp",
+    "en": "Log 30 days in a row",
+    "es": "Registra 30 días seguidos"
+   }
+  },
+  "streak_365": {
+   "title": {
+    "vi": "Trọn Một Năm",
+    "en": "A Full Year",
+    "es": "Un Año Completo"
+   },
+   "desc": {
+    "vi": "Ghi log 365 ngày liên tiếp",
+    "en": "Log 365 days in a row",
+    "es": "Registra 365 días seguidos"
+   }
+  },
+  "streak_60": {
+   "title": {
+    "vi": "Hai Tháng Ròng",
+    "en": "Two Months Deep",
+    "es": "Dos Meses Seguidos"
+   },
+   "desc": {
+    "vi": "Ghi log 60 ngày liên tiếp",
+    "en": "Log 60 days in a row",
+    "es": "Registra 60 días seguidos"
+   }
+  },
+  "streak_7": {
+   "title": {
+    "vi": "Tuần Vàng",
+    "en": "Golden Week",
+    "es": "Semana Dorada"
+   },
+   "desc": {
+    "vi": "Ghi log 7 ngày liên tiếp",
+    "en": "Log 7 days in a row",
+    "es": "Registra 7 días seguidos"
+   }
+  },
+  "water_100": {
+   "title": {
+    "vi": "Trăm Ngày Nước",
+    "en": "Water Century",
+    "es": "Siglo del Agua"
+   },
+   "desc": {
+    "vi": "Ghi nước uống trong 100 ngày",
+    "en": "Log water on 100 days",
+    "es": "Registra agua durante 100 días"
+   }
+  },
+  "water_30": {
+   "title": {
+    "vi": "Dòng Chảy Đều",
+    "en": "Steady Current",
+    "es": "Corriente Constante"
+   },
+   "desc": {
+    "vi": "Ghi nước uống trong 30 ngày",
+    "en": "Log water on 30 days",
+    "es": "Registra agua durante 30 días"
+   }
+  },
+  "water_7": {
+   "title": {
+    "vi": "Bảy Ngày Nước",
+    "en": "Seven Springs",
+    "es": "Siete Manantiales"
+   },
+   "desc": {
+    "vi": "Ghi nước uống trong 7 ngày",
+    "en": "Log water on 7 days",
+    "es": "Registra agua durante 7 días"
+   }
+  },
+  "weigh_10": {
+   "title": {
+    "vi": "Mười Lần Cân",
+    "en": "Ten Readings",
+    "es": "Diez Mediciones"
+   },
+   "desc": {
+    "vi": "Ghi 10 lần cân",
+    "en": "Log 10 weigh-ins",
+    "es": "Registra 10 pesajes"
+   }
+  },
+  "weigh_200": {
+   "title": {
+    "vi": "Hai Trăm Vạch",
+    "en": "Two Hundred Marks",
+    "es": "Doscientas Marcas"
+   },
+   "desc": {
+    "vi": "Ghi 200 lần cân",
+    "en": "Log 200 weigh-ins",
+    "es": "Registra 200 pesajes"
+   }
+  },
+  "weigh_50": {
+   "title": {
+    "vi": "Tay Đều",
+    "en": "Steady Hand",
+    "es": "Mano Firme"
+   },
+   "desc": {
+    "vi": "Ghi 50 lần cân",
+    "en": "Log 50 weigh-ins",
+    "es": "Registra 50 pesajes"
+   }
+  },
+  "workouts_10": {
+   "title": {
+    "vi": "10 Buổi Tập",
+    "en": "10 Workouts",
+    "es": "10 Entrenamientos"
+   },
+   "desc": {
+    "vi": "Hoàn thành 10 buổi tập",
+    "en": "Complete 10 workouts",
+    "es": "Completa 10 entrenamientos"
+   }
+  },
+  "workouts_100": {
+   "title": {
+    "vi": "Centurion",
+    "en": "Centurion",
+    "es": "Centurión"
+   },
+   "desc": {
+    "vi": "Hoàn thành 100 buổi tập",
+    "en": "Complete 100 workouts",
+    "es": "Completa 100 entrenamientos"
+   }
+  },
+  "workouts_50": {
+   "title": {
+    "vi": "50 Buổi Tập",
+    "en": "50 Workouts",
+    "es": "50 Entrenamientos"
+   },
+   "desc": {
+    "vi": "Hoàn thành 50 buổi tập",
+    "en": "Complete 50 workouts",
+    "es": "Completa 50 entrenamientos"
+   }
+  }
+ }
+}

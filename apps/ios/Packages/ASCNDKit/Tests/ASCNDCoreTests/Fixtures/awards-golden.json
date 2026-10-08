@@ -1,0 +1,5186 @@
+{
+ "catalogue": [
+  {
+   "key": "streak_3",
+   "type": "streak",
+   "icon": "flame",
+   "tier": "bronze",
+   "requirement": 3
+  },
+  {
+   "key": "streak_7",
+   "type": "streak",
+   "icon": "calendar-days",
+   "tier": "silver",
+   "requirement": 7
+  },
+  {
+   "key": "streak_14",
+   "type": "streak",
+   "icon": "calendar-check",
+   "tier": "gold",
+   "requirement": 14
+  },
+  {
+   "key": "streak_30",
+   "type": "streak",
+   "icon": "calendar-range",
+   "tier": "platinum",
+   "requirement": 30
+  },
+  {
+   "key": "streak_60",
+   "type": "streak",
+   "icon": "sunrise",
+   "tier": "platinum",
+   "requirement": 60
+  },
+  {
+   "key": "streak_100",
+   "type": "streak",
+   "icon": "medal",
+   "tier": "platinum",
+   "requirement": 100
+  },
+  {
+   "key": "streak_180",
+   "type": "streak",
+   "icon": "gem",
+   "tier": "platinum",
+   "requirement": 180
+  },
+  {
+   "key": "streak_365",
+   "type": "streak",
+   "icon": "crown",
+   "tier": "platinum",
+   "requirement": 365
+  },
+  {
+   "key": "first_workout",
+   "type": "first_workout",
+   "icon": "dumbbell",
+   "tier": "bronze",
+   "requirement": null
+  },
+  {
+   "key": "workouts_10",
+   "type": "volume_milestone",
+   "icon": "activity",
+   "tier": "silver",
+   "requirement": 10
+  },
+  {
+   "key": "workouts_50",
+   "type": "volume_milestone",
+   "icon": "zap",
+   "tier": "gold",
+   "requirement": 50
+  },
+  {
+   "key": "workouts_100",
+   "type": "volume_milestone",
+   "icon": "shield",
+   "tier": "platinum",
+   "requirement": 100
+  },
+  {
+   "key": "first_pr",
+   "type": "pr",
+   "icon": "trending-up",
+   "tier": "silver",
+   "requirement": null
+  },
+  {
+   "key": "pr_5",
+   "type": "pr",
+   "icon": "trophy",
+   "tier": "gold",
+   "requirement": 5
+  },
+  {
+   "key": "steps_10k",
+   "type": "steps_goal",
+   "icon": "footprints",
+   "tier": "bronze",
+   "requirement": null
+  },
+  {
+   "key": "steps_15k",
+   "type": "steps_goal",
+   "icon": "route",
+   "tier": "silver",
+   "requirement": 15000
+  },
+  {
+   "key": "steps_20k",
+   "type": "steps_goal",
+   "icon": "mountain",
+   "tier": "gold",
+   "requirement": 20000
+  },
+  {
+   "key": "first_meal",
+   "type": "nutrition",
+   "icon": "utensils",
+   "tier": "bronze",
+   "requirement": 1
+  },
+  {
+   "key": "meals_50",
+   "type": "nutrition",
+   "icon": "salad",
+   "tier": "silver",
+   "requirement": 50
+  },
+  {
+   "key": "meals_250",
+   "type": "nutrition",
+   "icon": "chef-hat",
+   "tier": "gold",
+   "requirement": 250
+  },
+  {
+   "key": "water_7",
+   "type": "water",
+   "icon": "droplet",
+   "tier": "bronze",
+   "requirement": 7
+  },
+  {
+   "key": "water_30",
+   "type": "water",
+   "icon": "droplets",
+   "tier": "silver",
+   "requirement": 30
+  },
+  {
+   "key": "water_100",
+   "type": "water",
+   "icon": "glass-water",
+   "tier": "gold",
+   "requirement": 100
+  },
+  {
+   "key": "sleep_7",
+   "type": "sleep",
+   "icon": "moon",
+   "tier": "bronze",
+   "requirement": 7
+  },
+  {
+   "key": "sleep_30",
+   "type": "sleep",
+   "icon": "moon-star",
+   "tier": "silver",
+   "requirement": 30
+  },
+  {
+   "key": "sleep_100",
+   "type": "sleep",
+   "icon": "bed-double",
+   "tier": "gold",
+   "requirement": 100
+  },
+  {
+   "key": "weigh_10",
+   "type": "body",
+   "icon": "scale",
+   "tier": "bronze",
+   "requirement": 10
+  },
+  {
+   "key": "weigh_50",
+   "type": "body",
+   "icon": "chart-line",
+   "tier": "silver",
+   "requirement": 50
+  },
+  {
+   "key": "weigh_200",
+   "type": "body",
+   "icon": "target",
+   "tier": "gold",
+   "requirement": 200
+  }
+ ],
+ "grant": [
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": 0,
+    "workoutCount": 0,
+    "prCount": 0,
+    "steps": 0,
+    "mealCount": 0,
+    "waterDays": 0,
+    "sleepCount": 0,
+    "weighCount": 0
+   },
+   "earned": [],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": 0,
+    "workoutCount": 0,
+    "prCount": 0,
+    "steps": 0,
+    "mealCount": 0,
+    "waterDays": 0,
+    "sleepCount": 0,
+    "weighCount": 0
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": 0,
+    "workoutCount": 0,
+    "prCount": 0,
+    "steps": 0,
+    "mealCount": 0,
+    "waterDays": 0,
+    "sleepCount": 0,
+    "weighCount": 0
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": 3,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": [
+    "streak_3"
+   ]
+  },
+  {
+   "sources": {
+    "streak": 3,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": 3,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "streak_3"
+   ]
+  },
+  {
+   "sources": {
+    "streak": 2,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": 2,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": 2,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": 400,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": [
+    "streak_3",
+    "streak_7",
+    "streak_14",
+    "streak_30",
+    "streak_60",
+    "streak_100",
+    "streak_180",
+    "streak_365"
+   ]
+  },
+  {
+   "sources": {
+    "streak": 400,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "streak_7",
+    "streak_14",
+    "streak_30",
+    "streak_60",
+    "streak_100",
+    "streak_180",
+    "streak_365"
+   ]
+  },
+  {
+   "sources": {
+    "streak": 400,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "streak_3",
+    "streak_7",
+    "streak_14",
+    "streak_30",
+    "streak_60",
+    "streak_100",
+    "streak_180",
+    "streak_365"
+   ]
+  },
+  {
+   "sources": {
+    "streak": 29.9,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": [
+    "streak_3",
+    "streak_7",
+    "streak_14"
+   ]
+  },
+  {
+   "sources": {
+    "streak": 29.9,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "streak_7",
+    "streak_14"
+   ]
+  },
+  {
+   "sources": {
+    "streak": 29.9,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "streak_3",
+    "streak_7",
+    "streak_14"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 1,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": [
+    "first_workout"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 1,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 1,
+    "prCount": null,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "first_workout"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 10,
+    "prCount": 1,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": [
+    "first_workout",
+    "workouts_10",
+    "first_pr"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 10,
+    "prCount": 1,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "first_pr"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 10,
+    "prCount": 1,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "first_workout",
+    "workouts_10"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 99,
+    "prCount": 5,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": [
+    "first_workout",
+    "workouts_10",
+    "workouts_50",
+    "first_pr",
+    "pr_5"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 99,
+    "prCount": 5,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "workouts_50",
+    "first_pr",
+    "pr_5"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 99,
+    "prCount": 5,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "first_workout",
+    "workouts_10",
+    "workouts_50",
+    "pr_5"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 100,
+    "prCount": 4,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": [
+    "first_workout",
+    "workouts_10",
+    "workouts_50",
+    "workouts_100",
+    "first_pr"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 100,
+    "prCount": 4,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "workouts_50",
+    "workouts_100",
+    "first_pr"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": 100,
+    "prCount": 4,
+    "steps": null,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "first_workout",
+    "workouts_10",
+    "workouts_50",
+    "workouts_100"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 9999,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 9999,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 9999,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 10000,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": [
+    "steps_10k"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 10000,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "steps_10k"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 10000,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": []
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 15000,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": [
+    "steps_10k",
+    "steps_15k"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 15000,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "steps_10k",
+    "steps_15k"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 15000,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "steps_15k"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 25000,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [],
+   "grant": [
+    "steps_10k",
+    "steps_15k",
+    "steps_20k"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 25000,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "steps_10k",
+    "steps_15k",
+    "steps_20k"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": 25000,
+    "mealCount": null,
+    "waterDays": null,
+    "sleepCount": null,
+    "weighCount": null
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "steps_15k",
+    "steps_20k"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": 1,
+    "waterDays": 7,
+    "sleepCount": 30,
+    "weighCount": 200
+   },
+   "earned": [],
+   "grant": [
+    "first_meal",
+    "water_7",
+    "sleep_7",
+    "sleep_30",
+    "weigh_10",
+    "weigh_50",
+    "weigh_200"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": 1,
+    "waterDays": 7,
+    "sleepCount": 30,
+    "weighCount": 200
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "first_meal",
+    "water_7",
+    "sleep_7",
+    "sleep_30",
+    "weigh_10",
+    "weigh_50",
+    "weigh_200"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": 1,
+    "waterDays": 7,
+    "sleepCount": 30,
+    "weighCount": 200
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "first_meal",
+    "water_7",
+    "sleep_7",
+    "sleep_30",
+    "weigh_10",
+    "weigh_50",
+    "weigh_200"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": 249,
+    "waterDays": 29,
+    "sleepCount": 6,
+    "weighCount": 9
+   },
+   "earned": [],
+   "grant": [
+    "first_meal",
+    "meals_50",
+    "water_7"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": 249,
+    "waterDays": 29,
+    "sleepCount": 6,
+    "weighCount": 9
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "first_meal",
+    "meals_50",
+    "water_7"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": 249,
+    "waterDays": 29,
+    "sleepCount": 6,
+    "weighCount": 9
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "first_meal",
+    "water_7"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": 250,
+    "waterDays": 100,
+    "sleepCount": 100,
+    "weighCount": 50
+   },
+   "earned": [],
+   "grant": [
+    "first_meal",
+    "meals_50",
+    "meals_250",
+    "water_7",
+    "water_30",
+    "water_100",
+    "sleep_7",
+    "sleep_30",
+    "sleep_100",
+    "weigh_10",
+    "weigh_50"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": 250,
+    "waterDays": 100,
+    "sleepCount": 100,
+    "weighCount": 50
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "first_meal",
+    "meals_50",
+    "meals_250",
+    "water_7",
+    "water_30",
+    "water_100",
+    "sleep_7",
+    "sleep_30",
+    "sleep_100",
+    "weigh_10",
+    "weigh_50"
+   ]
+  },
+  {
+   "sources": {
+    "streak": null,
+    "workoutCount": null,
+    "prCount": null,
+    "steps": null,
+    "mealCount": 250,
+    "waterDays": 100,
+    "sleepCount": 100,
+    "weighCount": 50
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "first_meal",
+    "meals_250",
+    "water_7",
+    "water_30",
+    "water_100",
+    "sleep_7",
+    "sleep_30",
+    "sleep_100",
+    "weigh_10",
+    "weigh_50"
+   ]
+  },
+  {
+   "sources": {
+    "streak": 14,
+    "workoutCount": 50,
+    "prCount": 7,
+    "steps": 20000,
+    "mealCount": 50,
+    "waterDays": 30,
+    "sleepCount": 7,
+    "weighCount": 10
+   },
+   "earned": [],
+   "grant": [
+    "streak_3",
+    "streak_7",
+    "streak_14",
+    "first_workout",
+    "workouts_10",
+    "workouts_50",
+    "first_pr",
+    "pr_5",
+    "steps_10k",
+    "steps_15k",
+    "steps_20k",
+    "first_meal",
+    "meals_50",
+    "water_7",
+    "water_30",
+    "sleep_7",
+    "weigh_10"
+   ]
+  },
+  {
+   "sources": {
+    "streak": 14,
+    "workoutCount": 50,
+    "prCount": 7,
+    "steps": 20000,
+    "mealCount": 50,
+    "waterDays": 30,
+    "sleepCount": 7,
+    "weighCount": 10
+   },
+   "earned": [
+    "streak_3",
+    "first_workout",
+    "workouts_10"
+   ],
+   "grant": [
+    "streak_7",
+    "streak_14",
+    "workouts_50",
+    "first_pr",
+    "pr_5",
+    "steps_10k",
+    "steps_15k",
+    "steps_20k",
+    "first_meal",
+    "meals_50",
+    "water_7",
+    "water_30",
+    "sleep_7",
+    "weigh_10"
+   ]
+  },
+  {
+   "sources": {
+    "streak": 14,
+    "workoutCount": 50,
+    "prCount": 7,
+    "steps": 20000,
+    "mealCount": 50,
+    "waterDays": 30,
+    "sleepCount": 7,
+    "weighCount": 10
+   },
+   "earned": [
+    "meals_50",
+    "steps_10k",
+    "first_pr",
+    "unknown_key"
+   ],
+   "grant": [
+    "streak_3",
+    "streak_7",
+    "streak_14",
+    "first_workout",
+    "workouts_10",
+    "workouts_50",
+    "pr_5",
+    "steps_15k",
+    "steps_20k",
+    "first_meal",
+    "water_7",
+    "water_30",
+    "sleep_7",
+    "weigh_10"
+   ]
+  }
+ ],
+ "duplicate": [
+  {
+   "code": "23505",
+   "duplicate": true
+  },
+  {
+   "code": "23503",
+   "duplicate": false
+  },
+  {
+   "code": null,
+   "duplicate": false
+  },
+  {
+   "code": null,
+   "duplicate": false
+  }
+ ],
+ "grantAll": {
+  "keys": [
+   "streak_3",
+   "streak_7",
+   "streak_14",
+   "streak_30",
+   "streak_60",
+   "streak_100"
+  ],
+  "failOn": [
+   "streak_7",
+   "streak_30"
+  ],
+  "granted": [
+   "streak_3",
+   "streak_14",
+   "streak_60",
+   "streak_100"
+  ],
+  "failed": [
+   "streak_7",
+   "streak_30"
+  ]
+ },
+ "progress": [
+  {
+   "key": "streak_3",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_3",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_3",
+   "earned": false,
+   "current": 1,
+   "pct": 0.3333333333333333,
+   "showCount": true
+  },
+  {
+   "key": "streak_3",
+   "earned": false,
+   "current": 5,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_3",
+   "earned": false,
+   "current": 12,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_3",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_3",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_3",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_3",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_3",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_3",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_3",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_3",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_3",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_3",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_3",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_3",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_3",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_7",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_7",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_7",
+   "earned": false,
+   "current": 1,
+   "pct": 0.14285714285714285,
+   "showCount": true
+  },
+  {
+   "key": "streak_7",
+   "earned": false,
+   "current": 5,
+   "pct": 0.7142857142857143,
+   "showCount": true
+  },
+  {
+   "key": "streak_7",
+   "earned": false,
+   "current": 12,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_7",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_7",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_7",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_7",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_7",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_7",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_7",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_7",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_7",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_7",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_7",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_7",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_7",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_14",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_14",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_14",
+   "earned": false,
+   "current": 1,
+   "pct": 0.07142857142857142,
+   "showCount": true
+  },
+  {
+   "key": "streak_14",
+   "earned": false,
+   "current": 5,
+   "pct": 0.35714285714285715,
+   "showCount": true
+  },
+  {
+   "key": "streak_14",
+   "earned": false,
+   "current": 12,
+   "pct": 0.8571428571428571,
+   "showCount": true
+  },
+  {
+   "key": "streak_14",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_14",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_14",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_14",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_14",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_14",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_14",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_14",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_14",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_14",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_14",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_14",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_14",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_30",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_30",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_30",
+   "earned": false,
+   "current": 1,
+   "pct": 0.03333333333333333,
+   "showCount": true
+  },
+  {
+   "key": "streak_30",
+   "earned": false,
+   "current": 5,
+   "pct": 0.16666666666666666,
+   "showCount": true
+  },
+  {
+   "key": "streak_30",
+   "earned": false,
+   "current": 12,
+   "pct": 0.4,
+   "showCount": true
+  },
+  {
+   "key": "streak_30",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_30",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_30",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_30",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_30",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_30",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_30",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_30",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_30",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_30",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_30",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_30",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_30",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_60",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_60",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_60",
+   "earned": false,
+   "current": 1,
+   "pct": 0.016666666666666666,
+   "showCount": true
+  },
+  {
+   "key": "streak_60",
+   "earned": false,
+   "current": 5,
+   "pct": 0.08333333333333333,
+   "showCount": true
+  },
+  {
+   "key": "streak_60",
+   "earned": false,
+   "current": 12,
+   "pct": 0.2,
+   "showCount": true
+  },
+  {
+   "key": "streak_60",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_60",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_60",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_60",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_60",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_60",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_60",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_60",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_60",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_60",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_60",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_60",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_60",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_100",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_100",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_100",
+   "earned": false,
+   "current": 1,
+   "pct": 0.01,
+   "showCount": true
+  },
+  {
+   "key": "streak_100",
+   "earned": false,
+   "current": 5,
+   "pct": 0.05,
+   "showCount": true
+  },
+  {
+   "key": "streak_100",
+   "earned": false,
+   "current": 12,
+   "pct": 0.12,
+   "showCount": true
+  },
+  {
+   "key": "streak_100",
+   "earned": false,
+   "current": 99,
+   "pct": 0.99,
+   "showCount": true
+  },
+  {
+   "key": "streak_100",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_100",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_100",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_100",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_100",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_100",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_100",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_100",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_100",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_100",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_100",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_100",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_180",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_180",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_180",
+   "earned": false,
+   "current": 1,
+   "pct": 0.005555555555555556,
+   "showCount": true
+  },
+  {
+   "key": "streak_180",
+   "earned": false,
+   "current": 5,
+   "pct": 0.027777777777777776,
+   "showCount": true
+  },
+  {
+   "key": "streak_180",
+   "earned": false,
+   "current": 12,
+   "pct": 0.06666666666666667,
+   "showCount": true
+  },
+  {
+   "key": "streak_180",
+   "earned": false,
+   "current": 99,
+   "pct": 0.55,
+   "showCount": true
+  },
+  {
+   "key": "streak_180",
+   "earned": false,
+   "current": 100,
+   "pct": 0.5555555555555556,
+   "showCount": true
+  },
+  {
+   "key": "streak_180",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_180",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_180",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_180",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_180",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_180",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_180",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_180",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_180",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_180",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_180",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_365",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_365",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_365",
+   "earned": false,
+   "current": 1,
+   "pct": 0.0027397260273972603,
+   "showCount": true
+  },
+  {
+   "key": "streak_365",
+   "earned": false,
+   "current": 5,
+   "pct": 0.0136986301369863,
+   "showCount": true
+  },
+  {
+   "key": "streak_365",
+   "earned": false,
+   "current": 12,
+   "pct": 0.03287671232876712,
+   "showCount": true
+  },
+  {
+   "key": "streak_365",
+   "earned": false,
+   "current": 99,
+   "pct": 0.27123287671232876,
+   "showCount": true
+  },
+  {
+   "key": "streak_365",
+   "earned": false,
+   "current": 100,
+   "pct": 0.273972602739726,
+   "showCount": true
+  },
+  {
+   "key": "streak_365",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "streak_365",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "streak_365",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_365",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_365",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_365",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_365",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_365",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_365",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_365",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "streak_365",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": false,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": false,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": false,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": false,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": false,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": false,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_workout",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_10",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_10",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "workouts_10",
+   "earned": false,
+   "current": 1,
+   "pct": 0.1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_10",
+   "earned": false,
+   "current": 5,
+   "pct": 0.5,
+   "showCount": true
+  },
+  {
+   "key": "workouts_10",
+   "earned": false,
+   "current": 12,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_10",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_10",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_10",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_10",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "workouts_10",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_10",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_10",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_10",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_10",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_10",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_10",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_10",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_10",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_50",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_50",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "workouts_50",
+   "earned": false,
+   "current": 1,
+   "pct": 0.02,
+   "showCount": true
+  },
+  {
+   "key": "workouts_50",
+   "earned": false,
+   "current": 5,
+   "pct": 0.1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_50",
+   "earned": false,
+   "current": 12,
+   "pct": 0.24,
+   "showCount": true
+  },
+  {
+   "key": "workouts_50",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_50",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_50",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_50",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "workouts_50",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_50",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_50",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_50",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_50",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_50",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_50",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_50",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_50",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_100",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_100",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "workouts_100",
+   "earned": false,
+   "current": 1,
+   "pct": 0.01,
+   "showCount": true
+  },
+  {
+   "key": "workouts_100",
+   "earned": false,
+   "current": 5,
+   "pct": 0.05,
+   "showCount": true
+  },
+  {
+   "key": "workouts_100",
+   "earned": false,
+   "current": 12,
+   "pct": 0.12,
+   "showCount": true
+  },
+  {
+   "key": "workouts_100",
+   "earned": false,
+   "current": 99,
+   "pct": 0.99,
+   "showCount": true
+  },
+  {
+   "key": "workouts_100",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_100",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "workouts_100",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "workouts_100",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_100",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_100",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_100",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_100",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_100",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_100",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_100",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "workouts_100",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": false,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": false,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": false,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": false,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": false,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": false,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_pr",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "pr_5",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "pr_5",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "pr_5",
+   "earned": false,
+   "current": 1,
+   "pct": 0.2,
+   "showCount": true
+  },
+  {
+   "key": "pr_5",
+   "earned": false,
+   "current": 5,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "pr_5",
+   "earned": false,
+   "current": 12,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "pr_5",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "pr_5",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "pr_5",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "pr_5",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "pr_5",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "pr_5",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "pr_5",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "pr_5",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "pr_5",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "pr_5",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "pr_5",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "pr_5",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "pr_5",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": false,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": false,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": false,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": false,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": false,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": false,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_10k",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_15k",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_15k",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "steps_15k",
+   "earned": false,
+   "current": 1,
+   "pct": 0.00006666666666666667,
+   "showCount": true
+  },
+  {
+   "key": "steps_15k",
+   "earned": false,
+   "current": 5,
+   "pct": 0.0003333333333333333,
+   "showCount": true
+  },
+  {
+   "key": "steps_15k",
+   "earned": false,
+   "current": 12,
+   "pct": 0.0008,
+   "showCount": true
+  },
+  {
+   "key": "steps_15k",
+   "earned": false,
+   "current": 99,
+   "pct": 0.0066,
+   "showCount": true
+  },
+  {
+   "key": "steps_15k",
+   "earned": false,
+   "current": 100,
+   "pct": 0.006666666666666667,
+   "showCount": true
+  },
+  {
+   "key": "steps_15k",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "steps_15k",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "steps_15k",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_15k",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_15k",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_15k",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_15k",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_15k",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_15k",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_15k",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_15k",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_20k",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_20k",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "steps_20k",
+   "earned": false,
+   "current": 1,
+   "pct": 0.00005,
+   "showCount": true
+  },
+  {
+   "key": "steps_20k",
+   "earned": false,
+   "current": 5,
+   "pct": 0.00025,
+   "showCount": true
+  },
+  {
+   "key": "steps_20k",
+   "earned": false,
+   "current": 12,
+   "pct": 0.0006,
+   "showCount": true
+  },
+  {
+   "key": "steps_20k",
+   "earned": false,
+   "current": 99,
+   "pct": 0.00495,
+   "showCount": true
+  },
+  {
+   "key": "steps_20k",
+   "earned": false,
+   "current": 100,
+   "pct": 0.005,
+   "showCount": true
+  },
+  {
+   "key": "steps_20k",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "steps_20k",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "steps_20k",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_20k",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_20k",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_20k",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_20k",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_20k",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_20k",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_20k",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "steps_20k",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_meal",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_meal",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "first_meal",
+   "earned": false,
+   "current": 1,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "first_meal",
+   "earned": false,
+   "current": 5,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "first_meal",
+   "earned": false,
+   "current": 12,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "first_meal",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "first_meal",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "first_meal",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "first_meal",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "first_meal",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_meal",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_meal",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_meal",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_meal",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_meal",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_meal",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_meal",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "first_meal",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_50",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_50",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "meals_50",
+   "earned": false,
+   "current": 1,
+   "pct": 0.02,
+   "showCount": true
+  },
+  {
+   "key": "meals_50",
+   "earned": false,
+   "current": 5,
+   "pct": 0.1,
+   "showCount": true
+  },
+  {
+   "key": "meals_50",
+   "earned": false,
+   "current": 12,
+   "pct": 0.24,
+   "showCount": true
+  },
+  {
+   "key": "meals_50",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "meals_50",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "meals_50",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "meals_50",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "meals_50",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_50",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_50",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_50",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_50",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_50",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_50",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_50",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_50",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_250",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_250",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "meals_250",
+   "earned": false,
+   "current": 1,
+   "pct": 0.004,
+   "showCount": true
+  },
+  {
+   "key": "meals_250",
+   "earned": false,
+   "current": 5,
+   "pct": 0.02,
+   "showCount": true
+  },
+  {
+   "key": "meals_250",
+   "earned": false,
+   "current": 12,
+   "pct": 0.048,
+   "showCount": true
+  },
+  {
+   "key": "meals_250",
+   "earned": false,
+   "current": 99,
+   "pct": 0.396,
+   "showCount": true
+  },
+  {
+   "key": "meals_250",
+   "earned": false,
+   "current": 100,
+   "pct": 0.4,
+   "showCount": true
+  },
+  {
+   "key": "meals_250",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "meals_250",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "meals_250",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_250",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_250",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_250",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_250",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_250",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_250",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_250",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "meals_250",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_7",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_7",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "water_7",
+   "earned": false,
+   "current": 1,
+   "pct": 0.14285714285714285,
+   "showCount": true
+  },
+  {
+   "key": "water_7",
+   "earned": false,
+   "current": 5,
+   "pct": 0.7142857142857143,
+   "showCount": true
+  },
+  {
+   "key": "water_7",
+   "earned": false,
+   "current": 12,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "water_7",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "water_7",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "water_7",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "water_7",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "water_7",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_7",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_7",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_7",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_7",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_7",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_7",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_7",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_7",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_30",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_30",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "water_30",
+   "earned": false,
+   "current": 1,
+   "pct": 0.03333333333333333,
+   "showCount": true
+  },
+  {
+   "key": "water_30",
+   "earned": false,
+   "current": 5,
+   "pct": 0.16666666666666666,
+   "showCount": true
+  },
+  {
+   "key": "water_30",
+   "earned": false,
+   "current": 12,
+   "pct": 0.4,
+   "showCount": true
+  },
+  {
+   "key": "water_30",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "water_30",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "water_30",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "water_30",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "water_30",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_30",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_30",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_30",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_30",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_30",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_30",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_30",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_30",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_100",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_100",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "water_100",
+   "earned": false,
+   "current": 1,
+   "pct": 0.01,
+   "showCount": true
+  },
+  {
+   "key": "water_100",
+   "earned": false,
+   "current": 5,
+   "pct": 0.05,
+   "showCount": true
+  },
+  {
+   "key": "water_100",
+   "earned": false,
+   "current": 12,
+   "pct": 0.12,
+   "showCount": true
+  },
+  {
+   "key": "water_100",
+   "earned": false,
+   "current": 99,
+   "pct": 0.99,
+   "showCount": true
+  },
+  {
+   "key": "water_100",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "water_100",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "water_100",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "water_100",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_100",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_100",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_100",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_100",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_100",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_100",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_100",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "water_100",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_7",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_7",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "sleep_7",
+   "earned": false,
+   "current": 1,
+   "pct": 0.14285714285714285,
+   "showCount": true
+  },
+  {
+   "key": "sleep_7",
+   "earned": false,
+   "current": 5,
+   "pct": 0.7142857142857143,
+   "showCount": true
+  },
+  {
+   "key": "sleep_7",
+   "earned": false,
+   "current": 12,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "sleep_7",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "sleep_7",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "sleep_7",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "sleep_7",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "sleep_7",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_7",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_7",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_7",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_7",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_7",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_7",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_7",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_7",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_30",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_30",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "sleep_30",
+   "earned": false,
+   "current": 1,
+   "pct": 0.03333333333333333,
+   "showCount": true
+  },
+  {
+   "key": "sleep_30",
+   "earned": false,
+   "current": 5,
+   "pct": 0.16666666666666666,
+   "showCount": true
+  },
+  {
+   "key": "sleep_30",
+   "earned": false,
+   "current": 12,
+   "pct": 0.4,
+   "showCount": true
+  },
+  {
+   "key": "sleep_30",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "sleep_30",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "sleep_30",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "sleep_30",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "sleep_30",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_30",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_30",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_30",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_30",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_30",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_30",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_30",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_30",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_100",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_100",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "sleep_100",
+   "earned": false,
+   "current": 1,
+   "pct": 0.01,
+   "showCount": true
+  },
+  {
+   "key": "sleep_100",
+   "earned": false,
+   "current": 5,
+   "pct": 0.05,
+   "showCount": true
+  },
+  {
+   "key": "sleep_100",
+   "earned": false,
+   "current": 12,
+   "pct": 0.12,
+   "showCount": true
+  },
+  {
+   "key": "sleep_100",
+   "earned": false,
+   "current": 99,
+   "pct": 0.99,
+   "showCount": true
+  },
+  {
+   "key": "sleep_100",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "sleep_100",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "sleep_100",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "sleep_100",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_100",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_100",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_100",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_100",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_100",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_100",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_100",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "sleep_100",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_10",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_10",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "weigh_10",
+   "earned": false,
+   "current": 1,
+   "pct": 0.1,
+   "showCount": true
+  },
+  {
+   "key": "weigh_10",
+   "earned": false,
+   "current": 5,
+   "pct": 0.5,
+   "showCount": true
+  },
+  {
+   "key": "weigh_10",
+   "earned": false,
+   "current": 12,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "weigh_10",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "weigh_10",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "weigh_10",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "weigh_10",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "weigh_10",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_10",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_10",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_10",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_10",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_10",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_10",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_10",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_10",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_50",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_50",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "weigh_50",
+   "earned": false,
+   "current": 1,
+   "pct": 0.02,
+   "showCount": true
+  },
+  {
+   "key": "weigh_50",
+   "earned": false,
+   "current": 5,
+   "pct": 0.1,
+   "showCount": true
+  },
+  {
+   "key": "weigh_50",
+   "earned": false,
+   "current": 12,
+   "pct": 0.24,
+   "showCount": true
+  },
+  {
+   "key": "weigh_50",
+   "earned": false,
+   "current": 99,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "weigh_50",
+   "earned": false,
+   "current": 100,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "weigh_50",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "weigh_50",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "weigh_50",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_50",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_50",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_50",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_50",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_50",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_50",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_50",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_50",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_200",
+   "earned": false,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_200",
+   "earned": false,
+   "current": 0,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "weigh_200",
+   "earned": false,
+   "current": 1,
+   "pct": 0.005,
+   "showCount": true
+  },
+  {
+   "key": "weigh_200",
+   "earned": false,
+   "current": 5,
+   "pct": 0.025,
+   "showCount": true
+  },
+  {
+   "key": "weigh_200",
+   "earned": false,
+   "current": 12,
+   "pct": 0.06,
+   "showCount": true
+  },
+  {
+   "key": "weigh_200",
+   "earned": false,
+   "current": 99,
+   "pct": 0.495,
+   "showCount": true
+  },
+  {
+   "key": "weigh_200",
+   "earned": false,
+   "current": 100,
+   "pct": 0.5,
+   "showCount": true
+  },
+  {
+   "key": "weigh_200",
+   "earned": false,
+   "current": 20000,
+   "pct": 1,
+   "showCount": true
+  },
+  {
+   "key": "weigh_200",
+   "earned": false,
+   "current": -3,
+   "pct": 0,
+   "showCount": true
+  },
+  {
+   "key": "weigh_200",
+   "earned": true,
+   "current": null,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_200",
+   "earned": true,
+   "current": 0,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_200",
+   "earned": true,
+   "current": 1,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_200",
+   "earned": true,
+   "current": 5,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_200",
+   "earned": true,
+   "current": 12,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_200",
+   "earned": true,
+   "current": 99,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_200",
+   "earned": true,
+   "current": 100,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_200",
+   "earned": true,
+   "current": 20000,
+   "pct": 0,
+   "showCount": false
+  },
+  {
+   "key": "weigh_200",
+   "earned": true,
+   "current": -3,
+   "pct": 0,
+   "showCount": false
+  }
+ ],
+ "current": [
+  {
+   "type": "streak",
+   "value": 14,
+   "none": null
+  },
+  {
+   "type": "volume_milestone",
+   "value": 50,
+   "none": null
+  },
+  {
+   "type": "first_workout",
+   "value": 50,
+   "none": null
+  },
+  {
+   "type": "pr",
+   "value": 7,
+   "none": null
+  },
+  {
+   "type": "steps_goal",
+   "value": 20000,
+   "none": null
+  },
+  {
+   "type": "nutrition",
+   "value": 50,
+   "none": null
+  },
+  {
+   "type": "water",
+   "value": 30,
+   "none": null
+  },
+  {
+   "type": "sleep",
+   "value": 7,
+   "none": null
+  },
+  {
+   "type": "body",
+   "value": 10,
+   "none": null
+  },
+  {
+   "type": "other",
+   "value": null,
+   "none": null
+  }
+ ],
+ "percent": [
+  {
+   "earned": 0,
+   "pct": 0
+  },
+  {
+   "earned": 1,
+   "pct": 3
+  },
+  {
+   "earned": 2,
+   "pct": 7
+  },
+  {
+   "earned": 7,
+   "pct": 24
+  },
+  {
+   "earned": 14,
+   "pct": 48
+  },
+  {
+   "earned": 15,
+   "pct": 52
+  },
+  {
+   "earned": 28,
+   "pct": 97
+  },
+  {
+   "earned": 29,
+   "pct": 100
+  }
+ ],
+ "mark": [
+  {
+   "requirement": null,
+   "mark": null
+  },
+  {
+   "requirement": 1,
+   "mark": "1"
+  },
+  {
+   "requirement": 3,
+   "mark": "3"
+  },
+  {
+   "requirement": 100,
+   "mark": "100"
+  },
+  {
+   "requirement": 365,
+   "mark": "365"
+  },
+  {
+   "requirement": 999,
+   "mark": "999"
+  },
+  {
+   "requirement": 1000,
+   "mark": "1K"
+  },
+  {
+   "requirement": 1499,
+   "mark": "1K"
+  },
+  {
+   "requirement": 1500,
+   "mark": "2K"
+  },
+  {
+   "requirement": 10000,
+   "mark": "10K"
+  },
+  {
+   "requirement": 15000,
+   "mark": "15K"
+  },
+  {
+   "requirement": 20000,
+   "mark": "20K"
+  }
+ ]
+}
