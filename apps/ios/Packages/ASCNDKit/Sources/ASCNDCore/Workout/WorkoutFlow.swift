@@ -178,6 +178,11 @@ public final class WorkoutFlow {
   /// mạng (`registerBusyProbe` của RN đọc `isFetching` của React Query).
   public var isRefreshing: Bool { refreshing != nil }
 
+  /// "App còn đang tải" của dải báo mạng: lượt làm mới chung, hoặc sheet
+  /// hướng dẫn đang đọc server (một query riêng ở RN, cùng được `isFetching`
+  /// đếm). Không gộp vào `isRefreshing`: đó là lượt kéo-làm-mới.
+  public var isBusy: Bool { isRefreshing || (guides?.loading ?? false) }
+
   /// Kéo để làm mới. Gọi chồng thì chờ lượt đang chạy.
   public func refresh() async {
     guard !closed else { return }

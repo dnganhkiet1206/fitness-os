@@ -143,6 +143,25 @@ private actor Source: ExerciseGuideSource {
     return media[exerciseId] ?? []
   }
 }
+/// Nguồn giữ câu trả lời cho một bài tới khi test thả.
+private actor GatedGuideSource: ExerciseGuideSource {
+  private var held: String?
+  private var waiters: [CheckedContinuation<Void, Never>] = []
+  var waiting: Bool { !waiters.isEmpty }
+  func hold(_ id: String) { held = id }
+  func releaseAll() {
+    held = nil
+    waiters.forEach { $0.resume() }
+    waiters = []
+  }
+  func guideRows(userId: String, id: String?) async throws -> [GuideExerciseRow] {
+    if let id, id == held { await withCheckedContinuation { waiters.append($0) } }
+    return [seed, GuideExerciseRow(id: "other", userId: nil, name: "Row", muscleGroup: "back", equipment: nil, videoUrl: nil)]
+      .filter { id == nil || $0.id == id }
+  }
+  func guideContent(exerciseId: String) async throws -> [GuideContentRow] { exerciseId == "seed" ? rows : [] }
+  func guideMedia(exerciseId: String) async throws -> [MediaRow] { [] }
+}
 private actor Cache: ExerciseGuideCache {
   var store: [String: ExerciseGuide] = [:]
   func load(userId: String, key: String) async throws -> ExerciseGuide? { store["\(userId)#\(key)"] }
@@ -214,6 +233,26 @@ struct ExerciseGuideLookupTests {
     let other = ExerciseGuideBook(userId: "u2", source: source, cache: cache, clock: clock)
     await other.open(exerciseId: "seed", name: "Bench Press", lang: .vi)
     #expect(other.guide == nil, "cache theo người")
+  }
+
+  /// Busy-probe (#527 A-NEXT 2): đang đọc bài A thì mở bài B đã có bản nhớ
+  /// còn mới — `loading` phải hạ (trước đây kẹt `true` vì `defer` của A chỉ
+  /// hạ khi A vẫn là bài hiện tại).
+  @Test func switchingToAFreshGuideClearsLoading() async throws {
+    let source = GatedGuideSource()
+    let book = ExerciseGuideBook(userId: "u1", source: source, cache: Cache(),
+                                 clock: ManualClock(EpochMillis(1_791_183_600_000)))
+    await book.open(exerciseId: "seed", name: "Bench Press", lang: .vi)
+    #expect(book.guide != nil && !book.loading)
+    await source.hold("other")
+    let a = Task { await book.open(exerciseId: "other", name: "Row", lang: .vi) }
+    while !(await source.waiting) { await Task.yield() }
+    #expect(book.loading)
+    await book.open(exerciseId: "seed", name: "Bench Press", lang: .vi)
+    #expect(!book.loading, "bài B có bản mới: không có gì đang tải")
+    await source.releaseAll()
+    await a.value
+    #expect(!book.loading && book.guide?.instructions == ["Nằm trên ghế"], "kết quả của A không đè B")
   }
 
   @Test func relatedFromAGuide() async throws {
