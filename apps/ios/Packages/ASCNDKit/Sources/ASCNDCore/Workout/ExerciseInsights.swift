@@ -455,6 +455,9 @@ public final class InsightBook {
   @ObservationIgnored private let timeZone: TimeZone
   @ObservationIgnored private var rows: [SessionHistoryRow] = []
   @ObservationIgnored private var weighIns: [WeighIn] = []
+  /// Buổi còn trong outbox (#429) — lần làm mới không hồi sinh buổi đã xoá.
+  @ObservationIgnored private let pending: (any PendingWrites)?
+  @ObservationIgnored private var log = SessionChangeLog()
   /// Loại bài khai báo trong thư viện (`exercises.exercise_kind`, #420).
   @ObservationIgnored public var declaredKinds: [String: String] = [:] {
     didSet { recompute() }
@@ -462,8 +465,9 @@ public final class InsightBook {
 
   public init(
     userId: String, source: any PerformanceSource, cache: any InsightCache,
-    clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current
+    clock: any WallClock = SystemWallClock(), timeZone: TimeZone = .current, pending: (any PendingWrites)? = nil
   ) {
+    self.pending = pending
     self.userId = userId
     self.source = source
     self.cache = cache
@@ -495,8 +499,11 @@ public final class InsightBook {
 
   public func refresh() async {
     let since = clock.nowMillis() - Int64(PerformanceHistory.windowDays) * 86_400_000
+    let mark = log.mark
+    guard let queued = await pending.changes(userId: userId) else { return }
     do {
-      let fresh = try await source.sessions(userId: userId, since: since)
+      let fetched = try await source.sessions(userId: userId, since: since)
+      let fresh = PendingSessions.apply(queued + log.settle(since: mark), to: fetched)
       // Cân nặng hỏng thì vẫn phân tích được, chỉ thiếu thang cơ thể (RN:
       // `weights.data ?? []`; ở đây giữ lần cân đã biết).
       weighIns = (try? await source.weighIns(userId: userId, since: LocalDate(since, in: timeZone))) ?? weighIns
@@ -515,6 +522,7 @@ public final class InsightBook {
     guard let id = row["id"]?.stringValue,
       let at = row["date_time"]?.stringValue.flatMap({ EpochMillis(iso8601: $0) })
     else { return }
+    log.record(.upsert(row))
     rows.removeAll { $0.id == id }
     rows.append(SessionHistoryRow(id: id, at: at, sets: row["sets"]))
     loaded = true
@@ -524,6 +532,7 @@ public final class InsightBook {
 
   /// Buổi bị xoá trên máy (gỡ set cuối cùng #398, xoá từ lịch sử #400).
   public func forget(sessionId: String) async {
+    log.record(.delete(id: sessionId, at: nil))
     let before = rows.count
     rows.removeAll { $0.id == sessionId }
     guard rows.count != before else { return }

@@ -20,6 +20,7 @@ struct VectorRegressionTests {
     ("workout-history.json", "WorkoutHistoryVectorTests (WH-3a: notPorted, #266)"),
     ("remove-set-undo.json", "RemoveSetVectorTests (RS-1: native gỡ đúng hàng, không phải set cuối cùng tên)"),
     ("today-controller.json", "TodayVectorTests"),
+    ("workout-day-account.json", "WorkoutDayAccountVectorTests (ASCNDStore, SQLite thật)"),
   ]
 
   /// Tệp vector CHỈ chạy ở RN, kèm lý do. Đây không phải chỗ để giấu một

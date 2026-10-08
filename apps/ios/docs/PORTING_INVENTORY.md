@@ -56,7 +56,7 @@ Follow-up chỉ được tạo cho mục có nguồn RN cụ thể (#336). Các 
 | Gate theo phiên, dọn khi đăng xuất / đổi tài khoản | `use-auth.tsx:53` `forgetPreviousAccount` | `RootGate`, `onSignedOut` (#293), #397 | ported (sửa lỗi RN) | |
 | Hàng chờ gửi khi đăng xuất | `clearPersistedCache` | bỏ, như RN | decision | #241 |
 | Đổi mật khẩu | `app/change-password.tsx` (157) | không | not ported | |
-| Onboarding | `components/ascnd/onboarding-flow.tsx` | không | not ported | |
+| Onboarding | `components/ascnd/onboarding-flow.tsx` | `OnboardingController` (#442), `OnboardingGateView` / `OnboardingFlowView` (#527 1.3) | ported (chờ merge) | màn Sức khoẻ (HealthKit 4.1), Koa (Phase 7) |
 
 ## 5. Hồ sơ và cài đặt
 
@@ -64,7 +64,7 @@ Follow-up chỉ được tạo cho mục có nguồn RN cụ thể (#336). Các 
 |---|---|---|---|
 | Sửa hồ sơ (đơn vị, cân nặng, mục tiêu) | `app/edit-profile.tsx` (889), `useProfile` | không | not ported. Vỏ trình bày: C-35 #387 |
 | Cài đặt (ngôn ngữ, khoá app, vai trò, linh vật) | `app/settings.tsx` (1109), `useAppLock`, `useAppRole` | không | not ported |
-| Nhắc nhở | `app/reminders.tsx` (306), `use-reminders.ts` | không | not ported |
+| Nhắc nhở | `app/reminders.tsx` (306), `use-reminders.ts` | `ReminderCenter` (#445), `RemindersView` (#527 1.10) | ported (chờ merge) | lời mời theo giờ hay tập (`habitFor`), đồng bộ ngữ cảnh từ Hôm nay (`useReminderSync`) |
 
 ## 6. Readiness và HealthKit
 

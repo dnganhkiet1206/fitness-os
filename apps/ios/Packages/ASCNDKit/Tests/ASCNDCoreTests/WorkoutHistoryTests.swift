@@ -119,7 +119,7 @@ struct HistoryBookTests {
     #expect(b.entries.map(\.id) == ["s2"])
     let entry = try #require(await store.outbox.last)
     #expect(entry.kind == WorkoutSessionRecord.deleteKind)
-    #expect(entry.payload == .object(["id": .string("s1")]))
+    #expect(entry.payload == .object(["id": .string("s1"), "date_time": .string("2026-10-05T07:00:00.000Z")]), "thời điểm đi kèm (#429)")
     #expect(entry.id.hasPrefix("s1@"))
     #expect(await store.days["2026-10-05:tpl"]?.loggedKeys == [], "ngày thôi giữ set nào trong buổi")
     await b.refresh()

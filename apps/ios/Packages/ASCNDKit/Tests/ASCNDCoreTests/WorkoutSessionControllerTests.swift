@@ -594,7 +594,7 @@ struct RemoveLoggedSetTests {
     #expect(removal.deletedSession)
     let last = try #require(await store.outbox.last)
     #expect(last.kind == WorkoutSessionRecord.deleteKind)
-    #expect(last.payload == .object(["id": .string(first.sessionId)]))
+    #expect(last.payload["id"] == .string(first.sessionId) && last.payload["date_time"]?.stringValue != nil, "thời điểm đi kèm (#429)")
     #expect(c.loggedKeys.isEmpty)
     #expect(c.summary == nil)
   }

@@ -15,7 +15,7 @@ struct RootTabView: View {
   var body: some View {
     TabView(selection: $selection) {
       Tab("tab.today", systemImage: "house", value: AppTab.today) {
-        PlaceholderScreen(title: "tab.today", systemImage: "house")
+        TodayTab(onStartWorkout: { selection = .workouts })
       }
       .accessibilityHint(Text(String(localized: "tab.today.hint")))
       Tab("tab.nutrition", systemImage: "fork.knife", value: AppTab.nutrition) {
@@ -24,11 +24,10 @@ struct RootTabView: View {
       .accessibilityHint(Text(String(localized: "tab.nutrition.hint")))
       Tab("tab.workouts", systemImage: "dumbbell", value: AppTab.workouts) {
         #if DEBUG
-          // Tạm thời: các màn thử cho Kiệt kiểm trên máy — lát dọc màn tập
-          // (A5) và Live Activity (#227). Màn tập thật thay chỗ này.
-          LabsView()
+          // Bản Debug: màn thật + các màn thử (Lab) cho Kiệt kiểm trên máy.
+          DebugWorkoutsTab()
         #else
-          PlaceholderScreen(title: "tab.workouts", systemImage: "dumbbell")
+          WorkoutsTab()
         #endif
       }
       .accessibilityHint(Text(String(localized: "tab.workouts.hint")))
@@ -45,6 +44,27 @@ struct RootTabView: View {
 }
 
 #if DEBUG
+  /// Tab Tập luyện của bản Debug: màn thật (như Release) hoặc Lab. Nhớ lựa
+  /// chọn qua các lần mở app.
+  private struct DebugWorkoutsTab: View {
+    @AppStorage("lab.showsLab") private var showsLab = false
+
+    var body: some View {
+      VStack(spacing: 0) {
+        Picker(selection: $showsLab) {
+          Text(verbatim: "App").tag(false)
+          Text(verbatim: "Lab").tag(true)
+        } label: {
+          Text(verbatim: "Mode")
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+        .padding(.top, 8)
+        if showsLab { LabsView() } else { WorkoutsTab() }
+      }
+    }
+  }
+
   /// Chọn giữa các màn thử (chỉ bản Debug). Nhớ lựa chọn qua các lần mở app.
   private struct LabsView: View {
     @AppStorage("lab.which") private var which = 0
@@ -88,6 +108,3 @@ private struct PlaceholderScreen: View {
   }
 }
 
-#Preview("Light") { RootTabView() }
-#Preview("Dark") { RootTabView().preferredColorScheme(.dark) }
-#Preview("Dynamic Type XXXL") { RootTabView().dynamicTypeSize(.accessibility3) }
