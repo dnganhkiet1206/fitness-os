@@ -14,6 +14,9 @@ public actor InMemoryWorkoutStore: WorkoutStore {
   /// Hàng đã sang `dead` — khi store này đóng vai `OutboxPersistence`.
   public private(set) var deadEntries: [DeadEntry] = []
   public private(set) var writes = 0
+  /// Người mà mỗi `saveDay` nói nó ghi cho (#454) — test kiểm controller
+  /// truyền đúng người của nó.
+  public private(set) var savedFor: [String] = []
   private var failures = 0
   private var loadFailures = 0
   private var heldKey: String?
@@ -69,8 +72,9 @@ public actor InMemoryWorkoutStore: WorkoutStore {
     return days[key]
   }
 
-  public func saveDay(_ key: String, _ state: DayState) async throws {
+  public func saveDay(_ key: String, _ state: DayState, userId: String) async throws {
     try await enter()
+    savedFor.append(userId)
     try locked(key, against: state.loggedSessionId)
     days[key] = state
   }

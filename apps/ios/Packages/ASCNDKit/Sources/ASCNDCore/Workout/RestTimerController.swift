@@ -142,6 +142,18 @@ public final class RestTimerController {
     await syncing?.value
   }
 
+  /// Lúc mở app, SAU khi biết phiên (C42, #252): không ai đăng nhập thì quãng
+  /// nghỉ đã lưu là của người trước — huỷ (xoá cả bản lưu) rồi mới đối chiếu,
+  /// nên Island không bao giờ phát lại tên bài của họ trên màn khoá.
+  ///
+  /// Đăng xuất trong app đã huỷ qua `onSessionEnded`; ca này là phiên mất khi
+  /// app không chạy (token hết hạn, bị thu hồi) — `SessionStore` coi lần mở
+  /// không phiên là `initialSession`, không chạy dọn.
+  public func reconcile(signedIn: Bool) async {
+    if !signedIn, timer != nil { handle(.cancel) }
+    await reconcile()
+  }
+
   /// Đợi vòng đồng bộ hiện tại xong (cho test và cho lúc app sắp vào nền).
   public func flush() async {
     while let s = syncing {

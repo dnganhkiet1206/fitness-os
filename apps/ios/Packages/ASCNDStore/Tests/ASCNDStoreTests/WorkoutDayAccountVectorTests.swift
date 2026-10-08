@@ -20,14 +20,18 @@ import Testing
 /// - `clearAll {expect: n}` — dọn của phiên (`clearAll`), trả về số ngày bỏ.
 /// - `save {day, done, expect}` — `saveDay` ngày chưa chốt.
 /// - `finish {day, session, done, expect}` — `commitFinish`; hàng outbox id
-///   `session`, `userId` = người đăng nhập gần nhất (lượt muộn mang id người cũ).
+///   `session`.
 /// - `delete {session, expect}` — `commitDelete`, hàng outbox `<session>@del`.
+/// Phép ghi (`save` / `finish` / `delete`) ghi CHO người đăng nhập gần nhất
+/// (lượt muộn sau đăng xuất mang người cũ), hoặc cho `as` nếu có — lượt muộn
+/// của controller người cũ tới khi người khác đã đăng nhập (#454).
 /// - `race {day, sessions, expect: {ok, dayAlreadyLogged}}` — các `finish`
 ///   chạy đồng thời.
 /// - `load {day, expect}` — `loadDay`; `null` = không thấy; object = chỉ so các
 ///   trường có mặt (`done` sắp xếp, `loggedSessionId`, `loggedKeys`).
 /// - `raw {owner, day, expect}` — đọc thẳng hàng của `owner` trên đĩa.
-/// - `prune {today, expect: n}` — `pruneDays`.
+/// - `prune {today, expect}` — `pruneDays`; `expect` là số ngày bỏ, hoặc
+///   `closed` khi không ai đăng nhập (#469).
 /// `expect` của phép ghi: `ok` | `closed` (`AccountScopeClosed`) |
 /// `dayAlreadyLogged`.
 
@@ -134,15 +138,15 @@ private final class Run {
 
   deinit { try? FileManager.default.removeItem(atPath: path) }
 
-  func entry(_ id: String) -> OutboxEntry {
+  func entry(_ id: String, as user: String? = nil) -> OutboxEntry {
     OutboxEntry(
-      id: id, userId: lastUser, kind: WorkoutSessionRecord.outboxKind, payload: .object(["id": .string(id)]),
+      id: id, userId: user ?? lastUser, kind: WorkoutSessionRecord.outboxKind, payload: .object(["id": .string(id)]),
       createdAt: EpochMillis(0))
   }
 
-  func finish(_ day: String, _ session: String, _ done: [String]) async throws {
+  func finish(_ day: String, _ session: String, _ done: [String], as user: String?) async throws {
     let state = DayState(progress: ticks(done), loggedSessionId: session, loggedKeys: done)
-    _ = try await store.commitFinish(try key(day), state, entry(session))
+    _ = try await store.commitFinish(try key(day), state, entry(session, as: user))
   }
 
   func check(_ ok: Bool, _ step: Int, _ op: String, _ message: @autoclosure () -> String) {
@@ -152,6 +156,7 @@ private final class Run {
   func step(_ i: Int, _ s: JSONValue) async throws {
     let op = s["op"]?.stringValue ?? "?"
     let expect = s["expect"]
+    let writer = s["as"]?.stringValue
     switch op {
     case "signIn":
       lastUser = (s["user"]?.stringValue ?? "").lowercased()
@@ -167,16 +172,16 @@ private final class Run {
       check(n == expect?.intValue, i, op, "dọn \(n), chờ \(expect.map { "\($0)" } ?? "?")")
     case "save":
       let k = try key(s["day"]?.stringValue ?? "")
-      let got = await outcome { try await self.store.saveDay(k, DayState(progress: ticks(strings(s["done"])))) }
+      let got = await outcome { try await self.store.saveDay(k, DayState(progress: ticks(strings(s["done"]))), userId: writer ?? self.lastUser) }
       check(got == expect?.stringValue, i, op, "\(got), chờ \(expect?.stringValue ?? "?")")
     case "finish":
       let got = await outcome {
-        try await self.finish(s["day"]?.stringValue ?? "", s["session"]?.stringValue ?? "", strings(s["done"]))
+        try await self.finish(s["day"]?.stringValue ?? "", s["session"]?.stringValue ?? "", strings(s["done"]), as: writer)
       }
       check(got == expect?.stringValue, i, op, "\(got), chờ \(expect?.stringValue ?? "?")")
     case "delete":
       let id = s["session"]?.stringValue ?? ""
-      let got = await outcome { try await self.store.commitDelete(sessionId: id, self.entry("\(id)@del")) }
+      let got = await outcome { try await self.store.commitDelete(sessionId: id, self.entry("\(id)@del", as: writer)) }
       check(got == expect?.stringValue, i, op, "\(got), chờ \(expect?.stringValue ?? "?")")
     case "race":
       let k = try key(s["day"]?.stringValue ?? "")
@@ -207,8 +212,13 @@ private final class Run {
       if let m = mismatch(state, expect) { check(false, i, op, "\(owner): \(m)") }
     case "prune":
       let today = try #require(LocalDate(s["today"]?.stringValue ?? ""))
-      let n = try await store.pruneDays(today: today)
-      check(n == expect?.intValue, i, op, "dọn \(n), chờ \(expect.map { "\($0)" } ?? "?")")
+      if expect?.stringValue == "closed" {
+        let got = await outcome { _ = try await self.store.pruneDays(today: today) }
+        check(got == "closed", i, op, "\(got), chờ closed")
+      } else {
+        let n = try await store.pruneDays(today: today)
+        check(n == expect?.intValue, i, op, "dọn \(n), chờ \(expect.map { "\($0)" } ?? "?")")
+      }
     default:
       throw VectorFailure(description: "bước \(i): op lạ '\(op)'")
     }
@@ -246,7 +256,7 @@ private func run(_ v: Vector) async throws -> [String] {
 struct WorkoutDayAccountVectorTests {
   @Test func vectorFileIsPresentAndWellFormed() throws {
     let cases = try loadVectors()
-    #expect(cases.count >= 9)
+    #expect(cases.count >= 11)
     #expect(Set(cases.map(\.rule)).count == cases.count, "trùng rule")
   }
 

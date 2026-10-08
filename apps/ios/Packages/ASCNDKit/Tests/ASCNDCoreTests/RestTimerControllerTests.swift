@@ -170,6 +170,33 @@ struct RestTimerControllerTests {
     #expect(driver.showing == t.activityContent(target: squat))
   }
 
+  /// C42 (#252): A nghỉ giữa chừng → app bị kill → phiên mất khi app không
+  /// chạy → mở lại ở trạng thái đăng xuất. Quãng nghỉ của A không được phát
+  /// lại; Island A để lại bị end; bản lưu bị xoá.
+  @Test func signedOutLaunchDropsThePreviousUsersRest() async throws {
+    let t = try #require(RestTimer.start(seconds: 90, at: EpochMillis(0)))
+    let left = t.activityContent(target: squat)
+    let driver = FakeDriver(showing: left)
+    var saved: RestTimer? = t
+    let c = RestTimerController(
+      driver: driver, clock: TestClock(40_000), restored: (t, squat), persist: { t, _ in saved = t })
+    await c.reconcile(signedIn: false)
+    #expect(c.timer == nil && c.target == nil)
+    #expect(saved == nil)
+    #expect(driver.showing == nil)
+    #expect(!driver.calls.contains { if case .start = $0 { true } else { false } })
+  }
+
+  /// Còn phiên: nghỉ tiếp như cũ.
+  @Test func signedInLaunchKeepsTheRest() async throws {
+    let t = try #require(RestTimer.start(seconds: 90, at: EpochMillis(0)))
+    let driver = FakeDriver()
+    let c = RestTimerController(driver: driver, clock: TestClock(40_000), restored: (t, squat))
+    await c.reconcile(signedIn: true)
+    #expect(c.timer == t)
+    #expect(driver.showing == t.activityContent(target: squat))
+  }
+
   /// Quãng nghỉ đã hết hẳn trong lúc app bị đóng: không hồi sinh, không haptic.
   @Test func reconcileDropsRestThatEndedWhileKilled() async throws {
     let t = try #require(RestTimer.start(seconds: 90, at: EpochMillis(0)))
@@ -250,5 +277,36 @@ struct RestTimerControllerTests {
     #expect(saved.count == 3)
     #expect(saved[1]?.total == 75)
     #expect(saved.last! == nil)
+  }
+
+  /// D32 (#477) — negative regression: ±15 sau terminal state KHÔNG được
+  /// publish gì mới lên ActivityKit, và timer vẫn nil.
+  ///
+  /// `RestTimer.reduce` coi quãng nghỉ đã `.over` như không còn (`live = nil`),
+  /// nên `adjust` lúc ấy trả về nil thay vì hồi sinh timer. Nếu ai đó bỏ chốt
+  /// này, `adjust(by: 15)` sẽ tạo timer mới (`endsAt = now + 15_000`) và vòng
+  /// sync sẽ `driver.start(...)` — test này đỏ ngay ở `driver.calls.count`.
+  @Test func adjustAfterEndPublishesNothing() async {
+    let driver = FakeDriver()
+    let clock = TestClock(0)
+    let c = RestTimerController(driver: driver, clock: clock)
+    // 1. Start timer.
+    c.handle(.start(seconds: 30), target: nil)
+    await c.flush()
+    // 2. Đưa về terminal state: quá endsAt + doneGraceMillis rồi settle.
+    clock.advance(31_100)
+    c.settle()
+    await c.flush()
+    #expect(c.timer == nil, "settle sau khi quá hạn phải đóng timer")
+    #expect(driver.calls.last == .end, "terminal state phải end activity")
+    let callsAfterEnd = driver.calls.count
+    // 4. Adjust +15 sau terminal state.
+    c.adjust(by: 15)
+    await c.flush()
+    // 5. Không có ActivityKit update mới nào sau terminal state.
+    #expect(driver.calls.count == callsAfterEnd, "adjust sau terminal state không được publish gì mới")
+    #expect(driver.showing == nil)
+    // 6. Timer vẫn nil — không hồi sinh.
+    #expect(c.timer == nil)
   }
 }

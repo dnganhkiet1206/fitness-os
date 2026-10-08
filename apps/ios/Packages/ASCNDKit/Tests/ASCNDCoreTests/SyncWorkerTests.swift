@@ -259,7 +259,7 @@ private actor BridgingStore: WorkoutStore {
   var days: [String: DayState] = [:]
   init(outbox: InMemoryOutboxStore) { self.outbox = outbox }
   func loadDay(_ key: String) async throws -> DayState? { days[key] }
-  func saveDay(_ key: String, _ state: DayState) async throws { days[key] = state }
+  func saveDay(_ key: String, _ state: DayState, userId: String) async throws { days[key] = state }
   func commitFinish(_ key: String, _ state: DayState, _ entry: OutboxEntry) async throws -> Bool {
     days[key] = state
     await outbox.append(entry)
