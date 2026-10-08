@@ -24,7 +24,7 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 |---|---|---|---|---|---|---|
 | Đăng nhập email / Apple / quên MK | ✅ | ✅ | 🟡 | 🟡 | 🟡 PARTIAL | `SessionStore`+`SupabaseAuthAPI` (#245), `AuthView` (#297). Nonce Apple theo từng lượt (P1, batch 1, `AppleSignInNoncesTests`). Kiểm tra form #350 (batch 3; **cải tiến** so với RN: RN chỉ đòi khác rỗng). Thiếu: capability Apple trong `project.yml` (A/Kiệt) |
 | Gate phiên, đổi tài khoản | ✅ | ✅ | ✅ | ✅ | ✅ DONE | #293, #397, #338; `AccountIsolationTests`, D-22 #390 |
-| Đổi mật khẩu | ✅ | 🟡 | ✅ | ✅ | 🟡 PARTIAL | A29 #441 (batch 5): `PasswordChangeController`, luật RN (≥6 đơn vị UTF-16, so từng đơn vị như JS), lỗi có tên. Chưa có màn production |
+| Đổi mật khẩu | ✅ | 🟡 | ✅ | ✅ | 🟡 PARTIAL | A29 #441 (batch 5): `PasswordChangeController`, luật RN (≥6 đơn vị UTF-16, so từng đơn vị như JS), lỗi có tên. E (#527 Phase 8): `ChangePasswordView` từ Cài đặt ở Release (hàng chỉ hiện khi đã đăng nhập); lỗi có tên ra lời (không chuỗi thô của server). Khác RN: chưa có toast — "đã đổi" báo dưới hàng của Cài đặt + VoiceOver. Thiết bị: NOT RUN |
 | Onboarding | ✅ | 🔵 | 🟡 | ✅ | 🔵 IN QUEUE | A30 #442 (batch 5): trạng thái, luật bước, nháp bền, `FitnessCalc` (golden `plan-golden.json` sinh từ RN). E (#527 1.3): cổng `OnboardingGateView` trong `RootGate` + 11 màn + thước (golden `ruler-golden.json` sinh từ `units.ts`/`BOUNDS`) + văn bản pháp lý chép máy từ `legal-content.ts`. Còn thiếu: màn Sức khoẻ (chờ HealthKit 4.1), Koa / hình chiếc cân (Phase 7), kiểm trên iPhone thật |
 | Hôm nay (5 trạng thái, kế hoạch) | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `TodayController` (#290), `TodayScreen` (#345), vectors TC (#380). `todayCta` / `sessionTicks` / `mergeProgress` port vào Core (`TodayRules`, batch 5, runner TodayVectorTests). Thiếu: TodayView chưa dùng `cta`; widget Hôm nay (mục 3) |
 | Màn tập trong ngày | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | #263/#268/#287/#389; vectors WS (#286), append (#347), remove-set (#412). Tạ lẻ `plannedLoad` + lỗi chốt chữ RN (batch 1, golden node). VoiceOver từng control #288 + #291, focus/flush ô nhập #318 (batch 3). Ô nhập đọc `controller.progress` (không seed một lần), khoá khi controller không cho sửa (`canEditMatchesWhatTheSettersAccept`). Sau khi chốt (batch 4): bỏ tích → hỏi lại chữ RN → gỡ + hoàn tác 8 s; "Ghi thêm vào buổi hôm nay"; rung + VoiceOver khi xong. Đa thiết bị (batch 6): buổi ghi ở máy khác được NHẬN — hàng chứng minh đã tích với số thật, gỡ / nối thêm vào buổi ấy như RN (`AdoptRemoteSessionTests`, hai máy qua server giả). Chưa thử trên hai máy thật. Thiếu: RestCard / SyncStrip chưa nối controller; `WorkoutView` chưa được gắn vào tab production |
@@ -64,11 +64,12 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 | `sessions` | Lịch sử | dữ liệu #433; UI #375 (batch 3) | 🟡 |
 | `templates`, `workout-builder` | Template | #410 + #435 | 🔵 |
 | `exercises`, `exercise-guide`, `exercise-insight` | Thư viện | — | 🔵 A26/A27/A28/A25 |
-| `change-password` | Tài khoản | — | 🔵 A29 #441 |
+| `change-password` | Tài khoản | `ChangePasswordView` (Cài đặt) | 🟡 PARTIAL — E #527 Phase 8 trên lõi A29 #441 |
 | `edit-profile` | Hồ sơ | — | 🔵 A31 #443 |
 | `settings` | Cài đặt | vỏ #394 | ⚪ A32 #444 (ranh giới) |
 | `reminders` | Nhắc nhở | `RemindersView` (từ Cài đặt) | 🔵 E #527 1.10 trên lõi A33 #445 — vào được ở Release khi #528 nối Cài đặt |
-| `legal`, `media-viewer` | Khác | — | 🔴 TODO |
+| `legal` | Khác | `LegalView` (Cài đặt, 4 tab; onboarding dùng 3 tab) | 🟡 PARTIAL — E #527 Phase 8; văn bản chép máy (`gen.mjs --check`) |
+| `media-viewer` | Khác | `GuideMediaViewer` (từ hướng dẫn bài) | 🟡 (#544) |
 | `(tabs)/nutrition`, `diary`, `food-editor`, `food-list`, `grocery`, `log-meal`, `meal-plan`, `meal-plans`, `nutrition-insights`, `scan-barcode`, `scan-food`, `supplements`, `water` | Dinh dưỡng | — | 🔴 TODO (13) |
 | `(tabs)/community`, `community-challenge`, `community-challenges`, `community-inbox`, `community-post`, `community-privacy`, `community-profile`, `community-saved`, `community-search`, `community-share`, `community-share-progress`, `community-share-recipe`, `community-user`, `challenges` | Cộng đồng | — | 🔴 TODO (14) |
 | `(tabs)/assistant`, `ai-coach`, `coach-memory` | Trợ lý | — | 🔴 TODO (3) |

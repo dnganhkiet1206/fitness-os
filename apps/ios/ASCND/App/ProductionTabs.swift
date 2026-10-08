@@ -122,7 +122,9 @@ private struct SettingsSheet: View {
       theme: services.preferences.theme.rawValue,
       onThemeChange: { code in
         if let t = AppPreferences.Theme(rawValue: code) { services.preferences.setTheme(t) }
-      }
+      },
+      makePasswordChange: { PasswordChangeController(session: services.session) },
+      legalLang: services.preferences.lang
     )
     .presentationDragIndicator(.visible)
   }

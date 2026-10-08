@@ -18,12 +18,15 @@ struct LegalContent: Decodable {
     let blocks: [Block]
   }
 
+  let pageTitle: String
   let tabTerms: String
   let tabPrivacy: String
   let tabHealth: String
+  let tabData: String
   let terms: Doc
   let privacy: Doc
   let health: Doc
+  let data: Doc
 
   private struct File: Decodable {
     let vi: LegalContent
@@ -49,11 +52,8 @@ struct LegalContent: Decodable {
 /// `onboarding-flow.tsx`): màn 13 nói "bắt đầu tức là bạn đồng ý với…", nên
 /// cả ba phải đọc được TRƯỚC khi đồng ý — màn Pháp lý của app nằm sau cổng.
 struct LegalSheet: View {
-  enum Tab: Hashable, CaseIterable { case terms, privacy, health }
-
   /// Đọc một lần khi mở sheet, không mỗi lần đổi tab.
   private let content: LegalContent?
-  @State private var tab: Tab = .terms
   @Environment(\.dismiss) private var dismiss
 
   init(lang: AppPreferences.Lang) {
@@ -62,41 +62,69 @@ struct LegalSheet: View {
 
   var body: some View {
     NavigationStack {
-      VStack(spacing: 0) {
-        if let content {
-          Picker(selection: $tab) {
-            ForEach(Tab.allCases, id: \.self) { t in
-              Text(verbatim: label(t, content)).tag(t)
+      LegalDocumentView(content: content, tabs: [.terms, .privacy, .health])
+        .toolbar {
+          ToolbarItem(placement: .cancellationAction) {
+            Button {
+              dismiss()
+            } label: {
+              Image(systemName: "xmark")
             }
-          } label: {
-            Text(verbatim: label(tab, content))
-          }
-          .pickerStyle(.segmented)
-          .padding(DS.Spacing.md)
-          ScrollView {
-            VStack(alignment: .leading, spacing: DS.Spacing.md) {
-              ForEach(Array(doc(tab, content).blocks.enumerated()), id: \.offset) { _, b in
-                block(b)
-              }
-            }
-            .padding(DS.Spacing.md)
+            .accessibilityLabel(Text(String(localized: "onboarding.legal.close")))
           }
         }
-      }
-      .background(DS.Color.background.swiftUI)
-      .navigationTitle(content.map { doc(tab, $0).title } ?? "")
-      .navigationBarTitleDisplayMode(.inline)
-      .toolbar {
-        ToolbarItem(placement: .cancellationAction) {
-          Button {
-            dismiss()
-          } label: {
-            Image(systemName: "xmark")
+    }
+  }
+}
+
+/// Màn Pháp lý của app (`app/legal.tsx` @ fac9ac2), mở từ Cài đặt
+/// (`settings.tsx:739`): đủ BỐN tab — Điều khoản, Riêng tư, Sức khoẻ, Dữ liệu.
+struct LegalView: View {
+  private let content: LegalContent?
+
+  init(lang: AppPreferences.Lang) {
+    content = LegalContent.load(lang)
+  }
+
+  var body: some View {
+    LegalDocumentView(content: content, tabs: LegalDocumentView.Tab.allCases)
+  }
+}
+
+/// Phần chung: bộ chọn tab + các khối của tài liệu đang chọn.
+struct LegalDocumentView: View {
+  enum Tab: Hashable, CaseIterable { case terms, privacy, health, data }
+
+  let content: LegalContent?
+  let tabs: [Tab]
+  @State private var tab: Tab = .terms
+
+  var body: some View {
+    VStack(spacing: 0) {
+      if let content {
+        Picker(selection: $tab) {
+          ForEach(tabs, id: \.self) { t in
+            Text(verbatim: label(t, content)).tag(t)
           }
-          .accessibilityLabel(Text(String(localized: "onboarding.legal.close")))
+        } label: {
+          Text(verbatim: label(tab, content))
+        }
+        .pickerStyle(.segmented)
+        .padding(DS.Spacing.md)
+        ScrollView {
+          VStack(alignment: .leading, spacing: DS.Spacing.md) {
+            ForEach(Array(doc(tab, content).blocks.enumerated()), id: \.offset) { i, b in
+              // Khối đầu của Sức khoẻ là lời cảnh báo y tế: viền đỏ như RN `warnCard`.
+              block(b, warning: tab == .health && i == 0)
+            }
+          }
+          .padding(DS.Spacing.md)
         }
       }
     }
+    .background(DS.Color.background.swiftUI)
+    .navigationTitle(content.map { doc(tab, $0).title } ?? "")
+    .navigationBarTitleDisplayMode(.inline)
   }
 
   private func label(_ t: Tab, _ c: LegalContent) -> String {
@@ -104,6 +132,7 @@ struct LegalSheet: View {
     case .terms: c.tabTerms
     case .privacy: c.tabPrivacy
     case .health: c.tabHealth
+    case .data: c.tabData
     }
   }
 
@@ -112,11 +141,12 @@ struct LegalSheet: View {
     case .terms: c.terms
     case .privacy: c.privacy
     case .health: c.health
+    case .data: c.data
     }
   }
 
   /// Thứ tự của RN: tiêu đề, thân, lời dẫn, gạch đầu dòng.
-  private func block(_ b: LegalContent.Block) -> some View {
+  private func block(_ b: LegalContent.Block, warning: Bool) -> some View {
     VStack(alignment: .leading, spacing: DS.Spacing.xs) {
       Text(b.title)
         .font(DS.TextStyle.headline)
@@ -145,5 +175,10 @@ struct LegalSheet: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .background(DS.Color.card.swiftUI)
     .clipShape(RoundedRectangle(cornerRadius: DS.Radius.md))
+    .overlay {
+      if warning {
+        RoundedRectangle(cornerRadius: DS.Radius.md).stroke(DS.Color.readinessRed.swiftUI, lineWidth: 1)
+      }
+    }
   }
 }
