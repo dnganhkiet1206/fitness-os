@@ -264,7 +264,7 @@ private struct DayPicker: View {
           }
         }
         Section {
-          let templates = (snapshot?.templates ?? []).sorted(by: PlanEdit.newestFirst)
+          let templates = (snapshot?.templates ?? []).sorted(by: WorkoutTemplate.newestFirst)
           if templates.isEmpty {
             Text(snapshot == nil && flow.today.failure != nil ? String(localized: "history.loadFailed") : String(localized: "wp.noTemplates"))
               .font(DS.TextStyle.footnote)
