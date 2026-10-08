@@ -21,6 +21,10 @@ public struct SettingsView: View {
   let account: AccountSummary?
   var onSignOut: () -> Void
   var onLanguageChange: (String) -> Void
+  /// Hiện bộ chọn ngôn ngữ. Production tắt cho tới khi đổi ngôn ngữ trong app
+  /// đổi được chữ thật (#527 Phase 1): chữ app hiện theo ngôn ngữ máy, một bộ
+  /// chọn không đổi gì là một nút hỏng.
+  var showsLanguage: Bool
 
   @State private var showSignOutConfirm = false
   @State private var selectedLanguage = "vi"
@@ -38,11 +42,13 @@ public struct SettingsView: View {
   public init(
     account: AccountSummary? = nil,
     onSignOut: @escaping () -> Void = {},
-    onLanguageChange: @escaping (String) -> Void = { _ in }
+    onLanguageChange: @escaping (String) -> Void = { _ in },
+    showsLanguage: Bool = true
   ) {
     self.account = account
     self.onSignOut = onSignOut
     self.onLanguageChange = onLanguageChange
+    self.showsLanguage = showsLanguage
   }
 
   public var body: some View {
@@ -69,24 +75,26 @@ public struct SettingsView: View {
         }
 
         // Language
-        Section {
-          Picker(
-            String(localized: "settings.language"),
-            selection: $selectedLanguage
-          ) {
-            // Tên ngôn ngữ viết bằng CHÍNH ngôn ngữ ấy, không dịch — người
-            // không đọc được ngôn ngữ đang chọn vẫn tìm ra ngôn ngữ của mình
-            // (như RN `i18n.ts` LANGUAGES, như Cài đặt iOS). `verbatim`: không
-            // tra xcstrings bằng chính chuỗi hiển thị.
-            ForEach(Self.languages, id: \.code) { lang in
-              Text(verbatim: lang.endonym).tag(lang.code)
+        if showsLanguage {
+          Section {
+            Picker(
+              String(localized: "settings.language"),
+              selection: $selectedLanguage
+            ) {
+              // Tên ngôn ngữ viết bằng CHÍNH ngôn ngữ ấy, không dịch — người
+              // không đọc được ngôn ngữ đang chọn vẫn tìm ra ngôn ngữ của mình
+              // (như RN `i18n.ts` LANGUAGES, như Cài đặt iOS). `verbatim`: không
+              // tra xcstrings bằng chính chuỗi hiển thị.
+              ForEach(Self.languages, id: \.code) { lang in
+                Text(verbatim: lang.endonym).tag(lang.code)
+              }
             }
+            .onChange(of: selectedLanguage) { _, new in
+              onLanguageChange(new)
+            }
+          } header: {
+            Text(String(localized: "settings.language"))
           }
-          .onChange(of: selectedLanguage) { _, new in
-            onLanguageChange(new)
-          }
-        } header: {
-          Text(String(localized: "settings.language"))
         }
 
         // Appearance (placeholder — hệ thống)

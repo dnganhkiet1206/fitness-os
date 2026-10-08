@@ -25,6 +25,13 @@ public struct WorkoutView: View {
   var onSkipRest: () -> Void
   /// Trạng thái outbox — A8 nối `SyncWorker`. Mặc định `.ok` (không hiện).
   var outboxStatus: OutboxStatus
+  /// Chốt / nối thêm qua tầng ứng dụng (`WorkoutFlow.finish` / `.append`):
+  /// flow làm thêm việc mà controller không biết (ngày đã chốt ở chỗ khác vẫn
+  /// là "đã tập"). `nil` = gọi thẳng controller (Preview, test).
+  var onFinish: (@MainActor () async throws -> Void)?
+  var onAppend: (@MainActor () async throws -> Void)?
+  /// Mở lịch sử buổi tập. `nil` = không hiện nút (Preview, test).
+  var onOpenHistory: (() -> Void)?
 
   @State private var weightTexts: [String: String] = [:]
   @State private var repsTexts: [String: String] = [:]
@@ -55,7 +62,10 @@ public struct WorkoutView: View {
     restTimer: RestTimer? = nil,
     onAdjustRest: @escaping (Int) -> Void = { _ in },
     onSkipRest: @escaping () -> Void = {},
-    outboxStatus: OutboxStatus = .ok
+    outboxStatus: OutboxStatus = .ok,
+    onFinish: (@MainActor () async throws -> Void)? = nil,
+    onAppend: (@MainActor () async throws -> Void)? = nil,
+    onOpenHistory: (() -> Void)? = nil
   ) {
     self.controller = controller
     self.restingRowKey = restingRowKey
@@ -63,6 +73,9 @@ public struct WorkoutView: View {
     self.onAdjustRest = onAdjustRest
     self.onSkipRest = onSkipRest
     self.outboxStatus = outboxStatus
+    self.onFinish = onFinish
+    self.onAppend = onAppend
+    self.onOpenHistory = onOpenHistory
   }
 
   public var body: some View {
@@ -86,6 +99,15 @@ public struct WorkoutView: View {
       // Một thanh "Xong" trên bàn phím cho cả màn — gắn trên từng ô reps thì
       // mỗi hàng góp một nút.
       .toolbar {
+        if let onOpenHistory {
+          ToolbarItem(placement: .topBarTrailing) {
+            Button(action: onOpenHistory) {
+              Image(systemName: "clock.arrow.circlepath")
+                .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityLabel(Text("history.title"))
+          }
+        }
         ToolbarItemGroup(placement: .keyboard) {
           Spacer()
           Button(String(localized: "workout.done")) {
@@ -583,7 +605,7 @@ public struct WorkoutView: View {
     defer { isFinishing = false }
     await flushWrites()
     do {
-      _ = try await controller.append()
+      if let onAppend { try await onAppend() } else { _ = try await controller.append() }
       successTick += 1
       AccessibilityNotification.Announcement(String(localized: "workout.appended")).post()
     } catch let refusal as WorkoutSessionController.FinishRefusal {
@@ -598,7 +620,7 @@ public struct WorkoutView: View {
     defer { isFinishing = false }
     await flushWrites()
     do {
-      _ = try await controller.finish()
+      if let onFinish { try await onFinish() } else { _ = try await controller.finish() }
       // RN: Haptics.success + "Đã ghi buổi tập" (nRdSaved).
       successTick += 1
       AccessibilityNotification.Announcement(String(localized: "workout.saved")).post()
