@@ -216,4 +216,43 @@ struct WorkoutUnitsTests {
     #expect(c.progress.remoteWeight["b1"] == nil)
     #expect(c.performed(rows[0]).weightKg == 132.3 / Self.lbPerKg)
   }
+
+  // MARK: - 1.9-B: màn tập + Today
+
+  /// Ô tạ của hàng chưa gõ hiện `unit.seed(kg)`; KHÔNG chạm thì set ghi đúng
+  /// số kế hoạch (60 kg). Khác RN có chủ đích: RN gieo chữ "132.3" vào state
+  /// rồi đọc lại → 60.0103 → ghi 60.01 kg cho một set kế hoạch 60 kg.
+  @Test func untouchedPlannedRowUnderLbsLogsThePlannedKg() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store, unit: .lbs)
+    #expect(WeightUnit.lbs.seed(rows[0].weightKg) == "132.3", "ô hiện 132.3 lb")
+    #expect(await c.toggle("b1"))
+    _ = try await c.finish()
+    #expect(try await outboxSets(store).first?["weight"]?.doubleValue == 60)
+  }
+
+  /// Gõ lại đúng chữ ô đang hiện ("132.3" lb) là một số người dùng NHẬP:
+  /// đổi về kg rồi ghi 2 chữ số lẻ như RN → 60.01 kg.
+  @Test func retypedSeedIsReadAsTypedPounds() async throws {
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store, unit: .lbs)
+    #expect(await c.setWeightText(WeightUnit.lbs.seed(60), for: "b1"))
+    #expect(await c.toggle("b1"))
+    _ = try await c.finish()
+    #expect(try await outboxSets(store).first?["weight"]?.doubleValue == 60.01)
+  }
+
+  /// Dòng kế hoạch của Today: một chữ số lẻ theo đơn vị, dấu thập phân của
+  /// máy; không tạ → không có chữ (không "0 kg").
+  @Test func todayLoadFollowsUnitAndLocale() {
+    let en = Locale(identifier: "en_US"), vi = Locale(identifier: "vi_VN")
+    #expect(WeightUnit.kg.localizedLoad(62.5, locale: en) == "62.5 kg")
+    #expect(WeightUnit.kg.localizedLoad(62.5, locale: vi) == "62,5 kg")
+    #expect(WeightUnit.lbs.localizedLoad(62.5, locale: en) == "137.8 lb")
+    #expect(WeightUnit.lbs.localizedLoad(62.5, locale: vi) == "137,8 lb")
+    #expect(WeightUnit.kg.localizedLoad(100, locale: vi) == "100 kg")
+    #expect(WeightUnit.kg.localizedLoad(62.25, locale: en) == "62.3 kg", "một chữ số lẻ như displayWeight")
+    #expect(WeightUnit.kg.localizedLoad(0, locale: en) == nil)
+    #expect(WeightUnit.lbs.localizedLoad(-5, locale: en) == nil)
+  }
 }

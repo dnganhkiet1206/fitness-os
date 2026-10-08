@@ -46,11 +46,23 @@
  "weights": [
   {
    "unit": "kg",
+   "kg": -1,
+   "convert": -1,
+   "display": -1,
+   "label": "kg",
+   "text": "-1",
+   "seed": "",
+   "volume": -1,
+   "backToKg": -1
+  },
+  {
+   "unit": "kg",
    "kg": 0,
    "convert": 0,
    "display": 0,
    "label": "kg",
    "text": "0",
+   "seed": "",
    "volume": 0,
    "backToKg": 0
   },
@@ -61,6 +73,7 @@
    "display": 0.5,
    "label": "kg",
    "text": "0.5",
+   "seed": "0.5",
    "volume": 1,
    "backToKg": 0.5
   },
@@ -71,6 +84,7 @@
    "display": 1,
    "label": "kg",
    "text": "1",
+   "seed": "1",
    "volume": 1,
    "backToKg": 1
   },
@@ -81,6 +95,7 @@
    "display": 2.5,
    "label": "kg",
    "text": "2.5",
+   "seed": "2.5",
    "volume": 3,
    "backToKg": 2.5
   },
@@ -91,6 +106,7 @@
    "display": 20,
    "label": "kg",
    "text": "20",
+   "seed": "20",
    "volume": 20,
    "backToKg": 20
   },
@@ -101,6 +117,7 @@
    "display": 22.5,
    "label": "kg",
    "text": "22.5",
+   "seed": "22.5",
    "volume": 23,
    "backToKg": 22.5
   },
@@ -111,6 +128,7 @@
    "display": 45.4,
    "label": "kg",
    "text": "45.4",
+   "seed": "45.4",
    "volume": 45,
    "backToKg": 45.4
   },
@@ -121,6 +139,7 @@
    "display": 60,
    "label": "kg",
    "text": "60",
+   "seed": "60",
    "volume": 60,
    "backToKg": 60
   },
@@ -131,6 +150,7 @@
    "display": 61.2,
    "label": "kg",
    "text": "61.2",
+   "seed": "61.2",
    "volume": 61,
    "backToKg": 61.2
   },
@@ -141,6 +161,7 @@
    "display": 61.2,
    "label": "kg",
    "text": "61.2",
+   "seed": "61.2",
    "volume": 61,
    "backToKg": 61.2
   },
@@ -151,6 +172,7 @@
    "display": 62.5,
    "label": "kg",
    "text": "62.5",
+   "seed": "62.5",
    "volume": 63,
    "backToKg": 62.5
   },
@@ -161,6 +183,7 @@
    "display": 70,
    "label": "kg",
    "text": "70",
+   "seed": "70",
    "volume": 70,
    "backToKg": 70
   },
@@ -171,6 +194,7 @@
    "display": 72.5,
    "label": "kg",
    "text": "72.5",
+   "seed": "72.5",
    "volume": 73,
    "backToKg": 72.5
   },
@@ -181,6 +205,7 @@
    "display": 100,
    "label": "kg",
    "text": "100",
+   "seed": "100",
    "volume": 100,
    "backToKg": 100
   },
@@ -191,6 +216,7 @@
    "display": 100.2,
    "label": "kg",
    "text": "100.2",
+   "seed": "100.2",
    "volume": 100,
    "backToKg": 100.2
   },
@@ -201,6 +227,7 @@
    "display": 102.1,
    "label": "kg",
    "text": "102.1",
+   "seed": "102.1",
    "volume": 102,
    "backToKg": 102.1
   },
@@ -211,6 +238,7 @@
    "display": 140,
    "label": "kg",
    "text": "140",
+   "seed": "140",
    "volume": 140,
    "backToKg": 140
   },
@@ -221,6 +249,7 @@
    "display": 142.9,
    "label": "kg",
    "text": "142.9",
+   "seed": "142.9",
    "volume": 143,
    "backToKg": 142.9
   },
@@ -231,6 +260,7 @@
    "display": 180,
    "label": "kg",
    "text": "180",
+   "seed": "180",
    "volume": 180,
    "backToKg": 180
   },
@@ -241,6 +271,7 @@
    "display": 0,
    "label": "kg",
    "text": "0",
+   "seed": "0",
    "volume": 0,
    "backToKg": 0
   },
@@ -251,6 +282,7 @@
    "display": 0,
    "label": "kg",
    "text": "0",
+   "seed": "0",
    "volume": 0,
    "backToKg": 0
   },
@@ -261,6 +293,7 @@
    "display": 1234.5,
    "label": "kg",
    "text": "1234.5",
+   "seed": "1234.5",
    "volume": 1235,
    "backToKg": 1234.5
   },
@@ -271,6 +304,7 @@
    "display": 48200,
    "label": "kg",
    "text": "48200",
+   "seed": "48200",
    "volume": 48200,
    "backToKg": 48200
   },
@@ -281,8 +315,20 @@
    "display": 4200.8,
    "label": "kg",
    "text": "4200.8",
+   "seed": "4200.8",
    "volume": 4201,
    "backToKg": 4200.8
+  },
+  {
+   "unit": "lbs",
+   "kg": -1,
+   "convert": -2.2046226218,
+   "display": -2.2,
+   "label": "lb",
+   "text": "-2.2",
+   "seed": "",
+   "volume": -2,
+   "backToKg": -0.997903214022078
   },
   {
    "unit": "lbs",
@@ -291,6 +337,7 @@
    "display": 0,
    "label": "lb",
    "text": "0",
+   "seed": "",
    "volume": 0,
    "backToKg": 0
   },
@@ -301,6 +348,7 @@
    "display": 1.1,
    "label": "lb",
    "text": "1.1",
+   "seed": "1.1",
    "volume": 1,
    "backToKg": 0.498951607011039
   },
@@ -311,6 +359,7 @@
    "display": 2.2,
    "label": "lb",
    "text": "2.2",
+   "seed": "2.2",
    "volume": 2,
    "backToKg": 0.997903214022078
   },
@@ -321,6 +370,7 @@
    "display": 5.5,
    "label": "lb",
    "text": "5.5",
+   "seed": "5.5",
    "volume": 6,
    "backToKg": 2.494758035055195
   },
@@ -331,6 +381,7 @@
    "display": 44.1,
    "label": "lb",
    "text": "44.1",
+   "seed": "44.1",
    "volume": 44,
    "backToKg": 20.003423517442563
   },
@@ -341,6 +392,7 @@
    "display": 49.6,
    "label": "lb",
    "text": "49.6",
+   "seed": "49.6",
    "volume": 50,
    "backToKg": 22.49818155249776
   },
@@ -351,6 +403,7 @@
    "display": 100,
    "label": "lb",
    "text": "100",
+   "seed": "100",
    "volume": 100,
    "backToKg": 45.35923700100354
   },
@@ -361,6 +414,7 @@
    "display": 132.3,
    "label": "lb",
    "text": "132.3",
+   "seed": "132.3",
    "volume": 132,
    "backToKg": 60.01027055232769
   },
@@ -371,6 +425,7 @@
    "display": 135,
    "label": "lb",
    "text": "135",
+   "seed": "135",
    "volume": 135,
    "backToKg": 61.234969951354785
   },
@@ -381,6 +436,7 @@
    "display": 135,
    "label": "lb",
    "text": "135",
+   "seed": "135",
    "volume": 135,
    "backToKg": 61.234969951354785
   },
@@ -391,6 +447,7 @@
    "display": 137.8,
    "label": "lb",
    "text": "137.8",
+   "seed": "137.8",
    "volume": 138,
    "backToKg": 62.50502858738289
   },
@@ -401,6 +458,7 @@
    "display": 154.3,
    "label": "lb",
    "text": "154.3",
+   "seed": "154.3",
    "volume": 154,
    "backToKg": 69.98930269254848
   },
@@ -411,6 +469,7 @@
    "display": 159.8,
    "label": "lb",
    "text": "159.8",
+   "seed": "159.8",
    "volume": 160,
    "backToKg": 72.48406072760366
   },
@@ -421,6 +480,7 @@
    "display": 220.5,
    "label": "lb",
    "text": "220.5",
+   "seed": "220.5",
    "volume": 221,
    "backToKg": 100.01711758721281
   },
@@ -431,6 +491,7 @@
    "display": 221,
    "label": "lb",
    "text": "221",
+   "seed": "221",
    "volume": 221,
    "backToKg": 100.24391377221782
   },
@@ -441,6 +502,7 @@
    "display": 225,
    "label": "lb",
    "text": "225",
+   "seed": "225",
    "volume": 225,
    "backToKg": 102.05828325225797
   },
@@ -451,6 +513,7 @@
    "display": 308.6,
    "label": "lb",
    "text": "308.6",
+   "seed": "308.6",
    "volume": 309,
    "backToKg": 139.97860538509696
   },
@@ -461,6 +524,7 @@
    "display": 315,
    "label": "lb",
    "text": "315",
+   "seed": "315",
    "volume": 315,
    "backToKg": 142.88159655316116
   },
@@ -471,6 +535,7 @@
    "display": 396.8,
    "label": "lb",
    "text": "396.8",
+   "seed": "396.8",
    "volume": 397,
    "backToKg": 179.98545241998207
   },
@@ -481,6 +546,7 @@
    "display": 0.1,
    "label": "lb",
    "text": "0.1",
+   "seed": "0.1",
    "volume": 0,
    "backToKg": 0.04535923700100355
   },
@@ -491,6 +557,7 @@
    "display": 0.1,
    "label": "lb",
    "text": "0.1",
+   "seed": "0.1",
    "volume": 0,
    "backToKg": 0.04535923700100355
   },
@@ -501,6 +568,7 @@
    "display": 2721.6,
    "label": "lb",
    "text": "2721.6",
+   "seed": "2721.6",
    "volume": 2722,
    "backToKg": 1234.4969942193125
   },
@@ -511,6 +579,7 @@
    "display": 106262.8,
    "label": "lb",
    "text": "106262.8",
+   "seed": "106262.8",
    "volume": 106263,
    "backToKg": 48199.995295902394
   },
@@ -521,6 +590,7 @@
    "display": 9261.1,
    "label": "lb",
    "text": "9261.1",
+   "seed": "9261.1",
    "volume": 9261,
    "backToKg": 4200.764297899939
   }

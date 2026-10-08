@@ -71,7 +71,7 @@ private struct SignedInScope<Content: View>: View {
     Group {
       if let flow {
         content.environment(flow)
-          .environment(\.weightUnit, WeightUnit(profile: profile?.profile))
+          .environment(\.weightUnit, weightUnit)
       } else {
         ProgressView()
           .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -79,6 +79,7 @@ private struct SignedInScope<Content: View>: View {
     }
     .task {
       let f = services.makeWorkoutFlow(userId: userId, rest: rest)
+      f.setWeightUnit(weightUnit)
       flow = f
       // "Đang kết nối lại" thoát khi lượt tải của phiên này xong. Giữ `weak`:
       // phiên đã đóng thì không còn gì để chờ. Không gỡ ở `onDisappear` — cây
@@ -110,11 +111,19 @@ private struct SignedInScope<Content: View>: View {
       // Đổi đơn vị ở máy khác: ra tiền cảnh thì đọc lại hồ sơ.
       if phase == .active, let profile { Task { await profile.refresh() } }
     }
+    // Màn tập đọc và gõ theo đơn vị của tài khoản (#527 1.9-B): controller đổi
+    // chữ trong ô về kg theo đúng đơn vị màn đang hiện. Hồ sơ chưa nạp → kg,
+    // như RN `useUnits`.
+    .onChange(of: weightUnit, initial: true) { _, unit in
+      flow?.setWeightUnit(unit)
+    }
     .onChange(of: services.sync.online) { _, online in
       // Có mạng lại (`refetchOnReconnect` của baseline).
       if online, let flow { Task { await flow.reconnected() } }
     }
   }
+
+  private var weightUnit: WeightUnit { WeightUnit(profile: profile?.profile) }
 
   private var isCurrentSession: Bool {
     if case .signedIn(let s) = services.session.phase { return s.userId == userId }

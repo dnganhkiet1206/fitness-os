@@ -223,6 +223,18 @@ struct WorkoutFlowTests {
     #expect(next !== s && next.weightUnit == .lbs)
   }
 
+  /// Phiên mới (đổi tài khoản dựng flow mới, `.id(userId)`): không mang đơn
+  /// vị của người trước — kg cho tới khi hồ sơ của người này nạp xong.
+  @Test func aNewFlowStartsInKgRegardlessOfThePreviousAccount() async throws {
+    let h = Harness()
+    await h.flow.start()
+    h.flow.setWeightUnit(.lbs)
+    let other = h.make()
+    await other.start()
+    #expect(other.weightUnit == .kg)
+    #expect(try #require(other.session).weightUnit == .kg)
+  }
+
   /// Qua nửa đêm giữa buổi: buổi dở vẫn ở đó, chốt muộn ghi đúng ngày đã tập.
   @Test func activeSessionSurvivesMidnight() async throws {
     let h = Harness()
