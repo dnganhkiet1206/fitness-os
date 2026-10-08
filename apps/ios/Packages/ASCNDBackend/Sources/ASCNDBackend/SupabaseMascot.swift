@@ -35,7 +35,7 @@ public struct SupabaseMascotSource: MascotSource {
     let rows: [DateDTO] = try await client.from("daily_logs")
       .select("date")
       .eq("user_id", value: userId)
-      .or(StreakRules.loggedDayFilter)
+      .or(Streak.loggedDayFilter)
       .order("date", ascending: false)
       .limit(limit)
       .execute().value

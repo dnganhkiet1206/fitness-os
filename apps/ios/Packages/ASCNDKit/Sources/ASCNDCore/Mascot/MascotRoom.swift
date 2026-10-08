@@ -175,7 +175,7 @@ public final class MascotRoomController {
   public private(set) var today: LocalDate
   public private(set) var phase: Phase = .loading
   public private(set) var wallet: MascotWallet?
-  public private(set) var streak = StreakRules.Streak(count: 0, loggedToday: false)
+  public private(set) var streak = Streak.Value(count: 0, loggedToday: false)
   /// Băng chuỗi đang giữ / đã dùng.
   public private(set) var freezesHeld = 0
   public private(set) var freezesUsed = 0
@@ -220,7 +220,7 @@ public final class MascotRoomController {
     let uid = userId, day = today, src = source
     let weekStart = day.adding(days: -WorkoutPlanning.routineIndex(day))
     async let ledger = capture { try await src.ledger(userId: uid) }
-    async let dates = capture { try await src.loggedDates(userId: uid, limit: StreakRules.window) }
+    async let dates = capture { try await src.loggedDates(userId: uid, limit: Streak.window) }
     async let freezes = capture { try await src.freezes(userId: uid) }
     async let weekly = capture { try await src.weeklyChallenges(userId: uid, weekStart: weekStart) }
     async let awards = capture { try await src.awardCount(userId: uid) }
@@ -238,7 +238,8 @@ public final class MascotRoomController {
     freezesHeld = frozenRows.count - used.count
     freezesUsed = used.count
     if let logged = try? d.get() {
-      streak = StreakRules.streak(datesDesc: logged, today: day, frozen: used)
+      // `streakFrom` — cùng một bản port với widget (#66).
+      streak = Streak.from(logged.map(\.description), today: day.description, frozen: used.map(\.description))
     }
     if let rows = try? w.get() { challenges = rows }
     if let n = try? a.get() { awardCount = n }

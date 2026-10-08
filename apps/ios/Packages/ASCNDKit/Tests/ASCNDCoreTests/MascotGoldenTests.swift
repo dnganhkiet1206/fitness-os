@@ -24,8 +24,8 @@ struct MascotGoldenTests {
     #expect(Self.int(c?["freezeMax"]) == MascotRules.freezeMax)
     #expect(Self.int(c?["freezePrice"]) == MascotRules.freezePrice)
     #expect(Self.int(c?["weeklyBonusXp"]) == MascotRules.weeklyBonusXp)
-    #expect(Self.int(c?["streakWindow"]) == StreakRules.window)
-    #expect(c?["loggedDayFilter"]?.stringValue == StreakRules.loggedDayFilter)
+    #expect(Self.int(c?["streakWindow"]) == Streak.window)
+    #expect(c?["loggedDayFilter"]?.stringValue == Streak.loggedDayFilter)
     let signals = try Self.array(c?["energySignals"]).compactMap(\.stringValue)
     #expect(signals == MascotRules.energySignals.map(\.rawValue))
   }
@@ -121,10 +121,10 @@ struct MascotGoldenTests {
       let dates = try Self.array(c["dates"]).compactMap { $0.stringValue.flatMap(LocalDate.init) }
       let frozen = try Self.array(c["frozen"]).compactMap { $0.stringValue.flatMap(LocalDate.init) }
       let today = try #require(c["today"]?.stringValue.flatMap(LocalDate.init))
-      let s = StreakRules.streak(datesDesc: dates, today: today, frozen: frozen)
+      let s = Streak.from(dates.map(\.description), today: today.description, frozen: frozen.map(\.description))
       #expect(s.count == Self.int(c["streak"]?["count"]), "\(name): count")
       #expect(s.loggedToday == (c["streak"]?["loggedToday"] == .bool(true)), "\(name): loggedToday")
-      let missed = StreakRules.missedDates(datesDesc: dates, today: today, frozen: frozen).map(\.description)
+      let missed = Streak.missedDates(datesDesc: dates, today: today, frozen: frozen).map(\.description)
       #expect(missed == (try Self.array(c["missed"]).compactMap(\.stringValue)), "\(name): missed")
     }
   }
