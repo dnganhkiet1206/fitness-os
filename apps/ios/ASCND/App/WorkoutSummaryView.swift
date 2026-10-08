@@ -91,7 +91,7 @@ public struct WorkoutSummaryView: View {
             DSStatTile(
               label: String(localized: "summary.volume"),
               // `Math.round(displayWeight(volume)).toLocaleString()` (`day-plan.tsx:1653`).
-              value: unit.volume(Double(summary.volumeKg)).formatted(),
+              value: unit.volume(Double(summary.volumeKg)).formatted(.number.locale(.app)),
               unit: unit.label
             )
             DSStatTile(
