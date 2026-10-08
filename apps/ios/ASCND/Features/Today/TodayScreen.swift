@@ -20,6 +20,8 @@ public struct TodayScreen: View {
   var onStartWorkout: () -> Void
   /// Chọn plan khác — `nil` khi bản này chưa có màn kế hoạch (nút ẩn).
   var onChoosePlan: (() -> Void)?
+  /// Ghi buổi tự do / phát sinh — `nil` thì không hiện nút.
+  var onLogWorkout: (() -> Void)?
   /// Mở Cài đặt — `nil` thì không hiện nút.
   var onOpenSettings: (() -> Void)?
   /// Làm mới — A8b truyền `{ await flow.refresh() }`.
@@ -29,12 +31,14 @@ public struct TodayScreen: View {
     controller: TodayController,
     onStartWorkout: @escaping () -> Void = {},
     onChoosePlan: (() -> Void)? = nil,
+    onLogWorkout: (() -> Void)? = nil,
     onOpenSettings: (() -> Void)? = nil,
     onRefresh: @escaping () async -> Void = {}
   ) {
     self.controller = controller
     self.onStartWorkout = onStartWorkout
     self.onChoosePlan = onChoosePlan
+    self.onLogWorkout = onLogWorkout
     self.onOpenSettings = onOpenSettings
     self.onRefresh = onRefresh
   }
@@ -64,7 +68,9 @@ public struct TodayScreen: View {
           }
           TodayView(
             state: display,
+            cta: controller.cta,
             onStart: onStartWorkout,
+            onLogWorkout: onLogWorkout,
             onChoosePlan: onChoosePlan,
             onOpenSettings: onOpenSettings
           )
