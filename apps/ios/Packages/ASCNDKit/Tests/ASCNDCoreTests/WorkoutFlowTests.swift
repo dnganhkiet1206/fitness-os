@@ -198,6 +198,30 @@ struct WorkoutFlowTests {
     #expect(next.phase == .idle)
   }
 
+  /// Đơn vị tạ của tài khoản (#527 1.9-A): buổi đang mở nhận ngay, buổi dựng
+  /// sau (qua nửa đêm) cũng nhận — chốt theo lb ghi kg không làm tròn.
+  @Test func weightUnitReachesCurrentAndNextSession() async throws {
+    let h = Harness()
+    await h.flow.start()
+    h.flow.setWeightUnit(.lbs)
+    let s = try #require(h.flow.session)
+    #expect(s.weightUnit == .lbs)
+    await s.setWeightText("135", for: "0-0")
+    await s.toggle("0-0")
+    let summary = try await h.flow.finish()
+    #expect(summary.volumeKg > 0)
+    guard case .array(let sets)? = h.enqueued.last?.payload["sets"] else {
+      Issue.record("không có hàng outbox")
+      return
+    }
+    #expect(sets.first?["weight"]?.doubleValue == 135 / 2.2046226218)
+
+    h.clock.advance(12 * 3_600_000)
+    await h.flow.becameActive()
+    let next = try #require(h.flow.session)
+    #expect(next !== s && next.weightUnit == .lbs)
+  }
+
   /// Qua nửa đêm giữa buổi: buổi dở vẫn ở đó, chốt muộn ghi đúng ngày đã tập.
   @Test func activeSessionSurvivesMidnight() async throws {
     let h = Harness()

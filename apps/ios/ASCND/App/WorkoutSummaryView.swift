@@ -43,6 +43,8 @@ public struct WorkoutSummaryView: View {
   let sets: [SummarySet]
   /// Về Today — A8 nối navigation thật (#305).
   var onDone: (() -> Void)?
+  /// Đơn vị tạ của tài khoản (#527 1.9-A) — số lưu vẫn là kg.
+  @Environment(\.weightUnit) private var unit
 
   public init(
     summary: WorkoutSummary,
@@ -88,8 +90,9 @@ public struct WorkoutSummaryView: View {
           HStack(spacing: DS.Spacing.md) {
             DSStatTile(
               label: String(localized: "summary.volume"),
-              value: "\(summary.volumeKg)",
-              unit: "kg"
+              // `Math.round(displayWeight(volume)).toLocaleString()` (`day-plan.tsx:1653`).
+              value: unit.volume(Double(summary.volumeKg)).formatted(),
+              unit: unit.label
             )
             DSStatTile(
               label: String(localized: "summary.sets"),
@@ -106,7 +109,7 @@ public struct WorkoutSummaryView: View {
           Text(
             String(
               format: String(localized: "summary.stats.accessibility"),
-              summary.volumeKg, summary.completedSets, summary.exerciseCount
+              unit.volume(Double(summary.volumeKg)), unit.label, summary.completedSets, summary.exerciseCount
             )
           )
         )
@@ -164,8 +167,8 @@ public struct WorkoutSummaryView: View {
       return "\(secs)s"
     }
     if let w = s.weightKg, w > 0 {
-      // Cùng cách hiện mức tạ như màn tập (RN `plannedLoad`: một chữ số lẻ).
-      return "\(NumberInput.plannedLoad(w)) kg × \(s.reps)"
+      // Cùng cách hiện mức tạ như màn tập (RN: một chữ số lẻ, theo đơn vị).
+      return "\(unit.load(w)) × \(s.reps)"
     }
     return "× \(s.reps)"
   }

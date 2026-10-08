@@ -170,6 +170,27 @@ public final class WorkoutSessionController {
   private let remoteSessions: [JSONValue]
   /// Đã nhận buổi ghi từ máy khác (lượt `load` này).
   public private(set) var adoptedRemote = false
+  /// Đơn vị người dùng xem và gõ tạ (#527 1.9-A) — của tài khoản
+  /// (`profiles.units_weight`), không của từng set. Mặc định của mọi lần chốt /
+  /// nối thêm / gỡ / hoàn tác: chữ trong ô đọc theo đơn vị này rồi đổi về kg.
+  ///
+  /// RN behavior (giữ nguyên): đổi đơn vị giữa ngày thì chữ người dùng ĐÃ GÕ
+  /// đọc lại theo đơn vị mới (`performed`, `day-plan.tsx:1041`) — "100" gõ lúc
+  /// còn kg thành 100 lb. Hàng nhận từ máy khác là số trên server, không phải
+  /// chữ gõ: điền lại theo đơn vị mới, vẫn mang đúng số kg ấy.
+  public private(set) var weightUnit: WeightUnit = .kg
+
+  /// Đổi đơn vị (hồ sơ nạp xong, đổi ở máy khác). Chữ người dùng đã gõ giữ
+  /// nguyên; ô của set nhận từ server điền lại theo đơn vị mới.
+  public func setWeightUnit(_ unit: WeightUnit) {
+    guard unit != weightUnit else { return }
+    weightUnit = unit
+    for (key, remote) in progress.remoteWeight where progress.weightText[key] == remote.text {
+      let text = unit.text(remote.kg)
+      progress.weightText[key] = text
+      progress.remoteWeight[key] = RemoteWeight(text: text, kg: remote.kg)
+    }
+  }
   /// Bảng tốt-nhất để so kỷ lục lúc chốt (#295); `nil` = chưa biết lịch sử →
   /// không nhận kỷ lục (như baseline khi đọc lịch sử lỗi).
   private let bests: @MainActor () -> PersonalRecords.Bests?
@@ -246,8 +267,8 @@ public final class WorkoutSessionController {
       && !pending.isEmpty && pending.allSatisfy { WorkoutDay.isReady($0, progress) }
   }
 
-  public func performed(_ row: PlannedSet, toKg: (Double) -> Double = { $0 }) -> PerformedSet {
-    WorkoutDay.performed(row, progress, toKg: toKg)
+  public func performed(_ row: PlannedSet, toKg: ((Double) -> Double)? = nil) -> PerformedSet {
+    WorkoutDay.performed(row, progress, toKg: toKg ?? weightUnit.toKg)
   }
 
   // MARK: - đọc
@@ -316,8 +337,13 @@ public final class WorkoutSessionController {
     for (key, index) in assigned {
       let s = newestSets[index]
       progress.done[key] = true
+      // Số server (kg) điền theo đơn vị đang xem, như ô hạt giống của RN
+      // (`day-plan.tsx:1011`): 61.23497 kg → "135" lb / "61.2" kg — kèm số kg
+      // thật, để ghi lại đúng set ấy chứ không phải số đọc lại từ chữ.
       let kg = s["weight"]?.doubleValue ?? 0
-      progress.weightText[key] = Self.plain(kg)
+      let text = weightUnit.text(kg)
+      progress.weightText[key] = text
+      progress.remoteWeight[key] = RemoteWeight(text: text, kg: kg)
       if let d = s["durationSec"]?.intValue, d > 0 {
         progress.repsText[key] = "\(d)s"
       } else {
@@ -346,11 +372,6 @@ public final class WorkoutSessionController {
   /// Hàng do một buổi CŨ hơn trên server chứng minh — tích, khoá.
   public private(set) var olderProven: Set<String> = []
 
-  /// `String(n)` của JS cho số đã lưu (82.25 → "82.25", 60 → "60").
-  static func plain(_ v: Double) -> String {
-    v == v.rounded() && abs(v) < 1e15 ? String(Int64(v)) : String(v)
-  }
-
   // MARK: - ghi
 
   /// Tick / bỏ tick. Tick BẬT một hàng chưa đủ (không tên, không reps) bị từ
@@ -371,6 +392,7 @@ public final class WorkoutSessionController {
   public func setWeightText(_ text: String, for key: String) async -> Bool {
     guard editable(key), row(key) != nil else { return false }
     progress.weightText[key] = NumberInput.decimal(text)
+    progress.remoteWeight[key] = nil
     return await persist()
   }
 
@@ -399,7 +421,8 @@ public final class WorkoutSessionController {
 
   /// Chốt buổi. Trả tổng kết khi hàng outbox ĐÃ bền — không sớm hơn.
   /// Gọi lại sau khi đã chốt trả lại đúng tổng kết cũ, không ghi gì thêm.
-  public func finish(toKg: (Double) -> Double = { $0 }) async throws(FinishRefusal) -> WorkoutSummary {
+  public func finish(toKg: ((Double) -> Double)? = nil) async throws(FinishRefusal) -> WorkoutSummary {
+    let toKg = toKg ?? weightUnit.toKg
     if let id = loggedSessionId {
       if let s = summary, s.sessionId == id { return s }
       throw .alreadyLogged(sessionId: id)
@@ -470,7 +493,8 @@ public final class WorkoutSessionController {
   ///   volume, RPE, số set tính lại từ đủ set (không cộng dồn lệch).
   /// Kỷ lục: chỉ xét set MỚI, so với bảng đã gồm phần đầu của buổi; `pr_detected`
   ///   chỉ bật lên, không tắt (baseline).
-  public func append(toKg: (Double) -> Double = { $0 }) async throws(FinishRefusal) -> WorkoutSummary {
+  public func append(toKg: ((Double) -> Double)? = nil) async throws(FinishRefusal) -> WorkoutSummary {
+    let toKg = toKg ?? weightUnit.toKg
     guard loaded else { throw .loading }
     guard !finishing else { throw .inProgress }
     guard let sessionId = loggedSessionId, canAppend else {
@@ -584,7 +608,8 @@ public final class WorkoutSessionController {
   ///   (cùng đường với nối thêm, #296): chạy cả offline, idempotent, không có
   ///   cuộc đua đọc–sửa–ghi. Set cuối cùng → hàng outbox xoá buổi.
   /// Giữ như RN: `session_rpe` không đổi; volume tính lại, bỏ khởi động.
-  public func removeLoggedSet(_ key: String, toKg: (Double) -> Double = { $0 }) async throws(RemoveRefusal) -> Removal {
+  public func removeLoggedSet(_ key: String, toKg: ((Double) -> Double)? = nil) async throws(RemoveRefusal) -> Removal {
+    let toKg = toKg ?? weightUnit.toKg
     guard loaded else { throw .loading }
     guard !finishing else { throw .inProgress }
     // Máy khác đã ghi mà máy này chưa có (chưa nhận) buổi nào: không có buổi
@@ -613,7 +638,8 @@ public final class WorkoutSessionController {
 
   /// Hoàn tác một lần gỡ trong cửa sổ 8 giây: set trở lại buổi, hàng được ghi
   /// lại (dựng lại nếu đã bị xoá).
-  public func undo(_ removal: Removal, toKg: (Double) -> Double = { $0 }) async throws(RemoveRefusal) {
+  public func undo(_ removal: Removal, toKg: ((Double) -> Double)? = nil) async throws(RemoveRefusal) {
+    let toKg = toKg ?? weightUnit.toKg
     guard loaded else { throw .loading }
     guard !finishing else { throw .inProgress }
     guard clock.nowMillis() < removal.expiresAt, removal.sessionId == loggedSessionId,

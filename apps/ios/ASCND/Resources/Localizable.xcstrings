@@ -3252,19 +3252,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "· %@ kg"
+      "value": "· %@"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "· %@ kg"
+      "value": "· %@"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "· %@ kg"
+      "value": "· %@"
      }
     }
    }
@@ -3712,19 +3712,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "%@, %lld kg, %lld sets"
+      "value": "%1$@, %2$lld %3$@, %4$lld sets"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "%@, %lld kg, %lld hiệp"
+      "value": "%1$@, %2$lld %3$@, %4$lld hiệp"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "%@, %lld kg, %lld series"
+      "value": "%1$@, %2$lld %3$@, %4$lld series"
      }
     }
    }
@@ -5009,19 +5009,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Volume %1$d kg, %2$d sets, %3$d exercises"
+      "value": "Volume %1$d %2$@, %3$d sets, %4$d exercises"
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Volume %1$d kg, %2$d set, %3$d bài"
+      "value": "Volume %1$d %2$@, %3$d set, %4$d bài"
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "Volumen %1$d kg, %2$d series, %3$d ejercicios"
+      "value": "Volumen %1$d %2$@, %3$d series, %4$d ejercicios"
      }
     }
    }
