@@ -156,8 +156,40 @@ private actor Cache: ProfileCache {
   func save(userId: String, _ profile: Profile) async throws { store[userId] = profile }
 }
 
+/// Nguồn hồ sơ giữ câu trả lời tới khi test thả.
+private actor GatedSource: ProfileSource {
+  private var waiters: [CheckedContinuation<Void, Never>] = []
+  private(set) var calls = 0
+  func profile(userId: String) async throws -> JSONValue? {
+    calls += 1
+    await withCheckedContinuation { waiters.append($0) }
+    return storedRow
+  }
+  func releaseAll() {
+    waiters.forEach { $0.resume() }
+    waiters = []
+  }
+}
+
 @MainActor
 struct ProfileBookTests {
+  /// Busy-probe (#527 A-NEXT 2): đếm lượt đọc đang bay; hai lượt chồng nhau
+  /// thì lượt xong trước không hạ cờ của lượt kia.
+  @Test func refreshIsCountedForTheBusyProbe() async {
+    let source = GatedSource()
+    let book = ProfileBook(userId: "u1", source: source, writer: Writer(), cache: Cache())
+    #expect(!book.isRefreshing)
+    let a = Task { await book.refresh() }
+    let b = Task { await book.refresh() }
+    while await source.calls < 2 { await Task.yield() }
+    #expect(book.isRefreshing)
+    await source.releaseAll()
+    await a.value
+    await b.value
+    #expect(!book.isRefreshing)
+    #expect(book.profile?.weightKg == 78.5)
+  }
+
   @Test func loadsAndCachesPerUser() async throws {
     let source = Source(storedRow)
     let cache = Cache()
