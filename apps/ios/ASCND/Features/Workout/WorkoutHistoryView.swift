@@ -23,6 +23,12 @@ import SwiftUI
 public struct WorkoutHistoryView: View {
   let book: HistoryBook
   @State private var pendingDelete: HistoryEntry?
+  /// Đơn vị tạ của tài khoản (#527 1.9-A) — số lưu vẫn là kg.
+  @Environment(\.weightUnit) private var unit
+  /// Luồng tập của phiên — mở màn ghi tay từ trạng thái rỗng. `nil` (preview)
+  /// = không có nút.
+  @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
+  @State private var showsManualLog = false
   @State private var deleteFailed = false
 
   public init(book: HistoryBook) {
@@ -61,7 +67,14 @@ public struct WorkoutHistoryView: View {
         Task { await book.refresh() }
       }
     } else if book.entries.isEmpty {
-      DSEmptyState(systemImage: "dumbbell", title: String(localized: "history.empty.title"))
+      // Rỗng thì chỉ đường ghi buổi (`sessions.tsx:146`, `nLogWorkoutBtn`).
+      DSEmptyState(
+        systemImage: "dumbbell", title: String(localized: "history.empty.title"),
+        actionTitle: flow == nil ? nil : String(localized: "manualLog.open"),
+        action: flow == nil ? nil : { showsManualLog = true })
+        .sheet(isPresented: $showsManualLog) {
+          if let flow { ManualLogView(flow: flow) }
+        }
     } else {
       list
     }
@@ -129,11 +142,17 @@ public struct WorkoutHistoryView: View {
     return date.formatted(.dateTime.month(.wide).year())
   }
 
-  /// "4 buổi · 48.200 kg" — không có khối lượng thì chỉ số buổi (RN).
+  /// "4 buổi · 48.200 kg" / "4 sessions · 106,263 lb" — không có khối lượng
+  /// thì chỉ số buổi (RN `sessions.tsx:187`: `Math.round(displayWeight(volume))`).
   private func monthMeta(_ m: HistoryMonth) -> String {
     let n = m.entries.count
     let count = String(format: String(localized: n == 1 ? "history.month.sessions.one" : "history.month.sessions.other"), n)
-    return m.volumeKg > 0 ? "\(count)  ·  \(m.volumeKg.formatted()) kg" : count
+    return m.volumeKg > 0 ? "\(count)  ·  \(volume(m.volumeKg))" : count
+  }
+
+  /// Khối lượng theo đơn vị của tài khoản (#527 1.9-A, `session-row.tsx:98`).
+  private func volume(_ kg: Int) -> String {
+    "\(unit.volume(Double(kg)).formatted()) \(unit.label)"
   }
 
   // MARK: - Hàng
@@ -169,7 +188,7 @@ public struct WorkoutHistoryView: View {
         }
         Spacer(minLength: DS.Spacing.sm)
         VStack(alignment: .trailing, spacing: 4) {
-          Text(verbatim: "\(e.volumeKg.formatted()) kg")
+          Text(verbatim: volume(e.volumeKg))
             .font(DS.TextStyle.body.monospacedDigit())
             .foregroundStyle(DS.Color.foreground.swiftUI)
           Text(String(format: String(localized: "history.sets"), e.completedSets, e.exerciseCount))
@@ -193,7 +212,9 @@ public struct WorkoutHistoryView: View {
   /// "Push A, 4.200 kg, 12 hiệp, thứ Hai 5 thg 10[, Kỷ lục cá nhân]".
   private func rowLabel(_ e: HistoryEntry) -> String {
     var parts = [
-      String(format: String(localized: "history.a11y.row"), e.templateName, e.volumeKg, e.completedSets),
+      String(
+        format: String(localized: "history.a11y.row"), e.templateName, unit.volume(Double(e.volumeKg)), unit.label,
+        e.completedSets),
       e.at.date.formatted(.dateTime.weekday(.wide).day().month(.wide)),
     ]
     if e.prDetected { parts.append(String(localized: "history.pr")) }

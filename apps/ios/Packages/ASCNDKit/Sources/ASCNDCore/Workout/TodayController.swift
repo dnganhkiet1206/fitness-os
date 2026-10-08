@@ -132,6 +132,8 @@ public final class TodayController {
   /// thứ tự lúc nhận — để lượt làm mới biết lệnh nào tới SAU khi nó bắt đầu.
   @ObservationIgnored private var edits: [(seq: Int, entry: OutboxEntry)] = []
   @ObservationIgnored private var editSeq = 0
+  /// Buổi vừa xoá trên máy (#429), để lần làm mới đang bay không đánh dấu lại.
+  @ObservationIgnored private var sessionLog = SessionChangeLog()
 
   public init(
     userId: String, repository: TodayRepository, history: any TrainingHistory, workouts: any WorkoutStore,
@@ -198,6 +200,8 @@ public final class TodayController {
     // vấn chưa thấy sẽ biến mất cho tới lần làm mới sau.
     let mark = editSeq
     let pending = await repository.pendingEdits(userId: userId)
+    let sessionMark = sessionLog.mark
+    let pendingSessions = await repository.pendingSessionChanges(userId: userId)
     do {
       let fresh = try await repository.refresh(userId: userId)
       snapshot = fresh
@@ -210,7 +214,12 @@ public final class TodayController {
     }
     do {
       let since = EpochMillis(Self.startOfDay(today.adding(days: -(Self.historyDays - 1)), in: timeZone))
-      let times = try await history.sessionTimes(userId: userId, since: since)
+      var times = try await history.sessionTimes(userId: userId, since: since)
+      // Buổi đã xoá trên máy mà server chưa nhận lệnh xoá (#429): không còn là
+      // buổi của ngày ấy. Bỏ ĐÚNG một lần mỗi buổi — ngày có buổi khác vẫn "đã tập".
+      for change in (pendingSessions ?? []) + sessionLog.settle(since: sessionMark) {
+        if case .delete(_, let at?) = change, let i = times.firstIndex(of: at) { times.remove(at: i) }
+      }
       serverTrained = Set(times.map { LocalDate($0, in: timeZone) })
     } catch {
       errors.append(("history", error))
@@ -259,6 +268,35 @@ public final class TodayController {
       bests: bests, onRest: onRest, onEnqueued: onEnqueued)
   }
 
+  /// Bảng tập của MỘT NGÀY BẤT KỲ trong tuần (`DayPlan` dưới ngày đang chọn,
+  /// `week-plan.tsx:495`). Hôm nay đi đúng đường `makeSession` ở trên. Ngày
+  /// khác: kế hoạch của chính ngày ấy (`plan(for:)` — template gán cho thứ ấy,
+  /// sau các lệnh sửa chưa gửi), tiến độ trên máy theo khoá của ngày ấy
+  /// (`dayProgressKey`), và — nếu server biết ngày ấy đã tập — các buổi của
+  /// ngày ấy làm bằng chứng từng hàng (`sessions.filter(dayOf == dStr)` của RN).
+  /// Ngày nghỉ / chưa lên lịch: `nil`. Ghi của ngày tương lai bị chặn trong
+  /// `finish` (`.futureDay`); ngày đã qua ghi đúng ngày ấy.
+  public func makeSession(
+    on date: LocalDate,
+    bests: @escaping @MainActor () -> PersonalRecords.Bests? = { nil },
+    onRest: @escaping @MainActor (RestEvent, PlannedSet?) -> Void = { _, _ in },
+    onEnqueued: @escaping @MainActor (OutboxEntry) -> Void = { _ in }
+  ) async -> WorkoutSessionController? {
+    if date == today { return makeSession(bests: bests, onRest: onRest, onEnqueued: onEnqueued) }
+    guard let sessionPlan = library?.plan(for: date, today: today, trained: trained).sessionPlan else { return nil }
+    let logged = serverTrained.contains(date)
+    var rows: [JSONValue] = []
+    if logged {
+      // Không đọc được buổi thì vẫn biết "đã tập" — chỉ thiếu bằng chứng từng hàng.
+      let from = EpochMillis(Self.startOfDay(date, in: timeZone))
+      let to = EpochMillis(Self.startOfDay(date.adding(days: 1), in: timeZone))
+      rows = (try? await history.sessions(userId: userId, from: from, to: to)) ?? []
+    }
+    return WorkoutSessionController(
+      plan: sessionPlan, userId: userId, store: workouts, clock: clock, timeZone: timeZone,
+      loggedElsewhere: logged, remoteSessions: rows, bests: bests, onRest: onRest, onEnqueued: onEnqueued)
+  }
+
   /// Lệnh sửa kế hoạch vừa bền (#401): kế hoạch đổi ngay, không đợi server
   /// (D-26 TW-6b). Nhận lại cùng lệnh là không đổi gì.
   public func adopt(_ entries: [OutboxEntry]) async {
@@ -293,7 +331,10 @@ public final class TodayController {
   /// Buổi của ngày vừa bị xoá trên máy (gỡ set cuối cùng, #398): ngày không
   /// còn "đã tập" — kể cả khi server chưa nhận lệnh xoá (local-first). Lần làm
   /// mới sau server nói lại sự thật.
-  public func markUntrained(_ date: LocalDate) async {
+  /// - Parameter at: thời điểm của buổi bị xoá — để lần làm mới đang bay
+  ///   (bản server chưa biết lệnh xoá) không đánh dấu lại ngày ấy.
+  public func markUntrained(_ date: LocalDate, at: EpochMillis? = nil) async {
+    if let at { sessionLog.record(.delete(id: "", at: at)) }
     localTrained.remove(date)
     serverTrained.remove(date)
     await recompute()

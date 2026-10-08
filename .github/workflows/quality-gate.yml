@@ -48,7 +48,7 @@ name: Cổng chất lượng
 
 on:
   push:
-    branches: ['claude/**', main]
+    branches: ['claude/**', 'native/**', main]
   pull_request:
   workflow_dispatch:
 
