@@ -26,8 +26,12 @@ struct RootGate: View {
       case .signedIn(let s):
         // `id`: đổi tài khoản dựng lại cả cây — không state nào của người trước
         // (tab đang mở, màn tập, ô đang gõ) sống sót sang người sau.
-        SignedInScope(userId: s.userId) {
-          RootTabView()
+        // Cổng onboarding (#527 1.3, `_layout.tsx:292`) đứng TRƯỚC phiên app:
+        // chưa xong onboarding thì luồng tập / tab chưa dựng.
+        OnboardingGateView(userId: s.userId) {
+          SignedInScope(userId: s.userId) {
+            RootTabView()
+          }
         }
         .id(s.userId)
         .transition(.opacity)
