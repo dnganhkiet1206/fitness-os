@@ -1,0 +1,1448 @@
+{
+ "source": "native/src/lib/{units,macro-targets}.ts + edit-profile.tsx @ fac9ac2 — apps/ios/tools/insights-golden/gen-profile-entry.mjs",
+ "tolerance": 10,
+ "entries": [
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "",
+   "out": ""
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "",
+   "out": ""
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "",
+   "out": ""
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "",
+   "out": ""
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "",
+   "out": ""
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "",
+   "out": ""
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "0",
+   "out": "0"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "0",
+   "out": "0"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "0",
+   "out": "0"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "0",
+   "out": "0"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "0",
+   "out": "0"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "0",
+   "out": "0"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "0.",
+   "out": "0"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "0.",
+   "out": "0"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "0.",
+   "out": "0"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "0.",
+   "out": "0"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "0.",
+   "out": "0"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "0.",
+   "out": "0"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "0.5",
+   "out": "1"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "0.5",
+   "out": "1"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "0.5",
+   "out": "0.5"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "0.5",
+   "out": "0.2"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "0.5",
+   "out": "1"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "0.5",
+   "out": "15"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "5",
+   "out": "5"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "5",
+   "out": "13"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "5",
+   "out": "5"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "5",
+   "out": "2.3"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "5",
+   "out": "5"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "5",
+   "out": "148"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "12",
+   "out": "12"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "12",
+   "out": "30"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "12",
+   "out": "12"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "12",
+   "out": "5.4"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "12",
+   "out": "12"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "12",
+   "out": "355"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "12.5",
+   "out": "13"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "12.5",
+   "out": "32"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "12.5",
+   "out": "12.5"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "12.5",
+   "out": "5.7"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "12.5",
+   "out": "13"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "12.5",
+   "out": "370"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "61.2",
+   "out": "61"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "61.2",
+   "out": "155"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "61.2",
+   "out": "61.2"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "61.2",
+   "out": "27.8"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "61.2",
+   "out": "61"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "61.2",
+   "out": "1810"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "69",
+   "out": "69"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "69",
+   "out": "175"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "69",
+   "out": "69"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "69",
+   "out": "31.3"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "69",
+   "out": "69"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "69",
+   "out": "2041"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "70",
+   "out": "70"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "70",
+   "out": "178"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "70",
+   "out": "70"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "70",
+   "out": "31.8"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "70",
+   "out": "70"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "70",
+   "out": "2070"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "71.5",
+   "out": "72"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "71.5",
+   "out": "182"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "71.5",
+   "out": "71.5"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "71.5",
+   "out": "32.4"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "71.5",
+   "out": "72"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "71.5",
+   "out": "2115"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "100",
+   "out": "100"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "100",
+   "out": "254"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "100",
+   "out": "100"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "100",
+   "out": "45.4"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "100",
+   "out": "100"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "100",
+   "out": "2957"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "150.25",
+   "out": "150"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "150.25",
+   "out": "382"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "150.25",
+   "out": "150.3"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "150.25",
+   "out": "68.2"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "150.25",
+   "out": "150"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "150.25",
+   "out": "4443"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "175",
+   "out": "175"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "175",
+   "out": "445"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "175",
+   "out": "175"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "175",
+   "out": "79.4"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "175",
+   "out": "175"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "175",
+   "out": "5175"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "180.3",
+   "out": "180"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "180.3",
+   "out": "458"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "180.3",
+   "out": "180.3"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "180.3",
+   "out": "81.8"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "180.3",
+   "out": "180"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "180.3",
+   "out": "5332"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "250",
+   "out": "250"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "250",
+   "out": "635"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "250",
+   "out": "250"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "250",
+   "out": "113.4"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "250",
+   "out": "250"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "250",
+   "out": "7393"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "400",
+   "out": "400"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "400",
+   "out": "1016"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "400",
+   "out": "400"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "400",
+   "out": "181.4"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "400",
+   "out": "400"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "400",
+   "out": "11829"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "999.99",
+   "out": "1000"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "999.99",
+   "out": "2540"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "999.99",
+   "out": "1000"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "999.99",
+   "out": "453.6"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "999.99",
+   "out": "1000"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "999.99",
+   "out": "29573"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "text": "1000",
+   "out": "1000"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "text": "1000",
+   "out": "2540"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "text": "1000",
+   "out": "1000"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "text": "1000",
+   "out": "453.6"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "text": "1000",
+   "out": "1000"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "text": "1000",
+   "out": "29574"
+  }
+ ],
+ "displays": [
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "",
+   "seed": "",
+   "flip": ""
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "",
+   "seed": "",
+   "flip": ""
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "",
+   "seed": "",
+   "flip": ""
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "",
+   "seed": "",
+   "flip": ""
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "",
+   "seed": "",
+   "flip": ""
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "",
+   "seed": "",
+   "flip": ""
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "0",
+   "seed": "0",
+   "flip": ""
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "0",
+   "seed": "0",
+   "flip": ""
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "0",
+   "seed": "0",
+   "flip": ""
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "0",
+   "seed": "0",
+   "flip": ""
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "0",
+   "seed": "0",
+   "flip": ""
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "0",
+   "seed": "0",
+   "flip": ""
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "1",
+   "seed": "1",
+   "flip": "1"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "1",
+   "seed": "0.4",
+   "flip": "0.4"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "1",
+   "seed": "1",
+   "flip": "1"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "1",
+   "seed": "2.2",
+   "flip": "2.2"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "1",
+   "seed": "1",
+   "flip": "1"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "1",
+   "seed": "0",
+   "flip": "0"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "45.4",
+   "seed": "45.4",
+   "flip": "45.4"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "45.4",
+   "seed": "17.9",
+   "flip": "17.9"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "45.4",
+   "seed": "45.4",
+   "flip": "45.4"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "45.4",
+   "seed": "100.1",
+   "flip": "100.1"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "45.4",
+   "seed": "45",
+   "flip": "45"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "45.4",
+   "seed": "1.5",
+   "flip": "1.5"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "61.2",
+   "seed": "61.2",
+   "flip": "61.2"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "61.2",
+   "seed": "24.1",
+   "flip": "24.1"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "61.2",
+   "seed": "61.2",
+   "flip": "61.2"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "61.2",
+   "seed": "134.9",
+   "flip": "134.9"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "61.2",
+   "seed": "61",
+   "flip": "61"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "61.2",
+   "seed": "2.1",
+   "flip": "2.1"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "70",
+   "seed": "70",
+   "flip": "70"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "70",
+   "seed": "27.6",
+   "flip": "27.6"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "70",
+   "seed": "70",
+   "flip": "70"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "70",
+   "seed": "154.3",
+   "flip": "154.3"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "70",
+   "seed": "70",
+   "flip": "70"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "70",
+   "seed": "2.4",
+   "flip": "2.4"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "72.5",
+   "seed": "72.5",
+   "flip": "72.5"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "72.5",
+   "seed": "28.5",
+   "flip": "28.5"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "72.5",
+   "seed": "72.5",
+   "flip": "72.5"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "72.5",
+   "seed": "159.8",
+   "flip": "159.8"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "72.5",
+   "seed": "73",
+   "flip": "73"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "72.5",
+   "seed": "2.5",
+   "flip": "2.5"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "150",
+   "seed": "150",
+   "flip": "150"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "150",
+   "seed": "59.1",
+   "flip": "59.1"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "150",
+   "seed": "150",
+   "flip": "150"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "150",
+   "seed": "330.7",
+   "flip": "330.7"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "150",
+   "seed": "150",
+   "flip": "150"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "150",
+   "seed": "5.1",
+   "flip": "5.1"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "175",
+   "seed": "175",
+   "flip": "175"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "175",
+   "seed": "68.9",
+   "flip": "68.9"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "175",
+   "seed": "175",
+   "flip": "175"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "175",
+   "seed": "385.8",
+   "flip": "385.8"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "175",
+   "seed": "175",
+   "flip": "175"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "175",
+   "seed": "5.9",
+   "flip": "5.9"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "180",
+   "seed": "180",
+   "flip": "180"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "180",
+   "seed": "70.9",
+   "flip": "70.9"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "180",
+   "seed": "180",
+   "flip": "180"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "180",
+   "seed": "396.8",
+   "flip": "396.8"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "180",
+   "seed": "180",
+   "flip": "180"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "180",
+   "seed": "6.1",
+   "flip": "6.1"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "1500",
+   "seed": "1500",
+   "flip": "1500"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "1500",
+   "seed": "590.6",
+   "flip": "590.6"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "1500",
+   "seed": "1500",
+   "flip": "1500"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "1500",
+   "seed": "3306.9",
+   "flip": "3306.9"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "1500",
+   "seed": "1500",
+   "flip": "1500"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "1500",
+   "seed": "50.7",
+   "flip": "50.7"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "2000",
+   "seed": "2000",
+   "flip": "2000"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "2000",
+   "seed": "787.4",
+   "flip": "787.4"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "2000",
+   "seed": "2000",
+   "flip": "2000"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "2000",
+   "seed": "4409.2",
+   "flip": "4409.2"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "2000",
+   "seed": "2000",
+   "flip": "2000"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "2000",
+   "seed": "67.6",
+   "flip": "67.6"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "2365",
+   "seed": "2365",
+   "flip": "2365"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "2365",
+   "seed": "931.1",
+   "flip": "931.1"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "2365",
+   "seed": "2365",
+   "flip": "2365"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "2365",
+   "seed": "5213.9",
+   "flip": "5213.9"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "2365",
+   "seed": "2365",
+   "flip": "2365"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "2365",
+   "seed": "80",
+   "flip": "80"
+  },
+  {
+   "field": "height",
+   "unit": "cm",
+   "metric": "3000",
+   "seed": "3000",
+   "flip": "3000"
+  },
+  {
+   "field": "height",
+   "unit": "in",
+   "metric": "3000",
+   "seed": "1181.1",
+   "flip": "1181.1"
+  },
+  {
+   "field": "weight",
+   "unit": "kg",
+   "metric": "3000",
+   "seed": "3000",
+   "flip": "3000"
+  },
+  {
+   "field": "weight",
+   "unit": "lbs",
+   "metric": "3000",
+   "seed": "6613.9",
+   "flip": "6613.9"
+  },
+  {
+   "field": "water",
+   "unit": "ml",
+   "metric": "3000",
+   "seed": "3000",
+   "flip": "3000"
+  },
+  {
+   "field": "water",
+   "unit": "oz",
+   "metric": "3000",
+   "seed": "101.4",
+   "flip": "101.4"
+  }
+ ],
+ "drifts": [
+  {
+   "kcal": "",
+   "protein": "",
+   "carbs": "",
+   "fat": "",
+   "fiber": "",
+   "calorieTarget": 2200,
+   "drift": null
+  },
+  {
+   "kcal": "2200",
+   "protein": "150",
+   "carbs": "250",
+   "fat": "70",
+   "fiber": "30",
+   "calorieTarget": 2200,
+   "drift": {
+    "sum": 2230,
+    "drift": 30,
+    "kcalTarget": 2200
+   }
+  },
+  {
+   "kcal": "2200",
+   "protein": "150",
+   "carbs": "250",
+   "fat": "70",
+   "fiber": "",
+   "calorieTarget": 2200,
+   "drift": null
+  },
+  {
+   "kcal": "2200",
+   "protein": "150",
+   "carbs": "",
+   "fat": "70",
+   "fiber": "30",
+   "calorieTarget": 2200,
+   "drift": null
+  },
+  {
+   "kcal": "1399",
+   "protein": "139",
+   "carbs": "250",
+   "fat": "39",
+   "fiber": "20",
+   "calorieTarget": 1399,
+   "drift": {
+    "sum": 1907,
+    "drift": 508,
+    "kcalTarget": 1399
+   }
+  },
+  {
+   "kcal": "1399",
+   "protein": "139",
+   "carbs": "139",
+   "fat": "39",
+   "fiber": "20",
+   "calorieTarget": 1399,
+   "drift": {
+    "sum": 1463,
+    "drift": 64,
+    "kcalTarget": 1399
+   }
+  },
+  {
+   "kcal": "1399",
+   "protein": "139",
+   "carbs": "141",
+   "fat": "39",
+   "fiber": "20",
+   "calorieTarget": 1399,
+   "drift": {
+    "sum": 1471,
+    "drift": 72,
+    "kcalTarget": 1399
+   }
+  },
+  {
+   "kcal": "1399",
+   "protein": "139",
+   "carbs": "142",
+   "fat": "40",
+   "fiber": "20",
+   "calorieTarget": 1399,
+   "drift": {
+    "sum": 1484,
+    "drift": 85,
+    "kcalTarget": 1399
+   }
+  },
+  {
+   "kcal": "",
+   "protein": "150",
+   "carbs": "250",
+   "fat": "70",
+   "fiber": "30",
+   "calorieTarget": 2200,
+   "drift": {
+    "sum": 2230,
+    "drift": 30,
+    "kcalTarget": 2200
+   }
+  },
+  {
+   "kcal": "0",
+   "protein": "150",
+   "carbs": "250",
+   "fat": "70",
+   "fiber": "30",
+   "calorieTarget": 2200,
+   "drift": {
+    "sum": 2230,
+    "drift": 30,
+    "kcalTarget": 2200
+   }
+  },
+  {
+   "kcal": "3200",
+   "protein": "200",
+   "carbs": "400",
+   "fat": "80",
+   "fiber": "45",
+   "calorieTarget": 3200,
+   "drift": {
+    "sum": 3120,
+    "drift": -80,
+    "kcalTarget": 3200
+   }
+  },
+  {
+   "kcal": "3200",
+   "protein": "0",
+   "carbs": "0",
+   "fat": "0",
+   "fiber": "0",
+   "calorieTarget": 3200,
+   "drift": {
+    "sum": 0,
+    "drift": -3200,
+    "kcalTarget": 3200
+   }
+  },
+  {
+   "kcal": "2539",
+   "protein": "190",
+   "carbs": "286",
+   "fat": "70",
+   "fiber": "35",
+   "calorieTarget": 2539,
+   "drift": null
+  },
+  {
+   "kcal": "100000",
+   "protein": "1",
+   "carbs": "1",
+   "fat": "1",
+   "fiber": "1",
+   "calorieTarget": 100000,
+   "drift": {
+    "sum": 17,
+    "drift": -99983,
+    "kcalTarget": 100000
+   }
+  }
+ ]
+}

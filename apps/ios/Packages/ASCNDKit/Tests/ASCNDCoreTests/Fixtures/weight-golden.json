@@ -1,0 +1,730 @@
+{
+ "source": "native/src/lib/units.ts @ fac9ac2",
+ "lbPerKg": 2.2046226218,
+ "profiles": [
+  {
+   "stored": "lbs",
+   "unit": "lbs"
+  },
+  {
+   "stored": "kg",
+   "unit": "kg"
+  },
+  {
+   "stored": "LBS",
+   "unit": "kg"
+  },
+  {
+   "stored": "lb",
+   "unit": "kg"
+  },
+  {
+   "stored": "Lbs",
+   "unit": "kg"
+  },
+  {
+   "stored": " lbs",
+   "unit": "kg"
+  },
+  {
+   "stored": "",
+   "unit": "kg"
+  },
+  {
+   "stored": null,
+   "unit": "kg"
+  },
+  {
+   "stored": "<missing>",
+   "unit": "kg"
+  },
+  {
+   "stored": "pounds",
+   "unit": "kg"
+  }
+ ],
+ "weights": [
+  {
+   "unit": "kg",
+   "kg": -1,
+   "convert": -1,
+   "display": -1,
+   "label": "kg",
+   "text": "-1",
+   "seed": "",
+   "volume": -1,
+   "backToKg": -1
+  },
+  {
+   "unit": "kg",
+   "kg": 0,
+   "convert": 0,
+   "display": 0,
+   "label": "kg",
+   "text": "0",
+   "seed": "",
+   "volume": 0,
+   "backToKg": 0
+  },
+  {
+   "unit": "kg",
+   "kg": 0.5,
+   "convert": 0.5,
+   "display": 0.5,
+   "label": "kg",
+   "text": "0.5",
+   "seed": "0.5",
+   "volume": 1,
+   "backToKg": 0.5
+  },
+  {
+   "unit": "kg",
+   "kg": 1,
+   "convert": 1,
+   "display": 1,
+   "label": "kg",
+   "text": "1",
+   "seed": "1",
+   "volume": 1,
+   "backToKg": 1
+  },
+  {
+   "unit": "kg",
+   "kg": 2.5,
+   "convert": 2.5,
+   "display": 2.5,
+   "label": "kg",
+   "text": "2.5",
+   "seed": "2.5",
+   "volume": 3,
+   "backToKg": 2.5
+  },
+  {
+   "unit": "kg",
+   "kg": 20,
+   "convert": 20,
+   "display": 20,
+   "label": "kg",
+   "text": "20",
+   "seed": "20",
+   "volume": 20,
+   "backToKg": 20
+  },
+  {
+   "unit": "kg",
+   "kg": 22.5,
+   "convert": 22.5,
+   "display": 22.5,
+   "label": "kg",
+   "text": "22.5",
+   "seed": "22.5",
+   "volume": 23,
+   "backToKg": 22.5
+  },
+  {
+   "unit": "kg",
+   "kg": 45.359237,
+   "convert": 45.359237,
+   "display": 45.4,
+   "label": "kg",
+   "text": "45.4",
+   "seed": "45.4",
+   "volume": 45,
+   "backToKg": 45.4
+  },
+  {
+   "unit": "kg",
+   "kg": 60,
+   "convert": 60,
+   "display": 60,
+   "label": "kg",
+   "text": "60",
+   "seed": "60",
+   "volume": 60,
+   "backToKg": 60
+  },
+  {
+   "unit": "kg",
+   "kg": 61.23497,
+   "convert": 61.23497,
+   "display": 61.2,
+   "label": "kg",
+   "text": "61.2",
+   "seed": "61.2",
+   "volume": 61,
+   "backToKg": 61.2
+  },
+  {
+   "unit": "kg",
+   "kg": 61.2349,
+   "convert": 61.2349,
+   "display": 61.2,
+   "label": "kg",
+   "text": "61.2",
+   "seed": "61.2",
+   "volume": 61,
+   "backToKg": 61.2
+  },
+  {
+   "unit": "kg",
+   "kg": 62.5,
+   "convert": 62.5,
+   "display": 62.5,
+   "label": "kg",
+   "text": "62.5",
+   "seed": "62.5",
+   "volume": 63,
+   "backToKg": 62.5
+  },
+  {
+   "unit": "kg",
+   "kg": 70,
+   "convert": 70,
+   "display": 70,
+   "label": "kg",
+   "text": "70",
+   "seed": "70",
+   "volume": 70,
+   "backToKg": 70
+  },
+  {
+   "unit": "kg",
+   "kg": 72.5,
+   "convert": 72.5,
+   "display": 72.5,
+   "label": "kg",
+   "text": "72.5",
+   "seed": "72.5",
+   "volume": 73,
+   "backToKg": 72.5
+  },
+  {
+   "unit": "kg",
+   "kg": 100,
+   "convert": 100,
+   "display": 100,
+   "label": "kg",
+   "text": "100",
+   "seed": "100",
+   "volume": 100,
+   "backToKg": 100
+  },
+  {
+   "unit": "kg",
+   "kg": 100.24,
+   "convert": 100.24,
+   "display": 100.2,
+   "label": "kg",
+   "text": "100.2",
+   "seed": "100.2",
+   "volume": 100,
+   "backToKg": 100.2
+  },
+  {
+   "unit": "kg",
+   "kg": 102.058,
+   "convert": 102.058,
+   "display": 102.1,
+   "label": "kg",
+   "text": "102.1",
+   "seed": "102.1",
+   "volume": 102,
+   "backToKg": 102.1
+  },
+  {
+   "unit": "kg",
+   "kg": 140,
+   "convert": 140,
+   "display": 140,
+   "label": "kg",
+   "text": "140",
+   "seed": "140",
+   "volume": 140,
+   "backToKg": 140
+  },
+  {
+   "unit": "kg",
+   "kg": 142.88,
+   "convert": 142.88,
+   "display": 142.9,
+   "label": "kg",
+   "text": "142.9",
+   "seed": "142.9",
+   "volume": 143,
+   "backToKg": 142.9
+  },
+  {
+   "unit": "kg",
+   "kg": 180,
+   "convert": 180,
+   "display": 180,
+   "label": "kg",
+   "text": "180",
+   "seed": "180",
+   "volume": 180,
+   "backToKg": 180
+  },
+  {
+   "unit": "kg",
+   "kg": 0.04535,
+   "convert": 0.04535,
+   "display": 0,
+   "label": "kg",
+   "text": "0",
+   "seed": "0",
+   "volume": 0,
+   "backToKg": 0
+  },
+  {
+   "unit": "kg",
+   "kg": 0.0453,
+   "convert": 0.0453,
+   "display": 0,
+   "label": "kg",
+   "text": "0",
+   "seed": "0",
+   "volume": 0,
+   "backToKg": 0
+  },
+  {
+   "unit": "kg",
+   "kg": 1234.5,
+   "convert": 1234.5,
+   "display": 1234.5,
+   "label": "kg",
+   "text": "1234.5",
+   "seed": "1234.5",
+   "volume": 1235,
+   "backToKg": 1234.5
+  },
+  {
+   "unit": "kg",
+   "kg": 48200,
+   "convert": 48200,
+   "display": 48200,
+   "label": "kg",
+   "text": "48200",
+   "seed": "48200",
+   "volume": 48200,
+   "backToKg": 48200
+  },
+  {
+   "unit": "kg",
+   "kg": 4200.75,
+   "convert": 4200.75,
+   "display": 4200.8,
+   "label": "kg",
+   "text": "4200.8",
+   "seed": "4200.8",
+   "volume": 4201,
+   "backToKg": 4200.8
+  },
+  {
+   "unit": "lbs",
+   "kg": -1,
+   "convert": -2.2046226218,
+   "display": -2.2,
+   "label": "lb",
+   "text": "-2.2",
+   "seed": "",
+   "volume": -2,
+   "backToKg": -0.997903214022078
+  },
+  {
+   "unit": "lbs",
+   "kg": 0,
+   "convert": 0,
+   "display": 0,
+   "label": "lb",
+   "text": "0",
+   "seed": "",
+   "volume": 0,
+   "backToKg": 0
+  },
+  {
+   "unit": "lbs",
+   "kg": 0.5,
+   "convert": 1.1023113109,
+   "display": 1.1,
+   "label": "lb",
+   "text": "1.1",
+   "seed": "1.1",
+   "volume": 1,
+   "backToKg": 0.498951607011039
+  },
+  {
+   "unit": "lbs",
+   "kg": 1,
+   "convert": 2.2046226218,
+   "display": 2.2,
+   "label": "lb",
+   "text": "2.2",
+   "seed": "2.2",
+   "volume": 2,
+   "backToKg": 0.997903214022078
+  },
+  {
+   "unit": "lbs",
+   "kg": 2.5,
+   "convert": 5.5115565545,
+   "display": 5.5,
+   "label": "lb",
+   "text": "5.5",
+   "seed": "5.5",
+   "volume": 6,
+   "backToKg": 2.494758035055195
+  },
+  {
+   "unit": "lbs",
+   "kg": 20,
+   "convert": 44.092452436,
+   "display": 44.1,
+   "label": "lb",
+   "text": "44.1",
+   "seed": "44.1",
+   "volume": 44,
+   "backToKg": 20.003423517442563
+  },
+  {
+   "unit": "lbs",
+   "kg": 22.5,
+   "convert": 49.6040089905,
+   "display": 49.6,
+   "label": "lb",
+   "text": "49.6",
+   "seed": "49.6",
+   "volume": 50,
+   "backToKg": 22.49818155249776
+  },
+  {
+   "unit": "lbs",
+   "kg": 45.359237,
+   "convert": 99.99999999778757,
+   "display": 100,
+   "label": "lb",
+   "text": "100",
+   "seed": "100",
+   "volume": 100,
+   "backToKg": 45.35923700100354
+  },
+  {
+   "unit": "lbs",
+   "kg": 60,
+   "convert": 132.277357308,
+   "display": 132.3,
+   "label": "lb",
+   "text": "132.3",
+   "seed": "132.3",
+   "volume": 132,
+   "backToKg": 60.01027055232769
+  },
+  {
+   "unit": "lbs",
+   "kg": 61.23497,
+   "convert": 135.00000010724435,
+   "display": 135,
+   "label": "lb",
+   "text": "135",
+   "seed": "135",
+   "volume": 135,
+   "backToKg": 61.234969951354785
+  },
+  {
+   "unit": "lbs",
+   "kg": 61.2349,
+   "convert": 134.99984578366082,
+   "display": 135,
+   "label": "lb",
+   "text": "135",
+   "seed": "135",
+   "volume": 135,
+   "backToKg": 61.234969951354785
+  },
+  {
+   "unit": "lbs",
+   "kg": 62.5,
+   "convert": 137.7889138625,
+   "display": 137.8,
+   "label": "lb",
+   "text": "137.8",
+   "seed": "137.8",
+   "volume": 138,
+   "backToKg": 62.50502858738289
+  },
+  {
+   "unit": "lbs",
+   "kg": 70,
+   "convert": 154.323583526,
+   "display": 154.3,
+   "label": "lb",
+   "text": "154.3",
+   "seed": "154.3",
+   "volume": 154,
+   "backToKg": 69.98930269254848
+  },
+  {
+   "unit": "lbs",
+   "kg": 72.5,
+   "convert": 159.8351400805,
+   "display": 159.8,
+   "label": "lb",
+   "text": "159.8",
+   "seed": "159.8",
+   "volume": 160,
+   "backToKg": 72.48406072760366
+  },
+  {
+   "unit": "lbs",
+   "kg": 100,
+   "convert": 220.46226218,
+   "display": 220.5,
+   "label": "lb",
+   "text": "220.5",
+   "seed": "220.5",
+   "volume": 221,
+   "backToKg": 100.01711758721281
+  },
+  {
+   "unit": "lbs",
+   "kg": 100.24,
+   "convert": 220.991371609232,
+   "display": 221,
+   "label": "lb",
+   "text": "221",
+   "seed": "221",
+   "volume": 221,
+   "backToKg": 100.24391377221782
+  },
+  {
+   "unit": "lbs",
+   "kg": 102.058,
+   "convert": 224.99937553566443,
+   "display": 225,
+   "label": "lb",
+   "text": "225",
+   "seed": "225",
+   "volume": 225,
+   "backToKg": 102.05828325225797
+  },
+  {
+   "unit": "lbs",
+   "kg": 140,
+   "convert": 308.647167052,
+   "display": 308.6,
+   "label": "lb",
+   "text": "308.6",
+   "seed": "308.6",
+   "volume": 309,
+   "backToKg": 139.97860538509696
+  },
+  {
+   "unit": "lbs",
+   "kg": 142.88,
+   "convert": 314.99648020278397,
+   "display": 315,
+   "label": "lb",
+   "text": "315",
+   "seed": "315",
+   "volume": 315,
+   "backToKg": 142.88159655316116
+  },
+  {
+   "unit": "lbs",
+   "kg": 180,
+   "convert": 396.832071924,
+   "display": 396.8,
+   "label": "lb",
+   "text": "396.8",
+   "seed": "396.8",
+   "volume": 397,
+   "backToKg": 179.98545241998207
+  },
+  {
+   "unit": "lbs",
+   "kg": 0.04535,
+   "convert": 0.09997963589863,
+   "display": 0.1,
+   "label": "lb",
+   "text": "0.1",
+   "seed": "0.1",
+   "volume": 0,
+   "backToKg": 0.04535923700100355
+  },
+  {
+   "unit": "lbs",
+   "kg": 0.0453,
+   "convert": 0.09986940476754,
+   "display": 0.1,
+   "label": "lb",
+   "text": "0.1",
+   "seed": "0.1",
+   "volume": 0,
+   "backToKg": 0.04535923700100355
+  },
+  {
+   "unit": "lbs",
+   "kg": 1234.5,
+   "convert": 2721.6066266121,
+   "display": 2721.6,
+   "label": "lb",
+   "text": "2721.6",
+   "seed": "2721.6",
+   "volume": 2722,
+   "backToKg": 1234.4969942193125
+  },
+  {
+   "unit": "lbs",
+   "kg": 48200,
+   "convert": 106262.81037076,
+   "display": 106262.8,
+   "label": "lb",
+   "text": "106262.8",
+   "seed": "106262.8",
+   "volume": 106263,
+   "backToKg": 48199.995295902394
+  },
+  {
+   "unit": "lbs",
+   "kg": 4200.75,
+   "convert": 9261.06847852635,
+   "display": 9261.1,
+   "label": "lb",
+   "text": "9261.1",
+   "seed": "9261.1",
+   "volume": 9261,
+   "backToKg": 4200.764297899939
+  }
+ ],
+ "typed": [
+  {
+   "unit": "kg",
+   "value": 0,
+   "kg": 0
+  },
+  {
+   "unit": "kg",
+   "value": 1,
+   "kg": 1
+  },
+  {
+   "unit": "kg",
+   "value": 45,
+   "kg": 45
+  },
+  {
+   "unit": "kg",
+   "value": 100,
+   "kg": 100
+  },
+  {
+   "unit": "kg",
+   "value": 132.3,
+   "kg": 132.3
+  },
+  {
+   "unit": "kg",
+   "value": 135,
+   "kg": 135
+  },
+  {
+   "unit": "kg",
+   "value": 135.5,
+   "kg": 135.5
+  },
+  {
+   "unit": "kg",
+   "value": 137.8,
+   "kg": 137.8
+  },
+  {
+   "unit": "kg",
+   "value": 225,
+   "kg": 225
+  },
+  {
+   "unit": "kg",
+   "value": 315,
+   "kg": 315
+  },
+  {
+   "unit": "kg",
+   "value": 61.2,
+   "kg": 61.2
+  },
+  {
+   "unit": "kg",
+   "value": 0.1,
+   "kg": 0.1
+  },
+  {
+   "unit": "kg",
+   "value": 999.9,
+   "kg": 999.9
+  },
+  {
+   "unit": "lbs",
+   "value": 0,
+   "kg": 0
+  },
+  {
+   "unit": "lbs",
+   "value": 1,
+   "kg": 0.45359237001003544
+  },
+  {
+   "unit": "lbs",
+   "value": 45,
+   "kg": 20.411656650451594
+  },
+  {
+   "unit": "lbs",
+   "value": 100,
+   "kg": 45.35923700100354
+  },
+  {
+   "unit": "lbs",
+   "value": 132.3,
+   "kg": 60.01027055232769
+  },
+  {
+   "unit": "lbs",
+   "value": 135,
+   "kg": 61.234969951354785
+  },
+  {
+   "unit": "lbs",
+   "value": 135.5,
+   "kg": 61.4617661363598
+  },
+  {
+   "unit": "lbs",
+   "value": 137.8,
+   "kg": 62.50502858738289
+  },
+  {
+   "unit": "lbs",
+   "value": 225,
+   "kg": 102.05828325225797
+  },
+  {
+   "unit": "lbs",
+   "value": 315,
+   "kg": 142.88159655316116
+  },
+  {
+   "unit": "lbs",
+   "value": 61.2,
+   "kg": 27.759853044614168
+  },
+  {
+   "unit": "lbs",
+   "value": 0.1,
+   "kg": 0.04535923700100355
+  },
+  {
+   "unit": "lbs",
+   "value": 999.9,
+   "kg": 453.5470107730344
+  }
+ ]
+}

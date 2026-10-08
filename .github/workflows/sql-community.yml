@@ -26,7 +26,7 @@ name: Test SQL Cộng đồng
 
 on:
   push:
-    branches: ['claude/**', main]
+    branches: ['claude/**', 'native/**', main]
     paths: ['supabase/**', '.github/workflows/sql-community.yml']
   pull_request:
     paths: ['supabase/**', '.github/workflows/sql-community.yml']

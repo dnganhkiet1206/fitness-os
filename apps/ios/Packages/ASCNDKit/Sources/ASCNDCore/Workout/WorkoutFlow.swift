@@ -31,6 +31,14 @@ public final class WorkoutFlow {
   /// Buổi tập của hôm nay; `nil` khi hôm nay không có buổi (nghỉ / chưa lên
   /// lịch) và không có kế hoạch tự do.
   public private(set) var session: WorkoutSessionController?
+  /// Đơn vị tạ của tài khoản (#527 1.9-A): buổi đang mở và mọi buổi dựng sau
+  /// nhận theo — kể cả buổi dựng lại qua nửa đêm.
+  public private(set) var weightUnit: WeightUnit = .kg
+
+  public func setWeightUnit(_ unit: WeightUnit) {
+    weightUnit = unit
+    session?.setWeightUnit(unit)
+  }
   /// Ghi kế hoạch (#401): builder, danh sách template, màn Plan. `nil` khi app
   /// không đưa chỗ ghi.
   public private(set) var plan: PlanEditor?
@@ -163,6 +171,10 @@ public final class WorkoutFlow {
     absorbing?.cancel()
   }
 
+  /// Đang có lượt tải bay — "app còn đang lấy lại phần đã lỡ" của dải báo
+  /// mạng (`registerBusyProbe` của RN đọc `isFetching` của React Query).
+  public var isRefreshing: Bool { refreshing != nil }
+
   /// Kéo để làm mới. Gọi chồng thì chờ lượt đang chạy.
   public func refresh() async {
     guard !closed else { return }
@@ -234,7 +246,7 @@ public final class WorkoutFlow {
       todaysTemplate: { [weak today] in today?.plan.flatMap { $0.date == date ? $0.template : nil } },
       loggedToday: { [weak today] in today?.trained.contains(date) ?? false },
       bests: { [records] in records.bests }, clock: clock, makeId: makeId,
-      onEnqueued: enqueued(for: date))
+      onEnqueued: enqueued(for: date), weightUnit: weightUnit)
   }
 
   /// Kế hoạch tự do cho ngày không có buổi (chỉ Lab dùng). `nil` để tắt.
@@ -301,6 +313,7 @@ public final class WorkoutFlow {
       }
       guard Self.replaceable(current, today: today.today) else { return }
     }
+    next?.setWeightUnit(weightUnit)
     session = next
     await next?.load()
   }
@@ -314,6 +327,25 @@ public final class WorkoutFlow {
     case .finished: current.plan.date != today
     case .active: false
     }
+  }
+
+  /// Bảng tập của một ngày trong kế hoạch tuần (`week-plan.tsx:495`, `key=
+  /// {dStr}`: mỗi ngày một bảng). Hôm nay là CHÍNH buổi của màn tập — một
+  /// trạng thái, hai chỗ xem, không có hai bảng đếm khác nhau cho cùng một
+  /// buổi. Ngày khác: một bảng riêng, đã đọc tiến độ của ngày ấy, cùng đơn vị
+  /// tạ, cùng đường ghi (kỷ lục, lịch sử, "đã tập" của ĐÚNG ngày ấy).
+  /// `nil`: ngày nghỉ, ngày chưa lên lịch, hay chưa có kế hoạch.
+  public func daySession(on date: LocalDate) async -> WorkoutSessionController? {
+    if date == today.today { return session }
+    let onRest = self.onRest
+    let rest: @MainActor (RestEvent, PlannedSet?) -> Void = { event, next in onRest(event, Self.restTarget(next)) }
+    let bests: @MainActor () -> PersonalRecords.Bests? = { [records] in records.bests }
+    guard
+      let s = await today.makeSession(on: date, bests: bests, onRest: rest, onEnqueued: enqueued(for: date))
+    else { return nil }
+    s.setWeightUnit(weightUnit)
+    await s.load()
+    return s
   }
 
   private func makeSession() -> WorkoutSessionController? {

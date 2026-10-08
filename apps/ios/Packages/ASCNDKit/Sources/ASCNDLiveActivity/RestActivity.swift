@@ -68,24 +68,35 @@ public struct ActivityKitRestDriver: RestActivityDriver {
     live?.content.state
   }
 
-  public func start(_ content: RestActivityContent) async {
+  /// Chỉ thành công khi app ở TIỀN CẢNH (Apple: "You start a Live Activity
+  /// in your app's code while the app is in the foreground"). Vì vậy
+  /// controller không bao giờ gọi `start` khi đã có activity đang hiện. Nếu
+  /// gọi, activity cũ sẽ bị end ở dưới đây và request mới bị từ chối từ nền.
+  public func start(_ content: RestActivityContent) async -> Bool {
     // Một quãng nghỉ tại một thời điểm: dọn mọi activity cũ trước.
     for a in Activity<RestActivityAttributes>.activities {
       await a.end(nil, dismissalPolicy: .immediate)
     }
-    guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
-    _ = try? Activity.request(
-      attributes: RestActivityAttributes(),
-      content: ActivityContent(state: content, staleDate: Self.stale(content)),
-      pushType: nil)
+    guard ActivityAuthorizationInfo().areActivitiesEnabled else { return false }
+    // Không `try?` rồi giả định đã có activity: request hỏng (app ở nền, hết
+    // hạn mức, bị tắt giữa chừng) phải về tới controller (#523 P1).
+    do {
+      _ = try Activity.request(
+        attributes: RestActivityAttributes(),
+        content: ActivityContent(state: content, staleDate: Self.stale(content)),
+        pushType: nil)
+      return true
+    } catch {
+      return false
+    }
   }
 
-  public func update(_ content: RestActivityContent) async {
+  public func update(_ content: RestActivityContent) async -> Bool {
     guard let a = live else {
-      await start(content)
-      return
+      return await start(content)
     }
     await a.update(ActivityContent(state: content, staleDate: Self.stale(content)))
+    return true
   }
 
   public func end() async {
@@ -94,8 +105,20 @@ public struct ActivityKitRestDriver: RestActivityDriver {
     }
   }
 
-  /// Hết hạn 60 giây sau khi nghỉ xong: app không còn chạy để dọn thì hệ
-  /// thống tự coi nó là cũ.
+  /// 60 giây sau khi nghỉ xong, hệ thống coi activity là CŨ (`.stale`). Nó
+  /// KHÔNG gỡ activity: chú thích của bản RN ("the stale activity is removed
+  /// 60s later", `RestTimerLiveActivity.swift` @ fac9ac2) sai. Theo Apple, một
+  /// activity không được end sống tới 8 giờ trên Island, và tới 12 giờ trên
+  /// màn khoá ("Displaying live data with Live Activities"; `staleDate`:
+  /// "the activityState … changes to stale").
+  ///
+  /// Vì vậy quãng nghỉ hết giờ lúc app ở nền vẫn hiện "0:00" cho tới khi
+  /// activity được gỡ thật. Ba đường gỡ:
+  /// - app ra tiền cảnh: `settle()`;
+  /// - mở lại sau khi bị kill: `reconcile()`;
+  /// - chạm ±15: intent → không còn quãng nghỉ → `end`.
+  ///
+  /// Hiện gì khi `isStale` là quyết định sản phẩm (#274), chưa đổi ở đây.
   static func stale(_ c: RestActivityContent) -> Date {
     c.endsAt.date.addingTimeInterval(60)
   }
