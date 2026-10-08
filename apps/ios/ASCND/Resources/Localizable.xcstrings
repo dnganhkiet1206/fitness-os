@@ -4152,6 +4152,54 @@
     }
    }
   },
+  "workouts.noSession.title": {
+   "comment": "Tab Tập luyện khi hôm nay không có buổi (ngày nghỉ / chưa lên lịch).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No workout today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay chưa có buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoy no hay entrenamiento"
+     }
+    }
+   }
+  },
+  "workouts.noSession.message": {
+   "comment": "Tab Tập luyện khi hôm nay không có buổi.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Today's planned workout will show up here."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi tập theo kế hoạch của hôm nay sẽ hiện ở đây."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El entrenamiento planificado de hoy aparecerá aquí."
+     }
+    }
+   }
+  },
   "workout.rest.title": {
    "extractionState": "manual",
    "localizations": {
