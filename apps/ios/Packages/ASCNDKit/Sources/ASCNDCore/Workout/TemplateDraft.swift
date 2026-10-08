@@ -165,6 +165,27 @@ public struct TemplateDraft: Sendable, Hashable {
     }
   }
 
+  /// Nút ± của ô tạ (`workout-set-sheet.tsx:163`): bước 2.5 kg / 5 lb, kẹp
+  /// [0, 500 kg] / [0, 1100 lb] theo SỐ ĐANG HIỆN (`displayWeight`), lưu lại
+  /// kg 2 chữ số lẻ (`tidy(weightToKg(n))`) — bước 2.5 không trôi thành
+  /// 82.50000000000001.
+  public static func stepLoad(_ kg: Double, unit: WeightUnit, up: Bool) -> Double {
+    let step = unit == .kg ? 2.5 : 5
+    let maxShown = unit == .kg ? 500.0 : 1100
+    let shown = unit.display(kg)
+    let next = min(maxShown, max(0, shown + (up ? step : -step)))
+    return (unit.toKg(next) * 100 + 0.5).rounded(.down) / 100
+  }
+
+  /// Ô tìm của danh sách buổi tập (`templates.tsx:57`): tên hoặc loại chứa
+  /// chữ tìm; mới trước (`newestFirst`).
+  public static func listed(_ templates: [WorkoutTemplate], search: String) -> [WorkoutTemplate] {
+    let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    return templates.sorted(by: PlanEdit.newestFirst).filter {
+      q.isEmpty || $0.name.lowercased().contains(q) || ($0.type ?? "").lowercased().contains(q)
+    }
+  }
+
   /// Tên sẽ lưu (`shownName.trim() || suggestedName`, `:454`).
   public func finalName(suggested: String) -> String {
     let shown = (nameTouched ? name : suggested).trimmingCharacters(in: .whitespacesAndNewlines)

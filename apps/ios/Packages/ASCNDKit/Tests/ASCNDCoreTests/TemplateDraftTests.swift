@@ -126,4 +126,25 @@ struct TemplateDraftTests {
     d.pickedType = .strength
     #expect(d.type(ranked: [.chest]) == .strength)
   }
+
+  /// Nút ± của ô tạ: bước theo đơn vị đang hiện, lưu kg 2 chữ số lẻ.
+  @Test func loadStepsInTheShownUnit() {
+    #expect(TemplateDraft.stepLoad(60, unit: .kg, up: true) == 62.5)
+    #expect(TemplateDraft.stepLoad(0, unit: .kg, up: false) == 0, "không âm")
+    #expect(TemplateDraft.stepLoad(500, unit: .kg, up: true) == 500)
+    #expect(TemplateDraft.stepLoad(60, unit: .lbs, up: true) == 62.28, "132.3 + 5 = 137.3 lb → 62.278… → 62.28 kg")
+  }
+
+  /// Danh sách buổi tập (`templates.tsx:57`): mới trước, tìm theo tên hoặc loại.
+  @Test func listSearchesNameOrTypeNewestFirst() {
+    let t = [
+      WorkoutTemplate(id: "a", name: "Push A", exercises: [], type: "push", createdAt: EpochMillis(1)),
+      WorkoutTemplate(id: "b", name: "Legs", exercises: [], type: "legs", createdAt: EpochMillis(3)),
+      WorkoutTemplate(id: "c", name: "Arms", exercises: [], type: "upper", createdAt: EpochMillis(2)),
+    ]
+    #expect(TemplateDraft.listed(t, search: "").map(\.id) == ["b", "c", "a"])
+    #expect(TemplateDraft.listed(t, search: " PUSH ").map(\.id) == ["a"])
+    #expect(TemplateDraft.listed(t, search: "upp").map(\.id) == ["c"], "khớp theo loại")
+    #expect(TemplateDraft.listed(t, search: "zzz").isEmpty)
+  }
 }
