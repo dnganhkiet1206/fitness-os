@@ -242,7 +242,9 @@ struct BiometricsBookTests {
     let sample = b.newestFirst[0]
     s.rows = []
     #expect(await b.delete(sample) == .deleted)
-    #expect(r.calls.count == 1 && r.calls[0] == ("a", "acct-A"))
+    #expect(r.calls.count == 1)
+    #expect(r.calls.first?.0 == "a")
+    #expect(r.calls.first?.1 == "acct-A")
     let rebuiltDays = Set(
       s.queries.filter { $0.table == "daily_logs" }.compactMap { q in
         q.filters.compactMap { f -> String? in
