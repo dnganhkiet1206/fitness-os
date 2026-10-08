@@ -10,7 +10,8 @@ import WidgetKit
 /// spike (#195: "Upper Body Strength", chuỗi 12 ngày, sẵn sàng 86) như số
 /// thật. Ở đây: chưa có dữ liệu thì nói thế ("mở ASCND để cập nhật"); số mẫu
 /// chỉ dùng cho `placeholder`, và hệ thống vẽ nó dạng che (redacted).
-/// Chữ của widget theo ngôn ngữ máy (RN cứng tiếng Anh).
+/// Chữ của widget theo ngôn ngữ chọn TRONG APP (App Group,
+/// `WidgetDataStore.locale`; "Theo máy" thì ngôn ngữ máy). RN cứng tiếng Anh.
 
 struct TodayWorkoutEntry: TimelineEntry {
   let date: Date
@@ -40,6 +41,7 @@ struct TodayWorkoutWidget: Widget {
   var body: some WidgetConfiguration {
     StaticConfiguration(kind: "com.ascnd.fitnessos.widgets.today-workout", provider: TodayWorkoutProvider()) { entry in
       TodayWorkoutView(data: entry.data)
+        .environment(\.locale, WidgetDataStore().locale)
         .containerBackground(.fill.tertiary, for: .widget)
     }
     .configurationDisplayName(Text("widget.today.name"))
@@ -114,6 +116,7 @@ struct StreakReadinessWidget: Widget {
     StaticConfiguration(kind: "com.ascnd.fitnessos.widgets.streak-readiness", provider: StreakReadinessProvider()) {
       entry in
       StreakReadinessView(data: entry.data)
+        .environment(\.locale, WidgetDataStore().locale)
         .containerBackground(.fill.tertiary, for: .widget)
     }
     .configurationDisplayName(Text("widget.streak.name"))
