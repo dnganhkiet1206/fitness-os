@@ -368,7 +368,7 @@ public final class AwardsBook {
     let uid = userId, src = source, text = englishText
     let outcome = await Awards.grantAll(Awards.toGrant(s, earned: Set(earned.keys))) { d in
       let t = text(d.key)
-      do {
+      do throws(AwardGrantError) {
         try await src.grant(
           userId: uid, award: d, title: t.title, description: t.description, metadata: Awards.metadata(d, s))
       } catch {
