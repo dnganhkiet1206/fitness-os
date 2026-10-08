@@ -10480,19 +10480,19 @@
     "en": {
      "stringUnit": {
       "state": "translated",
-      "value": "Remove %@?"
+      "value": "Remove %@? Your training load and readiness will be recalculated."
      }
     },
     "vi": {
      "stringUnit": {
       "state": "translated",
-      "value": "Xoá %@?"
+      "value": "Xoá %@? Khối lượng tập và điểm sẵn sàng sẽ được tính lại."
      }
     },
     "es": {
      "stringUnit": {
       "state": "translated",
-      "value": "¿Eliminar %@?"
+      "value": "¿Quitar %@? Tu carga de entrenamiento y tu preparación se recalcularán."
      }
     }
    },
@@ -14213,6 +14213,98 @@
      "stringUnit": {
       "state": "translated",
       "value": "OK"
+     }
+    }
+   }
+  },
+  "widget.done": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Done"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoàn thành"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hecho"
+     }
+    }
+   }
+  },
+  "widget.restDay": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Rest day"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngày nghỉ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Día de descanso"
+     }
+    }
+   }
+  },
+  "widget.noWorkout": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No workout yet"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Chưa có buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Aún sin entrenamiento"
+     }
+    }
+   }
+  },
+  "widget.untitled": {
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Workout"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Entrenamiento"
      }
     }
    }
