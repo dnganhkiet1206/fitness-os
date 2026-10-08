@@ -329,6 +329,25 @@ public final class WorkoutFlow {
     }
   }
 
+  /// Bảng tập của một ngày trong kế hoạch tuần (`week-plan.tsx:495`, `key=
+  /// {dStr}`: mỗi ngày một bảng). Hôm nay là CHÍNH buổi của màn tập — một
+  /// trạng thái, hai chỗ xem, không có hai bảng đếm khác nhau cho cùng một
+  /// buổi. Ngày khác: một bảng riêng, đã đọc tiến độ của ngày ấy, cùng đơn vị
+  /// tạ, cùng đường ghi (kỷ lục, lịch sử, "đã tập" của ĐÚNG ngày ấy).
+  /// `nil`: ngày nghỉ, ngày chưa lên lịch, hay chưa có kế hoạch.
+  public func daySession(on date: LocalDate) async -> WorkoutSessionController? {
+    if date == today.today { return session }
+    let onRest = self.onRest
+    let rest: @MainActor (RestEvent, PlannedSet?) -> Void = { event, next in onRest(event, Self.restTarget(next)) }
+    let bests: @MainActor () -> PersonalRecords.Bests? = { [records] in records.bests }
+    guard
+      let s = await today.makeSession(on: date, bests: bests, onRest: rest, onEnqueued: enqueued(for: date))
+    else { return nil }
+    s.setWeightUnit(weightUnit)
+    await s.load()
+    return s
+  }
+
   private func makeSession() -> WorkoutSessionController? {
     let onRest = self.onRest
     let rest: @MainActor (RestEvent, PlannedSet?) -> Void = { event, next in onRest(event, Self.restTarget(next)) }

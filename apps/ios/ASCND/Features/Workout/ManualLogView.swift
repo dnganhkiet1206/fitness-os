@@ -255,10 +255,8 @@ struct ManualLogView: View {
         .accessibilityLabel(Text(String(localized: "manualLog.remove")))
       }
       // "Lần trước" chỉ trên hàng MỞ bài (`:837`) — nói một lần, không bốn.
-      if number == 1, let last = lastText(name, unit: unit) {
-        Text(verbatim: last)
-          .font(DS.TextStyle.caption)
-          .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+      if number == 1, !name.isEmpty, let insights = flow.insights {
+        ExerciseProgressRow(insights: insights, today: flow.today, name: name)
       }
       if focusedName == row.id, let library = flow.library {
         let picks = ManualLogController.suggestions(for: row.exerciseName, in: library.exercises)
@@ -306,17 +304,6 @@ struct ManualLogView: View {
       let reps = String(localized: "manualLog.reps")
       return String(localized: "manualLog.range \(b.lowerBound) \(b.upperBound) \(reps)")
     }
-  }
-
-  private func lastText(_ name: String, unit: WeightUnit) -> String? {
-    guard !name.isEmpty, let d = flow.performance.last(for: name)?.display else { return nil }
-    let value: String
-    switch d {
-    case .hold(let s): value = "\(s)s"
-    case .bodyweight(let r): value = PreviousPerformance(weightKg: nil, reps: r).label(unit)
-    case .loaded(let w, let r): value = PreviousPerformance(weightKg: w, reps: r).label(unit)
-    }
-    return "\(String(localized: "workout.previous.title")): \(value)"
   }
 
   // MARK: - Ghi

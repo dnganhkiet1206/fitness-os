@@ -214,6 +214,10 @@ public struct WorkoutView: View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         exerciseTitle(group)
+        // "Lần trước" — thứ đọc TRƯỚC khi làm một hiệp (`day-plan.tsx:1876`).
+        if let flow, let insights = flow.insights {
+          ExerciseProgressRow(insights: insights, today: flow.today, name: group.name)
+        }
         ForEach(group.rows) { row in
           setRow(row)
           if row.key != group.rows.last?.key {
