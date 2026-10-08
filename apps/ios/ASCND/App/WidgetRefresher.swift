@@ -44,6 +44,17 @@ final class WidgetRefresher: @unchecked Sendable {
     WidgetCenter.shared.reloadAllTimelines()
   }
 
+  /// Ngôn ngữ trong app đổi (hoặc lúc mở app): widget và Live Activity đọc
+  /// khoá này từ App Group. Dòng trạng thái trong payload được dựng bằng chữ
+  /// của app (`copy`), nên dựng lại theo ngôn ngữ mới. `nil` = "Theo máy".
+  func setLanguage(_ code: String?) {
+    let changed = data.language() != code
+    data.writeLanguage(code)
+    guard changed else { return }
+    WidgetCenter.shared.reloadAllTimelines()
+    Task { await refresh() }
+  }
+
   static var copy: HomeWidgets.Copy {
     HomeWidgets.Copy(
       done: String(localized: "widget.done"), restDay: String(localized: "widget.restDay"),
