@@ -28,6 +28,10 @@ final class AppServices {
   let reminders: ReminderCenter
   @ObservationIgnored private let reminderPresenter = ReminderPresenter()
   let sync: SyncWorker
+  /// Trạng thái mạng ba nhánh (#527 · 1.11, `net-status.ts`): dải báo ở gốc app.
+  let net = NetStatusMonitor()
+  /// Đường mạng + phép dò internet của NetInfo (#530) — nuôi `net` và vòng sync.
+  @ObservationIgnored private(set) var network: NetworkObserver!
   @ObservationIgnored let workouts: GRDBWorkoutStore
   /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
   /// vào đây và Today đọc lại phần chưa gửi.
@@ -149,6 +153,10 @@ final class AppServices {
       sync.setSignedInUser(session?.session?.userId)
     }
     UNUserNotificationCenter.current().delegate = reminderPresenter
+    network = NetworkObserver(prober: URLSessionReachabilityProber(), timers: TaskNetTimers()) {
+      [weak self] connected, reachable in
+      self?.applyNetwork(connected: connected, reachable: reachable)
+    }
     startNetworkMonitor()
   }
 
@@ -165,6 +173,8 @@ final class AppServices {
   /// giờ nào đổi; thông báo đang chờ giữ chữ cũ tới lần đặt kế, như RN).
   func setLanguage(_ choice: AppPreferences.LangChoice) {
     preferences.setLang(choice)
+    // Mọi lần tra chữ của app đổi ngay (`AppLanguage`, #527 · 1.7).
+    AppLanguage.shared.set(preferences.lang.rawValue)
     reminders.copy = ReminderCopyTable.copy(preferences.lang)
   }
 
@@ -239,6 +249,8 @@ final class AppServices {
   }
 
   func didBecomeActive() {
+    // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
+    network.resume(Self.netPath(monitor.currentPath))
     sync.kick()
   }
 
@@ -251,10 +263,43 @@ final class AppServices {
     return dir.appendingPathComponent("ascnd.sqlite").path
   }
 
+  /// MỘT định nghĩa "có mạng" cho cả app — vòng sync và dải báo đọc cùng một
+  /// phép đo (luật 4 của `tools/net-status.mjs`): đường mạng của `NWPath` +
+  /// phép dò internet của NetInfo (`NetworkObserver`, #530).
+  private func applyNetwork(connected: Bool?, reachable: Bool?) {
+    let usable = NetReachability.isUsable(connected: connected, internetReachable: reachable)
+    sync.setOnline(usable)
+    net.apply(connected: connected, internetReachable: reachable)
+  }
+
+  /// `NWPath` → loại đường mạng của `RNCConnectionState`.
+  nonisolated static func netPath(_ path: NWPath) -> NetPath {
+    guard path.status == .satisfied else { return NetPath(kind: .none, isExpensive: path.isExpensive) }
+    let kind: NetPath.Kind =
+      path.usesInterfaceType(.wifi) ? .wifi
+      : path.usesInterfaceType(.cellular) ? .cellular
+      : path.usesInterfaceType(.wiredEthernet) ? .ethernet
+      : .other
+    return NetPath(kind: kind, isExpensive: path.isExpensive)
+  }
+
+  /// "Thử lại" của dải báo (`retryNow`): ĐO lại đường mạng và dò lại internet,
+  /// không tự tuyên bố đã có mạng.
+  func retryNetwork() {
+    let s = network.refresh(Self.netPath(monitor.currentPath))
+    applyNetwork(connected: s.connected, reachable: s.reachable)
+  }
+
+  /// App vào nền: huỷ phép dò đang bay mà không đổi trạng thái (iOS cắt mạng
+  /// của app ở nền — một phép dò bị cắt không phải bằng chứng mất mạng).
+  func didEnterBackground() {
+    network.suspend()
+  }
+
   private func startNetworkMonitor() {
     monitor.pathUpdateHandler = { [weak self] path in
-      let online = path.status == .satisfied
-      Task { @MainActor in self?.sync.setOnline(online) }
+      let next = Self.netPath(path)
+      Task { @MainActor in self?.network.pathChanged(next) }
     }
     monitor.start(queue: DispatchQueue(label: "ascnd.network"))
   }

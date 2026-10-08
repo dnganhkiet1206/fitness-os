@@ -10,16 +10,22 @@ import SwiftUI
 public struct TodayView: View {
   let state: TodayDisplay
   var onStart: () -> Void
-  var onChoosePlan: () -> Void
+  /// Mở màn chọn kế hoạch. `nil` = chưa có màn ấy ở bản này: nút "Chọn kế
+  /// hoạch" ẩn đi thay vì là một nút không làm gì (#527).
+  var onChoosePlan: (() -> Void)?
+  /// Mở Cài đặt (RN: avatar tài khoản trên Today). `nil` = không hiện nút.
+  var onOpenSettings: (() -> Void)?
 
   public init(
     state: TodayDisplay,
     onStart: @escaping () -> Void = {},
-    onChoosePlan: @escaping () -> Void = {}
+    onChoosePlan: (() -> Void)? = nil,
+    onOpenSettings: (() -> Void)? = nil
   ) {
     self.state = state
     self.onStart = onStart
     self.onChoosePlan = onChoosePlan
+    self.onOpenSettings = onOpenSettings
   }
 
   public var body: some View {
@@ -37,6 +43,17 @@ public struct TodayView: View {
         .padding(DS.Spacing.md)
       }
       .navigationTitle(Text("tab.today"))
+      .toolbar {
+        if let onOpenSettings {
+          ToolbarItem(placement: .topBarTrailing) {
+            Button(action: onOpenSettings) {
+              Image(systemName: "person.crop.circle")
+                .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityLabel(Text("settings.title"))
+          }
+        }
+      }
     }
     // Không gắn accessibilityLabel lên cả cây: container không gộp thì nhãn
     // đè xuống từng phần tử con (nút Bắt đầu, từng bài đều đọc thành

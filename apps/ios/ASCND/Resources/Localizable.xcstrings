@@ -8637,6 +8637,54 @@
     }
    }
   },
+  "workouts.noSession.title": {
+   "comment": "Tab Tập luyện khi hôm nay không có buổi (ngày nghỉ / chưa lên lịch).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "No workout today"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hôm nay chưa có buổi tập"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Hoy no hay entrenamiento"
+     }
+    }
+   }
+  },
+  "workouts.noSession.message": {
+   "comment": "Tab Tập luyện khi hôm nay không có buổi.",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Today's planned workout will show up here."
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Buổi tập theo kế hoạch của hôm nay sẽ hiện ở đây."
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "El entrenamiento planificado de hoy aparecerá aquí."
+     }
+    }
+   }
+  },
   "workout.rest.title": {
    "extractionState": "manual",
    "localizations": {
@@ -9028,6 +9076,78 @@
     }
    }
   },
+  "net.offline": {
+   "comment": "Dải kết nối, mất mạng (RN nOffline).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Offline — showing saved data"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Ngoại tuyến — đang hiển thị dữ liệu đã lưu"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sin conexión — mostrando datos guardados"
+     }
+    }
+   }
+  },
+  "net.reconnecting": {
+   "comment": "Dải kết nối, mạng vừa về (RN nReconnecting).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reconnecting — catching up"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Đang kết nối lại — app đang tải phần đã lỡ"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reconectando — poniéndose al día"
+     }
+    }
+   }
+  },
+  "net.retry": {
+   "comment": "Nút trên dải mất mạng: đo lại mạng (RN nRetry).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Try again"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Thử lại"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Reintentar"
+     }
+    }
+   }
+  },
   "sync.retry": {
    "extractionState": "manual",
    "localizations": {
@@ -9185,6 +9305,54 @@
      "stringUnit": {
       "state": "translated",
       "value": "Sistema"
+     }
+    }
+   }
+  },
+  "settings.theme.dark": {
+   "comment": "Theme tối (RN settingsThemeDark).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Dark"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Tối"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Oscuro"
+     }
+    }
+   }
+  },
+  "settings.theme.light": {
+   "comment": "Theme sáng (RN settingsThemeLight).",
+   "extractionState": "manual",
+   "localizations": {
+    "en": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Light"
+     }
+    },
+    "vi": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Sáng"
+     }
+    },
+    "es": {
+     "stringUnit": {
+      "state": "translated",
+      "value": "Claro"
      }
     }
    }

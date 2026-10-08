@@ -81,6 +81,10 @@ private struct SignedInScope<Content: View>: View {
       let f = services.makeWorkoutFlow(userId: userId, rest: rest)
       f.setWeightUnit(weightUnit)
       flow = f
+      // "Đang kết nối lại" thoát khi lượt tải của phiên này xong. Giữ `weak`:
+      // phiên đã đóng thì không còn gì để chờ. Không gỡ ở `onDisappear` — cây
+      // của người mới có thể đã đăng ký trước khi cây cũ gỡ xong.
+      services.net.busyProbe = { [weak f] in f?.isRefreshing ?? false }
       await services.forgetOtherAccounts(keeping: userId)
       // Sau `forgetOtherAccounts`: bản nhớ hồ sơ chỉ đọc được khi phiên đã là
       // của người này. Đơn vị từ bản nhớ (không mạng) có TRƯỚC khi buổi tập
