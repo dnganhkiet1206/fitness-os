@@ -4,6 +4,7 @@ import ASCNDStore
 import Foundation
 import Network
 import Observation
+import UserNotifications
 
 /// Gốc lắp ráp của app: nơi DUY NHẤT dựng các mảnh thật và nối chúng với nhau.
 ///
@@ -18,11 +19,23 @@ import Observation
 @Observable
 final class AppServices {
   let session: SessionStore
+  /// Cài đặt của app (#426): ngôn ngữ, theme, đơn vị nước theo MÁY; linh vật
+  /// theo tài khoản. Sống suốt đời app — đăng xuất chỉ xoá phần theo tài khoản.
+  let preferences: AppPreferences
+  /// Nhắc nhở (#427): cài đặt theo tài khoản + lịch thông báo cục bộ. Một bản
+  /// cho cả app — màn Nhắc nhở và Hôm nay dùng chung (RN từng có hai bản ghi
+  /// đè lịch của nhau).
+  let reminders: ReminderCenter
+  @ObservationIgnored private let reminderPresenter = ReminderPresenter()
   let sync: SyncWorker
   /// Hai widget màn hình chính (#66): dữ liệu thật, xoá khi phiên kết thúc.
   @ObservationIgnored let widgets: WidgetRefresher
   /// Apple Health (#66): đồng bộ vào server, ghi ngược buổi ghi tay.
   @ObservationIgnored let health: HealthSyncCoordinator
+  /// Trạng thái mạng ba nhánh (#527 · 1.11, `net-status.ts`): dải báo ở gốc app.
+  let net = NetStatusMonitor()
+  /// Đường mạng + phép dò internet của NetInfo (#530) — nuôi `net` và vòng sync.
+  @ObservationIgnored private(set) var network: NetworkObserver!
   @ObservationIgnored let workouts: GRDBWorkoutStore
   /// Hàng đợi trên đĩa — vòng sync gửi từ đây; lệnh sửa kế hoạch (#401) ghi
   /// vào đây và Today đọc lại phần chưa gửi.
@@ -49,6 +62,9 @@ final class AppServices {
   @ObservationIgnored let profileCache: any ProfileCache
   /// Bảng `read_cache` (kế hoạch, kỷ lục, "lần trước") — để dọn theo người.
   @ObservationIgnored private let readCache: GRDBTemplateCache
+  /// Chốt tài khoản của mọi cache theo người dùng (#431): đóng lúc mở app và
+  /// lúc phiên kết thúc, chỉ mở cho đúng người đang đăng nhập.
+  @ObservationIgnored private let accounts: AccountScope
   /// Lỗi không mở được database / thiếu cấu hình — app vẫn mở, màn nói thật.
   private(set) var startupError: String?
 
@@ -74,6 +90,9 @@ final class AppServices {
       database = try! ASCNDDatabase()  // trong bộ nhớ: không có lý do thất bại ngoài hết RAM
     }
 
+    // Chưa ai đăng nhập cho tới khi phiên mở (`forgetOtherAccounts`).
+    database.accounts.signOut()
+    accounts = database.accounts
     workouts = GRDBWorkoutStore(database)
     let outboxStore = OutboxStore(database)
     outbox = outboxStore
@@ -105,6 +124,11 @@ final class AppServices {
     let widgets = WidgetRefresher(store: rows)
     self.widgets = widgets
     health = HealthSyncCoordinator(store: rows)
+    let prefs = AppPreferences(store: UserDefaultsStore())
+    preferences = prefs
+    let reminderCenter = ReminderCenter(
+      store: UserDefaultsStore(), scheduler: NotificationReminderScheduler(), copy: ReminderCopyTable.copy(prefs.lang))
+    reminders = reminderCenter
     sync = SyncWorker(
       store: outboxStore,
       remote: backend.map { b -> any RemoteWriter in
@@ -126,7 +150,11 @@ final class AppServices {
     // như `forgetPreviousAccount` của baseline (`use-auth.tsx:53`). MỘT closure,
     // chạy tuần tự, để thứ tự không phụ thuộc thứ tự đăng ký.
     let workouts = self.workouts
+    let accounts = self.accounts
     session.onSignedOut { [sync = self.sync, weak session = self.session] in
+      // Đóng chốt TRƯỚC khi dọn: lượt làm mới của người vừa rời đi về sau đó
+      // không ghi lại được gì lên đĩa (#431).
+      accounts.signOut()
       // Hàng đợi chưa gửi: bỏ, như baseline (#241 chờ Kiệt).
       await sync.signOut()
       // Điểm quay lại `routine-day:*` (`clearUserScopedStorage`).
@@ -135,9 +163,19 @@ final class AppServices {
       try? await templateCache.clearAll()
       // Widget màn hình chính không giữ số của người vừa rời đi (`clearWidgetData`).
       widgets.setUser(session?.session?.userId)
+      // Cài đặt theo tài khoản (linh vật); theo máy thì giữ (`DEVICE_KEYS`).
+      prefs.clearUserScoped()
+      // Nhắc nhở: huỷ thông báo đang chờ của người vừa rời đi, xoá cài đặt /
+      // chữ ký lịch / chốt giờ thông minh (`forgetPreviousAccount`).
+      await reminderCenter.clearUserScoped()
       // Đổi thẳng tài khoản: người mới đã đăng nhập — vòng sync gửi hàng của
       // họ (`signOut` ở trên vừa đặt nó về nil).
       sync.setSignedInUser(session?.session?.userId)
+    }
+    UNUserNotificationCenter.current().delegate = reminderPresenter
+    network = NetworkObserver(prober: URLSessionReachabilityProber(), timers: TaskNetTimers()) {
+      [weak self] connected, reachable in
+      self?.applyNetwork(connected: connected, reachable: reachable)
     }
     startNetworkMonitor()
   }
@@ -149,6 +187,16 @@ final class AppServices {
     _ = try? await workouts.pruneDays(today: today)
     sync.kick()
     autoSyncHealth()
+    await reminders.refreshPermission()
+  }
+
+  /// Đổi ngôn ngữ app: chữ của lời nhắc theo cùng (lịch không đặt lại — không
+  /// giờ nào đổi; thông báo đang chờ giữ chữ cũ tới lần đặt kế, như RN).
+  func setLanguage(_ choice: AppPreferences.LangChoice) {
+    preferences.setLang(choice)
+    // Mọi lần tra chữ của app đổi ngay (`AppLanguage`, #527 · 1.7).
+    AppLanguage.shared.set(preferences.lang.rawValue)
+    reminders.copy = ReminderCopyTable.copy(preferences.lang)
   }
 
   /// Tầng ứng dụng của màn Today cho người đang đăng nhập (#271).
@@ -159,6 +207,7 @@ final class AppServices {
   /// Phiên của `userId` bắt đầu: bỏ read model của mọi người khác. Lượt làm
   /// mới của người vừa rời đi có thể về SAU lượt dọn lúc đăng xuất (#335).
   func forgetOtherAccounts(keeping userId: String) async {
+    accounts.signIn(userId)
     _ = try? await readCache.clearAll(except: userId)
   }
 
@@ -170,12 +219,12 @@ final class AppServices {
 
   /// Bảng kỷ lục của người đang đăng nhập (#295).
   func makeRecordBook(userId: String) -> RecordBook {
-    RecordBook(userId: userId, history: recordHistory, cache: recordCache)
+    RecordBook(userId: userId, history: recordHistory, cache: recordCache, pending: outbox)
   }
 
   /// "Lần trước" của người đang đăng nhập (#331).
   func makePerformanceBook(userId: String) -> PerformanceBook {
-    PerformanceBook(userId: userId, source: performanceSource, cache: performanceCache)
+    PerformanceBook(userId: userId, source: performanceSource, cache: performanceCache, pending: outbox)
   }
 
   /// Luồng tập của người đang đăng nhập (#272): Today → buổi tập → nghỉ →
@@ -186,9 +235,9 @@ final class AppServices {
     // Lịch sử buổi tập (#400): xoá từ lịch sử đi qua cùng outbox.
     let history = HistoryBook(
       userId: userId, source: historySource, cache: historyCache, store: workouts,
-      onEnqueued: { _ in sync.kick() })
+      onEnqueued: { _ in sync.kick() }, pending: outbox)
     // Phân tích bài tập (#419): cùng nguồn 90 ngày với "lần trước".
-    let insights = InsightBook(userId: userId, source: performanceSource, cache: insightCache)
+    let insights = InsightBook(userId: userId, source: performanceSource, cache: insightCache, pending: outbox)
     let flow = WorkoutFlow(
       today: makeToday(userId: userId), records: makeRecordBook(userId: userId),
       performance: makePerformanceBook(userId: userId), history: history, insights: insights,
@@ -204,8 +253,8 @@ final class AppServices {
     return flow
   }
 
-  /// Onboarding (#424): cổng sau đăng nhập của người này. `RootGate` nối nó
-  /// khi màn của C sẵn sàng; tới lúc đó cổng hiện tại giữ nguyên.
+  /// Onboarding (#424): cổng sau đăng nhập của người này — `OnboardingGateView`
+  /// trong `RootGate` (#527 1.3).
   func makeOnboardingGate(userId: String) -> OnboardingGate {
     OnboardingGate(userId: userId, source: onboardingStatus, store: onboardingStore)
   }
@@ -223,6 +272,8 @@ final class AppServices {
   }
 
   func didBecomeActive() {
+    // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
+    network.resume(Self.netPath(monitor.currentPath))
     sync.kick()
     Task { [widgets] in await widgets.refresh() }
     autoSyncHealth()
@@ -238,9 +289,10 @@ final class AppServices {
     }
   }
 
-  /// Ngôn ngữ chữ của app đang hiện — tên buổi tập từ đồng hồ theo nó.
+  /// Ngôn ngữ chữ của app đang hiện — tên buổi tập từ đồng hồ theo nó. Lựa
+  /// chọn trong app (`AppLanguage`, #533) trước; "Theo máy" thì ngôn ngữ máy.
   static var appLang: String {
-    let code = Bundle.main.preferredLocalizations.first ?? "en"
+    let code = AppLanguage.shared.code ?? Bundle.main.preferredLocalizations.first ?? "en"
     return code.hasPrefix("vi") ? "vi" : code.hasPrefix("es") ? "es" : "en"
   }
 
@@ -253,10 +305,43 @@ final class AppServices {
     return dir.appendingPathComponent("ascnd.sqlite").path
   }
 
+  /// MỘT định nghĩa "có mạng" cho cả app — vòng sync và dải báo đọc cùng một
+  /// phép đo (luật 4 của `tools/net-status.mjs`): đường mạng của `NWPath` +
+  /// phép dò internet của NetInfo (`NetworkObserver`, #530).
+  private func applyNetwork(connected: Bool?, reachable: Bool?) {
+    let usable = NetReachability.isUsable(connected: connected, internetReachable: reachable)
+    sync.setOnline(usable)
+    net.apply(connected: connected, internetReachable: reachable)
+  }
+
+  /// `NWPath` → loại đường mạng của `RNCConnectionState`.
+  nonisolated static func netPath(_ path: NWPath) -> NetPath {
+    guard path.status == .satisfied else { return NetPath(kind: .none, isExpensive: path.isExpensive) }
+    let kind: NetPath.Kind =
+      path.usesInterfaceType(.wifi) ? .wifi
+      : path.usesInterfaceType(.cellular) ? .cellular
+      : path.usesInterfaceType(.wiredEthernet) ? .ethernet
+      : .other
+    return NetPath(kind: kind, isExpensive: path.isExpensive)
+  }
+
+  /// "Thử lại" của dải báo (`retryNow`): ĐO lại đường mạng và dò lại internet,
+  /// không tự tuyên bố đã có mạng.
+  func retryNetwork() {
+    let s = network.refresh(Self.netPath(monitor.currentPath))
+    applyNetwork(connected: s.connected, reachable: s.reachable)
+  }
+
+  /// App vào nền: huỷ phép dò đang bay mà không đổi trạng thái (iOS cắt mạng
+  /// của app ở nền — một phép dò bị cắt không phải bằng chứng mất mạng).
+  func didEnterBackground() {
+    network.suspend()
+  }
+
   private func startNetworkMonitor() {
     monitor.pathUpdateHandler = { [weak self] path in
-      let online = path.status == .satisfied
-      Task { @MainActor in self?.sync.setOnline(online) }
+      let next = Self.netPath(path)
+      Task { @MainActor in self?.network.pathChanged(next) }
     }
     monitor.start(queue: DispatchQueue(label: "ascnd.network"))
   }

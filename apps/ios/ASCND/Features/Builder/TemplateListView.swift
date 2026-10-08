@@ -1,165 +1,152 @@
-// Danh sách template — C sở hữu (#407).
-#if canImport(SwiftUI)
-@_exported import SwiftUI
-#endif
+import ASCNDCore
+import ASCNDDesignSystem
+import SwiftUI
 
-/// Danh sách template với empty state.
-public struct TemplateListView<Template: WorkoutTemplateProtocol>: View {
-  let templates: [Template]
-  var onSelect: (Template) -> Void
-  var onCreate: () -> Void
-  var onDelete: (Template) -> Void
+/// Danh sách buổi tập đã lưu (#527 Phase 2) — `app/templates.tsx` @ fac9ac2,
+/// trên kế hoạch của `TodayController.library` (server ⊕ lệnh chưa gửi) và
+/// `PlanEditor` để xoá.
+///
+/// RN behavior (giữ nguyên):
+/// - mới trước (`newestFirst`); ô tìm chỉ hiện khi có hơn 6 buổi;
+/// - tìm theo tên hoặc loại; tìm trượt thì nói đúng chữ đã tìm và KHÔNG mời
+///   tạo buổi (`:105`) — trống thật thì mời tạo;
+/// - xoá hỏi lại trước (`Alert`); lỗi đọc ≠ trống (`LoadFailed`);
+/// - nút "Tạo mới" luôn ở cuối.
+struct TemplateListView: View {
+  let flow: WorkoutFlow
+  @Environment(\.weightUnit) private var unit
+  @State private var search = ""
+  @State private var pendingDelete: WorkoutTemplate?
+  @State private var showsBuilder = false
+  @State private var deleteFailed = false
 
-  public init(
-    templates: [Template],
-    onSelect: @escaping (Template) -> Void = { _ in },
-    onCreate: @escaping () -> Void = {},
-    onDelete: @escaping (Template) -> Void = { _ in }
-  ) {
-    self.templates = templates
-    self.onSelect = onSelect
-    self.onCreate = onCreate
-    self.onDelete = onDelete
+  private var templates: [WorkoutTemplate] { flow.today.library?.templates ?? [] }
+  private var shown: [WorkoutTemplate] { TemplateDraft.listed(templates, search: search) }
+  private var query: String { search.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+  var body: some View {
+    content
+      .navigationTitle(Text("wb.list.title"))
+      .safeAreaInset(edge: .bottom) {
+        DSButton(String(localized: "wb.createNew"), style: .primary) { showsBuilder = true }
+          .disabled(flow.plan == nil)
+          .padding(DS.Spacing.md)
+          .background(.bar)
+      }
+      .sheet(isPresented: $showsBuilder) {
+        TemplateFormView(flow: flow)
+      }
+      .confirmationDialog(
+        String(localized: "wb.delete.title"),
+        isPresented: Binding(get: { pendingDelete != nil }, set: { if !$0 { pendingDelete = nil } }),
+        titleVisibility: .visible,
+        presenting: pendingDelete
+      ) { t in
+        Button(String(localized: "wb.delete.title"), role: .destructive) {
+          Task { await delete(t) }
+        }
+        Button(String(localized: "common.cancel"), role: .cancel) {}
+      }
+      .alert(String(localized: "workout.finishError.generic"), isPresented: $deleteFailed) {
+        Button(String(localized: "workout.ok")) {}
+      }
+      .refreshable { await flow.refresh() }
   }
 
-  public var body: some View {
-    Group {
-      if templates.isEmpty {
-        emptyState
-      } else {
-        List {
-          ForEach(templates) { template in
-            Button {
-              onSelect(template)
-            } label: {
-              TemplateRowView(template: template)
-            }
-            .buttonStyle(.plain)
-            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button(role: .destructive) {
-                  onDelete(template)
-                } label: {
-                  Label(
-                    String(localized: "builder.delete"),
-                    systemImage: "trash"
-                  )
-                }
-              }
-          }
+  @ViewBuilder private var content: some View {
+    if !shown.isEmpty {
+      List {
+        ForEach(shown, id: \.id) { t in
+          row(t)
         }
       }
+      .modifier(SearchWhenMany(count: templates.count, search: $search))
+    } else if flow.today.library == nil, flow.today.failure != nil {
+      DSErrorView(message: String(localized: "history.loadFailed")) {
+        Task { await flow.refresh() }
+      }
+    } else if !query.isEmpty {
+      // Tìm trượt: nói đúng chữ đã tìm, không mời tạo buổi.
+      DSEmptyState(systemImage: "magnifyingglass", title: String(localized: "wb.list.noMatch \(query)"))
+        .modifier(SearchWhenMany(count: templates.count, search: $search))
+    } else {
+      DSEmptyState(
+        systemImage: "dumbbell", title: String(localized: "wb.list.empty"),
+        actionTitle: flow.plan == nil ? nil : String(localized: "wb.createNew"),
+        action: flow.plan == nil ? nil : { showsBuilder = true })
     }
-    .toolbar {
-      ToolbarItem(placement: .primaryAction) {
-        Button {
-          onCreate()
-        } label: {
-          Label(
-            String(localized: "builder.create"),
-            systemImage: "plus"
-          )
+  }
+
+  private func row(_ t: WorkoutTemplate) -> some View {
+    let sets = t.exercises.reduce(0) { $0 + $1.sets }
+    return DisclosureGroup {
+      ForEach(Array(t.exercises.enumerated()), id: \.offset) { _, e in
+        HStack {
+          Text(verbatim: e.exerciseName)
+            .font(DS.TextStyle.footnote)
+          Spacer()
+          Text(verbatim: prescription(e))
+            .font(DS.TextStyle.footnote.monospacedDigit())
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
+        .accessibilityElement(children: .combine)
       }
-    }
-    .navigationTitle(String(localized: "builder.title"))
-  }
-
-  private var emptyState: some View {
-    VStack(spacing: 16) {
-      Image(systemName: "dumbbell")
-        .font(.system(size: 48))
-        .foregroundStyle(.secondary)
-        .accessibilityHidden(true)
-      Text(String(localized: "builder.empty.title"))
-        .font(.headline)
-      Text(String(localized: "builder.empty.message"))
-        .font(.subheadline)
-        .foregroundStyle(.secondary)
-        .multilineTextAlignment(.center)
-      Button(String(localized: "builder.create")) {
-        onCreate()
-      }
-      .buttonStyle(.borderedProminent)
-      .frame(minHeight: 44)
-    }
-    .padding()
-    .accessibilityElement(children: .combine)
-  }
-}
-
-/// Một hàng template trong danh sách.
-public struct TemplateRowView<Template: WorkoutTemplateProtocol>: View {
-  let template: Template
-
-  public init(template: Template) {
-    self.template = template
-  }
-
-  public var body: some View {
-    VStack(alignment: .leading, spacing: 4) {
-      Text(template.name)
-        .font(.headline)
+    } label: {
       HStack {
-        Text(exerciseCountText)
-          .font(.caption)
-          .foregroundStyle(.secondary)
-        if !template.assignedWeekdays.isEmpty {
-          Text(weekdaySummary)
-            .font(.caption)
-            .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 2) {
+          Text(verbatim: t.name)
+            .font(DS.TextStyle.headline)
+          Text(String(localized: "wb.list.meta \(t.exercises.count) \(sets)"))
+            .font(DS.TextStyle.caption)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         }
+        Spacer()
+        Button {
+          pendingDelete = t
+        } label: {
+          Image(systemName: "trash")
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+            .frame(minWidth: 44, minHeight: 44)
+        }
+        .buttonStyle(.borderless)
+        .disabled(flow.plan == nil)
+        .accessibilityLabel(Text(String(localized: "wb.delete.a11y \(t.name)")))
+      }
+    }
+    .swipeActions {
+      Button(role: .destructive) { pendingDelete = t } label: {
+        Label(String(localized: "wb.delete.short"), systemImage: "trash")
       }
     }
   }
 
-  /// Số bài tập đã localize — "1 exercise" / "N exercises" (en/vi/es).
-  /// Row giữ thuần presentation; Button bọc ngoài cung cấp semantics trợ năng.
-  private var exerciseCountText: String {
-    let count = template.exercises.count
-    if count == 1 {
-      return String(localized: "builder.exercise.count.one")
+  /// "3 × 10 · 60 kg" — tạ 0 không hiện.
+  private func prescription(_ e: TemplateExercise) -> String {
+    let base = "\(e.sets) × \(e.reps)"
+    guard let load = unit.localizedLoad(e.weightKg) else { return base }
+    return "\(base) · \(load)"
+  }
+
+  private func delete(_ t: WorkoutTemplate) async {
+    guard let plan = flow.plan else { return }
+    do throws(PlanEditor.Refusal) {
+      try await plan.delete(templateId: t.id)
+    } catch {
+      deleteFailed = true
     }
-    return String(localized: "builder.exercise.count.other \(count)")
-  }
-
-  private var weekdaySummary: String {
-    let names = template.assignedWeekdays.sorted().map { weekdayName($0) }
-    return names.joined(separator: ", ")
-  }
-
-  private func weekdayName(_ day: Int) -> String {
-    // 1=CN, 2=T2, ..., 7=T7
-    let key = "weekday.\(day)"
-    return String(localized: "\(key)")
   }
 }
 
-// MARK: - Previews
+/// Ô tìm chỉ khi có hơn 6 buổi (`templates.tsx:72`).
+private struct SearchWhenMany: ViewModifier {
+  let count: Int
+  @Binding var search: String
 
-#Preview("TemplateList — Empty") {
-  NavigationStack {
-    TemplateListView<MockTemplate>(templates: [])
-  }
-}
-
-#Preview("TemplateList — With Templates") {
-  NavigationStack {
-    TemplateListView<MockTemplate>(templates: [
-      MockTemplate(
-        name: "Push Day",
-        exercises: [
-          MockTemplateExercise(name: "Bench Press", sets: 4, reps: 8, weightKg: 60),
-          MockTemplateExercise(name: "Overhead Press", sets: 3, reps: 10),
-        ],
-        assignedWeekdays: [2, 5]
-      ),
-      MockTemplate(
-        name: "Pull Day",
-        exercises: [
-          MockTemplateExercise(name: "Deadlift", sets: 5, reps: 5, weightKg: 100),
-        ],
-        assignedWeekdays: [3, 6]
-      ),
-    ])
+  @ViewBuilder func body(content: Content) -> some View {
+    if count > 6 {
+      content.searchable(text: $search, prompt: Text("wb.list.search"))
+    } else {
+      content
+    }
   }
 }

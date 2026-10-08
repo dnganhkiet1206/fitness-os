@@ -21,9 +21,31 @@ public struct SettingsView: View {
   let account: AccountSummary?
   var onSignOut: () -> Void
   var onLanguageChange: (String) -> Void
+  /// Ngôn ngữ đang dùng (`vi` / `en` / `es`) — bộ chọn bắt đầu từ đây, không
+  /// từ một giá trị cứng.
+  var language: String
+  /// Theme đã chọn: `system` / `light` / `dark` (`ascnd_theme`).
+  var theme: String
+  var onThemeChange: (String) -> Void
+  /// Hiện bộ chọn ngôn ngữ. Production tắt cho tới khi đổi ngôn ngữ trong app
+  /// đổi được chữ thật (#527 Phase 1): chữ app hiện theo ngôn ngữ máy, một bộ
+  /// chọn không đổi gì là một nút hỏng.
+  var showsLanguage: Bool
 
   @State private var showSignOutConfirm = false
-  @State private var selectedLanguage = "vi"
+  @State private var selectedLanguage: String
+  @State private var selectedTheme: String
+
+  /// Theme như RN `settings.tsx`: "Theo máy" đứng đầu (mặc định), rồi sáng, tối.
+  static let themes = ["system", "light", "dark"]
+
+  static func themeLabel(_ code: String) -> String {
+    switch code {
+    case "light": String(localized: "settings.theme.light")
+    case "dark": String(localized: "settings.theme.dark")
+    default: String(localized: "settings.system")
+    }
+  }
 
   /// Ngôn ngữ app hỗ trợ: mã + tên bằng chính ngôn ngữ ấy (endonym).
   static let languages: [(code: String, endonym: String)] = [
@@ -38,11 +60,21 @@ public struct SettingsView: View {
   public init(
     account: AccountSummary? = nil,
     onSignOut: @escaping () -> Void = {},
-    onLanguageChange: @escaping (String) -> Void = { _ in }
+    onLanguageChange: @escaping (String) -> Void = { _ in },
+    showsLanguage: Bool = true,
+    language: String = "vi",
+    theme: String = "system",
+    onThemeChange: @escaping (String) -> Void = { _ in }
   ) {
     self.account = account
     self.onSignOut = onSignOut
     self.onLanguageChange = onLanguageChange
+    self.showsLanguage = showsLanguage
+    self.language = language
+    self.theme = theme
+    self.onThemeChange = onThemeChange
+    _selectedLanguage = State(initialValue: language)
+    _selectedTheme = State(initialValue: theme)
   }
 
   public var body: some View {
@@ -68,37 +100,60 @@ public struct SettingsView: View {
           Text(String(localized: "settings.account"))
         }
 
-        // Language
+        // Giao diện — NGAY TRÊN ngôn ngữ như RN: hai tuỳ chọn của MÁY đứng cạnh nhau.
         Section {
-          Picker(
-            String(localized: "settings.language"),
-            selection: $selectedLanguage
-          ) {
-            // Tên ngôn ngữ viết bằng CHÍNH ngôn ngữ ấy, không dịch — người
-            // không đọc được ngôn ngữ đang chọn vẫn tìm ra ngôn ngữ của mình
-            // (như RN `i18n.ts` LANGUAGES, như Cài đặt iOS). `verbatim`: không
-            // tra xcstrings bằng chính chuỗi hiển thị.
-            ForEach(Self.languages, id: \.code) { lang in
-              Text(verbatim: lang.endonym).tag(lang.code)
+          Picker(String(localized: "settings.appearance"), selection: $selectedTheme) {
+            ForEach(Self.themes, id: \.self) { t in
+              Text(Self.themeLabel(t)).tag(t)
             }
           }
-          .onChange(of: selectedLanguage) { _, new in
-            onLanguageChange(new)
-          }
-        } header: {
-          Text(String(localized: "settings.language"))
-        }
-
-        // Appearance (placeholder — hệ thống)
-        Section {
-          HStack {
-            Text(String(localized: "settings.appearance"))
-            Spacer()
-            Text(String(localized: "settings.system"))
-              .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+          .pickerStyle(.segmented)
+          .onChange(of: selectedTheme) { _, new in
+            onThemeChange(new)
           }
         } header: {
           Text(String(localized: "settings.appearance"))
+        }
+
+        // Language
+        if showsLanguage {
+          Section {
+            Picker(
+              String(localized: "settings.language"),
+              selection: $selectedLanguage
+            ) {
+              // Tên ngôn ngữ viết bằng CHÍNH ngôn ngữ ấy, không dịch — người
+              // không đọc được ngôn ngữ đang chọn vẫn tìm ra ngôn ngữ của mình
+              // (như RN `i18n.ts` LANGUAGES, như Cài đặt iOS). `verbatim`: không
+              // tra xcstrings bằng chính chuỗi hiển thị.
+              ForEach(Self.languages, id: \.code) { lang in
+                Text(verbatim: lang.endonym).tag(lang.code)
+              }
+            }
+            .onChange(of: selectedLanguage) { _, new in
+              onLanguageChange(new)
+            }
+          } header: {
+            Text(String(localized: "settings.language"))
+          }
+        }
+
+        // Nhắc nhở — thông báo cục bộ (`settings.tsx:604`, `nav.push('/reminders')`).
+        Section {
+          NavigationLink {
+            RemindersView()
+          } label: {
+            Label {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "reminders.title"))
+                Text(String(localized: "reminders.desc"))
+                  .font(DS.TextStyle.caption)
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              }
+            } icon: {
+              Image(systemName: "bell")
+            }
+          }
         }
 
         // About

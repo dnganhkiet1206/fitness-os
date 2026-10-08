@@ -19,6 +19,9 @@ struct ASCNDApp: App {
     controller.onRestFinished = { UINotificationFeedbackGenerator().notificationOccurred(.success) }
     _rest = State(initialValue: controller)
     let services = AppServices()
+    // Ngôn ngữ đã chọn (hoặc theo máy, như `deviceDefaultLang` của RN) cho
+    // MỌI lần tra chữ, từ khung hình đầu tiên (#527 · 1.7).
+    AppLanguage.shared.set(services.preferences.lang.rawValue)
     _services = State(initialValue: services)
     // Quãng nghỉ (và Live Activity trên màn khoá, có tên bài) của người vừa
     // rời đi không ở lại cho người sau.
@@ -28,9 +31,26 @@ struct ASCNDApp: App {
     RestIntentRouter.adjust = { delta in controller.adjust(by: delta) }
   }
 
+  static func colorScheme(_ theme: AppPreferences.Theme) -> ColorScheme? {
+    switch theme {
+    case .system: nil
+    case .light: .light
+    case .dark: .dark
+    }
+  }
+
   var body: some Scene {
     WindowGroup {
       RootGate()
+        // Dải trạng thái kết nối ở trên mọi màn, kể cả Đăng nhập (`_layout.tsx`).
+        .overlay(alignment: .top) { ConnectionBanner() }
+        // `Text("key")` của SwiftUI tra theo `\.locale`; ngày giờ / số cũng
+        // định dạng theo ngôn ngữ đã chọn.
+        .environment(\.locale, Locale(identifier: services.preferences.lang.rawValue))
+        // Theme đã chọn cho cả cửa sổ (sheet, alert theo cùng). "Theo máy" là
+        // `nil`: iOS luôn có sáng / tối, nên luật "máy không nói thì tối" của
+        // RN không có ca nào ở đây.
+        .preferredColorScheme(Self.colorScheme(services.preferences.theme))
         .environment(rest)
         .environment(services)
         .task { await rest.reconcile() }
@@ -48,6 +68,8 @@ struct ASCNDApp: App {
       if phase == .active {
         rest.settle()
         services.didBecomeActive()
+      } else if phase == .background {
+        services.didEnterBackground()
       }
     }
   }

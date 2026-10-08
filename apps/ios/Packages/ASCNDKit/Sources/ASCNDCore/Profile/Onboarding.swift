@@ -209,7 +209,10 @@ public final class OnboardingController {
   @ObservationIgnored private let writer: any OnboardingWriter
   @ObservationIgnored private let clock: any WallClock
   @ObservationIgnored private let timeZone: TimeZone
-  @ObservationIgnored private let defaultUnits: (height: String, weight: String)
+  /// Đơn vị của hồ sơ (`useUnits`): áp khi người dùng CHƯA chọn trong luồng.
+  /// Hồ sơ về muộn hơn lần vẽ đầu, nên đổi được sau khi dựng — như `hPick ??
+  /// units.height` của RN đọc lại hồ sơ mỗi lần vẽ.
+  public private(set) var defaultUnits: (height: String, weight: String)
   @ObservationIgnored private let onFinished: @MainActor () async -> Void
   @ObservationIgnored private var saves: Task<Void, Never>?
 
@@ -251,6 +254,11 @@ public final class OnboardingController {
     (draft.step == .welcome ? 0 : (shown.firstIndex(of: draft.step) ?? 0) + 1, shown.count)
   }
   public var attempt: FitnessCalc.Attempt { OnboardingRules.attempt(draft, today: today) }
+  /// Đơn vị đang hiện: người dùng chọn rồi thì theo lựa chọn, chưa thì theo hồ sơ.
+  public var heightUnit: String { draft.heightUnit ?? defaultUnits.height }
+  public var weightUnit: String { draft.weightUnit ?? defaultUnits.weight }
+  public var heightScale: OnboardingRuler.Scale { OnboardingRuler.scale(.height, unit: heightUnit) }
+  public var weightScale: OnboardingRuler.Scale { OnboardingRuler.scale(.weight, unit: weightUnit) }
   public var canAdvance: Bool { !finished && !OnboardingRules.blocked(draft, today: today) }
   public var canGoBack: Bool { draft.step != .welcome && !finished }
   /// Ngày sinh không hợp lệ (tương lai / quá 130 tuổi) — câu báo ở màn 06.
@@ -277,6 +285,26 @@ public final class OnboardingController {
   public func setDob(_ d: LocalDate) { edit { $0.dob = d } }
   public func setHeightCm(_ text: String) { edit { $0.heightCm = text } }
   public func setWeightKg(_ text: String) { edit { $0.weightKg = text } }
+  /// Hồ sơ vừa đọc được: `units_height` / `units_weight` (`useUnits`: lạ /
+  /// thiếu là hệ mét). Không đụng lựa chọn đã có trong nháp.
+  public func setDefaultUnits(height: String?, weight: String?) {
+    defaultUnits = (height == "in" ? "in" : "cm", weight == "lbs" ? "lbs" : "kg")
+  }
+
+  /// Thước báo một vạch (`commit`): ghi đúng câu RN ghi cho vạch ấy. Màn gọi
+  /// cả lúc thước vừa được đặt vào hạt giống — RN cũng ghi ở lượt cuộn của cú
+  /// `scrollTo` mở màn, nên số lưu luôn nằm trên vạch của đơn vị đang hiện.
+  public func commitRuler(_ q: OnboardingRuler.Quantity, index: Int) {
+    let scale = q == .height ? heightScale : weightScale
+    let i = max(0, min(scale.count - 1, index))
+    if q == .height { setHeightCm(scale.text(at: i)) } else { setWeightKg(scale.text(at: i)) }
+  }
+
+  /// Vạch đang đứng của thước `q` (hạt giống từ số đang lưu).
+  public func rulerIndex(_ q: OnboardingRuler.Quantity) -> Int {
+    q == .height ? heightScale.seed(draft.heightCm) : weightScale.seed(draft.weightKg)
+  }
+
   public func setUnits(height: String? = nil, weight: String? = nil) {
     edit {
       if let height { $0.heightUnit = height }
@@ -332,8 +360,8 @@ public final class OnboardingController {
       ("macro_fat_g", plan.fatG), ("macro_fiber_g", plan.fiberG), ("water_target_ml", plan.waterMl),
     ]
     for (k, v) in numbers { o[k] = .number(Double(v)) }
-    o["units_height"] = .string(d.heightUnit ?? defaultUnits.height)
-    o["units_weight"] = .string(d.weightUnit ?? defaultUnits.weight)
+    o["units_height"] = .string(heightUnit)
+    o["units_weight"] = .string(weightUnit)
     o["onboarding_completed"] = .bool(true)
     return .object(o)
   }
@@ -378,4 +406,32 @@ public final class OnboardingController {
 
   /// Chờ các lần lưu nháp xong (test; màn không cần).
   public func settled() async { await saves?.value }
+}
+
+/// Câu báo khi câu ghi cuối thất bại — `Alert.alert('ASCND', errorText(e))` của
+/// `finish` qua `useOnlineMutation` (`lib/error-copy.ts` @ fac9ac2).
+public enum OnboardingFailureCopy: String, Sendable, Hashable {
+  /// `errOnlineOnly`: mất mạng — không gửi, không giữ lại để gửi sau.
+  case onlineOnly
+  case duplicate, invalid, signedOut, notFound, server, unknown
+  /// `statsRequired`: câu của chính app (chốt thứ hai của cổng số đo).
+  case statsRequired
+}
+
+extension OnboardingFailure {
+  /// `SQLSTATE` của `error-copy.ts`; mã lạ / không có mã là `unknown` — không
+  /// bao giờ đưa chữ thô của server ra màn.
+  public var copy: OnboardingFailureCopy {
+    switch self {
+    case .statsRequired: .statsRequired
+    case .offline: .onlineOnly
+    case .server(let code): code.flatMap { Self.sqlstate[$0] } ?? .unknown
+    }
+  }
+
+  static let sqlstate: [String: OnboardingFailureCopy] = [
+    "23505": .duplicate, "23503": .invalid, "23502": .invalid, "23514": .invalid, "22001": .invalid,
+    "22003": .invalid, "22007": .invalid, "22P02": .invalid, "42501": .signedOut, "42703": .server,
+    "42P01": .server, "PGRST116": .notFound, "PGRST301": .signedOut,
+  ]
 }

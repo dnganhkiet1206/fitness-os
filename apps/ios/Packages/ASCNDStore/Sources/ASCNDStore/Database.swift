@@ -9,6 +9,8 @@ import GRDB
 /// một migration đã phát hành — chỉ thêm cái mới.
 public final class ASCNDDatabase: Sendable {
   let queue: DatabaseQueue
+  /// Tài khoản mà các cache theo người dùng đang phục vụ (#431).
+  public let accounts = AccountScope()
 
   public init(path: String) throws {
     queue = try DatabaseQueue(path: path)
@@ -55,6 +57,28 @@ public final class ASCNDDatabase: Sendable {
         t.column("json", .text).notNull()
         t.primaryKey(["userId", "kind"])
       }
+    }
+    m.registerMigration("v4-workout-day-owner") { db in
+      // `workout_day` theo tài khoản (#452). Bảng v2 không ghi của ai, nên
+      // đăng xuất phải xoá cả bảng và một lượt ghi muộn của người vừa rời đi
+      // dựng lại "ngày đã chốt" của họ cho người kế tiếp. Dựng lại bảng với
+      // khoá (người, ngày): SQLite không đổi được khoá chính tại chỗ.
+      //
+      // Hàng cũ KHÔNG được gán cho ai — không biết của ai thì không phải của
+      // người đăng nhập kế tiếp. Chúng mang chủ `#legacy` (không tài khoản nào
+      // trùng được), không ai đọc / ghi được, và được dọn theo tuổi như mọi
+      // ngày khác (`pruneDays`, 14 ngày).
+      try db.create(table: "workout_day_owned") { t in
+        t.column("userId", .text).notNull()
+        t.column("key", .text).notNull()
+        t.column("state", .text).notNull()
+        t.primaryKey(["userId", "key"])
+      }
+      try db.execute(
+        sql: "INSERT INTO workout_day_owned (userId, key, state) SELECT ?, key, state FROM workout_day",
+        arguments: [AccountScope.legacyOwner])
+      try db.drop(table: "workout_day")
+      try db.rename(table: "workout_day_owned", to: "workout_day")
     }
     return m
   }
