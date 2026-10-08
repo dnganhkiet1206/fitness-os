@@ -107,7 +107,8 @@ public struct SupabaseMascotSource: MascotSource {
   /// `use-daily-quests.ts`: nhật ký ngày, nước, giấc ngủ, mục tiêu nước, nguồn bước.
   public func dailySignals(userId: String, date: LocalDate) async throws -> DailySignals {
     let day = date.description
-    let (start, end) = Self.localDayRange(date)
+    // `localDayRangeISO` — cùng hàm với lượt dựng `daily_logs` (#552).
+    let range = DailyLog.dayRange(date, in: .current)
     async let log: [JSONValue] = client.from("daily_logs")
       .select("kcal, workout_count, sleep_duration_min, steps")
       .eq("user_id", value: userId)
@@ -122,8 +123,8 @@ public struct SupabaseMascotSource: MascotSource {
     async let sleep: [SleepDTO] = client.from("sleep_logs")
       .select("id")
       .eq("user_id", value: userId)
-      .gte("waketime", value: start)
-      .lt("waketime", value: end)
+      .gte("waketime", value: range.start)
+      .lt("waketime", value: range.end)
       .limit(1)
       .execute().value
     async let target: [TargetDTO] = client.from("profiles")
@@ -153,14 +154,6 @@ public struct SupabaseMascotSource: MascotSource {
     case .string(let s)?: Double(s)
     default: nil
     }
-  }
-
-  /// `localDayRangeISO`: [0h hôm nay, 0h hôm sau) theo lịch của máy.
-  static func localDayRange(_ date: LocalDate) -> (String, String) {
-    let cal = Calendar.current
-    let start = cal.date(from: DateComponents(year: date.year, month: date.month, day: date.day)) ?? Date()
-    let end = cal.date(byAdding: .day, value: 1, to: start) ?? start
-    return (WorkoutSessionRecord.iso8601(EpochMillis(start)), WorkoutSessionRecord.iso8601(EpochMillis(end)))
   }
 }
 
