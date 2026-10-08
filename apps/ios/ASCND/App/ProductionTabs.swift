@@ -56,6 +56,7 @@ struct WorkoutsTab: View {
           restTimer: rest.timer,
           onAdjustRest: { rest.adjust(by: $0) },
           onSkipRest: { rest.handle(.cancel) },
+          onSetRestPaused: { rest.setPaused($0) },
           outboxStatus: outboxStatus,
           onFinish: { _ = try await flow.finish() },
           onAppend: { _ = try await flow.append() },

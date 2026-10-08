@@ -58,6 +58,10 @@ targets:
       properties:
         com.apple.security.application-groups:
           - group.com.ascnd.fitnessos
+        # Apple Health (#66): đọc bước / nhịp tim / HRV / giấc ngủ / buổi tập,
+        # ghi buổi tập — như plugin `@kingstinct/react-native-healthkit` của RN.
+        com.apple.developer.healthkit: true
+        com.apple.developer.healthkit.access: []
     configFiles:
       Debug: Config/Backend.xcconfig
       Release: Config/Backend.xcconfig
@@ -80,6 +84,9 @@ targets:
         ASCNDSupabaseURL: https://$(ASCND_SUPABASE_HOST)
         ASCNDSupabaseKey: $(ASCND_SUPABASE_KEY)
         NSSupportsLiveActivities: true
+        # Câu chữ của bản RN (`app.json`), nguyên văn.
+        NSHealthShareUsageDescription: ASCND reads your steps, heart rate, HRV and sleep to compute your daily readiness score.
+        NSHealthUpdateUsageDescription: ASCND writes your logged weight, workouts and sleep to Apple Health so they appear in Apple Fitness and other apps.
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

@@ -13,6 +13,9 @@ import WidgetKit
 ///   với `.circular` của hệ thống (H3: style tự vẽ chỉ nhận một ảnh chụp lúc
 ///   render nên nhảy theo đợt). `ringStart = endsAt − total` nên vòng này và
 ///   vòng trong app là cùng một hàm của thời gian (H4).
+///
+/// Đang tạm dừng (#235): chữ số và vòng TĨNH từ `pausedLeft` — đồng hồ hệ
+/// thống vẫn chạy nên không được giao cho nó (RN `isPaused`).
 struct RestLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: RestActivityAttributes.self) { context in
@@ -28,7 +31,7 @@ struct RestLiveActivity: Widget {
           RestRing(state: context.state, size: 56)
         }
         DynamicIslandExpandedRegion(.bottom) {
-          AdjustButtons()
+          AdjustButtons(paused: context.state.pausedLeft != nil)
         }
       } compactLeading: {
         Image(systemName: "timer")
@@ -48,10 +51,22 @@ struct RestLiveActivity: Widget {
 struct RestDigits: View {
   let state: RestActivityContent
   var body: some View {
-    let now = Date()
-    Text(timerInterval: now...max(now, state.endsAt.date), countsDown: true)
-      .monospacedDigit()
-      .multilineTextAlignment(.trailing)
+    Group {
+      if let left = state.pausedLeft {
+        Text(verbatim: Self.clock(left))
+      } else {
+        let now = Date()
+        Text(timerInterval: now...max(now, state.endsAt.date), countsDown: true)
+      }
+    }
+    .monospacedDigit()
+    .multilineTextAlignment(.trailing)
+  }
+
+  /// "1:05" — cùng dạng `Text(timerInterval:)` vẽ khi đang chạy.
+  static func clock(_ seconds: Int) -> String {
+    let s = max(0, seconds)
+    return "\(s / 60):\(s % 60 < 10 ? "0" : "")\(s % 60)"
   }
 }
 
@@ -60,10 +75,21 @@ struct RestRing: View {
   var size: CGFloat
   var showsDigits = true
   var body: some View {
-    ProgressView(timerInterval: state.ringStart.date...state.endsAt.date, countsDown: true) {
-      EmptyView()
-    } currentValueLabel: {
-      if showsDigits { RestDigits(state: state).font(.caption2.weight(.semibold)) }
+    Group {
+      if let left = state.pausedLeft {
+        // Đứng yên ở đúng phần còn lại lúc dừng (`RestTimer.ringFraction`).
+        ProgressView(value: Double(min(left, max(state.totalSeconds, 1))), total: Double(max(state.totalSeconds, 1))) {
+          EmptyView()
+        } currentValueLabel: {
+          if showsDigits { RestDigits(state: state).font(.caption2.weight(.semibold)) }
+        }
+      } else {
+        ProgressView(timerInterval: state.ringStart.date...state.endsAt.date, countsDown: true) {
+          EmptyView()
+        } currentValueLabel: {
+          if showsDigits { RestDigits(state: state).font(.caption2.weight(.semibold)) }
+        }
+      }
     }
     .progressViewStyle(.circular)
     .tint(.white)
@@ -75,9 +101,15 @@ struct RestLabel: View {
   let state: RestActivityContent
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text("rest.title")
-        .font(.caption)
-        .foregroundStyle(.secondary)
+      Group {
+        if state.pausedLeft != nil {
+          Text("rest.title.paused")
+        } else {
+          Text("rest.title")
+        }
+      }
+      .font(.caption)
+      .foregroundStyle(.secondary)
       if let t = state.target {
         Text(t.exerciseName)
           .font(.headline)
@@ -90,8 +122,9 @@ struct RestLabel: View {
   }
 }
 
-/// ±15 — `LiveActivityIntent`, chạy trong process của app (#227 H1).
+/// ±15 và tạm dừng — `LiveActivityIntent`, chạy trong process của app (#227 H1).
 struct AdjustButtons: View {
+  let paused: Bool
   var body: some View {
     HStack(spacing: 12) {
       Button(intent: AdjustRestIntent(seconds: -15)) {
@@ -99,6 +132,11 @@ struct AdjustButtons: View {
           .frame(maxWidth: .infinity, minHeight: 44)
       }
       .accessibilityLabel(Text("rest.minus15"))
+      Button(intent: SetRestPausedIntent(paused: !paused)) {
+        Image(systemName: paused ? "play.fill" : "pause.fill")
+          .frame(maxWidth: .infinity, minHeight: 44)
+      }
+      .accessibilityLabel(paused ? Text("rest.resume") : Text("rest.pause"))
       Button(intent: AdjustRestIntent(seconds: 15)) {
         Text("+15")
           .frame(maxWidth: .infinity, minHeight: 44)
@@ -120,7 +158,7 @@ struct RestLockScreen: View {
         Spacer()
         RestRing(state: state, size: 64)
       }
-      AdjustButtons()
+      AdjustButtons(paused: state.pausedLeft != nil)
     }
     .padding()
   }

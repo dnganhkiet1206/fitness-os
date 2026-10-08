@@ -60,7 +60,30 @@ for (const [input, expectedSec] of cases) {
   );
 }
 
-// 4. restLabel spot-check
+// 4. Tạm dừng (#235, RT-17): runner chép logic nằm TRONG component
+// (day-plan.tsx). Neo từng dòng đã chép — RN đổi một dòng thì đỏ ở đây, và
+// bản chép trong run.mjs phải được chép lại.
+const dayPlan = readFileSync(path.join(ROOT, 'native/src/components/ascnd/day-plan.tsx'), 'utf8');
+for (const line of [
+  'if (s.pausedLeft !== undefined) return s;',
+  'if (now - s.endsAt >= 1000) return null;',
+  'const pausedLeft = Math.max(0, Math.ceil(intent.remainingSeconds));',
+  'const left = Math.max(1, Math.ceil(intent.remainingSeconds));',
+  'endsAt: Date.now() + left * 1000,',
+  's.pausedLeft !== undefined\n            ? s.pausedLeft\n            : Math.max(0, Math.ceil((s.endsAt - Date.now()) / 1000));',
+  'const left = Math.max(1, Math.min(REST_MAX, base + delta));',
+  'setResting({ ...s, pausedLeft: left, total });',
+]) {
+  check(`day-plan.tsx còn: ${line.split('\n')[0]}`, dayPlan.includes(line), 'RN đã đổi — chép lại restStep của run.mjs');
+}
+const nativeModule = readFileSync(path.join(ROOT, 'native/modules/ascnd-native/ios/AscndNativeModule.swift'), 'utf8');
+check(
+  'AscndNativeModule.swift: remaining khi dừng = pausedRemaining',
+  nativeModule.includes('s.isPaused ? s.pausedRemaining : max(s.endDate.timeIntervalSince(now), 0)'),
+  'RN đã đổi — chép lại restRemaining của run.mjs',
+);
+
+// 5. restLabel spot-check
 check('restLabel(90)', restLabel(90) === '1:30', `got "${restLabel(90)}"`);
 check('restLabel(45)', restLabel(45) === '45s', `got "${restLabel(45)}"`);
 

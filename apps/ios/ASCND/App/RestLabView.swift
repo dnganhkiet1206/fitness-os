@@ -43,6 +43,12 @@ struct RestLabView: View {
               .accessibilityLabel(Text("lab.minus15"))
             Button("+15") { rest.adjust(by: 15) }
               .accessibilityLabel(Text("lab.plus15"))
+            Button { rest.setPaused(rest.timer?.isPaused != true) } label: {
+              Image(systemName: rest.timer?.isPaused == true ? "play.fill" : "pause.fill")
+            }
+            .accessibilityLabel(
+              rest.timer?.isPaused == true
+                ? Text(String(localized: "workout.rest.resume")) : Text(String(localized: "workout.rest.pause")))
           }
           .font(.title3.monospacedDigit().weight(.semibold))
           .buttonStyle(.bordered)
