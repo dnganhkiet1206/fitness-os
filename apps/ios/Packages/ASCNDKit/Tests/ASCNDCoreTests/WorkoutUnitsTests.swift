@@ -257,4 +257,70 @@ struct WorkoutUnitsTests {
     #expect(WeightUnit.kg.localizedLoad(0, locale: en) == nil)
     #expect(WeightUnit.lbs.localizedLoad(-5, locale: en) == nil)
   }
+
+  // MARK: - 1.9-D: số kg đã gửi giữ nguyên qua đổi đơn vị
+
+  /// Gõ "135" dưới lbs, chốt (gửi 61.23 kg), hồ sơ đổi sang kg, rồi bỏ tích:
+  /// đúng set ấy rời server. Không có mốc kg đã gửi, bản ghi lại đọc "135"
+  /// thành 135 kg → `SessionRevisionMerge` không thấy set nào để gỡ (RN gỡ
+  /// theo tên bài nên không vấp). Ô hiện lại theo kg: "61.2".
+  @Test func loggedPoundsSetIsRemovedAfterSwitchingToKg() async throws {
+    let server = FakeServer()
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store, unit: .lbs)
+    #expect(await c.setWeightText("135", for: "b1"))
+    #expect(await c.toggle("b1"))
+    #expect(await c.toggle("s1"))
+    let summary = try await c.finish()
+    c.setWeightUnit(.kg)
+    #expect(c.progress.weightText["b1"] == "61.2", "set đã ghi là số kg đã gửi, hiện theo đơn vị mới")
+    #expect(c.performed(rows[0]).weightKg == 135 / Self.lbPerKg)
+    _ = try await c.removeLoggedSet("b1")
+    for e in await store.outbox { try await server.send(e) }
+    let sets = try await serverSets(server, summary.sessionId)
+    #expect(sets.map { $0["exerciseName"]?.stringValue } == ["Squat"], "set Bench 135 lb bị gỡ, Squat ở lại")
+  }
+
+  /// Nối thêm dưới lbs rồi đổi sang kg: set nối thêm vẫn gỡ đúng.
+  @Test func appendedPoundsSetIsRemovedAfterSwitchingToKg() async throws {
+    let server = FakeServer()
+    await server.externalWrite("s-other", remote)
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store, unit: .lbs, remote: [remote])
+    #expect(await c.setWeightText("225", for: "s1"))
+    #expect(await c.toggle("s1"))
+    _ = try await c.append()
+    c.setWeightUnit(.kg)
+    _ = try await c.removeLoggedSet("s1")
+    for e in await store.outbox { try await server.send(e) }
+    let sets = try await serverSets(server, "s-other")
+    #expect(sets.map { $0["weight"]?.doubleValue } == [60, 61.23, 15], "set 225 lb (102.06) bị gỡ, set server nguyên")
+  }
+
+  /// Gỡ rồi hoàn tác set nhận từ máy khác dưới lbs: set trở lại ĐÚNG 60 kg,
+  /// không phải 60.01 (đọc lại từ "132.3").
+  @Test func undoingAnAdoptedRowUnderLbsRestoresTheExactKg() async throws {
+    let server = FakeServer()
+    await server.externalWrite("s-other", remote)
+    let store = InMemoryWorkoutStore()
+    let c = await controller(store, unit: .lbs, remote: [remote])
+    let removal = try await c.removeLoggedSet("b1")
+    try await c.undo(removal)
+    for e in await store.outbox { try await server.send(e) }
+    let sets = try await serverSets(server, "s-other")
+    #expect(sets.count == 3)
+    let bench: [JSONValue] = sets.filter { $0["exerciseName"]?.stringValue == "Bench Press" }
+    let weights: [Double] = bench.compactMap { $0["weight"]?.doubleValue }.sorted()
+    #expect(weights == [60, 61.23])
+  }
+
+  /// Hàng CHƯA ghi giữ hành vi RN: đổi đơn vị không viết lại chữ người dùng gõ.
+  @Test func unloggedTypedTextIsNeverRewrittenByAUnitChange() async {
+    let c = await controller(InMemoryWorkoutStore(), unit: .lbs)
+    #expect(await c.setWeightText("135", for: "b1"))
+    #expect(await c.toggle("b1"))
+    c.setWeightUnit(.kg)
+    #expect(c.progress.weightText["b1"] == "135")
+    #expect(c.progress.remoteWeight["b1"] == nil)
+  }
 }
