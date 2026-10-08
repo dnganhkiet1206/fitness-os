@@ -308,6 +308,14 @@ final class AppServices {
       englishText: { AwardText.english($0) })
   }
 
+  /// Thử thách tuần: gieo + đo qua kho hàng chung, thưởng qua RPC của server.
+  func makeWeeklyChallenges(userId: String, today: LocalDate) -> WeeklyChallengesBook? {
+    guard let rows, let backend else { return nil }
+    return WeeklyChallengesBook(
+      userId: userId, today: today, store: rows, economy: SupabaseMascotEconomy(backend: backend),
+      english: { ChallengeText.english($0) })
+  }
+
   /// Phòng linh vật: server là chủ kinh tế (hai RPC).
   func makeMascotRoom(userId: String, today: LocalDate) -> MascotRoomController? {
     guard let backend else { return nil }

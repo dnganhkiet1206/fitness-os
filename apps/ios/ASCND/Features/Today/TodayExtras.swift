@@ -4,7 +4,7 @@ import SwiftUI
 
 /// Các thẻ dưới phần buổi tập của Today (#527 Phase 4/7/9) — như RN, Today là
 /// cửa của chúng: thẻ sẵn sàng (→ sinh trắc học, tấm giải thích), thẻ Apple
-/// Health, lối vào phòng linh vật (→ huy chương).
+/// Health, lối vào phòng linh vật (→ huy chương, thử thách tuần).
 ///
 /// Chỉ là nối dây: sổ dựng ở `AppServices`, một lần mỗi phiên (cây của tab
 /// dựng lại theo `.id(userId)`), đóng khi phiên kết thúc. Thiếu cấu hình
@@ -18,6 +18,7 @@ struct TodayExtras: View {
   @State private var biometrics: BiometricsBook?
   @State private var awards: AwardsBook?
   @State private var mascot: MascotRoomController?
+  @State private var challenges: WeeklyChallengesBook?
   @State private var showsBiometrics = false
   @State private var built = false
 
@@ -31,7 +32,7 @@ struct TodayExtras: View {
       HealthSyncCard(isAvailable: services.health.isAvailable, sync: syncHealth)
       if let mascot {
         NavigationLink {
-          MascotRoomView(room: mascot, awards: awards)
+          MascotRoomView(room: mascot, awards: awards, challenges: challenges)
         } label: {
           HStack {
             Label(String(localized: "mr.title"), systemImage: "pawprint.fill")
@@ -60,6 +61,7 @@ struct TodayExtras: View {
       biometrics = services.makeBiometricsBook(userId: userId)
       awards = services.makeAwardsBook(userId: userId)
       mascot = services.makeMascotRoom(userId: userId, today: today)
+      challenges = services.makeWeeklyChallenges(userId: userId, today: today)
       await readiness?.load()
     }
     .onChange(of: scenePhase) { _, phase in
@@ -80,6 +82,7 @@ struct TodayExtras: View {
       biometrics?.close()
       awards?.close()
       mascot?.close()
+      challenges?.close()
     }
   }
 
