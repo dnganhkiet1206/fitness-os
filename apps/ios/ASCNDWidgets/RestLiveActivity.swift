@@ -20,18 +20,22 @@ struct RestLiveActivity: Widget {
   var body: some WidgetConfiguration {
     ActivityConfiguration(for: RestActivityAttributes.self) { context in
       RestLockScreen(state: context.state)
+        // Chữ theo ngôn ngữ trong app (App Group, #527 A-NEXT 4).
+        .environment(\.locale, WidgetDataStore().locale)
         .activityBackgroundTint(Color.black.opacity(0.85))
         .activitySystemActionForegroundColor(.white)
     } dynamicIsland: { context in
       DynamicIsland {
         DynamicIslandExpandedRegion(.leading) {
           RestLabel(state: context.state)
+            .environment(\.locale, WidgetDataStore().locale)
         }
         DynamicIslandExpandedRegion(.trailing) {
           RestRing(state: context.state, size: 56)
         }
         DynamicIslandExpandedRegion(.bottom) {
           AdjustButtons(paused: context.state.pausedLeft != nil)
+            .environment(\.locale, WidgetDataStore().locale)
         }
       } compactLeading: {
         Image(systemName: "timer")
