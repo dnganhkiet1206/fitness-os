@@ -54,8 +54,12 @@ struct ASCNDApp: App {
         .preferredColorScheme(Self.colorScheme(services.preferences.theme))
         .environment(rest)
         .environment(services)
-        .task { await rest.reconcile() }
-        .task { await services.start() }
+        // Phiên trước, Island sau (#252): mở app khi phiên đã mất lúc app
+        // không chạy thì quãng nghỉ đã lưu là của người trước — không phát lại.
+        .task {
+          await services.start()
+          await rest.reconcile(signedIn: services.session.session != nil)
+        }
         // Phiên đổi (đăng nhập, đăng xuất, đổi tài khoản) → vòng sync biết
         // gửi hàng của ai; bản ghi của tài khoản khác không bao giờ đi.
         .onChange(of: services.session.session?.userId, initial: true) { _, user in

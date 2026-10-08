@@ -736,7 +736,7 @@ private actor PreviewStore: WorkoutStore {
 
   func loadDay(_ key: String) async throws -> DayState? { days[key] }
 
-  func saveDay(_ key: String, _ state: DayState) async throws {
+  func saveDay(_ key: String, _ state: DayState, userId: String) async throws {
     struct Failed: Error {}
     if failSaves { throw Failed() }
     days[key] = state
