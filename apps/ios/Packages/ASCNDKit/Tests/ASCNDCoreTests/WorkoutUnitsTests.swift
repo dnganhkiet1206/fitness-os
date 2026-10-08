@@ -7,7 +7,9 @@ import Testing
 /// theo `profiles.units_weight`.
 ///
 /// RN (`day-plan.tsx` @ fac9ac2): ô hạt giống `String(Math.round(displayWeight(kg) * 10) / 10)`,
-/// `performed` đọc chữ trong ô bằng `weightToKg(typed, wUnit)` — không làm tròn.
+/// `performed` đọc chữ trong ô bằng `weightToKg(typed, wUnit)` — không làm tròn;
+/// lúc GHI set, `use-fitness-data.ts:410` / `:631` làm tròn 2 chữ số lẻ
+/// (`Math.round(weight * 100) / 100`) — 135 lb lên server là 61.23 kg.
 @MainActor
 struct WorkoutUnitsTests {
   private let clock = FixedWallClock(iso8601: "2026-10-05T14:00:00+07:00")
@@ -28,15 +30,15 @@ struct WorkoutUnitsTests {
     ])
   }
 
-  /// Buổi máy khác ghi: Bench 60 kg (máy kg) và Bench 61.23497 kg (máy lb gõ
-  /// "135" → `weightToKg` không làm tròn), cùng một Curl ngoài kế hoạch.
+  /// Buổi máy khác ghi: Bench 60 kg (máy kg) và Bench 61.23 kg (máy lb gõ
+  /// "135" → `weightToKg` = 61.23497… → ghi 2 chữ số lẻ), cùng một Curl ngoài kế hoạch.
   private var remote: JSONValue {
     .object([
       "id": .string("s-other"), "date_time": .string("2026-10-05T02:00:00.000Z"),
       "session_rpe": .number(8), "pr_detected": .bool(false),
       "sets": .array([
         Self.set("Bench Press", "ex-bench", 60, 8, index: 1),
-        Self.set("Bench Press", "ex-bench", 135 / Self.lbPerKg, 6, index: 2),
+        Self.set("Bench Press", "ex-bench", 61.23, 6, index: 2),
         Self.set("Curl", "", 15, 12, index: 3),
       ]),
     ])
@@ -76,9 +78,9 @@ struct WorkoutUnitsTests {
     let c = await controller(InMemoryWorkoutStore(), unit: .lbs, remote: [remote])
     #expect(c.adoptedRemote)
     #expect(c.progress.weightText["b1"] == "132.3", "60 kg → 132.3 lb, không phải \"60\" đọc thành 60 lb")
-    #expect(c.progress.weightText["b2"] == "135", "61.23497 kg (gõ 135 lb ở máy kia) → 135 lb")
+    #expect(c.progress.weightText["b2"] == "135", "61.23 kg (gõ 135 lb ở máy kia) → 134.99 → 135 lb")
     #expect(c.performed(rows[0]).weightKg == 60, "không thành 132.3 / 2.2046 = 60.0103")
-    #expect(c.performed(rows[1]).weightKg == 135 / Self.lbPerKg)
+    #expect(c.performed(rows[1]).weightKg == 61.23)
   }
 
   /// Dữ liệu gốc lb đã chuẩn hoá kg trên server → hồ sơ kg hiện 61.2 kg.
@@ -86,7 +88,7 @@ struct WorkoutUnitsTests {
     let c = await controller(InMemoryWorkoutStore(), unit: .kg, remote: [remote])
     #expect(c.progress.weightText["b1"] == "60")
     #expect(c.progress.weightText["b2"] == "61.2")
-    #expect(c.performed(rows[1]).weightKg == 135 / Self.lbPerKg, "ô hiện 61.2, set vẫn 61.23497 kg")
+    #expect(c.performed(rows[1]).weightKg == 61.23, "ô hiện 61.2, set vẫn 61.23 kg")
   }
 
   /// Gỡ set đã nhận dưới hồ sơ lbs: đúng set ấy rời buổi trên server. Không có
@@ -107,8 +109,8 @@ struct WorkoutUnitsTests {
     #expect(sets.contains { $0["exerciseName"] == .string("Curl") })
   }
 
-  /// Nối thêm dưới hồ sơ lbs: set server giữ đúng số kg, set mới gõ lb lưu kg
-  /// KHÔNG làm tròn.
+  /// Nối thêm dưới hồ sơ lbs: set server giữ đúng số kg; set mới gõ lb đổi
+  /// về kg không làm tròn rồi ghi 2 chữ số lẻ như RN (225 lb → 102.06 kg).
   @Test func appendingUnderLbsKeepsServerKgAndStoresTypedPoundsUnrounded() async throws {
     let server = FakeServer()
     await server.externalWrite("s-other", remote)
@@ -119,7 +121,7 @@ struct WorkoutUnitsTests {
     _ = try await c.append()
     for e in await store.outbox { try await server.send(e) }
     let sets = try await serverSets(server, "s-other")
-    #expect(sets.map { $0["weight"]?.doubleValue } == [60, 135 / Self.lbPerKg, 15, 225 / Self.lbPerKg])
+    #expect(sets.map { $0["weight"]?.doubleValue } == [60, 61.23, 15, 102.06])
   }
 
   /// Hồ sơ đổi đơn vị SAU khi đã nhận buổi (hồ sơ nạp muộn hơn buổi, hay đổi
@@ -164,16 +166,18 @@ struct WorkoutUnitsTests {
 
   // MARK: - Chốt theo đơn vị của tài khoản
 
-  /// Hồ sơ lbs: gõ "135" → set lưu 135 / 2.2046226218 kg, không làm tròn.
+  /// Hồ sơ lbs: gõ "135" → `performed` = 135 / 2.2046226218 kg (không làm
+  /// tròn), set ghi 61.23 kg (2 chữ số lẻ, `use-fitness-data.ts:410`).
   @Test func finishingUnderLbsStoresUnroundedKg() async throws {
     let store = InMemoryWorkoutStore()
     let c = await controller(store, unit: .lbs)
     #expect(await c.setWeightText("135", for: "b1"))
     #expect(await c.toggle("b1"))
     #expect(await c.toggle("s1"))
+    #expect(c.performed(rows[0]).weightKg == 135 / Self.lbPerKg)
     _ = try await c.finish()
     let sets = try await outboxSets(store)
-    #expect(sets.map { $0["weight"]?.doubleValue } == [135 / Self.lbPerKg, 100], "hàng chưa gõ giữ đúng số kế hoạch (kg)")
+    #expect(sets.map { $0["weight"]?.doubleValue } == [61.23, 100], "hàng chưa gõ giữ đúng số kế hoạch (kg)")
   }
 
   /// Gọi tường minh `toKg` vẫn thắng đơn vị (Lab, test cũ).
@@ -188,7 +192,7 @@ struct WorkoutUnitsTests {
 
   /// RN behavior giữ nguyên (không có đơn vị theo set): đổi đơn vị giữa ngày
   /// thì chữ người dùng ĐÃ GÕ đọc lại theo đơn vị mới — "100" gõ lúc kg
-  /// thành 100 lb (45.36 kg) khi chốt sau khi đổi sang lbs.
+  /// thành 100 lb (45.359… kg, ghi 45.36) khi chốt sau khi đổi sang lbs.
   @Test func midDayUnitChangeRereadsTypedText() async throws {
     let store = InMemoryWorkoutStore()
     let c = await controller(store, unit: .kg)
@@ -199,7 +203,7 @@ struct WorkoutUnitsTests {
     #expect(c.progress.weightText["b1"] == "100", "chữ gõ không bị viết lại")
     #expect(c.performed(rows[0]).weightKg == 100 / Self.lbPerKg)
     _ = try await c.finish()
-    #expect(try await outboxSets(store).first?["weight"]?.doubleValue == 100 / Self.lbPerKg)
+    #expect(try await outboxSets(store).first?["weight"]?.doubleValue == 45.36)
   }
 
   /// Gõ đè lên ô của set đã nhận (sau khi gỡ nó): chữ mới đọc theo đơn vị,

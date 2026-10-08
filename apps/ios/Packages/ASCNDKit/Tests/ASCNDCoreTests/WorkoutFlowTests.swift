@@ -199,7 +199,7 @@ struct WorkoutFlowTests {
   }
 
   /// Đơn vị tạ của tài khoản (#527 1.9-A): buổi đang mở nhận ngay, buổi dựng
-  /// sau (qua nửa đêm) cũng nhận — chốt theo lb ghi kg không làm tròn.
+  /// sau (qua nửa đêm) cũng nhận — chốt theo lb đổi về kg.
   @Test func weightUnitReachesCurrentAndNextSession() async throws {
     let h = Harness()
     await h.flow.start()
@@ -214,7 +214,8 @@ struct WorkoutFlowTests {
       Issue.record("không có hàng outbox")
       return
     }
-    #expect(sets.first?["weight"]?.doubleValue == 135 / 2.2046226218)
+    #expect(s.performed(s.rows[0]).weightKg == 135 / 2.2046226218, "đổi về kg không làm tròn")
+    #expect(sets.first?["weight"]?.doubleValue == 61.23, "ghi 2 chữ số lẻ như RN (`use-fitness-data.ts:410`)")
 
     h.clock.advance(12 * 3_600_000)
     await h.flow.becameActive()

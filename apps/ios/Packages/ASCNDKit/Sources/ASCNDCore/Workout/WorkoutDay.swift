@@ -84,7 +84,7 @@ public struct DayProgress: Sendable, Hashable, Codable {
   public var extra: [AdHocExercise] = []
   /// Tạ THẬT (kg) của các hàng nhận từ buổi máy khác ghi (#523, #527 1.9-A),
   /// kèm chữ đã điền vào ô. Ô còn đúng chữ ấy thì set mang đúng số kg trên
-  /// server — "135" lb điền từ 61.23497 kg không thành 61.2349695… khi ghi lại,
+  /// server — "132.3" lb điền từ 60 kg không thành 60.01 kg khi ghi lại,
   /// nên gỡ / nối thêm khớp đúng set trên server (`SessionRevisionMerge` so
   /// theo nội dung). Không phải đơn vị theo set: chữ trong ô vẫn là của đơn
   /// vị người dùng đang xem.

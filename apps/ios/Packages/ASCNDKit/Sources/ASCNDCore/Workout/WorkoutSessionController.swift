@@ -338,7 +338,7 @@ public final class WorkoutSessionController {
       let s = newestSets[index]
       progress.done[key] = true
       // Số server (kg) điền theo đơn vị đang xem, như ô hạt giống của RN
-      // (`day-plan.tsx:1011`): 61.23497 kg → "135" lb / "61.2" kg — kèm số kg
+      // (`day-plan.tsx:1011`): 61.23 kg → "135" lb / "61.2" kg — kèm số kg
       // thật, để ghi lại đúng set ấy chứ không phải số đọc lại từ chữ.
       let kg = s["weight"]?.doubleValue ?? 0
       let text = weightUnit.text(kg)

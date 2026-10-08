@@ -5,6 +5,8 @@
 /// - chỉ đúng chuỗi `"lbs"` trong `profiles.units_weight` là lb; mọi thứ khác
 ///   (`nil`, rỗng, `"LBS"`, `"lb"`, hồ sơ chưa nạp) là kg;
 /// - DB luôn lưu kg: số gõ theo lb đổi về kg KHÔNG làm tròn (`weightToKg`);
+///   lúc ghi set, mọi tạ (kg hay lb) làm tròn 2 chữ số lẻ
+///   (`use-fitness-data.ts:410`) — việc của `WorkoutSessionRecord`, không phải ở đây;
 /// - hiển thị một chữ số lẻ (`displayWeight`), nhãn `lb` / `kg` (`weightLabel`);
 /// - khối lượng (tổng tạ × reps) làm tròn hai lần như màn RN:
 ///   `Math.round(displayWeight(v))`.
