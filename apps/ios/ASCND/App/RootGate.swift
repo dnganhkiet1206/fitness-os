@@ -87,7 +87,7 @@ private struct SignedInScope<Content: View>: View {
       // "Đang kết nối lại" thoát khi lượt tải của phiên này xong. Giữ `weak`:
       // phiên đã đóng thì không còn gì để chờ. Không gỡ ở `onDisappear` — cây
       // của người mới có thể đã đăng ký trước khi cây cũ gỡ xong.
-      services.net.busyProbe = { [weak f] in f?.isRefreshing ?? false }
+      services.net.busyProbe = { [weak f] in f?.isBusy ?? false }
       await services.forgetOtherAccounts(keeping: userId)
       // Sau `forgetOtherAccounts`: bản nhớ hồ sơ chỉ đọc được khi phiên đã là
       // của người này. Đơn vị từ bản nhớ (không mạng) có TRƯỚC khi buổi tập
@@ -95,6 +95,11 @@ private struct SignedInScope<Content: View>: View {
       // server song song với luồng tập.
       let book = services.makeProfileBook(userId: userId)
       profile = book
+      // Hồ sơ cũng là một lượt tải của phiên (RN: query `profile` trong
+      // `isFetching`). Đăng ký lại cùng probe, thêm hồ sơ — vẫn `weak`.
+      services.net.busyProbe = { [weak f, weak book] in
+        (f?.isBusy ?? false) || (book?.isRefreshing ?? false)
+      }
       await book.loadCached()
       f.setWeightUnit(weightUnit)
       async let units: Void = book.refresh()
