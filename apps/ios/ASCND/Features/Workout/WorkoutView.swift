@@ -185,13 +185,13 @@ public struct WorkoutView: View {
     }
   }
 
+  /// Bài đang mở hướng dẫn (`day-plan.tsx:1784`).
+  @State private var guideTarget: GuideTarget?
+
   private func exerciseCard(_ group: (key: String, name: String, rows: [PlannedSet])) -> some View {
     DSCard {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
-        Text(group.name)
-          .font(DS.TextStyle.title2)
-          .foregroundStyle(DS.Color.foreground.swiftUI)
-          .accessibilityAddTraits(.isHeader)
+        exerciseTitle(group)
         ForEach(group.rows) { row in
           setRow(row)
           if row.key != group.rows.last?.key {
@@ -199,6 +199,42 @@ public struct WorkoutView: View {
           }
         }
       }
+    }
+  }
+
+  /// Chạm tên bài để biết về bài ấy: tên + glyph ⓘ là MỘT control. Bài thêm
+  /// tay không có lối này — tên chưa có trong thư viện thì không có hướng dẫn.
+  /// Id lấy từ hàng đầu của khối; thiếu (template cũ) thì lõi lùi về tên.
+  @ViewBuilder private func exerciseTitle(_ group: (key: String, name: String, rows: [PlannedSet])) -> some View {
+    if let guides = flow?.guides, let first = group.rows.first, first.adHoc == nil {
+      Button {
+        guideTarget = GuideTarget(key: group.key, exerciseId: first.exerciseId, name: group.name)
+      } label: {
+        HStack(spacing: DS.Spacing.xs) {
+          Text(group.name)
+            .font(DS.TextStyle.title2)
+            .foregroundStyle(DS.Color.foreground.swiftUI)
+            .multilineTextAlignment(.leading)
+          Image(systemName: "info.circle")
+            .font(.footnote)
+            .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+        }
+        .frame(minHeight: 44)
+      }
+      .buttonStyle(.plain)
+      .accessibilityLabel(Text(String(localized: "eg.open.a11y \(group.name)")))
+      .accessibilityAddTraits(.isHeader)
+      .sheet(item: Binding(
+        get: { guideTarget?.key == group.key ? guideTarget : nil },
+        set: { guideTarget = $0 }
+      )) { t in
+        ExerciseGuideView(guides: guides, library: flow?.library, exerciseId: t.exerciseId, name: t.name)
+      }
+    } else {
+      Text(group.name)
+        .font(DS.TextStyle.title2)
+        .foregroundStyle(DS.Color.foreground.swiftUI)
+        .accessibilityAddTraits(.isHeader)
     }
   }
 
@@ -821,3 +857,10 @@ private struct WorkoutPreviewHost: View {
   WorkoutPreviewHost(scenario: .active, restingRowKey: nil, outboxStatus: .dead(1))
 }
 #endif
+
+private struct GuideTarget: Identifiable {
+  let key: String
+  let exerciseId: String?
+  let name: String
+  var id: String { key }
+}
