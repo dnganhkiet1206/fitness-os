@@ -220,6 +220,8 @@ const STEPS = [
   ['rãnh vòng tròn', 'node', ['tools/ring-track.mjs']],
   ['lớp phủ tấm nội dung', 'node', ['tools/sheet-scrim.mjs']],
   ['nút lồng trong nút', 'node', ['tools/a11y-swallow.mjs']],
+  ['builder a11y/i18n', 'node', ['tools/builder-a11y.mjs']],
+  ['extra exercise a11y/i18n', 'node', ['tools/extra-exercise-a11y.mjs']],
   ['hình dạng cây theo theme', 'node', ['tools/theme-shape.mjs']],
   ['thứ tự worklet', 'node', ['tools/worklet-tdz.mjs']],
   ['tranh chấp hiệu ứng', 'node', ['tools/anim-conflict.mjs']],
@@ -472,6 +474,13 @@ const STEPS = [
     `src/` ở gốc, nên lý do ấy đã hết đúng trong khi câu chữ thì còn.
   */
   ['khoá mồ côi', 'node', ['tools/i18n-orphans.mjs']],
+  /*
+    #370: ma trận fixture từng chỉ là Markdown liệt kê chuỗi mẫu — không gì
+    chạy, không gì đỏ được. Cổng này biến tools/fixture-matrix-data.mjs thành
+    assert: khoá đủ 3 locale, plural có bộ chọn và render đúng dạng, label a11y
+    mang nội dung động, fixture "dài" đạt ngưỡng cả 3 locale, data deterministic.
+  */
+  ['ma trận fixture', 'node', ['tools/fixture-matrix.mjs']],
   ['chuyển cảnh onboarding', 'node', ['tools/onboarding-transition.mjs']],
   ['dải trạng thái', 'node', ['tools/status-scrim.mjs']],
   /*
@@ -912,6 +921,60 @@ const STEPS = [
     call-site — mọi chỗ qua waterQuickAmounts.
   */
   ['preset nước', 'node', ['tools/water-presets.mjs']],
+  /*
+    C-43 (#484): contract History/Builder — fields C-28/C-37 khớp APIs A21/A22,
+    mọi mismatch có adapter tường minh. `--live` đối chiếu lại 4 branch thật.
+  */
+  ['contract handoff C43', 'node', ['tools/contract-handoff.mjs']],
+  /*
+    Golden vectors: mỗi tệp spec/vectors/*.json phải đăng ký runner trong
+    runners.json — vector không runner là vector không ai chạy (#328).
+  */
+  ['vector runners', 'node', ['../spec/vectors/check-runners.mjs']],
+  /*
+    #529: bước trên chỉ kiểm mỗi vector có runner ĐĂNG KÝ — không bước CI nào
+    CHẠY các runner JS, nên một runner đỏ (RN đổi luật, vector sửa tay, lib
+    chép lệch) vẫn để cổng xanh. Bước này chạy mọi `run*.mjs` + divergence-check
+    và đỏ khi một cái thoát khác 0, treo, hoặc nằm đó mà không ai đăng ký. Phá
+    thử: sửa expected TC-1a → đỏ; đổi `permanentFailure` của offline-write.ts
+    RN → đỏ ở OB-1c. Bước thứ hai: bộ chạy phải đỏ trên một thế giới hỏng.
+  */
+  ['vector runners JS chạy thật', 'node', ['../spec/vectors/run-all.mjs']],
+  ['vector runners JS — bộ chạy bắt runner hỏng', 'node', ['../spec/vectors/run-all.mjs', '--self-test']],
+  /*
+    Chuỗi người dùng thấy trong app iOS native phải đi qua Localizable.xcstrings
+    (#523 P3). Tool của #340 đã về 0 hit nhưng chưa nằm trong cổng: một
+    `Text("…")` cứng mới lọt vào thì không ai thấy cho tới khi người Việt mở
+    app ra thấy tiếng Anh. Bản DEBUG (`#if DEBUG`) và #Preview được bỏ qua.
+  */
+  ['chuỗi iOS native qua xcstrings', 'node', ['../apps/ios/tools/native-i18n-forensic.mjs']],
+  /*
+    Plural trong String Catalog phải nhắc tới con số (#527). Xcode từ chối
+    `variations.plural` mà dạng `other` không có số ("ngày", "days") — nhưng
+    chỉ ở `xcodebuild` trên macOS (run 37648967552, widget). Bước thứ nhất quét
+    mọi `.xcstrings` của apps/ios; bước thứ hai là bằng chứng nó bắt đúng lỗi
+    ấy: fixture lấy nguyên từ commit lỗi phải đỏ, bản sửa phải xanh.
+  */
+  ['plural xcstrings nhắc tới con số', 'node', ['../apps/ios/tools/native-xcstrings-plural.mjs']],
+  ['plural xcstrings — fixture lỗi widget phải đỏ', 'node', ['../apps/ios/tools/native-xcstrings-plural.mjs', '--self-test']],
+  /*
+    #533 (1.7): đổi ngôn ngữ trong app chỉ đi qua overload che
+    `String(localized:)` của ASCNDCore — Foundation một mình KHÔNG nghe lựa
+    chọn trong app (đo trên Foundation thật). Một chỗ gọi thêm `table:` /
+    `locale:` / `comment:`, hay `NSLocalizedString` / `LocalizedStringResource`
+    dựng tay, rơi về ngôn ngữ máy mà không test nào đỏ. Bước thứ hai: fixture
+    của từng dạng ấy phải đỏ, dạng đúng phải xanh.
+  */
+  ['tra chữ qua overload ngôn ngữ', 'node', ['../apps/ios/tools/native-l10n-override.mjs']],
+  ['tra chữ — fixture dạng rơi về Foundation phải đỏ', 'node', ['../apps/ios/tools/native-l10n-override.mjs', '--self-test']],
+  /*
+    #527 Phase 1 · 1.11: trạng thái mạng ba nhánh của app iOS native phải đổi
+    ở đúng các mốc RN đổi. Golden của `NetStatusGoldenTests` là output của
+    CHÍNH `net-status.ts` chạy trên đồng hồ ảo (sàn 600 ms, nhịp dò 250 ms, trần
+    12 s). Bước này sinh lại nó từ `native/src/lib` và so từng byte: RN đổi luật
+    mà Swift chưa port lại thì đỏ ở đây.
+  */
+  ['trạng thái mạng golden = mã RN', 'sh', ['../apps/ios/tools/net-status-golden/verify.sh']],
 ];
 
 /*
