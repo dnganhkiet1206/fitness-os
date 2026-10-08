@@ -46,7 +46,7 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 | Cộng đồng | ✅ | 🔴 | — | — | 🔴 TODO | 14 route |
 | Trợ lý / coach AI | ✅ | 🔴 | — | — | 🔴 TODO | 3 route |
 | Theo dõi cơ thể | ✅ | 🔴 | — | — | 🔴 TODO | 11 route |
-| Kinh tế / gamification (huy chương, cửa hàng, Koa) | ✅ | 🔴 | — | — | 🔴 TODO | 5 route; luật thưởng/streak/coin **không được đổi** |
+| Kinh tế / gamification (huy chương, cửa hàng, Koa) | ✅ | 🟡 | 🟡 | — | 🟡 IMPLEMENTED_NOT_WIRED | 5 route; luật thưởng/streak/coin **không được đổi**. E (#527 Phase 7): phòng linh vật — Core `MascotRules` + `Streak.missedDates` (chuỗi dùng chung `Streak` của widget #66; golden `mascot-golden.json` sinh bằng mã RN) + `MascotRoomController` (server là chủ: chỉ gọi `claim_quest_reward` / `buy_streak_freeze`; mã yêu cầu mua băng giữ tới khi server nhận; chốt thưởng chào mừng gỡ khi lỗi); `SupabaseMascotSource/Economy`; `MascotRoomView`. Chưa nối Release (cửa của RN nằm trên Today), Koa là hình giữ chỗ, chưa tự nhận nhiệm vụ, chưa có cửa hàng / thử thách / huy hiệu. Thiết bị: NOT RUN |
 | Quản trị (`admin/*`) | ✅ | 🔴 | — | — | ⚪ DECISION | 8 route; native v1 có kèm console quản trị? |
 | Thông báo cục bộ (nhắc nhở) | ✅ (`expo-notifications`) | 🔴 | — | — | 🔴 TODO | 0 tệp `UNUserNotificationCenter` trong `apps/ios` |
 | Widget màn hình chính | 🟡 (`TodayWorkoutWidget`, `StreakReadinessWidget`; dữ liệu App Group, RN rơi về SỐ GIẢ của spike khi chưa có dữ liệu) | ✅ | ✅ | — | 🟡 PARTIAL | #66 (Kiệt chốt ở #523): cùng kind, cỡ, bố cục, App Group `group.com.ascnd.fitnessos`, khoá và JSON như RN (đọc được dữ liệu bản RN để lại — `storeSpeaksRNsJSON`). Payload như `usePushWidgetData` (buổi mới nhất hôm nay, đếm bài khác nhau; `daily_logs.readiness_score` hôm nay); chuỗi ngày = `streakFrom` của RN, golden 401 ca sinh từ chính `lib/streak.ts` (so từng byte ở bước cổng). Làm mới khi mở app / về tiền cảnh / sau mỗi lệnh buổi tập server nhận; đăng xuất xoá. **Khác RN có chủ đích:** không hiện số giả khi chưa có dữ liệu ("Mở ASCND để cập nhật"); đọc hỏng thì giữ số cũ thay vì đẩy "0 ngày"; chữ widget theo ngôn ngữ máy (RN cứng tiếng Anh). Entitlement App Group cần được cấp ở Apple Developer (ký tự động sẽ đăng ký). Chưa chạy trên iPhone thật |
@@ -74,7 +74,8 @@ Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence 
 | `(tabs)/community`, `community-challenge`, `community-challenges`, `community-inbox`, `community-post`, `community-privacy`, `community-profile`, `community-saved`, `community-search`, `community-share`, `community-share-progress`, `community-share-recipe`, `community-user`, `challenges` | Cộng đồng | — | 🔴 TODO (14) |
 | `(tabs)/assistant`, `ai-coach`, `coach-memory` | Trợ lý | — | 🔴 TODO (3) |
 | `biometrics`, `log-biometrics`, `log-measurement`, `log-sleep`, `log-weight`, `measurements-trend`, `progress-photos`, `sleep-insights`, `steps`, `weekly-review`, `smart-goals` | Cơ thể | — | 🔴 TODO (11) |
-| `awards`, `shop`, `mascot-room`, `koa-sheet`, `koa-debug` | Kinh tế / Koa | — | 🔴 TODO (5; `koa-debug` là công cụ dev) |
+| `mascot-room` | Kinh tế / Koa | `MascotRoomView` | 🟡 IMPLEMENTED_NOT_WIRED — E #527 Phase 7 |
+| `awards`, `shop`, `koa-sheet`, `koa-debug` | Kinh tế / Koa | — | 🔴 TODO (4; `koa-debug` là công cụ dev) |
 | `admin/_layout`, `appeals`, `audit`, `images`, `index`, `reports`, `target`, `user`, `users` | Quản trị | — | ⚪ DECISION (9 tệp, 8 màn) |
 
 ## 3. Năng lực iOS ngoài route

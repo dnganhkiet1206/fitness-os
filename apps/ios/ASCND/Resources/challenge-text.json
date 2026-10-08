@@ -1,0 +1,45 @@
+{
+ "source": "native/src/lib/gamification-i18n.ts CHALLENGE_TEXT — sinh bằng apps/ios/tools/challenge-text/gen.mjs, đừng sửa tay",
+ "titles": {
+  "calories_5": {
+   "vi": "Đúng Calo 5/7",
+   "en": "On-Target Calories 5/7",
+   "es": "Calorías en Objetivo 5/7"
+  },
+  "log_7": {
+   "vi": "Log 7/7",
+   "en": "Log 7/7",
+   "es": "Registro 7/7"
+  },
+  "protein_7": {
+   "vi": "Protein 7/7",
+   "en": "Protein 7/7",
+   "es": "Proteína 7/7"
+  },
+  "sleep_7": {
+   "vi": "Ngủ Đủ 7/7",
+   "en": "Sleep 7/7",
+   "es": "Sueño 7/7"
+  },
+  "steps_50k": {
+   "vi": "50K Bước",
+   "en": "50K Steps",
+   "es": "50K Pasos"
+  },
+  "water_7": {
+   "vi": "Uống Đủ Nước 7/7",
+   "en": "Hydrated 7/7",
+   "es": "Hidratado 7/7"
+  },
+  "workouts_3": {
+   "vi": "3 Buổi Tập",
+   "en": "3 Workouts",
+   "es": "3 Entrenamientos"
+  },
+  "workouts_5": {
+   "vi": "5 Buổi Tập",
+   "en": "5 Workouts",
+   "es": "5 Entrenamientos"
+  }
+ }
+}
