@@ -3,22 +3,29 @@
 // Presentation layer thuần: nhận `TodayDisplay` đã tính sẵn + 2 callback,
 // không chứa workout-domain logic, không đọc database, không tính ngày.
 // 5 trạng thái đúng baseline `dayStateOf` (week-strip.tsx:137).
+import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
 public struct TodayView: View {
   let state: TodayDisplay
   var onStart: () -> Void
-  var onChoosePlan: () -> Void
+  /// Mở màn chọn kế hoạch. `nil` = chưa có màn ấy ở bản này: nút "Chọn kế
+  /// hoạch" ẩn đi thay vì là một nút không làm gì (#527).
+  var onChoosePlan: (() -> Void)?
+  /// Mở Cài đặt (RN: avatar tài khoản trên Today). `nil` = không hiện nút.
+  var onOpenSettings: (() -> Void)?
 
   public init(
     state: TodayDisplay,
     onStart: @escaping () -> Void = {},
-    onChoosePlan: @escaping () -> Void = {}
+    onChoosePlan: (() -> Void)? = nil,
+    onOpenSettings: (() -> Void)? = nil
   ) {
     self.state = state
     self.onStart = onStart
     self.onChoosePlan = onChoosePlan
+    self.onOpenSettings = onOpenSettings
   }
 
   public var body: some View {
@@ -36,6 +43,17 @@ public struct TodayView: View {
         .padding(DS.Spacing.md)
       }
       .navigationTitle(Text("tab.today"))
+      .toolbar {
+        if let onOpenSettings {
+          ToolbarItem(placement: .topBarTrailing) {
+            Button(action: onOpenSettings) {
+              Image(systemName: "person.crop.circle")
+                .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityLabel(Text("settings.title"))
+          }
+        }
+      }
     }
     // Không gắn accessibilityLabel lên cả cây: container không gộp thì nhãn
     // đè xuống từng phần tử con (nút Bắt đầu, từng bài đều đọc thành
@@ -91,13 +109,16 @@ public struct TodayView: View {
     }
   }
 
+  /// Đơn vị tạ của tài khoản (#527 1.9-B) — kế hoạch vẫn lưu kg.
+  @Environment(\.weightUnit) private var unit
+
   private func exerciseRow(_ e: TodayExercise) -> some View {
     HStack {
       Text(e.name)
         .font(DS.TextStyle.body)
         .foregroundStyle(DS.Color.foreground.swiftUI)
       Spacer()
-      Text(weightText(e).map { "\(e.sets)×\(e.reps) · \($0) kg" } ?? "\(e.sets)×\(e.reps)")
+      Text(weightText(e).map { "\(e.sets)×\(e.reps) · \($0)" } ?? "\(e.sets)×\(e.reps)")
         .font(DS.TextStyle.footnote)
         .foregroundStyle(DS.Color.mutedForeground.swiftUI)
         .monospacedDigit()
@@ -106,11 +127,11 @@ public struct TodayView: View {
     .accessibilityLabel(Text(exerciseAccessibility(e)))
   }
 
-  /// Mức tạ theo locale, giữ phần lẻ (62,5 kg — không cắt `Int` thành 62).
-  /// `nil` = bài không tạ, không hiện "0 kg".
+  /// Mức tạ theo locale và theo đơn vị của tài khoản (#527 1.9-B), một chữ
+  /// số lẻ như RN `displayWeight` (`day-plan.tsx:1820`): "62,5 kg", "137,8 lb"
+  /// — không cắt `Int` thành 62. `nil` = bài không tạ, không hiện "0 kg".
   private func weightText(_ e: TodayExercise) -> String? {
-    guard e.weightKg > 0 else { return nil }
-    return e.weightKg.formatted(.number.precision(.fractionLength(0...2)))
+    unit.localizedLoad(e.weightKg)
   }
 
   private func exerciseAccessibility(_ e: TodayExercise) -> String {

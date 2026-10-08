@@ -92,6 +92,33 @@ private struct LabSession: View {
         LabHistory(history: history)
       }
       if let editor = flow.plan {
+        Section {
+          // Danh sách + builder thật (#527 Phase 2) — cùng `PlanEditor`.
+          NavigationLink {
+            WorkoutBuilderView(flow: flow)
+          } label: {
+            Text(verbatim: "Buổi tập đã lưu + builder (màn thật)")
+          }
+          NavigationLink {
+            WeekPlanView(flow: flow)
+          } label: {
+            Text(verbatim: "Kế hoạch tuần (màn thật)")
+          }
+          if let library = flow.library {
+            NavigationLink {
+              ExercisesView(library: library)
+            } label: {
+              Text(verbatim: "Thư viện bài tập (màn thật)")
+            }
+          }
+          if let insights = flow.insights {
+            NavigationLink {
+              ExerciseInsightView(insights: insights, today: today)
+            } label: {
+              Text(verbatim: "Tiến bộ từng bài (màn thật)")
+            }
+          }
+        }
         LabPlan(today: today, editor: editor)
       }
       LabManualLog(flow: flow)
@@ -170,7 +197,7 @@ private struct LabWorkout: View {
             LabAdHocHeader(c: c, id: id)
           }
           if row.ordinal == 1, let last = flow.performance.last(for: row.exerciseName), let d = last.display {
-            Text(verbatim: "Last (\(last.date)): \(Self.describe(d))")
+            Text(verbatim: "Last (\(last.date)): \(Self.describe(d, unit: flow.weightUnit))")
               .font(.caption).foregroundStyle(.secondary)
           }
           LabSetRow(c: c, row: row)
@@ -285,11 +312,11 @@ private struct LabWorkout: View {
 }
 
 extension LabWorkout {
-  static func describe(_ d: LastPerformance.Display) -> String {
+  static func describe(_ d: LastPerformance.Display, unit: WeightUnit) -> String {
     switch d {
     case .hold(let s): "\(s)s"
     case .bodyweight(let r): "\(r) reps × bodyweight"
-    case .loaded(let w, let r): "\(w.formatted()) kg × \(r)"
+    case .loaded(let w, let r): "\(unit.load(w)) × \(r)"
     }
   }
 }
@@ -549,7 +576,8 @@ private struct LabManualLog: View {
           Task {
             do throws(ManualLogController.SaveRefusal) {
               let s = try await log.save()
-              message = "Đã ghi \(s.completedSets) set · \(s.volumeKg) kg\(s.prDetected ? " · PR" : "")"
+              let unit = flow.weightUnit
+              message = "Đã ghi \(s.completedSets) set · \(unit.volume(Double(s.volumeKg))) \(unit.label)\(s.prDetected ? " · PR" : "")"
             } catch {
               message = "\(error)"
             }
@@ -625,10 +653,12 @@ private struct LabSetRow: View {
           .font(.caption).foregroundStyle(.secondary)
       }
       Spacer()
+      // Ô gõ theo đơn vị của controller (#527 1.9-C): gieo và nhãn cùng đơn vị
+      // controller dùng để đổi về kg — không thì "60" ghi nhãn kg bị đọc là lb.
       TextField(text: Binding(
-        get: { c.progress.weightText[row.key] ?? WorkoutMath.round2(row.weightKg).formatted() },
+        get: { c.progress.weightText[row.key] ?? c.weightUnit.seed(row.weightKg) },
         set: { v in Task { await c.setWeightText(v, for: row.key) } })
-      ) { Text(verbatim: "kg") }
+      ) { Text(verbatim: c.weightUnit.label) }
         .keyboardType(.decimalPad)
         .frame(width: 56)
         .multilineTextAlignment(.trailing)

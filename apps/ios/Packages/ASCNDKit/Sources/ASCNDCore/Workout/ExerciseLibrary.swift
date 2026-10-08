@@ -45,7 +45,19 @@ public struct LibraryExercise: Sendable, Hashable, Codable, Identifiable {
 public enum MuscleGroup: String, Sendable, Hashable, Codable, CaseIterable {
   case chest, back, shoulders, biceps, triceps, legs, glutes, calves, abs, cardio
 
-  public enum Language: String, Sendable { case vi, en, es }
+  public enum Language: String, Sendable {
+    case vi, en, es
+
+    /// Ngôn ngữ app đang hiện (`lang` của RN): vi / es theo mã ngôn ngữ của
+    /// locale, còn lại là en — như bảng chữ, tiếng chưa dịch rơi về en.
+    public init(locale: Locale) {
+      switch locale.language.languageCode?.identifier {
+      case "vi": self = .vi
+      case "es": self = .es
+      default: self = .en
+      }
+    }
+  }
 
   static let aliases: [String: MuscleGroup] = [
     "chest": .chest, "back": .back, "shoulders": .shoulders, "biceps": .biceps, "triceps": .triceps,
@@ -177,6 +189,23 @@ public enum ExerciseCatalog {
       groups[title, default: []].append(e)
     }
     return order.map { Section(title: $0, exercises: groups[$0] ?? []) }
+  }
+
+  /// Nhóm cơ của form thêm bài (`MUSCLE_GROUPS`, `exercises.tsx:57`), đúng
+  /// thứ tự RN, kể cả ba nhóm không có hình riêng (Chân trước / Chân sau gập
+  /// về `legs`, Toàn thân về `cardio` — như `canonicalMuscleGroup`).
+  ///
+  /// RN gửi NHÃN theo tiếng đang bật rồi gập về khoá; bảng đồng nghĩa chỉ
+  /// biết vi / en, nên người dùng tiếng Tây Ban Nha lưu "Pecho" thô. Ở đây
+  /// mỗi mục mang sẵn chữ en mà bảng đồng nghĩa biết: vi / en lưu đúng khoá
+  /// như RN, es cũng lưu khoá.
+  public enum PickGroup: String, Sendable, Hashable, CaseIterable {
+    case chest, back, shoulders, biceps, triceps, quads, hamstrings, glutes, abs
+    case fullBody = "full body"
+    case cardio
+
+    /// Chữ đưa vào `ExerciseLibrary.create(muscleGroup:)`.
+    public var stored: String { rawValue }
   }
 
   /// `suggestionsFor` (`log-workout.tsx:386`): tối đa 5 bài; ô trống thì gợi ý

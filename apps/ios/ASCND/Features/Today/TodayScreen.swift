@@ -18,20 +18,24 @@ public struct TodayScreen: View {
   @Bindable var controller: TodayController
   /// Bắt đầu buổi tập — A8b mở WorkoutView với flow.session.
   var onStartWorkout: () -> Void
-  /// Chọn plan khác.
-  var onChoosePlan: () -> Void
+  /// Chọn plan khác — `nil` khi bản này chưa có màn kế hoạch (nút ẩn).
+  var onChoosePlan: (() -> Void)?
+  /// Mở Cài đặt — `nil` thì không hiện nút.
+  var onOpenSettings: (() -> Void)?
   /// Làm mới — A8b truyền `{ await flow.refresh() }`.
   var onRefresh: () async -> Void
 
   public init(
     controller: TodayController,
     onStartWorkout: @escaping () -> Void = {},
-    onChoosePlan: @escaping () -> Void = {},
+    onChoosePlan: (() -> Void)? = nil,
+    onOpenSettings: (() -> Void)? = nil,
     onRefresh: @escaping () async -> Void = {}
   ) {
     self.controller = controller
     self.onStartWorkout = onStartWorkout
     self.onChoosePlan = onChoosePlan
+    self.onOpenSettings = onOpenSettings
     self.onRefresh = onRefresh
   }
 
@@ -61,7 +65,8 @@ public struct TodayScreen: View {
           TodayView(
             state: display,
             onStart: onStartWorkout,
-            onChoosePlan: onChoosePlan
+            onChoosePlan: onChoosePlan,
+            onOpenSettings: onOpenSettings
           )
         }
         .refreshable {

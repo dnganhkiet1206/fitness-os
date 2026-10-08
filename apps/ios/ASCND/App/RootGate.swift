@@ -26,8 +26,12 @@ struct RootGate: View {
       case .signedIn(let s):
         // `id`: đổi tài khoản dựng lại cả cây — không state nào của người trước
         // (tab đang mở, màn tập, ô đang gõ) sống sót sang người sau.
-        SignedInScope(userId: s.userId) {
-          RootTabView()
+        // Cổng onboarding (#527 1.3, `_layout.tsx:292`) đứng TRƯỚC phiên app:
+        // chưa xong onboarding thì luồng tập / tab chưa dựng.
+        OnboardingGateView(userId: s.userId) {
+          SignedInScope(userId: s.userId) {
+            RootTabView()
+          }
         }
         .id(s.userId)
         .transition(.opacity)
@@ -59,11 +63,15 @@ private struct SignedInScope<Content: View>: View {
   @Environment(RestTimerController.self) private var rest
   @Environment(\.scenePhase) private var scenePhase
   @State private var flow: WorkoutFlow?
+  /// Hồ sơ của ĐÚNG tài khoản này — nguồn đơn vị tạ (#527 1.9-A). Dựng lại
+  /// cùng phiên (`.id(userId)`), nên không bao giờ mang đơn vị người trước.
+  @State private var profile: ProfileBook?
 
   var body: some View {
     Group {
       if let flow {
         content.environment(flow)
+          .environment(\.weightUnit, weightUnit)
       } else {
         ProgressView()
           .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -71,9 +79,24 @@ private struct SignedInScope<Content: View>: View {
     }
     .task {
       let f = services.makeWorkoutFlow(userId: userId, rest: rest)
+      f.setWeightUnit(weightUnit)
       flow = f
+      // "Đang kết nối lại" thoát khi lượt tải của phiên này xong. Giữ `weak`:
+      // phiên đã đóng thì không còn gì để chờ. Không gỡ ở `onDisappear` — cây
+      // của người mới có thể đã đăng ký trước khi cây cũ gỡ xong.
+      services.net.busyProbe = { [weak f] in f?.isRefreshing ?? false }
       await services.forgetOtherAccounts(keeping: userId)
+      // Sau `forgetOtherAccounts`: bản nhớ hồ sơ chỉ đọc được khi phiên đã là
+      // của người này. Đơn vị từ bản nhớ (không mạng) có TRƯỚC khi buổi tập
+      // dựng (#527 1.9-D) — mở lại app, ô tạ hiện lb ngay, không nháy kg; đọc
+      // server song song với luồng tập.
+      let book = services.makeProfileBook(userId: userId)
+      profile = book
+      await book.loadCached()
+      f.setWeightUnit(weightUnit)
+      async let units: Void = book.refresh()
       await f.start()
+      await units
     }
     // Phiên kết thúc (đăng xuất, đổi tài khoản → `.id` đổi): huỷ lượt làm mới
     // đang bay, để nó không ghi cache của người vừa rời đi.
@@ -89,12 +112,22 @@ private struct SignedInScope<Content: View>: View {
       // Ra tiền cảnh: qua nửa đêm thì "hôm nay" đổi; dữ liệu cũ hơn một phút
       // thì làm mới (`focusManager` của baseline).
       if phase == .active, let flow { Task { await flow.becameActive() } }
+      // Đổi đơn vị ở máy khác: ra tiền cảnh thì đọc lại hồ sơ.
+      if phase == .active, let profile { Task { await profile.refresh() } }
+    }
+    // Màn tập đọc và gõ theo đơn vị của tài khoản (#527 1.9-B): controller đổi
+    // chữ trong ô về kg theo đúng đơn vị màn đang hiện. Hồ sơ chưa nạp → kg,
+    // như RN `useUnits`.
+    .onChange(of: weightUnit, initial: true) { _, unit in
+      flow?.setWeightUnit(unit)
     }
     .onChange(of: services.sync.online) { _, online in
       // Có mạng lại (`refetchOnReconnect` của baseline).
       if online, let flow { Task { await flow.reconnected() } }
     }
   }
+
+  private var weightUnit: WeightUnit { WeightUnit(profile: profile?.profile) }
 
   private var isCurrentSession: Bool {
     if case .signedIn(let s) = services.session.phase { return s.userId == userId }

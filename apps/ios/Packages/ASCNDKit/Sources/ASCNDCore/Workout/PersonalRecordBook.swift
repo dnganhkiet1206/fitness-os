@@ -165,6 +165,8 @@ extension WorkoutSessionRecord {
 
 /// Lịch sử để so kỷ lục: cột `sets` của các buổi gần nhất
 /// (`ASCNDBackend.SupabaseRecordHistory`).
+/// Mỗi phần tử: `{id, sets}` (nguồn thật), hoặc chỉ cột `sets` (nguồn cũ /
+/// giả) — cái sau không nhận được lớp phủ buổi đã xoá.
 public protocol RecordHistory: Sendable {
   func recentSessionSets(userId: String, limit: Int) async throws -> [JSONValue]
 }
@@ -193,8 +195,15 @@ public final class RecordBook {
   public private(set) var bests: PersonalRecords.Bests?
   @ObservationIgnored private let history: any RecordHistory
   @ObservationIgnored private let cache: any RecordBookCache
+  /// Buổi còn trong outbox (#429): buổi đã xoá mà lệnh chưa gửi không được
+  /// đóng góp vào bảng tốt-nhất của lần làm mới.
+  @ObservationIgnored private let pending: (any PendingWrites)?
+  @ObservationIgnored private var log = SessionChangeLog()
 
-  public init(userId: String, history: any RecordHistory, cache: any RecordBookCache) {
+  public init(
+    userId: String, history: any RecordHistory, cache: any RecordBookCache, pending: (any PendingWrites)? = nil
+  ) {
+    self.pending = pending
     self.userId = userId
     self.history = history
     self.cache = cache
@@ -209,11 +218,30 @@ public final class RecordBook {
   }
 
   public func refresh() async {
-    guard let rows = try? await history.recentSessionSets(userId: userId, limit: PersonalRecords.historyLimit)
+    let mark = log.mark
+    guard let queued = await pending.changes(userId: userId),
+      let fetched = try? await history.recentSessionSets(userId: userId, limit: PersonalRecords.historyLimit)
     else { return }
-    let fresh = PersonalRecords.bests(from: rows.flatMap { PersonalRecords.sets(fromJSON: $0) })
+    // Hàng có `id` (`{id, sets}`) nhận lớp phủ; hàng chỉ có `sets` (nguồn cũ)
+    // giữ nguyên.
+    let rows = PendingSessions.apply(queued + log.settle(since: mark), to: fetched.filter { $0["id"] != nil })
+      + fetched.filter { $0["id"] == nil }
+    let fresh = PersonalRecords.bests(from: rows.flatMap { PersonalRecords.sets(fromJSON: $0["sets"] ?? $0) })
     bests = fresh
     try? await cache.save(userId: userId, fresh)
+  }
+
+  /// Buổi vừa chốt / ghi lại (hàng outbox): gộp vào bảng ngay, và nhớ để lần
+  /// làm mới đang bay không làm mất nó.
+  public func absorb(row: JSONValue) async {
+    if row["id"] != nil { log.record(.upsert(row)) }
+    await absorb(setsJSON: row["sets"])
+  }
+
+  /// Buổi bị xoá trên máy: tốt-nhất là phép max, không gỡ được tại chỗ —
+  /// người gọi làm mới (`refresh`), và lớp phủ loại buổi này khỏi bản server.
+  public func forget(sessionId: String) {
+    log.record(.delete(id: sessionId, at: nil))
   }
 
   /// Buổi vừa chốt thành lịch sử (`sets` trong hàng outbox).
