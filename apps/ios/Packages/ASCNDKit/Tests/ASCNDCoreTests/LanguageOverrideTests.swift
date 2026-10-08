@@ -56,6 +56,32 @@
       #expect(WeightUnit.kg.localizedLoad(62.5) == "62,5 kg")
     }
 
+    /// Số và ngày hiển thị (`.formatted(… .locale(.app))`: lịch sử, tuần,
+    /// Tổng kết, Cài đặt) theo ngôn ngữ trong app, không theo máy — cùng chữ
+    /// quanh nó. Không ghi đè thì `Locale.app` là locale của máy.
+    @Test func formattingLocaleFollowsTheInAppChoice() {
+      defer { AppLanguage.shared.set(nil) }
+      let date = Date(timeIntervalSince1970: 1_791_331_200)  // 2026-10-07 UTC
+      // Tính lại mỗi lần: `.locale(.app)` đọc ngôn ngữ lúc dựng style.
+      func month() -> String {
+        var style = Date.FormatStyle.dateTime.month(.wide).year().locale(.app)
+        style.timeZone = TimeZone(identifier: "UTC")!
+        return date.formatted(style)
+      }
+      AppLanguage.shared.set("vi")
+      #expect(Locale.app.identifier == "vi")
+      #expect(12_345.formatted(.number.locale(.app)) == "12.345")
+      #expect(month().lowercased().contains("10"))
+      #expect(!month().contains("October"))
+      AppLanguage.shared.set("en")
+      #expect(12_345.formatted(.number.locale(.app)) == "12,345")
+      #expect(month() == "October 2026")
+      AppLanguage.shared.set("es")
+      #expect(month().lowercased().contains("octubre"))
+      AppLanguage.shared.set(nil)
+      #expect(Locale.app.identifier == Locale.autoupdatingCurrent.identifier)
+    }
+
     /// Không ghi đè (widget, trước khi app đặt): đường của hệ thống, không
     /// trả ra khoá trần.
     @Test func noOverrideUsesTheSystemPath() throws {

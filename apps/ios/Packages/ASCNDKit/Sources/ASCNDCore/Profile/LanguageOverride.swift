@@ -44,6 +44,16 @@ public final class AppLanguage: Observable, @unchecked Sendable {
   }
 }
 
+extension Locale {
+  /// Locale để ĐỊNH DẠNG chữ hiển thị (số có nhóm nghìn, tên tháng / thứ,
+  /// danh sách "a, b và c", dấu thập phân của tạ) theo ngôn ngữ chọn TRONG APP
+  /// (`AppLanguage`), không theo máy. `.formatted()` không tham số của
+  /// Foundation đọc `Locale.current` (máy): máy tiếng Anh mà app đặt tiếng Việt
+  /// sẽ ra "October 2026" giữa chữ tiếng Việt. Không ghi đè (widget, test) thì
+  /// như Foundation. Đọc qua `AppLanguage.code` nên được Observation ghi nhận.
+  public static var app: Locale { AppLanguage.shared.locale ?? .autoupdatingCurrent }
+}
+
 #if canImport(Darwin)
   extension String {
     /// Che `String(localized:)` của Foundation cho mọi module nhập ASCNDCore:
