@@ -949,6 +949,14 @@ const STEPS = [
   */
   ['chuỗi iOS native qua xcstrings', 'node', ['../apps/ios/tools/native-i18n-forensic.mjs']],
   /*
+    #266: hàng `daily_logs` (readiness, ACWR, dinh dưỡng, giấc ngủ) mà app iOS
+    native ghi phải giống từng cột hàng RN ghi — hai app, một bảng. Golden của
+    `DailyLogGoldenTests` là output của CHÍNH `recomputeDailyLog` RN chạy trên
+    Supabase giả ở sáu múi giờ. Bước này sinh lại nó từ `native/src/lib` và so
+    từng byte: RN đổi luật mà Swift chưa port lại thì đỏ ở đây.
+  */
+  ['daily_logs golden = mã RN', 'sh', ['../apps/ios/tools/daily-log-golden/verify.sh']],
+  /*
     Plural trong String Catalog phải nhắc tới con số (#527). Xcode từ chối
     `variations.plural` mà dạng `other` không có số ("ngày", "days") — nhưng
     chỉ ở `xcodebuild` trên macOS (run 37648967552, widget). Bước thứ nhất quét
