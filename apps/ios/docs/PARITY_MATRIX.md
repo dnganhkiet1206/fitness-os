@@ -1,0 +1,133 @@
+# Parity matrix RN → Native iOS (sống)
+
+Chủ: B (#523). Chi tiết từng hành vi (nguồn RN, dòng): [PORTING_INVENTORY.md](PORTING_INVENTORY.md) (A18).
+Trang này là bảng theo **mảng** và theo **route**. Mỗi ô có evidence kiểm được (PR đã merge, test, tệp). Không ô nào điền theo cảm giác.
+
+- **Base đối chiếu:** `native/ios-rewrite` @ `82a89b05` (07/10/2026).
+- **RN:** `native/src/app/**` có **75 route**. RN tiếp tục là bản Android; iOS là native. Hai bản dùng chung backend và dữ liệu.
+
+## Thang trạng thái
+
+| Ký hiệu | Nghĩa |
+|---|---|
+| ✅ DONE | Hành vi tương đương RN, **có test**, đã vào `native/ios-rewrite`. Cột Evidence chỉ ra PR, test hoặc vector |
+| 🟡 PARTIAL | Có lõi; còn hành vi RN cụ thể chưa có (ghi ở cột Còn thiếu) |
+| 🔵 IN QUEUE | Code đã có trong PR đang chờ merge, chưa vào base. Chưa tính là DONE |
+| 🔴 TODO | Chưa có gì trong native |
+| ⚪ DECISION | Chờ quyết định sản phẩm (Kiệt); không làm khi chưa có quyết định |
+
+"Có màn compile được" **không** phải DONE (directive §2, §19).
+
+## 1. Theo mảng
+
+| Mảng | RN | Native | Parity | Tests | Trạng thái | Evidence / còn thiếu |
+|---|---|---|---|---|---|---|
+| Đăng nhập email / Apple / quên MK | ✅ | ✅ | 🟡 | 🟡 | 🟡 PARTIAL | `SessionStore`+`SupabaseAuthAPI` (#245), `AuthView` (#297). Nonce Apple theo từng lượt (P1, batch 1, `AppleSignInNoncesTests`). Kiểm tra form #350 (batch 3; **cải tiến** so với RN: RN chỉ đòi khác rỗng). Thiếu: capability Apple trong `project.yml` (A/Kiệt) |
+| Gate phiên, đổi tài khoản | ✅ | ✅ | ✅ | ✅ | ✅ DONE | #293, #397, #338; `AccountIsolationTests`, D-22 #390 |
+| Đổi mật khẩu | ✅ | 🟡 | ✅ | ✅ | 🟡 PARTIAL | A29 #441 (batch 5): `PasswordChangeController`, luật RN (≥6 đơn vị UTF-16, so từng đơn vị như JS), lỗi có tên. E (#527 Phase 8): `ChangePasswordView` từ Cài đặt ở Release (hàng chỉ hiện khi đã đăng nhập); lỗi có tên ra lời (không chuỗi thô của server). Khác RN: chưa có toast — "đã đổi" báo dưới hàng của Cài đặt + VoiceOver. Thiết bị: NOT RUN |
+| Onboarding | ✅ | 🔵 | 🟡 | ✅ | 🔵 IN QUEUE | A30 #442 (batch 5): trạng thái, luật bước, nháp bền, `FitnessCalc` (golden `plan-golden.json` sinh từ RN). E (#527 1.3): cổng `OnboardingGateView` trong `RootGate` + 11 màn + thước (golden `ruler-golden.json` sinh từ `units.ts`/`BOUNDS`) + văn bản pháp lý chép máy từ `legal-content.ts`. Còn thiếu: màn Sức khoẻ (chờ HealthKit 4.1), Koa / hình chiếc cân (Phase 7), kiểm trên iPhone thật |
+| Hôm nay (5 trạng thái, kế hoạch) | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `TodayController` (#290), `TodayScreen` (#345), vectors TC (#380). `todayCta` / `sessionTicks` / `mergeProgress` port vào Core (`TodayRules`, batch 5, runner TodayVectorTests). Thiếu: TodayView chưa dùng `cta`; widget Hôm nay (mục 3) |
+| Màn tập trong ngày | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | #263/#268/#287/#389; vectors WS (#286), append (#347), remove-set (#412). Tạ lẻ `plannedLoad` + lỗi chốt chữ RN (batch 1, golden node). VoiceOver từng control #288 + #291, focus/flush ô nhập #318 (batch 3). Ô nhập đọc `controller.progress` (không seed một lần), khoá khi controller không cho sửa (`canEditMatchesWhatTheSettersAccept`). Sau khi chốt (batch 4): bỏ tích → hỏi lại chữ RN → gỡ + hoàn tác 8 s; "Ghi thêm vào buổi hôm nay"; rung + VoiceOver khi xong. Đa thiết bị (batch 6): buổi ghi ở máy khác được NHẬN — hàng chứng minh đã tích với số thật, gỡ / nối thêm vào buổi ấy như RN (`AdoptRemoteSessionTests`, hai máy qua server giả). Chưa thử trên hai máy thật. Thiếu: RestCard / SyncStrip chưa nối controller; `WorkoutView` chưa được gắn vào tab production |
+| Gỡ set đã chốt + hoàn tác 8 s | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A19 #415; vectors RS (#412); `WorkoutSessionControllerTests` RS-3..6. RS-1/2 chưa có test bám ID |
+| Bài thêm ngoài kế hoạch | ✅ | ✅ | ✅ | ✅ | ✅ DONE | Dữ liệu A20 #416, UI #411, vectors AH #413 (batch 1). Chưa thử trên máy thật |
+| Kỷ lục cá nhân | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A11 #298; vectors PR (#344, runner gọi logic RN) |
+| "Lần trước" mỗi bài | ✅ | ✅ | ✅ | ✅ | ✅ DONE | A13 #349 + A23 #434 (bodyweight) |
+| Lịch sử buổi + xoá | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | Dữ liệu A21 #433, vectors WH (#414). UI #375 (B port lại theo `sessions.tsx`, batch 3): nhóm tháng + % so tháng trước (`HistoryMonths`, golden node TZ Sài Gòn/UTC), lỗi ≠ rỗng, xoá vuốt + nút + hỏi lại. **Chưa port:** WH-3a (dựng lại `daily_log` sau xoá — câu hỏi lại vì thế bỏ vế "điểm sẵn sàng sẽ được tính lại"), kcal mỗi buổi. Trạng thái rỗng có nút "Ghi buổi tập" (mở `ManualLogView`). Vào từ tab Tập luyện (#528). **Chi tiết buổi** (`SessionDetailView` trên `SessionDetail` #428, chạm hàng lịch sử): RN không có màn này — số theo luật RN đã có (`payloadFromSession`, `volume_load`, `trainingMinutes`, `findRecords`) |
+| Ghi buổi bằng tay | ✅ | 🟡 | ✅ | ✅ | 🟡 PARTIAL | A24 #436 (batch 5): `ManualLogController` — RPE 6…10 mặc định 7, cận `lift_kg` 0…600 / `set_reps` 1…500, `validSets`, nháp bền, gợi ý kế hoạch (đã đối chiếu `log-workout.tsx`). Màn production `ManualLogView` (E, #527 Phase 2): chip kế hoạch, tên, hàng set (tên / tạ theo đơn vị / reps / khởi động / bỏ), "Lần trước" trên hàng mở bài, gợi ý thư viện, Thêm set / Bài tập khác, khối lượng, RPE, lỗi cận, Lưu. Lối vào: lịch sử rỗng (`sessions.tsx:146`) và "ghi riêng" sau khi đã ghi trên màn tập (`day-plan.tsx:2291`). Chưa: mở nhạc, gợi ý tải (`suggestLoad`), xu hướng insight, màn ăn mừng kỷ lục |
+| Template + gán ngày (ghi) | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | A22 #435 (batch 1); builder UI #410 còn dùng mock — chưa nối `PlanEditor` |
+| Thư viện bài tập / hướng dẫn / insight | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | A25 #437 insight (golden sinh bằng mã RN), A26 #438 thư viện, A27 #439 ghi thư viện qua outbox, A28 #440 hướng dẫn (golden) — batch 5. **Màn thư viện** (`exercises.tsx`): `Features/Exercises/ExercisesView.swift` — gộp theo nhãn, tìm 250 ms, lọc theo nhóm, form thêm bài (11 nhóm, loại động tác mặc định chưa chọn), xoá bài của mình; lối vào từ builder ("Tạo “…”" khi tìm trượt, `openLibrary`). **Màn hướng dẫn** (`exercise-guide.tsx` + `media-viewer.tsx`): `Features/Exercises/ExerciseGuideView.swift` — ba tab, các bước có hình, ✓/✕, bài liên quan, trình xem media; lối vào: chạm tên bài ở màn tập (`day-plan.tsx:1784`, bài thêm tay không có). Chưa có `MuscleArt`, không dựng ảnh `DEMO_HERO`. **Màn tiến bộ từng bài** (`exercise-insight.tsx`): `Features/Exercises/ExerciseInsightView.swift` trên `InsightScreen` (core: `planKeys` / nhóm / headline / dãy so sánh, golden `insight-screen-golden.json` sinh từ RN). Chip **"Lần trước"** (`exercise-progress.tsx`): `ExerciseProgressRow` ở thẻ bài màn tập (`day-plan.tsx:1876`) và hàng mở bài màn ghi tay (`log-workout.tsx:836`) → mở màn tiến bộ với một bài; golden `progress-golden.json`. Lối vào còn lại: tab Tập luyện (#528). **Bảng tập của ngày bất kỳ** trong kế hoạch tuần (`DayPlan key={dStr}`): `WorkoutFlow.daySession(on:)` / `TodayController.makeSession(on:)`, mở thành sheet `WorkoutView` (hướng dẫn + chip đi theo). Chưa nối tab Release (#528) |
+| Hồ sơ | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | A31 #443 (batch 5): model đọc/ghi, form sửa, đơn vị. Ghi `update eq user_id` các cột form — last-write-wins **giống RN** `edit-profile.tsx:275`, cần mạng như RN. Vỏ `SettingsView` #394. E (#527 Phase 8): `EditProfileView` ở Release từ thẻ tài khoản; ô hiển thị ↔ cột hệ mét và cảnh báo macro lệch port vào Core (`ProfileEntry`, `MacroTargets`, golden sinh bằng mã RN). Khác RN: chưa có toast (kết quả "Tính lại" hiện dưới nút + VoiceOver). Thiết bị: NOT RUN |
+| Cài đặt app / nhắc nhở / chi tiết buổi | ✅ | ⚪ | — | — | ⚪ DECISION | A32 #444 / A33 #445 / A34 #446: ranh giới quyết định; 11 PR xếp chồng phía trên chờ theo |
+| Quãng nghỉ + Live Activity | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `RestTimerController` + `ASCNDLiveActivity`; #378 (batch 2: intent khi app bị kill; `Activity.request` bị từ chối không còn tính là đã hiện — `refusedStartIsNotRecordedAsShown`). Thiếu so với Island RN: **tạm dừng** (`isPaused`), 3 trạng thái `resting/active/ready`, nhãn "hiệp tiếp theo" theo ngôn ngữ. Pause thuộc **#235 (khoá)**. Hiện gì khi `isStale` là câu hỏi mở (#378) |
+| Đồng bộ / outbox | ✅ | 🟡 | 🟡 | ✅ | 🟡 PARTIAL | ADR-0003, #264/#265/#267; property tests D-13 #357. **Chỉ cho luồng tập**: nước, bữa ăn, cân nặng… chưa có |
+| Readiness / `daily_logs` | ✅ | 🔴 | — | — | ⚪ DECISION | #266 (khoá) |
+| HealthKit (bước, năng lượng, ngủ) | ✅ (`use-health-sync.ts`, 25+ tệp dùng) | 🔴 | — | — | ⚪ DECISION | **Không có trong native** (chỉ có 1 dòng ghi chú trong PORTING_INVENTORY §6). Bảng mẫu của directive ghi DONE: **không đúng** |
+| Dinh dưỡng | ✅ | 🔴 | — | — | 🔴 TODO | 13 route (mục 2) |
+| Cộng đồng | ✅ | 🔴 | — | — | 🔴 TODO | 14 route |
+| Trợ lý / coach AI | ✅ | 🔴 | — | — | 🔴 TODO | 3 route |
+| Theo dõi cơ thể | ✅ | 🔴 | — | — | 🔴 TODO | 11 route |
+| Kinh tế / gamification (huy chương, cửa hàng, Koa) | ✅ | 🔴 | — | — | 🔴 TODO | 5 route; luật thưởng/streak/coin **không được đổi** |
+| Quản trị (`admin/*`) | ✅ | 🔴 | — | — | ⚪ DECISION | 8 route; native v1 có kèm console quản trị? |
+| Thông báo cục bộ (nhắc nhở) | ✅ (`expo-notifications`) | 🔴 | — | — | 🔴 TODO | 0 tệp `UNUserNotificationCenter` trong `apps/ios` |
+| Widget màn hình chính | ✅ (`TodayWorkoutWidget`, `StreakReadinessWidget`) | 🔴 | — | — | 🔴 TODO | `apps/ios/ASCNDWidgets` chỉ có Live Activity. Nếu iOS chuyển hẳn sang native mà chưa port thì **mất 2 widget** |
+| Deep link (`ascnd://`) | ✅ | 🔴 | — | — | 🔴 TODO | Chưa audit route nào nhận link |
+| Localization en/vi/es | ✅ | ✅ | 🟡 | ✅ | 🟡 PARTIAL | `XcstringsTests` (#249) + `XcstringsUsageTests` (#345). Chữ cứng trong Lab là Debug-only (#340) |
+
+## 2. Theo route RN (75)
+
+| Route RN | Mảng | Native | Trạng thái |
+|---|---|---|---|
+| `_layout`, `(tabs)/_layout` | Khung, 5 tab | `RootGate`, `RootTabView` (#351) | ✅ DONE (khung); 4 tab ngoài Hôm nay còn là placeholder |
+| `(tabs)/index` | Hôm nay | `TodayScreen` (#345) | 🟡 PARTIAL |
+| `(tabs)/workouts/_layout`, `index`, `plan`, `library` | Tập luyện | Builder (#410, mock), `WorkoutView` | 🟡 / 🔵 (A22 #435, A26 #438) |
+| `log-workout` | Ghi tay | — | 🔵 A24 #436 |
+| `sessions` | Lịch sử | dữ liệu #433; UI #375 (batch 3) | 🟡 |
+| `templates`, `workout-builder` | Template | #410 + #435 | 🔵 |
+| `exercises`, `exercise-guide`, `exercise-insight` | Thư viện | — | 🔵 A26/A27/A28/A25 |
+| `change-password` | Tài khoản | `ChangePasswordView` (Cài đặt) | 🟡 PARTIAL — E #527 Phase 8 trên lõi A29 #441 |
+| `edit-profile` | Hồ sơ | `EditProfileView` (thẻ tài khoản của Cài đặt) | 🟡 PARTIAL — E #527 Phase 8 trên lõi A31 #443 + `ProfileEntry` / `MacroTargets` (golden `profile-entry-golden.json`) |
+| `settings` | Cài đặt | vỏ #394 | ⚪ A32 #444 (ranh giới) |
+| `reminders` | Nhắc nhở | `RemindersView` (từ Cài đặt) | 🔵 E #527 1.10 trên lõi A33 #445 — vào được ở Release khi #528 nối Cài đặt |
+| `legal` | Khác | `LegalView` (Cài đặt, 4 tab; onboarding dùng 3 tab) | 🟡 PARTIAL — E #527 Phase 8; văn bản chép máy (`gen.mjs --check`) |
+| `media-viewer` | Khác | `GuideMediaViewer` (từ hướng dẫn bài) | 🟡 (#544) |
+| `(tabs)/nutrition`, `diary`, `food-editor`, `food-list`, `grocery`, `log-meal`, `meal-plan`, `meal-plans`, `nutrition-insights`, `scan-barcode`, `scan-food`, `supplements`, `water` | Dinh dưỡng | — | 🔴 TODO (13) |
+| `(tabs)/community`, `community-challenge`, `community-challenges`, `community-inbox`, `community-post`, `community-privacy`, `community-profile`, `community-saved`, `community-search`, `community-share`, `community-share-progress`, `community-share-recipe`, `community-user`, `challenges` | Cộng đồng | — | 🔴 TODO (14) |
+| `(tabs)/assistant`, `ai-coach`, `coach-memory` | Trợ lý | — | 🔴 TODO (3) |
+| `biometrics`, `log-biometrics`, `log-measurement`, `log-sleep`, `log-weight`, `measurements-trend`, `progress-photos`, `sleep-insights`, `steps`, `weekly-review`, `smart-goals` | Cơ thể | — | 🔴 TODO (11) |
+| `awards`, `shop`, `mascot-room`, `koa-sheet`, `koa-debug` | Kinh tế / Koa | — | 🔴 TODO (5; `koa-debug` là công cụ dev) |
+| `admin/_layout`, `appeals`, `audit`, `images`, `index`, `reports`, `target`, `user`, `users` | Quản trị | — | ⚪ DECISION (9 tệp, 8 màn) |
+
+## 3. Năng lực iOS ngoài route
+
+| Năng lực | RN (iOS) | Native | Ghi chú |
+|---|---|---|---|
+| Live Activity nghỉ | `native/modules/ascnd-native/ios/Widgets/RestTimerLiveActivity.swift` | `apps/ios/ASCNDWidgets/RestLiveActivity.swift` + `ASCNDLiveActivity` | Hai bản thuộc **hai app khác nhau** (RN-iOS và native), không phải bản trùng trong một app. Bản chuẩn cho iOS native: `apps/ios`. Khoảng hở xem mục 1 |
+| App Intents (±15) | `RestTimerIntents.swift` | `AdjustRestIntent` (`RestActivity.swift`) | ✅ (±15); thiếu intent pause (#235) |
+| Widget Hôm nay / Streak | `TodayWorkoutWidget.swift`, `StreakReadinessWidget.swift` | không | 🔴 TODO |
+| HealthKit | `use-health-sync.ts` | không | ⚪ DECISION |
+
+## 4. Đa thiết bị (iPhone ↔ Android, cùng backend)
+
+Theo dõi riêng ở #523 (audit read → modify → write). Đã có:
+- chốt buổi idempotent theo id (`upsert ignoreDuplicates`);
+- bản ghi lại theo `"<buổi>@…"`;
+- `routine_days` upsert theo `(user_id, day_of_week)`;
+- `isRow` chặn ghi cho tài khoản khác.
+
+**Phát hiện P1 (B, 07/10): bản ghi lại buổi đè dữ liệu của thiết bị khác.**
+
+- **Native:** nối thêm (#307) và gỡ set (#415) tạo `workout-revision`. Hàng outbox mang **cả hàng `workout_sessions`** dựng từ ảnh chụp *trên máy này lúc đưa vào hàng đợi* (`WorkoutSessionController.revise`). `SupabaseRemoteWriter` upsert **ghi đè** khi gửi. Gỡ set cuối tạo `workout-delete`, xoá cả hàng.
+- **RN** (`useAppendToSession`, `use-fitness-data.ts:599`): đọc hàng server **ngay trước khi ghi**, rồi `update({ sets: [...old, ...added] })`; lớp `offline: now`, cần mạng.
+- **Kịch bản mất dữ liệu:**
+  1. iPhone chốt buổi.
+  2. iPhone offline nối thêm hoặc gỡ một set.
+  3. Android nối thêm set vào cùng buổi (đọc mới nhất, ghi).
+  4. iPhone có mạng → upsert ảnh chụp cũ → **set của Android mất**. Trường hợp gỡ set cuối: **xoá cả buổi**.
+- **Đã sửa (B, batch 2):** gộp **lúc gửi** (`SessionRevisionMerge`, ASCNDCore).
+  - Hàng outbox mang thêm `base` = các set máy này đã ghi trước lần sửa (trường optional; hàng outbox cũ vẫn giải mã được và giữ cách ghi cũ).
+  - `SupabaseRemoteWriter` đọc `sets, session_rpe, pr_detected` của hàng **ngay lúc gửi**, rồi `update` theo `id` + `user_id` như RN. Hết set thì `delete`.
+  - Theo từng nội dung set (bỏ `setIndex`): máy này thêm → `max(server, local)`; máy này gỡ → `min(server, local)`; không đụng → giữ như server. `max`/`min` để **phát lại không nhân đôi**.
+  - Hàng đã bị máy khác xoá → không dựng lại (RN: `confirmWrite` báo lỗi). Ngoại lệ: hoàn tác lần gỡ set cuối của chính máy này.
+  - `volume_load` tính lại (bỏ khởi động); `session_rpe` không giảm; `pr_detected` không mất — như RN nối thêm.
+  - **Đánh đổi đã biết:** hai máy cùng thêm hai set *giống hệt* (cùng bài, mức, reps, RPE) thì giữ một. Còn khe nhỏ giữa đọc và ghi, đúng bằng khe của RN.
+  - **Bằng chứng:**
+    - `SessionRevisionMergeTests` (8 test): thêm/thêm, gỡ/thêm, máy kia đã gỡ, phát lại idempotent, gỡ set cuối khi máy kia còn set, hàng mất, các trường hàng, khoá set.
+    - `WorkoutPipelineTests`: `offlineAppendDoesNotOverwriteAnotherDevicesSet`, `offlineRemovalKeepsAnotherDevicesSet` (đầu-cuối qua outbox + SyncWorker; `FakeServer` gộp đúng như writer).
+    - iOS CI trên batch 2 `f41f2572` (run 37552501155): core-linux **319 test pass**, gồm cả các test trên; app-macos xanh. Chưa thử trên máy thật (hai máy thật).
+
+**Buổi ghi ở máy khác cho hôm nay (B, batch 6):**
+- RN (`day-plan.tsx` `proven = sessionTicks(rows, sessions.sets)`): hàng được chứng minh hiện đã tích, không phải hàng mới; "Ghi thêm" nối vào `sessions[0].id`; bỏ tích thì gỡ khỏi buổi ấy.
+- Native: `TrainingHistory.sessions` đọc buổi của hôm nay (`id, date_time, session_rpe, pr_detected, sets`); máy này chưa có buổi riêng thì `WorkoutSessionController.adoptRemote` NHẬN buổi mới nhất — hàng chứng minh lấy tạ / reps / RPE THẬT; buổi cũ hơn cùng ngày chứng minh hàng nào thì hàng ấy tích + khoá (`DayState.provenElsewhere`, giữ qua mở lại app). Gỡ / nối thêm đi qua bản ghi lại có `base` = set server → `SessionRevisionMerge`: set ngoài kế hoạch của máy kia ở nguyên, không set nào nhân đôi.
+- Bằng chứng: `AdoptRemoteSessionTests` (nhận đúng số, ghi thêm giữ đủ set Android, gỡ đúng set, buổi cũ khoá qua reload), golden TC-4 (`sessionTicks`). Chưa thử trên hai máy thật.
+- Đơn vị (#527 1.9-A, PR riêng): ô của hàng nhận điền theo đơn vị tài khoản (`WeightUnit.text`, như ô hạt giống RN `day-plan.tsx:1011`) — server 60 kg → "132.3" lb, server 61.23 kg (máy lb gõ 135) → "135" lb / "61.2" kg — và giữ số kg THẬT của server (`DayProgress.remoteWeight`), để gỡ / nối thêm khớp đúng set trên server (`SessionRevisionMerge` so theo nội dung; đọc lại từ "132.3" thành 60.0103 → ghi 60.01 kg thì set 60 kg không bao giờ được gỡ). Bằng chứng: `WorkoutUnitsTests`. 1.9-B (PR riêng, xếp trên 1.9-A): `SignedInScope` đặt `WorkoutFlow.setWeightUnit` theo hồ sơ; ô tạ của màn tập gieo `WeightUnit.seed` + nhãn đơn vị cạnh ô (`day-plan.tsx:1986`) + nhãn VoiceOver của ô; Today hiện mức tạ theo đơn vị (`localizedLoad`).
+
+**Đơn vị tạ (#527 1.9-A, PR riêng):**
+- RN (`lib/units.ts`, `hooks/use-units.ts` @ fac9ac2): chỉ đúng `profiles.units_weight == "lbs"` là lb; DB luôn kg; hiển thị một chữ số lẻ, nhãn `lb` / `kg`; số gõ theo lb đổi về kg KHÔNG làm tròn (`weightToKg`), rồi lúc GHI set làm tròn 2 chữ số lẻ như mọi set (`use-fitness-data.ts:410` / `:631`, 135 lb → 61.23 kg); khối lượng `Math.round(displayWeight(v))`. Đổi đơn vị giữa ngày: chữ đã gõ đọc lại theo đơn vị mới — không có đơn vị theo set (giữ nguyên, có test hồi quy).
+- Native: `WeightUnit` (Core) — golden `weight-golden.json` sinh từ CHÍNH `units.ts` (`tools/insights-golden/gen-weight.mjs`). Nguồn: `ProfileBook` của đúng `userId` trong `SignedInScope` → environment `weightUnit` (dựng lại theo `.id(userId)`, đọc lại khi ra tiền cảnh). Áp vào: Lịch sử (khối lượng tháng / buổi + VoiceOver), Tổng kết (khối lượng, từng set, VoiceOver), "Lần trước", hàng bài của builder. `WorkoutSessionController.weightUnit` / `WorkoutFlow.weightUnit` mặc định cho chốt / nối thêm / gỡ / hoàn tác.
+- Bằng chứng: `WeightUnitGoldenTests`, `WeightUnitAccountTests` (đổi tài khoản A lbs → B kg → offline, hàng người khác), `WorkoutUnitsTests`. Chưa thử trên máy thật.
+- Khác RN có chủ đích (1.9-B): hàng kế hoạch KHÔNG chạm dưới lbs ghi đúng số kế hoạch (60 kg); RN gieo chữ "132.3" vào state rồi đọc lại → ghi 60.01 kg. Gõ lại chữ ấy thì như RN (60.01). Test `untouchedPlannedRowUnderLbsLogsThePlannedKg` / `retypedSeedIsReadAsTypedPounds`.
+- 1.9-C (PR riêng, xếp trên 1.9-B): ghi buổi bằng tay — `ManualLogController.weightUnit` (flow đưa vào): gợi ý kế hoạch hiện lb, cận và ghi đổi về kg (`log-workout.tsx:103` / `:481` / `:618`); màn duy nhất dùng nó là Lab (Debug), chưa có production entry. Lab: ô tạ gieo + nhãn theo đơn vị của controller (sửa lỗi 1.9-B: ô nhãn "kg" bị đọc là lb khi hồ sơ lbs). Chữ ĐỌC (Tổng kết, "Lần trước", builder, Today) theo dấu thập phân của máy (`localizedLoad`) — RN luôn ".", khác có chủ đích; ô gõ vẫn ".".
+- 1.9-D (PR riêng, xếp trên 1.9-C): hàng vừa vào buổi đã chốt mang số kg ĐÃ GỬI (`DayProgress.remoteWeight`, cùng mốc với hàng nhận từ server). RN gỡ set theo TÊN bài (`useRemoveSetFromSession`) nên không phụ thuộc đơn vị; native gộp theo NỘI DUNG, nên thiếu mốc này thì "135" gõ dưới lbs (gửi 61.23) đọc lại thành 135 kg sau khi đổi sang kg → gỡ set không khớp, set nằm lại server. Hàng CHƯA ghi vẫn giữ RN (chữ gõ đọc lại theo đơn vị mới). `ProfileBook.loadCached`: đơn vị từ bản nhớ có trước `flow.start` (mở lại app không nháy kg).
+- Chưa: nhãn VoiceOver của hàng set (`WorkoutView.rowVoiceOver` / `a11yLoad`, khoá `workout.row.accessibility`) vẫn đọc số kg — đúng hunk #526 viết lại; sau khi #526 vào: đổi `"\(weight) kg"` thành `unit.load(performed.weightKg)` (một dòng). Ghi buổi bằng tay và các màn Lab. Hồ sơ đổi đơn vị chưa đẩy ngay sang các màn (đọc lại khi ra tiền cảnh).
+
+**Không phải hồi quy:** `routine_days` upsert đủ 4 trường theo trạng thái trên máy. RN cũng làm vậy (`week-plan.tsx:343`), cùng last-write-wins. Hồ sơ (A31 #443): last-write-wins các cột form, giống RN (`edit-profile.tsx:275`) — không phải hồi quy (đã kiểm ở batch 5; hàng đợi).
