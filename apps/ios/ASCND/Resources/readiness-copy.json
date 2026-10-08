@@ -1,0 +1,140 @@
+{
+ "source": "native/src/lib/readiness-i18n.ts — sinh bằng apps/ios/tools/readiness-copy/gen.mjs, đừng sửa tay",
+ "reco": {
+  "green_no_load": {
+   "vi": "Sẵn sàng tập. Chưa có buổi tập nào để tính ACWR — tăng khối lượng từ từ.",
+   "en": "Ready to train. No sessions yet to compute ACWR — add volume gradually.",
+   "es": "Listo para entrenar. Aún no hay sesiones para calcular el ACWR: aumenta el volumen poco a poco."
+  },
+  "green_optimal": {
+   "vi": "Tập theo kế hoạch — đẩy top set + backoff sets.",
+   "en": "Train as planned — push the top set + backoff sets.",
+   "es": "Entrena según lo planeado: sube la serie principal + las series de descarga."
+  },
+  "green_watch": {
+   "vi": "Sẵn sàng tập. Theo dõi khối lượng — ACWR hơi cao.",
+   "en": "Ready to train. Watch the volume — ACWR is a bit high.",
+   "es": "Listo para entrenar. Vigila el volumen: el ACWR está un poco alto."
+  },
+  "listen": {
+   "vi": "Lắng nghe cơ thể. Vận động nhẹ nếu cảm thấy ổn.",
+   "en": "Listen to your body. Move lightly if you feel up to it.",
+   "es": "Escucha a tu cuerpo. Muévete con suavidad si te sientes con ganas."
+  },
+  "red_load_only": {
+   "vi": "Điểm thấp do tải tập, không phải do phục hồi. Đưa khối lượng về gần thói quen, và ghi giấc ngủ để có thêm cơ sở.",
+   "en": "Low from training load, not recovery. Steer volume back toward your usual, and log sleep for a fuller reading.",
+   "es": "Bajo por la carga de entrenamiento, no por la recuperación. Vuelve el volumen hacia tu nivel habitual y registra el sueño para una lectura más completa."
+  },
+  "red_recover": {
+   "vi": "Chỉ phục hồi tích cực — zone 2, mobility, thở.",
+   "en": "Active recovery only — zone 2, mobility, breathing.",
+   "es": "Solo recuperación activa: zona 2, movilidad, respiración."
+  },
+  "red_rest": {
+   "vi": "Nên nghỉ ngơi. Cardio nhẹ tối đa 20–30 phút.",
+   "en": "Better to rest. Light cardio, 20–30 min max.",
+   "es": "Mejor descansar. Cardio ligero, 20–30 min como máximo."
+  },
+  "yellow_reduce": {
+   "vi": "Giảm volume 5–10%. Tập trung kỹ thuật và phục hồi.",
+   "en": "Reduce volume 5–10%. Focus on technique and recovery.",
+   "es": "Reduce el volumen un 5–10%. Enfócate en la técnica y la recuperación."
+  },
+  "yellow_sleep": {
+   "vi": "Giữ cường độ, giảm 15% tổng sets. Ưu tiên ngủ tối nay.",
+   "en": "Keep the intensity, cut total sets by 15%. Prioritize sleep tonight.",
+   "es": "Mantén la intensidad, reduce las series totales un 15%. Prioriza el sueño esta noche."
+  }
+ },
+ "factors": {
+  "hrv": {
+   "label": {
+    "vi": "HRV",
+    "en": "HRV",
+    "es": "HRV"
+   },
+   "low": {
+    "vi": "thấp",
+    "en": "low",
+    "es": "baja"
+   },
+   "mid": {
+    "vi": "trung bình",
+    "en": "moderate",
+    "es": "moderada"
+   },
+   "high": {
+    "vi": "tốt",
+    "en": "good",
+    "es": "buena"
+   }
+  },
+  "rhr": {
+   "label": {
+    "vi": "Nhịp tim nghỉ",
+    "en": "Resting HR",
+    "es": "FC en reposo"
+   },
+   "low": {
+    "vi": "cao",
+    "en": "high",
+    "es": "alta"
+   },
+   "mid": {
+    "vi": "trung bình",
+    "en": "moderate",
+    "es": "moderada"
+   },
+   "high": {
+    "vi": "tốt",
+    "en": "good",
+    "es": "buena"
+   }
+  },
+  "sleep": {
+   "label": {
+    "vi": "Giấc ngủ",
+    "en": "Sleep",
+    "es": "Sueño"
+   },
+   "low": {
+    "vi": "kém",
+    "en": "poor",
+    "es": "malo"
+   },
+   "mid": {
+    "vi": "trung bình",
+    "en": "moderate",
+    "es": "moderado"
+   },
+   "high": {
+    "vi": "tốt",
+    "en": "good",
+    "es": "bueno"
+   }
+  },
+  "load": {
+   "label": {
+    "vi": "Tải tập",
+    "en": "Training load",
+    "es": "Carga de entrenamiento"
+   },
+   "low": {
+    "vi": "quá tải",
+    "en": "overreaching",
+    "es": "sobrecarga"
+   },
+   "mid": {
+    "vi": "trung bình",
+    "en": "moderate",
+    "es": "moderada"
+   },
+   "high": {
+    "vi": "tối ưu",
+    "en": "optimal",
+    "es": "óptima"
+   }
+  }
+ }
+}
