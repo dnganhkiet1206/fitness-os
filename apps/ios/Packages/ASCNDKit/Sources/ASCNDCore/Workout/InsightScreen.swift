@@ -119,6 +119,33 @@ public enum InsightScreen {
     return []
   }
 
+  // MARK: - Dải "Lần trước" (`components/ascnd/exercise-progress.tsx`)
+
+  /// `lastSetText`: con số của buổi gần nhất — giây cho bài giữ tư thế, `nil`
+  /// khi chưa có rep (dải không hiện: mười hai dòng "chưa có gì" trên kế hoạch
+  /// đầu tiên là mười hai món đồ đạc nói cùng một điều không gì). Cân nặng cơ
+  /// thể chỉ cộng cho bài không tạ; không có tải thì "8 reps × không tạ".
+  /// - Parameters:
+  ///   - load: chữ của một mức tải dương ("62.5 kg").
+  ///   - reps: "1 rep" / "8 reps" (`nRepsN`).
+  ///   - bodyweight: chữ "không tạ" đã viết thường (`nRdBodyweight.toLowerCase()`).
+  public static func lastSetText(
+    _ p: ExercisePerformance, load: (Double) -> String, reps: (Int) -> String, bodyweight: String
+  ) -> String? {
+    if let d = p.bestDurationSec, p.bestReps == nil { return "\(d)s" }
+    guard let r = p.bestReps else { return nil }
+    let total = (p.bodyweightKg ?? 0) * (p.kind == .bodyweight ? 1 : 0) + (p.bestWeightKg ?? 0)
+    if total <= 0 { return "\(reps(r)) × \(bodyweight)" }
+    return "\(load(total)) × \(reps(r))"
+  }
+
+  /// % trên dải: `Math.round(changePct * 100)`, chỉ hiện khi khác 0.
+  public static func stripPercent(_ i: ExerciseInsight?) -> Int? {
+    guard let c = i?.changePct else { return nil }
+    let pct = Int((c * 100 + 0.5).rounded(.down))
+    return pct == 0 ? nil : pct
+  }
+
   /// Các set tốt nhất của dãy so sánh (`best-sets`).
   public static func bestSets(of i: ExerciseInsight) -> [ExerciseTrend.Evidence.BestSet]? {
     for e in i.evidence {
