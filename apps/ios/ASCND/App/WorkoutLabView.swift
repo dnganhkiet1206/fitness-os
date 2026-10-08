@@ -99,6 +99,11 @@ private struct LabSession: View {
           } label: {
             Text(verbatim: "Buổi tập đã lưu + builder (màn thật)")
           }
+          NavigationLink {
+            WeekPlanView(flow: flow)
+          } label: {
+            Text(verbatim: "Kế hoạch tuần (màn thật)")
+          }
         }
         LabPlan(today: today, editor: editor)
       }
