@@ -181,7 +181,7 @@ public struct TemplateDraft: Sendable, Hashable {
   /// chữ tìm; mới trước (`newestFirst`).
   public static func listed(_ templates: [WorkoutTemplate], search: String) -> [WorkoutTemplate] {
     let q = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    return templates.sorted(by: PlanEdit.newestFirst).filter {
+    return templates.sorted(by: WorkoutTemplate.newestFirst).filter {
       q.isEmpty || $0.name.lowercased().contains(q) || ($0.type ?? "").lowercased().contains(q)
     }
   }
