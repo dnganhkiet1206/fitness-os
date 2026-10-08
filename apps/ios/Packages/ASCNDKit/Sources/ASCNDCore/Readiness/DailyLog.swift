@@ -325,6 +325,8 @@ public struct RowQuery: Sendable, Hashable {
     case eq(String, JSONValue)
     case gte(String, JSONValue)
     case lt(String, JSONValue)
+    /// `.or('a.gt.0,b.gt.0')` của PostgREST, nguyên chuỗi.
+    case or(String)
   }
   public struct Order: Sendable, Hashable {
     public let column: String

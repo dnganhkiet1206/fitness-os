@@ -38,6 +38,7 @@ struct DailyLogGoldenTests {
         case .eq(let c, let v): DailyLog.jsString(r[c]) == DailyLog.jsString(v)
         case .gte(let c, let v): cmp(r[c], v) >= 0
         case .lt(let c, let v): cmp(r[c], v) < 0
+        case .or: true  // `recomputeDailyLog` không dùng `or`
         }
       }
     }
@@ -81,6 +82,7 @@ struct DailyLogGoldenTests {
     case .eq(let c, let v): .object(["op": .string("eq"), "col": .string(c), "val": v])
     case .gte(let c, let v): .object(["op": .string("gte"), "col": .string(c), "val": v])
     case .lt(let c, let v): .object(["op": .string("lt"), "col": .string(c), "val": v])
+    case .or(let f): .object(["op": .string("or"), "val": .string(f)])
     }
   }
 

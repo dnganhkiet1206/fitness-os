@@ -28,6 +28,8 @@ final class AppServices {
   let reminders: ReminderCenter
   @ObservationIgnored private let reminderPresenter = ReminderPresenter()
   let sync: SyncWorker
+  /// Hai widget màn hình chính (#66): dữ liệu thật, xoá khi phiên kết thúc.
+  @ObservationIgnored let widgets: WidgetRefresher
   /// Trạng thái mạng ba nhánh (#527 · 1.11, `net-status.ts`): dải báo ở gốc app.
   let net = NetStatusMonitor()
   /// Đường mạng + phép dò internet của NetInfo (#530) — nuôi `net` và vòng sync.
@@ -112,6 +114,9 @@ final class AppServices {
     profileWriter = backend.map { SupabaseProfileWriter(backend: $0) as any ProfileWriter } ?? UnconfiguredProfile()
     profileCache = GRDBProfileCache(database)
     session = SessionStore(api: backend.map { SupabaseAuthAPI(backend: $0) as any AuthAPI } ?? UnconfiguredAuth())
+    let rows = backend.map { SupabaseRowStore(backend: $0) }
+    let widgets = WidgetRefresher(store: rows)
+    self.widgets = widgets
     let prefs = AppPreferences(store: UserDefaultsStore())
     preferences = prefs
     let reminderCenter = ReminderCenter(
@@ -121,11 +126,13 @@ final class AppServices {
       store: outboxStore,
       remote: backend.map { b -> any RemoteWriter in
         // Server đã nhận một lệnh buổi tập → dựng lại `daily_logs` của ngày ấy
-        // (+ hôm nay), như `rebuildAfterReplay` của RN (#266). Lỗi dựng lại
-        // không làm hỏng lượt gửi — ghi đã thành rồi.
+        // (+ hôm nay), như `rebuildAfterReplay` của RN (#266), rồi làm mới
+        // widget (điểm sẵn sàng / buổi hôm nay vừa đổi). Lỗi dựng lại không
+        // làm hỏng lượt gửi — ghi đã thành rồi.
         let rows = SupabaseRowStore(backend: b)
         return SupabaseRemoteWriter(backend: b, afterWrite: { entry in
           _ = await DailyLog.rebuildAfterWrite(entry, store: rows)
+          await widgets.refresh()
         })
       } ?? UnconfiguredRemote(),
       online: false)
@@ -147,6 +154,8 @@ final class AppServices {
       await lifecycle.sessionEnded(next: next) { @MainActor in
         _ = await sync.signOut()
       }
+      // Widget màn hình chính không giữ số của người vừa rời đi (`clearWidgetData`).
+      widgets.setUser(next)
       // Cài đặt theo tài khoản (linh vật); theo máy thì giữ (`DEVICE_KEYS`).
       prefs.clearUserScoped()
       // Nhắc nhở: huỷ thông báo đang chờ của người vừa rời đi, xoá cài đặt /
@@ -257,6 +266,7 @@ final class AppServices {
     // Quay lại tiền cảnh: đo lại đường mạng, dò lại internet ngay.
     network.resume(Self.netPath(monitor.currentPath))
     sync.kick()
+    Task { [widgets] in await widgets.refresh() }
   }
 
   /// `Application Support/ascnd.sqlite`. Bảo vệ "tới lần mở khoá đầu tiên":

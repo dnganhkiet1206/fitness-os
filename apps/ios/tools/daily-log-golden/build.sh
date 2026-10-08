@@ -8,7 +8,7 @@ set -e
 cd "$(dirname "$0")"
 RN=../../../../native/src/lib
 rm -rf lib out && mkdir lib
-for f in daily-log-service local-date training-card session-load readiness-engine readiness-i18n types; do
+for f in daily-log-service local-date training-card session-load readiness-engine readiness-i18n types streak; do
   cp "$RN/$f.ts" "lib/$f.ts"
 done
 cp supabase-stub.ts lib/supabase-stub.ts
