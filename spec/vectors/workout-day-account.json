@@ -134,5 +134,36 @@
      {"op": "load", "day": "2026-09-15", "expect": null},
      {"op": "load", "day": "2026-10-05", "expect": {"done": ["0-1"]}}
    ]},
-   "expected": {"owners": ["a", "a", "b"], "outbox": []}}
+   "expected": {"owners": ["a", "a", "b"], "outbox": []}},
+  {"rule": "WDA-10 Lượt ghi muộn của A tới khi B đã đăng nhập: từ chối trước khi có gì bền, không lọt vào ngày của B",
+   "note": "#454. `as` = người mà phép ghi nói nó ghi cho (controller cũ của A).",
+   "input": {"steps": [
+     {"op": "signIn", "user": "a"},
+     {"op": "save", "day": "2026-10-05", "done": ["0-0"], "expect": "ok"},
+     {"op": "finish", "day": "2026-10-04", "session": "s-a", "done": ["0-0"], "expect": "ok"},
+     {"op": "signIn", "user": "b"},
+     {"op": "save", "day": "2026-10-05", "done": ["0-0", "0-1"], "as": "a", "expect": "closed"},
+     {"op": "finish", "day": "2026-10-05", "session": "late", "done": ["0-0", "0-1"], "as": "a", "expect": "closed"},
+     {"op": "delete", "session": "s-a", "as": "a", "expect": "closed"},
+     {"op": "load", "day": "2026-10-05", "expect": null},
+     {"op": "save", "day": "2026-10-05", "done": ["1-0"], "as": "B", "expect": "ok"},
+     {"op": "save", "day": "2026-10-05", "done": ["1-0"], "as": "", "expect": "closed"},
+     {"op": "signIn", "user": "a"},
+     {"op": "load", "day": "2026-10-05", "expect": {"done": ["0-0"], "loggedSessionId": null}},
+     {"op": "load", "day": "2026-10-04", "expect": {"loggedSessionId": "s-a", "loggedKeys": ["0-0"]}}
+   ]},
+   "expected": {"owners": ["a", "a", "b"], "outbox": ["s-a"]}},
+  {"rule": "WDA-11 Thử lại chốt: lượt thử lại dưới phiên người khác bị từ chối, không nhân đôi; về đúng người thì idempotent",
+   "input": {"steps": [
+     {"op": "signIn", "user": "a"},
+     {"op": "finish", "day": "2026-10-05", "session": "s1", "done": ["0-0"], "expect": "ok"},
+     {"op": "signIn", "user": "b"},
+     {"op": "finish", "day": "2026-10-05", "session": "s1", "done": ["0-0"], "as": "a", "expect": "closed"},
+     {"op": "load", "day": "2026-10-05", "expect": null},
+     {"op": "signIn", "user": "a"},
+     {"op": "finish", "day": "2026-10-05", "session": "s1", "done": ["0-0"], "expect": "ok"},
+     {"op": "finish", "day": "2026-10-05", "session": "s2", "done": ["0-0"], "expect": "dayAlreadyLogged"},
+     {"op": "load", "day": "2026-10-05", "expect": {"loggedSessionId": "s1"}}
+   ]},
+   "expected": {"owners": ["a"], "outbox": ["s1"]}}
 ]
