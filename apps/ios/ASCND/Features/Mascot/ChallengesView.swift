@@ -8,11 +8,13 @@ import SwiftUI
 /// cho "không đọc được"); mở màn thì gieo tuần nếu trống rồi đo lại tiến độ;
 /// mỗi thử thách: tên + mô tả theo ngôn ngữ app (khoá lạ → chữ lưu trong hàng),
 /// thanh tiến độ, "x / y" hoặc "Hoàn thành"; đo lại không xong thì NÓI ra (con
-/// số trên màn có thể đã cũ). Khác RN: không có pháo hoa khi vừa xong — báo một
-/// dòng + VoiceOver.
+/// số trên màn có thể đã cũ); vừa xong thử thách có phần thưởng → thẻ ăn mừng
+/// (`enqueueAward`), kèm một dòng trên màn.
 struct ChallengesView: View {
   let book: WeeklyChallengesBook
   let lang: AppPreferences.Lang
+
+  @Environment(AppServices.self) private var services
 
   var body: some View {
     content
@@ -20,8 +22,20 @@ struct ChallengesView: View {
       .task { if case .loading = book.phase { await book.load() } }
       .refreshable { await book.refreshProgress() }
       .onChange(of: book.justCompleted) { _, keys in
+        guard case .ready(let rows) = book.phase else { return }
         for key in keys {
-          AccessibilityNotification.Announcement(String(localized: "ch.done \(title(key, fallback: key))")).post()
+          guard let ch = rows.first(where: { $0.key == key }) else { continue }
+          let name = title(key, fallback: ch.title)
+          // `use-extras.ts:711`: chỉ thử thách CÓ phần thưởng mới có thẻ ăn
+          // mừng (thẻ tự đọc cho VoiceOver); không có thì chỉ đọc một dòng.
+          if let reward = ch.rewardTitle {
+            services.celebrations.enqueue(
+              title: ChallengeText.reward(key, lang: lang) ?? reward,
+              description: String(localized: "ch.done \(name)"), icon: ch.icon ?? "trophy",
+              tier: ch.rewardTier ?? "bronze")
+          } else {
+            AccessibilityNotification.Announcement(String(localized: "ch.done \(name)")).post()
+          }
         }
       }
   }
