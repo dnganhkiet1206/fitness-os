@@ -12,9 +12,8 @@ import Testing
 /// kèm lý do; ca ấy biến mất hoặc được port thì phải sửa danh sách.
 @MainActor
 struct WorkoutHistoryVectorTests {
-  /// WH-3a: dựng lại daily_log của ngày bị xoá + hôm nay — readiness thuộc #266
-  /// (khoá), `WorkoutHistory.swift` ghi "chưa port".
-  static let notPorted: Set<String> = ["WH-3a"]
+  /// Mọi ca đã có phép kiểm Swift (WH-3a port ở #266 — `DailyLog.rebuildDays`).
+  static let notPorted: Set<String> = []
 
   private actor ServerLikeSource: HistorySource {
     let rows: [JSONValue]
@@ -154,6 +153,28 @@ struct WorkoutHistoryVectorTests {
       }
       let count = await store.outbox.filter { $0.kind == WorkoutSessionRecord.deleteKind }.count
       #expect((count == 1) == (expected?["deletedOnce"]?.boolValue == true), "WH-2c: xoá đúng một lần")
+
+    case "WH-3a":
+      // Xoá qua đúng đường thật (`HistoryBook.delete`), rồi hỏi writer sẽ dựng
+      // lại những ngày nào khi server đã nhận lệnh xoá ấy. Vector không ghi
+      // múi giờ và runner RN đọc ngày UTC (`date_time.slice(0, 10)`), nên chạy
+      // ở UTC; sáu múi giờ thật nằm ở `DailyLogGoldenTests`.
+      let at = try #require(input?["date_time"]?.stringValue)
+      let today = try #require(LocalDate(input?["today"]?.stringValue ?? ""))
+      let store = InMemoryWorkoutStore()
+      let b = book(
+        ServerLikeSource([Self.row(.object(["id": .string("s-old"), "date_time": .string(at)]))]), user: "u1",
+        store: store)
+      await b.load()
+      try await b.delete("s-old")
+      let entry = try #require(await store.outbox.last)
+      let days = DailyLog.rebuildDays(after: entry, today: today, in: TimeZone(identifier: "UTC")!)
+        .map { $0 == today ? "today" : $0.description }
+      guard case .array(let want)? = expected?["recomputed"] else {
+        Issue.record("WH-3a: thiếu recomputed")
+        return
+      }
+      #expect(days == want.compactMap(\.stringValue), "WH-3a: dựng lại ngày bị xoá + hôm nay")
 
     case "WH-4a":
       let b = book(ServerLikeSource([]), user: "u1")
