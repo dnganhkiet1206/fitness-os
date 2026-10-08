@@ -28,6 +28,26 @@ public enum TodayRules {
     return .pick
   }
 
+  /// Nút của thẻ Hôm nay cho ngày `date` (`today-training.tsx:80–110`):
+  /// - `library == nil`: lịch chưa đọc xong → không đoán (`daysPending`);
+  /// - ngày trong lịch: `Map` theo `day_of_week`, hàng sau thắng;
+  /// - `planned`: ngày có template TÌM THẤY trong danh sách và không phải nghỉ;
+  /// - `rest`: cờ nghỉ của ngày; `done`: ngày ấy đã tập (máy này hay server).
+  ///
+  /// Native: lịch trên máy (cache) là lịch đã biết — RN coi truy vấn lỗi là
+  /// "chưa biết" kể cả khi còn dữ liệu cũ; ở đây lịch đã có thì nút vẫn hiện
+  /// (local-first, như phần còn lại của thẻ).
+  public static func cta(
+    on date: LocalDate, library: TemplateSnapshot?, trained: Set<LocalDate>
+  ) -> TodayCta {
+    guard let library else { return cta(unknown: true, planned: false, rest: false, done: false) }
+    let index = WorkoutPlanning.routineIndex(date)
+    let day = library.routine.last { $0.dayOfWeek == index }
+    let rest = day?.isRest ?? false
+    let template = day?.templateId.flatMap { id in library.templates.first { $0.id == id } }
+    return cta(unknown: false, planned: template != nil && !rest, rest: rest, done: trained.contains(date))
+  }
+
   /// Hàng kế hoạch nào một buổi ĐÃ GHI (ở máy này hay máy khác) chứng minh
   /// là đã làm (RN `sessionTicks`): mỗi set mang tên bài "trả" cho đúng một
   /// hàng cùng tên, theo thứ tự hàng. Set không tên không chứng minh gì.

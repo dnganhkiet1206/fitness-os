@@ -2,10 +2,10 @@ import ASCNDCore
 import ASCNDDesignSystem
 import SwiftUI
 
-// Nối những màn ĐÃ có (#527) vào tab của bản Release: Today, màn tập, lịch sử
-// buổi tập, Cài đặt. Chỉ là nối dây — không hành vi mới. Màn nào chưa đủ hành
-// vi thì không hiện nút dẫn tới nó (chọn kế hoạch, builder: #527
-// IMPLEMENTED_NOT_WIRED), thay vì một nút không làm gì.
+// Nối những màn ĐÃ có (#527) vào tab của bản Release: Today (nút của thẻ →
+// kế hoạch tuần / ghi tay), màn tập, lịch sử buổi tập (→ chi tiết buổi), Cài
+// đặt. Chỉ là nối dây — không hành vi mới. Màn nào chưa đủ hành vi thì không
+// hiện nút dẫn tới nó, thay vì một nút không làm gì.
 
 /// Tab Hôm nay: `TodayScreen` trên `flow.today` của phiên.
 struct TodayTab: View {
@@ -13,17 +13,28 @@ struct TodayTab: View {
   /// Bấm "Bắt đầu" — đưa người dùng sang tab Tập luyện, nơi màn tập sống.
   var onStartWorkout: () -> Void
   @State private var showsSettings = false
+  @State private var showsPlan = false
+  @State private var showsManualLog = false
 
   var body: some View {
     TodayScreen(
       controller: flow.today,
       onStartWorkout: onStartWorkout,
-      // Chưa có màn kế hoạch nối vào bản này (#527): ẩn nút.
-      onChoosePlan: nil,
+      // Nút của thẻ (`today-training.tsx:338`): "Chọn buổi tập" mở kế hoạch
+      // của hôm nay (`/workouts/plan?day=today`); "Ghi buổi tập" / "Ghi thêm
+      // buổi phát sinh" mở màn ghi tay (`/log-workout`).
+      onChoosePlan: flow.plan == nil ? nil : { showsPlan = true },
+      onLogWorkout: { showsManualLog = true },
       onOpenSettings: { showsSettings = true },
       onRefresh: { await flow.refresh() }
     )
     .sheet(isPresented: $showsSettings) { SettingsSheet() }
+    .sheet(isPresented: $showsPlan) {
+      // Kế hoạch tuần mở trên hôm nay; từ đó: gán buổi, builder, thư viện,
+      // bảng tập của mọi ngày (#541, #540, #543, #547).
+      NavigationStack { WeekPlanView(flow: flow) }
+    }
+    .sheet(isPresented: $showsManualLog) { ManualLogView(flow: flow) }
   }
 }
 
@@ -111,7 +122,9 @@ private struct SettingsSheet: View {
       theme: services.preferences.theme.rawValue,
       onThemeChange: { code in
         if let t = AppPreferences.Theme(rawValue: code) { services.preferences.setTheme(t) }
-      }
+      },
+      makePasswordChange: { PasswordChangeController(session: services.session) },
+      legalLang: services.preferences.lang
     )
     .presentationDragIndicator(.visible)
   }
