@@ -71,6 +71,18 @@ struct TemplateFormView: View {
       if templateId == nil { templateId = flow.plan?.newTemplateId() }
       if let library = flow.library, !library.loaded { await library.load() }
     }
+    // Nút Lưu tắt khi đang lưu và dòng lỗi hiện ở cuối danh sách: VoiceOver
+    // phải được nói, không thì focus kẹt trên nút đã tắt (#466).
+    .onChange(of: saving) { _, now in
+      if now { announceForVoiceOver(String(localized: "wb.saving")) }
+    }
+    .onChange(of: failure) { _, message in
+      if let message { announceForVoiceOver(message) }
+    }
+  }
+
+  private func announceForVoiceOver(_ message: String) {
+    AccessibilityNotification.Announcement(message).post()
   }
 
   // MARK: - Bước 1: chọn bài
@@ -396,7 +408,7 @@ struct TemplateFormView: View {
     failure = nil
     do throws(PlanEditor.Refusal) {
       try await plan.create(id: id, name: name, type: kind.rawValue, exercises: draft.items, scheduleOn: scheduleOn)
-      AccessibilityNotification.Announcement(String(localized: "wb.saved")).post()
+      announceForVoiceOver(String(localized: "wb.saved"))
       dismiss()
     } catch {
       failure = String(localized: "workout.finishError.generic")
