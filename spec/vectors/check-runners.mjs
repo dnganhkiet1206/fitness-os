@@ -11,6 +11,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.resolve(DIR, '..', '..');
+/** Runner là test Swift: `swift:<đường dẫn từ gốc repo>`. */
+const SWIFT = 'swift:';
 const runners = JSON.parse(readFileSync(path.join(DIR, 'runners.json'), 'utf8'));
 const problems = [];
 const present = readdirSync(DIR).filter((x) => x.endsWith('.json') && x !== 'runners.json');
@@ -22,6 +25,17 @@ for (const f of present) {
   const runner = runners[f];
   if (!runner) {
     problems.push(`${f}: chưa đăng ký runner trong spec/vectors/runners.json`);
+    continue;
+  }
+  if (runner.startsWith(SWIFT)) {
+    // Hành vi chỉ native có (không có logic RN nào để chạy trên Linux): runner
+    // là test Swift, chạy ở iOS CI. Phải tồn tại VÀ đọc đúng tệp này — một
+    // test không nhắc tới tệp thì không chạy nó.
+    const rel = runner.slice(SWIFT.length);
+    const abs = path.join(ROOT, rel);
+    if (!existsSync(abs)) problems.push(`${f}: runner Swift ${rel} không tồn tại`);
+    else if (!readFileSync(abs, 'utf8').includes(`spec/vectors/${f}`))
+      problems.push(`${f}: runner Swift ${rel} không đọc spec/vectors/${f}`);
     continue;
   }
   if (!existsSync(path.join(DIR, runner))) {
