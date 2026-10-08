@@ -86,6 +86,14 @@ for (const [f, s] of builderFiles) {
     check(Number(m[1]) >= 44 && Number(m[2]) >= 44, `${f}: ${m[0]} dưới 44pt`);
   }
 }
+for (const [f, s] of builderFiles) {
+  // Nút chỉ có icon (`} label: { Image(systemName:) … }`): icon nhỏ hơn 44pt
+  // nhiều, nên label phải tự nới vùng chạm — như WeekdayButton năm xưa.
+  for (const m of s.matchAll(/\}\s*label:\s*\{\s*Image\(systemName:\s*("[^"]+")([^}]*)\}/g)) {
+    check(/\.frame\(minWidth:\s*44,\s*minHeight:\s*44\)/.test(m[2]),
+      `${f}: nút icon ${m[1]} phải frame(minWidth: 44, minHeight: 44)`);
+  }
+}
 check(/Image\(systemName: "trash"\)[^}]*\.frame\(minWidth:\s*44,\s*minHeight:\s*44\)/.test(list),
   'TemplateListView.swift: nút xoá (icon) phải frame(minWidth: 44, minHeight: 44)');
 
