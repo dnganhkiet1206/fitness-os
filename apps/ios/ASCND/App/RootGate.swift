@@ -87,10 +87,14 @@ private struct SignedInScope<Content: View>: View {
       services.net.busyProbe = { [weak f] in f?.isRefreshing ?? false }
       await services.forgetOtherAccounts(keeping: userId)
       // Sau `forgetOtherAccounts`: bản nhớ hồ sơ chỉ đọc được khi phiên đã là
-      // của người này. Song song với luồng tập — không chờ nhau.
+      // của người này. Đơn vị từ bản nhớ (không mạng) có TRƯỚC khi buổi tập
+      // dựng (#527 1.9-D) — mở lại app, ô tạ hiện lb ngay, không nháy kg; đọc
+      // server song song với luồng tập.
       let book = services.makeProfileBook(userId: userId)
       profile = book
-      async let units: Void = book.load()
+      await book.loadCached()
+      f.setWeightUnit(weightUnit)
+      async let units: Void = book.refresh()
       await f.start()
       await units
     }

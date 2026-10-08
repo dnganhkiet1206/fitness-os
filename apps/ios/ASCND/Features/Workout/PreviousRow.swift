@@ -22,8 +22,8 @@ public struct PreviousPerformance: Hashable, Sendable {
   /// Nhãn hiển thị theo đơn vị của tài khoản (#527 1.9-A): "60 kg × 8",
   /// "132.3 lb × 8", hoặc "× 8" khi không tạ.
   public func label(_ unit: WeightUnit) -> String {
-    if let w = weightKg, w > 0 {
-      return "\(unit.load(w)) × \(reps)"
+    if let w = weightKg, let load = unit.localizedLoad(w) {
+      return "\(load) × \(reps)"
     }
     return "× \(reps)"
   }

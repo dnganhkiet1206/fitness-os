@@ -246,7 +246,7 @@ public final class WorkoutFlow {
       todaysTemplate: { [weak today] in today?.plan.flatMap { $0.date == date ? $0.template : nil } },
       loggedToday: { [weak today] in today?.trained.contains(date) ?? false },
       bests: { [records] in records.bests }, clock: clock, makeId: makeId,
-      onEnqueued: enqueued(for: date))
+      onEnqueued: enqueued(for: date), weightUnit: weightUnit)
   }
 
   /// Kế hoạch tự do cho ngày không có buổi (chỉ Lab dùng). `nil` để tắt.

@@ -58,6 +58,10 @@ public struct WorkoutView: View {
   @State private var removal: WorkoutSessionController.Removal?
   /// Tăng mỗi lần chốt / nối thêm thành công — kích phản hồi xúc giác.
   @State private var successTick = 0
+  /// Luồng tập của phiên — mở màn ghi tay cho bài phát sinh sau khi đã ghi
+  /// (`day-plan.tsx:2291`). `nil` (preview) = không có liên kết.
+  @Environment(WorkoutFlow.self) private var flow: WorkoutFlow?
+  @State private var showsManualLog = false
 
   public init(
     controller: WorkoutSessionController,
@@ -537,6 +541,14 @@ public struct WorkoutView: View {
         .font(DS.TextStyle.headline)
         .foregroundStyle(DS.Color.readinessGreen.swiftUI)
         .frame(maxWidth: .infinity, minHeight: 48)
+      // Đã ghi mà còn bài PHÁT SINH: chỉ chỗ đi tiếp (`nRdExtra`) — luật
+      // một-lần-lưu giữ nguyên, sổ ghi tay nhận buổi thứ hai.
+      if let flow {
+        Button(String(localized: "manualLog.extra")) { showsManualLog = true }
+          .font(DS.TextStyle.footnote.weight(.semibold))
+          .frame(maxWidth: .infinity, minHeight: 44)
+          .sheet(isPresented: $showsManualLog) { ManualLogView(flow: flow) }
+      }
     } else {
       DSButton(
         isFinishing

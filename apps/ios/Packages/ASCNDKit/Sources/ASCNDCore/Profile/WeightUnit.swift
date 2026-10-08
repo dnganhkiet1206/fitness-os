@@ -65,10 +65,11 @@ public enum WeightUnit: String, Sendable, Hashable, CaseIterable {
     "\(text(kg)) \(label)"
   }
 
-  /// Mức tạ cho dòng kế hoạch (Today): số của `load` (`day-plan.tsx:1820`,
-  /// một chữ số lẻ, không nhóm nghìn) với dấu thập phân của máy — "62,5 kg"
-  /// trên máy tiếng Việt, "137.8 lb" trên máy tiếng Anh. `nil` = bài không tạ
-  /// (không hiện "0 kg").
+  /// Mức tạ để ĐỌC (Today, Tổng kết, "Lần trước", builder, VoiceOver): số của
+  /// `load` (`day-plan.tsx:1820`, một chữ số lẻ, không nhóm nghìn) với dấu thập
+  /// phân của máy — "62,5 kg" (vi / es), "137.8 lb" (en). RN luôn in "."; native
+  /// theo locale cho chữ hiển thị — số lưu (kg) và ô gõ (`text` / `seed`, luôn
+  /// ".") không đổi. `nil` = bài không tạ (không hiện "0 kg").
   public func localizedLoad(_ kg: Double, locale: Locale = .current) -> String? {
     guard kg.isFinite, kg > 0 else { return nil }
     let separator = locale.decimalSeparator ?? "."

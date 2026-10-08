@@ -220,8 +220,8 @@ public struct ExerciseConfigRow: View {
           .font(.subheadline)
         // `ex.weight ? \`  ·  ${displayWeight(ex.weight, wUnit)} ${wl}\` : ''`
         // (`workout-builder.tsx:795`): tạ 0 không hiện "0 kg".
-        if let weight = exercise.weightKg, weight > 0 {
-          Text(String(localized: "builder.exercise.weight \(unit.load(weight))"))
+        if let weight = exercise.weightKg, let load = unit.localizedLoad(weight) {
+          Text(String(localized: "builder.exercise.weight \(load)"))
             .font(.subheadline)
             .foregroundStyle(.secondary)
         }

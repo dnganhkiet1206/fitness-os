@@ -69,10 +69,12 @@ struct WeightUnitAccountTests {
   private actor Source: ProfileSource {
     var rows: [String: JSONValue]
     var down = false
+    private(set) var calls = 0
     init(_ rows: [String: JSONValue]) { self.rows = rows }
     func setDown(_ d: Bool) { down = d }
     func set(_ userId: String, _ row: JSONValue?) { rows[userId] = row }
     func profile(userId: String) async throws -> JSONValue? {
+      calls += 1
       if down { throw URLError(.notConnectedToInternet) }
       return rows[userId]
     }
@@ -107,6 +109,23 @@ struct WeightUnitAccountTests {
     #expect(await unit("a", source, cache) == .lbs, "offline: bản nhớ của chính A")
     #expect(await unit("b", source, cache) == .kg, "offline: B không mượn lb của A")
     #expect(await unit("c", source, cache) == .kg, "người mới, chưa có gì → kg")
+  }
+
+  /// Mở lại app (#527 1.9-D): đơn vị đến từ bản nhớ trên máy, KHÔNG chờ mạng —
+  /// có trước khi màn tập dựng (`SignedInScope`: `loadCached` rồi
+  /// `setWeightUnit` rồi mới `flow.start`). Bản nhớ chỉ của đúng người.
+  @Test func cachedUnitIsReadyBeforeAnyNetwork() async {
+    let source = Source(["a": Self.row("a", "lbs")])
+    let cache = Cache()
+    #expect(await unit("a", source, cache) == .lbs)
+    let before = await source.calls
+    let reopened = ProfileBook(userId: "a", source: source, writer: Writer(), cache: cache)
+    await reopened.loadCached()
+    #expect(WeightUnit(profile: reopened.profile) == .lbs)
+    #expect(await source.calls == before, "không gọi server")
+    let other = ProfileBook(userId: "b", source: source, writer: Writer(), cache: cache)
+    await other.loadCached()
+    #expect(WeightUnit(profile: other.profile) == .kg, "B không đọc bản nhớ của A")
   }
 
   /// Hàng của người KHÁC (RLS hỏng) không bao giờ thành đơn vị của mình.
