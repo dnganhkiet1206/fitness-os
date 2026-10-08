@@ -104,6 +104,20 @@ private struct LabSession: View {
           } label: {
             Text(verbatim: "Kế hoạch tuần (màn thật)")
           }
+          if let library = flow.library {
+            NavigationLink {
+              ExercisesView(library: library)
+            } label: {
+              Text(verbatim: "Thư viện bài tập (màn thật)")
+            }
+          }
+          if let insights = flow.insights {
+            NavigationLink {
+              ExerciseInsightView(insights: insights, today: today)
+            } label: {
+              Text(verbatim: "Tiến bộ từng bài (màn thật)")
+            }
+          }
         }
         LabPlan(today: today, editor: editor)
       }
