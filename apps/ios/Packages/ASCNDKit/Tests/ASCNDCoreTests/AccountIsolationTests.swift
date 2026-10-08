@@ -115,7 +115,7 @@ struct AccountIsolationTests {
   @Test func committedDayDataSurvivesSignOut() async throws {
     let store = InMemoryWorkoutStore()
     let key = "routine-day:2026-10-05:tpl-1"
-    try await store.saveDay(key, DayState())
+    try await store.saveDay(key, DayState(), userId: "u-alice")
     #expect(try await store.loadDay(key) != nil)
 
     let outbox = LockedOutbox()
