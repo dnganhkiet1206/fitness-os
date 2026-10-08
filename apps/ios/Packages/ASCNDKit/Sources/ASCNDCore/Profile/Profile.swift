@@ -25,6 +25,11 @@ public struct Profile: Sendable, Hashable, Codable {
   public var sleepTargetHours: Double?
   public var sleepTargetBedtime: String?
   public var sleepTargetWaketime: String?
+  /// `sleep_target_*_set` (P0-3): người dùng đã TỰ lưu giờ ngủ / dậy. Cột giờ
+  /// mặc định '23:00' / '07:00' trong DB, nên giờ không có cờ không phải là
+  /// điều người dùng đã nói.
+  public var sleepTargetBedtimeSet: Bool?
+  public var sleepTargetWaketimeSet: Bool?
   public var allergies: [String]?
   public var dislikedFoods: [String]?
   public var onboardingCompleted: Bool?
@@ -67,6 +72,8 @@ public struct Profile: Sendable, Hashable, Codable {
     sleepTargetHours = num("sleep_target_hours")
     sleepTargetBedtime = row["sleep_target_bedtime"]?.stringValue
     sleepTargetWaketime = row["sleep_target_waketime"]?.stringValue
+    sleepTargetBedtimeSet = row["sleep_target_bedtime_set"]?.boolValue
+    sleepTargetWaketimeSet = row["sleep_target_waketime_set"]?.boolValue
     allergies = strings("allergies")
     dislikedFoods = strings("disliked_foods")
     onboardingCompleted = row["onboarding_completed"]?.boolValue

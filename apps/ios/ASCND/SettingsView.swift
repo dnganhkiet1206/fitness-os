@@ -138,6 +138,24 @@ public struct SettingsView: View {
           }
         }
 
+        // Nhắc nhở — thông báo cục bộ (`settings.tsx:604`, `nav.push('/reminders')`).
+        Section {
+          NavigationLink {
+            RemindersView()
+          } label: {
+            Label {
+              VStack(alignment: .leading, spacing: 2) {
+                Text(String(localized: "reminders.title"))
+                Text(String(localized: "reminders.desc"))
+                  .font(DS.TextStyle.caption)
+                  .foregroundStyle(DS.Color.mutedForeground.swiftUI)
+              }
+            } icon: {
+              Image(systemName: "bell")
+            }
+          }
+        }
+
         // About
         Section {
           HStack {
