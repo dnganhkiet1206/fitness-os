@@ -74,7 +74,7 @@ public enum WeightUnit: String, Sendable, Hashable, CaseIterable {
   /// Mặc định theo ngôn ngữ chọn TRONG APP (`AppLanguage`, #533), không theo
   /// máy: máy tiếng Anh mà app đặt tiếng Việt thì vẫn "62,5 kg", cùng chữ
   /// quanh nó. "Theo máy" (`code == nil`) thì `Locale.current`.
-  public func localizedLoad(_ kg: Double, locale: Locale = AppLanguage.shared.locale ?? .current) -> String? {
+  public func localizedLoad(_ kg: Double, locale: Locale = .app) -> String? {
     guard kg.isFinite, kg > 0 else { return nil }
     let separator = locale.decimalSeparator ?? "."
     return "\(text(kg).replacingOccurrences(of: ".", with: separator)) \(label)"

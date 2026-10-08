@@ -317,7 +317,7 @@ private struct OnboardingStepsView: View {
       VStack(alignment: .leading, spacing: DS.Spacing.sm) {
         Eyebrow(text: String(localized: "onboarding.plan.eyebrow"))
         HStack(alignment: .firstTextBaseline, spacing: DS.Spacing.xs) {
-          Text(p.targetKcal.formatted(.number))
+          Text(p.targetKcal.formatted(.number.locale(.app)))
             .font(DS.TextStyle.hero)
             .monospacedDigit()
           Text(verbatim: Self.kcal)
@@ -404,7 +404,7 @@ private struct OnboardingStepsView: View {
 
   private var readyChips: [String] {
     let kcal = flow.attempt.plan?.targetKcal ?? 0
-    return [goalLabel, "\(kcal.formatted(.number)) \(Self.kcal)", String(localized: "onboarding.ready.level \(Self.level)")]
+    return [goalLabel, "\(kcal.formatted(.number.locale(.app))) \(Self.kcal)", String(localized: "onboarding.ready.level \(Self.level)")]
       .filter { !$0.isEmpty }
   }
 
@@ -426,7 +426,7 @@ private struct OnboardingStepsView: View {
   private func water(_ ml: Int) -> String {
     let unit = services.preferences.volumeUnit
     let v = OnboardingRuler.displayVolume(ml, unit: unit)
-    return unit == .oz ? "\(OnboardingRuler.fixed1(v)) oz" : "\(Int(v).formatted(.number)) ml"
+    return unit == .oz ? "\(OnboardingRuler.fixed1(v)) oz" : "\(Int(v).formatted(.number.locale(.app))) ml"
   }
 
   static func date(_ d: LocalDate) -> Date { d.calendarDate }
