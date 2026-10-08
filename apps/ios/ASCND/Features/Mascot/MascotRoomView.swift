@@ -18,11 +18,14 @@ import SwiftUI
 /// - câu nói / tâm trạng của Koa (`useMascot`), dòng "Koa để ý" (mô hình cá
 ///   nhân trên máy) — không có nguồn native;
 /// - tự nhận nhiệm vụ (`use-quest-autoclaim`, gắn toàn app ở RN);
-/// - cửa hàng / phòng thay đồ, đổi linh vật, màn thử thách / huy hiệu — hai
-///   hàng cuối chỉ hiện số, không dẫn tới màn chưa có;
+/// - cửa hàng / phòng thay đồ, đổi linh vật, màn thử thách — hàng thử thách
+///   chỉ hiện số; hàng huy hiệu dẫn tới `AwardsView` khi được truyền `awards`;
 /// - nút "+300 xu" của bản dev (server từ chối khoá `dev:`) — không port.
 struct MascotRoomView: View {
   let room: MascotRoomController
+  /// Sổ huy chương cho hàng "Huy hiệu" (`nav.push('/awards')`) — B truyền khi nối.
+  var awards: AwardsBook? = nil
+  var lang: AppPreferences.Lang = .vi
 
   @Environment(\.accessibilityReduceMotion) private var reduceMotion
   @Environment(\.locale) private var locale
@@ -354,7 +357,7 @@ struct MascotRoomView: View {
     }
   }
 
-  /// Số thử thách đã xong / tổng, số huy hiệu — chỉ hiện, chưa dẫn tới màn nào.
+  /// Số thử thách đã xong / tổng; số huy hiệu — dẫn tới màn huy chương khi có sổ.
   private var counts: some View {
     DSCard {
       VStack(spacing: DS.Spacing.sm) {
@@ -365,10 +368,22 @@ struct MascotRoomView: View {
             Text(verbatim: "—")
           }
         }
-        LabeledContent(String(localized: "mr.awards")) {
-          Text(verbatim: room.awardCount.map { $0 > 0 ? String($0) : "—" } ?? "—").monospacedDigit()
+        if let awards {
+          NavigationLink {
+            AwardsView(book: awards, lang: lang)
+          } label: {
+            awardsRow
+          }
+        } else {
+          awardsRow
         }
       }
+    }
+  }
+
+  private var awardsRow: some View {
+    LabeledContent(String(localized: "mr.awards")) {
+      Text(verbatim: room.awardCount.map { $0 > 0 ? String($0) : "—" } ?? "—").monospacedDigit()
     }
   }
 

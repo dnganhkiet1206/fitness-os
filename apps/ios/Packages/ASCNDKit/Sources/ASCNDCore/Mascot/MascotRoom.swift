@@ -378,6 +378,6 @@ public final class MascotRoomController {
 }
 
 /// Lỗi của một lượt đọc thành giá trị — để các lượt song song không kéo nhau đổ.
-private func capture<T: Sendable>(_ body: @Sendable () async throws -> T) async -> Result<T, any Error> {
+func capture<T: Sendable>(_ body: @Sendable () async throws -> T) async -> Result<T, any Error> {
   do { return .success(try await body()) } catch { return .failure(error) }
 }
